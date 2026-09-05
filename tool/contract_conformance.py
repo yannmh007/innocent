@@ -196,8 +196,15 @@ CLASS = re.compile(
 # `implements` completeness check — the whole reason this file exists — was
 # silently satisfied by the call site. Anchoring the group on a non-space first
 # character costs nothing and closes it.
+#
+# `static` is captured rather than skipped. Dart never inherits a static
+# member, so `implements`/`extends` cannot require one to be redeclared:
+# counting statics as part of the contract made every subclass of a base
+# class with a static helper look non-conforming. The generated
+# `AppLocalizationsEn/My/Th extends AppLocalizations` each failed on the
+# `static AppLocalizations of(BuildContext)` that only the base can declare.
 MEMBER = re.compile(
-    r'^[ \t]{2,4}(?:@override\s+)?(?:static\s+|external\s+)?'
+    r'^[ \t]{2,4}(?:@override\s+)?(static\s+)?(?:external\s+)?'
     r'([\w<>,\?\[\]][\w<>,\?\[\] \t]*?)\s+(\w+)\s*\(', re.M)
 
 for path in dart_files():
@@ -226,8 +233,12 @@ for path in dart_files():
             i += 1
         body = src[m.end():i]
         for mm in MEMBER.finditer(body):
-            ret, member = mm.group(1).strip(), mm.group(2)
+            is_static, ret, member = (mm.group(1), mm.group(2).strip(),
+                                      mm.group(3))
             if member in ('if', 'for', 'while', 'switch', 'return', 'catch'):
+                continue
+            if is_static:
+                # not inheritable, so never part of the contract either side
                 continue
             close = balanced(body, mm.end() - 1)
             if close < 0:
