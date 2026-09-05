@@ -1,0 +1,85 @@
+# Static analysis configuration for Innocent.
+#
+# Activates the `flutter_lints` recommended rule set (already a dev
+# dependency) plus a handful of correctness-focused rules that catch real
+# bugs — leaked stream subscriptions, unclosed sinks, stray prints, and
+# BuildContext used across async gaps.
+#
+# Note: these findings are surfaced by the analyzer / IDE only. They do
+# NOT gate `flutter build apk`, so adding rules here cannot break the
+# FlutLab build — it simply gives the project a professional-grade quality
+# baseline and a gradual cleanup backlog.
+#
+# THE WORKFLOW THIS FILE EXISTS FOR: open the Analyzer tab BEFORE pressing
+# Build. FlutLab's Analyzer 2.0 runs a real language server that understands
+# every object in the project and every imported library, so it reports the
+# same errors the compiler will — in seconds instead of minutes. Skipping it
+# and going straight to Build is how a two-minute mistake becomes a
+# two-minute wait to find out about a two-minute mistake.
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  exclude:
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
+    - "build/**"
+  errors:
+    # Promote a genuine crash-class issue to a warning so it stands out in
+    # the Problems panel (still non-fatal to the build).
+    use_build_context_synchronously: warning
+
+linter:
+  rules:
+    # Correctness / resource-safety beyond the flutter_lints defaults.
+    avoid_print: true
+    cancel_subscriptions: true
+    close_sinks: true
+    unawaited_futures: true
+    avoid_empty_else: true
+    prefer_final_locals: true
+
+    # --- Added after a build failed that static text checks could not see ---
+    #
+    # The FlutLab Analyzer understands every object in this project. It is the
+    # cheapest place to catch a whole class of mistake that `tool/check.py`
+    # is structurally incapable of catching, and it answers in seconds where a
+    # Gradle build takes minutes. These rules widen what it reports.
+    #
+    # Signature and override correctness — the exact family that broke the
+    # build when a parameter was removed from an interface and the
+    # implementations were not updated with it.
+    annotate_overrides: true
+    avoid_returning_null_for_void: true
+    avoid_void_async: true
+
+    # Nullability discipline. A `!` on something that can be null is the most
+    # common runtime crash in a Flutter app, and every one of them is visible
+    # before the app runs.
+    null_check_on_nullable_type_parameter: true
+    unnecessary_null_checks: true
+    avoid_null_checks_in_equality_operators: true
+
+    # Async correctness. `BuildContext` after an await is already promoted to
+    # a warning above; this is its neighbour.
+    await_only_futures: true
+
+    # Collection and equality traps that read as correct.
+    collection_methods_unrelated_type: true
+    unrelated_type_equality_checks: true
+    iterable_contains_unrelated_type: true
+    list_remove_unrelated_type: true
+
+    # DELIBERATELY NOT ENABLED, and the reason is the whole point of this file:
+    #
+    #   prefer_const_constructors, prefer_const_declarations,
+    #   prefer_const_literals_to_create_immutables, discarded_futures
+    #
+    # Each is a fine rule and each would fire hundreds of times across 273
+    # files. The Analyzer tab currently shows a number small enough to read.
+    # Bury four real errors under six hundred style suggestions and nobody
+    # reads any of them — the badge becomes wallpaper and the tab stops being
+    # opened at all. A check that cries wolf gets switched off, and this one
+    # is the only thing standing between a typo and a failed build.
+    #
+    # Turn them on deliberately, one at a time, with a cleanup pass for each.
+    # Not as a batch, and not while the Analyzer is load-bearing.

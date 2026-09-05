@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Compatibility pass: on notch / punch-hole phones (API 27+) let the window
+  extend into the display cutout so fullscreen video fills the entire panel
+  (MX Player behaviour) instead of leaving a black letterbox strip beside
+  the camera. Flutter's SafeArea keeps normal UI clear of the cutout; only
+  the video surface benefits from the extra pixels.
+-->
+<resources>
+    <style name="LaunchTheme" parent="@android:style/Theme.Light.NoTitleBar">
+        <item name="android:windowBackground">@drawable/launch_background</item>
+        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
+    </style>
+    <style name="NormalTheme" parent="@android:style/Theme.Light.NoTitleBar">
+        <item name="android:windowBackground">?android:colorBackground</item>
+        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
+    </style>
+</resources>

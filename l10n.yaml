@@ -1,0 +1,20 @@
+# Flutter l10n configuration. Triggered by `flutter pub get` when
+# `generate: true` is set in pubspec.yaml's flutter section.
+#
+# The generator reads every `app_<locale>.arb` file under
+# `arb-dir` and produces a typed `AppLocalizations` class importable
+# as `package:flutter_gen/gen_l10n/app_localizations.dart`.
+#
+# Wire-up steps (do after `flutter pub get`):
+#   1. `flutter gen-l10n` (or just `flutter run` — runs automatically)
+#   2. In MaterialApp:
+#        localizationsDelegates: AppLocalizations.localizationsDelegates,
+#        supportedLocales:       AppLocalizations.supportedLocales,
+#   3. Replace hardcoded strings with `AppLocalizations.of(context)!.x`.
+#
+# Locales to add as the project grows: add a new ARB file per locale.
+arb-dir: lib/l10n
+template-arb-file: app_en.arb
+output-localization-file: app_localizations.dart
+output-class: AppLocalizations
+nullable-getter: false

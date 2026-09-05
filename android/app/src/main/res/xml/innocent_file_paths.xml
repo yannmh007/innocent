@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Paths Innocent may hand to another app as a content:// URI.
+
+  Needed because Android 7+ throws FileUriExposedException the moment a
+  file:// URI crosses an app boundary — which is exactly what happens when a
+  received APK is handed to the package installer, or a received PDF to a
+  reader. Scoped to the two roots we actually write into rather than the
+  whole filesystem: a provider that exports everything is an app-wide read
+  primitive for anyone who can reach it.
+-->
+<paths>
+    <!-- /storage/emulated/0/Innocent/... — where received files land. -->
+    <external-path name="innocent_public" path="Innocent/" />
+    <!-- The app-specific external dir, used when public storage is refused. -->
+    <external-files-path name="innocent_private" path="Innocent_Received/" />
+    <!-- Temp pulls (Android/data files staged for sharing). -->
+    <cache-path name="innocent_cache" path="." />
+</paths>

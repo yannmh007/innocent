@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 13+ themed-icon layer: full I-beam silhouette (gap bridged),
+     same measured proportions as the colour mark. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <path android:fillColor="#FFFFFFFF" android:pathData="M38.51,24.0 L69.5,24.0 L69.5,37.28 L62.63,37.28 L62.63,71.11 L69.5,71.11 L69.5,84.0 L38.51,84.0 L38.51,71.11 L45.4,71.11 L45.4,37.28 L38.51,37.28 Z" />
+</vector>

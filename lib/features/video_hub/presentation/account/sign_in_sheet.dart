@@ -1,0 +1,343 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../../core/localization/app_strings.dart';
+import '../../data/local_account_repository.dart';
+import '../account_provider.dart';
+import '../video_hub_theme.dart';
+
+/// Phone sign-in, as a bottom sheet.
+///
+/// Identity exists here for one operational reason: with manual KPay
+/// activation somebody has to be able to look at a transfer and say which
+/// account it belongs to. An anonymous app has nothing to attach that answer
+/// to.
+///
+/// Phone leads because KPay is phone-based - the number that pays is almost
+/// always the number that signs in, which turns manual matching from an
+/// investigation into a glance.
+///
+/// Returns true when a session was established.
+class SignInSheet extends ConsumerStatefulWidget {
+  const SignInSheet({super.key});
+
+  static Future<bool> show(BuildContext context) async {
+    final ok = await showModalBottomSheet<bool>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => const SignInSheet(),
+    );
+    return ok ?? false;
+  }
+
+  @override
+  ConsumerState<SignInSheet> createState() => _SignInSheetState();
+}
+
+class _SignInSheetState extends ConsumerState<SignInSheet> {
+  final TextEditingController _phone = TextEditingController();
+  final TextEditingController _code = TextEditingController();
+
+  bool _codeSent = false;
+  bool _busy = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _phone.dispose();
+    _code.dispose();
+    super.dispose();
+  }
+
+  /// Myanmar numbers are typed as 09..., stored as +959...
+  ///
+  /// Normalised once, at the edge. A subscription keyed on "09..." and a KPay
+  /// statement listing "+959..." are the same person, and code that has to
+  /// remember that at every comparison is code that will eventually forget.
+  String _normalise(String input) {
+    final t = input.trim().replaceAll(RegExp(r'[\s-]'), '');
+    if (t.startsWith('+')) return t;
+    if (t.startsWith('09')) return '+959${t.substring(2)}';
+    if (t.startsWith('9')) return '+95$t';
+    return t;
+  }
+
+  Future<void> _sendCode() async {
+    final phone = _normalise(_phone.text);
+    if (phone.length < 8) {
+      setState(() => _error = AppStrings.of(context).vhSignInBadPhone);
+      return;
+    }
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await ref.read(accountRepositoryProvider).startPhoneSignIn(phone);
+      if (!mounted) return;
+      setState(() => _codeSent = true);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _error = e.toString());
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _signInWithGoogle() async {
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await ref.read(accountRepositoryProvider).signInWithGoogle();
+      await ref.read(accountProvider.notifier).refresh();
+      if (!mounted) return;
+      Navigator.of(context).pop(true);
+    } on UnimplementedError {
+      // Stated plainly rather than silently doing nothing. Google sign-in
+      // needs an OAuth client and a platform plugin; a button that fails
+      // quietly is worse than one that says why.
+      if (!mounted) return;
+      setState(() => _error = AppStrings.of(context).vhSignInGoogleSoon);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _error = AppStrings.of(context).vhSignInGoogleSoon);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _verify() async {
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await ref.read(accountProvider.notifier).verifyPhone(
+            phoneE164: _normalise(_phone.text),
+            code: _code.text,
+          );
+      if (!mounted) return;
+      Navigator.of(context).pop(true);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _error = AppStrings.of(context).vhSignInBadCode);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppStrings.of(context);
+
+    return Padding(
+      // Lifts the sheet above the keyboard; without it the code field is
+      // exactly what the keyboard covers.
+      padding:
+          EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: Container(
+        decoration: const BoxDecoration(
+          color: VH.surface2,
+          borderRadius:
+              BorderRadius.vertical(top: Radius.circular(VH.rSheet)),
+        ),
+        child: SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+                VH.gutter, VH.s3, VH.gutter, VH.s4),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Center(
+                  child: Container(
+                    width: 34,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: VH.textTertiary.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: VH.s4),
+                Text(s.vhSignInTitle, style: VH.title),
+                const SizedBox(height: VH.s2),
+                Text(s.vhSignInWhy, style: VH.body),
+                const SizedBox(height: VH.s5),
+                // Google first for people who would rather not hand over a
+                // number - which, for an adult app, is a real and reasonable
+                // preference and not an edge case.
+                _GoogleButton(
+                  busy: _busy,
+                  onTap: _signInWithGoogle,
+                ),
+                const SizedBox(height: VH.s4),
+                Row(
+                  children: <Widget>[
+                    const Expanded(child: Divider(color: VH.hairline)),
+                    Padding(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: VH.s3),
+                      child: Text(
+                        s.vhSignInOr,
+                        style: VH.meta.copyWith(fontSize: 11.5),
+                      ),
+                    ),
+                    const Expanded(child: Divider(color: VH.hairline)),
+                  ],
+                ),
+                const SizedBox(height: VH.s4),
+                _Field(
+                  controller: _phone,
+                  hint: s.vhSignInPhoneHint,
+                  keyboardType: TextInputType.phone,
+                  enabled: !_codeSent && !_busy,
+                  inputFormatters: <TextInputFormatter>[
+                    FilteringTextInputFormatter.allow(RegExp(r'[0-9+ -]')),
+                  ],
+                ),
+                if (_codeSent) ...<Widget>[
+                  const SizedBox(height: VH.s3),
+                  _Field(
+                    controller: _code,
+                    hint: s.vhSignInCodeHint,
+                    keyboardType: TextInputType.number,
+                    enabled: !_busy,
+                    inputFormatters: <TextInputFormatter>[
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(6),
+                    ],
+                  ),
+                  const SizedBox(height: VH.s2),
+                  // Stated plainly rather than hidden. A development stub that
+                  // pretends to be secure teaches the wrong lesson to whoever
+                  // wires the real backend.
+                  Text(
+                    s.vhSignInDevCode(LocalAccountRepository.devCode),
+                    style: VH.meta.copyWith(fontSize: 11.5),
+                  ),
+                ],
+                if (_error != null) ...<Widget>[
+                  const SizedBox(height: VH.s3),
+                  Text(
+                    _error!,
+                    style: VH.meta.copyWith(color: VH.accent, fontSize: 12),
+                  ),
+                ],
+                const SizedBox(height: VH.s4),
+                SizedBox(
+                  width: double.infinity,
+                  height: 46,
+                  child: FilledButton(
+                    onPressed: _busy ? null : (_codeSent ? _verify : _sendCode),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: VH.textPrimary,
+                      foregroundColor: VH.textInverse,
+                      disabledBackgroundColor: VH.surface3,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(VH.rControl),
+                      ),
+                    ),
+                    child: _busy
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Text(
+                            _codeSent ? s.vhSignInVerify : s.vhSignInSendCode,
+                            style: VH.label.copyWith(
+                              color: VH.textInverse,
+                              fontSize: 14.5,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _GoogleButton extends StatelessWidget {
+  final bool busy;
+  final VoidCallback onTap;
+
+  const _GoogleButton({required this.busy, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppStrings.of(context);
+    return SizedBox(
+      width: double.infinity,
+      height: 48,
+      child: OutlinedButton.icon(
+        onPressed: busy ? null : onTap,
+        icon: const Icon(Icons.account_circle_outlined,
+            size: 20, color: VH.textPrimary),
+        label: Text(
+          s.vhSignInGoogle,
+          style: VH.label.copyWith(fontSize: 14.5, fontWeight: FontWeight.w600),
+        ),
+        style: OutlinedButton.styleFrom(
+          side: const BorderSide(color: VH.hairline),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(VH.rControl),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _Field extends StatelessWidget {
+  final TextEditingController controller;
+  final String hint;
+  final TextInputType keyboardType;
+  final bool enabled;
+  final List<TextInputFormatter>? inputFormatters;
+
+  const _Field({
+    required this.controller,
+    required this.hint,
+    required this.keyboardType,
+    required this.enabled,
+    this.inputFormatters,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: controller,
+      enabled: enabled,
+      keyboardType: keyboardType,
+      inputFormatters: inputFormatters,
+      style: VH.label.copyWith(fontSize: 15, fontWeight: FontWeight.w500),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: VH.label.copyWith(
+          color: VH.textTertiary,
+          fontSize: 15,
+          fontWeight: FontWeight.w400,
+        ),
+        filled: true,
+        fillColor: VH.surface3,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: VH.s4, vertical: VH.s3),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(VH.rControl),
+          borderSide: BorderSide.none,
+        ),
+      ),
+    );
+  }
+}

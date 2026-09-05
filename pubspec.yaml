@@ -1,0 +1,106 @@
+name: innocent
+description: Innocent - a personal Flutter media player
+publish_to: 'none'
+version: 1.64.7+320
+
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+  flutter: '>=3.22.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  # Pinned to 0.20.2 by flutter_localizations in the SDK; using
+  # the same constraint avoids the pub-solver conflict.
+  intl: ^0.20.2
+
+  # === PLAYER ===
+  media_kit: ^1.1.10
+  media_kit_video: ^1.2.4
+  media_kit_libs_video: ^1.0.4
+
+  # === STATE / ROUTING ===
+  flutter_riverpod: ^2.5.1
+  go_router: ^14.0.0
+
+  # === FILE / MEDIA ===
+  photo_manager: ^3.0.0
+  file_picker: ^8.0.0+1
+  path: ^1.9.0
+  path_provider: ^2.1.3
+
+  # === PERMISSIONS ===
+  permission_handler: ^11.3.1
+  device_info_plus: ^10.1.0
+
+  # === SYSTEM ===
+  wakelock_plus: ^1.2.5
+  screen_brightness: ^0.2.2+1
+  flutter_volume_controller: ^1.3.2
+
+  # === PHASE 3 NEW ===
+  shared_preferences: ^2.2.3
+
+  # === UI ===
+  cupertino_icons: ^1.0.6
+  # Audit fix (build blocker): share_plus ^9.0.0 pins mime ^1, but
+  # audio_metadata_reader ^1.4.1 needs mime ^2 -> pub solver failed.
+  # share_plus 10.0.3+ drops the mime ^1 pin (resolves the conflict)
+  # while the deprecated-but-still-working Share.share(text, subject:)
+  # API stays available across the 10.x line -> no call-site changes.
+  # Staying <11.0.0 avoids the SharePlus.instance API migration and the
+  # newer Gradle/AGP requirements of 11/12.
+  share_plus: ^10.0.3
+  crypto: ^3.0.3
+  # Audit fix (standard high-quality): http for the manual-URL
+  # subtitle download feature in video_option_menu. Lightweight,
+  # Dart-first, official Flutter team package.
+  http: ^1.2.1
+  # Audit fix (standard high-quality): biometric authentication for
+  # Private Folder PIN unlock. Provides fingerprint/face fallback so
+  # daily users don't have to retype the PIN on every re-entry while
+  # keeping the PIN as the underlying source of truth (biometric is
+  # an unlock affordance, not the secret itself).
+  local_auth: ^2.2.0
+  # Audit fix (PIN at rest): keystore-backed storage for the Private
+  # Folder PIN hash / salt / lockout. On Android this is AES-encrypted via
+  # the OS keystore (EncryptedSharedPreferences), so a root / ADB
+  # filesystem dump can't recover the salted hash to brute-force the PIN
+  # offline. Pure-Dart API; the encryption is handled by platform code.
+  flutter_secure_storage: ^9.2.2
+  # Audit fix (Transfer real impl): tiny pure-Dart HTTP server used
+  # by the "Send" mode to serve picked files to other devices on the
+  # same Wi-Fi network. Same library Flutter team uses in official
+  # examples. Pure Dart → no platform code, works on Android out of
+  # the box.
+  shelf: ^1.4.1
+  shelf_router: ^1.1.4
+  # QR code rendering for sharing the server URL with the receiving
+  # device. Pure Dart.
+  qr_flutter: ^4.1.0
+  # QR scanning on the Transfer "Receive" side (scan the sender's QR to get
+  # its share URL instead of typing it). MLKit-backed; needs the CAMERA
+  # permission (declared in AndroidManifest).
+  mobile_scanner: ^5.2.3
+  # Local network interface enumeration — needed to find the right
+  # IPv4 address to advertise (Wi-Fi NIC, not loopback).
+  network_info_plus: ^5.0.3
+  # Audit fix (Music: ID3 tags not read → empty artist/album fields):
+  # audio_metadata_reader is pure Dart, supports MP3 / MP4 / FLAC /
+  # OGG / Vorbis tag formats.
+  audio_metadata_reader: ^1.4.1
+  # Audit fix (Music: background play + lock-screen + notification
+  # controls + Bluetooth headset support): audio_service wraps the
+  # OS-level MediaSession on Android and Now-Playing on iOS.
+  audio_service: ^0.18.13
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+  generate: true

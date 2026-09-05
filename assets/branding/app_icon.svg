@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!--
+    Placeholder app icon for Innocent.
+    Minimalist play glyph on the existing accent-blue background
+    (#2196F3 — matches AppColors.accentBlue in lib/core/theme).
+    Designed at 1024×1024 to feed flutter_launcher_icons or to be
+    rasterised to the standard Android mipmap density set.
+
+    Replace this with a real design when ready. The play triangle is
+    proportioned for visual balance (centred mass slightly right of
+    geometric centre, as the eye reads).
+
+    Wire-up:
+      1. Convert this SVG to PNGs (or add `flutter_launcher_icons:` to
+         dev_dependencies and let it generate from this file).
+      2. With flutter_launcher_icons, add a section to pubspec.yaml:
+           flutter_launcher_icons:
+             android: true
+             image_path: assets/branding/app_icon.png
+             adaptive_icon_background: "#2196F3"
+             adaptive_icon_foreground: assets/branding/app_icon_fg.png
+      3. Run `flutter pub run flutter_launcher_icons`.
+      4. AndroidManifest's `android:icon="@android:drawable/sym_def_app_icon"`
+         can then be replaced with `@mipmap/ic_launcher`.
+  -->
+  <rect width="1024" height="1024" fill="#2196F3"/>
+  <!-- White play triangle, optically centred -->
+  <path d="M 385 280 L 385 744 L 760 512 Z"
+        fill="#FFFFFF"
+        stroke="none"/>
+</svg>
