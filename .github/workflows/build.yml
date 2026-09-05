@@ -36,6 +36,43 @@ jobs:
       - name: Check out the repository
         uses: actions/checkout@v4
 
+      # WHY THIS STEP EXISTS. The first build to get past the analyzer died
+      # ten minutes in, at :app:mergeReleaseNativeLibs:
+      #
+      #     > No space left on device
+      #
+      # Nothing in the tree was wrong. A runner ships something like 25 GB of
+      # toolchains this project never touches, and on top of the Android SDK
+      # this build still needs room for NDK 27 (~2.5 GB, and docs/CI.md notes
+      # it is not cached), the native libraries of three ABIs, and Gradle's
+      # own caches. It does not fit.
+      #
+      # Only things nothing in this workflow uses are removed, and this runs
+      # before the JDK, Flutter and Android SDK steps so they install into the
+      # freed space. Every removal is best-effort on purpose: a future runner
+      # image that drops one of these paths must not fail the build. The df
+      # lines are here so that the next disk failure names itself instead of
+      # arriving as a Gradle stack trace.
+      - name: Free runner disk space
+        run: |
+          set -uo pipefail
+          echo "before: $(df -h / | awk 'NR==2 {print $4" free of "$2}')"
+          # Deliberately NOT removed, though both are large and every
+          # "free disk space" recipe online deletes them: /usr/share/miniconda
+          # (the Structural checks step runs python3) and
+          # /usr/local/lib/node_modules (every action here is JavaScript).
+          # Neither is worth a red build to reclaim — what is left below
+          # already frees several times what this build was short of.
+          sudo rm -rf /usr/share/dotnet \
+                      /usr/share/swift \
+                      /usr/local/.ghcup \
+                      /opt/ghc \
+                      /usr/local/share/powershell \
+                      /usr/local/share/boost \
+                      /opt/hostedtoolcache/CodeQL 2>/dev/null || true
+          docker image prune --all --force >/dev/null 2>&1 || true
+          echo "after:  $(df -h / | awk 'NR==2 {print $4" free of "$2}')"
+
       # JDK 17 runs Gradle. It is NOT the same as the Java 11 in
       # build.gradle.kts — that one is the bytecode target for the app's own
       # Kotlin and Java. AGP 8.7 refuses to run on anything below 17.
