@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Launcher foreground — the v0.49.3 InnocentLogo, generated from the SAME
+  measured constants as lib/core/ui/innocent_logo.dart (971×1880 artwork):
+  two separate pieces with a 45° air gap, hairline white contour.
+  Mark box: 30.99×60dp centred in the 108dp adaptive viewport.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+
+    <!-- dark piece: top-bar sliver + stem + bottom bar -->
+    <path android:fillColor="#383838" android:pathData="M69.5,25.21 L69.5,37.28 L62.63,37.28 L62.63,71.11 L69.5,71.11 L69.5,84.0 L38.51,84.0 L38.51,71.11 L45.4,71.11 L45.4,49.31 Z" />
+    <path android:fillColor="#00000000" android:strokeColor="#FFFFFF"
+        android:strokeWidth="0.7" android:strokeLineJoin="round"
+        android:pathData="M69.5,25.21 L69.5,37.28 L62.63,37.28 L62.63,71.11 L69.5,71.11 L69.5,84.0 L38.51,84.0 L38.51,71.11 L45.4,71.11 L45.4,49.31 Z" />
+
+    <!-- red piece: top-bar left + downward wedge -->
+    <path android:fillColor="#F00000" android:pathData="M45.4,46.56 L45.4,37.28 L38.51,37.28 L38.51,24.0 L67.96,24.0 Z" />
+    <path android:fillColor="#00000000" android:strokeColor="#FFFFFF"
+        android:strokeWidth="0.7" android:strokeLineJoin="round"
+        android:pathData="M45.4,46.56 L45.4,37.28 L38.51,37.28 L38.51,24.0 L67.96,24.0 Z" />
+</vector>

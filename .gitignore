@@ -1,0 +1,45 @@
+# ---------------------------------------------------------------------------
+# Innocent — what git must never see.
+#
+# The first block is the one that matters. A build artefact committed by
+# mistake is noise; a signing key committed by mistake is permanent. Git keeps
+# every version of every file forever, and deleting it later does not remove
+# it from forks, clones, or any CI log that printed it. There is no undo.
+# ---------------------------------------------------------------------------
+
+# SIGNING — never, under any circumstances
+*.jks
+*.keystore
+*.p12
+*.pem
+android/key.properties
+android/signing.properties
+android/app/innocent.jks
+
+# Local machine paths, not portable
+android/local.properties
+android/.gradle/
+.metadata
+
+# Build output — regenerated every time, and large
+build/
+android/app/build/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+*.apk
+*.aab
+
+# Editors
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# NOTE: android/app/libs/*.aar are NOT ignored and must stay committed.
+# They are the iADB helper libraries, they have no public Maven coordinates,
+# and the build fails without them. Four files, ~120 KB total.

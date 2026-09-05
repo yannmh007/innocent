@@ -1,0 +1,22 @@
+<!--
+  Audit fix (background music notification): audio_service's
+  AndroidNotificationIcon defaulted to 'mipmap/ic_launcher', but this
+  project ships no mipmap/ic_launcher resource (res/ has no mipmap dir
+  at all). With an unresolvable icon, the OS MediaSession notification
+  fails to display and the lock-screen / Bluetooth music controls
+  never appear. This monochrome music-note vector is a valid notif
+  small icon (status-bar icons are rendered as a white silhouette,
+  so a full-colour launcher icon is the wrong asset here anyway).
+  main.dart's AudioServiceConfig points androidNotificationIcon at
+  'drawable/ic_stat_music'.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24"
+    android:tint="#FFFFFFFF">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M12,3v10.55c-0.59,-0.34 -1.27,-0.55 -2,-0.55 -2.21,0 -4,1.79 -4,4s1.79,4 4,4 4,-1.79 4,-4V7h4V3h-6z" />
+</vector>

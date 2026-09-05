@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Auto Backup rules for Android 11 (API 30) and below.
+  Android 12+ uses data_extraction_rules.xml instead; both files exist and
+  say the same thing so the guarantee holds on every supported OS.
+
+  WHY THIS FILE EXISTS
+  ────────────────────
+  Android's Auto Backup uploads an app's INTERNAL storage to the user's
+  Google Drive by default. Innocent keeps the Private Folder vault in
+  getApplicationSupportDirectory() — which on Android is context.getFilesDir()
+  — so without these rules every file the user hid would be copied off the
+  device to a cloud account. That is the exact opposite of what a vault is
+  for, and the user is never asked.
+
+  There is a second, quieter failure. flutter_secure_storage encrypts the PIN
+  hash, salt, lockout and vault index with a key held in the Android Keystore,
+  and stores the CIPHERTEXT in a SharedPreferences file. The keystore key is
+  hardware-bound and is NEVER part of a backup. So a backup+restore (new
+  phone, or reinstall) brings back an encrypted blob with no key to open it:
+  the app then reads nothing, decides no PIN is set, shows the "create a PIN"
+  screen, and every vaulted file becomes an unreachable random-named blob.
+  Excluding the store means the restore leaves it absent rather than present
+  and undecryptable — a clean first-run instead of a silent loss.
+
+  Everything NOT listed here still backs up normally (player settings,
+  history, downloader config), so an ordinary restore keeps working.
+-->
+<full-backup-content>
+    <!-- The vault itself: the hidden files. -->
+    <exclude domain="file" path="private_vault/" />
+    <!-- Break-in selfies of whoever tried to open the vault. -->
+    <exclude domain="file" path="intruder_shots/" />
+    <!-- flutter_secure_storage's EncryptedSharedPreferences file: PIN hash,
+         salt, decoy hash, recovery hashes, lockout, vault index. Keystore-
+         bound, so a restored copy is undecryptable by construction. -->
+    <exclude domain="sharedpref" path="FlutterSecureStorage" />
+    <exclude domain="sharedpref" path="FlutterSecureStorage.xml" />
+</full-backup-content>

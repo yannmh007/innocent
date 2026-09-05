@@ -1,0 +1,24 @@
+# ============================================================================
+# android/key.properties   —   Innocent release signing
+#
+# ဒီဖိုင်ကို  android/key.properties  မှာ ထားပါ  (android/app/ ထဲ မဟုတ်ဘူး)။
+# ဒီဖိုင်နဲ့  .jks  ဖိုင်နှစ်ခုကို ဘယ်တော့မှ zip ထဲ / GitHub ထဲ မထည့်ပါနဲ့။
+#
+# WARNING / သတိ:
+#   * placeholder သုံးလုံးကို ကိုယ့်တန်ဖိုးအစစ်နဲ့ အစားထိုးပါ။
+#   * စကားဝှက်မှာ  \  :  =  #  တို့ မသုံးပါနဲ့ (properties ဖိုင်က အထူးအက္ခရာအဖြစ် ဖတ်တယ်)။
+#     စာလုံး + ဂဏန်း ၂၀ လုံးလောက်ဆို လုံလောက်ပါတယ်။
+#   * တန်ဖိုးတွေကို quote (" ") မခံပါနဲ့။ နောက်မှာ space မကျန်စေနဲ့။
+# ============================================================================
+
+# .jks ဖိုင်နာမည်။ ဒီအတိုင်းရေးရင်  android/app/innocent.jks  ကို ရှာပါလိမ့်မယ်။
+storeFile=innocent.jks
+
+# keytool မှာ ပေးခဲ့တဲ့ storepass
+storePassword=REPLACE_WITH_YOUR_PASSWORD
+
+# keytool မှာ ပေးခဲ့တဲ့ alias
+keyAlias=innocent
+
+# keypass — အပေါ်က storePassword နဲ့ အတူတူပဲ ထားပါ။
+keyPassword=REPLACE_WITH_YOUR_PASSWORD

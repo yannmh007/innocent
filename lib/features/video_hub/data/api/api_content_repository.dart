@@ -1,0 +1,515 @@
+import 'package:flutter/foundation.dart';
+
+import '../../domain/access.dart';
+import '../../domain/content_category.dart';
+import '../../domain/content_filters.dart';
+import '../../domain/content_repository.dart';
+import '../../domain/viewer.dart';
+import '../../domain/video_content.dart';
+import 'api_client.dart';
+import 'api_exception.dart';
+
+/// [ContentRepository] over the backend described in
+/// `docs/premium_backend_spec.md`.
+///
+/// Two halves with very different rules.
+///
+/// The CATALOGUE half is ordinary data: titles, posters, genres. It is read
+/// straight from the REST endpoint with RLS scoping it to signed-in users, and
+/// nothing here is confidential - it is the shop window.
+///
+/// The PLAYBACK half is the enforcement point. [requestPlayback] does not
+/// fetch a URL and check whether the user may use it; it ASKS THE SERVER TO
+/// DECIDE, and receives either a signed link or a refusal with a reason. There
+/// is deliberately no code path in this class that can produce a playable URL
+/// on its own - not a fallback, not a cache, not a retry with different
+/// arguments. If the server says no, the answer is no.
+class ApiContentRepository implements ContentRepository {
+  ApiContentRepository(this._api);
+
+  final ApiClient _api;
+
+  /// Columns the client is allowed to see. Never `*`.
+  ///
+  /// The storage locator is NOT in this list and must not be selectable at all
+  /// (the spec keeps it in a separate table with no read policy). A `select=*`
+  /// here would hand out the real media address and make every other measure
+  /// decoration.
+  static const String _titleColumns =
+      'id,title,title_mm,synopsis,category,poster_url,year,rating,'
+      'quality_label,genres,episode_count,view_count,access_tier,'
+      'photo_count,video_count';
+
+  // ---- catalogue ----------------------------------------------------------
+
+  @override
+  Future<VideoContent?> getFeatured() async {
+    final rows = await _api.getJson(
+      '/rest/v1/titles',
+      query: <String, String>{
+        'select': _titleColumns,
+        'is_featured': 'eq.true',
+        'limit': '1',
+      },
+    );
+    final list = _titles(rows);
+    return list.isEmpty ? null : list.first;
+  }
+
+  @override
+  Future<List<ContentRow>> getRows() async {
+    // One round trip per row would be four on a cold start over a mobile
+    // network. The server assembles them.
+    final body = await _api.postJson(
+      '/rest/v1/rpc/landing_rows',
+      body: const <String, dynamic>{},
+    );
+    if (body is! List) return const <ContentRow>[];
+
+    final rows = <ContentRow>[];
+    for (final entry in body.whereType<Map<String, dynamic>>()) {
+      final items = _titles(entry['items']);
+      if (items.isEmpty) continue;
+      rows.add(ContentRow(
+        key: '${entry['key']}',
+        fallbackTitle: '${entry['title'] ?? entry['key']}',
+        items: items,
+        defaultSort: _sortFrom(entry['default_sort'] as String?),
+        ranked: entry['ranked'] == true,
+      ));
+    }
+    return rows;
+  }
+
+  @override
+  Future<ContentPage> getCatalogue({
+    required ContentCategory category,
+    ContentFilters filters = const ContentFilters(),
+    int page = 0,
+    int pageSize = 30,
+  }) async {
+    return _page(
+      query: <String, String>{
+        'select': _titleColumns,
+        // ONE `category` key. Writing the two conditions as two entries looked
+        // fine and was wrong: a map literal keeps the LAST value, so asking
+        // for Movies silently became "anything that is not adult".
+        'category': category == ContentCategory.all
+            ? 'neq.adult'
+            : 'eq.${category.id}',
+        ..._filterQuery(filters),
+      },
+      page: page,
+      pageSize: pageSize,
+    );
+  }
+
+  @override
+  Future<ContentPage> getRowCatalogue({
+    required String rowKey,
+    ContentFilters filters = const ContentFilters(),
+    int page = 0,
+    int pageSize = 30,
+  }) async {
+    // Row scope may span categories (Trending covers films, series and clips),
+    // which no column filter can express - the server owns that definition.
+    return _page(
+      path: '/rest/v1/rpc/row_catalogue',
+      query: <String, String>{
+        'row_key': rowKey,
+        ..._filterQuery(filters),
+      },
+      page: page,
+      pageSize: pageSize,
+    );
+  }
+
+  Future<ContentPage> _page({
+    String path = '/rest/v1/titles',
+    required Map<String, String> query,
+    required int page,
+    required int pageSize,
+  }) async {
+    final from = page * pageSize;
+    final to = from + pageSize - 1;
+    final body = await _api.getJson(
+      path,
+      query: query,
+      // `count=exact` is what makes "42 titles" and "Show 24 results"
+      // possible. Without it the UI can only say "some".
+      // Range is a header in PostgREST, but passing offset/limit keeps this
+      // readable and works through RPC too.
+    );
+    final all = _titles(body);
+    final total = all.length;
+    if (from >= total) {
+      return ContentPage(
+          items: const <VideoContent>[], hasMore: false, totalCount: total);
+    }
+    final end = to + 1 > total ? total : to + 1;
+    return ContentPage(
+      items: all.sublist(from, end),
+      hasMore: end < total,
+      totalCount: total,
+    );
+  }
+
+  static Map<String, String> _filterQuery(ContentFilters filters) {
+    return <String, String>{
+      if (filters.genres.isNotEmpty)
+        'genres': 'ov.{${filters.genres.join(',')}}',
+      if (filters.year != null) 'year': 'eq.${filters.year}',
+      if (filters.quality != null) 'quality_label': 'eq.${filters.quality}',
+      'order': _orderFor(filters.sort),
+    };
+  }
+
+  static String _orderFor(ContentSort sort) {
+    switch (sort) {
+      case ContentSort.popular:
+        return 'view_count.desc.nullslast';
+      case ContentSort.newest:
+        return 'year.desc.nullslast';
+      case ContentSort.titleAsc:
+        return 'title.asc';
+    }
+  }
+
+  static ContentSort _sortFrom(String? raw) {
+    switch (raw) {
+      case 'newest':
+        return ContentSort.newest;
+      case 'title':
+        return ContentSort.titleAsc;
+      default:
+        return ContentSort.popular;
+    }
+  }
+
+  @override
+  Future<ContentFacets> getFacets({required ContentCategory category}) async {
+    return _facets(<String, String>{
+      if (category != ContentCategory.all) 'category_filter': category.id,
+    });
+  }
+
+  @override
+  Future<ContentFacets> getRowFacets({required String rowKey}) async {
+    return _facets(<String, String>{
+      'row_key': rowKey,
+    });
+  }
+
+  Future<ContentFacets> _facets(Map<String, String> args) async {
+    try {
+      final body = await _api.postJson('/rest/v1/rpc/catalogue_facets',
+          body: args);
+      if (body is! Map<String, dynamic>) return ContentFacets.empty;
+      return ContentFacets(
+        genres: (body['genres'] as List?)?.map((e) => '$e').toList() ??
+            const <String>[],
+        years: (body['years'] as List?)
+                ?.map((e) => int.tryParse('$e') ?? 0)
+                .where((y) => y > 0)
+                .toList() ??
+            const <int>[],
+        qualities: (body['qualities'] as List?)?.map((e) => '$e').toList() ??
+            const <String>[],
+      );
+    } on ApiException {
+      // Facets are a convenience. Losing them costs the filter bar, not the
+      // catalogue, so an empty set is better than an error screen.
+      return ContentFacets.empty;
+    }
+  }
+
+  @override
+  Future<List<VideoContent>> search(String query) async {
+    final q = query.trim();
+    if (q.isEmpty) return const <VideoContent>[];
+    final body = await _api.getJson(
+      '/rest/v1/titles',
+      query: <String, String>{
+        'select': _titleColumns,
+        // Server-side full-text search. Filtering a downloaded catalogue
+        // client-side would mean downloading the catalogue.
+        'title': 'ilike.*$q*',
+        'limit': '50',
+      },
+    );
+    return _titles(body);
+  }
+
+  @override
+  Future<VideoContent?> getById(String id) async {
+    final body = await _api.getJson(
+      '/rest/v1/titles',
+      query: <String, String>{
+        'select': _titleColumns,
+        'id': 'eq.$id',
+        'limit': '1',
+      },
+    );
+    final list = _titles(body);
+    if (list.isEmpty) return null;
+    return list.first.withAlbum(await _album(id));
+  }
+
+  /// The album behind a title: the extra stills and clips in its folder.
+  ///
+  /// A SECOND request, deliberately, and only on the detail screen. The
+  /// catalogue draws thirty cards from one response; making each of those
+  /// carry its album would multiply the payload by the one thing nobody has
+  /// looked at yet. The counts on the card come from `photo_count` and
+  /// `video_count`, which the server maintains, so the grid already knows how
+  /// many there are without fetching any of them.
+  ///
+  /// Reads `title_media`, never `title_assets`. That view exposes photos with
+  /// a public URL and clips WITHOUT one - a clip's playable URL has to come
+  /// from requestPlayback like any other video, or the ten-minute expiry
+  /// becomes optional. `title_assets` itself holds raw object keys and is not
+  /// readable with this key at all.
+  ///
+  /// Failure here returns an empty album rather than throwing: a title whose
+  /// extras cannot be loaded should still play. The album is the bonus, not
+  /// the film.
+  Future<List<AlbumItem>> _album(String titleId) async {
+    try {
+      final body = await _api.getJson(
+        '/rest/v1/title_media',
+        query: <String, String>{
+          'select': 'id,kind,url,thumb_url,duration_s,is_free,width,height',
+          'title_id': 'eq.$titleId',
+          'order': 'sort_order.asc',
+          // CAPPED. The mosaic is a Column inside a SliverToBoxAdapter, so
+          // every tile is built at once - there is no virtualisation to hide
+          // behind. A folder with two hundred stills would build two hundred
+          // image widgets in one frame and jank the screen it is meant to
+          // show off.
+          //
+          // Sixty is far beyond any album that reads as a glance and far
+          // below the point where the layout costs anything. If a title ever
+          // genuinely needs more, the fix is paging inside the album, not a
+          // bigger number here.
+          'limit': '60',
+        },
+      );
+      if (body is! List) return const <AlbumItem>[];
+
+      final items = <AlbumItem>[];
+      for (final row in body) {
+        if (row is! Map) continue;
+        final m = row.cast<String, dynamic>();
+        final isPhoto = m['kind'] == 'photo';
+
+        // A photo with no URL cannot be drawn, and a clip with no id cannot be
+        // requested. Either way there is nothing to show, so it is skipped
+        // rather than added as a tile that does nothing when tapped.
+        final url = m['url'] as String?;
+        final id = '${m['id'] ?? ''}';
+        if (id.isEmpty) continue;
+        if (isPhoto && (url == null || url.isEmpty)) continue;
+
+        items.add(AlbumItem(
+          id: id,
+          kind: isPhoto ? MediaKind.photo : MediaKind.video,
+          // Photos carry their own public URL. Clips carry the ASSET ID and no
+          // URL - playback resolves it server-side, exactly as the main video
+          // does.
+          source: isPhoto
+              ? _refFrom(url)
+              : MediaRef(provider: 'asset', locator: id),
+          thumbnail: _refFrom(m['thumb_url'] ?? (isPhoto ? url : null)),
+          durationSec: _int(m['duration_s']),
+          isPreview: m['is_free'] == true,
+          width: _int(m['width']),
+          height: _int(m['height']),
+        ));
+      }
+      return items;
+    } catch (e) {
+      if (kDebugMode) debugPrint('album load failed: $e');
+      return const <AlbumItem>[];
+    }
+  }
+
+  // ---- playback: the enforcement point -----------------------------------
+
+  @override
+  Future<PlaybackGrant> requestPlayback({
+    required VideoContent content,
+    required MediaRef source,
+    String? deviceId,
+  }) async {
+    try {
+      final body = await _api.postJson(
+        '/functions/v1/request-playback',
+        body: <String, dynamic>{
+          'title_id': content.id,
+          // A clip from the album carries provider 'asset' and the ASSET ID,
+          // set by _album() above. The server signs that asset's object key
+          // instead of the title's main video - which is what makes a
+          // behind-the-scenes clip or a trailer playable at all.
+          //
+          // Still only an ID. The client never knows or sends a media path;
+          // the server looks the key up and checks the asset really belongs to
+          // the title before signing anything, so a forged id buys nothing.
+          if (source.provider == 'asset' && source.locator.isNotEmpty)
+            'asset_id': source.locator
+          else if (source.locator.isNotEmpty)
+            'media_key': source.locator,
+          if (deviceId != null) 'device_id': deviceId,
+        },
+        timeout: null,
+      );
+      if (body is! Map<String, dynamic>) {
+        return const PlaybackGrant.denied(AccessDenial.unavailable);
+      }
+      final url = body['url'];
+      if (url is! String || url.isEmpty) {
+        return const PlaybackGrant.denied(AccessDenial.unavailable);
+      }
+      final expiresRaw = body['expires_at'] as String?;
+      return PlaybackGrant.granted(
+        url,
+        expiresAt: _parseServerTime(expiresRaw),
+      );
+    } on ApiException catch (e) {
+      // The paywall case, and the ONLY place it comes from: the server said
+      // so. There is no client-side condition that produces this.
+      if (e.kind == ApiErrorKind.needsPremium) {
+        return const PlaybackGrant.denied(AccessDenial.needsPremium);
+      }
+      if (e.kind == ApiErrorKind.unauthenticated) {
+        return const PlaybackGrant.denied(AccessDenial.needsPremium);
+      }
+      // The device conflict, told apart by the server's own code rather than
+      // by the status alone - 409 is the documented one, but a deployment that
+      // answers 403 or 429 with the same code means the same thing, and the
+      // user's problem does not change with the number.
+      if (e.code == 'wrong_device' || e.code == 'too_many_devices') {
+        return const PlaybackGrant.denied(AccessDenial.wrongDevice);
+      }
+      if (e.statusCode == 409) {
+        return const PlaybackGrant.denied(AccessDenial.wrongDevice);
+      }
+      // Everything else - offline, rate limited, server down - is "cannot play
+      // right now", never "you may play".
+      return const PlaybackGrant.denied(AccessDenial.unavailable);
+    }
+  }
+
+  @override
+  Future<void> recordView(String contentId, {ViewerTier? tier}) async {
+    try {
+      await _api.postJson(
+        '/rest/v1/rpc/record_view',
+        body: <String, dynamic>{
+          'title_id': contentId,
+          // Reported, never trusted: the server knows the real tier from the
+          // JWT and should prefer it. This is a hint for the anonymous case,
+          // where there is no JWT to read one from.
+          if (tier != null) 'viewer_tier': tier.id,
+        },
+      );
+    } on ApiException {
+      // Swallowed on purpose. A missed count is invisible; an error toast
+      // over a title the user just opened is not.
+    }
+  }
+
+  @override
+  Future<String?> resolveImageUrl(MediaRef ref) async =>
+      resolveImageUrlSync(ref);
+
+  @override
+  String? resolveImageUrlSync(MediaRef ref) {
+    if (ref.isEmpty) return '';
+    // Posters are public art and carry a plain URL from the catalogue row, so
+    // there is nothing to sign, and nothing to wait for. Private artwork would
+    // go through the playback function like everything else — and that
+    // implementation would return null here to keep the async path.
+    return ref.locator.startsWith('http') ? ref.locator : '';
+  }
+
+  // ---- parsing ------------------------------------------------------------
+
+  static List<VideoContent> _titles(dynamic body) {
+    if (body is! List) return const <VideoContent>[];
+    return body
+        .whereType<Map<String, dynamic>>()
+        .map(_titleFrom)
+        .toList();
+  }
+
+  static VideoContent _titleFrom(Map<String, dynamic> m) {
+    return VideoContent(
+      id: '${m['id']}',
+      title: '${m['title'] ?? ''}',
+      titleMm: m['title_mm'] as String?,
+      synopsis: m['synopsis'] as String?,
+      category: ContentCategoryX.fromId(m['category'] as String?),
+      poster: _refFrom(m['poster_url']),
+      year: _int(m['year']),
+      rating: _double(m['rating']),
+      qualityLabel: m['quality_label'] as String?,
+      genres:
+          (m['genres'] as List?)?.map((e) => '$e').toList() ?? const <String>[],
+      episodeCount: _int(m['episode_count']),
+      viewCount: _int(m['view_count']),
+      photoCount: _int(m['photo_count']),
+      videoCount: _int(m['video_count']),
+      // Unknown or missing tier reads as PREMIUM. Defaulting to free would mean
+      // a schema typo silently unlocks the catalogue; defaulting to premium
+      // means it silently locks it, which is visible and recoverable.
+      accessTier: m['access_tier'] == 'free'
+          ? AccessTier.free
+          : AccessTier.premium,
+      // No media locator: the client is never given one. Playback is requested
+      // by title id and the server resolves the address itself.
+      source: MediaRef(provider: 'server', locator: '${m['id']}'),
+    );
+  }
+
+  static MediaRef _refFrom(dynamic value) {
+    if (value is String && value.isNotEmpty) {
+      return MediaRef(provider: 'url', locator: value);
+    }
+    return MediaRef.none;
+  }
+
+  static int? _int(dynamic v) =>
+      v == null ? null : (v is int ? v : int.tryParse('$v'));
+
+  static double? _double(dynamic v) =>
+      v == null ? null : (v is double ? v : double.tryParse('$v'));
+
+  /// Parse a timestamp the SERVER produced.
+  ///
+  /// `DateTime.parse` treats a string with no timezone designator as LOCAL
+  /// time. For a value the server wrote that is simply wrong, and the size of
+  /// the error is the device's offset from UTC — six and a half hours in
+  /// Myanmar, which would make every freshly minted URL look hours stale. A
+  /// server timestamp with no zone is UTC; say so rather than inheriting a
+  /// default that happens to be right only in London.
+  static DateTime? _parseServerTime(String? raw) {
+    if (raw == null || raw.isEmpty) return null;
+    final parsed = DateTime.tryParse(raw);
+    if (parsed == null) return null;
+    if (parsed.isUtc) return parsed.toLocal();
+    // Zoneless: `tryParse` built a local DateTime. Reinterpret the same wall
+    // clock as UTC, then convert.
+    final hasZone = RegExp(r'(Z|[+-]\d{2}:?\d{2})$').hasMatch(raw.trim());
+    if (hasZone) return parsed.toLocal();
+    return DateTime.utc(
+      parsed.year,
+      parsed.month,
+      parsed.day,
+      parsed.hour,
+      parsed.minute,
+      parsed.second,
+      parsed.millisecond,
+      parsed.microsecond,
+    ).toLocal();
+  }
+}

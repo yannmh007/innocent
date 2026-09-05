@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android 12+ (API 31) replacement for backup_rules.xml. See that file for the
+  full reasoning; the short version is that the vault must never leave the
+  device by a path the user did not choose.
+
+  This file has TWO sections and both matter:
+
+    <cloud-backup>    Google Drive / Auto Backup. Same risk as pre-12.
+
+    <device-transfer> The "copy your apps to your new phone" flow. This one is
+                      easy to miss: it is a SEPARATE channel from cloud backup
+                      and it copies far more data. Excluding the vault here is
+                      what stops a shop assistant setting up a new handset from
+                      cloning the user's hidden files across.
+
+  Everything not excluded still transfers, so settings and history survive.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="file" path="private_vault" />
+        <exclude domain="file" path="intruder_shots" />
+        <exclude domain="sharedpref" path="FlutterSecureStorage" />
+        <exclude domain="sharedpref" path="FlutterSecureStorage.xml" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="file" path="private_vault" />
+        <exclude domain="file" path="intruder_shots" />
+        <exclude domain="sharedpref" path="FlutterSecureStorage" />
+        <exclude domain="sharedpref" path="FlutterSecureStorage.xml" />
+    </device-transfer>
+</data-extraction-rules>

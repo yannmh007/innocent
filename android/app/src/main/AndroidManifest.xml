@@ -1,0 +1,378 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!--
+      v0.93 Backend 2: the four iADB client libraries declare minSdk 30
+      (Android 11), but Innocent supports minSdk 24 so it stays installable on
+      older phones (they use the built-in ADB backend). overrideLibrary tells
+      the manifest merger to allow the higher-minSdk libraries. This is SAFE
+      because every com.iadb.* reference is isolated in IadbBridge and only
+      reached after a Build.VERSION.SDK_INT >= 30 check (see IadbClient), so the
+      iADB code is never loaded on older devices.
+    -->
+    <uses-sdk tools:overrideLibrary="com.iadb.aidl,com.iadb.api,com.iadb.provider,com.iadb.shared" />
+
+    <!-- Network -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!--
+      Audit fix (Transfer real impl): ACCESS_WIFI_STATE is required by
+      network_info_plus.getWifiIP() — without it, the plugin returns
+      null and Transfer can never find the device's own IP.
+    -->
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <!--
+      Nearby-device discovery on the Transfer tab. Android's Wi-Fi stack
+      filters out broadcast/multicast frames that aren't addressed to this
+      device unless the app holds a MulticastLock, and creating that lock
+      requires this permission. Without it discovery works on some phones and
+      silently finds nothing on others.
+    -->
+    <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
+    <!--
+      v1.48: lets the user install an APK they just received. Handing the app
+      itself to a friend with no data is the single most common reason a share
+      app gets installed in this market, and without this the received APK
+      just sits in a folder the user has to go hunting for.
+    -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <!--
+      v1.46 Turbo link: a direct phone-to-phone Wi-Fi Direct group (or, on
+      Android 8-9, a local-only hotspot) so bytes cross the air once instead of
+      twice through a router. CHANGE_WIFI_STATE creates the group;
+      CHANGE_NETWORK_STATE lets the receiving phone request that link as a
+      network.
+
+      On Android 13+ NEARBY_WIFI_DEVICES replaces the location permission for
+      Wi-Fi peer APIs, and `neverForLocation` is an honest declaration here:
+      Innocent never derives a position from Wi-Fi data. ACCESS_FINE_LOCATION
+      is still required by the platform on Android 12 and below for the very
+      same calls, so it is declared with maxSdkVersion="32" — the OS will not
+      even offer it on newer phones.
+    -->
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
+    <uses-permission
+        android:name="android.permission.NEARBY_WIFI_DEVICES"
+        android:usesPermissionFlags="neverForLocation" />
+    <uses-permission
+        android:name="android.permission.ACCESS_FINE_LOCATION"
+        android:maxSdkVersion="32" />
+    <!-- Turbo is an accelerator, never a requirement: phones without a Wi-Fi
+         Direct radio still install and still transfer over ordinary Wi-Fi. -->
+    <uses-feature
+        android:name="android.hardware.wifi.direct"
+        android:required="false" />
+
+    <!-- QR scanning on Transfer "Receive". Camera is not required for the
+         rest of the app, so devices without one still install fine. -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+
+    <!-- Storage / Video access -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
+    <!-- Android 14 (API 34) partial "Select photos and videos" access.
+         Without this, users who grant limited access on 14+ see an empty
+         MediaStore in the Images picker. -->
+    <uses-permission
+        android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED" />
+    <!--
+      Audit: optional "All files access" — lets the user point the
+      library at folders outside the standard Movies/DCIM/Downloads
+      scoped-storage roots (e.g., a custom /sdcard/Series folder).
+      The OS will NOT grant this on first install; the user must
+      enable it from Settings → Apps → Innocent → All files access.
+      Off by default — the existing scoped-storage path covers most
+      libraries. The Settings UI exposes a one-tap deep-link.
+    -->
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
+
+    <!-- Playback -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <!-- Keeps a Wi-Fi file transfer alive while the app is backgrounded. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+
+    <!-- Notifications -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- Audit fix: biometric unlock for Private Folder (Android 9+).
+         USE_BIOMETRIC supersedes USE_FINGERPRINT; we declare both so
+         older devices (pre-Pie) still get fingerprint unlock. local_auth
+         degrades to PIN-only when no biometric is enrolled. -->
+    <!-- v0.50 app sharing: Android 11+ package-visibility filtering hides
+         other apps from getInstalledApplications() unless we hold this.
+         Needed so the Apps tab can list APKs to share (sideload-distributed
+         personal app — Play policy on this permission doesn't apply). -->
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
+
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+    <uses-permission android:name="android.permission.USE_FINGERPRINT" />
+
+    <!-- Auto-enable wireless ADB after reboot (no PC / no root). The app grants
+         itself WRITE_SECURE_SETTINGS over its own ADB shell (pm grant), then can
+         flip Wireless debugging back on via Settings.Global on boot. -->
+    <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS"
+        tools:ignore="ProtectedPermissions" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <!-- v0.99 Downloader: extractNativeLibs="true" is a hard requirement of
+         youtubedl-android — python / yt-dlp / ffmpeg / aria2c are exec'd as
+         command-line binaries, and a process can only be exec'd from a real
+         file on disk. Kept in sync with packaging.jniLibs.useLegacyPackaging =
+         true in app/build.gradle.kts (AGP derives one from the other; both are
+         stated so the requirement is visible in either file).
+         requestLegacyExternalStorage only affects Android 10 (API 29), where it
+         restores direct file access for the download directory; API 30+ ignores
+         it and we rely on MANAGE_EXTERNAL_STORAGE / the public Download dir. -->
+    <application
+        android:label="Innocent"
+        android:name=".InnocentApplication"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:extractNativeLibs="true"
+        android:requestLegacyExternalStorage="true"
+        android:allowBackup="true"
+        android:fullBackupContent="@xml/backup_rules"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:usesCleartextTraffic="true">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:taskAffinity=""
+            android:theme="@style/LaunchTheme"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:hardwareAccelerated="true"
+            android:resizeableActivity="true"
+            android:supportsPictureInPicture="true"
+            android:windowSoftInputMode="adjustResize">
+            <meta-data
+              android:name="io.flutter.embedding.android.NormalTheme"
+              android:resource="@style/NormalTheme" />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+
+            <!-- v0.99.5: put Innocent in the share sheet for plain text.
+                 This is how these apps are actually used: watch something in
+                 the YouTube or TikTok app, hit Share, pick the downloader.
+                 It was deliberately left out until now because an intent
+                 filter with nothing behind it would have put Innocent in
+                 every share sheet and then done nothing when chosen. -->
+            <intent-filter android:label="Innocent">
+                <action android:name="android.intent.action.SEND"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <data android:mimeType="text/plain"/>
+            </intent-filter>
+
+            <!-- Phase 29: Open video files from other apps (file manager, gallery, etc.) -->
+            <intent-filter android:label="Innocent">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="content"/>
+                <data android:scheme="file"/>
+                <data android:mimeType="video/*"/>
+            </intent-filter>
+            <intent-filter android:label="Innocent">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="http"/>
+                <data android:scheme="https"/>
+                <data android:scheme="rtmp"/>
+                <data android:scheme="rtsp"/>
+                <data android:mimeType="video/*"/>
+                <data android:mimeType="application/x-mpegURL"/>
+                <data android:mimeType="application/vnd.apple.mpegurl"/>
+            </intent-filter>
+            <!-- Phase 29: File extension associations (e.g. for files without proper MIME) -->
+            <intent-filter android:label="Innocent">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="file"/>
+                <data android:scheme="content"/>
+                <data android:host="*"/>
+                <data android:pathPattern=".*\\.mp4"/>
+                <data android:pathPattern=".*\\.mkv"/>
+                <data android:pathPattern=".*\\.avi"/>
+                <data android:pathPattern=".*\\.mov"/>
+                <data android:pathPattern=".*\\.webm"/>
+                <data android:pathPattern=".*\\.flv"/>
+                <data android:pathPattern=".*\\.wmv"/>
+                <data android:pathPattern=".*\\.m4v"/>
+                <data android:pathPattern=".*\\.3gp"/>
+                <data android:pathPattern=".*\\.ts"/>
+                <data android:pathPattern=".*\\.m3u8"/>
+            </intent-filter>
+        </activity>
+
+        <!-- Phase 45: Background playback foreground service. -->
+        <service
+            android:name=".PlaybackService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
+
+        <!-- v0.93 Backend 2: lets the installed iADB app hand its privileged
+             server binder to Innocent (Shizuku-style). Only meaningful when the
+             user picks the "iADB app" backend; harmless otherwise. Authorities
+             and permission are fixed by the iAdb-api contract. -->
+        <!--
+          v1.48: hands a received file to whichever app owns it — the package
+          installer for an APK, a reader for a PDF. Android 7+ refuses a
+          file:// URI across an app boundary, so this is the only way to open
+          what we just received. Not exported and permission-guarded by the
+          grant flag on each individual intent.
+        -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/innocent_file_paths" />
+        </provider>
+
+        <provider
+            android:name="com.iadb.IadbProvider"
+            android:authorities="${applicationId}.iadb"
+            android:directBootAware="true"
+            android:enabled="true"
+            android:exported="true"
+            android:multiprocess="false"
+            android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
+
+        <!-- v0.99.7: in-app sign-in. A plain Android WebView, no plugin, whose
+             only job is to let the user log into a site so the downloader can
+             use that session. Not exported: nothing outside Innocent can open
+             it or reach the cookie jar it writes. -->
+        <!-- The in-app browser. Not exported: nothing outside Innocent has any
+             business opening it, and an exported WebView activity is a way to
+             be asked to render someone else's page. -->
+        <activity
+            android:name=".BrowserActivity"
+            android:exported="false"
+            android:theme="@android:style/Theme.DeviceDefault.NoActionBar"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:hardwareAccelerated="true" />
+
+        <activity
+            android:name=".SignInWebViewActivity"
+            android:exported="false"
+            android:label="Sign in"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenSize|screenLayout|smallestScreenSize|uiMode"
+            android:theme="@android:style/Theme.DeviceDefault.NoActionBar" />
+
+        <!-- v1.2: weekly engine update, app opened or not. BIND_JOB_SERVICE is
+             required by the platform so only the scheduler can start it. -->
+        <service
+            android:name=".EngineUpdateJobService"
+            android:exported="false"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
+
+        <!-- Keeps Wi-Fi file transfers running in background + progress notification. -->
+        <service
+            android:name=".TransferService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
+        <!-- v0.99 Downloader: keeps a yt-dlp download alive when the user leaves
+             Innocent (Home / app switch / swipe-from-recents) and shows its
+             progress in the shade. Separate from TransferService on purpose —
+             a LAN transfer and a web download can run at the same time and each
+             needs its own notification. -->
+        <service
+            android:name=".DownloadService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
+        <!-- v0.89: iADB-style ADB pairing helper. Keeps mDNS pairing discovery
+             alive in the background and shows a reply notification so the user
+             can type the 6-digit code from the shade with NO split-screen. -->
+        <service
+            android:name=".AdbPairingService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
+        <!--
+          Audit fix (background music): audio_service plugin's
+          foreground service + media-button receiver. Without BOTH,
+          AudioService.init throws "no media session" and music
+          background play / lock-screen controls don't work.
+        -->
+        <service
+            android:name="com.ryanheise.audioservice.AudioService"
+            android:foregroundServiceType="mediaPlayback"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.media.browse.MediaBrowserService" />
+            </intent-filter>
+        </service>
+
+        <receiver
+            android:name="com.ryanheise.audioservice.MediaButtonReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MEDIA_BUTTON" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Music home-screen widget (home_widget plugin) -->
+        <receiver
+            android:name=".MusicWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/music_widget_info" />
+        </receiver>
+
+        <!-- v0.90: catches the direct-reply typed into the ADB pairing
+             notification and forwards the code to AdbPairingService. Declared
+             here (not registered at runtime) so the reply is captured even if
+             the service was killed while the user was in the Settings dialog. -->
+        <receiver
+            android:name=".AdbPairReplyReceiver"
+            android:exported="false" />
+
+        <!-- Auto-enable wireless ADB after reboot (opt-in; only acts when the
+             user has set it up and the app holds WRITE_SECURE_SETTINGS). -->
+        <receiver
+            android:name=".BootReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+            </intent-filter>
+        </receiver>
+
+        <meta-data
+            android:name="flutterEmbedding"
+            android:value="2" />
+    </application>
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.PROCESS_TEXT"/>
+            <data android:mimeType="text/plain"/>
+        </intent>
+        <!-- v0.93 Backend 2: Android 11+ package visibility. Without this,
+             Innocent can't see or bind to the installed iADB app (its provider
+             / server binder), so the iADB backend would silently fail to
+             connect. -->
+        <package android:name="com.iadb.helper" />
+    </queries>
+</manifest>
