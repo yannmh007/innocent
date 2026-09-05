@@ -46,18 +46,28 @@ jobs:
           java-version: '17'
 
       - name: Set up Flutter
-        # channel: stable, deliberately unpinned FOR THE FIRST GREEN BUILD ONLY.
-        # pubspec asks for Flutter >=3.22.0 and Dart >=3.4.0, which almost any
-        # recent stable satisfies. The moment a build succeeds, read the
-        # version out of the "Toolchain" step below and pin it here:
+        # PINNED. Left unpinned, `channel: stable` resolved to 3.47.2, whose
+        # Gradle plugin refuses to build:
         #
-        #     flutter-version: 3.x.y
+        #     Your project's Gradle version (8.10.2) is lower than Flutter's
+        #     minimum supported version of 8.14.0.
         #
-        # An unpinned toolchain means a build can start failing on a morning
-        # when nothing in this repository changed, and that is the single most
-        # confusing kind of CI failure there is.
+        # That is the failure docs/CI.md warns about — nothing in this
+        # repository changed, the toolchain moved underneath it.
+        #
+        # 3.32.8 is the newest patch of the line the project actually builds
+        # on (README: "The build runs on Flutter 3.32"), and it matches the
+        # Android toolchain this repo pins deliberately: Gradle 8.10.2,
+        # AGP 8.7.0, Kotlin 2.1.0. Its Dart 3.8 satisfies pubspec's
+        # `>=3.4.0 <4.0.0`.
+        #
+        # Raising this is a toolchain upgrade, not a version bump: Flutter
+        # >=3.47 needs Gradle >=8.14.0, so the wrapper, AGP and Kotlin move
+        # with it. pubspec already keeps share_plus <11.0.0 to avoid exactly
+        # that. Do it deliberately, in its own commit, not by unpinning.
         uses: subosito/flutter-action@v2
         with:
+          flutter-version: 3.32.8
           channel: stable
           cache: true
 
