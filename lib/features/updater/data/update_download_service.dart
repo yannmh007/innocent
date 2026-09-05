@@ -161,7 +161,8 @@ class UpdateDownloadService {
     }
   }
 
-  /// Refuse up front, with the two numbers, exactly as the vault does.
+  /// Refuse up front, with the two numbers, exactly as the vault does — and
+  /// take any partial file down with the refusal.
   ///
   /// The arithmetic is the plan's: "The APK needs its own size plus the
   /// installer's working room." So the ask is what is left to fetch, plus a
@@ -169,6 +170,15 @@ class UpdateDownloadService {
   /// project's usual headroom. Refusing now costs a sentence; running out at
   /// 80 MB of 88 costs the whole download and, on a metered bundle, real
   /// money.
+  ///
+  /// A REFUSAL DELETES THE `.part`, and the cost of that is accepted
+  /// deliberately: the fetched bytes are thrown away, so the next attempt
+  /// starts from zero. §5 asks for the partial to be deleted on failure and
+  /// gives the reason — "a stale `.part` that a later resume appends to
+  /// produces a hash mismatch that looks like tampering". That rule is worth
+  /// more than the progress, because the file this rule protects is the one
+  /// that gets handed to the package installer. A partial left behind here
+  /// also sits on the very volume the user has just been told is full.
   Future<void> _refuseIfSpaceIsShort(AppRelease release, File part) async {
     final size = release.apkBytes ?? 0;
     if (size <= 0) return; // Nothing to reason about; the download self-limits.
@@ -193,16 +203,24 @@ class UpdateDownloadService {
     // on an unknown would block every update on any device whose answer we
     // cannot read.
     if (free >= 0 && free < needed) {
-      // The .part is deliberately LEFT ON DISK here, unlike every failure
-      // inside the download itself.
-      //
-      // A refusal before the first byte has not corrupted anything — §5 wants
-      // the partial deleted so a later resume cannot append to a damaged file,
-      // and this one is intact. Deleting it would also make the next attempt
-      // strictly worse: it frees the bytes already fetched but raises the ask
-      // by the same amount, because the check counts what is still to fetch.
-      // 80 MB of an 88 MB download would be thrown away to ask for MORE space.
-      throw UpdateDownloadFailure.noSpace(needed: needed, free: free);
+      // Same rule as every failure inside the download: nothing partial
+      // survives a failure. See this method's doc for why the lost progress
+      // is the right trade.
+      await _deleteQuietly(part);
+      final reclaimed = onDisk - await _sizeOf(part);
+
+      // The numbers reported describe the NEXT attempt, not the one just
+      // refused. The partial is gone, so that attempt re-fetches the whole
+      // APK, and the bytes it occupied are back on the volume. Quoting the
+      // pre-deletion figures would send someone to free exactly `needed` and
+      // then refuse them a second time with a larger number — the check would
+      // no longer have a partial to credit. `reclaimed` is measured rather
+      // than assumed, because _deleteQuietly swallows a failed delete and the
+      // sentence must not claim space that is still occupied.
+      throw UpdateDownloadFailure.noSpace(
+        needed: size + size + _headroomBytes,
+        free: free + reclaimed,
+      );
     }
   }
 
