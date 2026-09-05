@@ -29,8 +29,9 @@ class UpdateCheckService {
   /// single typo reads as "the update check is broken", not as a bad column.
   /// If you add a column to the migration, add it here and to
   /// [AppRelease.fromJson] in the same edit.
-  static const String _columns =
-      'version_name,version_code,apk_bytes,notes_en,notes_mm,released_at';
+  static const String _columns = 'version_name,version_code,'
+      'apk_url,apk_sha256,apk_bytes,'
+      'notes_en,notes_mm,released_at';
 
   /// The newest published release, or null when the table holds no row.
   ///
