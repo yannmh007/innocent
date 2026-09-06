@@ -149,6 +149,10 @@ class AppStrings {
   String get updateInstallNoHandler => _s('updateInstallNoHandler');
   String get updateInstallSignature => _s('updateInstallSignature');
 
+  // v1.64.8 — the update prompt (docs/updater_plan.md step 5)
+  String get updateNow => _s('updateNow');
+  String get updateNotNow => _s('updateNotNow');
+
   // v1.3 Downloader additions
   String get downloaderSavedFiles => _s('downloaderSavedFiles');
   String get downloaderShare => _s('downloaderShare');
@@ -2326,6 +2330,10 @@ class AppStrings {
     // never install over the current build, and no amount of retrying helps.
     'updateInstallSignature':
         'This update could not be installed. Contact support.',
+    'updateNow': 'Update',
+    // Not "Cancel" and not "Later": this answer is remembered for this
+    // version and only this version, and "Not now" says that honestly.
+    'updateNotNow': 'Not now',
   };
 
   static const Map<String, String> _my = <String, String>{
@@ -3388,6 +3396,8 @@ class AppStrings {
     'updateInstallNoHandler': 'ဤဖုန်းတွင် အပ်ဒိတ်ကို ဖွင့်ပေးမည့် installer မရှိပါ။',
     'updateInstallSignature':
         'ဤအပ်ဒိတ်ကို သွင်းယူ၍ မရပါ။ support ကို ဆက်သွယ်ပါ။',
+    'updateNow': 'အပ်ဒိတ်လုပ်မည်',
+    'updateNotNow': 'အခု မလုပ်သေးပါ',
   };
 
   static const Map<String, String> _th = <String, String>{
@@ -4448,6 +4458,8 @@ class AppStrings {
     'updateInstallNoHandler': 'โทรศัพท์เครื่องนี้ไม่มีตัวติดตั้งสำหรับเปิดอัปเดต',
     'updateInstallSignature':
         'ติดตั้งอัปเดตนี้ไม่ได้ กรุณาติดต่อฝ่ายสนับสนุน',
+    'updateNow': 'อัปเดต',
+    'updateNotNow': 'ไว้ก่อน',
   };
 }
 

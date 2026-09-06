@@ -9,6 +9,7 @@ import '../../core/theme/app_colors.dart';
 import '../local_browser/presentation/library_provider.dart';
 import '../local_browser/presentation/local_screen.dart';
 import '../me/presentation/me_screen.dart';
+import '../updater/presentation/update_prompt.dart';
 import '../music/presentation/music_screen.dart';
 import '../transfer/presentation/transfer_screen.dart';
 
@@ -62,6 +63,26 @@ class _ShellScreenState extends ConsumerState<ShellScreen>
     // then overlays the bottom tabs instead of the tabs sitting above it.
     // Asserting it here (init) closes that gap.
     _restoreEdgeToEdge();
+    // The first resume of a cold start does not fire the lifecycle callback,
+    // so the prompt would otherwise wait for the user to background the app
+    // and come back before it could ever appear.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybePromptUpdate());
+  }
+
+  /// §4B: on resume, on a list screen. This is that list screen — the shell
+  /// hosts Local / Music / Transfer / Me, and the fullscreen player is pushed
+  /// on the ROOT navigator ABOVE it.
+  ///
+  /// THE isCurrent GUARD IS WHAT KEEPS THE PROMPT OFF THE PLAYER, and it is
+  /// the same guard the edge-to-edge restore above already relies on for the
+  /// same reason: the shell stays mounted under the player and its lifecycle
+  /// callback still fires, so "am I the visible route" is the question that
+  /// actually distinguishes the two. A flag saying "the player is open" would
+  /// be a second source of truth that could go stale; this one cannot.
+  void _maybePromptUpdate() {
+    if (!mounted) return;
+    if (!(ModalRoute.of(context)?.isCurrent ?? true)) return;
+    UpdatePrompt.maybeShow(context, ref);
   }
 
   @override
@@ -79,6 +100,7 @@ class _ShellScreenState extends ConsumerState<ShellScreen>
       final isShellVisible = ModalRoute.of(context)?.isCurrent ?? true;
       if (isShellVisible) {
         _restoreEdgeToEdge();
+        _maybePromptUpdate();
       }
     }
   }
