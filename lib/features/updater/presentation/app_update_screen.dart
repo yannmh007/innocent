@@ -1,10 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/app_version.dart';
 import '../../../core/localization/app_strings.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/ui/tablet_constrained_width.dart';
 import '../data/update_check_service.dart';
+import '../data/update_download_controller.dart';
 import '../data/update_download_service.dart';
 import '../domain/app_release.dart';
 
@@ -20,26 +24,28 @@ import '../domain/app_release.dart';
 /// `apk_url` and `apk_sha256` are nullable and are null in the row today, so
 /// this screen must be safe to ship before any APK has ever been published.
 ///
+/// THE SCREEN DOES NOT OWN THE DOWNLOAD. It reads
+/// [updateDownloadProvider] and renders whatever that says. The download
+/// itself lives in [UpdateDownloadNotifier], above the widget tree, so it
+/// survives this route being popped — and so that reopening the screen
+/// mid-download shows the LIVE progress bar rather than a Download button
+/// that would start a second writer on the same `.part`.
+///
 /// NEVER HIDDEN, even when up to date. "You're on the latest version" is a
 /// useful thing to be able to confirm, and this screen is where someone comes
 /// when they suspect the app is stale — including after dismissing a prompt,
 /// which is the whole reason it exists.
-class AppUpdateScreen extends StatefulWidget {
+class AppUpdateScreen extends ConsumerStatefulWidget {
   const AppUpdateScreen({super.key});
 
   @override
-  State<AppUpdateScreen> createState() => _AppUpdateScreenState();
+  ConsumerState<AppUpdateScreen> createState() => _AppUpdateScreenState();
 }
 
-class _AppUpdateScreenState extends State<AppUpdateScreen> {
+class _AppUpdateScreenState extends ConsumerState<AppUpdateScreen> {
   bool _loading = true;
   AppRelease? _release;
   UpdateCheckFailure? _failure;
-
-  _DownloadPhase _phase = _DownloadPhase.idle;
-  int _received = 0;
-  int _total = 0;
-  String? _downloadError;
 
   @override
   void initState() {
@@ -48,17 +54,13 @@ class _AppUpdateScreenState extends State<AppUpdateScreen> {
   }
 
   Future<void> _check() async {
-    if (_phase == _DownloadPhase.running ||
-        _phase == _DownloadPhase.verifying) {
-      return; // A check mid-download would swap the row under the download.
-    }
+    // A check mid-download would swap the row out from under the running
+    // fetch. The controller, not this screen, is the authority on whether one
+    // is running.
+    if (ref.read(updateDownloadProvider).isBusy) return;
     setState(() {
       _loading = true;
       _failure = null;
-      _phase = _DownloadPhase.idle;
-      _downloadError = null;
-      _received = 0;
-      _total = 0;
     });
 
     AppRelease? release;
@@ -73,6 +75,13 @@ class _AppUpdateScreenState extends State<AppUpdateScreen> {
     }
 
     if (!mounted) return;
+    // A finished or failed result for a build the manifest no longer offers is
+    // stale; drop it so the screen shows a plain Download button again.
+    final current = ref.read(updateDownloadProvider);
+    if (current.versionCode != null &&
+        current.versionCode != release?.versionCode) {
+      ref.read(updateDownloadProvider.notifier).reset();
+    }
     setState(() {
       _release = release;
       _failure = failure;
@@ -80,60 +89,23 @@ class _AppUpdateScreenState extends State<AppUpdateScreen> {
     });
   }
 
-  /// Fetch and verify the APK. Stops at "Downloaded" — see the class doc.
-  Future<void> _download(AppRelease release) async {
-    if (_phase == _DownloadPhase.running ||
-        _phase == _DownloadPhase.verifying) {
-      return;
-    }
-    // Strings are resolved BEFORE the await. The service runs without a
-    // BuildContext on purpose, and reaching for one after an await is the
-    // use_build_context_synchronously bug this project promotes to a warning.
+  /// Ask the controller to download. Stops at "Downloaded" — see the class doc.
+  ///
+  /// No local state is set here and no result is awaited. Both would be a lie:
+  /// this screen is one observer of a download it does not own, and the tap
+  /// may well ATTACH to a fetch that was already running before the route was
+  /// even built. Everything the user sees comes back through
+  /// [updateDownloadProvider].
+  void _download(AppRelease release) {
+    // Strings are resolved here, in a widget that has a BuildContext. The
+    // controller and the service deliberately have none — they outlive any
+    // route — so the notification wording is handed to them, never fetched.
     final s = AppStrings.of(context);
-    final notificationTitle = s.updateNotificationTitle;
-    final notificationDone = s.updateDownloaded;
-
-    setState(() {
-      _phase = _DownloadPhase.running;
-      _downloadError = null;
-      _received = 0;
-      _total = release.apkBytes ?? 0;
-    });
-
-    try {
-      await const UpdateDownloadService().download(
-        release,
-        notificationTitle: notificationTitle,
-        notificationDone: notificationDone,
-        onProgress: (received, total, _) {
-          if (!mounted) return;
-          setState(() {
-            _received = received;
-            _total = total;
-          });
-        },
-        onVerifying: () {
-          if (!mounted) return;
-          setState(() => _phase = _DownloadPhase.verifying);
-        },
-      );
-      if (!mounted) return;
-      setState(() => _phase = _DownloadPhase.done);
-    } on UpdateDownloadFailure catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _phase = _DownloadPhase.failed;
-        _downloadError = _sentenceFor(e, s);
-      });
-    } catch (_) {
-      // The service maps what it knows about; anything left is still a failed
-      // download, and the screen owes the user a sentence either way.
-      if (!mounted) return;
-      setState(() {
-        _phase = _DownloadPhase.failed;
-        _downloadError = s.updateDownloadFailed;
-      });
-    }
+    unawaited(ref.read(updateDownloadProvider.notifier).start(
+          release,
+          notificationTitle: s.updateNotificationTitle,
+          notificationDone: s.updateDownloaded,
+        ));
   }
 
   /// One honest line per failure. `docs/updater_plan.md` §6 fixes the wording;
@@ -155,6 +127,14 @@ class _AppUpdateScreenState extends State<AppUpdateScreen> {
       case UpdateDownloadFailureKind.io:
         return s.updateDownloadFailed;
     }
+  }
+
+  /// Bytes already on disk, shown while waiting for the network so the wait
+  /// reads as "held, nothing lost" rather than "stopped".
+  String _keptLabel(AppStrings s, UpdateDownloadState d) {
+    if (d.received <= 0) return s.updateWaitingForNetwork;
+    return '${s.updateWaitingForNetwork} '
+        '(${_fmtBytes(d.received)} ${s.updateKept})';
   }
 
   /// Same shape the vault's picker uses, so the two refusals read alike.
@@ -205,7 +185,7 @@ class _AppUpdateScreenState extends State<AppUpdateScreen> {
               child: FilledButton.icon(
                 // Disabled during a download: re-checking would replace the
                 // release the download is running against.
-                onPressed: _loading || _busy ? null : _check,
+                onPressed: _loading || _downloadIsBusy ? null : _check,
                 icon: const Icon(Icons.refresh),
                 label: Text(_loading ? s.updateChecking : s.updateCheckNow),
               ),
@@ -325,11 +305,11 @@ class _AppUpdateScreenState extends State<AppUpdateScreen> {
     );
   }
 
-  bool get _busy =>
-      _phase == _DownloadPhase.running || _phase == _DownloadPhase.verifying;
+  bool get _downloadIsBusy => ref.watch(updateDownloadProvider).isBusy;
 
-  /// The download half of the screen. Empty until there is genuinely
-  /// something to download.
+  /// The download half of the screen, rendered from the controller's state.
+  ///
+  /// Empty until there is genuinely something to download.
   List<Widget> _downloadSection(AppStrings s) {
     final release = _release;
     if (_loading || release == null) return const [];
@@ -342,29 +322,67 @@ class _AppUpdateScreenState extends State<AppUpdateScreen> {
     // it.
     if (!release.canDownload) return const [];
 
-    final progress = _total > 0 ? (_received / _total).clamp(0.0, 1.0) : null;
+    final d = ref.watch(updateDownloadProvider);
+    // State belonging to a different build is not this release's business.
+    final mine = d.versionCode == null || d.versionCode == release.versionCode;
+    final phase = mine ? d.phase : UpdateDownloadPhase.idle;
 
     return [
       const SizedBox(height: 24),
-      if (_phase == _DownloadPhase.running) ...[
-        LinearProgressIndicator(value: progress),
+      if (phase == UpdateDownloadPhase.downloading) ...[
+        // LIVE, and live for whoever is looking. Reopening the screen halfway
+        // through a download lands here, not on a Retry button, because the
+        // progress is read from the controller rather than from a field this
+        // widget owned and lost when the route was popped.
+        LinearProgressIndicator(value: d.fraction),
         const SizedBox(height: 10),
         Text(
-          progress == null
+          d.fraction == null
               ? s.updateDownloading
               : '${s.updateDownloading} '
-                  '${(progress * 100).round()}%  '
-                  '(${_fmtBytes(_received)} / ${_fmtBytes(_total)})',
+                  '${(d.fraction! * 100).round()}%  '
+                  '(${_fmtBytes(d.received)} / ${_fmtBytes(d.total)})',
           style: const TextStyle(fontSize: 13, color: Colors.white70),
         ),
-      ] else if (_phase == _DownloadPhase.verifying) ...[
+      ] else if (phase == UpdateDownloadPhase.verifying) ...[
         const LinearProgressIndicator(),
         const SizedBox(height: 10),
         Text(
           s.updateVerifying,
           style: const TextStyle(fontSize: 13, color: Colors.white70),
         ),
-      ] else if (_phase == _DownloadPhase.done) ...[
+      ] else if (phase == UpdateDownloadPhase.waitingForNetwork) ...[
+        // Not an error, and deliberately not a Retry button. The bytes are on
+        // disk, the controller is watching for the network, and it will resume
+        // on its own. Retry is offered anyway for someone who would rather
+        // not wait for the next probe.
+        Row(
+          children: [
+            const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                _keptLabel(s, d),
+                style:
+                    const TextStyle(fontSize: 13, color: Colors.orangeAccent),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: () => _download(release),
+            icon: const Icon(Icons.refresh),
+            label: Text(s.updateResumeNow),
+          ),
+        ),
+      ] else if (phase == UpdateDownloadPhase.done) ...[
         Row(
           children: [
             const Icon(Icons.check_circle, color: Colors.greenAccent, size: 22),
@@ -395,9 +413,9 @@ class _AppUpdateScreenState extends State<AppUpdateScreen> {
           ],
         ),
       ] else ...[
-        if (_downloadError != null) ...[
+        if (phase == UpdateDownloadPhase.failed && d.failure != null) ...[
           Text(
-            _downloadError!,
+            _sentenceFor(d.failure!, s),
             style: const TextStyle(fontSize: 13, color: Colors.orangeAccent),
           ),
           const SizedBox(height: 12),
@@ -405,10 +423,15 @@ class _AppUpdateScreenState extends State<AppUpdateScreen> {
         SizedBox(
           width: double.infinity,
           child: FilledButton.icon(
+            // Safe to press twice, and safe to press while a download this
+            // screen never started is already running: start() attaches
+            // instead of opening a second writer.
             onPressed: () => _download(release),
             icon: const Icon(Icons.download),
             label: Text(
-              _phase == _DownloadPhase.failed ? s.updateRetry : s.updateDownload,
+              phase == UpdateDownloadPhase.failed
+                  ? s.updateRetry
+                  : s.updateDownload,
             ),
           ),
         ),
@@ -438,9 +461,3 @@ class _AppUpdateScreenState extends State<AppUpdateScreen> {
     );
   }
 }
-
-/// Where the download has got to. Deliberately not merged into the check's
-/// `_loading` flag: a failed CHECK and a failed DOWNLOAD are different states
-/// that say different things, and collapsing them is how a screen ends up
-/// telling someone their network is down when their disk is full.
-enum _DownloadPhase { idle, running, verifying, done, failed }

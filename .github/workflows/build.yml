@@ -147,6 +147,23 @@ jobs:
       - name: Analyze
         run: flutter analyze --no-fatal-infos --no-fatal-warnings
 
+      # The unit tests, and unlike Analyze above they have NO tolerance flags:
+      # a failing test fails the build.
+      #
+      # WHY THIS STEP EXISTS. test/update_download_test.dart covers the two
+      # updater bugs that reached a real phone — a resume that restarted from
+      # zero, and two writers appending to one .part until the SHA-256 failed
+      # at 100%. Both only appear when a download is interrupted, which is
+      # exactly the case nobody reproduces by hand before shipping. Tests that
+      # only ever run on one laptop would not have caught either of them
+      # coming back.
+      #
+      # Placed after Analyze and before the release build on purpose: it is
+      # seconds of work that can spare fifteen minutes of Gradle, the same
+      # reason the structural checks run where they do.
+      - name: Test
+        run: flutter test
+
       - name: Restore the signing key
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}

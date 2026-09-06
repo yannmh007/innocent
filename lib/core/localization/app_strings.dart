@@ -139,6 +139,11 @@ class AppStrings {
   String get updateRetry => _s('updateRetry');
   String get updateNotificationTitle => _s('updateNotificationTitle');
 
+  // v1.64.8 — resumable download (docs/updater_plan.md step 3, follow-up)
+  String get updateWaitingForNetwork => _s('updateWaitingForNetwork');
+  String get updateKept => _s('updateKept');
+  String get updateResumeNow => _s('updateResumeNow');
+
   // v1.3 Downloader additions
   String get downloaderSavedFiles => _s('downloaderSavedFiles');
   String get downloaderShare => _s('downloaderShare');
@@ -2305,6 +2310,11 @@ class AppStrings {
     'updateNotEnoughSpace': 'Not enough space for this update.',
     'updateRetry': 'Try again',
     'updateNotificationTitle': 'Downloading update',
+    // The partial is kept and the download resumes by itself, so this is a
+    // held state, not an error. Never "Download failed".
+    'updateWaitingForNetwork': 'Waiting for the network...',
+    'updateKept': 'kept',
+    'updateResumeNow': 'Resume now',
   };
 
   static const Map<String, String> _my = <String, String>{
@@ -3360,6 +3370,9 @@ class AppStrings {
     'updateNotEnoughSpace': 'ဤအပ်ဒိတ်အတွက် နေရာ မလုံလောက်ပါ။',
     'updateRetry': 'ထပ်ကြိုးစားရန်',
     'updateNotificationTitle': 'အပ်ဒိတ် ဒေါင်းလုဒ်ဆွဲနေသည်',
+    'updateWaitingForNetwork': 'အင်တာနက် ပြန်ရလာရန် စောင့်နေသည်...',
+    'updateKept': 'သိမ်းထားပြီး',
+    'updateResumeNow': 'အခု ဆက်ဆွဲရန်',
   };
 
   static const Map<String, String> _th = <String, String>{
@@ -4413,6 +4426,9 @@ class AppStrings {
     'updateNotEnoughSpace': 'พื้นที่ไม่เพียงพอสำหรับอัปเดตนี้',
     'updateRetry': 'ลองอีกครั้ง',
     'updateNotificationTitle': 'กำลังดาวน์โหลดอัปเดต',
+    'updateWaitingForNetwork': 'กำลังรอเครือข่าย...',
+    'updateKept': 'เก็บไว้แล้ว',
+    'updateResumeNow': 'ดาวน์โหลดต่อตอนนี้',
   };
 }
 
