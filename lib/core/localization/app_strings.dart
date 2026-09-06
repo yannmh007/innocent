@@ -125,14 +125,12 @@ class AppStrings {
   String get updateChecking => _s('updateChecking');
   String get updateCheckFailed => _s('updateCheckFailed');
   String get updateNotConfigured => _s('updateNotConfigured');
-  String get updateDownloadNotYet => _s('updateDownloadNotYet');
 
   // v1.64.7 — the download half (docs/updater_plan.md step 3)
   String get updateDownload => _s('updateDownload');
   String get updateDownloading => _s('updateDownloading');
   String get updateVerifying => _s('updateVerifying');
   String get updateDownloaded => _s('updateDownloaded');
-  String get updateDownloadedNote => _s('updateDownloadedNote');
   String get updateDownloadDamaged => _s('updateDownloadDamaged');
   String get updateDownloadFailed => _s('updateDownloadFailed');
   String get updateNotEnoughSpace => _s('updateNotEnoughSpace');
@@ -143,6 +141,13 @@ class AppStrings {
   String get updateWaitingForNetwork => _s('updateWaitingForNetwork');
   String get updateKept => _s('updateKept');
   String get updateResumeNow => _s('updateResumeNow');
+
+  // v1.64.8 — the install intent (docs/updater_plan.md step 4)
+  String get updateInstall => _s('updateInstall');
+  String get updateInstallChecking => _s('updateInstallChecking');
+  String get updateInstallGone => _s('updateInstallGone');
+  String get updateInstallNoHandler => _s('updateInstallNoHandler');
+  String get updateInstallSignature => _s('updateInstallSignature');
 
   // v1.3 Downloader additions
   String get downloaderSavedFiles => _s('downloaderSavedFiles');
@@ -2296,14 +2301,12 @@ class AppStrings {
     'updateChecking': 'Checking...',
     'updateCheckFailed': 'Could not check for updates. Try again.',
     'updateNotConfigured': 'Update checking is not set up in this build.',
-    'updateDownloadNotYet': 'Downloading arrives in the next step.',
 
     // --- App update: the download (updater plan step 3) ---
     'updateDownload': 'Download update',
     'updateDownloading': 'Downloading...',
     'updateVerifying': 'Checking the download...',
     'updateDownloaded': 'Downloaded',
-    'updateDownloadedNote': 'Installing arrives in the next step.',
     // Never "verification failed" — plan section 6: that reads as an accusation.
     'updateDownloadDamaged': 'Download was damaged. Try again.',
     'updateDownloadFailed': 'The download did not finish. Try again.',
@@ -2315,6 +2318,14 @@ class AppStrings {
     'updateWaitingForNetwork': 'Waiting for the network...',
     'updateKept': 'kept',
     'updateResumeNow': 'Resume now',
+    'updateInstall': 'Install',
+    'updateInstallChecking': 'Checking the file...',
+    'updateInstallGone': 'The downloaded file is gone. Download it again.',
+    'updateInstallNoHandler': 'This phone has no installer to open the update.',
+    // Plan section 6, word for word. The signing key drifted: the update can
+    // never install over the current build, and no amount of retrying helps.
+    'updateInstallSignature':
+        'This update could not be installed. Contact support.',
   };
 
   static const Map<String, String> _my = <String, String>{
@@ -3357,14 +3368,12 @@ class AppStrings {
     'updateChecking': 'စစ်ဆေးနေသည်...',
     'updateCheckFailed': 'အပ်ဒိတ် စစ်ဆေး၍ မရပါ။ ထပ်ကြိုးစားကြည့်ပါ။',
     'updateNotConfigured': 'ဤဗားရှင်းတွင် အပ်ဒိတ်စစ်ဆေးမှု မဖွင့်ထားပါ။',
-    'updateDownloadNotYet': 'ဒေါင်းလုဒ်ဆွဲခြင်းကို နောက်အဆင့်တွင် ထည့်ပါမည်။',
 
     // --- App update: the download (updater plan step 3) ---
     'updateDownload': 'အပ်ဒိတ် ဒေါင်းလုဒ်ဆွဲရန်',
     'updateDownloading': 'ဒေါင်းလုဒ်ဆွဲနေသည်...',
     'updateVerifying': 'ဒေါင်းလုဒ်ကို စစ်ဆေးနေသည်...',
     'updateDownloaded': 'ဒေါင်းလုဒ် ပြီးပါပြီ',
-    'updateDownloadedNote': 'သွင်းယူခြင်းကို နောက်အဆင့်တွင် ထည့်ပါမည်။',
     'updateDownloadDamaged': 'ဒေါင်းလုဒ် ပျက်စီးသွားပါသည်။ ထပ်ကြိုးစားကြည့်ပါ။',
     'updateDownloadFailed': 'ဒေါင်းလုဒ် မပြီးဆုံးပါ။ ထပ်ကြိုးစားကြည့်ပါ။',
     'updateNotEnoughSpace': 'ဤအပ်ဒိတ်အတွက် နေရာ မလုံလောက်ပါ။',
@@ -3373,6 +3382,12 @@ class AppStrings {
     'updateWaitingForNetwork': 'အင်တာနက် ပြန်ရလာရန် စောင့်နေသည်...',
     'updateKept': 'သိမ်းထားပြီး',
     'updateResumeNow': 'အခု ဆက်ဆွဲရန်',
+    'updateInstall': 'သွင်းယူရန်',
+    'updateInstallChecking': 'ဖိုင်ကို စစ်ဆေးနေသည်...',
+    'updateInstallGone': 'ဒေါင်းလုဒ်ဆွဲထားသည့် ဖိုင် ပျောက်နေပါသည်။ ပြန်ဆွဲပါ။',
+    'updateInstallNoHandler': 'ဤဖုန်းတွင် အပ်ဒိတ်ကို ဖွင့်ပေးမည့် installer မရှိပါ။',
+    'updateInstallSignature':
+        'ဤအပ်ဒိတ်ကို သွင်းယူ၍ မရပါ။ support ကို ဆက်သွယ်ပါ။',
   };
 
   static const Map<String, String> _th = <String, String>{
@@ -4413,14 +4428,12 @@ class AppStrings {
     'updateChecking': 'กำลังตรวจสอบ...',
     'updateCheckFailed': 'ตรวจสอบอัปเดตไม่ได้ ลองอีกครั้ง',
     'updateNotConfigured': 'บิลด์นี้ไม่ได้ตั้งค่าการตรวจสอบอัปเดต',
-    'updateDownloadNotYet': 'การดาวน์โหลดจะมาในขั้นตอนถัดไป',
 
     // --- App update: the download (updater plan step 3) ---
     'updateDownload': 'ดาวน์โหลดอัปเดต',
     'updateDownloading': 'กำลังดาวน์โหลด...',
     'updateVerifying': 'กำลังตรวจสอบไฟล์ที่ดาวน์โหลด...',
     'updateDownloaded': 'ดาวน์โหลดแล้ว',
-    'updateDownloadedNote': 'การติดตั้งจะมาในขั้นตอนถัดไป',
     'updateDownloadDamaged': 'ไฟล์ที่ดาวน์โหลดเสียหาย ลองอีกครั้ง',
     'updateDownloadFailed': 'ดาวน์โหลดไม่สำเร็จ ลองอีกครั้ง',
     'updateNotEnoughSpace': 'พื้นที่ไม่เพียงพอสำหรับอัปเดตนี้',
@@ -4429,6 +4442,12 @@ class AppStrings {
     'updateWaitingForNetwork': 'กำลังรอเครือข่าย...',
     'updateKept': 'เก็บไว้แล้ว',
     'updateResumeNow': 'ดาวน์โหลดต่อตอนนี้',
+    'updateInstall': 'ติดตั้ง',
+    'updateInstallChecking': 'กำลังตรวจสอบไฟล์...',
+    'updateInstallGone': 'ไฟล์ที่ดาวน์โหลดหายไป กรุณาดาวน์โหลดใหม่',
+    'updateInstallNoHandler': 'โทรศัพท์เครื่องนี้ไม่มีตัวติดตั้งสำหรับเปิดอัปเดต',
+    'updateInstallSignature':
+        'ติดตั้งอัปเดตนี้ไม่ได้ กรุณาติดต่อฝ่ายสนับสนุน',
   };
 }
 
