@@ -886,6 +886,29 @@ class MainActivity : AudioServiceFragmentActivity() {
                     }
                     result.success(allowed)
                 }
+                // THE SIGNING-KEY-DRIFT EMERGENCY, docs/updater_plan.md §6.
+                //
+                // Android refuses to update an installed app with an APK
+                // signed by a different key. There is no override and no
+                // recovery: a single wrong-key release strands every existing
+                // install permanently, and the only way back is uninstall,
+                // which takes the user's data with it.
+                //
+                // The installer's own refusal is a generic "App not
+                // installed", which tells the user nothing and tells us
+                // nothing either — ACTION_VIEW returns no result. So the
+                // comparison happens HERE, before the intent is ever fired,
+                // and the Dart side gets to say the one honest sentence the
+                // plan fixes for this case.
+                //
+                // Returns true when the certificates match, false when they
+                // provably differ, and null when the question could not be
+                // answered. Null means PROCEED: refusing on an unknown would
+                // block every legitimate update on any device whose answer we
+                // cannot read.
+                "apkCertMatchesInstalled" -> {
+                    result.success(apkCertMatchesInstalled(call.argument<String>("path")))
+                }
                 "openInstallPermission" -> {
                     try {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -2217,6 +2240,50 @@ class MainActivity : AudioServiceFragmentActivity() {
             legacyAudioFocusListener?.let { am.abandonAudioFocus(it) }
         }
         legacyAudioFocusListener = null
+    }
+
+    // True / false / null — see the "apkCertMatchesInstalled" channel case.
+    @Suppress("DEPRECATION")
+    private fun apkCertMatchesInstalled(path: String?): Boolean? {
+        return try {
+            if (path.isNullOrBlank()) return null
+            if (!File(path).exists()) return null
+            val pm = packageManager
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                val flags = android.content.pm.PackageManager.GET_SIGNING_CERTIFICATES
+                val archive = pm.getPackageArchiveInfo(path, flags) ?: return null
+                // An APK for some other package is a different question, and
+                // not one this method answers. It is also never something the
+                // updater should install over Innocent.
+                if (archive.packageName != packageName) return false
+                val installed = pm.getPackageInfo(packageName, flags)
+                val a = archive.signingInfo?.apkContentsSigners ?: return null
+                val b = installed.signingInfo?.apkContentsSigners ?: return null
+                sameCertificates(a, b)
+            } else {
+                val flags = android.content.pm.PackageManager.GET_SIGNATURES
+                val archive = pm.getPackageArchiveInfo(path, flags) ?: return null
+                if (archive.packageName != packageName) return false
+                val installed = pm.getPackageInfo(packageName, flags)
+                val a = archive.signatures ?: return null
+                val b = installed.signatures ?: return null
+                sameCertificates(a, b)
+            }
+        } catch (t: Throwable) {
+            // Unanswerable, not "mismatched". The caller proceeds.
+            null
+        }
+    }
+
+    // Set comparison, not index-by-index: an APK may legitimately carry its
+    // signers in a different order from the installed package.
+    private fun sameCertificates(
+        a: Array<android.content.pm.Signature>,
+        b: Array<android.content.pm.Signature>
+    ): Boolean {
+        if (a.isEmpty() || b.isEmpty()) return false
+        return a.map { it.toCharsString() }.toHashSet() ==
+            b.map { it.toCharsString() }.toHashSet()
     }
 
     override fun onDestroy() {

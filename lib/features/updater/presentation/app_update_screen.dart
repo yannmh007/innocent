@@ -10,15 +10,16 @@ import '../../../core/ui/tablet_constrained_width.dart';
 import '../data/update_check_service.dart';
 import '../data/update_download_controller.dart';
 import '../data/update_download_service.dart';
+import '../data/update_install_service.dart';
 import '../domain/app_release.dart';
 
 /// Settings → App update. Steps 2-3 of `docs/updater_plan.md`.
 ///
-/// CHECK, THEN DOWNLOAD — AND STOP THERE. It reads the manifest, and when a
-/// newer build with a published APK exists it fetches and verifies it. It does
-/// NOT install: handing the file to the package installer is step 4, kept
-/// separate so the half that writes an APK to disk can be tested on a real
-/// phone before the half that asks Android to run it.
+/// CHECK, DOWNLOAD, THEN HAND OVER. It reads the manifest, fetches and
+/// verifies the APK, and offers Install. It never installs anything itself:
+/// Install fires the system package installer and the user confirms there.
+/// A silent install is impossible without device-owner privileges and an app
+/// that tried would be indistinguishable from malware — §7 rules it out.
 ///
 /// The download button appears only when [AppRelease.canDownload] is true —
 /// `apk_url` and `apk_sha256` are nullable and are null in the row today, so
@@ -46,6 +47,14 @@ class _AppUpdateScreenState extends ConsumerState<AppUpdateScreen> {
   bool _loading = true;
   AppRelease? _release;
   UpdateCheckFailure? _failure;
+
+  /// True while the pre-install re-hash runs. Local to this screen on purpose:
+  /// unlike a download, it is over in a second and does not outlive the route.
+  bool _installing = false;
+
+  /// The sentence from the last install attempt, or null. §6 fixes the
+  /// wording for every one of them.
+  String? _installMessage;
 
   @override
   void initState() {
@@ -106,6 +115,93 @@ class _AppUpdateScreenState extends ConsumerState<AppUpdateScreen> {
           notificationTitle: s.updateNotificationTitle,
           notificationDone: s.updateDownloaded,
         ));
+  }
+
+  /// Hand the verified APK to the system installer. Step 4, and the end of it.
+  ///
+  /// The user always taps this, and always confirms again in Android's own
+  /// dialog. Nothing here installs anything by itself.
+  Future<void> _install(AppRelease release, String filePath) async {
+    if (_installing) return;
+    final sha = release.apkSha256;
+    if (sha == null) return;
+
+    setState(() {
+      _installing = true;
+      _installMessage = null;
+    });
+
+    final outcome = await const UpdateInstallService().install(
+      filePath: filePath,
+      expectedSha256: sha,
+    );
+
+    if (!mounted) return;
+    setState(() => _installing = false);
+    final s = AppStrings.of(context);
+
+    switch (outcome) {
+      case UpdateInstallOutcome.handedToInstaller:
+        // Android owns the screen now. Saying anything else here would be
+        // guessing at what the user did next.
+        break;
+      case UpdateInstallOutcome.permissionNeeded:
+        await _askForInstallPermission(s);
+      case UpdateInstallOutcome.damaged:
+        // The file is gone. Put the screen back to offering a download, so
+        // Try again means something.
+        ref.read(updateDownloadProvider.notifier).reset();
+        setState(() => _installMessage = s.updateDownloadDamaged);
+      case UpdateInstallOutcome.missing:
+        ref.read(updateDownloadProvider.notifier).reset();
+        setState(() => _installMessage = s.updateInstallGone);
+      case UpdateInstallOutcome.signatureMismatch:
+        // The signing key drifted. Retrying cannot help, so nothing is reset
+        // and nothing is offered again — §6 sends them to a person.
+        setState(() => _installMessage = s.updateInstallSignature);
+      case UpdateInstallOutcome.noHandler:
+        setState(() => _installMessage = s.updateInstallNoHandler);
+    }
+  }
+
+  /// Explain, then send them to the exact Settings page — never a silent fail
+  /// and never the Settings root, where the switch is four taps deep and named
+  /// differently on every OEM skin.
+  ///
+  /// Reuses the dialog wording the Transfer feature already ships in all three
+  /// locales for exactly this switch.
+  Future<void> _askForInstallPermission(AppStrings s) async {
+    final go = await showDialog<bool>(
+      context: context,
+      builder: (dctx) => AlertDialog(
+        backgroundColor: AppColors.darkSurface,
+        title: Text(
+          s.allowInstallTitle,
+          style: const TextStyle(color: Colors.white, fontSize: 17),
+        ),
+        content: Text(
+          s.allowInstallBody,
+          style: const TextStyle(color: Colors.white70, height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dctx).pop(false),
+            child: Text(
+              s.cancel,
+              style: const TextStyle(color: AppColors.white70),
+            ),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dctx).pop(true),
+            child: Text(s.allowInstallAction),
+          ),
+        ],
+      ),
+    );
+    if (go != true) return;
+    await const UpdateInstallService().openInstallPermission();
+    // No polling for the switch to flip. They come back and tap Install, and
+    // it works — which is the whole contract of this path.
   }
 
   /// One honest line per failure. `docs/updater_plan.md` §6 fixes the wording;
@@ -243,10 +339,10 @@ class _AppUpdateScreenState extends ConsumerState<AppUpdateScreen> {
       colour: AppColors.primaryBlue,
       title: s.updateAvailable,
       body: notes,
-      // Honest, and only visible in a build that predates step 3. The button
-      // is absent rather than disabled: a button that cannot ever work is
-      // worse than no button, because the user keeps pressing it.
-      footer: s.updateDownloadNotYet,
+      // No footer any more. It used to read "Downloading arrives in the next
+      // step", which was true when the screen could only check — and became a
+      // contradiction the moment step 3 put a Download button directly under
+      // it. Step 4 removes the last of that scaffolding.
     );
   }
 
@@ -388,29 +484,37 @@ class _AppUpdateScreenState extends ConsumerState<AppUpdateScreen> {
             const Icon(Icons.check_circle, color: Colors.greenAccent, size: 22),
             const SizedBox(width: 10),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    s.updateDownloaded,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  // Honest about where this stops. Step 4 adds the install.
-                  Text(
-                    s.updateDownloadedNote,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Colors.white54,
-                    ),
-                  ),
-                ],
+              child: Text(
+                s.updateDownloaded,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ],
+        ),
+        if (_installMessage != null) ...[
+          const SizedBox(height: 12),
+          Text(
+            _installMessage!,
+            style: const TextStyle(fontSize: 13, color: Colors.orangeAccent),
+          ),
+        ],
+        const SizedBox(height: 14),
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton.icon(
+            // Absent, not disabled, when there is no file path to hand over:
+            // a button that cannot work is worse than no button.
+            onPressed: _installing || d.filePath == null
+                ? null
+                : () => _install(release, d.filePath!),
+            icon: const Icon(Icons.system_update_alt),
+            label: Text(
+              _installing ? s.updateInstallChecking : s.updateInstall,
+            ),
+          ),
         ),
       ] else ...[
         if (phase == UpdateDownloadPhase.failed && d.failure != null) ...[

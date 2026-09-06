@@ -163,7 +163,7 @@ class UpdateDownloadService {
     final done = File(finalPath);
     if (await done.exists()) {
       onVerifying?.call();
-      if (await _sha256OfFile(done) == expectedSha) return done;
+      if (await sha256OfFile(done) == expectedSha) return done;
       await _deleteQuietly(done);
     }
 
@@ -211,7 +211,7 @@ class UpdateDownloadService {
         // fresh download and a resumed one both land here. §5: "a resumed
         // download is exactly where a corrupt file comes from".
         onVerifying?.call();
-        if (await _sha256OfFile(part) != expectedSha) {
+        if (await sha256OfFile(part) != expectedSha) {
           await _deleteQuietly(part);
           throw const UpdateDownloadFailure.damaged();
         }
@@ -458,6 +458,11 @@ class UpdateDownloadService {
 
   /// Lowercase hex SHA-256 of [file], hashed in slices.
   ///
+  /// PUBLIC because step 4 re-verifies immediately before firing the install
+  /// intent. A file that was correct when it was downloaded can be replaced on
+  /// disk afterwards, and the installer must never be handed anything this has
+  /// not just agreed with. One implementation, used by both checks.
+  ///
   /// Streamed, not `sha256.convert(await file.readAsBytes())`: the second form
   /// holds the whole APK in memory, and 88 MB of it is exactly the allocation
   /// a mid-range phone refuses.
@@ -465,7 +470,7 @@ class UpdateDownloadService {
   /// `ChunkedConversionSink.withCallback` comes from `dart:convert`, so this
   /// needs no dependency on `package:convert` — which is only in the lockfile
   /// transitively, through `crypto`.
-  static Future<String> _sha256OfFile(File file) async {
+  static Future<String> sha256OfFile(File file) async {
     Digest? digest;
     final sink = sha256.startChunkedConversion(
       ChunkedConversionSink<Digest>.withCallback(
