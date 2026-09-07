@@ -15,6 +15,14 @@ class ExternalIntentService {
   /// First listener will also be replayed the initial intent (if any).
   Stream<ExternalVideoRequest> get videoRequests => _controller.stream;
 
+  /// docs/updater_plan.md step 6: the user tapped the "an update is
+  /// available" notification.
+  ///
+  /// A bare signal with no payload — the update screen re-checks the manifest
+  /// itself, and a version code carried over from a notification posted days
+  /// ago would be the stalest thing on the screen.
+  Stream<void> get appUpdateRequests => _appUpdateController.stream;
+
   /// v0.99.5: links shared into Innocent from another app's share sheet.
   ///
   /// Separate from [videoRequests] because they mean different things: a VIEW
@@ -27,6 +35,9 @@ class ExternalIntentService {
 
   final StreamController<String> _linkController =
       StreamController<String>.broadcast();
+
+  final StreamController<void> _appUpdateController =
+      StreamController<void>.broadcast();
 
   bool _started = false;
 
@@ -43,6 +54,10 @@ class ExternalIntentService {
         if (url is String && url.startsWith('http')) {
           _linkController.add(url);
         }
+        return null;
+      }
+      if (call.method == 'onOpenAppUpdate') {
+        _appUpdateController.add(null);
         return null;
       }
       if (call.method == 'onNewVideo') {
@@ -82,6 +97,17 @@ class ExternalIntentService {
       }
     } on MissingPluginException catch (_) {
     } on PlatformException catch (_) {}
+
+    // And the update screen, if Innocent was launched by tapping the update
+    // notification. Same one-shot contract as the two above.
+    try {
+      final bool? open =
+          await _channel.invokeMethod<bool>('getInitialOpenAppUpdate');
+      if (open == true) {
+        unawaited(Future.microtask(() => _appUpdateController.add(null)));
+      }
+    } on MissingPluginException catch (_) {
+    } on PlatformException catch (_) {}
   }
 
   ExternalVideoRequest? _parse(Map<Object?, Object?> map) {
@@ -100,6 +126,7 @@ class ExternalIntentService {
   void dispose() {
     _controller.close();
     _linkController.close();
+    _appUpdateController.close();
   }
 }
 

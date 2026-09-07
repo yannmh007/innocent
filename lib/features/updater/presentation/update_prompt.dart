@@ -10,6 +10,7 @@ import '../../downloader/presentation/downloader_providers.dart';
 import '../../music/presentation/music_providers.dart';
 import '../data/update_check_service.dart';
 import '../data/update_download_controller.dart';
+import '../data/update_notification_service.dart';
 import '../data/update_prompt_store.dart';
 import '../domain/app_release.dart';
 import '../domain/update_prompt_decision.dart';
@@ -38,6 +39,7 @@ class UpdatePrompt {
     WidgetRef ref, {
     UpdatePromptStore store = const UpdatePromptStore(),
     UpdateCheckService checkService = const UpdateCheckService(),
+    UpdateNotificationService notifications = const UpdateNotificationService(),
   }) async {
     final now = DateTime.now();
 
@@ -60,21 +62,89 @@ class UpdatePrompt {
       return;
     }
 
+    // Re-read: the fetch took time, and the state may have been consumed by
+    // another resume that raced this one, or the user may have started a
+    // download while the manifest was in flight.
+    final dismissed = await store.dismissedVersionCode();
+    final busyNow = isBusy(ref);
+    final checkedAt = DateTime.now();
+
+    // STEP 6, and it runs BEFORE the dialog on purpose. The dialog is a
+    // conversation the user is having right now; the notice is what is left
+    // behind if they are not. Posting first means a user who resumes and
+    // immediately backgrounds the app — the commonest way this app is used —
+    // still ends up with the one thing §4A says they will actually see,
+    // instead of a dialog that appeared behind them and was never read.
+    if (context.mounted) {
+      await _maybeNotify(
+        context,
+        release: release,
+        dismissedVersionCode: dismissed,
+        now: checkedAt,
+        busy: busyNow,
+        store: store,
+        notifications: notifications,
+      );
+    }
+
     if (!UpdatePromptDecision.shouldPrompt(
       release: release,
       installedBuild: AppVersion.build,
-      dismissedVersionCode: await store.dismissedVersionCode(),
-      // Re-read: the fetch took time, and the throttle may have been consumed
-      // by another resume that raced this one.
+      dismissedVersionCode: dismissed,
       lastPromptAt: await store.lastShownAt(),
-      now: DateTime.now(),
-      busy: isBusy(ref),
+      now: checkedAt,
+      busy: busyNow,
     )) {
       return;
     }
 
     if (!context.mounted) return;
-    await _show(context, release!, store);
+    await _show(context, release!, store, notifications);
+  }
+
+  /// Post, refresh or withdraw the shade notice for [release].
+  ///
+  /// Also the one place the notice is taken down when it has gone stale: the
+  /// user updated, or the server withdrew the release. A notification offering
+  /// a version that no longer exists is worse than none, and this check is the
+  /// only moment the app ever learns that it should go.
+  static Future<void> _maybeNotify(
+    BuildContext context, {
+    required AppRelease? release,
+    required int? dismissedVersionCode,
+    required DateTime now,
+    required bool busy,
+    required UpdatePromptStore store,
+    required UpdateNotificationService notifications,
+  }) async {
+    if (release == null || !release.isNewerThan(AppVersion.build)) {
+      await notifications.cancel();
+      return;
+    }
+
+    if (!UpdatePromptDecision.shouldNotify(
+      release: release,
+      installedBuild: AppVersion.build,
+      dismissedVersionCode: dismissedVersionCode,
+      notifiedVersionCode: await store.notifiedVersionCode(),
+      lastNotifiedAt: await store.lastNotifiedAt(),
+      now: now,
+      busy: busy,
+    )) {
+      return;
+    }
+
+    if (!context.mounted) return;
+    final s = AppStrings.of(context);
+
+    // Recorded only when it actually reached the shade. A notice suppressed
+    // for want of POST_NOTIFICATIONS must not burn the version's one slot:
+    // the user may grant the permission tomorrow, and should then be told.
+    final posted = await notifications.show(
+      title: s.updateAvailable,
+      text: release.headline,
+    );
+    if (posted) await store.recordNotified(release.versionCode, now);
   }
 
   /// Everything that means "not now, they are doing something".
@@ -119,6 +189,7 @@ class UpdatePrompt {
     BuildContext context,
     AppRelease release,
     UpdatePromptStore store,
+    UpdateNotificationService notifications,
   ) async {
     final s = AppStrings.of(context);
     final notes = release.notesFor(
@@ -144,7 +215,7 @@ class UpdatePrompt {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              _versionLine(release),
+              release.headline,
               style: const TextStyle(color: Colors.white70, height: 1.5),
             ),
             // ONE line of notes. §7: no "what's new" carousel — and a dialog
@@ -178,6 +249,15 @@ class UpdatePrompt {
       ),
     );
 
+    // Either answer means the user has now been asked to their face, so the
+    // shade notice has done its job and stays only as nagging. Step 6 posts
+    // it for the user who never saw the dialog; this is the one who did.
+    //
+    // BEFORE the mounted guard, and needing no context of its own: a dialog
+    // that was torn down with the route still had its say, and the notice
+    // should go either way.
+    await notifications.cancel();
+
     if (!context.mounted) return;
 
     if (update == true) {
@@ -192,12 +272,5 @@ class UpdatePrompt {
     // "Not now", or dismissed by tapping outside. Both are a no for THIS
     // version, and a later one asks again.
     await store.recordDismissed(release.versionCode);
-  }
-
-  /// "1.64.8 (321) · 88 MB", or without the size when none is published.
-  static String _versionLine(AppRelease release) {
-    final size = release.sizeLabel;
-    final version = '${release.versionName} (${release.versionCode})';
-    return size == null ? version : '$version  ·  $size';
   }
 }

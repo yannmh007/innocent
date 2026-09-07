@@ -80,6 +80,54 @@ class UpdatePromptDecision {
     return true;
   }
 
+  /// Whether the quiet "an update is available" notice may go out. Step 6.
+  ///
+  /// SHARES STEP 5's RULES BY CONSTRUCTION, not by being kept in step with
+  /// them: the release check and the per-version dismissal below are the same
+  /// two lines [shouldPrompt] runs, and [busy] is the same flag from the same
+  /// reader. A version the user declined never notifies, which is the point.
+  ///
+  /// The one difference is the clock. The dialog's throttle is global — one
+  /// interruption a day, whatever it is about. The notification's is PER
+  /// VERSION: a notice about 321 that has been sitting in the shade for two
+  /// days should not be re-posted, but 322 is news and is not made less so by
+  /// 321 having been announced yesterday.
+  ///
+  /// In practice a new version cannot even be discovered inside the window,
+  /// because [mayCheckNow] gates the manifest fetch on the dialog's global
+  /// throttle. This is the floor under that, not a second cadence.
+  static bool shouldNotify({
+    required AppRelease? release,
+    required int installedBuild,
+    required int? dismissedVersionCode,
+    required int? notifiedVersionCode,
+    required DateTime? lastNotifiedAt,
+    required DateTime now,
+    required bool busy,
+    Duration throttle = throttle,
+  }) {
+    // §4B and §3.2: a notice arriving mid-film is the same interruption a
+    // dialog would be, one row further from the user's thumb.
+    if (busy) return false;
+
+    if (release == null) return false;
+    if (!release.isNewerThan(installedBuild)) return false;
+
+    if (dismissedVersionCode != null &&
+        release.versionCode <= dismissedVersionCode) {
+      return false;
+    }
+
+    // A different version than the one last announced is always news.
+    if (notifiedVersionCode != release.versionCode) return true;
+
+    return _throttleElapsed(
+      lastPromptAt: lastNotifiedAt,
+      now: now,
+      throttle: throttle,
+    );
+  }
+
   /// True when enough time has passed since the last prompt.
   ///
   /// A timestamp in the FUTURE counts as elapsed. It can only come from a

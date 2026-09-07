@@ -130,6 +130,22 @@ class AppRelease {
     return '${mb.round()} MB';
   }
 
+  /// '1.64.8 (321) · 88 MB', or '1.64.8 (321)' when no size is published.
+  ///
+  /// ONE definition, because the dialog and the notification are two views of
+  /// the same fact and must not disagree about it. A user who sees '88 MB' in
+  /// the shade and a different number in the dialog has been given a reason to
+  /// distrust both.
+  ///
+  /// The build number is kept. It is the only value that is actually compared
+  /// (see [isNewerThan]), and it is what a user reads back when asking for
+  /// help.
+  String get headline {
+    final version = '$versionName ($versionCode)';
+    final size = sizeLabel;
+    return size == null ? version : '$version  ·  $size';
+  }
+
   /// Release notes in the reader's language, falling back to English.
   ///
   /// There is no `notes_th` column. Thai falls back to English rather than
