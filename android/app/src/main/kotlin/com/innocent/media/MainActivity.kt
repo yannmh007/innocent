@@ -171,6 +171,14 @@ class MainActivity : AudioServiceFragmentActivity() {
 
     /** Link shared into a cold start, held for the first getInitialSharedLink. */
     private var pendingSharedLink: String? = null
+
+    /**
+     * Set when the Activity was started by tapping the update notification on
+     * a COLD start, held for the first getInitialOpenAppUpdate. Same one-shot
+     * contract as [pendingSharedLink]: read once, cleared, so a later restart
+     * cannot replay it and drop the user on the update screen out of nowhere.
+     */
+    private var pendingOpenAppUpdate: Boolean = false
     private var safChannel: MethodChannel? = null
     // Holds the Flutter result across the ACTION_OPEN_DOCUMENT_TREE round-trip
     // (onActivityResult replies to it). Nullable because there's only ever one
@@ -715,6 +723,13 @@ class MainActivity : AudioServiceFragmentActivity() {
                     pendingSharedLink = null
                     result.success(link)
                 }
+                // docs/updater_plan.md step 6: the user tapped the "an update
+                // is available" notification while the app was not running.
+                "getInitialOpenAppUpdate" -> {
+                    val open = pendingOpenAppUpdate
+                    pendingOpenAppUpdate = false
+                    result.success(open)
+                }
                 else -> result.notImplemented()
             }
         }
@@ -936,6 +951,27 @@ class MainActivity : AudioServiceFragmentActivity() {
                     } catch (e: Throwable) {
                         result.success(false)
                     }
+                }
+                // docs/updater_plan.md step 6, §4A. On this channel rather
+                // than a new one for the same reason step 4's
+                // apkCertMatchesInstalled is: the notification-posting code
+                // the updater reuses lives on the transfer side, and a second
+                // MethodChannel for two methods would be a second seam to keep
+                // in step. The NOTIFICATION CHANNEL is separate — see
+                // UpdateNotification — which is the separation the user can
+                // actually see and control.
+                "showUpdateNotification" -> {
+                    result.success(
+                        UpdateNotification.show(
+                            applicationContext,
+                            call.argument<String>("title") ?: "An update is available",
+                            call.argument<String>("text") ?: ""
+                        )
+                    )
+                }
+                "cancelUpdateNotification" -> {
+                    UpdateNotification.cancel(applicationContext)
+                    result.success(true)
                 }
                 // Nearby-device discovery sends UDP broadcasts. Android's
                 // Wi-Fi stack DROPS frames that aren't addressed to this
@@ -1375,6 +1411,7 @@ class MainActivity : AudioServiceFragmentActivity() {
         // Process the initial intent that started this Activity (e.g. VIEW)
         handleVideoIntent(intent, fromNewIntent = false)
         handleSharedLink(intent, fromNewIntent = false)
+        handleUpdateIntent(intent, fromNewIntent = false)
 
         // v0.89: forward the ADB pairing service's result back to Flutter so the
         // ADB screen can react (it broadcasts ADB_PAIR_RESULT after each pair
@@ -2124,6 +2161,31 @@ class MainActivity : AudioServiceFragmentActivity() {
         setIntent(intent)
         handleVideoIntent(intent, fromNewIntent = true)
         handleSharedLink(intent, fromNewIntent = true)
+        handleUpdateIntent(intent, fromNewIntent = true)
+    }
+
+    /**
+     * docs/updater_plan.md step 6: the update notification was tapped.
+     *
+     * Mirrors [handleSharedLink] exactly, including the cold/warm split: when
+     * the app is already running the Dart side is told immediately, and when
+     * it is not, the fact is parked for the first getInitialOpenAppUpdate.
+     * Flutter is not attached during a cold start, so invoking the channel
+     * there would go nowhere and the tap would silently do nothing.
+     *
+     * The extra is REMOVED once read. The Activity is singleTop and the launch
+     * intent is sticky (setIntent in onNewIntent), so leaving it in place
+     * would re-open the update screen on every later resume from recents.
+     */
+    private fun handleUpdateIntent(intent: Intent?, fromNewIntent: Boolean) {
+        if (intent == null) return
+        if (!intent.getBooleanExtra(UpdateNotification.EXTRA_OPEN_APP_UPDATE, false)) return
+        intent.removeExtra(UpdateNotification.EXTRA_OPEN_APP_UPDATE)
+        if (fromNewIntent) {
+            intentChannel?.invokeMethod("onOpenAppUpdate", null)
+        } else {
+            pendingOpenAppUpdate = true
+        }
     }
 
     /**

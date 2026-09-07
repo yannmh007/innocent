@@ -7,10 +7,13 @@ import '../../../core/app_version.dart';
 import '../../../core/localization/app_strings.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/ui/tablet_constrained_width.dart';
+import '../../../core/services/permission/permission_service.dart';
 import '../data/update_check_service.dart';
 import '../data/update_download_controller.dart';
 import '../data/update_download_service.dart';
 import '../data/update_install_service.dart';
+import '../data/update_notification_service.dart';
+import '../data/update_prompt_store.dart';
 import '../domain/app_release.dart';
 
 /// Settings → App update. Steps 2-3 of `docs/updater_plan.md`.
@@ -60,6 +63,11 @@ class _AppUpdateScreenState extends ConsumerState<AppUpdateScreen> {
   void initState() {
     super.initState();
     _check();
+    // Step 6: arriving here is the notice being acted on, however the user got
+    // here — the notification itself, the dialog's Update button, or Settings.
+    // Leaving it in the shade after that is the nagging §3 calls this
+    // feature's real failure mode.
+    unawaited(const UpdateNotificationService().cancel());
   }
 
   Future<void> _check() async {
@@ -110,11 +118,43 @@ class _AppUpdateScreenState extends ConsumerState<AppUpdateScreen> {
     // controller and the service deliberately have none — they outlive any
     // route — so the notification wording is handed to them, never fetched.
     final s = AppStrings.of(context);
+    // THE ONE PLACE POST_NOTIFICATIONS IS EVER ASKED FOR, and it is asked
+    // beside the tap rather than before it: the download is about to run a
+    // foreground service whose whole visible output is a progress
+    // notification, so this is the moment the permission means something to
+    // the person answering. Never on cold launch — a permission dialog before
+    // the user has done anything is the ask most reliably refused.
+    //
+    // Deliberately not awaited. The download must start on the tap whatever
+    // the user answers; on Android 13+ the service still runs without the
+    // permission, it just has nothing to show. A notification is an
+    // enhancement here, never a dependency.
+    unawaited(_askForNotificationsOnce());
     unawaited(ref.read(updateDownloadProvider.notifier).start(
           release,
           notificationTitle: s.updateNotificationTitle,
           notificationDone: s.updateDownloaded,
         ));
+  }
+
+  /// Ask for POST_NOTIFICATIONS at most once in the app's lifetime.
+  ///
+  /// Android stops showing the dialog after two refusals and answers "denied"
+  /// forever after, so a second ask is not a second chance — it is a tap the
+  /// user spends for nothing. If they said no, the in-app dialog and this
+  /// screen still tell them everything; step 6's rule is do not nag.
+  Future<void> _askForNotificationsOnce() async {
+    const store = UpdatePromptStore();
+    try {
+      final permissions = PermissionServiceImpl();
+      if (await permissions.hasNotificationPermission()) return;
+      if (await store.notificationPermissionAsked()) return;
+      await store.recordNotificationPermissionAsked();
+      await permissions.requestNotificationPermission();
+    } catch (_) {
+      // A permission plugin that will not answer must not take the download
+      // down with it.
+    }
   }
 
   /// Hand the verified APK to the system installer. Step 4, and the end of it.

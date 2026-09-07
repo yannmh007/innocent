@@ -21,6 +21,7 @@ import 'core/ui/app_snackbar.dart';
 import 'core/utils/system_insets.dart';
 import 'features/downloader/presentation/downloader_home_screen.dart';
 import 'features/onboarding/onboarding_screen.dart';
+import 'features/updater/presentation/app_update_screen.dart';
 import 'features/player/presentation/floating_pip_overlay.dart';
 
 class InnocentApp extends ConsumerStatefulWidget {
@@ -36,6 +37,7 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
   final ExternalIntentService _intentService = ExternalIntentService();
   StreamSubscription<ExternalVideoRequest>? _intentSub;
   StreamSubscription<String>? _sharedLinkSub;
+  StreamSubscription<void>? _appUpdateSub;
 
   ThemeMode _resolveThemeMode(AppThemeMode mode) {
     switch (mode) {
@@ -92,12 +94,27 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
         );
       });
     });
+
+    // docs/updater_plan.md step 6: tapping the update notification opens
+    // Settings → App update. Pushed on the ROOT navigator, the same way a
+    // shared link opens the downloader above — the update screen is a pushed
+    // screen rather than a declared route, and the root navigator is what puts
+    // it above the shell instead of inside one tab.
+    _appUpdateSub = _intentService.appUpdateRequests.listen((_) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        rootNavigatorKey.currentState?.push(
+          MaterialPageRoute<void>(builder: (_) => const AppUpdateScreen()),
+        );
+      });
+    });
   }
 
   @override
   void dispose() {
     _intentSub?.cancel();
     _sharedLinkSub?.cancel();
+    _appUpdateSub?.cancel();
     _intentService.dispose();
     super.dispose();
   }
