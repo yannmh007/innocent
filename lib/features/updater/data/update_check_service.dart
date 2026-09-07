@@ -29,8 +29,17 @@ class UpdateCheckService {
   /// single typo reads as "the update check is broken", not as a bad column.
   /// If you add a column to the migration, add it here and to
   /// [AppRelease.fromJson] in the same edit.
+  ///
+  /// `min_supported` and `priority` arrived with step 7. Both are
+  /// `not null default` in migration 012, so they are always present on a
+  /// database that ran it — and on one that somehow did not, PostgREST
+  /// rejects the request, the check reports a failure, and step 7's fail-open
+  /// guard reads that as "not blocked". The failure mode of asking for a
+  /// column that is missing is therefore an update check that says nothing,
+  /// never an app that locks the user out.
   static const String _columns = 'version_name,version_code,'
       'apk_url,apk_sha256,apk_bytes,'
+      'min_supported,priority,'
       'notes_en,notes_mm,released_at';
 
   /// The newest published release, or null when the table holds no row.
