@@ -1,16 +1,16 @@
-# The analyzer backlog — what the 1219 issues actually are
+# The analyzer backlog — what the issues actually are
 
-`flutter analyze` reports **1219 issues and zero errors**. That number has sat
-in every CI run and every PR description for months, which is exactly the
-problem with it: a count nobody has broken down is a count nobody can act on,
-and one that large reads as "this codebase is bad" when the truth is much more
-boring.
+`flutter analyze` reports **705 issues and zero errors**, down from 1219.
 
-This is the breakdown. Nothing here has been fixed — it is a map, so the work
-can be done in the order that actually removes the most risk.
+That 1219 sat in every CI run and every PR description for months, which was
+exactly the problem with it: a count nobody has broken down is a count nobody
+can act on, and one that large reads as "this codebase is bad" when the truth
+is much more boring. This is the breakdown, and the order to work it in.
 
-Snapshot taken on Flutter 3.32.8 (the version CI pins) at commit `397e1bb`.
-Reproduce with:
+**Step 1 is done** — see the changelog at the bottom. Steps 2-5 are not.
+
+Snapshot taken on Flutter 3.32.8 (the version CI pins) at commit `37872ae`
+plus the step 1 change. Reproduce with:
 
 ```
 flutter analyze --no-fatal-infos --no-fatal-warnings
@@ -23,26 +23,29 @@ build.yml`. Errors are NOT tolerated, and there are none.
 
 ## The headline
 
-**875 of the 1219 — 72% — are two mechanical things**, neither of which needs
-a file-by-file review:
+**875 of the original 1219 — 72% — were two mechanical things**, neither of
+which needed a file-by-file review:
 
-| | count | share |
-|---|---:|---:|
-| One pattern in the player controller (see below) | 514 | 42% |
-| `prefer_const_constructors` and friends, all auto-fixable | 415 | 34% |
-| Everything else | 290 | 24% |
+| | count | status |
+|---|---:|---|
+| One pattern in the player controller (see below) | 514 | **cleared** |
+| `prefer_const_constructors` and friends, all auto-fixable | 415 | open |
+| Everything else | 290 | open |
 
-Severity split: **565 warning, 654 info, 0 error.**
+Severity split is now **51 warning, 654 info, 0 error** — it was 565 / 654 / 0.
+Clearing the player pattern took 514 warnings out in one commit, which is why
+the warning column collapsed while the info column did not move at all.
 
 ---
 
 ## By rule
 
+Current, after step 1. The two `invalid_use_of_*` rules that held 514 between
+them are gone from the list entirely.
+
 | rule | count | severity |
 |---|---:|---|
 | `prefer_const_constructors` | 361 | info |
-| `invalid_use_of_protected_member` | 257 | warning |
-| `invalid_use_of_visible_for_testing_member` | 257 | warning |
 | `deprecated_member_use` | 116 | info |
 | `unawaited_futures` | 84 | info |
 | `use_build_context_synchronously` | 20 | warning |
@@ -63,33 +66,28 @@ Severity split: **565 warning, 654 info, 0 error.**
 
 ## By area
 
-| folder | count |
-|---|---:|
-| `lib/features/player` | **587** |
-| `lib/features/local_browser` | 95 |
-| `lib/features/music` | 87 |
-| `lib/features/user_data` | 82 |
-| `lib/features/me` | 75 |
-| `lib/features/transfer` | 56 |
-| `lib/features/settings` | 51 |
-| `lib/features/private_folder` | 50 |
-| `lib/features/video_hub` | 38 |
-| `lib/core/services` | 35 |
-| `lib/features/equalizer` | 29 |
-| `lib/features/downloader` | 21 |
-| everything else | 13 |
+| folder | count | was |
+|---|---:|---:|
+| `lib/features/local_browser` | 95 | 95 |
+| `lib/features/music` | 87 | 87 |
+| `lib/features/user_data` | 82 | 82 |
+| `lib/features/me` | 75 | 75 |
+| `lib/features/player` | 73 | **587** |
+| `lib/features/transfer` | 56 | 56 |
+| `lib/features/settings` | 51 | 51 |
+| `lib/features/private_folder` | 50 | 50 |
+| `lib/features/video_hub` | 38 | 38 |
+| `lib/core/services` | 35 | 35 |
+| `lib/features/equalizer` | 29 | 29 |
+| `lib/features/downloader` | 21 | 21 |
+| everything else | 13 | 13 |
 
-Five files hold 509 of them:
+The player was 48% of the whole backlog and is now 10% of it. Nothing else
+moved, because nothing else was touched. Its remaining 73 are ordinary and
+spread thin — `player_screen.dart` 14, `cut_sheet.dart` 10,
+`player_provider.dart` 7, and a long tail below that.
 
-```
-133  player_controller_gestures.dart
-127  player_controller_playback.dart
- 98  player_controller_modes.dart
- 97  player_controller_controls.dart
- 54  player_controller_tracks.dart
-```
-
-### Why the player looks so bad, and why it isn't
+### Why the player looked so bad, and why it wasn't
 
 `PlayerController extends StateNotifier<PlayerState>` lives in
 `player_provider.dart` and is split across six `part of` files as extensions.
@@ -98,18 +96,20 @@ single read or write of `state` from those files trips two lints at once** —
 `invalid_use_of_protected_member` and `invalid_use_of_visible_for_testing_
 member`.
 
-257 sites, two rules, **514 issues**. The two location sets are byte-identical;
-it is the same code counted twice.
+257 sites, two rules, **514 issues**. The two location sets were
+byte-identical; it was the same code counted twice.
 
-Nothing is actually wrong. The extensions are `part of` the same library as the
-class, so no encapsulation is being broken — the lints simply cannot express
+Nothing was actually wrong. The extensions are `part of` the same library as
+the class, so no encapsulation is broken — the lints simply cannot express
 "extension on the class in its own library". Outside those `state` accesses,
-the six files contain a grand total of **five** other issues (four
-`unawaited_futures`, one `avoid_void_async`).
+the six files contained a grand total of **five** other issues (four
+`unawaited_futures`, one `avoid_void_async`), and those five are still there.
 
-Two ways to clear it: an `// ignore_for_file:` pair at the top of each `part`,
-or folding the extensions back into the class body. The first is two lines per
-file and changes no behaviour.
+**Cleared with an `// ignore_for_file:` on each of the six `part` files**, with
+a line above it saying why. The alternative — folding the extensions back into
+the class body — would have moved thousands of lines of working player code to
+satisfy a lint that is not describing a real problem, which is a much worse
+trade than three comment lines per file. Zero code lines changed.
 
 ---
 
@@ -182,11 +182,11 @@ nullable and the guard was left behind. Worth reading for what the author
 
 ---
 
-## (b) Harmless, but should be cleared — 772
+## (b) Harmless, but should be cleared — 258 left of 772
 
 | what | count | note |
 |---|---:|---|
-| the player `state` pattern | 514 | one decision, see above |
+| ~~the player `state` pattern~~ | ~~514~~ | **cleared, step 1** |
 | `deprecated_member_use` | 116 | `withOpacity` ×107, `onPopInvoked` ×7, `WidgetState*` ×2 |
 | `unawaited_futures` | 84 | the group most likely to hide a real bug |
 | imports (`unused` 12, `unnecessary` 16, `duplicate` 1) | 29 | |
@@ -236,8 +236,8 @@ little rebuild work; none of it changes behaviour. Spread fairly evenly:
 Highest risk removed per unit of effort, and each step is independently
 reviewable:
 
-1. **The player `state` pattern** — 514 gone in one commit, no behaviour
-   change. 1219 → 705.
+1. ~~**The player `state` pattern** — 514 gone in one commit, no behaviour
+   change. 1219 → 705.~~ **Done.** The prediction held exactly.
 2. **`dart fix --apply`** for category (c) — 415 gone, mechanical. 705 → 290.
 3. **`use_build_context_synchronously`, 20 by hand.** The only genuine crash
    risk in the list, and the only step that needs judgement.
@@ -247,6 +247,20 @@ reviewable:
 5. **`unawaited_futures`, 84 read individually** — the long tail, and where a
    real bug is most likely still hiding.
 
-Steps 1 and 2 are together 76% of the number and close to zero risk. Doing them
-first makes the remaining 290 small enough that the count means something
-again, which is the point of the exercise.
+Steps 1 and 2 are together 76% of the original number and close to zero risk.
+Doing them first makes the remaining 290 small enough that the count means
+something again, which is the point of the exercise.
+
+---
+
+## Changelog
+
+**Step 1 — the player `state` pattern.** `// ignore_for_file:
+invalid_use_of_protected_member, invalid_use_of_visible_for_testing_member` on
+each of the six `player_controller_*.dart` `part` files, with one line above
+each saying why. 18 lines added, none removed, no code touched.
+
+`flutter analyze`: **1219 → 705**, exactly as predicted. Warnings 565 → 51;
+infos unchanged at 654 (both rules were warnings); errors still 0. The two
+rules no longer appear anywhere in the output. `tool/check.py` 8/8 and all 206
+tests still pass.
