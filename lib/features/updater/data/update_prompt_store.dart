@@ -3,7 +3,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 /// What the update prompt and the update notification have to remember
 /// between launches: which version the user already declined, when they were
-/// last asked, and when the notification last went out for which version.
+/// last asked, when the manifest was last read, and when the notification
+/// last went out for which version.
+///
+/// LAST ASKED AND LAST READ ARE DIFFERENT FACTS. One throttles interruptions,
+/// the other throttles requests, and they are spent at different moments — see
+/// [lastCheckedAt].
 ///
 /// ONE STORE, not two. Step 6's notification obeys the same per-version
 /// dismissal as step 5's dialog — a version the user declined must not come
@@ -22,6 +27,10 @@ class UpdatePromptStore {
 
   /// When the prompt was last actually shown, as milliseconds since epoch.
   static const String _lastShownKey = 'updater_prompt_last_shown_ms';
+
+  /// When the manifest was last read SUCCESSFULLY, as milliseconds since
+  /// epoch. Distinct from [_lastShownKey] — see [lastCheckedAt].
+  static const String _lastCheckedKey = 'updater_last_checked_ms';
 
   /// The version code the notification was last posted for. Step 6.
   static const String _notifiedVersionKey = 'updater_notified_version';
@@ -64,6 +73,42 @@ class UpdatePromptStore {
       await sp.setInt(_lastShownKey, at.millisecondsSinceEpoch);
     } catch (e) {
       if (kDebugMode) debugPrint('UpdatePromptStore.recordShown: $e');
+    }
+  }
+
+  /// When the app last got an answer out of the manifest, or null.
+  ///
+  /// NOT the same question as [lastShownAt], and conflating the two was a real
+  /// bug. The shown-time is written only when a dialog appears, so a user with
+  /// nothing to update never wrote anything and re-fetched the manifest on
+  /// every resume — thirty times a day for the state almost everyone is in
+  /// almost all the time. §3's first rule is "check at most once every 24
+  /// hours", and it is about requests.
+  Future<DateTime?> lastCheckedAt() async {
+    try {
+      final sp = await SharedPreferences.getInstance();
+      final ms = sp.getInt(_lastCheckedKey);
+      if (ms == null) return null;
+      return DateTime.fromMillisecondsSinceEpoch(ms);
+    } catch (e) {
+      if (kDebugMode) debugPrint('UpdatePromptStore.lastCheckedAt: $e');
+      return null;
+    }
+  }
+
+  /// Record that the manifest answered at [at].
+  ///
+  /// Written on SUCCESS ONLY. A timeout or a 500 means the app still does not
+  /// know what the latest release is, and silencing the checker for a day over
+  /// one bad moment would be the opposite of the point — a user who was
+  /// offline at breakfast should not have to wait until tomorrow to be told
+  /// about a release. Failures cost a fast local error, not a download.
+  Future<void> recordChecked(DateTime at) async {
+    try {
+      final sp = await SharedPreferences.getInstance();
+      await sp.setInt(_lastCheckedKey, at.millisecondsSinceEpoch);
+    } catch (e) {
+      if (kDebugMode) debugPrint('UpdatePromptStore.recordChecked: $e');
     }
   }
 

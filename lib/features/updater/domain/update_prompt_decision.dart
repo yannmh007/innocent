@@ -29,8 +29,17 @@ class UpdatePromptDecision {
   /// costs nothing at all: no request, no battery, no data. On a phone that is
   /// opened thirty times a day this is the difference between one fetch and
   /// thirty.
+  ///
+  /// TWO CLOCKS, AND THEY ARE NOT THE SAME ONE. This takes [lastCheckedAt] —
+  /// when the app last got an ANSWER out of the server — while [shouldPrompt]
+  /// takes `lastPromptAt`, when it last INTERRUPTED someone. They used to be
+  /// the same value, and the bug that hid in that is worth remembering: the
+  /// shown-time is only written when a dialog actually appears, so a user with
+  /// nothing to update never recorded anything, and re-fetched the manifest on
+  /// every single resume. The commonest state in the world — up to date — was
+  /// the one that cost the most data.
   static bool mayCheckNow({
-    required DateTime? lastPromptAt,
+    required DateTime? lastCheckedAt,
     required DateTime now,
     required bool busy,
     Duration throttle = throttle,
@@ -39,14 +48,23 @@ class UpdatePromptDecision {
     // update prompt over a running transfer is an interruption of the thing
     // the user is actually doing.
     if (busy) return false;
-    return _throttleElapsed(lastPromptAt: lastPromptAt, now: now, throttle: throttle);
+    return _throttleElapsed(
+      lastPromptAt: lastCheckedAt,
+      now: now,
+      throttle: throttle,
+    );
   }
 
   /// The whole decision, including the release the manifest returned.
   ///
-  /// Re-applies [mayCheckNow]'s conditions rather than trusting the caller to
-  /// have checked: a fetch takes time, and the user may have started a
-  /// download in the meantime.
+  /// [lastPromptAt] IS NOT [mayCheckNow]'s clock. This one throttles
+  /// INTERRUPTIONS — §3's "at most once every 24 hours" as the user
+  /// experiences it — and is written only when a dialog actually goes up. The
+  /// other throttles REQUESTS. Asking the server costs data; asking the user
+  /// costs their patience, and the two are spent at different moments.
+  ///
+  /// Re-checks `busy` rather than trusting the caller: a fetch takes time, and
+  /// the user may have started a download in the meantime.
   static bool shouldPrompt({
     required AppRelease? release,
     required int installedBuild,
@@ -56,10 +74,10 @@ class UpdatePromptDecision {
     required bool busy,
     Duration throttle = throttle,
   }) {
-    if (!mayCheckNow(
+    if (busy) return false;
+    if (!_throttleElapsed(
       lastPromptAt: lastPromptAt,
       now: now,
-      busy: busy,
       throttle: throttle,
     )) {
       return false;
@@ -97,8 +115,8 @@ class UpdatePromptDecision {
   /// 321 having been announced yesterday.
   ///
   /// In practice a new version cannot even be discovered inside the window,
-  /// because [mayCheckNow] gates the manifest fetch on the dialog's global
-  /// throttle. This is the floor under that, not a second cadence.
+  /// because [mayCheckNow] gates the manifest fetch on its own 24-hour clock.
+  /// This is the floor under that, not a second cadence.
   static bool shouldNotify({
     required AppRelease? release,
     required int installedBuild,

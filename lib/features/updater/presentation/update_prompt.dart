@@ -44,8 +44,14 @@ class UpdatePrompt {
   }) async {
     final now = DateTime.now();
 
+    // §3's first rule, and it is about REQUESTS: "check at most once every 24
+    // hours... doing it on every cold start costs a Myanmar user data for
+    // nothing." The clock is the last successful READ of the manifest, not the
+    // last time a dialog went up — those are different facts, and using the
+    // shown-time here meant a user with nothing to update recorded nothing and
+    // re-fetched on every single resume.
     if (!UpdatePromptDecision.mayCheckNow(
-      lastPromptAt: await store.lastShownAt(),
+      lastCheckedAt: await store.lastCheckedAt(),
       now: now,
       busy: isBusy(ref),
     )) {
@@ -60,8 +66,18 @@ class UpdatePrompt {
     try {
       release = await checkService.fetchLatest();
     } catch (_) {
+      // Deliberately NOT recorded. The app still does not know what the latest
+      // release is, so the next resume should ask again rather than treat one
+      // bad moment as an answer good for a day.
       return;
     }
+
+    // Recorded the moment the server answers, and BEFORE anything is decided
+    // about it. "No update published" and "an update the user dismissed" are
+    // both answers, and both cost the same request — so both start the clock.
+    // Recording later, or only on some branches, is exactly how this ended up
+    // fetching on every resume the first time.
+    await store.recordChecked(now);
 
     // STEP 7, AND IT COMES FIRST. `min_supported` is the only thing that can
     // refuse to let someone keep using the app, so it is asked before any
