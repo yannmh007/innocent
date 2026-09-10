@@ -92,19 +92,48 @@ integer - `AppVersion.build` - and it already increments every release.
 
 ### `priority` — the server decides urgency, the client decides pixels
 
-Google Play's own model, worth copying because it is well tested:
+Google Play's own model, adapted. **PRIORITY IS PRESENTATION ONLY.** It decides
+which surfaces speak and how hard the dialog is to wave away by accident. It
+never decides whether the user may say no.
 
 | priority | meaning | this app's behaviour |
 |---|---|---|
-| 5 | critical | blocking dialog immediately, no dismiss |
-| 4 | important | banner now, blocking dialog after 3 days |
-| 3 | normal | banner; dialog once, dismissible |
-| 2 | minor | banner only |
-| 1 | silent | Settings only, no prompt |
+| 5 | critical | notification + dialog, marked; the barrier is not an answer |
+| 4 | important | notification + dialog, marked; the barrier is not an answer |
+| 3 | normal | notification + dialog, dismissible by tapping outside (the default) |
+| 2 | minor | notification only, no dialog |
+| 1 | silent | Settings only; no dialog, and a notification already posted is withdrawn |
+
+**Every level keeps "Not now"**, and the dismissal it records is the per-version
+one from step 5 — priority cannot revive a version the user has already
+declined. At 4 and 5 the only difference is that a stray tap on the barrier no
+longer counts as an answer: harder to MISS, exactly as easy to refuse.
+
+An absent priority, or one outside 1..5, is treated as 3. A server saying
+something unexpected must not change how the app behaves.
 
 **The whole point: you change urgency from SQL, with no rebuild.** Ship a build
-at priority 2, discover a bad bug, raise it to 5 - everyone still on the old
-version sees a blocking dialog on next launch.
+at priority 2, discover a bad bug, raise it to 5 — everyone still on the old
+version gets the loud prompt on their next check.
+
+#### Why priority cannot block, and `min_supported` alone can
+
+An earlier draft of this plan had priority 5 mean "blocking dialog, no dismiss"
+and priority 4 mean "blocking after 3 days". **That was wrong, and the code
+deliberately does not do it.**
+
+ONE COLUMN, ONE JOB. `priority` is the dial you reach for often — every release
+sets it, it is edited by hand in the SQL editor, and a wrong value there is a
+typo, not an emergency. `min_supported` is the one you touch almost never, and
+touching it is a deliberate act with a deliberate consequence. If urgency could
+also block, then a slipped keystroke in the field that gets edited every single
+release would lock every install out of the app. Keeping the two apart means the
+dangerous power lives only on the column nobody edits casually — and that
+column carries four separate guards before it will refuse anyone (see below).
+
+The cost is that a critical release cannot forbid use by itself. That is the
+right trade: `min_supported` is right there when a build genuinely must stop
+running, and it is one number away.
 
 ### `min_supported` — the emergency brake
 
@@ -115,6 +144,44 @@ Below it, the app shows an unskippable screen.
 
 **Use it almost never.** A forced update on a metered connection with no Wi-Fi
 is an app that simply stops working for that person.
+
+#### The four guards, and why each one exists
+
+The client is written as four ways to say no and one way to say yes. It blocks
+ONLY when all four are satisfied; every uncertainty resolves to "not blocked".
+
+1. **The manifest arrived and parsed.** No network, a timeout, a 500, a
+   malformed row, a column the server rejected — none of those is evidence
+   about whether this build may run, and treating them as evidence would let a
+   flaky connection brick the app. A `min_supported` that is not an integer is
+   dropped rather than coerced: `'999'` must never become `999`, or a typo
+   becomes a lockout.
+2. **A minimum is actually set.** Null, `0` and negatives all mean "no
+   minimum". `0` is this column's default, so the overwhelmingly common row
+   says exactly that.
+3. **The installed build is below it.** `installed >= min_supported` is every
+   healthy install, and the boundary is inclusive.
+4. **There is somewhere to go.** The published `version_code` must be at or
+   above the minimum AND that release must be genuinely downloadable — a real
+   `https` `apk_url` and a well-formed `apk_sha256`. Raise `min_supported` past
+   the release you have actually published and the app would otherwise demand
+   an update that does not exist, permanently. A brake with no exit is not a
+   brake; it is a wall.
+
+And the screen lets go by itself: it re-reads the manifest on resume and on a
+Check now button, and releases on any answer that is not a clear current block
+— **a failed fetch included**. Being wrong in that direction costs one
+unenforced update. Being wrong in the other costs someone their app, with no
+way to reach the thing that would fix it.
+
+Two consequences worth knowing before you use it:
+
+* **It engages within 24h, not instantly.** The block is read from the same
+  once-a-day manifest check everything else uses; fetching on every resume
+  would cost every user data for a thing that almost never happens. Raise
+  `priority` to 5 at the same time for the immediate loud prompt.
+* **Turning off the network releases the screen**, by design — see the failed
+  fetch above. It re-blocks on the next successful check.
 
 ---
 
@@ -149,16 +216,19 @@ risk.
 ## 4. THE THREE SURFACES
 
 ### A. Notification — quiet
-Only at priority ≥ 3, only once per version, low importance channel so it does
-not buzz. Tapping opens the update screen. This is the one your users will
-actually see, because they are not in the app when you release.
+Only at priority ≥ 2, only once per version (and at most once per 24h for the
+same version), low importance channel so it does not buzz. Never for a version
+the user has dismissed. Tapping opens the update screen. This is the one your
+users will actually see, because they are not in the app when you release.
 
 ### B. Dialog — on resume, on a list screen
 Title, one line of what changed (`notes_mm` from the server), the size, two
-buttons: **Update** and **Not now**. At priority 5 or below `min_supported`,
-only **Update**.
+buttons: **Update** and **Not now** — at every priority. Below `min_supported`
+there is no dialog at all: that case is the blocking screen, which has only
+**Update** and cannot be left.
 
-Never over the player. Never twice for the same version unless priority rose.
+Never over the player. Never twice for the same version: a dismissal is an
+answer about that build, and no priority overrides it.
 
 ### C. Settings → App update — always available
 The answer to *"what if they dismissed it?"* Shows current version, latest

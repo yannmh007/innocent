@@ -153,6 +153,10 @@ class AppStrings {
   String get updateNow => _s('updateNow');
   String get updateNotNow => _s('updateNotNow');
 
+  // v1.64.9 — min_supported, the emergency brake (docs/updater_plan.md step 7)
+  String get updateRequired => _s('updateRequired');
+  String get updateRequiredBody => _s('updateRequiredBody');
+
   // v1.3 Downloader additions
   String get downloaderSavedFiles => _s('downloaderSavedFiles');
   String get downloaderShare => _s('downloaderShare');
@@ -2334,6 +2338,13 @@ class AppStrings {
     // Not "Cancel" and not "Later": this answer is remembered for this
     // version and only this version, and "Not now" says that honestly.
     'updateNotNow': 'Not now',
+    // The only screen in the app the user cannot leave. It says what happened
+    // and what fixes it, and it does not apologise or explain itself twice —
+    // someone reading this is already blocked and wants the button.
+    'updateRequired': 'Update required',
+    'updateRequiredBody':
+        'This version of Innocent can no longer be used. Install the update '
+            'below to carry on.',
   };
 
   static const Map<String, String> _my = <String, String>{
@@ -3398,6 +3409,10 @@ class AppStrings {
         'ဤအပ်ဒိတ်ကို သွင်းယူ၍ မရပါ။ support ကို ဆက်သွယ်ပါ။',
     'updateNow': 'အပ်ဒိတ်လုပ်မည်',
     'updateNotNow': 'အခု မလုပ်သေးပါ',
+    'updateRequired': 'အပ်ဒိတ် လုပ်ရန် လိုအပ်ပါသည်',
+    'updateRequiredBody':
+        'ဤဗားရှင်းကို ဆက်လက်အသုံးပြု၍ မရတော့ပါ။ ဆက်လက်အသုံးပြုရန် '
+            'အောက်ပါ အပ်ဒိတ်ကို ထည့်သွင်းပါ။',
   };
 
   static const Map<String, String> _th = <String, String>{
@@ -4460,6 +4475,9 @@ class AppStrings {
         'ติดตั้งอัปเดตนี้ไม่ได้ กรุณาติดต่อฝ่ายสนับสนุน',
     'updateNow': 'อัปเดต',
     'updateNotNow': 'ไว้ก่อน',
+    'updateRequired': 'ต้องอัปเดต',
+    'updateRequiredBody':
+        'เวอร์ชันนี้ใช้งานต่อไม่ได้แล้ว ติดตั้งอัปเดตด้านล่างเพื่อใช้งานต่อ',
   };
 }
 

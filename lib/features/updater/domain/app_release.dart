@@ -17,6 +17,8 @@ class AppRelease {
     this.apkUrl,
     this.apkSha256,
     this.apkBytes,
+    this.minSupported,
+    this.priority,
     this.notesEn,
     this.notesMm,
     this.releasedAt,
@@ -44,6 +46,24 @@ class AppRelease {
   /// Download size. Null until an APK is actually published.
   final int? apkBytes;
 
+  /// §2's emergency brake: below this build, the app must not keep running.
+  ///
+  /// NULLABLE HERE THOUGH `not null default 0` IN THE MIGRATION, and that is
+  /// the whole safety design. Null means "the server did not tell us" — an
+  /// older schema, a column that failed to parse, a row read by a build that
+  /// asked for a column that is not there. Every one of those must read as
+  /// "no minimum", never as "block". See [UpdatePromptDecision.isBlocked],
+  /// which is the only thing allowed to act on this.
+  final int? minSupported;
+
+  /// §2's urgency dial, 1..5. Null when the server did not say.
+  ///
+  /// Changes how loudly the prompt speaks and NOTHING else. It cannot block,
+  /// cannot remove "Not now", and cannot make a prompt un-dismissible; only
+  /// [minSupported] can do that, and it is deliberately a separate column
+  /// answering a separate question.
+  final int? priority;
+
   final String? notesEn;
   final String? notesMm;
   final DateTime? releasedAt;
@@ -62,6 +82,12 @@ class AppRelease {
     final released = json['released_at'];
     final url = json['apk_url'];
     final sha = json['apk_sha256'];
+    // `is int` and nothing else. A string '319', a double, a null or a missing
+    // key all become null, which reads as "no minimum set" — the safe answer.
+    // Coercing here (int.tryParse on a string, say) would be a way for a typo
+    // in the SQL editor to lock every install out of the app.
+    final min = json['min_supported'];
+    final prio = json['priority'];
 
     return AppRelease(
       versionName: name,
@@ -71,6 +97,8 @@ class AppRelease {
           ? sha.trim().toLowerCase()
           : null,
       apkBytes: bytes is int ? bytes : null,
+      minSupported: min is int ? min : null,
+      priority: prio is int ? prio : null,
       notesEn: json['notes_en'] is String ? json['notes_en'] as String : null,
       notesMm: json['notes_mm'] is String ? json['notes_mm'] as String : null,
       releasedAt: released is String ? DateTime.tryParse(released) : null,

@@ -15,6 +15,7 @@ import '../data/update_prompt_store.dart';
 import '../domain/app_release.dart';
 import '../domain/update_prompt_decision.dart';
 import 'app_update_screen.dart';
+import 'blocking_update_screen.dart';
 
 /// The proactive update prompt. Step 5 of `docs/updater_plan.md` §4B.
 ///
@@ -62,6 +63,29 @@ class UpdatePrompt {
       return;
     }
 
+    // STEP 7, AND IT COMES FIRST. `min_supported` is the only thing that can
+    // refuse to let someone keep using the app, so it is asked before any
+    // question about prompts, throttles or dismissals — none of which apply
+    // to it. [UpdatePromptDecision.isBlocked] is four ways to say no and one
+    // way to say yes; everything uncertain, this fetch having failed
+    // included, has already resolved to "not blocked" by the time it returns.
+    if (UpdatePromptDecision.isBlocked(
+      release: release,
+      installedBuild: AppVersion.build,
+    )) {
+      // The shade notice is redundant against a screen the user cannot leave,
+      // and leaving it up would be a second way to say the same thing.
+      await notifications.cancel();
+      if (!context.mounted) return;
+      await BlockingUpdateScreen.show(context, release!);
+      return;
+    }
+
+    // §2's priority dial, and it reaches only this far: which surfaces speak.
+    // It cannot block, cannot remove "Not now", and cannot revive a dismissed
+    // version — the tests hold all three.
+    final style = UpdatePromptDecision.promptStyleFor(release);
+
     // Re-read: the fetch took time, and the state may have been consumed by
     // another resume that raced this one, or the user may have started a
     // download while the manifest was in flight.
@@ -76,16 +100,28 @@ class UpdatePrompt {
     // still ends up with the one thing §4A says they will actually see,
     // instead of a dialog that appeared behind them and was never read.
     if (context.mounted) {
-      await _maybeNotify(
-        context,
-        release: release,
-        dismissedVersionCode: dismissed,
-        now: checkedAt,
-        busy: busyNow,
-        store: store,
-        notifications: notifications,
-      );
+      if (style.showsNotification) {
+        await _maybeNotify(
+          context,
+          release: release,
+          dismissedVersionCode: dismissed,
+          now: checkedAt,
+          busy: busyNow,
+          store: store,
+          notifications: notifications,
+        );
+      } else {
+        // Priority 1 is "Settings only, no prompt", and that has to apply to
+        // a notice already in the shade. Lowering the priority of a release
+        // is how someone takes back a shout; if the notice survived it, the
+        // dial would only ever turn one way.
+        await notifications.cancel();
+      }
     }
+
+    // §2 priority 1 ("Settings only, no prompt") and 2 ("banner only") stop
+    // here. The App update screen still shows the release, as it always does.
+    if (!style.showsDialog) return;
 
     if (!UpdatePromptDecision.shouldPrompt(
       release: release,
@@ -99,7 +135,7 @@ class UpdatePrompt {
     }
 
     if (!context.mounted) return;
-    await _show(context, release!, store, notifications);
+    await _show(context, release!, store, notifications, style);
   }
 
   /// Post, refresh or withdraw the shade notice for [release].
@@ -190,6 +226,7 @@ class UpdatePrompt {
     AppRelease release,
     UpdatePromptStore store,
     UpdateNotificationService notifications,
+    UpdatePromptStyle style,
   ) async {
     final s = AppStrings.of(context);
     final notes = release.notesFor(
@@ -204,11 +241,30 @@ class UpdatePrompt {
 
     final update = await showDialog<bool>(
       context: context,
+      // §2's priority, and the ONLY behavioural difference it is allowed to
+      // make. At 4-5 a stray tap on the barrier no longer counts as an
+      // answer — the user has to choose. "Not now" is still right there, and
+      // still records the same per-version dismissal it always did. Priority
+      // makes a prompt harder to MISS, never harder to refuse.
+      barrierDismissible: style.barrierDismissible,
       builder: (dctx) => AlertDialog(
         backgroundColor: AppColors.darkSurface,
-        title: Text(
-          s.updateAvailable,
-          style: const TextStyle(color: Colors.white, fontSize: 17),
+        title: Row(
+          children: [
+            // The other half of "harder to miss": at 4-5 the dialog carries a
+            // mark. Decoration, and deliberately only decoration.
+            if (style == UpdatePromptStyle.urgent) ...[
+              const Icon(Icons.priority_high,
+                  color: Colors.orangeAccent, size: 20),
+              const SizedBox(width: 8),
+            ],
+            Expanded(
+              child: Text(
+                s.updateAvailable,
+                style: const TextStyle(color: Colors.white, fontSize: 17),
+              ),
+            ),
+          ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
