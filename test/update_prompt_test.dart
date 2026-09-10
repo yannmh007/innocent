@@ -188,7 +188,7 @@ void main() {
     test('lets a first check through', () {
       expect(
         UpdatePromptDecision.mayCheckNow(
-          lastPromptAt: null,
+          lastCheckedAt: null,
           now: now,
           busy: false,
         ),
@@ -201,7 +201,7 @@ void main() {
       // requests.
       expect(
         UpdatePromptDecision.mayCheckNow(
-          lastPromptAt: now.subtract(const Duration(hours: 1)),
+          lastCheckedAt: now.subtract(const Duration(hours: 1)),
           now: now,
           busy: false,
         ),
@@ -212,9 +212,77 @@ void main() {
     test('blocks while busy', () {
       expect(
         UpdatePromptDecision.mayCheckNow(
-          lastPromptAt: null,
+          lastCheckedAt: null,
           now: now,
           busy: true,
+        ),
+        isFalse,
+      );
+    });
+  });
+
+  group('two clocks: requests and interruptions', () {
+    // THE BUG THIS GROUP EXISTS FOR. mayCheckNow and shouldPrompt used to read
+    // the same stored value — the time a dialog was last SHOWN. That value is
+    // written only when a dialog actually appears, so the one state almost
+    // every user is in almost all of the time (up to date, nothing to show)
+    // never wrote anything, and the app re-fetched the manifest on every
+    // single resume. §3's first rule, broken by the state it most applies to.
+
+    test('a recent CHECK stops the fetch even though no dialog ever showed',
+        () {
+      // The regression, stated directly: nothing shown, so lastShownAt is
+      // null; but the server answered an hour ago, so there is nothing to ask.
+      expect(
+        UpdatePromptDecision.mayCheckNow(
+          lastCheckedAt: now.subtract(const Duration(hours: 1)),
+          now: now,
+          busy: false,
+        ),
+        isFalse,
+        reason: 'an answer an hour old is still an answer',
+      );
+    });
+
+    test('a recent PROMPT does not stop the fetch', () {
+      // The other direction, and it is not symmetric. Having interrupted
+      // someone yesterday says nothing about whether the manifest is stale.
+      expect(
+        UpdatePromptDecision.mayCheckNow(
+          lastCheckedAt: null,
+          now: now,
+          busy: false,
+        ),
+        isTrue,
+      );
+    });
+
+    test('a recent CHECK does not suppress a dialog that is due', () {
+      // Reading the manifest is not interrupting anyone. A check that just
+      // happened must still be allowed to produce the day's one prompt.
+      expect(
+        UpdatePromptDecision.shouldPrompt(
+          release: release(321),
+          installedBuild: installed,
+          dismissedVersionCode: null,
+          lastPromptAt: null,
+          now: now,
+          busy: false,
+        ),
+        isTrue,
+      );
+    });
+
+    test('a recent PROMPT still suppresses the next one', () {
+      // §3's cadence as the user feels it, unchanged by the split.
+      expect(
+        UpdatePromptDecision.shouldPrompt(
+          release: release(321),
+          installedBuild: installed,
+          dismissedVersionCode: null,
+          lastPromptAt: now.subtract(const Duration(hours: 2)),
+          now: now,
+          busy: false,
         ),
         isFalse,
       );
@@ -264,6 +332,53 @@ void main() {
           isFalse);
       expect(shouldPrompt(forRelease: release(322), dismissed: dismissed),
           isTrue);
+    });
+
+    test('the check clock round-trips and is separate from the shown one',
+        () async {
+      final checked = DateTime(2026, 9, 10, 7, 15, 30);
+      await store.recordChecked(checked);
+      expect(await store.lastCheckedAt(), checked);
+      // Recording a check must not invent a prompt that never happened.
+      expect(await store.lastShownAt(), isNull);
+
+      await store.recordShown(now);
+      expect(await store.lastCheckedAt(), checked,
+          reason: 'showing a dialog must not move the check clock');
+    });
+
+    test('a stored check clock gates the fetch end to end', () async {
+      // Nothing checked yet: ask.
+      expect(
+        UpdatePromptDecision.mayCheckNow(
+          lastCheckedAt: await store.lastCheckedAt(),
+          now: now,
+          busy: false,
+        ),
+        isTrue,
+      );
+
+      await store.recordChecked(now.subtract(const Duration(hours: 3)));
+      expect(
+        UpdatePromptDecision.mayCheckNow(
+          lastCheckedAt: await store.lastCheckedAt(),
+          now: now,
+          busy: false,
+        ),
+        isFalse,
+        reason: 'checked three hours ago — nothing to ask',
+      );
+
+      await store.recordChecked(now.subtract(const Duration(hours: 30)));
+      expect(
+        UpdatePromptDecision.mayCheckNow(
+          lastCheckedAt: await store.lastCheckedAt(),
+          now: now,
+          busy: false,
+        ),
+        isTrue,
+        reason: 'a day and a bit old — ask again',
+      );
     });
 
     test('a stored timestamp drives the throttle end to end', () async {
