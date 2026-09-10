@@ -38,13 +38,11 @@ android/app/build/
 # harder to spot in the noise. None of them is authored by hand; all of them
 # are reproducible from files that ARE committed.
 #
-# pubspec.lock is the one with a trade-off. Dart's advice for an APPLICATION
-# is to commit it, so every build resolves the same dependency versions. This
-# repo has never committed it — CI has always resolved fresh — so ignoring it
-# changes nothing today. If reproducible builds ever matter more than the
-# quiet status, delete this line and commit the lock; the two cannot both be
-# true.
-pubspec.lock
+# pubspec.lock is deliberately NOT in this list. It is generated too, but it
+# is the one generated file worth keeping: Dart's advice for an APPLICATION is
+# to commit the lock so every build — yours, a new clone's, CI's — resolves
+# the same dependency versions instead of quietly drifting to whatever was
+# published that morning. It is committed. Do not add it here.
 
 # The l10n generator's output. `lib/l10n/*.arb` are the SOURCES and stay
 # committed; these .dart files are produced from them by `flutter pub get`
