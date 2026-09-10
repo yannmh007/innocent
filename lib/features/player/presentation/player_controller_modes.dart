@@ -1,3 +1,6 @@
+// PlayerController is split into `part` extensions, and an extension is not
+// an instance member of the class, so every `state` access trips these two.
+// ignore_for_file: invalid_use_of_protected_member, invalid_use_of_visible_for_testing_member
 part of 'player_provider.dart';
 
 extension PlayerModes on PlayerController {
