@@ -185,7 +185,7 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppStrings.of(context).failedPickFiles + ': $e')),
+        SnackBar(content: Text('${AppStrings.of(context).failedPickFiles}: $e')),
       );
     } finally {
       if (mounted) setState(() => _picking = false);
@@ -256,7 +256,7 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
         backgroundColor: AppColors.darkSurface,
         title: Row(
           children: [
-            Icon(Icons.phone_android, color: AppColors.accentBlue, size: 22),
+            const Icon(Icons.phone_android, color: AppColors.accentBlue, size: 22),
             const SizedBox(width: 10),
             Expanded(
               child: Text(req.deviceName,
@@ -420,7 +420,7 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
       builder: (dctx) => AlertDialog(
         backgroundColor: AppColors.darkSurface,
         title: Text(AppStrings.of(context).howTransferWorksTitle,
-            style: TextStyle(color: Colors.white)),
+            style: const TextStyle(color: Colors.white)),
         content: SingleChildScrollView(
           child: Text(AppStrings.of(context).howTransferWorksBody,
             style: const TextStyle(color: Colors.white70, height: 1.55),
@@ -430,7 +430,7 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
           TextButton(
             onPressed: () => Navigator.of(dctx).pop(),
             child: Text(AppStrings.of(context).ok,
-                style: TextStyle(color: AppColors.accentBlue)),
+                style: const TextStyle(color: AppColors.accentBlue)),
           ),
         ],
       ),
@@ -603,7 +603,7 @@ class _PreparePane extends StatelessWidget {
           // needs to be visible and changeable before the share starts.
           Row(
             children: [
-              Icon(Icons.smartphone, size: 16, color: AppColors.white55),
+              const Icon(Icons.smartphone, size: 16, color: AppColors.white55),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -723,7 +723,7 @@ class _PreparePane extends StatelessWidget {
                                   const SizedBox(height: 2),
                                   Text(
                                     _fmtBytes(f.sizeBytes),
-                                    style: TextStyle(
+                                    style: const TextStyle(
                                         color: AppColors.white50,
                                         fontSize: 11),
                                   ),
@@ -775,7 +775,7 @@ class _PreparePane extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.lightbulb_outline,
+                  const Icon(Icons.lightbulb_outline,
                       size: 14, color: AppColors.warning),
                   const SizedBox(width: 8),
                   Expanded(
@@ -795,7 +795,7 @@ class _PreparePane extends StatelessWidget {
             onChanged: onToggleApproval,
             dense: true,
             contentPadding: EdgeInsets.zero,
-            secondary: Icon(Icons.verified_user_outlined,
+            secondary: const Icon(Icons.verified_user_outlined,
                 color: AppColors.white50, size: 20),
             title: Text(s.askBeforeSending,
                 style: const TextStyle(color: Colors.white, fontSize: 13.5)),
@@ -809,7 +809,7 @@ class _PreparePane extends StatelessWidget {
             onChanged: onTogglePin,
             dense: true,
             contentPadding: EdgeInsets.zero,
-            secondary: Icon(Icons.pin_outlined,
+            secondary: const Icon(Icons.pin_outlined,
                 color: AppColors.white50, size: 20),
             title: Text(s.protectWithPin,
                 style: const TextStyle(color: Colors.white, fontSize: 13.5)),
@@ -874,12 +874,12 @@ class _PreparePane extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.folder_open_outlined,
+            const Icon(Icons.folder_open_outlined,
                 size: 48, color: AppColors.white50),
             const SizedBox(height: 16),
             Text(AppStrings.of(context).noFilesHint,
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                   color: AppColors.white70, fontSize: 13, height: 1.5),
             ),
           ],
@@ -937,7 +937,7 @@ class _RunningPane extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(s.shareIsLive,
-            style: TextStyle(
+            style: const TextStyle(
                 color: Colors.white,
                 fontSize: 22,
                 fontWeight: FontWeight.w700),
@@ -946,7 +946,7 @@ class _RunningPane extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             '${state.deviceName ?? s.thisPhoneName} • ${s.tapDeviceToConnect}',
-            style: TextStyle(
+            style: const TextStyle(
                 color: AppColors.white70, fontSize: 13, height: 1.4),
             textAlign: TextAlign.center,
           ),
@@ -979,7 +979,7 @@ class _RunningPane extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(s.shareScanHint,
-            style: TextStyle(
+            style: const TextStyle(
                 color: AppColors.white55, fontSize: 11.5, height: 1.4),
             textAlign: TextAlign.center,
           ),
@@ -1011,7 +1011,7 @@ class _RunningPane extends StatelessWidget {
                       ..hideCurrentSnackBar()
                       ..showSnackBar(SnackBar(
                         content: Text(AppStrings.of(context).urlCopied),
-                        duration: Duration(seconds: 1),
+                        duration: const Duration(seconds: 1),
                         behavior: SnackBarBehavior.floating,
                       ));
                   },
@@ -1083,7 +1083,7 @@ class _RunningPane extends StatelessWidget {
             '${_fmtBytes(state.bytesServed)} sent • '
             '${state.files.length} file${state.files.length == 1 ? '' : 's'} '
             '(${_fmtBytes(state.totalBytes)})',
-            style: TextStyle(color: AppColors.white55, fontSize: 12),
+            style: const TextStyle(color: AppColors.white55, fontSize: 12),
           ),
           const SizedBox(height: 14),
           _linkModeCard(context, s, direct),
@@ -1101,7 +1101,7 @@ class _RunningPane extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  Icon(Icons.pin_outlined,
+                  const Icon(Icons.pin_outlined,
                       color: AppColors.accentBlue, size: 18),
                   const SizedBox(width: 10),
                   Text('${s.pinLabel}: ',
@@ -1109,7 +1109,7 @@ class _RunningPane extends StatelessWidget {
                           color: AppColors.white70, fontSize: 12.5)),
                   SelectableText(
                     state.pin,
-                    style: TextStyle(
+                    style: const TextStyle(
                         color: AppColors.accentBlue,
                         fontSize: 22,
                         letterSpacing: 6,
@@ -1176,12 +1176,12 @@ class _RunningPane extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.pause_circle_outline,
+                const Icon(Icons.pause_circle_outline,
                     color: AppColors.warning, size: 15),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(s.sharePaused,
-                      style: TextStyle(
+                      style: const TextStyle(
                           color: AppColors.warning,
                           fontSize: 11.5,
                           height: 1.4)),
@@ -1288,7 +1288,7 @@ class _RunningPane extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.info_outline,
+                const Icon(Icons.info_outline,
                     color: AppColors.warning, size: 15),
                 const SizedBox(width: 8),
                 Expanded(
@@ -1427,7 +1427,7 @@ class _RunningPane extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 2),
               child: Row(
                 children: [
-                  Icon(Icons.phone_android,
+                  const Icon(Icons.phone_android,
                       size: 15, color: AppColors.success),
                   const SizedBox(width: 8),
                   Expanded(
@@ -1627,7 +1627,7 @@ class _ReceivePaneState extends ConsumerState<_ReceivePane> {
         children: [
           Row(
             children: [
-              Icon(Icons.pin_outlined, color: AppColors.accentBlue, size: 20),
+              const Icon(Icons.pin_outlined, color: AppColors.accentBlue, size: 20),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(device.name,
@@ -1749,7 +1749,7 @@ class _ReceivePaneState extends ConsumerState<_ReceivePane> {
         children: [
           Row(
             children: [
-              Icon(Icons.bolt, color: AppColors.success, size: 20),
+              const Icon(Icons.bolt, color: AppColors.success, size: 20),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -1920,7 +1920,7 @@ class _ReceivePaneState extends ConsumerState<_ReceivePane> {
         children: [
           Row(
             children: [
-              Icon(Icons.wifi_tethering,
+              const Icon(Icons.wifi_tethering,
                   color: AppColors.accentBlue, size: 20),
               const SizedBox(width: 8),
               Expanded(
@@ -1987,7 +1987,7 @@ class _ReceivePaneState extends ConsumerState<_ReceivePane> {
                         radius: 16,
                         backgroundColor:
                             AppColors.accentBlue.withOpacity(0.20),
-                        child: Icon(Icons.phone_android,
+                        child: const Icon(Icons.phone_android,
                             size: 17, color: AppColors.accentBlue),
                       ),
                       const SizedBox(width: 12),
@@ -2020,7 +2020,7 @@ class _ReceivePaneState extends ConsumerState<_ReceivePane> {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       else
-                        Icon(Icons.chevron_right,
+                        const Icon(Icons.chevron_right,
                             color: AppColors.white50, size: 20),
                     ],
                   ),
@@ -2119,11 +2119,11 @@ class _ReceivePaneState extends ConsumerState<_ReceivePane> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          const Row(
             children: [
               Icon(Icons.history, color: AppColors.accentBlue, size: 20),
-              const SizedBox(width: 8),
-              const Expanded(
+              SizedBox(width: 8),
+              Expanded(
                 child: Text(
                   'Resume unfinished transfer',
                   style: TextStyle(
@@ -2233,7 +2233,7 @@ class _ReceivePaneState extends ConsumerState<_ReceivePane> {
               if (!allDone && speed > 0)
                 Text(
                   '${_fmtRate(speed)}${eta != null ? ' • ${_fmtEta(eta)}' : ''}',
-                  style: TextStyle(
+                  style: const TextStyle(
                       color: AppColors.accentBlue,
                       fontSize: 11.5,
                       fontWeight: FontWeight.w600),
@@ -2244,12 +2244,12 @@ class _ReceivePaneState extends ConsumerState<_ReceivePane> {
             const SizedBox(height: 8),
             Row(
               children: [
-                Icon(Icons.pause_circle_outline,
+                const Icon(Icons.pause_circle_outline,
                     color: AppColors.warning, size: 15),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(s.pausedBySender,
-                      style: TextStyle(
+                      style: const TextStyle(
                           color: AppColors.warning, fontSize: 11.5)),
                 ),
               ],
@@ -2259,12 +2259,12 @@ class _ReceivePaneState extends ConsumerState<_ReceivePane> {
             const SizedBox(height: 8),
             Row(
               children: [
-                Icon(Icons.pause_circle_outline,
+                const Icon(Icons.pause_circle_outline,
                     color: AppColors.warning, size: 15),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(s.receivePaused,
-                      style: TextStyle(
+                      style: const TextStyle(
                           color: AppColors.warning,
                           fontSize: 11.5,
                           height: 1.4)),
@@ -2422,7 +2422,7 @@ class _ReceivePaneState extends ConsumerState<_ReceivePane> {
     }
     if (pr != null && pr.error == null && pr.total > 0 && !pr.done) {
       if (pr.pausedBySender) {
-        return Icon(Icons.pause_circle_outline,
+        return const Icon(Icons.pause_circle_outline,
             color: AppColors.warning, size: 20);
       }
       return Text('${(pr.fraction * 100).round()}%',

@@ -28,7 +28,7 @@ class PlaylistsScreen extends ConsumerWidget {
       builder: (dialogCtx) => AlertDialog(
         backgroundColor: AppColors.darkSurface,
         title: Text(AppStrings.of(context).newPlaylistTitle,
-            style: TextStyle(color: Colors.white)),
+            style: const TextStyle(color: Colors.white)),
         content: TextField(
           controller: controller,
           autofocus: true,
@@ -42,13 +42,13 @@ class PlaylistsScreen extends ConsumerWidget {
           TextButton(
             onPressed: () => Navigator.of(dialogCtx).pop(),
             child: Text(AppStrings.of(context).cancel,
-                style: TextStyle(color: Colors.white70)),
+                style: const TextStyle(color: Colors.white70)),
           ),
           TextButton(
             onPressed: () =>
                 Navigator.of(dialogCtx).pop(controller.text.trim()),
             child: Text(AppStrings.of(context).create,
-                style: TextStyle(color: AppColors.accentBlue)),
+                style: const TextStyle(color: AppColors.accentBlue)),
           ),
         ],
       ),
@@ -74,7 +74,7 @@ class PlaylistsScreen extends ConsumerWidget {
       builder: (dialogCtx) => AlertDialog(
         backgroundColor: AppColors.darkSurface,
         title: Text(AppStrings.of(context).renamePlaylist,
-            style: TextStyle(color: Colors.white)),
+            style: const TextStyle(color: Colors.white)),
         content: TextField(
           controller: controller,
           autofocus: true,
@@ -88,13 +88,13 @@ class PlaylistsScreen extends ConsumerWidget {
           TextButton(
             onPressed: () => Navigator.of(dialogCtx).pop(),
             child: Text(AppStrings.of(context).cancel,
-                style: TextStyle(color: Colors.white70)),
+                style: const TextStyle(color: Colors.white70)),
           ),
           TextButton(
             onPressed: () =>
                 Navigator.of(dialogCtx).pop(controller.text.trim()),
             child: Text(AppStrings.of(context).rename,
-                style: TextStyle(color: AppColors.accentBlue)),
+                style: const TextStyle(color: AppColors.accentBlue)),
           ),
         ],
       ),
@@ -186,7 +186,7 @@ class PlaylistsScreen extends ConsumerWidget {
                   color: Colors.redAccent, size: 24),
             ),
             title: Text(AppStrings.of(context).favourites,
-                style: TextStyle(color: Colors.white, fontSize: 15)),
+                style: const TextStyle(color: Colors.white, fontSize: 15)),
             subtitle: Text(
               '$favCount ${favCount == 1 ? "video" : "videos"}',
               style: const TextStyle(
@@ -228,12 +228,12 @@ class PlaylistsScreen extends ConsumerWidget {
                         TextButton(
                           onPressed: () => Navigator.of(dctx).pop(false),
                           child: Text(AppStrings.of(context).cancel,
-                              style: TextStyle(color: Colors.white70)),
+                              style: const TextStyle(color: Colors.white70)),
                         ),
                         TextButton(
                           onPressed: () => Navigator.of(dctx).pop(true),
                           child: Text(AppStrings.of(context).delete,
-                              style: TextStyle(color: AppColors.error)),
+                              style: const TextStyle(color: AppColors.error)),
                         ),
                       ],
                     ),
@@ -297,14 +297,14 @@ class PlaylistsScreen extends ConsumerWidget {
                                     onPressed: () =>
                                         Navigator.of(dctx).pop(false),
                                     child: Text(AppStrings.of(context).cancel,
-                                        style: TextStyle(
+                                        style: const TextStyle(
                                             color: Colors.white70)),
                                   ),
                                   TextButton(
                                     onPressed: () =>
                                         Navigator.of(dctx).pop(true),
                                     child: Text(AppStrings.of(context).delete,
-                                        style: TextStyle(
+                                        style: const TextStyle(
                                             color: AppColors.error)),
                                   ),
                                 ],
@@ -368,7 +368,7 @@ class PlaylistsScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 12),
                   Text(AppStrings.of(context).noCustomPlaylists,
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: AppColors.white50,
                       fontSize: 14,
                     ),
@@ -443,21 +443,21 @@ class PlaylistDetailScreen extends ConsumerWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.queue_music,
                       size: 64,
                       color: AppColors.white30,
                     ),
                     const SizedBox(height: 16),
                     Text(AppStrings.of(context).playlistEmpty,
-                      style: TextStyle(
+                      style: const TextStyle(
                           color: Colors.white, fontSize: 16),
                     ),
                     const SizedBox(height: 6),
                     Text(
                       'Tap ⋮ on a video and choose "Add to Playlist" → "${current.name}"',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: AppColors.white55,
                         fontSize: 13,
                         height: 1.4,

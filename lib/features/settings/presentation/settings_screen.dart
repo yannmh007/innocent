@@ -59,7 +59,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       // v1.61. Not localised on purpose: every line it shows is a raw Android
       // record in English, so three translations of the label around it would
       // be decoration. See SettingsDiagnosticsScreen.
-      _SettingsEntry(Icons.bug_report_outlined, 'Diagnostics'),
+      const _SettingsEntry(Icons.bug_report_outlined, 'Diagnostics'),
       // Phase 30: App Language uses translate icon (the "A" with arrow)
       _SettingsEntry(Icons.translate, s.settingsAppLanguage),
       // updater_plan.md step 2. NEVER HIDDEN, even when up to date - this is

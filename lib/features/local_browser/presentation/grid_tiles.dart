@@ -398,7 +398,7 @@ class VideoGridTile extends ConsumerWidget {
                             borderRadius: BorderRadius.circular(2),
                           ),
                           child: Text(AppStrings.of(context).newBadge,
-                            style: TextStyle(
+                            style: const TextStyle(
                               color: Colors.white,
                               fontSize: 9,
                               fontWeight: FontWeight.w700,

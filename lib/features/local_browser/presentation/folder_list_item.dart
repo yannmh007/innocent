@@ -292,7 +292,7 @@ class FolderListItem extends ConsumerWidget {
             _PropRow(label: 'Modified', value: modifiedStr),
             const SizedBox(height: 6),
             Text(AppStrings.of(context).path,
-              style: TextStyle(color: Colors.white54, fontSize: 11),
+              style: const TextStyle(color: Colors.white54, fontSize: 11),
             ),
             const SizedBox(height: 2),
             Text(
@@ -305,7 +305,7 @@ class FolderListItem extends ConsumerWidget {
           TextButton(
             onPressed: () => Navigator.of(dctx).pop(),
             child: Text(AppStrings.of(context).close,
-              style: TextStyle(color: AppColors.accentBlue),
+              style: const TextStyle(color: AppColors.accentBlue),
             ),
           ),
         ],

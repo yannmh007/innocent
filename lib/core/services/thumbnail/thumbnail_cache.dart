@@ -154,7 +154,7 @@ class ThumbnailCache {
   Future<Uint8List?> getAtTime(String videoPath, int seconds) async {
     if (seconds < 0) seconds = 0;
     final bucket = (seconds ~/ 5) * 5; // 5s granularity
-    final key = '${_cacheKey(videoPath)}_t${bucket}';
+    final key = '${_cacheKey(videoPath)}_t$bucket';
 
     // Memory cache hit
     if (_memoryCache.containsKey(key)) {

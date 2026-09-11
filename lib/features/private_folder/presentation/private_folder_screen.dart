@@ -458,7 +458,7 @@ class _PrivateFolderScreenState extends ConsumerState<PrivateFolderScreen>
     } catch (err) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppStrings.of(context).restoreFailed + ': $err')),
+          SnackBar(content: Text('${AppStrings.of(context).restoreFailed}: $err')),
         );
       }
       return;
@@ -2177,8 +2177,7 @@ class _PrivateFolderScreenState extends ConsumerState<PrivateFolderScreen>
                     if (!mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                         content: Text(
-                            AppStrings.of(context).shareFailed +
-                                ': ' + err.toString())));
+                            '${AppStrings.of(context).shareFailed}: $err')));
                   }
                 },
               ),

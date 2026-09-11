@@ -81,7 +81,7 @@ class StatisticsScreen extends ConsumerWidget {
             return ListView(
               children: [
                 const SizedBox(height: 8),
-                _SectionHeader('LIBRARY'),
+                const _SectionHeader('LIBRARY'),
                 _StatGrid(items: [
                   _StatItem(
                     icon: Icons.movie_outlined,
@@ -105,7 +105,7 @@ class StatisticsScreen extends ConsumerWidget {
                   ),
                 ]),
                 const SizedBox(height: 16),
-                _SectionHeader('YOUR ACTIVITY'),
+                const _SectionHeader('YOUR ACTIVITY'),
                 _StatGrid(items: [
                   _StatItem(
                     icon: Icons.history,
@@ -125,7 +125,7 @@ class StatisticsScreen extends ConsumerWidget {
                 ]),
                 if (topFolders.isNotEmpty) ...[
                   const SizedBox(height: 16),
-                  _SectionHeader('TOP FOLDERS'),
+                  const _SectionHeader('TOP FOLDERS'),
                   ...topFolders.map(
                     (f) => ListTile(
                       leading: const Icon(Icons.folder,
@@ -158,7 +158,7 @@ class StatisticsScreen extends ConsumerWidget {
                 ],
                 if (top5Watched.isNotEmpty) ...[
                   const SizedBox(height: 16),
-                  _SectionHeader('MOST WATCHED'),
+                  const _SectionHeader('MOST WATCHED'),
                   ...top5Watched.map(
                     (e) => ListTile(
                       leading: const Icon(Icons.replay,

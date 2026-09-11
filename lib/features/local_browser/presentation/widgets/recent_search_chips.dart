@@ -44,7 +44,7 @@ class RecentSearchChips extends ConsumerWidget {
                   minimumSize: const Size(0, 28),
                 ),
                 child: Text(AppStrings.of(context).clear,
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: AppColors.darkOnSurfaceMuted,
                     fontSize: 12,
                   ),

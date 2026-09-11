@@ -166,7 +166,9 @@ final myPremiumRequestsProvider =
   // Depends on the session so signing out empties it rather than showing the
   // previous account's requests.
   final signedIn = ref.watch(accountProvider).isSignedIn;
-  if (!signedIn) return Future<List<PremiumRequest>>.value(
+  if (!signedIn) {
+    return Future<List<PremiumRequest>>.value(
       const <PremiumRequest>[]);
+  }
   return ref.watch(accountRepositoryProvider).myRequests();
 });

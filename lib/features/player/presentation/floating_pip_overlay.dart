@@ -283,7 +283,7 @@ class _FloatingPipOverlayState extends ConsumerState<FloatingPipOverlay>
     return Positioned(
       left: pos.dx,
       top: pos.dy,
-      child: _PipBody(width: _w, height: _h),
+      child: const _PipBody(width: _w, height: _h),
     );
   }
 }

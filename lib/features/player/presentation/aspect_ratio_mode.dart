@@ -56,7 +56,7 @@ enum AspectRatioMode {
 
   /// Cycle to next aspect ratio mode
   AspectRatioMode get next {
-    final values = AspectRatioMode.values;
+    const values = AspectRatioMode.values;
     final nextIndex = (index + 1) % values.length;
     return values[nextIndex];
   }

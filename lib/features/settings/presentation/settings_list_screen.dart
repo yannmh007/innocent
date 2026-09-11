@@ -140,7 +140,7 @@ class SettingsListScreen extends ConsumerWidget {
             final raw = ref
                 .watch(extraSettingsProvider)
                 .getStr(StringSetting.scanExtensions);
-            final defaults = const [
+            const defaults = [
               '.mp4', '.mkv', '.avi', '.mov', '.webm'
             ];
             final selected =

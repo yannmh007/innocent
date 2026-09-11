@@ -223,7 +223,7 @@ class _SpeedTrack extends StatelessWidget {
               child: Container(
                 width: 16,
                 height: 16,
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   shape: BoxShape.circle,
                   color: AppColors.accentBlue,
                   boxShadow: [

@@ -99,7 +99,7 @@ class BookmarksSheet extends ConsumerWidget {
             if (bookmarks.isEmpty)
               const Padding(
                 padding: EdgeInsets.all(24),
-                child: const Text(
+                child: Text(
                   'No bookmarks for this video.\nTap ⋮ → Bookmark while playing.',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: Colors.white54, fontSize: 13),

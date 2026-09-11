@@ -2790,7 +2790,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                             icon: const Icon(Icons.refresh,
                                 color: Colors.white, size: 16),
                             label: Text(AppStrings.of(context).retry,
-                              style: TextStyle(color: Colors.white),
+                              style: const TextStyle(color: Colors.white),
                             ),
                             style: TextButton.styleFrom(
                               backgroundColor: Colors.white24,
@@ -2808,7 +2808,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                             icon: const Icon(Icons.arrow_back,
                                 color: Colors.white, size: 16),
                             label: Text(AppStrings.of(context).goBack,
-                              style: TextStyle(color: Colors.white),
+                              style: const TextStyle(color: Colors.white),
                             ),
                             style: TextButton.styleFrom(
                               padding: const EdgeInsets.symmetric(
@@ -3103,7 +3103,7 @@ String _stripExtension(String title) {
 /// Deliberately `final`, not `const`: a `const false` lets the analyzer fold
 /// the condition and report the button code as dead, which would add noise to
 /// the Analyzer tab that analysis_options.yaml works hard to keep readable.
-final bool _kShowFrameStepButtons = false;
+const bool _kShowFrameStepButtons = false;
 
 class _BottomControls extends ConsumerStatefulWidget {
   final Duration position;

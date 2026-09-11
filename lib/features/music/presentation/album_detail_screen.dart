@@ -125,7 +125,7 @@ class AlbumDetailScreen extends ConsumerWidget {
                                 const SizedBox(height: 4),
                                 Text(
                                   '${songs.length} Song${songs.length == 1 ? '' : 's'}',
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     color: AppColors.white60,
                                     fontSize: 13,
                                   ),

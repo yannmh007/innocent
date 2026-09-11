@@ -58,7 +58,7 @@ class _MusicScreenState extends ConsumerState<MusicScreen>
                 decoration: InputDecoration(
                   hintText: AppStrings.of(context).searchSongs,
                   hintStyle:
-                      TextStyle(color: AppColors.white50),
+                      const TextStyle(color: AppColors.white50),
                   border: InputBorder.none,
                 ),
               )
@@ -100,7 +100,7 @@ class _MusicScreenState extends ConsumerState<MusicScreen>
                       builder: (_) => AlertDialog(
                         backgroundColor: AppColors.darkSurface,
                         title: Text(s.resumePlaySettings,
-                            style: TextStyle(color: Colors.white)),
+                            style: const TextStyle(color: Colors.white)),
                         content: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -108,7 +108,7 @@ class _MusicScreenState extends ConsumerState<MusicScreen>
                               value: 0,
                               groupValue: 0,
                               title: Text(s.alwaysResume,
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                       color: Colors.white, fontSize: 14)),
                               activeColor: AppColors.primaryBlue,
                               onChanged: (_) => Navigator.pop(context),
@@ -117,7 +117,7 @@ class _MusicScreenState extends ConsumerState<MusicScreen>
                               value: 1,
                               groupValue: 0,
                               title: Text(s.askEveryTime,
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                       color: Colors.white, fontSize: 14)),
                               activeColor: AppColors.primaryBlue,
                               onChanged: (_) => Navigator.pop(context),
@@ -126,7 +126,7 @@ class _MusicScreenState extends ConsumerState<MusicScreen>
                               value: 2,
                               groupValue: 0,
                               title: Text(s.startFromBeginning,
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                       color: Colors.white, fontSize: 14)),
                               activeColor: AppColors.primaryBlue,
                               onChanged: (_) => Navigator.pop(context),
@@ -245,7 +245,7 @@ class _TracksTabState extends ConsumerState<_TracksTab> {
                   child: Row(
                     children: [
                       const SizedBox(width: 10),
-                      Icon(Icons.search,
+                      const Icon(Icons.search,
                           size: 18,
                           color: AppColors.white50),
                       const SizedBox(width: 8),
@@ -263,7 +263,7 @@ class _TracksTabState extends ConsumerState<_TracksTab> {
                             isDense: true,
                             border: InputBorder.none,
                             hintText: AppStrings.of(context).searchSongs,
-                            hintStyle: TextStyle(
+                            hintStyle: const TextStyle(
                               color: AppColors.white50,
                               fontSize: 13,
                             ),
@@ -306,12 +306,12 @@ class _TracksTabState extends ConsumerState<_TracksTab> {
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.shuffle,
+                      const Icon(Icons.shuffle,
                           size: 16,
                           color: AppColors.white70),
                       const SizedBox(width: 6),
                       Text(AppStrings.of(context).shuffleAll,
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: AppColors.white70,
                           fontSize: 13,
                         ),
@@ -326,8 +326,8 @@ class _TracksTabState extends ConsumerState<_TracksTab> {
               InkWell(
                 borderRadius: BorderRadius.circular(8),
                 onTap: () => _showMusicSortSheet(context, ref),
-                child: Padding(
-                  padding: const EdgeInsets.all(4),
+                child: const Padding(
+                  padding: EdgeInsets.all(4),
                   child: Icon(Icons.sort,
                       color: AppColors.white70, size: 22),
                 ),
@@ -368,7 +368,7 @@ class _TracksTabState extends ConsumerState<_TracksTab> {
             error: (e, _) => Center(
               child: Padding(
                 padding: const EdgeInsets.all(24),
-                child: Text(AppStrings.of(context).errorReadingMusic + ': $e',
+                child: Text('${AppStrings.of(context).errorReadingMusic}: $e',
                   textAlign: TextAlign.center,
                   style: const TextStyle(color: Colors.white54, fontSize: 13),
                 ),
@@ -502,12 +502,12 @@ class _PlaylistsTab extends ConsumerWidget {
                   child: Row(
                     children: [
                       const SizedBox(width: 10),
-                      Icon(Icons.search,
+                      const Icon(Icons.search,
                           size: 18,
                           color: AppColors.white50),
                       const SizedBox(width: 8),
                       Text(AppStrings.of(context).searchPlaylists,
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: AppColors.white50,
                           fontSize: 13,
                         ),
@@ -599,7 +599,7 @@ class _PlaylistsTab extends ConsumerWidget {
             style: const TextStyle(color: Colors.white),
             decoration: InputDecoration(
               hintText: AppStrings.of(ctx).playlistName,
-              hintStyle: TextStyle(color: AppColors.white40),
+              hintStyle: const TextStyle(color: AppColors.white40),
             ),
           ),
           actions: [
@@ -716,11 +716,11 @@ class _AlbumsTab extends ConsumerWidget {
             child: Row(
               children: [
                 const SizedBox(width: 10),
-                Icon(Icons.search,
+                const Icon(Icons.search,
                     size: 18, color: AppColors.white50),
                 const SizedBox(width: 8),
                 Text(AppStrings.of(context).searchAlbums,
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: AppColors.white50,
                     fontSize: 13,
                   ),
@@ -736,7 +736,7 @@ class _AlbumsTab extends ConsumerWidget {
                 return Center(
                   child: Text(AppStrings.of(context).noAlbumsFound,
                       style:
-                          TextStyle(color: Colors.white54, fontSize: 14)),
+                          const TextStyle(color: Colors.white54, fontSize: 14)),
                 );
               }
               // Generate deterministic tint per album name
@@ -765,7 +765,7 @@ class _AlbumsTab extends ConsumerWidget {
                 const Center(child: CircularProgressIndicator()),
             error: (_, __) => Center(
               child: Text(AppStrings.of(context).errorLoadingAlbums,
-                  style: TextStyle(color: Colors.white54)),
+                  style: const TextStyle(color: Colors.white54)),
             ),
           ),
         ),
@@ -876,11 +876,11 @@ class _ArtistsTab extends ConsumerWidget {
             child: Row(
               children: [
                 const SizedBox(width: 10),
-                Icon(Icons.search,
+                const Icon(Icons.search,
                     size: 18, color: AppColors.white50),
                 const SizedBox(width: 8),
                 Text(AppStrings.of(context).searchArtists,
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: AppColors.white50,
                     fontSize: 13,
                   ),
@@ -896,7 +896,7 @@ class _ArtistsTab extends ConsumerWidget {
                 return Center(
                   child: Text(AppStrings.of(context).noArtistsFound,
                       style:
-                          TextStyle(color: Colors.white54, fontSize: 14)),
+                          const TextStyle(color: Colors.white54, fontSize: 14)),
                 );
               }
               return ListView.builder(
@@ -912,7 +912,7 @@ class _ArtistsTab extends ConsumerWidget {
                 const Center(child: CircularProgressIndicator()),
             error: (_, __) => Center(
               child: Text(AppStrings.of(context).errorLoadingArtists,
-                  style: TextStyle(color: Colors.white54)),
+                  style: const TextStyle(color: Colors.white54)),
             ),
           ),
         ),
@@ -1031,12 +1031,12 @@ class _FoldersTab extends ConsumerWidget {
                   child: Row(
                     children: [
                       const SizedBox(width: 10),
-                      Icon(Icons.search,
+                      const Icon(Icons.search,
                           size: 18,
                           color: AppColors.white50),
                       const SizedBox(width: 8),
                       Text(AppStrings.of(context).searchFolders,
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: AppColors.white50,
                           fontSize: 13,
                         ),
@@ -1049,8 +1049,8 @@ class _FoldersTab extends ConsumerWidget {
               InkWell(
                 borderRadius: BorderRadius.circular(8),
                 onTap: () => _showMusicSortSheet(context, ref),
-                child: Padding(
-                  padding: const EdgeInsets.all(4),
+                child: const Padding(
+                  padding: EdgeInsets.all(4),
                   child: Icon(Icons.sort,
                       color: AppColors.white70, size: 22),
                 ),
@@ -1065,7 +1065,7 @@ class _FoldersTab extends ConsumerWidget {
                 return Center(
                   child: Text(AppStrings.of(context).noMusicFoldersFound,
                       style:
-                          TextStyle(color: Colors.white54, fontSize: 14)),
+                          const TextStyle(color: Colors.white54, fontSize: 14)),
                 );
               }
               return ListView.builder(
@@ -1084,7 +1084,7 @@ class _FoldersTab extends ConsumerWidget {
                 const Center(child: CircularProgressIndicator()),
             error: (_, __) => Center(
               child: Text(AppStrings.of(context).errorLoadingFolders,
-                  style: TextStyle(color: Colors.white54)),
+                  style: const TextStyle(color: Colors.white54)),
             ),
           ),
         ),
@@ -1196,7 +1196,7 @@ class _MiniPlayerBar extends ConsumerWidget {
       },
       child: Container(
         height: 56,
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           color: AppColors.darkSurface,
           border: Border(
             top: BorderSide(color: AppColors.white06),

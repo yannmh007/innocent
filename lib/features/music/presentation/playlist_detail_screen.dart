@@ -42,7 +42,7 @@ class PlaylistDetailScreen extends ConsumerWidget {
           children: [
             // Header
             Container(
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
@@ -134,7 +134,7 @@ class PlaylistDetailScreen extends ConsumerWidget {
                               const SizedBox(height: 4),
                               Text(
                                 '${playlist.songUris.length} Song${playlist.songUris.length == 1 ? '' : 's'}',
-                                style: TextStyle(
+                                style: const TextStyle(
                                   color: AppColors.white60,
                                   fontSize: 13,
                                 ),

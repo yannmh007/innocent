@@ -56,7 +56,7 @@ class PosterCard extends StatelessWidget {
     // position IS the information, and two badges in one corner is clutter.
     final String? cornerLabel = rank != null
         ? '$rank'
-        : (content.qualityLabel != null ? content.qualityLabel : null);
+        : (content.qualityLabel);
     final bool cornerIsRank = rank != null;
 
     final art = AspectRatio(
@@ -125,7 +125,7 @@ class PosterCard extends StatelessWidget {
             // Top-right, opposite the rank/quality marker, so the two can
             // never collide in the same corner.
             if (premium)
-              Positioned(
+              const Positioned(
                 top: VH.s1,
                 right: VH.s1,
                 child: _PremiumTag(),

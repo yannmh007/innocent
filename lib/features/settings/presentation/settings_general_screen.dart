@@ -59,7 +59,7 @@ class SettingsGeneralScreen extends ConsumerWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(AppStrings.of(context).fullAccessAlready),
-          duration: Duration(seconds: 2),
+          duration: const Duration(seconds: 2),
         ),
       );
       return;
@@ -69,9 +69,9 @@ class SettingsGeneralScreen extends ConsumerWidget {
       builder: (dctx) => AlertDialog(
         backgroundColor: AppColors.darkSurface,
         title: Text(AppStrings.of(context).fullAccessTitle,
-            style: TextStyle(color: Colors.white)),
+            style: const TextStyle(color: Colors.white)),
         content: Text(AppStrings.of(context).fullAccessBody,
-          style: TextStyle(color: AppColors.darkOnSurfaceMuted),
+          style: const TextStyle(color: AppColors.darkOnSurfaceMuted),
         ),
         actions: [
           TextButton(
@@ -81,7 +81,7 @@ class SettingsGeneralScreen extends ConsumerWidget {
           TextButton(
             onPressed: () => Navigator.pop(dctx, true),
             child: Text(AppStrings.of(context).permissionOpenSettings,
-                style: TextStyle(color: AppColors.accentBlue)),
+                style: const TextStyle(color: AppColors.accentBlue)),
           ),
         ],
       ),
@@ -102,7 +102,7 @@ class SettingsGeneralScreen extends ConsumerWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(AppStrings.of(context).fullAccessEnabled),
-            duration: Duration(seconds: 2),
+            duration: const Duration(seconds: 2),
           ),
         );
         return;
@@ -113,7 +113,7 @@ class SettingsGeneralScreen extends ConsumerWidget {
       SnackBar(
         content:
             Text(AppStrings.of(context).permissionNotGranted),
-        duration: Duration(seconds: 2),
+        duration: const Duration(seconds: 2),
       ),
     );
   }
@@ -125,9 +125,9 @@ class SettingsGeneralScreen extends ConsumerWidget {
       builder: (dctx) => AlertDialog(
         backgroundColor: AppColors.darkSurface,
         title: Text(AppStrings.of(context).clearHistoryTitle,
-            style: TextStyle(color: Colors.white)),
+            style: const TextStyle(color: Colors.white)),
         content: Text(AppStrings.of(context).clearHistoryBody,
-          style: TextStyle(color: Colors.white70),
+          style: const TextStyle(color: Colors.white70),
         ),
         actions: [
           TextButton(
@@ -137,7 +137,7 @@ class SettingsGeneralScreen extends ConsumerWidget {
           TextButton(
             onPressed: () => Navigator.pop(dctx, true),
             child: Text(AppStrings.of(context).clear,
-                style: TextStyle(color: Colors.redAccent)),
+                style: const TextStyle(color: Colors.redAccent)),
           ),
         ],
       ),
@@ -149,7 +149,7 @@ class SettingsGeneralScreen extends ConsumerWidget {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
           content: Text(AppStrings.of(context).historyCleared),
-          duration: Duration(seconds: 2)),
+          duration: const Duration(seconds: 2)),
     );
   }
 
@@ -160,9 +160,9 @@ class SettingsGeneralScreen extends ConsumerWidget {
       builder: (dctx) => AlertDialog(
         backgroundColor: AppColors.darkSurface,
         title: Text(AppStrings.of(context).clearThumbTitle,
-            style: TextStyle(color: Colors.white)),
+            style: const TextStyle(color: Colors.white)),
         content: Text(AppStrings.of(context).clearThumbBody,
-          style: TextStyle(color: Colors.white70),
+          style: const TextStyle(color: Colors.white70),
         ),
         actions: [
           TextButton(
@@ -172,7 +172,7 @@ class SettingsGeneralScreen extends ConsumerWidget {
           TextButton(
             onPressed: () => Navigator.pop(dctx, true),
             child: Text(AppStrings.of(context).clear,
-                style: TextStyle(color: Colors.redAccent)),
+                style: const TextStyle(color: Colors.redAccent)),
           ),
         ],
       ),
@@ -186,7 +186,7 @@ class SettingsGeneralScreen extends ConsumerWidget {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
           content: Text(AppStrings.of(context).thumbCleared),
-          duration: Duration(seconds: 2)),
+          duration: const Duration(seconds: 2)),
     );
   }
 
@@ -200,9 +200,9 @@ class SettingsGeneralScreen extends ConsumerWidget {
       builder: (dctx) => AlertDialog(
         backgroundColor: AppColors.darkSurface,
         title: Text(AppStrings.of(context).resetSettingsTitle,
-            style: TextStyle(color: Colors.white)),
+            style: const TextStyle(color: Colors.white)),
         content: Text(AppStrings.of(context).resetSettingsBodyFull,
-          style: TextStyle(color: Colors.white70),
+          style: const TextStyle(color: Colors.white70),
         ),
         actions: [
           TextButton(
@@ -212,7 +212,7 @@ class SettingsGeneralScreen extends ConsumerWidget {
           TextButton(
             onPressed: () => Navigator.pop(dctx, true),
             child: Text(AppStrings.of(context).reset,
-                style: TextStyle(color: Colors.redAccent)),
+                style: const TextStyle(color: Colors.redAccent)),
           ),
         ],
       ),
@@ -273,7 +273,7 @@ class SettingsGeneralScreen extends ConsumerWidget {
     } catch (e) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppStrings.of(context).exportFailed + ': $e')),
+        SnackBar(content: Text('${AppStrings.of(context).exportFailed}: $e')),
       );
     }
   }
@@ -365,7 +365,7 @@ class SettingsGeneralScreen extends ConsumerWidget {
     } catch (e) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppStrings.of(context).importFailed + ': $e')),
+        SnackBar(content: Text('${AppStrings.of(context).importFailed}: $e')),
       );
     }
   }
@@ -522,7 +522,7 @@ class SettingsGeneralScreen extends ConsumerWidget {
                 builder: (dctx) => AlertDialog(
                   backgroundColor: AppColors.darkSurface,
                   title: Text(AppStrings.of(context).clearFontCacheTitle,
-                      style: TextStyle(color: Colors.white)),
+                      style: const TextStyle(color: Colors.white)),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.pop(dctx),
@@ -537,7 +537,7 @@ class SettingsGeneralScreen extends ConsumerWidget {
                         );
                       },
                       child: Text(AppStrings.of(context).clear,
-                          style: TextStyle(color: Colors.redAccent)),
+                          style: const TextStyle(color: Colors.redAccent)),
                     ),
                   ],
                 ),

@@ -34,7 +34,7 @@ class RecycleBinScreen extends ConsumerWidget {
                 builder: (_) => AlertDialog(
                   backgroundColor: AppColors.darkSurface,
                   title: Text(AppStrings.of(context).recycleBin,
-                      style: TextStyle(color: Colors.white)),
+                      style: const TextStyle(color: Colors.white)),
                   content: const Text(
                     'Items in the recycle bin will be kept for up to 30 days before being automatically removed.',
                     style: TextStyle(color: Colors.white70, height: 1.5),
@@ -57,7 +57,7 @@ class RecycleBinScreen extends ConsumerWidget {
                   builder: (_) => AlertDialog(
                     backgroundColor: AppColors.darkSurface,
                     title: Text(AppStrings.of(context).emptyBinTitle,
-                        style: TextStyle(color: Colors.white)),
+                        style: const TextStyle(color: Colors.white)),
                     content: const Text(
                       'All entries will be permanently removed from this list. The actual video files are NOT deleted from your device.',
                       style: TextStyle(color: Colors.white70),
@@ -66,12 +66,12 @@ class RecycleBinScreen extends ConsumerWidget {
                       TextButton(
                         onPressed: () => Navigator.of(_).pop(false),
                         child: Text(AppStrings.of(context).cancel,
-                            style: TextStyle(color: Colors.white70)),
+                            style: const TextStyle(color: Colors.white70)),
                       ),
                       TextButton(
                         onPressed: () => Navigator.of(_).pop(true),
                         child: Text(AppStrings.of(context).emptyVerb,
-                            style: TextStyle(color: AppColors.error)),
+                            style: const TextStyle(color: AppColors.error)),
                       ),
                     ],
                   ),
@@ -81,7 +81,7 @@ class RecycleBinScreen extends ConsumerWidget {
                 }
               },
               child: Text(AppStrings.of(context).emptyVerb,
-                  style: TextStyle(color: AppColors.error)),
+                  style: const TextStyle(color: AppColors.error)),
             ),
         ],
       ),
@@ -96,14 +96,14 @@ class RecycleBinScreen extends ConsumerWidget {
               color: const Color(0xFF3A2E1A),
               borderRadius: BorderRadius.circular(6),
             ),
-            child: Row(
+            child: const Row(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
+              children: [
                 Icon(Icons.error_outline,
                     color: Color(0xFFFFB74D), size: 18),
                 SizedBox(width: 10),
                 Expanded(
-                  child: const Text(
+                  child: Text(
                     'Files will be stored in the Recycle Bin for up to 30 days before being permanently deleted from your device.',
                     style: TextStyle(
                       color: Color(0xFFFFB74D),
@@ -145,7 +145,7 @@ class RecycleBinScreen extends ConsumerWidget {
                           ),
                           const SizedBox(height: 20),
                           Text(AppStrings.of(context).binEmpty,
-                            style: TextStyle(
+                            style: const TextStyle(
                               color: AppColors.white55,
                               fontSize: 14,
                             ),
@@ -199,8 +199,8 @@ class RecycleBinScreen extends ConsumerWidget {
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
-                              SizedBox(width: 6),
-                              Icon(Icons.delete_forever,
+                              const SizedBox(width: 6),
+                              const Icon(Icons.delete_forever,
                                   color: Colors.white, size: 24),
                             ],
                           ),
@@ -213,9 +213,9 @@ class RecycleBinScreen extends ConsumerWidget {
                               builder: (_) => AlertDialog(
                                 backgroundColor: AppColors.darkSurface,
                                 title: Text(AppStrings.of(context).permDeleteTitle,
-                                    style: TextStyle(color: Colors.white)),
+                                    style: const TextStyle(color: Colors.white)),
                                 content: Text(AppStrings.of(context).permDeleteBody,
-                                  style: TextStyle(color: Colors.white70),
+                                  style: const TextStyle(color: Colors.white70),
                                 ),
                                 actions: [
                                   TextButton(
@@ -223,13 +223,13 @@ class RecycleBinScreen extends ConsumerWidget {
                                         Navigator.of(_).pop(false),
                                     child: Text(AppStrings.of(context).cancel,
                                         style:
-                                            TextStyle(color: Colors.white70)),
+                                            const TextStyle(color: Colors.white70)),
                                   ),
                                   TextButton(
                                     onPressed: () =>
                                         Navigator.of(_).pop(true),
                                     child: Text(AppStrings.of(context).delete,
-                                        style: TextStyle(
+                                        style: const TextStyle(
                                             color: AppColors.error)),
                                   ),
                                 ],

@@ -108,7 +108,7 @@ class VideoListItem extends ConsumerWidget {
     // bar after a watch session). Measurable smoothness win on long
     // scroll lists.
     return Semantics(
-      label: 'Video: ${displayTitle}',
+      label: 'Video: $displayTitle',
       button: true,
       child: RepaintBoundary(
       child: InkWell(
@@ -163,7 +163,7 @@ class VideoListItem extends ConsumerWidget {
                             ),
                           ),
                           child: Text(AppStrings.of(context).newBadge,
-                            style: TextStyle(
+                            style: const TextStyle(
                               color: Colors.white,
                               fontSize: 9,
                               fontWeight: FontWeight.w700,

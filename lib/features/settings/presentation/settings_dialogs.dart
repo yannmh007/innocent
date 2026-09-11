@@ -44,7 +44,7 @@ Future<String?> showSettingsListDialog({
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: Text(AppStrings.of(context).cancel, style: TextStyle(color: Colors.white70)),
+          child: Text(AppStrings.of(context).cancel, style: const TextStyle(color: Colors.white70)),
         ),
       ],
     ),
@@ -116,11 +116,11 @@ Future<double?> showSettingsSliderDialog({
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(),
-              child: Text(AppStrings.of(context).cancel, style: TextStyle(color: Colors.white70)),
+              child: Text(AppStrings.of(context).cancel, style: const TextStyle(color: Colors.white70)),
             ),
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(tempValue),
-              child: Text(AppStrings.of(context).ok, style: TextStyle(color: AppColors.primaryBlue)),
+              child: Text(AppStrings.of(context).ok, style: const TextStyle(color: AppColors.primaryBlue)),
             ),
           ],
         );
@@ -171,11 +171,11 @@ Future<String?> showSettingsTextDialog({
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: Text(AppStrings.of(context).cancel, style: TextStyle(color: Colors.white70)),
+          child: Text(AppStrings.of(context).cancel, style: const TextStyle(color: Colors.white70)),
         ),
         TextButton(
           onPressed: () => Navigator.of(context).pop(controller.text),
-          child: Text(AppStrings.of(context).ok, style: TextStyle(color: AppColors.primaryBlue)),
+          child: Text(AppStrings.of(context).ok, style: const TextStyle(color: AppColors.primaryBlue)),
         ),
       ],
     ),
@@ -234,11 +234,11 @@ Future<List<String>?> showSettingsMultiSelectDialog({
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(),
-              child: Text(AppStrings.of(context).cancel, style: TextStyle(color: Colors.white70)),
+              child: Text(AppStrings.of(context).cancel, style: const TextStyle(color: Colors.white70)),
             ),
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(selected.toList()),
-              child: Text(AppStrings.of(context).ok, style: TextStyle(color: AppColors.primaryBlue)),
+              child: Text(AppStrings.of(context).ok, style: const TextStyle(color: AppColors.primaryBlue)),
             ),
           ],
         );

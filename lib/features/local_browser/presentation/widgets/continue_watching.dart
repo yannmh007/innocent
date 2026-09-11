@@ -178,7 +178,7 @@ class _ContinueCardState extends State<_ContinueCard> {
                 builder: (dctx) => AlertDialog(
                   backgroundColor: AppColors.darkSurface,
                   title: Text(AppStrings.of(context).removeContinueTitle,
-                    style: TextStyle(color: Colors.white),
+                    style: const TextStyle(color: Colors.white),
                   ),
                   content: Text(
                     widget.title,
@@ -188,13 +188,13 @@ class _ContinueCardState extends State<_ContinueCard> {
                     TextButton(
                       onPressed: () => Navigator.of(dctx).pop(false),
                       child: Text(AppStrings.of(context).cancel,
-                        style: TextStyle(color: Colors.white70),
+                        style: const TextStyle(color: Colors.white70),
                       ),
                     ),
                     TextButton(
                       onPressed: () => Navigator.of(dctx).pop(true),
                       child: Text(AppStrings.of(context).remove,
-                        style: TextStyle(color: AppColors.accentBlue),
+                        style: const TextStyle(color: AppColors.accentBlue),
                       ),
                     ),
                   ],

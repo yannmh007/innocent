@@ -57,7 +57,7 @@ class PlayingQueueSheet extends StatelessWidget {
           child: Row(
             children: [
               Text(AppStrings.of(context).playingQueueTitle,
-                style: TextStyle(
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 17,
                   fontWeight: FontWeight.w600,
@@ -66,7 +66,7 @@ class PlayingQueueSheet extends StatelessWidget {
               const Spacer(),
               Text(
                 '${queue.isEmpty ? 1 : queue.length} item${queue.length != 1 ? "s" : ""}',
-                style: TextStyle(
+                style: const TextStyle(
                   color: AppColors.white50,
                   fontSize: 13,
                 ),

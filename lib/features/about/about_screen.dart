@@ -94,7 +94,7 @@ class AboutScreen extends StatelessWidget {
               color: AppColors.accentBlue,
             ),
             title: Text(AppStrings.of(context).openSourceLicenses,
-              style: TextStyle(color: Colors.white),
+              style: const TextStyle(color: Colors.white),
             ),
             trailing: const Icon(
               Icons.chevron_right,

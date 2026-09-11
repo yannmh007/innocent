@@ -37,11 +37,11 @@ class MediaManagerScreen extends ConsumerWidget {
                 Row(
                   children: [
                     Text(AppStrings.of(context).deviceStorage,
-                      style: TextStyle(color: Colors.white70, fontSize: 14),
+                      style: const TextStyle(color: Colors.white70, fontSize: 14),
                     ),
                     const Spacer(),
                     // Phase 30: MX parity — orange "Used X.XX TB" highlight then white "/ Y.YY TB"
-                    Text.rich(
+                    const Text.rich(
                       TextSpan(
                         children: [
                           TextSpan(
@@ -51,7 +51,7 @@ class MediaManagerScreen extends ConsumerWidget {
                               fontSize: 12,
                             ),
                           ),
-                          const TextSpan(
+                          TextSpan(
                             text: '0.91 TB',
                             style: TextStyle(
                               color: Color(0xFFFF9800),
@@ -75,12 +75,12 @@ class MediaManagerScreen extends ConsumerWidget {
                 // Storage bar
                 ClipRRect(
                   borderRadius: BorderRadius.circular(4),
-                  child: SizedBox(
+                  child: const SizedBox(
                     height: 8,
                     child: LinearProgressIndicator(
                       value: 0.89,
                       backgroundColor: AppColors.white10,
-                      valueColor: const AlwaysStoppedAnimation<Color>(
+                      valueColor: AlwaysStoppedAnimation<Color>(
                           Color(0xFFFF9800)),
                     ),
                   ),
@@ -140,17 +140,17 @@ class MediaManagerScreen extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(AppStrings.of(context).cleanUpSpace,
-                        style: TextStyle(
+                        style: const TextStyle(
                             color: Color(0xFF1A1A1A),
                             fontSize: 14,
                             fontWeight: FontWeight.w600),
                       ),
                       const SizedBox(height: 2),
                       // Phase 34: GB amount in red — verified against screen recording
-                      Text.rich(
+                      const Text.rich(
                         TextSpan(
                           children: [
-                            const TextSpan(
+                            TextSpan(
                               text: '592 GB',
                               style: TextStyle(
                                 color: Color(0xFFE53935),
@@ -190,7 +190,7 @@ class MediaManagerScreen extends ConsumerWidget {
                     elevation: 0,
                   ),
                   child:
-                      Text(AppStrings.of(context).clean, style: TextStyle(fontSize: 13)),
+                      Text(AppStrings.of(context).clean, style: const TextStyle(fontSize: 13)),
                 ),
               ],
             ),
@@ -239,9 +239,9 @@ class MediaManagerScreen extends ConsumerWidget {
           const SizedBox(height: 24),
 
           // ─── HAVEN'T PLAYED ───
-          Row(
+          const Row(
             children: [
-              const Text(
+              Text(
                 "Haven't Played",
                 style: TextStyle(
                   color: Colors.white,
@@ -249,7 +249,7 @@ class MediaManagerScreen extends ConsumerWidget {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const Spacer(),
+              Spacer(),
               Icon(Icons.chevron_right,
                   color: AppColors.white50),
             ],
@@ -272,7 +272,7 @@ class MediaManagerScreen extends ConsumerWidget {
                   color: AppColors.darkSurface,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Center(
+                child: const Center(
                   child: Icon(Icons.videocam_outlined,
                       color: AppColors.white20, size: 36),
                 ),
@@ -294,7 +294,7 @@ class MediaManagerScreen extends ConsumerWidget {
             Container(
               width: 28,
               height: 28,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 color: AppColors.white08,
                 shape: BoxShape.circle,
               ),
@@ -519,7 +519,7 @@ class MediaManagerScreen extends ConsumerWidget {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(AppStrings.of(context).openingRecentlyPlayed),
-        duration: Duration(milliseconds: 800),
+        duration: const Duration(milliseconds: 800),
       ),
     );
   }

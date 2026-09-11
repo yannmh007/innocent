@@ -182,7 +182,7 @@ class _SongContextSheet extends StatelessWidget {
       builder: (_) => AlertDialog(
         backgroundColor: AppColors.darkSurface,
         title: Text(AppStrings.of(context).properties,
-            style: TextStyle(color: Colors.white, fontSize: 16)),
+            style: const TextStyle(color: Colors.white, fontSize: 16)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -199,7 +199,7 @@ class _SongContextSheet extends StatelessWidget {
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(AppStrings.of(context).close.toUpperCase(),
-                style: TextStyle(color: AppColors.primaryBlue)),
+                style: const TextStyle(color: AppColors.primaryBlue)),
           ),
           TextButton(
             onPressed: () {
@@ -208,7 +208,7 @@ class _SongContextSheet extends StatelessWidget {
               _toast(context, 'Path copied');
             },
             child: Text(AppStrings.of(context).copyPath.toUpperCase(),
-                style: TextStyle(color: AppColors.primaryBlue)),
+                style: const TextStyle(color: AppColors.primaryBlue)),
           ),
         ],
       ),
@@ -233,7 +233,7 @@ class _SongContextSheet extends StatelessWidget {
       builder: (dCtx) => AlertDialog(
         backgroundColor: AppColors.darkSurface,
         title: Text(AppStrings.of(context).addToPlaylist,
-            style: TextStyle(color: Colors.white, fontSize: 16)),
+            style: const TextStyle(color: Colors.white, fontSize: 16)),
         content: SizedBox(
           width: double.maxFinite,
           child: ListView.builder(
@@ -273,7 +273,7 @@ class _SongContextSheet extends StatelessWidget {
           TextButton(
             onPressed: () => Navigator.pop(dCtx),
             child: Text(AppStrings.of(context).cancel.toUpperCase(),
-                style: TextStyle(color: Colors.white70)),
+                style: const TextStyle(color: Colors.white70)),
           ),
         ],
       ),

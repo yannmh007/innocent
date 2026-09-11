@@ -414,7 +414,7 @@ class _AlbumTile extends StatelessWidget {
               child: Icon(Icons.play_circle_fill,
                   size: 30, color: VH.textPrimary),
             ),
-            Positioned(
+            const Positioned(
               left: 4,
               top: 4,
               child: _PreviewTag(),

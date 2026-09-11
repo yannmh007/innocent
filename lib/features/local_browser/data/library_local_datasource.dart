@@ -36,8 +36,10 @@ class LibraryLocalDataSource {
     // throws on web. Short-circuit to empty so the UI shows the empty
     // state cleanly instead of a cryptic plugin error.
     if (kIsWeb) {
-      if (kDebugMode) debugPrint('LibraryLocalDataSource: skipping video scan on web '
+      if (kDebugMode) {
+        debugPrint('LibraryLocalDataSource: skipping video scan on web '
           '(photo_manager has no web implementation)');
+      }
       return [];
     }
     // The Local screen already drives the permission dialog via

@@ -296,7 +296,7 @@ class SettingsDecoderScreen extends ConsumerWidget {
               builder: (dctx) => AlertDialog(
                 backgroundColor: AppColors.darkSurface,
                 title: Text(AppStrings.of(context).colorFormat,
-                  style: TextStyle(color: Colors.white),
+                  style: const TextStyle(color: Colors.white),
                 ),
                 content: const Text(
                   'On this player, the video output format (RGB 565 / 8888 / YUV) '
@@ -312,7 +312,7 @@ class SettingsDecoderScreen extends ConsumerWidget {
                   TextButton(
                     onPressed: () => Navigator.of(dctx).pop(),
                     child: Text(AppStrings.of(context).ok,
-                        style: TextStyle(color: AppColors.accentBlue)),
+                        style: const TextStyle(color: AppColors.accentBlue)),
                   ),
                 ],
               ),

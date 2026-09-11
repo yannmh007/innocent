@@ -40,7 +40,7 @@ class _CloudDriveScreenState extends State<CloudDriveScreen> {
       ..clearSnackBars()
       ..showSnackBar(
         SnackBar(
-          content: Text('${p.name} — ' + AppStrings.of(context).comingSoon),
+          content: Text('${p.name} — ${AppStrings.of(context).comingSoon}'),
           duration: const Duration(milliseconds: 1500),
         ),
       );
@@ -62,7 +62,7 @@ class _CloudDriveScreenState extends State<CloudDriveScreen> {
                 builder: (_) => AlertDialog(
                   backgroundColor: AppColors.darkSurface,
                   title: Text(AppStrings.of(context).aboutCloudDrive,
-                      style: TextStyle(color: Colors.white, fontSize: 16)),
+                      style: const TextStyle(color: Colors.white, fontSize: 16)),
                   content: Text(AppStrings.of(context).cloudDriveBody,
                     style: TextStyle(
                       color: Colors.white.withOpacity(0.75),
@@ -74,7 +74,7 @@ class _CloudDriveScreenState extends State<CloudDriveScreen> {
                     TextButton(
                       onPressed: () => Navigator.pop(context),
                       child: Text(AppStrings.of(context).gotIt.toUpperCase(),
-                          style: TextStyle(color: AppColors.primaryBlue)),
+                          style: const TextStyle(color: AppColors.primaryBlue)),
                     ),
                   ],
                 ),
@@ -88,7 +88,7 @@ class _CloudDriveScreenState extends State<CloudDriveScreen> {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: Text(AppStrings.of(context).connectCloudCaps,
-              style: TextStyle(
+              style: const TextStyle(
                 color: AppColors.white50,
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
@@ -100,7 +100,7 @@ class _CloudDriveScreenState extends State<CloudDriveScreen> {
             child: ListView.separated(
               padding: EdgeInsets.zero,
               itemCount: _providers.length,
-              separatorBuilder: (_, __) => Divider(
+              separatorBuilder: (_, __) => const Divider(
                   color: AppColors.white06, height: 1),
               itemBuilder: (_, i) {
                 final p = _providers[i];
@@ -133,7 +133,7 @@ class _CloudDriveScreenState extends State<CloudDriveScreen> {
                             TextButton(
                               onPressed: () => _toggle(p),
                               child: Text(AppStrings.of(context).disconnect,
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                       color: Color(0xFFEF5350), fontSize: 12)),
                             ),
                           ],
@@ -143,7 +143,7 @@ class _CloudDriveScreenState extends State<CloudDriveScreen> {
                           style: TextButton.styleFrom(
                               foregroundColor: AppColors.primaryBlue),
                           child: Text(AppStrings.of(context).connect,
-                              style: TextStyle(
+                              style: const TextStyle(
                                   fontSize: 13, fontWeight: FontWeight.w600)),
                         ),
                   onTap: () => _toggle(p),
@@ -154,7 +154,7 @@ class _CloudDriveScreenState extends State<CloudDriveScreen> {
           if (_connected.isNotEmpty)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 color: AppColors.darkSurface,
                 border: Border(
                   top: BorderSide(color: AppColors.white08),

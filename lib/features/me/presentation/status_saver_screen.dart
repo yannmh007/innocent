@@ -386,7 +386,7 @@ class _StatusSaverScreenState extends State<StatusSaverScreen>
                 size: 64, color: AppColors.white20),
             const SizedBox(height: 16),
             Text(AppStrings.of(context).storagePermissionNeeded,
-              style: TextStyle(
+              style: const TextStyle(
                 color: AppColors.white60,
                 fontSize: 15,
                 fontWeight: FontWeight.w500,
@@ -395,7 +395,7 @@ class _StatusSaverScreenState extends State<StatusSaverScreen>
             const SizedBox(height: 8),
             Text(AppStrings.of(context).statusPermissionHint,
               textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.white40, fontSize: 13),
+              style: const TextStyle(color: AppColors.white40, fontSize: 13),
             ),
             const SizedBox(height: 20),
             Wrap(

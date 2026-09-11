@@ -53,7 +53,7 @@ class SubtitlePanel extends StatelessWidget {
                     child: Row(
                       children: [
                         Text(AppStrings.of(context).subtitle,
-                          style: TextStyle(
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 18,
                             fontWeight: FontWeight.w500,
@@ -68,7 +68,7 @@ class SubtitlePanel extends StatelessWidget {
                                 horizontal: 12, vertical: 4),
                           ),
                           child: Text(AppStrings.of(context).onlineSubtitles,
-                            style: TextStyle(fontSize: 13),
+                            style: const TextStyle(fontSize: 13),
                           ),
                         ),
                       ],

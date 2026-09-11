@@ -62,7 +62,7 @@ class ArtistDetailScreen extends ConsumerWidget {
                             color: Colors.white70, size: 22),
                         onPressed: () {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(AppStrings.of(context).share + ' $name')),
+                            SnackBar(content: Text('${AppStrings.of(context).share} $name')),
                           );
                         },
                       ),
@@ -139,7 +139,7 @@ class ArtistDetailScreen extends ConsumerWidget {
                               const SizedBox(height: 4),
                               Text(
                                 '$songCount Song${songCount == 1 ? '' : 's'}',
-                                style: TextStyle(
+                                style: const TextStyle(
                                   color: AppColors.white60,
                                   fontSize: 13,
                                 ),
