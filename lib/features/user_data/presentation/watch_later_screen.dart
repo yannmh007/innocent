@@ -47,20 +47,20 @@ class WatchLaterScreen extends ConsumerWidget {
                   builder: (_) => AlertDialog(
                     backgroundColor: AppColors.darkSurface,
                     title: Text(AppStrings.of(context).clearWatchLaterTitle,
-                        style: TextStyle(color: Colors.white)),
+                        style: const TextStyle(color: Colors.white)),
                     content: Text(AppStrings.of(context).clearWatchLaterBody,
-                      style: TextStyle(color: Colors.white70),
+                      style: const TextStyle(color: Colors.white70),
                     ),
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.of(_).pop(false),
                         child: Text(AppStrings.of(context).cancel,
-                            style: TextStyle(color: Colors.white70)),
+                            style: const TextStyle(color: Colors.white70)),
                       ),
                       TextButton(
                         onPressed: () => Navigator.of(_).pop(true),
                         child: Text(AppStrings.of(context).clear,
-                            style: TextStyle(color: AppColors.error)),
+                            style: const TextStyle(color: AppColors.error)),
                       ),
                     ],
                   ),

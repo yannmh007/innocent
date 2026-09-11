@@ -22,7 +22,7 @@ class HiddenBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
+          const Icon(
             Icons.visibility_off_outlined,
             size: 11,
             color: AppColors.warning,
@@ -30,7 +30,7 @@ class HiddenBadge extends StatelessWidget {
           const SizedBox(width: 3),
           Text(
             label,
-            style: TextStyle(
+            style: const TextStyle(
               color: AppColors.warning,
               fontSize: 10,
               height: 1.2,
@@ -56,7 +56,7 @@ class HiddenCornerBadge extends StatelessWidget {
         color: const Color(0xC7000000),
         borderRadius: BorderRadius.circular(3),
       ),
-      child: Icon(
+      child: const Icon(
         Icons.visibility_off_outlined,
         size: 11,
         color: AppColors.warning,

@@ -65,7 +65,7 @@ class HelpScreen extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(4, 0, 4, 16),
                 child: Text(
                   answer,
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: AppColors.white60,
                     fontSize: 13,
                     height: 1.5,

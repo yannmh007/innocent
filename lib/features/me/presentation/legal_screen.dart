@@ -114,14 +114,14 @@ class _AboutPage extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(AppStrings.of(context).versionOf(AppVersion.name),
-              style: TextStyle(
+              style: const TextStyle(
                 color: AppColors.white50,
                 fontSize: 14,
               ),
             ),
             const SizedBox(height: 24),
             Text(AppStrings.of(context).personalPlayerApp,
-              style: TextStyle(
+              style: const TextStyle(
                 color: AppColors.white60,
                 fontSize: 14,
               ),

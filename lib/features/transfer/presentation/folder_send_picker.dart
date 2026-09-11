@@ -268,7 +268,7 @@ class _FolderSendPickerState extends ConsumerState<FolderSendPicker> {
                           itemBuilder: (_, i) {
                             final d = _subdirs[i];
                             return ListTile(
-                              leading: Icon(Icons.folder_outlined,
+                              leading: const Icon(Icons.folder_outlined,
                                   color: AppColors.accentBlue, size: 24),
                               title: Text(
                                 p.basename(d.path),
@@ -277,7 +277,7 @@ class _FolderSendPickerState extends ConsumerState<FolderSendPicker> {
                                 style: const TextStyle(
                                     color: Colors.white, fontSize: 14),
                               ),
-                              trailing: Icon(Icons.chevron_right,
+                              trailing: const Icon(Icons.chevron_right,
                                   color: AppColors.white50, size: 20),
                               onTap: _scanning ? null : () => _enter(d),
                             );

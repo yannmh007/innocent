@@ -267,7 +267,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen> {
         error: (e, _) => Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
-            child: Text(AppStrings.of(context).errorLoadingVideosPrefix + ': $e',
+            child: Text('${AppStrings.of(context).errorLoadingVideosPrefix}: $e',
               textAlign: TextAlign.center,
               style: const TextStyle(color: AppColors.error),
             ),

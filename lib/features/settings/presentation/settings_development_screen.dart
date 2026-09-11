@@ -36,9 +36,9 @@ class SettingsDevelopmentScreen extends ConsumerWidget {
       builder: (dctx) => AlertDialog(
         backgroundColor: AppColors.darkSurface,
         title: Text(AppStrings.of(context).resetSettingsTitle,
-            style: TextStyle(color: Colors.white)),
+            style: const TextStyle(color: Colors.white)),
         content: Text(AppStrings.of(context).resetSettingsBody,
-          style: TextStyle(color: Colors.white70),
+          style: const TextStyle(color: Colors.white70),
         ),
         actions: [
           TextButton(
@@ -48,7 +48,7 @@ class SettingsDevelopmentScreen extends ConsumerWidget {
           TextButton(
             onPressed: () => Navigator.pop(dctx, true),
             child: Text(AppStrings.of(context).reset,
-                style: TextStyle(color: Colors.redAccent)),
+                style: const TextStyle(color: Colors.redAccent)),
           ),
         ],
       ),
@@ -59,7 +59,7 @@ class SettingsDevelopmentScreen extends ConsumerWidget {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
           content: Text(AppStrings.of(context).settingsResetDone),
-          duration: Duration(seconds: 2)),
+          duration: const Duration(seconds: 2)),
     );
   }
 

@@ -141,7 +141,7 @@ class VideoOptionMenu extends ConsumerWidget {
       builder: (dctx) => AlertDialog(
         backgroundColor: AppColors.darkSurface,
         title: Text(AppStrings.of(sheetContext).addSubtitleFromUrl,
-          style: TextStyle(color: Colors.white),
+          style: const TextStyle(color: Colors.white),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -173,7 +173,7 @@ class VideoOptionMenu extends ConsumerWidget {
             ),
             const SizedBox(height: 12),
             Text(AppStrings.of(sheetContext).subtitleUrlTip,
-              style: TextStyle(
+              style: const TextStyle(
                 color: Colors.white54,
                 fontSize: 11,
                 fontStyle: FontStyle.italic,
@@ -185,14 +185,14 @@ class VideoOptionMenu extends ConsumerWidget {
           TextButton(
             onPressed: () => Navigator.of(dctx).pop(),
             child: Text(AppStrings.of(sheetContext).cancel,
-              style: TextStyle(color: Colors.white70),
+              style: const TextStyle(color: Colors.white70),
             ),
           ),
           TextButton(
             onPressed: () =>
                 Navigator.of(dctx).pop(urlCtl.text.trim()),
             child: Text(AppStrings.of(sheetContext).download,
-              style: TextStyle(color: AppColors.accentBlue),
+              style: const TextStyle(color: AppColors.accentBlue),
             ),
           ),
         ],
@@ -206,15 +206,15 @@ class VideoOptionMenu extends ConsumerWidget {
       ..showSnackBar(SnackBar(
         content: Row(
           children: [
-            SizedBox(
+            const SizedBox(
                 width: 18,
                 height: 18,
                 child: CircularProgressIndicator(strokeWidth: 2)),
-            SizedBox(width: 12),
+            const SizedBox(width: 12),
             Text(AppStrings.of(sheetContext).downloadingSubtitle),
           ],
         ),
-        duration: Duration(seconds: 30),
+        duration: const Duration(seconds: 30),
         behavior: SnackBarBehavior.floating,
       ));
     try {
@@ -237,7 +237,7 @@ class VideoOptionMenu extends ConsumerWidget {
       ScaffoldMessenger.of(hostContext)
         ..hideCurrentSnackBar()
         ..showSnackBar(SnackBar(
-          content: Text(AppStrings.of(sheetContext).downloadFailed + ': $e'),
+          content: Text('${AppStrings.of(sheetContext).downloadFailed}: $e'),
           duration: const Duration(seconds: 5),
           behavior: SnackBarBehavior.floating,
         ));
@@ -251,7 +251,7 @@ class VideoOptionMenu extends ConsumerWidget {
       builder: (dctx) => AlertDialog(
         backgroundColor: AppColors.darkSurface,
         title: Text(AppStrings.of(sheetContext).moveToBinTitle,
-            style: TextStyle(color: Colors.white)),
+            style: const TextStyle(color: Colors.white)),
         content: Text(
           'This will hide "${video.title}" from your library. You can restore it from Recycle Bin later.',
           style: const TextStyle(color: Colors.white70),
@@ -260,12 +260,12 @@ class VideoOptionMenu extends ConsumerWidget {
           TextButton(
             onPressed: () => Navigator.of(dctx).pop(false),
             child: Text(AppStrings.of(sheetContext).cancel,
-                style: TextStyle(color: Colors.white70)),
+                style: const TextStyle(color: Colors.white70)),
           ),
           TextButton(
             onPressed: () => Navigator.of(dctx).pop(true),
             child: Text(AppStrings.of(sheetContext).move,
-                style: TextStyle(color: AppColors.error)),
+                style: const TextStyle(color: AppColors.error)),
           ),
         ],
       ),
@@ -657,7 +657,7 @@ class VideoOptionMenu extends ConsumerWidget {
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.darkSurface,
         title: Text(AppStrings.of(sheetContext).deleteVideoTitle,
-            style: TextStyle(color: Colors.white)),
+            style: const TextStyle(color: Colors.white)),
         content: Text(
           'Permanently delete "${video.title}"?\n\nThis cannot be undone.',
           style: const TextStyle(color: Colors.white70),
@@ -666,12 +666,12 @@ class VideoOptionMenu extends ConsumerWidget {
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
             child: Text(AppStrings.of(sheetContext).cancel,
-                style: TextStyle(color: Colors.white70)),
+                style: const TextStyle(color: Colors.white70)),
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
             child:
-                Text(AppStrings.of(sheetContext).delete, style: TextStyle(color: AppColors.error)),
+                Text(AppStrings.of(sheetContext).delete, style: const TextStyle(color: AppColors.error)),
           ),
         ],
       ),
@@ -973,7 +973,7 @@ class _PlaylistPickerSheetState extends ConsumerState<_PlaylistPickerSheet> {
       builder: (dialogCtx) => AlertDialog(
         backgroundColor: AppColors.darkSurface,
         title: Text(AppStrings.of(context).newPlaylistTitle,
-            style: TextStyle(color: Colors.white)),
+            style: const TextStyle(color: Colors.white)),
         content: TextField(
           controller: controller,
           autofocus: true,
@@ -987,12 +987,12 @@ class _PlaylistPickerSheetState extends ConsumerState<_PlaylistPickerSheet> {
           TextButton(
             onPressed: () => Navigator.of(dialogCtx).pop(),
             child: Text(AppStrings.of(context).cancel,
-                style: TextStyle(color: Colors.white70)),
+                style: const TextStyle(color: Colors.white70)),
           ),
           TextButton(
             onPressed: () => Navigator.of(dialogCtx).pop(controller.text.trim()),
             child: Text(AppStrings.of(context).create,
-                style: TextStyle(color: AppColors.accentBlue)),
+                style: const TextStyle(color: AppColors.accentBlue)),
           ),
         ],
       ),
@@ -1068,7 +1068,7 @@ class _PlaylistPickerSheetState extends ConsumerState<_PlaylistPickerSheet> {
           ListTile(
             leading: const Icon(Icons.add, color: AppColors.accentBlue),
             title: Text(AppStrings.of(context).createNewPlaylist,
-              style: TextStyle(
+              style: const TextStyle(
                 color: AppColors.accentBlue,
                 fontWeight: FontWeight.w500,
               ),
@@ -1413,7 +1413,7 @@ class _RenameDialogState extends State<_RenameDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       backgroundColor: AppColors.darkSurface,
-      title: Text(AppStrings.of(context).rename, style: TextStyle(color: Colors.white)),
+      title: Text(AppStrings.of(context).rename, style: const TextStyle(color: Colors.white)),
       content: TextField(
         controller: _controller,
         autofocus: true,
@@ -1434,12 +1434,12 @@ class _RenameDialogState extends State<_RenameDialog> {
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
           child: Text(AppStrings.of(context).cancel,
-              style: TextStyle(color: Colors.white70)),
+              style: const TextStyle(color: Colors.white70)),
         ),
         TextButton(
           onPressed: () => Navigator.of(context).pop(_controller.text),
           child: Text(AppStrings.of(context).rename,
-            style: TextStyle(
+            style: const TextStyle(
               color: AppColors.accentBlue,
               fontWeight: FontWeight.w600,
             ),
@@ -1482,12 +1482,12 @@ class _AudioConvertProgressDialog extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
+              const Row(
                 children: [
-                  const Icon(Icons.audiotrack,
+                  Icon(Icons.audiotrack,
                       color: AppColors.accentBlue, size: 22),
-                  const SizedBox(width: 12),
-                  const Expanded(
+                  SizedBox(width: 12),
+                  Expanded(
                     child: Text(
                       'Converting to Audio',
                       style: TextStyle(

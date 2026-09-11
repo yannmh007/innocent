@@ -242,7 +242,7 @@ class _QuickAccessChipsState extends ConsumerState<QuickAccessChips> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(AppStrings.of(context).eqDuringPlayback),
-              duration: Duration(seconds: 1),
+              duration: const Duration(seconds: 1),
             ),
           );
         },

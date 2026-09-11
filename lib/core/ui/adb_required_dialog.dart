@@ -81,7 +81,7 @@ class AdbRequiredDialog {
                       'be opened through an ADB connection. The iADB app '
                       'handles that once and then stays connected.',
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 color: AppColors.white70,
                 fontSize: 13.5,
                 height: 1.55,

@@ -289,7 +289,7 @@ class LibraryPreferencesNotifier extends StateNotifier<LibraryPreferences> {
 
   /// Cycle view mode: All folders → Files → Folders → All folders
   void cycleViewMode() {
-    final values = ViewMode.values;
+    const values = ViewMode.values;
     final next = values[(state.viewMode.index + 1) % values.length];
     state = state.copyWith(viewMode: next);
     _save();

@@ -164,8 +164,8 @@ class _SortViewDialogState extends ConsumerState<SortViewDialog> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // View Mode (left) + Layout (right) headers in same row
-                    Row(
-                      children: const [
+                    const Row(
+                      children: [
                         Expanded(
                           flex: 3,
                           child: _SectionLabel('View Mode'),
@@ -440,7 +440,7 @@ class _SortViewDialogState extends ConsumerState<SortViewDialog> {
                           horizontal: 16, vertical: 8),
                     ),
                     child: Text(AppStrings.of(context).cancel,
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: Colors.white70,
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
@@ -456,7 +456,7 @@ class _SortViewDialogState extends ConsumerState<SortViewDialog> {
                           horizontal: 16, vertical: 8),
                     ),
                     child: Text(AppStrings.of(context).done,
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: AppColors.accentBlue,
                         fontSize: 14,
                         fontWeight: FontWeight.w600,

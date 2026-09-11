@@ -182,7 +182,7 @@ class _AskView extends StatelessWidget {
           children: <Widget>[
             Expanded(
               child: ListView(
-                padding: EdgeInsets.fromLTRB(
+                padding: const EdgeInsets.fromLTRB(
                     VH.gutter, VH.s6, VH.gutter, VH.s4),
                 children: <Widget>[
                   Center(

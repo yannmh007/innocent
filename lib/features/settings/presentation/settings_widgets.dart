@@ -76,7 +76,7 @@ class SettingsNavTile extends StatelessWidget {
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(AppStrings.of(context).soonBadge,
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: Colors.black87,
                     fontSize: 9,
                     fontWeight: FontWeight.w700,
@@ -89,7 +89,7 @@ class SettingsNavTile extends StatelessWidget {
                 ScaffoldMessenger.of(context)
                   ..hideCurrentSnackBar()
                   ..showSnackBar(SnackBar(
-                    content: Text('$title — ' + AppStrings.of(context).comingSoon),
+                    content: Text('$title — ${AppStrings.of(context).comingSoon}'),
                     duration: const Duration(seconds: 2),
                     behavior: SnackBarBehavior.floating,
                   ));

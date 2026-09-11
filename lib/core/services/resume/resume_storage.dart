@@ -92,7 +92,7 @@ class ResumeStorage {
     final touched = prefs.getInt(_lastTouchedKey);
     if (touched != null) {
       final ageMs = DateTime.now().millisecondsSinceEpoch - touched;
-      if (ageMs > Duration(days: 7).inMilliseconds) {
+      if (ageMs > const Duration(days: 7).inMilliseconds) {
         await clearLastPlaying();
         return null;
       }

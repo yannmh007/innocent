@@ -25,8 +25,10 @@ class MusicLocalDataSource {
     // MissingPluginException, which used to bubble up as opaque error.
     // Short-circuit to empty so the UI shows clean empty state.
     if (kIsWeb) {
-      if (kDebugMode) debugPrint('MusicLocalDataSource: skipping audio scan on web '
+      if (kDebugMode) {
+        debugPrint('MusicLocalDataSource: skipping audio scan on web '
           '(photo_manager has no web implementation)');
+      }
       return [];
     }
     // Phase 32: photo_manager auto-requests appropriate permission per type.

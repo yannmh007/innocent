@@ -23,7 +23,7 @@ class WatchInsightsScreen extends ConsumerWidget {
         backgroundColor: AppColors.darkBackground,
         elevation: 0,
         title: Text(AppStrings.of(context).yourWatchInsights,
-            style: TextStyle(color: Colors.white, fontSize: 18)),
+            style: const TextStyle(color: Colors.white, fontSize: 18)),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: insights.videosWatched == 0
@@ -66,11 +66,11 @@ class _EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.insights,
+            const Icon(Icons.insights,
                 size: 48, color: AppColors.white30),
             const SizedBox(height: 16),
             Text(AppStrings.of(context).noInsightsYet,
-              style: TextStyle(
+              style: const TextStyle(
                   color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 6),
@@ -121,7 +121,7 @@ class _HeroCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(AppStrings.of(context).totalTimeWatched,
-              style: TextStyle(
+              style: const TextStyle(
                   color: AppColors.white60, fontSize: 12)),
           const SizedBox(height: 6),
           RichText(
@@ -135,7 +135,7 @@ class _HeroCard extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                TextSpan(
+                const TextSpan(
                   text: ' h ',
                   style: TextStyle(
                     color: AppColors.white60,
@@ -150,7 +150,7 @@ class _HeroCard extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                TextSpan(
+                const TextSpan(
                   text: ' min',
                   style: TextStyle(
                     color: AppColors.white60,
@@ -206,7 +206,7 @@ class _Stat extends StatelessWidget {
                   fontWeight: FontWeight.w600)),
           const SizedBox(height: 2),
           Text(label,
-              style: TextStyle(
+              style: const TextStyle(
                   color: AppColors.white50, fontSize: 11)),
         ],
       ),
@@ -258,7 +258,7 @@ class _StreakCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(msg,
-                    style: TextStyle(
+                    style: const TextStyle(
                         color: AppColors.white60,
                         fontSize: 12)),
               ],
@@ -285,7 +285,7 @@ class _SevenDayCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(AppStrings.of(context).last7Days,
-              style: TextStyle(
+              style: const TextStyle(
                   color: AppColors.white60, fontSize: 12)),
           const SizedBox(height: 14),
           SizedBox(
@@ -301,7 +301,7 @@ class _SevenDayCard extends StatelessWidget {
                         if (insights.lastSevenDaysMinutes[i] > 0)
                           Text(
                             '${insights.lastSevenDaysMinutes[i]}',
-                            style: TextStyle(
+                            style: const TextStyle(
                                 color: AppColors.white60,
                                 fontSize: 10),
                           ),
@@ -326,7 +326,7 @@ class _SevenDayCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(labels[i],
-                            style: TextStyle(
+                            style: const TextStyle(
                                 color: AppColors.white40,
                                 fontSize: 10)),
                       ],
@@ -371,7 +371,7 @@ class _MostRewatchedCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(AppStrings.of(context).mostRewatched,
-                    style: TextStyle(
+                    style: const TextStyle(
                         color: AppColors.white60, fontSize: 11)),
                 const SizedBox(height: 2),
                 Text(
@@ -385,7 +385,7 @@ class _MostRewatchedCard extends StatelessWidget {
                 ),
                 Text(
                   '${e.watchCount} ${e.watchCount == 1 ? "watch" : "watches"}',
-                  style: TextStyle(
+                  style: const TextStyle(
                       color: AppColors.white50, fontSize: 12),
                 ),
               ],
@@ -424,7 +424,7 @@ class _FolderCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(AppStrings.of(context).mostWatchedFolder,
-                    style: TextStyle(
+                    style: const TextStyle(
                         color: AppColors.white60, fontSize: 11)),
                 const SizedBox(height: 2),
                 Text(
@@ -438,7 +438,7 @@ class _FolderCard extends StatelessWidget {
                 ),
                 Text(
                   '${insights.mostWatchedFolderCount} ${insights.mostWatchedFolderCount == 1 ? "play" : "plays"}',
-                  style: TextStyle(
+                  style: const TextStyle(
                       color: AppColors.white50, fontSize: 12),
                 ),
               ],
@@ -468,7 +468,7 @@ class _CompletionCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(AppStrings.of(context).averageCompletion,
-              style: TextStyle(
+              style: const TextStyle(
                   color: AppColors.white60, fontSize: 12)),
           const SizedBox(height: 8),
           Row(
@@ -490,7 +490,7 @@ class _CompletionCard extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(message,
-                    style: TextStyle(
+                    style: const TextStyle(
                         color: AppColors.white60, fontSize: 12)),
               ),
             ],
@@ -518,14 +518,14 @@ class _PrivacyFootnote extends StatelessWidget {
   const _PrivacyFootnote();
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return const Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Icon(Icons.lock_outline,
             size: 12, color: AppColors.white40),
-        const SizedBox(width: 6),
+        SizedBox(width: 6),
         Expanded(
-          child: const Text(
+          child: Text(
             'These numbers are computed entirely on your device. Nothing is uploaded.',
             style: TextStyle(
                 color: AppColors.white40,

@@ -185,7 +185,7 @@ class _DownloaderHomeScreenState extends ConsumerState<DownloaderHomeScreen>
       'bot wall — visiting the video to earn a session, then retrying',
       url: url,
     );
-    final SignInTarget target = SignInTargets.youtubeGuest;
+    const SignInTarget target = SignInTargets.youtubeGuest;
     final bool ok = await DownloaderEngineService.instance.guestSession(
       // THE VIDEO'S OWN PAGE, not the home page. This is the whole difference
       // between the session the browser earned and the one we were collecting.
@@ -1034,7 +1034,7 @@ class _DownloaderHomeScreenState extends ConsumerState<DownloaderHomeScreen>
       if (!must) return;
     }
 
-    final SignInTarget target = SignInTargets.youtubeGuest;
+    const SignInTarget target = SignInTargets.youtubeGuest;
     final bool ok = await DownloaderEngineService.instance.guestSession(
       url: target.url,
       cookieUrls: target.cookieUrls,

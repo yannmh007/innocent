@@ -119,7 +119,7 @@ class _CustomSpeedDialogState extends State<CustomSpeedDialog> {
           const SizedBox(height: 12),
           Text(AppStrings.of(context).speedRangeHint,
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               color: AppColors.darkOnSurfaceMuted,
               fontSize: 12,
             ),
@@ -130,12 +130,12 @@ class _CustomSpeedDialogState extends State<CustomSpeedDialog> {
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
           child: Text(AppStrings.of(context).cancel,
-              style: TextStyle(color: Colors.white70)),
+              style: const TextStyle(color: Colors.white70)),
         ),
         TextButton(
           onPressed: _apply,
           child: Text(AppStrings.of(context).apply,
-            style: TextStyle(
+            style: const TextStyle(
               color: AppColors.accentBlue,
               fontWeight: FontWeight.w600,
             ),

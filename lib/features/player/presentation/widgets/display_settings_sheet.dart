@@ -49,7 +49,7 @@ class _DisplaySettingsSheetState extends State<DisplaySettingsSheet> {
             Row(
               children: [
                 Text(AppStrings.of(context).displaySettingsTitle,
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 17,
                     fontWeight: FontWeight.w600,
@@ -59,7 +59,7 @@ class _DisplaySettingsSheetState extends State<DisplaySettingsSheet> {
                 TextButton(
                   onPressed: _reset,
                   child: Text(AppStrings.of(context).reset,
-                      style: TextStyle(color: AppColors.primaryBlue)),
+                      style: const TextStyle(color: AppColors.primaryBlue)),
                 ),
               ],
             ),
@@ -116,13 +116,13 @@ class _DisplaySettingsSheetState extends State<DisplaySettingsSheet> {
           ),
           Expanded(
             child: SliderTheme(
-              data: SliderThemeData(
+              data: const SliderThemeData(
                 activeTrackColor: AppColors.primaryBlue,
                 inactiveTrackColor: AppColors.white15,
                 thumbColor: AppColors.primaryBlue,
                 trackHeight: 2,
                 thumbShape:
-                    const RoundSliderThumbShape(enabledThumbRadius: 6),
+                    RoundSliderThumbShape(enabledThumbRadius: 6),
               ),
               child: Slider(
                 value: value,
@@ -137,7 +137,7 @@ class _DisplaySettingsSheetState extends State<DisplaySettingsSheet> {
             child: Text(
               '${(value * 100).round()}',
               textAlign: TextAlign.right,
-              style: TextStyle(
+              style: const TextStyle(
                 color: AppColors.white60,
                 fontSize: 12,
               ),

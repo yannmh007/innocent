@@ -56,7 +56,7 @@ class MusicQueueSheet extends ConsumerWidget {
                       color: Colors.white, size: 20),
                   const SizedBox(width: 10),
                   Text(AppStrings.of(context).playingQueueTitle,
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 16,
                       fontWeight: FontWeight.w600,

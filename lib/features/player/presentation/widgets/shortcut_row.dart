@@ -240,7 +240,7 @@ class _ShortcutButton extends StatelessWidget {
     return Container(
       width: 36,
       height: 36,
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         shape: BoxShape.circle,
         color: AppColors.shortcutInactive,
       ),

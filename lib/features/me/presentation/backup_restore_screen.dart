@@ -57,7 +57,7 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
       builder: (dctx) => AlertDialog(
         backgroundColor: AppColors.darkSurface,
         title: Text(AppStrings.of(context).restoreBackupTitle,
-            style: TextStyle(color: Colors.white)),
+            style: const TextStyle(color: Colors.white)),
         content: const Text(
           'This will REPLACE all current favourites, playlists, bookmarks, history, and recycle bin entries with those from the backup file.',
           style: TextStyle(color: Colors.white70),
@@ -66,12 +66,12 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
           TextButton(
             onPressed: () => Navigator.of(dctx).pop(false),
             child: Text(AppStrings.of(context).cancel,
-                style: TextStyle(color: Colors.white70)),
+                style: const TextStyle(color: Colors.white70)),
           ),
           TextButton(
             onPressed: () => Navigator.of(dctx).pop(true),
             child: Text(AppStrings.of(context).restore,
-                style: TextStyle(color: AppColors.accentBlue)),
+                style: const TextStyle(color: AppColors.accentBlue)),
           ),
         ],
       ),
@@ -114,7 +114,7 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
       builder: (dctx) => AlertDialog(
         backgroundColor: AppColors.darkSurface,
         title: Text(AppStrings.of(context).clearLibraryCacheTitle,
-            style: TextStyle(color: Colors.white)),
+            style: const TextStyle(color: Colors.white)),
         content: const Text(
           'Next app open will re-scan all videos from device storage. This is safe but slower the next time.',
           style: TextStyle(color: Colors.white70),
@@ -123,12 +123,12 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
           TextButton(
             onPressed: () => Navigator.of(dctx).pop(false),
             child: Text(AppStrings.of(context).cancel,
-                style: TextStyle(color: Colors.white70)),
+                style: const TextStyle(color: Colors.white70)),
           ),
           TextButton(
             onPressed: () => Navigator.of(dctx).pop(true),
             child:
-                Text(AppStrings.of(context).clear, style: TextStyle(color: AppColors.error)),
+                Text(AppStrings.of(context).clear, style: const TextStyle(color: AppColors.error)),
           ),
         ],
       ),
@@ -156,12 +156,12 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
             ),
             child: Row(
               children: [
-                Icon(Icons.info_outline,
+                const Icon(Icons.info_outline,
                     color: AppColors.accentBlue70,
                     size: 20),
                 const SizedBox(width: 12),
-                Expanded(
-                  child: const Text(
+                const Expanded(
+                  child: Text(
                     'Back up your settings, playlists, and preferences. Restore them on any device.',
                     style: TextStyle(
                       color: AppColors.white60,
@@ -327,7 +327,7 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
                     const SizedBox(height: 2),
                     Text(
                       subtitle,
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: AppColors.white50,
                         fontSize: 12,
                       ),
@@ -336,7 +336,7 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
                 ),
               ),
               const SizedBox(width: 8),
-              Icon(Icons.chevron_right,
+              const Icon(Icons.chevron_right,
                   color: AppColors.white30, size: 20),
             ],
           ),

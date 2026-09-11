@@ -90,7 +90,7 @@ class LocalNetworkScreen extends StatelessWidget {
                 context: context,
                 builder: (_) => AlertDialog(
                   backgroundColor: AppColors.darkSurface,
-                  title: Text(AppStrings.of(context).networks, style: TextStyle(color: Colors.white)),
+                  title: Text(AppStrings.of(context).networks, style: const TextStyle(color: Colors.white)),
                   content: const Text(
                     'Access remote files from SMB, FTP, FTPS or SFTP servers directly on your device.',
                     style: TextStyle(color: Colors.white70),
@@ -126,19 +126,19 @@ class LocalNetworkScreen extends StatelessWidget {
             ),
             child: Column(
               children: [
-                Row(
+                const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(Icons.computer,
                         color: AppColors.white90, size: 40),
-                    const SizedBox(width: 16),
+                    SizedBox(width: 16),
                     Icon(Icons.storage,
                         color: AppColors.white90, size: 40),
                   ],
                 ),
                 const SizedBox(height: 16),
                 Text(AppStrings.of(context).supportedProtocols,
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: Colors.white70,
                     fontSize: 12,
                     letterSpacing: 1.5,
@@ -161,7 +161,7 @@ class LocalNetworkScreen extends StatelessWidget {
 
           // ─── HOW TO USE ───
           Text(AppStrings.of(context).howToUse,
-            style: TextStyle(
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 16,
               fontWeight: FontWeight.w600,

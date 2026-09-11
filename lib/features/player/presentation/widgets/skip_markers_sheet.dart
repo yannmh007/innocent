@@ -124,7 +124,7 @@ class SkipMarkersSheet extends ConsumerWidget {
                   icon: const Icon(Icons.delete_outline,
                       color: AppColors.error, size: 18),
                   label: Text(AppStrings.of(context).clearAllMarkers,
-                    style: TextStyle(color: AppColors.error),
+                    style: const TextStyle(color: AppColors.error),
                   ),
                 ),
             ],

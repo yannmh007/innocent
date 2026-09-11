@@ -73,7 +73,7 @@ class _ResumeDialogState extends State<ResumeDialog> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(AppStrings.of(context).resumeTitle,
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
@@ -81,7 +81,7 @@ class _ResumeDialogState extends State<ResumeDialog> {
                   ),
                   const SizedBox(height: 14),
                   Text(AppStrings.of(context).resumeBody,
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: Colors.white70,
                       fontSize: 14,
                     ),
@@ -121,7 +121,7 @@ class _ResumeDialogState extends State<ResumeDialog> {
                           ),
                           const SizedBox(width: 10),
                           Text(AppStrings.of(context).useByDefault,
-                            style: TextStyle(
+                            style: const TextStyle(
                               color: Colors.white70,
                               fontSize: 13,
                             ),
@@ -142,7 +142,7 @@ class _ResumeDialogState extends State<ResumeDialog> {
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                         ),
                         child: Text(AppStrings.of(context).startOver.toUpperCase(),
-                          style: TextStyle(
+                          style: const TextStyle(
                             color: Colors.white70,
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
@@ -159,7 +159,7 @@ class _ResumeDialogState extends State<ResumeDialog> {
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                         ),
                         child: Text(AppStrings.of(context).resume,
-                          style: TextStyle(
+                          style: const TextStyle(
                             color: AppColors.accentBlue,
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
@@ -214,7 +214,7 @@ class _ResumeDialogState extends State<ResumeDialog> {
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
                 child: Text(AppStrings.of(context).startOver.toUpperCase(),
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: AppColors.accentBlue,
                     fontSize: 13,
                     fontWeight: FontWeight.w600,

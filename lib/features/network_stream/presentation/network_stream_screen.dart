@@ -105,7 +105,7 @@ class _NetworkStreamScreenState extends ConsumerState<NetworkStreamScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(AppStrings.of(context).streamUrl,
-                style: TextStyle(
+                style: const TextStyle(
                   color: AppColors.darkOnSurface,
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
@@ -158,7 +158,7 @@ class _NetworkStreamScreenState extends ConsumerState<NetworkStreamScreen> {
                 ),
                 icon: const Icon(Icons.play_arrow),
                 label: Text(AppStrings.of(context).play,
-                  style: TextStyle(fontWeight: FontWeight.w600),
+                  style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
               ),
               const SizedBox(height: 8),
@@ -185,7 +185,7 @@ class _NetworkStreamScreenState extends ConsumerState<NetworkStreamScreen> {
                     TextButton(
                       onPressed: _clearRecent,
                       child: Text(AppStrings.of(context).clear,
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: AppColors.darkOnSurfaceMuted,
                           fontSize: 12,
                         ),

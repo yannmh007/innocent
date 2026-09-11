@@ -119,8 +119,8 @@ class RowSkeletonList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cardWidth = PosterMetrics.rowCardWidth;
-    final posterHeight = cardWidth / PosterMetrics.aspect;
+    const cardWidth = PosterMetrics.rowCardWidth;
+    const posterHeight = cardWidth / PosterMetrics.aspect;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

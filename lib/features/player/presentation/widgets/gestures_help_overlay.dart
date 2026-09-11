@@ -159,7 +159,7 @@ class _GestureItem extends StatelessWidget {
         Container(
           width: 40,
           height: 40,
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             color: AppColors.accentBlue15,
             shape: BoxShape.circle,
           ),

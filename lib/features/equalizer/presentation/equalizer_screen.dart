@@ -314,7 +314,7 @@ class _EqualizerScreenState extends ConsumerState<EqualizerScreen>
                 fontWeight: FontWeight.w600,
               ),
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             const Text(
               'Your device or OS does not support audio effects, or no audio is currently playing.',
               textAlign: TextAlign.center,
@@ -380,7 +380,7 @@ class _EqualizerScreenState extends ConsumerState<EqualizerScreen>
           ),
           const SizedBox(height: 16),
           Text(AppStrings.of(context).profilesFineTuneHint,
-            style: TextStyle(
+            style: const TextStyle(
               color: AppColors.darkOnSurfaceMuted,
               fontSize: 12,
               height: 1.4,
@@ -525,7 +525,7 @@ class _EqualizerScreenState extends ConsumerState<EqualizerScreen>
     final c = size / 2;
     final dx = local.dx - c;
     final dy = local.dy - c;
-    final sweep = _DialPainter._sweep;
+    const sweep = _DialPainter._sweep;
     var delta = (math.atan2(dy, dx) - _DialPainter._start) % (2 * math.pi);
     if (delta < 0) delta += 2 * math.pi;
     double t = delta <= sweep
@@ -640,7 +640,7 @@ class _EqualizerScreenState extends ConsumerState<EqualizerScreen>
             const Icon(Icons.waves, color: AppColors.white55, size: 20),
             const SizedBox(width: 12),
             Text(AppStrings.of(context).reverb,
-                style: TextStyle(color: AppColors.white70, fontSize: 16)),
+                style: const TextStyle(color: AppColors.white70, fontSize: 16)),
             const Spacer(),
             Text(name,
                 style:

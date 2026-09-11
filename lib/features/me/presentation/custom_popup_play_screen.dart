@@ -27,7 +27,7 @@ class CustomPopupPlayScreen extends ConsumerWidget {
         padding: const EdgeInsets.all(16),
         children: [
           Text(AppStrings.of(context).popupPlayControls,
-            style: TextStyle(
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 16,
               fontWeight: FontWeight.w600,

@@ -91,7 +91,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               child: TextButton(
                 onPressed: _finish,
                 child: Text(AppStrings.of(context).skip,
-                  style: TextStyle(color: AppColors.darkOnSurfaceMuted),
+                  style: const TextStyle(color: AppColors.darkOnSurfaceMuted),
                 ),
               ),
             ),

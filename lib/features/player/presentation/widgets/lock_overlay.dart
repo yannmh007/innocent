@@ -53,7 +53,7 @@ class LockOverlay extends ConsumerWidget {
                   const SizedBox(width: 8),
                   Text(
                     '-${_fmt(state.duration - state.position)}',
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: AppColors.white70,
                       fontSize: 13,
                       fontFeatures: [FontFeature.tabularFigures()],

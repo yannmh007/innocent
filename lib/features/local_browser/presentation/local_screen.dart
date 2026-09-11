@@ -224,7 +224,7 @@ class _LocalScreenState extends ConsumerState<LocalScreen> {
       builder: (dctx) => SimpleDialog(
         backgroundColor: AppColors.darkSurface,
         title: Text(AppStrings.of(context).help,
-          style: TextStyle(color: Colors.white, fontSize: 18),
+          style: const TextStyle(color: Colors.white, fontSize: 18),
         ),
         children: [
           // Phase 45 (audit refined): MX Player V3 Help submenu has:
@@ -305,12 +305,12 @@ class _LocalScreenState extends ConsumerState<LocalScreen> {
         backgroundColor: AppColors.darkSurface,
         title: const Text("What's new",
             style: TextStyle(color: Colors.white)),
-        content: SingleChildScrollView(
+        content: const SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
-            children: const [
-              const Text(
+            children: [
+              Text(
                 'Build 60 — Phase 45 audit refinements',
                 style: TextStyle(
                     color: Colors.white, fontWeight: FontWeight.w600),
@@ -335,7 +335,7 @@ class _LocalScreenState extends ConsumerState<LocalScreen> {
           TextButton(
             onPressed: () => Navigator.of(dctx).pop(),
             child: Text(AppStrings.of(context).close,
-                style: TextStyle(color: AppColors.accentBlue)),
+                style: const TextStyle(color: AppColors.accentBlue)),
           ),
         ],
       ),
@@ -348,7 +348,7 @@ class _LocalScreenState extends ConsumerState<LocalScreen> {
       builder: (dctx) => AlertDialog(
         backgroundColor: AppColors.darkSurface,
         title: Text(AppStrings.of(context).features,
-            style: TextStyle(color: Colors.white)),
+            style: const TextStyle(color: Colors.white)),
         content: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -369,7 +369,7 @@ class _LocalScreenState extends ConsumerState<LocalScreen> {
           TextButton(
             onPressed: () => Navigator.of(dctx).pop(),
             child: Text(AppStrings.of(context).close,
-                style: TextStyle(color: AppColors.accentBlue)),
+                style: const TextStyle(color: AppColors.accentBlue)),
           ),
         ],
       ),
@@ -382,7 +382,7 @@ class _LocalScreenState extends ConsumerState<LocalScreen> {
       builder: (dctx) => AlertDialog(
         backgroundColor: AppColors.darkSurface,
         title: Text(AppStrings.of(context).faq,
-            style: TextStyle(color: Colors.white)),
+            style: const TextStyle(color: Colors.white)),
         content: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -422,7 +422,7 @@ class _LocalScreenState extends ConsumerState<LocalScreen> {
           TextButton(
             onPressed: () => Navigator.of(dctx).pop(),
             child: Text(AppStrings.of(context).close,
-                style: TextStyle(color: AppColors.accentBlue)),
+                style: const TextStyle(color: AppColors.accentBlue)),
           ),
         ],
       ),
@@ -435,15 +435,15 @@ class _LocalScreenState extends ConsumerState<LocalScreen> {
       builder: (dctx) => AlertDialog(
         backgroundColor: AppColors.darkSurface,
         title: Text(AppStrings.of(context).privacy,
-            style: TextStyle(color: Colors.white)),
+            style: const TextStyle(color: Colors.white)),
         content: Text(AppStrings.of(context).privacyBody,
-          style: TextStyle(color: Colors.white70, fontSize: 13),
+          style: const TextStyle(color: Colors.white70, fontSize: 13),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dctx).pop(),
             child: Text(AppStrings.of(context).close,
-                style: TextStyle(color: AppColors.accentBlue)),
+                style: const TextStyle(color: AppColors.accentBlue)),
           ),
         ],
       ),
@@ -457,7 +457,7 @@ class _LocalScreenState extends ConsumerState<LocalScreen> {
       builder: (dctx) => AlertDialog(
         backgroundColor: AppColors.darkSurface,
         title: Text(AppStrings.of(context).appName,
-          style: TextStyle(color: Colors.white),
+          style: const TextStyle(color: Colors.white),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -468,7 +468,7 @@ class _LocalScreenState extends ConsumerState<LocalScreen> {
             ),
             const SizedBox(height: 12),
             Text(AppStrings.of(context).aboutBody,
-              style: TextStyle(color: Colors.white54, fontSize: 13),
+              style: const TextStyle(color: Colors.white54, fontSize: 13),
             ),
           ],
         ),
@@ -476,7 +476,7 @@ class _LocalScreenState extends ConsumerState<LocalScreen> {
           TextButton(
             onPressed: () => Navigator.of(dctx).pop(),
             child: Text(AppStrings.of(context).ok,
-              style: TextStyle(color: AppColors.accentBlue),
+              style: const TextStyle(color: AppColors.accentBlue),
             ),
           ),
         ],
@@ -704,7 +704,7 @@ class _LocalScreenState extends ConsumerState<LocalScreen> {
             Container(
               width: 96,
               height: 96,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 color: AppColors.accentBlue15,
                 shape: BoxShape.circle,
               ),
@@ -716,7 +716,7 @@ class _LocalScreenState extends ConsumerState<LocalScreen> {
             ),
             const SizedBox(height: 24),
             Text(AppStrings.of(context).findYourVideos,
-              style: TextStyle(
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 20,
                 fontWeight: FontWeight.w600,
@@ -902,7 +902,7 @@ class _LocalScreenState extends ConsumerState<LocalScreen> {
       error: (e, _) => Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
-          child: Text(AppStrings.of(context).errorLoadingFoldersPrefix + ': $e',
+          child: Text('${AppStrings.of(context).errorLoadingFoldersPrefix}: $e',
             textAlign: TextAlign.center,
             style: const TextStyle(color: AppColors.error),
           ),
@@ -1185,7 +1185,7 @@ class _LocalScreenState extends ConsumerState<LocalScreen> {
         ),
       ),
       error: (e, _) => Center(
-        child: Text(AppStrings.of(context).errorWord + ': $e',
+        child: Text('${AppStrings.of(context).errorWord}: $e',
             style: const TextStyle(color: AppColors.error)),
       ),
     );

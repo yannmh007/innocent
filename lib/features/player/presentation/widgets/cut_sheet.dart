@@ -87,7 +87,7 @@ class _CutSheetState extends ConsumerState<CutSheet> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(AppStrings.of(context).setStartFirst),
-          duration: Duration(milliseconds: 1500),
+          duration: const Duration(milliseconds: 1500),
         ),
       );
       return;
@@ -96,7 +96,7 @@ class _CutSheetState extends ConsumerState<CutSheet> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(AppStrings.of(context).endAfterStart),
-          duration: Duration(milliseconds: 1500),
+          duration: const Duration(milliseconds: 1500),
         ),
       );
       return;
@@ -120,7 +120,7 @@ class _CutSheetState extends ConsumerState<CutSheet> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(AppStrings.of(context).setBothPoints),
-          duration: Duration(milliseconds: 1500),
+          duration: const Duration(milliseconds: 1500),
         ),
       );
       return;
@@ -183,7 +183,7 @@ class _CutSheetState extends ConsumerState<CutSheet> {
             ),
             const SizedBox(height: 4),
             Text(AppStrings.of(context).markClipHint,
-              style: TextStyle(
+              style: const TextStyle(
                 color: AppColors.white60,
                 fontSize: 12,
               ),
@@ -216,12 +216,12 @@ class _CutSheetState extends ConsumerState<CutSheet> {
                   const Icon(Icons.timer_outlined,
                       color: Colors.white54, size: 16),
                   const SizedBox(width: 8),
-                  Text(AppStrings.of(context).currentLabel + ': ${_fmt(position)} / ${_fmt(duration)}',
+                  Text('${AppStrings.of(context).currentLabel}: ${_fmt(position)} / ${_fmt(duration)}',
                     style: const TextStyle(color: Colors.white, fontSize: 12),
                   ),
                   const Spacer(),
                   if (clipDuration != null)
-                    Text(AppStrings.of(context).clipLabel + ': ${_fmt(clipDuration)}',
+                    Text('${AppStrings.of(context).clipLabel}: ${_fmt(clipDuration)}',
                       style: const TextStyle(
                         color: AppColors.accentBlue,
                         fontSize: 12,
@@ -243,7 +243,7 @@ class _CutSheetState extends ConsumerState<CutSheet> {
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
                     child: Text(AppStrings.of(context).clear,
-                      style: TextStyle(color: Colors.white70),
+                      style: const TextStyle(color: Colors.white70),
                     ),
                   ),
                 ),
@@ -257,7 +257,7 @@ class _CutSheetState extends ConsumerState<CutSheet> {
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
                     child: Text(AppStrings.of(context).export,
-                      style: TextStyle(fontWeight: FontWeight.w600),
+                      style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
                   ),
                 ),
@@ -353,7 +353,7 @@ class _PointRow extends StatelessWidget {
             ),
           ),
           child: Text(AppStrings.of(context).setWord,
-            style: TextStyle(
+            style: const TextStyle(
               color: AppColors.accentBlue,
               fontWeight: FontWeight.w600,
             ),

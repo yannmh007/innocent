@@ -277,7 +277,7 @@ class DiagnosticsLog {
     // the one thing nobody thinks to mention when describing a problem.
     out.writeln(
       'dns        ${privateDns == 'on' ? 'private DNS ON' : privateDns == 'off' ? 'system resolver' : 'unknown'}'
-      '${netVerdict != null ? '  ·  ' + netVerdict : ''}'
+      '${netVerdict != null ? '  ·  $netVerdict' : ''}'
       '${bypassRunning ? '  ·  app resolver ON' : ''}',
     );
     out.writeln('notifs     ${notificationsEnabled ? 'allowed' : 'BLOCKED'}');

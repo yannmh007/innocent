@@ -17,7 +17,7 @@ class MagicPenFab extends StatelessWidget {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(AppStrings.of(context).magicPenHint),
-              duration: Duration(seconds: 1),
+              duration: const Duration(seconds: 1),
             ),
           );
         },

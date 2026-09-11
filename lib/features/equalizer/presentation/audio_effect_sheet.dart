@@ -814,7 +814,7 @@ class _AudioEffectSheetState extends ConsumerState<AudioEffectSheet>
     final c = size / 2;
     final dx = local.dx - c;
     final dy = local.dy - c;
-    final sweep = _DialPainter._sweep;
+    const sweep = _DialPainter._sweep;
     var delta = (math.atan2(dy, dx) - _DialPainter._start) % (2 * math.pi);
     if (delta < 0) delta += 2 * math.pi;
     double t = delta <= sweep

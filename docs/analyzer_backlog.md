@@ -1,16 +1,17 @@
 # The analyzer backlog — what the issues actually are
 
-`flutter analyze` reports **705 issues and zero errors**, down from 1219.
+`flutter analyze` reports **295 issues and zero errors**, down from 1219.
 
 That 1219 sat in every CI run and every PR description for months, which was
 exactly the problem with it: a count nobody has broken down is a count nobody
 can act on, and one that large reads as "this codebase is bad" when the truth
 is much more boring. This is the breakdown, and the order to work it in.
 
-**Step 1 is done** — see the changelog at the bottom. Steps 2-5 are not.
+**Steps 1 and 2 are done** — see the changelog at the bottom. Steps 3-5 are
+not, and they are the ones that need a human reading each site.
 
-Snapshot taken on Flutter 3.32.8 (the version CI pins) at commit `37872ae`
-plus the step 1 change. Reproduce with:
+Counts below are the CURRENT state unless a column says otherwise. Taken on
+Flutter 3.32.8 (the version CI pins). Reproduce with:
 
 ```
 flutter analyze --no-fatal-infos --no-fatal-warnings
@@ -28,64 +29,59 @@ which needed a file-by-file review:
 
 | | count | status |
 |---|---:|---|
-| One pattern in the player controller (see below) | 514 | **cleared** |
-| `prefer_const_constructors` and friends, all auto-fixable | 415 | open |
+| One pattern in the player controller (see below) | 514 | **cleared** (step 1) |
+| `prefer_const_constructors` and friends, all auto-fixable | 415 | **410 cleared** (step 2) |
 | Everything else | 290 | open |
 
-Severity split is now **51 warning, 654 info, 0 error** — it was 565 / 654 / 0.
-Clearing the player pattern took 514 warnings out in one commit, which is why
-the warning column collapsed while the info column did not move at all.
+Severity split is now **51 warning, 244 info, 0 error** — it was 565 / 654 / 0.
+Step 1 took out 514 warnings and no infos; step 2 took out 410 infos and no
+warnings. The two halves of the original 72% were cleanly separable, which is
+why neither touched the other's column.
 
 ---
 
 ## By rule
 
-Current, after step 1. The two `invalid_use_of_*` rules that held 514 between
-them are gone from the list entirely.
+Current, after steps 1 and 2. The two `invalid_use_of_*` rules that held 514
+between them, and every `prefer_*` rule that held 402, are gone from the list.
 
 | rule | count | severity |
 |---|---:|---|
-| `prefer_const_constructors` | 361 | info |
 | `deprecated_member_use` | 116 | info |
 | `unawaited_futures` | 84 | info |
 | `use_build_context_synchronously` | 20 | warning |
-| `prefer_interpolation_to_compose_strings` | 20 | info |
 | `unnecessary_import` | 16 | info |
 | `annotate_overrides` | 14 | info |
 | `unused_import` | 12 | warning |
-| `prefer_const_literals_to_create_immutables` | 11 | info |
-| `prefer_const_declarations` | 10 | info |
 | `unused_field` | 9 | warning |
 | `no_wildcard_variable_uses` | 9 | info |
 | `unused_element` | 5 | warning |
-| `unnecessary_const` | 3 | info |
-| `curly_braces_in_flow_control_structures` | 3 | info |
 | `dead_null_aware_expression` | 2 | warning |
-| `unnecessary_brace_in_string_interps` | 2 | info |
 | 8 more rules, one each | 8 | mixed |
 
 ## By area
 
-| folder | count | was |
+| folder | now | at 1219 |
 |---|---:|---:|
-| `lib/features/local_browser` | 95 | 95 |
-| `lib/features/music` | 87 | 87 |
-| `lib/features/user_data` | 82 | 82 |
-| `lib/features/me` | 75 | 75 |
-| `lib/features/player` | 73 | **587** |
-| `lib/features/transfer` | 56 | 56 |
-| `lib/features/settings` | 51 | 51 |
-| `lib/features/private_folder` | 50 | 50 |
-| `lib/features/video_hub` | 38 | 38 |
-| `lib/core/services` | 35 | 35 |
-| `lib/features/equalizer` | 29 | 29 |
-| `lib/features/downloader` | 21 | 21 |
-| everything else | 13 | 13 |
+| `lib/features/private_folder` | 48 | 50 |
+| `lib/core/services` | 33 | 35 |
+| `lib/features/local_browser` | 31 | 95 |
+| `lib/features/video_hub` | 30 | 38 |
+| `lib/features/player` | 28 | 587 |
+| `lib/features/equalizer` | 24 | 29 |
+| `lib/features/user_data` | 21 | 82 |
+| `lib/features/transfer` | 18 | 56 |
+| `lib/features/downloader` | 18 | 21 |
+| `lib/features/settings` | 13 | 51 |
+| `lib/features/music` | 13 | 87 |
+| `lib/features/me` | 11 | 75 |
+| everything else | 7 | 13 |
 
-The player was 48% of the whole backlog and is now 10% of it. Nothing else
-moved, because nothing else was touched. Its remaining 73 are ordinary and
-spread thin — `player_screen.dart` 14, `cut_sheet.dart` 10,
-`player_provider.dart` 7, and a long tail below that.
+The ordering has completely inverted, and that is the useful part. `player`
+was 48% of the backlog and is now 9% of a much smaller one. `music`, `me` and
+`user_data` looked like problem areas and were almost entirely `const` noise.
+What is left at the top — `private_folder`, `core/services` — was always the
+real remainder; it was just buried under 924 mechanical findings.
 
 ### Why the player looked so bad, and why it wasn't
 
@@ -213,7 +209,7 @@ only if nobody meant to wire them up.
 
 ---
 
-## (c) Style only — 415
+## (c) Style only — 5 left of 415
 
 `prefer_const_constructors` (361), `prefer_interpolation_to_compose_strings`
 (20), `prefer_const_literals_to_create_immutables` (11),
@@ -224,10 +220,16 @@ only if nobody meant to wire them up.
 `avoid_renaming_method_parameters`, `avoid_void_async`,
 `unnecessary_nullable_for_final_variable_declarations`).
 
-Essentially all of it is `dart fix --apply`. The const constructors save a
-little rebuild work; none of it changes behaviour. Spread fairly evenly:
-`music` 66, `user_data` 59, `me` 59, `local_browser` 55, `player` 37,
-`transfer` 36.
+Essentially all of it was `dart fix --apply`, and 410 of the 415 went that way
+in step 2. The const constructors save a little rebuild work; none of it
+changes behaviour.
+
+**Five were deliberately left**, each for a stated reason — see the step 2
+changelog entry below. Two of them (`avoid_void_async`,
+`unnecessary_nullable_for_final_variable_declarations`) are the ones to be
+careful with if anyone reaches for a blanket `dart fix --apply` later: both
+change types or signatures, and both can make the code LESS correct than the
+author wrote it.
 
 ---
 
@@ -238,7 +240,8 @@ reviewable:
 
 1. ~~**The player `state` pattern** — 514 gone in one commit, no behaviour
    change. 1219 → 705.~~ **Done.** The prediction held exactly.
-2. **`dart fix --apply`** for category (c) — 415 gone, mechanical. 705 → 290.
+2. ~~**`dart fix --apply`** for category (c) — 415 gone, mechanical. 705 → 290.~~
+   **Done.** 410 went; five were held back on purpose. 705 → 295.
 3. **`use_build_context_synchronously`, 20 by hand.** The only genuine crash
    risk in the list, and the only step that needs judgement.
 4. **The upgrade landmines**: `no_wildcard_variable_uses` (9) and
@@ -247,9 +250,10 @@ reviewable:
 5. **`unawaited_futures`, 84 read individually** — the long tail, and where a
    real bug is most likely still hiding.
 
-Steps 1 and 2 are together 76% of the original number and close to zero risk.
-Doing them first makes the remaining 290 small enough that the count means
-something again, which is the point of the exercise.
+Steps 1 and 2 were together 76% of the original number and close to zero risk.
+Doing them first has made the remaining 295 small enough that the count means
+something again, which was the point of the exercise. Every one of steps 3-5
+now needs a person reading each site — there is no more mechanical work left.
 
 ---
 
@@ -264,3 +268,49 @@ each saying why. 18 lines added, none removed, no code touched.
 infos unchanged at 654 (both rules were warnings); errors still 0. The two
 rules no longer appear anywhere in the output. `tool/check.py` 8/8 and all 206
 tests still pass.
+
+**Step 2 — the style rules.** `dart fix --apply` restricted with `--code=` to
+nine rules, applied to 80 files. **705 → 295.** Infos 654 → 244; warnings
+unchanged at 51; errors still 0.
+
+`--code=` rather than a bare `dart fix --apply`, because a bare run also
+rewrites `deprecated_member_use`, `unawaited_futures` and
+`use_build_context_synchronously` — the three groups that are NOT mechanical
+and need a person. The nine applied were `prefer_const_constructors`,
+`prefer_const_declarations`, `prefer_const_literals_to_create_immutables`,
+`unnecessary_const`, `prefer_interpolation_to_compose_strings`,
+`unnecessary_brace_in_string_interps`,
+`curly_braces_in_flow_control_structures`, `prefer_if_null_operators` and
+`unnecessary_nullable_for_final_variable_declarations`.
+
+**Five findings were held back, and the reasons are worth keeping:**
+
+* `avoid_void_async` (1) — would turn `PlayerController.selectDecoder` from
+  `void` into `Future<void>`. Every un-awaited call site then becomes an
+  `unawaited_futures` candidate, so a "style" fix would have quietly created
+  work in the category that most needs human attention.
+* `non_constant_identifier_names` (1) — `_v0_to_v1` in
+  `settings_migration_service.dart` is a deliberate convention: the file's own
+  doc comment reads *"runs each `_v0_to_v1`, `_v1_to_v2`, ..."*. `dart fix`
+  renames the code and not the prose, which desyncs them.
+* `avoid_renaming_method_parameters` (1) — `dart fix` offers no fix for it.
+* `unnecessary_nullable_for_final_variable_declarations` (1) — this one was
+  applied, then REVERTED. In `status_saver_screen.dart` it changed
+  `final AssetEntity? asset` to `final AssetEntity asset`, trusting
+  `PhotoManager.editor.saveVideo`'s non-nullable signature. The next line is
+  `if (asset != null)`, which the author wrote because those plugin methods do
+  return null on a failed MediaStore save — the comment directly above says
+  so. The fix made the code less defensive than the author deliberately wrote
+  it, and turned a working guard into an `unnecessary_null_comparison`
+  warning. Reverted; the nullable type stands.
+* `prefer_interpolation_to_compose_strings` (1) — applied, then reverted at
+  one site in `downloader_home_screen.dart`. `dart fix` produced an
+  interpolation that OPENS on one line and CLOSES two lines later. The Dart is
+  valid and `flutter analyze` is happy, but `tool/check.py`'s brace-balance
+  guard counts 216 vs 217 and fails, which would have turned CI red. Reverted
+  rather than hand-rewritten, so this commit stays exactly what `dart fix`
+  produced and nothing more.
+
+The last two are the general warning: a blanket `dart fix --apply` on this
+repo will change types and will trip the repo's own structural guard. Restrict
+it with `--code=` and read the diff.

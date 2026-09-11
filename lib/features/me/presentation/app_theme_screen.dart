@@ -136,7 +136,7 @@ class AppThemeScreen extends ConsumerWidget {
 
           // Classic Themes header
           Text(AppStrings.of(context).classicThemes,
-            style: TextStyle(
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 16,
               fontWeight: FontWeight.w600,

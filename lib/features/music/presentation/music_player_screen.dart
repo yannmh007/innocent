@@ -90,7 +90,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
         color: AppColors.darkSurface,
         border: Border.all(color: AppColors.white15, width: 1),
       ),
-      child: Icon(
+      child: const Icon(
         Icons.music_note,
         size: 40,
         color: AppColors.white50,
@@ -155,7 +155,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
       context: context,
       builder: (dctx) => AlertDialog(
         backgroundColor: AppColors.darkSurface,
-        title: Text(AppStrings.of(context).sleepTimer, style: TextStyle(color: Colors.white)),
+        title: Text(AppStrings.of(context).sleepTimer, style: const TextStyle(color: Colors.white)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -194,7 +194,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
               ),
             ListTile(
               dense: true,
-              title: Text(AppStrings.of(context).off, style: TextStyle(color: Colors.white70)),
+              title: Text(AppStrings.of(context).off, style: const TextStyle(color: Colors.white70)),
               onTap: () {
                 Navigator.pop(dctx);
                 ref.read(musicPlayingProvider.notifier).cancelSleepTimer();
@@ -202,7 +202,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text(AppStrings.of(context).sleepTimerOff),
-                      duration: Duration(seconds: 1),
+                      duration: const Duration(seconds: 1),
                     ),
                   );
                 }
@@ -221,7 +221,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppStrings.of(context).shareFailed + ': $e')),
+        SnackBar(content: Text('${AppStrings.of(context).shareFailed}: $e')),
       );
     }
   }
@@ -307,7 +307,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                   child: TextButton(
                     onPressed: () => Navigator.of(dctx).pop(),
                     child: Text(AppStrings.of(context).close,
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: AppColors.primaryBlue,
                         fontWeight: FontWeight.w600,
                       ),
@@ -355,7 +355,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
           ScaffoldMessenger.of(context)
             ..hideCurrentSnackBar()
             ..showSnackBar(SnackBar(
-              content: Text(AppStrings.of(context).playbackError + ': $newErr'),
+              content: Text('${AppStrings.of(context).playbackError}: $newErr'),
               duration: const Duration(seconds: 4),
               behavior: SnackBarBehavior.floating,
             ));
@@ -375,7 +375,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()
           ..showSnackBar(SnackBar(
-            content: Text(AppStrings.of(context).playbackError + ': $newErr'),
+            content: Text('${AppStrings.of(context).playbackError}: $newErr'),
             duration: const Duration(seconds: 4),
             behavior: SnackBarBehavior.floating,
           ));
@@ -435,7 +435,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                         const SizedBox(height: 2),
                         Text(
                           artist,
-                          style: TextStyle(
+                          style: const TextStyle(
                             color: AppColors.white60,
                             fontSize: 13,
                           ),
@@ -477,7 +477,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                   color: const Color(0xFF1A1A2E),
                   border: Border.all(
                       color: AppColors.white10, width: 2),
-                  boxShadow: [
+                  boxShadow: const [
                     BoxShadow(
                       color: AppColors.black40,
                       blurRadius: 20,
@@ -529,7 +529,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   IconButton(
-                    icon: Icon(Icons.equalizer,
+                    icon: const Icon(Icons.equalizer,
                         color: AppColors.white70, size: 24),
                     onPressed: _showEqualizer,
                     tooltip: 'Equalizer',
@@ -592,7 +592,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                     tooltip: 'Favourite',
                   ),
                   IconButton(
-                    icon: Icon(Icons.more_vert,
+                    icon: const Icon(Icons.more_vert,
                         color: AppColors.white70, size: 24),
                     onPressed: () {
                       showModalBottomSheet(
@@ -610,7 +610,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                                 leading: const Icon(Icons.access_time,
                                     color: Colors.white70),
                                 title: Text(AppStrings.of(context).sleepTimer,
-                                    style: TextStyle(color: Colors.white)),
+                                    style: const TextStyle(color: Colors.white)),
                                 onTap: () {
                                   Navigator.pop(context);
                                   _showSleepTimer();
@@ -620,7 +620,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                                 leading: const Icon(Icons.share,
                                     color: Colors.white70),
                                 title: Text(AppStrings.of(context).share,
-                                    style: TextStyle(color: Colors.white)),
+                                    style: const TextStyle(color: Colors.white)),
                                 onTap: () {
                                   Navigator.pop(context);
                                   _shareSong(song);
@@ -630,7 +630,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                                 leading: const Icon(Icons.info_outline,
                                     color: Colors.white70),
                                 title: Text(AppStrings.of(context).information,
-                                    style: TextStyle(color: Colors.white)),
+                                    style: const TextStyle(color: Colors.white)),
                                 onTap: () {
                                   Navigator.pop(context);
                                   _showSongInfo(song);
@@ -655,11 +655,11 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
               child: Column(
                 children: [
                   SliderTheme(
-                    data: SliderThemeData(
+                    data: const SliderThemeData(
                       thumbShape:
-                          const RoundSliderThumbShape(enabledThumbRadius: 6),
+                          RoundSliderThumbShape(enabledThumbRadius: 6),
                       overlayShape:
-                          const RoundSliderOverlayShape(overlayRadius: 14),
+                          RoundSliderOverlayShape(overlayRadius: 14),
                       trackHeight: 3,
                       activeTrackColor: AppColors.primaryBlue,
                       inactiveTrackColor:
@@ -699,14 +699,14 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                       children: [
                         Text(
                           _formatDuration(currentPos),
-                          style: TextStyle(
+                          style: const TextStyle(
                             color: AppColors.white60,
                             fontSize: 12,
                           ),
                         ),
                         Text(
                           _formatDuration(duration),
-                          style: TextStyle(
+                          style: const TextStyle(
                             color: AppColors.white60,
                             fontSize: 12,
                           ),
@@ -853,7 +853,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
             // ─── LYRICS / PLAYING QUEUE TABS ───
             Container(
               height: 48,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 border: Border(
                   top: BorderSide(
                       color: AppColors.white10),
@@ -875,12 +875,12 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.lyrics_outlined,
+                          const Icon(Icons.lyrics_outlined,
                               color: AppColors.white70,
                               size: 18),
                           const SizedBox(width: 8),
                           Text(AppStrings.of(context).lyrics,
-                            style: TextStyle(
+                            style: const TextStyle(
                               color: AppColors.white70,
                               fontSize: 14,
                             ),
@@ -900,12 +900,12 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.queue_music,
+                          const Icon(Icons.queue_music,
                               color: AppColors.white70,
                               size: 18),
                           const SizedBox(width: 8),
                           Text(AppStrings.of(context).playingQueueTitle,
-                            style: TextStyle(
+                            style: const TextStyle(
                               color: AppColors.white70,
                               fontSize: 14,
                             ),
@@ -980,7 +980,7 @@ class _LyricsSheetState extends ConsumerState<_LyricsSheet> {
                         ),
                         const SizedBox(height: 2),
                         Text(AppStrings.of(context).lyrics,
-                          style: TextStyle(
+                          style: const TextStyle(
                             color: AppColors.white50,
                             fontSize: 12,
                           ),
@@ -1079,7 +1079,7 @@ class _LyricsSheetState extends ConsumerState<_LyricsSheet> {
         child: Text(
           msg,
           textAlign: TextAlign.center,
-          style: TextStyle(
+          style: const TextStyle(
             color: AppColors.white70,
             fontSize: 13,
             height: 1.55,
