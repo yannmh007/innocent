@@ -957,7 +957,13 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
       final image = await boundary.toImage(pixelRatio: 2.0);
       final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
       if (byteData == null) {
-        _showSnack(context, 'Screenshot failed: encoding error');
+        // `toImage` / `toByteData` above are both awaits, so match the
+        // `context.mounted` guard this method already uses on its success and
+        // error paths. The screenshot has failed either way; the only question
+        // is whether there is still a Scaffold to say so in.
+        if (context.mounted) {
+          _showSnack(context, 'Screenshot failed: encoding error');
+        }
         return;
       }
       final bytes = byteData.buffer.asUint8List();
@@ -1006,6 +1012,13 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
           }
         }
       }
+      // The permission check and its dialog above are awaits, so the player
+      // screen can be gone by now. Do NOT open the floating window in that
+      // case: it would leave a video hovering over a screen the user has
+      // already left, with no player behind it to expand back into. Bailing
+      // out entirely is the decided behaviour — a PiP the user asked for is
+      // worth less than one they cannot get rid of.
+      if (!context.mounted) return;
       ref.read(floatingPipProvider.notifier).activate(
             // THE LIVE ADDRESS, NOT THE ONE WE WERE BORN WITH.
             //

@@ -32,6 +32,17 @@ class BookmarksSheet extends ConsumerWidget {
     if (wasPlaying) {
       await controller.pause();
     }
+    // `pause()` is an await, so the player screen can go away (back gesture,
+    // PiP hand-off, swipe-kill) before the sheet ever opens. This is a static
+    // method on a StatelessWidget, so `context.mounted` is the only check
+    // available — there is no State to ask.
+    //
+    // Returning here deliberately leaves playback PAUSED and does not resume.
+    // The alternative — undoing our own pause — would start audio playing
+    // under a screen the user has just left, which is the worse of the two
+    // surprises. A paused player is recoverable with one tap; unexpected
+    // sound coming out of a phone is not.
+    if (!context.mounted) return;
     await showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,

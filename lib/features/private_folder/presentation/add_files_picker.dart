@@ -575,6 +575,16 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
           }
         }
 
+        // `svc.freeSpaceBytes()` above is an await and the `mounted` check
+        // that follows it lives INSIDE the not-enough-space branch, so the
+        // common path — enough space, or a platform that would not say —
+        // reaches here having crossed an async gap unguarded. Everything
+        // below touches `context` to raise the progress sheet.
+        //
+        // A bare `return`, not `setState(() => _adding = false)`: if the
+        // element is gone the State goes with it, and setState would throw.
+        if (!mounted) return;
+
         var ok = 0;
         var failed = 0;
         var cancelled = false;
