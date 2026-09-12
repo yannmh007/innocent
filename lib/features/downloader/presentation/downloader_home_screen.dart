@@ -1642,12 +1642,25 @@ class _DownloaderHomeScreenState extends ConsumerState<DownloaderHomeScreen>
       backgroundColor: AppColors.darkBackground,
       appBar: AppBar(
         backgroundColor: AppColors.darkBackground,
+        // The bar's background is hardcoded dark, so its foreground is stated
+        // here rather than inherited. This is the bar a user reported as
+        // "faded": the old `AppTheme.light` declared no `appBarTheme`, so the
+        // title and both icons resolved to #212121 on this #0F0F0F bar — a
+        // contrast ratio of 1.19:1. `AppTheme.light` no longer does that, and
+        // these two lines stop the bar depending on it either way.
+        //
+        // BOTH lines are needed. `foregroundColor` alone fixes the icons but
+        // not the title, because `appBarTheme.titleTextStyle` carries its own
+        // colour (#E0E0E0) and outranks it — which would leave a grey title
+        // above white icons, and above the pure-white TabBar below.
+        foregroundColor: Colors.white,
         elevation: 0,
         scrolledUnderElevation: 0,
         titleSpacing: 0,
         title: Text(
           s.downloaderTitle,
-          style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w600),
+          style: const TextStyle(
+              color: Colors.white, fontSize: 19, fontWeight: FontWeight.w600),
         ),
         actions: <Widget>[
           IconButton(

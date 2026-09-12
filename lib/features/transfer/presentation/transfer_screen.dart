@@ -312,8 +312,14 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
     return Scaffold(
       backgroundColor: AppColors.darkBackground,
       appBar: AppBar(
-        title: Text(AppStrings.of(context).fileTransfer),
+        title: Text(AppStrings.of(context).fileTransfer,
+            style: const TextStyle(color: Colors.white)),
         backgroundColor: AppColors.darkBackground,
+        // Hardcoded dark background, so the foreground is stated here too
+        // rather than inherited. The title needs its own colour on top of
+        // `foregroundColor` because `appBarTheme.titleTextStyle` carries one
+        // and outranks it. See test/appbar_contrast_test.dart.
+        foregroundColor: Colors.white,
         elevation: 0,
         actions: [
           IconButton(
