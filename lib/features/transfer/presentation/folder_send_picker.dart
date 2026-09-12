@@ -219,10 +219,16 @@ class _FolderSendPickerState extends ConsumerState<FolderSendPicker> {
         backgroundColor: AppColors.darkBackground,
         appBar: AppBar(
           backgroundColor: AppColors.darkBackground,
+          // Hardcoded dark background, so the foreground is set here too —
+          // `AppTheme.light` declares no `appBarTheme` and would resolve both
+          // to #212121 on this bar. The title needs its own colour because
+          // the dark theme's `titleTextStyle` outranks `foregroundColor`.
+          foregroundColor: Colors.white,
           title: Text(
             current == null ? s.sendFolder : p.basename(current.path),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
+            style: const TextStyle(color: Colors.white),
           ),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),

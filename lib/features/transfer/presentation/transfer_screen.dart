@@ -312,8 +312,15 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
     return Scaffold(
       backgroundColor: AppColors.darkBackground,
       appBar: AppBar(
-        title: Text(AppStrings.of(context).fileTransfer),
+        title: Text(AppStrings.of(context).fileTransfer,
+            style: const TextStyle(color: Colors.white)),
         backgroundColor: AppColors.darkBackground,
+        // Hardcoded dark background, so the foreground is set here too —
+        // `AppTheme.light` declares no `appBarTheme` and would resolve the
+        // title and the info icon to #212121 on this bar. The title needs its
+        // own colour because the dark theme's `titleTextStyle` outranks
+        // `foregroundColor`.
+        foregroundColor: Colors.white,
         elevation: 0,
         actions: [
           IconButton(
