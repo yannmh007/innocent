@@ -556,10 +556,19 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
           // refusing on an unknown would block every import on any device
           // whose answer we cannot read.
           if (free >= 0 && free < needed + (64 * 1024 * 1024)) {
-            if (!mounted) {
-              setState(() => _adding = false);
-              return;
-            }
+            // BUG FIX, not a lint fix. This branch used to call
+            // `setState(() => _adding = false)` here, inside `if (!mounted)`.
+            // `setState` on an unmounted State throws — so on the one path
+            // that reached it (the user closes the picker while
+            // `freeSpaceBytes()` is still resolving, on a nearly-full disk)
+            // the refusal turned into an exception instead of a return.
+            //
+            // Nothing is needed in its place: the `finally` at the bottom of
+            // `_commit` already releases `_adding`, and already guards it
+            // with `if (mounted)` — which is what this line should have
+            // been. Releasing a flag on a State that is being discarded was
+            // never the point anyway.
+            if (!mounted) return;
             final s = AppStrings.of(context);
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -581,8 +590,9 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
         // reaches here having crossed an async gap unguarded. Everything
         // below touches `context` to raise the progress sheet.
         //
-        // A bare `return`, not `setState(() => _adding = false)`: if the
-        // element is gone the State goes with it, and setState would throw.
+        // A bare `return`: `_adding` is released by `_commit`'s `finally`,
+        // which checks `mounted` first. Calling setState here instead would
+        // be the same mistake fixed a few lines above.
         if (!mounted) return;
 
         var ok = 0;
