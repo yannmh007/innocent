@@ -14,23 +14,29 @@ would otherwise rediscover the hard way.
 | Area | State |
 |---|---|
 | Updater | Steps 1–7 shipped and phone-tested. §8 of `updater_plan.md` is the next one. |
-| Analyzer backlog | **1219 → 275.** Steps 1–3 of `analyzer_backlog.md` done. Steps 4–5 open. |
-| Tests | 228 on `main`, 251 with #16. `flutter test` is a CI gate with no tolerance flags. |
+| Analyzer backlog | **1219 → 266** with #17. Steps 1–3 done, and the wildcard half of 4. Steps 4–5 open. |
+| Tests | **251 on `main`** (#16 merged). 268 with #17 + #18. `flutter test` is a CI gate with no tolerance flags. |
 | Flutter SDK | Pinned at 3.32.8. Six minors behind. `upgrade_plan.md` says target 3.38.10, staged. |
-| Light mode | Does not exist. Made safe rather than real — `light_mode_audit.md`. |
+| Light mode | Does not exist. Made safe and badged "Coming soon" — `light_mode_audit.md`. |
+| Crash reporting | Wired, **off** until a build passes a DSN — `crash_reporting.md`. |
 
 ### Open, in the order I would do them
 
-1. **`docs/upgrade_plan.md` step 0** — rename the 9 `Navigator.of(_)` wildcard
-   params. Free, isolated, and removes a landmine: they are infos today and
-   become *compile errors* the moment anyone raises `pubspec.yaml`'s `sdk:`
-   lower bound past 3.7. That edit looks like housekeeping.
-2. **Sentry** — resolves today on the current SDK, no upgrade needed. Worth
-   having in place *before* the SDK moves, not after.
-3. **`analyzer_backlog.md` step 4** — 107 `withOpacity` + 9 wildcards.
-4. **`analyzer_backlog.md` step 5** — 84 `unawaited_futures`. Needs a person
+**Step 0 of `upgrade_plan.md` is done** — both halves, #17 and #18.
+
+1. **Flutter 3.35.7** — `upgrade_plan.md` step 1. The first SDK step, and the
+   one that needs a real phone: `targetSdk` goes 35 → 36 by inheritance, which
+   opts the app into Android 16's non-optional edge-to-edge. NDK stays at 27,
+   which is what this repo already pins — that is why 3.35 is its own step.
+2. **`analyzer_backlog.md` step 4** — 107 `withOpacity`. (The 9 wildcards that
+   used to be in this line are done.)
+3. **`analyzer_backlog.md` step 5** — 84 `unawaited_futures`. Needs a person
    per site; not mechanical.
-5. **Flutter 3.35 → 3.38**, staged, per `upgrade_plan.md`.
+4. **Flutter 3.38.10** — `upgrade_plan.md` step 2. Brings NDK 28.2 and the
+   JDK 17 floor; both need the CI file edited in the same commit.
+5. **`media_kit_video` 1.3.1, then 2.0.1** — follow `media_kit_upgrade.md`
+   exactly. Budget `screen_brightness` → 2.1.11 in the same commit; it is not
+   optional, it is a resolver requirement.
 
 ### Known and deliberately unfixed
 
@@ -43,6 +49,56 @@ would otherwise rediscover the hard way.
 - **The swipe-kill state-restoration issue.** Raised repeatedly, never scoped.
 
 ---
+
+## 2026-09-12 — Crash reporting, off by default (#18)
+
+`sentry_flutter` 9.30.0, which needed no SDK move — the project is eight
+minors past its floor. **The SDK is never initialised without
+`--dart-define=SENTRY_DSN=…`,** which CI does not pass, so the APK CI builds
+is unchanged. Four tests pin that, and they *invert* with a DSN compiled in,
+which is the proof they test the gate and not something incidental.
+
+Everything that does leave passes through `crash_redaction.dart` (13 tests).
+The breadcrumb messages this app writes are all structural — **the leak was
+always going to be exceptions**, because a `FileSystemException` carries the
+path it failed on and that path is the name of somebody's video.
+
+Three things worth carrying forward:
+
+- **Order in `main.dart` is load-bearing and the failure is silent.** Sentry
+  must start AFTER `PlatformDispatcher.onError` is assigned. Before it, the
+  assignment overwrites Sentry's handler and no async error is ever reported
+  while everything still looks fine. Sentry chains and preserves the app's
+  `return true` — verified by reading `on_error_integration.dart`, not assumed.
+- **The redactor must not eat stack frames.** An over-eager path pattern would
+  make the whole feature worthless; there is a test asserting a three-frame
+  trace survives byte-identical.
+- `attachScreenshot` / `attachViewHierarchy` are off. Either would defeat the
+  redactor in one attachment.
+
+`docs/crash_reporting.md` has the privacy design and the switch.
+
+## 2026-09-12 — The 9 wildcard params, and a CI gate (#17)
+
+275 → 266. The nine `Navigator.of(_)` reads compiled only because pubspec
+declares `sdk: '>=3.4.0'`; Dart 3.7 made `_` non-binding, so they were one
+housekeeping-looking line away from nine compile errors. Measured both ways:
+raising the bound gave 9 errors before, 0 after.
+
+**A dead end worth not repeating.** I wrote `tool/wildcard_params.py` in the
+style of `context_scope.py` first. It produced 25 false positives on the fixed
+tree — it flagged `catch (_)` and cannot scope a Dart callback with a regex.
+Deleted. The right mechanism was already one line away in
+`analysis_options.yaml`:
+
+    no_wildcard_variable_uses: error
+
+`error` is the one severity CI's `--no-fatal-infos --no-fatal-warnings` does
+not suppress, and it uses the analyzer's own implementation, so there is
+nothing to tune. Verified in both directions with CI's exact command.
+
+Also: only ONE of `player_screen.dart`'s five `builder: (_)` reads its
+parameter. `_` is correct where a value is ignored; do not sweep them all.
 
 ## 2026-09-12 — Light mode made safe and honestly labelled (#16)
 
