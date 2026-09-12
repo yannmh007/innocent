@@ -21,7 +21,13 @@ class CustomiseItemsScreen extends ConsumerWidget {
       backgroundColor: AppColors.darkBackground,
       appBar: AppBar(
         backgroundColor: AppColors.darkBackground,
-        title: Text(AppStrings.of(context).shortcuts),
+        // Hardcoded dark background, so the foreground is set here too —
+        // `AppTheme.light` declares no `appBarTheme` and would resolve both
+        // to #212121 on this bar. The title needs its own colour because the
+        // dark theme's `titleTextStyle` outranks `foregroundColor`.
+        foregroundColor: Colors.white,
+        title: Text(AppStrings.of(context).shortcuts,
+            style: const TextStyle(color: Colors.white)),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16),
