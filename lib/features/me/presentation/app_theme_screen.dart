@@ -105,6 +105,19 @@ class AppThemeScreen extends ConsumerWidget {
                 badgeColor: Colors.green,
               ),
               const SizedBox(width: 12),
+              // "Coming soon", ALWAYS — not only when unselected, and not
+              // swapped for 'Using' when it is.
+              //
+              // Innocent has no light mode: 72 of its 76 Scaffolds paint their
+              // own dark background, so `AppTheme.light` returns the dark
+              // theme (see app_theme.dart). Picking this card is therefore a
+              // no-op, and the moment a user most needs to be told that is
+              // exactly the moment they have picked it and nothing changed.
+              // Selection is still visible — `_buildThemeCard` draws a blue
+              // border for it, independently of this badge.
+              //
+              // docs/light_mode_audit.md §6 is the route to making it real,
+              // and this label is what should come off first when it is.
               _buildThemeCard(
                 context,
                 ref,
@@ -112,8 +125,8 @@ class AppThemeScreen extends ConsumerWidget {
                 AppThemeMode.light,
                 Colors.white,
                 currentMode: currentMode,
-                badge: currentMode == AppThemeMode.light ? 'Using' : null,
-                badgeColor: Colors.green,
+                badge: 'Coming soon',
+                badgeColor: Colors.orange,
                 textDark: true,
               ),
               const SizedBox(width: 12),

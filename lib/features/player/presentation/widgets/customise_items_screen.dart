@@ -21,7 +21,13 @@ class CustomiseItemsScreen extends ConsumerWidget {
       backgroundColor: AppColors.darkBackground,
       appBar: AppBar(
         backgroundColor: AppColors.darkBackground,
-        title: Text(AppStrings.of(context).shortcuts),
+        // Hardcoded dark background, so the foreground is stated here too
+        // rather than inherited. The title needs its own colour on top of
+        // `foregroundColor` because `appBarTheme.titleTextStyle` carries one
+        // and outranks it. See test/appbar_contrast_test.dart.
+        foregroundColor: Colors.white,
+        title: Text(AppStrings.of(context).shortcuts,
+            style: const TextStyle(color: Colors.white)),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16),

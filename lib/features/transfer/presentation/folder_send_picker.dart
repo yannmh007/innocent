@@ -219,10 +219,16 @@ class _FolderSendPickerState extends ConsumerState<FolderSendPicker> {
         backgroundColor: AppColors.darkBackground,
         appBar: AppBar(
           backgroundColor: AppColors.darkBackground,
+          // Hardcoded dark background, so the foreground is stated here too
+          // rather than inherited. The title needs its own colour on top of
+          // `foregroundColor` because `appBarTheme.titleTextStyle` carries
+          // one and outranks it. See test/appbar_contrast_test.dart.
+          foregroundColor: Colors.white,
           title: Text(
             current == null ? s.sendFolder : p.basename(current.path),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
+            style: const TextStyle(color: Colors.white),
           ),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
