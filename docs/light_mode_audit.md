@@ -141,9 +141,21 @@ regression in *honesty of the UI*, and an improvement in *legibility of the
 app*. Before this change, choosing Light produced ~388 invisible strings; it
 never produced a light app.
 
-**The UI still offers three choices.** Deciding whether to relabel it, hide
-Light, or leave it as a placeholder for the real thing is a product call and
-was deliberately left alone — see §6.
+### And the picker now says so
+
+The product question this raised — relabel, hide, or leave alone — was decided:
+**keep Light selectable, and badge it "Coming soon".**
+
+`app_theme_screen.dart` badges the Light card permanently, not only when
+unselected. Swapping it for "Using" on selection would hide the explanation at
+exactly the moment a user has picked Light, seen nothing change, and wants to
+know why. Selection is still visible — the card draws a blue border for it,
+independently of the badge.
+
+That label is the whole user-facing half of this change, so it is pinned by
+`test/theme_picker_badge_test.dart` (3 cases, including that it does not
+overflow a 320dp phone — "Coming soon" is materially longer than the "Using"
+and "NEW" the card was built around).
 
 ---
 
@@ -189,15 +201,16 @@ unfinished:
 
 1. **Decide the product question first.** Does Innocent want a light mode? It
    is a dark-first media player; a light mode is a real design project, not a
-   theme entry. If the answer is no, the better change is to the picker, not
-   the theme.
+   theme entry. *Answered on 12 Sep 2026: yes, eventually — the option stays,
+   badged "Coming soon". That is why the picker still offers it.*
 2. **Introduce semantic colours.** `AppColors.darkBackground` used at 72 call
    sites is the blocker — those sites are naming a *colour*, not a *role*.
    They need to name `surface`, `surfaceElevated`, `onSurface` and resolve
    through `Theme.of(context)`.
 3. **Then the 388 unstyled `Text` sites stop mattering**, because the theme
    they fall through to would finally match the surface under them.
-4. **Delete `static ThemeData get light => dark;` last**, and expect
+4. **Delete `static ThemeData get light => dark;` last**, take the "Coming
+   soon" badge off in the same commit, and expect
    `test/theme_legibility_test.dart` to start failing. Those failures are the
    remaining checklist, not an obstacle.
 

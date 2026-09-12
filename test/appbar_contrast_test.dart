@@ -24,12 +24,13 @@
 // consistency check, which is the one that notices a grey title sitting
 // above white icons.
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:innocent/core/theme/app_colors.dart';
 import 'package:innocent/core/theme/app_theme.dart';
+
+import 'support/contrast.dart';
 
 /// The AppBars, transcribed from the four screens that were repaired. Keep a
 /// row in step with its screen: the point is to fail when the real one drifts.
@@ -83,22 +84,6 @@ final Map<String, AppBar Function()> _bars = <String, AppBar Function()>{
         ],
       ),
 };
-
-/// WCAG relative luminance, so the assertion is about legibility rather than
-/// about one particular shade of white.
-double _luminance(Color c) {
-  double ch(double v) =>
-      v <= 0.03928 ? v / 12.92 : math.pow((v + 0.055) / 1.055, 2.4).toDouble();
-  return 0.2126 * ch(c.r) + 0.7152 * ch(c.g) + 0.0722 * ch(c.b);
-}
-
-double _contrast(Color a, Color b) {
-  final double la = _luminance(a);
-  final double lb = _luminance(b);
-  final double hi = la > lb ? la : lb;
-  final double lo = la > lb ? lb : la;
-  return (hi + 0.05) / (lo + 0.05);
-}
 
 void main() {
   /// Pushes a second route so the automatic back button exists — it is one of
@@ -156,11 +141,11 @@ void main() {
           //    text against the bar's own hardcoded background. The shipped
           //    regression scored 1.19:1.
           for (final MapEntry<String, Color?> part in parts.entries) {
-            expect(
-              _contrast(part.value!, AppColors.darkBackground),
-              greaterThan(4.5),
-              reason: '${bar.key}: ${part.key} is illegible in '
-                  '${theme.key} mode',
+            expectLegible(
+              part.value!,
+              AppColors.darkBackground,
+              what: '${bar.key} ${part.key}',
+              where: '${theme.key} mode',
             );
           }
 

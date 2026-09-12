@@ -15,7 +15,7 @@ would otherwise rediscover the hard way.
 |---|---|
 | Updater | Steps 1–7 shipped and phone-tested. §8 of `updater_plan.md` is the next one. |
 | Analyzer backlog | **1219 → 275.** Steps 1–3 of `analyzer_backlog.md` done. Steps 4–5 open. |
-| Tests | 228 on `main`, 240 with this branch. `flutter test` is a CI gate with no tolerance flags. |
+| Tests | 228 on `main`, 251 with #16. `flutter test` is a CI gate with no tolerance flags. |
 | Flutter SDK | Pinned at 3.32.8. Six minors behind. `upgrade_plan.md` says target 3.38.10, staged. |
 | Light mode | Does not exist. Made safe rather than real — `light_mode_audit.md`. |
 
@@ -34,8 +34,9 @@ would otherwise rediscover the hard way.
 
 ### Known and deliberately unfixed
 
-- **The theme picker offers three choices that now render identically.** A
-  product call, not a bug. `light_mode_audit.md` §6.
+- **The theme picker offers three choices that render identically.** Decided,
+  not drifting: Light stays selectable and is badged "Coming soon".
+  `light_mode_audit.md` §4.
 - **`media_kit` is the real upgrade ceiling** — last release Dec 2025, only
   ever claimed Flutter 3.38.x. Not a constraint you can read off pubspec;
   every version declares `flutter: >=3.7.0`.
@@ -43,10 +44,14 @@ would otherwise rediscover the hard way.
 
 ---
 
-## 2026-09-12 — Light mode made safe (#16)
+## 2026-09-12 — Light mode made safe and honestly labelled (#16)
 
-`AppTheme.light => dark`, one line, plus `theme_legibility_test.dart` (12
-cases) and `test/support/contrast.dart`.
+**#15 and #16 were combined into #16** once the product question was answered;
+#15 was closed as absorbed, not abandoned. Its four AppBar fixes are in here.
+
+`AppTheme.light => dark`, one line, plus the "Coming soon" badge on the Light
+card, `theme_legibility_test.dart` (12 cases),
+`theme_picker_badge_test.dart` (3) and `test/support/contrast.dart`.
 
 **The finding is bigger than the change.** 72 of 76 Scaffolds hardcode a dark
 background and nothing outside `app_theme.dart` reads a light colour, so
@@ -59,7 +64,7 @@ have fixed one direction and broken the other.
 Full measurements, per-file counts and the roadmap to a real light mode:
 `docs/light_mode_audit.md`.
 
-## 2026-09-12 — Four dark AppBars in Light mode (#15)
+### The AppBar half (originally #15)
 
 The user-reported symptom of the above: the Downloader AppBar at 1.19:1. Fixed
 four bars (`downloader_home`, `customise_items`, `folder_send_picker`,
