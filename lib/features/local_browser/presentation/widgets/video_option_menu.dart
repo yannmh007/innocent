@@ -81,7 +81,10 @@ class VideoOptionMenu extends ConsumerWidget {
   Future<void> _addToWatchLater(BuildContext sheetContext, WidgetRef ref) async {
     final added =
         await ref.read(watchLaterProvider.notifier).add(video.uri);
-    _dismiss(sheetContext);
+    // Same guard as `_addToPlaylist` below. The snackbar stays OUTSIDE it:
+    // it is routed through a global key, needs no context, and the add
+    // already succeeded — the user should be told either way.
+    if (sheetContext.mounted) _dismiss(sheetContext);
     AppSnackbar.global(
         added ? '⏰ Added to Watch Later' : 'Already in Watch Later');
   }
@@ -89,7 +92,8 @@ class VideoOptionMenu extends ConsumerWidget {
   Future<void> _toggleFavourite(BuildContext sheetContext, WidgetRef ref) async {
     final added =
         await ref.read(favouritesProvider.notifier).toggle(video.uri);
-    _dismiss(sheetContext);
+    // As in `_addToWatchLater`: guard the dismiss, not the snackbar.
+    if (sheetContext.mounted) _dismiss(sheetContext);
     AppSnackbar.global(
         added ? '★ Added to favourites' : '☆ Removed from favourites');
   }
@@ -476,6 +480,13 @@ class VideoOptionMenu extends ConsumerWidget {
     //     `sheetContext.mounted` is checked for below.
     final msgLocking = AppStrings.of(sheetContext).lockingNow;
     final msgMoved = AppStrings.of(sheetContext).movedToPrivate;
+    // `msgVerify` and `msgCancelled` are read here for the same reason as the
+    // two above, and they are the ones that most needed it: both were being
+    // resolved AFTER the biometric prompt and the folder picker, which are
+    // the longest awaits in this method — a user who walks away mid-prompt is
+    // exactly the case the comment above describes.
+    final msgVerify = AppStrings.of(sheetContext).verifyToLock;
+    final msgCancelled = AppStrings.of(sheetContext).lockCancelled;
     final svc = ref.read(privateFolderServiceProvider);
     final hasPin = await svc.hasPin();
     if (!hasPin) {
@@ -490,19 +501,23 @@ class VideoOptionMenu extends ConsumerWidget {
     // the PIN screen inside Private Folder remains the gate.
     final bio = ref.read(biometricServiceProvider);
     if (await bio.canCheck()) {
-      final ok = await bio.authenticate(
-          reason: AppStrings.of(sheetContext).verifyToLock);
+      final ok = await bio.authenticate(reason: msgVerify);
       if (!ok) {
-        AppSnackbar.global(AppStrings.of(sheetContext).lockCancelled);
+        AppSnackbar.global(msgCancelled);
         return;
       }
     }
 
     // Then ask which organiser folder to drop it in (existing folder, the
     // root, or a brand-new folder created on the spot).
+    // A guard rather than a pre-capture, because `_chooseVaultFolder` opens a
+    // picker and so needs a live element — there is nothing to read ahead.
+    // Nothing has been moved yet, so returning leaves the file exactly where
+    // it was and the user can start again.
+    if (!sheetContext.mounted) return;
     final folderId = await _chooseVaultFolder(sheetContext, svc);
     if (folderId == _kChooseCancelled) {
-      AppSnackbar.global(AppStrings.of(sheetContext).lockCancelled);
+      AppSnackbar.global(msgCancelled);
       return;
     }
 
@@ -1059,7 +1074,12 @@ class _PlaylistPickerSheetState extends ConsumerState<_PlaylistPickerSheet> {
                 await ref
                     .read(playlistsProvider.notifier)
                     .addVideo(pl.id, widget.video.uri);
-                if (!mounted) return;
+                // `context.mounted`, not `mounted`: this `context` is
+                // `build`'s parameter, which shadows `State.context`. They are
+                // the same element in practice, but the State's `mounted` says
+                // nothing about the identifier actually being used here — so
+                // check the one that is.
+                if (!context.mounted) return;
                 Navigator.of(context).pop('Added to "${pl.name}"');
               },
             ),

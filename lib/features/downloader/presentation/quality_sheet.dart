@@ -405,6 +405,10 @@ class _QualitySheetState extends ConsumerState<QualitySheet> {
     final MediaFormat? format = _selected;
     if (format == null) return;
     if (!await ensureStorageAccess(context, ref)) return;
+    // `ensureStorageAccess` can show the OS permission dialog, so the sheet
+    // may be gone by the time it returns. Nothing has been queued yet, so
+    // returning here costs the user only a second tap.
+    if (!mounted) return;
     DiagnosticsLog.instance.note(
       'tap',
       'Download pressed — ${format.qualityLabel} '
@@ -438,7 +442,12 @@ class _QualitySheetState extends ConsumerState<QualitySheet> {
     );
     // Show the row immediately; the native side confirms with its own events.
     queue.register(spec);
-    Navigator.of(context).pop();
+    // Guarded, NOT an early return: the download is already registered and
+    // must still be started below. `_clearedToStart` re-checks `mounted`
+    // after each of its own awaits and returns false if the sheet went away,
+    // so reaching here with `mounted == false` should be impossible — the
+    // analyzer just cannot see that across the call boundary.
+    if (mounted) Navigator.of(context).pop();
     try {
       await DownloaderEngineService.instance.startDownload(
         id: spec.id,

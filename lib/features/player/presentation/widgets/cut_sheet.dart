@@ -31,6 +31,11 @@ class CutSheet extends ConsumerStatefulWidget {
     if (wasPlaying) {
       await controller.pause();
     }
+    // Same guard, and the same decision, as `BookmarksSheet.show`: if the
+    // player screen went away across the `pause()` await, skip the sheet and
+    // leave playback paused rather than resuming into a screen the user has
+    // already left. See the longer note there.
+    if (!context.mounted) return;
     await showModalBottomSheet<void>(
       context: context,
       backgroundColor: AppColors.darkSurface,

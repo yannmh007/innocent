@@ -227,7 +227,10 @@ class _FolderSendPickerState extends ConsumerState<FolderSendPicker> {
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
             onPressed: () async {
-              if (await _up() && mounted) Navigator.of(context).pop();
+              // `context.mounted`, not `mounted`: `context` here is `build`'s
+              // parameter, which shadows `State.context`. `_up()` awaits a
+              // directory listing when it descends, so the gap is real.
+              if (await _up() && context.mounted) Navigator.of(context).pop();
             },
           ),
         ),

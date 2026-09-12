@@ -688,7 +688,12 @@ class _PrivateFolderScreenState extends ConsumerState<PrivateFolderScreen>
                           break;
                         case 'refresh':
                           await _reload();
-                          if (mounted) {
+                          // `context.mounted`, not `mounted`: this `context`
+                          // is `build`'s parameter shadowing `State.context`,
+                          // and the State's flag says nothing about the
+                          // identifier the two `of(context)` lookups below
+                          // actually read from.
+                          if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                                 content: Text(
                                     AppStrings.of(context).refreshingVault),
