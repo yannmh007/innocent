@@ -452,5 +452,6 @@
   "propFinishedNo": "Not finished",
   "propLastPosition": "Last position",
   "okay": "Okay",
-  "cancelling": "Cancelling…"
+  "cancelling": "Cancelling…",
+  "downloaderTapResume": "Tap resume to download anyway"
 }

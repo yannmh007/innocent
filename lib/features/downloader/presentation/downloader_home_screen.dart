@@ -32,6 +32,7 @@ import 'storage_access.dart';
 import 'package:share_plus/share_plus.dart';
 
 import 'playlist_sheet.dart';
+import 'preflight_gate.dart';
 import 'quality_sheet.dart';
 
 /// Home of the downloader.
@@ -1097,6 +1098,14 @@ class _DownloaderHomeScreenState extends ConsumerState<DownloaderHomeScreen>
     final DownloadExtras extras = ref.read(downloadExtrasProvider);
     final DownloadQueueNotifier queue =
         ref.read(downloadQueueProvider.notifier);
+    // Same pre-flight the quality sheet runs. It used to live inside that
+    // sheet, so a preset download — one tap, no sheet — skipped the mobile
+    // data and free-space questions entirely. See docs/audit_downloader.md F1.
+    //
+    // The preset picks its format inside the engine rather than here, so no
+    // size is known at this point; the metered question is still asked and
+    // the space one simply does not fire.
+    if (!await confirmPreflight(context, ref, dir: dir)) return;
     final DownloadSpec spec = DownloadSpec(
       id: 'q_${DateTime.now().microsecondsSinceEpoch}',
       url: probe.url,
@@ -2982,6 +2991,24 @@ class _DownloaderHomeScreenState extends ConsumerState<DownloaderHomeScreen>
                         const Spacer(),
                     ],
                   ),
+                  // A row HELD before it ever started — "Wi-Fi only is on and
+                  // you are on mobile data", say. The browser's pick cannot
+                  // show a dialog (see DownloadQueueNotifier.holdBeforeStart),
+                  // so the reason travels on the row instead, and this is
+                  // where it is read. Shown verbatim because it is our own
+                  // sentence, not engine output: it needs no classifying.
+                  if (task.heldReason?.isNotEmpty ?? false) ...[
+                    const SizedBox(height: 3),
+                    Text(
+                      task.heldReason!,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          color: AppColors.white40,
+                          fontSize: 10.5,
+                          height: 1.3),
+                    ),
+                  ],
                   if (task.phase == DownloadPhase.error &&
                       (task.error?.isNotEmpty ?? false)) ...<Widget>[
                     const SizedBox(height: 3),

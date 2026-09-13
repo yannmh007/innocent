@@ -425,5 +425,6 @@
   "propFinishedNo": "မပြီးသေးပါ",
   "propLastPosition": "နောက်ဆုံး နေရာ",
   "okay": "အိုကေ",
-  "cancelling": "ရပ်နေသည်…"
+  "cancelling": "ရပ်နေသည်…",
+  "downloaderTapResume": "ဆက်ဆွဲရန် resume ကို နှိပ်ပါ"
 }

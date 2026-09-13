@@ -15,22 +15,38 @@ would otherwise rediscover the hard way.
 |---|---|
 | Updater | Steps 1–7 shipped and phone-tested. §8 of `updater_plan.md` is the next one. |
 | Analyzer backlog | **1219 → 275.** Steps 1–3 of `analyzer_backlog.md` done. Steps 4–5 open. |
-| Tests | 228 on `main`, 251 with #16. `flutter test` is a CI gate with no tolerance flags. |
+| Tests | **261 on `main`.** `flutter test` is a CI gate with no tolerance flags. Distribution is lopsided — see the entry for the audit series. |
 | Flutter SDK | Pinned at 3.32.8. Six minors behind. `upgrade_plan.md` says target 3.38.10, staged. |
 | Light mode | Does not exist. Made safe rather than real — `light_mode_audit.md`. |
+| Audits | Seven landed (#19–#25). Their findings are now the backlog; see below. |
 
 ### Open, in the order I would do them
 
-1. **`docs/upgrade_plan.md` step 0** — rename the 9 `Navigator.of(_)` wildcard
-   params. Free, isolated, and removes a landmine: they are infos today and
-   become *compile errors* the moment anyone raises `pubspec.yaml`'s `sdk:`
-   lower bound past 3.7. That edit looks like housekeeping.
-2. **Sentry** — resolves today on the current SDK, no upgrade needed. Worth
-   having in place *before* the SDK moves, not after.
-3. **`analyzer_backlog.md` step 4** — 107 `withOpacity` + 9 wildcards.
-4. **`analyzer_backlog.md` step 5** — 84 `unawaited_futures`. Needs a person
-   per site; not mechanical.
-5. **Flutter 3.35 → 3.38**, staged, per `upgrade_plan.md`.
+Reordered after the seven audits landed: their findings outrank the tidying
+that was queued before them.
+
+1. **Downloader pre-flight** — `audit_downloader.md` F1/F2/F3. *Done, this
+   entry.*
+2. **Private Folder: close the intruder camera** — `audit_private_folder.md`
+   V1/V2. A successful selfie holds the front camera for the life of the
+   process, so Android 12+ leaves the camera indicator lit on a vault app.
+3. **Transfer stall watchdog** — `audit_transfer.md` T1/T2. Nothing bounds an
+   active download; a stalled batch also holds the Turbo release shut, so the
+   phone keeps no internet.
+4. **Tests for the pure functions that have none** — `ProbeParser.parse`,
+   `extractPath`, `_stripIdTag`, `sanitizeRelDir`. All pure, all zero-coverage,
+   all trivially testable. See the note on test distribution below.
+5. **A `tool/check.py` checker for settings nothing reads** —
+   `audit_library_music_settings.md` L1. Ten prior instances are recorded in
+   the tree's own comments and five are open.
+6. **Localise the Settings tree** — 267 hardcoded strings while `my`/`th` are
+   complete at 425 getters each.
+7. **`docs/upgrade_plan.md` step 0** — the 9 `Navigator.of(_)` wildcard params
+   (#17, open) and Sentry (#18, open). Both are landmine removal before the
+   SDK moves, not after.
+8. **`analyzer_backlog.md` steps 4–5**, then **Flutter 3.35 → 3.38**, staged.
+9. **Audit Video Hub and the ADB stack** — the two large surfaces the five
+   domain audits did not cover.
 
 ### Known and deliberately unfixed
 
@@ -41,6 +57,83 @@ would otherwise rediscover the hard way.
   ever claimed Flutter 3.38.x. Not a constraint you can read off pubspec;
   every version declares `flutter: >=3.7.0`.
 - **The swipe-kill state-restoration issue.** Raised repeatedly, never scoped.
+
+---
+
+## 2026-09-13 — Seven audits, then the first fix out of them (#19–#25, #26)
+
+### The audits (#19–#25, all merged, no code changed)
+
+`engine_update_audit.md`, `filename_audit.md`, and one per domain:
+`audit_downloader.md`, `audit_player.md`, `audit_private_folder.md`,
+`audit_transfer.md`, `audit_library_music_settings.md`.
+
+Each carries a **"withdrawn after checking"** section, and those are the most
+useful part to read first — they are the shapes that look wrong in this
+codebase and are not. Between them: `initBlocking` is `@Synchronized`;
+`BROWSER_PROBE_ID` already exists; the intruder selfie *is* implemented in
+Camera2; `_copyWithProgress` does clean up its partial; `playerControllerProvider`
+is watched conditionally by the PiP overlay; `_bytesServed +=` is not a race;
+`userLocale` is a deliberate mirror, not a dead setting.
+
+Each also carries a **do-not-touch list** naming the specific past failure the
+odd-looking code answers.
+
+**Two things measured across the tree that are worth keeping in view:**
+
+- **Test distribution is inverted.** 110,311 lines of `lib/`, and the tests
+  import 29 of its 302 files. The updater — the least risky area — holds
+  roughly half of them. The downloader, transfer, library, music and the
+  libmpv service have **zero**. The most testable code (pure functions over
+  strings and JSON) is the code with no tests.
+- **"A setting nothing reads" is this project's most repeated bug.** Ten
+  instances are recorded in the tree's own comments, each found by somebody
+  noticing. Five more are open. That is a missing check, not bad luck.
+
+### The first fix (#26): the downloader pre-flight
+
+`audit_downloader.md` F1/F2/F3. A download can start from four places and only
+**one** of them asked the mobile-data and free-space questions. Someone who had
+switched "Wi-Fi only" on could queue a forty-item playlist over mobile data
+without a word — the most expensive finding in any of the seven, because
+nothing looks broken and the bill arrives later.
+
+The decision is now a pure function (`download_preflight.dart`) with no
+context, no provider and no channel, so the browser path — which has no widget
+tree in front of it — can ask the same question the sheets ask, and so it can
+be tested without a device. 10 tests, both mutations checked.
+
+**The browser path could not be fixed the same way as the other three**, and
+that is the part worth remembering: the in-app browser is a native Activity in
+front of Flutter and the downloads screen may never have been built, so there
+is nowhere to draw a dialog. Ignoring the setting was the old behaviour.
+Instead the row is registered and **held** — paused, with the reason on it —
+and the Resume button every paused row already has *is* the "download anyway"
+the dialog would have offered.
+
+`heldReason` is a separate field from `line` on purpose: an ordinary pause
+keeps the engine's last output in `line`, so reusing it would have printed a
+yt-dlp progress line under every paused row.
+
+**F3 came free and was the more embarrassing one.** The browser's
+`startDownload` passed no extras at all — no subtitles, no thumbnail, no
+metadata, and no **speed limit** — while two separate comments (the call site's
+own, and `BrowserPick`'s) claimed that everything but the address, format and
+title "stays with Dart, so there is one answer to those questions rather than
+two that can drift apart". The playlist sheet twelve lines away passes all
+four.
+
+**And reading the diff back found a third home for F3.** `resume()`'s replay
+path — the one taken when the engine has no record of a job — passed neither
+the cookies, nor the player clients, nor any of the four extras. So a resumed
+age-gated download arrived with no cookies and failed for a reason that looks
+nothing like the cause. That mattered more after this change than before it: a
+held row has no engine record, so `resume` always throws for it and the replay
+is the *only* way that download ever runs. Fixed in the same PR.
+
+Not done here, and deliberately: `BrowserPick` carries no size, so only the
+metered arm can fire on that path. Adding a size means changing the Kotlin
+payload, which is a different change.
 
 ---
 
