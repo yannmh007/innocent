@@ -781,6 +781,82 @@ class AppStrings {
   String get selectDecoder => _s('selectDecoder');
   String get bookmarksTitle => _s('bookmarksTitle');
   String get subtitleDelayTitle => _s('subtitleDelayTitle');
+
+  // Subtitle Text / Subtitle Layout screens (localised 13 Sep 2026).
+  String get subFont => _s('subFont');
+  String get subFontDefault => _s('subFontDefault');
+  String get subFontSansSerif => _s('subFontSansSerif');
+  String get subFontSerif => _s('subFontSerif');
+  String get subFontMonospace => _s('subFontMonospace');
+  String get subFontCustomEnter => _s('subFontCustomEnter');
+  String get subFontCustom => _s('subFontCustom');
+  String get subFontCustomHint => _s('subFontCustomHint');
+  String get subSize => _s('subSize');
+  String get subFontSize => _s('subFontSize');
+  String get subBold => _s('subBold');
+  String get subBoldDesc => _s('subBoldDesc');
+  String get subTextColor => _s('subTextColor');
+  String get subTextColorTitle => _s('subTextColorTitle');
+  String get subBorderStyle => _s('subBorderStyle');
+  String get subBorderStyleTitle => _s('subBorderStyleTitle');
+  String get subBorderColor => _s('subBorderColor');
+  String get subBorderColorTitle => _s('subBorderColorTitle');
+  String get subScale => _s('subScale');
+  String get subScaleTitle => _s('subScaleTitle');
+  String get subShadow => _s('subShadow');
+  String get subBackground => _s('subBackground');
+  String get subBackgroundColor => _s('subBackgroundColor');
+  String get subAlignment => _s('subAlignment');
+  String get subTextAlignment => _s('subTextAlignment');
+  String get subBottomMargins => _s('subBottomMargins');
+  String get subBottomMarginsTitle => _s('subBottomMarginsTitle');
+  String get subImproveStroke => _s('subImproveStroke');
+  String get subSecColor => _s('subSecColor');
+  String get subSecBorder => _s('subSecBorder');
+  String get subSecAppearance => _s('subSecAppearance');
+  String get sizeTiny => _s('sizeTiny');
+  String get sizeSmall => _s('sizeSmall');
+  String get sizeMedium => _s('sizeMedium');
+  String get sizeLarge => _s('sizeLarge');
+  String get sizeHuge => _s('sizeHuge');
+  String get colourWhite => _s('colourWhite');
+  String get colourYellow => _s('colourYellow');
+  String get colourCyan => _s('colourCyan');
+  String get colourGreen => _s('colourGreen');
+  String get colourRed => _s('colourRed');
+  String get colourBlack => _s('colourBlack');
+  String get borderNone => _s('borderNone');
+  String get borderOutline => _s('borderOutline');
+  String get borderDropShadow => _s('borderDropShadow');
+  String get borderRaised => _s('borderRaised');
+  String get borderDepressed => _s('borderDepressed');
+  String get shadowSubtle => _s('shadowSubtle');
+  String get shadowDefault => _s('shadowDefault');
+  String get shadowStrong => _s('shadowStrong');
+  String get bgTransparent => _s('bgTransparent');
+  String get bgTranslucent => _s('bgTranslucent');
+  String get bgOpaque => _s('bgOpaque');
+  String get alignLeft => _s('alignLeft');
+  String get alignCenter => _s('alignCenter');
+  String get alignRight => _s('alignRight');
+  String get subImproveStrokeDesc => _s('subImproveStrokeDesc');
+  String get subVerticalPos => _s('subVerticalPos');
+  String get subVerticalPosTitle => _s('subVerticalPosTitle');
+  String get subVerticalPosDesc => _s('subVerticalPosDesc');
+  String get subHorizontalAlign => _s('subHorizontalAlign');
+  String get subHorizontalAlignTitle => _s('subHorizontalAlignTitle');
+  String get subSidePadding => _s('subSidePadding');
+  String get subSidePaddingTitle => _s('subSidePaddingTitle');
+  String get subSidePaddingDesc => _s('subSidePaddingDesc');
+  String get subBottomMargin => _s('subBottomMargin');
+  String get subBottomMarginTitle => _s('subBottomMarginTitle');
+  String get subBottomMarginDesc => _s('subBottomMarginDesc');
+  String get subShowBackground => _s('subShowBackground');
+  String get subBgBlack50 => _s('subBgBlack50');
+  String get subBgBlack75 => _s('subBgBlack75');
+  String get subBgDarkGray => _s('subBgDarkGray');
+  String get subBgColorActiveWhen => _s('subBgColorActiveWhen');
+  String get currently => _s('currently');
   String get shortcuts => _s('shortcuts');
   String get unknownTab => _s('unknownTab');
   String get invalidUrl => _s('invalidUrl');
@@ -1270,6 +1346,81 @@ class AppStrings {
   };
 
   static const Map<String, String> _en = <String, String>{
+    'subSecColor': 'Color',
+    'subSecBorder': 'Border',
+    'subSecAppearance': 'Appearance',
+    'sizeTiny': 'Tiny',
+    'sizeSmall': 'Small',
+    'sizeMedium': 'Medium',
+    'sizeLarge': 'Large',
+    'sizeHuge': 'Huge',
+    'colourWhite': 'White',
+    'colourYellow': 'Yellow',
+    'colourCyan': 'Cyan',
+    'colourGreen': 'Green',
+    'colourRed': 'Red',
+    'colourBlack': 'Black',
+    'borderNone': 'None',
+    'borderOutline': 'Outline',
+    'borderDropShadow': 'Drop shadow',
+    'borderRaised': 'Raised',
+    'borderDepressed': 'Depressed',
+    'shadowSubtle': 'Subtle',
+    'shadowDefault': 'Default',
+    'shadowStrong': 'Strong',
+    'bgTransparent': 'Transparent',
+    'bgTranslucent': 'Translucent',
+    'bgOpaque': 'Opaque',
+    'alignLeft': 'Left',
+    'alignCenter': 'Center',
+    'alignRight': 'Right',
+    'subImproveStrokeDesc': 'Render subtitle stroke at higher quality. Slightly more CPU.',
+    // Subtitle Text / Subtitle Layout screens.
+    'subFont': 'Font',
+    'subFontDefault': 'Default',
+    'subFontSansSerif': 'Sans-serif',
+    'subFontSerif': 'Serif',
+    'subFontMonospace': 'Monospace',
+    'subFontCustomEnter': 'Custom (enter name)…',
+    'subFontCustom': 'Custom Font',
+    'subFontCustomHint': 'Enter the font family name as installed on the device, or a full path to a .ttf / .otf file.',
+    'subSize': 'Size',
+    'subFontSize': 'Font Size',
+    'subBold': 'Bold',
+    'subBoldDesc': 'Use bold text for subtitles.',
+    'subTextColor': 'Text color',
+    'subTextColorTitle': 'Text Color',
+    'subBorderStyle': 'Border style',
+    'subBorderStyleTitle': 'Border Style',
+    'subBorderColor': 'Border color',
+    'subBorderColorTitle': 'Border Color',
+    'subScale': 'Scale',
+    'subScaleTitle': 'Subtitle Scale',
+    'subShadow': 'Shadow',
+    'subBackground': 'Background',
+    'subBackgroundColor': 'Background Color',
+    'subAlignment': 'Alignment',
+    'subTextAlignment': 'Text Alignment',
+    'subBottomMargins': 'Bottom margins',
+    'subBottomMarginsTitle': 'Bottom Margins',
+    'subImproveStroke': 'Improve stroke rendering',
+    'subVerticalPos': 'Vertical position',
+    'subVerticalPosTitle': 'Vertical Position',
+    'subVerticalPosDesc': 'Distance from the top, as a percentage.',
+    'subHorizontalAlign': 'Horizontal alignment',
+    'subHorizontalAlignTitle': 'Horizontal Alignment',
+    'subSidePadding': 'Left/Right padding',
+    'subSidePaddingTitle': 'Left/Right Padding',
+    'subSidePaddingDesc': 'Pixels of horizontal margin.',
+    'subBottomMargin': 'Bottom margin',
+    'subBottomMarginTitle': 'Bottom Margin',
+    'subBottomMarginDesc': 'Pixels of bottom margin.',
+    'subShowBackground': 'Show background',
+    'subBgBlack50': 'Black (50% opacity)',
+    'subBgBlack75': 'Black (75% opacity)',
+    'subBgDarkGray': 'Dark gray',
+    'subBgColorActiveWhen': 'Active only when "Show background" is on.',
+    'currently': 'Currently',
 
     // --- Video Hub: age gate / library ---
     'vhGateTitle': 'This is an adult site',
@@ -2348,6 +2499,81 @@ class AppStrings {
   };
 
   static const Map<String, String> _my = <String, String>{
+    'subSecColor': 'အရောင်',
+    'subSecBorder': 'ဘောင်',
+    'subSecAppearance': 'အသွင်အပြင်',
+    'sizeTiny': 'အသေးဆုံး',
+    'sizeSmall': 'သေး',
+    'sizeMedium': 'အလတ်',
+    'sizeLarge': 'ကြီး',
+    'sizeHuge': 'အကြီးဆုံး',
+    'colourWhite': 'အဖြူ',
+    'colourYellow': 'အဝါ',
+    'colourCyan': 'စိမ်းပြာ',
+    'colourGreen': 'အစိမ်း',
+    'colourRed': 'အနီ',
+    'colourBlack': 'အနက်',
+    'borderNone': 'မရှိ',
+    'borderOutline': 'အနားသတ်',
+    'borderDropShadow': 'အရိပ်ကျ',
+    'borderRaised': 'ဖောင်းကြွ',
+    'borderDepressed': 'ချိုင့်ဝင်',
+    'shadowSubtle': 'သိမ်မွေ့',
+    'shadowDefault': 'မူလ',
+    'shadowStrong': 'ပြင်းထန်',
+    'bgTransparent': 'ဖောက်ထွင်းမြင်ရ',
+    'bgTranslucent': 'တစ်ဝက်ဖောက်ထွင်း',
+    'bgOpaque': 'အလင်းပိတ်',
+    'alignLeft': 'ဘယ်',
+    'alignCenter': 'အလယ်',
+    'alignRight': 'ညာ',
+    'subImproveStrokeDesc': 'စာတန်းထိုး အနားသတ်ကို အရည်အသွေးမြင့် ဖော်ပြပါ။ CPU အနည်းငယ် ပိုသုံးပါသည်။',
+    // Subtitle Text / Subtitle Layout screens.
+    'subFont': 'ဖောင့်',
+    'subFontDefault': 'မူလ',
+    'subFontSansSerif': 'Sans-serif',
+    'subFontSerif': 'Serif',
+    'subFontMonospace': 'Monospace',
+    'subFontCustomEnter': 'စိတ်ကြိုက် (နာမည် ရိုက်ထည့်ရန်)…',
+    'subFontCustom': 'စိတ်ကြိုက် ဖောင့်',
+    'subFontCustomHint': 'စက်ထဲမှာ တင်ထားတဲ့ ဖောင့်မိသားစု နာမည်၊ ဒါမှမဟုတ် .ttf / .otf ဖိုင်ရဲ့ လမ်းကြောင်း အပြည့်အစုံ ရိုက်ထည့်ပါ။',
+    'subSize': 'အရွယ်အစား',
+    'subFontSize': 'ဖောင့် အရွယ်အစား',
+    'subBold': 'စာလုံးထူ',
+    'subBoldDesc': 'စာတန်းထိုးကို စာလုံးထူနဲ့ ပြပါ။',
+    'subTextColor': 'စာလုံး အရောင်',
+    'subTextColorTitle': 'စာလုံး အရောင်',
+    'subBorderStyle': 'ဘောင် ပုံစံ',
+    'subBorderStyleTitle': 'ဘောင် ပုံစံ',
+    'subBorderColor': 'ဘောင် အရောင်',
+    'subBorderColorTitle': 'ဘောင် အရောင်',
+    'subScale': 'အချိုးအစား',
+    'subScaleTitle': 'စာတန်းထိုး အချိုးအစား',
+    'subShadow': 'အရိပ်',
+    'subBackground': 'နောက်ခံ',
+    'subBackgroundColor': 'နောက်ခံ အရောင်',
+    'subAlignment': 'နေရာချထားမှု',
+    'subTextAlignment': 'စာလုံး နေရာချထားမှု',
+    'subBottomMargins': 'အောက်ခြေ အကွာအဝေး',
+    'subBottomMarginsTitle': 'အောက်ခြေ အကွာအဝေး',
+    'subImproveStroke': 'အနားသတ် ဖော်ပြမှု တိုးတက်စေရန်',
+    'subVerticalPos': 'ဒေါင်လိုက် တည်နေရာ',
+    'subVerticalPosTitle': 'ဒေါင်လိုက် တည်နေရာ',
+    'subVerticalPosDesc': 'အပေါ်ဘက်မှ အကွာအဝေး၊ ရာခိုင်နှုန်းအဖြစ်။',
+    'subHorizontalAlign': 'အလျားလိုက် နေရာချထားမှု',
+    'subHorizontalAlignTitle': 'အလျားလိုက် နေရာချထားမှု',
+    'subSidePadding': 'ဘယ်/ညာ အကွာအဝေး',
+    'subSidePaddingTitle': 'ဘယ်/ညာ အကွာအဝေး',
+    'subSidePaddingDesc': 'အလျားလိုက် အကွာအဝေး၊ pixel အားဖြင့်။',
+    'subBottomMargin': 'အောက်ခြေ အကွာအဝေး',
+    'subBottomMarginTitle': 'အောက်ခြေ အကွာအဝေး',
+    'subBottomMarginDesc': 'အောက်ခြေ အကွာအဝေး၊ pixel အားဖြင့်။',
+    'subShowBackground': 'နောက်ခံ ပြရန်',
+    'subBgBlack50': 'အနက် (၅၀% အလင်းပိတ်)',
+    'subBgBlack75': 'အနက် (၇၅% အလင်းပိတ်)',
+    'subBgDarkGray': 'မီးခိုးရင့်',
+    'subBgColorActiveWhen': '"နောက်ခံ ပြရန်" ဖွင့်ထားမှသာ အလုပ်လုပ်ပါသည်။',
+    'currently': 'လက်ရှိ',
 
     // --- Video Hub: age gate / library ---
     'vhGateTitle': 'ဤနေရာသည် အရွယ်ရောက်ပြီးသူများအတွက်သာ',
@@ -3416,6 +3642,81 @@ class AppStrings {
   };
 
   static const Map<String, String> _th = <String, String>{
+    'subSecColor': 'สี',
+    'subSecBorder': 'ขอบ',
+    'subSecAppearance': 'ลักษณะ',
+    'sizeTiny': 'เล็กที่สุด',
+    'sizeSmall': 'เล็ก',
+    'sizeMedium': 'กลาง',
+    'sizeLarge': 'ใหญ่',
+    'sizeHuge': 'ใหญ่ที่สุด',
+    'colourWhite': 'ขาว',
+    'colourYellow': 'เหลือง',
+    'colourCyan': 'ฟ้าอมเขียว',
+    'colourGreen': 'เขียว',
+    'colourRed': 'แดง',
+    'colourBlack': 'ดำ',
+    'borderNone': 'ไม่มี',
+    'borderOutline': 'เส้นขอบ',
+    'borderDropShadow': 'เงาตกกระทบ',
+    'borderRaised': 'นูน',
+    'borderDepressed': 'บุ๋ม',
+    'shadowSubtle': 'บางเบา',
+    'shadowDefault': 'ค่าเริ่มต้น',
+    'shadowStrong': 'เข้ม',
+    'bgTransparent': 'โปร่งใส',
+    'bgTranslucent': 'โปร่งแสง',
+    'bgOpaque': 'ทึบแสง',
+    'alignLeft': 'ซ้าย',
+    'alignCenter': 'กึ่งกลาง',
+    'alignRight': 'ขวา',
+    'subImproveStrokeDesc': 'วาดเส้นขอบคำบรรยายคุณภาพสูงขึ้น ใช้ CPU เพิ่มเล็กน้อย',
+    // Subtitle Text / Subtitle Layout screens.
+    'subFont': 'ฟอนต์',
+    'subFontDefault': 'ค่าเริ่มต้น',
+    'subFontSansSerif': 'Sans-serif',
+    'subFontSerif': 'Serif',
+    'subFontMonospace': 'Monospace',
+    'subFontCustomEnter': 'กำหนดเอง (พิมพ์ชื่อ)…',
+    'subFontCustom': 'ฟอนต์กำหนดเอง',
+    'subFontCustomHint': 'พิมพ์ชื่อตระกูลฟอนต์ที่ติดตั้งในเครื่อง หรือพาธเต็มของไฟล์ .ttf / .otf',
+    'subSize': 'ขนาด',
+    'subFontSize': 'ขนาดฟอนต์',
+    'subBold': 'ตัวหนา',
+    'subBoldDesc': 'ใช้ตัวหนาสำหรับคำบรรยาย',
+    'subTextColor': 'สีข้อความ',
+    'subTextColorTitle': 'สีข้อความ',
+    'subBorderStyle': 'รูปแบบขอบ',
+    'subBorderStyleTitle': 'รูปแบบขอบ',
+    'subBorderColor': 'สีขอบ',
+    'subBorderColorTitle': 'สีขอบ',
+    'subScale': 'อัตราส่วน',
+    'subScaleTitle': 'อัตราส่วนคำบรรยาย',
+    'subShadow': 'เงา',
+    'subBackground': 'พื้นหลัง',
+    'subBackgroundColor': 'สีพื้นหลัง',
+    'subAlignment': 'การจัดวาง',
+    'subTextAlignment': 'การจัดวางข้อความ',
+    'subBottomMargins': 'ระยะขอบล่าง',
+    'subBottomMarginsTitle': 'ระยะขอบล่าง',
+    'subImproveStroke': 'ปรับปรุงการวาดเส้นขอบ',
+    'subVerticalPos': 'ตำแหน่งแนวตั้ง',
+    'subVerticalPosTitle': 'ตำแหน่งแนวตั้ง',
+    'subVerticalPosDesc': 'ระยะห่างจากด้านบน เป็นเปอร์เซ็นต์',
+    'subHorizontalAlign': 'การจัดวางแนวนอน',
+    'subHorizontalAlignTitle': 'การจัดวางแนวนอน',
+    'subSidePadding': 'ระยะขอบซ้าย/ขวา',
+    'subSidePaddingTitle': 'ระยะขอบซ้าย/ขวา',
+    'subSidePaddingDesc': 'ระยะขอบแนวนอน หน่วยพิกเซล',
+    'subBottomMargin': 'ระยะขอบล่าง',
+    'subBottomMarginTitle': 'ระยะขอบล่าง',
+    'subBottomMarginDesc': 'ระยะขอบล่าง หน่วยพิกเซล',
+    'subShowBackground': 'แสดงพื้นหลัง',
+    'subBgBlack50': 'ดำ (ทึบ 50%)',
+    'subBgBlack75': 'ดำ (ทึบ 75%)',
+    'subBgDarkGray': 'เทาเข้ม',
+    'subBgColorActiveWhen': 'ใช้ได้เฉพาะเมื่อเปิด "แสดงพื้นหลัง" เท่านั้น',
+    'currently': 'ปัจจุบัน',
 
     // --- Video Hub: age gate / library ---
     'vhGateTitle': 'เนื้อหาสำหรับผู้ใหญ่',
