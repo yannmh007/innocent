@@ -754,6 +754,16 @@ class FileReceiverService {
     }
   }
 
+  /// Exposed so the fuzz in `test/transfer_sanitize_test.dart` can reach it.
+  ///
+  /// README records a 30,000-case fuzz that found the `..` survivor, and a
+  /// 60,000-case re-fuzz that found none — but neither lives in this repo, so
+  /// nothing has re-run them since and nothing would notice a regression. A
+  /// test that cannot be re-run does not protect anything; this makes it one
+  /// CI runs on every push.
+  @visibleForTesting
+  static String safeNameForTest(String name) => _safeName(name);
+
   static String _safeName(String name) {
     // Strip path separators / quotes a malicious manifest might send.
     final stripped = name.replaceAll(RegExp(r'[/\\\x00-\x1f"]'), '_');
