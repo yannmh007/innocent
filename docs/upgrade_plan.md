@@ -426,6 +426,11 @@ with the player tests from #12 as the net.
 
 ## 6. Sentry — available today, no upgrade required
 
+> **Done 12 Sep 2026 (PR #18).** Added off-by-default: the SDK is only
+> initialised when a build passes `--dart-define=SENTRY_DSN=…`, and
+> everything that does leave is scrubbed. `docs/crash_reporting.md` has the
+> privacy design; the caveat this section raises below is answered there.
+
 **`sentry_flutter` needs Flutter ≥3.24.0 and Dart ≥3.5.0. The project is on
 3.32.8 / 3.8.1. It is already past the requirement by eight minor versions.**
 
