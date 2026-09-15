@@ -425,5 +425,6 @@
   "propFinishedNo": "ยังเล่นไม่จบ",
   "propLastPosition": "ตำแหน่งล่าสุด",
   "okay": "ตกลง",
-  "cancelling": "กำลังยกเลิก…"
+  "cancelling": "กำลังยกเลิก…",
+  "downloaderTapResume": "แตะเล่นต่อเพื่อดาวน์โหลดต่อไป"
 }

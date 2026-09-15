@@ -193,6 +193,7 @@ class AppStrings {
   String get downloaderMetered => _s('downloaderMetered');
   String get downloaderDownloadAnyway => _s('downloaderDownloadAnyway');
   String get downloaderLowSpace => _s('downloaderLowSpace');
+  String get downloaderTapResume => _s('downloaderTapResume');
   String get downloaderAutoUpdate => _s('downloaderAutoUpdate');
   String get downloaderAutoUpdateNote => _s('downloaderAutoUpdateNote');
   String get downloaderConfigUrl => _s('downloaderConfigUrl');
@@ -2289,6 +2290,7 @@ class AppStrings {
     'downloaderMetered': 'You are on mobile data',
     'downloaderDownloadAnyway': 'Download anyway',
     'downloaderLowSpace': 'Not enough free space for this download',
+    'downloaderTapResume': 'Tap resume to download anyway',
     'downloaderAutoUpdate': 'Keep the engine updated',
     'downloaderAutoUpdateNote': 'Checks weekly, and again whenever a link is refused',
     'downloaderConfigUrl': 'Settings source',
@@ -3367,6 +3369,7 @@ class AppStrings {
     'downloaderMetered': 'မိုဘိုင်းဒေတာ သုံးနေပါသည်',
     'downloaderDownloadAnyway': 'ဒါပေမယ့် ဆွဲမည်',
     'downloaderLowSpace': 'ဤဒေါင်းလုဒ်အတွက် နေရာလွတ် မလုံလောက်ပါ',
+    'downloaderTapResume': 'ဆက်ဆွဲရန် resume ကို နှိပ်ပါ',
     'downloaderAutoUpdate': 'အင်ဂျင်ကို အလိုအလျောက် အပ်ဒိတ်လုပ်ရန်',
     'downloaderAutoUpdateNote': 'တစ်ပတ်တစ်ခါ၊ လင့်ခ် ငြင်းပယ်ခံရတိုင်း ထပ်စစ်သည်',
     'downloaderConfigUrl': 'ဆက်တင် ရင်းမြစ်',
@@ -4433,6 +4436,7 @@ class AppStrings {
     'downloaderMetered': 'คุณกำลังใช้เน็ตมือถือ',
     'downloaderDownloadAnyway': 'ดาวน์โหลดต่อไป',
     'downloaderLowSpace': 'พื้นที่ว่างไม่พอสำหรับการดาวน์โหลดนี้',
+    'downloaderTapResume': 'แตะเล่นต่อเพื่อดาวน์โหลดต่อไป',
     'downloaderAutoUpdate': 'อัปเดตเอนจินอัตโนมัติ',
     'downloaderAutoUpdateNote': 'ตรวจทุกสัปดาห์ และอีกครั้งเมื่อลิงก์ถูกปฏิเสธ',
     'downloaderConfigUrl': 'แหล่งการตั้งค่า',
