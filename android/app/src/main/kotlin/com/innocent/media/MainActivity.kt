@@ -2411,9 +2411,52 @@ class MainActivity : AudioServiceFragmentActivity() {
         val camThread = HandlerThread("intruderCam").apply { start() }
         val camHandler = Handler(camThread.looper)
         var settled = false
+
+        // HELD HERE SO finish() CAN RELEASE THEM FROM ANY EXIT.
+        //
+        // This is the fix for docs/audit_private_folder.md V1/V2, and the
+        // shape of the bug is worth keeping written down because the code
+        // looked complete: device.close() appeared in FIVE places and every
+        // one of them was a failure branch. The successful path ends inside
+        // the ImageReader listener, which cannot see the CameraDevice at all
+        // — it was scoped to onOpened — so a selfie that WORKED left the front
+        // camera open for the life of the process. The ImageReader was never
+        // closed on any path.
+        //
+        // On Android 12+ that means the camera-in-use indicator stays lit and
+        // the phone's own Camera app cannot open the selfie camera until
+        // Innocent is killed. On a vault app, a camera dot that never goes out
+        // is the worst possible signal: the one thing this feature exists to
+        // reassure people about is the one thing it then contradicts.
+        //
+        // One owner, not six: every callback assigns into these and nothing
+        // else closes them.
+        var camera: CameraDevice? = null
+        var session: CameraCaptureSession? = null
+        var reader: ImageReader? = null
+
         fun finish(value: String?) {
             if (settled) return
             settled = true
+            // Session, then device, then reader. Closing the reader first
+            // would pull its surface out from under a session still holding
+            // it. CameraDevice.close() is idempotent, so a callback that has
+            // already been through here costs nothing.
+            try {
+                session?.close()
+            } catch (_: Throwable) {
+            }
+            try {
+                camera?.close()
+            } catch (_: Throwable) {
+            }
+            try {
+                reader?.close()
+            } catch (_: Throwable) {
+            }
+            session = null
+            camera = null
+            reader = null
             runOnUiThread { result.success(value) }
             camHandler.postDelayed({ camThread.quitSafely() }, 200)
         }
@@ -2434,10 +2477,11 @@ class MainActivity : AudioServiceFragmentActivity() {
                 finish(null)
                 return
             }
-            val reader = ImageReader.newInstance(
+            val imageReader = ImageReader.newInstance(
                 640, 480, android.graphics.ImageFormat.JPEG, 1
             )
-            reader.setOnImageAvailableListener({ r ->
+            reader = imageReader
+            imageReader.setOnImageAvailableListener({ r ->
                 var ok = false
                 try {
                     val image = r.acquireLatestImage()
@@ -2452,13 +2496,17 @@ class MainActivity : AudioServiceFragmentActivity() {
                 } catch (e: Exception) {
                     ok = false
                 }
+                // Safe to close the reader from inside its own callback: the
+                // one image it was configured for has just been acquired and
+                // closed above, so nothing is outstanding.
                 finish(if (ok) path else null)
             }, camHandler)
 
             manager.openCamera(frontId, object : CameraDevice.StateCallback() {
                 override fun onOpened(device: CameraDevice) {
+                    camera = device
                     try {
-                        val surface = reader.surface
+                        val surface = imageReader.surface
                         val req = device.createCaptureRequest(
                             CameraDevice.TEMPLATE_STILL_CAPTURE
                         )
@@ -2471,45 +2519,49 @@ class MainActivity : AudioServiceFragmentActivity() {
                             listOf(surface),
                             object : CameraCaptureSession.StateCallback() {
                                 override fun onConfigured(
-                                    session: CameraCaptureSession
+                                    configured: CameraCaptureSession
                                 ) {
+                                    session = configured
                                     try {
-                                        session.capture(
+                                        configured.capture(
                                             req.build(), null, camHandler
                                         )
                                     } catch (e: Exception) {
-                                        device.close()
                                         finish(null)
                                     }
                                 }
 
                                 override fun onConfigureFailed(
-                                    session: CameraCaptureSession
+                                    configured: CameraCaptureSession
                                 ) {
-                                    device.close()
+                                    session = configured
                                     finish(null)
                                 }
                             },
                             camHandler
                         )
                     } catch (e: Exception) {
-                        device.close()
                         finish(null)
                     }
                 }
 
                 override fun onDisconnected(device: CameraDevice) {
-                    device.close()
+                    // Assigned here too: onOpened may never have run, and the
+                    // device handed to this callback is still ours to close.
+                    camera = device
                     finish(null)
                 }
 
                 override fun onError(device: CameraDevice, error: Int) {
-                    device.close()
+                    camera = device
                     finish(null)
                 }
             }, camHandler)
 
-            // Safety timeout: if the camera never delivers, give up.
+            // Safety timeout: if the camera never delivers, give up — and
+            // release it, which this used to skip. A front camera claimed by
+            // a face-unlock service opens and then never delivers a frame,
+            // which is precisely the case that reached here and leaked.
             camHandler.postDelayed({ finish(null) }, 4000)
         } catch (e: Exception) {
             finish(null)
