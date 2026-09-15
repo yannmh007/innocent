@@ -1224,7 +1224,10 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     final picked = await showModalBottomSheet<String>(
       context: context,
       backgroundColor: AppColors.darkSurface,
-      builder: (_) => SafeArea(
+      // Named, not `_`: the tile below pops THIS sheet to return the chosen
+      // playlist id. Under Dart 3.7 semantics `_` stops binding, so the name
+      // has to be real — see the note in docs/upgrade_plan.md §4a.
+      builder: (sheetCtx) => SafeArea(
         top: false,
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1251,7 +1254,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                     fontSize: 12,
                   ),
                 ),
-                onTap: () => Navigator.of(_).pop(pl.id),
+                onTap: () => Navigator.of(sheetCtx).pop(pl.id),
               ),
             ),
           ],

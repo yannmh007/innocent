@@ -72,7 +72,10 @@ class HistoryScreen extends ConsumerWidget {
               onPressed: () async {
                 final confirm = await showDialog<bool>(
                   context: context,
-                  builder: (_) => AlertDialog(
+                  // Named, not `_`: the two buttons below pop THIS dialog
+                  // to return the answer. Under Dart 3.7 semantics `_` stops
+                  // binding — see docs/upgrade_plan.md §4a.
+                  builder: (dialogCtx) => AlertDialog(
                     backgroundColor: AppColors.darkSurface,
                     title: Text(AppStrings.of(context).clearHistoryTitle,
                         style: const TextStyle(color: Colors.white)),
@@ -81,12 +84,12 @@ class HistoryScreen extends ConsumerWidget {
                     ),
                     actions: [
                       TextButton(
-                        onPressed: () => Navigator.of(_).pop(false),
+                        onPressed: () => Navigator.of(dialogCtx).pop(false),
                         child: Text(AppStrings.of(context).cancel,
                             style: const TextStyle(color: Colors.white70)),
                       ),
                       TextButton(
-                        onPressed: () => Navigator.of(_).pop(true),
+                        onPressed: () => Navigator.of(dialogCtx).pop(true),
                         child: Text(AppStrings.of(context).clear,
                             style: const TextStyle(color: AppColors.error)),
                       ),
