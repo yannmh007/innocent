@@ -15,6 +15,7 @@ import '../domain/diagnostics_log.dart';
 import 'storage_access.dart';
 import '../domain/media_probe.dart';
 import 'downloader_providers.dart';
+import 'preflight_gate.dart';
 
 /// Quality picker for a probed link.
 ///
@@ -260,61 +261,6 @@ class _QualitySheetState extends ConsumerState<QualitySheet> {
     }
   }
 
-  /// Mobile data and free space, asked about before anything starts.
-  ///
-  /// Both are cheap to check and expensive to get wrong: a downloader that
-  /// quietly spends someone's data bundle, or fills the last of their storage
-  /// halfway through a file, is one they stop trusting. Neither is a hard
-  /// block — the user can override — but neither happens silently.
-  Future<bool> _clearedToStart(
-    MediaFormat format,
-    String dir,
-    AppStrings s,
-  ) async {
-    final bool wifiOnly = ref.read(wifiOnlyProvider);
-    final DeviceStatus device =
-        await DownloaderEngineService.instance.deviceStatus(dir);
-    if (!mounted) return false;
-
-    if (wifiOnly && device.online && !device.unmetered) {
-      final bool go = await _confirm(s.downloaderMetered, s) ?? false;
-      if (!go || !mounted) return false;
-    }
-
-    final int? size = format.filesize;
-    if (size != null && device.freeBytes > 0) {
-      // A margin, not a bare comparison: finishing with nothing left over is
-      // its own kind of failure, and the size is often an estimate anyway.
-      const int margin = 200 * 1024 * 1024;
-      if (size + margin > device.freeBytes) {
-        final bool go = await _confirm(s.downloaderLowSpace, s) ?? false;
-        if (!go || !mounted) return false;
-      }
-    }
-    return true;
-  }
-
-  Future<bool?> _confirm(String message, AppStrings s) => showDialog<bool>(
-        context: context,
-        builder: (BuildContext ctx) => AlertDialog(
-          backgroundColor: AppColors.specSheetBg,
-          content: Text(
-            message,
-            style: const TextStyle(color: Colors.white, fontSize: 14),
-          ),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(false),
-              child: Text(s.cancel),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(true),
-              child: Text(s.downloaderDownloadAnyway),
-            ),
-          ],
-        ),
-      );
-
   /// Headers to play a media URL with.
   ///
   /// Starts from whatever the engine reported, then fills the two that a CDN
@@ -428,7 +374,10 @@ class _QualitySheetState extends ConsumerState<QualitySheet> {
     final DownloadExtras extras = ref.read(downloadExtrasProvider);
     // Checked BEFORE the sheet closes, so a refusal can still be explained
     // and reconsidered here rather than turning into a failed row later.
-    if (!await _clearedToStart(format, dir, s)) return;
+    if (!await confirmPreflight(context, ref,
+        dir: dir, totalBytes: format.filesize)) {
+      return;
+    }
 
     final DownloadSpec spec = DownloadSpec(
       id: id,
@@ -443,9 +392,9 @@ class _QualitySheetState extends ConsumerState<QualitySheet> {
     // Show the row immediately; the native side confirms with its own events.
     queue.register(spec);
     // Guarded, NOT an early return: the download is already registered and
-    // must still be started below. `_clearedToStart` re-checks `mounted`
-    // after each of its own awaits and returns false if the sheet went away,
-    // so reaching here with `mounted == false` should be impossible — the
+    // must still be started below. `confirmPreflight` checks `context.mounted`
+    // after its own await and returns false if the sheet went away, so
+    // reaching here with `mounted == false` should be impossible — the
     // analyzer just cannot see that across the call boundary.
     if (mounted) Navigator.of(context).pop();
     try {

@@ -499,5 +499,6 @@
   "alignLeft": "ဘယ်",
   "alignCenter": "အလယ်",
   "alignRight": "ညာ",
-  "subImproveStrokeDesc": "စာတန်းထိုး အနားသတ်ကို အရည်အသွေးမြင့် ဖော်ပြပါ။ CPU အနည်းငယ် ပိုသုံးပါသည်။"
+  "subImproveStrokeDesc": "စာတန်းထိုး အနားသတ်ကို အရည်အသွေးမြင့် ဖော်ပြပါ။ CPU အနည်းငယ် ပိုသုံးပါသည်။",
+  "downloaderTapResume": "ဆက်ဆွဲရန် resume ကို နှိပ်ပါ"
 }

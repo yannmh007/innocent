@@ -499,5 +499,6 @@
   "alignLeft": "ซ้าย",
   "alignCenter": "กึ่งกลาง",
   "alignRight": "ขวา",
-  "subImproveStrokeDesc": "วาดเส้นขอบคำบรรยายคุณภาพสูงขึ้น ใช้ CPU เพิ่มเล็กน้อย"
+  "subImproveStrokeDesc": "วาดเส้นขอบคำบรรยายคุณภาพสูงขึ้น ใช้ CPU เพิ่มเล็กน้อย",
+  "downloaderTapResume": "แตะเล่นต่อเพื่อดาวน์โหลดต่อไป"
 }

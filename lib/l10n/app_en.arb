@@ -526,5 +526,6 @@
   "alignLeft": "Left",
   "alignCenter": "Center",
   "alignRight": "Right",
-  "subImproveStrokeDesc": "Render subtitle stroke at higher quality. Slightly more CPU."
+  "subImproveStrokeDesc": "Render subtitle stroke at higher quality. Slightly more CPU.",
+  "downloaderTapResume": "Tap resume to download anyway"
 }
