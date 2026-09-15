@@ -28,6 +28,25 @@ analyzer:
     # the Problems panel (still non-fatal to the build).
     use_build_context_synchronously: warning
 
+    # ERROR, not warning, and it is the only rule here set that high.
+    #
+    # Reading a `_` parameter compiles today only because pubspec declares
+    # `sdk: '>=3.4.0'`. Dart 3.7 made `_` a non-binding wildcard, so from that
+    # language version on, every such read is `Undefined name '_'` — a compile
+    # error. Nine sites were in exactly that state; raising the bound and
+    # changing nothing else turned all nine into build failures.
+    #
+    # The analyzer reports it by default as an INFO, and CI runs
+    # `--no-fatal-infos --no-fatal-warnings` because of a known lint backlog,
+    # so by default this is a real problem that is invisible in CI. Promoting
+    # it to `error` is what makes CI refuse it, and errors are the one class
+    # those flags do not suppress.
+    #
+    # Keep `_` for parameters you genuinely ignore — that is what it is for,
+    # and most of the `(_)` in this tree are correct. This only fires when the
+    # body actually reads it. See docs/upgrade_plan.md §4a.
+    no_wildcard_variable_uses: error
+
 linter:
   rules:
     # Correctness / resource-safety beyond the flutter_lints defaults.

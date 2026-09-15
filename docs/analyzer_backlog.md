@@ -54,7 +54,7 @@ between them, and every `prefer_*` rule that held 402, are gone from the list.
 | `annotate_overrides` | 14 | info |
 | `unused_import` | 12 | warning |
 | `unused_field` | 9 | warning |
-| `no_wildcard_variable_uses` | 9 | info |
+| ~~`no_wildcard_variable_uses`~~ | ~~9~~ **0** | ~~info~~ **error** (PR #17) |
 | `unused_element` | 5 | warning |
 | `dead_null_aware_expression` | 2 | warning |
 | 8 more rules, one each | 8 | mixed |
@@ -143,7 +143,11 @@ The fix is a `if (!ctx.mounted) return;` after each await, which also documents
 what should happen when the user walks away mid-flow — a question these call
 sites currently do not answer.
 
-### `no_wildcard_variable_uses` — 9 (info)
+### ~~`no_wildcard_variable_uses` — 9 (info)~~ — cleared, PR #17
+
+> Fixed 12 Sep 2026: the nine params are named, and the rule is promoted to
+> `error` in `analysis_options.yaml` so CI refuses it coming back. Kept below
+> because the reasoning is what justifies the promotion.
 
 `showDialog(builder: (_) => ... Navigator.of(_).pop())`.
 
@@ -244,7 +248,7 @@ reviewable:
    **Done.** 410 went; five were held back on purpose. 705 → 295.
 3. **`use_build_context_synchronously`, 20 by hand.** The only genuine crash
    risk in the list, and the only step that needs judgement.
-4. **The upgrade landmines**: `no_wildcard_variable_uses` (9) and
+4. **The upgrade landmines**: ~~`no_wildcard_variable_uses` (9)~~ (done, PR #17) and
    `withOpacity` (107), before the next SDK or Flutter bump rather than during
    it.
 5. **`unawaited_futures`, 84 read individually** — the long tail, and where a

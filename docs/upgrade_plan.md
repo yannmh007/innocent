@@ -238,7 +238,12 @@ own direct `screen_brightness` and `flutter_volume_controller` pins.
 Four separate things, and they are triggered by four different knobs. Keeping
 them apart is most of the value of this section.
 
-### 4a. The 9 wildcards — a compile error, and Flutter does not cause it
+### 4a. The 9 wildcards — ~~a compile error waiting~~ **DONE**
+
+> **Resolved 12 Sep 2026 (PR #17).** All nine are named, and
+> `no_wildcard_variable_uses` is promoted to `error` in
+> `analysis_options.yaml` so CI refuses a reintroduction. The rest of this
+> section is kept because it explains *why* the promotion is there.
 
 All nine are the same shape: `Navigator.of(_)` inside a `builder: (_) {…}`.
 
@@ -387,7 +392,7 @@ needs **zero** Gradle/AGP/Kotlin changes (§4d).
 
 | Step | Does | Why it is its own step |
 |---|---|---|
-| **0** | Name the 9 wildcard params (§4a). Add Sentry (§6). | Free, independent, and Sentry is the instrumentation the later steps should be observed through |
+| **0** | ~~Name the 9 wildcard params (§4a)~~ **done, PR #17**. Add Sentry (§6). | Free, independent, and Sentry is the instrumentation the later steps should be observed through |
 | **1** | → **Flutter 3.35.7** | Isolates the **targetSdk 35 → 36 / Android-16 edge-to-edge** change (§4c) with NDK still at 27 — the one this repo already pins. One behavioural variable, alone. |
 | **2** | → **Flutter 3.38.10** | Brings **NDK 28.2** and the **JDK 17 floor**. Both toolchain, both need the CI file edited in the same commit. |
 | **3** | `media_kit_video` → 1.3.1, then 2.0.1 | Follow `media_kit_upgrade.md` exactly — it is the authority and its staging (bump, verify screen-off *with* the workaround, only then neuter it) exists because this subsystem has already burned four attempts. Budget `screen_brightness` → 2.1.11 in the same commit (§3c). |
@@ -488,3 +493,4 @@ exact table in §4d.
 | Date | Flutter | Change |
 |---|---|---|
 | 2026-09-11 | 3.32.8 | Survey written against `main` @ `596ab26`. No code changed. |
+| 2026-09-12 | 3.32.8 | Step 0's wildcard half done (PR #17): 9 params named, rule promoted to `error`. Raising `sdk:` to `>=3.7.0` now yields 0 errors, measured. |
