@@ -7,6 +7,7 @@ import '../../../core/theme/app_colors.dart';
 import '../data/probe_parser.dart';
 import '../domain/quality_preset.dart';
 import 'downloader_providers.dart';
+import 'preflight_gate.dart';
 
 /// Picks videos out of a collection and one quality for all of them.
 ///
@@ -61,8 +62,24 @@ class _PlaylistSheetState extends ConsumerState<PlaylistSheet> {
       for (int i = 0; i < widget.playlist.entries.length; i++)
         if (_selected.contains(i)) widget.playlist.entries[i],
     ];
+    if (chosen.isEmpty) {
+      Navigator.of(context).pop();
+      return;
+    }
+    // ASKED ONCE FOR THE WHOLE BATCH, and asked BEFORE the sheet closes.
+    //
+    // This path skipped the pre-flight entirely, which made it the worst of
+    // the four: a person who had switched "Wi-Fi only" on could queue forty
+    // items over mobile data without a word. See docs/audit_downloader.md F1.
+    //
+    // Once, not once per item — forty identical dialogs is not a warning, it
+    // is an obstacle course, and the answer to the first is the answer to all
+    // of them. No size is passed because a flat playlist read carries no
+    // per-entry size (PlaylistEntry has url, title and duration), so the
+    // free-space arm cannot fire here and does not pretend to.
+    if (!await confirmPreflight(context, ref, dir: dir)) return;
+    if (!mounted) return;
     Navigator.of(context).pop();
-    if (chosen.isEmpty) return;
 
     // Registered and submitted one at a time, in order. The engine's queue is
     // single-file by design, so this simply fills it — the first starts now and

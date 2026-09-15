@@ -7,8 +7,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../core/localization/app_strings.dart';
+import '../../../core/localization/locale_provider.dart';
 import '../../../core/services/downloader/downloader_engine_service.dart';
 import '../data/probe_pipeline.dart';
+import '../domain/download_preflight.dart';
 import '../data/site_catalog.dart';
 import '../data/remote_config_service.dart';
 import '../domain/diagnostics_log.dart';
@@ -906,6 +909,7 @@ class DownloadTask {
     this.error,
     this.stats,
     this.attempt = 0,
+    this.heldReason,
   });
 
   final String id;
@@ -923,6 +927,17 @@ class DownloadTask {
 
   /// Which automatic reconnect attempt we are on, 0 when none.
   final int attempt;
+
+  /// Why this row is paused BEFORE it ever ran, in the user's language.
+  ///
+  /// Deliberately separate from [line], which carries the engine's last
+  /// output: an ordinary pause keeps that line, so reusing it here would
+  /// print a yt-dlp progress line under every paused row and a held reason
+  /// under none of them. Null for every row that actually started.
+  ///
+  /// Cleared for free on resume: the engine's first event rebuilds the task
+  /// through [applyEvent], which does not carry this field forward.
+  final String? heldReason;
 
   bool get isRunning =>
       phase == DownloadPhase.queued ||
@@ -1072,6 +1087,47 @@ class DownloadQueueNotifier extends StateNotifier<List<DownloadTask>> {
         '${pick.rawFormats > 0 ? ' · engine sent ${pick.rawFormats}, offered ${pick.offered}' : ''}',
         url: pick.url,
       );
+
+      // THE PRE-FLIGHT, WITHOUT A DIALOG TO ASK IN.
+      //
+      // The other three start paths put the mobile-data and free-space
+      // questions to the user directly (see preflight_gate.dart). This one
+      // cannot: the in-app browser is a native Activity sitting in front of
+      // Flutter, and the downloads screen may never have been built. Ignoring
+      // the setting because there is nowhere to draw a dialog was the old
+      // behaviour and it is how "Wi-Fi only" quietly did nothing here.
+      //
+      // So the answer is not to ask and not to ignore, but to HOLD: the row
+      // is registered and paused with the reason on it, and the Resume button
+      // it already has is the "download anyway" the dialog would have offered.
+      // The person's intent is kept, the setting is honoured, and the reason
+      // is on screen the moment they leave the browser.
+      final DeviceStatus device =
+          await DownloaderEngineService.instance.deviceStatus(dir);
+      final PreflightVerdict verdict = decidePreflight(
+        wifiOnly: _ref.read(wifiOnlyProvider),
+        online: device.online,
+        unmetered: device.unmetered,
+        freeBytes: device.freeBytes,
+        // BrowserPick does not carry a size — it reports the address, the
+        // selector, the title and whether muxing is needed, and adding a
+        // field means changing the Kotlin payload too. So only the metered
+        // arm can fire here, which is the one this path was actually losing
+        // money on. Passing null is honest; passing 0 would read as "it
+        // fits" if the arm ever changed shape.
+        totalBytes: null,
+      );
+      if (verdict != PreflightVerdict.clear) {
+        holdBeforeStart(spec.id, _preflightReason(verdict));
+        DiagnosticsLog.instance.note(
+          'download',
+          'browser pick held before start: ${verdict.name}',
+          url: pick.url,
+        );
+        return;
+      }
+
+      final DownloadExtras extras = _ref.read(downloadExtrasProvider);
       await DownloaderEngineService.instance.startDownload(
         id: spec.id,
         url: spec.url,
@@ -1083,6 +1139,19 @@ class DownloadQueueNotifier extends StateNotifier<List<DownloadTask>> {
         merge: spec.merge,
         cookies: _ref.read(cookiesPathProvider),
         clients: _ref.read(playerClientsProvider),
+        // THE EXTRAS, WHICH THIS PATH USED TO DROP ON THE FLOOR.
+        //
+        // The doc comment above says everything but the address, the format
+        // and the title "stays with Dart, so there is one answer to those
+        // questions rather than two that can drift apart" — and DownloadSpec's
+        // own comment says the same. Neither was true: subtitles, thumbnail,
+        // metadata and the SPEED LIMIT were simply not passed, so a browser
+        // download ignored every one of them while the playlist sheet twelve
+        // lines away passed all four. See docs/audit_downloader.md F3.
+        subLangs: extras.subLangs.isEmpty ? null : extras.subLangs,
+        embedThumbnail: extras.embedThumbnail,
+        embedMetadata: extras.embedMetadata,
+        rateLimit: extras.rateLimit.isEmpty ? null : extras.rateLimit,
       );
     } catch (e) {
       // The browser is in front and cannot show this, so it goes where every
@@ -1241,6 +1310,63 @@ class DownloadQueueNotifier extends StateNotifier<List<DownloadTask>> {
     _persist();
   }
 
+  /// Park an already-registered row before it ever reaches the engine.
+  ///
+  /// The browser's counterpart to the pre-flight dialog the sheets show. The
+  /// row lands in the list as PAUSED with [reason] on it, which means it
+  /// already has the Resume button every paused row has — and resume() replays
+  /// the persisted spec, so one tap is exactly the "download anyway" the
+  /// dialog would have offered.
+  ///
+  /// Paused rather than error on purpose: nothing failed. The download has not
+  /// been tried yet and the person may well want it — an error row invites a
+  /// Dismiss, a paused row invites a Resume.
+  void holdBeforeStart(String id, String reason) {
+    if (!mounted) return;
+    state = <DownloadTask>[
+      for (final DownloadTask t in state)
+        if (t.id == id)
+          DownloadTask(
+            id: t.id,
+            title: t.title,
+            phase: DownloadPhase.paused,
+            spec: t.spec,
+            progress: t.progress,
+            etaSeconds: t.etaSeconds,
+            line: t.line,
+            path: t.path,
+            error: t.error,
+            stats: t.stats,
+            attempt: t.attempt,
+            heldReason: reason,
+          )
+        else
+          t,
+    ];
+    _persist();
+  }
+
+  /// The held reason, in the user's language, from outside a widget tree.
+  ///
+  /// `AppStrings.of(context)` is unavailable here — this notifier deliberately
+  /// outlives every screen so the browser can reach it. AppStrings is a plain
+  /// map lookup, so it can be built from a Locale directly: the explicit
+  /// choice when there is one, the platform's otherwise, and `_s` already
+  /// falls back to English for any language it does not carry.
+  String _preflightReason(PreflightVerdict verdict) {
+    final AppStrings s = AppStrings(
+      _ref.read(localeProvider) ?? PlatformDispatcher.instance.locale,
+    );
+    switch (verdict) {
+      case PreflightVerdict.metered:
+        return '${s.downloaderMetered} · ${s.downloaderTapResume}';
+      case PreflightVerdict.lowSpace:
+        return '${s.downloaderLowSpace} · ${s.downloaderTapResume}';
+      case PreflightVerdict.clear:
+        return '';
+    }
+  }
+
   Future<void> pause(String id) => DownloaderEngineService.instance.pause(id);
 
   /// Resume prefers the engine's own record; if that is gone (the app process
@@ -1258,6 +1384,18 @@ class DownloadQueueNotifier extends StateNotifier<List<DownloadTask>> {
     }
     final DownloadSpec? spec = task.spec;
     if (spec == null) return;
+    // THE REPLAY IS A START, SO IT NEEDS EVERYTHING A START NEEDS.
+    //
+    // This dropped the cookies, the player clients and all four extras, which
+    // made it a second home for the bug audit_downloader.md F3 found on the
+    // browser path. Two ways it bites: a resumed age-gated download arrives
+    // with no cookies and fails for a reason that looks nothing like the
+    // cause, and a resumed download silently ignores the speed limit.
+    //
+    // It matters more now than it did: a row HELD before it ever started (see
+    // holdBeforeStart) has no engine record, so `resume` above always throws
+    // for it and this replay is the ONLY way that download ever runs.
+    final DownloadExtras extras = _ref.read(downloadExtrasProvider);
     try {
       await DownloaderEngineService.instance.startDownload(
         id: spec.id,
@@ -1268,6 +1406,12 @@ class DownloadQueueNotifier extends StateNotifier<List<DownloadTask>> {
         audioOnly: spec.audioOnly,
         toMp3: spec.toMp3,
         merge: spec.merge,
+        cookies: _ref.read(cookiesPathProvider),
+        clients: _ref.read(playerClientsProvider),
+        subLangs: extras.subLangs.isEmpty ? null : extras.subLangs,
+        embedThumbnail: extras.embedThumbnail,
+        embedMetadata: extras.embedMetadata,
+        rateLimit: extras.rateLimit.isEmpty ? null : extras.rateLimit,
       );
     } catch (_) {}
   }
