@@ -13,6 +13,7 @@ import 'core/router/app_router.dart';
 import 'core/router/routes.dart';
 import 'core/services/diagnostics/crash_breadcrumbs.dart';
 import 'core/services/diagnostics/crash_diagnostics.dart';
+import 'core/services/diagnostics/sentry_reporting.dart';
 import 'core/services/equalizer/equalizer_service.dart';
 import 'core/services/music_background/music_audio_handler.dart';
 import 'core/services/preferences/settings_migration_service.dart';
@@ -91,6 +92,19 @@ void main() async {
     debugPrint('Uncaught async error: $error\n$stack');
     return true;
   };
+
+  // AFTER the two hooks above, and the order is the whole point.
+  //
+  // Sentry's OnErrorIntegration captures whatever `PlatformDispatcher.onError`
+  // already holds and calls it, returning its result — so the `return true`
+  // decided just above survives, and an unawaited failure still keeps the
+  // isolate alive. Start it BEFORE that assignment and the assignment wins:
+  // Sentry's handler is overwritten and no async error is ever reported.
+  //
+  // Does nothing at all unless the build carries
+  // `--dart-define=SENTRY_DSN=…`, which CI's does not. See
+  // lib/core/services/diagnostics/sentry_reporting.dart.
+  await SentryReporting.start();
 
   // Phase 45: tune the Flutter image cache for the realistic devices
   // people install MX-clones on. Default Flutter caps live image cache
