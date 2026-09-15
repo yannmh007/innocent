@@ -98,6 +98,45 @@ class TransferEngine {
   /// thirty seconds would be worse than useless.
   static const int _maxPausedWaitMs = 10 * 60 * 1000;
 
+  /// How long a response body may deliver NOTHING before the attempt is
+  /// abandoned.
+  ///
+  /// WHY THIS EXISTS. `connectionTimeout` bounds the TCP connect and
+  /// `idleTimeout` bounds a POOLED, NON-ACTIVE connection. Neither bounds a
+  /// body that started arriving and then stopped — and that is the ordinary
+  /// case here, not an exotic one: the sending phone's screen goes off,
+  /// Android freezes the app mid-share, and the TCP connection is left
+  /// half-open with nothing to signal it. See docs/audit_transfer.md T1.
+  ///
+  /// The retry loop in [run] was already correct and already generous — four
+  /// attempts with backoff. It simply never got to run, because attempt one
+  /// never ended. This turns a permanent hang into the retry the code was
+  /// already built for.
+  ///
+  /// 30 seconds, not the 60 the audit suggested, because the clock measures
+  /// ZERO BYTES rather than throughput: a link delivering one byte every 29
+  /// seconds resets it. Half a minute of complete silence mid-body on a LAN
+  /// means the peer is gone. Four attempts then cost ~2 minutes before the
+  /// file is given up and the batch moves on, which matters because
+  /// `state.batchRunning` gates the Turbo idle release — a batch that never
+  /// ends is a phone that never gets its internet back.
+  ///
+  /// A PAUSE IS NOT A STALL and cannot be caught by this. The sender signals
+  /// a pause with HTTP 503 on a new request, and truncates the body on an
+  /// in-flight one — a truncation ENDS the stream rather than stalling it, so
+  /// it lands on the byte-count check and the 503 path, both of which already
+  /// exist and are deliberately outside the error budget.
+  static const Duration defaultStallTimeout = Duration(seconds: 30);
+
+  /// Overridable only so a test can prove the watchdog fires without waiting
+  /// half a minute for it. Production always takes the default — the isolate
+  /// worker constructs `TransferEngine()` with no arguments, and so does the
+  /// in-process fallback.
+  final Duration stallTimeout;
+
+  TransferEngine({Duration? stallTimeout})
+      : stallTimeout = stallTimeout ?? defaultStallTimeout;
+
   HttpClient? _client;
   HttpClientRequest? _activeReq;
   final List<HttpClientRequest> _activeReqs = [];
@@ -286,7 +325,7 @@ class TransferEngine {
       // addStream rather than a manual loop with sink.add: IOSink.add applies
       // NO back-pressure, so when the link outruns the flash write the
       // unwritten chunks pile up in RAM until the OS kills us.
-      final counted = resp.map((chunk) {
+      final counted = resp.timeout(stallTimeout).map((chunk) {
         received += chunk.length;
         final now = DateTime.now();
         final ms = now.difference(lastTick).inMilliseconds;
@@ -389,7 +428,7 @@ class TransferEngine {
                 'Sender did not honour ranges (HTTP ${resp.statusCode}).');
           }
           final buf = BytesBuilder(copy: false);
-          await for (final chunk in resp) {
+          await for (final chunk in resp.timeout(stallTimeout)) {
             buf.add(chunk);
             if (buf.length >= _writeBufBytes) {
               final bytes = buf.takeBytes();
@@ -493,6 +532,21 @@ class IsolateDownloader {
         rp.sendPort,
         errorsAreFatal: false,
         debugName: 'innocent-transfer',
+        // TELL US WHEN IT DIES. See docs/audit_transfer.md T2.
+        //
+        // The worker's own try/catch around engine.run is thorough, so the
+        // only way to hang was the isolate ITSELF dying — an out-of-memory
+        // kill during a large transfer on a low-RAM phone, which is the
+        // realistic case for this app's devices. Without these ports nothing
+        // noticed: _jobDone was never completed, isAlive still returned true
+        // because _toIsolate was still non-null, and the batch loop waited
+        // forever. Same end state as a stalled body, and it held the Turbo
+        // idle release shut the same way.
+        //
+        // Both are routed to the one port this class already listens on, so
+        // _onMessage is the single place that decides what a message means.
+        onExit: rp.sendPort,
+        onError: rp.sendPort,
       ).timeout(const Duration(seconds: 8));
       host._isolate = iso;
       host._fromIsolate = rp;
@@ -512,6 +566,34 @@ class IsolateDownloader {
   void _onMessage(dynamic msg, Completer<SendPort> ready) {
     if (msg is SendPort) {
       if (!ready.isCompleted) ready.complete(msg);
+      return;
+    }
+    // THE ISOLATE DIED. `onExit` sends null; `onError` sends a two-element
+    // list of [error, stackTrace], both already converted to strings by the
+    // VM. Neither is a Map, so both used to fall through the check below and
+    // vanish — which is precisely how a dead worker went unnoticed.
+    //
+    // Fail the job in flight and mark the worker dead, so isAlive stops lying
+    // and downloadFile falls back to the in-process engine on the next file.
+    // That fallback already exists and is already correct; it was simply
+    // unreachable.
+    if (msg == null || msg is List) {
+      _toIsolate = null;
+      final c = _jobDone;
+      _jobDone = null;
+      _onProgress = null;
+      if (c != null && !c.isCompleted) {
+        c.completeError(
+          Exception(msg is List && msg.isNotEmpty
+              ? 'Transfer worker died: ${msg.first}'
+              : 'Transfer worker exited unexpectedly'),
+        );
+      }
+      // The spawn handshake can also die here — never leave it hanging for
+      // its full eight seconds when we already know the answer.
+      if (!ready.isCompleted) {
+        ready.completeError(Exception('isolate died before reporting ready'));
+      }
       return;
     }
     if (msg is! Map) return;
