@@ -33,22 +33,26 @@ class SubtitleTextScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final s = AppStrings.of(context);
     return Scaffold(
       backgroundColor: AppColors.darkBackground,
-      appBar: AppBar(title: Text(AppStrings.of(context).subtitleTextTitle)),
+      appBar: AppBar(title: Text(s.subtitleTextTitle)),
       body: ListView(
         children: [
-          const SettingsSectionHeader('Font'),
+          SettingsSectionHeader(s.subFont),
           // Phase 45 (audit refined, build 64): wire Font picker.
           // 'Default' = libmpv system font. Other options set a
           // specific font family name. 'Custom' lets the user enter a
           // .ttf path from their typeface_dir.
           Builder(builder: (ctx) {
-            const fontMap = <String, String>{
-              'Default': '',
-              'Sans-serif': 'sans-serif',
-              'Serif': 'serif',
-              'Monospace': 'monospace',
+            // Labels localised, VALUES untouched: the stored preference is
+            // the map's value, and the reverse lookup below compares values,
+            // so translating the keys cannot change what is saved.
+            final fontMap = <String, String>{
+              s.subFontDefault: '',
+              s.subFontSansSerif: 'sans-serif',
+              s.subFontSerif: 'serif',
+              s.subFontMonospace: 'monospace',
             };
             final cur = ref
                 .watch(extraSettingsProvider)
@@ -59,7 +63,7 @@ class SubtitleTextScreen extends ConsumerWidget {
                 .firstWhere(
                   (e) => e.value == cur,
                   orElse: () => cur.isEmpty
-                      ? const MapEntry('Default', '')
+                      ? MapEntry(s.subFontDefault, '')
                       : MapEntry(
                           cur.length > 24
                               ? '...${cur.substring(cur.length - 24)}'
@@ -68,27 +72,27 @@ class SubtitleTextScreen extends ConsumerWidget {
                 )
                 .key;
             return SettingsNavTile(
-              title: 'Font',
+              title: s.subFont,
               subtitle: curLabel,
               onTap: () async {
                 final picked = await showSettingsListDialog(
                   context: context,
-                  title: 'Font',
-                  options: [...fontMap.keys, 'Custom (enter name)…'],
+                  title: s.subFont,
+                  options: [...fontMap.keys, s.subFontCustomEnter],
                   currentValue: fontMap.containsValue(cur)
                       ? fontMap.entries
                           .firstWhere((e) => e.value == cur)
                           .key
-                      : 'Default',
+                      : s.subFontDefault,
                 );
                 if (picked == null) return;
-                if (picked == 'Custom (enter name)…') {
+                if (picked == s.subFontCustomEnter) {
                   if (!context.mounted) return;
                   final entered = await showSettingsTextDialog(
                     context: context,
-                    title: 'Custom Font',
+                    title: s.subFontCustom,
                     subtitle:
-                        'Enter the font family name as installed on the device, or a full path to a .ttf / .otf file.',
+                        s.subFontCustomHint,
                     currentValue: cur,
                     hintText: 'e.g. NotoSansMyanmar-Regular',
                   );
@@ -111,18 +115,18 @@ class SubtitleTextScreen extends ConsumerWidget {
           // IntSetting.subtitleFontSize. Applied as a base preset
           // multiplied with the user's `subtitleScale` slider.
           Builder(builder: (ctx) {
-            const opts = ['Tiny', 'Small', 'Medium', 'Large', 'Huge'];
+            final opts = [s.sizeTiny, s.sizeSmall, s.sizeMedium, s.sizeLarge, s.sizeHuge];
             final cur = ref
                 .watch(extraSettingsProvider)
                 .getInt(IntSetting.subtitleFontSize);
             final curLabel = opts[cur.clamp(0, 4)];
             return SettingsNavTile(
-              title: 'Size',
+              title: s.subSize,
               subtitle: curLabel,
               onTap: () async {
                 final picked = await showSettingsListDialog(
                   context: context,
-                  title: 'Font Size',
+                  title: s.subFontSize,
                   options: opts,
                   currentValue: curLabel,
                 );
@@ -138,26 +142,26 @@ class SubtitleTextScreen extends ConsumerWidget {
             );
           }),
           _toggle(ref,
-              title: 'Bold',
-              subtitle: 'Use bold text for subtitles.',
+              title: s.subBold,
+              subtitle: s.subBoldDesc,
               setting: PlayerSetting.subTextBold),
-          const SettingsSectionHeader('Color'),
+          SettingsSectionHeader(s.subSecColor),
           // Phase 45 (audit refined, build 63): wire Text color to
           // IntSetting.subtitleTextColor (6-preset palette matching
           // MX Player V3). Applied to libmpv `sub-color` on every play.
           Builder(builder: (ctx) {
-            const opts = ['White', 'Yellow', 'Cyan', 'Green', 'Red', 'Black'];
+            final opts = [s.colourWhite, s.colourYellow, s.colourCyan, s.colourGreen, s.colourRed, s.colourBlack];
             final cur = ref
                 .watch(extraSettingsProvider)
                 .getInt(IntSetting.subtitleTextColor);
             final curLabel = opts[cur.clamp(0, 5)];
             return SettingsNavTile(
-              title: 'Text color',
+              title: s.subTextColor,
               subtitle: curLabel,
               onTap: () async {
                 final picked = await showSettingsListDialog(
                   context: context,
-                  title: 'Text Color',
+                  title: s.subTextColorTitle,
                   options: opts,
                   currentValue: curLabel,
                 );
@@ -172,30 +176,30 @@ class SubtitleTextScreen extends ConsumerWidget {
               },
             );
           }),
-          const SettingsSectionHeader('Border'),
+          SettingsSectionHeader(s.subSecBorder),
           // Phase 45 (audit refined, build 64): wire Border style to
           // IntSetting.subtitleBorderStyle. 5 options (None/Outline/
           // Drop shadow/Raised/Depressed). Applied via libmpv's
           // sub-border-size + sub-shadow-offset on every play.
           Builder(builder: (ctx) {
-            const opts = [
-              'None',
-              'Outline',
-              'Drop shadow',
-              'Raised',
-              'Depressed'
+            final opts = [
+              s.borderNone,
+              s.borderOutline,
+              s.borderDropShadow,
+              s.borderRaised,
+              s.borderDepressed,
             ];
             final cur = ref
                 .watch(extraSettingsProvider)
                 .getInt(IntSetting.subtitleBorderStyle);
             final curLabel = opts[cur.clamp(0, 4)];
             return SettingsNavTile(
-              title: 'Border style',
+              title: s.subBorderStyle,
               subtitle: curLabel,
               onTap: () async {
                 final picked = await showSettingsListDialog(
                   context: context,
-                  title: 'Border Style',
+                  title: s.subBorderStyleTitle,
                   options: opts,
                   currentValue: curLabel,
                 );
@@ -214,18 +218,18 @@ class SubtitleTextScreen extends ConsumerWidget {
           // IntSetting.subtitleBorderColor. Applied to libmpv
           // `sub-border-color` on every play.
           Builder(builder: (ctx) {
-            const opts = ['White', 'Yellow', 'Cyan', 'Green', 'Red', 'Black'];
+            final opts = [s.colourWhite, s.colourYellow, s.colourCyan, s.colourGreen, s.colourRed, s.colourBlack];
             final cur = ref
                 .watch(extraSettingsProvider)
                 .getInt(IntSetting.subtitleBorderColor);
             final curLabel = opts[cur.clamp(0, 5)];
             return SettingsNavTile(
-              title: 'Border color',
+              title: s.subBorderColor,
               subtitle: curLabel,
               onTap: () async {
                 final picked = await showSettingsListDialog(
                   context: context,
-                  title: 'Border Color',
+                  title: s.subBorderColorTitle,
                   options: opts,
                   currentValue: curLabel,
                 );
@@ -246,7 +250,7 @@ class SubtitleTextScreen extends ConsumerWidget {
           // for visual parity. Persistence wiring per setting can be
           // added in next phase; these are visible-only for now to
           // match MX Player's settings list 1:1.
-          const SettingsSectionHeader('Appearance'),
+          SettingsSectionHeader(s.subSecAppearance),
           // Phase 45 (audit refined, build 63): wire Scale to
           // IntSetting.subtitleScale (stored as percent 10-200, default
           // 100 = 1.0x). Applied to libmpv `sub-scale` on every play.
@@ -255,12 +259,12 @@ class SubtitleTextScreen extends ConsumerWidget {
                 .watch(extraSettingsProvider)
                 .getInt(IntSetting.subtitleScale);
             return SettingsNavTile(
-              title: 'Scale',
+              title: s.subScale,
               subtitle: '${(scalePct / 100).toStringAsFixed(2)}x',
               onTap: () async {
                 final picked = await showSettingsSliderDialog(
                   context: context,
-                  title: 'Subtitle Scale',
+                  title: s.subScaleTitle,
                   currentValue: scalePct.toDouble(),
                   min: 10,
                   max: 200,
@@ -280,18 +284,18 @@ class SubtitleTextScreen extends ConsumerWidget {
           // 3=Strong). Applied to libmpv sub-shadow-color +
           // sub-shadow-offset.
           Builder(builder: (ctx) {
-            const opts = ['None', 'Subtle', 'Default', 'Strong'];
+            final opts = [s.borderNone, s.shadowSubtle, s.shadowDefault, s.shadowStrong];
             final lvl = ref
                 .watch(extraSettingsProvider)
                 .getInt(IntSetting.subtitleShadow);
             final curLabel = opts[lvl.clamp(0, 3)];
             return SettingsNavTile(
-              title: 'Shadow',
+              title: s.subShadow,
               subtitle: curLabel,
               onTap: () async {
                 final picked = await showSettingsListDialog(
                   context: context,
-                  title: 'Shadow',
+                  title: s.subShadow,
                   options: opts,
                   currentValue: curLabel,
                 );
@@ -311,18 +315,18 @@ class SubtitleTextScreen extends ConsumerWidget {
           // 1=Translucent, 2=Opaque). Applied to libmpv
           // sub-back-color alpha.
           Builder(builder: (ctx) {
-            const opts = ['Transparent', 'Translucent', 'Opaque'];
+            final opts = [s.bgTransparent, s.bgTranslucent, s.bgOpaque];
             final lvl = ref
                 .watch(extraSettingsProvider)
                 .getInt(IntSetting.subtitleBackgroundOpacity);
             final curLabel = opts[lvl.clamp(0, 2)];
             return SettingsNavTile(
-              title: 'Background',
+              title: s.subBackground,
               subtitle: curLabel,
               onTap: () async {
                 final picked = await showSettingsListDialog(
                   context: context,
-                  title: 'Background',
+                  title: s.subBackground,
                   options: opts,
                   currentValue: curLabel,
                 );
@@ -342,18 +346,18 @@ class SubtitleTextScreen extends ConsumerWidget {
           // to IntSetting.subtitleBackgroundColor. Applied with the
           // chosen opacity to produce a proper ARGB on libmpv.
           Builder(builder: (ctx) {
-            const opts = ['White', 'Yellow', 'Cyan', 'Green', 'Red', 'Black'];
+            final opts = [s.colourWhite, s.colourYellow, s.colourCyan, s.colourGreen, s.colourRed, s.colourBlack];
             final cur = ref
                 .watch(extraSettingsProvider)
                 .getInt(IntSetting.subtitleBackgroundColor);
             final curLabel = opts[cur.clamp(0, 5)];
             return SettingsNavTile(
-              title: 'Background Color',
+              title: s.subBackgroundColor,
               subtitle: curLabel,
               onTap: () async {
                 final picked = await showSettingsListDialog(
                   context: context,
-                  title: 'Background Color',
+                  title: s.subBackgroundColor,
                   options: opts,
                   currentValue: curLabel,
                 );
@@ -372,18 +376,18 @@ class SubtitleTextScreen extends ConsumerWidget {
           // IntSetting.subtitleAlignment (0=Left, 1=Center, 2=Right).
           // Applied to libmpv `sub-align-x` on every play.
           Builder(builder: (ctx) {
-            const opts = ['Left', 'Center', 'Right'];
+            final opts = [s.alignLeft, s.alignCenter, s.alignRight];
             final cur = ref
                 .watch(extraSettingsProvider)
                 .getInt(IntSetting.subtitleAlignment);
             final curLabel = opts[cur.clamp(0, 2)];
             return SettingsNavTile(
-              title: 'Alignment',
+              title: s.subAlignment,
               subtitle: curLabel,
               onTap: () async {
                 final picked = await showSettingsListDialog(
                   context: context,
-                  title: 'Text Alignment',
+                  title: s.subTextAlignment,
                   options: opts,
                   currentValue: curLabel,
                 );
@@ -406,14 +410,14 @@ class SubtitleTextScreen extends ConsumerWidget {
                 .watch(extraSettingsProvider)
                 .getInt(IntSetting.subtitleBottomMargin);
             return SettingsNavTile(
-              title: 'Bottom margins',
+              title: s.subBottomMargins,
               subtitle: pct == 0
                   ? '0% (touching bottom edge)'
                   : '$pct% of screen height',
               onTap: () async {
                 final picked = await showSettingsSliderDialog(
                   context: context,
-                  title: 'Bottom Margins',
+                  title: s.subBottomMarginsTitle,
                   currentValue: pct.toDouble(),
                   min: 0,
                   max: 20,
@@ -430,9 +434,9 @@ class SubtitleTextScreen extends ConsumerWidget {
             );
           }),
           _toggle(ref,
-              title: 'Improve stroke rendering',
+              title: s.subImproveStroke,
               subtitle:
-                  'Render subtitle stroke at higher quality. Slightly more CPU.',
+                  s.subImproveStrokeDesc,
               setting: PlayerSetting.subTextImproveStroke),
           const SizedBox(height: 24),
         ],
