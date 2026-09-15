@@ -281,6 +281,20 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload the APK
+        # NOT on a pull request. The comment below predicted the failure and
+        # `retention-days` alone could not prevent it: with ten PRs open, ten
+        # builds each stored an 88 MB APK inside the five-day window, which is
+        # 885 MB against a 500 MB allowance. On 15 Sep the upload started
+        # failing with "Artifact storage quota has been hit" — AFTER a
+        # completely successful build, so a green tree reported red.
+        #
+        # A PR build's job is to prove the tree compiles, the tests pass and
+        # the APK signs. All three finish before this step. Nobody installs an
+        # APK from a PR; the one worth keeping is the one built from `main`.
+        # `workflow_dispatch` is kept so a branch can still be asked for an
+        # APK deliberately, which is rare and is someone choosing to spend the
+        # allowance.
+        if: github.event_name != 'pull_request'
         uses: actions/upload-artifact@v4
         with:
           name: innocent-${{ steps.facts.outputs.vname }}-${{ steps.facts.outputs.vcode }}
