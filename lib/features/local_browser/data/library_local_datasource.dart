@@ -429,6 +429,19 @@ class LibraryLocalDataSource {
     }
   }
 
+  /// Exposed for `test/library_titles_test.dart`.
+  ///
+  /// These two decide what every row in the Videos tab is called, and they
+  /// had no tests — while `_stripIdTag`'s whole design is a set of deliberate
+  /// near-misses (it must strip `[ph64a3f2]` and must NOT strip
+  /// `[Official Video]`), which is precisely the kind of rule that decays
+  /// silently when someone widens it "just a little".
+  @visibleForTesting
+  static String stripExtForTest(String s) => _stripExt(s);
+
+  @visibleForTesting
+  static String stripIdTagForTest(String s) => _stripIdTag(s);
+
   /// Phase 16: MX Player parity — never show the file extension in titles.
   static String _stripExt(String s) {
     final dot = s.lastIndexOf('.');
