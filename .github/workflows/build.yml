@@ -110,6 +110,24 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          # Do not let the action install its default package set.
+          #
+          # setup-android@v3 defaults to `packages: 'tools platform-tools'`,
+          # and Google has REMOVED the obsolete `tools` package from the SDK
+          # repository. sdkmanager now answers "Failed to find package 'tools'"
+          # and exits 1, which fails this step before any of this project's
+          # code is even fetched — so every build on every branch broke at once
+          # on a day nobody touched the repository.
+          #
+          # Empty rather than 'platform-tools': nothing in this workflow uses
+          # adb. The pieces that ARE needed are installed explicitly by the
+          # next step, which is where they belong — it is the one that has to
+          # stay in sync with android/app/build.gradle.kts.
+          #
+          # The action still does the two things it is here for with an empty
+          # package list: it puts sdkmanager on PATH and exports ANDROID_HOME.
+          packages: ''
 
       - name: Install the exact SDK pieces this project pins
         run: |
@@ -263,6 +281,20 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload the APK
+        # NOT on a pull request. The comment below predicted the failure and
+        # `retention-days` alone could not prevent it: with ten PRs open, ten
+        # builds each stored an 88 MB APK inside the five-day window, which is
+        # 885 MB against a 500 MB allowance. On 15 Sep the upload started
+        # failing with "Artifact storage quota has been hit" — AFTER a
+        # completely successful build, so a green tree reported red.
+        #
+        # A PR build's job is to prove the tree compiles, the tests pass and
+        # the APK signs. All three finish before this step. Nobody installs an
+        # APK from a PR; the one worth keeping is the one built from `main`.
+        # `workflow_dispatch` is kept so a branch can still be asked for an
+        # APK deliberately, which is rare and is someone choosing to spend the
+        # allowance.
+        if: github.event_name != 'pull_request'
         uses: actions/upload-artifact@v4
         with:
           name: innocent-${{ steps.facts.outputs.vname }}-${{ steps.facts.outputs.vcode }}
