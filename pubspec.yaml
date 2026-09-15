@@ -54,6 +54,13 @@ dependencies:
   # newer Gradle/AGP requirements of 11/12.
   share_plus: ^10.0.3
   crypto: ^3.0.3
+  # Crash reporting, OFF unless a DSN is compiled in with
+  # `--dart-define=SENTRY_DSN=…`. With no DSN the SDK is never initialised, so
+  # a build made the way CI makes one is unchanged by it. Needs Flutter
+  # >=3.24.0 and Dart >=3.5.0; this project is eight minors past both, so it
+  # required no SDK move. See lib/core/services/diagnostics/sentry_reporting.dart
+  # and docs/crash_reporting.md.
+  sentry_flutter: ^9.30.0
   # Audit fix (standard high-quality): http for the manual-URL
   # subtitle download feature in video_option_menu. Lightweight,
   # Dart-first, official Flutter team package.

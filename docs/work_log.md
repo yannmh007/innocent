@@ -137,6 +137,56 @@ payload, which is a different change.
 
 ---
 
+## 2026-09-12 — Crash reporting, off by default (#18)
+
+`sentry_flutter` 9.30.0, which needed no SDK move — the project is eight
+minors past its floor. **The SDK is never initialised without
+`--dart-define=SENTRY_DSN=…`,** which CI does not pass, so the APK CI builds
+is unchanged. Four tests pin that, and they *invert* with a DSN compiled in,
+which is the proof they test the gate and not something incidental.
+
+Everything that does leave passes through `crash_redaction.dart` (13 tests).
+The breadcrumb messages this app writes are all structural — **the leak was
+always going to be exceptions**, because a `FileSystemException` carries the
+path it failed on and that path is the name of somebody's video.
+
+Three things worth carrying forward:
+
+- **Order in `main.dart` is load-bearing and the failure is silent.** Sentry
+  must start AFTER `PlatformDispatcher.onError` is assigned. Before it, the
+  assignment overwrites Sentry's handler and no async error is ever reported
+  while everything still looks fine. Sentry chains and preserves the app's
+  `return true` — verified by reading `on_error_integration.dart`, not assumed.
+- **The redactor must not eat stack frames.** An over-eager path pattern would
+  make the whole feature worthless; there is a test asserting a three-frame
+  trace survives byte-identical.
+- `attachScreenshot` / `attachViewHierarchy` are off. Either would defeat the
+  redactor in one attachment.
+
+`docs/crash_reporting.md` has the privacy design and the switch.
+
+## 2026-09-12 — The 9 wildcard params, and a CI gate (#17)
+
+275 → 266. The nine `Navigator.of(_)` reads compiled only because pubspec
+declares `sdk: '>=3.4.0'`; Dart 3.7 made `_` non-binding, so they were one
+housekeeping-looking line away from nine compile errors. Measured both ways:
+raising the bound gave 9 errors before, 0 after.
+
+**A dead end worth not repeating.** I wrote `tool/wildcard_params.py` in the
+style of `context_scope.py` first. It produced 25 false positives on the fixed
+tree — it flagged `catch (_)` and cannot scope a Dart callback with a regex.
+Deleted. The right mechanism was already one line away in
+`analysis_options.yaml`:
+
+    no_wildcard_variable_uses: error
+
+`error` is the one severity CI's `--no-fatal-infos --no-fatal-warnings` does
+not suppress, and it uses the analyzer's own implementation, so there is
+nothing to tune. Verified in both directions with CI's exact command.
+
+Also: only ONE of `player_screen.dart`'s five `builder: (_)` reads its
+parameter. `_` is correct where a value is ignored; do not sweep them all.
+
 ## 2026-09-12 — Light mode made safe and honestly labelled (#16)
 
 **#15 and #16 were combined into #16** once the product question was answered;
