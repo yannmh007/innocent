@@ -54,6 +54,10 @@ CHECKS = [
     ('ref_in_dispose.py', ROOT,
      '`ref` used inside dispose() — always throws and silently abandons the '
      'rest of the teardown; crashed the app on 30 Aug 2026'),
+    ('dead_settings.py', ROOT,
+     'a setting the app stores and never reads — the single most repeated '
+     'bug class in this project, ten instances recorded in the tree\'s own '
+     'comments before anyone counted'),
 ]
 
 
