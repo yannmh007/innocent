@@ -68,6 +68,46 @@ setting that turned out to be a deliberate mirror. §3.
 
 ---
 
+## 0. Correction — it is 35, not 5
+
+*Added 13 September 2026, when `tool/dead_settings.py` was written.*
+
+**L1 below undercounts by sevenfold.** The sweep it describes extracted the
+enum values from `extra_settings_service.dart` and grepped each one. It never
+looked at **`PlayerSetting`**, which lives in a different file
+(`player_settings_service.dart`) and has a hundred values — and **thirty of
+those are dead too**.
+
+The full list is in `tool/dead_settings.py`'s `KNOWN_OPEN`, grouped by the
+screen that offers each control. The worst concentrations:
+
+| screen | dead controls |
+|---|---|
+| Decoder | 7 |
+| Player | 6 |
+| List | 3 (+ `scanFolders`) |
+| Subtitle | 3 |
+| Audio | 2 (+ `bluetoothAudioDelay`) |
+| Style, Screen, General | 2 each |
+| Development | 1 |
+| **referenced nowhere at all** | **2** — `listRecognizeNomedia`, `listShowHiddenFiles` |
+
+Those last two are not even read back by a settings screen. They are pure dead
+code and the cheapest thing on the list.
+
+**This is the argument for a check rather than a sweep, in one paragraph.** The
+sweep was careful, its method is written out in §1, and it still missed 86% of
+the problem because it looked in one file. The check looks at every enum in
+every preferences file, and it is now the thing that has to be satisfied rather
+than somebody's attention.
+
+§1 below is left as written — it was accurate about the five it found and
+about *why* they matter, and the two it singles out (`scanFolders` and
+`bluetoothAudioDelay`, whose siblings on the same screen work) are still the
+best examples of the shape.
+
+---
+
 ## 1. Findings
 
 Likelihood: မကြာခဏ (often) / ရံဖန်ရံခါ (sometimes) / ရှားပါး (rare).
