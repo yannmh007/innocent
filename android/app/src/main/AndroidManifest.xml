@@ -348,15 +348,32 @@
             android:exported="false" />
 
         <!-- Auto-enable wireless ADB after reboot (opt-in; only acts when the
-             user has set it up and the app holds WRITE_SECURE_SETTINGS). -->
+             user has set it up and the app holds WRITE_SECURE_SETTINGS).
+
+             audit_adb.md A3. This filter used to carry two more actions and
+             both are gone:
+
+             QUICKBOOT_POWERON is an OEM fast-boot extension and is NOT in
+             AOSP's protected-broadcast list, so any installed application
+             could send it — as an explicit intent straight at this exported
+             receiver, needing no permission of its own — and make Innocent
+             switch wireless debugging on at will.
+
+             LOCKED_BOOT_COMPLETED was simply dead: the system delivers it
+             only to components marked android:directBootAware="true", and
+             this one is not. Had it ever arrived, AdbManager.autoEnableOn
+             reads SharedPreferences on a credential-encrypted context, which
+             throws before the first unlock.
+
+             BOOT_COMPLETED is protected — only the system can send it — and
+             is the only one that ever did anything. exported="true" is still
+             required to receive it. -->
         <receiver
             android:name=".BootReceiver"
             android:enabled="true"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
-                <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
-                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
             </intent-filter>
         </receiver>
 

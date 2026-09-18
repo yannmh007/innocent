@@ -747,7 +747,21 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
                 }
                 if (dest.exists()) dest.delete()
 
-                val safeSrc = srcPath.replace("\"", "")
+                // audit_adb.md A1. This used to be `srcPath.replace("\"", "")`,
+                // which strips only the double quote. Inside `cat "..."` the
+                // metacharacters that still act are `"`, `$` and a backtick,
+                // so `$(...)` and `` `...` `` both survived and both executed
+                // — as the shell, uid 2000, which on a phone that has set up
+                // auto-enable also holds WRITE_SECURE_SETTINGS.
+                //
+                // The path is not typed by anyone. It is a filename found by
+                // the `find` over /storage/emulated/0/Android/{data,obb},
+                // directories whose contents OTHER APPS write and fully name.
+                // Six call sites reach this method.
+                //
+                // sanitizePath strips all three and was already used, sixty
+                // lines below, on the LESS dangerous `stat`/`dd` paths.
+                val safeSrc = sanitizePath(srcPath)
                 var lastErr = "unknown"
                 for (attempt in 0..1) {
                     val mgr = getInstance(context)

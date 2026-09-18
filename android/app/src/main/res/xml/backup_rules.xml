@@ -36,4 +36,16 @@
          bound, so a restored copy is undecryptable by construction. -->
     <exclude domain="sharedpref" path="FlutterSecureStorage" />
     <exclude domain="sharedpref" path="FlutterSecureStorage.xml" />
+    <!-- audit_adb.md A4. The ADB client identity. adb_key.pk8 is an
+         UNENCRYPTED PKCS#8 RSA private key, and it is the credential adbd
+         remembers after pairing — it is what "pair once, reconnect forever"
+         rests on. It sits in the same directory as private_vault/, one level
+         up from a folder this file already excludes, and was not excluded
+         itself, so it was going to the user's Google Drive.
+
+         Excluded rather than moved, for the same reason device_identity was:
+         a key restored onto a NEW phone is wrong, because that phone has not
+         paired. A fresh install should mint a fresh identity. -->
+    <exclude domain="file" path="adb_key.pk8" />
+    <exclude domain="file" path="adb_cert.der" />
 </full-backup-content>
