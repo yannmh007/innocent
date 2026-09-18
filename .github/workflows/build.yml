@@ -32,6 +32,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
 
+    # `contents: write` is needed by the release step at the end, and is the
+    # ONLY elevated permission this workflow has. Declared explicitly rather
+    # than inherited, because the repository default is read-only and a silent
+    # 403 from `gh release` twenty minutes into a build is a bad way to find
+    # that out.
+    permissions:
+      contents: write
+
     steps:
       - name: Check out the repository
         uses: actions/checkout@v4
@@ -248,6 +256,9 @@ jobs:
           echo "name=$NAME" >> "$GITHUB_OUTPUT"
           echo "vname=$VNAME" >> "$GITHUB_OUTPUT"
           echo "vcode=$VCODE" >> "$GITHUB_OUTPUT"
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          echo "bytes=$BYTES" >> "$GITHUB_OUTPUT"
+          echo "mb=$MB" >> "$GITHUB_OUTPUT"
 
           # Everything needed for the in-app updater, ready to copy from a
           # phone. See docs/updater_plan.md.
@@ -261,7 +272,17 @@ jobs:
             echo "| SHA-256 | \`${SHA}\` |"
             echo "| Signature | verified against the Innocent key |"
             echo ""
-            echo "Upload the artifact to R2 under \`apk/\`, then run:"
+            echo "The APK is attached to release \`v${VNAME}-${VCODE}\`:"
+            echo ""
+            echo "    https://github.com/${GITHUB_REPOSITORY}/releases/download/v${VNAME}-${VCODE}/${NAME}"
+            echo ""
+            echo "That URL is permanent and serves the file directly, so it"
+            echo "can be used as \`apk_url\` as-is. The R2 copy below stays the"
+            echo "documented route; use whichever you prefer, but make sure"
+            echo "\`apk_url\` and \`apk_sha256\` describe the SAME file."
+            echo ""
+            echo "To keep using R2: upload the release asset there under"
+            echo "\`apk/\`, then run:"
             echo ""
             echo '```sql'
             echo "update public.app_releases"
@@ -280,28 +301,72 @@ jobs:
             echo "> leaves some users reading the previous release's note."
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Upload the APK
-        # NOT on a pull request. The comment below predicted the failure and
-        # `retention-days` alone could not prevent it: with ten PRs open, ten
-        # builds each stored an 88 MB APK inside the five-day window, which is
-        # 885 MB against a 500 MB allowance. On 15 Sep the upload started
-        # failing with "Artifact storage quota has been hit" — AFTER a
-        # completely successful build, so a green tree reported red.
+      - name: Publish the APK as a Release asset
+        # WHY A RELEASE AND NOT AN ARTIFACT (18 Sep 2026)
+        # ───────────────────────────────────────────────
+        # This step used to be actions/upload-artifact. It broke, and the way
+        # it broke is the reason it is gone rather than fixed.
         #
-        # A PR build's job is to prove the tree compiles, the tests pass and
-        # the APK signs. All three finish before this step. Nobody installs an
-        # APK from a PR; the one worth keeping is the one built from `main`.
-        # `workflow_dispatch` is kept so a branch can still be asked for an
-        # APK deliberately, which is rare and is someone choosing to spend the
-        # allowance.
+        # The free plan allows 500 MB of Actions ARTIFACT storage and this APK
+        # is ~88 MB, so six of them fill it. With ten pull requests open at
+        # once, ten builds each stored one inside the same five-day retention
+        # window. From 15 Sep every upload answered:
+        #
+        #     Failed to CreateArtifact: Artifact storage quota has been hit.
+        #     Usage is recalculated every 6-12 hours.
+        #
+        # AFTER a completely successful build — analyze, 251 tests, a signed
+        # 88.5 MB APK, signature verified — so a green tree reported red four
+        # times running. Skipping the upload on pull requests was not enough,
+        # and deleting four artifacts did not clear it either: the block is on
+        # a usage figure GitHub recalculates on its own schedule, and it had
+        # not moved a full day later.
+        #
+        # Release assets do not touch that quota at all. They also fix two
+        # things the artifact was bad at anyway: the download is a direct file
+        # rather than a zip, and the URL is permanent rather than expiring in
+        # five days — which is what `docs/updater_plan.md` needs for
+        # `app_releases.apk_url`.
+        #
+        # Not on a pull request: a PR build's job is to prove the tree
+        # compiles, the tests pass and the APK signs, and all three are
+        # finished before this step. Nobody installs an APK from a PR, and
+        # nobody wants a GitHub Release per PR either.
         if: github.event_name != 'pull_request'
-        uses: actions/upload-artifact@v4
-        with:
-          name: innocent-${{ steps.facts.outputs.vname }}-${{ steps.facts.outputs.vcode }}
-          path: ${{ steps.facts.outputs.name }}
-          # The free plan allows 500 MB of artifact storage in total and this
-          # APK is ~88 MB, so five of them fill it. Short retention keeps the
-          # allowance from becoming a mysterious "storage quota exceeded" a
-          # month from now. Download the ones worth keeping.
-          retention-days: 5
-          compression-level: 0
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: v${{ steps.facts.outputs.vname }}-${{ steps.facts.outputs.vcode }}
+          NAME: ${{ steps.facts.outputs.name }}
+        run: |
+          set -euo pipefail
+
+          # Create the release only if this version has not been published
+          # before; otherwise reuse it. `gh release create` fails on an
+          # existing tag, and rebuilding the same version is normal — a CI
+          # fix, a re-run, a doc-only commit.
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "release $TAG already exists — updating its asset"
+          else
+            gh release create "$TAG" \
+              --title "Innocent ${{ steps.facts.outputs.vname }} (${{ steps.facts.outputs.vcode }})" \
+              --notes "Built from \`${GITHUB_SHA}\` by the Build workflow.
+
+          | | |
+          |---|---|
+          | File | \`${NAME}\` |
+          | Size | ${{ steps.facts.outputs.mb }} MB (${{ steps.facts.outputs.bytes }} bytes) |
+          | SHA-256 | \`${{ steps.facts.outputs.sha }}\` |
+          | Signature | verified against the Innocent key |
+
+          Check the download before installing:
+
+          \`\`\`
+          sha256sum ${NAME}
+          \`\`\`"
+          fi
+
+          # --clobber so a re-run replaces the asset instead of failing or
+          # leaving two files with the same name on one release.
+          gh release upload "$TAG" "$NAME" --clobber
+
+          echo "published: $(gh release view "$TAG" --json url --jq .url)"
