@@ -67,6 +67,7 @@ class UserService : IUserService.Stub {
                 .redirectErrorStream(true)
                 .start()
             val out = StringBuilder()
+            var truncated = false
             BufferedReader(InputStreamReader(proc.inputStream)).use { reader ->
                 var line: String?
                 while (true) {
@@ -77,8 +78,26 @@ class UserService : IUserService.Stub {
                     // narrower find roots if it ever hits this.
                     if (out.length > 700_000) {
                         out.append("\n[truncated]\n")
+                        truncated = true
                         break
                     }
+                }
+            }
+            // audit_adb.md A8. Breaking out of the read loop above stops
+            // draining the child's stdout, and waitFor() then waits for a
+            // process that CANNOT exit: its pipe buffer is full and nobody is
+            // emptying it. Classic pipe deadlock, on the exact branch the
+            // truncation comment was written for — and this runs on a binder
+            // thread inside the iADB server, so the client's iadbExec never
+            // returns either. AdbService.iadbExec has no timeout of its own,
+            // so the Dart future never completes and the user gets a spinner
+            // with no end. `iadb` is the DEFAULT backend on Android 11+ and
+            // the command that hits the cap is the ordinary Android/data
+            // scan on a phone with a lot of app data.
+            if (truncated) {
+                try {
+                    proc.destroy()
+                } catch (_: Throwable) {
                 }
             }
             try {

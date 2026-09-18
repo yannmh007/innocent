@@ -123,7 +123,16 @@ class LocalAccountRepository implements AccountRepository {
   Future<PaymentInstructions> paymentInstructions() async {
     // Served by the backend in production so a number or a price can change
     // without a release.
-    return PaymentInstructions.placeholder;
+    //
+    // Marked `live` rather than left as `placeholder`: for the STUB these
+    // bundled values ARE the authoritative answer, and audit_video_hub.md M2
+    // made the payment screen refuse to lay out anything whose source is
+    // `placeholder`. Without this the dev flow could not be walked through at
+    // all, which is the one thing this class exists for. The digits are still
+    // fake — that is stated at the top of this file, and this repository is
+    // only ever reached when BackendConfig.isConfigured is false.
+    return PaymentInstructions.placeholder
+        .copyWith(source: PaymentSource.live);
   }
 
   @override

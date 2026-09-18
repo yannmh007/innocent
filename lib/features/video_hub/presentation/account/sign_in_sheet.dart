@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -213,14 +214,35 @@ class _SignInSheetState extends ConsumerState<SignInSheet> {
                       LengthLimitingTextInputFormatter(6),
                     ],
                   ),
-                  const SizedBox(height: VH.s2),
-                  // Stated plainly rather than hidden. A development stub that
-                  // pretends to be secure teaches the wrong lesson to whoever
-                  // wires the real backend.
-                  Text(
-                    s.vhSignInDevCode(LocalAccountRepository.devCode),
-                    style: VH.meta.copyWith(fontSize: 11.5),
-                  ),
+                  // audit_video_hub.md M3. The line below used to render on
+                  // EVERY phone sign-in, with `_codeSent` as its only
+                  // condition — so a production build, against the live
+                  // backend, told the user in their own language to type
+                  // 000000 after a real SMS had been sent. They type it, the
+                  // server rejects it, and _verify says "That code is not
+                  // correct" about the code the app just told them to use.
+                  // Sign-in gates the payment flow, so this is where people
+                  // gave up.
+                  //
+                  // Its comment was right and was in the wrong build. The
+                  // identical hazard in account_screen.dart (the dev
+                  // approve-my-own-payment button) IS guarded, with a
+                  // paragraph explaining that "harmless as long as a config
+                  // value is set" is not a control — so kDebugMode is a
+                  // compile-time constant and the tree-shaker removes the
+                  // branch from a release binary entirely. Both conditions
+                  // are kept here: the stub is the only thing that accepts
+                  // this code, and a debug build wired to a real backend must
+                  // not claim otherwise either.
+                  if (kDebugMode &&
+                      ref.read(accountRepositoryProvider)
+                          is LocalAccountRepository) ...<Widget>[
+                    const SizedBox(height: VH.s2),
+                    Text(
+                      s.vhSignInDevCode(LocalAccountRepository.devCode),
+                      style: VH.meta.copyWith(fontSize: 11.5),
+                    ),
+                  ],
                 ],
                 if (_error != null) ...<Widget>[
                   const SizedBox(height: VH.s3),

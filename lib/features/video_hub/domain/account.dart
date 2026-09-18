@@ -104,6 +104,30 @@ class PremiumRequest {
   bool get isPending => status == PremiumRequestStatus.pending;
 }
 
+/// Where a [PaymentInstructions] actually came from.
+///
+/// audit_video_hub.md M2. This exists because the screen used to render all
+/// three identically — payee in bold, a Copy button beside the number, "send
+/// the money here" above it — and one of the three is a number that has never
+/// received a Kyat.
+///
+/// The UI must branch on this. A payee nobody can pay is not a degraded
+/// version of a payee; it is a wrong instruction given with confidence.
+enum PaymentSource {
+  /// The server answered just now. Safe to act on.
+  live,
+
+  /// The server could not be reached, and this is the last answer it gave,
+  /// saved on this device. Real digits, possibly stale prices — so it is
+  /// shown, with a warning, rather than withheld.
+  cached,
+
+  /// Nothing has ever been fetched on this install. The values are the
+  /// bundled constants below and are NOT payable. Never present these as
+  /// payment instructions.
+  placeholder,
+}
+
 /// What the operator needs the payer to see and do.
 ///
 /// Data, not hard-coded strings: a KPay number changes, a price changes, and
@@ -121,13 +145,64 @@ class PaymentInstructions {
   /// Free-form operator note — hours, expected turnaround, contact.
   final String? note;
 
+  /// Where these values came from. Defaults to [PaymentSource.live] so that
+  /// any repository returning its own authoritative answer needs no change.
+  final PaymentSource source;
+
   const PaymentInstructions({
     required this.payeeName,
     required this.payeeNumber,
     required this.prices,
     this.note,
+    this.source = PaymentSource.live,
   });
 
+  /// True when these values may be shown as something to pay.
+  ///
+  /// [PaymentSource.cached] counts: the digits are real, they are just
+  /// possibly stale, and the screen says so. [PaymentSource.placeholder] does
+  /// not, and that is the whole point of this getter.
+  bool get isPayable => source != PaymentSource.placeholder;
+
+  PaymentInstructions copyWith({PaymentSource? source}) => PaymentInstructions(
+        payeeName: payeeName,
+        payeeNumber: payeeNumber,
+        prices: prices,
+        note: note,
+        source: source ?? this.source,
+      );
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+        'payee_name': payeeName,
+        'payee_number': payeeNumber,
+        'prices': prices,
+        'note': note,
+      };
+
+  /// Rebuilds a cached copy. Returns null rather than a half-filled object if
+  /// the stored shape is not what this build expects — a wrong payee number
+  /// is worse than no payee number.
+  static PaymentInstructions? fromJson(Map<String, dynamic> m) {
+    final name = m['payee_name'];
+    final number = m['payee_number'];
+    if (name is! String || number is! String || number.isEmpty) return null;
+    final prices = <String, String>{};
+    final raw = m['prices'];
+    if (raw is Map) raw.forEach((k, v) => prices['$k'] = '$v');
+    if (prices.isEmpty) return null;
+    return PaymentInstructions(
+      payeeName: name,
+      payeeNumber: number,
+      prices: prices,
+      note: m['note'] as String?,
+      source: PaymentSource.cached,
+    );
+  }
+
+  /// NOT PAYABLE. `09-000-000-000` is not a real KPay account; it exists so
+  /// the screen has something to lay out before a fetch has ever succeeded.
+  /// It carries [PaymentSource.placeholder] so nothing can show it by
+  /// accident — see [isPayable].
   static const PaymentInstructions placeholder = PaymentInstructions(
     payeeName: 'Innocent',
     payeeNumber: '09-000-000-000',
@@ -135,5 +210,6 @@ class PaymentInstructions {
       'yearly': 'MMK 34,000',
       'monthly': 'MMK 3,500',
     },
+    source: PaymentSource.placeholder,
   );
 }

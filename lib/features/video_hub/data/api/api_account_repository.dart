@@ -1,3 +1,7 @@
+import 'dart:convert';
+
+import 'package:shared_preferences/shared_preferences.dart';
+
 import '../../domain/access.dart';
 import '../../domain/account.dart';
 import '../../domain/account_repository.dart';
@@ -151,8 +155,31 @@ class ApiAccountRepository implements AccountRepository {
     );
   }
 
+  /// Where the last successful fetch is kept, so a failed one has something
+  /// true to fall back to. Plain SharedPreferences on purpose: a KPay payee
+  /// number is public information the operator wants shown, not a secret.
+  static const String _kCachedInstructions = 'vh_payment_instructions';
+
   @override
   Future<PaymentInstructions> paymentInstructions() async {
+    // audit_video_hub.md M2. The old version caught ApiException and returned
+    // PaymentInstructions.placeholder, under a comment that said "showing the
+    // last-known KPay number beats showing an error". It was NOT the
+    // last-known number — nothing persisted a successful fetch — it was the
+    // bundled constant `09-000-000-000`, rendered identically to real data,
+    // with a Copy button beside it, under the words "send the money here".
+    //
+    // Two failures, in order of cost. Somebody copies a number that is not a
+    // KPay account, and the app has just invented a payment instruction. And
+    // the PRICES are stale by construction, so raising the yearly plan leaves
+    // every user on a bad connection quoted the old figure — and right to be
+    // annoyed when told otherwise.
+    //
+    // So the sentence is made true instead: a successful fetch is saved, and
+    // a failed one returns that, marked `cached` so the screen can say the
+    // details might be stale. Only when nothing has EVER been fetched does
+    // the placeholder come back, and it is marked `placeholder` so the screen
+    // refuses to present it as payable at all.
     try {
       final rows = await _api.getJson(
         '/rest/v1/payment_instructions',
@@ -170,22 +197,49 @@ class ApiAccountRepository implements AccountRepository {
           if (raw is Map) {
             raw.forEach((k, v) => prices['$k'] = '$v');
           }
-          return PaymentInstructions(
-            payeeName: '${m['payee_name'] ?? ''}',
-            payeeNumber: '${m['payee_number'] ?? ''}',
-            prices: prices.isEmpty
-                ? PaymentInstructions.placeholder.prices
-                : prices,
-            note: m['note'] as String?,
-          );
+          final number = '${m['payee_number'] ?? ''}';
+          // A row that arrived but carries no payee is not a live answer.
+          // Treat it exactly like a failed fetch rather than showing an empty
+          // number as though it were one.
+          if (number.isNotEmpty && prices.isNotEmpty) {
+            final fresh = PaymentInstructions(
+              payeeName: '${m['payee_name'] ?? ''}',
+              payeeNumber: number,
+              prices: prices,
+              note: m['note'] as String?,
+            );
+            await _cacheInstructions(fresh);
+            return fresh;
+          }
         }
       }
     } on ApiException {
-      // Falls through to the bundled defaults. Showing the last-known KPay
-      // number beats showing an error on the one screen where the user is
-      // trying to give you money.
+      // Fall through to the cache below.
     }
-    return PaymentInstructions.placeholder;
+    return await _cachedInstructions() ?? PaymentInstructions.placeholder;
+  }
+
+  static Future<void> _cacheInstructions(PaymentInstructions value) async {
+    try {
+      final sp = await SharedPreferences.getInstance();
+      await sp.setString(_kCachedInstructions, jsonEncode(value.toJson()));
+    } catch (_) {
+      // A cache that cannot be written costs the next offline visit a
+      // fallback. It must not cost this visit its answer.
+    }
+  }
+
+  static Future<PaymentInstructions?> _cachedInstructions() async {
+    try {
+      final sp = await SharedPreferences.getInstance();
+      final raw = sp.getString(_kCachedInstructions);
+      if (raw == null || raw.isEmpty) return null;
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map<String, dynamic>) return null;
+      return PaymentInstructions.fromJson(decoded);
+    } catch (_) {
+      return null;
+    }
   }
 
   @override

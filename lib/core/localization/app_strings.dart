@@ -1253,6 +1253,9 @@ class AppStrings {
   String get vhPaySenderHint => _s('vhPaySenderHint');
   String get vhPaySubmit => _s('vhPaySubmit');
   String get vhPayManualNote => _s('vhPayManualNote');
+  String get vhPaySubmitFailed => _s('vhPaySubmitFailed');
+  String get vhPayDetailsStale => _s('vhPayDetailsStale');
+  String get vhPayDetailsUnavailable => _s('vhPayDetailsUnavailable');
   String get vhPayQueuedTitle => _s('vhPayQueuedTitle');
   String get vhPayQueuedBody => _s('vhPayQueuedBody');
   String get vhPayDone => _s('vhPayDone');
@@ -1520,6 +1523,9 @@ class AppStrings {
     'vhPaySenderHint': 'Number you paid from',
     'vhPaySubmit': 'Submit payment',
     'vhPayManualNote': 'Payments are checked by hand against the KPay statement, so activation is not instant.',
+    'vhPaySubmitFailed': 'Could not send your payment details. Nothing was recorded - check your connection and try again.',
+    'vhPayDetailsStale': 'Could not reach the server. These are the details saved on this device last time - check them before you send money.',
+    'vhPayDetailsUnavailable': 'Could not load the payment details. Do not send money until they appear.',
     'vhPayQueuedTitle': 'Payment submitted',
     'vhPayQueuedBody': 'We will check it against the KPay statement and activate your account. You can close the app - it stays saved.',
     'vhPayDone': 'Done',
@@ -2674,6 +2680,9 @@ class AppStrings {
     'vhPaySenderHint': 'ငွေလွှဲသည့် နံပါတ်',
     'vhPaySubmit': 'ငွေပေးချေမှု တင်ရန်',
     'vhPayManualNote': 'ငွေပေးချေမှုများကို KPay စာရင်းနှင့် လူကိုယ်တိုင် တိုက်စစ်သဖြင့် ချက်ချင်း အသက်မဝင်ပါ။',
+    'vhPaySubmitFailed': 'ငွေပေးချေမှု အချက်အလက် မပို့နိုင်ပါ။ ဘာမှ မမှတ်တမ်းတင်ရသေးပါ - အင်တာနက် စစ်ပြီး ထပ်စမ်းပါ။',
+    'vhPayDetailsStale': 'ဆာဗာသို့ မဆက်သွယ်နိုင်ပါ။ ဤအချက်အလက်များမှာ ဤဖုန်းတွင် နောက်ဆုံး သိမ်းထားသည့်များ ဖြစ်သည် - ငွေမပို့မီ သေချာစစ်ပါ။',
+    'vhPayDetailsUnavailable': 'ငွေပေးချေမှု အချက်အလက်များ မရယူနိုင်ပါ။ ၎င်းတို့ မပေါ်မချင်း ငွေမပို့ပါနှင့်။',
     'vhPayQueuedTitle': 'ငွေပေးချေမှု တင်ပြီးပါပြီ',
     'vhPayQueuedBody': 'KPay စာရင်းနှင့် တိုက်စစ်ပြီး အကောင့်ကို အသက်သွင်းပေးပါမည်။ App ပိတ်ထားလည်း ရပါသည် - မှတ်တမ်း ကျန်နေပါမည်။',
     'vhPayDone': 'ပြီးပါပြီ',
@@ -3818,6 +3827,9 @@ class AppStrings {
     'vhPaySenderHint': 'เบอร์ที่ใช้โอน',
     'vhPaySubmit': 'ส่งการชำระเงิน',
     'vhPayManualNote': 'การชำระเงินตรวจสอบด้วยคนเทียบกับรายการ KPay จึงไม่เปิดใช้งานทันที',
+    'vhPaySubmitFailed': 'ส่งรายละเอียดการชำระเงินไม่สำเร็จ ยังไม่มีการบันทึกใด ๆ - ตรวจสอบการเชื่อมต่อแล้วลองใหม่',
+    'vhPayDetailsStale': 'ติดต่อเซิร์ฟเวอร์ไม่ได้ นี่คือรายละเอียดที่บันทึกไว้ในเครื่องครั้งล่าสุด - ตรวจสอบก่อนโอนเงิน',
+    'vhPayDetailsUnavailable': 'โหลดรายละเอียดการชำระเงินไม่ได้ อย่าโอนเงินจนกว่าจะแสดงขึ้น',
     'vhPayQueuedTitle': 'ส่งการชำระเงินแล้ว',
     'vhPayQueuedBody': 'เราจะตรวจสอบกับรายการ KPay แล้วเปิดใช้งานบัญชีให้ ปิดแอปได้ ข้อมูลจะยังอยู่',
     'vhPayDone': 'เสร็จสิ้น',

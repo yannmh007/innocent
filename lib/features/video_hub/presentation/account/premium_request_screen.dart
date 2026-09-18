@@ -35,6 +35,16 @@ class _PremiumRequestScreenState
   bool _busy = false;
   bool _submitted = false;
 
+  /// audit_video_hub.md M1. There was no such field, because there was no
+  /// catch: `_submit` was try/finally. On a timeout the spinner became a
+  /// button again and NOTHING else happened — no message, no retry — on the
+  /// screen a user reaches AFTER sending Kyat through KPay. They either
+  /// submit again, writing a second premium_requests row for one payment
+  /// (the reconciliation problem premium_backend_spec.md §5 warns about by
+  /// name), or close the app believing the claim is queued and wait for an
+  /// approval nobody knows to make.
+  String? _error;
+
   @override
   void initState() {
     super.initState();
@@ -54,7 +64,10 @@ class _PremiumRequestScreenState
 
   Future<void> _submit() async {
     if (_reference.text.trim().isEmpty) return;
-    setState(() => _busy = true);
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
     try {
       await ref.read(accountRepositoryProvider).submitPremiumRequest(
             planId: widget.planId,
@@ -66,6 +79,14 @@ class _PremiumRequestScreenState
       ref.invalidate(myPremiumRequestsProvider);
       if (!mounted) return;
       setState(() => _submitted = true);
+    } catch (_) {
+      // The message says NOTHING WAS RECORDED, deliberately. A user who is
+      // unsure whether their claim went through submits again, and a second
+      // row for one payment is the operator's problem to untangle later. The
+      // form keeps its contents so retrying is one tap, not a re-type of a
+      // KPay transaction id copied off another screen.
+      if (!mounted) return;
+      setState(() => _error = AppStrings.of(context).vhPaySubmitFailed);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -74,8 +95,14 @@ class _PremiumRequestScreenState
   @override
   Widget build(BuildContext context) {
     final s = AppStrings.of(context);
-    final instructions =
-        ref.watch(paymentInstructionsProvider).asData?.value;
+    final instructionsAsync = ref.watch(paymentInstructionsProvider);
+    final instructions = instructionsAsync.asData?.value;
+    // audit_video_hub.md M2. `isPayable` is false only for the bundled
+    // placeholder — `09-000-000-000`, which is not a KPay account. The screen
+    // must not lay that out as something to send money to, so the whole flow
+    // (payee card, form, submit) is replaced by an honest refusal. A cached
+    // answer IS payable: real digits, possibly stale prices, shown with a
+    // warning.
 
     return Scaffold(
       backgroundColor: VH.canvas,
@@ -95,7 +122,14 @@ class _PremiumRequestScreenState
               padding: EdgeInsets.fromLTRB(VH.gutter, VH.s2, VH.gutter,
                   VhInsets.scrollBottom(context, extra: VH.s6)),
               children: <Widget>[
-                if (instructions != null) ...<Widget>[
+                if (instructions != null && instructions.isPayable) ...<Widget>[
+                  if (instructions.source == PaymentSource.cached) ...<Widget>[
+                    _Notice(
+                      icon: Icons.cloud_off,
+                      message: s.vhPayDetailsStale,
+                    ),
+                    const SizedBox(height: VH.s4),
+                  ],
                   _Step(
                     number: 1,
                     title: s.vhPayStep1,
@@ -129,6 +163,14 @@ class _PremiumRequestScreenState
                       ],
                     ),
                   ),
+                  if (_error != null) ...<Widget>[
+                    const SizedBox(height: VH.s4),
+                    _Notice(
+                      icon: Icons.error_outline,
+                      message: _error!,
+                      emphasise: true,
+                    ),
+                  ],
                   const SizedBox(height: VH.s4),
                   SizedBox(
                     width: double.infinity,
@@ -169,13 +211,92 @@ class _PremiumRequestScreenState
                     textAlign: TextAlign.center,
                     style: VH.meta.copyWith(height: 1.4, fontSize: 11.5),
                   ),
-                ] else
+                ] else if (instructionsAsync.isLoading)
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: VH.s6),
                     child: Center(child: CircularProgressIndicator()),
+                  )
+                else ...<Widget>[
+                  // Nothing payable: either the fetch failed with no cached
+                  // answer, or it returned a row with no payee. Both used to
+                  // land on the bundled `09-000-000-000` with a Copy button
+                  // under "send the money here". Refusing is the only honest
+                  // thing a payment screen can do when it does not know where
+                  // the money goes.
+                  const SizedBox(height: VH.s6),
+                  _Notice(
+                    icon: Icons.error_outline,
+                    message: s.vhPayDetailsUnavailable,
+                    emphasise: true,
                   ),
+                  const SizedBox(height: VH.s4),
+                  Center(
+                    child: FilledButton(
+                      onPressed: () =>
+                          ref.invalidate(paymentInstructionsProvider),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: VH.textPrimary,
+                        foregroundColor: VH.textInverse,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: VH.s6, vertical: VH.s3),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(VH.rControl),
+                        ),
+                      ),
+                      child: Text(
+                        s.vhRetry,
+                        style: VH.label.copyWith(
+                          color: VH.textInverse,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
+    );
+  }
+}
+
+/// A line the user has to read before acting — a stale-details warning, or a
+/// submit that failed. Deliberately not a SnackBar: both of these are about
+/// money and must stay on screen next to the thing they describe, rather than
+/// sliding away after two seconds while the user is reading their KPay app.
+class _Notice extends StatelessWidget {
+  final IconData icon;
+  final String message;
+  final bool emphasise;
+
+  const _Notice({
+    required this.icon,
+    required this.message,
+    this.emphasise = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = emphasise ? VH.accent : VH.textSecondary;
+    return Container(
+      padding: const EdgeInsets.all(VH.s3),
+      decoration: BoxDecoration(
+        color: VH.surface1,
+        borderRadius: BorderRadius.circular(VH.rControl),
+        border: Border.all(color: color.withOpacity(0.5)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Icon(icon, size: 17, color: color),
+          const SizedBox(width: VH.s3),
+          Expanded(
+            child: Text(
+              message,
+              style: VH.body.copyWith(fontSize: 12.5, height: 1.4),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

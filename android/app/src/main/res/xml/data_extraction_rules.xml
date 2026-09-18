@@ -17,15 +17,24 @@
   Everything not excluded still transfers, so settings and history survive.
 -->
 <data-extraction-rules>
+    <!-- adb_key.pk8 / adb_cert.der: audit_adb.md A4. An unencrypted RSA
+         private key — the identity adbd remembers after pairing — living in
+         the same directory as private_vault/. Excluded from BOTH channels:
+         a key that reaches a new handset is wrong, because that handset has
+         not paired, exactly as with the device id in v1.63.5. -->
     <cloud-backup>
         <exclude domain="file" path="private_vault" />
         <exclude domain="file" path="intruder_shots" />
+        <exclude domain="file" path="adb_key.pk8" />
+        <exclude domain="file" path="adb_cert.der" />
         <exclude domain="sharedpref" path="FlutterSecureStorage" />
         <exclude domain="sharedpref" path="FlutterSecureStorage.xml" />
     </cloud-backup>
     <device-transfer>
         <exclude domain="file" path="private_vault" />
         <exclude domain="file" path="intruder_shots" />
+        <exclude domain="file" path="adb_key.pk8" />
+        <exclude domain="file" path="adb_cert.der" />
         <exclude domain="sharedpref" path="FlutterSecureStorage" />
         <exclude domain="sharedpref" path="FlutterSecureStorage.xml" />
     </device-transfer>
