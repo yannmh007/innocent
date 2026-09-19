@@ -569,19 +569,42 @@ class AdbService {
     }
   }
 
-  /// Whether the WRITE_SECURE_SETTINGS permission is granted, and whether the
-  /// user has auto-enable turned on. Keys: 'granted', 'on'.
-  Future<({bool granted, bool on})> autoEnableStatus() async {
+  /// Whether the WRITE_SECURE_SETTINGS permission is granted, whether the user
+  /// has auto-enable turned on, and what the last post-boot restore did.
+  ///
+  /// `lastBoot` is empty until a reboot restore has run at least once. It is
+  /// carried all the way to the screen on purpose (audit_adb.md A5): the old
+  /// boot path could fail completely and silently, and a user whose
+  /// Android/data videos had vanished had nothing anywhere to read.
+  Future<({bool granted, bool on, String lastBoot, int lastBootAt})>
+      autoEnableStatus() async {
     try {
       final r = await _channel.invokeMethod<Map<Object?, Object?>>(
         'autoEnableStatus',
       );
+      final at = r?['lastBootAt'];
       return (
         granted: r?['granted'] == true,
         on: r?['on'] == true,
+        lastBoot: r?['lastBoot'] as String? ?? '',
+        lastBootAt: at is int ? at : 0,
       );
     } catch (_) {
-      return (granted: false, on: false);
+      return (granted: false, on: false, lastBoot: '', lastBootAt: 0);
+    }
+  }
+
+  /// Hand WRITE_SECURE_SETTINGS back to the system (audit_adb.md A9).
+  ///
+  /// Needs the ADB shell — the same shell that granted it is the only thing
+  /// that can take it away — so it can legitimately fail when nothing is
+  /// connected. The returned string says which happened.
+  Future<String> revokeSecureSettings() async {
+    try {
+      final r = await _channel.invokeMethod<String>('revokeSecureSettings');
+      return r ?? 'No response';
+    } catch (e) {
+      return 'ERROR: channel error: $e';
     }
   }
 

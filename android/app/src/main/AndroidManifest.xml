@@ -280,6 +280,14 @@
             android:exported="false"
             android:permission="android.permission.BIND_JOB_SERVICE" />
 
+        <!-- audit_adb.md A5: the post-boot wireless-ADB restore, moved out of
+             BootReceiver so onReceive returns immediately instead of holding
+             goAsync() for up to 78 seconds at boot. -->
+        <service
+            android:name=".AdbBootJobService"
+            android:exported="false"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
+
         <!-- Keeps Wi-Fi file transfers running in background + progress notification. -->
         <service
             android:name=".TransferService"

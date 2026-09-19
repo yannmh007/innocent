@@ -811,6 +811,62 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
             }
         }
 
+        /**
+         * Hand WRITE_SECURE_SETTINGS back (audit_adb.md A9).
+         *
+         * The grant is opt-in and clearly explained, and the technique is
+         * standard. The EXIT was what was missing. Turning the auto-reconnect
+         * switch off wrote a boolean that stopped [BootReceiver] acting; it did
+         * not revoke anything, and nothing anywhere in this app did. A user who
+         * turned the feature off was left holding a permission that can write
+         * ANY secure setting — location mode, accessibility services, ADB
+         * itself — indefinitely, with no screen that mentioned it still existed
+         * and no way to give it back short of uninstalling or finding
+         * `adb shell pm revoke` on a PC, which is the exact thing this feature
+         * exists to avoid needing.
+         *
+         * There is a real catch, and the wording below says it rather than
+         * hiding it: `pm revoke` of a `signature|privileged` permission needs
+         * the same shell that granted it. With the shell gone the revoke cannot
+         * run — so the users most likely to press this are the ones for whom it
+         * can fail. That is an argument for saying so, not for silence.
+         *
+         * The preference is cleared FIRST, because a revoke normally kills this
+         * process and we would never reach the line after it.
+         */
+        fun revokeSecureSettings(context: Context): String {
+            setAutoEnable(context, false)
+            if (!hasSecureSettings(context)) {
+                return "OK \u2014 Innocent does not hold WRITE_SECURE_SETTINGS. " +
+                    "Auto-reconnect after reboot is off."
+            }
+            val pkg = context.packageName
+            val out = runShell(
+                context,
+                "pm revoke $pkg android.permission.WRITE_SECURE_SETTINGS 2>&1",
+            )
+            if (out.startsWith("ERROR:")) {
+                return "Couldn't hand it back: only the ADB shell can take this " +
+                    "permission away, and the shell isn't reachable right now. " +
+                    "Connect above first, then try again. If you can't connect " +
+                    "at all, run `adb shell pm revoke $pkg " +
+                    "android.permission.WRITE_SECURE_SETTINGS` from a PC, or " +
+                    "uninstall the app. ($out)"
+            }
+            // Android normally kills the process when a permission is revoked,
+            // so reaching this line at all usually means the revoke did not
+            // take. Re-check rather than claim.
+            return if (hasSecureSettings(context)) {
+                "Sent, but Innocent still holds the permission" +
+                    (if (out.isBlank()) "" else " ($out)") +
+                    ". Some phones refuse to revoke it over the shell. " +
+                    "Auto-reconnect is off either way."
+            } else {
+                "OK \u2014 WRITE_SECURE_SETTINGS handed back. Auto-reconnect " +
+                    "after reboot is off; set it up again any time."
+            }
+        }
+
         /** Whether the user has opted into auto-enable. */
         fun autoEnableOn(context: Context): Boolean =
             context.getSharedPreferences("adb_state", Context.MODE_PRIVATE)

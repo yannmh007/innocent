@@ -3,15 +3,18 @@ package com.innocent.media
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import kotlin.concurrent.thread
 
 /**
  * Restores wireless ADB after a reboot with zero manual steps.
  *
  * Once the user has set up auto-enable (we hold WRITE_SECURE_SETTINGS), a reboot
  * would normally turn Wireless debugging off and randomise its port, forcing a
- * manual re-enable + reconnect. Here we flip it back on via Settings.Global and
- * reconnect over mDNS — pairing persists, so no re-pairing is needed.
+ * manual re-enable + reconnect. [AdbBootJobService] flips it back on via
+ * Settings.Global and reconnects — pairing persists, so no re-pairing is needed.
+ *
+ * This receiver does NOT do that work itself any more. It schedules the job and
+ * returns; audit_adb.md A5 has the whole argument, and [AdbBootJobService]'s
+ * header carries it.
  */
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
@@ -28,26 +31,14 @@ class BootReceiver : BroadcastReceiver() {
         if (!AdbManager.autoEnableOn(appContext)) return
         if (!AdbManager.hasSecureSettings(appContext)) return
 
-        val pending = goAsync()
-        thread(start = true, isDaemon = true, name = "adb-boot") {
-            try {
-                // Give Wi-Fi and the system a moment to come up after boot.
-                try {
-                    Thread.sleep(45000)
-                } catch (_: Throwable) {
-                }
-                AdbManager.enableWirelessDebugging(appContext)
-                // Wait for adbd to start advertising the connect service.
-                try {
-                    Thread.sleep(8000)
-                } catch (_: Throwable) {
-                }
-                // Reconnect over mDNS (port changed on reboot) and prove it.
-                AdbManager.autoConnectAndRun(appContext, "id", 25000L)
-            } catch (_: Throwable) {
-            } finally {
-                pending.finish()
-            }
+        // No goAsync(), no thread, no sleep. Scheduling is a single binder
+        // call, so onReceive returns in microseconds and the process becomes
+        // reclaimable again immediately — which at boot is the whole point.
+        if (!AdbBootJobService.schedule(appContext)) {
+            android.util.Log.w(
+                "BootReceiver",
+                "could not schedule the post-boot ADB restore",
+            )
         }
     }
 }
