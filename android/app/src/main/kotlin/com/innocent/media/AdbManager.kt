@@ -30,6 +30,21 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 
+/** What a bounded adb connect attempt actually did. */
+private enum class ConnectTry {
+    /** Connected. */
+    CONNECTED,
+
+    /** Did not connect, and the worker thread is finished. Safe to try again. */
+    FAILED,
+
+    /**
+     * Timed out and the worker is STILL inside `mgr.connect()`, mutating the
+     * shared connection manager. The caller must not touch it again.
+     */
+    ABANDONED,
+}
+
 /**
  * Concrete [AbsAdbConnectionManager] for Innocent (Phase 64).
  *
@@ -113,9 +128,14 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
         fun selfTest(context: Context): String {
             return try {
                 getInstance(context)
+                // Surfaced here rather than only logged: a non-zero count is a
+                // real thread leak, and the self-test is the one place anyone
+                // looks when the ADB screen misbehaves.
+                val stuck = abandonedWorkers.get()
+                val leak = if (stuck == 0) "" else " Stuck workers: $stuck."
                 "OK \u2014 ADB engine ready: key + certificate generated/loaded " +
                     "(Android API ${Build.VERSION.SDK_INT}). " +
-                    "Hidden-API: ${InnocentApplication.exemptionStatus}."
+                    "Hidden-API: ${InnocentApplication.exemptionStatus}.$leak"
             } catch (e: Throwable) {
                 "ERROR: ${e.javaClass.simpleName}: ${e.message}"
             }
@@ -172,6 +192,58 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
         // (streamRange) deliberately does NOT take this lock so playback stays
         // concurrent.
         private val opLock = Any()
+
+        /**
+         * Workers that outlived their deadline AND survived the disconnect and
+         * the interrupt. Non-zero means threads are being leaked; it is
+         * reported by [selfTest] so it is visible rather than merely true.
+         */
+        private val abandonedWorkers = AtomicInteger(0)
+
+        /**
+         * How many USER-INITIATED operations are queued behind [opLock].
+         *
+         * Background rediscovery (the localhost sweep and mDNS) can hold the
+         * lock for tens of seconds, and while it does, the Connect button does
+         * nothing — see audit_adb.md A7. Java's `synchronized` has no way to
+         * ask "is anyone waiting?", so the waiters count themselves here and
+         * the long background loops check it and stand down. The user's own tap
+         * is always worth more than finishing a speculative sweep.
+         */
+        private val interactiveWaiting = AtomicInteger(0)
+
+        /**
+         * This thread's own contribution to [interactiveWaiting].
+         *
+         * Needed because the explicit Connect button IS an interactive
+         * operation and ALSO runs the sweep. Without discounting itself, the
+         * sweep would look up, see a waiter, find that the waiter is itself,
+         * and stand down immediately — every time. The thing to yield to is
+         * SOMEBODY ELSE waiting.
+         */
+        private val ownInteractive = object : ThreadLocal<Int>() {
+            override fun initialValue(): Int = 0
+        }
+
+        /** True when a user-initiated operation OTHER than this one is waiting. */
+        private fun shouldYield(): Boolean =
+            interactiveWaiting.get() > (ownInteractive.get() ?: 0)
+
+        /**
+         * Mark [block] as user-initiated, so background rediscovery yields to
+         * it. Wraps the WHOLE call including the wait for [opLock] — the point
+         * is to be counted while queued, not once running.
+         */
+        private inline fun <T> interactive(block: () -> T): T {
+            interactiveWaiting.incrementAndGet()
+            ownInteractive.set((ownInteractive.get() ?: 0) + 1)
+            try {
+                return block()
+            } finally {
+                ownInteractive.set((ownInteractive.get() ?: 1) - 1)
+                interactiveWaiting.decrementAndGet()
+            }
+        }
 
         private fun errorString(err: String?): String = when {
             err == null -> "ERROR: couldn't connect"
@@ -242,7 +314,26 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
                     getInstance(context).disconnect()
                 } catch (_: Throwable) {
                 }
-                latch.await(2, TimeUnit.SECONDS)
+                if (!latch.await(2, TimeUnit.SECONDS)) {
+                    // The teardown did not unwind it. Interrupt: no help
+                    // against a plain blocking socket read, but it does free a
+                    // worker parked in await(), sleep() or an interruptible
+                    // channel, and it costs nothing to try.
+                    worker.interrupt()
+                    if (!latch.await(1, TimeUnit.SECONDS)) {
+                        // Genuinely stuck, and a Java thread cannot be killed.
+                        // So COUNT it. This used to be a silent abandonment:
+                        // the thread kept its stack and its buffers for the
+                        // life of the process and nothing anywhere said so. A
+                        // leak nobody can see is a leak nobody ever fixes.
+                        val n = abandonedWorkers.incrementAndGet()
+                        android.util.Log.w(
+                            "AdbManager",
+                            "abandoned a stuck adb worker after ${ms}ms " +
+                                "(abandoned so far: $n)",
+                        )
+                    }
+                }
                 throw java.io.IOException("timed out after ${ms}ms")
             }
             err.get()?.let { throw it }
@@ -294,11 +385,16 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
             return "ERROR: $lastErr"
         }
 
-        fun connectAndRun(context: Context, host: String, port: Int, command: String): String {
+        fun connectAndRun(
+            context: Context,
+            host: String,
+            port: Int,
+            command: String,
+        ): String = interactive {
             val out = execRead(context, "shell:$command") { mgr ->
                 connectHostPort(context, mgr, host, port)
             }
-            return if (out.startsWith("ERROR")) out
+            if (out.startsWith("ERROR")) out
             else "OK \u2014 connected.\n\n\$ $command\n$out"
         }
 
@@ -307,14 +403,15 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
          * loopback), then mDNS if that's stale (e.g. after a reboot the port
          * changed). Used when the ADB screen opens.
          */
-        fun reconnectAndRun(context: Context, command: String): String {
-            val out = execRead(context, "shell:$command") { mgr ->
-                if (reconnectFromSaved(context, mgr)) null
-                else "couldn't reach the device over the saved port or mDNS"
+        fun reconnectAndRun(context: Context, command: String): String =
+            interactive {
+                val out = execRead(context, "shell:$command") { mgr ->
+                    if (reconnectFromSaved(context, mgr)) null
+                    else "couldn't reach the device over the saved port or mDNS"
+                }
+                if (out.startsWith("ERROR")) out
+                else "OK \u2014 connected.\n\n\$ $command\n$out"
             }
-            return if (out.startsWith("ERROR")) out
-            else "OK \u2014 connected.\n\n\$ $command\n$out"
-        }
 
         // ---- ADB backend selection (v0.89 / Backend selector) ----
         // Innocent can read Android/data two ways:
@@ -404,15 +501,31 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
             val isScan = command.contains("Android/data") &&
                 command.contains("find ")
             if (isScan) scanInProgress = true
+            val busy = "not connected \u2014 the ADB connection is busy; " +
+                "try the scan again in a moment."
             try {
                 return execRead(context, "shell:$command", deadlineMs) { mgr ->
-                    if (reconnectFromSaved(context, mgr)) null
-                    // If the saved port is stale (WD restarted), do the full
-                    // rediscovery here too so a scan started after a drop can
-                    // recover on its own instead of failing.
-                    else if (isScan && scanLocalPort(context, mgr)) null
-                    else if (isScan) mdnsConnect(context, 12000L)
-                    else "not connected \u2014 open the ADB screen and connect first."
+                    when {
+                        reconnectFromSaved(context, mgr) -> null
+                        !isScan ->
+                            "not connected \u2014 open the ADB screen and " +
+                                "connect first."
+                        // If the saved port is stale (WD restarted), do the
+                        // full rediscovery here too, so a scan started after a
+                        // drop can recover on its own instead of failing.
+                        //
+                        // But NOT while the user is waiting. This runs holding
+                        // opLock, and sweep-then-mDNS can hold it for tens of
+                        // seconds, during which the Connect button does
+                        // nothing (audit_adb.md A7). A background scan that
+                        // gives up and asks to be retried costs the user
+                        // nothing; a Connect button that ignores them costs
+                        // them their trust in the screen.
+                        shouldYield() -> busy
+                        scanLocalPort(context, mgr) -> null
+                        shouldYield() -> busy
+                        else -> mdnsConnect(context, 12000L)
+                    }
                 }
             } finally {
                 if (isScan) scanInProgress = false
@@ -453,7 +566,14 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
                     val p = last.substring(idx + 1).toIntOrNull()
                     if (p != null) {
                         for (host in candidateHosts(h)) {
-                            if (tryConnectBounded(mgr, host, p, 2500L)) return true
+                            when (tryConnectBounded(mgr, host, p, 2500L)) {
+                                ConnectTry.CONNECTED -> return true
+                                // A worker is still inside connect() on the
+                                // shared manager. Trying the next host would
+                                // race it, which is the bug A6b describes.
+                                ConnectTry.ABANDONED -> return false
+                                ConnectTry.FAILED -> Unit
+                            }
                         }
                     }
                 }
@@ -493,39 +613,86 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
         private fun scanLocalPort(context: Context, mgr: AbsAdbConnectionManager): Boolean {
             val open = findOpenLocalPorts()
             for (port in open) {
+                // A tap on Connect is worth more than finishing a sweep that
+                // has already tried the likelier ports (audit_adb.md A7).
+                if (shouldYield()) return false
                 try {
                     mgr.disconnect()
                 } catch (_: Throwable) {
                 }
-                if (tryConnectBounded(mgr, "127.0.0.1", port, 3500L)) {
-                    saveLastConnect(context, "127.0.0.1", port)
-                    return true
+                when (tryConnectBounded(mgr, "127.0.0.1", port, 3500L)) {
+                    ConnectTry.CONNECTED -> {
+                        saveLastConnect(context, "127.0.0.1", port)
+                        return true
+                    }
+                    // Stop: the next iteration would call disconnect() and
+                    // connect() on a manager another thread is still inside.
+                    ConnectTry.ABANDONED -> return false
+                    ConnectTry.FAILED -> Unit
                 }
             }
             return false
         }
 
-        /** Ports on 127.0.0.1 accepting TCP, across the ephemeral range. */
+        private const val SWEEP_FIRST_PORT = 32768
+        private const val SWEEP_LAST_PORT = 61000
+        private const val SWEEP_CHUNK = 2048
+        private const val SWEEP_BUDGET_MS = 8000L
+
+        /**
+         * Ports on 127.0.0.1 accepting TCP, across the ephemeral range.
+         *
+         * Sweeping the whole range is defensible on loopback: the app and adbd
+         * share the device, and a refused connect to 127.0.0.1 returns
+         * instantly. Two things about HOW it was done were not (audit_adb.md
+         * A7).
+         *
+         * It materialised all 28,233 `Callable`s into one `List` before
+         * submitting any of them, on a phone. Now it goes a chunk at a time,
+         * so the peak is [SWEEP_CHUNK] objects rather than the whole range.
+         *
+         * And it ran to completion no matter what else was waiting. This runs
+         * under [opLock], so while it worked, every other ADB operation —
+         * including the user tapping Connect — sat blocked behind it. Between
+         * chunks it now checks [shouldYield] and stops. Stopping early loses a
+         * sweep that was speculative anyway; not stopping loses the tap.
+         *
+         * [SWEEP_BUDGET_MS] is the budget for the WHOLE sweep, not per chunk:
+         * the previous code gave 8 s to a single `invokeAll`, and splitting the
+         * work into chunks without splitting the budget would have quietly
+         * turned that into 8 s × 14.
+         */
         private fun findOpenLocalPorts(): List<Int> {
             val open = java.util.Collections.synchronizedList(ArrayList<Int>())
             val pool = java.util.concurrent.Executors.newFixedThreadPool(64)
+            val deadline = System.currentTimeMillis() + SWEEP_BUDGET_MS
             try {
-                val tasks = (32768..61000).map { port ->
-                    java.util.concurrent.Callable<Unit> {
-                        try {
-                            java.net.Socket().use { s ->
-                                s.connect(
-                                    java.net.InetSocketAddress("127.0.0.1", port),
-                                    120,
-                                )
-                                open.add(port)
+                var from = SWEEP_FIRST_PORT
+                while (from <= SWEEP_LAST_PORT) {
+                    val left = deadline - System.currentTimeMillis()
+                    if (left <= 0L || shouldYield()) break
+                    val to = minOf(from + SWEEP_CHUNK - 1, SWEEP_LAST_PORT)
+                    val tasks = (from..to).map { port ->
+                        java.util.concurrent.Callable<Unit> {
+                            try {
+                                java.net.Socket().use { s ->
+                                    s.connect(
+                                        java.net.InetSocketAddress(
+                                            "127.0.0.1",
+                                            port,
+                                        ),
+                                        120,
+                                    )
+                                    open.add(port)
+                                }
+                            } catch (_: Throwable) {
                             }
-                        } catch (_: Throwable) {
+                            Unit
                         }
-                        Unit
                     }
+                    pool.invokeAll(tasks, left, TimeUnit.MILLISECONDS)
+                    from = to + 1
                 }
-                pool.invokeAll(tasks, 8, TimeUnit.SECONDS)
             } catch (_: Throwable) {
             } finally {
                 pool.shutdownNow()
@@ -536,13 +703,32 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
         /**
          * Attempt an adb connect with a hard deadline so a non-adb port that
          * accepts TCP but never completes the handshake can't wedge the sweep.
+         *
+         * ─── WHY THE THIRD OUTCOME EXISTS (audit_adb.md A6b) ─────────────
+         *
+         * This used to disconnect on timeout and return `false` at once,
+         * leaving the worker inside `mgr.connect()`. `mgr` is the SINGLETON
+         * connection manager, so that abandoned thread went on mutating the
+         * shared object while the caller moved to the next port and called
+         * `disconnect()` and `connect()` on the very same object. A sweep that
+         * finds ten open ports could have several half-finished connects racing
+         * one disconnect — below [opLock], which cannot see threads the ADB
+         * code starts for itself.
+         *
+         * That is a strong candidate for the corruption whose symptom the
+         * [opLock] comment records ("Stream closed"). [opLock] fixed the races
+         * it could see; this one was inside the mechanism.
+         *
+         * So on a timeout we now WAIT for the worker to actually leave
+         * `connect()` before the caller is allowed to continue, and if it never
+         * does we say so, and the caller stops rather than racing it.
          */
         private fun tryConnectBounded(
             mgr: AbsAdbConnectionManager,
             host: String,
             port: Int,
             ms: Long,
-        ): Boolean {
+        ): ConnectTry {
             val ok = java.util.concurrent.atomic.AtomicBoolean(false)
             val latch = CountDownLatch(1)
             val w = Thread {
@@ -555,15 +741,27 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
                 }
             }
             w.isDaemon = true
+            w.name = "adb-connect-$port"
             w.start()
             if (!latch.await(ms, TimeUnit.MILLISECONDS)) {
+                // Tear the socket down; that is what normally unwinds a
+                // handshake blocked on a read.
                 try {
                     mgr.disconnect()
                 } catch (_: Throwable) {
                 }
-                return false
+                if (latch.await(3, TimeUnit.SECONDS)) return ConnectTry.FAILED
+                w.interrupt()
+                if (latch.await(1, TimeUnit.SECONDS)) return ConnectTry.FAILED
+                val n = abandonedWorkers.incrementAndGet()
+                android.util.Log.w(
+                    "AdbManager",
+                    "connect worker for $host:$port never returned " +
+                        "(abandoned so far: $n)",
+                )
+                return ConnectTry.ABANDONED
             }
-            return ok.get()
+            return if (ok.get()) ConnectTry.CONNECTED else ConnectTry.FAILED
         }
 
         // ---- Auto-enable-after-reboot (no PC, no root) ----
@@ -937,6 +1135,12 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
                 if (!mgr.isConnected && !reconnectFromSaved(context, mgr)) {
                     return "ERROR: not connected"
                 }
+                // Checked HERE as well as in the proxy, so a caller asking
+                // for something the proxy will not serve is told so now,
+                // by name, rather than getting a URL that 404s inside libmpv.
+                if (!AdbHttpProxy.canServe(srcPath)) {
+                    return "ERROR: path is outside the servable directories"
+                }
                 val size = fileSize(context, srcPath)
                 if (size <= 0L) return "ERROR: could not stat file"
                 val probeLen = if (size < 4L) size else 4L
@@ -946,7 +1150,9 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
                 val port = AdbHttpProxy.ensureStarted(context)
                 if (port <= 0) return "ERROR: proxy not started"
                 val enc = java.net.URLEncoder.encode(srcPath, "UTF-8")
-                "http://127.0.0.1:$port/f?p=$enc"
+                // The token is URL-safe Base64 (A-Za-z0-9-_), so it needs no
+                // encoding of its own.
+                "http://127.0.0.1:$port/f?t=${AdbHttpProxy.token()}&p=$enc"
             } catch (e: Throwable) {
                 "ERROR: ${e.javaClass.simpleName}: ${e.message}"
             }
@@ -970,7 +1176,20 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
          * with pairing code" dialog must stay OPEN (it only advertises the
          * mDNS pairing service while visible).
          */
-        fun pairWithMdns(context: Context, code: String, timeoutMs: Long): String = synchronized(opLock) {
+        fun pairWithMdns(
+            context: Context,
+            code: String,
+            timeoutMs: Long,
+        ): String = interactive {
+            synchronized(opLock) { pairLocked(context, code, timeoutMs) }
+        }
+
+        /** [pairWithMdns] with the lock and the waiter bookkeeping already done. */
+        private fun pairLocked(
+            context: Context,
+            code: String,
+            timeoutMs: Long,
+        ): String {
             var mdns: AdbMdns? = null
             return try {
                 val hostRef = AtomicReference<String?>(null)
@@ -1047,7 +1266,11 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
          * with no port typing (also resolves the correct host IP itself), then
          * run one shell command. Requires having paired once already.
          */
-        fun autoConnectAndRun(context: Context, command: String, timeoutMs: Long): String {
+        fun autoConnectAndRun(
+            context: Context,
+            command: String,
+            timeoutMs: Long,
+        ): String = interactive {
             val out = execRead(context, "shell:$command") { mgr ->
                 // Fast path first (saved port), then the localhost sweep, then
                 // mDNS. This is the full/deep connect used for the explicit
@@ -1057,7 +1280,7 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
                 else if (scanLocalPort(context, mgr)) null
                 else mdnsConnect(context, timeoutMs)
             }
-            return if (out.startsWith("ERROR")) out
+            if (out.startsWith("ERROR")) out
             else "OK \u2014 connected\n\n\$ $command\n$out"
         }
 
