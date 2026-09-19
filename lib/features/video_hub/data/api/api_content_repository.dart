@@ -227,18 +227,57 @@ class ApiContentRepository implements ContentRepository {
   Future<List<VideoContent>> search(String query) async {
     final q = query.trim();
     if (q.isEmpty) return const <VideoContent>[];
-    final body = await _api.getJson(
-      '/rest/v1/titles',
-      query: <String, String>{
-        'select': _titleColumns,
-        // Server-side full-text search. Filtering a downloaded catalogue
-        // client-side would mean downloading the catalogue.
-        'title': 'ilike.*$q*',
-        'limit': '50',
-      },
-    );
-    return _titles(body);
+
+    // audit_video_hub.md M5. This used to be `'title': 'ilike.*$q*'` — ONE
+    // column — so a Burmese user typing a Burmese title got nothing back,
+    // in an app whose audience is mostly Burmese, against a catalogue that
+    // stores the Burmese title in `title_mm`. The bundled DEMO repository
+    // searched it correctly all along, via VideoContent.searchHaystack; only
+    // the real one did not.
+    final safe = _forOrGroup(q);
+    try {
+      final body = await _api.getJson(
+        '/rest/v1/titles',
+        query: <String, String>{
+          'select': _titleColumns,
+          'or': '(title.ilike."*$safe*",title_mm.ilike."*$safe*")',
+          'limit': '50',
+        },
+      );
+      return _titles(body);
+    } on ApiException {
+      // FALL BACK RATHER THAN FAIL.
+      //
+      // The `or=()` group above is the one query in this class whose exact
+      // syntax could not be tried against the live project before shipping.
+      // If a deployment rejects it, search must degrade to what it did
+      // yesterday — English titles only — rather than becoming an error
+      // screen. Losing Burmese search is a missing feature; losing search is
+      // a broken app.
+      final body = await _api.getJson(
+        '/rest/v1/titles',
+        query: <String, String>{
+          'select': _titleColumns,
+          'title': 'ilike.*$q*',
+          'limit': '50',
+        },
+      );
+      return _titles(body);
+    }
   }
+
+  /// Makes a user's search text safe to sit inside a PostgREST `or=()` group.
+  ///
+  /// Inside that group a comma separates the conditions and a parenthesis
+  /// closes it, so a title with either in it would rewrite the query rather
+  /// than be matched. Double-quoting the value is what PostgREST offers for
+  /// that, which in turn makes `"` and `\` the characters that must go.
+  ///
+  /// Stripped, not escaped: escaping inside a quoted value is the part that
+  /// varies between PostgREST versions, and this could not be tested against
+  /// the live project. Dropping two characters a film title will not contain
+  /// is the boring option, and the boring option is right here.
+  static String _forOrGroup(String q) => q.replaceAll(RegExp(r'["\\]'), '');
 
   @override
   Future<VideoContent?> getById(String id) async {

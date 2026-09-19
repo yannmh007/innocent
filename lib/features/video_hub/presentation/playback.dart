@@ -88,7 +88,9 @@ Future<void> playMedia(
       Routes.player,
       extra: <String, dynamic>{
         'uri': grant.url,
-        'title': titleOverride ?? content.title,
+        // audit_video_hub.md M5: the player's title bar gets the Burmese
+        // title too, when that is the language the app is in.
+        'title': titleOverride ?? content.displayTitle(s.locale.languageCode),
         'secure': content.accessTier == AccessTier.premium,
         // NEVER WRITE THIS URL DOWN.
         //
