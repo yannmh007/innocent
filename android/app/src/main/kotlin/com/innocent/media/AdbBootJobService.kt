@@ -74,10 +74,14 @@ class AdbBootJobService : JobService() {
 
         const val PREF_AT = "boot_restore_at"
         const val PREF_RESULT = "boot_restore_result"
+        private const val PREF_ATTEMPT = "boot_restore_attempt"
 
         /** Schedule the post-boot restore. Returns false if it could not be. */
         fun schedule(context: Context): Boolean {
             return try {
+                // A new boot is a new count, not a continuation of the last
+                // one's failures.
+                resetAttempts(context)
                 val scheduler = context.getSystemService(Context.JOB_SCHEDULER_SERVICE)
                     as? JobScheduler ?: return false
                 val info = JobInfo.Builder(
@@ -108,6 +112,42 @@ class AdbBootJobService : JobService() {
             context.getSharedPreferences("adb_state", Context.MODE_PRIVATE)
                 .getLong(PREF_AT, 0L)
 
+        /**
+         * Bump and return this restore's attempt number, counting from 1.
+         *
+         * Counted here because JobScheduler does not expose it: `JobParameters`
+         * carries the job id, the extras and (from API 31) the stop reason, but
+         * nothing about how many times the job has been retried — that is
+         * WorkManager's `WorkInfo.runAttemptCount`, and WorkManager is the
+         * dependency this file exists to avoid.
+         *
+         * In SharedPreferences rather than a field, because the whole point of
+         * the job is that it survives the process being killed between
+         * retries, and a field would not.
+         */
+        private fun nextAttempt(context: Context): Int {
+            return try {
+                val prefs = context.getSharedPreferences(
+                    "adb_state",
+                    Context.MODE_PRIVATE,
+                )
+                val n = prefs.getInt(PREF_ATTEMPT, 0) + 1
+                prefs.edit().putInt(PREF_ATTEMPT, n).apply()
+                n
+            } catch (_: Throwable) {
+                1
+            }
+        }
+
+        /** Start a fresh count. Called when a new restore is scheduled. */
+        private fun resetAttempts(context: Context) {
+            try {
+                context.getSharedPreferences("adb_state", Context.MODE_PRIVATE)
+                    .edit().putInt(PREF_ATTEMPT, 0).apply()
+            } catch (_: Throwable) {
+            }
+        }
+
         private fun record(context: Context, text: String) {
             try {
                 context.getSharedPreferences("adb_state", Context.MODE_PRIVATE)
@@ -128,7 +168,7 @@ class AdbBootJobService : JobService() {
         val thread = Thread {
             var retry = false
             try {
-                retry = restore(ctx, params)
+                retry = restore(ctx)
             } catch (e: Throwable) {
                 record(ctx, "Failed: ${e.javaClass.simpleName}: ${e.message}")
             }
@@ -155,7 +195,7 @@ class AdbBootJobService : JobService() {
     }
 
     /** Returns true when the caller should ask for a retry. */
-    private fun restore(context: Context, params: JobParameters?): Boolean {
+    private fun restore(context: Context): Boolean {
         // Re-checked HERE, not only at schedule time: the user can turn the
         // feature off, or the permission can go away, between the boot and the
         // moment the constraints are met.
@@ -171,7 +211,7 @@ class AdbBootJobService : JobService() {
             return false
         }
 
-        val attempt = (params?.let { runAttemptCount(it) } ?: 0) + 1
+        val attempt = nextAttempt(context)
 
         if (!AdbManager.enableWirelessDebugging(context)) {
             record(context, "Could not turn Wireless debugging on (try $attempt).")
@@ -204,17 +244,5 @@ class AdbBootJobService : JobService() {
             },
         )
         return more
-    }
-
-    /**
-     * [JobParameters.getRunAttemptCount] arrived in API 26 and this app runs
-     * from 24, so it is read defensively rather than called outright.
-     */
-    private fun runAttemptCount(params: JobParameters): Int {
-        return try {
-            if (android.os.Build.VERSION.SDK_INT >= 26) params.runAttemptCount else 0
-        } catch (_: Throwable) {
-            0
-        }
     }
 }
