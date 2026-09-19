@@ -46,6 +46,8 @@ class FeaturedHero extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = AppStrings.of(context);
+    // audit_video_hub.md M5.
+    final shownTitle = content.displayTitle(s.locale.languageCode);
     final width = MediaQuery.of(context).size.width;
     final height = (width / _aspect).clamp(0.0, _maxHeight);
 
@@ -62,7 +64,7 @@ class FeaturedHero extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: <Widget>[
-          PosterImage(mediaRef: content.poster, title: content.title),
+          PosterImage(mediaRef: content.poster, title: shownTitle),
 
           // Two scrims, not one. A single top-to-bottom wash either leaves the
           // text unreadable or greys out the artwork; separating them lets the
@@ -90,7 +92,7 @@ class FeaturedHero extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
                 Text(
-                  content.title,
+                  shownTitle,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: VH.display,
