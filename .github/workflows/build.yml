@@ -359,41 +359,18 @@ jobs:
           #
           # `gh release create` with no --target does NOT tag the commit being
           # built. It tags the DEFAULT BRANCH HEAD at the moment it runs. Those
-          # are the same commit only when nothing has merged since the build
-          # started, and on 19 Sep they were not: v1.64.11-324 was created
+          # are the same commit only when nothing merged while the build was
+          # running, and on 19 Sep they were not: v1.64.11-324 was created
           # while main's HEAD was still 73c3ddd — which is 1.64.9+322 — so a
-          # tag naming 1.64.11 pointed at a 1.64.9 tree. The release notes said
-          # one commit and the tag said another, and neither was the build.
+          # tag naming 1.64.11 pointed at a 1.64.9 tree, while the notes named
+          # a third commit. Three answers to one question.
           #
           # docs/updater_plan.md hangs app_releases.apk_url on these tags. A
-          # tag that names the wrong tree makes "which source built the APK my
+          # tag naming the wrong tree makes "which source built the APK my
           # users are running" unanswerable.
           #
-          # So: pin it with --target below, and refuse outright if the tag
-          # already exists somewhere else. That second check is not
-          # belt-and-braces — `gh release create` REUSES an existing tag and
-          # silently ignores --target, which is precisely how a wrong tag
-          # survives every retry you throw at it.
-          existing=$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${TAG}" \
-            --jq .object.sha 2>/dev/null || true)
-          if [ -n "$existing" ] && [ "$existing" != "$GITHUB_SHA" ]; then
-            echo "::error::tag $TAG already exists at $existing, but this" \
-                 "build is $GITHUB_SHA. Delete the tag (and its release) or" \
-                 "bump the version; publishing here would label this APK with" \
-                 "someone else's commit."
-            exit 1
-          fi
-
-          # Create the release only if this version has not been published
-          # before; otherwise reuse it. Rebuilding the same version is normal —
-          # a CI fix, a re-run, a doc-only commit.
-          if gh release view "$TAG" >/dev/null 2>&1; then
-            echo "release $TAG already exists — updating its asset"
-          else
-            gh release create "$TAG" \
-              --target "$GITHUB_SHA" \
-              --title "Innocent ${{ steps.facts.outputs.vname }} (${{ steps.facts.outputs.vcode }})" \
-              --notes "Built from \`${GITHUB_SHA}\` by the Build workflow.
+          # Three cases, and they are genuinely different:
+          NOTES="Built from \`${GITHUB_SHA}\` by the Build workflow.
 
           | | |
           |---|---|
@@ -407,6 +384,44 @@ jobs:
           \`\`\`
           sha256sum ${NAME}
           \`\`\`"
+
+          tagged=$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${TAG}" \
+            --jq .object.sha 2>/dev/null || true)
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            # (1) REBUILDING A PUBLISHED VERSION. Normal and allowed — a CI
+            # fix, a re-run, a doc-only commit. The tag goes on naming the
+            # commit that first published this version, because moving a tag
+            # people may already have fetched is worse than leaving it. What
+            # must NOT happen is the notes going on describing an asset that
+            # has been replaced, so they are rewritten to name this build.
+            echo "release $TAG already exists — updating its asset and notes"
+            if [ -n "$tagged" ] && [ "$tagged" != "$GITHUB_SHA" ]; then
+              echo "::warning::tag $TAG names $tagged, the commit that first" \
+                   "published this version; this asset was built from" \
+                   "$GITHUB_SHA. Bump the version if they need to agree."
+            fi
+            gh release edit "$TAG" --notes "$NOTES"
+          elif [ -n "$tagged" ] && [ "$tagged" != "$GITHUB_SHA" ]; then
+            # (2) A STALE TAG WITH NO RELEASE. Stop.
+            #
+            # This is the case that actually bit us, and it cannot be fixed
+            # from here: `gh release create` REUSES an existing tag and
+            # silently ignores --target, so carrying on would rebuild the
+            # release straight back onto the wrong commit. Deleting only the
+            # release and re-running — the obvious thing to try — lands
+            # exactly here.
+            echo "::error::tag $TAG already exists at $tagged but there is no" \
+                 "release for it, and this build is $GITHUB_SHA. Delete the" \
+                 "tag as well, or bump the version. Publishing now would" \
+                 "label this APK with someone else's commit."
+            exit 1
+          else
+            # (3) A NEW VERSION. --target pins the tag to this build.
+            gh release create "$TAG" \
+              --target "$GITHUB_SHA" \
+              --title "Innocent ${{ steps.facts.outputs.vname }} (${{ steps.facts.outputs.vcode }})" \
+              --notes "$NOTES"
           fi
 
           # --clobber so a re-run replaces the asset instead of failing or
