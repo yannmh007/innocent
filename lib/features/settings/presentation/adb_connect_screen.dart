@@ -37,6 +37,11 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen> {
   List<String> _found = [];
   bool _autoEnableGranted = false;
   bool _autoEnableOn = false;
+
+  /// What the last post-boot restore did, and when (audit_adb.md A5). Empty
+  /// until one has run.
+  String _lastBoot = '';
+  int _lastBootAt = 0;
   // null = unknown/checking, true = a shell round-trip works, false = not usable.
   bool? _connected;
   // v0.89: 'builtin' (embedded engine) or 'iadb' (bind to the iADB app — wired
@@ -129,6 +134,8 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen> {
         setState(() {
           _autoEnableGranted = st.granted;
           _autoEnableOn = st.on;
+          _lastBoot = st.lastBoot;
+          _lastBootAt = st.lastBootAt;
         });
       }
       final last = await AdbService.instance.lastConnect();
@@ -379,6 +386,8 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen> {
         _output = r;
         _autoEnableGranted = st.granted;
         _autoEnableOn = st.on;
+        _lastBoot = st.lastBoot;
+        _lastBootAt = st.lastBootAt;
       });
     } catch (e) {
       if (mounted) setState(() => _output = 'ERROR: $e');
@@ -391,6 +400,68 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen> {
     await AdbService.instance.setAutoEnable(on);
     if (!mounted) return;
     setState(() => _autoEnableOn = on);
+  }
+
+  /// Give WRITE_SECURE_SETTINGS back (audit_adb.md A9).
+  ///
+  /// Confirmed first, because it needs a live ADB shell to work and the user
+  /// should be told that before they press it rather than after it fails.
+  Future<void> _revokeSecureSettings() async {
+    final go = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Hand the permission back?'),
+        content: const Text(
+          'Innocent will give up WRITE_SECURE_SETTINGS and stop restoring '
+          'Wireless debugging after a reboot. You can set it up again any '
+          'time.\n\n'
+          'Only the ADB shell can take this permission away, so this needs a '
+          'live connection — connect first if you are not connected.',
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Hand it back'),
+          ),
+        ],
+      ),
+    );
+    if (go != true || !mounted) return;
+    setState(() {
+      _busy = true;
+      _output = 'Handing the permission back…';
+    });
+    try {
+      final r = await AdbService.instance.revokeSecureSettings();
+      final st = await AdbService.instance.autoEnableStatus();
+      if (!mounted) return;
+      setState(() {
+        _output = r;
+        _autoEnableGranted = st.granted;
+        _autoEnableOn = st.on;
+      });
+    } catch (e) {
+      if (mounted) setState(() => _output = 'ERROR: $e');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  /// "3 hours ago" for the last boot restore. Coarse on purpose — the exact
+  /// minute of a reboot is not information anyone needs.
+  String _ago(int millis) {
+    if (millis <= 0) return '';
+    final d = DateTime.now().difference(
+      DateTime.fromMillisecondsSinceEpoch(millis),
+    );
+    if (d.inMinutes < 1) return 'just now';
+    if (d.inHours < 1) return '${d.inMinutes} min ago';
+    if (d.inDays < 1) return '${d.inHours} h ago';
+    return '${d.inDays} d ago';
   }
 
   /// The label adapts: with a fresh 6-digit code we pair first; otherwise we
@@ -975,6 +1046,58 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen> {
                 icon: const Icon(Icons.bolt),
                 label: const Text('Set up auto-reconnect'),
               ),
+            // audit_adb.md A5. The last reboot restore, in the user's own
+            // words rather than in logcat. The old boot path could fail
+            // completely and say nothing at all, and the user found out days
+            // later by noticing missing videos.
+            if (_lastBoot.isNotEmpty) ...<Widget>[
+              const SizedBox(height: 8),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  const Icon(Icons.history, size: 16),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Last reboot: $_lastBoot'
+                      '${_lastBootAt > 0 ? ' (${_ago(_lastBootAt)})' : ''}',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+            // audit_adb.md A9. The permission gets its own line, not a
+            // mention buried in the toggle above, and an exit that exists.
+            // It is a permission to write ANY secure setting; holding it
+            // silently and for ever was the finding.
+            if (_autoEnableGranted) ...<Widget>[
+              const Divider(height: 24),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  const Icon(Icons.shield_outlined, size: 16),
+                  const SizedBox(width: 8),
+                  const Expanded(
+                    child: Text(
+                      'Innocent holds WRITE_SECURE_SETTINGS. That is what '
+                      'lets it switch Wireless debugging back on by itself. '
+                      'It stays granted until you hand it back, even if the '
+                      'switch above is off.',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                  ),
+                ],
+              ),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: _busy ? null : _revokeSecureSettings,
+                  icon: const Icon(Icons.undo, size: 18),
+                  label: const Text('Hand the permission back'),
+                ),
+              ),
+            ],
           ],
         ),
       ),

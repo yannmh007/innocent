@@ -1292,7 +1292,19 @@ class MainActivity : AudioServiceFragmentActivity() {
                     val map = HashMap<String, Any>()
                     map["granted"] = AdbManager.hasSecureSettings(this@MainActivity)
                     map["on"] = AdbManager.autoEnableOn(this@MainActivity)
+                    // audit_adb.md A5: what the last post-boot restore did.
+                    // "It silently did not happen" was the actual complaint,
+                    // so the screen has to be able to say what happened.
+                    map["lastBoot"] = AdbBootJobService.lastResult(this@MainActivity)
+                    map["lastBootAt"] = AdbBootJobService.lastResultAt(this@MainActivity)
                     result.success(map)
+                }
+                // audit_adb.md A9: the exit the feature never had.
+                "revokeSecureSettings" -> {
+                    thread(start = true, isDaemon = true, name = "adb-revoke") {
+                        val status = AdbManager.revokeSecureSettings(this@MainActivity)
+                        runOnUiThread { result.success(status) }
+                    }
                 }
                 "setAutoEnable" -> {
                     val on = call.argument<Boolean>("on") ?: false

@@ -15,13 +15,13 @@ evidence of anything.
 | **A2** | 1.64.9+322 | proxy: per-process token, resolved-path prefix check, bounded pool, bounded line reader, socket timeout |
 | **A3** | 1.64.8+321 | `QUICKBOOT_POWERON` and `LOCKED_BOOT_COMPLETED` dropped; receiver guard narrowed |
 | **A4** | 1.64.8+321 | `adb_key.pk8` / `adb_cert.der` excluded from both backup channels |
+| **A5** | 1.64.10+323 | the restore moved out of the broadcast into `AdbBootJobService`; the receiver returns at once, waits are constraints, failures retry with backoff, and the outcome is shown on the ADB screen |
 | **A6** | 1.64.9+322 | `runWithDeadline` interrupts and counts an abandoned worker; `tryConnectBounded` returns a third outcome and the callers stop instead of racing the shared manager |
 | **A7** | 1.64.9+322 | sweep goes a chunk at a time under one budget, and both it and the scan path stand down when a user-initiated operation is waiting |
 | **A8** | 1.64.8+321 | `UserService.exec` destroys the child on the truncation path before `waitFor` |
+| **A9** | 1.64.10+323 | the ADB screen names the permission on its own line and offers a Hand-it-back action, with the shell caveat stated |
 
-Still open: **A5** (the boot receiver's 78-second `goAsync`), **A9**
-(`WRITE_SECURE_SETTINGS` never offered back), **A10**–**A12**, and the three
-device questions at the end.
+Still open: **A10**–**A12**, and the three device questions at the end.
 
 Covers `AdbManager.kt` (1,135), `adb_connect_screen.dart` (1,089), `adb_service.dart`
 (632), `AdbPairingService.kt` (371), `IadbClient.kt` (345), `AdbHttpProxy.kt` (183),
