@@ -18,6 +18,44 @@ import 'package:flutter/services.dart';
   return (path: t, sizeBytes: 0);
 }
 
+/// Parse one `stat -c '%F|%s|%n'` line from [AdbService.listAdbDir].
+///
+/// Returns null for a line that cannot be a directory entry, so the caller can
+/// skip it rather than invent one.
+///
+/// Split on the FIRST TWO bars only: `%n` is the path and a path may itself
+/// contain `|`. Everything after the second bar is the path, bars included.
+/// `%F` is the human type ("directory", "regular file", "symbolic link"), so
+/// the test is a substring rather than equality — `stat` on some devices
+/// prints "directory" inside a longer phrase.
+///
+/// Extracted from the middle of [AdbService.listAdbDir] so it can be tested
+/// (audit_adb.md A12). It was the kind of code that decays quietly: a careful
+/// splitter, a real tolerance rule, and nothing anywhere exercising it.
+AdbFileEntry? parseAdbDirLine(String raw) {
+  final line = raw.trim();
+  if (line.isEmpty) return null;
+  final b1 = line.indexOf('|');
+  if (b1 <= 0) return null;
+  final b2 = line.indexOf('|', b1 + 1);
+  if (b2 <= b1) return null;
+  final kind = line.substring(0, b1);
+  final sizeStr = line.substring(b1 + 1, b2);
+  final path = line.substring(b2 + 1).trim();
+  if (path.isEmpty) return null;
+  final isDir = kind.contains('directory');
+  final size = int.tryParse(sizeStr.trim()) ?? 0;
+  final segments = path.split('/').where((s) => s.isNotEmpty);
+  return AdbFileEntry(
+    path: path,
+    name: segments.isEmpty ? path : segments.last,
+    isDir: isDir,
+    // A directory's byte size is an implementation detail of the filesystem,
+    // not something to show anyone.
+    sizeBytes: isDir ? 0 : (size < 0 ? 0 : size),
+  );
+}
+
 /// Thin bridge to the native ADB engine (`mx_clone/adb` channel).
 ///
 /// Phase 64 / M1a: only [init] (key + certificate self-test) is wired. Pair /
@@ -76,9 +114,9 @@ class AdbService {
         case 'onIadbState':
           // Native just signals "state changed"; re-query happens in each
           // listener (which calls the threaded iadbConnected/iadbStatus).
-          _iadbStateListener?.call(true);
-          for (final l in List<void Function(bool)>.of(_iadbStateListeners)) {
-            l(true);
+          // Copied before iterating: a listener is allowed to dispose itself.
+          for (final l in List<void Function()>.of(_iadbStateListeners)) {
+            l();
           }
           break;
       }
@@ -86,23 +124,58 @@ class AdbService {
     });
   }
 
-  /// Which backend reads Android/data: 'builtin' (embedded libadb engine,
-  /// default) or 'iadb' (bind to the installed iADB app — wired in a later
-  /// version). Never throws.
-  Future<String> getBackend() async {
+  /// What native last told us the backend is. `null` means "never
+  /// successfully asked", which is NOT the same as 'builtin'.
+  ///
+  /// Conflating those two was audit_adb.md A10. Native's default when the user
+  /// has never chosen is `iadb` on Android 11+ and `builtin` below; Dart's
+  /// fallback on a channel failure was a flat `builtin`. They diverge only
+  /// when the channel throws — and at that moment [pullForPlayback] took the
+  /// built-in socket path on a device actually configured for the iADB
+  /// process, so the failure read as "not connected" instead of as a routing
+  /// mistake.
+  ///
+  /// Caching it also fixes the smaller half of A10: [shellRouted] asked native
+  /// on EVERY shell command, a full platform round trip each time, including
+  /// both attempts of the scan's fallback.
+  String? _backendCache;
+
+  /// Ask native once and remember the answer. `null` when the channel will not
+  /// answer, so a caller that must not guess can tell that it does not know.
+  Future<String?> backendOrNull() async {
+    final cached = _backendCache;
+    if (cached != null) return cached;
     try {
       final r = await _channel.invokeMethod<String>('getBackend');
-      return r ?? 'builtin';
+      if (r == 'builtin' || r == 'iadb') {
+        _backendCache = r;
+        return r;
+      }
+      return null;
     } catch (_) {
-      return 'builtin';
+      return null;
     }
   }
 
+  /// Which backend reads Android/data: 'builtin' (embedded libadb engine) or
+  /// 'iadb' (bind to the installed iADB app).
+  ///
+  /// FOR DISPLAY. Falls back to 'builtin' when native will not answer, because
+  /// a radio button has to show something and a wrong one there is cosmetic.
+  /// Anything that ROUTES must use [backendOrNull] and refuse to guess.
+  Future<String> getBackend() async => await backendOrNull() ?? 'builtin';
+
   /// Persist the chosen backend ('builtin' | 'iadb').
   Future<void> setBackend(String backend) async {
+    final v = backend == 'iadb' ? 'iadb' : 'builtin';
     try {
-      await _channel.invokeMethod<bool>('setBackend', {'backend': backend});
-    } catch (_) {}
+      await _channel.invokeMethod<bool>('setBackend', {'backend': v});
+      _backendCache = v;
+    } catch (_) {
+      // The write may or may not have landed. Forget what we thought rather
+      // than keep a value we are no longer sure of.
+      _backendCache = null;
+    }
   }
 
   /// Start the iADB-style pairing notification service: it discovers the pairing
@@ -153,7 +226,7 @@ class AdbService {
   }
 
   /// Begin the iADB connect flow (may show iADB's permission dialog). State
-  /// changes arrive via [setIadbStateListener].
+  /// changes arrive via [addIadbStateListener].
   Future<void> iadbConnect() async {
     try {
       await _channel.invokeMethod<bool>('iadbConnect');
@@ -185,25 +258,27 @@ class AdbService {
     } catch (_) {}
   }
 
-  void Function(bool connected)? _iadbStateListener;
+  /// Everyone watching the iADB connection: the ADB screen, and the global
+  /// coordinator that auto-scans on connect.
+  final List<void Function()> _iadbStateListeners = [];
 
-  /// Additional iADB state listeners (beyond the single UI one above), so a
-  /// global coordinator — e.g. auto-scan on connect — can observe state
-  /// changes at the same time as the ADB screen. Native fires "state changed";
-  /// each listener re-queries the real state on a worker thread.
-  final List<void Function(bool connected)> _iadbStateListeners = [];
-
-  /// Register a persistent iADB state listener. Returns a disposer.
-  void Function() addIadbStateListener(void Function(bool connected) listener) {
+  /// Register a listener for "the iADB connection state changed". Returns a
+  /// disposer — call it from `dispose()`.
+  ///
+  /// NO PARAMETER, deliberately (audit_adb.md A11). The signature used to be
+  /// `void Function(bool connected)` and the value passed was always `true`,
+  /// including on a DISCONNECT: native only signals that something changed and
+  /// every listener re-queries the real state on a worker thread. A parameter
+  /// that always lies is worse than no parameter, because the next listener
+  /// written against that signature would believe it.
+  ///
+  /// ONE MECHANISM, also deliberately. There used to be a single-slot setter
+  /// beside this list, so a second screen calling the setter silently stopped
+  /// the first from receiving anything.
+  void Function() addIadbStateListener(void Function() listener) {
     _iadbStateListeners.add(listener);
     _ensureHandler();
     return () => _iadbStateListeners.remove(listener);
-  }
-
-  /// Register a callback for iADB connect/disconnect events.
-  void setIadbStateListener(void Function(bool connected)? listener) {
-    _iadbStateListener = listener;
-    _ensureHandler();
   }
 
   /// Build or load the ADB client key + certificate natively and return a
@@ -381,28 +456,8 @@ class AdbService {
     }
     final entries = <AdbFileEntry>[];
     for (final raw in out.split('\n')) {
-      final line = raw.trim();
-      if (line.isEmpty) continue;
-      // Split on the FIRST two bars only, so paths containing '|' survive.
-      final b1 = line.indexOf('|');
-      if (b1 <= 0) continue;
-      final b2 = line.indexOf('|', b1 + 1);
-      if (b2 <= b1) continue;
-      final kind = line.substring(0, b1);
-      final sizeStr = line.substring(b1 + 1, b2);
-      final path = line.substring(b2 + 1).trim();
-      if (path.isEmpty) continue;
-      final isDir = kind.contains('directory');
-      final size = int.tryParse(sizeStr.trim()) ?? 0;
-      final name = path.split('/').where((s) => s.isNotEmpty).isEmpty
-          ? path
-          : path.split('/').last;
-      entries.add(AdbFileEntry(
-        path: path,
-        name: name,
-        isDir: isDir,
-        sizeBytes: isDir ? 0 : size,
-      ));
+      final e = parseAdbDirLine(raw);
+      if (e != null) entries.add(e);
     }
     entries.sort((a, b) {
       if (a.isDir != b.isDir) return a.isDir ? -1 : 1;
@@ -465,7 +520,14 @@ class AdbService {
   /// any other shell-based feature backend-agnostic. Returns the same shape as
   /// [shell] (an "ERROR:" prefix on failure) so callers don't change.
   Future<String> shellRouted(String command, {int timeoutMs = 12000}) async {
-    final backend = await getBackend();
+    // backendOrNull, not getBackend: routing must not guess (audit_adb.md
+    // A10). Sending the command down the wrong backend produces a "not
+    // connected" that is nothing of the sort and costs an hour to diagnose.
+    final backend = await backendOrNull();
+    if (backend == null) {
+      return 'ERROR: couldn\'t tell which ADB backend to use — the app\'s '
+          'platform channel is not answering. Reopen the app and try again.';
+    }
     if (backend == 'iadb') {
       final out = await iadbExec(command);
       if (out.isEmpty) {

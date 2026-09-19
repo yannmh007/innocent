@@ -328,11 +328,26 @@ jobs:
         # five days — which is what `docs/updater_plan.md` needs for
         # `app_releases.apk_url`.
         #
-        # Not on a pull request: a PR build's job is to prove the tree
-        # compiles, the tests pass and the APK signs, and all three are
-        # finished before this step. Nobody installs an APK from a PR, and
-        # nobody wants a GitHub Release per PR either.
-        if: github.event_name != 'pull_request'
+        # MAIN ONLY, by ref rather than by event.
+        #
+        # A PR build's job is to prove the tree compiles, the tests pass and
+        # the APK signs, and all three are finished before this step. Nobody
+        # installs an APK from a PR and nobody wants a Release per PR.
+        #
+        # But "not a pull request" was the wrong way to say that. It also
+        # matched workflow_dispatch, and a dispatch runs on whatever branch you
+        # point it at — so re-running this workflow by hand on a topic branch
+        # cut a real, public GitHub Release and tagged it at an UNMERGED
+        # commit. That happened: v1.64.11-324 was created from
+        # claude/adb-tail, and once the PR squash-merges, the tag points at a
+        # commit that is not on main and never will be. The tag is what
+        # docs/updater_plan.md hangs app_releases.apk_url on, so its
+        # provenance has to mean something.
+        #
+        # Testing the ref says what was meant: a release comes from main, no
+        # matter which event started the run. Dispatch on a branch is then
+        # exactly what it should be — a build, and nothing else.
+        if: github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: v${{ steps.facts.outputs.vname }}-${{ steps.facts.outputs.vcode }}

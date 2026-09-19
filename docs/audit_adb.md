@@ -20,8 +20,14 @@ evidence of anything.
 | **A7** | 1.64.9+322 | sweep goes a chunk at a time under one budget, and both it and the scan path stand down when a user-initiated operation is waiting |
 | **A8** | 1.64.8+321 | `UserService.exec` destroys the child on the truncation path before `waitFor` |
 | **A9** | 1.64.10+323 | the ADB screen names the permission on its own line and offers a Hand-it-back action, with the shell caveat stated |
+| **A10** | 1.64.11+324 | routing uses `backendOrNull` and refuses to guess; the answer is cached and invalidated on `setBackend` |
+| **A11** | 1.64.11+324 | the state callback takes no parameter, and the single-slot setter is gone — one mechanism |
+| **A12** | 1.64.11+324 | `parseAdbDirLine` extracted from `listAdbDir`; 18 tests for it and `parseAdbScanLine` in `test/adb_parse_test.dart` |
 
-Still open: **A10**–**A12**, and the three device questions at the end.
+Still open: the three device questions at the end. Every finding in this
+audit that survived checking has now been fixed, except the Kotlin half of
+**A12** — there is still no `android/app/src/test/`, so the Kotlin remains
+untestable in principle.
 
 Covers `AdbManager.kt` (1,135), `adb_connect_screen.dart` (1,089), `adb_service.dart`
 (632), `AdbPairingService.kt` (371), `IadbClient.kt` (345), `AdbHttpProxy.kt` (183),
