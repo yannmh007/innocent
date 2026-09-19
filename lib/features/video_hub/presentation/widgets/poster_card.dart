@@ -58,6 +58,10 @@ class PosterCard extends StatelessWidget {
         ? '$rank'
         : (content.qualityLabel);
     final bool cornerIsRank = rank != null;
+    // audit_video_hub.md M5. Show the Burmese title to a Burmese reader. It
+    // was already being fetched on every catalogue request and thrown away.
+    final shownTitle =
+        content.displayTitle(AppStrings.of(context).locale.languageCode);
 
     final art = AspectRatio(
       aspectRatio: PosterMetrics.aspect,
@@ -68,7 +72,7 @@ class PosterCard extends StatelessWidget {
           children: <Widget>[
             PosterImage(
               mediaRef: content.poster,
-              title: content.title,
+              title: shownTitle,
               glyph: _glyphFor(content.category),
             ),
             // Scrim only where a badge sits, and only strong enough to carry
@@ -182,7 +186,7 @@ class PosterCard extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
               Text(
-                content.title,
+                shownTitle,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: VH.cardTitle,

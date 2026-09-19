@@ -66,13 +66,18 @@ class _AlbumViewerScreenState extends ConsumerState<AlbumViewerScreen> {
         );
   }
 
+  /// audit_video_hub.md M5. One place, because four call sites below need
+  /// it and a State has `context`.
+  String get _shownTitle =>
+      widget.content.displayTitle(AppStrings.of(context).locale.languageCode);
+
   Future<void> _playVideo(AlbumItem item) {
     return playMedia(
       context,
       ref,
       content: widget.content,
       source: item.source,
-      titleOverride: widget.content.title,
+      titleOverride: _shownTitle,
     );
   }
 
@@ -107,7 +112,7 @@ class _AlbumViewerScreenState extends ConsumerState<AlbumViewerScreen> {
           if (!_canOpen(index)) {
             return _LockedPage(
               item: item,
-              parentTitle: widget.content.title,
+              parentTitle: _shownTitle,
               onUnlock: () =>
                   promptUpgrade(context, ref, content: widget.content),
             );
@@ -115,7 +120,7 @@ class _AlbumViewerScreenState extends ConsumerState<AlbumViewerScreen> {
           if (item.isVideo) {
             return _VideoPage(
               item: item,
-              title: widget.content.title,
+              title: _shownTitle,
               onPlay: () => _playVideo(item),
             );
           }
@@ -126,7 +131,7 @@ class _AlbumViewerScreenState extends ConsumerState<AlbumViewerScreen> {
               child: PosterImage(
                 mediaRef:
                     item.source.isEmpty ? item.thumbnail : item.source,
-                title: '${widget.content.title} ${item.id}',
+                title: '$_shownTitle ${item.id}',
                 fit: BoxFit.contain,
                 glyph: Icons.image_outlined,
               ),

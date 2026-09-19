@@ -53,6 +53,8 @@ class _ContentDetailScreenState extends ConsumerState<ContentDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final s = AppStrings.of(context);
+    // audit_video_hub.md M5.
+    final shownTitle = content.displayTitle(s.locale.languageCode);
     final policy = ref.watch(accessPolicyProvider);
     // Watched: a purchase made from this screen must unlock it in place.
     final tier = ref.watch(viewerProvider).tier;
@@ -78,7 +80,7 @@ class _ContentDetailScreenState extends ConsumerState<ContentDetailScreen> {
                 children: <Widget>[
                   PosterImage(
                     mediaRef: content.poster,
-                    title: content.title,
+                    title: shownTitle,
                   ),
                   // Scrim so the pinned title and back arrow stay legible over
                   // whatever the artwork happens to be.
@@ -153,7 +155,7 @@ class _ContentDetailScreenState extends ConsumerState<ContentDetailScreen> {
                         );
                         return _AlbumTile(
                           item: item,
-                          parentTitle: content.title,
+                          parentTitle: shownTitle,
                           locked: !unlocked,
                           // A locked tile still opens the viewer rather than
                           // jumping straight to the paywall: landing on the
@@ -215,6 +217,9 @@ class _Header extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = AppStrings.of(context);
+    // audit_video_hub.md M5. Its own local: _Header is a separate widget and
+    // does not see the one in the screen's build.
+    final shownTitle = content.displayTitle(s.locale.languageCode);
     final meta = <String>[
       if (content.year != null) '${content.year}',
       if (content.qualityLabel != null) content.qualityLabel!,
@@ -227,7 +232,7 @@ class _Header extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Text(content.title, style: VH.title),
+          Text(shownTitle, style: VH.title),
           if (content.viewCount != null) ...<Widget>[
             const SizedBox(height: 6),
             // Full label here - there is room for the word, and "12K views"

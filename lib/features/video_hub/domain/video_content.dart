@@ -272,6 +272,27 @@ class VideoContent {
   /// choose from first).
   bool get isDirectlyPlayable => !items.isNotEmpty && !source.isEmpty;
 
+  /// The title to SHOW, given the language the app is running in.
+  ///
+  /// audit_video_hub.md M5. `titleMm` was selected from the server, arrived on
+  /// every catalogue request, was parsed into this class — and rendered by
+  /// nothing. Every render site used [title]. So the app fetched the Burmese
+  /// title on every request and showed the English one to an audience that is
+  /// mostly Burmese.
+  ///
+  /// Takes the language code rather than a BuildContext so it stays pure and
+  /// testable, and so a widget cannot accidentally read a different locale
+  /// than the one the rest of the screen is using.
+  ///
+  /// Falls back to [title] on a blank or whitespace-only `title_mm`, because a
+  /// row where somebody saved an empty string must not render as a nameless
+  /// card.
+  String displayTitle(String? languageCode) {
+    if (languageCode != 'my') return title;
+    final mm = titleMm?.trim();
+    return (mm == null || mm.isEmpty) ? title : mm;
+  }
+
   /// Lowercased haystack used by search. Built once per entry rather than per
   /// keystroke — a 3000-title catalogue re-lowercasing four fields on every
   /// character is the classic search stutter.
