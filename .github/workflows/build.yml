@@ -355,14 +355,43 @@ jobs:
         run: |
           set -euo pipefail
 
+          # A TAG MUST NAME THE COMMIT ITS APK WAS BUILT FROM.
+          #
+          # `gh release create` with no --target does NOT tag the commit being
+          # built. It tags the DEFAULT BRANCH HEAD at the moment it runs. Those
+          # are the same commit only when nothing has merged since the build
+          # started, and on 19 Sep they were not: v1.64.11-324 was created
+          # while main's HEAD was still 73c3ddd — which is 1.64.9+322 — so a
+          # tag naming 1.64.11 pointed at a 1.64.9 tree. The release notes said
+          # one commit and the tag said another, and neither was the build.
+          #
+          # docs/updater_plan.md hangs app_releases.apk_url on these tags. A
+          # tag that names the wrong tree makes "which source built the APK my
+          # users are running" unanswerable.
+          #
+          # So: pin it with --target below, and refuse outright if the tag
+          # already exists somewhere else. That second check is not
+          # belt-and-braces — `gh release create` REUSES an existing tag and
+          # silently ignores --target, which is precisely how a wrong tag
+          # survives every retry you throw at it.
+          existing=$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${TAG}" \
+            --jq .object.sha 2>/dev/null || true)
+          if [ -n "$existing" ] && [ "$existing" != "$GITHUB_SHA" ]; then
+            echo "::error::tag $TAG already exists at $existing, but this" \
+                 "build is $GITHUB_SHA. Delete the tag (and its release) or" \
+                 "bump the version; publishing here would label this APK with" \
+                 "someone else's commit."
+            exit 1
+          fi
+
           # Create the release only if this version has not been published
-          # before; otherwise reuse it. `gh release create` fails on an
-          # existing tag, and rebuilding the same version is normal — a CI
-          # fix, a re-run, a doc-only commit.
+          # before; otherwise reuse it. Rebuilding the same version is normal —
+          # a CI fix, a re-run, a doc-only commit.
           if gh release view "$TAG" >/dev/null 2>&1; then
             echo "release $TAG already exists — updating its asset"
           else
             gh release create "$TAG" \
+              --target "$GITHUB_SHA" \
               --title "Innocent ${{ steps.facts.outputs.vname }} (${{ steps.facts.outputs.vcode }})" \
               --notes "Built from \`${GITHUB_SHA}\` by the Build workflow.
 
