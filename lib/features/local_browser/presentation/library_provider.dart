@@ -700,7 +700,7 @@ final adbAutoScanProvider = Provider<void>((ref) {
   }
 
   final dispose =
-      AdbService.instance.addIadbStateListener((_) => maybeScan());
+      AdbService.instance.addIadbStateListener(() => maybeScan());
   ref.onDispose(dispose);
   // Also run once now: if iADB is already connected when this provider first
   // comes alive (e.g. app relaunched while iADB stayed connected), scan

@@ -32,6 +32,9 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen> {
 
   String _output = '';
   bool _busy = false;
+
+  /// Disposer from [AdbService.addIadbStateListener], called in dispose().
+  void Function()? _iadbStateOff;
   bool _pairedBefore = false;
   bool _showManual = false;
   List<String> _found = [];
@@ -94,7 +97,7 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen> {
     // v0.89: receive results from the notification pairing service.
     AdbService.instance.setPairResultListener(_onPairServiceResult);
     // v0.93: receive iADB connect/disconnect events.
-    AdbService.instance.setIadbStateListener(_onIadbState);
+    _iadbStateOff = AdbService.instance.addIadbStateListener(_onIadbState);
     _loadAndAutoConnect();
   }
 
@@ -167,7 +170,8 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen> {
   @override
   void dispose() {
     AdbService.instance.setPairResultListener(null);
-    AdbService.instance.setIadbStateListener(null);
+    _iadbStateOff?.call();
+    _iadbStateOff = null;
     // Don't leave the pairing notification lingering if the user leaves.
     if (_pairingServiceOn) AdbService.instance.stopPairingService();
     _code.dispose();
@@ -224,7 +228,7 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen> {
 
   // ---- v0.93: iADB-app backend ----
 
-  void _onIadbState(bool _) {
+  void _onIadbState() {
     if (!mounted) return;
     // Native signalled a state change; read the real state on a worker thread.
     _refreshIadbStatus();
