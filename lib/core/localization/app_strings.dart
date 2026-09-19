@@ -1233,6 +1233,8 @@ class AppStrings {
   String get vhSignInVerify => _s('vhSignInVerify');
   String get vhSignInBadPhone => _s('vhSignInBadPhone');
   String get vhSignInBadCode => _s('vhSignInBadCode');
+  String get vhSignInSendFailed => _s('vhSignInSendFailed');
+  String get vhSignInNoConnection => _s('vhSignInNoConnection');
   String get vhSignOut => _s('vhSignOut');
   String get vhAccountTitle => _s('vhAccountTitle');
   String get vhAccountFreePlan => _s('vhAccountFreePlan');
@@ -1499,6 +1501,8 @@ class AppStrings {
     'vhSignInWhy': 'Sign in so a payment can be matched to your account. We use your number only to confirm your subscription.',
     'vhSignInPhoneHint': '09xxxxxxxxx',
     'vhSignInCodeHint': '6-digit code',
+    'vhSignInSendFailed': "Couldn't send the code. Try again in a moment.",
+    'vhSignInNoConnection': 'No connection. Check your internet and try again.',
     'vhSignInSendCode': 'Send code',
     'vhSignInVerify': 'Verify',
     'vhSignInBadPhone': 'Enter a valid phone number',
@@ -2656,6 +2660,8 @@ class AppStrings {
     'vhSignInWhy': 'ငွေပေးချေမှုကို သင့်အကောင့်နှင့် တွဲနိုင်ရန် အကောင့်ဝင်ပါ။ ဖုန်းနံပါတ်ကို subscription အတည်ပြုရန်သာ သုံးပါသည်။',
     'vhSignInPhoneHint': '09xxxxxxxxx',
     'vhSignInCodeHint': 'ဂဏန်း ၆ လုံး ကုဒ်',
+    'vhSignInSendFailed': 'ကုဒ် မပို့နိုင်ပါ။ ခဏနေ ထပ်ကြိုးစားပါ။',
+    'vhSignInNoConnection': 'အင်တာနက် မရှိပါ။ ချိတ်ဆက်မှုကို စစ်ပြီး ထပ်ကြိုးစားပါ။',
     'vhSignInSendCode': 'ကုဒ် ပို့ရန်',
     'vhSignInVerify': 'အတည်ပြုရန်',
     'vhSignInBadPhone': 'ဖုန်းနံပါတ် မှန်ကန်စွာ ထည့်ပါ',
@@ -3803,6 +3809,8 @@ class AppStrings {
     'vhSignInWhy': 'เข้าสู่ระบบเพื่อให้จับคู่การชำระเงินกับบัญชีของคุณได้ เราใช้เบอร์เพื่อยืนยันการสมัครสมาชิกเท่านั้น',
     'vhSignInPhoneHint': '09xxxxxxxxx',
     'vhSignInCodeHint': 'รหัส 6 หลัก',
+    'vhSignInSendFailed': 'ส่งรหัสไม่สำเร็จ ลองใหม่อีกครั้งในอีกสักครู่',
+    'vhSignInNoConnection': 'ไม่มีการเชื่อมต่อ ตรวจสอบอินเทอร์เน็ตแล้วลองใหม่',
     'vhSignInSendCode': 'ส่งรหัส',
     'vhSignInVerify': 'ยืนยัน',
     'vhSignInBadPhone': 'กรอกเบอร์โทรให้ถูกต้อง',

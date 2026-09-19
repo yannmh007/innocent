@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/localization/app_strings.dart';
+import '../../data/api/api_exception.dart';
 import '../../data/local_account_repository.dart';
 import '../account_provider.dart';
 import '../video_hub_theme.dart';
@@ -81,10 +82,33 @@ class _SignInSheetState extends ConsumerState<SignInSheet> {
       setState(() => _codeSent = true);
     } catch (e) {
       if (!mounted) return;
-      setState(() => _error = e.toString());
+      setState(() => _error = _sendCodeError(e));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+
+  /// A sentence a person can act on, for a code request that failed.
+  ///
+  /// NEVER `e.toString()`, which is what this used to be. ApiException renders
+  /// as `ApiException(server:400)` — the class name and the HTTP status, shown
+  /// to someone holding a phone who wants to buy something. The two other
+  /// catch blocks in this file already got this right; this one was the odd
+  /// one out.
+  ///
+  /// The cause is not narrowed further, and that is deliberate rather than
+  /// lazy: api_client does NOT copy the server's error body into the
+  /// exception, because those bodies quote request context and occasionally
+  /// tokens, and this string can reach a crash report. So from here the
+  /// honest distinction is "your connection" versus "not right now", and the
+  /// real reason lives in the project's auth logs, where the operator can
+  /// read it and the user cannot be expected to.
+  String _sendCodeError(Object e) {
+    final s = AppStrings.of(context);
+    if (e is ApiException && e.kind == ApiErrorKind.network) {
+      return s.vhSignInNoConnection;
+    }
+    return s.vhSignInSendFailed;
   }
 
   Future<void> _signInWithGoogle() async {
