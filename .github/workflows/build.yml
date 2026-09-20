@@ -203,6 +203,42 @@ jobs:
           # Size only. Never print the file, and never print a password.
           echo "keystore restored, $(stat -c%s android/app/innocent.jks) bytes"
 
+      # android/gradle.properties is tuned, in detail and for good reasons, for
+      # FlutLab.io's ~4 GB container: a 2 GB Gradle heap, one worker, no
+      # parallelism, no daemon, Kotlin compiled in-process. Every one of those
+      # numbers was chosen against a real OOM, and its comment says which.
+      #
+      # This runner is not that container. ubuntu-latest has 16 GB and 4 cores,
+      # so the 2 GB cap is not protecting anything here — it is the thing that
+      # fails. On 19 Sep a build died with:
+      #
+      #     Execution failed for JetifyTransform: armeabi_v7a_release-...jar
+      #       > Java heap space
+      #
+      # Jetifier rewriting an 80 MB Flutter engine jar inside a 2 GB heap, on a
+      # machine with 16 GB free. Intermittent, because it depends on what else
+      # is live when that transform runs — which is worse than a hard failure,
+      # not better: it costs a fifteen-minute cycle at random.
+      #
+      # APPENDED, not edited. A Java properties file takes the LAST value for a
+      # key, so this overrides the FlutLab numbers here without touching them
+      # there — the project still builds on FlutLab with the settings that
+      # environment needs.
+      #
+      # Only the heap is changed. Workers, parallelism and the Kotlin strategy
+      # stay as they are: one variable at a time, and this is the one the
+      # failure named.
+      - name: Give Gradle the runner's memory, not FlutLab's
+        run: |
+          set -euo pipefail
+          {
+            echo ""
+            echo "## Appended by .github/workflows/build.yml — CI only."
+            echo "org.gradle.jvmargs=-Xmx6144M -XX:MaxMetaspaceSize=1024m -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8"
+          } >> android/gradle.properties
+          echo "effective heap setting:"
+          grep '^org.gradle.jvmargs' android/gradle.properties | tail -1
+
       - name: Build release APK
         env:
           # build.gradle.kts reads these when no signing.properties or
