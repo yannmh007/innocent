@@ -2,6 +2,60 @@
 
 *13 September 2026. No code changed by this document.*
 
+## Status — what has been fixed, and what the project finally answered
+
+The findings below are left exactly as they were written, including the ones
+that turned out to be wrong and the ones written without information I did not
+have at the time. An audit you can quietly rewrite is not evidence of anything.
+This section is the only part that gets edited after the fact.
+
+| | fixed in | what changed |
+|---|---|---|
+| **M1** | 1.64.8+321 | the payment claim form catches, and says NOTHING WAS RECORDED |
+| **M2** | 1.64.8+321 | a successful fetch is cached; the placeholder is never laid out as payable |
+| **M3** | 1.64.8+321 | the dev-code hint is behind `kDebugMode` AND the stub repository |
+| **M5** | 1.64.11+324 | `displayTitle` renders `title_mm`; search covers both columns with a fail-safe fallback |
+| **M6** | 1.64.11+324 | the age-consent keys moved to `FlutterSecureStorage`, out of Auto Backup |
+
+**M4 is open and has been re-priced downwards — see below.**
+
+### §3's questions, answered against the live project (19–20 Sep 2026)
+
+Five of the six are settled. The evidence is in each row, because "I checked"
+is not evidence.
+
+| # | question | answer |
+|---|---|---|
+| 1 | `db-max-rows` | **1000**, and `titles` holds **1** published row. The cap is nowhere near being hit, so no truncation is happening and `totalCount` is not lying today. |
+| 2 | `row_catalogue` volatility | **`STABLE`**, so PostgREST allows the GET and the feared 405 does not occur. `pg_get_functiondef` on the live project matches the repo's SQL exactly. |
+| 3 | `titles` RLS and anonymous browsing | **Anonymous browsing works.** The catalogue and a title's detail screen render with no session — observed on device, and the sign-in sheet only appears on tapping Upgrade. |
+| 4 | PostgREST reserved characters in search | **Still open.** Not testable with one title in the catalogue. |
+| 5 | `payment_instructions` readable by `anon` | **Yes** — `set role anon; select payee_name, payee_number, prices …` succeeds. This is what M2's paywall depends on, and it holds. |
+| 6 | `record_age_consent` callable without a JWT | **Yes, now.** Granted to `anon, authenticated`. But see the migration note below: until 20 Sep the function did not exist at all. |
+
+### The thing none of the six questions asked
+
+**Migration `010_premium_backend.sql` had never been applied.** The
+`schema_migrations` ledger went 009 → 011, and not one of its five tables or
+five functions existed on the live project.
+
+So for the whole period this audit covers, every premium endpoint the app calls
+— `payment_instructions`, `premium_requests`, `subscriptions`,
+`record_age_consent`, `claim_anonymous_history` — was addressing objects that
+were not there. M1 and M2 were not defensive niceties on that project; they
+were the only reason those screens said anything honest.
+
+Applied 20 Sep 2026. Why it was never run is not established, but the file
+ended in live SQL written to fail (a deliberate `permission denied` check under
+a header promising "Paste the WHOLE file … and Run"), which would have aborted
+the run and rolled it back for anyone who followed the instruction. Fixed
+separately.
+
+I did not think to check whether the server-side migrations had actually been
+applied. Every finding here was read off the client against a schema file in
+the repo, and the repo was right about what the schema *should* be. That is the
+gap this audit had, and it was larger than anything in the list below.
+
 11,451 lines across 49 files — the largest surface in the app and the only one
 never audited. It is also the only one that handles **money** and **access**,
 and the only one whose failures cost the user in Kyat rather than in patience.
@@ -319,6 +373,40 @@ business, not a query parameter's.
 | likelihood | **မကြာခဏ** — every second page and every filter change |
 | severity | **high** — the app's stated primary constraint, inverted |
 | fix | **moderate** — `Range` header plus `Prefer: count=exact` for the table path; add `p_offset`/`p_limit` to the two RPCs |
+
+**Re-priced 20 Sep 2026, and two corrections to the paragraph above.**
+
+`select count(*) from public.titles` on the live project returns **1**. So
+"downloads the whole catalogue" currently means downloading one row, and the
+cost of this finding today is zero. The bug is real and the reasoning holds;
+what it does not have is urgency. It becomes worth fixing when the catalogue
+does, and not before — shipping an APK for it now buys nothing.
+
+**The `Range` header is not needed.** PostgREST accepts `limit` and `offset` as
+ordinary query parameters, and this very file already proves it: `getFeatured`
+sends `'limit': '1'` at line 52 and has always worked. Better, those parameters
+apply to an RPC's `setof` result too, so one edit to `_page()` covers both
+`/rest/v1/titles` and `row_catalogue` — the split the paragraph above describes
+is not required. What does still need the header route is `totalCount`:
+`Prefer: count=exact` is sent as a header and the answer comes back in
+`Content-Range`, and `api_client`'s `_decode` returns only the body, so reading
+it needs a change there.
+
+**A cap the audit missed.** `row_catalogue` ends in a hard-coded `limit 200`:
+
+```sql
+  order by
+    case when row_key = 'newest' then null else view_count end desc nulls last,
+    title asc
+  limit 200;
+```
+
+No amount of client paging gets See-all past 200 titles. And since the app's
+`genres`/`year`/`order` parameters are applied by PostgREST to the function's
+*result*, they act after that limit — so sorting a row's See-all by "newest"
+would be sorting the 200 most-viewed, not the catalogue. That second part is
+**untested** and stated as a suspicion, not a finding: it needs a catalogue
+larger than one title to observe.
 
 ### M5 — the Burmese title is fetched, and shown to nobody
 

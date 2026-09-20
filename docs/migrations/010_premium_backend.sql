@@ -328,14 +328,28 @@ grant select on public.pending_requests to service_role;
 
 
 -- ---------------------------------------------------------------------------
--- PROVE IT
+-- PROVE IT — COMMENTED OUT ON PURPOSE. Run these SEPARATELY, after the
+-- migration, one block at a time.
 -- ---------------------------------------------------------------------------
--- 1. the paywall must render with no session at all
-set role anon;
-select payee_name, payee_number, prices from public.payment_instructions;
-select count(*) from public.subscriptions;   -- must ERROR: permission denied
-reset role;
-
--- 2. what the operator sees
-select * from public.pending_requests;
-select version from public.schema_migrations order by version desc limit 1;  -- 010
+-- These were live SQL, and one of them is DESIGNED TO FAIL: the `select
+-- count(*) from public.subscriptions` below must be refused, which is the
+-- whole point of it. Live, at the bottom of a file whose own header says
+-- "Paste the WHOLE file into the SQL Editor and Run", it aborted the run at
+-- the last statement and took the migration's transaction with it — and
+-- `reset role` never executed, leaving the session as `anon`.
+--
+-- Found on 19 Sep 2026, when this migration turned out never to have been
+-- applied to the live project at all: the schema_migrations ledger goes
+-- 009 → 011, and not one of 010's five tables or five functions exists.
+-- Whether this trap is why nobody ever completed the run, I do not know.
+-- It is enough that it would have stopped them.
+--
+--   -- 1. the paywall must render with no session at all
+--   set role anon;
+--   select payee_name, payee_number, prices from public.payment_instructions;
+--   select count(*) from public.subscriptions;   -- must ERROR: permission denied
+--   reset role;
+--
+--   -- 2. what the operator sees
+--   select * from public.pending_requests;
+--   select version from public.schema_migrations order by version desc limit 1;  -- 010
