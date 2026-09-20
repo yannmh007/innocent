@@ -421,8 +421,30 @@ jobs:
           sha256sum ${NAME}
           \`\`\`"
 
-          tagged=$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${TAG}" \
-            --jq .object.sha 2>/dev/null || true)
+          # Does the tag already exist, and at which commit?
+          #
+          # `|| true` was wrong here and cost a red main. On a missing ref
+          # `gh api` prints its error body to STDOUT and exits non-zero:
+          #
+          #     {"message":"Not Found","status":"404"}
+          #
+          # `|| true` threw the exit code away and kept the body, so `tagged`
+          # held that JSON — non-empty, and not equal to $GITHUB_SHA. The guard
+          # below then fired on the one case it must never fire on: a brand new
+          # version. v1.64.12-325 failed exactly this way.
+          #
+          # So: test gh's EXIT STATUS, not the emptiness of its output. And
+          # then check the shape, because this step cannot be exercised by a
+          # branch build (it is main-only) and has now been wrong twice. A git
+          # object id is forty hex characters; anything else is not an answer
+          # and is treated as "no tag".
+          if tagged=$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${TAG}" \
+                        --jq .object.sha 2>/dev/null); then
+            :
+          else
+            tagged=""
+          fi
+          printf '%s' "$tagged" | grep -Eq '^[0-9a-f]{40}$' || tagged=""
 
           if gh release view "$TAG" >/dev/null 2>&1; then
             # (1) REBUILDING A PUBLISHED VERSION. Normal and allowed — a CI
