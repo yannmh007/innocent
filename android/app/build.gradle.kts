@@ -146,13 +146,35 @@ android {
         aidl = true
     }
 
+    // v1.64.13 — 11 -> 17, forced by google_sign_in.
+    //
+    // `google_sign_in_android` 7.2.17 compiles itself at
+    // `JavaVersion.VERSION_17` and ships class files of major version 61. A
+    // module compiled with `-target 11` cannot read those: javac stops with
+    //
+    //     class file has wrong version 61.0, should be 55.0
+    //
+    // and the Kotlin half stops with an "Inconsistent JVM-target
+    // compatibility" error naming 11 and 17. Neither is fixable from the
+    // Dart side; the app's own target has to move.
+    //
+    // NOTHING ELSE MOVES, and that is the point of writing this down. The
+    // JDK that RUNS Gradle was already 17 — the CI workflow sets it up and
+    // says so, and AGP 8.7 refuses to start on anything lower. So this is
+    // not a toolchain upgrade, it is the bytecode target catching up with
+    // the toolchain that was already there. Java 17 has been Android's
+    // supported desugaring target since AGP 8.0, minSdk 24 is unchanged, and
+    // Kotlin 2.1.0 has emitted 17 for several major versions.
+    //
+    // The 11 was never a decision. It is the number Flutter's template wrote
+    // in 2023 and nothing since had a reason to touch it.
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_11.toString()
+        jvmTarget = JavaVersion.VERSION_17.toString()
     }
 
     defaultConfig {

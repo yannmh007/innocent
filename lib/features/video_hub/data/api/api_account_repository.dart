@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../domain/access.dart';
@@ -7,6 +8,7 @@ import '../../domain/account.dart';
 import '../../domain/account_repository.dart';
 import 'api_client.dart';
 import 'api_exception.dart';
+import 'backend_config.dart';
 import 'session_store.dart';
 
 /// [AccountRepository] over the backend described in
@@ -84,6 +86,17 @@ class ApiAccountRepository implements AccountRepository {
       },
       authenticated: false,
     );
+    return _adoptSession(body);
+  }
+
+  /// Stores the session a token endpoint returned, and names its user.
+  ///
+  /// Shared by every sign-in method, because the tail of all of them is
+  /// identical: whatever proved who you are - an SMS code, a Google ID token,
+  /// an emailed link later - GoTrue answers with the same session envelope.
+  /// Keeping one copy is what stops a second method from quietly skipping the
+  /// save and leaving a signed-in user with no token on disk.
+  Future<AuthUser> _adoptSession(dynamic body) async {
     if (body is! Map<String, dynamic>) {
       throw const ApiException(ApiErrorKind.server, message: 'bad session');
     }
@@ -99,12 +112,119 @@ class ApiAccountRepository implements AccountRepository {
     return me;
   }
 
+  /// The one-time plugin init, shared by every caller.
+  ///
+  /// The FUTURE is kept, not a boolean: two taps in quick succession then
+  /// await the same initialisation instead of racing two of them through a
+  /// singleton. A failure is deliberately NOT remembered - see below.
+  static Future<void>? _googleInit;
+
+  static Future<void> _ensureGoogleReady() async {
+    final pending = _googleInit;
+    if (pending != null) return pending;
+
+    final started = GoogleSignIn.instance.initialize(
+      serverClientId: BackendConfig.googleServerClientId,
+    );
+    _googleInit = started;
+    try {
+      await started;
+    } catch (_) {
+      // Forget a failed init, or the first failure becomes permanent for the
+      // life of the process: every later tap would replay the cached error
+      // without ever retrying. Play Services updating in the background is
+      // exactly the kind of thing that fails once and then works.
+      _googleInit = null;
+      rethrow;
+    }
+  }
+
   @override
   Future<AuthUser> signInWithGoogle() async {
-    // Google sign-in needs an OAuth redirect and a platform plugin, which is a
-    // native dependency this project cannot verify without a local build.
-    // Left unimplemented rather than faked, so whoever wires it sees the gap.
-    throw UnimplementedError('Google sign-in not wired yet');
+    // The button is hidden when this is false, so reaching here means a caller
+    // offered a method this build cannot perform. Say so rather than failing
+    // deep inside the plugin with a message about a missing client ID.
+    if (!BackendConfig.googleEnabled) {
+      throw const SignInNotConfigured('google');
+    }
+
+    await _ensureGoogleReady();
+
+    // False only where sign-in must be started by a button the Google SDK
+    // itself renders, which today means web. This app ships to Android, so
+    // treat it as "this build cannot" rather than inventing a web fallback
+    // that has never been run.
+    if (!GoogleSignIn.instance.supportsAuthenticate()) {
+      throw const SignInNotConfigured('google');
+    }
+
+    final String idToken;
+    try {
+      final account = await GoogleSignIn.instance.authenticate();
+
+      // 7.x carries ONLY an ID token here - there is no access token to pass
+      // on, and Google does not need one for this exchange.
+      final token = account.authentication.idToken;
+      if (token == null || token.isEmpty) {
+        // Google accepted the user but issued no ID token. In practice that
+        // means serverClientId names a client Google will not mint a token
+        // for, which is a setup fault rather than a runtime one.
+        throw const ApiException(
+          ApiErrorKind.server,
+          message: 'google returned no id token',
+        );
+      }
+      idToken = token;
+    } on GoogleSignInException catch (e) {
+      switch (e.code) {
+        case GoogleSignInExceptionCode.canceled:
+          // A TRAP WORTH KNOWING ABOUT, documented by the plugin itself:
+          // some configuration errors make Android's CredentialManager report
+          // "canceled" after an account has already been picked, and the
+          // plugin cannot tell that apart from a real cancel. So during a
+          // first Google Cloud setup the symptom of a wrong SHA-1 or a wrong
+          // package name is a button that does NOTHING AT ALL - no error, no
+          // spinner, nothing.
+          //
+          // Treated as a cancel anyway, because once the setup is right that
+          // is what it always is, and the alternative is showing a failure
+          // message to everyone who taps Back. If the button ever seems dead
+          // on a fresh install, read this comment first and check the SHA-1
+          // before looking anywhere else.
+          throw const SignInCancelled();
+        case GoogleSignInExceptionCode.clientConfigurationError:
+        case GoogleSignInExceptionCode.providerConfigurationError:
+          // The SHA-1 does not match a registered Android client, or the
+          // package name does not, or the client was never created. This is
+          // THE failure of a first Google Cloud setup, and it is worth being
+          // able to tell apart from a network blip while that setup is still
+          // being got right.
+          throw const SignInNotConfigured('google');
+        case GoogleSignInExceptionCode.unknownError:
+        case GoogleSignInExceptionCode.interrupted:
+        case GoogleSignInExceptionCode.uiUnavailable:
+        case GoogleSignInExceptionCode.userMismatch:
+          // The code, never e.description: descriptions are free text from
+          // Play Services and this string can reach a crash report.
+          throw ApiException(
+            ApiErrorKind.server,
+            message: 'google ${e.code.name}',
+          );
+      }
+    }
+
+    // The same exchange the official client performs, spelled out because this
+    // app talks to GoTrue over its REST surface rather than through the SDK:
+    // POST /auth/v1/token?grant_type=id_token with the provider and token.
+    // Unauthenticated by definition - this request is what creates the
+    // session, so there is none to send.
+    final body = await _api.postJson(
+      '/auth/v1/token',
+      query: const <String, String>{'grant_type': 'id_token'},
+      body: <String, dynamic>{'provider': 'google', 'id_token': idToken},
+      authenticated: false,
+    );
+    return _adoptSession(body);
   }
 
   @override
@@ -116,6 +236,24 @@ class ApiAccountRepository implements AccountRepository {
       // still cleared: a user who taps Sign out must end up signed out, even
       // offline.
     }
+
+    // Sign out of Google too, or the next tap on the Google button silently
+    // re-signs in as the same person with no chooser - and the account is
+    // still remembered, so "Sign out" would not have signed anyone out. On a
+    // phone two people share, that hands the second one the first one's
+    // subscription.
+    //
+    // Only when this process actually initialised the plugin: calling into an
+    // uninitialised singleton is a different failure, and signing out of
+    // Google is not worth risking a sign-out that otherwise works.
+    if (_googleInit != null) {
+      try {
+        await GoogleSignIn.instance.signOut();
+      } catch (_) {
+        // Same best-effort rule as the logout above.
+      }
+    }
+
     await _session.clear();
   }
 

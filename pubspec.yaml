@@ -1,7 +1,7 @@
 name: innocent
 description: Innocent - a personal Flutter media player
 publish_to: 'none'
-version: 1.64.12+325
+version: 1.64.13+326
 
 environment:
   sdk: '>=3.4.0 <4.0.0'
@@ -102,6 +102,25 @@ dependencies:
   # controls + Bluetooth headset support): audio_service wraps the
   # OS-level MediaSession on Android and Now-Playing on iOS.
   audio_service: ^0.18.13
+
+  # === ACCOUNT / AUTH ===
+  # Native Google sign-in, which is the only sign-in this app can offer for
+  # free. Phone OTP needs a paid SMS provider and email needs a paid-or-free
+  # SMTP service; a Google account costs nothing per sign-in, forever, and
+  # every Android phone already has one signed in.
+  #
+  # 7.x AND NOT 6.x, deliberately. The 7 line replaced the whole API
+  # (`GoogleSignIn.instance.initialize()` + `authenticate()` instead of
+  # `GoogleSignIn(...)` + `signIn()`), and 6.x is the line that will stop
+  # getting fixes. 7.2.0 needs Flutter >=3.29.0; CI pins 3.32.8, three minors
+  # past it, so this required no SDK move — unlike share_plus 11, which is
+  # held back above for exactly the opposite reason.
+  #
+  # In 7.x `GoogleSignInAuthentication` carries ONLY an idToken, no access
+  # token. That is all that is needed here: the token is exchanged at
+  # `/auth/v1/token?grant_type=id_token`, where `access_token` is optional for
+  # Google. See api_account_repository.dart.
+  google_sign_in: ^7.2.0
 
 dev_dependencies:
   flutter_test:

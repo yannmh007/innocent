@@ -5,7 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/localization/app_strings.dart';
 import '../../data/api/api_exception.dart';
+import '../../data/api/backend_config.dart';
 import '../../data/local_account_repository.dart';
+import '../../domain/account_repository.dart';
 import '../account_provider.dart';
 import '../video_hub_theme.dart';
 
@@ -121,15 +123,25 @@ class _SignInSheetState extends ConsumerState<SignInSheet> {
       await ref.read(accountProvider.notifier).refresh();
       if (!mounted) return;
       Navigator.of(context).pop(true);
-    } on UnimplementedError {
-      // Stated plainly rather than silently doing nothing. Google sign-in
-      // needs an OAuth client and a platform plugin; a button that fails
-      // quietly is worse than one that says why.
+    } on SignInCancelled {
+      // NOTHING. They backed out of Google's account chooser, which is a
+      // decision, not a fault. An error message here would tell someone who
+      // just changed their mind that the app is broken.
+    } on SignInNotConfigured {
+      // The button is hidden when Google is unconfigured, so this is the
+      // backstop - plus the case where Google itself refuses the client
+      // (wrong SHA-1, wrong package name), which looks the same to a user:
+      // this method is not available, use another one.
       if (!mounted) return;
       setState(() => _error = AppStrings.of(context).vhSignInGoogleSoon);
-    } catch (e) {
+    } on ApiException catch (e) {
       if (!mounted) return;
-      setState(() => _error = AppStrings.of(context).vhSignInGoogleSoon);
+      setState(() => _error = e.kind == ApiErrorKind.network
+          ? AppStrings.of(context).vhSignInNoConnection
+          : AppStrings.of(context).vhSignInGoogleFailed);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _error = AppStrings.of(context).vhSignInGoogleFailed);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -197,26 +209,34 @@ class _SignInSheetState extends ConsumerState<SignInSheet> {
                 // Google first for people who would rather not hand over a
                 // number - which, for an adult app, is a real and reasonable
                 // preference and not an edge case.
-                _GoogleButton(
-                  busy: _busy,
-                  onTap: _signInWithGoogle,
-                ),
-                const SizedBox(height: VH.s4),
-                Row(
-                  children: <Widget>[
-                    const Expanded(child: Divider(color: VH.hairline)),
-                    Padding(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: VH.s3),
-                      child: Text(
-                        s.vhSignInOr,
-                        style: VH.meta.copyWith(fontSize: 11.5),
+                //
+                // AND ONLY WHEN THE BUILD CAN ACTUALLY DO IT. This button used
+                // to be unconditional and always threw; offering a way in that
+                // cannot work is worse than offering one fewer. The divider
+                // goes with it, or an "or" is left separating one thing from
+                // nothing.
+                if (BackendConfig.googleEnabled) ...<Widget>[
+                  _GoogleButton(
+                    busy: _busy,
+                    onTap: _signInWithGoogle,
+                  ),
+                  const SizedBox(height: VH.s4),
+                  Row(
+                    children: <Widget>[
+                      const Expanded(child: Divider(color: VH.hairline)),
+                      Padding(
+                        padding:
+                            const EdgeInsets.symmetric(horizontal: VH.s3),
+                        child: Text(
+                          s.vhSignInOr,
+                          style: VH.meta.copyWith(fontSize: 11.5),
+                        ),
                       ),
-                    ),
-                    const Expanded(child: Divider(color: VH.hairline)),
-                  ],
-                ),
-                const SizedBox(height: VH.s4),
+                      const Expanded(child: Divider(color: VH.hairline)),
+                    ],
+                  ),
+                  const SizedBox(height: VH.s4),
+                ],
                 _Field(
                   controller: _phone,
                   hint: s.vhSignInPhoneHint,

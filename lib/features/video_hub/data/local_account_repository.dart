@@ -89,9 +89,11 @@ class LocalAccountRepository implements AccountRepository {
 
   @override
   Future<AuthUser> signInWithGoogle() async {
-    // Native Google sign-in needs a plugin and a configured OAuth client, and
-    // faking it here would hide that from whoever wires the backend.
-    throw UnimplementedError('Google sign-in requires backend configuration');
+    // The demo repositories stand in for a backend that is not there. There
+    // is no session to create and nothing to attach a Google account to, so
+    // this reports the method as unavailable rather than faking a sign-in
+    // that would leave the app believing in a user the server never saw.
+    throw const SignInNotConfigured('google');
   }
 
   @override

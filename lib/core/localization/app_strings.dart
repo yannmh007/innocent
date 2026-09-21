@@ -1337,6 +1337,7 @@ class AppStrings {
   String get vhGateMistakeConfirmYes => _s('vhGateMistakeConfirmYes');
   String get vhSignInGoogle => _s('vhSignInGoogle');
   String get vhSignInGoogleSoon => _s('vhSignInGoogleSoon');
+  String get vhSignInGoogleFailed => _s('vhSignInGoogleFailed');
   String get vhSignInOr => _s('vhSignInOr');
   String get vhLibraryBookmarks => _s('vhLibraryBookmarks');
   String get vhLibraryBookmarksHint => _s('vhLibraryBookmarksHint');
@@ -1486,6 +1487,7 @@ class AppStrings {
     'vhGateMistakeConfirmYes': 'Yes, I mis-tapped',
     'vhSignInGoogle': 'Continue with Google',
     'vhSignInGoogleSoon': 'Google sign-in is not available yet. Please use your phone number.',
+    'vhSignInGoogleFailed': "Couldn't finish signing in with Google. Try again in a moment.",
     'vhSignInOr': 'or',
     'vhLibraryBookmarks': 'Bookmarks',
     'vhLibraryBookmarksHint': 'Titles you saved for later',
@@ -2645,6 +2647,7 @@ class AppStrings {
     'vhGateMistakeConfirmYes': 'ဟုတ်ကဲ့၊ မှားနှိပ်မိပါသည်',
     'vhSignInGoogle': 'Google ဖြင့် ဆက်လက်ဆောင်ရွက်ရန်',
     'vhSignInGoogleSoon': 'Google ဖြင့် ဝင်ရောက်ခြင်း မရသေးပါ။ ဖုန်းနံပါတ်ဖြင့် ဝင်ပါ။',
+    'vhSignInGoogleFailed': 'Google ဖြင့် ဝင်ရောက်၍ မပြီးမြောက်ပါ။ ခဏနေ ပြန်ကြိုးစားပါ။',
     'vhSignInOr': 'သို့မဟုတ်',
     'vhLibraryBookmarks': 'သိမ်းထားသည်များ',
     'vhLibraryBookmarksHint': 'နောက်မှကြည့်ရန် သိမ်းထားသော ခေါင်းစဉ်များ',
@@ -3794,6 +3797,7 @@ class AppStrings {
     'vhGateMistakeConfirmYes': 'ใช่ ฉันกดผิด',
     'vhSignInGoogle': 'ดำเนินการต่อด้วย Google',
     'vhSignInGoogleSoon': 'ยังไม่รองรับการเข้าสู่ระบบด้วย Google กรุณาใช้เบอร์โทรศัพท์',
+    'vhSignInGoogleFailed': 'เข้าสู่ระบบด้วย Google ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง',
     'vhSignInOr': 'หรือ',
     'vhLibraryBookmarks': 'บุ๊กมาร์ก',
     'vhLibraryBookmarksHint': 'รายการที่คุณบันทึกไว้',

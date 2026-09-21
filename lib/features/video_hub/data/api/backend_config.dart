@@ -72,6 +72,39 @@ class BackendConfig {
   static bool get isConfigured =>
       baseUrl.trim().isNotEmpty && anonKey.trim().isNotEmpty;
 
+  // ─── GOOGLE SIGN-IN ────────────────────────────────────────────────────
+  //
+  // The WEB OAuth client ID from Google Cloud, not the Android one. This is
+  // the single most common way this setup is got wrong, so: the Android
+  // client (package name + SHA-1) must EXIST for Google to sign anything at
+  // all, but it is never named in code. What the plugin is handed is the web
+  // client ID, as `serverClientId`, because that is what ends up in the
+  // `aud` claim of the ID token, and that claim is what Supabase checks
+  // against the Client IDs registered on its Google provider page.
+  //
+  // NOT A SECRET, for the same reason the publishable key above is not: it
+  // ships inside every APK and identifies the project rather than authorising
+  // anything. The secret half of an OAuth client is the client SECRET, which
+  // belongs on Supabase's provider page and must never appear here.
+  //
+  // Empty until the Google Cloud clients exist. Empty is a supported state,
+  // not a broken one - see [googleEnabled].
+  static const String _googleServerClientIdDefault = '';
+
+  static const String googleServerClientId = String.fromEnvironment(
+    'VH_GOOGLE_SERVER_CLIENT_ID',
+    defaultValue: _googleServerClientIdDefault,
+  );
+
+  /// True when Google sign-in can actually complete.
+  ///
+  /// The sign-in sheet hides the Google button when this is false. That is the
+  /// point: before this was wired, the button was always shown and always
+  /// failed, and "Google sign-in is not available yet" is a worse answer than
+  /// not offering it. A build that has the ID offers Google; one that does not
+  /// falls back to the other methods without the user ever meeting a dead end.
+  static bool get googleEnabled => googleServerClientId.trim().isNotEmpty;
+
   /// How long any single request may take.
   ///
   /// Deliberately short. This app is used on Myanmar mobile networks, where a

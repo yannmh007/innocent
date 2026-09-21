@@ -30,6 +30,10 @@ abstract class AccountRepository {
   });
 
   /// Google sign-in, for people who would rather not hand over a number.
+  ///
+  /// Throws [SignInCancelled] when the person dismissed the account chooser.
+  /// That is not a failure and must not be shown as one — see the type's own
+  /// note for why it is an exception rather than a null return.
   Future<AuthUser> signInWithGoogle();
 
   Future<void> signOut();
@@ -82,4 +86,42 @@ abstract class AccountRepository {
     required int version,
     required DateTime acceptedAt,
   });
+}
+
+/// The person dismissed a sign-in flow that had already opened.
+///
+/// Its own type because "cancelled" and "failed" need opposite UI. Google's
+/// account chooser is a full-screen system sheet, and backing out of it is
+/// the most ordinary thing a person can do there - they tapped the wrong
+/// button, or changed their mind. Showing "Sign-in failed" for that accuses
+/// the app of breaking when nothing broke.
+///
+/// AN EXCEPTION RATHER THAN A NULL RETURN, on purpose. A nullable
+/// `Future<AuthUser?>` invites `final user = await signIn(); pop(true);` -
+/// which compiles, ignores the null, and closes the sheet on a cancel. A
+/// throw cannot be ignored: a caller either names this type above its generic
+/// `catch` or lands in it, and "lands in it" is visible the first time
+/// anybody taps Back.
+class SignInCancelled implements Exception {
+  const SignInCancelled();
+
+  @override
+  String toString() => 'SignInCancelled';
+}
+
+/// A sign-in method the build cannot perform.
+///
+/// Distinct from a failure: nothing went wrong at runtime, the app was simply
+/// built without the credentials this method needs (for Google, the web OAuth
+/// client ID - see `BackendConfig.googleServerClientId`). The sheet hides such
+/// methods rather than offering them, so this exists as the backstop for a
+/// caller that offers one anyway.
+class SignInNotConfigured implements Exception {
+  const SignInNotConfigured(this.method);
+
+  /// `google`, `phone`, `email` - the method, not the reason.
+  final String method;
+
+  @override
+  String toString() => 'SignInNotConfigured($method)';
 }
