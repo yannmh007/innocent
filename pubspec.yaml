@@ -1,7 +1,7 @@
 name: innocent
 description: Innocent - a personal Flutter media player
 publish_to: 'none'
-version: 1.64.13+326
+version: 1.64.14+327
 
 environment:
   sdk: '>=3.4.0 <4.0.0'

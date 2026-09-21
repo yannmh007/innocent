@@ -87,9 +87,25 @@ class BackendConfig {
   // anything. The secret half of an OAuth client is the client SECRET, which
   // belongs on Supabase's provider page and must never appear here.
   //
-  // Empty until the Google Cloud clients exist. Empty is a supported state,
-  // not a broken one - see [googleEnabled].
-  static const String _googleServerClientIdDefault = '';
+  // WIRED TO THE LIVE CLIENTS, 21 Sep 2026 (v1.64.14). Two OAuth clients
+  // exist in the `Innocent` Google Cloud project:
+  //
+  //   Android  504972129795-6d2aa3rq42tohdd1s3aurlr2606r3jso...
+  //            package com.innocent.media, SHA-1 C4:3C:59:...:EC:26
+  //            Registered with Google and with Supabase. NOT NAMED HERE.
+  //
+  //   Web      the value below. This is the one the plugin is handed.
+  //
+  // Filled in rather than left to `--dart-define`, for the same reason the
+  // base URL and publishable key are: a value that has to be retyped
+  // correctly on every build is a value that will one day be typed wrong. A
+  // define of the same name still wins, so a staging build overrides it
+  // without editing this file.
+  //
+  // Empty is still a supported state - see [googleEnabled] - and is what
+  // every build was in before today.
+  static const String _googleServerClientIdDefault =
+      '504972129795-oj8ps08s13e8ain46pofbfrsr0u9iqdi.apps.googleusercontent.com';
 
   static const String googleServerClientId = String.fromEnvironment(
     'VH_GOOGLE_SERVER_CLIENT_ID',

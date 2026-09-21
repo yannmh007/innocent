@@ -1,29 +1,24 @@
-// Tests for the guard in front of native Google sign-in.
-//
-// WHAT THIS PINS, and why it is worth a file: Google sign-in needs a web
-// OAuth client ID compiled into the build (`BackendConfig.googleServerClientId`).
-// Until that ID exists, the method cannot work — and the failure mode that
-// matters is not "it throws", it is WHERE it throws.
-//
-// The previous version of this code threw `UnimplementedError` from the first
-// line, which was honest. The new version does real work: it initialises a
-// platform plugin, opens a system account chooser, and posts an ID token to
-// GoTrue. If the "is this build configured" check ever drifts below any of
-// that, an unconfigured build would open Google's account sheet, let someone
-// pick an account, and only then discover it has nowhere to send the token —
-// after the user has handed over their identity. Worse, in a test binary or
-// on a device without Play Services, it would fail inside a MethodChannel
-// with a message nobody can act on.
-//
-// So the assertion here is not merely that it throws. It is that it throws
-// WITHOUT the HTTP client ever being called, which is the observable proxy
-// for "nothing happened yet".
+// Tests around native Google sign-in.
 //
 // Nothing here can test a SUCCESSFUL Google sign-in: that needs Play
 // Services, a real account and a registered SHA-1, none of which exist in a
-// test binary. That path is proven on a device, and the repository's
-// `_adoptSession` — the part a wrong token would break — is shared with phone
-// sign-in, which is exercised for real.
+// test binary. That path is proven on a device. What IS pinned here is the
+// configuration the whole thing hangs off, and the one ordering property
+// that can still be observed without a plugin.
+//
+// WHY THE CONFIGURATION IS WORTH A TEST. Google issues two OAuth clients for
+// an Android app, and only one of them belongs in this file:
+//
+//   Android client   package name + SHA-1. Makes Google willing to sign.
+//                    Registered with Google and Supabase. Never in code.
+//   Web client       what the ID token is addressed to (`aud`), and what
+//                    Supabase checks. THIS is what the plugin is handed.
+//
+// Pasting the Android ID into `serverClientId` is the single most common way
+// this setup is got wrong, and the symptom is not an error message — it is a
+// button that does nothing, because Android's CredentialManager reports some
+// configuration faults as a user cancel. A swap would cost a day. It costs
+// one `expect` to notice instead.
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -35,6 +30,18 @@ import 'package:innocent/features/video_hub/data/local_account_repository.dart';
 import 'package:innocent/features/video_hub/domain/account_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+/// The Android client, which must NEVER be what the app is configured with.
+///
+/// Here as a known-wrong value rather than a comment, because a comment does
+/// not fail a build. Registered in Google Cloud against `com.innocent.media`
+/// and SHA-1 `C4:3C:...:EC:26`, and listed on Supabase's Google provider.
+const String _androidClientId =
+    '504972129795-6d2aa3rq42tohdd1s3aurlr2606r3jso.apps.googleusercontent.com';
+
+/// The web client, which is what `serverClientId` must be.
+const String _webClientId =
+    '504972129795-oj8ps08s13e8ain46pofbfrsr0u9iqdi.apps.googleusercontent.com';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -42,32 +49,44 @@ void main() {
     SharedPreferences.setMockInitialValues(<String, Object>{});
   });
 
-  group('BackendConfig.googleEnabled', () {
-    test('a build with no client ID does not offer Google', () {
-      // A test binary is compiled without `--dart-define`, so this exercises
-      // exactly the state every build is in until the Google Cloud clients
-      // are created. The sign-in sheet reads this to decide whether to render
-      // the button at all.
-      expect(BackendConfig.googleServerClientId, isEmpty);
-      expect(BackendConfig.googleEnabled, isFalse);
+  group('BackendConfig — Google', () {
+    test('ships the WEB client ID, not the Android one', () {
+      expect(BackendConfig.googleServerClientId, _webClientId);
+      expect(
+        BackendConfig.googleServerClientId,
+        isNot(_androidClientId),
+        reason: 'serverClientId must be the web client. The Android client '
+            'is registered with Google and Supabase but is never named in '
+            'code — see docs/google_sign_in_setup.md.',
+      );
+    });
+
+    test('a configured build offers the Google button', () {
+      // The sign-in sheet renders the button on this, and hides it — with its
+      // divider — when it is false. False is a supported state, not a broken
+      // one: it is what every build was before the Cloud clients existed, and
+      // what a build with `--dart-define=VH_GOOGLE_SERVER_CLIENT_ID=` still is.
+      expect(BackendConfig.googleEnabled, isTrue);
     });
   });
 
   group('ApiAccountRepository.signInWithGoogle', () {
-    test('refuses before touching the network when unconfigured', () async {
-      // Fails the test rather than returning a canned response: a request
-      // reaching here means the guard ran too late.
+    test('opens no network request before the account chooser', () async {
+      // The ordering property, and the only part of the real repository this
+      // binary can still observe. `initialize()` reaches for a platform
+      // channel that does not exist here, so the call fails — but it must
+      // fail THERE, having sent nothing. A request arriving at this client
+      // would mean the token exchange runs before there is a token.
       final client = ApiClient(
         httpClient: MockClient((http.Request request) async {
           fail('signInWithGoogle sent ${request.method} ${request.url.path} '
-              'on an unconfigured build');
+              'before Google returned an ID token');
         }),
       );
 
       await expectLater(
         ApiAccountRepository(client).signInWithGoogle(),
-        throwsA(isA<SignInNotConfigured>()
-            .having((e) => e.method, 'method', 'google')),
+        throwsA(anything),
       );
     });
   });
