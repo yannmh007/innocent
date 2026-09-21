@@ -33,6 +33,38 @@ is not evidence.
 | 5 | `payment_instructions` readable by `anon` | **Yes** — `set role anon; select payee_name, payee_number, prices …` succeeds. This is what M2's paywall depends on, and it holds. |
 | 6 | `record_age_consent` callable without a JWT | **Yes, now.** Granted to `anon, authenticated`. But see the migration note below: until 20 Sep the function did not exist at all. |
 
+### M7 — the paywall quoted a price the app could not honour (21 Sep 2026)
+
+Found on a live device while testing Google sign-in, and not by any question
+this audit thought to ask.
+
+The paywall offered **Yearly — MMK 34,000**. Tapping it opened Pay with KPay,
+which asked for **100,000 MMK**. Nearly three times more, on the two screens
+either side of a decision to spend money.
+
+Neither number was a typo:
+
+| screen | source | showed |
+|---|---|---|
+| paywall | `s.vhPlanYearlyPrice`, a localized string compiled into the APK | MMK 34,000 |
+| Pay with KPay | `payment_instructions.prices`, read from the backend | 100,000 MMK |
+
+M2 had already established that `payment_instructions` is the authority for
+what to charge, and question 5 above confirmed `anon` can read it — which the
+paywall needs, because it renders before sign-in. The paywall simply never
+asked. `paymentInstructionsProvider`'s own doc says prices are "served by the
+backend so a KPay number or a price can change without a release", and the one
+screen that quotes a price to a buyer was the screen ignoring it.
+
+So the operator raised the price in Supabase and the paywall went on
+advertising the old one, with no way to notice from inside the app.
+
+**Fixed.** The sheet now reads the same table the payment screen does, through
+`PaywallSheet.priceFor`, under M2's rule: a placeholder is never quoted, a
+cached answer is. The two string keys are deleted from all three locales, so
+the old shape cannot return by copy-paste, and `test/payment_instructions_test.dart`
+pins the rule.
+
 ### The thing none of the six questions asked
 
 **Migration `010_premium_backend.sql` had never been applied.** The

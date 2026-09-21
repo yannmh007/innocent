@@ -13,6 +13,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:innocent/features/video_hub/domain/account.dart';
+import 'package:innocent/features/video_hub/presentation/widgets/paywall_sheet.dart';
 
 void main() {
   group('PaymentInstructions.isPayable', () {
@@ -149,6 +150,77 @@ void main() {
       // The const is untouched — this matters, because the dev stub promotes
       // a copy and production must still see a refusal.
       expect(PaymentInstructions.placeholder.isPayable, isFalse);
+    });
+  });
+
+  // ── The bug this group exists for ────────────────────────────────────────
+  //
+  // Found on a live device, 21 Sep 2026. The paywall offered "Yearly — MMK
+  // 34,000". Tapping it opened Pay with KPay, which asked for 100,000 MMK.
+  // Nearly three times more, on the two screens either side of a decision to
+  // spend money.
+  //
+  // Neither number was a typo. The paywall read `s.vhPlanYearlyPrice`, a
+  // localized string compiled into the APK; the payment screen read
+  // `payment_instructions.prices`, which the operator had since changed. The
+  // provider's own doc says prices are "served by the backend so a KPay
+  // number or a price can change without a release" — and the one screen that
+  // quotes a price to a buyer was the screen ignoring it.
+  //
+  // Those two strings are now deleted, so the old shape cannot come back by
+  // copy-paste. What remains testable is the rule that replaced them.
+  group('PaywallSheet.priceFor', () {
+    test('quotes the price the server actually named', () {
+      const live = PaymentInstructions(
+        payeeName: 'Yann Min Htan',
+        payeeNumber: '09440121237',
+        prices: <String, String>{
+          'yearly': '100,000 MMK',
+          'monthly': '10,500 MMK',
+        },
+      );
+      expect(PaywallSheet.priceFor(live, 'yearly'), '100,000 MMK');
+      expect(PaywallSheet.priceFor(live, 'monthly'), '10,500 MMK');
+    });
+
+    test('quotes NOTHING for the placeholder', () {
+      // THE LOAD-BEARING ASSERTION. `09-000-000-000` is not a KPay account,
+      // and audit_video_hub.md M2 already settled that the payment screen
+      // must refuse to lay it out as something to pay. A sheet that asks for
+      // money must not quote its numbers either.
+      expect(PaywallSheet.priceFor(PaymentInstructions.placeholder, 'yearly'),
+          isEmpty);
+      expect(PaywallSheet.priceFor(PaymentInstructions.placeholder, 'monthly'),
+          isEmpty);
+    });
+
+    test('quotes nothing before the first answer arrives', () {
+      // Null is the loading state — no value yet. Empty renders as nothing,
+      // which is the point: a blank is honest, a stale constant is not.
+      expect(PaywallSheet.priceFor(null, 'yearly'), isEmpty);
+    });
+
+    test('a CACHED answer is quoted — real digits, possibly stale', () {
+      // Deliberate, and the same call the payment screen makes: withholding a
+      // real price because the network is down helps nobody, and the payment
+      // screen carries the staleness warning.
+      final cached = PaymentInstructions.fromJson(<String, dynamic>{
+        'payee_name': 'Yann Min Htan',
+        'payee_number': '09440121237',
+        'prices': <String, dynamic>{'yearly': '100,000 MMK'},
+      })!;
+      expect(cached.source, PaymentSource.cached);
+      expect(PaywallSheet.priceFor(cached, 'yearly'), '100,000 MMK');
+    });
+
+    test('quotes nothing for a plan the server did not price', () {
+      const partial = PaymentInstructions(
+        payeeName: 'Yann Min Htan',
+        payeeNumber: '09440121237',
+        prices: <String, String>{'yearly': '100,000 MMK'},
+      );
+      // Rather than falling through to some other plan's number.
+      expect(PaywallSheet.priceFor(partial, 'monthly'), isEmpty);
     });
   });
 }

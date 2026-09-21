@@ -1205,10 +1205,8 @@ class AppStrings {
   String get vhPerkMedia => _s('vhPerkMedia');
   String get vhPerkQuality => _s('vhPerkQuality');
   String get vhPlanYearly => _s('vhPlanYearly');
-  String get vhPlanYearlyPrice => _s('vhPlanYearlyPrice');
   String get vhPlanYearlyNote => _s('vhPlanYearlyNote');
   String get vhPlanMonthly => _s('vhPlanMonthly');
-  String get vhPlanMonthlyPrice => _s('vhPlanMonthlyPrice');
   String get vhPaywallFinePrint => _s('vhPaywallFinePrint');
   String get vhPaywallNotNow => _s('vhPaywallNotNow');
   String get vhPremiumBadge => _s('vhPremiumBadge');
@@ -1545,10 +1543,8 @@ class AppStrings {
     'vhPerkMedia': 'See every photo and clip, not just a preview',
     'vhPerkQuality': 'Highest available quality',
     'vhPlanYearly': 'Yearly',
-    'vhPlanYearlyPrice': 'MMK 34,000',
     'vhPlanYearlyNote': 'Best value',
     'vhPlanMonthly': 'Monthly',
-    'vhPlanMonthlyPrice': 'MMK 3,500',
     'vhPaywallFinePrint': 'A one-off payment for the period shown. Nothing renews automatically \u2014 pay again to extend.',
     'vhPaywallNotNow': 'Not now',
     'vhPremiumBadge': 'VIP',
@@ -2705,10 +2701,8 @@ class AppStrings {
     'vhPerkMedia': 'နမူနာမဟုတ်ဘဲ ပုံနှင့် ကလစ် အားလုံး မြင်ရသည်',
     'vhPerkQuality': 'ရနိုင်သမျှ အကောင်းဆုံး ကြည်လင်မှု',
     'vhPlanYearly': 'တစ်နှစ်',
-    'vhPlanYearlyPrice': '၃၄,၀၀၀ ကျပ်',
     'vhPlanYearlyNote': 'အတန်ဆုံး',
     'vhPlanMonthly': 'တစ်လ',
-    'vhPlanMonthlyPrice': '၃,၅၀၀ ကျပ်',
     'vhPaywallFinePrint': 'ဖော်ပြထားသည့် ကာလအတွက် တစ်ကြိမ်တည်း ပေးချေမှုဖြစ်သည်။ အလိုအလျောက် သက်တမ်း မတိုးပါ။ ဆက်လိုပါက ထပ်မံ ပေးချေပါ။',
     'vhPaywallNotNow': 'ယခု မလိုသေးပါ',
     'vhPremiumBadge': 'VIP',
@@ -3855,10 +3849,8 @@ class AppStrings {
     'vhPerkMedia': 'ดูรูปและคลิปทั้งหมด ไม่ใช่แค่ตัวอย่าง',
     'vhPerkQuality': 'คุณภาพสูงสุดที่มี',
     'vhPlanYearly': 'รายปี',
-    'vhPlanYearlyPrice': 'MMK 34,000',
     'vhPlanYearlyNote': 'คุ้มที่สุด',
     'vhPlanMonthly': 'รายเดือน',
-    'vhPlanMonthlyPrice': 'MMK 3,500',
     'vhPaywallFinePrint': 'ชำระครั้งเดียวสำหรับระยะเวลาที่แสดง ไม่ต่ออายุอัตโนมัติ ชำระอีกครั้งเพื่อขยายเวลา',
     'vhPaywallNotNow': 'ไว้ก่อน',
     'vhPremiumBadge': 'VIP',

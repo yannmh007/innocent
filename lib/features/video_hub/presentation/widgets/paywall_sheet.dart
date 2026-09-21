@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/localization/app_strings.dart';
+import '../../domain/account.dart';
 import '../../domain/video_content.dart';
 import '../account/premium_request_screen.dart';
 import '../account/sign_in_sheet.dart';
@@ -24,9 +25,12 @@ import '../video_hub_theme.dart';
 ///      already looking at converts better than a wall, because they can still
 ///      see the thing they want.
 ///
-/// PLANS ARE PLACEHOLDERS. They render the real layout so the screen can be
-/// judged, and they are wired to nothing: [_purchase] records an entitlement
-/// locally and takes no money. A real integration replaces that one call.
+/// PRICES COME FROM THE SERVER, NOT FROM THIS APP. They used to be localized
+/// strings baked into the build, which is how the sheet came to advertise
+/// MMK 34,000 for a plan the very next screen billed at 100,000 — the number
+/// in `payment_instructions` had moved and the APK could not follow. See
+/// [priceFor]: the only prices this sheet will show are ones the backend
+/// actually named.
 class PaywallSheet extends ConsumerWidget {
   /// The title that triggered this, when there is one. Null for a generic
   /// upgrade entry point.
@@ -51,9 +55,30 @@ class PaywallSheet extends ConsumerWidget {
     return result ?? false;
   }
 
+  /// The price to show for [planId], or empty when there is not a real one.
+  ///
+  /// SAME RULE AS THE PAYMENT SCREEN, deliberately. `isPayable` is false only
+  /// for the bundled placeholder, and audit_video_hub.md M2 already settled
+  /// that the placeholder must never be laid out as something to pay — so a
+  /// sheet that asks for money must not quote its numbers either. A CACHED
+  /// answer is payable: the digits are real, only possibly stale.
+  ///
+  /// Empty renders as nothing rather than as a wrong number. That loses the
+  /// "show the price up front" property for the one case where the app has
+  /// never once reached the server, and keeps it for every other: the answer
+  /// is cached after the first fetch. Showing a stale constant instead is
+  /// what this method exists to stop.
+  ///
+  /// Static and pure so it can be tested without building a widget.
+  static String priceFor(PaymentInstructions? instructions, String planId) {
+    if (instructions == null || !instructions.isPayable) return '';
+    return instructions.prices[planId] ?? '';
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = AppStrings.of(context);
+    final instructions = ref.watch(paymentInstructionsProvider).asData?.value;
 
     return Container(
       constraints: BoxConstraints(
@@ -117,7 +142,7 @@ class PaywallSheet extends ConsumerWidget {
                   // where trust starts leaking.
                   _Plan(
                     label: s.vhPlanYearly,
-                    price: s.vhPlanYearlyPrice,
+                    price: priceFor(instructions, 'yearly'),
                     note: s.vhPlanYearlyNote,
                     recommended: true,
                     onTap: () => _purchase(context, ref, 'yearly'),
@@ -125,7 +150,7 @@ class PaywallSheet extends ConsumerWidget {
                   const SizedBox(height: VH.s2),
                   _Plan(
                     label: s.vhPlanMonthly,
-                    price: s.vhPlanMonthlyPrice,
+                    price: priceFor(instructions, 'monthly'),
                     onTap: () => _purchase(context, ref, 'monthly'),
                   ),
                   const SizedBox(height: VH.s3),
