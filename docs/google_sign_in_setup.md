@@ -47,8 +47,12 @@ is the single most common way this is got wrong.
 <https://console.cloud.google.com/auth/clients>
 
 1. Create a project if there is not one already.
-2. Configure the consent screen (**Audience**, **Branding**). A published app
-   needs a privacy policy and terms URL here.
+2. Configure the consent screen (**Audience**, **Branding**).
+   - **Publish the app.** Left in Testing, only listed test users can sign
+     in — see the troubleshooting note below, because this is the failure
+     that only appears once other people try.
+   - Basic scopes only (`openid`, `email`, `profile`), so no verification
+     review is triggered.
 3. **Create OAuth client → Android**
    - Package name: `com.innocent.media`
    - SHA-1: see below
@@ -56,9 +60,27 @@ is the single most common way this is got wrong.
    - No redirect URI is needed for the native flow.
    - Copy its **Client ID** and **Client secret**. Both are used in step 2.
 
-### Getting the SHA-1
+### The SHA-1, already extracted
 
-From the keystore, if you have it:
+For the release key this repository ships with, as of v1.64.12-325:
+
+```
+C4:3C:59:F9:E9:97:FE:EC:C8:86:23:49:D2:57:60:0A:6B:EC:EC:26
+```
+
+Taken from the published APK itself, not from anybody's memory: the file
+was downloaded from its Release, its SHA-256 checked against the one in the
+release notes, the certificate read out of the APK Signing Block, and the
+fingerprint computed twice — once by hand and once by `openssl`. Both agree,
+and the certificate's SHA-256 matches the one recorded in
+`docs/signing_identity.md`, which is what proves the key has not changed.
+
+This is not a secret. It is a fingerprint of a public certificate that ships
+inside every copy of the app.
+
+### Getting the SHA-1 yourself
+
+Needed again whenever the signing key changes. From the keystore:
 
 ```
 keytool -list -v -keystore innocent.jks -alias innocent -storepass <password> | grep SHA1
@@ -69,6 +91,10 @@ Or from a built APK, which needs no password at all:
 ```
 keytool -printcert -jarfile innocent-1.64.13-326.apk | grep SHA1
 ```
+
+`-jarfile` reads the v1 (JAR) signature. These APKs are signed with v2/v3
+only and have no `META-INF/*.RSA`, so that command finds nothing here —
+`apksigner verify --print-certs <apk>` reads the v2 block and does.
 
 Both print the fingerprint of the certificate the app is actually signed
 with, which is the only one that matters. Debug builds are signed with a
@@ -139,6 +165,17 @@ the APK was actually signed with, not the one you think it was.
 `clientConfigurationError` or `providerConfigurationError` — the Android
 client does not exist, or `VH_GOOGLE_SERVER_CLIENT_ID` names a client Google
 will not mint a token for. Confirm the ID in the build is the **web** one.
+
+### Only you can sign in. Everybody else is refused.
+
+The OAuth consent screen is still in **Testing**, where only accounts listed
+as test users may authenticate. Yours is listed because you made it, which is
+exactly why this one survives testing and fails in the hands of users.
+
+**Audience → Publish app.** With only the basic scopes this app asks for —
+`openid`, `email`, `profile` — publishing does not require Google's
+verification review, so it is a button, not a process. Verification is for
+sensitive scopes, and none are requested here.
 
 ### It signs in, then fails
 
