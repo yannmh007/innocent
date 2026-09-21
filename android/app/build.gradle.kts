@@ -146,28 +146,39 @@ android {
         aidl = true
     }
 
-    // v1.64.13 — 11 -> 17, forced by google_sign_in.
+    // v1.64.13 — 11 -> 17, ahead of google_sign_in needing it.
     //
-    // `google_sign_in_android` 7.2.17 compiles itself at
-    // `JavaVersion.VERSION_17` and ships class files of major version 61. A
-    // module compiled with `-target 11` cannot read those: javac stops with
+    // NOT REQUIRED BY THE BUILD AS IT RESOLVES TODAY, and saying otherwise
+    // would be the kind of claim this file exists to stop. The exact
+    // versions, checked rather than assumed:
+    //
+    //     google_sign_in_android 7.2.1   Java 11   needs Flutter >=3.29.0
+    //     google_sign_in_android 7.2.2   Java 17   needs Flutter >=3.35.0
+    //     google_sign_in_android 7.2.17  Java 17   needs Flutter >=3.44.0
+    //
+    // CI pins Flutter 3.32.8, so pub correctly holds at 7.2.1, which targets
+    // 11 and would have built against 11. The bump is for the next step, not
+    // this one: the moment that Flutter pin moves past 3.35 — a routine bump,
+    // and one this project has already made twice — pub takes 7.2.2+ and a
+    // module targeting 11 can no longer read its class files:
     //
     //     class file has wrong version 61.0, should be 55.0
     //
-    // and the Kotlin half stops with an "Inconsistent JVM-target
-    // compatibility" error naming 11 and 17. Neither is fixable from the
-    // Dart side; the app's own target has to move.
+    // with the Kotlin half reporting an "Inconsistent JVM-target
+    // compatibility" error naming 11 and 17. Neither is fixable from the Dart
+    // side. Paying for it now, against a green build, is cheaper than paying
+    // for it inside an unrelated Flutter upgrade where it looks like the
+    // upgrade broke.
     //
-    // NOTHING ELSE MOVES, and that is the point of writing this down. The
-    // JDK that RUNS Gradle was already 17 — the CI workflow sets it up and
-    // says so, and AGP 8.7 refuses to start on anything lower. So this is
-    // not a toolchain upgrade, it is the bytecode target catching up with
-    // the toolchain that was already there. Java 17 has been Android's
-    // supported desugaring target since AGP 8.0, minSdk 24 is unchanged, and
-    // Kotlin 2.1.0 has emitted 17 for several major versions.
+    // NOTHING ELSE MOVES. The JDK that RUNS Gradle was already 17 — the CI
+    // workflow sets it up and says so, and AGP 8.7 refuses to start on
+    // anything lower. This is the bytecode target catching up with a
+    // toolchain that was already there, not a toolchain upgrade. Java 17 has
+    // been a supported desugaring target since AGP 8.0, minSdk 24 is
+    // unchanged, and Kotlin 2.1.0 has emitted 17 for several major versions.
     //
     // The 11 was never a decision. It is the number Flutter's template wrote
-    // in 2023 and nothing since had a reason to touch it.
+    // and nothing since had a reason to touch.
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17

@@ -120,6 +120,11 @@ dependencies:
   # token. That is all that is needed here: the token is exchanged at
   # `/auth/v1/token?grant_type=id_token`, where `access_token` is optional for
   # Google. See api_account_repository.dart.
+  #
+  # What this actually resolves to, because the caret hides it: the Flutter
+  # 3.32.8 pin holds `google_sign_in_android` at 7.2.1, since 7.2.2+ requires
+  # Flutter >=3.35.0. That matters for the Java target — see the note in
+  # android/app/build.gradle.kts.
   google_sign_in: ^7.2.0
 
 dev_dependencies:
