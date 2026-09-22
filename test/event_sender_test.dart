@@ -33,6 +33,25 @@ void main() {
     SharedPreferences.setMockInitialValues(<String, Object>{});
   });
 
+  /// Waits until [condition] holds, pumping the event loop between checks.
+  ///
+  /// NOT `await Future.delayed(Duration.zero)`, which is what this file tried
+  /// first and what CI rejected. That drains one turn, and the flush chain is
+  /// deeper than one: on the way out it consults DeviceIdentity, whose
+  /// keystore read throws in a test binary (no plugin) and falls back to
+  /// SharedPreferences — a mocked platform channel, which needs real
+  /// event-loop turns rather than a microtask drain.
+  ///
+  /// Counting the turns would be guessing at an implementation detail two
+  /// layers away; waiting for the observable outcome is not. The bound exists
+  /// so a genuine regression fails the expectation below rather than hanging
+  /// the suite.
+  Future<void> until(bool Function() condition, {int turns = 500}) async {
+    for (var i = 0; i < turns && !condition(); i++) {
+      await Future<void>.delayed(Duration.zero);
+    }
+  }
+
   /// A client that records every request body it is given.
   (ApiClient, List<Map<String, dynamic>>) recording({int status = 200}) {
     final seen = <Map<String, dynamic>>[];
@@ -72,9 +91,9 @@ void main() {
       for (var i = 0; i < EventSender.flushAt; i++) {
         sender.log(Ev.impression, titleId: 't$i');
       }
-      // The flush is started synchronously inside log() but completes on the
-      // microtask queue, so the test has to let it run.
-      await Future<void>.delayed(Duration.zero);
+      // The flush is started synchronously inside log(); the request that
+      // carries it is several awaits away. See `until`.
+      await until(() => seen.isNotEmpty);
 
       expect(seen, hasLength(1),
           reason: 'a heavy session should not sit on 30 seconds of data');
@@ -97,17 +116,25 @@ void main() {
       addTearDown(sender.dispose);
 
       // Enough to start one flush and then overflow the buffer behind it.
+      //
+      // No pumping needed here, unlike the test above: log() adds, trims and
+      // hands off to flush() entirely synchronously, and flush() empties the
+      // buffer before its first await. The buffer's size is therefore already
+      // final when this loop ends.
       for (var i = 0; i < EventSender.flushAt + EventSender.maxBuffered + 50; i++) {
         sender.log(Ev.impression, titleId: 't$i');
       }
-      await Future<void>.delayed(Duration.zero);
 
       expect(sender.pending, EventSender.maxBuffered,
           reason: 'the buffer must stop at the cap, not follow the session');
 
-      // Let the stalled request finish so no timer outlives the test.
+      // Let the stalled request unwind, so no pending future or timeout timer
+      // outlives the test. `until` is no use here — there is no condition to
+      // wait for, only an unwinding to allow — so this drains turns directly.
       gate.complete(http.Response('0', 200));
-      await Future<void>.delayed(Duration.zero);
+      for (var i = 0; i < 20; i++) {
+        await Future<void>.delayed(Duration.zero);
+      }
     });
   });
 
