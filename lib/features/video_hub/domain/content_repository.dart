@@ -49,6 +49,19 @@ abstract class ContentRepository {
   /// Which filter values this category can actually offer.
   Future<ContentFacets> getFacets({required ContentCategory category});
 
+  /// What the server calls each category, in what order, and which to hide.
+  ///
+  /// A REPOSITORY CALL RATHER THAN A CONSTANT, for the same reason
+  /// [getFeatured] is: how a catalogue names its own sections is an editorial
+  /// decision that belongs with the content, not in a build. Renaming
+  /// "Movies" to "Video" should not need an APK.
+  ///
+  /// Returning [CategoryCatalogue.empty] is CORRECT, not a failure — it means
+  /// "no opinion", and every caller then uses the compiled enum and the
+  /// compiled strings. That is what the demo repository returns, what a build
+  /// with no backend uses, and what the app falls back to offline.
+  Future<CategoryCatalogue> getCategories();
+
   /// The FULL list behind one of the landing rows, filtered, sorted and paged.
   ///
   /// A row shows a sample; this is what "See all" opens. It is a separate call

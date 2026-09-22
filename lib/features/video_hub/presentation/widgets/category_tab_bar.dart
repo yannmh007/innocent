@@ -20,11 +20,18 @@ class CategoryTabBar extends StatefulWidget {
   final ContentCategory selected;
   final ValueChanged<ContentCategory> onSelected;
 
+  /// What the SERVER calls these categories, where it has an opinion.
+  ///
+  /// Defaulted to empty so every existing call site and every test keeps
+  /// compiling and keeps showing exactly what it showed before.
+  final CategoryCatalogue styles;
+
   const CategoryTabBar({
     super.key,
     required this.categories,
     required this.selected,
     required this.onSelected,
+    this.styles = CategoryCatalogue.empty,
   });
 
   static const double height = VH.barHeight;
@@ -82,7 +89,7 @@ class _CategoryTabBarState extends State<CategoryTabBar> {
           final key = _keys.putIfAbsent(category, () => GlobalKey());
           return _CategoryPill(
             key: key,
-            label: labelFor(s, category),
+            label: labelFor(s, category, styles: widget.styles),
             icon: category.icon,
             selected: category == widget.selected,
             onTap: () {
@@ -98,7 +105,23 @@ class _CategoryTabBarState extends State<CategoryTabBar> {
 
   /// Localized label for a category. Lives here so every surface that shows a
   /// category name spells it the same way.
-  static String labelFor(AppStrings s, ContentCategory category) {
+  ///
+  /// THE SERVER WINS WHEN IT HAS SOMETHING TO SAY, and the compiled string is
+  /// what is drawn when it does not. That ordering is the feature: renaming
+  /// "Movies" to "Video" is one UPDATE and takes effect on the next launch.
+  ///
+  /// The compiled string is the fallback for "the server said nothing", NOT
+  /// for "the server said nothing in this language". A rename has to reach
+  /// every audience: after Movies becomes Video, a Thai viewer seeing the
+  /// compiled Thai word for "Movies" is being shown the old name, which is
+  /// worse than an English one they can read. See CategoryCatalogue.labelFor.
+  static String labelFor(
+    AppStrings s,
+    ContentCategory category, {
+    CategoryCatalogue styles = CategoryCatalogue.empty,
+  }) {
+    final fromServer = styles.labelFor(category, s.locale.languageCode);
+    if (fromServer != null) return fromServer;
     switch (category) {
       case ContentCategory.all:
         return s.vhCategoryAll;

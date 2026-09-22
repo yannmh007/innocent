@@ -243,6 +243,12 @@ class DemoContentRepository implements ContentRepository {
     return _page(list, page, pageSize);
   }
 
+  /// The bundled catalogue has no server to have an opinion, so it has none.
+  /// Every caller then falls back to the enum and the compiled strings, which
+  /// is exactly what this build has always shown.
+  @override
+  Future<CategoryCatalogue> getCategories() async => CategoryCatalogue.empty;
+
   @override
   Future<ContentFacets> getFacets({required ContentCategory category}) async {
     final list = _source

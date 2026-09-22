@@ -228,6 +228,36 @@ class ApiContentRepository implements ContentRepository {
     final q = query.trim();
     if (q.isEmpty) return const <VideoContent>[];
 
+    // THE SERVER SEARCHES NOW, and the two columns below are what it falls
+    // back to.
+    //
+    // `search_titles` matches against a maintained column holding the title,
+    // the Burmese title, the synopsis, the genres and the operator's
+    // invisible keywords — and it matches with pg_trgm, so a mistyped letter
+    // still finds the title. Trigrams rather than to_tsvector because of the
+    // audience: Postgres has no Burmese text-search configuration, so
+    // stemming has nothing to work with, while comparing three characters at
+    // a time works identically for Burmese, English and a title that mixes
+    // both.
+    //
+    // It returns `setof title_cards`, which is the same column list the
+    // catalogue returns — so there is one parser, not two, and the second one
+    // cannot go stale.
+    try {
+      final body = await _api.postJson(
+        '/rest/v1/rpc/search_titles',
+        body: <String, dynamic>{'q': q, 'lim': 50},
+      );
+      // An empty result is a REAL ANSWER — the catalogue does not have it —
+      // so it is returned rather than retried against the fallback below,
+      // which searches two columns and could only ever find less.
+      return _titles(body);
+    } on ApiException {
+      // FALL THROUGH, deliberately quiet. A deployment that has not run
+      // migration 015 has no such function, and search degrading to two
+      // columns is a missing feature; search throwing is a broken app.
+    }
+
     // audit_video_hub.md M5. This used to be `'title': 'ilike.*$q*'` — ONE
     // column — so a Burmese user typing a Burmese title got nothing back,
     // in an app whose audience is mostly Burmese, against a catalogue that
@@ -278,6 +308,49 @@ class ApiContentRepository implements ContentRepository {
   /// the live project. Dropping two characters a film title will not contain
   /// is the boring option, and the boring option is right here.
   static String _forOrGroup(String q) => q.replaceAll(RegExp(r'["\\]'), '');
+
+  @override
+  Future<CategoryCatalogue> getCategories() async {
+    try {
+      final body = await _api.getJson(
+        '/rest/v1/categories',
+        query: const <String, String>{
+          'select': 'id,label,label_mm,sort_order,is_visible',
+          'order': 'sort_order.asc',
+        },
+        // Drawn before the age gate and before any account exists, so it must
+        // not wait on a session it may never get.
+        authenticated: false,
+      );
+      if (body is! List) return CategoryCatalogue.empty;
+
+      final byId = <String, CategoryStyle>{};
+      for (final row in body) {
+        if (row is! Map) continue;
+        final m = row.cast<String, dynamic>();
+        final id = '${m['id'] ?? ''}'.trim();
+        final label = '${m['label'] ?? ''}'.trim();
+        // A row with no id addresses nothing and a row with no label would
+        // render an empty pill. Skipping beats drawing either.
+        if (id.isEmpty || label.isEmpty) continue;
+        byId[id] = CategoryStyle(
+          id: id,
+          label: label,
+          labelMm: m['label_mm'] as String?,
+          sortOrder: _int(m['sort_order']) ?? 0,
+          // Absent reads as VISIBLE. A column the server has not sent must
+          // never be able to hide a tab.
+          isVisible: m['is_visible'] != false,
+        );
+      }
+      return CategoryCatalogue(byId);
+    } on ApiException {
+      // The compiled enum and the compiled strings. Not an error state — see
+      // CategoryCatalogue.empty. A catalogue that cannot draw its own tab bar
+      // without the network is worse than one with month-old labels.
+      return CategoryCatalogue.empty;
+    }
+  }
 
   @override
   Future<VideoContent?> getById(String id) async {

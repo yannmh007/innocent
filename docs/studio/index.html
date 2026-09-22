@@ -112,6 +112,7 @@
     <button class="tab" data-tab="catalogue" aria-selected="true">Catalogue</button>
     <button class="tab" data-tab="new" aria-selected="false">New title</button>
     <button class="tab" data-tab="requests" aria-selected="false">Requests</button>
+    <button class="tab" data-tab="cats" aria-selected="false">Categories</button>
     <button class="tab" data-tab="stats" aria-selected="false">Signals</button>
     <button class="tab" data-tab="health" aria-selected="false">Health</button>
   </div>
@@ -198,6 +199,21 @@
       <h2>Premium requests</h2>
       <small>Approving writes the subscription. Nothing else does.</small>
       <div id="reqList" style="margin-top:12px"></div>
+    </div>
+  </section>
+
+  <!-- ── CATEGORIES ────────────────────────────────────────────────────── -->
+  <section id="tab-cats" hidden>
+    <div class="card">
+      <h2>Categories</h2>
+      <small>The tab names in the app. Rename, reorder or hide them here — no
+        new app build needed. The <code>id</code> is NOT editable and never
+        will be: it is what every title stores, so changing one would orphan
+        every title using it.<br><br>
+        Adding a new category is not possible here either. The app keys off a
+        fixed list, so a row it has never heard of would look saved and do
+        nothing. Renaming, reordering and hiding are what this does.</small>
+      <div id="catList" style="margin-top:14px"></div>
     </div>
   </section>
 
@@ -470,6 +486,11 @@ const FIELDS = [
   { k: 'genres', label: 'Tags / genres', ph: 'action, drama, myanmar',
     hint: 'Comma separated. These are the chips on the card and what the ' +
           'filter bar offers.' },
+  { k: 'keywords', label: 'Search keywords (hidden)',
+    ph: 'alternate spelling, actor name, မြန်မာလို အမည်',
+    hint: 'Comma separated. Searchable but NEVER shown on the card — the ' +
+          'words people actually type. Alternate spellings, a Burmese ' +
+          'transliteration, an actor.' },
   { k: 'year', label: 'Year', type: 'number', half: true },
   { k: 'rating', label: 'Rating (0-10)', type: 'number', step: '0.1', half: true },
   { k: 'quality_label', label: 'Quality', ph: 'HD, 4K, CAM', half: true },
@@ -499,7 +520,9 @@ function buildForm(host, prefix, values) {
 
     const v = values ? values[f.k] : undefined;
     if (f.type === 'checkbox') input.checked = v === true;
-    else if (f.k === 'genres') input.value = Array.isArray(v) ? v.join(', ') : (v || '');
+    else if (f.k === 'genres' || f.k === 'keywords') {
+      input.value = Array.isArray(v) ? v.join(', ') : (v || '');
+    }
     else input.value = v == null ? '' : v;
 
     let node;
@@ -533,7 +556,7 @@ function readForm(prefix) {
     const n = $(prefix + f.k);
     if (!n) continue;
     if (f.type === 'checkbox') out[f.k] = n.checked;
-    else if (f.k === 'genres') {
+    else if (f.k === 'genres' || f.k === 'keywords') {
       out[f.k] = n.value.split(',').map((s) => s.trim()).filter(Boolean);
     } else if (f.type === 'number') {
       out[f.k] = n.value === '' ? null : Number(n.value);
@@ -543,7 +566,8 @@ function readForm(prefix) {
 }
 
 // ── tabs ─────────────────────────────────────────────────────────────────
-const TABS = ['catalogue', 'new', 'requests', 'stats', 'health', 'editor'];
+const TABS = ['catalogue', 'new', 'requests', 'cats', 'stats', 'health',
+  'editor'];
 function show(tab) {
   for (const t of TABS) $('tab-' + t).hidden = (t !== tab);
   for (const b of document.querySelectorAll('.tab')) {
@@ -552,6 +576,7 @@ function show(tab) {
   clear();
   if (tab === 'catalogue') loadList();
   if (tab === 'requests') loadRequests();
+  if (tab === 'cats') loadCategories();
   if (tab === 'stats') loadStats();
   if (tab === 'health') loadHealth();
 }
@@ -745,6 +770,7 @@ $('saveTitle').onclick = async () => {
         title: f.title, title_mm: f.title_mm, synopsis: f.synopsis,
         category: f.category, year: f.year, rating: f.rating,
         quality_label: f.quality_label, genres: f.genres,
+        keywords: f.keywords,
         episode_count: f.episode_count, access_tier: f.access_tier,
         is_featured: f.is_featured, published: f.published,
       },
@@ -849,7 +875,8 @@ $('create').onclick = async () => {
       folder,
       title: f.title, titleMm: f.title_mm, synopsis: f.synopsis,
       category: f.category, year: f.year, rating: f.rating,
-      quality: f.quality_label, genres: f.genres, episodes: f.episode_count,
+      quality: f.quality_label, genres: f.genres, keywords: f.keywords,
+      episodes: f.episode_count,
       free: f.access_tier === 'free', featured: f.is_featured,
       publish: f.published, assets,
     });
@@ -906,6 +933,59 @@ async function loadRequests() {
             (r.submitted_at || '').slice(0, 16).replace('T', ' ')]
             .filter(Boolean).join(' · '))),
           el('div', { className: 'row tight' }, [days, ok, no]),
+        ]),
+      ]));
+    }
+  } catch (e) { say('bad', String(e.message || e)); }
+}
+
+// ── categories ───────────────────────────────────────────────────────────
+async function loadCategories() {
+  const host = $('catList');
+  host.textContent = '';
+  try {
+    const { categories } = await api({ op: 'categories' });
+    for (const c of categories) {
+      const label = el('input', { value: c.label || '' });
+      const labelMm = el('input', { value: c.label_mm || '' });
+      const order = el('input', { type: 'number', value: String(c.sort_order ?? 0) });
+      const vis = el('input', { type: 'checkbox' });
+      vis.checked = c.is_visible !== false;
+      // `all` is the landing tab and the app refuses to hide it whatever this
+      // says, so the box is disabled rather than lying about what it does.
+      if (c.id === 'all') vis.disabled = true;
+
+      const save = el('button', { className: 'mini' }, text('Save'));
+      save.onclick = async () => {
+        save.disabled = true;
+        try {
+          await api({
+            op: 'saveCategory', id: c.id,
+            patch: {
+              label: label.value,
+              label_mm: labelMm.value,
+              sort_order: Number(order.value) || 0,
+              is_visible: vis.checked,
+            },
+          });
+          say('ok', 'Saved. The app picks it up on its next launch.');
+        } catch (e) { say('bad', String(e.message || e)); }
+        save.disabled = false;
+      };
+
+      host.append(el('div', { className: 'item', style: 'align-items:flex-start' }, [
+        el('div', { className: 'grow' }, [
+          el('div', { className: 't' }, text(c.id)),
+          el('small', {}, text('id — frozen')),
+          el('div', { className: 'grid2', style: 'margin-top:8px' }, [
+            el('div', {}, [el('label', {}, text('Label')), label]),
+            el('div', {}, [el('label', {}, text('Label (Burmese)')), labelMm]),
+          ]),
+          el('div', { className: 'row tight' }, [
+            el('small', {}, text('order')), order,
+            vis, el('small', {}, text(c.id === 'all' ? 'always visible' : 'visible')),
+            save,
+          ]),
         ]),
       ]));
     }

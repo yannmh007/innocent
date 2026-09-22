@@ -2,8 +2,8 @@
 //
 // Was two calls (sign, publish) behind an upload form. It is now the whole
 // console: list, get, create, save, addAssets, updateAsset, setPrimary,
-// deleteAsset, deleteTitle, requests, approve, reject, stats, health, folder,
-// sign, selftest.
+// deleteAsset, deleteTitle, requests, approve, reject, categories,
+// saveCategory, stats, health, folder, sign, selftest.
 //
 // WHY THIS EXISTS. Putting one title into the catalogue used to mean: open the
 // R2 dashboard, upload the video, upload the poster, copy both object keys,
@@ -351,8 +351,8 @@ Deno.serve(async (req: Request) => {
   // never silently starts shipping it to a browser.
   const TITLE_COLS =
     'id,title,title_mm,synopsis,category,poster_url,year,rating,quality_label,' +
-    'genres,episode_count,view_count,access_tier,photo_count,video_count,' +
-    'is_featured,locator,provider,published,status,slug,created_at';
+    'genres,keywords,episode_count,view_count,access_tier,photo_count,' +
+    'video_count,is_featured,locator,provider,published,status,slug,created_at';
 
   // --- sign: hand back one presigned PUT URL -------------------------------
   //
@@ -577,6 +577,11 @@ Deno.serve(async (req: Request) => {
       rating: num(body.rating),
       quality_label: str(body.quality),
       genres: arr(body.genres),
+      // SEARCHABLE, NEVER RENDERED. `genres` draws the chips on the card and
+      // fills the filter bar; these are the words people actually type —
+      // alternate spellings, a Burmese transliteration, an actor's name —
+      // which would clutter the card and must still find the title.
+      keywords: arr(body.keywords),
       episode_count: num(body.episodes),
       // THE FOLDER, RECORDED. Every object key of this title begins with it,
       // so it is not decoration: `addAssets` reads it back to put later files
@@ -644,6 +649,7 @@ Deno.serve(async (req: Request) => {
     if ('rating' in p) upd.rating = num(p.rating);
     if ('quality_label' in p) upd.quality_label = str(p.quality_label);
     if ('genres' in p) upd.genres = arr(p.genres);
+    if ('keywords' in p) upd.keywords = arr(p.keywords);
     if ('episode_count' in p) upd.episode_count = num(p.episode_count);
     if ('access_tier' in p) {
       upd.access_tier = p.access_tier === 'free' ? 'free' : 'premium';
@@ -852,6 +858,47 @@ Deno.serve(async (req: Request) => {
       trending: trend.data ?? [],
       error: kinds.error?.message ?? geo.error?.message ?? null,
     }, 200, req);
+  }
+
+  // --- categories: rename a tab without shipping an app -------------------
+  //
+  // THE id IS NOT EDITABLE HERE AND MUST NEVER BECOME EDITABLE. It is what
+  // `titles.category` stores, what analytics group by and what a saved tab
+  // selection holds; changing one orphans every title that used it. The
+  // label, the order and the visibility are the editable half, and between
+  // them they are the whole feature — renaming "Movies" to "Video" is one
+  // UPDATE and takes effect on the next app launch.
+  //
+  // Adding a category is NOT possible from here, and that is honest rather
+  // than missing: the client keys off a Dart enum, so no row this writes can
+  // make a build draw a tab it has never heard of. There is no insert below
+  // for exactly that reason — an id with no enum value would be a row that
+  // looks saved and does nothing.
+  if (body.op === 'categories') {
+    const { data, error } = await admin()
+      .from('categories').select('*').order('sort_order');
+    if (error) return json({ error: 'categories_failed', detail: error.message }, 500, req);
+    return json({ categories: data ?? [] }, 200, req);
+  }
+
+  if (body.op === 'saveCategory') {
+    const id = String(body.id ?? '').trim();
+    if (!id) return json({ error: 'no_id' }, 400, req);
+
+    const p = (body.patch ?? {}) as Record<string, unknown>;
+    const upd: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    if ('label' in p) upd.label = String(p.label ?? '').trim();
+    if ('label_mm' in p) upd.label_mm = str(p.label_mm);
+    if ('sort_order' in p) upd.sort_order = num(p.sort_order) ?? 0;
+    if ('is_visible' in p) upd.is_visible = p.is_visible === true;
+    // A blank label would render an empty pill in the tab bar, which reads as
+    // a broken build rather than as a mistake somebody made in a form.
+    if ('label' in upd && !upd.label) return json({ error: 'no_label' }, 400, req);
+
+    const { error } = await admin()
+      .from('categories').update(upd).eq('id', id);
+    if (error) return json({ error: 'save_failed', detail: error.message }, 500, req);
+    return json({ ok: true, id, changed: Object.keys(upd) }, 200, req);
   }
 
   // --- health: the view that has existed unread since the schema was written

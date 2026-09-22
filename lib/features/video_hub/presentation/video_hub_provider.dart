@@ -121,6 +121,31 @@ void recordViewOnce(WidgetRef ref, String contentId) {
       .catchError((_) {});
 }
 
+/// What the server calls each category, in what order, and which to hide.
+///
+/// FETCHED ONCE AND KEPT, which is why it is a plain [FutureProvider] in the
+/// root container rather than an autoDispose one: the tab bar rebuilds on
+/// every scroll and every filter change, and a request per rebuild would cost
+/// more than the feature is worth. Category names change roughly never; a
+/// stale label until the next launch is the correct trade.
+///
+/// Never an error state on screen. Both repositories answer
+/// [CategoryCatalogue.empty] rather than throwing when there is nothing to
+/// say, and every reader treats empty as "use the compiled enum".
+final categoryCatalogueProvider = FutureProvider<CategoryCatalogue>((ref) {
+  return ref.watch(contentRepositoryProvider).getCategories();
+});
+
+/// The catalogue as a plain value, for the widgets that cannot await.
+///
+/// The tab bar is built inside a sliver that is already rendering; making it
+/// an AsyncValue would mean a loading state for a bar that has perfectly good
+/// defaults to draw immediately. So: whatever has arrived, or empty.
+final categoryStylesProvider = Provider<CategoryCatalogue>((ref) {
+  return ref.watch(categoryCatalogueProvider).asData?.value ??
+      CategoryCatalogue.empty;
+});
+
 /// The event log's client half.
 ///
 /// ONE PER APP RUN, which is what makes `session_id` mean anything: a new

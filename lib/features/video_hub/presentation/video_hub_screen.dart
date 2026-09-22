@@ -105,7 +105,11 @@ class _VideoHubScreenState extends ConsumerState<VideoHubScreen>
   Widget build(BuildContext context) {
     final s = AppStrings.of(context);
     final selected = ref.watch(selectedCategoryProvider);
-    final categories = ContentCategoryX.visible();
+    // Order and visibility from the server where it has an opinion, the
+    // compiled enum where it does not — including before the first fetch
+    // returns and whenever the phone is offline. See CategoryCatalogue.
+    final styles = ref.watch(categoryStylesProvider);
+    final categories = styles.visible();
     // Watched here so a purchase anywhere in the feature repaints every badge
     // on this screen at once.
     ref.watch(viewerProvider);
@@ -139,6 +143,7 @@ class _VideoHubScreenState extends ConsumerState<VideoHubScreen>
                   child: CategoryTabBar(
                     categories: categories,
                     selected: selected,
+                    styles: styles,
                     onSelected: _selectCategory,
                   ),
                 ),
