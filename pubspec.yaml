@@ -1,7 +1,7 @@
 name: innocent
 description: Innocent - a personal Flutter media player
 publish_to: 'none'
-version: 1.64.18+331
+version: 1.64.19+332
 
 environment:
   sdk: '>=3.4.0 <4.0.0'
@@ -131,6 +131,18 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^4.0.0
+  # Test-only, and both are already in the tree as transitive dependencies of
+  # path_provider — declared here rather than imported implicitly so the
+  # analyzer's `depend_on_referenced_packages` has nothing to say and so a
+  # future version bump of path_provider cannot silently remove them.
+  #
+  # What they are for: test/offline_library_test.dart points
+  # getApplicationSupportDirectory at a temp folder. The offline shelf's whole
+  # behaviour IS its filesystem interaction — an index that agrees with a mock
+  # would prove nothing — so the test writes real files and needs to choose
+  # where.
+  path_provider_platform_interface: ^2.1.2
+  plugin_platform_interface: ^2.1.8
 
 flutter:
   uses-material-design: true

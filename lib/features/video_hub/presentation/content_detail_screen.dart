@@ -11,6 +11,7 @@ import 'album_viewer_screen.dart';
 import 'widgets/media_mosaic.dart';
 import 'playback.dart';
 import 'video_hub_provider.dart';
+import 'widgets/download_action.dart';
 import 'widgets/poster_image.dart';
 import 'widgets/vh_insets.dart';
 import 'widgets/view_count_badge.dart';
@@ -316,6 +317,15 @@ class _Header extends StatelessWidget {
                   .toList(),
             ),
           ],
+          // Under the metadata chips and above the synopsis: a secondary
+          // action, next to the facts about the title rather than competing
+          // with the primary control below. Draws nothing at all for a viewer
+          // who cannot download — see DownloadAction.
+          const SizedBox(height: VH.s2),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: DownloadAction(content: content),
+          ),
           if (locked && lockedCount > 0) ...<Widget>[
             const SizedBox(height: VH.s3),
             Row(

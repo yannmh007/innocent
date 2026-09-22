@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/api/api_account_repository.dart';
 import '../data/api/api_client.dart';
 import '../data/api/backend_config.dart';
+import '../data/api/offline_library.dart';
 import '../data/device_identity.dart';
 import '../data/local_account_repository.dart';
 import '../domain/access.dart';
@@ -70,11 +71,19 @@ class AccountState {
 }
 
 class AccountNotifier extends StateNotifier<AccountState> {
-  AccountNotifier(this._repo) : super(const AccountState()) {
+  AccountNotifier(this._repo, {OfflineLibrary? offline})
+      : _offline = offline ?? OfflineLibrary(),
+        super(const AccountState()) {
     refresh();
   }
 
   final AccountRepository _repo;
+
+  /// The offline shelf, so signing out can empty it.
+  ///
+  /// Injectable so a test can watch it being emptied without touching a
+  /// filesystem — and defaulted so no call site has to know it exists.
+  final OfflineLibrary _offline;
 
   /// Re-reads BOTH the session and the entitlement.
   ///
@@ -115,6 +124,25 @@ class AccountNotifier extends StateNotifier<AccountState> {
 
   Future<void> signOut() async {
     await _repo.signOut();
+    // THE DOWNLOADS GO WITH THE ACCOUNT, and this is the only enforcement
+    // this side can honestly offer. A downloaded file is a plain file in
+    // app-private storage — see the note on OfflineLibrary — so emptying the
+    // shelf is a promise about what this app does, not about the bytes. It is
+    // still worth keeping: the ordinary case is a person signing out, and in
+    // the ordinary case their premium library should not stay behind.
+    //
+    // BEFORE the state assignment, so there is no frame in which the account
+    // is gone and the shelf is still full. Awaited, because a sign-out that
+    // returned while files were still being deleted would let the next screen
+    // list titles that are on their way out.
+    //
+    // Failure is swallowed deliberately: a file the OS refuses to delete must
+    // not be able to trap somebody in an account they are trying to leave.
+    try {
+      await _offline.dropAll();
+    } catch (e) {
+      if (kDebugMode) debugPrint('offline sweep on sign-out failed: $e');
+    }
     if (!mounted) return;
     // Entitlement is cleared in the SAME assignment as the user. Doing it in
     // two steps leaves a frame where nobody is signed in and premium is still

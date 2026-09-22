@@ -1340,6 +1340,7 @@ class AppStrings {
   String get vhLibraryBookmarks => _s('vhLibraryBookmarks');
   String get vhLibraryBookmarksHint => _s('vhLibraryBookmarksHint');
   String get vhLibraryDownloads => _s('vhLibraryDownloads');
+  String get vhDeleteDownloadBody => _s('vhDeleteDownloadBody');
   String get vhLibraryDownloadsHint => _s('vhLibraryDownloadsHint');
   String get vhLibrarySoon => _s('vhLibrarySoon');
 
@@ -1491,6 +1492,9 @@ class AppStrings {
     'vhLibraryBookmarksHint': 'Titles you saved for later',
     'vhLibraryDownloads': 'Downloads',
     'vhLibraryDownloadsHint': 'Watch offline - Premium',
+    'vhDeleteDownloadBody':
+        'Remove this download from your device? You can download it again '
+        'while your subscription is active.',
     'vhLibrarySoon': 'Coming soon',
 
     // --- Video Hub: view counts ---
@@ -2649,6 +2653,9 @@ class AppStrings {
     'vhLibraryBookmarksHint': 'နောက်မှကြည့်ရန် သိမ်းထားသော ခေါင်းစဉ်များ',
     'vhLibraryDownloads': 'ဒေါင်းလုဒ်များ',
     'vhLibraryDownloadsHint': 'အော့ဖ်လိုင်း ကြည့်ရန် - Premium',
+    'vhDeleteDownloadBody':
+        'ဤဒေါင်းလုဒ်ကို ဖုန်းထဲက ဖယ်ရှားမလား။ Premium သက်တမ်း ရှိနေသေးသ၍ '
+        'ပြန်ဒေါင်းလုဒ် လုပ်လို့ ရပါတယ်။',
     'vhLibrarySoon': 'မကြာမီ ရရှိမည်',
 
     // --- Video Hub: view counts ---
@@ -3797,6 +3804,9 @@ class AppStrings {
     'vhLibraryBookmarksHint': 'รายการที่คุณบันทึกไว้',
     'vhLibraryDownloads': 'ดาวน์โหลด',
     'vhLibraryDownloadsHint': 'ดูออฟไลน์ - Premium',
+    'vhDeleteDownloadBody':
+        'ลบดาวน์โหลดนี้ออกจากเครื่องหรือไม่ คุณดาวน์โหลดใหม่ได้ '
+        'ตราบใดที่สมาชิกยังใช้งานอยู่',
     'vhLibrarySoon': 'เร็ว ๆ นี้',
 
     // --- Video Hub: view counts ---

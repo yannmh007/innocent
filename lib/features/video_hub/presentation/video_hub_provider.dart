@@ -7,6 +7,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/api/api_content_repository.dart';
 import '../data/api/backend_config.dart';
 import '../data/api/event_sender.dart';
+import '../data/api/offline_downloader.dart';
+import '../data/api/offline_library.dart';
 import '../data/demo_content_repository.dart';
 import '../domain/access.dart';
 import '../domain/access_policy.dart';
@@ -144,6 +146,38 @@ final categoryCatalogueProvider = FutureProvider<CategoryCatalogue>((ref) {
 final categoryStylesProvider = Provider<CategoryCatalogue>((ref) {
   return ref.watch(categoryCatalogueProvider).asData?.value ??
       CategoryCatalogue.empty;
+});
+
+/// Where downloaded titles live.
+///
+/// One instance, because it owns a SharedPreferences-backed index: two would
+/// each hold their own view of the shelf and the one that wrote last would
+/// win, silently losing whatever the other had added.
+final offlineLibraryProvider = Provider<OfflineLibrary>((ref) {
+  return OfflineLibrary();
+});
+
+/// Fetches titles onto the device.
+///
+/// Also one instance, and for a harder reason: it tracks which downloads are
+/// RUNNING. A second instance would not know about the first one's transfers,
+/// so tapping Download twice from two screens would start two writers on one
+/// file — which does not fail, it corrupts.
+final offlineDownloaderProvider = Provider<OfflineDownloader>((ref) {
+  return OfflineDownloader(
+    ref.watch(contentRepositoryProvider),
+    ref.watch(offlineLibraryProvider),
+  );
+});
+
+/// What is on the shelf.
+///
+/// autoDispose so it is re-read when a screen that shows it is opened rather
+/// than held stale: the filesystem can lose a file to Android's own cleanup
+/// without telling the app, and [OfflineLibrary.items] verifies as it reads.
+final offlineItemsProvider =
+    FutureProvider.autoDispose<List<OfflineItem>>((ref) {
+  return ref.watch(offlineLibraryProvider).items();
 });
 
 /// The event log's client half.

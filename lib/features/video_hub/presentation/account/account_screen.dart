@@ -9,6 +9,7 @@ import '../../domain/account.dart';
 import '../account_provider.dart';
 import '../video_hub_theme.dart';
 import '../widgets/vh_insets.dart';
+import '../downloads_screen.dart';
 import 'premium_request_screen.dart';
 import 'sign_in_sheet.dart';
 
@@ -84,7 +85,16 @@ class AccountScreen extends ConsumerWidget {
               label: s.vhLibraryDownloads,
               subtitle: s.vhLibraryDownloadsHint,
               locked: !account.entitlement.isActive,
-              onTap: () => _notYet(context, s),
+              // OPENS EVEN WHEN LOCKED. `locked` dims the tile to say what
+              // the feature costs; refusing to open it would hide a shelf
+              // that may still have titles on it — a subscription that
+              // lapsed an hour ago has not yet been swept, and a person
+              // should be able to see and delete what is on their own phone.
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const DownloadsScreen(),
+                ),
+              ),
             ),
             if (requests.isNotEmpty) ...<Widget>[
                 const SizedBox(height: VH.s5),
