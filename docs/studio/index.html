@@ -68,6 +68,7 @@ small{color:var(--dim);font-size:12px}
   </div>
 
   <button id="go">Upload and publish</button>
+  <button id="test" style="background:var(--s2);color:var(--fg);border:1px solid var(--line);font-weight:400;margin-top:10px">Check bucket access</button>
 </div>
 
 <div id="msg"></div>
@@ -144,6 +145,24 @@ function put(url, file, bar) {
     x.send(file);
   });
 }
+
+// Asks the server to do the upload the page cannot, so a failure here and a
+// failure in the page together say which of the two possible faults it is.
+$('test').onclick = async () => {
+  $('test').disabled = true;
+  try {
+    say('Checking…', 'ok');
+    const r = await api({ op: 'selftest' });
+    const lines = Object.entries(r).map(([b, v]) =>
+      b + ': ' + (v.ok ? 'WRITABLE (' + v.status + ')'
+                       : 'FAILED ' + (v.status || '') + ' ' + (v.detail || v.error || '')));
+    say(lines.join('\n\n'), Object.values(r).every((v) => v.ok) ? 'ok' : 'err');
+  } catch (e) {
+    say(String(e.message || e), 'err');
+  } finally {
+    $('test').disabled = false;
+  }
+};
 
 $('go').onclick = async () => {
   const v = $('video').files[0];

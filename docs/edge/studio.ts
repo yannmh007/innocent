@@ -276,6 +276,41 @@ Deno.serve(async (req: Request) => {
     }, 200, req);
   }
 
+  // --- selftest: can these credentials actually write to each bucket? ------
+  //
+  // EXISTS BECAUSE THE BROWSER CANNOT TELL YOU. A failed PUT from the page
+  // reports the same "network error" whether the bucket has no CORS policy or
+  // the API token has no write permission on it — R2 does not attach CORS
+  // headers to its error responses, so the browser blocks the reply before
+  // JavaScript can read the status. Two very different faults, one symptom.
+  //
+  // This does the same signed PUT from the server, where there is no CORS at
+  // all. A 200 here with a failure in the page means CORS; a 403 here means
+  // the token. It leaves one tiny object per bucket under `_selftest/`, which
+  // is harmless and identifiable.
+  if (body.op === 'selftest') {
+    const out: Record<string, unknown> = {};
+    for (const bucket of [MEDIA_BUCKET, PUBLIC_BUCKET]) {
+      const key = `_selftest/${crypto.randomUUID()}.txt`;
+      try {
+        const res = await fetch(await presignPut(bucket, key), {
+          method: 'PUT',
+          body: 'studio selftest',
+        });
+        out[bucket] = {
+          status: res.status,
+          ok: res.ok,
+          // R2 explains itself in an XML body. Truncated because the useful
+          // part — the <Code> — is at the front.
+          detail: res.ok ? null : (await res.text()).slice(0, 300),
+        };
+      } catch (e) {
+        out[bucket] = { error: String(e) };
+      }
+    }
+    return json(out, 200, req);
+  }
+
   // --- publish: the rows that make it a title ------------------------------
   //
   // Service role, because `titles` is not writable by `authenticated` and
