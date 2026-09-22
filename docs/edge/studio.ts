@@ -186,8 +186,6 @@ function json(body: unknown, status = 200): Response {
 }
 
 Deno.serve(async (req: Request) => {
-  const url = new URL(req.url);
-
   if (req.method === 'GET') {
     // Filled in at serve time rather than written into the HTML, so the page
     // cannot drift from the project it is deployed in. Neither value is a
@@ -271,7 +269,12 @@ Deno.serve(async (req: Request) => {
       .select('id')
       .single();
 
-    if (titleErr) return json({ error: 'title_insert', detail: titleErr.message }, 500);
+    // `!row` as well as the error: `.single()` types its data as possibly
+    // null, and an error check alone does not narrow it, so `row.id` below
+    // is a type error under the strict settings Deno applies.
+    if (titleErr || !row) {
+      return json({ error: 'title_insert', detail: titleErr?.message ?? 'no row' }, 500);
+    }
 
     // The assets rows drive photo_count / video_count through the triggers
     // already on this table — nothing here counts anything itself.
