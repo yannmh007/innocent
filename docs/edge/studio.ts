@@ -45,7 +45,15 @@ const PUBLIC_BASE = Deno.env.get('R2_PUBLIC_BASE') ??
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
 const SERVICE_KEY = Deno.env.get('SB_SERVICE_KEY') ??
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-const ANON_KEY = Deno.env.get('SB_ANON_KEY') ?? '';
+// SB_ANON_KEY is a secret somebody has to remember to add — self-test.ts has
+// a whole branch for it being missing — whereas SUPABASE_ANON_KEY is injected
+// into every function by the platform. Falling back to it is the same shape as
+// the SERVICE_KEY line above, and for the same reason: without a key here the
+// page cannot build a client and `/auth/v1/user` refuses every token, so the
+// symptom of a missing secret would be a dead sign-in button and a 403 on
+// everything — with nothing on screen to say which secret.
+const ANON_KEY = Deno.env.get('SB_ANON_KEY') ??
+  Deno.env.get('SUPABASE_ANON_KEY') ?? '';
 
 // Who may publish. A comma-separated list of auth.users.id values.
 //
