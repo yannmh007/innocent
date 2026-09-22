@@ -743,7 +743,7 @@ Deno.serve(async (req: Request) => {
   // phone is a thing that happens. Storage is a fraction of a cent per GB per
   // month; an unrecoverable video is a re-upload over a mobile connection.
   // Orphans are findable: an object key with no title_assets row — and now
-// also a folder in R2 with no matching `titles.slug`.
+  // also a folder in R2 with no matching `titles.slug`.
   if (body.op === 'deleteAsset') {
     const id = String(body.id ?? '');
     if (!id) return json({ error: 'no_id' }, 400, req);
