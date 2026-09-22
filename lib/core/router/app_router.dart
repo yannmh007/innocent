@@ -163,12 +163,20 @@ final routerProvider = Provider<GoRouter>((ref) {
           // A signed, expiring stream URL: never write it down. Defaults to
           // false, so an ordinary file route is unaffected.
           final ephemeral = extra?['ephemeral'] as bool? ?? false;
+          // Catalogue identity, and the ONLY thing the player learns about
+          // the hub. Absent for a local file, the vault and music, so those
+          // report nothing — which is the point: a viewer's own files are
+          // not the catalogue's business.
+          final titleId = extra?['titleId'] as String?;
+          final assetId = extra?['assetId'] as String?;
           return PlayerScreen(
             videoUri: uri,
             title: title,
             isPrivate: isPrivate,
             secureScreen: secure,
             ephemeral: ephemeral,
+            titleId: titleId,
+            assetId: assetId,
           );
         },
       ),

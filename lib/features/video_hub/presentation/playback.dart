@@ -107,6 +107,11 @@ Future<void> playMedia(
         // title too, when that is the language the app is in.
         'title': titleOverride ?? content.displayTitle(s.locale.languageCode),
         'secure': content.accessTier == AccessTier.premium,
+        // What the player reports progress against. Two opaque strings: it
+        // never learns what a title is, only what to put in an event.
+        'titleId': content.id,
+        if (source.provider == 'asset' && source.locator.isNotEmpty)
+          'assetId': source.locator,
         // NEVER WRITE THIS URL DOWN.
         //
         // It is a different string every time the same title is opened, so a

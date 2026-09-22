@@ -84,6 +84,11 @@ import 'widgets/track_selection_sheet.dart';
 import 'widgets/volume_indicator.dart';
 import '../../../core/services/secure_screen/secure_screen_service.dart';
 import '../../../core/services/video_player/stream_renewal.dart';
+// The ONE dependency this screen takes on the catalogue feature, and it is a
+// reporter that takes two strings and an event sender. Nothing about titles,
+// entitlement or playback authorisation crosses this line.
+import '../../video_hub/data/api/playback_reporter.dart';
+import '../../video_hub/presentation/video_hub_provider.dart';
 
 class PlayerScreen extends ConsumerStatefulWidget {
   final String videoUri;
@@ -114,6 +119,17 @@ class PlayerScreen extends ConsumerStatefulWidget {
   /// of the age gate instead of behind it.
   final bool ephemeral;
 
+  /// The catalogue title this playback belongs to, or null.
+  ///
+  /// THE ONLY THING THIS SCREEN KNOWS ABOUT THE VIDEO HUB, and it is opaque:
+  /// a string to put in an event, never looked up, never rendered. Null for a
+  /// local file, the vault and music — so a viewer's own library reports
+  /// nothing, which is deliberate and not an oversight. See [PlaybackReporter].
+  final String? titleId;
+
+  /// The album clip, when this is one rather than the title's main film.
+  final String? assetId;
+
   const PlayerScreen({
     super.key,
     required this.videoUri,
@@ -121,6 +137,8 @@ class PlayerScreen extends ConsumerStatefulWidget {
     this.isPrivate = false,
     this.secureScreen = false,
     this.ephemeral = false,
+    this.titleId,
+    this.assetId,
   });
 
   @override
@@ -129,6 +147,13 @@ class PlayerScreen extends ConsumerStatefulWidget {
 
 class _PlayerScreenState extends ConsumerState<PlayerScreen>
     with WidgetsBindingObserver {
+  /// Reports where this viewer got to, for catalogue playback only.
+  ///
+  /// Null for everything else, and every use below is guarded — so a local
+  /// file costs one null check and nothing else.
+  PlaybackReporter? _reporter;
+  Timer? _reportTimer;
+
   bool _videoDisplayEnabled = true;
   final GlobalKey _videoBoundaryKey = GlobalKey();
   final HardwareKeysService _hwKeys = HardwareKeysService();
@@ -260,6 +285,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
   @override
   void initState() {
     super.initState();
+    _startReporting();
     // v1.63.1: seed the subtitle timing from the saved value, so the tune
     // panel opens showing what libmpv is actually doing. See the field's note.
     try {
@@ -763,6 +789,56 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
   /// toward the fix without nagging on every PiP tap.
   static bool _pipPermPromptedThisSession = false;
 
+  /// Begins reporting progress, for catalogue playback only.
+  ///
+  /// NOTHING HAPPENS FOR A LOCAL FILE, and that is the first check rather than
+  /// a filter further down: a viewer's own library is not the catalogue's
+  /// business, and the cheapest way to guarantee that is for the reporter
+  /// never to exist.
+  ///
+  /// The EventSender is read ONCE and held, rather than read from `ref` on
+  /// each tick. Two reasons: the timer outlives at least one rebuild, and
+  /// `dispose()` may not touch `ref` at all — see the long note on
+  /// [deactivate] — so holding the object is what lets the teardown below
+  /// send its last event.
+  void _startReporting() {
+    final id = widget.titleId;
+    if (id == null || id.isEmpty) return;
+    try {
+      _reporter = PlaybackReporter(
+        ref.read(eventSenderProvider),
+        titleId: id,
+        assetId: widget.assetId,
+      );
+    } catch (e) {
+      // Analytics must never be the reason a video will not open, which is
+      // the same rule the subtitle-timing read above follows.
+      PlaybackLog.add('reporter init failed: $e');
+      return;
+    }
+    _reportTimer = Timer.periodic(PlaybackReporter.reportEvery, (_) {
+      if (!mounted) return;
+      _reportProgress();
+    });
+  }
+
+  /// One progress sample, from the ENGINE rather than from the UI state.
+  ///
+  /// `state.position` is rounded to whole seconds for the scrubber and only
+  /// updates when the widget rebuilds, which it does not while the controls
+  /// are hidden — so sampling it would report a position frozen at whenever
+  /// the overlay last faded out.
+  void _reportProgress() {
+    final reporter = _reporter;
+    if (reporter == null) return;
+    try {
+      final svc = ref.read(videoPlayerServiceProvider);
+      reporter.report(svc.position, svc.duration);
+    } catch (e) {
+      PlaybackLog.add('progress report failed: $e');
+    }
+  }
+
   /// v1.61 — the last moment `ref` is legal.
   ///
   /// Riverpod's ConsumerStatefulElement marks itself disposed inside
@@ -772,6 +848,20 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
   /// dispose() never touches `ref` again.
   @override
   void deactivate() {
+    // FIRST, and inside its own guard: this is the last event of the
+    // playback, and it carries where the viewer actually stopped — the single
+    // most valuable row the log collects. Losing it to an unrelated snapshot
+    // failure below would lose the answer to "does this title hold people".
+    try {
+      final svc = ref.read(videoPlayerServiceProvider);
+      _reporter?.finish(position: svc.position, duration: svc.duration);
+    } catch (e) {
+      // Still finish, with whatever the reporter already saw.
+      PlaybackLog.add('final report failed: $e');
+      try {
+        _reporter?.finish();
+      } catch (_) {}
+    }
     try {
       _floatingPipActiveAtTeardown = ref.read(floatingPipProvider).isActive;
       _controllerAtTeardown = ref.read(playerControllerProvider.notifier);
@@ -809,6 +899,10 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
       WidgetsBinding.instance.removeObserver(this);
     } catch (_) {}
     _step('overlayTimer', () => _overlayTimer?.cancel());
+    // The final event has already gone out in deactivate(), where `ref` was
+    // still legal. All that is left here is the timer, which would otherwise
+    // keep firing into a dead widget every thirty seconds.
+    _step('reportTimer', () => _reportTimer?.cancel());
     _step('overlayMsg', () => _overlayMsg.dispose());
     // Release the screen-capture claim taken in initState. Paired exactly:
     // the service counts holders, so a missed release here would leave the
