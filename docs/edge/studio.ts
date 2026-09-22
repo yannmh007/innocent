@@ -1,4 +1,8 @@
-// studio — the two calls behind the upload page.
+// studio — the API behind the operator console.
+//
+// Was two calls (sign, publish) behind an upload form. It is now the whole
+// console: list, get, create, save, addAssets, updateAsset, setPrimary,
+// deleteAsset, deleteTitle, requests, approve, reject, health, selftest.
 //
 // WHY THIS EXISTS. Putting one title into the catalogue used to mean: open the
 // R2 dashboard, upload the video, upload the poster, copy both object keys,
@@ -35,9 +39,9 @@
 // no Authorization header, and the platform's own JWT gate rejects it before
 // this code runs — so every POST from the page would fail at the preflight,
 // with a CORS error that says nothing about tokens. The gate is therefore
-// applied HERE, per operation: `sign` and `publish` both refuse without a
-// token belonging to an operator, and the unauthenticated GET says only that
-// the service is alive.
+// applied HERE, ONCE, as an early return before any op is dispatched — so an
+// op added later is behind it automatically and cannot be forgotten, and the
+// unauthenticated GET says only that the service is alive.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -178,7 +182,8 @@ async function operatorId(req: Request): Promise<string | null> {
 }
 
 // --- object keys ------------------------------------------------------------
-// Matches what is already in the bucket: `v/…` for video, `p/…` for stills.
+// Matches what is already in the bucket: `v/…` for video, `p/…` for stills,
+// and `t/…` for the poster frames the page takes from a video.
 //
 // The name is rebuilt rather than trusted. A phone hands over whatever the
 // file is called — spaces, brackets, Burmese, a leading dot, `../` if someone
@@ -256,23 +261,77 @@ Deno.serve(async (req: Request) => {
     return json({ error: 'bad_json' }, 400, req);
   }
 
+  // ═══════════════════════════════════════════════════════════════════════
+  // THE CONSOLE API
+  //
+  // Every op below runs as the SERVICE ROLE once `operatorId()` above has
+  // said yes. That is deliberate and is the whole security model of this
+  // file: `titles` and `title_assets` are not writable by `authenticated`
+  // and must not become writable, because widening RLS to let any signed-in
+  // user edit the catalogue would be a far larger hole than one function
+  // checking a list of two people.
+  //
+  // So: the gate is ONE function, at the top, and nothing below it re-checks.
+  // If an op is added, it is behind that gate automatically. If the gate is
+  // ever removed, everything below it falls open at once — which is why it is
+  // written as an early return and not as a flag.
+  // ═══════════════════════════════════════════════════════════════════════
+
+  const admin = () => createClient(SUPABASE_URL, SERVICE_KEY);
+
+  // Columns the console reads for ONE title. Not `*`: `locator` is in here on
+  // purpose (the operator must be able to see and fix a wrong key) but that
+  // is exactly why this list is written out — so adding a column to `titles`
+  // never silently starts shipping it to a browser.
+  const TITLE_COLS =
+    'id,title,title_mm,synopsis,category,poster_url,year,rating,quality_label,' +
+    'genres,episode_count,view_count,access_tier,photo_count,video_count,' +
+    'is_featured,locator,provider,published,status,slug,created_at';
+
   // --- sign: hand back one presigned PUT URL -------------------------------
+  //
+  // THREE KINDS, not two. `thumb` is new and is what fixes the album grid: a
+  // video has no picture of its own, so `title_media` used to fall back to the
+  // title's poster, and a title with six clips drew the same image six times.
+  // The page now grabs a frame from each video with a <canvas> and uploads it
+  // here, into the PUBLIC bucket like any other still — a thumbnail is an
+  // advertisement for the clip, not the clip.
   if (body.op === 'sign') {
     const filename = String(body.filename ?? '');
-    const kind = body.kind === 'photo' ? 'photo' : 'video';
     if (!filename) return json({ error: 'no_filename' }, 400, req);
 
-    const bucket = kind === 'photo' ? PUBLIC_BUCKET : MEDIA_BUCKET;
-    const objectKey = safeKey(kind === 'photo' ? 'p' : 'v', filename);
-    const uploadUrl = await presignPut(bucket, objectKey);
+    const kind = body.kind === 'photo' ? 'photo'
+      : body.kind === 'thumb' ? 'thumb'
+      : 'video';
+
+    // SIZE REFUSED HERE, NOT DISCOVERED AT 5 GiB. A single presigned PUT to R2
+    // is capped at 5 GiB; above that it needs multipart, which is a different
+    // protocol (CreateMultipartUpload -> UploadPart x N -> Complete) and is not
+    // built. Without this check the page would upload for forty minutes and
+    // then fail with a CORS error, because R2 does not attach CORS headers to
+    // its error responses — the single worst failure mode available. A refusal
+    // before the first byte costs nothing and says what to do.
+    const size = Number(body.size ?? 0);
+    if (size > 0 && size > 5 * 1024 * 1024 * 1024) {
+      return json({
+        error: 'too_large',
+        detail: 'A single upload is limited to 5 GiB. Split the file or ' +
+          're-encode it smaller; multipart upload is not built yet.',
+      }, 413, req);
+    }
+
+    const bucket = kind === 'video' ? MEDIA_BUCKET : PUBLIC_BUCKET;
+    const prefix = kind === 'video' ? 'v' : kind === 'thumb' ? 't' : 'p';
+    const objectKey = safeKey(prefix, filename);
 
     return json({
-      uploadUrl,
+      uploadUrl: await presignPut(bucket, objectKey),
       bucket,
       objectKey,
+      kind,
       // Only meaningful for the public bucket; the media bucket is reached
       // through request-playback, never by a direct URL.
-      publicUrl: kind === 'photo' ? `${PUBLIC_BASE}/${objectKey}` : null,
+      publicUrl: kind === 'video' ? null : `${PUBLIC_BASE}/${objectKey}`,
     }, 200, req);
   }
 
@@ -311,83 +370,429 @@ Deno.serve(async (req: Request) => {
     return json(out, 200, req);
   }
 
-  // --- publish: the rows that make it a title ------------------------------
-  //
-  // Service role, because `titles` is not writable by `authenticated` and
-  // should not be: the check that matters already happened above, against a
-  // list of two-or-fewer people, and widening RLS to let a signed-in user
-  // write the catalogue would be a far larger hole than this function is.
-  if (body.op === 'publish') {
-    if (!SERVICE_KEY) return json({ error: 'no_service_key' }, 500, req);
+  if (!SERVICE_KEY) return json({ error: 'no_service_key' }, 500, req);
 
+  // --- list: the catalogue, including drafts -------------------------------
+  //
+  // Drafts INCLUDED, which is the point of an operator view: `title_cards` and
+  // every client path filter on `published`, so a half-finished title is
+  // invisible everywhere else. This is the only screen that can see one, and
+  // therefore the only screen from which one can be finished.
+  if (body.op === 'list') {
+    const q = String(body.q ?? '').trim();
+    let sel = admin().from('titles').select(TITLE_COLS)
+      .order('created_at', { ascending: false })
+      .limit(Math.min(Number(body.limit ?? 100), 500));
+
+    if (body.status === 'draft') sel = sel.eq('published', false);
+    if (body.status === 'published') sel = sel.eq('published', true);
+    if (body.category) sel = sel.eq('category', String(body.category));
+    // Quoted: a comma or a parenthesis in the search text would otherwise
+    // rewrite the or-group rather than be matched by it. Stripped rather than
+    // escaped for the same reason api_content_repository.dart strips them —
+    // escaping inside a quoted value varies between PostgREST versions.
+    if (q) {
+      const safe = q.replace(/["\\,()]/g, '');
+      if (safe) sel = sel.or(`title.ilike."*${safe}*",title_mm.ilike."*${safe}*"`);
+    }
+
+    const { data, error } = await sel;
+    if (error) return json({ error: 'list_failed', detail: error.message }, 500, req);
+    return json({ titles: data ?? [] }, 200, req);
+  }
+
+  // --- get: one title and everything attached to it ------------------------
+  if (body.op === 'get') {
+    const id = String(body.id ?? '');
+    if (!id) return json({ error: 'no_id' }, 400, req);
+    const db = admin();
+
+    const { data: title, error: tErr } = await db
+      .from('titles').select(TITLE_COLS).eq('id', id).maybeSingle();
+    if (tErr) return json({ error: 'get_failed', detail: tErr.message }, 500, req);
+    if (!title) return json({ error: 'not_found' }, 404, req);
+
+    const { data: assets, error: aErr } = await db
+      .from('title_assets')
+      .select('id,kind,bucket,object_key,thumb_key,is_primary,is_free,' +
+        'sort_order,label,language,duration_s,width,height,bytes,mime,added_at')
+      .eq('title_id', id)
+      // SORT_ORDER FIRST, NOT KIND. The app asks title_media for
+      // `order=sort_order.asc` and draws photos and clips interleaved in that
+      // one sequence. Grouping by kind here would show the operator a list
+      // that is not the list they are reordering — every drag would land
+      // somewhere other than where it looked like it would.
+      .order('sort_order').order('kind');
+    if (aErr) return json({ error: 'assets_failed', detail: aErr.message }, 500, req);
+
+    return json({
+      title,
+      // The page needs the base to draw a thumbnail from an object key. It is
+      // public information — it is already compiled into every APK — but
+      // sending it beats hard-coding the same string in a second file where
+      // the two can drift.
+      publicBase: PUBLIC_BASE,
+      assets: assets ?? [],
+    }, 200, req);
+  }
+
+  // --- create: a new title, with as many files as were uploaded ------------
+  //
+  // `publish` is kept as an alias because an operator's browser may still be
+  // holding the previous version of the page from cache, and a stale page that
+  // silently stops working is worse than one that looks old.
+  if (body.op === 'create' || body.op === 'publish') {
     const title = String(body.title ?? '').trim();
     if (!title) return json({ error: 'no_title' }, 400, req);
 
-    const video = body.video as { bucket: string; objectKey: string } | null;
-    if (!video?.objectKey) return json({ error: 'no_video' }, 400, req);
+    // The page sends a flat list now. The old page sent `video` and `photo`
+    // singletons; both shapes are accepted so neither version of the page is
+    // broken by a deploy.
+    const incoming = Array.isArray(body.assets)
+      ? (body.assets as Record<string, unknown>[])
+      : [
+          ...(body.video ? [{ ...(body.video as object), kind: 'video' }] : []),
+          ...(body.photo ? [{ ...(body.photo as object), kind: 'photo' }] : []),
+        ];
+    if (incoming.length === 0) return json({ error: 'no_assets' }, 400, req);
 
-    const photo = body.photo as { objectKey: string; publicUrl: string } | null;
-    const admin = createClient(SUPABASE_URL, SERVICE_KEY);
+    const db = admin();
+    const wantPublished = body.publish === true;
 
-    const { data: row, error: titleErr } = await admin
-      .from('titles')
-      .insert({
-        title,
-        title_mm: String(body.titleMm ?? '').trim() || null,
-        synopsis: String(body.synopsis ?? '').trim() || null,
-        category: String(body.category ?? 'movies'),
-        access_tier: body.free === true ? 'free' : 'premium',
-        // `locator` is what request-playback signs. It must be the object key
-        // inside the media bucket, with no leading slash and no bucket name.
-        locator: video.objectKey,
-        provider: 'r2',
-        poster_url: photo?.publicUrl ?? null,
-        // Draft until the operator says otherwise. Publishing by default is
-        // how a half-uploaded title reaches a paying customer.
-        status: body.publish === true ? 'published' : 'draft',
-        published: body.publish === true,
-      })
-      .select('id')
-      .single();
+    // `locator` and `poster_url` are MAINTAINED DENORMALISATIONS: a trigger on
+    // title_assets rewrites both from whichever asset is primary. They are set
+    // here as well, rather than left null for the trigger, because the trigger
+    // fires on the asset insert that happens a line later and a row that is
+    // briefly published with no locator is a row a client can briefly fetch.
+    const firstVideo = incoming.find((a) => normKind(a.kind) !== 'photo');
+    const firstPhoto = incoming.find((a) => normKind(a.kind) === 'photo');
+
+    const { data: row, error: titleErr } = await db.from('titles').insert({
+      title,
+      title_mm: str(body.titleMm),
+      synopsis: str(body.synopsis),
+      category: String(body.category ?? 'movies'),
+      year: num(body.year),
+      rating: num(body.rating),
+      quality_label: str(body.quality),
+      genres: arr(body.genres),
+      episode_count: num(body.episodes),
+      access_tier: body.free === true ? 'free' : 'premium',
+      is_featured: body.featured === true,
+      locator: firstVideo ? String(firstVideo.objectKey ?? '') : null,
+      provider: 'r2',
+      poster_url: firstPhoto ? `${PUBLIC_BASE}/${firstPhoto.objectKey}` : null,
+      // Draft until the operator says otherwise. Publishing by default is how
+      // a half-uploaded title reaches a paying customer.
+      status: wantPublished ? 'published' : 'draft',
+      published: wantPublished,
+    }).select('id').single();
 
     // `!row` as well as the error: `.single()` types its data as possibly
     // null, and an error check alone does not narrow it, so `row.id` below
-    // is a type error under the strict settings Deno applies.
+    // would be a type error under the strict settings Deno applies.
     if (titleErr || !row) {
       return json({ error: 'title_insert', detail: titleErr?.message ?? 'no row' }, 500, req);
     }
 
-    // The assets rows drive photo_count / video_count through the triggers
-    // already on this table — nothing here counts anything itself.
-    const assets: Record<string, unknown>[] = [{
-      title_id: row.id,
-      kind: 'video',
-      bucket: video.bucket ?? MEDIA_BUCKET,
-      object_key: video.objectKey,
-      is_primary: true,
-      is_free: body.free === true,
-      sort_order: 0,
-    }];
-    if (photo?.objectKey) {
-      assets.push({
-        title_id: row.id,
-        kind: 'photo',
-        bucket: PUBLIC_BUCKET,
-        object_key: photo.objectKey,
-        is_primary: true,
-        is_free: true, // A poster is the advertisement; it is never withheld.
-        sort_order: 0,
-      });
+    // EXACTLY ONE PRIMARY PHOTO AND ONE PRIMARY VIDEO, chosen here when the
+    // page did not choose. The primary photo is what the trigger writes into
+    // `poster_url` and the primary video is what it writes into `locator`, so
+    // a title created with neither has a card the app cannot draw and a film
+    // request-playback cannot sign. A partial unique index refuses a SECOND
+    // primary, which is why this marks at most one of each rather than all.
+    const rows = incoming.map((a, i) => assetRow(String(row.id), a, i));
+    if (!rows.some((r) => r.kind === 'photo' && r.is_primary)) {
+      const first = rows.find((r) => r.kind === 'photo');
+      if (first) first.is_primary = true;
+    }
+    if (!rows.some((r) => r.kind !== 'photo' && r.is_primary)) {
+      const first = rows.find((r) => r.kind !== 'photo');
+      if (first) first.is_primary = true;
     }
 
-    const { error: assetErr } = await admin.from('title_assets').insert(assets);
-    if (assetErr) return json({ error: 'asset_insert', detail: assetErr.message }, 500, req);
+    const ins = await db.from('title_assets').insert(rows);
+    if (ins.error) {
+      return json({ error: 'asset_insert', detail: ins.error.message }, 500, req);
+    }
 
-    return json(
-      { id: row.id, title, status: body.publish === true ? 'published' : 'draft' },
-      200, req,
-    );
+    return json({ id: row.id, title, status: wantPublished ? 'published' : 'draft' }, 200, req);
+  }
+
+  // --- save: edit everything about an existing title -----------------------
+  //
+  // PATCH SEMANTICS, not replace: only keys actually present in the request
+  // are written. A page that sent the whole row back would overwrite a field
+  // it did not render — and the first field to be forgotten would be
+  // `view_count`, which nothing should ever be able to reset by accident.
+  if (body.op === 'save') {
+    const id = String(body.id ?? '');
+    if (!id) return json({ error: 'no_id' }, 400, req);
+
+    const p = (body.patch ?? {}) as Record<string, unknown>;
+    const upd: Record<string, unknown> = {};
+    if ('title' in p) upd.title = String(p.title ?? '').trim();
+    if ('title_mm' in p) upd.title_mm = str(p.title_mm);
+    if ('synopsis' in p) upd.synopsis = str(p.synopsis);
+    if ('category' in p) upd.category = String(p.category ?? 'movies');
+    if ('year' in p) upd.year = num(p.year);
+    if ('rating' in p) upd.rating = num(p.rating);
+    if ('quality_label' in p) upd.quality_label = str(p.quality_label);
+    if ('genres' in p) upd.genres = arr(p.genres);
+    if ('episode_count' in p) upd.episode_count = num(p.episode_count);
+    if ('access_tier' in p) {
+      upd.access_tier = p.access_tier === 'free' ? 'free' : 'premium';
+    }
+    if ('is_featured' in p) upd.is_featured = p.is_featured === true;
+    if ('locator' in p) upd.locator = str(p.locator);
+    if ('published' in p) {
+      upd.published = p.published === true;
+      // `status` and `published` are two columns saying one thing, and the
+      // catalogue_health view reads `status` while every client path reads
+      // `published`. Writing one without the other is how they disagree.
+      upd.status = p.published === true ? 'published' : 'draft';
+    }
+    if (Object.keys(upd).length === 0) return json({ error: 'empty_patch' }, 400, req);
+    if ('title' in upd && !upd.title) return json({ error: 'no_title' }, 400, req);
+
+    const { error } = await admin().from('titles').update(upd).eq('id', id);
+    if (error) return json({ error: 'save_failed', detail: error.message }, 500, req);
+    return json({ ok: true, id, changed: Object.keys(upd) }, 200, req);
+  }
+
+  // --- addAssets: more files onto a title that already exists --------------
+  //
+  // THE OPERATION THE OLD PAGE COULD NOT DO AT ALL, and the reason a card
+  // could never hold more than one video and one photo. The database has
+  // supported many since the title_assets table was written; only the uploader
+  // did not.
+  if (body.op === 'addAssets') {
+    const id = String(body.titleId ?? '');
+    const incoming = Array.isArray(body.assets)
+      ? (body.assets as Record<string, unknown>[]) : [];
+    if (!id) return json({ error: 'no_id' }, 400, req);
+    if (incoming.length === 0) return json({ error: 'no_assets' }, 400, req);
+
+    const db = admin();
+    // Appended AFTER whatever is already there. Reading the current maximum
+    // rather than counting rows: a deleted asset leaves a gap, and counting
+    // would hand the new file a sort_order that is already taken.
+    const { data: last } = await db.from('title_assets')
+      .select('sort_order').eq('title_id', id)
+      .order('sort_order', { ascending: false }).limit(1).maybeSingle();
+    const base = (last?.sort_order ?? -1) + 1;
+
+    const { error } = await db.from('title_assets')
+      .insert(incoming.map((a, i) => assetRow(id, a, base + i)));
+    if (error) return json({ error: 'asset_insert', detail: error.message }, 500, req);
+    return json({ ok: true, added: incoming.length }, 200, req);
+  }
+
+  // --- updateAsset: order, label, free-preview, thumbnail, dimensions ------
+  if (body.op === 'updateAsset') {
+    const id = String(body.id ?? '');
+    if (!id) return json({ error: 'no_id' }, 400, req);
+
+    const p = (body.patch ?? {}) as Record<string, unknown>;
+    const upd: Record<string, unknown> = {};
+    if ('sort_order' in p) upd.sort_order = num(p.sort_order) ?? 0;
+    if ('is_free' in p) upd.is_free = p.is_free === true;
+    if ('label' in p) upd.label = str(p.label);
+    if ('language' in p) upd.language = str(p.language);
+    if ('thumb_key' in p) upd.thumb_key = str(p.thumb_key);
+    if ('duration_s' in p) upd.duration_s = num(p.duration_s);
+    if ('width' in p) upd.width = num(p.width);
+    if ('height' in p) upd.height = num(p.height);
+    if (Object.keys(upd).length === 0) return json({ error: 'empty_patch' }, 400, req);
+
+    const { error } = await admin().from('title_assets').update(upd).eq('id', id);
+    if (error) return json({ error: 'update_failed', detail: error.message }, 500, req);
+    return json({ ok: true, id }, 200, req);
+  }
+
+  // --- setPrimary: which photo is the card, which video is the film --------
+  //
+  // Through the RPC that already exists rather than two UPDATEs from here.
+  // `set_primary_asset()` clears the old primary and sets the new one inside
+  // one statement, and a partial unique index refuses a second primary — so
+  // doing it by hand from here would be the one path that could leave two.
+  if (body.op === 'setPrimary') {
+    const id = String(body.id ?? '');
+    if (!id) return json({ error: 'no_id' }, 400, req);
+    const { error } = await admin().rpc('set_primary_asset', { asset_id: id });
+    if (error) return json({ error: 'set_primary_failed', detail: error.message }, 500, req);
+    return json({ ok: true, id }, 200, req);
+  }
+
+  // --- deleteAsset / deleteTitle -------------------------------------------
+  //
+  // THE R2 OBJECT IS LEFT WHERE IT IS, on purpose. Deleting a row is
+  // recoverable — the file is still in the bucket and can be pointed at again.
+  // Deleting the object is not, and an operator tapping the wrong row on a
+  // phone is a thing that happens. Storage is a fraction of a cent per GB per
+  // month; an unrecoverable video is a re-upload over a mobile connection.
+  // Orphans are findable: an object key with no title_assets row.
+  if (body.op === 'deleteAsset') {
+    const id = String(body.id ?? '');
+    if (!id) return json({ error: 'no_id' }, 400, req);
+    const { error } = await admin().from('title_assets').delete().eq('id', id);
+    if (error) return json({ error: 'delete_failed', detail: error.message }, 500, req);
+    return json({ ok: true, id }, 200, req);
+  }
+
+  if (body.op === 'deleteTitle') {
+    const id = String(body.id ?? '');
+    if (!id) return json({ error: 'no_id' }, 400, req);
+    // The name has to be typed back in the page before this is called. Not a
+    // security measure — the caller is already an operator — but the one
+    // interaction that reliably separates "delete this" from "I meant the row
+    // above".
+    if (String(body.confirm ?? '') !== 'DELETE') {
+      return json({ error: 'not_confirmed' }, 400, req);
+    }
+    // title_assets cascades on the foreign key; title_views does not and is
+    // deliberately left, because a deleted title's view history is still a
+    // true record of what happened.
+    const { error } = await admin().from('titles').delete().eq('id', id);
+    if (error) return json({ error: 'delete_failed', detail: error.message }, 500, req);
+    return json({ ok: true, id }, 200, req);
+  }
+
+  // --- the premium approval queue ------------------------------------------
+  //
+  // `docs/movies_gaps.md` §2 calls the missing operator side BLOCKING — "until
+  // this exists, the product cannot take money". Every piece of it was already
+  // in the database: the `pending_requests` view, `approve_request(id, days)`
+  // and `reject_request(id, note)`. Nothing called them. These three ops are
+  // the whole fix.
+  //
+  // The approval writes the subscription row and nothing else does — that is
+  // the rule from premium_backend_spec.md and it is why this goes through the
+  // RPC rather than inserting into `subscriptions` from here.
+  if (body.op === 'requests') {
+    const { data, error } = await admin()
+      .from('pending_requests').select('*').order('submitted_at');
+    if (error) return json({ error: 'requests_failed', detail: error.message }, 500, req);
+    return json({ requests: data ?? [] }, 200, req);
+  }
+
+  if (body.op === 'approve') {
+    const id = String(body.id ?? '');
+    const days = Math.max(1, Math.min(Number(body.days ?? 365), 3650));
+    if (!id) return json({ error: 'no_id' }, 400, req);
+    const { error } = await admin()
+      .rpc('approve_request', { p_request_id: id, p_days: days });
+    if (error) return json({ error: 'approve_failed', detail: error.message }, 500, req);
+    return json({ ok: true, id, days }, 200, req);
+  }
+
+  if (body.op === 'reject') {
+    const id = String(body.id ?? '');
+    if (!id) return json({ error: 'no_id' }, 400, req);
+    const { error } = await admin().rpc('reject_request', {
+      p_request_id: id,
+      p_note: str(body.note) ?? 'rejected by operator',
+    });
+    if (error) return json({ error: 'reject_failed', detail: error.message }, 500, req);
+    return json({ ok: true, id }, 200, req);
+  }
+
+  // --- health: the view that has existed unread since the schema was written
+  if (body.op === 'health') {
+    const { data, error } = await admin().from('catalogue_health').select('*');
+    if (error) return json({ error: 'health_failed', detail: error.message }, 500, req);
+    return json({ rows: data ?? [] }, 200, req);
   }
 
   return json({ error: 'unknown_op' }, 400, req);
 });
+
+// --- shaping what the browser sent -----------------------------------------
+//
+// Below the handler, not inside it, because these are pure and a reader
+// chasing an op should not have to step over them first.
+
+/// Empty string and whitespace become NULL, never ''.
+///
+/// A column holding '' and a column holding NULL look identical in the page
+/// and behave differently everywhere else: `title_mm = ''` renders as a
+/// nameless card, while NULL falls back to the English title. The app has a
+/// guard for exactly this (`displayTitle` trims before deciding) — but a guard
+/// in the client is not a reason to write bad rows.
+function str(v: unknown): string | null {
+  const s = String(v ?? '').trim();
+  return s === '' ? null : s;
+}
+
+function num(v: unknown): number | null {
+  if (v === null || v === undefined || v === '') return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+/// Accepts an array or a comma-separated string, because the tag field in the
+/// page is a text input and a paste from anywhere is comma-separated.
+function arr(v: unknown): string[] {
+  const raw = Array.isArray(v) ? v.map((x) => String(x))
+    : String(v ?? '').split(',');
+  const out: string[] = [];
+  for (const item of raw) {
+    const s = item.trim();
+    // De-duplicated case-insensitively: 'Drama' and 'drama' would otherwise
+    // both reach the filter bar as separate chips selecting the same titles.
+    if (s && !out.some((o) => o.toLowerCase() === s.toLowerCase())) out.push(s);
+  }
+  return out;
+}
+
+/// The four kinds `title_assets` accepts from this page.
+///
+/// Anything unrecognised becomes 'clip' rather than being rejected: a clip is
+/// the kind with the fewest consequences — it is playable, it is not the
+/// poster, and it is not the main film — so a future page sending a kind this
+/// version has not heard of degrades instead of failing.
+function normKind(v: unknown): string {
+  const k = String(v ?? '').toLowerCase();
+  return k === 'photo' || k === 'video' || k === 'trailer' ? k : 'clip';
+}
+
+/// One `title_assets` row from what the page measured and uploaded.
+///
+/// THE DIMENSIONS ARE THE POINT. They were null on every asset in the
+/// catalogue, and two things downstream need them: the app's MediaMosaic sizes
+/// each row of tiles from the aspect ratios in it — with nothing to read it
+/// gives a portrait clip the same shape as a landscape still — and the
+/// duration badge in the corner of a video tile simply never draws. The
+/// browser has all three for free: a <video> exposes duration, videoWidth and
+/// videoHeight once `loadedmetadata` fires, and an <img> exposes
+/// naturalWidth/naturalHeight. No ffmpeg, no server work, no second pass.
+function assetRow(
+  titleId: string,
+  a: Record<string, unknown>,
+  order: number,
+): Record<string, unknown> {
+  const kind = normKind(a.kind);
+  const isPhoto = kind === 'photo';
+  return {
+    title_id: titleId,
+    kind,
+    bucket: isPhoto ? PUBLIC_BUCKET : MEDIA_BUCKET,
+    object_key: String(a.objectKey ?? ''),
+    thumb_key: str(a.thumbKey),
+    // `is_primary` is set only when the page asks. The partial unique index
+    // refuses a second primary per title, so sending it on every row of a
+    // twelve-file upload would fail the whole insert.
+    is_primary: a.isPrimary === true,
+    // A poster is the advertisement; it is never withheld. A video follows the
+    // title's tier unless the operator marked it a free preview.
+    is_free: isPhoto ? true : a.isFree === true,
+    sort_order: num(a.sortOrder) ?? order,
+    label: str(a.label),
+    language: str(a.language),
+    duration_s: num(a.durationS),
+    width: num(a.width),
+    height: num(a.height),
+    bytes: num(a.bytes),
+    mime: str(a.mime),
+  };
+}

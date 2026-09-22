@@ -5,7 +5,44 @@ The API:  `docs/edge/studio.ts`, deployed as the `studio` edge function.
 
 Pick files, type a name, tap Publish. The file goes from the phone straight
 to R2 — never through the function — so the only size ceiling is R2's own,
-5 GiB in a single PUT.
+5 GiB in a single PUT. Above that the function refuses before the first byte
+rather than letting an hour of uploading end in a CORS error: multipart is
+not built. See `docs/movies_v3_plan.md` §3.3.
+
+---
+
+## What the console can do
+
+Four tabs, all behind the operator check in `studio.ts`.
+
+**Catalogue** — every title including drafts, which no other surface can see.
+Search, filter by status, tap through to the editor.
+
+**Title editor** — the whole row: names in both languages, description,
+category, tags/genres, year, rating, quality, episodes, tier, featured,
+published. Plus the media list: reorder, choose the primary photo (the card
+image) and the primary video (what the Play path resolves to), mark a clip a
+free preview, delete, and add more files to a title that already exists.
+
+**Requests** — the premium approval queue. `docs/movies_gaps.md` §2 called
+this launch-blocking; `approve_request()` and `reject_request()` had existed
+in the database for weeks with nothing calling them. **An approval here is
+what writes the subscription. Nothing else does.**
+
+**Health** — the `catalogue_health` view: which titles have no video, no
+poster, or no assets.
+
+### The uploader measures every file before it sends it
+
+Duration, width and height were null on every asset in the catalogue, and two
+things downstream need them — the app's media mosaic sizes each row of tiles
+from the aspect ratios in it, and a video tile's duration badge cannot draw
+without a duration. The browser has all three for free. It also takes a poster
+frame from each video with a `<canvas>` and uploads it under `t/`, which is
+what stops six clips in one title from all showing the same picture.
+
+Three files upload at a time. Not twelve: one slow pipe divided twelve ways
+finishes nothing inside the presigned URL's one-hour life.
 
 ---
 
