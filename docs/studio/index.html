@@ -112,6 +112,7 @@
     <button class="tab" data-tab="catalogue" aria-selected="true">Catalogue</button>
     <button class="tab" data-tab="new" aria-selected="false">New title</button>
     <button class="tab" data-tab="requests" aria-selected="false">Requests</button>
+    <button class="tab" data-tab="stats" aria-selected="false">Signals</button>
     <button class="tab" data-tab="health" aria-selected="false">Health</button>
   </div>
 </header>
@@ -149,7 +150,9 @@
     <div class="card">
       <h2>Media</h2>
       <small>Order is what the app draws. The primary photo is the card image;
-        the primary video is what the Play path resolves to.</small>
+        the primary video is what the Play path resolves to.<br>
+        R2 folder: <code id="folderName"></code> — in both buckets. Renaming
+        the title does not move the files.</small>
       <div id="assetList" style="margin-top:12px"></div>
       <div class="drop" id="addDrop">
         Add more videos or photos
@@ -195,6 +198,17 @@
       <h2>Premium requests</h2>
       <small>Approving writes the subscription. Nothing else does.</small>
       <div id="reqList" style="margin-top:12px"></div>
+    </div>
+  </section>
+
+  <!-- ── STATS ─────────────────────────────────────────────────────────── -->
+  <section id="tab-stats" hidden>
+    <div class="card">
+      <h2>Last 7 days</h2>
+      <small>The event log is designed to be invisible — nothing on screen
+        changes whether it works or not. This tab is the only way to tell a
+        working log from a dead one.</small>
+      <div id="statsBody" style="margin-top:12px"></div>
     </div>
   </section>
 
@@ -361,7 +375,14 @@ function put(url, blob, onProgress) {
 }
 
 /// Measures, presigns, uploads, and returns the asset descriptor the API wants.
-async function uploadOne(file, onProgress) {
+///
+/// `folder` is the title's own prefix in R2 — one folder per card, in both
+/// buckets, so everything belonging to Solar sits under `solar/` instead of
+/// being scattered through one flat list of every video ever uploaded. It is
+/// decided once per upload run and never changes afterwards: renaming a title
+/// does not move its files, because every object key already names the old
+/// prefix. See the note above safeKey() in studio.ts.
+async function uploadOne(file, onProgress, folder) {
   const isVideo = file.type.startsWith('video');
   const meta = await measure(file);
 
@@ -370,6 +391,7 @@ async function uploadOne(file, onProgress) {
     kind: isVideo ? 'video' : 'photo',
     filename: file.name,
     size: file.size,
+    folder,
   });
   await put(sig.uploadUrl, file, onProgress);
 
@@ -392,6 +414,7 @@ async function uploadOne(file, onProgress) {
         op: 'sign', kind: 'thumb',
         filename: file.name.replace(/\.[^.]+$/, '') + '.jpg',
         size: meta.thumb.size,
+        folder,
       });
       await put(t.uploadUrl, meta.thumb);
       out.thumbKey = t.objectKey;
@@ -405,7 +428,7 @@ async function uploadOne(file, onProgress) {
 /// BOUNDED CONCURRENCY, not Promise.all. A phone on a Myanmar mobile network
 /// asked to upload twelve files at once divides one slow pipe twelve ways and
 /// finishes none of them inside the presigned URL's one-hour life.
-async function uploadAll(files, container) {
+async function uploadAll(files, container, folder) {
   const rows = files.map((f) => {
     const bar = el('i');
     container.append(el('div', { className: 'row tight' }, [
@@ -424,7 +447,7 @@ async function uploadAll(files, container) {
       const i = next++;
       out[i] = await uploadOne(files[i], (p) => {
         rows[i].style.width = Math.round(p * 100) + '%';
-      });
+      }, folder);
       rows[i].style.width = '100%';
     }
   };
@@ -520,7 +543,7 @@ function readForm(prefix) {
 }
 
 // ── tabs ─────────────────────────────────────────────────────────────────
-const TABS = ['catalogue', 'new', 'requests', 'health', 'editor'];
+const TABS = ['catalogue', 'new', 'requests', 'stats', 'health', 'editor'];
 function show(tab) {
   for (const t of TABS) $('tab-' + t).hidden = (t !== tab);
   for (const b of document.querySelectorAll('.tab')) {
@@ -529,6 +552,7 @@ function show(tab) {
   clear();
   if (tab === 'catalogue') loadList();
   if (tab === 'requests') loadRequests();
+  if (tab === 'stats') loadStats();
   if (tab === 'health') loadHealth();
 }
 for (const b of document.querySelectorAll('.tab')) {
@@ -591,6 +615,9 @@ async function openEditor(id) {
     current = await api({ op: 'get', id });
     clear();
     buildForm($('editFields'), 'e_', current.title);
+    // Named on screen because it is what an operator types into the R2
+    // console to find these files, and nothing else in the UI reveals it.
+    $('folderName').textContent = current.folder + '/';
     $('delConfirm').value = '';
     drawAssets();
   } catch (e) { say('bad', String(e.message || e)); }
@@ -734,7 +761,9 @@ $('addFiles').onchange = async () => {
   host.textContent = '';
   try {
     say('info', 'Uploading ' + files.length + ' file(s)…');
-    const assets = await uploadAll(files, host);
+    // `current.folder` comes from the `get` that opened this editor, which
+    // also backfills one for a title created before foldering existed.
+    const assets = await uploadAll(files, host, current.folder);
     await api({ op: 'addAssets', titleId: current.title.id, assets });
     $('addFiles').value = '';
     host.textContent = '';
@@ -809,10 +838,15 @@ $('create').onclick = async () => {
   const host = $('newPicked');
   host.textContent = '';
   try {
-    say('info', 'Uploading ' + files.length + ' file(s)…');
-    const assets = await uploadAll(files, host);
+    // RESERVED BEFORE THE FIRST BYTE. The object keys have to carry the
+    // folder, and they are fixed at sign time — which is before the `titles`
+    // row exists to read a slug back from.
+    const { folder } = await api({ op: 'folder', title: f.title });
+    say('info', 'Uploading ' + files.length + ' file(s) into ' + folder + '/…');
+    const assets = await uploadAll(files, host, folder);
     const res = await api({
       op: 'create',
+      folder,
       title: f.title, titleMm: f.title_mm, synopsis: f.synopsis,
       category: f.category, year: f.year, rating: f.rating,
       quality: f.quality_label, genres: f.genres, episodes: f.episode_count,
@@ -875,6 +909,59 @@ async function loadRequests() {
         ]),
       ]));
     }
+  } catch (e) { say('bad', String(e.message || e)); }
+}
+
+// ── stats ────────────────────────────────────────────────────────────────
+async function loadStats() {
+  const host = $('statsBody');
+  host.textContent = '';
+  try {
+    const st = await api({ op: 'stats' });
+
+    const section = (heading, rows, note) => {
+      host.append(el('div', { style: 'margin-top:14px' }, [
+        el('div', { className: 't' }, text(heading)),
+        note ? el('small', {}, text(note)) : null,
+      ]));
+      if (!rows.length) {
+        host.append(el('small', {}, text('nothing yet')));
+        return;
+      }
+      const t = el('table');
+      for (const [k, v] of rows) {
+        t.append(el('tr', {}, [el('td', {}, text(k)), el('td', {}, text(v))]));
+      }
+      host.append(t);
+    };
+
+    const pairs = (o) => Object.entries(o || {}).sort((a, b) => b[1] - a[1]);
+
+    section('Events by kind', pairs(st.kinds),
+      st.capped ? 'capped at 5000 — the real number is higher' : null);
+
+    // WHY THIS ONE IS WORTH LOOKING AT FIRST. `vpn_suspect` means the
+    // connection claimed one country while the phone's clock and language
+    // said Myanmar — the case that would otherwise push a VPN user into
+    // somebody else's recommendations. All rows reading "unknown" means
+    // cf-ipcountry is not reaching this project at all, which is the one
+    // assumption in migration 014 that no SQL console can check.
+    section('Geography', pairs(st.geo_trust),
+      'vpn_suspect = the phone says Myanmar and the connection does not. ' +
+      'All "unknown" = no country header is arriving.');
+
+    section('Audience (what a recommender groups by)', pairs(st.audience));
+
+    section('Searches that found nothing',
+      (st.search_gaps || []).map((g) => [g.q, g.misses]),
+      'The audience naming what the catalogue is missing, in their own words.');
+
+    section('Trending (time-decayed x completion)',
+      (st.trending || []).map((t) => [t.title_id, t.score]),
+      'Not wired into the app yet — it needs about two weeks of events ' +
+      'before it ranks anything but noise.');
+
+    if (st.error) say('bad', st.error);
   } catch (e) { say('bad', String(e.message || e)); }
 }
 

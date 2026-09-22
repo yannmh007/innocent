@@ -414,10 +414,10 @@ Ordered by *what cannot be recovered if delayed*, then by cost.
 
 | # | Work | Why here | Ships |
 |---|---|---|---|
-| 1 | `title_media` includes `video`; studio measures duration/width/height; studio grabs video thumbnails | One view line + browser-side metadata. Makes the album screen that already exists actually appear. Hours, not days. | server + studio only |
-| 2 | **Event log live**, client sender batching every 30s | Cannot be backfilled. Every day costs data permanently. Nothing needs to read it yet. | client + server |
-| 3 | Admin console: catalogue list, title editor, media manager, multi-upload | Unblocks everything editorial, and until it exists every schema addition below is unreachable | studio only |
-| 4 | Premium approval queue in the console | `movies_gaps.md` calls this launch-blocking; the SQL already exists | studio only |
+| 1 | ~~`title_media` includes `video`; studio measures duration/width/height; studio grabs video thumbnails~~ ✅ 22 Sep — **plus the permission fault in §6b, which was the larger half** | One view line + browser-side metadata. Makes the album screen that already exists actually appear. Hours, not days. | server + studio only |
+| 2 | ~~**Event log live**, client sender batching every 30s~~ ✅ 22 Sep | Cannot be backfilled. Every day costs data permanently. Nothing needs to read it yet. | client + server |
+| 3 | ~~Admin console: catalogue list, title editor, media manager, multi-upload~~ ✅ 22 Sep | Unblocks everything editorial, and until it exists every schema addition below is unreachable | studio only |
+| 4 | ~~Premium approval queue in the console~~ ✅ 22 Sep | `movies_gaps.md` calls this launch-blocking; the SQL already exists | studio only |
 | 5 | Tags + trigram search | Needs #3 to enter tags | server + small client |
 | 6 | Server-owned categories | Client widening — must ship before the table is relied on | client first |
 | 7 | Hide the Play button when a title has an album | One conditional. Depends on #1 making albums real. | client |
@@ -430,15 +430,133 @@ no way to play anything at all.
 
 ---
 
+## 6b. WHAT THE FIRST ROUND OF WORK ACTUALLY FOUND
+
+Written 22 Sep, after §6's items 1-4 shipped. Two things here were not in the
+plan above because nobody knew them.
+
+### The album had TWO causes, and each one hid the other
+
+§1 blamed the `kind = 'video'` exclusion in `title_media`. That was real and
+migration 013 fixed it. It was also not enough.
+
+`title_media` was created `with (security_invoker = true)` in migrations 006
+and 009, which means the view runs as the CALLER. `anon` has no SELECT grant
+on `title_assets`, so:
+
+```
+set local role anon;
+select count(*) from public.title_media;
+ERROR:  permission denied for table title_assets
+```
+
+**The album has never loaded for anybody, on any build.**
+`ApiContentRepository._album()` catches its own failures and returns an empty
+list on purpose — "a title whose extras cannot be loaded should still play" —
+so the fault never appeared as an error. The screen just drew no grid.
+
+Fixing either cause alone would have changed nothing visible. That is worth
+remembering the next time something is "obviously" one bug.
+
+It was found by accident: migration 013's `create or replace view` dropped the
+`security_invoker` option, because CREATE OR REPLACE VIEW resets reloptions
+rather than preserving them, and the Supabase linter flagged the result. The
+lint looked like a regression to undo; undoing it is what produced the error
+above.
+
+**The fix is not the GRANT the hint suggests.** `title_assets.object_key` is
+the address of every private video in the media bucket. Migration 013b makes
+the owner-rights choice explicit instead, with the reasoning written into the
+file so that nobody "restores" 006's clause and silently empties the album
+again.
+
+### The R2 layout, and why the folder is frozen
+
+One folder per title, in both buckets:
+
+```
+innocent-media/<slug>/video/20260922-solar-a1b2c3d4.mp4
+innocent-public/<slug>/photo/20260922-poster-e5f6a7b8.jpg
+innocent-public/<slug>/thumb/20260922-clip-01-c9d0e1f2.jpg
+```
+
+The two buckets stay two: that split is the security boundary (private video
+behind a signed URL, public stills so the catalogue can draw itself), not an
+organisational one. Within each, everything belonging to one card is under one
+prefix, so finding "the third clip of Solar" is one click in the R2 console
+instead of a database query against a flat list of every video ever uploaded.
+
+**The folder is frozen at creation and a rename does not move it.** Every
+`title_assets.object_key` and `titles.locator` names the prefix; a rename that
+rewrote R2 would have to copy every object and leave the catalogue broken in
+between. The folder is an address; `titles.title` is the label.
+
+Legacy `v/…` and `p/…` keys are left exactly where they are — they are still
+valid keys and everything resolves them in full. A title created before
+foldering is given a folder the first time it is opened in the console, so
+later uploads land in the right place without a backfill migration.
+
+### Geography: what was decided and why it is not the IP
+
+The concern raised was right: a VPN makes `cf-ipcountry` lie, and an interest
+model fed a lie recommends the wrong things. The raw address is the wrong
+instrument for it, on two counts. It does not actually detect a VPN — telling
+a Singapore exit node from a real Singapore viewer needs a commercial
+IP-intelligence feed, not the address. And on an adult catalogue, a table
+joining viewing history to IP addresses is the highest-liability object in the
+system and the one thing in it that could identify a real person.
+
+So three things are stored instead, and between them they do everything the
+request was about:
+
+| | |
+|---|---|
+| `country` | from `cf-ipcountry`. Free, and wrong under a VPN — which is the point of the other two |
+| `tz_offset_min`, `locale` | reported by the DEVICE. **A VPN does not change a phone's clock or its language.** A device at UTC+06:30 with a Burmese locale is a Myanmar viewer whatever the exit node claims |
+| `ip_hash` | HMAC-SHA256 of the address with a rotating secret. Two events from one network match; the address cannot be recovered. This is what answers "these forty searches came from one connection" and "this account is being used from nine networks" |
+
+The verdict lives in the `event_geo` VIEW rather than in a column, so the rule
+can be corrected in one statement and every historical row is re-judged for
+free. Proven on the case that prompted it: connection `SG`, phone at +06:30
+and `my` locale → `geo_trust = vpn_suspect`, `audience = MM`. The recommender
+groups by `audience`, so a VPN user still gets Myanmar recommendations.
+
+---
+
 ## 7. DECISIONS NEEDED BEFORE ANY OF THIS IS BUILT
 
 | | |
 |---|---|
-| **B1** | Offline download: (a) plain files, (b) encrypted at rest, (c) not yet? §2.4 |
-| **B2** | Location: country only, no IP stored — agreed? §4 |
-| **B3** | Event retention: raw rows aged out at 90 days into daily aggregates? |
-| **B4** | Categories: confirm that `id` is frozen forever and only `label` is editable. Renaming an `id` later silently orphans every title that used it. |
-| **B5** | Uploads over 5 GiB: refuse clearly now, or build multipart? §3.3 |
-| **B6** | Series/seasons/episodes — still open from `movies_data_model_v2.md` §2, and still client-first if ever wanted |
+| **B1** | ✅ **(a) now, (b) later.** Plain files in app-private storage, deleted when the subscription lapses. Keystore encryption is the upgrade path, not the first version — and the difference will be stated plainly rather than implied. §2.4 |
+| **B2** | ✅ **Country, plus the two device signals, plus a salted IP hash. Never the raw address.** See §6b. |
+| **B3** | ✅ **90 days**, rolled into `event_daily` and `search_daily` first. `prune_events()` rolls up every unrolled day before it deletes anything, in that order always — otherwise a prune is data loss rather than hygiene. |
+| **B4** | ✅ **`id` frozen, `label` editable.** Which is the whole feature: `titles.category` stores the id, analytics group by the id, a saved tab selection holds the id. Only the word on screen moves. |
+| **B5** | ⏳ See below — the question was what multipart even is. |
+| **B6** | ✅ **Not wanted.** Series, seasons and episodes are off the table, which also removes the one item `movies_data_model_v2.md` §2 said had to widen the client before the tables could be filled. |
 
-B1 and B4 are the two that are expensive to change afterwards.
+### B5, since the question was what the 5 GiB thing actually means
+
+R2 accepts a file in one of two ways.
+
+**One PUT.** The browser opens a connection, sends the whole file, done. This
+is what the console does, it is simple, and R2 caps it at **5 GiB**. A typical
+film is far under that: an hour of 1080p is usually 1–3 GB.
+
+**Multipart.** The file is cut into pieces, each piece is uploaded separately
+and R2 glues them back together. It is how anything up to 5 TB gets in. It is
+also three separate operations instead of one — start, upload each piece, then
+finish — and the page has to track which pieces succeeded and retry the ones
+that did not.
+
+The decision taken for now: **refuse a file over 5 GiB before the first byte
+is uploaded**, with a message saying to split or re-encode it. The reason is
+not laziness about multipart. It is that without the check, the page would
+upload for forty minutes and then fail with an unreadable CORS error — R2 does
+not attach CORS headers to its error responses, so the browser blocks the
+reply before JavaScript can read it. **An hour of uploading that ends in
+"something went wrong" is the single worst failure available here.** A refusal
+that takes no time and says what to do is better in every way.
+
+Multipart gets built the first time a file actually needs it. Say so then.
+
+B4 is the one remaining decision that is expensive to change afterwards.

@@ -29,8 +29,36 @@ this launch-blocking; `approve_request()` and `reject_request()` had existed
 in the database for weeks with nothing calling them. **An approval here is
 what writes the subscription. Nothing else does.**
 
+**Signals** — proof the event log is filling. The whole design of that log is
+that nothing on screen changes whether it works or not, which is correct for
+the app and useless for an operator: without this tab there would be no way
+to tell a working log from a dead one until the day the data was needed and
+three months of it did not exist. The row to watch is **Geography** —
+`vpn_suspect` means the phone said Myanmar and the connection said somewhere
+else; everything reading `unknown` means no country header is reaching this
+project at all.
+
 **Health** — the `catalogue_health` view: which titles have no video, no
 poster, or no assets.
+
+### One folder per title, in both buckets
+
+```
+innocent-media/<slug>/video/20260922-solar-a1b2c3d4.mp4
+innocent-public/<slug>/photo/20260922-poster-e5f6a7b8.jpg
+innocent-public/<slug>/thumb/20260922-clip-01-c9d0e1f2.jpg
+```
+
+The folder is shown in the editor so it can be pasted into the R2 console.
+
+**It is frozen at creation and a rename does not move it.** Every object key
+and the title's `locator` name the prefix; a rename that rewrote R2 would have
+to copy every object and leave the catalogue broken in between. The folder is
+an address — the title is the label.
+
+A title created before foldering gets one the first time it is opened in the
+console. Its existing files stay where they are: `v/…` and `p/…` are still
+valid keys and everything resolves them in full.
 
 ### The uploader measures every file before it sends it
 

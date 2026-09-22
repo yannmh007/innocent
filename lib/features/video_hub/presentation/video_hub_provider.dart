@@ -1,8 +1,12 @@
-import 'package:flutter/foundation.dart';
+// widgets, not foundation: `AppLifecycleListener` below needs it, and
+// widgets re-exports every foundation symbol this file uses (`@immutable`)
+// — so importing both would leave foundation flagged as unused.
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/api/api_content_repository.dart';
 import '../data/api/backend_config.dart';
+import '../data/api/event_sender.dart';
 import '../data/demo_content_repository.dart';
 import '../domain/access.dart';
 import '../domain/access_policy.dart';
@@ -115,6 +119,69 @@ void recordViewOnce(WidgetRef ref, String contentId) {
       .read(contentRepositoryProvider)
       .recordView(contentId, tier: tier)
       .catchError((_) {});
+}
+
+/// The event log's client half.
+///
+/// ONE PER APP RUN, which is what makes `session_id` mean anything: a new
+/// instance per screen would give every screen its own session and the
+/// journey through them would be unreadable. A plain `Provider` in the root
+/// container is exactly that — created once, disposed when the app is.
+///
+/// Returns a sender even when the backend is not configured. The demo build
+/// has no server to post to, so every flush fails and is swallowed, which is
+/// the correct no-op: the alternative is a nullable provider and a `?.` at
+/// every call site, and the one that gets forgotten is the one that matters.
+final eventSenderProvider = Provider<EventSender>((ref) {
+  final sender = EventSender(ref.watch(apiClientProvider));
+
+  // THE FLUSH THAT ACTUALLY MATTERS. On a timer alone, every session would
+  // lose its last thirty seconds — and the last thirty seconds is where
+  // people stop watching, which is the one thing the whole log exists to
+  // learn. Android kills a backgrounded app whenever it likes; this is the
+  // final chance to post.
+  //
+  // onHide and onPause only. onInactive fires for a pulled-down notification
+  // shade and a permission dialog, which would turn a scroll through the
+  // catalogue into a request per interruption.
+  final lifecycle = AppLifecycleListener(
+    onHide: () => sender.flush(),
+    onPause: () => sender.flush(),
+  );
+
+  ref.onDispose(() {
+    lifecycle.dispose();
+    // Last flush on the way out. It cannot be awaited here, so it is a
+    // best-effort post, which is the same promise everything else in this
+    // file makes.
+    sender.flush();
+    sender.dispose();
+  });
+  return sender;
+});
+
+/// Queue an event from anywhere that has a [WidgetRef].
+///
+/// A free function rather than `ref.read(eventSenderProvider).log(...)` at
+/// forty call sites, so that the day this needs a sampling rate or a consent
+/// check there is one place to put it.
+void logEvent(
+  WidgetRef ref,
+  String kind, {
+  String? titleId,
+  String? assetId,
+  int? positionS,
+  int? durationS,
+  Map<String, dynamic>? meta,
+}) {
+  ref.read(eventSenderProvider).log(
+        kind,
+        titleId: titleId,
+        assetId: assetId,
+        positionS: positionS,
+        durationS: durationS,
+        meta: meta,
+      );
 }
 
 /// Live search query. Held in a provider rather than in the search screen's

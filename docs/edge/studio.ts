@@ -2,7 +2,8 @@
 //
 // Was two calls (sign, publish) behind an upload form. It is now the whole
 // console: list, get, create, save, addAssets, updateAsset, setPrimary,
-// deleteAsset, deleteTitle, requests, approve, reject, health, selftest.
+// deleteAsset, deleteTitle, requests, approve, reject, stats, health, folder,
+// sign, selftest.
 //
 // WHY THIS EXISTS. Putting one title into the catalogue used to mean: open the
 // R2 dashboard, upload the video, upload the poster, copy both object keys,
@@ -182,15 +183,41 @@ async function operatorId(req: Request): Promise<string | null> {
 }
 
 // --- object keys ------------------------------------------------------------
-// Matches what is already in the bucket: `v/…` for video, `p/…` for stills,
-// and `t/…` for the poster frames the page takes from a video.
+//
+// ONE FOLDER PER TITLE, in both buckets:
+//
+//   innocent-media/<slug>/video/20260922-solar-a1b2c3d4.mp4
+//   innocent-public/<slug>/photo/20260922-poster-e5f6a7b8.jpg
+//   innocent-public/<slug>/thumb/20260922-clip-01-c9d0e1f2.jpg
+//
+// The buckets stay two, because that split is the security boundary and not
+// an organisational one: video is private and reached only through a signed
+// URL, stills are public so the catalogue can draw itself. Within each, every
+// file belonging to one card lives under one prefix.
+//
+// WHY THIS IS WORTH A MIGRATION OF HABIT. R2's console lists objects by
+// prefix, so `v/` and `p/` meant one flat list of every video ever uploaded
+// and another of every still, with nothing but a timestamp in the name to say
+// which card a file belonged to. Finding "the third clip of Solar" meant
+// reading the database first. With a folder it is one click, and deleting or
+// auditing a title is one prefix.
+//
+// THE FOLDER IS FROZEN AT CREATION. Renaming a title later does NOT move its
+// objects: every `title_assets.object_key` and `titles.locator` names the old
+// prefix, and a rename that rewrote R2 would have to copy every file and
+// leave the catalogue broken in between. The folder is an address, not a
+// label — `titles.title` is the label.
+//
+// The legacy `v/…` and `p/…` keys are left exactly where they are. They are
+// still valid object keys and everything resolves them by the full key; only
+// new uploads are foldered.
 //
 // The name is rebuilt rather than trusted. A phone hands over whatever the
 // file is called — spaces, brackets, Burmese, a leading dot, `../` if someone
 // is trying — and an object key is a path. Keeping only a known alphabet and
 // prefixing a timestamp also makes two uploads of `VID_0001.mp4` two objects
 // instead of one overwriting the other.
-function safeKey(prefix: string, filename: string): string {
+function safeKey(prefix: string, filename: string, folder?: string): string {
   const dot = filename.lastIndexOf('.');
   const stem = (dot > 0 ? filename.slice(0, dot) : filename)
     .toLowerCase().replace(/[^a-z0-9]+/g, '-')
@@ -199,7 +226,46 @@ function safeKey(prefix: string, filename: string): string {
     .toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 8);
   const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
   const rand = crypto.randomUUID().slice(0, 8);
-  return `${prefix}/${stamp}-${stem}-${rand}${ext ? '.' + ext : ''}`;
+  const name = `${stamp}-${stem}-${rand}${ext ? '.' + ext : ''}`;
+  // `slugify` again on the way past, even though the folder came from this
+  // same file: it arrives over HTTP from a page, and a folder is the first
+  // half of a path.
+  const dir = slugify(folder ?? '');
+  return dir ? `${dir}/${prefix}/${name}` : `${prefix}/${name}`;
+}
+
+/// The one shape allowed in a path segment.
+///
+/// Shared by the folder and the file name so a name cannot be legal in one
+/// and a traversal in the other. Burmese, spaces, brackets and `../` all
+/// reduce to hyphens; an empty result is the caller's problem to handle,
+/// because silently inventing a name is how two titles end up in one folder.
+function slugify(raw: string): string {
+  return String(raw ?? '').toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60);
+}
+
+/// A folder name no other title is using.
+///
+/// Suffixed rather than randomised, because the folder is the thing an
+/// operator reads in the R2 console: `solar-2` says what it is, and
+/// `solar-f3a91c` does not. Falls back to a timestamp when the title has no
+/// latin characters at all — a Burmese-only name slugifies to nothing.
+async function uniqueFolder(
+  db: ReturnType<typeof createClient>,
+  title: string,
+): Promise<string> {
+  const base = slugify(title) ||
+    `title-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}`;
+  for (let n = 1; n <= 50; n++) {
+    const candidate = n === 1 ? base : `${base}-${n}`;
+    const { data } = await db.from('titles')
+      .select('id').eq('slug', candidate).maybeSingle();
+    if (!data) return candidate;
+  }
+  // Fifty collisions means something is wrong with the loop, not with the
+  // catalogue. A random suffix always terminates.
+  return `${base}-${crypto.randomUUID().slice(0, 6)}`;
 }
 
 // The page is on github.io and this is on supabase.co, so every call from it
@@ -321,8 +387,11 @@ Deno.serve(async (req: Request) => {
     }
 
     const bucket = kind === 'video' ? MEDIA_BUCKET : PUBLIC_BUCKET;
-    const prefix = kind === 'video' ? 'v' : kind === 'thumb' ? 't' : 'p';
-    const objectKey = safeKey(prefix, filename);
+    const prefix = kind === 'video' ? 'video' : kind === 'thumb' ? 'thumb' : 'photo';
+    // No folder means a caller that predates foldering. It still works and
+    // still lands in `video/…` — it simply has no title prefix. Refusing it
+    // would break a page held in a browser cache for the sake of tidiness.
+    const objectKey = safeKey(prefix, filename, String(body.folder ?? ''));
 
     return json({
       uploadUrl: await presignPut(bucket, objectKey),
@@ -333,6 +402,24 @@ Deno.serve(async (req: Request) => {
       // through request-playback, never by a direct URL.
       publicUrl: kind === 'video' ? null : `${PUBLIC_BASE}/${objectKey}`,
     }, 200, req);
+  }
+
+  // --- folder: reserve the prefix before the first byte is uploaded --------
+  //
+  // Called once by the page before a new title's files go up, because the
+  // object keys have to carry the folder and they are decided at `sign` time
+  // — which is before the `titles` row exists to read a slug from.
+  //
+  // Reserving is not locking. Two operators creating "Solar" in the same
+  // minute would both be handed `solar`, and the second `create` would then
+  // fail on the unique slug. With an OPERATOR_IDS list of one that is a
+  // theoretical problem, and the honest fix is a real reservation table, not
+  // a comment claiming this is safe.
+  if (body.op === 'folder') {
+    if (!SERVICE_KEY) return json({ error: 'no_service_key' }, 500, req);
+    const wanted = String(body.title ?? '').trim();
+    if (!wanted) return json({ error: 'no_title' }, 400, req);
+    return json({ folder: await uniqueFolder(admin(), wanted) }, 200, req);
   }
 
   // --- selftest: can these credentials actually write to each bucket? ------
@@ -412,6 +499,19 @@ Deno.serve(async (req: Request) => {
     if (tErr) return json({ error: 'get_failed', detail: tErr.message }, 500, req);
     if (!title) return json({ error: 'not_found' }, 404, req);
 
+    // A TITLE WITHOUT A FOLDER GETS ONE HERE, which is a write inside a read
+    // and is deliberate. Every title created before foldering has a null (or
+    // a legacy filename) in `slug`, and "Add files" needs a folder BEFORE it
+    // can sign anything. Doing it lazily on first open means no backfill
+    // migration and no title that can silently keep scattering files into the
+    // flat prefixes. Existing objects are not moved — see safeKey.
+    let folder = slugify(String(title.slug ?? ''));
+    if (!folder) {
+      folder = await uniqueFolder(db, String(title.title ?? ''));
+      await db.from('titles').update({ slug: folder }).eq('id', id);
+      title.slug = folder;
+    }
+
     const { data: assets, error: aErr } = await db
       .from('title_assets')
       .select('id,kind,bucket,object_key,thumb_key,is_primary,is_free,' +
@@ -427,6 +527,7 @@ Deno.serve(async (req: Request) => {
 
     return json({
       title,
+      folder,
       // The page needs the base to draw a thumbnail from an object key. It is
       // public information — it is already compiled into every APK — but
       // sending it beats hard-coding the same string in a second file where
@@ -477,6 +578,10 @@ Deno.serve(async (req: Request) => {
       quality_label: str(body.quality),
       genres: arr(body.genres),
       episode_count: num(body.episodes),
+      // THE FOLDER, RECORDED. Every object key of this title begins with it,
+      // so it is not decoration: `addAssets` reads it back to put later files
+      // in the same place, and the R2 console is browsable by it.
+      slug: slugify(String(body.folder ?? '')) || null,
       access_tier: body.free === true ? 'free' : 'premium',
       is_featured: body.featured === true,
       locator: firstVideo ? String(firstVideo.objectKey ?? '') : null,
@@ -631,7 +736,8 @@ Deno.serve(async (req: Request) => {
   // Deleting the object is not, and an operator tapping the wrong row on a
   // phone is a thing that happens. Storage is a fraction of a cent per GB per
   // month; an unrecoverable video is a re-upload over a mobile connection.
-  // Orphans are findable: an object key with no title_assets row.
+  // Orphans are findable: an object key with no title_assets row — and now
+// also a folder in R2 with no matching `titles.slug`.
   if (body.op === 'deleteAsset') {
     const id = String(body.id ?? '');
     if (!id) return json({ error: 'no_id' }, 400, req);
@@ -695,6 +801,57 @@ Deno.serve(async (req: Request) => {
     });
     if (error) return json({ error: 'reject_failed', detail: error.message }, 500, req);
     return json({ ok: true, id }, 200, req);
+  }
+
+  // --- stats: proof that the event log is actually filling ----------------
+  //
+  // EXISTS TO BE VERIFIABLE FROM A PHONE. The event log's whole design is
+  // that nothing on screen changes because of it — no counter moves, no row
+  // reorders, nothing fails if it silently stops working. That is correct for
+  // the app and terrible for the operator, who would have no way to tell a
+  // working log from a dead one until the day they needed the data and found
+  // three months of nothing.
+  //
+  // So this is the one surface that says "it is on". Four numbers, and the
+  // geo breakdown in particular is worth watching: it is what says whether
+  // `cf-ipcountry` reaches this project at all, which is the one assumption
+  // in migration 014 that could not be checked from a SQL console.
+  if (body.op === 'stats') {
+    const db = admin();
+    const since = new Date(Date.now() - 7 * 86400_000).toISOString();
+
+    const [kinds, geo, gaps, trend] = await Promise.all([
+      db.from('events').select('kind').gte('occurred_at', since).limit(5000),
+      db.from('event_geo').select('geo_trust, audience')
+        .gte('occurred_at', since).limit(5000),
+      db.from('search_gaps').select('*').limit(25),
+      db.rpc('trending_titles', { p_limit: 10 }),
+    ]);
+
+    // Counted here rather than in SQL because PostgREST has no group-by and
+    // adding an RPC for two tallies over at most five thousand rows is more
+    // moving parts than it saves.
+    const tally = (rows: unknown, field: string): Record<string, number> => {
+      const out: Record<string, number> = {};
+      for (const r of (Array.isArray(rows) ? rows : [])) {
+        const k = String((r as Record<string, unknown>)[field] ?? '?');
+        out[k] = (out[k] ?? 0) + 1;
+      }
+      return out;
+    };
+
+    return json({
+      since,
+      // Capped at 5000 above, so say so rather than letting a plateau at
+      // exactly 5000 read as a suspiciously round week.
+      capped: (kinds.data?.length ?? 0) >= 5000,
+      kinds: tally(kinds.data, 'kind'),
+      geo_trust: tally(geo.data, 'geo_trust'),
+      audience: tally(geo.data, 'audience'),
+      search_gaps: gaps.data ?? [],
+      trending: trend.data ?? [],
+      error: kinds.error?.message ?? geo.error?.message ?? null,
+    }, 200, req);
   }
 
   // --- health: the view that has existed unread since the schema was written

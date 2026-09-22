@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/localization/app_strings.dart';
 import '../domain/access_policy.dart';
+import '../data/api/event_sender.dart';
 import '../domain/video_content.dart';
 import 'album_viewer_screen.dart';
 import 'widgets/media_mosaic.dart';
@@ -47,6 +48,13 @@ class _ContentDetailScreenState extends ConsumerState<ContentDetailScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       recordViewOnce(ref, content.id);
+      // The same moment, recorded twice on purpose and NOT duplication.
+      // `recordViewOnce` maintains `titles.view_count`, which is a lifetime
+      // total the card draws; this is a row in the event log, which is what
+      // a ranking reads. One is a number on screen, the other is history —
+      // and unlike the counter, the event carries when, from which session,
+      // and beside what else.
+      logEvent(ref, Ev.detailView, titleId: content.id);
     });
   }
 

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/localization/app_strings.dart';
+import '../data/api/event_sender.dart';
 import '../domain/video_content.dart';
 import 'content_detail_screen.dart';
 import 'video_hub_provider.dart';
@@ -35,9 +36,19 @@ class _VideoSearchScreenState extends ConsumerState<VideoSearchScreen> {
   /// enough that results feel live.
   static const Duration _debounceDelay = Duration(milliseconds: 300);
 
+  /// The last query an event was written for.
+  ///
+  /// The listener below fires on every state the results provider passes
+  /// through — loading, then data — and a rebuild for the clear button can
+  /// deliver the same data again. Without this, one search would be recorded
+  /// two or three times and `search_daily.searches` would be inflated by a
+  /// factor nobody could later work out.
+  String _loggedQuery = '';
+
   @override
   void initState() {
     super.initState();
+    logEvent(ref, Ev.searchOpen);
     // Raise the keyboard on arrival: the user tapped a search field to get
     // here, so making them tap a second one is a wasted step.
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -76,6 +87,34 @@ class _VideoSearchScreenState extends ConsumerState<VideoSearchScreen> {
     final s = AppStrings.of(context);
     final query = ref.watch(videoSearchQueryProvider);
     final resultsAsync = ref.watch(videoSearchResultsProvider);
+
+    // RECORDED WHEN THE RESULTS ARRIVE, not when the box is typed in.
+    //
+    // The count is the whole point. A query that returned nothing is the
+    // audience naming, in their own words, something this catalogue does not
+    // have — which is the most directly actionable row in the entire schema
+    // and cannot be reconstructed from anything else. Logging on keystroke
+    // would give a count of queries and no idea which of them failed.
+    //
+    // ref.listen inside build is the Riverpod-sanctioned place for a side
+    // effect on a state change: it is registered once and fires only when the
+    // value actually changes, unlike a callback in the build body.
+    ref.listen<AsyncValue<List<VideoContent>>>(videoSearchResultsProvider,
+        (previous, next) {
+      final q = ref.read(videoSearchQueryProvider).trim();
+      if (q.isEmpty) return;
+      final results = next.asData?.value;
+      if (results == null) return;
+      if (_loggedQuery == q) return;
+      _loggedQuery = q;
+      logEvent(ref, Ev.search, meta: <String, dynamic>{
+        // Capped: a paste of a whole paragraph into the search box should not
+        // become a 40 KB row. The server truncates to 120 as well, so this is
+        // belt and braces on the side that pays for the bandwidth.
+        'q': q.length > 120 ? q.substring(0, 120) : q,
+        'results': results.length,
+      });
+    });
 
     return Scaffold(
       backgroundColor: VH.canvas,

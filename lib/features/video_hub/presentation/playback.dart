@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/localization/app_strings.dart';
 import '../../../core/router/routes.dart';
 import '../../../core/services/video_player/stream_renewal.dart';
+import '../data/api/event_sender.dart';
 import '../data/device_identity.dart';
 import '../domain/access.dart';
 import '../domain/access_policy.dart';
@@ -51,7 +52,21 @@ Future<void> playMedia(
 
   if (!context.mounted) return;
 
+  // BOTH BRANCHES ARE RECORDED, and the refusal is the more valuable of the
+  // two. `playback_denied` over `play_start` is the conversion funnel: if many
+  // people hit the paywall and few subscribe, the price or the size of the
+  // free tier is wrong — and that is a business answer no amount of code
+  // produces. It is also the number nobody can estimate by guessing.
   if (grant.isGranted) {
+    logEvent(
+      ref,
+      Ev.playStart,
+      titleId: content.id,
+      // The album clip, when this is one. Without it every clip in a title
+      // would be indistinguishable from the main film, and "which extra do
+      // people actually watch" would be unanswerable.
+      assetId: source.provider == 'asset' ? source.locator : null,
+    );
     // Screen-capture protection for paid content is requested here but HELD
     // BY THE PLAYER, which acquires it in initState and releases it in
     // dispose. The service is ref-counted, so a claim taken by the caller
@@ -105,6 +120,18 @@ Future<void> playMedia(
     );
     return;
   }
+
+  logEvent(
+    ref,
+    Ev.playbackDenied,
+    titleId: content.id,
+    assetId: source.provider == 'asset' ? source.locator : null,
+    // The reason, because the three are completely different problems: a
+    // paywall is a sale not made, a wrong device is a paying customer locked
+    // out, and unavailable is an outage. One count of "denied" would hide
+    // all three behind each other.
+    meta: <String, dynamic>{'reason': grant.denial?.name ?? 'unknown'},
+  );
 
   if (grant.denial == AccessDenial.needsPremium) {
     final policy = ref.read(accessPolicyProvider);

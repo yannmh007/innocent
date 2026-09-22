@@ -1,0 +1,74 @@
+-- 013b — say out loud what 013 did by accident, because it turned out to be
+-- the only thing that works.
+--
+-- APPLIED 22 Sep 2026, minutes after 013.
+--
+-- HOW IT CAME UP. Migrations 006 and 009 created title_media
+-- `with (security_invoker = true)`. Migration 013's `create or replace view`
+-- omitted the clause, and CREATE OR REPLACE VIEW RESETS reloptions rather
+-- than preserving them — so the option was silently dropped. The Supabase
+-- linter caught it as an ERROR-level `security_definer_view` finding.
+--
+-- That looked like a regression to undo. Investigating it turned up something
+-- larger.
+--
+-- THE ALBUM HAS NEVER LOADED FOR ANYBODY. With security_invoker = true the
+-- view runs as the CALLER, so `anon` needs SELECT on the base tables. It does
+-- not have it, and never has:
+--
+--   set local role anon;
+--   select count(*) from public.title_media;
+--   ERROR:  permission denied for table title_assets
+--   HINT:   Grant the required privileges to the current role with:
+--           GRANT SELECT ON public.title_assets TO anon;
+--
+-- `ApiContentRepository._album()` catches its own failures and returns an
+-- empty list on purpose — "a title whose extras cannot be loaded should still
+-- play" — so this never surfaced as an error. The detail screen simply drew
+-- no grid, every time, on every build since the view was written.
+--
+-- So the empty album had TWO independent causes and each one hid the other:
+-- the `kind = 'video'` exclusion that 013 fixed, and this. Fixing either
+-- alone would have changed nothing visible.
+--
+-- WHAT THE FIX IS NOT. It is not the GRANT the hint suggests.
+-- `title_assets.object_key` is the address of every private video in the
+-- media bucket. Handing that to `anon` would make request-playback, the
+-- signed URLs and the ten-minute expiry all decoration — the entire point of
+-- this architecture is that the client never learns a media path.
+--
+-- Owner rights are the right answer, and this is the textbook case for them:
+-- THE VIEW IS THE ACCESS CONTROL. It is a deliberate, column-filtered window
+-- onto a table nobody may read directly. It exposes a `url` only for photos,
+-- never an object key for a video, and its WHERE clause drops unpublished
+-- titles. `title_cards` keeps security_invoker = true for the opposite
+-- reason: its base table has real RLS policies for anon to be filtered by.
+-- This one has none, deliberately.
+--
+-- Written as an explicit `false` rather than as an omission, so nobody
+-- reading 006 alongside 013 concludes the option was lost again and "fixes"
+-- it back to true — which would return the catalogue to an album that is
+-- always empty and never errors.
+alter view public.title_media set (security_invoker = false);
+
+insert into public.schema_migrations (version, note)
+values ('013b', 'title_media: owner rights, explicitly — anon has no grant on title_assets')
+on conflict (version) do nothing;
+
+-- ===========================================================================
+-- CHECKS — both halves matter, so run both.
+-- ===========================================================================
+--
+--   set local role anon;
+--   select count(*) filter (where kind = 'video' and url is not null) as leaked,
+--          count(*) filter (where kind = 'photo' and url is not null) as photos,
+--          count(*) as rows
+--     from public.title_media;
+--   -- rows > 0, photos > 0, leaked MUST be 0.
+--
+--   set local role anon;
+--   select object_key from public.title_assets limit 1;
+--   -- MUST be: permission denied for table title_assets
+--
+-- The second is the one that matters. If it ever starts returning a row, the
+-- private bucket's addresses are public and the signed-URL design is over.
