@@ -1,4 +1,4 @@
-// studio — the upload page, and the two calls behind it.
+// studio — the two calls behind the upload page.
 //
 // WHY THIS EXISTS. Putting one title into the catalogue used to mean: open the
 // R2 dashboard, upload the video, upload the poster, copy both object keys,
@@ -6,8 +6,17 @@
 // `title_assets`, get the key spelling exactly right in both. Per title. From
 // a phone. That is the whole reason the catalogue has one row in it.
 //
-// This serves a page that does all of it: pick the files, type a name, tap
-// Publish.
+// `docs/studio/index.html` is the page that does all of it: pick the files,
+// type a name, tap Publish. This file is the API it talks to.
+//
+// THE PAGE IS NOT SERVED FROM HERE, and that is not a preference. Supabase
+// documents it: "Serving of HTML content is only supported with custom
+// domains (Otherwise GET requests that return text/html will be rewritten to
+// text/plain)." The first version of this function returned the page with a
+// text/html header and the platform rewrote it, so Chrome printed the source
+// instead of rendering it. A custom domain is a paid add-on; GitHub Pages
+// serves the same file, from a repository that is already public, for
+// nothing. The page therefore lives in git and this stays an API.
 //
 // THE FILE NEVER PASSES THROUGH HERE. The page asks this function for a
 // presigned PUT URL and then uploads straight from the phone to R2. An edge
@@ -22,11 +31,13 @@
 // would only be a chance to get it wrong.
 //
 // DEPLOYED WITH verify_jwt: false, deliberately, and this is the one thing to
-// understand before editing. A browser loading a page cannot send an
-// Authorization header, so the platform's own JWT gate would make the page
-// unreachable. The gate is therefore applied HERE, per operation: `sign` and
-// `publish` both refuse without a token belonging to an operator. The only
-// thing served without a token is the HTML, which contains nothing.
+// understand before editing. The browser's CORS preflight is an OPTIONS with
+// no Authorization header, and the platform's own JWT gate rejects it before
+// this code runs — so every POST from the page would fail at the preflight,
+// with a CORS error that says nothing about tokens. The gate is therefore
+// applied HERE, per operation: `sign` and `publish` both refuse without a
+// token belonging to an operator, and the unauthenticated GET says only that
+// the service is alive.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -186,43 +197,70 @@ function safeKey(prefix: string, filename: string): string {
   return `${prefix}/${stamp}-${stem}-${rand}${ext ? '.' + ext : ''}`;
 }
 
-function json(body: unknown, status = 200): Response {
+// The page is on github.io and this is on supabase.co, so every call from it
+// is cross-origin and the browser will not even deliver the response without
+// these. An allow-list of one origin rather than `*`: nothing here is meant to
+// be callable from any page that fancies it, and the operator check is not a
+// reason to be careless about who gets to try.
+const ALLOWED_ORIGINS = (Deno.env.get('STUDIO_ORIGINS') ??
+  'https://yannmh007.github.io')
+  .split(',').map((s) => s.trim()).filter(Boolean);
+
+function corsHeaders(req: Request): Record<string, string> {
+  const origin = req.headers.get('Origin') ?? '';
+  if (!ALLOWED_ORIGINS.includes(origin)) return {};
+  return {
+    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Headers': 'authorization, content-type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Max-Age': '86400',
+  };
+}
+
+function json(body: unknown, status = 200, req?: Request): Response {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(req ? corsHeaders(req) : {}),
+    },
   });
 }
 
 Deno.serve(async (req: Request) => {
-  if (req.method === 'GET') {
-    // Filled in at serve time rather than written into the HTML, so the page
-    // cannot drift from the project it is deployed in. Neither value is a
-    // secret: both already ship inside every copy of the app.
-    const page = PAGE
-      .replaceAll('__SUPABASE_URL__', SUPABASE_URL)
-      .replaceAll('__ANON_KEY__', ANON_KEY);
-    return new Response(page, {
-      headers: { 'Content-Type': 'text/html; charset=utf-8' },
-    });
+  // The preflight the browser sends before any POST carrying an
+  // Authorization header. Answering it is not optional.
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { status: 204, headers: corsHeaders(req) });
   }
 
-  if (req.method !== 'POST') return json({ error: 'method' }, 405);
+  // Opening this URL by hand should say what it is rather than 405 at
+  // somebody who is trying to check the thing is alive.
+  if (req.method === 'GET') {
+    return json({
+      ok: true,
+      service: 'studio',
+      page: 'https://yannmh007.github.io/innocent/studio/',
+    }, 200, req);
+  }
+
+  if (req.method !== 'POST') return json({ error: 'method' }, 405, req);
 
   const who = await operatorId(req);
-  if (!who) return json({ error: 'not_an_operator' }, 403);
+  if (!who) return json({ error: 'not_an_operator' }, 403, req);
 
   let body: Record<string, unknown>;
   try {
     body = await req.json();
   } catch {
-    return json({ error: 'bad_json' }, 400);
+    return json({ error: 'bad_json' }, 400, req);
   }
 
   // --- sign: hand back one presigned PUT URL -------------------------------
   if (body.op === 'sign') {
     const filename = String(body.filename ?? '');
     const kind = body.kind === 'photo' ? 'photo' : 'video';
-    if (!filename) return json({ error: 'no_filename' }, 400);
+    if (!filename) return json({ error: 'no_filename' }, 400, req);
 
     const bucket = kind === 'photo' ? PUBLIC_BUCKET : MEDIA_BUCKET;
     const objectKey = safeKey(kind === 'photo' ? 'p' : 'v', filename);
@@ -235,7 +273,7 @@ Deno.serve(async (req: Request) => {
       // Only meaningful for the public bucket; the media bucket is reached
       // through request-playback, never by a direct URL.
       publicUrl: kind === 'photo' ? `${PUBLIC_BASE}/${objectKey}` : null,
-    });
+    }, 200, req);
   }
 
   // --- publish: the rows that make it a title ------------------------------
@@ -245,13 +283,13 @@ Deno.serve(async (req: Request) => {
   // list of two-or-fewer people, and widening RLS to let a signed-in user
   // write the catalogue would be a far larger hole than this function is.
   if (body.op === 'publish') {
-    if (!SERVICE_KEY) return json({ error: 'no_service_key' }, 500);
+    if (!SERVICE_KEY) return json({ error: 'no_service_key' }, 500, req);
 
     const title = String(body.title ?? '').trim();
-    if (!title) return json({ error: 'no_title' }, 400);
+    if (!title) return json({ error: 'no_title' }, 400, req);
 
     const video = body.video as { bucket: string; objectKey: string } | null;
-    if (!video?.objectKey) return json({ error: 'no_video' }, 400);
+    if (!video?.objectKey) return json({ error: 'no_video' }, 400, req);
 
     const photo = body.photo as { objectKey: string; publicUrl: string } | null;
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
@@ -281,7 +319,7 @@ Deno.serve(async (req: Request) => {
     // null, and an error check alone does not narrow it, so `row.id` below
     // is a type error under the strict settings Deno applies.
     if (titleErr || !row) {
-      return json({ error: 'title_insert', detail: titleErr?.message ?? 'no row' }, 500);
+      return json({ error: 'title_insert', detail: titleErr?.message ?? 'no row' }, 500, req);
     }
 
     // The assets rows drive photo_count / video_count through the triggers
@@ -308,205 +346,13 @@ Deno.serve(async (req: Request) => {
     }
 
     const { error: assetErr } = await admin.from('title_assets').insert(assets);
-    if (assetErr) return json({ error: 'asset_insert', detail: assetErr.message }, 500);
+    if (assetErr) return json({ error: 'asset_insert', detail: assetErr.message }, 500, req);
 
-    return json({ id: row.id, title, status: body.publish === true ? 'published' : 'draft' });
+    return json(
+      { id: row.id, title, status: body.publish === true ? 'published' : 'draft' },
+      200, req,
+    );
   }
 
-  return json({ error: 'unknown_op' }, 400);
+  return json({ error: 'unknown_op' }, 400, req);
 });
-
-// --- the page ---------------------------------------------------------------
-// One file, no framework, no build step. It is edited here and deployed by
-// deploying this function, which is the only way it can be kept in step with
-// the two calls above.
-const PAGE = `<!doctype html>
-<html lang="en"><head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Innocent Studio</title>
-<style>
-:root{--bg:#0b0b0d;--s1:#141418;--s2:#1c1c22;--line:#2a2a32;--fg:#f2f2f5;--dim:#9a9aa6;--acc:#ffffff}
-*{box-sizing:border-box}
-body{margin:0;padding:16px;background:var(--bg);color:var(--fg);
-  font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
-  max-width:560px;margin-inline:auto}
-h1{font-size:19px;margin:8px 0 4px}
-p.sub{color:var(--dim);margin:0 0 20px;font-size:13.5px}
-label{display:block;font-size:12.5px;color:var(--dim);margin:14px 0 6px;letter-spacing:.02em}
-input,textarea,select,button{width:100%;font:inherit;color:var(--fg);
-  background:var(--s2);border:1px solid var(--line);border-radius:10px;padding:11px 12px}
-textarea{min-height:72px;resize:vertical}
-button{background:var(--acc);color:#000;font-weight:700;border:0;padding:14px;margin-top:20px}
-button:disabled{opacity:.45}
-.row{display:flex;gap:10px;align-items:center;margin-top:12px}
-.row input[type=checkbox]{width:auto;margin:0}
-.row label{margin:0;color:var(--fg);font-size:14px}
-.card{background:var(--s1);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
-.bar{height:5px;background:var(--s2);border-radius:3px;overflow:hidden;margin-top:8px}
-.bar i{display:block;height:100%;width:0;background:var(--fg);transition:width .2s}
-.msg{margin-top:16px;padding:12px;border-radius:10px;font-size:13.5px;white-space:pre-wrap}
-.ok{background:#0f2a18;color:#8ff0b0}.err{background:#2a1010;color:#ff9b9b}
-small{color:var(--dim);font-size:12px}
-</style></head><body>
-
-<h1>Innocent Studio</h1>
-<p class="sub">Upload a title straight to R2 and put it in the catalogue.</p>
-
-<div id="gate" class="card">
-  <p class="sub" style="margin:0 0 12px">Sign in with the account that owns the catalogue.</p>
-  <button id="signin">Continue with Google</button>
-  <div id="who" hidden><small id="whoami"></small></div>
-</div>
-
-<div id="form" hidden>
-  <div class="card">
-    <label>Video file</label>
-    <input id="video" type="file" accept="video/*">
-    <div class="bar"><i id="vbar"></i></div>
-  </div>
-
-  <div class="card">
-    <label>Poster / photo (optional)</label>
-    <input id="photo" type="file" accept="image/*">
-    <div class="bar"><i id="pbar"></i></div>
-  </div>
-
-  <div class="card">
-    <label>Title</label>
-    <input id="title" placeholder="Name shown in the app">
-    <label>Title (Burmese, optional)</label>
-    <input id="titleMm">
-    <label>Synopsis (optional)</label>
-    <textarea id="synopsis"></textarea>
-    <label>Category</label>
-    <select id="category">
-      <option value="movies">movies</option>
-      <option value="series">series</option>
-      <option value="clips">clips</option>
-    </select>
-    <div class="row"><input id="free" type="checkbox"><label for="free">Free to watch</label></div>
-    <div class="row"><input id="pub" type="checkbox" checked><label for="pub">Publish now</label></div>
-  </div>
-
-  <button id="go">Upload and publish</button>
-</div>
-
-<div id="msg"></div>
-
-<!-- The UMD build, not the ESM one. esm.sh serves modules, which a plain
-     <script src> does not evaluate into a global, so the supabase global would be
-     undefined on the next line. jsdelivr's dist/umd/supabase.js is the
-     browser bundle the package itself points "jsdelivr" at. -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script>
-const $ = (id) => document.getElementById(id);
-let TOKEN = '';
-
-// The same Google sign-in the app uses, through the same provider, so there is
-// one account system and not two. The operator check happens on the server
-// against a list of user ids — signing in is not the same as being allowed to
-// publish, and a stranger who signs in here gets 403 from every call.
-const sb = supabase.createClient('__SUPABASE_URL__', '__ANON_KEY__');
-
-async function refresh() {
-  const { data } = await sb.auth.getSession();
-  const s = data.session;
-  if (!s) { $('gate').hidden = false; $('form').hidden = true; return; }
-  TOKEN = s.access_token;
-  $('gate').hidden = true;
-  $('form').hidden = false;
-  $('who').hidden = false;
-  $('whoami').textContent = 'Signed in as ' + (s.user.email || s.user.id);
-}
-
-$('signin').onclick = async () => {
-  const { error } = await sb.auth.signInWithOAuth({
-    provider: 'google',
-    // Back to this page, not to a default — otherwise the round trip lands
-    // wherever the project's Site URL points, which is not here.
-    options: { redirectTo: location.origin + location.pathname },
-  });
-  if (error) say(error.message, 'err');
-};
-
-// supabase-js parses the tokens out of the URL fragment on load; this runs
-// after that has happened.
-sb.auth.onAuthStateChange(() => refresh());
-refresh();
-
-function say(text, cls) { $('msg').className = 'msg ' + cls; $('msg').textContent = text; }
-
-async function api(payload) {
-  const r = await fetch(location.pathname, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + TOKEN },
-    body: JSON.stringify(payload),
-  });
-  const body = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(body.detail || body.error || ('HTTP ' + r.status));
-  return body;
-}
-
-// XHR rather than fetch, for one reason: upload progress. fetch cannot report
-// how far a request body has got, and a phone sending 900 MB with no feedback
-// is indistinguishable from a phone that has frozen.
-function put(url, file, bar) {
-  return new Promise((resolve, reject) => {
-    const x = new XMLHttpRequest();
-    x.open('PUT', url);
-    x.upload.onprogress = (e) => {
-      if (e.lengthComputable) bar.style.width = (e.loaded / e.total * 100) + '%';
-    };
-    x.onload = () => (x.status >= 200 && x.status < 300)
-      ? resolve() : reject(new Error('R2 refused the upload (HTTP ' + x.status + ')'));
-    x.onerror = () => reject(new Error('Upload failed. If this is the first run, check the bucket CORS policy.'));
-    x.send(file);
-  });
-}
-
-$('go').onclick = async () => {
-  const v = $('video').files[0];
-  const p = $('photo').files[0];
-  const title = $('title').value.trim();
-  if (!v) return say('Pick a video first.', 'err');
-  if (!title) return say('Give it a title.', 'err');
-
-  $('go').disabled = true;
-  try {
-    say('Asking for an upload URL…', 'ok');
-    const vs = await api({ op: 'sign', kind: 'video', filename: v.name });
-    say('Uploading video…', 'ok');
-    await put(vs.uploadUrl, v, $('vbar'));
-
-    let ps = null;
-    if (p) {
-      const s = await api({ op: 'sign', kind: 'photo', filename: p.name });
-      say('Uploading poster…', 'ok');
-      await put(s.uploadUrl, p, $('pbar'));
-      ps = { objectKey: s.objectKey, publicUrl: s.publicUrl };
-    }
-
-    say('Writing the catalogue row…', 'ok');
-    const out = await api({
-      op: 'publish',
-      title,
-      titleMm: $('titleMm').value,
-      synopsis: $('synopsis').value,
-      category: $('category').value,
-      free: $('free').checked,
-      publish: $('pub').checked,
-      video: { bucket: vs.bucket, objectKey: vs.objectKey },
-      photo: ps,
-    });
-    say('Done — "' + out.title + '" is ' + out.status + '.\\n' + out.id, 'ok');
-    $('video').value = ''; $('photo').value = ''; $('title').value = '';
-    $('vbar').style.width = '0'; $('pbar').style.width = '0';
-  } catch (e) {
-    say(String(e.message || e), 'err');
-  } finally {
-    $('go').disabled = false;
-  }
-};
-</script>
-</body></html>`;

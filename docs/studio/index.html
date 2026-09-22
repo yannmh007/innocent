@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Innocent Studio</title>
+<style>
+:root{--bg:#0b0b0d;--s1:#141418;--s2:#1c1c22;--line:#2a2a32;--fg:#f2f2f5;--dim:#9a9aa6;--acc:#ffffff}
+*{box-sizing:border-box}
+body{margin:0;padding:16px;background:var(--bg);color:var(--fg);
+  font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  max-width:560px;margin-inline:auto}
+h1{font-size:19px;margin:8px 0 4px}
+p.sub{color:var(--dim);margin:0 0 20px;font-size:13.5px}
+label{display:block;font-size:12.5px;color:var(--dim);margin:14px 0 6px;letter-spacing:.02em}
+input,textarea,select,button{width:100%;font:inherit;color:var(--fg);
+  background:var(--s2);border:1px solid var(--line);border-radius:10px;padding:11px 12px}
+textarea{min-height:72px;resize:vertical}
+button{background:var(--acc);color:#000;font-weight:700;border:0;padding:14px;margin-top:20px}
+button:disabled{opacity:.45}
+.row{display:flex;gap:10px;align-items:center;margin-top:12px}
+.row input[type=checkbox]{width:auto;margin:0}
+.row label{margin:0;color:var(--fg);font-size:14px}
+.card{background:var(--s1);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
+.bar{height:5px;background:var(--s2);border-radius:3px;overflow:hidden;margin-top:8px}
+.bar i{display:block;height:100%;width:0;background:var(--fg);transition:width .2s}
+.msg{margin-top:16px;padding:12px;border-radius:10px;font-size:13.5px;white-space:pre-wrap}
+.ok{background:#0f2a18;color:#8ff0b0}.err{background:#2a1010;color:#ff9b9b}
+small{color:var(--dim);font-size:12px}
+</style></head><body>
+
+<h1>Innocent Studio</h1>
+<p class="sub">Upload a title straight to R2 and put it in the catalogue.</p>
+
+<div id="gate" class="card">
+  <p class="sub" style="margin:0 0 12px">Sign in with the account that owns the catalogue.</p>
+  <button id="signin">Continue with Google</button>
+  <div id="who" hidden><small id="whoami"></small></div>
+</div>
+
+<div id="form" hidden>
+  <div class="card">
+    <label>Video file</label>
+    <input id="video" type="file" accept="video/*">
+    <div class="bar"><i id="vbar"></i></div>
+  </div>
+
+  <div class="card">
+    <label>Poster / photo (optional)</label>
+    <input id="photo" type="file" accept="image/*">
+    <div class="bar"><i id="pbar"></i></div>
+  </div>
+
+  <div class="card">
+    <label>Title</label>
+    <input id="title" placeholder="Name shown in the app">
+    <label>Title (Burmese, optional)</label>
+    <input id="titleMm">
+    <label>Synopsis (optional)</label>
+    <textarea id="synopsis"></textarea>
+    <label>Category</label>
+    <select id="category">
+      <option value="movies">movies</option>
+      <option value="series">series</option>
+      <option value="clips">clips</option>
+    </select>
+    <div class="row"><input id="free" type="checkbox"><label for="free">Free to watch</label></div>
+    <div class="row"><input id="pub" type="checkbox" checked><label for="pub">Publish now</label></div>
+  </div>
+
+  <button id="go">Upload and publish</button>
+</div>
+
+<div id="msg"></div>
+
+<!-- The UMD build, not the ESM one. esm.sh serves modules, which a plain
+     <script src> does not evaluate into a global, so the supabase global would be
+     undefined on the next line. jsdelivr's dist/umd/supabase.js is the
+     browser bundle the package itself points "jsdelivr" at. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+let TOKEN = '';
+
+// The same Google sign-in the app uses, through the same provider, so there is
+// one account system and not two. The operator check happens on the server
+// against a list of user ids — signing in is not the same as being allowed to
+// publish, and a stranger who signs in here gets 403 from every call.
+const sb = supabase.createClient('https://yqonvmuiezqvyqmexrft.supabase.co', 'sb_publishable_vTiAxBAhnZL_BqFcZD4m9A_Rb8Q8PHj');
+
+async function refresh() {
+  const { data } = await sb.auth.getSession();
+  const s = data.session;
+  if (!s) { $('gate').hidden = false; $('form').hidden = true; return; }
+  TOKEN = s.access_token;
+  $('gate').hidden = true;
+  $('form').hidden = false;
+  $('who').hidden = false;
+  $('whoami').textContent = 'Signed in as ' + (s.user.email || s.user.id);
+}
+
+$('signin').onclick = async () => {
+  const { error } = await sb.auth.signInWithOAuth({
+    provider: 'google',
+    // Back to this page, not to a default — otherwise the round trip lands
+    // wherever the project's Site URL points, which is not here.
+    options: { redirectTo: location.origin + location.pathname },
+  });
+  if (error) say(error.message, 'err');
+};
+
+// supabase-js parses the tokens out of the URL fragment on load; this runs
+// after that has happened.
+sb.auth.onAuthStateChange(() => refresh());
+refresh();
+
+function say(text, cls) { $('msg').className = 'msg ' + cls; $('msg').textContent = text; }
+
+const API = 'https://yqonvmuiezqvyqmexrft.supabase.co/functions/v1/studio';
+
+async function api(payload) {
+  const r = await fetch(API, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + TOKEN },
+    body: JSON.stringify(payload),
+  });
+  const body = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(body.detail || body.error || ('HTTP ' + r.status));
+  return body;
+}
+
+// XHR rather than fetch, for one reason: upload progress. fetch cannot report
+// how far a request body has got, and a phone sending 900 MB with no feedback
+// is indistinguishable from a phone that has frozen.
+function put(url, file, bar) {
+  return new Promise((resolve, reject) => {
+    const x = new XMLHttpRequest();
+    x.open('PUT', url);
+    x.upload.onprogress = (e) => {
+      if (e.lengthComputable) bar.style.width = (e.loaded / e.total * 100) + '%';
+    };
+    x.onload = () => (x.status >= 200 && x.status < 300)
+      ? resolve() : reject(new Error('R2 refused the upload (HTTP ' + x.status + ')'));
+    x.onerror = () => reject(new Error('Upload failed. If this is the first run, check the bucket CORS policy.'));
+    x.send(file);
+  });
+}
+
+$('go').onclick = async () => {
+  const v = $('video').files[0];
+  const p = $('photo').files[0];
+  const title = $('title').value.trim();
+  if (!v) return say('Pick a video first.', 'err');
+  if (!title) return say('Give it a title.', 'err');
+
+  $('go').disabled = true;
+  try {
+    say('Asking for an upload URL…', 'ok');
+    const vs = await api({ op: 'sign', kind: 'video', filename: v.name });
+    say('Uploading video…', 'ok');
+    await put(vs.uploadUrl, v, $('vbar'));
+
+    let ps = null;
+    if (p) {
+      const s = await api({ op: 'sign', kind: 'photo', filename: p.name });
+      say('Uploading poster…', 'ok');
+      await put(s.uploadUrl, p, $('pbar'));
+      ps = { objectKey: s.objectKey, publicUrl: s.publicUrl };
+    }
+
+    say('Writing the catalogue row…', 'ok');
+    const out = await api({
+      op: 'publish',
+      title,
+      titleMm: $('titleMm').value,
+      synopsis: $('synopsis').value,
+      category: $('category').value,
+      free: $('free').checked,
+      publish: $('pub').checked,
+      video: { bucket: vs.bucket, objectKey: vs.objectKey },
+      photo: ps,
+    });
+    say('Done — "' + out.title + '" is ' + out.status + '.\\n' + out.id, 'ok');
+    $('video').value = ''; $('photo').value = ''; $('title').value = '';
+    $('vbar').style.width = '0'; $('pbar').style.width = '0';
+  } catch (e) {
+    say(String(e.message || e), 'err');
+  } finally {
+    $('go').disabled = false;
+  }
+};
+</script>
+</body></html>
