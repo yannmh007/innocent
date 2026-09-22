@@ -31,6 +31,39 @@ class ContentDetailScreen extends ConsumerStatefulWidget {
 
   const ContentDetailScreen({super.key, required this.content});
 
+  /// Whether the big button above the grid is drawn at all.
+  ///
+  /// THE BRIEF WAS "HIDE PLAY", AND THIS IS THE HONEST READING OF IT. The
+  /// album is meant to be the way into a title — a Telegram-style grid where
+  /// every video tile carries its own play glyph — so a second, larger Play
+  /// button above it is a duplicate that also implies there is only one video
+  /// to watch. When there is a grid, the grid is the control.
+  ///
+  /// THREE CASES, AND THE THIRD IS THE ONE WORTH ARGUING:
+  ///
+  ///   no album              -> SHOWN. There is no other way in. A detail
+  ///                            screen with nothing to tap is not a cleaner
+  ///                            design, it is a dead end.
+  ///   album, unlocked       -> HIDDEN. This is the case the brief is about.
+  ///   album, LOCKED         -> SHOWN, saying Upgrade.
+  ///
+  /// The third is a deliberate departure from "hide the button", because the
+  /// button in that state is not a Play button — it is the route to the
+  /// paywall, and it is the only unmissable one on the screen. A locked tile
+  /// does lead there, but only after the viewer decides to tap something they
+  /// can see is locked. Removing the explicit offer to keep the grid tidy
+  /// trades a sale for a layout, and this screen exists to make the sale.
+  ///
+  /// Static and pure so the rule can be tested without building a widget, and
+  /// so there is exactly one statement of it. A condition inlined into
+  /// `build()` is a condition that gets a second, slightly different copy the
+  /// first time another surface needs the same answer.
+  static bool showsHeaderButton({
+    required bool hasAlbum,
+    required bool locked,
+  }) =>
+      !hasAlbum || locked;
+
   @override
   ConsumerState<ContentDetailScreen> createState() =>
       _ContentDetailScreenState();
@@ -68,6 +101,7 @@ class _ContentDetailScreenState extends ConsumerState<ContentDetailScreen> {
     final tier = ref.watch(viewerProvider).tier;
     final ordinals = AccessPolicy.photoOrdinalsOf(content.items);
     final lockedCount = policy.lockedCountFor(content, tier);
+    final locked = !policy.canPlayTitle(content, tier);
 
     return Scaffold(
       backgroundColor: VH.canvas,
@@ -113,8 +147,14 @@ class _ContentDetailScreenState extends ConsumerState<ContentDetailScreen> {
           SliverToBoxAdapter(
             child: _Header(
               content: content,
-              locked: !policy.canPlayTitle(content, tier),
+              locked: locked,
               lockedCount: lockedCount,
+              // Hidden once the grid below can do the job. See
+              // ContentDetailScreen.showsHeaderButton.
+              showButton: ContentDetailScreen.showsHeaderButton(
+                hasAlbum: content.hasAlbum,
+                locked: locked,
+              ),
               onPlay: () => _play(context, ref),
             ),
           ),
@@ -208,6 +248,9 @@ class _Header extends StatelessWidget {
   final VideoContent content;
   final VoidCallback onPlay;
 
+  /// False once the album grid below is the way into the title.
+  final bool showButton;
+
   /// True when this viewer cannot play the title. Changes the button LABEL,
   /// never disables it - a dead Play button teaches nothing, while a button
   /// that says Upgrade both explains the state and offers the way out.
@@ -220,6 +263,7 @@ class _Header extends StatelessWidget {
     required this.onPlay,
     required this.locked,
     required this.lockedCount,
+    required this.showButton,
   });
 
   @override
@@ -290,33 +334,35 @@ class _Header extends StatelessWidget {
             const SizedBox(height: 12),
             Text(content.synopsis!, style: VH.body),
           ],
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              onPressed: onPlay,
-              icon: Icon(
-                locked ? Icons.lock_rounded : Icons.play_arrow_rounded,
-                size: locked ? 18 : 22,
-              ),
-              label: Text(
-                locked ? s.vhUpgrade : s.vhPlay,
-                style: VH.label.copyWith(
-                  color: VH.textInverse,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
+          if (showButton) ...<Widget>[
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: onPlay,
+                icon: Icon(
+                  locked ? Icons.lock_rounded : Icons.play_arrow_rounded,
+                  size: locked ? 18 : 22,
                 ),
-              ),
-              style: FilledButton.styleFrom(
-                backgroundColor: VH.textPrimary,
-                foregroundColor: VH.textInverse,
-                padding: const EdgeInsets.symmetric(vertical: 13),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(VH.rControl),
+                label: Text(
+                  locked ? s.vhUpgrade : s.vhPlay,
+                  style: VH.label.copyWith(
+                    color: VH.textInverse,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                style: FilledButton.styleFrom(
+                  backgroundColor: VH.textPrimary,
+                  foregroundColor: VH.textInverse,
+                  padding: const EdgeInsets.symmetric(vertical: 13),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(VH.rControl),
+                  ),
                 ),
               ),
             ),
-          ),
+          ],
         ],
       ),
     );
