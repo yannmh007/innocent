@@ -9,6 +9,7 @@ import '../data/api/event_sender.dart';
 import '../data/device_identity.dart';
 import '../domain/access.dart';
 import '../domain/access_policy.dart';
+import '../domain/capability.dart';
 import '../domain/video_content.dart';
 import 'video_hub_provider.dart';
 import 'widgets/paywall_sheet.dart';
@@ -179,6 +180,71 @@ Future<void> playContent(
   VideoContent content,
 ) {
   return playMedia(context, ref, content: content, source: content.source);
+}
+
+/// Plays a title that is already on this device.
+///
+/// EXISTS IN THIS FILE, AND ONLY IN THIS FILE, because the structural checker
+/// is right: `tool/checks/security_invariants.py` refuses any screen but this
+/// one referencing `Routes.player`, so that every play in the feature passes
+/// one gate. The first version of the Downloads screen pushed the player
+/// itself, and the check failed the build — correctly. A downloaded file is
+/// the one path where nothing would otherwise stop a viewer whose
+/// subscription ended last week.
+///
+/// WHAT THIS CHECK IS AND IS NOT, stated rather than implied. Online, the
+/// SERVER decides: `requestPlayback` re-reads the subscription, the tier and
+/// the device binding, and the client cannot overrule it. Offline there is no
+/// server to ask, so this is [AccessPolicy] — the client's own table — and a
+/// client-side check protects nothing against anyone willing to modify the
+/// app. It is a real weakening, and it is inherent to offline playback rather
+/// than a shortcut taken here.
+///
+/// What limits it: the file only exists because the server authorised the
+/// download, every resume during that download re-authorised it, and the
+/// shelf is emptied on sign-out. The bytes are a plain file — see
+/// [OfflineLibrary] — so this is friction, not enforcement, and the honest
+/// description is that a download is a grant the app cannot take back on its
+/// own.
+Future<void> playOffline(
+  BuildContext context,
+  WidgetRef ref, {
+  required String path,
+  required String titleId,
+  required String title,
+  required bool premium,
+}) async {
+  final tier = ref.read(viewerProvider).tier;
+
+  // The same capability the Download button was drawn from, asked again at
+  // play time. A subscription that lapsed between downloading and watching is
+  // exactly the case this catches.
+  if (premium &&
+      !CapabilityMatrix.allows(tier, Capability.downloadOffline)) {
+    logEvent(ref, Ev.playbackDenied, titleId: titleId,
+        meta: const <String, dynamic>{'reason': 'offline_not_entitled'});
+    if (!context.mounted) return;
+    await PaywallSheet.show(context, content: null, lockedCount: 0);
+    return;
+  }
+
+  if (!context.mounted) return;
+  context.push(
+    Routes.player,
+    extra: <String, dynamic>{
+      'uri': path,
+      'title': title,
+      // Same paid content it was online, so the same capture protection.
+      'secure': premium,
+      // NOT ephemeral, unlike a stream: a file path is a stable identity, so
+      // a resume point keyed on it works and is worth keeping.
+      'ephemeral': false,
+      // No titleId: the reporter would have no network to flush to for the
+      // whole session, and a device coming back online hours later would post
+      // a burst of events timestamped to a viewing nobody can place. Offline
+      // viewing is deliberately not measured rather than measured badly.
+    },
+  );
 }
 
 /// Opens the paywall for a locked album item.

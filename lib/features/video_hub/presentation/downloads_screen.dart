@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../core/localization/app_strings.dart';
-import '../../../core/router/routes.dart';
 import '../data/api/offline_library.dart';
+import 'playback.dart';
 import 'video_hub_provider.dart';
 import 'widgets/hub_states.dart';
 import 'widgets/poster_image.dart';
@@ -89,7 +88,7 @@ class _Row extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return InkWell(
-      onTap: () => _play(context),
+      onTap: () => _play(context, ref),
       borderRadius: BorderRadius.circular(VH.rControl),
       child: Padding(
         padding: const EdgeInsets.all(VH.s2),
@@ -132,21 +131,26 @@ class _Row extends ConsumerWidget {
     );
   }
 
-  /// Opens the local file.
+  /// Opens the local file THROUGH playback.dart, like every other play.
   ///
-  /// `ephemeral: false` — unlike a stream, this path IS a stable identity, so
-  /// a resume point keyed on it works and is worth keeping. And no `titleId`:
-  /// the playback reporter would have no network to flush to for the whole
-  /// session, and a device that came back online hours later would post a
-  /// burst of events timestamped to a viewing nobody can place. Offline
-  /// viewing is deliberately not measured rather than measured badly.
-  void _play(BuildContext context) {
-    context.push(Routes.player, extra: <String, dynamic>{
-      'uri': item.path,
-      'title': _shownTitle,
-      // Still capture-protected: it is the same paid content it was online.
-      'secure': true,
-    });
+  /// The first version of this pushed `Routes.player` directly and the
+  /// structural checker failed the build for it — correctly. A downloaded
+  /// file is the one path where nothing would otherwise stop a viewer whose
+  /// subscription ended last week, so it is exactly the path that must not
+  /// have its own door. See [playOffline].
+  Future<void> _play(BuildContext context, WidgetRef ref) {
+    return playOffline(
+      context,
+      ref,
+      path: item.path,
+      titleId: item.titleId,
+      title: _shownTitle,
+      // Nothing free is ever downloaded — the Download control is drawn from
+      // Capability.downloadOffline, which only a premium tier has — so
+      // treating every item on the shelf as paid is the true reading, not a
+      // conservative guess.
+      premium: true,
+    );
   }
 
   Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
