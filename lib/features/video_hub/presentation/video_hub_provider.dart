@@ -148,6 +148,29 @@ final categoryStylesProvider = Provider<CategoryCatalogue>((ref) {
       CategoryCatalogue.empty;
 });
 
+/// One title IN FULL — including the album the catalogue never carries.
+///
+/// THE CATALOGUE AND THE DETAIL SCREEN NEED DIFFERENT THINGS, and this is the
+/// second request. `getRows` and `getCatalogue` select the card columns only:
+/// making each of thirty cards carry its album would multiply the payload by
+/// the one thing nobody has looked at yet. So a card knows HOW MANY stills and
+/// clips a title has — `photo_count` and `video_count` come down with it — and
+/// knows nothing about what they are.
+///
+/// Which means the detail screen must ask, and until this provider existed it
+/// did not. `getById` was written, declared on the interface, implemented in
+/// both repositories, and called by NOTHING — so `content.items` was empty on
+/// every screen, in every build, and the album grid drew nothing while the
+/// card beside it advertised twenty photos.
+///
+/// autoDispose and per-id: a viewer flicking through ten titles should not
+/// accumulate ten albums, and the next visit re-reads rather than showing a
+/// title as it was an hour ago.
+final titleDetailProvider =
+    FutureProvider.autoDispose.family<VideoContent?, String>((ref, id) {
+  return ref.watch(contentRepositoryProvider).getById(id);
+});
+
 /// Where downloaded titles live.
 ///
 /// One instance, because it owns a SharedPreferences-backed index: two would

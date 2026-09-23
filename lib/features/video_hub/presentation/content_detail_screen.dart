@@ -71,7 +71,20 @@ class ContentDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _ContentDetailScreenState extends ConsumerState<ContentDetailScreen> {
-  VideoContent get content => widget.content;
+  /// The title as richly as it is currently known.
+  ///
+  /// [widget.content] is the CARD: whatever the catalogue row carried, which
+  /// is enough to draw the poster, the name and the facts immediately. The
+  /// provider adds the album, and the moment it arrives the grid appears.
+  ///
+  /// Falls back rather than waiting. A detail screen that showed a spinner
+  /// until a second request returned would blank the artwork the viewer just
+  /// tapped — and on a dead connection it would never show anything at all,
+  /// when everything except the album is already in hand.
+  VideoContent get content {
+    final full = ref.read(titleDetailProvider(widget.content.id)).asData?.value;
+    return full ?? widget.content;
+  }
 
   @override
   void initState() {
@@ -94,6 +107,9 @@ class _ContentDetailScreenState extends ConsumerState<ContentDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Watched, so the screen rebuilds when the album lands. The `content`
+    // getter above reads the same provider for the value.
+    ref.watch(titleDetailProvider(widget.content.id));
     final s = AppStrings.of(context);
     // audit_video_hub.md M5.
     final shownTitle = content.displayTitle(s.locale.languageCode);
