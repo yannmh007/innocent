@@ -61,6 +61,11 @@
   --fg:#e8eaed; --dim:#8b919c; --dim2:#5f6670;
   --acc:#f0b429; --ok:#34d399; --bad:#f87171; --info:#60a5fa;
   --r:6px; --row:34px; --ctl:30px;
+  /* The height of the sticky top bar. A VARIABLE because three other
+     things stick underneath it, and on a phone the bar becomes two rows
+     — a hard-coded 44px in those three places is how a sticky heading
+     ends up floating over the content it is supposed to label. */
+  --hh:44px;
   --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,monospace;
 }
 *{box-sizing:border-box}
@@ -107,7 +112,23 @@ input[type=checkbox]{width:15px;height:15px;accent-color:var(--acc);
 input[type=file]{height:auto;padding:6px;font-size:12px}
 .grid{display:grid;gap:8px;grid-template-columns:repeat(2,minmax(0,1fr))}
 .grid.one{grid-template-columns:1fr}
-@media(min-width:760px){.grid.wide{grid-template-columns:repeat(4,minmax(0,1fr))}}
+/* FIELD WIDTHS ARE A CLASS, NOT AN INLINE STYLE, and that is a fix rather
+   than tidying. The form used to set `grid-column: span 4` on its wide
+   fields from JavaScript, with a comment saying a two-column phone grid
+   would ignore it. It does not: an item that spans four tracks in a
+   two-track grid creates two IMPLICIT columns rather than being clamped, so
+   one textarea silently turned the whole form into four columns. Every other
+   field then had a quarter of a 390px screen — which is how "Tags / genres"
+   ended up as a label reading one letter per line beside a 20px input.
+   
+   As a class the span exists only where the tracks do. */
+.grid.wide>.w3,.grid.wide>.w4{grid-column:1/-1}
+@media(min-width:760px){
+  .grid.wide{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .grid.wide>.w2{grid-column:span 2}
+  .grid.wide>.w3{grid-column:span 3}
+  .grid.wide>.w4{grid-column:span 4}
+}
 button.b{height:var(--ctl);padding:0 11px;font:inherit;font-size:12.5px;
   background:var(--panel2);border:1px solid var(--line2);color:var(--fg);
   border-radius:var(--r);cursor:pointer;white-space:nowrap}
@@ -136,9 +157,29 @@ button.i.on{color:var(--acc)}
 [hidden]{display:none!important}
 
 /* ── table ─────────────────────────────────────────────────────────────── */
-.tw{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r)}
+/* THE HEADER USED TO BE DRAWN ON TOP OF THE FIRST ROW. Reported with a
+   screenshot showing "Test 003" sitting behind the TITLE/STATUS/CATEGORY
+   strip, with an empty band above it, in both mobile and desktop mode.
+
+   The cause is a rule of `position:sticky` that is easy to get wrong:
+   sticky resolves against the nearest SCROLLING ANCESTOR, not the page. The
+   moment this wrapper was given `overflow-x:auto` it became a scroll
+   container — the spec forces a `visible` overflow-y to compute to `auto`
+   when the other axis is not visible — so `top:44px` stopped meaning "44px
+   below the page's toolbar" and started meaning "44px below the top of this
+   box". The header was therefore pushed 44px down INSIDE the table, leaving
+   the empty band where its own layout box had been and landing squarely on
+   row one.
+   
+   Now the wrapper owns the scroll deliberately: it scrolls vertically too,
+   with a height cap, and the header sticks to ITS top with no offset. That
+   is both correct and better — a long catalogue scrolls under a pinned
+   header instead of scrolling the whole page away from it. */
+.tw{overflow:auto;max-height:min(70vh,620px);
+  -webkit-overflow-scrolling:touch;
+  border:1px solid var(--line);border-radius:var(--r)}
 table{width:100%;border-collapse:collapse;font-size:12.5px}
-th{position:sticky;top:44px;background:var(--panel);text-align:left;
+th{position:sticky;top:0;z-index:2;background:var(--panel);text-align:left;
   font-size:10.5px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;
   color:var(--dim2);padding:7px 8px;border-bottom:1px solid var(--line);
   white-space:nowrap}
@@ -152,6 +193,49 @@ td.num{text-align:right;font-variant-numeric:tabular-nums;color:var(--dim)}
   background:var(--panel2);display:block}
 .tt{font-weight:550;max-width:30ch;overflow:hidden;text-overflow:ellipsis}
 .tt small{display:block;font-weight:400;color:var(--dim2);font-size:11px}
+
+/* ── the catalogue list ────────────────────────────────────────────────── */
+/*
+   NOT A <table>, and that is the second half of the screenshot fix. A table
+   has one layout: columns, side by side, as wide as their content needs. On a
+   360px phone that means seven columns in a box that scrolls sideways, so
+   Folder was off the edge and the only way to read a row was to drag it into
+   view — which is exactly what the report showed.
+   
+   A grid has two layouts from the same markup. Wide, it IS a table: the
+   header and every row share one column template, so everything lines up.
+   Narrow, the same seven cells rearrange into a card — thumbnail down the
+   left, title and status on the first line, and the four facts wrapped onto a
+   second line underneath. Nothing scrolls sideways and nothing is hidden.
+   
+   `display:contents` is what makes one markup serve both. The four meta cells
+   are wrapped in a span so that narrow can flex them onto one line; wide
+   dissolves that wrapper so its children sit directly in the row's grid as if
+   it were not there. Without it the choice would be two renderers, and two
+   renderers drift.
+*/
+.lst{border:1px solid var(--line);border-radius:var(--r)}
+.lhead,.lrow{display:grid;align-items:center;gap:10px;padding:0 10px;
+  grid-template-columns:26px minmax(0,1.6fr) 52px 92px 78px 62px minmax(0,1fr)}
+.lhead{height:28px;background:var(--panel);
+  border-bottom:1px solid var(--line);border-radius:var(--r) var(--r) 0 0;
+  /* Sticks to the PAGE under the toolbar, not inside a scrolling box — see
+     the long note on .tw for what happens when those two are confused. */
+  position:sticky;top:var(--hh);z-index:10;
+  font-size:10.5px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;
+  color:var(--dim2)}
+/* min-height, not height. A title with a Burmese subtitle is two lines, and
+   a fixed 34px row clipped the second one against the border. */
+.lrow{min-height:var(--row);padding-top:3px;padding-bottom:3px;
+  border-bottom:1px solid var(--line);cursor:pointer}
+.lrow:last-child{border-bottom:0}
+.lrow:hover{background:var(--panel)}
+.lmeta{display:contents}
+.lhead .num,.lrow .num{text-align:right}
+.lrow .chip{justify-self:start}
+/* Wide by default; the narrow block swaps them. Both are always present, so
+   nothing has to re-render when the window changes size. */
+.lrow .n{display:none}
 
 /* ── media grid ────────────────────────────────────────────────────────── */
 .mg{display:grid;gap:7px;
@@ -187,6 +271,66 @@ td.num{text-align:right;font-variant-numeric:tabular-nums;color:var(--dim)}
   color:#fbd38d;font-size:9.5px;text-align:center;padding:1px}
 .mt .nosize + .borrowed,.mt .borrowed + .nosize{bottom:13px}
 
+/* ── narrow ────────────────────────────────────────────────────────────── */
+/*
+   One breakpoint, at 720px, because there are only two shapes this console
+   needs: a desk and a phone. The operator uses the phone one, so it is the
+   one that has to be right.
+*/
+@media(max-width:720px){
+  /* The bar becomes two rows. Cramming a brand, six tabs and an email
+     address into 44px left the tabs a thumb-wide sliver and clipped the
+     address to nothing useful. Everything that sticks underneath reads the
+     new height from --hh rather than being told twice. */
+  :root{--hh:78px}
+  .bar{height:auto;flex-wrap:wrap;padding:0 12px;gap:0 10px}
+  /* line-height, NOT display:flex. Making the brand a flex container turns
+     "Innocent <em>Studio</em>" into two flex items and drops the whitespace
+     between them, so it reads "InnocentStudio". */
+  .bar .brand{line-height:38px}
+  .bar .who{order:2;margin-left:auto;line-height:38px;max-width:58vw}
+  .bar nav{order:3;flex:0 0 100%;height:40px;
+    border-top:1px solid var(--line)}
+  .bar nav button{height:39px;padding:0 11px}
+  .bar .spacer{display:none}
+
+  main{padding:12px 12px 0}
+
+  /* A row becomes a card. The grid areas are written out rather than left to
+     auto-placement so the thumbnail can span both lines. */
+  .lst{border:0;border-radius:0}
+  .lhead{display:none}
+  .lrow{grid-template-columns:44px minmax(0,1fr) auto;
+    column-gap:10px;row-gap:3px;height:auto;padding:8px 10px;
+    border:1px solid var(--line);border-radius:var(--r);margin-bottom:6px}
+  .lrow>.cv{grid-column:1;grid-row:1/span 2;width:44px;height:58px;
+    align-self:start}
+  .lrow>.tt{grid-column:2;grid-row:1;max-width:none}
+  .lrow>.chip{grid-column:3;grid-row:1;justify-self:end}
+  /* The wrapper stops dissolving and becomes the second line. */
+  .lmeta{display:flex;flex-wrap:wrap;align-items:center;gap:2px 7px;
+    grid-column:2/-1;grid-row:2;min-width:0}
+  .lmeta>*{text-align:left!important;font-size:11px}
+  /* A separator between the facts. Without one, "movies 1 photo · 1 video
+     3 views test-001" reads as a single run-on string and the eye has to
+     parse it; with one it is four things. */
+  .lmeta>*+*::before{content:'·';margin-right:7px;color:var(--line2)}
+  .lrow .w{display:none}
+  .lrow .n{display:inline}
+
+  /* The remaining tables (signals, health, categories) still scroll
+     sideways, and that is acceptable for a screen read occasionally — but
+     they must not be taller than the phone. */
+  .tw{max-height:62vh}
+
+  /* Tiles get smaller so three fit across a 360px screen instead of two. */
+  .mg{grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:6px}
+
+  .modal{padding:0;align-items:flex-end}
+  .modal .sheet{width:100%;max-height:92vh;
+    border-radius:var(--r) var(--r) 0 0;border-bottom:0}
+}
+
 /* ── modal sheets (frame picker, photo picker) ─────────────────────────── */
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:50;
   display:flex;align-items:center;justify-content:center;padding:16px}
@@ -219,9 +363,18 @@ td.num{text-align:right;font-variant-numeric:tabular-nums;color:var(--dim)}
 .prog{display:flex;align-items:center;gap:8px;padding:3px 0;font-size:11.5px}
 .prog .n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;
   white-space:nowrap;color:var(--dim)}
-.bar{flex:0 0 90px;height:3px;background:var(--panel2);border-radius:2px;
+/* WAS ALSO CALLED `.bar`, AND IT WAS SILENTLY FLATTENING THE TOOLBAR.
+   
+   The top bar is `.bar` too, declared two hundred lines earlier with
+   `height:44px`. Same specificity, so the later rule won and the toolbar
+   was `height:3px` — a 44px row of brand, tabs and email overflowing a
+   three-pixel box. That is the clipped strip along the top of the reported
+   screenshots, and it had been there since this progress bar was written.
+   Two different things sharing one class name is a bug waiting for
+   whichever is declared last. */
+.ptrack{flex:0 0 90px;height:3px;background:var(--panel2);border-radius:2px;
   overflow:hidden}
-.bar i{display:block;height:100%;width:0;background:var(--acc)}
+.ptrack i{display:block;height:100%;width:0;background:var(--acc)}
 /* The faststart verdict. Three colours because the three states need
    different attention: moved is the good case and should be quiet, already
    is nothing at all, skipped is the one the operator may want to act on. */
@@ -273,22 +426,20 @@ td.num{text-align:right;font-variant-numeric:tabular-nums;color:var(--dim)}
       <span class="spacer"></span>
       <span class="hint" id="count"></span>
     </div>
-    <div class="tw"><table>
-      <thead><tr>
-        <th style="width:24px"></th>
-        <th>Title</th><th>Status</th><th>Category</th>
-        <th style="text-align:right">Media</th>
-        <th style="text-align:right">Views</th>
-        <th>Folder</th>
-      </tr></thead>
-      <tbody id="rows"></tbody>
-    </table></div>
+    <div class="lst">
+      <div class="lhead">
+        <span></span><span>Title</span><span>Status</span><span>Category</span>
+        <span class="num">Media</span><span class="num">Views</span>
+        <span>Folder</span>
+      </div>
+      <div id="rows"></div>
+    </div>
     <div id="listEmpty"></div>
   </section>
 
   <!-- ══ EDITOR ═════════════════════════════════════════════════════════ -->
   <section id="tab-editor" hidden>
-    <div class="sechead" style="position:sticky;top:44px;z-index:20;
+    <div class="sechead" style="position:sticky;top:var(--hh);z-index:20;
          background:var(--bg);padding:8px 0;margin:0 0 4px">
       <button class="b" id="back">&larr;</button>
       <strong id="eTitle" style="font-size:13.5px"></strong>
@@ -832,7 +983,7 @@ async function uploadAll(files, container, folder) {
     notes.push(nt);
     container.append(el('div', { className: 'prog' }, [
       el('span', { className: 'n' }, text(f.name)),
-      el('span', { className: 'bar' }, [bar]),
+      el('span', { className: 'ptrack' }, [bar]),
       nt,
     ]));
     return bar;
@@ -936,9 +1087,10 @@ function buildForm(host, prefix, values, onChange) {
           f.hint ? el('div', { className: 'hint', style: 'margin-top:3px' },
             text(f.hint)) : null,
         ]);
-    // Wide fields span more of the four-column grid on a desktop; on a phone
-    // the grid is two columns and this is ignored, which is the point.
-    if (f.w) cell.style.gridColumn = 'span ' + Math.min(f.w, 4);
+    // A class, so the stylesheet decides where the span applies. See the
+    // note on `.grid.wide` — setting `grid-column: span 4` directly does NOT
+    // get clamped by a narrower grid, it grows the grid.
+    if (f.w) cell.className = 'w' + Math.min(Math.max(f.w, 2), 4);
     wide.append(cell);
   }
 }
@@ -1011,28 +1163,47 @@ async function loadList() {
       const img = el('img', { className: 'cv', alt: '', loading: 'lazy' });
       if (t.poster_url) img.src = t.poster_url;
 
-      const tr = el('tr', {}, [
-        el('td', {}, [img]),
-        el('td', {}, [
-          el('div', { className: 'tt' }, [
-            text(t.title),
-            t.title_mm ? el('small', {}, text(t.title_mm)) : null,
-          ]),
-        ]),
-        el('td', {}, [
-          el('span', { className: 'chip ' + (t.published ? 'ok' : 'draft') },
-            text(t.published ? 'live' : 'draft')),
-        ]),
-        el('td', { className: 'mono', style: 'color:var(--dim)' },
+      // SEVEN CELLS, ONE MARKUP, TWO LAYOUTS. The four facts are wrapped in
+      // `.lmeta` so a phone can flex them onto a second line; a wide screen
+      // dissolves that wrapper with `display:contents` and they sit in the
+      // row's own grid, aligned under the header. See the CSS note.
+      //
+      // The counts carry their own label on a phone and not on the desk.
+      // Both forms are in the DOM and CSS picks one, because the column
+      // heading that explains "20 / 0" is only there on the wide layout —
+      // on a card, a bare pair of numbers next to a bare "3" is a puzzle
+      // rather than a fact. Writing it twice costs two spans; deciding it
+      // in JavaScript would mean re-rendering the list on a resize.
+      const pair = (wide, narrow, cls) => el('span', { className: cls }, [
+        el('span', { className: 'w' }, text(wide)),
+        el('span', { className: 'n' }, text(narrow)),
+      ]);
+      const photos = t.photo_count ?? 0;
+      const videos = t.video_count ?? 0;
+      const views = t.view_count ?? 0;
+
+      const meta = el('span', { className: 'lmeta' }, [
+        el('span', { className: 'mono', style: 'color:var(--dim)' },
           text(t.category)),
-        el('td', { className: 'num mono' },
-          text((t.photo_count ?? 0) + ' / ' + (t.video_count ?? 0))),
-        el('td', { className: 'num' }, text(t.view_count ?? 0)),
-        el('td', { className: 'mono', style: 'color:var(--dim2)' },
+        pair(photos + ' / ' + videos,
+             photos + ' photo / ' + videos + ' video', 'num mono'),
+        pair(String(views), views + (views === 1 ? ' view' : ' views'), 'num'),
+        el('span', { className: 'mono', style: 'color:var(--dim2)' },
           text(t.slug || '—')),
       ]);
-      tr.onclick = () => openEditor(t.id);
-      body.append(tr);
+
+      const row = el('div', { className: 'lrow' }, [
+        img,
+        el('div', { className: 'tt' }, [
+          text(t.title),
+          t.title_mm ? el('small', {}, text(t.title_mm)) : null,
+        ]),
+        el('span', { className: 'chip ' + (t.published ? 'ok' : 'draft') },
+          text(t.published ? 'live' : 'draft')),
+        meta,
+      ]);
+      row.onclick = () => openEditor(t.id);
+      body.append(row);
     }
   } catch (e) { say('bad', String(e.message || e)); }
 }

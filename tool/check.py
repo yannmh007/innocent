@@ -59,6 +59,10 @@ CHECKS = [
      'a setting the app stores and never reads — the single most repeated '
      'bug class in this project, ten instances recorded in the tree\'s own '
      'comments before anyone counted'),
+    ('console_css.py', None,
+     'two unrelated rules sharing one class name in the operator console — '
+     '`.bar` meant both the toolbar and an upload progress track, so the '
+     'toolbar rendered three pixels tall and its contents were clipped'),
     ('unread_contract.py', None,
      'a repository method built, implemented twice and called by nothing — '
      'the same bug class as dead_settings one level up. getById was the only '
