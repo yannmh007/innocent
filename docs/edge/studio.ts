@@ -2,8 +2,8 @@
 //
 // Was two calls (sign, publish) behind an upload form. It is now the whole
 // console: list, get, create, save, addAssets, updateAsset, setPrimary,
-// deleteAsset, deleteTitle, requests, approve, reject, categories,
-// saveCategory, stats, health, folder, sign, selftest.
+// deleteAsset, deleteTitle, reorder, requests, approve, reject, categories,
+// saveCategory, stats, health, folder, checkFolder, sign, selftest.
 //
 // WHY THIS EXISTS. Putting one title into the catalogue used to mean: open the
 // R2 dashboard, upload the video, upload the poster, copy both object keys,
@@ -11,8 +11,8 @@
 // `title_assets`, get the key spelling exactly right in both. Per title. From
 // a phone. That is the whole reason the catalogue has one row in it.
 //
-// `docs/studio/index.html` is the page that does all of it: pick the files,
-// type a name, tap Publish. This file is the API it talks to.
+// `docs/studio/index.html` is the page that does all of it. This file is the
+// API it talks to.
 //
 // THE PAGE IS NOT SERVED FROM HERE, and that is not a preference. Supabase
 // documents it: "Serving of HTML content is only supported with custom
@@ -184,11 +184,11 @@ async function operatorId(req: Request): Promise<string | null> {
 
 // --- object keys ------------------------------------------------------------
 //
-// ONE FOLDER PER TITLE, in both buckets:
+// ONE FOLDER PER TITLE, CHOSEN BY THE OPERATOR, in both buckets:
 //
-//   innocent-media/<slug>/video/20260922-solar-a1b2c3d4.mp4
-//   innocent-public/<slug>/photo/20260922-poster-e5f6a7b8.jpg
-//   innocent-public/<slug>/thumb/20260922-clip-01-c9d0e1f2.jpg
+//   innocent-media/<folder>/video/20260922-solar-a1b2c3d4.mp4
+//   innocent-public/<folder>/photo/20260922-poster-e5f6a7b8.jpg
+//   innocent-public/<folder>/thumb/20260922-clip-01-c9d0e1f2.jpg
 //
 // The buckets stay two, because that split is the security boundary and not
 // an organisational one: video is private and reached only through a signed
@@ -230,7 +230,7 @@ function safeKey(prefix: string, filename: string, folder?: string): string {
   // `slugify` again on the way past, even though the folder came from this
   // same file: it arrives over HTTP from a page, and a folder is the first
   // half of a path.
-  const dir = slugify(folder ?? '');
+  const dir = slugifyPath(folder ?? '');
   return dir ? `${dir}/${prefix}/${name}` : `${prefix}/${name}`;
 }
 
@@ -243,6 +243,27 @@ function safeKey(prefix: string, filename: string, folder?: string): string {
 function slugify(raw: string): string {
   return String(raw ?? '').toLowerCase()
     .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60);
+}
+
+/// A folder the operator chose, which may be nested.
+///
+/// `slugify` alone cannot be used for this: it turns `/` into a hyphen, so
+/// `movies/spiderman` would become the single folder `movies-spiderman` and
+/// the operator's choice of shelf would silently vanish. This slugifies each
+/// SEGMENT and rejoins, which keeps the nesting and still makes `../` and a
+/// leading `/` impossible — `..` slugifies to nothing and an empty segment is
+/// dropped.
+///
+/// Depth is capped at three. Not because anything breaks deeper, but because
+/// a path nobody can hold in their head is a path files get lost in, and R2's
+/// console is a prefix browser rather than a tree.
+function slugifyPath(raw: string): string {
+  return String(raw ?? '')
+    .split('/')
+    .map(slugify)
+    .filter(Boolean)
+    .slice(0, 3)
+    .join('/');
 }
 
 /// A folder name no other title is using.
@@ -404,11 +425,11 @@ Deno.serve(async (req: Request) => {
     }, 200, req);
   }
 
-  // --- folder: reserve the prefix before the first byte is uploaded --------
+  // --- folder: SUGGEST a free prefix --------------------------------------
   //
-  // Called once by the page before a new title's files go up, because the
-  // object keys have to carry the folder and they are decided at `sign` time
-  // — which is before the `titles` row exists to read a slug from.
+  // Suggests one from a title and guarantees uniqueness by appending a
+  // number. Kept for callers that want a name chosen for them; the console
+  // asks the operator instead and validates with `checkFolder`.
   //
   // Reserving is not locking. Two operators creating "Solar" in the same
   // minute would both be handed `solar`, and the second `create` would then
@@ -420,6 +441,39 @@ Deno.serve(async (req: Request) => {
     const wanted = String(body.title ?? '').trim();
     if (!wanted) return json({ error: 'no_title' }, 400, req);
     return json({ folder: await uniqueFolder(admin(), wanted) }, 200, req);
+  }
+
+  // --- checkFolder: is the name the operator typed free? ------------------
+  //
+  // SEPARATE FROM `folder`, and the difference is who decides. That one
+  // suggests; this one takes a name the operator chose and answers yes or no
+  // — because silently turning their `spiderman` into `spiderman-2` would put
+  // the files somewhere they did not ask for and would not think to look.
+  //
+  // Answers with what the key will actually be, so the page can show the real
+  // path rather than the operator's draft of it: `Spider Man /Movies` becomes
+  // `spider-man/movies` before anything is uploaded, and seeing that before
+  // committing is the whole point.
+  if (body.op === 'checkFolder') {
+    if (!SERVICE_KEY) return json({ error: 'no_service_key' }, 500, req);
+    const wanted = slugifyPath(String(body.folder ?? ''));
+    if (!wanted) return json({ ok: false, reason: 'empty', folder: '' }, 200, req);
+
+    const { data } = await admin().from('titles')
+      .select('id, title').eq('slug', wanted).maybeSingle();
+    return json({
+      ok: !data,
+      folder: wanted,
+      // Naming the occupant rather than just refusing: "taken" sends an
+      // operator hunting through the catalogue; "taken by Spider-Man (2019)"
+      // usually ends the question.
+      takenBy: data ? String((data as Record<string, unknown>).title ?? '') : null,
+      preview: {
+        video: `${MEDIA_BUCKET}/${wanted}/video/…`,
+        photo: `${PUBLIC_BUCKET}/${wanted}/photo/…`,
+        thumb: `${PUBLIC_BUCKET}/${wanted}/thumb/…`,
+      },
+    }, 200, req);
   }
 
   // --- selftest: can these credentials actually write to each bucket? ------
@@ -505,7 +559,7 @@ Deno.serve(async (req: Request) => {
     // can sign anything. Doing it lazily on first open means no backfill
     // migration and no title that can silently keep scattering files into the
     // flat prefixes. Existing objects are not moved — see safeKey.
-    let folder = slugify(String(title.slug ?? ''));
+    let folder = slugifyPath(String(title.slug ?? ''));
     if (!folder) {
       folder = await uniqueFolder(db, String(title.title ?? ''));
       await db.from('titles').update({ slug: folder }).eq('id', id);
@@ -583,10 +637,10 @@ Deno.serve(async (req: Request) => {
       // which would clutter the card and must still find the title.
       keywords: arr(body.keywords),
       episode_count: num(body.episodes),
-      // THE FOLDER, RECORDED. Every object key of this title begins with it,
-      // so it is not decoration: `addAssets` reads it back to put later files
-      // in the same place, and the R2 console is browsable by it.
-      slug: slugify(String(body.folder ?? '')) || null,
+      // THE FOLDER THE OPERATOR CHOSE. Every object key of this title begins
+      // with it, so it is not decoration: `addAssets` reads it back to put
+      // later files in the same place, and the R2 console is browsable by it.
+      slug: slugifyPath(String(body.folder ?? '')) || null,
       access_tier: body.free === true ? 'free' : 'premium',
       is_featured: body.featured === true,
       locator: firstVideo ? String(firstVideo.objectKey ?? '') : null,
@@ -719,6 +773,49 @@ Deno.serve(async (req: Request) => {
     const { error } = await admin().from('title_assets').update(upd).eq('id', id);
     if (error) return json({ error: 'update_failed', detail: error.message }, 500, req);
     return json({ ok: true, id }, 200, req);
+  }
+
+  // --- reorder: the whole sequence in one request -------------------------
+  //
+  // ONE CALL, NOT ONE PER TILE. Dragging a photo from position ten to
+  // position one changes every row between them, and ten `updateAsset` calls
+  // over a Myanmar mobile connection is ten chances to half-apply an order —
+  // leaving the grid in a state neither the operator nor the app expects, with
+  // no way to tell which half landed.
+  //
+  // Sent as the FULL sequence rather than a diff, because the page already
+  // knows the whole order and a diff would need both sides to agree on what
+  // changed. The last write wins, which is correct for a single operator and
+  // honestly stated for the day there are two.
+  if (body.op === 'reorder') {
+    const items = Array.isArray(body.order)
+      ? (body.order as Record<string, unknown>[]) : [];
+    if (items.length === 0) return json({ error: 'no_order' }, 400, req);
+    if (items.length > 500) return json({ error: 'too_many' }, 400, req);
+
+    const db = admin();
+    // Sequential rather than Promise.all: these are writes to one table and a
+    // burst of five hundred concurrent updates is how a pooler runs out of
+    // connections. The list is tens of rows, so the cost is milliseconds.
+    let done = 0;
+    for (const it of items) {
+      const id = String(it.id ?? '');
+      const order = num(it.sort_order);
+      if (!id || order === null) continue;
+      const { error } = await db.from('title_assets')
+        .update({ sort_order: order }).eq('id', id);
+      if (error) {
+        return json({
+          error: 'reorder_failed',
+          detail: error.message,
+          // Says how far it got. A partial order is recoverable only if
+          // somebody knows it happened.
+          applied: done,
+        }, 500, req);
+      }
+      done += 1;
+    }
+    return json({ ok: true, applied: done }, 200, req);
   }
 
   // --- setPrimary: which photo is the card, which video is the film --------

@@ -7,264 +7,402 @@
 <!--
   Innocent Studio — the operator console.
 
-  ONE FILE, NO BUILD STEP, ON PURPOSE. It is served by GitHub Pages straight
-  out of `docs/studio/` in a public repository, so the deploy is `git push` and
-  there is no toolchain to keep alive. The whole thing is also edited and
-  deployed from a phone, which is the actual operating constraint here.
+  ONE FILE, NO BUILD STEP, ON PURPOSE. Served by GitHub Pages straight out of
+  `docs/studio/` in a public repository, so the deploy is `git push`. The whole
+  thing is also edited and operated from a phone, which is the real constraint.
 
   THERE IS NO SECRET IN THIS FILE AND THERE CANNOT BE. The repository is
   public. The only credentials here are the project URL and the publishable
   key, both of which already ship inside every APK and neither of which
   authorises anything. Every privileged action goes to the `studio` edge
-  function, which checks the caller's user id against OPERATOR_IDS and holds
-  the R2 credentials in Supabase secrets.
+  function, which checks the caller against OPERATOR_IDS and holds the R2
+  credentials in Supabase secrets.
 
   FILES NEVER PASS THROUGH THE SERVER. The page asks for a presigned PUT and
-  uploads straight from the phone to R2. That is what makes a 900 MB video
-  possible at all — an edge function has a request-body limit a video does not
-  respect.
+  uploads straight from the phone to R2 — which is what makes a 900 MB video
+  possible at all.
 
-  WHY THE UPLOADER MEASURES THE FILE. Every asset in the catalogue had null
-  duration, width and height, and two things downstream need them: the app's
-  media mosaic sizes each row of tiles from the aspect ratios in it, and the
-  duration badge on a video tile cannot draw without a duration. The browser
-  has all three for free. It can also grab a poster frame from a video with a
-  <canvas>, which is what stops six clips in one title from all showing the
-  same picture.
+  ─────────────────────────────────────────────────────────────────────────
+  WHY THIS LOOKS THE WAY IT DOES (rewritten 23 Sep 2026)
+  ─────────────────────────────────────────────────────────────────────────
+
+  The first version was built out of big rounded cards, 16px padding and
+  15px type. It read as a phone app rather than a console, and the operator's
+  word for it was right: bloated. An admin surface is a place to SEE a lot and
+  CHANGE it quickly, and the two things that buy both are density and
+  hierarchy.
+
+  So, deliberately:
+
+  * ONE DENSITY THROUGHOUT. 13px base, an 4/8/12/16 spacing scale, 34px table
+    rows, 30px inputs. Mixing dense and comfortable components is what makes
+    an interface feel unresolved — attention lands on whatever is biggest
+    rather than on whatever matters.
+  * HAIRLINES, NOT CARDS. A card inside a card inside a card is three borders
+    saying nothing. Sections are separated by one 1px rule and a heading.
+  * A TABLE FOR THE CATALOGUE, not a list of tiles. Titles are records; they
+    are compared, sorted and scanned. Fifteen rows visible beats five.
+  * ONE ACCENT, and colour only where it carries state — published/draft,
+    cover, free preview. Everything else is greyscale so those three read
+    instantly.
+  * MONOSPACE FOR IDENTIFIERS. Folders, object keys and ids are strings that
+    get compared character by character; a proportional font makes that work.
+
+  References for the density decisions: Setproduct's 2026 data-table guide
+  (36-40px rows for dense views), Denali's density-and-spacing principles
+  (4/8/12 in high-density contexts, scale type and controls together, never
+  row height alone).
 -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
-  :root{
-    --bg:#0b0b0d; --s1:#141418; --s2:#1e1e24; --line:#2a2a32;
-    --fg:#f2f2f5; --dim:#9a9aa6; --acc:#f5c518; --ok:#3ecf8e; --bad:#ef4444;
-    --r:12px;
-  }
-  *{box-sizing:border-box}
-  html,body{margin:0;background:var(--bg);color:var(--fg);
-    font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
-  body{padding:0 0 96px;-webkit-text-size-adjust:100%}
-  header{position:sticky;top:0;z-index:20;background:rgba(11,11,13,.94);
-    backdrop-filter:blur(10px);border-bottom:1px solid var(--line);
-    padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px) * 0)}
-  h1{margin:0;font-size:17px;letter-spacing:.2px}
-  h2{margin:0 0 12px;font-size:15px;color:var(--fg)}
-  small{color:var(--dim);font-size:12.5px}
-  main{max-width:720px;margin:0 auto;padding:16px}
-  .tabs{display:flex;gap:6px;margin-top:10px;overflow-x:auto;scrollbar-width:none}
-  .tabs::-webkit-scrollbar{display:none}
-  .tab{flex:0 0 auto;padding:7px 14px;border-radius:999px;background:var(--s2);
-    border:1px solid var(--line);color:var(--dim);font-size:13.5px;cursor:pointer}
-  .tab[aria-selected=true]{background:var(--fg);color:#000;border-color:var(--fg);font-weight:600}
-  .card{background:var(--s1);border:1px solid var(--line);border-radius:var(--r);
-    padding:16px;margin-bottom:14px}
-  label{display:block;margin-top:14px;font-size:12.5px;color:var(--dim);
-    text-transform:uppercase;letter-spacing:.6px}
-  input,select,textarea{width:100%;margin-top:6px;padding:11px 12px;font-size:15px;
-    background:var(--s2);border:1px solid var(--line);color:var(--fg);
-    border-radius:9px;font-family:inherit}
-  textarea{min-height:86px;resize:vertical}
-  input[type=file]{padding:10px}
-  input[type=checkbox]{width:auto;margin:0}
-  button{font:inherit;cursor:pointer;border-radius:9px;border:1px solid var(--line);
-    background:var(--s2);color:var(--fg);padding:11px 14px}
-  button.primary{background:var(--acc);color:#000;border-color:var(--acc);font-weight:700;
-    width:100%;padding:14px;margin-top:18px}
-  button.danger{background:transparent;color:var(--bad);border-color:var(--bad)}
-  button.mini{padding:6px 10px;font-size:12.5px}
-  button:disabled{opacity:.5;cursor:default}
-  .row{display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap}
-  .row.tight{margin-top:8px;gap:6px}
-  .grow{flex:1 1 auto;min-width:0}
-  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  .bar{height:5px;background:var(--s2);border-radius:3px;overflow:hidden;margin-top:6px}
-  .bar>i{display:block;height:100%;width:0;background:var(--acc);transition:width .15s}
-  .chip{display:inline-block;padding:3px 9px;border-radius:999px;font-size:11.5px;
-    background:var(--s2);border:1px solid var(--line);color:var(--dim)}
-  .chip.ok{color:var(--ok);border-color:#1d4b38}
-  .chip.draft{color:var(--acc);border-color:#4a3f10}
-  .item{display:flex;gap:12px;align-items:center;padding:10px;border-radius:10px;
-    background:var(--s1);border:1px solid var(--line);margin-bottom:8px}
-  .item img{width:64px;height:64px;object-fit:cover;border-radius:8px;
-    background:var(--s2);flex:0 0 auto}
-  .item .t{font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;
-    white-space:nowrap}
-  .drop{border:2px dashed var(--line);border-radius:var(--r);padding:26px 16px;
-    text-align:center;color:var(--dim);margin-top:10px}
-  .drop.hot{border-color:var(--acc);color:var(--fg)}
-  .msg{margin:14px 0;padding:12px 14px;border-radius:10px;font-size:13.5px;
-    white-space:pre-wrap;word-break:break-word}
-  .msg.ok{background:#0f2a1e;color:#b9f2d6}
-  .msg.bad{background:#2a1111;color:#ffc9c9}
-  .msg.info{background:var(--s2);color:var(--dim)}
-  .empty{text-align:center;color:var(--dim);padding:34px 10px;font-size:14px}
-  table{width:100%;border-collapse:collapse;font-size:13px}
-  td,th{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left}
-  th{color:var(--dim);font-weight:500;font-size:11.5px;text-transform:uppercase}
-  [hidden]{display:none !important}
+:root{
+  --bg:#0c0d10; --panel:#131519; --panel2:#181b20;
+  --line:#23262d; --line2:#2f333b;
+  --fg:#e8eaed; --dim:#8b919c; --dim2:#5f6670;
+  --acc:#f0b429; --ok:#34d399; --bad:#f87171; --info:#60a5fa;
+  --r:6px; --row:34px; --ctl:30px;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--fg);
+  font:13px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  -webkit-text-size-adjust:100%}
+body{padding-bottom:64px}
+
+/* ── shell ─────────────────────────────────────────────────────────────── */
+header{position:sticky;top:0;z-index:30;background:rgba(12,13,16,.96);
+  backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.bar{display:flex;align-items:center;gap:14px;height:44px;
+  padding:0 14px;max-width:1180px;margin:0 auto}
+.brand{font-weight:650;font-size:13px;letter-spacing:.2px;white-space:nowrap}
+.brand em{color:var(--acc);font-style:normal}
+nav{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;flex:1}
+nav::-webkit-scrollbar{display:none}
+nav button{flex:0 0 auto;background:none;border:0;color:var(--dim);
+  font:inherit;padding:0 9px;height:44px;cursor:pointer;
+  border-bottom:2px solid transparent;white-space:nowrap}
+nav button:hover{color:var(--fg)}
+nav button[aria-selected=true]{color:var(--fg);border-bottom-color:var(--acc)}
+.who{font-family:var(--mono);font-size:11px;color:var(--dim2);
+  max-width:34vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+main{max-width:1180px;margin:0 auto;padding:14px}
+
+/* ── primitives ────────────────────────────────────────────────────────── */
+h2{margin:0;font-size:12px;font-weight:600;letter-spacing:.5px;
+  text-transform:uppercase;color:var(--dim)}
+.sec{border-top:1px solid var(--line);padding:14px 0;margin-top:4px}
+.sec:first-of-type{border-top:0}
+.sechead{display:flex;align-items:center;gap:10px;margin-bottom:10px;
+  flex-wrap:wrap}
+.hint{color:var(--dim2);font-size:11.5px;line-height:1.5}
+.spacer{flex:1}
+label{display:block;font-size:11px;color:var(--dim);margin-bottom:3px}
+input,select,textarea{width:100%;height:var(--ctl);padding:0 8px;font:inherit;
+  font-size:12.5px;background:var(--panel);border:1px solid var(--line2);
+  color:var(--fg);border-radius:var(--r);outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--acc)}
+textarea{height:auto;min-height:62px;padding:6px 8px;resize:vertical}
+input[type=checkbox]{width:15px;height:15px;accent-color:var(--acc);
+  vertical-align:-2px;margin:0}
+input[type=file]{height:auto;padding:6px;font-size:12px}
+.grid{display:grid;gap:8px;grid-template-columns:repeat(2,minmax(0,1fr))}
+.grid.one{grid-template-columns:1fr}
+@media(min-width:760px){.grid.wide{grid-template-columns:repeat(4,minmax(0,1fr))}}
+button.b{height:var(--ctl);padding:0 11px;font:inherit;font-size:12.5px;
+  background:var(--panel2);border:1px solid var(--line2);color:var(--fg);
+  border-radius:var(--r);cursor:pointer;white-space:nowrap}
+button.b:hover{border-color:var(--dim2)}
+button.b.p{background:var(--acc);border-color:var(--acc);color:#141414;
+  font-weight:650}
+button.b.d{color:var(--bad);border-color:#5b2626}
+button.b:disabled{opacity:.42;cursor:default}
+button.i{background:none;border:0;color:var(--dim);cursor:pointer;
+  padding:3px 5px;border-radius:4px;font-size:13px;line-height:1}
+button.i:hover{color:var(--fg);background:var(--panel2)}
+button.i.on{color:var(--acc)}
+.chip{display:inline-flex;align-items:center;gap:4px;height:19px;padding:0 6px;
+  border-radius:4px;font-size:10.5px;font-weight:600;letter-spacing:.3px;
+  background:var(--panel2);color:var(--dim);border:1px solid var(--line2)}
+.chip.ok{color:var(--ok);border-color:#1e4637;background:#0f2019}
+.chip.draft{color:var(--acc);border-color:#4a3a12;background:#211a08}
+.chip.info{color:var(--info);border-color:#1e3a5f;background:#0d1826}
+.mono{font-family:var(--mono);font-size:11.5px}
+.msg{margin:10px 0;padding:8px 10px;border-radius:var(--r);font-size:12.5px;
+  white-space:pre-wrap;word-break:break-word;border:1px solid transparent}
+.msg.ok{background:#0f2019;color:#a7f3d0;border-color:#1e4637}
+.msg.bad{background:#241012;color:#fecaca;border-color:#5b2626}
+.msg.info{background:var(--panel);color:var(--dim);border-color:var(--line2)}
+.empty{color:var(--dim2);padding:26px 4px;text-align:center;font-size:12.5px}
+[hidden]{display:none!important}
+
+/* ── table ─────────────────────────────────────────────────────────────── */
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r)}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{position:sticky;top:44px;background:var(--panel);text-align:left;
+  font-size:10.5px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;
+  color:var(--dim2);padding:7px 8px;border-bottom:1px solid var(--line);
+  white-space:nowrap}
+td{padding:0 8px;height:var(--row);border-bottom:1px solid var(--line);
+  white-space:nowrap;vertical-align:middle}
+tbody tr{cursor:pointer}
+tbody tr:hover{background:var(--panel)}
+tbody tr:last-child td{border-bottom:0}
+td.num{text-align:right;font-variant-numeric:tabular-nums;color:var(--dim)}
+.cv{width:24px;height:32px;object-fit:cover;border-radius:3px;
+  background:var(--panel2);display:block}
+.tt{font-weight:550;max-width:30ch;overflow:hidden;text-overflow:ellipsis}
+.tt small{display:block;font-weight:400;color:var(--dim2);font-size:11px}
+
+/* ── media grid ────────────────────────────────────────────────────────── */
+.mg{display:grid;gap:7px;
+  grid-template-columns:repeat(auto-fill,minmax(112px,1fr))}
+.mt{position:relative;border:1px solid var(--line2);border-radius:var(--r);
+  overflow:hidden;background:var(--panel)}
+.mt.drop{outline:2px solid var(--acc);outline-offset:-2px}
+.mt.drag{opacity:.35}
+.mt .ph{position:relative;aspect-ratio:16/10;background:#000}
+.mt .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.mt .ord{position:absolute;left:3px;top:3px;width:19px;height:19px;padding:0;
+  text-align:center;background:rgba(0,0,0,.72);border:0;color:#fff;
+  font-family:var(--mono);font-size:10.5px;border-radius:3px}
+.mt .cover{position:absolute;right:3px;top:3px;background:var(--acc);
+  color:#141414;font-size:9.5px;font-weight:700;padding:1px 4px;
+  border-radius:3px;letter-spacing:.3px}
+.mt .dur{position:absolute;right:3px;bottom:3px;background:rgba(0,0,0,.72);
+  font-family:var(--mono);font-size:10px;padding:1px 3px;border-radius:3px}
+.mt .kind{position:absolute;left:3px;bottom:3px;background:rgba(0,0,0,.72);
+  font-size:9.5px;padding:1px 4px;border-radius:3px;color:var(--dim)}
+.mt .row{display:flex;align-items:center;gap:1px;padding:2px 2px 2px 0;
+  border-top:1px solid var(--line)}
+.mt .hnd{cursor:grab;touch-action:none;padding:3px 6px;color:var(--dim2);
+  font-size:13px;line-height:1}
+.mt .hnd:active{cursor:grabbing}
+.mt .nosize{position:absolute;left:0;right:0;bottom:0;background:#4a1d1d;
+  color:#fecaca;font-size:9.5px;text-align:center;padding:1px}
+
+/* ── upload / drop ─────────────────────────────────────────────────────── */
+.drop{border:1px dashed var(--line2);border-radius:var(--r);padding:14px;
+  text-align:center;color:var(--dim2);font-size:12.5px}
+.drop.hot{border-color:var(--acc);color:var(--fg);background:var(--panel)}
+.prog{display:flex;align-items:center;gap:8px;padding:3px 0;font-size:11.5px}
+.prog .n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap;color:var(--dim)}
+.bar{flex:0 0 90px;height:3px;background:var(--panel2);border-radius:2px;
+  overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--acc)}
+.pathprev{font-family:var(--mono);font-size:11px;color:var(--dim2);
+  line-height:1.7;margin-top:6px;word-break:break-all}
+.pathprev b{color:var(--acc);font-weight:600}
 </style>
 </head>
 <body>
 
 <header>
-  <h1>Innocent Studio</h1>
-  <small id="whoami">not signed in</small>
-  <div class="tabs" id="tabs" hidden>
-    <button class="tab" data-tab="catalogue" aria-selected="true">Catalogue</button>
-    <button class="tab" data-tab="new" aria-selected="false">New title</button>
-    <button class="tab" data-tab="requests" aria-selected="false">Requests</button>
-    <button class="tab" data-tab="cats" aria-selected="false">Categories</button>
-    <button class="tab" data-tab="stats" aria-selected="false">Signals</button>
-    <button class="tab" data-tab="health" aria-selected="false">Health</button>
+  <div class="bar">
+    <span class="brand">Innocent <em>Studio</em></span>
+    <nav id="nav" hidden>
+      <button data-tab="catalogue" aria-selected="true">Catalogue</button>
+      <button data-tab="new" aria-selected="false">New</button>
+      <button data-tab="requests" aria-selected="false">Requests</button>
+      <button data-tab="cats" aria-selected="false">Categories</button>
+      <button data-tab="stats" aria-selected="false">Signals</button>
+      <button data-tab="health" aria-selected="false">Health</button>
+    </nav>
+    <span class="spacer"></span>
+    <span class="who" id="who"></span>
   </div>
 </header>
 
 <main>
-  <div id="gate" class="card">
-    <small>Sign in with the Google account registered as an operator.</small>
-    <button class="primary" id="signin">Continue with Google</button>
+  <div id="gate" class="sec">
+    <h2>Sign in</h2>
+    <p class="hint">Use the Google account registered as an operator.</p>
+    <button class="b p" id="signin" style="margin-top:8px">Continue with Google</button>
   </div>
 
   <div id="msg"></div>
 
-  <!-- ── CATALOGUE ─────────────────────────────────────────────────────── -->
+  <!-- ══ CATALOGUE ══════════════════════════════════════════════════════ -->
   <section id="tab-catalogue" hidden>
-    <div class="row">
-      <input class="grow" id="q" placeholder="Search titles">
-      <select id="statusFilter" style="width:auto">
+    <div class="sechead">
+      <input id="q" placeholder="Search titles" style="max-width:240px">
+      <select id="fStatus" style="width:auto">
         <option value="">All</option>
         <option value="published">Published</option>
         <option value="draft">Drafts</option>
       </select>
+      <span class="spacer"></span>
+      <span class="hint" id="count"></span>
     </div>
-    <div id="list"></div>
+    <div class="tw"><table>
+      <thead><tr>
+        <th style="width:24px"></th>
+        <th>Title</th><th>Status</th><th>Category</th>
+        <th style="text-align:right">Media</th>
+        <th style="text-align:right">Views</th>
+        <th>Folder</th>
+      </tr></thead>
+      <tbody id="rows"></tbody>
+    </table></div>
+    <div id="listEmpty"></div>
   </section>
 
-  <!-- ── EDITOR ────────────────────────────────────────────────────────── -->
+  <!-- ══ EDITOR ═════════════════════════════════════════════════════════ -->
   <section id="tab-editor" hidden>
-    <button class="mini" id="backToList">&larr; Catalogue</button>
-    <div class="card" style="margin-top:12px">
-      <h2>Details</h2>
-      <div id="editFields"></div>
-      <button class="primary" id="saveTitle">Save changes</button>
+    <div class="sechead" style="position:sticky;top:44px;z-index:20;
+         background:var(--bg);padding:8px 0;margin:0 0 4px">
+      <button class="b" id="back">&larr;</button>
+      <strong id="eTitle" style="font-size:13.5px"></strong>
+      <span class="chip mono" id="eFolder"></span>
+      <span class="chip" id="eDirty" hidden>unsaved</span>
+      <span class="spacer"></span>
+      <button class="b p" id="save" disabled>Save</button>
     </div>
 
-    <div class="card">
-      <h2>Media</h2>
-      <small>Order is what the app draws. The primary photo is the card image;
-        the primary video is what the Play path resolves to.<br>
-        R2 folder: <code id="folderName"></code> — in both buckets. Renaming
-        the title does not move the files.</small>
-      <div id="assetList" style="margin-top:12px"></div>
-      <div class="drop" id="addDrop">
-        Add more videos or photos
-        <input id="addFiles" type="file" multiple accept="video/*,image/*"
-               style="margin-top:12px">
+    <div class="sec">
+      <div class="sechead"><h2>Details</h2></div>
+      <div id="eFields"></div>
+    </div>
+
+    <div class="sec">
+      <div class="sechead">
+        <h2>Media</h2>
+        <span class="hint" id="mCount"></span>
+        <span class="spacer"></span>
+        <button class="b" id="addBtn">Add files</button>
       </div>
-      <div id="addProgress"></div>
+      <p class="hint">
+        Drag <b style="color:var(--dim)">⠿</b> to reorder, or type a position in
+        the box on a tile. This is ONE sequence — photos and clips interleave
+        exactly as the app draws them. <b style="color:var(--acc)">COVER</b> is
+        the card image; tap ★ on any photo to move it.
+      </p>
+      <div class="mg" id="mGrid" style="margin-top:10px"></div>
+      <div id="addWrap" hidden style="margin-top:10px">
+        <div class="drop" id="addDrop">
+          Drop files, or choose them
+          <input id="addFiles" type="file" multiple accept="video/*,image/*"
+                 style="margin-top:8px">
+        </div>
+      </div>
+      <div id="addProg"></div>
     </div>
 
-    <div class="card">
-      <h2>Danger</h2>
-      <small>Deleting a title removes its rows. The files stay in R2 and can be
-        pointed at again.</small>
-      <div class="row">
-        <input class="grow" id="delConfirm" placeholder="Type DELETE to confirm">
-        <button class="danger" id="delTitle">Delete title</button>
+    <div class="sec">
+      <div class="sechead"><h2>Danger</h2></div>
+      <p class="hint">Deleting removes the rows. The files stay in R2 under
+        <span class="mono" id="dFolder"></span> and can be pointed at again.</p>
+      <div class="sechead" style="margin-top:8px">
+        <input id="delConfirm" placeholder="Type DELETE" style="max-width:150px">
+        <button class="b d" id="delTitle">Delete title</button>
       </div>
     </div>
   </section>
 
-  <!-- ── NEW ───────────────────────────────────────────────────────────── -->
+  <!-- ══ NEW ════════════════════════════════════════════════════════════ -->
   <section id="tab-new" hidden>
-    <div class="card">
-      <h2>Files</h2>
-      <small>Pick every video and photo for this card at once. Videos are
-        measured and get a poster frame taken automatically.</small>
-      <div class="drop" id="newDrop">
-        <input id="newFiles" type="file" multiple accept="video/*,image/*">
+    <div class="sec">
+      <div class="sechead"><h2>Folder</h2></div>
+      <p class="hint">Where this title's files live in R2. Chosen by you, not
+        derived — and <b>frozen once the first file is uploaded</b>, because
+        every object key will name it. Renaming the title later does not move
+        the files. Use <span class="mono">/</span> to nest, up to three levels.</p>
+      <div class="grid one" style="margin-top:8px;max-width:420px">
+        <input id="nFolder" placeholder="spiderman   or   movies/spiderman"
+               autocapitalize="off" autocorrect="off" spellcheck="false">
       </div>
-      <div id="newPicked"></div>
+      <div class="pathprev" id="nPaths"></div>
     </div>
-    <div class="card">
-      <h2>Details</h2>
-      <div id="newFields"></div>
-      <button class="primary" id="create">Upload and save</button>
-      <button class="mini" id="selftest" style="margin-top:10px">Check bucket access</button>
+
+    <div class="sec">
+      <div class="sechead">
+        <h2>Files</h2>
+        <span class="spacer"></span>
+        <button class="b" id="selftest">Check bucket access</button>
+      </div>
+      <p class="hint">Every video is measured and gets a poster frame taken
+        automatically. Order can be changed after they are in.</p>
+      <div class="drop" id="nDrop" style="margin-top:8px">
+        Drop files, or choose them
+        <input id="nFiles" type="file" multiple accept="video/*,image/*"
+               style="margin-top:8px">
+      </div>
+      <div id="nPicked"></div>
+    </div>
+
+    <div class="sec">
+      <div class="sechead"><h2>Details</h2></div>
+      <div id="nFields"></div>
+      <button class="b p" id="create" style="margin-top:12px">Upload and save</button>
     </div>
   </section>
 
-  <!-- ── REQUESTS ──────────────────────────────────────────────────────── -->
+  <!-- ══ REQUESTS ═══════════════════════════════════════════════════════ -->
   <section id="tab-requests" hidden>
-    <div class="card">
-      <h2>Premium requests</h2>
-      <small>Approving writes the subscription. Nothing else does.</small>
-      <div id="reqList" style="margin-top:12px"></div>
+    <div class="sec">
+      <div class="sechead"><h2>Premium requests</h2></div>
+      <p class="hint">Approving writes the subscription. Nothing else does.</p>
+      <div id="reqList" style="margin-top:10px"></div>
     </div>
   </section>
 
-  <!-- ── CATEGORIES ────────────────────────────────────────────────────── -->
+  <!-- ══ CATEGORIES ═════════════════════════════════════════════════════ -->
   <section id="tab-cats" hidden>
-    <div class="card">
-      <h2>Categories</h2>
-      <small>The tab names in the app. Rename, reorder or hide them here — no
-        new app build needed. The <code>id</code> is NOT editable and never
-        will be: it is what every title stores, so changing one would orphan
-        every title using it.<br><br>
-        Adding a new category is not possible here either. The app keys off a
-        fixed list, so a row it has never heard of would look saved and do
-        nothing. Renaming, reordering and hiding are what this does.</small>
-      <div id="catList" style="margin-top:14px"></div>
+    <div class="sec">
+      <div class="sechead"><h2>Categories</h2></div>
+      <p class="hint">The tab names in the app. Rename, reorder or hide — no
+        app build needed. The <span class="mono">id</span> is not editable and
+        never will be: every title stores it, so changing one would orphan
+        every title using it. Adding a new category is not possible here
+        either — the app keys off a fixed list, so a row it has never heard of
+        would look saved and do nothing.</p>
+      <div id="catList" style="margin-top:10px"></div>
     </div>
   </section>
 
-  <!-- ── STATS ─────────────────────────────────────────────────────────── -->
+  <!-- ══ SIGNALS ════════════════════════════════════════════════════════ -->
   <section id="tab-stats" hidden>
-    <div class="card">
-      <h2>Last 7 days</h2>
-      <small>The event log is designed to be invisible — nothing on screen
-        changes whether it works or not. This tab is the only way to tell a
-        working log from a dead one.</small>
-      <div id="statsBody" style="margin-top:12px"></div>
+    <div class="sec">
+      <div class="sechead"><h2>Last 7 days</h2></div>
+      <p class="hint">The event log is designed to be invisible — nothing on
+        screen changes whether it works or not. This is the only way to tell a
+        working log from a dead one.</p>
+      <div id="statsBody" style="margin-top:10px"></div>
     </div>
   </section>
 
-  <!-- ── HEALTH ────────────────────────────────────────────────────────── -->
+  <!-- ══ HEALTH ═════════════════════════════════════════════════════════ -->
   <section id="tab-health" hidden>
-    <div class="card">
-      <h2>Catalogue health</h2>
-      <div id="healthTable" style="margin-top:12px;overflow-x:auto"></div>
+    <div class="sec">
+      <div class="sechead"><h2>Catalogue health</h2></div>
+      <div id="healthBody" style="margin-top:10px"></div>
     </div>
   </section>
 </main>
-
 <script>
 // ── configuration ────────────────────────────────────────────────────────
-// Neither of these is a secret; both already ship inside every APK. See the
-// comment at the top of this file and backend_config.dart.
+// Neither is a secret; both already ship inside every APK.
 const SB_URL = 'https://yqonvmuiezqvyqmexrft.supabase.co';
 const SB_KEY = 'sb_publishable_vTiAxBAhnZL_BqFcZD4m9A_Rb8Q8PHj';
 const API = SB_URL + '/functions/v1/studio';
 
-// Matches lib/features/video_hub/domain/content_category.dart. HARD-CODED
-// HERE FOR NOW, and that is a known limitation rather than a choice: the app
-// compiles these into libapp.so, so a category cannot be renamed from the
-// server until the client reads them as data. See docs/movies_v3_plan.md §2.3.
-// Keep this list and that enum in step until then.
+// Matches lib/features/video_hub/domain/content_category.dart. Hard-coded
+// here because the app compiles these into libapp.so — the Categories tab
+// renames them, it cannot add one. See docs/movies_v3_plan.md §2.3.
 const CATEGORIES = ['movies', 'series', 'reels'];
 
 const sb = supabase.createClient(SB_URL, SB_KEY);
 
-// ── tiny DOM helpers ─────────────────────────────────────────────────────
+// ── DOM helpers ──────────────────────────────────────────────────────────
 const $ = (id) => document.getElementById(id);
 const el = (tag, props = {}, kids = []) => {
   const n = Object.assign(document.createElement(tag), props);
   for (const k of [].concat(kids)) if (k != null) n.append(k);
   return n;
 };
-// TEXT, NEVER innerHTML, for anything that came out of the database. A title
-// is operator-entered, but "the operator typed it" is not the same as "it is
-// safe to evaluate", and a console that renders its own catalogue as HTML is
-// one paste away from running it.
+// TEXT, NEVER innerHTML, for anything out of the database. "The operator
+// typed it" is not the same as "safe to evaluate", and a console that renders
+// its own catalogue as HTML is one paste away from running it.
 const text = (s) => document.createTextNode(s == null ? '' : String(s));
 
 function say(kind, s) {
@@ -273,6 +411,16 @@ function say(kind, s) {
   if (kind !== 'info') window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 const clear = () => { $('msg').className = ''; $('msg').textContent = ''; };
+
+const fmtDur = (s) => {
+  if (!s) return '';
+  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), x = s % 60;
+  return (h ? h + ':' + String(m).padStart(2, '0') : String(m)) +
+    ':' + String(x).padStart(2, '0');
+};
+const fmtSize = (b) => b >= 1073741824 ? (b / 1073741824).toFixed(1) + ' GB'
+  : b >= 1048576 ? (b / 1048576).toFixed(0) + ' MB'
+  : (b / 1024).toFixed(0) + ' KB';
 
 // ── the API ──────────────────────────────────────────────────────────────
 async function api(payload) {
@@ -301,7 +449,7 @@ async function api(payload) {
 //
 // EVERYTHING IS BEST-EFFORT. A codec the browser cannot decode gives no
 // dimensions and no frame, and that must not stop the upload — a video with
-// null width still plays; it just gets a default tile shape. So every step
+// null width still plays, it just gets a default tile shape. So every step
 // here resolves rather than rejects.
 function measure(file) {
   const isVideo = file.type.startsWith('video');
@@ -338,9 +486,8 @@ function measure(file) {
         width: v.videoWidth || null,
         height: v.videoHeight || null,
       };
-      // 10% in, capped at 3s. The first frame of a video is very often black
-      // or a fade-in, which makes a useless thumbnail; a tenth of the way in
-      // is past the titles on almost anything.
+      // 10% in, capped at 3s. The first frame is very often black or a
+      // fade-in, which makes a useless thumbnail.
       const at = Math.min(3, (v.duration || 0) * 0.1);
       v.onseeked = () => {
         clearTimeout(bail);
@@ -364,10 +511,9 @@ function measure(file) {
 
 // ── uploading ────────────────────────────────────────────────────────────
 //
-// XHR, not fetch. `fetch` has no upload progress event — the whole body goes
-// and then the promise resolves — and an operator watching a 900 MB video
-// upload over a mobile connection with no progress bar will conclude the page
-// is broken and reload it.
+// XHR, not fetch. `fetch` has no upload progress event, and an operator
+// watching a 900 MB video go up over a mobile connection with no progress bar
+// will conclude the page is broken and reload it.
 function put(url, blob, onProgress) {
   return new Promise((resolve, reject) => {
     const x = new XMLHttpRequest();
@@ -375,12 +521,10 @@ function put(url, blob, onProgress) {
     x.upload.onprogress = (e) => {
       if (e.lengthComputable && onProgress) onProgress(e.loaded / e.total);
     };
-    x.onload = () => (x.status >= 200 && x.status < 300)
-      ? resolve()
+    x.onload = () => (x.status >= 200 && x.status < 300) ? resolve()
       // R2 does not attach CORS headers to its error responses, so the browser
-      // usually blocks the body before this can read it. Naming the likely
-      // causes is the most this side can honestly do — `Check bucket access`
-      // is what tells them apart, from the server, where there is no CORS.
+      // usually blocks the body before this can read it. Naming the two likely
+      // causes is the most this side can honestly do.
       : reject(new Error('R2 refused the upload (HTTP ' + x.status + '). ' +
           'Use "Check bucket access" to tell a CORS fault from a token fault.'));
     x.onerror = () => reject(new Error(
@@ -391,23 +535,13 @@ function put(url, blob, onProgress) {
 }
 
 /// Measures, presigns, uploads, and returns the asset descriptor the API wants.
-///
-/// `folder` is the title's own prefix in R2 — one folder per card, in both
-/// buckets, so everything belonging to Solar sits under `solar/` instead of
-/// being scattered through one flat list of every video ever uploaded. It is
-/// decided once per upload run and never changes afterwards: renaming a title
-/// does not move its files, because every object key already names the old
-/// prefix. See the note above safeKey() in studio.ts.
 async function uploadOne(file, onProgress, folder) {
   const isVideo = file.type.startsWith('video');
   const meta = await measure(file);
 
   const sig = await api({
-    op: 'sign',
-    kind: isVideo ? 'video' : 'photo',
-    filename: file.name,
-    size: file.size,
-    folder,
+    op: 'sign', kind: isVideo ? 'video' : 'photo',
+    filename: file.name, size: file.size, folder,
   });
   await put(sig.uploadUrl, file, onProgress);
 
@@ -421,16 +555,15 @@ async function uploadOne(file, onProgress, folder) {
     height: meta.height ?? null,
   };
 
-  // The poster frame, uploaded as a second object. Failing here loses a
-  // thumbnail, not the video — so it is caught and dropped rather than
-  // failing the file that already uploaded successfully.
+  // The poster frame, as a second object. Failing here loses a thumbnail, not
+  // the video, so it is caught and dropped rather than failing a file that
+  // already uploaded successfully.
   if (isVideo && meta.thumb) {
     try {
       const t = await api({
         op: 'sign', kind: 'thumb',
         filename: file.name.replace(/\.[^.]+$/, '') + '.jpg',
-        size: meta.thumb.size,
-        folder,
+        size: meta.thumb.size, folder,
       });
       await put(t.uploadUrl, meta.thumb);
       out.thumbKey = t.objectKey;
@@ -441,17 +574,15 @@ async function uploadOne(file, onProgress, folder) {
 
 /// Uploads a list of files with a progress row each, three at a time.
 ///
-/// BOUNDED CONCURRENCY, not Promise.all. A phone on a Myanmar mobile network
-/// asked to upload twelve files at once divides one slow pipe twelve ways and
-/// finishes none of them inside the presigned URL's one-hour life.
+/// BOUNDED CONCURRENCY, not Promise.all. A phone asked to upload twelve files
+/// at once divides one slow pipe twelve ways and finishes none of them inside
+/// the presigned URL's one-hour life.
 async function uploadAll(files, container, folder) {
-  const rows = files.map((f) => {
+  const bars = files.map((f) => {
     const bar = el('i');
-    container.append(el('div', { className: 'row tight' }, [
-      el('div', { className: 'grow' }, [
-        el('div', { style: 'font-size:12.5px' }, text(f.name)),
-        el('div', { className: 'bar' }, [bar]),
-      ]),
+    container.append(el('div', { className: 'prog' }, [
+      el('span', { className: 'n' }, text(f.name)),
+      el('span', { className: 'bar' }, [bar]),
     ]));
     return bar;
   });
@@ -462,9 +593,9 @@ async function uploadAll(files, container, folder) {
     while (next < files.length) {
       const i = next++;
       out[i] = await uploadOne(files[i], (p) => {
-        rows[i].style.width = Math.round(p * 100) + '%';
+        bars[i].style.width = Math.round(p * 100) + '%';
       }, folder);
-      rows[i].style.width = '100%';
+      bars[i].style.width = '100%';
     }
   };
   const workers = [];
@@ -473,37 +604,51 @@ async function uploadAll(files, container, folder) {
   return out;
 }
 
-// ── forms ────────────────────────────────────────────────────────────────
+/// Makes a dashed box accept a drop and feed it into the file input.
+function wireDrop(box, input, after) {
+  const stop = (e) => { e.preventDefault(); e.stopPropagation(); };
+  box.addEventListener('dragover', (e) => { stop(e); box.classList.add('hot'); });
+  box.addEventListener('dragleave', (e) => { stop(e); box.classList.remove('hot'); });
+  box.addEventListener('drop', (e) => {
+    stop(e);
+    box.classList.remove('hot');
+    if (!e.dataTransfer?.files?.length) return;
+    input.files = e.dataTransfer.files;
+    after();
+  });
+}
+
+// ── the detail form, shared by New and the editor ────────────────────────
 //
-// The detail fields are built from one description, used by both the New tab
-// and the editor. Two hand-written copies of an eleven-field form drift the
-// first time a field is added to one of them.
+// One description, two consumers. Two hand-written copies of a twelve-field
+// form drift the first time a field is added to one of them.
 const FIELDS = [
-  { k: 'title', label: 'Title', ph: 'Name shown in the app' },
-  { k: 'title_mm', label: 'Title (Burmese)' },
-  { k: 'synopsis', label: 'Description', type: 'textarea' },
+  { k: 'title', label: 'Title', ph: 'Name shown in the app', w: 2 },
+  { k: 'title_mm', label: 'Title (Burmese)', w: 2 },
+  { k: 'synopsis', label: 'Description', type: 'textarea', w: 4 },
+  { k: 'genres', label: 'Tags / genres', ph: 'action, drama, myanmar', w: 2,
+    hint: 'Chips on the card, and what the filter bar offers.' },
+  { k: 'keywords', label: 'Search keywords (hidden)', w: 2,
+    ph: 'alternate spelling, actor, မြန်မာလို အမည်',
+    hint: 'Searchable, never shown. The words people actually type.' },
   { k: 'category', label: 'Category', type: 'select', options: CATEGORIES },
-  { k: 'genres', label: 'Tags / genres', ph: 'action, drama, myanmar',
-    hint: 'Comma separated. These are the chips on the card and what the ' +
-          'filter bar offers.' },
-  { k: 'keywords', label: 'Search keywords (hidden)',
-    ph: 'alternate spelling, actor name, မြန်မာလို အမည်',
-    hint: 'Comma separated. Searchable but NEVER shown on the card — the ' +
-          'words people actually type. Alternate spellings, a Burmese ' +
-          'transliteration, an actor.' },
-  { k: 'year', label: 'Year', type: 'number', half: true },
-  { k: 'rating', label: 'Rating (0-10)', type: 'number', step: '0.1', half: true },
-  { k: 'quality_label', label: 'Quality', ph: 'HD, 4K, CAM', half: true },
-  { k: 'episode_count', label: 'Episodes', type: 'number', half: true },
   { k: 'access_tier', label: 'Access', type: 'select',
     options: ['premium', 'free'] },
-  { k: 'is_featured', label: 'Featured on the home hero', type: 'checkbox' },
-  { k: 'published', label: 'Published (visible in the app)', type: 'checkbox' },
+  { k: 'year', label: 'Year', type: 'number' },
+  { k: 'quality_label', label: 'Quality', ph: 'HD, 4K, CAM' },
+  { k: 'rating', label: 'Rating 0-10', type: 'number', step: '0.1' },
+  { k: 'episode_count', label: 'Episodes', type: 'number' },
+  { k: 'is_featured', label: 'Featured on the home hero', type: 'checkbox', w: 2 },
+  { k: 'published', label: 'Published (visible in the app)',
+    type: 'checkbox', w: 2 },
 ];
+const ARRAY_FIELDS = new Set(['genres', 'keywords']);
 
-function buildForm(host, prefix, values) {
+function buildForm(host, prefix, values, onChange) {
   host.textContent = '';
-  let pending = null;
+  const wide = el('div', { className: 'grid wide' });
+  host.append(wide);
+
   for (const f of FIELDS) {
     const id = prefix + f.k;
     let input;
@@ -511,43 +656,37 @@ function buildForm(host, prefix, values) {
     else if (f.type === 'select') {
       input = el('select', { id });
       for (const o of f.options) input.append(el('option', { value: o }, text(o)));
-    } else if (f.type === 'checkbox') {
-      input = el('input', { id, type: 'checkbox' });
-    } else {
+    } else if (f.type === 'checkbox') input = el('input', { id, type: 'checkbox' });
+    else {
       input = el('input', { id, type: f.type || 'text', placeholder: f.ph || '' });
       if (f.step) input.step = f.step;
     }
 
     const v = values ? values[f.k] : undefined;
     if (f.type === 'checkbox') input.checked = v === true;
-    else if (f.k === 'genres' || f.k === 'keywords') {
+    else if (ARRAY_FIELDS.has(f.k)) {
       input.value = Array.isArray(v) ? v.join(', ') : (v || '');
-    }
-    else input.value = v == null ? '' : v;
+    } else input.value = v == null ? '' : v;
 
-    let node;
-    if (f.type === 'checkbox') {
-      node = el('div', { className: 'row' },
-        [input, el('label', { htmlFor: id, style: 'margin:0;text-transform:none;letter-spacing:0' }, text(f.label))]);
-    } else {
-      node = el('div', {}, [
-        el('label', { htmlFor: id }, text(f.label)),
-        input,
-        f.hint ? el('small', {}, text(f.hint)) : null,
-      ]);
+    if (onChange) {
+      input.addEventListener('input', onChange);
+      input.addEventListener('change', onChange);
     }
 
-    // Short numeric fields sit two to a row so the form is not eleven screens
-    // tall on a phone.
-    if (f.half) {
-      if (pending) { host.append(el('div', { className: 'grid2' }, [pending, node])); pending = null; }
-      else pending = node;
-    } else {
-      if (pending) { host.append(pending); pending = null; }
-      host.append(node);
-    }
+    const cell = f.type === 'checkbox'
+      ? el('div', { style: 'display:flex;align-items:center;gap:7px;height:var(--ctl);align-self:end' },
+          [input, el('label', { htmlFor: id, style: 'margin:0' }, text(f.label))])
+      : el('div', {}, [
+          el('label', { htmlFor: id }, text(f.label)),
+          input,
+          f.hint ? el('div', { className: 'hint', style: 'margin-top:3px' },
+            text(f.hint)) : null,
+        ]);
+    // Wide fields span more of the four-column grid on a desktop; on a phone
+    // the grid is two columns and this is ignored, which is the point.
+    if (f.w) cell.style.gridColumn = 'span ' + Math.min(f.w, 4);
+    wide.append(cell);
   }
-  if (pending) host.append(pending);
 }
 
 function readForm(prefix) {
@@ -556,7 +695,7 @@ function readForm(prefix) {
     const n = $(prefix + f.k);
     if (!n) continue;
     if (f.type === 'checkbox') out[f.k] = n.checked;
-    else if (f.k === 'genres' || f.k === 'keywords') {
+    else if (ARRAY_FIELDS.has(f.k)) {
       out[f.k] = n.value.split(',').map((s) => s.trim()).filter(Boolean);
     } else if (f.type === 'number') {
       out[f.k] = n.value === '' ? null : Number(n.value);
@@ -569,8 +708,19 @@ function readForm(prefix) {
 const TABS = ['catalogue', 'new', 'requests', 'cats', 'stats', 'health',
   'editor'];
 function show(tab) {
+  // LEAVING THE EDITOR WITH UNSAVED DETAILS. `beforeunload` covers closing the
+  // tab, but not switching to another tab inside this page — which is the
+  // likelier way to lose typing, because it feels like navigation rather than
+  // leaving. Media changes save themselves on the spot, so this only ever
+  // fires for the form.
+  if (dirty && tab !== 'editor' &&
+      !$('tab-editor').hidden &&
+      !confirm('Discard unsaved changes to this title?')) {
+    return;
+  }
+  if (tab !== 'editor') markClean();
   for (const t of TABS) $('tab-' + t).hidden = (t !== tab);
-  for (const b of document.querySelectorAll('.tab')) {
+  for (const b of document.querySelectorAll('nav button')) {
     b.setAttribute('aria-selected', String(b.dataset.tab === tab));
   }
   clear();
@@ -580,165 +730,261 @@ function show(tab) {
   if (tab === 'stats') loadStats();
   if (tab === 'health') loadHealth();
 }
-for (const b of document.querySelectorAll('.tab')) {
+for (const b of document.querySelectorAll('nav button')) {
   b.onclick = () => show(b.dataset.tab);
 }
 
 // ── catalogue ────────────────────────────────────────────────────────────
 let listTimer = null;
 $('q').oninput = () => { clearTimeout(listTimer); listTimer = setTimeout(loadList, 300); };
-$('statusFilter').onchange = loadList;
+$('fStatus').onchange = loadList;
 
 async function loadList() {
-  const host = $('list');
-  host.textContent = '';
-  host.append(el('div', { className: 'empty' }, text('Loading…')));
+  const body = $('rows');
+  const empty = $('listEmpty');
+  empty.textContent = '';
   try {
     const { titles } = await api({
-      op: 'list', q: $('q').value, status: $('statusFilter').value,
+      op: 'list', q: $('q').value, status: $('fStatus').value,
     });
-    host.textContent = '';
+    body.textContent = '';
+    $('count').textContent = titles.length + (titles.length === 1 ? ' title' : ' titles');
     if (!titles.length) {
-      host.append(el('div', { className: 'empty' }, text('No titles yet.')));
+      empty.append(el('div', { className: 'empty' }, text('Nothing here.')));
       return;
     }
     for (const t of titles) {
-      const img = el('img', { alt: '', loading: 'lazy' });
+      const img = el('img', { className: 'cv', alt: '', loading: 'lazy' });
       if (t.poster_url) img.src = t.poster_url;
-      const chip = el('span', {
-        className: 'chip ' + (t.published ? 'ok' : 'draft'),
-      }, text(t.published ? 'published' : 'draft'));
 
-      const counts = [
-        (t.video_count ?? 0) + ' video',
-        (t.photo_count ?? 0) + ' photo',
-        (t.view_count ?? 0) + ' views',
-      ].join(' · ');
-
-      const row = el('div', { className: 'item' }, [
-        img,
-        el('div', { className: 'grow' }, [
-          el('div', { className: 't' }, text(t.title)),
-          el('div', {}, [chip, text(' '), el('small', {}, text(counts))]),
+      const tr = el('tr', {}, [
+        el('td', {}, [img]),
+        el('td', {}, [
+          el('div', { className: 'tt' }, [
+            text(t.title),
+            t.title_mm ? el('small', {}, text(t.title_mm)) : null,
+          ]),
         ]),
+        el('td', {}, [
+          el('span', { className: 'chip ' + (t.published ? 'ok' : 'draft') },
+            text(t.published ? 'live' : 'draft')),
+        ]),
+        el('td', { className: 'mono', style: 'color:var(--dim)' },
+          text(t.category)),
+        el('td', { className: 'num mono' },
+          text((t.photo_count ?? 0) + ' / ' + (t.video_count ?? 0))),
+        el('td', { className: 'num' }, text(t.view_count ?? 0)),
+        el('td', { className: 'mono', style: 'color:var(--dim2)' },
+          text(t.slug || '—')),
       ]);
-      row.onclick = () => openEditor(t.id);
-      host.append(row);
+      tr.onclick = () => openEditor(t.id);
+      body.append(tr);
     }
-  } catch (e) { say('bad', String(e.message || e)); host.textContent = ''; }
+  } catch (e) { say('bad', String(e.message || e)); }
 }
 
 // ── editor ───────────────────────────────────────────────────────────────
-let current = null;   // { title, assets, publicBase }
+let cur = null;      // { title, assets, folder, publicBase }
+let dirty = false;
 
-$('backToList').onclick = () => show('catalogue');
+$('back').onclick = () => show('catalogue');
+
+function markDirty() {
+  dirty = true;
+  const chip = $('eDirty');
+  chip.hidden = false;
+  // Amber, the one colour this console uses for "needs attention". A grey
+  // chip saying "unsaved" is a chip nobody reads.
+  chip.className = 'chip draft';
+  $('save').disabled = false;
+}
+function markClean() {
+  dirty = false;
+  $('eDirty').hidden = true;
+  $('save').disabled = true;
+}
 
 async function openEditor(id) {
   show('editor');
   say('info', 'Loading…');
   try {
-    current = await api({ op: 'get', id });
+    cur = await api({ op: 'get', id });
     clear();
-    buildForm($('editFields'), 'e_', current.title);
-    // Named on screen because it is what an operator types into the R2
-    // console to find these files, and nothing else in the UI reveals it.
-    $('folderName').textContent = current.folder + '/';
+    $('eTitle').textContent = cur.title.title || '(untitled)';
+    $('eFolder').textContent = cur.folder + '/';
+    $('dFolder').textContent = cur.folder + '/';
     $('delConfirm').value = '';
-    drawAssets();
+    buildForm($('eFields'), 'e_', cur.title, markDirty);
+    markClean();
+    drawMedia();
   } catch (e) { say('bad', String(e.message || e)); }
 }
 
 function assetThumb(a) {
-  const base = current.publicBase;
+  const base = cur.publicBase;
   if (a.thumb_key) return base + '/' + a.thumb_key;
   if (a.kind === 'photo') return base + '/' + a.object_key;
-  return current.title.poster_url || '';
+  return cur.title.poster_url || '';
 }
 
-function drawAssets() {
-  const host = $('assetList');
+function drawMedia() {
+  const host = $('mGrid');
   host.textContent = '';
-  const assets = current.assets;
+  const assets = cur.assets;
+  const photos = assets.filter((a) => a.kind === 'photo').length;
+  $('mCount').textContent =
+    assets.length + ' items · ' + photos + ' photo, ' + (assets.length - photos) + ' video';
+
   if (!assets.length) {
     host.append(el('div', { className: 'empty' }, text('No media yet.')));
     return;
   }
+
   assets.forEach((a, i) => {
     const img = el('img', { alt: '', loading: 'lazy' });
     const src = assetThumb(a);
     if (src) img.src = src;
 
-    const facts = [a.kind];
-    if (a.duration_s) facts.push(fmt(a.duration_s));
-    if (a.width && a.height) facts.push(a.width + '×' + a.height);
-    if (a.is_primary) facts.push('primary');
-    if (a.is_free && a.kind !== 'photo') facts.push('free preview');
-    // A null dimension is worth SAYING rather than leaving blank: it is
-    // exactly the state that makes the app's mosaic guess a tile shape, and an
-    // operator who cannot see it has no reason to re-upload.
-    if (!a.width) facts.push('no size');
+    // POSITION AS A TYPED NUMBER, not only as a drag. Dragging a tile from
+    // twenty to one on a phone means dragging past nineteen tiles while the
+    // list scrolls under the finger; typing "1" does it in one tap. The drag
+    // is for small moves, this is for large ones, and both write the same
+    // sequence.
+    const ord = el('input', {
+      className: 'ord', type: 'text', inputMode: 'numeric',
+      value: String(i + 1), title: 'Position',
+    });
+    ord.onclick = (e) => e.stopPropagation();
+    ord.onchange = () => {
+      const to = Math.max(1, Math.min(assets.length, Number(ord.value) || i + 1)) - 1;
+      if (to === i) { ord.value = String(i + 1); return; }
+      assets.splice(to, 0, assets.splice(i, 1)[0]);
+      drawMedia();
+      commitOrder();
+    };
 
-    const controls = el('div', { className: 'row tight' }, [
-      mini('↑', i === 0, () => move(i, -1)),
-      mini('↓', i === assets.length - 1, () => move(i, 1)),
-      mini(a.is_primary ? 'primary' : 'make primary', a.is_primary,
-        () => setPrimary(a)),
-      a.kind === 'photo' ? null
-        : mini(a.is_free ? 'free ✓' : 'free preview', false,
-            () => patchAsset(a, { is_free: !a.is_free })),
-      mini('delete', false, () => removeAsset(a)),
+    const ph = el('div', { className: 'ph' }, [
+      img, ord,
+      a.is_primary && a.kind === 'photo'
+        ? el('span', { className: 'cover' }, text('COVER')) : null,
+      el('span', { className: 'kind' },
+        text(a.kind === 'photo' ? 'photo' : a.kind)),
+      a.duration_s ? el('span', { className: 'dur' }, text(fmtDur(a.duration_s))) : null,
+      // The state that silently degrades the app's layout: with no width the
+      // mosaic cannot size the row and gives a portrait clip a landscape hole.
+      !a.width ? el('div', { className: 'nosize' }, text('no size')) : null,
     ]);
 
-    host.append(el('div', { className: 'item', style: 'align-items:flex-start' }, [
-      img,
-      el('div', { className: 'grow' }, [
-        el('div', { className: 't' }, text(a.label || a.object_key.split('/').pop())),
-        el('small', {}, text(facts.join(' · '))),
-        controls,
-      ]),
-    ]));
+    const handle = el('span', { className: 'hnd', title: 'Drag to reorder' },
+      text('⠿'));
+
+    const star = el('button', {
+      className: 'i' + (a.is_primary && a.kind === 'photo' ? ' on' : ''),
+      title: a.kind === 'photo' ? 'Use as card image' : 'Use as the main video',
+    }, text(a.is_primary ? '★' : '☆'));
+    star.onclick = (e) => { e.stopPropagation(); setPrimary(a); };
+
+    const freeBtn = a.kind === 'photo' ? null : el('button', {
+      className: 'i' + (a.is_free ? ' on' : ''),
+      title: a.is_free ? 'Free preview — anyone can watch' : 'Mark as free preview',
+    }, text(a.is_free ? '◉' : '○'));
+    if (freeBtn) {
+      freeBtn.onclick = (e) => {
+        e.stopPropagation();
+        patchAsset(a, { is_free: !a.is_free });
+      };
+    }
+
+    const del = el('button', { className: 'i', title: 'Remove' }, text('🗑'));
+    del.onclick = (e) => { e.stopPropagation(); removeAsset(a); };
+
+    const tile = el('div', { className: 'mt' }, [
+      ph,
+      el('div', { className: 'row' },
+        [handle, star, freeBtn, el('span', { className: 'spacer' }), del]),
+    ]);
+    tile.dataset.index = String(i);
+    wireDrag(tile, handle, i);
+    host.append(tile);
   });
 }
 
-const fmt = (s) => {
-  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), x = s % 60;
-  const mm = String(m).padStart(h ? 2 : 1, '0');
-  return (h ? h + ':' : '') + mm + ':' + String(x).padStart(2, '0');
-};
+// ── drag to reorder ──────────────────────────────────────────────────────
+//
+// POINTER EVENTS, NOT HTML5 DRAG-AND-DROP. The HTML5 API does not fire on
+// touch at all in any mobile browser, and this console is operated from a
+// phone — so a drag built on it would work only on the machine nobody uses.
+//
+// The handle is the only element with `touch-action: none`. That is
+// deliberate: making the whole tile undraggable-by-scroll would trap the page
+// the moment a finger landed on the grid, and the grid is most of the screen.
+let dragIdx = null;
 
-function mini(label, disabled, onClick) {
-  const b = el('button', { className: 'mini', disabled }, text(label));
-  b.onclick = (ev) => { ev.stopPropagation(); onClick(); };
-  return b;
+function wireDrag(tile, handle, index) {
+  handle.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    dragIdx = index;
+    tile.classList.add('drag');
+    handle.setPointerCapture(e.pointerId);
+  });
+
+  handle.addEventListener('pointermove', (e) => {
+    if (dragIdx === null) return;
+    const over = document.elementFromPoint(e.clientX, e.clientY)?.closest('.mt');
+    for (const t of document.querySelectorAll('.mt')) t.classList.remove('drop');
+    if (over && over !== tile) over.classList.add('drop');
+  });
+
+  const end = (e) => {
+    if (dragIdx === null) return;
+    const over = document.elementFromPoint(e.clientX, e.clientY)?.closest('.mt');
+    const from = dragIdx;
+    dragIdx = null;
+    tile.classList.remove('drag');
+    for (const t of document.querySelectorAll('.mt')) t.classList.remove('drop');
+    if (!over || over === tile) return;
+    const to = Number(over.dataset.index);
+    if (Number.isNaN(to) || to === from) return;
+    cur.assets.splice(to, 0, cur.assets.splice(from, 1)[0]);
+    drawMedia();
+    commitOrder();
+  };
+  handle.addEventListener('pointerup', end);
+  handle.addEventListener('pointercancel', () => {
+    dragIdx = null;
+    tile.classList.remove('drag');
+    for (const t of document.querySelectorAll('.mt')) t.classList.remove('drop');
+  });
 }
 
-/// Moves an asset one place and writes the NEW ORDER OF BOTH ROWS.
+/// Writes the WHOLE sequence in one request.
 ///
-/// Both, not one: sort_order values are not guaranteed distinct (an import or
-/// a deletion can leave two rows sharing one), so writing only the row that
-/// moved can produce a swap that changes nothing on screen.
-async function move(i, delta) {
-  const a = current.assets[i], b = current.assets[i + delta];
-  if (!b) return;
+/// Not one call per moved tile: dragging from ten to one changes every row
+/// between, and ten requests over a mobile connection is ten chances to
+/// half-apply an order that neither the operator nor the app expects.
+async function commitOrder() {
   try {
-    await api({ op: 'updateAsset', id: a.id, patch: { sort_order: i + delta } });
-    await api({ op: 'updateAsset', id: b.id, patch: { sort_order: i } });
-    current.assets[i] = b; current.assets[i + delta] = a;
-    a.sort_order = i + delta; b.sort_order = i;
-    drawAssets();
+    await api({
+      op: 'reorder',
+      order: cur.assets.map((a, i) => ({ id: a.id, sort_order: i })),
+    });
+    cur.assets.forEach((a, i) => { a.sort_order = i; });
+    say('ok', 'Order saved.');
   } catch (e) { say('bad', String(e.message || e)); }
 }
 
 async function setPrimary(a) {
   try {
     await api({ op: 'setPrimary', id: a.id });
-    // Only within the same kind: the primary photo and the primary video are
-    // two independent slots and clearing both here would show the wrong state
-    // until the next reload.
-    for (const o of current.assets) if (o.kind === a.kind) o.is_primary = false;
+    // Only within the same kind: the cover photo and the main video are two
+    // independent slots, and clearing both would show the wrong state until
+    // the next reload.
+    for (const o of cur.assets) if (o.kind === a.kind) o.is_primary = false;
     a.is_primary = true;
-    drawAssets();
-    say('ok', 'Primary updated. The card image and locator follow it.');
+    drawMedia();
+    say('ok', a.kind === 'photo'
+      ? 'Card image updated. The app picks it up on its next fetch.'
+      : 'Main video updated.');
   } catch (e) { say('bad', String(e.message || e)); }
 }
 
@@ -746,7 +992,7 @@ async function patchAsset(a, patch) {
   try {
     await api({ op: 'updateAsset', id: a.id, patch });
     Object.assign(a, patch);
-    drawAssets();
+    drawMedia();
   } catch (e) { say('bad', String(e.message || e)); }
 }
 
@@ -754,54 +1000,58 @@ async function removeAsset(a) {
   if (!confirm('Remove this file from the title? The object stays in R2.')) return;
   try {
     await api({ op: 'deleteAsset', id: a.id });
-    current.assets = current.assets.filter((o) => o.id !== a.id);
-    drawAssets();
+    cur.assets = cur.assets.filter((o) => o.id !== a.id);
+    drawMedia();
   } catch (e) { say('bad', String(e.message || e)); }
 }
 
-$('saveTitle').onclick = async () => {
-  const b = $('saveTitle');
-  b.disabled = true;
+$('save').onclick = async () => {
+  $('save').disabled = true;
   try {
     const f = readForm('e_');
     await api({
-      op: 'save', id: current.title.id,
+      op: 'save', id: cur.title.id,
       patch: {
         title: f.title, title_mm: f.title_mm, synopsis: f.synopsis,
         category: f.category, year: f.year, rating: f.rating,
-        quality_label: f.quality_label, genres: f.genres,
-        keywords: f.keywords,
+        quality_label: f.quality_label, genres: f.genres, keywords: f.keywords,
         episode_count: f.episode_count, access_tier: f.access_tier,
         is_featured: f.is_featured, published: f.published,
       },
     });
+    Object.assign(cur.title, f);
+    $('eTitle').textContent = f.title || '(untitled)';
+    markClean();
     say('ok', 'Saved.');
-  } catch (e) { say('bad', String(e.message || e)); }
-  b.disabled = false;
+  } catch (e) { say('bad', String(e.message || e)); $('save').disabled = false; }
+};
+
+$('addBtn').onclick = () => {
+  $('addWrap').hidden = !$('addWrap').hidden;
+  if (!$('addWrap').hidden) $('addFiles').click();
 };
 
 $('addFiles').onchange = async () => {
   const files = [...$('addFiles').files];
   if (!files.length) return;
-  const host = $('addProgress');
+  const host = $('addProg');
   host.textContent = '';
   try {
-    say('info', 'Uploading ' + files.length + ' file(s)…');
-    // `current.folder` comes from the `get` that opened this editor, which
-    // also backfills one for a title created before foldering existed.
-    const assets = await uploadAll(files, host, current.folder);
-    await api({ op: 'addAssets', titleId: current.title.id, assets });
+    say('info', 'Uploading ' + files.length + ' file(s) into ' + cur.folder + '/…');
+    const assets = await uploadAll(files, host, cur.folder);
+    await api({ op: 'addAssets', titleId: cur.title.id, assets });
     $('addFiles').value = '';
     host.textContent = '';
-    await openEditor(current.title.id);
-    say('ok', 'Added ' + assets.length + ' file(s).');
+    $('addWrap').hidden = true;
+    await openEditor(cur.title.id);
+    say('ok', 'Added ' + assets.length + ' file(s). Drag to place them.');
   } catch (e) { say('bad', String(e.message || e)); }
 };
 
 $('delTitle').onclick = async () => {
   try {
     await api({
-      op: 'deleteTitle', id: current.title.id, confirm: $('delConfirm').value.trim(),
+      op: 'deleteTitle', id: cur.title.id, confirm: $('delConfirm').value.trim(),
     });
     say('ok', 'Deleted.');
     show('catalogue');
@@ -809,43 +1059,65 @@ $('delTitle').onclick = async () => {
 };
 
 // ── new title ────────────────────────────────────────────────────────────
-buildForm($('newFields'), 'n_', { category: 'movies', access_tier: 'premium', published: true });
+buildForm($('nFields'), 'n_',
+  { category: 'movies', access_tier: 'premium', published: true });
 
-/// Makes a dashed box accept a drop and feed it into the file input.
+let folderTimer = null;
+let folderOk = false;
+
+$('nFolder').oninput = () => {
+  folderOk = false;
+  clearTimeout(folderTimer);
+  folderTimer = setTimeout(checkFolder, 350);
+  $('nPaths').textContent = 'checking…';
+};
+
+/// Shows what the object keys will ACTUALLY be, before a byte is uploaded.
 ///
-/// Wired rather than left as decoration: the box already looks droppable, and
-/// a target that looks droppable and is not reads as a broken page. On a phone
-/// none of this fires and the input inside does all the work.
-function wireDrop(box, input, after) {
-  const stop = (e) => { e.preventDefault(); e.stopPropagation(); };
-  box.addEventListener('dragover', (e) => { stop(e); box.classList.add('hot'); });
-  box.addEventListener('dragleave', (e) => { stop(e); box.classList.remove('hot'); });
-  box.addEventListener('drop', (e) => {
-    stop(e);
-    box.classList.remove('hot');
-    if (!e.dataTransfer?.files?.length) return;
-    // Assigning a DataTransfer's FileList to the input is what keeps ONE code
-    // path: everything downstream reads input.files and does not care whether
-    // the files were dropped or picked.
-    input.files = e.dataTransfer.files;
-    after();
-  });
+/// The operator types `Spider Man /Movies`; the keys will say
+/// `spider-man/movies`. Seeing that beforehand is the whole point of letting
+/// them choose — a folder silently rewritten is a folder they will not think
+/// to look in.
+async function checkFolder() {
+  const raw = $('nFolder').value.trim();
+  const out = $('nPaths');
+  out.textContent = '';
+  if (!raw) { out.textContent = 'Required — pick a folder first.'; return; }
+  try {
+    const r = await api({ op: 'checkFolder', folder: raw });
+    folderOk = r.ok;
+    if (!r.folder) { out.textContent = 'That reduces to nothing usable.'; return; }
+    out.append(
+      el('div', {}, [text('innocent-media/'), el('b', {}, text(r.folder)),
+        text('/video/…')]),
+      el('div', {}, [text('innocent-public/'), el('b', {}, text(r.folder)),
+        text('/photo/…')]),
+      el('div', {}, [text('innocent-public/'), el('b', {}, text(r.folder)),
+        text('/thumb/…')]),
+    );
+    if (!r.ok) {
+      out.append(el('div', { style: 'color:var(--bad);margin-top:4px' },
+        text('Already used' + (r.takenBy ? ' by "' + r.takenBy + '"' : '') +
+          '. Pick another.')));
+    }
+  } catch (e) { out.textContent = String(e.message || e); }
 }
 
-$('newFiles').onchange = () => {
-  const host = $('newPicked');
+$('nFiles').onchange = () => {
+  const host = $('nPicked');
   host.textContent = '';
-  const files = [...$('newFiles').files];
+  const files = [...$('nFiles').files];
   if (!files.length) return;
-  const mb = (n) => (n / 1048576).toFixed(1) + ' MB';
   for (const f of files) {
-    host.append(el('div', { className: 'row tight' }, [
-      el('small', { className: 'grow' }, text(f.name)),
-      el('small', {}, text(mb(f.size))),
+    host.append(el('div', { className: 'prog' }, [
+      el('span', { className: 'n' }, text(f.name)),
+      el('span', { className: 'hint' }, text(fmtSize(f.size))),
     ]));
   }
   // The refusal the server would give anyway, said before an hour is spent
-  // uploading toward it. 5 GiB is R2's single-PUT limit; multipart is not built.
+  // uploading toward it. 5 GiB is R2's single-PUT limit; multipart is not
+  // built, and an hour ending in an unreadable CORS error is the worst
+  // failure available here.
   const big = files.filter((f) => f.size > 5 * 1024 * 1024 * 1024);
   if (big.length) {
     say('bad', 'Too large for a single upload (5 GiB limit): ' +
@@ -855,35 +1127,36 @@ $('newFiles').onchange = () => {
 
 $('create').onclick = async () => {
   const b = $('create');
-  const files = [...$('newFiles').files];
-  if (!files.length) return say('bad', 'Pick at least one file.');
+  const files = [...$('nFiles').files];
   const f = readForm('n_');
+  const raw = $('nFolder').value.trim();
+
+  if (!raw) return say('bad', 'Pick a folder first — it cannot be changed later.');
+  if (!folderOk) { await checkFolder(); if (!folderOk) return say('bad', 'That folder is not available.'); }
   if (!f.title) return say('bad', 'A title needs a name.');
+  if (!files.length) return say('bad', 'Pick at least one file.');
 
   b.disabled = true;
-  const host = $('newPicked');
+  const host = $('nPicked');
   host.textContent = '';
   try {
-    // RESERVED BEFORE THE FIRST BYTE. The object keys have to carry the
-    // folder, and they are fixed at sign time — which is before the `titles`
-    // row exists to read a slug back from.
-    const { folder } = await api({ op: 'folder', title: f.title });
-    say('info', 'Uploading ' + files.length + ' file(s) into ' + folder + '/…');
-    const assets = await uploadAll(files, host, folder);
+    say('info', 'Uploading ' + files.length + ' file(s) into ' + raw + '/…');
+    const assets = await uploadAll(files, host, raw);
     const res = await api({
-      op: 'create',
-      folder,
+      op: 'create', folder: raw,
       title: f.title, titleMm: f.title_mm, synopsis: f.synopsis,
       category: f.category, year: f.year, rating: f.rating,
       quality: f.quality_label, genres: f.genres, keywords: f.keywords,
-      episodes: f.episode_count,
-      free: f.access_tier === 'free', featured: f.is_featured,
-      publish: f.published, assets,
+      episodes: f.episode_count, free: f.access_tier === 'free',
+      featured: f.is_featured, publish: f.published, assets,
     });
-    say('ok', 'Created "' + res.title + '" (' + res.status + ').');
-    $('newFiles').value = '';
+    $('nFiles').value = '';
+    $('nFolder').value = '';
+    $('nPaths').textContent = '';
     host.textContent = '';
     openEditor(res.id);
+    say('ok', 'Created "' + res.title + '" (' + res.status +
+      '). Set the cover and the order below.');
   } catch (e) { say('bad', String(e.message || e)); }
   b.disabled = false;
 };
@@ -895,7 +1168,7 @@ $('selftest').onclick = async () => {
   } catch (e) { say('bad', String(e.message || e)); }
 };
 
-wireDrop($('newDrop'), $('newFiles'), () => $('newFiles').onchange());
+wireDrop($('nDrop'), $('nFiles'), () => $('nFiles').onchange());
 wireDrop($('addDrop'), $('addFiles'), () => $('addFiles').onchange());
 
 // ── requests ─────────────────────────────────────────────────────────────
@@ -909,31 +1182,35 @@ async function loadRequests() {
       return;
     }
     for (const r of requests) {
-      const days = el('input', {
-        type: 'number', value: '365', style: 'width:84px',
-      });
-      const ok = el('button', { className: 'mini' }, text('Approve'));
-      const no = el('button', { className: 'mini danger' }, text('Reject'));
+      const days = el('input', { type: 'number', value: '365',
+        style: 'width:72px' });
+      const ok = el('button', { className: 'b p' }, text('Approve'));
+      const no = el('button', { className: 'b d' }, text('Reject'));
       ok.onclick = async () => {
         ok.disabled = no.disabled = true;
         try {
           await api({ op: 'approve', id: r.id, days: Number(days.value) || 365 });
           say('ok', 'Approved.'); loadRequests();
-        } catch (e) { say('bad', String(e.message || e)); ok.disabled = no.disabled = false; }
+        } catch (e) {
+          say('bad', String(e.message || e));
+          ok.disabled = no.disabled = false;
+        }
       };
       no.onclick = async () => {
         if (!confirm('Reject this request?')) return;
         try { await api({ op: 'reject', id: r.id }); say('ok', 'Rejected.'); loadRequests(); }
         catch (e) { say('bad', String(e.message || e)); }
       };
-      host.append(el('div', { className: 'item', style: 'align-items:flex-start' }, [
-        el('div', { className: 'grow' }, [
-          el('div', { className: 't' }, text(r.email || r.phone || r.id)),
-          el('small', {}, text([r.plan_id, r.reference, r.sender_phone,
-            (r.submitted_at || '').slice(0, 16).replace('T', ' ')]
+      host.append(el('div', { className: 'sechead',
+        style: 'border-bottom:1px solid var(--line);padding-bottom:8px' }, [
+        el('div', { style: 'min-width:150px' }, [
+          el('div', {}, text(r.email || r.phone || r.id)),
+          el('div', { className: 'hint mono' }, text([r.plan_id, r.reference,
+            r.sender_phone, (r.submitted_at || '').slice(0, 16).replace('T', ' ')]
             .filter(Boolean).join(' · '))),
-          el('div', { className: 'row tight' }, [days, ok, no]),
         ]),
+        el('span', { className: 'spacer' }),
+        el('span', { className: 'hint' }, text('days')), days, ok, no,
       ]));
     }
   } catch (e) { say('bad', String(e.message || e)); }
@@ -948,98 +1225,94 @@ async function loadCategories() {
     for (const c of categories) {
       const label = el('input', { value: c.label || '' });
       const labelMm = el('input', { value: c.label_mm || '' });
-      const order = el('input', { type: 'number', value: String(c.sort_order ?? 0) });
+      const order = el('input', { type: 'number',
+        value: String(c.sort_order ?? 0), style: 'width:64px' });
       const vis = el('input', { type: 'checkbox' });
       vis.checked = c.is_visible !== false;
       // `all` is the landing tab and the app refuses to hide it whatever this
       // says, so the box is disabled rather than lying about what it does.
       if (c.id === 'all') vis.disabled = true;
 
-      const save = el('button', { className: 'mini' }, text('Save'));
+      const save = el('button', { className: 'b' }, text('Save'));
       save.onclick = async () => {
         save.disabled = true;
         try {
-          await api({
-            op: 'saveCategory', id: c.id,
-            patch: {
-              label: label.value,
-              label_mm: labelMm.value,
-              sort_order: Number(order.value) || 0,
-              is_visible: vis.checked,
-            },
-          });
+          await api({ op: 'saveCategory', id: c.id, patch: {
+            label: label.value, label_mm: labelMm.value,
+            sort_order: Number(order.value) || 0, is_visible: vis.checked,
+          } });
           say('ok', 'Saved. The app picks it up on its next launch.');
         } catch (e) { say('bad', String(e.message || e)); }
         save.disabled = false;
       };
 
-      host.append(el('div', { className: 'item', style: 'align-items:flex-start' }, [
-        el('div', { className: 'grow' }, [
-          el('div', { className: 't' }, text(c.id)),
-          el('small', {}, text('id — frozen')),
-          el('div', { className: 'grid2', style: 'margin-top:8px' }, [
-            el('div', {}, [el('label', {}, text('Label')), label]),
-            el('div', {}, [el('label', {}, text('Label (Burmese)')), labelMm]),
-          ]),
-          el('div', { className: 'row tight' }, [
-            el('small', {}, text('order')), order,
-            vis, el('small', {}, text(c.id === 'all' ? 'always visible' : 'visible')),
-            save,
-          ]),
-        ]),
+      host.append(el('div', { className: 'sechead',
+        style: 'border-bottom:1px solid var(--line);padding-bottom:8px' }, [
+        el('span', { className: 'chip mono', style: 'min-width:58px' }, text(c.id)),
+        el('div', { style: 'flex:1;min-width:120px' },
+          [el('label', {}, text('Label')), label]),
+        el('div', { style: 'flex:1;min-width:120px' },
+          [el('label', {}, text('Burmese')), labelMm]),
+        el('div', {}, [el('label', {}, text('Order')), order]),
+        el('div', { style: 'display:flex;align-items:center;gap:6px;align-self:end;height:var(--ctl)' },
+          [vis, el('span', { className: 'hint' },
+            text(c.id === 'all' ? 'always shown' : 'visible'))]),
+        save,
       ]));
     }
   } catch (e) { say('bad', String(e.message || e)); }
 }
 
-// ── stats ────────────────────────────────────────────────────────────────
+// ── signals ──────────────────────────────────────────────────────────────
 async function loadStats() {
   const host = $('statsBody');
   host.textContent = '';
   try {
     const st = await api({ op: 'stats' });
-
-    const section = (heading, rows, note) => {
-      host.append(el('div', { style: 'margin-top:14px' }, [
-        el('div', { className: 't' }, text(heading)),
-        note ? el('small', {}, text(note)) : null,
-      ]));
-      if (!rows.length) {
-        host.append(el('small', {}, text('nothing yet')));
-        return;
-      }
-      const t = el('table');
-      for (const [k, v] of rows) {
-        t.append(el('tr', {}, [el('td', {}, text(k)), el('td', {}, text(v))]));
-      }
-      host.append(t);
-    };
-
     const pairs = (o) => Object.entries(o || {}).sort((a, b) => b[1] - a[1]);
 
-    section('Events by kind', pairs(st.kinds),
+    const block = (heading, rows, note) => {
+      host.append(el('div', { className: 'sechead', style: 'margin-top:14px' },
+        [el('h2', {}, text(heading))]));
+      if (note) host.append(el('div', { className: 'hint' }, text(note)));
+      if (!rows.length) {
+        host.append(el('div', { className: 'hint', style: 'margin-top:4px' },
+          text('nothing yet')));
+        return;
+      }
+      const t = el('table', { style: 'margin-top:6px;max-width:420px' });
+      for (const [k, v] of rows) {
+        t.append(el('tr', {}, [
+          el('td', {}, text(k)),
+          el('td', { className: 'num mono' }, text(v)),
+        ]));
+      }
+      host.append(el('div', { className: 'tw' }, [t]));
+    };
+
+    block('Events by kind', pairs(st.kinds),
       st.capped ? 'capped at 5000 — the real number is higher' : null);
 
-    // WHY THIS ONE IS WORTH LOOKING AT FIRST. `vpn_suspect` means the
-    // connection claimed one country while the phone's clock and language
-    // said Myanmar — the case that would otherwise push a VPN user into
-    // somebody else's recommendations. All rows reading "unknown" means
-    // cf-ipcountry is not reaching this project at all, which is the one
-    // assumption in migration 014 that no SQL console can check.
-    section('Geography', pairs(st.geo_trust),
+    // WORTH LOOKING AT FIRST. `vpn_suspect` means the connection claimed one
+    // country while the phone's clock and language said Myanmar — the case
+    // that would otherwise push a VPN user into somebody else's
+    // recommendations. All rows reading "unknown" means cf-ipcountry is not
+    // reaching this project at all, which is the one assumption in migration
+    // 014 that no SQL console can check.
+    block('Geography', pairs(st.geo_trust),
       'vpn_suspect = the phone says Myanmar and the connection does not. ' +
       'All "unknown" = no country header is arriving.');
 
-    section('Audience (what a recommender groups by)', pairs(st.audience));
+    block('Audience (what a recommender groups by)', pairs(st.audience));
 
-    section('Searches that found nothing',
+    block('Searches that found nothing',
       (st.search_gaps || []).map((g) => [g.q, g.misses]),
       'The audience naming what the catalogue is missing, in their own words.');
 
-    section('Trending (time-decayed x completion)',
+    block('Trending (time-decayed × completion)',
       (st.trending || []).map((t) => [t.title_id, t.score]),
-      'Not wired into the app yet — it needs about two weeks of events ' +
-      'before it ranks anything but noise.');
+      'Not wired into the app yet — it needs about two weeks of events before ' +
+      'it ranks anything but noise.');
 
     if (st.error) say('bad', st.error);
   } catch (e) { say('bad', String(e.message || e)); }
@@ -1047,7 +1320,7 @@ async function loadStats() {
 
 // ── health ───────────────────────────────────────────────────────────────
 async function loadHealth() {
-  const host = $('healthTable');
+  const host = $('healthBody');
   host.textContent = '';
   try {
     const { rows } = await api({ op: 'health' });
@@ -1057,23 +1330,26 @@ async function loadHealth() {
     }
     const cols = ['title', 'status', 'videos', 'photos', 'has_poster', 'verdict'];
     const t = el('table');
-    t.append(el('tr', {}, cols.map((c) => el('th', {}, text(c.replace(/_/g, ' '))))));
+    t.append(el('thead', {}, [el('tr', {},
+      cols.map((c) => el('th', {}, text(c.replace(/_/g, ' ')))))]));
+    const tb = el('tbody');
     for (const r of rows) {
-      t.append(el('tr', {}, cols.map((c) => {
+      tb.append(el('tr', {}, cols.map((c) => {
         const td = el('td', {}, text(r[c]));
         if (c === 'verdict' && r[c] !== 'ok') td.style.color = 'var(--bad)';
         return td;
       })));
     }
-    host.append(t);
+    t.append(tb);
+    host.append(el('div', { className: 'tw' }, [t]));
   } catch (e) { say('bad', String(e.message || e)); }
 }
 
 // ── sign-in ──────────────────────────────────────────────────────────────
 $('signin').onclick = () => sb.auth.signInWithOAuth({
   provider: 'google',
-  // Back to THIS page, not to the site root. The redirect must also be listed
-  // on Supabase's Auth → URL Configuration page or the round trip lands on an
+  // Back to THIS page, not the site root. The redirect must also be listed on
+  // Supabase's Auth → URL Configuration page or the round trip lands on an
   // error page with no explanation.
   options: { redirectTo: location.origin + location.pathname },
 });
@@ -1082,13 +1358,20 @@ async function boot() {
   const { data: { session } } = await sb.auth.getSession();
   const signedIn = !!session;
   $('gate').hidden = signedIn;
-  $('tabs').hidden = !signedIn;
-  $('whoami').textContent = signedIn
-    ? (session.user.email || session.user.id)
-    : 'not signed in';
+  $('nav').hidden = !signedIn;
+  $('who').textContent = signedIn ? (session.user.email || session.user.id) : '';
   if (signedIn) show('catalogue');
   else for (const t of TABS) $('tab-' + t).hidden = true;
 }
+
+// Leaving with unsaved details is almost always a mistake, and the editor is
+// the one screen where a back gesture can lose typing. Media changes save
+// themselves on the spot, so this only ever fires for the form.
+window.addEventListener('beforeunload', (e) => {
+  if (!dirty) return;
+  e.preventDefault();
+  e.returnValue = '';
+});
 
 sb.auth.onAuthStateChange(() => boot());
 boot();
