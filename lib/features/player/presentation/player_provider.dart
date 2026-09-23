@@ -1174,9 +1174,6 @@ class PlayerController extends StateNotifier<PlayerState> {
   /// stop, so a normal pause-then-resume does not flap the notification.
   Timer? _bgPauseTimer;
 
-  /// True when something currently on screen actually displays the playback
-  /// position. Used to skip state writes (and therefore whole-screen rebuilds)
-  /// during ordinary fullscreen playback with the controls hidden.
   /// The black screen just ended.
   ///
   /// Idempotent by design: three separate signals can arrive first (buffering
@@ -1199,6 +1196,9 @@ class PlayerController extends StateNotifier<PlayerState> {
     }
   }
 
+  /// True when something currently on screen actually displays the playback
+  /// position. Used to skip state writes (and therefore whole-screen rebuilds)
+  /// during ordinary fullscreen playback with the controls hidden.
   bool _positionIsVisible() =>
       state.controlsVisible ||
       state.isLocked ||
