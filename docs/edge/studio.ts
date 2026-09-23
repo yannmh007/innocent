@@ -768,6 +768,12 @@ Deno.serve(async (req: Request) => {
     if ('duration_s' in p) upd.duration_s = num(p.duration_s);
     if ('width' in p) upd.width = num(p.width);
     if ('height' in p) upd.height = num(p.height);
+    // Added with the thumbnail tools. A video uploaded by the old page has
+    // null for every one of these, and the console can now measure them from
+    // the operator's local copy without re-uploading the video — so the
+    // patch has to be able to carry them.
+    if ('bytes' in p) upd.bytes = num(p.bytes);
+    if ('mime' in p) upd.mime = str(p.mime);
     if (Object.keys(upd).length === 0) return json({ error: 'empty_patch' }, 400, req);
 
     const { error } = await admin().from('title_assets').update(upd).eq('id', id);
@@ -919,17 +925,36 @@ Deno.serve(async (req: Request) => {
   // geo breakdown in particular is worth watching: it is what says whether
   // `cf-ipcountry` reaches this project at all, which is the one assumption
   // in migration 014 that could not be checked from a SQL console.
+  //
+  // START-UP LATENCY LEADS IT NOW. A user reported the player showing "Slow
+  // connection — buffering…" for seconds on a 13 MB/s link, and there was no
+  // way to tell whether that was everyone, one title or one evening. The
+  // client now reports time-to-first-frame and `startup_latency` turns it
+  // into percentiles — p95, not a mean, because a mean hides exactly the
+  // tail that makes people stop opening the app.
   if (body.op === 'stats') {
     const db = admin();
     const since = new Date(Date.now() - 7 * 86400_000).toISOString();
 
-    const [kinds, geo, gaps, trend] = await Promise.all([
+    const [kinds, geo, gaps, trend, startup, slowest, health] =
+      await Promise.all([
       db.from('events').select('kind').gte('occurred_at', since).limit(5000),
       db.from('event_geo').select('geo_trust, audience')
         .gte('occurred_at', since).limit(5000),
       db.from('search_gaps').select('*').limit(25),
       db.rpc('trending_titles', { p_limit: 10 }),
+      // How long viewers stare at black before a video starts. The only
+      // answer to "it feels slow" that can be argued with.
+      db.rpc('startup_latency', { p_days: 7 }),
+      db.rpc('startup_by_title', { p_days: 7, p_limit: 8 }),
+      // Assets that look fine and are not — chiefly videos with no
+      // thumbnail of their own, which have been drawing the title poster.
+      db.from('media_health').select('*').limit(500),
     ]);
+
+    const rows = Array.isArray(health.data)
+      ? (health.data as Record<string, unknown>[]) : [];
+    const countWhere = (f: string) => rows.filter((r) => r[f] === true).length;
 
     // Counted here rather than in SQL because PostgREST has no group-by and
     // adding an RPC for two tallies over at most five thousand rows is more
@@ -953,6 +978,21 @@ Deno.serve(async (req: Request) => {
       audience: tally(geo.data, 'audience'),
       search_gaps: gaps.data ?? [],
       trending: trend.data ?? [],
+      startup: startup.data ?? [],
+      slowest_titles: slowest.data ?? [],
+      media_health: {
+        total: rows.length,
+        borrows_poster: countWhere('borrows_poster'),
+        no_dimensions: countWhere('no_dimensions'),
+        no_duration: countWhere('no_duration'),
+        no_size: countWhere('no_size'),
+        // The worst offenders by name, so the operator can go straight to
+        // the title rather than hunting for which one the number meant.
+        worst: rows
+          .filter((r) => r.borrows_poster === true)
+          .slice(0, 12)
+          .map((r) => ({ title: r.title, kind: r.kind, id: r.title_id })),
+      },
       error: kinds.error?.message ?? geo.error?.message ?? null,
     }, 200, req);
   }

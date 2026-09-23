@@ -26,6 +26,7 @@ Step 1 before step 3 is the one people skip, and it is the one that would have
 saved the failed build: the Analyzer already understands every object in the
 project and reports the same errors the compiler will, without the wait.
 """
+import shutil
 import subprocess
 import sys
 import os
@@ -91,6 +92,40 @@ def main() -> int:
         if result.returncode != 0:
             failed.append((script, result.stdout, purpose))
 
+    # ── the one check that is not Python ──────────────────────────────────
+    #
+    # The console rewrites the box order of every MP4 an operator uploads, so
+    # the moov atom is at the front and playback can start without a second
+    # round trip to the tail of the file. That rewrite patches the chunk
+    # offset table by hand, and an error in it produces a file of exactly the
+    # right length that plays as noise — with the operator's original already
+    # deleted. It is the only code in this repository that can destroy data
+    # silently, so it is tested, and the test is JavaScript because the code
+    # is.
+    #
+    # SKIPPED LOUDLY, NEVER QUIETLY. If node is missing the line says so in
+    # the same column as a failure, because a check that disappears without
+    # comment is worse than one that was never written: the summary still
+    # reads "all passed".
+    js_test = os.path.join(TOOL, 'js', 'faststart_test.mjs')
+    if os.path.exists(js_test):
+        node = shutil.which('node')
+        if not node:
+            print('SKIP  %-26s %s' % ('faststart_test.mjs',
+                  '=== node not installed — the MP4 rewrite is UNTESTED ==='))
+        else:
+            r = subprocess.run([node, js_test], capture_output=True,
+                               text=True, cwd=ROOT)
+            ok = r.returncode == 0
+            print('%-5s %-26s %s' % ('PASS' if ok else 'FAIL',
+                  'faststart_test.mjs',
+                  '=== %d check(s) on the MP4 rewrite ===' %
+                  r.stdout.count('ok   ')))
+            if not ok:
+                failed.append(('faststart_test.mjs', r.stdout + r.stderr,
+                               'an MP4 rewrite that corrupts the video it '
+                               'was meant to speed up'))
+
     print()
     if not failed:
         print('All structural checks passed.')
@@ -102,7 +137,11 @@ def main() -> int:
         print('-' * 68)
         print('%s  --  guards against: %s' % (script, purpose))
         for line in out.splitlines():
-            if line.startswith(' -') or line.startswith('[info]'):
+            # 'FAIL ' is the JavaScript test's prefix; without it a failing
+            # MP4 rewrite would print a FAIL header and then nothing that
+            # says which assertion broke.
+            if (line.startswith(' -') or line.startswith('[info]')
+                    or line.startswith('FAIL ')):
                 print(line)
     return 1
 

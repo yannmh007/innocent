@@ -227,6 +227,21 @@ class Ev {
 
   /// Every ~30s while playing. Where people stop is the most valuable signal
   /// in the whole schema.
+  /// How long the screen stayed black before the first frame, in ms, in
+  /// `meta.open_ms`.
+  ///
+  /// THE NUMBER THAT ENDS THE ARGUMENT. Start-up latency was previously
+  /// something people described ("it spins for a while") and something we
+  /// guessed at ("probably the moov atom"), and neither is a basis for
+  /// changing anything. A distribution of real measurements from real phones
+  /// on real Myanmar connections is: it says whether the fix worked, which
+  /// titles are slow, and whether slow is the file or the network.
+  ///
+  /// Carried on its own event rather than folded into `play_start` because
+  /// `play_start` is logged before the player screen even exists — the number
+  /// does not exist yet at that point.
+  static const String playOpen = 'play_open';
+
   static const String playProgress = 'play_progress';
 
   /// ≥90% watched.

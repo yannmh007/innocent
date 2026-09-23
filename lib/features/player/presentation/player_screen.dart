@@ -816,6 +816,16 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
       PlaybackLog.add('reporter init failed: $e');
       return;
     }
+    // The controller measures the black screen; only this screen knows which
+    // title it belonged to. The callback is the seam between them, and it is
+    // why the player — which also plays local files, music and vault content
+    // — never has to learn what a title id is.
+    try {
+      ref.read(playerControllerProvider.notifier).onFirstFrame =
+          (took) => _reporter?.reportOpen(took);
+    } catch (e) {
+      PlaybackLog.add('open timing not wired: $e');
+    }
     _reportTimer = Timer.periodic(PlaybackReporter.reportEvery, (_) {
       if (!mounted) return;
       _reportProgress();
@@ -861,6 +871,15 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
       try {
         _reporter?.finish();
       } catch (_) {}
+    }
+    // Hand the callback back before this screen goes. The controller outlives
+    // the screen, so a callback left pointing at a finished reporter would
+    // attribute the NEXT video's start-up time to the previous title — and a
+    // finished reporter drops it, so the new one would be missing instead.
+    try {
+      ref.read(playerControllerProvider.notifier).onFirstFrame = null;
+    } catch (_) {
+      // Nothing to release if the provider is already gone.
     }
     try {
       _floatingPipActiveAtTeardown = ref.read(floatingPipProvider).isActive;
@@ -2293,10 +2312,15 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
               ),
             ),
 
-          // Audit fix (C4): tier-1 "slow connection" hint, shown
-          // after 3 s of continuous network buffering. Positioned
-          // just under the centred spinner; auto-disappears when
-          // buffering recovers (controller clears the flag).
+          // Tier-1 caption under the spinner. WHICH SENTENCE IT SHOWS IS
+          // THE WHOLE POINT: while the stream is still opening this says so
+          // and nothing more, because start-up latency is not evidence of a
+          // slow link — it is a signed URL, a TLS handshake and a moov atom,
+          // and it happens at full speed. Only once a frame has been shown
+          // does a refill mean the connection cannot keep up, and only then
+          // does the wifi-off icon and the "slow connection" wording appear.
+          // Getting this backwards sent people to restart their router over
+          // a delay their router never caused.
           if (state.slowNetworkHintVisible && state.isBuffering)
             Positioned(
               left: 0,
@@ -2313,10 +2337,17 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.wifi_off,
-                          size: 16, color: Colors.white70),
+                      Icon(
+                          state.isOpening
+                              ? Icons.play_circle_outline
+                              : Icons.wifi_off,
+                          size: 16,
+                          color: Colors.white70),
                       const SizedBox(width: 8),
-                      Text(AppStrings.of(context).slowBuffering,
+                      Text(
+                        state.isOpening
+                            ? AppStrings.of(context).openingVideo
+                            : AppStrings.of(context).slowBuffering,
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 13,

@@ -48,6 +48,26 @@ class PlaybackReporter {
   /// rate near zero for titles everybody finished.
   static const double completeAt = 0.9;
 
+  bool _openReported = false;
+
+  /// Records how long the black screen lasted.
+  ///
+  /// Once per playback, and only for a real measurement: a second call is
+  /// ignored so a mid-film re-buffer, a seek or a silent reconnect can never
+  /// be counted as another start. Without that guard the median would drift
+  /// downwards every time someone scrubbed, and the metric would look like it
+  /// was improving while nothing had changed.
+  void reportOpen(Duration took) {
+    if (_openReported || _finished) return;
+    _openReported = true;
+    _events.log(
+      Ev.playOpen,
+      titleId: titleId,
+      assetId: assetId,
+      meta: <String, dynamic>{'open_ms': took.inMilliseconds},
+    );
+  }
+
   int _furthestS = 0;
   int _durationS = 0;
   bool _finished = false;

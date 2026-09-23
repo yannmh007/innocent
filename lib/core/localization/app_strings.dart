@@ -756,6 +756,10 @@ class AppStrings {
   String get personalProject => _s('personalProject');
   String get personalVideoPlayer => _s('personalVideoPlayer');
   String get slowBuffering => _s('slowBuffering');
+  /// Shown instead of [slowBuffering] while a stream is still OPENING.
+  /// Start-up latency is not a slow connection and must not be described
+  /// as one — see PlayerState.isOpening.
+  String get openingVideo => _s('openingVideo');
   String get durationLabel => _s('durationLabel');
   String get resumeTitle => _s('resumeTitle');
   String get resumeBody => _s('resumeBody');
@@ -2044,6 +2048,7 @@ class AppStrings {
     'personalProject': 'A personal Flutter project for learning and private use.',
     'personalVideoPlayer': 'Personal video player',
     'slowBuffering': 'Slow connection — buffering…',
+    'openingVideo': 'Opening the video…',
     'durationLabel': 'Duration',
     'resumeTitle': 'Resume',
     'resumeBody': 'Do you wish to resume from where you stopped?',
@@ -3204,6 +3209,7 @@ class AppStrings {
     'personalProject': 'သင်ယူရေးနဲ့ ကိုယ်ပိုင်သုံးအတွက် Flutter project တစ်ခုပါ။',
     'personalVideoPlayer': 'ကိုယ်ပိုင် ဗီဒီယို player',
     'slowBuffering': 'ချိတ်ဆက်မှုနှေးနေသည် — buffering…',
+    'openingVideo': 'ဗီဒီယိုကို ဖွင့်နေသည်…',
     'durationLabel': 'ကြာချိန်',
     'resumeTitle': 'ဆက်ဖွင့်မယ်',
     'resumeBody': 'ရပ်ခဲ့တဲ့နေရာကနေ ဆက်ဖွင့်မလား?',
@@ -4355,6 +4361,7 @@ class AppStrings {
     'personalProject': 'โปรเจกต์ Flutter ส่วนตัวเพื่อการเรียนรู้',
     'personalVideoPlayer': 'เครื่องเล่นวิดีโอส่วนตัว',
     'slowBuffering': 'การเชื่อมต่อช้า — กำลังบัฟเฟอร์…',
+    'openingVideo': 'กำลังเปิดวิดีโอ…',
     'durationLabel': 'ระยะเวลา',
     'resumeTitle': 'เล่นต่อ',
     'resumeBody': 'ต้องการเล่นต่อจากจุดที่หยุดไหม?',

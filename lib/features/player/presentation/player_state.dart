@@ -68,6 +68,23 @@ class PlayerState {
   /// copying an Android/data video out over ADB before playback. null hides it.
   final String? loadingMessage;
 
+  /// True from the moment a file is handed to libmpv until the first frame
+  /// of it is actually decoded.
+  ///
+  /// THE FLAG THAT STOPS THE PLAYER LYING. Opening a network stream and
+  /// running out of buffer halfway through a film both surface as "the
+  /// demuxer is waiting", and the old code had no way to tell them apart, so
+  /// it called both a slow connection. Start-up is not a slow connection: a
+  /// signed URL has to be resolved, a TLS session negotiated and the moov
+  /// atom found and parsed before a single frame exists, and on a 13 MB/s
+  /// link that is still seconds of work during which the network is doing
+  /// exactly what it should. Blaming the user's connection for it sent people
+  /// to go and check their Wi-Fi over a delay Wi-Fi never caused.
+  ///
+  /// Only once a frame has been shown does a refill mean what the sentence
+  /// says — the stream cannot keep up — and only then is that sentence used.
+  final bool isOpening;
+
   /// Audit fix (C4): tier-1 soft hint shown after 3 s of continuous
   /// network buffering (before the 10 s hard "stalled" error fires).
   /// Lets the UI show a polite "Slow connection..." indicator that
@@ -175,6 +192,7 @@ class PlayerState {
     this.isBuffering = false,
     this.errorMessage,
     this.loadingMessage,
+    this.isOpening = false,
     this.slowNetworkHintVisible = false,
     this.playbackCompleted = false,
     this.controlsVisible = true,
@@ -235,6 +253,7 @@ class PlayerState {
     bool? isBuffering,
     Object? errorMessage = _sentinel,
     Object? loadingMessage = _sentinel,
+    bool? isOpening,
     bool? slowNetworkHintVisible,
     bool? playbackCompleted,
     bool? controlsVisible,
@@ -289,6 +308,7 @@ class PlayerState {
       loadingMessage: loadingMessage == _sentinel
           ? this.loadingMessage
           : loadingMessage as String?,
+      isOpening: isOpening ?? this.isOpening,
       slowNetworkHintVisible:
           slowNetworkHintVisible ?? this.slowNetworkHintVisible,
       playbackCompleted: playbackCompleted ?? this.playbackCompleted,

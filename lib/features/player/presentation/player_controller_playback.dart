@@ -126,10 +126,16 @@ extension PlayerPlayback on PlayerController {
     // Phase 45: stale state from the previous video must not leak into
     // the new one. Clear error + playbackCompleted now; tracks will be
     // overwritten by the streams as soon as libmpv probes the new file.
+    // The open clock starts here, not when libmpv reports buffering: the
+    // number worth knowing is how long the user stares at black, and that
+    // begins the instant the file is handed over.
+    _openStartedAt = DateTime.now();
+    _firstFrameSeen = false;
     state = state.copyWith(
       errorMessage: null,
       playbackCompleted: false,
       isBuffering: true,
+      isOpening: true,
       position: Duration.zero,
       // Audit fix (B2): auto-close any side panel / dialog left open
       // from the previous video. Without this a user who had the

@@ -30,6 +30,38 @@ class EqualizerSessionBinder {
 /// and detailed subtitle styling. This version exposes the libmpv
 /// properties MX Player and similar players rely on, with safe defaults
 /// that work on any Android version from 7.0 up.
+/// Options handed to libavformat's HTTP layer for every network stream.
+///
+/// Passed as one string because `stream-lavf-o` is one property: writing it
+/// twice replaces rather than merges, which is how an earlier version quietly
+/// lost its reconnect settings the moment anything else set the property.
+///
+///  * `reconnect` / `reconnect_streamed` / `reconnect_delay_max` — resume a
+///    transfer the network dropped instead of surfacing it as a playback
+///    error. This is what a lift, a tunnel or a cell handover looks like to
+///    ffmpeg, and it is the commonest cause of "it failed once and worked on
+///    retry".
+///  * `reconnect_on_network_error` — the same for a connection that fails
+///    while being established, not just one that dies mid-transfer.
+///  * `reconnect_max_retries` — bounded, because a URL whose signature has
+///    EXPIRED will fail forever and must be allowed to fail so the player's
+///    own renewal path can fetch a fresh one. Retrying a 403 is not
+///    resilience, it is a loop.
+///  * `multiple_requests` — keep the HTTP connection alive between Range
+///    requests. Every seek, and every moov-at-the-end open, otherwise pays a
+///    fresh TCP handshake plus a fresh TLS negotiation before the first byte.
+///    On a link to another continent that is the difference between a
+///    quarter-second seek and a two-second one.
+///  * `seekable` — state plainly that the source supports Range, so ffmpeg
+///    does not have to discover it by trying and failing.
+const String _networkStreamOptions = 'reconnect=1,'
+    'reconnect_streamed=1,'
+    'reconnect_on_network_error=1,'
+    'reconnect_delay_max=5,'
+    'reconnect_max_retries=3,'
+    'multiple_requests=1,'
+    'seekable=1';
+
 class MediaKitPlayerService implements VideoPlayerService {
   // NOT `late final`: dropping `final` makes a second assignment legal, which
   // matters because initialize() can now be re-entered after dispose(). The
@@ -175,9 +207,11 @@ class MediaKitPlayerService implements VideoPlayerService {
     // even at high bitrates, which is the range people actually scrub back
     // into.
     await _setMpvProperty('demuxer-seekable-cache', 'yes');
-    // Network reads — 5 s timeout, 5 retries. Mirrors VLC defaults.
-    await _setMpvProperty('network-timeout', '5');
-    await _setMpvProperty('stream-lavf-o', 'reconnect=1,reconnect_streamed=1,reconnect_delay_max=5');
+    // Network reads — see [_networkStreamOptions] for why the list is what
+    // it is. The baseline is the same string; the per-file call re-applies it
+    // so a local file that reset these gets them back.
+    await _setMpvProperty('network-timeout', '10');
+    await _setMpvProperty('stream-lavf-o', _networkStreamOptions);
     // Subtitle baseline — MX Player uses white + thin black border.
     await _setMpvProperty('sub-font', 'sans-serif');
     await _setMpvProperty('sub-color', '#FFFFFFFF');
@@ -1112,12 +1146,55 @@ class MediaKitPlayerService implements VideoPlayerService {
       await _setMpvProperty('demuxer-max-back-bytes', '${32 * 1024 * 1024}');
       await _setMpvProperty('cache-secs', '30');
       await _setMpvProperty('demuxer-readahead-secs', '20');
+      // ── START-UP, which is a different problem from smoothness ──────────
+      //
+      // Everything above decides how well a film PLAYS. None of it touches
+      // how long the screen stays black before it starts, and that was the
+      // part users actually complained about: several seconds of nothing on
+      // a link measured at 13 MB/s. Read-ahead cannot help there, because
+      // there is nothing to read ahead of yet.
+      //
+      // Three things are paid before the first frame, and two of them are
+      // ours to cut:
+      //
+      //  1. libavformat PROBES the stream before it will admit what is in
+      //     it. Left alone it will read up to 5 MB and up to five seconds of
+      //     presentation time deciding. For an MP4 the moov atom already
+      //     says precisely what the streams are, so nearly all of that is a
+      //     download performed to learn something already known. Capping it
+      //     is the single largest start-up saving available, and it is
+      //     applied only to network sources — a local file's probe is free,
+      //     and a stubborn local file is exactly where a full probe earns
+      //     its keep.
+      await _setMpvProperty(
+          'demuxer-lavf-probesize', '${768 * 1024}');
+      await _setMpvProperty('demuxer-lavf-analyzeduration', '1');
+      //  2. An MP4 whose moov atom sits at the END (anything not written
+      //     "faststart") forces a read of the tail before playback can begin
+      //     — the demuxer opens at byte zero, finds no moov, and jumps to
+      //     the end of a file that may be gigabytes away. Without HTTP
+      //     connection reuse each of those jumps is a fresh TCP handshake
+      //     and a fresh TLS negotiation, three round trips apiece, and the
+      //     same again to come back to the start. `multiple_requests=1`
+      //     makes libavformat keep the socket and issue the next Range
+      //     request on it, which turns six round trips into zero.
+      //
+      //     The upload side now writes moov to the front so this stops
+      //     happening at all (see the console's faststart rewrite), but old
+      //     objects are already in the bucket and cannot be retro-fixed, so
+      //     the client has to stay fast for them too.
+      await _setMpvProperty('stream-lavf-o', _networkStreamOptions);
     } else {
       await _setMpvProperty('cache', 'auto');
       await _setMpvProperty('demuxer-max-bytes', '${32 * 1024 * 1024}');
       await _setMpvProperty('demuxer-max-back-bytes', '${16 * 1024 * 1024}');
       await _setMpvProperty('cache-secs', '10');
       await _setMpvProperty('demuxer-readahead-secs', '5');
+      // Hand the probe limits back. A local file gets the full, patient
+      // probe: it costs a disk read, and it is what makes an awkward
+      // container play at all. `0` means "libavformat's own default".
+      await _setMpvProperty('demuxer-lavf-probesize', '0');
+      await _setMpvProperty('demuxer-lavf-analyzeduration', '0');
     }
   }
 

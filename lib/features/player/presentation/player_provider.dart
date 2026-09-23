@@ -55,6 +55,23 @@ const Duration _seekThrottle = Duration(milliseconds: 60);
 const Duration _smartPreviousThreshold = Duration(seconds: 5);
 const List<double> _speedSteps = [0.25, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0];
 
+// ── how long the player waits before it says anything ────────────────────
+//
+// FOUR NUMBERS, NOT TWO, because opening a stream and running dry during one
+// are different events. The pairs are deliberately far apart:
+//
+//   * opening is expected to take a moment, so the caption is late and the
+//     give-up is very late — abandoning a start is strictly worse than a
+//     slow one, since the retry pays the entire cost again;
+//   * a refill mid-film is not expected at all, so it is called out quickly
+//     and abandoned sooner: at that point the stream has already proved it
+//     can be read, and twenty seconds of nothing means it stopped being
+//     readable.
+const Duration _openHintAfter = Duration(seconds: 6);
+const Duration _openGiveUpAfter = Duration(seconds: 40);
+const Duration _stallHintAfter = Duration(seconds: 3);
+const Duration _stallGiveUpAfter = Duration(seconds: 20);
+
 class PlayerController extends StateNotifier<PlayerState> {
   final Ref _ref;
   final List<StreamSubscription> _subs = [];
@@ -74,6 +91,25 @@ class PlayerController extends StateNotifier<PlayerState> {
   /// after a seek/skip should not flash a loading circle, so the spinner
   /// only appears if buffering is still active after this delay.
   Timer? _bufferSpinnerTimer;
+  /// True once the current file has produced a frame.
+  ///
+  /// The whole of the buffering watchdog hangs off this one bool. Before the
+  /// first frame the player is OPENING, and a wait means the stream is being
+  /// set up; after it, a wait means the stream fell behind. Those are
+  /// different events with different honest sentences and very different
+  /// patience, and merging them is what produced "Slow connection" on a
+  /// 13 MB/s link.
+  bool _firstFrameSeen = false;
+
+  /// When the current file was handed to libmpv. Used only to measure the
+  /// black screen, never to decide anything.
+  DateTime? _openStartedAt;
+
+  /// Called once per file with the measured time to first frame, so the
+  /// feature that knows what a title is can report it. Null for local
+  /// playback, which has nobody to report to.
+  void Function(Duration openTook)? onFirstFrame;
+
   Duration? _seekStartPosition;
   bool _wasLongPressActive = false;
   double _volumeBeforeMute = 0.5;
@@ -690,6 +726,11 @@ class PlayerController extends StateNotifier<PlayerState> {
       // `syncPositionToState` pushes the live value in so the first frame is
       // already correct. The exact position is always available from
       // `svc.position` for anything that needs it on demand.
+      // Backstop for the first-frame flag. `bufferingStream` going false is
+      // the primary signal, but a file that never reports buffering at all
+      // (a local file, or a stream mpv had cached) would otherwise stay
+      // "opening" forever and never be measured.
+      if (!_firstFrameSeen && p > Duration.zero) _markFirstFrame();
       if (_positionIsVisible() && p.inSeconds != state.position.inSeconds) {
         state = state.copyWith(position: p);
       }
@@ -704,6 +745,10 @@ class PlayerController extends StateNotifier<PlayerState> {
     }));
     _subs.add(svc.bufferingStream.listen((b) {
       if (!mounted) return;
+      // Buffering going FALSE is the first-frame signal: libmpv only stops
+      // reporting a starved demuxer once it has enough to render, so this is
+      // the moment the black screen ends.
+      if (!b) _markFirstFrame();
       // Debounce the SPINNER: a brief buffer refill right after a
       // seek/skip (typically well under 350 ms) should never flash a
       // "loading" circle — only a sustained stall surfaces it. Clearing
@@ -719,14 +764,25 @@ class PlayerController extends StateNotifier<PlayerState> {
       } else if (state.isBuffering) {
         state = state.copyWith(isBuffering: false);
       }
-      // Audit + industry pattern: ExoPlayer / VLC both expose a
-      // "buffer underrun" signal that the UI can use to differentiate
-      // a brief network blip (sub-second) from a real stall. Here we
-      // start TWO timers when buffering begins, cancel both when it
-      // ends. Tier 1 at 3 s surfaces a soft "Slow connection..."
-      // snackbar so the user knows it's the network, not the app.
-      // Tier 2 at 10 s upgrades to a hard "Playback stalled" error
-      // with Retry — at that point further wait is pointless.
+
+      // TWO WATCHDOGS THAT USED TO BE ONE, and the merge was the bug.
+      //
+      // ExoPlayer and VLC both expose a buffer-underrun signal, and the
+      // pattern of escalating a sustained one into a message is right. What
+      // was wrong here was applying it to START-UP. Opening a signed R2
+      // stream means a DNS lookup, a TLS handshake, an HTTP GET, finding and
+      // parsing the moov atom — which on a file that was not written
+      // faststart costs a second round trip to the tail of a multi-gigabyte
+      // object — and only then a decode. Every one of those seconds was
+      // reported to the user as "Slow connection — buffering…", on a link
+      // doing 13 MB/s. The sentence was false, and it pointed the user at
+      // their router instead of at us.
+      //
+      // So: before the first frame this is OPENING. It gets a neutral
+      // caption, a much longer rope, and a failure message that says the
+      // video would not start rather than blaming the network. After the
+      // first frame a refill genuinely does mean the stream cannot keep up,
+      // and only there does the old wording apply.
       _bufferStallTimer?.cancel();
       _bufferStallTimer = null;
       _bufferSlowTimer?.cancel();
@@ -734,24 +790,38 @@ class PlayerController extends StateNotifier<PlayerState> {
       if (b) {
         final uri = _currentUri;
         if (uri != null && _isNetworkUri(uri)) {
-          // Tier 1 — soft hint.
-          _bufferSlowTimer = Timer(const Duration(seconds: 3), () {
-            if (!mounted) return;
-            if (!state.isBuffering) return;
-            state = state.copyWith(
-              slowNetworkHintVisible: true,
-            );
-          });
-          // Tier 2 — hard error + clear the soft hint.
-          _bufferStallTimer = Timer(const Duration(seconds: 10), () {
-            if (!mounted) return;
-            if (!state.isBuffering) return;
-            state = state.copyWith(
-              slowNetworkHintVisible: false,
-              errorMessage:
-                  'Playback stalled — the network is too slow to keep up. Tap Retry or check your connection.',
-            );
-          });
+          final opening = !_firstFrameSeen;
+          // Tier 1 — soft caption. While opening it is a statement of fact
+          // ("still opening"); mid-playback it is a diagnosis ("slow
+          // connection"), and the screen picks the wording off `isOpening`.
+          _bufferSlowTimer = Timer(
+            opening ? _openHintAfter : _stallHintAfter,
+            () {
+              if (!mounted) return;
+              if (!state.isBuffering) return;
+              state = state.copyWith(slowNetworkHintVisible: true);
+            },
+          );
+          // Tier 2 — hard error + clear the soft hint. Giving up on an open
+          // at ten seconds is what turned a slow first play into a red error
+          // screen the user then retried, paying the whole cost again. A
+          // start that takes twenty seconds is bad; a start abandoned at ten
+          // is worse, because it never happens at all.
+          _bufferStallTimer = Timer(
+            opening ? _openGiveUpAfter : _stallGiveUpAfter,
+            () {
+              if (!mounted) return;
+              if (!state.isBuffering) return;
+              state = state.copyWith(
+                slowNetworkHintVisible: false,
+                errorMessage: opening
+                    ? 'This video would not start. Tap Retry — if it keeps '
+                        'failing, the file may be unavailable.'
+                    : 'Playback stalled — the network is too slow to keep '
+                        'up. Tap Retry or check your connection.',
+              );
+            },
+          );
         }
       } else {
         // Buffer recovered — clear any visible hint.
@@ -1107,6 +1177,28 @@ class PlayerController extends StateNotifier<PlayerState> {
   /// True when something currently on screen actually displays the playback
   /// position. Used to skip state writes (and therefore whole-screen rebuilds)
   /// during ordinary fullscreen playback with the controls hidden.
+  /// The black screen just ended.
+  ///
+  /// Idempotent by design: three separate signals can arrive first (buffering
+  /// clearing, the position advancing, a seek completing) and whichever wins
+  /// is the right one. Everything after the first call is ignored, so a
+  /// mid-film refill can never be mistaken for another start.
+  void _markFirstFrame() {
+    if (_firstFrameSeen) return;
+    _firstFrameSeen = true;
+    final started = _openStartedAt;
+    _openStartedAt = null;
+    if (mounted && state.isOpening) {
+      state = state.copyWith(isOpening: false, slowNetworkHintVisible: false);
+    }
+    if (started != null) {
+      // Reported, not logged. A number nobody collects is a number nobody
+      // can act on, and "it feels slow" is not something you can tune
+      // against — p50 and p95 time-to-first-frame is.
+      onFirstFrame?.call(DateTime.now().difference(started));
+    }
+  }
+
   bool _positionIsVisible() =>
       state.controlsVisible ||
       state.isLocked ||

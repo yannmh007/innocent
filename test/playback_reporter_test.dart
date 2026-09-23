@@ -103,6 +103,43 @@ void main() {
     });
   });
 
+  group('reportOpen — the start-up measurement', () {
+    test('a re-buffer mid-film is not a second start', () {
+      // The guard that keeps the metric honest. Buffering going idle is what
+      // marks the first frame, and it happens again on every seek and every
+      // silent reconnect. If each of those reported an "open", the median
+      // would fall steadily towards zero while nothing had actually got
+      // faster — a metric that improves on its own is worse than none.
+      final s = sender();
+      addTearDown(s.dispose);
+      final r = PlaybackReporter(s, titleId: 'abc');
+
+      r.reportOpen(const Duration(milliseconds: 4200));
+      r.reportOpen(const Duration(milliseconds: 90));
+      r.reportOpen(const Duration(milliseconds: 60));
+
+      expect(s.pending, 1);
+    });
+
+    test('nothing is reported after the playback has finished', () {
+      // A late callback arriving during teardown would otherwise append an
+      // event after the one marked final, and every query that reads "the
+      // last event of a viewing" would read the wrong one.
+      final s = sender();
+      addTearDown(s.dispose);
+      final r = PlaybackReporter(s, titleId: 'abc');
+
+      r.finish(
+        position: const Duration(seconds: 10),
+        duration: const Duration(seconds: 600),
+      );
+      final afterFinish = s.pending;
+      r.reportOpen(const Duration(seconds: 3));
+
+      expect(s.pending, afterFinish);
+    });
+  });
+
   group('finish', () {
     test('seeking back after the end still counts as complete', () {
       // FURTHEST, NOT LAST. Someone who watches to the end and then rewinds to

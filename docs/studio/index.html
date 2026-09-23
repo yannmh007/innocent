@@ -179,6 +179,38 @@ td.num{text-align:right;font-variant-numeric:tabular-nums;color:var(--dim)}
 .mt .hnd:active{cursor:grabbing}
 .mt .nosize{position:absolute;left:0;right:0;bottom:0;background:#4a1d1d;
   color:#fecaca;font-size:9.5px;text-align:center;padding:1px}
+/* Amber, not red: a borrowed poster is wrong but the tile still works, and
+   colouring it the same as a broken one would teach the operator to ignore
+   both. It sits above .nosize so a tile with neither problem has a clean
+   bottom edge. */
+.mt .borrowed{position:absolute;left:0;right:0;bottom:0;background:#3d2f08;
+  color:#fbd38d;font-size:9.5px;text-align:center;padding:1px}
+.mt .nosize + .borrowed,.mt .borrowed + .nosize{bottom:13px}
+
+/* ── modal sheets (frame picker, photo picker) ─────────────────────────── */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:50;
+  display:flex;align-items:center;justify-content:center;padding:16px}
+.modal .sheet{background:var(--panel);border:1px solid var(--line2);
+  border-radius:var(--r);padding:14px;width:min(520px,100%);
+  max-height:90vh;overflow:auto}
+.modal .sh{font-size:13px;font-weight:600;margin-bottom:8px}
+.modal .hint{font-size:11.5px;color:var(--dim2);line-height:1.6;
+  margin-bottom:10px}
+.modal video{width:100%;max-height:46vh;background:#000;border-radius:4px;
+  display:block}
+.modal .stack{display:flex;flex-direction:column;gap:6px}
+.modal .stack button{width:100%;text-align:left}
+.srow{display:flex;align-items:center;gap:8px;margin-top:10px}
+.srow.end{justify-content:flex-end}
+.scrub{flex:1;accent-color:var(--acc)}
+.srow .at{font-family:var(--mono);font-size:11px;color:var(--dim2);
+  flex:0 0 auto}
+.pickgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));
+  gap:6px;max-height:46vh;overflow:auto}
+.pickgrid .pk{padding:0;border:1px solid var(--line2);border-radius:4px;
+  overflow:hidden;aspect-ratio:1;background:var(--panel2)}
+.pickgrid .pk img{width:100%;height:100%;object-fit:cover;display:block}
+.pickgrid .pk:hover{border-color:var(--acc)}
 
 /* ── upload / drop ─────────────────────────────────────────────────────── */
 .drop{border:1px dashed var(--line2);border-radius:var(--r);padding:14px;
@@ -190,6 +222,13 @@ td.num{text-align:right;font-variant-numeric:tabular-nums;color:var(--dim)}
 .bar{flex:0 0 90px;height:3px;background:var(--panel2);border-radius:2px;
   overflow:hidden}
 .bar i{display:block;height:100%;width:0;background:var(--acc)}
+/* The faststart verdict. Three colours because the three states need
+   different attention: moved is the good case and should be quiet, already
+   is nothing at all, skipped is the one the operator may want to act on. */
+.prog .note{flex:0 0 auto;font-size:10.5px;color:var(--dim2);max-width:45%;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prog .note.moved{color:var(--ok)}
+.prog .note.skipped{color:var(--acc)}
 .pathprev{font-family:var(--mono);font-size:11px;color:var(--dim2);
   line-height:1.7;margin-top:6px;word-break:break-all}
 .pathprev b{color:var(--acc);font-weight:600}
@@ -509,6 +548,197 @@ function measure(file) {
   });
 }
 
+
+// ── faststart: moving the moov atom to the front ─────────────────────────
+//
+// THE SINGLE LARGEST CAUSE OF A BLACK SCREEN BEFORE PLAYBACK, and it is
+// decided here, at upload, not in the player.
+//
+// An MP4 is a flat list of boxes. `mdat` holds the samples; `moov` holds the
+// index that says where every sample is. Encoders that do not know the final
+// size until they are finished — which is most of them, and all of the phone
+// ones — write `mdat` first and append `moov` at the end. A local player
+// never notices: it seeks to the end for free. Over HTTP it is expensive and
+// visible: the demuxer opens at byte zero, finds no index, and has to fetch
+// the tail of a file that may be two gigabytes away before it can decode a
+// single frame. That is a second round trip at best, and on a fresh
+// connection it is a TCP handshake and a TLS negotiation as well.
+//
+// Rewriting it costs no re-encode. The bytes of every sample are untouched;
+// only the ORDER of the top-level boxes changes, plus the chunk-offset table
+// inside `moov`, which has to be corrected because every chunk has just moved
+// forward by the size of the `moov` box that was inserted in front of it.
+//
+// EVERY FAILURE PATH RETURNS THE ORIGINAL FILE. A video that uploads slightly
+// slow to start is a small problem; a video corrupted by a rewrite that
+// misread a box is a total one, and there is no way to get the original back
+// once it is in the bucket. So anything unexpected — a box shape not
+// recognised, an offset that would overflow, a truncated file — declines and
+// says why, and the upload proceeds with the bytes the operator chose.
+
+/// Reads the top-level box list without loading the file.
+///
+/// `File.slice()` is lazy, so this touches sixteen bytes per box however
+/// large the file is. A two-hour film is typically five or six top-level
+/// boxes, so this is a handful of small reads.
+async function topLevelBoxes(file) {
+  const out = [];
+  let at = 0;
+  while (at + 8 <= file.size) {
+    const head = new DataView(await file.slice(at, at + 16).arrayBuffer());
+    if (head.byteLength < 8) break;
+    let size = head.getUint32(0);
+    const type = String.fromCharCode(
+      head.getUint8(4), head.getUint8(5), head.getUint8(6), head.getUint8(7));
+    let header = 8;
+    if (size === 1) {
+      // 64-bit size, for an mdat larger than 4 GiB.
+      if (head.byteLength < 16) return null;
+      const hi = head.getUint32(8);
+      const lo = head.getUint32(12);
+      size = hi * 4294967296 + lo;
+      header = 16;
+    } else if (size === 0) {
+      // "to end of file" — legal, and only ever the last box.
+      size = file.size - at;
+    }
+    // A size that does not advance, or runs past the end, means this is not
+    // a box list we understand. Better to decline than to guess.
+    if (size < header || at + size > file.size) return null;
+    out.push({ type, start: at, size });
+    at += size;
+  }
+  return out;
+}
+
+/// Adds `delta` to every chunk offset inside a moov buffer.
+///
+/// Walks only the containers chunk offsets can live in, so a box shaped
+/// unexpectedly elsewhere in the tree cannot be misread as a table. Returns
+/// false if anything is wrong, and the caller then uses the original file.
+function shiftChunkOffsets(view, start, end, delta, moovStart) {
+  let at = start;
+  const CONTAINERS = ['moov', 'trak', 'mdia', 'minf', 'stbl', 'edts'];
+  while (at + 8 <= end) {
+    let size = view.getUint32(at);
+    const type = String.fromCharCode(
+      view.getUint8(at + 4), view.getUint8(at + 5),
+      view.getUint8(at + 6), view.getUint8(at + 7));
+    let header = 8;
+    if (size === 1) {
+      if (at + 16 > end) return false;
+      size = view.getUint32(at + 8) * 4294967296 + view.getUint32(at + 12);
+      header = 16;
+    } else if (size === 0) {
+      size = end - at;
+    }
+    if (size < header || at + size > end) return false;
+
+    if (CONTAINERS.includes(type)) {
+      if (!shiftChunkOffsets(view, at + header, at + size, delta, moovStart)) {
+        return false;
+      }
+    } else if (type === 'stco' || type === 'co64') {
+      // version(1) + flags(3) + entry_count(4), then the table.
+      const body = at + header + 4;
+      if (body + 4 > at + size) return false;
+      const count = view.getUint32(body);
+      const wide = type === 'co64';
+      const width = wide ? 8 : 4;
+      if (body + 4 + count * width > at + size) return false;
+      for (let i = 0; i < count; i++) {
+        const p = body + 4 + i * width;
+        if (wide) {
+          const v = view.getUint32(p) * 4294967296 + view.getUint32(p + 4);
+          // Only what moved. A chunk already past the old moov position does
+          // not shift, because the boxes ahead of it are the same set either
+          // way — moov simply swapped places with what was between them.
+          if (v >= moovStart) continue;
+          const n = v + delta;
+          view.setUint32(p, Math.floor(n / 4294967296));
+          view.setUint32(p + 4, n % 4294967296);
+        } else {
+          const v = view.getUint32(p);
+          if (v >= moovStart) continue;
+          const n = v + delta;
+          // A 32-bit table that would need 33 bits. Promoting stco to co64
+          // means resizing the box and every parent, so this declines
+          // instead — it needs a file within a few megabytes of 4 GiB, which
+          // the 5 GiB single-PUT ceiling already makes rare.
+          if (n > 0xFFFFFFFF) return false;
+          view.setUint32(p, n);
+        }
+      }
+    }
+    at += size;
+  }
+  return true;
+}
+
+/// Returns `{ blob, state, detail }`. `blob` is always safe to upload.
+async function faststart(file) {
+  const keep = (state, detail) => ({ blob: file, state, detail });
+  if (!/\.(mp4|m4v|mov)$/i.test(file.name) &&
+      !/^video\/(mp4|quicktime|x-m4v)$/i.test(file.type || '')) {
+    return keep('skipped', 'not an MP4-family file');
+  }
+  let boxes;
+  try {
+    boxes = await topLevelBoxes(file);
+  } catch (e) {
+    return keep('skipped', 'could not be read: ' + (e.message || e));
+  }
+  if (!boxes) return keep('skipped', 'unrecognised box layout');
+
+  const moov = boxes.find((b) => b.type === 'moov');
+  const mdat = boxes.find((b) => b.type === 'mdat');
+  if (!moov || !mdat) return keep('skipped', 'no moov/mdat pair');
+  // The reassembly below writes ftyp first. That is only a no-op — and the
+  // offset arithmetic only holds — if ftyp was already first, which it is in
+  // every file any encoder produces. A file that breaks that assumption gets
+  // left alone rather than reordered on a guess.
+  if (!boxes.length || boxes[0].type !== 'ftyp') {
+    return keep('skipped', 'the file does not begin with ftyp');
+  }
+  if (moov.start < mdat.start) return keep('already', 'moov is already first');
+  // A moov this large would have to be held in memory to patch. Declining is
+  // honest; the alternative is an out-of-memory crash on the operator's
+  // phone midway through a 2 GB upload.
+  if (moov.size > 128 * 1024 * 1024) {
+    return keep('skipped', 'moov is too large to rewrite in the browser');
+  }
+
+  let buf;
+  try {
+    buf = await file.slice(moov.start, moov.start + moov.size).arrayBuffer();
+  } catch (e) {
+    return keep('skipped', 'moov could not be read: ' + (e.message || e));
+  }
+  const view = new DataView(buf);
+  // Walk INSIDE the moov box, so `start` is past its own 8-byte header.
+  if (!shiftChunkOffsets(view, 8, buf.byteLength, moov.size, moov.start)) {
+    return keep('skipped', 'chunk offset table could not be corrected');
+  }
+
+  // ftyp first if there is one — some players refuse a file that does not
+  // begin with it — then moov, then everything else in its original order.
+  const parts = [];
+  const ftyp = boxes.find((b) => b.type === 'ftyp');
+  if (ftyp) parts.push(file.slice(ftyp.start, ftyp.start + ftyp.size));
+  parts.push(buf);
+  for (const b of boxes) {
+    if (b === moov || b === ftyp) continue;
+    parts.push(file.slice(b.start, b.start + b.size));
+  }
+  const blob = new Blob(parts, { type: file.type || 'video/mp4' });
+  // The rewrite must not change a single byte of length. If it did, the
+  // offsets just patched are wrong and the file would play as noise.
+  if (blob.size !== file.size) {
+    return keep('skipped', 'rewrite changed the file length — refused');
+  }
+  return { blob, state: 'moved', detail: 'moov moved to the front' };
+}
+
 // ── uploading ────────────────────────────────────────────────────────────
 //
 // XHR, not fetch. `fetch` has no upload progress event, and an operator
@@ -535,20 +765,32 @@ function put(url, blob, onProgress) {
 }
 
 /// Measures, presigns, uploads, and returns the asset descriptor the API wants.
-async function uploadOne(file, onProgress, folder) {
+async function uploadOne(file, onProgress, folder, note) {
   const isVideo = file.type.startsWith('video');
   const meta = await measure(file);
 
+  // Reordered BEFORE the upload, not after, because there is no "after" —
+  // once the object is in R2 the only way to fix its box order is to upload
+  // it again. `body` is the original file whenever the rewrite declines, and
+  // it declines loudly so the operator knows which of their files will make
+  // viewers wait.
+  let body = file;
+  if (isVideo) {
+    const fs = await faststart(file);
+    body = fs.blob;
+    if (note) note(fs.state, fs.detail);
+  }
+
   const sig = await api({
     op: 'sign', kind: isVideo ? 'video' : 'photo',
-    filename: file.name, size: file.size, folder,
+    filename: file.name, size: body.size, folder,
   });
-  await put(sig.uploadUrl, file, onProgress);
+  await put(sig.uploadUrl, body, onProgress);
 
   const out = {
     kind: isVideo ? 'video' : 'photo',
     objectKey: sig.objectKey,
-    bytes: file.size,
+    bytes: body.size,
     mime: file.type || null,
     durationS: meta.durationS ?? null,
     width: meta.width ?? null,
@@ -578,11 +820,20 @@ async function uploadOne(file, onProgress, folder) {
 /// at once divides one slow pipe twelve ways and finishes none of them inside
 /// the presigned URL's one-hour life.
 async function uploadAll(files, container, folder) {
+  const notes = [];
   const bars = files.map((f) => {
     const bar = el('i');
+    // One line per file for what the rewrite did to it. An operator who can
+    // see "moov moved to the front" on nine files and "unrecognised box
+    // layout" on the tenth knows exactly which upload will make viewers wait
+    // — and can re-encode that one instead of wondering why the app feels
+    // slow on some titles and not others.
+    const nt = el('span', { className: 'note' });
+    notes.push(nt);
     container.append(el('div', { className: 'prog' }, [
       el('span', { className: 'n' }, text(f.name)),
       el('span', { className: 'bar' }, [bar]),
+      nt,
     ]));
     return bar;
   });
@@ -594,7 +845,10 @@ async function uploadAll(files, container, folder) {
       const i = next++;
       out[i] = await uploadOne(files[i], (p) => {
         bars[i].style.width = Math.round(p * 100) + '%';
-      }, folder);
+      }, folder, (state, detail) => {
+        notes[i].className = 'note ' + state;
+        notes[i].textContent = detail;
+      });
       bars[i].style.width = '100%';
     }
   };
@@ -873,6 +1127,12 @@ function drawMedia() {
       // The state that silently degrades the app's layout: with no width the
       // mosaic cannot size the row and gives a portrait clip a landscape hole.
       !a.width ? el('div', { className: 'nosize' }, text('no size')) : null,
+      // The state the app has been in since the first upload: the tile is
+      // showing the TITLE POSTER, not this video. It looks fine in the
+      // console, which is why nobody caught it — the picture is real, it is
+      // just a picture of something else.
+      (a.kind !== 'photo' && !a.thumb_key)
+        ? el('div', { className: 'borrowed' }, text('poster')) : null,
     ]);
 
     const handle = el('span', { className: 'hnd', title: 'Drag to reorder' },
@@ -895,18 +1155,239 @@ function drawMedia() {
       };
     }
 
+    // Only videos get one. A photo IS its own thumbnail, and offering to
+    // give it a different one would be offering to make the grid lie.
+    const thumbBtn = a.kind === 'photo' ? null : el('button', {
+      className: 'i' + (a.thumb_key ? ' on' : ''),
+      title: a.thumb_key
+        ? 'Change the thumbnail'
+        : 'No thumbnail — the card is borrowing the title poster',
+    }, text('🖼'));
+    if (thumbBtn) {
+      thumbBtn.onclick = (e) => { e.stopPropagation(); thumbMenu(a); };
+    }
+
     const del = el('button', { className: 'i', title: 'Remove' }, text('🗑'));
     del.onclick = (e) => { e.stopPropagation(); removeAsset(a); };
 
     const tile = el('div', { className: 'mt' }, [
       ph,
       el('div', { className: 'row' },
-        [handle, star, freeBtn, el('span', { className: 'spacer' }), del]),
+        [handle, star, freeBtn, thumbBtn,
+          el('span', { className: 'spacer' }), del]),
     ]);
     tile.dataset.index = String(i);
     wireDrag(tile, handle, i);
     host.append(tile);
   });
+}
+
+
+// ── thumbnails for a video that already exists ───────────────────────────
+//
+// EVERY VIDEO IN THE DATABASE HAS `thumb_key` NULL, so `title_media` falls
+// back to the title's poster and a title with four clips draws the same
+// picture four times — which is exactly what the app showed.
+//
+// New uploads fix themselves: `measure()` grabs a frame before the file
+// leaves the operator's device. The objects already in the bucket cannot be
+// fixed that way, and the obvious approach — sign a GET, load the video off
+// R2 into a <video>, draw it — needs the media bucket to answer a
+// cross-origin GET with CORS headers, which it currently does not (the rule
+// allows PUT only). A canvas that has drawn a frame from a cross-origin
+// source without CORS is TAINTED: `toBlob` throws, and the failure looks
+// exactly like a network error.
+//
+// So the path that always works comes first: the operator still has the
+// video file, and a frame taken from the local copy is the same frame. It
+// uploads a 30 KB JPEG instead of re-uploading two gigabytes. The two
+// cheaper options — any image file, or a photo already in this title — are
+// there because a hand-picked still is often a better advertisement for a
+// clip than any frame in it.
+
+/// A modal that plays a local file and hands back the frame the operator chose.
+///
+/// SCRUBBING, NOT "10% IN". The automatic rule is a guess that lands on a
+/// fade, a title card or the back of someone's head often enough to matter,
+/// and the thumbnail is the only thing deciding whether a card gets tapped.
+function pickFrame(file) {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file);
+    const v = el('video', { muted: true, playsInline: true, preload: 'auto' });
+    v.src = url;
+    const scrub = el('input', { type: 'range', min: '0', max: '1000', value: '100',
+      className: 'scrub' });
+    const at = el('span', { className: 'at' }, text('—'));
+    const use = el('button', { className: 'p' }, text('Use this frame'));
+    const cancel = el('button', {}, text('Cancel'));
+
+    const close = (out) => {
+      URL.revokeObjectURL(url);
+      back.remove();
+      resolve(out);
+    };
+
+    v.onloadedmetadata = () => {
+      // A quarter of the way in, which beats the first frame on almost
+      // everything: past the fade, before the credits.
+      v.currentTime = Math.min(v.duration * 0.25, 30);
+    };
+    v.ontimeupdate = v.onseeked = () => {
+      at.textContent = fmtDur(Math.round(v.currentTime)) +
+        ' / ' + fmtDur(Math.round(v.duration || 0));
+      if (v.duration) scrub.value = String(Math.round(v.currentTime / v.duration * 1000));
+    };
+    scrub.oninput = () => {
+      if (v.duration) v.currentTime = v.duration * (Number(scrub.value) / 1000);
+    };
+    use.onclick = () => {
+      try {
+        // 640 on the long edge. A grid tile is never shown larger, and a
+        // full-resolution still would cost more to fetch than the card it
+        // decorates.
+        const scale = Math.min(1, 640 / Math.max(v.videoWidth || 640, 1));
+        const c = el('canvas', {
+          width: Math.max(1, Math.round((v.videoWidth || 640) * scale)),
+          height: Math.max(1, Math.round((v.videoHeight || 360) * scale)),
+        });
+        c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
+        c.toBlob((b) => close(b ? {
+          blob: b,
+          atS: Math.round(v.currentTime),
+          width: v.videoWidth || null,
+          height: v.videoHeight || null,
+          durationS: Number.isFinite(v.duration) ? Math.round(v.duration) : null,
+        } : null), 'image/jpeg', 0.85);
+      } catch (e) {
+        say('bad', 'The browser would not give up this frame: ' + (e.message || e));
+        close(null);
+      }
+    };
+    cancel.onclick = () => close(null);
+    v.onerror = () => {
+      say('bad', 'This browser cannot decode that video.');
+      close(null);
+    };
+
+    const back = el('div', { className: 'modal' }, [
+      el('div', { className: 'sheet' }, [
+        el('div', { className: 'sh' }, text('Choose the frame')),
+        v,
+        el('div', { className: 'srow' }, [scrub, at]),
+        el('div', { className: 'srow end' }, [cancel, use]),
+      ]),
+    ]);
+    document.body.append(back);
+  });
+}
+
+/// Uploads a still and points the asset at it.
+async function setThumbBlob(a, blob, extra) {
+  const t = await api({
+    op: 'sign', kind: 'thumb',
+    filename: (a.object_key.split('/').pop() || 'thumb')
+      .replace(/\.[^.]+$/, '') + '.jpg',
+    size: blob.size, folder: cur.folder,
+  });
+  await put(t.uploadUrl, blob);
+  // The dimensions ride along, because a video row with a null width is what
+  // makes the app's mosaic give a portrait clip a landscape hole — and the
+  // operator has just had the real numbers on screen.
+  const patch = Object.assign({ thumb_key: t.objectKey }, extra || {});
+  await patchAsset(a, patch);
+}
+
+/// The per-video thumbnail menu.
+async function thumbMenu(a) {
+  const photos = cur.assets.filter((o) => o.kind === 'photo');
+  const fromVideo = el('button', {}, text('From the video file…'));
+  const fromImage = el('button', {}, text('From an image file…'));
+  const fromPhoto = photos.length
+    ? el('button', {}, text('From a photo in this title…')) : null;
+  const cancel = el('button', {}, text('Cancel'));
+  let back;
+  const close = () => back.remove();
+
+  fromVideo.onclick = () => {
+    close();
+    const inp = el('input', { type: 'file', accept: 'video/*' });
+    inp.onchange = async () => {
+      const f = inp.files && inp.files[0];
+      if (!f) return;
+      const picked = await pickFrame(f);
+      if (!picked) return;
+      try {
+        await setThumbBlob(a, picked.blob, {
+          width: picked.width, height: picked.height,
+          duration_s: picked.durationS,
+        });
+        say('ok', 'Thumbnail set from the frame at ' + fmtDur(picked.atS) + '.');
+      } catch (e) { say('bad', String(e.message || e)); }
+    };
+    inp.click();
+  };
+
+  fromImage.onclick = () => {
+    close();
+    const inp = el('input', { type: 'file', accept: 'image/*' });
+    inp.onchange = async () => {
+      const f = inp.files && inp.files[0];
+      if (!f) return;
+      try {
+        await setThumbBlob(a, f);
+        say('ok', 'Thumbnail set.');
+      } catch (e) { say('bad', String(e.message || e)); }
+    };
+    inp.click();
+  };
+
+  if (fromPhoto) {
+    fromPhoto.onclick = () => {
+      close();
+      // NOTHING IS UPLOADED. The photo is already an object in the public
+      // bucket, so this only writes its key onto the video row — instant,
+      // free, and undoable by choosing another.
+      const grid = el('div', { className: 'pickgrid' });
+      let pb;
+      photos.forEach((p) => {
+        const im = el('img', { src: cur.publicBase + '/' + p.object_key, alt: '' });
+        const b = el('button', { className: 'pk' }, im);
+        b.onclick = async () => {
+          pb.remove();
+          try {
+            await patchAsset(a, { thumb_key: p.object_key });
+            say('ok', 'Thumbnail set from a photo in this title.');
+          } catch (e) { say('bad', String(e.message || e)); }
+        };
+        grid.append(b);
+      });
+      const no = el('button', {}, text('Cancel'));
+      no.onclick = () => pb.remove();
+      pb = el('div', { className: 'modal' }, [
+        el('div', { className: 'sheet' }, [
+          el('div', { className: 'sh' }, text('Pick a photo')),
+          grid,
+          el('div', { className: 'srow end' }, [no]),
+        ]),
+      ]);
+      document.body.append(pb);
+    };
+  }
+
+  cancel.onclick = close;
+  back = el('div', { className: 'modal' }, [
+    el('div', { className: 'sheet' }, [
+      el('div', { className: 'sh' }, text('Video thumbnail')),
+      el('div', { className: 'hint' }, text(
+        'A frame from the video itself is what viewers expect. Pick the ' +
+        'same file from this device — only the still is uploaded, not the ' +
+        'video.')),
+      el('div', { className: 'stack' },
+        [fromVideo, fromImage, fromPhoto]),
+      el('div', { className: 'srow end' }, [cancel]),
+    ]),
+  ]);
+  document.body.append(back);
 }
 
 // ── drag to reorder ──────────────────────────────────────────────────────
@@ -1289,6 +1770,66 @@ async function loadStats() {
       }
       host.append(el('div', { className: 'tw' }, [t]));
     };
+
+    // FIRST, ABOVE EVERYTHING ELSE, because it is the number users feel.
+    // Everything below this is about what to publish; this is about whether
+    // what is already published actually starts when somebody taps it.
+    //
+    // Percentiles rather than an average: 500 ms for most people and twenty
+    // seconds for one in twenty averages out to something that looks
+    // perfectly healthy and is not. p95 is the experience that decides
+    // whether somebody opens the app again.
+    const sl = st.startup || [];
+    host.append(el('div', { className: 'sechead' },
+      [el('h2', {}, text('Time to first frame'))]));
+    host.append(el('div', { className: 'hint' }, text(
+      'Measured on real devices: from tapping play to the first frame. ' +
+      'p95 is what it feels like on a bad day, and it is the number worth ' +
+      'chasing — the average hides it.')));
+    if (!sl.length) {
+      host.append(el('div', { className: 'hint', style: 'margin-top:4px' },
+        text('no measurements yet — needs a build that reports play_open')));
+    } else {
+      const t = el('table', { style: 'margin-top:6px;max-width:520px' });
+      t.append(el('tr', {}, ['day', 'plays', 'p50', 'p95', 'p99', 'worst']
+        .map((h, i) => el('th', { className: i ? 'num' : '' }, text(h)))));
+      for (const r of sl) {
+        t.append(el('tr', {}, [
+          el('td', { className: 'mono' }, text(r.day)),
+          el('td', { className: 'num mono' }, text(r.samples)),
+          el('td', { className: 'num mono' }, text(r.p50_ms + ' ms')),
+          el('td', { className: 'num mono' }, text(r.p95_ms + ' ms')),
+          el('td', { className: 'num mono' }, text(r.p99_ms + ' ms')),
+          el('td', { className: 'num mono' }, text(r.worst_ms + ' ms')),
+        ]));
+      }
+      host.append(el('div', { className: 'tw' }, [t]));
+    }
+
+    block('Slowest titles to start',
+      (st.slowest_titles || []).map((r) =>
+        [r.title + '  (' + r.samples + ')', r.p95_ms + ' ms']),
+      'Start-up cost is mostly a property of the FILE, not the network — an ' +
+      'MP4 whose index sits at the end costs an extra round trip every ' +
+      'single play. A title at the top of this list is one to re-upload.');
+
+    // The defect that survived because nothing was broken: a video with no
+    // thumbnail still draws a picture, just a picture of something else.
+    const mh = st.media_health || {};
+    block('Media needing attention', [
+      ['videos borrowing the title poster', mh.borrows_poster || 0],
+      ['assets with no width/height', mh.no_dimensions || 0],
+      ['videos with no duration', mh.no_duration || 0],
+      ['assets with no byte size', mh.no_size || 0],
+      ['assets in total', mh.total || 0],
+    ], 'A video with no thumbnail of its own shows the title poster, so ' +
+       'every clip in a title draws the same picture. Fix it per video from ' +
+       'the editor: 🖼 → "From the video file…".');
+
+    if ((mh.worst || []).length) {
+      block('Titles with a video showing the poster',
+        mh.worst.map((w) => [w.title, w.kind]));
+    }
 
     block('Events by kind', pairs(st.kinds),
       st.capped ? 'capped at 5000 — the real number is higher' : null);
