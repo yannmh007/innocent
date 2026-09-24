@@ -1,0 +1,49 @@
+# innocent-stream — the Worker that serves video from the Cloudflare edge.
+#
+# Deploy with:  npx wrangler deploy
+# See README.md in this folder for the four steps around it.
+
+name = "innocent-stream"
+main = "src/index.js"
+
+# Workers Caching — the read-through cache that makes this worth doing — is
+# gated on a recent compatibility date. Do not lower it.
+compatibility_date = "2026-07-06"
+
+# The private bucket, bound directly. No S3 endpoint, no signature, no
+# credentials in the Worker: a binding is an internal handle that only this
+# Worker's code can use.
+[[r2_buckets]]
+binding = "MEDIA"
+bucket_name = "innocent-media"
+
+# ── the two entrypoints, and why they are configured opposite ways ────────
+#
+# `default` is the public door. It decrypts the token and must therefore run
+# on EVERY request, so an expired token stops working the moment it expires
+# rather than whenever the cache happens to fall out. Caching off.
+#
+# `Media` is the cached half. Its path is the object key, which is the same
+# for every viewer of a film and the same on every replay, so one stored
+# copy serves all of them. Caching on. Cloudflare strips `Range` before
+# calling it, stores the full body it returns, and slices every subsequent
+# range out of storage without running any code at all.
+[cache]
+enabled = true
+
+[exports.default]
+type = "worker"
+
+  [exports.default.cache]
+  enabled = false
+
+[exports.Media]
+type = "worker"
+
+  [exports.Media.cache]
+  enabled = true
+
+# TOKEN_SECRET is NOT set here. It is a secret, it is shared with the
+# Supabase function that mints tokens, and a repository is a public place:
+#
+#   npx wrangler secret put TOKEN_SECRET

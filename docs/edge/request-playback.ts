@@ -110,6 +110,88 @@ function encodeKey(key: string): string {
   return key.split('/').map(rfc3986).join('/');
 }
 
+// --- the Worker door -------------------------------------------------------
+//
+// PREFERRED OVER A PRESIGNED S3 URL WHENEVER IT IS CONFIGURED, and the
+// reason is both halves of what people complain about.
+//
+// `<account>.r2.cloudflarestorage.com` is R2's S3 API endpoint. It answers
+// from anywhere and it caches nothing: every byte of every play, for every
+// viewer, is fetched from the bucket's region, and two people watching the
+// same film ten minutes apart share nothing at all. The Worker is on
+// Cloudflare's edge with a read-through cache in front of it, so the second
+// viewer in a region is served from beside them.
+//
+// And the presigned URL says far too much. It names the account, names the
+// private bucket, spells out the folder scheme and carries the access key id
+// in its credential scope — on screen in the player's own information
+// dialog until v1.64.22, and in any screenshot a viewer passes on. A token
+// says none of it.
+//
+// FALLS BACK RATHER THAN FAILING. If either secret is missing this returns
+// null and the caller presigns as before, so a half-finished deployment
+// degrades to the old behaviour instead of breaking playback. That is also
+// what makes the switch a server-side change with no app release: the client
+// plays whichever URL it is handed.
+const STREAM_BASE = (Deno.env.get('STREAM_BASE') ?? '').replace(/\/+$/, '');
+const STREAM_TOKEN_SECRET = Deno.env.get('STREAM_TOKEN_SECRET') ?? '';
+
+function b64urlFromBytes(b: Uint8Array): string {
+  let s = '';
+  for (const byte of b) s += String.fromCharCode(byte);
+  return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+function bytesFromB64url(s: string): Uint8Array {
+  const pad = s.length % 4 === 0 ? '' : '='.repeat(4 - (s.length % 4));
+  const bin = atob(s.replace(/-/g, '+').replace(/_/g, '/') + pad);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+/// A playable URL through the Worker, or null when it is not configured.
+///
+/// AES-GCM rather than a signature. A signed-but-readable token would still
+/// publish the object key to anyone who base64-decodes the URL, which gives
+/// back most of what moving off the S3 endpoint was for. Encrypted, the
+/// token is opaque, and because GCM is authenticated it also cannot be
+/// edited or its expiry extended — one changed bit fails to decrypt rather
+/// than decrypting to something else.
+async function workerUrl(objectKey: string): Promise<string | null> {
+  if (!STREAM_BASE || !STREAM_TOKEN_SECRET) return null;
+  try {
+    const key = await crypto.subtle.importKey(
+      'raw',
+      bytesFromB64url(STREAM_TOKEN_SECRET) as BufferSource,
+      { name: 'AES-GCM' },
+      false,
+      ['encrypt'],
+    );
+    // 12 bytes is the size GCM is defined for; anything else costs an extra
+    // derivation step on both sides for no benefit.
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const claim = JSON.stringify({
+      k: objectKey,
+      e: Math.floor(Date.now() / 1000) + EXPIRY_SECONDS,
+    });
+    const sealed = new Uint8Array(await crypto.subtle.encrypt(
+      { name: 'AES-GCM', iv },
+      key,
+      new TextEncoder().encode(claim),
+    ));
+    const token = new Uint8Array(iv.length + sealed.length);
+    token.set(iv, 0);
+    token.set(sealed, iv.length);
+    return `${STREAM_BASE}/v/${b64urlFromBytes(token)}`;
+  } catch (e) {
+    // A broken secret must not take playback down with it. The presigned
+    // path below still works, and the log says which one was used.
+    logRefusal('stream_token_failed', String(e));
+    return null;
+  }
+}
+
 async function presign(objectKey: string): Promise<string> {
   const host = `${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`;
   const now = new Date();
@@ -367,9 +449,17 @@ Deno.serve(async (req) => {
     }
   }
 
-  const url = await presign(objectKey);
+  // The Worker when it is configured, the S3 endpoint when it is not. Which
+  // one was used is worth knowing from a log without reading the URL back,
+  // because "is the edge cache actually on" is otherwise a question nobody
+  // can answer after the fact.
+  const viaWorker = await workerUrl(objectKey);
+  const url = viaWorker ?? await presign(objectKey);
   return json({
     url,
     expires_at: new Date(Date.now() + EXPIRY_SECONDS * 1000).toISOString(),
+    // A label, not an address. The client ignores it; the function log does
+    // not, and neither does anyone checking a deployment took effect.
+    via: viaWorker ? 'edge' : 's3',
   }, 200);
 });

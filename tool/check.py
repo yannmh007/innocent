@@ -111,24 +111,33 @@ def main() -> int:
     # the same column as a failure, because a check that disappears without
     # comment is worse than one that was never written: the summary still
     # reads "all passed".
-    js_test = os.path.join(TOOL, 'js', 'faststart_test.mjs')
-    if os.path.exists(js_test):
-        node = shutil.which('node')
+    JS_TESTS = [
+        ('faststart_test.mjs',
+         'the MP4 rewrite',
+         'an MP4 rewrite that corrupts the video it was meant to speed up'),
+        ('stream_token_test.mjs',
+         'the playback token',
+         'the Supabase function and the Worker disagreeing about how a '
+         'token is built — which fails at deploy time as a 404 on every '
+         'video, for everyone, with a response that deliberately does not '
+         'say why'),
+    ]
+    node = shutil.which('node')
+    for name, what, guards in JS_TESTS:
+        js_test = os.path.join(TOOL, 'js', name)
+        if not os.path.exists(js_test):
+            continue
         if not node:
-            print('SKIP  %-26s %s' % ('faststart_test.mjs',
-                  '=== node not installed — the MP4 rewrite is UNTESTED ==='))
-        else:
-            r = subprocess.run([node, js_test], capture_output=True,
-                               text=True, cwd=ROOT)
-            ok = r.returncode == 0
-            print('%-5s %-26s %s' % ('PASS' if ok else 'FAIL',
-                  'faststart_test.mjs',
-                  '=== %d check(s) on the MP4 rewrite ===' %
-                  r.stdout.count('ok   ')))
-            if not ok:
-                failed.append(('faststart_test.mjs', r.stdout + r.stderr,
-                               'an MP4 rewrite that corrupts the video it '
-                               'was meant to speed up'))
+            print('SKIP  %-26s %s' % (name,
+                  '=== node not installed — %s is UNTESTED ===' % what))
+            continue
+        r = subprocess.run([node, js_test], capture_output=True,
+                           text=True, cwd=ROOT)
+        ok = r.returncode == 0
+        print('%-5s %-26s %s' % ('PASS' if ok else 'FAIL', name,
+              '=== %d check(s) on %s ===' % (r.stdout.count('ok   '), what)))
+        if not ok:
+            failed.append((name, r.stdout + r.stderr, guards))
 
     print()
     if not failed:
