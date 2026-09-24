@@ -16,6 +16,25 @@ name: Build
 on:
   push:
     branches: [ main ]
+    # DOCS-ONLY PUSHES DO NOT CUT A RELEASE.
+    #
+    # `docs/` holds the operator console, the SQL migrations, the Supabase
+    # edge functions and the Cloudflare Worker. None of it is compiled into
+    # the APK, and all of it is deployed by something other than this
+    # workflow — GitHub Pages serves the console, Cloudflare's Workers Builds
+    # watches `docs/worker`, and the rest is applied from a session.
+    #
+    # Without this filter, changing a comment in the Worker meant a
+    # fifteen-minute Gradle build followed by a release step trying to create
+    # a tag that already exists — and, when the version HAD been bumped to
+    # avoid that, an "update available" prompt on every phone for an APK
+    # identical to the one they were already running. Neither is a thing to
+    # do to people.
+    #
+    # `workflow_dispatch` ignores path filters, so a build can still be run
+    # by hand over any tree.
+    paths-ignore:
+      - 'docs/**'
   pull_request:
   workflow_dispatch:
 

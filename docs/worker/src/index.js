@@ -1,68 +1,71 @@
 // innocent-stream — the only public door to the private video bucket.
 //
-// WHAT IT REPLACES AND WHY.
+// WHAT IT REPLACES.
 //
-// Until now the app played a presigned S3 URL:
+// The app used to play a presigned S3 URL:
 //
 //   https://<account-id>.r2.cloudflarestorage.com/innocent-media/<folder>/
 //       video/<key>.mp4?X-Amz-Credential=<ACCESS-KEY-ID>%2F...&X-Amz-Signature=...
 //
-// Two things are wrong with that, and they are the two complaints this
-// project has had about video.
+// which names the account, names the private bucket, spells out the folder
+// scheme, and carries the access key id in its credential scope. None of it
+// is a password. All of it is the map an attacker would otherwise have to
+// guess at — and it was on screen in the player's own information dialog
+// until v1.64.22.
 //
-// IT IS SLOW, and not for the reason it looks. `<account>.r2.cloudflarestorage.com`
-// is R2's S3 API endpoint. It is reachable from everywhere, but it is not a
-// CDN: nothing it serves is cached at the edge. Every byte of every play,
-// for every viewer, is fetched from the bucket's region. The bucket's
-// location hint is APAC, so a viewer in Yangon is doing better than most —
-// and still paying a round trip to Singapore or Tokyo for each seek, each
-// range request, and each of the two requests an MP4 with its index at the
-// end needs before the first frame. Nothing is shared between two people
-// watching the same film ten minutes apart.
+// Now the app plays `https://<worker>/v/<token>`, where the token is AES-GCM
+// ciphertext holding the object key and an expiry. It says nothing to
+// anyone holding the URL, and because GCM is authenticated it cannot be
+// edited or its expiry extended: one changed bit fails to decrypt rather
+// than decrypting to something else.
 //
-// IT SHOWS TOO MUCH. The URL names the account, names the private bucket,
-// spells out the folder scheme, and carries the access key id in its
-// credential scope. None of that is a password. All of it is the map.
+// ─── WHAT THE FIRST VERSION GOT WRONG, because it is worth writing down ───
 //
-// WHAT THIS DOES INSTEAD.
+// It was built around Workers Caching, with two entrypoints — a gateway that
+// decrypted the token and a cached inner entrypoint keyed on the object key
+// — so that two viewers of the same film would share one edge copy. The
+// design was sound and the reasoning was right. Two facts about the platform
+// made it the wrong shape for THIS content, and both were discoverable
+// before shipping:
 //
-// The app is handed an opaque, expiring token and plays
+//  1. IT STRIPPED THE CLIENT'S `Range`. The gateway built the inner request
+//     with `headers: new Headers()`, dropping everything — including the
+//     `Range` header every video player sends. So the client was answered
+//     with a full `200` and no seeking, for a file of any length. That was
+//     my error, not the platform's.
 //
-//   https://<worker>/v/<token>
+//  2. WORKERS CACHING CANNOT HOLD A FILM. Cacheable responses are capped at
+//     512 MB, and — per Cloudflare's own note — every Workers Caching
+//     response is held to the Free-plan limit at launch regardless of the
+//     account's plan. A feature film does not fit. So the entire benefit
+//     the two-entrypoint shape existed to buy was never available for the
+//     content it was built for, while its cost — a cold cache trying to
+//     pull a whole object before anyone gets a byte — was paid in full.
 //
-// The token is AES-GCM ciphertext: the object key is inside it, encrypted
-// with a secret only this Worker and the Supabase function that mints
-// tokens share. It cannot be read, edited or extended by anyone holding the
-// URL, and it says nothing about R2 to anyone who looks at it.
+// The result on a phone was a video that buffered and never started.
 //
-// THE CACHE IS THE POINT, and getting it is the whole reason this is
-// written as two entrypoints rather than one.
+// ─── WHAT IT DOES NOW ─────────────────────────────────────────────────────
 //
-// Workers Caching keys on the request path. A token is different on every
-// play — a new expiry, a new IV — so caching on the public path would miss
-// every single time and be worse than useless. So the gateway below does
-// the decrypting and then forwards to a SECOND entrypoint at a stable,
-// internal path derived from the object key. That inner entrypoint is the
-// one with caching enabled. Two people watching the same film share one
-// cache entry even though their URLs have nothing in common.
+// Reads the object straight from the R2 binding and answers `Range` properly,
+// with a real `206` and a `Content-Range`. No cache layer between them,
+// because there is no cache that can hold these files.
 //
-// Range requests are the platform's job, not ours, and the rule is exact:
-// Cloudflare strips `Range` before invoking a cached entrypoint, asks for
-// the FULL body, stores it, and slices every subsequent range out of the
-// stored copy without invoking the Worker at all. A Worker that returns its
-// own 206 is treated as uncacheable — so `Media` below always returns 200
-// with the whole object and never looks at `Range`. Getting that backwards
-// is the difference between an edge cache and an expensive proxy.
+// That keeps the part that always worked — the address is hidden, the URL
+// expires, the bucket is reached through a binding rather than a credential
+// — and it keeps the bytes on Cloudflare's own network from R2 to the
+// viewer. It does NOT give an edge copy shared between viewers. Caching
+// full-length video needs either a paid plan's larger cacheable size or
+// segmented delivery (HLS), and pretending otherwise in a comment would be
+// how this gets "fixed" back into the shape that did not work.
+//
+// Small objects — thumbnails, short clips — still carry `Cache-Control`, so
+// they cache wherever something is willing to hold them.
 
-import { WorkerEntrypoint } from 'cloudflare:workers';
-
-/// How long a cached object stays at the edge.
+/// How long anything that CAN be cached may be held.
 ///
-/// A day. The objects are immutable — every upload gets a fresh key with a
-/// timestamp and a random suffix, so the same key never holds different
-/// bytes — which is also why `immutable` is honest here rather than
-/// optimistic. Changing a film means a new key, and a new key is a new
-/// cache entry.
+/// The objects are immutable: every upload gets a fresh key with a timestamp
+/// and a random suffix, so one key never holds different bytes. `immutable`
+/// is a statement of fact here rather than an optimisation.
 const EDGE_TTL_SECONDS = 86400;
 
 /// Rejections say nothing.
@@ -97,9 +100,6 @@ function b64urlToBytes(s) {
 /// warm isolate goes on accepting tokens minted with the old one until it
 /// happens to be recycled. A revocation that silently does not revoke is
 /// worse than none, because you stop looking.
-///
-/// Caught by `tool/js/stream_token_test.mjs`, which opens a token with the
-/// wrong secret and expects to be refused.
 const keyCache = new Map();
 function signingKey(secret) {
   let promise = keyCache.get(secret);
@@ -115,20 +115,13 @@ function signingKey(secret) {
 
 /// SHA-256 OF THE SECRET, NOT THE SECRET'S BYTES.
 ///
-/// The first version required the secret to be exactly 32 bytes of
-/// base64url, because that is what AES-GCM wants and what `openssl rand`
-/// produces. That is a fine requirement for someone at a terminal and a trap
-/// for everyone else: the operator here works from a phone, where the
-/// natural way to get a long random string is a password manager — and those
-/// produce text with symbols in it, which is not base64url and does not
-/// decode to 32 bytes.
-///
-/// Hashing removes the requirement entirely. Any string at all becomes
-/// exactly 32 bytes, deterministically, on both sides. A long random
-/// passphrase works; so does a base64url key from `openssl`. There is no
-/// format to get wrong, and therefore no way to get it wrong quietly.
-///
-/// It costs one hash per isolate, not per request — see the cache above.
+/// AES-GCM wants exactly 32 bytes, which meant the secret had to be
+/// base64url of exactly that length — fine for someone at a terminal with
+/// `openssl rand`, a trap for an operator on a phone whose natural source of
+/// a long random string is a password manager, which produces text with
+/// symbols in it. Hashing turns any string into 32 bytes on both sides, so
+/// there is no format to get wrong and therefore no way to get it wrong
+/// quietly. `request-playback` derives its key the same way.
 async function deriveKey(secret) {
   const digest = await crypto.subtle.digest(
     'SHA-256', new TextEncoder().encode(secret));
@@ -137,10 +130,6 @@ async function deriveKey(secret) {
 }
 
 /// Reads a token back. Returns null for anything at all suspect.
-///
-/// AES-GCM is authenticated encryption, so a token that has been edited by
-/// a single bit fails to decrypt rather than decrypting to something else.
-/// There is no separate signature to check and no way to make one.
 async function openToken(token, secret) {
   try {
     const raw = b64urlToBytes(token);
@@ -155,8 +144,8 @@ async function openToken(token, secret) {
     const claim = JSON.parse(new TextDecoder().decode(plain));
     if (typeof claim?.k !== 'string' || !claim.k) return null;
     if (typeof claim?.e !== 'number') return null;
-    // Expiry is checked HERE, not by the cache. A stale token must stop
-    // working even though the object it names is still cached and warm.
+    // Expiry is checked on every request, by this Worker. Nothing else
+    // enforces it once the URL has left the server.
     if (Date.now() / 1000 > claim.e) return null;
     return claim;
   } catch {
@@ -164,55 +153,8 @@ async function openToken(token, secret) {
   }
 }
 
-/// The cached half. Reads one object from the bucket and returns all of it.
-///
-/// Never sees a token, never sees a `Range` header (the platform strips it),
-/// and never returns a 206. Its path is the object key, which is stable, so
-/// every viewer of one film shares one entry.
-///
-/// EXTENDS `WorkerEntrypoint` RATHER THAN LOOKING LIKE ONE. A plain class
-/// with the same constructor shape reads identically and is not the same
-/// thing: per-entrypoint caching is configured against named entrypoints,
-/// and `ctx.exports.Media` resolves to one. A lookalike would deploy, run,
-/// and never be cached — which is the failure mode this whole file exists
-/// to avoid, arrived at by a different road.
-export class Media extends WorkerEntrypoint {
-  async fetch(request) {
-    const url = new URL(request.url);
-    const key = decodeURIComponent(url.pathname.replace(/^\/o\//, ''));
-    if (!key) return refuse();
-
-    const object = await this.env.MEDIA.get(key);
-    if (!object) return refuse();
-
-    const headers = new Headers();
-    object.writeHttpMetadata(headers);
-    headers.set('Content-Type',
-      object.httpMetadata?.contentType || 'video/mp4');
-    headers.set('Content-Length', String(object.size));
-    headers.set('ETag', object.httpEtag);
-    // Tells the platform to store it, and tells the player it may seek.
-    headers.set('Cache-Control',
-      `public, max-age=${EDGE_TTL_SECONDS}, immutable`);
-    headers.set('Accept-Ranges', 'bytes');
-    // The object key must not travel back out in a header either. R2 sets
-    // none of these itself, but a future `writeHttpMetadata` change could.
-    headers.delete('Content-Disposition');
-
-    return new Response(object.body, { status: 200, headers });
-  }
-}
-
-/// The public half. Authenticates, then hands over to the cached half.
-///
-/// Caching is DISABLED for this entrypoint in wrangler.toml, on purpose: it
-/// must run on every request so an expired token stops working immediately,
-/// even while the object it named is still warm in the cache.
 export default {
-  async fetch(request, env, ctx) {
-    if (request.method !== 'GET' && request.method !== 'HEAD') {
-      return new Response('Method not allowed', { status: 405 });
-    }
+  async fetch(request, env) {
     const url = new URL(request.url);
 
     // ANSWERED BEFORE THE SECRET IS CHECKED, and that order is the point.
@@ -223,11 +165,6 @@ export default {
     // A health check that reports "dead" during the one procedure it exists
     // to support is worse than not having one: the operator reads it as a
     // failed deploy and starts undoing work that was correct.
-    //
-    // It reports WHETHER the secret is set, which is the actual question
-    // being asked at that moment, and that is not a disclosure: anyone can
-    // already tell by asking for a video and being refused. What it does not
-    // say is anything about the bucket, the keys or the secret itself.
     if (url.pathname === '/health') {
       return new Response(JSON.stringify({
         ok: true,
@@ -240,9 +177,18 @@ export default {
       });
     }
 
-    if (!env.TOKEN_SECRET) {
-      // Refusing everything beats serving everything. A missing secret is
-      // a deployment mistake, and the safe reading of it is "closed".
+    if (request.method !== 'GET' && request.method !== 'HEAD') {
+      return new Response('Method not allowed', { status: 405 });
+    }
+    if (!env.TOKEN_SECRET || !env.MEDIA) {
+      // Refusing everything beats serving everything. A missing secret or a
+      // missing binding is a deployment mistake, and the safe reading of a
+      // deployment mistake is "closed".
+      console.log(JSON.stringify({
+        refusal: 'not_configured',
+        secret: !!env.TOKEN_SECRET,
+        bucket: !!env.MEDIA,
+      }));
       return refuse();
     }
 
@@ -250,25 +196,90 @@ export default {
     if (!match) return refuse();
 
     const claim = await openToken(match[1], env.TOKEN_SECRET);
-    if (!claim) return refuse();
+    if (!claim) {
+      // Logged, never returned. Which of the three reasons it was is the
+      // operator's business and nobody else's — but an operator with no way
+      // to tell a wrong secret from an expired token has nothing to work
+      // with when something stops playing.
+      console.log(JSON.stringify({ refusal: 'bad_token' }));
+      return refuse();
+    }
 
-    // The internal URL. `https://media.internal` is never resolved — it is
-    // a name for the cache key, and the key is the object, which is what
-    // makes two viewers of one film share one stored copy.
-    const inner = new Request(
-      'https://media.internal/o/' + encodeURIComponent(claim.k),
-      { method: 'GET', headers: new Headers() },
-    );
-    const response = await ctx.exports.Media.fetch(inner);
-
-    // A HEAD is answered from the same cached entry, without a body. mpv
-    // sends one on some paths before it commits to a stream.
-    if (request.method === 'HEAD') {
+    // THE CLIENT'S `Range` IS THE WHOLE JOB, and dropping it is what broke
+    // the first version. A video player opens a file by asking for a range,
+    // seeks by asking for another, and treats a `200` where it asked for a
+    // `206` as a server that cannot be seeked. R2's binding parses the
+    // header itself when handed the request's headers, which is both less
+    // code and less to get wrong than parsing `bytes=` by hand.
+    //
+    // `onlyIf` carries the conditional headers through in the same way, so
+    // `If-Range` and `If-None-Match` behave as a player expects rather than
+    // being silently ignored.
+    let object;
+    try {
+      object = await env.MEDIA.get(claim.k, {
+        range: request.headers,
+        onlyIf: request.headers,
+      });
+    } catch (e) {
+      // An unsatisfiable range throws rather than returning null. 416 is the
+      // honest answer and the one a player knows how to recover from.
+      console.log(JSON.stringify({
+        refusal: 'range_error', detail: String(e),
+      }));
       return new Response(null, {
-        status: response.status,
-        headers: response.headers,
+        status: 416,
+        headers: { 'Cache-Control': 'no-store' },
       });
     }
-    return response;
+
+    if (!object) {
+      console.log(JSON.stringify({ refusal: 'no_object' }));
+      return refuse();
+    }
+
+    const headers = new Headers();
+    object.writeHttpMetadata(headers);
+    headers.set('ETag', object.httpEtag);
+    headers.set('Accept-Ranges', 'bytes');
+    if (!headers.has('Content-Type')) headers.set('Content-Type', 'video/mp4');
+    // Written on every response even though nothing between here and the
+    // viewer will hold a film: it costs nothing, and the small objects that
+    // also pass through here — thumbnails, short clips — are cacheable
+    // wherever something is willing to hold them.
+    headers.set('Cache-Control',
+      `public, max-age=${EDGE_TTL_SECONDS}, immutable`);
+    // R2 sets none of these, but a future `writeHttpMetadata` change could,
+    // and an object key must not travel back out in a header either.
+    headers.delete('Content-Disposition');
+
+    // A conditional request that matched has no body. 304 must not carry
+    // one, and must not claim a length it is not sending.
+    if (!('body' in object) || object.body === null) {
+      return new Response(null, { status: 304, headers });
+    }
+
+    // `object.range` is present exactly when a range was asked for and
+    // honoured. Turning it into `Content-Range` is what makes the response a
+    // real 206 rather than a 200 that happens to be short — a player reading
+    // 200 concludes the source cannot be seeked and gives up on scrubbing.
+    const range = object.range;
+    if (range && request.headers.has('Range')) {
+      const offset = 'offset' in range && range.offset !== undefined
+        ? range.offset
+        : object.size - range.suffix;
+      const length = 'length' in range && range.length !== undefined
+        ? range.length
+        : object.size - offset;
+      const end = offset + length - 1;
+      headers.set('Content-Range', `bytes ${offset}-${end}/${object.size}`);
+      headers.set('Content-Length', String(length));
+      return new Response(request.method === 'HEAD' ? null : object.body,
+        { status: 206, headers });
+    }
+
+    headers.set('Content-Length', String(object.size));
+    return new Response(request.method === 'HEAD' ? null : object.body,
+      { status: 200, headers });
   },
 };

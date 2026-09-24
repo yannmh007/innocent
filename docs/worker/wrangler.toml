@@ -1,4 +1,4 @@
-# innocent-stream — the Worker that serves video from the Cloudflare edge.
+# innocent-stream — the only public door to the private video bucket.
 #
 # Deploy with:  npx wrangler deploy
 # See README.md in this folder for the four steps around it.
@@ -6,8 +6,7 @@
 name = "innocent-stream"
 main = "src/index.js"
 
-# Workers Caching — the read-through cache that makes this worth doing — is
-# gated on a recent compatibility date. Do not lower it.
+# Recent enough for the runtime APIs this Worker uses. Do not lower it.
 compatibility_date = "2026-07-06"
 
 # The private bucket, bound directly. No S3 endpoint, no signature, no
@@ -17,31 +16,23 @@ compatibility_date = "2026-07-06"
 binding = "MEDIA"
 bucket_name = "innocent-media"
 
-# ── the two entrypoints, and why they are configured opposite ways ────────
+# ── caching is OFF, and that is a decision rather than an omission ───────
 #
-# `default` is the public door. It decrypts the token and must therefore run
-# on EVERY request, so an expired token stops working the moment it expires
-# rather than whenever the cache happens to fall out. Caching off.
+# This Worker was first written around Workers Caching, with a second,
+# cached entrypoint keyed on the object key so two viewers of one film would
+# share an edge copy. The reasoning was right and the shape was wrong, for a
+# reason that is in Cloudflare's own documentation: cacheable responses are
+# capped at 512 MB, and every Workers Caching response is held to the Free
+# plan's limit at launch whatever the account's plan. A feature film does
+# not fit. The benefit was never available for this content; the cost — a
+# cold cache trying to pull a whole object before anyone receives a byte —
+# was paid on every first play.
 #
-# `Media` is the cached half. Its path is the object key, which is the same
-# for every viewer of a film and the same on every replay, so one stored
-# copy serves all of them. Caching on. Cloudflare strips `Range` before
-# calling it, stores the full body it returns, and slices every subsequent
-# range out of storage without running any code at all.
+# So it is off. The Worker reads from the R2 binding and answers `Range`
+# itself. Turning this back on without also solving the size limit would
+# reintroduce a video that buffers and never starts.
 [cache]
-enabled = true
-
-[exports.default]
-type = "worker"
-
-  [exports.default.cache]
-  enabled = false
-
-[exports.Media]
-type = "worker"
-
-  [exports.Media.cache]
-  enabled = true
+enabled = false
 
 # TOKEN_SECRET is NOT set here. It is a secret, it is shared with the
 # Supabase function that mints tokens, and a repository is a public place:
