@@ -35,6 +35,12 @@ on:
     # by hand over any tree.
     paths-ignore:
       - 'docs/**'
+      # The transcoding script runs on a GitHub runner against R2, never
+      # inside the APK. Changing it cannot change a byte of the build, so a
+      # push that only touches it should not spend fifteen minutes of Gradle
+      # and then try to publish a release for a version that already has one.
+      # It is still covered on every pull request and by workflow_dispatch.
+      - 'tool/transcode.sh'
   pull_request:
   workflow_dispatch:
 
