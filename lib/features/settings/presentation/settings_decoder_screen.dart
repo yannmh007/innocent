@@ -320,6 +320,10 @@ class SettingsDecoderScreen extends ConsumerWidget {
           ),
           _toggle(ref,
               title: 'Use speedup tricks',
+              subtitle:
+                  'Allow the software decoder to take shortcuts when it '
+                  'cannot keep up. The picture stays at full quality until '
+                  'frames are actually being dropped.',
               setting: PlayerSetting.decSpeedupTricks),
           const SettingsSectionHeader('General'),
           _toggle(ref,

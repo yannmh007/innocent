@@ -1392,6 +1392,19 @@ class PlayerController extends StateNotifier<PlayerState> {
         patientProbe: true,
       );
       if (!mounted || _currentUri != uri) return;
+      // THIS IS AN OPEN, AND THE CAPTION HAS TO KNOW IT. A full probe reads
+      // up to five megabytes before the first frame, which on a slow link is
+      // longer than the three seconds after which a mid-playback refill is
+      // called a slow connection. Saying so puts the wait on the opening
+      // timer instead, where it gets the neutral wording and the longer rope
+      // — the player must not blame the viewer's network for a reload it
+      // chose to perform.
+      _firstFrameSeen = false;
+      state = state.copyWith(
+        isOpening: true,
+        slowNetworkHintVisible: false,
+        clearStallCause: true,
+      );
       await svc.open(uri, startAt: at);
       await svc.play();
     } catch (e) {

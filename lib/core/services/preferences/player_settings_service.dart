@@ -151,6 +151,12 @@ enum PlayerSetting {
   // with its old `false` default would have quietly REMOVED them and made
   // software decoding slower and hotter on exactly the weak devices that need
   // them most.
+  //
+  // What ON means changed in 1.64.25 and the default did not. It now grants
+  // PERMISSION for the loop-filter skip rather than applying it: the picture
+  // starts at full quality on every file and the shortcut is spent only on a
+  // decoder measured dropping frames. A weak device still gets it, within
+  // seconds; every other device stops paying for it.
   decSpeedupTricks(default_: true),
   decDeinterlace(default_: false),
   decCustomCodec(default_: false),
