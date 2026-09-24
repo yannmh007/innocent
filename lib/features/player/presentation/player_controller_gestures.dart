@@ -181,11 +181,11 @@ extension PlayerGestures on PlayerController {
   void onSeekUpdate(int seconds) {
     if (state.isLocked || _seekStartPosition == null) return;
     final delta = Duration(seconds: seconds);
-    var target = _seekStartPosition! + delta;
-    if (target < Duration.zero) target = Duration.zero;
-    if (state.duration > Duration.zero && target > state.duration) {
-      target = state.duration;
-    }
+    final target = clampSeekTarget(
+      current: _seekStartPosition!,
+      delta: delta,
+      duration: state.duration,
+    );
     // Update the on-screen indicator + position immediately (responsive UI)
     state = state.copyWith(
       position: target,

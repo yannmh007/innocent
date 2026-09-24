@@ -281,8 +281,16 @@ extension PlayerControls on PlayerController {
       // The buffering profile is a set of runtime properties too, so it can be
       // refreshed without reloading anything. Kept in step with the open path
       // so a decoder switch never silently reinstates desktop-sized buffers.
+      //
+      // THROUGH [_applyStreamProfileFor], which carries the one thing the
+      // call here used to drop: whether the address is this app's own caching
+      // proxy. Without it, changing decoder mid-film while watching through
+      // the proxy turned `cache-on-disk` back on, and mpv began spilling a
+      // second copy of every byte the proxy was already writing to the same
+      // phone — a duplicate of the film, invisible, charged to the viewer's
+      // storage, for the sake of a decoder switch.
       if (svc is MediaKitPlayerService) {
-        await svc.setStreamBufferProfile(network: isNetwork);
+        await _applyStreamProfileFor(uri);
       } else {
         await svc.setDemuxerCacheMb(isNetwork ? 96 : 32);
       }

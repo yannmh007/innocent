@@ -1059,12 +1059,17 @@ extension PlayerPlayback on PlayerController {
     // 2800-line player screen from rebuilding on every tick, so a +10 s skip
     // taken from it actually moved somewhere between 9.0 and 10.0 seconds, and
     // repeated skips accumulated the error. libmpv's live position is exact.
-    final dur = state.duration;
+    //
+    // Through [clampSeekTarget] so there is ONE piece of this arithmetic in
+    // the app. There were two, they disagreed, and the engine-level copy was
+    // the one that got it wrong: it treated a duration of zero as a real
+    // ceiling rather than as "not known yet".
     final base = svc.position > Duration.zero ? svc.position : state.position;
-    final target = base + Duration(seconds: seconds);
-    final clamped = target < Duration.zero
-        ? Duration.zero
-        : (dur > Duration.zero && target > dur ? dur : target);
+    final clamped = clampSeekTarget(
+      current: base,
+      delta: Duration(seconds: seconds),
+      duration: state.duration,
+    );
     await svc.seek(clamped);
     // Keep the on-screen position in step immediately; the quantised stream
     // update can be up to a second behind and the label would lag the jump.
