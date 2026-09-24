@@ -48,4 +48,11 @@
          paired. A fresh install should mint a fresh identity. -->
     <exclude domain="file" path="adb_key.pk8" />
     <exclude domain="file" path="adb_cert.der" />
+    <!-- The streaming cache: whatever of the catalogue this phone has played.
+         It is premium video, it lives in the support directory because the
+         system's own cache directory is emptied without asking, and Auto
+         Backup would therefore upload the catalogue to the viewer's Google
+         Drive. It is also pure cache — losing it on a restore costs a
+         download and nothing else. -->
+    <exclude domain="file" path="stream_cache/" />
 </full-backup-content>

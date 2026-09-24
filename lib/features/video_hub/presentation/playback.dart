@@ -8,6 +8,8 @@ import '../../../core/services/video_player/stream_renewal.dart';
 import '../data/api/event_sender.dart';
 import '../data/device_identity.dart';
 import '../domain/access.dart';
+import '../data/cache/stream_cache_id.dart';
+import '../data/cache/stream_cache_server.dart';
 import '../domain/rendition.dart';
 import '../../../core/services/network/throughput_memory.dart';
 import '../domain/access_policy.dart';
@@ -109,12 +111,65 @@ Future<void> playMedia(
     );
     final playUrl = chosen?.url ?? grant.url!;
 
+    // ─── AND THE PHONE KEEPS WHAT IT RECEIVES ──────────────────────────
+    //
+    // Bytes already downloaded are the cheapest bytes there are. Without
+    // this, dragging the bar back thirty seconds re-downloads thirty
+    // seconds, and watching a clip twice downloads it twice — over the very
+    // connections the rest of this work has spent weeks apologising to.
+    //
+    // The player is handed a LOCAL address. Behind it, the cache serves what
+    // the phone already has and fetches only what it does not — and quietly
+    // replaces the signed URL when it expires, so a film longer than ten
+    // minutes stops stumbling once per URL lifetime.
+    //
+    // NULL MEANS PLAY THE REMOTE URL, which is what this line did before any
+    // of it existed. A cache that cannot start costs smoothness, never
+    // playback.
+    final assetId = source.provider == 'asset' && source.locator.isNotEmpty
+        ? source.locator
+        : null;
+    final cacheId = streamCacheId(
+      titleId: content.id,
+      assetId: assetId,
+      height: chosen?.height ?? 0,
+    );
+    StreamCacheServer.instance.releaseAllExcept(<String>{cacheId});
+    final localUrl = await StreamCacheServer.instance.localUrlFor(
+      cacheId: cacheId,
+      upstream: playUrl,
+      total: chosen?.bytes,
+      // A title, never an object key: a key is a map of the bucket and has
+      // no business on a viewer's storage screen.
+      label: titleOverride ?? content.displayTitle(s.locale.languageCode),
+      // The proxy's own way of dealing with an expired link. It goes back
+      // through `requestPlayback`, so entitlement, expiry and the device cap
+      // are decided again — a lapsed subscription stops the film here rather
+      // than being cached along with the bytes.
+      refresh: () async {
+        final fresh = await ref.read(contentRepositoryProvider).requestPlayback(
+              content: content,
+              source: source,
+              deviceId: deviceId,
+            );
+        if (!fresh.isGranted) return null;
+        final same = fresh.renditions
+            .where((r) => r.height == (chosen?.height ?? -1))
+            .toList();
+        // The SAME rung, because the cache entry is that rung's bytes and
+        // mixing two encodes into one file is a corrupted film.
+        if (same.isNotEmpty) return same.first.url;
+        return chosen == null ? fresh.url : null;
+      },
+    );
+    final openUrl = localUrl ?? playUrl;
+
     // The renewal picks again rather than reusing this rung. A film longer
     // than a signature's life is renewed mid-playback, and by then the
     // player has measured the connection for real — so the second half of a
     // long film can be a better or a smaller copy than the first, decided on
     // evidence the first choice did not have.
-    StreamRenewal.register(playUrl, ({int? belowKbps}) async {
+    StreamRenewal.register(openUrl, ({int? belowKbps}) async {
       final fresh = await ref.read(contentRepositoryProvider).requestPlayback(
             content: content,
             source: source,
@@ -134,12 +189,50 @@ Future<void> playMedia(
       // give, so say so rather than handing back the same URL and making the
       // player reopen for no reason.
       if (belowKbps != null && again == null) return null;
-      return again?.url ?? fresh.url;
+      final freshUrl = again?.url ?? fresh.url;
+      if (freshUrl == null) return null;
+
+      // A DOWNGRADE IS A DIFFERENT FILE, so it is a different cache entry.
+      // Pointing the existing entry at a smaller encode would write two
+      // different videos into one set of byte ranges, and the result is not
+      // a video at all.
+      final nextId = streamCacheId(
+        titleId: content.id,
+        assetId: assetId,
+        height: again?.height ?? 0,
+      );
+      if (nextId == cacheId) {
+        // Same rung: the URL was only stale. Hand the proxy the new one and
+        // keep the player on the address it already has.
+        StreamCacheServer.instance.updateUpstream(cacheId, freshUrl);
+        return openUrl;
+      }
+      StreamCacheServer.instance.releaseAllExcept(<String>{nextId});
+      final nextLocal = await StreamCacheServer.instance.localUrlFor(
+        cacheId: nextId,
+        upstream: freshUrl,
+        total: again?.bytes,
+        label: titleOverride ?? content.displayTitle(s.locale.languageCode),
+        refresh: () async {
+          final f2 = await ref.read(contentRepositoryProvider).requestPlayback(
+                content: content,
+                source: source,
+                deviceId: deviceId,
+              );
+          if (!f2.isGranted) return null;
+          final same = f2.renditions
+              .where((r) => r.height == (again?.height ?? -1))
+              .toList();
+          if (same.isNotEmpty) return same.first.url;
+          return again == null ? f2.url : null;
+        },
+      );
+      return nextLocal ?? freshUrl;
     });
     context.push(
       Routes.player,
       extra: <String, dynamic>{
-        'uri': playUrl,
+        'uri': openUrl,
         // audit_video_hub.md M5: the player's title bar gets the Burmese
         // title too, when that is the language the app is in.
         'title': titleOverride ?? content.displayTitle(s.locale.languageCode),

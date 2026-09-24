@@ -767,6 +767,19 @@ class AppStrings {
   /// statement that sends the viewer to restart a router that was never the
   /// problem. See StallCause.
   String get videoTooHeavy => _s('videoTooHeavy');
+
+  /// The storage screen for the streaming cache. Its own strings rather than
+  /// the thumbnail cache's, because the two hold very different things and a
+  /// viewer deciding how much of their phone to give away needs to know
+  /// which one they are looking at.
+  String get streamCacheTitle => _s('streamCacheTitle');
+  String get streamCacheExplain => _s('streamCacheExplain');
+  String get streamCacheLimit => _s('streamCacheLimit');
+  String get streamCacheClear => _s('streamCacheClear');
+  String get streamCacheClearNote => _s('streamCacheClearNote');
+  String get streamCacheKept => _s('streamCacheKept');
+  String get streamCacheUnnamed => _s('streamCacheUnnamed');
+  String get streamCacheSubtitle => _s('streamCacheSubtitle');
   String get durationLabel => _s('durationLabel');
   String get resumeTitle => _s('resumeTitle');
   String get resumeBody => _s('resumeBody');
@@ -2057,6 +2070,20 @@ class AppStrings {
     'slowBuffering': 'Slow connection — buffering…',
     'openingVideo': 'Opening the video…',
     'videoTooHeavy': 'This video is heavy for this device…',
+    'streamCacheTitle': 'Video storage',
+    'streamCacheExplain':
+        'Videos you watch are kept on this phone, so rewinding and watching '
+        'again cost nothing and work without a signal. Only the parts you '
+        'actually watched are kept. When the limit is reached, the videos you '
+        'have not opened for longest go first.',
+    'streamCacheLimit': 'LIMIT',
+    'streamCacheClear': 'Clear kept videos',
+    'streamCacheClearNote':
+        'Frees the space now. Anything you watch again will be downloaded '
+        'again.',
+    'streamCacheKept': 'KEPT',
+    'streamCacheUnnamed': 'Video',
+    'streamCacheSubtitle': 'Keep watched videos on this phone',
     'durationLabel': 'Duration',
     'resumeTitle': 'Resume',
     'resumeBody': 'Do you wish to resume from where you stopped?',
@@ -3219,6 +3246,20 @@ class AppStrings {
     'slowBuffering': 'ချိတ်ဆက်မှုနှေးနေသည် — buffering…',
     'openingVideo': 'ဗီဒီယိုကို ဖွင့်နေသည်…',
     'videoTooHeavy': 'ဒီဗီဒီယိုက ဖုန်းအတွက် လေးနေပါတယ်…',
+    'streamCacheTitle': 'ဗီဒီယို သိမ်းဆည်းမှု',
+    'streamCacheExplain':
+        'ကြည့်ပြီးသား ဗီဒီယိုတွေကို ဒီဖုန်းထဲမှာ သိမ်းထားပေးပါတယ်။ '
+        'နောက်ပြန်ဆွဲတာ၊ ပြန်ကြည့်တာတွေမှာ data မကုန်တော့ဘဲ '
+        'အင်တာနက်မရှိလည်း ကြည့်လို့ရပါတယ်။ တကယ်ကြည့်ပြီးသား အပိုင်းကိုပဲ '
+        'သိမ်းပါတယ်။ ကန့်သတ်ချက်ပြည့်ရင် အကြာဆုံး မဖွင့်ဖြစ်တာကို '
+        'အရင်ဖျက်ပါတယ်။',
+    'streamCacheLimit': 'ကန့်သတ်ချက်',
+    'streamCacheClear': 'သိမ်းထားတာတွေ ဖျက်မည်',
+    'streamCacheClearNote':
+        'နေရာ ချက်ချင်းပြန်ရပါမယ်။ ပြန်ကြည့်မယ်ဆိုရင်တော့ ထပ်ဒေါင်းရပါမယ်။',
+    'streamCacheKept': 'သိမ်းထားသည်',
+    'streamCacheUnnamed': 'ဗီဒီယို',
+    'streamCacheSubtitle': 'ကြည့်ပြီးသား ဗီဒီယိုကို ဖုန်းထဲသိမ်းထားမည်',
     'durationLabel': 'ကြာချိန်',
     'resumeTitle': 'ဆက်ဖွင့်မယ်',
     'resumeBody': 'ရပ်ခဲ့တဲ့နေရာကနေ ဆက်ဖွင့်မလား?',
@@ -4372,6 +4413,17 @@ class AppStrings {
     'slowBuffering': 'การเชื่อมต่อช้า — กำลังบัฟเฟอร์…',
     'openingVideo': 'กำลังเปิดวิดีโอ…',
     'videoTooHeavy': 'วิดีโอนี้หนักเกินไปสำหรับเครื่องนี้…',
+    'streamCacheTitle': 'พื้นที่เก็บวิดีโอ',
+    'streamCacheExplain':
+        'วิดีโอที่คุณดูจะถูกเก็บไว้ในเครื่องนี้ การย้อนกลับและการดูซ้ำจึงไม่เสียเน็ต '
+        'และใช้ได้แม้ไม่มีสัญญาณ เก็บเฉพาะส่วนที่ดูไปแล้วเท่านั้น '
+        'เมื่อถึงขีดจำกัด รายการที่ไม่ได้เปิดนานที่สุดจะถูกลบก่อน',
+    'streamCacheLimit': 'ขีดจำกัด',
+    'streamCacheClear': 'ล้างวิดีโอที่เก็บไว้',
+    'streamCacheClearNote': 'คืนพื้นที่ทันที สิ่งที่ดูซ้ำจะต้องโหลดใหม่',
+    'streamCacheKept': 'เก็บไว้',
+    'streamCacheUnnamed': 'วิดีโอ',
+    'streamCacheSubtitle': 'เก็บวิดีโอที่ดูแล้วไว้ในเครื่อง',
     'durationLabel': 'ระยะเวลา',
     'resumeTitle': 'เล่นต่อ',
     'resumeBody': 'ต้องการเล่นต่อจากจุดที่หยุดไหม?',

@@ -15,6 +15,7 @@ import '../../../core/services/preferences/extra_settings_service.dart';
 import '../../../core/services/thumbnail/thumbnail_cache.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../user_data/user_data_providers.dart';
+import '../../video_hub/presentation/stream_cache_screen.dart';
 import 'settings_dialogs.dart';
 import 'settings_language_screen.dart';
 import 'settings_widgets.dart';
@@ -502,6 +503,17 @@ class SettingsGeneralScreen extends ConsumerWidget {
             subtitle:
                 'Clear all user activity records, including playback and search history.',
             onTap: () => _confirmAndClearHistory(context, ref),
+          ),
+          // The streaming cache gets its own screen rather than a "clear"
+          // button here, because it is the only thing this app keeps that can
+          // reach gigabytes, and a viewer deciding how much of their phone to
+          // give away needs to see the number, the limit and what is in it —
+          // not a single destructive tap next to the thumbnails.
+          SettingsNavTile(
+            title: AppStrings.of(context).streamCacheTitle,
+            subtitle: AppStrings.of(context).streamCacheSubtitle,
+            onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => const StreamCacheScreen())),
           ),
           SettingsNavTile(
             title: 'Clear thumbnail cache',

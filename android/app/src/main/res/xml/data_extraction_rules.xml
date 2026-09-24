@@ -27,6 +27,12 @@
         <exclude domain="file" path="intruder_shots" />
         <exclude domain="file" path="adb_key.pk8" />
         <exclude domain="file" path="adb_cert.der" />
+        <!-- Premium video this phone has played. Excluded from BOTH channels:
+             cloud backup would put the catalogue in a Drive account, and the
+             new-phone transfer would clone it onto a handset that has not
+             been granted any of it. It is pure cache, so losing it costs a
+             download and nothing else. -->
+        <exclude domain="file" path="stream_cache" />
         <exclude domain="sharedpref" path="FlutterSecureStorage" />
         <exclude domain="sharedpref" path="FlutterSecureStorage.xml" />
     </cloud-backup>
@@ -35,6 +41,12 @@
         <exclude domain="file" path="intruder_shots" />
         <exclude domain="file" path="adb_key.pk8" />
         <exclude domain="file" path="adb_cert.der" />
+        <!-- Premium video this phone has played. Excluded from BOTH channels:
+             cloud backup would put the catalogue in a Drive account, and the
+             new-phone transfer would clone it onto a handset that has not
+             been granted any of it. It is pure cache, so losing it costs a
+             download and nothing else. -->
+        <exclude domain="file" path="stream_cache" />
         <exclude domain="sharedpref" path="FlutterSecureStorage" />
         <exclude domain="sharedpref" path="FlutterSecureStorage.xml" />
     </device-transfer>
