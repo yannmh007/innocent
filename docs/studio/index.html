@@ -567,6 +567,27 @@ td.num{text-align:right;font-variant-numeric:tabular-nums;color:var(--dim)}
       <div class="sechead"><h2>Catalogue health</h2></div>
       <div id="healthBody" style="margin-top:10px"></div>
     </div>
+    <!-- ══ START-UP ════════════════════════════════════════════════════
+         Which videos make a viewer wait, and why. The answer is a property
+         of the FILE, not of anybody's connection, and it cannot be seen
+         from the database — the row looks identical either way.       -->
+    <div class="sec">
+      <div class="sechead">
+        <h2>Start-up</h2>
+        <span class="spacer"></span>
+        <button class="b" id="probeBtn">Check videos</button>
+      </div>
+      <div class="hint">
+        An MP4 keeps an index. At the FRONT, a player reads the head of the
+        file and starts. At the END, it reads the head, finds no index, and
+        seeks to the tail of a file that may be gigabytes away — an extra
+        round trip on every play, for every viewer, forever. Uploads made
+        before the console learned to write the index first are in the
+        second state, and re-uploading them from here is the fix.
+      </div>
+      <div id="probeBody" style="margin-top:10px"></div>
+    </div>
+
     <!-- ══ STREAM SECRET ═══════════════════════════════════════════════
          Generated in the browser, on the operator's own phone, because
          that is the only place it can be made without either a terminal
@@ -608,6 +629,11 @@ td.num{text-align:right;font-variant-numeric:tabular-nums;color:var(--dim)}
 const SB_URL = 'https://yqonvmuiezqvyqmexrft.supabase.co';
 const SB_KEY = 'sb_publishable_vTiAxBAhnZL_BqFcZD4m9A_Rb8Q8PHj';
 const API = SB_URL + '/functions/v1/studio';
+// A SECOND FUNCTION, NOT A SECOND OP. `studio` is a thousand lines and is
+// the only control surface this operator has; every deploy of it is a small
+// risk taken with that. The probe only reads, so it lives on its own where
+// it can be changed without anyone holding their breath.
+const PROBE_API = SB_URL + '/functions/v1/probe-media';
 
 // Matches lib/features/video_hub/domain/content_category.dart. Hard-coded
 // here because the app compiles these into libapp.so — the Categories tab
@@ -646,10 +672,10 @@ const fmtSize = (b) => b >= 1073741824 ? (b / 1073741824).toFixed(1) + ' GB'
   : (b / 1024).toFixed(0) + ' KB';
 
 // ── the API ──────────────────────────────────────────────────────────────
-async function api(payload) {
+async function api(payload, endpoint) {
   const { data: { session } } = await sb.auth.getSession();
   if (!session) throw new Error('Signed out. Reload and sign in again.');
-  const res = await fetch(API, {
+  const res = await fetch(endpoint || API, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -2064,6 +2090,77 @@ async function loadStats() {
 }
 
 // ── health ───────────────────────────────────────────────────────────────
+// ── start-up: which files make a viewer wait ─────────────────────────────
+//
+// TURNS "IT FEELS SLOW" INTO A LIST OF FILES. Start-up cost is mostly a
+// property of the OBJECT — where the MP4 keeps its index — and that is
+// invisible from the database, invisible in the player, and invisible in
+// any metric that averages across titles. It is visible in the first sixty
+// kilobytes of the file, which is all the probe reads.
+$('probeBtn').onclick = async () => {
+  const host = $('probeBody');
+  const btn = $('probeBtn');
+  btn.disabled = true;
+  host.textContent = '';
+  host.append(el('div', { className: 'hint' }, text('Reading the first 64 KB of each video…')));
+  try {
+    const { results } = await api({}, PROBE_API);
+    host.textContent = '';
+    const rows = results || [];
+    if (!rows.length) {
+      host.append(el('div', { className: 'empty' }, text('No videos to check.')));
+      return;
+    }
+
+    const slow = rows.filter((r) => r.verdict === 'tail').length;
+    host.append(el('div', {
+      className: 'msg ' + (slow ? 'bad' : 'ok'),
+    }, text(slow
+      ? slow + ' of ' + rows.length + ' videos keep their index at the end. ' +
+        'Each of those costs every viewer an extra round trip before the ' +
+        'first frame. Re-upload them from New or from the title editor — ' +
+        'the console writes the index first now.'
+      : 'All ' + rows.length + ' videos start from the front. Nothing to do.')));
+
+    const t = el('table', { style: 'margin-top:8px' });
+    t.append(el('tr', {}, ['file', 'size', 'layout', 'verdict']
+      .map((h) => el('th', {}, text(h)))));
+    for (const r of rows) {
+      const v = r.error ? 'error' : r.verdict;
+      const td = el('td', {}, text(r.error || v));
+      if (v === 'tail' || v === 'error') td.style.color = 'var(--bad)';
+      else if (v === 'faststart') td.style.color = 'var(--ok)';
+      t.append(el('tr', {}, [
+        // The key, not the title: this is about the OBJECT, and two titles
+        // can point at the same one.
+        el('td', { className: 'mono', style: 'word-break:break-all' },
+          text(r.key)),
+        el('td', { className: 'num mono' }, text(fmtBytes(r.bytes))),
+        el('td', { className: 'mono', style: 'color:var(--dim2)' },
+          text((r.boxes || []).join(' '))),
+        td,
+      ]));
+    }
+    host.append(el('div', { className: 'tw' }, [t]));
+  } catch (e) {
+    say('bad', String(e.message || e));
+    host.textContent = '';
+  } finally {
+    btn.disabled = false;
+  }
+};
+
+/// Bytes as something a person reads. Null and zero are "—" rather than
+/// "0 B", because not knowing a size and knowing it is empty are different.
+function fmtBytes(n) {
+  if (!n) return '\u2014';
+  const u = ['B', 'KB', 'MB', 'GB'];
+  let i = 0;
+  let v = n;
+  while (v >= 1024 && i < u.length - 1) { v /= 1024; i++; }
+  return (v >= 10 || i === 0 ? Math.round(v) : v.toFixed(1)) + ' ' + u[i];
+}
+
 // ── the stream secret ────────────────────────────────────────────────────
 //
 // THE ONE PIECE OF THIS SYSTEM AN OPERATOR CANNOT MAKE ON A PHONE.

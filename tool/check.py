@@ -115,6 +115,11 @@ def main() -> int:
         ('faststart_test.mjs',
          'the MP4 rewrite',
          'an MP4 rewrite that corrupts the video it was meant to speed up'),
+        ('probe_boxes_test.mjs',
+         'the MP4 box walker',
+         'a start-up check that tells the operator to re-upload a film that '
+         'was already correct, or to stop looking at one that is not — '
+         'neither of which throws'),
         ('stream_token_test.mjs',
          'the playback token',
          'the Supabase function and the Worker disagreeing about how a '
