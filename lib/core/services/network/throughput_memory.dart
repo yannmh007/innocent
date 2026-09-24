@@ -30,12 +30,28 @@ class ThroughputMemory {
 
   static const String _key = 'net.throughput_kbps';
 
-  /// How much of a new reading replaces the old one.
+  /// How much of a new reading replaces the old one, when the news is good.
   ///
-  /// A THIRD. Three consecutive films on a genuinely different connection
-  /// move the estimate most of the way there; one anomaly moves it a third
-  /// of the way and is undone by the next normal reading.
-  static const double _weight = 1 / 3;
+  /// A THIRD. Three consecutive films on a genuinely better connection move
+  /// the estimate most of the way there; one lucky burst moves it a third of
+  /// the way and is undone by the next normal reading. Rising slowly is the
+  /// safe direction: over-estimating hands somebody a rung their connection
+  /// cannot carry, which is the stutter all of this exists to end.
+  static const double _weightUp = 1 / 3;
+
+  /// And when the news is bad.
+  ///
+  /// THREE QUARTERS, BECAUSE THE TWO DIRECTIONS ARE NOT SYMMETRIC. Somebody
+  /// who walks out of their wifi and onto the street has not had a bad
+  /// moment, they have a different connection — and a symmetric average
+  /// would take three films to notice, which is three films of stuttering.
+  /// Over-reacting downwards costs a picture that is softer than it needed
+  /// to be for one film, and the next reading corrects it.
+  ///
+  /// This app has no way to tell wifi from mobile — that needs a plugin the
+  /// project deliberately does not carry — so this asymmetry is the whole
+  /// mechanism for noticing that the connection changed.
+  static const double _weightDown = 3 / 4;
 
   /// Readings outside these are not measurements, they are artefacts. A
   /// reading taken in the first moment of a stall can be near zero because
@@ -73,9 +89,10 @@ class ThroughputMemory {
   static Future<void> observe(int kbps) async {
     if (kbps < _floorKbps || kbps > _ceilingKbps) return;
     final before = _cached;
+    final weight = before == null || kbps >= before ? _weightUp : _weightDown;
     final next = before == null
         ? kbps
-        : (before + (kbps - before) * _weight).round();
+        : (before + (kbps - before) * weight).round();
     _cached = next;
     _loaded = true;
     try {

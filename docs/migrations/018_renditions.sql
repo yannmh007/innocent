@@ -260,9 +260,20 @@ as $$
          transcode_at = now()
    where a.id = (
      select x.id from public.title_assets x
-      where x.transcode_state = 'queued'
-        and x.kind <> 'photo'
-      order by x.added_at asc
+      where x.kind <> 'photo'
+        and (
+          x.transcode_state = 'queued'
+          -- A RUNNER THAT DIED LEAVES A ROW SAYING 'running' FOR EVER.
+          -- GitHub kills a job at six hours and a runner can vanish at any
+          -- moment; nothing about that reaches this database. Without this
+          -- clause the first such job is the last one the queue ever
+          -- processes for that file, and the only symptom is a title that
+          -- never becomes watchable. Seven hours is past the platform's own
+          -- ceiling, so a live job is never stolen from itself.
+          or (x.transcode_state = 'running'
+              and x.transcode_at < now() - interval '7 hours')
+        )
+      order by (x.transcode_state = 'running'), x.added_at asc
       for update skip locked
       limit 1
    )

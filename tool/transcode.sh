@@ -49,6 +49,32 @@ ls -lh "$src"
 echo "::endgroup::"
 
 # ── what are we working with ───────────────────────────────────────────────
+# THE REPORTER IS DEFINED BEFORE ANYTHING CAN FAIL, because a job that dies
+# before it exists leaves the row saying "running" for ever, and the operator
+# has no way to tell a dead runner from a slow one.
+results="$work/rows.json"
+echo '[]' > "$results"
+
+report() {
+  # Reported after every rung rather than once at the end, so a job that is
+  # killed still leaves a ladder somebody can watch.
+  curl -fsS -X POST "$DONE_URL" \
+    -H 'Content-Type: application/json' \
+    -d "$(python3 - "$results" <<'PY'
+import json, os, sys
+rows = json.load(open(sys.argv[1]))
+print(json.dumps({
+  'op': 'done',
+  'token': os.environ['JOB_TOKEN'],
+  'asset_id': os.environ['ASSET_ID'],
+  'rows': rows,
+  'note': os.environ.get('NOTE', ''),
+}))
+PY
+)" >/dev/null || echo "report failed (continuing)"
+}
+
+
 probe() { ffprobe -v error -select_streams v:0 -show_entries "$1" -of csv=p=0 "$src" | head -1; }
 SRC_H="$(probe stream=height)"
 SRC_W="$(probe stream=width)"
@@ -56,6 +82,18 @@ FPS_RAW="$(probe stream=r_frame_rate)"
 DUR="$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$src" | head -1)"
 PIXFMT="$(probe stream=pix_fmt)"
 TRANSFER="$(probe stream=color_transfer)"
+
+# A SOURCE WITH NO VIDEO STREAM IS NOT A LADDER, and left unguarded it is a
+# crash: every rung test below compares a height against an empty string,
+# bash calls that an error, and the job dies with a message about integer
+# expressions that says nothing about the file. An audio-only upload, or one
+# ffprobe cannot read at all, is reported as a failure the operator can act
+# on instead.
+if ! [ "${SRC_H:-0}" -gt 0 ] 2>/dev/null; then
+  echo "no video stream in this file (height='${SRC_H:-}')"
+  NOTE="no video stream - nothing to encode" report
+  exit 0
+fi
 
 FPS="$(python3 -c "
 n,_,d = '''$FPS_RAW'''.partition('/')
@@ -107,28 +145,6 @@ if [ "$DUR_I" -gt 2400 ]; then MAX_H=1080; fi
 
 FPSMUL=100
 if python3 -c "import sys; sys.exit(0 if float('$FPS') > 40 else 1)"; then FPSMUL=135; fi
-
-results="$work/rows.json"
-echo '[]' > "$results"
-
-report() {
-  # Reported after every rung rather than once at the end, so a job that is
-  # killed still leaves a ladder somebody can watch.
-  curl -fsS -X POST "$DONE_URL" \
-    -H 'Content-Type: application/json' \
-    -d "$(python3 - "$results" <<'PY'
-import json, os, sys
-rows = json.load(open(sys.argv[1]))
-print(json.dumps({
-  'op': 'done',
-  'token': os.environ['JOB_TOKEN'],
-  'asset_id': os.environ['ASSET_ID'],
-  'rows': rows,
-  'note': os.environ.get('NOTE', ''),
-}))
-PY
-)" >/dev/null || echo "report failed (continuing)"
-}
 
 for i in "${!LADDER_H[@]}"; do
   h="${LADDER_H[$i]}"
