@@ -213,19 +213,37 @@ export default {
     if (request.method !== 'GET' && request.method !== 'HEAD') {
       return new Response('Method not allowed', { status: 405 });
     }
+    const url = new URL(request.url);
+
+    // ANSWERED BEFORE THE SECRET IS CHECKED, and that order is the point.
+    //
+    // The first version put this after the guard below, so a Worker with no
+    // TOKEN_SECRET set — which is every Worker between its first deploy and
+    // the moment the operator adds the secret — answered `/health` with 404.
+    // A health check that reports "dead" during the one procedure it exists
+    // to support is worse than not having one: the operator reads it as a
+    // failed deploy and starts undoing work that was correct.
+    //
+    // It reports WHETHER the secret is set, which is the actual question
+    // being asked at that moment, and that is not a disclosure: anyone can
+    // already tell by asking for a video and being refused. What it does not
+    // say is anything about the bucket, the keys or the secret itself.
+    if (url.pathname === '/health') {
+      return new Response(JSON.stringify({
+        ok: true,
+        service: 'innocent-stream',
+        secret: !!env.TOKEN_SECRET,
+        bucket: !!env.MEDIA,
+      }), {
+        headers: { 'Content-Type': 'application/json',
+                   'Cache-Control': 'no-store' },
+      });
+    }
+
     if (!env.TOKEN_SECRET) {
       // Refusing everything beats serving everything. A missing secret is
       // a deployment mistake, and the safe reading of it is "closed".
       return refuse();
-    }
-
-    const url = new URL(request.url);
-    // A liveness probe that reveals nothing about the bucket.
-    if (url.pathname === '/health') {
-      return new Response(JSON.stringify({ ok: true, service: 'innocent-stream' }), {
-        headers: { 'Content-Type': 'application/json',
-                   'Cache-Control': 'no-store' },
-      });
     }
 
     const match = url.pathname.match(/^\/v\/([A-Za-z0-9_-]+)$/);

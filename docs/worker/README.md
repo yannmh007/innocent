@@ -125,9 +125,21 @@ Check it is alive by opening this in the phone's browser:
 https://innocent-stream.<your-subdomain>.workers.dev/health
 ```
 
-It should answer `{"ok":true,"service":"innocent-stream"}`. Anything else
-means the Worker is not running yet; the `/health` path is deliberately the
-only one that answers without a token.
+It answers four things:
+
+```json
+{"ok":true,"service":"innocent-stream","secret":true,"bucket":true}
+```
+
+`secret` is `false` until step 3 is done and redeployed — which is the
+question being asked at that moment, so it is worth having the answer rather
+than guessing. `bucket` says the R2 binding attached. Both must be `true`
+before a video will play.
+
+`/health` is deliberately the only path that answers without a token, and it
+answers before the secret is checked: a health check that reports "dead"
+during the one procedure it exists to support would send an operator to undo
+work that was correct.
 
 ### 4. Give Supabase the same secret and the address
 
