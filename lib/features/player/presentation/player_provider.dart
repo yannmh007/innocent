@@ -421,6 +421,8 @@ class PlayerController extends StateNotifier<PlayerState> {
         'priv=$_isPrivate');
     if (!state.isBackgroundPlay || _isPrivate) return;
     _bgPauseTimer?.cancel();
+    _decodeWatchTimer?.cancel();
+    _noAudioCheckTimer?.cancel();
     _bgPauseTimer = null;
     if (playing) {
       try {
@@ -958,6 +960,13 @@ class PlayerController extends StateNotifier<PlayerState> {
               }
               target = fresh;
               _currentUri = fresh;
+              // A renewal can move the playback between the caching proxy and
+              // the origin; the buffering profile has to move with it.
+              await _applyStreamProfileFor(target);
+              if (!mounted || _currentUri != target) {
+                _networkRetryInFlight = false;
+                return;
+              }
             }
             await s.open(target, startAt: lastPos);
             await s.play();
@@ -1222,12 +1231,200 @@ class PlayerController extends StateNotifier<PlayerState> {
   /// stop, so a normal pause-then-resume does not flap the notification.
   Timer? _bgPauseTimer;
 
-  /// The black screen just ended.
+  // ─── THE DECODER'S SIDE OF THE SAME QUESTION ───────────────────────────
+  //
+  // Everything above watches the NETWORK, because a stall is what the network
+  // does when it cannot keep up. A decoder that cannot keep up does not stall
+  // at all — it throws frames away and carries on, so the buffer never runs
+  // dry, no buffering event ever fires, and the one measurement in this file
+  // never runs. The viewer sees motion that judders on a picture that never
+  // pauses, and nothing in the app has an opinion about it.
+  //
+  // This is the missing half: a light poll of libmpv's own drop counter,
+  // running ONLY while a file is playing in software, which is the only case
+  // where anything can be done about it. Two property reads every four
+  // seconds — a rounding error against decoding a frame — and they buy the
+  // one decision worth making, which is whether this device has earned the
+  // quality cut that used to be applied to every device unconditionally.
+  Timer? _decodeWatchTimer;
+  int _decodeWatchDropped = 0;
+
+  /// Consecutive ticks that came back over the threshold.
   ///
-  /// Idempotent by design: three separate signals can arrive first (buffering
-  /// clearing, the position advancing, a seek completing) and whichever wins
-  /// is the right one. Everything after the first call is ignored, so a
-  /// mid-film refill can never be mistaken for another start.
+  /// TWO, BECAUSE ONE IS NOT EVIDENCE. `hr-seek-framedrop` is on, so every
+  /// scrub of the seek bar throws frames away by design — a viewer hunting
+  /// for a scene produces exactly the burst a struggling decoder does. A
+  /// decoder that genuinely cannot keep up is still behind four seconds
+  /// later; a seek is not.
+  int _decodeBadTicks = 0;
+
+  /// How many frames may be lost between two ticks before the decoder is
+  /// judged to be losing. Four seconds of a 24 fps film is ninety-six frames;
+  /// six of them gone is visible juddering, while one or two are the ordinary
+  /// cost of a seek and mean nothing.
+  static const int _decodeDropThreshold = 6;
+
+  /// Start the decode watch for a newly opened file. Safe to call repeatedly.
+  void _startDecodeWatch() {
+    _decodeWatchTimer?.cancel();
+    _decodeWatchDropped = 0;
+    _decodeBadTicks = 0;
+    _decodeWatchTimer = Timer.periodic(
+      const Duration(seconds: 4),
+      (_) => unawaited(_pollDecodeHealth()),
+    );
+  }
+
+  void _stopDecodeWatch() {
+    _decodeWatchTimer?.cancel();
+    _decodeWatchTimer = null;
+  }
+
+  /// One tick of the decode watch. Never throws; a reading that cannot be
+  /// taken simply does not change anything.
+  Future<void> _pollDecodeHealth() async {
+    try {
+      if (!mounted || !state.isPlaying) return;
+      final svc = _ref.read(videoPlayerServiceProvider);
+      if (svc is! MediaKitPlayerService) return;
+      if (svc.isDecodeRelieved) {
+        // Nothing left to decide for this file.
+        _stopDecodeWatch();
+        return;
+      }
+      final total = await svc.readDroppedFrames();
+      final delta = total - _decodeWatchDropped;
+      _decodeWatchDropped = total;
+      // A REOPEN RESETS libmpv's COUNTER, not this one. A downgrade or a
+      // reconnect mid-film leaves the baseline above whatever the new file
+      // has counted so far, and the difference goes negative. Re-base on it
+      // and wait for the next tick rather than reading a negative number as
+      // "healthy" — which it happens to be, but only by accident.
+      if (delta < 0) {
+        _decodeBadTicks = 0;
+        return;
+      }
+      if (delta < _decodeDropThreshold) {
+        _decodeBadTicks = 0;
+        return;
+      }
+      if (++_decodeBadTicks < 2) return;
+      // Only a SOFTWARE decoder can be helped by this. A hardware decoder
+      // dropping frames is doing so for a reason no libavcodec option
+      // touches, and taking the picture apart would cost quality for
+      // nothing. The check is last because it is the expensive one.
+      if (!await svc.isSoftwareDecoding()) {
+        _stopDecodeWatch();
+        return;
+      }
+      if (!mounted) return;
+      if (await svc.relieveDecoder()) {
+        PlaybackLog.add('decode relief after $delta dropped frames in 4s');
+        _stopDecodeWatch();
+      }
+    } catch (e) {
+      PlaybackLog.add('decode watch failed: $e');
+      _stopDecodeWatch();
+    }
+  }
+
+  // ─── A PICTURE WITH NO SOUND IS NOT A PLAYABLE FILE ────────────────────
+  //
+  // The network profile caps how long libavformat may spend working out what
+  // is in a stream, because that probe is paid before the first frame and
+  // most of it is spent learning what an MP4 header already says. The cap has
+  // one failure mode and it is not a slow start: on a container whose tracks
+  // are discovered from the packets rather than declared up front, a probe
+  // that ends early can end before the audio has appeared. libmpv then plays
+  // the file exactly as it understands it — video only — and the viewer
+  // watches a film in silence with nothing on screen to explain it.
+  //
+  // So the app checks its own work. If a network file settles with a picture
+  // and no audio track at all, it is reopened ONCE with the probe limits off,
+  // at the same moment. The cost when the file really is silent is a second,
+  // once; the cost of not doing it is the whole film.
+  bool _patientProbeTried = false;
+  Timer? _noAudioCheckTimer;
+
+  /// Arm the check for the file that has just started. It runs once, a beat
+  /// after the first frame, by which time libmpv has reported its track list.
+  void _armNoAudioCheck() {
+    _noAudioCheckTimer?.cancel();
+    final uri = _currentUri;
+    if (uri == null || !_isNetworkUri(uri)) return;
+    if (_patientProbeTried) return;
+    _noAudioCheckTimer = Timer(
+      const Duration(milliseconds: 2500),
+      () => unawaited(_reopenIfSilent(uri)),
+    );
+  }
+
+  /// A real track, not one of libmpv's two pseudo-entries. media_kit always
+  /// carries `auto` and `no` in every track list; counting them would make
+  /// every silent file look like it had sound.
+  static bool _isRealTrackId(String id) => id != 'auto' && id != 'no';
+
+  /// True while the silent-file recovery is reopening. Held so a downgrade
+  /// cannot start between this method's guard and its `open`.
+  bool _reopenInFlight = false;
+
+  Future<void> _reopenIfSilent(String uri) async {
+    if (!mounted || _currentUri != uri) return;
+    if (_patientProbeTried || _downgradeInFlight || _networkRetryInFlight) {
+      return;
+    }
+    // Only when there is a PICTURE and no sound. A file with neither is not
+    // playing at all and is somebody else's error path; a file with sound and
+    // no picture is a music track, which is exactly as it should be.
+    if (!state.videoTracks.any((t) => _isRealTrackId(t.id))) return;
+    if (state.audioTracks.any((t) => _isRealTrackId(t.id))) return;
+    _patientProbeTried = true;
+    _reopenInFlight = true;
+    try {
+      final svc = _ref.read(videoPlayerServiceProvider);
+      if (svc is! MediaKitPlayerService) return;
+      final at = svc.position > Duration.zero ? svc.position : state.position;
+      PlaybackLog.add('no audio track found - reopening with a full probe');
+      await svc.setStreamBufferProfile(
+        network: true,
+        viaLocalCache: isLoopbackUri(uri),
+        patientProbe: true,
+      );
+      if (!mounted || _currentUri != uri) return;
+      await svc.open(uri, startAt: at);
+      await svc.play();
+    } catch (e) {
+      // The silent copy is still playing, which is better than nothing.
+      PlaybackLog.add('full-probe reopen failed: $e');
+    } finally {
+      _reopenInFlight = false;
+    }
+  }
+
+  /// Re-state the buffering profile for a URI the player has just been moved
+  /// to WITHOUT going through the open path.
+  ///
+  /// Both reopen paths in this file — the downgrade and the network retry —
+  /// can hand libmpv an address of a different KIND from the one it had: the
+  /// renewal returns this app's caching proxy on loopback when the proxy can
+  /// serve the film and the origin's own URL when it cannot, and which of the
+  /// two comes back is not knowable in advance. The profile that matters
+  /// there is `cache-on-disk`: left on while playing through the proxy, mpv
+  /// spills a second copy of every byte the proxy is already writing to the
+  /// same phone. One film, two copies, one of them invisible.
+  Future<void> _applyStreamProfileFor(String uri) async {
+    try {
+      final svc = _ref.read(videoPlayerServiceProvider);
+      if (svc is! MediaKitPlayerService) return;
+      await svc.setStreamBufferProfile(
+        network: _isNetworkUri(uri),
+        viaLocalCache: isLoopbackUri(uri),
+      );
+    } catch (e) {
+      PlaybackLog.add('profile re-apply failed: $e');
+    }
+  }
+
   /// Ask libmpv why it stopped, and say so out loud.
   ///
   /// This is the method that ends a three-week argument. "It stutters" has
@@ -1297,6 +1494,12 @@ class PlayerController extends StateNotifier<PlayerState> {
       // now, so that is a thing that can actually be done.
       if (diagnosis.cause == StallCause.network) {
         unawaited(_stepDownARung(reading.needBitsPerSecond));
+      } else if (diagnosis.cause == StallCause.decode) {
+        // Measured, not suspected: the buffer was full and the decoder was
+        // throwing frames away. That is the exact evidence the loop-filter
+        // shortcut is reserved for, so do not wait for the poll to notice it
+        // again four seconds from now.
+        unawaited(svc.relieveDecoder());
       }
     } catch (e) {
       PlaybackLog.add('stall measurement failed: $e');
@@ -1318,7 +1521,7 @@ class PlayerController extends StateNotifier<PlayerState> {
   /// reading there is no ceiling to set and no honest basis for a downgrade,
   /// so nothing happens.
   Future<void> _stepDownARung(int? failingBitsPerSecond) async {
-    if (_downgradeInFlight || _networkRetryInFlight) return;
+    if (_downgradeInFlight || _networkRetryInFlight || _reopenInFlight) return;
     if (_downgrades >= _maxDowngrades) return;
     final uri = _currentUri;
     if (uri == null || !StreamRenewal.canRenew(uri)) return;
@@ -1342,6 +1545,9 @@ class PlayerController extends StateNotifier<PlayerState> {
       _downgrades++;
       _currentUri = fresh;
       PlaybackLog.add('stepped down a rung (#$_downgrades) at ${at.inSeconds}s');
+      // The smaller copy may be served from a different KIND of address than
+      // the one that was playing — see [_applyStreamProfileFor].
+      await _applyStreamProfileFor(fresh);
       await svc.open(fresh, startAt: at);
       await svc.play();
       if (mounted && _currentUri == fresh) {
@@ -1360,6 +1566,12 @@ class PlayerController extends StateNotifier<PlayerState> {
     }
   }
 
+  /// The black screen just ended.
+  ///
+  /// Idempotent by design: three separate signals can arrive first (buffering
+  /// clearing, the position advancing, a seek completing) and whichever wins
+  /// is the right one. Everything after the first call is ignored, so a
+  /// mid-film refill can never be mistaken for another start.
   void _markFirstFrame() {
     if (_firstFrameSeen) return;
     _firstFrameSeen = true;
@@ -1374,6 +1586,11 @@ class PlayerController extends StateNotifier<PlayerState> {
       // against — p50 and p95 time-to-first-frame is.
       onFirstFrame?.call(DateTime.now().difference(started));
     }
+    // Both checks belong HERE and not in the open path: neither question has
+    // an answer before there is a picture. Until the first frame there is no
+    // decoder to be behind and no track list to be missing from.
+    _startDecodeWatch();
+    _armNoAudioCheck();
   }
 
   /// True when something currently on screen actually displays the playback

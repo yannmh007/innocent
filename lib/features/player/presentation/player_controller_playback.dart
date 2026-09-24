@@ -139,6 +139,15 @@ extension PlayerPlayback on PlayerController {
     _stallsReported = 0;
     _downgrades = 0;
     _downgradeInFlight = false;
+    // The decode watch and the silent-file check both describe ONE playback.
+    // Left running across an open they would measure the new file against the
+    // old one's counters and spend its one full-probe reopen before it had
+    // played a frame.
+    _stopDecodeWatch();
+    _noAudioCheckTimer?.cancel();
+    _noAudioCheckTimer = null;
+    _patientProbeTried = false;
+    _reopenInFlight = false;
     state = state.copyWith(
       errorMessage: null,
       playbackCompleted: false,
@@ -295,6 +304,12 @@ extension PlayerPlayback on PlayerController {
         await svc.setFastSeeking(ps2.get(PlayerSetting.fastSeeking));
         await svc.setDeinterlace(ps2.get(PlayerSetting.decDeinterlace));
         await svc.setSpeedupTricks(ps2.get(PlayerSetting.decSpeedupTricks));
+        // Every file starts at full picture quality. The loop-filter skip is
+        // earned by a decoder that is measurably losing, and what the last
+        // file proved says nothing about this one — a phone that could not
+        // manage a 4K HEVC stream in software decodes a 720p H.264 one
+        // without noticing.
+        await svc.resetDecodeRelief();
         await svc.setSubtitleItalic(
             ps2.get(PlayerSetting.subtitleItalicEffect));
       }

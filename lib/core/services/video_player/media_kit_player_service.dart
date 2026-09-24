@@ -11,6 +11,7 @@ import 'models/video_track_info.dart';
 import '../diagnostics/playback_log.dart';
 import 'disk_cache_dir.dart';
 import 'mpv_option_range.dart';
+import 'seek_math.dart';
 import 'stall_diagnosis.dart';
 import 'video_player_service.dart';
 
@@ -232,12 +233,27 @@ class MediaKitPlayerService implements VideoPlayerService {
     // then restores 'absolute' for the precise final seek on release.
     await _setMpvProperty('hr-seek', 'absolute');
     await _setMpvProperty('hr-seek-framedrop', 'yes');
-    // Software-decode fallback speedups. This is now owned by Settings →
-    // Decoder → "Use speedup tricks" (see setSpeedupTricks), which the open
-    // path applies per file; the baseline just matches that setting's default
-    // so the very first frame is decoded the same way as every later one.
+    // Software-decode speedups, and the two are NOT the same trade.
+    //
+    // `vd-lavc-fast` permits decoding shortcuts that are not strictly
+    // spec-compliant. In practice the difference is arithmetic noise, so it
+    // is on wherever the user's setting allows it.
+    //
+    // `vd-lavc-skiploopfilter=nonkey` is a different proposition entirely: it
+    // switches OFF H.264's deblocking filter for every frame that is not a
+    // keyframe. Deblocking is not an enhancement, it is part of the decode —
+    // the encoder assumed it would run, and without it the picture shows the
+    // block edges the filter exists to remove, worst on exactly the content
+    // that is hardest to encode. It used to be on for the whole of every
+    // software-decoded film, on every device, whether or not anything was
+    // struggling: a permanent, visible quality cut paid in advance against a
+    // problem most phones never have.
+    //
+    // So it starts OFF and is turned on only when the decoder is measurably
+    // losing — see [relieveDecoder], which the player calls when it counts
+    // real dropped frames. Full quality by default; the shortcut on proof.
     await _setMpvProperty('vd-lavc-fast', 'yes');
-    await _setMpvProperty('vd-lavc-skiploopfilter', 'nonkey');
+    await _setMpvProperty('vd-lavc-skiploopfilter', 'none');
     // BATTERY/HEAT FIX — was '0', which means "one decode thread per CPU
     // core". On an eight-core phone that lights up every core the moment
     // libmpv falls back to software decoding, and a phone under full
@@ -724,11 +740,16 @@ class MediaKitPlayerService implements VideoPlayerService {
 
   @override
   Future<void> seekRelative(Duration delta) async {
-    final target = _position + delta;
-    final clamped = target < Duration.zero
-        ? Duration.zero
-        : (target > _duration ? _duration : target);
-    await _player.seek(clamped);
+    // Clamped by [clampSeekTarget], which knows the difference between a
+    // duration of zero and a duration that is not known yet. The arithmetic
+    // used to live here and did not: every +10 s tapped in the first moment
+    // of a file — before the demuxer had reported a length — landed on 00:00,
+    // and on a stream with no length at all it landed there every time.
+    await _player.seek(clampSeekTarget(
+      current: _position,
+      delta: delta,
+      duration: _duration,
+    ));
   }
 
   // === Audio ===
@@ -1114,16 +1135,89 @@ class MediaKitPlayerService implements VideoPlayerService {
   /// Settings → Decoder → "Use speedup tricks".
   ///
   /// Two software-decode shortcuts, both no-ops while hardware decoding is
-  /// doing the work: `vd-lavc-fast` allows decoding that is not strictly
-  /// spec-compliant but visually equivalent, and skipping the loop filter on
-  /// non-keyframes drops the single most expensive step in H.264 decoding.
-  /// Together they are the difference between watching and stuttering on a
-  /// weak device with an unsupported codec; on a strong one they simply save
-  /// battery. Turning the switch off restores strict decoding.
+  /// doing the work, and they are no longer applied the same way.
+  ///
+  /// `vd-lavc-fast` permits decoding that is not strictly spec-compliant but
+  /// is visually equivalent, so the switch applies it directly.
+  ///
+  /// Skipping the loop filter on non-keyframes is the bigger saving and the
+  /// only one with a price: deblocking is part of the decode the encoder
+  /// assumed would happen, and without it the block edges it removes stay in
+  /// the picture. That used to be applied here too, which meant every
+  /// software-decoded film on every device was watched slightly degraded
+  /// against a problem most devices never have. So the switch now grants
+  /// PERMISSION for it and [relieveDecoder] spends it — once, on a decoder
+  /// that has been measured losing frames.
+  ///
+  /// Turning the switch off restores strict decoding immediately, including
+  /// undoing a relief already in force.
   Future<void> setSpeedupTricks(bool enabled) async {
+    _speedupAllowed = enabled;
     await _setMpvProperty('vd-lavc-fast', enabled ? 'yes' : 'no');
-    await _setMpvProperty(
-        'vd-lavc-skiploopfilter', enabled ? 'nonkey' : 'none');
+    // The loop-filter skip is no longer applied here. The switch grants
+    // PERMISSION to use it; [relieveDecoder] decides whether it is needed.
+    // Turning the switch off has to withdraw it immediately, though — a user
+    // who has just asked for strict decoding should not keep watching a
+    // degraded picture until the next file.
+    if (!enabled && _decodeRelieved) {
+      _decodeRelieved = false;
+      await _setMpvProperty('vd-lavc-skiploopfilter', 'none');
+    }
+  }
+
+  /// Whether Settings → Decoder → "Use speedup tricks" allows the loop-filter
+  /// skip at all. Default matches the setting's own default.
+  bool _speedupAllowed = true;
+
+  /// True once the loop-filter skip has been applied to the current file.
+  bool _decodeRelieved = false;
+
+  /// True when the shortcut is currently in force, for the caller's log line.
+  bool get isDecodeRelieved => _decodeRelieved;
+
+  /// Give a losing software decoder the one shortcut that actually buys back
+  /// real time, and only then.
+  ///
+  /// Called by the player when it has COUNTED dropped frames — not when it
+  /// suspects a weak device, not at open, not on a hunch. Skipping the
+  /// deblocking filter costs picture quality, so it is spent to keep a film
+  /// playing at all, which is a trade a viewer would make, and never spent
+  /// on a device that was managing fine, which is a trade they would not.
+  ///
+  /// ONE WAY, FOR THE REST OF THE FILE. Turning it back off the moment the
+  /// drops stop, then on again at the next difficult scene, would pump the
+  /// picture quality visibly up and down — worse to watch than either state.
+  /// [resetDecodeRelief] clears it when a new file starts, which is the only
+  /// point where the question is worth asking again.
+  ///
+  /// Returns true when this call changed anything, so the caller can log the
+  /// moment rather than the polling.
+  Future<bool> relieveDecoder() async {
+    if (_decodeRelieved || !_speedupAllowed) return false;
+    _decodeRelieved = true;
+    await _setMpvProperty('vd-lavc-skiploopfilter', 'nonkey');
+    PlaybackLog.add('decode relief on (loop filter skipped on non-keyframes)');
+    return true;
+  }
+
+  /// Back to full quality for a new file. Called from the open path.
+  Future<void> resetDecodeRelief() async {
+    if (!_decodeRelieved) return;
+    _decodeRelieved = false;
+    await _setMpvProperty('vd-lavc-skiploopfilter', 'none');
+  }
+
+  /// True when libmpv is decoding this file in software.
+  ///
+  /// `hwdec-current` reads `no` when nothing is accelerating, and the name of
+  /// the backend (`mediacodec`, `mediacodec-copy`, …) when something is. A
+  /// null reading — a build without the property — is reported as NOT
+  /// software, because the shortcut this gates is a quality cut and an
+  /// unreadable device should not pay it on a guess.
+  Future<bool> isSoftwareDecoding() async {
+    final v = (await _getMpvProperty('hwdec-current'))?.trim().toLowerCase();
+    if (v == null || v.isEmpty) return false;
+    return v == 'no' || v == 'null';
   }
 
   /// Settings → Subtitle → "Italic effect". libmpv's own `sub-italic`.
@@ -1171,9 +1265,16 @@ class MediaKitPlayerService implements VideoPlayerService {
   /// disk cache below must not be used, because the bytes it would spill are
   /// the bytes the proxy has already written. Two copies of the same film on
   /// the same phone is not a cache, it is a bug with a comment.
+  ///
+  /// [patientProbe] undoes the start-up probe cap below for this one open.
+  /// Set when a previous attempt at the same file came back with a video
+  /// track and no audio at all — see the note on the cap for why that is the
+  /// one thing the cap can take away, and [PlayerController]'s recovery for
+  /// what it does about it.
   Future<void> setStreamBufferProfile({
     required bool network,
     bool viaLocalCache = false,
+    bool patientProbe = false,
   }) async {
     if (network) {
       await _setMpvProperty('cache', 'yes');
@@ -1259,9 +1360,32 @@ class MediaKitPlayerService implements VideoPlayerService {
       //     applied only to network sources — a local file's probe is free,
       //     and a stubborn local file is exactly where a full probe earns
       //     its keep.
-      await _setMpvProperty(
-          'demuxer-lavf-probesize', '${768 * 1024}');
-      await _setMpvProperty('demuxer-lavf-analyzeduration', '1');
+      //     THE CAP HAS A COST AND IT IS WORTH NAMING. What
+      //     `avformat_find_stream_info()` produces is the TRACK LIST, and a
+      //     probe that is cut short can end before it has seen a stream that
+      //     is really there. For an MP4 or an MKV that cannot happen — the
+      //     header declares every track, so the probe finishes long before
+      //     any limit — but for a transport stream (a camera's .m2ts, a
+      //     capture, anything muxed for broadcast) the tracks are discovered
+      //     from the packets themselves, and at 60 Mbps the old 768 KB was
+      //     about a tenth of a second of them. Miss the audio PID in that
+      //     window and the film plays, perfectly, in silence, and every
+      //     viewer blames the app.
+      //
+      //     Two megabytes and two seconds, then: still well under
+      //     libavformat's own 5 MB / 5 s, so the start-up saving on the
+      //     format this app actually serves is kept almost whole, and far
+      //     enough past the awkward case to stop guessing at it. The backstop
+      //     is [patientProbe]: if a file DOES open with a picture and no
+      //     sound, the player reopens it once with the limits off rather than
+      //     letting anyone watch a silent film.
+      if (patientProbe) {
+        await _setMpvProperty('demuxer-lavf-probesize', '5000000');
+        await _setMpvProperty('demuxer-lavf-analyzeduration', '5');
+      } else {
+        await _setMpvProperty('demuxer-lavf-probesize', '${2 * 1024 * 1024}');
+        await _setMpvProperty('demuxer-lavf-analyzeduration', '2');
+      }
       //  2. An MP4 whose moov atom sits at the END (anything not written
       //     "faststart") forces a read of the tail before playback can begin
       //     — the demuxer opens at byte zero, finds no moov, and jumps to
