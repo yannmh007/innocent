@@ -1061,9 +1061,10 @@ extension PlayerPlayback on PlayerController {
     // repeated skips accumulated the error. libmpv's live position is exact.
     //
     // Through [clampSeekTarget] so there is ONE piece of this arithmetic in
-    // the app. There were two, they disagreed, and the engine-level copy was
-    // the one that got it wrong: it treated a duration of zero as a real
-    // ceiling rather than as "not known yet".
+    // the app. There were three — here, the scrub gesture and the engine —
+    // they disagreed, and the engine's copy was the one that got it wrong: it
+    // treated a duration of zero as a real ceiling rather than as "not known
+    // yet".
     final base = svc.position > Duration.zero ? svc.position : state.position;
     final clamped = clampSeekTarget(
       current: base,
