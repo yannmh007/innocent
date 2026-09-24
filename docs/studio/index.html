@@ -382,6 +382,25 @@ td.num{text-align:right;font-variant-numeric:tabular-nums;color:var(--dim)}
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .prog .note.moved{color:var(--ok)}
 .prog .note.skipped{color:var(--acc)}
+/* The start-up list. NOT A TABLE, AND THAT IS THE FIX rather than a style
+   preference. It was a four-column table whose last column was the VERDICT
+   — the only column anyone reads — and on a phone the table scrolled
+   horizontally so the verdict was off-screen. The operator saw six file
+   names, six sizes, and no answer. A stacked row has nothing to cut off:
+   the key wraps, the facts sit under it, and the width of the screen stops
+   being able to hide the conclusion. */
+.prow{padding:8px 10px;border-bottom:1px solid var(--line);
+  display:flex;flex-direction:column;gap:5px}
+.prow:last-child{border-bottom:0}
+.pkey{font-family:var(--mono);font-size:11px;color:var(--dim);
+  word-break:break-all;line-height:1.45}
+.pfacts{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.pfact{font-size:11px;font-family:var(--mono);color:var(--dim2);
+  border:1px solid var(--line2);border-radius:999px;padding:1px 8px;
+  white-space:nowrap}
+.pfact.ok{color:var(--ok);border-color:#1e4637}
+.pfact.warn{color:var(--acc);border-color:#4a3a12}
+.pfact.bad{color:var(--bad);border-color:#5b2626}
 .pathprev{font-family:var(--mono);font-size:11px;color:var(--dim2);
   line-height:1.7;margin-top:6px;word-break:break-all}
 .pathprev b{color:var(--acc);font-weight:600}
@@ -576,12 +595,21 @@ td.num{text-align:right;font-variant-numeric:tabular-nums;color:var(--dim)}
         <h2>Start-up</h2>
         <span class="spacer"></span>
         <button class="b" id="probeBtn">Check videos</button>
+        <button class="b" id="speedBtn">Speed test</button>
       </div>
       <div class="hint">
-        An MP4 keeps an index. At the FRONT, a player reads the head of the
-        file and starts. At the END, it reads the head, finds no index, and
-        seeks to the tail of a file that may be gigabytes away — an extra
-        round trip on every play, for every viewer, forever. Uploads made
+        Two different costs, and only one of them is about file size.
+        <b>Bitrate</b> — megabits every second — decides whether a stream can
+        keep up at all: a phone camera writes for archive quality, so a short
+        clip can demand more per second than a whole feature and will stop
+        and start for as long as anyone watches it. <b>Speed test</b>
+        downloads 8 MB of a real file through the Worker, from this phone, so
+        the two numbers can be compared instead of guessed at. The
+        <b>index</b> is the second cost: an MP4 keeps one, and at the FRONT a
+        player reads the head of the file and starts. At the END, it reads
+        the head, finds no index, and seeks to the tail of a file that may be
+        gigabytes away — one extra round trip before the first frame, which
+        is a slower start rather than a stutter. Uploads made
         before the console learned to write the index first are in the
         second state, and re-uploading them from here is the fix.
       </div>
@@ -2097,51 +2125,126 @@ async function loadStats() {
 // invisible from the database, invisible in the player, and invisible in
 // any metric that averages across titles. It is visible in the first sixty
 // kilobytes of the file, which is all the probe reads.
+// WHAT THIS PANEL LEARNED TO ASK. It began as "where is the index", which
+// is a real cost and turned out not to be THE cost: a viewer reported that
+// small files play perfectly and short camera clips stutter every couple of
+// seconds on a 6 MB/s connection, and an index at the end delays the START,
+// once, not every two seconds forever.
+//
+// The number that explains it is BITRATE, and nothing here knew it. A 133 MB
+// clip is not a big file — a feature here is 155 MB — but a 133 MB clip that
+// runs for ninety seconds is 12 megabits every second, and a phone camera
+// writing 4K will happily produce five times that. Size says how long a
+// download takes. Bitrate says whether a stream can keep up at all, and it
+// is size divided by DURATION, which is why the probe now reads the movie
+// header as well as the box list.
+let lastProbe = [];
+let measuredKbps = null;
+
+// A file needs its bitrate delivered CONTINUOUSLY, with nothing left over
+// for a lift, a tunnel or somebody else's phone on the same tower. These are
+// the two lines where a stream stops being comfortable and stops being
+// possible, and they are stated here rather than in four places.
+const COMFORTABLE_KBPS = 6000;
+const RISKY_KBPS = 12000;
+
+function bitrateClass(kbps) {
+  if (kbps == null) return '';
+  // Against a MEASUREMENT once there is one. A fixed threshold is a guess
+  // about somebody else's connection; the speed test is that connection.
+  const ceiling = measuredKbps != null ? measuredKbps * 0.7 : RISKY_KBPS;
+  if (kbps >= ceiling) return 'bad';
+  if (kbps >= (measuredKbps != null ? ceiling * 0.5 : COMFORTABLE_KBPS)) return 'warn';
+  return 'ok';
+}
+
+function fmtSecs(s) {
+  if (!s && s !== 0) return null;
+  const m = Math.floor(s / 60), r = Math.round(s % 60);
+  return m + ':' + String(r).padStart(2, '0');
+}
+
+function drawProbe() {
+  const host = $('probeBody');
+  host.textContent = '';
+  const rows = lastProbe;
+  if (!rows.length) {
+    host.append(el('div', { className: 'empty' }, text('No videos to check.')));
+    return;
+  }
+
+  const tail = rows.filter((r) => r.verdict === 'tail').length;
+  const fat = rows.filter((r) => bitrateClass(r.kbps) === 'bad').length;
+
+  // TWO SENTENCES, IN THE ORDER OF WHAT IT COSTS. A file too fat to stream
+  // ruins every second of the film; an index at the end costs one round trip
+  // at the start. Leading with the index — which is what this panel used to
+  // do, because it was all it could see — sent the operator to re-upload
+  // files whose real problem re-uploading does not touch.
+  if (fat) {
+    host.append(el('div', { className: 'msg bad' }, text(
+      fat + ' of ' + rows.length + ' videos are too heavy for ' +
+      (measuredKbps != null
+        ? 'the ' + (measuredKbps / 1000).toFixed(1) + ' Mbps this connection measured'
+        : 'a typical mobile connection') +
+      '. They will play a second or two, stop, and play again for as long as ' +
+      'anyone watches. Nothing in the app can fix that — the file has to ' +
+      'carry fewer bits per second, which means re-encoding it before upload.')));
+  }
+  if (tail) {
+    host.append(el('div', { className: 'msg ' + (fat ? 'info' : 'bad') }, text(
+      tail + ' of ' + rows.length + ' videos keep their index at the end. ' +
+      'That costs every viewer one extra round trip before the first frame — ' +
+      'a slower START, not a stutter. Re-upload them from New or from the ' +
+      'title editor; the console writes the index first now.')));
+  }
+  if (!tail && !fat) {
+    host.append(el('div', { className: 'msg ok' }, text(
+      'All ' + rows.length + ' videos start from the front and are light ' +
+      'enough to stream. Nothing to do.')));
+  }
+
+  const list = el('div', { className: 'lst', style: 'margin-top:8px' });
+  for (const r of rows) {
+    const facts = [];
+    facts.push(el('span', { className: 'pfact' }, text(fmtBytes(r.bytes))));
+    const dur = fmtSecs(r.seconds);
+    if (dur) facts.push(el('span', { className: 'pfact' }, text(dur)));
+    if (r.kbps != null) {
+      facts.push(el('span', { className: 'pfact ' + bitrateClass(r.kbps) },
+        text((r.kbps / 1000).toFixed(1) + ' Mbps')));
+    } else if (!r.error) {
+      // Said out loud rather than left blank. A blank cell reads as "fine".
+      facts.push(el('span', { className: 'pfact' }, text('length unknown')));
+    }
+    const v = r.error ? r.error : r.verdict;
+    facts.push(el('span', {
+      className: 'pfact ' + (v === 'faststart' ? 'ok'
+        : v === 'tail' ? 'bad' : v === 'unknown' ? 'warn' : 'bad'),
+    }, text(v === 'faststart' ? 'index first'
+      : v === 'tail' ? 'index at end' : v)));
+
+    list.append(el('div', { className: 'prow' }, [
+      // The key, not the title: this is about the OBJECT, and two titles can
+      // point at the same one.
+      el('div', { className: 'pkey' }, text(r.key)),
+      el('div', { className: 'pfacts' }, facts),
+    ]));
+  }
+  host.append(list);
+}
+
 $('probeBtn').onclick = async () => {
   const host = $('probeBody');
   const btn = $('probeBtn');
   btn.disabled = true;
   host.textContent = '';
-  host.append(el('div', { className: 'hint' }, text('Reading the first 64 KB of each video…')));
+  host.append(el('div', { className: 'hint' },
+    text('Reading the head of each video, and the tail when the index is there…')));
   try {
     const { results } = await api({}, PROBE_API);
-    host.textContent = '';
-    const rows = results || [];
-    if (!rows.length) {
-      host.append(el('div', { className: 'empty' }, text('No videos to check.')));
-      return;
-    }
-
-    const slow = rows.filter((r) => r.verdict === 'tail').length;
-    host.append(el('div', {
-      className: 'msg ' + (slow ? 'bad' : 'ok'),
-    }, text(slow
-      ? slow + ' of ' + rows.length + ' videos keep their index at the end. ' +
-        'Each of those costs every viewer an extra round trip before the ' +
-        'first frame. Re-upload them from New or from the title editor — ' +
-        'the console writes the index first now.'
-      : 'All ' + rows.length + ' videos start from the front. Nothing to do.')));
-
-    const t = el('table', { style: 'margin-top:8px' });
-    t.append(el('tr', {}, ['file', 'size', 'layout', 'verdict']
-      .map((h) => el('th', {}, text(h)))));
-    for (const r of rows) {
-      const v = r.error ? 'error' : r.verdict;
-      const td = el('td', {}, text(r.error || v));
-      if (v === 'tail' || v === 'error') td.style.color = 'var(--bad)';
-      else if (v === 'faststart') td.style.color = 'var(--ok)';
-      t.append(el('tr', {}, [
-        // The key, not the title: this is about the OBJECT, and two titles
-        // can point at the same one.
-        el('td', { className: 'mono', style: 'word-break:break-all' },
-          text(r.key)),
-        el('td', { className: 'num mono' }, text(fmtBytes(r.bytes))),
-        el('td', { className: 'mono', style: 'color:var(--dim2)' },
-          text((r.boxes || []).join(' '))),
-        td,
-      ]));
-    }
-    host.append(el('div', { className: 'tw' }, [t]));
+    lastProbe = results || [];
+    drawProbe();
   } catch (e) {
     say('bad', String(e.message || e));
     host.textContent = '';
@@ -2150,8 +2253,77 @@ $('probeBtn').onclick = async () => {
   }
 };
 
-/// Bytes as something a person reads. Null and zero are "—" rather than
-/// "0 B", because not knowing a size and knowing it is empty are different.
+// ── the speed test ────────────────────────────────────────────────────────
+//
+// MEASURED FROM HERE, ON PURPOSE. Every other number available about this
+// service is measured in a datacentre: the edge function's own timings, the
+// Worker's CPU time, R2's latency. None of them is what a viewer has. This
+// page runs on the operator's phone, on the operator's connection, and it
+// asks the SAME Worker for a range of a REAL object with a REAL token — the
+// exact path the player takes. What comes back is the only throughput figure
+// in the system that anybody actually experiences.
+//
+// EIGHT MEGABYTES, and the size is a compromise with a reason on each side.
+// Too small and TCP never leaves slow start, so the answer flatters the
+// connection; too large and an operator on a metered phone pays for a
+// diagnostic. Eight is a couple of seconds on a good link and still an
+// honest steady-state reading.
+$('speedBtn').onclick = async () => {
+  const host = $('probeBody');
+  const btn = $('speedBtn');
+  if (!lastProbe.length) {
+    say('info', 'Run "Check videos" first — the test downloads part of a real file.');
+    return;
+  }
+  // The largest object, because a test that finishes before the connection
+  // has settled measures the handshake rather than the throughput.
+  const target = lastProbe.filter((r) => r.bytes > 0)
+    .sort((a, b) => b.bytes - a.bytes)[0];
+  if (!target) { say('bad', 'Nothing to test against.'); return; }
+
+  btn.disabled = true;
+  const label = el('div', { className: 'msg info' },
+    text('Downloading 8 MB through the Worker…'));
+  host.prepend(label);
+  try {
+    const { url, error } = await api({ speed: target.key }, PROBE_API);
+    if (!url) throw new Error(error === 'no_stream_base'
+      ? 'STREAM_BASE / STREAM_TOKEN_SECRET are not set, so there is no Worker to test.'
+      : (error || 'no url'));
+    const want = Math.min(8 * 1024 * 1024, target.bytes) - 1;
+    const t0 = performance.now();
+    const res = await fetch(url, { headers: { Range: 'bytes=0-' + want } });
+    if (!res.ok && res.status !== 206) throw new Error('worker said ' + res.status);
+    // COUNTED FROM THE BODY, NOT FROM THE HEADER. A Content-Length says what
+    // was promised; reading the stream to the end says what arrived, and the
+    // difference between those two is exactly what a stalling viewer sees.
+    const buf = await res.arrayBuffer();
+    const secs = (performance.now() - t0) / 1000;
+    const kbps = Math.round((buf.byteLength * 8) / secs / 1000);
+    measuredKbps = kbps;
+
+    // Redrawn, because every bitrate on the list was coloured against a
+    // guess until this moment and is now coloured against a measurement.
+    drawProbe();
+    const heavy = lastProbe.filter((r) => r.kbps != null && r.kbps >= kbps * 0.7);
+    host.prepend(el('div', { className: 'msg ' + (heavy.length ? 'bad' : 'ok') }, text(
+      (kbps / 1000).toFixed(1) + ' Mbps (' + (kbps / 8000).toFixed(1) +
+      ' MB/s) through the Worker, measured over ' + fmtBytes(buf.byteLength) +
+      ' in ' + secs.toFixed(1) + 's. ' +
+      (heavy.length
+        ? heavy.length + ' of these files ask for more than 70% of that, ' +
+          'which is why they stutter: there is no headroom left for a ' +
+          'moment of congestion.'
+        : 'Every file in the list fits inside that with room to spare, so a ' +
+          'stutter here is not the connection.'))));
+  } catch (e) {
+    host.prepend(el('div', { className: 'msg bad' }, text(String(e.message || e))));
+  } finally {
+    label.remove();
+    btn.disabled = false;
+  }
+};
+
 function fmtBytes(n) {
   if (!n) return '\u2014';
   const u = ['B', 'KB', 'MB', 'GB'];

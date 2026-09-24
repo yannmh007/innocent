@@ -68,6 +68,33 @@
 /// is a statement of fact here rather than an optimisation.
 const EDGE_TTL_SECONDS = 86400;
 
+/// The one page allowed to read a response from here with JavaScript.
+///
+/// WHY A VIDEO WORKER NEEDS CORS AT ALL. It does not, for playback: a
+/// `<video>` element and libmpv both fetch without the same-origin rules
+/// applying. It needs it for the console's speed test, which is the only way
+/// to answer "what does this phone actually get through the Worker" from the
+/// phone that is complaining — and a browser will not let a page read bytes
+/// from another origin unless that origin says so.
+///
+/// AN ALLOWLIST, NOT `*`. A token is still required either way, so `*` would
+/// not hand anyone the bucket — but it would let any page on the internet
+/// spend this Worker's request budget on a URL it had somehow obtained, and
+/// there is exactly one page that has any business reading from here.
+const STUDIO_ORIGINS = ['https://yannmh007.github.io'];
+
+function corsFor(request) {
+  const origin = request.headers.get('Origin') || '';
+  if (!STUDIO_ORIGINS.includes(origin)) return {};
+  return {
+    'Access-Control-Allow-Origin': origin,
+    // Without this the page can time the download but cannot read the
+    // length it downloaded, which is half a measurement.
+    'Access-Control-Expose-Headers': 'Content-Range, Content-Length',
+    Vary: 'Origin',
+  };
+}
+
 /// Rejections say nothing.
 ///
 /// "Expired", "bad signature" and "no such object" are three different
@@ -173,7 +200,26 @@ export default {
         bucket: !!env.MEDIA,
       }), {
         headers: { 'Content-Type': 'application/json',
-                   'Cache-Control': 'no-store' },
+                   'Cache-Control': 'no-store', ...corsFor(request) },
+      });
+    }
+
+    // A plain `Range: bytes=0-N` is a CORS-safelisted header, so the speed
+    // test should never preflight. Answered anyway, because "should never"
+    // is a prediction about browsers and this costs four lines.
+    //
+    // 204 CARRIES NO BODY. A 204 with one is malformed and browsers discard
+    // the whole response — which cost an afternoon in `probe-media` with
+    // nothing in any log to say why.
+    if (request.method === 'OPTIONS') {
+      return new Response(null, {
+        status: 204,
+        headers: {
+          ...corsFor(request),
+          'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+          'Access-Control-Allow-Headers': 'range',
+          'Access-Control-Max-Age': '86400',
+        },
       });
     }
 
@@ -238,7 +284,7 @@ export default {
       return refuse();
     }
 
-    const headers = new Headers();
+    const headers = new Headers(corsFor(request));
     object.writeHttpMetadata(headers);
     headers.set('ETag', object.httpEtag);
     headers.set('Accept-Ranges', 'bytes');

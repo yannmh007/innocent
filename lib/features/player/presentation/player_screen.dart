@@ -46,6 +46,7 @@ import '../../../core/services/preferences/extra_settings_service.dart';
 // setSubtitleVerticalPos, which live on the concrete service rather than
 // on the VideoPlayerService interface.
 import '../../../core/services/video_player/media_kit_player_service.dart';
+import '../../../core/services/video_player/stall_diagnosis.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/ui/app_snackbar.dart';
 import '../../../core/utils/system_insets.dart';
@@ -824,6 +825,10 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     try {
       ref.read(playerControllerProvider.notifier).onFirstFrame =
           (took) => _reporter?.reportOpen(took);
+      // The same seam, for the same reason: the controller measures WHY
+      // playback stopped and only this screen knows which title it was.
+      ref.read(playerControllerProvider.notifier).onStall =
+          (reason) => _reporter?.reportStall(reason.toMeta());
     } catch (e) {
       PlaybackLog.add('open timing not wired: $e');
     }
@@ -879,6 +884,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     // finished reporter drops it, so the new one would be missing instead.
     try {
       ref.read(playerControllerProvider.notifier).onFirstFrame = null;
+      ref.read(playerControllerProvider.notifier).onStall = null;
     } catch (_) {
       // Nothing to release if the provider is already gone.
     }
@@ -2348,14 +2354,25 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                       Icon(
                           state.isOpening
                               ? Icons.play_circle_outline
-                              : Icons.wifi_off,
+                              // THE THIRD CASE, and it is measured rather
+                              // than assumed. `stallCause` is filled from
+                              // libmpv's own numbers at the moment playback
+                              // stopped: a full buffer with the decoder
+                              // dropping frames is the device failing to
+                              // keep up, not the link, and the wifi-off icon
+                              // over that is a lie in a picture.
+                              : state.stallCause == StallCause.decode
+                                  ? Icons.memory
+                                  : Icons.wifi_off,
                           size: 16,
                           color: Colors.white70),
                       const SizedBox(width: 8),
                       Text(
                         state.isOpening
                             ? AppStrings.of(context).openingVideo
-                            : AppStrings.of(context).slowBuffering,
+                            : state.stallCause == StallCause.decode
+                                ? AppStrings.of(context).videoTooHeavy
+                                : AppStrings.of(context).slowBuffering,
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 13,

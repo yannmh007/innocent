@@ -10,6 +10,7 @@ import 'models/subtitle_track_info.dart';
 import 'models/video_track_info.dart';
 import '../diagnostics/playback_log.dart';
 import 'mpv_option_range.dart';
+import 'stall_diagnosis.dart';
 import 'video_player_service.dart';
 
 /// Decouples the video player from the equalizer service. The EQ service
@@ -1170,6 +1171,31 @@ class MediaKitPlayerService implements VideoPlayerService {
       await _setMpvProperty('demuxer-max-back-bytes', '${32 * 1024 * 1024}');
       await _setMpvProperty('cache-secs', '30');
       await _setMpvProperty('demuxer-readahead-secs', '20');
+      // ── THE STUTTER, WHICH IS A DIFFERENT PROBLEM AGAIN ─────────────────
+      //
+      // A viewer reported video that plays two seconds, stops, plays two
+      // seconds, stops — on a connection measured at 6 MB/s. That rhythm is
+      // not a slow link on its own; it is the shape libmpv's own recovery
+      // makes when the link is MARGINAL.
+      //
+      // When the demuxer runs dry, libmpv pauses and waits until it holds
+      // `cache-pause-wait` seconds before resuming. The default is ONE. On a
+      // file whose bitrate is close to what the connection can deliver, one
+      // second of buffer is spent in about one second of playback, so the
+      // player resumes into the same starvation it just recovered from, over
+      // and over: a spinner every couple of seconds for the whole film.
+      //
+      // Six seconds turns that into one honest wait followed by real
+      // playback. It does NOT make the connection faster and nothing here
+      // can — but twelve half-second interruptions and one six-second one
+      // are not the same experience, and the second is the one a person can
+      // actually watch.
+      //
+      // It costs nothing at start-up: `cache-pause-initial` stays off, so
+      // the FIRST frame is still drawn as soon as there is one. This only
+      // governs recovery after a stall.
+      await _setMpvProperty('cache-pause-wait', '6');
+      await _setMpvProperty('cache-pause-initial', 'no');
       // ── START-UP, which is a different problem from smoothness ──────────
       //
       // Everything above decides how well a film PLAYS. None of it touches
@@ -1214,6 +1240,12 @@ class MediaKitPlayerService implements VideoPlayerService {
       await _setMpvProperty('demuxer-max-back-bytes', '${16 * 1024 * 1024}');
       await _setMpvProperty('cache-secs', '10');
       await _setMpvProperty('demuxer-readahead-secs', '5');
+      // Back to libmpv's default. The long recovery wait above is right for
+      // a marginal connection and wrong for a file on the phone's own
+      // storage, where a stall is a momentary hiccup and making the viewer
+      // wait six seconds for it would be the player inventing a delay that
+      // the hardware never asked for.
+      await _setMpvProperty('cache-pause-wait', '1');
       // Hand the probe limits back. A local file gets the full, patient
       // probe: it costs a disk read, and it is what makes an awkward
       // container play at all.
@@ -1230,6 +1262,70 @@ class MediaKitPlayerService implements VideoPlayerService {
       await _setMpvProperty('demuxer-lavf-probesize', '5000000');
       await _setMpvProperty('demuxer-lavf-analyzeduration', '5');
     }
+  }
+
+  /// Read, at the moment playback stopped, the four numbers that say WHY.
+  ///
+  /// THE POINT IS TO STOP GUESSING. "It stutters" has had three plausible
+  /// explanations in this codebase alone — the moov atom, the probe size, the
+  /// connection — and each one was argued from the symptom rather than from a
+  /// measurement, which is why two of them were wrong. libmpv already knows
+  /// the answer at the instant it stops: how many seconds of data it is
+  /// holding, how fast bytes are arriving, what the file demands, and whether
+  /// the decoder is throwing frames away. Reading those four turns an opinion
+  /// into a row in a table.
+  ///
+  /// `cache-speed` IS IN BYTES AND `video-bitrate` IS IN BITS. Converting
+  /// here, once, is the difference between a comparison and a factor-of-eight
+  /// mistake that would look like a working diagnosis.
+  ///
+  /// [previousDropped] is the drop count from the last reading: the property
+  /// is cumulative for the whole playback, and a total would file every stall
+  /// after the first as a decode problem for the rest of the film.
+  ///
+  /// Never throws and never blocks playback. Every read is individually
+  /// tolerant of a property this libmpv build does not carry, and a reading
+  /// full of nulls diagnoses as [StallCause.unknown], which is the honest
+  /// answer when nothing could be measured.
+  Future<StallReading> readStallNumbers({int previousDropped = 0}) async {
+    Future<double?> num_(String key) async {
+      final raw = await _getMpvProperty(key);
+      if (raw == null) return null;
+      return double.tryParse(raw.trim());
+    }
+
+    final cache = await num_('demuxer-cache-duration');
+    final bytesPerSec = await num_('cache-speed');
+    final video = await num_('video-bitrate');
+    final audio = await num_('audio-bitrate');
+    final dropped = await num_('decoder-frame-drop-count');
+    final hw = await _getMpvProperty('hwdec-current');
+    final w = await num_('video-params/w');
+    final h = await num_('video-params/h');
+
+    // Null when neither track reported one, rather than zero: a zero "need"
+    // would make every link look sufficient.
+    final need = (video ?? 0) + (audio ?? 0);
+
+    return StallReading(
+      cacheSeconds: cache,
+      haveBitsPerSecond: bytesPerSec == null ? null : (bytesPerSec * 8).round(),
+      needBitsPerSecond: need > 0 ? need.round() : null,
+      droppedFrames: dropped == null
+          ? null
+          : (dropped.round() - previousDropped).clamp(0, 1 << 30),
+      hwdec: hw,
+      width: w?.round(),
+      height: h?.round(),
+    );
+  }
+
+  /// The cumulative decoder drop count, for the caller to carry between
+  /// readings. Separate from [readStallNumbers] so the delta arithmetic lives
+  /// in one place and this stays a plain accessor.
+  Future<int> readDroppedFrames() async {
+    final raw = await _getMpvProperty('decoder-frame-drop-count');
+    return int.tryParse(raw?.trim() ?? '') ?? 0;
   }
 
   /// Phase 45 (audit): apply a global audio delay in milliseconds.

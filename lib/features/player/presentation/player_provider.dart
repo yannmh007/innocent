@@ -14,6 +14,7 @@ import '../../../core/di/core_providers.dart';
 import '../../../core/services/diagnostics/playback_log.dart';
 import '../../../core/di/preferences_provider.dart';
 import '../../../core/services/video_player/media_kit_player_service.dart';
+import '../../../core/services/video_player/stall_diagnosis.dart';
 import '../../../core/services/video_player/stream_renewal.dart';
 import '../../user_data/domain/user_data_models.dart';
 import '../../user_data/user_data_providers.dart';
@@ -109,6 +110,29 @@ class PlayerController extends StateNotifier<PlayerState> {
   /// feature that knows what a title is can report it. Null for local
   /// playback, which has nobody to report to.
   void Function(Duration openTook)? onFirstFrame;
+
+  /// Called when playback stops mid-film for long enough to matter, with the
+  /// measured reason. Null for local playback, which has nobody to report to.
+  ///
+  /// THE CALLBACK, AND NOT A REPORT FROM HERE, for the same reason
+  /// [onFirstFrame] is: this controller plays local files, music and vault
+  /// content as well as catalogue titles, and none of those has a title id or
+  /// belongs in the event log.
+  void Function(StallDiagnosis reason)? onStall;
+
+  /// The decoder's cumulative drop count at the last reading. The property is
+  /// a running total for the whole file, so without this every stall after
+  /// the first would inherit the first one's drops and be filed as a decode
+  /// problem for the rest of the film.
+  int _droppedAtLastStall = 0;
+
+  /// How many stalls have been reported for this playback.
+  ///
+  /// CAPPED, because the failure this diagnoses is one that repeats every two
+  /// seconds. Six samples say what is happening; six hundred would be the app
+  /// answering a bad connection by making more requests on it.
+  int _stallsReported = 0;
+  static const int _maxStallReports = 6;
 
   Duration? _seekStartPosition;
   bool _wasLongPressActive = false;
@@ -800,6 +824,11 @@ class PlayerController extends StateNotifier<PlayerState> {
               if (!mounted) return;
               if (!state.isBuffering) return;
               state = state.copyWith(slowNetworkHintVisible: true);
+              // A stall that has lasted this long is worth measuring. Not an
+              // open — before the first frame there is no bitrate, no cache
+              // duration and no decoder to be behind, so the numbers would be
+              // nulls dressed up as a diagnosis.
+              if (!opening) unawaited(_measureStall());
             },
           );
           // Tier 2 — hard error + clear the soft hint. Giving up on an open
@@ -824,9 +853,14 @@ class PlayerController extends StateNotifier<PlayerState> {
           );
         }
       } else {
-        // Buffer recovered — clear any visible hint.
-        if (state.slowNetworkHintVisible) {
-          state = state.copyWith(slowNetworkHintVisible: false);
+        // Buffer recovered — clear any visible hint, and the diagnosis with
+        // it. A cause that outlives the stall it explained would sit under a
+        // stream that is now perfectly healthy.
+        if (state.slowNetworkHintVisible || state.stallCause != null) {
+          state = state.copyWith(
+            slowNetworkHintVisible: false,
+            clearStallCause: true,
+          );
         }
       }
     }));
@@ -1180,6 +1214,44 @@ class PlayerController extends StateNotifier<PlayerState> {
   /// clearing, the position advancing, a seek completing) and whichever wins
   /// is the right one. Everything after the first call is ignored, so a
   /// mid-film refill can never be mistaken for another start.
+  /// Ask libmpv why it stopped, and say so out loud.
+  ///
+  /// This is the method that ends a three-week argument. "It stutters" has
+  /// been explained here as the moov atom, then as the probe size, then as
+  /// the connection, each from the symptom rather than from a measurement,
+  /// and two of those were wrong. The player knows at the moment it stops
+  /// whether its buffer is empty or full, and those two facts have opposite
+  /// causes and opposite fixes.
+  ///
+  /// BEST EFFORT, ALWAYS. Every read can come back empty and the result is
+  /// then `unknown`, which is reported as `unknown` rather than rounded to
+  /// whichever cause was last suspected. A failure to measure must never
+  /// touch playback, so the whole thing is wrapped and discarded on error.
+  Future<void> _measureStall() async {
+    if (_stallsReported >= _maxStallReports) return;
+    _stallsReported++;
+    try {
+      final svc = _ref.read(videoPlayerServiceProvider);
+      final reading =
+          await svc.readStallNumbers(previousDropped: _droppedAtLastStall);
+      _droppedAtLastStall = await svc.readDroppedFrames();
+      final diagnosis = diagnoseStall(reading);
+      PlaybackLog.add(
+        'stall #$_stallsReported ${diagnosis.cause.name} '
+        '${diagnosis.toMeta()}',
+      );
+      if (!mounted) return;
+      // THE CAPTION STOPS LYING HERE TOO. "Slow connection" printed over a
+      // video the chip cannot decode sends the viewer to restart their
+      // router, and sends us to look at the network. The player now says
+      // which it is, because it now knows.
+      state = state.copyWith(stallCause: diagnosis.cause);
+      onStall?.call(diagnosis);
+    } catch (e) {
+      PlaybackLog.add('stall measurement failed: $e');
+    }
+  }
+
   void _markFirstFrame() {
     if (_firstFrameSeen) return;
     _firstFrameSeen = true;

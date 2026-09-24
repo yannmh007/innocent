@@ -131,11 +131,18 @@ extension PlayerPlayback on PlayerController {
     // begins the instant the file is handed over.
     _openStartedAt = DateTime.now();
     _firstFrameSeen = false;
+    // Per FILE, not per session. The drop counter and the stall budget both
+    // describe one playback; carrying them over would attribute the previous
+    // video's dropped frames to this one and spend this one's budget before
+    // it started.
+    _droppedAtLastStall = 0;
+    _stallsReported = 0;
     state = state.copyWith(
       errorMessage: null,
       playbackCompleted: false,
       isBuffering: true,
       isOpening: true,
+      clearStallCause: true,
       position: Duration.zero,
       // Audit fix (B2): auto-close any side panel / dialog left open
       // from the previous video. Without this a user who had the

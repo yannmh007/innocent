@@ -760,6 +760,13 @@ class AppStrings {
   /// Start-up latency is not a slow connection and must not be described
   /// as one — see PlayerState.isOpening.
   String get openingVideo => _s('openingVideo');
+
+  /// Shown when playback stops and the MEASUREMENT says the device, not the
+  /// link, could not keep up — libmpv was holding plenty of data and the
+  /// decoder was dropping frames. Blaming the connection there is a false
+  /// statement that sends the viewer to restart a router that was never the
+  /// problem. See StallCause.
+  String get videoTooHeavy => _s('videoTooHeavy');
   String get durationLabel => _s('durationLabel');
   String get resumeTitle => _s('resumeTitle');
   String get resumeBody => _s('resumeBody');
@@ -2049,6 +2056,7 @@ class AppStrings {
     'personalVideoPlayer': 'Personal video player',
     'slowBuffering': 'Slow connection — buffering…',
     'openingVideo': 'Opening the video…',
+    'videoTooHeavy': 'This video is heavy for this device…',
     'durationLabel': 'Duration',
     'resumeTitle': 'Resume',
     'resumeBody': 'Do you wish to resume from where you stopped?',
@@ -3210,6 +3218,7 @@ class AppStrings {
     'personalVideoPlayer': 'ကိုယ်ပိုင် ဗီဒီယို player',
     'slowBuffering': 'ချိတ်ဆက်မှုနှေးနေသည် — buffering…',
     'openingVideo': 'ဗီဒီယိုကို ဖွင့်နေသည်…',
+    'videoTooHeavy': 'ဒီဗီဒီယိုက ဖုန်းအတွက် လေးနေပါတယ်…',
     'durationLabel': 'ကြာချိန်',
     'resumeTitle': 'ဆက်ဖွင့်မယ်',
     'resumeBody': 'ရပ်ခဲ့တဲ့နေရာကနေ ဆက်ဖွင့်မလား?',
@@ -4362,6 +4371,7 @@ class AppStrings {
     'personalVideoPlayer': 'เครื่องเล่นวิดีโอส่วนตัว',
     'slowBuffering': 'การเชื่อมต่อช้า — กำลังบัฟเฟอร์…',
     'openingVideo': 'กำลังเปิดวิดีโอ…',
+    'videoTooHeavy': 'วิดีโอนี้หนักเกินไปสำหรับเครื่องนี้…',
     'durationLabel': 'ระยะเวลา',
     'resumeTitle': 'เล่นต่อ',
     'resumeBody': 'ต้องการเล่นต่อจากจุดที่หยุดไหม?',

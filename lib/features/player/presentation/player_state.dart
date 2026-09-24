@@ -85,6 +85,15 @@ class PlayerState {
   /// says — the stream cannot keep up — and only then is that sentence used.
   final bool isOpening;
 
+  /// Why playback last stopped mid-film, measured rather than assumed.
+  ///
+  /// THE CAPTION IS DECIDED BY THIS, and that is the whole reason it exists.
+  /// "Slow connection — buffering…" printed over a file the device cannot
+  /// decode in real time is a false statement that sends the viewer to
+  /// restart their router. Null until something actually stops and the
+  /// numbers have been read.
+  final StallCause? stallCause;
+
   /// Audit fix (C4): tier-1 soft hint shown after 3 s of continuous
   /// network buffering (before the 10 s hard "stalled" error fires).
   /// Lets the UI show a polite "Slow connection..." indicator that
@@ -193,6 +202,7 @@ class PlayerState {
     this.errorMessage,
     this.loadingMessage,
     this.isOpening = false,
+    this.stallCause,
     this.slowNetworkHintVisible = false,
     this.playbackCompleted = false,
     this.controlsVisible = true,
@@ -254,6 +264,8 @@ class PlayerState {
     Object? errorMessage = _sentinel,
     Object? loadingMessage = _sentinel,
     bool? isOpening,
+    StallCause? stallCause,
+    bool clearStallCause = false,
     bool? slowNetworkHintVisible,
     bool? playbackCompleted,
     bool? controlsVisible,
@@ -309,6 +321,11 @@ class PlayerState {
           ? this.loadingMessage
           : loadingMessage as String?,
       isOpening: isOpening ?? this.isOpening,
+      // An explicit clear, because `copyWith(stallCause: null)` cannot mean
+      // "forget it" — null is what "leave it alone" already means, and a
+      // cause that survives the recovery it described would caption a
+      // healthy stream with the last thing that went wrong.
+      stallCause: clearStallCause ? null : (stallCause ?? this.stallCause),
       slowNetworkHintVisible:
           slowNetworkHintVisible ?? this.slowNetworkHintVisible,
       playbackCompleted: playbackCompleted ?? this.playbackCompleted,

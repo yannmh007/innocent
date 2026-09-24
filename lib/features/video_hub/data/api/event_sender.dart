@@ -225,6 +225,17 @@ class Ev {
 
   static const String playStart = 'play_start';
 
+  /// Playback stopped mid-film, with the measured reason in `meta.reason`:
+  /// `network` (the demuxer ran dry), `decode` (it was full and the chip was
+  /// dropping frames) or `unknown` (neither pattern fitted, reported as such
+  /// rather than rounded to whichever was last suspected).
+  ///
+  /// The numbers that justify it travel with it — `need_kbps` is what the
+  /// file demands, `have_kbps` what was arriving, `cache_s` what was in hand
+  /// — because a reason with no arithmetic behind it is an opinion, and this
+  /// project has already shipped two of those.
+  static const String playStall = 'play_stall';
+
   /// Every ~30s while playing. Where people stop is the most valuable signal
   /// in the whole schema.
   /// How long the screen stayed black before the first frame, in ms, in

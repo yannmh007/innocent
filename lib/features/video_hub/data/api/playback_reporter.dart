@@ -68,6 +68,32 @@ class PlaybackReporter {
     );
   }
 
+  int _stallsSent = 0;
+
+  /// Records a stall, with the measured reason.
+  ///
+  /// THIS IS THE EVENT THAT ANSWERS "WHY DOES IT STUTTER". Until now the only
+  /// thing recorded about a stall was that the app had nothing to draw, and
+  /// the two causes of that — a link too slow for the file's bitrate, and a
+  /// device too slow to decode it — want opposite fixes. The client measures
+  /// which at the moment it happens; this carries it.
+  ///
+  /// CAPPED AT SIX PER PLAYBACK, and the cap is the point rather than a
+  /// detail. The failure being diagnosed repeats every couple of seconds, so
+  /// an uncapped reporter would answer a struggling connection by making
+  /// hundreds more requests on it — turning a measurement into a cause.
+  void reportStall(Map<String, dynamic> reason) {
+    if (_finished || _stallsSent >= 6) return;
+    _stallsSent++;
+    _events.log(
+      Ev.playStall,
+      titleId: titleId,
+      assetId: assetId,
+      positionS: _furthestS,
+      meta: <String, dynamic>{...reason, 'n': _stallsSent},
+    );
+  }
+
   int _furthestS = 0;
   int _durationS = 0;
   bool _finished = false;

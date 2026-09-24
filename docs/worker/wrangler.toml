@@ -38,3 +38,22 @@ enabled = false
 # Supabase function that mints tokens, and a repository is a public place:
 #
 #   npx wrangler secret put TOKEN_SECRET
+
+# ── logs stay on, because a dashboard toggle does not survive a deploy ───
+#
+# Workers Logs was switched on in the dashboard and was OFF again the next
+# time anyone looked — the Overview read "Workers Logs: Disabled" while the
+# very deploy that was supposed to be traced ran. A setting made by hand in
+# the dashboard is not part of the deploy, and a deploy that does not carry
+# it can take it away.
+#
+# So it is declared here, where it is redeployed with the code. The evidence
+# this Worker logs — one line per request saying what range was asked for and
+# what was returned — is the only way to tell one slow stream from fifty fast
+# ones, and those have opposite fixes.
+#
+# `head_sampling_rate = 1` means every request, not a sample. This is a
+# handful of viewers; a sample of a handful is noise.
+[observability]
+enabled = true
+head_sampling_rate = 1

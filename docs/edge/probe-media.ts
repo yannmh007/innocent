@@ -46,6 +46,12 @@ const OPERATORS = (Deno.env.get('OPERATOR_IDS') ??
 const SERVICE_KEY = Deno.env.get('SB_SERVICE_KEY') ??
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
+// The same two values `request-playback` mints tokens from. Read here so the
+// console can time a download over the REAL path — phone to Worker to R2 —
+// rather than over a presigned S3 URL that nothing in the app ever uses.
+const STREAM_BASE = (Deno.env.get('STREAM_BASE') ?? '').replace(/\/+$/, '');
+const STREAM_TOKEN_SECRET = Deno.env.get('STREAM_TOKEN_SECRET') ?? '';
+
 const ALLOWED_ORIGINS = (Deno.env.get('STUDIO_ORIGINS') ??
   'https://yannmh007.github.io')
   .split(',').map((s) => s.trim()).filter(Boolean);
@@ -138,6 +144,95 @@ function boxes(view: DataView, total: number) {
   return out;
 }
 
+// --- how long is it, and therefore how fat is it ------------------------
+//
+// SIZE ALONE ANSWERS NOTHING, and that is the lesson this function was
+// extended for. A viewer reported that "small files are fine and short
+// camera clips stutter" — and a short camera clip at 133 MB is not a small
+// file at all, it is a very FAT one: tens of megabits every second, because
+// a phone camera writes for archival quality with no thought for a network.
+// A 155 MB feature is gentler than a 116 MB clip of someone's garden. The
+// number that decides whether a connection can carry a file is bytes over
+// SECONDS, and until now nothing here knew the seconds.
+//
+// `mvhd` is the movie header: one per file, inside `moov`, carrying a
+// timescale and a duration. FOUND BY SCANNING FOR THE FOUR CHARACTERS rather
+// than by descending the box tree, and that is deliberate. In a faststart
+// file the tree walk would work; in a file with its index at the END the
+// index is megabytes away and its offset is not knowable without reading it,
+// which is the whole problem. A scan works identically on a chunk taken from
+// the head or from the tail, and `mvhd` preceded by a plausible version byte
+// is not a sequence that occurs by accident in compressed video.
+function mvhdSeconds(bytes: Uint8Array): number | null {
+  for (let i = 0; i + 8 <= bytes.length; i++) {
+    if (bytes[i] !== 0x6d || bytes[i + 1] !== 0x76 ||
+        bytes[i + 2] !== 0x68 || bytes[i + 3] !== 0x64) continue;
+    // THE VIEW RUNS TO THE END OF THE CHUNK, and a short one is caught
+    // below rather than guarded here. A fixed length is what broke the
+    // first version: 28 bytes is enough for a version-0 header and four
+    // bytes short of a version-1 one, so every 64-bit header — which is
+    // what a long recording gets — read as "no duration found" and lost
+    // its bitrate silently.
+    const v = new DataView(
+      bytes.buffer, bytes.byteOffset + i + 4, bytes.length - i - 4);
+    const version = v.getUint8(0);
+    try {
+      if (version === 0) {
+        // version, flags(3), created(4), modified(4), timescale(4), dur(4)
+        const timescale = v.getUint32(12);
+        const duration = v.getUint32(16);
+        if (timescale > 0 && duration > 0) return duration / timescale;
+      } else if (version === 1) {
+        // version, flags(3), created(8), modified(8), timescale(4), dur(8)
+        const timescale = v.getUint32(20);
+        const hi = v.getUint32(24), lo = v.getUint32(28);
+        const duration = hi * 4294967296 + lo;
+        if (timescale > 0 && duration > 0) return duration / timescale;
+      }
+    } catch {
+      // A match too close to the end of the chunk to read. Keep scanning:
+      // this is a candidate rejected, not a file without a header.
+    }
+  }
+  return null;
+}
+
+// --- a token for the console's own speed test ---------------------------
+//
+// THE SAME PATH THE PLAYER USES. A speed test against anything else measures
+// something nobody experiences: a presigned S3 URL skips the Worker, and a
+// generic speed test skips R2 as well. What a viewer's phone actually does
+// is ask this Worker for a range of this object, so that is what gets timed.
+function b64url(b: Uint8Array): string {
+  return btoa(String.fromCharCode(...b))
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+async function streamUrl(objectKey: string): Promise<string | null> {
+  if (!STREAM_BASE || !STREAM_TOKEN_SECRET) return null;
+  // SHA-256 of the secret, exactly as request-playback and the Worker do it,
+  // so any text works as a secret and all three agree on the key.
+  const key = await crypto.subtle.importKey(
+    'raw',
+    await crypto.subtle.digest('SHA-256', enc.encode(STREAM_TOKEN_SECRET)),
+    { name: 'AES-GCM' }, false, ['encrypt'],
+  );
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const sealed = new Uint8Array(await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv }, key,
+    enc.encode(JSON.stringify({
+      k: objectKey,
+      // Two minutes. A speed test that outlives the page that asked for it
+      // is a URL somebody can keep.
+      e: Math.floor(Date.now() / 1000) + 120,
+    })),
+  ));
+  const token = new Uint8Array(iv.length + sealed.length);
+  token.set(iv, 0);
+  token.set(sealed, iv.length);
+  return `${STREAM_BASE}/v/${b64url(token)}`;
+}
+
 const json = (body: unknown, status: number, req: Request) => {
   const origin = req.headers.get('Origin') ?? '';
   const cors = ALLOWED_ORIGINS.includes(origin)
@@ -193,8 +288,23 @@ Deno.serve(async (req: Request) => {
   if (req.method !== 'POST') return json({ error: 'method' }, 405, req);
   if (!(await operatorId(req))) return json({ error: 'not_an_operator' }, 403, req);
 
-  let body: { keys?: unknown };
+  let body: { keys?: unknown; speed?: unknown };
   try { body = await req.json(); } catch { body = {}; }
+
+  // ── the speed test ────────────────────────────────────────────────────
+  //
+  // Answers the one question the file list cannot: what does THIS phone, on
+  // THIS connection, actually get through the Worker? The edge function
+  // cannot measure that — it would be measuring a datacentre — so it hands
+  // back a short-lived URL and the browser does the timing. That browser is
+  // the operator's phone, on the same network as the complaint.
+  if (body.speed) {
+    const key = typeof body.speed === 'string' ? body.speed : '';
+    if (!key) return json({ error: 'no_key' }, 400, req);
+    const url = await streamUrl(key);
+    if (!url) return json({ error: 'no_stream_base' }, 409, req);
+    return json({ url }, 200, req);
+  }
 
   // THE KEYS ARE LOOKED UP HERE WHEN THE CALLER DOES NOT NAME ANY, so the
   // console needs one button and no list-building of its own. PostgREST
@@ -237,15 +347,46 @@ Deno.serve(async (req: Request) => {
       const cr = res.headers.get('Content-Range') ?? '';
       const total = Number(cr.split('/')[1] ?? 0) ||
         Number(res.headers.get('Content-Length') ?? 0);
-      const head = new DataView(await res.arrayBuffer());
+      const headBytes = new Uint8Array(await res.arrayBuffer());
+      const head = new DataView(
+        headBytes.buffer, headBytes.byteOffset, headBytes.byteLength);
       const list = boxes(head, total);
       const names = list.map((b) => b.type);
       const moov = names.indexOf('moov');
       const mdat = names.indexOf('mdat');
 
+      // A faststart file carries its header in the chunk already read. A
+      // file with its index at the end does not, and its duration is the
+      // number that decides whether it is watchable at all — so it is worth
+      // one more ranged read of the last megabyte rather than reporting a
+      // blank where the bitrate should be.
+      let seconds = mvhdSeconds(headBytes);
+      if (seconds === null && total > 0) {
+        try {
+          const from = Math.max(0, total - 1024 * 1024);
+          const tail = await fetch(await presignGet(key), {
+            headers: { Range: `bytes=${from}-${total - 1}` },
+          });
+          if (tail.ok || tail.status === 206) {
+            seconds = mvhdSeconds(new Uint8Array(await tail.arrayBuffer()));
+          }
+        } catch {
+          // The head answer stands on its own; a failed tail read costs a
+          // bitrate, not a verdict.
+        }
+      }
+
       results.push({
         key,
         bytes: total,
+        seconds: seconds === null ? null : Math.round(seconds),
+        // Kilobits per second, which is the unit a connection is sold in and
+        // therefore the one that can be compared to it without arithmetic in
+        // somebody's head. Null rather than 0 when the duration is unknown:
+        // a zero bitrate reads as "this file is free to stream".
+        kbps: seconds && seconds > 0
+          ? Math.round((total * 8) / seconds / 1000)
+          : null,
         boxes: names,
         // The verdict, in the three states that mean different things.
         //   faststart — the index is at the front; nothing to do.
