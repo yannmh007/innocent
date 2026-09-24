@@ -47,61 +47,128 @@ therefore always returns `200` with the whole object and never reads
 `Range` — a Worker that returns its own `206` is treated as uncacheable,
 which would silently turn this back into an expensive proxy.
 
-## Deploying it
+## Deploying it — from a phone, with no terminal
 
-Four steps. Nothing here can be done from the repository, because three of
-them involve secrets.
+`npx wrangler deploy` assumes a laptop. There is another way that is entirely
+dashboard-driven: **Workers Builds**, Cloudflare's own CI, which connects to
+this GitHub repository and deploys using the `wrangler.toml` beside this
+file.
 
-**1. Make the shared secret.** 32 random bytes, base64url, no padding:
+That matters beyond convenience. Workers Caching — the whole reason this
+Worker exists — **cannot be switched on from the dashboard**; Cloudflare's
+own docs list a dashboard UI for it under "coming soon". It is a Wrangler
+config key. So a Worker pasted into the dashboard editor would deploy, run,
+serve video correctly, and cache nothing at all. Workers Builds runs the
+real Wrangler against the real config, which is why it is the route here
+rather than the editor.
+
+`package.json` beside this file pins Wrangler for the same reason: `[cache]`
+needs 4.69.0 and the per-entrypoint map needs 4.107.0, and an older Wrangler
+does not warn — it drops the settings.
+
+### 1. Make the secret (in the console you already use)
+
+Open the operator console on your phone, go to **Health**, and under
+**Stream secret** tap **Generate**, then **Copy**.
+
+It is generated in the browser and stored nowhere — not on the page, not on
+a server, not in this repository. Keep the tab open until step 4; you need
+to paste the same value twice.
+
+### 2. Create the Worker from the repository
+
+In the Cloudflare dashboard:
+
+1. **Workers & Pages** → **Create application**
+2. **Import a repository** → connect GitHub if it asks, and pick
+   `yannmh007/innocent`
+3. **Name the Worker exactly `innocent-stream`.** The build fails if the
+   dashboard name and the `name` in `wrangler.toml` disagree — Cloudflare
+   checks it on purpose, so a repository cannot deploy over a Worker it was
+   not meant to.
+4. **Root directory**: `docs/worker` — this is a monorepo, and that is where
+   the Worker's config lives.
+5. Leave the deploy command at `npx wrangler deploy`.
+6. **Save and Deploy.**
+
+The R2 binding is in `wrangler.toml`, so it is created for you. There is
+nothing to attach by hand.
+
+### 3. Give the Worker the secret
+
+Open the deployed Worker → **Settings** → **Variables and Secrets** → **Add**:
+
+| | |
+|---|---|
+| Type | **Secret** (not Text — a plaintext variable is readable from the dashboard afterwards) |
+| Name | `TOKEN_SECRET` |
+| Value | the string from step 1 |
+
+Deploy again from **Deployments** so the running version picks it up.
+
+Check it is alive by opening this in the phone's browser:
 
 ```
-openssl rand 32 | base64 | tr '+/' '-_' | tr -d '='
+https://innocent-stream.<your-subdomain>.workers.dev/health
 ```
 
-Keep the output. It goes in two places and nowhere else.
+It should answer `{"ok":true,"service":"innocent-stream"}`. Anything else
+means the Worker is not running yet; the `/health` path is deliberately the
+only one that answers without a token.
 
-**2. Give it to the Worker.**
+### 4. Give Supabase the same secret and the address
 
-```
-cd docs/worker
-npx wrangler secret put TOKEN_SECRET
-```
+Supabase dashboard → **Edge Functions** → **Secrets** → add two:
 
-**3. Deploy.**
+| Name | Value |
+|---|---|
+| `STREAM_TOKEN_SECRET` | the same string from step 1 |
+| `STREAM_BASE` | `https://innocent-stream.<your-subdomain>.workers.dev` |
 
-```
-npx wrangler deploy
-```
+`request-playback` starts minting Worker tokens the moment **both** exist.
+Until then it presigns exactly as it does today, so a half-finished
+deployment degrades to current behaviour rather than breaking playback. No
+app release is involved either way — the client plays whichever URL it is
+handed.
 
-Note the URL it prints — `https://innocent-stream.<your-subdomain>.workers.dev`.
-Check it is alive: `curl https://innocent-stream.<sub>.workers.dev/health`
-should answer `{"ok":true,"service":"innocent-stream"}`.
+Now close the console tab from step 1.
 
-**4. Give the same secret to Supabase**, along with the Worker's base URL,
-as Edge Function secrets:
+### If a build fails
 
-```
-STREAM_TOKEN_SECRET = <the same base64url string>
-STREAM_BASE         = https://innocent-stream.<your-subdomain>.workers.dev
-```
+The build log is in the Worker's **Settings → Builds**. The two failures
+worth naming:
 
-`request-playback` mints Worker tokens as soon as **both** are present. If
-either is missing it goes on returning presigned S3 URLs exactly as before —
-so a half-finished deployment degrades to the old behaviour rather than
-breaking playback. No app release is involved either way: the client plays
-whatever URL it is handed.
+* **"Worker name mismatch"** — the dashboard name is not `innocent-stream`.
+* **An error mentioning `cache` or `exports`** — Wrangler is older than
+  `package.json` asks for. Check the build log's install step actually ran.
 
-## Checking it actually caches
+## Checking it actually worked — without a terminal
 
-Play a film, then play it again from another device on the same network.
+Three things to look at, in order, all from a phone.
 
-```
-curl -sI "https://innocent-stream.<sub>.workers.dev/v/<token>" | grep -i cf-cache-status
-```
+**Is it on at all?** The console's **Signals** tab reads the same numbers
+`request-playback` writes. In the Supabase dashboard, Edge Functions →
+`request-playback` → Logs, each successful call now carries
+`"via":"edge"` once the two secrets exist and `"via":"s3"` before that. That
+one field answers "did the change take effect" without reading a URL back.
 
-`MISS` on the first request for an object, `HIT` afterwards. If it says
-`MISS` every time, the usual cause is a `206` escaping from `Media` or the
-inner path not being stable — both are covered above.
+**Is the cache filling?** Play a film, wait a minute, play it again — ideally
+from a second phone. Cloudflare's Worker page shows requests and, once the
+cache is warm, a subscription-free **Cf-Cache-Status** breakdown under the
+Worker's metrics. A first play is a `MISS`; every later one on the same
+object should be a `HIT`.
+
+**Did viewers feel it?** This is the measurement that matters and the only
+one that is not a proxy for it. The console's **Signals** tab shows
+time-to-first-frame as p50/p95/p99, measured on real devices, by day. Compare
+the days either side of the deployment. p95 is the number to watch: an
+average is dragged around by one viewer on a dying connection and hides
+exactly the tail that makes people stop opening the app.
+
+If `Cf-Cache-Status` is `MISS` every time, the two causes are a `206`
+escaping from `Media` — it must return the full `200` and let the platform
+slice — or the inner path not being stable, which would mean the token had
+leaked into it. Both are covered above.
 
 ## What this does and does not protect
 

@@ -567,6 +567,37 @@ td.num{text-align:right;font-variant-numeric:tabular-nums;color:var(--dim)}
       <div class="sechead"><h2>Catalogue health</h2></div>
       <div id="healthBody" style="margin-top:10px"></div>
     </div>
+    <!-- ══ STREAM SECRET ═══════════════════════════════════════════════
+         Generated in the browser, on the operator's own phone, because
+         that is the only place it can be made without either a terminal
+         or somebody else seeing it. `openssl rand` assumes a laptop;
+         pasting a secret into a chat or a repository puts it somewhere
+         it cannot be taken back from. `crypto.getRandomValues` is the
+         same CSPRNG, already here, and the value never leaves the page
+         except by the operator's own paste.                          -->
+    <div class="sec">
+      <div class="sechead"><h2>Stream secret</h2></div>
+      <div class="hint">
+        The shared secret between the streaming Worker and
+        <span class="mono">request-playback</span>. Generate it once, paste
+        the same value into both — Cloudflare (Worker → Settings → Variables
+        and Secrets → <span class="mono">TOKEN_SECRET</span>) and Supabase
+        (Edge Functions → Secrets → <span class="mono">STREAM_TOKEN_SECRET</span>).
+        It is never sent anywhere from this page.
+      </div>
+      <div class="srow" style="margin-top:10px">
+        <button class="b p" id="genSecret">Generate</button>
+        <button class="b" id="copySecret" disabled>Copy</button>
+      </div>
+      <input id="secretOut" class="mono" readonly
+             placeholder="not generated yet"
+             style="margin-top:8px;font-size:11.5px">
+      <div class="hint" style="margin-top:6px">
+        32 random bytes, base64url. Generating a new one invalidates every
+        token already handed out, so anything mid-playback stops until the
+        app asks again — which it does automatically.
+      </div>
+    </div>
   </section>
 </main>
 <script>
@@ -2031,6 +2062,47 @@ async function loadStats() {
 }
 
 // ── health ───────────────────────────────────────────────────────────────
+// ── the stream secret ────────────────────────────────────────────────────
+//
+// THE ONE PIECE OF THIS SYSTEM AN OPERATOR CANNOT MAKE ON A PHONE.
+// Everything else in the deployment is a dashboard form; the secret assumed
+// a terminal (`openssl rand`) and there is not one. The alternatives were
+// worse: a value typed by hand is not random, and a value passed through a
+// chat or committed to a repository is somewhere it can never be taken back
+// from. The browser has the same CSPRNG the command line would have used.
+//
+// Deliberately NOT stored. Not in localStorage, not posted anywhere, not
+// logged. It exists in the input until the page is closed, which is long
+// enough to paste it into two dashboards and no longer.
+$('genSecret').onclick = () => {
+  const bytes = crypto.getRandomValues(new Uint8Array(32));
+  let bin = '';
+  for (const b of bytes) bin += String.fromCharCode(b);
+  // base64url, unpadded — it travels in a URL path on one side and through
+  // two dashboard text fields on the other, and `+ / =` survive none of
+  // those reliably.
+  $('secretOut').value = btoa(bin)
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  $('copySecret').disabled = false;
+  say('ok', 'Generated. Paste the same value into Cloudflare and Supabase, ' +
+      'then close this tab — it is not saved anywhere.');
+};
+
+$('copySecret').onclick = async () => {
+  const v = $('secretOut').value;
+  if (!v) return;
+  try {
+    await navigator.clipboard.writeText(v);
+    say('ok', 'Copied.');
+  } catch (_) {
+    // A phone browser without clipboard permission. Selecting it is the
+    // fallback that always works, and saying so beats a silent failure.
+    $('secretOut').select();
+    say('info', 'Could not reach the clipboard — the value is selected, ' +
+        'copy it by hand.');
+  }
+};
+
 async function loadHealth() {
   const host = $('healthBody');
   host.textContent = '';

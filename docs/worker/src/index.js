@@ -54,6 +54,8 @@
 // with the whole object and never looks at `Range`. Getting that backwards
 // is the difference between an edge cache and an expensive proxy.
 
+import { WorkerEntrypoint } from 'cloudflare:workers';
+
 /// How long a cached object stays at the edge.
 ///
 /// A day. The objects are immutable — every upload gets a fresh key with a
@@ -150,12 +152,14 @@ async function openToken(token, secret) {
 /// Never sees a token, never sees a `Range` header (the platform strips it),
 /// and never returns a 206. Its path is the object key, which is stable, so
 /// every viewer of one film shares one entry.
-export class Media {
-  constructor(ctx, env) {
-    this.ctx = ctx;
-    this.env = env;
-  }
-
+///
+/// EXTENDS `WorkerEntrypoint` RATHER THAN LOOKING LIKE ONE. A plain class
+/// with the same constructor shape reads identically and is not the same
+/// thing: per-entrypoint caching is configured against named entrypoints,
+/// and `ctx.exports.Media` resolves to one. A lookalike would deploy, run,
+/// and never be cached — which is the failure mode this whole file exists
+/// to avoid, arrived at by a different road.
+export class Media extends WorkerEntrypoint {
   async fetch(request) {
     const url = new URL(request.url);
     const key = decodeURIComponent(url.pathname.replace(/^\/o\//, ''));

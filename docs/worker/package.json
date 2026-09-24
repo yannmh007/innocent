@@ -1,0 +1,18 @@
+{
+  "name": "innocent-stream",
+  "private": true,
+  "version": "1.0.0",
+  "_comment": [
+    "WRANGLER IS PINNED HERE BECAUSE THE DEPLOY IS NOT RUN FROM A LAPTOP.",
+    "Cloudflare's Workers Builds reads the Wrangler version out of this file",
+    "and uses it to deploy. Without the file it picks its own, and the two",
+    "features this Worker is built around have version floors: `[cache]`",
+    "needs 4.69.0 and the per-entrypoint `[exports.*.cache]` map needs",
+    "4.107.0. An older Wrangler does not warn — it either rejects the config",
+    "or drops the cache settings, and a Worker that deploys cleanly and",
+    "caches nothing is exactly the outcome this design exists to avoid."
+  ],
+  "devDependencies": {
+    "wrangler": "^4.107.0"
+  }
+}
