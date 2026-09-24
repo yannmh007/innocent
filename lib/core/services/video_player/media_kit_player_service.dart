@@ -1311,9 +1311,14 @@ class MediaKitPlayerService implements VideoPlayerService {
       cacheSeconds: cache,
       haveBitsPerSecond: bytesPerSec == null ? null : (bytesPerSec * 8).round(),
       needBitsPerSecond: need > 0 ? need.round() : null,
+      // Written out rather than with `clamp`, which is declared on `num` and
+      // makes the expression's static type a `num` in the general case — and
+      // this field is an `int?`.
       droppedFrames: dropped == null
           ? null
-          : (dropped.round() - previousDropped).clamp(0, 1 << 30),
+          : (dropped.round() - previousDropped < 0
+              ? 0
+              : dropped.round() - previousDropped),
       hwdec: hw,
       width: w?.round(),
       height: h?.round(),

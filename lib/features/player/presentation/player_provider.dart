@@ -1231,7 +1231,14 @@ class PlayerController extends StateNotifier<PlayerState> {
     if (_stallsReported >= _maxStallReports) return;
     _stallsReported++;
     try {
+      // GUARDED, LIKE EVERY OTHER libmpv-SPECIFIC CALL IN THIS FILE. The
+      // provider is typed as the abstract `VideoPlayerService`, and these
+      // two readings exist only on the libmpv implementation — a different
+      // engine has no `demuxer-cache-duration` to report. Without the check
+      // this does not fail at runtime; it fails to compile, which is the
+      // better of the two and how it was caught.
       final svc = _ref.read(videoPlayerServiceProvider);
+      if (svc is! MediaKitPlayerService) return;
       final reading =
           await svc.readStallNumbers(previousDropped: _droppedAtLastStall);
       _droppedAtLastStall = await svc.readDroppedFrames();
