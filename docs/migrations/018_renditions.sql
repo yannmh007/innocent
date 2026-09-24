@@ -161,8 +161,20 @@ begin
     end;
   end loop;
 
+  -- `ready` MEANS THE LADDER IS FINISHED, not that one rung is. The encoder
+  -- reports after every rung on purpose — a job killed at the runner's
+  -- six-hour limit still leaves a watchable video — but the first report was
+  -- setting `ready`, so a 4K film with its 360p rung done and five hours of
+  -- encoding still to run looked exactly like a finished one. The runner
+  -- sends note='complete' on its last call. Nothing waits on this: the rungs
+  -- that exist are already being served. It only stops the row claiming to
+  -- be done before it is.
   update public.title_assets
-    set transcode_state = case when written > 0 then 'ready' else 'failed' end,
+    set transcode_state = case
+          when written = 0 then 'failed'
+          when coalesce(p_note, '') = 'complete' then 'ready'
+          else 'running'
+        end,
         transcode_note = p_note,
         transcode_at = now()
     where id = p_asset;
