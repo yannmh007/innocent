@@ -1,10 +1,18 @@
 import 'package:flutter/foundation.dart';
 
-/// Produces a FRESH playable URL for a stream whose current one has died.
+/// Produces a FRESH playable URL for a stream whose current one has died —
+/// or, with [belowKbps], a SMALLER copy of the same video.
+///
+/// THE SECOND USE IS WHY THIS TAKES AN ARGUMENT AT ALL. A stream the player
+/// has measured as too heavy for the connection cannot be fixed by fetching
+/// the same thing again; it needs a different rung of the ladder, and the
+/// only place that knows what rungs exist is the feature that interpreted
+/// the grant. `belowKbps` is the bitrate of the copy that FAILED, so the
+/// answer is "anything cheaper than this".
 ///
 /// Returns null when no replacement can be had — the caller must then fail,
 /// never fall back to the dead URL.
-typedef StreamRenewer = Future<String?> Function();
+typedef StreamRenewer = Future<String?> Function({int? belowKbps});
 
 /// Lets the player recover from an EXPIRED URL instead of retrying a dead one.
 ///
@@ -85,12 +93,15 @@ class StreamRenewal {
   ///
   /// Never throws: a failed renewal is a failed playback attempt, and the
   /// caller already has an error path for that.
-  static Future<String?> renew(String uri) async {
+  /// [belowKbps] asks for a copy cheaper than that bitrate, for the case
+  /// where the current one is not dead but is too heavy for the connection.
+  /// Omitted, this is the original behaviour: the best copy available.
+  static Future<String?> renew(String uri, {int? belowKbps}) async {
     if (!canRenew(uri)) return null;
     final renewer = _renewer;
     if (renewer == null) return null;
     try {
-      final fresh = await renewer();
+      final fresh = await renewer(belowKbps: belowKbps);
       if (fresh == null || fresh.isEmpty) return null;
       // The registration now describes the NEW url, or a second failure would
       // look up a key that no longer matches.

@@ -137,6 +137,8 @@ extension PlayerPlayback on PlayerController {
     // it started.
     _droppedAtLastStall = 0;
     _stallsReported = 0;
+    _downgrades = 0;
+    _downgradeInFlight = false;
     state = state.copyWith(
       errorMessage: null,
       playbackCompleted: false,

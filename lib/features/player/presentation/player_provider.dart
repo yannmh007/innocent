@@ -135,6 +135,18 @@ class PlayerController extends StateNotifier<PlayerState> {
   int _stallsReported = 0;
   static const int _maxStallReports = 6;
 
+  /// How many times this playback has stepped down to a smaller copy.
+  ///
+  /// TWO, AND THE CAP IS THE POINT. Each step costs a visible reopen of a
+  /// second or so, and a ladder has four or five rungs — a player willing to
+  /// walk all the way down would spend a film's first minute reopening it.
+  /// Two steps reach a copy a third the size of where it started, which is
+  /// past any connection that was merely marginal; a connection that still
+  /// cannot manage is not a connection a third rung would fix.
+  int _downgrades = 0;
+  static const int _maxDowngrades = 2;
+  bool _downgradeInFlight = false;
+
   Duration? _seekStartPosition;
   bool _wasLongPressActive = false;
   double _volumeBeforeMute = 0.5;
@@ -1265,8 +1277,73 @@ class PlayerController extends StateNotifier<PlayerState> {
       // which it is, because it now knows.
       state = state.copyWith(stallCause: diagnosis.cause);
       onStall?.call(diagnosis);
+
+      // A DIAGNOSIS THAT CHANGES NOTHING IS A COMMENT. When the measurement
+      // says the bytes are not arriving fast enough, the one thing that can
+      // be done about it is to play a smaller copy — and the ladder exists
+      // now, so that is a thing that can actually be done.
+      if (diagnosis.cause == StallCause.network) {
+        unawaited(_stepDownARung(reading.needBitsPerSecond));
+      }
     } catch (e) {
       PlaybackLog.add('stall measurement failed: $e');
+    }
+  }
+
+  /// Reopen the film one rung smaller, at the same moment.
+  ///
+  /// WHY A REOPEN AND NOT A SEAMLESS SWITCH. HLS exists so a player can
+  /// change rung mid-stream without interrupting anything, and libmpv cannot
+  /// do it: FFmpeg's HLS demuxer picks one variant when it opens and stays on
+  /// it. So the switch costs a second of black — against a film that
+  /// otherwise stops and starts for as long as anyone is willing to watch
+  /// it. That is not a close trade.
+  ///
+  /// [failingBitsPerSecond] is what the copy currently playing demands. It
+  /// becomes the ceiling: the answer must be cheaper than the thing that just
+  /// failed, or reopening would repeat the stall that asked for it. Without a
+  /// reading there is no ceiling to set and no honest basis for a downgrade,
+  /// so nothing happens.
+  Future<void> _stepDownARung(int? failingBitsPerSecond) async {
+    if (_downgradeInFlight || _networkRetryInFlight) return;
+    if (_downgrades >= _maxDowngrades) return;
+    final uri = _currentUri;
+    if (uri == null || !StreamRenewal.canRenew(uri)) return;
+    final need = failingBitsPerSecond;
+    if (need == null || need <= 0) return;
+
+    _downgradeInFlight = true;
+    try {
+      final fresh = await StreamRenewal.renew(uri, belowKbps: need ~/ 1000);
+      // Nothing smaller exists, or the film was swapped while we asked. Both
+      // mean leave it alone — a reopen that lands on the same rung is a
+      // second of black screen bought for nothing.
+      if (fresh == null || fresh == uri) return;
+      if (!mounted || _currentUri != uri) return;
+
+      final svc = _ref.read(videoPlayerServiceProvider);
+      // The engine's exact position, not the whole-second copy the UI shows:
+      // a downgrade that rewinds a second is a downgrade the viewer sees
+      // twice.
+      final at = svc.position > Duration.zero ? svc.position : state.position;
+      _downgrades++;
+      _currentUri = fresh;
+      PlaybackLog.add('stepped down a rung (#$_downgrades) at ${at.inSeconds}s');
+      await svc.open(fresh, startAt: at);
+      await svc.play();
+      if (mounted && _currentUri == fresh) {
+        state = state.copyWith(
+          errorMessage: null,
+          slowNetworkHintVisible: false,
+          clearStallCause: true,
+        );
+      }
+    } catch (e) {
+      // The copy that was playing is still playing. A failed downgrade is a
+      // missed improvement, never a broken playback.
+      PlaybackLog.add('step down failed: $e');
+    } finally {
+      _downgradeInFlight = false;
     }
   }
 

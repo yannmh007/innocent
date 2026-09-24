@@ -114,7 +114,7 @@ Future<void> playMedia(
     // player has measured the connection for real — so the second half of a
     // long film can be a better or a smaller copy than the first, decided on
     // evidence the first choice did not have.
-    StreamRenewal.register(playUrl, () async {
+    StreamRenewal.register(playUrl, ({int? belowKbps}) async {
       final fresh = await ref.read(contentRepositoryProvider).requestPlayback(
             content: content,
             source: source,
@@ -124,7 +124,16 @@ Future<void> playMedia(
       final again = pickRendition(
         fresh.renditions,
         measuredKbps: ThroughputMemory.current,
+        // Set only when the player has MEASURED the current copy as too
+        // heavy for this connection. Then this is not a renewal at all, it
+        // is a downgrade, and handing back the same rung would repeat the
+        // stall that asked for it.
+        ceilingKbps: belowKbps,
       );
+      // No ladder and a downgrade was asked for: there is nothing smaller to
+      // give, so say so rather than handing back the same URL and making the
+      // player reopen for no reason.
+      if (belowKbps != null && again == null) return null;
       return again?.url ?? fresh.url;
     });
     context.push(

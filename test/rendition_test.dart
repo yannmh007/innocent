@@ -54,6 +54,16 @@ void main() {
       expect(got!.height, 360);
     });
 
+    test('a downgrade from the only rung returns that rung, and the caller '
+        'must notice it did not change', () {
+      // The player treats "same url back" as "there is nothing smaller" and
+      // does not reopen. That contract lives across two files, so it is
+      // pinned here: with one rung, a ceiling at its own bitrate returns it.
+      final one = [r(360, 600)];
+      final got = pickRendition(one, measuredKbps: 5000, ceilingKbps: 600);
+      expect(got!.url, 'u360');
+    });
+
     test('an unsorted ladder is handled', () {
       final jumbled = [r(1080, 3800), r(360, 600), r(720, 2000)];
       expect(pickRendition(jumbled, measuredKbps: 20000)!.height, 1080);
