@@ -1,3 +1,4 @@
+import 'rendition.dart';
 import 'package:flutter/foundation.dart';
 
 /// What a piece of content REQUIRES of the viewer.
@@ -115,12 +116,23 @@ class PlaybackGrant {
   /// mechanism entirely.
   final DateTime? expiresAt;
 
-  const PlaybackGrant.granted(String this.url, {this.expiresAt})
+  /// Every copy of this video the server has, cheapest first.
+  ///
+  /// EMPTY IS THE NORMAL CASE and always will be for anything uploaded
+  /// before the transcoding pipeline existed. The caller reads empty as
+  /// "there is one copy and [url] is it", which is exactly what the app did
+  /// before any of this — so an old server, a failed lookup and an
+  /// un-transcoded file all behave identically and correctly.
+  final List<Rendition> renditions;
+
+  const PlaybackGrant.granted(String this.url,
+      {this.expiresAt, this.renditions = const <Rendition>[]})
       : denial = null;
 
   const PlaybackGrant.denied(AccessDenial this.denial)
       : url = null,
-        expiresAt = null;
+        expiresAt = null,
+        renditions = const <Rendition>[];
 
   /// A grant is granted when the server handed over a URL. Full stop.
   ///

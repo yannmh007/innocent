@@ -1,0 +1,128 @@
+# Turn uploaded masters into ladders anybody can stream.
+#
+# WHAT THIS IS FOR. The operator uploads whatever their camera made — 4K, 60
+# frames a second, sixty megabits — and a viewer on a mobile connection
+# cannot receive that continuously. No player setting fixes it; that is
+# arithmetic, not a setting. A smaller copy of the same video does fix it,
+# and this is where those get made.
+#
+# WHY A RUNNER, AND WHY THIS ONE. The operator works from a phone. There is
+# no server in this project, and adding one means a bill, a machine to patch
+# and a key to lose. GitHub Actions on standard runners is free and unmetered
+# for public repositories, which this is, and a runner is four x86 cores with
+# ffmpeg one apt-get away. It is the only free compute this project already
+# has a relationship with.
+#
+# WHY IT PULLS RATHER THAN BEING PUSHED. Pushing means a GitHub token with
+# write access to this repository living in Supabase. Pulling means one
+# shared secret whose entire power is "ask for a transcode job" — a much
+# smaller thing to lose. The cost is that a job starts within five minutes
+# instead of instantly, which is nothing beside the hour of encoding after
+# it.
+#
+# WHY IT HOLDS NO BUCKET CREDENTIALS. Everything it touches arrives as a
+# PRESIGNED URL: one GET for the master, one PUT per rung, each scoped to a
+# single object and expiring the same day. This repository is public; R2
+# account keys stored here would be one careless `echo` from being permanent.
+name: Transcode
+
+on:
+  # Five minutes is the finest GitHub offers and far finer than this needs.
+  schedule:
+    - cron: '*/5 * * * *'
+  # For starting one immediately rather than waiting for the tick.
+  workflow_dispatch:
+
+# One ladder at a time. Two runners encoding two different files would be
+# fine; two runners encoding the SAME file would race to write the same
+# objects, and the claim in the database is what prevents that. This is the
+# belt to its braces.
+concurrency:
+  group: transcode
+  cancel-in-progress: false
+
+jobs:
+  ladder:
+    runs-on: ubuntu-latest
+    # Under GitHub's own six-hour ceiling, with room left to report the rungs
+    # that did finish. The script reports after EVERY rung for exactly this
+    # reason: a job killed at the limit still leaves a watchable video.
+    timeout-minutes: 330
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # ASK FIRST, INSTALL SECOND. The common case by far is "nothing to do"
+      # — this ticks every five minutes whether or not anyone uploaded — and
+      # spending thirty seconds of apt on that is a waste of somebody's
+      # shared runners.
+      - name: Ask for work
+        id: claim
+        env:
+          SB_URL: ${{ secrets.SUPABASE_URL }}
+          RUNNER_SECRET: ${{ secrets.TRANSCODE_SECRET }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SB_URL:-}" ] || [ -z "${RUNNER_SECRET:-}" ]; then
+            echo "TRANSCODE_SECRET or SUPABASE_URL not set — nothing to do."
+            echo "job=none" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          code=$(curl -sS -o /tmp/job.json -w '%{http_code}' \
+            -X POST "$SB_URL/functions/v1/transcode" \
+            -H "Authorization: Bearer $RUNNER_SECRET" \
+            -H 'Content-Type: application/json' \
+            -d '{"op":"claim"}')
+          if [ "$code" != "200" ]; then
+            echo "claim returned $code"; echo "job=none" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          # The payload is never printed. It is a bundle of presigned URLs,
+          # and a run log on a public repository is public.
+          if python3 -c "import json,sys; sys.exit(0 if json.load(open('/tmp/job.json')).get('asset_id') else 1)"; then
+            echo "job=yes" >> "$GITHUB_OUTPUT"
+            python3 -c "import json;print('asset', json.load(open('/tmp/job.json'))['asset_id'])"
+          else
+            echo "queue is empty"
+            echo "job=none" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install ffmpeg
+        if: steps.claim.outputs.job == 'yes'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+          ffmpeg -version | head -1
+
+      - name: Build the ladder
+        if: steps.claim.outputs.job == 'yes'
+        env:
+          JOB_TOKEN: ${{ secrets.TRANSCODE_SECRET }}
+        run: |
+          set -euo pipefail
+          export ASSET_ID="$(python3 -c "import json;print(json.load(open('/tmp/job.json'))['asset_id'])")"
+          export SRC_URL="$(python3 -c "import json;print(json.load(open('/tmp/job.json'))['src_url'])")"
+          export DONE_URL="$(python3 -c "import json;print(json.load(open('/tmp/job.json'))['done_url'])")"
+          export PUT_BASE="$(python3 -c "import json;print(json.dumps(json.load(open('/tmp/job.json'))['put']))")"
+          bash tool/transcode.sh
+
+      - name: Say so when it did not work
+        if: failure() && steps.claim.outputs.job == 'yes'
+        env:
+          JOB_TOKEN: ${{ secrets.TRANSCODE_SECRET }}
+        run: |
+          # A failure that exists only in a run log is a file stuck on
+          # "running" in the console forever. The operator finds out here.
+          python3 - > /tmp/fail.json <<'PY'
+          import json, os
+          job = json.load(open('/tmp/job.json'))
+          print(json.dumps({
+            'op': 'done',
+            'token': os.environ['JOB_TOKEN'],
+            'asset_id': job['asset_id'],
+            'rows': None,
+            'note': 'encoder failed - see the Transcode run in Actions',
+          }))
+          PY
+          curl -fsS -X POST "$(python3 -c "import json;print(json.load(open('/tmp/job.json'))['done_url'])")" \
+            -H 'Content-Type: application/json' -d @/tmp/fail.json || true

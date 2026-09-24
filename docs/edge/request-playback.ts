@@ -365,11 +365,17 @@ Deno.serve(async (req) => {
   // title's asset id and walk straight past the tier test below.
   let objectKey: string = title.locator;
   let assetIsFree = false;
+  // WHICH ROW THE LADDER HANGS OFF. Renditions belong to a `title_assets`
+  // row, and a title played through its own `locator` has no asset id in the
+  // request — so it is looked up by key below. Without that, the main film
+  // of every title would be the one thing in the catalogue that never got a
+  // smaller copy, which is exactly backwards.
+  let assetId: string | null = null;
 
   if (body.asset_id) {
     const { data: asset, error: assetErr } = await admin
       .from('title_assets')
-      .select('object_key, is_free, title_id, kind')
+      .select('id, object_key, is_free, title_id, kind')
       .eq('id', body.asset_id)
       .maybeSingle();
 
@@ -392,6 +398,7 @@ Deno.serve(async (req) => {
     }
     objectKey = asset.object_key;
     assetIsFree = asset.is_free === true;
+    assetId = asset.id as string;
   }
 
   if (!objectKey) {
@@ -455,11 +462,56 @@ Deno.serve(async (req) => {
   // can answer after the fact.
   const viaWorker = await workerUrl(objectKey);
   const url = viaWorker ?? await presign(objectKey);
+
+  // ─── THE LADDER ────────────────────────────────────────────────────────
+  //
+  // WHY THE SERVER HANDS OVER ALL OF THEM AND THE CLIENT CHOOSES. The one
+  // fact that decides which copy of a film somebody should receive — what
+  // their connection is actually delivering right now — exists only on their
+  // phone. A server can guess from a country code and be wrong about a
+  // person in a lift. So every rung is signed and sent, and the player picks
+  // against what it has measured, and drops a rung when it measures a stall.
+  //
+  // SIGNING FIVE URLS INSTEAD OF ONE is five AES-GCM encryptions of about
+  // sixty bytes. It is not worth a round trip to avoid.
+  //
+  // `url` STAYS EXACTLY WHAT IT WAS. Every app already installed reads that
+  // field and knows nothing about this one, and an app that stops playing
+  // because the server got cleverer is not an improvement.
+  const renditions: Array<Record<string, unknown>> = [];
+  try {
+    if (!assetId) {
+      const { data: byKey } = await admin
+        .from('title_assets').select('id')
+        .eq('object_key', objectKey).limit(1).maybeSingle();
+      if (byKey?.id) assetId = byKey.id as string;
+    }
+    if (assetId) {
+      const { data: rows } = await admin.rpc('renditions_for', { p_asset: assetId });
+      for (const r of (rows ?? []) as Array<Record<string, unknown>>) {
+        const key = String(r.object_key ?? '');
+        if (!key) continue;
+        const rUrl = (await workerUrl(key)) ?? await presign(key);
+        renditions.push({
+          height: r.height, kbps: r.kbps, bytes: r.bytes ?? null, url: rUrl,
+        });
+      }
+    }
+  } catch (e) {
+    // A ladder that cannot be read is not a reason to refuse playback. The
+    // original still plays, which is what happened before any of this
+    // existed.
+    logRefusal('renditions_failed', String(e).slice(0, 160));
+  }
+
   return json({
     url,
     expires_at: new Date(Date.now() + EXPIRY_SECONDS * 1000).toISOString(),
     // A label, not an address. The client ignores it; the function log does
     // not, and neither does anyone checking a deployment took effect.
     via: viaWorker ? 'edge' : 's3',
+    // Cheapest first. Empty for anything not transcoded, which the client
+    // reads as "there is one copy and this is it".
+    renditions,
   }, 200);
 });

@@ -8,6 +8,8 @@ import '../../../core/services/video_player/stream_renewal.dart';
 import '../data/api/event_sender.dart';
 import '../data/device_identity.dart';
 import '../domain/access.dart';
+import '../domain/rendition.dart';
+import '../../../core/services/network/throughput_memory.dart';
 import '../domain/access_policy.dart';
 import '../domain/capability.dart';
 import '../domain/video_content.dart';
@@ -92,18 +94,43 @@ Future<void> playMedia(
     // request, so entitlement, expiry and the concurrency cap are all decided
     // again - a subscription that lapsed mid-film is refused here, not
     // extended.
-    StreamRenewal.register(grant.url!, () async {
+    // ─── WHICH COPY OF THIS FILM ───────────────────────────────────────
+    //
+    // The server hands over every rung it has; the choice is made here,
+    // because the fact that decides it — what this phone's connection is
+    // actually delivering — exists only on this phone. `renditions` is empty
+    // for everything uploaded before the transcoding pipeline, and for
+    // anything small enough not to need a ladder, and empty means "play the
+    // original", which is exactly what this line did before.
+    await ThroughputMemory.read();
+    final chosen = pickRendition(
+      grant.renditions,
+      measuredKbps: ThroughputMemory.current,
+    );
+    final playUrl = chosen?.url ?? grant.url!;
+
+    // The renewal picks again rather than reusing this rung. A film longer
+    // than a signature's life is renewed mid-playback, and by then the
+    // player has measured the connection for real — so the second half of a
+    // long film can be a better or a smaller copy than the first, decided on
+    // evidence the first choice did not have.
+    StreamRenewal.register(playUrl, () async {
       final fresh = await ref.read(contentRepositoryProvider).requestPlayback(
             content: content,
             source: source,
             deviceId: deviceId,
           );
-      return fresh.isGranted ? fresh.url : null;
+      if (!fresh.isGranted) return null;
+      final again = pickRendition(
+        fresh.renditions,
+        measuredKbps: ThroughputMemory.current,
+      );
+      return again?.url ?? fresh.url;
     });
     context.push(
       Routes.player,
       extra: <String, dynamic>{
-        'uri': grant.url,
+        'uri': playUrl,
         // audit_video_hub.md M5: the player's title bar gets the Burmese
         // title too, when that is the language the app is in.
         'title': titleOverride ?? content.displayTitle(s.locale.languageCode),

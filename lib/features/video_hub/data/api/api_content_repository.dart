@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../../domain/access.dart';
+import '../../domain/rendition.dart';
 import '../../domain/content_category.dart';
 import '../../domain/content_filters.dart';
 import '../../domain/content_repository.dart';
@@ -482,9 +483,22 @@ class ApiContentRepository implements ContentRepository {
         return const PlaybackGrant.denied(AccessDenial.unavailable);
       }
       final expiresRaw = body['expires_at'] as String?;
+      // THE LADDER, AND A MALFORMED RUNG IS DROPPED RATHER THAN DEFAULTED.
+      // A rung with no bitrate would divide every bandwidth decision by a
+      // number meaning "free", and a rung with no url is unplayable — either
+      // one is worse than one fewer choice.
+      final ladder = <Rendition>[];
+      final raw = body['renditions'];
+      if (raw is List) {
+        for (final row in raw) {
+          final r = Rendition.fromJson(row);
+          if (r != null) ladder.add(r);
+        }
+      }
       return PlaybackGrant.granted(
         url,
         expiresAt: _parseServerTime(expiresRaw),
+        renditions: ladder,
       );
     } on ApiException catch (e) {
       // The paywall case, and the ONLY place it comes from: the server said

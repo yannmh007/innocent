@@ -616,6 +616,30 @@ td.num{text-align:right;font-variant-numeric:tabular-nums;color:var(--dim)}
       <div id="probeBody" style="margin-top:10px"></div>
     </div>
 
+    <!-- ══ STREAMING COPIES ════════════════════════════════════════════
+         The answer to "upload anything and it must not stutter". A camera
+         clip needing 61 Mbps cannot be streamed over a 48 Mbps link; that
+         is arithmetic, not a setting. The only thing that changes it is a
+         SMALLER COPY of the same video, and this is where those are
+         watched over.                                                  -->
+    <div class="sec">
+      <div class="sechead">
+        <h2>Streaming copies</h2>
+        <span class="spacer"></span>
+        <button class="b" id="ladderBtn">Refresh</button>
+      </div>
+      <div class="hint">
+        Every viewer gets the copy their connection can carry, chosen by
+        their phone from what it has measured. Heavy uploads are queued for
+        conversion automatically; anything older can be queued here. A job
+        starts within five minutes and reports each size as it finishes, so
+        the small one is watchable long before the big one is done —
+        <b>queued</b> is waiting, <b>running</b> is being converted,
+        <b>ready</b> has a full set.
+      </div>
+      <div id="ladderBody" style="margin-top:10px"></div>
+    </div>
+
     <!-- ══ STREAM SECRET ═══════════════════════════════════════════════
          Generated in the browser, on the operator's own phone, because
          that is the only place it can be made without either a terminal
@@ -662,6 +686,7 @@ const API = SB_URL + '/functions/v1/studio';
 // risk taken with that. The probe only reads, so it lives on its own where
 // it can be changed without anyone holding their breath.
 const PROBE_API = SB_URL + '/functions/v1/probe-media';
+const TRANSCODE_API = SB_URL + '/functions/v1/transcode';
 
 // Matches lib/features/video_hub/domain/content_category.dart. Hard-coded
 // here because the app compiles these into libapp.so — the Categories tab
@@ -1093,42 +1118,31 @@ function videoSeconds(file) {
 }
 
 async function uploadAll(files, container, folder) {
-  // ── THE GATE, BEFORE A SINGLE BYTE GOES UP ────────────────────────────
+  // ── ANYTHING CAN BE UPLOADED, AND THAT IS THE REQUIREMENT ─────────────
   //
-  // Uploading a file nobody can stream costs the operator their mobile data
-  // twice — once to put it there and once to replace it — and costs every
-  // viewer a title that stops and starts for as long as they are willing to
-  // watch. Catching it here is the only place where the fix is still cheap:
-  // the file is on the phone, the camera app that made it can be told to
-  // record smaller, and nothing has been paid yet.
+  // The operator's own words: whatever the size, however it was shot, 4K or
+  // high frame rate, it must not stutter — because the person uploading will
+  // not be thinking about bitrates and should not have to.
   //
-  // IT ASKS RATHER THAN REFUSES. There are real reasons to upload something
-  // heavy — an archive master, a file whose audience is on wifi — and a
-  // console that silently overrules its operator is worse than one that
-  // warns them.
-  const heavy = [];
+  // So this no longer stands in the way. It measures each video before the
+  // upload starts, and anything that a phone connection cannot carry is
+  // QUEUED FOR A SMALLER COPY as soon as it lands. The operator uploads the
+  // file they have; the ladder appears behind them.
+  //
+  // THE MEASUREMENT IS STILL DONE HERE, BEFORE THE UPLOAD, for one reason:
+  // it is the only place the duration and the size are both known without
+  // reading the object back out of the bucket. It costs a metadata load of a
+  // local file, which is milliseconds.
+  const needsLadder = [];
   for (const f of files) {
     if (!f.type.startsWith('video')) continue;
     const secs = await videoSeconds(f);
     if (!secs || secs <= 0) continue;
     const kbps = Math.round((f.size * 8) / secs / 1000);
-    if (kbps >= UPLOAD_CEILING_KBPS) heavy.push({ name: f.name, kbps, secs });
-  }
-  if (heavy.length) {
-    const lines = heavy.map((h) =>
-      '\u2022 ' + h.name + ' \u2014 ' + (h.kbps / 1000).toFixed(0) +
-      ' Mbps (' + Math.round(h.secs) + 's)').join('\n');
-    const ok = confirm(
-      heavy.length + ' of these files ask for more bandwidth than a phone ' +
-      'connection can hold:\n\n' + lines + '\n\n' +
-      'A viewer needs that much EVERY SECOND, continuously. These will play ' +
-      'for a second or two, stop, and play again \u2014 for as long as anyone ' +
-      'watches. Nothing in the app can fix it; the file has to carry fewer ' +
-      'bits per second.\n\n' +
-      'Record at 1080p instead of 4K, or re-encode before uploading.\n\n' +
-      'Upload them anyway?');
-    if (!ok) throw new Error('Upload cancelled — ' + heavy.length +
-      ' file(s) are too heavy to stream.');
+    // Every video above the comfortable line gets a ladder, not only the
+    // impossible ones. A 3 Mbps film is fine on wifi and miserable on a bus,
+    // and the rung that fixes the bus costs nothing to anyone else.
+    if (kbps >= COMFORTABLE_KBPS) needsLadder.push({ name: f.name, kbps });
   }
 
   const notes = [];
@@ -1166,6 +1180,36 @@ async function uploadAll(files, container, folder) {
   const workers = [];
   for (let i = 0; i < Math.min(3, files.length); i++) workers.push(worker());
   await Promise.all(workers);
+
+  // ── HAND THE HEAVY ONES TO THE ENCODER ────────────────────────────────
+  //
+  // After the upload rather than before it, because the object has to exist
+  // for a runner to fetch it. Queued by KEY, which is the one identifier the
+  // console has at this point.
+  //
+  // A FAILURE HERE IS NOT AN UPLOAD FAILURE. The file is in the bucket and
+  // plays; it just plays at whatever bitrate it was shot at until somebody
+  // queues it from the Health panel. Throwing here would make a successful
+  // upload look like a failed one.
+  if (needsLadder.length) {
+    const wanted = new Set(needsLadder.map((h) => h.name));
+    const keys = [];
+    files.forEach((f, i) => {
+      if (wanted.has(f.name) && out[i] && out[i].objectKey) keys.push(out[i].objectKey);
+    });
+    let queued = 0;
+    for (const key of keys) {
+      try {
+        await api({ op: 'queue', object_key: key }, TRANSCODE_API);
+        queued++;
+      } catch (e) { /* reported below, never fatal */ }
+    }
+    say(queued ? 'info' : 'bad', queued
+      ? queued + ' video(s) queued for smaller streaming copies. They play ' +
+        'as uploaded until those are ready — watch the Health tab.'
+      : 'These videos are heavier than a phone connection can carry and ' +
+        'could not be queued for conversion. Queue them from Health.');
+  }
   return out;
 }
 
@@ -2396,6 +2440,91 @@ $('speedBtn').onclick = async () => {
     btn.disabled = false;
   }
 };
+
+// ── streaming copies ─────────────────────────────────────────────────────
+//
+// WHAT THE OPERATOR NEEDS FROM THIS PANEL is not a list of files, it is an
+// answer to "can this be watched yet". So each row leads with the state and
+// the gap the ladder closes: what the original demands per second, and what
+// the smallest copy demands. Those two numbers are the work.
+async function drawLadders() {
+  const host = $('ladderBody');
+  host.textContent = '';
+  host.append(el('div', { className: 'hint' }, text('Reading…')));
+  let res;
+  try {
+    res = await api({ op: 'health' }, TRANSCODE_API);
+  } catch (e) {
+    host.textContent = '';
+    host.append(el('div', { className: 'msg bad' }, text(String(e.message || e))));
+    return;
+  }
+  host.textContent = '';
+
+  // The encoder half is off until the shared secret exists on both sides.
+  // Said plainly here, because otherwise queued jobs simply never start and
+  // nothing on screen explains why.
+  if (!res.runner) {
+    host.append(el('div', { className: 'msg bad' }, text(
+      'No encoder is connected. Add the same TRANSCODE_SECRET to Supabase ' +
+      '(Edge Function secrets) and to GitHub (repository secrets), along ' +
+      'with SUPABASE_URL in GitHub. Until then, queued files stay queued.')));
+  }
+
+  const rows = res.rows || [];
+  if (!rows.length) {
+    host.append(el('div', { className: 'empty' }, text('No videos yet.')));
+    return;
+  }
+
+  const list = el('div', { className: 'lst' });
+  for (const r of rows) {
+    const facts = [];
+    const state = r.state || 'none';
+    facts.push(el('span', {
+      className: 'pfact ' + (state === 'ready' ? 'ok'
+        : state === 'failed' ? 'bad'
+        : state === 'none' ? '' : 'warn'),
+    }, text(state)));
+    if (r.src_kbps) {
+      facts.push(el('span', { className: 'pfact ' + bitrateClass(r.src_kbps) },
+        text('source ' + (r.src_kbps / 1000).toFixed(1) + ' Mbps')));
+    }
+    if (r.rungs) {
+      facts.push(el('span', { className: 'pfact ok' }, text(
+        r.rungs + ' sizes, ' + (r.lowest_kbps / 1000).toFixed(1) + '–' +
+        (r.highest_kbps / 1000).toFixed(1) + ' Mbps')));
+    }
+    if (r.note) {
+      facts.push(el('span', { className: 'pfact' }, text(r.note)));
+    }
+
+    // Offered on everything, not only on what looks heavy: an operator who
+    // can see a file is fine and wants a ladder anyway is not wrong, and a
+    // button that appears and disappears by rule is a button nobody trusts.
+    const go = el('button', { className: 'b' },
+      text(r.rungs ? 'Convert again' : 'Make streamable'));
+    go.onclick = async () => {
+      go.disabled = true;
+      try {
+        await api({ op: 'queue', object_key: r.object_key }, TRANSCODE_API);
+        say('ok', 'Queued. It starts within five minutes.');
+        await drawLadders();
+      } catch (e) {
+        say('bad', String(e.message || e));
+        go.disabled = false;
+      }
+    };
+
+    list.append(el('div', { className: 'prow' }, [
+      el('div', { className: 'pkey' }, text((r.title || '—') + '  ·  ' + r.object_key)),
+      el('div', { className: 'pfacts' }, [...facts, go]),
+    ]));
+  }
+  host.append(list);
+}
+
+$('ladderBtn').onclick = drawLadders;
 
 function fmtBytes(n) {
   if (!n) return '\u2014';

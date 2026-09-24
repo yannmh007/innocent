@@ -15,6 +15,7 @@ import '../../../core/services/diagnostics/playback_log.dart';
 import '../../../core/di/preferences_provider.dart';
 import '../../../core/services/video_player/media_kit_player_service.dart';
 import '../../../core/services/video_player/stall_diagnosis.dart';
+import '../../../core/services/network/throughput_memory.dart';
 import '../../../core/services/video_player/stream_renewal.dart';
 import '../../user_data/domain/user_data_models.dart';
 import '../../user_data/user_data_providers.dart';
@@ -1243,6 +1244,16 @@ class PlayerController extends StateNotifier<PlayerState> {
           await svc.readStallNumbers(previousDropped: _droppedAtLastStall);
       _droppedAtLastStall = await svc.readDroppedFrames();
       final diagnosis = diagnoseStall(reading);
+      // THE MEASUREMENT IS WORTH MORE THAN THE DIAGNOSIS. Whatever stopped
+      // playback, `cache-speed` at that moment is a real reading of this
+      // connection over the real path — the same Worker, the same bucket,
+      // the same tower — and it is what decides which copy of the NEXT film
+      // this phone is handed. A stall that teaches the app something is a
+      // stall that does not happen twice.
+      final have = reading.haveBitsPerSecond;
+      if (have != null && have > 0) {
+        unawaited(ThroughputMemory.observe(have ~/ 1000));
+      }
       PlaybackLog.add(
         'stall #$_stallsReported ${diagnosis.cause.name} '
         '${diagnosis.toMeta()}',
