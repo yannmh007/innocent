@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui' show PlatformDispatcher;
 
 import 'package:audio_service/audio_service.dart';
@@ -9,6 +10,7 @@ import 'package:go_router/go_router.dart';
 import 'package:media_kit/media_kit.dart';
 
 import 'app.dart';
+import 'core/services/video_player/disk_cache_dir.dart';
 import 'core/router/app_router.dart';
 import 'core/router/routes.dart';
 import 'core/services/diagnostics/crash_breadcrumbs.dart';
@@ -36,6 +38,14 @@ void main() async {
   // back from Android in Settings → Diagnostics.
   await CrashBreadcrumbs.start();
   CrashDiagnostics.installErrorHooks();
+
+  // Anything the streaming disk cache left behind. It should be nothing —
+  // the files are unlinked the moment they are created, so even a crash
+  // takes them with it — and that is exactly why this runs unawaited and
+  // never blocks the start-up path. What it catches is the platform's
+  // exceptions to "should be nothing", where a stray gigabyte would
+  // otherwise sit on a viewer's phone with no name and no owner.
+  unawaited(DiskCacheDir.sweep());
 
   // Audit: cap the image cache before any widget is built so a large
   // library with hundreds of thumbnails can't blow past memory. Flutter

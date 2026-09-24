@@ -9,6 +9,7 @@ import 'models/audio_track_info.dart';
 import 'models/subtitle_track_info.dart';
 import 'models/video_track_info.dart';
 import '../diagnostics/playback_log.dart';
+import 'disk_cache_dir.dart';
 import 'mpv_option_range.dart';
 import 'stall_diagnosis.dart';
 import 'video_player_service.dart';
@@ -1196,6 +1197,38 @@ class MediaKitPlayerService implements VideoPlayerService {
       // governs recovery after a stall.
       await _setMpvProperty('cache-pause-wait', '6');
       await _setMpvProperty('cache-pause-initial', 'no');
+      // ── SCRUBBING BACKWARDS SHOULD NOT COST A DOWNLOAD ─────────────────
+      //
+      // The back buffer above is thirty-two megabytes — perhaps two minutes
+      // of a 1080p film. Drag the bar back further than that and libmpv
+      // re-requests bytes it already had, over the same connection that was
+      // the problem in the first place. On disk, everything watched so far
+      // is still there and a scrub backwards costs nothing.
+      //
+      // ONLY WHEN THERE IS ROOM, and the check is not a formality. mpv's own
+      // manual says `demuxer-max-bytes` applies to packet METADATA when the
+      // cache is on disk — the FILE is append-only, never reuses pruned
+      // space, and has no ceiling at all. It grows to the size of everything
+      // watched. `DiskCacheDir` refuses below two gigabytes free, because
+      // filling a viewer's phone is a worse fault than a slow scrub.
+      //
+      // IT IS NOT A CACHE BETWEEN PLAYBACKS. The manual is explicit: the
+      // file is deleted when playback closes. Watching the same film
+      // tomorrow downloads it again. Keeping it is a different feature with
+      // a storage budget and a plaintext copy of premium content to answer
+      // for, and it is not this.
+      final cacheDir = await DiskCacheDir.pathIfSpaceAllows();
+      if (cacheDir != null) {
+        await _setMpvProperty('demuxer-cache-dir', cacheDir);
+        // Unlinked the moment it is created: no name any other app could
+        // open, and the space comes back even if this process is killed.
+        // It is mpv's default; stated here because it is the security
+        // property, not an implementation detail to inherit quietly.
+        await _setMpvProperty('demuxer-cache-unlink-files', 'immediate');
+        await _setMpvProperty('cache-on-disk', 'yes');
+      } else {
+        await _setMpvProperty('cache-on-disk', 'no');
+      }
       // ── START-UP, which is a different problem from smoothness ──────────
       //
       // Everything above decides how well a film PLAYS. None of it touches
@@ -1246,6 +1279,10 @@ class MediaKitPlayerService implements VideoPlayerService {
       // wait six seconds for it would be the player inventing a delay that
       // the hardware never asked for.
       await _setMpvProperty('cache-pause-wait', '1');
+      // A file on the phone's own storage is already the disk cache. Spilling
+      // a copy of it beside itself would double the space a film occupies to
+      // save a read that was never slow.
+      await _setMpvProperty('cache-on-disk', 'no');
       // Hand the probe limits back. A local file gets the full, patient
       // probe: it costs a disk read, and it is what makes an awkward
       // container play at all.
