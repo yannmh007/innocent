@@ -593,9 +593,11 @@ td.num{text-align:right;font-variant-numeric:tabular-nums;color:var(--dim)}
              placeholder="not generated yet"
              style="margin-top:8px;font-size:11.5px">
       <div class="hint" style="margin-top:6px">
-        32 random bytes, base64url. Generating a new one invalidates every
-        token already handed out, so anything mid-playback stops until the
-        app asks again — which it does automatically.
+        32 random bytes. There is no required format — both sides hash
+        whatever text they are given — so a password-manager output works
+        just as well as this. Generating a new one invalidates every token
+        already handed out, so anything mid-playback stops until the app
+        asks again, which it does automatically.
       </div>
     </div>
   </section>

@@ -104,19 +104,36 @@ const keyCache = new Map();
 function signingKey(secret) {
   let promise = keyCache.get(secret);
   if (!promise) {
-    promise = crypto.subtle.importKey(
-      'raw',
-      b64urlToBytes(secret),
-      { name: 'AES-GCM' },
-      false,
-      ['decrypt'],
-    );
+    promise = deriveKey(secret);
     // One live secret and one being rotated out is the whole realistic
     // range. A bound stops a bug elsewhere turning this into a leak.
     if (keyCache.size > 4) keyCache.clear();
     keyCache.set(secret, promise);
   }
   return promise;
+}
+
+/// SHA-256 OF THE SECRET, NOT THE SECRET'S BYTES.
+///
+/// The first version required the secret to be exactly 32 bytes of
+/// base64url, because that is what AES-GCM wants and what `openssl rand`
+/// produces. That is a fine requirement for someone at a terminal and a trap
+/// for everyone else: the operator here works from a phone, where the
+/// natural way to get a long random string is a password manager — and those
+/// produce text with symbols in it, which is not base64url and does not
+/// decode to 32 bytes.
+///
+/// Hashing removes the requirement entirely. Any string at all becomes
+/// exactly 32 bytes, deterministically, on both sides. A long random
+/// passphrase works; so does a base64url key from `openssl`. There is no
+/// format to get wrong, and therefore no way to get it wrong quietly.
+///
+/// It costs one hash per isolate, not per request — see the cache above.
+async function deriveKey(secret) {
+  const digest = await crypto.subtle.digest(
+    'SHA-256', new TextEncoder().encode(secret));
+  return crypto.subtle.importKey(
+    'raw', digest, { name: 'AES-GCM' }, false, ['decrypt']);
 }
 
 /// Reads a token back. Returns null for anything at all suspect.

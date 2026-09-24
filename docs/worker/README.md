@@ -66,14 +66,27 @@ rather than the editor.
 needs 4.69.0 and the per-entrypoint map needs 4.107.0, and an older Wrangler
 does not warn — it drops the settings.
 
-### 1. Make the secret (in the console you already use)
+### 1. Make the secret
 
-Open the operator console on your phone, go to **Health**, and under
-**Stream secret** tap **Generate**, then **Copy**.
+**Any long random string.** There is no format: both sides take the SHA-256
+of whatever text you give them, so a passphrase, a password-manager output
+with symbols in it, or a base64 key from `openssl` all work equally. That is
+deliberate — a format requirement is a thing to get wrong quietly, in two
+dashboards, with no symptom but "video stopped working".
 
-It is generated in the browser and stored nowhere — not on the page, not on
-a server, not in this repository. Keep the tab open until step 4; you need
-to paste the same value twice.
+Easiest on a phone, in order:
+
+1. **The console.** Health tab → **Stream secret** → **Generate** → **Copy**.
+   Generated in the browser, stored nowhere — not on the page, not on a
+   server, not in this repository.
+2. **A password manager.** Generate a password, length 40 or more. Symbols
+   are fine.
+3. **Anything else long and unguessable.** Four or five unrelated words,
+   typed by you, is genuinely enough — but a name, a date or a phrase from
+   anywhere is not random however long it looks.
+
+Keep it somewhere you can read it until step 4; you need to paste the same
+value twice. After that, nothing needs to remember it.
 
 ### 2. Create the Worker from the repository
 

@@ -142,14 +142,6 @@ function b64urlFromBytes(b: Uint8Array): string {
   return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
-function bytesFromB64url(s: string): Uint8Array {
-  const pad = s.length % 4 === 0 ? '' : '='.repeat(4 - (s.length % 4));
-  const bin = atob(s.replace(/-/g, '+').replace(/_/g, '/') + pad);
-  const out = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
-  return out;
-}
-
 /// A playable URL through the Worker, or null when it is not configured.
 ///
 /// AES-GCM rather than a signature. A signed-but-readable token would still
@@ -161,9 +153,17 @@ function bytesFromB64url(s: string): Uint8Array {
 async function workerUrl(objectKey: string): Promise<string | null> {
   if (!STREAM_BASE || !STREAM_TOKEN_SECRET) return null;
   try {
+    // SHA-256 OF THE SECRET, NOT THE SECRET'S BYTES. AES-GCM wants exactly
+    // 32 bytes, which meant the secret had to be base64url of exactly that
+    // length — fine at a terminal with `openssl rand`, a trap for an
+    // operator on a phone whose natural source of a long random string is a
+    // password manager, which produces text with symbols in it. Hashing
+    // turns any string into 32 bytes on both sides, so there is no format
+    // to get wrong. The Worker derives its key the same way.
     const key = await crypto.subtle.importKey(
       'raw',
-      bytesFromB64url(STREAM_TOKEN_SECRET) as BufferSource,
+      await crypto.subtle.digest(
+        'SHA-256', new TextEncoder().encode(STREAM_TOKEN_SECRET)),
       { name: 'AES-GCM' },
       false,
       ['encrypt'],

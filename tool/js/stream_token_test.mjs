@@ -45,8 +45,7 @@ const mint = await import('data:text/javascript,' + encodeURIComponent(
     .replace(/: string\b/g, '')
     .replace(/: Promise<string \| null>/g, '')
     .replace(/ as BufferSource/g, '')
-    + '\nexport { b64urlFromBytes, bytesFromB64url, workerUrl };'
-    + '\nexport function setEnv(base, secret) { STREAM_BASE = base; STREAM_TOKEN_SECRET = secret; }'
+    + '\nexport { b64urlFromBytes, workerUrl };'
 ));
 
 // ── the opening half, lifted out of the Worker ───────────────────────────
@@ -58,17 +57,27 @@ const openSrc = worker.slice(
 const open = await import('data:text/javascript,' + encodeURIComponent(
   openSrc + '\nexport { openToken, b64urlToBytes };'));
 
-// ── the shared secret, made exactly as the README says to ────────────────
+// ── the shared secret ────────────────────────────────────────────────────
+//
+// A base64url key, as `openssl rand` would produce. The password-manager
+// case — arbitrary text with symbols in it — is exercised at the end, and
+// is the reason both sides hash the secret rather than decoding it.
 const secretBytes = webcrypto.getRandomValues(new Uint8Array(32));
 const secret = Buffer.from(secretBytes).toString('base64')
   .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
+// Both sides derive the AES key the same way: SHA-256 of the secret's text.
+const aesKey = async (s) => webcrypto.subtle.importKey(
+  'raw',
+  await webcrypto.subtle.digest('SHA-256', new TextEncoder().encode(s)),
+  { name: 'AES-GCM' }, false, ['encrypt']);
+
 // The minting side reads module-level consts, so rebuild it with the values
 // bound rather than trying to reassign them.
 const EXPIRY_SECONDS = 600;
-async function mintUrl(objectKey, base = 'https://s.example.workers.dev') {
-  const key = await webcrypto.subtle.importKey(
-    'raw', mint.bytesFromB64url(secret), { name: 'AES-GCM' }, false, ['encrypt']);
+async function mintUrl(objectKey, base = 'https://s.example.workers.dev',
+                       withSecret = secret) {
+  const key = await aesKey(withSecret);
   const iv = webcrypto.getRandomValues(new Uint8Array(12));
   const claim = JSON.stringify({
     k: objectKey, e: Math.floor(Date.now() / 1000) + EXPIRY_SECONDS });
@@ -125,8 +134,7 @@ check('another secret cannot open the token',
 
 // 7. Expiry is enforced. A token whose moment has passed must stop working
 //    even though the object it names is still cached and warm.
-const expiredKey = await webcrypto.subtle.importKey(
-  'raw', mint.bytesFromB64url(secret), { name: 'AES-GCM' }, false, ['encrypt']);
+const expiredKey = await aesKey(secret);
 const iv2 = webcrypto.getRandomValues(new Uint8Array(12));
 const stale = new Uint8Array(await webcrypto.subtle.encrypt(
   { name: 'AES-GCM', iv: iv2 }, expiredKey,
@@ -143,6 +151,31 @@ for (const junk of ['', 'a', 'not-a-token', 'x'.repeat(200)]) {
   const got = await open.openToken(junk, secret);
   check(`garbage token ${JSON.stringify(junk.slice(0, 12))} is refused`,
     got === null);
+}
+
+// 9. ANY STRING WORKS AS A SECRET. This is the whole reason the key is
+//    derived by hashing rather than decoded: the operator works from a
+//    phone, where a long random string comes from a password manager and
+//    has symbols in it. Requiring base64url would have been a format to get
+//    wrong, silently, in two dashboards.
+for (const odd of [
+  'correct horse battery staple correct horse battery staple',
+  'x9#Kq2!vLm$8pZw@3Ft&6Hn*1Bd^4Gj',
+  '\u1019\u103c\u1014\u103a\u1019\u102c \u1005\u102c\u101c\u102f\u1036\u1038 \u1015\u102b\u1010\u101a\u103a 12345',
+  'a',
+]) {
+  const u = await mintUrl(KEY, 'https://s.example.workers.dev', odd);
+  const back = await open.openToken(u.split('/v/')[1], odd);
+  check(`a non-base64url secret works (${JSON.stringify(odd.slice(0, 18))})`,
+    back !== null && back.k === KEY);
+}
+
+// 10. And two DIFFERENT arbitrary strings still cannot open each other's
+//     tokens — hashing must not have collapsed the space.
+{
+  const u = await mintUrl(KEY, 'https://s.example.workers.dev', 'secret one');
+  check('two different passphrases stay different',
+    (await open.openToken(u.split('/v/')[1], 'secret two')) === null);
 }
 
 if (failures) {
