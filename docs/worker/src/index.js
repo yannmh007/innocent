@@ -263,6 +263,21 @@ export default {
     // honoured. Turning it into `Content-Range` is what makes the response a
     // real 206 rather than a 200 that happens to be short — a player reading
     // 200 concludes the source cannot be seeked and gives up on scrubbing.
+    // ONE LINE PER REQUEST, because the question that matters cannot be
+    // answered any other way: how many times does the player ask, and for
+    // what? A video that plays two seconds, stalls, plays two seconds is
+    // either one slow stream or fifty fast ones, and those have opposite
+    // fixes. The log says which. It carries no key and no token — the
+    // object is identified by its size, which is enough to tell two files
+    // apart in a trace and tells a reader nothing about the bucket.
+    console.log(JSON.stringify({
+      ev: 'serve',
+      asked: request.headers.get('Range') || 'whole',
+      size: object.size,
+      got: object.range ?? null,
+      ua: (request.headers.get('User-Agent') || '').slice(0, 40),
+    }));
+
     const range = object.range;
     if (range && request.headers.has('Range')) {
       const offset = 'offset' in range && range.offset !== undefined

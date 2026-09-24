@@ -168,7 +168,24 @@ async function operatorId(req: Request): Promise<string | null> {
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
-    return json({}, 204, req);
+    // 204 MEANS NO CONTENT, AND MEANS IT LITERALLY. The first version built
+    // the preflight response through the same `json()` helper as everything
+    // else, which gave it a body — and a 204 carrying a body is malformed,
+    // so the browser discarded the whole response and the console reported
+    // "Failed to fetch" with nothing in any log to say why. The preflight is
+    // the one response here that must be built by hand.
+    const origin = req.headers.get('Origin') ?? '';
+    return new Response(null, {
+      status: 204,
+      headers: ALLOWED_ORIGINS.includes(origin)
+        ? {
+          'Access-Control-Allow-Origin': origin,
+          'Access-Control-Allow-Headers': 'authorization, content-type',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Access-Control-Max-Age': '86400',
+        }
+        : {},
+    });
   }
   if (req.method === 'GET') {
     return json({ ok: true, service: 'probe-media' }, 200, req);
