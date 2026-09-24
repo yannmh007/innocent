@@ -354,7 +354,7 @@ Deno.serve(async (req) => {
     return json({ code: 'not_found' }, 404);
   }
 
-  // ─── WHICH OBJECT ARE WE SIGNING? (v3) ─────────────────────────────────
+  // ─── WHICH OBJECT ARE WE SIGNING? (v3) ─────────────────────────────
   //
   // Either the title's main video, or one asset from its folder - a clip, a
   // behind-the-scenes reel, a trailer.
