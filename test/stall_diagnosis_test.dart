@@ -72,8 +72,8 @@ void main() {
     test('meta carries kilobits, a rounded cache and the resolution', () {
       final m = diagnoseStall(const StallReading(
         cacheSeconds: 0.6,
-        haveBitsPerSecond: 5_400_000,
-        needBitsPerSecond: 35_200_000,
+        haveBitsPerSecond: 5400000,
+        needBitsPerSecond: 35200000,
         droppedFrames: 3,
         hwdec: 'mediacodec',
         width: 3840,
