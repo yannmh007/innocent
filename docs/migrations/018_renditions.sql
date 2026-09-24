@@ -171,6 +171,12 @@ begin
   -- be done before it is.
   update public.title_assets
     set transcode_state = case
+          -- A FILE THAT NEEDED NO RUNG IS FINISHED, NOT FAILED. Some videos
+          -- are already light enough to stream, and every rung the encoder
+          -- could make would be as big as the original; the right answer for
+          -- them IS the original, and the row has to say so or the console
+          -- shows a permanent error for a video that is perfectly fine.
+          when coalesce(p_note, '') like 'already light%' then 'ready'
           when written = 0 then 'failed'
           when coalesce(p_note, '') = 'complete' then 'ready'
           else 'running'

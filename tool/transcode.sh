@@ -146,6 +146,23 @@ if [ "$DUR_I" -gt 2400 ]; then MAX_H=1080; fi
 FPSMUL=100
 if python3 -c "import sys; sys.exit(0 if float('$FPS') > 40 else 1)"; then FPSMUL=135; fi
 
+# ── A RUNG MUST BE MEANINGFULLY SMALLER THAN THE FILE IT COMES FROM ──────
+#
+# Found in the real data rather than reasoned about: a 96 MB ten-minute film
+# at 1.3 megabits produced a ladder of 157 MB. Every rung was DEARER to store
+# than it was worth, and the top one — 720p at 1.04 Mbps against a 1.3 Mbps
+# original — was a re-encode of an already-light file, so it cost storage,
+# cost encoder time, and looked WORSE than the thing it was made from.
+#
+# The ladder exists to make a heavy file streamable. A file that is already
+# streamable does not need one, and eighty per cent is where "smaller" stops
+# being worth a second copy: below that a rung genuinely helps a weak
+# connection, above it the original is the better answer in every respect.
+SRC_BYTES="$(stat -c%s "$src")"
+SRC_KBPS="$(python3 -c "print(max(1, round($SRC_BYTES*8/max(1,$DUR_I)/1000)))")"
+echo "source is ${SRC_KBPS} kbps"
+CEILING=$(( SRC_KBPS * 80 / 100 ))
+
 for i in "${!LADDER_H[@]}"; do
   h="${LADDER_H[$i]}"
   k="${LADDER_K[$i]}"
@@ -156,6 +173,13 @@ for i in "${!LADDER_H[@]}"; do
   [ "$h" -gt "$MAX_H" ] && continue
 
   k=$(( k * FPSMUL / 100 ))
+
+  # Not worth making: this rung asks for as much as the original, or more.
+  if [ "$k" -ge "$CEILING" ]; then
+    echo "${h}p at ${k}k is not smaller than the source (${SRC_KBPS}k) - skipped"
+    continue
+  fi
+
   url="$(python3 -c "import json,os; print(json.loads(os.environ['PUT_BASE']).get('$h',''))")"
   if [ -z "$url" ]; then echo "no upload url for ${h}p — skipped"; continue; fi
 
@@ -200,5 +224,12 @@ PY
   rm -f "$out"
 done
 
-NOTE="complete" report
+# A file that needed no rung at all is FINISHED, not failed. The app plays
+# the original, which was always the right answer for it — but the row has to
+# say so, or the console shows a permanent error for a video that is fine.
+if [ "$(python3 -c "import json;print(len(json.load(open('$results'))))")" = "0" ]; then
+  NOTE="already light - no rung would be smaller" report
+else
+  NOTE="complete" report
+fi
 echo "ladder:"; cat "$results"
