@@ -1165,7 +1165,16 @@ class MediaKitPlayerService implements VideoPlayerService {
   ///  * NETWORK — read-ahead IS the feature; it is what absorbs a lift-shaft
   ///    or a congested cell. Keep it generous in SECONDS, but cap the bytes at
   ///    something a phone can hold without the system trimming other apps.
-  Future<void> setStreamBufferProfile({required bool network}) async {
+  /// [viaLocalCache] is set when the address is this app's own caching
+  /// proxy on loopback. It is still a network profile — the proxy fetches
+  /// over the same connection and a stall there is still a stall — but the
+  /// disk cache below must not be used, because the bytes it would spill are
+  /// the bytes the proxy has already written. Two copies of the same film on
+  /// the same phone is not a cache, it is a bug with a comment.
+  Future<void> setStreamBufferProfile({
+    required bool network,
+    bool viaLocalCache = false,
+  }) async {
     if (network) {
       await _setMpvProperty('cache', 'yes');
       await _setMpvProperty('demuxer-max-bytes', '${96 * 1024 * 1024}');
@@ -1217,7 +1226,8 @@ class MediaKitPlayerService implements VideoPlayerService {
       // tomorrow downloads it again. Keeping it is a different feature with
       // a storage budget and a plaintext copy of premium content to answer
       // for, and it is not this.
-      final cacheDir = await DiskCacheDir.pathIfSpaceAllows();
+      final cacheDir =
+          viaLocalCache ? null : await DiskCacheDir.pathIfSpaceAllows();
       if (cacheDir != null) {
         await _setMpvProperty('demuxer-cache-dir', cacheDir);
         // Unlinked the moment it is created: no name any other app could

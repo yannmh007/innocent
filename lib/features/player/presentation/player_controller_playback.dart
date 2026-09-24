@@ -219,7 +219,15 @@ extension PlayerPlayback on PlayerController {
     // buffer, because absorbing a dead spot is the entire point of it.
     try {
       if (svc is MediaKitPlayerService) {
-        await svc.setStreamBufferProfile(network: isNetwork);
+        await svc.setStreamBufferProfile(
+          network: isNetwork,
+          // The app's own caching proxy answers on loopback. Everything else
+          // about a network profile still applies — it fetches over the same
+          // connection and can stall the same way — but libmpv must not ALSO
+          // spill this to disk, because the proxy is already writing those
+          // bytes there. Two copies of one film on one phone is not a cache.
+          viaLocalCache: isLoopbackUri(uri),
+        );
       } else {
         await svc.setDemuxerCacheMb(isNetwork ? 96 : 32);
       }

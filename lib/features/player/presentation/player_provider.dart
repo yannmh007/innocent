@@ -14,6 +14,7 @@ import '../../../core/di/core_providers.dart';
 import '../../../core/services/diagnostics/playback_log.dart';
 import '../../../core/di/preferences_provider.dart';
 import '../../../core/services/video_player/media_kit_player_service.dart';
+import '../../../core/services/video_player/loopback_uri.dart';
 import '../../../core/services/video_player/stall_diagnosis.dart';
 import '../../../core/services/network/throughput_memory.dart';
 import '../../../core/services/video_player/stream_renewal.dart';
@@ -1262,8 +1263,20 @@ class PlayerController extends StateNotifier<PlayerState> {
       // the same tower — and it is what decides which copy of the NEXT film
       // this phone is handed. A stall that teaches the app something is a
       // stall that does not happen twice.
+      //
+      // NOT WHEN THE BYTES CAME FROM THIS PHONE. `cache-speed` measures how
+      // fast bytes reach libmpv, and through the caching proxy a cached film
+      // reaches it at flash speed — hundreds of megabits. Recorded as a
+      // measurement of the viewer's connection, that would open the NEXT
+      // film at 4K on a 6 Mbps link, which is precisely the stutter all of
+      // this exists to end. The proxy reports its own upstream speed
+      // instead, because it is the only thing that knows which bytes
+      // crossed the network.
       final have = reading.haveBitsPerSecond;
-      if (have != null && have > 0) {
+      final uri = _currentUri;
+      if (have != null &&
+          have > 0 &&
+          (uri == null || !isLoopbackUri(uri))) {
         unawaited(ThroughputMemory.observe(have ~/ 1000));
       }
       PlaybackLog.add(

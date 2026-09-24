@@ -250,10 +250,27 @@ class StreamCacheStore {
         // safe reading is that the cache is wrong.
         await remove(id);
       } else {
-        if (total != null && total > 0) have.total = total;
-        if (label != null && label.isNotEmpty) have.label = label;
-        have.usedAt = DateTime.now();
-        await _saveMeta(have);
+        var changed = false;
+        if (total != null && total > 0 && have.total != total) {
+          have.total = total;
+          changed = true;
+        }
+        if (label != null && label.isNotEmpty && have.label != label) {
+          have.label = label;
+          changed = true;
+        }
+        // WRITTEN RARELY, ON PURPOSE. A demuxer issues many ranged requests
+        // per film and each one passes through here; rewriting the metadata
+        // file every time is a flash write per request for a timestamp whose
+        // only job is to order an eviction list. A minute is far finer than
+        // that list needs and orders of magnitude cheaper.
+        final now = DateTime.now();
+        if (changed || now.difference(have.usedAt) > const Duration(minutes: 1)) {
+          have.usedAt = now;
+          await _saveMeta(have);
+        } else {
+          have.usedAt = now;
+        }
         return have;
       }
     }

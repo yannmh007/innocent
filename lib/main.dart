@@ -11,6 +11,7 @@ import 'package:media_kit/media_kit.dart';
 
 import 'app.dart';
 import 'core/services/video_player/disk_cache_dir.dart';
+import 'features/video_hub/data/cache/stream_cache_store.dart';
 import 'core/router/app_router.dart';
 import 'core/router/routes.dart';
 import 'core/services/diagnostics/crash_breadcrumbs.dart';
@@ -46,6 +47,12 @@ void main() async {
   // exceptions to "should be nothing", where a stray gigabyte would
   // otherwise sit on a viewer's phone with no name and no owner.
   unawaited(DiskCacheDir.sweep());
+
+  // Read the streaming cache's index now rather than on the path to the
+  // first frame. It is a directory listing — milliseconds — but those are
+  // milliseconds of black screen if they are spent when somebody presses
+  // play, and this app has spent weeks removing exactly that kind of delay.
+  unawaited(StreamCacheStore.instance.load());
 
   // Audit: cap the image cache before any widget is built so a large
   // library with hundreds of thumbnails can't blow past memory. Flutter
