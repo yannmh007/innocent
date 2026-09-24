@@ -7,6 +7,7 @@ import 'package:path/path.dart' as p;
 import 'package:share_plus/share_plus.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/media_address.dart';
 import '../../../../core/ui/app_snackbar.dart';
 import '../../../../core/services/private_folder/private_folder_service.dart';
 import '../../../../core/services/biometric/biometric_service.dart';
@@ -1233,16 +1234,21 @@ class _VideoInfoDialogState extends ConsumerState<VideoInfoDialog> {
   @override
   Widget build(BuildContext context) {
     final s = AppStrings.of(context);
-    final fileName = () {
-      if (_absPath != null) return p.basename(_absPath!);
-      try {
-        final raw = Uri.parse(video.uri).pathSegments.lastOrNull ?? video.title;
-        return raw.isEmpty ? video.title : raw;
-      } catch (_) {
-        return video.title;
-      }
-    }();
-    final location = _absPath != null ? p.dirname(_absPath!) : video.folderPath;
+    // NAME AND LOCATION GO THROUGH ONE RULE, HERE, for every screen that
+    // opens this dialog. It is shared with the local library, where showing
+    // a folder is the point — and it was also being opened over a Video Hub
+    // stream, where "the folder" is the signed R2 address and showing it
+    // hands out the account id, the private bucket's name and the shape of
+    // every key in it. See `media_address.dart`.
+    final fileName = showableFileName(
+      uri: video.uri,
+      title: video.title,
+      onDiskName: _absPath == null ? null : p.basename(_absPath!),
+    );
+    final location = showableLocation(
+      onDiskDirectory: _absPath == null ? null : p.dirname(_absPath!),
+      candidate: video.folderPath,
+    );
     final fmt = video.mimeType?.split('/').lastOrNull?.toUpperCase();
     final sizeStr = _exactBytes != null
         ? _fmtSizeExact(_exactBytes!)
@@ -1279,7 +1285,10 @@ class _VideoInfoDialogState extends ConsumerState<VideoInfoDialog> {
                     // ── File ──
                     _SectionHeader(s.propSectionFile),
                     _InfoRow(s.propFile, fileName),
-                    _InfoRow(s.propLocation, location),
+                    // Omitted rather than blanked when there is nothing
+                    // showable: a row reading "Location: —" invites somebody
+                    // to go and find the missing value and put it back.
+                    if (location != null) _InfoRow(s.propLocation, location),
                     _InfoRow(s.propSize, sizeStr),
                     _InfoRow(s.propDate, _fmtDateTime(_modified ?? video.dateAdded)),
                     const SizedBox(height: 14),

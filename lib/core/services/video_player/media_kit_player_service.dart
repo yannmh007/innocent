@@ -9,6 +9,7 @@ import 'models/audio_track_info.dart';
 import 'models/subtitle_track_info.dart';
 import 'models/video_track_info.dart';
 import '../diagnostics/playback_log.dart';
+import 'mpv_option_range.dart';
 import 'video_player_service.dart';
 
 /// Decouples the video player from the equalizer service. The EQ service
@@ -289,6 +290,23 @@ class MediaKitPlayerService implements VideoPlayerService {
   /// previous value. Caching a value it rejected would make us skip the next
   /// attempt to set the same thing, believing it was already applied.
   Future<bool> _setMpvProperty(String key, String value) async {
+    // CHECKED BEFORE IT IS SENT, because after it is sent there is nothing
+    // to check. libmpv refuses an out-of-range value by writing to its LOG
+    // at error level — the call itself succeeds, so `try/catch` sees nothing
+    // and this method would return true. media_kit then forwards that log
+    // line to its error stream and the player draws "Playback failed" over a
+    // film that is playing correctly. That is exactly what v1.64.21 did to
+    // every local file, with `demuxer-lavf-probesize: 0`.
+    //
+    // Refused here instead, loudly in the log and never on the viewer's
+    // screen: a bad constant in this file is a bug for us to fix, not an
+    // event for them to read.
+    final problem = mpvValueProblem(key, value);
+    if (problem != null) {
+      PlaybackLog.add('mpv option refused locally: $problem');
+      assert(false, problem);
+      return false;
+    }
     try {
       await (_player.platform as dynamic)?.setProperty(key, value);
       return true;
@@ -409,6 +427,12 @@ class MediaKitPlayerService implements VideoPlayerService {
         // that arrived just before a crash left no record at all — and the
         // moment right before a crash is the only moment that matters.
         PlaybackLog.add('mpv error: ${e.length > 160 ? e.substring(0, 160) : e}');
+        // A complaint about an OPTION is not a playback failure, and showing
+        // it as one is worse than showing nothing: it appears over a picture
+        // that is playing correctly, so the next time the box appears for a
+        // real reason it has already been taught to be ignored. Logged
+        // above, dropped here — the trail keeps it, the viewer never sees it.
+        if (isMpvConfigComplaint(e)) return null;
         try {
           onPlaybackError?.call(e);
         } catch (_) {
@@ -1192,9 +1216,19 @@ class MediaKitPlayerService implements VideoPlayerService {
       await _setMpvProperty('demuxer-readahead-secs', '5');
       // Hand the probe limits back. A local file gets the full, patient
       // probe: it costs a disk read, and it is what makes an awkward
-      // container play at all. `0` means "libavformat's own default".
-      await _setMpvProperty('demuxer-lavf-probesize', '0');
-      await _setMpvProperty('demuxer-lavf-analyzeduration', '0');
+      // container play at all.
+      //
+      // WRITTEN AS LIBAVFORMAT'S OWN DEFAULTS, NOT AS ZERO. Zero is the
+      // value mpv carries internally to mean "let libavformat decide", and
+      // it is the obvious thing to write when undoing the cap above — but
+      // `demuxer-lavf-probesize` is declared with a minimum of 32 and mpv
+      // validates what you write, not what it ships with. v1.64.21 wrote 0
+      // here and every local file opened with a red "Playback failed" box
+      // quoting the option name. These two numbers are libavformat's
+      // documented defaults, so the behaviour is identical and the value is
+      // one libmpv will accept.
+      await _setMpvProperty('demuxer-lavf-probesize', '5000000');
+      await _setMpvProperty('demuxer-lavf-analyzeduration', '5');
     }
   }
 

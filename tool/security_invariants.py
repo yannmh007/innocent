@@ -105,6 +105,42 @@ for p in feature_files():
             'CLIENT DECIDES: %s (a data adapter) consults CapabilityMatrix. '
             'Adapters must ask the server, not a local table.' % rel)
 
+# --- 6. an address is never display material ------------------------------
+# The player's Information dialog is shared with the local library, where
+# showing a file's folder is the point. Opened over a stream, the same field
+# showed the signed R2 address — account id, private bucket name and the
+# shape of every key in it — on the viewer's screen and in any screenshot
+# they sent on. The near miss was worse: the sibling field split the URI at
+# its last slash, and a SigV4 query string carries
+# `X-Amz-Credential=<ACCESS-KEY-ID>/<date>/auto/s3/aws4_request`. Those
+# slashes are percent-encoded by the signer today. That is one encoding
+# decision, in a different file, away from an access key id on screen.
+#
+# So the two fields may only be rendered through the rules that refuse an
+# address. Checked across the whole tree, not just video_hub, because the
+# dialog that leaked lives in local_browser.
+GUARDED_FIELDS = [
+    ('propLocation', 'showableLocation'),
+    ('propFile', 'showableFileName'),
+]
+for r, d, f in os.walk(os.path.join(ROOT, 'lib')):
+    for fn in f:
+        if not fn.endswith('.dart'):
+            continue
+        # The string table declares every key; it renders nothing.
+        if fn in ('app_strings.dart',) or '/l10n/' in os.path.join(r, fn):
+            continue
+        path = os.path.join(r, fn)
+        body = strip(open(path, encoding='utf-8').read())
+        for field, rule in GUARDED_FIELDS:
+            if ('s.' + field) in body and (rule + '(') not in body:
+                fails.append(
+                    'ADDRESS ON SCREEN: %s renders %s without going through '
+                    '%s(). A streamed title has no showable location and is '
+                    'named by its title, never by its object key — see '
+                    'lib/core/utils/media_address.dart.'
+                    % (os.path.relpath(path, ROOT), field, rule))
+
 print('=== %d security invariant violation(s) ===' % len(fails))
 for f in fails:
     print(' -', f)

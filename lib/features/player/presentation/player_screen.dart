@@ -87,6 +87,7 @@ import '../../../core/services/video_player/stream_renewal.dart';
 // The ONE dependency this screen takes on the catalogue feature, and it is a
 // reporter that takes two strings and an event sender. Nothing about titles,
 // entitlement or playback authorisation crosses this line.
+import '../../../core/utils/media_address.dart';
 import '../../video_hub/data/api/playback_reporter.dart';
 import '../../video_hub/presentation/video_hub_provider.dart';
 
@@ -1475,10 +1476,17 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     // the video stays faintly visible behind the dialog.
     final state = ref.read(playerControllerProvider);
     final vt = state.videoTracks.isNotEmpty ? state.videoTracks.first : null;
+    // The folder is assembled ONLY for something on this device. For a
+    // stream the same arithmetic produced the signed R2 address — host,
+    // bucket and key path — and handed it to a dialog that renders whatever
+    // it is given. The dialog now refuses such a string on its own (see
+    // `media_address.dart`), and this stops building one in the first place:
+    // two independent places have to fail before an address can be shown.
+    final remote = isRemoteAddress(widget.videoUri);
     final path = widget.videoUri.startsWith('file://')
         ? Uri.parse(widget.videoUri).toFilePath()
         : widget.videoUri;
-    final folder = path.contains('/')
+    final folder = (!remote && path.contains('/'))
         ? path.substring(0, path.lastIndexOf('/'))
         : '';
     final video = Video(
