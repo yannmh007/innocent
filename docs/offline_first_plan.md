@@ -51,8 +51,8 @@ complained about a film they had already paid data for.
 | **C1** | Upload above 5 GiB | **done** — 1.64.30+343 |
 | **D1** | Email / phone sign-in | **skipped by the operator**, 2026-09-25 |
 | **E1** | Downloads encrypted at rest | **done** — 1.64.31+344 |
-| **F1** | Telegram → R2 pipeline | open — next |
-| **G1** | Watch a download while it is still downloading | open |
+| **F1** | Telegram → R2 pipeline | open — **blocked on a decision**, see below |
+| **G1** | Watch a download while it is still downloading | **done** — 1.64.32+345 |
 | **G2** | True background download | open — **needs a real device** |
 | **#31** | Serve video from the Cloudflare edge, not the S3 API | open, older |
 | **#32** | Find which videos still have their index at the end | open, older |
@@ -318,21 +318,113 @@ not guess. A restart onto a replaced object mints a *new* IV, because one
 keystream used for two different films hands anybody holding both of them the XOR
 of the two plaintexts without needing the key at all.
 
+## G1. Watch a download while it is still downloading
+
+**Done out of order, and deliberately.** The plan had F1 before this, but F1 turned
+out to be blocked on a decision only the operator can make (below) — and E1 had
+just built the thing G1 needed: a loopback server that serves a local film with
+byte ranges. So G1 went from a week to an afternoon, and it is the item on this
+list a viewer notices.
+
+Telegram plays a video while it downloads, and that is what this audience is used
+to. Waiting for a whole film before it will open is what makes downloading feel
+worse than streaming even when it is the better choice.
+
+### What decides whether it can be offered
+
+An MP4 keeps its frames in `mdat` and its index — every frame's offset, size and
+timestamp — in `moov`. A demuxer cannot play one frame without the index, so where
+`moov` sits decides everything:
+
+| | |
+|---|---|
+| `ftyp moov mdat` | index at the FRONT — the first megabytes are enough to start |
+| `ftyp mdat moov` | index at the END — nothing plays until the last byte |
+
+The console reorders every upload into the first shape, which is what makes this
+worth offering at all. But every film uploaded before that existed is in the
+second, so **the shape is read out of the bytes rather than assumed**: `moov` has
+to come before `mdat`, and the whole of it has to have arrived, plus four
+megabytes of frames behind it so the demuxer starts instead of stalling on its
+first read.
+
+`assessMp4Head` is a pure function on bytes with 18 tests, because its answer is a
+button and both ways of being wrong are silent: `ready` on a film whose index is at
+the end opens a black screen with a spinner that never resolves, and `indexAtEnd`
+on a film that is fine hides a feature nobody will then find.
+
+### The three things that make it work rather than half-work
+
+**Bytes that have not arrived are WAITED FOR, not refused.** Every demuxer seeks
+ahead, and so does anybody dragging a seek bar. Answering short there looks to the
+player exactly like a dropped connection, and it would give up on a film that is
+arriving perfectly well. The server polls the part file's length every quarter
+second, for up to ninety seconds; past that a download has not slowed down, it has
+stopped.
+
+**An open handle survives the download finishing.** A rename moves a name and not
+an inode, so somebody watching while the last megabytes arrive is not interrupted
+by the `.part` file becoming the film.
+
+**A growing sealed film has no trailer yet** — that is written at the end — so its
+IV comes from the sidecar and its length from the size note. This is the reason
+`SealInfo` is a value the caller can construct rather than something only a
+finished file can produce.
+
+### What it deliberately does not do
+
+The address is **ephemeral**: no resume point, no cold-start "Resume X?" marker. A
+film watched while it downloads has no stable identity yet — the file is called
+`.part` and will be renamed the moment it finishes — so it is watched without one
+and gets a real resume point as an ordinary download afterwards. Writing the
+loopback address down would leave a key that never matches again, pointing at a
+port that no longer exists.
+
+The readiness check runs **on the tap, not in `build`**: it is a read and a decrypt
+of the first two megabytes, and a list does not get to do that per frame. So the
+button appears on a cheap test — eight megabytes in, and only when the film's
+length is known — and the real answer comes when it is pressed. Which means it can
+say no, and **every no says which no it is**: "not enough of this has arrived yet"
+is worth waiting a minute for, and "only once the download has finished" means
+going and doing something else. Telling somebody the second when it is the first
+invites them to keep pressing.
+
 ## The rest, in the order to do it
 
-### F1. Telegram → R2 pipeline
+### F1. Telegram → R2 pipeline — BLOCKED ON A DECISION, not on work
 
-The operator's masters largely arrive over Telegram today, and the current path is
-download-to-phone-then-upload-from-phone: the file crosses the mobile connection
-twice. A server-side pull would make it zero.
+The operator's masters largely arrive over Telegram, and the current path is
+download-to-phone-then-upload-from-phone: the file crosses the worst connection in
+the system twice. A pull straight into R2 would make it zero.
 
-### G1. Watch a download while it is still downloading
+**The shape is already proven.** `transcode.yml` runs ffmpeg on a GitHub Actions
+runner, claims work from an edge function with a shared secret, and touches nothing
+but presigned URLs. An ingest job is the same pipeline with a different program in
+the middle.
 
-Telegram does this and people expect it. The likely shape is serving the `.part`
-file through the loopback cache proxy that already exists, with the player told
-the duration up front. **Investigate before promising it**: a seek past the
-downloaded head has to fail gracefully rather than look like the stutter this
-whole project exists to remove.
+**What blocks it is Telegram's own limits.** A bot using the cloud Bot API cannot
+download a file larger than **20 MB** — not a setting, not a rate limit, the API's
+own ceiling — so no bot can fetch a film. The two ways past it are:
+
+1. **An MTProto user session** (Telethon, GramJS, TDLib), which can fetch up to
+   2 GB per file, or 4 GB on Premium. The session string would live in a GitHub
+   Actions secret.
+2. **A self-hosted Local Bot API server**, which lifts the limit for bots — and
+   means a machine to run, patch and pay for, which this project deliberately does
+   not have.
+
+Option 1 is what everybody actually does, and it needs saying plainly: **a Telegram
+user session string is the operator's whole account**, not a scoped key like
+`TRANSCODE_SECRET` whose entire power is "ask for a transcode job". Anyone who
+reads it can read every chat that account can. That is a different order of
+trust from anything else in this repository, and it is the operator's call to
+make rather than a detail to be got on with.
+
+So: ask first. If the answer is yes, the work is an `ingest_jobs` table, an
+`ingest` edge function with `claim`/`done` ops (multipart, since masters pass
+5 GiB), a workflow, and the api_id / api_hash / session secrets. None of it can be
+tested from a checkout — there is no Telegram from here — which is one more reason
+the decision comes before the code.
 
 ### G2. True background download — needs a real device
 

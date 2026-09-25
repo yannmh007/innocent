@@ -1372,6 +1372,10 @@ class AppStrings {
   String get vhDownloadResuming => _s('vhDownloadResuming');
   String get vhDownloadResume => _s('vhDownloadResume');
   String get vhDownloadPause => _s('vhDownloadPause');
+  String get vhWatchNow => _s('vhWatchNow');
+  String get vhWatchNotYet => _s('vhWatchNotYet');
+  String get vhWatchIndexAtEnd => _s('vhWatchIndexAtEnd');
+  String get vhWatchGone => _s('vhWatchGone');
   String get vhDownloadNoSpace => _s('vhDownloadNoSpace');
   String get vhDownloadGaveUp => _s('vhDownloadGaveUp');
   String get vhDownloadWaitingSignal => _s('vhDownloadWaitingSignal');
@@ -1576,6 +1580,12 @@ class AppStrings {
     'vhDownloadResuming': 'Downloading',
     'vhDownloadResume': 'Resume',
     'vhDownloadPause': 'Pause',
+    'vhWatchNow': 'Watch now',
+    'vhWatchNotYet':
+        'Not enough of this film has arrived yet. Try again in a moment.',
+    'vhWatchIndexAtEnd':
+        'This one can only be watched once the download has finished.',
+    'vhWatchGone': 'This download is no longer on the phone.',
     'vhDownloadNoSpace':
         'Not enough space on this phone. Free some up and start again - what '
         'has already downloaded is kept.',
@@ -2789,6 +2799,11 @@ class AppStrings {
     'vhDownloadResuming': 'ဒေါင်းလုဒ် လုပ်နေသည်',
     'vhDownloadResume': 'ဆက်လုပ်',
     'vhDownloadPause': 'ခဏရပ်',
+    'vhWatchNow': 'အခုကြည့်',
+    'vhWatchNotYet':
+        'ဒီဇာတ်ကားရဲ့ အစပိုင်း လုံလောက်စွာ မရောက်သေးပါ။ ခဏနေပြီး ထပ်စမ်းပါ။',
+    'vhWatchIndexAtEnd': 'ဒီဇာတ်ကားကို Download ပြီးမှသာ ကြည့်လို့ရပါမယ်။',
+    'vhWatchGone': 'ဒီ Download ကို ဖုန်းပေါ်မှာ ရှာမတွေ့ပါ။',
     'vhDownloadNoSpace':
         'ဖုန်းထဲ နေရာ မလုံလောက်ပါ။ နေရာ လွတ်ပေးပြီး ပြန်စပါ - '
         'ရောက်ပြီးသား အပိုင်းကို သိမ်းထားပါတယ်။',
@@ -3992,6 +4007,10 @@ class AppStrings {
     'vhDownloadResuming': 'กำลังดาวน์โหลด',
     'vhDownloadResume': 'ทำต่อ',
     'vhDownloadPause': 'หยุดพัก',
+    'vhWatchNow': 'ดูเลย',
+    'vhWatchNotYet': 'ยังได้ไฟล์มาไม่พอ ลองอีกครั้งในอีกสักครู่',
+    'vhWatchIndexAtEnd': 'เรื่องนี้ดูได้เมื่อดาวน์โหลดเสร็จแล้วเท่านั้น',
+    'vhWatchGone': 'ไม่พบไฟล์ดาวน์โหลดนี้บนเครื่องแล้ว',
     'vhDownloadNoSpace':
         'พื้นที่ในเครื่องไม่พอ ลบไฟล์บางส่วนแล้วเริ่มใหม่ '
         'ส่วนที่ดาวน์โหลดแล้วยังอยู่',

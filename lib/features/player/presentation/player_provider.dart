@@ -40,9 +40,9 @@ import 'widgets/sleep_timer_dialog.dart';
 import '../../../core/services/subtitles/subtitle_formats.dart';
 // v1.64.31: a sealed download is ciphertext on this phone, and the player
 // resolves `sealed://` to a loopback address that decrypts on demand. See
-// SealedFileServer for why decryption wears the shape of an HTTP server.
+// LocalFilmServer for why decryption wears the shape of an HTTP server.
 import '../../video_hub/data/api/offline_crypto.dart';
-import '../../video_hub/data/cache/sealed_file_server.dart';
+import '../../video_hub/data/cache/local_film_server.dart';
 
 part 'player_state.dart';
 part 'player_controller_playback.dart';

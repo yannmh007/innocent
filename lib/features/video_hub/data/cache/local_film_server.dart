@@ -1,12 +1,14 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:math';
+import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 
 import '../api/offline_crypto.dart';
 
-/// Gives the player a local address for a sealed film on this phone.
+/// Gives the player a local address for a film on this phone that it cannot
+/// open by path: one that is ciphertext, one that is still downloading, or both.
 ///
 /// ═══════════════════════════════════════════════════════════════════════
 /// WHY THIS EXISTS AT ALL
@@ -33,16 +35,16 @@ import '../api/offline_crypto.dart';
 /// address therefore carries a token minted once per process, and a request
 /// without it is refused before a file is opened. The token is handed to libmpv
 /// in-process and appears in no log and no URL that leaves the phone.
-class SealedFileServer {
-  SealedFileServer._();
-  static final SealedFileServer instance = SealedFileServer._();
+class LocalFilmServer {
+  LocalFilmServer._();
+  static final LocalFilmServer instance = LocalFilmServer._();
 
   HttpServer? _server;
   String? _token;
 
   /// id → the film it serves, and the reverse so re-opening one film twice
   /// does not register it twice.
-  final Map<String, _Sealed> _open = <String, _Sealed>{};
+  final Map<String, _Film> _open = <String, _Film>{};
   final Map<String, String> _idFor = <String, String>{};
 
   /// How much to decrypt per turn of the loop.
@@ -63,7 +65,7 @@ class SealedFileServer {
         .join();
     final s = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
     s.listen(_handle, onError: (Object e) {
-      if (kDebugMode) debugPrint('SealedFileServer: $e');
+      if (kDebugMode) debugPrint('LocalFilmServer: $e');
     });
     _server = s;
   }
@@ -74,24 +76,65 @@ class SealedFileServer {
   /// back to the file itself — a sealed file played directly is noise. Failing
   /// here is "this film will not open", which is a thing to say out loud rather
   /// than a thing to paper over.
+  /// A finished film, sealed, read straight off the disk.
   Future<String?> localUrlFor({
     required File file,
     required SealInfo seal,
-  }) async {
+  }) =>
+      _register(_Film(
+        file: file,
+        seal: seal,
+        total: seal.plainLength,
+      ));
+
+  /// A film that is STILL DOWNLOADING.
+  ///
+  /// ═══════════════════════════════════════════════════════════════════
+  /// WHAT THIS IS FOR, AND WHY IT IS THE FEATURE PEOPLE ASKED FOR
+  /// ═══════════════════════════════════════════════════════════════════
+  ///
+  /// Telegram plays a video while it downloads, and that is what this audience
+  /// is used to: you start it, you watch the beginning, and the rest arrives
+  /// behind you. Waiting for a whole film before it will open is the thing that
+  /// makes downloading feel worse than streaming even when it is better.
+  ///
+  /// [total] is the length of the WHOLE film, from the object's own
+  /// Content-Length, so the seek bar is the film's and not the part file's.
+  /// Bytes that have not arrived are WAITED FOR rather than refused — see
+  /// `_waitFor`, which is the whole difference between this and an error.
+  ///
+  /// [seal] is null for an unsealed download, in which case the part file is
+  /// read as it is.
+  Future<String?> localUrlForGrowing({
+    required File part,
+    required File finished,
+    required SealInfo? seal,
+    required int total,
+  }) =>
+      _register(_Film(
+        file: part,
+        seal: seal,
+        total: total,
+        growing: true,
+        finished: finished,
+      ));
+
+  Future<String?> _register(_Film film) async {
     try {
       await _ensureStarted();
       final port = _server?.port;
       final token = _token;
       if (port == null || token == null) return null;
+      final file = film.file;
       // ONE ID PER FILM PER PROCESS. Re-opening the same film — a second play,
       // an expand out of the floating window, a retry after a stall — has to
       // land on the same address, or the player's own comparisons of "is this
       // still the video I was told to play" stop matching.
       final id = _idFor.putIfAbsent(file.path, _mintId);
-      _open[id] = _Sealed(file: file, seal: seal);
+      _open[id] = film;
       return 'http://127.0.0.1:$port/s/$token/$id';
     } catch (e) {
-      if (kDebugMode) debugPrint('SealedFileServer.localUrlFor: $e');
+      if (kDebugMode) debugPrint('LocalFilmServer._register: $e');
       return null;
     }
   }
@@ -133,7 +176,7 @@ class SealedFileServer {
       }
       await _serve(req, res, entry);
     } catch (e) {
-      if (kDebugMode) debugPrint('SealedFileServer._handle: $e');
+      if (kDebugMode) debugPrint('LocalFilmServer._handle: $e');
       try {
         res.statusCode = HttpStatus.internalServerError;
         await res.close();
@@ -141,8 +184,60 @@ class SealedFileServer {
     }
   }
 
-  Future<void> _serve(HttpRequest req, HttpResponse res, _Sealed entry) async {
-    final total = entry.seal.plainLength;
+  /// Waits until [pos] has arrived, and says how far the film now reaches.
+  ///
+  /// ═══════════════════════════════════════════════════════════════════
+  /// WHY A POLL AND NOT A NOTIFICATION
+  /// ═══════════════════════════════════════════════════════════════════
+  ///
+  /// The writer is the downloader, in this same isolate, and it could be made to
+  /// signal. It is not, because the reader must also survive the writer being
+  /// gone: a download that was cancelled, paused, or finished and renamed while
+  /// somebody was watching. A poll asks the filesystem, which is the only thing
+  /// that knows all three of those; a subscription would need every one of them
+  /// to remember to fire.
+  ///
+  /// A quarter-second tick against a download measured in minutes is free, and
+  /// it only ever runs while a player is genuinely ahead of the bytes.
+  ///
+  /// THE CEILING IS A MINUTE AND A HALF. Past that, a download is not slow, it
+  /// has stopped — and holding the socket open for ever would leave the player
+  /// showing a spinner with nothing behind it. Giving up writes a short
+  /// response, which the player treats as a dropped connection and retries: if
+  /// the download resumes, the retry succeeds.
+  static const Duration _waitStep = Duration(milliseconds: 250);
+  static const int _waitSteps = 360; // 90 seconds
+
+  Future<int> _waitFor(_Film entry, int pos) async {
+    for (var i = 0; i < _waitSteps; i++) {
+      await Future<void>.delayed(_waitStep);
+      final reach = await entry.available();
+      // NEGATIVE IS NOT "NOT YET". The part file is gone and there is no
+      // finished file either, so the download was cancelled or deleted and no
+      // amount of waiting will produce this byte.
+      if (reach < 0) return -1;
+      if (reach > pos) return reach;
+    }
+    return -1;
+  }
+
+  /// A plain read, for a download that is not sealed.
+  Future<Uint8List?> _readPlainBytes(
+    RandomAccessFile handle, {
+    required int offset,
+    required int length,
+  }) async {
+    try {
+      await handle.setPosition(offset);
+      return await handle.read(length);
+    } catch (e) {
+      if (kDebugMode) debugPrint('LocalFilmServer._readPlainBytes: $e');
+      return null;
+    }
+  }
+
+  Future<void> _serve(HttpRequest req, HttpResponse res, _Film entry) async {
+    final total = entry.total;
     if (total <= 0) {
       res.statusCode = HttpStatus.notFound;
       await res.close();
@@ -196,13 +291,34 @@ class SealedFileServer {
       handle = await entry.file.open();
       var pos = start;
       while (pos <= endInclusive) {
-        final want = min(_chunk, endInclusive - pos + 1);
-        final plain = await OfflineCrypto.readPlain(
-          handle,
-          entry.seal,
-          offset: pos,
-          length: want,
-        );
+        // ─── IS THIS BYTE HERE YET? ──────────────────────────────────────
+        //
+        // For a finished film the answer is always yes. For one still
+        // downloading, a demuxer that seeks ahead — which every demuxer does,
+        // to read the end of the index or to honour somebody dragging the seek
+        // bar — asks for bytes that have not arrived. Answering short there
+        // would look to the player exactly like a dropped connection, and it
+        // would give up on a film that is arriving perfectly well.
+        //
+        // So it WAITS. That is what Telegram does, it is what somebody dragging
+        // a seek bar expects, and it is the whole difference between "watch
+        // while it downloads" and "an error halfway through".
+        var reach = await entry.available();
+        if (pos >= reach) {
+          reach = await _waitFor(entry, pos);
+          if (reach <= pos) break;
+        }
+        final ceiling = min(endInclusive, reach - 1);
+        final want = min(_chunk, ceiling - pos + 1);
+        if (want <= 0) break;
+        final plain = entry.seal == null
+            ? await _readPlainBytes(handle, offset: pos, length: want)
+            : await OfflineCrypto.readPlain(
+                handle,
+                entry.seal!,
+                offset: pos,
+                length: want,
+              );
         // A SHORT READ AND NOT AN ERROR. The headers are already committed, so
         // there is no status code left to send; stopping the write is what a
         // dropped connection looks like from the player's side, and its retry
@@ -216,7 +332,7 @@ class SealedFileServer {
         pos += plain.length;
       }
     } catch (e) {
-      if (kDebugMode) debugPrint('SealedFileServer._serve: $e');
+      if (kDebugMode) debugPrint('LocalFilmServer._serve: $e');
     } finally {
       try {
         await handle?.close();
@@ -229,8 +345,59 @@ class SealedFileServer {
 }
 
 @immutable
-class _Sealed {
-  const _Sealed({required this.file, required this.seal});
+class _Film {
+  const _Film({
+    required this.file,
+    required this.seal,
+    required this.total,
+    this.growing = false,
+    this.finished,
+  });
+
+  /// What to open. For a growing film this is the `.part` file — and an open
+  /// handle on it SURVIVES THE RENAME that finishes the download, because a
+  /// rename moves a name and not an inode. Somebody watching while the last
+  /// megabytes arrive does not have their playback interrupted by the download
+  /// completing.
   final File file;
-  final SealInfo seal;
+
+  /// Null for a plain file. Sealed films carry their IV here; a growing sealed
+  /// download has no trailer yet, so the IV comes from the sidecar beside the
+  /// part file and the length from the object's own Content-Length.
+  final SealInfo? seal;
+
+  /// The length of the WHOLE film, which for a growing one is more than is on
+  /// disk. It is what the seek bar and the duration are drawn from.
+  final int total;
+
+  final bool growing;
+
+  /// Where the part file lands when it finishes. Read only to answer "how much
+  /// is there now" once the rename has happened.
+  final File? finished;
+
+  /// How much of the film can be read right now.
+  ///
+  /// Returns a negative number when the download has gone — cancelled, or
+  /// deleted from the shelf — which is different from "not yet" and is the one
+  /// case where waiting would be waiting for ever.
+  Future<int> available() async {
+    if (!growing) return total;
+    try {
+      if (await file.exists()) return await file.length();
+    } catch (_) {/* fall through to the finished name */}
+    final done = finished;
+    if (done != null) {
+      try {
+        if (await done.exists()) {
+          final length = await done.length();
+          // The finished file carries the trailer; the film does not.
+          return seal == null
+              ? length
+              : length - OfflineCrypto.trailerLength;
+        }
+      } catch (_) {}
+    }
+    return -1;
+  }
 }

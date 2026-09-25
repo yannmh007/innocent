@@ -382,6 +382,57 @@ Future<void> playOffline(
   );
 }
 
+/// Opens a download that is still arriving.
+///
+/// ═══════════════════════════════════════════════════════════════════════
+/// WHY THIS IS NOT [playOffline] WITH A DIFFERENT URI
+/// ═══════════════════════════════════════════════════════════════════════
+///
+/// Two things differ, and both are about honesty rather than plumbing.
+///
+/// [url] is a loopback address carrying a port and a token minted once per
+/// process, so it is EPHEMERAL: writing it into the resume store would leave a
+/// key that never matches again and a cold-start "Resume X?" prompt pointing at
+/// an address that no longer exists. A film watched while it downloads has no
+/// stable identity yet — the file it is being read out of is named `.part` and
+/// will be renamed the moment it finishes — so it is watched without one, and
+/// gets a real resume point as an ordinary download afterwards.
+///
+/// And the entitlement question is asked here as well, for the same reason
+/// [playOffline] asks it: a subscription that lapsed between starting the
+/// download and opening it is exactly the case a local file would otherwise
+/// walk straight past.
+Future<void> playPartial(
+  BuildContext context,
+  WidgetRef ref, {
+  required String url,
+  required String titleId,
+  required String title,
+  required bool premium,
+}) async {
+  final tier = ref.read(viewerProvider).tier;
+  if (premium &&
+      !CapabilityMatrix.allows(tier, Capability.downloadOffline)) {
+    logEvent(ref, Ev.playbackDenied, titleId: titleId,
+        meta: const <String, dynamic>{'reason': 'partial_not_entitled'});
+    if (!context.mounted) return;
+    await PaywallSheet.show(context, content: null, lockedCount: 0);
+    return;
+  }
+
+  if (!context.mounted) return;
+  context.push(
+    Routes.player,
+    extra: <String, dynamic>{
+      'uri': url,
+      'title': title,
+      'secure': premium,
+      // See the note above: a per-process address is not an identity.
+      'ephemeral': true,
+    },
+  );
+}
+
 /// Opens the paywall for a locked album item.
 ///
 /// Separate from [playMedia] because a locked PHOTO never had a stream to

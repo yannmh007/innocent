@@ -110,7 +110,7 @@ extension PlayerPlayback on PlayerController {
       final seal = await OfflineCrypto.inspect(file);
       final local = seal == null
           ? null
-          : await SealedFileServer.instance
+          : await LocalFilmServer.instance
               .localUrlFor(file: file, seal: seal);
       if (local == null) {
         if (mounted) {

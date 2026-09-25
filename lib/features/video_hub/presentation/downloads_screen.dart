@@ -8,6 +8,7 @@ import '../../../core/services/preferences/player_settings_service.dart';
 import '../data/api/offline_downloader.dart';
 import '../data/api/offline_library.dart';
 import '../data/device_identity.dart';
+import '../data/api/watch_while_downloading.dart';
 import 'playback.dart';
 import 'video_hub_provider.dart';
 import 'widgets/hub_states.dart';
@@ -268,8 +269,16 @@ class _PendingRow extends ConsumerStatefulWidget {
 }
 
 class _PendingRowState extends ConsumerState<_PendingRow> {
+  /// How much has to be on disk before "watch now" is even offered.
+  ///
+  /// Eight megabytes. Below that the index is unlikely to have finished
+  /// arriving whatever its position, so the button would be there to fail. This
+  /// is the cheap gate; [WatchWhileDownloading.open] is the real one.
+  static const int _watchFrom = 8 * 1024 * 1024;
+
   OfflineProgress? _live;
   bool _starting = false;
+  bool _opening = false;
   StreamSubscription<OfflineProgress>? _sub;
 
   PendingDownload get item => widget.pending.item;
@@ -300,6 +309,48 @@ class _PendingRowState extends ConsumerState<_PendingRow> {
     // screen is a `setState` on a dead widget the next time a download moves.
     _sub?.cancel();
     super.dispose();
+  }
+
+  /// Opens a download that has not finished, the way Telegram does.
+  ///
+  /// THE CHECK HAPPENS HERE AND NOT IN `build`, because it is a read and a
+  /// decrypt of the first couple of megabytes and a list must not do that per
+  /// frame. So the button is offered on a cheap test and the expensive one
+  /// happens on the tap — which means it can say no, and every no says which
+  /// no it is. "Not enough yet" and "only once it has finished" are completely
+  /// different pieces of news: the first is worth waiting a minute for, and the
+  /// second means going and doing something else.
+  Future<void> _watchNow(int total) async {
+    final s = AppStrings.of(context);
+    setState(() => _opening = true);
+    try {
+      final got = await WatchWhileDownloading.open(
+        library: ref.read(offlineLibraryProvider),
+        titleId: item.titleId,
+        total: total,
+      );
+      if (!mounted) return;
+      final url = got.url;
+      if (url == null) {
+        final text = switch (got.refusal) {
+          PartialRefusal.indexAtEnd => s.vhWatchIndexAtEnd,
+          PartialRefusal.gone => s.vhWatchGone,
+          _ => s.vhWatchNotYet,
+        };
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
+        return;
+      }
+      await playPartial(
+        context,
+        ref,
+        url: url,
+        titleId: item.titleId,
+        title: _shownTitle,
+        premium: item.premium,
+      );
+    } finally {
+      if (mounted) setState(() => _opening = false);
+    }
   }
 
   /// RESUMING NEEDS THE TITLE BACK, and the row deliberately does not hold it.
@@ -493,6 +544,24 @@ class _PendingRowState extends ConsumerState<_PendingRow> {
               ],
             ),
           ),
+          // WATCH IT WHILE IT ARRIVES. Offered from about eight megabytes in,
+          // which on this connection is a minute or two — and only when the
+          // film's length is known, because without it there is no seek bar to
+          // draw. Whether it can ACTUALLY start is read out of the file when
+          // this is tapped rather than on every rebuild: the answer needs a
+          // read and a decrypt, and a list does not get to do that per frame.
+          if (total != null && received >= _watchFrom)
+            IconButton(
+              icon: _opening
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.play_circle_outline,
+                      color: VH.textSecondary),
+              tooltip: s.vhWatchNow,
+              onPressed: _opening ? null : () => _watchNow(total),
+            ),
           if (running)
             TextButton(
               onPressed: () =>
