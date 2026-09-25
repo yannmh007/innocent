@@ -360,6 +360,71 @@ void main() {
       expect(await File(free.path).exists(), isTrue);
     });
 
+    test('a running premium download is STOPPED before its file is deleted',
+        () async {
+      // THE BUG THIS PINS. Deleting a part file does not stop the downloader
+      // writing to it: on POSIX an open handle outlives its name, so the
+      // transfer carries on spending the viewer's mobile data into a file
+      // nothing can reach, and then either fails to rename or recreates the
+      // part file empty and finishes a film that is mostly missing. Signing
+      // out mid-download is uncommon; paying for the rest of a film afterwards
+      // is not a thing to do to anybody.
+      final dir = await library.directory();
+      final part = File('${dir.path}/paid.mp4${OfflineLibrary.partSuffix}');
+      await part.writeAsBytes(List<int>.filled(64, 0));
+      await library.putPending(PendingDownload(
+        titleId: 'paid',
+        title: 'Paid',
+        startedAt: DateTime.now(),
+      ));
+
+      // Recorded AT THE MOMENT it is called, so the order can be asserted and
+      // not merely the fact.
+      final stopped = <String>[];
+      var fileWasThere = false;
+      await library.dropEntitled(stop: (id) {
+        stopped.add(id);
+        fileWasThere = part.existsSync();
+      });
+
+      expect(stopped, <String>['paid']);
+      expect(fileWasThere, isTrue,
+          reason: 'stop must be called BEFORE the part file is deleted');
+      expect(await part.exists(), isFalse);
+    });
+
+    test('a running FREE download is left alone, and keeps its bytes',
+        () async {
+      // A free title needs no account to watch and no entitlement to download.
+      // Interrupting one on sign-out would cost data for a rule that does not
+      // exist — and marking it paused, which stopping does, would stop it
+      // resuming by itself ever again.
+      final dir = await library.directory();
+      final part = File('${dir.path}/free.mp4${OfflineLibrary.partSuffix}');
+      await part.writeAsBytes(List<int>.filled(64, 0));
+      await library.putPending(PendingDownload(
+        titleId: 'free',
+        title: 'Free',
+        startedAt: DateTime.now(),
+        premium: false,
+      ));
+
+      final stopped = <String>[];
+      await library.dropEntitled(stop: stopped.add);
+
+      expect(stopped, isEmpty);
+      expect(await part.exists(), isTrue);
+      expect(await part.length(), 64);
+    });
+
+    test('no stop function is not an error — the sweep still runs', () async {
+      // Every existing call site passes nothing, and a test of the library
+      // should not need a downloader to exist.
+      final paid = await seed('paid');
+      await library.dropEntitled();
+      expect(await File(paid.path).exists(), isFalse);
+    });
+
     test('dropAll still empties everything, free included', () async {
       await seed('free', premium: false);
       await seed('paid');

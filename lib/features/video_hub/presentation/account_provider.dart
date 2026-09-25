@@ -11,6 +11,13 @@ import '../domain/access.dart';
 import '../domain/account.dart';
 import '../domain/account_repository.dart';
 import '../domain/viewer.dart';
+// MUTUALLY IMPORTED WITH THIS FILE, which Dart allows and which is worth a
+// sentence rather than a shrug: video_hub_provider reads `accountProvider` for
+// entitlement, and this file reads `offlineDownloaderProvider` so a sign-out
+// can stop a transfer before deleting its file. The edge added here is used
+// only inside a closure, so nothing is constructed at import time and there is
+// no initialisation order to get wrong.
+import 'video_hub_provider.dart';
 
 /// THE SWAP POINT for identity and billing.
 ///
@@ -71,8 +78,12 @@ class AccountState {
 }
 
 class AccountNotifier extends StateNotifier<AccountState> {
-  AccountNotifier(this._repo, {OfflineLibrary? offline})
-      : _offline = offline ?? OfflineLibrary(),
+  AccountNotifier(
+    this._repo, {
+    OfflineLibrary? offline,
+    void Function(String titleId)? stopDownload,
+  })  : _offline = offline ?? OfflineLibrary(),
+        _stopDownload = stopDownload,
         super(const AccountState()) {
     refresh();
   }
@@ -84,6 +95,17 @@ class AccountNotifier extends StateNotifier<AccountState> {
   /// Injectable so a test can watch it being emptied without touching a
   /// filesystem — and defaulted so no call site has to know it exists.
   final OfflineLibrary _offline;
+
+  /// Stops a download that is still running, before the sweep deletes its file.
+  ///
+  /// A FUNCTION AND NOT THE DOWNLOADER ITSELF, for two reasons. Holding the
+  /// downloader would put an edge from this provider to one that reaches the
+  /// content repository, and a rebuild anywhere along it would rebuild this
+  /// notifier and reset the account state mid-session. And a closure reads the
+  /// downloader at the moment it is needed rather than at construction, which
+  /// is the same thing the downloader's own `allowance` does and for the same
+  /// reason.
+  final void Function(String titleId)? _stopDownload;
 
   /// Re-reads BOTH the session and the entitlement.
   ///
@@ -145,7 +167,7 @@ class AccountNotifier extends StateNotifier<AccountState> {
     // somebody an hour of mobile data they had already spent. On a metered
     // connection that is money, taken for a rule that does not exist.
     try {
-      await _offline.dropEntitled();
+      await _offline.dropEntitled(stop: _stopDownload);
     } catch (e) {
       if (kDebugMode) debugPrint('offline sweep on sign-out failed: $e');
     }
@@ -166,7 +188,15 @@ class AccountNotifier extends StateNotifier<AccountState> {
 
 final accountProvider =
     StateNotifierProvider<AccountNotifier, AccountState>((ref) {
-  return AccountNotifier(ref.watch(accountRepositoryProvider));
+  return AccountNotifier(
+    ref.watch(accountRepositoryProvider),
+    // `ref.read` INSIDE A CLOSURE, so this creates no dependency edge: the
+    // downloader is looked up when a sign-out actually needs it, and a rebuild
+    // of anything it depends on cannot rebuild this notifier and wipe the
+    // signed-in state out from under the app.
+    stopDownload: (titleId) =>
+        ref.read(offlineDownloaderProvider).cancel(titleId),
+  );
 });
 
 /// Who is looking at the app, resolved from the account and the install id.

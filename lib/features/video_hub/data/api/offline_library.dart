@@ -486,7 +486,20 @@ class OfflineLibrary {
   ///
   /// Orphan files are swept as well, but only files nothing kept refers to, so
   /// a free download is never collected as litter.
-  Future<void> dropEntitled() async {
+  ///
+  /// [stop] IS CALLED BEFORE ANYTHING IS DELETED, for every premium download
+  /// that is still unfinished. Without it this method deletes a part file that
+  /// the downloader may be writing to at that very moment — and on POSIX an
+  /// open handle survives its name, so the transfer does not fail. It carries
+  /// on spending the viewer's mobile data into a file nothing can reach, and
+  /// then either fails to rename or recreates the part file empty and finishes
+  /// a film that is mostly missing. Signing out during a download is not a
+  /// common thing to do; paying for the rest of a film afterwards is not a
+  /// thing to do to somebody at all.
+  ///
+  /// The Downloads screen has always cancelled before discarding. This is the
+  /// same rule, for the path that had not been given it.
+  Future<void> dropEntitled({void Function(String titleId)? stop}) async {
     final keep = <OfflineItem>[];
     final keepPaths = <String>{};
     for (final item in await _rows()) {
@@ -508,6 +521,9 @@ class OfflineLibrary {
       for (final row in await _pendingRows()) {
         final part = File('${dir.path}/${row.titleId}.mp4$partSuffix');
         if (row.premium) {
+          // STOP THE WRITER FIRST. See the note on this method: deleting a file
+          // out from under a live download does not stop the download.
+          stop?.call(row.titleId);
           try {
             if (await part.exists()) await part.delete();
             final note = File('${part.path}.total');

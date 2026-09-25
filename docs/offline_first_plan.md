@@ -528,6 +528,44 @@ thing it was asked to improve — and this project already has one of those
 
 ---
 
+## The destructive paths, and what stops each one
+
+Read once on 2026-09-25, deliberately and in order of what they can destroy. Two
+of them were already right for reasons worth knowing; one was not.
+
+| what it can destroy | what stops it |
+|---|---|
+| A viewer's downloaded film (`items()` deleting a "truncated" file) | Judged against `fileLengthFor(bytes, sealed)`, never a bare length; `bytes > 0` guards it; it never reads the trailer, so a Keystore failure cannot make it delete anything |
+| A viewer's film, on sign-out (`dropEntitled`) | **This one was wrong — see below** |
+| A viewer's film, on discard from the UI | `_discard` has always cancelled the download before deleting. That is where the rule came from |
+| Everything (`dropAll`) | Exactly what it is for. Called from nowhere but a test |
+| The operator's master, by a rung written over it | **Impossible by construction.** `rungKey` appends `-<height>p.mp4` after stripping the extension, so the output always carries one more segment than its input — and the runner is handed a presigned **GET** for the master and **PUT**s only for rung keys, so even a broken runner cannot write to it |
+| The operator's master, by a multipart complete onto an existing key | S3 ties an upload id to one key, and the only thing that begins an upload is `beginMultipart`, which always mints a fresh timestamped key. `isMintedKey` refuses anything else on complete and abort |
+| The operator's master, by the browser's faststart rewrite | Six checks in `faststart_test.mjs`, untouched by the multipart work — and a file over 128 MiB still goes through the rewrite before it is cut into parts, which is the case where the index position costs most |
+| A title's objects, on delete | Deleting a title deletes the ROW and lets the foreign key cascade; the objects stay in the bucket. That is a bill rather than a loss, and it is the safe direction to be wrong in. Confirmed with `confirm: "DELETE"` |
+
+### The one that was wrong: signing out during a download
+
+`dropEntitled` deleted a premium download's part file and did not stop the
+downloader writing to it. **Deleting a file does not stop a write to it.** On
+POSIX an open handle outlives its name, so the transfer carried on spending the
+viewer's mobile data into an inode nothing could reach, and then either failed to
+rename or — on the next pass, because `openWrite` recreates a missing file —
+started appending to an empty one and "finished" a film that was mostly missing.
+The shelf's own verification would then delete that, so the viewer ended with
+nothing, having paid for all of it.
+
+The Downloads screen has cancelled before discarding since the day it was
+written. `dropEntitled` now takes the same `stop` callback and calls it **before**
+the first delete, for premium rows only — a free download survives a sign-out
+untouched, because a free title needs no account and stopping one would also mark
+it paused, which is the one state that stops it resuming by itself.
+
+The callback is wired with `ref.read` inside a closure rather than by holding the
+downloader, so no edge is added to the provider graph: holding it would let a
+rebuild anywhere below the content repository rebuild the account notifier and
+reset the signed-in state mid-session.
+
 ## Notes for whoever picks this up
 
 - **No Flutter or Dart SDK in the session container.** `python3 tool/check.py`
