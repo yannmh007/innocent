@@ -862,6 +862,17 @@ class MainActivity : AudioServiceFragmentActivity() {
                         result.success(false)
                     }
                 }
+                // Has the Pause button in the shade been pressed? Read and
+                // cleared in one call, so one press pauses one download. The
+                // downloader asks while it refreshes the notification, which is
+                // the only moment it is certainly running.
+                "takePauseRequest" -> {
+                    try {
+                        result.success(OfflineService.takePauseRequest())
+                    } catch (e: Throwable) {
+                        result.success(false)
+                    }
+                }
                 else -> result.notImplemented()
             }
         }

@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 
 import '../../../../core/services/connectivity/connectivity_service.dart';
+import '../../../../core/services/diagnostics/playback_log.dart';
 import '../../../../core/services/offline/offline_service_bridge.dart';
 import '../../domain/access.dart';
 import '../../domain/content_repository.dart';
@@ -289,6 +290,7 @@ class OfflineDownloader {
       posterUrl: content.poster.isEmpty ? null : content.poster.locator,
       assetId: assetId,
       startedAt: DateTime.now(),
+      premium: content.accessTier == AccessTier.premium,
     ));
 
     // Queued behind any transfer already registered. Said out loud, because a
@@ -411,6 +413,17 @@ class OfflineDownloader {
         // must never wait on it.
         // ignore: discarded_futures
         OfflineServiceBridge.update(label, line, pct);
+        // AND ASK WHETHER THE SHADE WANTS IT PAUSED. This is the only moment
+        // the downloader is certainly running and certainly talking to the
+        // service, which is what makes a poll the right direction — see
+        // [OfflineServiceBridge.takePauseRequest].
+        // ignore: discarded_futures
+        OfflineServiceBridge.takePauseRequest().then((wanted) {
+          if (wanted) {
+            PlaybackLog.add('offline paused from the notification');
+            cancel(titleId);
+          }
+        });
       }
     }
 
@@ -768,6 +781,10 @@ class OfflineDownloader {
       bytes: bytes,
       addedAt: DateTime.now(),
       assetId: assetId,
+      // RECORDED, NOT ASSUMED. The Downloads screen used to open every item as
+      // premium, which showed the paywall over a FREE film somebody had just
+      // spent an hour of mobile data on.
+      premium: content.accessTier == AccessTier.premium,
     );
     await _library.put(item);
     await _library.dropPending(content.id);

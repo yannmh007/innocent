@@ -56,6 +56,28 @@ class OfflineServiceBridge {
   /// already said so on screen.
   static Future<void> stop() => _call('stop', '', '', -1);
 
+  /// True when the Pause button in the notification shade has been pressed
+  /// since the last time this was asked.
+  ///
+  /// A POLL RATHER THAN A CALLBACK, and that is the robust direction. The
+  /// button arrives in a service that may have been recreated with no Activity
+  /// attached, and the channel that would carry a call INTO Dart belongs to the
+  /// Activity's Flutter engine — so a push could be delivered to nothing. The
+  /// downloader is already talking to the service every couple of seconds while
+  /// it refreshes the notification, and if it is not talking then it is not
+  /// downloading and there is nothing to pause.
+  ///
+  /// Read-and-clear on the native side, so one press pauses one download.
+  static Future<bool> takePauseRequest() async {
+    if (!_supported) return false;
+    try {
+      return await _channel.invokeMethod<bool>('takePauseRequest') ?? false;
+    } catch (e) {
+      if (kDebugMode) debugPrint('OfflineServiceBridge.takePauseRequest: $e');
+      return false;
+    }
+  }
+
   static Future<void> _call(
       String method, String title, String text, int progress) async {
     if (!_supported) return;

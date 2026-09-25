@@ -33,6 +33,28 @@ class OfflineItem {
   /// The album clip this is, when it is not the title's main film.
   final String? assetId;
 
+  /// Whether this title needed an entitlement to download.
+  ///
+  /// ─── THE BUG THIS FIELD EXISTS TO FIX ────────────────────────────────
+  ///
+  /// The Downloads screen opened every item with `premium: true`, on the
+  /// strength of a comment saying "nothing free is ever downloaded". That was
+  /// simply not true: [AccessPolicy.canDownload] returns true for a FREE title
+  /// whatever the viewer's tier, so the Download button is drawn for a free
+  /// film on an anonymous account — and `playOffline` then asked for the
+  /// premium capability and showed the paywall. The viewer spent an hour of
+  /// mobile data on a film the app refused to open, and there was no way past
+  /// it short of paying for something that was free.
+  ///
+  /// DEFAULTS TO TRUE FOR A ROW WRITTEN BEFORE THIS FIELD EXISTED. Every such
+  /// row belongs to a premium subscriber (they were the only people the button
+  /// was reliably drawn for), and treating an unknown row as premium keeps the
+  /// capture protection and the entitlement re-check that it has today. The
+  /// wrong default here would either strip protection from paid content or
+  /// lock somebody out of their own download, and only one of those is
+  /// recoverable by watching the film again online.
+  final bool premium;
+
   const OfflineItem({
     required this.titleId,
     required this.title,
@@ -43,6 +65,7 @@ class OfflineItem {
     this.posterUrl,
     this.durationS,
     this.assetId,
+    this.premium = true,
   });
 
   /// The same entry with a corrected byte count.
@@ -59,6 +82,7 @@ class OfflineItem {
         posterUrl: posterUrl,
         durationS: durationS,
         assetId: assetId,
+        premium: premium,
       );
 
   Map<String, dynamic> toJson() => <String, dynamic>{
@@ -71,6 +95,7 @@ class OfflineItem {
         if (durationS != null) 'durationS': durationS,
         'addedAt': addedAt.toUtc().toIso8601String(),
         if (assetId != null) 'assetId': assetId,
+        'premium': premium,
       };
 
   static OfflineItem? fromJson(Map<String, dynamic> m) {
@@ -89,6 +114,9 @@ class OfflineItem {
       durationS: (m['durationS'] as num?)?.toInt(),
       addedAt: DateTime.tryParse('${m['addedAt']}')?.toLocal() ?? DateTime.now(),
       assetId: m['assetId'] as String?,
+      // Absent means a row written before the field existed — see the note on
+      // [premium] for why the unknown case is the protected one.
+      premium: m['premium'] as bool? ?? true,
     );
   }
 }
@@ -120,6 +148,11 @@ class PendingDownload {
   final String? assetId;
   final DateTime startedAt;
 
+  /// Whether this title needed an entitlement — see [OfflineItem.premium].
+  /// Carried here as well so a sign-out can throw away a half-finished PAID
+  /// download without touching a half-finished free one.
+  final bool premium;
+
   const PendingDownload({
     required this.titleId,
     required this.title,
@@ -127,6 +160,7 @@ class PendingDownload {
     this.titleMm,
     this.posterUrl,
     this.assetId,
+    this.premium = true,
   });
 
   Map<String, dynamic> toJson() => <String, dynamic>{
@@ -136,6 +170,7 @@ class PendingDownload {
         if (posterUrl != null) 'posterUrl': posterUrl,
         if (assetId != null) 'assetId': assetId,
         'startedAt': startedAt.toUtc().toIso8601String(),
+        'premium': premium,
       };
 
   static PendingDownload? fromJson(Map<String, dynamic> m) {
@@ -149,6 +184,7 @@ class PendingDownload {
       assetId: m['assetId'] as String?,
       startedAt:
           DateTime.tryParse('${m['startedAt']}')?.toLocal() ?? DateTime.now(),
+      premium: m['premium'] as bool? ?? true,
     );
   }
 }
@@ -384,11 +420,77 @@ class OfflineLibrary {
     await _write(next);
   }
 
-  /// Empties the shelf.
+  /// Empties the shelf of everything the ACCOUNT paid for, and keeps the rest.
   ///
-  /// CALLED WHEN THE SUBSCRIPTION LAPSES OR THE VIEWER SIGNS OUT, and it is
-  /// the one enforcement this side can honestly make. It is a promise about
-  /// what this app does, not about the bytes — see the class note.
+  /// ─── WHY THIS IS NOT [dropAll] ───────────────────────────────────────
+  ///
+  /// Signing out used to delete every download, free ones included. A free
+  /// title needs no account to watch and no entitlement to download — that is
+  /// what free means — so deleting it on sign-out enforced nothing and cost
+  /// somebody an hour of mobile data they had already spent. On a metered
+  /// Myanmar connection that is real money, taken for a rule that does not
+  /// exist.
+  ///
+  /// What premium downloads keep is the promise worth keeping: a lapsed or
+  /// abandoned subscription should not leave a paid library behind. That is
+  /// still a promise about this app's behaviour rather than about the bytes —
+  /// see the class note.
+  ///
+  /// Orphan files are swept as well, but only files nothing kept refers to, so
+  /// a free download is never collected as litter.
+  Future<void> dropEntitled() async {
+    final keep = <OfflineItem>[];
+    final keepPaths = <String>{};
+    for (final item in await _rows()) {
+      if (item.premium) {
+        try {
+          final f = File(item.path);
+          if (await f.exists()) await f.delete();
+        } catch (_) {}
+        continue;
+      }
+      keep.add(item);
+      keepPaths.add(item.path);
+    }
+    // Pending downloads of premium titles go too, and their size notes with
+    // them. A free one stays resumable, which is the same rule as above.
+    final keptPending = <PendingDownload>[];
+    try {
+      final dir = await directory();
+      for (final row in await _pendingRows()) {
+        final part = File('${dir.path}/${row.titleId}.mp4$partSuffix');
+        if (row.premium) {
+          try {
+            if (await part.exists()) await part.delete();
+            final note = File('${part.path}.total');
+            if (await note.exists()) await note.delete();
+          } catch (_) {}
+          continue;
+        }
+        keptPending.add(row);
+        keepPaths.add(part.path);
+        keepPaths.add('${part.path}.total');
+      }
+      // Anything else in the folder is litter: a part file from a download
+      // nothing recorded, or a file whose row has just gone.
+      await for (final e in dir.list()) {
+        if (e is File && !keepPaths.contains(e.path)) {
+          try {
+            await e.delete();
+          } catch (_) {}
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) debugPrint('offline entitled sweep failed: $e');
+    }
+    await _write(keep);
+    await _writePending(keptPending);
+  }
+
+  /// Empties the shelf completely, free titles included.
+  ///
+  /// Kept for a full wipe — clearing app data, a factory reset of the feature.
+  /// Sign-out uses [dropEntitled], which is the narrower and correct rule.
   ///
   /// Sweeps the DIRECTORY as well as the index, so a `.part` file from a
   /// download that was interrupted mid-flight goes too. Those are the entries

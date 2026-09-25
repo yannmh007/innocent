@@ -50,7 +50,8 @@ void main() {
     if (await temp.exists()) await temp.delete(recursive: true);
   });
 
-  Future<OfflineItem> seed(String id, {int bytes = 10}) async {
+  Future<OfflineItem> seed(String id,
+      {int bytes = 10, bool premium = true}) async {
     final dir = await library.directory();
     final f = File('${dir.path}/$id.mp4');
     await f.writeAsBytes(List<int>.filled(bytes, 0));
@@ -60,6 +61,7 @@ void main() {
       path: f.path,
       bytes: bytes,
       addedAt: DateTime.now(),
+      premium: premium,
     );
     await library.put(item);
     return item;
@@ -189,6 +191,77 @@ void main() {
 
       expect(await library.items(), isEmpty);
       expect(await orphan.exists(), isFalse);
+      expect(await dir.list().isEmpty, isTrue);
+    });
+  });
+
+  group('free downloads are not the account\'s to take back', () {
+    // THE BUG. The Downloads screen opened every item as premium, so a FREE
+    // film downloaded on an anonymous account showed the paywall — an hour of
+    // mobile data spent on something the app then refused to open, with no way
+    // past it but paying for what was free.
+    test('a free download round-trips as free', () async {
+      await seed('free', premium: false);
+      await seed('paid');
+      final items = await library.items();
+      expect(items.firstWhere((i) => i.titleId == 'free').premium, isFalse);
+      expect(items.firstWhere((i) => i.titleId == 'paid').premium, isTrue);
+    });
+
+    test('a row written before the field existed reads as premium', () async {
+      // The unknown case has to be the PROTECTED one: getting it wrong the
+      // other way strips capture protection from paid content, and unlike a
+      // lockout that is not recoverable by watching the film again online.
+      SharedPreferences.setMockInitialValues(<String, Object>{
+        'vh_offline_index': '[{"titleId":"old","title":"Old",'
+            '"path":"/nope","bytes":0,"addedAt":"2026-01-01T00:00:00Z"}]',
+      });
+      final lib = OfflineLibrary();
+      // The file is missing so the shelf prunes it; what matters is the parse.
+      final parsed = OfflineItem.fromJson(<String, dynamic>{
+        'titleId': 'old',
+        'title': 'Old',
+        'path': '/nope',
+        'bytes': 0,
+        'addedAt': '2026-01-01T00:00:00Z',
+      });
+      expect(parsed!.premium, isTrue);
+      expect(await lib.items(), isEmpty);
+    });
+
+    test('signing out takes the paid downloads and leaves the free ones',
+        () async {
+      final free = await seed('free', premium: false);
+      final paid = await seed('paid');
+
+      await library.dropEntitled();
+
+      final left = await library.items();
+      expect(left, hasLength(1));
+      expect(left.single.titleId, 'free');
+      expect(await File(free.path).exists(), isTrue);
+      expect(await File(paid.path).exists(), isFalse);
+    });
+
+    test('the entitled sweep collects litter without eating a free download',
+        () async {
+      final free = await seed('free', premium: false);
+      final dir = await library.directory();
+      final orphan = File('${dir.path}/ghost.mp4${OfflineLibrary.partSuffix}');
+      await orphan.writeAsBytes(<int>[1, 2, 3]);
+
+      await library.dropEntitled();
+
+      expect(await orphan.exists(), isFalse);
+      expect(await File(free.path).exists(), isTrue);
+    });
+
+    test('dropAll still empties everything, free included', () async {
+      await seed('free', premium: false);
+      await seed('paid');
+      await library.dropAll();
+      expect(await library.items(), isEmpty);
+      final dir = await library.directory();
       expect(await dir.list().isEmpty, isTrue);
     });
   });

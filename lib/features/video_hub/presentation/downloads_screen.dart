@@ -200,11 +200,16 @@ class _Row extends ConsumerWidget {
       path: item.path,
       titleId: item.titleId,
       title: _shownTitle,
-      // Nothing free is ever downloaded — the Download control is drawn from
-      // Capability.downloadOffline, which only a premium tier has — so
-      // treating every item on the shelf as paid is the true reading, not a
-      // conservative guess.
-      premium: true,
+      // WHAT IT ACTUALLY WAS, which is not always premium.
+      //
+      // This used to pass `true` unconditionally, on the strength of a comment
+      // claiming nothing free is ever downloaded. `AccessPolicy.canDownload`
+      // returns true for a FREE title whatever the viewer's tier, so the
+      // Download button is drawn for a free film on an anonymous account — and
+      // `playOffline` then asked for the premium capability and put the
+      // paywall over it. An hour of mobile data spent on a film the app
+      // refused to open, with no way past it but paying for something free.
+      premium: item.premium,
     );
   }
 

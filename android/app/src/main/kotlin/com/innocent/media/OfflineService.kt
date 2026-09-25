@@ -79,6 +79,30 @@ class OfflineService : Service() {
         const val ACTION_UPDATE = "com.innocent.media.OFFLINE_UPDATE"
         const val ACTION_STOP = "com.innocent.media.OFFLINE_STOP"
 
+        /** The Pause button on the notification itself. */
+        const val ACTION_PAUSE = "com.innocent.media.OFFLINE_PAUSE"
+
+        /**
+         * Set by the Pause button, read and cleared by the Dart downloader.
+         *
+         * WHY A FLAG AND NOT A CALL INTO DART. A notification button arrives in
+         * the service, which may have been recreated by START_STICKY with no
+         * Activity attached — and the channel that would carry a call to Dart
+         * belongs to the Activity's Flutter engine. A flag needs nobody to be
+         * listening: the downloader is already asking every couple of seconds
+         * while it updates this notification, and if it is not asking then it
+         * is not running and there is nothing to pause.
+         */
+        @Volatile
+        var pauseRequested: Boolean = false
+
+        /** Read once and cleared, so one press pauses one download. */
+        fun takePauseRequest(): Boolean {
+            val v = pauseRequested
+            pauseRequested = false
+            return v
+        }
+
         const val EXTRA_TITLE = "title"
         const val EXTRA_TEXT = "text"
         const val EXTRA_PROGRESS = "progress" // 0..100, or <0 for indeterminate
@@ -243,14 +267,68 @@ class OfflineService : Service() {
 
     override fun onDestroy() {
         isRunning = false
+        pauseRequested = false
+        idleHandler.removeCallbacks(idleTimeout)
         releaseLocks()
         super.onDestroy()
     }
 
+    /**
+     * Stops the service when Dart stops talking to it.
+     *
+     * ─── THE LEAK THIS CLOSES ──────────────────────────────────────────────
+     *
+     * This service keeps the PROCESS alive; it does not keep the Flutter engine
+     * alive, and the downloader is Dart code. An Activity that is destroyed —
+     * swiped from recents, backed out of, or reclaimed — takes its engine and
+     * therefore the download with it, and START_STICKY then recreates this
+     * service with a null intent. What was left was a partial WakeLock pinning
+     * the CPU and a notification saying "Downloading" beside a download that
+     * had stopped: a battery drain and a lie, and neither of them visible to
+     * anybody who could act on it.
+     *
+     * Rather than asserting anything about engine lifetimes — which differ by
+     * Android version and by how the app was closed — the service simply
+     * requires proof of life. The downloader refreshes this notification every
+     * couple of seconds, including while it waits out a lost connection, so
+     * three minutes of silence means nothing is downloading. Generous on
+     * purpose: the size question can hold the downloader on a dialog, and the
+     * cost of waiting too long is a few minutes of WakeLock while the cost of
+     * stopping too early is a download that dies for no reason.
+     */
+    private val idleHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private val idleTimeout = Runnable {
+        isRunning = false
+        releaseLocks()
+        stopForeground(STOP_FOREGROUND_REMOVE)
+        stopSelf()
+    }
+
+    private fun armIdleWatchdog() {
+        idleHandler.removeCallbacks(idleTimeout)
+        idleHandler.postDelayed(idleTimeout, 3 * 60 * 1000L)
+    }
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
+            ACTION_PAUSE -> {
+                // Only a flag and a redraw. The download is Dart's and it will
+                // notice within a couple of seconds; stopping the service here
+                // would drop the WakeLock out from under the last write.
+                pauseRequested = true
+                ensureChannel()
+                val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                nm.notify(
+                    NOTIFICATION_ID,
+                    buildNotification("Pausing…", "", -1, pausable = false)
+                )
+                armIdleWatchdog()
+                return START_STICKY
+            }
             ACTION_STOP -> {
                 isRunning = false
+                idleHandler.removeCallbacks(idleTimeout)
+                pauseRequested = false
                 releaseLocks()
                 stopForeground(STOP_FOREGROUND_REMOVE)
                 stopSelf()
@@ -263,6 +341,7 @@ class OfflineService : Service() {
                 try {
                     wakeLock?.acquire(60 * 60 * 1000L)
                 } catch (_: Throwable) {}
+                armIdleWatchdog()
                 ensureChannel()
                 val notification = buildNotification(
                     intent.getStringExtra(EXTRA_TITLE) ?: "Downloading",
@@ -274,6 +353,7 @@ class OfflineService : Service() {
             }
             else -> {
                 acquireLocks()
+                armIdleWatchdog()
                 ensureChannel()
                 val notification = buildNotification(
                     intent?.getStringExtra(EXTRA_TITLE) ?: "Downloading",
@@ -313,7 +393,12 @@ class OfflineService : Service() {
         nm.createNotificationChannel(channel)
     }
 
-    private fun buildNotification(title: String, text: String, progress: Int): Notification {
+    private fun buildNotification(
+        title: String,
+        text: String,
+        progress: Int,
+        pausable: Boolean = true
+    ): Notification {
         val openIntent = packageManager.getLaunchIntentForPackage(packageName)?.apply {
             flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
@@ -343,6 +428,27 @@ class OfflineService : Service() {
             builder.setProgress(0, 0, true)
         }
         if (contentPi != null) builder.setContentIntent(contentPi)
+        // PAUSE ON THE NOTIFICATION, which is where the download is being
+        // watched from. Somebody who started a two-hour download and then
+        // needed their data for something else had to find the app, find the
+        // title and find the control; every other download in the shade — a
+        // browser's, a chat app's — can be stopped where it is shown.
+        //
+        // PAUSE AND NOT CANCEL. What this does is keep the bytes: discarding
+        // them is destructive, it cannot be undone, and a destructive button
+        // beside a progress bar in the shade is a mis-tap waiting to happen.
+        // Discarding lives on the Downloads screen, next to a figure saying
+        // how much would be thrown away.
+        if (pausable) {
+            val pauseIntent = Intent(this, OfflineService::class.java).apply {
+                action = ACTION_PAUSE
+            }
+            builder.addAction(
+                android.R.drawable.ic_media_pause,
+                "Pause",
+                PendingIntent.getService(this, 4, pauseIntent, pendingFlags)
+            )
+        }
         return builder.build()
     }
 }

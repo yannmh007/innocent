@@ -138,8 +138,14 @@ class AccountNotifier extends StateNotifier<AccountState> {
     //
     // Failure is swallowed deliberately: a file the OS refuses to delete must
     // not be able to trap somebody in an account they are trying to leave.
+    //
+    // NARROWED TO WHAT THE ACCOUNT PAID FOR. This used to call `dropAll`, which
+    // deleted FREE downloads too — and a free title needs no account to watch
+    // and no entitlement to download, so that enforced nothing and cost
+    // somebody an hour of mobile data they had already spent. On a metered
+    // connection that is money, taken for a rule that does not exist.
     try {
-      await _offline.dropAll();
+      await _offline.dropEntitled();
     } catch (e) {
       if (kDebugMode) debugPrint('offline sweep on sign-out failed: $e');
     }
