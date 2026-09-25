@@ -119,6 +119,47 @@ void main() {
       expect((await fresh.items()).single.titleId, 'b');
     });
 
+    // BOTH DIRECTIONS OF A LENGTH MISMATCH, because they mean opposite things
+    // and the first version of the check treated them the same — and deleted a
+    // film at the instant it finished downloading.
+    test('a truncated file is dropped, and the file goes with it', () async {
+      // "Downloaded" is a promise made offline, where the app cannot go back
+      // and look. A film that stops in the middle is not a shorter film.
+      final item = await seed('a', bytes: 100);
+      await File(item.path).writeAsBytes(List<int>.filled(40, 0));
+
+      expect(await library.items(), isEmpty);
+      expect(await File(item.path).exists(), isFalse);
+    });
+
+    test('a file LONGER than its row is a stale row, not a broken file',
+        () async {
+      // A re-download renames `<id>.mp4.part` over `<id>.mp4`, so between the
+      // rename and the index write the file is the new one and the row still
+      // describes the old. Deleting here destroyed a good download.
+      final item = await seed('a', bytes: 100);
+      await File(item.path).writeAsBytes(List<int>.filled(250, 0));
+
+      final items = await library.items();
+      expect(items, hasLength(1));
+      expect(await File(item.path).exists(), isTrue);
+      // And the row is corrected rather than left disagreeing with the disk.
+      expect(items.single.bytes, 250);
+    });
+
+    test('a second put of the same title does not destroy its own file',
+        () async {
+      // The regression this whole split exists for: `put` used to read the
+      // shelf through the verifying path, so writing the new row ran the
+      // damage check against the file it had just replaced.
+      await seed('a', bytes: 10);
+      await seed('a', bytes: 20);
+      final items = await library.items();
+      expect(items, hasLength(1));
+      expect(items.single.bytes, 20);
+      expect(await File(items.single.path).exists(), isTrue);
+    });
+
     test('an unreadable index is an empty shelf, not a crash', () async {
       SharedPreferences.setMockInitialValues(
         <String, Object>{'vh_offline_index': 'not json at all'},

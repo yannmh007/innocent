@@ -5,10 +5,13 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 
+import '../../../../core/services/connectivity/connectivity_service.dart';
 import '../../../../core/services/offline/offline_service_bridge.dart';
 import '../../domain/access.dart';
 import '../../domain/content_repository.dart';
 import '../../domain/video_content.dart';
+import '../../domain/byte_size.dart';
+import '../../domain/transfer_rate.dart';
 import 'download_plan.dart';
 import 'offline_library.dart';
 
@@ -28,6 +31,25 @@ class OfflineProgress {
   /// Download and sees nothing move will tap it again.
   final bool queued;
 
+  /// Current speed, or null while there is not yet enough to say honestly.
+  ///
+  /// THE NUMBER THE VIEWER IS ACTUALLY ASKING FOR. "412 MB of 1.8 GB" is a
+  /// fact about the file; "2.1 MB/s, 11 minutes left" is the answer to "can I
+  /// watch this tonight" — which is the only question being asked while a
+  /// download runs. See [TransferRate] for why it is a rolling window and not
+  /// an average.
+  final int? bytesPerSecond;
+
+  /// How long the rest will take at the current speed, or null when that
+  /// cannot be answered. Null rather than a huge number: "stalled" and
+  /// "4 million hours" are different things to say, and only one is useful.
+  final Duration? remaining;
+
+  /// True while the download is waiting out a lost connection rather than
+  /// transferring. Different from [queued], which is waiting for another
+  /// download, and from an error, which has given up.
+  final bool waitingForNetwork;
+
   /// Set when the download stopped and will not continue on its own.
   final String? error;
 
@@ -37,6 +59,9 @@ class OfflineProgress {
     this.total,
     this.done = false,
     this.queued = false,
+    this.waitingForNetwork = false,
+    this.bytesPerSecond,
+    this.remaining,
     this.error,
   });
 
@@ -266,15 +291,20 @@ class OfflineDownloader {
       startedAt: DateTime.now(),
     ));
 
-    // Queued behind any transfer already running. Said out loud, because a
+    // Queued behind any transfer already registered. Said out loud, because a
     // Download button that reports nothing for ten minutes gets tapped again.
-    if (_busy) {
+    //
+    // MEASURED FROM THE REGISTRY, NOT FROM A "BUSY" FLAG. The flag was set
+    // inside the chain, which starts on a later microtask — so two downloads
+    // tapped in quick succession both saw "not busy" and neither said it was
+    // waiting. This map has this download's own entry in it already, so more
+    // than one entry means somebody else is ahead.
+    if (_streams.length > 1) {
       emit(OfflineProgress(titleId: titleId, queued: true));
     }
 
     final completer = Completer<OfflineItem?>();
     _chain = _chain.then((_) async {
-      _busy = true;
       try {
         if (_cancelled.contains(titleId)) {
           completer.complete(null);
@@ -295,7 +325,6 @@ class OfflineDownloader {
         emit(OfflineProgress(titleId: titleId, error: '$e'));
         completer.complete(null);
       } finally {
-        _busy = false;
         await controller.close();
         _streams.remove(titleId);
         _cancelled.remove(titleId);
@@ -308,8 +337,6 @@ class OfflineDownloader {
     });
     return completer.future;
   }
-
-  bool _busy = false;
 
   Future<OfflineItem?> _run({
     required VideoContent content,
@@ -346,16 +373,23 @@ class OfflineDownloader {
     var lastEmitBytes = -1;
     var lastNoticeAt = DateTime.fromMillisecondsSinceEpoch(0);
     var lastSpaceCheck = received;
+    final rate = TransferRate();
 
     void report({bool force = false}) {
       final now = DateTime.now();
+      rate.observe(received, now);
       if (force ||
           now.difference(lastEmitAt) >= const Duration(milliseconds: 400) ||
           received - lastEmitBytes >= 4 * 1024 * 1024) {
         lastEmitAt = now;
         lastEmitBytes = received;
         emit(OfflineProgress(
-            titleId: titleId, received: received, total: total));
+          titleId: titleId,
+          received: received,
+          total: total,
+          bytesPerSecond: rate.bytesPerSecond,
+          remaining: rate.remaining(received, total),
+        ));
       }
       // The notification is refreshed on its own, slower clock — but it must
       // keep being refreshed even when the number has not moved, because that
@@ -365,10 +399,18 @@ class OfflineDownloader {
         final pct = total != null && total! > 0
             ? ((received / total!) * 100).clamp(0, 100).round()
             : -1;
+        // THE SPEED GOES IN THE SHADE TOO. This notification is what somebody
+        // who put the phone down looks at, and it is the only place they can
+        // see the download at all without opening the app — so it carries the
+        // same answer the screen does.
+        final speed = rate.bytesPerSecond;
+        final line = speed == null || speed <= 0
+            ? _statusLine(received, total)
+            : '${_statusLine(received, total)} · ${formatBytes(speed)}/s';
         // Fire and forget: the notification is a courtesy and the download
         // must never wait on it.
         // ignore: discarded_futures
-        OfflineServiceBridge.update(label, _statusLine(received, total), pct);
+        OfflineServiceBridge.update(label, line, pct);
       }
     }
 
@@ -384,11 +426,29 @@ class OfflineDownloader {
         if (_cancelled.contains(titleId)) return null;
 
         if (failures > 0) {
-          final wait = retryDelay(failures);
+          rate.reset();
+          emit(OfflineProgress(
+            titleId: titleId,
+            received: received,
+            total: total,
+            waitingForNetwork: true,
+          ));
           // ignore: discarded_futures
           OfflineServiceBridge.update(label, notices.waiting, -1);
-          await Future<void>.delayed(wait);
-          if (_cancelled.contains(titleId)) return null;
+          // ─── WAITING ON THE CONNECTION, NOT ON A CLOCK ──────────────────
+          //
+          // The backoff exists so a dead link is not hammered. It should not
+          // also mean that a link which came back after four seconds is
+          // ignored for another fifty-six — which is what a plain sleep does,
+          // and on a connection that drops every few minutes those wasted
+          // fifty-six seconds are most of the download.
+          //
+          // So the wait is broken into short steps and abandoned as soon as a
+          // DNS lookup succeeds. The backoff still bounds how often the server
+          // is asked; it no longer decides how long recovery takes.
+          if (!await _waitForNetwork(retryDelay(failures), titleId)) {
+            return null;
+          }
         }
 
         // A FRESH URL EVERY ATTEMPT, and a fresh entitlement check with it.
@@ -487,6 +547,7 @@ class OfflineDownloader {
           } catch (_) {}
           received = 0;
           total = null;
+          askedSize = false; // A different film, so a different size to agree to.
           if (await part.exists()) await part.delete();
           try {
             if (await sizeNote.exists()) await sizeNote.delete();
@@ -664,6 +725,16 @@ class OfflineDownloader {
       // The notification and the locks go whatever happened. A download that
       // stopped must not leave a foreground service pinning the CPU.
       if (serviceUp) await OfflineServiceBridge.stop();
+      // NOTHING WRITTEN MEANS NOTHING TO RESUME. A refusal, a cancel before
+      // the first byte, or a No to the size question would otherwise leave a
+      // row on the Downloads screen offering to continue a download that has
+      // not got a single byte behind it — clutter that has to be dismissed by
+      // hand, on the screen whose job is to be reassuring.
+      if (received <= 0) {
+        try {
+          await _library.dropPending(titleId);
+        } catch (_) {}
+      }
     }
   }
 
@@ -712,6 +783,33 @@ class OfflineDownloader {
     // where opening the app costs them data.
     await OfflineServiceBridge.done(label, notices.ready);
     return item;
+  }
+
+  /// Sleep for [total], or until the network answers, whichever is sooner.
+  ///
+  /// Returns false when the download was cancelled while waiting, so the caller
+  /// stops instead of carrying on into a transfer nobody is waiting for.
+  Future<bool> _waitForNetwork(Duration total, String titleId) async {
+    const step = Duration(seconds: 2);
+    var waited = Duration.zero;
+    // The first step is always taken. Retrying the instant a request failed is
+    // what makes a bad link into a hammered one, and the DNS probe itself
+    // needs the radio to have come back.
+    while (waited < total) {
+      await Future<void>.delayed(step);
+      waited += step;
+      if (_cancelled.contains(titleId)) return false;
+      if (waited >= total) break;
+      // Cheap: a DNS lookup against a host the OS has almost certainly cached,
+      // and it fails fast when there is no radio. Costs nothing on a link that
+      // is down and saves most of a minute on one that has just come back.
+      if (await const ConnectivityService().isOnline(
+        timeout: const Duration(seconds: 2),
+      )) {
+        return true;
+      }
+    }
+    return !_cancelled.contains(titleId);
   }
 
   static String _statusLine(int received, int? total) {

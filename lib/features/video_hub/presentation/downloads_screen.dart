@@ -373,15 +373,54 @@ class _PendingRowState extends ConsumerState<_PendingRow> {
     ref.invalidate(offlineStorageProvider);
   }
 
+  /// The one line under the title, which has to carry four different states.
+  ///
+  /// SPEED AND TIME LEFT WHILE IT RUNS, because that is what somebody deciding
+  /// whether to keep waiting needs and the byte count is not. "Waiting for the
+  /// connection" while the link is down, because a frozen number reads as a
+  /// bug. And how far it got while it is paused, because that is the number
+  /// that makes resuming obviously worth it.
+  String _line(
+    AppStrings s, {
+    required OfflineProgress? live,
+    required int received,
+    required int? total,
+  }) {
+    final got = total == null
+        ? formatBytes(received)
+        : '${formatBytes(received)} / ${formatBytes(total)}';
+    if (live != null) {
+      if (live.waitingForNetwork) return '$got · ${s.vhDownloadWaitingSignal}';
+      final speed = live.bytesPerSecond;
+      final left = live.remaining;
+      if (speed != null && speed > 0 && left != null) {
+        return '$got · ${formatBytes(speed)}/s · ${s.vhDownloadLeft(left)}';
+      }
+      if (speed != null && speed > 0) {
+        return '$got · ${formatBytes(speed)}/s';
+      }
+      return '$got · ${s.vhDownloadResuming}';
+    }
+    return '$got · ${s.vhDownloadPaused}';
+  }
+
   @override
   Widget build(BuildContext context) {
     final s = AppStrings.of(context);
-    final live = _live;
-    final running = live != null && !live.done && live.error == null;
+    // NARROWED TO NULL RATHER THAN PAIRED WITH A BOOL. `running` is a fact
+    // about `live`, and Dart's flow analysis cannot carry it back — so
+    // `running ? live.received : ...` does not compile, and writing `live!`
+    // to get past that puts a bang next to a value that really can be null.
+    final reported = _live;
+    final OfflineProgress? live =
+        (reported != null && !reported.done && reported.error == null)
+            ? reported
+            : null;
+    final running = live != null;
     // The live figure while a resume is under way, the on-disk figure
     // otherwise. Both are real; the difference is only which is fresher.
-    final received = running ? live.received : widget.pending.received;
-    final total = running ? live.total : widget.pending.total;
+    final received = live?.received ?? widget.pending.received;
+    final total = live?.total ?? widget.pending.total;
     final double? fraction = (total != null && total > 0)
         ? (received / total).clamp(0.0, 1.0).toDouble()
         : null;
@@ -418,10 +457,10 @@ class _PendingRowState extends ConsumerState<_PendingRow> {
                 // 900 MB film and not starting again — that is the whole
                 // difference between resuming and giving up.
                 Text(
-                  total == null
-                      ? '${formatBytes(received)} · ${running ? s.vhDownloadResuming : s.vhDownloadPaused}'
-                      : '${formatBytes(received)} / ${formatBytes(total)} · ${running ? s.vhDownloadResuming : s.vhDownloadPaused}',
+                  _line(s, live: live, received: received, total: total),
                   style: VH.meta.copyWith(fontSize: 12),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 5),
                 ClipRRect(

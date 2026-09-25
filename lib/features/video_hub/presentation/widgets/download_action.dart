@@ -165,11 +165,19 @@ class _DownloadActionState extends ConsumerState<DownloadAction> {
 
   /// True when the viewer wants to go ahead at this size.
   ///
-  /// Returns false when this widget is gone: a dialog cannot be shown from a
-  /// screen the user has left, and starting a gigabyte of metered download on
-  /// the strength of a question nobody was asked is the opposite of the point.
+  /// PROCEEDS WHEN THERE IS NOBODY TO ASK. If the viewer has left this screen
+  /// the dialog cannot be shown, and the choice is between starting the
+  /// download they explicitly asked for and silently discarding it. Chrome,
+  /// Telegram and YouTube all take the first: the tap IS the consent, and this
+  /// question is a courtesy that saves somebody from a surprise, not the
+  /// permission itself. Discarding it would mean coming back to find nothing
+  /// downloaded and no explanation — which is the bug this whole round of work
+  /// has been about.
+  ///
+  /// The download is visible in the notification with its size and speed, and
+  /// tapping that opens the app where it can be paused.
   Future<bool> _confirmSize(int totalBytes, int freeBytes) async {
-    if (!mounted) return false;
+    if (!mounted) return true;
     final s = AppStrings.of(context);
     final answer = await showDialog<bool>(
       context: context,
@@ -258,14 +266,37 @@ class _DownloadActionState extends ConsumerState<DownloadAction> {
             ),
           ),
           const SizedBox(width: VH.s2),
-          Text(
-            f == null ? '…' : '${(f * 100).round()}%',
-            style: VH.meta.copyWith(fontSize: 12),
+          // PER CENT AND TIME LEFT, not per cent alone. Forty-two per cent is
+          // a fact about the file; eleven minutes is the answer to the only
+          // question somebody watching a progress ring is asking. When the
+          // link has dropped it says so instead of freezing on a number.
+          Flexible(
+            child: Text(
+              running.waitingForNetwork
+                  ? s.vhDownloadWaitingSignal
+                  : running.remaining != null
+                      ? '${f == null ? '' : '${(f * 100).round()}% · '}'
+                          '${s.vhDownloadLeft(running.remaining!)}'
+                      : f == null
+                          ? '…'
+                          : '${(f * 100).round()}%',
+              style: VH.meta.copyWith(fontSize: 12),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
           TextButton(
+            // PAUSE, NOT CANCEL. This keeps the part file — that is the whole
+            // design — so calling it Cancel promised the opposite of what it
+            // does in both directions: a viewer who wanted to stop for now was
+            // told they were throwing it away, and one who wanted it gone was
+            // told it had been cancelled while a gigabyte stayed on the phone.
+            // Discarding is on the Downloads screen, where the bytes it would
+            // throw away are visible.
             onPressed: () =>
                 ref.read(offlineDownloaderProvider).cancel(content.id),
-            child: Text(s.cancel, style: VH.meta.copyWith(fontSize: 12)),
+            child:
+                Text(s.vhDownloadPause, style: VH.meta.copyWith(fontSize: 12)),
           ),
         ],
       );

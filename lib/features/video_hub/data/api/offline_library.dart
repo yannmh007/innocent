@@ -45,6 +45,22 @@ class OfflineItem {
     this.assetId,
   });
 
+  /// The same entry with a corrected byte count.
+  ///
+  /// Used when the file on disk is longer than the row says, which means the
+  /// row is stale rather than the film broken — see [OfflineLibrary.items].
+  OfflineItem copyWithBytes(int newBytes) => OfflineItem(
+        titleId: titleId,
+        title: title,
+        path: path,
+        bytes: newBytes,
+        addedAt: addedAt,
+        titleMm: titleMm,
+        posterUrl: posterUrl,
+        durationS: durationS,
+        assetId: assetId,
+      );
+
   Map<String, dynamic> toJson() => <String, dynamic>{
         'titleId': titleId,
         'title': title,
@@ -228,9 +244,82 @@ class OfflineLibrary {
   /// an index entry whose file is gone is a row that spins forever when
   /// tapped. Checking costs one `stat` per item on a list of tens.
   Future<List<OfflineItem>> items() async {
+    final rows = await _rows();
+    final out = <OfflineItem>[];
+    var changed = false;
+    for (final row in rows) {
+      var item = row;
+      final f = File(item.path);
+      if (!await f.exists()) {
+        changed = true;
+        continue;
+      }
+      // AND THE LENGTH IS CHECKED, not only the existence — but the two
+      // directions of a mismatch mean opposite things and only one of them is
+      // damage.
+      //
+      // SHORTER THAN RECORDED is a film that stops in the middle. "Downloaded"
+      // is a promise the app makes OFFLINE, where it cannot go back and look,
+      // and the viewer finds out on a bus with no signal having done nothing
+      // wrong. The row goes and the file with it: a truncated film is not
+      // worth a gigabyte, and leaving it after removing the only reference to
+      // it is a gigabyte nothing in the app can ever reclaim.
+      //
+      // LONGER THAN RECORDED IS A STALE ROW, NOT A BROKEN FILE, and treating
+      // it as damage deleted a perfectly good download. A re-download writes
+      // `<id>.mp4.part` and renames it over `<id>.mp4`, so between the rename
+      // and the index write the file is the NEW one and the row still
+      // describes the old — which is exactly the moment `put` reads the index.
+      // The first version of this check deleted the film that had just
+      // finished downloading. (`put` now reads the raw rows so it cannot
+      // trigger this at all; the row is corrected here as well, because
+      // self-healing beats being right only about the order of two writes.)
+      if (item.bytes > 0) {
+        int onDisk;
+        try {
+          onDisk = await f.length();
+        } catch (_) {
+          changed = true;
+          continue;
+        }
+        if (onDisk < item.bytes) {
+          if (kDebugMode) {
+            debugPrint('offline entry truncated: ${item.titleId} '
+                '$onDisk < ${item.bytes}');
+          }
+          try {
+            await f.delete();
+          } catch (_) {}
+          changed = true;
+          continue;
+        }
+        if (onDisk > item.bytes) {
+          if (kDebugMode) {
+            debugPrint('offline row stale: ${item.titleId} '
+                '$onDisk > ${item.bytes} — correcting');
+          }
+          item = item.copyWithBytes(onDisk);
+          changed = true;
+        }
+      }
+      out.add(item);
+    }
+    out.sort((a, b) => b.addedAt.compareTo(a.addedAt));
+    if (changed) await _write(out);
+    return out;
+  }
+
+  /// The stored rows, exactly as written, with NO filesystem check.
+  ///
+  /// SEPARATE FROM [items] BECAUSE VERIFYING IS DESTRUCTIVE. [items] deletes a
+  /// truncated file, and a write path that read the shelf through it would run
+  /// that judgement against a file it is in the middle of replacing — which is
+  /// how the first version of the length check deleted a download at the
+  /// instant it finished. Anything that is about to WRITE the index reads the
+  /// rows; anything that is about to SHOW it reads [items].
+  Future<List<OfflineItem>> _rows() async {
     final raw = (await _store).getString(_key);
     if (raw == null || raw.isEmpty) return const <OfflineItem>[];
-
     List<dynamic> decoded;
     try {
       decoded = jsonDecode(raw) as List<dynamic>;
@@ -238,58 +327,12 @@ class OfflineLibrary {
       if (kDebugMode) debugPrint('offline index unreadable: $e');
       return const <OfflineItem>[];
     }
-
     final out = <OfflineItem>[];
-    var pruned = false;
     for (final entry in decoded) {
       if (entry is! Map) continue;
       final item = OfflineItem.fromJson(entry.cast<String, dynamic>());
-      if (item == null) {
-        pruned = true;
-        continue;
-      }
-      final f = File(item.path);
-      if (!await f.exists()) {
-        pruned = true;
-        continue;
-      }
-      // AND THE LENGTH IS CHECKED, not only the existence.
-      //
-      // "Downloaded" is a promise the app makes OFFLINE, where it cannot go
-      // back and look. A file that is shorter than the download that produced
-      // it is not a shorter film, it is a film that stops in the middle — and
-      // the viewer finds that out on a bus with no signal, having deleted
-      // nothing and done nothing wrong. Both numbers come from the same
-      // place (`bytes` is the count of bytes written), so they match on every
-      // healthy entry and a mismatch is real damage.
-      //
-      // The file goes with the row. A truncated film is not worth a gigabyte,
-      // and leaving it behind after removing the only reference to it means a
-      // gigabyte nothing in the app can ever reclaim.
-      if (item.bytes > 0) {
-        int onDisk;
-        try {
-          onDisk = await f.length();
-        } catch (_) {
-          pruned = true;
-          continue;
-        }
-        if (onDisk != item.bytes) {
-          if (kDebugMode) {
-            debugPrint('offline entry damaged: ${item.titleId} '
-                '$onDisk != ${item.bytes}');
-          }
-          try {
-            await f.delete();
-          } catch (_) {}
-          pruned = true;
-          continue;
-        }
-      }
-      out.add(item);
+      if (item != null) out.add(item);
     }
-    out.sort((a, b) => b.addedAt.compareTo(a.addedAt));
-    if (pruned) await _write(out);
     return out;
   }
 
@@ -304,7 +347,7 @@ class OfflineLibrary {
 
   /// Adds or replaces one entry.
   Future<void> put(OfflineItem item) async {
-    final current = await items();
+    final current = await _rows();
     final next = <OfflineItem>[
       item,
       for (final o in current)
@@ -319,7 +362,13 @@ class OfflineLibrary {
   /// references — invisible, undeletable through the UI, and still occupying
   /// a gigabyte.
   Future<void> drop(String titleId) async {
-    final item = await find(titleId);
+    // The RAW row, not the verified one: deleting a download must work whether
+    // or not the file passes verification, and going through [items] would
+    // make a delete depend on a judgement about damage.
+    OfflineItem? item;
+    for (final row in await _rows()) {
+      if (row.titleId == titleId) item = row;
+    }
     if (item != null) {
       try {
         final f = File(item.path);
@@ -329,7 +378,7 @@ class OfflineLibrary {
       }
     }
     final next = <OfflineItem>[
-      for (final o in await items())
+      for (final o in await _rows())
         if (o.titleId != titleId) o,
     ];
     await _write(next);
@@ -345,7 +394,7 @@ class OfflineLibrary {
   /// download that was interrupted mid-flight goes too. Those are the entries
   /// no index ever knew about.
   Future<void> dropAll() async {
-    for (final item in await items()) {
+    for (final item in await _rows()) {
       try {
         final f = File(item.path);
         if (await f.exists()) await f.delete();
@@ -423,19 +472,27 @@ class OfflineLibrary {
     final out = <PendingProgress>[];
     var pruned = false;
     for (final row in await _pendingRows()) {
-      final part = File('${dir.path}/${row.titleId}.mp4$partSuffix');
-      if (!await part.exists()) {
-        // The finished file being there means the download completed and only
-        // the row is stale; either way there is nothing pending.
+      // PRUNED ONLY WHEN IT PROVABLY FINISHED. The first version dropped any
+      // row whose part file was missing — which is every row for the first few
+      // seconds of its own download, because `putPending` is written before
+      // the first byte. Opening this screen at that moment deleted the record
+      // of a live download, and if the app was then killed the part file went
+      // back to being an anonymous uuid. A row with nothing behind it is
+      // dropped by the downloader itself when it ends with no bytes written,
+      // which is precise where a filesystem guess is not.
+      final finished = File('${dir.path}/${row.titleId}.mp4');
+      if (await finished.exists()) {
         pruned = true;
         continue;
       }
-      int received;
-      try {
-        received = await part.length();
-      } catch (_) {
-        pruned = true;
-        continue;
+      final part = File('${dir.path}/${row.titleId}.mp4$partSuffix');
+      int received = 0;
+      if (await part.exists()) {
+        try {
+          received = await part.length();
+        } catch (_) {
+          received = 0;
+        }
       }
       int? total;
       try {

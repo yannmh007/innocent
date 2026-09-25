@@ -1384,6 +1384,26 @@ class AppStrings {
       .replaceFirst('{free}', '$free');
   String get vhDownloadStart => _s('vhDownloadStart');
   String get vhDownloadStorageLine => _s('vhDownloadStorageLine');
+
+  /// "11 min left", built from unit words rather than from a format string, so
+  /// Burmese reads as Burmese and not as English with the numbers swapped.
+  ///
+  /// THE NUMBER PEOPLE ACTUALLY WANT. A download shows how many megabytes have
+  /// arrived, which is a fact about the file; how long is left is the answer to
+  /// "can I watch this tonight", which is the question. Telegram — what this
+  /// audience already uses for films — shows it, and it is most of why its
+  /// downloads feel manageable on a bad line.
+  String vhDownloadLeft(Duration d) {
+    if (d.inMinutes < 1) return _s('vhDownloadLeftSoon');
+    if (d.inHours < 1) {
+      return _s('vhDownloadLeftMinutes').replaceFirst('{m}', '${d.inMinutes}');
+    }
+    // Beyond a day the estimate is not information, it is a warning.
+    if (d.inHours >= 24) return _s('vhDownloadLeftAges');
+    return _s('vhDownloadLeftHours')
+        .replaceFirst('{h}', '${d.inHours}')
+        .replaceFirst('{m}', '${d.inMinutes % 60}');
+  }
   String vhDownloadStorage(Object used, Object free) =>
       _s('vhDownloadStorage')
           .replaceFirst('{used}', '$used')
@@ -1564,6 +1584,10 @@ class AppStrings {
         'on this phone. Carry on?',
     'vhDownloadStart': 'Download',
     'vhDownloadStorageLine': 'On this phone',
+    'vhDownloadLeftSoon': 'less than a minute left',
+    'vhDownloadLeftMinutes': '{m} min left',
+    'vhDownloadLeftHours': '{h} hr {m} min left',
+    'vhDownloadLeftAges': 'more than a day left',
     'vhDownloadStorage': '{used} used - {free} free',
     'vhLibrarySoon': 'Coming soon',
 
@@ -2764,6 +2788,10 @@ class AppStrings {
         'ဖုန်းထဲ {free} လွတ်ပါတယ်။ ဆက်လုပ်မလား?',
     'vhDownloadStart': 'ဒေါင်းလုဒ်',
     'vhDownloadStorageLine': 'ဖုန်းထဲမှာ',
+    'vhDownloadLeftSoon': '၁ မိနစ်အောက် ကျန်',
+    'vhDownloadLeftMinutes': '{m} မိနစ် ကျန်',
+    'vhDownloadLeftHours': '{h} နာရီ {m} မိနစ် ကျန်',
+    'vhDownloadLeftAges': '၁ ရက်ထက် ပိုကျန်',
     'vhDownloadStorage': '{used} သုံးပြီး - {free} လွတ်',
     'vhLibrarySoon': 'မကြာမီ ရရှိမည်',
 
@@ -3954,6 +3982,10 @@ class AppStrings {
         'เครื่องนี้เหลือพื้นที่ {free} ดำเนินการต่อหรือไม่',
     'vhDownloadStart': 'ดาวน์โหลด',
     'vhDownloadStorageLine': 'ในเครื่องนี้',
+    'vhDownloadLeftSoon': 'เหลือไม่ถึงหนึ่งนาที',
+    'vhDownloadLeftMinutes': 'เหลือ {m} นาที',
+    'vhDownloadLeftHours': 'เหลือ {h} ชม. {m} นาที',
+    'vhDownloadLeftAges': 'เหลือมากกว่าหนึ่งวัน',
     'vhDownloadStorage': 'ใช้ {used} - เหลือ {free}',
     'vhLibrarySoon': 'เร็ว ๆ นี้',
 
