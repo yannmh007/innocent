@@ -126,6 +126,12 @@ def main() -> int:
          'token is built — which fails at deploy time as a 404 on every '
          'video, for everyone, with a response that deliberately does not '
          'say why'),
+        ('sigv4_test.mjs',
+         'the R2 signatures and the multipart XML',
+         'a request R2 refuses with a bare 403 that names no parameter, no '
+         'header and no reason — or a CompleteMultipartUpload that finishes '
+         'an upload with its parts out of order. Both land after the '
+         'operator has already spent an hour of mobile data'),
     ]
     node = shutil.which('node')
     for name, what, guards in JS_TESTS:

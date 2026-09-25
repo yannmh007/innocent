@@ -4,7 +4,7 @@
 // console: list, get, create, save, addAssets, updateAsset, setPrimary,
 // deleteAsset, deleteTitle, reorder, requests, approve, reject, categories,
 // saveCategory, addCategory, stats, health, folder, checkFolder, sign,
-// selftest.
+// beginMultipart, signParts, completeMultipart, abortMultipart, selftest.
 //
 // WHY THIS EXISTS. Putting one title into the catalogue used to mean: open the
 // R2 dashboard, upload the video, upload the poster, copy both object keys,
@@ -115,7 +115,17 @@ function encodeKey(key: string): string {
   return key.split('/').map(rfc3986).join('/');
 }
 
-async function presignPut(bucket: string, objectKey: string): Promise<string> {
+/// [extraQuery] carries the parameters a MULTIPART part upload needs
+/// (`partNumber` and `uploadId`). They are signed like any other query
+/// parameter, which is the whole reason they have to go through here rather
+/// than being appended to a finished URL: SigV4 covers the canonical query
+/// string, so a parameter added afterwards invalidates the signature and R2
+/// answers SignatureDoesNotMatch without saying which parameter it minded.
+async function presignPut(
+  bucket: string,
+  objectKey: string,
+  extraQuery: Record<string, string> = {},
+): Promise<string> {
   const host = `${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`;
   const now = new Date();
   const amzDate = now.toISOString().replace(/[:-]|\.\d{3}/g, '');
@@ -123,6 +133,7 @@ async function presignPut(bucket: string, objectKey: string): Promise<string> {
   const scope = `${dateStamp}/auto/s3/aws4_request`;
 
   const params: Record<string, string> = {
+    ...extraQuery,
     'X-Amz-Algorithm': 'AWS4-HMAC-SHA256',
     'X-Amz-Credential': `${R2_ACCESS_KEY_ID}/${scope}`,
     'X-Amz-Date': amzDate,
@@ -162,6 +173,115 @@ async function presignPut(bucket: string, objectKey: string): Promise<string> {
   const signature = hex(await hmac(key, stringToSign));
 
   return `https://${host}${canonicalPath}?${canonicalQuery}&X-Amz-Signature=${signature}`;
+}
+
+// --- multipart, which the server has to speak itself ------------------------
+//
+// ═══════════════════════════════════════════════════════════════════════
+// WHY THIS IS A SECOND SIGNER AND NOT A REUSE OF THE FIRST
+// ═══════════════════════════════════════════════════════════════════════
+//
+// A presigned URL carries its signature in the query string and lets somebody
+// ELSE make the request — which is exactly right for uploading a part, because
+// the bytes are in the operator's browser and must not pass through an edge
+// function. It is exactly wrong for the two ends of a multipart upload:
+// CreateMultipartUpload ANSWERS with the upload id in an XML body, and
+// CompleteMultipartUpload has to SEND an XML body listing every part's ETag.
+// A browser cannot be handed a presigned URL for either without also being
+// handed the job of parsing and composing S3 XML.
+//
+// So begin, complete and abort are made from here with an Authorization header,
+// and only the parts themselves are presigned. The difference in the signing is
+// small and unforgiving: the payload hash is real rather than UNSIGNED-PAYLOAD,
+// and it appears twice — once as the `x-amz-content-sha256` header and once in
+// the canonical request — so a mismatch between the two is refused as a
+// signature error rather than as a content error.
+async function sha256HexOf(body: string): Promise<string> {
+  return await sha256Hex(body);
+}
+
+interface SignedReq {
+  url: string;
+  headers: Record<string, string>;
+}
+
+async function signRequest(
+  method: string,
+  bucket: string,
+  objectKey: string,
+  query: Record<string, string>,
+  body: string,
+): Promise<SignedReq> {
+  const host = `${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`;
+  const amzDate = new Date().toISOString().replace(/[:-]|\.\d{3}/g, '');
+  const dateStamp = amzDate.slice(0, 8);
+  const scope = `${dateStamp}/auto/s3/aws4_request`;
+  const payloadHash = await sha256HexOf(body);
+
+  const canonicalQuery = Object.keys(query).sort()
+    .map((k) => `${rfc3986(k)}=${rfc3986(query[k])}`).join('&');
+  const canonicalPath = `/${bucket}/${encodeKey(objectKey)}`;
+
+  // SORTED AND LOWER-CASE, and the list below must match the headers actually
+  // sent, exactly. A header in SignedHeaders that is not sent, or sent with
+  // different whitespace, is a signature failure with no diagnostic.
+  const canonicalHeaders =
+    `host:${host}\n` +
+    `x-amz-content-sha256:${payloadHash}\n` +
+    `x-amz-date:${amzDate}\n`;
+  const signedHeaders = 'host;x-amz-content-sha256;x-amz-date';
+
+  const canonicalRequest = [
+    method, canonicalPath, canonicalQuery,
+    canonicalHeaders, signedHeaders, payloadHash,
+  ].join('\n');
+
+  const stringToSign = [
+    'AWS4-HMAC-SHA256', amzDate, scope, await sha256Hex(canonicalRequest),
+  ].join('\n');
+
+  let key: Uint8Array = enc.encode(`AWS4${R2_SECRET_ACCESS_KEY}`);
+  for (const part of [dateStamp, 'auto', 's3', 'aws4_request']) {
+    key = await hmac(key, part);
+  }
+  const signature = hex(await hmac(key, stringToSign));
+
+  return {
+    url: `https://${host}${canonicalPath}` +
+      (canonicalQuery ? `?${canonicalQuery}` : ''),
+    headers: {
+      'Authorization': `AWS4-HMAC-SHA256 Credential=${R2_ACCESS_KEY_ID}/${scope}, ` +
+        `SignedHeaders=${signedHeaders}, Signature=${signature}`,
+      'x-amz-content-sha256': payloadHash,
+      'x-amz-date': amzDate,
+    },
+  };
+}
+
+/// One tag out of an S3 XML response.
+///
+/// A REGEX AND NOT A PARSER, deliberately. Deno's edge runtime has no DOM, the
+/// responses here are three tags deep, and pulling in an XML library to read
+/// `<UploadId>` would be a dependency added to a function that holds the R2
+/// credentials. Anchored on the exact tag and non-greedy, so a longer document
+/// cannot make it read past the element it was asked for.
+function xmlTag(xml: string, tag: string): string | null {
+  const m = new RegExp(`<${tag}>([^<]*)</${tag}>`).exec(xml);
+  return m ? m[1] : null;
+}
+
+/// An object key the operator is allowed to be writing to.
+///
+/// CHECKED EVEN THOUGH THE CALLER IS THE OPERATOR. `complete` and `abort` take
+/// a key from the page, and a key from a page is a path: without this, a typo
+/// or a stale tab could complete a multipart upload onto any object in the
+/// bucket — including one somebody is watching. The prefixes are the three this
+/// function ever mints (see safeKey), and `..` is refused outright rather than
+/// normalised, because there is no legitimate key that needs it.
+function isMintedKey(key: string): boolean {
+  if (!key || key.length > 512) return false;
+  if (key.includes('..') || key.startsWith('/')) return false;
+  return /(^|\/)(video|photo|thumb)\/[a-z0-9][a-z0-9.\-]*$/.test(key);
 }
 
 // --- who is asking ----------------------------------------------------------
@@ -392,19 +512,19 @@ Deno.serve(async (req: Request) => {
       : body.kind === 'thumb' ? 'thumb'
       : 'video';
 
-    // SIZE REFUSED HERE, NOT DISCOVERED AT 5 GiB. A single presigned PUT to R2
-    // is capped at 5 GiB; above that it needs multipart, which is a different
-    // protocol (CreateMultipartUpload -> UploadPart x N -> Complete) and is not
-    // built. Without this check the page would upload for forty minutes and
-    // then fail with a CORS error, because R2 does not attach CORS headers to
-    // its error responses — the single worst failure mode available. A refusal
-    // before the first byte costs nothing and says what to do.
+    // A SINGLE PUT IS STILL CAPPED AT 5 GiB, and the refusal stays — but it is
+    // no longer the end of the road. Multipart is built now (see
+    // beginMultipart below), so the page uses it for anything large and this
+    // path only ever sees small files. The check remains because a page held in
+    // a browser cache predates multipart and would otherwise upload for forty
+    // minutes and fail with a CORS error: R2 does not attach CORS headers to
+    // its error responses, which is the single worst failure mode available.
     const size = Number(body.size ?? 0);
     if (size > 0 && size > 5 * 1024 * 1024 * 1024) {
       return json({
         error: 'too_large',
-        detail: 'A single upload is limited to 5 GiB. Split the file or ' +
-          're-encode it smaller; multipart upload is not built yet.',
+        detail: 'A single upload is limited to 5 GiB. Reload this page — the ' +
+          'current console uploads large files in parts and has no such limit.',
       }, 413, req);
     }
 
@@ -424,6 +544,161 @@ Deno.serve(async (req: Request) => {
       // through request-playback, never by a direct URL.
       publicUrl: kind === 'video' ? null : `${PUBLIC_BASE}/${objectKey}`,
     }, 200, req);
+  }
+
+  // --- multipart: one upload, many parts, each retryable on its own ---------
+  //
+  // ═══════════════════════════════════════════════════════════════════════
+  // WHAT THIS IS ACTUALLY FOR, WHICH IS NOT THE 5 GiB CAP
+  // ═══════════════════════════════════════════════════════════════════════
+  //
+  // The cap was the visible problem: a 4K master over 5 GiB could not be
+  // uploaded at all. The problem that costs the operator their evening is a
+  // different one — a single PUT of three gigabytes that fails at ninety per
+  // cent starts again from zero, and on a Myanmar uplink that is hours of
+  // someone's life and their data allowance, twice. Multipart makes each part
+  // its own transfer with its own retry, so a dropped connection costs one part
+  // and not the file.
+  //
+  // THREE OPS AND NOT ONE, because the browser holds the bytes and must upload
+  // them directly to R2 — routing gigabytes through an edge function would be
+  // slower, would cost money and would put the media through a process that has
+  // no business holding it. So: this function begins and completes the upload
+  // (both need S3 XML, which a browser should not be composing), and hands out
+  // presigned URLs for the parts themselves.
+  if (body.op === 'beginMultipart') {
+    const filename = String(body.filename ?? '');
+    if (!filename) return json({ error: 'no_filename' }, 400, req);
+    const kind = body.kind === 'photo' ? 'photo'
+      : body.kind === 'thumb' ? 'thumb'
+      : 'video';
+    const bucket = kind === 'video' ? MEDIA_BUCKET : PUBLIC_BUCKET;
+    const prefix = kind === 'video' ? 'video' : kind === 'thumb' ? 'thumb' : 'photo';
+    const objectKey = safeKey(prefix, filename, String(body.folder ?? ''));
+
+    const signed = await signRequest('POST', bucket, objectKey, { uploads: '' }, '');
+    const res = await fetch(signed.url, { method: 'POST', headers: signed.headers });
+    const xml = await res.text();
+    if (!res.ok) {
+      return json({ error: 'begin_failed', status: res.status,
+        detail: xmlTag(xml, 'Message') ?? xml.slice(0, 200) }, 502, req);
+    }
+    const uploadId = xmlTag(xml, 'UploadId');
+    if (!uploadId) {
+      return json({ error: 'no_upload_id', detail: xml.slice(0, 200) }, 502, req);
+    }
+    return json({ uploadId, bucket, objectKey, kind,
+      publicUrl: kind === 'video' ? null : `${PUBLIC_BASE}/${objectKey}` }, 200, req);
+  }
+
+  // --- signParts: URLs for a BATCH of parts, not all of them ----------------
+  //
+  // A presigned URL lives an hour. A four-gigabyte file is sixty-four parts,
+  // and on the connection this exists for the last of them may be uploaded
+  // three hours after the first — so signing all sixty-four up front hands the
+  // operator a set of URLs that expire underneath them, with the failure landing
+  // at part forty for no visible reason. The page asks for the next handful as
+  // it goes, and each batch is fresh.
+  if (body.op === 'signParts') {
+    const objectKey = String(body.objectKey ?? '');
+    const uploadId = String(body.uploadId ?? '');
+    if (!isMintedKey(objectKey)) return json({ error: 'bad_key' }, 400, req);
+    if (!uploadId) return json({ error: 'no_upload_id' }, 400, req);
+    const kind = body.kind === 'photo' ? 'photo'
+      : body.kind === 'thumb' ? 'thumb'
+      : 'video';
+    const bucket = kind === 'video' ? MEDIA_BUCKET : PUBLIC_BUCKET;
+
+    const from = Math.max(1, Math.floor(Number(body.from ?? 1)));
+    // Bounded so one call cannot be turned into ten thousand signatures.
+    const count = Math.min(32, Math.max(1, Math.floor(Number(body.count ?? 8))));
+    const urls: Array<{ partNumber: number; url: string }> = [];
+    for (let n = from; n < from + count; n++) {
+      if (n > 10000) break; // S3's own ceiling on part numbers.
+      urls.push({ partNumber: n, url: await presignPut(bucket, objectKey, {
+        partNumber: String(n), uploadId,
+      }) });
+    }
+    return json({ parts: urls, expiresIn: EXPIRY_SECONDS }, 200, req);
+  }
+
+  if (body.op === 'completeMultipart') {
+    const objectKey = String(body.objectKey ?? '');
+    const uploadId = String(body.uploadId ?? '');
+    if (!isMintedKey(objectKey)) return json({ error: 'bad_key' }, 400, req);
+    if (!uploadId) return json({ error: 'no_upload_id' }, 400, req);
+    const kind = body.kind === 'photo' ? 'photo'
+      : body.kind === 'thumb' ? 'thumb'
+      : 'video';
+    const bucket = kind === 'video' ? MEDIA_BUCKET : PUBLIC_BUCKET;
+
+    const raw = Array.isArray(body.parts) ? body.parts : [];
+    if (!raw.length) return json({ error: 'no_parts' }, 400, req);
+    // SORTED HERE, whatever order they arrived in. S3 requires ascending part
+    // numbers and rejects the whole upload otherwise — and the page uploads
+    // sequentially today, which is exactly the kind of thing a later change to
+    // parallel uploads would break silently.
+    const parts = raw
+      .map((p) => {
+        const o = (p ?? {}) as Record<string, unknown>;
+        return {
+          n: Math.floor(Number(o.partNumber ?? 0)),
+          // The ETag comes back quoted and S3 wants it back quoted. Normalised
+          // to one form so it cannot be sent doubly quoted or bare.
+          etag: String(o.etag ?? '').replace(/^"+|"+$/g, ''),
+        };
+      })
+      .filter((p) => p.n >= 1 && p.etag)
+      .sort((a, b) => a.n - b.n);
+    if (parts.length !== raw.length) return json({ error: 'bad_parts' }, 400, req);
+
+    const xmlBody = '<CompleteMultipartUpload>' +
+      parts.map((p) =>
+        `<Part><PartNumber>${p.n}</PartNumber><ETag>"${p.etag}"</ETag></Part>`)
+        .join('') +
+      '</CompleteMultipartUpload>';
+
+    const signed = await signRequest(
+      'POST', bucket, objectKey, { uploadId }, xmlBody);
+    const res = await fetch(signed.url, {
+      method: 'POST',
+      headers: { ...signed.headers, 'Content-Type': 'application/xml' },
+      body: xmlBody,
+    });
+    const xml = await res.text();
+    // S3 CAN ANSWER 200 AND STILL HAVE FAILED. CompleteMultipartUpload streams
+    // its response, so an error that happens after the headers arrives as an
+    // <Error> document inside a 200. Checking the body is not belt and braces
+    // here; it is the only way to know.
+    if (!res.ok || xml.includes('<Error>')) {
+      return json({ error: 'complete_failed', status: res.status,
+        detail: xmlTag(xml, 'Message') ?? xml.slice(0, 200) }, 502, req);
+    }
+    return json({ ok: true, bucket, objectKey,
+      publicUrl: kind === 'video' ? null : `${PUBLIC_BASE}/${objectKey}` }, 200, req);
+  }
+
+  // --- abortMultipart: the tidying that stops an abandoned upload billing ---
+  //
+  // Parts that were uploaded and never completed sit in the bucket, invisible
+  // to every listing and charged for by the gigabyte-month. An operator who
+  // closes the tab halfway through a four-gigabyte master would otherwise pay
+  // for it every month until somebody thought to look.
+  if (body.op === 'abortMultipart') {
+    const objectKey = String(body.objectKey ?? '');
+    const uploadId = String(body.uploadId ?? '');
+    if (!isMintedKey(objectKey)) return json({ error: 'bad_key' }, 400, req);
+    if (!uploadId) return json({ error: 'no_upload_id' }, 400, req);
+    const bucket = body.kind === 'photo' || body.kind === 'thumb'
+      ? PUBLIC_BUCKET : MEDIA_BUCKET;
+    const signed = await signRequest(
+      'DELETE', bucket, objectKey, { uploadId }, '');
+    const res = await fetch(signed.url,
+      { method: 'DELETE', headers: signed.headers });
+    // A failed abort is reported and not thrown: the upload is already
+    // abandoned, and the operator needs to know the parts may still be there
+    // rather than to be given an error about a thing they did not ask for.
+    return json({ ok: res.ok, status: res.status }, 200, req);
   }
 
   // --- folder: SUGGEST a free prefix --------------------------------------

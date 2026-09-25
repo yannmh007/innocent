@@ -1078,6 +1078,151 @@ function put(url, blob, onProgress) {
   });
 }
 
+// ── multipart: one upload, many parts, each retryable on its own ──────────
+//
+// ═══════════════════════════════════════════════════════════════════════
+// WHAT THIS IS ACTUALLY FOR, WHICH IS NOT THE 5 GiB CAP
+// ═══════════════════════════════════════════════════════════════════════
+//
+// The cap was the visible problem: a 4K master over 5 GiB could not be uploaded
+// at all. The problem that costs an evening is a different one — a single PUT of
+// three gigabytes that fails at ninety per cent starts again from zero, and on a
+// Myanmar uplink that is hours of somebody's life and their data allowance,
+// twice. Each part is now its own transfer with its own retry, so a dropped
+// connection costs one part.
+//
+// SEQUENTIAL AND NOT PARALLEL. Three parts at once divides one slow uplink three
+// ways and finishes none of them sooner; it also makes the progress bar lie,
+// because the number that matters to somebody watching is how much of the FILE
+// has gone, not how many requests are in flight.
+
+/// Above this, upload in parts. Below it, one PUT is simpler and there is
+/// nothing to gain: a file that uploads in a minute does not need a resume.
+const MULTIPART_THRESHOLD = 128 * 1024 * 1024;
+
+/// 64 MiB a part. S3 allows ten thousand parts, so this tops out at 640 GB —
+/// far past anything that will ever be uploaded here — and it is large enough
+/// that the per-part overhead is noise and small enough that losing one to a
+/// dropped connection costs a minute rather than an hour.
+const PART_SIZE = 64 * 1024 * 1024;
+
+/// Attempts per part. Four with a doubling wait covers the shape of a bad
+/// connection: a blip, a tunnel, a tower handover.
+const PART_TRIES = 4;
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/// PUTs one part and returns its ETag, which the complete call cannot do
+/// without.
+///
+/// THE ETag IS ONLY READABLE IF THE BUCKET SAYS SO. A browser can see a
+/// response header on a cross-origin request only when the CORS rule lists it
+/// in ExposeHeaders — and without the ETag there is no way to complete a
+/// multipart upload at all. So a missing one is reported as the configuration
+/// fault it is, by name, rather than as "upload failed": the parts went up
+/// perfectly and the only thing wrong is one line of bucket policy.
+function putPart(url, blob, onProgress) {
+  return new Promise((resolve, reject) => {
+    const x = new XMLHttpRequest();
+    x.open('PUT', url);
+    x.upload.onprogress = (e) => {
+      if (e.lengthComputable && onProgress) onProgress(e.loaded / e.total);
+    };
+    x.onload = () => {
+      if (x.status < 200 || x.status >= 300) {
+        return reject(new Error('R2 refused a part (HTTP ' + x.status + ').'));
+      }
+      const etag = x.getResponseHeader('ETag');
+      if (!etag) {
+        return reject(new Error(
+          'The part uploaded but its ETag is not readable, so the upload ' +
+          'cannot be completed. Add ETag to ExposeHeaders in the bucket\'s ' +
+          'CORS rule — nothing else is wrong.'));
+      }
+      resolve(etag.replace(/^"+|"+$/g, ''));
+    };
+    x.onerror = () => reject(new Error(
+      'A part was blocked by the browser. Either the bucket has no CORS rule ' +
+      'for this page, or the R2 token cannot write to it. Use "Check bucket ' +
+      'access".'));
+    x.send(blob);
+  });
+}
+
+/// Uploads [blob] in parts and returns the same descriptor `sign` would have.
+async function putInParts(blob, onProgress, { kind, filename, folder }) {
+  const begin = await api({ op: 'beginMultipart', kind, filename, folder });
+  const ref = { kind, objectKey: begin.objectKey, uploadId: begin.uploadId };
+  const total = blob.size;
+  const count = Math.ceil(total / PART_SIZE);
+  const done = [];
+  let sent = 0;
+  // A queue of presigned URLs, refilled as it empties. Signing all of them up
+  // front hands the operator a set that expires underneath them — see the
+  // signParts op for why that fails at part forty for no visible reason.
+  let queue = [];
+
+  try {
+    for (let n = 1; n <= count; n++) {
+      if (!queue.length) {
+        const r = await api({ ...ref, op: 'signParts', from: n, count: 8 });
+        queue = r.parts || [];
+      }
+      const slot = queue.shift();
+      if (!slot) throw new Error('The server signed no URL for part ' + n + '.');
+      // THE URL MUST BE FOR THE PART WE ARE ABOUT TO SEND. `partNumber` is
+      // inside the signature, so a batch that came back offset by one would
+      // write each chunk at the wrong index — and R2 would accept every part.
+      // The result is a file of exactly the right length with its minutes
+      // shuffled, discovered by a viewer.
+      if (slot.partNumber !== n) {
+        throw new Error('The server signed part ' + slot.partNumber +
+          ' where part ' + n + ' was asked for.');
+      }
+      const start = (n - 1) * PART_SIZE;
+      const chunk = blob.slice(start, Math.min(start + PART_SIZE, total));
+
+      let etag = null;
+      let last = null;
+      for (let t = 0; t < PART_TRIES; t++) {
+        // A RETRY GETS A FRESH URL. The old one may be the reason the attempt
+        // failed — an hour is a long time on this connection — and re-signing
+        // one part costs a single small request.
+        let url = slot.url;
+        if (t > 0) {
+          await sleep(1000 * Math.pow(2, t - 1));
+          try {
+            const again = await api({ ...ref, op: 'signParts', from: n, count: 1 });
+            if (again.parts && again.parts[0]) url = again.parts[0].url;
+          } catch (_) { /* keep the URL we have and try it */ }
+        }
+        try {
+          etag = await putPart(url, chunk,
+            (f) => onProgress && onProgress((sent + f * chunk.size) / total));
+          break;
+        } catch (e) {
+          last = e;
+          // A CORS fault will not fix itself on the next attempt, and three
+          // more identical failures only delay the message that says so.
+          if (/ExposeHeaders/.test(String(e.message || e))) throw e;
+        }
+      }
+      if (!etag) throw last || new Error('Part ' + n + ' would not upload.');
+
+      sent += chunk.size;
+      if (onProgress) onProgress(sent / total);
+      done.push({ partNumber: n, etag });
+    }
+    await api({ ...ref, op: 'completeMultipart', parts: done });
+    return begin;
+  } catch (e) {
+    // TIDY UP, ALWAYS. Parts that were uploaded and never completed sit in the
+    // bucket invisible to every listing and charged for by the gigabyte-month.
+    try { await api({ ...ref, op: 'abortMultipart' }); } catch (_) {}
+    throw e;
+  }
+}
+
 /// Measures, presigns, uploads, and returns the asset descriptor the API wants.
 async function uploadOne(file, onProgress, folder, note) {
   const isVideo = file.type.startsWith('video');
@@ -1095,11 +1240,18 @@ async function uploadOne(file, onProgress, folder, note) {
     if (note) note(fs.state, fs.detail);
   }
 
-  const sig = await api({
-    op: 'sign', kind: isVideo ? 'video' : 'photo',
-    filename: file.name, size: body.size, folder,
-  });
-  await put(sig.uploadUrl, body, onProgress);
+  // ONE PUT FOR A SMALL FILE, PARTS FOR A LARGE ONE. The threshold is about
+  // resumability rather than about the 5 GiB cap — see putInParts.
+  const kind = isVideo ? 'video' : 'photo';
+  let sig;
+  if (body.size > MULTIPART_THRESHOLD) {
+    sig = await putInParts(body, onProgress, { kind, filename: file.name, folder });
+  } else {
+    sig = await api({
+      op: 'sign', kind, filename: file.name, size: body.size, folder,
+    });
+    await put(sig.uploadUrl, body, onProgress);
+  }
 
   const out = {
     kind: isVideo ? 'video' : 'photo',
