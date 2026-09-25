@@ -167,6 +167,69 @@ if os.path.isfile(OFFLINE):
             'DOWNLOAD SOURCE UNCLEAR: offline_downloader.dart no longer reads '
             'grant.url. The original object is what a download is for.')
 
+# --- 9. nothing deletes a file another thread is still writing --------------
+#
+# DELETING A FILE DOES NOT STOP A WRITE TO IT. On POSIX an open handle outlives
+# its name, so a sweep that removes a part file under a live download does not
+# stop the download: it carries on spending the viewer's mobile data into an
+# inode nothing can reach, and then either fails to rename or — because
+# `openWrite` recreates a missing file — appends to an empty one and "finishes"
+# a film that is mostly missing. The shelf's own verification deletes that as
+# truncated, so the viewer ends with nothing, having paid for all of it.
+#
+# The Downloads screen has cancelled before discarding since the day it was
+# written. `dropEntitled` had not, and signing out mid-download cost somebody
+# the rest of their film. The rule is the same one in both places and it is
+# ORDER, not intent: the writer stops FIRST.
+#
+# Checked as text because it is checkable as text, and because a rule that lives
+# only in a comment is one a later edit deletes without noticing.
+LIB = os.path.join(FEATURE, 'data/api/offline_library.dart')
+if os.path.isfile(LIB):
+    body = strip(open(LIB, encoding='utf-8').read())
+    start = body.find('Future<void> dropEntitled(')
+    if start < 0:
+        fails.append(
+            'SWEEP RENAMED: offline_library.dart has no dropEntitled. If the '
+            'entitled sweep moved, move this check with it - it is the one '
+            'that stops a sign-out deleting a file a download is writing to.')
+    else:
+        end = body.find('Future<void> dropAll(', start)
+        method = body[start:end if end > start else len(body)]
+        # SCOPED TO THE PART FILES, which are the only ones anything can be
+        # writing to. The finished films this method deletes above are not:
+        # the downloader writes `<id>.mp4.part` and renames only at the very
+        # end, so `<id>.mp4` never has a writer. Checking the whole method
+        # would fail on those deletes and teach whoever met it that the rule
+        # is noise.
+        pend = method.find('_pendingRows()')
+        method = method[pend:] if pend >= 0 else method
+        if 'stop?.call(' not in method:
+            fails.append(
+                'SWEEP DOES NOT STOP THE WRITER: dropEntitled deletes a '
+                'premium part file without calling stop(). Deleting a file '
+                'does not stop a download writing to it - see the note on the '
+                'method.')
+        else:
+            # ORDER IS THE WHOLE FIX. Calling stop() after the delete is the
+            # same bug with a callback in it.
+            called = method.find('stop?.call(')
+            deleted = method.find('.delete()')
+            if deleted >= 0 and deleted < called:
+                fails.append(
+                    'SWEEP STOPS THE WRITER TOO LATE: dropEntitled deletes '
+                    'before it calls stop(). The order is the fix, not the '
+                    'call.')
+
+ACCOUNT = os.path.join(FEATURE, 'presentation/account_provider.dart')
+if os.path.isfile(ACCOUNT):
+    body = strip(open(ACCOUNT, encoding='utf-8').read())
+    if 'dropEntitled(' in body and 'dropEntitled(stop:' not in body:
+        fails.append(
+            'SIGN-OUT SWEEPS WITHOUT STOPPING: account_provider calls '
+            'dropEntitled without passing stop:. The callback exists so a '
+            'sign-out can halt a running download before deleting its file.')
+
 # --- 8. no credential is ever written into this repository -----------------
 #
 # THIS IS NOT A PRECAUTION. `docs/RUNBOOK.md` carried the live

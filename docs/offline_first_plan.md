@@ -566,6 +566,36 @@ downloader, so no edge is added to the provider graph: holding it would let a
 rebuild anywhere below the content repository rebuild the account notifier and
 reset the signed-in state mid-session.
 
+**And the rule is now a check.** `security_invariants.py` rule 9 fails the build
+if `dropEntitled` deletes a part file without calling `stop()`, if it calls it
+AFTER the delete (the same bug with a callback in it), or if the sign-out stops
+passing one. Scoped to the PART files, because the finished films the same method
+deletes have no writer — the downloader writes `<id>.mp4.part` and renames only at
+the very end — and a check that failed on those would teach whoever met it that
+the rule is noise. Both halves were proved by breaking them and watching the build
+go red.
+
+### Checked and safe: an offline film cannot be turned back into a stream
+
+Worth writing down because it is not obvious and because somebody could
+"simplify" it away. The player steps down a rung when it stalls, and a stall on a
+downloaded film would be a disaster: a viewer watching offline would be switched
+to a network copy — spending mobile data on a film they had already paid to
+download, or failing outright with no signal at all.
+
+It cannot happen, and the reason is not the `ephemeral` flag. `StreamRenewal`
+holds ONE registration and `canRenew(uri)` compares the **exact URI string**. A
+stream registers the address it actually opened; a downloaded film is opened from
+`sealed://…` resolved to a different local server on a different port, and a
+partially-downloaded one from that same local server. Neither string can ever
+equal the registered one, so `canRenew` is false and both the downgrade and the
+mid-stream renewal return immediately.
+
+**If `canRenew` is ever reduced to a boolean, that protection is gone.** The
+comparison is the guard.
+
+
+
 ## Notes for whoever picks this up
 
 - **No Flutter or Dart SDK in the session container.** `python3 tool/check.py`
