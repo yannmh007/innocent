@@ -131,6 +131,7 @@ class MainActivity : AudioServiceFragmentActivity() {
         // app is backgrounded, and shows transfer progress in the shade.
         private const val TRANSFER_SERVICE_CHANNEL = "mx_clone/transfer_service"
         private const val OFFLINE_SERVICE_CHANNEL = "mx_clone/offline_service"
+        private const val NET_INFO_CHANNEL = "mx_clone/net_info"
         // v0.50 (Zapya-style app sharing): the file picker's Apps tab asks
         // for the installed user apps so their APKs can be sent over the
         // LAN transfer just like any other file.
@@ -214,6 +215,7 @@ class MainActivity : AudioServiceFragmentActivity() {
     private var musicWidgetChannel: MethodChannel? = null
     private var transferServiceChannel: MethodChannel? = null
     private var offlineServiceChannel: MethodChannel? = null
+    private var netInfoChannel: MethodChannel? = null
     // Held only while the Transfer tab is scanning for nearby devices.
     // Without it Android filters out the UDP broadcast frames discovery
     // depends on. Released in onDestroy so it can never leak.
@@ -804,6 +806,28 @@ class MainActivity : AudioServiceFragmentActivity() {
         // Foreground service for Wi-Fi file transfers: Flutter calls
         // start/update/stop to keep the transfer alive while backgrounded
         // and to drive the progress notification.
+        // What kind of connection this is, and whether it costs money by the
+        // megabyte. See NetInfo for why the question is "metered" and not
+        // "Wi-Fi": a tethered phone and a paid hotspot are both Wi-Fi and both
+        // cost the user, and Android already knows the difference.
+        netInfoChannel = MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            NET_INFO_CHANNEL
+        )
+        netInfoChannel?.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "read" -> {
+                    result.success(
+                        mapOf(
+                            "transport" to NetInfo.transport(applicationContext),
+                            "metered" to NetInfo.metered(applicationContext)
+                        )
+                    )
+                }
+                else -> result.notImplemented()
+            }
+        }
+
         // Keeps a catalogue "watch offline" download alive across Home, a
         // screen-off and a swipe from recents. Three verbs and nothing else:
         // the downloading itself is Dart's, and this only tells Android the

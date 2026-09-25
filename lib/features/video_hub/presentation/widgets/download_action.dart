@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/localization/app_strings.dart';
+import '../../../../core/services/network/connection_kind.dart';
 import '../../data/api/event_sender.dart';
 import '../../data/api/offline_downloader.dart';
 import '../../data/device_identity.dart';
@@ -157,7 +158,9 @@ class _DownloadActionState extends ConsumerState<DownloadAction> {
         ? s.vhDownloadNoSpace
         : failed == 'gave_up'
             ? s.vhDownloadGaveUp
-            : s.vhUnavailable;
+            : failed == 'meteredWhileWifiOnly'
+                ? s.vhDownloadWifiOnlyBlocked
+                : s.vhUnavailable;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message)),
     );
@@ -179,19 +182,28 @@ class _DownloadActionState extends ConsumerState<DownloadAction> {
   Future<bool> _confirmSize(int totalBytes, int freeBytes) async {
     if (!mounted) return true;
     final s = AppStrings.of(context);
+    // WHICH CONNECTION IS ABOUT TO BE SPENT. "1.8 GB" means one thing on home
+    // wifi and quite another on a data bundle, and the app knows which it is on
+    // — so not saying it leaves the viewer to work out the only part of the
+    // question that costs them money.
+    final kind = await ConnectionInfo.read();
+    if (!mounted) return true;
     final answer = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: VH.surface1,
         title: Text(content.title, style: VH.label),
         content: Text(
-          s.vhDownloadSizeAsk(
-            formatBytes(totalBytes),
-            // A platform that did not answer is shown as a dash rather than
-            // as a confident "0 MB free", which would read as a reason not to
-            // continue when nothing was actually measured.
-            freeBytes < 0 ? '—' : formatBytes(freeBytes),
-          ),
+          <String>[
+            s.vhDownloadSizeAsk(
+              formatBytes(totalBytes),
+              // A platform that did not answer is shown as a dash rather than
+              // as a confident "0 MB free", which would read as a reason not to
+              // continue when nothing was actually measured.
+              freeBytes < 0 ? '—' : formatBytes(freeBytes),
+            ),
+            if (kind.metered) s.vhDownloadOnMobile,
+          ].join(' '),
           style: VH.body,
         ),
         actions: <Widget>[

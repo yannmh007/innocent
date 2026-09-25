@@ -78,6 +78,24 @@ class OfflineProgress {
   }
 }
 
+/// Whether a download may spend this connection right now.
+///
+/// PASSED IN RATHER THAN READ HERE. The downloader has no business knowing
+/// about Riverpod or about a settings screen, and the rule it is enforcing is a
+/// product decision that belongs next to the setting. What it gets is an
+/// answer: yes, or a reason to give the viewer.
+typedef DownloadAllowance = Future<DownloadRefusal?> Function();
+
+/// Why a download may not spend this connection.
+enum DownloadRefusal {
+  /// "Download over Wi-Fi only" is on and this connection is metered.
+  ///
+  /// Android's own NET_CAPABILITY_NOT_METERED decides, not the transport: a
+  /// tethered phone and a paid hotspot are both Wi-Fi and both cost the viewer
+  /// by the megabyte.
+  meteredWhileWifiOnly,
+}
+
 /// The two sentences a download puts in the notification shade.
 ///
 /// PASSED IN, BECAUSE THIS CLASS CANNOT READ THE STRING TABLE. It has no
@@ -156,11 +174,16 @@ class OfflineDownloader {
     this._repo,
     this._library, {
     http.Client? httpClient,
-  }) : _http = httpClient ?? http.Client();
+    DownloadAllowance? allowance,
+  })  : _http = httpClient ?? http.Client(),
+        _allowance = allowance ?? _alwaysAllowed;
 
   final ContentRepository _repo;
   final OfflineLibrary _library;
   final http.Client _http;
+  final DownloadAllowance _allowance;
+
+  static Future<DownloadRefusal?> _alwaysAllowed() async => null;
 
   /// CONSECUTIVE failures tolerated before giving up, not total attempts.
   ///
@@ -227,7 +250,21 @@ class OfflineDownloader {
 
   /// Asks for the download to stop. The partial file is KEPT, so starting
   /// again resumes rather than restarts.
-  void cancel(String titleId) => _cancelled.add(titleId);
+  ///
+  /// THIS IS THE VIEWER PAUSING, and it is recorded as such. Everything that
+  /// calls it is a person pressing something — the Pause button, the shade, the
+  /// Cancel on a queued item — so the row is marked, and nothing will resume it
+  /// on their behalf. A download stopped by the network or by the app dying
+  /// leaves the row unmarked and carries on by itself. See
+  /// [PendingDownload.pausedByUser]: the two look identical on disk and only
+  /// this call can tell them apart.
+  void cancel(String titleId) {
+    _cancelled.add(titleId);
+    // Fire and forget: the flag above is what stops the transfer, and a
+    // preferences write must not be in that path.
+    // ignore: discarded_futures
+    _library.markPaused(titleId);
+  }
 
   /// Fetches [content] to disk.
   ///
@@ -291,6 +328,8 @@ class OfflineDownloader {
       assetId: assetId,
       startedAt: DateTime.now(),
       premium: content.accessTier == AccessTier.premium,
+      // Starting or resuming clears the pause: it is being asked for again.
+      pausedByUser: false,
     ));
 
     // Queued behind any transfer already registered. Said out loud, because a
@@ -437,6 +476,30 @@ class OfflineDownloader {
       while (failures <= maxConsecutiveFailures && attempts < maxAttempts) {
         attempts++;
         if (_cancelled.contains(titleId)) return null;
+
+        // ─── MAY THIS CONNECTION BE SPENT? ────────────────────────────────
+        //
+        // Asked before every attempt, not only the first, so a download that
+        // was running on wifi stops when the viewer walks out of the house
+        // rather than quietly continuing on their data bundle. That is the only
+        // reading of "Wi-Fi only" that means anything.
+        //
+        // It STOPS rather than waits. Waiting would hold the foreground service
+        // and its WakeLock for however long it takes somebody to get home,
+        // which is a battery drain in exchange for nothing — the bytes on disk
+        // are kept and the resume is automatic the next time the app sees
+        // wifi. Saying so out loud is the difference between a rule and a
+        // silence.
+        final refusal = await _allowance();
+        if (refusal != null) {
+          emit(OfflineProgress(
+            titleId: titleId,
+            received: received,
+            total: total,
+            error: refusal.name,
+          ));
+          return null;
+        }
 
         if (failures > 0) {
           rate.reset();

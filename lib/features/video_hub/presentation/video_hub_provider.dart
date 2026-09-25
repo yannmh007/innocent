@@ -4,6 +4,8 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/services/network/connection_kind.dart';
+import '../../../core/services/preferences/player_settings_service.dart';
 import '../data/api/api_content_repository.dart';
 import '../data/api/backend_config.dart';
 import '../data/api/event_sender.dart';
@@ -190,6 +192,20 @@ final offlineDownloaderProvider = Provider<OfflineDownloader>((ref) {
   return OfflineDownloader(
     ref.watch(contentRepositoryProvider),
     ref.watch(offlineLibraryProvider),
+    // WHETHER THIS CONNECTION MAY BE SPENT, asked fresh on every attempt.
+    //
+    // `ref.read` and deliberately NOT `ref.watch`: watching the setting would
+    // rebuild the downloader when it changes, and the downloader is the thing
+    // holding every in-flight download's state. Flipping a switch would abandon
+    // a transfer at 900 MB. The closure reads the current value when it is
+    // asked, which is the same freshness with none of that.
+    allowance: () async {
+      final wifiOnly =
+          ref.read(playerSettingsProvider).get(PlayerSetting.downloadWifiOnly);
+      if (!wifiOnly) return null;
+      final kind = await ConnectionInfo.read();
+      return kind.metered ? DownloadRefusal.meteredWhileWifiOnly : null;
+    },
   );
 });
 

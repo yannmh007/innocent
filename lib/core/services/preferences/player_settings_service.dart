@@ -158,6 +158,16 @@ enum PlayerSetting {
   // decoder measured dropping frames. A weak device still gets it, within
   // seconds; every other device stops paying for it.
   decSpeedupTricks(default_: true),
+
+  // ─── Downloads (watch offline) ───
+  //
+  // DEFAULT OFF, AND THAT IS THE DELIBERATE CHOICE FOR THIS AUDIENCE. Every
+  // download feature ships this switch and most ship it ON, because most were
+  // built where home wifi is assumed. Most viewers of this app are on Myanmar
+  // mobile data and have no wifi to wait for — defaulting this on would mean a
+  // Download button that appears to do nothing, for the majority, for ever.
+  // It is here for the minority who do have wifi and would rather wait for it.
+  downloadWifiOnly(default_: false),
   decDeinterlace(default_: false),
   decCustomCodec(default_: false),
 

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/localization/app_strings.dart';
+import '../../../core/services/preferences/player_settings_service.dart';
 import '../data/api/offline_downloader.dart';
 import '../data/api/offline_library.dart';
 import '../data/device_identity.dart';
@@ -100,6 +101,12 @@ class DownloadsScreen extends ConsumerWidget {
                     ],
                   ),
                 ),
+              // THE ONE SETTING THIS FEATURE NEEDS, next to the thing it
+              // governs rather than buried in a settings tree four screens
+              // away. YouTube and Netflix both keep it in their downloads
+              // section for the same reason: it is only ever thought about
+              // while looking at downloads.
+              const _WifiOnlyRow(),
               if (pending.isNotEmpty) ...<Widget>[
                 Padding(
                   padding: const EdgeInsets.only(bottom: VH.s2),
@@ -406,7 +413,13 @@ class _PendingRowState extends ConsumerState<_PendingRow> {
       }
       return '$got · ${s.vhDownloadResuming}';
     }
-    return '$got · ${s.vhDownloadPaused}';
+    // PAUSED AND INTERRUPTED READ DIFFERENTLY, because they are different
+    // promises. One is waiting for the viewer; the other is waiting for
+    // nothing and will pick itself up the next time the app opens with a
+    // connection. Telling somebody their download is "Paused" when it is
+    // about to carry on invites them to press something they do not need to.
+    if (widget.pending.item.pausedByUser) return '$got · ${s.vhDownloadPaused}';
+    return '$got · ${s.vhDownloadWillResume}';
   }
 
   @override
@@ -500,6 +513,50 @@ class _PendingRowState extends ConsumerState<_PendingRow> {
           IconButton(
             icon: const Icon(Icons.delete_outline, color: VH.textTertiary),
             onPressed: _discard,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+
+/// "Download over Wi-Fi only", with the reason it is off by default.
+class _WifiOnlyRow extends ConsumerWidget {
+  const _WifiOnlyRow();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = AppStrings.of(context);
+    final on = ref.watch(playerSettingsProvider).get(
+          PlayerSetting.downloadWifiOnly,
+        );
+    return Padding(
+      padding: const EdgeInsets.only(bottom: VH.s3),
+      child: Row(
+        children: <Widget>[
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(s.vhDownloadWifiOnly,
+                    style: VH.label.copyWith(fontSize: 13.5)),
+                const SizedBox(height: 2),
+                // THE HINT SAYS WHY IT IS OFF. A switch whose default looks
+                // wrong invites somebody to "fix" it, and turning this on is
+                // exactly the wrong move for a viewer with no wifi — their
+                // downloads would then wait for something that never comes.
+                Text(s.vhDownloadWifiOnlyHint,
+                    style: VH.meta.copyWith(fontSize: 11.5)),
+              ],
+            ),
+          ),
+          const SizedBox(width: VH.s2),
+          Switch(
+            value: on,
+            onChanged: (v) => ref
+                .read(playerSettingsProvider.notifier)
+                .setValue(PlayerSetting.downloadWifiOnly, v),
           ),
         ],
       ),

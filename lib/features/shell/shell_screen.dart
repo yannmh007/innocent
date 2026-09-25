@@ -7,6 +7,8 @@ import '../../core/localization/app_strings.dart';
 import '../../core/router/routes.dart';
 import '../../core/theme/app_colors.dart';
 import '../local_browser/presentation/library_provider.dart';
+import '../video_hub/data/api/offline_auto_resume.dart';
+import '../video_hub/data/api/offline_downloader.dart';
 import '../local_browser/presentation/local_screen.dart';
 import '../me/presentation/me_screen.dart';
 import '../updater/presentation/update_prompt.dart';
@@ -67,6 +69,31 @@ class _ShellScreenState extends ConsumerState<ShellScreen>
     // so the prompt would otherwise wait for the user to background the app
     // and come back before it could ever appear.
     WidgetsBinding.instance.addPostFrameCallback((_) => _maybePromptUpdate());
+    // AND PICK UP ANY DOWNLOAD THAT WAS INTERRUPTED.
+    //
+    // The shell is the right place for this and the only one: it is the first
+    // thing that exists in a session, it survives the whole of it, and unlike a
+    // provider it knows the viewer's language — which a resumed download needs
+    // for its notification. Hooked to the post-frame callback for the same
+    // reason the update prompt is: the first resume of a cold start never fires
+    // the lifecycle callback, so anything that waits for one waits until the
+    // user has backgrounded the app and come back.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeResumeDownloads());
+  }
+
+  /// Carry on with downloads the network or the app interrupted — never with
+  /// one the viewer paused. See [OfflineAutoResume].
+  void _maybeResumeDownloads() {
+    if (!mounted) return;
+    final s = AppStrings.of(context);
+    // ignore: discarded_futures
+    OfflineAutoResume.maybeRun(
+      ref,
+      notices: DownloadNotices(
+        waiting: s.vhDownloadWaitingSignal,
+        ready: s.vhDownloadReadyOffline,
+      ),
+    );
   }
 
   /// §4B: on resume, on a list screen. This is that list screen — the shell
@@ -101,6 +128,10 @@ class _ShellScreenState extends ConsumerState<ShellScreen>
       if (isShellVisible) {
         _restoreEdgeToEdge();
         _maybePromptUpdate();
+        // On every return to the app, not only on a cold start. Walking into
+        // wifi, or getting the signal back, is noticed the next time somebody
+        // glances at their phone rather than the next time they relaunch.
+        _maybeResumeDownloads();
       }
     }
   }

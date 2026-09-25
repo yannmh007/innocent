@@ -266,6 +266,69 @@ void main() {
     });
   });
 
+  group('paused by the viewer, or interrupted', () {
+    // THE LINE AUTOMATIC RESUMING IS DRAWN ON. Interrupted and paused look
+    // identical on disk, so the pause has to be recorded when it happens —
+    // otherwise the app either abandons downloads it should finish or overrules
+    // people who deliberately stopped one, and spends their data doing it.
+    Future<void> seedPending(String id, {int bytes = 5}) async {
+      final dir = await library.directory();
+      await File('${dir.path}/$id.mp4${OfflineLibrary.partSuffix}')
+          .writeAsBytes(List<int>.filled(bytes, 0));
+      await library.putPending(PendingDownload(
+        titleId: id,
+        title: 'Title $id',
+        startedAt: DateTime.now(),
+      ));
+    }
+
+    test('a fresh pending download is not paused', () async {
+      await seedPending('a');
+      final rows = await library.pending();
+      expect(rows, hasLength(1));
+      expect(rows.single.item.pausedByUser, isFalse);
+    });
+
+    test('markPaused records it, and it survives a reread', () async {
+      await seedPending('a');
+      await library.markPaused('a');
+      expect((await OfflineLibrary().pending()).single.item.pausedByUser,
+          isTrue);
+    });
+
+    test('marking a title with no row does not invent one', () async {
+      await library.markPaused('never-existed');
+      expect(await library.pending(), isEmpty);
+    });
+
+    test('starting again clears the pause, because it is being asked for',
+        () async {
+      await seedPending('a');
+      await library.markPaused('a');
+      await library.putPending(PendingDownload(
+        titleId: 'a',
+        title: 'Title a',
+        startedAt: DateTime.now(),
+      ));
+      expect((await library.pending()).single.item.pausedByUser, isFalse);
+    });
+
+    test('a row shows what is on disk, and 0 when nothing is there yet',
+        () async {
+      // putPending runs BEFORE the first byte, so a row with no part file is
+      // the ordinary state for the first seconds of a download. It must be
+      // listed, not pruned — pruning it deleted the record of a live download.
+      await library.putPending(PendingDownload(
+        titleId: 'fresh',
+        title: 'Fresh',
+        startedAt: DateTime.now(),
+      ));
+      final rows = await library.pending();
+      expect(rows, hasLength(1));
+      expect(rows.single.received, 0);
+    });
+  });
+
   group('totals', () {
     test('adds up what is actually on disk', () async {
       await seed('a', bytes: 100);

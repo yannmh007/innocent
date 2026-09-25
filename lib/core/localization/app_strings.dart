@@ -1376,6 +1376,11 @@ class AppStrings {
   String get vhDownloadGaveUp => _s('vhDownloadGaveUp');
   String get vhDownloadWaitingSignal => _s('vhDownloadWaitingSignal');
   String get vhDownloadReadyOffline => _s('vhDownloadReadyOffline');
+  String get vhDownloadWifiOnly => _s('vhDownloadWifiOnly');
+  String get vhDownloadWifiOnlyHint => _s('vhDownloadWifiOnlyHint');
+  String get vhDownloadWifiOnlyBlocked => _s('vhDownloadWifiOnlyBlocked');
+  String get vhDownloadOnMobile => _s('vhDownloadOnMobile');
+  String get vhDownloadWillResume => _s('vhDownloadWillResume');
 
   /// "This film is {size}. You have {free} free." — shown BEFORE a byte of a
   /// metered connection is spent, which is the whole point of it.
@@ -1579,6 +1584,15 @@ class AppStrings {
         'resume it from Downloads when you have signal.',
     'vhDownloadWaitingSignal': 'Waiting for the connection…',
     'vhDownloadReadyOffline': 'Ready to watch offline',
+    'vhDownloadWifiOnly': 'Download over Wi-Fi only',
+    'vhDownloadWifiOnlyHint':
+        'Downloads wait for Wi-Fi instead of using mobile data. Off by '
+        'default, because most people here have no Wi-Fi to wait for.',
+    'vhDownloadWifiOnlyBlocked':
+        'Waiting for Wi-Fi. Everything downloaded so far is kept - it carries '
+        'on by itself, or turn off "Wi-Fi only" to use mobile data.',
+    'vhDownloadOnMobile': 'You are on mobile data.',
+    'vhDownloadWillResume': 'will carry on by itself',
     'vhDownloadSizeAsk':
         'This one is {size}, downloaded at full quality. You have {free} free '
         'on this phone. Carry on?',
@@ -2783,6 +2797,15 @@ class AppStrings {
         'လိုင်းရတဲ့အခါ ဒေါင်းလုဒ်များ ထဲကနေ ဆက်လုပ်ပါ။',
     'vhDownloadWaitingSignal': 'အင်တာနက် ပြန်ရအောင် စောင့်နေသည်…',
     'vhDownloadReadyOffline': 'အော့ဖ်လိုင်း ကြည့်လို့ ရပါပြီ',
+    'vhDownloadWifiOnly': 'Wi-Fi နဲ့သာ ဒေါင်းလုဒ်',
+    'vhDownloadWifiOnlyHint':
+        'မိုဘိုင်းဒေတာ မသုံးဘဲ Wi-Fi ရမှ ဒေါင်းပါမယ်။ ပုံမှန် ပိတ်ထားပါတယ် — '
+        'အများစုမှာ စောင့်ရမယ့် Wi-Fi မရှိတာမို့။',
+    'vhDownloadWifiOnlyBlocked':
+        'Wi-Fi ရအောင် စောင့်နေပါတယ်။ ရောက်ပြီးသား အကုန် သိမ်းထားပါတယ် — '
+        'အလိုအလျောက် ဆက်လုပ်ပါမယ်၊ ဒါမှမဟုတ် "Wi-Fi နဲ့သာ" ကို ပိတ်လိုက်ပါ။',
+    'vhDownloadOnMobile': 'မိုဘိုင်းဒေတာ သုံးနေပါတယ်။',
+    'vhDownloadWillResume': 'အလိုအလျောက် ဆက်လုပ်ပါမယ်',
     'vhDownloadSizeAsk':
         'ဒီဇာတ်ကားက {size} ရှိပါတယ် — quality အပြည့်နဲ့ ဒေါင်းမှာပါ။ '
         'ဖုန်းထဲ {free} လွတ်ပါတယ်။ ဆက်လုပ်မလား?',
@@ -3977,6 +4000,15 @@ class AppStrings {
         'ทำต่อได้จากหน้าดาวน์โหลดเมื่อมีสัญญาณ',
     'vhDownloadWaitingSignal': 'กำลังรอการเชื่อมต่อ…',
     'vhDownloadReadyOffline': 'ดูออฟไลน์ได้แล้ว',
+    'vhDownloadWifiOnly': 'ดาวน์โหลดผ่าน Wi-Fi เท่านั้น',
+    'vhDownloadWifiOnlyHint':
+        'รอ Wi-Fi แทนการใช้เน็ตมือถือ ปิดไว้เป็นค่าเริ่มต้น '
+        'เพราะผู้ใช้ส่วนใหญ่ที่นี่ไม่มี Wi-Fi ให้รอ',
+    'vhDownloadWifiOnlyBlocked':
+        'กำลังรอ Wi-Fi ส่วนที่ดาวน์โหลดแล้วยังอยู่ - จะทำต่อเอง '
+        'หรือปิด "Wi-Fi เท่านั้น" เพื่อใช้เน็ตมือถือ',
+    'vhDownloadOnMobile': 'คุณกำลังใช้เน็ตมือถือ',
+    'vhDownloadWillResume': 'จะทำต่อเอง',
     'vhDownloadSizeAsk':
         'เรื่องนี้ขนาด {size} ดาวน์โหลดแบบคุณภาพเต็ม '
         'เครื่องนี้เหลือพื้นที่ {free} ดำเนินการต่อหรือไม่',

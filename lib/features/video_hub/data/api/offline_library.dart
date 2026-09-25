@@ -153,6 +153,18 @@ class PendingDownload {
   /// download without touching a half-finished free one.
   final bool premium;
 
+  /// True when the VIEWER stopped this, rather than the network or the app.
+  ///
+  /// ─── THE WHOLE BASIS OF AUTOMATIC RESUMING ───────────────────────────
+  ///
+  /// A download that was interrupted should carry on by itself: the viewer
+  /// asked for it, agreed to its size, and nothing since then was their
+  /// decision. A download they PAUSED must not, and resuming it would be the
+  /// app overruling them and spending their data to do it. Chrome draws the
+  /// line in exactly this place, and it is the only line that can be drawn
+  /// honestly — "interrupted" and "paused" look identical on disk.
+  final bool pausedByUser;
+
   const PendingDownload({
     required this.titleId,
     required this.title,
@@ -161,6 +173,7 @@ class PendingDownload {
     this.posterUrl,
     this.assetId,
     this.premium = true,
+    this.pausedByUser = false,
   });
 
   Map<String, dynamic> toJson() => <String, dynamic>{
@@ -171,6 +184,7 @@ class PendingDownload {
         if (assetId != null) 'assetId': assetId,
         'startedAt': startedAt.toUtc().toIso8601String(),
         'premium': premium,
+        'pausedByUser': pausedByUser,
       };
 
   static PendingDownload? fromJson(Map<String, dynamic> m) {
@@ -185,6 +199,10 @@ class PendingDownload {
       startedAt:
           DateTime.tryParse('${m['startedAt']}')?.toLocal() ?? DateTime.now(),
       premium: m['premium'] as bool? ?? true,
+      // Absent reads as NOT paused, so a row written before this field existed
+      // is eligible to carry on. That is the right default: those rows were all
+      // left behind by an interruption, because there was no way to pause one.
+      pausedByUser: m['pausedByUser'] as bool? ?? false,
     );
   }
 }
@@ -533,6 +551,36 @@ class OfflineLibrary {
         if (o.titleId != item.titleId) o,
     ];
     await _writePending(next);
+  }
+
+  /// Record that the VIEWER stopped this download, so nothing resumes it for
+  /// them. See [PendingDownload.pausedByUser].
+  ///
+  /// A no-op when there is no row: a cancel that arrives after the download
+  /// finished has nothing to mark, and inventing a row for it would put a
+  /// finished film in the unfinished list.
+  Future<void> markPaused(String titleId) async {
+    final rows = await _pendingRows();
+    var found = false;
+    final next = <PendingDownload>[];
+    for (final row in rows) {
+      if (row.titleId == titleId) {
+        found = true;
+        next.add(PendingDownload(
+          titleId: row.titleId,
+          title: row.title,
+          startedAt: row.startedAt,
+          titleMm: row.titleMm,
+          posterUrl: row.posterUrl,
+          assetId: row.assetId,
+          premium: row.premium,
+          pausedByUser: true,
+        ));
+      } else {
+        next.add(row);
+      }
+    }
+    if (found) await _writePending(next);
   }
 
   /// Forget a pending row WITHOUT touching the part file.
