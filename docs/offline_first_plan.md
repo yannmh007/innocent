@@ -532,8 +532,11 @@ thing it was asked to improve — and this project already has one of those
   to GitHub until 2026-09-25. It is out of the working tree now and **that does
   not undo it**: the value is still in this repository's history, in every clone
   and fork, and in whatever cached the page. **Those keys have to be rolled in
-  Cloudflare** — R2 → Manage API tokens → new token, update the Supabase secrets,
-  the transcode runner's and the studio function's, then delete the old token.
+  Cloudflare** — R2 → Manage API tokens → a new token with **Object Read & Write**
+  scoped to the two buckets, both values pasted into the Supabase project's Edge
+  Function secrets (ONE place: all four functions read the same two), then the old
+  token revoked. The Worker is unaffected throughout, because it reaches the
+  bucket through a binding rather than a credential.
   Until that is done, anyone who has read the repository can read, overwrite and
   delete every object in the media bucket.
   `tool/security_invariants.py` rule 8 now fails the build on a credential-shaped

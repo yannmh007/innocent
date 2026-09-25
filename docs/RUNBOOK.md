@@ -95,10 +95,24 @@ All three: **Deploy → Settings → turn `Verify JWT with legacy secret` OFF.**
 > cached the page. A pair of R2 keys can read, overwrite and delete every object
 > in the media bucket.
 >
-> **They have to be rolled in the Cloudflare dashboard** (R2 → Manage API
-> tokens → create a new token, then update the two secrets below, the transcode
-> runner's, and the studio function's), and the old token deleted. Nothing else
-> makes them safe again.
+> **They have to be rolled in the Cloudflare dashboard**: R2 → Account Details →
+> **Manage** next to API Tokens → **Create Account API token** → **Object Read &
+> Write**, scoped to `innocent-media` and `innocent-public` (every R2 call this
+> project makes is object-level, so Admin is more than it needs) → then paste the
+> new Access Key ID and Secret Access Key into the two secrets below and **revoke
+> the old token**. Nothing else makes them safe again.
+>
+> **ONE PLACE, NOT FOUR.** Supabase Edge Function secrets are per PROJECT, so
+> `request-playback`, `studio`, `probe-media` and `transcode` all read the same
+> two values and all four are fixed by editing them once. Nothing in GitHub
+> Actions holds them — the transcode runner is handed presigned URLs and never
+> sees a credential — and neither does the console page or the Worker, which
+> reaches the bucket through a binding.
+>
+> **THE WORKER IS UNAFFECTED**, which is what makes this safe to do in the
+> daytime: playback through the edge uses that binding, not these keys, so it
+> keeps working throughout. What briefly stops if the values are wrong is
+> uploading, probing, and the presigned fallback.
 >
 > `tool/security_invariants.py` now fails the build if a 64-character hex string
 > that looks like an R2 secret appears anywhere in the tree, so this cannot come
