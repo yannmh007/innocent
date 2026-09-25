@@ -415,6 +415,25 @@ class OfflineDownloader {
     int? total = await _readSizeNote(sizeNote);
     var sealer = await _sealerFor(part: part, ivNote: ivNote, at: received);
 
+    // ─── KILLED BETWEEN THE TRAILER AND THE RENAME ─────────────────────────
+    //
+    // A narrow window, and it leaves a part file that is a COMPLETE sealed film
+    // — thirty-two bytes longer than the object. Without this, `received` reads
+    // as that longer number, the film finishes with a second trailer appended
+    // over the first, and the shelf records a size thirty-two bytes larger than
+    // anything anybody uploaded.
+    //
+    // A false positive here is not reachable: a trailer is recognised by its
+    // magic AND by carrying this file's own length minus thirty-two, and
+    // ciphertext does not produce that pair by accident.
+    if (sealer != null && received > OfflineCrypto.trailerLength) {
+      final already = await OfflineCrypto.inspect(part);
+      if (already != null) {
+        received = already.plainLength;
+        sealer = _Sealer(iv: sealer.iv, at: received);
+      }
+    }
+
     final label = content.title.trim().isEmpty ? 'Downloading' : content.title;
     await OfflineServiceBridge.start(label, _statusLine(received, total));
     var serviceUp = true;
@@ -1115,9 +1134,16 @@ class _Sealer {
   }
 
   /// Writes the trailer that makes the file a film rather than a part file.
+  ///
+  /// IDEMPOTENT, because this can be reached twice for one film: the app can be
+  /// killed between this line and the rename that follows it, and the next run
+  /// arrives here with the trailer already written. Appending a second one would
+  /// leave the first thirty-two bytes of it inside the film.
   Future<bool> seal(File part, {required int plainLength}) async {
     IOSink? sink;
     try {
+      final already = await OfflineCrypto.inspect(part);
+      if (already != null && already.plainLength == plainLength) return true;
       final trailer = OfflineCrypto.composeTrailer(
         iv: Uint8List.fromList(base64Decode(iv)),
         plainLength: plainLength,

@@ -244,6 +244,25 @@ class LocalFilmServer {
       return;
     }
 
+    // ─── OPENED BEFORE A HEADER IS WRITTEN ────────────────────────────────
+    //
+    // Once a status line has gone out there is no status code left to send, so
+    // a file that cannot be opened has to be discovered here or not reported at
+    // all. This is reachable in the ordinary course of things: a demuxer opens a
+    // second connection on a large seek, and by then a download may have
+    // finished and its part file been renamed — which is why the open falls back
+    // to the finished name rather than failing.
+    //
+    // A HANDLE PER REQUEST, not one per film. Two readers sharing a handle share
+    // its position, which is a race that produces the WRONG BYTES rather than an
+    // error.
+    final handle = await entry.openForRead();
+    if (handle == null) {
+      res.statusCode = HttpStatus.notFound;
+      await res.close();
+      return;
+    }
+
     // HTTP ranges are inclusive at both ends. Everything below is half-open,
     // and the conversion happens here, once.
     var start = 0;
@@ -261,6 +280,12 @@ class LocalFilmServer {
       if (start < 0 || start >= total) {
         res.statusCode = HttpStatus.requestedRangeNotSatisfiable;
         res.headers.set(HttpHeaders.contentRangeHeader, 'bytes */$total');
+        // As with the HEAD return below: the handle is open above this line, so
+        // each early return closes it. A leaked handle per refused range is a
+        // file descriptor per seek, and a process runs out of those.
+        try {
+          await handle.close();
+        } catch (_) {}
         await res.close();
         return;
       }
@@ -278,17 +303,16 @@ class LocalFilmServer {
           HttpHeaders.contentRangeHeader, 'bytes $start-$endInclusive/$total');
     }
     if (req.method == 'HEAD') {
+      // The handle is opened above a header write, so this early return owns
+      // closing it — the `finally` below is on a block this never enters.
+      try {
+        await handle.close();
+      } catch (_) {}
       await res.close();
       return;
     }
 
-    // A HANDLE PER REQUEST, not one per film. A demuxer opens a second
-    // connection to read the tail while the first is still reading the head,
-    // and two readers sharing one handle share its position — which is a race
-    // that produces the wrong bytes rather than an error.
-    RandomAccessFile? handle;
     try {
-      handle = await entry.file.open();
       var pos = start;
       while (pos <= endInclusive) {
         // ─── IS THIS BYTE HERE YET? ──────────────────────────────────────
@@ -335,7 +359,7 @@ class LocalFilmServer {
       if (kDebugMode) debugPrint('LocalFilmServer._serve: $e');
     } finally {
       try {
-        await handle?.close();
+        await handle.close();
       } catch (_) {}
       try {
         await res.close();
@@ -375,6 +399,26 @@ class _Film {
   /// Where the part file lands when it finishes. Read only to answer "how much
   /// is there now" once the rename has happened.
   final File? finished;
+
+  /// Opens the film for reading, whichever name it is under now.
+  ///
+  /// A download that finishes while somebody is watching renames its part file,
+  /// and a request that arrives after that — a demuxer's second connection on a
+  /// large seek — would otherwise find nothing. The layout is identical either
+  /// way: ciphertext from byte zero, with the trailer only ever at the end, so
+  /// every offset in this file still means the same thing.
+  Future<RandomAccessFile?> openForRead() async {
+    try {
+      if (await file.exists()) return await file.open();
+    } catch (_) {/* fall through to the finished name */}
+    final done = finished;
+    if (done != null) {
+      try {
+        if (await done.exists()) return await done.open();
+      } catch (_) {}
+    }
+    return null;
+  }
 
   /// How much of the film can be read right now.
   ///
