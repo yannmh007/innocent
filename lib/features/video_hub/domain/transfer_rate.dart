@@ -72,9 +72,19 @@ class TransferRate {
     }
     _samples.add(_Sample(bytes, at));
     final cutoff = at.subtract(window);
-    // Keep one sample older than the cutoff so a short window still has a
-    // span to measure across.
-    while (_samples.length > 2 && _samples[1].at.isBefore(cutoff)) {
+    // ─── TRIMMED ON THE FIRST SAMPLE, NOT THE SECOND ────────────────────
+    //
+    // The first version tested `_samples[1]`, meaning "stop as soon as the
+    // SECOND sample is inside the window" — which keeps the first one for ever.
+    // Its own test caught it: ten minutes of stall followed by six seconds at
+    // 3 MB/s reported 29 kB/s, because the reading from ten minutes ago was
+    // still the start of the span. That is precisely the lifetime-average
+    // answer the window exists to avoid, arrived at by accident.
+    //
+    // Two samples are always kept even when both are older than the cutoff, so
+    // a transfer that has delivered nothing for a minute reports zero — which
+    // is a fact worth saying — rather than reporting nothing at all.
+    while (_samples.length > 2 && _samples.first.at.isBefore(cutoff)) {
       _samples.removeAt(0);
     }
   }
