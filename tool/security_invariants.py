@@ -254,14 +254,52 @@ RULES = [os.path.join(XML_DIR, 'backup_rules.xml'),
          os.path.join(XML_DIR, 'data_extraction_rules.xml')]
 if all(os.path.isfile(f) for f in RULES):
     rules_text = {f: open(f, encoding='utf-8').read() for f in RULES}
+    # THREE SHAPES, BECAUSE THE TREE USES THREE. The first version of this
+    # matched only `Directory('${base.path}/offline')` — and the stream cache,
+    # the other directory full of catalogue video, is written
+    # `Directory(p.join(base.path, _dirName))`. It would have sailed straight
+    # past a check meant to catch exactly it, and the next person to add a
+    # directory will copy whichever file they happen to open.
     seen = set()
     for base, dirs, files in os.walk(FEATURE):
         for fn in files:
             if not fn.endswith('.dart'):
                 continue
-            body = strip(open(os.path.join(base, fn), encoding='utf-8').read())
-            for m in re.finditer(r"Directory\('\$\{[A-Za-z_.]+\}/([A-Za-z0-9_\-]+)'\)", body):
-                seen.add((m.group(1), os.path.relpath(os.path.join(base, fn), ROOT)))
+            path = os.path.join(base, fn)
+            body = strip(open(path, encoding='utf-8').read())
+            where = os.path.relpath(path, ROOT)
+            # A constant holding the folder name, resolved within its own file.
+            consts = dict(re.findall(
+                r"const\s+String\s+(\w+)\s*=\s*'([A-Za-z0-9_\-]+)'", body))
+            # WHICH BASE DIRECTORY THIS ONE HANGS OFF, because two of them are
+            # not backed up at ALL and flagging those would make this check
+            # wrong. `getApplicationCacheDirectory()` and
+            # `getTemporaryDirectory()` are outside every backup domain by
+            # platform rule — the poster cache lives in the first of those, and
+            # an earlier version of this check demanded a rule for it. A check
+            # that asks for something unnecessary is one people learn to
+            # override.
+            bases = [(m.start(), m.group(1)) for m in
+                     re.finditer(r"get(\w*)Directory\(\)", body)]
+
+            def backed_up(at):
+                prev = [name for off, name in bases if off < at]
+                if not prev:
+                    return True
+                return prev[-1] not in ('ApplicationCache', 'Temporary')
+            for m in re.finditer(
+                    r"Directory\('\$\{[A-Za-z_.]+\}/([A-Za-z0-9_\-]+)'\)", body):
+                if backed_up(m.start()):
+                    seen.add((m.group(1), where))
+            for m in re.finditer(
+                    r"p\.join\(\s*[A-Za-z_][\w.]*\.path\s*,\s*'([A-Za-z0-9_\-]+)'",
+                    body):
+                if backed_up(m.start()):
+                    seen.add((m.group(1), where))
+            for m in re.finditer(
+                    r"p\.join\(\s*[A-Za-z_][\w.]*\.path\s*,\s*(\w+)\s*\)", body):
+                if m.group(1) in consts and backed_up(m.start()):
+                    seen.add((consts[m.group(1)], where))
     for name, where in sorted(seen):
         for f in RULES:
             if ('path="%s"' % name) not in rules_text[f] and \

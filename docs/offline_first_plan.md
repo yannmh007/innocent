@@ -611,6 +611,20 @@ refused is the silence. The wrapped key's preferences file is checked by name
 against `MediaCrypto`'s own constant, so renaming it there without updating the
 rules fails the build. Both halves proved by breaking them.
 
+The check took two goes to be worth having, and both corrections are the point:
+
+- **It matched one spelling and the tree uses three.** `offline/` is written
+  `Directory('${base.path}/offline')`; the stream cache — the OTHER directory full
+  of catalogue video — is written `Directory(p.join(base.path, _dirName))`, with
+  the name in a constant. The first version would have sailed straight past the
+  very thing it was written to catch, and whoever adds the next directory will
+  copy whichever file they happened to open.
+- **It demanded a rule for a directory the platform never backs up.** The poster
+  cache lives in `getApplicationCacheDirectory()`, which is outside every backup
+  domain by platform rule. A check that asks for something unnecessary is one
+  people learn to override, so it now looks at which base directory each one
+  hangs off and stays quiet about the cache and temporary ones.
+
 ### Checked and safe: an offline film cannot be turned back into a stream
 
 Worth writing down because it is not obvious and because somebody could
