@@ -84,7 +84,7 @@ class ApiContentRepository implements ContentRepository {
 
   @override
   Future<ContentPage> getCatalogue({
-    required ContentCategory category,
+    required String categoryId,
     ContentFilters filters = const ContentFilters(),
     int page = 0,
     int pageSize = 30,
@@ -95,9 +95,18 @@ class ApiContentRepository implements ContentRepository {
         // ONE `category` key. Writing the two conditions as two entries looked
         // fine and was wrong: a map literal keeps the LAST value, so asking
         // for Movies silently became "anything that is not adult".
-        'category': category == ContentCategory.all
+        // `all` IS NOT A CATEGORY, it is the absence of one — every title the
+        // caller may see. `neq.adult` rather than no filter at all because the
+        // one category that was ever meant to be excluded from a general
+        // listing was that one; a category hidden with `is_visible = false`
+        // still appears here, which is the honest reading of "hidden section":
+        // the films are published and reachable, the section is not advertised.
+        // Changing that would need the server to own the listing (an RPC), and
+        // putting a visibility rule in the client instead would be a rule in
+        // the wrong place.
+        'category': categoryId == ContentCategory.all.id
             ? 'neq.adult'
-            : 'eq.${category.id}',
+            : 'eq.$categoryId',
         ..._filterQuery(filters),
       },
       page: page,
@@ -188,9 +197,9 @@ class ApiContentRepository implements ContentRepository {
   }
 
   @override
-  Future<ContentFacets> getFacets({required ContentCategory category}) async {
+  Future<ContentFacets> getFacets({required String categoryId}) async {
     return _facets(<String, String>{
-      if (category != ContentCategory.all) 'category_filter': category.id,
+      if (categoryId != ContentCategory.all.id) 'category_filter': categoryId,
     });
   }
 

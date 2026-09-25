@@ -152,4 +152,104 @@ void main() {
       expect(c.visible(), ContentCategoryX.visible());
     });
   });
+
+  group('a category the build has never heard of', () {
+    // THE POINT OF CategoryRef. Until this existed, `visible()` could only ever
+    // return values from a compiled enum, so an operator adding a category got
+    // rows the app stored, queried and refused to draw a tab for. Migration 020
+    // removed the two database obstacles; this is the third.
+
+    test('a server-only category becomes a tab', () {
+      final c = catalogue(<CategoryStyle>[
+        style('all', label: 'All', sortOrder: 0),
+        style('movies', label: 'Movies', sortOrder: 1),
+        style('documentary', label: 'Documentary', sortOrder: 9),
+      ]);
+      final ids = <String>[for (final r in c.refs()) r.id];
+      expect(ids, contains('documentary'));
+      // And it knows it is not compiled, which is what decides whether it can
+      // have a glyph or curated rows.
+      final extra = c.refs().firstWhere((r) => r.id == 'documentary');
+      expect(extra.builtIn, isNull);
+      expect(extra.showsRows, isFalse);
+    });
+
+    test('sort_order places it among the built-ins, not merely at the end', () {
+      // An operator dropping a new section between two old ones is the ordinary
+      // case; appending is the special one.
+      final c = catalogue(<CategoryStyle>[
+        style('all', sortOrder: 0),
+        style('movies', sortOrder: 1),
+        style('documentary', sortOrder: 2),
+        style('series', sortOrder: 3),
+        style('reels', sortOrder: 4),
+      ]);
+      expect(<String>[for (final r in c.refs()) r.id],
+          <String>['all', 'movies', 'documentary', 'series', 'reels']);
+    });
+
+    test('a hidden server-only category is not drawn at all', () {
+      final c = catalogue(<CategoryStyle>[
+        style('all', sortOrder: 0),
+        style('documentary', sortOrder: 9, isVisible: false),
+      ]);
+      expect(<String>[for (final r in c.refs()) r.id],
+          isNot(contains('documentary')));
+    });
+
+    test('two extras with the same sort_order keep a stable order', () {
+      // Equal orders that swapped between launches would read as the app
+      // shuffling its own tab bar.
+      final c = catalogue(<CategoryStyle>[
+        style('all', sortOrder: 0),
+        style('zebra', sortOrder: 5),
+        style('alpaca', sortOrder: 5),
+      ]);
+      final ids = <String>[for (final r in c.refs()) r.id];
+      expect(ids.indexOf('alpaca'), lessThan(ids.indexOf('zebra')));
+      expect(<String>[for (final r in c.refs()) r.id], ids);
+    });
+
+    test('no opinion from the server still yields every built-in tab', () {
+      expect(
+        <String>[for (final r in CategoryCatalogue.empty.refs()) r.id],
+        <String>[for (final c in ContentCategoryX.visible()) c.id],
+      );
+      expect(CategoryCatalogue.empty.refs().first, CategoryRef.all);
+    });
+
+    test('labelForId reads the server row, and says nothing when it cannot',
+        () {
+      final c = catalogue(<CategoryStyle>[
+        style('documentary', label: 'Documentary', labelMm: 'မှတ်တမ်း'),
+        style('blank', label: '   '),
+      ]);
+      expect(c.labelForId('documentary', 'en'), 'Documentary');
+      expect(c.labelForId('documentary', 'my'), 'မှတ်တမ်း');
+      // A blank label is "nothing usable to say", not a label — otherwise the
+      // bar draws an empty pill, which reads as a rendering bug.
+      expect(c.labelForId('blank', 'en'), isNull);
+      expect(c.labelForId('never-heard-of-it', 'en'), isNull);
+    });
+
+    test('fromId keeps an unknown id instead of collapsing it to All', () {
+      // Collapsing is what made a new category invisible, and it would now
+      // reinterpret a link into somebody's new section as the front page.
+      expect(CategoryRef.fromId('movies').builtIn, ContentCategory.movies);
+      expect(CategoryRef.fromId('documentary').builtIn, isNull);
+      expect(CategoryRef.fromId('documentary').id, 'documentary');
+      expect(CategoryRef.fromId('all'), CategoryRef.all);
+    });
+
+    test('refs are equal by id, so a rebuilt ref still matches the selection',
+        () {
+      // The selected tab is compared against a list rebuilt on every frame. If
+      // two refs for one category were not equal, no pill would ever look
+      // chosen.
+      expect(CategoryRef.fromId('movies'), CategoryRef.of(ContentCategory.movies));
+      expect(CategoryRef.serverOnly('documentary'),
+          CategoryRef.fromId('documentary'));
+      expect(CategoryRef.serverOnly('a') == CategoryRef.serverOnly('b'), isFalse);
+    });
+  });
 }

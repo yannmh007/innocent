@@ -49,8 +49,11 @@ final accessPolicyProvider =
     Provider<AccessPolicy>((ref) => AccessPolicy.standard);
 
 /// The category currently selected in the sticky bar.
+///
+/// A [CategoryRef] and not a [ContentCategory], so a category the operator added
+/// after this build shipped can be selected like any other — see [CategoryRef].
 final selectedCategoryProvider =
-    StateProvider<ContentCategory>((ref) => ContentCategory.all);
+    StateProvider<CategoryRef>((ref) => CategoryRef.all);
 
 /// Secondary filters for the selected category.
 ///
@@ -77,7 +80,7 @@ final categoryFacetsProvider =
     FutureProvider.autoDispose<ContentFacets>((ref) {
   final repo = ref.watch(contentRepositoryProvider);
   final category = ref.watch(selectedCategoryProvider);
-  return repo.getFacets(category: category);
+  return repo.getFacets(categoryId: category.id);
 });
 
 /// Identity of a row-facets request. Needs `==`/`hashCode` because it is a

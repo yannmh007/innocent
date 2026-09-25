@@ -109,7 +109,21 @@ class _VideoHubScreenState extends ConsumerState<VideoHubScreen>
     // compiled enum where it does not — including before the first fetch
     // returns and whenever the phone is offline. See CategoryCatalogue.
     final styles = ref.watch(categoryStylesProvider);
-    final categories = styles.visible();
+    final categories = styles.refs();
+    // A CATEGORY CAN STOP EXISTING WHILE IT IS SELECTED. An operator hiding or
+    // deleting one leaves the hub on a tab that is no longer in the bar — no
+    // pill looks chosen, and the grid queries a category the server will not
+    // answer for. Falling back to the landing tab is the only state that is
+    // always valid. Deferred out of build, because a provider must not be
+    // written to while one is being built.
+    if (!categories.contains(selected)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        if (ref.read(selectedCategoryProvider) == selected) {
+          ref.read(selectedCategoryProvider.notifier).state = CategoryRef.all;
+        }
+      });
+    }
     // Watched here so a purchase anywhere in the feature repaints every badge
     // on this screen at once.
     ref.watch(viewerProvider);
@@ -165,7 +179,7 @@ class _VideoHubScreenState extends ConsumerState<VideoHubScreen>
   }
 
   /// Pull-to-refresh refreshes whatever the current tab is actually showing.
-  Future<void> _refresh(ContentCategory selected) async {
+  Future<void> _refresh(CategoryRef selected) async {
     if (selected.showsRows) {
       ref.invalidate(featuredContentProvider);
       ref.invalidate(contentRowsProvider);
@@ -181,7 +195,7 @@ class _VideoHubScreenState extends ConsumerState<VideoHubScreen>
   /// selection across is how someone lands on an empty grid with no visible
   /// reason. And staying scrolled deep while the content underneath changes
   /// completely is disorienting - the new tab starts at its start.
-  void _selectCategory(ContentCategory category) {
+  void _selectCategory(CategoryRef category) {
     ref.read(selectedCategoryProvider.notifier).state = category;
     ref.read(contentFiltersProvider.notifier).state = const ContentFilters();
     if (_scroll.hasClients) _scroll.jumpTo(0);
@@ -381,11 +395,11 @@ class _VideoHubScreenState extends ConsumerState<VideoHubScreen>
   /// Counts matches for a candidate filter set, so the filter sheet can say
   /// "Show 24 titles" before anything is applied.
   Future<int> _countFor({
-    required ContentCategory category,
+    required CategoryRef category,
     required ContentFilters filters,
   }) async {
     final page = await ref.read(contentRepositoryProvider).getCatalogue(
-          category: category,
+          categoryId: category.id,
           filters: filters,
           pageSize: 1,
         );

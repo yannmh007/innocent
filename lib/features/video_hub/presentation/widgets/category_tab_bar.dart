@@ -16,9 +16,9 @@ import '../video_hub_theme.dart';
 /// item to near-white and let everything else recede. Same information, no
 /// shouting, and the posters stay the brightest content on screen.
 class CategoryTabBar extends StatefulWidget {
-  final List<ContentCategory> categories;
-  final ContentCategory selected;
-  final ValueChanged<ContentCategory> onSelected;
+  final List<CategoryRef> categories;
+  final CategoryRef selected;
+  final ValueChanged<CategoryRef> onSelected;
 
   /// What the SERVER calls these categories, where it has an opinion.
   ///
@@ -44,7 +44,9 @@ class _CategoryTabBarState extends State<CategoryTabBar> {
   /// One key per category so the selected pill can be scrolled into view.
   /// Without this, selecting a tab that sits off-screen leaves the bar showing
   /// a selection the user cannot see.
-  final Map<ContentCategory, GlobalKey> _keys = <ContentCategory, GlobalKey>{};
+  // Keyed on the ID, so a category this build has never heard of gets a key
+  // like any other tab.
+  final Map<String, GlobalKey> _keys = <String, GlobalKey>{};
 
   @override
   void didUpdateWidget(covariant CategoryTabBar oldWidget) {
@@ -59,7 +61,7 @@ class _CategoryTabBarState extends State<CategoryTabBar> {
     // and ensureVisible on an unlaid-out box does nothing.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      final ctx = _keys[widget.selected]?.currentContext;
+      final ctx = _keys[widget.selected.id]?.currentContext;
       if (ctx == null) return;
       Scrollable.ensureVisible(
         ctx,
@@ -86,11 +88,15 @@ class _CategoryTabBarState extends State<CategoryTabBar> {
         separatorBuilder: (_, __) => const SizedBox(width: VH.s2),
         itemBuilder: (context, index) {
           final category = widget.categories[index];
-          final key = _keys.putIfAbsent(category, () => GlobalKey());
+          final key = _keys.putIfAbsent(category.id, () => GlobalKey());
           return _CategoryPill(
             key: key,
             label: labelFor(s, category, styles: widget.styles),
-            icon: category.icon,
+            // A glyph is something only a BUILT-IN tab can have: it is a
+            // compiled asset, and a category added after this build shipped has
+            // no way to name one. Text-only is the right answer there, and the
+            // bar was designed to read as text anyway.
+            icon: category.builtIn?.icon,
             selected: category == widget.selected,
             onTap: () {
               if (category == widget.selected) return;
@@ -117,12 +123,19 @@ class _CategoryTabBarState extends State<CategoryTabBar> {
   /// worse than an English one they can read. See CategoryCatalogue.labelFor.
   static String labelFor(
     AppStrings s,
-    ContentCategory category, {
+    CategoryRef category, {
     CategoryCatalogue styles = CategoryCatalogue.empty,
   }) {
-    final fromServer = styles.labelFor(category, s.locale.languageCode);
+    final fromServer = styles.labelForId(category.id, s.locale.languageCode);
     if (fromServer != null) return fromServer;
-    switch (category) {
+    // A category this build has never heard of has no compiled string to fall
+    // back to, and its id is the only name anything here knows. It should never
+    // be reached — a server-only tab exists BECAUSE the server sent a row for
+    // it, and that row is what `labelForId` reads — but an id on screen beats
+    // an empty pill, which reads as a rendering bug.
+    final builtIn = category.builtIn;
+    if (builtIn == null) return category.id;
+    switch (builtIn) {
       case ContentCategory.all:
         return s.vhCategoryAll;
       case ContentCategory.movies:

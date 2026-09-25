@@ -19,7 +19,7 @@ class CatalogueKey {
   /// Exactly one of these is set. [rowKey] means a landing row's full list
   /// (which may span categories); [category] means one category's catalogue.
   final String? rowKey;
-  final ContentCategory? category;
+  final CategoryRef? category;
 
   final ContentFilters filters;
   const CatalogueKey.row(this.rowKey, {required this.filters})
@@ -130,7 +130,7 @@ class PagedCatalogueNotifier extends StateNotifier<PagedCatalogueState> {
       );
     }
     return _repo.getCatalogue(
-      category: _key.category ?? ContentCategory.all,
+      categoryId: (_key.category ?? CategoryRef.all).id,
       filters: _key.filters,
       page: page,
       pageSize: _pageSize,

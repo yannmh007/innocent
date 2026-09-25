@@ -39,15 +39,19 @@ abstract class ContentRepository {
   Future<List<ContentRow>> getRows();
 
   /// One category's catalogue, filtered and paged.
+  /// [categoryId] is the STRING id and not a [ContentCategory], because the set
+  /// of categories is `public.categories` and not an enum this build compiled —
+  /// see [CategoryRef]. Passing an enum here is what made a new category
+  /// unqueryable by a shipped app.
   Future<ContentPage> getCatalogue({
-    required ContentCategory category,
+    required String categoryId,
     ContentFilters filters = const ContentFilters(),
     int page = 0,
     int pageSize = 30,
   });
 
   /// Which filter values this category can actually offer.
-  Future<ContentFacets> getFacets({required ContentCategory category});
+  Future<ContentFacets> getFacets({required String categoryId});
 
   /// What the server calls each category, in what order, and which to hide.
   ///
@@ -66,8 +70,8 @@ abstract class ContentRepository {
   ///
   /// A row shows a sample; this is what "See all" opens. It is a separate call
   /// from [getCatalogue] because a row's scope is not a category — "Trending"
-  /// spans films, series and clips at once, which no single [ContentCategory]
-  /// can express.
+  /// spans films, series and clips at once, which no single category can
+  /// express.
   Future<ContentPage> getRowCatalogue({
     required String rowKey,
     ContentFilters filters = const ContentFilters(),

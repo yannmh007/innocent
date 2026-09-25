@@ -222,7 +222,7 @@ class DemoContentRepository implements ContentRepository {
 
   @override
   Future<ContentPage> getCatalogue({
-    required ContentCategory category,
+    required String categoryId,
     ContentFilters filters = const ContentFilters(),
     int page = 0,
     int pageSize = 30,
@@ -235,7 +235,7 @@ class DemoContentRepository implements ContentRepository {
     var list = _source
         .all()
         .where((e) =>
-            category == ContentCategory.all || e.category == category)
+            categoryId == ContentCategory.all.id || e.category.id == categoryId)
         .toList();
 
     list = _applyFilters(list, filters);
@@ -250,11 +250,11 @@ class DemoContentRepository implements ContentRepository {
   Future<CategoryCatalogue> getCategories() async => CategoryCatalogue.empty;
 
   @override
-  Future<ContentFacets> getFacets({required ContentCategory category}) async {
+  Future<ContentFacets> getFacets({required String categoryId}) async {
     final list = _source
         .all()
         .where((e) =>
-            category == ContentCategory.all || e.category == category)
+            categoryId == ContentCategory.all.id || e.category.id == categoryId)
         .toList();
 
     return _facetsOf(list);

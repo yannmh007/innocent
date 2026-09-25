@@ -86,6 +86,84 @@ extension ContentCategoryX on ContentCategory {
   static List<ContentCategory> visible() => ContentCategory.values;
 }
 
+/// A category the bar can show: one this build knows about, or one the operator
+/// added after it shipped.
+///
+/// ═══════════════════════════════════════════════════════════════════════
+/// WHY THIS EXISTS, AND WHAT IT REPLACES
+/// ═══════════════════════════════════════════════════════════════════════
+///
+/// The selection used to BE a [ContentCategory], and the note further down used
+/// to say — correctly — that a brand-new category therefore needed an app
+/// release: "no row the server sends can make a build draw a tab it has never
+/// heard of". That was the last of three things standing in the way, and the
+/// other two are gone (migration 020 made public.categories the list of valid
+/// categories and taught the landing page to honour visibility).
+///
+/// The fix is not to abolish the enum. The enum still earns its place: `all`
+/// shows curated rows rather than a grid, `series` and `reels` have their own
+/// glyph, and every one of them has a compiled label so the bar can draw itself
+/// with no network. What had to go is the assumption that the enum is EXHAUSTIVE.
+///
+/// So the identity at every boundary — the query, the analytics, the saved
+/// selection — is the STRING id, which is what `titles.category` has always
+/// stored. [builtIn] is present when this build happens to know more about the
+/// category than its name, and absent when it does not. A tab with no built-in
+/// is drawn from the server's label, filtered by its id, and behaves like every
+/// other flat category.
+@immutable
+class CategoryRef {
+  /// What `titles.category` stores. The only thing that identifies a category.
+  final String id;
+
+  /// The compiled category, when this build has one for [id].
+  final ContentCategory? builtIn;
+
+  const CategoryRef._(this.id, this.builtIn);
+
+  factory CategoryRef.of(ContentCategory category) =>
+      CategoryRef._(category.id, category);
+
+  /// A category this build has never heard of. Perfectly ordinary.
+  factory CategoryRef.serverOnly(String id) => CategoryRef._(id, null);
+
+  /// The landing tab, and the default selection.
+  static const CategoryRef all =
+      CategoryRef._('all', ContentCategory.all);
+
+  /// Resolve an id against what this build knows.
+  ///
+  /// An unknown id becomes a server-only ref rather than falling back to
+  /// [all] — falling back is what made a new category invisible, and it would
+  /// now silently reinterpret a deep link into somebody's new section as the
+  /// front page.
+  static CategoryRef fromId(String id) {
+    for (final c in ContentCategory.values) {
+      if (c.id == id) return CategoryRef.of(c);
+    }
+    return CategoryRef.serverOnly(id);
+  }
+
+  /// True when this tab shows curated rows rather than one flat grid.
+  ///
+  /// Keyed on the id and not on [builtIn], so it keeps working if `all` ever
+  /// arrives as a server-only row.
+  bool get showsRows => id == ContentCategory.all.id;
+
+  /// The compiled English name, or the id when there is nothing compiled. Only
+  /// for logs — the screen uses the server label or [AppStrings].
+  String get fallbackLabel => builtIn?.fallbackLabel ?? id;
+
+  @override
+  bool operator ==(Object other) => other is CategoryRef && other.id == id;
+
+  @override
+  int get hashCode => id.hashCode;
+
+  @override
+  String toString() => 'CategoryRef($id)';
+}
+
 /// One category's SERVER-CONTROLLED presentation.
 ///
 /// The owner asked to be able to rename "Movies" to "Video" without shipping
@@ -101,11 +179,18 @@ extension ContentCategoryX on ContentCategory {
 ///       The PRESENTATION. Owned by `public.categories` and changed with an
 ///       UPDATE.
 ///
-/// WHAT THIS DELIBERATELY DOES NOT DO, stated here rather than discovered
-/// later: a brand-new category still needs an app release. The client keys
-/// off an enum, and no row the server sends can make a build draw a tab it
-/// has never heard of. Renaming, reordering and hiding are what this buys;
-/// adding is a different piece of work.
+/// ADDING A CATEGORY NO LONGER NEEDS AN APP RELEASE, and the note that used to
+/// sit here saying it did was accurate when it was written. Three things stood
+/// in the way and all three are gone: `titles.category` had a CHECK constraint
+/// listing four names (migration 020 made it a foreign key to this table), the
+/// landing page filtered a hard-coded category name (020 made it honour
+/// `is_visible`), and the client keyed its tab bar off an exhaustive enum
+/// (see [CategoryRef]). An INSERT here now produces a tab.
+///
+/// What a build still owns is the EXTRAS: a compiled label so the bar draws
+/// with no network, the curated-rows behaviour of `all`, and the series and
+/// reels glyphs. A category the build has never heard of gets the server's
+/// name and a flat grid, which is everything a category actually needs.
 @immutable
 class CategoryStyle {
   final String id;
@@ -197,6 +282,62 @@ class CategoryCatalogue {
     return kept;
   }
 
+  /// Every tab to draw, in the order to draw them — including categories this
+  /// build has never heard of.
+  ///
+  /// THE BLEND IS THE POINT. A built-in keeps its compiled label and its
+  /// behaviour; a server-only row becomes an ordinary flat tab; and both are
+  /// placed by the same `sort_order`, so an operator can drop a new section
+  /// between two old ones rather than only at the end.
+  List<CategoryRef> refs() {
+    final builtIns = ContentCategoryX.visible();
+    final placed = <_Placed>[];
+
+    for (var i = 0; i < builtIns.length; i++) {
+      final c = builtIns[i];
+      final style = byId[c.id];
+      // [ContentCategory.all] is NEVER hidden, whatever the row says. It is the
+      // landing tab and the default selection, so hiding it would leave the hub
+      // opened on a tab that is not in the bar — a state no operator would
+      // expect from setting `is_visible = false`.
+      if (c != ContentCategory.all && !(style?.isVisible ?? true)) continue;
+      // An unknown id sorts by its enum index so it lands where it always was:
+      // the server not knowing about a tab is the normal state immediately
+      // after a release adds one.
+      placed.add(_Placed(CategoryRef.of(c), style?.sortOrder ?? i, i));
+    }
+
+    final known = <String>{for (final c in builtIns) c.id};
+    var tie = builtIns.length;
+    final extras = <CategoryStyle>[
+      for (final style in byId.values)
+        if (!known.contains(style.id) && style.isVisible) style,
+    ]..sort((a, b) {
+        final byOrder = a.sortOrder.compareTo(b.sortOrder);
+        // Tie-broken on the id so two rows with the same sort_order do not swap
+        // places between launches, which reads as the app shuffling itself.
+        return byOrder != 0 ? byOrder : a.id.compareTo(b.id);
+      });
+    for (final style in extras) {
+      placed.add(_Placed(
+          CategoryRef.serverOnly(style.id), style.sortOrder, tie++));
+    }
+
+    placed.sort((a, b) {
+      final byOrder = a.order.compareTo(b.order);
+      return byOrder != 0 ? byOrder : a.tie.compareTo(b.tie);
+    });
+    return <CategoryRef>[for (final p in placed) p.ref];
+  }
+
+  /// The server's label for an id, or null when it has nothing usable to say.
+  String? labelForId(String id, String? languageCode) {
+    final style = byId[id];
+    if (style == null) return null;
+    final label = style.displayLabel(languageCode).trim();
+    return label.isEmpty ? null : label;
+  }
+
   /// The server's name for a category, or null to use the compiled string.
   ///
   /// NULL ONLY WHEN THE SERVER HAS NOTHING USABLE TO SAY — no row, or a row
@@ -217,4 +358,21 @@ class CategoryCatalogue {
     final label = style.displayLabel(languageCode).trim();
     return label.isEmpty ? null : label;
   }
+}
+
+
+/// One category and where it sits, while [CategoryCatalogue.refs] is deciding.
+///
+/// A plain class rather than a record, because this file is compiled at
+/// language version 3.4 and a small private class reads the same and cannot be
+/// wrong about it.
+class _Placed {
+  _Placed(this.ref, this.order, this.tie);
+
+  final CategoryRef ref;
+  final int order;
+
+  /// Breaks a tie in [order] with the position the tab would have had anyway,
+  /// so equal sort orders produce a stable, unsurprising bar.
+  final int tie;
 }

@@ -3,7 +3,8 @@
 // Was two calls (sign, publish) behind an upload form. It is now the whole
 // console: list, get, create, save, addAssets, updateAsset, setPrimary,
 // deleteAsset, deleteTitle, reorder, requests, approve, reject, categories,
-// saveCategory, stats, health, folder, checkFolder, sign, selftest.
+// saveCategory, addCategory, stats, health, folder, checkFolder, sign,
+// selftest.
 //
 // WHY THIS EXISTS. Putting one title into the catalogue used to mean: open the
 // R2 dashboard, upload the video, upload the poster, copy both object keys,
@@ -1006,11 +1007,14 @@ Deno.serve(async (req: Request) => {
   // them they are the whole feature — renaming "Movies" to "Video" is one
   // UPDATE and takes effect on the next app launch.
   //
-  // Adding a category is NOT possible from here, and that is honest rather
-  // than missing: the client keys off a Dart enum, so no row this writes can
-  // make a build draw a tab it has never heard of. There is no insert below
-  // for exactly that reason — an id with no enum value would be a row that
-  // looks saved and does nothing.
+  // ADDING ONE IS POSSIBLE NOW, and the note that used to sit here saying it
+  // was not was accurate when it was written: the client keyed off a Dart enum,
+  // so no row this wrote could make a build draw a tab it had never heard of.
+  // Three things had to change and all three have — the CHECK constraint on
+  // titles.category became a foreign key to this table (migration 020), the
+  // landing page learned to honour is_visible (020), and the app's tab bar
+  // stopped being an exhaustive enum (CategoryRef). An insert here produces a
+  // tab on the next launch.
   if (body.op === 'categories') {
     const { data, error } = await admin()
       .from('categories').select('*').order('sort_order');
@@ -1036,6 +1040,50 @@ Deno.serve(async (req: Request) => {
       .from('categories').update(upd).eq('id', id);
     if (error) return json({ error: 'save_failed', detail: error.message }, 500, req);
     return json({ ok: true, id, changed: Object.keys(upd) }, 200, req);
+  }
+
+  // --- addCategory: a new section, without an app release
+  //
+  // THE ID IS THE ONE THING THAT CANNOT BE FIXED LATER. It is what
+  // `titles.category` stores for every film put in this section, so renaming it
+  // means rewriting all of them; the label is what people see and can be
+  // changed whenever. So the id is validated strictly and the label is not:
+  // lower-case letters, digits and hyphens, which is what survives a URL, a
+  // filter query and a log line unchanged.
+  //
+  // `all` is refused explicitly. It is the landing TAB and the database has a
+  // constraint saying no title may be in it, so a row for it would create a
+  // section that can never contain anything.
+  if (body.op === 'addCategory') {
+    const id = String(body.id ?? '').trim().toLowerCase();
+    const label = String(body.label ?? '').trim();
+    if (!/^[a-z0-9-]{2,32}$/.test(id)) {
+      return json({ error: 'bad_id', detail:
+        'lower-case letters, digits and hyphens, 2 to 32 characters' }, 400, req);
+    }
+    if (id === 'all') return json({ error: 'reserved_id' }, 400, req);
+    // A blank label would render an empty pill, which reads as a broken build
+    // rather than as a form somebody left half-filled.
+    if (!label) return json({ error: 'no_label' }, 400, req);
+
+    const row: Record<string, unknown> = {
+      id,
+      label,
+      label_mm: str(body.label_mm),
+      sort_order: num(body.sort_order) ?? 0,
+      is_visible: body.is_visible !== false,
+      updated_at: new Date().toISOString(),
+    };
+    // INSERT AND NOT UPSERT. An operator typing an id that already exists has
+    // almost certainly mistyped a new one, and silently overwriting the label
+    // of a live section is a worse outcome than being told the name is taken.
+    const { error } = await admin().from('categories').insert(row);
+    if (error) {
+      const taken = /duplicate key/i.test(error.message);
+      return json({ error: taken ? 'id_taken' : 'add_failed',
+        detail: error.message }, taken ? 409 : 500, req);
+    }
+    return json({ ok: true, id }, 200, req);
   }
 
   // --- health: the view that has existed unread since the schema was written

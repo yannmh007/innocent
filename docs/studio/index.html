@@ -559,13 +559,38 @@ td.num{text-align:right;font-variant-numeric:tabular-nums;color:var(--dim)}
   <section id="tab-cats" hidden>
     <div class="sec">
       <div class="sechead"><h2>Categories</h2></div>
-      <p class="hint">The tab names in the app. Rename, reorder or hide — no
-        app build needed. The <span class="mono">id</span> is not editable and
-        never will be: every title stores it, so changing one would orphan
-        every title using it. Adding a new category is not possible here
-        either — the app keys off a fixed list, so a row it has never heard of
-        would look saved and do nothing.</p>
+      <p class="hint">The tab names in the app. Rename, reorder, hide — and now
+        add — with no app build. The <span class="mono">id</span> is not
+        editable and never will be: every title stores it, so changing one
+        would rewrite every title using it. Hiding a category hides its films
+        from the front page as well as its tab.</p>
       <div id="catList" style="margin-top:10px"></div>
+      <div class="sechead" style="margin-top:14px">Add a category</div>
+      <p class="hint">The <span class="mono">id</span> is the part that cannot
+        be changed afterwards — it is what every film in this section stores.
+        Lower-case letters, digits and hyphens. The label is what people see
+        and can be edited whenever you like.</p>
+      <div class="row">
+        <div style="flex:1;min-width:120px">
+          <label>id</label>
+          <input id="newCatId" class="mono" placeholder="documentary">
+        </div>
+        <div style="flex:1;min-width:120px">
+          <label>Label</label>
+          <input id="newCatLabel" placeholder="Documentary">
+        </div>
+        <div style="flex:1;min-width:120px">
+          <label>Label (Burmese)</label>
+          <input id="newCatLabelMm" placeholder="မှတ်တမ်း">
+        </div>
+        <div style="min-width:88px">
+          <label>Order</label>
+          <input id="newCatOrder" type="number" value="9" style="width:72px">
+        </div>
+        <div style="align-self:flex-end">
+          <button id="newCatAdd" class="b">Add</button>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -688,10 +713,36 @@ const API = SB_URL + '/functions/v1/studio';
 const PROBE_API = SB_URL + '/functions/v1/probe-media';
 const TRANSCODE_API = SB_URL + '/functions/v1/transcode';
 
-// Matches lib/features/video_hub/domain/content_category.dart. Hard-coded
-// here because the app compiles these into libapp.so — the Categories tab
-// renames them, it cannot add one. See docs/movies_v3_plan.md §2.3.
-const CATEGORIES = ['movies', 'series', 'reels'];
+// WHAT THE CATEGORY PICKER OFFERS, read from the database rather than compiled.
+//
+// This was hard-coded, with a comment explaining that the app compiled these
+// into libapp.so so the Categories tab could rename them but not add one. That
+// is no longer true — titles.category is a foreign key to public.categories
+// (migration 020) and the app's tab bar no longer keys off an exhaustive enum
+// (CategoryRef) — so hard-coding it here would be the last place a new section
+// could not reach.
+//
+// Seeded with the four that have always existed so the picker is never empty
+// on a cold load or an offline console, and replaced by the table as soon as it
+// answers. `all` is excluded because it is the landing TAB: the database has a
+// constraint saying no title may be in it.
+let CATEGORIES = ['movies', 'series', 'reels'];
+
+async function refreshCategoryOptions() {
+  try {
+    const { categories } = await api({ op: 'categories' });
+    const ids = (categories ?? [])
+      .filter((c) => c.id !== 'all')
+      .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+      .map((c) => String(c.id));
+    if (ids.length) CATEGORIES = ids;
+  } catch (e) {
+    // A console that cannot reach the table keeps the seeded list. Refusing to
+    // draw the form would be worse: the operator would be unable to edit a
+    // title's other fields either.
+    console.warn('category options: ' + (e && e.message ? e.message : e));
+  }
+}
 
 const sb = supabase.createClient(SB_URL, SB_KEY);
 
@@ -1240,7 +1291,11 @@ const FIELDS = [
   { k: 'keywords', label: 'Search keywords (hidden)', w: 2,
     ph: 'alternate spelling, actor, မြန်မာလို အမည်',
     hint: 'Searchable, never shown. The words people actually type.' },
-  { k: 'category', label: 'Category', type: 'select', options: CATEGORIES },
+  // A FUNCTION, NOT AN ARRAY. `options: CATEGORIES` captured the array that
+  // existed when this file was parsed, so a category added while the console was
+  // open — or fetched a moment after it loaded — never appeared in the picker.
+  { k: 'category', label: 'Category', type: 'select',
+    options: () => CATEGORIES },
   { k: 'access_tier', label: 'Access', type: 'select',
     options: ['premium', 'free'] },
   { k: 'year', label: 'Year', type: 'number' },
@@ -1264,7 +1319,8 @@ function buildForm(host, prefix, values, onChange) {
     if (f.type === 'textarea') input = el('textarea', { id });
     else if (f.type === 'select') {
       input = el('select', { id });
-      for (const o of f.options) input.append(el('option', { value: o }, text(o)));
+      const opts = typeof f.options === 'function' ? f.options() : f.options;
+      for (const o of opts) input.append(el('option', { value: o }, text(o)));
     } else if (f.type === 'checkbox') input = el('input', { id, type: 'checkbox' });
     else {
       input = el('input', { id, type: f.type || 'text', placeholder: f.ph || '' });
@@ -2017,6 +2073,8 @@ $('create').onclick = async () => {
   b.disabled = false;
 };
 
+$('newCatAdd').onclick = addCategory;
+
 $('selftest').onclick = async () => {
   try {
     say('info', 'Testing…');
@@ -2073,6 +2131,41 @@ async function loadRequests() {
 }
 
 // ── categories ───────────────────────────────────────────────────────────
+async function addCategory() {
+  const btn = $('newCatAdd');
+  const id = ($('newCatId').value || '').trim().toLowerCase();
+  const label = ($('newCatLabel').value || '').trim();
+  // CHECKED HERE AS WELL AS ON THE SERVER, because the server's refusal arrives
+  // as a code and this one arrives as a sentence next to the box that is wrong.
+  // The server check is the one that matters; this one is the one that helps.
+  if (!/^[a-z0-9-]{2,32}$/.test(id)) {
+    return say('bad', 'The id must be 2-32 characters of lower-case letters, ' +
+      'digits and hyphens. It is what every film in this section stores.');
+  }
+  if (!label) return say('bad', 'A category needs a label — it is the tab name.');
+  btn.disabled = true;
+  try {
+    await api({ op: 'addCategory', id, label,
+      label_mm: ($('newCatLabelMm').value || '').trim() || null,
+      sort_order: Number($('newCatOrder').value) || 0 });
+    $('newCatId').value = '';
+    $('newCatLabel').value = '';
+    $('newCatLabelMm').value = '';
+    say('ok', 'Added. It is a tab in the app on its next launch, and it is in ' +
+      'the Category picker here straight away.');
+    // BOTH, and in this order. The picker is what the operator will reach for
+    // next — they added the section to put something in it.
+    await refreshCategoryOptions();
+    await loadCategories();
+  } catch (e) {
+    const m = String(e.message || e);
+    say('bad', /id_taken/.test(m)
+      ? 'That id is already in use. Pick another, or rename the existing one.'
+      : m);
+  }
+  btn.disabled = false;
+}
+
 async function loadCategories() {
   const host = $('catList');
   host.textContent = '';
@@ -2617,8 +2710,16 @@ async function boot() {
   $('gate').hidden = signedIn;
   $('nav').hidden = !signedIn;
   $('who').textContent = signedIn ? (session.user.email || session.user.id) : '';
-  if (signedIn) show('catalogue');
-  else for (const t of TABS) $('tab-' + t).hidden = true;
+  if (signedIn) {
+    show('catalogue');
+    // Not awaited: the picker is seeded with the four that have always existed,
+    // so the editor is usable immediately and gains any newer section the
+    // moment the table answers. Awaiting would hold the whole console on a
+    // request it does not need.
+    refreshCategoryOptions();
+  } else {
+    for (const t of TABS) $('tab-' + t).hidden = true;
+  }
 }
 
 // Leaving with unsaved details is almost always a mistake, and the editor is
