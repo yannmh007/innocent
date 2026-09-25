@@ -1376,6 +1376,18 @@ class AppStrings {
   String get vhDownloadGaveUp => _s('vhDownloadGaveUp');
   String get vhDownloadWaitingSignal => _s('vhDownloadWaitingSignal');
   String get vhDownloadReadyOffline => _s('vhDownloadReadyOffline');
+
+  /// "This film is {size}. You have {free} free." — shown BEFORE a byte of a
+  /// metered connection is spent, which is the whole point of it.
+  String vhDownloadSizeAsk(Object size, Object free) => _s('vhDownloadSizeAsk')
+      .replaceFirst('{size}', '$size')
+      .replaceFirst('{free}', '$free');
+  String get vhDownloadStart => _s('vhDownloadStart');
+  String get vhDownloadStorageLine => _s('vhDownloadStorageLine');
+  String vhDownloadStorage(Object used, Object free) =>
+      _s('vhDownloadStorage')
+          .replaceFirst('{used}', '$used')
+          .replaceFirst('{free}', '$free');
   String get vhLibraryDownloadsHint => _s('vhLibraryDownloadsHint');
   String get vhLibrarySoon => _s('vhLibrarySoon');
 
@@ -1547,6 +1559,12 @@ class AppStrings {
         'resume it from Downloads when you have signal.',
     'vhDownloadWaitingSignal': 'Waiting for the connection…',
     'vhDownloadReadyOffline': 'Ready to watch offline',
+    'vhDownloadSizeAsk':
+        'This one is {size}, downloaded at full quality. You have {free} free '
+        'on this phone. Carry on?',
+    'vhDownloadStart': 'Download',
+    'vhDownloadStorageLine': 'On this phone',
+    'vhDownloadStorage': '{used} used - {free} free',
     'vhLibrarySoon': 'Coming soon',
 
     // --- Video Hub: view counts ---
@@ -2741,6 +2759,12 @@ class AppStrings {
         'လိုင်းရတဲ့အခါ ဒေါင်းလုဒ်များ ထဲကနေ ဆက်လုပ်ပါ။',
     'vhDownloadWaitingSignal': 'အင်တာနက် ပြန်ရအောင် စောင့်နေသည်…',
     'vhDownloadReadyOffline': 'အော့ဖ်လိုင်း ကြည့်လို့ ရပါပြီ',
+    'vhDownloadSizeAsk':
+        'ဒီဇာတ်ကားက {size} ရှိပါတယ် — quality အပြည့်နဲ့ ဒေါင်းမှာပါ။ '
+        'ဖုန်းထဲ {free} လွတ်ပါတယ်။ ဆက်လုပ်မလား?',
+    'vhDownloadStart': 'ဒေါင်းလုဒ်',
+    'vhDownloadStorageLine': 'ဖုန်းထဲမှာ',
+    'vhDownloadStorage': '{used} သုံးပြီး - {free} လွတ်',
     'vhLibrarySoon': 'မကြာမီ ရရှိမည်',
 
     // --- Video Hub: view counts ---
@@ -3925,6 +3949,12 @@ class AppStrings {
         'ทำต่อได้จากหน้าดาวน์โหลดเมื่อมีสัญญาณ',
     'vhDownloadWaitingSignal': 'กำลังรอการเชื่อมต่อ…',
     'vhDownloadReadyOffline': 'ดูออฟไลน์ได้แล้ว',
+    'vhDownloadSizeAsk':
+        'เรื่องนี้ขนาด {size} ดาวน์โหลดแบบคุณภาพเต็ม '
+        'เครื่องนี้เหลือพื้นที่ {free} ดำเนินการต่อหรือไม่',
+    'vhDownloadStart': 'ดาวน์โหลด',
+    'vhDownloadStorageLine': 'ในเครื่องนี้',
+    'vhDownloadStorage': 'ใช้ {used} - เหลือ {free}',
     'vhLibrarySoon': 'เร็ว ๆ นี้',
 
     // --- Video Hub: view counts ---

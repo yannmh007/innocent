@@ -210,6 +210,17 @@ final offlineItemsProvider =
 /// played, it can be resumed, and the space it occupies is space the viewer
 /// may want back. Mixing the two would mean a row that sometimes plays and
 /// sometimes does not.
+/// What the downloads take up, and what is left.
+///
+/// ONE PROVIDER FOR BOTH NUMBERS, because they are read together and only mean
+/// anything together: "3.2 GB used" is a fact about the app and "5.1 GB free"
+/// is the fact somebody deciding whether to download a film actually needs.
+final offlineStorageProvider =
+    FutureProvider.autoDispose<({int used, int free})>((ref) async {
+  final lib = ref.watch(offlineLibraryProvider);
+  return (used: await lib.totalBytes(), free: await lib.freeBytes());
+});
+
 final offlinePendingProvider =
     FutureProvider.autoDispose<List<PendingProgress>>((ref) {
   return ref.watch(offlineLibraryProvider).pending();

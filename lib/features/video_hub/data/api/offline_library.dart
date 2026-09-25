@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -247,9 +248,43 @@ class OfflineLibrary {
         pruned = true;
         continue;
       }
-      if (!await File(item.path).exists()) {
+      final f = File(item.path);
+      if (!await f.exists()) {
         pruned = true;
         continue;
+      }
+      // AND THE LENGTH IS CHECKED, not only the existence.
+      //
+      // "Downloaded" is a promise the app makes OFFLINE, where it cannot go
+      // back and look. A file that is shorter than the download that produced
+      // it is not a shorter film, it is a film that stops in the middle — and
+      // the viewer finds that out on a bus with no signal, having deleted
+      // nothing and done nothing wrong. Both numbers come from the same
+      // place (`bytes` is the count of bytes written), so they match on every
+      // healthy entry and a mismatch is real damage.
+      //
+      // The file goes with the row. A truncated film is not worth a gigabyte,
+      // and leaving it behind after removing the only reference to it means a
+      // gigabyte nothing in the app can ever reclaim.
+      if (item.bytes > 0) {
+        int onDisk;
+        try {
+          onDisk = await f.length();
+        } catch (_) {
+          pruned = true;
+          continue;
+        }
+        if (onDisk != item.bytes) {
+          if (kDebugMode) {
+            debugPrint('offline entry damaged: ${item.titleId} '
+                '$onDisk != ${item.bytes}');
+          }
+          try {
+            await f.delete();
+          } catch (_) {}
+          pruned = true;
+          continue;
+        }
       }
       out.add(item);
     }
@@ -447,12 +482,35 @@ class OfflineLibrary {
   }
 
   /// Bytes on disk, for the line the Downloads screen shows.
+  ///
+  /// COUNTS UNFINISHED DOWNLOADS TOO. A part file occupies exactly as much of
+  /// the viewer's phone as a finished one, and a "used" figure that leaves out
+  /// the 700 MB of a film that stalled last night is not a figure about
+  /// storage — it is a figure about the index.
   Future<int> totalBytes() async {
     var sum = 0;
     for (final item in await items()) {
       sum += item.bytes;
     }
+    for (final p in await pending()) {
+      sum += p.received;
+    }
     return sum;
+  }
+
+  /// Free bytes on the volume holding the downloads folder, or -1 when the
+  /// platform did not answer. Same channel the player's disk cache uses; a
+  /// second implementation of this would be a second answer to one question.
+  Future<int> freeBytes() async {
+    try {
+      final dir = await directory();
+      final v = await const MethodChannel('mx_clone/media_scan')
+          .invokeMethod<int>('freeBytes', <String, dynamic>{'dir': dir.path});
+      return v ?? -1;
+    } catch (e) {
+      if (kDebugMode) debugPrint('OfflineLibrary.freeBytes: $e');
+      return -1;
+    }
   }
 
   Future<void> _write(List<OfflineItem> items) async {

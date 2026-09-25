@@ -7,6 +7,7 @@ import '../../../../core/localization/app_strings.dart';
 import '../../data/api/event_sender.dart';
 import '../../data/api/offline_downloader.dart';
 import '../../data/device_identity.dart';
+import '../../domain/byte_size.dart';
 import '../../domain/video_content.dart';
 import '../account_provider.dart';
 import '../video_hub_provider.dart';
@@ -110,6 +111,13 @@ class _DownloadActionState extends ConsumerState<DownloadAction> {
         waiting: s.vhDownloadWaitingSignal,
         ready: s.vhDownloadReadyOffline,
       ),
+      // ASKED BEFORE THE DATA IS SPENT, not after. The downloader knows the
+      // size the moment the response headers land and before it reads a byte
+      // of the body, so this question costs a viewer on a metered connection
+      // nothing at all to answer — and "this is 1.8 GB" is the sentence that
+      // decides whether they wanted to do this on mobile data today.
+      confirmSize: (totalBytes, freeBytes) =>
+          _confirmSize(totalBytes, freeBytes),
       onProgress: (p) {
         if (p.error != null) failure = p.error;
         if (!mounted) return;
@@ -127,12 +135,14 @@ class _DownloadActionState extends ConsumerState<DownloadAction> {
       await _refresh();
       ref.invalidate(offlineItemsProvider);
       ref.invalidate(offlinePendingProvider);
+      ref.invalidate(offlineStorageProvider);
       return;
     }
     if (!mounted) return;
     // Whatever is on disk is now an unfinished download the Downloads screen
     // can offer to resume, so that list has changed too.
     ref.invalidate(offlinePendingProvider);
+    ref.invalidate(offlineStorageProvider);
     // WHICH FAILURE IT WAS, because they are not the same problem and only one
     // of them is the viewer's to fix. A full phone is a thing they can act on
     // in a minute; an entitlement refusal is not; a connection that never came
@@ -153,10 +163,49 @@ class _DownloadActionState extends ConsumerState<DownloadAction> {
     );
   }
 
+  /// True when the viewer wants to go ahead at this size.
+  ///
+  /// Returns false when this widget is gone: a dialog cannot be shown from a
+  /// screen the user has left, and starting a gigabyte of metered download on
+  /// the strength of a question nobody was asked is the opposite of the point.
+  Future<bool> _confirmSize(int totalBytes, int freeBytes) async {
+    if (!mounted) return false;
+    final s = AppStrings.of(context);
+    final answer = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: VH.surface1,
+        title: Text(content.title, style: VH.label),
+        content: Text(
+          s.vhDownloadSizeAsk(
+            formatBytes(totalBytes),
+            // A platform that did not answer is shown as a dash rather than
+            // as a confident "0 MB free", which would read as a reason not to
+            // continue when nothing was actually measured.
+            freeBytes < 0 ? '—' : formatBytes(freeBytes),
+          ),
+          style: VH.body,
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(s.cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(s.vhDownloadStart),
+          ),
+        ],
+      ),
+    );
+    return answer == true;
+  }
+
   Future<void> _remove() async {
     await ref.read(offlineLibraryProvider).drop(content.id);
     if (!mounted) return;
     ref.invalidate(offlineItemsProvider);
+    ref.invalidate(offlineStorageProvider);
     await _refresh();
   }
 

@@ -233,6 +233,7 @@ class OfflineDownloader {
     String? assetId,
     void Function(OfflineProgress)? onProgress,
     DownloadNotices notices = DownloadNotices.english,
+    Future<bool> Function(int totalBytes, int freeBytes)? confirmSize,
   }) async {
     final titleId = content.id;
     if (_streams.containsKey(titleId)) return null;
@@ -285,6 +286,7 @@ class OfflineDownloader {
           deviceId: deviceId,
           assetId: assetId,
           notices: notices,
+          confirmSize: confirmSize,
           emit: emit,
         );
         completer.complete(item);
@@ -315,6 +317,7 @@ class OfflineDownloader {
     required String? deviceId,
     required String? assetId,
     required DownloadNotices notices,
+    required Future<bool> Function(int totalBytes, int freeBytes)? confirmSize,
     required void Function(OfflineProgress) emit,
   }) async {
     final titleId = content.id;
@@ -368,6 +371,10 @@ class OfflineDownloader {
         OfflineServiceBridge.update(label, _statusLine(received, total), pct);
       }
     }
+
+    // Asked at most once per download. Declared out here rather than inside
+    // the loop, which runs again on every resume.
+    var askedSize = false;
 
     try {
       var failures = 0;
@@ -492,6 +499,34 @@ class OfflineDownloader {
         if (freshTotal != null) {
           total = freshTotal;
           await _writeSizeNote(sizeNote, freshTotal);
+        }
+
+        // ─── THE SIZE IS KNOWN HERE, AND NOWHERE EARLIER ─────────────────
+        //
+        // The response headers say how big the film is, and they arrive before
+        // a single byte of the body does. So this is the one moment at which
+        // the viewer can be asked a question that costs them nothing to answer
+        // — and on a metered Myanmar connection "this is 1.8 GB" is the most
+        // important sentence in the whole feature. Asked ONCE, on a fresh
+        // download only: somebody resuming at 700 MB has already decided, and
+        // asking again would be the app forgetting what they told it.
+        //
+        // Nothing has been written yet, so a No costs exactly the headers.
+        if (confirmSize != null && !askedSize && received == 0) {
+          askedSize = true;
+          if (total != null) {
+            final ok = await confirmSize(total!, await _freeBytes(dir.path));
+            if (!ok) {
+              try {
+                await response.stream.drain<void>();
+              } catch (_) {}
+              // Not an error: they were asked and they said no. A row in the
+              // pending list for a download that never started would be a
+              // gigabyte's worth of promise about nothing.
+              await _library.dropPending(titleId);
+              return null;
+            }
+          }
         }
 
         // ROOM FIRST, BEFORE THE BODY. The headers already say how big the

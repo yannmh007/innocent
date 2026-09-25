@@ -12,6 +12,7 @@ import 'video_hub_provider.dart';
 import 'widgets/hub_states.dart';
 import 'widgets/poster_image.dart';
 import 'widgets/vh_insets.dart';
+import '../domain/byte_size.dart';
 import '../domain/video_content.dart';
 import 'video_hub_theme.dart';
 
@@ -68,10 +69,37 @@ class DownloadsScreen extends ConsumerWidget {
           if (items.isEmpty && pending.isEmpty) {
             return HubEmptyState(message: s.vhLibraryDownloadsHint);
           }
+          // WHAT IS LEFT, not only what is taken. Somebody deciding whether
+          // to download tonight's film needs the free figure more than the
+          // used one, and neither was on this screen.
+          final storage = ref.watch(offlineStorageProvider).valueOrNull;
           return ListView(
             padding: EdgeInsets.fromLTRB(
                 VH.gutter, VH.s3, VH.gutter, VhInsets.scrollBottom(context)),
             children: <Widget>[
+              if (storage != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: VH.s3),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(s.vhDownloadStorageLine,
+                          style: VH.meta.copyWith(fontSize: 11.5)),
+                      const SizedBox(height: 2),
+                      Text(
+                        s.vhDownloadStorage(
+                          formatBytes(storage.used),
+                          // A dash rather than "0 B free" when the platform
+                          // did not answer: an unmeasured number presented as
+                          // zero is a reason not to download that nobody
+                          // actually established.
+                          storage.free < 0 ? '—' : formatBytes(storage.free),
+                        ),
+                        style: VH.label.copyWith(fontSize: 13),
+                      ),
+                    ],
+                  ),
+                ),
               if (pending.isNotEmpty) ...<Widget>[
                 Padding(
                   padding: const EdgeInsets.only(bottom: VH.s2),
@@ -111,12 +139,6 @@ class _Row extends ConsumerWidget {
     return (mm == null || mm.isEmpty) ? item.title : mm;
   }
 
-  static String _size(int bytes) {
-    if (bytes >= 1 << 30) return '${(bytes / (1 << 30)).toStringAsFixed(1)} GB';
-    if (bytes >= 1 << 20) return '${(bytes / (1 << 20)).toStringAsFixed(0)} MB';
-    return '${(bytes / 1024).toStringAsFixed(0)} KB';
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return InkWell(
@@ -149,7 +171,8 @@ class _Row extends ConsumerWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis),
                   const SizedBox(height: 3),
-                  Text(_size(item.bytes), style: VH.meta.copyWith(fontSize: 12)),
+                  Text(formatBytes(item.bytes),
+                      style: VH.meta.copyWith(fontSize: 12)),
                 ],
               ),
             ),
@@ -215,6 +238,7 @@ class _Row extends ConsumerWidget {
     if (yes != true) return;
     await ref.read(offlineLibraryProvider).drop(item.titleId);
     ref.invalidate(offlineItemsProvider);
+    ref.invalidate(offlineStorageProvider);
   }
 }
 
@@ -305,6 +329,7 @@ class _PendingRowState extends ConsumerState<_PendingRow> {
       if (!mounted) return;
       ref.invalidate(offlineItemsProvider);
       ref.invalidate(offlinePendingProvider);
+      ref.invalidate(offlineStorageProvider);
       if (done != null || failure == null) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(failure == 'no_space'
@@ -345,12 +370,7 @@ class _PendingRowState extends ConsumerState<_PendingRow> {
     ref.read(offlineDownloaderProvider).cancel(item.titleId);
     await ref.read(offlineLibraryProvider).discardPending(item.titleId);
     ref.invalidate(offlinePendingProvider);
-  }
-
-  static String _size(int bytes) {
-    if (bytes >= 1 << 30) return '${(bytes / (1 << 30)).toStringAsFixed(1)} GB';
-    if (bytes >= 1 << 20) return '${(bytes / (1 << 20)).toStringAsFixed(0)} MB';
-    return '${(bytes / 1024).toStringAsFixed(0)} KB';
+    ref.invalidate(offlineStorageProvider);
   }
 
   @override
@@ -399,8 +419,8 @@ class _PendingRowState extends ConsumerState<_PendingRow> {
                 // difference between resuming and giving up.
                 Text(
                   total == null
-                      ? '${_size(received)} · ${running ? s.vhDownloadResuming : s.vhDownloadPaused}'
-                      : '${_size(received)} / ${_size(total)} · ${running ? s.vhDownloadResuming : s.vhDownloadPaused}',
+                      ? '${formatBytes(received)} · ${running ? s.vhDownloadResuming : s.vhDownloadPaused}'
+                      : '${formatBytes(received)} / ${formatBytes(total)} · ${running ? s.vhDownloadResuming : s.vhDownloadPaused}',
                   style: VH.meta.copyWith(fontSize: 12),
                 ),
                 const SizedBox(height: 5),
