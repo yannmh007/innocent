@@ -50,8 +50,8 @@ complained about a film they had already paid data for.
 | **B2** | Wire `trending_titles()` into `landing_rows()` | **done** — 1.64.29+342 |
 | **C1** | Upload above 5 GiB | **done** — 1.64.30+343 |
 | **D1** | Email / phone sign-in | **skipped by the operator**, 2026-09-25 |
-| **E1** | Downloads encrypted at rest | open — next |
-| **F1** | Telegram → R2 pipeline | open |
+| **E1** | Downloads encrypted at rest | **done** — 1.64.31+344 |
+| **F1** | Telegram → R2 pipeline | open — next |
 | **G1** | Watch a download while it is still downloading | open |
 | **G2** | True background download | open — **needs a real device** |
 | **#31** | Serve video from the Cloudflare edge, not the S3 API | open, older |
@@ -236,21 +236,89 @@ Not deferred for a technical reason and not to be revived without being asked.
 
 ---
 
+## E1. Downloads encrypted at rest
+
+A downloaded film was a plain MP4 in app storage — the operator's master, at full
+quality. On a rooted phone, or through any file manager granted the right
+permission, that is the whole catalogue leaving by the front door one download at
+a time. It is now ciphertext that only this phone can read.
+
+### The four decisions, and why each went the way it did
+
+**AES-CTR, not GCM.** A player seeks: libmpv will ask for the bytes at 01:42:07
+without having read anything before them, so the cipher has to be addressable by
+byte offset with no state carried from the start of the file. CTR is; GCM is one
+authenticated message, and authenticating a four-gigabyte film as one message
+means reading all of it before the first frame. That trades away tamper
+detection, which is the right trade rather than a compromise: the threat is a
+copy of the file being played elsewhere, not an attacker rewriting bytes in a
+directory where they could simply delete the film instead. ExoPlayer's own cache
+encryption makes the same choice for the same reason.
+
+**A wrapped key, not a Keystore key used directly.** A Keystore key never leaves
+the secure hardware, which is what makes it worth having — and it would mean every
+block of every film ciphered through a binder call into keymaster. So this is the
+envelope Jetpack Security and Tink use: a 256-bit data key does the film, a
+Keystore key does nothing but wrap that data key, and the bulk cipher runs on the
+platform's AES, which on every ARMv8 phone is the CPU's own AES instruction.
+
+**The trailer is at the END of the file.** Nothing is prepended, so *the byte at
+offset N of the film is the byte at offset N of the file*. The downloader appends
+as the network delivers, the resume point is the file's own length, and the
+player's range requests need no arithmetic. A header at the front would have
+shifted all of those by a constant — and a constant that is right in four places
+and forgotten in the fifth is a film that plays as noise.
+
+**Fail open on a phone that cannot seal.** If the Keystore will not answer, the
+download proceeds unencrypted rather than not at all. A viewer who cannot
+download is a worse outcome than a file that is not encrypted, and the realistic
+cause is a transient Keystore error rather than a phone without one. Recorded
+here so it is not quietly reversed into a hard failure.
+
+### What the player does with it
+
+libmpv cannot open a file it has to decrypt, and decrypting the whole film to a
+second file first would want another four gigabytes of a phone that has not got
+them — and a minute of staring at nothing. So the decryption wears the shape of a
+loopback HTTP server, which is the same answer `StreamCacheServer` reached for the
+same reason. A separate server, because the two have nothing in common but the
+shape: this one has no upstream, no refresh, no store and no budget.
+
+The address carries a token minted once per process. Loopback is not private on
+Android — any app may connect to 127.0.0.1 on any port — so without it the server
+would be a decryption service for the whole device, which is the exact thing the
+encryption was for.
+
+The player resolves a `sealed://<path>` URI to that address, the same way it
+already resolves `adb://`. **The stable identity stays the `sealed://` URI**: the
+loopback address carries a port and a token that change every launch, so a resume
+point keyed on it would be a new key every time — which is the same as having no
+resume point at all, on films two hours long.
+
+### What is deliberately NOT done
+
+- **Existing downloads are not re-encrypted, and never will be.** Every one of
+  them is a plain MP4 on somebody's phone; the app does not get to make people
+  download their films again. A row written before this feature reads as plain,
+  which is correct rather than merely safe.
+- **A sealed film's trailer is not verified on every shelf read.** The length is,
+  which is what the verification needs; the trailer is read at play time, where a
+  missing one becomes "delete this and download it again" rather than noise on
+  screen.
+- **The 32-byte overhead is not subtracted from the storage figures.** It is
+  thirty-two bytes.
+
+### The part nobody should have to rediscover
+
+A film ciphered under one keystream and then, after a restart, under another is
+noise with a seam in it. Two things stop that: the IV lives in a sidecar beside
+the part file, so a resume continues under the same keystream, and **its presence
+is also the answer to "was this download started sealed"** — which a resume must
+not guess. A restart onto a replaced object mints a *new* IV, because one
+keystream used for two different films hands anybody holding both of them the XOR
+of the two plaintexts without needing the key at all.
+
 ## The rest, in the order to do it
-
-### E1. Downloads encrypted at rest — next
-
-Decision already taken: **B1(a)** — encrypt the file, keep the key in the Android
-Keystore. The Private Folder feature already has the Keystore primitive, so the
-work is not the crypto. The work is **a decrypting data source in the player**:
-libmpv has to read a stream it cannot `open()` directly, which means either a
-local loopback that decrypts on the fly or a media_kit custom protocol. Decide
-that first; everything else follows from it.
-
-Why it matters here specifically: a downloaded premium film is currently a plain
-MP4 in app storage. On a rooted phone, or through any file manager with the right
-permission, it is a file somebody can copy and pass around — which is the
-operator's entire catalogue leaving by the front door.
 
 ### F1. Telegram → R2 pipeline
 

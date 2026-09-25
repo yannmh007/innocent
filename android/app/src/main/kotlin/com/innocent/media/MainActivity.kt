@@ -132,6 +132,9 @@ class MainActivity : AudioServiceFragmentActivity() {
         private const val TRANSFER_SERVICE_CHANNEL = "mx_clone/transfer_service"
         private const val OFFLINE_SERVICE_CHANNEL = "mx_clone/offline_service"
         private const val NET_INFO_CHANNEL = "mx_clone/net_info"
+        // The cipher a downloaded film is kept under. See MediaCrypto for why
+        // CTR and why the key is wrapped rather than used directly.
+        private const val MEDIA_CRYPTO_CHANNEL = "mx_clone/media_crypto"
         // v0.50 (Zapya-style app sharing): the file picker's Apps tab asks
         // for the installed user apps so their APKs can be sent over the
         // LAN transfer just like any other file.
@@ -216,6 +219,7 @@ class MainActivity : AudioServiceFragmentActivity() {
     private var transferServiceChannel: MethodChannel? = null
     private var offlineServiceChannel: MethodChannel? = null
     private var netInfoChannel: MethodChannel? = null
+    private var mediaCryptoChannel: MethodChannel? = null
     // Held only while the Transfer tab is scanning for nearby devices.
     // Without it Android filters out the UDP broadcast frames discovery
     // depends on. Released in onDestroy so it can never leak.
@@ -823,6 +827,56 @@ class MainActivity : AudioServiceFragmentActivity() {
                             "metered" to NetInfo.metered(applicationContext)
                         )
                     )
+                }
+                else -> result.notImplemented()
+            }
+        }
+
+        // The cipher that keeps a downloaded film from being copied off the
+        // phone. Three verbs: ask whether this phone can do it at all, mint an
+        // IV for a new film, and cipher a run of bytes that belong at a given
+        // offset. The file handling stays in Dart, which already owns the part
+        // file, its resume point and its sink.
+        //
+        // ON THE MAIN THREAD, and that is measured rather than assumed: the
+        // platform's AES is the CPU's own AES instruction on every ARMv8 phone,
+        // so a quarter-megabyte is a fraction of a millisecond, and the player
+        // asks about twelve times a second. Moving it to a background thread
+        // would add a hop and a copy to buy nothing.
+        mediaCryptoChannel = MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            MEDIA_CRYPTO_CHANNEL
+        )
+        mediaCryptoChannel?.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "selfTest" -> result.success(MediaCrypto.selfTest(applicationContext))
+                "newIv" -> {
+                    try {
+                        result.success(MediaCrypto.newIv())
+                    } catch (e: Throwable) {
+                        result.success(null)
+                    }
+                }
+                "transform" -> {
+                    // NULL AND NOT AN ERROR on failure. Every caller has a
+                    // plaintext path to fall back to, and a PlatformException
+                    // crossing into the download loop would be caught there and
+                    // counted as a network failure — which is the one diagnosis
+                    // that would send somebody to check their signal.
+                    try {
+                        val iv = call.argument<String>("iv")
+                        val bytes = call.argument<ByteArray>("bytes")
+                        val offset = (call.argument<Number>("offset"))?.toLong()
+                        if (iv == null || bytes == null || offset == null) {
+                            result.success(null)
+                        } else {
+                            result.success(
+                                MediaCrypto.transform(applicationContext, iv, offset, bytes)
+                            )
+                        }
+                    } catch (e: Throwable) {
+                        result.success(null)
+                    }
                 }
                 else -> result.notImplemented()
             }

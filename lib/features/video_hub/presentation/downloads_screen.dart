@@ -205,6 +205,7 @@ class _Row extends ConsumerWidget {
       context,
       ref,
       path: item.path,
+      sealed: item.sealed,
       titleId: item.titleId,
       title: _shownTitle,
       // WHAT IT ACTUALLY WAS, which is not always premium.

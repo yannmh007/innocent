@@ -7,6 +7,8 @@ import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'offline_crypto.dart';
+
 /// One title kept on this device for offline viewing.
 @immutable
 class OfflineItem {
@@ -55,6 +57,23 @@ class OfflineItem {
   /// recoverable by watching the film again online.
   final bool premium;
 
+  /// Whether the file is ciphertext with a trailer rather than a plain MP4.
+  ///
+  /// RECORDED RATHER THAN SNIFFED, for two reasons that both cost a viewer
+  /// their film when they are wrong. The file's own length has to be judged
+  /// against something — a sealed film is thirty-two bytes longer than the
+  /// object it came from — and without knowing which kind it is, the
+  /// verification in [OfflineLibrary.items] would read every sealed film as a
+  /// stale row and quietly record the wrong size. And a sealed film whose
+  /// trailer has been lost is DAMAGE: the row saying it should be there is the
+  /// only thing that can tell that apart from a plain MP4, which would
+  /// otherwise be handed to the player and drawn as noise.
+  ///
+  /// FALSE FOR EVERY ROW WRITTEN BEFORE THIS FIELD EXISTED, which is correct
+  /// rather than merely safe: they are all plain MP4s, because nothing had
+  /// sealed anything yet.
+  final bool sealed;
+
   const OfflineItem({
     required this.titleId,
     required this.title,
@@ -66,6 +85,7 @@ class OfflineItem {
     this.durationS,
     this.assetId,
     this.premium = true,
+    this.sealed = false,
   });
 
   /// The same entry with a corrected byte count.
@@ -83,6 +103,7 @@ class OfflineItem {
         durationS: durationS,
         assetId: assetId,
         premium: premium,
+        sealed: sealed,
       );
 
   Map<String, dynamic> toJson() => <String, dynamic>{
@@ -96,6 +117,7 @@ class OfflineItem {
         'addedAt': addedAt.toUtc().toIso8601String(),
         if (assetId != null) 'assetId': assetId,
         'premium': premium,
+        'sealed': sealed,
       };
 
   static OfflineItem? fromJson(Map<String, dynamic> m) {
@@ -117,6 +139,7 @@ class OfflineItem {
       // Absent means a row written before the field existed — see the note on
       // [premium] for why the unknown case is the protected one.
       premium: m['premium'] as bool? ?? true,
+      sealed: m['sealed'] as bool? ?? false,
     );
   }
 }
@@ -336,10 +359,17 @@ class OfflineLibrary {
           changed = true;
           continue;
         }
-        if (onDisk < item.bytes) {
+        // AGAINST THE LENGTH THE FILE SHOULD BE, which for a sealed film is the
+        // object's length plus its trailer. `bytes` stays the length of the
+        // ORIGINAL throughout — it is what the viewer paid data for and what
+        // the shelf shows — so the trailer is added here rather than being
+        // folded into the row.
+        final expected =
+            OfflineCrypto.fileLengthFor(item.bytes, sealed: item.sealed);
+        if (onDisk < expected) {
           if (kDebugMode) {
             debugPrint('offline entry truncated: ${item.titleId} '
-                '$onDisk < ${item.bytes}');
+                '$onDisk < $expected');
           }
           try {
             await f.delete();
@@ -347,12 +377,12 @@ class OfflineLibrary {
           changed = true;
           continue;
         }
-        if (onDisk > item.bytes) {
+        if (onDisk > expected) {
           if (kDebugMode) {
             debugPrint('offline row stale: ${item.titleId} '
-                '$onDisk > ${item.bytes} — correcting');
+                '$onDisk > $expected — correcting');
           }
-          item = item.copyWithBytes(onDisk);
+          item = item.copyWithBytes(onDisk - (expected - item.bytes));
           changed = true;
         }
       }
@@ -482,12 +512,18 @@ class OfflineLibrary {
             if (await part.exists()) await part.delete();
             final note = File('${part.path}.total');
             if (await note.exists()) await note.delete();
+            final iv = File('${part.path}.iv');
+            if (await iv.exists()) await iv.delete();
           } catch (_) {}
           continue;
         }
         keptPending.add(row);
         keepPaths.add(part.path);
         keepPaths.add('${part.path}.total');
+        // AND THE IV, or the sweep below deletes the one thing that says which
+        // keystream the bytes already on disk belong to — and a resume that
+        // cannot read it starts the whole film again, on a metered connection.
+        keepPaths.add('${part.path}.iv');
       }
       // Anything else in the folder is litter: a part file from a download
       // nothing recorded, or a file whose row has just gone.
@@ -605,6 +641,8 @@ class OfflineLibrary {
       if (await part.exists()) await part.delete();
       final note = File('${part.path}.total');
       if (await note.exists()) await note.delete();
+      final iv = File('${part.path}.iv');
+      if (await iv.exists()) await iv.delete();
     } catch (e) {
       if (kDebugMode) debugPrint('offline discard failed: $e');
     }

@@ -38,6 +38,11 @@ import 'widgets/sleep_timer_dialog.dart';
 // v1.63: the canonical subtitle-format list, used by the sidecar scan in
 // player_controller_gestures.dart (a `part of` this library).
 import '../../../core/services/subtitles/subtitle_formats.dart';
+// v1.64.31: a sealed download is ciphertext on this phone, and the player
+// resolves `sealed://` to a loopback address that decrypts on demand. See
+// SealedFileServer for why decryption wears the shape of an HTTP server.
+import '../../video_hub/data/api/offline_crypto.dart';
+import '../../video_hub/data/cache/sealed_file_server.dart';
 
 part 'player_state.dart';
 part 'player_controller_playback.dart';

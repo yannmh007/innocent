@@ -19,6 +19,13 @@ for base in targets:
                 cls,block=m.group(1),m.group(2)
                 # a DECLARATION block always contains `required` or `this.`
                 if 'required' not in block and 'this.' not in block: continue
+                # A COMMA IS APPENDED BECAUSE THE CLOSING BRACE WAS EATEN by the
+                # regex above, so the LAST parameter has no delimiter after it.
+                # Without this, `_Sealer({required this.iv, required int at})`
+                # registered only `iv` and every call passing `at:` was reported
+                # as an undeclared argument — a false positive that would have
+                # been "fixed" by deleting a correct argument.
+                block = block.rstrip() + ','
                 names=set(re.findall(r'(?:required\s+)?(?:this\.)?(\w+)\s*[,}=]',block))
                 names|=set(re.findall(r'this\.(\w+)',block))
                 names|=set(re.findall(r'super\.(\w+)',block))

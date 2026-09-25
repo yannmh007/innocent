@@ -94,6 +94,41 @@ extension PlayerPlayback on PlayerController {
       if (mounted) state = state.copyWith(loadingMessage: null);
       uri = local;
     }
+
+    // A SEALED DOWNLOAD. `sealed://<path>` means a film on this phone that is
+    // ciphertext: libmpv cannot open it, and handing it the path would draw
+    // noise. It is resolved to a loopback address that decrypts on demand.
+    //
+    // THE STABLE IDENTITY IS THE `sealed://` URI AND NOT THE ADDRESS, exactly
+    // as for adb://. The loopback address carries a port and a token minted
+    // once per process, so a resume point keyed on it would be a new key every
+    // launch — which is the same as having no resume point at all, on films two
+    // hours long. `_libraryUri` below keeps the stable one.
+    if (uri.startsWith('sealed://')) {
+      final path = uri.substring('sealed://'.length);
+      final file = File(path);
+      final seal = await OfflineCrypto.inspect(file);
+      final local = seal == null
+          ? null
+          : await SealedFileServer.instance
+              .localUrlFor(file: file, seal: seal);
+      if (local == null) {
+        if (mounted) {
+          state = state.copyWith(
+            isBuffering: false,
+            loadingMessage: null,
+            // NAMED AS WHAT IT IS. A viewer spent an hour of mobile data on
+            // this film; "could not play" would send them to check their
+            // signal for a file that is simply no longer readable. The only
+            // honest instruction is to download it again.
+            errorMessage: 'This download can no longer be opened on this '
+                'phone. Delete it from Downloads and download it again.',
+          );
+        }
+        return;
+      }
+      uri = local;
+    }
     _currentUri = uri;
     // Keep the library-facing identity separate from the URI libmpv plays,
     // so Next / Previous / Loop-all keep working for adb:// videos whose

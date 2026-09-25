@@ -342,6 +342,7 @@ Future<void> playOffline(
   required String titleId,
   required String title,
   required bool premium,
+  required bool sealed,
 }) async {
   final tier = ref.read(viewerProvider).tier;
 
@@ -361,7 +362,12 @@ Future<void> playOffline(
   context.push(
     Routes.player,
     extra: <String, dynamic>{
-      'uri': path,
+      // `sealed://` FOR A CIPHERTEXT FILM, and the plain path for everything
+      // else. The player resolves the scheme to a loopback address that
+      // decrypts on demand; handing it the path would draw noise, and handing
+      // it the loopback address directly would key the resume point on a port
+      // and a token that change every launch. See PlayerPlayback._doOpenVideo.
+      'uri': sealed ? 'sealed://$path' : path,
       'title': title,
       // Same paid content it was online, so the same capture protection.
       'secure': premium,

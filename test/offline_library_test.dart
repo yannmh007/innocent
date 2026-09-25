@@ -10,8 +10,10 @@
 // — an index that agrees with a fake is worth nothing.
 
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:innocent/features/video_hub/data/api/offline_crypto.dart';
 import 'package:innocent/features/video_hub/data/api/offline_library.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
@@ -167,6 +169,108 @@ void main() {
         <String, Object>{'vh_offline_index': 'not json at all'},
       );
       expect(await OfflineLibrary().items(), isEmpty);
+    });
+  });
+
+  group('a sealed download', () {
+    // A sealed film is the object's bytes plus a thirty-two byte trailer, and
+    // the row says so. Every test here is about the shelf's verification
+    // reading that length correctly: the first version compared a sealed file
+    // against the object's length, called every one of them a stale row, and
+    // recorded a size that was not the film's.
+
+    Future<OfflineItem> seedSealed(String id, {int bytes = 100}) async {
+      final dir = await library.directory();
+      final f = File('${dir.path}/$id.mp4');
+      await f.writeAsBytes(<int>[
+        ...List<int>.filled(bytes, 0),
+        ...OfflineCrypto.composeTrailer(
+          iv: Uint8List(16),
+          plainLength: bytes,
+        ),
+      ]);
+      final item = OfflineItem(
+        titleId: id,
+        title: 'Title $id',
+        path: f.path,
+        bytes: bytes,
+        addedAt: DateTime.now(),
+        sealed: true,
+      );
+      await library.put(item);
+      return item;
+    }
+
+    test('survives verification, and its size stays the object\'s', () async {
+      final item = await seedSealed('a', bytes: 100);
+      expect(await File(item.path).length(), 132);
+      final items = await library.items();
+      expect(items, hasLength(1));
+      expect(items.single.sealed, isTrue);
+      // NOT 132. `bytes` is what the viewer paid data for and what the shelf
+      // shows; the trailer is the app's own overhead.
+      expect(items.single.bytes, 100);
+    });
+
+    test('a sealed film that lost its trailer is damage, not a short film',
+        () async {
+      // The one case a plain-file shelf could not tell apart. Without the row
+      // saying the film is sealed, this file is thirty-two bytes shorter than
+      // it should be and passes for a legitimate MP4 — which is then handed to
+      // the player and drawn as noise.
+      final item = await seedSealed('a', bytes: 100);
+      await File(item.path).writeAsBytes(List<int>.filled(100, 0));
+
+      expect(await library.items(), isEmpty);
+      expect(await File(item.path).exists(), isFalse);
+    });
+
+    test('a truncated sealed film goes, like any other truncated film',
+        () async {
+      final item = await seedSealed('a', bytes: 100);
+      await File(item.path).writeAsBytes(List<int>.filled(40, 0));
+      expect(await library.items(), isEmpty);
+    });
+
+    test('a stale row is still corrected, and by the object\'s length',
+        () async {
+      // A re-download of a sealed film, caught between the rename and the index
+      // write. The correction has to subtract the trailer, or the row records a
+      // size thirty-two bytes larger than the film and never agrees with the
+      // disk again.
+      final item = await seedSealed('a', bytes: 100);
+      await File(item.path).writeAsBytes(<int>[
+        ...List<int>.filled(250, 0),
+        ...OfflineCrypto.composeTrailer(
+          iv: Uint8List(16),
+          plainLength: 250,
+        ),
+      ]);
+      final items = await library.items();
+      expect(items, hasLength(1));
+      expect(items.single.bytes, 250);
+    });
+
+    test('a row written before sealing existed reads as a plain file',
+        () async {
+      // Every download on every phone today. Reading one as sealed would hand
+      // libmpv a decryptor it does not need and draw noise over a film that was
+      // fine.
+      final item = OfflineItem.fromJson(<String, dynamic>{
+        'titleId': 'old',
+        'title': 'Old',
+        'path': '/x/old.mp4',
+        'bytes': 10,
+        'addedAt': DateTime.now().toUtc().toIso8601String(),
+      });
+      expect(item!.sealed, isFalse);
+    });
+
+    test('sealed-ness survives a write and a reread', () async {
+      await seedSealed('a', bytes: 64);
+      final fresh = OfflineLibrary();
+      final items = await fresh.items();
+      expect(items.single.sealed, isTrue);
     });
   });
 

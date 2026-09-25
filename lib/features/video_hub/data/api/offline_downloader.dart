@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -14,6 +16,7 @@ import '../../domain/video_content.dart';
 import '../../domain/byte_size.dart';
 import '../../domain/transfer_rate.dart';
 import 'download_plan.dart';
+import 'offline_crypto.dart';
 import 'offline_library.dart';
 
 /// Where one download has got to.
@@ -399,9 +402,18 @@ class OfflineDownloader {
     // The object length as first observed, kept beside the part file so a
     // resume days later can tell whether it is still the same film.
     final sizeNote = File('$partPath.total');
+    // WHICH KEYSTREAM THE BYTES ON DISK BELONG TO. A resume ciphers from where
+    // it stopped, and nothing in the part file itself says which IV produced
+    // it — so the IV is written beside it before the first byte and lives
+    // exactly as long as the part file does. Its presence is also the answer to
+    // "was this download started sealed", which is the one question a resume
+    // must not guess: half a film under one cipher and half under none is noise
+    // with a seam in it.
+    final ivNote = File('$partPath.iv');
 
     var received = await part.exists() ? await part.length() : 0;
     int? total = await _readSizeNote(sizeNote);
+    var sealer = await _sealerFor(part: part, ivNote: ivNote, at: received);
 
     final label = content.title.trim().isEmpty ? 'Downloading' : content.title;
     await OfflineServiceBridge.start(label, _statusLine(received, total));
@@ -476,6 +488,36 @@ class OfflineDownloader {
       while (failures <= maxConsecutiveFailures && attempts < maxAttempts) {
         attempts++;
         if (_cancelled.contains(titleId)) return null;
+
+        // ─── ALREADY COMPLETE, AND NEVER FINISHED ─────────────────────────
+        //
+        // The bytes are all there but the file was never renamed and no row
+        // was written. Two ways to arrive here: Android killed the app between
+        // the last byte and the rename, or the trailer would not write and the
+        // download was left resumable on purpose.
+        //
+        // WITHOUT THIS, AN ATTEMPT IS MADE ANYWAY, and it asks the object for
+        // the bytes from `received` onwards — which is past the end, so R2
+        // answers 416 and the loop counts a failure and waits, five hundred
+        // times, on a download that is sitting finished on the disk. Costing
+        // somebody their film to a rename that did not happen is the kind of
+        // thing nobody would ever find.
+        if (total != null && received >= total! && received > 0) {
+          serviceUp = false;
+          return _finish(
+            content: content,
+            assetId: assetId,
+            part: part,
+            sizeNote: sizeNote,
+            ivNote: ivNote,
+            sealer: sealer,
+            finalPath: finalPath,
+            bytes: received,
+            label: label,
+            notices: notices,
+            emit: emit,
+          );
+        }
 
         // ─── MAY THIS CONNECTION BE SPENT? ────────────────────────────────
         //
@@ -628,6 +670,14 @@ class OfflineDownloader {
           try {
             if (await sizeNote.exists()) await sizeNote.delete();
           } catch (_) {}
+          // A NEW IV FOR A NEW FILM, and this is not tidiness. One keystream
+          // used for two different films is the textbook way to lose a stream
+          // cipher: anybody holding both files gets the XOR of the two
+          // plaintexts without needing the key at all.
+          try {
+            if (await ivNote.exists()) await ivNote.delete();
+          } catch (_) {}
+          sealer = await _sealerFor(part: part, ivNote: ivNote, at: 0);
           // Not counted as a failure: this is a decision, not a fault, and the
           // next pass starts the download properly from zero.
           continue;
@@ -694,13 +744,25 @@ class OfflineDownloader {
         final sink = part.openWrite(mode: FileMode.append);
         var broke = false;
         var ranOut = false;
+        var sealBroke = false;
         try {
           await for (final chunk in response.stream) {
             if (_cancelled.contains(titleId)) {
               broke = true;
               break;
             }
-            sink.add(chunk);
+            final out = sealer == null ? chunk : await sealer.take(chunk);
+            if (out == null) {
+              // THE CIPHER FAILED MID-FILM. Everything already written is
+              // under the old keystream and still readable, so the honest move
+              // is to stop the pass rather than write plaintext into the middle
+              // of it — which would be a file that plays until the seam and
+              // then does not.
+              broke = true;
+              sealBroke = true;
+              break;
+            }
+            sink.add(out);
             received += chunk.length;
             report();
             if (received - lastSpaceCheck >= _spaceCheckEvery) {
@@ -742,7 +804,10 @@ class OfflineDownloader {
         // attempt that dies during its first packet cannot keep the loop alive
         // for ever.
         final gained = received - beforePass;
-        if (gained >= _realProgress) {
+        // A PASS THAT DIED IN THE CIPHER IS NOT A HEALTHY PASS, however many
+        // bytes it moved first. Without this it would clear the budget and the
+        // loop would keep asking a broken cipher for ever.
+        if (gained >= _realProgress && !sealBroke) {
           failures = 0;
         } else {
           failures++;
@@ -759,6 +824,8 @@ class OfflineDownloader {
             assetId: assetId,
             part: part,
             sizeNote: sizeNote,
+            ivNote: ivNote,
+            sealer: sealer,
             finalPath: finalPath,
             bytes: received,
             label: label,
@@ -777,6 +844,8 @@ class OfflineDownloader {
             assetId: assetId,
             part: part,
             sizeNote: sizeNote,
+            ivNote: ivNote,
+            sealer: sealer,
             finalPath: finalPath,
             bytes: received,
             label: label,
@@ -814,17 +883,83 @@ class OfflineDownloader {
     }
   }
 
-  Future<OfflineItem> _finish({
+  /// Decides whether this download is sealed, and under which IV.
+  ///
+  /// THE PART FILE DECIDES, NOT THE SETTING. A resume must continue exactly as
+  /// it started: the sidecar's presence says it started sealed, its absence says
+  /// it did not, and neither is overruled here. Only a download with nothing on
+  /// disk gets to ask the platform.
+  ///
+  /// A null return is not a failure. It is "this film will be a plain file",
+  /// which is what every download before this feature was and what a phone whose
+  /// Keystore will not answer still gets. FAIL OPEN, DELIBERATELY: a viewer who
+  /// cannot download at all is a worse outcome than a file that is not
+  /// encrypted, and the decision is recorded in `docs/offline_first_plan.md` so
+  /// it is not quietly reversed.
+  Future<_Sealer?> _sealerFor({
+    required File part,
+    required File ivNote,
+    required int at,
+  }) async {
+    try {
+      if (await part.exists()) {
+        if (!await ivNote.exists()) return null;
+        final iv = (await ivNote.readAsString()).trim();
+        if (iv.isEmpty) return null;
+        return _Sealer(iv: iv, at: at);
+      }
+      // A stale sidecar with no part file beside it belongs to a download that
+      // was deleted; reusing its IV would be reusing a keystream.
+      try {
+        if (await ivNote.exists()) await ivNote.delete();
+      } catch (_) {}
+      if (!await OfflineCrypto.available()) return null;
+      final iv = await OfflineCrypto.newIv();
+      if (iv == null) return null;
+      await ivNote.writeAsString(iv, flush: true);
+      return _Sealer(iv: iv, at: 0);
+    } catch (e) {
+      if (kDebugMode) debugPrint('offline sealer: $e');
+      return null;
+    }
+  }
+
+  Future<OfflineItem?> _finish({
     required VideoContent content,
     required String? assetId,
     required File part,
     required File sizeNote,
+    required File ivNote,
+    required _Sealer? sealer,
     required String finalPath,
     required int bytes,
     required String label,
     required DownloadNotices notices,
     required void Function(OfflineProgress) emit,
   }) async {
+    // THE TRAILER, AND THEN NOTHING ELSE IS WRITTEN. Until it is there the file
+    // is ciphertext that nothing can identify as ciphertext, which is exactly
+    // what a part file should be; once it is there the film is self-describing
+    // and does not need the sidecar, the shelf row or this build to be readable
+    // again.
+    if (sealer != null) {
+      final ok = await sealer.seal(part, plainLength: bytes);
+      if (!ok) {
+        // A sealed film whose trailer would not write is a film nothing can
+        // open. Better to say the download failed — with the bytes kept, so a
+        // retry resumes rather than starting again — than to hand somebody a
+        // finished row over a file that plays as noise.
+        emit(OfflineProgress(
+          titleId: content.id,
+          received: bytes,
+          total: bytes,
+          error: 'seal_failed',
+        ));
+        await OfflineServiceBridge.stop();
+        return null;
+      }
+    }
+
     // RENAME LAST. Until this line there is only a `.part` file, which no
     // reader trusts; after it there is a finished file AND an index entry.
     // A crash between the two leaves a file with no entry, which the next
@@ -833,6 +968,9 @@ class OfflineDownloader {
     await part.rename(finalPath);
     try {
       if (await sizeNote.exists()) await sizeNote.delete();
+    } catch (_) {}
+    try {
+      if (await ivNote.exists()) await ivNote.delete();
     } catch (_) {}
 
     final item = OfflineItem(
@@ -848,6 +986,10 @@ class OfflineDownloader {
       // premium, which showed the paywall over a FREE film somebody had just
       // spent an hour of mobile data on.
       premium: content.accessTier == AccessTier.premium,
+      // Whether this one is ciphertext. The shelf has to know: a sealed film is
+      // longer than the object it came from and cannot be handed to the player
+      // as a path.
+      sealed: sealer != null,
     );
     await _library.put(item);
     await _library.dropPending(content.id);
@@ -927,6 +1069,70 @@ class OfflineDownloader {
     } catch (e) {
       if (kDebugMode) debugPrint('offline freeBytes: $e');
       return -1;
+    }
+  }
+}
+
+/// Ciphers a download as it arrives.
+///
+/// ═══════════════════════════════════════════════════════════════════════
+/// WHY THIS IS AS SMALL AS IT IS
+/// ═══════════════════════════════════════════════════════════════════════
+///
+/// There is no buffer, no block alignment and no state carried across a process
+/// death, because CTR is addressable by byte: the cipher is told which offset a
+/// run of bytes belongs at and works out the rest. So a chunk from the network
+/// goes straight through whatever its length, a resume simply starts counting
+/// from the part file's own length, and there is nothing to get out of step.
+///
+/// The first version of this held a fifteen-byte remainder to keep every write
+/// block-aligned. It was deleted once the offset interface made it unnecessary —
+/// which is worth recording, because it looks like an omission.
+class _Sealer {
+  _Sealer({
+    required this.iv,
+    required int at,
+  }) : _at = at;
+
+  final String iv;
+
+  /// How far into the FILM the next byte goes. Plaintext offsets throughout —
+  /// the ciphertext is the same length, which is the whole reason this works.
+  int _at;
+
+  /// Returns the bytes to write, or null when the cipher would not answer.
+  Future<List<int>?> take(List<int> chunk) async {
+    if (chunk.isEmpty) return chunk;
+    final bytes = chunk is Uint8List ? chunk : Uint8List.fromList(chunk);
+    final out = await OfflineCrypto.transform(
+      iv: iv,
+      offset: _at,
+      bytes: bytes,
+    );
+    if (out == null) return null;
+    _at += bytes.length;
+    return out;
+  }
+
+  /// Writes the trailer that makes the file a film rather than a part file.
+  Future<bool> seal(File part, {required int plainLength}) async {
+    IOSink? sink;
+    try {
+      final trailer = OfflineCrypto.composeTrailer(
+        iv: Uint8List.fromList(base64Decode(iv)),
+        plainLength: plainLength,
+      );
+      sink = part.openWrite(mode: FileMode.append);
+      sink.add(trailer);
+      await sink.flush();
+      return true;
+    } catch (e) {
+      if (kDebugMode) debugPrint('offline seal: $e');
+      return false;
+    } finally {
+      try {
+        await sink?.close();
+      } catch (_) {}
     }
   }
 }
