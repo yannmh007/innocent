@@ -54,7 +54,7 @@ complained about a film they had already paid data for.
 | **F1** | Telegram → R2 pipeline | open — **blocked on a decision**, see below |
 | **G1** | Watch a download while it is still downloading | **done** — 1.64.32+345 |
 | **G2** | True background download | open — **needs a real device** |
-| **#31** | Serve video from the Cloudflare edge, not the S3 API | open, older |
+| **#31** | Serve video from the Cloudflare edge, not the S3 API | code complete — **needs one look**, see below |
 | **#32** | Find which videos still have their index at the end | open, older |
 
 Released along the way: 1.64.25+338, 1.64.26+339, 1.64.27+340. 1.64.28 through
@@ -435,12 +435,35 @@ destroyed (see the note under A1 for why the foreground service is not enough).
 strength of reading the documentation.** It needs a phone, swipe-killed, with the
 screen off, on mobile data, for twenty minutes.
 
-### #31. Serve video from the Cloudflare edge instead of the S3 API
+### #31. Serve video from the Cloudflare edge — the code is done, the switch is a secret
 
-Playback currently presigns the S3 API endpoint. The Worker path exists and the
-token design is already tested against both halves
-(`tool/js/stream_token_test.mjs`); this is about moving playback onto the edge so
-the bytes come from a cache near the viewer.
+This turned out not to be code at all. `request-playback` already does
+`const url = viaWorker ?? await presign(objectKey)`, the Worker
+(`innocent-stream`) is deployed with its R2 binding, and the token design is
+tested against both halves in `tool/js/stream_token_test.mjs`. Playback uses the
+edge the moment **`STREAM_BASE`** and **`STREAM_TOKEN_SECRET`** are both set on the
+Supabase functions.
+
+**And the fallback is silent, which is the actual problem.** The app plays either
+way, at the same quality, so nothing on any screen said which path viewers were
+on — in either direction. Weeks on the slower path cost nothing visible; and
+somebody who believed the edge was live had no way to find out it was not, which
+is the state this item sat in.
+
+So the console now says so. The Start-up panel reports **Edge delivery: on / off /
+misconfigured**, from a `delivery` op that returns booleans and never values, and
+asks the Worker's own `/health` from the server side — the console does not know
+the Worker's address, because that address is the secret, and it should not learn
+it from a diagnostic.
+
+It cannot prove the two secrets MATCH. Only the speed test can, because that mints
+a real token for a real object and fetches it. "Is it wired up" and "does it work"
+are different questions with different fixes, and they are answered by different
+buttons.
+
+**What is left is one look**, in this order: press *Check videos* and read the
+first line; if it says on, press *Speed test*. Both need `probe-media` redeployed,
+since the `delivery` op is new.
 
 ### #32. Find which videos still have their index at the end — the finder is done
 

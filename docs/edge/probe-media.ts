@@ -288,8 +288,56 @@ Deno.serve(async (req: Request) => {
   if (req.method !== 'POST') return json({ error: 'method' }, 405, req);
   if (!(await operatorId(req))) return json({ error: 'not_an_operator' }, 403, req);
 
-  let body: { keys?: unknown; speed?: unknown };
+  let body: { keys?: unknown; speed?: unknown; delivery?: unknown;
+    offset?: unknown };
   try { body = await req.json(); } catch { body = {}; }
+
+  // ── WHERE THE BYTES COME FROM, WHICH NOTHING COULD SEE ────────────────
+  //
+  // Playback goes through the Worker when STREAM_BASE and STREAM_TOKEN_SECRET
+  // are both set, and falls back to a presigned S3 URL when either is missing.
+  // That fallback is deliberate and it is SILENT: the app plays either way, at
+  // the same quality, so nothing on any screen said which path a viewer was on.
+  // Two consequences, and both of them happened.
+  //
+  // The edge path is the better one — bytes from Cloudflare's own network,
+  // reached through an R2 binding rather than a credential, and an address that
+  // says nothing to anyone holding it — so running on the fallback for weeks
+  // without knowing is a cost paid for nothing. And the other direction is
+  // worse: somebody who believed the edge path was live had no way to find out
+  // it was not, which is exactly the state this whole item sat in.
+  //
+  // BOOLEANS AND NEVER VALUES. This says whether a secret is set, not what it
+  // is. The Worker's own /health is asked from here rather than from the
+  // browser, because the console does not know the Worker's address — that is
+  // the secret — and it should not learn it from a diagnostic.
+  //
+  // It cannot prove the two secrets MATCH; only the speed test can, because
+  // that mints a real token for a real object and fetches it. So this answers
+  // "is it wired up" and the speed test answers "does it work", which are
+  // different questions with different fixes.
+  if (body.delivery) {
+    const out: Record<string, unknown> = {
+      edge: !!(STREAM_BASE && STREAM_TOKEN_SECRET),
+      base_set: !!STREAM_BASE,
+      secret_set: !!STREAM_TOKEN_SECRET,
+      worker: null,
+    };
+    if (STREAM_BASE) {
+      try {
+        const res = await fetch(`${STREAM_BASE}/health`, {
+          headers: { 'Cache-Control': 'no-store' },
+        });
+        out.worker = res.ok ? await res.json() : { status: res.status };
+      } catch (e) {
+        // A Worker that cannot be reached from here is a finding, not an error:
+        // it means the address is wrong or the Worker is not deployed, and the
+        // app has been quietly playing presigned S3 URLs ever since.
+        out.worker = { error: String(e).slice(0, 160) };
+      }
+    }
+    return json(out, 200, req);
+  }
 
   // ── the speed test ────────────────────────────────────────────────────
   //

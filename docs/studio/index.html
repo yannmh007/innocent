@@ -153,6 +153,11 @@ button.i.on{color:var(--acc)}
 .msg.ok{background:#0f2019;color:#a7f3d0;border-color:#1e4637}
 .msg.bad{background:#241012;color:#fecaca;border-color:#5b2626}
 .msg.info{background:var(--panel);color:var(--dim);border-color:var(--line2)}
+/* Amber, and it earns its own rule rather than borrowing `bad`. A setting that
+   is switched off is not a failure — the app plays perfectly well on the
+   fallback — and drawing it red sends the operator looking for a broken thing
+   when what is there is an unfinished one. */
+.msg.warn{background:#241d0c;color:#fde68a;border-color:#5b4a19}
 .empty{color:var(--dim2);padding:26px 4px;text-align:center;font-size:12.5px}
 [hidden]{display:none!important}
 
@@ -2501,6 +2506,7 @@ async function loadStats() {
 // is size divided by DURATION, which is why the probe now reads the movie
 // header as well as the box list.
 let lastProbe = [];
+let lastDelivery = null;
 let measuredKbps = null;
 
 // A file needs its bitrate delivered CONTINUOUSLY, with nothing left over
@@ -2537,6 +2543,38 @@ function drawProbe() {
 
   const tail = rows.filter((r) => r.verdict === 'tail').length;
   const fat = rows.filter((r) => bitrateClass(r.kbps) === 'bad').length;
+
+  // WHERE THE BYTES COME FROM, said out loud. Playback uses the Worker when
+  // both its secrets are set and falls back to a presigned S3 URL when either
+  // is missing — and the fallback is SILENT, because the app plays either way
+  // at the same quality. So nothing on any screen said which path viewers were
+  // on, in either direction: weeks on the slower path for nothing, or a belief
+  // that the edge was live with no way to find out it was not.
+  const d = lastDelivery;
+  if (d) {
+    const w = d.worker || {};
+    if (d.edge && w.ok && w.secret && w.bucket) {
+      host.append(el('div', { className: 'msg ok' }, text(
+        'Edge delivery is on. Videos come from Cloudflare\'s network through ' +
+        'the Worker, and the address a viewer holds says nothing about the ' +
+        'bucket. Run the speed test to measure what it actually delivers.')));
+    } else if (!d.base_set || !d.secret_set) {
+      host.append(el('div', { className: 'msg warn' }, text(
+        'Edge delivery is OFF — ' +
+        (!d.base_set && !d.secret_set ? 'neither STREAM_BASE nor STREAM_TOKEN_SECRET is set'
+          : !d.base_set ? 'STREAM_BASE is not set' : 'STREAM_TOKEN_SECRET is not set') +
+        '. Videos still play, from a presigned S3 address that names the ' +
+        'account and the bucket, and the bytes take the longer way round. ' +
+        'Set both in the Supabase function settings.')));
+    } else {
+      host.append(el('div', { className: 'msg bad' }, text(
+        'Edge delivery is configured but the Worker did not answer properly' +
+        (w.status ? ' (HTTP ' + w.status + ')' : w.error ? ': ' + w.error : '') +
+        (w.ok && !w.secret ? ' — it is running with no TOKEN_SECRET set' : '') +
+        (w.ok && !w.bucket ? ' — it is running with no bucket binding' : '') +
+        '. Playback is falling back to presigned S3 addresses.')));
+    }
+  }
 
   // TWO SENTENCES, IN THE ORDER OF WHAT IT COSTS. A file too fat to stream
   // ruins every second of the film; an index at the end costs one round trip
@@ -2616,6 +2654,15 @@ $('probeBtn').onclick = async () => {
     // A CEILING ON THE LOOP, because a bug in `more` would otherwise be an
     // infinite one on the operator's phone. Forty pages is 1,600 videos; if a
     // catalogue ever reaches that, this panel is the smaller problem.
+    // ASKED FIRST AND SEPARATELY, because it is the answer to a different
+    // question and it must not be lost when a probe fails: a catalogue that
+    // cannot be read is exactly when knowing which delivery path is live
+    // matters most.
+    try {
+      lastDelivery = await api({ delivery: 1 }, PROBE_API);
+    } catch (e) {
+      lastDelivery = null;
+    }
     const all = [];
     let offset = 0;
     for (let page = 0; page < 40; page++) {
