@@ -33,6 +33,19 @@
              been granted any of it. It is pure cache, so losing it costs a
              download and nothing else. -->
         <exclude domain="file" path="stream_cache" />
+        <!-- "Watch offline" downloads: COMPLETE ORIGINALS, not cache pieces.
+             Excluded from both channels for the same reason and more of it —
+             cloud backup would put the viewer's downloaded library in a Drive
+             account, the new-phone transfer would clone it onto a handset
+             granted none of it, and either one blows past the per-app backup
+             quota and takes the settings and history down with it. -->
+        <exclude domain="file" path="offline" />
+        <!-- The key those downloads are encrypted with. Keystore-wrapped, and
+             the Keystore is never in a backup, so a restored copy is a blob
+             with no key: every sealed film would draw as noise instead of
+             saying it can no longer be opened. -->
+        <exclude domain="sharedpref" path="mx_offline_crypto_v1" />
+        <exclude domain="sharedpref" path="mx_offline_crypto_v1.xml" />
         <exclude domain="sharedpref" path="FlutterSecureStorage" />
         <exclude domain="sharedpref" path="FlutterSecureStorage.xml" />
     </cloud-backup>
@@ -47,6 +60,19 @@
              been granted any of it. It is pure cache, so losing it costs a
              download and nothing else. -->
         <exclude domain="file" path="stream_cache" />
+        <!-- "Watch offline" downloads: COMPLETE ORIGINALS, not cache pieces.
+             Excluded from both channels for the same reason and more of it —
+             cloud backup would put the viewer's downloaded library in a Drive
+             account, the new-phone transfer would clone it onto a handset
+             granted none of it, and either one blows past the per-app backup
+             quota and takes the settings and history down with it. -->
+        <exclude domain="file" path="offline" />
+        <!-- The key those downloads are encrypted with. Keystore-wrapped, and
+             the Keystore is never in a backup, so a restored copy is a blob
+             with no key: every sealed film would draw as noise instead of
+             saying it can no longer be opened. -->
+        <exclude domain="sharedpref" path="mx_offline_crypto_v1" />
+        <exclude domain="sharedpref" path="mx_offline_crypto_v1.xml" />
         <exclude domain="sharedpref" path="FlutterSecureStorage" />
         <exclude domain="sharedpref" path="FlutterSecureStorage.xml" />
     </device-transfer>

@@ -55,4 +55,29 @@
          Drive. It is also pure cache — losing it on a restore costs a
          download and nothing else. -->
     <exclude domain="file" path="stream_cache/" />
+    <!-- "Watch offline" downloads. THE SAME ARGUMENT AS stream_cache/ AND
+         MORE SO: the cache holds pieces of whatever rung was streamed, this
+         holds COMPLETE ORIGINALS at full quality, which is the operator's
+         master. Without this line Auto Backup uploads the viewer's whole
+         downloaded library to their personal Google Drive, and the new-phone
+         transfer clones it onto a handset that has been granted none of it.
+
+         It also breaks the backup itself. Auto Backup allows a few tens of
+         megabytes per app; one downloaded film is a thousand. Past the quota
+         the WHOLE backup fails, so the settings and history that this file
+         deliberately keeps backing up stop arriving too — a feature nobody
+         would connect to a download.
+
+         Losing them on a restore is the correct outcome: a download belongs
+         to a phone, the app re-downloads on request, and the shelf drops any
+         row whose file is missing the next time it is read. -->
+    <exclude domain="file" path="offline/" />
+    <!-- The key those downloads are encrypted with — wrapped by a key that
+         lives in the Android Keystore and is NEVER in a backup. Exactly the
+         FlutterSecureStorage problem one paragraph up: restored, it is a blob
+         with no key to open it, and every sealed film becomes noise on screen
+         rather than an honest "download this again". Excluded so a restore
+         leaves it absent instead of present and useless. -->
+    <exclude domain="sharedpref" path="mx_offline_crypto_v1" />
+    <exclude domain="sharedpref" path="mx_offline_crypto_v1.xml" />
 </full-backup-content>

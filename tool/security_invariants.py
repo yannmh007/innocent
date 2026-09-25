@@ -230,6 +230,68 @@ if os.path.isfile(ACCOUNT):
             'dropEntitled without passing stop:. The callback exists so a '
             'sign-out can halt a running download before deleting its file.')
 
+# --- 10. nothing the catalogue is kept in leaves the phone in a backup ------
+#
+# ANDROID AUTO BACKUP UPLOADS AN APP'S INTERNAL STORAGE TO THE USER'S GOOGLE
+# DRIVE BY DEFAULT, and the "copy your apps to a new phone" transfer is a
+# SECOND channel that copies more. `res/xml/backup_rules.xml` and
+# `res/xml/data_extraction_rules.xml` exist because of that, and they were
+# written carefully — for the vault, the ADB key and the streaming cache.
+#
+# Then the offline downloads were added and nobody added a line. Complete
+# masters at full quality, sitting in the support directory, going to a
+# viewer's personal Drive and onto whatever handset a shop assistant set up
+# next. Past the per-app quota the whole backup fails as well, so the settings
+# and history those files deliberately KEEP backing up stop arriving too.
+#
+# So it is mechanical now. EVERYTHING THE VIDEO HUB KEEPS ON DISK IS CATALOGUE
+# CONTENT BY DEFINITION, and every directory it creates has to be named in both
+# files. The rule is stated as "named", not "excluded", so a directory that
+# genuinely should travel can be listed with a comment saying why — what is
+# refused is the silence.
+XML_DIR = os.path.join(ROOT, 'android/app/src/main/res/xml')
+RULES = [os.path.join(XML_DIR, 'backup_rules.xml'),
+         os.path.join(XML_DIR, 'data_extraction_rules.xml')]
+if all(os.path.isfile(f) for f in RULES):
+    rules_text = {f: open(f, encoding='utf-8').read() for f in RULES}
+    seen = set()
+    for base, dirs, files in os.walk(FEATURE):
+        for fn in files:
+            if not fn.endswith('.dart'):
+                continue
+            body = strip(open(os.path.join(base, fn), encoding='utf-8').read())
+            for m in re.finditer(r"Directory\('\$\{[A-Za-z_.]+\}/([A-Za-z0-9_\-]+)'\)", body):
+                seen.add((m.group(1), os.path.relpath(os.path.join(base, fn), ROOT)))
+    for name, where in sorted(seen):
+        for f in RULES:
+            if ('path="%s"' % name) not in rules_text[f] and \
+                    ('path="%s/"' % name) not in rules_text[f]:
+                fails.append(
+                    'CATALOGUE IN A BACKUP: %s keeps files in "%s/" and %s '
+                    'does not mention it. Android uploads internal storage to '
+                    'the user\'s Google Drive and clones it to a new phone '
+                    'unless a rule says otherwise.'
+                    % (where, name, os.path.relpath(f, ROOT)))
+
+# AND THE KEY THOSE DOWNLOADS ARE ENCRYPTED WITH. Keystore-wrapped, and the
+# Keystore is never part of a backup — so a restored copy is a blob with no key
+# to open it, and every sealed film draws as noise instead of saying it can no
+# longer be opened. The same trap FlutterSecureStorage is excluded for.
+CRYPTO_KT = os.path.join(
+    ROOT, 'android/app/src/main/kotlin/com/innocent/media/MediaCrypto.kt')
+if os.path.isfile(CRYPTO_KT) and all(os.path.isfile(f) for f in RULES):
+    m = re.search(r'PREFS\s*=\s*"([^"]+)"',
+                  open(CRYPTO_KT, encoding='utf-8').read())
+    if m:
+        for f in RULES:
+            if m.group(1) not in open(f, encoding='utf-8').read():
+                fails.append(
+                    'THE DOWNLOAD KEY IS IN A BACKUP: MediaCrypto stores the '
+                    'wrapped data key in "%s" and %s does not exclude it. '
+                    'Restored without its Keystore key it opens nothing, and '
+                    'every sealed film becomes noise on screen.'
+                    % (m.group(1), os.path.relpath(f, ROOT)))
+
 # --- 8. no credential is ever written into this repository -----------------
 #
 # THIS IS NOT A PRECAUTION. `docs/RUNBOOK.md` carried the live

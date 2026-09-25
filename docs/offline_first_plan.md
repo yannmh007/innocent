@@ -575,6 +575,42 @@ the very end — and a check that failed on those would teach whoever met it tha
 the rule is noise. Both halves were proved by breaking them and watching the build
 go red.
 
+### The second one that was wrong: the downloads were going to Google Drive
+
+`res/xml/backup_rules.xml` and `res/xml/data_extraction_rules.xml` exist because
+**Android Auto Backup uploads an app's internal storage to the user's Google
+Drive by default**, and the "copy your apps to a new phone" transfer is a second
+channel that copies more. Both files were written carefully — for the vault, the
+break-in selfies, the ADB key and the streaming cache, each with the reasoning
+beside it. The streaming cache's reason says it plainly: *"It is premium video …
+Auto Backup would therefore upload the catalogue to the viewer's Google Drive."*
+
+Then E1 and A1 put the offline downloads in `files/offline/` and **nobody added a
+line**. Those are not cache pieces; they are complete masters at full quality. So:
+
+- every downloaded film was being uploaded to the viewer's personal Google Drive,
+- and cloned onto whatever handset the new-phone transfer was run against,
+- and, past the per-app backup quota, **the whole backup fails** — so the settings
+  and history these files deliberately keep backing up stopped arriving too, for a
+  reason nobody would ever connect to a download.
+
+The wrapped data key had the same hole, and it is the trap the file already
+documents for `FlutterSecureStorage`: restored without the Keystore key that wraps
+it, it opens nothing — and because the trailer is plaintext, every sealed film
+would be *found*, *decrypted with the wrong key* and **drawn as noise**, rather
+than saying it can no longer be opened.
+
+Both are excluded now, from both channels. Losing them on a restore is the right
+outcome: a download belongs to a phone, the app re-downloads on request, and the
+shelf drops any row whose file is missing the next time it is read.
+
+**And this one is a check too.** Rule 10: every directory the video hub creates on
+disk must be NAMED in both files — named, not necessarily excluded, so a directory
+that genuinely should travel can be listed with a comment saying why. What is
+refused is the silence. The wrapped key's preferences file is checked by name
+against `MediaCrypto`'s own constant, so renaming it there without updating the
+rules fails the build. Both halves proved by breaking them.
+
 ### Checked and safe: an offline film cannot be turned back into a stream
 
 Worth writing down because it is not obvious and because somebody could
