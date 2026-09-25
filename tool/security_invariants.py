@@ -141,6 +141,32 @@ for r, d, f in os.walk(os.path.join(ROOT, 'lib')):
                     'lib/core/utils/media_address.dart.'
                     % (os.path.relpath(path, ROOT), field, rule))
 
+# --- 7. a download is the original, never a rung ---------------------------
+# The transcode ladder exists so STREAMING can be matched to a connection
+# second by second: a viewer on a weak link gets a smaller copy instead of a
+# film that stops. A download is the opposite situation. The whole reason
+# somebody waits an hour or two on Myanmar mobile data is to end up with the
+# film as it was uploaded, and a download that quietly handed back a 480p rung
+# would have spent that wait on the one thing it was not for.
+#
+# `grant.url` is signed from the original object key; `grant.renditions` are
+# the ladder. The offline downloader may read the first and must never read the
+# second. This is a rule about which of two right answers belongs on which
+# side, so it cannot be caught by review of the diff that breaks it — the line
+# would look perfectly sensible.
+OFFLINE = os.path.join(FEATURE, 'data/api/offline_downloader.dart')
+if os.path.isfile(OFFLINE):
+    body = strip(open(OFFLINE, encoding='utf-8').read())
+    if 'renditions' in body:
+        fails.append(
+            'DOWNLOAD DOWNGRADED: offline_downloader.dart mentions renditions. '
+            'A download must fetch grant.url, which is the ORIGINAL object - '
+            'the ladder is for streaming only.')
+    if 'grant.url' not in body:
+        fails.append(
+            'DOWNLOAD SOURCE UNCLEAR: offline_downloader.dart no longer reads '
+            'grant.url. The original object is what a download is for.')
+
 print('=== %d security invariant violation(s) ===' % len(fails))
 for f in fails:
     print(' -', f)

@@ -76,6 +76,93 @@ class OfflineItem {
   }
 }
 
+/// A download that was started and has not finished.
+///
+/// ═══════════════════════════════════════════════════════════════════════
+/// WHY THIS HAD TO BE WRITTEN DOWN BEFORE THE FIRST BYTE
+/// ═══════════════════════════════════════════════════════════════════════
+///
+/// The shelf only learned a title's name when its download FINISHED — which
+/// is precisely the case where the name is not needed. An interrupted
+/// download left a `.part` file named by a uuid and nothing else: the
+/// Downloads screen showed an empty shelf, the bytes were invisible and
+/// undeletable through the UI, and the only way to carry on was to remember
+/// which title it had been and find it in the catalogue again.
+///
+/// On the connection this whole feature exists for — Myanmar mobile data, a
+/// film that takes an hour or two — a download being interrupted is not the
+/// unusual case. It is most of them. So the row is written when the download
+/// starts, carries enough to draw itself with no network, and is removed when
+/// the download finishes or the viewer throws it away.
+@immutable
+class PendingDownload {
+  final String titleId;
+  final String title;
+  final String? titleMm;
+  final String? posterUrl;
+  final String? assetId;
+  final DateTime startedAt;
+
+  const PendingDownload({
+    required this.titleId,
+    required this.title,
+    required this.startedAt,
+    this.titleMm,
+    this.posterUrl,
+    this.assetId,
+  });
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+        'titleId': titleId,
+        'title': title,
+        if (titleMm != null) 'titleMm': titleMm,
+        if (posterUrl != null) 'posterUrl': posterUrl,
+        if (assetId != null) 'assetId': assetId,
+        'startedAt': startedAt.toUtc().toIso8601String(),
+      };
+
+  static PendingDownload? fromJson(Map<String, dynamic> m) {
+    final id = '${m['titleId'] ?? ''}';
+    if (id.isEmpty) return null;
+    return PendingDownload(
+      titleId: id,
+      title: '${m['title'] ?? ''}',
+      titleMm: m['titleMm'] as String?,
+      posterUrl: m['posterUrl'] as String?,
+      assetId: m['assetId'] as String?,
+      startedAt:
+          DateTime.tryParse('${m['startedAt']}')?.toLocal() ?? DateTime.now(),
+    );
+  }
+}
+
+/// A pending row plus what is actually on disk for it right now.
+@immutable
+class PendingProgress {
+  final PendingDownload item;
+
+  /// Bytes in the `.part` file.
+  final int received;
+
+  /// The object length, when a previous attempt got as far as learning it.
+  final int? total;
+
+  const PendingProgress({
+    required this.item,
+    required this.received,
+    this.total,
+  });
+
+  double? get fraction {
+    final t = total;
+    if (t == null || t <= 0) return null;
+    // `.toDouble()` written out rather than relied on: `clamp` is declared on
+    // `num`, and a `num` where a `double` is wanted is a compile error the
+    // first reader of this file will not expect.
+    return (received / t).clamp(0.0, 1.0).toDouble();
+  }
+}
+
 /// Where downloaded titles live, and what is on the shelf.
 ///
 /// ═══════════════════════════════════════════════════════════════════════
@@ -242,6 +329,121 @@ class OfflineLibrary {
       if (kDebugMode) debugPrint('offline sweep failed: $e');
     }
     await (await _store).remove(_key);
+    // The pending index describes files the sweep above has just deleted.
+    // Leaving it would fill the Downloads screen with rows that resume
+    // nothing.
+    await (await _store).remove(_pendingKey);
+  }
+
+  // ─── UNFINISHED DOWNLOADS ──────────────────────────────────────────────
+
+  static const String _pendingKey = 'vh_offline_pending';
+
+  /// Record that a download has begun. Replaces any earlier row for the title.
+  Future<void> putPending(PendingDownload item) async {
+    final next = <PendingDownload>[
+      item,
+      for (final o in await _pendingRows())
+        if (o.titleId != item.titleId) o,
+    ];
+    await _writePending(next);
+  }
+
+  /// Forget a pending row WITHOUT touching the part file.
+  ///
+  /// Called when a download finishes: the file has already been renamed and
+  /// the shelf entry written, so the row has nothing left to describe.
+  Future<void> dropPending(String titleId) async {
+    final next = <PendingDownload>[
+      for (final o in await _pendingRows())
+        if (o.titleId != titleId) o,
+    ];
+    await _writePending(next);
+  }
+
+  /// Throw away an unfinished download: the part file, its size note, and the
+  /// row. The order is file first, as in [drop], so nothing is left occupying
+  /// a gigabyte with no way to reach it.
+  Future<void> discardPending(String titleId) async {
+    try {
+      final dir = await directory();
+      final part = File('${dir.path}/$titleId.mp4$partSuffix');
+      if (await part.exists()) await part.delete();
+      final note = File('${part.path}.total');
+      if (await note.exists()) await note.delete();
+    } catch (e) {
+      if (kDebugMode) debugPrint('offline discard failed: $e');
+    }
+    await dropPending(titleId);
+  }
+
+  /// Unfinished downloads, newest first, each with what is on disk for it.
+  ///
+  /// A row whose part file has vanished — Android reclaiming app-private
+  /// storage, or a finished download whose row was not cleaned up — is dropped
+  /// rather than shown, for the same reason [items] verifies against the
+  /// filesystem: a row that cannot be resumed is a row that spins forever.
+  Future<List<PendingProgress>> pending() async {
+    final dir = await directory();
+    final out = <PendingProgress>[];
+    var pruned = false;
+    for (final row in await _pendingRows()) {
+      final part = File('${dir.path}/${row.titleId}.mp4$partSuffix');
+      if (!await part.exists()) {
+        // The finished file being there means the download completed and only
+        // the row is stale; either way there is nothing pending.
+        pruned = true;
+        continue;
+      }
+      int received;
+      try {
+        received = await part.length();
+      } catch (_) {
+        pruned = true;
+        continue;
+      }
+      int? total;
+      try {
+        final note = File('${part.path}.total');
+        if (await note.exists()) {
+          total = int.tryParse((await note.readAsString()).trim());
+          if (total != null && total <= 0) total = null;
+        }
+      } catch (_) {
+        total = null;
+      }
+      out.add(PendingProgress(item: row, received: received, total: total));
+    }
+    out.sort((a, b) => b.item.startedAt.compareTo(a.item.startedAt));
+    if (pruned) {
+      await _writePending(<PendingDownload>[for (final p in out) p.item]);
+    }
+    return out;
+  }
+
+  Future<List<PendingDownload>> _pendingRows() async {
+    final raw = (await _store).getString(_pendingKey);
+    if (raw == null || raw.isEmpty) return const <PendingDownload>[];
+    try {
+      final decoded = jsonDecode(raw) as List<dynamic>;
+      final out = <PendingDownload>[];
+      for (final e in decoded) {
+        if (e is! Map) continue;
+        final row = PendingDownload.fromJson(e.cast<String, dynamic>());
+        if (row != null) out.add(row);
+      }
+      return out;
+    } catch (e) {
+      if (kDebugMode) debugPrint('offline pending index unreadable: $e');
+      return const <PendingDownload>[];
+    }
+  }
+
+  Future<void> _writePending(List<PendingDownload> rows) async {
+    await (await _store).setString(
+      _pendingKey,
+      jsonEncode(rows.map((r) => r.toJson()).toList()),
+    );
   }
 
   /// Bytes on disk, for the line the Downloads screen shows.

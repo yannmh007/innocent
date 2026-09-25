@@ -1365,6 +1365,17 @@ class AppStrings {
   String get vhLibraryBookmarksHint => _s('vhLibraryBookmarksHint');
   String get vhLibraryDownloads => _s('vhLibraryDownloads');
   String get vhDeleteDownloadBody => _s('vhDeleteDownloadBody');
+  String get vhDiscardDownloadBody => _s('vhDiscardDownloadBody');
+  String get vhDownloadUnfinished => _s('vhDownloadUnfinished');
+  String get vhDownloadQueued => _s('vhDownloadQueued');
+  String get vhDownloadPaused => _s('vhDownloadPaused');
+  String get vhDownloadResuming => _s('vhDownloadResuming');
+  String get vhDownloadResume => _s('vhDownloadResume');
+  String get vhDownloadPause => _s('vhDownloadPause');
+  String get vhDownloadNoSpace => _s('vhDownloadNoSpace');
+  String get vhDownloadGaveUp => _s('vhDownloadGaveUp');
+  String get vhDownloadWaitingSignal => _s('vhDownloadWaitingSignal');
+  String get vhDownloadReadyOffline => _s('vhDownloadReadyOffline');
   String get vhLibraryDownloadsHint => _s('vhLibraryDownloadsHint');
   String get vhLibrarySoon => _s('vhLibrarySoon');
 
@@ -1519,6 +1530,23 @@ class AppStrings {
     'vhDeleteDownloadBody':
         'Remove this download from your device? You can download it again '
         'while your subscription is active.',
+    'vhDiscardDownloadBody':
+        'Throw away this unfinished download? The part already on your phone '
+        'will be deleted.',
+    'vhDownloadUnfinished': 'Not finished yet',
+    'vhDownloadQueued': 'Waiting its turn',
+    'vhDownloadPaused': 'Paused',
+    'vhDownloadResuming': 'Downloading',
+    'vhDownloadResume': 'Resume',
+    'vhDownloadPause': 'Pause',
+    'vhDownloadNoSpace':
+        'Not enough space on this phone. Free some up and start again - what '
+        'has already downloaded is kept.',
+    'vhDownloadGaveUp':
+        'The connection kept dropping. Everything downloaded so far is kept - '
+        'resume it from Downloads when you have signal.',
+    'vhDownloadWaitingSignal': 'Waiting for the connection…',
+    'vhDownloadReadyOffline': 'Ready to watch offline',
     'vhLibrarySoon': 'Coming soon',
 
     // --- Video Hub: view counts ---
@@ -2696,6 +2724,23 @@ class AppStrings {
     'vhDeleteDownloadBody':
         'ဤဒေါင်းလုဒ်ကို ဖုန်းထဲက ဖယ်ရှားမလား။ Premium သက်တမ်း ရှိနေသေးသ၍ '
         'ပြန်ဒေါင်းလုဒ် လုပ်လို့ ရပါတယ်။',
+    'vhDiscardDownloadBody':
+        'မပြီးသေးတဲ့ ဒီဒေါင်းလုဒ်ကို ပစ်မလား။ ဖုန်းထဲ ရောက်ပြီးသား '
+        'အပိုင်းကို ဖျက်ပါလိမ့်မယ်။',
+    'vhDownloadUnfinished': 'မပြီးသေးသည်များ',
+    'vhDownloadQueued': 'အလှည့် စောင့်နေသည်',
+    'vhDownloadPaused': 'ရပ်ထားသည်',
+    'vhDownloadResuming': 'ဒေါင်းလုဒ် လုပ်နေသည်',
+    'vhDownloadResume': 'ဆက်လုပ်',
+    'vhDownloadPause': 'ခဏရပ်',
+    'vhDownloadNoSpace':
+        'ဖုန်းထဲ နေရာ မလုံလောက်ပါ။ နေရာ လွတ်ပေးပြီး ပြန်စပါ - '
+        'ရောက်ပြီးသား အပိုင်းကို သိမ်းထားပါတယ်။',
+    'vhDownloadGaveUp':
+        'အင်တာနက် ခဏခဏ ပြတ်နေပါတယ်။ ရောက်ပြီးသား အကုန် သိမ်းထားပါတယ် - '
+        'လိုင်းရတဲ့အခါ ဒေါင်းလုဒ်များ ထဲကနေ ဆက်လုပ်ပါ။',
+    'vhDownloadWaitingSignal': 'အင်တာနက် ပြန်ရအောင် စောင့်နေသည်…',
+    'vhDownloadReadyOffline': 'အော့ဖ်လိုင်း ကြည့်လို့ ရပါပြီ',
     'vhLibrarySoon': 'မကြာမီ ရရှိမည်',
 
     // --- Video Hub: view counts ---
@@ -3863,6 +3908,23 @@ class AppStrings {
     'vhDeleteDownloadBody':
         'ลบดาวน์โหลดนี้ออกจากเครื่องหรือไม่ คุณดาวน์โหลดใหม่ได้ '
         'ตราบใดที่สมาชิกยังใช้งานอยู่',
+    'vhDiscardDownloadBody':
+        'ทิ้งดาวน์โหลดที่ยังไม่เสร็จนี้หรือไม่ ส่วนที่อยู่ในเครื่องแล้ว'
+        'จะถูกลบ',
+    'vhDownloadUnfinished': 'ยังไม่เสร็จ',
+    'vhDownloadQueued': 'รอคิว',
+    'vhDownloadPaused': 'หยุดไว้',
+    'vhDownloadResuming': 'กำลังดาวน์โหลด',
+    'vhDownloadResume': 'ทำต่อ',
+    'vhDownloadPause': 'หยุดพัก',
+    'vhDownloadNoSpace':
+        'พื้นที่ในเครื่องไม่พอ ลบไฟล์บางส่วนแล้วเริ่มใหม่ '
+        'ส่วนที่ดาวน์โหลดแล้วยังอยู่',
+    'vhDownloadGaveUp':
+        'การเชื่อมต่อหลุดบ่อย ส่วนที่ดาวน์โหลดแล้วยังอยู่ '
+        'ทำต่อได้จากหน้าดาวน์โหลดเมื่อมีสัญญาณ',
+    'vhDownloadWaitingSignal': 'กำลังรอการเชื่อมต่อ…',
+    'vhDownloadReadyOffline': 'ดูออฟไลน์ได้แล้ว',
     'vhLibrarySoon': 'เร็ว ๆ นี้',
 
     // --- Video Hub: view counts ---

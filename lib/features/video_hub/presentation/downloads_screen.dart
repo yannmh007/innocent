@@ -1,8 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/localization/app_strings.dart';
+import '../data/api/offline_downloader.dart';
 import '../data/api/offline_library.dart';
+import '../data/device_identity.dart';
 import 'playback.dart';
 import 'video_hub_provider.dart';
 import 'widgets/hub_states.dart';
@@ -48,18 +52,46 @@ class DownloadsScreen extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (_, __) => HubEmptyState(message: s.vhLibraryDownloadsHint),
         data: (items) {
-          if (items.isEmpty) {
+          // UNFINISHED DOWNLOADS ARE PART OF THIS SCREEN, and used to be
+          // nowhere at all.
+          //
+          // On the connection this feature exists for, a film takes an hour or
+          // two and being interrupted is the ordinary case, not the unusual
+          // one. What was left behind was a `.part` file named by a uuid that
+          // nothing in the app could see: the shelf looked empty, the gigabyte
+          // was unreclaimable through the UI, and carrying on meant
+          // remembering which title it had been and finding it in the
+          // catalogue again. The bytes were already paid for. They are the
+          // first thing on the screen now.
+          final pending = ref.watch(offlinePendingProvider).valueOrNull ??
+              const <PendingProgress>[];
+          if (items.isEmpty && pending.isEmpty) {
             return HubEmptyState(message: s.vhLibraryDownloadsHint);
           }
-          return ListView.separated(
+          return ListView(
             padding: EdgeInsets.fromLTRB(
                 VH.gutter, VH.s3, VH.gutter, VhInsets.scrollBottom(context)),
-            itemCount: items.length,
-            separatorBuilder: (_, __) => const SizedBox(height: VH.s2),
-            itemBuilder: (context, i) => _Row(
-              item: items[i],
-              languageCode: s.locale.languageCode,
-            ),
+            children: <Widget>[
+              if (pending.isNotEmpty) ...<Widget>[
+                Padding(
+                  padding: const EdgeInsets.only(bottom: VH.s2),
+                  child: Text(s.vhDownloadUnfinished,
+                      style: VH.meta.copyWith(fontSize: 12)),
+                ),
+                for (final p in pending) ...<Widget>[
+                  _PendingRow(
+                    pending: p,
+                    languageCode: s.locale.languageCode,
+                  ),
+                  const SizedBox(height: VH.s2),
+                ],
+                const Divider(height: VH.s4, color: VH.surface2),
+              ],
+              for (var i = 0; i < items.length; i++) ...<Widget>[
+                _Row(item: items[i], languageCode: s.locale.languageCode),
+                if (i != items.length - 1) const SizedBox(height: VH.s2),
+              ],
+            ],
           );
         },
       ),
@@ -183,5 +215,230 @@ class _Row extends ConsumerWidget {
     if (yes != true) return;
     await ref.read(offlineLibraryProvider).drop(item.titleId);
     ref.invalidate(offlineItemsProvider);
+  }
+}
+
+
+/// One unfinished download: what it is, how far it got, resume or throw away.
+class _PendingRow extends ConsumerStatefulWidget {
+  final PendingProgress pending;
+  final String languageCode;
+
+  const _PendingRow({required this.pending, required this.languageCode});
+
+  @override
+  ConsumerState<_PendingRow> createState() => _PendingRowState();
+}
+
+class _PendingRowState extends ConsumerState<_PendingRow> {
+  OfflineProgress? _live;
+  bool _starting = false;
+  StreamSubscription<OfflineProgress>? _sub;
+
+  PendingDownload get item => widget.pending.item;
+
+  String get _shownTitle {
+    if (widget.languageCode != 'my') return item.title;
+    final mm = item.titleMm?.trim();
+    return (mm == null || mm.isEmpty) ? item.title : mm;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // Re-attach to a resume that is already running — the viewer can start one
+    // and navigate away and back, and a row that forgot would offer to start a
+    // second writer on the same file.
+    final live = ref.read(offlineDownloaderProvider).watch(item.titleId);
+    if (live != null) {
+      _sub = live.listen((p) {
+        if (mounted) setState(() => _live = p);
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    // Held so it can be cancelled. A listener left running per visit to this
+    // screen is a `setState` on a dead widget the next time a download moves.
+    _sub?.cancel();
+    super.dispose();
+  }
+
+  /// RESUMING NEEDS THE TITLE BACK, and the row deliberately does not hold it.
+  ///
+  /// What is stored is enough to DRAW the row with no network — a name, a
+  /// poster URL — because that is what an offline screen needs. Resuming is a
+  /// network operation by definition (a fresh signed URL, a fresh entitlement
+  /// check), so fetching the title by id costs nothing that was not already
+  /// being spent, and storing a whole catalogue record per pending download
+  /// would mean a stale copy of it on disk for ever.
+  Future<void> _resume() async {
+    final s = AppStrings.of(context);
+    setState(() => _starting = true);
+    try {
+      final content =
+          await ref.read(contentRepositoryProvider).getById(item.titleId);
+      if (!mounted) return;
+      if (content == null) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(s.vhUnavailable)));
+        return;
+      }
+      final deviceId = await DeviceIdentity.get();
+      if (!mounted) return;
+      String? failure;
+      final done = await ref.read(offlineDownloaderProvider).download(
+            content: content,
+            source: content.source,
+            deviceId: deviceId,
+            assetId: item.assetId,
+            notices: DownloadNotices(
+              waiting: s.vhDownloadWaitingSignal,
+              ready: s.vhDownloadReadyOffline,
+            ),
+            onProgress: (p) {
+              if (p.error != null) failure = p.error;
+              if (mounted) setState(() => _live = p);
+            },
+          );
+      if (!mounted) return;
+      ref.invalidate(offlineItemsProvider);
+      ref.invalidate(offlinePendingProvider);
+      if (done != null || failure == null) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(failure == 'no_space'
+            ? s.vhDownloadNoSpace
+            : failure == 'gave_up'
+                ? s.vhDownloadGaveUp
+                : s.vhUnavailable),
+      ));
+    } finally {
+      if (mounted) setState(() => _starting = false);
+    }
+  }
+
+  Future<void> _discard() async {
+    final s = AppStrings.of(context);
+    final yes = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: VH.surface1,
+        title: Text(_shownTitle, style: VH.label),
+        content: Text(s.vhDiscardDownloadBody, style: VH.body),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(s.cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(
+              s.delete,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (yes != true) return;
+    ref.read(offlineDownloaderProvider).cancel(item.titleId);
+    await ref.read(offlineLibraryProvider).discardPending(item.titleId);
+    ref.invalidate(offlinePendingProvider);
+  }
+
+  static String _size(int bytes) {
+    if (bytes >= 1 << 30) return '${(bytes / (1 << 30)).toStringAsFixed(1)} GB';
+    if (bytes >= 1 << 20) return '${(bytes / (1 << 20)).toStringAsFixed(0)} MB';
+    return '${(bytes / 1024).toStringAsFixed(0)} KB';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppStrings.of(context);
+    final live = _live;
+    final running = live != null && !live.done && live.error == null;
+    // The live figure while a resume is under way, the on-disk figure
+    // otherwise. Both are real; the difference is only which is fresher.
+    final received = running ? live.received : widget.pending.received;
+    final total = running ? live.total : widget.pending.total;
+    final double? fraction = (total != null && total > 0)
+        ? (received / total).clamp(0.0, 1.0).toDouble()
+        : null;
+
+    return Padding(
+      padding: const EdgeInsets.all(VH.s2),
+      child: Row(
+        children: <Widget>[
+          SizedBox(
+            width: 76,
+            height: 56,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: PosterImage(
+                mediaRef: item.posterUrl == null
+                    ? MediaRef.none
+                    : MediaRef(provider: 'url', locator: item.posterUrl!),
+                title: _shownTitle,
+              ),
+            ),
+          ),
+          const SizedBox(width: VH.s3),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(_shownTitle,
+                    style: VH.label.copyWith(fontSize: 14.5),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis),
+                const SizedBox(height: 4),
+                // THE BYTES ALREADY PAID FOR, on screen. Somebody deciding
+                // whether to carry on needs to know they are 700 MB into a
+                // 900 MB film and not starting again — that is the whole
+                // difference between resuming and giving up.
+                Text(
+                  total == null
+                      ? '${_size(received)} · ${running ? s.vhDownloadResuming : s.vhDownloadPaused}'
+                      : '${_size(received)} / ${_size(total)} · ${running ? s.vhDownloadResuming : s.vhDownloadPaused}',
+                  style: VH.meta.copyWith(fontSize: 12),
+                ),
+                const SizedBox(height: 5),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(2),
+                  child: LinearProgressIndicator(
+                    value: fraction,
+                    minHeight: 3,
+                    backgroundColor: VH.surface2,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (running)
+            TextButton(
+              onPressed: () =>
+                  ref.read(offlineDownloaderProvider).cancel(item.titleId),
+              child: Text(s.vhDownloadPause, style: VH.meta.copyWith(fontSize: 12)),
+            )
+          else
+            IconButton(
+              icon: _starting
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.play_arrow_rounded,
+                      color: VH.textSecondary),
+              tooltip: s.vhDownloadResume,
+              onPressed: _starting ? null : _resume,
+            ),
+          IconButton(
+            icon: const Icon(Icons.delete_outline, color: VH.textTertiary),
+            onPressed: _discard,
+          ),
+        ],
+      ),
+    );
   }
 }

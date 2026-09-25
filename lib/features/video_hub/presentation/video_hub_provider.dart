@@ -203,6 +203,18 @@ final offlineItemsProvider =
   return ref.watch(offlineLibraryProvider).items();
 });
 
+/// Downloads that were started and have not finished.
+///
+/// A SEPARATE LIST FROM THE SHELF, on purpose. An unfinished download is not a
+/// worse version of a finished one — it is a different offer: it cannot be
+/// played, it can be resumed, and the space it occupies is space the viewer
+/// may want back. Mixing the two would mean a row that sometimes plays and
+/// sometimes does not.
+final offlinePendingProvider =
+    FutureProvider.autoDispose<List<PendingProgress>>((ref) {
+  return ref.watch(offlineLibraryProvider).pending();
+});
+
 /// The event log's client half.
 ///
 /// ONE PER APP RUN, which is what makes `session_id` mean anything: a new

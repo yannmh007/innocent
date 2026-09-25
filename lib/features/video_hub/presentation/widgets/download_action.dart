@@ -88,15 +88,36 @@ class _DownloadActionState extends ConsumerState<DownloadAction> {
     final deviceId = await DeviceIdentity.get();
     if (!mounted) return;
 
-    final live = downloader.watch(content.id);
-    if (live != null) _listen(live);
-
+    // NO `watch` HERE ANY MORE. Asking for the stream before `download` is
+    // called asks for a stream that does not exist yet — `download` is what
+    // creates it — so the answer was always null and the download this button
+    // had just started reported nothing at all. For an hour. The only way to
+    // see progress was to leave the screen and come back, which re-attached
+    // through `watch` and worked, which is why it was never noticed.
+    //
+    // The reason a download stops is KEPT OUTSIDE THE WIDGET'S STATE. It is
+    // the last thing reported, and clearing the state field is exactly what
+    // has to happen before the control can be drawn again — so reading the
+    // reason back off that field afterwards reads null every time.
+    String? failure;
     final item = await downloader.download(
       content: content,
       source: content.source,
       deviceId: deviceId,
+      // The notification is the only part of an hour-long download the viewer
+      // sees, so it is in their language and not in the downloader's.
+      notices: DownloadNotices(
+        waiting: s.vhDownloadWaitingSignal,
+        ready: s.vhDownloadReadyOffline,
+      ),
+      onProgress: (p) {
+        if (p.error != null) failure = p.error;
+        if (!mounted) return;
+        setState(() => _progress = p);
+      },
     );
     if (!mounted) return;
+    setState(() => _progress = null);
 
     if (item != null) {
       // Only on success. A download_complete written for a transfer that gave
@@ -105,14 +126,30 @@ class _DownloadActionState extends ConsumerState<DownloadAction> {
       logEvent(ref, Ev.downloadComplete, titleId: content.id);
       await _refresh();
       ref.invalidate(offlineItemsProvider);
+      ref.invalidate(offlinePendingProvider);
       return;
     }
     if (!mounted) return;
-    // A refusal here is almost always an entitlement or device answer the
-    // server just gave — the same one the Play button would get — so it is
-    // reported the same way rather than as a download-specific failure.
+    // Whatever is on disk is now an unfinished download the Downloads screen
+    // can offer to resume, so that list has changed too.
+    ref.invalidate(offlinePendingProvider);
+    // WHICH FAILURE IT WAS, because they are not the same problem and only one
+    // of them is the viewer's to fix. A full phone is a thing they can act on
+    // in a minute; an entitlement refusal is not; a connection that never came
+    // back is neither. One sentence for all three sent everybody to the wrong
+    // place — and on a metered connection, to spend the data again.
+    final failed = failure;
+    // A CANCELLATION IS NOT A FAILURE. The viewer pressed Cancel; telling them
+    // afterwards that the title is unavailable contradicts what they just did
+    // and invites them to think something broke.
+    if (failed == null) return;
+    final message = failed == 'no_space'
+        ? s.vhDownloadNoSpace
+        : failed == 'gave_up'
+            ? s.vhDownloadGaveUp
+            : s.vhUnavailable;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(s.vhUnavailable)),
+      SnackBar(content: Text(message)),
     );
   }
 
@@ -136,8 +173,26 @@ class _DownloadActionState extends ConsumerState<DownloadAction> {
     if (!_checked) return const SizedBox(height: 36);
 
     final running = _progress;
-    if (running != null && !running.done) {
+    if (running != null && !running.done && running.error == null) {
       final f = running.fraction;
+      if (running.queued) {
+        // Waiting its turn behind another download. Said out loud, or the
+        // viewer taps again and wonders why nothing happens.
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            const Icon(Icons.schedule_rounded,
+                size: 16, color: VH.textTertiary),
+            const SizedBox(width: VH.s2),
+            Text(s.vhDownloadQueued, style: VH.meta.copyWith(fontSize: 12)),
+            TextButton(
+              onPressed: () =>
+                  ref.read(offlineDownloaderProvider).cancel(content.id),
+              child: Text(s.cancel, style: VH.meta.copyWith(fontSize: 12)),
+            ),
+          ],
+        );
+      }
       return Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[

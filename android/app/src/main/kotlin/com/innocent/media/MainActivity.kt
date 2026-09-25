@@ -130,6 +130,7 @@ class MainActivity : AudioServiceFragmentActivity() {
         // Foreground service that keeps a Wi-Fi file transfer alive when the
         // app is backgrounded, and shows transfer progress in the shade.
         private const val TRANSFER_SERVICE_CHANNEL = "mx_clone/transfer_service"
+        private const val OFFLINE_SERVICE_CHANNEL = "mx_clone/offline_service"
         // v0.50 (Zapya-style app sharing): the file picker's Apps tab asks
         // for the installed user apps so their APKs can be sent over the
         // LAN transfer just like any other file.
@@ -212,6 +213,7 @@ class MainActivity : AudioServiceFragmentActivity() {
     private var audioFocusChannel: MethodChannel? = null
     private var musicWidgetChannel: MethodChannel? = null
     private var transferServiceChannel: MethodChannel? = null
+    private var offlineServiceChannel: MethodChannel? = null
     // Held only while the Transfer tab is scanning for nearby devices.
     // Without it Android filters out the UDP broadcast frames discovery
     // depends on. Released in onDestroy so it can never leak.
@@ -802,6 +804,68 @@ class MainActivity : AudioServiceFragmentActivity() {
         // Foreground service for Wi-Fi file transfers: Flutter calls
         // start/update/stop to keep the transfer alive while backgrounded
         // and to drive the progress notification.
+        // Keeps a catalogue "watch offline" download alive across Home, a
+        // screen-off and a swipe from recents. Three verbs and nothing else:
+        // the downloading itself is Dart's, and this only tells Android the
+        // work is happening. See OfflineService for why that declaration is
+        // the difference between the feature working and not.
+        offlineServiceChannel = MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            OFFLINE_SERVICE_CHANNEL
+        )
+        offlineServiceChannel?.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "start" -> {
+                    try {
+                        OfflineService.start(
+                            applicationContext,
+                            call.argument<String>("title") ?: "Downloading",
+                            call.argument<String>("text") ?: "",
+                            call.argument<Int>("progress") ?: -1
+                        )
+                        result.success(true)
+                    } catch (e: Throwable) {
+                        result.success(false)
+                    }
+                }
+                "update" -> {
+                    try {
+                        OfflineService.update(
+                            applicationContext,
+                            call.argument<String>("title") ?: "Downloading",
+                            call.argument<String>("text") ?: "",
+                            call.argument<Int>("progress") ?: -1
+                        )
+                        result.success(true)
+                    } catch (e: Throwable) {
+                        result.success(false)
+                    }
+                }
+                "done" -> {
+                    try {
+                        OfflineService.stop(applicationContext)
+                        OfflineService.notifyDone(
+                            applicationContext,
+                            call.argument<String>("title") ?: "Downloaded",
+                            call.argument<String>("text") ?: ""
+                        )
+                        result.success(true)
+                    } catch (e: Throwable) {
+                        result.success(false)
+                    }
+                }
+                "stop" -> {
+                    try {
+                        OfflineService.stop(applicationContext)
+                        result.success(true)
+                    } catch (e: Throwable) {
+                        result.success(false)
+                    }
+                }
+                else -> result.notImplemented()
+            }
+        }
+
         transferServiceChannel = MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger,
             TRANSFER_SERVICE_CHANNEL

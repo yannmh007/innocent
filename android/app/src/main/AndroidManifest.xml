@@ -304,6 +304,18 @@
             android:exported="false"
             android:foregroundServiceType="dataSync" />
 
+        <!-- Keeps a CATALOGUE download (watch offline) running when the user
+             leaves Innocent or the screen turns off. Separate from
+             DownloadService on purpose: a yt-dlp download and a catalogue
+             download can run at the same time and each needs its own
+             notification. See OfflineService for why this had to exist at all
+             — on a Myanmar mobile connection the download IS the feature, and
+             it stopped the moment the phone went in a pocket. -->
+        <service
+            android:name=".OfflineService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
         <!-- v0.89: iADB-style ADB pairing helper. Keeps mDNS pairing discovery
              alive in the background and shows a reply notification so the user
              can type the 6-digit code from the shade with NO split-screen. -->
