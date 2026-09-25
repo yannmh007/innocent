@@ -311,15 +311,37 @@ Deno.serve(async (req: Request) => {
   // over plain fetch rather than the supabase-js client: this reads one
   // column from one table, and an SDK import is megabytes of cold start
   // for a query that fits on a line.
+  const PAGE = 40;
   let keys = Array.isArray(body.keys)
-    ? (body.keys as unknown[]).map(String).filter(Boolean).slice(0, 40) : [];
+    ? (body.keys as unknown[]).map(String).filter(Boolean).slice(0, PAGE) : [];
+  const named = keys.length > 0;
 
-  if (!keys.length) {
+  // ─── IT PAGES, AND BEFORE IT DID IT LIED BY OMISSION ───────────────────
+  //
+  // This read forty objects and stopped, and the panel then said "3 of 40
+  // videos keep their index at the end" — a sentence that sounds like a
+  // complete answer and is a sample. Worse, it sampled the wrong end: newest
+  // first, so the films MOST likely to predate the upload rewrite were the
+  // ones never looked at. An operator could have run the check every week and
+  // never once seen the file that was slow.
+  //
+  // So the caller says where to carry on from and is told whether there is
+  // more. The console loops until there is not, which makes the count in that
+  // sentence the real one at any catalogue size. Forty at a time because each
+  // one is a ranged read of R2 and an edge function has a wall clock.
+  let more = false;
+  // WHERE THE NEXT PAGE STARTS, counted in DATABASE ROWS and not in results.
+  // A row with an empty object_key is dropped from the probe list but still
+  // occupies a place in the table, so a caller counting the results it
+  // received would page backwards over it and probe one object twice.
+  let nextOffset = 0;
+  if (!named) {
     if (!SERVICE_KEY) return json({ error: 'no_service_key' }, 500, req);
+    const offset = Math.max(0, Math.floor(Number(body.offset ?? 0)) || 0);
     const res = await fetch(
       `${SUPABASE_URL}/rest/v1/title_assets` +
       `?select=object_key&bucket=eq.${encodeURIComponent(MEDIA_BUCKET)}` +
-      `&order=added_at.desc&limit=40`,
+      `&order=added_at.desc&limit=${PAGE}&offset=${offset}`,
       { headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` } },
     );
     if (!res.ok) {
@@ -327,6 +349,14 @@ Deno.serve(async (req: Request) => {
     }
     const rows = await res.json() as { object_key: string }[];
     keys = rows.map((r) => r.object_key).filter(Boolean);
+    // A FULL PAGE MEANS "ASK AGAIN", not "there is definitely more". The
+    // alternative is a second count query for a page boundary that costs one
+    // extra empty round trip to be wrong about.
+    more = rows.length === PAGE;
+    nextOffset = offset + rows.length;
+    if (!keys.length) {
+      return json({ results: [], more, nextOffset }, 200, req);
+    }
   }
   if (!keys.length) return json({ error: 'no_keys' }, 400, req);
 
@@ -405,5 +435,5 @@ Deno.serve(async (req: Request) => {
       results.push({ key, error: String(e).slice(0, 160) });
     }
   }
-  return json({ results }, 200, req);
+  return json({ results, more, nextOffset }, 200, req);
 });

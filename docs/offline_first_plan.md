@@ -442,13 +442,51 @@ token design is already tested against both halves
 (`tool/js/stream_token_test.mjs`); this is about moving playback onto the edge so
 the bytes come from a cache near the viewer.
 
-### #32. Find which videos still have their index at the end
+### #32. Find which videos still have their index at the end — the finder is done
 
-`faststart` reorders on upload, from now on. It says nothing about what was
-uploaded before it existed, and a film with its `moov` atom at the tail costs a
-second round trip to the end of the file before the first frame — exactly the
-delay this programme is about. The box walker already exists
-(`tool/js/probe_boxes_test.mjs`); what is missing is the sweep.
+The sweep existed; it was **lying by omission**. `probe-media` read forty objects
+and stopped, and the console then said "3 of 40 videos keep their index at the
+end" — a sentence that sounds like a complete answer and was a sample. It sampled
+the wrong end, too: newest first, so the films most likely to predate the upload
+rewrite were the ones never looked at. An operator could have run the check every
+week and never once seen the file that was slow.
+
+It pages now, and the console loops until the function says there is no more, so
+the number in that sentence is the real one at any catalogue size. The next page
+starts at a **database row count** rather than at the number of results returned:
+a row with an empty object key is skipped by the probe and still occupies a place
+in the table, so counting results would step backwards over it and probe one
+object twice.
+
+**As of 2026-09-25 the media bucket holds six objects**, so today's sweep already
+covered the catalogue and the paging matters from film forty-one onwards. Which
+also means the answer to "which films have their index at the end" is one press of
+**Check videos** in the console — it cannot be answered from a checkout, because
+reading it means reading R2.
+
+⚠ **`probe-media` has to be redeployed for the paging to take effect.** The console
+half is backward compatible on purpose: against the old function `more` comes back
+undefined, the loop stops after one page, and the panel behaves exactly as it does
+today.
+
+### What to do about a `tail` verdict — NOT built, and here is the design
+
+Today the console says "re-upload them", which on a Myanmar connection is a
+gigabyte of somebody's data per film. With six objects that is the right answer;
+with sixty it is not.
+
+The better answer costs no upload at all: `ffmpeg -c copy -movflags +faststart` is
+a pure box reorder — no re-encode, no quality change, minutes rather than hours —
+and the transcode runner already has ffmpeg, a presigned GET and a presigned PUT.
+It would be a second job type in the pipeline that already exists.
+
+**And it must not overwrite the master.** Write the reordered copy to a NEW key,
+verify it by walking its boxes before anything else happens, then repoint
+`title_assets.object_key` at it in one statement. Nothing is destroyed, the switch
+is atomic, and if it is wrong the operator points the row back. An in-place
+overwrite would be the only operation in this system that can silently destroy the
+thing it was asked to improve — and this project already has one of those
+(`faststart` in the browser) and treats it with the respect it deserves.
 
 ---
 

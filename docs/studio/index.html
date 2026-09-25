@@ -2601,11 +2601,37 @@ $('probeBtn').onclick = async () => {
   const btn = $('probeBtn');
   btn.disabled = true;
   host.textContent = '';
-  host.append(el('div', { className: 'hint' },
-    text('Reading the head of each video, and the tail when the index is there…')));
+  const note = el('div', { className: 'hint' },
+    text('Reading the head of each video, and the tail when the index is there…'));
+  host.append(note);
   try {
-    const { results } = await api({}, PROBE_API);
-    lastProbe = results || [];
+    // EVERY VIDEO, NOT THE FIRST PAGE OF THEM. The function reads forty
+    // objects at a time because each one is a ranged read of R2 and an edge
+    // function has a wall clock — so this asks again until it says there is no
+    // more. Before it did, the panel's own sentence ("3 of 40 videos keep
+    // their index at the end") read as a complete answer and was a sample of
+    // the NEWEST forty: the films most likely to predate the upload rewrite
+    // were precisely the ones never looked at.
+    //
+    // A CEILING ON THE LOOP, because a bug in `more` would otherwise be an
+    // infinite one on the operator's phone. Forty pages is 1,600 videos; if a
+    // catalogue ever reaches that, this panel is the smaller problem.
+    const all = [];
+    let offset = 0;
+    for (let page = 0; page < 40; page++) {
+      const got = await api({ offset }, PROBE_API);
+      const batch = got.results || [];
+      all.push(...batch);
+      note.textContent = 'Checked ' + all.length + ' video' +
+        (all.length === 1 ? '' : 's') + '…';
+      // FROM THE SERVER'S COUNT AND NOT FROM OURS. A table row with no object
+      // key is skipped by the probe and still occupies a place in the table;
+      // counting what came back would step backwards over it.
+      if (!got.more || typeof got.nextOffset !== 'number' ||
+          got.nextOffset <= offset) break;
+      offset = got.nextOffset;
+    }
+    lastProbe = all;
     drawProbe();
   } catch (e) {
     say('bad', String(e.message || e));
