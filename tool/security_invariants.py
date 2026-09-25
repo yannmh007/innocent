@@ -167,6 +167,90 @@ if os.path.isfile(OFFLINE):
             'DOWNLOAD SOURCE UNCLEAR: offline_downloader.dart no longer reads '
             'grant.url. The original object is what a download is for.')
 
+# --- 8. no credential is ever written into this repository -----------------
+#
+# THIS IS NOT A PRECAUTION. `docs/RUNBOOK.md` carried the live
+# R2_SECRET_ACCESS_KEY in full, in a PUBLIC repository, from the commit that
+# first pushed this project to GitHub. `docs/` is also published as the operator
+# console, so everything in it is world-readable by design. A pair of R2 keys can
+# read, overwrite and delete every object in the media bucket.
+#
+# It got there the way these always do: somebody wrote a runbook so the next
+# person would not have to hunt for the values, which is a good instinct about a
+# private note and a disaster in a repository. So the rule is mechanical now.
+#
+# WHAT IS MATCHED, and why each one is shaped the way it is:
+#   * a 64-character hex run — R2 secret access keys are exactly that, and so is
+#     nothing else in this tree except SHA-256 digests, which are allowed by name
+#     below because they are public facts about public artefacts.
+#   * a 32-character hex run on a line that names an R2 key or account.
+#   * `sb_secret_...`, the new Supabase service key.
+#   * a JWT-shaped `eyJ...` run of any length, which is the legacy service_role
+#     key's shape.
+#
+# `sb_publishable_` is deliberately NOT matched: it is meant to be in client
+# code, and it is, in the console.
+#
+# The bare-hex rule DOES NOT APPLY TO TESTS. A crypto test is made of digests —
+# `test/private_folder_crypto_test.dart` alone holds eight — and listing each one
+# by name would turn this check into a list nobody maintains, which is how a
+# check stops being read. The key-shaped rules still apply everywhere, and the
+# places a credential actually reaches for reasons of convenience are documents,
+# workflows and functions, all of which are covered.
+CRED_PATTERNS = [
+    (re.compile(r'(?<![0-9a-fA-F])[0-9a-f]{64}(?![0-9a-fA-F])'),
+     'a 64-character hex string, which is the shape of an R2 secret access key',
+     ('test/', 'tool/js/')),
+    (re.compile(r'\bsb_secret_[A-Za-z0-9_-]{8,}'),
+     'a Supabase secret key', ()),
+    (re.compile(r'\beyJ[A-Za-z0-9_-]{30,}'),
+     'a JWT, which is the shape of the legacy service_role key', ()),
+]
+
+# Public facts that happen to be 64 hex characters. Each one is here by NAME
+# rather than by pattern, so adding to this list is a deliberate act.
+CRED_ALLOWED = {
+    # The release APK's signing certificate digest. A certificate fingerprint is
+    # published so that anybody can check a build; it is not a key.
+    'e3e1effa993ced6745a33f75c97742a3b8badd79d54927d2515538594c85cdb1',
+    # AWS's own published SigV4 worked example, which tool/js/sigv4_test.mjs
+    # verifies the signer against.
+    '7344ae5b7ee6c3e7e6b0fe0640412a37625d1fbfff95c48bbb2dc43964946972',
+    'f0e8bdb87c964420e857bd35b5d6ed310bd44f0170aba48dd91039c6036bdb41',
+    # SHA-256 of the empty string, in the same test.
+    'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+}
+
+CRED_EXTS = ('.md', '.ts', '.js', '.mjs', '.html', '.yml', '.yaml', '.sh',
+             '.py', '.dart', '.kt', '.toml', '.json', '.sql', '.txt')
+
+for base, dirs, files in os.walk(ROOT):
+    dirs[:] = [d for d in dirs
+               if d not in ('.git', 'build', '.dart_tool', 'node_modules')]
+    for fn in files:
+        if not fn.endswith(CRED_EXTS):
+            continue
+        path = os.path.join(base, fn)
+        try:
+            text = open(path, encoding='utf-8', errors='ignore').read()
+        except OSError:
+            continue
+        rel = os.path.relpath(path, ROOT).replace(os.sep, '/')
+        for pattern, what, exempt in CRED_PATTERNS:
+            if any(rel.startswith(e) for e in exempt):
+                continue
+            for m in pattern.finditer(text):
+                if m.group(0) in CRED_ALLOWED:
+                    continue
+                line = text.count('\n', 0, m.start()) + 1
+                fails.append(
+                    'CREDENTIAL IN THE REPOSITORY: %s:%d holds %s. This '
+                    'repository is public and docs/ is published as the '
+                    'console. If it is a real key, roll it in the dashboard '
+                    'first - deleting the line does not undo publication. If '
+                    'it is a public fact, add it to CRED_ALLOWED by name.'
+                    % (rel, line, what))
+
 print('=== %d security invariant violation(s) ===' % len(fails))
 for f in fails:
     print(' -', f)

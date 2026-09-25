@@ -87,14 +87,35 @@ All three: **Deploy → Settings → turn `Verify JWT with legacy secret` OFF.**
 
 ### Secrets (Edge Functions → Secrets)
 
+> ⚠️ **THE R2 KEYS WERE WRITTEN OUT HERE IN FULL, AND THIS REPOSITORY IS
+> PUBLIC.** They were committed on 2026-09-?? in "Extract Innocent v1.64.7
+> GitHub-ready release into repo root" and were readable by anyone until they
+> were taken out. **Deleting them from this file does not undo that** — they are
+> still in this repository's history, in every clone and fork, and in whatever
+> cached the page. A pair of R2 keys can read, overwrite and delete every object
+> in the media bucket.
+>
+> **They have to be rolled in the Cloudflare dashboard** (R2 → Manage API
+> tokens → create a new token, then update the two secrets below, the transcode
+> runner's, and the studio function's), and the old token deleted. Nothing else
+> makes them safe again.
+>
+> `tool/security_invariants.py` now fails the build if a 64-character hex string
+> that looks like an R2 secret appears anywhere in the tree, so this cannot come
+> back by being pasted into a document again.
+
 ```
-R2_ACCOUNT_ID          048680c1bbdd81dfc33d5cab9f9acfb8
-R2_ACCESS_KEY_ID       8ac9c57d7fe41c20ca1eaa4c01e51d86
-R2_SECRET_ACCESS_KEY   2f60015610f48f306d36135b0ed9fa7839b61bb77c0fc5d3707219cdd3f681fa
+R2_ACCOUNT_ID          <from Cloudflare → R2 → Overview, the Account ID>
+R2_ACCESS_KEY_ID       <from the R2 API token>
+R2_SECRET_ACCESS_KEY   <from the R2 API token — shown ONCE, at creation>
 R2_BUCKET              innocent-media
 SB_SERVICE_KEY         <the legacy service_role JWT, 219 chars>
-SB_ANON_KEY            sb_publishable_vTiAxBAhnZL_BqFcZD4m9A_Rb8Q8PHj
+SB_ANON_KEY            <the sb_publishable_... key; this one is meant to be public>
 ```
+
+The values live in the Supabase dashboard and nowhere else. **Never in this
+repository**, not even in a comment saying what they used to be: `docs/` is
+published as the operator console and everything in it is world-readable.
 
 `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are injected automatically -
 do not add them.

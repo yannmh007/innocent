@@ -523,10 +523,21 @@ thing it was asked to improve — and this project already has one of those
 - **Merging to `main` cuts a public GitHub Release** and pushes an update prompt
   to every phone. It is not a quiet operation and is never done without asking.
 - **This repository is public.** `docs/edge/*.ts`, `docs/studio/index.html`,
-  `tool/transcode.sh` and `.github/workflows/*` are all readable by anyone.
-  Every credential lives in Supabase Edge Function secrets, Cloudflare secrets or
-  GitHub Actions secrets, and none has ever been written into source. Keep it that
-  way.
+  `tool/transcode.sh` and `.github/workflows/*` are all readable by anyone, and
+  `docs/` is additionally published as the operator console. Every credential
+  belongs in Supabase Edge Function secrets, Cloudflare secrets or GitHub Actions
+  secrets.
+- ⚠️ **One was not.** `docs/RUNBOOK.md` carried the live `R2_SECRET_ACCESS_KEY`
+  and `R2_ACCESS_KEY_ID` in full, from the first commit that pushed this project
+  to GitHub until 2026-09-25. It is out of the working tree now and **that does
+  not undo it**: the value is still in this repository's history, in every clone
+  and fork, and in whatever cached the page. **Those keys have to be rolled in
+  Cloudflare** — R2 → Manage API tokens → new token, update the Supabase secrets,
+  the transcode runner's and the studio function's, then delete the old token.
+  Until that is done, anyone who has read the repository can read, overwrite and
+  delete every object in the media bucket.
+  `tool/security_invariants.py` rule 8 now fails the build on a credential-shaped
+  string anywhere in the tree, so it cannot come back the way it arrived.
 - **The odd-looking code is usually deliberate.** Split executors, reflection,
   `useLegacyPackaging`, the WebView thread rules, `--demuxer-lavf-probesize`'s
   minimum of 32. Read `git log` and the docs before calling something a weakness,

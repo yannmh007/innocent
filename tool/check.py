@@ -49,7 +49,8 @@ CHECKS = [
     ('check_args.py', None,
      'a named argument that the constructor does not declare'),
     ('security_invariants.py', ROOT,
-     'the paywall architecture quietly coming apart'),
+     'the paywall architecture quietly coming apart, and a credential written '
+     'into a public repository'),
     ('context_scope.py', ROOT,
      '`context` used in a class that has none — broke a build on 27 Aug 2026'),
     ('ref_in_dispose.py', ROOT,
