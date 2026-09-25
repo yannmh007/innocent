@@ -60,6 +60,57 @@ that was queued before them.
 
 ---
 
+## 2026-09-25 — Offline first, and the platform work that came with it
+
+**`docs/offline_first_plan.md` is authoritative for this programme.** It has the
+full ordered list, what was decided against, and what is left. The short version:
+
+The operator's observation was that in Myanmar most people are on mobile data with
+poor signal, that even a fully-downloaded film stutters in Telegram, and that what
+people actually do is download first and watch offline. The requirement that
+followed is the one thing in this programme that is architecture rather than
+preference: **a download arrives as the original R2 object at full quality; only
+streaming adapts to the connection.**
+
+That invariant is *enforced*, not documented — `tool/security_invariants.py` rule
+7 fails the build if `offline_downloader.dart` mentions `renditions` or stops
+reading `grant.url`. A later session optimising "download size" would otherwise
+hand people the 480p rung and nobody would find out until a viewer complained
+about a film they had already paid data for.
+
+Shipped: A1 unfinished downloads resume by themselves, A2 the app knows whether
+the connection is *metered* (not whether it is Wi-Fi — a tethered phone and a paid
+hotspot are both Wi-Fi and both cost money), B1 a new category no longer needs an
+app release, B2 the ranking that measured something finally decides something, C1
+uploads above 5 GiB in resumable 64 MiB parts.
+
+**Found and not done, with reasons:**
+
+- **A foreground service keeps the Android process alive but NOT the Flutter
+  engine.** The engine belongs to the Activity, so a destroyed Activity ends a
+  Dart-driven download whatever the service is doing. Hence an idle watchdog
+  rather than a claim. Doing it properly is G2, and G2 needs a phone — swipe-
+  killed, screen off, mobile data, twenty minutes — which a container cannot be.
+- **Shrinking the player's buffers for a "fully cached" film was declined.** A
+  wrong guess about what is cached causes exactly the stutter this programme
+  exists to remove.
+- **D1 (email/phone sign-in) was skipped by the operator**, not deferred for a
+  technical reason. Do not revive it unasked.
+
+**⚠ One thing has to be done in the Cloudflare dashboard for C1 to work at all:**
+the media bucket's CORS rule must list `ETag` in `ExposeHeaders`. A browser cannot
+read a cross-origin response header that is not exposed, and without the ETag a
+multipart upload cannot be completed. The console names that cause exactly rather
+than saying "upload failed", because the parts will have gone up perfectly.
+
+**New test worth knowing about:** `tool/js/sigv4_test.mjs`, 55 checks. Every way
+of getting SigV4 wrong fails as the same opaque 403, and R2 is not reachable from
+CI, so the real signer is pulled out of `docs/edge/studio.ts` and checked against
+an independent implementation that is itself verified against AWS's published
+worked example. Seven mutations of the real source were tried; all seven caught.
+
+---
+
 ## 2026-09-13 — Seven audits, then the first fix out of them (#19–#25, #26)
 
 ### The audits (#19–#25, all merged, no code changed)
