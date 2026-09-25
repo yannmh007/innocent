@@ -481,11 +481,26 @@ a row with an empty object key is skipped by the probe and still occupies a plac
 in the table, so counting results would step backwards over it and probe one
 object twice.
 
-**As of 2026-09-25 the media bucket holds six objects**, so today's sweep already
-covered the catalogue and the paging matters from film forty-one onwards. Which
-also means the answer to "which films have their index at the end" is one press of
-**Check videos** in the console — it cannot be answered from a checkout, because
-reading it means reading R2.
+**Asked and answered, 2026-09-25.** The media bucket holds six objects and the
+sweep covered all of them. **Two have their index at the end**, both legacy `v/`
+uploads from before the console started reordering:
+
+| object | | |
+|---|---|---|
+| `v/20260922-1000189108-ddedfd53.mp4` | 18 MB, 0:54 | Test 001 (free) |
+| `v/index-v1-a1.mp4` | 155 MB, 12:45 | First test title (premium) |
+
+Both are test content, so re-uploading them costs nothing anybody minds — which is
+also why the remux pipeline below stayed unbuilt. Every upload since is written
+index-first by the console.
+
+**What that actually costs, now that the numbers exist.** Both have ladders (4
+rungs and 2), and `tool/transcode.sh` writes every rung with `-movflags
++faststart`, so a viewer who receives a rung pays nothing. The extra round trip is
+paid only by a viewer good enough to get the original — and, since 1.64.32, by
+anyone who wanted to **watch while downloading**, because a download is always the
+original and a player cannot start without the index. That second cost did not
+exist when this item was written.
 
 ⚠ **`probe-media` has to be redeployed for the paging to take effect.** The console
 half is backward compatible on purpose: against the old function `more` comes back

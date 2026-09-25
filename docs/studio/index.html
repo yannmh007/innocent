@@ -2507,6 +2507,16 @@ async function loadStats() {
 // header as well as the box list.
 let lastProbe = [];
 let lastDelivery = null;
+/// object_key -> what the encoder has already made of it.
+///
+/// WHY THE START-UP PANEL NEEDS THIS. A heavy ORIGINAL is only a problem for
+/// somebody who receives the original. If a ladder exists, the app hands a
+/// viewer on a weak connection the smaller copy instead, and the file's own
+/// bitrate stops being the number that decides anything. Without knowing that,
+/// this panel told the operator to re-encode and re-upload files that were
+/// already solved — which on this connection is an hour and a gigabyte, spent
+/// on nothing.
+let lastLadders = {};
 let measuredKbps = null;
 
 // A file needs its bitrate delivered CONTINUOUSLY, with nothing left over
@@ -2542,7 +2552,6 @@ function drawProbe() {
   }
 
   const tail = rows.filter((r) => r.verdict === 'tail').length;
-  const fat = rows.filter((r) => bitrateClass(r.kbps) === 'bad').length;
 
   // WHERE THE BYTES COME FROM, said out loud. Playback uses the Worker when
   // both its secrets are set and falls back to a presigned S3 URL when either
@@ -2576,29 +2585,57 @@ function drawProbe() {
     }
   }
 
-  // TWO SENTENCES, IN THE ORDER OF WHAT IT COSTS. A file too fat to stream
-  // ruins every second of the film; an index at the end costs one round trip
-  // at the start. Leading with the index — which is what this panel used to
-  // do, because it was all it could see — sent the operator to re-upload
-  // files whose real problem re-uploading does not touch.
-  if (fat) {
+  // IN THE ORDER OF WHAT IT COSTS. A file too fat to stream ruins every second
+  // of the film; an index at the end costs one round trip at the start.
+  // Leading with the index — which is what this panel used to do, because it
+  // was all it could see — sent the operator to re-upload files whose real
+  // problem re-uploading does not touch.
+  // AND A HEAVY FILE WITH A LADDER IS NOT THE SAME PROBLEM AS ONE WITHOUT.
+  // This panel used to count both together and tell the operator the only fix
+  // was to re-encode before uploading again. For a file that already has
+  // smaller copies that is simply false — the app hands a viewer on a weak
+  // connection the rung, and the original's bitrate decides nothing — and
+  // acting on it costs an hour of somebody's life and a gigabyte of their
+  // data to replace a file that was already fine.
+  const heavy = rows.filter((r) => bitrateClass(r.kbps) === 'bad');
+  const covered = heavy.filter((r) => (lastLadders[r.key] || {}).rungs > 0);
+  const bare = heavy.filter((r) => !((lastLadders[r.key] || {}).rungs > 0));
+  const against = measuredKbps != null
+    ? 'the ' + (measuredKbps / 1000).toFixed(1) + ' Mbps this connection measured'
+    : 'a typical mobile connection';
+
+  // "AND HAVE NO SMALLER COPY" IS ONLY SAID WHEN IT IS KNOWN. If the encoder
+  // could not be reached, this panel has no reading at all — and a sentence
+  // that states an absence it did not check is the kind of confident wrong
+  // answer this whole panel exists to stop producing.
+  const knowLadders = Object.keys(lastLadders).length > 0;
+  if (bare.length) {
     host.append(el('div', { className: 'msg bad' }, text(
-      fat + ' of ' + rows.length + ' videos are too heavy for ' +
-      (measuredKbps != null
-        ? 'the ' + (measuredKbps / 1000).toFixed(1) + ' Mbps this connection measured'
-        : 'a typical mobile connection') +
+      bare.length + ' of ' + rows.length + ' videos are too heavy for ' +
+      against + (knowLadders ? ' and have no smaller copy' : '') +
       '. They will play a second or two, stop, and play again for as long as ' +
-      'anyone watches. Nothing in the app can fix that — the file has to ' +
-      'carry fewer bits per second, which means re-encoding it before upload.')));
+      'anyone watches. THE CHEAP FIX IS NOT TO RE-UPLOAD: open Streaming ' +
+      'copies and press "Make streamable", and the encoder builds the smaller ' +
+      'sizes from the file already in the bucket. Re-encoding before upload is ' +
+      'only worth it for a file you have not sent yet.')));
+  }
+  if (covered.length) {
+    host.append(el('div', { className: 'msg info' }, text(
+      covered.length + ' of ' + rows.length + ' videos are heavy as ' +
+      'ORIGINALS — more than ' + against + ' could carry — but smaller copies ' +
+      'already exist, and the app gives those to anyone whose connection ' +
+      'cannot take the original. Nothing to do about these.')));
   }
   if (tail) {
-    host.append(el('div', { className: 'msg ' + (fat ? 'info' : 'bad') }, text(
+    host.append(el('div', { className: 'msg ' + (heavy.length ? 'info' : 'bad') }, text(
       tail + ' of ' + rows.length + ' videos keep their index at the end. ' +
       'That costs every viewer one extra round trip before the first frame — ' +
-      'a slower START, not a stutter. Re-upload them from New or from the ' +
-      'title editor; the console writes the index first now.')));
+      'a slower START, not a stutter — and it also means those films CANNOT ' +
+      'be watched while they are still downloading, because a player needs ' +
+      'the index before it can play a frame. Re-upload them from New or from ' +
+      'the title editor; the console writes the index first now.')));
   }
-  if (!tail && !fat) {
+  if (!tail && !heavy.length) {
     host.append(el('div', { className: 'msg ok' }, text(
       'All ' + rows.length + ' videos start from the front and are light ' +
       'enough to stream. Nothing to do.')));
@@ -2617,6 +2654,18 @@ function drawProbe() {
       // Said out loud rather than left blank. A blank cell reads as "fine".
       facts.push(el('span', { className: 'pfact' }, text('length unknown')));
     }
+    // WHAT THE ENCODER HAS ALREADY MADE OF IT, beside the original's own
+    // numbers — because that is what decides whether a heavy file is a problem
+    // for a viewer or only a big object in a bucket.
+    const lad = lastLadders[r.key];
+    if (lad && lad.rungs > 0) {
+      facts.push(el('span', { className: 'pfact ok' }, text(
+        lad.rungs + ' smaller ' + (lad.rungs === 1 ? 'copy' : 'copies') +
+        (lad.lowest_kbps ? ' from ' + (lad.lowest_kbps / 1000).toFixed(1) + ' Mbps' : ''))));
+    } else if (lad) {
+      facts.push(el('span', { className: 'pfact warn' }, text('no smaller copy')));
+    }
+
     const v = r.error ? r.error : r.verdict;
     facts.push(el('span', {
       className: 'pfact ' + (v === 'faststart' ? 'ok'
@@ -2662,6 +2711,18 @@ $('probeBtn').onclick = async () => {
       lastDelivery = await api({ delivery: 1 }, PROBE_API);
     } catch (e) {
       lastDelivery = null;
+    }
+    // THE ENCODER'S VIEW OF THE SAME FILES, from the op the Streaming copies
+    // panel already uses. Asked separately and allowed to fail: a missing
+    // ladder reading costs a chip and a softer sentence, never the sweep.
+    try {
+      const lad = await api({ op: 'health' }, TRANSCODE_API);
+      lastLadders = {};
+      for (const row of (lad.rows || [])) {
+        if (row && row.object_key) lastLadders[row.object_key] = row;
+      }
+    } catch (e) {
+      lastLadders = {};
     }
     const all = [];
     let offset = 0;
