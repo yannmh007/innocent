@@ -82,7 +82,46 @@ Shipped: A1 unfinished downloads resume by themselves, A2 the app knows whether
 the connection is *metered* (not whether it is Wi-Fi — a tethered phone and a paid
 hotspot are both Wi-Fi and both cost money), B1 a new category no longer needs an
 app release, B2 the ranking that measured something finally decides something, C1
-uploads above 5 GiB in resumable 64 MiB parts.
+uploads above 5 GiB in resumable 64 MiB parts, E1 a downloaded film is ciphertext
+only this phone can read, G1 you can start watching before it has finished
+arriving, and the two older items — #32 and #31 — both of which turned out to be
+about a thing that could not be *seen* rather than a thing that did not work.
+
+**The two that were not what the list said they were:**
+
+- **#32** was "find which films have their index at the end", and the finder
+  existed. It was lying by omission: it read forty objects and the panel then said
+  "3 of 40 videos keep their index at the end", which reads as a complete answer
+  and was a sample — of the NEWEST forty, so the films most likely to predate the
+  upload rewrite were the ones never looked at. It pages now. (Six media objects
+  exist today, so the sweep already covered everything; the paging matters from
+  film forty-one.)
+- **#31** was "serve video from the Cloudflare edge", and the code was already
+  there: `request-playback` does `viaWorker ?? presign`, and the Worker is deployed
+  with its R2 binding. It moves to the edge the moment two Supabase secrets are
+  set — **and the fallback is silent**, so nothing said which path viewers were on
+  in either direction. The console now reports it, in booleans and never values,
+  asking the Worker's `/health` from the server side because the console does not
+  know the Worker's address and should not learn it from a diagnostic.
+
+**E1 and G1, the two decisions worth knowing without reading the plan:**
+
+- **AES-CTR and not GCM**, because a player seeks: libmpv asks for the bytes at
+  01:42:07 without having read anything before them. CTR is addressable by byte;
+  GCM is one authenticated message, and authenticating a four-gigabyte film as one
+  message means reading all of it before the first frame. And a **wrapped** key: a
+  Keystore key that never leaves the hardware would mean every block of every film
+  through a binder call, so a data key does the film and the Keystore key does
+  nothing but wrap it.
+- **The trailer is at the END of the sealed file**, so the byte at offset N of the
+  film is the byte at offset N of the file. The downloader appends as the network
+  delivers, the resume point is the file's own length, and the player's range
+  requests need no arithmetic. A header at the front would have shifted all of
+  those by a constant, and a constant right in four places and forgotten in the
+  fifth is a film that plays as noise.
+- **Bytes that have not arrived are waited for, not refused.** Every demuxer seeks
+  ahead; answering short looks to the player exactly like a dropped connection, and
+  it would give up on a film arriving perfectly well.
 
 **Found and not done, with reasons:**
 

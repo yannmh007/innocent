@@ -128,22 +128,21 @@ class WatchWhileDownloading {
       }
 
       final verdict = assessMp4Head(head, onDisk: onDisk, total: total);
-      switch (verdict.state) {
-        case ProgressiveState.indexAtEnd:
-          return const PartialPlay.no(PartialRefusal.indexAtEnd);
-        case ProgressiveState.waiting:
-          return const PartialPlay.no(PartialRefusal.notEnoughYet);
-        case ProgressiveState.ready:
-          final url = await LocalFilmServer.instance.localUrlForGrowing(
-            part: part,
-            finished: finished,
-            seal: seal,
-            total: total,
-          );
-          return url == null
-              ? const PartialPlay.no(PartialRefusal.cannotOpen)
-              : PartialPlay.ready(url);
+      if (verdict.state == ProgressiveState.indexAtEnd) {
+        return const PartialPlay.no(PartialRefusal.indexAtEnd);
       }
+      if (verdict.state != ProgressiveState.ready) {
+        return const PartialPlay.no(PartialRefusal.notEnoughYet);
+      }
+      final url = await LocalFilmServer.instance.localUrlForGrowing(
+        part: part,
+        finished: finished,
+        seal: seal,
+        total: total,
+      );
+      return url == null
+          ? const PartialPlay.no(PartialRefusal.cannotOpen)
+          : PartialPlay.ready(url);
     } catch (e) {
       if (kDebugMode) debugPrint('WatchWhileDownloading.open: $e');
       return const PartialPlay.no(PartialRefusal.cannotOpen);
