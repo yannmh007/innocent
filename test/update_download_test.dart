@@ -103,10 +103,20 @@ class _ApkServer {
   /// How many GETs arrived. The concurrency assertion reads this.
   int requests = 0;
 
-  /// When set, the NEXT response is cut off after this many bytes and the
-  /// socket is closed, simulating a dropped link mid-download. Consumed on
-  /// use, so a test that wants three interruptions sets it three times.
+  /// When set, the next response is cut off after this many bytes and the
+  /// socket is closed, simulating a dropped link mid-download.
   int? truncateNextResponseAt;
+
+  /// How many responses the cut applies to. One by default.
+  ///
+  /// It used to be consumed on every use, and a test that wanted three
+  /// interruptions set it three times around three separate calls to
+  /// `download`. That stopped working the day the service began resuming by
+  /// itself: the first call now carries on past the drop and finishes, so
+  /// the second and third had nothing left to interrupt. Several drops now
+  /// have to happen INSIDE one call, because that is where they happen in
+  /// life.
+  int truncateCount = 1;
 
   /// When set, every response omits Content-Range on a 206.
   bool omitContentRange = false;
@@ -153,7 +163,11 @@ class _ApkServer {
       final slice = body.sublist(start);
       final cut = truncateNextResponseAt;
       if (cut != null) {
-        truncateNextResponseAt = null;
+        truncateCount--;
+        if (truncateCount <= 0) {
+          truncateNextResponseAt = null;
+          truncateCount = 1;
+        }
         // No Content-Length: the client must notice the short read itself.
         req.response.add(slice.sublist(0, min(cut, slice.length)));
         await req.response.flush();
@@ -256,87 +270,88 @@ void main() {
       expect(file.path, endsWith('innocent-321.apk'));
     });
 
-    test('an interrupted download keeps its .part', () async {
+    // ═════════════════════════════════════════════════════════════════
+    // THESE FOUR USED TO EXPECT A THROW, AND THAT WAS THE BUG
+    // ═════════════════════════════════════════════════════════════════
+    //
+    // Resuming has always worked here; what did not was who had to ask for
+    // it. A dropped link left the loop as a failure, so the screen said "The
+    // download did not finish. Try again." at eighty-four per cent of ninety
+    // megabytes and waited for a tap — which these tests faithfully
+    // encoded, one `throwsA(anything)` at a time.
+    //
+    // The service now carries on by itself, so an interruption has no
+    // outcome a caller can see. What each of these asserts is therefore the
+    // same invariant it always did, read off the finished file and the
+    // server's own record instead of off an exception: the partial survived,
+    // the resume asked for exactly what was missing, and nothing was fetched
+    // twice.
+    test('an interruption is carried on by itself, not handed back', () async {
       server.truncateNextResponseAt = 150000;
-
-      await expectLater(
-        download(_release(server)),
-        throwsA(isA<UpdateDownloadFailure>().having(
-          (e) => e.kind,
-          'kind',
-          UpdateDownloadFailureKind.network,
-        )),
-      );
-
-      // THE POINT OF THE WHOLE REWORK: a dropped link must not cost the bytes
-      // already fetched.
-      final part = File('${dir.path}/innocent-321.apk.part');
-      expect(await part.exists(), isTrue);
-      expect(await part.length(), 150000);
-    });
-
-    test('resume continues from the offset instead of starting over',
-        () async {
-      server.truncateNextResponseAt = 150000;
-      await expectLater(download(_release(server)), throwsA(anything));
-      final carriedOver = await File('${dir.path}/innocent-321.apk.part')
-          .length();
 
       final file = await download(_release(server));
 
-      // The bytes are right...
       expect(await file.readAsBytes(), body);
-      // ...and they were not re-fetched. The second request asked to continue
-      // from exactly what was on disk.
-      expect(_rangeOffsets(server), [carriedOver]);
+      // Two requests and no failure reached the caller at all.
       expect(server.requests, 2);
+      // The second continued from exactly where the first stopped, which is
+      // only possible if the partial survived the drop.
+      expect(_rangeOffsets(server), [150000]);
+      // And nothing is left behind once it finishes.
+      expect(await File('${dir.path}/innocent-321.apk.part').exists(), isFalse);
+    });
+
+    test('the resume asks for what is missing and not one byte more',
+        () async {
+      server.truncateNextResponseAt = 90000;
+
+      final file = await download(_release(server));
+
+      expect(_rangeOffsets(server), [90000]);
+      // THE APPEND-TWICE CHECK. A resume that re-fetched from zero and
+      // appended would produce a longer file whose first 90000 bytes are
+      // duplicated — and the hash would catch it, but only after a second
+      // download nobody needed.
+      expect(await file.length(), body.length);
+      expect(await file.readAsBytes(), body);
     });
 
     test('resume survives several interruptions', () async {
       // A fixed slice per attempt, not a growing one: the cut applies to
       // what is LEFT to send, so a growing cut eventually exceeds the
       // remainder and the "interrupted" response quietly completes.
-      for (var i = 0; i < 3; i++) {
-        server.truncateNextResponseAt = 60000;
-        await expectLater(download(_release(server)), throwsA(anything));
-      }
-      server.truncateNextResponseAt = null;
+      //
+      // All three inside ONE call, which is where they happen in life.
+      server.truncateNextResponseAt = 60000;
+      server.truncateCount = 3;
+
       final file = await download(_release(server));
 
       expect(await file.readAsBytes(), body);
       // Every resume moved forward; none restarted at zero.
       final offsets = _rangeOffsets(server);
-      expect(offsets, isNotEmpty);
-      expect(offsets.first, greaterThan(0));
-      for (var i = 1; i < offsets.length; i++) {
-        expect(offsets[i], greaterThan(offsets[i - 1]));
-      }
+      expect(offsets, [60000, 120000, 180000]);
+      expect(server.requests, 4);
     });
 
     test('a 206 whose Content-Range names another total is not appended to',
         () async {
+      // The drop happens first, then the resume is answered by a server that
+      // now claims a different total — the shape of an APK re-published
+      // under the same name while somebody was downloading it.
       server.truncateNextResponseAt = 100000;
-      await expectLater(download(_release(server)), throwsA(anything));
-      expect(
-        await File('${dir.path}/innocent-321.apk.part').length(),
-        100000,
-      );
-
-      // The object at this URL is now a different size, so the bytes on disk
-      // belong to nothing. Appending would splice two APKs together — the
-      // corruption that reads as tampering when the hash finally fails.
       server.lieAboutTotal = body.length + 4096;
-      final before = server.requests;
 
       final file = await download(_release(server));
 
-      // NOT an error to the user. The partial is dropped and the file is
-      // re-fetched from zero in the same call, which is the outcome someone
-      // wants when the publisher replaced a build mid-download.
+      // Appending would splice two APKs together — the corruption that reads
+      // as tampering when the hash finally fails. Instead the partial is
+      // dropped and the file is re-fetched from zero, in the same call, with
+      // nothing shown to the user.
       expect(await file.readAsBytes(), body);
-      // Two requests: the refused resume, then a clean restart carrying no
+      // Truncated, then the refused resume, then a clean restart carrying no
       // Range header at all.
-      expect(server.requests - before, 2);
+      expect(server.requests, 3);
       expect(server.rangeHeaders.last, isNull);
     });
 
@@ -463,9 +478,36 @@ void main() {
       expect(controller.state.phase, UpdateDownloadPhase.done);
     });
 
-    test('an interrupted download leaves the controller waiting, not failed',
+    test('an interruption the service can carry never reaches the screen',
         () async {
       server.truncateNextResponseAt = 120000;
+      final controller = UpdateDownloadNotifier(
+        service,
+        retryDelay: const Duration(minutes: 5),
+      );
+      addTearDown(controller.dispose);
+
+      await controller.start(
+        _release(server),
+        notificationTitle: 'Downloading update',
+        notificationDone: 'Downloaded',
+      );
+
+      // Not `waitingForNetwork` and certainly not `failed`. The drop was
+      // picked up and the file finished, so there is nothing for the screen
+      // to say about it — which is the whole change.
+      expect(controller.state.phase, UpdateDownloadPhase.done);
+      expect(server.requests, 2);
+    });
+
+    test('a drop the resumes cannot beat leaves the controller waiting, '
+        'not failed', () async {
+      // NOTHING MOVES. Each response is closed before a single byte, so the
+      // service resumes twice, sees that neither attempt advanced the file,
+      // and stops rather than spinning — and the state it stops in is what
+      // this asserts.
+      server.truncateNextResponseAt = 0;
+      server.truncateCount = 5;
       final controller = UpdateDownloadNotifier(
         service,
         // Long enough that the auto-resume probe cannot fire during the test.
@@ -484,10 +526,8 @@ void main() {
       // network" with no Retry required.
       expect(controller.state.phase, UpdateDownloadPhase.waitingForNetwork);
       expect(controller.state.failure?.isTransient, isTrue);
-      expect(
-        await File('${dir.path}/innocent-321.apk.part').length(),
-        120000,
-      );
+      // Three attempts: the first, then the two resumes that moved nothing.
+      expect(server.requests, 3);
     });
   });
 
