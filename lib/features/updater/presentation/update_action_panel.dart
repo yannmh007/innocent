@@ -227,10 +227,25 @@ class _UpdateActionPanelState extends ConsumerState<UpdateActionPanel> {
         if (needed == null || free == null) return s.updateNotEnoughSpace;
         return '${s.updateNotEnoughSpace} '
             '(${_fmtBytes(needed)} / ${_fmtBytes(free)})';
+      // THREE THINGS USED TO SHARE ONE SENTENCE, and it cost a whole evening.
+      // A download that stopped near the end said "The download did not
+      // finish. Try again." — which is true of a dropped connection, of a
+      // phone that ran out of room, and of a server saying no, and those want
+      // three different actions. Nobody could tell which had happened,
+      // including from a photograph of the screen.
+      case UpdateDownloadFailureKind.io:
+        return s.updateDownloadWriteFailed;
+      case UpdateDownloadFailureKind.server:
+        // The code is named here and nowhere else in this file. §6 is right
+        // that a status code means nothing to most readers — but this is the
+        // one failure they can do nothing about and somebody else can, so the
+        // number is what makes it reportable.
+        final code = e.statusCode;
+        return code == null
+            ? s.updateDownloadRefused
+            : '${s.updateDownloadRefused} (HTTP $code)';
       case UpdateDownloadFailureKind.unsupported:
       case UpdateDownloadFailureKind.network:
-      case UpdateDownloadFailureKind.server:
-      case UpdateDownloadFailureKind.io:
         return s.updateDownloadFailed;
     }
   }

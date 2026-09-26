@@ -134,6 +134,8 @@ class AppStrings {
   String get updateDownloadDamaged => _s('updateDownloadDamaged');
   String get updateDownloadMismatch => _s('updateDownloadMismatch');
   String get updateDownloadFailed => _s('updateDownloadFailed');
+  String get updateDownloadWriteFailed => _s('updateDownloadWriteFailed');
+  String get updateDownloadRefused => _s('updateDownloadRefused');
   String get updateNotEnoughSpace => _s('updateNotEnoughSpace');
   String get updateRetry => _s('updateRetry');
   String get updateNotificationTitle => _s('updateNotificationTitle');
@@ -2653,6 +2655,11 @@ class AppStrings {
         'downloading it again would fetch the same file. Tap Check now; '
         'if it says the same thing, the release needs fixing.',
     'updateDownloadFailed': 'The download did not finish. Try again.',
+    'updateDownloadWriteFailed': 'The file could not be written. The phone '
+        'may have run out of space, or another app cleared this one''s '
+        'temporary storage while it was downloading. Free some space and '
+        'try again.',
+    'updateDownloadRefused': 'The server refused the download',
     'updateNotEnoughSpace': 'Not enough space for this update.',
     'updateRetry': 'Try again',
     'updateNotificationTitle': 'Downloading update',
@@ -3889,6 +3896,10 @@ class AppStrings {
         'ဖိုင်အတူတူပဲ ရပါမည်။ "ယခုစစ်ရန်" ကို နှိပ်ကြည့်ပါ၊ အတူတူပဲ '
         'ပြနေပါက release ကို ပြင်ရန် လိုအပ်ပါသည်။',
     'updateDownloadFailed': 'ဒေါင်းလုဒ် မပြီးဆုံးပါ။ ထပ်ကြိုးစားကြည့်ပါ။',
+    'updateDownloadWriteFailed': 'ဖိုင် ရေးလို့ မရပါ။ ဖုန်းမှာ နေရာ ကုန်နေခြင်း၊ '
+        'ဒါမှမဟုတ် တခြား app တစ်ခုက ဒီ app ရဲ့ ယာယီဖိုင်တွေကို ဖျက်ပစ်ခြင်း '
+        'ဖြစ်နိုင်ပါတယ်။ နေရာ အနည်းငယ် ရှင်းပြီး ထပ်ကြိုးစားပါ။',
+    'updateDownloadRefused': 'Server က ဒေါင်းလုဒ်ကို ငြင်းပယ်လိုက်ပါတယ်',
     'updateNotEnoughSpace': 'ဤအပ်ဒိတ်အတွက် နေရာ မလုံလောက်ပါ။',
     'updateRetry': 'ထပ်ကြိုးစားရန်',
     'updateNotificationTitle': 'အပ်ဒိတ် ဒေါင်းလုဒ်ဆွဲနေသည်',
@@ -5109,6 +5120,10 @@ class AppStrings {
         'ไม่ใช่ปัญหาการเชื่อมต่อของคุณ — ดาวน์โหลดใหม่ก็จะได้ไฟล์เดิม '
         'กด "ตรวจสอบตอนนี้" หากยังเหมือนเดิม แปลว่าต้องแก้ที่ตัวรีลีส',
     'updateDownloadFailed': 'ดาวน์โหลดไม่สำเร็จ ลองอีกครั้ง',
+    'updateDownloadWriteFailed': 'เขียนไฟล์ไม่ได้ เครื่องอาจมีพื้นที่ไม่พอ '
+        'หรือแอปอื่นล้างไฟล์ชั่วคราวของแอปนี้ระหว่างดาวน์โหลด '
+        'กรุณาเพิ่มพื้นที่แล้วลองใหม่',
+    'updateDownloadRefused': 'เซิร์ฟเวอร์ปฏิเสธการดาวน์โหลด',
     'updateNotEnoughSpace': 'พื้นที่ไม่เพียงพอสำหรับอัปเดตนี้',
     'updateRetry': 'ลองอีกครั้ง',
     'updateNotificationTitle': 'กำลังดาวน์โหลดอัปเดต',
