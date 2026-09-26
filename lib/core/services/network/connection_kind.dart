@@ -71,17 +71,6 @@ class ConnectionInfo {
   static DateTime? _lastAt;
   static const Duration _memo = Duration(seconds: 1);
 
-  /// Throws away the memo, so the next [read] asks the platform.
-  ///
-  /// For a moment when the connection is EXPECTED to have changed and the
-  /// answer is about to be acted on — coming back from the system's own
-  /// network settings, or a retry the user asked for after turning data on.
-  @visibleForTesting
-  static void forget() {
-    _last = null;
-    _lastAt = null;
-  }
-
   /// Never throws. An unreadable platform reads as [ConnectionKind.unknown].
   static Future<ConnectionKind> read({bool fresh = false}) async {
     if (!fresh) {

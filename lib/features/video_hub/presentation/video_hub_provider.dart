@@ -11,6 +11,7 @@ import '../data/api/backend_config.dart';
 import '../data/api/event_sender.dart';
 import '../data/api/offline_downloader.dart';
 import '../data/api/offline_library.dart';
+import '../data/cache/catalogue_cache.dart';
 import '../data/demo_content_repository.dart';
 import '../domain/access.dart';
 import '../domain/access_policy.dart';
@@ -63,14 +64,45 @@ final selectedCategoryProvider =
 final contentFiltersProvider =
     StateProvider<ContentFilters>((ref) => const ContentFilters());
 
+/// Ticks when a background refresh has replaced a saved answer.
+///
+/// ═══════════════════════════════════════════════════════════════════════
+/// WHAT MAKES THE FRESH COPY APPEAR BY ITSELF
+/// ═══════════════════════════════════════════════════════════════════════
+///
+/// The repository answers from the saved copy at once and sends the request
+/// behind it. That alone would mean the screen shows what it had and keeps
+/// showing it: a title published this morning would not be there until
+/// somebody pulled to refresh, and "instant" would have been bought by going
+/// stale.
+///
+/// So every catalogue provider watches this. `CatalogueCache` ticks it when a
+/// refresh lands; each provider re-runs, asks the repository again, and is
+/// handed the answer the refresh just wrote — out of memory, with no second
+/// request, because the repository has that key on cooldown. The viewer sees
+/// the new rows appear without having asked, which is what Telegram and
+/// Facebook do and the whole point of the exercise.
+///
+/// A [Provider] that invalidates ITSELF rather than a ChangeNotifierProvider,
+/// because a ChangeNotifierProvider disposes the notifier it is given and
+/// this one is a static that outlives any container.
+final catalogueRevisionProvider = Provider<int>((ref) {
+  void bumped() => ref.invalidateSelf();
+  CatalogueCache.revision.addListener(bumped);
+  ref.onDispose(() => CatalogueCache.revision.removeListener(bumped));
+  return CatalogueCache.revision.value;
+});
+
 /// The hero title for the landing tab.
 final featuredContentProvider = FutureProvider<VideoContent?>((ref) {
+  ref.watch(catalogueRevisionProvider);
   final repo = ref.watch(contentRepositoryProvider);
   return repo.getFeatured();
 });
 
 /// Curated rows for the "All" tab.
 final contentRowsProvider = FutureProvider<List<ContentRow>>((ref) {
+  ref.watch(catalogueRevisionProvider);
   final repo = ref.watch(contentRepositoryProvider);
   return repo.getRows();
 });
@@ -78,6 +110,7 @@ final contentRowsProvider = FutureProvider<List<ContentRow>>((ref) {
 /// Filter values the current category can actually offer.
 final categoryFacetsProvider =
     FutureProvider.autoDispose<ContentFacets>((ref) {
+  ref.watch(catalogueRevisionProvider);
   final repo = ref.watch(contentRepositoryProvider);
   final category = ref.watch(selectedCategoryProvider);
   return repo.getFacets(categoryId: category.id);
@@ -102,6 +135,7 @@ class RowFacetsArg {
 /// Filter values available inside one row's scope.
 final rowFacetsProvider = FutureProvider.autoDispose
     .family<ContentFacets, RowFacetsArg>((ref, arg) {
+  ref.watch(catalogueRevisionProvider);
   final repo = ref.watch(contentRepositoryProvider);
   return repo.getRowFacets(rowKey: arg.rowKey);
 });
@@ -140,6 +174,7 @@ void recordViewOnce(WidgetRef ref, String contentId) {
 /// [CategoryCatalogue.empty] rather than throwing when there is nothing to
 /// say, and every reader treats empty as "use the compiled enum".
 final categoryCatalogueProvider = FutureProvider<CategoryCatalogue>((ref) {
+  ref.watch(catalogueRevisionProvider);
   return ref.watch(contentRepositoryProvider).getCategories();
 });
 
@@ -173,6 +208,7 @@ final categoryStylesProvider = Provider<CategoryCatalogue>((ref) {
 /// title as it was an hour ago.
 final titleDetailProvider =
     FutureProvider.autoDispose.family<VideoContent?, String>((ref, id) {
+  ref.watch(catalogueRevisionProvider);
   return ref.watch(contentRepositoryProvider).getById(id);
 });
 

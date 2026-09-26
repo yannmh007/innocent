@@ -499,19 +499,50 @@ if os.path.isfile(REPO):
             'ConnectionInfo whether anything is attached. Without it a phone '
             'in aeroplane mode spends BackendConfig.timeout - twenty seconds '
             'of skeletons - before it will admit there is no network.')
-    m = re.search(r'_staleAfter = Duration\(milliseconds: (\d+)\)', body)
-    if not m:
-        fails.append(
-            'NO CEILING ON THE STALE WAIT: api_content_repository has no '
-            '`_staleAfter = Duration(milliseconds: N)`. Without it a saved '
-            'catalogue waits the full request timeout before it is shown, '
-            'which is the twenty-second blank screen this replaced.')
-    elif int(m.group(1)) > 5000:
-        fails.append(
-            'THE STALE WAIT IS TOO LONG: _staleAfter is %sms. Past a few '
-            'seconds the saved copy arrives after the viewer has decided the '
-            'app is broken, which is the whole failure it exists to prevent.'
-            % m.group(1))
+    # THERE IS NO CEILING ANY MORE BECAUSE THERE IS NO WAIT.
+    #
+    # This used to require `_staleAfter` and cap it at a few seconds. Both
+    # numbers it held — 2500 ms, then 700 ms — were guesses at how long a good
+    # request takes, and the case the wait governs is never the good one: a
+    # healthy request answers long before it, and a connection that is
+    # attached and not working pays it in full, on every screen, with the
+    # answer already on the disk. What replaced it is the absence of the bet.
+    # So the check is now the shape of the answer rather than the size of a
+    # number.
+    if serve:
+        if '.timeout(' in serve:
+            fails.append(
+                'THE SAVED CATALOGUE IS BEING MADE TO WAIT AGAIN: _serve has '
+                'a `.timeout(` in it. A saved answer is on the disk before '
+                'the question is asked, so any wait before showing it can '
+                'only lose time - which is what "it works but it is slower '
+                'than Facebook" was.')
+        if 'unawaited(fetch()' not in serve:
+            fails.append(
+                'THE CATALOGUE NO LONGER REFRESHES BEHIND THE SAVED COPY: '
+                '_serve does not run `unawaited(fetch()`. Showing the saved '
+                'answer instantly is only half of it; without the request '
+                'behind it the app shows yesterday until someone pulls to '
+                'refresh, and a title published this morning is not there.')
+        if 'CatalogueCache.noteRefreshed()' not in serve:
+            fails.append(
+                'A LANDED REFRESH REACHES NOTHING: _serve does not call '
+                'CatalogueCache.noteRefreshed(). The fresh answer is written '
+                'to the cache and never drawn, so it appears only on the next '
+                'navigation - which looks exactly like the app being stale.')
+        if '_dueForRefresh(' not in serve:
+            fails.append(
+                'THE REFRESH LOOP HAS NOTHING TO STOP IT: _serve does not '
+                'check _dueForRefresh. A landed refresh ticks the revision, '
+                'watchers rebuild, and a rebuild calls straight back in here '
+                '- so without the cooldown each refresh asks for another for '
+                'as long as the app is open.')
+        if 'CatalogueCache.isForcing' not in serve:
+            fails.append(
+                'PULL TO REFRESH DOES NOTHING: _serve does not honour '
+                'CatalogueCache.isForcing, so a deliberate refresh is handed '
+                'the same saved copy in no time at all. That is a control '
+                'that appears to work and does not.')
 
     # (c) The two search rungs that talk to the network directly must stay
     # directly on the network — a cached search key per query would fill the

@@ -90,50 +90,38 @@ class ApiContentRepository implements ContentRepository {
     );
   }
 
-  /// How long a saved answer will wait for a fresh one before it is shown.
+  /// WHY THERE IS NO LONGER A NUMBER HERE.
   ///
   /// ═══════════════════════════════════════════════════════════════════════
-  /// THIS NUMBER IS THE WHOLE DIFFERENCE BETWEEN "OFFLINE" AND "BROKEN"
+  /// THE DIFFERENCE BETWEEN "OFFLINE" AND "BROKEN" WAS NEVER THE RIGHT WAIT
   /// ═══════════════════════════════════════════════════════════════════════
   ///
-  /// The first version of this waited for the request to FAIL and only then
-  /// looked in the cache. That is correct and it is unusable: `BackendConfig
-  /// .timeout` is twenty seconds, and a phone with no signal does not always
-  /// fail fast — a dead connection frequently hangs rather than refusing, which
-  /// is the reason that timeout exists at all. So the landing tab sat on its
-  /// skeletons for up to twenty seconds before showing anything, and twenty
-  /// seconds of grey rectangles is indistinguishable from an app that does not
-  /// work. That is exactly what a viewer reported, with a screenshot.
+  /// The first version waited for the request to FAIL and only then looked in
+  /// the cache. Correct, and unusable: `BackendConfig.timeout` is twenty
+  /// seconds and a dead connection often hangs rather than refusing, so it
+  /// meant twenty seconds of grey rectangles — which a viewer photographed
+  /// and reported as an app that does not work.
   ///
-  /// Telegram and Facebook do not wait. They draw the last thing they had,
-  /// immediately, and quietly replace it when the network answers. So: the
-  /// request still goes out, and it still updates the cache when it lands, but
-  /// the SAVED copy is shown the moment this much time has passed without an
-  /// answer.
+  /// The second version waited a fixed 2500 ms, then 700 ms, for the network
+  /// to beat the disk before showing the saved copy. Better, and the same
+  /// mistake in smaller print. Any number here is a guess at how long a GOOD
+  /// request takes, and the case it governs is never the good one: a healthy
+  /// request answers in two or three hundred milliseconds and the wait never
+  /// runs. It runs when a connection is attached and NOT working — a Wi-Fi
+  /// with nothing behind it, a SIM out of credit, a cell that holds the
+  /// socket open rather than refusing it — and those paid it in full, on
+  /// every screen, with the answer already on the disk. Reported, again, as
+  /// "it works, but it is slower than Facebook".
   ///
-  /// Not zero, because on a working connection showing a saved copy and then
-  /// replacing it a moment later is a flicker nobody asked for. The number is
-  /// therefore a bet on how long a GOOD request takes, and the first bet was
-  /// wrong in the expensive direction.
+  /// The bet can only lose. By the time there is something to wait for, the
+  /// disk has already answered. So now nothing waits: the saved copy is
+  /// returned at once and the request runs behind it, and when it lands
+  /// `CatalogueCache.revision` brings the fresh answer to the screen by
+  /// itself. See `_serve`.
   ///
-  /// TWO AND A HALF SECONDS WAS A GUESS, AND IT WAS FELT. It was chosen to be
-  /// comfortably longer than a healthy round trip, which it is — and that is
-  /// the mistake: the case it governs is not the healthy one. A healthy
-  /// request answers in two or three hundred milliseconds and this timeout
-  /// never runs. It runs when the connection is attached and NOT WORKING — a
-  /// Wi-Fi with nothing behind it, a SIM out of credit, a cell that holds the
-  /// socket open rather than refusing it — which in Myanmar is not an edge
-  /// case, it is an afternoon. Every one of those paid the full two and a
-  /// half seconds, per screen, with the answer already on the disk. Reported
-  /// as "it works, but it is slower than Facebook", which is precisely what
-  /// it was.
-  ///
-  /// Seven hundred milliseconds still clears a good request with room to
-  /// spare, and it is under the threshold where waiting reads as the app
-  /// thinking rather than the app being stuck. The stale copy is never wrong
-  /// for long either way: the request carries on and refreshes the cache
-  /// whenever it lands.
-  static const Duration _staleAfter = Duration(milliseconds: 700);
+  /// The two cases that still await the network are the two where waiting is
+  /// what was asked for: nothing saved, so there is nothing else to show, and
+  /// a pull-to-refresh, which is a person asking for the newest answer.
 
   /// Answers from the network, or from what was saved, whichever can answer.
   ///
@@ -143,9 +131,9 @@ class ApiContentRepository implements ContentRepository {
   /// has just rejected would show one account's listing to whoever is holding
   /// the phone, which is the one thing row-level security is there to prevent.
   Future<dynamic> _serve(String key, Future<dynamic> Function() fetch) async {
-    // The local answer first, because whether there IS one changes what the
-    // network attempt is allowed to cost. A small JSON file off flash: single
-    // digit milliseconds, and it is the price of never showing a blank screen.
+    // The local answer first, because whether there IS one changes everything
+    // below. Off flash and, after the first time this process reads it, out of
+    // memory: this is the price of never showing a blank screen.
     final cached = await CatalogueCache.read(key, quiet: true);
 
     // ─── NO RADIO, NO WAIT ───────────────────────────────────────────────
@@ -173,40 +161,108 @@ class ApiContentRepository implements ContentRepository {
       );
     }
 
-    if (cached == null) {
-      // Nothing saved, so the network is the only answer there is and it gets
-      // the full timeout: a slow connection that WILL answer must not be cut
-      // off, because there is nothing to show instead.
-      final body = await fetch();
-      unawaited(CatalogueCache.write(key, body));
-      CatalogueCache.noteServedLive();
-      return body;
+    // ─── A PULL TO REFRESH IS A REQUEST TO WAIT ──────────────────────────
+    //
+    // Everything below answers from the saved copy at once. That is right for
+    // opening a screen and wrong for somebody who has just dragged the list
+    // down: they are asking for the newest answer, and being handed the same
+    // rows instantly looks exactly like a control that does nothing. Inside
+    // the window a pull opens, this behaves as it did before — the network is
+    // awaited, and the saved copy is the fallback rather than the answer.
+    final forcing = CatalogueCache.isForcing;
+
+    if (cached == null || forcing) {
+      // Nothing saved, or a refresh that was asked for. Either way the network
+      // gets the full timeout: a slow connection that WILL answer must not be
+      // cut off when there is nothing to show instead, and must not be cut off
+      // when somebody is watching a spinner they started.
+      try {
+        final body = await fetch();
+        unawaited(CatalogueCache.write(key, body));
+        _fetchedAt[key] = DateTime.now();
+        CatalogueCache.noteServedLive();
+        return body;
+      } on ApiException catch (e) {
+        if (cached == null || !e.isRetryable) rethrow;
+        CatalogueCache.noteServedFromCache();
+        return cached;
+      }
     }
 
-    final live = fetch();
-    // LISTENED TO SEPARATELY, so that a request which fails or arrives after
-    // the saved copy has already been returned updates the cache quietly
-    // instead of surfacing as an unhandled async error. Dart allows two
-    // listeners on one future; this is the one that outlives this call.
-    unawaited(live.then(
-      (body) => CatalogueCache.write(key, body),
-      onError: (Object _) {},
-    ));
-    try {
-      final body = await live.timeout(_staleAfter);
-      CatalogueCache.noteServedLive();
-      return body;
-    } on TimeoutException {
-      // Slow, not broken. The request is still running and will refresh the
-      // cache when it lands; what is shown now is the last known good answer.
-      CatalogueCache.noteServedFromCache();
-      return cached;
-    } on ApiException catch (e) {
-      if (!e.isRetryable) rethrow;
-      CatalogueCache.noteServedFromCache();
-      return cached;
+    // ─── SHOW WHAT WE HAVE. NOW. ─────────────────────────────────────────
+    //
+    // There is no wait here at all, and the number that used to be here is the
+    // reason. It was 2500 ms and then 700 ms, and both were the same mistake
+    // in different sizes: a guess at how long a good request takes, paid in
+    // full by every connection that is attached and not working — which here
+    // is an ordinary afternoon. Waiting to see whether the network can beat
+    // the disk is a bet that can only lose time, because the disk has already
+    // won by the time the question is asked.
+    //
+    // Telegram and Facebook do not make that bet. They draw the last thing
+    // they had, immediately, and replace it when the answer arrives. So does
+    // this: the request goes out behind the returned answer, and
+    // `CatalogueCache.noteRefreshed` is what brings the new one to the screen.
+    //
+    // THE BANNER IS NOT TOUCHED HERE, and that is deliberate. Serving the
+    // saved copy is now the normal case on a perfectly good connection, so
+    // flagging it would leave "offline" showing all the time; the flag is set
+    // only where it is true — no transport above, or a refresh that came back
+    // unreachable below.
+    if (_dueForRefresh(key)) {
+      _fetchedAt[key] = DateTime.now();
+      unawaited(fetch().then(
+        (body) async {
+          await CatalogueCache.write(key, body);
+          CatalogueCache.noteServedLive();
+          // Whatever is watching rebuilds, reads the entry this has just
+          // replaced, and draws it from memory. No second request: the line
+          // above put this key on cooldown before the request was even sent.
+          CatalogueCache.noteRefreshed();
+        },
+        onError: (Object e) {
+          // A refusal is the server's answer and must not be buried here —
+          // but there is nothing left to throw it at, the caller having been
+          // answered already. What it can do is stop claiming the screen is
+          // live. Anything unreachable is the ordinary case this design
+          // expects and the saved copy on screen is already the right answer.
+          if (e is ApiException && e.isRetryable) {
+            CatalogueCache.noteServedFromCache();
+          }
+        },
+      ));
     }
+    return cached;
   }
+
+  /// When each key was last asked of the network.
+  static final Map<String, DateTime> _fetchedAt = <String, DateTime>{};
+
+  /// How long a key rests after being fetched.
+  ///
+  /// TWO JOBS, AND THE SECOND ONE IS WHY IT CANNOT BE REMOVED. The obvious one
+  /// is cost: a screen that reads four keys, is left and returned to, used to
+  /// send four requests each time, over connections the rest of this work has
+  /// spent weeks apologising to.
+  ///
+  /// The other is that it is what stops the refresh loop. A landed refresh
+  /// ticks `CatalogueCache.revision`, watchers rebuild, and a rebuild calls
+  /// straight back into here — so without a cooldown each refresh would ask
+  /// for another, for as long as the app was open. Twenty seconds is far
+  /// longer than the rebuild it has to outlast, and far shorter than anybody
+  /// stays on one screen.
+  static const Duration _refreshRest = Duration(seconds: 20);
+
+  static bool _dueForRefresh(String key) {
+    final last = _fetchedAt[key];
+    return last == null || DateTime.now().difference(last) > _refreshRest;
+  }
+
+  /// Forgets every cooldown, so the next read of each key goes to the network.
+  ///
+  /// For a sign-out, where the next reader is a different account and must not
+  /// be told this one's rows are fresh enough.
+  static void forgetRefreshTimes() => _fetchedAt.clear();
 
   // ---- catalogue ----------------------------------------------------------
 

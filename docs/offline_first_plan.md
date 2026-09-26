@@ -863,13 +863,43 @@ verdicts removed, and the entitlement test removed.
 
 Three costs, none of them the network:
 
-* **`_staleAfter` was 2500 ms.** It was picked to be longer than a healthy
-  request, which it is — and that is the error, because the case it governs is
-  never the healthy one. A good request answers in two or three hundred
-  milliseconds and the timeout never runs. It runs when a connection is
-  attached and not working, which here is an afternoon, and every one of those
-  paid two and a half seconds per screen with the answer already on disk. Now
-  700 ms.
+* **`_staleAfter` was 2500 ms, then 700 ms, and is now gone.** Any number
+  there is a guess at how long a good request takes, and the case the wait
+  governs is never the good one: a healthy request answers in two or three
+  hundred milliseconds and the wait never runs. It runs when a connection is
+  attached and NOT working — which here is an afternoon — and every one of
+  those paid it in full, per screen, with the answer already on disk. The bet
+  can only lose: by the time there is something to wait for, the disk has
+  already won.
+
+  So nothing waits. The saved copy is returned at once and the request runs
+  behind it. Two cases still await the network, because in both of them
+  waiting is what was asked for: nothing saved, so there is nothing else to
+  show; and a pull-to-refresh, which is a person asking for the newest answer
+  (`CatalogueCache.beginForcedRefresh` opens a five-second window that the
+  repository honours — one pull fans out into several requests, so a flag the
+  first would consume is no good).
+
+  **The other half is that the fresh copy appears by itself.** Instant would
+  otherwise have been bought by going stale: a title published this morning
+  would not be there until somebody pulled. When a background refresh lands it
+  ticks `CatalogueCache.revision`; every catalogue provider watches
+  `catalogueRevisionProvider`, re-runs, and is handed what the refresh just
+  wrote — from memory, with no second request. It ticks on every successful
+  refresh rather than only on a changed one, because comparing means encoding
+  a few hundred kilobytes to answer a question whose wrong answer costs one
+  rebuild that draws identical pixels.
+
+  **It cannot loop**, and that is worth checking rather than assuming: the
+  rebuild calls back into the repository, which finds the key too recently
+  fetched (`_refreshRest`, twenty seconds) and asks for nothing, so nothing
+  ticks again. The cooldown is what terminates it, and it holds even if a
+  payload differed on every call.
+
+  The banner is left alone on this path. Serving the saved copy is now the
+  normal case on a perfectly good connection, so flagging it would leave
+  "offline" showing permanently; the flag is set only where it is true — no
+  transport at all, or a refresh that came back unreachable.
 * **Every catalogue read re-parsed its JSON.** A landing payload is a few
   hundred kilobytes decoded ON THE UI ISOLATE, paid again for the facets, the
   categories and each card — and `titleDetailProvider` is `autoDispose`, so

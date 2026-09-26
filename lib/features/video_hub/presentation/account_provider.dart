@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/api/account_snapshot.dart';
 import '../data/api/api_account_repository.dart';
 import '../data/api/api_client.dart';
+import '../data/api/api_content_repository.dart';
 import '../data/api/api_exception.dart';
 import '../data/api/backend_config.dart';
 import '../data/api/offline_library.dart';
@@ -258,6 +259,13 @@ class AccountNotifier extends StateNotifier<AccountState> {
     } catch (e) {
       if (kDebugMode) debugPrint('catalogue cache clear on sign-out failed: $e');
     }
+    // And the record of WHEN each key was last fetched, which is what stops a
+    // landed refresh asking for another. An emptied cache means the next read
+    // goes to the network anyway, so this changes nothing today; it is here so
+    // that it keeps being true if the clearing above ever becomes partial.
+    // A cooldown carried across a sign-out would be one account's timing
+    // deciding when the next one is allowed to ask.
+    ApiContentRepository.forgetRefreshTimes();
     if (!mounted) return;
     // Entitlement is cleared in the SAME assignment as the user. Doing it in
     // two steps leaves a frame where nobody is signed in and premium is still

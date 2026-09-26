@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/localization/app_strings.dart';
+import '../data/cache/catalogue_cache.dart';
 import '../domain/content_category.dart';
 import '../domain/content_filters.dart';
 import '../domain/video_content.dart';
@@ -184,7 +185,15 @@ class _VideoHubScreenState extends ConsumerState<VideoHubScreen>
   }
 
   /// Pull-to-refresh refreshes whatever the current tab is actually showing.
+  ///
+  /// THE WINDOW IS WHAT MAKES THIS DO ANYTHING. Every catalogue read now
+  /// answers from the saved copy at once and refreshes behind it, which is
+  /// right for opening a screen and wrong here: dragging the list down is a
+  /// person asking for the newest answer, and being handed the same rows
+  /// instantly is a control that looks broken. Inside the window the
+  /// repository awaits the network, as it did before all of this.
   Future<void> _refresh(CategoryRef selected) async {
+    CatalogueCache.beginForcedRefresh();
     if (selected.showsRows) {
       ref.invalidate(featuredContentProvider);
       ref.invalidate(contentRowsProvider);

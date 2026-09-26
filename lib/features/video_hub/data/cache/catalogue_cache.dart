@@ -112,6 +112,76 @@ class CatalogueCache {
   /// Say that what is about to be drawn came from the server.
   static void noteServedLive() => servedFromCache.value = false;
 
+  /// Goes up by one each time a background refresh has replaced a saved
+  /// answer with a newer one.
+  ///
+  /// ═══════════════════════════════════════════════════════════════════
+  /// THE OTHER HALF OF "SHOW IT INSTANTLY"
+  /// ═══════════════════════════════════════════════════════════════════
+  ///
+  /// Showing the saved copy at once is only half of what Telegram and
+  /// Facebook do. The other half is that the fresh one appears a moment
+  /// later WITHOUT ANYONE ASKING — no spinner, no pull, nothing to notice.
+  /// Without it, "instant" would mean "yesterday's rows until you pull to
+  /// refresh", and a title published this morning would not be there.
+  ///
+  /// So the request still goes out behind the returned answer, and when it
+  /// lands this ticks. Whatever is watching rebuilds, reads the cache again
+  /// — which the refresh has just replaced, in memory as well as on disk —
+  /// and draws the new answer from memory, with no second request.
+  ///
+  /// IT TICKS ON EVERY SUCCESSFUL REFRESH, not only on a changed one.
+  /// Comparing old against new would mean encoding a few hundred kilobytes
+  /// of JSON to answer a question whose wrong answer costs one rebuild that
+  /// renders identical pixels. The cost of comparing is larger and it is paid
+  /// every time; the cost of not comparing is paid once per refresh and is
+  /// invisible.
+  ///
+  /// THIS CANNOT LOOP, and that is the part worth checking rather than
+  /// assuming. A rebuild calls the repository again, the repository finds the
+  /// entry too recently fetched to fetch again, and so nothing is requested
+  /// and nothing ticks. The cooldown in `ApiContentRepository` is the thing
+  /// that terminates it, and it holds even if a payload were to differ on
+  /// every single call.
+  static final ValueNotifier<int> revision = ValueNotifier<int>(0);
+
+  /// Called by the repository when a background refresh has landed.
+  static void noteRefreshed() => revision.value = revision.value + 1;
+
+  /// Until when a deliberate refresh is in progress.
+  ///
+  /// PULL TO REFRESH HAS TO MEAN SOMETHING. Every other read now answers from
+  /// the cache immediately and refreshes behind it, which is right for
+  /// opening a screen and wrong for a person who has just dragged the list
+  /// down: they are asking to WAIT for the newest answer, and handing them
+  /// the same saved copy in no time at all looks exactly like a control that
+  /// does nothing.
+  ///
+  /// A window rather than a flag, because one pull fans out into several
+  /// requests — the hero, the rows, the facets — and a flag consumed by the
+  /// first of them would leave the rest served from the cache.
+  static DateTime? _forcedUntil;
+
+  /// True while a deliberate refresh should await the network.
+  static bool get isForcing {
+    final until = _forcedUntil;
+    if (until == null) return false;
+    if (DateTime.now().isAfter(until)) {
+      _forcedUntil = null;
+      return false;
+    }
+    return true;
+  }
+
+  /// Say that the next few seconds of reads are a refresh the user asked for.
+  ///
+  /// Five seconds covers the fan-out of one pull and nothing else. Longer
+  /// would quietly turn ordinary navigation during that window back into the
+  /// waiting this change exists to remove.
+  static void beginForcedRefresh() {
+    _forcedUntil = DateTime.now().add(const Duration(seconds: 5));
+  }
+
   static Directory? _dir;
 
   /// Decoded bodies, kept for the life of the process.
