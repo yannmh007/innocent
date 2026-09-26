@@ -818,6 +818,55 @@ Each of these was mutation-tested by breaking it and watching the check fail:
 stopped working would be silent.
 
 
+## H1 — the files nothing points at, and the bill for them
+
+Deleting a title does not delete its objects. Neither does replacing one.
+Nothing in this system has ever swept R2. So every title ever removed, every
+re-upload that landed under a new name, and every upload that finished its PUT
+and failed before the row, left bytes behind that nothing can reach and that are
+billed every month — and there was no way to even SEE them.
+
+- `unknown_object_keys(text[])` (migration `unknown_object_keys_for_the_orphan_report`)
+  does the comparison in Postgres. **Three columns name an object** and missing
+  any one turns the report into a list of the live catalogue:
+  `title_assets.object_key`, that table's `thumb_key`, and
+  `asset_renditions.object_key`. The rungs are the trap — real objects with no
+  row in `title_assets` at all. The bucket is deliberately ignored, because that
+  can only make the report quieter, and quieter is the safe direction for output
+  whose purpose is "you may delete these".
+- The comparison is a `text[]` to a function rather than a thousand values in a
+  PostgREST `in.()`: a key containing a comma or a quote would truncate that
+  list, and a truncated list means MORE keys reported as unreferenced — the
+  direction that gets something deleted.
+- `probe-media` gains `{orphans: 1}` (or `{orphans: 'innocent-public'}`), paging
+  1000 keys at a time with a continuation token. It asks for
+  `encoding-type=url`, because an object key may legally hold characters XML
+  cannot carry.
+- **Anything touched in the last 24 hours is counted and not listed.** An object
+  lands seconds before its row is written, so in that window a new film is
+  indistinguishable from an abandoned one. The report says how many it left out.
+- **Incomplete multipart uploads too**, which `ListObjectsV2` does not show at
+  all. Since C1 anything over 128 MiB goes up in parts, and a phone that loses
+  signal halfway leaves those parts billed and invisible. Reported with an age;
+  aborting one is a deliberate act and stays in `studio.ts`.
+- **It never deletes, and rule 13 fails the build if it could** — checked at the
+  signature, because signing is the only way the function can reach the bucket
+  and a bare search for "POST" would fire on the legitimate PostgREST call.
+- `tool/js/sigv4_test.mjs` grew 19 checks: the bucket-level signer is verified
+  against the independent node signer (proved by breaking it two ways — a
+  trailing slash on the bucket path, and `list-type` appended instead of
+  signed), and every XML reader is checked on a key that would otherwise be
+  mis-decoded and land in a list headed "nothing points at these".
+
+**Outstanding operator step:** `probe-media` has to be redeployed by pasting
+`docs/edge/probe-media.ts` into the Supabase editor. This container's network
+policy denies the project host, so the function cannot be invoked or deployed
+from here, and hand-transcribing 34 KB of signer is exactly how a silent
+signature difference gets introduced. See the redeploy section in
+`docs/RUNBOOK.md`. Until then the console's **Storage** panel answers
+`no_keys`; nothing else is affected.
+
+
 ## Notes for whoever picks this up
 
 - **No Flutter or Dart SDK in the session container.** `python3 tool/check.py`

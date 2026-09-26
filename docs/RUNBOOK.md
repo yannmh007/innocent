@@ -141,6 +141,25 @@ do not add them.
 > refused by the very grants that exist to refuse it. The symptom was a flat
 > `not_found`. **This cost two wrong guesses to find.**
 
+### Redeploying an edge function
+
+Supabase dashboard → **Edge Functions** → the function → **Deploy a new
+version** → *Via Editor* → paste the whole of `docs/edge/<name>.ts` from this
+repository → **Deploy** → **Settings → Verify JWT OFF**.
+
+Verify JWT stays off for all of them because each one does its own checking and
+does it differently: `request-playback` reads the viewer's JWT itself, `studio`
+and `probe-media` check the caller against `OPERATOR_IDS`, `transcode` checks a
+shared runner secret, and `backfill-dimensions` is called with no identity at
+all. Turning the platform's check on would refuse the runner and the console
+before either got to say who it was.
+
+> **Pending: `probe-media` needs this.** The repository file has the
+> unused-file report in it (`{orphans: 1}`) and the deployed version does not,
+> so the **Storage** panel in the console will answer `no_keys` until it is
+> pasted. Nothing else is affected — every other panel uses ops the deployed
+> version already has.
+
 ### Then
 
 **Run `self-test`. Ten checks, all PASS.** That is the gate for everything

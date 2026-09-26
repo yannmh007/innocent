@@ -646,6 +646,35 @@ td.num{text-align:right;font-variant-numeric:tabular-nums;color:var(--dim)}
       <div id="probeBody" style="margin-top:10px"></div>
     </div>
 
+    <!-- ══ STORAGE ══════════════════════════════════════════════════════
+         What is in the bucket that nothing in the catalogue points at. This
+         is the one panel about MONEY: R2 bills for every object every month
+         whether or not anything can reach it, and nothing in this system
+         has ever deleted one.                                          -->
+    <div class="sec">
+      <div class="sechead">
+        <h2>Storage</h2>
+        <span class="spacer"></span>
+        <button class="b" id="orphanBtn">Find unused files</button>
+        <button class="b" id="orphanPubBtn">…in artwork too</button>
+      </div>
+      <div class="hint">
+        Deleting a title does <b>not</b> delete its files. Neither does
+        replacing one. So every title ever removed, every re-upload that
+        landed under a new name, and every upload that finished and then
+        failed to save its row, left files behind that nothing can reach and
+        that are billed every month. This lists them — and
+        <b>lists them only</b>. Deleting happens in the Cloudflare R2
+        dashboard, by you, on purpose: a file uploaded a minute ago looks
+        exactly like an unused one until its row is written, so anything
+        touched in the last day is counted and deliberately not listed.
+        <b>Unfinished uploads</b> are the other half: a large upload goes up in
+        parts, and a phone that loses signal halfway leaves those parts in the
+        bucket where no file listing shows them.
+      </div>
+      <div id="orphanBody" style="margin-top:10px"></div>
+    </div>
+
     <!-- ══ STREAMING COPIES ════════════════════════════════════════════
          The answer to "upload anything and it must not stutter". A camera
          clip needing 61 Mbps cannot be streamed over a 48 Mbps link; that
@@ -2748,6 +2777,168 @@ $('probeBtn').onclick = async () => {
     btn.disabled = false;
   }
 };
+
+// ── unused files ─────────────────────────────────────────────────────────
+//
+// THE ONLY PANEL HERE ABOUT MONEY. R2 bills for every object every month
+// whether or not anything in the catalogue points at it, and nothing in this
+// system has ever deleted one — so the bill only goes one way and nobody could
+// see why.
+//
+// IT LISTS AND IT NEVER DELETES, and that is a decision rather than caution.
+// An automatic sweep would race an upload in flight: the object lands seconds
+// before its row is written, so for those seconds a perfectly good new film is
+// indistinguishable from an abandoned one. The function leaves anything touched
+// in the last day out of the list for the same reason and says how many it left
+// out, so the report is honest about the window it cannot see into.
+//
+// `tool/security_invariants.py` fails the build if a delete ever appears in
+// probe-media.ts.
+async function findOrphans(bucket, btn) {
+  const host = $('orphanBody');
+  const other = bucket ? $('orphanBtn') : $('orphanPubBtn');
+  btn.disabled = true;
+  if (other) other.disabled = true;
+  clear();
+  host.textContent = '';
+  const note = el('div', { className: 'hint' },
+    text('Listing the bucket…'));
+  host.append(note);
+  try {
+    const found = [];
+    let multipart = null;
+    let tooNew = 0;
+    let freshHours = 24;
+    let examined = 0;
+    let which = '';
+    let token = '';
+    // A CEILING ON THE LOOP. A thousand objects a page, so fifty pages is
+    // fifty thousand files; a bug in `more` must not spin forever on the
+    // operator's phone.
+    for (let page = 0; page < 50; page++) {
+      const got = await api(
+        bucket ? { orphans: bucket, token } : { orphans: 1, token }, PROBE_API);
+      which = got.bucket || '';
+      examined += got.examined || 0;
+      tooNew += got.too_new || 0;
+      if (typeof got.fresh_hours === 'number') freshHours = got.fresh_hours;
+      for (const o of (got.orphans || [])) found.push(o);
+      // Only the first page carries it; a later page's null must not erase it.
+      if (Array.isArray(got.multipart)) multipart = got.multipart;
+      note.textContent = 'Checked ' + examined + ' file' +
+        (examined === 1 ? '' : 's') + '…';
+      if (!got.more || !got.next_token || got.next_token === token) break;
+      token = got.next_token;
+    }
+    drawOrphans({ which, examined, found, tooNew, freshHours, multipart });
+  } catch (e) {
+    say('bad', String(e.message || e));
+    host.textContent = '';
+  } finally {
+    btn.disabled = false;
+    if (other) other.disabled = false;
+  }
+}
+
+function drawOrphans(r) {
+  const host = $('orphanBody');
+  host.textContent = '';
+  const wasted = r.found.reduce((n, o) => n + (o.bytes || 0), 0);
+
+  const head = el('div', { className: 'hint' });
+  if (!r.found.length) {
+    head.append(text(
+      'Nothing unused in ' + r.which + '. Every one of the ' + r.examined +
+      ' files there is pointed at by a title, a thumbnail or a streaming copy.'));
+  } else {
+    head.append(el('b', {}, text(
+      r.found.length + ' unused file' + (r.found.length === 1 ? '' : 's') +
+      ' · ' + fmtSize(wasted))));
+    head.append(text(
+      ' in ' + r.which + ', out of ' + r.examined + ' checked. Nothing in the ' +
+      'catalogue points at these. Delete them in the Cloudflare R2 dashboard ' +
+      'if you are sure — this page will not, on purpose.'));
+  }
+  if (r.tooNew > 0) {
+    head.append(el('div', { style: 'margin-top:6px' }, text(
+      r.tooNew + ' more ' + (r.tooNew === 1 ? 'is' : 'are') +
+      ' unaccounted for but newer than ' + r.freshHours +
+      ' hours, so they are left out: an upload that has landed but whose row ' +
+      'is not saved yet looks exactly the same.')));
+  }
+  host.append(head);
+
+  if (r.found.length) {
+    // Newest first would bury the oldest, which are the ones certainly dead.
+    // Biggest first, because the bill is bytes.
+    const rows = r.found.slice().sort((a, b) => (b.bytes || 0) - (a.bytes || 0));
+    const tbl = el('table');
+    const thead = el('thead', {}, el('tr', {}, [
+      el('th', {}, text('File')),
+      el('th', {}, text('Size')),
+      el('th', {}, text('Last changed')),
+    ]));
+    const body = el('tbody');
+    for (const o of rows.slice(0, 200)) {
+      body.append(el('tr', {}, [
+        el('td', {}, el('code', {}, text(o.key))),
+        el('td', {}, text(fmtSize(o.bytes || 0))),
+        el('td', {}, text((o.modified || '').slice(0, 10))),
+      ]));
+    }
+    tbl.append(thead, body);
+    // Wrapped in `.tw` like every other table here: it scrolls inside a bounded
+    // box instead of pushing the rest of the panel off a phone screen.
+    host.append(el('div', { className: 'tw', style: 'margin-top:8px' }, [tbl]));
+    if (rows.length > 200) {
+      host.append(el('div', { className: 'hint' }, text(
+        'Showing the 200 largest of ' + rows.length + '.')));
+    }
+  }
+
+  // ── unfinished uploads ──────────────────────────────────────────────────
+  //
+  // A separate listing, because a file listing does not show them at all. Since
+  // the console started uploading anything over 128 MiB in parts, a phone that
+  // loses its signal halfway leaves those parts in the bucket, invisible and
+  // billed. Reported with an age because a few minutes old is an upload in
+  // progress and a day old is abandoned.
+  if (Array.isArray(r.multipart)) {
+    const stale = r.multipart.filter((m) => m.hours >= 24 || m.hours < 0);
+    const msg = el('div', { className: r.multipart.length ? 'msg warn' : 'hint',
+      style: 'margin-top:12px' });
+    if (!r.multipart.length) {
+      msg.append(text('No unfinished uploads.'));
+    } else {
+      msg.append(el('b', {}, text(
+        r.multipart.length + ' unfinished upload' +
+        (r.multipart.length === 1 ? '' : 's'))));
+      msg.append(text(
+        stale.length
+          ? ' — ' + stale.length + ' of them older than a day, so abandoned. ' +
+            'Cloudflare can expire these automatically: R2 → the bucket → ' +
+            'Settings → Object lifecycle rules → abort incomplete multipart ' +
+            'uploads. Parts are billed until then and no file listing shows them.'
+          : ' — all recent, so one of them may be in progress right now. ' +
+            'Look again later before doing anything about them.'));
+      const list = el('div', { style: 'margin-top:6px' });
+      for (const m of r.multipart.slice(0, 40)) {
+        list.append(el('div', {}, [
+          el('code', {}, text(m.key || '(no name)')),
+          text(m.hours < 0 ? ' · age unknown'
+            : m.hours < 48 ? ' · ' + m.hours + 'h old'
+            : ' · ' + Math.floor(m.hours / 24) + ' days old'),
+        ]));
+      }
+      msg.append(list);
+    }
+    host.append(msg);
+  }
+}
+
+$('orphanBtn').onclick = () => findOrphans('', $('orphanBtn'));
+$('orphanPubBtn').onclick = () =>
+  findOrphans('innocent-public', $('orphanPubBtn'));
 
 // ── the speed test ────────────────────────────────────────────────────────
 //

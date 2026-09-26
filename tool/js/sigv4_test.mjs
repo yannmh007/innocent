@@ -467,6 +467,184 @@ const authOf = (signed) => {
   check('no parts at all is refused', noParts);
 }
 
+// ── the BUCKET-level signer, and the list parsing that depends on it ──────
+//
+// `presignBucketGet` in probe-media.ts is what makes the unused-file report
+// possible, and it is the one signer in this project that signs a path with no
+// object in it AND folds caller-supplied parameters into the signed query.
+// Both are new ways to be wrong and both fail as the same opaque 403:
+//
+//   * a canonical path of `/bucket/` rather than `/bucket`;
+//   * `list-type=2` appended to the finished URL instead of signed, which is
+//     the mistake that looks most like working code;
+//   * a parameter sorted before signing but appended after, so the query the
+//     server canonicalises is not the query that was signed.
+//
+// The XML readers are checked here too, because the failure they cause is
+// worse than a 403. A key mis-decoded is a key the catalogue cannot match, so
+// it lands in a list headed "nothing points at these" — and the operator's next
+// action is to delete it.
+{
+  const psrc = readFileSync(join(ROOT, 'docs/edge/probe-media.ts'), 'utf8');
+  const pts = (x) => x
+    .replace(/ as BufferSource/g, '')
+    .replace(/: Promise<[^>]*>/g, '')
+    .replace(/: Record<string, string>/g, '')
+    .replace(/: Uint8Array\b/g, '')
+    .replace(/: string\[\]/g, '')
+    .replace(/: string\b/g, '')
+    .replace(/<Uint8Array>/g, '');
+  const pbetween = (from, to) => {
+    const a = psrc.indexOf(from);
+    const b = psrc.indexOf(to);
+    if (a < 0 || b < 0 || b <= a) {
+      console.log('FAIL could not find ' + JSON.stringify(from) + ' .. ' +
+        JSON.stringify(to) + ' in docs/edge/probe-media.ts');
+      process.exit(1);
+    }
+    return psrc.slice(a, b);
+  };
+
+  const BUCKET = 'innocent-media';
+  const probe = await import('data:text/javascript,' + encodeURIComponent(
+    `const R2_ACCOUNT_ID = ${JSON.stringify(ACCOUNT)};\n` +
+    `const R2_ACCESS_KEY_ID = ${JSON.stringify(ACCESS)};\n` +
+    `const R2_SECRET_ACCESS_KEY = ${JSON.stringify(SECRET)};\n` +
+    `const MEDIA_BUCKET = ${JSON.stringify(BUCKET)};\n` +
+    pts(pbetween('const enc = new TextEncoder();',
+      '// --- the actual question')) +
+    '\nexport { presignGet, presignBucketGet, xmlBlocks, xmlTag, unescapeXml, decodeKey };'
+  ));
+
+  // 1. A bucket listing, signed and then judged by the independent signer.
+  {
+    const url = new URL(await probe.presignBucketGet(BUCKET, {
+      'list-type': '2',
+      'max-keys': '1000',
+      'encoding-type': 'url',
+      'continuation-token': '1/abc+def=/ghi',
+    }));
+    check('the bucket listing is signed against the bucket path, with no '
+      + 'trailing slash', url.pathname === `/${BUCKET}`);
+
+    const q = url.searchParams;
+    // EVERY caller parameter has to be inside SignedHeaders' sibling — the
+    // canonical query — which means it has to be present here AND have been
+    // part of the string that was signed. Rebuilding the canonical query from
+    // the URL minus the signature is exactly what R2 does.
+    const pairs = [];
+    for (const [k, v] of q.entries()) {
+      if (k === 'X-Amz-Signature') continue;
+      pairs.push([k, v]);
+    }
+    const rfc = (c) => encodeURIComponent(c)
+      .replace(/[!'()*]/g, (x) => '%' + x.charCodeAt(0).toString(16).toUpperCase());
+    const canonicalQuery = pairs
+      .map(([k, v]) => `${rfc(k)}=${rfc(v)}`).sort().join('&');
+    const amzDate = q.get('X-Amz-Date');
+    const mine = sigv4({
+      method: 'GET',
+      canonicalUri: `/${BUCKET}`,
+      canonicalQuery,
+      headers: { host: HOST },
+      payloadHash: 'UNSIGNED-PAYLOAD',
+      amzDate,
+      region: 'auto',
+      service: 's3',
+      secret: SECRET,
+    });
+    check('the bucket listing signature matches an independent signer',
+      q.get('X-Amz-Signature') === mine.signature);
+    check('list-type is SIGNED rather than appended afterwards',
+      q.get('list-type') === '2');
+    check('the continuation token survives signing intact',
+      q.get('continuation-token') === '1/abc+def=/ghi');
+    check('encoding-type=url is asked for, so a key XML cannot carry still '
+      + 'comes back', q.get('encoding-type') === 'url');
+    check('only host is signed', q.get('X-Amz-SignedHeaders') === 'host');
+  }
+
+  // 2. The multipart listing is the same signer with a valueless parameter.
+  //    `?uploads` is a flag, and SigV4 requires `uploads=` in the canonical
+  //    query — dropping the `=` is a 403.
+  {
+    const url = new URL(await probe.presignBucketGet(BUCKET, {
+      uploads: '', 'max-uploads': '200', 'encoding-type': 'url',
+    }));
+    check('the unfinished-upload listing signs `uploads` as an empty value',
+      url.search.includes('uploads=&') || url.search.includes('&uploads=&') ||
+      /[?&]uploads=(&|$)/.test(url.search));
+    const q = url.searchParams;
+    const pairs = [];
+    for (const [k, v] of q.entries()) {
+      if (k === 'X-Amz-Signature') continue;
+      pairs.push([k, v]);
+    }
+    const rfc = (c) => encodeURIComponent(c)
+      .replace(/[!'()*]/g, (x) => '%' + x.charCodeAt(0).toString(16).toUpperCase());
+    const mine = sigv4({
+      method: 'GET',
+      canonicalUri: `/${BUCKET}`,
+      canonicalQuery: pairs.map(([k, v]) => `${rfc(k)}=${rfc(v)}`).sort().join('&'),
+      headers: { host: HOST },
+      payloadHash: 'UNSIGNED-PAYLOAD',
+      amzDate: q.get('X-Amz-Date'),
+      region: 'auto',
+      service: 's3',
+      secret: SECRET,
+    });
+    check('the unfinished-upload listing signature matches an independent '
+      + 'signer', q.get('X-Amz-Signature') === mine.signature);
+  }
+
+  // 3. The object presigner still signs the object path, so adding the bucket
+  //    one did not break it.
+  {
+    const url = new URL(await probe.presignGet('v/a b&c.mp4'));
+    check('an object is still signed under bucket/key',
+      url.pathname === `/${BUCKET}/v/a%20b%26c.mp4`);
+  }
+
+  // 4. The XML readers. Each case here is a key that would otherwise be
+  //    reported as unreferenced and deleted.
+  {
+    const xml = '<ListBucketResult>'
+      + '<IsTruncated>true</IsTruncated>'
+      + '<Contents><Key>v%2Fa%26b.mp4</Key><Size>1234</Size>'
+      + '<LastModified>2026-01-02T03:04:05.000Z</LastModified></Contents>'
+      + '<Contents><Key>t%2F%E1%80%99.mp4</Key><Size>7</Size>'
+      + '<LastModified>2026-09-26T00:00:00.000Z</LastModified></Contents>'
+      + '<NextContinuationToken>abc123==</NextContinuationToken>'
+      + '</ListBucketResult>';
+    const blocks = probe.xmlBlocks(xml, 'Contents');
+    check('every Contents block is found, not just the first',
+      blocks.length === 2);
+    const keyOf = (b) => probe.decodeKey(
+      (/<Key>([\s\S]*?)<\/Key>/.exec(b) || ['', ''])[1]);
+    check('a key containing & survives the round trip',
+      keyOf(blocks[0]) === 'v/a&b.mp4');
+    // A Burmese filename is not hypothetical here.
+    check('a non-ASCII key decodes to itself',
+      keyOf(blocks[1]) === 't/\u1019.mp4');
+    check('the size is read as a number', probe.xmlTag(blocks[0], 'Size') === '1234');
+    check('truncation is read', probe.xmlTag(xml, 'IsTruncated') === 'true');
+    check('the continuation token is read, padding and all',
+      probe.xmlTag(xml, 'NextContinuationToken') === 'abc123==');
+    // ORDER OF THE ENTITIES. Replacing &amp; first turns the escaping of the
+    // literal text "&lt;" into "<" — a different key, reported as unreferenced.
+    check('&amp;lt; unescapes to the text &lt; and not to <',
+      probe.unescapeXml('&amp;lt;') === '&lt;');
+    check('all five predefined entities are handled',
+      probe.unescapeXml('&lt;&gt;&quot;&apos;&amp;') === '<>"\'&');
+    // A key this code cannot decode must come back unchanged rather than be
+    // dropped: a dropped key is a key nothing reports and nothing reaches.
+    check('an invalid percent escape returns the key verbatim',
+      probe.decodeKey('v%2Gbroken') === 'v%2Gbroken');
+    check('a missing tag reads as empty rather than throwing',
+      probe.xmlTag('<a></a>', 'Size') === '');
+  }
+}
+
 if (failures) {
   console.error(failures + ' sigv4/multipart check(s) failed');
   process.exit(1);

@@ -639,6 +639,55 @@ if os.path.isfile(CACHE_ID) and os.path.isfile(SH):
                 'offline at all.' % (got, want))
 
 
+
+# --- 13. the report that finds unused files must never act on what it finds ---
+#
+# R2 bills for every object every month whether or not anything in the catalogue
+# points at it, and nothing in this system has ever deleted one — so the unused
+# file report in `probe-media` is the first thing that can even SEE the waste.
+# It must stay a report.
+#
+# A sweep would race an upload in flight: the object lands seconds before its
+# row is written, so for those seconds a new film is indistinguishable from an
+# abandoned one. The function that CAN delete an upload is `studio.ts`'s
+# `abortMultipart`, which is reached by an operator aborting a specific upload
+# they started — a different act with a different button.
+PROBE = os.path.join(ROOT, 'docs/edge/probe-media.ts')
+if os.path.isfile(PROBE):
+    body = strip(open(PROBE, encoding='utf-8').read())
+    # CHECKED AT THE SIGNATURE, because that is the only way this function can
+    # reach the bucket at all: an unsigned request to R2 is refused, so every
+    # verb it can perform is written into a canonical request here. A bare
+    # search for "POST" would fire on the PostgREST call that asks the database
+    # which keys are known, which is exactly the legitimate use.
+    for m in re.finditer(r'const canonicalRequest = \[\s*\n?\s*\'(\w+)\'',
+                         body):
+        if m.group(1) != 'GET':
+            fails.append(
+                'THE UNUSED-FILE REPORT CAN ACT: docs/edge/probe-media.ts '
+                'signs a %s against R2. It lists what nothing points at and '
+                'must not be able to remove it - an object that has just '
+                'landed looks exactly like an abandoned one until its row is '
+                'written. Deleting belongs in the R2 dashboard, and aborting a '
+                'specific upload belongs in studio.ts.' % m.group(1))
+    for bad in ('DeleteObject', 'DeleteObjects'):
+        if bad in body:
+            fails.append(
+                'THE UNUSED-FILE REPORT CAN ACT: docs/edge/probe-media.ts '
+                'names %s. See above - it reports, it does not act.' % bad)
+    # And the comparison has to cover all three columns that name an object, or
+    # the report is a list of the catalogue. The SQL lives in a migration, so
+    # what is checked here is that the function asks the database rather than
+    # deciding for itself.
+    if 'orphans' in body and 'unknown_object_keys' not in body:
+        fails.append(
+            'THE UNUSED-FILE REPORT DECIDES FOR ITSELF: probe-media.ts has an '
+            'orphans op that does not call unknown_object_keys. Three columns '
+            'name objects - title_assets.object_key, that table\'s thumb_key, '
+            'and asset_renditions.object_key - and missing any one of them '
+            'turns the report into a list of the live catalogue.')
+
+
 print('=== %d security invariant violation(s) ===' % len(fails))
 for f in fails:
     print(' -', f)

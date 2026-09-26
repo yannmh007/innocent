@@ -36,6 +36,10 @@ const R2_ACCOUNT_ID = Deno.env.get('R2_ACCOUNT_ID')!;
 const R2_ACCESS_KEY_ID = Deno.env.get('R2_ACCESS_KEY_ID')!;
 const R2_SECRET_ACCESS_KEY = Deno.env.get('R2_SECRET_ACCESS_KEY')!;
 const MEDIA_BUCKET = Deno.env.get('R2_BUCKET') ?? 'innocent-media';
+/// The artwork bucket. Named here only so the orphan report can be pointed at
+/// it: posters and thumbnails are objects too, and a deleted title leaves those
+/// behind exactly as it leaves the film behind.
+const PUBLIC_BUCKET = Deno.env.get('R2_PUBLIC_BUCKET') ?? 'innocent-public';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
 const ANON_KEY = Deno.env.get('SB_ANON_KEY') ??
@@ -107,6 +111,94 @@ async function presignGet(objectKey: string): Promise<string> {
   }
   return `https://${host}${canonicalPath}?${canonicalQuery}` +
     `&X-Amz-Signature=${hex(await hmac(key, stringToSign))}`;
+}
+
+/// Presign a GET against the BUCKET rather than an object, for the list APIs.
+///
+/// Same signature as [presignGet] with two differences that both matter: the
+/// canonical path is the bucket alone, and the caller's query parameters are
+/// folded into the signed set. SigV4 signs the whole canonical query sorted, so
+/// `list-type`, `continuation-token` and `uploads` have to be in it — leaving
+/// them out and appending them to the URL afterwards produces a signature
+/// mismatch, which R2 reports as 403 and which reads exactly like a bad key.
+async function presignBucketGet(
+  bucket: string,
+  extra: Record<string, string>,
+): Promise<string> {
+  const host = `${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`;
+  const amzDate = new Date().toISOString().replace(/[:-]|\.\d{3}/g, '');
+  const dateStamp = amzDate.slice(0, 8);
+  const scope = `${dateStamp}/auto/s3/aws4_request`;
+  const params: Record<string, string> = {
+    ...extra,
+    'X-Amz-Algorithm': 'AWS4-HMAC-SHA256',
+    'X-Amz-Credential': `${R2_ACCESS_KEY_ID}/${scope}`,
+    'X-Amz-Date': amzDate,
+    'X-Amz-Expires': '120',
+    'X-Amz-SignedHeaders': 'host',
+  };
+  const canonicalQuery = Object.keys(params).sort()
+    .map((k) => `${rfc3986(k)}=${rfc3986(params[k])}`).join('&');
+  const canonicalPath = `/${bucket}`;
+  const canonicalRequest = [
+    'GET', canonicalPath, canonicalQuery, `host:${host}\n`, 'host',
+    'UNSIGNED-PAYLOAD',
+  ].join('\n');
+  const stringToSign = [
+    'AWS4-HMAC-SHA256', amzDate, scope, await sha256Hex(canonicalRequest),
+  ].join('\n');
+  let key: Uint8Array = enc.encode(`AWS4${R2_SECRET_ACCESS_KEY}`);
+  for (const part of [dateStamp, 'auto', 's3', 'aws4_request']) {
+    key = await hmac(key, part);
+  }
+  return `https://${host}${canonicalPath}?${canonicalQuery}` +
+    `&X-Amz-Signature=${hex(await hmac(key, stringToSign))}`;
+}
+
+/// --- just enough XML ------------------------------------------------------
+///
+/// Two regexes rather than a parser, and the reason is the same as everywhere
+/// else in this project: the shape being read is four fixed tags from one
+/// vendor's list API, and a DOM parser is a dependency and a cold start for
+/// that. What it does NOT do is guess — see the unescaping below.
+function xmlBlocks(xml: string, tag: string): string[] {
+  const out: string[] = [];
+  const re = new RegExp(`<${tag}>([\\s\\S]*?)</${tag}>`, 'g');
+  for (let m = re.exec(xml); m; m = re.exec(xml)) out.push(m[1]);
+  return out;
+}
+function xmlTag(xml: string, tag: string): string {
+  const m = new RegExp(`<${tag}>([\\s\\S]*?)</${tag}>`).exec(xml);
+  return m ? unescapeXml(m[1]) : '';
+}
+/// The five predefined entities, `&amp;` LAST.
+///
+/// Order is the whole correctness of this function. Replacing `&amp;` first
+/// turns `&amp;lt;` — which is the escaping of the literal text `&lt;` — into
+/// `<`, so a key containing that text would come back as a different key, be
+/// reported as unknown, and appear in a list headed "safe to delete".
+function unescapeXml(s: string): string {
+  return s
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&amp;/g, '&');
+}
+/// A key out of a list response asked for with `encoding-type=url`.
+///
+/// Asked for that way on purpose: object keys may legally contain characters
+/// that cannot appear in XML at all, and S3's answer is to percent-encode the
+/// key rather than emit a document nothing can parse. So the key is decoded
+/// here, and a key that will not decode is returned verbatim rather than
+/// dropped — a key this code cannot read must not become a key the operator is
+/// told nothing references.
+function decodeKey(raw: string): string {
+  try {
+    return decodeURIComponent(unescapeXml(raw));
+  } catch {
+    return unescapeXml(raw);
+  }
 }
 
 // --- the actual question --------------------------------------------------
@@ -289,7 +381,7 @@ Deno.serve(async (req: Request) => {
   if (!(await operatorId(req))) return json({ error: 'not_an_operator' }, 403, req);
 
   let body: { keys?: unknown; speed?: unknown; delivery?: unknown;
-    offset?: unknown };
+    offset?: unknown; orphans?: unknown; token?: unknown };
   try { body = await req.json(); } catch { body = {}; }
 
   // ── WHERE THE BYTES COME FROM, WHICH NOTHING COULD SEE ────────────────
@@ -337,6 +429,176 @@ Deno.serve(async (req: Request) => {
       }
     }
     return json(out, 200, req);
+  }
+
+  // ── WHAT IS IN THE BUCKET THAT THE CATALOGUE HAS NEVER HEARD OF ───────
+  //
+  // Deleting a title does not delete its objects. Nothing in this system
+  // sweeps R2. So every title ever removed, every re-upload that landed under
+  // a new name, and every upload that finished the PUT and failed before the
+  // row, left bytes behind that nothing can reach and that are billed every
+  // month for as long as the account exists. There was no way to even SEE
+  // them, which is why this exists.
+  //
+  // IT LISTS AND IT NEVER DELETES, and that is not timidity. An automatic
+  // sweep would race an upload in flight — the object lands seconds before the
+  // row is written, so for those seconds a perfectly good new film looks
+  // exactly like an orphan. `tool/security_invariants.py` fails the build if
+  // a delete ever appears in this file.
+  //
+  // For the same reason anything touched in the last [FRESH_HOURS] is left out
+  // of the list entirely and only COUNTED, so the report says out loud that it
+  // deliberately looked away from the window where it cannot tell the two
+  // apart.
+  //
+  // THE COMPARISON IS DONE IN POSTGRES, by `unknown_object_keys`. Three
+  // columns reference objects — `title_assets.object_key`, that table's
+  // `thumb_key`, and `asset_renditions.object_key` — and missing any one of
+  // them turns this into a list of the catalogue. The rungs are the trap: they
+  // are real objects with no row in `title_assets` at all.
+  //
+  // AND INCOMPLETE MULTIPART UPLOADS, which `ListObjectsV2` does not show.
+  // Since C1 the console uploads anything over 128 MiB in parts, and a phone
+  // that loses its connection halfway leaves those parts in the bucket,
+  // invisible and billed. They are reported with their age; aborting one is a
+  // deliberate act and belongs in `studio.ts`, which already has it.
+  if (body.orphans) {
+    if (!SERVICE_KEY) return json({ error: 'no_service_key' }, 500, req);
+    // Only the two buckets this project has. Not a security boundary — the
+    // token is scoped to them, so anything else would 403 — but a named
+    // mistake beats a signature error that reads like a bad key.
+    const wanted = typeof body.orphans === 'string' ? body.orphans : MEDIA_BUCKET;
+    const bucket = wanted === PUBLIC_BUCKET ? PUBLIC_BUCKET : MEDIA_BUCKET;
+    const token = typeof body.token === 'string' ? body.token : '';
+    const FRESH_HOURS = 24;
+    const PAGE_KEYS = 1000;
+
+    const listQuery: Record<string, string> = {
+      'list-type': '2',
+      'max-keys': String(PAGE_KEYS),
+      // See decodeKey: a key may hold characters XML cannot carry.
+      'encoding-type': 'url',
+    };
+    if (token) listQuery['continuation-token'] = token;
+
+    let xml: string;
+    try {
+      const res = await fetch(await presignBucketGet(bucket, listQuery));
+      if (!res.ok) {
+        return json({ error: 'list_failed', status: res.status }, 502, req);
+      }
+      xml = await res.text();
+    } catch (e) {
+      return json({ error: 'list_failed', detail: String(e).slice(0, 160) }, 502, req);
+    }
+
+    const now = Date.now();
+    const seen: Array<{ key: string; bytes: number; modified: string }> = [];
+    for (const block of xmlBlocks(xml, 'Contents')) {
+      const key = decodeKey((/<Key>([\s\S]*?)<\/Key>/.exec(block) ?? ['', ''])[1]);
+      if (!key) continue;
+      seen.push({
+        key,
+        bytes: Number(xmlTag(block, 'Size')) || 0,
+        modified: xmlTag(block, 'LastModified'),
+      });
+    }
+    const truncated = xmlTag(xml, 'IsTruncated') === 'true';
+    const nextToken = xmlTag(xml, 'NextContinuationToken');
+
+    // One round trip for the whole page. A text[] body rather than a thousand
+    // values in a URL: a key containing a comma or a quote would truncate an
+    // `in.()` list, and a truncated list means MORE keys reported as unknown —
+    // the direction that gets something deleted.
+    let unknownKeys: string[] = [];
+    if (seen.length) {
+      const asked = await fetch(`${SUPABASE_URL}/rest/v1/rpc/unknown_object_keys`, {
+        method: 'POST',
+        headers: {
+          apikey: SERVICE_KEY,
+          Authorization: `Bearer ${SERVICE_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ keys: seen.map((o) => o.key) }),
+      });
+      if (!asked.ok) {
+        return json({
+          error: 'compare_failed',
+          status: asked.status,
+          detail: (await asked.text()).slice(0, 200),
+        }, 500, req);
+      }
+      const rows = await asked.json();
+      unknownKeys = Array.isArray(rows) ? rows.map(String) : [];
+    }
+
+    const unknown = new Set(unknownKeys);
+    const orphans: Array<{ key: string; bytes: number; modified: string }> = [];
+    let orphanBytes = 0;
+    let fresh = 0;
+    for (const o of seen) {
+      if (!unknown.has(o.key)) continue;
+      const age = o.modified ? now - Date.parse(o.modified) : Number.NaN;
+      // NaN fails this comparison, so an unparseable date counts as OLD and is
+      // reported. The alternative — treating it as fresh — would hide an
+      // orphan forever behind a date this code could not read.
+      if (age < FRESH_HOURS * 3600 * 1000) {
+        fresh++;
+        continue;
+      }
+      orphans.push(o);
+      orphanBytes += o.bytes;
+    }
+
+    // ── incomplete multipart uploads ──────────────────────────────────────
+    //
+    // Asked once, on the first page only: it is a separate listing with its
+    // own paging, it is small, and repeating it per page would multiply one
+    // answer by the size of the bucket.
+    let multipart: Array<{ key: string; initiated: string; hours: number }> | null = null;
+    if (!token) {
+      try {
+        const res = await fetch(await presignBucketGet(bucket, {
+          uploads: '',
+          'max-uploads': '200',
+          'encoding-type': 'url',
+        }));
+        if (res.ok) {
+          const mx = await res.text();
+          multipart = [];
+          for (const block of xmlBlocks(mx, 'Upload')) {
+            const key = decodeKey(
+              (/<Key>([\s\S]*?)<\/Key>/.exec(block) ?? ['', ''])[1]);
+            const initiated = xmlTag(block, 'Initiated');
+            const started = initiated ? Date.parse(initiated) : Number.NaN;
+            multipart.push({
+              key,
+              initiated,
+              hours: Number.isNaN(started)
+                ? -1
+                : Math.floor((now - started) / 3600000),
+            });
+          }
+        }
+      } catch {
+        // A listing that fails costs this one number, not the report.
+        multipart = null;
+      }
+    }
+
+    return json({
+      bucket,
+      examined: seen.length,
+      orphans,
+      orphan_bytes: orphanBytes,
+      // How many unknown objects were left out because they are too new to
+      // tell apart from an upload in progress.
+      too_new: fresh,
+      fresh_hours: FRESH_HOURS,
+      multipart,
+      more: truncated,
+      next_token: nextToken,
+    }, 200, req);
   }
 
   // ── the speed test ────────────────────────────────────────────────────
