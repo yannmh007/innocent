@@ -319,14 +319,23 @@ void main() {
       }
     });
 
-    test('the three reasons stay distinct', () {
+    test('the four reasons stay distinct', () {
       // A guard, not a tautology: this fails the moment someone deletes a
       // value or aliases two of them, which is exactly how wrongDevice would
       // quietly become unavailable again.
-      expect(AccessDenial.values.length, 3);
-      expect(AccessDenial.values.toSet().length, 3);
+      //
+      // FOUR SINCE `offline`, and it is the one that most wants collapsing
+      // because "we could not ask" looks like a flavour of "no". It is not.
+      // The phone may hold bytes of this film already, paid for and authorised
+      // once by the server that sent them, and `_playHeldBytes` offers them for
+      // THIS value and refuses to for `unavailable` — which still covers a
+      // refusal nobody recognised, a region block or a banned account. Merge
+      // the two and the client starts overruling the server.
+      expect(AccessDenial.values.length, 4);
+      expect(AccessDenial.values.toSet().length, 4);
       expect(AccessDenial.needsPremium == AccessDenial.wrongDevice, isFalse);
       expect(AccessDenial.wrongDevice == AccessDenial.unavailable, isFalse);
+      expect(AccessDenial.offline == AccessDenial.unavailable, isFalse);
     });
 
     test('a granted URL is granted even when the device clock says expired',
