@@ -109,6 +109,18 @@ jobs:
           # A failure that exists only in a run log is a row stuck on
           # "running" in the console for seven hours. The operator finds out
           # here instead.
+          #
+          # UNLESS THE RUNNER ALREADY SAID SO, in which case this is a worse
+          # message arriving second. tool/ingest.py reports the reason it
+          # knows and then exits non-zero — which is honest, the job did fail
+          # — and this step used to fire anyway and overwrite "Telegram
+          # credentials are not set on this repository" with "runner failed,
+          # see the Ingest run in Actions". The specific one is the one the
+          # operator can act on.
+          if [ -f /tmp/ingest.reported ]; then
+            echo "the runner already reported the reason; not overwriting it"
+            exit 0
+          fi
           python3 - > /tmp/fail.json <<'PY'
           import json, os
           job = json.load(open('/tmp/ingest.json'))

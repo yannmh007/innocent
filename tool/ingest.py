@@ -47,6 +47,14 @@ def report(job, ok, note, size=None):
     row that says 'running' until the seven-hour recovery in claim_ingest
     takes it back — during which the console shows a film as arriving that
     is not.
+
+    LEAVES A MARKER so the workflow's own failure reporter knows to stand
+    down. This script reports the reason it knows — "Telegram credentials are
+    not set on this repository" — and then exits non-zero, which is honest:
+    the job did fail. The `if: failure()` step then fired and reported a
+    second time with the generic "runner failed - see the Ingest run in
+    Actions", overwriting the one message that said what to actually do. Seen
+    happening in run #12, in that order, in one log.
     """
     payload = {
         'op': 'done',
@@ -69,6 +77,13 @@ def report(job, ok, note, size=None):
         check=False,
     )
     os.unlink(path)
+    # Best effort, and deliberately after the report: a marker written for a
+    # report that never went out would silence the backstop.
+    try:
+        with open('/tmp/ingest.reported', 'w') as fh:
+            fh.write('1')
+    except OSError:
+        pass
 
 
 def put_to_r2(path, url):
