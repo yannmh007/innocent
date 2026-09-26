@@ -646,6 +646,28 @@ td.num{text-align:right;font-variant-numeric:tabular-nums;color:var(--dim)}
       <div id="probeBody" style="margin-top:10px"></div>
     </div>
 
+    <!-- ══ INGEST ═══════════════════════════════════════════════════════
+         Films forwarded to the bot. The shortest path for a gigabyte does
+         not go through this phone: Telegram already has the file on a
+         server with a fast link, so a runner moves it.               -->
+    <div class="sec">
+      <div class="sechead">
+        <h2>From Telegram</h2>
+        <span class="spacer"></span>
+        <button class="b" id="ingestBtn">Refresh</button>
+      </div>
+      <div class="hint">
+        Forward a film to the bot <b>as a file</b>, with the folder name as
+        the caption. A runner fetches it within five minutes and puts it in
+        the bucket; then choose which title it belongs to here, and the
+        streaming copies are made automatically. Send it as a <i>file</i> and
+        not as a video — Telegram re-encodes anything sent as a video, and
+        the whole point is the original. Telegram stops at 2 GB; anything
+        bigger still goes through Upload above.
+      </div>
+      <div id="ingestBody" style="margin-top:10px"></div>
+    </div>
+
     <!-- ══ STORAGE ══════════════════════════════════════════════════════
          What is in the bucket that nothing in the catalogue points at. This
          is the one panel about MONEY: R2 bills for every object every month
@@ -746,6 +768,7 @@ const API = SB_URL + '/functions/v1/studio';
 // it can be changed without anyone holding their breath.
 const PROBE_API = SB_URL + '/functions/v1/probe-media';
 const TRANSCODE_API = SB_URL + '/functions/v1/transcode';
+const INGEST_API = SB_URL + '/functions/v1/ingest';
 
 // WHAT THE CATEGORY PICKER OFFERS, read from the database rather than compiled.
 //
@@ -2777,6 +2800,135 @@ $('probeBtn').onclick = async () => {
     btn.disabled = false;
   }
 };
+
+// ── films forwarded to the bot ───────────────────────────────────────────
+//
+// The queue between "the operator forwarded a film" and "it is in the bucket
+// with a ladder". The expensive half — moving gigabytes — happens on a runner
+// with a fast link; the only thing that needs a person is deciding which card
+// a film belongs to, and that is this panel.
+//
+// THE TWO HALVES ARE SEPARATE ON PURPOSE. Forwarding takes a second and the
+// transfer takes an hour, so being made to choose the title first would hold
+// up the expensive half for a decision that can wait. A job with no title is
+// parked, its bytes safely in the bucket, until somebody picks one here.
+let ingestTitles = null;
+
+async function loadIngest() {
+  const host = $('ingestBody');
+  const btn = $('ingestBtn');
+  btn.disabled = true;
+  clear();
+  host.textContent = '';
+  host.append(el('div', { className: 'hint' }, text('Reading the queue…')));
+  try {
+    const got = await api({ op: 'list' }, INGEST_API);
+    // Fetched once and kept: the picker is a list of every card, it does not
+    // change while somebody is looking at one screen, and a request per row
+    // would be dozens.
+    if (!ingestTitles) {
+      try {
+        const t = await api({ op: 'list', limit: 500 }, API);
+        ingestTitles = t.titles || [];
+      } catch (e) {
+        ingestTitles = [];
+      }
+    }
+    drawIngest(got);
+  } catch (e) {
+    say('bad', String(e.message || e));
+    host.textContent = '';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function drawIngest(got) {
+  const host = $('ingestBody');
+  host.textContent = '';
+  const rows = got.rows || [];
+
+  if (!got.runner) {
+    host.append(el('div', { className: 'msg warn' }, text(
+      'The runner half is switched off: INGEST_SECRET is not set on this '
+      + 'project. Films can be forwarded and will queue, and nothing will '
+      + 'fetch them until it is.')));
+  }
+  if (!rows.length) {
+    host.append(el('div', { className: 'hint' }, text(
+      'Nothing forwarded yet. Send a film to the bot as a file.')));
+    return;
+  }
+
+  for (const r of rows) {
+    const card = el('div', {
+      style: 'border:1px solid var(--line);border-radius:var(--r);'
+        + 'padding:10px;margin-bottom:8px',
+    });
+    const head = el('div', { style: 'display:flex;gap:8px;align-items:center' });
+    head.append(el('b', {}, text(r.file_name || '(no name)')));
+    head.append(el('span', { className: 'spacer' }));
+    // The state, in the words the operator thinks in rather than the
+    // database's. "running" means a runner has it; "queued" means nothing has
+    // picked it up yet, which on a five-minute tick is the normal first state.
+    const label = r.state === 'done' ? 'in the bucket'
+      : r.state === 'running' ? 'fetching…'
+      : r.state === 'failed' ? 'failed'
+      : 'waiting for a runner';
+    head.append(el('span', {
+      style: 'font-size:12px;color:' +
+        (r.state === 'failed' ? 'var(--bad)' : 'var(--muted)'),
+    }, text(label)));
+    card.append(head);
+
+    const facts = [];
+    if (r.bytes) facts.push(fmtSize(r.bytes));
+    if (r.kind) facts.push(r.kind);
+    if (r.created_at) facts.push(String(r.created_at).slice(0, 16).replace('T', ' '));
+    card.append(el('div', { className: 'hint', style: 'margin:4px 0' },
+      text(facts.join(' · '))));
+    if (r.state === 'failed' && r.note) {
+      card.append(el('div', { className: 'hint', style: 'color:var(--bad)' },
+        text(r.note)));
+    }
+
+    // ATTACHING IS ONLY OFFERED ONCE THE BYTES ARE THERE. Pointing a title at
+    // a half-written object would put a film in the catalogue that fails to
+    // play, which is worse than one that is not there yet.
+    if (r.state === 'done') {
+      if (r.title_id) {
+        card.append(el('div', { className: 'hint' },
+          text('Attached to a title, and queued for streaming copies.')));
+      } else {
+        const row = el('div', { style: 'display:flex;gap:8px;margin-top:6px' });
+        const pick = el('select', { style: 'flex:1;min-width:0' });
+        pick.append(el('option', { value: '' }, text('Choose a title…')));
+        for (const t of (ingestTitles || [])) {
+          pick.append(el('option', { value: t.id }, text(t.title || t.id)));
+        }
+        const go = el('button', { className: 'b' }, text('Attach'));
+        go.onclick = async () => {
+          if (!pick.value) { say('warn', 'Choose a title first.'); return; }
+          go.disabled = true;
+          try {
+            await api({ op: 'attach', job_id: r.id, title_id: pick.value },
+              INGEST_API);
+            say('ok', 'Attached. The streaming copies are queued.');
+            await loadIngest();
+          } catch (e) {
+            say('bad', String(e.message || e));
+            go.disabled = false;
+          }
+        };
+        row.append(pick, go);
+        card.append(row);
+      }
+    }
+    host.append(card);
+  }
+}
+
+$('ingestBtn').onclick = loadIngest;
 
 // ── unused files ─────────────────────────────────────────────────────────
 //

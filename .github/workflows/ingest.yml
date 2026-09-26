@@ -1,0 +1,124 @@
+# Move a film the operator forwarded to the bot into R2.
+#
+# WHAT THIS IS FOR. The operator works from a phone and the films are
+# gigabytes. Uploading one from a handset over a Myanmar connection is hours
+# of holding the screen awake. The film is usually already on Telegram, on a
+# server with a fast link to everywhere — so the shortest path does not go
+# through the phone at all. Forward the message to the bot; this moves the
+# bytes.
+#
+# WHY A RUNNER, AND WHY IT PULLS. The same reasoning as Transcode: GitHub
+# Actions is free and unmetered for public repositories, which this is, and
+# pulling means the only secret here whose loss would matter to the backend is
+# one whose entire power is "ask for an ingest job". Pushing would mean a
+# GitHub token with write access living in Supabase.
+#
+# WHY IT HOLDS NO BUCKET CREDENTIALS. The destination arrives as a PRESIGNED
+# PUT, scoped to one object and expiring the same day. This repository is
+# public; R2 account keys stored here would be one careless `echo` from being
+# permanent.
+#
+# IT DOES HOLD TELEGRAM CREDENTIALS, and that is the honest cost of the
+# feature. `api_id`, `api_hash` and the bot token are Actions secrets. They
+# are a BOT, not the operator's account — there is deliberately no user
+# session string anywhere in this design, because that would be the whole
+# account. Losing these means somebody can act as the bot; losing a session
+# string would mean somebody can act as the person.
+name: Ingest
+
+on:
+  # Five minutes is the finest GitHub offers and far finer than this needs:
+  # the operator forwards a film and walks away.
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+# One at a time. Two runners claiming two different files would be fine; the
+# claim in the database already prevents two claiming the same one. This is
+# the belt to its braces, and it also keeps one job's disk to itself.
+concurrency:
+  group: ingest
+  cancel-in-progress: false
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    # A 2 GB file over Telegram's rate limiting, then up to R2. Generous
+    # rather than tight: a job killed part way leaves the row on 'running'
+    # until the seven-hour recovery in claim_ingest takes it back.
+    timeout-minutes: 120
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # ASK FIRST, INSTALL SECOND. The common case by far is "nothing to do" —
+      # this ticks every five minutes whether or not anyone forwarded
+      # anything — and spending a minute of pip on that is a waste of somebody
+      # else's shared runners.
+      - name: Ask for work
+        id: claim
+        env:
+          SB_URL: ${{ secrets.SUPABASE_URL }}
+          RUNNER_SECRET: ${{ secrets.INGEST_SECRET }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SB_URL:-}" ] || [ -z "${RUNNER_SECRET:-}" ]; then
+            echo "INGEST_SECRET or SUPABASE_URL not set — nothing to do."
+            echo "job=none" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          code=$(curl -sS -o /tmp/ingest.json -w '%{http_code}' \
+            -X POST "$SB_URL/functions/v1/ingest" \
+            -H "Authorization: Bearer $RUNNER_SECRET" \
+            -H 'Content-Type: application/json' \
+            -d '{"op":"claim"}')
+          if [ "$code" != "200" ]; then
+            echo "claim returned $code"; echo "job=none" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          # The payload is never printed. It carries a presigned PUT, and a
+          # run log on a public repository is public.
+          if python3 -c "import json,sys; sys.exit(0 if json.load(open('/tmp/ingest.json')).get('job_id') else 1)"; then
+            echo "job=yes" >> "$GITHUB_OUTPUT"
+            python3 -c "import json;d=json.load(open('/tmp/ingest.json'));print('job',d['job_id'],d.get('file_name',''))"
+          else
+            echo "queue is empty"
+            echo "job=none" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install the Telegram client
+        if: steps.claim.outputs.job == 'yes'
+        run: |
+          python3 -m pip install --quiet --disable-pip-version-check \
+            'pyrogram==2.0.106' 'tgcrypto==1.2.5'
+
+      - name: Fetch it and put it in the bucket
+        if: steps.claim.outputs.job == 'yes'
+        env:
+          JOB_TOKEN: ${{ secrets.INGEST_SECRET }}
+          TG_API_ID: ${{ secrets.TELEGRAM_API_ID }}
+          TG_API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
+          TG_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        run: python3 tool/ingest.py
+
+      - name: Say so when it did not work
+        if: failure() && steps.claim.outputs.job == 'yes'
+        env:
+          JOB_TOKEN: ${{ secrets.INGEST_SECRET }}
+        run: |
+          # A failure that exists only in a run log is a row stuck on
+          # "running" in the console for seven hours. The operator finds out
+          # here instead.
+          python3 - > /tmp/fail.json <<'PY'
+          import json, os
+          job = json.load(open('/tmp/ingest.json'))
+          print(json.dumps({
+            'op': 'done',
+            'token': os.environ['JOB_TOKEN'],
+            'job_id': job['job_id'],
+            'ok': False,
+            'note': 'runner failed - see the Ingest run in Actions',
+          }))
+          PY
+          curl -fsS -X POST "$(python3 -c "import json;print(json.load(open('/tmp/ingest.json'))['done_url'])")" \
+            -H 'Content-Type: application/json' -d @/tmp/fail.json || true

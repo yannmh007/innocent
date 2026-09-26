@@ -133,6 +133,13 @@ def main() -> int:
          'header and no reason — or a CompleteMultipartUpload that finishes '
          'an upload with its parts out of order. Both land after the '
          'operator has already spent an hour of mobile data'),
+        ('ingest_test.mjs',
+         'the Telegram ingest: object keys and which part of a message is '
+         'the film',
+         'an object key built from a file name a stranger chose and a '
+         'caption typed on a phone — either one is a path, and a key the '
+         'console would refuse is an upload that works and a file nothing '
+         'can later find. And a round selfie video published as a master'),
     ]
     node = shutil.which('node')
     for name, what, guards in JS_TESTS:

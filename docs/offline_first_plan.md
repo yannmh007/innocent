@@ -867,6 +867,91 @@ signature difference gets introduced. See the redeploy section in
 `no_keys`; nothing else is affected.
 
 
+## F1 — forwarding a film to a bot instead of uploading it from a phone
+
+The operator works from a phone and the films are gigabytes. Uploading one
+from a handset over a Myanmar connection is hours of holding the screen awake
+— the console does it, in parts since C1, and it is still the phone's uplink.
+The film is usually already on Telegram, on a server with a fast link to
+everywhere, so the shortest path does not go through the phone at all.
+
+    forward to the bot  →  webhook queues a row
+                        →  a runner claims it, downloads, PUTs to R2
+                        →  done: the catalogue row is made and the ladder queued
+                        →  attach: the console picks which title, if not already
+
+### The correction that mattered
+
+The plan was a **self-hosted Bot API server** on the runner, because the cloud
+Bot API refuses to download anything over 20 MB and a local one serves up to
+2000 MB. All true, and it does not work here: moving a bot to a local server
+requires `logOut` on the cloud API first, **and the cloud API is what delivers
+the forwarded film to the webhook.** The download would have worked and the
+webhook would have gone silent.
+
+The runner speaks **MTProto as the bot** instead — `api_id`, `api_hash` and the
+bot token, which is a separate session from the Bot API's, so both work at
+once and there is no 20 MB limit. Still **no user session string anywhere**,
+which is the thing worth being careful about: a session string is the
+operator's whole Telegram account; a bot token is a bot.
+
+It fetches by **chat and message**, not by file id. A Bot API file id is an
+encoding of an MTProto file location and libraries do decode it, but
+`get_messages(chat, id)` then downloading its media depends on nothing about
+that encoding. Both columns were already being stored.
+
+**No multipart, and that is a decision.** Telegram caps a file at 2 GB and R2
+takes a single PUT up to 5 GiB, so multipart could never execute on this path.
+Mirroring C1's machinery here would have been several hundred lines of dead
+code. A master bigger than 2 GB cannot come through Telegram and still belongs
+in the console's own uploader.
+
+### What is checked, and what is not
+
+**Checked against the live database**, by running it and rolling back:
+
+- the unique index refuses the same film forwarded twice;
+- `claim_ingest` hands a job to exactly one runner, and a second claim is
+  empty;
+- the seven-hour recovery clause exists for a runner that vanished (GitHub
+  kills a job at six);
+- `finish_ingest` and `attach_ingest` create the catalogue row and queue the
+  ladder;
+- **a defect the test found**: both inserted without a `sort_order`, so the
+  SECOND video attached to any title failed the `(title_id, kind, sort_order)`
+  unique constraint. It would have surfaced as an ingest stuck on done with no
+  catalogue row and an error only in a function log. Both now take the next
+  slot per title and kind;
+- attaching twice makes one row, not two, because a console is a web page and
+  a web page gets tapped twice.
+
+**Checked in `tool/js/ingest_test.mjs`** (34 checks) — the two decisions that
+cannot be taken back, both pure:
+
+- the object key, built from a file name a stranger chose and a caption typed
+  on a phone: no traversal from any of five shapes, a Burmese name still makes
+  a legal key rather than collapsing to an empty stem, the same file twice is
+  two objects, **and the key is one `studio.ts`'s own `isMintedKey` accepts** —
+  lifted from that file rather than restated, so the two are checked to agree
+  and not assumed to;
+- which part of a message is the film: a document beats a video (the document
+  is the master, the video is Telegram's re-encode), a photo takes the largest
+  size kept, a jpeg sent as a document is a photo, and a round selfie video, a
+  sticker, an animation and a voice note are all refused rather than published.
+
+**NOT checked, and this is the honest limit.** The edge function, the workflow
+and `tool/ingest.py` have never run. This container's network policy denies the
+project host, so the function cannot be deployed or invoked from here; the
+Telegram secrets do not exist yet; and the one assumption I could not test is
+that Pyrogram's `download_media` on a fetched message works for a bot session
+the way the documentation says. If it does not, Telethon is the same shape.
+Everything that could be exercised was.
+
+**Operator steps** are in `docs/RUNBOOK.md` — a bot, an application, the chat
+id, four Actions secrets, four Supabase secrets, deploy `ingest`, one
+`setWebhook`.
+
+
 ## Notes for whoever picks this up
 
 - **No Flutter or Dart SDK in the session container.** `python3 tool/check.py`

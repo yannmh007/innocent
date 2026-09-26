@@ -141,6 +141,79 @@ do not add them.
 > refused by the very grants that exist to refuse it. The symptom was a flat
 > `not_found`. **This cost two wrong guesses to find.**
 
+### Forwarding a film to the bot (F1)
+
+The shortest path for a gigabyte is not through the phone. The film is usually
+already on Telegram, on a server with a fast link to everywhere: forward it to
+the bot and a GitHub Actions runner moves the bytes into R2, creates the
+catalogue row and queues the ladder. The operator's part is one tap.
+
+**Once, to set it up:**
+
+1. **A bot.** Message `@BotFather` → `/newbot` → keep the token. Then
+   `/setprivacy` → **Disable** is *not* needed (a private chat always reaches
+   the bot); leave the defaults.
+2. **An application.** <https://my.telegram.org> → API development tools →
+   note `api_id` and `api_hash`. These identify an APPLICATION, not a person.
+   **Never create a user session string for this** — a session string is the
+   whole Telegram account, and nothing here needs one.
+3. **Your chat id.** Message `@userinfobot`, or send anything to your own bot
+   and read `message.chat.id` from
+   `https://api.telegram.org/bot<TOKEN>/getUpdates`.
+4. **Repository secrets** (Settings → Secrets and variables → Actions):
+
+   ```
+   INGEST_SECRET        a long random string you invent; also a Supabase secret
+   TELEGRAM_API_ID      from step 2
+   TELEGRAM_API_HASH    from step 2
+   TELEGRAM_BOT_TOKEN   from step 1
+   ```
+
+5. **Supabase Edge Function secrets** (the same project, one place for all
+   functions):
+
+   ```
+   INGEST_SECRET             the SAME string as above
+   TELEGRAM_BOT_TOKEN        the same token (used only to reply to you)
+   TELEGRAM_WEBHOOK_SECRET   another long random string you invent
+   TELEGRAM_CHAT_IDS         your chat id from step 3, comma separated
+   ```
+
+6. **Deploy `ingest`** (see the section below) with **Verify JWT OFF** —
+   Telegram cannot present a JWT.
+7. **Point Telegram at it**, once:
+
+   ```
+   curl "https://api.telegram.org/bot<TOKEN>/setWebhook" \
+     -d "url=https://<project>.supabase.co/functions/v1/ingest" \
+     -d "secret_token=<TELEGRAM_WEBHOOK_SECRET>"
+   ```
+
+**Then, for every film:** forward it to the bot **as a file/document**, with
+the folder name as the caption. The bot replies "Queued". A runner picks it up
+within five minutes. When it says done, open the console's **Ingest** panel and
+choose which title it belongs to — that creates the catalogue row and queues
+the ladder.
+
+> **Send it as a FILE, not as a video.** Telegram's clients re-encode anything
+> sent as a video; a document is byte-for-byte the master. A video is accepted
+> rather than refused, because rejecting one after an hour of uploading would
+> be cruel, but it is not the original.
+
+> **`TELEGRAM_CHAT_IDS` is not optional.** A bot anyone can find can be
+> messaged by anyone, and without that list a stranger could make this project
+> download their file into your bucket at your expense.
+
+> **No `logOut`, and do not run a local Bot API server.** The obvious way to
+> beat the cloud Bot API's 20 MB download limit is a self-hosted
+> `telegram-bot-api`, and it does not work here: moving a bot to a local server
+> requires `logOut` on the cloud API first, after which the cloud API stops
+> delivering the updates that put films in the queue. The runner uses MTProto
+> as the bot instead — a separate session, no size limit, webhook untouched.
+
+> **Telegram caps a file at 2 GB.** Anything larger has to go through the
+> console's own uploader, which since C1 uploads in parts.
+
 ### Redeploying an edge function
 
 Supabase dashboard → **Edge Functions** → the function → **Deploy a new
@@ -159,6 +232,14 @@ before either got to say who it was.
 > so the **Storage** panel in the console will answer `no_keys` until it is
 > pasted. Nothing else is affected — every other panel uses ops the deployed
 > version already has.
+>
+> **Pending: `ingest` has never been deployed.** It is a new function —
+> Edge Functions → **Deploy a new function** → *Via Editor* → name it
+> `ingest` → paste `docs/edge/ingest.ts` → **Verify JWT OFF**. The database
+> side (the `ingest_jobs` table and its three functions) is already applied
+> and was exercised against the live schema; the function, the workflow and
+> `tool/ingest.py` have not run anywhere yet, and the Telegram secrets above
+> do not exist until you make them.
 
 ### Then
 
