@@ -218,6 +218,8 @@ class _UpdateActionPanelState extends ConsumerState<UpdateActionPanel> {
     switch (e.kind) {
       case UpdateDownloadFailureKind.damaged:
         return s.updateDownloadDamaged;
+      case UpdateDownloadFailureKind.mismatch:
+        return s.updateDownloadMismatch;
       case UpdateDownloadFailureKind.noSpace:
         // The two numbers, as the vault shows them.
         final needed = e.neededBytes;
@@ -369,21 +371,33 @@ class _UpdateActionPanelState extends ConsumerState<UpdateActionPanel> {
           ),
           const SizedBox(height: 12),
         ],
-        SizedBox(
-          width: double.infinity,
-          child: FilledButton.icon(
-            // Safe to press twice, and safe to press while a download this
-            // screen never started is already running: start() attaches
-            // instead of opening a second writer.
-            onPressed: () => _download(release),
-            icon: const Icon(Icons.download),
-            label: Text(
-              phase == UpdateDownloadPhase.failed
-                  ? s.updateRetry
-                  : s.updateDownload,
+        // NO RETRY BUTTON FOR A MISMATCH. Every other failure here is worth
+        // another attempt — the network dropped, the disk filled, the server
+        // was briefly unhappy. A mismatch is not: the whole file arrived at
+        // exactly the published length and the fingerprint was still wrong,
+        // so the next attempt fetches the same bytes and fails on the same
+        // line, having spent another ninety megabytes. Offering the button
+        // would be inviting that, and on a Myanmar mobile connection the
+        // invitation is expensive. Check now, below, is the action that can
+        // actually change the answer: it re-reads the catalogue, and a
+        // corrected record is exactly what this needs.
+        if (phase != UpdateDownloadPhase.failed ||
+            d.failure?.kind != UpdateDownloadFailureKind.mismatch)
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              // Safe to press twice, and safe to press while a download this
+              // screen never started is already running: start() attaches
+              // instead of opening a second writer.
+              onPressed: () => _download(release),
+              icon: const Icon(Icons.download),
+              label: Text(
+                phase == UpdateDownloadPhase.failed
+                    ? s.updateRetry
+                    : s.updateDownload,
+              ),
             ),
           ),
-        ),
       ],
     ];
   }

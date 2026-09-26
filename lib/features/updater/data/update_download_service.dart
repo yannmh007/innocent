@@ -210,10 +210,31 @@ class UpdateDownloadService {
         // (a) VERIFY BEFORE ANYTHING ELSE, on every path into this line — a
         // fresh download and a resumed one both land here. §5: "a resumed
         // download is exactly where a corrupt file comes from".
+        //
+        // AND WHEN IT FAILS HERE, RETRYING CANNOT HELP. The length gate above
+        // has already passed, so this is the whole file, exactly as long as
+        // the catalogue says, and its fingerprint is still wrong. A damaged
+        // transfer is not what that looks like: a damaged transfer ends short,
+        // or fails, or fails the length gate. A complete file of exactly the
+        // right size with a stable wrong hash means the PUBLISHED HASH DOES
+        // NOT DESCRIBE THE PUBLISHED FILE, and the next attempt will fetch the
+        // same bytes and reach the same line.
+        //
+        // This happened on 26 Sep: a rebuild replaced the release asset with a
+        // byte-different APK of identical size while `app_releases.apk_sha256`
+        // kept the old fingerprint. The screen said "Download was damaged. Try
+        // again.", which invited exactly the thing that could not work —
+        // ninety megabytes of somebody's mobile data, in a loop, for as long
+        // as they were willing to keep tapping.
+        //
+        // So it is reported as its own kind. The wording changes from "try
+        // again" to "this release is wrong, and it is not your connection",
+        // and the screen offers Check now — which can pick up a corrected
+        // record — instead of Retry, which cannot.
         onVerifying?.call();
         if (await sha256OfFile(part) != expectedSha) {
           await _deleteQuietly(part);
-          throw const UpdateDownloadFailure.damaged();
+          throw const UpdateDownloadFailure.mismatch();
         }
 
         // Renamed only now. Until this line no file on disk carries an .apk
@@ -544,6 +565,11 @@ class UpdateDownloadFailure implements Exception {
         statusCode = null,
         neededBytes = null,
         freeBytes = null;
+  const UpdateDownloadFailure.mismatch()
+      : kind = UpdateDownloadFailureKind.mismatch,
+        statusCode = null,
+        neededBytes = null,
+        freeBytes = null;
   const UpdateDownloadFailure.io()
       : kind = UpdateDownloadFailureKind.io,
         statusCode = null,
@@ -584,11 +610,22 @@ enum UpdateDownloadFailureKind {
   network,
   server,
 
-  /// The bytes on disk are not the bytes that were published.
+  /// The transfer went wrong — a short file, a restart, a length that does
+  /// not match. Trying again is the right advice.
   ///
   /// Shown as "Download was damaged. Try again." and never as anything with
   /// the word "verification" in it — §6: that reads as an accusation.
   damaged,
+
+  /// The whole file arrived, at exactly the published length, and its
+  /// fingerprint is still wrong.
+  ///
+  /// SEPARATE FROM [damaged] BECAUSE THE ADVICE IS THE OPPOSITE. Nothing
+  /// about the next attempt will differ: the file is what the server has, and
+  /// the fingerprint is what the catalogue has, and one of them is wrong at
+  /// the source. Offering "try again" here costs a full download per tap and
+  /// can never succeed.
+  mismatch,
   noSpace,
   io,
 }

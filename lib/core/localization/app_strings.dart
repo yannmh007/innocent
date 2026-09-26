@@ -132,6 +132,7 @@ class AppStrings {
   String get updateVerifying => _s('updateVerifying');
   String get updateDownloaded => _s('updateDownloaded');
   String get updateDownloadDamaged => _s('updateDownloadDamaged');
+  String get updateDownloadMismatch => _s('updateDownloadMismatch');
   String get updateDownloadFailed => _s('updateDownloadFailed');
   String get updateNotEnoughSpace => _s('updateNotEnoughSpace');
   String get updateRetry => _s('updateRetry');
@@ -2647,6 +2648,10 @@ class AppStrings {
     'updateDownloaded': 'Downloaded',
     // Never "verification failed" — plan section 6: that reads as an accusation.
     'updateDownloadDamaged': 'Download was damaged. Try again.',
+    'updateDownloadMismatch': 'This update file does not match what the '
+        'app was told to expect. Nothing is wrong with your connection — '
+        'downloading it again would fetch the same file. Tap Check now; '
+        'if it says the same thing, the release needs fixing.',
     'updateDownloadFailed': 'The download did not finish. Try again.',
     'updateNotEnoughSpace': 'Not enough space for this update.',
     'updateRetry': 'Try again',
@@ -3879,6 +3884,10 @@ class AppStrings {
     'updateVerifying': 'ဒေါင်းလုဒ်ကို စစ်ဆေးနေသည်...',
     'updateDownloaded': 'ဒေါင်းလုဒ် ပြီးပါပြီ',
     'updateDownloadDamaged': 'ဒေါင်းလုဒ် ပျက်စီးသွားပါသည်။ ထပ်ကြိုးစားကြည့်ပါ။',
+    'updateDownloadMismatch': 'ဤ update ဖိုင်သည် app မျှော်လင့်ထားသည့်အရာနှင့် '
+        'မကိုက်ညီပါ။ ခင်ဗျားရဲ့ အင်တာနက်ကြောင့် မဟုတ်ပါ — ပြန်ဆွဲလည်း '
+        'ဖိုင်အတူတူပဲ ရပါမည်။ "ယခုစစ်ရန်" ကို နှိပ်ကြည့်ပါ၊ အတူတူပဲ '
+        'ပြနေပါက release ကို ပြင်ရန် လိုအပ်ပါသည်။',
     'updateDownloadFailed': 'ဒေါင်းလုဒ် မပြီးဆုံးပါ။ ထပ်ကြိုးစားကြည့်ပါ။',
     'updateNotEnoughSpace': 'ဤအပ်ဒိတ်အတွက် နေရာ မလုံလောက်ပါ။',
     'updateRetry': 'ထပ်ကြိုးစားရန်',
@@ -5096,6 +5105,9 @@ class AppStrings {
     'updateVerifying': 'กำลังตรวจสอบไฟล์ที่ดาวน์โหลด...',
     'updateDownloaded': 'ดาวน์โหลดแล้ว',
     'updateDownloadDamaged': 'ไฟล์ที่ดาวน์โหลดเสียหาย ลองอีกครั้ง',
+    'updateDownloadMismatch': 'ไฟล์อัปเดตนี้ไม่ตรงกับที่แอปคาดไว้ '
+        'ไม่ใช่ปัญหาการเชื่อมต่อของคุณ — ดาวน์โหลดใหม่ก็จะได้ไฟล์เดิม '
+        'กด "ตรวจสอบตอนนี้" หากยังเหมือนเดิม แปลว่าต้องแก้ที่ตัวรีลีส',
     'updateDownloadFailed': 'ดาวน์โหลดไม่สำเร็จ ลองอีกครั้ง',
     'updateNotEnoughSpace': 'พื้นที่ไม่เพียงพอสำหรับอัปเดตนี้',
     'updateRetry': 'ลองอีกครั้ง',

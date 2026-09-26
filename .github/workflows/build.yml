@@ -472,13 +472,68 @@ jobs:
           printf '%s' "$tagged" | grep -Eq '^[0-9a-f]{40}$' || tagged=""
 
           if gh release view "$TAG" >/dev/null 2>&1; then
-            # (1) REBUILDING A PUBLISHED VERSION. Normal and allowed — a CI
-            # fix, a re-run, a doc-only commit. The tag goes on naming the
-            # commit that first published this version, because moving a tag
-            # people may already have fetched is worse than leaving it. What
-            # must NOT happen is the notes going on describing an asset that
-            # has been replaced, so they are rewritten to name this build.
-            echo "release $TAG already exists — updating its asset and notes"
+            # (1) THIS VERSION IS ALREADY PUBLISHED, SO ITS APK IS LEFT ALONE.
+            #
+            # This step used to rebuild the asset here with `--clobber`, on the
+            # reasoning that a rebuild of a published version is normal — a CI
+            # fix, a re-run, a commit that changes no Dart. It is normal. What
+            # is not survivable is REPLACING the file, and on 26 Sep it cost
+            # every user their update.
+            #
+            # v1.64.36-349 was released at 09:16 from 65925fcd. Its APK hashed
+            # ba46942e…, and that hash went into `app_releases.apk_sha256`,
+            # which is what the in-app updater checks a finished download
+            # against. Four hours later a commit touching only tool/ and
+            # .github/ — neither covered by paths-ignore — rebuilt the same
+            # version and clobbered the asset with e0cec1df…. Same size to the
+            # byte; different content, because APK signing is not
+            # reproducible.
+            #
+            # Every phone then downloaded ninety megabytes, hashed it, found
+            # the wrong answer and said "Download was damaged. Try again." —
+            # correctly, and for ever, because retrying fetched the same file.
+            # On a Myanmar mobile connection that is ninety megabytes of
+            # somebody's data per attempt. The integrity check was the only
+            # part of the chain behaving properly.
+            #
+            # There is no fix for this inside the workflow: it cannot reach
+            # the database, by design, and even if it could, a phone that
+            # started its download before the swap would still fail. The only
+            # sound rule is that A PUBLISHED VERSION'S APK NEVER CHANGES.
+            # Getting a different binary to users is what a version bump is
+            # for, and it costs one line in pubspec.yaml.
+            #
+            # The build still ran: the tree compiles, the tests pass, the
+            # signature is the Innocent key. That is the whole job of a build
+            # for a version that is already out.
+            if gh release view "$TAG" --json assets --jq '.assets[].name' \
+                 | grep -Fxq "$NAME"; then
+              echo "::warning::$TAG is already published and its APK was NOT" \
+                   "replaced. This build ($GITHUB_SHA) reaches nobody. Bump" \
+                   "the version in pubspec.yaml to ship it."
+              {
+                echo ""
+                echo "## Nothing was published"
+                echo ""
+                echo "\`$TAG\` already exists and **its APK was left"
+                echo "untouched**, so the SQL above is for a file that was not"
+                echo "uploaded — ignore it, and do not change"
+                echo "\`app_releases\`."
+                echo ""
+                echo "A published version's APK never changes: the updater"
+                echo "checks a finished download against"
+                echo "\`app_releases.apk_sha256\`, and replacing the file"
+                echo "makes every update fail the check, on every retry, for"
+                echo "everyone. Bump the version in \`pubspec.yaml\` to ship"
+                echo "this build."
+              } >> "$GITHUB_STEP_SUMMARY"
+              echo "left alone: $(gh release view "$TAG" --json url --jq .url)"
+              exit 0
+            fi
+            # The release exists and carries no asset: the upload failed after
+            # the release was created. Finishing that is not replacing
+            # anything, so it goes ahead.
+            echo "release $TAG exists but has no asset yet — uploading"
             if [ -n "$tagged" ] && [ "$tagged" != "$GITHUB_SHA" ]; then
               echo "::warning::tag $TAG names $tagged, the commit that first" \
                    "published this version; this asset was built from" \
@@ -507,8 +562,10 @@ jobs:
               --notes "$NOTES"
           fi
 
-          # --clobber so a re-run replaces the asset instead of failing or
-          # leaving two files with the same name on one release.
+          # --clobber for the one case that reaches here with a file already
+          # present: a partial upload under this name. A release that already
+          # carries a complete asset returned above and never gets this far,
+          # which is the point — see case (1).
           gh release upload "$TAG" "$NAME" --clobber
 
           echo "published: $(gh release view "$TAG" --json url --jq .url)"

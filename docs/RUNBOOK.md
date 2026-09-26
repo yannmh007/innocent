@@ -320,6 +320,36 @@ select public.set_primary_asset('<the id you want>');
 
 ---
 
+## PART 3b — RELEASING A NEW VERSION OF THE APP
+
+The Build workflow does everything except the last step, which is yours: the
+`app_releases` row. It prints the exact `update` to run in the run's summary.
+
+> **`apk_url` and `apk_sha256` must describe the SAME file, and the file must
+> never change afterwards.** The updater downloads the whole APK, hashes it,
+> and refuses to install anything whose fingerprint does not match the row. A
+> row pointing at a file that has since been replaced is not a small problem:
+> every phone downloads ninety megabytes, fails the check, is told to try
+> again, and downloads it again. There is no way out of that loop from the
+> phone.
+>
+> This is not hypothetical. On 26 Sep, v1.64.36-349 was released at 09:16 and
+> its hash went into the row. At 13:38 a commit touching only `tool/` and
+> `.github/` — neither covered by the workflow's `paths-ignore` — rebuilt the
+> SAME version and `gh release upload --clobber` replaced the asset with a
+> byte-different APK of identical size, because APK signing is not
+> reproducible. Every update failed from then on.
+>
+> The workflow no longer does this: a version that is already published keeps
+> its APK, and the run says so in its summary instead of uploading. **Getting a
+> different binary to users needs a version bump**, which is one line in
+> `pubspec.yaml`.
+
+**To check a release is sound, at any time, without downloading it:** open
+`https://api.github.com/repos/yannmh007/innocent/releases/tags/v<name>-<code>`
+and compare `assets[0].digest` with `apk_sha256` in the row. GitHub computes
+that digest itself, so agreement means the two really do describe one file.
+
 ## PART 4 — WEEKLY
 
 **Back up.** The free tier has NO backups - no daily, no downloadable, no PITR.

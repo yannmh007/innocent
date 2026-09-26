@@ -352,7 +352,14 @@ void main() {
       expect(server.rangeHeaders, [null]);
     });
 
-    test('a corrupt complete file is deleted and reported as damaged',
+    // NOT `damaged`, AND THE DIFFERENCE IS THE WHOLE POINT. The file arrives
+    // whole and at exactly the published length; only the fingerprint
+    // disagrees. That is not a broken transfer, it is a catalogue whose hash
+    // does not describe the file at its own URL — which is what happened to
+    // 1.64.36+349 on 26 Sep when a rebuild replaced the release asset. The
+    // screen said "try again", and every attempt re-fetched the same ninety
+    // megabytes and failed on the same line.
+    test('a complete file with the wrong hash is a mismatch, not damage',
         () async {
       final wrong = _release(server);
       final release = AppRelease(
@@ -369,7 +376,7 @@ void main() {
         throwsA(isA<UpdateDownloadFailure>().having(
           (e) => e.kind,
           'kind',
-          UpdateDownloadFailureKind.damaged,
+          UpdateDownloadFailureKind.mismatch,
         )),
       );
       expect(
