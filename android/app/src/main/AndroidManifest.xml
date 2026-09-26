@@ -99,6 +99,25 @@
     <!-- Keeps a Wi-Fi file transfer alive while the app is backgrounded. -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
+    <!-- ASK ANDROID TO STOP DEFERRING A DOWNLOAD WHEN THE SCREEN IS OFF.
+         OfflineService already declares the work and holds a WakeLock, which is
+         enough on stock Android. It is not enough on the ROMs this app is used
+         on: Xiaomi, Oppo, Vivo, Realme and Huawei freeze or kill backgrounded
+         processes on a timer by default, foreground service or not, and a 900 MB
+         film forty per cent downloaded simply stops. Nothing in an app can
+         override that; the one thing it can do is show the platform's own
+         dialog and let the user decide. See PowerPolicy.kt.
+
+         ON GOOGLE PLAY THIS PERMISSION IS RESTRICTED — an app there may declare
+         it only when its core function requires it. Innocent is distributed as
+         an APK from its own GitHub Releases and is not on Play, so the policy
+         does not bind; and the justification would hold anyway, since the core
+         function is fetching multi-gigabyte files over connections where that
+         takes hours with the screen off. Written down because the next person
+         reading this file will wonder. -->
+    <uses-permission
+        android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+
     <!-- Notifications -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 

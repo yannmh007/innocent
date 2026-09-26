@@ -1202,6 +1202,13 @@ class AppStrings {
   String get vhOfflineNothingSaved => _s('vhOfflineNothingSaved');
   String get vhOfflineHint => _s('vhOfflineHint');
   String get vhOfflineNotHeld => _s('vhOfflineNotHeld');
+  String get vhBatteryDozeTitle => _s('vhBatteryDozeTitle');
+  String vhBatteryDozeBody(String maker) =>
+      _s('vhBatteryDozeBody').replaceAll('{maker}', maker);
+  String get vhBatteryAllow => _s('vhBatteryAllow');
+  String get vhBatteryBlockedTitle => _s('vhBatteryBlockedTitle');
+  String get vhBatteryBlockedBody => _s('vhBatteryBlockedBody');
+  String get vhBatteryOpenSettings => _s('vhBatteryOpenSettings');
   String get vhOfflineReplayPartial => _s('vhOfflineReplayPartial');
   String get vhOfflineReplayNotEnough => _s('vhOfflineReplayNotEnough');
   String get vhOfflineReplayWholeFileOnly => _s('vhOfflineReplayWholeFileOnly');
@@ -1724,6 +1731,12 @@ class AppStrings {
     'vhOfflineNothingSaved': 'No internet connection',
     'vhOfflineHint': 'Connect once and this page is kept for offline use. Downloads play without any connection.',
     'vhOfflineNotHeld': 'No connection, and none of this title is saved on the phone',
+    'vhBatteryDozeTitle': 'Downloads may stop when the screen is off',
+    'vhBatteryDozeBody': '{maker} phones pause background work to save battery, so a film can stop halfway with nothing to say why. Allowing this app to keep running lets a download finish while the phone is in your pocket.',
+    'vhBatteryAllow': 'Allow background downloads',
+    'vhBatteryBlockedTitle': 'Background activity is switched off for this app',
+    'vhBatteryBlockedBody': 'Nothing will download while the app is not open. This is a setting on the phone, under Battery on this app page — it cannot be changed from here.',
+    'vhBatteryOpenSettings': 'Open app settings',
     'vhOfflineReplayPartial': 'Playing what is saved. It will stop where the saved part ends.',
     'vhOfflineReplayNotEnough': 'Too little of this is saved to open it without a connection',
     'vhOfflineReplayWholeFileOnly': 'This video can only be watched offline once all of it is saved',
@@ -2951,6 +2964,12 @@ class AppStrings {
     'vhOfflineNothingSaved': 'အင်တာနက် မရှိပါ',
     'vhOfflineHint': 'တစ်ခါ ချိတ်ဆက်ပြီးရင် ဒီစာမျက်နှာကို သိမ်းထားပေးမှာပါ။ Download လုပ်ထားတာတွေက အင်တာနက် မလိုဘဲ ကြည့်လို့ရပါတယ်။',
     'vhOfflineNotHeld': 'အင်တာနက် မရှိပါ၊ ဒီဖလင်ကို ဖုန်းထဲမှာ သိမ်းထားတာ မရှိပါ',
+    'vhBatteryDozeTitle': 'Screen ပိတ်ထားရင် Download ရပ်သွားနိုင်ပါတယ်',
+    'vhBatteryDozeBody': '{maker} ဖုန်းတွေက ဘက်ထရီချွေတာဖို့ နောက်ကွယ်လုပ်ငန်းတွေကို ရပ်တန့်စေပါတယ်။ ဒါကြောင့် ဇာတ်ကားက အလယ်မှာ ရပ်သွားပြီး ဘာကြောင့်မှန်း မပြောပါဘူး။ ဒီ App ကို ဆက်လုပ်ခွင့်ပေးလိုက်ရင် ဖုန်းအိတ်ထဲထည့်ထားရင်းနဲ့ Download ပြီးအောင် ဆွဲပေးပါမယ်။',
+    'vhBatteryAllow': 'နောက်ကွယ်မှာ Download ဆွဲခွင့်ပေးမည်',
+    'vhBatteryBlockedTitle': 'ဒီ App အတွက် နောက်ကွယ်လုပ်ဆောင်ချက် ပိတ်ထားပါတယ်',
+    'vhBatteryBlockedBody': 'App မဖွင့်ထားရင် ဘာမှ Download ဆွဲမှာ မဟုတ်ပါဘူး။ ဒါက ဖုန်းရဲ့ setting ဖြစ်ပြီး ဒီ App စာမျက်နှာထဲက Battery အောက်မှာ ရှိပါတယ် — ဒီကနေ ပြောင်းလို့ မရပါဘူး။',
+    'vhBatteryOpenSettings': 'App setting ဖွင့်မည်',
     'vhOfflineReplayPartial': 'သိမ်းထားသလောက် ဖွင့်ပေးပါမည်။ သိမ်းထားတာ ကုန်သွားရင် ရပ်သွားပါမယ်။',
     'vhOfflineReplayNotEnough': 'အင်တာနက် မရှိဘဲ ဖွင့်ရန် သိမ်းထားတာ နည်းနေပါသည်',
     'vhOfflineReplayWholeFileOnly': 'ဒီဗီဒီယိုကို အကုန် သိမ်းမိမှသာ အင်တာနက် မရှိဘဲ ကြည့်လို့ရပါမည်',
@@ -4167,6 +4186,12 @@ class AppStrings {
     'vhOfflineNothingSaved': 'ไม่มีการเชื่อมต่ออินเทอร์เน็ต',
     'vhOfflineHint': 'เชื่อมต่อหนึ่งครั้งแล้วหน้านี้จะถูกบันทึกไว้ใช้งานออฟไลน์ ส่วนรายการที่ดาวน์โหลดไว้เล่นได้โดยไม่ต้องเชื่อมต่อ',
     'vhOfflineNotHeld': 'ไม่มีการเชื่อมต่อ และไม่มีส่วนใดของรายการนี้บันทึกไว้ในเครื่อง',
+    'vhBatteryDozeTitle': 'การดาวน์โหลดอาจหยุดเมื่อปิดหน้าจอ',
+    'vhBatteryDozeBody': 'เครื่อง {maker} จะหยุดงานเบื้องหลังเพื่อประหยัดแบตเตอรี่ ไฟล์จึงอาจหยุดกลางคันโดยไม่มีคำอธิบาย การอนุญาตให้แอปนี้ทำงานต่อจะช่วยให้ดาวน์โหลดจบขณะเครื่องอยู่ในกระเป๋า',
+    'vhBatteryAllow': 'อนุญาตให้ดาวน์โหลดเบื้องหลัง',
+    'vhBatteryBlockedTitle': 'กิจกรรมเบื้องหลังถูกปิดสำหรับแอปนี้',
+    'vhBatteryBlockedBody': 'จะไม่มีการดาวน์โหลดขณะไม่ได้เปิดแอป นี่เป็นการตั้งค่าของเครื่อง อยู่ใต้หัวข้อแบตเตอรี่ในหน้าแอปนี้ และเปลี่ยนจากที่นี่ไม่ได้',
+    'vhBatteryOpenSettings': 'เปิดการตั้งค่าแอป',
     'vhOfflineReplayPartial': 'กำลังเล่นส่วนที่บันทึกไว้ จะหยุดเมื่อถึงจุดสิ้นสุดของส่วนนั้น',
     'vhOfflineReplayNotEnough': 'บันทึกไว้น้อยเกินกว่าจะเปิดได้โดยไม่เชื่อมต่อ',
     'vhOfflineReplayWholeFileOnly': 'วิดีโอนี้ดูออฟไลน์ได้เมื่อบันทึกไว้ครบทั้งไฟล์แล้วเท่านั้น',

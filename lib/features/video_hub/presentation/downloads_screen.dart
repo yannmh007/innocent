@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/localization/app_strings.dart';
+import '../../../core/services/power/power_policy.dart';
 import '../../../core/services/preferences/player_settings_service.dart';
 import '../data/api/offline_downloader.dart';
 import '../data/api/offline_library.dart';
@@ -108,6 +109,9 @@ class DownloadsScreen extends ConsumerWidget {
               // section for the same reason: it is only ever thought about
               // while looking at downloads.
               const _WifiOnlyRow(),
+              // WHY A DOWNLOAD STOPS WHEN THE PHONE IS PUT DOWN, in the one
+              // place the person who noticed it is looking. See _BatteryRow.
+              const _BatteryRow(),
               if (pending.isNotEmpty) ...<Widget>[
                 Padding(
                   padding: const EdgeInsets.only(bottom: VH.s2),
@@ -592,6 +596,151 @@ class _PendingRowState extends ConsumerState<_PendingRow> {
 
 
 /// "Download over Wi-Fi only", with the reason it is off by default.
+/// Says why a download stops when the phone is put down, and offers the fix.
+///
+/// ═══════════════════════════════════════════════════════════════════════
+/// THE LAST THING STANDING BETWEEN A DOWNLOAD AND FINISHING
+/// ═══════════════════════════════════════════════════════════════════════
+///
+/// `OfflineService` already declares the transfer to Android, holds a partial
+/// WakeLock and a WifiLock, and survives a swipe out of recents. On stock
+/// Android that is the whole answer and this row never appears.
+///
+/// It is not the answer on the phones this app is used on. Xiaomi, Oppo, Vivo,
+/// Realme and Huawei ship battery managers that freeze or kill backgrounded
+/// processes on a timer, by default, foreground service or not. The download
+/// stops, and the viewer — on the mobile connection that made downloading the
+/// right answer in the first place — is given no reason and concludes the app
+/// is broken. Nothing in an app can override that setting. What it can do is
+/// the two things this row is:
+///
+///   SAY SO, where somebody looking at a stalled download will read it. A
+///   message in Settings would be read by nobody; this is on the screen they
+///   are already on.
+///
+///   OFFER THE ONE TAP. Android has a standard dialog for the Doze exemption
+///   and the user's answer is the only thing that changes the outcome.
+///
+/// TWO STATES AND TWO DIFFERENT BUTTONS, because offering the wrong one wastes
+/// the only tap anybody will give. `restricted` means background work has been
+/// switched off for this app by hand and the exemption dialog does not touch
+/// it — the only honest action there is to open the page that holds the
+/// switch.
+///
+/// DRAWN ONLY WHEN THERE IS SOMETHING TO SAY. A phone that is already exempt
+/// and unrestricted gets nothing, and an unreadable platform reports the
+/// permissive answer for the same reason: a card telling somebody to fix a
+/// problem they do not have is worse than silence, because what is on their
+/// screen is a download that works.
+class _BatteryRow extends StatefulWidget {
+  const _BatteryRow();
+
+  @override
+  State<_BatteryRow> createState() => _BatteryRowState();
+}
+
+class _BatteryRowState extends State<_BatteryRow> with WidgetsBindingObserver {
+  PowerState _state = PowerState.unknown;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _refresh();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // THE ANSWER CHANGES WHILE THIS SCREEN IS IN THE BACKGROUND, which is the
+    // whole shape of the interaction: the button opens a system dialog, the
+    // app is backgrounded, the user grants it, and the app comes back. Without
+    // this the row would still be telling them to fix what they have just
+    // fixed.
+    if (state == AppLifecycleState.resumed) _refresh();
+  }
+
+  Future<void> _refresh() async {
+    final next = await PowerPolicy.read(fresh: true);
+    if (!mounted) return;
+    setState(() => _state = next);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_state.restrictsDownloads) return const SizedBox.shrink();
+    final s = AppStrings.of(context);
+    // `restricted` first: it is the harder refusal and the dialog cannot lift
+    // it, so offering the dialog would be a tap that changes nothing.
+    final hard = _state.restricted;
+    return Container(
+      margin: const EdgeInsets.only(bottom: VH.s3),
+      padding: const EdgeInsets.all(VH.s3),
+      decoration: BoxDecoration(
+        color: VH.surface2,
+        borderRadius: BorderRadius.circular(VH.s2),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              const Icon(Icons.battery_alert_outlined,
+                  size: 18, color: VH.accent),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  hard ? s.vhBatteryBlockedTitle : s.vhBatteryDozeTitle,
+                  style: VH.label.copyWith(fontSize: 13.5),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            hard
+                ? s.vhBatteryBlockedBody
+                : s.vhBatteryDozeBody(
+                    // Named, because the page that actually matters is called
+                    // something different on every one of these ROMs and
+                    // "your phone" tells nobody where to look.
+                    _state.manufacturer.isEmpty ? '—' : _state.manufacturer),
+            style: VH.meta.copyWith(fontSize: 12, height: 1.35),
+          ),
+          const SizedBox(height: 4),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton(
+              onPressed: () async {
+                if (hard) {
+                  await PowerPolicy.openSettings();
+                } else {
+                  await PowerPolicy.requestExemption();
+                }
+                // The lifecycle callback re-reads when the app comes back, so
+                // there is nothing to poll for here.
+              },
+              child: Text(
+                hard ? s.vhBatteryOpenSettings : s.vhBatteryAllow,
+                style: const TextStyle(
+                  color: VH.accent,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _WifiOnlyRow extends ConsumerWidget {
   const _WifiOnlyRow();
 

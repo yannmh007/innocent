@@ -131,6 +131,7 @@ class MainActivity : AudioServiceFragmentActivity() {
         // app is backgrounded, and shows transfer progress in the shade.
         private const val TRANSFER_SERVICE_CHANNEL = "mx_clone/transfer_service"
         private const val OFFLINE_SERVICE_CHANNEL = "mx_clone/offline_service"
+        private const val POWER_POLICY_CHANNEL = "mx_clone/power_policy"
         private const val NET_INFO_CHANNEL = "mx_clone/net_info"
         // The cipher a downloaded film is kept under. See MediaCrypto for why
         // CTR and why the key is wrapped rather than used directly.
@@ -219,6 +220,7 @@ class MainActivity : AudioServiceFragmentActivity() {
     private var transferServiceChannel: MethodChannel? = null
     private var offlineServiceChannel: MethodChannel? = null
     private var netInfoChannel: MethodChannel? = null
+    private var powerPolicyChannel: MethodChannel? = null
     private var mediaCryptoChannel: MethodChannel? = null
     // Held only while the Transfer tab is scanning for nearby devices.
     // Without it Android filters out the UDP broadcast frames discovery
@@ -827,6 +829,58 @@ class MainActivity : AudioServiceFragmentActivity() {
                             "metered" to NetInfo.metered(applicationContext)
                         )
                     )
+                }
+                else -> result.notImplemented()
+            }
+        }
+
+        // WHETHER THIS PHONE WILL LET A DOWNLOAD FINISH WITH THE SCREEN OFF.
+        //
+        // OfflineService already declares the work, holds a WakeLock and a
+        // WifiLock and survives a swipe out of recents, which is enough on
+        // stock Android. It is not enough on the ROMs this app is used on:
+        // Xiaomi, Oppo, Vivo, Realme and Huawei all freeze or kill backgrounded
+        // processes on a timer by default, foreground service or not. Nothing
+        // here can override that — see PowerPolicy — so the app does the two
+        // things it can: ask, once, with the platform's own dialog, and
+        // otherwise say so where somebody looking at a stalled download will
+        // read it.
+        //
+        // `open` NEVER LAUNCHES A DIALOG THAT HAS NOTHING TO ASK. It answers
+        // false when the phone is already exempt, so a caller cannot show a
+        // system prompt for a problem the user has already fixed.
+        powerPolicyChannel = MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            POWER_POLICY_CHANNEL
+        )
+        powerPolicyChannel?.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "read" -> result.success(PowerPolicy.state(applicationContext))
+                "open" -> {
+                    val intent = PowerPolicy.exemptionIntent(applicationContext)
+                    if (intent == null) {
+                        result.success(false)
+                    } else {
+                        try {
+                            // From the ACTIVITY, so the dialog appears over the
+                            // app rather than as a task of its own. An activity
+                            // that is gone is a caller that cannot see a dialog
+                            // anyway, so the failure is reported rather than
+                            // retried from the application context.
+                            startActivity(intent)
+                            result.success(true)
+                        } catch (_: Throwable) {
+                            result.success(false)
+                        }
+                    }
+                }
+                "settings" -> {
+                    try {
+                        startActivity(PowerPolicy.appSettingsIntent(applicationContext))
+                        result.success(true)
+                    } catch (_: Throwable) {
+                        result.success(false)
+                    }
                 }
                 else -> result.notImplemented()
             }
