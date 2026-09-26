@@ -71,6 +71,23 @@ const R2_ACCESS_KEY_ID = Deno.env.get('R2_ACCESS_KEY_ID')!;
 const R2_SECRET_ACCESS_KEY = Deno.env.get('R2_SECRET_ACCESS_KEY')!;
 const MEDIA_BUCKET = Deno.env.get('R2_BUCKET') ?? 'innocent-media';
 
+// TWO BUCKETS, AND A PHOTO IN THE WRONG ONE IS A BROKEN IMAGE. Video is
+// private and reached through a signed URL; artwork is public and served
+// straight off the public bucket's domain. The `title_media` view builds a
+// photo's URL as `public_asset_base() || object_key` and NEVER LOOKS AT THE
+// `bucket` COLUMN, so a photo whose bytes went to the media bucket produces a
+// URL that 404s, in the app, with nothing anywhere saying why. studio.ts has
+// picked between them on `kind` since it was written; this file did not, and
+// put everything in the media bucket.
+const PUBLIC_BUCKET = Deno.env.get('R2_PUBLIC_BUCKET') ?? 'innocent-public';
+
+/// Which bucket a kind belongs in. One place, because the webhook and the
+/// presigned PUT have to agree and the row is written by one and signed by
+/// the other.
+function bucketFor(kind: string): string {
+  return kind === 'video' ? MEDIA_BUCKET : PUBLIC_BUCKET;
+}
+
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
 const ANON_KEY = Deno.env.get('SB_ANON_KEY') ??
   Deno.env.get('SUPABASE_ANON_KEY') ?? '';
@@ -129,7 +146,7 @@ function encodeKey(key: string): string {
 }
 
 async function presign(
-  method: 'GET' | 'PUT', objectKey: string, seconds: number,
+  method: 'GET' | 'PUT', objectKey: string, seconds: number, bucket: string,
 ): Promise<string> {
   const host = `${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`;
   const amzDate = new Date().toISOString().replace(/[:-]|\.\d{3}/g, '');
@@ -144,7 +161,7 @@ async function presign(
   };
   const canonicalQuery = Object.keys(params).sort()
     .map((k) => `${rfc3986(k)}=${rfc3986(params[k])}`).join('&');
-  const canonicalPath = `/${MEDIA_BUCKET}/${encodeKey(objectKey)}`;
+  const canonicalPath = `/${bucket}/${encodeKey(objectKey)}`;
   const canonicalRequest = [
     method, canonicalPath, canonicalQuery, `host:${host}\n`, 'host',
     'UNSIGNED-PAYLOAD',
@@ -397,7 +414,7 @@ Deno.serve(async (req: Request) => {
         width: file.width,
         height: file.height,
         kind: file.kind,
-        bucket: MEDIA_BUCKET,
+        bucket: bucketFor(file.kind),
         object_key: key,
       }),
     });
@@ -450,7 +467,11 @@ Deno.serve(async (req: Request) => {
       // one pass on a runner with a fast link, so this is generous — but a URL
       // that expires mid-transfer throws away everything already moved, and
       // the whole job is a single object.
-      put_url: await presign('PUT', String(job.object_key ?? ''), 86400),
+      // Signed for the bucket the ROW names. Signing the media bucket for a
+      // photo would have R2 refuse the PUT — which is the good failure; the
+      // bad one was writing the photo there and serving a 404 for ever.
+      put_url: await presign('PUT', String(job.object_key ?? ''), 86400,
+        String(job.bucket ?? MEDIA_BUCKET)),
       done_url: `${SUPABASE_URL}/functions/v1/ingest`,
     }, 200, req);
   }

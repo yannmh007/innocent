@@ -16,6 +16,14 @@
 //   a document rejected because the code only looked at `video` would send
 //   the operator back to re-upload a gigabyte.
 //
+//   WHICH BUCKET IT GOES IN is the third, and it failed in the live system
+//   before it was checked here. Video is private and reached through a signed
+//   URL; artwork is public and served off the public bucket's domain. The
+//   `title_media` view builds a photo's URL from `public_asset_base()` and the
+//   object key and never reads the `bucket` column — so a photo written to the
+//   media bucket is a broken image in the app, with a row that looks correct
+//   from every angle.
+//
 // The functions are pulled out of `docs/edge/ingest.ts` — never copied, since
 // a copy would pass for ever while the file drifted — and `isMintedKey` out
 // of `docs/edge/studio.ts`, so the agreement between the two is checked and
@@ -62,10 +70,19 @@ const ts = (s) => s
 // Sliced in two pieces on purpose: `say()` sits between them and talks to
 // Telegram, which has no business in a test of two pure functions.
 const mod = await import('data:text/javascript,' + encodeURIComponent(
+  // The buckets come from Deno.env in the real file. Named here so the
+  // CHOICE is what is checked, rather than the two default strings.
+  "const MEDIA_BUCKET = 'media-bucket';\n"
+  + "const PUBLIC_BUCKET = 'public-bucket';\n"
+  + ts(sliceOut('docs/edge/ingest.ts', 'function bucketFor(', '\nconst SUPABASE_URL')) +
   ts(sliceOut('docs/edge/ingest.ts', 'function slugify(', '/// Tell the operator')) +
   ts(sliceOut('docs/edge/ingest.ts', 'function fileOf(', 'Deno.serve(')) +
-  '\nexport { slugify, safeKey, fileOf };'
+  '\nexport { slugify, safeKey, fileOf, bucketFor };'
 ));
+
+// The raw file, for the three places the choice has to be USED. A correct
+// bucketFor that nothing calls is the same bug with extra steps.
+const ingestSrc = readFileSync(join(ROOT, 'docs/edge/ingest.ts'), 'utf8');
 
 // `isMintedKey` is the console's own gate on a key. Lifted rather than
 // restated, because the point of these checks is that the two files agree.
@@ -183,6 +200,32 @@ const studio = await import('data:text/javascript,' + encodeURIComponent(
   ]) {
     check(`${why} is not a film`, mod.fileOf(msg) === null);
   }
+}
+
+// ── which bucket ──────────────────────────────────────────────────────────
+{
+  check('a video goes to the media bucket',
+    mod.bucketFor('video') === 'media-bucket');
+
+  // Everything that is not a video is artwork, including a kind nobody has
+  // thought of yet: the public bucket is the safe default because a photo in
+  // the private bucket is invisible, while a video in the public one would
+  // have to be named in a row before anything could reach it.
+  for (const kind of ['photo', 'thumb', 'clip', '']) {
+    check(`${kind || '(no kind)'} goes to the public bucket`,
+      mod.bucketFor(kind) === 'public-bucket');
+  }
+
+  // USED IN ALL THREE PLACES. The row records it, the signature signs it, and
+  // the signature reads it back off the ROW rather than deciding again — two
+  // independent decisions are two chances to disagree.
+  check('the queued row takes the bucket from the kind',
+    /bucket:\s*bucketFor\(file\.kind\)/.test(ingestSrc));
+  check('the signed path uses the bucket it was given, not a constant',
+    /const canonicalPath = `\/\$\{bucket\}\//.test(ingestSrc) &&
+    !/const canonicalPath = `\/\$\{MEDIA_BUCKET\}/.test(ingestSrc));
+  check('the PUT is signed for the bucket the row names',
+    /put_url: await presign\('PUT',[\s\S]{0,160}?String\(job\.bucket/.test(ingestSrc));
 }
 
 if (failures) {
