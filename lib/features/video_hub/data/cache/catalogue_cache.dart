@@ -113,6 +113,42 @@ class CatalogueCache {
   static void noteServedLive() => servedFromCache.value = false;
 
   static Directory? _dir;
+
+  /// Decoded bodies, kept for the life of the process.
+  ///
+  /// WHY A SECOND CACHE IN FRONT OF THE CACHE. Reading an entry is a file
+  /// existence check, a whole-file read and a `jsonDecode`, and the decode is
+  /// the expensive one: a landing payload is a few hundred kilobytes of JSON
+  /// and it is parsed ON THE UI ISOLATE, so the cost is not throughput, it is
+  /// frames not drawn. Opening the hub pays it for the rows, the facets and
+  /// the categories; opening a card pays it again, and `titleDetailProvider`
+  /// is `autoDispose`, so backing out and tapping the same card pays it a
+  /// third time. None of that reaches the disk twice for a reason — it just
+  /// was not being remembered.
+  ///
+  /// This is what made offline "work but feel slow", which is its own kind of
+  /// broken: Telegram shows what it has instantly and so must this.
+  ///
+  /// THE BODY IS SHARED, NOT COPIED, and that relies on callers not mutating
+  /// what they are handed. They already must: `_serve` hands the same decoded
+  /// object to the mapper and to `write`, so a mapper that edited it would
+  /// have been writing its edits to disk since the day the cache was added.
+  /// Copying instead would cost exactly what this exists to avoid.
+  static final Map<String, dynamic> _hot = <String, dynamic>{};
+
+  /// Small on purpose. The hub touches a handful of keys and a body can be
+  /// hundreds of kilobytes; this is a working set, not a second store. Oldest
+  /// insertion goes first, which for this access pattern is the card opened
+  /// longest ago.
+  static const int hotEntries = 12;
+
+  static void _remember(String key, dynamic body) {
+    _hot.remove(key);
+    _hot[key] = body;
+    while (_hot.length > hotEntries) {
+      _hot.remove(_hot.keys.first);
+    }
+  }
   static bool _pruned = false;
 
   /// A stable key for one request. Query order must not produce two entries
@@ -139,6 +175,14 @@ class CatalogueCache {
   /// screen, because every screen reads the cache first now.
   static Future<dynamic> read(String key, {bool quiet = false}) async {
     if (!enabled) return null;
+    // Answered without touching the disk when this process has already read
+    // or written it. The disk copy is what survives a restart; this is what
+    // keeps the second look at the same screen free.
+    final hot = _hot[key];
+    if (hot != null) {
+      if (!quiet) servedFromCache.value = true;
+      return hot;
+    }
     try {
       final dir = await _directory();
       if (dir == null) return null;
@@ -165,6 +209,7 @@ class CatalogueCache {
       // original failure and the user will get a retry button — an error card
       // under a banner promising saved content would be the worst of both.
       if (body == null) return null;
+      _remember(key, body);
       if (!quiet) servedFromCache.value = true;
       return body;
     } catch (e) {
@@ -184,6 +229,10 @@ class CatalogueCache {
       // Nothing to serve later, and writing it would shadow a good older entry
       // with an empty one.
       if (body == null) return;
+      // Before the disk, and not after: this is the copy the next read on
+      // this screen will answer from, and the write below is best-effort. A
+      // full disk must not leave the process reading last hour's rows.
+      _remember(key, body);
       // A WRITE NO LONGER CLEARS THE BANNER, and that is a correction rather
       // than an omission. Since the caller shows the saved copy after a couple
       // of seconds and lets the request carry on in the background, the write
@@ -219,6 +268,12 @@ class CatalogueCache {
   /// in here is what the previous user was allowed to see. Leaving it behind
   /// would show the next person that list, offline, with no request made.
   static Future<void> clear() async {
+    // FIRST, AND OUTSIDE THE TRY. Sign-out calls this, and a decoded body
+    // left in memory after it would be the previous account's listing, ready
+    // to be handed to whoever signs in next — which is the one thing the
+    // whole cache is not allowed to do. A directory that cannot be opened
+    // must not be the reason it stays.
+    _hot.clear();
     try {
       final dir = await _directory();
       if (dir == null) return;

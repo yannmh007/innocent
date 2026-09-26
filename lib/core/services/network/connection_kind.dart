@@ -51,8 +51,55 @@ class ConnectionInfo {
 
   static const MethodChannel _channel = MethodChannel('mx_clone/net_info');
 
+  /// The last answer, and when it was given.
+  ///
+  /// ONE SECOND, AND IT IS ABOUT DRAWING A SCREEN RATHER THAN SAVING WORK.
+  /// Opening the hub asks this once per catalogue request — the rows, the
+  /// facets, the categories, the detail behind a card — and each one is a
+  /// platform channel hop that has to cross to the Android side and back
+  /// before anything can be decided. Individually they are milliseconds;
+  /// together, on the phones this app is for, they are the difference between
+  /// a screen that appears and a screen that arrives.
+  ///
+  /// A second is short enough that nothing acts on a stale answer in a way a
+  /// person would notice: the radio does not change state and get acted upon
+  /// inside one frame of one screen. It is deliberately NOT a cached value
+  /// with a listener — a stale answer here costs one screen drawn under the
+  /// wrong assumption, while a subscription that leaks costs battery for as
+  /// long as the app runs.
+  static ConnectionKind? _last;
+  static DateTime? _lastAt;
+  static const Duration _memo = Duration(seconds: 1);
+
+  /// Throws away the memo, so the next [read] asks the platform.
+  ///
+  /// For a moment when the connection is EXPECTED to have changed and the
+  /// answer is about to be acted on — coming back from the system's own
+  /// network settings, or a retry the user asked for after turning data on.
+  @visibleForTesting
+  static void forget() {
+    _last = null;
+    _lastAt = null;
+  }
+
   /// Never throws. An unreadable platform reads as [ConnectionKind.unknown].
-  static Future<ConnectionKind> read() async {
+  static Future<ConnectionKind> read({bool fresh = false}) async {
+    if (!fresh) {
+      final was = _last;
+      final at = _lastAt;
+      if (was != null &&
+          at != null &&
+          DateTime.now().difference(at) < _memo) {
+        return was;
+      }
+    }
+    final answer = await _ask();
+    _last = answer;
+    _lastAt = DateTime.now();
+    return answer;
+  }
+
+  static Future<ConnectionKind> _ask() async {
     if (defaultTargetPlatform != TargetPlatform.android || kIsWeb) {
       // No platform to ask. A desktop or test run is treated as unmetered
       // because there is no data bundle to protect, and as attached because

@@ -111,11 +111,29 @@ class ApiContentRepository implements ContentRepository {
   /// the SAVED copy is shown the moment this much time has passed without an
   /// answer.
   ///
-  /// Two and a half seconds rather than zero, because on a working connection
-  /// showing a saved copy and then replacing it a moment later is a flicker
-  /// nobody asked for. Two and a half seconds is longer than a good request and
-  /// far shorter than a person's patience with a blank screen.
-  static const Duration _staleAfter = Duration(milliseconds: 2500);
+  /// Not zero, because on a working connection showing a saved copy and then
+  /// replacing it a moment later is a flicker nobody asked for. The number is
+  /// therefore a bet on how long a GOOD request takes, and the first bet was
+  /// wrong in the expensive direction.
+  ///
+  /// TWO AND A HALF SECONDS WAS A GUESS, AND IT WAS FELT. It was chosen to be
+  /// comfortably longer than a healthy round trip, which it is — and that is
+  /// the mistake: the case it governs is not the healthy one. A healthy
+  /// request answers in two or three hundred milliseconds and this timeout
+  /// never runs. It runs when the connection is attached and NOT WORKING — a
+  /// Wi-Fi with nothing behind it, a SIM out of credit, a cell that holds the
+  /// socket open rather than refusing it — which in Myanmar is not an edge
+  /// case, it is an afternoon. Every one of those paid the full two and a
+  /// half seconds, per screen, with the answer already on the disk. Reported
+  /// as "it works, but it is slower than Facebook", which is precisely what
+  /// it was.
+  ///
+  /// Seven hundred milliseconds still clears a good request with room to
+  /// spare, and it is under the threshold where waiting reads as the app
+  /// thinking rather than the app being stuck. The stale copy is never wrong
+  /// for long either way: the request carries on and refreshes the cache
+  /// whenever it lands.
+  static const Duration _staleAfter = Duration(milliseconds: 700);
 
   /// Answers from the network, or from what was saved, whichever can answer.
   ///

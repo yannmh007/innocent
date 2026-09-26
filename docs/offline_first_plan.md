@@ -818,6 +818,70 @@ Each of these was mutation-tested by breaking it and watching the check fail:
 stopped working would be silent.
 
 
+## O6 — "it works, but it is slow, and a downloaded film will not open at all"
+
+The first real offline test after O1–O5 shipped. Both halves of the verdict
+mattered and they had one cause between them.
+
+### A downloaded film opened nothing
+
+Offline, a title downloaded IN FULL did not play from its card. Poster, album,
+layout — all there; Play did nothing at all, no player, no message.
+
+`playMedia` asked `requestPlayback` first, always. With no network that call
+spends the whole timeout before it can answer `AccessDenial.offline`, so the
+tap was followed by a long silence — long enough to read as a dead button, and
+reported that way. When it finally returned, the fallback looked in the
+STREAMING CACHE only. A downloaded film has never been streamed, so the cache
+had nothing, and the app said "nothing saved" about a complete copy of the film
+sitting on the disk.
+
+The one thing the offline work exists for was the one thing it did not do.
+
+Two changes, and the first is the one that removes the silence:
+
+* `ConnectionInfo` is asked BEFORE the server, exactly as
+  `ApiContentRepository._serve` already did. `none` skips the request
+  entirely — a film on this phone does not need permission from a server that
+  cannot be reached.
+* `_playHeldBytes` looks in `OfflineLibrary` first and the streaming cache
+  second. A download is the whole film at full quality; the cache is however
+  much was watched, of whichever rung the connection allowed. Offering the
+  second while holding the first would be showing somebody a worse copy of
+  their own file. A download recorded against a different `assetId` is not a
+  match — an album clip and the main film are separate videos under one title.
+
+Both paths into the fallback now go through one `_offlineOnly`, and rule 12a in
+`tool/security_invariants.py` was restated to match: `_playHeldBytes` must have
+exactly ONE call site, inside `_offlineOnly`, and every `_offlineOnly` call must
+be reached from either `AccessDenial.offline` or `ConnectionInfo` reporting no
+transport. Neither is "the server said no", which is what the rule has always
+been about. Four mutations checked: a second call site, each of the two
+verdicts removed, and the entitlement test removed.
+
+### And it was slower than Facebook
+
+Three costs, none of them the network:
+
+* **`_staleAfter` was 2500 ms.** It was picked to be longer than a healthy
+  request, which it is — and that is the error, because the case it governs is
+  never the healthy one. A good request answers in two or three hundred
+  milliseconds and the timeout never runs. It runs when a connection is
+  attached and not working, which here is an afternoon, and every one of those
+  paid two and a half seconds per screen with the answer already on disk. Now
+  700 ms.
+* **Every catalogue read re-parsed its JSON.** A landing payload is a few
+  hundred kilobytes decoded ON THE UI ISOLATE, paid again for the facets, the
+  categories and each card — and `titleDetailProvider` is `autoDispose`, so
+  re-opening the same card paid it again. `CatalogueCache` now keeps the last
+  twelve decoded bodies in memory. `clear()` empties them first and outside the
+  try, because a sign-out that left the previous account's listing in memory
+  would be the one thing this cache must never do; rule 11c checks that, and
+  the mutation is caught.
+* **Every catalogue read crossed a platform channel** to ask what the
+  connection was. Memoised for one second — short enough that no screen acts
+  on a stale answer, and it collapses a handful of hops per screen into one.
+
 ## H1 — the files nothing points at, and the bill for them
 
 Deleting a title does not delete its objects. Neither does replacing one.

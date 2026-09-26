@@ -590,6 +590,38 @@ if os.path.isfile(ACCOUNT):
 
 
 
+# --- 11c. signing out empties the catalogue held IN MEMORY too ----------------
+#
+# CatalogueCache now answers from a decoded copy in memory before it touches
+# the disk, because parsing a few hundred kilobytes of JSON on the UI isolate
+# once per screen is what made offline "work but feel slow".
+#
+# That copy is a second place the previous account's listing can survive a sign
+# out. `clear()` deletes the files, and for as long as it deleted only the
+# files, the next person to sign in on that phone would have been served the
+# last one's rows out of memory — by the very cache whose whole purpose is to
+# show what was already seen. The disk half of this is rule 11's subject; this
+# is the half a reader would not think to look for.
+CATALOGUE = os.path.join(FEATURE, 'data/cache/catalogue_cache.dart')
+if os.path.isfile(CATALOGUE):
+    body = strip(open(CATALOGUE, encoding='utf-8').read())
+    start = body.find('Future<void> clear() async {')
+    end = body.find('\n  }', start) if start >= 0 else -1
+    clear = body[start:end] if start >= 0 and end > start else ''
+    if not clear:
+        fails.append(
+            'CATALOGUE CLEAR RENAMED: catalogue_cache.dart has no '
+            '`Future<void> clear() async {`. Move this check with it - it is '
+            'the one that stops a sign-out leaving the previous account\'s '
+            'listing in memory.')
+    elif '_hot.clear()' not in clear:
+        fails.append(
+            'SIGN-OUT LEAVES THE CATALOGUE IN MEMORY: CatalogueCache.clear '
+            'deletes the files and does not empty `_hot`. The decoded bodies '
+            'outlive the sign-out, so the next account signing in on this '
+            'phone is served the previous one\'s rows.')
+
+
 # --- 12. the bytes already on the phone are reachable, and only that way ------
 #
 # The streaming cache keeps every byte the phone receives so that dragging the
@@ -609,16 +641,46 @@ if os.path.isfile(PLAYBACK):
     # `unavailable` still covers a refusal nobody recognised — a region block, a
     # banned account — and serving a film out of the cache on one of those would
     # be the server being overruled by the client.
-    for m in re.finditer(r'(?<!Future<bool> )_playHeldBytes\(', body):
-        before = body[max(0, m.start() - 600):m.start()]
-        if 'AccessDenial.offline' not in before:
+    #
+    # THERE ARE NOW TWO WAYS TO ESTABLISH "COULD NOT ASK", and the second one
+    # is why this is shaped as it is. `AccessDenial.offline` is the request
+    # coming back unanswered. `ConnectionInfo` reporting no transport is the
+    # phone saying there is nothing to ask ON — and skipping the request then
+    # is not a shortcut, it is the difference between a film opening at once
+    # and Play doing nothing at all for the length of a timeout.
+    #
+    # Both are "no server answer exists", neither is "the server said no", and
+    # every other reason remains forbidden. So the rule is checked in two
+    # halves: `_playHeldBytes` has exactly ONE call site, and that site is
+    # reached only from one of the two verdicts. One door, checked at the door,
+    # rather than a condition that has to be repeated correctly at each of
+    # them.
+    calls = [m for m in re.finditer(r'(?<!Future<bool> )_playHeldBytes\(', body)]
+    if len(calls) != 1:
+        fails.append(
+            'HELD BYTES HAVE %d DOORS, NOT ONE: playback.dart calls '
+            '_playHeldBytes %d times. It is reachable only through '
+            '_offlineOnly, whose own callers are what this check can verify; '
+            'a second call site is a path nothing checks.'
+            % (len(calls), len(calls)))
+    elif '_offlineOnly(' not in body[max(0, calls[0].start() - 900):calls[0].start()]:
+        fails.append(
+            'HELD BYTES REACHED FROM OUTSIDE _offlineOnly: playback.dart:%d '
+            'calls _playHeldBytes from somewhere else. That is the door this '
+            'check watches, and a play that goes round it is a play nothing '
+            'established an offline verdict for.'
+            % (body.count('\n', 0, calls[0].start()) + 1))
+    for m in re.finditer(r'(?<!Future<void> )_offlineOnly\(', body):
+        before = body[max(0, m.start() - 700):m.start()]
+        if 'AccessDenial.offline' not in before and 'kind.isOffline' not in before:
             line = body.count('\n', 0, m.start()) + 1
             fails.append(
                 'HELD BYTES OFFERED WITHOUT AN OFFLINE VERDICT: '
-                'playback.dart:%d plays what is cached without first '
-                'establishing AccessDenial.offline. `unavailable` covers a '
-                'refusal nobody recognised, and answering that out of the '
-                'cache is the client overruling the server.' % line)
+                'playback.dart:%d falls back to what is on the phone without '
+                'first establishing either AccessDenial.offline or '
+                'ConnectionInfo saying there is no transport. `unavailable` '
+                'covers a refusal nobody recognised, and answering that out '
+                'of the cache is the client overruling the server.' % line)
     # (b) It is still gated on the viewer's tier. The check protects nothing
     # against a modified app and is not meant to; removing it would mean a
     # lapsed subscriber replaying premium film forever by staying offline.

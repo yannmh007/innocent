@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -12,6 +14,7 @@ import '../data/cache/offline_replay.dart';
 import '../data/cache/stream_cache_id.dart';
 import '../data/cache/stream_cache_server.dart';
 import '../domain/rendition.dart';
+import '../../../core/services/network/connection_kind.dart';
 import '../../../core/services/network/throughput_memory.dart';
 import '../domain/access_policy.dart';
 import '../domain/capability.dart';
@@ -47,6 +50,34 @@ Future<void> playMedia(
   String? titleOverride,
 }) async {
   final s = AppStrings.of(context);
+
+  // ─── NO RADIO, NO REQUEST ─────────────────────────────────────────────
+  //
+  // A film this phone already holds does not need a server's permission to
+  // open, and asking for one when there is no network is not a formality —
+  // it is the whole delay. `requestPlayback` on a phone with nothing attached
+  // spends the full timeout before it can say "offline", and until it does,
+  // tapping Play does NOTHING: no player, no spinner, no message. Reported
+  // exactly that way — "ပုံလိုပဲ အသေဖြစ်နေ", the card is dead — and the
+  // reason was never that the bytes were missing. They were on the disk the
+  // whole time, behind a question nobody could answer.
+  //
+  // `none` is the only value that skips the attempt, for the same reason
+  // ApiContentRepository._serve gives: an unreadable platform reports
+  // `other`, so a phone this cannot measure behaves exactly as before.
+  final kind = await ConnectionInfo.read();
+  if (kind.isOffline) {
+    if (!context.mounted) return;
+    await _offlineOnly(
+      context,
+      ref,
+      content: content,
+      source: source,
+      titleOverride: titleOverride,
+    );
+    return;
+  }
+
   // The device id lets the server bind this grant and enforce the
   // concurrency cap. It is sent as information, not as an argument for
   // access - the server ignores anything the client claims about its rights.
@@ -296,17 +327,16 @@ Future<void> playMedia(
   // already hold this film. See [_playHeldBytes]: it is only reached for
   // AccessDenial.offline, never for a refusal.
   if (grant.denial == AccessDenial.offline) {
-    final handled = await _playHeldBytes(
+    // The same path the short-circuit above takes. This one is reached when
+    // an interface IS attached and the request still could not be answered —
+    // a Wi-Fi with no internet behind it, a SIM with no credit, a captive
+    // portal. Common enough here that it cannot be the slow path only.
+    await _offlineOnly(
       context,
       ref,
       content: content,
       source: source,
       titleOverride: titleOverride,
-    );
-    if (handled) return;
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(s.vhOfflineNotHeld), duration: const Duration(seconds: 3)),
     );
     return;
   }
@@ -319,6 +349,38 @@ Future<void> playMedia(
     SnackBar(
       content: Text(isDevice ? s.vhWrongDevice : s.vhUnavailable),
       duration: Duration(seconds: isDevice ? 5 : 2),
+    ),
+  );
+}
+
+/// Everything this phone can do for this title without a server, and the one
+/// sentence that is true when it can do nothing.
+///
+/// Both callers need the same three steps in the same order, and they used to
+/// be written out twice — once where the platform says there is no connection
+/// and once where the request came back unanswered. Two copies of a fallback
+/// is how one of them ends up missing a case.
+Future<void> _offlineOnly(
+  BuildContext context,
+  WidgetRef ref, {
+  required VideoContent content,
+  required MediaRef source,
+  String? titleOverride,
+}) async {
+  final s = AppStrings.of(context);
+  final handled = await _playHeldBytes(
+    context,
+    ref,
+    content: content,
+    source: source,
+    titleOverride: titleOverride,
+  );
+  if (handled) return;
+  if (!context.mounted) return;
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(s.vhOfflineNotHeld),
+      duration: const Duration(seconds: 3),
     ),
   );
 }
@@ -376,6 +438,48 @@ Future<bool> _playHeldBytes(
   final assetId = source.provider == 'asset' && source.locator.isNotEmpty
       ? source.locator
       : null;
+
+  // ─── A DOWNLOAD BEATS A CACHE, AND IT WAS NOT EVEN BEING LOOKED FOR ───
+  //
+  // THIS WAS THE BUG. Offline, a title the viewer had DOWNLOADED IN FULL
+  // opened nothing at all: this function went straight to the streaming
+  // cache, the streaming cache had never seen the film — downloading does
+  // not stream it — and the caller said "nothing saved" about a complete
+  // copy sitting on the disk. The one thing the whole offline feature was
+  // promised to do was the one thing it did not do.
+  //
+  // First, because the two are not equivalent when both exist. A download is
+  // the WHOLE film at full quality and needs no loopback proxy; the cache is
+  // however much happened to be watched, of whichever rung the connection
+  // allowed at the time. Offering the second while holding the first would
+  // be showing somebody a worse copy of their own file.
+  //
+  // A download recorded for a DIFFERENT asset is not this one: an album clip
+  // and the main film are separate videos under one title. When either side
+  // names no asset the match stands — a title with a single film is the
+  // ordinary case and both sides describe it.
+  final held = await ref.read(offlineLibraryProvider).find(content.id);
+  if (held != null &&
+      (held.assetId == null || assetId == null || held.assetId == assetId)) {
+    // The index can outlive the file: Android clears an app's storage, a file
+    // manager deletes it, a restore brings the index back without the bytes.
+    // Pushing the player at a path with nothing behind it is a black screen,
+    // so the cache below gets its turn instead.
+    if (await File(held.path).exists()) {
+      if (!context.mounted) return true;
+      await playOffline(
+        context,
+        ref,
+        path: held.path,
+        titleId: content.id,
+        title: titleOverride ?? held.title,
+        premium: held.premium,
+        sealed: held.sealed,
+      );
+      return true;
+    }
+  }
+
   final offer = await OfflineReplay.open(
     titleId: content.id,
     assetId: assetId,
