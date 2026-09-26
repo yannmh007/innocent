@@ -189,6 +189,19 @@ catalogue row and queues the ladder. The operator's part is one tap.
      -d "secret_token=<TELEGRAM_WEBHOOK_SECRET>"
    ```
 
+8. **Check it took.** `https://api.telegram.org/bot<TOKEN>/getWebhookInfo`
+   should show your function's URL, `pending_update_count: 0` and no
+   `last_error_message`. An error here means Telegram is being refused and no
+   forwarded film will ever arrive.
+
+**The two halves can be tested separately, and the first one needs nothing from
+`my.telegram.org`.** Forward a small file to the bot: if it answers "Queued",
+the webhook, the chat allow-list and the database are all working, and the
+film sits in the queue waiting for a runner. Only the second half — the runner
+fetching it — needs `TELEGRAM_API_ID` and `TELEGRAM_API_HASH`, and if they are
+missing the panel says so in words: `attempt 1 of 3 failed: Telegram
+credentials are not set on this repository`.
+
 **Then, for every film:** forward it to the bot **as a file/document**, with
 the folder name as the caption. The bot replies "Queued". A runner picks it up
 within five minutes. When it says done, open the console's **Ingest** panel and
@@ -214,6 +227,16 @@ the ladder.
 > **Telegram caps a file at 2 GB.** Anything larger has to go through the
 > console's own uploader, which since C1 uploads in parts.
 
+> **A failed fetch tries itself twice more, then lets you forward it again.**
+> The runner ticks every five minutes, so a transient failure — Telegram rate
+> limiting, an R2 hiccup, a runner that lost its network — costs nothing and
+> fixes itself; the panel shows `attempt 1 of 3 failed: …` in the meantime.
+> After the third the row says `gave up after 3 attempts: …` and forwarding
+> the same film again starts a new job. Until 2026-09-26 it did neither: a
+> failure was terminal and re-forwarding answered "Already queued" for ever,
+> so a film sent before `TELEGRAM_API_ID` existed could not be recovered by
+> any means the operator had.
+
 ### Redeploying an edge function
 
 Supabase dashboard → **Edge Functions** → the function → the **Code** tab →
@@ -233,18 +256,25 @@ shared runner secret, and `backfill-dimensions` is called with no identity at
 all. Turning the platform's check on would refuse the runner and the console
 before either got to say who it was.
 
-> **Pending: `probe-media` needs this.** The repository file has the
-> unused-file report in it (`{orphans: 1}`) and the deployed version does not,
-> so the **Storage** panel in the console will answer `no_keys` until it is
-> pasted. Nothing else is affected — every other panel uses ops the deployed
-> version already has.
+> **Both are deployed and both were read back.** `probe-media` is at version
+> 12 with the unused-file report in it, `ingest` at version 5, Verify JWT off
+> on both.
 >
-> **`ingest` is deployed** (version 1, Verify JWT off), and the deployed copy
-> was read back and checked line by line against this repository. The
-> database side — the `ingest_jobs` table and its three functions — is
-> applied and was exercised against the live schema. What has still never run
-> is the workflow and `tool/ingest.py`, and the Telegram secrets above do not
-> exist until you make them.
+> The pasted `probe-media` came back with its indentation mangled — the
+> dashboard editor adds to the leading whitespace on every paste, and 298 of
+> its lines arrived with more than a thousand spaces in front of them. It is
+> cosmetic and nothing needs redoing: the deployed copy is 749 lines, the
+> repository file is 749 lines, comparing them with the indentation stripped
+> gives an exact match, and the file contains no template literal spanning
+> more than one line, which is the only place whitespace could have meant
+> anything.
+>
+> What has still never run end to end is the runner: the workflow and
+> `tool/ingest.py`. The claim half is proven — a dispatched **Ingest** run
+> answered `queue is empty`, which is only reachable through an HTTP 200 from
+> the deployed function, so `INGEST_SECRET` matches on both sides and
+> `SUPABASE_URL` is right. What is missing is `TELEGRAM_API_ID` and
+> `TELEGRAM_API_HASH`.
 
 ### Then
 

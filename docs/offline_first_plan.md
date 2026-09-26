@@ -939,13 +939,75 @@ cannot be taken back, both pure:
   size kept, a jpeg sent as a document is a photo, and a round selfie video, a
   sticker, an animation and a voice note are all refused rather than published.
 
-**NOT checked, and this is the honest limit.** The edge function, the workflow
-and `tool/ingest.py` have never run. This container's network policy denies the
-project host, so the function cannot be deployed or invoked from here; the
-Telegram secrets do not exist yet; and the one assumption I could not test is
-that Pyrogram's `download_media` on a fetched message works for a bot session
-the way the documentation says. If it does not, Telethon is the same shape.
-Everything that could be exercised was.
+### Two defects the verification pass found, after all of the above passed
+
+Both were found on 2026-09-26, after the function was deployed and the secrets
+were in place, by asking a different question: not "do the functions behave?"
+but "does the path the operator actually takes work?"
+
+**1. The webhook could never have queued anything.** `ingest_jobs` was created
+with RLS on, no policies, and every privilege revoked from anon, authenticated
+and `service_role`, on the reasoning that all access goes through the three
+SECURITY DEFINER functions — which bypass RLS and table grants alike. Two paths
+are not functions: the webhook INSERTs through `/rest/v1/ingest_jobs` and the
+console's `op=list` SELECTs the same way, both with the service key, and
+PostgREST is an ordinary client. `has_table_privilege('service_role',
+'public.ingest_jobs', 'INSERT')` was `false`.
+
+Every earlier test passed because every earlier test called the functions. The
+operator would have forwarded a film and been told "Could not queue that one.
+Try again in a minute." for ever, with nothing in the queue and nothing in any
+log to say why. Found by `set local role service_role` and running the
+statement the function runs instead of the function; fixed by granting
+`select, insert, update` to `service_role` alone, and re-verified the same way —
+including that `anon` and `authenticated` are still refused.
+
+**2. A failed fetch was unrecoverable.** `finish_ingest(ok => false)` set
+`state = 'failed'` and stopped, and the unique index on `tg_unique_id` was
+unconditional. So forwarding the same film again — the one gesture a phone
+operator will reach for — hit the duplicate branch and the bot answered
+"Already queued", which was false: nothing was queued and nothing ever would
+be. The only way out was hand-written SQL.
+
+This was not hypothetical. The first failure this pipeline was ever going to
+see is `Telegram credentials are not set on this repository`, because `api_id`
+and `api_hash` arrive after the bot does — so the first film forwarded would
+have been the one that could not be recovered.
+
+Fixed with an `attempts` counter incremented **in `claim_ingest`**, not in
+`finish_ingest`, so a runner that dies without reporting also spends one —
+otherwise a job that kills its runner every time is claimed for ever, seven
+hours apart. A failure goes back to `queued` until three are spent, which makes
+a transient failure fix itself within five minutes; after the third the row is
+terminal, and the unique index is now partial (`where state <> 'failed'`) so
+the film can be forwarded again as a new job. A `done` file still cannot be
+re-forwarded, which is what the index is for.
+
+Fourteen checks against the live database, rolled back: the duplicate is
+refused while queued, three claims each spend an attempt, the first two
+failures answer `requeued` and clear `finished_at`, the third answers `failed`,
+a terminal row is never claimed again, and re-forwarding after it is accepted.
+
+Both are recorded in `docs/migrations/022_ingest_from_telegram.sql`, which is
+the consolidated final state — the repository's migration record had stopped at
+020 while the live database moved on, and 021 and 022 close that gap.
+
+### What the claim half proves, and what is still untested
+
+A dispatched **Ingest** run answered `queue is empty`. That single line is the
+end-to-end proof of the runner's half that does not need Telegram: it is only
+reachable through an HTTP 200 from the deployed function, so `SUPABASE_URL` is
+right, the function is reachable without a JWT, and `INGEST_SECRET` is
+byte-identical between the Actions secret and the Supabase secret. The two
+other outcomes are distinguishable on purpose — `INGEST_SECRET or SUPABASE_URL
+not set` for a missing secret, `claim returned 403` for a mismatched one.
+
+**Still not run:** `tool/ingest.py` and the Telegram fetch itself. The one
+assumption I could not test is that Pyrogram's `download_media` on a fetched
+message works for a bot session the way the documentation says. If it does not,
+Telethon is the same shape. `TELEGRAM_API_ID` and `TELEGRAM_API_HASH` are the
+only things still missing, and the webhook half can be tested without them —
+forward a small file and the bot either says "Queued" or it does not.
 
 **Operator steps** are in `docs/RUNBOOK.md` — a bot, an application, the chat
 id, four Actions secrets, four Supabase secrets, deploy `ingest`, one
