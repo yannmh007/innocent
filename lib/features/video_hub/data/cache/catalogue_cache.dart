@@ -102,6 +102,16 @@ class CatalogueCache {
   /// [PosterCache].
   static final ValueNotifier<bool> servedFromCache = ValueNotifier<bool>(false);
 
+  /// Say that what is about to be drawn came from here.
+  ///
+  /// Separate from [read] because reading and USING are no longer the same
+  /// thing: every catalogue call reads the cache first now, and only the ones
+  /// whose network attempt was too slow or unreachable actually show it.
+  static void noteServedFromCache() => servedFromCache.value = true;
+
+  /// Say that what is about to be drawn came from the server.
+  static void noteServedLive() => servedFromCache.value = false;
+
   static Directory? _dir;
   static bool _pruned = false;
 
@@ -118,7 +128,16 @@ class CatalogueCache {
 
   /// The stored body for [key], or null when there is none, it is too old, or
   /// it cannot be read.
-  static Future<dynamic> read(String key) async {
+  ///
+  /// [quiet] reads WITHOUT claiming the screen is showing saved data.
+  ///
+  /// The caller now reads the cache BEFORE the network rather than after it
+  /// fails — that is what makes an offline launch instant instead of a
+  /// twenty-second wait — so a read no longer means the saved copy was used.
+  /// Only the caller knows that, and it says so with [noteServedFromCache].
+  /// Without this the banner appeared on a perfectly good connection, on every
+  /// screen, because every screen reads the cache first now.
+  static Future<dynamic> read(String key, {bool quiet = false}) async {
     if (!enabled) return null;
     try {
       final dir = await _directory();
@@ -146,7 +165,7 @@ class CatalogueCache {
       // original failure and the user will get a retry button — an error card
       // under a banner promising saved content would be the worst of both.
       if (body == null) return null;
-      servedFromCache.value = true;
+      if (!quiet) servedFromCache.value = true;
       return body;
     } catch (e) {
       if (kDebugMode) debugPrint('CatalogueCache.read: $e');
@@ -165,11 +184,14 @@ class CatalogueCache {
       // Nothing to serve later, and writing it would shadow a good older entry
       // with an empty one.
       if (body == null) return;
-      // A write means a live answer just arrived, which is the one thing that
-      // can clear the banner. Set before the encoding and the disk work, so a
-      // full disk does not leave the app claiming to be offline while it is
-      // plainly fetching.
-      servedFromCache.value = false;
+      // A WRITE NO LONGER CLEARS THE BANNER, and that is a correction rather
+      // than an omission. Since the caller shows the saved copy after a couple
+      // of seconds and lets the request carry on in the background, the write
+      // that eventually lands happens while the STALE copy is still on screen
+      // — so clearing the banner here would take the notice away and leave the
+      // old listing under it, which is the one combination that misleads.
+      // Only the caller knows which answer it actually returned, and it says
+      // so on both paths.
       final encoded = jsonEncode(<String, dynamic>{
         'v': 1,
         'at': DateTime.now().toUtc().millisecondsSinceEpoch,

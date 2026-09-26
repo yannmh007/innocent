@@ -168,7 +168,7 @@ class PosterCache {
       final dir = Directory(p.join(base.path, dirName));
       if (!await dir.exists()) await dir.create(recursive: true);
       _dir = dir;
-      unawaited(_dropLegacyOnce());
+      unawaited(_adoptLegacyOnce(dir));
       return dir;
     } catch (e) {
       if (kDebugMode) debugPrint('PosterCache.dir: $e');
@@ -178,24 +178,60 @@ class PosterCache {
 
   static bool _legacyChecked = false;
 
-  /// Deletes the pre-move directory, once.
+  /// Moves the pre-move directory's artwork into the new one, once.
   ///
-  /// Without this an upgraded install keeps up to [_maxBytes] of artwork in the
-  /// old location that nothing will ever read again — and since Android only
-  /// reclaims the cache directory under pressure, it could sit there for
-  /// months. The posters simply re-download into the new directory on first
-  /// use, which is one scroll's worth of data and the reason no migration is
-  /// attempted: copying would double the disk use to save a few hundred
-  /// kilobytes of traffic.
-  static Future<void> _dropLegacyOnce() async {
+  /// ═══════════════════════════════════════════════════════════════════════
+  /// ADOPTED AND NOT DELETED, AND THE DIFFERENCE IS THE WHOLE POINT
+  /// ═══════════════════════════════════════════════════════════════════════
+  ///
+  /// The first version of this deleted the old directory, on the reasoning
+  /// that the posters simply re-download on first use and copying would double
+  /// the disk use to save a few hundred kilobytes of traffic.
+  ///
+  /// That reasoning missed the case this whole programme is about. An upgrade
+  /// happens, then the phone loses its signal — and the viewer who had a
+  /// catalogue full of artwork a minute ago now has a grid of grey rectangles,
+  /// caused by the very change that was supposed to stop artwork disappearing.
+  /// "It re-downloads" is true and useless with no connection.
+  ///
+  /// A RENAME, not a copy, so the objection to copying does not apply: both
+  /// directories are app-private storage on one volume, so each file moves by
+  /// having its name changed and nothing is duplicated, at any size. The names
+  /// are already SHA-1 of the URL, so a file keeps working under the same name
+  /// in its new home with nothing to rewrite.
+  ///
+  /// Every failure falls back to deleting: an adoption that cannot happen must
+  /// not leave up to [_maxBytes] of unreachable artwork behind in a directory
+  /// nothing will ever read again.
+  static Future<void> _adoptLegacyOnce(Directory into) async {
     if (_legacyChecked) return;
     _legacyChecked = true;
     try {
       final base = await getApplicationCacheDirectory();
       final old = Directory(p.join(base.path, dirName));
-      if (await old.exists()) await old.delete(recursive: true);
+      if (!await old.exists()) return;
+      await for (final entity in old.list(followLinks: false)) {
+        if (entity is! File) continue;
+        final name = p.basename(entity.path);
+        // A half-written file from an interrupted download in the old
+        // location. It would be adopted as a permanently broken poster.
+        if (name.endsWith('.part')) continue;
+        final target = File(p.join(into.path, name));
+        try {
+          // Whatever is already in the new directory was written by this
+          // build and is at least as trustworthy.
+          if (await target.exists()) continue;
+          await entity.rename(target.path);
+        } catch (_) {
+          // Cross-device, a name clash, a permission: this one poster
+          // re-downloads. The rest still move.
+        }
+      }
+      // Whatever would not move is deleted with the directory: unreachable
+      // artwork billed to the user's storage for nothing.
+      await old.delete(recursive: true);
     } catch (e) {
-      if (kDebugMode) debugPrint('PosterCache.legacy: $e');
+      if (kDebugMode) debugPrint('PosterCache.adopt: $e');
     }
   }
 

@@ -9,6 +9,7 @@ import '../../domain/content_filters.dart';
 import '../../domain/content_repository.dart';
 import '../../domain/viewer.dart';
 import '../../domain/video_content.dart';
+import '../../../../core/services/network/connection_kind.dart';
 import '../cache/catalogue_cache.dart';
 import 'api_client.dart';
 import 'api_exception.dart';
@@ -70,25 +71,11 @@ class ApiContentRepository implements ContentRepository {
     String path, {
     Map<String, String>? query,
     bool authenticated = true,
-  }) async {
-    final key = CatalogueCache.keyFor(path, query);
-    try {
-      final body = await _api.getJson(
-        path,
-        query: query,
-        authenticated: authenticated,
-      );
-      unawaited(CatalogueCache.write(key, body));
-      return body;
-    } on ApiException catch (e) {
-      if (!e.isRetryable) rethrow;
-      final cached = await CatalogueCache.read(key);
-      // Nothing remembered: the caller sees the original failure, so an empty
-      // cache still produces a retry button rather than a silently empty
-      // screen that looks like an empty catalogue.
-      if (cached == null) rethrow;
-      return cached;
-    }
+  }) {
+    return _serve(
+      CatalogueCache.keyFor(path, query),
+      () => _api.getJson(path, query: query, authenticated: authenticated),
+    );
   }
 
   /// Same, for the RPCs. The body is part of the key — `row_catalogue` and
@@ -96,16 +83,109 @@ class ApiContentRepository implements ContentRepository {
   Future<dynamic> _cachedPost(
     String path, {
     required Map<String, dynamic> body,
-  }) async {
-    final key = CatalogueCache.keyFor(path, body);
+  }) {
+    return _serve(
+      CatalogueCache.keyFor(path, body),
+      () => _api.postJson(path, body: body),
+    );
+  }
+
+  /// How long a saved answer will wait for a fresh one before it is shown.
+  ///
+  /// ═══════════════════════════════════════════════════════════════════════
+  /// THIS NUMBER IS THE WHOLE DIFFERENCE BETWEEN "OFFLINE" AND "BROKEN"
+  /// ═══════════════════════════════════════════════════════════════════════
+  ///
+  /// The first version of this waited for the request to FAIL and only then
+  /// looked in the cache. That is correct and it is unusable: `BackendConfig
+  /// .timeout` is twenty seconds, and a phone with no signal does not always
+  /// fail fast — a dead connection frequently hangs rather than refusing, which
+  /// is the reason that timeout exists at all. So the landing tab sat on its
+  /// skeletons for up to twenty seconds before showing anything, and twenty
+  /// seconds of grey rectangles is indistinguishable from an app that does not
+  /// work. That is exactly what a viewer reported, with a screenshot.
+  ///
+  /// Telegram and Facebook do not wait. They draw the last thing they had,
+  /// immediately, and quietly replace it when the network answers. So: the
+  /// request still goes out, and it still updates the cache when it lands, but
+  /// the SAVED copy is shown the moment this much time has passed without an
+  /// answer.
+  ///
+  /// Two and a half seconds rather than zero, because on a working connection
+  /// showing a saved copy and then replacing it a moment later is a flicker
+  /// nobody asked for. Two and a half seconds is longer than a good request and
+  /// far shorter than a person's patience with a blank screen.
+  static const Duration _staleAfter = Duration(milliseconds: 2500);
+
+  /// Answers from the network, or from what was saved, whichever can answer.
+  ///
+  /// THE FALLBACK IS FOR "COULD NOT ASK" AND FOR "HAS NOT ANSWERED YET", NEVER
+  /// FOR "WAS TOLD NO". A 401, 403 or 404 is the server's actual answer and is
+  /// rethrown untouched: serving a remembered catalogue to a session the server
+  /// has just rejected would show one account's listing to whoever is holding
+  /// the phone, which is the one thing row-level security is there to prevent.
+  Future<dynamic> _serve(String key, Future<dynamic> Function() fetch) async {
+    // The local answer first, because whether there IS one changes what the
+    // network attempt is allowed to cost. A small JSON file off flash: single
+    // digit milliseconds, and it is the price of never showing a blank screen.
+    final cached = await CatalogueCache.read(key, quiet: true);
+
+    // ─── NO RADIO, NO WAIT ───────────────────────────────────────────────
+    //
+    // Asking the platform what is attached is a synchronous lookup with no DNS
+    // and no socket in it, and it answers the one question a timeout can only
+    // guess at. Without this the no-cache path below still spent the full
+    // twenty seconds on a phone in aeroplane mode before admitting there was
+    // no connection — twenty seconds of skeletons, which is what a viewer
+    // photographed and reported as "it does not work".
+    //
+    // `none` is the only value that skips the attempt. An unreadable platform
+    // reports `other`, so a phone this cannot measure still tries the network
+    // exactly as before — the safe direction, because the alternative is
+    // refusing to load a catalogue on a device that is perfectly online.
+    final kind = await ConnectionInfo.read();
+    if (kind.isOffline) {
+      if (cached != null) {
+        CatalogueCache.noteServedFromCache();
+        return cached;
+      }
+      throw const ApiException(
+        ApiErrorKind.network,
+        message: 'no connection',
+      );
+    }
+
+    if (cached == null) {
+      // Nothing saved, so the network is the only answer there is and it gets
+      // the full timeout: a slow connection that WILL answer must not be cut
+      // off, because there is nothing to show instead.
+      final body = await fetch();
+      unawaited(CatalogueCache.write(key, body));
+      CatalogueCache.noteServedLive();
+      return body;
+    }
+
+    final live = fetch();
+    // LISTENED TO SEPARATELY, so that a request which fails or arrives after
+    // the saved copy has already been returned updates the cache quietly
+    // instead of surfacing as an unhandled async error. Dart allows two
+    // listeners on one future; this is the one that outlives this call.
+    unawaited(live.then(
+      (body) => CatalogueCache.write(key, body),
+      onError: (Object _) {},
+    ));
     try {
-      final result = await _api.postJson(path, body: body);
-      unawaited(CatalogueCache.write(key, result));
-      return result;
+      final body = await live.timeout(_staleAfter);
+      CatalogueCache.noteServedLive();
+      return body;
+    } on TimeoutException {
+      // Slow, not broken. The request is still running and will refresh the
+      // cache when it lands; what is shown now is the last known good answer.
+      CatalogueCache.noteServedFromCache();
+      return cached;
     } on ApiException catch (e) {
       if (!e.isRetryable) rethrow;
-      final cached = await CatalogueCache.read(key);
-      if (cached == null) rethrow;
+      CatalogueCache.noteServedFromCache();
       return cached;
     }
   }

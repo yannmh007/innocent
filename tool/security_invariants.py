@@ -452,18 +452,66 @@ if os.path.isfile(REPO):
                 'makes every other measure decoration. Call _api.postJson '
                 'directly.' % m.group(1))
 
-    # (b) EVERY FALLBACK IS GUARDED. A `CatalogueCache.read` that is not
-    # preceded by the retryable test is a cache answering a refusal.
-    for m in re.finditer(r'CatalogueCache\.read\(', body):
-        before = body[max(0, m.start() - 400):m.start()]
-        if 'isRetryable' not in before and 'isUnreachableError' not in before:
-            line = body.count('\n', 0, m.start()) + 1
+    # (b) A REFUSAL IS NEVER ANSWERED FROM THE CACHE.
+    #
+    # The check is on the RETURN and not on the read, because the read moved.
+    # The cache is now consulted BEFORE the network rather than after it fails
+    # — that is what makes an offline launch instant instead of a twenty-second
+    # wait on a dead connection — so "read the cache" no longer means "use it".
+    # What still must hold is that the saved copy is returned only when the
+    # server could not answer: a 401 or 403 is the server's ANSWER, and
+    # replacing it with a remembered listing would show one account's catalogue
+    # after row-level security had just declined it.
+    start = body.find('Future<dynamic> _serve(')
+    end = body.find('\n  // ---- catalogue', start) if start >= 0 else -1
+    serve = body[start:end if end > start else len(body)] if start >= 0 else ''
+    if not serve:
+        fails.append(
+            'CACHE FALLBACK RENAMED: api_content_repository has no '
+            '`Future<dynamic> _serve(`. Move this check with it - it is the '
+            'one that stops a refusal being answered out of the cache.')
+    else:
+        caught = serve.find('on ApiException catch')
+        used = serve.find('return cached;', caught if caught >= 0 else 0)
+        guard = serve.find('!e.isRetryable) rethrow', caught if caught >= 0 else 0)
+        if caught < 0 or used < 0 or guard < 0 or guard > used:
             fails.append(
-                'UNGUARDED CACHE FALLBACK: api_content_repository.dart:%d '
-                'reads the catalogue cache without first checking that the '
-                'failure was retryable. A 401 or 403 is the server\'s ANSWER '
-                'and must be obeyed, not replaced with a remembered listing.'
-                % line)
+                'A REFUSAL ANSWERED FROM THE CACHE: _serve returns the saved '
+                'copy for an ApiException without `if (!e.isRetryable) '
+                'rethrow;` before it. A 401 or 403 is the server\'s answer and '
+                'must be obeyed, not replaced with a remembered listing.')
+
+    # (b2) AND IT MUST NOT WAIT TWENTY SECONDS TO SAY "NO INTERNET".
+    #
+    # This is the defect a viewer photographed. The first version looked in the
+    # cache only after the request FAILED, and `BackendConfig.timeout` is twenty
+    # seconds — a dead connection frequently hangs rather than refusing, which
+    # is why that timeout exists at all. So the landing tab sat on grey
+    # rectangles for twenty seconds before showing anything, which is
+    # indistinguishable from an app that does not work.
+    #
+    # Two things fixed it and both have to stay: ask the platform what is
+    # attached, which costs no DNS and no socket; and put a short ceiling on how
+    # long a saved answer waits for a fresh one.
+    if serve and 'ConnectionInfo.read()' not in serve:
+        fails.append(
+            'THE CATALOGUE WAITS ON A DEAD CONNECTION: _serve does not ask '
+            'ConnectionInfo whether anything is attached. Without it a phone '
+            'in aeroplane mode spends BackendConfig.timeout - twenty seconds '
+            'of skeletons - before it will admit there is no network.')
+    m = re.search(r'_staleAfter = Duration\(milliseconds: (\d+)\)', body)
+    if not m:
+        fails.append(
+            'NO CEILING ON THE STALE WAIT: api_content_repository has no '
+            '`_staleAfter = Duration(milliseconds: N)`. Without it a saved '
+            'catalogue waits the full request timeout before it is shown, '
+            'which is the twenty-second blank screen this replaced.')
+    elif int(m.group(1)) > 5000:
+        fails.append(
+            'THE STALE WAIT IS TOO LONG: _staleAfter is %sms. Past a few '
+            'seconds the saved copy arrives after the viewer has decided the '
+            'app is broken, which is the whole failure it exists to prevent.'
+            % m.group(1))
 
     # (c) The two search rungs that talk to the network directly must stay
     # directly on the network — a cached search key per query would fill the
