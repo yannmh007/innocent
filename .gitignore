@@ -72,3 +72,8 @@ Thumbs.db
 # NOTE: android/app/libs/*.aar are NOT ignored and must stay committed.
 # They are the iADB helper libraries, they have no public Maven coordinates,
 # and the build fails without them. Four files, ~120 KB total.
+
+# Python bytecode. `python3 -m py_compile` writes it beside the checker
+# scripts, and one got committed once.
+__pycache__/
+*.pyc
