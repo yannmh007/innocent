@@ -362,6 +362,66 @@ jobs:
             echo "> leaves some users reading the previous release's note."
           } >> "$GITHUB_STEP_SUMMARY"
 
+      # ═══════════════════════════════════════════════════════════════════
+      # AND TO THE CDN, WHICH IS WHERE PEOPLE ACTUALLY DOWNLOAD IT FROM
+      # ═══════════════════════════════════════════════════════════════════
+      #
+      # A GitHub release asset is a redirect to Azure blob storage, and from
+      # Myanmar that path does not reliably carry ninety megabytes: the
+      # transfer is cut off part way, again and again, at roughly the same
+      # place. The operator's own update failed that way repeatedly while
+      # every poster and every film in the app arrived fine — because those
+      # come off Cloudflare, which has an edge near these users.
+      #
+      # So the APK is also put where the artwork already lives, and
+      # `app_releases.apk_url` points there. The GitHub release stays: it is
+      # the record of what was built, with the hash and the commit.
+      #
+      # NO BUCKET CREDENTIALS HERE EITHER. This asks the ingest function for
+      # a signature and gets one URL, for one object, for an hour. The same
+      # shape as the ingest runner, for the same reason — this repository is
+      # public.
+      - name: Also put the APK on the CDN
+        if: github.ref == 'refs/heads/main'
+        env:
+          SB_URL: ${{ secrets.SUPABASE_URL }}
+          RUNNER_SECRET: ${{ secrets.INGEST_SECRET }}
+          NAME: ${{ steps.facts.outputs.name }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SB_URL:-}" ] || [ -z "${RUNNER_SECRET:-}" ]; then
+            echo "::warning::INGEST_SECRET or SUPABASE_URL not set - the APK" \
+                 "is on the Release only. app_releases must point at GitHub."
+            exit 0
+          fi
+          code=$(curl -sS -o /tmp/sign.json -w '%{http_code}' \
+            -X POST "$SB_URL/functions/v1/ingest" \
+            -H "Authorization: Bearer $RUNNER_SECRET" \
+            -H 'Content-Type: application/json' \
+            -d "{\"op\":\"release\",\"name\":\"${NAME}\"}")
+          if [ "$code" != "200" ]; then
+            echo "::warning::could not get a CDN signature (HTTP $code). The" \
+                 "APK is on the Release only."
+            exit 0
+          fi
+          # NEVER PRINTED. It is a presigned PUT and this log is public.
+          PUT=$(python3 -c "import json;print(json.load(open('/tmp/sign.json'))['put_url'])")
+          PUB=$(python3 -c "import json;print(json.load(open('/tmp/sign.json'))['public_url'])")
+          curl --fail-with-body -sS -X PUT -T "$NAME" \
+            -H 'Content-Type: application/vnd.android.package-archive' "$PUT"
+          echo "on the CDN: $PUB"
+          {
+            echo ""
+            echo "## The APK is also on the CDN"
+            echo ""
+            echo "    $PUB"
+            echo ""
+            echo "**Use this as \`apk_url\`, not the GitHub link.** A release"
+            echo "asset redirects to Azure blob storage, which does not"
+            echo "reliably carry ninety megabytes to Myanmar; this is the"
+            echo "same Cloudflare edge that already serves every poster."
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Publish the APK as a Release asset
         # WHY A RELEASE AND NOT AN ARTIFACT (18 Sep 2026)
         # ───────────────────────────────────────────────

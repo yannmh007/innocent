@@ -81,6 +81,12 @@ const MEDIA_BUCKET = Deno.env.get('R2_BUCKET') ?? 'innocent-media';
 // put everything in the media bucket.
 const PUBLIC_BUCKET = Deno.env.get('R2_PUBLIC_BUCKET') ?? 'innocent-public';
 
+// Where the public bucket answers from. The same base `public_asset_base()`
+// builds artwork URLs on, so an APK put here is served by the edge that is
+// already delivering every poster in the app.
+const PUBLIC_BASE = Deno.env.get('R2_PUBLIC_BASE') ??
+  'https://pub-18c62521649645be87d4d36225021e15.r2.dev/';
+
 /// Which bucket a kind belongs in. One place, because the webhook and the
 /// presigned PUT have to agree and the row is written by one and signed by
 /// the other.
@@ -497,6 +503,51 @@ Deno.serve(async (req: Request) => {
       p_bytes: Number(body.bytes ?? 0) || null,
     });
     return json({ ok: true, result }, 200, req);
+  }
+
+  // ── release ──────────────────────────────────────────────────────────────
+  //
+  // A presigned PUT for an APK, in the PUBLIC bucket.
+  //
+  // ═══════════════════════════════════════════════════════════════════════
+  // WHY THE UPDATE IS NOT SERVED FROM GITHUB ANY MORE
+  // ═══════════════════════════════════════════════════════════════════════
+  //
+  // A GitHub release asset is a redirect to Azure blob storage, and from
+  // Myanmar that path is not reliable for ninety megabytes: the transfer is
+  // cut off part way, repeatedly, at roughly the same place. The operator's
+  // own update failed that way over and over while every poster and every
+  // film in the app arrived without trouble — because those come off
+  // Cloudflare, which has an edge near these users and Azure does not.
+  //
+  // So the APK goes where the artwork already goes. The GitHub release is
+  // still cut and is still the record of what was built; this is the copy
+  // people download.
+  //
+  // THE RUNNER STILL HOLDS NO BUCKET CREDENTIALS. It asks for a signature
+  // and gets one URL, for one object, for an hour — the same shape as the
+  // ingest path above, and for the same reason: this repository is public.
+  //
+  // THE NAME IS A PATTERN, NOT A STRING THE CALLER CHOOSES. Anything holding
+  // the runner secret could otherwise write anywhere in a bucket the whole
+  // app reads, including over a poster. `innocent-<x>.<y>.<z>-<code>.apk`
+  // and nothing else, under `apk/`.
+  if (op === 'release') {
+    const given = (req.headers.get('Authorization') ?? '').replace(/^Bearer /i, '');
+    if (!sameSecret(given, RUNNER_SECRET)) return json({ error: 'no' }, 403, req);
+
+    const name = String(body.name ?? '');
+    if (!/^innocent-\d+\.\d+\.\d+-\d+\.apk$/.test(name)) {
+      return json({ error: 'bad_name' }, 400, req);
+    }
+    const key = `apk/${name}`;
+    return json({
+      // An hour. The upload is one PUT from a runner with a fast link, and a
+      // signature that outlives the job it was minted for is a signature
+      // somebody can find in a log and reuse.
+      put_url: await presign('PUT', key, 3600, PUBLIC_BUCKET),
+      public_url: `${PUBLIC_BASE}${key}`,
+    }, 200, req);
   }
 
   // ── list ─────────────────────────────────────────────────────────────────

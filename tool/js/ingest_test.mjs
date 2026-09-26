@@ -228,6 +228,49 @@ const studio = await import('data:text/javascript,' + encodeURIComponent(
     /put_url: await presign\('PUT',[\s\S]{0,160}?String\(job\.bucket/.test(ingestSrc));
 }
 
+// ── the one key the RUNNER may write ──────────────────────────────────────
+//
+// `op: release` hands a presigned PUT into the PUBLIC bucket to anything
+// holding the runner secret. That bucket is where every poster the app draws
+// lives, so the name is a pattern and not a string the caller picks: without
+// one, a leaked Actions secret could overwrite artwork, or drop an APK at a
+// path the console's own listing would never show.
+{
+  // The WHOLE block. Cutting it at the first `return json({` would stop at
+  // the 403 on the line above the name check, which is how the first version
+  // of this managed to assert things about an empty string.
+  const from = ingestSrc.indexOf("op === 'release'");
+  const rel = ingestSrc.slice(from, ingestSrc.indexOf("op === 'list'", from));
+  const guard = rel;
+
+  check('the release op checks the runner secret first',
+    /sameSecret\(given, RUNNER_SECRET\)/.test(guard));
+  check('the release key is under apk/',
+    /`apk\/\$\{name\}`/.test(rel.slice(0, rel.indexOf('}, 200, req);'))));
+
+  // The pattern itself, lifted out of the source and exercised rather than
+  // read: a pattern that looks strict and is not would pass any eyeballing.
+  const m = guard.match(/\/(\^innocent-[^/]*\$)\//);
+  check('the release name pattern is present', m !== null);
+  check('the release name is anchored at both ends',
+    m !== null && m[1].startsWith('^') && m[1].endsWith('$'));
+  if (m) {
+    const re = new RegExp(m[1]);
+    check('a real release name is accepted',
+      re.test('innocent-1.64.39-352.apk'));
+    for (const bad of [
+      'innocent-1.64.39-352.apk.exe',
+      '../poster.jpg',
+      'innocent-1.64.39-352.jpg',
+      'x/innocent-1.64.39-352.apk',
+      'innocent-1.64.39-352.apk\n',
+      '',
+    ]) {
+      check(`${JSON.stringify(bad)} is refused`, !re.test(bad));
+    }
+  }
+}
+
 if (failures) {
   console.error(failures + ' ingest check(s) failed');
   process.exit(1);
