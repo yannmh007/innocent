@@ -85,10 +85,17 @@ class UpdateDownloadService {
   /// times, and each one was a tap, and being away from the phone for two
   /// minutes meant the update simply stopped.
   ///
-  /// Nothing about that needed a person. Six is enough to cross an afternoon
-  /// of a bad cell and small enough that a genuinely dead connection gives up
-  /// in well under a minute.
-  static const int _maxResumes = 6;
+  /// Nothing about that needed a person.
+  ///
+  /// TWENTY, NOT SIX. Six was chosen against "a cell that drops now and
+  /// then". The link this actually has to survive cuts a large transfer off
+  /// repeatedly and at roughly the same place, so a handful of resumes runs
+  /// out while there are still megabytes to go — and the point is to finish
+  /// the file, not to make a respectable number of attempts. Every resume
+  /// that moves bytes is bytes that never have to be paid for again, so the
+  /// only real cost of a high number is time; what stops a pointless loop is
+  /// the barren counter below, not this.
+  static const int _maxResumes = 20;
 
   /// Two consecutive attempts that move nothing mean the connection is gone
   /// rather than flaky, and asking a seventh time would only look busy.
@@ -244,9 +251,25 @@ class UpdateDownloadService {
           // error is an answer, not a hiccup, and repeating the question does
           // not change it; `UpdateDownloadFailure.server` passes straight
           // through this clause.
+          // THE COMMONEST DROP OF ALL DOES NOT THROW A SocketException.
+          //
+          // A link that dies mid-response often just ENDS THE STREAM. No
+          // exception reaches here from the socket at all: `addStream`
+          // completes, the byte count comes up short, and `_fetch` reports
+          // that itself as `UpdateDownloadFailure.network`. The first version
+          // of this clause matched only the three exception types, so the one
+          // case it was written for — a ninety-megabyte transfer cut off at
+          // eighty-four per cent — went straight past it to the screen and
+          // asked for a tap. Which is what happened, twice, on the evening
+          // this was supposed to fix.
+          //
+          // `server` is deliberately NOT in this list. A 404 or a 403 is an
+          // answer and asking again does not change it.
           final dropped = e is SocketException ||
               e is HttpException ||
-              e is TimeoutException;
+              e is TimeoutException ||
+              (e is UpdateDownloadFailure &&
+                  e.kind == UpdateDownloadFailureKind.network);
           if (!dropped) rethrow;
           if (!await _canResume(part, before, resumes, barren)) rethrow;
           resumes++;
@@ -430,7 +453,17 @@ class UpdateDownloadService {
 
     final client = (httpClientFactory?.call() ?? HttpClient())
       ..connectionTimeout = const Duration(seconds: 15)
-      ..idleTimeout = const Duration(seconds: 40);
+      // THREE MINUTES, NOT FORTY SECONDS, AND THE TWO ARE NOT THE SAME KIND
+      // OF NUMBER. connectionTimeout bounds getting a connection at all,
+      // where fifteen seconds is generous. idleTimeout kills a connection
+      // that has gone quiet — and a congested cell goes quiet for a minute
+      // at a time without being dead. At forty seconds this client hung up
+      // on connections that were about to carry on, which ends the response
+      // stream early and reads downstream as a truncated download.
+      //
+      // Being wrong in this direction costs a slow download; being wrong in
+      // the other costs the download.
+      ..idleTimeout = const Duration(minutes: 3);
     IOSink? sink;
     try {
       final req = await client.getUrl(Uri.parse(url));
