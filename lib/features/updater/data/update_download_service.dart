@@ -69,6 +69,34 @@ class UpdateDownloadService {
   /// [download]; a third would just be burning someone's data bundle.
   static const int _maxAttempts = 2;
 
+  /// How many times a DROPPED connection is picked up again by itself.
+  ///
+  /// ═══════════════════════════════════════════════════════════════════
+  /// NINETY MEGABYTES ON A CONNECTION THAT DROPS IS THE ORDINARY CASE
+  /// ═══════════════════════════════════════════════════════════════════
+  ///
+  /// Resuming has worked since this file was written: the partial is kept, a
+  /// retry sends `Range: bytes=<what is on disk>-`, and not one byte already
+  /// paid for is fetched twice. What did not work was WHO had to ask for it.
+  /// A dropped socket went straight out of the loop as a failure, so the
+  /// screen said "The download did not finish. Try again." at eighty-four per
+  /// cent and waited for a tap — reported exactly that way. On the
+  /// connections this app is for, a ninety-megabyte transfer can drop several
+  /// times, and each one was a tap, and being away from the phone for two
+  /// minutes meant the update simply stopped.
+  ///
+  /// Nothing about that needed a person. Six is enough to cross an afternoon
+  /// of a bad cell and small enough that a genuinely dead connection gives up
+  /// in well under a minute.
+  static const int _maxResumes = 6;
+
+  /// Two consecutive attempts that move nothing mean the connection is gone
+  /// rather than flaky, and asking a seventh time would only look busy.
+  static const int _maxBarrenResumes = 2;
+
+  /// Long enough for a cell to hand over, short enough not to feel stalled.
+  static const Duration _resumeDelay = Duration(seconds: 2);
+
   /// Where the APK is written.
   ///
   /// The app cache directory, because it is the ONE root already exported by
@@ -174,7 +202,19 @@ class UpdateDownloadService {
       progress: 0,
     );
     try {
-      for (var attempt = 1;; attempt++) {
+      // Counted across the whole download rather than per attempt: six
+      // resumes is a budget for finishing this file, not six per drop.
+      var resumes = 0;
+      var barren = 0;
+      // COUNTED SEPARATELY FROM THE RESUMES, and it has to be. A restart
+      // throws the partial away and starts at zero; a resume keeps it and
+      // asks for the rest. Sharing one counter would mean three dropped
+      // connections spending the budget for the one legitimate restart that
+      // a re-published APK needs, and the download would be called damaged
+      // when nothing was.
+      var restarts = 0;
+      while (true) {
+        final before = await _sizeOf(part);
         try {
           await _fetch(
             url: url,
@@ -187,9 +227,31 @@ class UpdateDownloadService {
           // _fetch has already removed the unusable partial. Whatever it found
           // (a 416, or a Content-Range naming a different object) means the
           // bytes on disk cannot belong to the file being fetched.
-          if (attempt >= _maxAttempts) {
+          restarts++;
+          if (restarts >= _maxAttempts) {
             throw const UpdateDownloadFailure.damaged();
           }
+          continue;
+        } catch (e) {
+          // THE CONNECTION WENT, NOT THE FILE. A dropped socket, a response
+          // that ended early and an idle timeout are all the same thing here:
+          // the bytes on disk are sound — every one of them arrived under a
+          // Content-Range this code validated — and the way to finish is to
+          // ask for the rest. So it asks, instead of putting "Try again" in
+          // front of somebody at eighty-four per cent.
+          //
+          // Everything else is rethrown untouched. A 404, a 403 or a server
+          // error is an answer, not a hiccup, and repeating the question does
+          // not change it; `UpdateDownloadFailure.server` passes straight
+          // through this clause.
+          final dropped = e is SocketException ||
+              e is HttpException ||
+              e is TimeoutException;
+          if (!dropped) rethrow;
+          if (!await _canResume(part, before, resumes, barren)) rethrow;
+          resumes++;
+          barren = await _sizeOf(part) > before ? 0 : barren + 1;
+          await Future<void>.delayed(_resumeDelay);
           continue;
         }
 
@@ -201,7 +263,8 @@ class UpdateDownloadService {
         final actualBytes = await _sizeOf(part);
         if (expectedBytes > 0 && actualBytes != expectedBytes) {
           await _deleteQuietly(part);
-          if (attempt >= _maxAttempts) {
+          restarts++;
+          if (restarts >= _maxAttempts) {
             throw const UpdateDownloadFailure.damaged();
           }
           continue;
@@ -259,6 +322,23 @@ class UpdateDownloadService {
     } finally {
       await TransferForegroundService.stop();
     }
+  }
+
+  /// Whether a dropped connection is worth picking up again by itself.
+  ///
+  /// TWO BUDGETS, BECAUSE TWO DIFFERENT THINGS GO WRONG. A flaky cell drops a
+  /// transfer that is making progress, and the right answer is to carry on
+  /// where it stopped — every one of those is bytes already paid for. A dead
+  /// connection fails instantly and repeatedly, and retrying it is a spinner
+  /// that means nothing; two attempts that move no bytes is the signal, and
+  /// after that the screen says so and the partial waits for a real retry.
+  ///
+  /// The count of resumes is the outer bound on both, so a connection that
+  /// delivers a kilobyte between drops cannot keep this alive indefinitely.
+  Future<bool> _canResume(File part, int before, int resumes, int barren) async {
+    if (resumes >= _maxResumes) return false;
+    if (await _sizeOf(part) > before) return true;
+    return barren < _maxBarrenResumes;
   }
 
   /// How many bytes of [release] are already on disk, for a resumed UI.

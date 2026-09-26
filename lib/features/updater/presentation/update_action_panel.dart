@@ -243,13 +243,23 @@ class _UpdateActionPanelState extends ConsumerState<UpdateActionPanel> {
         '(${_fmtBytes(d.received)} ${s.updateKept})';
   }
 
-  /// Same shape the vault's picker uses, so the two refusals read alike.
+  /// DECIMAL, TO AGREE WITH THE ROW DIRECTLY ABOVE IT.
+  ///
+  /// This used to divide by 1024 while `AppRelease.sizeLabel` divided by
+  /// 1000, so one screen said the download was 90 MB and, four lines lower,
+  /// counted it towards 86 MB. Both were arithmetically fine and together
+  /// they were nonsense — somebody watching a progress bar creep towards a
+  /// number smaller than the one they were promised has been given a reason
+  /// to distrust the whole screen.
+  ///
+  /// The row above wins because it is the published figure, the one in the
+  /// release notes and the one a person compares against their data bundle.
   static String _fmtBytes(int b) {
-    if (b >= 1024 * 1024 * 1024) {
-      return '${(b / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
+    if (b >= 1000000000) {
+      return '${(b / 1000000000).toStringAsFixed(1)} GB';
     }
-    if (b >= 1024 * 1024) return '${(b / (1024 * 1024)).round()} MB';
-    if (b >= 1024) return '${(b / 1024).round()} KB';
+    if (b >= 1000000) return '${(b / 1000000).round()} MB';
+    if (b >= 1000) return '${(b / 1000).round()} KB';
     return '$b B';
   }
 
