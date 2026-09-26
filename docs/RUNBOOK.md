@@ -216,9 +216,15 @@ the ladder.
 
 ### Redeploying an edge function
 
-Supabase dashboard → **Edge Functions** → the function → **Deploy a new
-version** → *Via Editor* → paste the whole of `docs/edge/<name>.ts` from this
-repository → **Deploy** → **Settings → Verify JWT OFF**.
+Supabase dashboard → **Edge Functions** → the function → the **Code** tab →
+select everything in the editor and replace it with the whole of
+`docs/edge/<name>.ts` from this repository → **Deploy** → check
+**Settings → Verify JWT is OFF**.
+
+> The dashboard moved this. There is no longer a "Deploy a new version"
+> button on the function's overview; editing and deploying both live in the
+> **Code** tab. A NEW function is still created from the Edge Functions list
+> page, not from inside an existing one.
 
 Verify JWT stays off for all of them because each one does its own checking and
 does it differently: `request-playback` reads the viewer's JWT itself, `studio`
@@ -233,13 +239,12 @@ before either got to say who it was.
 > pasted. Nothing else is affected — every other panel uses ops the deployed
 > version already has.
 >
-> **Pending: `ingest` has never been deployed.** It is a new function —
-> Edge Functions → **Deploy a new function** → *Via Editor* → name it
-> `ingest` → paste `docs/edge/ingest.ts` → **Verify JWT OFF**. The database
-> side (the `ingest_jobs` table and its three functions) is already applied
-> and was exercised against the live schema; the function, the workflow and
-> `tool/ingest.py` have not run anywhere yet, and the Telegram secrets above
-> do not exist until you make them.
+> **`ingest` is deployed** (version 1, Verify JWT off), and the deployed copy
+> was read back and checked line by line against this repository. The
+> database side — the `ingest_jobs` table and its three functions — is
+> applied and was exercised against the live schema. What has still never run
+> is the workflow and `tool/ingest.py`, and the Telegram secrets above do not
+> exist until you make them.
 
 ### Then
 
