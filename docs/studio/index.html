@@ -2887,9 +2887,17 @@ function drawIngest(got) {
     if (r.created_at) facts.push(String(r.created_at).slice(0, 16).replace('T', ' '));
     card.append(el('div', { className: 'hint', style: 'margin:4px 0' },
       text(facts.join(' · '))));
-    if (r.state === 'failed' && r.note) {
-      card.append(el('div', { className: 'hint', style: 'color:var(--bad)' },
-        text(r.note)));
+    // THE NOTE IS SHOWN WHILE IT IS STILL GOING ROUND, not only at the end.
+    // A failed fetch goes back to 'queued' for two more tries, so a row that
+    // has already failed twice reads "waiting for a runner" — which is true
+    // and useless. The note says `attempt 1 of 3 failed: …`, and that is the
+    // only place the reason appears before the third try spends it.
+    if (r.note && r.note !== 'claimed') {
+      const bad = r.state === 'failed' || r.note.startsWith('attempt ');
+      card.append(el('div', {
+        className: 'hint',
+        style: bad ? 'color:var(--bad)' : '',
+      }, text(r.note)));
     }
 
     // ATTACHING IS ONLY OFFERED ONCE THE BYTES ARE THERE. Pointing a title at
