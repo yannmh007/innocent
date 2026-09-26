@@ -646,6 +646,125 @@ comparison is the guard.
 
 
 
+## The offline UI (O1–O5) — "Internet မရှိလို့ Layout မပေါ်တာမျိုးမဖြစ်ရ"
+
+The request was Telegram's and Facebook's behaviour: with the radio off the
+layout, the artwork, the grid and a title's album must all still be there;
+downloads play at full quality; anything else plays as much as was already
+watched. Five separate things were wrong, and four of them were invisible from
+the code that showed the symptom.
+
+### O1 — offline, every viewer was ANONYMOUS, so premium downloads showed a paywall
+
+The worst of them, and nothing to do with the catalogue.
+
+`ApiAccountRepository.currentUser()` **rethrows** a network failure rather than
+reporting a sign-out — deliberately and correctly, with a comment saying so.
+Nothing caught it. `AccountNotifier.refresh()` is called unawaited from its own
+constructor, so with no connection the throw escaped as an unhandled async error
+and the state never left its initial value:
+
+```dart
+const AccountState()   // isLoading: true, user: null, Entitlement.free()
+```
+
+`viewerProvider` builds `ViewerTierX.from(account: null, …)`, which is
+`ViewerTier.anonymous`. And `playOffline` asks
+`CapabilityMatrix.allows(tier, Capability.downloadOffline)` before opening a
+file. **So a paying subscriber who had downloaded a film specifically to watch
+without a connection was shown a paywall for their own file, on the one
+connection state the entire download feature exists to serve.**
+
+Fixed by remembering the server's own last answer:
+
+- `data/api/account_snapshot.dart` — user identity plus entitlement, in the
+  Keystore-backed vault (the one store the backup rules already exclude), used
+  under four conditions that must all hold: **only when the network failed**,
+  **only for `grace` (30 days)**, **only for the same user id**, and **only
+  while signed in** (`signOut` forgets it in the same step that empties the
+  shelf). `Entitlement.isActive` still applies on top, because the expiry
+  travels with the snapshot.
+- `refresh()` now resolves to a state always, and tells the two failures apart:
+  a REFUSAL (401/403/404) signs the user out and forgets the snapshot; an
+  UNREACHABLE server falls back to it and sets `AccountState.isOffline`.
+- The `installId` read is outside that try and tolerant of its own failure, so
+  it cannot reintroduce the same bug from one line higher.
+
+### O2 — nothing in the catalogue half was ever persisted
+
+`getRows`, `getCatalogue`, `getRowCatalogue`, `getFacets`, `getById` and the
+album all went straight to the network and kept nothing. Offline the landing tab
+drew `HubErrorState` **instead of** its rows, so there was no layout at all; a
+category grid drew an error; and the album silently vanished from the detail
+screen, which kept its poster and synopsis only because the card object had been
+handed to it by the screen behind.
+
+`data/cache/catalogue_cache.dart` keeps **raw response bodies**, keyed by
+request. Not parsed objects: a second copy of the parser would have to be kept in
+step with `VideoContent` by hand, and the copy that goes stale is always the one
+some screen happens to read. Keeping the JSON means the one parser stays the only
+one, and a column added tomorrow is cached correctly today.
+
+- `getApplicationSupportDirectory()/vh_catalogue/`, SHA-1 file names, bounded by
+  age (45 days), count (200) and bytes (8 MB), write-then-rename.
+- The **support** directory and not the system cache directory: this is the only
+  copy a phone with no signal has, and Android empties the cache directory
+  without asking. Excluded from both backup channels — rule 10 proves it.
+- `_cachedGet` / `_cachedPost` in `ApiContentRepository` are the only door.
+  **The fallback is for "could not ask", never for "was told no"**: only
+  `isUnreachableError` reaches the cache, so a 401 still rethrows rather than
+  serving a listing row-level security has just declined.
+- Offline **search** falls back to `CatalogueCache.titleRows()` matched against
+  `VideoContent.searchHaystack` — the same field set the demo repository
+  searches, so the two cannot drift.
+- `signOut` clears it. The catalogue is RLS-scoped, so what is in it is what the
+  person signing out was allowed to see.
+
+### O3 — the poster cache was in the directory Android empties
+
+`PosterCache` lived in `getApplicationCacheDirectory()` on the argument that
+artwork "can always be fetched again". That premise is exactly what the offline
+programme breaks: with the text now surviving, artwork reclaimed by Android would
+leave the catalogue rendering as a grid of grey tiles — the same blank screen one
+layer down. And this app writes multi-gigabyte downloads to the same device, so
+it is itself the likeliest reason that directory would ever be reclaimed.
+
+Moved to `getApplicationSupportDirectory()/vh_posters/`, same 48 MB ceiling, old
+directory deleted once on upgrade, excluded from both backup channels, and
+clearable by the user — a second button on the stream-cache screen, deliberately
+separate from the video one because they answer opposite needs.
+
+### O4 — and the UI now says "offline" instead of printing an exception
+
+`HubErrorState` showed `error.toString()`, which on a phone with no signal reads
+`ApiException(network)`. It now tells the two apart with the same
+`isUnreachableError` the repository uses, and `OfflineNotice` — driven by
+`CatalogueCache.servedFromCache` — puts one line above the hub and the see-all
+grid saying what is on screen was saved rather than fetched. Driven by the thing
+that answered the request rather than by a connectivity probe, because the honest
+question is not "is there a signal" but "is what you are reading current".
+
+### Fenced by rule 11 in `tool/security_invariants.py`
+
+Each of these was mutation-tested by breaking it and watching the check fail:
+
+1. no `/functions/**` path may go through the caching helpers (a signed URL that
+   expires must never be remembered);
+2. every `CatalogueCache.read` must be preceded by the retryable test;
+3. fewer than five cached reads means a screen fell off the offline path;
+4. `grace` must exist and be ≤ 60 days;
+5. a snapshot dated in the future must be refused (the grace window is measured
+   against the device clock, so winding it forward is the way past it);
+6. `signOut` must call both `AccountSnapshot.forget()` and
+   `CatalogueCache.clear()`;
+7. `refresh()` must contain a `catch`.
+
+`test/offline_first_test.dart` covers the three pure decisions —
+`isUnreachableError`, `AccountSnapshot.decode` and
+`CatalogueCache.collectTitles` — including every refusal, because a refusal that
+stopped working would be silent.
+
+
 ## Notes for whoever picks this up
 
 - **No Flutter or Dart SDK in the session container.** `python3 tool/check.py`

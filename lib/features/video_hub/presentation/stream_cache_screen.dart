@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../../../core/localization/app_strings.dart';
 import '../../../core/theme/app_colors.dart';
+import '../data/cache/catalogue_cache.dart';
 import '../data/cache/stream_cache_store.dart';
+import '../data/poster_cache.dart';
 
 /// What the app is keeping, and the controls to change it.
 ///
@@ -150,6 +152,38 @@ class _StreamCacheScreenState extends State<StreamCacheScreen> {
                           await store.clear();
                           if (mounted) setState(() => _busy = false);
                         },
+                ),
+                // THE OTHER TWO CACHES, and they belong on this screen rather
+                // than a new one because the question a viewer arrives with is
+                // "what is this app keeping and how do I get the space back".
+                //
+                // Separate from the video button above because they answer
+                // opposite needs and clearing the wrong one is annoying: the
+                // video cache is gigabytes and losing it costs a re-download,
+                // while this is a few megabytes and losing it costs the ability
+                // to browse at all with no signal. Someone reclaiming space
+                // wants the first; only someone who suspects a stale listing
+                // wants this.
+                //
+                // Always enabled: unlike the video cache there is no cheap
+                // byte count to gate it on, and a button that does nothing
+                // twice is better than one that looks broken when it would
+                // have worked.
+                ListTile(
+                  leading: const Icon(Icons.cleaning_services_outlined,
+                      color: AppColors.darkOnSurface),
+                  title: Text(s.streamCacheClearPages,
+                      style: const TextStyle(
+                          color: AppColors.darkOnSurface, fontSize: 15)),
+                  subtitle: Text(s.streamCacheClearPagesNote,
+                      style: const TextStyle(
+                          color: AppColors.darkOnSurfaceMuted, fontSize: 12)),
+                  onTap: () async {
+                    setState(() => _busy = true);
+                    await CatalogueCache.clear();
+                    await PosterCache.clear();
+                    if (mounted) setState(() => _busy = false);
+                  },
                 ),
                 if (store.entries.isNotEmpty) ...[
                   const Divider(height: 24),

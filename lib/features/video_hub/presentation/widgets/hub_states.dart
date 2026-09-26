@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/localization/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../data/api/api_exception.dart';
+import '../../data/cache/catalogue_cache.dart';
 import 'poster_metrics.dart';
 import '../video_hub_theme.dart';
 
@@ -242,7 +244,67 @@ class HubEmptyState extends StatelessWidget {
   }
 }
 
+/// A slim line saying what is on screen was saved earlier, not fetched now.
+///
+/// ─── WHY A BANNER AND NOT AN ERROR ───────────────────────────────────────
+///
+/// With no connection the hub used to draw an error card INSTEAD OF its rows,
+/// so the whole layout disappeared and the app looked broken rather than
+/// offline. [CatalogueCache] fixed the disappearing half: the rows, the grid
+/// and a title's album now come off the disk. This is the other half — saying
+/// so. Telegram and Facebook both keep showing the last thing they had and
+/// mark it; an app that shows month-old data as if it were current is the one
+/// people stop trusting.
+///
+/// Listens to [CatalogueCache.servedFromCache] rather than probing the network:
+/// the honest question is not "is there a signal" but "is what you are reading
+/// current", and only the thing that answered the request knows that. It also
+/// means the banner disappears by itself the moment a live answer arrives, with
+/// nothing to poll and nothing to invalidate.
+class OfflineNotice extends StatelessWidget {
+  const OfflineNotice({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppStrings.of(context);
+    return ValueListenableBuilder<bool>(
+      valueListenable: CatalogueCache.servedFromCache,
+      builder: (context, stale, _) {
+        if (!stale) return const SizedBox.shrink();
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: VH.gutter, vertical: 8),
+          color: VH.surface2,
+          child: Row(
+            children: <Widget>[
+              const Icon(Icons.cloud_off, size: 15, color: VH.textTertiary),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  s.vhOfflineBanner,
+                  style: const TextStyle(
+                    color: VH.textSecondary,
+                    fontSize: 12,
+                    height: 1.3,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
 /// Something actually broke. Always offers a retry.
+///
+/// TELLS "NO INTERNET" APART FROM "SOMETHING WENT WRONG", because they call for
+/// different things from the reader: one is fixed by turning the radio on, the
+/// other by tapping retry or telling somebody. It used to print
+/// `error.toString()` in both cases, which on a phone with no signal read
+/// `ApiException(network)` — a sentence that means nothing to the person
+/// holding it and hides the one thing they could act on.
 class HubErrorState extends StatelessWidget {
   final VoidCallback onRetry;
 
@@ -250,7 +312,22 @@ class HubErrorState extends StatelessWidget {
   /// they forward a screenshot to always does.
   final String? detail;
 
-  const HubErrorState({super.key, required this.onRetry, this.detail});
+  /// What was thrown, when the caller has it.
+  ///
+  /// Given the error rather than a boolean so the decision is made in ONE
+  /// place, by [isUnreachableError], which is the same test the repository uses
+  /// to decide whether to serve its cache. A boolean here would let a screen
+  /// disagree with the layer that produced the failure.
+  final Object? error;
+
+  const HubErrorState({
+    super.key,
+    required this.onRetry,
+    this.detail,
+    this.error,
+  });
+
+  bool get _offline => isUnreachableError(error);
 
   @override
   Widget build(BuildContext context) {
@@ -263,7 +340,7 @@ class HubErrorState extends StatelessWidget {
           const Icon(Icons.cloud_off, size: 44, color: AppColors.specBadge),
           const SizedBox(height: 14),
           Text(
-            s.vhLoadFailed,
+            _offline ? s.vhOfflineNothingSaved : s.vhLoadFailed,
             textAlign: TextAlign.center,
             style: const TextStyle(
               color: Colors.white,
@@ -271,12 +348,15 @@ class HubErrorState extends StatelessWidget {
               fontWeight: FontWeight.w600,
             ),
           ),
-          if (detail != null) ...<Widget>[
+          // Offline gets the sentence that tells the user what will happen
+          // next; a real failure gets the raw detail, which is worth nothing to
+          // them and everything to whoever they forward the screenshot to.
+          if (_offline || detail != null) ...<Widget>[
             const SizedBox(height: 6),
             Text(
-              detail!,
+              _offline ? s.vhOfflineHint : detail!,
               textAlign: TextAlign.center,
-              maxLines: 3,
+              maxLines: 4,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 color: VH.textTertiary,

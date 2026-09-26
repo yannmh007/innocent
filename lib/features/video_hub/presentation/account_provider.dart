@@ -1,10 +1,13 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../data/api/account_snapshot.dart';
 import '../data/api/api_account_repository.dart';
 import '../data/api/api_client.dart';
+import '../data/api/api_exception.dart';
 import '../data/api/backend_config.dart';
 import '../data/api/offline_library.dart';
+import '../data/cache/catalogue_cache.dart';
 import '../data/device_identity.dart';
 import '../data/local_account_repository.dart';
 import '../domain/access.dart';
@@ -52,11 +55,21 @@ class AccountState {
   /// Stable per-install id. Empty until the first load resolves.
   final String installId;
 
+  /// True when this state came from [AccountSnapshot] rather than from the
+  /// server — the radio is off, or the backend could not be reached.
+  ///
+  /// Carried so the UI can SAY SO. An app that quietly shows a month-old
+  /// entitlement as if it had just been checked is the same app that shows a
+  /// lapsed subscriber as premium and cannot explain why; a line of text
+  /// costs nothing and makes the state legible.
+  final bool isOffline;
+
   const AccountState({
     this.user,
     this.entitlement = const Entitlement.free(),
     this.isLoading = true,
     this.installId = '',
+    this.isOffline = false,
   });
 
   bool get isSignedIn => user != null;
@@ -66,6 +79,7 @@ class AccountState {
     Entitlement? entitlement,
     bool? isLoading,
     String? installId,
+    bool? isOffline,
     bool clearUser = false,
   }) {
     return AccountState(
@@ -73,6 +87,7 @@ class AccountState {
       entitlement: entitlement ?? this.entitlement,
       isLoading: isLoading ?? this.isLoading,
       installId: installId ?? this.installId,
+      isOffline: isOffline ?? this.isOffline,
     );
   }
 }
@@ -109,22 +124,79 @@ class AccountNotifier extends StateNotifier<AccountState> {
 
   /// Re-reads BOTH the session and the entitlement.
   ///
-  /// Entitlement is never derived locally, and never cached across a sign-in
-  /// change: it is the server's answer to "what has this account paid for",
-  /// and the only party that can answer it honestly is the one holding the
-  /// payment records.
+  /// Entitlement is never DERIVED locally: it is the server's answer to "what
+  /// has this account paid for", and the only party that can answer it
+  /// honestly is the one holding the payment records. When the server answers,
+  /// its answer is the state, and it is written to [AccountSnapshot] on the
+  /// way past.
+  ///
+  /// ─── AND THIS METHOD MUST NOT THROW ──────────────────────────────────────
+  ///
+  /// It used to. `ApiAccountRepository.currentUser` rethrows a network failure
+  /// rather than reporting a sign-out — correct, and nothing caught it, so
+  /// with the radio off the assignment below was never reached and the state
+  /// stayed at its initial value: loading forever, nobody signed in, free
+  /// tier. `viewerProvider` read that as an ANONYMOUS viewer, and
+  /// `playOffline` refuses a premium download to an anonymous viewer — so a
+  /// subscriber who had deliberately downloaded a film to watch without a
+  /// connection was shown a paywall for it, by the one code path the whole
+  /// download feature exists for.
+  ///
+  /// So a failure now resolves to a state, always. Which state depends on what
+  /// kind of failure it was, and the difference matters: a REFUSAL is an
+  /// answer and signs the user out, while an UNREACHABLE server is not an
+  /// answer at all and falls back to what the server said last.
   Future<void> refresh() async {
-    final installId = await DeviceIdentity.get();
-    final user = await _repo.currentUser();
-    final entitlement =
-        user == null ? const Entitlement.free() : await _repo.entitlement();
-    if (!mounted) return;
-    state = AccountState(
-      user: user,
-      entitlement: entitlement,
-      isLoading: false,
-      installId: installId,
-    );
+    // OUTSIDE the try below AND TOLERANT OF ITS OWN FAILURE. It reads the
+    // install id out of the Keystore-backed store, and every path inside
+    // `DeviceIdentity` already swallows — but if one ever stopped, a throw here
+    // would put this method straight back to never assigning a state, which is
+    // the entire bug above. An unreadable id costs the concurrency cap a device
+    // name for one launch; it must not cost the account.
+    var installId = '';
+    try {
+      installId = await DeviceIdentity.get();
+    } catch (e) {
+      if (kDebugMode) debugPrint('install id unreadable: $e');
+    }
+    try {
+      final user = await _repo.currentUser();
+      final entitlement =
+          user == null ? const Entitlement.free() : await _repo.entitlement();
+      // Remembered before the state assignment and awaited, so a launch that
+      // is killed a frame later still has the answer on disk.
+      await AccountSnapshot.remember(user, entitlement);
+      if (!mounted) return;
+      state = AccountState(
+        user: user,
+        entitlement: entitlement,
+        isLoading: false,
+        installId: installId,
+      );
+    } catch (e) {
+      if (!isUnreachableError(e)) {
+        // A real refusal. `currentUser` has already cleared the session on a
+        // 401; anything else here (a 403, a malformed body) is the server
+        // declining to identify this caller, and the honest reading of that is
+        // "not signed in" rather than "signed in as whoever we remember".
+        await AccountSnapshot.forget();
+        if (!mounted) return;
+        state = AccountState(isLoading: false, installId: installId);
+        return;
+      }
+      final remembered = await AccountSnapshot.recall();
+      if (!mounted) return;
+      state = AccountState(
+        user: remembered?.user,
+        entitlement: remembered?.entitlement ?? const Entitlement.free(),
+        isLoading: false,
+        installId: installId,
+        // Flagged even when nothing was remembered: the app is offline either
+        // way, and "we could not check" is a different message from "you are
+        // not signed in".
+        isOffline: true,
+      );
+    }
   }
 
   Future<void> verifyPhone({
@@ -170,6 +242,21 @@ class AccountNotifier extends StateNotifier<AccountState> {
       await _offline.dropEntitled(stop: _stopDownload);
     } catch (e) {
       if (kDebugMode) debugPrint('offline sweep on sign-out failed: $e');
+    }
+    // THE OFFLINE LICENCE GOES WITH THE ACCOUNT TOO, and before the state
+    // assignment for the same reason: a snapshot left behind would let the next
+    // launch with no network sign the previous person back in and hand their
+    // entitlement to whoever is holding the phone.
+    await AccountSnapshot.forget();
+    // And the catalogue cached for offline use. It is scoped to an ACCOUNT by
+    // row-level security, so what is in it is what the person signing out was
+    // allowed to see — including a hidden category their subscription unlocked.
+    // Leaving it behind would draw that listing for the next person with no
+    // request made and no session to refuse it.
+    try {
+      await CatalogueCache.clear();
+    } catch (e) {
+      if (kDebugMode) debugPrint('catalogue cache clear on sign-out failed: $e');
     }
     if (!mounted) return;
     // Entitlement is cleared in the SAME assignment as the user. Doing it in

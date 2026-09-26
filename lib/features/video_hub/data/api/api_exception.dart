@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:io';
+
 /// What went wrong, in terms the UI can act on.
 ///
 /// A single "request failed" is useless here, because the responses mean
@@ -55,4 +58,28 @@ class ApiException implements Exception {
 
   @override
   String toString() => 'ApiException(${kind.name}${code == null ? '' : ':$code'})';
+}
+
+/// Whether [error] means "could not ask" rather than "was told no".
+///
+/// ONE DEFINITION, because three places need the same answer and they must not
+/// drift: `AccountNotifier.refresh` decides whether to fall back to the stored
+/// entitlement, `ApiContentRepository` decides whether to serve a remembered
+/// catalogue, and the Video Hub decides whether to say "no internet" or
+/// "something went wrong". If those three ever disagreed, the app would show a
+/// paywall on one screen and a cached listing on the next for the same cause.
+///
+/// The distinction is the whole point. A REFUSAL — 401, 403, 404 — is the
+/// server's answer and must be obeyed: falling back to a cache on a 401 would
+/// serve a listing row-level security had just declined, and falling back on a
+/// 403 would keep a lapsed subscriber premium forever. Everything retryable is
+/// not an answer at all.
+///
+/// The two bare exceptions are here because a throw can also escape from below
+/// the API client — a platform channel, the secure vault, a socket that cannot
+/// be opened — and on a phone in aeroplane mode that last one is the common
+/// case.
+bool isUnreachableError(Object? error) {
+  if (error is ApiException) return error.isRetryable;
+  return error is SocketException || error is TimeoutException;
 }

@@ -40,6 +40,16 @@
              granted none of it, and either one blows past the per-app backup
              quota and takes the settings and history down with it. -->
         <exclude domain="file" path="offline" />
+        <!-- Poster artwork, moved out of the system cache directory so an
+             offline catalogue still has its pictures. Excluded from both
+             channels for the same reason as the catalogue itself. -->
+        <exclude domain="file" path="vh_posters" />
+        <!-- The catalogue cached for offline browsing: titles, synopses, row
+             structure, album listings. An adult catalogue in readable JSON, so
+             cloud backup would put a list of it in a Drive account and the
+             new-phone transfer would carry it to a handset that has not signed
+             in. Excluded from both channels; it costs one refresh. -->
+        <exclude domain="file" path="vh_catalogue" />
         <!-- The key those downloads are encrypted with. Keystore-wrapped, and
              the Keystore is never in a backup, so a restored copy is a blob
              with no key: every sealed film would draw as noise instead of
@@ -67,6 +77,16 @@
              granted none of it, and either one blows past the per-app backup
              quota and takes the settings and history down with it. -->
         <exclude domain="file" path="offline" />
+        <!-- Poster artwork, moved out of the system cache directory so an
+             offline catalogue still has its pictures. Excluded from both
+             channels for the same reason as the catalogue itself. -->
+        <exclude domain="file" path="vh_posters" />
+        <!-- The catalogue cached for offline browsing: titles, synopses, row
+             structure, album listings. An adult catalogue in readable JSON, so
+             cloud backup would put a list of it in a Drive account and the
+             new-phone transfer would carry it to a handset that has not signed
+             in. Excluded from both channels; it costs one refresh. -->
+        <exclude domain="file" path="vh_catalogue" />
         <!-- The key those downloads are encrypted with. Keystore-wrapped, and
              the Keystore is never in a backup, so a restored copy is a blob
              with no key: every sealed film would draw as noise instead of

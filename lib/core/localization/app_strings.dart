@@ -777,6 +777,8 @@ class AppStrings {
   String get streamCacheLimit => _s('streamCacheLimit');
   String get streamCacheClear => _s('streamCacheClear');
   String get streamCacheClearNote => _s('streamCacheClearNote');
+  String get streamCacheClearPages => _s('streamCacheClearPages');
+  String get streamCacheClearPagesNote => _s('streamCacheClearPagesNote');
   String get streamCacheKept => _s('streamCacheKept');
   String get streamCacheUnnamed => _s('streamCacheUnnamed');
   String get streamCacheSubtitle => _s('streamCacheSubtitle');
@@ -1196,6 +1198,9 @@ class AppStrings {
   String get vhNoContent => _s('vhNoContent');
   String get vhNoMatchingContent => _s('vhNoMatchingContent');
   String get vhLoadFailed => _s('vhLoadFailed');
+  String get vhOfflineBanner => _s('vhOfflineBanner');
+  String get vhOfflineNothingSaved => _s('vhOfflineNothingSaved');
+  String get vhOfflineHint => _s('vhOfflineHint');
   String get vhRetry => _s('vhRetry');
   String get vhSearchPrompt => _s('vhSearchPrompt');
   String get vhSearchNoResults => _s('vhSearchNoResults');
@@ -1711,6 +1716,9 @@ class AppStrings {
     'vhNoContent': 'Nothing here yet. Content appears once a source is connected.',
     'vhNoMatchingContent': 'No titles match these filters.',
     'vhLoadFailed': 'Could not load content',
+    'vhOfflineBanner': 'You are offline — showing what was saved',
+    'vhOfflineNothingSaved': 'No internet connection',
+    'vhOfflineHint': 'Connect once and this page is kept for offline use. Downloads play without any connection.',
     'vhRetry': 'Retry',
     'vhSearchPrompt': 'Search across every category',
     'vhSearchNoResults': 'No titles found',
@@ -2172,6 +2180,8 @@ class AppStrings {
         'have not opened for longest go first.',
     'streamCacheLimit': 'LIMIT',
     'streamCacheClear': 'Clear kept videos',
+    'streamCacheClearPages': 'Clear saved pages and artwork',
+    'streamCacheClearPagesNote': 'The catalogue kept for offline browsing, and its posters. Frees space; needs a connection to fill again.',
     'streamCacheClearNote':
         'Frees the space now. Anything you watch again will be downloaded '
         'again.',
@@ -2929,6 +2939,9 @@ class AppStrings {
     'vhNoContent': 'ဒီမှာ ဘာမှ မရှိသေးပါ။ အရင်းအမြစ် ချိတ်ဆက်ပြီးမှ ပေါ်လာပါမယ်။',
     'vhNoMatchingContent': 'ဒီ စစ်ထုတ်မှုနဲ့ ကိုက်ညီတာ မတွေ့ပါ။',
     'vhLoadFailed': 'အကြောင်းအရာ ဖွင့်၍ မရပါ',
+    'vhOfflineBanner': 'အင်တာနက် မရှိပါ — သိမ်းထားသည့်အတိုင်း ပြထားသည်',
+    'vhOfflineNothingSaved': 'အင်တာနက် မရှိပါ',
+    'vhOfflineHint': 'တစ်ခါ ချိတ်ဆက်ပြီးရင် ဒီစာမျက်နှာကို သိမ်းထားပေးမှာပါ။ Download လုပ်ထားတာတွေက အင်တာနက် မလိုဘဲ ကြည့်လို့ရပါတယ်။',
     'vhRetry': 'ထပ်စမ်းရန်',
     'vhSearchPrompt': 'အမျိုးအစား အားလုံးထဲမှာ ရှာပါ',
     'vhSearchNoResults': 'ရှာမတွေ့ပါ',
@@ -3390,6 +3403,8 @@ class AppStrings {
         'အရင်ဖျက်ပါတယ်။',
     'streamCacheLimit': 'ကန့်သတ်ချက်',
     'streamCacheClear': 'သိမ်းထားတာတွေ ဖျက်မည်',
+    'streamCacheClearPages': 'သိမ်းထားသည့် စာမျက်နှာနှင့် ပုံများ ဖျက်မည်',
+    'streamCacheClearPagesNote': 'အင်တာနက်မရှိချိန် ကြည့်ရန် သိမ်းထားသည့် ကာတာလောက်နှင့် ပိုစတာပုံများ။ ဖျက်လိုက်ရင် နေရာလွတ်ရမည်၊ ပြန်ရဖို့ အင်တာနက် လိုအပ်ပါမည်။',
     'streamCacheClearNote':
         'နေရာ ချက်ချင်းပြန်ရပါမယ်။ ပြန်ကြည့်မယ်ဆိုရင်တော့ ထပ်ဒေါင်းရပါမယ်။',
     'streamCacheKept': 'သိမ်းထားသည်',
@@ -4136,6 +4151,9 @@ class AppStrings {
     'vhNoContent': 'ยังไม่มีเนื้อหา จะแสดงเมื่อเชื่อมต่อแหล่งข้อมูลแล้ว',
     'vhNoMatchingContent': 'ไม่พบรายการที่ตรงกับตัวกรองนี้',
     'vhLoadFailed': 'โหลดเนื้อหาไม่สำเร็จ',
+    'vhOfflineBanner': 'ออฟไลน์ — กำลังแสดงข้อมูลที่บันทึกไว้',
+    'vhOfflineNothingSaved': 'ไม่มีการเชื่อมต่ออินเทอร์เน็ต',
+    'vhOfflineHint': 'เชื่อมต่อหนึ่งครั้งแล้วหน้านี้จะถูกบันทึกไว้ใช้งานออฟไลน์ ส่วนรายการที่ดาวน์โหลดไว้เล่นได้โดยไม่ต้องเชื่อมต่อ',
     'vhRetry': 'ลองอีกครั้ง',
     'vhSearchPrompt': 'ค้นหาจากทุกหมวดหมู่',
     'vhSearchNoResults': 'ไม่พบรายการ',
@@ -4595,6 +4613,8 @@ class AppStrings {
         'เมื่อถึงขีดจำกัด รายการที่ไม่ได้เปิดนานที่สุดจะถูกลบก่อน',
     'streamCacheLimit': 'ขีดจำกัด',
     'streamCacheClear': 'ล้างวิดีโอที่เก็บไว้',
+    'streamCacheClearPages': 'ล้างหน้าและภาพที่บันทึกไว้',
+    'streamCacheClearPagesNote': 'แคตตาล็อกที่บันทึกไว้สำหรับดูออฟไลน์ และภาพโปสเตอร์ คืนพื้นที่ แต่ต้องเชื่อมต่อเพื่อโหลดใหม่',
     'streamCacheClearNote': 'คืนพื้นที่ทันที สิ่งที่ดูซ้ำจะต้องโหลดใหม่',
     'streamCacheKept': 'เก็บไว้',
     'streamCacheUnnamed': 'วิดีโอ',

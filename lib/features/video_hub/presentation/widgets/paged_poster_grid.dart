@@ -55,6 +55,7 @@ class PagedPosterGrid {
       return <Widget>[
         SliverToBoxAdapter(
           child: HubErrorState(
+            error: state.error,
             detail: state.error.toString(),
             onRetry: onRetry,
           ),

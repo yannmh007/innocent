@@ -27,15 +27,36 @@ import 'package:path_provider/path_provider.dart';
 ///
 /// WHAT IS STORED, AND WHERE
 /// ─────────────────────────
-/// `getApplicationCacheDirectory()/vh_posters/`, app-private, with SHA-1 file
+/// `getApplicationSupportDirectory()/vh_posters/`, app-private, with SHA-1 file
 /// names. The name is opaque on purpose - this catalogue is adult, and a
 /// directory listing of `Some Explicit Title.jpg` is a leak even inside
 /// app-private storage. Nothing about a title is recoverable from the
 /// directory; the URL cannot be read back out of the hash.
 ///
-/// The cache directory is the right one rather than the support directory: the
-/// OS may reclaim it under storage pressure and "Clear cache" empties it, both
-/// of which are correct for artwork that can always be fetched again.
+/// ─── AND IT USED TO BE THE CACHE DIRECTORY, ON AN ARGUMENT THAT LAPSED ────
+///
+/// It lived in `getApplicationCacheDirectory()` because the OS may reclaim that
+/// under storage pressure and "Clear cache" empties it, "both of which are
+/// correct for artwork that can always be fetched again".
+///
+/// The premise is what broke. Artwork CANNOT always be fetched again, and the
+/// whole offline programme is about the phones where it cannot: since
+/// [CatalogueCache] the titles, rows and albums survive with no signal, and
+/// artwork reclaimed by Android would leave that catalogue rendering as a grid
+/// of grey tiles — the same blank screen, one layer down. The two caches are
+/// one feature now and must be kept on the same terms.
+///
+/// Storage pressure is not hypothetical here either: this app writes
+/// multi-gigabyte downloads to the same device, so it is itself the likeliest
+/// reason the cache directory would ever be reclaimed.
+///
+/// What is given up is that Android no longer frees this on its own, so the
+/// ceiling below is the whole promise — and there is a button for it in the
+/// stream-cache screen, next to the one for the video cache. And because the
+/// support directory IS backed up, `res/xml/backup_rules.xml` and
+/// `data_extraction_rules.xml` exclude it: a list of poster artwork from an
+/// adult catalogue has no business in somebody's Google Drive.
+/// `tool/security_invariants.py` rule 10 fails the build if that is forgotten.
 ///
 /// FAILURE IS NOT FATAL, BY DESIGN
 /// ───────────────────────────────
@@ -135,18 +156,46 @@ class PosterCache {
     }
   }
 
+  /// Named rather than inline because `tool/security_invariants.py` reads it to
+  /// check that the backup rules mention it.
+  static const String dirName = 'vh_posters';
+
   static Future<Directory?> _directory() async {
     final existing = _dir;
     if (existing != null) return existing;
     try {
-      final base = await getApplicationCacheDirectory();
-      final dir = Directory(p.join(base.path, 'vh_posters'));
+      final base = await getApplicationSupportDirectory();
+      final dir = Directory(p.join(base.path, dirName));
       if (!await dir.exists()) await dir.create(recursive: true);
       _dir = dir;
+      unawaited(_dropLegacyOnce());
       return dir;
     } catch (e) {
       if (kDebugMode) debugPrint('PosterCache.dir: $e');
       return null;
+    }
+  }
+
+  static bool _legacyChecked = false;
+
+  /// Deletes the pre-move directory, once.
+  ///
+  /// Without this an upgraded install keeps up to [_maxBytes] of artwork in the
+  /// old location that nothing will ever read again — and since Android only
+  /// reclaims the cache directory under pressure, it could sit there for
+  /// months. The posters simply re-download into the new directory on first
+  /// use, which is one scroll's worth of data and the reason no migration is
+  /// attempted: copying would double the disk use to save a few hundred
+  /// kilobytes of traffic.
+  static Future<void> _dropLegacyOnce() async {
+    if (_legacyChecked) return;
+    _legacyChecked = true;
+    try {
+      final base = await getApplicationCacheDirectory();
+      final old = Directory(p.join(base.path, dirName));
+      if (await old.exists()) await old.delete(recursive: true);
+    } catch (e) {
+      if (kDebugMode) debugPrint('PosterCache.legacy: $e');
     }
   }
 

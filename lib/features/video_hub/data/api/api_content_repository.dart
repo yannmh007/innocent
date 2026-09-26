@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 
 import '../../domain/access.dart';
@@ -7,6 +9,7 @@ import '../../domain/content_filters.dart';
 import '../../domain/content_repository.dart';
 import '../../domain/viewer.dart';
 import '../../domain/video_content.dart';
+import '../cache/catalogue_cache.dart';
 import 'api_client.dart';
 import 'api_exception.dart';
 
@@ -25,6 +28,14 @@ import 'api_exception.dart';
 /// is deliberately no code path in this class that can produce a playable URL
 /// on its own - not a fallback, not a cache, not a retry with different
 /// arguments. If the server says no, the answer is no.
+///
+/// THE CATALOGUE HALF IS CACHED TO DISK and the PLAYBACK HALF IS NOT, and the
+/// two helpers below are where that line is drawn. [_cachedGet] and
+/// [_cachedPost] remember what the server said and replay it when the server
+/// cannot be reached, which is what lets a phone with no signal still draw its
+/// rows, its grid and a title's album — see [CatalogueCache]. Neither is used
+/// by [requestPlayback], which must ask every single time, and
+/// `tool/security_invariants.py` fails the build if that ever changes.
 class ApiContentRepository implements ContentRepository {
   ApiContentRepository(this._api);
 
@@ -41,11 +52,69 @@ class ApiContentRepository implements ContentRepository {
       'quality_label,genres,episode_count,view_count,access_tier,'
       'photo_count,video_count';
 
+  // ---- the network, remembered ---------------------------------------------
+
+  /// A catalogue GET whose answer is kept, and replayed when the server cannot
+  /// be reached.
+  ///
+  /// THE FALLBACK IS FOR "COULD NOT ASK", NEVER FOR "WAS TOLD NO". Only a
+  /// retryable failure — no connection, a timeout, a 5xx, a 429 — reaches the
+  /// cache. A 401, 403 or 404 is the server's actual answer and is rethrown
+  /// untouched: serving a remembered catalogue to a session the server has just
+  /// rejected would show one account's listing to whoever is holding the phone,
+  /// which is the one thing row-level security is there to prevent.
+  ///
+  /// The write is not awaited. A slow disk must not add latency to a screen
+  /// that already has its data.
+  Future<dynamic> _cachedGet(
+    String path, {
+    Map<String, String>? query,
+    bool authenticated = true,
+  }) async {
+    final key = CatalogueCache.keyFor(path, query);
+    try {
+      final body = await _api.getJson(
+        path,
+        query: query,
+        authenticated: authenticated,
+      );
+      unawaited(CatalogueCache.write(key, body));
+      return body;
+    } on ApiException catch (e) {
+      if (!e.isRetryable) rethrow;
+      final cached = await CatalogueCache.read(key);
+      // Nothing remembered: the caller sees the original failure, so an empty
+      // cache still produces a retry button rather than a silently empty
+      // screen that looks like an empty catalogue.
+      if (cached == null) rethrow;
+      return cached;
+    }
+  }
+
+  /// Same, for the RPCs. The body is part of the key — `row_catalogue` and
+  /// `catalogue_facets` are the same path with different arguments.
+  Future<dynamic> _cachedPost(
+    String path, {
+    required Map<String, dynamic> body,
+  }) async {
+    final key = CatalogueCache.keyFor(path, body);
+    try {
+      final result = await _api.postJson(path, body: body);
+      unawaited(CatalogueCache.write(key, result));
+      return result;
+    } on ApiException catch (e) {
+      if (!e.isRetryable) rethrow;
+      final cached = await CatalogueCache.read(key);
+      if (cached == null) rethrow;
+      return cached;
+    }
+  }
+
   // ---- catalogue ----------------------------------------------------------
 
   @override
   Future<VideoContent?> getFeatured() async {
-    final rows = await _api.getJson(
+    final rows = await _cachedGet(
       '/rest/v1/titles',
       query: <String, String>{
         'select': _titleColumns,
@@ -61,7 +130,7 @@ class ApiContentRepository implements ContentRepository {
   Future<List<ContentRow>> getRows() async {
     // One round trip per row would be four on a cold start over a mobile
     // network. The server assembles them.
-    final body = await _api.postJson(
+    final body = await _cachedPost(
       '/rest/v1/rpc/landing_rows',
       body: const <String, dynamic>{},
     );
@@ -142,7 +211,7 @@ class ApiContentRepository implements ContentRepository {
   }) async {
     final from = page * pageSize;
     final to = from + pageSize - 1;
-    final body = await _api.getJson(
+    final body = await _cachedGet(
       path,
       query: query,
       // `count=exact` is what makes "42 titles" and "Show 24 results"
@@ -212,8 +281,8 @@ class ApiContentRepository implements ContentRepository {
 
   Future<ContentFacets> _facets(Map<String, String> args) async {
     try {
-      final body = await _api.postJson('/rest/v1/rpc/catalogue_facets',
-          body: args);
+      final body =
+          await _cachedPost('/rest/v1/rpc/catalogue_facets', body: args);
       if (body is! Map<String, dynamic>) return ContentFacets.empty;
       return ContentFacets(
         genres: (body['genres'] as List?)?.map((e) => '$e').toList() ??
@@ -294,16 +363,53 @@ class ApiContentRepository implements ContentRepository {
       // yesterday — English titles only — rather than becoming an error
       // screen. Losing Burmese search is a missing feature; losing search is
       // a broken app.
-      final body = await _api.getJson(
-        '/rest/v1/titles',
-        query: <String, String>{
-          'select': _titleColumns,
-          'title': 'ilike.*$q*',
-          'limit': '50',
-        },
-      );
-      return _titles(body);
+      try {
+        final body = await _api.getJson(
+          '/rest/v1/titles',
+          query: <String, String>{
+            'select': _titleColumns,
+            'title': 'ilike.*$q*',
+            'limit': '50',
+          },
+        );
+        return _titles(body);
+      } on ApiException catch (e) {
+        // THE LAST RUNG: NO SERVER AT ALL.
+        //
+        // Every attempt above needs one. With the radio off all three fail with
+        // the same network error, and a search screen that can only ever say
+        // "something went wrong" is the wrong answer for somebody looking for a
+        // film they were watching yesterday — which is the likeliest search on
+        // a phone with no signal. So the last resort searches what has already
+        // been seen.
+        //
+        // Only for a retryable failure. A 401 or a 403 means the server
+        // declined this session, and answering it out of a cache would hand
+        // over a listing row-level security had just refused.
+        if (!e.isRetryable) rethrow;
+        return _searchCached(q);
+      }
     }
+  }
+
+  /// Search over the catalogue already on disk.
+  ///
+  /// Matches on [VideoContent.searchHaystack] — title, Burmese title, genres,
+  /// year, category — which is the same field set the bundled demo repository
+  /// searches, so offline search and demo search cannot drift apart. Trigram
+  /// tolerance is not reproduced: a substring match is what can honestly be
+  /// done without Postgres, and a mistyped letter finding nothing offline is a
+  /// smaller failure than an empty screen.
+  Future<List<VideoContent>> _searchCached(String q) async {
+    final needle = q.toLowerCase();
+    final rows = await CatalogueCache.titleRows();
+    final hits = <VideoContent>[];
+    for (final row in rows) {
+      final title = _titleFrom(row);
+      if (title.searchHaystack.contains(needle)) hits.add(title);
+      if (hits.length >= 50) break;
+    }
+    return hits;
   }
 
   /// Makes a user's search text safe to sit inside a PostgREST `or=()` group.
@@ -322,7 +428,7 @@ class ApiContentRepository implements ContentRepository {
   @override
   Future<CategoryCatalogue> getCategories() async {
     try {
-      final body = await _api.getJson(
+      final body = await _cachedGet(
         '/rest/v1/categories',
         query: const <String, String>{
           'select': 'id,label,label_mm,sort_order,is_visible',
@@ -364,7 +470,7 @@ class ApiContentRepository implements ContentRepository {
 
   @override
   Future<VideoContent?> getById(String id) async {
-    final body = await _api.getJson(
+    final body = await _cachedGet(
       '/rest/v1/titles',
       query: <String, String>{
         'select': _titleColumns,
@@ -397,7 +503,7 @@ class ApiContentRepository implements ContentRepository {
   /// the film.
   Future<List<AlbumItem>> _album(String titleId) async {
     try {
-      final body = await _api.getJson(
+      final body = await _cachedGet(
         '/rest/v1/title_media',
         query: <String, String>{
           'select': 'id,kind,url,thumb_url,duration_s,is_free,width,height',

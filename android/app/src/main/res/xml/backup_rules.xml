@@ -72,6 +72,23 @@
          to a phone, the app re-downloads on request, and the shelf drops any
          row whose file is missing the next time it is read. -->
     <exclude domain="file" path="offline/" />
+    <!-- Poster artwork for whatever this viewer has browsed. It moved out of
+         the system cache directory so that a catalogue kept for offline use
+         still has its pictures — see PosterCache — which put it inside the
+         backup domain, and a Drive folder of artwork from an adult catalogue is
+         the same leak as a list of the titles. Capped and clearable in the app;
+         losing it on a restore costs one scroll. -->
+    <exclude domain="file" path="vh_posters/" />
+    <!-- The catalogue itself, cached so the app is not blank with no signal.
+         Titles, synopses, row structure and album listings for whatever this
+         viewer has browsed — an ADULT catalogue, in other words, and Auto
+         Backup would put a readable list of it in the user's Google Drive.
+
+         In the support directory rather than the system cache directory on
+         purpose: it is the only copy a phone with no signal has, and Android
+         empties the cache directory without asking. Losing it on a restore
+         costs one refresh and nothing else. -->
+    <exclude domain="file" path="vh_catalogue/" />
     <!-- The key those downloads are encrypted with — wrapped by a key that
          lives in the Android Keystore and is NEVER in a backup. Exactly the
          FlutterSecureStorage problem one paragraph up: restored, it is a blob

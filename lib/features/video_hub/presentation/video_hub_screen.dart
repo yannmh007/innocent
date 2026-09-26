@@ -150,6 +150,11 @@ class _VideoHubScreenState extends ConsumerState<VideoHubScreen>
             physics: const AlwaysScrollableScrollPhysics(),
             slivers: <Widget>[
               _buildSearchBar(context, s),
+              // ABOVE the sticky tab bar and inside the scroll view, so it
+              // scrolls away rather than eating a line of a phone screen
+              // permanently. It draws nothing at all while the catalogue is
+              // current — see OfflineNotice.
+              const SliverToBoxAdapter(child: OfflineNotice()),
               SliverPersistentHeader(
                 pinned: true,
                 delegate: StickyBar(
@@ -281,6 +286,7 @@ class _VideoHubScreenState extends ConsumerState<VideoHubScreen>
       error: (error, _) => <Widget>[
         SliverToBoxAdapter(
           child: HubErrorState(
+            error: error,
             detail: error.toString(),
             onRetry: () => ref.invalidate(contentRowsProvider),
           ),

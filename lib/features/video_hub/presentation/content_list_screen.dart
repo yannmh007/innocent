@@ -9,6 +9,7 @@ import 'video_hub_provider.dart';
 import 'video_hub_theme.dart';
 import 'widgets/filter_sheet.dart';
 import 'widgets/filter_toolbar.dart';
+import 'widgets/hub_states.dart';
 import 'widgets/paged_poster_grid.dart';
 import 'widgets/sticky_bar.dart';
 import 'account_provider.dart';
@@ -133,6 +134,10 @@ class _ContentListScreenState extends ConsumerState<ContentListScreen> {
           // looks wrong and the user most wants to retry.
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: <Widget>[
+            // Draws nothing while the catalogue is current. See OfflineNotice:
+            // a grid served off the disk should say so here as well as on the
+            // hub, because "See all" is reachable without passing the hub.
+            const SliverToBoxAdapter(child: OfflineNotice()),
             if (facets != null && !facets.isEmpty)
               SliverPersistentHeader(
                 pinned: true,

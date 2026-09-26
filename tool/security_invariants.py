@@ -414,6 +414,133 @@ for base, dirs, files in os.walk(ROOT):
                     'it is a public fact, add it to CRED_ALLOWED by name.'
                     % (rel, line, what))
 
+
+# --- 11. the offline cache can never answer a question about ACCESS ----------
+#
+# Two halves of the app were made to survive with no network, and each one has a
+# line it must not cross. Both lines are invisible in a diff and expensive to
+# cross, which is why they are here rather than in a comment.
+#
+# THE CATALOGUE CACHE (CatalogueCache) replays what the server said so a phone
+# with no signal still draws its rows, its grid and a title's album. It must
+# only ever do that when the server could not be REACHED. A 401 means the
+# session is gone and a 403 means the subscription is not — answering either out
+# of a cache would show one account's listing to whoever is holding the phone,
+# or keep a lapsed subscriber premium for as long as they stayed lapsed. And it
+# must never stand anywhere near `request-playback`, whose signed URL expires in
+# ten minutes and is the one thing the client must not be able to produce on its
+# own.
+#
+# THE ACCOUNT SNAPSHOT (AccountSnapshot) is the server's last answer about who
+# is signed in and what they paid for, kept so a premium download opens on a bus
+# with no signal. It is bounded by a grace window and by the sign-out that
+# forgets it; without either it is a permanent free subscription for anybody who
+# signs in once and then stays in aeroplane mode.
+REPO = os.path.join(FEATURE, 'data/api/api_content_repository.dart')
+if os.path.isfile(REPO):
+    body = strip(open(REPO, encoding='utf-8').read())
+
+    # (a) THE PLAYBACK PATH IS NOT CACHED. Every edge function is refused, not
+    # just request-playback by name: the next one to be added would be signed
+    # too, and a rule that lists one endpoint teaches people to add a second.
+    for m in re.finditer(r'_cached(?:Get|Post)\(\s*\n?\s*\'([^\']+)\'', body):
+        if m.group(1).startswith('/functions/'):
+            fails.append(
+                'PLAYBACK SERVED FROM A CACHE: api_content_repository asks '
+                '%s through the caching helper. An edge function decides '
+                'ACCESS and signs a URL that expires; a remembered answer '
+                'makes every other measure decoration. Call _api.postJson '
+                'directly.' % m.group(1))
+
+    # (b) EVERY FALLBACK IS GUARDED. A `CatalogueCache.read` that is not
+    # preceded by the retryable test is a cache answering a refusal.
+    for m in re.finditer(r'CatalogueCache\.read\(', body):
+        before = body[max(0, m.start() - 400):m.start()]
+        if 'isRetryable' not in before and 'isUnreachableError' not in before:
+            line = body.count('\n', 0, m.start()) + 1
+            fails.append(
+                'UNGUARDED CACHE FALLBACK: api_content_repository.dart:%d '
+                'reads the catalogue cache without first checking that the '
+                'failure was retryable. A 401 or 403 is the server\'s ANSWER '
+                'and must be obeyed, not replaced with a remembered listing.'
+                % line)
+
+    # (c) The two search rungs that talk to the network directly must stay
+    # directly on the network — a cached search key per query would fill the
+    # cache with one entry per keystroke.
+    if body.count('_cachedGet(') + body.count('_cachedPost(') < 5:
+        fails.append(
+            'CATALOGUE NO LONGER CACHED: api_content_repository has fewer '
+            'than five cached reads. The landing rows, the paged catalogue, '
+            'the facets, the categories, one title and its album all went '
+            'through the cache so the app is not blank with no signal. If a '
+            'call moved off it, the offline hub lost a screen.')
+
+SNAP = os.path.join(FEATURE, 'data/api/account_snapshot.dart')
+if os.path.isfile(SNAP):
+    body = strip(open(SNAP, encoding='utf-8').read())
+    # A grace window that is absent or enormous is the same as none.
+    m = re.search(r'Duration\s+grace\s*=\s*Duration\(days:\s*(\d+)\)', body)
+    if not m:
+        fails.append(
+            'OFFLINE LICENCE WITH NO EXPIRY: account_snapshot.dart has no '
+            '`Duration grace = Duration(days: N)`. Without it, signing in once '
+            'and staying offline is a permanent subscription.')
+    elif int(m.group(1)) > 60:
+        fails.append(
+            'OFFLINE LICENCE TOO LONG: account_snapshot.dart grants %s days '
+            'offline. Longer than a billing cycle means a cancelled '
+            'subscription keeps working by staying in aeroplane mode.'
+            % m.group(1))
+    # A snapshot dated in the future would otherwise survive the window by
+    # winding the device clock forward.
+    if 'isBefore(at)' not in body:
+        fails.append(
+            'CLOCK NOT CHECKED: account_snapshot.dart does not refuse a '
+            'snapshot dated in the future. The grace window is measured '
+            'against the device clock, so that is the way past it.')
+
+if os.path.isfile(ACCOUNT):
+    body = strip(open(ACCOUNT, encoding='utf-8').read())
+    start = body.find('Future<void> signOut()')
+    end = body.find('\n  }', start) if start >= 0 else -1
+    out = body[start:end] if start >= 0 and end > start else ''
+    if 'AccountSnapshot.forget()' not in out:
+        fails.append(
+            'SIGN-OUT KEEPS THE OFFLINE LICENCE: signOut does not call '
+            'AccountSnapshot.forget(). A snapshot left behind signs the '
+            'previous person back in on the next launch with no network and '
+            'hands their entitlement to whoever is holding the phone.')
+    if 'CatalogueCache.clear()' not in out:
+        fails.append(
+            'SIGN-OUT KEEPS THE CACHED CATALOGUE: signOut does not call '
+            'CatalogueCache.clear(). What is in it is what the person signing '
+            'out was allowed to see, and the next person would be shown that '
+            'listing with no request made and no session to refuse it.')
+
+    # THE BUG THIS WHOLE GROUP EXISTS BECAUSE OF. `currentUser()` rethrows a
+    # network failure by design; nothing caught it, so with the radio off the
+    # account state never left `isLoading: true, user: null,
+    # Entitlement.free()` — and `playOffline` refuses a premium download to an
+    # anonymous viewer. A paying subscriber was shown a paywall for their own
+    # download, on the one connection state the feature exists for.
+    start = body.find('Future<void> refresh() async {')
+    end = body.find('\n  }', start) if start >= 0 else -1
+    ref = body[start:end] if start >= 0 and end > start else ''
+    if not ref:
+        fails.append(
+            'REFRESH RENAMED: account_provider has no `Future<void> refresh() '
+            'async {`. Move this check with it - it is the one that stops an '
+            'offline launch showing a paywall for a downloaded film.')
+    elif '} catch (' not in ref:
+        fails.append(
+            'OFFLINE LAUNCH LEFT LOADING: AccountNotifier.refresh does not '
+            'catch. currentUser() rethrows a network failure by design, so '
+            'without a catch an offline launch never assigns a state: the '
+            'viewer stays anonymous and every premium download opens a '
+            'paywall instead of the film.')
+
+
 print('=== %d security invariant violation(s) ===' % len(fails))
 for f in fails:
     print(' -', f)

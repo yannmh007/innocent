@@ -174,6 +174,7 @@ class _VideoSearchScreenState extends ConsumerState<VideoSearchScreen> {
     return resultsAsync.when(
       loading: () => const PosterSkeletonGrid(count: 9),
       error: (error, _) => HubErrorState(
+        error: error,
         detail: error.toString(),
         onRetry: () => ref.invalidate(videoSearchResultsProvider),
       ),
