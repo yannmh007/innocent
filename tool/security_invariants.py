@@ -541,6 +541,104 @@ if os.path.isfile(ACCOUNT):
             'paywall instead of the film.')
 
 
+
+# --- 12. the bytes already on the phone are reachable, and only that way ------
+#
+# The streaming cache keeps every byte the phone receives so that dragging the
+# bar back costs nothing. All of it was still there with the radio off and
+# UNREACHABLE, because every play goes through `requestPlayback` first and a
+# phone with no signal never gets an answer — bytes on the disk, paid for,
+# authorised once by the server that sent them, and the app refused to open
+# them. `AccessDenial.offline` and `OfflineReplay` are what changed that, and
+# three things have to stay true or it turns into a hole.
+PLAYBACK = os.path.join(FEATURE, 'presentation/playback.dart')
+REPLAY = os.path.join(FEATURE, 'data/cache/offline_replay.dart')
+CACHE_ID = os.path.join(FEATURE, 'data/cache/stream_cache_id.dart')
+
+if os.path.isfile(PLAYBACK):
+    body = strip(open(PLAYBACK, encoding='utf-8').read())
+    # (a) THE HELD BYTES ARE OFFERED FOR "COULD NOT ASK" AND NOTHING ELSE.
+    # `unavailable` still covers a refusal nobody recognised — a region block, a
+    # banned account — and serving a film out of the cache on one of those would
+    # be the server being overruled by the client.
+    for m in re.finditer(r'(?<!Future<bool> )_playHeldBytes\(', body):
+        before = body[max(0, m.start() - 600):m.start()]
+        if 'AccessDenial.offline' not in before:
+            line = body.count('\n', 0, m.start()) + 1
+            fails.append(
+                'HELD BYTES OFFERED WITHOUT AN OFFLINE VERDICT: '
+                'playback.dart:%d plays what is cached without first '
+                'establishing AccessDenial.offline. `unavailable` covers a '
+                'refusal nobody recognised, and answering that out of the '
+                'cache is the client overruling the server.' % line)
+    # (b) It is still gated on the viewer's tier. The check protects nothing
+    # against a modified app and is not meant to; removing it would mean a
+    # lapsed subscriber replaying premium film forever by staying offline.
+    start = body.find('Future<bool> _playHeldBytes(')
+    end = body.find('\nFuture<', start + 10) if start >= 0 else -1
+    held = body[start:end if end > start else len(body)] if start >= 0 else ''
+    if start >= 0 and 'CapabilityMatrix.allows(' not in held:
+        fails.append(
+            'HELD BYTES PLAYED WITH NO ENTITLEMENT TEST: _playHeldBytes does '
+            'not ask CapabilityMatrix. It is the same client-side check '
+            'playOffline makes and the same weakening; without it a lapsed '
+            'subscriber keeps premium film by staying offline.')
+
+# (c) ONE DOOR. The head of the file has to be read and walked before an address
+# is handed out, or a viewer who dragged the bar gets a black screen that never
+# resolves — a hundred megabytes from the middle of a film cannot be opened.
+# That walk lives in offline_replay.dart, so nothing else may mint the address.
+for base, dirs, files in os.walk(os.path.join(ROOT, 'lib')):
+    for fn in files:
+        if not fn.endswith('.dart'):
+            continue
+        path = os.path.join(base, fn)
+        rel = os.path.relpath(path, ROOT).replace(os.sep, '/')
+        if rel.endswith('data/cache/stream_cache_server.dart') or \
+                rel.endswith('data/cache/offline_replay.dart'):
+            continue
+        if 'localUrlForHeldBytes' in strip(open(path, encoding='utf-8').read()):
+            fails.append(
+                'CACHED FILM OPENED WITHOUT READING ITS HEAD: %s calls '
+                'localUrlForHeldBytes. Only offline_replay.dart may, because it '
+                'is the only place that walks the index first - the cache holds '
+                'arbitrary runs of bytes and one from the middle of a film '
+                'opens a black screen that never resolves.' % rel)
+
+if os.path.isfile(REPLAY):
+    body = strip(open(REPLAY, encoding='utf-8').read())
+    if 'assessMp4Head(' not in body:
+        fails.append(
+            'OFFLINE REPLAY NO LONGER READS THE FILE: offline_replay.dart does '
+            'not call assessMp4Head. How much has to be on disk is read out of '
+            'the header, never guessed - see the note on the file.')
+
+# (d) THE LADDER THE CLIENT GUESSES WITH MUST BE THE LADDER THE ENCODER WRITES.
+# A cache id is a hash of the title, the asset and the RUNG, so offline the only
+# way to find what is on disk is to compute every id it could have been. A rung
+# the encoder produces and this list omits is simply invisible offline.
+SH = os.path.join(ROOT, 'tool/transcode.sh')
+if os.path.isfile(CACHE_ID) and os.path.isfile(SH):
+    dart = strip(open(CACHE_ID, encoding='utf-8').read())
+    shell = open(SH, encoding='utf-8').read()
+    m = re.search(r'kStreamCacheRungs\s*=\s*<int>\[([^\]]*)\]', dart)
+    n = re.search(r'LADDER_H=\(([^)]*)\)', shell)
+    if not m:
+        fails.append(
+            'RUNG LADDER MISSING: stream_cache_id.dart has no '
+            'kStreamCacheRungs. Without it nothing can find a cached film '
+            'offline, because the id is a one-way hash of the rung.')
+    elif n:
+        got = [x.strip() for x in m.group(1).split(',') if x.strip()]
+        want = ['0'] + n.group(1).split()
+        if got != want:
+            fails.append(
+                'RUNG LADDER OUT OF STEP: stream_cache_id.dart lists %s and '
+                'tool/transcode.sh encodes %s (0 for the original comes '
+                'first). A rung missing from the Dart list cannot be found '
+                'offline at all.' % (got, want))
+
+
 print('=== %d security invariant violation(s) ===' % len(fails))
 for f in fails:
     print(' -', f)

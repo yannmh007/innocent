@@ -30,3 +30,35 @@ String streamCacheId({
   final raw = '$titleId/${assetId ?? 'main'}/${height}p';
   return sha256.convert(utf8.encode(raw)).toString().substring(0, 32);
 }
+
+/// The rung heights `tool/transcode.sh` produces, plus 0 for the original.
+///
+/// WHY THE CLIENT HAS TO KNOW THEM. A cache id is a hash of the title, the
+/// asset and the rung, which is what keeps a directory listing from being a
+/// list of what somebody has watched — and it also means the mapping only goes
+/// one way. Online that is fine: the rung is chosen before anything is cached.
+/// OFFLINE THERE IS NOBODY TO ASK WHICH RUNG WAS PLAYED, so the only way to
+/// find what is on disk is to compute every id it could have been and look for
+/// those. Seven hashes is nothing; the alternative was writing the title id
+/// into the cache directory, which is the property this scheme exists to keep.
+///
+/// `LADDER_H` in `tool/transcode.sh` is the original, and
+/// `tool/security_invariants.py` rule 12 fails the build if the two disagree.
+/// Out of step, the cost is small and self-healing: a rung missing from here
+/// simply cannot be found offline, and nothing plays that should not.
+const List<int> kStreamCacheRungs = <int>[0, 360, 480, 720, 1080, 1440, 2160];
+
+/// Every id the given title and asset could have been cached under.
+///
+/// Order is the ladder's, so a caller that wants the best copy first can
+/// reverse it — but the one that matters is "which of these actually has bytes",
+/// which only the store can answer.
+List<String> streamCacheCandidates({
+  required String titleId,
+  String? assetId,
+}) {
+  return <String>[
+    for (final h in kStreamCacheRungs)
+      streamCacheId(titleId: titleId, assetId: assetId, height: h),
+  ];
+}

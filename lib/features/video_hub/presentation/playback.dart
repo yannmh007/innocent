@@ -8,6 +8,7 @@ import '../../../core/services/video_player/stream_renewal.dart';
 import '../data/api/event_sender.dart';
 import '../data/device_identity.dart';
 import '../domain/access.dart';
+import '../data/cache/offline_replay.dart';
 import '../data/cache/stream_cache_id.dart';
 import '../data/cache/stream_cache_server.dart';
 import '../domain/rendition.dart';
@@ -32,6 +33,7 @@ import 'account_provider.dart';
 ///
 ///   * a URL          -> open the player;
 ///   * needsPremium   -> open the paywall, not an error;
+///   * offline        -> play what this phone already holds, if anything;
 ///   * unavailable    -> a plain message.
 ///
 /// Telling the second two apart is the whole reason [PlaybackGrant] carries a
@@ -290,6 +292,25 @@ Future<void> playMedia(
     return;
   }
 
+  // COULD NOT ASK, as opposed to having been told no — and the phone may
+  // already hold this film. See [_playHeldBytes]: it is only reached for
+  // AccessDenial.offline, never for a refusal.
+  if (grant.denial == AccessDenial.offline) {
+    final handled = await _playHeldBytes(
+      context,
+      ref,
+      content: content,
+      source: source,
+      titleOverride: titleOverride,
+    );
+    if (handled) return;
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(s.vhOfflineNotHeld), duration: const Duration(seconds: 3)),
+    );
+    return;
+  }
+
   // A device refusal gets its own message and a longer read. It is the only
   // refusal here the user can actually do something about, and the sentence
   // has to carry the instruction - there is no screen behind it yet.
@@ -300,6 +321,124 @@ Future<void> playMedia(
       duration: Duration(seconds: isDevice ? 5 : 2),
     ),
   );
+}
+
+/// Plays what the streaming cache already holds of this film, when the server
+/// could not be reached.
+///
+/// Returns true when it dealt with the situation — played, refused with a
+/// reason, or showed the paywall — and false only when there is nothing of this
+/// title on the phone, which lets the caller say so in one sentence.
+///
+/// ═══════════════════════════════════════════════════════════════════════
+/// WHY THIS IS A SEPARATE FUNCTION AND WHY IT LIVES HERE
+/// ═══════════════════════════════════════════════════════════════════════
+///
+/// Here, because the structural checker refuses any file but this one from
+/// referencing `Routes.player`: every play in the feature passes one gate, and
+/// this is a play. A screen that found the bytes itself and pushed the player
+/// would be the same hole the Downloads screen was caught opening.
+///
+/// Separate, because the entitlement question is asked the same way
+/// [playOffline] asks it and for the same reason, and the reasoning deserves to
+/// be read rather than inlined into a denial branch.
+///
+/// THE CHECK IS THE CLIENT'S OWN TABLE, and that is a real weakening rather
+/// than a shortcut. Online the SERVER decides and the client cannot overrule
+/// it. Offline there is no server, so this is [CapabilityMatrix] — which
+/// protects nothing against anyone willing to modify the app. What limits it:
+/// these bytes exist only because the server authorised the stream that
+/// delivered them, and the tier this reads is itself the server's last answer,
+/// kept for thirty days and dropped on sign-out. A subscription that lapsed
+/// between watching and re-watching is caught the next time the phone has a
+/// signal, which is the same promise a downloaded film makes.
+Future<bool> _playHeldBytes(
+  BuildContext context,
+  WidgetRef ref, {
+  required VideoContent content,
+  required MediaRef source,
+  String? titleOverride,
+}) async {
+  final s = AppStrings.of(context);
+  final premium = content.accessTier == AccessTier.premium;
+  final tier = ref.read(viewerProvider).tier;
+
+  // Asked BEFORE looking at the disk, so a viewer who may not watch this is not
+  // told how much of it the phone is keeping.
+  if (premium && !CapabilityMatrix.allows(tier, Capability.playPremiumVideo)) {
+    logEvent(ref, Ev.playbackDenied, titleId: content.id,
+        meta: const <String, dynamic>{'reason': 'held_bytes_not_entitled'});
+    if (!context.mounted) return true;
+    await PaywallSheet.show(context, content: content, lockedCount: 0);
+    return true;
+  }
+
+  final assetId = source.provider == 'asset' && source.locator.isNotEmpty
+      ? source.locator
+      : null;
+  final offer = await OfflineReplay.open(
+    titleId: content.id,
+    assetId: assetId,
+  );
+  if (!context.mounted) return true;
+
+  // PLAIN CONDITIONS AND ONE URL TEST, NOT A SWITCH ON THE REFUSAL. The refusal
+  // is nullable and the address is the thing that decides, so a switch would
+  // have to be exhaustive over five possibilities to prove the code below is
+  // unreachable — and if it ever stopped being, the fall-through would push the
+  // player at a null address. Testing the address makes that impossible.
+  final url = offer.url;
+  if (url == null) {
+    final refusal = offer.refusal;
+    // Nothing of this title is here: the caller's one sentence is the whole
+    // explanation, so it says it rather than this adding a second.
+    if (refusal == null || refusal == ReplayRefusal.nothingHeld) return false;
+    final String message;
+    var seconds = 3;
+    if (refusal == ReplayRefusal.notEnoughYet) {
+      message = s.vhOfflineReplayNotEnough;
+    } else if (refusal == ReplayRefusal.indexAtEnd) {
+      message = s.vhOfflineReplayWholeFileOnly;
+      seconds = 4;
+    } else {
+      message = s.vhUnavailable;
+      seconds = 2;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(message),
+      duration: Duration(seconds: seconds),
+    ));
+    return true;
+  }
+
+  logEvent(ref, Ev.playStart, titleId: content.id, assetId: assetId,
+      meta: const <String, dynamic>{'source': 'held_bytes'});
+
+  // SAID OUT LOUD WHEN IT WILL STOP EARLY. A film that ends without warning
+  // three-quarters of the way through reads as a broken app; the same thing
+  // announced reads as the feature it is.
+  if (!offer.isComplete) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(s.vhOfflineReplayPartial),
+      duration: const Duration(seconds: 3),
+    ));
+  }
+
+  if (!context.mounted) return true;
+  context.push(
+    Routes.player,
+    extra: <String, dynamic>{
+      'uri': url,
+      'title': titleOverride ?? content.displayTitle(s.locale.languageCode),
+      'secure': premium,
+      // EPHEMERAL, like a partial download and for the same reason: the address
+      // carries a port and a token minted once per process, so a resume point
+      // keyed on it would never match again and would leave a cold-start
+      // "Resume X?" prompt pointing at an address that no longer exists.
+      'ephemeral': true,
+    },
+  );
+  return true;
 }
 
 /// Convenience for a catalogue entry's primary source.

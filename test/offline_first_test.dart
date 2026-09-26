@@ -34,6 +34,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:innocent/features/video_hub/data/api/account_snapshot.dart';
 import 'package:innocent/features/video_hub/data/api/api_exception.dart';
 import 'package:innocent/features/video_hub/data/cache/catalogue_cache.dart';
+import 'package:innocent/features/video_hub/data/cache/stream_cache_id.dart';
 import 'package:innocent/features/video_hub/domain/access.dart';
 import 'package:innocent/features/video_hub/domain/account.dart';
 
@@ -249,6 +250,58 @@ void main() {
       expect(back, isNotNull);
       expect(back!.entitlement.isPremium, isFalse);
       expect(back.user.method, AuthMethod.phone);
+    });
+  });
+
+  group('streamCacheCandidates: finding a cached film with no server to ask', () {
+    test('every rung the encoder writes, and the original', () {
+      // Seven, because `tool/transcode.sh` writes six rungs and 0 is the
+      // master. A rung missing from this list is a film that cannot be found
+      // offline at all.
+      expect(kStreamCacheRungs, <int>[0, 360, 480, 720, 1080, 1440, 2160]);
+      final ids = streamCacheCandidates(titleId: 't1');
+      expect(ids.length, kStreamCacheRungs.length);
+      // No duplicates: two rungs hashing to one id would mean one entry could
+      // be found under two names and the cache would look inconsistent.
+      expect(ids.toSet().length, ids.length);
+    });
+
+    test('a candidate list contains the id the player actually cached under', () {
+      // THE POINT OF THE WHOLE LIST. Online the rung is known and
+      // `streamCacheId` is called with it; offline nobody knows which it was,
+      // so the id must be reachable by guessing. If these two ever stopped
+      // agreeing, offline replay would find nothing while the bytes sat there.
+      for (final h in kStreamCacheRungs) {
+        expect(
+          streamCacheCandidates(titleId: 'title-9'),
+          contains(streamCacheId(titleId: 'title-9', height: h)),
+          reason: '${h}p',
+        );
+      }
+    });
+
+    test('an album clip is not the main film', () {
+      // A behind-the-scenes clip cached offline must not be offered as the
+      // feature, and vice versa.
+      final main = streamCacheCandidates(titleId: 't1');
+      final clip = streamCacheCandidates(titleId: 't1', assetId: 'asset-4');
+      expect(main.toSet().intersection(clip.toSet()), isEmpty);
+    });
+
+    test('two titles never share a candidate', () {
+      final a = streamCacheCandidates(titleId: 'a').toSet();
+      final b = streamCacheCandidates(titleId: 'b').toSet();
+      expect(a.intersection(b), isEmpty);
+    });
+
+    test('the ids are stable across runs', () {
+      // They name directories on disk. An id that changed between releases
+      // would orphan every cached film on every phone at once.
+      expect(
+        streamCacheId(titleId: 'fixed-title', height: 720),
+        streamCacheId(titleId: 'fixed-title', height: 720),
+      );
+      expect(streamCacheId(titleId: 'fixed-title', height: 720).length, 32);
     });
   });
 

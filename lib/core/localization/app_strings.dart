@@ -1201,6 +1201,10 @@ class AppStrings {
   String get vhOfflineBanner => _s('vhOfflineBanner');
   String get vhOfflineNothingSaved => _s('vhOfflineNothingSaved');
   String get vhOfflineHint => _s('vhOfflineHint');
+  String get vhOfflineNotHeld => _s('vhOfflineNotHeld');
+  String get vhOfflineReplayPartial => _s('vhOfflineReplayPartial');
+  String get vhOfflineReplayNotEnough => _s('vhOfflineReplayNotEnough');
+  String get vhOfflineReplayWholeFileOnly => _s('vhOfflineReplayWholeFileOnly');
   String get vhRetry => _s('vhRetry');
   String get vhSearchPrompt => _s('vhSearchPrompt');
   String get vhSearchNoResults => _s('vhSearchNoResults');
@@ -1719,6 +1723,10 @@ class AppStrings {
     'vhOfflineBanner': 'You are offline — showing what was saved',
     'vhOfflineNothingSaved': 'No internet connection',
     'vhOfflineHint': 'Connect once and this page is kept for offline use. Downloads play without any connection.',
+    'vhOfflineNotHeld': 'No connection, and none of this title is saved on the phone',
+    'vhOfflineReplayPartial': 'Playing what is saved. It will stop where the saved part ends.',
+    'vhOfflineReplayNotEnough': 'Too little of this is saved to open it without a connection',
+    'vhOfflineReplayWholeFileOnly': 'This video can only be watched offline once all of it is saved',
     'vhRetry': 'Retry',
     'vhSearchPrompt': 'Search across every category',
     'vhSearchNoResults': 'No titles found',
@@ -2942,6 +2950,10 @@ class AppStrings {
     'vhOfflineBanner': 'အင်တာနက် မရှိပါ — သိမ်းထားသည့်အတိုင်း ပြထားသည်',
     'vhOfflineNothingSaved': 'အင်တာနက် မရှိပါ',
     'vhOfflineHint': 'တစ်ခါ ချိတ်ဆက်ပြီးရင် ဒီစာမျက်နှာကို သိမ်းထားပေးမှာပါ။ Download လုပ်ထားတာတွေက အင်တာနက် မလိုဘဲ ကြည့်လို့ရပါတယ်။',
+    'vhOfflineNotHeld': 'အင်တာနက် မရှိပါ၊ ဒီဖလင်ကို ဖုန်းထဲမှာ သိမ်းထားတာ မရှိပါ',
+    'vhOfflineReplayPartial': 'သိမ်းထားသလောက် ဖွင့်ပေးပါမည်။ သိမ်းထားတာ ကုန်သွားရင် ရပ်သွားပါမယ်။',
+    'vhOfflineReplayNotEnough': 'အင်တာနက် မရှိဘဲ ဖွင့်ရန် သိမ်းထားတာ နည်းနေပါသည်',
+    'vhOfflineReplayWholeFileOnly': 'ဒီဗီဒီယိုကို အကုန် သိမ်းမိမှသာ အင်တာနက် မရှိဘဲ ကြည့်လို့ရပါမည်',
     'vhRetry': 'ထပ်စမ်းရန်',
     'vhSearchPrompt': 'အမျိုးအစား အားလုံးထဲမှာ ရှာပါ',
     'vhSearchNoResults': 'ရှာမတွေ့ပါ',
@@ -4154,6 +4166,10 @@ class AppStrings {
     'vhOfflineBanner': 'ออฟไลน์ — กำลังแสดงข้อมูลที่บันทึกไว้',
     'vhOfflineNothingSaved': 'ไม่มีการเชื่อมต่ออินเทอร์เน็ต',
     'vhOfflineHint': 'เชื่อมต่อหนึ่งครั้งแล้วหน้านี้จะถูกบันทึกไว้ใช้งานออฟไลน์ ส่วนรายการที่ดาวน์โหลดไว้เล่นได้โดยไม่ต้องเชื่อมต่อ',
+    'vhOfflineNotHeld': 'ไม่มีการเชื่อมต่อ และไม่มีส่วนใดของรายการนี้บันทึกไว้ในเครื่อง',
+    'vhOfflineReplayPartial': 'กำลังเล่นส่วนที่บันทึกไว้ จะหยุดเมื่อถึงจุดสิ้นสุดของส่วนนั้น',
+    'vhOfflineReplayNotEnough': 'บันทึกไว้น้อยเกินกว่าจะเปิดได้โดยไม่เชื่อมต่อ',
+    'vhOfflineReplayWholeFileOnly': 'วิดีโอนี้ดูออฟไลน์ได้เมื่อบันทึกไว้ครบทั้งไฟล์แล้วเท่านั้น',
     'vhRetry': 'ลองอีกครั้ง',
     'vhSearchPrompt': 'ค้นหาจากทุกหมวดหมู่',
     'vhSearchNoResults': 'ไม่พบรายการ',

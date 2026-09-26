@@ -744,6 +744,59 @@ grid saying what is on screen was saved rather than fetched. Driven by the thing
 that answered the request rather than by a connectivity probe, because the honest
 question is not "is there a signal" but "is what you are reading current".
 
+### O5 — the bytes were on the disk and the app refused to open them
+
+The one the user asked for in so many words: *"တခြားဟာတွေကတော့ ကိုယ့်ကြည့်မိသလောက်ကို
+Offline အခြေနေမှာ ကြည့်လို့ရရမယ်"*.
+
+The streaming cache keeps every byte the phone receives, in app-private storage,
+so that dragging the bar back thirty seconds costs nothing. All of it was still
+there with the radio off — and unreachable, because **every** play goes through
+`requestPlayback` first and a phone with no signal never gets an answer. Bytes on
+the disk, already paid for, already authorised once by the server that sent them,
+and the app showed "unavailable".
+
+What changed:
+
+- **`AccessDenial.offline`**, its own value. Everything that failed was
+  `unavailable`, which mixes "we could not ask" in with "the answer was no for a
+  reason we did not recognise" — a region block, a banned account. That mixture
+  cannot be acted on, because playing what is on disk is exactly right for the
+  first and exactly wrong for the second. `requestPlayback` returns it only for
+  `isUnreachableError`.
+- **`data/cache/offline_replay.dart`** finds the best copy and refuses honestly.
+  The cache holds arbitrary runs of bytes, so the run containing **byte zero** is
+  what matters — somebody who dragged the bar has a hundred megabytes from the
+  middle of a film and cannot open it at all. Its header is walked by
+  `assessMp4Head`, the same function the watch-while-downloading screen uses, and
+  a film whose index is at the end is refused rather than opened into a black
+  screen that never resolves.
+- **`kStreamCacheRungs`** in `stream_cache_id.dart`. A cache id is a hash of the
+  title, the asset and the rung — deliberately one-way, so a directory listing is
+  not a list of what somebody has watched — which means offline the only way to
+  find a film is to compute every id it could have been. Seven hashes. The
+  alternative was writing title ids into the cache directory, which is the
+  property that scheme exists to keep. Rule 12 fails the build if the list and
+  `LADDER_H` in `tool/transcode.sh` disagree.
+- **`StreamCacheServer.localUrlForHeldBytes`** serves from disk and nowhere else:
+  `_Source.offline` skips the length probe and the upstream fetch rather than
+  attempting them and letting them fail, which would have spent two connection
+  timeouts plus three per gap on the path to the first frame — forty-five seconds
+  of spinner before a film the phone already had.
+- **`_playHeldBytes`** in `playback.dart`, because the structural checker is right
+  that only that file may reference `Routes.player`. It asks `CapabilityMatrix`
+  exactly as `playOffline` does and is the same concession, not a new one: the
+  client's own table decides, which protects nothing against a modified app, and
+  what limits it is that the bytes exist only because the server authorised the
+  stream and the tier behind the decision is itself the server's last answer.
+  It says out loud when playback will stop early, because a film that ends
+  without warning three-quarters of the way through reads as a broken app.
+
+Rule 12 was mutation-tested five ways: offering held bytes for any denial rather
+than `offline`, removing the entitlement test, another file minting the loopback
+address, removing the header walk, and the ladder drifting out of step with the
+encoder.
+
 ### Fenced by rule 11 in `tool/security_invariants.py`
 
 Each of these was mutation-tested by breaking it and watching the check fail:

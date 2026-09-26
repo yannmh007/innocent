@@ -634,8 +634,20 @@ class ApiContentRepository implements ContentRepository {
       if (e.statusCode == 409) {
         return const PlaybackGrant.denied(AccessDenial.wrongDevice);
       }
-      // Everything else - offline, rate limited, server down - is "cannot play
-      // right now", never "you may play".
+      // COULD NOT ASK, told apart from "was told no", and this is the only
+      // place in the class that distinction is made about PLAYBACK.
+      //
+      // It is still a refusal — nothing here ever returns a URL — but the
+      // caller may offer the bytes this phone already holds for THIS value and
+      // must not for the one below. The difference matters both ways: those
+      // bytes were paid for and authorised once, so refusing them because a
+      // tunnel has no signal is wrong; and a 403 nobody recognised is somebody
+      // saying no, so serving them then would be worse.
+      if (isUnreachableError(e)) {
+        return const PlaybackGrant.denied(AccessDenial.offline);
+      }
+      // Everything else - a refusal with no code, a malformed body - is
+      // "cannot play right now", never "you may play".
       return const PlaybackGrant.denied(AccessDenial.unavailable);
     }
   }

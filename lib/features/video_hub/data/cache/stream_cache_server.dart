@@ -125,6 +125,39 @@ class StreamCacheServer {
     }
   }
 
+  /// A local address for a film that is served ENTIRELY from what is on disk.
+  ///
+  /// Reached only after `requestPlayback` has already answered
+  /// `AccessDenial.offline` — the server could not be asked, as opposed to
+  /// having said no — and only once [OfflineReplay] has read the file's own
+  /// header and established that enough of it is here to open. There is no
+  /// upstream, so nothing is probed and nothing is fetched: a gap in the film
+  /// is where the film ends.
+  ///
+  /// Returns null when the loopback server will not start, and the caller then
+  /// has nothing to offer, which is the truth.
+  Future<String?> localUrlForHeldBytes({required String cacheId}) async {
+    try {
+      await StreamCacheStore.instance.load();
+      await _ensureStarted();
+      final port = _server?.port;
+      final token = _token;
+      if (port == null || token == null) return null;
+      // NO `entryFor` CALL, deliberately: the entry must already exist, and
+      // creating one here would mint an empty directory for a film this phone
+      // does not have and then serve a 502 out of it.
+      _sources[cacheId] = _Source(
+        upstream: '',
+        refresh: () async => null,
+        offline: true,
+      );
+      return 'http://127.0.0.1:$port/c/$token/$cacheId';
+    } catch (e) {
+      if (kDebugMode) debugPrint('StreamCacheServer.localUrlForHeldBytes: $e');
+      return null;
+    }
+  }
+
   /// Point an already-registered film at a fresh upstream URL.
   void updateUpstream(String cacheId, String upstream) {
     _sources[cacheId]?.upstream = upstream;
@@ -191,7 +224,15 @@ class StreamCacheServer {
     // the rung — not from the object — so an operator who replaces a file
     // keeps the same id. The length is what changes, and comparing it is
     // what turns "probably fine" into "checked". It costs two bytes.
-    if (entry.total <= 0 || !src.checkedTotal) {
+    if (src.offline) {
+      // Nothing to confirm against and nothing to fetch. The stored length is
+      // all there is, and without one there is no range to answer at all.
+      if (entry.total <= 0) {
+        res.statusCode = HttpStatus.badGateway;
+        await res.close();
+        return;
+      }
+    } else if (entry.total <= 0 || !src.checkedTotal) {
       final probed = await _probeTotal(src);
       if (probed <= 0 && entry.total <= 0) {
         res.statusCode = HttpStatus.badGateway;
@@ -265,6 +306,12 @@ class StreamCacheServer {
         }
 
         // ── from upstream, keeping what passes through ─────────────────
+        //
+        // Offline there is no upstream, and a gap is simply where the film
+        // stops. The response is already committed, so ending the write is the
+        // honest signal: the player reads it as a dropped connection, which is
+        // what it is, and its own retry path handles it.
+        if (src.offline) break;
         pos = await _fromUpstream(res, store, entry, src, pos, endInclusive);
         // No progress means upstream gave nothing and will keep giving
         // nothing. The response is already committed, so the honest end is
@@ -511,11 +558,23 @@ class StreamCacheServer {
 }
 
 class _Source {
-  _Source({required this.upstream, required this.refresh});
+  _Source({required this.upstream, required this.refresh, this.offline = false});
 
   String upstream;
   final Future<String?> Function() refresh;
   Future<bool>? refreshing;
+
+  /// THIS FILM IS SERVED FROM DISK AND NOWHERE ELSE.
+  ///
+  /// Set by [StreamCacheServer.localUrlForHeldBytes], which is reached only
+  /// after the server has already refused to answer because it could not be
+  /// reached. There is no upstream to open and no length to confirm, so both
+  /// are skipped — not attempted and allowed to fail. The difference is
+  /// visible: probing would spend two connection timeouts, and each gap in the
+  /// file three more, on the path to the first frame. A viewer in a tunnel
+  /// would watch a spinner for forty-five seconds before the film they already
+  /// have started.
+  final bool offline;
 
   /// Whether this film's length has been confirmed against the server since
   /// the app started. One check per film per session: enough to catch a

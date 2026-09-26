@@ -239,6 +239,39 @@ class StreamCacheStore {
     return List<CacheEntry>.unmodifiable(list);
   }
 
+  /// The entry among [ids] that holds the most of a film FROM ITS FIRST BYTE,
+  /// or null when none of them holds anything usable.
+  ///
+  /// WHAT "USABLE" MEANS, AND WHY IT IS THE HEAD AND NOT THE TOTAL. A film is
+  /// opened by reading its index, and with `-movflags +faststart` — which every
+  /// rung is written with — the index is at the front. An entry holding a
+  /// hundred megabytes from the middle of a film, because somebody dragged the
+  /// bar, cannot be opened at all; ten megabytes from the start can. So the
+  /// measure is the length of the run containing byte zero, and an entry with no
+  /// such run is skipped rather than offered.
+  ///
+  /// [ids] is the candidate list from `streamCacheCandidates` — every rung this
+  /// title could have been played at, because offline there is nobody to ask
+  /// which one it was. The best HEAD wins rather than the highest rung: what
+  /// decides whether this works is how much can be played, not how sharp it
+  /// would have been.
+  Future<CacheEntry?> bestHeadAmong(List<String> ids) async {
+    await load();
+    CacheEntry? best;
+    var bestHead = 0;
+    for (final id in ids) {
+      final entry = _entries[id];
+      // A total of zero means nothing was ever read to the end of a header, so
+      // there is no length to serve a range against.
+      if (entry == null || entry.total <= 0) continue;
+      final head = entry.partAt(0);
+      if (head == null || head.length <= bestHead) continue;
+      best = entry;
+      bestHead = head.length;
+    }
+    return best;
+  }
+
   Future<CacheEntry> entryFor(String id, {int? total, String? label}) async {
     await load();
     final have = _entries[id];

@@ -89,6 +89,21 @@ enum AccessDenial {
   /// mistakes: it reads as being charged twice.
   wrongDevice,
 
+  /// The server could not be REACHED — no connection, a timeout, a 5xx. Not a
+  /// refusal at all.
+  ///
+  /// Its own value, and the reason is the whole offline programme. Everything
+  /// that fails is otherwise [unavailable], which mixes "we could not ask" in
+  /// with "the answer was no for a reason we did not recognise" — a region
+  /// block, a banned account. That mixture cannot be acted on: the phone holds
+  /// bytes of this film already, paid for and already authorised once, and
+  /// playing them is exactly right when nobody could be asked and exactly
+  /// wrong when somebody said no.
+  ///
+  /// So the caller may offer what is already on disk for THIS value and must
+  /// not for [unavailable]. See `OfflineReplay`.
+  offline,
+
   /// No provider could serve this. Show the unavailable message.
   unavailable,
 }
