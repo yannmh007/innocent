@@ -203,11 +203,27 @@ final categoryStylesProvider = Provider<CategoryCatalogue>((ref) {
 /// every screen, in every build, and the album grid drew nothing while the
 /// card beside it advertised twenty photos.
 ///
-/// autoDispose and per-id: a viewer flicking through ten titles should not
-/// accumulate ten albums, and the next visit re-reads rather than showing a
-/// title as it was an hour ago.
+/// PER-ID AND KEPT, WHICH IT DID NOT USED TO BE.
+///
+/// It was `autoDispose`, on the reasoning that a viewer flicking through ten
+/// titles should not accumulate ten albums and that the next visit should
+/// re-read rather than show an hour-old title. The second half is now the
+/// repository's job — it re-reads behind every answer and says so through
+/// `catalogueRevisionProvider`, which this watches — and the first half was
+/// never the real cost.
+///
+/// The real cost was the flicker. The detail screen draws the CARD's fields
+/// immediately and swaps in the fuller record when it lands, so every visit
+/// that starts with no value in hand redraws the page a frame later with an
+/// album grid in it and the Play button somewhere else. Throwing the value
+/// away on the way out guaranteed that on every single re-entry; keeping it
+/// means the second visit to a card is already complete on its first frame,
+/// and there is nothing to jump.
+///
+/// What is accumulated is one [VideoContent] per title actually opened, which
+/// is a few kilobytes each and is dropped with the rest on sign-out.
 final titleDetailProvider =
-    FutureProvider.autoDispose.family<VideoContent?, String>((ref, id) {
+    FutureProvider.family<VideoContent?, String>((ref, id) {
   ref.watch(catalogueRevisionProvider);
   return ref.watch(contentRepositoryProvider).getById(id);
 });

@@ -213,12 +213,22 @@ class ApiContentRepository implements ContentRepository {
       _fetchedAt[key] = DateTime.now();
       unawaited(fetch().then(
         (body) async {
-          await CatalogueCache.write(key, body);
+          final changed = await CatalogueCache.write(key, body);
           CatalogueCache.noteServedLive();
-          // Whatever is watching rebuilds, reads the entry this has just
-          // replaced, and draws it from memory. No second request: the line
-          // above put this key on cooldown before the request was even sent.
-          CatalogueCache.noteRefreshed();
+          // ONLY WHEN SOMETHING ACTUALLY CHANGED, which is almost never.
+          //
+          // This used to tick every time, on the reasoning that a rebuild
+          // drawing identical pixels costs nothing. It costs something on the
+          // detail screen, which draws the card's own fields first and swaps
+          // in the fuller record when it lands — so each spurious tick is
+          // another chance for the album grid and the Play button to jump.
+          // Reported as the screen flickering on the way into every card.
+          //
+          // Whatever is watching now rebuilds only when there is something
+          // new to see, reads the entry this has just replaced, and draws it
+          // from memory. No second request either: the line above put this
+          // key on cooldown before the request was even sent.
+          if (changed) CatalogueCache.noteRefreshed();
         },
         onError: (Object e) {
           // A refusal is the server's answer and must not be buried here —

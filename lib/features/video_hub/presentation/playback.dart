@@ -454,13 +454,28 @@ Future<bool> _playHeldBytes(
   // allowed at the time. Offering the second while holding the first would
   // be showing somebody a worse copy of their own file.
   //
-  // A download recorded for a DIFFERENT asset is not this one: an album clip
-  // and the main film are separate videos under one title. When either side
-  // names no asset the match stands — a title with a single film is the
-  // ordinary case and both sides describe it.
+  // ─── AND IT MUST BE THE SAME VIDEO, WHICH IT WAS NOT ─────────────────
+  //
+  // THIS LIED. The first version treated a null `assetId` on either side as
+  // "matches anything", so a title with two videos in its album — the
+  // download being the FIRST, recorded with no asset id because that is all
+  // the Download button ever passes — answered a tap on the SECOND with the
+  // first one's file. The screen said video 2 and played video 1, which is
+  // worse than refusing: a viewer cannot tell they are being shown the wrong
+  // film, they can only wonder why it is the same one.
+  //
+  // Null on the held row does not mean "any". It means the title's own
+  // `source`, which is what the Download button downloaded. So both sides
+  // are resolved to a real asset before they are compared, and they have to
+  // be equal. A title with one film still matches — both resolve to the same
+  // id, or both to null when the catalogue names none.
+  final main = content.source.provider == 'asset' &&
+          content.source.locator.isNotEmpty
+      ? content.source.locator
+      : null;
+  final wanted = assetId ?? main;
   final held = await ref.read(offlineLibraryProvider).find(content.id);
-  if (held != null &&
-      (held.assetId == null || assetId == null || held.assetId == assetId)) {
+  if (held != null && (held.assetId ?? main) == wanted) {
     // The index can outlive the file: Android clears an app's storage, a file
     // manager deletes it, a restore brings the index back without the bytes.
     // Pushing the player at a path with nothing behind it is a black screen,

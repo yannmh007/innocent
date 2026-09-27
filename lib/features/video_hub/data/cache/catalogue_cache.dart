@@ -206,6 +206,29 @@ class CatalogueCache {
   /// Copying instead would cost exactly what this exists to avoid.
   static final Map<String, dynamic> _hot = <String, dynamic>{};
 
+  /// A short digest of what was last WRITTEN under each key.
+  ///
+  /// WHY A REFRESH HAS TO KNOW WHETHER IT CHANGED ANYTHING. Every catalogue
+  /// read now sends a request behind the answer, and a landed refresh ticks
+  /// [revision], which rebuilds every catalogue provider. The overwhelming
+  /// majority of those refreshes bring back EXACTLY what was already on
+  /// screen — the catalogue does not change between opening two cards — so
+  /// the rebuild redraws identical pixels for nothing.
+  ///
+  /// Nothing, except that it is not nothing on a detail screen. That screen
+  /// draws the card's own fields immediately and swaps in the fuller record
+  /// when it arrives, so every rebuild is a chance for the album grid and the
+  /// Play button to move. Reported as the screen flickering on the way in,
+  /// online and off, once per card — which is exactly the number of spurious
+  /// ticks.
+  ///
+  /// A digest rather than the string it came from: the bodies are hundreds of
+  /// kilobytes and twelve of them in memory twice over is a real cost on the
+  /// phones this is for. The comparison is only ever used to decide whether
+  /// to REDRAW, so a collision costs one missed refresh on screen until the
+  /// next navigation, and sha1 does not collide by accident.
+  static final Map<String, String> _stamp = <String, String>{};
+
   /// Small on purpose. The hub touches a handful of keys and a body can be
   /// hundreds of kilobytes; this is a working set, not a second store. Oldest
   /// insertion goes first, which for this access pattern is the card opened
@@ -293,12 +316,14 @@ class CatalogueCache {
   /// Best effort in every direction: a full disk, a denied directory or a body
   /// that will not encode must cost the offline case and nothing else. The
   /// caller never awaits this on the path that matters.
-  static Future<void> write(String key, dynamic body) async {
-    if (!enabled) return;
+  /// Returns true when what was stored DIFFERS from what was there before,
+  /// which is the only case worth redrawing for. See [_stamp].
+  static Future<bool> write(String key, dynamic body) async {
+    if (!enabled) return false;
     try {
       // Nothing to serve later, and writing it would shadow a good older entry
       // with an empty one.
-      if (body == null) return;
+      if (body == null) return false;
       // Before the disk, and not after: this is the copy the next read on
       // this screen will answer from, and the write below is best-effort. A
       // full disk must not leave the process reading last hour's rows.
@@ -311,15 +336,22 @@ class CatalogueCache {
       // old listing under it, which is the one combination that misleads.
       // Only the caller knows which answer it actually returned, and it says
       // so on both paths.
+      // THE BODY ALONE, because the envelope carries a timestamp and would
+      // make every single write look like a change.
+      final payload = jsonEncode(body);
+      final stamp = sha1.convert(utf8.encode(payload)).toString();
+      final changed = _stamp[key] != stamp;
+      _stamp[key] = stamp;
+
       final encoded = jsonEncode(<String, dynamic>{
         'v': 1,
         'at': DateTime.now().toUtc().millisecondsSinceEpoch,
         'body': body,
       });
-      if (encoded.length > maxEntryBytes) return;
+      if (encoded.length > maxEntryBytes) return changed;
 
       final dir = await _directory();
-      if (dir == null) return;
+      if (dir == null) return changed;
       final file = File(p.join(dir.path, _nameFor(key)));
       // Write-then-rename, so a kill mid-write cannot leave a truncated entry
       // that later parses as half a catalogue.
@@ -327,8 +359,10 @@ class CatalogueCache {
       await part.writeAsString(encoded, flush: true);
       await part.rename(file.path);
       unawaited(_pruneOnce());
+      return changed;
     } catch (e) {
       if (kDebugMode) debugPrint('CatalogueCache.write: $e');
+      return false;
     }
   }
 
@@ -344,6 +378,7 @@ class CatalogueCache {
     // whole cache is not allowed to do. A directory that cannot be opened
     // must not be the reason it stays.
     _hot.clear();
+    _stamp.clear();
     try {
       final dir = await _directory();
       if (dir == null) return;
