@@ -166,27 +166,40 @@ class _ContentDetailScreenState extends ConsumerState<ContentDetailScreen> {
               content: content,
               locked: locked,
               lockedCount: lockedCount,
-              // Hidden once the grid below can do the job. See
-              // ContentDetailScreen.showsHeaderButton.
+              // `expectsAlbum`, NOT `hasAlbum`, and that one word is the
+              // flicker. `hasAlbum` asks whether the album has LOADED, which
+              // for the first frame of every visit is no — so this drew the
+              // button, and took it away again when the grid arrived. The
+              // question being asked is whether the title HAS an album, and
+              // the card's own counts answer that before anything is fetched.
               showButton: ContentDetailScreen.showsHeaderButton(
-                hasAlbum: content.hasAlbum,
+                hasAlbum: content.expectsAlbum,
                 locked: locked,
               ),
               onPlay: () => _play(context, ref),
             ),
           ),
-          if (content.hasAlbum) ...<Widget>[
+          // Drawn from the moment the title is known to have one, so the
+          // heading does not arrive late and shove the page. The tiles below
+          // it fill in when they load, which grows downward and moves nothing
+          // that is already on screen.
+          if (content.expectsAlbum) ...<Widget>[
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(14, 18, 14, 10),
                 child: Row(
                   children: <Widget>[
                     Text(s.vhAlbum, style: VH.heading),
-                    const SizedBox(width: 8),
-                    Text(
-                      '${content.items.length}',
-                      style: VH.meta.copyWith(fontSize: 12.5),
-                    ),
+                    if (content.albumCount != null) ...<Widget>[
+                      const SizedBox(width: 8),
+                      // The server's total, not `items.length`: the album may
+                      // still be loading, and a number that counts up as
+                      // tiles arrive is a second thing moving.
+                      Text(
+                        '${content.albumCount}',
+                        style: VH.meta.copyWith(fontSize: 12.5),
+                      ),
+                    ],
                   ],
                 ),
               ),

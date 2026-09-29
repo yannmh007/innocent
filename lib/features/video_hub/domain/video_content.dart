@@ -266,7 +266,56 @@ class VideoContent {
       );
 
   bool get isSeries => category == ContentCategory.series;
+
+  /// Whether the album is loaded and has anything in it.
   bool get hasAlbum => items.isNotEmpty;
+
+  /// Whether this title HAS an album, answerable BEFORE one is loaded.
+  ///
+  /// ═══════════════════════════════════════════════════════════════════════
+  /// THE FLICKER ON THE WAY INTO EVERY CARD WAS THIS DISTINCTION MISSING
+  /// ═══════════════════════════════════════════════════════════════════════
+  ///
+  /// The detail screen draws the CARD first — poster, name, facts, all of it
+  /// already in hand — and attaches the album a moment later. Until then
+  /// [hasAlbum] is false, because the album is genuinely not loaded. But the
+  /// screen was asking [hasAlbum] a different question: not "is the album
+  /// here?" but "does this title HAVE one?", and using the answer to decide
+  /// whether to draw the big Play button at all
+  /// (`ContentDetailScreen.showsHeaderButton`).
+  ///
+  /// So every title with an album drew the button for one or two frames and
+  /// then took it away again as the grid arrived — a control appearing and
+  /// vanishing in the middle of the screen, with everything below it jumping
+  /// up. Reported as the screen flickering on the way in, and as the Play
+  /// button "suddenly appearing", which is exactly what it was doing.
+  ///
+  /// The counts answer it immediately and correctly. They come down WITH the
+  /// card, they are the server's own totals for the folder, and [withAlbum]
+  /// deliberately preserves them — so this reads the same before the album
+  /// lands and after, which is the whole point. A screen that decides from
+  /// this cannot change its mind.
+  ///
+  /// Falls back to [hasAlbum] when the server sent no counts at all, which is
+  /// the honest answer for a row that carries nothing to reason from.
+  bool get expectsAlbum {
+    final p = photoCount;
+    final v = videoCount;
+    if (p == null && v == null) return hasAlbum;
+    return (p ?? 0) + (v ?? 0) > 0 || hasAlbum;
+  }
+
+  /// How many things the album holds, for the heading beside it.
+  ///
+  /// The server's totals rather than `items.length`, for the same reason
+  /// [expectsAlbum] uses them: a number that is right on the first frame does
+  /// not change on the second. Null when there is nothing to say.
+  int? get albumCount {
+    final p = photoCount;
+    final v = videoCount;
+    if (p == null && v == null) return items.isEmpty ? null : items.length;
+    return (p ?? 0) + (v ?? 0);
+  }
 
   /// True when this entry is playable straight from the poster (no album to
   /// choose from first).

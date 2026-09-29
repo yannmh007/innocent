@@ -11,7 +11,28 @@
 // shows up in a screenshot of the case somebody thought to look at.
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:innocent/features/video_hub/domain/access.dart';
+import 'package:innocent/features/video_hub/domain/content_category.dart';
+import 'package:innocent/features/video_hub/domain/video_content.dart';
 import 'package:innocent/features/video_hub/presentation/content_detail_screen.dart';
+
+VideoContent _title({
+  List<AlbumItem> items = const <AlbumItem>[],
+  int? photoCount,
+  int? videoCount,
+}) =>
+    VideoContent(
+      id: 't1',
+      title: 'Test title',
+      category: ContentCategory.movies,
+      accessTier: AccessTier.free,
+      items: items,
+      photoCount: photoCount,
+      videoCount: videoCount,
+    );
+
+AlbumItem _video(String id) =>
+    AlbumItem(id: id, kind: MediaKind.video, source: MediaRef.none);
 
 void main() {
   group('ContentDetailScreen.showsHeaderButton', () {
@@ -55,6 +76,81 @@ void main() {
         ContentDetailScreen.showsHeaderButton(hasAlbum: false, locked: true),
         isTrue,
       );
+    });
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // WHICH ANSWER THE RULE IS GIVEN, WHICH IS WHERE THE FLICKER WAS
+  // ═══════════════════════════════════════════════════════════════════════
+  //
+  // The rule above is right and was never wrong. What was wrong is that the
+  // screen fed it `hasAlbum` — "is the album LOADED" — for a screen whose
+  // first frame is drawn before any album is fetched. So every title with an
+  // album drew the button for a frame or two and then took it away as the
+  // grid arrived, and the whole page below it jumped.
+  //
+  // `expectsAlbum` answers the question the rule is actually asking, from the
+  // counts that come down with the card. These tests exist because the two
+  // getters read almost the same and differ only in the one case nobody
+  // screenshots: the first frame.
+  group('VideoContent.expectsAlbum', () {
+    test('the counts answer before the album is loaded', () {
+      final card = _title(photoCount: 3, videoCount: 2);
+      expect(card.hasAlbum, isFalse, reason: 'nothing loaded yet');
+      expect(card.expectsAlbum, isTrue, reason: 'but the server said five');
+    });
+
+    test('and it does not change when the album arrives', () {
+      final card = _title(photoCount: 0, videoCount: 2);
+      final loaded = card.withAlbum(<AlbumItem>[_video('a'), _video('b')]);
+      // THE POINT. Same answer on the first frame and the last, so the screen
+      // cannot decide one thing and then the other.
+      expect(card.expectsAlbum, loaded.expectsAlbum);
+      expect(loaded.expectsAlbum, isTrue);
+    });
+
+    test('a title the server says has nothing keeps its button', () {
+      final card = _title(photoCount: 0, videoCount: 0);
+      expect(card.expectsAlbum, isFalse);
+      expect(
+        ContentDetailScreen.showsHeaderButton(
+            hasAlbum: card.expectsAlbum, locked: false),
+        isTrue,
+      );
+    });
+
+    test('no counts at all falls back to what is loaded', () {
+      // An old row, or a shape that carries no totals. Guessing "has an
+      // album" there would hide the button on a title that has no other way
+      // in, which is the one failure this must not have.
+      expect(_title().expectsAlbum, isFalse);
+      expect(_title(items: <AlbumItem>[_video('a')]).expectsAlbum, isTrue);
+    });
+
+    test('a loaded album counts even when the totals say zero', () {
+      // Disagreement is possible — a row skipped for having no usable URL,
+      // or stale totals. What is in hand wins, because it is on the screen.
+      expect(
+        _title(photoCount: 0, videoCount: 0, items: <AlbumItem>[_video('a')])
+            .expectsAlbum,
+        isTrue,
+      );
+    });
+  });
+
+  group('VideoContent.albumCount', () {
+    test('is the server total, so it does not count up as tiles arrive', () {
+      final card = _title(photoCount: 3, videoCount: 2);
+      expect(card.albumCount, 5);
+      expect(card.withAlbum(<AlbumItem>[_video('a')]).albumCount, 5);
+    });
+
+    test('is null when there is nothing to say', () {
+      expect(_title().albumCount, isNull);
+    });
+
+    test('falls back to what is loaded when no totals came down', () {
+      expect(_title(items: <AlbumItem>[_video('a'), _video('b')]).albumCount, 2);
     });
   });
 }
