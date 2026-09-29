@@ -451,6 +451,12 @@ Deno.serve(async (req: Request) => {
         p_folder: slugify(caption),
         p_key_tail: keyTail(file.kind, file.name),
         p_media_group: mediaGroup,
+        // THE WHOLE CAPTION, not just the line the folder came from. The
+        // operator types the name, a blank line and three paragraphs of
+        // synopsis in Telegram while forwarding; everything after the first
+        // line used to be dropped here, so it had to be typed a second time
+        // into a phone. The console reads it back and fills the form with it.
+        p_caption: String(msg.caption ?? ''),
       }) as Array<Record<string, unknown>>;
       queued = (Array.isArray(rows) ? rows[0] : rows) ?? {};
     } catch {
@@ -598,7 +604,8 @@ Deno.serve(async (req: Request) => {
     if (!(await isOperator(req))) return json({ error: 'not_an_operator' }, 403, req);
     const res = await rest(
       'ingest_jobs?select=id,file_name,bytes,kind,state,note,object_key,'
-      + 'title_id,created_at,finished_at&order=created_at.desc&limit=60');
+      + 'title_id,created_at,finished_at,tg_caption,tg_media_group'
+      + '&order=created_at.desc&limit=200');
     if (!res.ok) return json({ error: 'list_failed' }, 500, req);
     return json({ rows: await res.json(), runner: !!RUNNER_SECRET }, 200, req);
   }
@@ -614,6 +621,72 @@ Deno.serve(async (req: Request) => {
       p_job: jobId, p_title: titleId,
     });
     return json({ ok: true, result }, 200, req);
+  }
+
+  // ── attach_folder ────────────────────────────────────────────────────────
+  //
+  // Point a title at EVERY finished file of one folder.
+  //
+  // An album is one thing to the person who sent it. Fifteen rows each with
+  // their own picker is fifteen chances to choose the wrong title on the
+  // eleventh, and the folder is the thing the album already agreed on when it
+  // was queued, so it is the right handle. `attach_ingest_folder` skips what
+  // is not finished and what is already attached.
+  if (op === 'attach_folder') {
+    if (!(await isOperator(req))) return json({ error: 'not_an_operator' }, 403, req);
+    const folder = String(body.folder ?? '');
+    const titleId = String(body.title_id ?? '');
+    if (!folder || !titleId) return json({ error: 'no_folder_or_title' }, 400, req);
+    const result = await rpc('attach_ingest_folder', {
+      p_folder: folder, p_title: titleId,
+    });
+    return json({ ok: true, attached: result }, 200, req);
+  }
+
+  // ── create_title ─────────────────────────────────────────────────────────
+  //
+  // One album becomes one title, in one statement.
+  //
+  // WHY NOT studio.ts's `create`. That one exists to take files off the
+  // phone: it demands at least one, uploads them, and makes the title around
+  // them. After an ingest the files are ALREADY in the bucket — and the
+  // operator's next step, "choose the title in the console", could not be
+  // taken at all, because the only titles to choose from were five old test
+  // ones and making a new one demanded uploading a file that was already
+  // there. Attaching a 416 MB film to `Test 001` is not a workaround.
+  //
+  // Loosening `create` would have left five steps to say one thing. This says
+  // it once, and the title is never empty for a moment because
+  // `create_title_from_ingest` attaches the folder inside the same
+  // transaction that creates the row. It is born a DRAFT; the rest of the card
+  // — category, year, the Burmese title, the tags — is typed in the editor,
+  // which is where the operator is standing once the title exists.
+  if (op === 'create_title') {
+    if (!(await isOperator(req))) return json({ error: 'not_an_operator' }, 403, req);
+    const folder = String(body.folder ?? '');
+    const name = String(body.title ?? '');
+    if (!folder || !name.trim()) {
+      return json({ error: 'no_folder_or_title' }, 400, req);
+    }
+    try {
+      const rows = await rpc('create_title_from_ingest', {
+        p_folder: folder,
+        p_title: name,
+        p_synopsis: String(body.synopsis ?? ''),
+      }) as Array<Record<string, unknown>>;
+      const made = (Array.isArray(rows) ? rows[0] : rows) ?? {};
+      return json({
+        ok: true,
+        id: made.title_id ?? null,
+        attached: Number(made.attached ?? 0) || 0,
+      }, 200, req);
+    } catch (e) {
+      // The database's own words. `that folder already belongs to another
+      // title` is the one the operator can act on, and a generic 500 would
+      // send them to look in the logs for it.
+      return json({ error: 'create_failed', detail: String(e).slice(0, 200) },
+        400, req);
+    }
   }
 
   // ── retry ────────────────────────────────────────────────────────────────

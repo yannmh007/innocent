@@ -366,6 +366,68 @@ const studio = await import('data:text/javascript,' + encodeURIComponent(
     /op: 'retry', job_id: r\.id/.test(studioSrc));
 }
 
+// ── a title can be born from an ingest ────────────────────────────────────
+//
+// The ingest put fifteen files in two folders and there was nothing to be
+// done with them: creating a title demanded uploading a file from the phone,
+// which is the one thing this whole path exists to avoid. Each check below is
+// a way that could quietly come back.
+{
+  const studioSrc = readFileSync(join(ROOT, 'docs/studio/index.html'), 'utf8');
+  const studioTs = readFileSync(join(ROOT, 'docs/edge/studio.ts'), 'utf8');
+
+  // studio.ts IS DELIBERATELY UNTOUCHED. Its `create` exists to take files off
+  // the phone and is right to insist on one; the ingest path does not go
+  // through it at all. A future edit that loosens it there would be solving
+  // this problem twice, in the place where it is harder to get right.
+  check('studio create still insists on a file for its own path',
+    /if \(incoming\.length === 0\) return json\(\{ error: 'no_assets' \}/.test(studioTs));
+
+  // The title is born holding its files, in one statement.
+  check('there is a create_title op', /op === 'create_title'/.test(ingestSrc));
+  check('create_title is operator-only',
+    /if \(op === 'create_title'\) \{\s*\n\s*if \(!\(await isOperator\(req\)\)\)/
+      .test(ingestSrc));
+  check('and it decides in the database',
+    /rpc\('create_title_from_ingest'/.test(ingestSrc));
+  check('the console uses it', /op: 'create_title'/.test(studioSrc));
+
+  // The whole caption, not the one line the folder came from.
+  check('the whole caption goes to the database',
+    /p_caption: String\(msg\.caption/.test(ingestSrc));
+  check('and comes back to the console',
+    /tg_caption/.test(ingestSrc) && /tg_caption/.test(studioSrc));
+
+  // Fifteen pickers for one album is fifteen chances to pick wrong.
+  check('a folder can be attached in one go', /op === 'attach_folder'/.test(ingestSrc));
+  check('attach_folder is operator-only',
+    /if \(op === 'attach_folder'\) \{\s*\n\s*if \(!\(await isOperator\(req\)\)\)/
+      .test(ingestSrc));
+  check('and the console uses it', /op: 'attach_folder'/.test(studioSrc));
+
+  // `inbox` IS NOT AN ALBUM. It is the drawer everything captionless falls
+  // into, and one tap filing a year of unrelated uploads under one title is
+  // the worst thing this panel could learn to do.
+  check('inbox keeps its per-file pickers',
+    /drawLooseFiles/.test(studioSrc) &&
+    /folder === 'inbox'\s*\n?\s*\? drawLooseFiles/.test(studioSrc));
+
+  // The new title must land in the folder the files are already in. A
+  // different one plays fine — attach copies the key — and then disagrees
+  // with the R2 listing, the unused-file report, and every later upload from
+  // this page, which reads the folder back to decide where files go.
+  const born = studioSrc.slice(studioSrc.indexOf('async function startTitleFromIngest'));
+  check('a title born from an ingest takes the ingest folder',
+    /op: 'create_title', folder,/.test(born));
+  check('the caption fills the name and the synopsis',
+    /lines\[0\]/.test(born) && /synopsis: rest/.test(born));
+  // It is a draft because `create_title_from_ingest` makes drafts, and the
+  // trigger refuses to publish an empty one whatever this page sends.
+  check('and the operator is told it is a draft', /DRAFT/.test(born));
+  check('the picker is refreshed, or every other group offers a stale list',
+    /ingestTitles = null/.test(born));
+}
+
 if (failures) {
   console.error(failures + ' ingest check(s) failed');
   process.exit(1);

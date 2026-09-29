@@ -214,6 +214,27 @@ and looking for that word finds nothing:
 > *Start-up* → **From Telegram**. It is the third of four sections; if you
 > reach *Storage* you have gone one too far.
 
+**The panel is grouped by folder, not by file.** One album is one card,
+showing the caption you typed in Telegram and every file in it. Two buttons:
+
+> **New title from this** — makes the title, in that folder, with the
+> caption's first line as its name and the rest as its description, and
+> attaches every finished file to it. It opens the editor on the new title,
+> which is where the category, year, Burmese title, tags and cover go. It is
+> created as a DRAFT and cannot be published until it has files — the database
+> refuses, not just the page.
+>
+> **Attach all to an existing title** — the same, onto a title that already
+> exists.
+
+Do NOT make a title for forwarded files from the **New** tab. That tab is the
+uploader: it takes files off the phone and insists on at least one, and these
+files are already in the bucket. It will tell you so.
+
+`inbox` is the exception and keeps a picker per file. It is not an album — it
+is where everything forwarded without a caption lands, and its contents have
+nothing to do with each other.
+
 **Send a whole album at once and caption ONE of them.** Telegram delivers an
 album as one message per file and puts the caption on a single one of them;
 the folder is agreed across the group in the database, so the other files

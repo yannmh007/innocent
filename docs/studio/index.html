@@ -2263,7 +2263,15 @@ $('create').onclick = async () => {
   if (!raw) return say('bad', 'Pick a folder first — it cannot be changed later.');
   if (!folderOk) { await checkFolder(); if (!folderOk) return say('bad', 'That folder is not available.'); }
   if (!f.title) return say('bad', 'A title needs a name.');
-  if (!files.length) return say('bad', 'Pick at least one file.');
+  // STILL REQUIRED HERE, and that is not an oversight. This tab is the
+  // uploader: it takes files off the phone and builds a title around them. A
+  // title whose files are ALREADY in the bucket — forwarded to the bot — is
+  // not made here at all; it is made by "New title from this" in Health →
+  // From Telegram, in one statement, with its files already attached.
+  if (!files.length) {
+    return say('bad', 'Pick at least one file. If the files were forwarded to '
+      + 'the bot, make the title from Health → From Telegram instead.');
+  }
 
   b.disabled = true;
   const host = $('nPicked');
@@ -2851,6 +2859,20 @@ async function loadIngest() {
   }
 }
 
+/// The From Telegram panel, GROUPED BY FOLDER.
+///
+/// WHY NOT A ROW PER FILE, WHICH IS WHAT THIS WAS. One album of a film and
+/// five stills arrives as fifteen rows, each with its own "Choose a title…"
+/// picker. That is fifteen chances to pick the wrong title on the eleventh,
+/// and it presents as fifteen decisions something that was one decision when
+/// it was sent. The album already agreed on a folder when it was queued — see
+/// migration 023 — so the folder is the handle the operator is already
+/// thinking in.
+///
+/// `inbox` IS THE EXCEPTION AND KEEPS ITS PER-FILE PICKERS. It is not an
+/// album; it is the drawer everything with no caption falls into, and its
+/// contents have nothing to do with each other. "Attach all of inbox" would
+/// be a single tap that files a year of unrelated uploads under one title.
 function drawIngest(got) {
   const host = $('ingestBody');
   host.textContent = '';
@@ -2868,93 +2890,198 @@ function drawIngest(got) {
     return;
   }
 
+  // Newest folder first, which is the order the rows arrive in.
+  const groups = new Map();
   for (const r of rows) {
-    const card = el('div', {
-      style: 'border:1px solid var(--line);border-radius:var(--r);'
-        + 'padding:10px;margin-bottom:8px',
+    const folder = String(r.object_key || '').split('/')[0] || 'inbox';
+    if (!groups.has(folder)) groups.set(folder, []);
+    groups.get(folder).push(r);
+  }
+
+  for (const [folder, items] of groups) {
+    host.append(folder === 'inbox'
+      ? drawLooseFiles(items)
+      : drawFolder(folder, items));
+  }
+}
+
+/// The state, in the words the operator thinks in rather than the database's.
+function stateLabel(state) {
+  return state === 'done' ? 'in the bucket'
+    : state === 'running' ? 'fetching…'
+    : state === 'failed' ? 'failed'
+    : 'waiting for a runner';
+}
+
+/// One file's line inside a group: name, size, state, and the reason if there
+/// is one. The note is shown WHILE IT IS STILL GOING ROUND, not only at the
+/// end — a row that has already failed twice reads "waiting for a runner",
+/// which is true and useless; the note says `attempt 1 of 3 failed: …`.
+function ingestLine(r) {
+  const line = el('div', {
+    style: 'display:flex;gap:8px;align-items:baseline;padding:3px 0',
+  });
+  line.append(el('span', { className: 'mono', style: 'font-size:12px' },
+    text(r.file_name || '(no name)')));
+  line.append(el('span', { className: 'hint', style: 'font-size:11px' },
+    text([r.bytes ? fmtSize(r.bytes) : '', r.kind].filter(Boolean).join(' · '))));
+  line.append(el('span', { className: 'spacer' }));
+  line.append(el('span', {
+    style: 'font-size:11px;color:' +
+      (r.state === 'failed' ? 'var(--bad)' : 'var(--muted)'),
+  }, text(stateLabel(r.state))));
+
+  const wrap = el('div', {}, [line]);
+  if (r.note && r.note !== 'claimed' && r.note !== 'ok') {
+    const bad = r.state === 'failed' || String(r.note).startsWith('attempt ');
+    wrap.append(el('div', {
+      className: 'hint',
+      style: 'font-size:11px;margin:-2px 0 4px;' + (bad ? 'color:var(--bad)' : ''),
+    }, text(r.note)));
+  }
+  if (r.state === 'failed') wrap.append(retryButton(r));
+  return wrap;
+}
+
+/// Put a spent job back in the queue. See the `retry` op: every failure this
+/// pipeline has actually had was the environment rather than the file.
+function retryButton(r) {
+  const again = el('button', { className: 'b', style: 'margin:2px 0 6px' },
+    text('Try again'));
+  again.onclick = async () => {
+    again.disabled = true;
+    try {
+      const got = await api({ op: 'retry', job_id: r.id }, INGEST_API);
+      if (got.result === 'queued') {
+        say('ok', 'Back in the queue. A runner takes it on the next tick.');
+      } else if (got.result === 'duplicate') {
+        say('warn', 'That file has already been forwarded again — this row '
+          + 'stays as history.');
+      } else {
+        say('warn', String(got.result || 'nothing to retry'));
+      }
+      await loadIngest();
+    } catch (e) {
+      say('bad', String(e.message || e));
+      again.disabled = false;
+    }
+  };
+  return again;
+}
+
+/// One album: the folder, what the operator typed in Telegram, and the two
+/// things they can do with it.
+function drawFolder(folder, items) {
+  const card = el('div', {
+    style: 'border:1px solid var(--line);border-radius:var(--r);'
+      + 'padding:10px;margin-bottom:10px',
+  });
+
+  const head = el('div', { style: 'display:flex;gap:8px;align-items:baseline' });
+  head.append(el('b', { className: 'mono' }, text(folder)));
+  head.append(el('span', { className: 'spacer' }));
+  const photos = items.filter((r) => r.kind === 'photo').length;
+  const videos = items.length - photos;
+  const bytes = items.reduce((n, r) => n + (Number(r.bytes) || 0), 0);
+  head.append(el('span', { className: 'hint', style: 'font-size:12px' }, text(
+    [videos ? videos + ' video' + (videos > 1 ? 's' : '') : '',
+      photos ? photos + ' photo' + (photos > 1 ? 's' : '') : '',
+      fmtSize(bytes)].filter(Boolean).join(' · '))));
+  card.append(head);
+
+  // WHAT THE OPERATOR TYPED IN TELEGRAM, kept whole. They write the name, a
+  // blank line and three paragraphs of synopsis while forwarding; until
+  // 2026-09-29 everything after the first line was dropped and had to be
+  // typed again, into a phone. This is that text.
+  const caption = (items.find((r) => r.tg_caption) || {}).tg_caption || '';
+  if (caption) {
+    card.append(el('div', {
+      style: 'white-space:pre-wrap;font-size:12px;color:var(--muted);'
+        + 'border-left:2px solid var(--line);padding:4px 0 4px 8px;margin:6px 0',
+    }, text(caption)));
+  }
+
+  const list = el('div', { style: 'margin:6px 0' });
+  for (const r of items) list.append(ingestLine(r));
+  card.append(list);
+
+  const ready = items.filter((r) => r.state === 'done' && !r.title_id);
+  const attached = items.filter((r) => r.title_id).length;
+  if (attached) {
+    card.append(el('div', { className: 'hint' }, text(
+      attached + ' of ' + items.length + ' attached to a title'
+      + (ready.length ? '' : ', and queued for streaming copies.'))));
+  }
+
+  // NOTHING IS OFFERED UNTIL THE BYTES ARE THERE. Pointing a title at a
+  // half-written object puts a film in the catalogue that fails to play,
+  // which is worse than one that is not there yet.
+  if (!ready.length) {
+    if (!attached) {
+      card.append(el('div', { className: 'hint' }, text(
+        'Nothing finished yet — the actions appear when the files are in the '
+        + 'bucket.')));
+    }
+    return card;
+  }
+
+  const row = el('div', { style: 'display:flex;gap:8px;margin-top:8px;flex-wrap:wrap' });
+  const pick = el('select', { style: 'flex:1;min-width:140px' });
+  pick.append(el('option', { value: '' }, text('Attach all to an existing title…')));
+  for (const t of (ingestTitles || [])) {
+    pick.append(el('option', { value: t.id }, text(t.title || t.id)));
+  }
+  const go = el('button', { className: 'b' }, text('Attach ' + ready.length));
+  go.onclick = async () => {
+    if (!pick.value) { say('warn', 'Choose a title first.'); return; }
+    go.disabled = true;
+    try {
+      const res = await api(
+        { op: 'attach_folder', folder, title_id: pick.value }, INGEST_API);
+      say('ok', 'Attached ' + res.attached + '. The streaming copies are queued.');
+      await loadIngest();
+    } catch (e) {
+      say('bad', String(e.message || e));
+      go.disabled = false;
+    }
+  };
+  row.append(pick, go);
+
+  // THE ONE THAT CLOSES THE LOOP. Everything the new title needs is already
+  // here — the folder these files live in, and the name and synopsis the
+  // operator typed in Telegram. Retyping a Burmese synopsis into a phone,
+  // from memory or by scrolling back through a chat, is the step that made
+  // this whole path not worth using.
+  const fresh = el('button', { className: 'b p' }, text('New title from this'));
+  fresh.onclick = () => startTitleFromIngest(folder, caption, fresh);
+  row.append(fresh);
+
+  card.append(row);
+  return card;
+}
+
+/// Everything forwarded without a caption, which is a drawer and not an album.
+function drawLooseFiles(items) {
+  const card = el('div', {
+    style: 'border:1px solid var(--line);border-radius:var(--r);'
+      + 'padding:10px;margin-bottom:10px',
+  });
+  card.append(el('b', { className: 'mono' }, text('inbox')));
+  card.append(el('div', { className: 'hint', style: 'margin:2px 0 6px' }, text(
+    'Forwarded with no caption, so they share nothing but this drawer. '
+    + 'Attached one at a time on purpose.')));
+
+  for (const r of items) {
+    const box = el('div', {
+      style: 'border-top:1px solid var(--line);padding-top:6px;margin-top:6px',
     });
-    const head = el('div', { style: 'display:flex;gap:8px;align-items:center' });
-    head.append(el('b', {}, text(r.file_name || '(no name)')));
-    head.append(el('span', { className: 'spacer' }));
-    // The state, in the words the operator thinks in rather than the
-    // database's. "running" means a runner has it; "queued" means nothing has
-    // picked it up yet, which on a five-minute tick is the normal first state.
-    const label = r.state === 'done' ? 'in the bucket'
-      : r.state === 'running' ? 'fetching…'
-      : r.state === 'failed' ? 'failed'
-      : 'waiting for a runner';
-    head.append(el('span', {
-      style: 'font-size:12px;color:' +
-        (r.state === 'failed' ? 'var(--bad)' : 'var(--muted)'),
-    }, text(label)));
-    card.append(head);
-
-    const facts = [];
-    if (r.bytes) facts.push(fmtSize(r.bytes));
-    if (r.kind) facts.push(r.kind);
-    if (r.created_at) facts.push(String(r.created_at).slice(0, 16).replace('T', ' '));
-    card.append(el('div', { className: 'hint', style: 'margin:4px 0' },
-      text(facts.join(' · '))));
-    // THE NOTE IS SHOWN WHILE IT IS STILL GOING ROUND, not only at the end.
-    // A failed fetch goes back to 'queued' for two more tries, so a row that
-    // has already failed twice reads "waiting for a runner" — which is true
-    // and useless. The note says `attempt 1 of 3 failed: …`, and that is the
-    // only place the reason appears before the third try spends it.
-    if (r.note && r.note !== 'claimed') {
-      const bad = r.state === 'failed' || r.note.startsWith('attempt ');
-      card.append(el('div', {
-        className: 'hint',
-        style: bad ? 'color:var(--bad)' : '',
-      }, text(r.note)));
-    }
-
-    // A SPENT JOB CAN BE SENT ROUND AGAIN FROM HERE. Every failure this
-    // pipeline has actually seen was the environment rather than the file:
-    // three attempts each on `Telegram credentials are not set on this
-    // repository`, while the chat, the message and the file id sat in the row
-    // and were all still good. Without this the only way back was to find the
-    // message in Telegram and forward it again — from a phone, scrolling for
-    // something sent days ago.
-    //
-    // `retry_ingest` is the one that decides. It refuses a job that is not
-    // spent, and refuses one whose file has since been forwarded again, which
-    // would fetch the same gigabyte twice.
-    if (r.state === 'failed') {
-      const again = el('button', { className: 'b', style: 'margin-top:6px' },
-        text('Try again'));
-      again.onclick = async () => {
-        again.disabled = true;
-        try {
-          const got = await api({ op: 'retry', job_id: r.id }, INGEST_API);
-          // The function answers with what it decided rather than just
-          // 'done', because 'duplicate' and 'not_failed' are both refusals
-          // that look like success from here.
-          if (got.result === 'queued') {
-            say('ok', 'Back in the queue. A runner takes it on the next tick.');
-          } else if (got.result === 'duplicate') {
-            say('warn', 'That file has already been forwarded again — this '
-              + 'row stays as history.');
-          } else {
-            say('warn', String(got.result || 'nothing to retry'));
-          }
-          await loadIngest();
-        } catch (e) {
-          say('bad', String(e.message || e));
-          again.disabled = false;
-        }
-      };
-      card.append(again);
-    }
-
-    // ATTACHING IS ONLY OFFERED ONCE THE BYTES ARE THERE. Pointing a title at
-    // a half-written object would put a film in the catalogue that fails to
-    // play, which is worse than one that is not there yet.
+    box.append(ingestLine(r));
     if (r.state === 'done') {
       if (r.title_id) {
-        card.append(el('div', { className: 'hint' },
+        box.append(el('div', { className: 'hint' },
           text('Attached to a title, and queued for streaming copies.')));
       } else {
-        const row = el('div', { style: 'display:flex;gap:8px;margin-top:6px' });
+        const row = el('div', { style: 'display:flex;gap:8px;margin-top:4px' });
         const pick = el('select', { style: 'flex:1;min-width:0' });
         pick.append(el('option', { value: '' }, text('Choose a title…')));
         for (const t of (ingestTitles || [])) {
@@ -2975,10 +3102,57 @@ function drawIngest(got) {
           }
         };
         row.append(pick, go);
-        card.append(row);
+        box.append(row);
       }
     }
-    host.append(card);
+    card.append(box);
+  }
+  return card;
+}
+
+/// Turn one album into one title, and open the editor on it.
+///
+/// EVERYTHING IT NEEDS IS ALREADY HERE. The folder these files agreed on when
+/// they were queued, and the name and synopsis the operator typed in Telegram
+/// while forwarding — a name, a blank line, the description, which is how they
+/// already write them. Retyping a Burmese synopsis into a phone, from memory
+/// or by scrolling back through a chat, is the step that made this whole path
+/// not worth using.
+///
+/// THE FOLDER IS THE INGEST'S FOLDER AND IS NOT NEGOTIABLE. Every object key
+/// of these files begins with it. A title under a different folder would play
+/// perfectly — attaching copies the key across — and then disagree with the R2
+/// listing, the unused-file report, and every later upload from this page,
+/// which reads the folder back to decide where files go.
+///
+/// It is created as a DRAFT with its files already on it. The rest of the card
+/// is the editor's job, which is where this leaves the operator.
+async function startTitleFromIngest(folder, caption, btn) {
+  const lines = String(caption || '').split('\n');
+  const name = (lines[0] || '').trim() || folder;
+  const rest = lines.slice(1).join('\n').trim();
+
+  // The name is the one thing worth confirming: it is what people see, the
+  // caption's first line is sometimes a file name or a channel's banner, and
+  // it is far easier to fix here than after the card exists.
+  const chosen = prompt('Name for this title:', name);
+  if (chosen === null) return;
+  if (!chosen.trim()) { say('warn', 'A title needs a name.'); return; }
+
+  if (btn) btn.disabled = true;
+  try {
+    const res = await api({
+      op: 'create_title', folder, title: chosen, synopsis: rest,
+    }, INGEST_API);
+    say('ok', 'Created "' + chosen.trim() + '" with ' + res.attached
+      + ' file(s). It is a DRAFT — fill in the rest and publish when it looks '
+      + 'right.');
+    // The picker on every other group is now out of date by one title.
+    ingestTitles = null;
+    openEditor(res.id);
+  } catch (e) {
+    say('bad', String(e.message || e));
+    if (btn) btn.disabled = false;
   }
 }
 
