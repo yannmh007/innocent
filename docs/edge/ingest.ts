@@ -263,16 +263,27 @@ function slugify(raw: string): string {
     .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60);
 }
 
-function safeKey(prefix: string, filename: string, folder: string): string {
+/// Everything in a key EXCEPT the folder: `<kind>/<date>-<slug>-<rand>.<ext>`.
+///
+/// SPLIT OUT BECAUSE ONLY THE FOLDER IS EVER IN QUESTION. A file sent as part
+/// of an album may not know its folder yet — the caption is on one message of
+/// the group and this may not be that one — so the database decides the folder
+/// across the whole group and is handed this tail to put in front of. The tail
+/// is minted here rather than there because it has to keep agreeing with
+/// `isMintedKey` in studio.ts, which is the console's gate on a key it will
+/// later be asked to complete, abort or list.
+function keyTail(prefix: string, filename: string): string {
   const dot = filename.lastIndexOf('.');
   const stem = slugify(dot > 0 ? filename.slice(0, dot) : filename) || 'file';
   const ext = (dot > 0 ? filename.slice(dot + 1) : '')
     .toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 8);
   const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
   const rand = crypto.randomUUID().slice(0, 8);
-  const name = `${stamp}-${stem}-${rand}${ext ? '.' + ext : ''}`;
-  const dir = slugify(folder);
-  return dir ? `${dir}/${prefix}/${name}` : `inbox/${prefix}/${name}`;
+  return `${prefix}/${stamp}-${stem}-${rand}${ext ? '.' + ext : ''}`;
+}
+
+function safeKey(prefix: string, filename: string, folder: string): string {
+  return `${slugify(folder) || 'inbox'}/${keyTail(prefix, filename)}`;
 }
 
 /// Tell the operator what happened, in Telegram, where they are already
@@ -403,45 +414,75 @@ Deno.serve(async (req: Request) => {
     // matching a card by a typed name is a guess and this should not guess
     // about where a film ends up.
     const caption = String(msg.caption ?? '').split('\n')[0] ?? '';
-    const key = safeKey(file.kind, file.name, caption);
 
-    const res = await rest('ingest_jobs', {
-      method: 'POST',
-      headers: { Prefer: 'return=representation' },
-      body: JSON.stringify({
-        tg_file_id: file.id,
-        tg_unique_id: file.uniq,
-        tg_chat_id: Number(chatId) || null,
-        tg_message_id: Number(msg.message_id ?? 0) || null,
-        file_name: file.name,
-        mime: file.mime || null,
-        bytes: file.bytes || null,
-        duration_s: file.duration,
-        width: file.width,
-        height: file.height,
-        kind: file.kind,
-        bucket: bucketFor(file.kind),
-        object_key: key,
-      }),
-    });
+    // WHICH ALBUM THIS WAS SENT IN, and it is the difference between the
+    // folder working and three files out of four landing in `inbox`.
+    //
+    // Telegram does NOT deliver a media group as one update. It sends one per
+    // file, they share `media_group_id`, and the caption is attached to
+    // exactly one of them — so reading `msg.caption` per message, which is
+    // right for a single forwarded film, silently loses the folder for every
+    // other file of an album. Sending a title's artwork as an album is the
+    // natural gesture from a phone, so this was most of the traffic.
+    //
+    // The folder cannot be sorted out afterwards either: the object key is
+    // minted before the bytes move and the runner is handed a presigned PUT
+    // for that exact key. So it is agreed at INSERT time, in one statement,
+    // by `enqueue_ingest` — which inherits a sibling's folder when this
+    // message has no caption, and moves siblings already parked in `inbox`
+    // when it does. See migration 023 for why that needs a lock.
+    const mediaGroup = String(msg.media_group_id ?? '');
 
-    if (res.status === 409) {
-      // The unique index on file_unique_id. Forwarding the same film twice is
-      // the ordinary accident, not an unusual one, and the second one costing
-      // nothing is the point of that index.
-      await say(chatId, 'Already queued — same file.');
-      return json({ ok: true, skipped: 'duplicate' }, 200, req);
-    }
-    if (!res.ok) {
+    let queued: Record<string, unknown>;
+    try {
+      const rows = await rpc('enqueue_ingest', {
+        p_file_id: file.id,
+        p_unique_id: file.uniq,
+        p_chat_id: Number(chatId) || null,
+        p_message_id: Number(msg.message_id ?? 0) || null,
+        p_file_name: file.name,
+        p_mime: file.mime || null,
+        p_bytes: file.bytes || null,
+        p_duration: file.duration,
+        p_width: file.width,
+        p_height: file.height,
+        p_kind: file.kind,
+        p_bucket: bucketFor(file.kind),
+        p_folder: slugify(caption),
+        p_key_tail: keyTail(file.kind, file.name),
+        p_media_group: mediaGroup,
+      }) as Array<Record<string, unknown>>;
+      queued = (Array.isArray(rows) ? rows[0] : rows) ?? {};
+    } catch {
       await say(chatId, 'Could not queue that one. Try again in a minute.');
       return json({ ok: true, error: 'insert_failed' }, 200, req);
     }
+
+    if (String(queued.status ?? '') === 'duplicate') {
+      // Forwarding the same film twice is the ordinary accident, not an
+      // unusual one, and the second one costing nothing is the point of the
+      // unique index behind this.
+      await say(chatId, 'Already queued — same file.');
+      return json({ ok: true, skipped: 'duplicate' }, 200, req);
+    }
+
     const mb = file.bytes ? Math.round(file.bytes / 1048576) : 0;
+    const moved = Number(queued.moved ?? 0) || 0;
     await say(chatId,
       `Queued: ${file.name}${mb ? ` (${mb} MB)` : ''}\n`
-      + `Folder: ${slugify(caption) || 'inbox'}\n`
-      + 'A runner picks it up within five minutes. Choose the title in the '
-      + 'console when it is done.');
+      // THE FOLDER IT ACTUALLY WENT IN, which is not always the one this
+      // message carried. Reporting the caption was true and useless: for
+      // three files of a four-file album it said `inbox`, which is the one
+      // thing the operator needed to not be true.
+      + `Folder: ${String(queued.folder ?? 'inbox')}\n`
+      + (moved ? `Moved ${moved} more from this album into it.\n` : '')
+      // NOT "within five minutes", which is what this said and what the
+      // cron expression claims. GitHub runs a free public repository's
+      // schedule when it gets to it — fourteen to twenty minutes apart,
+      // measured — and a promise the system cannot keep is how somebody comes
+      // to believe the thing is broken and forwards it all again.
+      + 'A runner usually picks it up within twenty minutes, and takes the '
+      + 'whole queue when it does. Choose the title in the console after.');
     return json({ ok: true, queued: true }, 200, req);
   }
 
@@ -572,6 +613,29 @@ Deno.serve(async (req: Request) => {
     const result = await rpc('attach_ingest', {
       p_job: jobId, p_title: titleId,
     });
+    return json({ ok: true, result }, 200, req);
+  }
+
+  // ── retry ────────────────────────────────────────────────────────────────
+  //
+  // Put a terminally failed job back in the queue.
+  //
+  // WHY THIS EXISTS. 022 made a failure re-forwardable, which covers a file
+  // that was wrong. It does not cover a file that was fine and an ENVIRONMENT
+  // that was not: the first two jobs this pipeline ever saw died three times
+  // each on `Telegram credentials are not set on this repository`, and once
+  // the credentials existed the only way to recover them was to find the
+  // messages in Telegram and forward them again. The chat, the message and
+  // the file id were all still in the row.
+  //
+  // Operator-only, and `retry_ingest` refuses anything that is not spent —
+  // including a file that has since been forwarded again, which would fetch
+  // the same gigabyte twice.
+  if (op === 'retry') {
+    if (!(await isOperator(req))) return json({ error: 'not_an_operator' }, 403, req);
+    const jobId = String(body.job_id ?? '');
+    if (!jobId) return json({ error: 'no_job' }, 400, req);
+    const result = await rpc('retry_ingest', { p_job: jobId });
     return json({ ok: true, result }, 200, req);
   }
 

@@ -1603,7 +1603,15 @@ function show(tab) {
   if (tab === 'requests') loadRequests();
   if (tab === 'cats') loadCategories();
   if (tab === 'stats') loadStats();
-  if (tab === 'health') loadHealth();
+  if (tab === 'health') {
+    loadHealth();
+    // AND THE PANEL BELOW IT. `loadIngest` was wired to its own Refresh
+    // button and to nothing else, so opening Health drew the heading, the
+    // paragraph explaining what to forward, and then nothing — which reads
+    // exactly like a panel that is not there. The operator went looking for
+    // it three times and could not find it, because it was empty.
+    loadIngest();
+  }
 }
 for (const b of document.querySelectorAll('nav button')) {
   b.onclick = () => show(b.dataset.tab);
@@ -2898,6 +2906,44 @@ function drawIngest(got) {
         className: 'hint',
         style: bad ? 'color:var(--bad)' : '',
       }, text(r.note)));
+    }
+
+    // A SPENT JOB CAN BE SENT ROUND AGAIN FROM HERE. Every failure this
+    // pipeline has actually seen was the environment rather than the file:
+    // three attempts each on `Telegram credentials are not set on this
+    // repository`, while the chat, the message and the file id sat in the row
+    // and were all still good. Without this the only way back was to find the
+    // message in Telegram and forward it again — from a phone, scrolling for
+    // something sent days ago.
+    //
+    // `retry_ingest` is the one that decides. It refuses a job that is not
+    // spent, and refuses one whose file has since been forwarded again, which
+    // would fetch the same gigabyte twice.
+    if (r.state === 'failed') {
+      const again = el('button', { className: 'b', style: 'margin-top:6px' },
+        text('Try again'));
+      again.onclick = async () => {
+        again.disabled = true;
+        try {
+          const got = await api({ op: 'retry', job_id: r.id }, INGEST_API);
+          // The function answers with what it decided rather than just
+          // 'done', because 'duplicate' and 'not_failed' are both refusals
+          // that look like success from here.
+          if (got.result === 'queued') {
+            say('ok', 'Back in the queue. A runner takes it on the next tick.');
+          } else if (got.result === 'duplicate') {
+            say('warn', 'That file has already been forwarded again — this '
+              + 'row stays as history.');
+          } else {
+            say('warn', String(got.result || 'nothing to retry'));
+          }
+          await loadIngest();
+        } catch (e) {
+          say('bad', String(e.message || e));
+          again.disabled = false;
+        }
+      };
+      card.append(again);
     }
 
     // ATTACHING IS ONLY OFFERED ONCE THE BYTES ARE THERE. Pointing a title at

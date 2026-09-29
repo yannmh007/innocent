@@ -77,7 +77,7 @@ const mod = await import('data:text/javascript,' + encodeURIComponent(
   + ts(sliceOut('docs/edge/ingest.ts', 'function bucketFor(', '\nconst SUPABASE_URL')) +
   ts(sliceOut('docs/edge/ingest.ts', 'function slugify(', '/// Tell the operator')) +
   ts(sliceOut('docs/edge/ingest.ts', 'function fileOf(', 'Deno.serve(')) +
-  '\nexport { slugify, safeKey, fileOf, bucketFor };'
+  '\nexport { slugify, safeKey, keyTail, fileOf, bucketFor };'
 ));
 
 // The raw file, for the three places the choice has to be USED. A correct
@@ -269,6 +269,101 @@ const studio = await import('data:text/javascript,' + encodeURIComponent(
       check(`${JSON.stringify(bad)} is refused`, !re.test(bad));
     }
   }
+}
+
+// ── an album keeps its caption's folder ───────────────────────────────────
+//
+// The fix lives in `enqueue_ingest` (migration 023) and is checked against a
+// real Postgres by tool/sql/album_folder_test.sql, because it is a race
+// between messages resolved by a lock. What is checked HERE is the half that
+// is in this file, and each of these is a way the two could silently stop
+// agreeing while both looked right on their own.
+{
+  // The database composes `folder || '/' || tail`. If that does not produce
+  // exactly what safeKey produces, the console stops recognising keys the
+  // ingest mints and the unused-file report starts calling live films
+  // orphans — which is a bill, quietly.
+  const tail = mod.keyTail('photo', 'Poster.JPG');
+  check('a tail is the kind and the name, with no folder',
+    /^photo\/20\d{6}-poster-[0-9a-f]{8}\.jpg$/.test(tail));
+  check('folder + tail is a key the console accepts',
+    studio.isMintedKey('chief-of-war-2025/' + tail));
+  check('and inbox + tail is too', studio.isMintedKey('inbox/' + tail));
+  check('safeKey is exactly that composition',
+    /^\$\{slugify\(folder\) \|\| 'inbox'\}\/\$\{keyTail\(prefix, filename\)\}$/
+      .test(
+        (ingestSrc.match(/function safeKey[^]*?return `([^`]*)`/) || [])[1] || ''));
+
+  // Telegram sends one update per file of an album and puts the caption on
+  // one of them. Not reading `media_group_id` is precisely the bug: three
+  // photos of a four-photo album landed in `inbox` with nothing wrong
+  // anywhere that anyone could see.
+  check('the webhook reads media_group_id',
+    /media_group_id/.test(ingestSrc));
+  check('and passes it to the database',
+    /p_media_group:\s*mediaGroup/.test(ingestSrc));
+
+  // The folder and the tail go SEPARATELY, because the folder is the part the
+  // database may override. Sending a finished key would put the decision back
+  // in the one place that cannot see the other messages of the album.
+  check('the folder is sent on its own', /p_folder:\s*slugify\(caption\)/.test(ingestSrc));
+  check('the tail is sent on its own',
+    /p_key_tail:\s*keyTail\(file\.kind, file\.name\)/.test(ingestSrc));
+
+  // THE INSERT MUST NOT GO ROUND THE FUNCTION. A plain REST insert would skip
+  // the lock and the reconciliation and put the album bug straight back, with
+  // every test above still passing.
+  check('nothing inserts into ingest_jobs behind the function',
+    !/rest\('ingest_jobs',\s*\{[^]*?method:\s*'POST'/.test(ingestSrc));
+  check('the enqueue goes through enqueue_ingest',
+    /rpc\('enqueue_ingest'/.test(ingestSrc));
+
+  // The bot used to report the caption it had been handed. For three files of
+  // that album the true answer was `inbox` and the reported answer was
+  // `inbox`, which was correct and told the operator nothing was wrong.
+  check('the bot reports the folder the row actually got',
+    /Folder: \$\{String\(queued\.folder/.test(ingestSrc));
+  check('and says so when siblings were moved to join it',
+    /queued\.moved/.test(ingestSrc));
+}
+
+// ── a spent job can be sent round again ───────────────────────────────────
+{
+  const retry = ingestSrc.slice(ingestSrc.indexOf("if (op === 'retry')"));
+  check('there is a retry op', retry.length > 0);
+  // Operator-only and checked FIRST. This requeues work that costs bandwidth
+  // and it is reachable from a page on the open internet.
+  check('retry checks the operator before anything else',
+    /^if \(op === 'retry'\) \{\s*\n\s*if \(!\(await isOperator\(req\)\)\)/.test(retry));
+  check('retry refuses a call with no job', /no_job/.test(retry.slice(0, 500)));
+  check('retry decides in the database, not here',
+    /rpc\('retry_ingest'/.test(retry));
+}
+
+// ── the console ───────────────────────────────────────────────────────────
+//
+// Two faults that are invisible in a screenshot of the case somebody thought
+// to look at, which is how both survived.
+{
+  const studioSrc = readFileSync(join(ROOT, 'docs/studio/index.html'), 'utf8');
+
+  // The panel was wired to its own Refresh button and to nothing else, so
+  // opening the tab drew a heading and an explanation over an empty div. It
+  // reads as a panel that does not exist, and it was looked for three times.
+  const onHealth = studioSrc.slice(studioSrc.indexOf("if (tab === 'health')"));
+  check('opening Health fills the From Telegram panel too',
+    /loadIngest\(\)/.test(onHealth.slice(0, 700)));
+
+  // The heading on the page is `From Telegram`. Anything that calls it the
+  // Ingest panel is sending somebody looking for a word that is not there —
+  // which is what the runbook did.
+  check('the panel is headed From Telegram', />From Telegram</.test(studioSrc));
+  check('the runbook calls it by that name',
+    /From Telegram/.test(readFileSync(join(ROOT, 'docs/RUNBOOK.md'), 'utf8')));
+
+  check('a failed row offers Try again',
+    /r\.state === 'failed'/.test(studioSrc) &&
+    /op: 'retry', job_id: r\.id/.test(studioSrc));
 }
 
 if (failures) {

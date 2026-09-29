@@ -27,8 +27,11 @@
 name: Ingest
 
 on:
-  # Five minutes is the finest GitHub offers and far finer than this needs:
-  # the operator forwards a film and walks away.
+  # Five minutes is the finest GitHub offers, and it is NOT what happens. A
+  # cron on a free public repository is best effort and queues behind
+  # everyone else's: measured over one morning this fired fourteen to twenty
+  # minutes apart. Which is why a run drains the whole queue rather than
+  # taking one file and trusting the next tick to be along shortly.
   schedule:
     - cron: '*/5 * * * *'
   workflow_dispatch:
@@ -92,45 +95,26 @@ jobs:
           python3 -m pip install --quiet --disable-pip-version-check \
             'pyrogram==2.0.106' 'tgcrypto==1.2.5'
 
-      - name: Fetch it and put it in the bucket
+      # ONE RUN TAKES AS MANY AS IT CAN, rather than one and out.
+      #
+      # `*/5` above is what GitHub accepts, not what it runs. Measured over one
+      # morning the schedule fired fourteen to twenty minutes apart, because a
+      # cron on a free public repository is best effort — so a title's artwork
+      # sent as a single album of ten photos took between two and three hours
+      # to land, one file per tick, with nothing anywhere saying why.
+      #
+      # The loop, the time budget and the per-job crash backstop are all in
+      # tool/ingest_all.sh, which explains each of them. The backstop moved in
+      # there for a reason worth repeating: a final `if: failure()` step can
+      # only ever report the LAST job, so in a loop it would miss every earlier
+      # failure and misattribute the one it caught.
+      - name: Fetch them and put them in the bucket
         if: steps.claim.outputs.job == 'yes'
         env:
+          SB_URL: ${{ secrets.SUPABASE_URL }}
+          RUNNER_SECRET: ${{ secrets.INGEST_SECRET }}
           JOB_TOKEN: ${{ secrets.INGEST_SECRET }}
           TG_API_ID: ${{ secrets.TELEGRAM_API_ID }}
           TG_API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
           TG_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-        run: python3 tool/ingest.py
-
-      - name: Say so when it did not work
-        if: failure() && steps.claim.outputs.job == 'yes'
-        env:
-          JOB_TOKEN: ${{ secrets.INGEST_SECRET }}
-        run: |
-          # A failure that exists only in a run log is a row stuck on
-          # "running" in the console for seven hours. The operator finds out
-          # here instead.
-          #
-          # UNLESS THE RUNNER ALREADY SAID SO, in which case this is a worse
-          # message arriving second. tool/ingest.py reports the reason it
-          # knows and then exits non-zero — which is honest, the job did fail
-          # — and this step used to fire anyway and overwrite "Telegram
-          # credentials are not set on this repository" with "runner failed,
-          # see the Ingest run in Actions". The specific one is the one the
-          # operator can act on.
-          if [ -f /tmp/ingest.reported ]; then
-            echo "the runner already reported the reason; not overwriting it"
-            exit 0
-          fi
-          python3 - > /tmp/fail.json <<'PY'
-          import json, os
-          job = json.load(open('/tmp/ingest.json'))
-          print(json.dumps({
-            'op': 'done',
-            'token': os.environ['JOB_TOKEN'],
-            'job_id': job['job_id'],
-            'ok': False,
-            'note': 'runner failed - see the Ingest run in Actions',
-          }))
-          PY
-          curl -fsS -X POST "$(python3 -c "import json;print(json.load(open('/tmp/ingest.json'))['done_url'])")" \
-            -H 'Content-Type: application/json' -d @/tmp/fail.json || true
+        run: bash tool/ingest_all.sh

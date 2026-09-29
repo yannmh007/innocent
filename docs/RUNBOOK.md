@@ -203,10 +203,30 @@ missing the panel says so in words: `attempt 1 of 3 failed: Telegram
 credentials are not set on this repository`.
 
 **Then, for every film:** forward it to the bot **as a file/document**, with
-the folder name as the caption. The bot replies "Queued". A runner picks it up
-within five minutes. When it says done, open the console's **Ingest** panel and
-choose which title it belongs to — that creates the catalogue row and queues
-the ladder.
+the folder name as the caption. The bot replies "Queued". When it says done,
+choose which title it belongs to in the console — that creates the catalogue
+row and queues the ladder.
+
+**Where that panel is**, because it is not called Ingest anywhere on screen
+and looking for that word finds nothing:
+
+> Console → **Health** (the last tab) → scroll past *Catalogue health* and
+> *Start-up* → **From Telegram**. It is the third of four sections; if you
+> reach *Storage* you have gone one too far.
+
+**Send a whole album at once and caption ONE of them.** Telegram delivers an
+album as one message per file and puts the caption on a single one of them;
+the folder is agreed across the group in the database, so the other files
+follow it into the same folder whichever order they arrive in. Before
+2026-09-29 they did not, and three photos of a four-photo album went to
+`inbox` with nothing anywhere saying why.
+
+**How long it takes.** `*/5` in the workflow is what GitHub accepts, not what
+it runs — a schedule on a free public repository fires when it gets to it,
+measured at fourteen to twenty minutes apart. A run now drains the WHOLE queue
+rather than taking one file, so ten photos are ten minutes of transfers after
+one wait, not ten waits. To skip the wait entirely, run the **Ingest**
+workflow by hand from the Actions tab.
 
 > **Send it as a FILE, not as a video.** Telegram's clients re-encode anything
 > sent as a video; a document is byte-for-byte the master. A video is accepted
@@ -227,15 +247,25 @@ the ladder.
 > **Telegram caps a file at 2 GB.** Anything larger has to go through the
 > console's own uploader, which since C1 uploads in parts.
 
-> **A failed fetch tries itself twice more, then lets you forward it again.**
-> The runner ticks every five minutes, so a transient failure — Telegram rate
-> limiting, an R2 hiccup, a runner that lost its network — costs nothing and
-> fixes itself; the panel shows `attempt 1 of 3 failed: …` in the meantime.
-> After the third the row says `gave up after 3 attempts: …` and forwarding
-> the same film again starts a new job. Until 2026-09-26 it did neither: a
-> failure was terminal and re-forwarding answered "Already queued" for ever,
-> so a film sent before `TELEGRAM_API_ID` existed could not be recovered by
-> any means the operator had.
+> **A failed fetch tries itself twice more, then offers you Try again.**
+> A transient failure — Telegram rate limiting, an R2 hiccup, a runner that
+> lost its network — costs nothing and fixes itself; the panel shows
+> `attempt 1 of 3 failed: …` in the meantime. After the third the row says
+> `gave up after 3 attempts: …` and grows a **Try again** button, which puts
+> it back in the queue with its attempts reset. Forwarding the same film again
+> also starts a new job.
+>
+> Use **Try again** when the reason was the environment rather than the file,
+> which so far is every failure this pipeline has had: the first two jobs died
+> three times each on `Telegram credentials are not set on this repository`
+> while the chat, the message and the file id in the row were all still good.
+> It refuses when that file has since been forwarded again, because retrying
+> would fetch the same gigabyte twice.
+>
+> Until 2026-09-26 a failure was terminal and re-forwarding answered "Already
+> queued" for ever, so a film sent before `TELEGRAM_API_ID` existed could not
+> be recovered by any means the operator had. Until 2026-09-29 recovering one
+> still meant finding the message in Telegram and forwarding it again.
 
 ### Redeploying an edge function
 
