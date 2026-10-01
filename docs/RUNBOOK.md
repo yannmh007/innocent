@@ -307,8 +307,23 @@ it. Nothing to do.
 
 ### Redeploying an edge function
 
-Supabase dashboard → **Edge Functions** → the function → the **Code** tab →
-select everything in the editor and replace it with the whole of
+**Since 2026-10-01 `studio`, `ingest`, `transcode` and `probe-media` are
+deployed as one line**, an `index.ts` that imports the file from this
+repository pinned to a commit:
+
+```ts
+import 'https://raw.githubusercontent.com/yannmh007/innocent/<commit>/docs/edge/studio.ts';
+```
+
+Supabase fetches and bundles it at deploy time, so what runs is byte for byte
+that file at that commit — and the dashboard's Code tab shows which commit is
+live. To deploy a newer version: push, put the new commit hash in that line,
+Deploy. A commit hash and not a branch name, so the live code can never change
+underneath anyone, and Verify JWT stays OFF.
+
+The older way still works and is what to fall back on if GitHub is
+unreachable: Supabase dashboard → **Edge Functions** → the function → the
+**Code** tab → select everything in the editor and replace it with the whole of
 `docs/edge/<name>.ts` from this repository → **Deploy** → check
 **Settings → Verify JWT is OFF**.
 
