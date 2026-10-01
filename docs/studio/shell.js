@@ -436,6 +436,21 @@ function explainError(code, status) {
     bad_state: 'Somebody has already moved this title on — reload to see where it is.',
     already_live: 'It is already in the app.',
     not_live: 'It is not in the app.',
+    not_confirmed: 'Type the confirmation exactly as asked.',
+    nothing_to_delete: 'Tick at least one unused file.',
+    not_in_bin: 'It is no longer in the bin — already restored, or already deleted.',
+    bad_folder: 'That is not a usable folder name: lower-case letters, digits and hyphens, "/" to nest.',
+    same_folder: 'That is the folder it is in already.',
+    folder_taken: 'Another title already uses that folder name.',
+    folder_not_empty: 'There are files in that folder already. Pick a new name.',
+    move_in_progress: 'A move of these files is already running — continue or cancel it under Files.',
+    nothing_to_move: 'There is nothing to move: the files are where they should be already.',
+    destination_in_use: 'Something already points at one of the new names. Pick another folder.',
+    not_copied: 'Not every file is copied yet — continue the move first.',
+    not_copying: 'This move has already finished or been cancelled. Reload Files.',
+    no_such_move: 'That move no longer exists. Reload Files.',
+    copy_failed: 'R2 refused to copy a file. Nothing was switched; try Continue again.',
+    no_folder: 'Pick a folder first.',
   }[c];
   return words ? words + ' (' + c + ')' : c;
 }

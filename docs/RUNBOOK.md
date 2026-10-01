@@ -437,6 +437,39 @@ The Build workflow does everything except the last step, which is yours: the
 and compare `assets[0].digest` with `apk_sha256` in the row. GitHub computes
 that digest itself, so agreement means the two really do describe one file.
 
+## The Files page
+
+`docs/studio/files.js`, *Files* in the console menu (editor and owner). It works
+from the console's own copy of the bucket listing (`r2_inventory`, migration
+028), taken by **Scan again** and dated on the page — reading R2 on every visit
+would be slow on a phone. Scan after doing anything in the Cloudflare dashboard.
+
+| What | Who | What it does |
+|---|---|---|
+| folders, sizes, cost, "unused" | editor, owner | unused = no title, cover, streaming copy or Telegram file points at it |
+| look at a file | editor, owner | ten-minute link, like the preview |
+| display name | editor, owner | a label on the page only; nothing in R2 moves |
+| **Move to bin** | owner, fresh 2-step code, typed `DELETE` | the file waits **7 days**, restorable; a file a title uses is refused, by the database |
+| **Rename / move folder…** | owner, fresh code, new name typed twice | copy inside R2 → check sizes → switch every reference in one transaction → old files to the bin for 7 days |
+| **gather into its own folder** | owner | for the early flat `v/…` `p/…` uploads: one title's files are moved to a folder of their own, the same way |
+
+**The bin is emptied by the Telegram runner** (`ingest.yml`, last step, every
+run): it asks for files whose seven days are up, deletes each from R2, and
+marks it done. A file a title started using again in the meantime is put back
+instead of deleted. Nothing else ever deletes from R2.
+
+A file changed in the last day is never offered for deleting: until an upload's
+title row is written it looks exactly like an unused file.
+
+**A move that stopped** (page closed, phone lost signal) shows under *Moves not
+finished* with **Continue** and **Cancel**. Nothing is switched until every copy
+is checked, so the title keeps working from the old folder until then. Cancel
+puts the copies made so far in the bin. Files above 5 GB copy in 1 GB
+parts; R2 drops an abandoned part-copy by itself after seven days.
+
+**The direct check** under the folders is the older page: it asks R2 directly
+and also finds unfinished multipart uploads, which no listing shows.
+
 ## PART 4 — WEEKLY
 
 **Back up.** The free tier has NO backups - no daily, no downloadable, no PITR.

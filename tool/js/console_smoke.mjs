@@ -62,6 +62,135 @@ const jwt = (aal, totpAt) => `${b64({ alg: 'HS256', typ: 'JWT' })}.${b64({
     : [{ method: 'oauth', timestamp: now() - 600 }],
 })}.sig`;
 
+// ── the Files page's fake R2 ─────────────────────────────────────────────
+const DAY = 86400000;
+const ago = (ms) => new Date(Date.now() - ms).toISOString();
+const fmFolderOf = (k) => {
+  const m = /^(.*)\/(?:video|photo|thumb)\/[^/]+$/.exec(k);
+  return m ? m[1] : k.includes('/') ? k.split('/')[0] : '';
+};
+function fmFixture() {
+  return {
+    scanned: false, scans: [], ops: [], labels: {}, bin: [], moves: [], nextBin: 1,
+    copySteps: 2, copyFails: false,
+    inv: [
+      { bucket: 'innocent-media', key: 'solar/video/a.mp4', bytes: 2e9, modified: ago(30 * DAY), used_by: SOLAR, used_title: 'Solar', how: 'asset' },
+      { bucket: 'innocent-public', key: 'solar/photo/p.jpg', bytes: 2e5, modified: ago(30 * DAY), used_by: SOLAR, used_title: 'Solar', how: 'asset' },
+      { bucket: 'innocent-media', key: 'solar/video/old.mp4', bytes: 5e8, modified: ago(3 * DAY) },
+      { bucket: 'innocent-media', key: 'solar/video/fresh.mp4', bytes: 4e8, modified: ago(3600e3) },
+      { bucket: 'innocent-media', key: 'v/20260101-a.mp4', bytes: 9e8, modified: ago(200 * DAY), used_by: MINE, used_title: 'My draft', how: 'asset' },
+      { bucket: 'innocent-public', key: 'p/old-cover.jpg', bytes: 3e5, modified: ago(200 * DAY) },
+      { bucket: 'innocent-media', key: 'zz-album/video/1.mp4', bytes: 7e7, modified: ago(2 * DAY), how: 'telegram inbox' },
+    ],
+  };
+}
+/// The studio ops of the Files page, answered from `state.fm` the way the
+/// database functions answer (migration 028): files_summary, files_list, the
+/// bin refusing anything a title uses, a move copying in steps.
+function fmOps(state, body) {
+  const fm = state.fm;
+  const binned = (o) => fm.bin.find((b) => b.bucket === o.bucket && b.key === o.key);
+  const unused = (o) => !o.used_by && o.how !== 'telegram inbox' && !binned(o);
+  const owner = () => state.role === 'owner' ? null : { __status: 403, error: 'not_allowed' };
+  fm.ops.push(body.op);
+  return {
+    filesSummary: () => {
+      const by = new Map();
+      for (const o of fm.scanned ? fm.inv : []) {
+        const f = fmFolderOf(o.key);
+        const r = by.get(f) || { folder: f, files: 0, bytes: 0, unused_files: 0, unused_bytes: 0,
+          title_id: null, title: null, label: fm.labels[f] || null };
+        r.files += 1; r.bytes += o.bytes;
+        if (unused(o)) { r.unused_files += 1; r.unused_bytes += o.bytes; }
+        if (f === 'solar') { r.title_id = SOLAR; r.title = 'Solar'; }
+        by.set(f, r);
+      }
+      return { folders: [...by.values()].sort((a, b) => b.bytes - a.bytes), scans: fm.scans,
+        bin: fm.bin, buckets: { media: 'innocent-media', public: 'innocent-public' },
+        price: { perGbMonth: 0.015, freeGb: 10 } };
+    },
+    inventoryScan: () => {
+      // The media bucket answers in two pages, so the paging is driven.
+      const first = !body.token;
+      const two = body.bucket === 'innocent-media';
+      if (!first || !two) {
+        fm.scanned = true;
+        fm.scans = fm.scans.filter((x) => x.bucket !== body.bucket)
+          .concat([{ bucket: body.bucket, finished_at: new Date().toISOString() }]);
+      }
+      return { bucket: body.bucket, scan: body.scan || '00000000-0000-4000-8000-00000000005c',
+        seen: 3, next: first && two ? 'page2' : null, done: !(first && two), removed: 0 };
+    },
+    filesList: () => ({ folder: body.folder, rows: fm.inv.filter((o) => fmFolderOf(o.key) === body.folder)
+      .map((o) => ({ used_by: null, used_title: null, how: null, ...o,
+        source: o.how === 'telegram inbox' ? 'telegram' : 'upload',
+        bin_id: (binned(o) || {}).id || null, purge_after: (binned(o) || {}).purge_after || null })) }),
+    objectUrl: () => ({ url: (body.bucket === 'innocent-public' ? 'https://pub.test/' : 'https://media.test/') + body.key }),
+    folderLabel: () => { fm.labels[body.folder] = body.label || null; return { ok: true, result: 'saved' }; },
+    moveList: () => ({ moves: fm.moves }),
+    trashObjects: () => owner() || (body.confirm !== 'DELETE' ? { __status: 400, error: 'not_confirmed' } : (() => {
+      let added = 0; const refused = [];
+      for (const it of body.items || []) {
+        const o = fm.inv.find((x) => x.bucket === it.bucket && x.key === it.key);
+        if (!o || o.used_by || o.how === 'telegram inbox') { refused.push({ key: it.key, why: 'in_use' }); continue; }
+        fm.bin.push({ id: fm.nextBin++, bucket: o.bucket, key: o.key, bytes: o.bytes, reason: 'deleted on the Files page',
+          requested_email: 'boss@example.com', purge_after: new Date(Date.now() + 7 * DAY - 60e3).toISOString() });
+        added += 1;
+      }
+      return { ok: true, added, refused };
+    })()),
+    trashRestore: () => owner() || (() => {
+      const before = fm.bin.length;
+      fm.bin = fm.bin.filter((b) => b.id !== body.id);
+      return before === fm.bin.length ? { __status: 409, error: 'not_in_bin' } : { ok: true };
+    })(),
+    moveStart: () => owner() || (() => {
+      if (body.confirm !== body.to) return { __status: 400, error: 'not_confirmed' };
+      if (fm.inv.some((o) => fmFolderOf(o.key) === body.to)) return { __status: 409, error: 'folder_not_empty' };
+      const objects = fm.inv.filter((o) => body.mode === 'folder' ? fmFolderOf(o.key) === body.from
+        : o.used_by === body.titleId).map((o) => ({ bucket: o.bucket, from: o.key,
+        to: body.mode === 'folder' ? body.to + o.key.slice(body.from.length)
+          : body.to + '/' + (o.bucket === 'innocent-media' ? 'video' : 'photo') + '/' + o.key.split('/').pop(),
+        bytes: o.bytes, done: false }));
+      const m = { id: 'mv' + (fm.moves.length + 1), mode: body.mode, from_folder: body.from || null,
+        to_folder: body.to, state: 'copying', objects, created_at: new Date().toISOString(), steps: 0 };
+      fm.moves.push(m);
+      return { ok: true, id: m.id, files: objects.length };
+    })(),
+    moveCopy: () => owner() || (() => {
+      const m = fm.moves.find((x) => x.id === body.id);
+      if (!m) return { __status: 404, error: 'no_such_move' };
+      if (m.state !== 'copying') return { __status: 409, error: 'not_copying' };
+      if (fm.copyFails) return { __status: 502, error: 'copy_failed' };
+      // Half the files a call, so the page has to come back.
+      m.steps += 1;
+      const n = Math.ceil(m.objects.length * Math.min(1, m.steps / fm.copySteps));
+      m.objects.forEach((o, i) => { if (i < n) o.done = true; });
+      const done = m.objects.filter((o) => o.done).length;
+      return { done, total: m.objects.length, finished: done === m.objects.length,
+        bytesDone: m.objects.filter((o) => o.done).reduce((a, o) => a + o.bytes, 0) };
+    })(),
+    moveSwitch: () => owner() || (() => {
+      const m = fm.moves.find((x) => x.id === body.id);
+      if (m.objects.some((o) => !o.done)) return { __status: 409, error: 'not_copied' };
+      for (const o of m.objects) {
+        const it = fm.inv.find((x) => x.bucket === o.bucket && x.key === o.from);
+        fm.inv.push({ ...it, key: o.to });
+        fm.bin.push({ id: fm.nextBin++, bucket: o.bucket, key: o.from, bytes: o.bytes,
+          reason: 'moved', purge_after: new Date(Date.now() + 7 * DAY).toISOString() });
+        delete it.used_by;
+      }
+      m.state = 'switched';
+      return { ok: true, switched: m.objects.length, binned: m.objects.length };
+    })(),
+    moveCancel: () => owner() || (() => {
+      const m = fm.moves.find((x) => x.id === body.id);
+      m.state = 'cancelled';
+      return { ok: true };
+    })(),
+  }[body.op];
+}
+
 const TYPES = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css' };
 
 /// One browser page, signed in as `role`, with a scripted backend.
@@ -104,6 +233,9 @@ async function open(browser, role, opts = {}) {
     // false, every request to R2 and to Supabase is cut off. (Playwright's own
     // offline switch does not reach requests the test answers itself.)
     online: true,
+    // A fake inventory for the Files page: what R2 holds, what the bin holds,
+    // the moves, and every Files op the page sent, in order.
+    fm: fmFixture(),
   };
   page.on('pageerror', (e) => state.errors.push(String(e)));
   // A refused request is logged by the browser as "Failed to load resource";
@@ -316,7 +448,7 @@ async function open(browser, role, opts = {}) {
         t.review_note = body.note || null;
         return json(route, 200, { ok: true, result: decision });
       }
-      const f = ops[body.op];
+      const f = ops[body.op] || fmOps(state, body);
       if (!f) { state.unexpected.push('studio op ' + body.op); return json(route, 400, { error: 'unknown_op' }); }
       const out = f();
       if (out && out.__status) return json(route, out.__status, { error: out.error });
@@ -761,6 +893,162 @@ try {
     if (state.errors.length) console.log('     ' + state.errors.join('\n     '));
     check('upload: nothing unexpected was called', state.unexpected.length === 0);
     if (state.unexpected.length) console.log('     ' + state.unexpected.join('\n     '));
+    await ctx.close();
+  }
+
+  // ── Files: an owner tidies the bucket ───────────────────────────────────
+  {
+    const { page, ctx, state } = await open(browser, 'owner', {
+      aal: 'aal2', codeAge: 60, hash: '#/files',
+      stepUp: ['trashObjects', 'moveStart', 'moveSwitch'],
+      factors: [{ id: 'f1', factor_type: 'totp', status: 'verified', friendly_name: 'phone' }],
+    });
+    const fm = state.fm;
+    await page.waitForSelector('#fmBody .fm-row');
+    await shot(page, 'files-overview');
+    const scans = fm.ops.filter((o) => o === 'inventoryScan').length;
+    check('files: never scanned, so it scans by itself — both buckets, every page (' + scans + ')', scans === 3);
+    check('files: four numbers', (await page.$$('#fmBody .cr-kpi')).length === 4);
+    check('files: one row a folder, biggest first',
+      (await page.$$eval('#fmBody .fm-row b', (ns) => ns.map((n) => n.textContent))).join(',') === 'solar,v,zz-album,p');
+    check('files: the unused part of a folder is shown',
+      /900\.0 MB unused/.test(await page.textContent('#fmBody .fm-row:nth-child(1)')));
+    check('files: a Telegram inbox file is not counted as unused',
+      !/unused/.test(await page.textContent('#fmBody .fm-row:nth-child(3)')));
+    check('files: the early flat uploads are named for what they are',
+      /early uploads/.test(await page.textContent('#fmBody .fm-row:nth-child(2)')));
+    check('files: inside the free 10 GB, nothing to pay',
+      /\$0/.test(await page.textContent('#fmBody .cr-kpi:nth-child(2)')));
+
+    await page.click('#fmBody .fm-row:nth-child(1)');
+    await page.waitForSelector('#fmBody .fm-frow');
+    await shot(page, 'files-folder');
+    check('files: every file of the folder is listed', (await page.$$('#fmBody .fm-frow')).length === 4);
+    check('files: only the old unused file can be ticked',
+      (await page.$$('#fmBody .fm-frow input[type=checkbox]')).length === 1);
+    check('files: a file from the last hour is called new, not unused',
+      /may still be uploading/.test(await page.textContent('#fmBody .fm-files')));
+    check('files: a used file names its title', (await page.$$('#fmBody .fm-used a.chip.ok')).length === 2);
+
+    // The bin: typed, refused when mistyped, and sent with exactly the ticked file.
+    await page.check('#fmBody .fm-frow input[type=checkbox]');
+    await page.click('#fmBody button.b.d');
+    await page.waitForSelector('.cr-dlg input');
+    await page.fill('.cr-dlg input', 'delete');
+    await page.click('.cr-dlg button.b.d');
+    check('files: "delete" in lower case is not DELETE',
+      /Type DELETE/.test(await page.textContent('.cr-dlg')) && !fm.ops.includes('trashObjects'));
+    state.calls.length = 0;
+    await page.fill('.cr-dlg input', 'DELETE');
+    await page.click('.cr-dlg button.b.d');
+    await page.waitForFunction(() => /in the bin/.test(document.querySelector('#msg')?.textContent || ''));
+    const sent = state.calls.find((c) => c.op === 'trashObjects');
+    check('files: the bin got the one ticked file', fm.bin.length === 1 && fm.bin[0].key === 'solar/video/old.mp4');
+    check('files: with a fresh code (aal2)', !!sent && sent.aal === 'aal2');
+    await page.waitForSelector('#fmBody .fm-used button');
+    await shot(page, 'files-binned');
+    check('files: the binned file says how long it has left',
+      /in bin · 7 day\(s\) left/.test(await page.textContent('#fmBody .fm-files')));
+    await page.click('#fmBody .fm-used button');
+    await page.waitForFunction(() => /Restored/.test(document.querySelector('#msg')?.textContent || ''));
+    check('files: Restore takes it out of the bin', fm.bin.length === 0);
+
+    // A look at a file before deciding.
+    await page.click('#fmBody .fm-file');
+    await page.waitForSelector('.modal video');
+    check('files: a video opens in the preview',
+      (await page.getAttribute('.modal video', 'src')) === 'https://media.test/solar/video/a.mp4');
+    await page.click('.modal .srow button');
+    check('files: and closes', !(await page.$('.modal')));
+
+    // Display name: moves nothing.
+    page.once('dialog', (d) => d.accept('Solar (2026)'));
+    await page.click('#fmBody .sechead button:nth-of-type(2)');
+    await page.waitForFunction(() => /Display name saved/.test(document.querySelector('#msg')?.textContent || ''));
+    await page.waitForFunction(() => /Solar \(2026\)/.test(document.querySelector('#fmBody b')?.textContent || ''),
+      null, { timeout: 5000 }).catch(() => {});
+    check('files: a display name is saved and shown',
+      fm.labels.solar === 'Solar (2026)' && /Solar \(2026\)/.test(await page.textContent('#fmBody')));
+
+    // Move the folder: typed twice, copied in steps, then switched, then rescanned.
+    fm.ops.length = 0;
+    await page.click('text=Rename / move folder…');
+    await page.waitForSelector('.cr-dlg input');
+    const [to, again] = await page.$$('.cr-dlg input');
+    await to.fill('solar-2026');
+    await again.fill('solar-2025');
+    await page.click('.cr-dlg button.b.p');
+    check('files: a move whose two names differ is not sent',
+      /do not match/.test(await page.textContent('.cr-dlg')) && !fm.ops.includes('moveStart'));
+    await again.fill('solar-2026');
+    await page.click('.cr-dlg button.b.p');
+    await page.waitForFunction(() => /Moved 4 file/.test(document.querySelector('#msg')?.textContent || ''));
+    await page.waitForSelector('#fmBody .fm-row');
+    check('files: start, copy until done, switch, then a fresh listing (' + fm.ops.join(',') + ')',
+      fm.ops.join(',').replace(/(,inventoryScan)+/, ',scan').replace(/,(filesSummary|moveList)/g, '') ===
+        'moveStart,moveCopy,moveCopy,moveSwitch,scan');
+    check('files: the move took exactly the folder',
+      fm.moves[0].objects.map((o) => o.to).sort().join(',') ===
+        'solar-2026/photo/p.jpg,solar-2026/video/a.mp4,solar-2026/video/fresh.mp4,solar-2026/video/old.mp4');
+    check('files: the old copies wait in the bin', fm.bin.length === 4);
+    await shot(page, 'files-after-move');
+
+    // A move that stopped half-way is offered again on the overview.
+    fm.moves.push({ id: 'mv9', mode: 'title', from_folder: 'v', to_folder: 'my-draft', state: 'copying',
+      objects: [{ bucket: 'innocent-media', from: 'v/20260101-a.mp4', to: 'my-draft/video/20260101-a.mp4', bytes: 9e8, done: false }],
+      created_at: new Date().toISOString(), steps: 0 });
+    fm.copyFails = true;
+    await page.evaluate(() => loadFiles());
+    await page.waitForSelector('text=Moves not finished');
+    check('files: an unfinished move is shown with Continue',
+      /v\s+→\s+my-draft/.test(await page.textContent('#fmBody')));
+    await page.click('#fmBody .cr-rv button.b.p');
+    await page.waitForFunction(() => /The move stopped/.test(document.querySelector('#msg')?.textContent || ''));
+    check('files: a copy R2 refuses stops the move, and nothing is switched',
+      fm.moves[1].state === 'copying' && !fm.ops.slice(-6).includes('moveSwitch'));
+
+    // The flat early-uploads folder: whole-folder rename is not offered; gathering a title is.
+    await page.waitForSelector('#fmBody .fm-row');
+    await page.click('#fmBody .fm-row:has-text("early uploads")');
+    await page.waitForSelector('#fmBody .fm-frow');
+    check('files: a folder of several titles offers to gather each title',
+      /“My draft” →/.test(await page.textContent('#fmBody .cr-rv-note')) &&
+      !(await page.$('text=Rename / move folder…')));
+
+    // A Telegram file waiting to be filed is not "unused", and not offered.
+    await page.click('#fmBody .sechead button:first-child');
+    await page.click('#fmBody .fm-row:has-text("zz-album")');
+    await page.waitForSelector('#fmBody .fm-frow');
+    check('files: a Telegram inbox file cannot be ticked',
+      /Telegram inbox/.test(await page.textContent('#fmBody .fm-files')) &&
+      !(await page.$('#fmBody .fm-frow input[type=checkbox]')));
+
+    check('files: no script errors', state.errors.length === 0);
+    if (state.errors.length) console.log('     ' + state.errors.join('\n     '));
+    check('files: nothing unexpected was called', state.unexpected.length === 0);
+    if (state.unexpected.length) console.log('     ' + state.unexpected.join('\n     '));
+    await ctx.close();
+  }
+
+  // ── Files: an editor looks, on a phone, and cannot delete or move ───────
+  {
+    const { page, ctx, state } = await open(browser, 'editor', { phone: true, hash: '#/files' });
+    state.fm.scanned = true;
+    state.fm.scans = [{ bucket: 'innocent-media', finished_at: ago(DAY) }, { bucket: 'innocent-public', finished_at: ago(DAY) }];
+    await page.evaluate(() => loadFiles());
+    await page.waitForSelector('#fmBody .fm-row');
+    check('editor: an earlier listing is used, not rescanned', !state.fm.ops.includes('inventoryScan'));
+    await page.click('#fmBody .fm-row:nth-child(1)');
+    await page.waitForSelector('#fmBody .fm-frow');
+    await shot(page, 'files-editor-phone');
+    check('editor: nothing to tick, no bin button',
+      !(await page.$('#fmBody input[type=checkbox]')) && !(await page.$('#fmBody button.b.d')));
+    check('editor: no move', !(await page.$('text=Rename / move folder…')));
+    check('editor: a display name is allowed', !!(await page.$('text=Display name')));
+    const w = await page.evaluate(() => document.documentElement.scrollWidth);
+    check('editor: the file list fits the phone (' + w + 'px)', w <= 390);
+    check('editor: no script errors', state.errors.length === 0);
+    if (state.errors.length) console.log('     ' + state.errors.join('\n     '));
     await ctx.close();
   }
 

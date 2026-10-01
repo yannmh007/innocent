@@ -302,6 +302,33 @@ const authOf = (signed) => {
     signed.headers['x-amz-content-sha256'] === sha(''));
 }
 
+// 2c. THE FILES PAGE'S TWO NEW SHAPES. A CopyObject carries
+//     x-amz-copy-source, which must be signed and sent (an unsigned x-amz-*
+//     header is refused); a listing addresses the bucket, `/bucket`, with no
+//     trailing slash.
+{
+  const src = '/mx-media/' + KEY.split('/').map(encodeURIComponent).join('/');
+  const copy = await signers.signRequest('PUT', 'mx-media', 'dest/video/x.mp4', {}, '',
+    { 'x-amz-copy-source': src });
+  const a = authOf(copy);
+  check('a copy signs x-amz-copy-source, in sorted order',
+    a.signedHeaders === 'host;x-amz-content-sha256;x-amz-copy-source;x-amz-date');
+  check('and sends it', copy.headers['x-amz-copy-source'] === src);
+  const ref = sigv4({
+    method: 'PUT', canonicalUri: '/mx-media/dest/video/x.mp4', canonicalQuery: '',
+    headers: { host: HOST, 'x-amz-content-sha256': copy.headers['x-amz-content-sha256'],
+      'x-amz-copy-source': src, 'x-amz-date': copy.headers['x-amz-date'] },
+    payloadHash: copy.headers['x-amz-content-sha256'], amzDate: copy.headers['x-amz-date'],
+    region: 'auto', service: 's3', secret: SECRET,
+  });
+  check('a copy signs as an independent implementation signs it', a.signature === ref.signature);
+  const list = await signers.signRequest('GET', 'mx-media', '', { 'list-type': '2', prefix: 'a/' }, '');
+  check('a listing addresses the bucket with no trailing slash',
+    list.url === `https://${HOST}/mx-media?list-type=2&prefix=a%2F`);
+  check('a listing signs as an independent implementation signs it',
+    authOf(list).signature === recomputeSigned('GET', '/mx-media', 'list-type=2&prefix=a%2F', list).signature);
+}
+
 // 7. THE HEADERS SENT ARE EXACTLY THE HEADERS SIGNED. A header named in
 //    SignedHeaders and not sent — or sent and not named — is a bare 403. `host`
 //    is the one exception: fetch sets it from the URL and forbids setting it by

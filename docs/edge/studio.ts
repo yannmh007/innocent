@@ -221,12 +221,17 @@ interface SignedReq {
   headers: Record<string, string>;
 }
 
+///
+/// `extra` headers are signed and sent as well — CopyObject's
+/// `x-amz-copy-source` must be, or R2 cannot tell a copy from an empty PUT.
+/// An empty `objectKey` addresses the bucket itself (a listing).
 async function signRequest(
   method: string,
   bucket: string,
   objectKey: string,
   query: Record<string, string>,
   body: string,
+  extra: Record<string, string> = {},
 ): Promise<SignedReq> {
   const host = `${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`;
   const amzDate = new Date().toISOString().replace(/[:-]|\.\d{3}/g, '');
@@ -236,16 +241,22 @@ async function signRequest(
 
   const canonicalQuery = Object.keys(query).sort()
     .map((k) => `${rfc3986(k)}=${rfc3986(query[k])}`).join('&');
-  const canonicalPath = `/${bucket}/${encodeKey(objectKey)}`;
+  const canonicalPath = objectKey
+    ? `/${bucket}/${encodeKey(objectKey)}`
+    : `/${bucket}`;
 
   // SORTED AND LOWER-CASE, and the list below must match the headers actually
   // sent, exactly. A header in SignedHeaders that is not sent, or sent with
   // different whitespace, is a signature failure with no diagnostic.
-  const canonicalHeaders =
-    `host:${host}\n` +
-    `x-amz-content-sha256:${payloadHash}\n` +
-    `x-amz-date:${amzDate}\n`;
-  const signedHeaders = 'host;x-amz-content-sha256;x-amz-date';
+  const all: Record<string, string> = {
+    host,
+    'x-amz-content-sha256': payloadHash,
+    'x-amz-date': amzDate,
+  };
+  for (const [k, v] of Object.entries(extra)) all[k.toLowerCase()] = String(v).trim();
+  const names = Object.keys(all).sort();
+  const canonicalHeaders = names.map((k) => `${k}:${all[k]}\n`).join('');
+  const signedHeaders = names.join(';');
 
   const canonicalRequest = [
     method, canonicalPath, canonicalQuery,
@@ -270,6 +281,7 @@ async function signRequest(
         `SignedHeaders=${signedHeaders}, Signature=${signature}`,
       'x-amz-content-sha256': payloadHash,
       'x-amz-date': amzDate,
+      ...Object.fromEntries(Object.entries(extra).map(([k, v]) => [k.toLowerCase(), String(v).trim()])),
     },
   };
 }
@@ -452,6 +464,119 @@ async function audit(
 }
 // ── ADMIN GATE (end) ─────────────────────────────────────────────────────
 
+// --- the Files page: folders, listings, copies ------------------------------
+
+/// Which folder a key is in. THE SAME RULE as `r2_folder_of` in migration
+/// 028 — <folder>/<video|photo|thumb>/<name>, else the first segment — and
+/// tool/js/files_test.mjs fails the build if the two ever disagree, because a
+/// move that picked its files by one rule and a page that grouped them by the
+/// other would move a folder the operator was not looking at.
+function folderOf(key: string): string {
+  const m = /^(.*)\/(?:video|photo|thumb)\/[^/]+$/.exec(key);
+  if (m) return m[1];
+  const i = key.indexOf('/');
+  return i > 0 ? key.slice(0, i) : '';
+}
+
+/// One page of a bucket listing (1000 keys), asked for with encoding-type=url
+/// so a key with characters XML cannot carry still comes back whole.
+async function listBucket(
+  bucket: string, prefix: string, token: string,
+): Promise<{ items: Array<{ key: string; bytes: number; modified: string }>; next: string } | { error: string; status: number }> {
+  const q: Record<string, string> = {
+    'list-type': '2', 'max-keys': '1000', 'encoding-type': 'url',
+  };
+  if (prefix) q.prefix = prefix;
+  if (token) q['continuation-token'] = token;
+  const signed = await signRequest('GET', bucket, '', q, '');
+  const res = await fetch(signed.url, { headers: signed.headers });
+  const xml = await res.text();
+  if (!res.ok) return { error: 'list_failed', status: res.status };
+  const items: Array<{ key: string; bytes: number; modified: string }> = [];
+  for (const block of xml.split('<Contents>').slice(1)) {
+    const raw = xmlTag(block, 'Key') ?? '';
+    let key = raw;
+    try { key = decodeURIComponent(raw.replace(/\+/g, '%20')); } catch { /* keep raw */ }
+    if (!key) continue;
+    items.push({ key, bytes: Number(xmlTag(block, 'Size') ?? 0) || 0,
+      modified: xmlTag(block, 'LastModified') ?? '' });
+  }
+  const more = xmlTag(xml, 'IsTruncated') === 'true';
+  return { items, next: more ? (xmlTag(xml, 'NextContinuationToken') ?? '') : '' };
+}
+
+/// The size of one object, or null when it is not there.
+async function objectSize(bucket: string, key: string): Promise<number | null> {
+  const h = await signRequest('HEAD', bucket, key, {}, '');
+  const r = await fetch(h.url, { method: 'HEAD', headers: h.headers });
+  if (r.status === 404) return null;
+  if (!r.ok) throw new Error('head_failed_' + r.status);
+  return Number(r.headers.get('Content-Length') ?? 0);
+}
+
+/// R2 copies one object up to 5 GiB in a single CopyObject. Larger ones go in
+/// 1 GiB parts with UploadPartCopy — R2's rule that every part but the last
+/// is the same size still applies to copies.
+const COPY_SINGLE_MAX = 5 * 1024 * 1024 * 1024;
+const COPY_PART = 1024 * 1024 * 1024;
+
+/// Copies one object inside R2 (no bytes pass through here or the phone).
+/// `state` carries a multipart copy's progress between calls, because a big
+/// file can take longer than one edge-function request may run; the caller
+/// saves it and calls again. Answers { done } or { state } to save.
+async function copyStep(
+  bucket: string, from: string, to: string, size: number,
+  state: Record<string, unknown> | null, deadline: number,
+): Promise<{ done: true } | { state: Record<string, unknown> }> {
+  const source = `/${bucket}/${encodeKey(from)}`;
+  if (size <= COPY_SINGLE_MAX) {
+    const signed = await signRequest('PUT', bucket, to, {}, '', { 'x-amz-copy-source': source });
+    const res = await fetch(signed.url, { method: 'PUT', headers: signed.headers });
+    const xml = await res.text();
+    // Like CompleteMultipartUpload, a copy can answer 200 and have failed.
+    if (!res.ok || xml.includes('<Error>')) {
+      throw new Error('copy_failed: ' + (xmlTag(xml, 'Code') ?? res.status));
+    }
+    return { done: true };
+  }
+  const st = { ...(state ?? {}) } as { uploadId?: string; parts?: Array<{ n: number; etag: string }> };
+  if (!st.uploadId) {
+    const b = await signRequest('POST', bucket, to, { uploads: '' }, '');
+    const r = await fetch(b.url, { method: 'POST', headers: b.headers });
+    const xml = await r.text();
+    const id = xmlTag(xml, 'UploadId');
+    if (!r.ok || !id) throw new Error('copy_begin_failed: ' + (xmlTag(xml, 'Code') ?? r.status));
+    st.uploadId = id;
+    st.parts = [];
+    return { state: st };
+  }
+  const parts = st.parts ?? [];
+  const count = Math.ceil(size / COPY_PART);
+  while (parts.length < count && Date.now() < deadline) {
+    const n = parts.length + 1;
+    const start = (n - 1) * COPY_PART;
+    const end = Math.min(size, n * COPY_PART) - 1;
+    const p = await signRequest('PUT', bucket, to, { partNumber: String(n), uploadId: st.uploadId },
+      '', { 'x-amz-copy-source': source, 'x-amz-copy-source-range': `bytes=${start}-${end}` });
+    const r = await fetch(p.url, { method: 'PUT', headers: p.headers });
+    const xml = await r.text();
+    const etag = (xmlTag(xml, 'ETag') ?? '').replace(/&quot;|"/g, '');
+    if (!r.ok || !etag) throw new Error('copy_part_failed: ' + (xmlTag(xml, 'Code') ?? r.status));
+    parts.push({ n, etag });
+  }
+  st.parts = parts;
+  if (parts.length < count) return { state: st };
+  const xmlBody = '<CompleteMultipartUpload>' +
+    parts.map((p) => `<Part><PartNumber>${p.n}</PartNumber><ETag>"${p.etag}"</ETag></Part>`).join('') +
+    `</CompleteMultipartUpload>`;
+  const c = await signRequest('POST', bucket, to, { uploadId: st.uploadId }, xmlBody);
+  const cr = await fetch(c.url, { method: 'POST',
+    headers: { ...c.headers, 'Content-Type': 'application/xml' }, body: xmlBody });
+  const cx = await cr.text();
+  if (!cr.ok || cx.includes('<Error>')) throw new Error('copy_complete_failed: ' + (xmlTag(cx, 'Code') ?? cr.status));
+  return { done: true };
+}
+
 // --- object keys ------------------------------------------------------------
 //
 // ONE FOLDER PER TITLE, CHOSEN BY THE OPERATOR, in both buckets:
@@ -617,6 +742,12 @@ const NEED: Record<string, Role> = {
   reviewSubmit: 'uploader', reviewReopen: 'uploader',
   reviewApprove: 'editor', reviewSendBack: 'editor', reviewReject: 'editor',
   unpublish: 'editor',
+  // the Files page — looking and naming are an editor's; anything that
+  // deletes or moves a file is the owner's
+  filesSummary: 'editor', filesList: 'editor', inventoryScan: 'editor',
+  objectUrl: 'editor', folderLabel: 'editor', moveList: 'editor',
+  trashObjects: 'owner', trashRestore: 'owner',
+  moveStart: 'owner', moveCopy: 'owner', moveSwitch: 'owner', moveCancel: 'owner',
   // publishing and the business
   publish: 'editor', approve: 'editor', reject: 'editor',
   saveCategory: 'editor', addCategory: 'editor', selftest: 'editor',
@@ -634,12 +765,14 @@ const READS = new Set([
   'health', 'checkFolder', 'folder', 'selftest', 'audit', 'admins', 'settings',
   'sign', 'beginMultipart', 'signParts', 'listParts',
   'reviewQueue', 'reviewHistory', 'previewUrl',
+  'filesSummary', 'filesList', 'inventoryScan', 'objectUrl', 'moveList',
 ]);
 
 /// What cannot be undone, or hands out power: these need an authenticator code
 /// from the last few minutes (once MFA is required), not just a session.
 const DANGEROUS = new Set([
   'deleteTitle', 'adminSave', 'adminRemove', 'settingsSave',
+  'trashObjects', 'moveStart', 'moveSwitch',
 ]);
 
 /// The thing an audit line is about, for the Activity page's one-line view.
@@ -2094,6 +2227,278 @@ async function handleOp(
       url, kind: 'video', height: pick ? pick.height : null,
       via: viaWorker ? 'worker' : 'r2',
     }, 200, req);
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // THE FILES PAGE — what is in R2, who uses it, the bin, and moves
+  // ═══════════════════════════════════════════════════════════════════════
+
+  // ── inventoryScan: refresh the console's copy of one bucket's listing ───
+  //
+  // One page (1000 keys) a call; the page calls again with `next` until it
+  // is empty, and the last call tells the database to forget whatever this
+  // scan did not see. Paged so no single request runs long on a big bucket.
+  if (body.op === 'inventoryScan') {
+    const bucket = body.bucket === PUBLIC_BUCKET ? PUBLIC_BUCKET : MEDIA_BUCKET;
+    const given = String(body.scan ?? '');
+    const scan = /^[0-9a-f-]{36}$/i.test(given) ? given : crypto.randomUUID();
+    const page = await listBucket(bucket, '', String(body.token ?? ''));
+    if ('error' in page) return json(page, 502, req);
+    const db = admin();
+    const up = await db.rpc('inventory_upsert', { p_bucket: bucket, p_scan: scan, p_rows: page.items });
+    if (up.error) return json({ error: 'inventory_failed', detail: up.error.message }, 500, req);
+    let removed = 0;
+    if (!page.next) {
+      const fin = await db.rpc('inventory_finish', { p_bucket: bucket, p_scan: scan });
+      if (fin.error) return json({ error: 'inventory_failed', detail: fin.error.message }, 500, req);
+      removed = Number(fin.data) || 0;
+    }
+    return json({ bucket, scan, seen: page.items.length, next: page.next, done: !page.next, removed }, 200, req);
+  }
+
+  // ── filesSummary: every folder, the bin, and when the listing was taken ─
+  if (body.op === 'filesSummary') {
+    const db = admin();
+    const [f, sc, bin] = await Promise.all([
+      db.rpc('files_summary'),
+      db.from('r2_scans').select('bucket,started_at,finished_at,objects,bytes'),
+      db.from('r2_trash')
+        .select('id,bucket,key,bytes,reason,requested_email,requested_at,purge_after,purge_error')
+        .is('purged_at', null).is('restored_at', null).order('purge_after').limit(500),
+    ]);
+    if (f.error) return json({ error: 'files_failed', detail: f.error.message }, 500, req);
+    return json({
+      folders: f.data ?? [], scans: sc.data ?? [], bin: bin.data ?? [],
+      buckets: { media: MEDIA_BUCKET, public: PUBLIC_BUCKET },
+      // R2 Standard, as published: per GB-month, the first 10 GB free each
+      // month, no charge for downloads. Sent from here so the page and this
+      // file cannot disagree about the price.
+      price: { perGbMonth: 0.015, freeGb: 10 },
+    }, 200, req);
+  }
+
+  // ── filesList: the files of one folder ─────────────────────────────────
+  if (body.op === 'filesList') {
+    const folder = String(body.folder ?? '');
+    const { data, error } = await admin().rpc('files_list', { p_folder: folder });
+    if (error) return json({ error: 'files_failed', detail: error.message }, 500, req);
+    return json({ folder, rows: data ?? [] }, 200, req);
+  }
+
+  // ── objectUrl: look at any file, used or not ───────────────────────────
+  //
+  // previewUrl works from a title's asset; this from a key, so an unused file
+  // can be looked at before it is binned. Ten minutes, like the preview.
+  if (body.op === 'objectUrl') {
+    const key = String(body.key ?? '');
+    if (!key || key.includes('..') || key.startsWith('/')) return json({ error: 'bad_key' }, 400, req);
+    if (body.bucket === PUBLIC_BUCKET) return json({ url: `${PUBLIC_BASE}/${key}` }, 200, req);
+    const url = (await previewStreamUrl(key, 600).catch(() => null)) ??
+      await presignPut(MEDIA_BUCKET, key, { 'X-Amz-Expires': '600' }, 'GET');
+    return json({ url }, 200, req);
+  }
+
+  // ── folderLabel: a display name; nothing in R2 changes ─────────────────
+  if (body.op === 'folderLabel') {
+    const { data, error } = await admin().rpc('folder_label_set', {
+      p_folder: String(body.folder ?? ''), p_label: String(body.label ?? ''), p_actor: who.id,
+    });
+    if (error) return json({ error: 'label_failed', detail: error.message }, 500, req);
+    if (data === 'no_folder') return json({ error: 'no_folder' }, 400, req);
+    return json({ ok: true, result: data }, 200, req);
+  }
+
+  // ── trashObjects / trashRestore: the seven-day bin ─────────────────────
+  //
+  // `confirm` must be DELETE, typed — the same as deleting a title. The
+  // database refuses any file a title uses, by name, and does it again on the
+  // day the bin is emptied.
+  if (body.op === 'trashObjects') {
+    if (String(body.confirm ?? '') !== 'DELETE') return json({ error: 'not_confirmed' }, 400, req);
+    const items = (Array.isArray(body.items) ? body.items as Array<Record<string, unknown>> : [])
+      .filter((o) => (o.bucket === MEDIA_BUCKET || o.bucket === PUBLIC_BUCKET) &&
+        typeof o.key === 'string' && o.key && !String(o.key).includes('..'))
+      .map((o) => ({ bucket: String(o.bucket), key: String(o.key) }))
+      .slice(0, 500);
+    if (!items.length) return json({ error: 'nothing_to_delete' }, 400, req);
+    const { data, error } = await admin().rpc('r2_trash_add', {
+      p_items: items, p_actor: who.id, p_reason: 'deleted on the Files page', p_days: 7,
+    });
+    if (error) return json({ error: 'bin_failed', detail: error.message }, 500, req);
+    const out = (data ?? {}) as Record<string, unknown>;
+    if (out.error) return json({ error: String(out.error) }, 403, req);
+    return json({ ok: true, ...out }, 200, req);
+  }
+  if (body.op === 'trashRestore') {
+    const { data, error } = await admin().rpc('r2_trash_restore', {
+      p_id: Number(body.id ?? 0), p_actor: who.id,
+    });
+    if (error) return json({ error: 'restore_failed', detail: error.message }, 500, req);
+    if (data !== 'restored') return json({ error: String(data) }, 409, req);
+    return json({ ok: true }, 200, req);
+  }
+
+  // ── moves ───────────────────────────────────────────────────────────────
+  //
+  // moveStart plans and records; moveCopy copies (a step at a time, the page
+  // calling it until every file is done); moveSwitch changes every reference
+  // in one transaction and bins the old files for seven days; moveCancel
+  // stops before the switch. Two kinds:
+  //   folder  rename a folder — every file whose folder is exactly `from`
+  //   title   gather one title's files into a folder of its own — which is
+  //           how the old flat `v/…` and `p/…` uploads get tidied
+  if (body.op === 'moveList') {
+    const since = new Date(Date.now() - 14 * 86400000).toISOString();
+    const { data, error } = await admin().from('r2_moves')
+      .select('id,mode,from_folder,to_folder,title_id,state,objects,requested_email,created_at,switched_at')
+      .or(`state.eq.copying,created_at.gt.${since}`)
+      .order('created_at', { ascending: false }).limit(20);
+    if (error) return json({ error: 'moves_failed', detail: error.message }, 500, req);
+    return json({ moves: data ?? [] }, 200, req);
+  }
+
+  if (body.op === 'moveStart') {
+    const mode = body.mode === 'title' ? 'title' : 'folder';
+    const to = slugifyPath(String(body.to ?? ''));
+    if (!to) return json({ error: 'bad_folder' }, 400, req);
+    // TYPED, LIKE A DELETE: the new folder name, a second time.
+    if (String(body.confirm ?? '') !== to) return json({ error: 'not_confirmed' }, 400, req);
+    const db = admin();
+    const objects: Array<{ bucket: string; from: string; to: string; bytes: number | null; done: boolean }> = [];
+    let from = '';
+    let titleId: string | null = null;
+
+    if (mode === 'folder') {
+      from = String(body.from ?? '');
+      if (!from || from.includes('..') || from.startsWith('/')) return json({ error: 'bad_folder' }, 400, req);
+      for (const bucket of [MEDIA_BUCKET, PUBLIC_BUCKET]) {
+        let token = '';
+        for (let page = 0; page < 50; page++) {
+          const got = await listBucket(bucket, from + '/', token);
+          if ('error' in got) return json(got, 502, req);
+          for (const o of got.items) {
+            // EXACTLY THIS FOLDER: `movies` must not take `movies/solar` with it.
+            if (folderOf(o.key) !== from) continue;
+            objects.push({ bucket, from: o.key, to: to + o.key.slice(from.length), bytes: o.bytes, done: false });
+          }
+          if (!got.next) break;
+          token = got.next;
+        }
+      }
+    } else {
+      titleId = String(body.titleId ?? '');
+      const { data: t } = await db.from('titles').select('id,slug').eq('id', titleId).maybeSingle();
+      if (!t) return json({ error: 'no_such_title' }, 404, req);
+      from = String(t.slug ?? '');
+      const { data: assets } = await db.from('title_assets')
+        .select('id,bucket,object_key,thumb_key').eq('title_id', titleId);
+      const ids = ((assets ?? []) as Array<Record<string, unknown>>).map((a) => String(a.id));
+      const { data: rungs } = ids.length
+        ? await db.from('asset_renditions').select('object_key').in('asset_id', ids)
+        : { data: [] };
+      const seen = new Set<string>();
+      const add = (bucket: string, key: string) => {
+        if (!key || seen.has(key)) return;
+        seen.add(key);
+        const m = /^(.*)\/(video|photo|thumb)\/([^/]+)$/.exec(key);
+        const kind = m ? m[2] : (bucket === MEDIA_BUCKET ? 'video' : 'photo');
+        const name = m ? m[3] : key.split('/').pop() ?? '';
+        if (!name || name.includes('..')) return;
+        const dest = `${to}/${kind}/${name}`;
+        if (dest !== key) objects.push({ bucket, from: key, to: dest, bytes: null, done: false });
+      };
+      for (const a of (assets ?? []) as Array<Record<string, unknown>>) {
+        add(String(a.bucket ?? MEDIA_BUCKET), String(a.object_key ?? ''));
+        if (a.thumb_key) add(PUBLIC_BUCKET, String(a.thumb_key));
+      }
+      for (const r of (rungs ?? []) as Array<Record<string, unknown>>) add(MEDIA_BUCKET, String(r.object_key ?? ''));
+    }
+
+    const { data, error } = await db.rpc('r2_move_create', {
+      p_actor: who.id, p_mode: mode, p_from: from || null, p_to: to,
+      p_title: titleId, p_objects: objects,
+    });
+    if (error) return json({ error: 'move_failed', detail: error.message }, 500, req);
+    const out = (data ?? {}) as Record<string, unknown>;
+    if (out.error) return json({ error: String(out.error) }, 409, req);
+    return json({ ok: true, id: out.id, files: objects.length,
+      bytes: objects.reduce((a, o) => a + (o.bytes ?? 0), 0) }, 200, req);
+  }
+
+  if (body.op === 'moveCopy') {
+    const db = admin();
+    const { data: m } = await db.from('r2_moves').select('*').eq('id', String(body.id ?? '')).maybeSingle();
+    if (!m) return json({ error: 'no_such_move' }, 404, req);
+    if (m.state !== 'copying') return json({ error: 'not_copying', state: m.state }, 409, req);
+    const objects = (m.objects ?? []) as Array<Record<string, unknown>>;
+    // Well inside the 150 s an edge function may run; the page calls again.
+    const deadline = Date.now() + 90000;
+    for (let i = 0; i < objects.length && Date.now() < deadline; i++) {
+      const o = objects[i];
+      if (o.done === true) continue;
+      const bucket = String(o.bucket);
+      const from = String(o.from);
+      const to = String(o.to);
+      try {
+        const srcSize = await objectSize(bucket, from);
+        const dstSize = await objectSize(bucket, to);
+        // DONE ALREADY — a copy that finished before the page lost its answer.
+        if (dstSize !== null && (srcSize === null || dstSize === srcSize)) {
+          o.done = true;
+          o.bytes = dstSize;
+        } else if (srcSize === null) {
+          throw new Error('source_missing');
+        } else {
+          const step = await copyStep(bucket, from, to, srcSize,
+            (o.mp ?? null) as Record<string, unknown> | null, deadline);
+          if ('state' in step) {
+            o.mp = step.state;
+            await db.rpc('r2_move_progress', { p_id: m.id, p_index: i, p_patch: { mp: step.state, bytes: srcSize } });
+            break;
+          }
+          // CHECKED: the copy is the size of the original.
+          const after = await objectSize(bucket, to);
+          if (after !== srcSize) throw new Error('copy_size_mismatch');
+          o.done = true;
+          o.bytes = srcSize;
+        }
+        await db.rpc('r2_move_progress', { p_id: m.id, p_index: i, p_patch: { done: true, bytes: o.bytes, error: null } });
+      } catch (e) {
+        const msg = String((e as Error).message ?? e).slice(0, 200);
+        await db.rpc('r2_move_progress', { p_id: m.id, p_index: i, p_patch: { error: msg } });
+        return json({ error: 'copy_failed', detail: msg, file: from }, 502, req);
+      }
+    }
+    const done = objects.filter((o) => o.done === true).length;
+    return json({
+      done, total: objects.length, finished: done === objects.length,
+      bytesDone: objects.filter((o) => o.done === true).reduce((a, o) => a + (Number(o.bytes) || 0), 0),
+    }, 200, req);
+  }
+
+  if (body.op === 'moveSwitch' || body.op === 'moveCancel') {
+    const db = admin();
+    const id = String(body.id ?? '');
+    if (body.op === 'moveCancel') {
+      // A big file's half-finished multipart copy is not an object yet and
+      // so not in the bin; abort it here, best effort.
+      const { data: m } = await db.from('r2_moves').select('objects,state').eq('id', id).maybeSingle();
+      for (const o of ((m?.objects ?? []) as Array<Record<string, unknown>>)) {
+        const mp = o.mp as Record<string, unknown> | undefined;
+        if (o.done !== true && mp && mp.uploadId) {
+          try {
+            const d = await signRequest('DELETE', String(o.bucket), String(o.to), { uploadId: String(mp.uploadId) }, '');
+            await fetch(d.url, { method: 'DELETE', headers: d.headers });
+          } catch { /* R2 drops it after seven days anyway */ }
+        }
+      }
+    }
+    const { data, error } = await db.rpc(body.op === 'moveSwitch' ? 'r2_move_switch' : 'r2_move_cancel',
+      { p_id: id, p_actor: who.id });
+    if (error) return json({ error: 'move_failed', detail: error.message }, 500, req);
+    const out = (data ?? {}) as Record<string, unknown>;
+    if (out.error) return json({ error: String(out.error) }, 409, req);
+    return json({ ok: true, ...out }, 200, req);
   }
 
   return json({ error: 'unknown_op' }, 400, req);

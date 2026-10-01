@@ -70,6 +70,7 @@
 <script src="control.js"></script>
 <script src="review.js"></script>
 <script src="upload.js"></script>
+<script src="files.js"></script>
 <style>
 :root{
   --bg:#0c0d10; --panel:#131519; --panel2:#181b20;
@@ -571,6 +572,31 @@ body.sh-on{padding-bottom:calc(76px + env(safe-area-inset-bottom))}
 .cr-dlg-in{width:min(380px,100%);background:var(--panel);border:1px solid var(--line2);
   border-radius:12px;padding:18px}
 .cr-dlg-in h3{margin:0 0 6px;font-size:15px}
+/* Files page (files.js). */
+.fm-folders{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.fm-row{text-decoration:none;color:inherit}
+.fm-name{min-width:0;flex:1;overflow-wrap:anywhere}
+.fm-dim{color:var(--dim2);font-size:11.5px}
+.fm-num{text-align:right;white-space:nowrap;font-family:var(--mono);font-size:12px}
+.fm-bad{color:var(--bad);font-size:11.5px}
+.fm-files{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:8px}
+.fm-frow{display:flex;align-items:center;gap:10px;padding:8px 10px;
+  border-bottom:1px solid var(--line);min-height:44px}
+.fm-frow:last-child{border-bottom:0}
+.fm-frow input[type=checkbox]{width:20px;height:20px;flex:0 0 20px;margin:0}
+.fm-cb{width:20px;flex:0 0 20px}
+.fm-fmain{min-width:0;flex:1}
+.fm-file{background:none;border:0;padding:0;color:var(--fg,inherit);font:inherit;
+  font-family:var(--mono);font-size:12px;text-align:left;cursor:pointer;
+  overflow-wrap:anywhere;text-decoration:underline dotted var(--dim2)}
+.fm-used{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex:0 0 auto;max-width:34%}
+.fm-used .chip{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media (max-width:560px){
+  .fm-frow{flex-wrap:wrap}
+  .fm-fmain{flex-basis:calc(100% - 30px)}
+  .fm-num{margin-left:30px;text-align:left}
+  .fm-used{margin-left:auto;max-width:60%}
+}
 .cr-idle{position:fixed;left:50%;transform:translateX(-50%);z-index:65;
   bottom:calc(88px + env(safe-area-inset-bottom));background:#241d0c;
   color:#fde68a;border:1px solid #5b4a19;border-radius:8px;padding:8px 12px;
@@ -997,31 +1023,36 @@ body.sh-on{padding-bottom:calc(76px + env(safe-area-inset-bottom))}
 
   <!-- ══ FILES ══════════════════════════════════════════════════════════ -->
   <section id="tab-files" hidden>
-    <!-- ══ STORAGE ══════════════════════════════════════════════════════
-         What is in the bucket that nothing in the catalogue points at. This
-         is the one panel about MONEY: R2 bills for every object every month
-         whether or not anything can reach it, and nothing in this system
-         has ever deleted one.                                          -->
+    <!-- ══ FILES ═════════════════════════════════════════════════════════
+         Everything in both R2 buckets, by folder: what each file is for,
+         what it costs, and — for an owner — the seven-day bin and folder
+         moves. Drawn by files.js from the inventory the server keeps.  -->
+    <div class="hint">
+      A file a title uses <b>cannot</b> be deleted from here, and a deleted
+      file is not gone at once: it waits in the bin for seven days and can be
+      restored until then. A file touched in the last day is never offered for
+      deleting — an upload looks unused until its title is saved.
+    </div>
+    <div id="fmBody" style="margin-top:10px"></div>
+
+    <!-- ══ OLDER CHECK ═════════════════════════════════════════════════════
+         The direct bucket listing this page had before the inventory. Kept
+         because it also finds UNFINISHED multipart uploads, which no file
+         listing (and so no inventory) shows.                           -->
     <div class="sec">
       <div class="sechead">
-        <h2>Storage</h2>
+        <h2>Direct check</h2>
         <span class="spacer"></span>
         <button class="b" id="orphanBtn">Find unused files</button>
         <button class="b" id="orphanPubBtn">…in artwork too</button>
       </div>
       <div class="hint">
-        Deleting a title does <b>not</b> delete its files. Neither does
-        replacing one. So every title ever removed, every re-upload that
-        landed under a new name, and every upload that finished and then
-        failed to save its row, left files behind that nothing can reach and
-        that are billed every month. This lists them — and
-        <b>lists them only</b>. Deleting happens in the Cloudflare R2
-        dashboard, by you, on purpose: a file uploaded a minute ago looks
-        exactly like an unused one until its row is written, so anything
-        touched in the last day is counted and deliberately not listed.
-        <b>Unfinished uploads</b> are the other half: a large upload goes up in
+        Asks R2 directly, without the inventory above. It only <b>lists</b> —
+        to delete, use the folders above, where deleting goes through the bin.
+        <b>Unfinished uploads</b> are what this adds: a large upload goes up in
         parts, and a phone that loses signal halfway leaves those parts in the
-        bucket where no file listing shows them.
+        bucket where no file listing shows them (R2 drops them by itself
+        after seven days).
       </div>
       <div id="orphanBody" style="margin-top:10px"></div>
     </div>
@@ -1866,6 +1897,7 @@ function show(tab) {
   // its own Refresh button and nothing else, so it drew a heading and then
   // nothing — which reads exactly like a panel that is not there.
   if (tab === 'telegram') loadIngest();
+  if (tab === 'files') loadFiles();
 }
 
 // ── catalogue ────────────────────────────────────────────────────────────

@@ -152,6 +152,11 @@ def main() -> int:
          'the authenticator code, an op nobody gave a role to, or one of four '
          'copies of a security check quietly left behind when the others '
          'were fixed'),
+        ('files_test.mjs',
+         'which folder a file is in, the same in SQL and in studio.ts',
+         'a folder move that picks its files by a different rule than the '
+         'page that showed them — moving `movies` and taking `movies/solar` '
+         'with it'),
         ('console_smoke.mjs',
          'the console in Chromium: menu per role, routes, 2-step, idle',
          'a control room that draws for an owner and throws for a viewer, a '

@@ -153,3 +153,26 @@ jobs:
           PY
           curl -fsS -X POST "$(python3 -c "import json;print(json.load(open('/tmp/ingest.json'))['done_url'])")" \
             -H 'Content-Type: application/json' -d @/tmp/fail.json || true
+
+      # ── the R2 bin ────────────────────────────────────────────────────────
+      #
+      # Deletes what the Files page binned seven days ago — and only what
+      # nothing uses by then; the function checks again and keeps anything a
+      # title has picked up since. On every run, whatever else this run did,
+      # because a bin that only empties when somebody forwards a film is a bin
+      # that fills. The function signs each DELETE itself: this runner still
+      # holds no bucket credentials. Only the two counts are printed.
+      - name: Empty the R2 bin
+        if: always()
+        env:
+          SB_URL: ${{ secrets.SUPABASE_URL }}
+          RUNNER_SECRET: ${{ secrets.INGEST_SECRET }}
+        run: |
+          if [ -z "${SB_URL:-}" ] || [ -z "${RUNNER_SECRET:-}" ]; then exit 0; fi
+          code=$(curl -sS -o /tmp/purge.json -w '%{http_code}' \
+            -X POST "$SB_URL/functions/v1/ingest" \
+            -H "Authorization: Bearer $RUNNER_SECRET" \
+            -H 'Content-Type: application/json' \
+            -d '{"op":"purge"}' || echo 000)
+          echo "bin: HTTP $code"
+          python3 -c "import json;d=json.load(open('/tmp/purge.json'));print('bin: deleted',d.get('purged'),'failed',d.get('failed'))" || true

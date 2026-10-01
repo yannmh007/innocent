@@ -421,6 +421,10 @@ const CR_ACTIONS = {
   reviewSendBack: 'sent a title back', reviewReject: 'rejected a title',
   reviewReopen: 'reopened a title', unpublish: 'took a title down',
   discard: 'discarded Telegram files',
+  folderLabel: 'named a folder', trashObjects: 'put files in the bin',
+  trashRestore: 'restored a file from the bin', moveStart: 'started moving files',
+  moveCopy: 'copied files for a move',
+  moveSwitch: 'MOVED files to a new folder', moveCancel: 'cancelled a move',
 };
 
 function drawFeed(rows) {

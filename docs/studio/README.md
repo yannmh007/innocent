@@ -66,13 +66,13 @@ project at all.
 poster, or no assets), start-up checks, streaming copies and the stream
 secret.
 
-The page is five files: `index.html` (the pages), `shell.js` (menu, routes,
+The page is six files: `index.html` (the pages), `shell.js` (menu, routes,
 dashboard, idle sign-out), `control.js` (2-step sign-in, Security, Admins,
 Activity), `review.js` (the review queue, the editor's review bar, the
 in-console preview) and `upload.js` (16 MB parts, waiting out a dropped
 connection, the stall watchdog, keeping the screen on, and the record in the
 phone that lets an upload resume after the tab died — RUNBOOK → *Uploading
-from a phone*). supabase-js is vendored in `vendor/`, pinned to one version with an
+from a phone*), and `files.js` (the Files page — RUNBOOK → *The Files page*). supabase-js is vendored in `vendor/`, pinned to one version with an
 integrity hash — not loaded from a CDN. `tool/js/console_smoke.mjs` drives the
 page in Chromium against a fake backend for each role.
 
@@ -90,6 +90,11 @@ The folder is shown in the editor so it can be pasted into the R2 console.
 and the title's `locator` name the prefix; a rename that rewrote R2 would have
 to copy every object and leave the catalogue broken in between. The folder is
 an address — the title is the label.
+
+(An owner can move it on purpose since 2026-10-01: **Files → the folder →
+Rename / move folder…** copies every object inside R2, checks each copy's
+size, then switches every key in one database transaction and keeps the old
+objects in the bin for seven days. Renaming the title still moves nothing.)
 
 A title created before foldering gets one the first time it is opened in the
 console. Its existing files stay where they are: `v/…` and `p/…` are still

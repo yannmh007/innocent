@@ -149,7 +149,7 @@ function encodeKey(key: string): string {
 }
 
 async function presign(
-  method: 'GET' | 'PUT', objectKey: string, seconds: number, bucket: string,
+  method: 'GET' | 'PUT' | 'DELETE', objectKey: string, seconds: number, bucket: string,
 ): Promise<string> {
   const host = `${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`;
   const amzDate = new Date().toISOString().replace(/[:-]|\.\d{3}/g, '');
@@ -192,7 +192,9 @@ async function rpc(name: string, body: unknown): Promise<unknown> {
     body: JSON.stringify(body ?? {}),
   });
   if (!res.ok) throw new Error(`${name} ${res.status} ${await res.text()}`);
-  return await res.json();
+  // A function that returns nothing answers with no body (204).
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
 }
 
 async function rest(path: string, init: RequestInit = {}): Promise<Response> {
@@ -759,6 +761,44 @@ Deno.serve(async (req: Request) => {
       put_url: await presign('PUT', key, 3600, PUBLIC_BUCKET),
       public_url: `${PUBLIC_BASE}${key}`,
     }, 200, req);
+  }
+
+  // ── purge ────────────────────────────────────────────────────────────────
+  //
+  // EMPTY THE R2 BIN — what the Files page put there seven days ago (or a
+  // cancelled move's copies, at once). Called by the same runner as `claim`,
+  // on every run, with the same secret; it answers at once when nothing is
+  // due. `r2_trash_due` checks AGAIN that nothing uses each file and takes
+  // back out of the bin anything that is in use by now, so a file attached to
+  // a title during its week in the bin is never deleted.
+  //
+  // Here and not in the console: deletes run whether or not anybody opens the
+  // page, and the runner holds no bucket credentials — this function signs
+  // each DELETE itself.
+  if (op === 'purge') {
+    const given = (req.headers.get('Authorization') ?? '').replace(/^Bearer /i, '');
+    if (!sameSecret(given, RUNNER_SECRET)) return json({ error: 'no' }, 403, req);
+    const due = (await rpc('r2_trash_due', { p_limit: 200 }) ?? []) as
+      Array<{ id: number; bucket: string; key: string }>;
+    let purged = 0;
+    let failed = 0;
+    for (const d of due) {
+      let err: string | null = null;
+      if (d.bucket !== MEDIA_BUCKET && d.bucket !== PUBLIC_BUCKET) {
+        err = 'unknown bucket';
+      } else {
+        try {
+          const res = await fetch(await presign('DELETE', d.key, 300, d.bucket), { method: 'DELETE' });
+          // 404 is success: it is gone, which is what was wanted.
+          if (!res.ok && res.status !== 404) err = 'http ' + res.status;
+        } catch (e) {
+          err = String(e).slice(0, 200);
+        }
+      }
+      await rpc('r2_trash_done', { p_id: d.id, p_error: err });
+      if (err) failed++; else purged++;
+    }
+    return json({ ok: true, purged, failed }, 200, req);
   }
 
   // ═══════════════════════════════════════════════════════════════════════
