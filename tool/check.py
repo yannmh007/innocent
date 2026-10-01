@@ -157,6 +157,10 @@ def main() -> int:
          'a folder move that picks its files by a different rule than the '
          'page that showed them — moving `movies` and taking `movies/solar` '
          'with it'),
+        ('playback_url_test.mjs',
+         'what request-playback puts in `url` when a film\'s original is only in Telegram',
+         'every app older than the ladder, and every download, handed a URL '
+         'to an original the storage policy has taken out of R2'),
         ('console_smoke.mjs',
          'the console in Chromium: menu per role, routes, 2-step, idle',
          'a control room that draws for an owner and throws for a viewer, a '

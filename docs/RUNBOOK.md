@@ -470,6 +470,55 @@ parts; R2 drops an abandoned part-copy by itself after seven days.
 **The direct check** under the folders is the older page: it asks R2 directly
 and also finds unfinished multipart uploads, which no listing shows.
 
+## Storage: Telegram is the archive, R2 the working set
+
+Migration 029, `docs/studio/storage.js` (*Storage* in the console menu, editor
+and owner). Viewers only ever stream from R2 through Cloudflare. What R2 does
+not have to hold is a second copy of a film Telegram already has.
+
+**Which films have a Telegram copy.** Only one that arrived by being forwarded
+to the bot: the runner can fetch that message again. A film uploaded from the
+console never touched Telegram and always stays in R2. The page says which.
+
+| Action | Who | What happens |
+|---|---|---|
+| **Pin** | owner | everything of the title stays in R2, whatever the policy says |
+| **Keep only in Telegram** (one film) | owner, fresh code | the original goes to the bin; its streaming copies stay, so the app plays exactly as before. Downloads get the best streaming copy instead of the original |
+| **Bring the original back** | editor | out of the bin at once if it is still there, otherwise fetched from Telegram by the runner |
+| **Archive…** | owner, fresh code, typed `ARCHIVE` | the title leaves the app (still approved — not sent back to review); every file of its films goes to the bin; photos stay |
+| **Restore** | editor | at once while the files are in the bin; after that the runner fetches the films from Telegram, the streaming copies are made again, and the title goes back in the app **by itself** when they are ready (a draft stays a draft) |
+| **Finish restore** | owner | when the encoder failed: back in the app on the originals |
+| **Check Telegram copy** | editor | the next runner tick looks at the message |
+| **Policy** | owner, fresh code | *automatic*: originals leave R2 a day after their streaming copies are ready (off by default); and the GB at which the bot tells you |
+
+**What keeps this safe.**
+
+1. Nothing leaves R2 at once — the seven-day bin (Files page).
+2. The bin **does not delete** the R2 copy of anything whose other copy is in
+   Telegram unless the runner has looked at that Telegram message in the last
+   **three days** and found the same file (same `file_unique_id`, or the same
+   size). Until then the delete simply waits, and the check is asked for.
+3. If a check finds the message **gone or a different file**, everything of that
+   film still in the bin comes back out at once, the title is put back if it was
+   archived, and the page and the bot say so.
+4. Every film that is only in Telegram is looked at again every week. If its
+   copy is gone then, the bot says so in its daily notice: re-forward the film
+   to the bot, or pin the title and upload it from the console.
+
+**The runner does it all.** Checks and restores are handed out by the same
+`claim` as forwarded films and done in the same Telegram sign-in; the bin and
+the housekeeping run in the workflow's last step (`Empty the R2 bin`), whose log
+prints `storage: {...}` with what it did.
+
+**Infrequent Access is not used**, and the page shows the sum: R2's free 10 GB
+applies only to Standard storage, Infrequent Access has a 30-day minimum and
+charges for every byte read. Below 10 GB it can only cost money. Archiving is
+the cheaper way to keep a cold title.
+
+**A title that cannot be archived** says why: a console upload (no Telegram
+copy), a copy not checked in three days (a check is queued — try again after the
+next runner tick), pinned, or still restoring.
+
 ## PART 4 — WEEKLY
 
 **Back up.** The free tier has NO backups - no daily, no downloadable, no PITR.

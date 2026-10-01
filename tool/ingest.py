@@ -40,6 +40,17 @@ application, not a person, and the login here is `bot_token=`. A user session
 string would be the operator's entire Telegram account, and this feature is
 not worth that.
 
+THE SAME LOOP CARRIES THE STORAGE POLICY'S TELEGRAM WORK (migration 029).
+When nothing has been forwarded, a claim can hand out one of two other jobs,
+marked by `type`:
+
+  verify   fetch the message a film came from and say whether the same file
+           is still there — the bin will not delete the R2 copy of a film
+           whose only other copy is in Telegram until this has said yes;
+  restore  download that file again and PUT it back at the key it had.
+
+Both answer through `vault_done` / `vault_defer` instead of `done` / `defer`.
+
 WHAT THIS SCRIPT NEVER SEES: an R2 key. The destination is a presigned PUT
 scoped to one object, minted by the edge function and expiring the same day.
 """
@@ -168,6 +179,138 @@ def defer(job, seconds):
         pass
 
 
+def vault_report(job, ok, state=None, note='', size=None):
+    """Tell the edge function how a verify or restore job went.
+
+    `state` is the verdict on a verify — 'ok', 'missing' or 'changed'. `ok`
+    False means this run could not tell (an error, not a verdict), which the
+    database counts as one of three attempts.
+    """
+    payload = {
+        'op': 'vault_done',
+        'token': os.environ['JOB_TOKEN'],
+        'job_id': job['job_id'],
+        'ok': bool(ok),
+        'note': str(note)[:300],
+    }
+    if state:
+        payload['state'] = state
+    if size is not None:
+        payload['bytes'] = int(size)
+    _post(job['done_url'], payload)
+    try:
+        with open(REPORTED, 'w') as fh:
+            fh.write(str(job['job_id']))
+    except OSError:
+        pass
+
+
+def vault_defer(job, seconds):
+    _post(job['done_url'], {
+        'op': 'vault_defer',
+        'token': os.environ['JOB_TOKEN'],
+        'job_id': job['job_id'],
+        'seconds': int(seconds or 0),
+    })
+    try:
+        with open(REPORTED, 'w') as fh:
+            fh.write(str(job['job_id']))
+    except OSError:
+        pass
+
+
+def _media_of(msg):
+    """The file a message carries, whichever way it was sent, or None."""
+    for attr in ('document', 'video', 'animation', 'audio', 'photo'):
+        media = getattr(msg, attr, None)
+        if media is not None:
+            return media
+    return None
+
+
+def judge_copy(msg, job):
+    """'ok', 'missing' or 'changed', and why — for a fetched message.
+
+    THE SAME FILE, by Telegram's own id for it when that matches; by size when
+    it does not, because the Bot API and MTProto libraries are documented to
+    agree on `file_unique_id` but a difference in encoding between them must
+    not be read as "the film is gone". A different size is a different file.
+    """
+    if msg is None or getattr(msg, 'empty', False):
+        return 'missing', 'the message is gone'
+    media = _media_of(msg)
+    if media is None:
+        return 'missing', 'the message no longer holds a file'
+    want_id = job.get('tg_unique_id') or ''
+    got_id = getattr(media, 'file_unique_id', '') or ''
+    want_size = int(job.get('bytes') or 0)
+    got_size = int(getattr(media, 'file_size', 0) or 0)
+    if want_id and got_id and want_id == got_id:
+        return 'ok', 'same file'
+    if want_size and got_size == want_size:
+        return 'ok', 'same size (%d bytes)' % got_size
+    if want_size and got_size and got_size != want_size:
+        return 'changed', 'a different file: %d bytes, expected %d' % (got_size, want_size)
+    return 'changed', 'cannot tell it is the same file'
+
+
+def vault_one(app, job, flood_type):
+    """A verify or a restore, reported through vault_done."""
+    chat_id = job.get('tg_chat_id')
+    message_id = job.get('tg_message_id')
+    if not chat_id or not message_id:
+        vault_report(job, False, note='the job has no chat or message')
+        return
+    work = tempfile.mkdtemp(prefix='vault-')
+    target = os.path.join(work, 'payload.bin')
+    try:
+        msg = app.get_messages(int(chat_id), int(message_id))
+        verdict, why = judge_copy(msg, job)
+        if job.get('type') == 'verify':
+            print('telegram copy: %s (%s)' % (verdict, why))
+            vault_report(job, True, verdict, why)
+            return
+        # restore
+        if verdict != 'ok':
+            # Nothing to fetch. Reported as a verdict the database can act on
+            # rather than three failed attempts at downloading nothing.
+            vault_report(job, False, note='cannot restore: %s' % why)
+            return
+        got = app.download_media(msg, file_name=target)
+        if not got or not os.path.exists(target):
+            vault_report(job, False, note='nothing was downloaded')
+            return
+        size = os.path.getsize(target)
+        print('downloaded %d bytes' % size)
+        put = put_to_r2(target, job['put_url'])
+        print('restored %d bytes' % put)
+        vault_report(job, True, note='restored', size=put)
+    except flood_type as exc:
+        seconds = int(getattr(exc, 'value', 0) or 0)
+        print('Telegram asked for a %ds wait; deferring and ending the run'
+              % seconds)
+        vault_defer(job, seconds)
+        raise _Stop()
+    except Exception as exc:                       # noqa: BLE001
+        vault_report(job, False, note='failed: %s' % str(exc)[:200])
+        print('failed: %s' % exc)
+    finally:
+        try:
+            if os.path.exists(target):
+                os.unlink(target)
+            os.rmdir(work)
+        except OSError:
+            pass
+
+
+def handle(app, job, flood_type):
+    """One job of whichever type the claim handed out."""
+    if job.get('type') in ('verify', 'restore'):
+        vault_one(app, job, flood_type)
+    else:
+        fetch_one(app, job, flood_type)
+
+
 def claim_next():
     """Ask for the next job. Writes JOB_FILE and answers it, or None.
 
@@ -289,6 +432,14 @@ def fetch_one(app, job, flood_type):
             pass
 
 
+def fail(job, note):
+    """Report a job as failed through the op its type answers to."""
+    if job.get('type') in ('verify', 'restore'):
+        vault_report(job, False, note=note)
+    else:
+        report(job, False, note)
+
+
 def main():
     job = load_job()
     api_id = os.environ.get('TG_API_ID', '')
@@ -297,7 +448,7 @@ def main():
     if not api_id or not api_hash or not bot_token:
         # One job reported and the run ends. Every other job would fail for
         # the same reason, and spending their attempts on it says nothing new.
-        report(job, False, 'Telegram credentials are not set on this repository')
+        fail(job, 'Telegram credentials are not set on this repository')
         print('TELEGRAM_API_ID / TELEGRAM_API_HASH / TELEGRAM_BOT_TOKEN missing')
         return 1
 
@@ -308,7 +459,7 @@ def main():
         from pyrogram import Client
         from pyrogram.errors import FloodWait
     except Exception as exc:                       # noqa: BLE001
-        report(job, False, 'telegram client unavailable: %s' % exc)
+        fail(job, 'telegram client unavailable: %s' % exc)
         return 1
 
     # `in_memory=True` so no .session file is written to the runner's disk:
@@ -329,12 +480,15 @@ def main():
         seconds = int(getattr(exc, 'value', 0) or 0)
         print('Telegram asked for a %ds wait before signing in; deferring'
               % seconds)
-        defer(job, seconds)
+        if job.get('type') in ('verify', 'restore'):
+            vault_defer(job, seconds)
+        else:
+            defer(job, seconds)
         return 0
     except Exception as exc:                       # noqa: BLE001
         # A bad api_id or a revoked token. Nothing else in the queue can
         # succeed either, so one job carries the reason and the run ends.
-        report(job, False, 'could not sign in to Telegram: %s' % str(exc)[:200])
+        fail(job, 'could not sign in to Telegram: %s' % str(exc)[:200])
         print('sign-in failed: %s' % exc)
         return 1
 
@@ -343,7 +497,7 @@ def main():
     try:
         while True:
             try:
-                fetch_one(app, job, FloodWait)
+                handle(app, job, FloodWait)
             except _Stop:
                 break
             handled += 1

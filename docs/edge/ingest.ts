@@ -642,11 +642,34 @@ Deno.serve(async (req: Request) => {
     if (!sameSecret(given, RUNNER_SECRET)) return json({ error: 'no' }, 403, req);
 
     const rows = await rpc('claim_ingest', {}) as Array<Record<string, unknown>>;
-    if (!Array.isArray(rows) || !rows.length) return json({}, 200, req);
+    if (!Array.isArray(rows) || !rows.length) {
+      // NOTHING FORWARDED: the Telegram work of the storage policy (migration
+      // 029) — look at a film's Telegram copy, or fetch one back into R2. The
+      // same runner and the same sign-in, so a restore costs no extra login.
+      const vault = await rpc('vault_claim', {}) as Array<Record<string, unknown>>;
+      if (!Array.isArray(vault) || !vault.length) return json({}, 200, req);
+      const v = vault[0];
+      const restore = v.kind === 'restore';
+      return json({
+        job_id: v.job_id,
+        type: restore ? 'restore' : 'verify',
+        tg_chat_id: v.chat_id ?? null,
+        tg_message_id: v.message_id ?? null,
+        tg_unique_id: v.unique_id ?? null,
+        bytes: v.bytes ?? null,
+        file_name: '',
+        // Only a restore writes, and only to the key the film already had.
+        put_url: restore
+          ? await presign('PUT', String(v.object_key ?? ''), 86400, String(v.bucket ?? MEDIA_BUCKET))
+          : null,
+        done_url: `${SUPABASE_URL}/functions/v1/ingest`,
+      }, 200, req);
+    }
     const job = rows[0];
 
     return json({
       job_id: job.job_id,
+      type: 'ingest',
       // CHAT AND MESSAGE, so the runner can fetch the message and download
       // its media without decoding a Bot API file id. The file id goes too,
       // as a fallback for a library that prefers it. No bot token is in this
@@ -715,6 +738,39 @@ Deno.serve(async (req: Request) => {
     if (!jobId) return json({ error: 'no_job' }, 400, req);
     const seconds = Math.max(0, Math.floor(Number(body.seconds ?? 0)) || 0);
     const result = await rpc('defer_ingest', { p_job: jobId, p_seconds: seconds });
+    return json({ ok: true, result }, 200, req);
+  }
+
+  // ── vault_done / vault_defer ─────────────────────────────────────────────
+  //
+  // The runner's answer to a verify or restore job. `state` is its verdict on
+  // a verify — ok, missing (the message is gone) or changed (a different file
+  // is there now); `ok: false` means it could not tell, which spends one of
+  // three attempts. The database decides what follows: a lost copy puts the
+  // film's R2 files back out of the bin, a restore is accepted only at the
+  // size the film had.
+  if (op === 'vault_done') {
+    const given = String(body.token ?? '');
+    if (!sameSecret(given, RUNNER_SECRET)) return json({ error: 'no' }, 403, req);
+    const jobId = String(body.job_id ?? '');
+    if (!jobId) return json({ error: 'no_job' }, 400, req);
+    const state = String(body.state ?? '');
+    const result = await rpc('vault_finish', {
+      p_job: jobId,
+      p_ok: body.ok === true,
+      p_state: ['ok', 'missing', 'changed'].includes(state) ? state : null,
+      p_note: String(body.note ?? '').slice(0, 300),
+      p_bytes: Number(body.bytes ?? 0) || null,
+    });
+    return json({ ok: true, result }, 200, req);
+  }
+  if (op === 'vault_defer') {
+    const given = String(body.token ?? '');
+    if (!sameSecret(given, RUNNER_SECRET)) return json({ error: 'no' }, 403, req);
+    const jobId = String(body.job_id ?? '');
+    if (!jobId) return json({ error: 'no_job' }, 400, req);
+    const seconds = Math.max(0, Math.floor(Number(body.seconds ?? 0)) || 0);
+    const result = await rpc('vault_defer', { p_job: jobId, p_seconds: seconds });
     return json({ ok: true, result }, 200, req);
   }
 
@@ -798,7 +854,33 @@ Deno.serve(async (req: Request) => {
       await rpc('r2_trash_done', { p_id: d.id, p_error: err });
       if (err) failed++; else purged++;
     }
-    return json({ ok: true, purged, failed }, 200, req);
+
+    // THE STORAGE POLICY'S HOUSEKEEPING, on the same tick (migration 029):
+    // record new Telegram copies, free masters if the owner turned that on,
+    // move restores on, ask for the checks the bin is waiting on, and tell the
+    // owner — at most daily — when something needs them. Each step on its own
+    // so one failing does not stop the bin above or the others.
+    const house: Record<string, unknown> = {};
+    for (const [name, fn] of [
+      ['copies', 'vault_sync'], ['freed', 'vault_auto_offload'],
+      ['restored', 'vault_tick'], ['checks', 'vault_schedule'],
+    ] as const) {
+      try {
+        house[name] = await rpc(fn, {});
+      } catch (e) {
+        house[name] = 'error: ' + String(e).slice(0, 120);
+      }
+    }
+    try {
+      const notice = await rpc('storage_notice', {});
+      if (typeof notice === 'string' && notice) {
+        for (const chat of TG_CHATS) await say(chat, notice);
+        house.noticed = true;
+      }
+    } catch (e) {
+      house.noticed = 'error: ' + String(e).slice(0, 120);
+    }
+    return json({ ok: true, purged, failed, house }, 200, req);
   }
 
   // ═══════════════════════════════════════════════════════════════════════

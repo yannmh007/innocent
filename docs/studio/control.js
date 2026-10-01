@@ -425,6 +425,10 @@ const CR_ACTIONS = {
   trashRestore: 'restored a file from the bin', moveStart: 'started moving files',
   moveCopy: 'copied files for a move',
   moveSwitch: 'MOVED files to a new folder', moveCancel: 'cancelled a move',
+  storagePin: 'pinned a title', masterOffload: 'kept an original only in Telegram',
+  masterKeep: 'brought an original back to R2', titleArchive: 'ARCHIVED a title',
+  titleRestore: 'restored a title', titleRestoreFinish: 'finished a restore by hand',
+  vaultCheck: 'asked for a Telegram check', storageSettings: 'changed the storage policy',
 };
 
 function drawFeed(rows) {

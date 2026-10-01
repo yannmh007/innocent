@@ -71,6 +71,7 @@
 <script src="review.js"></script>
 <script src="upload.js"></script>
 <script src="files.js"></script>
+<script src="storage.js"></script>
 <style>
 :root{
   --bg:#0c0d10; --panel:#131519; --panel2:#181b20;
@@ -597,6 +598,16 @@ body.sh-on{padding-bottom:calc(76px + env(safe-area-inset-bottom))}
   .fm-num{margin-left:30px;text-align:left}
   .fm-used{margin-left:auto;max-width:60%}
 }
+/* Storage page (storage.js). */
+.st-list{display:flex;flex-direction:column;gap:2px;margin-top:8px}
+.st-head{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.st-films{display:flex;flex-direction:column;gap:6px;margin-top:4px}
+.st-film{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:6px 8px;
+  border:1px solid var(--line);border-radius:8px}
+.st-fmain{min-width:0;flex:1;overflow-wrap:anywhere}
+.st-facts{display:flex;flex-wrap:wrap;gap:6px}
+.st-opt{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:12.5px;color:var(--dim)}
+.st-opt input[type=checkbox]{width:20px;height:20px;margin:0}
 .cr-idle{position:fixed;left:50%;transform:translateX(-50%);z-index:65;
   bottom:calc(88px + env(safe-area-inset-bottom));background:#241d0c;
   color:#fde68a;border:1px solid #5b4a19;border-radius:8px;padding:8px 12px;
@@ -1057,6 +1068,21 @@ body.sh-on{padding-bottom:calc(76px + env(safe-area-inset-bottom))}
       <div id="orphanBody" style="margin-top:10px"></div>
     </div>
 
+  </section>
+
+  <!-- ══ STORAGE ═══════════════════════════════════════════════════════════
+       Telegram is the archive, R2 the working set (migration 029). Drawn by
+       storage.js.                                                     -->
+  <section id="tab-storage" hidden>
+    <div class="hint">
+      Viewers only ever stream from R2. A film forwarded to the bot also has a
+      copy in Telegram, so R2 does not have to keep its original once its
+      streaming copies exist — and a title nobody watches can leave R2
+      altogether and come back from Telegram when it is wanted. Nothing leaves
+      R2 at once: it waits seven days in the bin, and is deleted only if the
+      runner has seen the same file in Telegram in the last three days.
+    </div>
+    <div id="stBody" style="margin-top:10px"></div>
   </section>
 </main>
 <script>
@@ -1866,7 +1892,7 @@ function readForm(prefix) {
 
 // ── tabs ─────────────────────────────────────────────────────────────────
 const TABS = ['dashboard', 'review', 'catalogue', 'new', 'telegram', 'requests',
-  'cats', 'stats', 'health', 'files', 'activity', 'admins', 'security', 'editor'];
+  'cats', 'stats', 'health', 'files', 'storage', 'activity', 'admins', 'security', 'editor'];
 function show(tab) {
   // LEAVING THE EDITOR WITH UNSAVED DETAILS. `beforeunload` covers closing the
   // tab, but not switching to another tab inside this page — which is the
@@ -1898,6 +1924,7 @@ function show(tab) {
   // nothing — which reads exactly like a panel that is not there.
   if (tab === 'telegram') loadIngest();
   if (tab === 'files') loadFiles();
+  if (tab === 'storage') loadStorage();
 }
 
 // ── catalogue ────────────────────────────────────────────────────────────

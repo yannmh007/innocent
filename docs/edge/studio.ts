@@ -748,6 +748,13 @@ const NEED: Record<string, Role> = {
   objectUrl: 'editor', folderLabel: 'editor', moveList: 'editor',
   trashObjects: 'owner', trashRestore: 'owner',
   moveStart: 'owner', moveCopy: 'owner', moveSwitch: 'owner', moveCancel: 'owner',
+  // the Storage page (migration 029) — looking, bringing a film back and
+  // asking for a Telegram check are an editor's; anything that takes a film
+  // out of R2, and the policy itself, is the owner's
+  storageOverview: 'editor', masterKeep: 'editor', titleRestore: 'editor',
+  vaultCheck: 'editor',
+  storagePin: 'owner', masterOffload: 'owner', titleArchive: 'owner',
+  titleRestoreFinish: 'owner', storageSettings: 'owner',
   // publishing and the business
   publish: 'editor', approve: 'editor', reject: 'editor',
   saveCategory: 'editor', addCategory: 'editor', selftest: 'editor',
@@ -766,6 +773,7 @@ const READS = new Set([
   'sign', 'beginMultipart', 'signParts', 'listParts',
   'reviewQueue', 'reviewHistory', 'previewUrl',
   'filesSummary', 'filesList', 'inventoryScan', 'objectUrl', 'moveList',
+  'storageOverview',
 ]);
 
 /// What cannot be undone, or hands out power: these need an authenticator code
@@ -773,6 +781,7 @@ const READS = new Set([
 const DANGEROUS = new Set([
   'deleteTitle', 'adminSave', 'adminRemove', 'settingsSave',
   'trashObjects', 'moveStart', 'moveSwitch',
+  'masterOffload', 'titleArchive', 'storageSettings',
 ]);
 
 /// The thing an audit line is about, for the Activity page's one-line view.
@@ -2368,6 +2377,20 @@ async function handleOp(
     let from = '';
     let titleId: string | null = null;
 
+    // A FILM WHOSE ORIGINAL IS ONLY IN TELEGRAM (migration 029) has nothing
+    // in R2 to copy, and a move would leave its key — where a restore puts
+    // it back — in the old folder. Bring it back first.
+    {
+      const owner = mode === 'folder'
+        ? (await db.from('titles').select('id').eq('slug', String(body.from ?? '')).maybeSingle()).data
+        : { id: String(body.titleId ?? '') };
+      if (owner?.id) {
+        const { data: away } = await db.from('title_assets').select('id')
+          .eq('title_id', owner.id).neq('master_state', 'r2').limit(1);
+        if ((away ?? []).length) return json({ error: 'master_in_telegram' }, 409, req);
+      }
+    }
+
     if (mode === 'folder') {
       from = String(body.from ?? '');
       if (!from || from.includes('..') || from.startsWith('/')) return json({ error: 'bad_folder' }, 400, req);
@@ -2499,6 +2522,106 @@ async function handleOp(
     const out = (data ?? {}) as Record<string, unknown>;
     if (out.error) return json({ error: String(out.error) }, 409, req);
     return json({ ok: true, ...out }, 200, req);
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // THE STORAGE PAGE — Telegram is the archive, R2 the working set (029)
+  // ═══════════════════════════════════════════════════════════════════════
+  //
+  // Every decision is the database's: these ops pass the actor along and
+  // turn the one-word answer into a status. The functions check the role
+  // again, and refuse anything that would leave a film with no copy.
+
+  if (body.op === 'storageOverview') {
+    const db = admin();
+    // New Telegram copies are recorded on every runner tick; doing it here
+    // too means a film filed a minute ago shows its copy straight away.
+    await db.rpc('vault_sync');
+    const [ov, st, jobs, bytes, scans] = await Promise.all([
+      db.rpc('storage_overview'),
+      db.from('admin_settings').select('auto_offload,storage_alert_gb,storage_noticed_at,storage_notice').limit(1).maybeSingle(),
+      db.from('vault_jobs').select('id,asset_id,kind,state,attempts,note,created_at,finished_at')
+        .order('created_at', { ascending: false }).limit(30),
+      db.rpc('storage_bytes'),
+      db.from('r2_scans').select('bucket,finished_at,objects,bytes'),
+    ]);
+    if (ov.error) return json({ error: 'storage_failed', detail: ov.error.message }, 500, req);
+    return json({
+      titles: ov.data ?? [], settings: st.data ?? {}, jobs: jobs.data ?? [],
+      catalogueBytes: Number(bytes.data ?? 0) || 0, scans: scans.data ?? [],
+      // The same price the Files page shows, plus Infrequent Access, so the
+      // page can show why it is not used.
+      price: { perGbMonth: 0.015, freeGb: 10, iaPerGbMonth: 0.01, iaRetrievalPerGb: 0.01, iaMinDays: 30 },
+    }, 200, req);
+  }
+
+  if (body.op === 'storagePin') {
+    const id = String(body.titleId ?? '');
+    if (!/^[0-9a-f-]{36}$/i.test(id)) return json({ error: 'no_title' }, 400, req);
+    const { error } = await admin().from('titles').update({ pinned: body.pinned === true }).eq('id', id);
+    if (error) return json({ error: 'save_failed', detail: error.message }, 500, req);
+    return json({ ok: true, pinned: body.pinned === true }, 200, req);
+  }
+
+  if (body.op === 'masterOffload' || body.op === 'masterKeep') {
+    const id = String(body.assetId ?? '');
+    if (!/^[0-9a-f-]{36}$/i.test(id)) return json({ error: 'no_such_asset' }, 400, req);
+    const fn = body.op === 'masterOffload' ? 'master_offload' : 'master_keep';
+    const { data, error } = await admin().rpc(fn, { p_asset: id, p_actor: who.id });
+    if (error) return json({ error: 'storage_failed', detail: error.message }, 500, req);
+    const word = String(data ?? '');
+    if (!['offloaded', 'kept', 'restoring'].includes(word)) return json({ error: word || 'storage_failed' }, 409, req);
+    return json({ ok: true, result: word }, 200, req);
+  }
+
+  if (body.op === 'titleArchive' || body.op === 'titleRestore') {
+    const id = String(body.titleId ?? '');
+    if (!/^[0-9a-f-]{36}$/i.test(id)) return json({ error: 'no_title' }, 400, req);
+    // TYPED, like a delete: an archive takes a title out of the app.
+    if (body.op === 'titleArchive' && String(body.confirm ?? '') !== 'ARCHIVE') {
+      return json({ error: 'not_confirmed' }, 400, req);
+    }
+    const fn = body.op === 'titleArchive' ? 'title_archive' : 'title_restore';
+    const { data, error } = await admin().rpc(fn, { p_title: id, p_actor: who.id });
+    if (error) return json({ error: 'storage_failed', detail: error.message }, 500, req);
+    const out = (data ?? {}) as Record<string, unknown>;
+    if (out.error) return json({ error: String(out.error), films: out.films ?? null }, 409, req);
+    return json({ ok: true, ...out }, 200, req);
+  }
+
+  if (body.op === 'titleRestoreFinish') {
+    const id = String(body.titleId ?? '');
+    const { data, error } = await admin().rpc('title_restore_finish', { p_title: id, p_actor: who.id });
+    if (error) return json({ error: 'storage_failed', detail: error.message }, 500, req);
+    if (data !== 'finished') return json({ error: String(data) }, 409, req);
+    return json({ ok: true }, 200, req);
+  }
+
+  if (body.op === 'vaultCheck') {
+    const id = String(body.titleId ?? '');
+    if (!/^[0-9a-f-]{36}$/i.test(id)) return json({ error: 'no_title' }, 400, req);
+    const db = admin();
+    const { data: films } = await db.from('title_assets').select('id').eq('title_id', id).eq('kind', 'video');
+    let asked = 0;
+    for (const f of (films ?? []) as Array<{ id: string }>) {
+      const { error } = await db.rpc('vault_request', { p_asset: f.id, p_kind: 'verify', p_actor: who.id });
+      if (!error) asked++;
+    }
+    return json({ ok: true, asked }, 200, req);
+  }
+
+  if (body.op === 'storageSettings') {
+    const patch: Record<string, unknown> = {};
+    if (typeof body.autoOffload === 'boolean') patch.auto_offload = body.autoOffload;
+    if (body.alertGb !== undefined) {
+      const gb = Number(body.alertGb);
+      if (!Number.isFinite(gb) || gb < 0 || gb > 100000) return json({ error: 'bad_alert' }, 400, req);
+      patch.storage_alert_gb = gb;
+    }
+    if (!Object.keys(patch).length) return json({ error: 'empty_patch' }, 400, req);
+    const { error } = await admin().from('admin_settings').update(patch).eq('id', true);
+    if (error) return json({ error: 'settings_failed', detail: error.message }, 500, req);
+    return json({ ok: true }, 200, req);
   }
 
   return json({ error: 'unknown_op' }, 400, req);

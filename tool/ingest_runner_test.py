@@ -46,10 +46,18 @@ class FloodWait(Exception):
         self.value = value
 
 
+class FakeDocument:
+    def __init__(self, unique_id, size):
+        self.file_unique_id = unique_id
+        self.file_size = size
+
+
 class FakeMessage:
     def __init__(self, mid):
         self.id = mid
-        self.empty = False
+        self.empty = mid in W.gone
+        media = W.media.get(mid)
+        self.document = FakeDocument(*media) if media else None
 
 
 class World:
@@ -62,6 +70,9 @@ class World:
         self.flood_on_start = None       # seconds, or None
         self.flood_on_message = {}       # message_id -> seconds
         self.error_on_message = {}       # message_id -> text
+        self.media = {}                  # message_id -> (file_unique_id, size)
+        self.gone = set()                # message ids that no longer exist
+        self.puts = []
 
 
 W = World()
@@ -88,8 +99,9 @@ class Client:
         return FakeMessage(message_id)
 
     def download_media(self, msg, file_name):
+        size = msg.document.file_size if msg.document else 1000 + msg.id
         with open(file_name, 'wb') as fh:
-            fh.write(b'x' * (1000 + msg.id))
+            fh.write(b'x' * size)
         return file_name
 
 
@@ -130,7 +142,18 @@ def job(n):
     }
 
 
-def run(first, rest, env=None, start_flood=None, flood=None, error=None):
+def vjob(n, kind, unique='u%d', size=None):
+    return {
+        'job_id': '%s-%d' % (kind, n), 'type': kind, 'tg_chat_id': 1, 'tg_message_id': n,
+        'tg_unique_id': unique % n if '%' in unique else unique,
+        'bytes': size if size is not None else 5000 + n,
+        'put_url': 'https://r2.invalid/put/v%d' % n if kind == 'restore' else None,
+        'done_url': 'https://edge.invalid/ingest',
+    }
+
+
+def run(first, rest, env=None, start_flood=None, flood=None, error=None,
+        media=None, gone=None):
     """One runner invocation in a scratch directory. Answers (rc, edge).
 
     `env` entries set to None are REMOVED for the run, which is how the
@@ -141,6 +164,8 @@ def run(first, rest, env=None, start_flood=None, flood=None, error=None):
     W.flood_on_start = start_flood
     W.flood_on_message = flood or {}
     W.error_on_message = error or {}
+    W.media = media or {}
+    W.gone = set(gone or ())
     tmp = tempfile.mkdtemp(prefix='ingest-test-')
     ingest.JOB_FILE = os.path.join(tmp, 'ingest.json')
     ingest.REPORTED = os.path.join(tmp, 'ingest.reported')
@@ -148,7 +173,10 @@ def run(first, rest, env=None, start_flood=None, flood=None, error=None):
         json.dump(first, fh)
     edge = Edge(rest)
     ingest._post = edge.post
-    ingest.put_to_r2 = lambda path, url: os.path.getsize(path)
+    def put(path, url):
+        W.puts.append(url)
+        return os.path.getsize(path)
+    ingest.put_to_r2 = put
     base = {
         'TG_API_ID': '1', 'TG_API_HASH': 'h', 'TG_BOT_TOKEN': 't',
         'JOB_TOKEN': 'tok', 'RUNNER_SECRET': 'tok',
@@ -233,6 +261,54 @@ check('missing credentials are reported on the job in hand',
 check('without building a client', W.constructed == 0)
 check('and without claiming the rest only to fail them the same way',
       not edge.ops('claim'))
+
+# ── THE STORAGE POLICY'S JOBS RIDE THE SAME SIGN-IN ───────────────────────
+#
+# A forwarded film, then a check of a Telegram copy, then a restore — one run,
+# one client, each answered through the op its type belongs to.
+rc, edge = run(job(1), [vjob(7, 'verify'), vjob(8, 'restore')],
+               media={1: ('x', 1001), 7: ('u7', 5007), 8: ('u8', 5008)})
+check('ingest, verify and restore in one run: still one sign-in', W.started == 1)
+check('the forwarded film is reported through done', len(edge.ops('done')) == 1)
+vd = {c['job_id']: c for c in edge.ops('vault_done')}
+check('the check and the restore are reported through vault_done',
+      set(vd) == {'verify-7', 'restore-8'})
+check('a copy that is there is "ok"',
+      vd.get('verify-7', {}).get('state') == 'ok' and vd['verify-7'].get('ok') is True)
+check('a restore PUTs to the URL it was given and reports the bytes',
+      'https://r2.invalid/put/v8' in W.puts and vd.get('restore-8', {}).get('bytes') == 5008)
+check('a verify uploads nothing', not [u for u in W.puts if u.endswith('/v7')])
+
+# the verdicts
+rc, edge = run(vjob(9, 'verify'), [], gone={9})
+c = (edge.ops('vault_done') or [{}])[0]
+check('a deleted message is "missing" — a verdict, not an error',
+      c.get('state') == 'missing' and c.get('ok') is True)
+rc, edge = run(vjob(10, 'verify'), [], media={10: ('other', 1234)})
+c = (edge.ops('vault_done') or [{}])[0]
+check('a different file in the message is "changed"', c.get('state') == 'changed')
+rc, edge = run(vjob(11, 'verify'), [], media={11: ('re-encoded-id', 5011)})
+c = (edge.ops('vault_done') or [{}])[0]
+check('a different id but the same size is still "ok"', c.get('state') == 'ok')
+
+# a restore of a message that is gone fetches nothing
+rc, edge = run(vjob(12, 'restore'), [], gone={12})
+c = (edge.ops('vault_done') or [{}])[0]
+check('a restore with nothing to fetch fails, and PUTs nothing',
+      c.get('ok') is False and not W.puts)
+
+# a wait during a check costs nothing
+rc, edge = run(vjob(13, 'verify'), [vjob(14, 'verify')], flood={13: 900},
+               media={13: ('u13', 5013), 14: ('u14', 5014)})
+check('a FLOOD_WAIT on a check defers it through vault_defer',
+      [c['job_id'] for c in edge.ops('vault_defer')] == ['verify-13'] and
+      not edge.ops('vault_done') and not edge.ops('defer'))
+
+# no credentials, with a check in hand
+rc, edge = run(vjob(15, 'verify'), [], env={'TG_BOT_TOKEN': None})
+check('missing credentials on a check are reported through vault_done',
+      any(not c['ok'] and 'credentials' in c['note'] for c in edge.ops('vault_done'))
+      and not edge.ops('done'))
 
 print()
 if failures:

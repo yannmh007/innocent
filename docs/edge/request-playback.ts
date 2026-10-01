@@ -280,6 +280,28 @@ const KEY_SOURCE = Deno.env.get('SB_SERVICE_KEY')
 //
 // The information is not lost - it goes to the function log, which the
 // operator can read and the client cannot. Same debugging power, no leak.
+/// What goes in `url` — the field every installed app reads, and the one
+/// offline downloads fetch.
+///
+/// THE ORIGINAL when it is in R2, exactly as before. When the storage policy
+/// has left the original only in Telegram, the BEST streaming copy instead:
+/// an app that knows nothing of `renditions` still plays, and a download gets
+/// the best copy that exists rather than a URL to nothing. (The downloader
+/// notices that the size changed and starts the file again rather than
+/// splicing two encodes together.) Null when there is neither.
+function primaryUrl(
+  masterUrl: string | null,
+  ladder: Array<Record<string, unknown>>,
+): string | null {
+  if (masterUrl) return masterUrl;
+  let best: Record<string, unknown> | null = null;
+  for (const r of ladder) {
+    if (typeof r.url !== 'string' || !r.url) continue;
+    if (!best || Number(r.kbps ?? 0) > Number(best.kbps ?? 0)) best = r;
+  }
+  return best ? String(best.url) : null;
+}
+
 function logRefusal(reason: string, detail?: string) {
   console.log(JSON.stringify({
     refusal: reason,
@@ -371,11 +393,14 @@ Deno.serve(async (req) => {
   // of every title would be the one thing in the catalogue that never got a
   // smaller copy, which is exactly backwards.
   let assetId: string | null = null;
+  // Whether the ORIGINAL is in R2. The storage policy (migration 029) can
+  // leave a film's original only in Telegram once its streaming copies exist.
+  let masterInR2 = true;
 
   if (body.asset_id) {
     const { data: asset, error: assetErr } = await admin
       .from('title_assets')
-      .select('id, object_key, is_free, title_id, kind')
+      .select('id, object_key, is_free, title_id, kind, master_state')
       .eq('id', body.asset_id)
       .maybeSingle();
 
@@ -399,6 +424,7 @@ Deno.serve(async (req) => {
     objectKey = asset.object_key;
     assetIsFree = asset.is_free === true;
     assetId = asset.id as string;
+    masterInR2 = asset.master_state !== 'telegram' && asset.master_state !== 'restoring';
   }
 
   if (!objectKey) {
@@ -460,8 +486,9 @@ Deno.serve(async (req) => {
   // one was used is worth knowing from a log without reading the URL back,
   // because "is the edge cache actually on" is otherwise a question nobody
   // can answer after the fact.
-  const viaWorker = await workerUrl(objectKey);
-  const url = viaWorker ?? await presign(objectKey);
+  //
+  // Signed after the ladder is read, below: when the original is only in
+  // Telegram there is nothing at its key to sign.
 
   // ─── THE LADDER ──────────────────────────────────────────────────
   //
@@ -482,9 +509,12 @@ Deno.serve(async (req) => {
   try {
     if (!assetId) {
       const { data: byKey } = await admin
-        .from('title_assets').select('id')
+        .from('title_assets').select('id, master_state')
         .eq('object_key', objectKey).limit(1).maybeSingle();
-      if (byKey?.id) assetId = byKey.id as string;
+      if (byKey?.id) {
+        assetId = byKey.id as string;
+        masterInR2 = byKey.master_state !== 'telegram' && byKey.master_state !== 'restoring';
+      }
     }
     if (assetId) {
       const { data: rows } = await admin.rpc('renditions_for', { p_asset: assetId });
@@ -504,12 +534,22 @@ Deno.serve(async (req) => {
     logRefusal('renditions_failed', String(e).slice(0, 160));
   }
 
+  const viaWorker = masterInR2 ? await workerUrl(objectKey) : null;
+  const masterUrl = masterInR2 ? (viaWorker ?? await presign(objectKey)) : null;
+  const url = primaryUrl(masterUrl, renditions);
+  if (!url) {
+    // Only in Telegram and no streaming copy to play: an archive that lost
+    // its ladder. The console shows it; a viewer gets "not found".
+    logRefusal('master_in_telegram', String(assetId ?? titleId));
+    return json({ code: 'not_found' }, 404);
+  }
+
   return json({
     url,
     expires_at: new Date(Date.now() + EXPIRY_SECONDS * 1000).toISOString(),
     // A label, not an address. The client ignores it; the function log does
     // not, and neither does anyone checking a deployment took effect.
-    via: viaWorker ? 'edge' : 's3',
+    via: masterUrl ? (viaWorker ? 'edge' : 's3') : 'rung',
     // Cheapest first. Empty for anything not transcoded, which the client
     // reads as "there is one copy and this is it".
     renditions,

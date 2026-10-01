@@ -191,6 +191,64 @@ function fmOps(state, body) {
   }[body.op];
 }
 
+// ── the Storage page's fake database (migration 029) ─────────────────────
+function stFixture() {
+  const film = (id, key, bytes, master, ladder, copy, verified) => ({ id, key, bytes, master, ladder,
+    transcode: ladder ? 'ready' : 'none', copy, verified_at: verified, copy_note: null });
+  const row = (o) => ({ published: true, storage_state: 'hot', pinned: false, archived_at: null,
+    storage_note: null, last_viewed: '2026-09-30', views_30d: 3, films: 1, films_with_copy: 1,
+    copies_ok: 1, copies_bad: 0, masters_r2: 1, masters_telegram: 0, masters_restoring: 0,
+    master_bytes_r2: 0, master_bytes_telegram: 0, ladder_bytes: 0, other_bytes: 1e5,
+    freeable: 0, jobs_open: 0, ...o });
+  return {
+    calls: [],
+    settings: { auto_offload: false, storage_alert_gb: 9, storage_noticed_at: null, storage_notice: null },
+    titles: [
+      row({ title_id: 'st-1', title: 'Chester', slug: 'chester', master_bytes_r2: 4.2e8, ladder_bytes: 2.2e8,
+        assets: [film('as-c', 'chester/video/film.mp4', 4.2e8, 'r2', true, 'ok', new Date().toISOString())] }),
+      row({ title_id: 'st-2', title: 'Console film', slug: 'console-film', views_30d: 0, last_viewed: null,
+        films_with_copy: 0, copies_ok: 0, master_bytes_r2: 3e8, ladder_bytes: 1e8,
+        assets: [film('as-k', 'console-film/video/k.mp4', 3e8, 'r2', true, null, null)] }),
+      row({ title_id: 'st-3', title: 'Old film', slug: 'old-film', published: false, storage_state: 'archived',
+        masters_r2: 0, masters_telegram: 1, master_bytes_telegram: 9e8, views_30d: 0,
+        assets: [film('as-o', 'old-film/video/o.mp4', 9e8, 'telegram', false, 'ok', new Date(Date.now() - 2 * DAY).toISOString())] }),
+      row({ title_id: 'st-4', title: 'Stuck', slug: 'stuck', published: false, storage_state: 'restoring',
+        storage_note: 'streaming copies failed — Finish restore to put it back anyway', master_bytes_r2: 2e8,
+        assets: [film('as-s', 'stuck/video/s.mp4', 2e8, 'r2', false, 'ok', new Date().toISOString())] }),
+      // a title with no films is not listed
+      row({ title_id: 'st-5', title: 'Photos only', slug: 'photos', films: 0, films_with_copy: 0, assets: [] }),
+    ],
+    jobs: [{ id: 'vj1', asset_id: 'as-o', kind: 'verify', state: 'done', attempts: 1, note: 'ok',
+      created_at: new Date().toISOString(), finished_at: new Date().toISOString() }],
+  };
+}
+function stOps(state, body) {
+  const st = state.st;
+  const t = st.titles.find((x) => x.title_id === body.titleId);
+  const owner = () => state.role === 'owner' ? null : { __status: 403, error: 'not_allowed' };
+  const op = {
+    storageOverview: () => ({ titles: st.titles, settings: st.settings, jobs: st.jobs,
+      catalogueBytes: 1.3e9, scans: [],
+      price: { perGbMonth: 0.015, freeGb: 10, iaPerGbMonth: 0.01, iaRetrievalPerGb: 0.01, iaMinDays: 30 } }),
+    storagePin: () => owner() || (t.pinned = body.pinned === true, { ok: true, pinned: t.pinned }),
+    masterOffload: () => owner() || (() => {
+      const f = st.titles.flatMap((x) => x.assets).find((a) => a.id === body.assetId);
+      f.master = 'telegram';
+      return { ok: true, result: 'offloaded' };
+    })(),
+    masterKeep: () => ({ ok: true, result: 'restoring' }),
+    titleArchive: () => owner() || (body.confirm !== 'ARCHIVE' ? { __status: 400, error: 'not_confirmed' }
+      : (t.storage_state = 'archived', t.published = false, { ok: true, archived: 1, binned: 2 })),
+    titleRestore: () => (t.storage_state = 'restoring', { ok: true, instant: 0, fetching: 1, state: 'restoring' }),
+    titleRestoreFinish: () => owner() || (t.storage_state = 'hot', t.published = true, t.storage_note = null, { ok: true }),
+    vaultCheck: () => ({ ok: true, asked: 1 }),
+    storageSettings: () => owner() || (Object.assign(st.settings, {
+      auto_offload: body.autoOffload, storage_alert_gb: body.alertGb }), { ok: true }),
+  }[body.op];
+  if (op) st.calls.push(body);
+  return op;
+}
+
 const TYPES = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css' };
 
 /// One browser page, signed in as `role`, with a scripted backend.
@@ -236,6 +294,7 @@ async function open(browser, role, opts = {}) {
     // A fake inventory for the Files page: what R2 holds, what the bin holds,
     // the moves, and every Files op the page sent, in order.
     fm: fmFixture(),
+    st: stFixture(),
   };
   page.on('pageerror', (e) => state.errors.push(String(e)));
   // A refused request is logged by the browser as "Failed to load resource";
@@ -448,7 +507,7 @@ async function open(browser, role, opts = {}) {
         t.review_note = body.note || null;
         return json(route, 200, { ok: true, result: decision });
       }
-      const f = ops[body.op] || fmOps(state, body);
+      const f = ops[body.op] || fmOps(state, body) || stOps(state, body);
       if (!f) { state.unexpected.push('studio op ' + body.op); return json(route, 400, { error: 'unknown_op' }); }
       const out = f();
       if (out && out.__status) return json(route, out.__status, { error: out.error });
@@ -501,7 +560,7 @@ try {
     check('owner: the sidebar is shown on a desk', await visible(page, '#side'));
     check('owner: the bottom bar is not', !(await visible(page, '#tabbar')));
     const side = await menuTabs(page, '#side .sh-item');
-    check('owner: every page is in the menu (' + side.length + ')', side.length === 13 &&
+    check('owner: every page is in the menu (' + side.length + ')', side.length === 14 &&
       side.includes('admins') && side.includes('activity') && side.includes('files'));
     check('owner: the Telegram badge counts failed + unfiled',
       (await page.textContent('#side [data-badge=telegram]')) === '6');
@@ -559,6 +618,7 @@ try {
     const more = await menuTabs(page, '#sheet .sh-item');
     check('uploader: More has no owner or editor pages (' + more.join(',') + ')',
       !more.includes('admins') && !more.includes('activity') && !more.includes('files') &&
+      !more.includes('storage') &&
       more.includes('telegram') &&
       more.includes('security') && more.includes('health'));
     await page.click('#sheet a[data-tab=security]');
@@ -1048,6 +1108,109 @@ try {
     const w = await page.evaluate(() => document.documentElement.scrollWidth);
     check('editor: the file list fits the phone (' + w + 'px)', w <= 390);
     check('editor: no script errors', state.errors.length === 0);
+    if (state.errors.length) console.log('     ' + state.errors.join('\n     '));
+    await ctx.close();
+  }
+
+  // ── Storage: an owner runs the policy ───────────────────────────────────
+  {
+    const { page, ctx, state } = await open(browser, 'owner', {
+      aal: 'aal2', codeAge: 60, hash: '#/storage',
+      stepUp: ['masterOffload', 'titleArchive', 'storageSettings'],
+      factors: [{ id: 'f1', factor_type: 'totp', status: 'verified', friendly_name: 'phone' }],
+    });
+    const st = state.st;
+    await page.waitForSelector('#stBody .st-row');
+    await shot(page, 'storage-owner');
+    check('storage: four numbers', (await page.$$('#stBody .cr-kpi')).length === 4);
+    check('storage: one row per title with films (a photo-only title is not listed)',
+      (await page.$$('#stBody .st-row')).length === 4);
+    check('storage: Infrequent Access is explained in this catalogue\'s numbers',
+      /no free tier[\s\S]*Not used/.test(await page.textContent('#stBody')));
+    const row = (name) => page.locator('#stBody .st-row', { hasText: name });
+    check('storage: a console upload cannot be archived, and says why',
+      await row('Console film').locator('button:has-text("Archive")').isDisabled() &&
+      /no Telegram copy/.test(await row('Console film').textContent()));
+    check('storage: and its original cannot be sent to Telegram',
+      !(await row('Console film').locator('button:has-text("Keep only in Telegram")').count()));
+    check('storage: a checked Telegram copy says when',
+      /checked today/.test(await row('Chester').textContent()));
+
+    // keep only in Telegram: a confirm, then the op with the film's id
+    page.once('dialog', (d) => d.accept());
+    await row('Chester').locator('button:has-text("Keep only in Telegram")').click();
+    await page.waitForFunction(() => /Telegram keeps it/.test(document.querySelector('#msg')?.textContent || ''));
+    check('storage: freeing an original sends that film', st.calls.some((c) => c.op === 'masterOffload' && c.assetId === 'as-c'));
+    await page.waitForSelector('#stBody .st-row');
+    check('storage: and the film now says it is only in Telegram, with a way back',
+      /original only in Telegram/.test(await row('Chester').textContent()) &&
+      await row('Chester').locator('button:has-text("Bring the original back")').count() === 1);
+
+    // archive: typed
+    await row('Chester').locator('button:has-text("Archive")').click();
+    await page.waitForSelector('.cr-dlg input');
+    await page.fill('.cr-dlg input', 'archive');
+    await page.click('.cr-dlg button.b.d');
+    check('storage: "archive" in lower case is not ARCHIVE',
+      /Type ARCHIVE/.test(await page.textContent('.cr-dlg')) && !st.calls.some((c) => c.op === 'titleArchive'));
+    await page.fill('.cr-dlg input', 'ARCHIVE');
+    await page.click('.cr-dlg button.b.d');
+    await page.waitForFunction(() => /Archived/.test(document.querySelector('#msg')?.textContent || ''));
+    check('storage: archive sends the title, confirmed',
+      st.calls.some((c) => c.op === 'titleArchive' && c.titleId === 'st-1' && c.confirm === 'ARCHIVE'));
+    await page.waitForSelector('#stBody .st-row');
+    check('storage: an archived title offers Restore',
+      await row('Chester').locator('button:has-text("Restore")').count() === 1);
+
+    // restore, and finish one whose encoder failed
+    await row('Old film').locator('button:has-text("Restore")').click();
+    await page.waitForFunction(() => /being fetched from Telegram/.test(document.querySelector('#msg')?.textContent || ''));
+    check('storage: restore says what happens next', st.calls.some((c) => c.op === 'titleRestore' && c.titleId === 'st-3'));
+    await page.waitForSelector('#stBody .st-row');
+    page.once('dialog', (d) => d.accept());
+    await row('Stuck').locator('button:has-text("Finish restore")').click();
+    await page.waitForFunction(() => /Back in the app/.test(document.querySelector('#msg')?.textContent || ''));
+    check('storage: a stuck restore can be finished by the owner',
+      st.calls.some((c) => c.op === 'titleRestoreFinish' && c.titleId === 'st-4'));
+
+    // pin, and the policy
+    await page.waitForSelector('#stBody .st-row');
+    await row('Console film').locator('button:has-text("Pin")').click();
+    await page.waitForFunction(() => /Pinned/.test(document.querySelector('#msg')?.textContent || ''));
+    check('storage: pin', st.calls.some((c) => c.op === 'storagePin' && c.titleId === 'st-2' && c.pinned === true));
+    await page.waitForSelector('#stBody .st-opt input[type=checkbox]');
+    await page.check('#stBody .st-opt input[type=checkbox]');
+    page.once('dialog', (d) => d.accept());
+    await page.click('#stBody .sec:has-text("Policy") button');
+    await page.waitForFunction(() => /policy saved/.test(document.querySelector('#msg')?.textContent || ''));
+    check('storage: turning the automatic policy on asks first, then saves it',
+      st.calls.some((c) => c.op === 'storageSettings' && c.autoOffload === true && c.alertGb === 9));
+    await page.waitForSelector('#stBody h2:has-text("Telegram work")', { timeout: 5000 }).catch(() => {});
+    check('storage: the Telegram work is listed', /Telegram work/.test(await page.textContent('#stBody')));
+
+    check('storage: no script errors', state.errors.length === 0);
+    if (state.errors.length) console.log('     ' + state.errors.join('\n     '));
+    check('storage: nothing unexpected was called', state.unexpected.length === 0);
+    if (state.unexpected.length) console.log('     ' + state.unexpected.join('\n     '));
+    await ctx.close();
+  }
+
+  // ── Storage: an editor, on a phone ──────────────────────────────────────
+  {
+    const { page, ctx, state } = await open(browser, 'editor', { phone: true, hash: '#/storage' });
+    await page.waitForSelector('#stBody .st-row');
+    await shot(page, 'storage-editor-phone');
+    const txt = await page.textContent('#stBody');
+    check('editor: no Pin, no Archive, no freeing an original, no policy',
+      !(await page.$('#stBody button:has-text("Pin")')) && !(await page.$('#stBody button:has-text("Archive")')) &&
+      !(await page.$('#stBody button:has-text("Keep only in Telegram")')) && !/Policy/.test(txt));
+    check('editor: may restore and ask for a check',
+      !!(await page.$('#stBody button:has-text("Restore")')) &&
+      !!(await page.$('#stBody button:has-text("Check Telegram copy")')));
+    check('editor: no Finish restore (the owner\'s)', !(await page.$('#stBody button:has-text("Finish restore")')));
+    const w = await page.evaluate(() => document.documentElement.scrollWidth);
+    check('editor: the storage page fits the phone (' + w + 'px)', w <= 390);
+    check('editor: no script errors on storage', state.errors.length === 0);
     if (state.errors.length) console.log('     ' + state.errors.join('\n     '));
     await ctx.close();
   }

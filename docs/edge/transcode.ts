@@ -379,6 +379,13 @@ Deno.serve(async (req: Request) => {
     if (!asset) return json({ error: 'no_asset' }, 400, req);
 
     const state = await rpc('queue_transcode', { p_asset: asset });
+    // NOTHING QUEUED: a photo, or a film whose original the storage policy
+    // left only in Telegram (migration 029) — the encoder would be handed a
+    // URL to nothing. Restore it first, from Storage.
+    if (state === null || (Array.isArray(state) && !state.length)) {
+      await audit(who, 'transcode', 'queue', asset, auditDetail(body), false, 'master_in_telegram');
+      return json({ error: 'master_in_telegram' }, 409, req);
+    }
     await audit(who, 'transcode', 'queue', asset, auditDetail(body), true, null);
     return json({ ok: true, asset_id: asset, state, runner: !!RUNNER_SECRET },
       200, req);

@@ -167,7 +167,7 @@ const show = (s) => [...s].sort().join(', ');
   // The runner's ops have no person behind them and answer to the runner's
   // secret — each one, before it does anything.
   const serve = s.slice(s.indexOf('Deno.serve('), s.indexOf('async function consoleOp('));
-  for (const op of ['claim', 'done', 'defer', 'release', 'purge']) {
+  for (const op of ['claim', 'done', 'defer', 'release', 'purge', 'vault_done', 'vault_defer']) {
     check(`ingest: runner op ${op} checks the runner's secret first`,
       new RegExp(`if \\(op === '${op}'\\) \\{\\s*\\n[^\\n]*\\n\\s*if \\(!sameSecret\\(given, RUNNER_SECRET\\)\\)`)
         .test(serve));

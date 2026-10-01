@@ -143,8 +143,10 @@ jobs:
           python3 - > /tmp/fail.json <<'PY'
           import json, os
           job = json.load(open('/tmp/ingest.json'))
+          # A Telegram check or restore (migration 029) answers to its own op.
+          vault = job.get('type') in ('verify', 'restore')
           print(json.dumps({
-            'op': 'done',
+            'op': 'vault_done' if vault else 'done',
             'token': os.environ['JOB_TOKEN'],
             'job_id': job['job_id'],
             'ok': False,
@@ -175,4 +177,4 @@ jobs:
             -H 'Content-Type: application/json' \
             -d '{"op":"purge"}' || echo 000)
           echo "bin: HTTP $code"
-          python3 -c "import json;d=json.load(open('/tmp/purge.json'));print('bin: deleted',d.get('purged'),'failed',d.get('failed'))" || true
+          python3 -c "import json;d=json.load(open('/tmp/purge.json'));print('bin: deleted',d.get('purged'),'failed',d.get('failed'));print('storage:',json.dumps(d.get('house',{})))" || true
