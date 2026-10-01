@@ -87,7 +87,7 @@ const ingestSrc = readFileSync(join(ROOT, 'docs/edge/ingest.ts'), 'utf8');
 // `isMintedKey` is the console's own gate on a key. Lifted rather than
 // restated, because the point of these checks is that the two files agree.
 const studio = await import('data:text/javascript,' + encodeURIComponent(
-  sliceOut('docs/edge/studio.ts', 'function isMintedKey(', '// --- who is asking')
+  sliceOut('docs/edge/studio.ts', 'function isMintedKey(', '// ── ADMIN GATE (begin)')
     .replace(/: boolean\b/g, '').replace(/: string\b/g, '') +
   '\nexport { isMintedKey };'
 ));
@@ -331,10 +331,14 @@ const studio = await import('data:text/javascript,' + encodeURIComponent(
 {
   const retry = ingestSrc.slice(ingestSrc.indexOf("if (op === 'retry')"));
   check('there is a retry op', retry.length > 0);
-  // Operator-only and checked FIRST. This requeues work that costs bandwidth
-  // and it is reachable from a page on the open internet.
-  check('retry checks the operator before anything else',
-    /^if \(op === 'retry'\) \{\s*\n\s*if \(!\(await isOperator\(req\)\)\)/.test(retry));
+  // Behind the admin gate. This requeues work that costs bandwidth and it is
+  // reachable from a page on the open internet. That the gate runs before
+  // consoleOp at all is tool/js/admin_gate_test.mjs's to prove; this says
+  // retry is one of the gated ops and not a runner op beside them.
+  check('retry is behind the admin gate',
+    /\n  retry: 'uploader',/.test(ingestSrc) &&
+    ingestSrc.indexOf("if (op === 'retry')") >
+      ingestSrc.indexOf('async function consoleOp('));
   check('retry refuses a call with no job', /no_job/.test(retry.slice(0, 500)));
   check('retry decides in the database, not here',
     /rpc\('retry_ingest'/.test(retry));
@@ -385,9 +389,12 @@ const studio = await import('data:text/javascript,' + encodeURIComponent(
 
   // The title is born holding its files, in one statement.
   check('there is a create_title op', /op === 'create_title'/.test(ingestSrc));
-  check('create_title is operator-only',
-    /if \(op === 'create_title'\) \{\s*\n\s*if \(!\(await isOperator\(req\)\)\)/
-      .test(ingestSrc));
+  check('create_title is behind the admin gate',
+    /create_title: 'uploader'/.test(ingestSrc) &&
+    ingestSrc.indexOf("if (op === 'create_title')") >
+      ingestSrc.indexOf('async function consoleOp('));
+  check('and says who made it, so an uploader can go on editing it',
+    /p_actor: who\.id/.test(ingestSrc));
   check('and it decides in the database',
     /rpc\('create_title_from_ingest'/.test(ingestSrc));
   check('the console uses it', /op: 'create_title'/.test(studioSrc));
@@ -400,9 +407,10 @@ const studio = await import('data:text/javascript,' + encodeURIComponent(
 
   // Fifteen pickers for one album is fifteen chances to pick wrong.
   check('a folder can be attached in one go', /op === 'attach_folder'/.test(ingestSrc));
-  check('attach_folder is operator-only',
-    /if \(op === 'attach_folder'\) \{\s*\n\s*if \(!\(await isOperator\(req\)\)\)/
-      .test(ingestSrc));
+  check('attach_folder is behind the admin gate',
+    /attach_folder: 'uploader'/.test(ingestSrc) &&
+    ingestSrc.indexOf("if (op === 'attach_folder')") >
+      ingestSrc.indexOf('async function consoleOp('));
   check('and the console uses it', /op: 'attach_folder'/.test(studioSrc));
 
   // `inbox` IS NOT AN ALBUM. It is the drawer everything captionless falls

@@ -99,9 +99,6 @@ const ANON_KEY = Deno.env.get('SB_ANON_KEY') ??
   Deno.env.get('SUPABASE_ANON_KEY') ?? '';
 const SERVICE_KEY = Deno.env.get('SB_SERVICE_KEY') ??
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-const OPERATORS = (Deno.env.get('OPERATOR_IDS') ??
-  '6c679480-3387-4442-ad3d-4423b8aceb71')
-  .split(',').map((s) => s.trim()).filter(Boolean);
 
 // The one secret the runner holds. Absent means the runner half is off: files
 // still queue, they simply wait, and the console says so.
@@ -212,7 +209,7 @@ async function rest(path: string, init: RequestInit = {}): Promise<Response> {
 
 const json = (body: unknown, status: number, req: Request) => {
   const origin = req.headers.get('Origin') ?? '';
-  const cors = ALLOWED_ORIGINS.includes(origin)
+  const cors: Record<string, string> = ALLOWED_ORIGINS.includes(origin)
     ? {
       'Access-Control-Allow-Origin': origin,
       'Access-Control-Allow-Headers': 'authorization, content-type',
@@ -226,16 +223,157 @@ const json = (body: unknown, status: number, req: Request) => {
   });
 };
 
-async function isOperator(req: Request): Promise<boolean> {
+// ── ADMIN GATE (begin) ───────────────────────────────────────────────────
+//
+// WHO IS ASKING, AND WHAT MAY THEY DO. The same block, byte for byte, in
+// studio.ts, ingest.ts, transcode.ts and probe-media.ts — tool/js/
+// admin_gate_test.mjs fails the build if the four copies ever differ. It
+// replaces four copies of a one-person OPERATOR_IDS list, which could not say
+// what each person may do, could not change without a deploy, and recorded
+// nothing about who did what.
+//
+// THE TOKEN IS CHECKED BY ASKING THE AUTH SERVER, not by verifying a signature
+// here: that needs no second copy of the JWT secret and is right about expiry
+// and revocation by construction. Once the auth server has accepted this exact
+// token, its claims — `aal`, `amr`, `session_id` — can be read without
+// checking the signature a second time.
+//
+// THE ROLE COMES FROM THE DATABASE on every request (`admin_resolve`), so
+// disabling an admin takes effect on their next click, not on their next
+// sign-in.
+type Role = 'viewer' | 'uploader' | 'editor' | 'owner';
+const RANK: Record<Role, number> = { viewer: 1, uploader: 2, editor: 3, owner: 4 };
+
+type Admin = {
+  id: string;
+  email: string;
+  role: Role;
+  aal: string;
+  session: string;
+  totpAt: number;
+  requireMfa: boolean;
+  stepupMinutes: number;
+  idleMinutes: number;
+};
+
+function jwtClaims(auth: string): Record<string, unknown> {
+  try {
+    const part = auth.slice(7).trim().split('.')[1] ?? '';
+    const b64 = part.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = b64 + '='.repeat((4 - (b64.length % 4)) % 4);
+    return JSON.parse(atob(padded)) as Record<string, unknown>;
+  } catch {
+    return {};
+  }
+}
+
+async function whoIsAsking(
+  req: Request,
+): Promise<Admin | { error: string; status: number }> {
   const auth = req.headers.get('Authorization') ?? '';
-  if (!auth.toLowerCase().startsWith('bearer ')) return false;
+  if (!auth.toLowerCase().startsWith('bearer ')) {
+    return { error: 'not_signed_in', status: 401 };
+  }
   const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
     headers: { Authorization: auth, apikey: ANON_KEY },
   });
-  if (!res.ok) return false;
+  if (!res.ok) return { error: 'not_signed_in', status: 401 };
   const user = await res.json();
-  return OPERATORS.includes(typeof user?.id === 'string' ? user.id : '');
+  const id = typeof user?.id === 'string' ? user.id : '';
+  if (!id) return { error: 'not_signed_in', status: 401 };
+
+  const rr = await fetch(`${SUPABASE_URL}/rest/v1/rpc/admin_resolve`, {
+    method: 'POST',
+    headers: {
+      apikey: SERVICE_KEY,
+      Authorization: `Bearer ${SERVICE_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ p_user: id }),
+  });
+  if (!rr.ok) return { error: 'admin_lookup_failed', status: 500 };
+  const rows = await rr.json() as Array<Record<string, unknown>>;
+  const row = Array.isArray(rows) ? rows[0] : undefined;
+  const role = String(row?.role ?? '');
+  if (!row || !(role in RANK)) return { error: 'not_an_admin', status: 403 };
+
+  const claims = jwtClaims(auth);
+  const amr = Array.isArray(claims.amr)
+    ? claims.amr as Array<Record<string, unknown>> : [];
+  const totp = amr.filter((m) => m && m.method === 'totp')
+    .map((m) => Number(m.timestamp) || 0);
+  const who: Admin = {
+    id,
+    email: String(row.email ?? ''),
+    role: role as Role,
+    aal: String(claims.aal ?? 'aal1'),
+    session: String(claims.session_id ?? ''),
+    totpAt: totp.length ? Math.max(...totp) : 0,
+    requireMfa: row.require_mfa === true,
+    stepupMinutes: Number(row.stepup_minutes) || 10,
+    idleMinutes: Number(row.idle_minutes) || 30,
+  };
+  // MFA REQUIRED MEANS REQUIRED. A stolen Google session without the
+  // authenticator code is turned away here, on every request.
+  if (who.requireMfa && who.aal !== 'aal2') {
+    return { error: 'mfa_required', status: 403 };
+  }
+  return who;
 }
+
+function mayDo(who: Admin, need: Role): boolean {
+  return RANK[who.role] >= RANK[need];
+}
+
+/// For what cannot be undone: the authenticator code must have been entered
+/// in the last few minutes, not hours ago when the session began. Applies only
+/// once MFA is required — before that the owner may have no factor to give.
+function freshEnough(who: Admin): boolean {
+  if (!who.requireMfa) return true;
+  return who.totpAt > 0 &&
+    Date.now() / 1000 - who.totpAt <= who.stepupMinutes * 60;
+}
+
+/// What goes in the audit line: enough to know what was done, nothing that is
+/// a secret or a link that grants access. Presigned URLs, tokens and upload
+/// part lists are dropped by name; long strings are cut; arrays are counted.
+function auditDetail(body: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(body ?? {})) {
+    if (k === 'op') continue;
+    if (/token|secret|url|parts|password|code/i.test(k)) continue;
+    if (Array.isArray(v)) out[k] = `[${v.length}]`;
+    else if (typeof v === 'string') out[k] = v.length > 120 ? v.slice(0, 120) + '…' : v;
+    else if (v && typeof v === 'object') out[k] = auditDetail(v as Record<string, unknown>);
+    else out[k] = v;
+  }
+  return out;
+}
+
+/// One line of the audit log. Best effort: an audit write that fails must not
+/// turn a change that succeeded into an error the admin then repeats.
+async function audit(
+  who: Admin, fn: string, action: string, target: string | null,
+  detail: Record<string, unknown> | null, ok: boolean, error: string | null,
+): Promise<void> {
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/rpc/admin_log`, {
+      method: 'POST',
+      headers: {
+        apikey: SERVICE_KEY,
+        Authorization: `Bearer ${SERVICE_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        p_actor: who.id, p_fn: fn, p_action: action, p_target: target,
+        p_detail: detail, p_ok: ok, p_error: error,
+      }),
+    });
+  } catch {
+    // Nothing useful to do; the change itself already happened.
+  }
+}
+// ── ADMIN GATE (end) ─────────────────────────────────────────────────────
 
 /// Constant time, because a comparison that returns early on the first wrong
 /// character tells an attacker how much of the secret they have.
@@ -623,11 +761,86 @@ Deno.serve(async (req: Request) => {
     }, 200, req);
   }
 
+  // ═══════════════════════════════════════════════════════════════════════
+  // EVERYTHING BELOW IS THE CONSOLE'S, and goes through the admin gate.
+  //
+  // The runner's ops above answer to RUNNER_SECRET and the webhook to
+  // Telegram's header; neither has a person behind it, so neither has a
+  // role. These four do, and an op that is not in NEED is refused before
+  // anything runs — deny by default, as in studio.ts.
+  // ═══════════════════════════════════════════════════════════════════════
+  const need = NEED[op];
+  if (!need) return json({ error: 'unknown_op' }, 400, req);
+  const asked = await whoIsAsking(req);
+  if ('error' in asked) return json({ error: asked.error }, asked.status, req);
+  const who = asked;
+  if (!mayDo(who, need)) {
+    return json({ error: 'not_allowed', need, role: who.role }, 403, req);
+  }
+  const refused = await uploaderRefusal(op, body, who);
+  if (refused) return json({ error: refused }, 403, req);
+
+  let res: Response;
+  try {
+    res = await consoleOp(req, op, body, who);
+  } catch (e) {
+    // `rpc` throws on a database error. Caught here so the failure is in
+    // the audit log as well as in the admin's face.
+    res = json({ error: 'failed', detail: String(e).slice(0, 200) }, 500, req);
+  }
+  if (op !== 'list') {
+    let err: string | null = null;
+    if (res.status >= 400) {
+      try {
+        err = String((await res.clone().json())?.error ?? res.status);
+      } catch {
+        err = String(res.status);
+      }
+    }
+    await audit(who, 'ingest', op,
+      String(body.job_id ?? body.folder ?? body.title_id ?? '') || null,
+      auditDetail(body), res.status < 400, err);
+  }
+  return res;
+});
+
+/// Who may call which of the console's ops. Deny by default: an op that is
+/// not here is refused. tool/js/admin_gate_test.mjs fails the build if an op
+/// handled in consoleOp is missing from here, or the reverse.
+const NEED: Record<string, Role> = {
+  list: 'viewer',
+  attach: 'uploader', attach_folder: 'uploader', create_title: 'uploader',
+  retry: 'uploader',
+};
+
+/// An uploader may file Telegram's files into a title only while that title
+/// is THEIR OWN DRAFT — the same rule as studio.ts. `create_title` makes a
+/// draft owned by the caller, and `retry` puts a file back in the queue
+/// without touching any title, so neither needs the check.
+async function uploaderRefusal(
+  op: string, body: Record<string, unknown>, who: Admin,
+): Promise<string | null> {
+  if (who.role !== 'uploader') return null;
+  if (op !== 'attach' && op !== 'attach_folder') return null;
+  const titleId = String(body.title_id ?? '');
+  if (!/^[0-9a-f-]{36}$/i.test(titleId)) return 'no_title';
+  const res = await rest(
+    `titles?select=published,created_by&id=eq.${titleId}`);
+  if (!res.ok) return 'no_title';
+  const rows = await res.json() as Array<Record<string, unknown>>;
+  const t = Array.isArray(rows) ? rows[0] : undefined;
+  if (!t) return 'no_title';
+  if (t.published === true || t.created_by !== who.id) return 'not_your_draft';
+  return null;
+}
+
+async function consoleOp(
+  req: Request, op: string, body: Record<string, unknown>, who: Admin,
+): Promise<Response> {
   // ── list ─────────────────────────────────────────────────────────────────
-  // The console's panel. Operator-only: it is a list of object keys and
+  // The console's panel. Admins only: it is a list of object keys and
   // Telegram file ids, and either one is worth keeping off a public page.
   if (op === 'list') {
-    if (!(await isOperator(req))) return json({ error: 'not_an_operator' }, 403, req);
     const res = await rest(
       'ingest_jobs?select=id,file_name,bytes,kind,state,note,object_key,'
       + 'title_id,created_at,finished_at,tg_caption,tg_media_group'
@@ -639,7 +852,6 @@ Deno.serve(async (req: Request) => {
   // ── attach ───────────────────────────────────────────────────────────────
   // Point a finished ingest at a title. Idempotent — see attach_ingest.
   if (op === 'attach') {
-    if (!(await isOperator(req))) return json({ error: 'not_an_operator' }, 403, req);
     const jobId = String(body.job_id ?? '');
     const titleId = String(body.title_id ?? '');
     if (!jobId || !titleId) return json({ error: 'no_job_or_title' }, 400, req);
@@ -659,7 +871,6 @@ Deno.serve(async (req: Request) => {
   // was queued, so it is the right handle. `attach_ingest_folder` skips what
   // is not finished and what is already attached.
   if (op === 'attach_folder') {
-    if (!(await isOperator(req))) return json({ error: 'not_an_operator' }, 403, req);
     const folder = String(body.folder ?? '');
     const titleId = String(body.title_id ?? '');
     if (!folder || !titleId) return json({ error: 'no_folder_or_title' }, 400, req);
@@ -688,7 +899,6 @@ Deno.serve(async (req: Request) => {
   // — category, year, the Burmese title, the tags — is typed in the editor,
   // which is where the operator is standing once the title exists.
   if (op === 'create_title') {
-    if (!(await isOperator(req))) return json({ error: 'not_an_operator' }, 403, req);
     const folder = String(body.folder ?? '');
     const name = String(body.title ?? '');
     if (!folder || !name.trim()) {
@@ -699,6 +909,7 @@ Deno.serve(async (req: Request) => {
         p_folder: folder,
         p_title: name,
         p_synopsis: String(body.synopsis ?? ''),
+        p_actor: who.id,
       }) as Array<Record<string, unknown>>;
       const made = (Array.isArray(rows) ? rows[0] : rows) ?? {};
       return json({
@@ -727,11 +938,10 @@ Deno.serve(async (req: Request) => {
   // messages in Telegram and forward them again. The chat, the message and
   // the file id were all still in the row.
   //
-  // Operator-only, and `retry_ingest` refuses anything that is not spent —
+  // An uploader's, and `retry_ingest` refuses anything that is not spent —
   // including a file that has since been forwarded again, which would fetch
   // the same gigabyte twice.
   if (op === 'retry') {
-    if (!(await isOperator(req))) return json({ error: 'not_an_operator' }, 403, req);
     const jobId = String(body.job_id ?? '');
     if (!jobId) return json({ error: 'no_job' }, 400, req);
     const result = await rpc('retry_ingest', { p_job: jobId });
@@ -739,4 +949,4 @@ Deno.serve(async (req: Request) => {
   }
 
   return json({ error: 'unknown_op' }, 400, req);
-});
+}

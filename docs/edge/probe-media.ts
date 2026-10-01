@@ -44,9 +44,6 @@ const PUBLIC_BUCKET = Deno.env.get('R2_PUBLIC_BUCKET') ?? 'innocent-public';
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
 const ANON_KEY = Deno.env.get('SB_ANON_KEY') ??
   Deno.env.get('SUPABASE_ANON_KEY') ?? '';
-const OPERATORS = (Deno.env.get('OPERATOR_IDS') ??
-  '6c679480-3387-4442-ad3d-4423b8aceb71')
-  .split(',').map((s) => s.trim()).filter(Boolean);
 const SERVICE_KEY = Deno.env.get('SB_SERVICE_KEY') ??
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
@@ -327,7 +324,7 @@ async function streamUrl(objectKey: string): Promise<string | null> {
 
 const json = (body: unknown, status: number, req: Request) => {
   const origin = req.headers.get('Origin') ?? '';
-  const cors = ALLOWED_ORIGINS.includes(origin)
+  const cors: Record<string, string> = ALLOWED_ORIGINS.includes(origin)
     ? {
       'Access-Control-Allow-Origin': origin,
       'Access-Control-Allow-Headers': 'authorization, content-type',
@@ -341,17 +338,162 @@ const json = (body: unknown, status: number, req: Request) => {
   });
 };
 
-async function operatorId(req: Request): Promise<string | null> {
+// ── ADMIN GATE (begin) ───────────────────────────────────────────────────
+//
+// WHO IS ASKING, AND WHAT MAY THEY DO. The same block, byte for byte, in
+// studio.ts, ingest.ts, transcode.ts and probe-media.ts — tool/js/
+// admin_gate_test.mjs fails the build if the four copies ever differ. It
+// replaces four copies of a one-person OPERATOR_IDS list, which could not say
+// what each person may do, could not change without a deploy, and recorded
+// nothing about who did what.
+//
+// THE TOKEN IS CHECKED BY ASKING THE AUTH SERVER, not by verifying a signature
+// here: that needs no second copy of the JWT secret and is right about expiry
+// and revocation by construction. Once the auth server has accepted this exact
+// token, its claims — `aal`, `amr`, `session_id` — can be read without
+// checking the signature a second time.
+//
+// THE ROLE COMES FROM THE DATABASE on every request (`admin_resolve`), so
+// disabling an admin takes effect on their next click, not on their next
+// sign-in.
+type Role = 'viewer' | 'uploader' | 'editor' | 'owner';
+const RANK: Record<Role, number> = { viewer: 1, uploader: 2, editor: 3, owner: 4 };
+
+type Admin = {
+  id: string;
+  email: string;
+  role: Role;
+  aal: string;
+  session: string;
+  totpAt: number;
+  requireMfa: boolean;
+  stepupMinutes: number;
+  idleMinutes: number;
+};
+
+function jwtClaims(auth: string): Record<string, unknown> {
+  try {
+    const part = auth.slice(7).trim().split('.')[1] ?? '';
+    const b64 = part.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = b64 + '='.repeat((4 - (b64.length % 4)) % 4);
+    return JSON.parse(atob(padded)) as Record<string, unknown>;
+  } catch {
+    return {};
+  }
+}
+
+async function whoIsAsking(
+  req: Request,
+): Promise<Admin | { error: string; status: number }> {
   const auth = req.headers.get('Authorization') ?? '';
-  if (!auth.toLowerCase().startsWith('bearer ')) return null;
+  if (!auth.toLowerCase().startsWith('bearer ')) {
+    return { error: 'not_signed_in', status: 401 };
+  }
   const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
     headers: { Authorization: auth, apikey: ANON_KEY },
   });
-  if (!res.ok) return null;
+  if (!res.ok) return { error: 'not_signed_in', status: 401 };
   const user = await res.json();
   const id = typeof user?.id === 'string' ? user.id : '';
-  return OPERATORS.includes(id) ? id : null;
+  if (!id) return { error: 'not_signed_in', status: 401 };
+
+  const rr = await fetch(`${SUPABASE_URL}/rest/v1/rpc/admin_resolve`, {
+    method: 'POST',
+    headers: {
+      apikey: SERVICE_KEY,
+      Authorization: `Bearer ${SERVICE_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ p_user: id }),
+  });
+  if (!rr.ok) return { error: 'admin_lookup_failed', status: 500 };
+  const rows = await rr.json() as Array<Record<string, unknown>>;
+  const row = Array.isArray(rows) ? rows[0] : undefined;
+  const role = String(row?.role ?? '');
+  if (!row || !(role in RANK)) return { error: 'not_an_admin', status: 403 };
+
+  const claims = jwtClaims(auth);
+  const amr = Array.isArray(claims.amr)
+    ? claims.amr as Array<Record<string, unknown>> : [];
+  const totp = amr.filter((m) => m && m.method === 'totp')
+    .map((m) => Number(m.timestamp) || 0);
+  const who: Admin = {
+    id,
+    email: String(row.email ?? ''),
+    role: role as Role,
+    aal: String(claims.aal ?? 'aal1'),
+    session: String(claims.session_id ?? ''),
+    totpAt: totp.length ? Math.max(...totp) : 0,
+    requireMfa: row.require_mfa === true,
+    stepupMinutes: Number(row.stepup_minutes) || 10,
+    idleMinutes: Number(row.idle_minutes) || 30,
+  };
+  // MFA REQUIRED MEANS REQUIRED. A stolen Google session without the
+  // authenticator code is turned away here, on every request.
+  if (who.requireMfa && who.aal !== 'aal2') {
+    return { error: 'mfa_required', status: 403 };
+  }
+  return who;
 }
+
+function mayDo(who: Admin, need: Role): boolean {
+  return RANK[who.role] >= RANK[need];
+}
+
+/// For what cannot be undone: the authenticator code must have been entered
+/// in the last few minutes, not hours ago when the session began. Applies only
+/// once MFA is required — before that the owner may have no factor to give.
+function freshEnough(who: Admin): boolean {
+  if (!who.requireMfa) return true;
+  return who.totpAt > 0 &&
+    Date.now() / 1000 - who.totpAt <= who.stepupMinutes * 60;
+}
+
+/// What goes in the audit line: enough to know what was done, nothing that is
+/// a secret or a link that grants access. Presigned URLs, tokens and upload
+/// part lists are dropped by name; long strings are cut; arrays are counted.
+function auditDetail(body: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(body ?? {})) {
+    if (k === 'op') continue;
+    if (/token|secret|url|parts|password|code/i.test(k)) continue;
+    if (Array.isArray(v)) out[k] = `[${v.length}]`;
+    else if (typeof v === 'string') out[k] = v.length > 120 ? v.slice(0, 120) + '…' : v;
+    else if (v && typeof v === 'object') out[k] = auditDetail(v as Record<string, unknown>);
+    else out[k] = v;
+  }
+  return out;
+}
+
+/// One line of the audit log. Best effort: an audit write that fails must not
+/// turn a change that succeeded into an error the admin then repeats.
+async function audit(
+  who: Admin, fn: string, action: string, target: string | null,
+  detail: Record<string, unknown> | null, ok: boolean, error: string | null,
+): Promise<void> {
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/rpc/admin_log`, {
+      method: 'POST',
+      headers: {
+        apikey: SERVICE_KEY,
+        Authorization: `Bearer ${SERVICE_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        p_actor: who.id, p_fn: fn, p_action: action, p_target: target,
+        p_detail: detail, p_ok: ok, p_error: error,
+      }),
+    });
+  } catch {
+    // Nothing useful to do; the change itself already happened.
+  }
+}
+// ── ADMIN GATE (end) ─────────────────────────────────────────────────────
+
+/// The whole function is one op as far as roles go: it reads the bucket and
+/// times the delivery path, and its answers are object keys — a map of the
+/// bucket — so it is an editor's. It writes nothing, so nothing is audited.
+const NEED: Record<string, Role> = { probe: 'editor' };
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
@@ -378,7 +520,11 @@ Deno.serve(async (req: Request) => {
     return json({ ok: true, service: 'probe-media' }, 200, req);
   }
   if (req.method !== 'POST') return json({ error: 'method' }, 405, req);
-  if (!(await operatorId(req))) return json({ error: 'not_an_operator' }, 403, req);
+  const asked = await whoIsAsking(req);
+  if ('error' in asked) return json({ error: asked.error }, asked.status, req);
+  if (!mayDo(asked, NEED.probe)) {
+    return json({ error: 'not_allowed', need: NEED.probe, role: asked.role }, 403, req);
+  }
 
   let body: { keys?: unknown; speed?: unknown; delivery?: unknown;
     offset?: unknown; orphans?: unknown; token?: unknown };

@@ -140,7 +140,7 @@ const signers = await import('data:text/javascript,' + encodeURIComponent(
   ts(between('const enc = new TextEncoder();',
     '/// One tag out of an S3 XML response.')) +
   ts(between('function xmlTag(', '/// An object key the operator is allowed')) +
-  ts(between('function isMintedKey(', '// --- who is asking')) +
+  ts(between('function isMintedKey(', '// ── ADMIN GATE (begin)')) +
   '\nexport function completeBody(body) {\n' +
   '  const req = null;\n' +
   '  const json = (o) => { throw new Error(String(o.error)); };\n' +

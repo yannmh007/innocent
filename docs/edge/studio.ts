@@ -72,14 +72,17 @@ const SERVICE_KEY = Deno.env.get('SB_SERVICE_KEY') ??
 const ANON_KEY = Deno.env.get('SB_ANON_KEY') ??
   Deno.env.get('SUPABASE_ANON_KEY') ?? '';
 
-// Who may publish. A comma-separated list of auth.users.id values.
-//
-// Defaulted rather than required, so the page works the moment it is deployed
-// — but defaulted to ONE id, not to "anyone". A user id is not a secret and
-// grants nothing on its own; what it does is keep this list readable next to
-// the code that enforces it, instead of in a dashboard nobody opens.
-const OPERATORS = (Deno.env.get('OPERATOR_IDS') ??
-  '6c679480-3387-4442-ad3d-4423b8aceb71')
+// WHO MAY USE THE CONSOLE is no longer a list here. It was OPERATOR_IDS — one
+// user id, copied into four functions — and it could not say what each person
+// may do. It is the `admins` table now (migration 026), read on every request
+// by the admin gate below.
+
+// Where a console sign-in is announced: the owner's own Telegram chat, by the
+// same bot that answers forwarded films. Both are project-wide secrets already
+// set for `ingest`; if either is absent the announcement is skipped and
+// nothing else changes.
+const BOT_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN') ?? '';
+const TG_CHATS = (Deno.env.get('TELEGRAM_CHAT_IDS') ?? '')
   .split(',').map((s) => s.trim()).filter(Boolean);
 
 const EXPIRY_SECONDS = 3600; // An hour: a long video on a Myanmar connection.
@@ -284,24 +287,157 @@ function isMintedKey(key: string): boolean {
   return /(^|\/)(video|photo|thumb)\/[a-z0-9][a-z0-9.\-]*$/.test(key);
 }
 
-// --- who is asking ----------------------------------------------------------
-// The token is checked by ASKING THE AUTH SERVER, not by verifying a signature
-// here. Verifying locally means holding the JWT secret in a second place and
-// reimplementing expiry and revocation; asking costs one request and is right
-// by construction. It is the same call the app makes on every cold start.
-async function operatorId(req: Request): Promise<string | null> {
-  const auth = req.headers.get('Authorization') ?? '';
-  if (!auth.toLowerCase().startsWith('bearer ')) return null;
+// ── ADMIN GATE (begin) ───────────────────────────────────────────────────
+//
+// WHO IS ASKING, AND WHAT MAY THEY DO. The same block, byte for byte, in
+// studio.ts, ingest.ts, transcode.ts and probe-media.ts — tool/js/
+// admin_gate_test.mjs fails the build if the four copies ever differ. It
+// replaces four copies of a one-person OPERATOR_IDS list, which could not say
+// what each person may do, could not change without a deploy, and recorded
+// nothing about who did what.
+//
+// THE TOKEN IS CHECKED BY ASKING THE AUTH SERVER, not by verifying a signature
+// here: that needs no second copy of the JWT secret and is right about expiry
+// and revocation by construction. Once the auth server has accepted this exact
+// token, its claims — `aal`, `amr`, `session_id` — can be read without
+// checking the signature a second time.
+//
+// THE ROLE COMES FROM THE DATABASE on every request (`admin_resolve`), so
+// disabling an admin takes effect on their next click, not on their next
+// sign-in.
+type Role = 'viewer' | 'uploader' | 'editor' | 'owner';
+const RANK: Record<Role, number> = { viewer: 1, uploader: 2, editor: 3, owner: 4 };
 
+type Admin = {
+  id: string;
+  email: string;
+  role: Role;
+  aal: string;
+  session: string;
+  totpAt: number;
+  requireMfa: boolean;
+  stepupMinutes: number;
+  idleMinutes: number;
+};
+
+function jwtClaims(auth: string): Record<string, unknown> {
+  try {
+    const part = auth.slice(7).trim().split('.')[1] ?? '';
+    const b64 = part.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = b64 + '='.repeat((4 - (b64.length % 4)) % 4);
+    return JSON.parse(atob(padded)) as Record<string, unknown>;
+  } catch {
+    return {};
+  }
+}
+
+async function whoIsAsking(
+  req: Request,
+): Promise<Admin | { error: string; status: number }> {
+  const auth = req.headers.get('Authorization') ?? '';
+  if (!auth.toLowerCase().startsWith('bearer ')) {
+    return { error: 'not_signed_in', status: 401 };
+  }
   const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
     headers: { Authorization: auth, apikey: ANON_KEY },
   });
-  if (!res.ok) return null;
-
+  if (!res.ok) return { error: 'not_signed_in', status: 401 };
   const user = await res.json();
   const id = typeof user?.id === 'string' ? user.id : '';
-  return OPERATORS.includes(id) ? id : null;
+  if (!id) return { error: 'not_signed_in', status: 401 };
+
+  const rr = await fetch(`${SUPABASE_URL}/rest/v1/rpc/admin_resolve`, {
+    method: 'POST',
+    headers: {
+      apikey: SERVICE_KEY,
+      Authorization: `Bearer ${SERVICE_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ p_user: id }),
+  });
+  if (!rr.ok) return { error: 'admin_lookup_failed', status: 500 };
+  const rows = await rr.json() as Array<Record<string, unknown>>;
+  const row = Array.isArray(rows) ? rows[0] : undefined;
+  const role = String(row?.role ?? '');
+  if (!row || !(role in RANK)) return { error: 'not_an_admin', status: 403 };
+
+  const claims = jwtClaims(auth);
+  const amr = Array.isArray(claims.amr)
+    ? claims.amr as Array<Record<string, unknown>> : [];
+  const totp = amr.filter((m) => m && m.method === 'totp')
+    .map((m) => Number(m.timestamp) || 0);
+  const who: Admin = {
+    id,
+    email: String(row.email ?? ''),
+    role: role as Role,
+    aal: String(claims.aal ?? 'aal1'),
+    session: String(claims.session_id ?? ''),
+    totpAt: totp.length ? Math.max(...totp) : 0,
+    requireMfa: row.require_mfa === true,
+    stepupMinutes: Number(row.stepup_minutes) || 10,
+    idleMinutes: Number(row.idle_minutes) || 30,
+  };
+  // MFA REQUIRED MEANS REQUIRED. A stolen Google session without the
+  // authenticator code is turned away here, on every request.
+  if (who.requireMfa && who.aal !== 'aal2') {
+    return { error: 'mfa_required', status: 403 };
+  }
+  return who;
 }
+
+function mayDo(who: Admin, need: Role): boolean {
+  return RANK[who.role] >= RANK[need];
+}
+
+/// For what cannot be undone: the authenticator code must have been entered
+/// in the last few minutes, not hours ago when the session began. Applies only
+/// once MFA is required — before that the owner may have no factor to give.
+function freshEnough(who: Admin): boolean {
+  if (!who.requireMfa) return true;
+  return who.totpAt > 0 &&
+    Date.now() / 1000 - who.totpAt <= who.stepupMinutes * 60;
+}
+
+/// What goes in the audit line: enough to know what was done, nothing that is
+/// a secret or a link that grants access. Presigned URLs, tokens and upload
+/// part lists are dropped by name; long strings are cut; arrays are counted.
+function auditDetail(body: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(body ?? {})) {
+    if (k === 'op') continue;
+    if (/token|secret|url|parts|password|code/i.test(k)) continue;
+    if (Array.isArray(v)) out[k] = `[${v.length}]`;
+    else if (typeof v === 'string') out[k] = v.length > 120 ? v.slice(0, 120) + '…' : v;
+    else if (v && typeof v === 'object') out[k] = auditDetail(v as Record<string, unknown>);
+    else out[k] = v;
+  }
+  return out;
+}
+
+/// One line of the audit log. Best effort: an audit write that fails must not
+/// turn a change that succeeded into an error the admin then repeats.
+async function audit(
+  who: Admin, fn: string, action: string, target: string | null,
+  detail: Record<string, unknown> | null, ok: boolean, error: string | null,
+): Promise<void> {
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/rpc/admin_log`, {
+      method: 'POST',
+      headers: {
+        apikey: SERVICE_KEY,
+        Authorization: `Bearer ${SERVICE_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        p_actor: who.id, p_fn: fn, p_action: action, p_target: target,
+        p_detail: detail, p_ok: ok, p_error: error,
+      }),
+    });
+  } catch {
+    // Nothing useful to do; the change itself already happened.
+  }
+}
+// ── ADMIN GATE (end) ─────────────────────────────────────────────────────
 
 // --- object keys ------------------------------------------------------------
 //
@@ -440,6 +576,132 @@ function json(body: unknown, status = 200, req?: Request): Response {
   });
 }
 
+// ═══════════════════════════════════════════════════════════════════════
+// WHICH ROLE EACH OP NEEDS
+// ═══════════════════════════════════════════════════════════════════════
+//
+//   viewer    reads
+//   uploader  uploads and makes drafts — only ITS OWN, only UNPUBLISHED (see
+//             uploaderRefusal), and never publishes
+//   editor    publishes, edits anything, payments, categories, the audit log
+//   owner     deletes titles, manages admins and the security switches
+//
+// An op missing from here is refused (deny by default, above).
+const NEED: Record<string, Role> = {
+  // reading
+  whoami: 'viewer', summary: 'viewer', list: 'viewer', get: 'viewer',
+  requests: 'viewer', stats: 'viewer', categories: 'viewer', health: 'viewer',
+  // uploading and drafting
+  sign: 'uploader', beginMultipart: 'uploader', signParts: 'uploader',
+  completeMultipart: 'uploader', abortMultipart: 'uploader',
+  folder: 'uploader', checkFolder: 'uploader',
+  create: 'uploader', save: 'uploader', addAssets: 'uploader',
+  updateAsset: 'uploader', reorder: 'uploader', setPrimary: 'uploader',
+  deleteAsset: 'uploader',
+  // publishing and the business
+  publish: 'editor', approve: 'editor', reject: 'editor',
+  saveCategory: 'editor', addCategory: 'editor', selftest: 'editor',
+  audit: 'editor',
+  // the owner's
+  deleteTitle: 'owner', admins: 'owner', adminSave: 'owner',
+  adminRemove: 'owner', settings: 'owner', settingsSave: 'owner',
+};
+
+/// Ops that change nothing, and so are not written to the audit log. Signing
+/// a URL is here on purpose: it changes nothing until the upload completes,
+/// and the completion IS logged.
+const READS = new Set([
+  'whoami', 'summary', 'list', 'get', 'requests', 'stats', 'categories',
+  'health', 'checkFolder', 'folder', 'selftest', 'audit', 'admins', 'settings',
+  'sign', 'beginMultipart', 'signParts',
+]);
+
+/// What cannot be undone, or hands out power: these need an authenticator code
+/// from the last few minutes (once MFA is required), not just a session.
+const DANGEROUS = new Set([
+  'deleteTitle', 'adminSave', 'adminRemove', 'settingsSave',
+]);
+
+/// The thing an audit line is about, for the Activity page's one-line view.
+function auditTarget(body: Record<string, unknown>): string | null {
+  const t = body.id ?? body.titleId ?? body.email ?? body.folder ?? body.key ??
+    body.title ?? null;
+  return t === null || t === undefined ? null : String(t).slice(0, 200);
+}
+
+/// An uploader may make drafts and edit them — its OWN drafts, while they are
+/// UNPUBLISHED — and may not publish anything. Answers the refusal, or null.
+///
+/// Checked against the database, not the page: which title an asset belongs
+/// to and who made a title are facts the page could misreport.
+async function uploaderRefusal(
+  op: string, body: Record<string, unknown>, who: Admin,
+): Promise<string | null> {
+  if (who.role !== 'uploader') return null;
+  if ((op === 'create' || op === 'publish') && body.publish === true) {
+    return 'needs_editor_to_publish';
+  }
+  const db = createClient(SUPABASE_URL, SERVICE_KEY);
+  let titles: string[] = [];
+  if (op === 'save') {
+    const p = (body.patch ?? {}) as Record<string, unknown>;
+    if ('published' in p) return 'needs_editor_to_publish';
+    titles = [String(body.id ?? '')];
+  } else if (op === 'addAssets') {
+    titles = [String(body.titleId ?? '')];
+  } else if (
+    op === 'updateAsset' || op === 'setPrimary' || op === 'reorder' ||
+    op === 'deleteAsset'
+  ) {
+    const ids: string[] = op === 'reorder'
+      ? (Array.isArray(body.order) ? body.order as Record<string, unknown>[] : [])
+        .map((o: Record<string, unknown>) => String(o?.id ?? ''))
+      : [String(body.id ?? '')];
+    const { data } = await db.from('title_assets').select('title_id')
+      .in('id', ids.filter(Boolean));
+    titles = [...new Set<string>(
+      ((data ?? []) as Array<{ title_id: unknown }>).map((r) => String(r.title_id)),
+    )];
+    if (!titles.length) return 'no_such_asset';
+  } else {
+    return null;
+  }
+  if (!titles.length || titles.some((t) => !t)) return 'no_title';
+  const { data: rows } = await db.from('titles')
+    .select('id,published,created_by').in('id', titles);
+  if (!rows || rows.length !== titles.length) return 'no_title';
+  const owned = rows as Array<{ published: unknown; created_by: unknown }>;
+  if (owned.some((r) => r.published === true || r.created_by !== who.id)) {
+    return 'not_your_draft';
+  }
+  return null;
+}
+
+/// Tell the owner, in Telegram, that somebody has just signed in to the
+/// console — once per session. An admin account being used by somebody else
+/// is the attack this whole page is shaped around, and the person most likely
+/// to notice a sign-in they did not make is the one it is announced to.
+async function announceSignIn(who: Admin): Promise<void> {
+  if (!BOT_TOKEN || !TG_CHATS.length) return;
+  // Myanmar time, which is what the owner's phone shows: UTC+6:30.
+  const mmt = new Date(Date.now() + 6.5 * 3600 * 1000).toISOString()
+    .slice(0, 16).replace('T', ' ');
+  const text = `Console sign-in\n${who.email} (${who.role})\n` +
+    `2-step: ${who.aal === 'aal2' ? 'yes' : 'NO'}\n${mmt} Myanmar time\n` +
+    'If this was not you, remove the admin on the Admins page.';
+  for (const chat of TG_CHATS) {
+    try {
+      await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: chat, text }),
+      });
+    } catch {
+      // Best effort: a sign-in must not fail because Telegram did not answer.
+    }
+  }
+}
+
 Deno.serve(async (req: Request) => {
   // The preflight the browser sends before any POST carrying an
   // Authorization header. Answering it is not optional.
@@ -459,8 +721,9 @@ Deno.serve(async (req: Request) => {
 
   if (req.method !== 'POST') return json({ error: 'method' }, 405, req);
 
-  const who = await operatorId(req);
-  if (!who) return json({ error: 'not_an_operator' }, 403, req);
+  const asked = await whoIsAsking(req);
+  if ('error' in asked) return json({ error: asked.error }, asked.status, req);
+  const who = asked;
 
   let body: Record<string, unknown>;
   try {
@@ -470,21 +733,54 @@ Deno.serve(async (req: Request) => {
   }
 
   // ═══════════════════════════════════════════════════════════════════════
-  // THE CONSOLE API
+  // THE CONSOLE API, AND WHO MAY CALL WHICH PART OF IT
   //
-  // Every op below runs as the SERVICE ROLE once `operatorId()` above has
-  // said yes. That is deliberate and is the whole security model of this
-  // file: `titles` and `title_assets` are not writable by `authenticated`
-  // and must not become writable, because widening RLS to let any signed-in
-  // user edit the catalogue would be a far larger hole than one function
-  // checking a list of two people.
+  // Every op runs as the SERVICE ROLE once the checks below have said yes.
+  // That is deliberate: `titles` and `title_assets` are not writable by
+  // `authenticated` and must not become writable — widening RLS to let any
+  // signed-in user edit the catalogue would be a far larger hole than one
+  // function checking roles.
   //
-  // So: the gate is ONE function, at the top, and nothing below it re-checks.
-  // If an op is added, it is behind that gate automatically. If the gate is
-  // ever removed, everything below it falls open at once — which is why it is
-  // written as an early return and not as a flag.
+  // DENY BY DEFAULT. An op that is not in NEED is refused before anything
+  // runs. It used to be that a new op was behind the gate automatically; with
+  // roles, a new op with no role would be behind NO role, so it is refused
+  // until somebody decides who may call it. tool/js/admin_gate_test.mjs fails
+  // the build if an op exists in this file and not in NEED, or the reverse.
   // ═══════════════════════════════════════════════════════════════════════
+  const op = String(body.op ?? '');
+  const need = NEED[op];
+  if (!need) return json({ error: 'unknown_op' }, 400, req);
+  if (!mayDo(who, need)) {
+    return json({ error: 'not_allowed', need, role: who.role }, 403, req);
+  }
+  if (DANGEROUS.has(op) && !freshEnough(who)) {
+    return json({ error: 'reauth_required' }, 403, req);
+  }
+  const refused = await uploaderRefusal(op, body, who);
+  if (refused) return json({ error: refused }, 403, req);
 
+  const res = await handleOp(req, body, who);
+
+  // EVERY WRITE IS WRITTEN DOWN, whether it worked or not — a refused delete
+  // is as much a part of the record as a successful one.
+  if (!READS.has(op)) {
+    let err: string | null = null;
+    if (res.status >= 400) {
+      try {
+        err = String((await res.clone().json())?.error ?? res.status);
+      } catch {
+        err = String(res.status);
+      }
+    }
+    await audit(who, 'studio', op, auditTarget(body), auditDetail(body),
+      res.status < 400, err);
+  }
+  return res;
+});
+
+async function handleOp(
+  req: Request, body: Record<string, unknown>, who: Admin,
+): Promise<Response> {
   const admin = () => createClient(SUPABASE_URL, SERVICE_KEY);
 
   // Columns the console reads for ONE title. Not `*`: `locator` is in here on
@@ -926,6 +1222,8 @@ Deno.serve(async (req: Request) => {
       // a half-uploaded title reaches a paying customer.
       status: wantPublished ? 'published' : 'draft',
       published: wantPublished,
+      // WHO MADE IT, because an uploader may edit only their own drafts.
+      created_by: who.id,
     }).select('id').single();
 
     // `!row` as well as the error: `.single()` types its data as possibly
@@ -1368,8 +1666,163 @@ Deno.serve(async (req: Request) => {
     return json({ rows: data ?? [] }, 200, req);
   }
 
+  // ═══════════════════════════════════════════════════════════════════════
+  // THE CONTROL ROOM: who is signed in, the dashboard, admins, the audit log
+  // ═══════════════════════════════════════════════════════════════════════
+
+  // ── whoami: what this person is, and announce the sign-in once ─────────
+  //
+  // The console asks this first. Its answer decides which pages it shows —
+  // which is manners, not security: every op above checks the role again.
+  if (body.op === 'whoami') {
+    const db = admin();
+    const { data: isNew } = await db.rpc('admin_note_session', {
+      p_session: who.session || null,
+      p_user: who.id,
+      p_agent: (req.headers.get('User-Agent') ?? '').slice(0, 200),
+    });
+    if (isNew === true) await announceSignIn(who);
+    return json({
+      email: who.email,
+      role: who.role,
+      aal: who.aal,
+      requireMfa: who.requireMfa,
+      idleMinutes: who.idleMinutes,
+      stepupMinutes: who.stepupMinutes,
+    }, 200, req);
+  }
+
+  // ── summary: the dashboard, in one request ──────────────────────────────
+  if (body.op === 'summary') {
+    const db = admin();
+    const count = async (q: PromiseLike<{ count: number | null }>) =>
+      (await q).count ?? 0;
+    const [live, drafts, requests, queued, running, failed, unattached] =
+      await Promise.all([
+        count(db.from('titles').select('id', { count: 'exact', head: true })
+          .eq('published', true)),
+        count(db.from('titles').select('id', { count: 'exact', head: true })
+          .eq('published', false)),
+        count(db.from('pending_requests').select('*', { count: 'exact', head: true })),
+        count(db.from('ingest_jobs').select('id', { count: 'exact', head: true })
+          .eq('state', 'queued')),
+        count(db.from('ingest_jobs').select('id', { count: 'exact', head: true })
+          .eq('state', 'running')),
+        count(db.from('ingest_jobs').select('id', { count: 'exact', head: true })
+          .eq('state', 'failed')),
+        count(db.from('ingest_jobs').select('id', { count: 'exact', head: true })
+          .eq('state', 'done').is('title_id', null)),
+      ]);
+    // The recent activity is the audit log, which is an editor's to read.
+    let recent: unknown[] = [];
+    if (mayDo(who, 'editor')) {
+      const { data } = await db.from('admin_audit')
+        .select('at,actor_email,actor_role,fn,action,target,ok,error')
+        .order('at', { ascending: false }).limit(8);
+      recent = data ?? [];
+    }
+    return json({
+      titles: { live, drafts },
+      telegram: { queued, running, failed, unattached },
+      requests,
+      recent,
+    }, 200, req);
+  }
+
+  // ── admins: the Admins page ─────────────────────────────────────────────
+  if (body.op === 'admins') {
+    const { data, error } = await admin().rpc('admin_list');
+    if (error) return json({ error: 'admins_failed', detail: error.message }, 500, req);
+    return json({ admins: data ?? [] }, 200, req);
+  }
+
+  // ── adminSave: invite by email, or change a role ────────────────────────
+  //
+  // `admin_save` checks the caller is an owner AGAIN, and refuses to demote
+  // the last owner. Both checks live in the database as well as here because
+  // this is the one op that can hand out every other permission.
+  if (body.op === 'adminSave') {
+    const { data, error } = await admin().rpc('admin_save', {
+      p_actor: who.id,
+      p_email: String(body.email ?? ''),
+      p_role: String(body.role ?? ''),
+    });
+    if (error) return json({ error: 'save_failed', detail: error.message }, 500, req);
+    const result = String(data ?? '');
+    if (result !== 'added' && result !== 'updated') {
+      return json({ error: result || 'save_failed' }, 400, req);
+    }
+    return json({ ok: true, result }, 200, req);
+  }
+
+  // ── adminRemove: disable, never delete ──────────────────────────────────
+  if (body.op === 'adminRemove') {
+    const { data, error } = await admin().rpc('admin_remove', {
+      p_actor: who.id,
+      p_admin: String(body.id ?? ''),
+    });
+    if (error) return json({ error: 'remove_failed', detail: error.message }, 500, req);
+    const result = String(data ?? '');
+    if (result !== 'disabled') return json({ error: result || 'remove_failed' }, 400, req);
+    return json({ ok: true, result }, 200, req);
+  }
+
+  // ── audit: the Activity page ────────────────────────────────────────────
+  //
+  // Newest first, a page at a time. `before` is the id of the last row the
+  // page already has; ids only grow, so the page can never skip or repeat a
+  // line however many are written while somebody is reading.
+  if (body.op === 'audit') {
+    let q = admin().from('admin_audit')
+      .select('id,at,actor_email,actor_role,fn,action,target,detail,ok,error')
+      .order('id', { ascending: false }).limit(100);
+    const before = Number(body.before ?? 0);
+    if (before > 0) q = q.lt('id', before);
+    const actor = String(body.actor ?? '');
+    if (actor) q = q.eq('actor_email', actor.toLowerCase());
+    const { data, error } = await q;
+    if (error) return json({ error: 'audit_failed', detail: error.message }, 500, req);
+    return json({ rows: data ?? [] }, 200, req);
+  }
+
+  // ── settings / settingsSave: the security switches ──────────────────────
+  if (body.op === 'settings') {
+    const { data, error } = await admin().from('admin_settings')
+      .select('require_mfa,stepup_minutes,idle_minutes,updated_at').eq('id', true)
+      .maybeSingle();
+    if (error) return json({ error: 'settings_failed', detail: error.message }, 500, req);
+    return json({ settings: data }, 200, req);
+  }
+
+  if (body.op === 'settingsSave') {
+    const upd: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    if ('require_mfa' in body) {
+      const on = body.require_mfa === true;
+      // NOT WITHOUT A FACTOR OF YOUR OWN. Requiring MFA while the person
+      // switching it on has none would turn them away on their very next
+      // click, and if they are the only owner, nobody could switch it back.
+      if (on && who.aal !== 'aal2') {
+        return json({ error: 'enrol_mfa_first' }, 400, req);
+      }
+      upd.require_mfa = on;
+    }
+    if ('idle_minutes' in body) {
+      const v = Math.round(Number(body.idle_minutes));
+      if (!(v >= 5 && v <= 480)) return json({ error: 'bad_idle_minutes' }, 400, req);
+      upd.idle_minutes = v;
+    }
+    if ('stepup_minutes' in body) {
+      const v = Math.round(Number(body.stepup_minutes));
+      if (!(v >= 1 && v <= 120)) return json({ error: 'bad_stepup_minutes' }, 400, req);
+      upd.stepup_minutes = v;
+    }
+    const { error } = await admin().from('admin_settings').update(upd).eq('id', true);
+    if (error) return json({ error: 'settings_failed', detail: error.message }, 500, req);
+    return json({ ok: true }, 200, req);
+  }
+
   return json({ error: 'unknown_op' }, 400, req);
-});
+}
 
 // --- shaping what the browser sent -----------------------------------------
 //

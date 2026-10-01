@@ -146,6 +146,12 @@ def main() -> int:
          'caption typed on a phone — either one is a path, and a key the '
          'console would refuse is an upload that works and a file nothing '
          'can later find. And a round selfie video published as a master'),
+        ('admin_gate_test.mjs',
+         'the admin gate: roles, MFA, the audit line, four identical copies',
+         'a viewer who can delete a title, a stolen session let in without '
+         'the authenticator code, an op nobody gave a role to, or one of four '
+         'copies of a security check quietly left behind when the others '
+         'were fixed'),
     ]
     node = shutil.which('node')
     for name, what, guards in JS_TESTS:
