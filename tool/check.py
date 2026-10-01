@@ -64,6 +64,12 @@ CHECKS = [
      'two unrelated rules sharing one class name in the operator console — '
      '`.bar` meant both the toolbar and an upload progress track, so the '
      'toolbar rendered three pixels tall and its contents were clipped'),
+    ('ingest_runner_test.py', None,
+     'a Telegram runner that signs in once per file instead of once per run. '
+     'Each piece is correct alone; together they sent fifteen sign-ins in two '
+     'minutes, Telegram answered FLOOD_WAIT, and seven good files had their '
+     'three attempts spent in under a minute — and a wait reported as a '
+     'failed attempt, which is how a slow afternoon marks a film as dead'),
     ('unread_contract.py', None,
      'a repository method built, implemented twice and called by nothing — '
      'the same bug class as dead_settings one level up. getById was the only '

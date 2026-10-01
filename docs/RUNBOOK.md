@@ -249,6 +249,22 @@ rather than taking one file, so ten photos are ten minutes of transfers after
 one wait, not ten waits. To skip the wait entirely, run the **Ingest**
 workflow by hand from the Actions tab.
 
+**`waiting: Telegram asked for …s` is not a failure.** The run signs in to
+Telegram once and moves every file in that one session. If Telegram still
+asks the bot to slow down (FLOOD_WAIT), a wait of up to five minutes is sat
+through inside the run; a longer one hands the file back WITHOUT spending one
+of its three attempts, shows that note in the panel, and the next run takes
+it. Nothing to do.
+
+> The first version of the queue-draining run signed in once PER FILE. On
+> 2026-09-29 that was fifteen sign-ins in two minutes; Telegram answered
+> FLOOD_WAIT on `auth.ImportBotAuthorization`, every throttled file was
+> claimed again a second later and throttled again, and seven good files were
+> marked `gave up after 3 attempts` in under a minute. If you ever see that
+> note again with `ImportBotAuthorization` in it, the runner is signing in more
+> than once per run, and `python3 tool/ingest_runner_test.py` should be
+> failing.
+
 > **Send it as a FILE, not as a video.** Telegram's clients re-encode anything
 > sent as a video; a document is byte-for-byte the master. A video is accepted
 > rather than refused, because rejecting one after an hour of uploading would

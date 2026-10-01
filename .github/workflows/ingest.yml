@@ -95,19 +95,20 @@ jobs:
           python3 -m pip install --quiet --disable-pip-version-check \
             'pyrogram==2.0.106' 'tgcrypto==1.2.5'
 
-      # ONE RUN TAKES AS MANY AS IT CAN, rather than one and out.
+      # ONE RUN TAKES AS MANY AS IT CAN — IN ONE TELEGRAM SIGN-IN.
       #
       # `*/5` above is what GitHub accepts, not what it runs. Measured over one
-      # morning the schedule fired fourteen to twenty minutes apart, because a
-      # cron on a free public repository is best effort — so a title's artwork
-      # sent as a single album of ten photos took between two and three hours
-      # to land, one file per tick, with nothing anywhere saying why.
+      # morning the schedule fired fourteen to twenty minutes apart, so a
+      # title's artwork sent as an album of ten photos took two to three hours
+      # when each run took one file.
       #
-      # The loop, the time budget and the per-job crash backstop are all in
-      # tool/ingest_all.sh, which explains each of them. The backstop moved in
-      # there for a reason worth repeating: a final `if: failure()` step can
-      # only ever report the LAST job, so in a loop it would miss every earlier
-      # failure and misattribute the one it caught.
+      # THE LOOP IS IN tool/ingest.py, AROUND ONE SESSION, and that placement
+      # is the fix for the first attempt at this. That one looped in a shell
+      # script around ingest.py, and ingest.py signed in every time it
+      # started: fifteen sign-ins in two minutes, FLOOD_WAIT on
+      # auth.ImportBotAuthorization, and seven good files with their three
+      # attempts spent in under a minute. tool/ingest_runner_test.py now
+      # counts the sign-ins.
       - name: Fetch them and put them in the bucket
         if: steps.claim.outputs.job == 'yes'
         env:
@@ -117,4 +118,38 @@ jobs:
           TG_API_ID: ${{ secrets.TELEGRAM_API_ID }}
           TG_API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
           TG_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-        run: bash tool/ingest_all.sh
+        run: python3 tool/ingest.py
+
+      # THE PROCESS DIED WITHOUT SAYING SO — killed for memory, or by the job
+      # timeout. Every failure ingest.py can see, it reports itself and exits
+      # 0, so this only fires on a death it could not see.
+      #
+      # /tmp/ingest.json always names the job IN HAND, because each claim
+      # overwrites it. /tmp/ingest.reported names the last job that WAS
+      # reported. If they are the same job, it was dealt with and this stands
+      # down; otherwise that job is the one left on 'running', and saying so
+      # here is the difference between a row the console explains and one
+      # that sits there for seven hours.
+      - name: Say so when it died
+        if: failure() && steps.claim.outputs.job == 'yes'
+        env:
+          JOB_TOKEN: ${{ secrets.INGEST_SECRET }}
+        run: |
+          in_hand=$(python3 -c "import json;print(json.load(open('/tmp/ingest.json'))['job_id'])")
+          if [ -f /tmp/ingest.reported ] && [ "$(cat /tmp/ingest.reported)" = "$in_hand" ]; then
+            echo "the job in hand was already reported; not overwriting it"
+            exit 0
+          fi
+          python3 - > /tmp/fail.json <<'PY'
+          import json, os
+          job = json.load(open('/tmp/ingest.json'))
+          print(json.dumps({
+            'op': 'done',
+            'token': os.environ['JOB_TOKEN'],
+            'job_id': job['job_id'],
+            'ok': False,
+            'note': 'runner died mid-job - see the Ingest run in Actions',
+          }))
+          PY
+          curl -fsS -X POST "$(python3 -c "import json;print(json.load(open('/tmp/ingest.json'))['done_url'])")" \
+            -H 'Content-Type: application/json' -d @/tmp/fail.json || true

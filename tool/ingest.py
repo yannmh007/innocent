@@ -1,14 +1,32 @@
 #!/usr/bin/env python3
-"""Move one forwarded Telegram film into R2.
+"""Move forwarded Telegram files into R2 — every one queued, in one sign-in.
 
-Run by .github/workflows/ingest.yml after a job has been claimed. Reads
-/tmp/ingest.json — the claim response — and:
+Run by .github/workflows/ingest.yml after the first job has been claimed.
+Reads /tmp/ingest.json — the claim response — and:
 
-  1. signs in to Telegram AS THE BOT over MTProto,
-  2. fetches the forwarded message and downloads its media,
-  3. PUTs the file at the presigned URL the claim handed over,
-  4. reports the real byte count back, which is what creates the catalogue
-     row and queues the transcode.
+  1. signs in to Telegram AS THE BOT over MTProto, ONCE,
+  2. for that job and every job claimed after it in the same run:
+       fetches the forwarded message and downloads its media,
+       PUTs the file at the presigned URL the claim handed over,
+       reports the real byte count back, which is what creates the
+       catalogue row and queues the transcode,
+  3. stops when the queue is empty, the time budget is spent, or Telegram
+     asks for a wait longer than is worth sitting through.
+
+ONE SIGN-IN PER RUN, AND THAT IS THE WHOLE POINT OF THE LOOP BEING HERE. The
+first version of the queue-draining run looped in a shell script around this
+file, and this file signed in every time it started. Fifteen files meant
+fifteen sign-ins inside two minutes; Telegram throttled them with FLOOD_WAIT
+on `auth.ImportBotAuthorization`, each throttled job was claimed again a
+second later by the same loop and throttled again, and seven good files had
+their three attempts spent in under a minute. The fetches were never the
+problem — the sign-ins were. One session now carries every job of the run.
+
+A WAIT IS NOT A FAILURE. FLOOD_WAIT is Telegram scheduling the bot, not a
+verdict on the file. Waits up to SLEEP_THRESHOLD are slept through by the
+client itself; a longer one gives the job back with `defer`, which returns
+the attempt the claim took, and ends the run — every further call would be
+refused the same way, and the next scheduled run is later than the wait.
 
 WHY MTProto AND NOT THE BOT API. The cloud Bot API refuses to download
 anything over 20 MB, and moving the bot to a self-hosted Bot API server —
@@ -31,13 +49,69 @@ import os
 import subprocess
 import sys
 import tempfile
+import time
 
 JOB_FILE = '/tmp/ingest.json'
+REPORTED = '/tmp/ingest.reported'
+
+# Waits up to this long are slept through by the client, inside the run. Five
+# minutes: long enough to absorb the waits Telegram asks of a bot that signs in
+# once and then downloads steadily, short enough that a run never sits idle
+# for longer than GitHub would take to schedule the next one anyway.
+SLEEP_THRESHOLD = 300
+
+# The run's own limits. Minutes against the workflow's 120, so the job in hand
+# can finish rather than be killed halfway with a part-written object and a
+# row stuck on 'running' until the seven-hour recovery in claim_ingest.
+BUDGET_MIN = int(os.environ.get('INGEST_BUDGET_MIN', '90') or 90)
+# A belt to the budget's braces. Nothing should queue this many at once, and a
+# loop that cannot end is worse than a queue that waits for the next tick.
+MAX_JOBS = int(os.environ.get('INGEST_MAX_JOBS', '40') or 40)
 
 
 def load_job():
     with open(JOB_FILE, 'r', encoding='utf-8') as fh:
         return json.load(fh)
+
+
+def _post(url, payload, bearer=None):
+    """POST JSON with curl; answer (status, parsed body).
+
+    curl rather than urllib so the body goes in a file and never onto a
+    command line, where it would be visible in the process list — it carries
+    the runner token. The response goes to a file for the same reason in the
+    other direction: a claim response carries a presigned PUT, and nothing
+    here prints it.
+    """
+    with tempfile.NamedTemporaryFile('w', suffix='.json', delete=False) as fh:
+        fh.write(json.dumps(payload))
+        body_path = fh.name
+    out_path = body_path + '.out'
+    cmd = ['curl', '-sS', '-o', out_path, '-w', '%{http_code}',
+           '-X', 'POST', url,
+           '-H', 'Content-Type: application/json', '-d', '@' + body_path]
+    if bearer:
+        # A header file, not `-H 'Authorization: …'`, for the same reason as
+        # the body: argv is readable by every process on the machine.
+        hdr_path = body_path + '.hdr'
+        with open(hdr_path, 'w') as hf:
+            hf.write('Authorization: Bearer %s\n' % bearer)
+        cmd += ['-H', '@' + hdr_path]
+    try:
+        r = subprocess.run(cmd, capture_output=True, text=True, check=False)
+        code = int((r.stdout or '0').strip() or 0)
+        try:
+            with open(out_path, 'r', encoding='utf-8') as fh:
+                parsed = json.load(fh)
+        except (OSError, ValueError):
+            parsed = {}
+        return code, parsed
+    finally:
+        for path in (body_path, out_path, body_path + '.hdr'):
+            try:
+                os.unlink(path)
+            except OSError:
+                pass
 
 
 def report(job, ok, note, size=None):
@@ -48,13 +122,13 @@ def report(job, ok, note, size=None):
     takes it back — during which the console shows a film as arriving that
     is not.
 
-    LEAVES A MARKER so the workflow's own failure reporter knows to stand
-    down. This script reports the reason it knows — "Telegram credentials are
-    not set on this repository" — and then exits non-zero, which is honest:
-    the job did fail. The `if: failure()` step then fired and reported a
-    second time with the generic "runner failed - see the Ingest run in
-    Actions", overwriting the one message that said what to actually do. Seen
-    happening in run #12, in that order, in one log.
+    LEAVES A MARKER naming THIS job, so the workflow's own failure reporter
+    knows to stand down for it. This script reports the reason it knows —
+    "Telegram credentials are not set on this repository" — and the
+    `if: failure()` step used to fire anyway and overwrite it with the generic
+    "runner failed - see the Ingest run in Actions". The marker holds the job
+    id rather than just existing, because one run now handles many jobs and
+    the backstop must only stand down for the one that was actually reported.
     """
     payload = {
         'op': 'done',
@@ -65,25 +139,54 @@ def report(job, ok, note, size=None):
     }
     if size is not None:
         payload['bytes'] = int(size)
-    body = json.dumps(payload)
-    # curl rather than urllib so the body goes in a file and never onto a
-    # command line, where it would be visible in the process list.
-    with tempfile.NamedTemporaryFile('w', suffix='.json', delete=False) as fh:
-        fh.write(body)
-        path = fh.name
-    subprocess.run(
-        ['curl', '-fsS', '-X', 'POST', job['done_url'],
-         '-H', 'Content-Type: application/json', '-d', '@' + path],
-        check=False,
-    )
-    os.unlink(path)
+    _post(job['done_url'], payload)
     # Best effort, and deliberately after the report: a marker written for a
     # report that never went out would silence the backstop.
     try:
-        with open('/tmp/ingest.reported', 'w') as fh:
-            fh.write('1')
+        with open(REPORTED, 'w') as fh:
+            fh.write(str(job['job_id']))
     except OSError:
         pass
+
+
+def defer(job, seconds):
+    """Give the job back without spending an attempt: Telegram said wait.
+
+    Marked as reported too — it has been dealt with, and the backstop saying
+    "runner failed" over it would turn a wait back into a failure.
+    """
+    _post(job['done_url'], {
+        'op': 'defer',
+        'token': os.environ['JOB_TOKEN'],
+        'job_id': job['job_id'],
+        'seconds': int(seconds or 0),
+    })
+    try:
+        with open(REPORTED, 'w') as fh:
+            fh.write(str(job['job_id']))
+    except OSError:
+        pass
+
+
+def claim_next():
+    """Ask for the next job. Writes JOB_FILE and answers it, or None.
+
+    JOB_FILE is overwritten on purpose: it always names the job IN HAND, which
+    is the one the workflow's crash backstop must report if this process dies.
+    """
+    code, body = _post(
+        os.environ['SB_URL'].rstrip('/') + '/functions/v1/ingest',
+        {'op': 'claim'},
+        bearer=os.environ['RUNNER_SECRET'],
+    )
+    if code != 200:
+        print('claim returned %s' % code)
+        return None
+    if not body.get('job_id'):
+        return None
+    with open(JOB_FILE, 'w', encoding='utf-8') as fh:
+        json.dump(body, fh)
+    return body
 
 
 def put_to_r2(path, url):
@@ -116,60 +219,42 @@ def put_to_r2(path, url):
     return size
 
 
-def main():
-    job = load_job()
-    api_id = os.environ.get('TG_API_ID', '')
-    api_hash = os.environ.get('TG_API_HASH', '')
-    bot_token = os.environ.get('TG_BOT_TOKEN', '')
-    if not api_id or not api_hash or not bot_token:
-        report(job, False, 'Telegram credentials are not set on this repository')
-        print('TELEGRAM_API_ID / TELEGRAM_API_HASH / TELEGRAM_BOT_TOKEN missing')
-        return 1
+class _Stop(Exception):
+    """End the run: whatever comes next would be refused the same way."""
 
+
+def fetch_one(app, job, flood_type):
+    """Move one job's file into R2 with an already signed-in client.
+
+    Reports the outcome itself, success or failure, EXCEPT for a FLOOD_WAIT
+    longer than the client was willing to sleep through: that is not this
+    file's outcome, so the job is deferred and the run ends.
+    """
     chat_id = job.get('tg_chat_id')
     message_id = job.get('tg_message_id')
     if not chat_id or not message_id:
         report(job, False, 'the job has no chat or message to fetch')
-        return 1
-
-    # Imported here rather than at the top so a missing dependency is
-    # reported to the console as a failed job instead of a stack trace in a
-    # log nobody reads.
-    try:
-        from pyrogram import Client
-    except Exception as exc:                       # noqa: BLE001
-        report(job, False, 'telegram client unavailable: %s' % exc)
-        return 1
+        return
 
     work = tempfile.mkdtemp(prefix='ingest-')
     target = os.path.join(work, 'payload.bin')
     try:
-        # `in_memory=True` so no .session file is written to the runner's
-        # disk. There is nothing to leak into an artifact and nothing to
-        # clean up; a fresh login per run costs one round trip.
-        with Client(
-            'ingest',
-            api_id=int(api_id),
-            api_hash=api_hash,
-            bot_token=bot_token,
-            in_memory=True,
-        ) as app:
-            msg = app.get_messages(int(chat_id), int(message_id))
-            if msg is None or getattr(msg, 'empty', False):
-                report(job, False, 'the forwarded message is gone')
-                return 1
-            # download_media writes the media of whichever kind the message
-            # holds — document, video or photo — which is why the message is
-            # fetched rather than a file id decoded.
-            got = app.download_media(msg, file_name=target)
-            if not got or not os.path.exists(target):
-                report(job, False, 'nothing was downloaded')
-                return 1
+        msg = app.get_messages(int(chat_id), int(message_id))
+        if msg is None or getattr(msg, 'empty', False):
+            report(job, False, 'the forwarded message is gone')
+            return
+        # download_media writes the media of whichever kind the message
+        # holds — document, video or photo — which is why the message is
+        # fetched rather than a file id decoded.
+        got = app.download_media(msg, file_name=target)
+        if not got or not os.path.exists(target):
+            report(job, False, 'nothing was downloaded')
+            return
 
         size = os.path.getsize(target)
         if size <= 0:
             report(job, False, 'downloaded zero bytes')
-            return 1
+            return
         print('downloaded %d bytes' % size)
 
         # WHAT TELEGRAM SAID VERSUS WHAT ARRIVED. A mismatch is not fatal —
@@ -184,13 +269,17 @@ def main():
         put = put_to_r2(target, job['put_url'])
         print('uploaded %d bytes' % put)
         report(job, True, 'ok', put)
-        return 0
+    except flood_type as exc:
+        seconds = int(getattr(exc, 'value', 0) or 0)
+        print('Telegram asked for a %ds wait; deferring and ending the run'
+              % seconds)
+        defer(job, seconds)
+        raise _Stop()
     except Exception as exc:                       # noqa: BLE001
         # The message is truncated and never includes the presigned URL: a
         # note goes into the database and the database is read by a console.
         report(job, False, 'ingest failed: %s' % str(exc)[:200])
         print('failed: %s' % exc)
-        return 1
     finally:
         try:
             if os.path.exists(target):
@@ -198,6 +287,89 @@ def main():
             os.rmdir(work)
         except OSError:
             pass
+
+
+def main():
+    job = load_job()
+    api_id = os.environ.get('TG_API_ID', '')
+    api_hash = os.environ.get('TG_API_HASH', '')
+    bot_token = os.environ.get('TG_BOT_TOKEN', '')
+    if not api_id or not api_hash or not bot_token:
+        # One job reported and the run ends. Every other job would fail for
+        # the same reason, and spending their attempts on it says nothing new.
+        report(job, False, 'Telegram credentials are not set on this repository')
+        print('TELEGRAM_API_ID / TELEGRAM_API_HASH / TELEGRAM_BOT_TOKEN missing')
+        return 1
+
+    # Imported here rather than at the top so a missing dependency is
+    # reported to the console as a failed job instead of a stack trace in a
+    # log nobody reads.
+    try:
+        from pyrogram import Client
+        from pyrogram.errors import FloodWait
+    except Exception as exc:                       # noqa: BLE001
+        report(job, False, 'telegram client unavailable: %s' % exc)
+        return 1
+
+    # `in_memory=True` so no .session file is written to the runner's disk:
+    # there is nothing to leak into an artifact and nothing to clean up.
+    # `sleep_threshold` makes the client itself sit through short FLOOD_WAITs
+    # — including on the sign-in — instead of raising them.
+    app = Client(
+        'ingest',
+        api_id=int(api_id),
+        api_hash=api_hash,
+        bot_token=bot_token,
+        in_memory=True,
+        sleep_threshold=SLEEP_THRESHOLD,
+    )
+    try:
+        app.start()
+    except FloodWait as exc:
+        seconds = int(getattr(exc, 'value', 0) or 0)
+        print('Telegram asked for a %ds wait before signing in; deferring'
+              % seconds)
+        defer(job, seconds)
+        return 0
+    except Exception as exc:                       # noqa: BLE001
+        # A bad api_id or a revoked token. Nothing else in the queue can
+        # succeed either, so one job carries the reason and the run ends.
+        report(job, False, 'could not sign in to Telegram: %s' % str(exc)[:200])
+        print('sign-in failed: %s' % exc)
+        return 1
+
+    deadline = time.time() + BUDGET_MIN * 60
+    handled = 0
+    try:
+        while True:
+            try:
+                fetch_one(app, job, FloodWait)
+            except _Stop:
+                break
+            handled += 1
+            if handled >= MAX_JOBS:
+                print('stopping at %d jobs; the next run takes the rest' % MAX_JOBS)
+                break
+            if time.time() >= deadline:
+                print('stopping after %dm; the next run takes the rest' % BUDGET_MIN)
+                break
+            job = claim_next()
+            if job is None:
+                print('queue is empty')
+                break
+            print('next job claimed')
+    finally:
+        try:
+            app.stop()
+        except Exception:                          # noqa: BLE001
+            pass
+
+    print('handled %d job(s) in one sign-in' % handled)
+    # ZERO even when a file failed: every failure has already been reported
+    # to the database, which is where the operator looks. A red run for a
+    # file that was simply unreachable tells nobody anything new — and would
+    # fire the crash backstop over a job that was already dealt with.
+    return 0
 
 
 if __name__ == '__main__':

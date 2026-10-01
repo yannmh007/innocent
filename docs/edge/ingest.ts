@@ -552,6 +552,32 @@ Deno.serve(async (req: Request) => {
     return json({ ok: true, result }, 200, req);
   }
 
+  // ── defer ────────────────────────────────────────────────────────────────
+  //
+  // Give a claimed job back WITHOUT spending an attempt on it.
+  //
+  // For one reason only: Telegram answered FLOOD_WAIT. That is Telegram's
+  // scheduling, not a verdict on the file, and reporting it through `done`
+  // with ok=false counted it as one of the job's three tries. The first run
+  // that drained a whole queue signed in once per file, was throttled, and
+  // burned three tries on each of seven good files in under a minute — every
+  // one of them marked dead for a wait of about seven minutes. The runner
+  // signs in once per run now; this is what keeps a wait from killing a film
+  // on the day Telegram is slow anyway.
+  //
+  // Runner-only, with the same token as `done`. `defer_ingest` refuses any
+  // job that is not currently claimed, so this cannot be used to reset a
+  // failed job's attempts and run it a fourth time.
+  if (op === 'defer') {
+    const given = String(body.token ?? '');
+    if (!sameSecret(given, RUNNER_SECRET)) return json({ error: 'no' }, 403, req);
+    const jobId = String(body.job_id ?? '');
+    if (!jobId) return json({ error: 'no_job' }, 400, req);
+    const seconds = Math.max(0, Math.floor(Number(body.seconds ?? 0)) || 0);
+    const result = await rpc('defer_ingest', { p_job: jobId, p_seconds: seconds });
+    return json({ ok: true, result }, 200, req);
+  }
+
   // ── release ──────────────────────────────────────────────────────────────
   //
   // A presigned PUT for an APK, in the PUBLIC bucket.
