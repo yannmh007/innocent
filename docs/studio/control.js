@@ -264,6 +264,7 @@ async function loadSecurity() {
   catch (e) { body.append(el('div', { className: 'msg bad' }, text(String(e.message || e)))); return; }
 
   const req = el('input', { type: 'checkbox', checked: st.require_mfa === true });
+  const two = el('input', { type: 'checkbox', checked: st.two_person === true });
   const idle = el('input', { type: 'number', min: 5, max: 480, value: st.idle_minutes ?? 30, style: 'width:90px' });
   const step = el('input', { type: 'number', min: 1, max: 120, value: st.stepup_minutes ?? 10, style: 'width:90px' });
   const save = el('button', { className: 'b p', type: 'button' }, text('Save rules'));
@@ -274,6 +275,10 @@ async function loadSecurity() {
       'Switch this on only when every admin on the Admins page shows "2-step on" — the server ' +
       'refuses otherwise, because an admin with no authenticator could have one added by ' +
       'whoever holds their Google session.')),
+    el('label', { style: 'display:flex;gap:8px;align-items:center;font-size:13px;color:var(--fg);margin-top:10px' },
+      [two, text('Two-person rule: whoever made a title cannot approve it')]),
+    el('p', { className: 'hint' }, text(
+      'Needs at least two editors or owners, or nothing could ever be approved.')),
     el('div', { className: 'cr-form', style: 'margin-top:8px' }, [
       el('div', {}, [el('label', {}, text('Sign out after (minutes idle)')), idle]),
       el('div', {}, [el('label', {}, text('Fresh code for deletes (minutes)')), step]),
@@ -283,7 +288,7 @@ async function loadSecurity() {
   save.onclick = async () => {
     save.disabled = true;
     try {
-      await api({ op: 'settingsSave', require_mfa: req.checked,
+      await api({ op: 'settingsSave', require_mfa: req.checked, two_person: two.checked,
         idle_minutes: Number(idle.value), stepup_minutes: Number(step.value) });
       ME.idleMinutes = Number(idle.value);
       ME.stepupMinutes = Number(step.value);
@@ -291,6 +296,7 @@ async function loadSecurity() {
     } catch (e) {
       say('bad', String(e.message || e));
       req.checked = st.require_mfa === true;
+      two.checked = st.two_person === true;
     }
     save.disabled = false;
   };
@@ -411,6 +417,10 @@ const CR_ACTIONS = {
   attach: 'filed a Telegram file', attach_folder: 'filed a Telegram album',
   create_title: 'made a title from Telegram', retry: 'retried a Telegram file',
   queue: 'queued streaming copies',
+  reviewSubmit: 'sent a title for review', reviewApprove: 'APPROVED a title',
+  reviewSendBack: 'sent a title back', reviewReject: 'rejected a title',
+  reviewReopen: 'reopened a title', unpublish: 'took a title down',
+  discard: 'discarded Telegram files',
 };
 
 function drawFeed(rows) {

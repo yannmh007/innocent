@@ -811,6 +811,9 @@ const NEED: Record<string, Role> = {
   list: 'viewer',
   attach: 'uploader', attach_folder: 'uploader', create_title: 'uploader',
   retry: 'uploader',
+  // Taking forwarded files out of the inbox is a decision about what the
+  // catalogue receives, so it is an editor's — the review queue's reject.
+  discard: 'editor',
 };
 
 /// An uploader may file Telegram's files into a title only while that title
@@ -946,6 +949,23 @@ async function consoleOp(
     if (!jobId) return json({ error: 'no_job' }, 400, req);
     const result = await rpc('retry_ingest', { p_job: jobId });
     return json({ ok: true, result }, 200, req);
+  }
+
+  // ── discard ──────────────────────────────────────────────────────────────
+  //
+  // "I forwarded that by mistake." One file, or every finished file of one
+  // folder that is in no title, leaves the inbox. `discard_ingest` never
+  // touches a queued or running job (the runner holds those) or a filed one.
+  // The rows go, so the same file can be forwarded again on purpose; the
+  // object stays in R2 for the Files page to list as unused.
+  if (op === 'discard') {
+    const jobId = String(body.job_id ?? '');
+    const folder = String(body.folder ?? '');
+    if (!jobId && !folder) return json({ error: 'no_job_or_folder' }, 400, req);
+    const n = await rpc('discard_ingest', {
+      p_job: jobId || null, p_folder: jobId ? null : folder,
+    });
+    return json({ ok: true, discarded: Number(n) || 0 }, 200, req);
   }
 
   return json({ error: 'unknown_op' }, 400, req);

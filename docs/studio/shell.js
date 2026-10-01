@@ -21,9 +21,10 @@
 /// is any use to. `bar` marks the four pages on a phone's bottom bar.
 const SH_PAGES = [
   { tab: 'dashboard', route: 'dashboard', label: 'Dashboard', group: 'Overview', need: 'viewer', icon: 'grid', bar: 1 },
-  { tab: 'catalogue', route: 'library', label: 'Library', group: 'Content', need: 'viewer', icon: 'film', bar: 2 },
-  { tab: 'new', route: 'upload', label: 'Upload', group: 'Content', need: 'uploader', icon: 'upload', bar: 3 },
-  { tab: 'telegram', route: 'telegram', label: 'Telegram', group: 'Content', need: 'viewer', icon: 'send', bar: 4, badge: 'telegram' },
+  { tab: 'review', route: 'review', label: 'Review', group: 'Content', need: 'viewer', icon: 'check', bar: 2, badge: 'review' },
+  { tab: 'catalogue', route: 'library', label: 'Library', group: 'Content', need: 'viewer', icon: 'film', bar: 3 },
+  { tab: 'new', route: 'upload', label: 'Upload', group: 'Content', need: 'uploader', icon: 'upload', bar: 4 },
+  { tab: 'telegram', route: 'telegram', label: 'Telegram', group: 'Content', need: 'viewer', icon: 'send', bar: 5, badge: 'telegram' },
   { tab: 'cats', route: 'categories', label: 'Categories', group: 'Content', need: 'viewer', icon: 'tag' },
   { tab: 'requests', route: 'requests', label: 'Requests', group: 'Business', need: 'viewer', icon: 'inbox', badge: 'requests' },
   { tab: 'stats', route: 'insights', label: 'Insights', group: 'Business', need: 'viewer', icon: 'chart' },
@@ -52,6 +53,7 @@ const SH_ICONS = {
   users: 'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM2 21v-1a6 6 0 0 1 12 0v1M16 3.5a4 4 0 0 1 0 7.5M22 21v-1a6 6 0 0 0-4-5.6',
   shield: 'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6zM9 12l2 2 4-4',
   more: 'M5 12h.01M12 12h.01M19 12h.01',
+  check: 'M4 12.5l5 5L20 6.5',
 };
 
 function shIcon(name) {
@@ -285,7 +287,12 @@ async function refreshBadges() {
 
 function shApplySummary(s) {
   const tg = s.telegram || {};
+  const rv = s.review || {};
+  // WHAT IS WAITING FOR THIS PERSON. An editor's badge counts what waits for
+  // an approval; an uploader's counts what was sent back to them.
+  const decides = !!ME && SH_RANK[ME.role] >= SH_RANK.editor;
   shBadges = {
+    review: decides ? { n: rv.waiting || 0, bad: false } : { n: rv.mine || 0, bad: true },
     telegram: { n: (tg.unattached || 0) + (tg.failed || 0), bad: (tg.failed || 0) > 0 },
     requests: { n: s.requests || 0, bad: false },
   };
@@ -330,8 +337,9 @@ async function loadDashboard() {
     ]);
     kpis.append(a);
   };
+  const rv = s.review || {};
   kpi('Live', t.live ?? 0, 'titles in the app', '#/library');
-  kpi('Drafts', t.drafts ?? 0, 'not yet published', '#/library', t.drafts ? 'warn' : '');
+  kpi('Review', rv.waiting ?? 0, 'waiting for approval', '#/review', rv.waiting ? 'warn' : '');
   kpi('Telegram', (tg.queued || 0) + (tg.running || 0),
     tg.running ? tg.running + ' fetching now' : 'waiting to fetch', '#/telegram');
   kpi('Requests', s.requests ?? 0, 'premium, waiting', '#/requests', s.requests ? 'warn' : '');
@@ -344,12 +352,14 @@ async function loadDashboard() {
     el('span', {}, text(words)),
     el('span', { className: 'cr-go' }, text('›')),
   ]));
-  if (tg.failed) item('bad', tg.failed + ' Telegram file(s) failed to fetch — try again or forward them again', '#/telegram');
-  if (tg.unattached) item('', tg.unattached + ' Telegram file(s) fetched and not yet in a title', '#/telegram');
   // Approving is an editor's; an uploader is shown what they can act on.
   const canApprove = SH_RANK[ME.role] >= SH_RANK.editor;
+  if (rv.mine) item('bad', rv.mine + ' of your title(s) sent back with a note — fix and send again', '#/review');
+  if (canApprove && rv.waiting) item('', rv.waiting + ' title(s) waiting for your approval', '#/review');
+  if (tg.failed) item('bad', tg.failed + ' Telegram file(s) failed to fetch — try again or forward them again', '#/telegram');
+  if (tg.unattached) item('', tg.unattached + ' Telegram file(s) in no title yet — make titles from them on Review', '#/review');
   if (s.requests && canApprove) item('', s.requests + ' premium request(s) waiting for approval', '#/requests');
-  if (t.drafts) item('', t.drafts + ' draft title(s) not yet published', '#/library');
+  if (t.drafts) item('', t.drafts + ' draft title(s) not in the app', '#/review');
   if (!todo.childNodes.length) {
     todo.append(el('div', { className: 'empty' }, text('Nothing is waiting. All clear.')));
   }
@@ -413,6 +423,13 @@ function explainError(code, status) {
     bad_email: 'That is not an email address.',
     already_disabled: 'That admin is already removed.',
     unknown_op: 'This console is newer than the server — the server has not been updated yet.',
+    two_person: 'The person who made a title cannot also approve it (two-person rule).',
+    needs_two_approvers: 'The two-person rule needs at least two editors or owners.',
+    note_required: 'Say what needs changing.',
+    no_files: 'A title with no files cannot be sent or approved.',
+    bad_state: 'Somebody has already moved this title on — reload to see where it is.',
+    already_live: 'It is already in the app.',
+    not_live: 'It is not in the app.',
   }[c];
   return words ? words + ' (' + c + ')' : c;
 }

@@ -3,7 +3,8 @@
 The page: <https://yannmh007.github.io/innocent/studio/>
 The API:  `docs/edge/studio.ts`, deployed as the `studio` edge function.
 
-Pick files, type a name, tap Publish. The file goes from the phone straight
+Pick files, type a name, save. It is a draft until an editor approves it on
+Review. The file goes from the phone straight
 to R2 — never through the function — so the only size ceiling is R2's own,
 5 GiB in a single PUT. Above that the function refuses before the first byte
 rather than letting an hour of uploading end in a CORS error: multipart is
@@ -28,6 +29,12 @@ activity.
 attempts. **Admins** (owner) — add, re-role, remove. **Security** — set up
 the authenticator for your own account; owners also set the console rules
 (2-step required, idle sign-out, fresh-code window).
+
+**Review** — the queue everything waits in before it reaches the app:
+drafts, titles sent for review, ones sent back with a note, and Telegram
+files not yet in a title. Approve / Send back / Reject / Take down, and ▶ on a
+video tile to watch it in the console first (`review.js`). See RUNBOOK →
+*The review queue*.
 
 **Telegram** — what was forwarded to the bot, grouped by album, with *New
 title from this*. **Files** (editor+) — unused objects and unfinished uploads
@@ -60,9 +67,10 @@ project at all.
 poster, or no assets), start-up checks, streaming copies and the stream
 secret.
 
-The page is three files: `index.html` (the pages), `shell.js` (menu, routes,
-dashboard, idle sign-out) and `control.js` (2-step sign-in, Security, Admins,
-Activity). supabase-js is vendored in `vendor/`, pinned to one version with an
+The page is four files: `index.html` (the pages), `shell.js` (menu, routes,
+dashboard, idle sign-out), `control.js` (2-step sign-in, Security, Admins,
+Activity) and `review.js` (the review queue, the editor's review bar, the
+in-console preview). supabase-js is vendored in `vendor/`, pinned to one version with an
 integrity hash — not loaded from a CDN. `tool/js/console_smoke.mjs` drives the
 page in Chromium against a fake backend for each role.
 

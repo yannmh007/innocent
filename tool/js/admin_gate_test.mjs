@@ -116,6 +116,24 @@ const show = (s) => [...s].sort().join(', ');
     need.publish === 'editor' && need.approve === 'editor');
   check('studio: deleting a title needs a fresh code', dangerous.has('deleteTitle'));
 
+  // THE REVIEW QUEUE. Approving puts a title in front of paying viewers.
+  check('studio: approving, sending back, rejecting and taking down are an editor\'s',
+    need.reviewApprove === 'editor' && need.reviewSendBack === 'editor' &&
+    need.reviewReject === 'editor' && need.unpublish === 'editor');
+  check('studio: an uploader may send their own draft for review',
+    need.reviewSubmit === 'uploader' &&
+    /op === 'reviewSubmit' \|\| op === 'reviewReopen'/.test(s));
+  check('studio: a new title is always a draft, whatever the page asks',
+    /const wantPublished = false;/.test(s));
+  check('studio: save cannot publish around the review',
+    /p_action: publishTo \? 'approve' : 'unpublish'/.test(s) &&
+    !/upd\.published = /.test(s));
+  check('studio: every decision goes through review_decide',
+    /rpc\('review_decide'/.test(s) &&
+    !/from\('titles'\)\.update\(\{[^}]*published: true/.test(s));
+  check('studio: a preview link lives ten minutes',
+    /const seconds = 600;/.test(s));
+
   // The order of the checks in the handler. Role before step-up before the
   // uploader's ownership rule, and all of them before handleOp runs.
   const serve = s.slice(s.indexOf('Deno.serve('), s.indexOf('async function handleOp('));

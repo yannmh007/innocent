@@ -87,6 +87,16 @@ const TG_CHATS = (Deno.env.get('TELEGRAM_CHAT_IDS') ?? '')
 
 const EXPIRY_SECONDS = 3600; // An hour: a long video on a Myanmar connection.
 
+// The streaming Worker, for the review page's preview. The same two values
+// request-playback mints viewers' tokens from, so an admin previews a film
+// over the path a viewer will watch it on. Absent, the preview falls back to
+// a presigned GET straight from R2.
+const STREAM_BASE = (Deno.env.get('STREAM_BASE') ?? '').replace(/\/+$/, '');
+const STREAM_TOKEN_SECRET = Deno.env.get('STREAM_TOKEN_SECRET') ?? '';
+
+/// Where the console links to from a Telegram notice.
+const CONSOLE_URL = 'https://yannmh007.github.io/innocent/studio/';
+
 // --- AWS SigV4 query signing ------------------------------------------------
 // Identical to request-playback.ts. See that file for why each piece is the
 // way it is; the notes are not repeated here so the two cannot drift by having
@@ -128,6 +138,7 @@ async function presignPut(
   bucket: string,
   objectKey: string,
   extraQuery: Record<string, string> = {},
+  method: string = 'PUT',
 ): Promise<string> {
   const host = `${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`;
   const now = new Date();
@@ -140,7 +151,9 @@ async function presignPut(
     'X-Amz-Algorithm': 'AWS4-HMAC-SHA256',
     'X-Amz-Credential': `${R2_ACCESS_KEY_ID}/${scope}`,
     'X-Amz-Date': amzDate,
-    'X-Amz-Expires': String(EXPIRY_SECONDS),
+    // A caller may ask for a shorter life (the review preview does); the
+    // default is the hour an upload part needs.
+    'X-Amz-Expires': extraQuery['X-Amz-Expires'] ?? String(EXPIRY_SECONDS),
     'X-Amz-SignedHeaders': 'host',
   };
   const canonicalQuery = Object.keys(params).sort()
@@ -157,7 +170,7 @@ async function presignPut(
   // it would force the browser to send exactly the type we guessed, and a
   // phone's file picker reports types this code has no business predicting.
   const canonicalRequest = [
-    'PUT',
+    method,
     canonicalPath,
     canonicalQuery,
     `host:${host}\n`,
@@ -598,6 +611,12 @@ const NEED: Record<string, Role> = {
   create: 'uploader', save: 'uploader', addAssets: 'uploader',
   updateAsset: 'uploader', reorder: 'uploader', setPrimary: 'uploader',
   deleteAsset: 'uploader',
+  // review — looking is anyone's; sending your own draft is an uploader's;
+  // deciding is an editor's (and review_decide checks all of it again)
+  reviewQueue: 'viewer', reviewHistory: 'viewer', previewUrl: 'viewer',
+  reviewSubmit: 'uploader', reviewReopen: 'uploader',
+  reviewApprove: 'editor', reviewSendBack: 'editor', reviewReject: 'editor',
+  unpublish: 'editor',
   // publishing and the business
   publish: 'editor', approve: 'editor', reject: 'editor',
   saveCategory: 'editor', addCategory: 'editor', selftest: 'editor',
@@ -614,6 +633,7 @@ const READS = new Set([
   'whoami', 'summary', 'list', 'get', 'requests', 'stats', 'categories',
   'health', 'checkFolder', 'folder', 'selftest', 'audit', 'admins', 'settings',
   'sign', 'beginMultipart', 'signParts',
+  'reviewQueue', 'reviewHistory', 'previewUrl',
 ]);
 
 /// What cannot be undone, or hands out power: these need an authenticator code
@@ -649,6 +669,8 @@ async function uploaderRefusal(
     titles = [String(body.id ?? '')];
   } else if (op === 'addAssets') {
     titles = [String(body.titleId ?? '')];
+  } else if (op === 'reviewSubmit' || op === 'reviewReopen') {
+    titles = [String(body.id ?? '')];
   } else if (
     op === 'updateAsset' || op === 'setPrimary' || op === 'reorder' ||
     op === 'deleteAsset'
@@ -677,29 +699,59 @@ async function uploaderRefusal(
   return null;
 }
 
-/// Tell the owner, in Telegram, that somebody has just signed in to the
-/// console — once per session. An admin account being used by somebody else
-/// is the attack this whole page is shaped around, and the person most likely
-/// to notice a sign-in they did not make is the one it is announced to.
-async function announceSignIn(who: Admin): Promise<void> {
+/// A Worker URL for one object, valid for [seconds]. THE SAME TOKEN as
+/// request-playback.ts's workerUrl — AES-GCM over {k, e} with the SHA-256 of
+/// the shared secret — so the Worker cannot tell an admin's preview from a
+/// viewer's play. tool/js/stream_token_test.mjs opens one of these with the
+/// Worker's own code.
+async function previewStreamUrl(objectKey: string, seconds: number): Promise<string | null> {
+  if (!STREAM_BASE || !STREAM_TOKEN_SECRET) return null;
+  const key = await crypto.subtle.importKey(
+    'raw',
+    await crypto.subtle.digest('SHA-256', enc.encode(STREAM_TOKEN_SECRET)),
+    { name: 'AES-GCM' }, false, ['encrypt'],
+  );
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const sealed = new Uint8Array(await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv }, key,
+    enc.encode(JSON.stringify({ k: objectKey, e: Math.floor(Date.now() / 1000) + seconds })),
+  ));
+  const token = new Uint8Array(iv.length + sealed.length);
+  token.set(iv, 0);
+  token.set(sealed, iv.length);
+  const b64 = btoa(String.fromCharCode(...token))
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  return `${STREAM_BASE}/v/${b64}`;
+}
+
+/// One message to the owner's Telegram chats. Best effort: nothing the
+/// console does may fail because Telegram did not answer.
+async function tellOwner(text: string): Promise<void> {
   if (!BOT_TOKEN || !TG_CHATS.length) return;
-  // Myanmar time, which is what the owner's phone shows: UTC+6:30.
-  const mmt = new Date(Date.now() + 6.5 * 3600 * 1000).toISOString()
-    .slice(0, 16).replace('T', ' ');
-  const text = `Console sign-in\n${who.email} (${who.role})\n` +
-    `2-step: ${who.aal === 'aal2' ? 'yes' : 'NO'}\n${mmt} Myanmar time\n` +
-    'If this was not you, remove the admin on the Admins page.';
   for (const chat of TG_CHATS) {
     try {
       await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chat_id: chat, text }),
+        body: JSON.stringify({ chat_id: chat, text, disable_web_page_preview: true }),
       });
     } catch {
-      // Best effort: a sign-in must not fail because Telegram did not answer.
+      // Best effort.
     }
   }
+}
+
+/// Tell the owner, in Telegram, that somebody has just signed in to the
+/// console — once per session. An admin account being used by somebody else
+/// is the attack this whole page is shaped around, and the person most likely
+/// to notice a sign-in they did not make is the one it is announced to.
+async function announceSignIn(who: Admin): Promise<void> {
+  // Myanmar time, which is what the owner's phone shows: UTC+6:30.
+  const mmt = new Date(Date.now() + 6.5 * 3600 * 1000).toISOString()
+    .slice(0, 16).replace('T', ' ');
+  await tellOwner(`Console sign-in\n${who.email} (${who.role})\n` +
+    `2-step: ${who.aal === 'aal2' ? 'yes' : 'NO'}\n${mmt} Myanmar time\n` +
+    'If this was not you, remove the admin on the Admins page.');
 }
 
 Deno.serve(async (req: Request) => {
@@ -790,7 +842,8 @@ async function handleOp(
   const TITLE_COLS =
     'id,title,title_mm,synopsis,category,poster_url,year,rating,quality_label,' +
     'genres,keywords,episode_count,view_count,access_tier,photo_count,' +
-    'video_count,is_featured,locator,provider,published,status,slug,created_at';
+    'video_count,is_featured,locator,provider,published,status,slug,created_at,' +
+    'created_by,review_state,review_note,submitted_at,decided_at';
 
   // --- sign: hand back one presigned PUT URL -------------------------------
   //
@@ -1099,6 +1152,7 @@ async function handleOp(
 
     if (body.status === 'draft') sel = sel.eq('published', false);
     if (body.status === 'published') sel = sel.eq('published', true);
+    if (body.status === 'ready') sel = sel.eq('published', false).eq('review_state', 'ready');
     if (body.category) sel = sel.eq('category', String(body.category));
     // Quoted: a comma or a parenthesis in the search text would otherwise
     // rewrite the or-group rather than be matched by it. Stripped rather than
@@ -1184,7 +1238,11 @@ async function handleOp(
     if (incoming.length === 0) return json({ error: 'no_assets' }, 400, req);
 
     const db = admin();
-    const wantPublished = body.publish === true;
+    // ALWAYS A DRAFT, whatever the page asks. Since the review queue, nothing
+    // reaches the app without an editor's Approve — and this was the one door
+    // that published on creation, by default, from a checkbox that started
+    // ticked. `publish` is still read from old pages and ignored.
+    const wantPublished = false;
 
     // `locator` and `poster_url` are MAINTAINED DENORMALISATIONS: a trigger on
     // title_assets rewrites both from whichever asset is primary. They are set
@@ -1284,18 +1342,34 @@ async function handleOp(
     }
     if ('is_featured' in p) upd.is_featured = p.is_featured === true;
     if ('locator' in p) upd.locator = str(p.locator);
-    if ('published' in p) {
-      upd.published = p.published === true;
-      // `status` and `published` are two columns saying one thing, and the
-      // catalogue_health view reads `status` while every client path reads
-      // `published`. Writing one without the other is how they disagree.
-      upd.status = p.published === true ? 'published' : 'draft';
+    // PUBLISHING GOES THROUGH THE REVIEW, not around it. An older page still
+    // sends `published` from its checkbox; it is turned into an approve or an
+    // unpublish by review_decide, which checks the role, the files and the
+    // two-person rule and writes the history — the same as the Review page.
+    const publishTo = 'published' in p ? p.published === true : null;
+    if (Object.keys(upd).length === 0 && publishTo === null) {
+      return json({ error: 'empty_patch' }, 400, req);
     }
-    if (Object.keys(upd).length === 0) return json({ error: 'empty_patch' }, 400, req);
     if ('title' in upd && !upd.title) return json({ error: 'no_title' }, 400, req);
 
-    const { error } = await admin().from('titles').update(upd).eq('id', id);
-    if (error) return json({ error: 'save_failed', detail: error.message }, 500, req);
+    if (Object.keys(upd).length) {
+      const { error } = await admin().from('titles').update(upd).eq('id', id);
+      if (error) return json({ error: 'save_failed', detail: error.message }, 500, req);
+    }
+    if (publishTo !== null) {
+      const { data: now } = await admin().from('titles')
+        .select('published').eq('id', id).maybeSingle();
+      if (now && now.published !== publishTo) {
+        const { data: word, error } = await admin().rpc('review_decide', {
+          p_title: id, p_actor: who.id,
+          p_action: publishTo ? 'approve' : 'unpublish', p_note: null,
+        });
+        if (error) return json({ error: 'save_failed', detail: error.message }, 500, req);
+        if (word !== 'approved' && word !== 'unpublished') {
+          return json({ error: String(word) }, 409, req);
+        }
+      }
+    }
     return json({ ok: true, id, changed: Object.keys(upd) }, 200, req);
   }
 
@@ -1683,6 +1757,9 @@ async function handleOp(
     });
     if (isNew === true) await announceSignIn(who);
     return json({
+      // The page compares it with a title's created_by, to know which drafts
+      // are this admin's own. Not a secret: it is in their own token.
+      id: who.id,
       email: who.email,
       role: who.role,
       aal: who.aal,
@@ -1697,7 +1774,8 @@ async function handleOp(
     const db = admin();
     const count = async (q: PromiseLike<{ count: number | null }>) =>
       (await q).count ?? 0;
-    const [live, drafts, requests, queued, running, failed, unattached] =
+    const [live, drafts, requests, queued, running, failed, unattached,
+      waiting, sentBack, mineBack] =
       await Promise.all([
         count(db.from('titles').select('id', { count: 'exact', head: true })
           .eq('published', true)),
@@ -1712,6 +1790,12 @@ async function handleOp(
           .eq('state', 'failed')),
         count(db.from('ingest_jobs').select('id', { count: 'exact', head: true })
           .eq('state', 'done').is('title_id', null)),
+        count(db.from('titles').select('id', { count: 'exact', head: true })
+          .eq('published', false).eq('review_state', 'ready')),
+        count(db.from('titles').select('id', { count: 'exact', head: true })
+          .eq('published', false).eq('review_state', 'changes')),
+        count(db.from('titles').select('id', { count: 'exact', head: true })
+          .eq('published', false).eq('review_state', 'changes').eq('created_by', who.id)),
       ]);
     // The recent activity is the audit log, which is an editor's to read.
     let recent: unknown[] = [];
@@ -1724,6 +1808,8 @@ async function handleOp(
     return json({
       titles: { live, drafts },
       telegram: { queued, running, failed, unattached },
+      // `mine` is what was sent back to THIS admin — the uploader's to-do.
+      review: { waiting, sentBack, mine: mineBack },
       requests,
       recent,
     }, 200, req);
@@ -1788,7 +1874,7 @@ async function handleOp(
   // ── settings / settingsSave: the security switches ──────────────────────
   if (body.op === 'settings') {
     const { data, error } = await admin().from('admin_settings')
-      .select('require_mfa,stepup_minutes,idle_minutes,updated_at').eq('id', true)
+      .select('require_mfa,stepup_minutes,idle_minutes,two_person,updated_at').eq('id', true)
       .maybeSingle();
     if (error) return json({ error: 'settings_failed', detail: error.message }, 500, req);
     return json({ settings: data }, 200, req);
@@ -1821,6 +1907,22 @@ async function handleOp(
       }
       upd.require_mfa = on;
     }
+    if ('two_person' in body) {
+      const on = body.two_person === true;
+      // NOT WITH ONE APPROVER. With the rule on, the person who made a title
+      // cannot approve it — and if they are the only editor or owner, nothing
+      // they make could ever go live.
+      if (on) {
+        const { data: list } = await admin().rpc('admin_list');
+        const approvers = ((list ?? []) as Array<Record<string, unknown>>)
+          .filter((a) => a.disabled !== true &&
+            (a.role === 'editor' || a.role === 'owner'));
+        if (approvers.length < 2) {
+          return json({ error: 'needs_two_approvers' }, 400, req);
+        }
+      }
+      upd.two_person = on;
+    }
     if ('idle_minutes' in body) {
       const v = Math.round(Number(body.idle_minutes));
       if (!(v >= 5 && v <= 480)) return json({ error: 'bad_idle_minutes' }, 400, req);
@@ -1834,6 +1936,106 @@ async function handleOp(
     const { error } = await admin().from('admin_settings').update(upd).eq('id', true);
     if (error) return json({ error: 'settings_failed', detail: error.message }, 500, req);
     return json({ ok: true }, 200, req);
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // THE REVIEW QUEUE
+  // ═══════════════════════════════════════════════════════════════════════
+
+  // ── reviewQueue: everything not live, the ones waiting first ────────────
+  if (body.op === 'reviewQueue') {
+    const { data, error } = await admin().rpc('review_queue');
+    if (error) return json({ error: 'queue_failed', detail: error.message }, 500, req);
+    return json({ rows: data ?? [], me: who.id }, 200, req);
+  }
+
+  // ── reviewHistory: who sent, approved, sent back — for one title ────────
+  if (body.op === 'reviewHistory') {
+    const id = String(body.id ?? '');
+    if (!id) return json({ error: 'no_id' }, 400, req);
+    const { data, error } = await admin().from('title_reviews')
+      .select('at,actor_email,action,note').eq('title_id', id)
+      .order('at', { ascending: false }).limit(50);
+    if (error) return json({ error: 'history_failed', detail: error.message }, 500, req);
+    return json({ rows: data ?? [] }, 200, req);
+  }
+
+  // ── the decisions: one door, review_decide ──────────────────────────────
+  //
+  // The database checks the role, the state, the files and the two-person
+  // rule, locks the row and writes the history; this only translates its
+  // answer. A refusal comes back as its own word, which the page explains.
+  if (body.op === 'reviewSubmit' || body.op === 'reviewApprove' ||
+      body.op === 'reviewSendBack' || body.op === 'reviewReject' ||
+      body.op === 'reviewReopen' || body.op === 'unpublish') {
+    const id = String(body.id ?? '');
+    if (!id) return json({ error: 'no_id' }, 400, req);
+    const action = ({
+      reviewSubmit: 'submit', reviewApprove: 'approve', reviewSendBack: 'send_back',
+      reviewReject: 'reject', reviewReopen: 'reopen', unpublish: 'unpublish',
+    } as Record<string, string>)[String(body.op)];
+    const note = String(body.note ?? '').slice(0, 1000);
+    const db = admin();
+    const { data: word, error } = await db.rpc('review_decide', {
+      p_title: id, p_actor: who.id, p_action: action, p_note: note || null,
+    });
+    if (error) return json({ error: 'decide_failed', detail: error.message }, 500, req);
+    const result = String(word ?? '');
+    const done = ['submitted', 'approved', 'sent_back', 'rejected', 'reopened', 'unpublished'];
+    if (!done.includes(result)) {
+      return json({ error: result || 'decide_failed' },
+        result === 'not_allowed' || result === 'two_person' ? 403 : 409, req);
+    }
+    // "PLEASE LOOK" REACHES A PERSON. Sending for review tells the owner's
+    // Telegram, with how many are now waiting, so the queue is not something
+    // somebody has to remember to open.
+    if (result === 'submitted') {
+      const [{ data: t }, { count }] = await Promise.all([
+        db.from('titles').select('title').eq('id', id).maybeSingle(),
+        db.from('titles').select('id', { count: 'exact', head: true })
+          .eq('published', false).eq('review_state', 'ready'),
+      ]);
+      await tellOwner(`Waiting for review: "${String(t?.title ?? '')}"\n` +
+        `sent by ${who.email}\n${count ?? 1} waiting in all.\n${CONSOLE_URL}#/review`);
+    }
+    return json({ ok: true, result }, 200, req);
+  }
+
+  // ── previewUrl: watch a file inside the console before approving it ─────
+  //
+  // A PHOTO is public already. A VIDEO is in the private bucket, so this
+  // hands back a short-lived URL: through the Worker when it is set up (the
+  // path viewers use), a presigned GET otherwise. Ten minutes — enough to
+  // watch a trailer or skip through a film, short enough that a copied link
+  // is worth nothing by the time anyone could share it.
+  //
+  // THE SMALLEST GOOD COPY, not the master. An admin previewing on a phone
+  // over mobile data wants to see the film, not pull a 4K master; a 720p
+  // (or the nearest below it) streaming copy is chosen when one exists.
+  if (body.op === 'previewUrl') {
+    const id = String(body.id ?? '');
+    if (!id) return json({ error: 'no_id' }, 400, req);
+    const db = admin();
+    const { data: a, error } = await db.from('title_assets')
+      .select('id,kind,bucket,object_key').eq('id', id).maybeSingle();
+    if (error) return json({ error: 'preview_failed', detail: error.message }, 500, req);
+    if (!a) return json({ error: 'no_such_asset' }, 404, req);
+    if (a.kind === 'photo' || a.bucket === PUBLIC_BUCKET) {
+      return json({ url: `${PUBLIC_BASE}/${a.object_key}`, kind: 'photo' }, 200, req);
+    }
+    const { data: rungs } = await db.from('asset_renditions')
+      .select('height,object_key').eq('asset_id', id).order('height');
+    const list = (rungs ?? []) as Array<{ height: number; object_key: string }>;
+    const pick = list.filter((r) => r.height <= 720).pop() ?? list[0] ?? null;
+    const key = pick ? pick.object_key : String(a.object_key);
+    const seconds = 600;
+    const viaWorker = await previewStreamUrl(key, seconds).catch(() => null);
+    const url = viaWorker ??
+      await presignPut(MEDIA_BUCKET, key, { 'X-Amz-Expires': String(seconds) }, 'GET');
+    return json({
+      url, kind: 'video', height: pick ? pick.height : null,
+      via: viaWorker ? 'worker' : 'r2',
+    }, 200, req);
   }
 
   return json({ error: 'unknown_op' }, 400, req);

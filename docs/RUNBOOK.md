@@ -204,8 +204,9 @@ credentials are not set on this repository`.
 
 **Then, for every film:** forward it to the bot **as a file/document**, with
 the folder name as the caption. The bot replies "Queued". When it says done,
-choose which title it belongs to in the console — that creates the catalogue
-row and queues the ladder.
+make a title from it in the console (Review or Telegram → *New title from
+this*), then send it for review; it reaches the app when an editor or the
+owner taps **Approve** — see **The review queue** below.
 
 **Where that panel is**, because it is not called Ingest anywhere on screen
 and looking for that word finds nothing:
@@ -222,7 +223,7 @@ showing the caption you typed in Telegram and every file in it. Two buttons:
 > caption's first line as its name and the rest as its description, and
 > attaches every finished file to it. It opens the editor on the new title,
 > which is where the category, year, Burmese title, tags and cover go. It is
-> created as a DRAFT and cannot be published until it has files — the database
+> created as a DRAFT and cannot be approved until it has files — the database
 > refuses, not just the page.
 >
 > **Attach all to an existing title** — the same, onto a title that already
@@ -594,4 +595,44 @@ A sign-in you did not make: remove that admin on the Admins page.
 authenticator on Security and set up a new one, then switch it back on.
 The console also signs out after *Sign out after (minutes idle)* without a
 touch (default 30) — never while an upload is running.
+
+---
+
+## The review queue
+
+Migration 027. **Nothing reaches the app without one approval** — not a
+Telegram album, not a console upload. Console → **Review**.
+
+```
+draft  →  Send for review  →  waiting  →  Approve  →  live (in the app)
+                                 ↓ Send back (with a note) → draft again
+                                 ↓ Reject → out of the queue (Reopen brings it back)
+live   →  Take down  →  draft
+```
+
+* **Upload** always saves a draft now; the "Published" checkbox is gone from
+  Upload and from the editor. The bar at the top of the editor shows where a
+  title stands and holds the buttons.
+* **Uploaders** send their own drafts for review and see what was sent back to
+  them (the Review badge counts those). **Editors and owners** approve, send
+  back (a note is required), reject, and take down. Approve is one tap.
+* **Watch before approving:** the ▶ on a video tile plays it inside the
+  console — the 720p streaming copy when there is one, through the same
+  Worker viewers use, on a link that lasts ten minutes.
+* **Telegram files in no title** are listed on Review too, with *New title
+  from this* and (editors) *Discard* for something forwarded by mistake.
+  Discard removes the rows only; the files stay in R2, appear on Files as
+  unused after a day, and the same file can be forwarded again.
+* **Sending for review messages the owner** in Telegram with the title, who
+  sent it, how many are waiting, and a link to the Review page.
+* **Two-person rule** (Security → Console rules, owner): whoever made a title
+  cannot approve it. Off by default; the server refuses to switch it on until
+  there are at least two editors or owners.
+
+Every decision is checked again in the database (`review_decide`: role,
+state, files, two-person rule) and written to the title's history — the
+editor's *History* — which, like the audit log, cannot be edited or deleted.
+A title published straight from the Table Editor still gets the same
+treatment: its review state follows, and it is refused if it has no files.
+`tool/sql/review_test.sql` is the database test (`REVIEW TEST PASSED`).
 

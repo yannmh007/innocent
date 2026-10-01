@@ -50,6 +50,9 @@ const check = (what, ok) => {
 const SB = 'https://yqonvmuiezqvyqmexrft.supabase.co';
 const SITE = 'http://studio.test';
 const USER = '6c679480-3387-4442-ad3d-4423b8aceb71';
+const OTHER = '00000000-0000-4000-8000-0000000000a1';
+const SOLAR = '11111111-1111-4111-8111-111111111111';
+const MINE = '22222222-2222-4222-8222-222222222222';
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64url');
 const now = () => Math.floor(Date.now() / 1000);
 const jwt = (aal, totpAt) => `${b64({ alg: 'HS256', typ: 'JWT' })}.${b64({
@@ -71,6 +74,26 @@ async function open(browser, role, opts = {}) {
   const state = {
     role, aal: opts.aal || 'aal1', factors: opts.factors || [],
     calls: [], errors: [], unexpected: [], verifyCount: 0,
+    // The review queue, as the fake server holds it: one title somebody else
+    // sent for review, one draft of this admin's own.
+    titles: [
+      { id: SOLAR, title: 'Solar', title_mm: null, poster_url: null, category: 'movies',
+        folder: 'solar', review_state: 'ready', review_note: null, published: false,
+        created_at: new Date().toISOString(), created_by: OTHER, creator_email: 'up@example.com',
+        submitted_at: new Date().toISOString(), decided_at: null, decider_email: null,
+        photos: 1, videos: 1 },
+      { id: MINE, title: 'My draft', title_mm: null, poster_url: null, category: 'movies',
+        folder: 'my-draft', review_state: 'editing', review_note: null, published: false,
+        created_at: new Date().toISOString(), created_by: USER, creator_email: 'boss@example.com',
+        submitted_at: null, decided_at: null, decider_email: null, photos: 0, videos: 1 },
+    ],
+    inbox: [
+      { id: 'j1', state: 'done', title_id: null, kind: 'video', object_key: 'zz-album/video/1.mp4',
+        tg_caption: 'Album Name\nthe synopsis', file_name: '1.mp4' },
+      { id: 'j2', state: 'done', title_id: null, kind: 'photo', object_key: 'zz-album/photo/2.jpg',
+        tg_caption: 'Album Name\nthe synopsis', file_name: '2.jpg' },
+    ],
+    decisions: [],
   };
   page.on('pageerror', (e) => state.errors.push(String(e)));
   // A refused request is logged by the browser as "Failed to load resource";
@@ -88,6 +111,10 @@ async function open(browser, role, opts = {}) {
     token: jwt(state.aal, state.aal === 'aal2' ? now() - (opts.codeAge || 60) : 0),
     user: { id: USER, email: 'boss@example.com', aud: 'authenticated', factors: state.factors },
   });
+
+  // Media the preview and the covers point at: answered, so nothing leaves.
+  await page.route(/https:\/\/(media|pub)\.test\//, (route) =>
+    route.fulfill({ status: 404, body: '' }));
 
   await page.route(SITE + '/**', async (route) => {
     const path = new URL(route.request().url()).pathname.replace(/^\//, '') || 'index.html';
@@ -159,9 +186,14 @@ async function open(browser, role, opts = {}) {
         return json(route, 403, { error: 'reauth_required' });
       }
       const ops = {
-        whoami: () => ({ email: 'boss@example.com', role: state.role, aal: claims.aal,
+        whoami: () => ({ id: USER, email: 'boss@example.com', role: state.role, aal: claims.aal,
           requireMfa: !!opts.requireMfa, idleMinutes: 30, stepupMinutes: 10, ...(opts.whoami || {}) }),
         summary: () => ({ titles: { live: 12, drafts: 3 }, telegram: { queued: 1, running: 0, failed: 2, unattached: 4 },
+          review: {
+            waiting: state.titles.filter((t) => !t.published && t.review_state === 'ready').length,
+            sentBack: state.titles.filter((t) => !t.published && t.review_state === 'changes').length,
+            mine: state.titles.filter((t) => t.review_state === 'changes' && t.created_by === USER).length,
+          },
           requests: 5, recent: !['owner', 'editor'].includes(state.role) ? [] : [
             { at: new Date().toISOString(), actor_email: 'boss@example.com', actor_role: 'owner',
               fn: 'studio', action: 'save', target: 't1', ok: true, error: null }] }),
@@ -182,12 +214,50 @@ async function open(browser, role, opts = {}) {
         settings: () => ({ settings: { require_mfa: !!opts.requireMfa, stepup_minutes: 10, idle_minutes: 30 } }),
         health: () => ({ rows: [] }),
         stats: () => ({}),
+        reviewQueue: () => ({ rows: state.titles.filter((t) => !t.published), me: USER }),
+        reviewHistory: () => ({ rows: [] }),
+        get: () => {
+          const t = state.titles.find((x) => x.id === body.id) || state.titles[0];
+          return { title: { ...t, slug: t.folder }, folder: t.folder, publicBase: 'https://pub.test',
+            assets: [
+              { id: 'as1', kind: 'video', bucket: 'innocent-media', object_key: t.folder + '/video/a.mp4', sort_order: 0, is_primary: true },
+              { id: 'as2', kind: 'photo', bucket: 'innocent-public', object_key: t.folder + '/photo/p.jpg', sort_order: 1, is_primary: true },
+            ] };
+        },
+        previewUrl: () => ({ url: 'https://media.test/p.mp4', kind: 'video', height: 720, via: 'worker' }),
       };
+      // The decisions, with the two rules the page must not be trusted with:
+      // only an editor or owner approves, and a send-back needs a note.
+      const decision = { reviewSubmit: 'ready', reviewApprove: 'approved', reviewSendBack: 'changes',
+        reviewReject: 'rejected', reviewReopen: 'editing', unpublish: 'editing' }[body.op];
+      if (decision) {
+        state.decisions.push({ op: body.op, id: body.id, note: body.note, role: state.role });
+        const t = state.titles.find((x) => x.id === body.id);
+        if (['reviewApprove', 'reviewSendBack', 'reviewReject', 'unpublish'].includes(body.op) &&
+            !['editor', 'owner'].includes(state.role)) {
+          return json(route, 403, { error: 'not_allowed' });
+        }
+        if (body.op === 'reviewSendBack' && !String(body.note || '').trim()) {
+          return json(route, 409, { error: 'note_required' });
+        }
+        t.review_state = decision;
+        t.published = decision === 'approved';
+        t.review_note = body.note || null;
+        return json(route, 200, { ok: true, result: decision });
+      }
       const f = ops[body.op];
       if (!f) { state.unexpected.push('studio op ' + body.op); return json(route, 400, { error: 'unknown_op' }); }
       return json(route, 200, f());
     }
-    if (p === '/functions/v1/ingest') return json(route, 200, { rows: [], runner: true });
+    if (p === '/functions/v1/ingest') {
+      if (body.op === 'discard') {
+        state.decisions.push({ op: 'discard', folder: body.folder, job: body.job_id });
+        const before = state.inbox.length;
+        state.inbox = state.inbox.filter((j) => !String(j.object_key).startsWith(body.folder + '/'));
+        return json(route, 200, { ok: true, discarded: before - state.inbox.length });
+      }
+      return json(route, 200, { rows: state.inbox, runner: true });
+    }
     if (p === '/functions/v1/transcode') return json(route, 200, { rows: [], runner: true });
     state.unexpected.push(req.method() + ' ' + p);
     return json(route, 404, { error: 'not_stubbed' });
@@ -217,12 +287,16 @@ try {
     check('owner: lands on the dashboard', await visible(page, '#tab-dashboard'));
     check('owner: the address bar says so', page.url().endsWith('#/dashboard'));
     check('owner: four numbers on the dashboard', (await page.$$('.cr-kpi')).length === 4);
-    check('owner: the failed Telegram files are the first thing to do',
-      /failed/.test(await page.textContent('#dashTodo .cr-todo')));
+    check('owner: the waiting title is the first thing to do',
+      /waiting for your approval/.test(await page.textContent('#dashTodo .cr-todo')));
+    check('owner: the failed Telegram files are on the list too',
+      /failed/.test(await page.textContent('#dashTodo')));
+    check('owner: the Review badge counts what waits for approval',
+      (await page.textContent('#side [data-badge=review]')) === '1');
     check('owner: the sidebar is shown on a desk', await visible(page, '#side'));
     check('owner: the bottom bar is not', !(await visible(page, '#tabbar')));
     const side = await menuTabs(page, '#side .sh-item');
-    check('owner: every page is in the menu (' + side.length + ')', side.length === 12 &&
+    check('owner: every page is in the menu (' + side.length + ')', side.length === 13 &&
       side.includes('admins') && side.includes('activity') && side.includes('files'));
     check('owner: the Telegram badge counts failed + unfiled',
       (await page.textContent('#side [data-badge=telegram]')) === '6');
@@ -273,13 +347,14 @@ try {
     check('uploader: the bottom bar is shown on a phone', await visible(page, '#tabbar'));
     check('uploader: the sidebar is not', !(await visible(page, '#side')));
     const bar = await menuTabs(page, '#tabbar .sh-tab');
-    check('uploader: the bar is Dashboard, Library, Upload, Telegram (' + bar.join(',') + ')',
-      bar.join(',') === 'dashboard,catalogue,new,telegram');
+    check('uploader: the bar is Dashboard, Review, Library, Upload (' + bar.join(',') + ')',
+      bar.join(',') === 'dashboard,review,catalogue,new');
     await page.click('#tabbar [data-more]');
     await shot(page, 'phone-more');
     const more = await menuTabs(page, '#sheet .sh-item');
     check('uploader: More has no owner or editor pages (' + more.join(',') + ')',
       !more.includes('admins') && !more.includes('activity') && !more.includes('files') &&
+      more.includes('telegram') &&
       more.includes('security') && more.includes('health'));
     await page.click('#sheet a[data-tab=security]');
     await page.waitForSelector('#tab-security:not([hidden])');
@@ -377,6 +452,94 @@ try {
     check('setup: verified, and the page says it is on', state.verifyCount === 1);
     check('setup: the owner sees the console rules', await visible(page, '#secSettings'));
     check('setup: no script errors', state.errors.length === 0);
+    if (state.errors.length) console.log('     ' + state.errors.join('\n     '));
+    await ctx.close();
+  }
+
+  // ── the review queue, as the owner ──────────────────────────────────────
+  {
+    const { page, ctx, state } = await open(browser, 'owner', { hash: '#/review' });
+    await page.waitForSelector('#revBody .cr-rv');
+    await shot(page, 'desk-review');
+    const solar = page.locator('.cr-rv', { hasText: 'Solar' }).first();
+    check('review: the waiting title is listed with an Approve button',
+      await solar.locator('button', { hasText: 'Approve' }).isVisible());
+    check('review: the Telegram album is in the queue too',
+      await page.locator('.cr-rv', { hasText: 'Album Name' }).first().isVisible());
+
+    // Send back insists on a note — the page, and the server.
+    await solar.locator('button', { hasText: 'Send back' }).click();
+    await page.waitForSelector('.cr-dlg textarea');
+    await page.click('.cr-dlg button.b.p');
+    check('review: a send-back with no note is not sent',
+      /Say what needs changing/.test(await page.textContent('.cr-dlg')) &&
+      !state.decisions.some((d) => d.op === 'reviewSendBack'));
+    await page.fill('.cr-dlg textarea', 'Cover is blurry');
+    await page.click('.cr-dlg button.b.p');
+    await page.waitForFunction(() => /Sent back with your note/.test(document.querySelector('#msg')?.textContent || ''));
+    check('review: the note goes with it',
+      state.decisions.some((d) => d.op === 'reviewSendBack' && d.note === 'Cover is blurry'));
+    await page.waitForSelector('.cr-rv-note');
+    check('review: the note is shown on the card', /Cover is blurry/.test(await page.textContent('#revBody')));
+
+    // Approve is one tap.
+    await page.locator('.cr-rv', { hasText: 'Solar' }).first()
+      .locator('button', { hasText: 'Approve' }).click();
+    await page.waitForFunction(() => /Approved/.test(document.querySelector('#msg')?.textContent || ''));
+    check('review: Approve is one tap', state.decisions.some((d) => d.op === 'reviewApprove' && d.id === SOLAR));
+
+    // A mistaken forward leaves the inbox.
+    page.once('dialog', (d) => d.accept());
+    await page.locator('.cr-rv', { hasText: 'Album Name' }).first()
+      .locator('button', { hasText: 'Discard' }).click();
+    await page.waitForFunction(() => /Discarded 2/.test(document.querySelector('#msg')?.textContent || ''));
+    check('review: Discard takes the album out of the inbox',
+      state.decisions.some((d) => d.op === 'discard' && d.folder === 'zz-album'));
+
+    // The editor: a review bar instead of a Published checkbox, and a play button.
+    await page.goto(SITE + '/index.html#/title/' + MINE);
+    await page.waitForSelector('#revBar .cr-revbar');
+    await shot(page, 'desk-editor-review');
+    check('editor: no Published checkbox any more', !(await page.$('#e_published')));
+    check('editor: the bar offers Approve and Send for review on a draft',
+      /Approve/.test(await page.textContent('#revBar')) &&
+      /Send for review/.test(await page.textContent('#revBar')));
+    await page.click('#mGrid button[title="Watch it"]');
+    await page.waitForSelector('.modal video');
+    check('editor: a video plays inside the console',
+      (await page.getAttribute('.modal video', 'src')) === 'https://media.test/p.mp4');
+    check('editor: and says which copy it is', /720p streaming copy/.test(await page.textContent('.modal')));
+    await page.click('.modal button.b');
+    await page.click('#side a[data-tab=new]');
+    await page.waitForSelector('#tab-new:not([hidden])');
+    check('upload: no Published checkbox — everything starts as a draft', !(await page.$('#n_published')));
+    check('review: no script errors', state.errors.length === 0);
+    if (state.errors.length) console.log('     ' + state.errors.join('\n     '));
+    check('review: nothing unexpected was called', state.unexpected.length === 0);
+    if (state.unexpected.length) console.log('     ' + state.unexpected.join('\n     '));
+    await ctx.close();
+  }
+
+  // ── the review queue, as an uploader ────────────────────────────────────
+  {
+    const { page, ctx, state } = await open(browser, 'uploader', { phone: true, hash: '#/review' });
+    await page.waitForSelector('#revBody .cr-rv');
+    await shot(page, 'phone-review');
+    check('uploader review: no Approve anywhere',
+      (await page.locator('#revBody button', { hasText: 'Approve' }).count()) === 0);
+    check('uploader review: no Discard either',
+      (await page.locator('#revBody button', { hasText: 'Discard' }).count()) === 0);
+    const solar = page.locator('.cr-rv', { hasText: 'Solar' }).first();
+    check('uploader review: somebody else\'s title can only be opened',
+      (await solar.locator('button').count()) === 1);
+    const mine = page.locator('.cr-rv', { hasText: 'My draft' }).first();
+    await mine.locator('button', { hasText: 'Send for review' }).click();
+    await page.waitForFunction(() => /Sent for review/.test(document.querySelector('#msg')?.textContent || ''));
+    check('uploader review: their own draft is sent for review',
+      state.decisions.some((d) => d.op === 'reviewSubmit' && d.id === MINE));
+    const w = await page.evaluate(() => document.documentElement.scrollWidth);
+    check('uploader review: nothing is wider than the phone (' + w + 'px)', w <= 390);
+    check('uploader review: no script errors', state.errors.length === 0);
     if (state.errors.length) console.log('     ' + state.errors.join('\n     '));
     await ctx.close();
   }

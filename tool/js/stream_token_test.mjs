@@ -178,6 +178,34 @@ for (const odd of [
     (await open.openToken(u.split('/v/')[1], 'secret two')) === null);
 }
 
+// 9. THE REVIEW PREVIEW MINTS THE SAME TOKEN. studio.ts has its own copy of
+//    the minting for the console's preview; the Worker cannot tell an admin
+//    from a viewer, so the two must agree exactly — and a copy that drifts
+//    fails as a 404 on every preview with nothing saying why.
+{
+  const studio = readFileSync(join(ROOT, 'docs/edge/studio.ts'), 'utf8');
+  const from = studio.indexOf('async function previewStreamUrl(');
+  const to = studio.indexOf('/// One message to the owner');
+  check('studio.ts has a preview minter', from > 0 && to > from);
+  const body = studio.slice(from, to)
+    .replace(/: Promise<string \| null>/g, '')
+    .replace(/: string\b/g, '')
+    .replace(/: number\b/g, '');
+  const preview = await import('data:text/javascript,' + encodeURIComponent(
+    `const STREAM_BASE = 'https://s.example.workers.dev';\n` +
+    `const STREAM_TOKEN_SECRET = ${JSON.stringify(secret)};\n` +
+    `const enc = new TextEncoder();\n` + body +
+    '\nexport { previewStreamUrl };'));
+  const purl = await preview.previewStreamUrl(KEY, 600);
+  const ptoken = purl.split('/v/')[1];
+  const pclaim = await open.openToken(ptoken, secret);
+  check('the Worker opens a preview token minted by studio.ts',
+    pclaim !== null && pclaim.k === KEY);
+  check('and its expiry is the ten minutes asked for',
+    pclaim !== null && Math.abs(pclaim.e - (Math.floor(Date.now() / 1000) + 600)) <= 2);
+  check('the preview token is URL-safe too', /^[A-Za-z0-9_-]+$/.test(ptoken));
+}
+
 if (failures) {
   console.error(failures + ' stream-token check(s) failed');
   process.exit(1);

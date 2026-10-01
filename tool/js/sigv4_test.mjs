@@ -159,7 +159,7 @@ const CANON_PATH = `/mx-media/${KEY}`;
 //    same request. This is the whole of SigV4 query signing in one assertion:
 //    method, path, every query parameter, the host header and
 //    UNSIGNED-PAYLOAD.
-function recomputePresign(url) {
+function recomputePresign(url, method = 'PUT') {
   const u = new URL(url);
   const params = [...u.searchParams.keys()]
     .filter((k) => k !== 'X-Amz-Signature').sort()
@@ -167,7 +167,7 @@ function recomputePresign(url) {
       .replace(/[!'()*]/g, (c) => '%' + c.charCodeAt(0).toString(16).toUpperCase())}`)
     .join('&');
   return sigv4({
-    method: 'PUT',
+    method,
     canonicalUri: u.pathname,
     canonicalQuery: params,
     headers: { host: u.host },
@@ -190,6 +190,21 @@ function recomputePresign(url) {
     u.searchParams.get('X-Amz-Expires') === String(EXPIRY));
   check('the presigned URL signs only the host header',
     u.searchParams.get('X-Amz-SignedHeaders') === 'host');
+}
+
+// 2b. THE REVIEW PREVIEW: the same signer, asked for a GET with a ten-minute
+//     life. A GET-signed URL must not work as a PUT (the method is signed),
+//     and the shorter expiry must be the one in the URL — the extra query is
+//     spread first, so a default written after it would silently win.
+{
+  const url = await signers.presignPut('mx-media', KEY, { 'X-Amz-Expires': '600' }, 'GET');
+  const u = new URL(url);
+  check('a preview GET signs as an independent implementation signs a GET',
+    u.searchParams.get('X-Amz-Signature') === recomputePresign(url, 'GET'));
+  check('and is not a valid PUT',
+    u.searchParams.get('X-Amz-Signature') !== recomputePresign(url, 'PUT'));
+  check('the preview asks for ten minutes, once',
+    u.searchParams.getAll('X-Amz-Expires').join() === '600');
 }
 
 // 3. THE PART PARAMETERS ARE INSIDE THE SIGNATURE. `partNumber` and `uploadId`
