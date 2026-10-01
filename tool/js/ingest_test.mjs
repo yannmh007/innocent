@@ -354,9 +354,11 @@ const studio = await import('data:text/javascript,' + encodeURIComponent(
   // The panel was wired to its own Refresh button and to nothing else, so
   // opening the tab drew a heading and an explanation over an empty div. It
   // reads as a panel that does not exist, and it was looked for three times.
-  const onHealth = studioSrc.slice(studioSrc.indexOf("if (tab === 'health')"));
-  check('opening Health fills the From Telegram panel too',
-    /loadIngest\(\)/.test(onHealth.slice(0, 700)));
+  // It has its own page now (Telegram), and opening that page is what fills it.
+  check('opening the Telegram page fills the From Telegram panel',
+    /if \(tab === 'telegram'\) loadIngest\(\);/.test(studioSrc));
+  check('and the panel is on that page',
+    studioSrc.indexOf('id="ingestBody"') > studioSrc.indexOf('id="tab-telegram"'));
 
   // The heading on the page is `From Telegram`. Anything that calls it the
   // Ingest panel is sending somebody looking for a word that is not there —

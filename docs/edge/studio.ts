@@ -1804,6 +1804,21 @@ async function handleOp(
       if (on && who.aal !== 'aal2') {
         return json({ error: 'enrol_mfa_first' }, 400, req);
       }
+      // NOT WHILE ANOTHER ADMIN HAS NONE EITHER. Supabase lets an account
+      // with no authenticator enrol one from an ordinary session — so with
+      // MFA required, whoever holds that admin's Google session could enrol
+      // THEIR OWN authenticator and walk in. Everyone enrols first; then it
+      // is switched on.
+      if (on) {
+        const { data: list } = await admin().rpc('admin_list');
+        const missing = ((list ?? []) as Array<Record<string, unknown>>)
+          .filter((a) => a.disabled !== true && a.mfa !== true)
+          .map((a) => String(a.email ?? ''));
+        if (missing.length) {
+          return json({ error: 'admins_without_mfa', detail: missing.join(', ') },
+            400, req);
+        }
+      }
       upd.require_mfa = on;
     }
     if ('idle_minutes' in body) {

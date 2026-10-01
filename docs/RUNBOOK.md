@@ -210,9 +210,10 @@ row and queues the ladder.
 **Where that panel is**, because it is not called Ingest anywhere on screen
 and looking for that word finds nothing:
 
-> Console → **Health** (the last tab) → scroll past *Catalogue health* and
-> *Start-up* → **From Telegram**. It is the third of four sections; if you
-> reach *Storage* you have gone one too far.
+> Console → **Telegram** in the menu (the sidebar on a computer, the bottom
+> bar on a phone) → the section headed **From Telegram**. It has its own page
+> since the control-room menu; it used to be the third section of Health. The badge on the menu counts files that
+> failed or are waiting to be put in a title.
 
 **The panel is grouped by folder, not by file.** One album is one card,
 showing the caption you typed in Telegram and every file in it. Two buttons:
@@ -227,7 +228,7 @@ showing the caption you typed in Telegram and every file in it. Two buttons:
 > **Attach all to an existing title** — the same, onto a title that already
 > exists.
 
-Do NOT make a title for forwarded files from the **New** tab. That tab is the
+Do NOT make a title for forwarded files from the **Upload** page. That page is the
 uploader: it takes files off the phone and insists on at least one, and these
 files are already in the bucket. It will tell you so.
 
@@ -317,10 +318,13 @@ select everything in the editor and replace it with the whole of
 > page, not from inside an existing one.
 
 Verify JWT stays off for all of them because each one does its own checking and
-does it differently: `request-playback` reads the viewer's JWT itself, `studio`
-and `probe-media` check the caller against `OPERATOR_IDS`, `transcode` checks a
-shared runner secret, and `backfill-dimensions` is called with no identity at
-all. Turning the platform's check on would refuse the runner and the console
+does it differently: `request-playback` reads the viewer's JWT itself; `studio`,
+`ingest`, `transcode` and `probe-media` run the admin gate (the caller's role
+from the `admins` table, and the 2-step code once it is required — see
+**Admins and two-step sign-in** below); the runner ops of `ingest` and
+`transcode` check a shared runner secret; and `backfill-dimensions` is called
+with no identity at all. `OPERATOR_IDS` is no longer read by anything and can be
+deleted from the function secrets. Turning the platform's check on would refuse the runner and the console
 before either got to say who it was.
 
 > **Both are deployed and both were read back.** `probe-media` is at version
@@ -532,3 +536,47 @@ it.
 
 Edge function logs are kept **one day** on the free tier. Copy anything
 interesting out immediately.
+
+---
+
+## Admins and two-step sign-in
+
+Migration 026. Who may use the console is a table, not a secret: **Admins**
+in the console menu (owners only) adds a Google email with a role, changes a
+role, or removes someone — effective on their next click, no deploy.
+
+| Role | May |
+|---|---|
+| owner | everything, including Admins and the console rules |
+| editor | publish, approve/reject requests, categories, Files, Activity |
+| uploader | upload and edit **their own unpublished drafts**; file Telegram albums into them; cannot publish |
+| viewer | look; change nothing |
+
+The last active owner cannot be demoted or removed — by anyone, themselves
+included. Every change anyone makes, and every refusal, is a line in
+**Activity**; the database refuses to edit or delete those lines.
+
+**A sign-in is announced** to the owner in Telegram (the bot, the chats in
+`TELEGRAM_CHAT_IDS`) once per session, with the email, role and Myanmar time.
+A sign-in you did not make: remove that admin on the Admins page.
+
+**Two-step sign-in, switched on in this order:**
+
+1. Each admin: **Security** → *Set it up*. On a phone, tap *open it with this
+   link* (opens the authenticator app) or copy the setup key into the app;
+   type the 6-digit code. From then on the console asks for a code at each
+   sign-in.
+2. When **every** admin on the Admins page shows *2-step on*, an owner ticks
+   *Every admin must give a two-step code* on Security → Console rules. The
+   server refuses this while any active admin has none, because an account
+   with no authenticator can have one added by whoever holds its Google
+   session.
+3. From then on, deleting a title and changing admins or the rules also need
+   a code from the last few minutes (*Fresh code for deletes*, default 10).
+
+**Emergency switch** (lost phone, locked out): in the Supabase SQL editor,
+`update public.admin_settings set require_mfa = false;` — then remove the old
+authenticator on Security and set up a new one, then switch it back on.
+The console also signs out after *Sign out after (minutes idle)* without a
+touch (default 30) — never while an upload is running.
+

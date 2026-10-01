@@ -13,9 +13,27 @@ not built. See `docs/movies_v3_plan.md` §3.3.
 
 ## What the console can do
 
-Four tabs, all behind the operator check in `studio.ts`.
+A menu of pages — a sidebar on a computer, a bottom bar plus *More* on a
+phone — filtered by the signed-in admin's role (owner / editor / uploader /
+viewer, from the `admins` table; see RUNBOOK → *Admins and two-step
+sign-in*). The menu only hides what a role cannot use; every op is checked
+again in the edge function. The address bar names the page (`#/library`,
+`#/title/<id>`), so reload and the back button work.
 
-**Catalogue** — every title including drafts, which no other surface can see.
+**Dashboard** — live/draft counts, the Telegram queue, requests waiting, and
+a "needs you" list of things to tap. Editors and owners also see the latest
+activity.
+
+**Activity** (editor+) — the audit log: who changed what, including refused
+attempts. **Admins** (owner) — add, re-role, remove. **Security** — set up
+the authenticator for your own account; owners also set the console rules
+(2-step required, idle sign-out, fresh-code window).
+
+**Telegram** — what was forwarded to the bot, grouped by album, with *New
+title from this*. **Files** (editor+) — unused objects and unfinished uploads
+in R2.
+
+**Library** (was Catalogue) — every title including drafts, which no other surface can see.
 Search, filter by status, tap through to the editor.
 
 **Title editor** — the whole row: names in both languages, description,
@@ -29,7 +47,7 @@ this launch-blocking; `approve_request()` and `reject_request()` had existed
 in the database for weeks with nothing calling them. **An approval here is
 what writes the subscription. Nothing else does.**
 
-**Signals** — proof the event log is filling. The whole design of that log is
+**Insights** (was Signals) — proof the event log is filling. The whole design of that log is
 that nothing on screen changes whether it works or not, which is correct for
 the app and useless for an operator: without this tab there would be no way
 to tell a working log from a dead one until the day the data was needed and
@@ -38,8 +56,15 @@ three months of it did not exist. The row to watch is **Geography** —
 else; everything reading `unknown` means no country header is reaching this
 project at all.
 
-**Health** — the `catalogue_health` view: which titles have no video, no
-poster, or no assets.
+**Health** — the `catalogue_health` view (which titles have no video, no
+poster, or no assets), start-up checks, streaming copies and the stream
+secret.
+
+The page is three files: `index.html` (the pages), `shell.js` (menu, routes,
+dashboard, idle sign-out) and `control.js` (2-step sign-in, Security, Admins,
+Activity). supabase-js is vendored in `vendor/`, pinned to one version with an
+integrity hash — not loaded from a CDN. `tool/js/console_smoke.mjs` drives the
+page in Chromium against a fake backend for each role.
 
 ### One folder per title, in both buckets
 
@@ -148,8 +173,8 @@ It changed once already, when the page moved off supabase.co.
 - **Google web client**: the Supabase callback
   `https://<ref>.supabase.co/auth/v1/callback` must be an authorised
   redirect URI.
-- **Who may publish**: `OPERATOR_IDS`, defaulting to one `auth.users.id`.
-  Signing in is not the same as being allowed to publish.
+- **Who may do what**: the `admins` table (migration 026), managed from the
+  Admins page. Signing in is not the same as being an admin.
 
 ---
 

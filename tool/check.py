@@ -152,6 +152,11 @@ def main() -> int:
          'the authenticator code, an op nobody gave a role to, or one of four '
          'copies of a security check quietly left behind when the others '
          'were fixed'),
+        ('console_smoke.mjs',
+         'the console in Chromium: menu per role, routes, 2-step, idle',
+         'a control room that draws for an owner and throws for a viewer, a '
+         '2-step code that verifies and then never retries the request it '
+         'interrupted, or a sign-out in the middle of an upload'),
     ]
     node = shutil.which('node')
     for name, what, guards in JS_TESTS:
@@ -165,6 +170,11 @@ def main() -> int:
         r = subprocess.run([node, js_test], capture_output=True,
                            text=True, cwd=ROOT)
         ok = r.returncode == 0
+        # A test that needs something this machine lacks (a browser) says
+        # SKIP and exits 0. Shown as SKIP, never as a PASS of zero checks.
+        if ok and r.stdout.startswith('SKIP'):
+            print('SKIP  %-26s === %s ===' % (name, r.stdout.strip()[5:]))
+            continue
         print('%-5s %-26s %s' % ('PASS' if ok else 'FAIL', name,
               '=== %d check(s) on %s ===' % (r.stdout.count('ok   '), what)))
         if not ok:

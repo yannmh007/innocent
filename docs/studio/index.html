@@ -14,9 +14,10 @@
   THERE IS NO SECRET IN THIS FILE AND THERE CANNOT BE. The repository is
   public. The only credentials here are the project URL and the publishable
   key, both of which already ship inside every APK and neither of which
-  authorises anything. Every privileged action goes to the `studio` edge
-  function, which checks the caller against OPERATOR_IDS and holds the R2
-  credentials in Supabase secrets.
+  authorises anything. Every privileged action goes to an edge function,
+  which looks the caller's role up in the `admins` table (and, once it is
+  required, their 2-step code) and holds the R2 credentials in Supabase
+  secrets.
 
   FILES NEVER PASS THROUGH THE SERVER. The page asks for a presigned PUT and
   uploads straight from the phone to R2 — which is what makes a 900 MB video
@@ -53,7 +54,20 @@
   (4/8/12 in high-density contexts, scale type and controls together, never
   row height alone).
 -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<!-- supabase-js, VENDORED AND PINNED. It was `@2` from a CDN, which is
+     "whatever version was published last, from somebody else's server" —
+     on the one page that can delete the catalogue and hand out admin roles.
+     The file is the npm tarball's own dist/umd/supabase.js for 2.117.2
+     (tarball checked against the registry's sha512), served from this site,
+     and the integrity attribute refuses it if a byte changes. Updating it is
+     deliberate: replace the file, change the version and the hash here. -->
+<script src="vendor/supabase-js-2.117.2.js"
+        integrity="sha384-Rj26LVGvoeRVR6+mwQmFfcR3QOBEwT+ZmuCWpuiqeTzJpCs0ER4ITAWGb4Hiy3Ok"></script>
+<!-- The control room: menu, routes, dashboard, admins, activity, 2-step
+     sign-in. Function declarations only — nothing runs until boot() below
+     calls into them, because they use helpers this page defines later. -->
+<script src="shell.js"></script>
+<script src="control.js"></script>
 <style>
 :root{
   --bg:#0c0d10; --panel:#131519; --panel2:#181b20;
@@ -81,13 +95,6 @@ header{position:sticky;top:0;z-index:30;background:rgba(12,13,16,.96);
   padding:0 14px;max-width:1180px;margin:0 auto}
 .brand{font-weight:650;font-size:13px;letter-spacing:.2px;white-space:nowrap}
 .brand em{color:var(--acc);font-style:normal}
-nav{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;flex:1}
-nav::-webkit-scrollbar{display:none}
-nav button{flex:0 0 auto;background:none;border:0;color:var(--dim);
-  font:inherit;padding:0 9px;height:44px;cursor:pointer;
-  border-bottom:2px solid transparent;white-space:nowrap}
-nav button:hover{color:var(--fg)}
-nav button[aria-selected=true]{color:var(--fg);border-bottom-color:var(--acc)}
 .who{font-family:var(--mono);font-size:11px;color:var(--dim2);
   max-width:34vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 main{max-width:1180px;margin:0 auto;padding:14px}
@@ -283,21 +290,11 @@ td.num{text-align:right;font-variant-numeric:tabular-nums;color:var(--dim)}
    one that has to be right.
 */
 @media(max-width:720px){
-  /* The bar becomes two rows. Cramming a brand, six tabs and an email
-     address into 44px left the tabs a thumb-wide sliver and clipped the
-     address to nothing useful. Everything that sticks underneath reads the
-     new height from --hh rather than being told twice. */
-  :root{--hh:78px}
-  .bar{height:auto;flex-wrap:wrap;padding:0 12px;gap:0 10px}
-  /* line-height, NOT display:flex. Making the brand a flex container turns
-     "Innocent <em>Studio</em>" into two flex items and drops the whitespace
-     between them, so it reads "InnocentStudio". */
-  .bar .brand{line-height:38px}
-  .bar .who{order:2;margin-left:auto;line-height:38px;max-width:58vw}
-  .bar nav{order:3;flex:0 0 100%;height:40px;
-    border-top:1px solid var(--line)}
-  .bar nav button{height:39px;padding:0 11px}
-  .bar .spacer{display:none}
+  /* ONE ROW AGAIN. The bar was two rows while it carried six tabs; the
+     menu now lives in the bottom bar, so the top bar holds the brand, the
+     page name and the account — and the address is the first thing cut. */
+  .bar{padding:0 12px;gap:8px}
+  .bar .who{display:none}
 
   main{padding:12px 12px 0}
 
@@ -409,6 +406,147 @@ td.num{text-align:right;font-variant-numeric:tabular-nums;color:var(--dim)}
 .pathprev{font-family:var(--mono);font-size:11px;color:var(--dim2);
   line-height:1.7;margin-top:6px;word-break:break-all}
 .pathprev b{color:var(--acc);font-weight:600}
+
+/* ── the control room shell ─────────────────────────────────────────────
+   Prefixed sh- and cr- so nothing here can collide with a class the pages
+   already use (tool/console_css.py exists because that happened once).
+
+   Two shapes from one menu list. A desk gets a sidebar with the pages in
+   groups. A phone gets a bottom bar — where a thumb is — with the four
+   pages used most, and More for the rest. */
+.sh-crumb{color:var(--dim);font-size:12.5px;white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis}
+.sh-crumb::before{content:"/";color:var(--dim2);margin-right:8px}
+.sh-crumb:empty{display:none}
+.sh-role{font-size:10.5px;letter-spacing:.4px;text-transform:uppercase;
+  color:var(--acc);border:1px solid #4a3a12;background:#211a08;
+  border-radius:999px;padding:1px 8px;white-space:nowrap}
+.sh-link{display:inline-flex;align-items:center;text-decoration:none;
+  height:var(--ctl);padding:0 11px;font-size:12.5px;color:var(--fg);
+  background:var(--panel2);border:1px solid var(--line2);border-radius:var(--r)}
+.sh-ico{width:17px;height:17px;flex:0 0 17px;stroke:currentColor;fill:none;
+  stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+
+.sh-side{position:fixed;left:0;top:0;bottom:0;width:216px;z-index:35;
+  display:none;flex-direction:column;gap:2px;padding:10px 10px 16px;
+  background:linear-gradient(180deg,#111317 0%,#0d0e11 100%);
+  border-right:1px solid var(--line);overflow-y:auto}
+.sh-brand{display:flex;align-items:center;gap:9px;height:34px;padding:0 8px;
+  margin-bottom:8px;font-weight:650;letter-spacing:.2px}
+.sh-brand em{color:var(--acc);font-style:normal}
+.sh-mark{width:22px;height:22px;border-radius:6px;display:grid;place-items:center;
+  background:linear-gradient(135deg,#f0b429,#c27c0e);color:#141414;
+  font-size:12px;font-weight:800}
+.sh-group{font-size:10.5px;letter-spacing:.7px;text-transform:uppercase;
+  color:var(--dim2);padding:12px 10px 4px}
+.sh-item{display:flex;align-items:center;gap:10px;height:34px;padding:0 10px;
+  border-radius:7px;color:var(--dim);text-decoration:none;font-size:13px;
+  position:relative;border:1px solid transparent}
+.sh-item:hover{color:var(--fg);background:#16181d}
+.sh-item[aria-current=page]{color:var(--fg);background:#1a1c22;
+  border-color:var(--line2)}
+.sh-item[aria-current=page]::before{content:"";position:absolute;left:-10px;
+  top:8px;bottom:8px;width:3px;border-radius:0 3px 3px 0;background:var(--acc)}
+.sh-item[aria-current=page] .sh-ico{color:var(--acc)}
+.sh-badge{margin-left:auto;min-width:18px;height:18px;padding:0 5px;
+  border-radius:999px;background:#2a2112;color:var(--acc);font-size:10.5px;
+  display:grid;place-items:center;font-variant-numeric:tabular-nums}
+.sh-badge.bad{background:#2a1214;color:var(--bad)}
+.sh-foot{margin-top:auto;padding:12px 10px 0;border-top:1px solid var(--line);
+  font-size:11px;color:var(--dim2);line-height:1.5;word-break:break-all}
+
+.sh-tabbar{position:fixed;left:0;right:0;bottom:0;z-index:35;display:none;
+  height:calc(58px + env(safe-area-inset-bottom));
+  padding-bottom:env(safe-area-inset-bottom);
+  background:rgba(14,15,18,.97);backdrop-filter:blur(10px);
+  border-top:1px solid var(--line)}
+.sh-tab{flex:1;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:3px;background:none;border:0;color:var(--dim2);
+  font:inherit;font-size:10.5px;text-decoration:none;position:relative;
+  cursor:pointer}
+.sh-tab .sh-ico{width:21px;height:21px;flex-basis:21px}
+.sh-tab[aria-current=page]{color:var(--fg)}
+.sh-tab[aria-current=page] .sh-ico{color:var(--acc)}
+.sh-tab .sh-badge{position:absolute;top:5px;left:calc(50% + 6px);margin:0}
+
+.sh-sheet{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.6);
+  display:flex;align-items:flex-end}
+.sh-sheet[hidden]{display:none}
+.sh-sheet-in{width:100%;background:var(--panel);border-top:1px solid var(--line2);
+  border-radius:14px 14px 0 0;padding:8px 12px calc(16px + env(safe-area-inset-bottom));
+  max-height:80vh;overflow-y:auto}
+.sh-grip{width:36px;height:4px;border-radius:2px;background:var(--line2);
+  margin:4px auto 8px}
+.sh-sheet-in .sh-item{height:46px;font-size:14px}
+
+body.sh-on .sh-tabbar{display:flex}
+body.sh-on{padding-bottom:calc(76px + env(safe-area-inset-bottom))}
+@media(min-width:900px){
+  body.sh-on .sh-side{display:flex}
+  body.sh-on .sh-tabbar{display:none}
+  body.sh-on{padding-left:216px;padding-bottom:64px}
+  body.sh-on .bar>.brand{display:none}
+  body.sh-on .sh-crumb::before{display:none}
+}
+
+/* ── control-room pages ───────────────────────────────────────────────── */
+.cr-kpis{display:grid;gap:1px;background:var(--line);border:1px solid var(--line);
+  border-radius:10px;overflow:hidden;
+  grid-template-columns:repeat(2,minmax(0,1fr));margin:4px 0 6px}
+@media(min-width:720px){.cr-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.cr-kpi{background:linear-gradient(180deg,#14161a,#111317);padding:12px 14px;
+  text-decoration:none;color:inherit;display:block}
+.cr-kpi:hover{background:#171a1f}
+.cr-kpi .k{font-size:10.5px;letter-spacing:.6px;text-transform:uppercase;
+  color:var(--dim2)}
+.cr-kpi .v{font-size:24px;font-weight:650;margin-top:4px;
+  font-variant-numeric:tabular-nums;letter-spacing:-.3px}
+.cr-kpi .s{font-size:11px;color:var(--dim);margin-top:2px}
+.cr-kpi.warn .v{color:var(--acc)}
+.cr-kpi.bad .v{color:var(--bad)}
+.cr-todo{display:flex;align-items:center;gap:10px;min-height:44px;padding:8px 10px;
+  border:1px solid var(--line);border-radius:8px;margin-bottom:6px;
+  text-decoration:none;color:var(--fg)}
+.cr-todo:hover{border-color:var(--line2);background:#14161a}
+.cr-todo .cr-dot{width:8px;height:8px;border-radius:50%;background:var(--acc);
+  flex:0 0 8px}
+.cr-todo .cr-dot.bad{background:var(--bad)}
+.cr-todo .cr-go{margin-left:auto;color:var(--dim2)}
+.cr-feed{border:1px solid var(--line);border-radius:8px}
+.cr-line{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 10px;
+  align-items:baseline;padding:8px 10px;border-bottom:1px solid var(--line)}
+.cr-line:last-child{border-bottom:0}
+.cr-line .cr-act{font-weight:600}
+.cr-line .cr-who{color:var(--dim);font-size:11.5px}
+.cr-line .cr-at{color:var(--dim2);font-size:11px;font-family:var(--mono);
+  white-space:nowrap}
+.cr-line .cr-tgt{grid-column:2/-1;color:var(--dim2);font-family:var(--mono);
+  font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cr-line.no .cr-act{color:var(--bad)}
+.cr-ok{width:8px;height:8px;border-radius:50%;background:var(--ok);
+  align-self:center}
+.cr-line.no .cr-ok{background:var(--bad)}
+.cr-adm{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px;
+  border:1px solid var(--line);border-radius:8px;margin-bottom:6px}
+.cr-adm .cr-em{font-weight:600;word-break:break-all}
+.cr-adm .cr-meta{color:var(--dim2);font-size:11.5px;flex-basis:100%}
+.cr-adm.off{opacity:.55}
+.cr-form{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end}
+.cr-form>div{min-width:0}
+.cr-qr{background:#fff;padding:10px;border-radius:8px;width:180px;height:180px}
+.cr-qr img{width:100%;height:100%;display:block}
+.cr-code{font-family:var(--mono);font-size:22px;letter-spacing:6px;
+  text-align:center;height:46px}
+.cr-steps{margin:0;padding-left:18px;color:var(--dim);line-height:1.7}
+.cr-dlg{position:fixed;inset:0;z-index:70;background:rgba(0,0,0,.72);
+  display:grid;place-items:center;padding:16px}
+.cr-dlg-in{width:min(380px,100%);background:var(--panel);border:1px solid var(--line2);
+  border-radius:12px;padding:18px}
+.cr-dlg-in h3{margin:0 0 6px;font-size:15px}
+.cr-idle{position:fixed;left:50%;transform:translateX(-50%);z-index:65;
+  bottom:calc(88px + env(safe-area-inset-bottom));background:#241d0c;
+  color:#fde68a;border:1px solid #5b4a19;border-radius:8px;padding:8px 12px;
+  font-size:12.5px;box-shadow:0 8px 30px rgba(0,0,0,.5)}
 </style>
 </head>
 <body>
@@ -416,27 +554,113 @@ td.num{text-align:right;font-variant-numeric:tabular-nums;color:var(--dim)}
 <header>
   <div class="bar">
     <span class="brand">Innocent <em>Studio</em></span>
-    <nav id="nav" hidden>
-      <button data-tab="catalogue" aria-selected="true">Catalogue</button>
-      <button data-tab="new" aria-selected="false">New</button>
-      <button data-tab="requests" aria-selected="false">Requests</button>
-      <button data-tab="cats" aria-selected="false">Categories</button>
-      <button data-tab="stats" aria-selected="false">Signals</button>
-      <button data-tab="health" aria-selected="false">Health</button>
-    </nav>
+    <span class="sh-crumb" id="crumb"></span>
     <span class="spacer"></span>
+    <span class="sh-role" id="roleChip" hidden></span>
     <span class="who" id="who"></span>
+    <button class="i" id="signout" hidden title="Sign out">Sign out</button>
   </div>
 </header>
+
+<!-- The menu. Wide: a sidebar. Phone: a bottom bar with the four pages used
+     most and a More sheet with the rest. Both are drawn by shell.js from one
+     list, filtered by the signed-in admin's role. -->
+<aside class="sh-side" id="side" hidden></aside>
+<nav class="sh-tabbar" id="tabbar" hidden></nav>
+<div class="sh-sheet" id="sheet" hidden></div>
 
 <main>
   <div id="gate" class="sec">
     <h2>Sign in</h2>
-    <p class="hint">Use the Google account registered as an operator.</p>
+    <p class="hint">Use the Google account an owner added on the Admins page.</p>
     <button class="b p" id="signin" style="margin-top:8px">Continue with Google</button>
   </div>
 
   <div id="msg"></div>
+
+  <!-- ══ DASHBOARD ══════════════════════════════════════════════════════ -->
+  <section id="tab-dashboard" hidden>
+    <div class="cr-kpis" id="dashKpis"></div>
+    <div class="sec">
+      <div class="sechead"><h2>Needs you</h2></div>
+      <div id="dashTodo"></div>
+    </div>
+    <div class="sec" id="dashRecentSec" hidden>
+      <div class="sechead">
+        <h2>Recent activity</h2>
+        <span class="spacer"></span>
+        <a class="sh-link" href="#/activity">All activity</a>
+      </div>
+      <div id="dashRecent"></div>
+    </div>
+  </section>
+
+  <!-- ══ ACTIVITY ═══════════════════════════════════════════════════════ -->
+  <section id="tab-activity" hidden>
+    <div class="sec">
+      <div class="sechead">
+        <h2>Activity</h2>
+        <span class="spacer"></span>
+        <select id="actWho" style="width:auto"><option value="">Everyone</option></select>
+        <button class="b" id="actRefresh">Refresh</button>
+      </div>
+      <p class="hint">Every change anyone made in this console, newest first —
+        including the ones that were refused. Nobody can edit or delete these
+        lines, owners included.</p>
+      <div id="actList" style="margin-top:10px"></div>
+      <button class="b" id="actMore" hidden style="margin-top:10px">Older</button>
+    </div>
+  </section>
+
+  <!-- ══ ADMINS ═════════════════════════════════════════════════════════ -->
+  <section id="tab-admins" hidden>
+    <div class="sec">
+      <div class="sechead"><h2>Admins</h2></div>
+      <p class="hint"><b>Owner</b> — everything, including this page.
+        <b>Editor</b> — publish, approve requests, categories, delete files.
+        <b>Uploader</b> — upload and edit their own drafts; cannot publish.
+        <b>Viewer</b> — look, change nothing.</p>
+      <div id="admList" style="margin-top:10px"></div>
+    </div>
+    <div class="sec">
+      <div class="sechead"><h2>Add an admin</h2></div>
+      <p class="hint">Their Google account's email. They can sign in as soon as
+        it is added; the role takes effect on their next click, and so does
+        removing them.</p>
+      <div class="cr-form" style="margin-top:8px">
+        <div style="flex:2;min-width:180px">
+          <label>Email</label>
+          <input id="admEmail" type="email" autocapitalize="off" spellcheck="false"
+                 placeholder="name@gmail.com">
+        </div>
+        <div style="flex:1;min-width:120px">
+          <label>Role</label>
+          <select id="admRole">
+            <option value="uploader">Uploader</option>
+            <option value="editor">Editor</option>
+            <option value="viewer">Viewer</option>
+            <option value="owner">Owner</option>
+          </select>
+        </div>
+        <div style="align-self:flex-end"><button class="b p" id="admAdd">Add</button></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ SECURITY ═══════════════════════════════════════════════════════ -->
+  <section id="tab-security" hidden>
+    <div class="sec">
+      <div class="sechead"><h2>Two-step sign-in</h2></div>
+      <p class="hint">A code from an authenticator app (Google Authenticator,
+        Microsoft Authenticator, 2FAS, Aegis…) on top of Google sign-in. With it,
+        somebody holding your Google session still cannot get in.</p>
+      <div id="mfaBody" style="margin-top:10px"></div>
+    </div>
+    <div class="sec" id="secSettings" hidden>
+      <div class="sechead"><h2>Console rules</h2></div>
+      <div id="secSettingsBody"></div>
+    </div>
+  </section>
 
   <!-- ══ CATALOGUE ══════════════════════════════════════════════════════ -->
   <section id="tab-catalogue" hidden>
@@ -575,7 +799,7 @@ td.num{text-align:right;font-variant-numeric:tabular-nums;color:var(--dim)}
         be changed afterwards — it is what every film in this section stores.
         Lower-case letters, digits and hyphens. The label is what people see
         and can be edited whenever you like.</p>
-      <div class="row">
+      <div class="cr-form">
         <div style="flex:1;min-width:120px">
           <label>id</label>
           <input id="newCatId" class="mono" placeholder="documentary">
@@ -646,57 +870,6 @@ td.num{text-align:right;font-variant-numeric:tabular-nums;color:var(--dim)}
       <div id="probeBody" style="margin-top:10px"></div>
     </div>
 
-    <!-- ══ INGEST ═══════════════════════════════════════════════════════
-         Films forwarded to the bot. The shortest path for a gigabyte does
-         not go through this phone: Telegram already has the file on a
-         server with a fast link, so a runner moves it.               -->
-    <div class="sec">
-      <div class="sechead">
-        <h2>From Telegram</h2>
-        <span class="spacer"></span>
-        <button class="b" id="ingestBtn">Refresh</button>
-      </div>
-      <div class="hint">
-        Forward a film to the bot <b>as a file</b>, with the folder name as
-        the caption. A runner fetches it within five minutes and puts it in
-        the bucket; then choose which title it belongs to here, and the
-        streaming copies are made automatically. Send it as a <i>file</i> and
-        not as a video — Telegram re-encodes anything sent as a video, and
-        the whole point is the original. Telegram stops at 2 GB; anything
-        bigger still goes through Upload above.
-      </div>
-      <div id="ingestBody" style="margin-top:10px"></div>
-    </div>
-
-    <!-- ══ STORAGE ══════════════════════════════════════════════════════
-         What is in the bucket that nothing in the catalogue points at. This
-         is the one panel about MONEY: R2 bills for every object every month
-         whether or not anything can reach it, and nothing in this system
-         has ever deleted one.                                          -->
-    <div class="sec">
-      <div class="sechead">
-        <h2>Storage</h2>
-        <span class="spacer"></span>
-        <button class="b" id="orphanBtn">Find unused files</button>
-        <button class="b" id="orphanPubBtn">…in artwork too</button>
-      </div>
-      <div class="hint">
-        Deleting a title does <b>not</b> delete its files. Neither does
-        replacing one. So every title ever removed, every re-upload that
-        landed under a new name, and every upload that finished and then
-        failed to save its row, left files behind that nothing can reach and
-        that are billed every month. This lists them — and
-        <b>lists them only</b>. Deleting happens in the Cloudflare R2
-        dashboard, by you, on purpose: a file uploaded a minute ago looks
-        exactly like an unused one until its row is written, so anything
-        touched in the last day is counted and deliberately not listed.
-        <b>Unfinished uploads</b> are the other half: a large upload goes up in
-        parts, and a phone that loses signal halfway leaves those parts in the
-        bucket where no file listing shows them.
-      </div>
-      <div id="orphanBody" style="margin-top:10px"></div>
-    </div>
-
     <!-- ══ STREAMING COPIES ════════════════════════════════════════════
          The answer to "upload anything and it must not stutter". A camera
          clip needing 61 Mbps cannot be streamed over a 48 Mbps link; that
@@ -754,6 +927,65 @@ td.num{text-align:right;font-variant-numeric:tabular-nums;color:var(--dim)}
         asks again, which it does automatically.
       </div>
     </div>
+  </section>
+
+  <!-- ══ TELEGRAM ═══════════════════════════════════════════════════════ -->
+  <section id="tab-telegram" hidden>
+    <!-- ══ INGEST ═══════════════════════════════════════════════════════
+         Films forwarded to the bot. The shortest path for a gigabyte does
+         not go through this phone: Telegram already has the file on a
+         server with a fast link, so a runner moves it.               -->
+    <div class="sec">
+      <div class="sechead">
+        <h2>From Telegram</h2>
+        <span class="spacer"></span>
+        <button class="b" id="ingestBtn">Refresh</button>
+      </div>
+      <div class="hint">
+        Forward a film to the bot <b>as a file</b>, with the folder name as
+        the caption. A runner fetches it within twenty minutes and puts it in
+        the bucket; then choose which title it belongs to here, and the
+        streaming copies are made automatically. Send it as a <i>file</i> and
+        not as a video — Telegram re-encodes anything sent as a video, and
+        the whole point is the original. Telegram stops at 2 GB; anything
+        bigger still goes through Upload above.
+      </div>
+      <div id="ingestBody" style="margin-top:10px"></div>
+    </div>
+
+  </section>
+
+  <!-- ══ FILES ══════════════════════════════════════════════════════════ -->
+  <section id="tab-files" hidden>
+    <!-- ══ STORAGE ══════════════════════════════════════════════════════
+         What is in the bucket that nothing in the catalogue points at. This
+         is the one panel about MONEY: R2 bills for every object every month
+         whether or not anything can reach it, and nothing in this system
+         has ever deleted one.                                          -->
+    <div class="sec">
+      <div class="sechead">
+        <h2>Storage</h2>
+        <span class="spacer"></span>
+        <button class="b" id="orphanBtn">Find unused files</button>
+        <button class="b" id="orphanPubBtn">…in artwork too</button>
+      </div>
+      <div class="hint">
+        Deleting a title does <b>not</b> delete its files. Neither does
+        replacing one. So every title ever removed, every re-upload that
+        landed under a new name, and every upload that finished and then
+        failed to save its row, left files behind that nothing can reach and
+        that are billed every month. This lists them — and
+        <b>lists them only</b>. Deleting happens in the Cloudflare R2
+        dashboard, by you, on purpose: a file uploaded a minute ago looks
+        exactly like an unused one until its row is written, so anything
+        touched in the last day is counted and deliberately not listed.
+        <b>Unfinished uploads</b> are the other half: a large upload goes up in
+        parts, and a phone that loses signal halfway leaves those parts in the
+        bucket where no file listing shows them.
+      </div>
+      <div id="orphanBody" style="margin-top:10px"></div>
+    </div>
+
   </section>
 </main>
 <script>
@@ -833,9 +1065,10 @@ const fmtSize = (b) => b >= 1073741824 ? (b / 1073741824).toFixed(1) + ' GB'
   : (b / 1024).toFixed(0) + ' KB';
 
 // ── the API ──────────────────────────────────────────────────────────────
-async function api(payload, endpoint) {
+async function api(payload, endpoint, retried) {
   const { data: { session } } = await sb.auth.getSession();
   if (!session) throw new Error('Signed out. Reload and sign in again.');
+  noteActivity();
   const res = await fetch(endpoint || API, {
     method: 'POST',
     headers: {
@@ -845,9 +1078,18 @@ async function api(payload, endpoint) {
     body: JSON.stringify(payload),
   });
   const body = await res.json().catch(() => ({}));
+  // THE SERVER ASKED FOR THE AUTHENTICATOR CODE: `mfa_required` when this
+  // session never gave one, `reauth_required` when it gave one too long ago
+  // for what is being done (deleting a title, changing an admin). Asked for
+  // here, once, and the same request sent again — so no page has to know.
+  if (!retried && (body.error === 'mfa_required' || body.error === 'reauth_required')) {
+    if (await askForCode(body.error)) return api(payload, endpoint, true);
+  }
   if (!res.ok) {
-    throw new Error((body.error || res.status) +
+    const e = new Error(explainError(body.error, res.status) +
       (body.detail ? ' — ' + body.detail : ''));
+    e.code = body.error || String(res.status);
+    throw e;
   }
   return body;
 }
@@ -1377,7 +1619,21 @@ function videoSeconds(file) {
   });
 }
 
+/// How many uploads are running. The idle sign-out reads it: signing out in
+/// the middle of a two-gigabyte upload over a Myanmar connection would cost
+/// the operator the upload, and an upload is not "idle" however long it
+/// takes without a tap.
+let uploadsInFlight = 0;
 async function uploadAll(files, container, folder) {
+  uploadsInFlight += 1;
+  try {
+    return await uploadAllNow(files, container, folder);
+  } finally {
+    uploadsInFlight -= 1;
+  }
+}
+
+async function uploadAllNow(files, container, folder) {
   // ── ANYTHING CAN BE UPLOADED, AND THAT IS THE REQUIREMENT ─────────────
   //
   // The operator's own words: whatever the size, however it was shot, 4K or
@@ -1580,8 +1836,8 @@ function readForm(prefix) {
 }
 
 // ── tabs ─────────────────────────────────────────────────────────────────
-const TABS = ['catalogue', 'new', 'requests', 'cats', 'stats', 'health',
-  'editor'];
+const TABS = ['dashboard', 'catalogue', 'new', 'telegram', 'requests', 'cats',
+  'stats', 'health', 'files', 'activity', 'admins', 'security', 'editor'];
 function show(tab) {
   // LEAVING THE EDITOR WITH UNSAVED DETAILS. `beforeunload` covers closing the
   // tab, but not switching to another tab inside this page — which is the
@@ -1595,26 +1851,21 @@ function show(tab) {
   }
   if (tab !== 'editor') markClean();
   for (const t of TABS) $('tab-' + t).hidden = (t !== tab);
-  for (const b of document.querySelectorAll('nav button')) {
-    b.setAttribute('aria-selected', String(b.dataset.tab === tab));
-  }
+  markMenu(tab);
   clear();
+  if (tab === 'dashboard') loadDashboard();
+  if (tab === 'activity') loadActivity(true);
+  if (tab === 'admins') loadAdmins();
+  if (tab === 'security') loadSecurity();
   if (tab === 'catalogue') loadList();
   if (tab === 'requests') loadRequests();
   if (tab === 'cats') loadCategories();
   if (tab === 'stats') loadStats();
-  if (tab === 'health') {
-    loadHealth();
-    // AND THE PANEL BELOW IT. `loadIngest` was wired to its own Refresh
-    // button and to nothing else, so opening Health drew the heading, the
-    // paragraph explaining what to forward, and then nothing — which reads
-    // exactly like a panel that is not there. The operator went looking for
-    // it three times and could not find it, because it was empty.
-    loadIngest();
-  }
-}
-for (const b of document.querySelectorAll('nav button')) {
-  b.onclick = () => show(b.dataset.tab);
+  if (tab === 'health') loadHealth();
+  // The From Telegram panel FILLS ITSELF when its page opens. It was wired to
+  // its own Refresh button and nothing else, so it drew a heading and then
+  // nothing — which reads exactly like a panel that is not there.
+  if (tab === 'telegram') loadIngest();
 }
 
 // ── catalogue ────────────────────────────────────────────────────────────
@@ -1687,6 +1938,7 @@ async function loadList() {
 
 // ── editor ───────────────────────────────────────────────────────────────
 let cur = null;      // { title, assets, folder, publicBase }
+let editingId = null; // for the address bar: #/title/<id>
 let dirty = false;
 
 $('back').onclick = () => show('catalogue');
@@ -1707,6 +1959,7 @@ function markClean() {
 }
 
 async function openEditor(id) {
+  editingId = id;
   show('editor');
   say('info', 'Loading…');
   try {
@@ -2266,11 +2519,11 @@ $('create').onclick = async () => {
   // STILL REQUIRED HERE, and that is not an oversight. This tab is the
   // uploader: it takes files off the phone and builds a title around them. A
   // title whose files are ALREADY in the bucket — forwarded to the bot — is
-  // not made here at all; it is made by "New title from this" in Health →
+  // not made here at all; it is made by "New title from this" on the Telegram page →
   // From Telegram, in one statement, with its files already attached.
   if (!files.length) {
     return say('bad', 'Pick at least one file. If the files were forwarded to '
-      + 'the bot, make the title from Health → From Telegram instead.');
+      + 'the bot, make the title from the Telegram page instead.');
   }
 
   b.disabled = true;
@@ -3564,20 +3817,32 @@ $('signin').onclick = () => sb.auth.signInWithOAuth({
 async function boot() {
   const { data: { session } } = await sb.auth.getSession();
   const signedIn = !!session;
+  // ONCE PER PERSON, NOT ONCE PER AUTH EVENT. supabase-js reports a token
+  // refresh every hour and a verified 2-step code as auth events too; this
+  // used to redraw the console on every one of them, which threw the admin
+  // back to the first page — in the middle of an edit, an hour in.
+  const who = signedIn ? session.user.id : null;
+  if (who === bootedFor) return;
+  bootedFor = who;
   $('gate').hidden = signedIn;
-  $('nav').hidden = !signedIn;
   $('who').textContent = signedIn ? (session.user.email || session.user.id) : '';
+  $('signout').hidden = !signedIn;
   if (signedIn) {
-    show('catalogue');
+    // The shell asks the server who this is, asks for the 2-step code if the
+    // console requires one, draws the menu for that role and opens the page
+    // in the address bar.
+    await startShell();
     // Not awaited: the picker is seeded with the four that have always existed,
     // so the editor is usable immediately and gains any newer section the
     // moment the table answers. Awaiting would hold the whole console on a
     // request it does not need.
     refreshCategoryOptions();
   } else {
+    stopShell();
     for (const t of TABS) $('tab-' + t).hidden = true;
   }
 }
+let bootedFor;
 
 // Leaving with unsaved details is almost always a mistake, and the editor is
 // the one screen where a back gesture can lose typing. Media changes save
@@ -3588,7 +3853,10 @@ window.addEventListener('beforeunload', (e) => {
   e.returnValue = '';
 });
 
-sb.auth.onAuthStateChange(() => boot());
+// setTimeout, not a direct call: supabase-js holds a lock while it runs this
+// callback, and boot() asks it for the session — awaiting that inside the
+// callback is the deadlock its documentation warns about.
+sb.auth.onAuthStateChange(() => setTimeout(boot, 0));
 boot();
 </script>
 </body>
