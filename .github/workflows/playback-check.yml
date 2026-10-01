@@ -1,0 +1,42 @@
+# Ask request-playback for a free published title, the way the app does, and
+# print the SHAPE of the answer — status, which door (`edge`, `s3`, `rung`),
+# how many streaming copies, whether `url` is set. Never the URLs: they are
+# signed and this log is public.
+#
+# MANUAL ONLY. Run it after deploying request-playback: that function is what
+# every viewer goes through, real traffic can be one request an hour, and a
+# deploy that does not boot would otherwise be found by a viewer.
+name: Playback check
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Ask for a free title's playback
+        env:
+          SB_URL: ${{ secrets.SUPABASE_URL }}
+          # The publishable key. Not a secret — it ships in every APK and in
+          # the console's own page.
+          SB_KEY: sb_publishable_vTiAxBAhnZL_BqFcZD4m9A_Rb8Q8PHj
+        run: |
+          set -euo pipefail
+          id=$(curl -sS "$SB_URL/rest/v1/titles?select=id&access_tier=eq.free&published=eq.true&limit=1" \
+            -H "apikey: $SB_KEY" | python3 -c "import json,sys;r=json.load(sys.stdin);print(r[0]['id'] if r else '')")
+          if [ -z "$id" ]; then echo "no free published title"; exit 1; fi
+          code=$(curl -sS -o /tmp/p.json -w '%{http_code}' -X POST "$SB_URL/functions/v1/request-playback" \
+            -H "apikey: $SB_KEY" -H 'Content-Type: application/json' -d "{\"title_id\":\"$id\"}")
+          echo "HTTP $code"
+          python3 - <<'PY'
+          import json
+          d = json.load(open('/tmp/p.json'))
+          print('url set:', bool(d.get('url')), '| via:', d.get('via'),
+                '| rungs:', len(d.get('renditions') or []), '| code:', d.get('code'))
+          PY
+          [ "$code" = "200" ]
