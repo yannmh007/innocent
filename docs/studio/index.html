@@ -69,6 +69,7 @@
 <script src="shell.js"></script>
 <script src="control.js"></script>
 <script src="review.js"></script>
+<script src="upload.js"></script>
 <style>
 :root{
   --bg:#0c0d10; --panel:#131519; --panel2:#181b20;
@@ -538,6 +539,9 @@ body.sh-on{padding-bottom:calc(76px + env(safe-area-inset-bottom))}
 .cr-adm .cr-meta{color:var(--dim2);font-size:11.5px;flex-basis:100%}
 .cr-adm.off{opacity:.55}
 .cr-form{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end}
+.up-st{color:var(--dim)}
+.up-st.wait{color:var(--acc)}
+.up-st.ok{color:var(--ok)}
 .chip.bad{color:var(--bad);border-color:#5b2626;background:#241012}
 .cr-rv{display:flex;gap:12px;padding:10px;border:1px solid var(--line);
   border-radius:10px;margin-bottom:8px;background:linear-gradient(180deg,#121418,#101114)}
@@ -773,6 +777,8 @@ body.sh-on{padding-bottom:calc(76px + env(safe-area-inset-bottom))}
 
   <!-- ══ NEW ════════════════════════════════════════════════════════════ -->
   <section id="tab-new" hidden>
+    <!-- Uploads that stopped part-way, from upload.js's record in this phone. -->
+    <div id="upResume"></div>
     <div class="sec">
       <div class="sechead"><h2>Folder</h2></div>
       <p class="hint">Where this title's files live in R2. Chosen by you, not
@@ -1411,153 +1417,19 @@ function put(url, blob, onProgress) {
   });
 }
 
-// ── multipart: one upload, many parts, each retryable on its own ──────────
+// ── multipart, retries, waiting for the network, resume: upload.js ──────
 //
-// ═══════════════════════════════════════════════════════════════════════
-// WHAT THIS IS ACTUALLY FOR, WHICH IS NOT THE 5 GiB CAP
-// ═══════════════════════════════════════════════════════════════════════
-//
-// The cap was the visible problem: a 4K master over 5 GiB could not be uploaded
-// at all. The problem that costs an evening is a different one — a single PUT of
-// three gigabytes that fails at ninety per cent starts again from zero, and on a
-// Myanmar uplink that is hours of somebody's life and their data allowance,
-// twice. Each part is now its own transfer with its own retry, so a dropped
-// connection costs one part.
-//
-// SEQUENTIAL AND NOT PARALLEL. Three parts at once divides one slow uplink three
-// ways and finishes none of them sooner; it also makes the progress bar lie,
-// because the number that matters to somebody watching is how much of the FILE
-// has gone, not how many requests are in flight.
-
-/// Above this, upload in parts. Below it, one PUT is simpler and there is
-/// nothing to gain: a file that uploads in a minute does not need a resume.
-const MULTIPART_THRESHOLD = 128 * 1024 * 1024;
-
-/// 64 MiB a part. S3 allows ten thousand parts, so this tops out at 640 GB —
-/// far past anything that will ever be uploaded here — and it is large enough
-/// that the per-part overhead is noise and small enough that losing one to a
-/// dropped connection costs a minute rather than an hour.
-const PART_SIZE = 64 * 1024 * 1024;
-
-/// Attempts per part. Four with a doubling wait covers the shape of a bad
-/// connection: a blip, a tunnel, a tower handover.
-const PART_TRIES = 4;
-
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-
-/// PUTs one part and returns its ETag, which the complete call cannot do
-/// without.
-///
-/// THE ETag IS ONLY READABLE IF THE BUCKET SAYS SO. A browser can see a
-/// response header on a cross-origin request only when the CORS rule lists it
-/// in ExposeHeaders — and without the ETag there is no way to complete a
-/// multipart upload at all. So a missing one is reported as the configuration
-/// fault it is, by name, rather than as "upload failed": the parts went up
-/// perfectly and the only thing wrong is one line of bucket policy.
-function putPart(url, blob, onProgress) {
-  return new Promise((resolve, reject) => {
-    const x = new XMLHttpRequest();
-    x.open('PUT', url);
-    x.upload.onprogress = (e) => {
-      if (e.lengthComputable && onProgress) onProgress(e.loaded / e.total);
-    };
-    x.onload = () => {
-      if (x.status < 200 || x.status >= 300) {
-        return reject(new Error('R2 refused a part (HTTP ' + x.status + ').'));
-      }
-      const etag = x.getResponseHeader('ETag');
-      if (!etag) {
-        return reject(new Error(
-          'The part uploaded but its ETag is not readable, so the upload ' +
-          'cannot be completed. Add ETag to ExposeHeaders in the bucket\'s ' +
-          'CORS rule — nothing else is wrong.'));
-      }
-      resolve(etag.replace(/^"+|"+$/g, ''));
-    };
-    x.onerror = () => reject(new Error(
-      'A part was blocked by the browser. Either the bucket has no CORS rule ' +
-      'for this page, or the R2 token cannot write to it. Use "Check bucket ' +
-      'access".'));
-    x.send(blob);
-  });
-}
-
-/// Uploads [blob] in parts and returns the same descriptor `sign` would have.
-async function putInParts(blob, onProgress, { kind, filename, folder }) {
-  const begin = await api({ op: 'beginMultipart', kind, filename, folder });
-  const ref = { kind, objectKey: begin.objectKey, uploadId: begin.uploadId };
-  const total = blob.size;
-  const count = Math.ceil(total / PART_SIZE);
-  const done = [];
-  let sent = 0;
-  // A queue of presigned URLs, refilled as it empties. Signing all of them up
-  // front hands the operator a set that expires underneath them — see the
-  // signParts op for why that fails at part forty for no visible reason.
-  let queue = [];
-
-  try {
-    for (let n = 1; n <= count; n++) {
-      if (!queue.length) {
-        const r = await api({ ...ref, op: 'signParts', from: n, count: 8 });
-        queue = r.parts || [];
-      }
-      const slot = queue.shift();
-      if (!slot) throw new Error('The server signed no URL for part ' + n + '.');
-      // THE URL MUST BE FOR THE PART WE ARE ABOUT TO SEND. `partNumber` is
-      // inside the signature, so a batch that came back offset by one would
-      // write each chunk at the wrong index — and R2 would accept every part.
-      // The result is a file of exactly the right length with its minutes
-      // shuffled, discovered by a viewer.
-      if (slot.partNumber !== n) {
-        throw new Error('The server signed part ' + slot.partNumber +
-          ' where part ' + n + ' was asked for.');
-      }
-      const start = (n - 1) * PART_SIZE;
-      const chunk = blob.slice(start, Math.min(start + PART_SIZE, total));
-
-      let etag = null;
-      let last = null;
-      for (let t = 0; t < PART_TRIES; t++) {
-        // A RETRY GETS A FRESH URL. The old one may be the reason the attempt
-        // failed — an hour is a long time on this connection — and re-signing
-        // one part costs a single small request.
-        let url = slot.url;
-        if (t > 0) {
-          await sleep(1000 * Math.pow(2, t - 1));
-          try {
-            const again = await api({ ...ref, op: 'signParts', from: n, count: 1 });
-            if (again.parts && again.parts[0]) url = again.parts[0].url;
-          } catch (_) { /* keep the URL we have and try it */ }
-        }
-        try {
-          etag = await putPart(url, chunk,
-            (f) => onProgress && onProgress((sent + f * chunk.size) / total));
-          break;
-        } catch (e) {
-          last = e;
-          // A CORS fault will not fix itself on the next attempt, and three
-          // more identical failures only delay the message that says so.
-          if (/ExposeHeaders/.test(String(e.message || e))) throw e;
-        }
-      }
-      if (!etag) throw last || new Error('Part ' + n + ' would not upload.');
-
-      sent += chunk.size;
-      if (onProgress) onProgress(sent / total);
-      done.push({ partNumber: n, etag });
-    }
-    await api({ ...ref, op: 'completeMultipart', parts: done });
-    return begin;
-  } catch (e) {
-    // TIDY UP, ALWAYS. Parts that were uploaded and never completed sit in the
-    // bucket invisible to every listing and charged for by the gigabyte-month.
-    try { await api({ ...ref, op: 'abortMultipart' }); } catch (_) {}
-    throw e;
-  }
-}
+// The parts, the patience and the record that lets a dead tab carry on all
+// live in upload.js now (`putInParts`, `putSmall`, `patiently`, the job
+// store). `put` above stays for the small extras — a poster frame, a chosen
+// thumbnail — where losing one costs a picture, not an upload.
 
 /// Measures, presigns, uploads, and returns the asset descriptor the API wants.
-async function uploadOne(file, onProgress, folder, note) {
+///
+/// `ctx` (optional): `status(text, tone)` for the row's live line, `resume`
+/// (an earlier multipart record for this file) and `record(mp)` (called with
+/// each new state of the multipart upload, for the job store).
+async function uploadOne(file, onProgress, folder, note, ctx = {}) {
   const isVideo = file.type.startsWith('video');
   const meta = await measure(file);
 
@@ -1574,16 +1446,26 @@ async function uploadOne(file, onProgress, folder, note) {
   }
 
   // ONE PUT FOR A SMALL FILE, PARTS FOR A LARGE ONE. The threshold is about
-  // resumability rather than about the 5 GiB cap — see putInParts.
+  // resumability rather than about the 5 GiB cap — see upload.js.
   const kind = isVideo ? 'video' : 'photo';
   let sig;
   if (body.size > MULTIPART_THRESHOLD) {
-    sig = await putInParts(body, onProgress, { kind, filename: file.name, folder });
-  } else {
-    sig = await api({
-      op: 'sign', kind, filename: file.name, size: body.size, folder,
+    // THE SAME BYTES OR NOTHING. A resume sends only the missing parts, so
+    // the file picked again must be byte for byte the one that was started —
+    // checked by size and by a fingerprint of the bytes after the faststart
+    // rewrite (which is deterministic: the same input gives the same output).
+    const fp = await fingerprint(body);
+    let resume = ctx.resume || null;
+    if (resume && (resume.bodySize !== body.size || (resume.fp && resume.fp !== fp))) {
+      resume = null;
+      if (ctx.status) ctx.status('This is not the same file as before — sending it from the start', 'warn');
+    }
+    sig = await putInParts(body, onProgress, { kind, filename: file.name, folder }, {
+      status: ctx.status, resume,
+      record: (mp) => ctx.record && ctx.record({ ...mp, fp }),
     });
-    await put(sig.uploadUrl, body, onProgress);
+  } else {
+    sig = await putSmall(body, onProgress, { kind, filename: file.name, folder }, ctx.status);
   }
 
   const out = {
@@ -1658,16 +1540,27 @@ function videoSeconds(file) {
 /// the operator the upload, and an upload is not "idle" however long it
 /// takes without a tap.
 let uploadsInFlight = 0;
-async function uploadAll(files, container, folder) {
+async function uploadAll(files, container, folder, job) {
   uploadsInFlight += 1;
+  holdScreenOn();
   try {
-    return await uploadAllNow(files, container, folder);
+    return await uploadAllNow(files, container, folder, job);
   } finally {
     uploadsInFlight -= 1;
+    if (!uploadsInFlight) letScreenSleep();
   }
 }
+// The browser drops a screen wake lock whenever the tab is hidden; take it
+// again when the tab comes back with an upload still going.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && uploadsInFlight > 0) holdScreenOn();
+});
 
-async function uploadAllNow(files, container, folder) {
+/// `job` (from upload.js's `newUploadJob`) is the record that lets this be
+/// resumed after the tab dies: each file's progress is written into it as it
+/// goes, and a file it already has as done is not uploaded again. A file
+/// that is done is passed in as a stand-in `{ name, size, done: true }`.
+async function uploadAllNow(files, container, folder, job) {
   // ── ANYTHING CAN BE UPLOADED, AND THAT IS THE REQUIREMENT ─────────────
   //
   // The operator's own words: whatever the size, however it was shot, 4K or
@@ -1685,7 +1578,7 @@ async function uploadAllNow(files, container, folder) {
   // local file, which is milliseconds.
   const needsLadder = [];
   for (const f of files) {
-    if (!f.type.startsWith('video')) continue;
+    if (!(f instanceof Blob) || !f.type.startsWith('video')) continue;
     const secs = await videoSeconds(f);
     if (!secs || secs <= 0) continue;
     const kbps = Math.round((f.size * 8) / secs / 1000);
@@ -1696,6 +1589,7 @@ async function uploadAllNow(files, container, folder) {
   }
 
   const notes = [];
+  const lines = [];
   const bars = files.map((f) => {
     const bar = el('i');
     // One line per file for what the rewrite did to it. An operator who can
@@ -1705,10 +1599,15 @@ async function uploadAllNow(files, container, folder) {
     // slow on some titles and not others.
     const nt = el('span', { className: 'note' });
     notes.push(nt);
+    // THE LIVE LINE: speed and time left while it runs, "waiting for the
+    // connection" while it cannot. A bar that stops moving with nothing
+    // beside it reads as a page that has hung, and gets reloaded.
+    const st = el('span', { className: 'note up-st' });
+    lines.push(st);
     container.append(el('div', { className: 'prog' }, [
       el('span', { className: 'n' }, text(f.name)),
       el('span', { className: 'ptrack' }, [bar]),
-      nt,
+      nt, st,
     ]));
     return bar;
   });
@@ -1718,13 +1617,60 @@ async function uploadAllNow(files, container, folder) {
   const worker = async () => {
     while (next < files.length) {
       const i = next++;
+      const jf = job ? job.files[i] : null;
+      if (files[i] && files[i].done && jf && jf.state === 'done') {
+        out[i] = jf.asset;
+        bars[i].style.width = '100%';
+        lines[i].textContent = 'already uploaded';
+        continue;
+      }
+      // Speed over the last ten seconds, not since the start: a connection
+      // that has just come back should not be averaged with the minutes it
+      // was gone.
+      const samples = [];
+      let waiting = false;
+      const size = files[i].size || 0;
+      const status = (t, tone) => {
+        waiting = tone === 'wait';
+        lines[i].className = 'note up-st ' + (tone || '');
+        lines[i].textContent = t;
+      };
       out[i] = await uploadOne(files[i], (p) => {
         bars[i].style.width = Math.round(p * 100) + '%';
+        const now = Date.now();
+        samples.push([now, p * size]);
+        while (samples.length > 2 && now - samples[0][0] > 10000) samples.shift();
+        if (waiting || samples.length < 2) return;
+        const [t0, b0] = samples[0];
+        const rate = (p * size - b0) / Math.max(1, (now - t0) / 1000);
+        if (rate > 0) {
+          const left = ((1 - p) * size) / rate;
+          lines[i].className = 'note up-st';
+          lines[i].textContent = (rate / 1048576).toFixed(1) + ' MB/s · ' +
+            (left > 90 ? Math.round(left / 60) + ' min left' : Math.round(left) + ' s left');
+        }
       }, folder, (state, detail) => {
         notes[i].className = 'note ' + state;
         notes[i].textContent = detail;
+      }, {
+        status,
+        resume: jf && jf.mp ? jf.mp : null,
+        record: (mp) => {
+          if (!jf) return;
+          jf.state = 'partial';
+          jf.mp = mp;
+          upSave(job);
+        },
       });
       bars[i].style.width = '100%';
+      lines[i].className = 'note up-st ok';
+      lines[i].textContent = 'uploaded';
+      if (jf) {
+        jf.state = 'done';
+        jf.asset = out[i];
+        delete jf.mp;
+        upSave(job);
+      }
     }
   };
   const workers = [];
@@ -1741,26 +1687,43 @@ async function uploadAllNow(files, container, folder) {
   // plays; it just plays at whatever bitrate it was shot at until somebody
   // queues it from the Health panel. Throwing here would make a successful
   // upload look like a failed one.
-  if (needsLadder.length) {
+  //
+  // AFTER THE ROW, NOT HERE. This used to queue them right here — before the
+  // title (and so the asset rows) existed — and `queue` finds an asset by its
+  // key in title_assets, so it could never find one; every heavy upload
+  // ended with "could not be queued" and was queued by hand from Health.
+  // The keys are handed to the job, and `queueLadders` runs once the row is
+  // written (finishUploadJob in upload.js).
+  if (needsLadder.length && job) {
     const wanted = new Set(needsLadder.map((h) => h.name));
-    const keys = [];
+    job.ladder = [];
     files.forEach((f, i) => {
-      if (wanted.has(f.name) && out[i] && out[i].objectKey) keys.push(out[i].objectKey);
+      if (wanted.has(f.name) && out[i] && out[i].objectKey) job.ladder.push(out[i].objectKey);
     });
-    let queued = 0;
-    for (const key of keys) {
-      try {
-        await api({ op: 'queue', object_key: key }, TRANSCODE_API);
-        queued++;
-      } catch (e) { /* reported below, never fatal */ }
-    }
-    say(queued ? 'info' : 'bad', queued
-      ? queued + ' video(s) queued for smaller streaming copies. They play ' +
-        'as uploaded until those are ready — watch the Health tab.'
-      : 'These videos are heavier than a phone connection can carry and ' +
-        'could not be queued for conversion. Queue them from Health.');
+    upSave(job);
   }
   return out;
+}
+
+/// Queues smaller streaming copies for the heavy videos of a job whose title
+/// row now exists. A failure here is not an upload failure — the file plays;
+/// it plays at the bitrate it was shot at until somebody queues it.
+/// Answers a sentence for the caller's message ('' when there was nothing to
+/// queue) rather than saying it, so it is not overwritten a moment later.
+async function queueLadders(keys) {
+  if (!keys || !keys.length) return '';
+  let queued = 0;
+  for (const key of keys) {
+    try {
+      await api({ op: 'queue', object_key: key }, TRANSCODE_API);
+      queued++;
+    } catch (e) { /* reported below, never fatal */ }
+  }
+  return queued
+    ? queued + ' video(s) queued for smaller streaming copies; they play as ' +
+      'uploaded until those are ready (see Health).'
+    : 'These videos are heavier than a phone connection can carry and could ' +
+      'not be queued for smaller copies — queue them from Health.';
 }
 
 /// Makes a dashed box accept a drop and feed it into the file input.
@@ -1890,6 +1853,7 @@ function show(tab) {
   clear();
   if (tab === 'dashboard') loadDashboard();
   if (tab === 'review') loadReview();
+  if (tab === 'new') drawInterrupted();
   if (tab === 'activity') loadActivity(true);
   if (tab === 'admins') loadAdmins();
   if (tab === 'security') loadSecurity();
@@ -2467,14 +2431,22 @@ $('addFiles').onchange = async () => {
   host.textContent = '';
   try {
     say('info', 'Uploading ' + files.length + ' file(s) into ' + cur.folder + '/…');
-    const assets = await uploadAll(files, host, cur.folder);
-    await api({ op: 'addAssets', titleId: cur.title.id, assets });
+    const job = newUploadJob(files, cur.folder,
+      { op: 'addAssets', titleId: cur.title.id }, cur.title.title);
+    await upSave(job);
+    const assets = await uploadAll(files, host, cur.folder, job);
+    const res = await finishUploadJob(job, assets);
     $('addFiles').value = '';
     host.textContent = '';
     $('addWrap').hidden = true;
     await openEditor(cur.title.id);
-    say('ok', 'Added ' + assets.length + ' file(s). Drag to place them.');
-  } catch (e) { say('bad', String(e.message || e)); }
+    say('ok', 'Added ' + assets.length + ' file(s). Drag to place them.' +
+      (res.ladderNote ? ' ' + res.ladderNote : ''));
+  } catch (e) {
+    // Not lost: the parts already sent are recorded, and Upload → Interrupted
+    // uploads carries on from them.
+    say('bad', String(e.message || e) + ' — what was sent is kept; resume it from Upload.');
+  }
 };
 
 $('delTitle').onclick = async () => {
@@ -2578,15 +2550,20 @@ $('create').onclick = async () => {
   host.textContent = '';
   try {
     say('info', 'Uploading ' + files.length + ' file(s) into ' + raw + '/…');
-    const assets = await uploadAll(files, host, raw);
-    const res = await api({
+    // THE FORM IS KEPT WITH THE FILES, so a resume after the tab died makes
+    // the same title — the details typed before the upload started are not
+    // something the operator should have to type twice.
+    const job = newUploadJob(files, raw, { op: 'create', payload: {
       op: 'create', folder: raw,
       title: f.title, titleMm: f.title_mm, synopsis: f.synopsis,
       category: f.category, year: f.year, rating: f.rating,
       quality: f.quality_label, genres: f.genres, keywords: f.keywords,
       episodes: f.episode_count, free: f.access_tier === 'free',
-      featured: f.is_featured, assets,
-    });
+      featured: f.is_featured,
+    } }, f.title);
+    await upSave(job);
+    const assets = await uploadAll(files, host, raw, job);
+    const res = await finishUploadJob(job, assets);
     $('nFiles').value = '';
     $('nFolder').value = '';
     $('nPaths').textContent = '';
@@ -2594,8 +2571,12 @@ $('create').onclick = async () => {
     await openEditor(res.id);
     say('ok', 'Saved "' + res.title + '" as a DRAFT — it is not in the app yet. '
       + 'Set the cover and the order, then send it for review (or approve it) '
-      + 'from the bar at the top.');
-  } catch (e) { say('bad', String(e.message || e)); }
+      + 'from the bar at the top.' + (res.ladderNote ? ' ' + res.ladderNote : ''));
+  } catch (e) {
+    say('bad', String(e.message || e) + ' — what was sent is kept; resume it from '
+      + 'Interrupted uploads at the top of this page.');
+    drawInterrupted();
+  }
   b.disabled = false;
 };
 
@@ -3896,7 +3877,9 @@ let bootedFor;
 // the one screen where a back gesture can lose typing. Media changes save
 // themselves on the spot, so this only ever fires for the form.
 window.addEventListener('beforeunload', (e) => {
-  if (!dirty) return;
+  // An upload in flight counts too. It can be resumed now, but resuming
+  // means picking the file again — worth one "are you sure".
+  if (!dirty && !uploadsInFlight) return;
   e.preventDefault();
   e.returnValue = '';
 });

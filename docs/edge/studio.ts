@@ -606,7 +606,7 @@ const NEED: Record<string, Role> = {
   requests: 'viewer', stats: 'viewer', categories: 'viewer', health: 'viewer',
   // uploading and drafting
   sign: 'uploader', beginMultipart: 'uploader', signParts: 'uploader',
-  completeMultipart: 'uploader', abortMultipart: 'uploader',
+  completeMultipart: 'uploader', abortMultipart: 'uploader', listParts: 'uploader',
   folder: 'uploader', checkFolder: 'uploader',
   create: 'uploader', save: 'uploader', addAssets: 'uploader',
   updateAsset: 'uploader', reorder: 'uploader', setPrimary: 'uploader',
@@ -632,7 +632,7 @@ const NEED: Record<string, Role> = {
 const READS = new Set([
   'whoami', 'summary', 'list', 'get', 'requests', 'stats', 'categories',
   'health', 'checkFolder', 'folder', 'selftest', 'audit', 'admins', 'settings',
-  'sign', 'beginMultipart', 'signParts',
+  'sign', 'beginMultipart', 'signParts', 'listParts',
   'reviewQueue', 'reviewHistory', 'previewUrl',
 ]);
 
@@ -1023,8 +1023,66 @@ async function handleOp(
       return json({ error: 'complete_failed', status: res.status,
         detail: xmlTag(xml, 'Message') ?? xml.slice(0, 200) }, 502, req);
     }
-    return json({ ok: true, bucket, objectKey,
+    // HOW BIG IS WHAT ARRIVED. Read back from R2 rather than assumed: the
+    // page compares it with the file it sent before it writes a row, so an
+    // upload that "finished" short is caught here and not by a viewer whose
+    // film stops ten minutes early. Best effort — a HEAD that fails leaves
+    // `bytes` null, which the page treats as "could not check", not as wrong.
+    let bytes: number | null = null;
+    try {
+      const h = await signRequest('HEAD', bucket, objectKey, {}, '');
+      const hr = await fetch(h.url, { method: 'HEAD', headers: h.headers });
+      if (hr.ok) bytes = Number(hr.headers.get('Content-Length')) || null;
+    } catch {
+      // Left null.
+    }
+    return json({ ok: true, bucket, objectKey, bytes,
       publicUrl: kind === 'video' ? null : `${PUBLIC_BASE}/${objectKey}` }, 200, req);
+  }
+
+  // --- listParts: which parts of an upload R2 actually holds ---------------
+  //
+  // FOR RESUMING after the tab died. The page keeps its own record of the
+  // parts R2 accepted; this is the cross-check from the other side, and the
+  // way to learn the upload is gone — R2 aborts an unfinished upload after
+  // seven days by default, and then answers NoSuchUpload (404).
+  //
+  // Paged by 1000 like the S3 API; twelve pages is more than the 10,000-part
+  // ceiling, so the loop cannot run away.
+  if (body.op === 'listParts') {
+    const objectKey = String(body.objectKey ?? '');
+    const uploadId = String(body.uploadId ?? '');
+    if (!isMintedKey(objectKey)) return json({ error: 'bad_key' }, 400, req);
+    if (!uploadId) return json({ error: 'no_upload_id' }, 400, req);
+    const bucket = body.kind === 'photo' || body.kind === 'thumb'
+      ? PUBLIC_BUCKET : MEDIA_BUCKET;
+    const parts: Array<{ partNumber: number; etag: string; size: number }> = [];
+    let marker = '';
+    for (let page = 0; page < 12; page++) {
+      const q: Record<string, string> = { uploadId, 'max-parts': '1000' };
+      if (marker) q['part-number-marker'] = marker;
+      const signed = await signRequest('GET', bucket, objectKey, q, '');
+      const res = await fetch(signed.url, { headers: signed.headers });
+      const xml = await res.text();
+      if (!res.ok) {
+        const code = xmlTag(xml, 'Code') ?? '';
+        if (res.status === 404 || code === 'NoSuchUpload') {
+          return json({ error: 'no_such_upload' }, 404, req);
+        }
+        return json({ error: 'list_parts_failed', status: res.status, detail: code }, 502, req);
+      }
+      for (const block of xml.split('<Part>').slice(1)) {
+        parts.push({
+          partNumber: Number(xmlTag(block, 'PartNumber') ?? 0),
+          etag: String(xmlTag(block, 'ETag') ?? '').replace(/&quot;|"/g, ''),
+          size: Number(xmlTag(block, 'Size') ?? 0),
+        });
+      }
+      if (xmlTag(xml, 'IsTruncated') !== 'true') break;
+      marker = xmlTag(xml, 'NextPartNumberMarker') ?? '';
+      if (!marker) break;
+    }
+    return json({ parts }, 200, req);
   }
 
   // --- abortMultipart: the tidying that stops an abandoned upload billing ---

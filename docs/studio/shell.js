@@ -360,6 +360,12 @@ async function loadDashboard() {
   if (tg.unattached) item('', tg.unattached + ' Telegram file(s) in no title yet — make titles from them on Review', '#/review');
   if (s.requests && canApprove) item('', s.requests + ' premium request(s) waiting for approval', '#/requests');
   if (t.drafts) item('', t.drafts + ' draft title(s) not in the app', '#/review');
+  // Uploads that stopped part-way on THIS phone — only this phone has the
+  // files, so only here can they be finished.
+  const stopped = await upJobs();
+  if (stopped.length) {
+    item('bad', stopped.length + ' upload(s) stopped part-way on this phone — resume them', '#/upload');
+  }
   if (!todo.childNodes.length) {
     todo.append(el('div', { className: 'empty' }, text('Nothing is waiting. All clear.')));
   }

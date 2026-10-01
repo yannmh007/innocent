@@ -23,6 +23,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join, extname } from 'path';
 import { createRequire } from 'module';
 import { execSync } from 'child_process';
+import { createHash } from 'crypto';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const STUDIO = join(ROOT, 'docs', 'studio');
@@ -48,7 +49,7 @@ const check = (what, ok) => {
 };
 
 const SB = 'https://yqonvmuiezqvyqmexrft.supabase.co';
-const SITE = 'http://studio.test';
+const SITE = 'https://studio.test';
 const USER = '6c679480-3387-4442-ad3d-4423b8aceb71';
 const OTHER = '00000000-0000-4000-8000-0000000000a1';
 const SOLAR = '11111111-1111-4111-8111-111111111111';
@@ -94,6 +95,15 @@ async function open(browser, role, opts = {}) {
         tg_caption: 'Album Name\nthe synopsis', file_name: '2.jpg' },
     ],
     decisions: [],
+    // A fake R2 for the uploader: the multipart uploads it holds, every PUT
+    // it was sent, and the knobs a test turns — hold a part, refuse
+    // everything, report the wrong size.
+    r2: { uploads: {}, puts: [], begins: 0, aborts: [], creates: [], hold: null,
+      refuseAll: false, wrongSize: false },
+    // The phone's connection, as far as the fake servers are concerned: while
+    // false, every request to R2 and to Supabase is cut off. (Playwright's own
+    // offline switch does not reach requests the test answers itself.)
+    online: true,
   };
   page.on('pageerror', (e) => state.errors.push(String(e)));
   // A refused request is logged by the browser as "Failed to load resource";
@@ -116,6 +126,39 @@ async function open(browser, role, opts = {}) {
   await page.route(/https:\/\/(media|pub)\.test\//, (route) =>
     route.fulfill({ status: 404, body: '' }));
 
+  // The bucket. Parts are PUT to https://r2.test/up/<uploadId>/<n>, small
+  // files to https://r2.test/one/<key>. Answers with the CORS headers a real
+  // bucket rule gives, ETag exposed — the MD5 of the part, as R2's is.
+  await page.route('https://r2.test/**', async (route) => {
+    const req = route.request();
+    const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'PUT',
+      'Access-Control-Allow-Headers': '*', 'Access-Control-Expose-Headers': 'ETag' };
+    if (req.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: cors });
+    const m = /\/up\/([^/]+)\/(\d+)$/.exec(new URL(req.url()).pathname);
+    const r2 = state.r2;
+    if (!state.online) return route.abort('internetdisconnected');
+    if (r2.refuseAll) return route.abort('failed');
+    if (r2.cut && r2.cut(Number((/\/(\d+)$/.exec(new URL(req.url()).pathname) || [])[1]))) {
+      return route.abort('connectionreset');
+    }
+    const n = m ? Number(m[2]) : 0;
+    if (m && r2.hold) {
+      const wait = r2.hold(n);
+      if (wait) { try { await wait; } catch { /* released by a reload */ } }
+      if (!state.online) return route.abort('internetdisconnected').catch(() => {});
+    }
+    const buf = req.postDataBuffer() || Buffer.alloc(0);
+    const etag = createHash('md5').update(buf).digest('hex');
+    r2.puts.push({ upload: m ? m[1] : null, n, size: buf.length });
+    if (m) {
+      const up = r2.uploads[m[1]];
+      if (up) up.parts[n] = { etag, size: buf.length };
+    }
+    try {
+      await route.fulfill({ status: 200, body: '', headers: { ...cors, ETag: '"' + etag + '"' } });
+    } catch { /* the page went away mid-request */ }
+  });
+
   await page.route(SITE + '/**', async (route) => {
     const path = new URL(route.request().url()).pathname.replace(/^\//, '') || 'index.html';
     try {
@@ -132,6 +175,7 @@ async function open(browser, role, opts = {}) {
 
   await page.route(SB + '/**', async (route) => {
     const req = route.request();
+    if (!state.online) return route.abort('internetdisconnected');
     const url = new URL(req.url());
     const p = url.pathname;
     if (req.method() === 'OPTIONS') {
@@ -178,6 +222,9 @@ async function open(browser, role, opts = {}) {
       });
     }
 
+    if (p === '/functions/v1/studio' && req.method() === 'GET') {
+      return json(route, 200, { ok: true, service: 'studio' });
+    }
     if (p === '/functions/v1/studio') {
       if (opts.notAdmin) return json(route, 403, { error: 'not_an_admin' });
       if (opts.requireMfa && claims.aal !== 'aal2') return json(route, 403, { error: 'mfa_required' });
@@ -225,6 +272,30 @@ async function open(browser, role, opts = {}) {
             ] };
         },
         previewUrl: () => ({ url: 'https://media.test/p.mp4', kind: 'video', height: 720, via: 'worker' }),
+        checkFolder: () => ({ ok: true, folder: body.folder, takenBy: null, preview: {} }),
+        sign: () => ({ uploadUrl: 'https://r2.test/one/' + encodeURIComponent(body.filename),
+          objectKey: (body.folder || 'f') + '/photo/' + body.filename, kind: body.kind }),
+        beginMultipart: () => {
+          const id = 'u' + (++state.r2.begins);
+          state.r2.uploads[id] = { key: (body.folder || 'f') + '/photo/' + id + '-' + body.filename, parts: {} };
+          return { uploadId: id, objectKey: state.r2.uploads[id].key, kind: body.kind, publicUrl: null };
+        },
+        signParts: () => ({ parts: Array.from({ length: body.count || 8 }, (_, k) => ({
+          partNumber: body.from + k,
+          url: 'https://r2.test/up/' + body.uploadId + '/' + (body.from + k) })), expiresIn: 3600 }),
+        listParts: () => {
+          const up = state.r2.uploads[body.uploadId];
+          if (!up) return { __status: 404, error: 'no_such_upload' };
+          return { parts: Object.entries(up.parts).map(([n, p]) => ({ partNumber: Number(n), ...p })) };
+        },
+        completeMultipart: () => {
+          const up = state.r2.uploads[body.uploadId];
+          const bytes = (body.parts || []).reduce((a, p) => a + (up.parts[p.partNumber] || { size: 0 }).size, 0);
+          delete state.r2.uploads[body.uploadId];
+          return { ok: true, objectKey: up.key, bytes: state.r2.wrongSize ? 1 : bytes, publicUrl: null };
+        },
+        abortMultipart: () => { state.r2.aborts.push(body.uploadId); return { ok: true }; },
+        create: () => { state.r2.creates.push(body); return { id: MINE, title: body.title, status: 'draft' }; },
       };
       // The decisions, with the two rules the page must not be trusted with:
       // only an editor or owner approves, and a send-back needs a note.
@@ -247,7 +318,9 @@ async function open(browser, role, opts = {}) {
       }
       const f = ops[body.op];
       if (!f) { state.unexpected.push('studio op ' + body.op); return json(route, 400, { error: 'unknown_op' }); }
-      return json(route, 200, f());
+      const out = f();
+      if (out && out.__status) return json(route, out.__status, { error: out.error });
+      return json(route, 200, out);
     }
     if (p === '/functions/v1/ingest') {
       if (body.op === 'discard') {
@@ -541,6 +614,153 @@ try {
     check('uploader review: nothing is wider than the phone (' + w + 'px)', w <= 390);
     check('uploader review: no script errors', state.errors.length === 0);
     if (state.errors.length) console.log('     ' + state.errors.join('\n     '));
+    await ctx.close();
+  }
+
+  // ── the uploader: drops, stalls, a dead tab, the wrong file ────────────
+  {
+    const { page, ctx, state } = await open(browser, 'owner', { hash: '#/upload' });
+    await page.waitForSelector('#tab-new:not([hidden])');
+    const fast = async () => page.evaluate(() => {
+      UPLOAD_TIMING.stallMs = 1500; UPLOAD_TIMING.backoffMs = 30; UPLOAD_TIMING.pollMs = 200;
+      // 40 MiB, the same bytes for the same seed — so a file "picked again"
+      // in the test is byte for byte the one that was started.
+      window.__mk = (seed, name) => {
+        const n = 40 * 1024 * 1024;
+        const u = new Uint8Array(n);
+        for (let i = 0; i < n; i++) u[i] = (i * 31 + seed) & 255;
+        return new File([u], name, { type: 'image/jpeg', lastModified: 1 });
+      };
+      window.__start = (seed, name) => {
+        window.__res = null; window.__err = null;
+        const f = __mk(seed, name);
+        const host = document.body.appendChild(document.createElement('div'));
+        const job = newUploadJob([f], 'f', { op: 'create', payload: { op: 'create', folder: 'f', title: name } }, name);
+        upSave(job).then(() => uploadAll([f], host, 'f', job))
+          .then((a) => finishUploadJob(job, a))
+          .then((r) => { window.__res = r; }, (e) => { window.__err = String(e.message || e); });
+      };
+    });
+    const nodeFile = (seed, name) => {
+      const n = 40 * 1024 * 1024;
+      const b = Buffer.alloc(n);
+      for (let i = 0; i < n; i++) b[i] = (i * 31 + seed) & 255;
+      return { name, mimeType: 'image/jpeg', buffer: b };
+    };
+    const settled = () => page.waitForFunction(() => window.__res || window.__err, null, { timeout: 60000 });
+    const partsOf = (id) => state.r2.puts.filter((p) => p.upload === id).map((p) => p.n);
+    await fast();
+
+    // A. The connection goes in the middle of a file, and comes back.
+    let dropped = false;
+    state.r2.hold = (n) => (n === 2 && !dropped ? (dropped = true, state.online = false, 'drop') : null);
+    await page.evaluate(() => __start(1, 'drop.jpg'));
+    await page.waitForFunction(() => /Waiting for the connection/.test(document.body.textContent), null, { timeout: 20000 });
+    // Still offline a few seconds later: it waits, it does not give up.
+    await new Promise((r) => setTimeout(r, 3000));
+    check('upload: a dropped connection is waited out, not failed',
+      !(await page.evaluate(() => window.__err)) && !(await page.evaluate(() => window.__res)) &&
+      /Waiting for the connection/.test(await page.textContent('body')));
+    state.online = true;
+    await settled();
+    check('upload: and carries on by itself when it is back (' + (await page.evaluate(() => window.__err)) + ')',
+      !!(await page.evaluate(() => window.__res)));
+    check('upload: 16 MB parts — a 40 MB file is three', partsOf('u1').filter((n, i, a) => a.indexOf(n) === i).length === 3);
+    check('upload: nothing was aborted along the way', state.r2.aborts.length === 0);
+    check('upload: the title row was written once', state.r2.creates.length === 1);
+    check('upload: and nothing is left in the resume record',
+      (await page.evaluate(() => upJobs().then((j) => j.length))) === 0);
+    state.r2.hold = null;
+
+    // B. The tab dies after part 1. Reopen, pick the same file: only 2 and 3 go.
+    let release;
+    const held = new Promise((r) => { release = r; });
+    state.r2.hold = (n) => (n === 2 ? held : null);
+    await page.evaluate(() => __start(2, 'dies.jpg'));
+    await page.waitForFunction(() => true);
+    for (let k = 0; k < 200 && !partsOf('u2').includes(1); k++) await new Promise((r) => setTimeout(r, 50));
+    check('upload: part 1 reached R2 before the tab died', partsOf('u2').includes(1));
+    await page.reload();
+    await page.waitForSelector('#tab-new:not([hidden])');
+    release();
+    state.r2.hold = null;
+    await fast();
+    await page.waitForSelector('#upResume .cr-rv');
+    check('upload: the stopped upload is offered for resuming', /dies\.jpg/.test(await page.textContent('#upResume')));
+    await shot(page, 'desk-upload-resume');
+    const beginsBefore = state.r2.begins;
+    const putsBefore = state.r2.puts.length;
+    await page.setInputFiles('#upResume .cr-rv input[type=file]', nodeFile(2, 'dies.jpg'));
+    await page.waitForFunction(() => /Finished/.test(document.querySelector('#msg')?.textContent || ''), null, { timeout: 60000 });
+    const resent = state.r2.puts.slice(putsBefore).filter((p) => p.upload === 'u2').map((p) => p.n);
+    check('upload: the resume sent only what was missing (' + resent.join(',') + ')',
+      !resent.includes(1) && resent.includes(2) && resent.includes(3));
+    check('upload: into the same upload, not a new one', state.r2.begins === beginsBefore);
+    check('upload: and wrote the title it was going to', state.r2.creates.some((c) => c.title === 'dies.jpg'));
+    check('upload: the record is gone once it is finished',
+      (await page.evaluate(() => upJobs().then((j) => j.length))) === 0);
+
+    // C. The wrong file picked on resume: same name and size, other bytes.
+    await page.evaluate(() => show('new'));
+    const held2 = new Promise(() => {});
+    state.r2.hold = (n) => (n === 2 ? held2 : null);
+    await page.evaluate(() => __start(3, 'other.jpg'));
+    for (let k = 0; k < 200 && !partsOf('u3').includes(1); k++) await new Promise((r) => setTimeout(r, 50));
+    await page.reload();
+    state.r2.hold = null;
+    await page.waitForSelector('#tab-new:not([hidden])');
+    await fast();
+    await page.waitForSelector('#upResume .cr-rv');
+    const b2 = state.r2.begins;
+    await page.setInputFiles('#upResume .cr-rv input[type=file]', nodeFile(4, 'other.jpg'));
+    await page.waitForFunction(() => /Finished/.test(document.querySelector('#msg')?.textContent || ''), null, { timeout: 60000 });
+    check('upload: a different file under the same name is sent from the start, not spliced in',
+      state.r2.begins === b2 + 1);
+
+    // D. A part that stalls is given up on and sent again.
+    let stalls = 0;
+    state.r2.hold = (n) => (n === 1 && stalls++ === 0 ? new Promise((r) => setTimeout(r, 4000)) : null);
+    await page.evaluate(() => __start(5, 'stall.jpg'));
+    await settled();
+    const id5 = 'u' + state.r2.begins;
+    check('upload: a stalled part is abandoned and retried', stalls >= 2 && !!(await page.evaluate(() => window.__res)));
+    state.r2.hold = null;
+
+    // D2. R2 drops part 2 again and again while the server answers fine —
+    //     a bad uplink to the bucket. Some of this file already went up, so
+    //     it is an unsteady connection, not a refusing bucket: keep going.
+    let flaky = 0;
+    state.r2.cut = (n) => n === 2 && flaky++ < 6;
+    await page.evaluate(() => __start(8, 'flaky.jpg'));
+    await settled();
+    check('upload: a part cut off six times while the server is fine still gets there (' +
+      (await page.evaluate(() => window.__err)) + ')',
+      !!(await page.evaluate(() => window.__res)) && flaky >= 6);
+    state.r2.cut = null;
+
+    // E. A bucket that refuses everything fails at once — not "waiting" for ever.
+    state.r2.refuseAll = true;
+    const t0 = Date.now();
+    await page.evaluate(() => __start(6, 'refused.jpg'));
+    await settled();
+    check('upload: a bucket that refuses everything is reported, quickly (' + (Date.now() - t0) + ' ms)',
+      /CORS/.test(String(await page.evaluate(() => window.__err))) && Date.now() - t0 < 15000);
+    state.r2.refuseAll = false;
+
+    // F. "Finished" but short: nothing is saved.
+    state.r2.wrongSize = true;
+    const creates = state.r2.creates.length;
+    await page.evaluate(() => __start(7, 'short.jpg'));
+    await settled();
+    check('upload: a short file after "complete" is refused before any row',
+      /holds 1 bytes/.test(String(await page.evaluate(() => window.__err))) &&
+      state.r2.creates.length === creates);
+    state.r2.wrongSize = false;
+
+    check('upload: no script errors', state.errors.length === 0);
+    if (state.errors.length) console.log('     ' + state.errors.join('\n     '));
+    check('upload: nothing unexpected was called', state.unexpected.length === 0);
+    if (state.unexpected.length) console.log('     ' + state.unexpected.join('\n     '));
     await ctx.close();
   }
 

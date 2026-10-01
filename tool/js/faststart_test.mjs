@@ -104,6 +104,16 @@ check('every patched offset still lands on its own chunk',
   markers.join(',') === 'a1,b2,c3');
 check('moov is now the second box', b2.map(b=>b.type).join(',') === 'ftyp,moov,mdat');
 
+// Case 1b: THE SAME INPUT GIVES THE SAME BYTES. Resuming an upload after the
+// tab died sends only the parts R2 does not have, from the file picked again
+// and rewritten again — so the rewrite must be deterministic, or part 3 of
+// one rewrite would be spliced onto parts 1–2 of another. (upload.js also
+// fingerprints the bytes and refuses to splice when they differ; this is the
+// reason that check passes for the right file.)
+const again = await mod.faststart(new F(original, 'test.mp4', 'video/mp4'));
+check('the same file rewrites to the same bytes every time',
+  Buffer.compare(Buffer.from(again.blob._b), Buffer.from(out)) === 0);
+
 // Case 2: a file that is ALREADY faststart must be returned untouched.
 const already = new F(out, 'o.mp4', 'video/mp4');
 const r2 = await mod.faststart(already);

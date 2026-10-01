@@ -636,3 +636,36 @@ A title published straight from the Table Editor still gets the same
 treatment: its review state follows, and it is refused if it has no files.
 `tool/sql/review_test.sql` is the database test (`REVIEW TEST PASSED`).
 
+---
+
+## Uploading from a phone: when the connection goes
+
+`docs/studio/upload.js`. A file over 32 MB goes up in 16 MB parts, and each
+accepted part is recorded in the phone (IndexedDB) as it lands.
+
+| What happens | What the console does |
+|---|---|
+| a blip | retries the part (fresh link each time) |
+| minutes with no connection | the file's line says *Waiting for the connection* and it carries on by itself when it is back — no time limit |
+| a part stops moving | after a minute with no progress it is treated as a dropped connection and sent again |
+| the screen would turn off | kept on while uploading (Screen Wake Lock), where the browser supports it |
+| the tab is closed, the phone restarts, Android kills the browser | **Upload → Interrupted uploads → Resume**, pick the same file(s) again; only the missing parts are sent, then the title is made with the details typed the first time. The Dashboard says when there is one |
+| R2 says "finished" | the size R2 holds is checked against the file before the title row is written |
+| the bucket refuses everything (CORS rule, token) | reported within seconds with "Check bucket access", not waited on |
+
+Picking the file again is a browser rule — a page may not reopen a file by
+itself. The console checks it is the same file (name, size and a fingerprint
+of its bytes); a different file under the same name is sent from the start
+rather than spliced into the old upload.
+
+**Discard** on an interrupted upload deletes its parts from R2 at once. Left
+alone, R2 deletes unfinished uploads by itself after **7 days** (Cloudflare's
+default); resuming after that sends the unfinished files from the start and
+keeps the finished ones. The record is per phone and per browser: an upload
+started on one phone can only be resumed on that phone.
+
+The heavy videos are queued for smaller streaming copies once the title row is
+written. (Until 2026-10-01 this was attempted before the row existed and could
+never find the file, so every heavy upload ended with "could not be queued"
+and was queued from Health by hand.)
+

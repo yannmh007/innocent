@@ -6,9 +6,8 @@ The API:  `docs/edge/studio.ts`, deployed as the `studio` edge function.
 Pick files, type a name, save. It is a draft until an editor approves it on
 Review. The file goes from the phone straight
 to R2 — never through the function — so the only size ceiling is R2's own,
-5 GiB in a single PUT. Above that the function refuses before the first byte
-rather than letting an hour of uploading end in a CORS error: multipart is
-not built. See `docs/movies_v3_plan.md` §3.3.
+5 GiB in a single PUT — and anything over 32 MB goes up in 16 MB parts, up
+to 160 GB, resumable after a dropped connection or a closed tab.
 
 ---
 
@@ -67,10 +66,13 @@ project at all.
 poster, or no assets), start-up checks, streaming copies and the stream
 secret.
 
-The page is four files: `index.html` (the pages), `shell.js` (menu, routes,
+The page is five files: `index.html` (the pages), `shell.js` (menu, routes,
 dashboard, idle sign-out), `control.js` (2-step sign-in, Security, Admins,
-Activity) and `review.js` (the review queue, the editor's review bar, the
-in-console preview). supabase-js is vendored in `vendor/`, pinned to one version with an
+Activity), `review.js` (the review queue, the editor's review bar, the
+in-console preview) and `upload.js` (16 MB parts, waiting out a dropped
+connection, the stall watchdog, keeping the screen on, and the record in the
+phone that lets an upload resume after the tab died — RUNBOOK → *Uploading
+from a phone*). supabase-js is vendored in `vendor/`, pinned to one version with an
 integrity hash — not loaded from a CDN. `tool/js/console_smoke.mjs` drives the
 page in Chromium against a fake backend for each role.
 
