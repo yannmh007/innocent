@@ -423,6 +423,9 @@ class AppStrings {
   String get subtitleOff => _s('subtitleOff');
   String get aspectRatioTitle => _s('aspectRatioTitle');
   String get pressBackAgain => _s('pressBackAgain');
+  String get playerQuality => _s('playerQuality');
+  String get playerQualityAutoHint => _s('playerQualityAutoHint');
+  String get playerQualityFailed => _s('playerQualityFailed');
   String get close => _s('close');
   String get audioTrack => _s('audioTrack');
   String get subtitle => _s('subtitle');
@@ -1845,6 +1848,9 @@ class AppStrings {
     'subtitleOff': 'Subtitle off',
     'aspectRatioTitle': 'Aspect ratio',
     'pressBackAgain': 'Press back again to close',
+    'playerQuality': 'Quality',
+    'playerQualityAutoHint': 'Adjusts to your connection',
+    'playerQualityFailed': 'Could not switch quality. Still playing the current copy.',
     'close': 'Close',
     'audioTrack': 'Audio track',
     'subtitle': 'Subtitle',
@@ -3086,6 +3092,9 @@ class AppStrings {
     'subtitleOff': 'စာတန်းထိုး ပိတ်',
     'aspectRatioTitle': 'အချိုးအစား',
     'pressBackAgain': 'ပိတ်ရန် နောက်တစ်ကြိမ် နှိပ်ပါ',
+    'playerQuality': 'အရည်အသွေး',
+    'playerQualityAutoHint': 'အင်တာနက်လိုင်းအလိုက် အလိုအလျောက် ချိန်ပေးသည်',
+    'playerQualityFailed': 'အရည်အသွေး မပြောင်းနိုင်ပါ။ လက်ရှိအတိုင်း ဆက်ပြနေပါသည်။',
     'close': 'ပိတ်ရန်',
     'audioTrack': 'အသံ လိုင်း',
     'subtitle': 'စာတန်းထိုး',
@@ -4316,6 +4325,9 @@ class AppStrings {
     'subtitleOff': 'ปิดคำบรรยาย',
     'aspectRatioTitle': 'อัตราส่วนภาพ',
     'pressBackAgain': 'กดย้อนกลับอีกครั้งเพื่อปิด',
+    'playerQuality': 'คุณภาพ',
+    'playerQualityAutoHint': 'ปรับตามการเชื่อมต่อ',
+    'playerQualityFailed': 'เปลี่ยนคุณภาพไม่ได้ ยังเล่นสำเนาเดิมอยู่',
     'close': 'ปิด',
     'audioTrack': 'แทร็กเสียง',
     'subtitle': 'คำบรรยาย',

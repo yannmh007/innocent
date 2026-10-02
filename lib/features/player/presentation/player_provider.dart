@@ -1542,6 +1542,11 @@ class PlayerController extends StateNotifier<PlayerState> {
   Future<void> _stepDownARung(int? failingBitsPerSecond) async {
     if (_downgradeInFlight || _networkRetryInFlight || _reopenInFlight) return;
     if (_downgrades >= _maxDowngrades) return;
+    // THE VIEWER CHOSE THIS COPY. Somebody who picked 1080p or Original from
+    // the Quality menu asked for it knowing their connection; stepping them
+    // down behind their back is exactly what they turned Auto off to avoid.
+    // The buffering spinner is the honest answer, as on YouTube.
+    if (StreamRenewal.qualityPinned) return;
     final uri = _currentUri;
     if (uri == null || !StreamRenewal.canRenew(uri)) return;
     final need = failingBitsPerSecond;
@@ -1580,6 +1585,54 @@ class PlayerController extends StateNotifier<PlayerState> {
       // The copy that was playing is still playing. A failed downgrade is a
       // missed improvement, never a broken playback.
       PlaybackLog.add('step down failed: $e');
+    } finally {
+      _downgradeInFlight = false;
+    }
+  }
+
+  /// The viewer picked a line in the Quality menu: reopen the film on that
+  /// copy at the same moment.
+  ///
+  /// Answers false when nothing could be had — a refused renewal, or no
+  /// stream that can be renewed — so the menu can say so; the copy that was
+  /// playing carries on either way.
+  Future<bool> switchQuality(String id) async {
+    final uri = _currentUri;
+    if (uri == null || !StreamRenewal.canRenew(uri)) return false;
+    if (_downgradeInFlight || _networkRetryInFlight) return false;
+    _downgradeInFlight = true;
+    try {
+      final fresh = await StreamRenewal.renew(uri, quality: id);
+      if (fresh == null) return false;
+      if (!mounted || _currentUri != uri) return false;
+      // The same copy (Auto landing on the rung already playing): nothing to
+      // reopen, and a second of black for nothing is the one thing a quality
+      // menu must not do.
+      if (fresh == uri) return true;
+      final svc = _ref.read(videoPlayerServiceProvider);
+      final at = svc.position > Duration.zero ? svc.position : state.position;
+      final wasPlaying = state.isPlaying;
+      _currentUri = fresh;
+      // A deliberate switch is not a stall: the automatic step-down count
+      // starts again from here.
+      _downgrades = 0;
+      PlaybackLog.add('quality -> $id at ${at.inSeconds}s');
+      await _applyStreamProfileFor(fresh);
+      // A paused film stays paused on the new copy: the viewer was choosing,
+      // not watching.
+      await svc.open(fresh, startAt: at, autoplay: wasPlaying);
+      if (wasPlaying) await svc.play();
+      if (mounted && _currentUri == fresh) {
+        state = state.copyWith(
+          errorMessage: null,
+          slowNetworkHintVisible: false,
+          clearStallCause: true,
+        );
+      }
+      return true;
+    } catch (e) {
+      PlaybackLog.add('quality switch failed: $e');
+      return false;
     } finally {
       _downgradeInFlight = false;
     }

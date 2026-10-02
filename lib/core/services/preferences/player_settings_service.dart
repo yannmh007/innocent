@@ -14,7 +14,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// MX-Player-parity value.
 enum PlayerSetting {
   // ─── Settings → Player → Interface ───
-  doubleTapBack(default_: true),
+  // OFF BY DEFAULT since 2026-10-02, at the owner's request. It was on, so
+  // every video in the app took two presses of Back to leave and showed
+  // "Press back again to close" on the first — the opposite of Telegram and
+  // YouTube, where one press leaves the player. A viewer who never touched
+  // the switch now gets one press; anyone who turned it on keeps it on
+  // (only changed values are stored, see [PlayerSettings.get]).
+  doubleTapBack(default_: false),
   quickZoom(default_: true),
   // ─── Settings → Player → Playback ───
   resumeOnlyFirst(default_: false),

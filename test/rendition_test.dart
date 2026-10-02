@@ -92,4 +92,67 @@ void main() {
       expect(Rendition.fromJson('nonsense'), isNull);
     });
   });
+
+  group('chooseRendition — the viewer\'s choice in the Quality menu', () {
+    test('Auto is the measured rule, unchanged', () {
+      expect(chooseRendition(ladder, 'auto', measuredKbps: 20000)!.height, 1080);
+      expect(chooseRendition(ladder, 'auto')!.height, 720);
+    });
+
+    test('Original means the master, even on a slow link', () {
+      // The whole point of the choice: somebody on good wifi who wants the
+      // film exactly as it was uploaded.
+      expect(chooseRendition(ladder, 'original', measuredKbps: 500), isNull);
+    });
+
+    test('a fixed height is that rung, whatever was measured', () {
+      expect(chooseRendition(ladder, '1080', measuredKbps: 500)!.height, 1080);
+      expect(chooseRendition(ladder, '360', measuredKbps: 50000)!.height, 360);
+    });
+
+    test('a height this film lacks is the nearest BELOW, never heavier', () {
+      // Chose 1080p on another film; this one tops out at 720p.
+      final small = [r(360, 600), r(720, 2000)];
+      expect(chooseRendition(small, '1080')!.height, 720);
+      // Chose 480p to save data: 360p, not 720p.
+      expect(chooseRendition(small, '480')!.height, 360);
+      // Everything above the choice: the smallest is the closest.
+      expect(chooseRendition([r(720, 2000), r(1080, 3800)], '480')!.height, 720);
+    });
+
+    test('no ladder: there is only the original', () {
+      expect(chooseRendition(const [], '720'), isNull);
+      expect(chooseRendition(const [], 'auto'), isNull);
+    });
+
+    test('anything unreadable in storage is Auto, never a crash', () {
+      expect(QualityChoice.normalise(null), 'auto');
+      expect(QualityChoice.normalise(''), 'auto');
+      expect(QualityChoice.normalise('banana'), 'auto');
+      expect(QualityChoice.normalise('-5'), 'auto');
+      expect(QualityChoice.normalise('720'), '720');
+      expect(QualityChoice.normalise('original'), 'original');
+      expect(chooseRendition(ladder, 'banana')!.height, 720);
+    });
+  });
+
+  group('qualityMenuFor', () {
+    test('Auto, every rung from the top, then Original', () {
+      final m = qualityMenuFor(ladder, originalHeight: 2160);
+      expect(m.map((o) => o.id).toList(),
+          ['auto', '1080', '720', '480', '360', 'original']);
+      expect(m.last.detail, '4K');
+      expect(m[1].label, '1080p');
+      expect(m[1].detail, '3.8 Mbps');
+    });
+
+    test('no ladder, no menu — one copy has nothing to choose between', () {
+      expect(qualityMenuFor(const []), isEmpty);
+    });
+
+    test('two rungs of one height are one line', () {
+      final m = qualityMenuFor([r(720, 2000), r(720, 2100), r(360, 600)]);
+      expect(m.where((o) => o.id == '720').length, 1);
+    });
+  });
 }

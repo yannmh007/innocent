@@ -12,7 +12,66 @@ import 'package:flutter/foundation.dart';
 ///
 /// Returns null when no replacement can be had — the caller must then fail,
 /// never fall back to the dead URL.
-typedef StreamRenewer = Future<String?> Function({int? belowKbps});
+///
+/// [quality] is the viewer's own choice from the player's Quality menu — an
+/// id from [QualityMenu.options] — and asks for exactly that copy. It wins
+/// over [belowKbps]; the two are never sent together.
+typedef StreamRenewer = Future<String?> Function({int? belowKbps, String? quality});
+
+/// One line of the player's Quality menu.
+///
+/// THE IDS ARE THE FEATURE'S, NOT THE PLAYER'S. The player shows [label] and
+/// hands [id] back unread; what "720" or "original" means is decided by the
+/// code that registered the menu, which is the only code that has seen the
+/// ladder.
+@immutable
+class QualityOption {
+  const QualityOption({required this.id, required this.label, this.detail});
+
+  /// 'auto', 'original', or a height such as '720'.
+  final String id;
+
+  /// What the menu shows: 'Auto', '1080p', 'Original'.
+  final String label;
+
+  /// A second, quieter line: '2.5 Mbps', '4K · 61 Mbps'.
+  final String? detail;
+}
+
+/// What the Quality menu offers for the stream that is playing, and which
+/// of it the viewer chose.
+@immutable
+class QualityMenu {
+  const QualityMenu({
+    required this.uri,
+    required this.options,
+    required this.selected,
+    this.playing,
+  });
+
+  /// The stream this menu belongs to. A menu for a different address is not
+  /// shown — the viewer has moved on.
+  final String uri;
+  final List<QualityOption> options;
+
+  /// The viewer's choice: an option id.
+  final String selected;
+
+  /// What is actually on screen when [selected] is 'auto' — '720p' — so the
+  /// menu can say "Auto (720p)" the way YouTube does.
+  final String? playing;
+
+  /// True when the viewer pinned a copy, so the player must not step it down
+  /// by itself on a stall: they asked for this one.
+  bool get pinned => selected != 'auto';
+
+  QualityMenu copyWith({String? uri, String? selected, String? playing}) => QualityMenu(
+        uri: uri ?? this.uri,
+        options: options,
+        selected: selected ?? this.selected,
+        playing: playing ?? this.playing,
+      );
+}
 
 /// Lets the player recover from an EXPIRED URL instead of retrying a dead one.
 ///
@@ -67,11 +126,21 @@ class StreamRenewal {
   /// Exactly one registration exists at a time: the app has one video player,
   /// and a second registration means a second video was opened, at which point
   /// the first is no longer anything's business.
-  static void register(String uri, StreamRenewer renewer) {
+  static void register(String uri, StreamRenewer renewer, {QualityMenu? menu}) {
     _uri = uri;
     _renewer = renewer;
     _at = DateTime.now();
+    quality.value = menu;
   }
+
+  /// The Quality menu for what is playing, or null when there is nothing to
+  /// choose between (a local file, a title with no streaming copies, an
+  /// offline download). The player's top bar listens to this.
+  static final ValueNotifier<QualityMenu?> quality = ValueNotifier<QualityMenu?>(null);
+
+  /// The viewer's choice for the current stream, or 'auto' when there is no
+  /// menu at all.
+  static bool get qualityPinned => quality.value?.pinned ?? false;
 
   /// Forget the current registration. Called when playback of an unrelated
   /// file begins, so a renewer can never be applied to the wrong stream.
@@ -79,6 +148,7 @@ class StreamRenewal {
     _uri = null;
     _renewer = null;
     _at = null;
+    quality.value = null;
   }
 
   /// True when [uri] is a stream this class can replace. Cheap enough to call
@@ -96,17 +166,23 @@ class StreamRenewal {
   /// [belowKbps] asks for a copy cheaper than that bitrate, for the case
   /// where the current one is not dead but is too heavy for the connection.
   /// Omitted, this is the original behaviour: the best copy available.
-  static Future<String?> renew(String uri, {int? belowKbps}) async {
+  static Future<String?> renew(String uri, {int? belowKbps, String? quality}) async {
     if (!canRenew(uri)) return null;
     final renewer = _renewer;
     if (renewer == null) return null;
     try {
-      final fresh = await renewer(belowKbps: belowKbps);
+      final fresh = await renewer(belowKbps: belowKbps, quality: quality);
       if (fresh == null || fresh.isEmpty) return null;
       // The registration now describes the NEW url, or a second failure would
       // look up a key that no longer matches.
       _uri = fresh;
       _at = DateTime.now();
+      // And so does the menu, or it would disappear the moment the stream
+      // it belongs to was renewed.
+      final menu = StreamRenewal.quality.value;
+      if (menu != null && menu.uri == uri) {
+        StreamRenewal.quality.value = menu.copyWith(uri: fresh);
+      }
       return fresh;
     } catch (e) {
       if (kDebugMode) debugPrint('StreamRenewal.renew: $e');

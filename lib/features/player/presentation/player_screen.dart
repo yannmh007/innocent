@@ -1798,6 +1798,80 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     }
   }
 
+  /// The Quality menu: Auto, each streaming copy, Original.
+  ///
+  /// Picking one reopens the film on that copy at the same moment and is
+  /// remembered for the next film. Auto (the default) follows the connection
+  /// and steps down on a stall; any other choice is kept as chosen.
+  Future<void> _showQualitySheet(BuildContext context) async {
+    final menu = StreamRenewal.quality.value;
+    if (menu == null || menu.options.isEmpty) return;
+    final s = AppStrings.of(context);
+    final picked = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: AppColors.darkSurface,
+      showDragHandle: true,
+      builder: (sheet) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+              child: Text(
+                s.playerQuality,
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700),
+              ),
+            ),
+            for (final o in menu.options)
+              ListTile(
+                key: ValueKey('quality-${o.id}'),
+                dense: true,
+                leading: Icon(
+                  o.id == menu.selected
+                      ? Icons.check_rounded
+                      : Icons.circle_outlined,
+                  color: o.id == menu.selected
+                      ? AppColors.accentBlue
+                      : Colors.white24,
+                  size: 20,
+                ),
+                title: Text(
+                  o.id == 'auto' && menu.playing != null
+                      ? '${o.label} (${menu.playing})'
+                      : o.label,
+                  style: const TextStyle(color: Colors.white, fontSize: 14.5),
+                ),
+                subtitle: o.id == 'auto'
+                    ? Text(s.playerQualityAutoHint,
+                        style: const TextStyle(
+                            color: Colors.white54, fontSize: 12))
+                    : (o.detail == null
+                        ? null
+                        : Text(o.detail!,
+                            style: const TextStyle(
+                                color: Colors.white54, fontSize: 12))),
+                onTap: () => Navigator.of(sheet).pop(o.id),
+              ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+    if (picked == null || !mounted) return;
+    final ok = await ref
+        .read(playerControllerProvider.notifier)
+        .switchQuality(picked);
+    if (!ok && mounted) {
+      ScaffoldMessenger.of(this.context).showSnackBar(
+        SnackBar(content: Text(AppStrings.of(this.context).playerQualityFailed)),
+      );
+    }
+  }
+
   /// rather than relying on PopScope's `canPop` flipping (which never happened
   /// because the flag was set without a rebuild, so the phone back button
   /// used to just re-show the toast forever and never actually exit).
@@ -2458,6 +2532,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                 onMore: controller.openMoreMenu,
                 // Phase 45 (audit): PiP icon is in the TOP bar (MX V3 parity).
                 onEnterPip: () => _enterPip(context),
+                onQuality: () => _showQualitySheet(context),
                 fmtTimer: _fmtTimerBadge,
                 hasMultipleAudioTracks: state.audioTracks.length > 1,
                 hasMultipleSubtitleTracks: state.subtitleTracks.length > 1,
@@ -3021,6 +3096,10 @@ class _TopBar extends StatelessWidget {
   /// Phase 45 (audit): MX Player V3 puts the PiP-enter icon in the TOP
   /// bar alongside HW/HW+ and ⋮, not in the bottom row. We now match.
   final VoidCallback onEnterPip;
+
+  /// The Quality menu. Drawn only while [StreamRenewal.quality] has a menu
+  /// for what is playing — a catalogue film with streaming copies.
+  final VoidCallback? onQuality;
   final String Function(Duration) fmtTimer;
   /// Phase 44: MX Player V3 parity — small dot on the audio/subtitle
   /// icons when the file actually has multiple of that kind of track, so
@@ -3048,6 +3127,7 @@ class _TopBar extends StatelessWidget {
     required this.onDecoder,
     required this.onMore,
     required this.onEnterPip,
+    this.onQuality,
     required this.fmtTimer,
     this.hasMultipleAudioTracks = false,
     this.hasMultipleSubtitleTracks = false,
@@ -3210,6 +3290,41 @@ class _TopBar extends StatelessWidget {
                 onPressed: onSubtitle,
               ),
             ],
+            // QUALITY, where YouTube keeps it: one tap from the picture, in
+            // both orientations. Shows what was chosen — "Auto", "720p",
+            // "Original" — so the viewer can see the state without opening
+            // the menu.
+            if (onQuality != null)
+              ValueListenableBuilder<QualityMenu?>(
+                valueListenable: StreamRenewal.quality,
+                builder: (context, menu, _) {
+                  if (menu == null || menu.options.isEmpty) {
+                    return const SizedBox.shrink();
+                  }
+                  final chosen = menu.options
+                      .where((o) => o.id == menu.selected)
+                      .map((o) => o.label)
+                      .firstOrNull;
+                  return TextButton.icon(
+                    key: const ValueKey('player-quality'),
+                    onPressed: onQuality,
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                      minimumSize: const Size(40, 40),
+                    ),
+                    icon: const Icon(Icons.high_quality_outlined, size: 18),
+                    label: Text(
+                      chosen ?? 'Auto',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  );
+                },
+              ),
             TextButton(
               onPressed: onDecoder,
               style: TextButton.styleFrom(

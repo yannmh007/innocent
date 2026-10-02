@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/localization/app_strings.dart';
 import '../../../core/router/routes.dart';
@@ -138,11 +139,22 @@ Future<void> playMedia(
     // anything small enough not to need a ladder, and empty means "play the
     // original", which is exactly what this line did before.
     await ThroughputMemory.read();
-    final chosen = pickRendition(
+    // THE VIEWER'S OWN CHOICE, when they made one (the player's Quality
+    // menu, remembered across films the way YouTube remembers it). Auto is
+    // the rule above; a fixed height is that rung or the nearest below it;
+    // Original is the file as it was uploaded.
+    final preferred = await QualityPreference.read();
+    if (!context.mounted) return;
+    final chosen = chooseRendition(
       grant.renditions,
+      preferred,
       measuredKbps: ThroughputMemory.current,
     );
     final playUrl = chosen?.url ?? grant.url!;
+    final menuOptions = qualityMenuFor(
+      grant.renditions,
+      originalHeight: _originalHeight(content, source),
+    );
 
     // ─── AND THE PHONE KEEPS WHAT IT RECEIVES ──────────────────────────
     //
@@ -202,22 +214,38 @@ Future<void> playMedia(
     // player has measured the connection for real — so the second half of a
     // long film can be a better or a smaller copy than the first, decided on
     // evidence the first choice did not have.
-    StreamRenewal.register(openUrl, ({int? belowKbps}) async {
+    StreamRenewal.register(openUrl, ({int? belowKbps, String? quality}) async {
       final fresh = await ref.read(contentRepositoryProvider).requestPlayback(
             content: content,
             source: source,
             deviceId: deviceId,
           );
       if (!fresh.isGranted) return null;
-      final again = pickRendition(
-        fresh.renditions,
-        measuredKbps: ThroughputMemory.current,
-        // Set only when the player has MEASURED the current copy as too
-        // heavy for this connection. Then this is not a renewal at all, it
-        // is a downgrade, and handing back the same rung would repeat the
-        // stall that asked for it.
-        ceilingKbps: belowKbps,
-      );
+      // WHAT TO OPEN, in order of who asked:
+      //   * the viewer picked a line in the Quality menu  → exactly that;
+      //   * the player measured a stall (belowKbps)        → one rung down;
+      //   * the link only expired                          → the viewer's
+      //     standing choice again, so a pinned 1080p is still 1080p after
+      //     the renewal and not whatever Auto would have picked.
+      final standing = StreamRenewal.quality.value?.selected ?? preferred;
+      final again = quality != null
+          ? chooseRendition(fresh.renditions, quality,
+              measuredKbps: ThroughputMemory.current)
+          : belowKbps != null
+              ? pickRendition(
+                  fresh.renditions,
+                  measuredKbps: ThroughputMemory.current,
+                  // Set only when the player has MEASURED the current copy
+                  // as too heavy for this connection. Then this is not a
+                  // renewal at all, it is a downgrade, and handing back the
+                  // same rung would repeat the stall that asked for it.
+                  ceilingKbps: belowKbps,
+                )
+              : chooseRendition(fresh.renditions, standing,
+                  measuredKbps: ThroughputMemory.current);
+      if (quality != null) {
+        await QualityPreference.write(quality);
+      }
       // No ladder and a downgrade was asked for: there is nothing smaller to
       // give, so say so rather than handing back the same URL and making the
       // player reopen for no reason.
@@ -234,10 +262,22 @@ Future<void> playMedia(
         assetId: assetId,
         height: again?.height ?? 0,
       );
+      // The menu follows what is now playing, whichever path got here.
+      void markPlaying(String uri) {
+        final menu = StreamRenewal.quality.value;
+        if (menu == null) return;
+        StreamRenewal.quality.value = menu.copyWith(
+          uri: uri,
+          selected: quality ?? menu.selected,
+          playing: again == null ? 'Original' : '${again.height}p',
+        );
+      }
+
       if (nextId == cacheId) {
         // Same rung: the URL was only stale. Hand the proxy the new one and
         // keep the player on the address it already has.
         StreamCacheServer.instance.updateUpstream(cacheId, freshUrl);
+        markPlaying(openUrl);
         return openUrl;
       }
       StreamCacheServer.instance.releaseAllExcept(<String>{nextId});
@@ -260,8 +300,21 @@ Future<void> playMedia(
           return again == null ? f2.url : null;
         },
       );
+      markPlaying(nextLocal ?? freshUrl);
       return nextLocal ?? freshUrl;
-    });
+    },
+        // NO MENU FOR A FILM WITH ONE COPY: nothing to choose between.
+        menu: menuOptions.isEmpty
+            ? null
+            : QualityMenu(
+                uri: openUrl,
+                options: <QualityOption>[
+                  for (final o in menuOptions)
+                    QualityOption(id: o.id, label: o.label, detail: o.detail),
+                ],
+                selected: preferred,
+                playing: chosen == null ? 'Original' : '${chosen.height}p',
+              ));
     context.push(
       Routes.player,
       extra: <String, dynamic>{
@@ -708,4 +761,48 @@ Future<void> promptUpgrade(
         .lockedCountFor(content, ref.read(viewerProvider).tier);
   }
   await PaywallSheet.show(context, content: content, lockedCount: locked);
+}
+
+
+/// The master's short side, when the album knows it, for "Original · 4K".
+int? _originalHeight(VideoContent content, MediaRef source) {
+  for (final item in content.items) {
+    if (item.source.provider == source.provider &&
+        item.source.locator == source.locator &&
+        item.width != null &&
+        item.height != null) {
+      final w = item.width!, h = item.height!;
+      return w < h ? w : h;
+    }
+  }
+  return null;
+}
+
+/// The viewer's standing choice in the Quality menu, kept on this phone.
+///
+/// One value for every film, as YouTube does it: somebody who chose Original
+/// on good wifi wants Original on the next film too, and somebody who chose
+/// 480p to save data does not want to choose it again every time.
+class QualityPreference {
+  QualityPreference._();
+  static const String _key = 'vh_quality_choice';
+
+  static Future<String> read() async {
+    try {
+      final p = await SharedPreferences.getInstance();
+      return QualityChoice.normalise(p.getString(_key));
+    } catch (_) {
+      return QualityChoice.auto;
+    }
+  }
+
+  static Future<void> write(String choice) async {
+    try {
+      final p = await SharedPreferences.getInstance();
+      await p.setString(_key, QualityChoice.normalise(choice));
+    } catch (_) {
+      // A choice that is not remembered is asked again next film. Not a
+      // reason to stop the film that is playing.
+    }
+  }
 }

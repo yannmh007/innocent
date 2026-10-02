@@ -10,11 +10,12 @@ import 'playback.dart';
 import 'video_hub_provider.dart';
 import 'video_hub_theme.dart';
 import 'widgets/poster_image.dart';
+import 'widgets/zoomable_photo.dart';
 import 'account_provider.dart';
 
 /// Full-screen, swipeable viewer for a content album.
 ///
-/// Photos are shown inline with pinch-zoom. Videos are NOT played here - a tap
+/// Photos are shown inline with pinch-zoom and double-tap zoom ([ZoomablePhoto]). Videos are NOT played here - a tap
 /// hands them to Innocent's existing player, which is the only video surface
 /// in the app. Two players would mean two sets of gesture handling, two resume
 /// stores and two background-audio behaviours to keep in step.
@@ -40,6 +41,10 @@ class _AlbumViewerScreenState extends ConsumerState<AlbumViewerScreen> {
   late final PageController _controller;
   late final List<int> _photoOrdinals;
   late int _index;
+
+  /// True while a photo is being pinched or is zoomed in: the page swipe is
+  /// switched off so the fingers move the photo, not the album.
+  bool _pagingLocked = false;
 
   List<AlbumItem> get _items => widget.content.items;
 
@@ -106,7 +111,11 @@ class _AlbumViewerScreenState extends ConsumerState<AlbumViewerScreen> {
       body: PageView.builder(
         controller: _controller,
         itemCount: total,
-        onPageChanged: (i) => setState(() => _index = i),
+        physics: _pagingLocked ? const NeverScrollableScrollPhysics() : null,
+        onPageChanged: (i) => setState(() {
+          _index = i;
+          _pagingLocked = false;
+        }),
         itemBuilder: (context, index) {
           final item = _items[index];
           if (!_canOpen(index)) {
@@ -124,9 +133,13 @@ class _AlbumViewerScreenState extends ConsumerState<AlbumViewerScreen> {
               onPlay: () => _playVideo(item),
             );
           }
-          return InteractiveViewer(
-            minScale: 1,
-            maxScale: 4,
+          return ZoomablePhoto(
+            key: ValueKey('photo-${item.id}'),
+            onLockPaging: (lock) {
+              if (lock != _pagingLocked && mounted) {
+                setState(() => _pagingLocked = lock);
+              }
+            },
             child: Center(
               child: PosterImage(
                 mediaRef:
