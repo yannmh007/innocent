@@ -306,7 +306,23 @@ const studio = await import('data:text/javascript,' + encodeURIComponent(
   // The folder and the tail go SEPARATELY, because the folder is the part the
   // database may override. Sending a finished key would put the decision back
   // in the one place that cannot see the other messages of the album.
-  check('the folder is sent on its own', /p_folder:\s*slugify\(caption\)/.test(ingestSrc));
+  check('the folder is sent on its own',
+    /p_folder:\s*(chosen \|\| )?slugify\(caption\)/.test(ingestSrc));
+
+  // /folder (migration 033): the folder the operator named in the chat wins
+  // over the caption, for every file until /done. A forwarded album's caption
+  // cannot be edited, so without this four albums of one title land in four
+  // folders — or in `inbox`, when the channel wrote its caption in Burmese.
+  check('a /folder session wins over the caption',
+    /p_folder:\s*chosen \|\| slugify\(caption\)/.test(ingestSrc) &&
+    /rpc\('bot_folder_current'/.test(ingestSrc));
+  check('a command is handled before the message is looked at as a file',
+    ingestSrc.indexOf('botCommand(chatId') > 0 &&
+    ingestSrc.indexOf('botCommand(chatId') < ingestSrc.indexOf('const file = fileOf(msg)'));
+  check('an EDITED old /folder does not switch the folder',
+    /startsWith\('\/'\) && !body\.edited_message/.test(ingestSrc));
+  check('the folder name typed in the chat is slugified the same way as a caption',
+    /const name = slugify\(arg\)/.test(ingestSrc));
   check('the tail is sent on its own',
     /p_key_tail:\s*keyTail\(file\.kind, file\.name\)/.test(ingestSrc));
 
