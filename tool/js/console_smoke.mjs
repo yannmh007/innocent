@@ -249,6 +249,59 @@ function stOps(state, body) {
   return op;
 }
 
+// ── the Status page's fake server (migration 032) ────────────────────────
+function ssFixture() {
+  const now = Date.now();
+  const iso = (ms) => new Date(now - ms).toISOString();
+  return {
+    calls: [],
+    data: {
+      db_bytes: 31e6, migration: '032',
+      runners: [{ name: 'ingest', seen_at: iso(6 * 60000),
+        info: { tg_api_id: true, tg_api_hash: true, tg_bot_token: false, ingest_secret: true, supabase_url: true } }],
+      ingest: { queued: 0, running: 0, failed: 1, last_done: iso(DAY) },
+      vault: { verify: { queued: 1, running: 0, failed_7d: 0, done_7d: 4, last_note: 'ok' } },
+      transcode: { ready: 9, none: 3 }, last_transcode: iso(3 * 3600000),
+      backups: [{ id: 7, taken_at: iso(2 * 3600000), bytes: 81234, raw_bytes: 812340,
+        tables: { titles: 9, title_assets: 71 }, trigger: 'daily', note: null }],
+      backup_due: false,
+      archive: { chat_id: null, title: null, connected_at: null, connected_by: null, note: null },
+      films: { total: 12, with_copy: 5, archived: 0, console_only: 7, too_big: 0 },
+      previews_missing: 0,
+      release: { version: '1.64.41', code: 354, at: iso(4 * DAY) },
+      archive_live: null,
+      bot: { username: 'innocent_bot' },
+      webhook: { ours: true, set: true, pending: 0, last_error_at: null, last_error: null,
+        allowed: null, hears_channels: true },
+      secrets: [
+        { name: 'R2_ACCOUNT_ID', need: true, set: true, what: 'Cloudflare account for R2' },
+        { name: 'TELEGRAM_CHAT_IDS', need: true, set: false, what: 'who may forward films' },
+        { name: 'STREAM_BASE', need: false, set: false, what: 'the streaming Worker' },
+      ],
+    },
+  };
+}
+function ssOps(state, body) {
+  const ss = state.ss;
+  const owner = () => state.role === 'owner' ? null : { __status: 403, error: 'not_allowed' };
+  const op = {
+    status: () => ss.data,
+    backupNow: () => owner() || (ss.data.backups.unshift({ id: 8, taken_at: new Date().toISOString(),
+      bytes: 82000, raw_bytes: 820000, tables: { titles: 9 }, trigger: 'manual', note: null }),
+    { ok: true, backup: { id: 8, bytes: 82000, tables: 31 } }),
+    backupUrl: () => owner() || { url: 'data:application/gzip;base64,H4sIAAAAAAAAAwMAAAAAAAAAAAA=', name: 'b.json.gz' },
+    webhookRepair: () => owner() || { ok: true },
+    archiveConnect: () => owner() || (body.chat === '@nope' ? { __status: 400, error: 'cannot_post' }
+      : (Object.assign(ss.data.archive, { chat_id: -100777, title: 'Innocent archive',
+        connected_at: new Date().toISOString(), connected_by: 'console' }),
+      ss.data.archive_live = { ok: true, title: 'Innocent archive' },
+      { ok: true, result: 'connected', title: 'Innocent archive' })),
+    archiveDisconnect: () => owner() || (ss.data.archive.chat_id = null, { ok: true, result: 'disconnected' }),
+  }[body.op];
+  if (op) ss.calls.push(body);
+  return op;
+}
+
 const TYPES = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css' };
 
 /// One browser page, signed in as `role`, with a scripted backend.
@@ -295,6 +348,7 @@ async function open(browser, role, opts = {}) {
     // the moves, and every Files op the page sent, in order.
     fm: fmFixture(),
     st: stFixture(),
+    ss: ssFixture(),
   };
   page.on('pageerror', (e) => state.errors.push(String(e)));
   // A refused request is logged by the browser as "Failed to load resource";
@@ -507,7 +561,7 @@ async function open(browser, role, opts = {}) {
         t.review_note = body.note || null;
         return json(route, 200, { ok: true, result: decision });
       }
-      const f = ops[body.op] || fmOps(state, body) || stOps(state, body);
+      const f = ops[body.op] || fmOps(state, body) || stOps(state, body) || ssOps(state, body);
       if (!f) { state.unexpected.push('studio op ' + body.op); return json(route, 400, { error: 'unknown_op' }); }
       const out = f();
       if (out && out.__status) return json(route, out.__status, { error: out.error });
@@ -560,7 +614,7 @@ try {
     check('owner: the sidebar is shown on a desk', await visible(page, '#side'));
     check('owner: the bottom bar is not', !(await visible(page, '#tabbar')));
     const side = await menuTabs(page, '#side .sh-item');
-    check('owner: every page is in the menu (' + side.length + ')', side.length === 14 &&
+    check('owner: every page is in the menu (' + side.length + ')', side.length === 15 && side.includes('status') &&
       side.includes('admins') && side.includes('activity') && side.includes('files'));
     check('owner: the Telegram badge counts failed + unfiled',
       (await page.textContent('#side [data-badge=telegram]')) === '6');
@@ -618,7 +672,7 @@ try {
     const more = await menuTabs(page, '#sheet .sh-item');
     check('uploader: More has no owner or editor pages (' + more.join(',') + ')',
       !more.includes('admins') && !more.includes('activity') && !more.includes('files') &&
-      !more.includes('storage') &&
+      !more.includes('storage') && !more.includes('status') &&
       more.includes('telegram') &&
       more.includes('security') && more.includes('health'));
     await page.click('#sheet a[data-tab=security]');
@@ -1215,6 +1269,85 @@ try {
     const nameW = await page.$eval('#stBody .st-fmain', (n) => n.getBoundingClientRect().width);
     check('editor: a file name keeps the width of the row (' + Math.round(nameW) + 'px)', nameW > 200);
     check('editor: no script errors on storage', state.errors.length === 0);
+    if (state.errors.length) console.log('     ' + state.errors.join('\n     '));
+    await ctx.close();
+  }
+
+  // ── Status: an owner ────────────────────────────────────────────────────
+  {
+    const { page, ctx, state } = await open(browser, 'owner', {
+      aal: 'aal2', codeAge: 60, hash: '#/status',
+      factors: [{ id: 'f1', factor_type: 'totp', status: 'verified', friendly_name: 'phone' }],
+    });
+    const ss = state.ss;
+    await page.waitForSelector('#ssBody .cr-kpi');
+    await shot(page, 'status-owner');
+    const txt = await page.textContent('#ssBody');
+    check('status: four numbers', (await page.$$('#ssBody .cr-kpi')).length === 4);
+    check('status: the runner was seen, and its missing secret is named',
+      /6 min ago/.test(txt) && /TELEGRAM_BOT_TOKEN\s*MISSING/.test(txt));
+    check('status: a missing project secret is MISSING, an optional one is not',
+      /TELEGRAM_CHAT_IDS\s*MISSING/.test(txt) && /STREAM_BASE\s*not set \(optional\)/.test(txt));
+    check('status: no secret value is on the page', !/sk_|eyJ|R2_SECRET_ACCESS_KEY.*[A-Za-z0-9]{20}/.test(txt));
+    check('status: an unconnected archive says how to connect one',
+      /PRIVATE channel/.test(txt) && /@innocent_bot/.test(txt));
+    check('status: the webhook points here', /Webhook points here\s*yes/.test(txt));
+
+    // back up now
+    await page.click('#ssBody button:has-text("Back up now")');
+    await page.waitForFunction(() => /Backed up/.test(document.querySelector('#msg')?.textContent || ''));
+    check('status: Back up now asks for one', ss.calls.some((c) => c.op === 'backupNow'));
+    await page.waitForSelector('#ssBody .ss-row');
+    check('status: and it is listed, by hand', /by hand/.test(await page.textContent('#ssBody')));
+    // download
+    await page.click('#ssBody .ss-row:nth-child(2) button:has-text("Download")');
+    await page.waitForFunction(() => true);
+    check('status: Download asks for that backup', ss.calls.some((c) => c.op === 'backupUrl' && c.id === 7));
+
+    // webhook repair
+    await page.click('#ssBody button:has-text("Repair webhook")');
+    await page.waitForFunction(() => /Webhook set/.test(document.querySelector('#msg')?.textContent || ''));
+    check('status: Repair webhook', ss.calls.some((c) => c.op === 'webhookRepair'));
+
+    // connect a channel by name: refused, then accepted
+    await page.fill('#ssBody .ss-connect input', '@nope');
+    await page.click('#ssBody .ss-connect button');
+    await page.waitForFunction(() => /cannot post/.test(document.querySelector('#msg')?.textContent || ''));
+    check('status: a channel the bot cannot post in is refused, and says why',
+      /cannot post/.test(await page.textContent('#msg')));
+    await page.fill('#ssBody .ss-connect input', '@innocent_archive');
+    await page.click('#ssBody .ss-connect button');
+    await page.waitForFunction(() => /connected: Innocent archive/.test(document.querySelector('#msg')?.textContent || ''));
+    check('status: connect sends the name', ss.calls.some((c) => c.op === 'archiveConnect' && c.chat === '@innocent_archive'));
+    await page.waitForSelector('#ssBody button:has-text("Disconnect")');
+    check('status: a connected channel shows where and whether the bot may post',
+      /Innocent archive/.test(await page.textContent('#ssBody')) &&
+      /Bot may post there\s*yes/.test(await page.textContent('#ssBody')));
+    page.once('dialog', (d) => d.accept());
+    await page.click('#ssBody button:has-text("Disconnect")');
+    await page.waitForFunction(() => /disconnected/.test(document.querySelector('#msg')?.textContent || ''));
+    check('status: disconnect asks first, then sends it', ss.calls.some((c) => c.op === 'archiveDisconnect'));
+
+    check('status: no script errors', state.errors.length === 0);
+    if (state.errors.length) console.log('     ' + state.errors.join('\n     '));
+    check('status: nothing unexpected was called', state.unexpected.length === 0);
+    if (state.unexpected.length) console.log('     ' + state.unexpected.join('\n     '));
+    await ctx.close();
+  }
+
+  // ── Status: an editor, on a phone ───────────────────────────────────────
+  {
+    const { page, ctx, state } = await open(browser, 'editor', { phone: true, hash: '#/status' });
+    await page.waitForSelector('#ssBody .cr-kpi');
+    await shot(page, 'status-editor-phone');
+    check('editor: the status page has no owner buttons',
+      !(await page.$('#ssBody button:has-text("Back up now")')) &&
+      !(await page.$('#ssBody button:has-text("Download")')) &&
+      !(await page.$('#ssBody button:has-text("Repair webhook")')) &&
+      !(await page.$('#ssBody .ss-connect')));
+    const w = await page.evaluate(() => document.documentElement.scrollWidth);
+    check('editor: the status page fits the phone (' + w + 'px)', w <= 390);
+    check('editor: no script errors on status', state.errors.length === 0);
     if (state.errors.length) console.log('     ' + state.errors.join('\n     '));
     await ctx.close();
   }

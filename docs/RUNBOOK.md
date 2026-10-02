@@ -519,20 +519,77 @@ the cheaper way to keep a cold title.
 copy), a copy not checked in three days (a check is queued — try again after the
 next runner tick), pinned, or still restoring.
 
-## PART 4 — WEEKLY
+## The archive channel (migration 032)
 
-**Back up.** The free tier has NO backups - no daily, no downloadable, no PITR.
-R2 holds `spiderman/video1.mp4`; only this database knows that is a film.
+A private Telegram channel that keeps a copy of EVERY film — forwarded ones
+and console uploads alike. It is what a restore fetches from, and what lets R2
+free a film's original (Storage page).
 
-```sql
-select json_build_object(
-  'titles', (select json_agg(t) from (select * from public.titles order by created_at) t),
-  'assets', (select json_agg(a) from (select * from public.title_assets order by added_at) a),
-  'subs',   (select json_agg(s) from (select * from public.subscriptions order by created_at) s)
-);
+**Setting it up — once, two minutes, from the phone:**
+
+1. Telegram → New Channel → name it (e.g. *Innocent archive*) → **Private**.
+2. Channel → Administrators → Add Admin → the bot → keep **Post messages** on.
+3. The bot says in your chat: *Archive channel connected*. Done.
+
+It must be YOU (an account in `TELEGRAM_CHAT_IDS`) who adds the bot: a channel
+anybody else adds it to is ignored. If nothing is said, open the console →
+**Status** → *Archive channel* and connect it by name (`@channel`) or id
+(`-100…`); and if *Telegram* there says it does not hear channel changes,
+press **Repair webhook**.
+
+**What happens then:** on each runner tick up to five films are copied — a
+forwarded film in a second (Telegram copies it), a console upload one at a
+time (fetched from R2 and sent; over 2000 MB cannot go through Telegram and
+stays in R2). The Status page counts *N of M films* in the channel. From then
+on every check and restore uses the channel copy.
+
+**Removing the bot from the channel** disconnects it, and the bot says so.
+Copies already there stay recorded; nothing new is sent until a channel is
+connected again.
+
+**One thing to know before the next release:** the archive copying needs the
+runner from this release's branch. Until it is merged, the scheduled runner
+does not ask for archive work, so nothing is sent (and nothing breaks).
+
+## Status page (migration 032)
+
+Console → **Status**: the bot and its webhook as Telegram sees them now (and
+**Repair webhook**), when the runner last came by and which of its GitHub
+secrets were set, every queue, the backups, the archive channel, and which
+project secrets are set — yes or no, never a value.
+
+## PART 4 — BACKUPS, AND KEEPING THE PROJECT AWAKE
+
+**The database is backed up every day, by itself** (migration 032). The free
+tier has NO backups of its own; R2 holds `spiderman/video1.mp4` and only this
+database knows that is a film. So on the first runner tick each day the ingest
+function writes every table (and the account list) gzipped to the PRIVATE
+bucket, `innocent-media/_backup/db/<year>/<month>/<time>-daily.json.gz`.
+Fourteen days are kept, and the first of each month for a year. The Files page
+lists them as "database backup" and will not put them in the bin.
+
+**See them, make one, download one:** console → **Status** → *Database
+backups*. "Back up now" and "Download" are the owner's; a download needs a
+fresh 2-step code, because the file holds every account's email.
+
+**Restore** (owner, from a laptop):
+
+```
+python3 tool/restore_backup.py 20261002T112909-daily.json.gz --list    # what is in it
+python3 tool/restore_backup.py 20261002T112909-daily.json.gz > restore.sql
+python3 tool/restore_backup.py 20261002T112909-daily.json.gz --tables titles,title_assets > some.sql
 ```
 
-Export it. Keep the last few.
+Paste the SQL into the SQL editor. It inserts parents before children and
+`on conflict do nothing` — rows still in the database are left as they are. To
+put a table back exactly, empty that table yourself first. Accounts are not
+written back (auth.users is Supabase's): into the same project nothing is
+needed; into a new one people sign in again, and the backup's account list
+says who had which subscription.
+
+**If backups stop:** the Status page shows "Last backup" in amber after a day
+and red after three. The usual cause is the runner not running — see
+*Runners* on the same page.
 
 **Keep the project awake.** A free project pauses after **7 days without a
 database query**, and the app then shows an empty catalogue with no

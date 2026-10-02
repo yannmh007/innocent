@@ -74,6 +74,10 @@ CHECKS = [
      'a workflow file that does not parse — GitHub then reports it as having '
      'no triggers, so the schedule and the manual run both vanish silently; '
      'an unquoted ": " in one run step did exactly that to ingest.yml'),
+    ('restore_backup_test.py', None,
+     'a backup that cannot be put back: a child row inserted before its parent '
+     'fails the whole restore, and a row holding the quote tag would end the '
+     'statement early and run the rest of the row as SQL'),
     ('previews_test.py', None,
      'an album blurhash the app cannot read back: the runner encodes and the '
      'app decodes with two ports of one algorithm, and a slip in either draws '

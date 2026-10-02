@@ -755,6 +755,10 @@ const NEED: Record<string, Role> = {
   vaultCheck: 'editor',
   storagePin: 'owner', masterOffload: 'owner', titleArchive: 'owner',
   titleRestoreFinish: 'owner', storageSettings: 'owner',
+  // the Status page (migration 032) — looking is an editor's; a backup, the
+  // webhook and the archive channel are the owner's
+  status: 'editor', backupNow: 'owner', backupUrl: 'owner', webhookRepair: 'owner',
+  archiveConnect: 'owner', archiveDisconnect: 'owner',
   // publishing and the business
   publish: 'editor', approve: 'editor', reject: 'editor',
   saveCategory: 'editor', addCategory: 'editor', selftest: 'editor',
@@ -773,7 +777,7 @@ const READS = new Set([
   'sign', 'beginMultipart', 'signParts', 'listParts',
   'reviewQueue', 'reviewHistory', 'previewUrl',
   'filesSummary', 'filesList', 'inventoryScan', 'objectUrl', 'moveList',
-  'storageOverview',
+  'storageOverview', 'status',
 ]);
 
 /// What cannot be undone, or hands out power: these need an authenticator code
@@ -782,6 +786,8 @@ const DANGEROUS = new Set([
   'deleteTitle', 'adminSave', 'adminRemove', 'settingsSave',
   'trashObjects', 'moveStart', 'moveSwitch',
   'masterOffload', 'titleArchive', 'storageSettings',
+  // Every account's email, in one file.
+  'backupUrl', 'archiveDisconnect',
 ]);
 
 /// The thing an audit line is about, for the Activity page's one-line view.
@@ -894,6 +900,83 @@ async function announceSignIn(who: Admin): Promise<void> {
   await tellOwner(`Console sign-in\n${who.email} (${who.role})\n` +
     `2-step: ${who.aal === 'aal2' ? 'yes' : 'NO'}\n${mmt} Myanmar time\n` +
     'If this was not you, remove the admin on the Admins page.');
+}
+
+// --- the Status page (migration 032) --------------------------------------
+
+/// The runner secret, which studio uses for exactly one thing: asking the
+/// ingest function for a backup, so the backup code exists once.
+const INGEST_SECRET = Deno.env.get('INGEST_SECRET') ?? '';
+const WEBHOOK_SECRET = Deno.env.get('TELEGRAM_WEBHOOK_SECRET') ?? '';
+const WEBHOOK_URL = `${SUPABASE_URL}/functions/v1/ingest`;
+const WEBHOOK_UPDATES = ['message', 'edited_message', 'channel_post', 'my_chat_member'];
+
+/// Which project secrets are SET — a yes or no per name, never a value. Every
+/// edge function sees the same project secrets, so this list is the
+/// project's, not just this function's.
+const SECRET_FACTS: Array<{ name: string; alt?: string; need: boolean; what: string }> = [
+  { name: 'R2_ACCOUNT_ID', need: true, what: 'Cloudflare account for R2' },
+  { name: 'R2_ACCESS_KEY_ID', need: true, what: 'R2 key id' },
+  { name: 'R2_SECRET_ACCESS_KEY', need: true, what: 'R2 secret key' },
+  { name: 'R2_BUCKET', need: false, what: 'private bucket name (default innocent-media)' },
+  { name: 'R2_PUBLIC_BUCKET', need: false, what: 'public bucket name (default innocent-public)' },
+  { name: 'SB_SERVICE_KEY', alt: 'SUPABASE_SERVICE_ROLE_KEY', need: true, what: 'database service key' },
+  { name: 'SB_ANON_KEY', alt: 'SUPABASE_ANON_KEY', need: true, what: 'public API key' },
+  { name: 'INGEST_SECRET', need: true, what: 'the runners\' shared secret' },
+  { name: 'TRANSCODE_SECRET', need: false, what: 'the encoder runner\'s secret' },
+  { name: 'TELEGRAM_BOT_TOKEN', need: true, what: 'the bot' },
+  { name: 'TELEGRAM_WEBHOOK_SECRET', need: true, what: 'proves a webhook call is Telegram' },
+  { name: 'TELEGRAM_CHAT_IDS', need: true, what: 'who may forward films' },
+  { name: 'STREAM_BASE', need: false, what: 'the streaming Worker' },
+  { name: 'STREAM_TOKEN_SECRET', need: false, what: 'the streaming Worker\'s token key' },
+];
+
+function secretFacts(): Array<Record<string, unknown>> {
+  return SECRET_FACTS.map((f) => ({
+    name: f.name, need: f.need, what: f.what,
+    set: !!(Deno.env.get(f.name) || (f.alt ? Deno.env.get(f.alt) : '')),
+  }));
+}
+
+/// One Bot API call, answering its `result` or null. Never throws: the
+/// Status page must draw whatever Telegram says, including nothing.
+async function bot(method: string, params: Record<string, unknown> = {}): Promise<{
+  ok: boolean; result?: unknown; description?: string;
+}> {
+  if (!BOT_TOKEN) return { ok: false, description: 'TELEGRAM_BOT_TOKEN is not set' };
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/${method}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    });
+    const j = await res.json() as { ok?: boolean; result?: unknown; description?: string };
+    return { ok: j.ok === true, result: j.result, description: j.description };
+  } catch (e) {
+    return { ok: false, description: String(e).slice(0, 160) };
+  }
+}
+
+/// May the bot post in this channel? The question every way of connecting an
+/// archive channel has to answer before it is connected.
+async function botMayPost(chat: string | number): Promise<{
+  ok: boolean; id?: number; title?: string; why?: string;
+}> {
+  const c = await bot('getChat', { chat_id: chat });
+  if (!c.ok) return { ok: false, why: c.description ?? 'Telegram does not know that chat' };
+  const info = c.result as Record<string, unknown>;
+  if (info.type !== 'channel') return { ok: false, why: 'that is not a channel' };
+  const me = await bot('getMe');
+  const meId = Number((me.result as Record<string, unknown> | undefined)?.id ?? 0);
+  const m = await bot('getChatMember', { chat_id: info.id, user_id: meId });
+  const member = (m.result ?? {}) as Record<string, unknown>;
+  if (!m.ok || member.status !== 'administrator') {
+    return { ok: false, why: 'the bot is not an admin of that channel' };
+  }
+  if (member.can_post_messages === false) {
+    return { ok: false, why: 'the bot may not post in that channel' };
+  }
+  return { ok: true, id: Number(info.id), title: String(info.title ?? '') };
 }
 
 Deno.serve(async (req: Request) => {
@@ -2301,6 +2384,10 @@ async function handleOp(
   if (body.op === 'objectUrl') {
     const key = String(body.key ?? '');
     if (!key || key.includes('..') || key.startsWith('/')) return json({ error: 'bad_key' }, 400, req);
+    // A DATABASE BACKUP IS NOT A FILE TO PREVIEW. It holds every account's
+    // email; an editor may look at films, and only the owner may download a
+    // backup — through backupUrl, which is audited and needs a fresh 2-step.
+    if (key.startsWith('_backup/')) return json({ error: 'owner_only' }, 403, req);
     if (body.bucket === PUBLIC_BUCKET) return json({ url: `${PUBLIC_BASE}/${key}` }, 200, req);
     const url = (await previewStreamUrl(key, 600).catch(() => null)) ??
       await presignPut(MEDIA_BUCKET, key, { 'X-Amz-Expires': '600' }, 'GET');
@@ -2531,6 +2618,119 @@ async function handleOp(
   // Every decision is the database's: these ops pass the actor along and
   // turn the one-word answer into a status. The functions check the role
   // again, and refuse anything that would leave a film with no copy.
+
+  // ── the Status page (migration 032) ─────────────────────────────────────
+  //
+  // ONE PLACE THAT SAYS WHETHER THE MACHINE IS RUNNING: the webhook as
+  // Telegram sees it, when each runner last came by and which of its secrets
+  // it had, the queues, the backups, the archive channel, and which project
+  // secrets are set. Yes or no for every secret; never a value.
+  if (body.op === 'status') {
+    const db = admin();
+    const [ops, me, hook] = await Promise.all([
+      db.rpc('ops_status'),
+      bot('getMe'),
+      bot('getWebhookInfo'),
+    ]);
+    if (ops.error) return json({ error: 'status_failed', detail: ops.error.message }, 500, req);
+    const st = (ops.data ?? {}) as Record<string, unknown>;
+    const h = (hook.result ?? {}) as Record<string, unknown>;
+    const allowed = Array.isArray(h.allowed_updates) ? h.allowed_updates as string[] : [];
+    const webhook = hook.ok
+      ? {
+        // The address is compared, not shown in full: it is this project's
+        // own function URL and saying "it is ours" is the useful part.
+        ours: String(h.url ?? '') === WEBHOOK_URL,
+        set: !!h.url,
+        pending: Number(h.pending_update_count ?? 0),
+        last_error_at: h.last_error_date ? new Date(Number(h.last_error_date) * 1000).toISOString() : null,
+        last_error: h.last_error_message ? String(h.last_error_message).slice(0, 200) : null,
+        // Empty means Telegram's default, which includes everything needed.
+        allowed: allowed.length ? allowed : null,
+        hears_channels: !allowed.length || allowed.includes('my_chat_member'),
+      }
+      : { error: hook.description ?? 'Telegram did not answer' };
+    // The archive channel as Telegram sees it NOW: still there, bot still an
+    // admin who may post. The database only knows what it was told.
+    const arch = (st.archive ?? {}) as Record<string, unknown>;
+    let archiveLive: Record<string, unknown> | null = null;
+    if (arch.chat_id) {
+      const may = await botMayPost(Number(arch.chat_id));
+      archiveLive = may.ok ? { ok: true, title: may.title } : { ok: false, why: may.why };
+    }
+    const meR = (me.result ?? {}) as Record<string, unknown>;
+    return json({
+      ...st,
+      archive_live: archiveLive,
+      bot: me.ok ? { username: meR.username ?? null } : { error: me.description ?? 'no answer' },
+      webhook,
+      secrets: secretFacts(),
+      now: new Date().toISOString(),
+    }, 200, req);
+  }
+
+  // Back up now. The ingest function does it — one copy of the code.
+  if (body.op === 'backupNow') {
+    if (!INGEST_SECRET) return json({ error: 'no_ingest_secret' }, 500, req);
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/ingest`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${INGEST_SECRET}` },
+      body: JSON.stringify({ op: 'backup', actor: who.id }),
+    });
+    const out = await res.json().catch(() => ({}));
+    if (!res.ok) return json({ error: 'backup_failed', detail: (out as Record<string, unknown>).detail ?? res.status }, 500, req);
+    return json(out, 200, req);
+  }
+
+  // A backup, to download: ten minutes, one object, owner only, audited.
+  if (body.op === 'backupUrl') {
+    const id = Number(body.id ?? 0);
+    if (!Number.isInteger(id) || id <= 0) return json({ error: 'no_backup' }, 400, req);
+    const { data, error } = await admin().from('db_backups').select('object_key,deleted_at')
+      .eq('id', id).maybeSingle();
+    if (error || !data || data.deleted_at) return json({ error: 'no_backup' }, 404, req);
+    const key = String(data.object_key ?? '');
+    if (!key.startsWith('_backup/')) return json({ error: 'no_backup' }, 404, req);
+    const url = await presignPut(MEDIA_BUCKET, key, { 'X-Amz-Expires': '600' }, 'GET');
+    return json({ url, name: key.split('/').pop() }, 200, req);
+  }
+
+  // Point Telegram's webhook back at this project, with the secret it must
+  // send and every kind of update the ingest function reads.
+  if (body.op === 'webhookRepair') {
+    if (!WEBHOOK_SECRET) return json({ error: 'no_webhook_secret' }, 500, req);
+    const r = await bot('setWebhook', {
+      url: WEBHOOK_URL, secret_token: WEBHOOK_SECRET, allowed_updates: WEBHOOK_UPDATES,
+      drop_pending_updates: false,
+    });
+    if (!r.ok) return json({ error: 'webhook_failed', detail: r.description ?? '' }, 502, req);
+    return json({ ok: true }, 200, req);
+  }
+
+  // Connect a channel by its @name or id — the way round the webhook, for a
+  // bot that was made an admin before the webhook heard about it.
+  if (body.op === 'archiveConnect') {
+    const raw = String(body.chat ?? '').trim();
+    if (!/^(@[A-Za-z0-9_]{4,64}|-100\d{5,20})$/.test(raw)) return json({ error: 'bad_chat' }, 400, req);
+    const may = await botMayPost(raw.startsWith('@') ? raw : Number(raw));
+    if (!may.ok) return json({ error: 'cannot_post', detail: may.why }, 400, req);
+    const { data, error } = await admin().rpc('archive_connect', {
+      p_chat: may.id, p_title: may.title, p_by: `console: ${who.email}`,
+    });
+    if (error) return json({ error: 'connect_failed', detail: error.message }, 500, req);
+    if (data === 'connected') {
+      await tellOwner(`Archive channel connected from the console by ${who.email}: “${may.title}”.`);
+    }
+    return json({ ok: true, result: data, title: may.title }, 200, req);
+  }
+
+  if (body.op === 'archiveDisconnect') {
+    const { data, error } = await admin().rpc('archive_disconnect', {
+      p_chat: null, p_note: `disconnected from the console by ${who.email}`,
+    });
+    if (error) return json({ error: 'disconnect_failed', detail: error.message }, 500, req);
+    return json({ ok: true, result: data }, 200, req);
+  }
 
   if (body.op === 'storageOverview') {
     const db = admin();

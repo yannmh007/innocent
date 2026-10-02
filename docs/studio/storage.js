@@ -95,8 +95,9 @@ function stDraw() {
   host.append(el('div', { className: 'sec' }, [
     el('div', { className: 'sechead' }, [el('h2', {}, text('Titles')), el('span', { className: 'spacer' }), filter]),
     el('p', { className: 'hint' }, text(
-      'Biggest first. Only a film that arrived by being forwarded to the bot has a Telegram copy; ' +
-      'one uploaded from the console exists only in R2 and stays there.')),
+      'Biggest first. A film forwarded to the bot has a Telegram copy at once; one uploaded from the ' +
+      'console gets one when the runner copies it to the archive channel (Status page) — until then ' +
+      'it exists only in R2 and stays there.')),
     list,
   ]));
   draw();

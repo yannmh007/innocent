@@ -31,6 +31,7 @@ const SH_PAGES = [
   { tab: 'health', route: 'health', label: 'Health', group: 'System', need: 'viewer', icon: 'pulse' },
   { tab: 'files', route: 'files', label: 'Files', group: 'System', need: 'editor', icon: 'folder' },
   { tab: 'storage', route: 'storage', label: 'Storage', group: 'System', need: 'editor', icon: 'disk' },
+  { tab: 'status', route: 'status', label: 'Status', group: 'System', need: 'editor', icon: 'gauge' },
   { tab: 'activity', route: 'activity', label: 'Activity', group: 'Control', need: 'editor', icon: 'clock' },
   { tab: 'admins', route: 'admins', label: 'Admins', group: 'Control', need: 'owner', icon: 'users' },
   { tab: 'security', route: 'security', label: 'Security', group: 'Control', need: 'viewer', icon: 'shield' },
@@ -56,6 +57,7 @@ const SH_ICONS = {
   shield: 'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6zM9 12l2 2 4-4',
   more: 'M5 12h.01M12 12h.01M19 12h.01',
   check: 'M4 12.5l5 5L20 6.5',
+  gauge: 'M4 18a8 8 0 1 1 16 0M12 18l4-6M4 18h16',
 };
 
 function shIcon(name) {
@@ -455,7 +457,7 @@ function explainError(code, status) {
     no_folder: 'Pick a folder first.',
     master_in_telegram: 'This film\'s original is only in Telegram. Bring it back on the Storage page first.',
     not_verified: 'Its Telegram copy has not been looked at in the last three days. A check is queued — try again once the runner has looked (usually within twenty minutes).',
-    no_telegram_copy: 'Only a film forwarded to the bot has a Telegram copy. This one was uploaded from the console, so it stays in R2.',
+    no_telegram_copy: 'This film has no Telegram copy yet — it was uploaded from the console. Connect an archive channel (Status page) and the runner copies it there; until then it stays in R2.',
     no_streaming_copies: 'It has no streaming copies yet, so its original is the only thing the app can play. Make them first (Health).',
     pinned: 'It is pinned: everything of it stays in R2. Unpin it first.',
     already_in_telegram: 'Its original is already only in Telegram.',
@@ -466,6 +468,16 @@ function explainError(code, status) {
     no_films: 'It has no films to archive.',
     films_not_back: 'Not every film is back from Telegram yet.',
     not_restoring: 'It is not being restored.',
+    owner_only: 'Only an owner can open this. A database backup is downloaded from the Status page.',
+    no_backup: 'That backup no longer exists. Reload the Status page.',
+    backup_failed: 'The backup did not finish. Nothing was lost; try again in a minute.',
+    no_ingest_secret: 'The INGEST_SECRET project secret is not set.',
+    no_webhook_secret: 'The TELEGRAM_WEBHOOK_SECRET project secret is not set.',
+    webhook_failed: 'Telegram refused the webhook.',
+    bad_chat: 'Give the channel as @name, or its id starting -100.',
+    cannot_post: 'The bot cannot post in that channel yet.',
+    connect_failed: 'The channel could not be saved.',
+    disconnect_failed: 'The channel could not be disconnected.',
     archived: 'The title is archived; restore it first.',
     bad_alert: 'Give the alert as a number of GB.',
   }[c];
