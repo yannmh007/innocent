@@ -667,25 +667,19 @@ class ApiContentRepository implements ContentRepository {
   /// the film.
   Future<List<AlbumItem>> _album(String titleId) async {
     try {
-      final body = await _cachedGet(
-        '/rest/v1/title_media',
-        query: <String, String>{
-          'select': 'id,kind,url,thumb_url,duration_s,is_free,width,height',
-          'title_id': 'eq.$titleId',
-          'order': 'sort_order.asc',
-          // CAPPED. The mosaic is a Column inside a SliverToBoxAdapter, so
-          // every tile is built at once - there is no virtualisation to hide
-          // behind. A folder with two hundred stills would build two hundred
-          // image widgets in one frame and jank the screen it is meant to
-          // show off.
-          //
-          // Sixty is far beyond any album that reads as a glance and far
-          // below the point where the layout costs anything. If a title ever
-          // genuinely needs more, the fix is paging inside the album, not a
-          // bigger number here.
-          'limit': '60',
-        },
-      );
+      dynamic body;
+      try {
+        body = await _albumRows(titleId, _albumColumns);
+      } catch (e) {
+        // THE CACHED ALBUM IS KEYED BY ITS QUERY, and the column list just
+        // grew. A phone that updates while it has no signal holds every album
+        // under the OLD list and none under the new one — so asking only for
+        // the new list would empty every album it saved, offline, which is the
+        // exact screen the catalogue cache exists to keep. The old answer
+        // lacks only the download hints, which matter only online anyway.
+        if (kDebugMode) debugPrint('album (new columns) failed, trying old: $e');
+        body = await _albumRows(titleId, _albumColumnsBefore030);
+      }
       if (body is! List) return const <AlbumItem>[];
 
       final items = <AlbumItem>[];
@@ -716,6 +710,8 @@ class ApiContentRepository implements ContentRepository {
           isPreview: m['is_free'] == true,
           width: _int(m['width']),
           height: _int(m['height']),
+          isMain: m['is_main'] == true,
+          bytes: _int(m['bytes']),
         ));
       }
       return items;
@@ -723,6 +719,35 @@ class ApiContentRepository implements ContentRepository {
       if (kDebugMode) debugPrint('album load failed: $e');
       return const <AlbumItem>[];
     }
+  }
+
+  /// What the album asks `title_media` for. `is_main` and `bytes` arrived with
+  /// migration 030 — see [AlbumItem.isMain].
+  static const String _albumColumns =
+      'id,kind,url,thumb_url,duration_s,is_free,width,height,is_main,bytes';
+  static const String _albumColumnsBefore030 =
+      'id,kind,url,thumb_url,duration_s,is_free,width,height';
+
+  Future<dynamic> _albumRows(String titleId, String columns) {
+    return _cachedGet(
+        '/rest/v1/title_media',
+        query: <String, String>{
+          'select': columns,
+          'title_id': 'eq.$titleId',
+          'order': 'sort_order.asc',
+          // CAPPED. The mosaic is a Column inside a SliverToBoxAdapter, so
+          // every tile is built at once - there is no virtualisation to hide
+          // behind. A folder with two hundred stills would build two hundred
+          // image widgets in one frame and jank the screen it is meant to
+          // show off.
+          //
+          // Sixty is far beyond any album that reads as a glance and far
+          // below the point where the layout costs anything. If a title ever
+          // genuinely needs more, the fix is paging inside the album, not a
+          // bigger number here.
+          'limit': '60',
+        },
+      );
   }
 
   // ---- playback: the enforcement point -----------------------------------

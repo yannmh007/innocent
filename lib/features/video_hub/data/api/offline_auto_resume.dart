@@ -7,6 +7,7 @@ import '../../../../core/services/connectivity/connectivity_service.dart';
 import '../../presentation/video_hub_provider.dart';
 import '../device_identity.dart';
 import 'offline_downloader.dart';
+import 'offline_library.dart';
 
 /// Picks up downloads that were interrupted, without being asked.
 ///
@@ -89,11 +90,11 @@ class OfflineAutoResume {
       // a directory stat; the online probe is a DNS round trip. Most launches
       // have nothing to resume, and those must cost nothing.
       final pending = await library.pending();
-      final due = <String>[];
+      final due = <PendingDownload>[];
       for (final p in pending) {
         if (p.item.pausedByUser) continue;
-        if (downloader.isRunning(p.item.titleId)) continue;
-        due.add(p.item.titleId);
+        if (downloader.isRunning(p.item.key)) continue;
+        due.add(p.item);
       }
       if (due.isEmpty) return;
 
@@ -101,13 +102,13 @@ class OfflineAutoResume {
 
       final repo = ref.read(contentRepositoryProvider);
       final deviceId = await DeviceIdentity.get();
-      for (final titleId in due) {
+      for (final row in due) {
         // THE TITLE IS FETCHED RATHER THAN STORED. The pending row carries
         // enough to DRAW itself with no network, which is what an offline
         // screen needs; resuming is a network operation by definition, so this
         // costs nothing that was not already being spent — and a whole
         // catalogue record copied onto disk would be a stale one for ever.
-        final content = await repo.getById(titleId);
+        final content = await repo.getById(row.titleId);
         if (content == null) continue;
         // NOT AWAITED. The downloader queues these internally and runs them
         // one at a time; awaiting here would hold this sweep open for the two
@@ -115,7 +116,10 @@ class OfflineAutoResume {
         // ignore: discarded_futures
         downloader.download(
           content: content,
-          source: content.source,
+          // THE ROW'S OWN SOURCE. An album clip's row resumes the clip; the
+          // film's source here would write the film into the clip's part file.
+          source: OfflineDownloader.sourceFor(content, row.assetId),
+          assetId: row.assetId,
           deviceId: deviceId,
           notices: notices,
           // NO SIZE QUESTION ON A RESUME. It was asked and answered when the

@@ -7,6 +7,7 @@ import '../../../core/localization/app_strings.dart';
 import '../domain/access_policy.dart';
 import '../data/api/event_sender.dart';
 import '../domain/video_content.dart';
+import 'album_downloads.dart';
 import 'album_viewer_screen.dart';
 import 'widgets/media_mosaic.dart';
 import 'playback.dart';
@@ -200,6 +201,10 @@ class _ContentDetailScreenState extends ConsumerState<ContentDetailScreen> {
                         style: VH.meta.copyWith(fontSize: 12.5),
                       ),
                     ],
+                    const Spacer(),
+                    // The album's Download: everything, or only what the
+                    // admin added since — see AlbumDownloadButton.
+                    AlbumDownloadButton(content: content),
                   ],
                 ),
               ),
@@ -235,6 +240,9 @@ class _ContentDetailScreenState extends ConsumerState<ContentDetailScreen> {
                           item: item,
                           parentTitle: shownTitle,
                           locked: !unlocked,
+                          badge: unlocked
+                              ? AlbumItemBadge(content: content, item: item)
+                              : null,
                           // A locked tile still opens the viewer rather than
                           // jumping straight to the paywall: landing on the
                           // locked page in context, surrounded by what is
@@ -350,11 +358,19 @@ class _Header extends StatelessWidget {
           // action, next to the facts about the title rather than competing
           // with the primary control below. Draws nothing at all for a viewer
           // who cannot download — see DownloadAction.
-          const SizedBox(height: VH.s2),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: DownloadAction(content: content),
-          ),
+          //
+          // NOT FOR A TITLE WITH AN ALBUM. The album lists the film among its
+          // clips, and its own button downloads the film with everything else
+          // under the same key — two Download buttons for one file would be
+          // two answers to one question, and they would disagree the moment
+          // one of them was pressed.
+          if (!content.expectsAlbum) ...<Widget>[
+            const SizedBox(height: VH.s2),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: DownloadAction(content: content),
+            ),
+          ],
           if (locked && lockedCount > 0) ...<Widget>[
             const SizedBox(height: VH.s3),
             Row(
@@ -453,11 +469,16 @@ class _AlbumTile extends StatelessWidget {
   final bool locked;
   final VoidCallback onTap;
 
+  /// Whether this item is on the phone — see AlbumItemBadge. Top right, the
+  /// one corner nothing else on a tile uses.
+  final Widget? badge;
+
   const _AlbumTile({
     required this.item,
     required this.parentTitle,
     required this.onTap,
     this.locked = false,
+    this.badge,
   });
 
   @override
@@ -544,6 +565,7 @@ class _AlbumTile extends StatelessWidget {
                 ),
               ),
           ],
+          if (badge != null) Positioned(right: 4, top: 4, child: badge!),
         ],
       ),
     );

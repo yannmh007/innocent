@@ -181,44 +181,15 @@ class _DownloadActionState extends ConsumerState<DownloadAction> {
   /// tapping that opens the app where it can be paused.
   Future<bool> _confirmSize(int totalBytes, int freeBytes) async {
     if (!mounted) return true;
-    final s = AppStrings.of(context);
-    // WHICH CONNECTION IS ABOUT TO BE SPENT. "1.8 GB" means one thing on home
-    // wifi and quite another on a data bundle, and the app knows which it is on
-    // — so not saying it leaves the viewer to work out the only part of the
-    // question that costs them money.
-    final kind = await ConnectionInfo.read();
-    if (!mounted) return true;
-    final answer = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: VH.surface1,
-        title: Text(content.title, style: VH.label),
-        content: Text(
-          <String>[
-            s.vhDownloadSizeAsk(
-              formatBytes(totalBytes),
-              // A platform that did not answer is shown as a dash rather than
-              // as a confident "0 MB free", which would read as a reason not to
-              // continue when nothing was actually measured.
-              freeBytes < 0 ? '—' : formatBytes(freeBytes),
-            ),
-            if (kind.metered) s.vhDownloadOnMobile,
-          ].join(' '),
-          style: VH.body,
-        ),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text(s.cancel),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: Text(s.vhDownloadStart),
-          ),
-        ],
-      ),
-    );
-    return answer == true;
+    return askDownloadSize(context, title: content.title, body: (s) {
+      return s.vhDownloadSizeAsk(
+        formatBytes(totalBytes),
+        // A platform that did not answer is shown as a dash rather than as a
+        // confident "0 MB free", which would read as a reason not to continue
+        // when nothing was actually measured.
+        freeBytes < 0 ? '—' : formatBytes(freeBytes),
+      );
+    });
   }
 
   Future<void> _remove() async {
@@ -330,4 +301,51 @@ class _DownloadActionState extends ConsumerState<DownloadAction> {
       label: Text(s.vhLibraryDownloads, style: VH.meta.copyWith(fontSize: 12.5)),
     );
   }
+}
+
+/// Asks whether to spend the data a download is about to cost, and says which
+/// connection it would be spent on.
+///
+/// ONE DIALOG FOR THE FILM AND THE ALBUM, so they cannot drift apart about the
+/// only part of the question that costs money. [body] is the size sentence;
+/// the mobile-data sentence is added here, because the app knows which
+/// connection it is on and "1.8 GB" means one thing on home wifi and quite
+/// another on a data bundle.
+///
+/// PROCEEDS WHEN THERE IS NOBODY TO ASK — see the note on the film's own use
+/// of it: the tap IS the consent, and this is a courtesy that saves somebody
+/// from a surprise.
+Future<bool> askDownloadSize(
+  BuildContext context, {
+  required String title,
+  required String Function(AppStrings s) body,
+}) async {
+  final kind = await ConnectionInfo.read();
+  if (!context.mounted) return true;
+  final s = AppStrings.of(context);
+  final answer = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      backgroundColor: VH.surface1,
+      title: Text(title, style: VH.label),
+      content: Text(
+        <String>[
+          body(s),
+          if (kind.metered) s.vhDownloadOnMobile,
+        ].join(' '),
+        style: VH.body,
+      ),
+      actions: <Widget>[
+        TextButton(
+          onPressed: () => Navigator.of(ctx).pop(false),
+          child: Text(s.cancel),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(ctx).pop(true),
+          child: Text(s.vhDownloadStart),
+        ),
+      ],
+    ),
+  );
+  return answer == true;
 }

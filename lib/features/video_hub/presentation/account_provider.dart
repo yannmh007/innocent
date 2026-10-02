@@ -289,8 +289,8 @@ final accountProvider =
     // downloader is looked up when a sign-out actually needs it, and a rebuild
     // of anything it depends on cannot rebuild this notifier and wipe the
     // signed-in state out from under the app.
-    stopDownload: (titleId) =>
-        ref.read(offlineDownloaderProvider).cancel(titleId),
+    // A shelf KEY, not a title id: an album clip downloads under its own.
+    stopDownload: (key) => ref.read(offlineDownloaderProvider).cancel(key),
   );
 });
 

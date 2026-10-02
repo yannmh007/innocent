@@ -10,6 +10,8 @@ import '../data/api/offline_downloader.dart';
 import '../data/api/offline_library.dart';
 import '../data/device_identity.dart';
 import '../data/api/watch_while_downloading.dart';
+import 'album_downloads.dart';
+import 'album_viewer_screen.dart';
 import 'playback.dart';
 import 'video_hub_provider.dart';
 import 'widgets/hub_states.dart';
@@ -127,15 +129,193 @@ class DownloadsScreen extends ConsumerWidget {
                 ],
                 const Divider(height: VH.s4, color: VH.surface2),
               ],
-              for (var i = 0; i < items.length; i++) ...<Widget>[
-                _Row(item: items[i], languageCode: s.locale.languageCode),
-                if (i != items.length - 1) const SizedBox(height: VH.s2),
+              // FILMS ONE ROW EACH, ALBUMS ONE ROW PER TITLE. Nine photos and
+              // clips of one title as nine rows would bury the films, and none
+              // of them means anything without the album around it.
+              for (final entry in _shelfRows(items)) ...<Widget>[
+                if (entry.film != null)
+                  _Row(item: entry.film!, languageCode: s.locale.languageCode)
+                else
+                  _AlbumRow(
+                      items: entry.album, languageCode: s.locale.languageCode),
+                const SizedBox(height: VH.s2),
               ],
             ],
           );
         },
       ),
     );
+  }
+}
+
+/// One row of the shelf: a film, or every album item of one title.
+typedef _ShelfRow = ({OfflineItem? film, List<OfflineItem> album});
+
+/// The shelf in display order (newest first, as [OfflineLibrary.items] gives
+/// it), with each title's album items gathered into the row of the newest one.
+List<_ShelfRow> _shelfRows(List<OfflineItem> items) {
+  final out = <_ShelfRow>[];
+  final albumAt = <String, int>{};
+  for (final item in items) {
+    if (item.isFilm) {
+      out.add((film: item, album: const <OfflineItem>[]));
+      continue;
+    }
+    final at = albumAt[item.titleId];
+    if (at == null) {
+      albumAt[item.titleId] = out.length;
+      out.add((film: null, album: <OfflineItem>[item]));
+    } else {
+      out[at].album.add(item);
+    }
+  }
+  return out;
+}
+
+/// The album items one title has on the phone.
+class _AlbumRow extends ConsumerWidget {
+  final List<OfflineItem> items;
+  final String languageCode;
+
+  const _AlbumRow({required this.items, required this.languageCode});
+
+  OfflineItem get _first => items.first;
+
+  String get _shownTitle {
+    if (languageCode != 'my') return _first.title;
+    final mm = _first.titleMm?.trim();
+    return (mm == null || mm.isEmpty) ? _first.title : mm;
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = AppStrings.of(context);
+    final videos = items.where((i) => !i.isPhoto).length;
+    final photos = items.length - videos;
+    final bytes = items.fold<int>(0, (sum, i) => sum + i.bytes);
+    // The newest photo is the row's picture: it is ON THE PHONE, so it draws
+    // with no signal, where the title's poster may not have been kept.
+    OfflineItem? cover;
+    for (final i in items) {
+      if (i.isPhoto && i.sourceUrl != null) {
+        cover = i;
+        break;
+      }
+    }
+    final art = cover?.sourceUrl ?? _first.posterUrl;
+    return InkWell(
+      onTap: () => _open(context, ref),
+      borderRadius: BorderRadius.circular(VH.rControl),
+      child: Padding(
+        padding: const EdgeInsets.all(VH.s2),
+        child: Row(
+          children: <Widget>[
+            SizedBox(
+              width: 76,
+              height: 56,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: PosterImage(
+                  mediaRef: art == null
+                      ? MediaRef.none
+                      : MediaRef(provider: 'url', locator: art),
+                  title: _shownTitle,
+                  glyph: Icons.photo_library_outlined,
+                ),
+              ),
+            ),
+            const SizedBox(width: VH.s3),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Row(
+                    children: <Widget>[
+                      const Icon(Icons.photo_library_outlined,
+                          size: 14, color: VH.textTertiary),
+                      const SizedBox(width: 5),
+                      Expanded(
+                        child: Text(_shownTitle,
+                            style: VH.label.copyWith(fontSize: 14.5),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    <String>[
+                      if (videos > 0) s.vhAlbumVideos(videos),
+                      if (photos > 0) s.vhAlbumPhotos(photos),
+                      formatBytes(bytes),
+                    ].join(' · '),
+                    style: VH.meta.copyWith(fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.delete_outline, color: VH.textTertiary),
+              onPressed: () => _confirmDelete(context, ref),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Opens the album the items belong to, from the catalogue cache when there
+  /// is no signal — the viewer then draws every saved photo from the phone and
+  /// plays every saved clip from it.
+  Future<void> _open(BuildContext context, WidgetRef ref) async {
+    final s = AppStrings.of(context);
+    VideoContent? content;
+    try {
+      content = await ref.read(contentRepositoryProvider).getById(_first.titleId);
+    } catch (_) {
+      content = null;
+    }
+    if (!context.mounted) return;
+    if (content == null || content.items.isEmpty) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(s.vhOfflineNotHeld)));
+      return;
+    }
+    final keys = <String>{for (final i in items) i.key};
+    var start = content.items
+        .indexWhere((i) => keys.contains(albumItemKey(content!.id, i)));
+    if (start < 0) start = 0;
+    final album = content;
+    await Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (_) => AlbumViewerScreen(content: album, initialIndex: start),
+    ));
+  }
+
+  Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
+    final s = AppStrings.of(context);
+    final yes = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: VH.surface1,
+        title: Text(_shownTitle, style: VH.label),
+        content: Text(s.vhAlbumDeleteBody, style: VH.body),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(s.cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(
+              s.delete,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (yes != true) return;
+    await ref.read(albumDownloadsProvider).dropAlbum(_first.titleId);
   }
 }
 
@@ -254,7 +434,7 @@ class _Row extends ConsumerWidget {
       ),
     );
     if (yes != true) return;
-    await ref.read(offlineLibraryProvider).drop(item.titleId);
+    await ref.read(offlineLibraryProvider).drop(item.key);
     ref.invalidate(offlineItemsProvider);
     ref.invalidate(offlineStorageProvider);
   }
@@ -299,7 +479,7 @@ class _PendingRowState extends ConsumerState<_PendingRow> {
     // Re-attach to a resume that is already running — the viewer can start one
     // and navigate away and back, and a row that forgot would offer to start a
     // second writer on the same file.
-    final live = ref.read(offlineDownloaderProvider).watch(item.titleId);
+    final live = ref.read(offlineDownloaderProvider).watch(item.key);
     if (live != null) {
       _sub = live.listen((p) {
         if (mounted) setState(() => _live = p);
@@ -330,7 +510,7 @@ class _PendingRowState extends ConsumerState<_PendingRow> {
     try {
       final got = await WatchWhileDownloading.open(
         library: ref.read(offlineLibraryProvider),
-        titleId: item.titleId,
+        key: item.key,
         total: total,
       );
       if (!mounted) return;
@@ -382,7 +562,7 @@ class _PendingRowState extends ConsumerState<_PendingRow> {
       String? failure;
       final done = await ref.read(offlineDownloaderProvider).download(
             content: content,
-            source: content.source,
+            source: OfflineDownloader.sourceFor(content, item.assetId),
             deviceId: deviceId,
             assetId: item.assetId,
             notices: DownloadNotices(
@@ -435,8 +615,8 @@ class _PendingRowState extends ConsumerState<_PendingRow> {
       ),
     );
     if (yes != true) return;
-    ref.read(offlineDownloaderProvider).cancel(item.titleId);
-    await ref.read(offlineLibraryProvider).discardPending(item.titleId);
+    ref.read(offlineDownloaderProvider).cancel(item.key);
+    await ref.read(offlineLibraryProvider).discardPending(item.key);
     ref.invalidate(offlinePendingProvider);
     ref.invalidate(offlineStorageProvider);
   }
@@ -569,7 +749,7 @@ class _PendingRowState extends ConsumerState<_PendingRow> {
           if (running)
             TextButton(
               onPressed: () =>
-                  ref.read(offlineDownloaderProvider).cancel(item.titleId),
+                  ref.read(offlineDownloaderProvider).cancel(item.key),
               child: Text(s.vhDownloadPause, style: VH.meta.copyWith(fontSize: 12)),
             )
           else

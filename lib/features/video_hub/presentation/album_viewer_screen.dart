@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/localization/app_strings.dart';
 import '../domain/access_policy.dart';
 import '../domain/video_content.dart';
+import 'album_downloads.dart';
 import 'playback.dart';
 import 'video_hub_provider.dart';
 import 'video_hub_theme.dart';
@@ -54,6 +55,10 @@ class _AlbumViewerScreenState extends ConsumerState<AlbumViewerScreen> {
     _index = widget.initialIndex.clamp(0, _items.length - 1);
     _controller = PageController(initialPage: _index);
     _photoOrdinals = AccessPolicy.photoOrdinalsOf(_items);
+    // So a photo that is on the phone is drawn from the phone on the first
+    // frame, even when this viewer is the first thing to ask since launch.
+    // ignore: discarded_futures
+    ref.read(offlineLibraryProvider).warmPhotoIndex();
   }
 
   @override
@@ -107,6 +112,16 @@ class _AlbumViewerScreenState extends ConsumerState<AlbumViewerScreen> {
           '${_index + 1} / $total',
           style: VH.label.copyWith(fontWeight: FontWeight.w500),
         ),
+        actions: <Widget>[
+          // Save THIS one — the manual, one-at-a-time download. Draws nothing
+          // for an item this viewer may not download.
+          if (total > 0 && _canOpen(_index))
+            AlbumItemDownloadButton(
+              key: ValueKey('viewer-dl-${_items[_index].id}'),
+              content: widget.content,
+              item: _items[_index],
+            ),
+        ],
       ),
       body: PageView.builder(
         controller: _controller,

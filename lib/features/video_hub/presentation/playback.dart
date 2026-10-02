@@ -9,6 +9,7 @@ import '../../../core/localization/app_strings.dart';
 import '../../../core/router/routes.dart';
 import '../../../core/services/video_player/stream_renewal.dart';
 import '../data/api/event_sender.dart';
+import '../data/api/offline_library.dart';
 import '../data/device_identity.dart';
 import '../domain/access.dart';
 import '../data/cache/offline_replay.dart';
@@ -97,6 +98,36 @@ Future<void> playMedia(
   // free tier is wrong — and that is a business answer no amount of code
   // produces. It is also the number nobody can estimate by guessing.
   if (grant.isGranted) {
+    // ─── ALREADY ON THE PHONE: PLAY THE PHONE'S COPY ─────────────────────
+    //
+    // The server has just said yes, so entitlement, expiry and the device cap
+    // were decided where they belong. What it handed back is a stream — and
+    // streaming a film this phone already holds in full spends the viewer's
+    // data on bytes they paid for once already, at a rung no better than the
+    // original on disk. Telegram and YouTube both open the saved copy. So
+    // does this, after the server's answer rather than instead of it.
+    final held = await heldCopyOf(ref, content: content, source: source);
+    if (held != null && await File(held.path).exists()) {
+      logEvent(
+        ref,
+        Ev.playStart,
+        titleId: content.id,
+        assetId: source.provider == 'asset' ? source.locator : null,
+        meta: const <String, dynamic>{'source': 'download'},
+      );
+      if (!context.mounted) return;
+      await playOffline(
+        context,
+        ref,
+        path: held.path,
+        titleId: content.id,
+        title: titleOverride ?? held.title,
+        premium: held.premium,
+        sealed: held.sealed,
+      );
+      return;
+    }
+    if (!context.mounted) return;
     logEvent(
       ref,
       Ev.playStart,
@@ -507,28 +538,10 @@ Future<bool> _playHeldBytes(
   // allowed at the time. Offering the second while holding the first would
   // be showing somebody a worse copy of their own file.
   //
-  // ─── AND IT MUST BE THE SAME VIDEO, WHICH IT WAS NOT ─────────────────
-  //
-  // THIS LIED. The first version treated a null `assetId` on either side as
-  // "matches anything", so a title with two videos in its album — the
-  // download being the FIRST, recorded with no asset id because that is all
-  // the Download button ever passes — answered a tap on the SECOND with the
-  // first one's file. The screen said video 2 and played video 1, which is
-  // worse than refusing: a viewer cannot tell they are being shown the wrong
-  // film, they can only wonder why it is the same one.
-  //
-  // Null on the held row does not mean "any". It means the title's own
-  // `source`, which is what the Download button downloaded. So both sides
-  // are resolved to a real asset before they are compared, and they have to
-  // be equal. A title with one film still matches — both resolve to the same
-  // id, or both to null when the catalogue names none.
-  final main = content.source.provider == 'asset' &&
-          content.source.locator.isNotEmpty
-      ? content.source.locator
-      : null;
-  final wanted = assetId ?? main;
-  final held = await ref.read(offlineLibraryProvider).find(content.id);
-  if (held != null && (held.assetId ?? main) == wanted) {
+  // AND IT MUST BE THE SAME VIDEO — see [heldCopyOf], which owns that rule
+  // for this path and for the online one alike.
+  final held = await heldCopyOf(ref, content: content, source: source);
+  if (held != null) {
     // The index can outlive the file: Android clears an app's storage, a file
     // manager deletes it, a restore brings the index back without the bytes.
     // Pushing the player at a path with nothing behind it is a black screen,
@@ -611,6 +624,41 @@ Future<bool> _playHeldBytes(
     },
   );
   return true;
+}
+
+/// The downloaded copy of exactly the video [source] names, or null.
+///
+/// ─── AND IT MUST BE THE SAME VIDEO ───────────────────────────────────────
+///
+/// The first version of the offline fallback treated a null asset id on
+/// either side as "matches anything", so a title with two videos answered a
+/// tap on the SECOND with the first one's file. The screen said video 2 and
+/// played video 1, which is worse than refusing.
+///
+/// Keys make the question exact: the film is stored under the title id, an
+/// album clip under `<title>.<asset>` ([offlineKeyFor]). The one crossing is
+/// the album's own copy of the film (`AlbumItem.isMain`): it is the same file
+/// as the film, downloaded once under the film's key, so a tap on that tile
+/// finds the film — and only that tile does.
+Future<OfflineItem?> heldCopyOf(
+  WidgetRef ref, {
+  required VideoContent content,
+  required MediaRef source,
+}) async {
+  final library = ref.read(offlineLibraryProvider);
+  final assetId = source.provider == 'asset' && source.locator.isNotEmpty
+      ? source.locator
+      : null;
+  if (assetId == null) {
+    final film = await library.find(content.id);
+    return (film == null || film.isPhoto) ? null : film;
+  }
+  final own = await library.find(offlineKeyFor(content.id, assetId: assetId));
+  if (own != null && !own.isPhoto) return own;
+  final isMain = content.items.any((i) => i.id == assetId && i.isMain);
+  if (!isMain) return null;
+  final film = await library.find(content.id);
+  return (film == null || film.isPhoto) ? null : film;
 }
 
 /// Convenience for a catalogue entry's primary source.

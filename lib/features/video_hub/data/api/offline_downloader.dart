@@ -15,6 +15,7 @@ import '../../domain/content_repository.dart';
 import '../../domain/video_content.dart';
 import '../../domain/byte_size.dart';
 import '../../domain/transfer_rate.dart';
+import '../poster_cache.dart';
 import 'download_plan.dart';
 import 'offline_crypto.dart';
 import 'offline_library.dart';
@@ -22,7 +23,7 @@ import 'offline_library.dart';
 /// Where one download has got to.
 @immutable
 class OfflineProgress {
-  final String titleId;
+  final String key;
   final int received;
   final int? total;
   final bool done;
@@ -58,7 +59,7 @@ class OfflineProgress {
   final String? error;
 
   const OfflineProgress({
-    required this.titleId,
+    required this.key,
     this.received = 0,
     this.total,
     this.done = false,
@@ -245,11 +246,33 @@ class OfflineDownloader {
   /// difference between having something to watch tonight and not.
   Future<void> _chain = Future<void>.value();
 
-  /// True while this title is being fetched or waiting its turn.
-  bool isRunning(String titleId) => _streams.containsKey(titleId);
+  /// Album photos, fetched on a chain of their own. A photo is a few hundred
+  /// kilobytes and takes a second; queueing it behind an hour-long film would
+  /// leave "Download all" showing nothing for that hour. They still go one at
+  /// a time, for the same reason films do.
+  Future<void> _photoChain = Future<void>.value();
+
+  /// Ticks whenever a download is registered or ends.
+  ///
+  /// An album draws a badge on every tile and a counter over all of them, and
+  /// subscribing to every item's stream to learn that one of them started would
+  /// be a listener per tile for a question asked once.
+  final ValueNotifier<int> activity = ValueNotifier<int>(0);
+
+  /// What to ask the playback endpoint for, to (re)start the download stored
+  /// under this asset id: the album clip itself, or — with none — the title's
+  /// film. A resume that passed the film's source for a clip's row would
+  /// splice the film onto the clip's part file.
+  static MediaRef sourceFor(VideoContent content, String? assetId) =>
+      (assetId == null || assetId.isEmpty)
+          ? content.source
+          : MediaRef(provider: 'asset', locator: assetId);
+
+  /// True while this item is being fetched or waiting its turn.
+  bool isRunning(String key) => _streams.containsKey(key);
 
   /// Progress for a running download, or null when none is running.
-  Stream<OfflineProgress>? watch(String titleId) => _streams[titleId]?.stream;
+  Stream<OfflineProgress>? watch(String key) => _streams[key]?.stream;
 
   /// Asks for the download to stop. The partial file is KEPT, so starting
   /// again resumes rather than restarts.
@@ -261,12 +284,12 @@ class OfflineDownloader {
   /// leaves the row unmarked and carries on by itself. See
   /// [PendingDownload.pausedByUser]: the two look identical on disk and only
   /// this call can tell them apart.
-  void cancel(String titleId) {
-    _cancelled.add(titleId);
+  void cancel(String key) {
+    _cancelled.add(key);
     // Fire and forget: the flag above is what stops the transfer, and a
     // preferences write must not be in that path.
     // ignore: discarded_futures
-    _library.markPaused(titleId);
+    _library.markPaused(key);
   }
 
   /// Fetches [content] to disk.
@@ -301,12 +324,13 @@ class OfflineDownloader {
     DownloadNotices notices = DownloadNotices.english,
     Future<bool> Function(int totalBytes, int freeBytes)? confirmSize,
   }) async {
-    final titleId = content.id;
-    if (_streams.containsKey(titleId)) return null;
+    final key = offlineKeyFor(content.id, assetId: assetId);
+    if (_streams.containsKey(key)) return null;
 
     final controller = StreamController<OfflineProgress>.broadcast();
-    _streams[titleId] = controller;
-    _cancelled.remove(titleId);
+    _streams[key] = controller;
+    _cancelled.remove(key);
+    activity.value++;
 
     void emit(OfflineProgress p) {
       if (!controller.isClosed) controller.add(p);
@@ -324,7 +348,8 @@ class OfflineDownloader {
     // name when the download finished, which is exactly the case where the
     // name was not needed.
     await _library.putPending(PendingDownload(
-      titleId: titleId,
+      titleId: content.id,
+      key: key,
       title: content.title,
       titleMm: content.titleMm,
       posterUrl: content.poster.isEmpty ? null : content.poster.locator,
@@ -344,13 +369,13 @@ class OfflineDownloader {
     // waiting. This map has this download's own entry in it already, so more
     // than one entry means somebody else is ahead.
     if (_streams.length > 1) {
-      emit(OfflineProgress(titleId: titleId, queued: true));
+      emit(OfflineProgress(key: key, queued: true));
     }
 
     final completer = Completer<OfflineItem?>();
     _chain = _chain.then((_) async {
       try {
-        if (_cancelled.contains(titleId)) {
+        if (_cancelled.contains(key)) {
           completer.complete(null);
           return;
         }
@@ -366,12 +391,13 @@ class OfflineDownloader {
         completer.complete(item);
       } catch (e) {
         if (kDebugMode) debugPrint('offline download failed: $e');
-        emit(OfflineProgress(titleId: titleId, error: '$e'));
+        emit(OfflineProgress(key: key, error: '$e'));
         completer.complete(null);
       } finally {
         await controller.close();
-        _streams.remove(titleId);
-        _cancelled.remove(titleId);
+        _streams.remove(key);
+        _cancelled.remove(key);
+        activity.value++;
       }
     });
     // The chain must never end in an error state or every later download would
@@ -380,6 +406,181 @@ class OfflineDownloader {
       if (kDebugMode) debugPrint('offline chain: $e');
     });
     return completer.future;
+  }
+
+  /// Fetches one album PHOTO to disk.
+  ///
+  /// NOT [download] WITH A DIFFERENT SOURCE. A photo has a public URL, no
+  /// signed address to renew, no ladder, no foreground service and no size to
+  /// agree to on its own — the album asks once for everything it is about to
+  /// fetch. What it keeps from [download] is everything that protects the
+  /// viewer: the Wi-Fi-only rule, a `.part` file renamed only when complete,
+  /// a length check, and the same registry so a second tap cannot start a
+  /// second writer.
+  ///
+  /// Copied from the artwork cache when the photo is already there, which it
+  /// is for any photo somebody has opened: the bytes were paid for once.
+  Future<OfflineItem?> downloadPhoto({
+    required VideoContent content,
+    required String assetId,
+    required String url,
+    void Function(OfflineProgress)? onProgress,
+  }) async {
+    final key = offlineKeyFor(content.id, assetId: assetId);
+    if (_streams.containsKey(key)) return null;
+    final controller = StreamController<OfflineProgress>.broadcast();
+    _streams[key] = controller;
+    _cancelled.remove(key);
+    activity.value++;
+
+    void emit(OfflineProgress p) {
+      if (!controller.isClosed) controller.add(p);
+      try {
+        onProgress?.call(p);
+      } catch (e) {
+        if (kDebugMode) debugPrint('offline photo onProgress: $e');
+      }
+    }
+
+    emit(OfflineProgress(key: key, queued: true));
+    final completer = Completer<OfflineItem?>();
+    _photoChain = _photoChain.then((_) async {
+      try {
+        completer.complete(await _fetchPhoto(
+          content: content,
+          assetId: assetId,
+          key: key,
+          url: url,
+          emit: emit,
+        ));
+      } catch (e) {
+        if (kDebugMode) debugPrint('offline photo failed: $e');
+        emit(OfflineProgress(key: key, error: '$e'));
+        completer.complete(null);
+      } finally {
+        await controller.close();
+        _streams.remove(key);
+        _cancelled.remove(key);
+        activity.value++;
+      }
+    });
+    _photoChain = _photoChain.catchError((Object e) {
+      if (kDebugMode) debugPrint('offline photo chain: $e');
+    });
+    return completer.future;
+  }
+
+  /// How many times one photo is tried before it is reported as failed.
+  static const int _photoAttempts = 4;
+
+  Future<OfflineItem?> _fetchPhoto({
+    required VideoContent content,
+    required String assetId,
+    required String key,
+    required String url,
+    required void Function(OfflineProgress) emit,
+  }) async {
+    if (_cancelled.contains(key)) return null;
+    final refusal = await _allowance();
+    if (refusal != null) {
+      emit(OfflineProgress(key: key, error: refusal.name));
+      return null;
+    }
+    final dir = await _library.directory();
+    final finalPath = '${dir.path}/$key${photoExtension(url)}';
+    final part = File('$finalPath${OfflineLibrary.partSuffix}');
+    int? bytes;
+
+    final cached = await PosterCache.onDisk(url);
+    if (cached != null) {
+      try {
+        await File(cached).copy(part.path);
+        bytes = await part.length();
+        if (bytes <= 0) bytes = null;
+      } catch (e) {
+        if (kDebugMode) debugPrint('offline photo copy: $e');
+        bytes = null;
+      }
+    }
+
+    for (var attempt = 0; bytes == null && attempt < _photoAttempts; attempt++) {
+      if (_cancelled.contains(key)) return null;
+      if (attempt > 0) {
+        if (!await _waitForNetwork(retryDelay(attempt), key)) return null;
+      }
+      IOSink? sink;
+      try {
+        final response = await _http.send(http.Request('GET', Uri.parse(url)));
+        if (response.statusCode != 200) {
+          try {
+            await response.stream.drain<void>();
+          } catch (_) {}
+          // A 404 is an answer, not a blip: the photo is gone, and asking three
+          // more times spends data to be told so three more times.
+          if (response.statusCode == 404 || response.statusCode == 403) break;
+          continue;
+        }
+        final expected = response.contentLength;
+        sink = part.openWrite();
+        var got = 0;
+        var broke = false;
+        await for (final chunk in response.stream) {
+          if (_cancelled.contains(key)) {
+            broke = true;
+            break;
+          }
+          sink.add(chunk);
+          got += chunk.length;
+          emit(OfflineProgress(key: key, received: got, total: expected));
+        }
+        await sink.flush();
+        await sink.close();
+        sink = null;
+        if (broke) {
+          try {
+            if (await part.exists()) await part.delete();
+          } catch (_) {}
+          return null;
+        }
+        // SHORT IS FAILED. A photo that stopped half way draws as half a
+        // photo, and "downloaded" is a promise made offline, where nobody
+        // can go back and look.
+        if (got > 0 && (expected == null || got == expected)) bytes = got;
+      } catch (e) {
+        if (kDebugMode) debugPrint('offline photo attempt: $e');
+      } finally {
+        try {
+          await sink?.close();
+        } catch (_) {}
+      }
+    }
+
+    if (bytes == null) {
+      try {
+        if (await part.exists()) await part.delete();
+      } catch (_) {}
+      emit(OfflineProgress(key: key, error: 'gave_up'));
+      return null;
+    }
+
+    await part.rename(finalPath);
+    final item = OfflineItem(
+      titleId: content.id,
+      key: key,
+      kind: 'photo',
+      sourceUrl: url,
+      title: content.title,
+      titleMm: content.titleMm,
+      posterUrl: content.poster.isEmpty ? null : content.poster.locator,
+      path: finalPath,
+      bytes: bytes,
+      addedAt: DateTime.now(),
+      assetId: assetId,
+      premium: content.accessTier == AccessTier.premium,
+    );
+    await _library.put(item);
+    emit(OfflineProgress(key: key, received: bytes, total: bytes, done: true));
+    return item;
   }
 
   Future<OfflineItem?> _run({
@@ -391,12 +592,12 @@ class OfflineDownloader {
     required Future<bool> Function(int totalBytes, int freeBytes)? confirmSize,
     required void Function(OfflineProgress) emit,
   }) async {
-    final titleId = content.id;
+    final key = offlineKeyFor(content.id, assetId: assetId);
     final dir = await _library.directory();
     // Named by the TITLE ID, not by the title. A name is operator-entered
     // text that can contain anything a path cannot, and two titles can share
     // one; an id is a uuid and is unique by construction.
-    final finalPath = '${dir.path}/$titleId.mp4';
+    final finalPath = '${dir.path}/$key.mp4';
     final partPath = '$finalPath${OfflineLibrary.partSuffix}';
     final part = File(partPath);
     // The object length as first observed, kept beside the part file so a
@@ -456,7 +657,7 @@ class OfflineDownloader {
         lastEmitAt = now;
         lastEmitBytes = received;
         emit(OfflineProgress(
-          titleId: titleId,
+          key: key,
           received: received,
           total: total,
           bytesPerSecond: rate.bytesPerSecond,
@@ -491,7 +692,7 @@ class OfflineDownloader {
         OfflineServiceBridge.takePauseRequest().then((wanted) {
           if (wanted) {
             PlaybackLog.add('offline paused from the notification');
-            cancel(titleId);
+            cancel(key);
           }
         });
       }
@@ -506,7 +707,7 @@ class OfflineDownloader {
       var attempts = 0;
       while (failures <= maxConsecutiveFailures && attempts < maxAttempts) {
         attempts++;
-        if (_cancelled.contains(titleId)) return null;
+        if (_cancelled.contains(key)) return null;
 
         // ─── ALREADY COMPLETE, AND NEVER FINISHED ─────────────────────────
         //
@@ -554,7 +755,7 @@ class OfflineDownloader {
         final refusal = await _allowance();
         if (refusal != null) {
           emit(OfflineProgress(
-            titleId: titleId,
+            key: key,
             received: received,
             total: total,
             error: refusal.name,
@@ -565,7 +766,7 @@ class OfflineDownloader {
         if (failures > 0) {
           rate.reset();
           emit(OfflineProgress(
-            titleId: titleId,
+            key: key,
             received: received,
             total: total,
             waitingForNetwork: true,
@@ -583,7 +784,7 @@ class OfflineDownloader {
           // So the wait is broken into short steps and abandoned as soon as a
           // DNS lookup succeeds. The backoff still bounds how often the server
           // is asked; it no longer decides how long recovery takes.
-          if (!await _waitForNetwork(retryDelay(failures), titleId)) {
+          if (!await _waitForNetwork(retryDelay(failures), key)) {
             return null;
           }
         }
@@ -611,7 +812,7 @@ class OfflineDownloader {
           // an hour. The server has answered: this viewer may not have this
           // file. Retrying cannot change that and would hammer the endpoint.
           emit(OfflineProgress(
-            titleId: titleId,
+            key: key,
             received: received,
             total: total,
             // The denial reason, not a generic failure: a lapsed subscription
@@ -729,7 +930,7 @@ class OfflineDownloader {
               // Not an error: they were asked and they said no. A row in the
               // pending list for a download that never started would be a
               // gigabyte's worth of promise about nothing.
-              await _library.dropPending(titleId);
+              await _library.dropPending(key);
               return null;
             }
           }
@@ -749,7 +950,7 @@ class OfflineDownloader {
             await response.stream.drain<void>();
           } catch (_) {}
           emit(OfflineProgress(
-            titleId: titleId,
+            key: key,
             received: received,
             total: total,
             error: 'no_space',
@@ -766,7 +967,7 @@ class OfflineDownloader {
         var sealBroke = false;
         try {
           await for (final chunk in response.stream) {
-            if (_cancelled.contains(titleId)) {
+            if (_cancelled.contains(key)) {
               broke = true;
               break;
             }
@@ -795,7 +996,7 @@ class OfflineDownloader {
                 broke = true;
                 ranOut = true;
                 emit(OfflineProgress(
-                  titleId: titleId,
+                  key: key,
                   received: received,
                   total: total,
                   error: 'no_space',
@@ -815,7 +1016,7 @@ class OfflineDownloader {
           await sink.close();
         }
 
-        if (_cancelled.contains(titleId)) return null;
+        if (_cancelled.contains(key)) return null;
         // REAL PROGRESS CLEARS THE BUDGET. A download that is moving, however
         // slowly and however often it is interrupted, is a download that is
         // working, and the give-up count is for the other kind. Measured
@@ -879,7 +1080,7 @@ class OfflineDownloader {
       }
 
       emit(OfflineProgress(
-        titleId: titleId,
+        key: key,
         received: received,
         total: total,
         error: 'gave_up',
@@ -896,7 +1097,7 @@ class OfflineDownloader {
       // hand, on the screen whose job is to be reassuring.
       if (received <= 0) {
         try {
-          await _library.dropPending(titleId);
+          await _library.dropPending(key);
         } catch (_) {}
       }
     }
@@ -969,7 +1170,7 @@ class OfflineDownloader {
         // retry resumes rather than starting again — than to hand somebody a
         // finished row over a file that plays as noise.
         emit(OfflineProgress(
-          titleId: content.id,
+          key: offlineKeyFor(content.id, assetId: assetId),
           received: bytes,
           total: bytes,
           error: 'seal_failed',
@@ -992,8 +1193,10 @@ class OfflineDownloader {
       if (await ivNote.exists()) await ivNote.delete();
     } catch (_) {}
 
+    final key = offlineKeyFor(content.id, assetId: assetId);
     final item = OfflineItem(
       titleId: content.id,
+      key: key,
       title: content.title,
       titleMm: content.titleMm,
       posterUrl: content.poster.isEmpty ? null : content.poster.locator,
@@ -1011,9 +1214,9 @@ class OfflineDownloader {
       sealed: sealer != null,
     );
     await _library.put(item);
-    await _library.dropPending(content.id);
+    await _library.dropPending(key);
     emit(OfflineProgress(
-      titleId: content.id,
+      key: key,
       received: bytes,
       total: bytes,
       done: true,
@@ -1030,7 +1233,7 @@ class OfflineDownloader {
   ///
   /// Returns false when the download was cancelled while waiting, so the caller
   /// stops instead of carrying on into a transfer nobody is waiting for.
-  Future<bool> _waitForNetwork(Duration total, String titleId) async {
+  Future<bool> _waitForNetwork(Duration total, String key) async {
     const step = Duration(seconds: 2);
     var waited = Duration.zero;
     // The first step is always taken. Retrying the instant a request failed is
@@ -1039,7 +1242,7 @@ class OfflineDownloader {
     while (waited < total) {
       await Future<void>.delayed(step);
       waited += step;
-      if (_cancelled.contains(titleId)) return false;
+      if (_cancelled.contains(key)) return false;
       if (waited >= total) break;
       // Cheap: a DNS lookup against a host the OS has almost certainly cached,
       // and it fails fast when there is no radio. Costs nothing on a link that
@@ -1050,7 +1253,7 @@ class OfflineDownloader {
         return true;
       }
     }
-    return !_cancelled.contains(titleId);
+    return !_cancelled.contains(key);
   }
 
   static String _statusLine(int received, int? total) {
@@ -1090,6 +1293,20 @@ class OfflineDownloader {
       return -1;
     }
   }
+}
+
+/// The extension a downloaded photo is stored under, from its URL.
+///
+/// Only for the benefit of a human with a file browser — the decoder reads the
+/// bytes, not the name — so anything unrecognised is `.img` rather than a
+/// guess.
+@visibleForTesting
+String photoExtension(String url) {
+  final path = Uri.tryParse(url)?.path.toLowerCase() ?? '';
+  for (final ext in const <String>['.jpg', '.jpeg', '.png', '.webp', '.gif', '.heic']) {
+    if (path.endsWith(ext)) return ext;
+  }
+  return '.img';
 }
 
 /// Ciphers a download as it arrives.

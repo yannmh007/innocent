@@ -101,6 +101,25 @@ class PosterCache {
   /// A path already known to be on disk, or null. Never touches the disk.
   static String? pathIfReady(String url) => _known[url];
 
+  /// The cached file for [url] if it is ALREADY on disk, or null. Never
+  /// fetches.
+  ///
+  /// For an offline download of an album photo: a photo somebody has already
+  /// opened is already in this cache, and copying it off the disk costs them
+  /// nothing where fetching it again costs them the photo's size in data.
+  static Future<String?> onDisk(String url) async {
+    if (!enabled || url.isEmpty) return null;
+    final known = _known[url];
+    if (known != null) return known;
+    try {
+      final dir = await _directory();
+      if (dir == null) return null;
+      final file = File(p.join(dir.path, _nameFor(url)));
+      if (await file.exists() && await file.length() > 0) return file.path;
+    } catch (_) {}
+    return null;
+  }
+
   /// The cached file for [url], fetching and storing it if necessary.
   ///
   /// Returns null when the artwork could not be cached for any reason. The

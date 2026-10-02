@@ -68,13 +68,14 @@ class WatchWhileDownloading {
 
   static Future<PartialPlay> open({
     required OfflineLibrary library,
-    required String titleId,
+    /// The shelf key — see `offlineKeyFor` — which names the part file.
+    required String key,
     required int? total,
   }) async {
     RandomAccessFile? handle;
     try {
       final dir = await library.directory();
-      final finalPath = '${dir.path}/$titleId.mp4';
+      final finalPath = '${dir.path}/$key.mp4';
       final part = File('$finalPath${OfflineLibrary.partSuffix}');
       final finished = File(finalPath);
       if (!await part.exists()) {

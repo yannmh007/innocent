@@ -426,6 +426,40 @@ class AppStrings {
   String get playerQuality => _s('playerQuality');
   String get playerQualityAutoHint => _s('playerQualityAutoHint');
   String get playerQualityFailed => _s('playerQualityFailed');
+
+  // ─── ALBUM DOWNLOADS ─────────────────────────────────────────────────
+  String get vhAlbumDownloadAll => _s('vhAlbumDownloadAll');
+  String get vhAlbumDownloaded => _s('vhAlbumDownloaded');
+  String get vhAlbumDownloadNew => _s('vhAlbumDownloadNew');
+
+  /// "+2 Video" — what the admin added since this album was downloaded.
+  String vhAlbumPlusVideos(int n) =>
+      _s('vhAlbumPlusVideos').replaceFirst('{n}', '$n');
+  String vhAlbumPlusPhotos(int n) =>
+      _s('vhAlbumPlusPhotos').replaceFirst('{n}', '$n');
+
+  /// "3 / 9" while an album is arriving.
+  String vhAlbumProgress(int done, int total) => _s('vhAlbumProgress')
+      .replaceFirst('{done}', '$done')
+      .replaceFirst('{total}', '$total');
+  String vhAlbumVideos(int n) => _s('vhAlbumVideos').replaceFirst('{n}', '$n');
+  String vhAlbumPhotos(int n) => _s('vhAlbumPhotos').replaceFirst('{n}', '$n');
+
+  /// "{items}, about {size}. You have {free} free. Carry on?"
+  String vhAlbumAsk(Object items, Object size, Object free) =>
+      _s('vhAlbumAsk')
+          .replaceFirst('{items}', '$items')
+          .replaceFirst('{size}', '$size')
+          .replaceFirst('{free}', '$free');
+  String vhAlbumAskNoSize(Object items, Object free) => _s('vhAlbumAskNoSize')
+      .replaceFirst('{items}', '$items')
+      .replaceFirst('{free}', '$free');
+  String vhAlbumSomeFailed(int n) =>
+      _s('vhAlbumSomeFailed').replaceFirst('{n}', '$n');
+  String get vhSavedOffline => _s('vhSavedOffline');
+  String get vhSaveOffline => _s('vhSaveOffline');
+  String get vhAlbumDeleteBody => _s('vhAlbumDeleteBody');
+  String get vhDeleteItemBody => _s('vhDeleteItemBody');
   String get close => _s('close');
   String get audioTrack => _s('audioTrack');
   String get subtitle => _s('subtitle');
@@ -1851,6 +1885,21 @@ class AppStrings {
     'playerQuality': 'Quality',
     'playerQualityAutoHint': 'Adjusts to your connection',
     'playerQualityFailed': 'Could not switch quality. Still playing the current copy.',
+    'vhAlbumDownloadAll': 'Download all',
+    'vhAlbumDownloaded': 'Downloaded',
+    'vhAlbumDownloadNew': 'Download',
+    'vhAlbumPlusVideos': '+{n} Video',
+    'vhAlbumPlusPhotos': '+{n} Photo',
+    'vhAlbumProgress': '{done} / {total}',
+    'vhAlbumVideos': '{n} videos',
+    'vhAlbumPhotos': '{n} photos',
+    'vhAlbumAsk': '{items}, about {size} at full quality. You have {free} free on this phone. Carry on?',
+    'vhAlbumAskNoSize': '{items} at full quality. You have {free} free on this phone. Carry on?',
+    'vhAlbumSomeFailed': '{n} could not be downloaded. Tap Download to try them again.',
+    'vhSavedOffline': 'Saved on this phone',
+    'vhSaveOffline': 'Save for offline',
+    'vhAlbumDeleteBody': 'Delete the photos and clips of this album from this phone? A downloaded film stays.',
+    'vhDeleteItemBody': 'Delete this from the phone? You can download it again.',
     'close': 'Close',
     'audioTrack': 'Audio track',
     'subtitle': 'Subtitle',
@@ -3095,6 +3144,21 @@ class AppStrings {
     'playerQuality': 'အရည်အသွေး',
     'playerQualityAutoHint': 'အင်တာနက်လိုင်းအလိုက် အလိုအလျောက် ချိန်ပေးသည်',
     'playerQualityFailed': 'အရည်အသွေး မပြောင်းနိုင်ပါ။ လက်ရှိအတိုင်း ဆက်ပြနေပါသည်။',
+    'vhAlbumDownloadAll': 'အားလုံး ဒေါင်းမည်',
+    'vhAlbumDownloaded': 'ဒေါင်းပြီး',
+    'vhAlbumDownloadNew': 'ဒေါင်းမည်',
+    'vhAlbumPlusVideos': '+{n} Video',
+    'vhAlbumPlusPhotos': '+{n} ပုံ',
+    'vhAlbumProgress': '{done} / {total}',
+    'vhAlbumVideos': 'ဗီဒီယို {n} ခု',
+    'vhAlbumPhotos': 'ဓာတ်ပုံ {n} ပုံ',
+    'vhAlbumAsk': '{items}၊ မူရင်းအရည်အသွေးနဲ့ {size} ခန့်ရှိပါတယ်။ ဖုန်းထဲမှာ {free} ကျန်ပါတယ်။ ဆက်ဒေါင်းမလား?',
+    'vhAlbumAskNoSize': '{items} ကို မူရင်းအရည်အသွေးနဲ့ ဒေါင်းပါမယ်။ ဖုန်းထဲမှာ {free} ကျန်ပါတယ်။ ဆက်ဒေါင်းမလား?',
+    'vhAlbumSomeFailed': '{n} ခု ဒေါင်းမရပါ။ ပြန်ကြိုးစားရန် ဒေါင်းမည် ကို နှိပ်ပါ။',
+    'vhSavedOffline': 'ဖုန်းထဲ သိမ်းပြီး',
+    'vhSaveOffline': 'အော့ဖ်လိုင်းအတွက် သိမ်းမည်',
+    'vhAlbumDeleteBody': 'ဒီ album ရဲ့ ဓာတ်ပုံနဲ့ ဗီဒီယိုတွေကို ဖုန်းထဲက ဖျက်မလား? ဒေါင်းထားတဲ့ ဇာတ်ကားကတော့ ကျန်ပါမယ်။',
+    'vhDeleteItemBody': 'ဖုန်းထဲက ဖျက်မလား? နောက်မှ ပြန်ဒေါင်းလို့ ရပါတယ်။',
     'close': 'ပိတ်ရန်',
     'audioTrack': 'အသံ လိုင်း',
     'subtitle': 'စာတန်းထိုး',
@@ -4328,6 +4392,21 @@ class AppStrings {
     'playerQuality': 'คุณภาพ',
     'playerQualityAutoHint': 'ปรับตามการเชื่อมต่อ',
     'playerQualityFailed': 'เปลี่ยนคุณภาพไม่ได้ ยังเล่นสำเนาเดิมอยู่',
+    'vhAlbumDownloadAll': 'ดาวน์โหลดทั้งหมด',
+    'vhAlbumDownloaded': 'ดาวน์โหลดแล้ว',
+    'vhAlbumDownloadNew': 'ดาวน์โหลด',
+    'vhAlbumPlusVideos': '+{n} วิดีโอ',
+    'vhAlbumPlusPhotos': '+{n} รูป',
+    'vhAlbumProgress': '{done} / {total}',
+    'vhAlbumVideos': 'วิดีโอ {n} รายการ',
+    'vhAlbumPhotos': 'รูป {n} รูป',
+    'vhAlbumAsk': '{items} ประมาณ {size} ที่คุณภาพเต็ม เหลือพื้นที่ {free} ดำเนินการต่อไหม?',
+    'vhAlbumAskNoSize': '{items} ที่คุณภาพเต็ม เหลือพื้นที่ {free} ดำเนินการต่อไหม?',
+    'vhAlbumSomeFailed': 'ดาวน์โหลดไม่ได้ {n} รายการ แตะดาวน์โหลดเพื่อลองอีกครั้ง',
+    'vhSavedOffline': 'บันทึกไว้ในเครื่องแล้ว',
+    'vhSaveOffline': 'บันทึกไว้ดูออฟไลน์',
+    'vhAlbumDeleteBody': 'ลบรูปและคลิปของอัลบั้มนี้ออกจากเครื่องไหม? ภาพยนตร์ที่ดาวน์โหลดไว้ยังอยู่',
+    'vhDeleteItemBody': 'ลบออกจากเครื่องไหม? ดาวน์โหลดใหม่ได้ภายหลัง',
     'close': 'ปิด',
     'audioTrack': 'แทร็กเสียง',
     'subtitle': 'คำบรรยาย',

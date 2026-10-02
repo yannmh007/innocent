@@ -79,6 +79,18 @@ class AlbumItem {
   final int? width;
   final int? height;
 
+  /// True for the clip that IS the title's film (`title_media.is_main`).
+  ///
+  /// The album lists the film among its clips, and the film is downloaded
+  /// through the title's own Download button under the title's key. An album
+  /// "Download all" that did not know which clip this is would fetch the
+  /// largest file in the album a second time.
+  final bool isMain;
+
+  /// Size of the original in bytes, when the server knows it. Lets "Download
+  /// all" say what it will cost before anything is fetched.
+  final int? bytes;
+
   const AlbumItem({
     required this.id,
     required this.kind,
@@ -88,6 +100,8 @@ class AlbumItem {
     this.isPreview = false,
     this.width,
     this.height,
+    this.isMain = false,
+    this.bytes,
   });
 
   bool get isVideo => kind == MediaKind.video;

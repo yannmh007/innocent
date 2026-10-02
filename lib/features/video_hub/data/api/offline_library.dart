@@ -7,13 +7,33 @@ import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../domain/offline_key.dart';
 import 'offline_crypto.dart';
 
-/// One title kept on this device for offline viewing.
+export '../../domain/offline_key.dart';
+
+/// One thing kept on this device for offline viewing: a title's film, or one
+/// photo or clip from its album.
 @immutable
 class OfflineItem {
-  /// The catalogue title. Also the key: one download per title.
+  /// The catalogue title this belongs to — for an album item, its parent.
   final String titleId;
+
+  /// What the shelf is keyed by. See [offlineKeyFor].
+  ///
+  /// STORED, NOT DERIVED, for one reason: a row written before this field
+  /// existed is keyed by its title id whatever else it says, and deriving the
+  /// key from `assetId` would re-key a legacy row that happened to carry one.
+  final String key;
+
+  /// 'video' or 'photo'. Every row written before albums were downloadable is
+  /// a video, which is what the absent field reads as.
+  final String kind;
+
+  /// The public URL a photo was fetched from, so the album can draw the copy on
+  /// disk in place of the network one. Null for a video, whose address is
+  /// signed per request and must never be written down.
+  final String? sourceUrl;
 
   /// What to show in the list. Copied at download time rather than looked up,
   /// because the whole point is that this works with no network.
@@ -80,13 +100,21 @@ class OfflineItem {
     required this.path,
     required this.bytes,
     required this.addedAt,
+    String? key,
+    this.kind = 'video',
+    this.sourceUrl,
     this.titleMm,
     this.posterUrl,
     this.durationS,
     this.assetId,
     this.premium = true,
     this.sealed = false,
-  });
+  }) : key = key ?? titleId;
+
+  bool get isPhoto => kind == 'photo';
+
+  /// True for the title's own film, as opposed to an album item.
+  bool get isFilm => key == titleId;
 
   /// The same entry with a corrected byte count.
   ///
@@ -94,6 +122,9 @@ class OfflineItem {
   /// row is stale rather than the film broken — see [OfflineLibrary.items].
   OfflineItem copyWithBytes(int newBytes) => OfflineItem(
         titleId: titleId,
+        key: key,
+        kind: kind,
+        sourceUrl: sourceUrl,
         title: title,
         path: path,
         bytes: newBytes,
@@ -108,6 +139,9 @@ class OfflineItem {
 
   Map<String, dynamic> toJson() => <String, dynamic>{
         'titleId': titleId,
+        'key': key,
+        'kind': kind,
+        if (sourceUrl != null) 'sourceUrl': sourceUrl,
         'title': title,
         if (titleMm != null) 'titleMm': titleMm,
         if (posterUrl != null) 'posterUrl': posterUrl,
@@ -126,8 +160,13 @@ class OfflineItem {
     // A row with no id addresses nothing and a row with no path plays
     // nothing. Dropping beats keeping a shelf entry that cannot open.
     if (id.isEmpty || path.isEmpty) return null;
+    final key = '${m['key'] ?? ''}';
     return OfflineItem(
       titleId: id,
+      // Absent: a row from before albums, which is the title's film.
+      key: key.isEmpty ? id : key,
+      kind: m['kind'] == 'photo' ? 'photo' : 'video',
+      sourceUrl: m['sourceUrl'] as String?,
       title: '${m['title'] ?? ''}',
       titleMm: m['titleMm'] as String?,
       posterUrl: m['posterUrl'] as String?,
@@ -164,7 +203,12 @@ class OfflineItem {
 /// the download finishes or the viewer throws it away.
 @immutable
 class PendingDownload {
+  /// The parent title. See [key] for what the row is addressed by.
   final String titleId;
+
+  /// The shelf key — [offlineKeyFor] — and the stem of the part file's name.
+  /// Stored for the reason given on [OfflineItem.key].
+  final String key;
   final String title;
   final String? titleMm;
   final String? posterUrl;
@@ -192,15 +236,17 @@ class PendingDownload {
     required this.titleId,
     required this.title,
     required this.startedAt,
+    String? key,
     this.titleMm,
     this.posterUrl,
     this.assetId,
     this.premium = true,
     this.pausedByUser = false,
-  });
+  }) : key = key ?? titleId;
 
   Map<String, dynamic> toJson() => <String, dynamic>{
         'titleId': titleId,
+        'key': key,
         'title': title,
         if (titleMm != null) 'titleMm': titleMm,
         if (posterUrl != null) 'posterUrl': posterUrl,
@@ -213,8 +259,10 @@ class PendingDownload {
   static PendingDownload? fromJson(Map<String, dynamic> m) {
     final id = '${m['titleId'] ?? ''}';
     if (id.isEmpty) return null;
+    final key = '${m['key'] ?? ''}';
     return PendingDownload(
       titleId: id,
+      key: key.isEmpty ? id : key,
       title: '${m['title'] ?? ''}',
       titleMm: m['titleMm'] as String?,
       posterUrl: m['posterUrl'] as String?,
@@ -389,7 +437,11 @@ class OfflineLibrary {
       out.add(item);
     }
     out.sort((a, b) => b.addedAt.compareTo(a.addedAt));
-    if (changed) await _write(out);
+    if (changed) {
+      await _write(out);
+    } else {
+      _index(out);
+    }
     return out;
   }
 
@@ -420,14 +472,23 @@ class OfflineLibrary {
     return out;
   }
 
-  Future<OfflineItem?> find(String titleId) async {
+  /// The entry stored under [key] — see [offlineKeyFor]. A title id finds
+  /// the title's film, exactly as it always has.
+  Future<OfflineItem?> find(String key) async {
     for (final item in await items()) {
-      if (item.titleId == titleId) return item;
+      if (item.key == key) return item;
     }
     return null;
   }
 
-  Future<bool> has(String titleId) async => (await find(titleId)) != null;
+  Future<bool> has(String key) async => (await find(key)) != null;
+
+  /// Everything on the shelf that belongs to [titleId]: its film and every
+  /// album item, verified like [items].
+  Future<List<OfflineItem>> forTitle(String titleId) async => <OfflineItem>[
+        for (final item in await items())
+          if (item.titleId == titleId) item,
+      ];
 
   /// Adds or replaces one entry.
   Future<void> put(OfflineItem item) async {
@@ -435,7 +496,7 @@ class OfflineLibrary {
     final next = <OfflineItem>[
       item,
       for (final o in current)
-        if (o.titleId != item.titleId) o,
+        if (o.key != item.key) o,
     ];
     await _write(next);
   }
@@ -445,13 +506,13 @@ class OfflineLibrary {
   /// The FILE FIRST, then the index. The other order can leave a file nothing
   /// references — invisible, undeletable through the UI, and still occupying
   /// a gigabyte.
-  Future<void> drop(String titleId) async {
+  Future<void> drop(String key) async {
     // The RAW row, not the verified one: deleting a download must work whether
     // or not the file passes verification, and going through [items] would
     // make a delete depend on a judgement about damage.
     OfflineItem? item;
     for (final row in await _rows()) {
-      if (row.titleId == titleId) item = row;
+      if (row.key == key) item = row;
     }
     if (item != null) {
       try {
@@ -463,9 +524,16 @@ class OfflineLibrary {
     }
     final next = <OfflineItem>[
       for (final o in await _rows())
-        if (o.titleId != titleId) o,
+        if (o.key != key) o,
     ];
     await _write(next);
+  }
+
+  /// Removes everything [titleId] has on the shelf — film and album alike.
+  Future<void> dropTitle(String titleId) async {
+    for (final row in await _rows()) {
+      if (row.titleId == titleId) await drop(row.key);
+    }
   }
 
   /// Empties the shelf of everything the ACCOUNT paid for, and keeps the rest.
@@ -499,7 +567,7 @@ class OfflineLibrary {
   ///
   /// The Downloads screen has always cancelled before discarding. This is the
   /// same rule, for the path that had not been given it.
-  Future<void> dropEntitled({void Function(String titleId)? stop}) async {
+  Future<void> dropEntitled({void Function(String key)? stop}) async {
     final keep = <OfflineItem>[];
     final keepPaths = <String>{};
     for (final item in await _rows()) {
@@ -519,11 +587,11 @@ class OfflineLibrary {
     try {
       final dir = await directory();
       for (final row in await _pendingRows()) {
-        final part = File('${dir.path}/${row.titleId}.mp4$partSuffix');
+        final part = File('${dir.path}/${row.key}.mp4$partSuffix');
         if (row.premium) {
           // STOP THE WRITER FIRST. See the note on this method: deleting a file
           // out from under a live download does not stop the download.
-          stop?.call(row.titleId);
+          stop?.call(row.key);
           try {
             if (await part.exists()) await part.delete();
             final note = File('${part.path}.total');
@@ -585,6 +653,8 @@ class OfflineLibrary {
       if (kDebugMode) debugPrint('offline sweep failed: $e');
     }
     await (await _store).remove(_key);
+    _index(const <OfflineItem>[]);
+    shelf.value++;
     // The pending index describes files the sweep above has just deleted.
     // Leaving it would fill the Downloads screen with rows that resume
     // nothing.
@@ -600,7 +670,7 @@ class OfflineLibrary {
     final next = <PendingDownload>[
       item,
       for (final o in await _pendingRows())
-        if (o.titleId != item.titleId) o,
+        if (o.key != item.key) o,
     ];
     await _writePending(next);
   }
@@ -611,15 +681,16 @@ class OfflineLibrary {
   /// A no-op when there is no row: a cancel that arrives after the download
   /// finished has nothing to mark, and inventing a row for it would put a
   /// finished film in the unfinished list.
-  Future<void> markPaused(String titleId) async {
+  Future<void> markPaused(String key) async {
     final rows = await _pendingRows();
     var found = false;
     final next = <PendingDownload>[];
     for (final row in rows) {
-      if (row.titleId == titleId) {
+      if (row.key == key) {
         found = true;
         next.add(PendingDownload(
           titleId: row.titleId,
+          key: row.key,
           title: row.title,
           startedAt: row.startedAt,
           titleMm: row.titleMm,
@@ -639,10 +710,10 @@ class OfflineLibrary {
   ///
   /// Called when a download finishes: the file has already been renamed and
   /// the shelf entry written, so the row has nothing left to describe.
-  Future<void> dropPending(String titleId) async {
+  Future<void> dropPending(String key) async {
     final next = <PendingDownload>[
       for (final o in await _pendingRows())
-        if (o.titleId != titleId) o,
+        if (o.key != key) o,
     ];
     await _writePending(next);
   }
@@ -650,10 +721,10 @@ class OfflineLibrary {
   /// Throw away an unfinished download: the part file, its size note, and the
   /// row. The order is file first, as in [drop], so nothing is left occupying
   /// a gigabyte with no way to reach it.
-  Future<void> discardPending(String titleId) async {
+  Future<void> discardPending(String key) async {
     try {
       final dir = await directory();
-      final part = File('${dir.path}/$titleId.mp4$partSuffix');
+      final part = File('${dir.path}/$key.mp4$partSuffix');
       if (await part.exists()) await part.delete();
       final note = File('${part.path}.total');
       if (await note.exists()) await note.delete();
@@ -662,7 +733,7 @@ class OfflineLibrary {
     } catch (e) {
       if (kDebugMode) debugPrint('offline discard failed: $e');
     }
-    await dropPending(titleId);
+    await dropPending(key);
   }
 
   /// Unfinished downloads, newest first, each with what is on disk for it.
@@ -684,12 +755,12 @@ class OfflineLibrary {
       // back to being an anonymous uuid. A row with nothing behind it is
       // dropped by the downloader itself when it ends with no bytes written,
       // which is precise where a filesystem guess is not.
-      final finished = File('${dir.path}/${row.titleId}.mp4');
+      final finished = File('${dir.path}/${row.key}.mp4');
       if (await finished.exists()) {
         pruned = true;
         continue;
       }
-      final part = File('${dir.path}/${row.titleId}.mp4$partSuffix');
+      final part = File('${dir.path}/${row.key}.mp4$partSuffix');
       int received = 0;
       if (await part.exists()) {
         try {
@@ -779,5 +850,53 @@ class OfflineLibrary {
       _key,
       jsonEncode(items.map((i) => i.toJson()).toList()),
     );
+    _index(items);
+    shelf.value++;
   }
+
+  /// Ticks on every write to the shelf, whatever changed.
+  ///
+  /// An album screen shows which of its items are on the phone and has to
+  /// redraw when one arrives, whichever screen started it — the album, the
+  /// viewer, a resume on the Downloads screen, the automatic one at launch.
+  /// Writes are rare (one per finished item), so listening costs nothing.
+  static final ValueNotifier<int> shelf = ValueNotifier<int>(0);
+
+  // ─── PHOTOS ON THE SHELF, BY THE ADDRESS THEY CAME FROM ─────────────────
+  //
+  // A downloaded photo has to REPLACE the network one wherever the album draws
+  // it — the grid, the viewer, a Downloads row — without each of those learning
+  // about the shelf. So the image widget asks one synchronous question, "is
+  // this URL on the disk", and this map answers it with no I/O. Rebuilt on
+  // every write, which is the only way rows change, and warmed once from the
+  // stored rows before the first album is drawn.
+
+  static final Map<String, String> _photoByUrl = <String, String>{};
+
+  /// Bumped whenever the shelf changes, so a widget drawing a photo can redraw
+  /// when that photo arrives on (or leaves) the disk.
+  static final ValueNotifier<int> revision = ValueNotifier<int>(0);
+
+  /// The file holding the photo fetched from [url], or null.
+  static String? photoPathFor(String url) => _photoByUrl[url];
+
+  static void _index(List<OfflineItem> rows) {
+    final next = <String, String>{};
+    for (final r in rows) {
+      final url = r.sourceUrl;
+      if (r.isPhoto && url != null && url.isNotEmpty) next[url] = r.path;
+    }
+    // ONLY A REAL CHANGE IS ANNOUNCED. [items] re-indexes on every read, and a
+    // listener that rebuilt on each of those would be redrawing the album for
+    // nothing — or, if anything in that rebuild read the shelf, in a loop.
+    if (mapEquals(next, _photoByUrl)) return;
+    _photoByUrl
+      ..clear()
+      ..addAll(next);
+    revision.value++;
+  }
+
+  /// Loads [photoPathFor]'s map from the stored rows. Cheap — one preference
+  /// read, no filesystem — and safe to call more than once.
+  Future<void> warmPhotoIndex() async => _index(await _rows());
 }

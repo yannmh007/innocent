@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../data/api/offline_library.dart';
 import '../../data/poster_cache.dart';
 import '../../domain/video_content.dart';
 import '../video_hub_provider.dart';
@@ -131,6 +132,26 @@ class _PosterImageState extends ConsumerState<PosterImage> {
   }
 
   Widget _image(String url) {
+    // A PHOTO SAVED FOR OFFLINE WINS. It is the full photo, it is on the disk
+    // for as long as the viewer keeps it — unlike the artwork cache, which has
+    // a ceiling and evicts — and drawing it costs no data at all. One map
+    // lookup, no I/O; see OfflineLibrary.photoPathFor.
+    final saved = OfflineLibrary.photoPathFor(url);
+    if (saved != null) {
+      return Image.file(
+        File(saved),
+        fit: widget.fit,
+        semanticLabel: widget.title,
+        frameBuilder: _frame,
+        // The row can outlive the file (Android reclaiming space); the cache
+        // path below is then the honest fallback, not a broken image.
+        errorBuilder: (context, error, stack) => _cachedOrNetwork(url),
+      );
+    }
+    return _cachedOrNetwork(url);
+  }
+
+  Widget _cachedOrNetwork(String url) {
     _ensureCached(url);
 
     final path = _cachedPath;
