@@ -407,6 +407,17 @@ jobs:
           # NEVER PRINTED. It is a presigned PUT and this log is public.
           PUT=$(python3 -c "import json;print(json.load(open('/tmp/sign.json'))['put_url'])")
           PUB=$(python3 -c "import json;print(json.load(open('/tmp/sign.json'))['public_url'])")
+          # A PUBLISHED APK NEVER CHANGES. Any push to main that is not under
+          # docs/ rebuilds the same version name; uploading that would replace
+          # the file people are downloading with one whose hash no longer
+          # matches app_releases.apk_sha256, and every update would fail its
+          # check. A PUT is all or nothing, so a file that is there is whole.
+          have=$(curl -sS -o /dev/null -I -w '%{http_code}' "$PUB" || true)
+          if [ "$have" = "200" ]; then
+            echo "::notice::$PUB is already on the CDN - left as it is." \
+                 "Bump the version in pubspec.yaml to publish a new build."
+            exit 0
+          fi
           curl --fail-with-body -sS -X PUT -T "$NAME" \
             -H 'Content-Type: application/vnd.android.package-archive' "$PUT"
           echo "on the CDN: $PUB"

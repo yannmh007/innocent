@@ -378,6 +378,20 @@ def get_from_r2(url, path):
     return os.path.getsize(path)
 
 
+def widen_channel_ids(utils):
+    """Let pyrogram 2.0.106 address channels made since mid-2024.
+
+    A channel's id is -100 followed by its number, and pyrogram 2.0.106 takes
+    any id below -1002147483647 for nonsense ("Peer id invalid"): it was
+    written when channel numbers fitted in 31 bits. They no longer do — the
+    archive channel is -1004249568570 — and Telegram itself accepts them
+    (the webhook reported exactly that id). Only the lower bound moves; the
+    arithmetic from id to channel number (MAX_CHANNEL_ID - id) is unchanged.
+    """
+    if getattr(utils, 'MIN_CHANNEL_ID', 0) > -1009999999999:
+        utils.MIN_CHANNEL_ID = -1009999999999
+
+
 def archive_one(app, job, flood_type):
     """Copy one film into the archive channel, reported through vault_done."""
     target_chat = job.get('archive_chat')
@@ -614,9 +628,11 @@ def main():
     try:
         from pyrogram import Client
         from pyrogram.errors import FloodWait
+        import pyrogram.utils as pyrogram_utils
     except Exception as exc:                       # noqa: BLE001
         fail(job, 'telegram client unavailable: %s' % exc)
         return 1
+    widen_channel_ids(pyrogram_utils)
 
     # `in_memory=True` so no .session file is written to the runner's disk:
     # there is nothing to leak into an artifact and nothing to clean up.

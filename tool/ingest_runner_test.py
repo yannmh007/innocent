@@ -139,6 +139,11 @@ fake_errors.FloodWait = FloodWait
 fake.errors = fake_errors
 sys.modules['pyrogram'] = fake
 sys.modules['pyrogram.errors'] = fake_errors
+# The bound pyrogram 2.0.106 has, which the runner widens on every start.
+fake_utils_mod = types.ModuleType('pyrogram.utils')
+fake_utils_mod.MIN_CHANNEL_ID = -1002147483647
+fake.utils = fake_utils_mod
+sys.modules['pyrogram.utils'] = fake_utils_mod
 
 import ingest  # noqa: E402  (after the fake is in place)
 
@@ -427,6 +432,18 @@ check('a FLOOD_WAIT on an archive job defers it and ends the run',
 rc, edge = run(ajob(27), [], env={'TG_API_ID': None})
 check('missing credentials on an archive job are reported as one',
       any(c.get('type') == 'archive' and not c['ok'] for c in edge.ops('vault_done')))
+
+# pyrogram 2.0.106 says "Peer id invalid" to every channel numbered past
+# 2**31 — the archive channel is -1004249568570. The widening must let that
+# id through as a channel, and leave the id-to-number arithmetic alone.
+fake_utils = types.SimpleNamespace(MIN_CHANNEL_ID=-1002147483647)
+ingest.widen_channel_ids(fake_utils)
+check('a channel id past 2**31 is a channel to pyrogram',
+      fake_utils.MIN_CHANNEL_ID <= -1004249568570)
+ingest.widen_channel_ids(fake_utils)
+check('widening twice changes nothing', fake_utils.MIN_CHANNEL_ID == -1009999999999)
+check('the runner widens the client it signs in with',
+      fake_utils_mod.MIN_CHANNEL_ID == -1009999999999)
 
 print()
 if failures:
