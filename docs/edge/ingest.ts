@@ -646,7 +646,17 @@ Deno.serve(async (req: Request) => {
       // NOTHING FORWARDED: the Telegram work of the storage policy (migration
       // 029) — look at a film's Telegram copy, or fetch one back into R2. The
       // same runner and the same sign-in, so a restore costs no extra login.
-      const vault = await rpc('vault_claim', {}) as Array<Record<string, unknown>>;
+      // A failed look here is "nothing to do this tick", not a failed claim:
+      // the forwarded-film queue above already answered, and a connection
+      // reset on this optional second question once turned a run's claim
+      // into a 500 (2026-10-01 15:30).
+      let vault: Array<Record<string, unknown>> = [];
+      try {
+        vault = await rpc('vault_claim', {}) as Array<Record<string, unknown>>;
+      } catch (e) {
+        console.log('vault_claim failed: ' + String(e).slice(0, 160));
+        return json({}, 200, req);
+      }
       if (!Array.isArray(vault) || !vault.length) return json({}, 200, req);
       const v = vault[0];
       const restore = v.kind === 'restore';

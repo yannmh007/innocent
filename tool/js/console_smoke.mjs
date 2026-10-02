@@ -205,7 +205,7 @@ function stFixture() {
     settings: { auto_offload: false, storage_alert_gb: 9, storage_noticed_at: null, storage_notice: null },
     titles: [
       row({ title_id: 'st-1', title: 'Chester', slug: 'chester', master_bytes_r2: 4.2e8, ladder_bytes: 2.2e8,
-        assets: [film('as-c', 'chester/video/film.mp4', 4.2e8, 'r2', true, 'ok', new Date().toISOString())] }),
+        assets: [film('as-c', 'chester/video/20260929-agadxacaaiem-vq-992f9a15.mp4', 4.2e8, 'r2', true, 'ok', new Date().toISOString())] }),
       row({ title_id: 'st-2', title: 'Console film', slug: 'console-film', views_30d: 0, last_viewed: null,
         films_with_copy: 0, copies_ok: 0, master_bytes_r2: 3e8, ladder_bytes: 1e8,
         assets: [film('as-k', 'console-film/video/k.mp4', 3e8, 'r2', true, null, null)] }),
@@ -1210,6 +1210,10 @@ try {
     check('editor: no Finish restore (the owner\'s)', !(await page.$('#stBody button:has-text("Finish restore")')));
     const w = await page.evaluate(() => document.documentElement.scrollWidth);
     check('editor: the storage page fits the phone (' + w + 'px)', w <= 390);
+    // A long file name next to its chip squeezed into one letter a line on a
+    // real phone (2026-10-02): the name must keep most of the row.
+    const nameW = await page.$eval('#stBody .st-fmain', (n) => n.getBoundingClientRect().width);
+    check('editor: a file name keeps the width of the row (' + Math.round(nameW) + 'px)', nameW > 200);
     check('editor: no script errors on storage', state.errors.length === 0);
     if (state.errors.length) console.log('     ' + state.errors.join('\n     '));
     await ctx.close();
