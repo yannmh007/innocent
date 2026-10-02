@@ -13,6 +13,7 @@ import '../../../core/services/adb/adb_service.dart';
 import '../../../core/di/core_providers.dart';
 import '../../../core/services/diagnostics/playback_log.dart';
 import '../../../core/di/preferences_provider.dart';
+import '../../../core/services/video_player/incomplete_file.dart';
 import '../../../core/services/video_player/media_kit_player_service.dart';
 import '../../../core/services/video_player/loopback_uri.dart';
 import '../../../core/services/video_player/seek_math.dart';
@@ -886,6 +887,45 @@ class PlayerController extends StateNotifier<PlayerState> {
         }
       }
     }));
+    if (svc is MediaKitPlayerService) {
+      // THE ENGINE STOPPED ANSWERING (see MpvLink). Said plainly, with the way
+      // out: Retry or another video gets a fresh engine. Before this the app
+      // simply froze, and "Wait" led to the same freeze on the next video.
+      _subs.add(svc.engineWedgedChanges.listen((stuck) {
+        if (!mounted) return;
+        if (stuck) {
+          PlaybackLog.add('engine stuck on ${svc.engineWedgedReason}');
+          _stopDecodeWatch();
+          state = state.copyWith(
+            errorMessage: kPlayerEngineStuck,
+            isBuffering: false,
+            isOpening: false,
+            loadingMessage: null,
+          );
+        } else if (state.errorMessage == kPlayerEngineStuck) {
+          // It came back by itself: slow, not dead.
+          state = state.copyWith(errorMessage: null);
+        }
+      }));
+      // A half-downloaded file: say where it ends, and when a seek is held.
+      _subs.add(svc.playbackLimitEvents.listen((ev) async {
+        if (!mounted) return;
+        state = state.copyWith(
+          notice: ev.kind == PlaybackLimitKind.armed
+              ? PlayerNotice.incompleteFile
+              : PlayerNotice.seekHeld,
+          noticeTime: ev.end,
+        );
+        final resume = _resumeAfterLimit;
+        _resumeAfterLimit = null;
+        if (ev.kind == PlaybackLimitKind.armed && resume != null) {
+          final target = resume < ev.end - const Duration(seconds: 30)
+              ? resume
+              : ev.end - const Duration(seconds: 30);
+          if (target > const Duration(seconds: 30)) await svc.seek(target);
+        }
+      }));
+    }
     _subs.add(svc.errorStream.listen((e) {
       if (e == null || !mounted) return;
       // Phase 45: for network streams, libmpv sometimes drops the
@@ -895,6 +935,40 @@ class PlayerController extends StateNotifier<PlayerState> {
       // retries — they either work or they're broken.
       final uri = _currentUri;
       final isNetwork = uri != null && _isNetworkUri(uri);
+      // THE HARDWARE DECODER FAILED, and that is not the end of the file.
+      //
+      // "Could not open codec." is libmpv's video decoder failing to open —
+      // on Android, MediaCodec refusing or choking on what it was fed, which
+      // a damaged or half-downloaded stretch of a file does. MX Player's
+      // answer is the right one: carry on in software, once, and say so.
+      // Software decoding fails fast on bad data instead of wedging inside a
+      // hardware codec, which is what took the whole app down before.
+      final svcAtError = _ref.read(videoPlayerServiceProvider);
+      final alreadySoftware = svcAtError is MediaKitPlayerService &&
+          svcAtError.currentHwdec == 'no';
+      if (_isDecoderOpenFailure(e) &&
+          !_swFallbackDone &&
+          !alreadySoftware &&
+          uri != null) {
+        _swFallbackDone = true;
+        _hwFailedFiles.add(uri);
+        PlaybackLog.add('decoder failed ($e) -> software '
+            '(${_hwFailedFiles.length} file(s) this session)');
+        final svcNow = _ref.read(videoPlayerServiceProvider);
+        () async {
+          try {
+            await svcNow.setHardwareDecoder('no');
+          } catch (_) {}
+          if (!mounted || _currentUri != uri) return;
+          state = state.copyWith(
+            decoder: DecoderType.sw,
+            notice: _hwFailedFiles.length >= 2
+                ? PlayerNotice.hardwareUnavailable
+                : PlayerNotice.switchedToSoftware,
+          );
+        }();
+        return;
+      }
       if (!isNetwork) {
         state = state.copyWith(errorMessage: e);
         return;
@@ -1236,6 +1310,25 @@ class PlayerController extends StateNotifier<PlayerState> {
   /// battery was gone" case. A short grace period rather than an immediate
   /// stop, so a normal pause-then-resume does not flap the notification.
   Timer? _bgPauseTimer;
+
+  /// Set once per file when its hardware decoder failed and it was moved to
+  /// software, so a second failure is shown instead of retried for ever.
+  bool _swFallbackDone = false;
+
+  /// Files whose hardware decoder failed, this process. A second one means
+  /// the decoder itself is the problem, not the file — usually a MediaCodec
+  /// left stuck by an earlier damaged file, which only a restart frees.
+  static final Set<String> _hwFailedFiles = <String>{};
+
+  /// A resume point held back until a half-downloaded file's length is known.
+  Duration? _resumeAfterLimit;
+
+  static bool _isDecoderOpenFailure(String e) {
+    final m = e.toLowerCase();
+    return m.contains('could not open codec') ||
+        m.contains('hardware decoding failed') ||
+        m.contains('mediacodec');
+  }
 
   // ─── THE DECODER'S SIDE OF THE SAME QUESTION ───────────────────────────
   //

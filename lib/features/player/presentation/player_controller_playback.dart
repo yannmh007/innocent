@@ -26,10 +26,20 @@ extension PlayerPlayback on PlayerController {
     // If another open is running, record this request and let the
     // running one chain to it when it finishes. This ensures the user
     // always ends up on the last-tapped video, not on an intermediate.
+    //
+    // UNLESS THE ENGINE IS STUCK. Then the open "in progress" is waiting on a
+    // libmpv that will never answer, and queueing behind it is how every
+    // video after a frozen one stayed frozen. It is abandoned: the new open
+    // starts a fresh engine (see _doOpenVideo), and if the old one ever
+    // returns, its `_currentUri != uri` checks make it stand down.
     if (_openInProgress) {
-      _pendingOpenUri = uri;
-      _pendingOpenTitle = title;
-      return;
+      final s = _ref.read(videoPlayerServiceProvider);
+      if (!(s is MediaKitPlayerService && s.engineWedged)) {
+        _pendingOpenUri = uri;
+        _pendingOpenTitle = title;
+        return;
+      }
+      PlaybackLog.add('open: abandoning an open stuck on the old engine');
     }
     _openInProgress = true;
     var nextUri = uri;
@@ -183,6 +193,8 @@ extension PlayerPlayback on PlayerController {
     _noAudioCheckTimer = null;
     _patientProbeTried = false;
     _reopenInFlight = false;
+    _swFallbackDone = false;
+    _resumeAfterLimit = null;
     state = state.copyWith(
       errorMessage: null,
       playbackCompleted: false,
@@ -211,6 +223,12 @@ extension PlayerPlayback on PlayerController {
     } catch (e) { if (kDebugMode) debugPrint('PlayerPlayback: $e'); }
     final svc = _ref.read(videoPlayerServiceProvider);
     if (!svc.isInitialized) await svc.initialize();
+    // The last file left libmpv stuck: start this one on a fresh engine
+    // instead of joining the queue behind the call that is hanging.
+    if (svc is MediaKitPlayerService && svc.engineWedged) {
+      await svc.rebuildEngine();
+      if (mounted) state = state.copyWith(notice: PlayerNotice.engineRestarted);
+    }
 
     // Phase 45: apply the user's decoder strategy BEFORE opening the
     // file so libmpv picks the right path on the first frame. The logic
@@ -448,10 +466,27 @@ extension PlayerPlayback on PlayerController {
         savedPos > const Duration(seconds: 30) &&
         (!resumeOnlyFirstAtOpen || !_hasOpenedFirstFile) &&
         resumeModeAtOpen == 'resume';
+    // A HALF-DOWNLOADED FILE is played only as far as its data goes (see
+    // IncompleteFile). Its resume point is held until the length is known:
+    // handed to `start` it could land in the zeros, which is precisely where
+    // the hardware decoder wedged and took the app with it.
+    var startAt = willSilentResume ? savedPos : null;
+    if (svc is MediaKitPlayerService && !isNetwork) {
+      final incomplete = await IncompleteFileProbe.probe(uri);
+      svc.limitNextFile(uri, incomplete);
+      if (incomplete != null) {
+        PlaybackLog.add('open: $incomplete');
+        if (startAt != null) {
+          _resumeAfterLimit = startAt;
+          startAt = null;
+        }
+      }
+      if (!mounted || _currentUri != uri) return;
+    }
     await svc.open(
       uri,
       autoplay: !willAskResume,
-      startAt: willSilentResume ? savedPos : null,
+      startAt: startAt,
     );
     // Non-ask paths play immediately; the 'ask' path stays paused until the
     // user picks Resume/Start over (resumeFromSaved / startOverFromBeginning
@@ -1011,6 +1046,11 @@ extension PlayerPlayback on PlayerController {
   /// Phase 13: Dismiss the error banner
   void dismissError() {
     state = state.copyWith(errorMessage: null);
+  }
+
+  /// The notice over the picture has been read (see [PlayerNotice]).
+  void clearNotice() {
+    if (state.notice != null) state = state.copyWith(notice: null);
   }
 
   // === Phase 14: Skip markers ===

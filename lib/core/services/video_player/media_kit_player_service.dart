@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
@@ -10,6 +11,8 @@ import 'models/subtitle_track_info.dart';
 import 'models/video_track_info.dart';
 import '../diagnostics/playback_log.dart';
 import 'disk_cache_dir.dart';
+import 'incomplete_file.dart';
+import 'mpv_link.dart';
 import 'mpv_option_range.dart';
 import 'seek_math.dart';
 import 'stall_diagnosis.dart';
@@ -73,6 +76,29 @@ class MediaKitPlayerService implements VideoPlayerService {
   late mk.Player _player;
   late mkv.VideoController _videoController;
   bool _initialized = false;
+
+  /// Every libmpv property read and write goes through here, off the UI
+  /// thread, with a deadline. See [MpvLink] for why — in one line: a stuck
+  /// libmpv core must not take the app's main thread down with it.
+  final MpvLink _link = MpvLink();
+
+  /// Which libmpv instance is current. Bumped by [rebuildEngine]; the stream
+  /// relays and the video widget follow it.
+  int _engineGen = 0;
+  final StreamController<int> _engineGenCtl = StreamController<int>.broadcast();
+
+  /// A cheap read every few seconds, so a core that stops answering is
+  /// noticed even when nothing else happens to be talking to it.
+  Timer? _heartbeat;
+
+  /// The part of the current file that holds data, when it is a
+  /// preallocated, unfinished download. See [IncompleteFile].
+  IncompleteFile? _incomplete;
+  String? _incompleteUri;
+  Duration? _playableEnd;
+  StreamSubscription<Duration>? _limitSub;
+  final StreamController<PlaybackLimitEvent> _limitCtl =
+      StreamController<PlaybackLimitEvent>.broadcast();
 
   /// In-flight (or completed) initialisation.
   ///
@@ -182,6 +208,179 @@ class MediaKitPlayerService implements VideoPlayerService {
 
     _initialized = true;
     anyInitialized = true;
+    _startHeartbeat();
+  }
+
+  // ─── A STUCK ENGINE ──────────────────────────────────────────────────────
+
+  /// True while libmpv has not answered a call for [MpvLink.timeout].
+  bool get engineWedged => _link.wedged;
+
+  /// Which call was hanging, for the playback log.
+  String? get engineWedgedReason => _link.wedgedOn;
+
+  /// The hwdec mode last applied (`no` is software decoding).
+  String? get currentHwdec => _currentHwdec;
+
+  /// Every change of [engineWedged], for the player to react to.
+  Stream<bool> get engineWedgedChanges => _link.wedgedChanges;
+
+  void _startHeartbeat() {
+    _heartbeat?.cancel();
+    _heartbeat = Timer.periodic(const Duration(seconds: 3), (_) async {
+      if (!_initialized || _link.wedged) return;
+      final ctx = await _ctxAddress();
+      if (ctx == null) return;
+      try {
+        await _link.get(ctx, 'pause');
+      } catch (_) {}
+    });
+  }
+
+  /// The libmpv handle of the current player, as an address, once it exists.
+  Future<int?> _ctxAddress() async {
+    try {
+      final p = _player.platform as dynamic;
+      if (p == null) return null;
+      await p.waitForPlayerInitialization;
+      await p.waitForVideoControllerInitializationIfAttached;
+      final int a = p.ctx.address as int;
+      return a == 0 ? null : a;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Replace a libmpv instance that has stopped answering with a new one.
+  ///
+  /// THE OLD ONE IS NOT DISPOSED, on purpose. media_kit's dispose waits for
+  /// the core (`stop`) and then calls `mpv_terminate_destroy` on the UI
+  /// thread, which joins the very thread that is stuck — so disposing it is
+  /// how a frozen video becomes a frozen app. It is dropped instead: its
+  /// threads stay parked until the process ends, which costs memory and
+  /// nothing else, and every video after this one plays on a clean engine.
+  ///
+  /// The streams the player listens to are relays (see [_live]) and follow
+  /// the new instance by themselves; the video widget is keyed on
+  /// [_engineGen] so it attaches to the new texture.
+  Future<void> rebuildEngine() async {
+    if (!_initialized) return;
+    PlaybackLog.add('engine rebuilt: libmpv stopped answering '
+        '(${_link.wedgedOn ?? "?"})');
+    await _positionSub?.cancel();
+    await _durationSub?.cancel();
+    await _playingSub?.cancel();
+    await _limitSub?.cancel();
+    _limitSub = null;
+    _bgReassertTimer?.cancel();
+    _bgReassertTimer = null;
+    _surfaceGen++;
+    _fadeGen++;
+    _videoDetached = false;
+    // The new instance starts from [_applyBaseline]'s values, not from what
+    // was last written to the old one — a cached `no` here would make the
+    // next switch to software look already done.
+    _currentHwdec = 'auto-safe';
+    _voForRestore = null;
+    _link.reset();
+    _initialized = false;
+    _initFuture = null;
+    _engineGen++;
+    await initialize();
+    if (!_engineGenCtl.isClosed) _engineGenCtl.add(_engineGen);
+  }
+
+  /// A stream of the CURRENT player, whichever instance that is.
+  ///
+  /// The player screen subscribes once per file; if the engine is rebuilt
+  /// under it, a plain `_player.stream.x` would leave it listening to an
+  /// instance nobody uses any more.
+  Stream<T> _live<T>(Stream<T> Function(mk.Player p) pick) {
+    // Closed with its last listener: onCancel drops both subscriptions, and
+    // a broadcast controller with no listeners holds nothing.
+    // ignore: close_sinks
+    late final StreamController<T> ctl;
+    StreamSubscription<T>? sub;
+    StreamSubscription<int>? genSub;
+    void attach() {
+      sub?.cancel();
+      sub = pick(_player).listen(ctl.add, onError: ctl.addError);
+    }
+
+    ctl = StreamController<T>.broadcast(
+      onListen: () {
+        attach();
+        genSub = _engineGenCtl.stream.listen((_) => attach());
+      },
+      onCancel: () {
+        sub?.cancel();
+        genSub?.cancel();
+        sub = null;
+        genSub = null;
+      },
+    );
+    return ctl.stream;
+  }
+
+  // ─── A HALF-DOWNLOADED FILE ──────────────────────────────────────────────
+
+  /// Play only the part of [uri] that holds data. Call before [open]; null
+  /// for an ordinary file. Keyed on the URI so a limit can never be applied
+  /// to a different file opened by some other path. See [IncompleteFile].
+  void limitNextFile(String uri, IncompleteFile? f) {
+    _incomplete = f;
+    _incompleteUri = f == null ? null : uri;
+  }
+
+  /// The furthest point of the current file that can be played, when it is
+  /// a half-downloaded one. Null for a complete file, or until the duration
+  /// is known.
+  Duration? get playableEnd => _playableEnd;
+
+  /// The file stopped at its downloaded end, or a seek was held short of it.
+  Stream<PlaybackLimitEvent> get playbackLimitEvents => _limitCtl.stream;
+
+  /// Applied when the new file reports its length: by then libmpv has run
+  /// its own unload/load hooks (which reset `end`), so the value sticks.
+  void _armPlaybackLimit(String uri) {
+    _limitSub?.cancel();
+    _limitSub = null;
+    _playableEnd = null;
+    final f = _incompleteUri == uri ? _incomplete : null;
+    _incomplete = null;
+    _incompleteUri = null;
+    if (f == null) return;
+    _limitSub = _player.stream.duration.listen((d) async {
+      if (d <= Duration.zero) return;
+      unawaited(_limitSub?.cancel());
+      _limitSub = null;
+      final end = f.playableOf(d);
+      _playableEnd = end;
+      PlaybackLog.add('incomplete file: ${f.toString()} -> plays to '
+          '${end.inSeconds}s of ${d.inSeconds}s');
+      // libmpv stops there itself: the decoder never reaches the zeros.
+      await _setMpvProperty('end', '${f.playablePercent.toStringAsFixed(2)}%');
+      if (!_limitCtl.isClosed) {
+        _limitCtl.add(PlaybackLimitEvent(PlaybackLimitKind.armed, end, d));
+      }
+      // Already past it (a resume point from before the file was known to be
+      // short): back to just inside.
+      if (_position > end) {
+        final back = end - const Duration(seconds: 30);
+        await seek(back > Duration.zero ? back : Duration.zero);
+      }
+    });
+  }
+
+  /// [to], held inside the downloaded part of a half-downloaded file.
+  Duration _clampToPlayable(Duration to) {
+    final end = _playableEnd;
+    if (end == null || to <= end) return to;
+    final held = end - const Duration(seconds: 3);
+    if (!_limitCtl.isClosed) {
+      _limitCtl.add(PlaybackLimitEvent(PlaybackLimitKind.seekHeld, end, _duration));
+    }
+    return held < Duration.zero ? Duration.zero : held;
   }
 
   /// One-time libmpv property baseline. Idempotent; safe to call again.
@@ -262,7 +461,15 @@ class MediaKitPlayerService implements VideoPlayerService {
     // SoC in its efficient range. Users who want the old behaviour can still
     // raise it in Settings → Decoder (videoDecoderThreads), which is applied
     // after this baseline.
-    await _setMpvProperty('vd-lavc-threads', '4');
+    //
+    // AND NEVER EVERY CORE. On a four-core phone, four decode threads plus
+    // libmpv's render and audio threads leave the UI thread nothing: the
+    // picture keeps moving while taps stop registering, and Android calls the
+    // app "not responding" with a film visibly playing — which is what was
+    // seen on 2026-10-02 once a damaged file had cost the session its
+    // hardware decoder and every video fell back to software. Two cores are
+    // left for the UI; six or more cores still get the full four.
+    await _setMpvProperty('vd-lavc-threads', '${softwareDecodeThreads(Platform.numberOfProcessors)}');
     // Keep last frame on EOF instead of going black — matches MX Player.
     await _setMpvProperty('keep-open', 'yes');
     // Bind libmpv's Android audio output to a known audio-session id so the
@@ -325,6 +532,20 @@ class MediaKitPlayerService implements VideoPlayerService {
       assert(false, problem);
       return false;
     }
+    // Off the UI thread when it can be (see [MpvLink]). A stuck engine
+    // answers false at once instead of freezing the app; only a platform
+    // with no helper isolate at all uses media_kit's synchronous call.
+    if (_link.available) {
+      final ctx = await _ctxAddress();
+      if (ctx != null) {
+        try {
+          return await _link.set(ctx, key, value);
+        } on MpvLinkUnavailable {
+          // Fall through to the direct path.
+        }
+      }
+    }
+    if (_link.wedged) return false;
     try {
       await (_player.platform as dynamic)?.setProperty(key, value);
       return true;
@@ -338,6 +559,18 @@ class MediaKitPlayerService implements VideoPlayerService {
   /// the platform object has no `getProperty` (it does on NativePlayer, but
   /// the signature has moved between media_kit versions) or libmpv refuses.
   Future<String?> _getMpvProperty(String key) async {
+    if (_link.available) {
+      final ctx = await _ctxAddress();
+      if (ctx != null) {
+        try {
+          final v = await _link.get(ctx, key);
+          return (v == null || v.isEmpty) ? null : v;
+        } on MpvLinkUnavailable {
+          // Fall through to the direct path.
+        }
+      }
+    }
+    if (_link.wedged) return null;
     try {
       final value = await (_player.platform as dynamic)?.getProperty(key);
       if (value is String && value.isNotEmpty) return value;
@@ -387,45 +620,45 @@ class MediaKitPlayerService implements VideoPlayerService {
 
   // === Streams ===
   @override
-  Stream<Duration> get positionStream => _player.stream.position;
+  Stream<Duration> get positionStream => _live((p) => p.stream.position);
 
   @override
-  Stream<Duration> get durationStream => _player.stream.duration;
+  Stream<Duration> get durationStream => _live((p) => p.stream.duration);
 
   @override
-  Stream<bool> get playingStream => _player.stream.playing;
+  Stream<bool> get playingStream => _live((p) => p.stream.playing);
 
   @override
-  Stream<bool> get bufferingStream => _player.stream.buffering;
+  Stream<bool> get bufferingStream => _live((p) => p.stream.buffering);
 
   @override
   Stream<Duration> get bufferedStream =>
-      _player.stream.buffer.map((d) => d);
+      _live((p) => p.stream.buffer);
 
   @override
   Stream<List<AudioTrackInfo>> get audioTracksStream =>
-      _player.stream.tracks.map(
+      _live((p) => p.stream.tracks).map(
         (tracks) => tracks.audio.map(_mapAudio).toList(),
       );
 
   @override
   Stream<List<SubtitleTrackInfo>> get subtitleTracksStream =>
-      _player.stream.tracks.map(
+      _live((p) => p.stream.tracks).map(
         (tracks) => tracks.subtitle.map(_mapSubtitle).toList(),
       );
 
   @override
   Stream<List<VideoTrackInfo>> get videoTracksStream =>
-      _player.stream.tracks.map(
+      _live((p) => p.stream.tracks).map(
         (tracks) => tracks.video.map(_mapVideo).toList(),
       );
 
   @override
   Stream<double> get volumeStream =>
-      _player.stream.volume.map((v) => v / 100.0);
+      _live((p) => p.stream.volume).map((v) => v / 100.0);
 
   @override
-  Stream<double> get rateStream => _player.stream.rate;
+  Stream<double> get rateStream => _live((p) => p.stream.rate);
 
   /// Called with whatever libmpv says went wrong, if anyone is listening.
   ///
@@ -438,7 +671,7 @@ class MediaKitPlayerService implements VideoPlayerService {
 
   @override
   Stream<String?> get errorStream =>
-      _player.stream.error.map<String?>((e) {
+      _live((p) => p.stream.error).map<String?>((e) {
         if (e.isEmpty) return null;
         // v1.63: into the persistent trail as well. Every libmpv error was
         // going only to whatever UI happened to be listening, so an error
@@ -460,7 +693,7 @@ class MediaKitPlayerService implements VideoPlayerService {
       });
 
   @override
-  Stream<bool> get completedStream => _player.stream.completed;
+  Stream<bool> get completedStream => _live((p) => p.stream.completed);
 
   // === Sync getters ===
   @override
@@ -624,6 +857,7 @@ class MediaKitPlayerService implements VideoPlayerService {
     // suspect from dying afterwards during decode or render. Without the
     // bracket both look identical in the trail.
     try {
+      _armPlaybackLimit(uri);
       await _player.open(mk.Media(uri, httpHeaders: headers), play: autoplay);
       PlaybackLog.add('open ok');
     } catch (e) {
@@ -672,6 +906,10 @@ class MediaKitPlayerService implements VideoPlayerService {
     // periodic timer writing properties to a disposed player.
     _bgReassertTimer?.cancel();
     _bgReassertTimer = null;
+    _heartbeat?.cancel();
+    _heartbeat = null;
+    await _limitSub?.cancel();
+    _limitSub = null;
     // Invalidate any surface transition still part-way through its awaits, so
     // it abandons itself instead of writing into a player that is about to be
     // destroyed. Same reasoning as the fade generation below.
@@ -701,7 +939,7 @@ class MediaKitPlayerService implements VideoPlayerService {
   Future<void> stop() => _player.stop();
 
   @override
-  Future<void> seek(Duration to) => _player.seek(to);
+  Future<void> seek(Duration to) => _player.seek(_clampToPlayable(to));
 
   /// See [VideoPlayerService.frameStep].
   ///
@@ -745,11 +983,11 @@ class MediaKitPlayerService implements VideoPlayerService {
     // used to live here and did not: every +10 s tapped in the first moment
     // of a file — before the demuxer had reported a length — landed on 00:00,
     // and on a stream with no length at all it landed there every time.
-    await _player.seek(clampSeekTarget(
+    await _player.seek(_clampToPlayable(clampSeekTarget(
       current: _position,
       delta: delta,
       duration: _duration,
-    ));
+    )));
   }
 
   // === Audio ===
@@ -1964,6 +2202,8 @@ class MediaKitPlayerService implements VideoPlayerService {
       return const ColoredBox(color: Color(0xFF000000));
     }
     return mkv.Video(
+      // A rebuilt engine is a new texture; a new key makes a new State.
+      key: ValueKey<int>(_engineGen),
       controller: _videoController,
       fit: fit,
       controls: mkv.NoVideoControls,
@@ -2013,4 +2253,28 @@ class MediaKitPlayerService implements VideoPlayerService {
         bitrate: _toInt(t.bitrate),
         codec: t.codec,
       );
+}
+
+/// What [MediaKitPlayerService.playbackLimitEvents] reports.
+enum PlaybackLimitKind {
+  /// The current file was found to be half-downloaded; it plays to [end].
+  armed,
+
+  /// A seek past the downloaded part was held at [end].
+  seekHeld,
+}
+
+class PlaybackLimitEvent {
+  const PlaybackLimitEvent(this.kind, this.end, this.duration);
+  final PlaybackLimitKind kind;
+  final Duration end;
+  final Duration duration;
+}
+
+/// Software decode threads for a phone with [cores] CPU cores: at most four,
+/// and never more than leaves two cores for the UI and the renderer.
+int softwareDecodeThreads(int cores) {
+  final spare = cores - 2;
+  if (spare < 1) return 1;
+  return spare > 4 ? 4 : spare;
 }

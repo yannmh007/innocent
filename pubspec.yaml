@@ -20,6 +20,9 @@ dependencies:
   media_kit: ^1.1.10
   media_kit_video: ^1.2.4
   media_kit_libs_video: ^1.0.4
+  # Off-UI-thread libmpv property calls (lib/core/services/video_player/
+  # mpv_link.dart). Already in the tree through media_kit.
+  ffi: ^2.1.0
 
   # === STATE / ROUTING ===
   flutter_riverpod: ^2.5.1

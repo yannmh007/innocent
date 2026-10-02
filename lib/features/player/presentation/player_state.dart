@@ -55,6 +55,32 @@ enum LoopMode {
   all,      // play folder; when last video ends, restart from first
 }
 
+/// A short, non-blocking message over the picture. Unlike [PlayerState.errorMessage]
+/// nothing has stopped: it says what the player did about a problem.
+enum PlayerNotice {
+  /// The file is a half-finished download; it plays to [PlayerState.noticeTime].
+  incompleteFile,
+
+  /// A seek past the downloaded part was held at [PlayerState.noticeTime].
+  seekHeld,
+
+  /// The hardware decoder failed on this file; it continues in software.
+  switchedToSoftware,
+
+  /// The hardware decoder has now failed on more than one file this session:
+  /// a damaged file has most likely left it stuck until the app restarts.
+  hardwareUnavailable,
+
+  /// libmpv stopped answering and was replaced; the next video uses a new one.
+  engineRestarted,
+}
+
+/// The error the screen replaces with its own localised words: the engine
+/// stopped answering (see MpvLink). Plain English as it stands, so anywhere
+/// that shows the raw text still says something true.
+const String kPlayerEngineStuck =
+    'The video engine stopped responding on this file.';
+
 /// Player state — Phase 3
 class PlayerState {
   // Playback
@@ -63,6 +89,12 @@ class PlayerState {
   final bool isPlaying;
   final bool isBuffering;
   final String? errorMessage;
+
+  /// See [PlayerNotice]. Cleared by the screen after a few seconds.
+  final PlayerNotice? notice;
+
+  /// The time the notice is about (where a partial file ends).
+  final Duration? noticeTime;
 
   /// A short overlay message shown during a long, non-network load — chiefly
   /// copying an Android/data video out over ADB before playback. null hides it.
@@ -200,6 +232,8 @@ class PlayerState {
     this.isPlaying = false,
     this.isBuffering = false,
     this.errorMessage,
+    this.notice,
+    this.noticeTime,
     this.loadingMessage,
     this.isOpening = false,
     this.stallCause,
@@ -262,6 +296,8 @@ class PlayerState {
     bool? isPlaying,
     bool? isBuffering,
     Object? errorMessage = _sentinel,
+    Object? notice = _sentinel,
+    Object? noticeTime = _sentinel,
     Object? loadingMessage = _sentinel,
     bool? isOpening,
     StallCause? stallCause,
@@ -317,6 +353,9 @@ class PlayerState {
       errorMessage: errorMessage == _sentinel
           ? this.errorMessage
           : errorMessage as String?,
+      notice: notice == _sentinel ? this.notice : notice as PlayerNotice?,
+      noticeTime:
+          noticeTime == _sentinel ? this.noticeTime : noticeTime as Duration?,
       loadingMessage: loadingMessage == _sentinel
           ? this.loadingMessage
           : loadingMessage as String?,

@@ -174,6 +174,9 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
   final ValueNotifier<String?> _overlayMsg = ValueNotifier(null);
   Timer? _overlayTimer;
 
+  /// Clears the notice over the picture (see [PlayerNotice]) after a while.
+  Timer? _noticeTimer;
+
   /// Phase 41: timestamp of the last back-button press. Used by the
   /// "Double-tap the back button" setting (Settings → Player → Interface)
   /// to require two presses within 2 seconds before actually closing.
@@ -925,6 +928,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
       WidgetsBinding.instance.removeObserver(this);
     } catch (_) {}
     _step('overlayTimer', () => _overlayTimer?.cancel());
+    _step('noticeTimer', () => _noticeTimer?.cancel());
     // The final event has already gone out in deactivate(), where `ref` was
     // still legal. All that is left here is the timer, which would otherwise
     // keep firing into a dead widget every thirty seconds.
@@ -2234,6 +2238,24 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     // Phase 41: when "Back to list" is on, completing a video flips
     // [playbackCompleted] in state. Pop back to the file list once that
     // happens.
+    // A notice says what the player did about a problem; it goes away by
+    // itself, and never sits in front of a tap (see the layer below).
+    ref.listen<PlayerNotice?>(
+        playerControllerProvider.select((s) => s.notice), (prev, next) {
+      _noticeTimer?.cancel();
+      if (next == null) return;
+      _noticeTimer = Timer(
+        Duration(
+            seconds: next == PlayerNotice.incompleteFile ||
+                    next == PlayerNotice.hardwareUnavailable
+                ? 9
+                : 5),
+        () {
+          if (mounted) controller.clearNotice();
+        },
+      );
+    });
+
     ref.listen<PlayerState>(playerControllerProvider, (prev, next) {
       if (prev?.playbackCompleted == next.playbackCompleted) return;
       if (next.playbackCompleted && context.mounted) {
@@ -3015,10 +3037,12 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        state.errorMessage!,
+                        state.errorMessage == kPlayerEngineStuck
+                            ? AppStrings.of(context).playerEngineStuck
+                            : state.errorMessage!,
                         style: const TextStyle(
                             color: Colors.white, fontSize: 12),
-                        maxLines: 3,
+                        maxLines: 4,
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 12),
@@ -3065,10 +3089,76 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                 ),
               ),
             ),
+
+          // === LAYER 15: Notice — what the player did about a problem ===
+          // IgnorePointer: it must never be the thing a tap lands on.
+          if (state.notice != null && state.errorMessage == null)
+            Positioned(
+              top: 84,
+              left: 24,
+              right: 24,
+              child: IgnorePointer(
+                child: Center(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xE6202124),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          state.notice == PlayerNotice.switchedToSoftware ||
+                                  state.notice ==
+                                      PlayerNotice.hardwareUnavailable
+                              ? Icons.memory
+                              : state.notice == PlayerNotice.engineRestarted
+                                  ? Icons.restart_alt
+                                  : Icons.downloading,
+                          color: Colors.white,
+                          size: 18,
+                        ),
+                        const SizedBox(width: 10),
+                        Flexible(
+                          child: Text(
+                            _noticeText(context, state),
+                            style: const TextStyle(
+                                color: Colors.white, fontSize: 13),
+                            maxLines: 3,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
       ),
     );
+  }
+
+  String _noticeText(BuildContext context, PlayerState state) {
+    final t = AppStrings.of(context);
+    final at = state.noticeTime == null ? '' : _fmt(state.noticeTime!);
+    switch (state.notice) {
+      case PlayerNotice.incompleteFile:
+        return t.playerNoticeIncomplete(at);
+      case PlayerNotice.seekHeld:
+        return t.playerNoticeSeekHeld(at);
+      case PlayerNotice.switchedToSoftware:
+        return t.playerNoticeSoftware;
+      case PlayerNotice.hardwareUnavailable:
+        return t.playerNoticeHwUnavailable;
+      case PlayerNotice.engineRestarted:
+        return t.playerNoticeEngineRestarted;
+      case null:
+        return '';
+    }
   }
 
   Widget _buildIndicator(GestureIndicator indicator) {

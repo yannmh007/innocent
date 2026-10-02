@@ -466,6 +466,16 @@ class AppStrings {
   String get vhDataSaverWifiHint => _s('vhDataSaverWifiHint');
   String get vhDataSaverOn => _s('vhDataSaverOn');
   String get vhDataSaverOff => _s('vhDataSaverOff');
+  // Player notices (1.64.43): a half-downloaded file, a failed hardware
+  // decoder, an engine that stopped answering.
+  String playerNoticeIncomplete(String t) =>
+      _s('playerNoticeIncomplete').replaceFirst('{t}', t);
+  String playerNoticeSeekHeld(String t) =>
+      _s('playerNoticeSeekHeld').replaceFirst('{t}', t);
+  String get playerNoticeSoftware => _s('playerNoticeSoftware');
+  String get playerNoticeHwUnavailable => _s('playerNoticeHwUnavailable');
+  String get playerNoticeEngineRestarted => _s('playerNoticeEngineRestarted');
+  String get playerEngineStuck => _s('playerEngineStuck');
   String get close => _s('close');
   String get audioTrack => _s('audioTrack');
   String get subtitle => _s('subtitle');
@@ -1912,6 +1922,12 @@ class AppStrings {
     'vhDataSaverWifiHint': 'Off: on Wi-Fi albums load normally.',
     'vhDataSaverOn': 'Data saver is on — tap to show albums normally',
     'vhDataSaverOff': 'Turn on data saver',
+    'playerNoticeIncomplete': 'This file is not fully downloaded. It plays up to {t}.',
+    'playerNoticeSeekHeld': 'Not downloaded past {t}.',
+    'playerNoticeSoftware': 'The hardware decoder failed on this file. Playing with the software (SW) decoder.',
+    'playerNoticeHwUnavailable': 'The hardware decoder stopped working after a damaged file. Videos play in software for now (slower, warmer). Close and reopen Innocent to bring it back.',
+    'playerNoticeEngineRestarted': 'The player was restarted after the last video stopped responding.',
+    'playerEngineStuck': 'The player stopped responding on this file. It may be damaged or not fully downloaded. Tap Retry, or go back and open another video.',
     'close': 'Close',
     'audioTrack': 'Audio track',
     'subtitle': 'Subtitle',
@@ -3177,6 +3193,12 @@ class AppStrings {
     'vhDataSaverWifiHint': 'ပိတ်ထားရင် Wi-Fi မှာ album တွေ ပုံမှန်အတိုင်း ပြပါမယ်။',
     'vhDataSaverOn': 'ဒေတာ ချွေတာမုဒ် ဖွင့်ထားသည် — ပုံမှန်ပြရန် နှိပ်ပါ',
     'vhDataSaverOff': 'ဒေတာ ချွေတာမုဒ် ဖွင့်မည်',
+    'playerNoticeIncomplete': 'ဒီဖိုင်က အပြည့် download မဆွဲရသေးပါ။ {t} အထိပဲ ကြည့်လို့ရပါမယ်။',
+    'playerNoticeSeekHeld': '{t} နောက်ပိုင်း download မဆွဲရသေးပါ။',
+    'playerNoticeSoftware': 'ဒီဖိုင်မှာ Hardware decoder အလုပ်မလုပ်လို့ Software (SW) decoder နဲ့ ဆက်ဖွင့်ထားပါတယ်။',
+    'playerNoticeHwUnavailable': 'ပျက်နေတဲ့ ဖိုင်ကြောင့် Hardware decoder ရပ်သွားပါတယ်။ ခဏ Software နဲ့ ဖွင့်ထားပါတယ် (နှေးပြီး ပူနိုင်ပါတယ်)။ Innocent ကို ပိတ်ပြီး ပြန်ဖွင့်ရင် ပြန်ကောင်းပါမယ်။',
+    'playerNoticeEngineRestarted': 'အရင် video က တုံ့ပြန်မှု ရပ်သွားလို့ player ကို အသစ်ပြန်စထားပါတယ်။',
+    'playerEngineStuck': 'ဒီဖိုင်မှာ player တုံ့ပြန်မှု ရပ်သွားပါတယ်။ ဖိုင် ပျက်နေတာ (သို့) အပြည့် download မဆွဲရသေးတာ ဖြစ်နိုင်ပါတယ်။ Retry နှိပ်ပါ (သို့) နောက်ပြန်ထွက်ပြီး တခြား video ဖွင့်ပါ။',
     'close': 'ပိတ်ရန်',
     'audioTrack': 'အသံ လိုင်း',
     'subtitle': 'စာတန်းထိုး',
@@ -4431,6 +4453,12 @@ class AppStrings {
     'vhDataSaverWifiHint': 'ปิดไว้: บน Wi-Fi อัลบั้มโหลดตามปกติ',
     'vhDataSaverOn': 'เปิดประหยัดเน็ตอยู่ — แตะเพื่อแสดงตามปกติ',
     'vhDataSaverOff': 'เปิดประหยัดเน็ต',
+    'playerNoticeIncomplete': 'ไฟล์นี้ดาวน์โหลดไม่ครบ เล่นได้ถึง {t}',
+    'playerNoticeSeekHeld': 'ยังไม่ได้ดาวน์โหลดหลัง {t}',
+    'playerNoticeSoftware': 'ตัวถอดรหัสฮาร์ดแวร์ใช้กับไฟล์นี้ไม่ได้ กำลังเล่นด้วยตัวถอดรหัสซอฟต์แวร์ (SW)',
+    'playerNoticeHwUnavailable': 'ตัวถอดรหัสฮาร์ดแวร์หยุดทำงานหลังจากไฟล์เสีย ตอนนี้เล่นด้วยซอฟต์แวร์ ปิดแล้วเปิด Innocent ใหม่เพื่อให้กลับมา',
+    'playerNoticeEngineRestarted': 'เริ่มเครื่องเล่นใหม่แล้ว หลังจากวิดีโอก่อนหน้าไม่ตอบสนอง',
+    'playerEngineStuck': 'เครื่องเล่นไม่ตอบสนองกับไฟล์นี้ ไฟล์อาจเสียหรือดาวน์โหลดไม่ครบ แตะลองอีกครั้ง หรือกลับไปเปิดวิดีโออื่น',
     'close': 'ปิด',
     'audioTrack': 'แทร็กเสียง',
     'subtitle': 'คำบรรยาย',
