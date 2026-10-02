@@ -130,6 +130,13 @@ dependencies:
   # android/app/build.gradle.kts.
   google_sign_in: ^7.2.0
 
+# The full-codec libmpv for Android (VC-1, RealVideo, TrueHD, AMR, PGS
+# subtitles, ...). A copy of the pub package with one changed download list;
+# see third_party/README.md.
+dependency_overrides:
+  media_kit_libs_android_video:
+    path: third_party/media_kit_libs_android_video
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
