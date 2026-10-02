@@ -74,6 +74,10 @@ class World:
         self.gone = set()                # message ids that no longer exist
         self.puts = []
         self.short = {}                  # message_id -> bytes actually delivered
+        self.copies = []                 # (to_chat, from_chat, message_id)
+        self.sends = []                  # (to_chat, path size)
+        self.chat_error = None           # text: get_chat on the archive fails
+        self.r2_size = None              # bytes a presigned GET delivers
 
 
 W = World()
@@ -98,6 +102,27 @@ class Client:
         if message_id in W.error_on_message:
             raise RuntimeError(W.error_on_message[message_id])
         return FakeMessage(message_id)
+
+    def get_chat(self, chat_id):
+        if W.chat_error:
+            raise RuntimeError(W.chat_error)
+        return types.SimpleNamespace(id=chat_id)
+
+    def copy_message(self, chat_id, from_chat_id, message_id, caption=None):
+        W.copies.append((chat_id, from_chat_id, message_id))
+        src = W.media.get(message_id)
+        sent = types.SimpleNamespace(id=900 + message_id,
+                                     chat=types.SimpleNamespace(id=chat_id))
+        sent.document = FakeDocument(*src) if src else None
+        return sent
+
+    def send_document(self, chat_id, path, caption=None, file_name=None,
+                      force_document=None):
+        size = os.path.getsize(path)
+        W.sends.append((chat_id, size))
+        sent = types.SimpleNamespace(id=777, chat=types.SimpleNamespace(id=chat_id))
+        sent.document = FakeDocument('sent-uniq', size)
+        return sent
 
     def download_media(self, msg, file_name):
         size = msg.document.file_size if msg.document else 1000 + msg.id
@@ -154,8 +179,23 @@ def vjob(n, kind, unique='u%d', size=None):
     }
 
 
+def ajob(n, forwarded=True, size=None):
+    """An archive job: a forwarded film (chat + message) or a console upload
+    (a presigned GET and nothing in Telegram)."""
+    return {
+        'job_id': 'archive-%d' % n, 'type': 'archive', 'archive_chat': -100555,
+        'tg_chat_id': 1 if forwarded else None,
+        'tg_message_id': n if forwarded else None,
+        'tg_unique_id': 'u%d' % n if forwarded else None,
+        'bytes': size if size is not None else 5000 + n,
+        'title': 'Film %d' % n, 'file_name': 'film-%d.mp4' % n,
+        'get_url': None if forwarded else 'https://r2.invalid/get/%d' % n,
+        'put_url': None, 'done_url': 'https://edge.invalid/ingest',
+    }
+
+
 def run(first, rest, env=None, start_flood=None, flood=None, error=None,
-        media=None, gone=None, short=None):
+        media=None, gone=None, short=None, chat_error=None, r2_size=None):
     """One runner invocation in a scratch directory. Answers (rc, edge).
 
     `env` entries set to None are REMOVED for the run, which is how the
@@ -169,6 +209,8 @@ def run(first, rest, env=None, start_flood=None, flood=None, error=None,
     W.media = media or {}
     W.gone = set(gone or ())
     W.short = dict(short or {})
+    W.chat_error = chat_error
+    W.r2_size = r2_size
     tmp = tempfile.mkdtemp(prefix='ingest-test-')
     ingest.JOB_FILE = os.path.join(tmp, 'ingest.json')
     ingest.REPORTED = os.path.join(tmp, 'ingest.reported')
@@ -180,6 +222,12 @@ def run(first, rest, env=None, start_flood=None, flood=None, error=None,
         W.puts.append(url)
         return os.path.getsize(path)
     ingest.put_to_r2 = put
+    def get(url, path):
+        size = W.r2_size if W.r2_size is not None else 0
+        with open(path, 'wb') as fh:
+            fh.write(b'y' * size)
+        return size
+    ingest.get_from_r2 = get
     base = {
         'TG_API_ID': '1', 'TG_API_HASH': 'h', 'TG_BOT_TOKEN': 't',
         'JOB_TOKEN': 'tok', 'RUNNER_SECRET': 'tok',
@@ -333,6 +381,52 @@ check('Telegram\'s size is checked even when the job has none',
 rc, edge = run(vjob(16, 'restore'), [], media={16: ('u16', 5016)}, short={16: 4096})
 c = (edge.ops('vault_done') or [{}])[0]
 check('a short restore is not uploaded either', c.get('ok') is False and not W.puts)
+
+# ── THE ARCHIVE CHANNEL (migration 032) ─────────────────────────────────
+#
+# A forwarded film is copied by Telegram itself; a console upload is fetched
+# from R2 and sent. Both answer where the copy now is, through vault_done with
+# type 'archive' — and nothing ever goes to R2.
+rc, edge = run(ajob(20), [ajob(21, forwarded=False)],
+               media={20: ('u20', 5020)}, r2_size=5021)
+va = {c['job_id']: c for c in edge.ops('vault_done')}
+check('this runner asks for archive work when it claims',
+      all(c.get('can') == ['archive'] for c in edge.ops('claim')) and edge.ops('claim'))
+check('a forwarded film is COPIED into the channel, not downloaded',
+      W.copies == [(-100555, 1, 20)])
+check('and reported where it now is, with the same file',
+      va.get('archive-20', {}).get('type') == 'archive' and va['archive-20'].get('ok') is True
+      and va['archive-20'].get('chat_id') == -100555 and va['archive-20'].get('message_id') == 920
+      and va['archive-20'].get('unique_id') == 'u20' and va['archive-20'].get('bytes') == 5020)
+check('a console upload is fetched from R2 and SENT to the channel',
+      W.sends == [(-100555, 5021)] and va.get('archive-21', {}).get('ok') is True
+      and va['archive-21'].get('message_id') == 777)
+check('an archive job writes nothing to R2', not W.puts)
+check('still one sign-in', W.started == 1)
+
+rc, edge = run(ajob(22, forwarded=False), [], r2_size=100)
+c = (edge.ops('vault_done') or [{}])[0]
+check('a short fetch from R2 is not sent to the archive',
+      c.get('ok') is False and 'fetched 100 of 5022' in c.get('note', '') and not W.sends)
+
+rc, edge = run(ajob(23), [], gone={23})
+c = (edge.ops('vault_done') or [{}])[0]
+check('a forwarded message that is gone is not "archived"',
+      c.get('ok') is False and not W.copies)
+
+rc, edge = run(ajob(24), [], media={24: ('u24', 5024)}, chat_error='CHANNEL_PRIVATE')
+c = (edge.ops('vault_done') or [{}])[0]
+check('a channel the bot cannot reach is said plainly, and nothing is sent',
+      c.get('ok') is False and 'archive channel' in c.get('note', '') and not W.copies)
+
+rc, edge = run(ajob(25), [ajob(26)], flood={25: 900}, media={26: ('u26', 5026)})
+check('a FLOOD_WAIT on an archive job defers it and ends the run',
+      [c['job_id'] for c in edge.ops('vault_defer')] == ['archive-25'] and
+      not edge.ops('vault_done'))
+
+rc, edge = run(ajob(27), [], env={'TG_API_ID': None})
+check('missing credentials on an archive job are reported as one',
+      any(c.get('type') == 'archive' and not c['ok'] for c in edge.ops('vault_done')))
 
 print()
 if failures:

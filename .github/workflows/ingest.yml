@@ -75,7 +75,7 @@ jobs:
             -X POST "$SB_URL/functions/v1/ingest" \
             -H "Authorization: Bearer $RUNNER_SECRET" \
             -H 'Content-Type: application/json' \
-            -d '{"op":"claim"}')
+            -d '{"op":"claim","can":["archive"]}')
           if [ "$code" != "200" ]; then
             echo "claim returned $code"; echo "job=none" >> "$GITHUB_OUTPUT"; exit 0
           fi
@@ -143,10 +143,12 @@ jobs:
           python3 - > /tmp/fail.json <<'PY'
           import json, os
           job = json.load(open('/tmp/ingest.json'))
-          # A Telegram check or restore (migration 029) answers to its own op.
-          vault = job.get('type') in ('verify', 'restore')
+          # A Telegram check, restore or archive copy (migrations 029, 032)
+          # answers to its own op; an archive copy says so with `type`.
+          vault = job.get('type') in ('verify', 'restore', 'archive')
           print(json.dumps({
             'op': 'vault_done' if vault else 'done',
+            'type': job.get('type'),
             'token': os.environ['JOB_TOKEN'],
             'job_id': job['job_id'],
             'ok': False,
@@ -164,20 +166,31 @@ jobs:
       # because a bin that only empties when somebody forwards a film is a bin
       # that fills. The function signs each DELETE itself: this runner still
       # holds no bucket credentials. Only the two counts are printed.
+      #
+      # It also carries what the Status page cannot see from anywhere else:
+      # that this runner ran, and which of its secrets are SET — true or false
+      # for each name, never a value. And the daily database backup happens on
+      # this call, inside the function (migration 032).
       - name: Empty the R2 bin
         if: always()
         env:
           SB_URL: ${{ secrets.SUPABASE_URL }}
           RUNNER_SECRET: ${{ secrets.INGEST_SECRET }}
+          HAS_API_ID: ${{ secrets.TELEGRAM_API_ID != '' }}
+          HAS_API_HASH: ${{ secrets.TELEGRAM_API_HASH != '' }}
+          HAS_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN != '' }}
+          RUN_ID: ${{ github.run_id }}
         run: |
           if [ -z "${SB_URL:-}" ] || [ -z "${RUNNER_SECRET:-}" ]; then exit 0; fi
+          body=$(printf '{"op":"purge","runner":{"tg_api_id":%s,"tg_api_hash":%s,"tg_bot_token":%s,"ingest_secret":true,"supabase_url":true,"run":"%s"}}' \
+            "$HAS_API_ID" "$HAS_API_HASH" "$HAS_BOT_TOKEN" "$RUN_ID")
           code=$(curl -sS -o /tmp/purge.json -w '%{http_code}' \
             -X POST "$SB_URL/functions/v1/ingest" \
             -H "Authorization: Bearer $RUNNER_SECRET" \
             -H 'Content-Type: application/json' \
-            -d '{"op":"purge"}' || echo 000)
+            -d "$body" || echo 000)
           echo "bin: HTTP $code"
-          python3 -c "import json;d=json.load(open('/tmp/purge.json'));print('bin: deleted',d.get('purged'),'failed',d.get('failed'));print('storage:',json.dumps(d.get('house',{})))" || true
+          python3 -c "import json;d=json.load(open('/tmp/purge.json'));print('bin: deleted',d.get('purged'),'failed',d.get('failed'));print('storage:',json.dumps({k:v for k,v in d.get('house',{}).items() if k!='backup'}));b=d.get('house',{}).get('backup');print('backup:',b if isinstance(b,str) else ('%s, %s bytes' % (b.get('key'),b.get('bytes')) if b else 'not due'))" || true
 
       # THE DATA SAVER'S FROSTED TILES (migration 031). A blurhash — about
       # thirty characters — for each album item that has none, made from the

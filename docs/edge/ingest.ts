@@ -209,6 +209,107 @@ async function rest(path: string, init: RequestInit = {}): Promise<Response> {
   });
 }
 
+// ── the daily backup (migration 032) ───────────────────────────────────────
+//
+// THE FREE PLAN HAS NO BACKUPS, and R2 without this database is a bucket of
+// files nobody can name. So once a day, on the runner's tick, this writes one:
+// every public table (in foreign-key order, so a restore inserts parents
+// first), the account list, gzipped, into the PRIVATE media bucket under
+// `_backup/db/`. The function signs its own PUT — the runner never holds a
+// bucket credential, and never sees the backup.
+//
+// THE TABLES ARE SPLICED, NOT RE-ENCODED. `backup_table` answers JSON, and the
+// text goes into the document as it came; the only parse is a row count for
+// the record. A catalogue this size is well under a megabyte; the gzip is a
+// tenth of that.
+const BACKUP_PREFIX = '_backup/db/';
+
+async function rpcText(name: string, body: unknown): Promise<string> {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${name}`, {
+    method: 'POST',
+    headers: {
+      apikey: SERVICE_KEY,
+      Authorization: `Bearer ${SERVICE_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body ?? {}),
+  });
+  if (!res.ok) throw new Error(`${name} ${res.status} ${(await res.text()).slice(0, 160)}`);
+  return await res.text();
+}
+
+async function gzip(bytes: Uint8Array): Promise<Uint8Array> {
+  const stream = new Blob([bytes as BlobPart]).stream()
+    .pipeThrough(new CompressionStream('gzip'));
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+
+async function runBackup(
+  trigger: 'daily' | 'manual', actor: string | null,
+): Promise<Record<string, unknown>> {
+  const order = await rpc('backup_tables', {}) as Array<{ name: string; ord: number }>;
+  if (!Array.isArray(order) || !order.length) throw new Error('no tables');
+  const parts: string[] = [];
+  const counts: Record<string, number> = {};
+  for (const t of order) {
+    const text = await rpcText('backup_table', { p_name: t.name });
+    const rows = JSON.parse(text);
+    counts[t.name] = Array.isArray(rows) ? rows.length : 0;
+    parts.push(`${JSON.stringify(t.name)}:${text}`);
+  }
+  const users = await rpcText('backup_auth_users', {});
+  const takenAt = new Date().toISOString();
+  const doc = '{"format":"innocent-db-backup","version":1,' +
+    `"taken_at":${JSON.stringify(takenAt)},"trigger":${JSON.stringify(trigger)},` +
+    `"order":${JSON.stringify(order.map((t) => t.name))},"counts":${JSON.stringify(counts)},` +
+    `"tables":{${parts.join(',')}},"auth_users":${users}}`;
+  const raw = enc.encode(doc);
+  const gz = await gzip(raw);
+  const sha = hex(new Uint8Array(await crypto.subtle.digest('SHA-256', gz as BufferSource)));
+  const stamp = takenAt.replace(/[-:]/g, '').replace(/\..*$/, '');   // 20261002T101500
+  const key = `${BACKUP_PREFIX}${takenAt.slice(0, 4)}/${takenAt.slice(5, 7)}/${stamp}-${trigger}.json.gz`;
+  const put = await fetch(await presign('PUT', key, 600, MEDIA_BUCKET), {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/gzip' },
+    body: gz as BodyInit,
+  });
+  if (!put.ok) throw new Error(`backup PUT ${put.status} ${(await put.text()).slice(0, 160)}`);
+  const id = await rpc('backup_record', {
+    p_key: key, p_bytes: gz.length, p_raw: raw.length, p_sha: sha, p_tables: counts,
+    p_trigger: trigger, p_actor: actor, p_note: null,
+  });
+  // RETENTION: fourteen days, and the first of each month for a year. The row
+  // is marked only once R2 has said the object is gone.
+  let pruned = 0;
+  try {
+    const old = await rpc('backup_prune_list', {}) as Array<{ id: number; object_key: string }>;
+    for (const b of old ?? []) {
+      if (!String(b.object_key).startsWith(BACKUP_PREFIX)) continue;
+      const del = await fetch(await presign('DELETE', b.object_key, 300, MEDIA_BUCKET),
+        { method: 'DELETE' });
+      if (del.ok || del.status === 404) {
+        await rpc('backup_deleted', { p_id: b.id });
+        pruned++;
+      }
+    }
+  } catch (e) {
+    console.log('backup prune: ' + String(e).slice(0, 160));
+  }
+  return { id, key, bytes: gz.length, raw: raw.length, tables: order.length, pruned };
+}
+
+/// What a runner may say about itself: which of its secrets are SET. Yes or no
+/// for a fixed list of names — never a value, never a name it made up.
+const RUNNER_FACTS = ['tg_api_id', 'tg_api_hash', 'tg_bot_token', 'ingest_secret', 'supabase_url'];
+function runnerInfo(raw: unknown): Record<string, unknown> | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const r = raw as Record<string, unknown>;
+  const out: Record<string, unknown> = {};
+  for (const k of RUNNER_FACTS) if (k in r) out[k] = r[k] === true;
+  if (typeof r.run === 'string' && /^\d{1,20}$/.test(r.run)) out.run = r.run;
+  return out;
+}
+
 const json = (body: unknown, status: number, req: Request) => {
   const origin = req.headers.get('Origin') ?? '';
   const cors: Record<string, string> = ALLOWED_ORIGINS.includes(origin)
@@ -528,6 +629,72 @@ Deno.serve(async (req: Request) => {
       // guessing the URL learns nothing from the shape of this response.
       return json({ ok: true }, 200, req);
     }
+    // ── THE ARCHIVE CHANNEL CONNECTS ITSELF (migration 032) ───────────────
+    //
+    // Telegram says so when the bot's place in a chat changes. Made an ADMIN
+    // of a CHANNEL by an OPERATOR — one of the accounts allowed to fill the
+    // queue — is the one way a channel becomes the archive: a stranger adding
+    // this bot to their channel must not become where the films go. Removed
+    // from the archive channel, and the archive is disconnected and the
+    // operator told, rather than every copy failing quietly.
+    const mcm = body.my_chat_member as Record<string, unknown> | undefined;
+    if (mcm) {
+      const chat = (mcm.chat ?? {}) as Record<string, unknown>;
+      const from = (mcm.from ?? {}) as Record<string, unknown>;
+      const fresh = (mcm.new_chat_member ?? {}) as Record<string, unknown>;
+      const status = String(fresh.status ?? '');
+      const by = String(from.id ?? '');
+      const chatNum = Number(chat.id ?? 0);
+      const title = String(chat.title ?? 'the channel').slice(0, 120);
+      if (chat.type !== 'channel' || !chatNum) {
+        return json({ ok: true, skipped: 'not_a_channel' }, 200, req);
+      }
+      if (status === 'administrator') {
+        if (!TG_CHATS.includes(by)) {
+          return json({ ok: true, skipped: 'added_by_a_stranger' }, 200, req);
+        }
+        if (fresh.can_post_messages === false) {
+          await say(by, `I am an admin of “${title}” but may not post there. ` +
+            'Turn on “Post messages” for me, and the channel will be connected.');
+          return json({ ok: true, skipped: 'cannot_post' }, 200, req);
+        }
+        let r = '';
+        try {
+          r = String(await rpc('archive_connect', { p_chat: chatNum, p_title: title, p_by: by }));
+        } catch (e) {
+          console.log('archive_connect: ' + String(e).slice(0, 160));
+        }
+        if (r === 'connected') {
+          await say(by, `Archive channel connected: “${title}”. Every film is copied there ` +
+            '— forwarded ones in seconds, console uploads one at a time. The Status page in the ' +
+            'console shows how far it has got.');
+        } else if (r === 'same') {
+          await say(by, `“${title}” is already the archive channel.`);
+        }
+        return json({ ok: true, archive: r || 'error' }, 200, req);
+      }
+      if (['left', 'kicked', 'member', 'restricted'].includes(status)) {
+        let r = '';
+        try {
+          r = String(await rpc('archive_disconnect', {
+            p_chat: chatNum, p_note: `the bot was removed from “${title}” (${status})`,
+          }));
+        } catch (e) {
+          console.log('archive_disconnect: ' + String(e).slice(0, 160));
+        }
+        if (r === 'disconnected') {
+          const tell = TG_CHATS.includes(by) ? by : TG_CHATS[0];
+          if (tell) {
+            await say(tell, `The bot is no longer an admin of “${title}”, so it is no longer the ` +
+              'archive channel. Films already copied there stay recorded; nothing new is sent ' +
+              'until a channel is connected again.');
+          }
+        }
+        return json({ ok: true, archive: r || 'error' }, 200, req);
+      }
+      return json({ ok: true, skipped: 'member_change' }, 200, req);
+    }
+
     const msg = (body.message ?? body.channel_post ??
       (body.edited_message as unknown)) as Record<string, unknown> | undefined;
     if (!msg) return json({ ok: true, skipped: 'no_message' }, 200, req);
@@ -687,7 +854,13 @@ Deno.serve(async (req: Request) => {
       // into a 500 (2026-10-01 15:30).
       let vault: Array<Record<string, unknown>> = [];
       try {
-        vault = await rpc('vault_claim', {}) as Array<Record<string, unknown>>;
+        // ARCHIVE JOBS ONLY TO A RUNNER THAT SAYS IT CAN DO THEM (032). One
+        // that cannot would read an archive job as a forwarded film, download
+        // it, find nowhere to put it, and do the same again every tick. The
+        // old claim never hands one out.
+        const canArchive = Array.isArray(body.can) && (body.can as unknown[]).includes('archive');
+        vault = await rpc(canArchive ? 'vault_claim_v2' : 'vault_claim', {}) as
+          Array<Record<string, unknown>>;
       } catch (e) {
         console.log('vault_claim failed: ' + String(e).slice(0, 160));
         return json({}, 200, req);
@@ -695,6 +868,30 @@ Deno.serve(async (req: Request) => {
       if (!Array.isArray(vault) || !vault.length) return json({}, 200, req);
       const v = vault[0];
       const restore = v.kind === 'restore';
+      if (v.kind === 'archive') {
+        // COPY THE FILM INTO THE ARCHIVE CHANNEL. A forwarded film carries its
+        // chat and message and Telegram copies it server side; a console
+        // upload has neither, and gets ONE presigned GET for its own object —
+        // read-only, one key, one day — to fetch and send.
+        const key = String(v.object_key ?? '');
+        const hasCopy = v.chat_id !== null && v.chat_id !== undefined;
+        return json({
+          job_id: v.job_id,
+          type: 'archive',
+          archive_chat: v.archive_chat ?? null,
+          tg_chat_id: v.chat_id ?? null,
+          tg_message_id: v.message_id ?? null,
+          tg_unique_id: v.unique_id ?? null,
+          bytes: v.bytes ?? null,
+          title: String(v.title ?? '').slice(0, 200),
+          file_name: key.split('/').pop() ?? 'film.mp4',
+          get_url: hasCopy || !key
+            ? null
+            : await presign('GET', key, 86400, String(v.bucket ?? MEDIA_BUCKET)),
+          put_url: null,
+          done_url: `${SUPABASE_URL}/functions/v1/ingest`,
+        }, 200, req);
+      }
       return json({
         job_id: v.job_id,
         type: restore ? 'restore' : 'verify',
@@ -799,6 +996,20 @@ Deno.serve(async (req: Request) => {
     if (!sameSecret(given, RUNNER_SECRET)) return json({ error: 'no' }, 403, req);
     const jobId = String(body.job_id ?? '');
     if (!jobId) return json({ error: 'no_job' }, 400, req);
+    if (body.type === 'archive') {
+      // Where the copy now is. The database checks it is the archive channel
+      // and the film's own size before it becomes the copy a restore trusts.
+      const result = await rpc('vault_archive_finish', {
+        p_job: jobId,
+        p_ok: body.ok === true,
+        p_note: String(body.note ?? '').slice(0, 300),
+        p_chat: Number(body.chat_id ?? 0) || null,
+        p_message: Number(body.message_id ?? 0) || null,
+        p_unique: String(body.unique_id ?? '').slice(0, 120),
+        p_bytes: Number(body.bytes ?? 0) || null,
+      });
+      return json({ ok: true, result }, 200, req);
+    }
     const state = String(body.state ?? '');
     const result = await rpc('vault_finish', {
       p_job: jobId,
@@ -925,7 +1136,39 @@ Deno.serve(async (req: Request) => {
     } catch (e) {
       house.noticed = 'error: ' + String(e).slice(0, 120);
     }
+    // THE RUNNER WAS HERE, and which of its secrets it had — for the Status
+    // page, which otherwise cannot know whether the schedule is running.
+    try {
+      await rpc('runner_tick', { p_name: 'ingest', p_info: runnerInfo(body.runner) });
+    } catch (e) {
+      console.log('runner_tick: ' + String(e).slice(0, 120));
+    }
+    // THE DAILY BACKUP, on whichever tick first finds the last one over
+    // twenty hours old. A failure is reported here and tried again next tick.
+    try {
+      if (await rpc('backup_due', {}) === true) {
+        house.backup = await runBackup('daily', null);
+      }
+    } catch (e) {
+      house.backup = 'error: ' + String(e).slice(0, 160);
+    }
     return json({ ok: true, purged, failed, house }, 200, req);
+  }
+
+  // ── backup ───────────────────────────────────────────────────────────────
+  //
+  // "Back up now", from the console's Status page: studio.ts checks the owner
+  // and calls this with the runner secret, so one copy of the backup code
+  // exists and it is this one.
+  if (op === 'backup') {
+    const given = (req.headers.get('Authorization') ?? '').replace(/^Bearer /i, '');
+    if (!sameSecret(given, RUNNER_SECRET)) return json({ error: 'no' }, 403, req);
+    const actor = /^[0-9a-f-]{36}$/i.test(String(body.actor ?? '')) ? String(body.actor) : null;
+    try {
+      return json({ ok: true, backup: await runBackup('manual', actor) }, 200, req);
+    } catch (e) {
+      return json({ error: 'backup_failed', detail: String(e).slice(0, 200) }, 500, req);
+    }
   }
 
   // ═══════════════════════════════════════════════════════════════════════

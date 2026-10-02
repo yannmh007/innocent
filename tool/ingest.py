@@ -51,6 +51,15 @@ marked by `type`:
 
 Both answer through `vault_done` / `vault_defer` instead of `done` / `defer`.
 
+AND A THIRD, `archive` (migration 032): copy a film into the archive channel —
+the private channel the bot was made an admin of. A forwarded film is copied
+by Telegram itself, server side, in a second (`copy_message`); a film uploaded
+from the console has no Telegram copy, so it is fetched from R2 through one
+presigned GET and sent. The answer is where the copy now is, and the database
+makes that the film's Telegram copy from then on. Only a run of THIS script
+asks for archive work (`can: ["archive"]`), so an older one is never given a
+job it would mistake for a forwarded film.
+
 WHAT THIS SCRIPT NEVER SEES: an R2 key. The destination is a presigned PUT
 scoped to one object, minted by the edge function and expiring the same day.
 """
@@ -323,10 +332,130 @@ def vault_one(app, job, flood_type):
             pass
 
 
+def archive_report(job, ok, note='', chat_id=None, message_id=None,
+                   unique_id=None, size=None):
+    """Tell the edge function where an archive copy now is (or why not)."""
+    payload = {
+        'op': 'vault_done',
+        'type': 'archive',
+        'token': os.environ['JOB_TOKEN'],
+        'job_id': job['job_id'],
+        'ok': bool(ok),
+        'note': str(note)[:300],
+    }
+    if chat_id is not None:
+        payload['chat_id'] = int(chat_id)
+    if message_id is not None:
+        payload['message_id'] = int(message_id)
+    if unique_id:
+        payload['unique_id'] = str(unique_id)
+    if size is not None:
+        payload['bytes'] = int(size)
+    _post(job['done_url'], payload)
+    try:
+        with open(REPORTED, 'w') as fh:
+            fh.write(str(job['job_id']))
+    except OSError:
+        pass
+
+
+def archive_caption(job):
+    """What the archive channel shows under a film: enough for a human
+    scrolling the channel to know what it is, nothing that is a secret."""
+    title = (job.get('title') or '').strip() or 'Untitled'
+    name = (job.get('file_name') or '').strip()
+    return ('%s\n%s' % (title, name)).strip()[:1000]
+
+
+def get_from_r2(url, path):
+    """Download a console upload through its presigned GET. Answers bytes."""
+    result = subprocess.run(
+        ['curl', '-sS', '--fail-with-body', '-o', path, url],
+        capture_output=True, text=True,
+    )
+    if result.returncode != 0:
+        raise RuntimeError('GET failed: %s' % (result.stdout or result.stderr)[:300])
+    return os.path.getsize(path)
+
+
+def archive_one(app, job, flood_type):
+    """Copy one film into the archive channel, reported through vault_done."""
+    target_chat = job.get('archive_chat')
+    if not target_chat:
+        archive_report(job, False, note='no archive channel is connected')
+        return
+    target_chat = int(target_chat)
+    chat_id = job.get('tg_chat_id')
+    message_id = job.get('tg_message_id')
+    work = tempfile.mkdtemp(prefix='archive-')
+    target = os.path.join(work, job.get('file_name') or 'film.mp4')
+    try:
+        # The bot learns the channel's access hash by asking; an in-memory
+        # session has never seen it, and sending blind is PEER_ID_INVALID.
+        try:
+            app.get_chat(target_chat)
+        except flood_type:
+            raise
+        except Exception as exc:                   # noqa: BLE001
+            archive_report(job, False, note='cannot reach the archive channel: %s'
+                           % str(exc)[:160])
+            return
+        if chat_id and message_id:
+            msg = app.get_messages(int(chat_id), int(message_id))
+            verdict, why = judge_copy(msg, job)
+            if verdict != 'ok':
+                archive_report(job, False, note='nothing to copy: %s' % why)
+                return
+            sent = app.copy_message(target_chat, int(chat_id), int(message_id),
+                                    caption=archive_caption(job))
+            how = 'copied'
+        else:
+            url = job.get('get_url')
+            if not url:
+                archive_report(job, False, note='no Telegram copy and no R2 address')
+                return
+            size = get_from_r2(url, target)
+            want = int(job.get('bytes') or 0)
+            if want and size != want:
+                archive_report(job, False, note='fetched %d of %d bytes from R2' % (size, want))
+                return
+            sent = app.send_document(target_chat, target, caption=archive_caption(job),
+                                     file_name=os.path.basename(target),
+                                     force_document=True)
+            how = 'uploaded'
+        media = _media_of(sent) if sent is not None else None
+        if media is None:
+            archive_report(job, False, note='Telegram answered without the file')
+            return
+        size = int(getattr(media, 'file_size', 0) or 0) or None
+        print('archive: %s, %s bytes' % (how, size))
+        archive_report(job, True, note=how,
+                       chat_id=sent.chat.id, message_id=sent.id,
+                       unique_id=getattr(media, 'file_unique_id', None), size=size)
+    except flood_type as exc:
+        seconds = int(getattr(exc, 'value', 0) or 0)
+        print('Telegram asked for a %ds wait; deferring and ending the run'
+              % seconds)
+        vault_defer(job, seconds)
+        raise _Stop()
+    except Exception as exc:                       # noqa: BLE001
+        archive_report(job, False, note='failed: %s' % str(exc)[:200])
+        print('failed: %s' % exc)
+    finally:
+        try:
+            if os.path.exists(target):
+                os.unlink(target)
+            os.rmdir(work)
+        except OSError:
+            pass
+
+
 def handle(app, job, flood_type):
     """One job of whichever type the claim handed out."""
     if job.get('type') in ('verify', 'restore'):
         vault_one(app, job, flood_type)
+    elif job.get('type') == 'archive':
+        archive_one(app, job, flood_type)
     else:
         fetch_one(app, job, flood_type)
 
@@ -339,7 +468,8 @@ def claim_next():
     """
     code, body = _post(
         os.environ['SB_URL'].rstrip('/') + '/functions/v1/ingest',
-        {'op': 'claim'},
+        # `can`: this runner knows what an archive job is. See the docstring.
+        {'op': 'claim', 'can': ['archive']},
         bearer=os.environ['RUNNER_SECRET'],
     )
     if code != 200:
@@ -460,6 +590,8 @@ def fail(job, note):
     """Report a job as failed through the op its type answers to."""
     if job.get('type') in ('verify', 'restore'):
         vault_report(job, False, note=note)
+    elif job.get('type') == 'archive':
+        archive_report(job, False, note=note)
     else:
         report(job, False, note)
 
@@ -504,7 +636,7 @@ def main():
         seconds = int(getattr(exc, 'value', 0) or 0)
         print('Telegram asked for a %ds wait before signing in; deferring'
               % seconds)
-        if job.get('type') in ('verify', 'restore'):
+        if job.get('type') in ('verify', 'restore', 'archive'):
             vault_defer(job, seconds)
         else:
             defer(job, seconds)
