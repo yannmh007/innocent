@@ -190,4 +190,5 @@ jobs:
         env:
           SB_URL: ${{ secrets.SUPABASE_URL }}
           RUNNER_SECRET: ${{ secrets.INGEST_SECRET }}
-        run: python3 tool/previews.py || echo "previews: skipped this tick"
+        run: |
+          python3 tool/previews.py || echo "previews: skipped this tick"
