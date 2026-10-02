@@ -137,12 +137,29 @@ def hash_image(data):
         return encode(list(small.getdata()), sw, sh, cx, cy)
 
 
+# Where Pillow goes when the runner does not have it. A FIXED DIRECTORY ADDED
+# TO THE PATH, not a plain `pip install`: installed from inside a running
+# interpreter, the package lands in a site directory that interpreter did not
+# know about when it started, and the import that follows still fails. The
+# first run of this script skipped all sixty items with ModuleNotFoundError
+# for exactly that reason.
+DEPS = '/tmp/previews-deps'
+
+
 def ensure_pillow():
     try:
         import PIL  # noqa: F401
+        return
     except ImportError:
-        subprocess.run([sys.executable, '-m', 'pip', 'install', '--quiet',
-                        '--disable-pip-version-check', 'pillow'], check=True)
+        pass
+    subprocess.run([sys.executable, '-m', 'pip', 'install', '--quiet',
+                    '--disable-pip-version-check', '--target', DEPS, 'pillow'],
+                   check=True)
+    if DEPS not in sys.path:
+        sys.path.insert(0, DEPS)
+    import importlib
+    importlib.invalidate_caches()
+    import PIL  # noqa: F401,E402  — fails loudly here, not once per image
 
 
 def call(url, secret, body):

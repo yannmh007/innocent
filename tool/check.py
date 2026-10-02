@@ -70,6 +70,10 @@ CHECKS = [
      'minutes, Telegram answered FLOOD_WAIT, and seven good files had their '
      'three attempts spent in under a minute — and a wait reported as a '
      'failed attempt, which is how a slow afternoon marks a film as dead'),
+    ('workflow_yaml.py', None,
+     'a workflow file that does not parse — GitHub then reports it as having '
+     'no triggers, so the schedule and the manual run both vanish silently; '
+     'an unquoted ": " in one run step did exactly that to ingest.yml'),
     ('previews_test.py', None,
      'an album blurhash the app cannot read back: the runner encodes and the '
      'app decodes with two ports of one algorithm, and a slip in either draws '
