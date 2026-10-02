@@ -174,6 +174,14 @@ enum PlayerSetting {
   // Download button that appears to do nothing, for the majority, for ever.
   // It is here for the minority who do have wifi and would rather wait for it.
   downloadWifiOnly(default_: false),
+  // THE DATA SAVER (Telegram's, for albums). On: an album shows frosted
+  // previews — a thirty-character blurhash, no image fetched — and a photo or
+  // clip arrives only when the viewer taps its download button. Off by
+  // default: the album looking like an album is the first impression.
+  albumDataSaver(default_: false),
+  // On Wi-Fi as well. Off by default, because the point of the saver is the
+  // data bundle; on unmetered Wi-Fi the full album costs nothing extra.
+  albumDataSaverOnWifi(default_: false),
   decDeinterlace(default_: false),
   decCustomCodec(default_: false),
 

@@ -8,6 +8,7 @@ import '../domain/access_policy.dart';
 import '../data/api/event_sender.dart';
 import '../domain/video_content.dart';
 import 'album_downloads.dart';
+import 'album_saver.dart';
 import 'album_viewer_screen.dart';
 import 'widgets/media_mosaic.dart';
 import 'playback.dart';
@@ -202,9 +203,12 @@ class _ContentDetailScreenState extends ConsumerState<ContentDetailScreen> {
                       ),
                     ],
                     const Spacer(),
+                    // Telegram's data saver, one tap away from the album it
+                    // changes — see album_saver.dart.
+                    const AlbumSaverToggle(),
                     // The album's Download: everything, or only what the
                     // admin added since — see AlbumDownloadButton.
-                    AlbumDownloadButton(content: content),
+                    Flexible(child: AlbumDownloadButton(content: content)),
                   ],
                 ),
               ),
@@ -237,9 +241,14 @@ class _ContentDetailScreenState extends ConsumerState<ContentDetailScreen> {
                           tier: tier,
                         );
                         return _AlbumTile(
+                          content: content,
                           item: item,
                           parentTitle: shownTitle,
                           locked: !unlocked,
+                          onPlay: () => playMedia(context, ref,
+                              content: content,
+                              source: item.source,
+                              titleOverride: shownTitle),
                           badge: unlocked
                               ? AlbumItemBadge(content: content, item: item)
                               : null,
@@ -313,7 +322,8 @@ class _Header extends StatelessWidget {
     final meta = <String>[
       if (content.year != null) '${content.year}',
       if (content.qualityLabel != null) content.qualityLabel!,
-      if (content.episodeCount != null) s.vhEpisodesCount(content.episodeCount!),
+      if (content.episodeCount != null)
+        s.vhEpisodesCount(content.episodeCount!),
       ...content.genres,
     ];
 
@@ -464,7 +474,11 @@ Widget _blurred(bool on, Widget child) {
 }
 
 class _AlbumTile extends StatelessWidget {
+  final VideoContent content;
   final AlbumItem item;
+
+  /// Plays a frosted clip straight from its tile — see AlbumSaverGate.
+  final VoidCallback? onPlay;
   final String parentTitle;
   final bool locked;
   final VoidCallback onTap;
@@ -474,7 +488,9 @@ class _AlbumTile extends StatelessWidget {
   final Widget? badge;
 
   const _AlbumTile({
+    required this.content,
     required this.item,
+    this.onPlay,
     required this.parentTitle,
     required this.onTap,
     this.locked = false,
@@ -485,89 +501,100 @@ class _AlbumTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      child: Stack(
-        fit: StackFit.expand,
-        children: <Widget>[
-          // Locked tiles are BLURRED, not blacked out.
-          //
-          // A flat 62% scrim hid the picture completely, which left a free
-          // viewer looking at a grey square: it says something is missing but
-          // nothing about what. A blur keeps the shape, the colour and the
-          // composition and withholds only the detail - so the offer becomes
-          // "there is more of THIS" rather than "there is more of something".
-          // Feature-preview paywalls work for exactly that reason: people
-          // judge what they can see far more readily than what they have to
-          // imagine.
-          //
-          // HONEST ABOUT WHAT THIS IS: a presentation choice, not a control.
-          // These photos live in the PUBLIC bucket and their URLs are already
-          // reachable. The blur exists to sell, not to protect. Anything that
-          // genuinely must not be seen belongs in the private bucket behind
-          // request-playback, like the video.
-          //
-          // TileMode.decal, not the default clamp: clamping smears the edge
-          // pixels outward and paints a dirty border around every locked tile.
-          _blurred(
-            locked,
-            PosterImage(
-              mediaRef: item.thumbnail.isEmpty ? item.source : item.thumbnail,
-              title: '$parentTitle ${item.id}',
-              glyph: item.isVideo
-                  ? Icons.play_circle_outline
-                  : Icons.image_outlined,
+      // With the data saver on, the tile is frost and a download button
+      // until the viewer asks for this one — and no picture is fetched to draw
+      // it. Otherwise exactly the tile below.
+      child: AlbumSaverGate(
+        content: content,
+        item: item,
+        locked: locked,
+        onPlay: onPlay,
+        normal: _normal(),
+      ),
+    );
+  }
+
+  Widget _normal() {
+    return Stack(
+      fit: StackFit.expand,
+      children: <Widget>[
+        // Locked tiles are BLURRED, not blacked out.
+        //
+        // A flat 62% scrim hid the picture completely, which left a free
+        // viewer looking at a grey square: it says something is missing but
+        // nothing about what. A blur keeps the shape, the colour and the
+        // composition and withholds only the detail - so the offer becomes
+        // "there is more of THIS" rather than "there is more of something".
+        // Feature-preview paywalls work for exactly that reason: people
+        // judge what they can see far more readily than what they have to
+        // imagine.
+        //
+        // HONEST ABOUT WHAT THIS IS: a presentation choice, not a control.
+        // These photos live in the PUBLIC bucket and their URLs are already
+        // reachable. The blur exists to sell, not to protect. Anything that
+        // genuinely must not be seen belongs in the private bucket behind
+        // request-playback, like the video.
+        //
+        // TileMode.decal, not the default clamp: clamping smears the edge
+        // pixels outward and paints a dirty border around every locked tile.
+        _blurred(
+          locked,
+          PosterImage(
+            mediaRef: item.thumbnail.isEmpty ? item.source : item.thumbnail,
+            title: '$parentTitle ${item.id}',
+            glyph:
+                item.isVideo ? Icons.play_circle_outline : Icons.image_outlined,
+          ),
+        ),
+        if (locked) ...<Widget>[
+          // A much lighter scrim than before. The blur already removes the
+          // detail; this only darkens enough for the lock glyph to read.
+          Positioned.fill(
+            child: IgnorePointer(
+              child: ColoredBox(color: Colors.black.withOpacity(0.22)),
             ),
           ),
-          if (locked) ...<Widget>[
-            // A much lighter scrim than before. The blur already removes the
-            // detail; this only darkens enough for the lock glyph to read.
-            Positioned.fill(
-              child: IgnorePointer(
-                child: ColoredBox(color: Colors.black.withOpacity(0.22)),
-              ),
-            ),
-            const Center(
-              child: Icon(Icons.lock_rounded, size: 18, color: VH.textPrimary),
-            ),
-          ] else if (item.isPreview && item.isVideo) ...<Widget>[
-            const Center(
-              child: Icon(Icons.play_circle_fill,
-                  size: 30, color: VH.textPrimary),
-            ),
-            const Positioned(
-              left: 4,
-              top: 4,
-              child: _PreviewTag(),
-            ),
-          ] else if (item.isVideo) ...<Widget>[
-            const Center(
-              child: Icon(Icons.play_circle_fill,
-                  size: 30, color: VH.textPrimary),
-            ),
-            if (item.durationLabel.isNotEmpty)
-              Positioned(
-                right: 4,
-                bottom: 4,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 4, vertical: 1),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.65),
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                  child: Text(
-                    item.durationLabel,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 9.5,
-                      fontWeight: FontWeight.w600,
-                    ),
+          const Center(
+            child: Icon(Icons.lock_rounded, size: 18, color: VH.textPrimary),
+          ),
+        ] else if (item.isPreview && item.isVideo) ...<Widget>[
+          const Center(
+            child:
+                Icon(Icons.play_circle_fill, size: 30, color: VH.textPrimary),
+          ),
+          const Positioned(
+            left: 4,
+            top: 4,
+            child: _PreviewTag(),
+          ),
+        ] else if (item.isVideo) ...<Widget>[
+          const Center(
+            child:
+                Icon(Icons.play_circle_fill, size: 30, color: VH.textPrimary),
+          ),
+          if (item.durationLabel.isNotEmpty)
+            Positioned(
+              right: 4,
+              bottom: 4,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.65),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+                child: Text(
+                  item.durationLabel,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
-          ],
-          if (badge != null) Positioned(right: 4, top: 4, child: badge!),
+            ),
         ],
-      ),
+        if (badge != null) Positioned(right: 4, top: 4, child: badge!),
+      ],
     );
   }
 }

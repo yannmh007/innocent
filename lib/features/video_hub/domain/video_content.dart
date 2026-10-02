@@ -91,6 +91,11 @@ class AlbumItem {
   /// all" say what it will cost before anything is fetched.
   final int? bytes;
 
+  /// A blurhash of the item (migration 031), about thirty characters: what
+  /// the data saver draws INSTEAD of fetching the picture. Null until the
+  /// runner has made one, and the tile is then a plain frosted square.
+  final String? preview;
+
   const AlbumItem({
     required this.id,
     required this.kind,
@@ -102,6 +107,7 @@ class AlbumItem {
     this.height,
     this.isMain = false,
     this.bytes,
+    this.preview,
   });
 
   bool get isVideo => kind == MediaKind.video;

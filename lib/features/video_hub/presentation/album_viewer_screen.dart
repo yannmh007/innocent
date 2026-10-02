@@ -7,6 +7,8 @@ import '../../../core/localization/app_strings.dart';
 import '../domain/access_policy.dart';
 import '../domain/video_content.dart';
 import 'album_downloads.dart';
+import 'album_saver.dart';
+import '../../../core/services/preferences/player_settings_service.dart';
 import 'playback.dart';
 import 'video_hub_provider.dart';
 import 'video_hub_theme.dart';
@@ -141,14 +143,34 @@ class _AlbumViewerScreenState extends ConsumerState<AlbumViewerScreen> {
                   promptUpgrade(context, ref, content: widget.content),
             );
           }
+          // THE DATA SAVER: frost and a download button, and nothing fetched,
+          // until the viewer asks for this one — see AlbumSaverGate.
           if (item.isVideo) {
-            return _VideoPage(
+            return AlbumSaverGate(
+              content: widget.content,
               item: item,
-              title: _shownTitle,
+              large: true,
               onPlay: () => _playVideo(item),
+              normal: _VideoPage(
+                item: item,
+                title: _shownTitle,
+                onPlay: () => _playVideo(item),
+              ),
             );
           }
-          return ZoomablePhoto(
+          return AlbumSaverGate(
+            content: widget.content,
+            item: item,
+            large: true,
+            normal: _photo(item),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _photo(AlbumItem item) {
+    return ZoomablePhoto(
             key: ValueKey('photo-${item.id}'),
             onLockPaging: (lock) {
               if (lock != _pagingLocked && mounted) {
@@ -165,9 +187,6 @@ class _AlbumViewerScreenState extends ConsumerState<AlbumViewerScreen> {
               ),
             ),
           );
-        },
-      ),
-    );
   }
 }
 
@@ -185,7 +204,7 @@ class _AlbumViewerScreenState extends ConsumerState<AlbumViewerScreen> {
 ///
 /// The blur is a presentation choice, not a control: these photos sit in the
 /// public bucket and their URLs are already reachable. It exists to sell.
-class _LockedPage extends StatelessWidget {
+class _LockedPage extends ConsumerWidget {
   final AlbumItem item;
   final String parentTitle;
   final VoidCallback onUnlock;
@@ -197,11 +216,22 @@ class _LockedPage extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final s = AppStrings.of(context);
+    // With the data saver on, the frost is the blurhash: fetching the photo
+    // only to blur it is the cost the saver exists to avoid.
+    // Frosted while the connection question is pending, for the same reason
+    // as AlbumSaverGate: the first frame must not fetch.
+    final saver = ref
+            .watch(playerSettingsProvider)
+            .get(PlayerSetting.albumDataSaver) &&
+        (ref.watch(albumSaverProvider).valueOrNull ?? true);
     return Stack(
       fit: StackFit.expand,
       children: <Widget>[
+        if (saver)
+          BlurPreview(hash: item.preview)
+        else
         // Same sigma as the grid tile, deliberately: a preview that is
         // crisper in one place than the other reads as a bug.
         ImageFiltered(

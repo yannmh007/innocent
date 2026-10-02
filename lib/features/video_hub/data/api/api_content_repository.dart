@@ -712,6 +712,7 @@ class ApiContentRepository implements ContentRepository {
           height: _int(m['height']),
           isMain: m['is_main'] == true,
           bytes: _int(m['bytes']),
+          preview: m['preview'] is String ? m['preview'] as String : null,
         ));
       }
       return items;
@@ -722,9 +723,10 @@ class ApiContentRepository implements ContentRepository {
   }
 
   /// What the album asks `title_media` for. `is_main` and `bytes` arrived with
-  /// migration 030 — see [AlbumItem.isMain].
+  /// migration 030 — see [AlbumItem.isMain] — and `preview` with 031.
   static const String _albumColumns =
-      'id,kind,url,thumb_url,duration_s,is_free,width,height,is_main,bytes';
+      'id,kind,url,thumb_url,duration_s,is_free,width,height,is_main,bytes,'
+      'preview';
   static const String _albumColumnsBefore030 =
       'id,kind,url,thumb_url,duration_s,is_free,width,height';
 

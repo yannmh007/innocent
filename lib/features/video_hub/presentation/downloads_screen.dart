@@ -111,6 +111,9 @@ class DownloadsScreen extends ConsumerWidget {
               // section for the same reason: it is only ever thought about
               // while looking at downloads.
               const _WifiOnlyRow(),
+              // The album data saver lives with the other "what may this
+              // spend" switch. The album heading has a one-tap toggle too.
+              const _DataSaverRow(),
               // WHY A DOWNLOAD STOPS WHEN THE PHONE IS PUT DOWN, in the one
               // place the person who noticed it is looking. See _BatteryRow.
               const _BatteryRow(),
@@ -959,6 +962,56 @@ class _WifiOnlyRow extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// The album data saver, and whether it also applies on Wi-Fi.
+class _DataSaverRow extends ConsumerWidget {
+  const _DataSaverRow();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = AppStrings.of(context);
+    final settings = ref.watch(playerSettingsProvider);
+    final on = settings.get(PlayerSetting.albumDataSaver);
+    final wifi = settings.get(PlayerSetting.albumDataSaverOnWifi);
+    final notifier = ref.read(playerSettingsProvider.notifier);
+    Widget row(String title, String hint, bool value, ValueChanged<bool> set,
+            {Key? key}) =>
+        Padding(
+          padding: const EdgeInsets.only(bottom: VH.s3),
+          child: Row(
+            children: <Widget>[
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(title, style: VH.label.copyWith(fontSize: 13.5)),
+                    const SizedBox(height: 2),
+                    Text(hint, style: VH.meta.copyWith(fontSize: 11.5)),
+                  ],
+                ),
+              ),
+              const SizedBox(width: VH.s2),
+              Switch(key: key, value: value, onChanged: set),
+            ],
+          ),
+        );
+    return Column(
+      children: <Widget>[
+        row(s.vhDataSaver, s.vhDataSaverHint, on,
+            (v) => notifier.setValue(PlayerSetting.albumDataSaver, v),
+            key: const ValueKey('data-saver-switch')),
+        // Only meaningful while the saver is on, so only drawn then.
+        if (on)
+          Padding(
+            padding: const EdgeInsets.only(left: VH.s4),
+            child: row(s.vhDataSaverWifi, s.vhDataSaverWifiHint, wifi,
+                (v) => notifier.setValue(PlayerSetting.albumDataSaverOnWifi, v),
+                key: const ValueKey('data-saver-wifi-switch')),
+          ),
+      ],
     );
   }
 }

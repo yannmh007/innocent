@@ -460,6 +460,12 @@ class AppStrings {
   String get vhSaveOffline => _s('vhSaveOffline');
   String get vhAlbumDeleteBody => _s('vhAlbumDeleteBody');
   String get vhDeleteItemBody => _s('vhDeleteItemBody');
+  String get vhDataSaver => _s('vhDataSaver');
+  String get vhDataSaverHint => _s('vhDataSaverHint');
+  String get vhDataSaverWifi => _s('vhDataSaverWifi');
+  String get vhDataSaverWifiHint => _s('vhDataSaverWifiHint');
+  String get vhDataSaverOn => _s('vhDataSaverOn');
+  String get vhDataSaverOff => _s('vhDataSaverOff');
   String get close => _s('close');
   String get audioTrack => _s('audioTrack');
   String get subtitle => _s('subtitle');
@@ -1900,6 +1906,12 @@ class AppStrings {
     'vhSaveOffline': 'Save for offline',
     'vhAlbumDeleteBody': 'Delete the photos and clips of this album from this phone? A downloaded film stays.',
     'vhDeleteItemBody': 'Delete this from the phone? You can download it again.',
+    'vhDataSaver': 'Data saver',
+    'vhDataSaverHint': 'Albums show blurred previews. Tap the download button on the ones you want.',
+    'vhDataSaverWifi': 'Also on Wi-Fi',
+    'vhDataSaverWifiHint': 'Off: on Wi-Fi albums load normally.',
+    'vhDataSaverOn': 'Data saver is on — tap to show albums normally',
+    'vhDataSaverOff': 'Turn on data saver',
     'close': 'Close',
     'audioTrack': 'Audio track',
     'subtitle': 'Subtitle',
@@ -3159,6 +3171,12 @@ class AppStrings {
     'vhSaveOffline': 'အော့ဖ်လိုင်းအတွက် သိမ်းမည်',
     'vhAlbumDeleteBody': 'ဒီ album ရဲ့ ဓာတ်ပုံနဲ့ ဗီဒီယိုတွေကို ဖုန်းထဲက ဖျက်မလား? ဒေါင်းထားတဲ့ ဇာတ်ကားကတော့ ကျန်ပါမယ်။',
     'vhDeleteItemBody': 'ဖုန်းထဲက ဖျက်မလား? နောက်မှ ပြန်ဒေါင်းလို့ ရပါတယ်။',
+    'vhDataSaver': 'ဒေတာ ချွေတာမုဒ်',
+    'vhDataSaverHint': 'Album တွေမှာ ဝါးဝါးလေးပဲ ပြပါမယ်။ လိုချင်တာကိုပဲ download ခလုတ်နှိပ်ပြီး ဖွင့်ပါ။',
+    'vhDataSaverWifi': 'Wi-Fi မှာလည်း',
+    'vhDataSaverWifiHint': 'ပိတ်ထားရင် Wi-Fi မှာ album တွေ ပုံမှန်အတိုင်း ပြပါမယ်။',
+    'vhDataSaverOn': 'ဒေတာ ချွေတာမုဒ် ဖွင့်ထားသည် — ပုံမှန်ပြရန် နှိပ်ပါ',
+    'vhDataSaverOff': 'ဒေတာ ချွေတာမုဒ် ဖွင့်မည်',
     'close': 'ပိတ်ရန်',
     'audioTrack': 'အသံ လိုင်း',
     'subtitle': 'စာတန်းထိုး',
@@ -4407,6 +4425,12 @@ class AppStrings {
     'vhSaveOffline': 'บันทึกไว้ดูออฟไลน์',
     'vhAlbumDeleteBody': 'ลบรูปและคลิปของอัลบั้มนี้ออกจากเครื่องไหม? ภาพยนตร์ที่ดาวน์โหลดไว้ยังอยู่',
     'vhDeleteItemBody': 'ลบออกจากเครื่องไหม? ดาวน์โหลดใหม่ได้ภายหลัง',
+    'vhDataSaver': 'ประหยัดเน็ต',
+    'vhDataSaverHint': 'อัลบั้มแสดงภาพเบลอ แตะปุ่มดาวน์โหลดเฉพาะรายการที่ต้องการ',
+    'vhDataSaverWifi': 'บน Wi-Fi ด้วย',
+    'vhDataSaverWifiHint': 'ปิดไว้: บน Wi-Fi อัลบั้มโหลดตามปกติ',
+    'vhDataSaverOn': 'เปิดประหยัดเน็ตอยู่ — แตะเพื่อแสดงตามปกติ',
+    'vhDataSaverOff': 'เปิดประหยัดเน็ต',
     'close': 'ปิด',
     'audioTrack': 'แทร็กเสียง',
     'subtitle': 'คำบรรยาย',
