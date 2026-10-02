@@ -73,6 +73,7 @@ class World:
         self.media = {}                  # message_id -> (file_unique_id, size)
         self.gone = set()                # message ids that no longer exist
         self.puts = []
+        self.short = {}                  # message_id -> bytes actually delivered
 
 
 W = World()
@@ -100,6 +101,7 @@ class Client:
 
     def download_media(self, msg, file_name):
         size = msg.document.file_size if msg.document else 1000 + msg.id
+        size = W.short.get(msg.id, size)
         with open(file_name, 'wb') as fh:
             fh.write(b'x' * size)
         return file_name
@@ -153,7 +155,7 @@ def vjob(n, kind, unique='u%d', size=None):
 
 
 def run(first, rest, env=None, start_flood=None, flood=None, error=None,
-        media=None, gone=None):
+        media=None, gone=None, short=None):
     """One runner invocation in a scratch directory. Answers (rc, edge).
 
     `env` entries set to None are REMOVED for the run, which is how the
@@ -166,6 +168,7 @@ def run(first, rest, env=None, start_flood=None, flood=None, error=None,
     W.error_on_message = error or {}
     W.media = media or {}
     W.gone = set(gone or ())
+    W.short = dict(short or {})
     tmp = tempfile.mkdtemp(prefix='ingest-test-')
     ingest.JOB_FILE = os.path.join(tmp, 'ingest.json')
     ingest.REPORTED = os.path.join(tmp, 'ingest.reported')
@@ -309,6 +312,27 @@ rc, edge = run(vjob(15, 'verify'), [], env={'TG_BOT_TOKEN': None})
 check('missing credentials on a check are reported through vault_done',
       any(not c['ok'] and 'credentials' in c['note'] for c in edge.ops('vault_done'))
       and not edge.ops('done'))
+
+# ── A SHORT DOWNLOAD IS NEVER UPLOADED (2026-09-29) ─────────────────────
+#
+# Telegram's GetFile timed out mid-file and the client handed back the first
+# 17 MiB of a 70 MB film; the runner printed a note, uploaded it and said ok.
+rc, edge = run(job(1), [job(2)], media={1: ('x', 69870661), 2: ('y', 1002)},
+               short={1: 17825792})
+d = {c['job_id']: c for c in edge.ops('done')}
+check('a download that stopped short is reported as a failure',
+      d.get('job-1', {}).get('ok') is False and 'stopped at 17825792 of 69870661' in d['job-1'].get('note', ''))
+check('and is not uploaded', 'https://r2.invalid/put/1' not in W.puts)
+check('and the queue carries on', d.get('job-2', {}).get('ok') is True)
+# Telegram's own size wins over what the job was queued with.
+j = job(3); j['bytes'] = 0
+rc, edge = run(j, [], media={3: ('z', 4114697)}, short={3: 3145728})
+check('Telegram\'s size is checked even when the job has none',
+      (edge.ops('done') or [{}])[0].get('ok') is False)
+# A restore is held to the same rule.
+rc, edge = run(vjob(16, 'restore'), [], media={16: ('u16', 5016)}, short={16: 4096})
+c = (edge.ops('vault_done') or [{}])[0]
+check('a short restore is not uploaded either', c.get('ok') is False and not W.puts)
 
 print()
 if failures:

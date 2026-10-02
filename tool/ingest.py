@@ -254,6 +254,21 @@ def judge_copy(msg, job):
     return 'changed', 'cannot tell it is the same file'
 
 
+def short_download(msg, job, size):
+    """Why a download is not the whole file, or None when it is.
+
+    Telegram's own size for the file in the message is the authority; the
+    size the job was queued with is the fallback. Both were right on the day
+    the downloads came back short — what was wrong was ignoring them.
+    """
+    media = _media_of(msg) if msg is not None else None
+    want = int(getattr(media, 'file_size', 0) or 0) or int(job.get('bytes') or 0)
+    if want and size != want:
+        return ('download stopped at %d of %d bytes (Telegram timed out?) '
+                '- will be tried again' % (size, want))
+    return None
+
+
 def vault_one(app, job, flood_type):
     """A verify or a restore, reported through vault_done."""
     chat_id = job.get('tg_chat_id')
@@ -282,6 +297,11 @@ def vault_one(app, job, flood_type):
             return
         size = os.path.getsize(target)
         print('downloaded %d bytes' % size)
+        short = short_download(msg, job, size)
+        if short:
+            vault_report(job, False, note=short)
+            print('failed: ' + short)
+            return
         put = put_to_r2(target, job['put_url'])
         print('restored %d bytes' % put)
         vault_report(job, True, note='restored', size=put)
@@ -400,14 +420,18 @@ def fetch_one(app, job, flood_type):
             return
         print('downloaded %d bytes' % size)
 
-        # WHAT TELEGRAM SAID VERSUS WHAT ARRIVED. A mismatch is not fatal —
-        # the bucket is the authority and the real size is reported below —
-        # but it is worth printing, because a short download that uploaded
-        # cleanly would otherwise become a truncated film nobody noticed
-        # until somebody watched the end of it.
-        claimed = job.get('bytes') or 0
-        if claimed and abs(claimed - size) > 0:
-            print('note: Telegram said %d bytes, got %d' % (claimed, size))
+        # A SHORT DOWNLOAD IS A FAILED DOWNLOAD. This used to print a note
+        # and upload anyway, on the theory that the bucket is the authority.
+        # On 2026-09-29 Telegram's GetFile timed out twice mid-file, the
+        # client gave back what it had, and two films went into R2 as their
+        # first 17 MiB of 70 MB and 3 MiB of 4 MB — reported "ok", approved,
+        # live, and unplayable (no moov atom; the encoder found it three days
+        # later). Now it is reported as a failure, which is retried.
+        short = short_download(msg, job, size)
+        if short:
+            report(job, False, short)
+            print('failed: ' + short)
+            return
 
         put = put_to_r2(target, job['put_url'])
         print('uploaded %d bytes' % put)
