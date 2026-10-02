@@ -727,6 +727,10 @@ it.
 | `not_found` from playback | function **Logs** tab - v3 writes the real reason there |
 | Poster missing | `backfill-dimensions` failures list, or `catalogue_health` |
 | Album reshuffles itself | migration 009 not applied |
+| "Not fully downloaded, plays up to …" | a preallocated, unfinished download (zeros after the cut). Expected; the player stops before the zeros since 1.64.43 |
+| "Hardware decoder stopped working" | a damaged file left MediaCodec stuck; only an app restart frees it. Videos play in software meanwhile |
+| "The player stopped responding on this file" | libmpv did not answer for 4 s (`MpvLink`); Retry or the next video starts a fresh engine. Diagnostics → playback log has `engine stuck on …` |
+| Category row missing on the All tab | the category has no published title, or `categories.is_visible` is false (migration 034) |
 | Upload fails in R2 | **VPN** |
 
 Edge function logs are kept **one day** on the free tier. Copy anything
