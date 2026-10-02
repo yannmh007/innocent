@@ -2533,6 +2533,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                 // Phase 45 (audit): PiP icon is in the TOP bar (MX V3 parity).
                 onEnterPip: () => _enterPip(context),
                 onQuality: () => _showQualitySheet(context),
+                activeUri:
+                    ref.read(playerControllerProvider.notifier).activeUri,
                 fmtTimer: _fmtTimerBadge,
                 hasMultipleAudioTracks: state.audioTracks.length > 1,
                 hasMultipleSubtitleTracks: state.subtitleTracks.length > 1,
@@ -3100,6 +3102,9 @@ class _TopBar extends StatelessWidget {
   /// The Quality menu. Drawn only while [StreamRenewal.quality] has a menu
   /// for what is playing — a catalogue film with streaming copies.
   final VoidCallback? onQuality;
+
+  /// What is playing, so a menu left over from another film is not shown.
+  final String? activeUri;
   final String Function(Duration) fmtTimer;
   /// Phase 44: MX Player V3 parity — small dot on the audio/subtitle
   /// icons when the file actually has multiple of that kind of track, so
@@ -3128,6 +3133,7 @@ class _TopBar extends StatelessWidget {
     required this.onMore,
     required this.onEnterPip,
     this.onQuality,
+    this.activeUri,
     required this.fmtTimer,
     this.hasMultipleAudioTracks = false,
     this.hasMultipleSubtitleTracks = false,
@@ -3298,7 +3304,9 @@ class _TopBar extends StatelessWidget {
               ValueListenableBuilder<QualityMenu?>(
                 valueListenable: StreamRenewal.quality,
                 builder: (context, menu, _) {
-                  if (menu == null || menu.options.isEmpty) {
+                  if (menu == null ||
+                      menu.options.isEmpty ||
+                      (activeUri != null && menu.uri != activeUri)) {
                     return const SizedBox.shrink();
                   }
                   final chosen = menu.options
