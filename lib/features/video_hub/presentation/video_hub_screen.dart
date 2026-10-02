@@ -319,7 +319,8 @@ class _VideoHubScreenState extends ConsumerState<VideoHubScreen>
                 final row = rows[index];
                 return ContentRowView(
                   row: row,
-                  title: rowTitle(s, row),
+                  title: rowTitle(s, row,
+                      styles: ref.watch(categoryStylesProvider)),
                   onItemTap: (item) => _openDetail(context, item),
                   onSeeAll: _openSeeAll,
                   isPremiumFor: _isPremiumFor,
@@ -429,6 +430,13 @@ class _VideoHubScreenState extends ConsumerState<VideoHubScreen>
   // ---- navigation ----------------------------------------------------------
 
   void _openSeeAll(ContentRow row, String resolvedTitle) {
+    // A CATEGORY ROW opens the category's own tab, with its filters and
+    // paging — the same list the tab bar leads to, not a second copy of it.
+    final cat = row.categoryId;
+    if (cat != null) {
+      ref.read(selectedCategoryProvider.notifier).state = CategoryRef.fromId(cat);
+      return;
+    }
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => ContentListScreen(
@@ -449,24 +457,9 @@ class _VideoHubScreenState extends ConsumerState<VideoHubScreen>
     );
   }
 
-  /// Row headings are carried as KEYS, resolved here, so a row shipped from a
-  /// backend is still shown in the user's language.
-  static String rowTitle(AppStrings s, ContentRow row) {
-    switch (row.key) {
-      case kRowTrending:
-        return s.vhRowTrending;
-      case kRowNewReleases:
-        return s.vhRowNewReleases;
-      case kRowMovies:
-        return s.vhCategoryMovies;
-      case kRowSeries:
-        return s.vhCategorySeries;
-      case kRowReels:
-        return s.vhCategoryReels;
-      default:
-        return row.fallbackTitle;
-    }
-  }
+  static String rowTitle(AppStrings s, ContentRow row,
+          {CategoryCatalogue styles = CategoryCatalogue.empty}) =>
+      contentRowTitle(s, row, styles: styles);
 }
 
 /// Tap target that looks like a field but opens the search screen.
@@ -567,5 +560,40 @@ class _AccountButton extends ConsumerWidget {
         ),
       ),
     );
+  }
+}
+
+/// Row headings are carried as KEYS, resolved here, so a row shipped from a
+/// backend is still shown in the user's language.
+///
+/// A category row is titled with the category's CURRENT name from
+/// `public.categories` — the same one its tab shows — so renaming "Movies"
+/// in the console renames the row too, in either language.
+String contentRowTitle(AppStrings s, ContentRow row,
+    {CategoryCatalogue styles = CategoryCatalogue.empty}) {
+  final lang = s.locale.languageCode;
+  final cat = row.categoryId;
+  if (cat != null) {
+    final live = styles.labelForId(cat, lang);
+    if (live != null) return live;
+    final mm = row.fallbackTitleMm?.trim();
+    if (lang == 'my' && mm != null && mm.isNotEmpty) return mm;
+    return row.fallbackTitle;
+  }
+  switch (row.key) {
+    case kRowTrending:
+      return s.vhRowTrending;
+    case kRowNewReleases:
+      return s.vhRowNewReleases;
+    case kRowMovies:
+      return s.vhCategoryMovies;
+    case kRowSeries:
+      return s.vhCategorySeries;
+    case kRowReels:
+      return s.vhCategoryReels;
+    default:
+      final mm = row.fallbackTitleMm?.trim();
+      if (lang == 'my' && mm != null && mm.isNotEmpty) return mm;
+      return row.fallbackTitle;
   }
 }

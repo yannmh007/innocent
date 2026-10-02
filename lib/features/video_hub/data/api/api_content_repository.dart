@@ -310,6 +310,9 @@ class ApiContentRepository implements ContentRepository {
         items: items,
         defaultSort: _sortFrom(entry['default_sort'] as String?),
         ranked: entry['ranked'] == true,
+        categoryId: entry['category'] is String ? entry['category'] as String : null,
+        fallbackTitleMm:
+            entry['title_mm'] is String ? entry['title_mm'] as String : null,
       ));
     }
     return rows;

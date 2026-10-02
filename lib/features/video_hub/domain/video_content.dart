@@ -405,12 +405,22 @@ class ContentRow {
   /// ordering (trending); false where the order is incidental.
   final bool ranked;
 
+  /// Set for a row that IS one category ("Movies", "Series", …). Its heading
+  /// is that category's current name — renamed in the console, renamed here
+  /// — and See all opens the category itself.
+  final String? categoryId;
+
+  /// The server's Burmese heading, for a row the build has no string for.
+  final String? fallbackTitleMm;
+
   const ContentRow({
     required this.key,
     required this.fallbackTitle,
     required this.items,
     this.defaultSort = ContentSort.newest,
     this.ranked = false,
+    this.categoryId,
+    this.fallbackTitleMm,
   });
 
   bool get isEmpty => items.isEmpty;
