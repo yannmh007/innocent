@@ -536,11 +536,248 @@ async function say(chatId: number | string, text: string): Promise<void> {
     await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: chatId, text: text.slice(0, 900) }),
+      body: JSON.stringify({ chat_id: chatId, text: text.slice(0, 3800) }),
     });
   } catch {
     // Nothing to do about it and nothing that should fail because of it.
   }
+}
+
+// ── bot commands (migration 033) ────────────────────────────────────────────
+//
+// THE FOLDER IS CHOSEN IN THE CHAT, NOT GUESSED FROM A CAPTION. A forwarded
+// album's caption cannot be edited, and a channel's caption is a Burmese
+// sentence or a hashtag far more often than a folder name — so four albums of
+// one title went to four folders, or to `inbox`. `/folder <name>` opens a
+// session: every file until `/done` (or three hours with no file) goes there,
+// whatever its caption says. The same name again continues the folder, which
+// is how more is added to a title later.
+//
+// The replies are Burmese because the operator is; folder names, numbers and
+// the commands themselves stay as typed.
+
+const BOT_COMMANDS: Array<{ command: string; description: string }> = [
+  { command: 'folder', description: 'Folder ရွေးမယ် — /folder name' },
+  { command: 'done', description: 'Folder ပိတ်မယ်၊ ဘယ်နှစ်ခု ပို့ပြီးလဲ ပြမယ်' },
+  { command: 'folders', description: 'မကြာသေးခင်က folder တွေ' },
+  { command: 'info', description: 'Folder တစ်ခုရဲ့ အခြေအနေ — /info name' },
+  { command: 'status', description: 'Queue နဲ့ runner အခြေအနေ' },
+  { command: 'retry', description: 'မအောင်မြင်တာတွေ ပြန်ကြိုးစား — /retry name' },
+  { command: 'help', description: 'Command အားလုံး' },
+];
+
+const HELP_TEXT = [
+  'Innocent bot — command များ',
+  '',
+  '/folder solo-girl-collection',
+  '   နောက်ပို့/forward လုပ်တဲ့ ဖိုင်အားလုံး ဒီ folder ထဲ ရောက်မယ်။',
+  '   Caption ဘာပဲရေးထားထား အရေးမကြီးတော့ဘူး။',
+  '   နာမည်ရှိပြီးသားဆို ဆက်ထည့်တာ ဖြစ်မယ် (နောက်ပိုင်း ထပ်ထည့်ချင်ရင်လည်း ဒါပဲ)။',
+  '/folder        — အခု ဘယ် folder ဖွင့်ထားလဲ',
+  '/done          — folder ပိတ်၊ ဘယ်နှစ်ခု ထည့်ခဲ့လဲ ပြ',
+  '/folders       — မကြာသေးခင်က folder ၁၀ ခု (ဆက်ထည့်ဖို့ နာမည်ရွေးရန်)',
+  '/info name     — folder တစ်ခုမှာ ဖိုင်ဘယ်နှစ်ခု၊ ဘယ် title၊ ဘာကျန်လဲ',
+  '/status        — queue ထဲ ဘယ်နှစ်ခု စောင့်နေလဲ၊ runner နောက်ဆုံး ဘယ်တုန်းက လာလဲ',
+  '/retry name    — အဲ့ folder ထဲက မအောင်မြင်တဲ့ ဖိုင်တွေ ပြန်ကြိုးစား',
+  '',
+  'Folder နာမည်: အင်္ဂလိပ် စာလုံး၊ ဂဏန်း၊ - ပဲ။ Space ရေးရင် - ဖြစ်သွားမယ်။',
+  'ဖိုင် မလာတာ ၃ နာရီကြာရင် folder ကို သူ့ဘာသာ ပိတ်တယ်။',
+].join('\n');
+
+function ago(iso: unknown): string {
+  const t = Date.parse(String(iso ?? ''));
+  if (!t) return '—';
+  const m = Math.max(0, Math.round((Date.now() - t) / 60000));
+  if (m < 1) return 'ခုနက';
+  if (m < 60) return `${m} မိနစ်က`;
+  const h = Math.round(m / 60);
+  if (h < 48) return `${h} နာရီက`;
+  return `${Math.round(h / 24)} ရက်က`;
+}
+
+function folderWords(st: Record<string, unknown>): string {
+  const n = (k: string) => Number(st[k] ?? 0) || 0;
+  const title = st.title as Record<string, unknown> | null;
+  const lines = [
+    `📁 ${String(st.folder ?? '')}`,
+    `Telegram ကပို့ထားတာ ${n('files')} ခု · R2 ထဲ ${n('in_r2')} ခု`,
+  ];
+  if (n('files')) {
+    lines.push(`  ပြီး ${n('done')} · စောင့်ဆဲ ${n('queued')} · မအောင်မြင် ${n('failed')}`
+      + (st.last_at ? ` · နောက်ဆုံး ${ago(st.last_at)}` : ''));
+  }
+  if (title) {
+    const where = title.published === true ? 'app ထဲမှာ ✅'
+      : title.review_state === 'ready' ? 'review စောင့်နေ' : 'draft';
+    lines.push(`Title: “${String(title.title ?? '')}” (${where})`);
+  } else {
+    lines.push('Title: မလုပ်ရသေး');
+  }
+  if (n('unattached')) {
+    lines.push(`⚠️ Title ထဲ မထည့်ရသေးတာ ${n('unattached')} ခု — Console → Telegram မှာ `
+      + (title ? `“Add to ${String(title.title ?? '')}”` : '“New title from this”') + ' နှိပ်ပါ');
+  }
+  if (n('failed')) lines.push(`/retry ${String(st.folder ?? '')} နဲ့ ပြန်ကြိုးစားလို့ရ`);
+  return lines.join('\n');
+}
+
+const NAME_WHY: Record<string, string> = {
+  empty: 'Folder နာမည် ထည့်ပါ — ဥပမာ /folder solo-girl-collection\n'
+    + '(မြန်မာစာလုံး မရပါ — အင်္ဂလိပ် စာလုံး၊ ဂဏန်း၊ - ပဲ)',
+  too_long: 'နာမည် ရှည်လွန်းတယ် (စာလုံး ၆၀ အထိ)',
+  bad_name: 'အင်္ဂလိပ် စာလုံး အသေး၊ ဂဏန်း၊ - ပဲ သုံးလို့ရတယ်',
+  reserved: 'ဒီနာမည်ကို system က သုံးထားလို့ မရပါ — တခြားနာမည် ပေးပါ',
+};
+
+async function botCommand(chatId: string, raw: string, req: Request): Promise<Response> {
+  const [head, ...rest] = raw.split(/\s+/);
+  const cmd = head.slice(1).split('@')[0].toLowerCase();
+  const arg = rest.join(' ').trim();
+  const chat = Number(chatId);
+  const done = (what: string) => json({ ok: true, command: what }, 200, req);
+
+  try {
+    if (cmd === 'start' || cmd === 'help') {
+      // The "/" menu in Telegram. Cheap, idempotent, and here rather than in
+      // a deploy step because the bot token lives only in this function.
+      if (BOT_TOKEN) {
+        try {
+          await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/setMyCommands`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ commands: BOT_COMMANDS }),
+          });
+        } catch { /* the menu is a convenience */ }
+      }
+      await say(chatId, HELP_TEXT);
+      return done(cmd);
+    }
+
+    if (cmd === 'folder' || cmd === 'f') {
+      if (!arg) {
+        const cur = await rpc('bot_folder_current', { p_chat: chat }) as Record<string, unknown>;
+        if (cur?.folder) {
+          const st = await rpc('bot_folder_stats', { p_folder: cur.folder }) as Record<string, unknown>;
+          await say(chatId, `အခု ဖွင့်ထားတာ: ${String(cur.folder)} (${ago(cur.since)} ကစ)\n\n`
+            + folderWords(st) + '\n\nပိတ်ချင်ရင် /done');
+        } else {
+          await say(chatId, 'Folder မဖွင့်ထားပါ — ဖိုင်တွေ caption အတိုင်း သွားနေတယ်။\n'
+            + 'ဖွင့်ရန်: /folder name');
+        }
+        return done('folder');
+      }
+      const name = slugify(arg);
+      const r = await rpc('bot_folder_open', { p_chat: chat, p_folder: name }) as Record<string, unknown>;
+      if (r?.error) {
+        await say(chatId, NAME_WHY[String(r.error)] ?? `မရပါ: ${String(r.error)}`);
+        return done('folder');
+      }
+      const st = (r.stats ?? {}) as Record<string, unknown>;
+      const fresh = !(Number(st.files ?? 0) || Number(st.in_r2 ?? 0) || st.title);
+      const lines = [
+        fresh ? `✅ Folder အသစ်: ${name}` : `✅ ${name} ကို ဆက်ထည့်ပါမယ်`,
+        '',
+        'အခု ဖိုင်/album တွေ ပို့ (forward) ပါ။ အားလုံး ဒီ folder ထဲ ရောက်ပါမယ်။',
+        'ပြီးရင် /done',
+      ];
+      if (name !== arg) lines.push('', `(“${arg}” ကို “${name}” အဖြစ် ပြောင်းထားတယ်)`);
+      if (r.previous) lines.push('', `(${String(r.previous)} ကို ပိတ်လိုက်ပြီ)`);
+      if (!fresh) lines.push('', folderWords(st));
+      await say(chatId, lines.join('\n'));
+      return done('folder');
+    }
+
+    if (cmd === 'done' || cmd === 'stop' || cmd === 'end') {
+      const r = await rpc('bot_folder_close', { p_chat: chat }) as Record<string, unknown>;
+      if (!r?.folder) {
+        await say(chatId, 'ဖွင့်ထားတဲ့ folder မရှိပါ။');
+        return done('done');
+      }
+      const st = (r.stats ?? {}) as Record<string, unknown>;
+      const title = st.title as Record<string, unknown> | null;
+      await say(chatId, [
+        `🔒 ${String(r.folder)} ပိတ်ပြီ — ဒီတစ်ခေါက် ${Number(r.added ?? 0)} ခု ထည့်ခဲ့တယ်`,
+        '',
+        folderWords(st),
+        '',
+        'နောက်တစ်ဆင့်: runner က R2 ထဲ ရွှေ့ပြီးရင် Console → Telegram မှာ '
+          + (title ? `“Add to ${String(title.title ?? '')}”` : '“New title from this”') + ' နှိပ်ပါ။',
+        `နောက်ပိုင်း ထပ်ထည့်ချင်ရင်: /folder ${String(r.folder)}`,
+      ].join('\n'));
+      return done('done');
+    }
+
+    if (cmd === 'folders') {
+      const rows = await rpc('bot_folders_recent', { p_limit: 10 }) as Array<Record<string, unknown>>;
+      if (!rows?.length) {
+        await say(chatId, 'Folder မရှိသေးပါ။');
+        return done('folders');
+      }
+      const lines = ['မကြာသေးခင်က folder များ:', ''];
+      for (const f of rows) {
+        const flags = [
+          Number(f.queued) ? `စောင့်ဆဲ ${f.queued}` : '',
+          Number(f.unattached) ? `title မထည့်ရ ${f.unattached}` : '',
+          Number(f.failed) ? `မအောင်မြင် ${f.failed}` : '',
+        ].filter(Boolean).join(', ');
+        lines.push(`📁 ${String(f.folder)} — ${Number(f.files)} ခု · ${ago(f.last_at)}`
+          + (f.title ? `\n   “${String(f.title)}”` : '')
+          + (flags ? `\n   ${flags}` : ''));
+      }
+      lines.push('', 'ဆက်ထည့်ရန်: /folder <name>   အသေးစိတ်: /info <name>');
+      await say(chatId, lines.join('\n'));
+      return done('folders');
+    }
+
+    if (cmd === 'info') {
+      let name = slugify(arg);
+      if (!name) {
+        const cur = await rpc('bot_folder_current', { p_chat: chat }) as Record<string, unknown>;
+        name = String(cur?.folder ?? '');
+      }
+      if (!name) {
+        await say(chatId, 'ဘယ် folder လဲ — /info name');
+        return done('info');
+      }
+      const st = await rpc('bot_folder_stats', { p_folder: name }) as Record<string, unknown>;
+      await say(chatId, folderWords(st));
+      return done('info');
+    }
+
+    if (cmd === 'status') {
+      const q = await rpc('bot_queue_status', {}) as Record<string, unknown>;
+      const cur = await rpc('bot_folder_current', { p_chat: chat }) as Record<string, unknown>;
+      await say(chatId, [
+        `Queue: စောင့်ဆဲ ${Number(q.queued ?? 0)} · ရွှေ့နေဆဲ ${Number(q.running ?? 0)}`
+          + (Number(q.waiting_mb) ? ` (${Number(q.waiting_mb)} MB)` : ''),
+        `Title မထည့်ရသေး: ${Number(q.unattached ?? 0)} · မအောင်မြင်: ${Number(q.failed ?? 0)}`,
+        `Archive channel သို့ ကူးဖို့ကျန်: ${Number(q.archive_queued ?? 0)}`,
+        `Runner နောက်ဆုံး: ${ago(q.runner_at)} (ပုံမှန် ၁၅–၂၀ မိနစ်တစ်ခါ)`,
+        `ဖွင့်ထားတဲ့ folder: ${String(cur?.folder ?? 'မရှိ')}`,
+      ].join('\n'));
+      return done('status');
+    }
+
+    if (cmd === 'retry') {
+      const name = slugify(arg);
+      if (!name) {
+        await say(chatId, 'ဘယ် folder လဲ — /retry name');
+        return done('retry');
+      }
+      const n = Number(await rpc('bot_retry_folder', { p_folder: name }) ?? 0);
+      await say(chatId, n
+        ? `🔁 ${name} ထဲက ${n} ခု queue ထဲ ပြန်ထည့်ပြီ — နောက် runner run မှာ ယူသွားမယ်။`
+        : `${name} ထဲမှာ ပြန်ကြိုးစားစရာ မရှိပါ။`);
+      return done('retry');
+    }
+  } catch (e) {
+    console.log(`bot command ${cmd}: ${String(e).slice(0, 200)}`);
+    await say(chatId, 'ခဏ မရဖြစ်နေတယ် — တစ်မိနစ်နေ ပြန်စမ်းပါ။');
+    return done('error');
+  }
+
+  await say(chatId, 'ဒီ command ကို မသိပါ — /help');
+  return done('unknown');
 }
 
 /// The file out of a Telegram message, whichever way it was sent.
@@ -708,6 +945,13 @@ Deno.serve(async (req: Request) => {
       return json({ ok: true, skipped: 'not_an_operator_chat' }, 200, req);
     }
 
+    // A command. Not from an edit: editing an old `/folder x` must not
+    // quietly switch where the next film goes.
+    const said = String(msg.text ?? '').trim();
+    if (said.startsWith('/') && !body.edited_message) {
+      return await botCommand(chatId, said, req);
+    }
+
     const file = fileOf(msg);
     if (!file) {
       await say(chatId, 'Send a film as a FILE (document) and it will be '
@@ -740,6 +984,18 @@ Deno.serve(async (req: Request) => {
     // when it does. See migration 023 for why that needs a lock.
     const mediaGroup = String(msg.media_group_id ?? '');
 
+    // THE FOLDER THE OPERATOR CHOSE WITH /folder, if one is open (033). It
+    // wins over the caption for every file of every album until /done. A
+    // failure to read it is not a failure to queue: the file goes by its
+    // caption, as it did before 033.
+    let session: Record<string, unknown> = {};
+    try {
+      session = (await rpc('bot_folder_current', { p_chat: Number(chatId) || 0 }) ?? {}) as Record<string, unknown>;
+    } catch (e) {
+      console.log('bot_folder_current: ' + String(e).slice(0, 160));
+    }
+    const chosen = String(session.folder ?? '');
+
     let queued: Record<string, unknown>;
     try {
       const rows = await rpc('enqueue_ingest', {
@@ -755,7 +1011,7 @@ Deno.serve(async (req: Request) => {
         p_height: file.height,
         p_kind: file.kind,
         p_bucket: bucketFor(file.kind),
-        p_folder: slugify(caption),
+        p_folder: chosen || slugify(caption),
         p_key_tail: keyTail(file.kind, file.name),
         p_media_group: mediaGroup,
         // THE WHOLE CAPTION, not just the line the folder came from. The
@@ -781,6 +1037,13 @@ Deno.serve(async (req: Request) => {
 
     const mb = file.bytes ? Math.round(file.bytes / 1048576) : 0;
     const moved = Number(queued.moved ?? 0) || 0;
+    // INSIDE A /folder SESSION, ONE LINE. Four albums of ten is forty
+    // replies, and the paragraph below forty times buries the one line that
+    // matters; /done gives the totals and the next step.
+    if (chosen) {
+      await say(chatId, `✓ ${file.name}${mb ? ` (${mb} MB)` : ''} → ${String(queued.folder ?? chosen)}`);
+      return json({ ok: true, queued: true }, 200, req);
+    }
     await say(chatId,
       `Queued: ${file.name}${mb ? ` (${mb} MB)` : ''}\n`
       // THE FOLDER IT ACTUALLY WENT IN, which is not always the one this
@@ -788,6 +1051,13 @@ Deno.serve(async (req: Request) => {
       // three files of a four-file album it said `inbox`, which is the one
       // thing the operator needed to not be true.
       + `Folder: ${String(queued.folder ?? 'inbox')}\n`
+      // THE SESSION ENDED BY ITSELF, and this file went by its caption. Said
+      // once, on the file it happened to, so the operator is not surprised
+      // to find it somewhere else.
+      + (session.expired
+        ? `(/folder ${String(session.expired)} ကို ၃ နာရီ ဖိုင်မလာလို့ ပိတ်ထားပြီ — `
+          + `ဆက်ထည့်ချင်ရင် /folder ${String(session.expired)} ပြန်ရိုက်ပါ)\n`
+        : '')
       + (moved ? `Moved ${moved} more from this album into it.\n` : '')
       // NOT "within five minutes", which is what this said and what the
       // cron expression claims. GitHub runs a free public repository's

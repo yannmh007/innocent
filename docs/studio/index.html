@@ -3422,9 +3422,34 @@ function drawFolder(folder, items) {
   // operator typed in Telegram. Retyping a Burmese synopsis into a phone,
   // from memory or by scrolling back through a chat, is the step that made
   // this whole path not worth using.
-  const fresh = el('button', { className: 'b p' }, text('New title from this'));
-  fresh.onclick = () => startTitleFromIngest(folder, caption, fresh);
-  row.append(fresh);
+  //
+  // UNLESS THE FOLDER ALREADY HAS ITS TITLE. `/folder <name>` in the bot is
+  // how more is added to a title later, and a title made from a folder is
+  // that folder's slug — so a second "New title" here could only be refused.
+  // The one thing these files can mean is "more of that title": one tap.
+  const owner = (ingestTitles || []).find((t) => t.slug === folder);
+  if (owner) {
+    const more = el('button', { className: 'b p' },
+      text('Add ' + ready.length + ' to “' + (owner.title || folder) + '”'));
+    more.onclick = async () => {
+      more.disabled = true;
+      try {
+        const res = await api(
+          { op: 'attach_folder', folder, title_id: owner.id }, INGEST_API);
+        say('ok', 'Added ' + res.attached + ' to “' + (owner.title || folder) + '”.'
+          + (owner.published ? ' It is live, so they are in the app now.' : ''));
+        await loadIngest();
+      } catch (e) {
+        say('bad', String(e.message || e));
+        more.disabled = false;
+      }
+    };
+    row.append(more);
+  } else {
+    const fresh = el('button', { className: 'b p' }, text('New title from this'));
+    fresh.onclick = () => startTitleFromIngest(folder, caption, fresh);
+    row.append(fresh);
+  }
 
   card.append(row);
   return card;

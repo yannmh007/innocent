@@ -244,6 +244,46 @@ follow it into the same folder whichever order they arrive in. Before
 2026-09-29 they did not, and three photos of a four-photo album went to
 `inbox` with nothing anywhere saying why.
 
+### Bot commands: choose the folder in the chat (migration 033)
+
+**A forwarded album's caption cannot be edited**, and a channel's caption is
+a Burmese sentence or a hashtag far more often than a folder name — so four
+albums of one title used to land in four folders, or in `inbox`. Name the
+folder first instead:
+
+```
+/folder solo-girl-collection      ← everything from now on goes here
+(forward the albums — any caption, any number)
+/done                             ← closes it, says how many, says what next
+```
+
+| Command | What it does |
+|---|---|
+| `/folder name` | open a folder; files go there whatever their caption says. The name is slugified (`Solo Girl` → `solo-girl`); Burmese alone is refused, not turned into `inbox`. A name that already has files **continues** it — that is how more is added to a title later |
+| `/folder` | which folder is open now, and what is in it |
+| `/done` | close it; how many this session added, and the next step in the console |
+| `/folders` | the ten most recent folders, with counts — to pick a name to continue |
+| `/info name` | files sent, in R2, waiting, failed, not yet in a title; which title owns the folder |
+| `/status` | queue, MB waiting, files in no title, archive copies left, when the runner last came by |
+| `/retry name` | every failed file of that folder back in the queue (the same rule as the console's retry) |
+| `/help` | all of this, and puts the commands in Telegram's `/` menu |
+
+* **A folder closes by itself after three hours with no file**, so a
+  forgotten `/done` cannot put tomorrow's film in today's folder. The next file
+  after the gap goes by its caption, and the bot says so.
+* Inside a session each file gets **one line** back (`✓ name (MB) → folder`)
+  instead of the paragraph, because four albums of ten is forty replies.
+* The caption is still kept: the console fills the description from it.
+* `inbox`, `apk`, `v`, `p`, `thumb(s)`, `backup`, `previews` are refused as
+  names — something else lives there.
+* **More for a title that already exists:** `/folder <its folder>`, forward,
+  `/done`. In Console → Telegram that folder's card then offers **Add N to
+  “title”** instead of *New title from this* (which could only be refused —
+  a title's folder is its slug). If the title is live, the files are in the
+  app as soon as they are added.
+
+`tool/sql/bot_folders_test.sql` is the database test (`BOT FOLDERS TEST PASSED`).
+
 **How long it takes.** `*/5` in the workflow is what GitHub accepts, not what
 it runs — a schedule on a free public repository fires when it gets to it,
 measured at fourteen to twenty minutes apart. A run now drains the WHOLE queue
