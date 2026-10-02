@@ -634,6 +634,41 @@ Deno.serve(async (req: Request) => {
 
   const op = String(body.op ?? '');
 
+  // ── previews_due / previews_set (migration 031) ─────────────────────────
+  //
+  // The data saver's frosted tiles. The runner asks which album items have no
+  // blurhash yet and is given a PUBLIC picture of each — it still holds no
+  // bucket credentials and is shown nothing private — then sends back one
+  // short string per item. A string that is not a plausible blurhash is
+  // refused here as well as by the column's check, so a broken runner cannot
+  // put a kilobyte into every album response.
+  if (op === 'previews_due' || op === 'previews_set') {
+    const given = (req.headers.get('Authorization') ?? '').replace(/^Bearer /i, '');
+    if (!sameSecret(given, RUNNER_SECRET)) return json({ error: 'no' }, 403, req);
+    if (op === 'previews_due') {
+      const limit = Math.max(1, Math.min(200, Number(body.limit ?? 40) || 40));
+      const rows = await rpc('previews_due', { p_limit: limit });
+      return json({ rows: Array.isArray(rows) ? rows : [] }, 200, req);
+    }
+    const items = Array.isArray(body.items) ? body.items : [];
+    let saved = 0;
+    let failed = 0;
+    for (const it of items.slice(0, 200) as Array<Record<string, unknown>>) {
+      const id = String(it.id ?? '');
+      if (!/^[0-9a-f-]{36}$/i.test(id)) continue;
+      const raw = it.preview == null ? '' : String(it.preview);
+      // The blurhash alphabet, and a length a 9x9 hash cannot exceed.
+      const ok = /^[0-9A-Za-z#$%*+,\-.:;=?@[\]^_{|}~]{6,100}$/.test(raw);
+      try {
+        await rpc('preview_set', { p_id: id, p_preview: ok ? raw : null });
+        if (ok) saved++; else failed++;
+      } catch {
+        failed++;
+      }
+    }
+    return json({ saved, failed }, 200, req);
+  }
+
   // ── claim ────────────────────────────────────────────────────────────────
   //
   // Answers `{}` when there is nothing to do, which is the common case.

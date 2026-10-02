@@ -70,6 +70,10 @@ CHECKS = [
      'minutes, Telegram answered FLOOD_WAIT, and seven good files had their '
      'three attempts spent in under a minute — and a wait reported as a '
      'failed attempt, which is how a slow afternoon marks a film as dead'),
+    ('previews_test.py', None,
+     'an album blurhash the app cannot read back: the runner encodes and the '
+     'app decodes with two ports of one algorithm, and a slip in either draws '
+     'every data-saver tile the wrong colour without an error anywhere'),
     ('unread_contract.py', None,
      'a repository method built, implemented twice and called by nothing — '
      'the same bug class as dead_settings one level up. getById was the only '

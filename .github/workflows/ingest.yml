@@ -178,3 +178,16 @@ jobs:
             -d '{"op":"purge"}' || echo 000)
           echo "bin: HTTP $code"
           python3 -c "import json;d=json.load(open('/tmp/purge.json'));print('bin: deleted',d.get('purged'),'failed',d.get('failed'));print('storage:',json.dumps(d.get('house',{})))" || true
+
+      # THE DATA SAVER'S FROSTED TILES (migration 031). A blurhash — about
+      # thirty characters — for each album item that has none, made from the
+      # item's PUBLIC picture; this runner still holds no bucket credentials.
+      # Usually there is nothing due and this is one request. Never fails the
+      # run: a tile with no frosting draws as a plain tile, which is how every
+      # album looked before.
+      - name: Album previews
+        if: always()
+        env:
+          SB_URL: ${{ secrets.SUPABASE_URL }}
+          RUNNER_SECRET: ${{ secrets.INGEST_SECRET }}
+        run: python3 tool/previews.py || echo "previews: skipped this tick"
