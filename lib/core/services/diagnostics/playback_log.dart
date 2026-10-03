@@ -50,7 +50,23 @@ class PlaybackLog {
 
   /// Record one event. Keep [message] short — this is read on a phone screen
   /// on top of a video.
+  static String? _lastMessage;
+  static int _lastRepeats = 0;
+
   static void add(String message) {
+    // THE SAME LINE AGAIN is folded into the one before it as `×N`. Forty
+    // lines is the whole trail, and on 2026-10-03 a flood of one decoder error
+    // filled all forty — the lines that would have said which file and why
+    // were pushed out by copies of one message. Not sent to the sink either:
+    // a repeat is not worth a disk write.
+    if (message == _lastMessage && _lines.isNotEmpty) {
+      _lastRepeats++;
+      _lines[_lines.length - 1] =
+          '${_stamp()}  $message ×${_lastRepeats + 1}';
+      return;
+    }
+    _lastMessage = message;
+    _lastRepeats = 0;
     _lines.add('${_stamp()}  $message');
     if (_lines.length > _cap) {
       _lines.removeRange(0, _lines.length - _cap);
@@ -73,6 +89,8 @@ class PlaybackLog {
 
   static void clear() {
     _lines.clear();
+    _lastMessage = null;
+    _lastRepeats = 0;
     _epoch = null;
   }
 }

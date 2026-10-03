@@ -22,11 +22,12 @@ import 'dart:typed_data';
 /// The fix is to never play into the zeros: find where the data ends, stop
 /// playback there, and say so — the way MX Player treats a partial file.
 ///
-/// THE TEST IS DELIBERATELY NARROW. A finished video never ends in 64 KiB of
-/// zeros: MKV ends in cues, tags or cluster data, MP4 in its index or in
+/// THE TEST IS DELIBERATELY NARROW. A finished video never holds 64 KiB of
+/// zeros in a row: MKV is cues, tags and clusters, MP4 its index and
 /// compressed samples, and compressed data is never a long run of zero bytes.
-/// So "the last block is all zeros" is a reliable sign of a preallocated,
-/// unfinished file, and anything else is treated as complete. A file that is
+/// So "a 64 KiB block that is all zeros" is a reliable sign of a hole a
+/// download never filled — at the end, or, from a manager that downloads in
+/// parallel segments, in the middle. Anything else is treated as complete. A file that is
 /// simply SHORT (a download that never preallocated) needs none of this:
 /// libmpv reaches a real end of file and stops cleanly.
 class IncompleteFile {
@@ -76,6 +77,9 @@ class IncompleteFileProbe {
   /// reads about a megabyte of a two-gigabyte file.
   static const int block = 64 * 1024;
 
+  /// Blocks sampled across the file when looking for a hole.
+  static const int samples = 96;
+
   /// Smaller files are not worth the reads; nobody preallocates a clip.
   static const int minSize = 8 * 1024 * 1024;
 
@@ -101,16 +105,37 @@ class IncompleteFileProbe {
         return isAllZero(bytes);
       }
 
-      // Complete files stop here, after one 64 KiB read.
-      if (!await zeroAt(blocks - 1)) return null;
       // A file that is zeros from the very start is not a film at all; leave
       // it to libmpv to say so.
       if (await zeroAt(0)) return null;
 
+      // SAMPLED ACROSS THE WHOLE FILE, not only at its end. A download
+      // manager that fetches in parallel segments leaves an unfinished file
+      // with zero-filled HOLES in the middle and real data after them — the
+      // end can look complete while 1:10:00 to 1:25:00 was never fetched.
+      // Diagnostics from 2026-10-03 show exactly that: a flood of audio
+      // decode errors part-way through a file the end-only check had passed.
+      // [samples] blocks spread evenly (the first and last included) find
+      // any hole wider than the spacing — on a 1.6 GB film about 17 MB, far
+      // smaller than the segments those managers use — for ~6 MB read.
+      final n = blocks < samples ? blocks : samples;
+      var prevData = 0;
+      int? firstZero;
+      for (var i = 1; i < n; i++) {
+        final idx = (i * (blocks - 1)) ~/ (n - 1);
+        if (idx <= prevData) continue;
+        if (await zeroAt(idx)) {
+          firstZero = idx;
+          break;
+        }
+        prevData = idx;
+      }
+      if (firstZero == null) return null;
+
       // Binary search for the boundary. Invariant: block [lo] holds data,
       // block [hi] is zeros.
-      var lo = 0;
-      var hi = blocks - 1;
+      var lo = prevData;
+      var hi = firstZero;
       while (hi - lo > 1) {
         final mid = lo + (hi - lo) ~/ 2;
         if (await zeroAt(mid)) {

@@ -476,6 +476,7 @@ class AppStrings {
   String get playerNoticeHwUnavailable => _s('playerNoticeHwUnavailable');
   String get playerNoticeEngineRestarted => _s('playerNoticeEngineRestarted');
   String get playerEngineStuck => _s('playerEngineStuck');
+  String get playerDamagedStretch => _s('playerDamagedStretch');
   String get close => _s('close');
   String get audioTrack => _s('audioTrack');
   String get subtitle => _s('subtitle');
@@ -1927,6 +1928,7 @@ class AppStrings {
     'playerNoticeSoftware': 'The hardware decoder failed on this file. Playing with the software (SW) decoder.',
     'playerNoticeHwUnavailable': 'The hardware decoder stopped working after a damaged file. Videos play in software for now (slower, warmer). Close and reopen Innocent to bring it back.',
     'playerNoticeEngineRestarted': 'The player was restarted after the last video stopped responding.',
+    'playerDamagedStretch': 'This part of the file is damaged or was never fully downloaded, so playback was stopped here to keep the app responsive. Tap Retry, or go back.',
     'playerEngineStuck': 'The player stopped responding on this file. It may be damaged or not fully downloaded. Tap Retry, or go back and open another video.',
     'close': 'Close',
     'audioTrack': 'Audio track',
@@ -3198,6 +3200,7 @@ class AppStrings {
     'playerNoticeSoftware': 'ဒီဖိုင်မှာ Hardware decoder အလုပ်မလုပ်လို့ Software (SW) decoder နဲ့ ဆက်ဖွင့်ထားပါတယ်။',
     'playerNoticeHwUnavailable': 'ပျက်နေတဲ့ ဖိုင်ကြောင့် Hardware decoder ရပ်သွားပါတယ်။ ခဏ Software နဲ့ ဖွင့်ထားပါတယ် (နှေးပြီး ပူနိုင်ပါတယ်)။ Innocent ကို ပိတ်ပြီး ပြန်ဖွင့်ရင် ပြန်ကောင်းပါမယ်။',
     'playerNoticeEngineRestarted': 'အရင် video က တုံ့ပြန်မှု ရပ်သွားလို့ player ကို အသစ်ပြန်စထားပါတယ်။',
+    'playerDamagedStretch': 'ဖိုင်ရဲ့ ဒီအပိုင်းက ပျက်နေတာ (သို့) download အပြည့် မဆွဲရသေးတာမို့ app မရပ်သွားအောင် ဒီနေရာမှာ ရပ်လိုက်ပါတယ်။ Retry နှိပ်ပါ (သို့) နောက်ပြန်ထွက်ပါ။',
     'playerEngineStuck': 'ဒီဖိုင်မှာ player တုံ့ပြန်မှု ရပ်သွားပါတယ်။ ဖိုင် ပျက်နေတာ (သို့) အပြည့် download မဆွဲရသေးတာ ဖြစ်နိုင်ပါတယ်။ Retry နှိပ်ပါ (သို့) နောက်ပြန်ထွက်ပြီး တခြား video ဖွင့်ပါ။',
     'close': 'ပိတ်ရန်',
     'audioTrack': 'အသံ လိုင်း',
@@ -4458,6 +4461,7 @@ class AppStrings {
     'playerNoticeSoftware': 'ตัวถอดรหัสฮาร์ดแวร์ใช้กับไฟล์นี้ไม่ได้ กำลังเล่นด้วยตัวถอดรหัสซอฟต์แวร์ (SW)',
     'playerNoticeHwUnavailable': 'ตัวถอดรหัสฮาร์ดแวร์หยุดทำงานหลังจากไฟล์เสีย ตอนนี้เล่นด้วยซอฟต์แวร์ ปิดแล้วเปิด Innocent ใหม่เพื่อให้กลับมา',
     'playerNoticeEngineRestarted': 'เริ่มเครื่องเล่นใหม่แล้ว หลังจากวิดีโอก่อนหน้าไม่ตอบสนอง',
+    'playerDamagedStretch': 'ส่วนนี้ของไฟล์เสียหรือดาวน์โหลดไม่ครบ จึงหยุดเล่นตรงนี้ แตะลองอีกครั้ง หรือกลับไป',
     'playerEngineStuck': 'เครื่องเล่นไม่ตอบสนองกับไฟล์นี้ ไฟล์อาจเสียหรือดาวน์โหลดไม่ครบ แตะลองอีกครั้ง หรือกลับไปเปิดวิดีโออื่น',
     'close': 'ปิด',
     'audioTrack': 'แทร็กเสียง',

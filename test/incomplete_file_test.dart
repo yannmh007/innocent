@@ -31,7 +31,7 @@ void main() {
   setUp(() async => dir = await Directory.systemTemp.createTemp('incomplete'));
   tearDown(() async => dir.delete(recursive: true));
 
-  test('a complete file is complete, after one read', () async {
+  test('a complete file is complete', () async {
     final f = await _film(dir, 'full.mkv', 20 << 20, 20 << 20);
     expect(await IncompleteFileProbe.probe(f.path), isNull);
   });
@@ -46,6 +46,30 @@ void main() {
     expect(r!.dataEnd, greaterThanOrEqualTo(dataEnd));
     expect(r.dataEnd - dataEnd, lessThan(IncompleteFileProbe.block));
     expect(r.fraction, closeTo(dataEnd / size, 0.01));
+  });
+
+  test('a hole in the MIDDLE is found, though the end holds data', () async {
+    // A parallel-segment download that stopped: data, a zero-filled gap,
+    // then data again from a later segment (2026-10-03 diagnostics).
+    const size = 48 << 20;
+    const holeFrom = 19 * 1024 * 1024 + 4321;
+    const holeTo = 30 << 20;
+    final f = File('${dir.path}/holes.mkv');
+    final raf = await f.open(mode: FileMode.write);
+    final rnd = Random(3);
+    for (var off = 0; off < size; off += 1 << 20) {
+      final bytes = Uint8List(1 << 20);
+      for (var i = 0; i < bytes.length; i++) {
+        final at = off + i;
+        if (at < holeFrom || at >= holeTo) bytes[i] = 1 + rnd.nextInt(255);
+      }
+      await raf.writeFrom(bytes);
+    }
+    await raf.close();
+    final r = await IncompleteFileProbe.probe(f.path);
+    expect(r, isNotNull);
+    expect(r!.dataEnd, greaterThanOrEqualTo(holeFrom));
+    expect(r.dataEnd - holeFrom, lessThan(IncompleteFileProbe.block));
   });
 
   test('the playable share holds back a margin, and never goes negative', () {

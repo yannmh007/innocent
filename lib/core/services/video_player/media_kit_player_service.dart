@@ -11,6 +11,7 @@ import 'models/subtitle_track_info.dart';
 import 'models/video_track_info.dart';
 import '../diagnostics/playback_log.dart';
 import 'disk_cache_dir.dart';
+import 'error_flood.dart';
 import 'incomplete_file.dart';
 import 'mpv_link.dart';
 import 'mpv_option_range.dart';
@@ -99,6 +100,14 @@ class MediaKitPlayerService implements VideoPlayerService {
   StreamSubscription<Duration>? _limitSub;
   final StreamController<PlaybackLimitEvent> _limitCtl =
       StreamController<PlaybackLimitEvent>.broadcast();
+
+  /// One decision per flood of identical decoder errors (see ErrorFloodGate).
+  final ErrorFloodGate _errGate = ErrorFloodGate();
+  final StreamController<String> _floodCtl = StreamController<String>.broadcast();
+
+  /// The decoder was failing on every packet and the file was stopped. The
+  /// message is the line that was flooding.
+  Stream<String> get decodeFloods => _floodCtl.stream;
 
   /// In-flight (or completed) initialisation.
   ///
@@ -673,6 +682,25 @@ class MediaKitPlayerService implements VideoPlayerService {
   Stream<String?> get errorStream =>
       _live((p) => p.stream.error).map<String?>((e) {
         if (e.isEmpty) return null;
+        // A FLOOD IS ONE EVENT, NOT A THOUSAND. This runs on the UI thread
+        // for every error line libmpv logs; a decoder chewing through bad
+        // data logs one per packet, as fast as it can read them, and running
+        // the full handler each time is what froze the app (2026-10-03).
+        final verdict = _errGate.admit(e);
+        if (verdict == ErrorVerdict.repeat) return null;
+        final summary = _errGate.takeSummary();
+        if (summary != null) PlaybackLog.add(summary);
+        if (verdict == ErrorVerdict.storm) {
+          // Stopped AT THE SOURCE. Pausing is not enough — the decoder keeps
+          // pulling packets to fill its queue while paused, and every one of
+          // them fails and logs again. `stop` is an async command: it is
+          // queued, not waited for, so this costs the UI thread nothing.
+          PlaybackLog.add('decoder flood: "${e.length > 80 ? e.substring(0, 80) : e}" '
+              '${_errGate.stormAt}+ times in ${_errGate.window.inSeconds}s -> file stopped');
+          unawaited(_player.stop().catchError((_) {}));
+          if (!_floodCtl.isClosed) _floodCtl.add(e);
+          return null;
+        }
         // v1.63: into the persistent trail as well. Every libmpv error was
         // going only to whatever UI happened to be listening, so an error
         // that arrived just before a crash left no record at all — and the
@@ -858,6 +886,7 @@ class MediaKitPlayerService implements VideoPlayerService {
     // bracket both look identical in the trail.
     try {
       _armPlaybackLimit(uri);
+      _errGate.reset();
       await _player.open(mk.Media(uri, httpHeaders: headers), play: autoplay);
       PlaybackLog.add('open ok');
     } catch (e) {

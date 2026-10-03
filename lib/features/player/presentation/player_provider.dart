@@ -907,6 +907,21 @@ class PlayerController extends StateNotifier<PlayerState> {
           state = state.copyWith(errorMessage: null);
         }
       }));
+      // THE DECODER WAS FLOODING and the service stopped the file (see
+      // ErrorFloodGate). Said once, plainly; before this the flood itself
+      // was the message — a thousand of them, and an app that stopped
+      // responding.
+      _subs.add(svc.decodeFloods.listen((line) {
+        if (!mounted) return;
+        _stopDecodeWatch();
+        state = state.copyWith(
+          errorMessage: kPlayerDamagedStretch,
+          isBuffering: false,
+          isOpening: false,
+          isPlaying: false,
+          loadingMessage: null,
+        );
+      }));
       // A half-downloaded file: say where it ends, and when a seek is held.
       _subs.add(svc.playbackLimitEvents.listen((ev) async {
         if (!mounted) return;

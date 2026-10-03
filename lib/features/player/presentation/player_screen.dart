@@ -3039,7 +3039,9 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                       Text(
                         state.errorMessage == kPlayerEngineStuck
                             ? AppStrings.of(context).playerEngineStuck
-                            : state.errorMessage!,
+                            : state.errorMessage == kPlayerDamagedStretch
+                                ? AppStrings.of(context).playerDamagedStretch
+                                : state.errorMessage!,
                         style: const TextStyle(
                             color: Colors.white, fontSize: 12),
                         maxLines: 4,

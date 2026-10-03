@@ -81,6 +81,11 @@ enum PlayerNotice {
 const String kPlayerEngineStuck =
     'The video engine stopped responding on this file.';
 
+/// The decoder failed on every packet here (a damaged stretch, or a hole a
+/// download never filled) and the file was stopped. Localised by the screen.
+const String kPlayerDamagedStretch =
+    'This part of the file is damaged or was never downloaded.';
+
 /// Player state — Phase 3
 class PlayerState {
   // Playback
