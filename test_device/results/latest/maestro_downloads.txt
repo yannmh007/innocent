@@ -21,4 +21,4 @@ Possible causes:
 
 ==== Debug output (logs & screenshots) ====
 
-/home/runner/work/innocent/innocent/out/maestro_out/2026-10-03_191344
+/home/runner/work/innocent/innocent/out/maestro_out/2026-10-03_192509

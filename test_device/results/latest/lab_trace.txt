@@ -1,0 +1,16 @@
+LAB    0.0 dl pass x3 from 0/396 MB http 200
+LAB  126.4 hwdec -> auto
+LAB  126.5 open scheme=http len=106 hwdec=auto start=0s autoplay=true
+LAB  126.5 wakelock playing=false bg=false priv=false
+LAB  126.7 open ok
+LAB  126.7 wakelock playing=true bg=false priv=false
+LAB  127.1 lifecycle inactive mounted=true
+LAB  128.4 fg stream: watching
+LAB  129.8 stall #1 unknown {reason: unknown}
+LAB  134.5 lifecycle resumed mounted=true
+LAB  136.3 dl pass end +180 MB in 136 s (1.32 MB/s)
+LAB  137.6 dl pass x1 (watching) from 180/396 MB http 206
+LAB  138.1 wakelock playing=false bg=false priv=false
+LAB  138.3 player teardown done keepPlaying=false
+LAB  147.4 dl pass end +2 MB in 10 s (0.26 MB/s)
+LAB  151.1 dl pass x3 from 182/396 MB http 206
