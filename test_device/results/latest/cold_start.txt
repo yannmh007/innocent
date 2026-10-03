@@ -1,0 +1,3 @@
+Starting: Intent { cmp=com.innocent.media/.MainActivity }
+Error type 3
+Error: Activity class {com.innocent.media/com.innocent.media.MainActivity} does not exist.

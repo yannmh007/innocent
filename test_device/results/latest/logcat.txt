@@ -1,0 +1,79 @@
+10-03 16:33:14.699 I/AndroidRuntime( 4768): VM exiting with result code 0, cleanup skipped.
+10-03 16:33:14.830 I/AndroidRuntime( 4814): VM exiting with result code 0, cleanup skipped.
+10-03 16:33:15.123 I/AndroidRuntime( 4844): VM exiting with result code 0, cleanup skipped.
+10-03 16:33:15.333 I/AndroidRuntime( 4876): VM exiting with result code 0, cleanup skipped.
+10-03 16:33:15.479 I/AndroidRuntime( 4909): VM exiting with result code 0, cleanup skipped.
+10-03 16:33:15.673 I/AndroidRuntime( 4930): VM exiting with result code 0, cleanup skipped.
+10-03 16:33:15.843 I/AndroidRuntime( 4954): VM exiting with result code 0, cleanup skipped.
+10-03 16:33:16.068 I/AndroidRuntime( 4970): VM exiting with result code 0, cleanup skipped.
+10-03 16:33:16.158 I/AndroidRuntime( 4993): VM exiting with result code 0, cleanup skipped.
+10-03 16:33:16.274 I/AndroidRuntime( 5011): VM exiting with result code 0, cleanup skipped.
+10-03 16:33:16.462 I/AndroidRuntime( 5033): VM exiting with result code 0, cleanup skipped.
+10-03 16:33:16.473 W/GnpSdk  ( 4430): java.lang.NullPointerException: Unable to get GrowthKit Component from host app: com.google.android.calendar
+10-03 16:33:16.588 I/AndroidRuntime( 5068): VM exiting with result code 0, cleanup skipped.
+10-03 16:33:16.695 I/AndroidRuntime( 5103): VM exiting with result code 0, cleanup skipped.
+10-03 16:33:16.897 I/AndroidRuntime( 5126): VM exiting with result code 0, cleanup skipped.
+10-03 16:33:17.101 I/AndroidRuntime( 5174): VM exiting with result code 0, cleanup skipped.
+10-03 16:33:17.351 W/ActivityManager(  479): Scheduling restart of crashed service com.google.android.gm/androidx.work.impl.background.systemjob.SystemJobService in 1000ms for connection
+10-03 16:33:17.557 I/AndroidRuntime( 5222): VM exiting with result code 0, cleanup skipped.
+10-03 16:33:18.135 W/ActivityManager(  479): Crash of app dev.mobile.maestro running instrumentation ComponentInfo{dev.mobile.maestro.test/androidx.test.runner.AndroidJUnitRunner}
+10-03 16:33:18.148 I/AndroidRuntime( 4416): VM exiting with result code 0.
+10-03 16:33:18.159 I/org.webrtc.Logging( 5245): CrashStartupListener: Checking conference crashes for 0 account(s).
+10-03 16:33:18.189 E/AppOps  (  479): java.lang.SecurityException: Specified package "dev.mobile.maestro" under uid 10174 but it is not
+10-03 16:33:18.938 E/Icing   ( 1260): Cursor call threw an exception: no such table: Alarm_cross_device_com.google.android.deskclock_seq_table (code 1 SQLITE_ERROR): , while compiling: SELECT * FROM [Alarm_cross_device_com.google.android.deskclock_seq_table] WHERE seqno>0 AND tag IS NULL ORDER BY seqno LIMIT 20
+10-03 16:33:18.939 E/Icing   ( 1260): Cursor call threw an exception: no such table: Stopwatch_cross_device_com.google.android.deskclock_seq_table (code 1 SQLITE_ERROR): , while compiling: SELECT * FROM [Stopwatch_cross_device_com.google.android.deskclock_seq_table] WHERE seqno>0 AND tag IS NULL ORDER BY seqno LIMIT 20
+10-03 16:33:19.518 W/AiAiAutofill( 1594): java.lang.SecurityException: caller is not user's Augmented Autofill Service
+10-03 16:33:19.734 W/SnapshotHandler( 1675): java.io.FileNotFoundException: /data/user/0/com.google.android.googlequicksearchbox/files/phenotype/shared/com.google.android.libraries.notifications#com.google.android.googlequicksearchbox.pb: open failed: ENOENT (No such file or directory)
+10-03 16:33:19.734 W/SnapshotHandler( 1675): Caused by: android.system.ErrnoException: open failed: ENOENT (No such file or directory)
+10-03 16:33:19.843 W/SnapshotHandler( 1675): java.io.FileNotFoundException: /data/user/0/com.google.android.googlequicksearchbox/files/phenotype/shared/com.google.android.libraries.notifications.platform#com.google.android.googlequicksearchbox.pb: open failed: ENOENT (No such file or directory)
+10-03 16:33:19.843 W/SnapshotHandler( 1675): Caused by: android.system.ErrnoException: open failed: ENOENT (No such file or directory)
+10-03 16:33:19.931 W/CorpusConfigHelper( 1675): android.util.MalformedJsonException: Use JsonReader.setLenient(true) to accept malformed JSON at line 123 column 2
+10-03 16:33:19.972 E/cr_CronetUrlRequestContext( 1675): Exception in upload method
+10-03 16:33:20.412 W/ModernMediaScanner( 1684): Failed to apply ContentProviderOperation(type=insert uri=content://media/internal/file values={instance_id=null, compilation=null, disc_number=0, duration=4383, is_ringtone=0, album_artist=null, resolution=null, orientation=null, artist=pdx, author=null, height=null, is_drm=0, is_audiobook=0, date_modified=1725920748, writer=null, composer=null, _modifier=3, is_recording=0, datetaken=null, mime_type=audio/ogg, is_notification=1, bitrate=96000, cd_track_number=0, xmp=[], year=null, _data=/product/media/audio/notifications/vega.ogg, _size=29476, album=Unknown, genre=Unknown, is_alarm=0, title=Vega, track=0, width=null, is_music=0, document_id=null, is_podcast=0, capture_framerate=null, num_tracks=1, original_document_id=null, media_type=2} exceptionAllowed)
+10-03 16:33:20.412 W/ModernMediaScanner( 1684): android.database.sqlite.SQLiteConstraintException: UNIQUE constraint failed: files._data (code 2067 SQLITE_CONSTRAINT_UNIQUE)
+10-03 16:33:20.424 W/AiAiAutofill( 1594): java.lang.SecurityException: caller is not user's Augmented Autofill Service
+10-03 16:33:20.631 W/ActivityManager(  479): Scheduling restart of crashed service com.google.android.permissioncontroller/com.android.permissioncontroller.permission.service.PermissionControllerServiceImpl in 1000ms for connection
+10-03 16:33:20.631 W/ActivityManager(  479): Scheduling restart of crashed service com.google.android.permissioncontroller/com.android.permissioncontroller.role.service.RoleControllerServiceImpl in 11000ms for connection
+10-03 16:33:20.691 W/ActivityManager(  479): Rescheduling restart of crashed service com.google.android.permissioncontroller/com.android.permissioncontroller.permission.service.PermissionControllerServiceImpl in 9940ms for mem-pressure-event
+10-03 16:33:21.123 W/AsyncOperation( 1046): OperationException[Status{statusCode=Stale snapshot for com.google.apps.dynamite.device#com.google.android.gm(change count changed - expected 2  but was 1), resolution=null}]
+10-03 16:33:22.444 W/MediaProvider( 1684): java.io.IOException: Failed to update quota type for /storage/emulated/0/Android
+10-03 16:33:22.449 W/MediaProvider( 1684): java.io.IOException: Failed to update quota type for /storage/emulated/0/Android/media
+10-03 16:33:22.986 W/FileUtils(  479): android.system.ErrnoException: chmod failed: ENOENT (No such file or directory)
+10-03 16:33:23.032 E/SystemServiceRegistry( 1098): android.os.ServiceManager$ServiceNotFoundException: No service published for: ethernet
+10-03 16:33:25.026 D/AndroidRuntime( 5778): >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-03 16:33:25.028 I/AndroidRuntime( 5778): Using default boot image
+10-03 16:33:25.028 I/AndroidRuntime( 5778): Leaving lock profiling enabled
+10-03 16:33:25.110 D/AndroidRuntime( 5778): Calling main entry com.android.commands.am.Am
+10-03 16:33:25.498 W/AiAiAutofill( 1594): java.lang.SecurityException: caller is not user's Augmented Autofill Service
+10-03 16:33:25.501 W/AiAiAutofill( 1594): java.lang.SecurityException: caller is not user's Augmented Autofill Service
+10-03 16:33:25.587 W/AsyncOperation( 1046): OperationException[Status{statusCode=Stale snapshot for com.google.android.googlequicksearchbox(change count changed - expected 4  but was 3), resolution=null}]
+10-03 16:33:25.631 E/RecoverySnapshotStorage(  479): java.io.FileNotFoundException: /data/system/recoverablekeystore/snapshots/10120.xml: open failed: ENOENT (No such file or directory)
+10-03 16:33:25.631 E/RecoverySnapshotStorage(  479): Caused by: android.system.ErrnoException: open failed: ENOENT (No such file or directory)
+10-03 16:33:25.635 W/RecoverableKeyStoreGms( 1260): [WrappingKeyManager] InternalRecoveryServiceException during wrapping key generation [CONTEXT service_id=172 ]
+10-03 16:33:25.635 W/RecoverableKeyStoreGms( 1260): android.security.keystore.recovery.InternalRecoveryServiceException: Failed to import secret key.
+10-03 16:33:25.635 W/RecoverableKeyStoreGms( 1260): 	at android.security.keystore.recovery.RecoveryController.wrapUnexpectedServiceSpecificException(RecoveryController.java:773)
+10-03 16:33:25.635 W/RecoverableKeyStoreGms( 1260): Caused by: android.os.ServiceSpecificException: Failed to import secret key. (code 22)
+10-03 16:33:25.635 W/RecoverableKeyStoreGms( 1260): 	at android.os.Parcel.createExceptionOrNull(Parcel.java:3025)
+10-03 16:33:25.635 W/RecoverableKeyStoreGms( 1260): 	at android.os.Parcel.createException(Parcel.java:2995)
+10-03 16:33:25.635 W/RecoverableKeyStoreGms( 1260): 	at android.os.Parcel.readException(Parcel.java:2978)
+10-03 16:33:25.635 W/RecoverableKeyStoreGms( 1260): 	at android.os.Parcel.readException(Parcel.java:2920)
+10-03 16:33:26.483 E/enyj    ( 1260): java.lang.RuntimeException: ManagedChannel allocation site
+10-03 16:33:26.777 W/Conscrypt( 1260): Could not set socket write timeout: java.net.SocketException: Socket closed
+10-03 16:33:26.856 W/CorpusConfigHelper( 1675): android.util.MalformedJsonException: Use JsonReader.setLenient(true) to accept malformed JSON at line 123 column 2
+10-03 16:33:26.934 W/PeoplePU( 1260): android.content.pm.PackageManager$NameNotFoundException: ComponentInfo{com.google.android.gms/com.google.android.gms.people.sync.focus.ContactsSyncAdapterService}
+10-03 16:33:26.937 W/PeoplePU( 1260): java.lang.IllegalArgumentException: Unknown component: ComponentInfo{com.google.android.syncadapters.contacts/com.google.android.syncadapters.contacts.ProxyGalProvider}
+10-03 16:33:26.937 W/PeoplePU( 1260): 	at android.os.Parcel.createExceptionOrNull(Parcel.java:3015)
+10-03 16:33:26.937 W/PeoplePU( 1260): 	at android.os.Parcel.createException(Parcel.java:2995)
+10-03 16:33:26.937 W/PeoplePU( 1260): 	at android.os.Parcel.readException(Parcel.java:2978)
+10-03 16:33:26.937 W/PeoplePU( 1260): 	at android.os.Parcel.readException(Parcel.java:2920)
+10-03 16:33:26.937 W/PeoplePU( 1260): Caused by: android.os.RemoteException: Remote stack trace:
+10-03 16:33:27.099 W/Conscrypt( 1260): Could not set socket write timeout: java.net.SocketException: Socket closed
+10-03 16:33:27.217 W/ActivityManager(  479): Crash of app dev.mobile.maestro running instrumentation ComponentInfo{dev.mobile.maestro.test/androidx.test.runner.AndroidJUnitRunner}
+10-03 16:33:27.227 I/AndroidRuntime( 5778): VM exiting with result code 0.
+10-03 16:33:27.244 E/AppOps  (  479): java.lang.SecurityException: Specified package "dev.mobile.maestro" under uid 10176 but it is not
+10-03 16:33:27.665 W/AiAiAutofill( 1594): java.lang.SecurityException: caller is not user's Augmented Autofill Service
+10-03 16:33:27.672 E/Vision  ( 1260): Couldn't read checkbot setting: android.provider.Settings$SettingNotFoundException: multi_cb
+10-03 16:33:27.945 W/AiAiAutofill( 1594): java.lang.SecurityException: caller is not user's Augmented Autofill Service
+10-03 16:33:27.996 W/GLSUser ( 1046): [AppCertManager] Exception while requesting key: 
+10-03 16:33:27.996 W/GLSUser ( 1046): java.util.concurrent.ExecutionException: avvw: Parse Proto Exception.
+10-03 16:33:27.996 W/GLSUser ( 1046): Caused by: avvw: Parse Proto Exception.
