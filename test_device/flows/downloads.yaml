@@ -2,19 +2,22 @@
 # Downloads. Two looks, twenty seconds apart, to read the speed it shows.
 appId: com.innocent.media
 ---
+# Back out to the hub's top, where the search field and Account live:
+# player → viewer → title → hub, scrolling each to its top on the way.
 - repeat:
-    times: 4
+    times: 5
     while:
-      notVisible: "Account"
+      notVisible: "Search movies.*"
     commands:
       - back
       - waitForAnimationToEnd:
           timeout: 3000
-- scrollUntilVisible:
-    element:
-      text: "Account"
-    direction: UP
-    optional: true
+      - swipe:
+          direction: DOWN
+          duration: 400
+      - swipe:
+          direction: DOWN
+          duration: 400
 - tapOn:
     text: "Account"
 - waitForAnimationToEnd:
