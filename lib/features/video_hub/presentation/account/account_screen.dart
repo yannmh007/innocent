@@ -57,12 +57,11 @@ class AccountScreen extends ConsumerWidget {
             icon: Icons.download_outlined,
             label: s.vhLibraryDownloads,
             subtitle: s.vhLibraryDownloadsHint,
-            locked: !account.entitlement.isActive,
-            // OPENS EVEN WHEN LOCKED. `locked` dims the tile to say what
-            // the feature costs; refusing to open it would hide a shelf
-            // that may still have titles on it — a subscription that
-            // lapsed an hour ago has not yet been swept, and a person
-            // should be able to see and delete what is on their own phone.
+            // NOT LOCKED. It said "Premium" with a padlock, but free titles
+            // download for everyone (AccessPolicy.canDownload) — the device
+            // lab downloaded one on a free account and then found its shelf
+            // behind a lock. A premium title's own button says what it costs.
+            locked: false,
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute<void>(
                 builder: (_) => const DownloadsScreen(),

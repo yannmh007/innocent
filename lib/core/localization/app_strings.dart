@@ -1679,7 +1679,7 @@ class AppStrings {
     'vhLibraryBookmarks': 'Bookmarks',
     'vhLibraryBookmarksHint': 'Titles you saved for later',
     'vhLibraryDownloads': 'Downloads',
-    'vhLibraryDownloadsHint': 'Watch offline - Premium',
+    'vhLibraryDownloadsHint': 'Watch offline, no connection needed',
     'vhDeleteDownloadBody':
         'Remove this download from your device? You can download it again '
         'while your subscription is active.',
@@ -2989,7 +2989,7 @@ class AppStrings {
     'vhLibraryBookmarks': 'သိမ်းထားသည်များ',
     'vhLibraryBookmarksHint': 'နောက်မှကြည့်ရန် သိမ်းထားသော ခေါင်းစဉ်များ',
     'vhLibraryDownloads': 'ဒေါင်းလုဒ်များ',
-    'vhLibraryDownloadsHint': 'အော့ဖ်လိုင်း ကြည့်ရန် - Premium',
+    'vhLibraryDownloadsHint': 'အင်တာနက်မလိုဘဲ အော့ဖ်လိုင်း ကြည့်ရန်',
     'vhDeleteDownloadBody':
         'ဤဒေါင်းလုဒ်ကို ဖုန်းထဲက ဖယ်ရှားမလား။ Premium သက်တမ်း ရှိနေသေးသ၍ '
         'ပြန်ဒေါင်းလုဒ် လုပ်လို့ ရပါတယ်။',
@@ -4287,7 +4287,7 @@ class AppStrings {
     'vhLibraryBookmarks': 'บุ๊กมาร์ก',
     'vhLibraryBookmarksHint': 'รายการที่คุณบันทึกไว้',
     'vhLibraryDownloads': 'ดาวน์โหลด',
-    'vhLibraryDownloadsHint': 'ดูออฟไลน์ - Premium',
+    'vhLibraryDownloadsHint': 'ดูออฟไลน์ ไม่ต้องใช้เน็ต',
     'vhDeleteDownloadBody':
         'ลบดาวน์โหลดนี้ออกจากเครื่องหรือไม่ คุณดาวน์โหลดใหม่ได้ '
         'ตราบใดที่สมาชิกยังใช้งานอยู่',
