@@ -1,0 +1,15 @@
+Running on test
+ > Flow downloads
+Press back... COMPLETED
+Wait for animation to end within 5000 ms... COMPLETED
+Tap on point (93%,7%)... COMPLETED
+Wait for animation to end within 8000 ms... COMPLETED
+Take screenshot 50_account... COMPLETED
+Tap on (Optional) "Downloads"... WARNED
+
+
+ Warning: Element not found: Text matching regex: Downloads
+Wait for animation to end within 8000 ms... COMPLETED
+Take screenshot 51_downloads... COMPLETED
+Wait for animation to end within 20000 ms... COMPLETED
+Take screenshot 52_downloads_20s... COMPLETED

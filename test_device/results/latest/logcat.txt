@@ -1,20 +1,33 @@
-10-03 18:11:45.685 W/ActivityManager(  525): Crash of app dev.mobile.maestro running instrumentation ComponentInfo{dev.mobile.maestro.test/androidx.test.runner.AndroidJUnitRunner}
-10-03 18:11:45.689 W/Binder  ( 7696): Caught a RuntimeException from the binder stub implementation.
-10-03 18:11:45.689 W/Binder  ( 7696): java.lang.SecurityException: Calling from not trusted UID!
-10-03 18:11:45.692 I/AndroidRuntime( 7696): VM exiting with result code 0.
-10-03 18:11:46.167 W/AppInfoHelper( 1502): android.content.pm.PackageManager$NameNotFoundException: dev.mobile.maestro.test
-10-03 18:11:49.973 D/AndroidRuntime( 7983): >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-10-03 18:11:49.978 I/AndroidRuntime( 7983): Using default boot image
-10-03 18:11:49.978 I/AndroidRuntime( 7983): Leaving lock profiling enabled
-10-03 18:11:50.016 D/nativeloader( 7983): InitDefaultPublicLibraries for_preload=1: libandroid.so:libaaudio.so:libamidi.so:libbinder_ndk.so:libc.so:libcamera2ndk.so:libdl.so:libEGL.so:libGLESv1_CM.so:libGLESv2.so:libGLESv3.so:libicu.so:libicui18n.so:libicuuc.so:libjnigraphics.so:liblog.so:libmediandk.so:libm.so:libnativehelper.so:libnativewindow.so:libOpenMAXAL.so:libOpenSLES.so:libRS.so:libstdc++.so:libsync.so:libvulkan.so:libwebviewchromium_plat_support.so:libz.so
-10-03 18:11:50.034 W/libc    ( 7983): Access denied finding property "ro.product.name_for_attestation"
-10-03 18:11:50.034 W/libc    ( 7983): Access denied finding property "ro.product.brand_for_attestation"
-10-03 18:11:50.034 W/libc    ( 7983): Access denied finding property "ro.product.model_for_attestation"
-10-03 18:11:50.034 D/AndroidRuntime( 7983): Calling main entry com.android.commands.am.Am
-10-03 18:11:51.775 W/ActivityManager(  525): Crash of app dev.mobile.maestro running instrumentation ComponentInfo{dev.mobile.maestro.test/androidx.test.runner.AndroidJUnitRunner}
-10-03 18:11:51.777 W/Binder  ( 7983): Caught a RuntimeException from the binder stub implementation.
-10-03 18:11:51.777 W/Binder  ( 7983): java.lang.SecurityException: Calling from not trusted UID!
-10-03 18:11:51.779 I/AndroidRuntime( 7983): VM exiting with result code 0.
-10-03 18:11:52.326 W/AppInfoHelper( 1502): android.content.pm.PackageManager$NameNotFoundException: dev.mobile.maestro.test
-10-03 18:11:52.534 I/.innocent.media( 5855): Explicit concurrent copying GC freed 46906(1766KB) AllocSpace objects, 0(0B) LOS objects, 49% free, 3679KB/7358KB, paused 10us,5us total 5.881ms
-10-03 18:11:52.617 E/AdbDebuggingManager(  525): Caught an exception opening the socket: java.io.IOException: Connection refused
+10-03 18:35:47.044 I/.innocent.media( 5606): Background concurrent copying GC freed 592(48KB) AllocSpace objects, 4(8208KB) LOS objects, 49% free, 3410KB/6820KB, paused 29us,13us total 458.377ms
+10-03 18:35:47.709 I/.innocent.media( 5606): Background young concurrent copying GC freed 1435(85KB) AllocSpace objects, 4(8208KB) LOS objects, 48% free, 3516KB/6820KB, paused 5.357ms,16us total 440.950ms
+10-03 18:35:48.569 I/NamespaceManager( 5688): Package com.google.android.crashrecovery name not found! Using module version.
+10-03 18:35:48.659 I/NamespaceManager( 5688): Package com.google.android.crashrecovery name not found! Using module version.
+10-03 18:35:49.816 D/AugmentedAutofillService( 1669): handleOnConnected(): debug=true, verbose=false
+10-03 18:35:50.712 I/ContentCaptureHelper( 1111): Setting logging level to DEBUG
+10-03 18:35:50.943 I/.innocent.media( 5606): Background concurrent copying GC freed 239(34KB) AllocSpace objects, 12(24MB) LOS objects, 49% free, 3434KB/6869KB, paused 16us,12us total 197.164ms
+10-03 18:35:54.285 I/.innocent.media( 5606): Background young concurrent copying GC freed 3725(174KB) AllocSpace objects, 10(20MB) LOS objects, 67% free, 7558KB/22MB, paused 10.759ms,6us total 17.454ms
+10-03 18:36:16.205 W/ActivityManager(  521): Crash of app dev.mobile.maestro running instrumentation ComponentInfo{dev.mobile.maestro.test/androidx.test.runner.AndroidJUnitRunner}
+10-03 18:36:16.234 W/Binder  ( 9593): Caught a RuntimeException from the binder stub implementation.
+10-03 18:36:16.234 W/Binder  ( 9593): java.lang.SecurityException: Calling from not trusted UID!
+10-03 18:36:16.241 I/AndroidRuntime( 9593): VM exiting with result code 0.
+10-03 18:36:16.679 W/CorpusConfigHelper( 1802): android.util.MalformedJsonException: Use JsonReader.setLenient(true) to accept malformed JSON at line 123 column 2
+10-03 18:36:18.109 I/.innocent.media( 5606): Background young concurrent copying GC freed 587(95KB) AllocSpace objects, 8(16MB) LOS objects, 49% free, 9593KB/18MB, paused 60us,11us total 115.795ms
+10-03 18:36:20.373 I/.innocent.media( 5606): Background concurrent copying GC freed 363(31KB) AllocSpace objects, 11(22MB) LOS objects, 49% free, 3470KB/6940KB, paused 32us,8us total 114.481ms
+10-03 18:36:20.698 I/.innocent.media( 5606): Background concurrent copying GC freed 211(33KB) AllocSpace objects, 0(0B) LOS objects, 49% free, 11MB/22MB, paused 1.492ms,12us total 141.784ms
+10-03 18:36:25.260 I/.innocent.media( 5606): Background concurrent copying GC freed 54(33KB) AllocSpace objects, 4(8208KB) LOS objects, 49% free, 11MB/22MB, paused 80us,230us total 251.236ms
+10-03 18:36:26.736 D/AndroidRuntime( 9948): >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-03 18:36:26.741 I/AndroidRuntime( 9948): Using default boot image
+10-03 18:36:26.741 I/AndroidRuntime( 9948): Leaving lock profiling enabled
+10-03 18:36:26.804 D/nativeloader( 9948): InitDefaultPublicLibraries for_preload=1: libandroid.so:libaaudio.so:libamidi.so:libbinder_ndk.so:libc.so:libcamera2ndk.so:libdl.so:libEGL.so:libGLESv1_CM.so:libGLESv2.so:libGLESv3.so:libicu.so:libicui18n.so:libicuuc.so:libjnigraphics.so:liblog.so:libmediandk.so:libm.so:libnativehelper.so:libnativewindow.so:libOpenMAXAL.so:libOpenSLES.so:libRS.so:libstdc++.so:libsync.so:libvulkan.so:libwebviewchromium_plat_support.so:libz.so
+10-03 18:36:26.839 W/libc    ( 9948): Access denied finding property "ro.product.name_for_attestation"
+10-03 18:36:26.839 W/libc    ( 9948): Access denied finding property "ro.product.brand_for_attestation"
+10-03 18:36:26.839 W/libc    ( 9948): Access denied finding property "ro.product.model_for_attestation"
+10-03 18:36:26.840 D/AndroidRuntime( 9948): Calling main entry com.android.commands.am.Am
+10-03 18:36:27.270 W/FileUtils(  521): Failed to chmod(AtomicFile[/data/system_de/0/system/game-manager-service.xml]): android.system.ErrnoException: chmod failed: ENOENT (No such file or directory)
+10-03 18:36:28.607 W/ActivityManager(  521): Crash of app dev.mobile.maestro running instrumentation ComponentInfo{dev.mobile.maestro.test/androidx.test.runner.AndroidJUnitRunner}
+10-03 18:36:28.612 W/Binder  ( 9948): Caught a RuntimeException from the binder stub implementation.
+10-03 18:36:28.612 W/Binder  ( 9948): java.lang.SecurityException: Calling from not trusted UID!
+10-03 18:36:28.627 I/AndroidRuntime( 9948): VM exiting with result code 0.
+10-03 18:36:29.345 W/AppInfoHelper( 1552): android.content.pm.PackageManager$NameNotFoundException: dev.mobile.maestro.test
+10-03 18:36:29.459 I/.innocent.media( 5606): Explicit concurrent copying GC freed 7746(409KB) AllocSpace objects, 4(208KB) LOS objects, 49% free, 3384KB/6769KB, paused 13us,4us total 7.020ms
+10-03 18:36:29.583 E/AdbDebuggingManager(  521): Caught an exception opening the socket: java.io.IOException: Connection refused
