@@ -26,9 +26,14 @@ class StatisticsScreen extends ConsumerWidget {
     return '${h}h ${m}m';
   }
 
+  /// WHERE the folder is, for the line under its name. This returned the
+  /// last path segment — which IS the name, so every row said it twice
+  /// ("Telegram Video / Telegram Video"). The path below the storage root
+  /// tells two same-named folders apart, which is what the line is for.
   String _displayPath(String path) {
-    final segments = path.split('/');
-    return segments.isNotEmpty ? segments.last : path;
+    final m = RegExp(r'^/storage/(emulated/\d+|[^/]+)').firstMatch(path);
+    final rest = m == null ? path : path.substring(m.end);
+    return rest.isEmpty ? '/' : rest;
   }
 
   @override

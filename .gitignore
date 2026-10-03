@@ -77,3 +77,6 @@ Thumbs.db
 # scripts, and one got committed once.
 __pycache__/
 *.pyc
+
+# Screenshots drawn by test_screens (looked at, never committed)
+test_screens/out/

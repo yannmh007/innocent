@@ -56,7 +56,9 @@ class DownloadsScreen extends ConsumerWidget {
         // and returns an empty list, because a shelf that cannot be read looks
         // exactly like an empty one to the person holding the phone.
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (_, __) => HubEmptyState(message: s.vhLibraryDownloadsHint),
+        error: (_, __) => HubEmptyState(
+              message: s.vhLibraryDownloadsHint,
+              icon: Icons.download_for_offline_outlined),
         data: (items) {
           // UNFINISHED DOWNLOADS ARE PART OF THIS SCREEN, and used to be
           // nowhere at all.
@@ -72,7 +74,9 @@ class DownloadsScreen extends ConsumerWidget {
           final pending = ref.watch(offlinePendingProvider).valueOrNull ??
               const <PendingProgress>[];
           if (items.isEmpty && pending.isEmpty) {
-            return HubEmptyState(message: s.vhLibraryDownloadsHint);
+            return HubEmptyState(
+              message: s.vhLibraryDownloadsHint,
+              icon: Icons.download_for_offline_outlined);
           }
           // WHAT IS LEFT, not only what is taken. Somebody deciding whether
           // to download tonight's film needs the free figure more than the

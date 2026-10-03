@@ -208,37 +208,44 @@ class HubEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 56),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Icon(icon, size: 44, color: VH.textTertiary),
-          const SizedBox(height: 14),
-          Text(
-            message,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: VH.textSecondary,
-              fontSize: 14,
-              height: 1.35,
-            ),
-          ),
-          if (actionLabel != null && onAction != null) ...<Widget>[
-            const SizedBox(height: 16),
-            TextButton(
-              onPressed: onAction,
-              child: Text(
-                actionLabel!,
-                style: const TextStyle(
-                  color: VH.accent,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
+    // CENTRED ACROSS, kept at the top. The column is only as wide as its
+    // longest line, and a parent that hands down loose constraints (a page
+    // body, a list) puts it at the left edge: screenshots of Downloads and
+    // Search showed the icon and the sentence sitting off to the left.
+    return Align(
+      alignment: Alignment.topCenter,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 56),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Icon(icon, size: 44, color: VH.textTertiary),
+            const SizedBox(height: 14),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: VH.textSecondary,
+                fontSize: 14,
+                height: 1.35,
               ),
             ),
+            if (actionLabel != null && onAction != null) ...<Widget>[
+              const SizedBox(height: 16),
+              TextButton(
+                onPressed: onAction,
+                child: Text(
+                  actionLabel!,
+                  style: const TextStyle(
+                    color: VH.accent,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }

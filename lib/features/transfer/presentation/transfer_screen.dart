@@ -600,106 +600,131 @@ class _PreparePane extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = AppStrings.of(context);
+    // ONE SCROLL, ONE PINNED BUTTON. This used to be a fixed column with the
+    // file list as its only flexible part. Three switches with two-line
+    // subtitles (three-line in Burmese) took more than a small phone's
+    // height, so the column overflowed and the list was squeezed to nothing —
+    // a screenshot of a 360×740 phone in Burmese showed the PIN switch cut
+    // in half by the overflow stripe, and even a 412×915 phone overflowed.
+    // Now everything above the Send button scrolls, and the button, the one
+    // thing this screen is for, stays where the thumb is.
     return Padding(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Identity row: this is the name the other phone will tap on, so it
-          // needs to be visible and changeable before the share starts.
-          Row(
-            children: [
-              const Icon(Icons.smartphone, size: 16, color: AppColors.white55),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  '${s.thisPhoneName}: ${state.deviceName ?? '…'}',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                      color: AppColors.white70, fontSize: 12.5),
-                ),
-              ),
-              TextButton(
-                onPressed: onRename,
-                style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    minimumSize: const Size(0, 32)),
-                child: Text(s.rename, style: const TextStyle(fontSize: 12)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Row(
-            children: [
-              Expanded(
-                child: Text(s.filesToShare,
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600)),
-              ),
-              FilledButton.tonalIcon(
-                onPressed: picking ? null : onPickFiles,
-                icon: picking
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Icon(Icons.add, size: 18),
-                label: Text(s.addFiles),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          if (state.error != null)
-            Container(
-              padding: const EdgeInsets.all(12),
-              margin: const EdgeInsets.only(bottom: 12),
-              decoration: BoxDecoration(
-                color: const Color(0x33C62828),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(state.error!,
-                  style: const TextStyle(
-                      color: Color(0xFFFFCDD2), fontSize: 13)),
-            ),
-          // Handing the app itself to a friend who has no data is the single
-          // most common reason these apps get installed in the first place.
-          Row(
-            children: [
-              TextButton.icon(
-                onPressed: onSendFolder,
-                style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 6),
-                    minimumSize: const Size(0, 34)),
-                icon: const Icon(Icons.drive_folder_upload, size: 17),
-                label:
-                    Text(s.sendFolder, style: const TextStyle(fontSize: 12.5)),
-              ),
-              const SizedBox(width: 4),
-              Flexible(
-                child: Tooltip(
-                  message: s.sendInnocentAppHint,
-                  child: TextButton.icon(
-                    onPressed: onSendApp,
-                    style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 6),
-                        minimumSize: const Size(0, 34)),
-                    icon: const Icon(Icons.android, size: 17),
-                    label: Text(s.sendInnocentApp,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 12.5)),
+          Expanded(
+            child: CustomScrollView(
+              slivers: [
+                SliverToBoxAdapter(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Identity row: this is the name the other phone will tap on, so it
+                      // needs to be visible and changeable before the share starts.
+                      Row(
+                        children: [
+                          const Icon(Icons.smartphone,
+                              size: 16, color: AppColors.white55),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              '${s.thisPhoneName}: ${state.deviceName ?? '…'}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                  color: AppColors.white70, fontSize: 12.5),
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: onRename,
+                            style: TextButton.styleFrom(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 8),
+                                minimumSize: const Size(0, 32)),
+                            child: Text(s.rename,
+                                style: const TextStyle(fontSize: 12)),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(s.filesToShare,
+                                style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600)),
+                          ),
+                          FilledButton.tonalIcon(
+                            onPressed: picking ? null : onPickFiles,
+                            icon: picking
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2))
+                                : const Icon(Icons.add, size: 18),
+                            label: Text(s.addFiles),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      if (state.error != null)
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          margin: const EdgeInsets.only(bottom: 12),
+                          decoration: BoxDecoration(
+                            color: const Color(0x33C62828),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(state.error!,
+                              style: const TextStyle(
+                                  color: Color(0xFFFFCDD2), fontSize: 13)),
+                        ),
+                      // Handing the app itself to a friend who has no data is the single
+                      // most common reason these apps get installed in the first place.
+                      Row(
+                        children: [
+                          TextButton.icon(
+                            onPressed: onSendFolder,
+                            style: TextButton.styleFrom(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 6),
+                                minimumSize: const Size(0, 34)),
+                            icon:
+                                const Icon(Icons.drive_folder_upload, size: 17),
+                            label: Text(s.sendFolder,
+                                style: const TextStyle(fontSize: 12.5)),
+                          ),
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Tooltip(
+                              message: s.sendInnocentAppHint,
+                              child: TextButton.icon(
+                                onPressed: onSendApp,
+                                style: TextButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 6),
+                                    minimumSize: const Size(0, 34)),
+                                icon: const Icon(Icons.android, size: 17),
+                                label: Text(s.sendInnocentApp,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(fontSize: 12.5)),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
-              ),
-            ],
-          ),
-          Expanded(
-            child: state.files.isEmpty
-                ? _emptyHint(context)
-                : ListView.separated(
+                if (state.files.isEmpty)
+                  SliverToBoxAdapter(child: _emptyHint(context))
+                else
+                  SliverList.separated(
                     itemCount: state.files.length,
                     separatorBuilder: (_, __) => const SizedBox(height: 6),
                     itemBuilder: (_, i) {
@@ -730,8 +755,7 @@ class _PreparePane extends StatelessWidget {
                                   Text(
                                     _fmtBytes(f.sizeBytes),
                                     style: const TextStyle(
-                                        color: AppColors.white50,
-                                        fontSize: 11),
+                                        color: AppColors.white50, fontSize: 11),
                                   ),
                                 ],
                               ),
@@ -747,84 +771,102 @@ class _PreparePane extends StatelessWidget {
                       );
                     },
                   ),
-          ),
-          // The speed switch. Off by default on purpose: it takes the phone
-          // off the internet for the duration, which is a real cost, and the
-          // user should be the one deciding to pay it.
-          SwitchListTile(
-            value: state.turboRequested,
-            onChanged: onToggleTurbo,
-            dense: true,
-            contentPadding: EdgeInsets.zero,
-            secondary: Icon(Icons.bolt,
-                color: state.turboRequested
-                    ? AppColors.success
-                    : AppColors.white50,
-                size: 20),
-            title: Text(s.turboTitle,
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w600)),
-            subtitle: Text(s.turboSubtitle,
-                style: const TextStyle(
-                    color: AppColors.white55, fontSize: 11.5, height: 1.35)),
-            activeColor: AppColors.success,
-          ),
-          // Shown only once Turbo is armed, because it is advice about the
-          // thing they just switched on. It is the single most useful sentence
-          // on this screen: acting on it is the difference between a 2.4 GHz
-          // link and a 5 GHz one.
-          if (state.turboRequested)
-            Padding(
-              padding: const EdgeInsets.only(left: 4, bottom: 6),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Icon(Icons.lightbulb_outline,
-                      size: 14, color: AppColors.warning),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(s.turboSccTip,
-                        style: const TextStyle(
-                            color: AppColors.white70,
-                            fontSize: 11.5,
-                            height: 1.4)),
+                SliverToBoxAdapter(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const SizedBox(height: 8),
+                      // The speed switch. Off by default on purpose: it takes the phone
+                      // off the internet for the duration, which is a real cost, and the
+                      // user should be the one deciding to pay it.
+                      SwitchListTile(
+                        value: state.turboRequested,
+                        onChanged: onToggleTurbo,
+                        dense: true,
+                        contentPadding: EdgeInsets.zero,
+                        secondary: Icon(Icons.bolt,
+                            color: state.turboRequested
+                                ? AppColors.success
+                                : AppColors.white50,
+                            size: 20),
+                        title: Text(s.turboTitle,
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w600)),
+                        subtitle: Text(s.turboSubtitle,
+                            style: const TextStyle(
+                                color: AppColors.white55,
+                                fontSize: 11.5,
+                                height: 1.35)),
+                        activeColor: AppColors.success,
+                      ),
+                      // Shown only once Turbo is armed, because it is advice about the
+                      // thing they just switched on. It is the single most useful sentence
+                      // on this screen: acting on it is the difference between a 2.4 GHz
+                      // link and a 5 GHz one.
+                      if (state.turboRequested)
+                        Padding(
+                          padding: const EdgeInsets.only(left: 4, bottom: 6),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Icon(Icons.lightbulb_outline,
+                                  size: 14, color: AppColors.warning),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(s.turboSccTip,
+                                    style: const TextStyle(
+                                        color: AppColors.white70,
+                                        fontSize: 11.5,
+                                        height: 1.4)),
+                              ),
+                            ],
+                          ),
+                        ),
+                      // Safety switch for shared/public Wi-Fi. Off by default because the
+                      // one-tap path is the point; on, nobody downloads without a tap here.
+                      SwitchListTile(
+                        value: state.requireApproval,
+                        onChanged: onToggleApproval,
+                        dense: true,
+                        contentPadding: EdgeInsets.zero,
+                        secondary: const Icon(Icons.verified_user_outlined,
+                            color: AppColors.white50, size: 20),
+                        title: Text(s.askBeforeSending,
+                            style: const TextStyle(
+                                color: Colors.white, fontSize: 13.5)),
+                        subtitle: Text(s.askBeforeSendingHint,
+                            style: const TextStyle(
+                                color: AppColors.white55,
+                                fontSize: 11.5,
+                                height: 1.35)),
+                        activeColor: AppColors.accentBlue,
+                      ),
+                      SwitchListTile(
+                        value: state.pin.isNotEmpty,
+                        onChanged: onTogglePin,
+                        dense: true,
+                        contentPadding: EdgeInsets.zero,
+                        secondary: const Icon(Icons.pin_outlined,
+                            color: AppColors.white50, size: 20),
+                        title: Text(s.protectWithPin,
+                            style: const TextStyle(
+                                color: Colors.white, fontSize: 13.5)),
+                        subtitle: Text(s.protectWithPinHint,
+                            style: const TextStyle(
+                                color: AppColors.white55,
+                                fontSize: 11.5,
+                                height: 1.35)),
+                        activeColor: AppColors.accentBlue,
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          // Safety switch for shared/public Wi-Fi. Off by default because the
-          // one-tap path is the point; on, nobody downloads without a tap here.
-          SwitchListTile(
-            value: state.requireApproval,
-            onChanged: onToggleApproval,
-            dense: true,
-            contentPadding: EdgeInsets.zero,
-            secondary: const Icon(Icons.verified_user_outlined,
-                color: AppColors.white50, size: 20),
-            title: Text(s.askBeforeSending,
-                style: const TextStyle(color: Colors.white, fontSize: 13.5)),
-            subtitle: Text(s.askBeforeSendingHint,
-                style: const TextStyle(
-                    color: AppColors.white55, fontSize: 11.5, height: 1.35)),
-            activeColor: AppColors.accentBlue,
           ),
-          SwitchListTile(
-            value: state.pin.isNotEmpty,
-            onChanged: onTogglePin,
-            dense: true,
-            contentPadding: EdgeInsets.zero,
-            secondary: const Icon(Icons.pin_outlined,
-                color: AppColors.white50, size: 20),
-            title: Text(s.protectWithPin,
-                style: const TextStyle(color: Colors.white, fontSize: 13.5)),
-            subtitle: Text(s.protectWithPinHint,
-                style: const TextStyle(
-                    color: AppColors.white55, fontSize: 11.5, height: 1.35)),
-            activeColor: AppColors.accentBlue,
-          ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 8),
           SizedBox(
             width: double.infinity,
             child: FilledButton(
@@ -843,8 +885,7 @@ class _PreparePane extends StatelessWidget {
                         const SizedBox(
                           width: 16,
                           height: 16,
-                          child:
-                              CircularProgressIndicator(strokeWidth: 2),
+                          child: CircularProgressIndicator(strokeWidth: 2),
                         ),
                         const SizedBox(width: 12),
                         Flexible(
@@ -883,7 +924,8 @@ class _PreparePane extends StatelessWidget {
             const Icon(Icons.folder_open_outlined,
                 size: 48, color: AppColors.white50),
             const SizedBox(height: 16),
-            Text(AppStrings.of(context).noFilesHint,
+            Text(
+              AppStrings.of(context).noFilesHint,
               textAlign: TextAlign.center,
               style: const TextStyle(
                   color: AppColors.white70, fontSize: 13, height: 1.5),

@@ -157,7 +157,7 @@ class _QuickAccessChipsState extends ConsumerState<QuickAccessChips> {
         },
       ),
       _ChipItem(
-        label: 'Music',
+        label: s.tabMusic,
         // MX shows headphones with musical-note sparkles; closest Material icon
         icon: Icons.headphones,
         bg: const Color(0xFFFF9800), // orange
@@ -169,28 +169,28 @@ class _QuickAccessChipsState extends ConsumerState<QuickAccessChips> {
         },
       ),
       _ChipItem(
-        label: 'File Transfer',
+        label: s.fileTransfer,
         // MX shows folder with arrows (transfer between folders)
         icon: Icons.drive_file_move_outlined,
         bg: const Color(0xFF1976D2), // blue
         onTap: () => _open(context, const TransferScreen()),
       ),
       _ChipItem(
-        label: 'Status Saver',
+        label: s.statusSaver,
         // MX shows download-into-rounded-square
         icon: Icons.system_update_alt,
         bg: const Color(0xFF43A047), // green
         onTap: () => _open(context, const StatusSaverScreen()),
       ),
       _ChipItem(
-        label: 'My Playlists',
+        label: s.playlists,
         // MX shows clipboard-with-plus
         icon: Icons.playlist_add,
         bg: const Color(0xFF8E24AA), // purple
         onTap: () => _open(context, const PlaylistsScreen()),
       ),
       _ChipItem(
-        label: 'Privacy',
+        label: s.privateFolder,
         // MX uses a closed-padlock-shield
         icon: Icons.shield_outlined,
         bg: const Color(0xFF1565C0), // dark blue
@@ -204,38 +204,38 @@ class _QuickAccessChipsState extends ConsumerState<QuickAccessChips> {
         },
       ),
       _ChipItem(
-        label: 'History',
+        label: s.history,
         icon: Icons.history,
         bg: const Color(0xFF00897B), // teal
         onTap: () => _open(context, const HistoryScreen()),
       ),
       _ChipItem(
-        label: 'Favourites',
+        label: s.favourites,
         icon: Icons.favorite,
         bg: const Color(0xFFE53935), // red
         onTap: () => _open(context, const FavouritesScreen()),
       ),
       _ChipItem(
-        label: 'Watch Later',
+        label: s.watchLater,
         icon: Icons.watch_later,
         bg: const Color(0xFFF57C00), // orange
         onTap: () => _open(context, const WatchLaterScreen()),
       ),
       _ChipItem(
-        label: 'Network',
+        label: s.networkStream,
         icon: Icons.public,
         bg: const Color(0xFF5E35B1), // deep purple
         onTap: () => _open(context, const NetworkStreamScreen()),
       ),
       _ChipItem(
-        label: 'Cleaner',
+        label: s.chipCleaner,
         // MX uses a green broom-like icon
         icon: Icons.cleaning_services,
         bg: const Color(0xFF388E3C), // green
         onTap: () => _open(context, const MediaManagerScreen()),
       ),
       _ChipItem(
-        label: 'Equalizer',
+        label: s.equalizerTitle,
         icon: Icons.tune,
         bg: const Color(0xFF00ACC1), // cyan
         onTap: () {
@@ -248,7 +248,7 @@ class _QuickAccessChipsState extends ConsumerState<QuickAccessChips> {
         },
       ),
       _ChipItem(
-        label: 'Settings',
+        label: s.settings,
         icon: Icons.settings,
         bg: const Color(0xFF546E7A), // blue grey
         onTap: () => _open(context, const SettingsScreen()),

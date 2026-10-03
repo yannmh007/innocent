@@ -81,6 +81,8 @@ class AppStrings {
   String get history => _s('history');
   String get favourites => _s('favourites');
   String get watchLater => _s('watchLater');
+  String get chipCleaner => _s('chipCleaner');
+  String get images => _s('images');
   String get playlists => _s('playlists');
   String get recycleBin => _s('recycleBin');
   String get statistics => _s('statistics');
@@ -1963,6 +1965,8 @@ class AppStrings {
     'watchLater': 'Watch later',
     'playlists': 'Playlists',
     'recycleBin': 'Recycle bin',
+    'chipCleaner': 'Cleaner',
+    'images': 'Images',
     'statistics': 'Statistics',
     'about': 'About',
     'help': 'Help',
@@ -3232,9 +3236,11 @@ class AppStrings {
     'viewGrid': 'ဇယားကွက်',
     'history': 'မှတ်တမ်း',
     'favourites': 'အကြိုက်ဆုံးများ',
-    'watchLater': 'မှ ကြည့်ရန်',
+    'watchLater': 'နောက်မှ ကြည့်ရန်',
     'playlists': 'ဖွင့်စာရင်းများ',
     'recycleBin': 'အမှိုက်ပုံး',
+    'chipCleaner': 'ရှင်းလင်းရန်',
+    'images': 'ဓာတ်ပုံ',
     'statistics': 'စာရင်းအင်း',
     'about': 'အကြောင်း',
     'help': 'အကူအညီ',
@@ -3392,7 +3398,7 @@ class AppStrings {
     'howTransferWorksBody': 'Wi-Fi ကွန်ရက်တစ်ခုတည်းပေါ်က တခြားစက်ဆီ ဖိုင်ပို့တာဖြစ်ပြီး အင်တာနက် မလိုပါ။\n\n၁။ စက်နှစ်လုံးကို Wi-Fi တစ်ခုတည်း ချိတ်ပါ။\n၂။ ဒီစက်မှာ ဖိုင်ရွေးပြီး Start နှိပ်ပါ။\n၃။ တခြားစက်မှာ browser ဖွင့်ပြီး:\n   - ကင်မရာနဲ့ QR ကို scan လုပ်ပါ၊ ဒါမှမဟုတ်\n   - မျက်နှာပြင်ပေါ်က URL ကို ရိုက်ထည့်ပါ။\n၄။ တခြားစက်မှာ ဖိုင်စာရင်း ပေါ်လာပါမယ်။ ဖိုင်ကိုနှိပ်ပြီး ဒေါင်းလုဒ်လုပ်ပါ။\n\nဒီစက်မှာ Stop နှိပ်ရင် ပို့တာရပ်ပြီး URL ချက်ချင်း အလုပ်မလုပ်တော့ပါ။\n\nသတိပြုရန်:\n- Encrypt မလုပ်ထားပါ (LAN အတွင်းသာ)။ URL အပြည့်သိတဲ့ Wi-Fi ပေါ်ကလူတိုင်း ဒေါင်းလုဒ်လုပ်နိုင်ပါတယ်။\n- Mobile data နဲ့ အလုပ်မလုပ်ပါ။ Wi-Fi သာ။\n- Background မှာ ဆက်မလုပ်ပါ။ App ပိတ်ရင် ပို့တာလည်း ရပ်ပါတယ်။',
     'filesToShare': 'ပို့မယ့် ဖိုင်များ',
     'addFiles': 'ဖိုင်ထည့်မယ်',
-    'noFilesHint': 'ဖိုင် မရှိသေးပါ။\n"Add files" ကိုနှိပ်ပြီး ပို့မယ့်ဖိုင် ရွေးပါ။',
+    'noFilesHint': 'ဖိုင် မရှိသေးပါ။\n"ဖိုင်ထည့်မယ်" ကိုနှိပ်ပြီး ပို့မယ့်ဖိုင် ရွေးပါ။',
     'shareIsLive': 'ပို့နေပါပြီ',
     'shareScanHint': 'တခြားစက်မှာ QR ကို scan လုပ်ပါ ဒါမှမဟုတ် အောက်က URL ကို browser ထဲ ရိုက်ထည့်ပါ။',
     'urlCopied': 'URL ကူးပြီးပါပြီ',
@@ -4496,6 +4502,8 @@ class AppStrings {
     'watchLater': 'ดูภายหลัง',
     'playlists': 'เพลย์ลิสต์',
     'recycleBin': 'ถังขยะ',
+    'chipCleaner': 'ล้างไฟล์',
+    'images': 'รูปภาพ',
     'statistics': 'สถิติ',
     'about': 'เกี่ยวกับ',
     'help': 'ช่วยเหลือ',

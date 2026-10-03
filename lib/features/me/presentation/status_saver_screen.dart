@@ -274,9 +274,9 @@ class _StatusSaverScreenState extends State<StatusSaverScreen>
           indicatorColor: AppColors.primaryBlue,
           labelColor: AppColors.primaryBlue,
           unselectedLabelColor: AppColors.darkOnSurfaceMuted,
-          tabs: const [
-            Tab(text: 'IMAGES'),
-            Tab(text: 'VIDEOS'),
+          tabs: [
+            Tab(text: AppStrings.of(context).images),
+            Tab(text: AppStrings.of(context).videos),
           ],
         ),
       ),

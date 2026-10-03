@@ -262,7 +262,26 @@ class VaultPinPadState extends State<VaultPinPad>
               ),
             ),
             const Spacer(flex: 3),
-            _keypad(keySize, canSubmit),
+            // SIZED BY THE SPACE ACTUALLY LEFT, not only by the estimate.
+            // [_chromeHeight] guesses the header and footer from their English
+            // height; in Burmese both run a line or two longer, the keys sized
+            // from the guess no longer fitted, and on a 360×740 phone the
+            // footer (the fingerprint switch) went under the overflow stripe.
+            // The estimate still decides whether to scroll at all; this makes
+            // the keys shrink into whatever the real text leaves them.
+            // Flex 40 against the spacers' 6: the keys get nearly all the
+            // free height, the spacers only the remainder they balance with.
+            Expanded(
+              flex: 40,
+              child: LayoutBuilder(
+                builder: (context, slot) {
+                  final fits = (slot.maxHeight / 4 - 12).clamp(44.0, 76.0);
+                  return Center(
+                    child: _keypad(math.min(keySize, fits), canSubmit),
+                  );
+                },
+              ),
+            ),
             if (widget.footer != null) ...[
               const SizedBox(height: 6),
               widget.footer!,

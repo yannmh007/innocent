@@ -1665,7 +1665,10 @@ class _DownloaderHomeScreenState extends ConsumerState<DownloaderHomeScreen>
         foregroundColor: Colors.white,
         elevation: 0,
         scrolledUnderElevation: 0,
-        titleSpacing: 0,
+        // Tight against the back arrow when there is one; the default inset
+        // when this is the first screen (opened from a shared link), where
+        // 0 put the title against the edge of the glass.
+        titleSpacing: Navigator.of(context).canPop() ? 0 : null,
         title: Text(
           s.downloaderTitle,
           style: const TextStyle(

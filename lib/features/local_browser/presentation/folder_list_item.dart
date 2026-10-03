@@ -203,7 +203,14 @@ class FolderListItem extends ConsumerWidget {
                   Row(
                     children: [
                       Text(
-                        '${folder.videoCount} ${folder.videoCount == 1 ? "video" : "videos"}',
+                        // English keeps its singular; Burmese and Thai
+                        // have no plural form, so their one string serves.
+                        folder.videoCount == 1 &&
+                                Localizations.localeOf(context).languageCode ==
+                                    'en'
+                            ? '1 video'
+                            : AppStrings.of(context)
+                                .vhAlbumVideos(folder.videoCount),
                         style: const TextStyle(
                           color: AppColors.specTextSecondary,
                           fontSize: 13,

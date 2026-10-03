@@ -541,7 +541,9 @@ class _LocalScreenState extends ConsumerState<LocalScreen> {
               scrolledUnderElevation: 0,
               surfaceTintColor: Colors.transparent,
               title: Text(
-                prefs.viewMode == ViewMode.files ? 'Videos' : 'Folders',
+                prefs.viewMode == ViewMode.files
+                    ? AppStrings.of(context).videos
+                    : AppStrings.of(context).foldersTitle,
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 17,

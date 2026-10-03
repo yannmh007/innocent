@@ -392,15 +392,21 @@ class _GridItem extends StatelessWidget {
           children: [
             Icon(feature.icon, color: AppColors.accentBlue, size: 30),
             const SizedBox(height: 8),
-            Text(
-              feature.label,
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 13,
-                fontWeight: FontWeight.w400,
+            // SHRINK, DON'T CUT. The rows are a fixed 82px, so a label gets
+            // one line; a long one ("မီဒီယာ စီမံခန့်ခွဲမှု" on a 360px phone)
+            // was cut to "မီဒီယာ စီမံခန့်…". Scaling it down a little keeps
+            // the whole word readable.
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                feature.label,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w400,
+                ),
               ),
             ),
           ],

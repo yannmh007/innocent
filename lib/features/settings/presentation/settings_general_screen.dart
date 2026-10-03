@@ -17,7 +17,6 @@ import '../../../core/theme/app_colors.dart';
 import '../../user_data/user_data_providers.dart';
 import '../../video_hub/presentation/stream_cache_screen.dart';
 import 'settings_dialogs.dart';
-import 'settings_language_screen.dart';
 import 'settings_widgets.dart';
 
 import '../../../core/localization/app_strings.dart';
@@ -378,12 +377,10 @@ class SettingsGeneralScreen extends ConsumerWidget {
       appBar: AppBar(title: Text(AppStrings.of(context).settingsGeneral)),
       body: ListView(
         children: [
-          SettingsNavTile(
-            title: 'App Language',
-            subtitle: 'System default',
-            onTap: () => Navigator.of(context).push(MaterialPageRoute(
-                builder: (_) => const SettingsLanguageScreen())),
-          ),
+          // There were two language rows here: this one said "System
+          // default" whatever the app was actually set to, and the live one
+          // below. A screenshot of the Burmese app showed both — one of them
+          // wrong — so only the live one is left.
           _toggle(ref,
               title: 'Play media links',
               subtitle:
@@ -407,12 +404,12 @@ class SettingsGeneralScreen extends ConsumerWidget {
               orElse: () => kAppLanguages.first,
             );
             return SettingsNavTile(
-              title: 'App language',
+              title: AppStrings.of(context).settingsAppLanguage,
               subtitle: labelFor(cur),
               onTap: () async {
                 final picked = await showSettingsListDialog(
                   context: context,
-                  title: 'App Language',
+                  title: AppStrings.of(context).settingsAppLanguage,
                   options: kAppLanguages.map(labelFor).toList(),
                   currentValue: labelFor(cur),
                 );
