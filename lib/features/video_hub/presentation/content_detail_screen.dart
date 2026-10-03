@@ -8,6 +8,7 @@ import '../../../core/localization/app_strings.dart';
 import '../../../core/services/preferences/player_settings_service.dart';
 import '../domain/access_policy.dart';
 import '../data/api/event_sender.dart';
+import '../data/api/offline_library.dart';
 import '../domain/video_content.dart';
 import 'album_downloads.dart';
 import 'album_saver.dart';
@@ -89,7 +90,11 @@ class _ContentDetailScreenState extends ConsumerState<ContentDetailScreen> {
   /// tapped — and on a dead connection it would never show anything at all,
   /// when everything except the album is already in hand.
   VideoContent get content {
-    final full = ref.read(titleDetailProvider(widget.content.id)).asData?.value;
+    // `valueOrNull`: through a background refresh the provider is reloading
+    // with the previous value, and `asData` would hand back null — dropping
+    // the screen to the bare card, emptying the album grid, and filling it
+    // again when the refresh landed. That was the flash on opening a card.
+    final full = ref.read(titleDetailProvider(widget.content.id)).valueOrNull;
     return full ?? widget.content;
   }
 
@@ -604,6 +609,23 @@ class _AlbumTile extends StatelessWidget {
     );
   }
 
+  /// What the tile draws. A PHOTO SAVED TO THE PHONE draws from the phone.
+  ///
+  /// The saved copy is indexed by the photo's own address, but the tile asked
+  /// for its THUMBNAIL — a different address — so a photo the viewer had just
+  /// downloaded with the data saver on was fetched again from the network to
+  /// fill its tile: the data spent twice, and the tile blank until the second
+  /// fetch landed. Asking for the photo itself when it is on the phone finds
+  /// the file (PosterImage → OfflineLibrary.photoPathFor) and costs nothing.
+  MediaRef _art() {
+    if (!item.isVideo &&
+        item.source.provider == 'url' &&
+        OfflineLibrary.photoPathFor(item.source.locator) != null) {
+      return item.source;
+    }
+    return item.thumbnail.isEmpty ? item.source : item.thumbnail;
+  }
+
   Widget _normal() {
     return Stack(
       fit: StackFit.expand,
@@ -630,7 +652,7 @@ class _AlbumTile extends StatelessWidget {
         _blurred(
           locked,
           PosterImage(
-            mediaRef: item.thumbnail.isEmpty ? item.source : item.thumbnail,
+            mediaRef: _art(),
             title: '$parentTitle ${item.id}',
             glyph:
                 item.isVideo ? Icons.play_circle_outline : Icons.image_outlined,

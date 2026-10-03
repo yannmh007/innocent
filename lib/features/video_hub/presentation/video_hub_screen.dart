@@ -268,7 +268,12 @@ class _VideoHubScreenState extends ConsumerState<VideoHubScreen>
   }
 
   List<Widget> _buildHero(BuildContext context) {
-    final featured = ref.watch(featuredContentProvider).asData?.value;
+    // `valueOrNull`, NOT `asData?.value`. While a background refresh re-runs
+    // the provider its state is "loading, with the previous value", and
+    // `asData` is null for that — so the hero vanished for the length of the
+    // request and came back: one of the two flashes on the way into Movies.
+    // `valueOrNull` keeps drawing what is on screen until the new one lands.
+    final featured = ref.watch(featuredContentProvider).valueOrNull;
     if (featured == null) return const <Widget>[];
     return <Widget>[
       SliverToBoxAdapter(
@@ -288,6 +293,12 @@ class _VideoHubScreenState extends ConsumerState<VideoHubScreen>
     final rowsAsync = ref.watch(contentRowsProvider);
 
     return rowsAsync.when(
+      // A REFRESH REPLACES THE ROWS IN PLACE. Without these, every background
+      // refresh that found something new put the skeleton back over rows the
+      // viewer was already reading, then drew them again — the second flash.
+      // The skeleton is for the first load only.
+      skipLoadingOnReload: true,
+      skipLoadingOnRefresh: true,
       loading: () => <Widget>[
         // Row-shaped, not grid-shaped: this tab is about to show rows.
         const SliverToBoxAdapter(child: RowSkeletonList()),
@@ -345,7 +356,7 @@ class _VideoHubScreenState extends ConsumerState<VideoHubScreen>
       filters: filters,
     );
     final state = ref.watch(pagedCatalogueProvider(key));
-    final facets = ref.watch(categoryFacetsProvider).asData?.value;
+    final facets = ref.watch(categoryFacetsProvider).valueOrNull;
     final maxWidth = MediaQuery.of(context).size.width;
 
     // Filters changed means a different result set, so the old scroll offset

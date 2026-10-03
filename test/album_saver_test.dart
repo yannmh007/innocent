@@ -72,7 +72,9 @@ void main() {
       {required bool saver,
       required AlbumItem item,
       bool locked = false,
-      Future<bool>? answer}) async {
+      Future<bool>? answer,
+      VoidCallback? onOpen,
+      VoidCallback? onPlay}) async {
     await tester.runAsync(() async {
       // The switch itself, which the gate reads before the connection
       // question. Written, not reset, so rows a test put on the shelf stay.
@@ -92,12 +94,17 @@ void main() {
             body: SizedBox(
               width: 200,
               height: 200,
-              child: AlbumSaverGate(
-                content: _content,
-                item: item,
-                locked: locked,
-                onPlay: () {},
-                normal: const Text('normal tile'),
+              // The album tile's own tap (open the viewer) sits OUTSIDE the
+              // gate, as it does in content_detail_screen.
+              child: InkWell(
+                onTap: onOpen,
+                child: AlbumSaverGate(
+                  content: _content,
+                  item: item,
+                  locked: locked,
+                  onPlay: onPlay ?? () {},
+                  normal: const Text('normal tile'),
+                ),
               ),
             ),
           ),
@@ -170,5 +177,56 @@ void main() {
         saver: true, item: _photo, answer: Completer<bool>().future);
     expect(find.text('normal tile'), findsNothing);
     expect(find.byKey(const ValueKey('saver-dl-p1')), findsOneWidget);
+  });
+
+  // Telegram, with auto-download off (2026-10-03 report: "the download circle
+  // opened the item instead of downloading it, and needed a second tap"):
+  testWidgets('a tap anywhere on a frosted photo downloads it, never opens it',
+      (tester) async {
+    var opened = 0;
+    await pump(tester, saver: true, item: _photo, onOpen: () => opened++);
+    // The corner, well away from the download circle in the middle.
+    await tester.tapAt(tester.getTopLeft(find.byType(AlbumSaverGate)) + const Offset(10, 10));
+    await tester.pump();
+    expect(opened, 0, reason: 'the viewer opened on an item that is not there');
+    await tester.tap(find.byKey(const ValueKey('saver-dl-p1')));
+    await tester.pump();
+    expect(opened, 0);
+  });
+
+  testWidgets('a frosted clip plays from its tile; its arrow only downloads',
+      (tester) async {
+    var opened = 0, played = 0;
+    await pump(tester,
+        saver: true, item: _clip, onOpen: () => opened++, onPlay: () => played++);
+    await tester.tapAt(tester.getTopLeft(find.byType(AlbumSaverGate)) + const Offset(10, 10));
+    await tester.pump();
+    expect(played, 1);
+    expect(opened, 0);
+  });
+
+  testWidgets('once on the phone, the tile opens as normal', (tester) async {
+    var opened = 0;
+    await tester.runAsync(() async {
+      final dir = await library.directory();
+      final f = File('${dir.path}/t.p1.jpg');
+      await f.writeAsBytes(<int>[1, 2, 3]);
+      await library.put(OfflineItem(
+        titleId: 't',
+        key: 't.p1',
+        kind: 'photo',
+        sourceUrl: 'https://x/p1.jpg',
+        title: 'T',
+        path: f.path,
+        bytes: 3,
+        addedAt: DateTime.now(),
+      ));
+    });
+    await pump(tester, saver: true, item: _photo, onOpen: () => opened++);
+    await tester.tap(find.text('normal tile'));
+    await tester.pump();
+    expect(opened, 1);
+    // And the saved photo is found by the address the tile asks for.
+    expect(OfflineLibrary.photoPathFor('https://x/p1.jpg'), isNotNull);
   });
 }

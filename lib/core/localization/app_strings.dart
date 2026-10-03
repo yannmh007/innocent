@@ -1464,6 +1464,9 @@ class AppStrings {
   String get vhBookmarksSignInHint => _s('vhBookmarksSignInHint');
   String get vhOn => _s('vhOn');
   String get vhEdit => _s('vhEdit');
+  String get vhDownloadsActive => _s('vhDownloadsActive');
+  String get vhDownloadsDone => _s('vhDownloadsDone');
+  String get vhDownloadsSettings => _s('vhDownloadsSettings');
   String vhBookmarksCount(int n) => _s('vhBookmarksCount').replaceFirst('{n}', '$n');
   String get vhLibraryDownloads => _s('vhLibraryDownloads');
   String get vhDeleteDownloadBody => _s('vhDeleteDownloadBody');
@@ -1979,6 +1982,9 @@ class AppStrings {
     'vhBookmarksCount': '{n} saved',
     'vhOn': 'On',
     'vhEdit': 'Edit',
+    'vhDownloadsActive': 'Downloading',
+    'vhDownloadsDone': 'Downloaded',
+    'vhDownloadsSettings': 'Download settings',
     'playerNoticeIncomplete': 'This file is not fully downloaded. It plays up to {t}.',
     'playerNoticeSeekHeld': 'Not downloaded past {t}.',
     'playerNoticeSoftware': 'The hardware decoder failed on this file. Playing with the software (SW) decoder.',
@@ -3280,6 +3286,9 @@ class AppStrings {
     'vhBookmarksCount': '{n} ခု သိမ်းထားသည်',
     'vhOn': 'ဖွင့်ထား',
     'vhEdit': 'ပြင်မယ်',
+    'vhDownloadsActive': 'ဒေါင်းနေဆဲ',
+    'vhDownloadsDone': 'ဒေါင်းပြီး',
+    'vhDownloadsSettings': 'ဒေါင်းလုဒ် ဆက်တင်',
     'playerNoticeIncomplete': 'ဒီဖိုင်က အပြည့် download မဆွဲရသေးပါ။ {t} အထိပဲ ကြည့်လို့ရပါမယ်။',
     'playerNoticeSeekHeld': '{t} နောက်ပိုင်း download မဆွဲရသေးပါ။',
     'playerNoticeSoftware': 'ဒီဖိုင်မှာ Hardware decoder အလုပ်မလုပ်လို့ Software (SW) decoder နဲ့ ဆက်ဖွင့်ထားပါတယ်။',
@@ -4570,6 +4579,9 @@ class AppStrings {
     'vhBookmarksCount': 'บันทึกไว้ {n} รายการ',
     'vhOn': 'เปิด',
     'vhEdit': 'แก้ไข',
+    'vhDownloadsActive': 'กำลังดาวน์โหลด',
+    'vhDownloadsDone': 'ดาวน์โหลดแล้ว',
+    'vhDownloadsSettings': 'ตั้งค่าดาวน์โหลด',
     'playerNoticeIncomplete': 'ไฟล์นี้ดาวน์โหลดไม่ครบ เล่นได้ถึง {t}',
     'playerNoticeSeekHeld': 'ยังไม่ได้ดาวน์โหลดหลัง {t}',
     'playerNoticeSoftware': 'ตัวถอดรหัสฮาร์ดแวร์ใช้กับไฟล์นี้ไม่ได้ กำลังเล่นด้วยตัวถอดรหัสซอฟต์แวร์ (SW)',

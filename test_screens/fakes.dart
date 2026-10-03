@@ -8,7 +8,9 @@ import 'package:innocent/features/music/domain/song.dart';
 import 'package:innocent/features/music/presentation/music_providers.dart';
 import 'package:innocent/features/video_hub/data/demo_content_datasource.dart';
 import 'package:innocent/features/video_hub/data/demo_content_repository.dart';
+import 'package:innocent/features/video_hub/data/api/offline_library.dart';
 import 'package:innocent/features/video_hub/domain/video_content.dart';
+import 'package:innocent/features/video_hub/presentation/video_hub_provider.dart';
 
 final _now = DateTime(2026, 10, 3, 12);
 
@@ -126,3 +128,65 @@ class AlbumDemoRepository extends DemoContentRepository {
 
 VideoContent albumTitle() =>
     const DemoContentDataSource().all().first.withAlbum(albumItems());
+
+/// A shelf with what a real one holds: two films, an album's photos and a
+/// clip, one download half-way and one paused.
+List<Override> downloadsOverrides() {
+  final now = DateTime(2026, 10, 3, 12);
+  OfflineItem film(String id, String t, int mb, int mins, {String? mm}) => OfflineItem(
+        titleId: id,
+        key: id,
+        title: t,
+        titleMm: mm,
+        path: '/data/$id.mp4',
+        bytes: mb * 1024 * 1024,
+        durationS: mins * 60,
+        addedAt: now.subtract(Duration(hours: mins)),
+      );
+  final items = <OfflineItem>[
+    film('f1', 'Inception', 1450, 148),
+    film('f2', 'The Lord of the Rings: The Return of the King (Extended)', 3900, 263),
+    film('f3', 'Chit Thu Eain', 820, 95, mm: 'ချစ်သူ့အိမ် — ဇာတ်ကားအပြည့်'),
+    for (var i = 0; i < 5; i++)
+      OfflineItem(
+        titleId: 'a1',
+        key: 'a1.p$i',
+        kind: 'photo',
+        title: 'Yangon Evening',
+        titleMm: 'ရန်ကုန် ညနေခင်း',
+        path: '/data/a1.p$i.jpg',
+        bytes: 180000 + i * 20000,
+        addedAt: now,
+      ),
+    OfflineItem(
+      titleId: 'a1',
+      key: 'a1.c0',
+      title: 'Yangon Evening',
+      titleMm: 'ရန်ကုန် ညနေခင်း',
+      path: '/data/a1.c0.mp4',
+      bytes: 120 * 1024 * 1024,
+      durationS: 630,
+      assetId: 'c0',
+      addedAt: now,
+    ),
+  ];
+  final pending = <PendingProgress>[
+    PendingProgress(
+      item: PendingDownload(titleId: 'p1', title: 'Interstellar', startedAt: now),
+      received: 640 * 1024 * 1024,
+      total: 1700 * 1024 * 1024,
+    ),
+    PendingProgress(
+      item: PendingDownload(
+          titleId: 'p2', title: 'Myanmar Drama Ep 1', startedAt: now, pausedByUser: true),
+      received: 90 * 1024 * 1024,
+      total: 400 * 1024 * 1024,
+    ),
+  ];
+  return [
+    offlineItemsProvider.overrideWith((ref) async => items),
+    offlinePendingProvider.overrideWith((ref) async => pending),
+    offlineStorageProvider.overrideWith(
+        (ref) async => (used: 6400 * 1024 * 1024, free: 23 * 1024 * 1024 * 1024)),
+  ];
+}

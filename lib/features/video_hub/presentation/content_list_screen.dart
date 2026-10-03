@@ -106,8 +106,7 @@ class _ContentListScreenState extends ConsumerState<ContentListScreen> {
     final state = ref.watch(pagedCatalogueProvider(key));
     final facets = ref
         .watch(rowFacetsProvider(RowFacetsArg(widget.rowKey)))
-        .asData
-        ?.value;
+        .valueOrNull;
     final maxWidth = MediaQuery.of(context).size.width;
 
     return Scaffold(

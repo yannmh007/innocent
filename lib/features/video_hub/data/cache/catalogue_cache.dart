@@ -146,7 +146,21 @@ class CatalogueCache {
   static final ValueNotifier<int> revision = ValueNotifier<int>(0);
 
   /// Called by the repository when a background refresh has landed.
-  static void noteRefreshed() => revision.value = revision.value + 1;
+  ///
+  /// COALESCED. Entering Movies refreshes several keys at once — the hero,
+  /// the rows, the categories — and they land a few hundred milliseconds
+  /// apart. One tick each meant one rebuild of every catalogue screen each:
+  /// the "flashes twice" on the way in. Ticks inside [_coalesce] become one.
+  static void noteRefreshed() {
+    if (_pendingTick != null) return;
+    _pendingTick = Timer(_coalesce, () {
+      _pendingTick = null;
+      revision.value = revision.value + 1;
+    });
+  }
+
+  static Timer? _pendingTick;
+  static const Duration _coalesce = Duration(milliseconds: 350);
 
   /// Until when a deliberate refresh is in progress.
   ///
@@ -318,6 +332,21 @@ class CatalogueCache {
   /// caller never awaits this on the path that matters.
   /// Returns true when what was stored DIFFERS from what was there before,
   /// which is the only case worth redrawing for. See [_stamp].
+  /// [body] without the fields that change without changing what a screen
+  /// shows in any way that matters. See the stamp in [write].
+  static dynamic _stable(dynamic body) {
+    if (body is Map) {
+      return <String, dynamic>{
+        for (final e in body.entries)
+          if (!_volatile.contains(e.key)) '${e.key}': _stable(e.value),
+      };
+    }
+    if (body is List) return body.map(_stable).toList(growable: false);
+    return body;
+  }
+
+  static const Set<String> _volatile = <String>{'view_count', 'views'};
+
   static Future<bool> write(String key, dynamic body) async {
     if (!enabled) return false;
     try {
@@ -338,8 +367,14 @@ class CatalogueCache {
       // so on both paths.
       // THE BODY ALONE, because the envelope carries a timestamp and would
       // make every single write look like a change.
-      final payload = jsonEncode(body);
-      final stamp = sha1.convert(utf8.encode(payload)).toString();
+      //
+      // And the stamp IGNORES VIEW COUNTS. They change on nearly every refresh —
+      // opening a card records a view, so the refresh that follows it was
+      // always "different" — and redrawing every catalogue screen to move a
+      // number from 1.2K to 1.2K is a flash for nothing. The new body is still
+      // stored and drawn on the next rebuild; it just does not cause one.
+      final stamp =
+          sha1.convert(utf8.encode(jsonEncode(_stable(body)))).toString();
       final changed = _stamp[key] != stamp;
       _stamp[key] = stamp;
 

@@ -132,7 +132,7 @@ class AlbumSaverGate extends ConsumerWidget {
     final downloader = ref.read(offlineDownloaderProvider);
     final s = AppStrings.of(context);
     final big = large ? 64.0 : 40.0;
-    return Stack(
+    final frosted = Stack(
       fit: StackFit.expand,
       children: <Widget>[
         BlurPreview(
@@ -270,6 +270,37 @@ class AlbumSaverGate extends ConsumerWidget {
             ),
           ),
       ],
+    );
+    // A locked item keeps the parent's tap: the viewer, with its paywall.
+    if (locked) return frosted;
+    // ═══════════════════════════════════════════════════════════════════
+    // THE WHOLE TILE IS THE BUTTON, AS IN TELEGRAM
+    // ═══════════════════════════════════════════════════════════════════
+    //
+    // With auto-download off, Telegram treats a not-yet-downloaded item like
+    // this: a PHOTO anywhere you tap starts the download (tap again while it
+    // runs to cancel) and, once it is down, the picture simply appears where
+    // the frost was — it does not open itself; the next tap opens it. A
+    // VIDEO's tile streams it (the play button), and the small arrow beside
+    // the play button downloads it in the background. This tile used to send
+    // a tap anywhere but the small circle into the viewer — on an item that
+    // was not there — which read as the download button doing nothing.
+    //
+    // Opaque, and inside the parent's InkWell: while frosted this wins the
+    // tap; once the item is held this widget is gone and the parent's tap
+    // (open the viewer) is what a tap does.
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: item.isVideo
+          ? onPlay
+          : () {
+              if (downloader.isRunning(key)) {
+                downloader.cancel(key);
+              } else {
+                downloadAlbumItem(context, ref, content: content, item: item);
+              }
+            },
+      child: frosted,
     );
   }
 }

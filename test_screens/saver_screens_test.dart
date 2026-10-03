@@ -35,6 +35,8 @@ void main() {
       overrides: hub, prefs: saverOn, phones: one);
   screens('downloads_saver', () => const DownloadsScreen(),
       overrides: hub, prefs: saverOn, phones: one);
+  screens('downloads_full', () => const DownloadsScreen(),
+      overrides: () => [...hub(), ...downloadsOverrides()], prefs: saverOn, scrolls: 2);
   final demo = const DemoContentDataSource().all();
   final saved = <String, Object>{
     'vh_bookmarks_v1': jsonEncode({

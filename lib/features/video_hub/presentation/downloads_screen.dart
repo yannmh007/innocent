@@ -87,39 +87,17 @@ class DownloadsScreen extends ConsumerWidget {
             padding: EdgeInsets.fromLTRB(
                 VH.gutter, VH.s3, VH.gutter, VhInsets.scrollBottom(context)),
             children: <Widget>[
+              // ═════════════════════════════════════════════════════════
+              // WHAT IS ON THE PHONE FIRST, HOW IT BEHAVES LAST
+              // ═════════════════════════════════════════════════════════
+              //
+              // This screen used to open on its settings — the storage line,
+              // the Wi-Fi switch, the whole data saver card — and the films
+              // the viewer came for started below the fold. Netflix and
+              // YouTube both put the downloads first and the settings in a
+              // compact group at the bottom; so does this, now.
               if (storage != null)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: VH.s3),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text(s.vhDownloadStorageLine,
-                          style: VH.meta.copyWith(fontSize: 11.5)),
-                      const SizedBox(height: 2),
-                      Text(
-                        s.vhDownloadStorage(
-                          formatBytes(storage.used),
-                          // A dash rather than "0 B free" when the platform
-                          // did not answer: an unmeasured number presented as
-                          // zero is a reason not to download that nobody
-                          // actually established.
-                          storage.free < 0 ? '—' : formatBytes(storage.free),
-                        ),
-                        style: VH.label.copyWith(fontSize: 13),
-                      ),
-                    ],
-                  ),
-                ),
-              // THE ONE SETTING THIS FEATURE NEEDS, next to the thing it
-              // governs rather than buried in a settings tree four screens
-              // away. YouTube and Netflix both keep it in their downloads
-              // section for the same reason: it is only ever thought about
-              // while looking at downloads.
-              const _WifiOnlyRow(),
-              // The album data saver lives with the other "what may this
-              // spend" switch. The album heading has a one-tap toggle too.
-              const DataSaverPanel(),
-              const SizedBox(height: VH.s4),
+                _StorageCard(used: storage.used, free: storage.free),
               // WHY A DOWNLOAD STOPS WHEN THE PHONE IS PUT DOWN, in the one
               // place the person who noticed it is looking. See _BatteryRow.
               const _BatteryRow(),
@@ -128,31 +106,31 @@ class DownloadsScreen extends ConsumerWidget {
                     message: s.vhLibraryDownloadsHint,
                     icon: Icons.download_for_offline_outlined),
               if (pending.isNotEmpty) ...<Widget>[
-                Padding(
-                  padding: const EdgeInsets.only(bottom: VH.s2),
-                  child: Text(s.vhDownloadUnfinished,
-                      style: VH.meta.copyWith(fontSize: 12)),
-                ),
-                for (final p in pending) ...<Widget>[
+                _Section(title: s.vhDownloadsActive, trailing: '${pending.length}'),
+                for (final p in pending)
                   _PendingRow(
                     pending: p,
                     languageCode: s.locale.languageCode,
                   ),
-                  const SizedBox(height: VH.s2),
-                ],
-                const Divider(height: VH.s4, color: VH.surface2),
               ],
               // FILMS ONE ROW EACH, ALBUMS ONE ROW PER TITLE. Nine photos and
               // clips of one title as nine rows would bury the films, and none
               // of them means anything without the album around it.
-              for (final entry in _shelfRows(items)) ...<Widget>[
-                if (entry.film != null)
-                  _Row(item: entry.film!, languageCode: s.locale.languageCode)
-                else
-                  _AlbumRow(
-                      items: entry.album, languageCode: s.locale.languageCode),
-                const SizedBox(height: VH.s2),
+              if (items.isNotEmpty) ...<Widget>[
+                _Section(
+                  title: s.vhDownloadsDone,
+                  trailing:
+                      '${_shelfRows(items).length} · ${formatBytes(items.fold<int>(0, (a, i) => a + i.bytes))}',
+                ),
+                for (final entry in _shelfRows(items))
+                  if (entry.film != null)
+                    _Row(item: entry.film!, languageCode: s.locale.languageCode)
+                  else
+                    _AlbumRow(
+                        items: entry.album, languageCode: s.locale.languageCode),
               ],
+              _Section(title: s.vhDownloadsSettings),
+              const _SettingsGroup(),
             ],
           );
         },
@@ -216,64 +194,29 @@ class _AlbumRow extends ConsumerWidget {
       }
     }
     final art = cover?.sourceUrl ?? _first.posterUrl;
-    return InkWell(
+    return _RowShell(
       onTap: () => _open(context, ref),
-      borderRadius: BorderRadius.circular(VH.rControl),
-      child: Padding(
-        padding: const EdgeInsets.all(VH.s2),
-        child: Row(
-          children: <Widget>[
-            SizedBox(
-              width: 76,
-              height: 56,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(6),
-                child: PosterImage(
-                  mediaRef: art == null
-                      ? MediaRef.none
-                      : MediaRef(provider: 'url', locator: art),
-                  title: _shownTitle,
-                  glyph: Icons.photo_library_outlined,
-                ),
-              ),
-            ),
-            const SizedBox(width: VH.s3),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Row(
-                    children: <Widget>[
-                      const Icon(Icons.photo_library_outlined,
-                          size: 14, color: VH.textTertiary),
-                      const SizedBox(width: 5),
-                      Expanded(
-                        child: Text(_shownTitle,
-                            style: VH.label.copyWith(fontSize: 14.5),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    <String>[
-                      if (videos > 0) s.vhAlbumVideos(videos),
-                      if (photos > 0) s.vhAlbumPhotos(photos),
-                      formatBytes(bytes),
-                    ].join(' · '),
-                    style: VH.meta.copyWith(fontSize: 12),
-                  ),
-                ],
-              ),
-            ),
-            IconButton(
-              icon: const Icon(Icons.delete_outline, color: VH.textTertiary),
-              onPressed: () => _confirmDelete(context, ref),
-            ),
-          ],
+      thumb: _Thumb(art: art, title: _shownTitle, glyph: Icons.photo_library_outlined),
+      title: _shownTitle,
+      titleIcon: Icons.photo_library_outlined,
+      lines: <Widget>[
+        Text(
+          <String>[
+            if (videos > 0) s.vhAlbumVideos(videos),
+            if (photos > 0) s.vhAlbumPhotos(photos),
+            formatBytes(bytes),
+          ].join(' · '),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: VH.meta.copyWith(fontSize: 12),
         ),
-      ),
+      ],
+      trailing: <Widget>[
+        _RowMenu(entries: <(IconData, String, VoidCallback, bool)>[
+          (Icons.photo_library_outlined, s.vhAlbum, () => _open(context, ref), false),
+          (Icons.delete_outline_rounded, s.delete, () => _confirmDelete(context, ref), true),
+        ]),
+      ],
     );
   }
 
@@ -346,48 +289,26 @@ class _Row extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return InkWell(
+    final s = AppStrings.of(context);
+    return _RowShell(
       onTap: () => _play(context, ref),
-      borderRadius: BorderRadius.circular(VH.rControl),
-      child: Padding(
-        padding: const EdgeInsets.all(VH.s2),
-        child: Row(
+      thumb: _Thumb(art: item.posterUrl, title: _shownTitle, badge: _hms(item.durationS)),
+      title: _shownTitle,
+      lines: <Widget>[
+        Row(
           children: <Widget>[
-            SizedBox(
-              width: 76,
-              height: 56,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(6),
-                child: PosterImage(
-                  mediaRef: item.posterUrl == null
-                      ? MediaRef.none
-                      : MediaRef(provider: 'url', locator: item.posterUrl!),
-                  title: _shownTitle,
-                ),
-              ),
-            ),
-            const SizedBox(width: VH.s3),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(_shownTitle,
-                      style: VH.label.copyWith(fontSize: 14.5),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis),
-                  const SizedBox(height: 3),
-                  Text(formatBytes(item.bytes),
-                      style: VH.meta.copyWith(fontSize: 12)),
-                ],
-              ),
-            ),
-            IconButton(
-              icon: const Icon(Icons.delete_outline, color: VH.textTertiary),
-              onPressed: () => _confirmDelete(context, ref),
-            ),
+            const Icon(Icons.offline_pin_rounded, size: 13, color: Color(0xFF2EBD6B)),
+            const SizedBox(width: 4),
+            Text(formatBytes(item.bytes), style: VH.meta.copyWith(fontSize: 12)),
           ],
         ),
-      ),
+      ],
+      trailing: <Widget>[
+        _RowMenu(entries: <(IconData, String, VoidCallback, bool)>[
+          (Icons.play_arrow_rounded, s.vhPlay, () => _play(context, ref), false),
+          (Icons.delete_outline_rounded, s.delete, () => _confirmDelete(context, ref), true),
+        ]),
+      ],
     );
   }
 
@@ -692,96 +613,93 @@ class _PendingRowState extends ConsumerState<_PendingRow> {
         ? (received / total).clamp(0.0, 1.0).toDouble()
         : null;
 
-    return Padding(
-      padding: const EdgeInsets.all(VH.s2),
-      child: Row(
-        children: <Widget>[
-          SizedBox(
-            width: 76,
-            height: 56,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(6),
-              child: PosterImage(
-                mediaRef: item.posterUrl == null
-                    ? MediaRef.none
-                    : MediaRef(provider: 'url', locator: item.posterUrl!),
-                title: _shownTitle,
-              ),
-            ),
+    final canWatch = total != null && received >= _watchFrom;
+    return _RowShell(
+      thumb: _Thumb(art: item.posterUrl, title: _shownTitle),
+      title: _shownTitle,
+      lines: <Widget>[
+        // THE BYTES ALREADY PAID FOR, on screen. Somebody deciding whether to
+        // carry on needs to know they are 700 MB into a 900 MB film and not
+        // starting again — that is the whole difference between resuming and
+        // giving up.
+        Text(
+          _line(s, live: live, received: received, total: total),
+          style: VH.meta.copyWith(fontSize: 11.5, height: 1.3),
+          // Two lines: the status at the end ("paused", "carries on by
+          // itself") is the part that says what to do, and one line cut it.
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+        const SizedBox(height: 6),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(VH.rPill),
+          child: LinearProgressIndicator(
+            value: fraction,
+            minHeight: 3,
+            color: running ? VH.accent : VH.textTertiary,
+            backgroundColor: VH.surface3,
           ),
-          const SizedBox(width: VH.s3),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(_shownTitle,
-                    style: VH.label.copyWith(fontSize: 14.5),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis),
-                const SizedBox(height: 4),
-                // THE BYTES ALREADY PAID FOR, on screen. Somebody deciding
-                // whether to carry on needs to know they are 700 MB into a
-                // 900 MB film and not starting again — that is the whole
-                // difference between resuming and giving up.
-                Text(
-                  _line(s, live: live, received: received, total: total),
-                  style: VH.meta.copyWith(fontSize: 12),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 5),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(2),
-                  child: LinearProgressIndicator(
-                    value: fraction,
-                    minHeight: 3,
-                    backgroundColor: VH.surface2,
-                  ),
-                ),
-              ],
-            ),
-          ),
+        ),
+      ],
+      trailing: <Widget>[
+        const SizedBox(width: VH.s2),
+        // ONE MAIN ACTION, in a circle: pause while it runs, resume when it
+        // does not. Watching while it arrives and throwing it away are in
+        // the menu — three icons in a row squeezed the title to "Myanmar …".
+        _CircleAction(
+          tooltip: running ? s.vhDownloadPause : s.vhDownloadResume,
+          busy: _starting,
+          icon: running ? Icons.pause_rounded : Icons.file_download_outlined,
+          onTap: running
+              ? () => ref.read(offlineDownloaderProvider).cancel(item.key)
+              : (_starting ? null : _resume),
+        ),
+        _RowMenu(entries: <(IconData, String, VoidCallback, bool)>[
           // WATCH IT WHILE IT ARRIVES. Offered from about eight megabytes in,
-          // which on this connection is a minute or two — and only when the
-          // film's length is known, because without it there is no seek bar to
-          // draw. Whether it can ACTUALLY start is read out of the file when
-          // this is tapped rather than on every rebuild: the answer needs a
-          // read and a decrypt, and a list does not get to do that per frame.
-          if (total != null && received >= _watchFrom)
-            IconButton(
-              icon: _opening
+          // and only when the film's length is known — see _watchNow.
+          if (canWatch && !_opening)
+            (Icons.play_circle_outline_rounded, s.vhWatchNow, () => _watchNow(total), false),
+          (Icons.delete_outline_rounded, s.delete, _discard, true),
+        ]),
+      ],
+    );
+  }
+}
+
+/// A round button for a row's one main action, with a spinner while busy.
+class _CircleAction extends StatelessWidget {
+  const _CircleAction({
+    required this.tooltip,
+    required this.icon,
+    required this.onTap,
+    this.busy = false,
+  });
+  final String tooltip;
+  final IconData icon;
+  final VoidCallback? onTap;
+  final bool busy;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: VH.surface2,
+        shape: const CircleBorder(),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onTap,
+          child: SizedBox(
+            width: 36,
+            height: 36,
+            child: Center(
+              child: busy
                   ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Icon(Icons.play_circle_outline,
-                      color: VH.textSecondary),
-              tooltip: s.vhWatchNow,
-              onPressed: _opening ? null : () => _watchNow(total),
+                      width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                  : Icon(icon, size: 19, color: VH.textPrimary),
             ),
-          if (running)
-            TextButton(
-              onPressed: () =>
-                  ref.read(offlineDownloaderProvider).cancel(item.key),
-              child: Text(s.vhDownloadPause, style: VH.meta.copyWith(fontSize: 12)),
-            )
-          else
-            IconButton(
-              icon: _starting
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Icon(Icons.play_arrow_rounded,
-                      color: VH.textSecondary),
-              tooltip: s.vhDownloadResume,
-              onPressed: _starting ? null : _resume,
-            ),
-          IconButton(
-            icon: const Icon(Icons.delete_outline, color: VH.textTertiary),
-            onPressed: _discard,
           ),
-        ],
+        ),
       ),
     );
   }
@@ -944,22 +862,26 @@ class _WifiOnlyRow extends ConsumerWidget {
           PlayerSetting.downloadWifiOnly,
         );
     return Padding(
-      padding: const EdgeInsets.only(bottom: VH.s3),
+      padding: const EdgeInsets.fromLTRB(VH.s3, VH.s2, VH.s2, VH.s2),
       child: Row(
         children: <Widget>[
+          const Icon(Icons.wifi_rounded, size: 20, color: VH.textSecondary),
+          const SizedBox(width: VH.s3),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Text(s.vhDownloadWifiOnly,
                     style: VH.label.copyWith(fontSize: 13.5)),
-                const SizedBox(height: 2),
+                const SizedBox(height: 1),
                 // THE HINT SAYS WHY IT IS OFF. A switch whose default looks
                 // wrong invites somebody to "fix" it, and turning this on is
                 // exactly the wrong move for a viewer with no wifi — their
                 // downloads would then wait for something that never comes.
                 Text(s.vhDownloadWifiOnlyHint,
-                    style: VH.meta.copyWith(fontSize: 11.5)),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: VH.meta.copyWith(fontSize: 11, height: 1.3)),
               ],
             ),
           ),
@@ -976,3 +898,298 @@ class _WifiOnlyRow extends ConsumerWidget {
   }
 }
 
+
+// ═══════════════════════════════════════════════════════════════════════
+// THE PIECES THE SCREEN IS BUILT FROM
+// ═══════════════════════════════════════════════════════════════════════
+
+/// Space on the phone: what the downloads take, what is left, as one bar.
+class _StorageCard extends StatelessWidget {
+  const _StorageCard({required this.used, required this.free});
+  final int used;
+  final int free;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppStrings.of(context);
+    final known = free >= 0;
+    final share = known && used + free > 0 ? used / (used + free) : null;
+    return Container(
+      margin: const EdgeInsets.only(bottom: VH.s2),
+      padding: const EdgeInsets.fromLTRB(VH.s3, VH.s3, VH.s3, VH.s3),
+      decoration: BoxDecoration(
+        color: VH.surface1,
+        borderRadius: BorderRadius.circular(VH.rCard),
+        border: Border.all(color: VH.hairline),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              const Icon(Icons.sd_storage_outlined, size: 17, color: VH.textSecondary),
+              const SizedBox(width: VH.s2),
+              Expanded(
+                child: Text(s.vhDownloadStorageLine,
+                    style: VH.label.copyWith(fontSize: 13)),
+              ),
+              Text(
+                s.vhDownloadStorage(formatBytes(used), known ? formatBytes(free) : '—'),
+                style: VH.meta.copyWith(fontSize: 11.5, color: VH.textSecondary),
+              ),
+            ],
+          ),
+          const SizedBox(height: VH.s2),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(VH.rPill),
+            child: LinearProgressIndicator(
+              value: share == null ? 0 : share.clamp(0.02, 1.0),
+              minHeight: 5,
+              color: VH.accent,
+              backgroundColor: VH.surface3,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A section's heading, with a count or total at the right.
+class _Section extends StatelessWidget {
+  const _Section({required this.title, this.trailing});
+  final String title;
+  final String? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(2, VH.s4, 2, VH.s2),
+      child: Row(
+        children: <Widget>[
+          Expanded(child: Text(title, style: VH.heading.copyWith(fontSize: 15.5))),
+          if (trailing != null)
+            Text(trailing!, style: VH.meta.copyWith(fontSize: 12)),
+        ],
+      ),
+    );
+  }
+}
+
+/// The artwork beside a row: 16:9, as the films are, with an optional label
+/// (a running time) in its corner.
+class _Thumb extends StatelessWidget {
+  const _Thumb({required this.art, required this.title, this.glyph, this.badge});
+  final String? art;
+  final String title;
+  final IconData? glyph;
+  final String? badge;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 104,
+      height: 58,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Stack(
+          fit: StackFit.expand,
+          children: <Widget>[
+            PosterImage(
+              mediaRef: art == null ? MediaRef.none : MediaRef(provider: 'url', locator: art!),
+              title: title,
+              glyph: glyph ?? Icons.movie_outlined,
+            ),
+            if (badge != null && badge!.isNotEmpty)
+              Positioned(
+                right: 4,
+                bottom: 4,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                  decoration: BoxDecoration(
+                    color: const Color(0xB3000000),
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                  child: Text(badge!,
+                      style: const TextStyle(
+                          color: Colors.white, fontSize: 9.5, fontWeight: FontWeight.w600)),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// One shelf row's frame: artwork, title, the lines under it, and actions.
+class _RowShell extends StatelessWidget {
+  const _RowShell({
+    required this.thumb,
+    required this.title,
+    required this.lines,
+    required this.trailing,
+    this.onTap,
+    this.titleIcon,
+  });
+  final Widget thumb;
+  final String title;
+  final IconData? titleIcon;
+  final List<Widget> lines;
+  final List<Widget> trailing;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(VH.rControl),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Row(
+          children: <Widget>[
+            thumb,
+            const SizedBox(width: VH.s3),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Row(
+                    children: <Widget>[
+                      if (titleIcon != null) ...<Widget>[
+                        Icon(titleIcon, size: 14, color: VH.textTertiary),
+                        const SizedBox(width: 4),
+                      ],
+                      Expanded(
+                        child: Text(title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: VH.label.copyWith(fontSize: 14, fontWeight: FontWeight.w600)),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 3),
+                  ...lines,
+                ],
+              ),
+            ),
+            ...trailing,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The row's ⋮ — the actions that are not the main one, Delete above all.
+///
+/// Behind a menu rather than a bin icon on every row: a one-tap destructive
+/// control beside every film was the biggest thing on each line, and the
+/// easiest one to hit by accident while scrolling.
+class _RowMenu extends StatelessWidget {
+  const _RowMenu({required this.entries});
+  final List<(IconData, String, VoidCallback, bool)> entries; // icon, label, action, danger
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<int>(
+      tooltip: '',
+      icon: const Icon(Icons.more_vert_rounded, color: VH.textTertiary, size: 20),
+      color: VH.surface2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(VH.rControl)),
+      onSelected: (i) => entries[i].$3(),
+      itemBuilder: (context) => <PopupMenuEntry<int>>[
+        for (final (i, e) in entries.indexed)
+          PopupMenuItem<int>(
+            value: i,
+            height: 42,
+            child: Row(
+              children: <Widget>[
+                Icon(e.$1,
+                    size: 18,
+                    color: e.$4 ? Theme.of(context).colorScheme.error : VH.textSecondary),
+                const SizedBox(width: VH.s3),
+                Text(e.$2,
+                    style: VH.label.copyWith(
+                        fontSize: 13.5,
+                        color: e.$4 ? Theme.of(context).colorScheme.error : VH.textPrimary)),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// The settings, grouped and compact, at the bottom: Wi-Fi only, and the data
+/// saver as one row that opens its own page.
+class _SettingsGroup extends ConsumerWidget {
+  const _SettingsGroup();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = AppStrings.of(context);
+    final saver = ref.watch(playerSettingsProvider).get(PlayerSetting.albumDataSaver);
+    return Container(
+      decoration: BoxDecoration(
+        color: VH.surface1,
+        borderRadius: BorderRadius.circular(VH.rCard),
+        border: Border.all(color: VH.hairline),
+      ),
+      child: Column(
+        children: <Widget>[
+          const _WifiOnlyRow(),
+          const Divider(height: 1, thickness: 1, color: VH.hairline, indent: 48),
+          InkWell(
+            onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(builder: (_) => const DataSaverScreen())),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(VH.s3, VH.s3, VH.s2, VH.s3),
+              child: Row(
+                children: <Widget>[
+                  Icon(saver ? Icons.data_saver_on_rounded : Icons.data_saver_off_rounded,
+                      size: 20, color: saver ? const Color(0xFF2EBD6B) : VH.textSecondary),
+                  const SizedBox(width: VH.s3),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(s.vhDataSaver, style: VH.label.copyWith(fontSize: 13.5)),
+                        const SizedBox(height: 1),
+                        Text(s.vhLibraryDataSaverHint,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: VH.meta.copyWith(fontSize: 11)),
+                      ],
+                    ),
+                  ),
+                  if (saver)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: const Color(0x292EBD6B),
+                        borderRadius: BorderRadius.circular(VH.rPill),
+                      ),
+                      child: Text(s.vhOn,
+                          style: const TextStyle(
+                              color: Color(0xFF2EBD6B), fontSize: 11, fontWeight: FontWeight.w700)),
+                    ),
+                  const Icon(Icons.chevron_right_rounded, color: VH.textTertiary),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 2:28:12, 52:10.
+String _hms(int? seconds) {
+  if (seconds == null || seconds <= 0) return '';
+  final h = seconds ~/ 3600, m = (seconds % 3600) ~/ 60, sec = seconds % 60;
+  final ss = sec.toString().padLeft(2, '0');
+  return h > 0 ? '$h:${m.toString().padLeft(2, '0')}:$ss' : '$m:$ss';
+}
