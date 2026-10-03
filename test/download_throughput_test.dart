@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 import 'package:innocent/core/services/network/foreground_stream.dart';
 import 'package:innocent/features/video_hub/data/api/offline_downloader.dart';
 import 'package:innocent/features/video_hub/data/api/offline_library.dart';
+import 'package:innocent/features/video_hub/data/api/ranged_fetch.dart';
 import 'package:innocent/features/video_hub/domain/access.dart';
 import 'package:innocent/features/video_hub/domain/content_category.dart';
 import 'package:innocent/features/video_hub/domain/content_repository.dart';
@@ -51,32 +52,83 @@ class _Repo implements ContentRepository {
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
 }
 
-/// Serves [body] in 4 KB chunks, the way a mobile socket hands it over.
+/// Serves [body] in 4 KB chunks, the way a mobile socket hands it over —
+/// honouring `bytes=a-` and `bytes=a-b`, and counting what it does.
 class _Chunky extends http.BaseClient {
-  _Chunky(this.body);
+  _Chunky(this.body, {this.ignoreBoundedRanges = false, this.failPartAt, this.slowPartAt});
   final Uint8List body;
   static const int piece = 4096;
 
+  /// A server (or a proxy) that answers a bounded range with the whole file.
+  final bool ignoreBoundedRanges;
+
+  /// The first request starting here dies halfway through its body.
+  int? failPartAt;
+
+  /// The request starting here takes its time: a lossy lane.
+  final int? slowPartAt;
+  int startedWhileSlow = 0;
+  bool _slowRunning = false;
+
+  int inFlight = 0;
+  int maxInFlight = 0;
+  int served = 0;
+  int requests = 0;
+
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    requests++;
     var from = 0;
+    int? to;
     final range = request.headers['Range'] ?? request.headers['range'];
     if (range != null) {
-      from = int.parse(RegExp(r'bytes=(\d+)-').firstMatch(range)!.group(1)!);
+      final m = RegExp(r'bytes=(\d+)-(\d*)').firstMatch(range)!;
+      from = int.parse(m.group(1)!);
+      if (m.group(2)!.isNotEmpty) to = int.parse(m.group(2)!);
     }
+    final ignored = to != null && ignoreBoundedRanges;
+    if (ignored) {
+      from = 0;
+      to = null;
+    }
+    final last = to ?? body.length - 1;
+    final slow = slowPartAt == from;
+    if (_slowRunning) startedWhileSlow++;
+    final fail = failPartAt != null && failPartAt == from;
+    if (fail) failPartAt = null;
+    final status = range == null || ignored ? 200 : 206;
+
     Stream<List<int>> pieces() async* {
-      for (var i = from; i < body.length; i += piece) {
-        yield body.sublist(i, i + piece > body.length ? body.length : i + piece);
+      inFlight++;
+      if (inFlight > maxInFlight) maxInFlight = inFlight;
+      if (slow) _slowRunning = true;
+      try {
+        if (slow) await Future<void>.delayed(const Duration(milliseconds: 400));
+        for (var i = from; i <= last; i += piece) {
+          if (fail && i - from >= (last - from) ~/ 2) {
+            throw const SocketException('connection reset');
+          }
+          // A real socket yields to the event loop between packets; this is
+          // what lets several lanes run at once.
+          await Future<void>.delayed(Duration.zero);
+          final e = i + piece > last + 1 ? last + 1 : i + piece;
+          served += e - i;
+          yield body.sublist(i, e);
+        }
+      } finally {
+        inFlight--;
+        if (slow) _slowRunning = false;
       }
     }
 
+    final n = last - from + 1;
     return http.StreamedResponse(
       pieces(),
-      from == 0 ? 200 : 206,
-      contentLength: body.length - from,
+      status,
+      contentLength: n,
       headers: <String, String>{
-        'content-length': '${body.length - from}',
-        if (from > 0) 'content-range': 'bytes $from-${body.length - 1}/${body.length}',
+        'content-length': '$n',
+        if (status == 206) 'content-range': 'bytes $from-$last/${body.length}',
         'accept-ranges': 'bytes',
       },
     );
@@ -139,7 +191,7 @@ void main() {
     expect(item, isNotNull, reason: events.take(6).join(' | '));
     // 2 MB / 512 KB = 4, plus at most one remainder. It was one per piece:
     // 512 round trips across the platform channel for this one file.
-    expect(transforms, lessThanOrEqualTo(5), reason: 'per-chunk ciphering is back: \$transforms calls');
+    expect(transforms, lessThanOrEqualTo(5), reason: 'per-chunk ciphering is back: $transforms calls');
 
     // And the file is exactly right: undo the stand-in cipher on everything
     // but the 32-byte trailer and compare.
@@ -188,4 +240,108 @@ void main() {
     expect(took, greaterThan(const Duration(seconds: 2)));
     expect(seen.any((p) => p.yielding), isTrue);
   }, timeout: const Timeout(Duration(seconds: 60)));
+
+  // ─── SEVERAL CONNECTIONS (RangedFetch) ─────────────────────────────────
+
+  const source = MediaRef(provider: 'url', locator: 'x');
+  const part = 64 * 1024;
+
+  Future<void> expectExact(OfflineItem? item, Uint8List data, List<String> log) async {
+    expect(item, isNotNull, reason: log.take(8).join(' | '));
+    final onDisk = await File(item!.path).readAsBytes();
+    final sealedBody = onDisk.sublist(0, onDisk.length - 32);
+    expect(sealedBody.length, data.length);
+    expect(Uint8List.fromList([for (final b in sealedBody) b ^ _key]), data,
+        reason: 'parts arrived out of order or with a hole');
+  }
+
+  test('a large film comes down over several connections, in order, paid for once',
+      () async {
+    final data = body(1024 * 1024); // 16 parts of 64 KB
+    final net = _Chunky(data);
+    final d = OfflineDownloader(_Repo(), OfflineLibrary(),
+        httpClient: net, lanes: 3, partBytes: part);
+    final log = <String>[];
+    final item = await d.download(
+        content: film, source: source, onProgress: (p) => log.add('${p.received} ${p.error}'));
+    await expectExact(item, data, log);
+    expect(net.maxInFlight, 3, reason: 'one connection at a time: not split');
+    // The only cost: what was in flight on the first response when it closed.
+    expect(net.served, lessThanOrEqualTo(data.length + 2 * _Chunky.piece));
+  });
+
+  test('a server that answers a range with the whole file: back to one connection',
+      () async {
+    final data = body(1024 * 1024);
+    final net = _Chunky(data, ignoreBoundedRanges: true);
+    final d = OfflineDownloader(_Repo(), OfflineLibrary(),
+        httpClient: net, lanes: 3, partBytes: part);
+    final log = <String>[];
+    final item = await d.download(
+        content: film, source: source, onProgress: (p) => log.add('${p.received} ${p.error}'));
+    await expectExact(item, data, log);
+    // Refused once, and not asked again: nowhere near twice the film.
+    expect(net.served, lessThan(data.length * 13 ~/ 10));
+  });
+
+  test('a lane that drops mid-part costs a retry, not the film', () async {
+    final data = body(1024 * 1024);
+    final net = _Chunky(data, failPartAt: 5 * part);
+    final d = OfflineDownloader(_Repo(), OfflineLibrary(),
+        httpClient: net, lanes: 3, partBytes: part);
+    final log = <String>[];
+    final item = await d.download(
+        content: film, source: source, onProgress: (p) => log.add('${p.received} ${p.error}'));
+    await expectExact(item, data, log);
+    expect(net.failPartAt, isNull, reason: 'the failure never happened');
+  }, timeout: const Timeout(Duration(seconds: 90)));
+
+  test('while a film streams, the download narrows to one connection', () async {
+    final data = body(1024 * 1024);
+    final net = _Chunky(data);
+    final d = OfflineDownloader(_Repo(), OfflineLibrary(),
+        httpClient: net, lanes: 3, partBytes: part);
+    ForegroundStream.touch();
+    final keepAlive = Timer.periodic(
+        const Duration(milliseconds: 200), (_) => ForegroundStream.touch());
+    final log = <String>[];
+    OfflineItem? item;
+    try {
+      item = await d.download(
+          content: film, source: source, onProgress: (p) => log.add('${p.received} ${p.error}'));
+    } finally {
+      keepAlive.cancel();
+    }
+    await expectExact(item, data, log);
+    expect(net.maxInFlight, 1);
+  }, timeout: const Timeout(Duration(seconds: 60)));
+
+  test('one slow lane does not hold the others up', () async {
+    final data = body(1024 * 1024);
+    final net = _Chunky(data, slowPartAt: part); // the first part after the head
+    final head = (await net.send(http.Request('GET', Uri.parse('https://media.test/f')))).stream;
+    final out = BytesBuilder();
+    await for (final c in RangedFetch.ordered(
+        client: net,
+        url: Uri.parse('https://media.test/f'),
+        head: head,
+        start: 0,
+        total: data.length,
+        partBytes: part,
+        lanes: 3)) {
+      out.add(c);
+    }
+    expect(out.takeBytes(), data);
+    // While it lagged, the other lanes kept starting parts — up to the window.
+    expect(net.startedWhileSlow, greaterThanOrEqualTo(3));
+    expect(net.maxInFlight, lessThanOrEqualTo(3));
+  });
+
+  test('Content-Range is read strictly', () {
+    expect(parseContentRange('bytes 200-1023/146515'),
+        (start: 200, end: 1023, total: 146515));
+    expect(parseContentRange('bytes 0-9/*'), (start: 0, end: 9, total: null));
+    expect(parseContentRange('bytes */146515'), isNull);
+    expect(parseContentRange(null), isNull);
+  });
 }

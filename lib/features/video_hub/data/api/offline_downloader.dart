@@ -18,6 +18,7 @@ import '../../domain/byte_size.dart';
 import '../../domain/transfer_rate.dart';
 import '../poster_cache.dart';
 import 'download_plan.dart';
+import 'ranged_fetch.dart';
 import 'offline_crypto.dart';
 import 'offline_library.dart';
 
@@ -185,13 +186,26 @@ class OfflineDownloader {
     this._library, {
     http.Client? httpClient,
     DownloadAllowance? allowance,
+    int lanes = RangedFetch.defaultLanes,
+    int partBytes = RangedFetch.defaultPartBytes,
   })  : _http = httpClient ?? http.Client(),
-        _allowance = allowance ?? _alwaysAllowed;
+        _allowance = allowance ?? _alwaysAllowed,
+        _lanes = lanes,
+        _partBytes = partBytes;
 
   final ContentRepository _repo;
   final OfflineLibrary _library;
   final http.Client _http;
   final DownloadAllowance _allowance;
+
+  /// Connections one download may use at once, and the part each fetches.
+  /// See [RangedFetch]. One means a single plain response, as before.
+  final int _lanes;
+  final int _partBytes;
+
+  /// Downloads whose server answered a range with the whole file. Asked once;
+  /// after that they keep to one connection rather than pay for it again.
+  final Set<String> _rangesRefused = <String>{};
 
   static Future<DownloadRefusal?> _alwaysAllowed() async => null;
 
@@ -1017,8 +1031,34 @@ class OfflineDownloader {
           return true;
         }
 
+        // ─── SEVERAL CONNECTIONS, WHEN IT IS WORTH IT ─────────────────────
+        //
+        // See [RangedFetch]: the rest of the film in parts, two or three at
+        // once, handed on in order — so everything below sees one stream of
+        // bytes exactly as before. Not for a film nearly done, not for a
+        // server that has already refused a range, and not while the viewer
+        // is streaming: then it narrows to one connection and the pacing
+        // below decides its speed.
+        final split = _lanes > 1 &&
+            total != null &&
+            !_rangesRefused.contains(key) &&
+            RangedFetch.acceptsRanges(response) &&
+            RangedFetch.worthSplitting(total - received, partBytes: _partBytes);
+        final body = split
+            ? RangedFetch.ordered(
+                client: _http,
+                url: Uri.parse(url),
+                head: response.stream,
+                start: received,
+                total: total,
+                partBytes: _partBytes,
+                lanes: _lanes,
+                narrow: () => ForegroundStream.active,
+              )
+            : response.stream;
+
         try {
-          await for (final chunk in response.stream) {
+          await for (final chunk in body) {
             if (_cancelled.contains(key)) {
               broke = true;
               break;
@@ -1077,6 +1117,7 @@ class OfflineDownloader {
           // URL expiring mid-transfer looks like from here. The loop asks for a
           // new one and carries on from the byte it reached.
           broke = true;
+          if (e is RangedFetchException && e.refused) _rangesRefused.add(key);
           if (kDebugMode) debugPrint('offline stream broke at $received: $e');
         } finally {
           // What gathered but was not yet written: written now, so a pass that
