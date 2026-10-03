@@ -1,3 +1,6 @@
 Starting: Intent { cmp=com.innocent.media/.MainActivity }
-Error type 3
-Error: Activity class {com.innocent.media/com.innocent.media.MainActivity} does not exist.
+Status: ok
+LaunchState: UNKNOWN (-1)
+Activity: com.google.android.apps.nexuslauncher/.NexusLauncherActivity
+WaitTime: 4354
+Complete

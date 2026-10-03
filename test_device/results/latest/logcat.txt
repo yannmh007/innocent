@@ -1,79 +1,120 @@
-10-03 16:33:14.699 I/AndroidRuntime( 4768): VM exiting with result code 0, cleanup skipped.
-10-03 16:33:14.830 I/AndroidRuntime( 4814): VM exiting with result code 0, cleanup skipped.
-10-03 16:33:15.123 I/AndroidRuntime( 4844): VM exiting with result code 0, cleanup skipped.
-10-03 16:33:15.333 I/AndroidRuntime( 4876): VM exiting with result code 0, cleanup skipped.
-10-03 16:33:15.479 I/AndroidRuntime( 4909): VM exiting with result code 0, cleanup skipped.
-10-03 16:33:15.673 I/AndroidRuntime( 4930): VM exiting with result code 0, cleanup skipped.
-10-03 16:33:15.843 I/AndroidRuntime( 4954): VM exiting with result code 0, cleanup skipped.
-10-03 16:33:16.068 I/AndroidRuntime( 4970): VM exiting with result code 0, cleanup skipped.
-10-03 16:33:16.158 I/AndroidRuntime( 4993): VM exiting with result code 0, cleanup skipped.
-10-03 16:33:16.274 I/AndroidRuntime( 5011): VM exiting with result code 0, cleanup skipped.
-10-03 16:33:16.462 I/AndroidRuntime( 5033): VM exiting with result code 0, cleanup skipped.
-10-03 16:33:16.473 W/GnpSdk  ( 4430): java.lang.NullPointerException: Unable to get GrowthKit Component from host app: com.google.android.calendar
-10-03 16:33:16.588 I/AndroidRuntime( 5068): VM exiting with result code 0, cleanup skipped.
-10-03 16:33:16.695 I/AndroidRuntime( 5103): VM exiting with result code 0, cleanup skipped.
-10-03 16:33:16.897 I/AndroidRuntime( 5126): VM exiting with result code 0, cleanup skipped.
-10-03 16:33:17.101 I/AndroidRuntime( 5174): VM exiting with result code 0, cleanup skipped.
-10-03 16:33:17.351 W/ActivityManager(  479): Scheduling restart of crashed service com.google.android.gm/androidx.work.impl.background.systemjob.SystemJobService in 1000ms for connection
-10-03 16:33:17.557 I/AndroidRuntime( 5222): VM exiting with result code 0, cleanup skipped.
-10-03 16:33:18.135 W/ActivityManager(  479): Crash of app dev.mobile.maestro running instrumentation ComponentInfo{dev.mobile.maestro.test/androidx.test.runner.AndroidJUnitRunner}
-10-03 16:33:18.148 I/AndroidRuntime( 4416): VM exiting with result code 0.
-10-03 16:33:18.159 I/org.webrtc.Logging( 5245): CrashStartupListener: Checking conference crashes for 0 account(s).
-10-03 16:33:18.189 E/AppOps  (  479): java.lang.SecurityException: Specified package "dev.mobile.maestro" under uid 10174 but it is not
-10-03 16:33:18.938 E/Icing   ( 1260): Cursor call threw an exception: no such table: Alarm_cross_device_com.google.android.deskclock_seq_table (code 1 SQLITE_ERROR): , while compiling: SELECT * FROM [Alarm_cross_device_com.google.android.deskclock_seq_table] WHERE seqno>0 AND tag IS NULL ORDER BY seqno LIMIT 20
-10-03 16:33:18.939 E/Icing   ( 1260): Cursor call threw an exception: no such table: Stopwatch_cross_device_com.google.android.deskclock_seq_table (code 1 SQLITE_ERROR): , while compiling: SELECT * FROM [Stopwatch_cross_device_com.google.android.deskclock_seq_table] WHERE seqno>0 AND tag IS NULL ORDER BY seqno LIMIT 20
-10-03 16:33:19.518 W/AiAiAutofill( 1594): java.lang.SecurityException: caller is not user's Augmented Autofill Service
-10-03 16:33:19.734 W/SnapshotHandler( 1675): java.io.FileNotFoundException: /data/user/0/com.google.android.googlequicksearchbox/files/phenotype/shared/com.google.android.libraries.notifications#com.google.android.googlequicksearchbox.pb: open failed: ENOENT (No such file or directory)
-10-03 16:33:19.734 W/SnapshotHandler( 1675): Caused by: android.system.ErrnoException: open failed: ENOENT (No such file or directory)
-10-03 16:33:19.843 W/SnapshotHandler( 1675): java.io.FileNotFoundException: /data/user/0/com.google.android.googlequicksearchbox/files/phenotype/shared/com.google.android.libraries.notifications.platform#com.google.android.googlequicksearchbox.pb: open failed: ENOENT (No such file or directory)
-10-03 16:33:19.843 W/SnapshotHandler( 1675): Caused by: android.system.ErrnoException: open failed: ENOENT (No such file or directory)
-10-03 16:33:19.931 W/CorpusConfigHelper( 1675): android.util.MalformedJsonException: Use JsonReader.setLenient(true) to accept malformed JSON at line 123 column 2
-10-03 16:33:19.972 E/cr_CronetUrlRequestContext( 1675): Exception in upload method
-10-03 16:33:20.412 W/ModernMediaScanner( 1684): Failed to apply ContentProviderOperation(type=insert uri=content://media/internal/file values={instance_id=null, compilation=null, disc_number=0, duration=4383, is_ringtone=0, album_artist=null, resolution=null, orientation=null, artist=pdx, author=null, height=null, is_drm=0, is_audiobook=0, date_modified=1725920748, writer=null, composer=null, _modifier=3, is_recording=0, datetaken=null, mime_type=audio/ogg, is_notification=1, bitrate=96000, cd_track_number=0, xmp=[], year=null, _data=/product/media/audio/notifications/vega.ogg, _size=29476, album=Unknown, genre=Unknown, is_alarm=0, title=Vega, track=0, width=null, is_music=0, document_id=null, is_podcast=0, capture_framerate=null, num_tracks=1, original_document_id=null, media_type=2} exceptionAllowed)
-10-03 16:33:20.412 W/ModernMediaScanner( 1684): android.database.sqlite.SQLiteConstraintException: UNIQUE constraint failed: files._data (code 2067 SQLITE_CONSTRAINT_UNIQUE)
-10-03 16:33:20.424 W/AiAiAutofill( 1594): java.lang.SecurityException: caller is not user's Augmented Autofill Service
-10-03 16:33:20.631 W/ActivityManager(  479): Scheduling restart of crashed service com.google.android.permissioncontroller/com.android.permissioncontroller.permission.service.PermissionControllerServiceImpl in 1000ms for connection
-10-03 16:33:20.631 W/ActivityManager(  479): Scheduling restart of crashed service com.google.android.permissioncontroller/com.android.permissioncontroller.role.service.RoleControllerServiceImpl in 11000ms for connection
-10-03 16:33:20.691 W/ActivityManager(  479): Rescheduling restart of crashed service com.google.android.permissioncontroller/com.android.permissioncontroller.permission.service.PermissionControllerServiceImpl in 9940ms for mem-pressure-event
-10-03 16:33:21.123 W/AsyncOperation( 1046): OperationException[Status{statusCode=Stale snapshot for com.google.apps.dynamite.device#com.google.android.gm(change count changed - expected 2  but was 1), resolution=null}]
-10-03 16:33:22.444 W/MediaProvider( 1684): java.io.IOException: Failed to update quota type for /storage/emulated/0/Android
-10-03 16:33:22.449 W/MediaProvider( 1684): java.io.IOException: Failed to update quota type for /storage/emulated/0/Android/media
-10-03 16:33:22.986 W/FileUtils(  479): android.system.ErrnoException: chmod failed: ENOENT (No such file or directory)
-10-03 16:33:23.032 E/SystemServiceRegistry( 1098): android.os.ServiceManager$ServiceNotFoundException: No service published for: ethernet
-10-03 16:33:25.026 D/AndroidRuntime( 5778): >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-10-03 16:33:25.028 I/AndroidRuntime( 5778): Using default boot image
-10-03 16:33:25.028 I/AndroidRuntime( 5778): Leaving lock profiling enabled
-10-03 16:33:25.110 D/AndroidRuntime( 5778): Calling main entry com.android.commands.am.Am
-10-03 16:33:25.498 W/AiAiAutofill( 1594): java.lang.SecurityException: caller is not user's Augmented Autofill Service
-10-03 16:33:25.501 W/AiAiAutofill( 1594): java.lang.SecurityException: caller is not user's Augmented Autofill Service
-10-03 16:33:25.587 W/AsyncOperation( 1046): OperationException[Status{statusCode=Stale snapshot for com.google.android.googlequicksearchbox(change count changed - expected 4  but was 3), resolution=null}]
-10-03 16:33:25.631 E/RecoverySnapshotStorage(  479): java.io.FileNotFoundException: /data/system/recoverablekeystore/snapshots/10120.xml: open failed: ENOENT (No such file or directory)
-10-03 16:33:25.631 E/RecoverySnapshotStorage(  479): Caused by: android.system.ErrnoException: open failed: ENOENT (No such file or directory)
-10-03 16:33:25.635 W/RecoverableKeyStoreGms( 1260): [WrappingKeyManager] InternalRecoveryServiceException during wrapping key generation [CONTEXT service_id=172 ]
-10-03 16:33:25.635 W/RecoverableKeyStoreGms( 1260): android.security.keystore.recovery.InternalRecoveryServiceException: Failed to import secret key.
-10-03 16:33:25.635 W/RecoverableKeyStoreGms( 1260): 	at android.security.keystore.recovery.RecoveryController.wrapUnexpectedServiceSpecificException(RecoveryController.java:773)
-10-03 16:33:25.635 W/RecoverableKeyStoreGms( 1260): Caused by: android.os.ServiceSpecificException: Failed to import secret key. (code 22)
-10-03 16:33:25.635 W/RecoverableKeyStoreGms( 1260): 	at android.os.Parcel.createExceptionOrNull(Parcel.java:3025)
-10-03 16:33:25.635 W/RecoverableKeyStoreGms( 1260): 	at android.os.Parcel.createException(Parcel.java:2995)
-10-03 16:33:25.635 W/RecoverableKeyStoreGms( 1260): 	at android.os.Parcel.readException(Parcel.java:2978)
-10-03 16:33:25.635 W/RecoverableKeyStoreGms( 1260): 	at android.os.Parcel.readException(Parcel.java:2920)
-10-03 16:33:26.483 E/enyj    ( 1260): java.lang.RuntimeException: ManagedChannel allocation site
-10-03 16:33:26.777 W/Conscrypt( 1260): Could not set socket write timeout: java.net.SocketException: Socket closed
-10-03 16:33:26.856 W/CorpusConfigHelper( 1675): android.util.MalformedJsonException: Use JsonReader.setLenient(true) to accept malformed JSON at line 123 column 2
-10-03 16:33:26.934 W/PeoplePU( 1260): android.content.pm.PackageManager$NameNotFoundException: ComponentInfo{com.google.android.gms/com.google.android.gms.people.sync.focus.ContactsSyncAdapterService}
-10-03 16:33:26.937 W/PeoplePU( 1260): java.lang.IllegalArgumentException: Unknown component: ComponentInfo{com.google.android.syncadapters.contacts/com.google.android.syncadapters.contacts.ProxyGalProvider}
-10-03 16:33:26.937 W/PeoplePU( 1260): 	at android.os.Parcel.createExceptionOrNull(Parcel.java:3015)
-10-03 16:33:26.937 W/PeoplePU( 1260): 	at android.os.Parcel.createException(Parcel.java:2995)
-10-03 16:33:26.937 W/PeoplePU( 1260): 	at android.os.Parcel.readException(Parcel.java:2978)
-10-03 16:33:26.937 W/PeoplePU( 1260): 	at android.os.Parcel.readException(Parcel.java:2920)
-10-03 16:33:26.937 W/PeoplePU( 1260): Caused by: android.os.RemoteException: Remote stack trace:
-10-03 16:33:27.099 W/Conscrypt( 1260): Could not set socket write timeout: java.net.SocketException: Socket closed
-10-03 16:33:27.217 W/ActivityManager(  479): Crash of app dev.mobile.maestro running instrumentation ComponentInfo{dev.mobile.maestro.test/androidx.test.runner.AndroidJUnitRunner}
-10-03 16:33:27.227 I/AndroidRuntime( 5778): VM exiting with result code 0.
-10-03 16:33:27.244 E/AppOps  (  479): java.lang.SecurityException: Specified package "dev.mobile.maestro" under uid 10176 but it is not
-10-03 16:33:27.665 W/AiAiAutofill( 1594): java.lang.SecurityException: caller is not user's Augmented Autofill Service
-10-03 16:33:27.672 E/Vision  ( 1260): Couldn't read checkbot setting: android.provider.Settings$SettingNotFoundException: multi_cb
-10-03 16:33:27.945 W/AiAiAutofill( 1594): java.lang.SecurityException: caller is not user's Augmented Autofill Service
-10-03 16:33:27.996 W/GLSUser ( 1046): [AppCertManager] Exception while requesting key: 
-10-03 16:33:27.996 W/GLSUser ( 1046): java.util.concurrent.ExecutionException: avvw: Parse Proto Exception.
-10-03 16:33:27.996 W/GLSUser ( 1046): Caused by: avvw: Parse Proto Exception.
+10-03 16:36:44.222 D/AndroidRuntime( 5526): >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-03 16:36:44.223 I/AndroidRuntime( 5526): Using default boot image
+10-03 16:36:44.223 I/AndroidRuntime( 5526): Leaving lock profiling enabled
+10-03 16:36:44.291 D/AndroidRuntime( 5526): Calling main entry com.android.commands.am.Am
+10-03 16:36:45.504 W/GH.DelegateICarSupplier( 4370): java.lang.IllegalArgumentException: Service not registered: bdx@ba1b39c
+10-03 16:36:45.679 I/MediaProvider( 1671): Invalidating LocalCallingIdentity cache for package com.innocent.media. Reason: op android:read_external_storage
+10-03 16:36:45.796 I/ActivityManager(  497): Force stopping com.innocent.media appid=10167 user=0: from pid 5741
+10-03 16:36:45.827 I/ActivityTaskManager(  497): START u0 {act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10000000 pkg=com.innocent.media cmp=com.innocent.media/.MainActivity} from uid 10168
+10-03 16:36:45.886 I/ActivityManager(  497): Start proc 5754:com.innocent.media/u0a167 for pre-top-activity {com.innocent.media/com.innocent.media.MainActivity}
+10-03 16:36:45.906 W/.innocent.medi( 5754): Unexpected CPU variant for X86 using defaults: x86_64
+10-03 16:36:46.075 I/.innocent.medi( 5754): The ClassLoaderContext is a special shared library.
+10-03 16:36:46.384 W/.innocent.media( 5754): type=1400 audit(0.0:60): avc: denied { getattr } for path="/proc/sys/vm/max_map_count" dev="proc" ino=104954 scontext=u:r:untrusted_app:s0:c167,c256,c512,c768 tcontext=u:object_r:proc_max_map_count:s0 tclass=file permissive=0 app=com.innocent.media
+10-03 16:36:46.384 W/.innocent.media( 5754): type=1400 audit(0.0:61): avc: denied { read } for name="max_map_count" dev="proc" ino=104954 scontext=u:r:untrusted_app:s0:c167,c256,c512,c768 tcontext=u:object_r:proc_max_map_count:s0 tclass=file permissive=0 app=com.innocent.media
+10-03 16:36:46.449 E/flutter ( 5754): [ERROR:flutter/impeller/toolkit/egl/egl.cc(56)] EGL Error: Success (12288) in ../../../flutter/impeller/toolkit/egl/display.cc:161
+10-03 16:36:46.450 E/flutter ( 5754): [ERROR:flutter/impeller/toolkit/egl/egl.cc(56)] EGL Error: Success (12288) in ../../../flutter/impeller/toolkit/egl/display.cc:161
+10-03 16:36:46.524 I/flutter ( 5754): [IMPORTANT:flutter/shell/platform/android/android_context_gl_impeller.cc(94)] Using the Impeller rendering backend (OpenGLES).
+--------- beginning of crash
+10-03 16:36:47.635 F/linker  ( 5803): CANNOT LINK EXECUTABLE "/system/bin/<token>": "/data/data/com.innocent.media/no_backup/youtubedl-android/packages/ffmpeg/usr/lib/libandroid.so" is for EM_AARCH64 (183) instead of EM_X86_64 (62)
+10-03 16:36:48.028 I/System.out( 5754): flutterEngine warmed up
+10-03 16:36:48.534 F/libc    ( 5754): Fatal signal 4 (SIGILL), code -6 (SI_TKILL) in tid 5754 (.innocent.media), pid 5754 (.innocent.media)
+10-03 16:36:48.555 I/crash_dump64( 5820): obtaining output fd from tombstoned, type: kDebuggerdTombstone
+10-03 16:36:48.556 I/tombstoned(  278): received crash request for pid 5754
+10-03 16:36:48.556 I/crash_dump64( 5820): performing dump of process 5754 (target tid = 5754)
+10-03 16:36:48.559 F/DEBUG   ( 5820): pid: 5754, tid: 5754, name: .innocent.media  >>> com.innocent.media <<<
+10-03 16:36:48.695 W/ActivityTaskManager(  497):   Force finishing activity com.innocent.media/.MainActivity
+10-03 16:36:48.698 I/DropBoxManagerService(  497): add tag=data_app_native_crash isTagEnabled=true flags=0x2
+10-03 16:36:48.787 I/WindowManager(  497): WIN DEATH: Window{7e68fa0 u0 com.innocent.media/com.innocent.media.MainActivity}
+10-03 16:36:48.787 W/InputDispatcher(  497): Attempted to unregister already unregistered input channel '7e68fa0 com.innocent.media/com.innocent.media.MainActivity (server)'
+10-03 16:36:48.788 I/ActivityManager(  497): Process com.innocent.media (pid 5754) has died: prcp TOP 
+10-03 16:36:48.795 V/MediaSessionRecord(  497): Removing dead callback in pushSessionDestroyed, this=com.innocent.media/media-session (userId=0), callback package=com.innocent.media, exception=android.os.DeadObjectException
+10-03 16:36:48.866 W/ActivityManager(  497): Ignoring remove of inactive process: ProcessRecord{cf05697 0:com.innocent.media/u0a167}
+10-03 16:36:49.197 W/ActivityTaskManager(  497): Activity top resumed state loss timeout for ActivityRecord{be56d16 u0 com.innocent.media/.MainActivity t-1 f}}
+10-03 16:37:06.843 E/AwarenessRouterSyncMgr( 5937): Exception while syncing fences
+10-03 16:37:06.843 E/AwarenessRouterSyncMgr( 5937): java.util.concurrent.ExecutionException: java.lang.IllegalStateException: Account associated with identity was null
+10-03 16:37:06.843 E/AwarenessRouterSyncMgr( 5937): Caused by: java.lang.IllegalStateException: Account associated with identity was null
+10-03 16:37:09.962 W/YouTubeMusic( 5937): rff: java.util.concurrent.ExecutionException: qjl: Precondition check failed.
+10-03 16:37:09.962 W/YouTubeMusic( 5937): Caused by: java.util.concurrent.ExecutionException: qjl: Precondition check failed.
+10-03 16:37:11.654 W/YouTubeMusic( 5937): rff: java.util.concurrent.ExecutionException: qjl: Precondition check failed.
+10-03 16:37:11.654 W/YouTubeMusic( 5937): Caused by: java.util.concurrent.ExecutionException: qjl: Precondition check failed.
+10-03 16:37:12.193 W/ConnectionTracker( 5937): Exception thrown while unbinding
+10-03 16:37:12.193 W/ConnectionTracker( 5937): java.lang.IllegalArgumentException: Service not registered: lbw@ff545c0
+10-03 16:37:14.256 W/YouTubeMusic( 5937): rff: java.util.concurrent.ExecutionException: qjl: Precondition check failed.
+10-03 16:37:14.256 W/YouTubeMusic( 5937): Caused by: java.util.concurrent.ExecutionException: qjl: Precondition check failed.
+10-03 16:37:14.864 D/AndroidRuntime( 6117): >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-03 16:37:14.865 I/AndroidRuntime( 6117): Using default boot image
+10-03 16:37:14.865 I/AndroidRuntime( 6117): Leaving lock profiling enabled
+10-03 16:37:14.905 D/AndroidRuntime( 6117): Calling main entry com.android.commands.input.Input
+10-03 16:37:15.382 D/AndroidRuntime( 6117): Shutting down VM
+10-03 16:37:16.971 W/GLSUser ( 1124): java.io.IOException: Invalid scope
+10-03 16:37:16.994 W/Conscrypt( 1124): Could not set socket write timeout: java.net.SocketException: Socket closed
+10-03 16:37:17.009 W/Conscrypt( 1124): Could not set socket write timeout: java.net.SocketException: Socket closed
+10-03 16:37:17.015 W/Conscrypt( 1124): Could not set socket write timeout: java.net.SocketException: Socket closed
+10-03 16:37:17.029 W/Conscrypt( 1124): Could not set socket write timeout: java.net.SocketException: Socket closed
+10-03 16:37:17.047 W/GLSUser ( 1124): [AppCertManager] IOException while requesting key: 
+10-03 16:37:17.047 W/GLSUser ( 1124): java.io.IOException: Invalid device key response.
+10-03 16:37:17.328 W/Conscrypt( 1124): Could not set socket write timeout: java.net.SocketException: Socket closed
+10-03 16:37:17.598 W/ActivityManager(  497): Crash of app dev.mobile.maestro running instrumentation ComponentInfo{dev.mobile.maestro.test/androidx.test.runner.AndroidJUnitRunner}
+10-03 16:37:17.598 E/AppOps  (  497): java.lang.SecurityException: Specified package dev.mobile.maestro under uid 10168 but it is really -1
+10-03 16:37:17.599 W/Binder  ( 5526): Caught a RuntimeException from the binder stub implementation.
+10-03 16:37:17.599 W/Binder  ( 5526): java.lang.SecurityException: Calling from not trusted UID!
+10-03 16:37:17.601 I/AndroidRuntime( 5526): VM exiting with result code 0.
+10-03 16:37:17.856 W/Conscrypt( 1124): Could not set socket write timeout: java.net.SocketException: Socket closed
+10-03 16:37:17.918 D/ModelWriter(  937): java.lang.Exception
+10-03 16:37:18.087 D/ModelWriter(  937): java.lang.Exception
+10-03 16:37:21.771 W/YouTubeMusic( 5937): rff: java.util.concurrent.ExecutionException: qjl: Precondition check failed.
+10-03 16:37:21.771 W/YouTubeMusic( 5937): Caused by: java.util.concurrent.ExecutionException: qjl: Precondition check failed.
+10-03 16:37:21.826 D/AndroidRuntime( 6583): >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-03 16:37:21.827 I/AndroidRuntime( 6583): Using default boot image
+10-03 16:37:21.827 I/AndroidRuntime( 6583): Leaving lock profiling enabled
+10-03 16:37:21.867 D/AndroidRuntime( 6583): Calling main entry com.android.commands.am.Am
+10-03 16:37:22.322 E/com.google.common.v.a.d( 1927): RuntimeException while executing runnable bq{com.google.android.libraries.mdi.download.i.ax@5a3f1ec} with executor MoreExecutors.directExecutor()
+10-03 16:37:22.322 E/com.google.common.v.a.d( 1927): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.s.b' on a null object reference
+10-03 16:37:22.322 E/com.google.common.v.a.d( 1927): RuntimeException while executing runnable bq{com.google.android.libraries.mdi.download.i.ax@2fa484a} with executor MoreExecutors.directExecutor()
+10-03 16:37:22.322 E/com.google.common.v.a.d( 1927): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.s.b' on a null object reference
+10-03 16:37:22.323 E/com.google.common.v.a.d( 1927): RuntimeException while executing runnable bq{com.google.android.libraries.mdi.download.i.ax@ed440d8} with executor MoreExecutors.directExecutor()
+10-03 16:37:22.323 E/com.google.common.v.a.d( 1927): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.s.b' on a null object reference
+10-03 16:37:22.323 E/com.google.common.v.a.d( 1927): RuntimeException while executing runnable bq{com.google.android.libraries.mdi.download.i.ax@9c9f16} with executor MoreExecutors.directExecutor()
+10-03 16:37:22.323 E/com.google.common.v.a.d( 1927): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.s.b' on a null object reference
+10-03 16:37:22.323 E/com.google.common.v.a.d( 1927): RuntimeException while executing runnable bq{com.google.android.libraries.mdi.download.i.ax@3b89284} with executor MoreExecutors.directExecutor()
+10-03 16:37:22.323 E/com.google.common.v.a.d( 1927): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.s.b' on a null object reference
+10-03 16:37:22.324 E/com.google.common.v.a.d( 1927): RuntimeException while executing runnable bq{com.google.android.libraries.mdi.download.i.ax@23b96a2} with executor MoreExecutors.directExecutor()
+10-03 16:37:22.324 E/com.google.common.v.a.d( 1927): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.s.b' on a null object reference
+10-03 16:37:22.327 E/com.google.common.v.a.d( 1927): RuntimeException while executing runnable bq{com.google.android.libraries.mdi.download.i.ax@d6e52f0} with executor MoreExecutors.directExecutor()
+10-03 16:37:22.327 E/com.google.common.v.a.d( 1927): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.s.b' on a null object reference
+10-03 16:37:22.329 E/com.google.common.v.a.d( 1927): RuntimeException while executing runnable bq{com.google.android.libraries.mdi.download.i.ax@a1d0b8f} with executor MoreExecutors.directExecutor()
+10-03 16:37:22.329 E/com.google.common.v.a.d( 1927): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.s.b' on a null object reference
+10-03 16:37:22.330 E/com.google.common.v.a.d( 1927): RuntimeException while executing runnable bq{com.google.android.libraries.mdi.download.i.ax@6dd57fa} with executor MoreExecutors.directExecutor()
+10-03 16:37:22.330 E/com.google.common.v.a.d( 1927): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.s.b' on a null object reference
+10-03 16:37:22.330 E/com.google.common.v.a.d( 1927): RuntimeException while executing runnable bq{com.google.android.libraries.mdi.download.i.ax@bc59008} with executor MoreExecutors.directExecutor()
+10-03 16:37:22.330 E/com.google.common.v.a.d( 1927): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.s.b' on a null object reference
+10-03 16:37:22.330 E/com.google.common.v.a.d( 1927): RuntimeException while executing runnable bq{com.google.android.libraries.mdi.download.i.ax@598f9c6} with executor MoreExecutors.directExecutor()
+10-03 16:37:22.330 E/com.google.common.v.a.d( 1927): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.s.b' on a null object reference
+10-03 16:37:22.331 E/com.google.common.v.a.d( 1927): RuntimeException while executing runnable bq{com.google.android.libraries.mdi.download.i.ax@127a4b4} with executor MoreExecutors.directExecutor()
+10-03 16:37:22.331 E/com.google.common.v.a.d( 1927): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.s.b' on a null object reference
+10-03 16:37:22.390 V/DynamiteModule( 1927): Dynamite loader version >= 2, using loadModule2NoCrashUtils
+10-03 16:37:22.744 E/com.google.common.v.a.d( 1927): RuntimeException while executing runnable bq{com.google.android.libraries.mdi.download.i.ax@1abdb66} with executor MoreExecutors.directExecutor()
+10-03 16:37:22.744 E/com.google.common.v.a.d( 1927): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.s.b' on a null object reference
+10-03 16:37:22.744 E/com.google.common.v.a.d( 1927): RuntimeException while executing runnable bq{com.google.android.libraries.mdi.download.i.ax@7e06f54} with executor MoreExecutors.directExecutor()
+10-03 16:37:22.744 E/com.google.common.v.a.d( 1927): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.s.b' on a null object reference
+10-03 16:37:22.744 E/com.google.common.v.a.d( 1927): RuntimeException while executing runnable bq{com.google.android.libraries.mdi.download.i.ax@d0a47f2} with executor MoreExecutors.directExecutor()
+10-03 16:37:22.744 E/com.google.common.v.a.d( 1927): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.s.b' on a null object reference
+10-03 16:37:22.744 E/com.google.common.v.a.d( 1927): RuntimeException while executing runnable bq{com.google.android.libraries.mdi.download.i.ax@77f2cc0} with executor MoreExecutors.directExecutor()
+10-03 16:37:22.744 E/com.google.common.v.a.d( 1927): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.s.b' on a null object reference
+10-03 16:37:22.745 E/com.google.common.v.a.d( 1927): RuntimeException while executing runnable bq{com.google.android.libraries.mdi.download.i.ax@970f13e} with executor MoreExecutors.directExecutor()
+10-03 16:37:22.745 E/com.google.common.v.a.d( 1927): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.s.b' on a null object reference
+10-03 16:37:22.745 E/com.google.common.v.a.d( 1927): RuntimeException while executing runnable bq{com.google.android.libraries.mdi.download.i.ax@98a54ec} with executor MoreExecutors.directExecutor()
+10-03 16:37:22.745 E/com.google.common.v.a.d( 1927): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.s.b' on a null object reference
+10-03 16:37:22.746 E/com.google.common.v.a.d( 1927): RuntimeException while executing runnable bq{com.google.android.libraries.mdi.download.i.ax@a06e34a} with executor MoreExecutors.directExecutor()
+10-03 16:37:22.746 E/com.google.common.v.a.d( 1927): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.s.b' on a null object reference
+10-03 16:37:22.746 E/com.google.common.v.a.d( 1927): RuntimeException while executing runnable bq{com.google.android.libraries.mdi.download.i.ax@e3dd3d8} with executor MoreExecutors.directExecutor()
+10-03 16:37:22.746 E/com.google.common.v.a.d( 1927): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.s.b' on a null object reference
+10-03 16:37:23.340 D/StrictMode( 1927): 	at android.os.Parcel.readExceptionCode(Parcel.java:2318)
+10-03 16:37:23.340 D/StrictMode( 1927): 	at android.database.DatabaseUtils.readExceptionFromParcel(DatabaseUtils.java:139)
+10-03 16:37:23.373 W/ConnectionTracker( 6347): Exception thrown while unbinding
+10-03 16:37:23.373 W/ConnectionTracker( 6347): java.lang.IllegalArgumentException: Service not registered: lm@f66c826
+10-03 16:37:23.636 W/ActivityManager(  497): Crash of app dev.mobile.maestro running instrumentation ComponentInfo{dev.mobile.maestro.test/androidx.test.runner.AndroidJUnitRunner}
+10-03 16:37:23.637 I/AndroidRuntime( 6583): VM exiting with result code 0.
+10-03 16:37:23.857 D/ModelWriter(  937): java.lang.Exception
+10-03 16:37:23.973 W/AppInfoHelper( 1290): android.content.pm.PackageManager$NameNotFoundException: dev.mobile.maestro.test
+10-03 16:37:24.113 D/ModelWriter(  937): java.lang.Exception

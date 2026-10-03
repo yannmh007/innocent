@@ -1,9 +1,34 @@
 Running on test
  > Flow explore
-Launch app "com.innocent.media"... FAILED
+Launch app "com.innocent.media"... COMPLETED
+Wait for animation to end within 15000 ms... COMPLETED
+Take screenshot 01_launch... COMPLETED
+Tap on (Optional) "Skip"... WARNED
 
-Package com.innocent.media is not installed
 
-==== Debug output (logs & screenshots) ====
+ Warning: Element not found: Text matching regex: Skip
+Tap on (Optional) "Allow.*"... WARNED
 
-/home/runner/.maestro/tests/2026-10-03_163304
+
+ Warning: Element not found: Text matching regex: Allow.*
+Tap on (Optional) "Allow.*"... WARNED
+
+
+ Warning: Element not found: Text matching regex: Allow.*
+Wait for animation to end within 8000 ms... COMPLETED
+Take screenshot 02_home... COMPLETED
+Tap on (Optional) "Movies"... WARNED
+
+
+ Warning: Element not found: Text matching regex: Movies
+Wait for animation to end within 10000 ms... COMPLETED
+Take screenshot 03_gate... COMPLETED
+Tap on (Optional) "I am 18 or older.*"... WARNED
+
+
+ Warning: Element not found: Text matching regex: I am 18 or older.*
+Wait for animation to end within 15000 ms... COMPLETED
+Take screenshot 04_hub... COMPLETED
+Scroll vertically... COMPLETED
+Wait for animation to end within 8000 ms... COMPLETED
+Take screenshot 05_hub_scrolled... COMPLETED
