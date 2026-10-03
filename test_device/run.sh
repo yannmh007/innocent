@@ -34,6 +34,14 @@ sampler() {
 sampler > "$OUT/samples.txt" 2>&1 &
 SAMPLER=$!
 
+# The whole run's log, streamed to the host as it happens: the device's ring
+# buffer keeps about a minute of this app, which is how the first traced run
+# came back empty.
+adb logcat -G 16M >/dev/null 2>&1 || true
+adb logcat -c || true
+adb logcat -v time > "$OUT/logcat_raw.txt" 2>&1 &
+LOGCAT=$!
+
 # The emulator's own launcher sometimes ANRs while the image settles, and its
 # dialog sits over the app and eats every tap. Hide system error dialogs and
 # give the image a moment before measuring anything.
@@ -60,7 +68,7 @@ for flow in $FLOWS; do
   maestro hierarchy > "$OUT/hierarchy_after_$flow.json" 2>/dev/null || true
 done
 
-kill $SAMPLER 2>/dev/null
+kill $SAMPLER $LOGCAT 2>/dev/null
 adb shell dumpsys meminfo "$PKG" > "$OUT/meminfo.txt" 2>&1
 adb shell dumpsys gfxinfo "$PKG" > "$OUT/gfxinfo.txt" 2>&1
 adb shell dumpsys activity processes "$PKG" | grep -iE "anr|crash" > "$OUT/anr_crash.txt" 2>&1 || true
@@ -71,7 +79,6 @@ mkdir -p "$OUT/tombstones"
 for t in $(adb shell ls /data/tombstones 2>/dev/null | tr -d '\r' | grep tombstone | grep -v '\.pb$'); do
   adb shell cat "/data/tombstones/$t" 2>/dev/null | head -150 > "$OUT/tombstones/$t.txt"
 done
-adb logcat -d -v time > "$OUT/logcat_raw.txt" 2>&1
 # The app's own trail (lab builds echo PlaybackLog to logcat): what each
 # download pass did, when the viewer started and stopped watching.
 grep -o 'LAB .*' "$OUT/logcat_raw.txt" | sed -E 's#https?://[^ "]+#<url>#g' > "$OUT/lab_trace.txt" || true
