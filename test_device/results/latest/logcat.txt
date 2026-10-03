@@ -1,27 +1,64 @@
-10-03 18:48:19.326 I/.innocent.media( 5733): Background concurrent copying GC freed 17649(770KB) AllocSpace objects, 22(4632KB) LOS objects, 49% free, 3810KB/7620KB, paused 10.582ms,12us total 117.954ms
-10-03 18:48:31.222 W/ActivityManager(  519): Crash of app dev.mobile.maestro running instrumentation ComponentInfo{dev.mobile.maestro.test/androidx.test.runner.AndroidJUnitRunner}
-10-03 18:48:31.225 W/Binder  ( 9556): Caught a RuntimeException from the binder stub implementation.
-10-03 18:48:31.225 W/Binder  ( 9556): java.lang.SecurityException: Calling from not trusted UID!
-10-03 18:48:31.229 I/AndroidRuntime( 9556): VM exiting with result code 0.
-10-03 18:48:31.553 W/CorpusConfigHelper( 1847): android.util.MalformedJsonException: Use JsonReader.setLenient(true) to accept malformed JSON at line 123 column 2
-10-03 18:48:33.023 W/AppInfoHelper( 1596): android.content.pm.PackageManager$NameNotFoundException: dev.mobile.maestro.test
-10-03 18:48:41.796 W/FileUtils(  519): Failed to chmod(AtomicFile[/data/system_de/0/system/game-manager-service.xml]): android.system.ErrnoException: chmod failed: ENOENT (No such file or directory)
-10-03 18:48:41.971 D/AndroidRuntime( 9949): >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-10-03 18:48:41.985 I/AndroidRuntime( 9949): Using default boot image
-10-03 18:48:41.985 I/AndroidRuntime( 9949): Leaving lock profiling enabled
-10-03 18:48:42.134 D/nativeloader( 9949): InitDefaultPublicLibraries for_preload=1: libandroid.so:libaaudio.so:libamidi.so:libbinder_ndk.so:libc.so:libcamera2ndk.so:libdl.so:libEGL.so:libGLESv1_CM.so:libGLESv2.so:libGLESv3.so:libicu.so:libicui18n.so:libicuuc.so:libjnigraphics.so:liblog.so:libmediandk.so:libm.so:libnativehelper.so:libnativewindow.so:libOpenMAXAL.so:libOpenSLES.so:libRS.so:libstdc++.so:libsync.so:libvulkan.so:libwebviewchromium_plat_support.so:libz.so
-10-03 18:48:42.253 W/libc    ( 9949): Access denied finding property "ro.product.name_for_attestation"
-10-03 18:48:42.253 W/libc    ( 9949): Access denied finding property "ro.product.brand_for_attestation"
-10-03 18:48:42.253 W/libc    ( 9949): Access denied finding property "ro.product.model_for_attestation"
-10-03 18:48:42.255 D/AndroidRuntime( 9949): Calling main entry com.android.commands.am.Am
-10-03 18:48:45.074 W/ActivityManager(  519): Crash of app dev.mobile.maestro running instrumentation ComponentInfo{dev.mobile.maestro.test/androidx.test.runner.AndroidJUnitRunner}
-10-03 18:48:45.076 W/Binder  ( 9949): Caught a RuntimeException from the binder stub implementation.
-10-03 18:48:45.076 W/Binder  ( 9949): java.lang.SecurityException: Calling from not trusted UID!
-10-03 18:48:45.080 I/AndroidRuntime( 9949): VM exiting with result code 0.
-10-03 18:48:46.305 I/.innocent.media( 5733): Waiting for a blocking GC Explicit
-10-03 18:48:46.362 I/.innocent.media( 5733): Background young concurrent copying GC freed 1164(153KB) AllocSpace objects, 8(4128KB) LOS objects, 36% free, 4557KB/7174KB, paused 55us,6us total 134.237ms
-10-03 18:48:46.362 I/.innocent.media( 5733): WaitForGcToComplete blocked Explicit on Background for 56.209ms
-10-03 18:48:46.428 W/AppInfoHelper( 1596): android.content.pm.PackageManager$NameNotFoundException: dev.mobile.maestro.test
-10-03 18:48:46.431 I/.innocent.media( 5733): Explicit concurrent copying GC freed 20177(647KB) AllocSpace objects, 12(432KB) LOS objects, 49% free, 3686KB/7372KB, paused 707us,13us total 69.204ms
-10-03 18:48:46.436 W/.innocent.media( 5733): Suspending all threads took: 5.271ms
-10-03 18:48:46.648 E/AdbDebuggingManager(  519): Caught an exception opening the socket: java.io.IOException: Connection refused
+10-03 19:14:17.873 I/.innocent.media( 5581): Background concurrent copying GC freed 2058(129KB) AllocSpace objects, 4(8208KB) LOS objects, 49% free, 3645KB/7291KB, paused 30us,14us total 182.174ms
+10-03 19:14:19.874 I/.innocent.media( 5581): Background concurrent copying GC freed 221(43KB) AllocSpace objects, 4(8208KB) LOS objects, 49% free, 3610KB/7220KB, paused 6.338ms,16us total 530.421ms
+10-03 19:14:21.686 I/.innocent.media( 5581): Background young concurrent copying GC freed 107(30KB) AllocSpace objects, 0(0B) LOS objects, 0% free, 11MB/11MB, paused 5.763ms,34us total 21.392ms
+10-03 19:14:23.616 I/.innocent.media( 5581): Background young concurrent copying GC freed 624(63KB) AllocSpace objects, 8(16MB) LOS objects, 49% free, 9766KB/19MB, paused 31us,42us total 219.143ms
+10-03 19:14:28.072 I/.innocent.media( 5581): Background concurrent copying GC freed 612(64KB) AllocSpace objects, 7(14MB) LOS objects, 49% free, 11MB/23MB, paused 23us,17us total 501.944ms
+10-03 19:14:32.812 I/.innocent.media( 5581): Background concurrent copying GC freed 503(65KB) AllocSpace objects, 8(16MB) LOS objects, 49% free, 11MB/23MB, paused 145us,307us total 395.127ms
+10-03 19:14:35.948 I/.innocent.media( 5581): Background young concurrent copying GC freed 2840(165KB) AllocSpace objects, 4(8208KB) LOS objects, 15% free, 19MB/23MB, paused 41us,16us total 162.157ms
+10-03 19:14:36.997 I/.innocent.media( 5581): Background concurrent copying GC freed 2655(130KB) AllocSpace objects, 10(20MB) LOS objects, 49% free, 7818KB/15MB, paused 113us,15us total 631.397ms
+10-03 19:14:39.010 I/.innocent.media( 5581): Background concurrent copying GC freed 512(42KB) AllocSpace objects, 4(8208KB) LOS objects, 49% free, 3637KB/7274KB, paused 10.568ms,104us total 321.875ms
+10-03 19:14:40.375 I/.innocent.media( 5581): Background young concurrent copying GC freed 147(31KB) AllocSpace objects, 4(8208KB) LOS objects, 49% free, 3637KB/7274KB, paused 97us,11us total 102.882ms
+10-03 19:14:40.575 I/.innocent.media( 5581): Background concurrent copying GC freed 624(63KB) AllocSpace objects, 5(10MB) LOS objects, 49% free, 9794KB/19MB, paused 102us,16us total 149.286ms
+10-03 19:14:44.180 I/.innocent.media( 5581): Background young concurrent copying GC freed 5421(234KB) AllocSpace objects, 4(8208KB) LOS objects, 49% free, 3695KB/7346KB, paused 50us,18us total 101.931ms
+10-03 19:14:47.581 I/.innocent.media( 5581): Background young concurrent copying GC freed 257(30KB) AllocSpace objects, 4(8208KB) LOS objects, 15% free, 19MB/23MB, paused 81us,16us total 123.992ms
+10-03 19:14:48.416 V/WindowManagerShell(  843): Transition requested: android.os.BinderProxy@101768c TransitionRequestInfo { type = CLOSE, triggerTask = TaskInfo{userId=0 taskId=9 displayId=0 isRunning=false baseIntent=Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10000000 pkg=com.innocent.media cmp=com.innocent.media/.MainActivity } baseActivity=null topActivity=null origActivity=null realActivity=ComponentInfo{com.innocent.media/com.innocent.media.MainActivity} numActivities=0 lastActiveTime=116507 supportsMultiWindow=true resizeMode=2 isResizeable=true minWidth=-1 minHeight=-1 defaultMinSize=220 token=WCT{android.window.IWindowContainerToken$Stub$Proxy@c0651d5} topActivityType=1 pictureInPictureParams=null shouldDockBigOverlays=false launchIntoPipHostTaskId=-1 lastParentTaskIdBeforePip=-1 displayCutoutSafeInsets=null topActivityInfo=null launchCookies=[] positionInParent=Point(0, 0) parentTaskId=-1 isFocused=false isVisible=true isVisibleRequested=true isSleeping=false topActivityInSizeCompat=false <token>= false topActivityLetterboxed= false isFromDoubleTap= false topActivityLetterboxVerticalPosition= -1 topActivityLetterboxHorizontalPosition= -1 topActivityLetterboxWidth=-1 topActivityLetterboxHeight=-1 locusId=null displayAreaFeatureId=1 cameraCompatControlState=hidden}, remoteTransition = null, displayChange = null }
+10-03 19:14:48.978 V/WindowManager(  520): Sent Transition #11 createdAt=10-03 19:14:48.415 via request=TransitionRequestInfo { type = CLOSE, triggerTask = TaskInfo{userId=0 taskId=9 displayId=0 isRunning=false baseIntent=Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10000000 pkg=com.innocent.media cmp=com.innocent.media/.MainActivity } baseActivity=null topActivity=null origActivity=null realActivity=ComponentInfo{com.innocent.media/com.innocent.media.MainActivity} numActivities=0 lastActiveTime=116507 supportsMultiWindow=true resizeMode=2 isResizeable=true minWidth=-1 minHeight=-1 defaultMinSize=220 token=WCT{RemoteToken{5dfddb4 Task{524dd97 #9 type=standard I=com.innocent.media/.MainActivity}}} topActivityType=1 pictureInPictureParams=null shouldDockBigOverlays=false launchIntoPipHostTaskId=-1 lastParentTaskIdBeforePip=-1 displayCutoutSafeInsets=null topActivityInfo=null launchCookies=[] positionInParent=Point(0, 0) parentTaskId=-1 isFocused=false isVisible=true isVisibleRequested=true isSleeping=false topActivityInSizeCompat=false <token>= false topActivityLetterboxed= false isFromDoubleTap= false topActivityLetterboxVerticalPosition= -1 topActivityLetterboxHorizontalPosition= -1 topActivityLetterboxWidth=-1 topActivityLetterboxHeight=-1 locusId=null displayAreaFeatureId=1 cameraCompatControlState=hidden}, remoteTransition = null, displayChange = null }
+10-03 19:14:48.978 V/WindowManager(  520):     info={id=11 t=CLOSE f=0x0 trk=0 r=[0@Point(0, 0)] c=[{WCT{RemoteToken{d1b9ab1 Task{e03b685 #1 type=home}}} m=TO_FRONT f=SHOW_WALLPAPER leash=Surface(name=Task=1)/@0x88a18b6 sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) d=0},{WCT{RemoteToken{5dfddb4 Task{524dd97 #9 type=standard I=com.innocent.media/.MainActivity}}} m=CLOSE f=NONE leash=Surface(name=Task=9)/@0xaee4ac6 sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) d=0},{null m=TO_FRONT f=IS_WALLPAPER leash=Surface(name=WallpaperWindowToken{92550f6 token=android.os.Binder@f486991})/@0x3efbecb sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) d=0}]}
+10-03 19:14:48.990 V/WindowManagerShell(  843):  Checking filter Pair{{types=[] flags=0x0] notFlags=0x0 checks=[{atype=dream independent=true modes=[OPEN,TO_FRONT] flags=NONE mustBeTask=false order=ANY topActivity=null},{atype=home independent=true modes=[CLOSE,TO_BACK] flags=NONE mustBeTask=false order=ANY topActivity=null}]} RemoteTransition { remoteTransition = android.window.IRemoteTransition$Stub$Proxy@b17e68d, appThread = android.app.IApplicationThread$Stub$Proxy@f7a5042, debugName = LauncherToDream }}
+10-03 19:14:48.990 V/WindowManagerShell(  843):  Checking filter Pair{{types=[] flags=0x0] notFlags=0x100 checks=[{atype=home independent=true modes=[OPEN,TO_FRONT] flags=NONE mustBeTask=false order=TOP topActivity=ComponentInfo{com.google.android.apps.nexuslauncher/com.google.android.apps.nexuslauncher.NexusLauncherActivity}},{atype=standard independent=true modes=[CLOSE,TO_BACK] flags=NONE mustBeTask=false order=ANY topActivity=null}]} RemoteTransition { remoteTransition = android.window.IRemoteTransition$Stub$Proxy@947853, appThread = android.app.IApplicationThread$Stub$Proxy@f12b590, debugName = QuickstepLaunchHome }}
+10-03 19:14:48.990 D/RemoteTransitionHandler(  843): Found filterPair{{types=[] flags=0x0] notFlags=0x100 checks=[{atype=home independent=true modes=[OPEN,TO_FRONT] flags=NONE mustBeTask=false order=TOP topActivity=ComponentInfo{com.google.android.apps.nexuslauncher/com.google.android.apps.nexuslauncher.NexusLauncherActivity}},{atype=standard independent=true modes=[CLOSE,TO_BACK] flags=NONE mustBeTask=false order=ANY topActivity=null}]} RemoteTransition { remoteTransition = android.window.IRemoteTransition$Stub$Proxy@947853, appThread = android.app.IApplicationThread$Stub$Proxy@f12b590, debugName = QuickstepLaunchHome }}
+10-03 19:14:48.990 V/WindowManagerShell(  843):  Delegate animation for #11 to RemoteTransition { remoteTransition = android.window.IRemoteTransition$Stub$Proxy@947853, appThread = android.app.IApplicationThread$Stub$Proxy@f12b590, debugName = QuickstepLaunchHome }
+10-03 19:14:49.984 W/CorpusConfigHelper( 1826): android.util.MalformedJsonException: Use JsonReader.setLenient(true) to accept malformed JSON at line 123 column 2
+10-03 19:14:50.201 W/A       ( 1826): DiscoverPrecheckException(precheckFailureReason=com.google.android.apps.search.googleapp.discover.w.a.c@e35d84d)
+10-03 19:14:50.419 D/CoreBackPreview(  520): Window{73d7957 u0 com.innocent.media/com.innocent.media.MainActivity}: Setting back callback null
+10-03 19:14:50.460 W/A       ( 1826): DiscoverPrecheckException(precheckFailureReason=com.google.android.apps.search.googleapp.discover.w.a.c@e35d84d)
+10-03 19:14:50.493 W/A       ( 1826): com.google.android.apps.search.googleapp.discover.v.i: DiscoverPrecheckException(precheckFailureReason=com.google.android.apps.search.googleapp.discover.w.a.c@e35d84d)
+10-03 19:14:50.493 W/A       ( 1826): Caused by: DiscoverPrecheckException(precheckFailureReason=com.google.android.apps.search.googleapp.discover.w.a.c@e35d84d)
+10-03 19:14:50.509 W/InputManager-JNI(  520): Input channel object '73d7957 com.innocent.media/com.innocent.media.MainActivity (client)' was disposed without first being removed with the input manager!
+10-03 19:14:50.788 I/MediaSessionStack(  520): removeSession | record: com.innocent.media/media-session (userId=0)
+10-03 19:14:50.791 I/MediaPlayerList( 1031): onMediaKeyEventSessionChanged: packageName=com.innocent.media
+10-03 19:14:50.792 I/MediaSessionStack(  520): addSession to bottom of stack | record: com.innocent.media/InnocentPlayback (userId=0)
+10-03 19:14:50.792 D/MediaSessionService(  520): Media button session is changed to com.innocent.media/InnocentPlayback (userId=0)
+10-03 19:14:50.794 I/MediaSessionStack(  520): removeSession | record: com.innocent.media/InnocentPlayback (userId=0)
+10-03 19:14:50.826 D/MediaPlayerList( 1031): setActivePlayer(): setting player to com.innocent.media
+10-03 19:14:50.827 I/MediaSessionService(  520): tempAllowlistTargetPkgIfPossible callingPackage:com.google.android.bluetooth targetPackage:com.innocent.media reason:MediaSessionRecord:android.support.v4.media.session.command.GET_EXTRA_BINDER [WIU] [FGS]
+10-03 19:14:50.855 I/MediaPlayerList( 1031): onMediaKeyEventSessionChanged: packageName=com.innocent.media
+10-03 19:14:50.856 D/MediaPlayerList( 1031): setActivePlayer(): setting player to com.innocent.media
+10-03 19:14:50.858 I/MediaPlayerList( 1031): onMediaKeyEventSessionChanged: token=com.innocent.media
+10-03 19:14:50.858 W/MediaPlayerList( 1031): com.innocent.media is already the active player
+10-03 19:14:50.858 I/MediaPlayerList( 1031): onMediaKeyEventSessionChanged: token=com.innocent.media
+10-03 19:14:50.858 W/MediaPlayerList( 1031): com.innocent.media is already the active player
+10-03 19:14:50.860 W/AudioMediaPlayerWrapper( 1031): The session was destroyed com.innocent.media
+10-03 19:14:50.860 D/MediaPlayerList( 1031): sessionUpdatedCallback(): packageName: com.innocent.media
+10-03 19:14:50.861 W/AudioMediaPlayerWrapper( 1031): The session was destroyed com.innocent.media
+10-03 19:14:50.861 D/MediaPlayerList( 1031): sessionUpdatedCallback(): packageName: com.innocent.media
+10-03 19:15:17.300 W/ActivityManager(  520): Crash of app dev.mobile.maestro running instrumentation ComponentInfo{dev.mobile.maestro.test/androidx.test.runner.AndroidJUnitRunner}
+10-03 19:15:17.313 W/Binder  ( 9603): Caught a RuntimeException from the binder stub implementation.
+10-03 19:15:17.313 W/Binder  ( 9603): java.lang.SecurityException: Calling from not trusted UID!
+10-03 19:15:17.313 I/AndroidRuntime( 9603): VM exiting with result code 0.
+10-03 19:15:18.425 W/AppInfoHelper( 1602): android.content.pm.PackageManager$NameNotFoundException: dev.mobile.maestro.test
+10-03 19:15:24.545 D/AndroidRuntime(10103): >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-03 19:15:24.550 I/AndroidRuntime(10103): Using default boot image
+10-03 19:15:24.551 I/AndroidRuntime(10103): Leaving lock profiling enabled
+10-03 19:15:24.635 D/nativeloader(10103): InitDefaultPublicLibraries for_preload=1: libandroid.so:libaaudio.so:libamidi.so:libbinder_ndk.so:libc.so:libcamera2ndk.so:libdl.so:libEGL.so:libGLESv1_CM.so:libGLESv2.so:libGLESv3.so:libicu.so:libicui18n.so:libicuuc.so:libjnigraphics.so:liblog.so:libmediandk.so:libm.so:libnativehelper.so:libnativewindow.so:libOpenMAXAL.so:libOpenSLES.so:libRS.so:libstdc++.so:libsync.so:libvulkan.so:libwebviewchromium_plat_support.so:libz.so
+10-03 19:15:24.680 W/libc    (10103): Access denied finding property "ro.product.name_for_attestation"
+10-03 19:15:24.680 W/libc    (10103): Access denied finding property "ro.product.brand_for_attestation"
+10-03 19:15:24.681 W/libc    (10103): Access denied finding property "ro.product.model_for_attestation"
+10-03 19:15:24.682 D/AndroidRuntime(10103): Calling main entry com.android.commands.am.Am
+10-03 19:15:27.096 W/ActivityManager(  520): Crash of app dev.mobile.maestro running instrumentation ComponentInfo{dev.mobile.maestro.test/androidx.test.runner.AndroidJUnitRunner}
+10-03 19:15:27.097 I/AndroidRuntime(10103): VM exiting with result code 0.
+10-03 19:15:27.956 W/FileUtils(  520): Failed to chmod(AtomicFile[/data/system_de/0/system/game-manager-service.xml]): android.system.ErrnoException: chmod failed: ENOENT (No such file or directory)
+10-03 19:15:28.057 W/.innocent.media( 5581): Cleared Reference was only reachable from finalizer (only reported once)
+10-03 19:15:28.059 I/.innocent.media( 5581): Explicit concurrent copying GC freed 9420(489KB) AllocSpace objects, 8(16MB) LOS objects, 49% free, 3459KB/6918KB, paused 23us,13us total 39.936ms
+10-03 19:15:28.220 E/AdbDebuggingManager(  520): Caught an exception opening the socket: java.io.IOException: Connection refused
+10-03 19:15:28.285 W/AppInfoHelper( 1602): android.content.pm.PackageManager$NameNotFoundException: dev.mobile.maestro.test

@@ -4,6 +4,7 @@ Scrolling DOWN until "1:11:19" is visible with speed 40, visibility percentage 1
 Tap on (Optional) "1:11:19"... COMPLETED
 Wait for animation to end within 3000 ms... COMPLETED
 Tap on point (50%,50%)... COMPLETED
+Tap on (Optional) "Got it"... COMPLETED
 Wait for animation to end within 15000 ms... COMPLETED
 Take screenshot 40_stream_while_dl_15s... COMPLETED
 Wait for animation to end within 15000 ms... COMPLETED

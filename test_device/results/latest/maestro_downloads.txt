@@ -1,7 +1,9 @@
 Running on test
  > Flow downloads
-Press back... COMPLETED
-Wait for animation to end within 5000 ms... COMPLETED
+Repeat while "Account" is not visible (up to 4 times)...
+  Press back... COMPLETED
+  Wait for animation to end within 3000 ms... COMPLETED
+Repeat while "Account" is not visible (up to 4 times)... COMPLETED
 Scrolling UP until "Account" is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... WARNED
 
 
@@ -19,4 +21,4 @@ Possible causes:
 
 ==== Debug output (logs & screenshots) ====
 
-/home/runner/work/innocent/innocent/out/maestro_out/2026-10-03_184750
+/home/runner/work/innocent/innocent/out/maestro_out/2026-10-03_191344
