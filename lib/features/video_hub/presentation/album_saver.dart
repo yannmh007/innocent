@@ -5,6 +5,8 @@ import '../../../core/localization/app_strings.dart';
 import '../../../core/services/network/connection_kind.dart';
 import '../../../core/services/preferences/player_settings_service.dart';
 import '../domain/blurhash.dart';
+import '../domain/byte_size.dart';
+import '../data/api/offline_downloader.dart';
 import '../domain/offline_key.dart';
 import '../domain/video_content.dart';
 import 'album_downloads.dart';
@@ -154,16 +156,52 @@ class AlbumSaverGate extends ConsumerWidget {
                     : () => downloadAlbumItem(context, ref,
                         content: content, item: item),
                 child: running
+                    // A RING THAT FILLS, as in Telegram, not a spinner: on a
+                    // slow line "is it moving?" is the question, and an
+                    // indeterminate spinner cannot answer it. Tapping it
+                    // stops the download (the partial is kept).
                     ? Padding(
-                        padding: EdgeInsets.all(big * 0.12),
-                        child: const CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white),
+                        padding: EdgeInsets.all(big * 0.1),
+                        child: StreamBuilder<OfflineProgress>(
+                          stream: downloader.watch(key),
+                          builder: (context, snap) => Stack(
+                            alignment: Alignment.center,
+                            children: <Widget>[
+                              CircularProgressIndicator(
+                                value: snap.data?.fraction,
+                                strokeWidth: 2.2,
+                                color: Colors.white,
+                                backgroundColor: const Color(0x33FFFFFF),
+                              ),
+                              Icon(Icons.close_rounded,
+                                  size: (item.isVideo ? big * 0.55 : big) * 0.38,
+                                  color: Colors.white),
+                            ],
+                          ),
+                        ),
                       )
                     : Icon(Icons.arrow_downward_rounded,
                         size: (item.isVideo ? big * 0.55 : big) * 0.55,
                         color: Colors.white),
               );
-              if (!item.isVideo) return Center(child: download);
+              if (!item.isVideo) {
+                if (!large) return Center(child: download);
+                // The full-screen page: the button with its cost under it,
+                // in words, because this is where the decision is made.
+                return Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      download,
+                      if ((item.bytes ?? 0) > 0) ...<Widget>[
+                        const SizedBox(height: VH.s3),
+                        _SizePill(
+                            bytes: item.bytes!, large: true, label: s.vhSaveOffline),
+                      ],
+                    ],
+                  ),
+                );
+              }
               // A clip: play in the middle, download tucked against it —
               // the layout of the screenshot this was asked for from.
               return Center(
@@ -190,6 +228,23 @@ class AlbumSaverGate extends ConsumerWidget {
               );
             },
           ),
+        // WHAT IT COSTS, before it is spent. Telegram prints the size on
+        // every undownloaded item for exactly this reader: someone deciding
+        // which of these is worth the data. A 450 MB clip and a 180 KB photo
+        // looked the same here.
+        if (!locked && !large && !item.isVideo && (item.bytes ?? 0) > 0)
+          Positioned(
+            left: 4,
+            bottom: 4,
+            child: _SizePill(bytes: item.bytes!),
+          ),
+        if (large && item.isVideo && !locked && (item.bytes ?? 0) > 0)
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: VH.s6,
+            child: Center(child: _SizePill(bytes: item.bytes!, large: true)),
+          ),
         if (item.isVideo && item.durationLabel.isNotEmpty)
           Positioned(
             right: 4,
@@ -200,8 +255,13 @@ class AlbumSaverGate extends ConsumerWidget {
                 color: const Color(0xA6000000),
                 borderRadius: BorderRadius.circular(3),
               ),
+              // A clip's size rides in its duration pill — two pills side by
+              // side collided on a narrow tile ("114 MB 18:29").
               child: Text(
-                item.durationLabel,
+                !locked && !large && (item.bytes ?? 0) > 0
+                    ? '${item.durationLabel} · ${formatBytes(item.bytes!)}'
+                    : item.durationLabel,
+                maxLines: 1,
                 style: const TextStyle(
                     color: Colors.white,
                     fontSize: 9.5,
@@ -210,6 +270,37 @@ class AlbumSaverGate extends ConsumerWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+/// "1.2 MB", on frosted glass. With [label], a wider pill for the viewer.
+class _SizePill extends StatelessWidget {
+  final int bytes;
+  final bool large;
+  final String? label;
+
+  const _SizePill({required this.bytes, this.large = false, this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    final size = formatBytes(bytes);
+    return Container(
+      padding: EdgeInsets.symmetric(
+          horizontal: large ? 10 : 4, vertical: large ? 5 : 1),
+      decoration: BoxDecoration(
+        color: const Color(0xA6000000),
+        borderRadius: BorderRadius.circular(large ? VH.rPill : 3),
+      ),
+      child: Text(
+        label == null ? size : '$label · $size',
+        maxLines: 1,
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: large ? 12.5 : 9.5,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
     );
   }
 }

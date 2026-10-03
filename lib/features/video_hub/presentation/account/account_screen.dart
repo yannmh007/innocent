@@ -3,10 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/localization/app_strings.dart';
+import '../../../../core/services/preferences/player_settings_service.dart';
 import '../../data/local_account_repository.dart';
 import '../../domain/access.dart';
 import '../../domain/account.dart';
 import '../account_provider.dart';
+import '../bookmarks_provider.dart';
+import '../bookmarks_screen.dart';
+import '../data_saver_panel.dart';
 import '../video_hub_theme.dart';
 import '../widgets/vh_insets.dart';
 import '../downloads_screen.dart';
@@ -29,6 +33,57 @@ class AccountScreen extends ConsumerWidget {
     final account = ref.watch(accountProvider);
     final requests = ref.watch(myPremiumRequestsProvider).asData?.value ??
         const <PremiumRequest>[];
+
+    final library = <Widget>[
+          // Library entries, ABOVE the payment history. Someone opening
+          // this screen is far more often looking for what they saved than
+          // for a receipt, and the common errand belongs at the top.
+          const SizedBox(height: VH.s5),
+          _LibraryTile(
+            icon: Icons.bookmark_border_rounded,
+            label: s.vhLibraryBookmarks,
+            subtitle: s.vhLibraryBookmarksHint,
+            // OPEN TO EVERYONE. Saving needs no account: bookmarks live on
+            // the phone, and signing in only adds that they follow the
+            // viewer to other phones.
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const BookmarksScreen()),
+            ),
+            locked: false,
+            trailing: ref.watch(titleBookmarksProvider).length,
+          ),
+          const SizedBox(height: VH.s2),
+          _LibraryTile(
+            icon: Icons.download_outlined,
+            label: s.vhLibraryDownloads,
+            subtitle: s.vhLibraryDownloadsHint,
+            locked: !account.entitlement.isActive,
+            // OPENS EVEN WHEN LOCKED. `locked` dims the tile to say what
+            // the feature costs; refusing to open it would hide a shelf
+            // that may still have titles on it — a subscription that
+            // lapsed an hour ago has not yet been swept, and a person
+            // should be able to see and delete what is on their own phone.
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const DownloadsScreen(),
+              ),
+            ),
+          ),
+          const SizedBox(height: VH.s2),
+          _LibraryTile(
+            icon: Icons.data_saver_on_rounded,
+            label: s.vhDataSaver,
+            subtitle: s.vhLibraryDataSaverHint,
+            locked: false,
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const DataSaverScreen()),
+            ),
+            trailingText: ref.watch(playerSettingsProvider)
+                    .get(PlayerSetting.albumDataSaver)
+                ? s.vhOn
+                : null,
+          ),
+    ];
 
     return Scaffold(
       backgroundColor: VH.canvas,
@@ -55,7 +110,10 @@ class AccountScreen extends ConsumerWidget {
               VhInsets.scrollBottom(context, extra: VH.s6)),
           children: <Widget>[
             if (!account.isSignedIn)
-              _SignedOut(onSignIn: () => SignInSheet.show(context))
+              ...<Widget>[
+                _SignedOut(onSignIn: () => SignInSheet.show(context)),
+                ...library,
+              ]
             else ...<Widget>[
               _IdentityCard(user: account.user!),
               const SizedBox(height: VH.s4),
@@ -68,34 +126,7 @@ class AccountScreen extends ConsumerWidget {
                   ),
                 ),
               ),
-            // Library entries, ABOVE the payment history. Someone opening
-            // this screen is far more often looking for what they saved than
-            // for a receipt, and the common errand belongs at the top.
-            const SizedBox(height: VH.s5),
-            _LibraryTile(
-              icon: Icons.bookmark_border_rounded,
-              label: s.vhLibraryBookmarks,
-              subtitle: s.vhLibraryBookmarksHint,
-              locked: !account.entitlement.isActive && !account.isSignedIn,
-              onTap: () => _notYet(context, s),
-            ),
-            const SizedBox(height: VH.s2),
-            _LibraryTile(
-              icon: Icons.download_outlined,
-              label: s.vhLibraryDownloads,
-              subtitle: s.vhLibraryDownloadsHint,
-              locked: !account.entitlement.isActive,
-              // OPENS EVEN WHEN LOCKED. `locked` dims the tile to say what
-              // the feature costs; refusing to open it would hide a shelf
-              // that may still have titles on it — a subscription that
-              // lapsed an hour ago has not yet been swept, and a person
-              // should be able to see and delete what is on their own phone.
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => const DownloadsScreen(),
-                ),
-              ),
-            ),
+              ...library,
             if (requests.isNotEmpty) ...<Widget>[
                 const SizedBox(height: VH.s5),
                 Text(s.vhAccountRequests, style: VH.heading),
@@ -129,20 +160,6 @@ class AccountScreen extends ConsumerWidget {
   }
 }
 
-/// A library destination that does not exist yet.
-///
-/// Shown rather than hidden, and honest about it. Hiding a planned feature
-/// makes the account screen look empty; pretending it works makes the app look
-/// broken. Naming it and saying "soon" does neither.
-void _notYet(BuildContext context, AppStrings s) {
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text(s.vhLibrarySoon),
-      duration: const Duration(seconds: 2),
-    ),
-  );
-}
-
 class _LibraryTile extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -150,48 +167,83 @@ class _LibraryTile extends StatelessWidget {
   final bool locked;
   final VoidCallback onTap;
 
+  /// A count shown as a pill before the chevron (saved titles), or null.
+  final int? trailing;
+
+  /// A word shown instead, e.g. "On" for the data saver.
+  final String? trailingText;
+
   const _LibraryTile({
     required this.icon,
     required this.label,
     required this.subtitle,
     required this.locked,
     required this.onTap,
+    this.trailing,
+    this.trailingText,
   });
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(VH.rControl),
-      child: Container(
-        padding: const EdgeInsets.all(VH.s4),
-        decoration: BoxDecoration(
-          color: VH.surface1,
-          borderRadius: BorderRadius.circular(VH.rControl),
-          border: Border.all(color: VH.hairline),
-        ),
-        child: Row(
-          children: <Widget>[
-            Icon(icon, size: 20, color: VH.textSecondary),
-            const SizedBox(width: VH.s3),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  Text(label, style: VH.label.copyWith(fontSize: 14.5)),
-                  const SizedBox(height: 2),
-                  Text(subtitle, style: VH.meta.copyWith(fontSize: 11.5)),
-                ],
+    final pill = trailingText ?? ((trailing ?? 0) > 0 ? '$trailing' : null);
+    return Material(
+      color: VH.surface1,
+      borderRadius: BorderRadius.circular(VH.rCard),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(VH.rCard),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(VH.s3, VH.s3, VH.s2, VH.s3),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(VH.rCard),
+            border: Border.all(color: VH.hairline),
+          ),
+          child: Row(
+            children: <Widget>[
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: VH.surface3,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, size: 20, color: VH.textPrimary),
               ),
-            ),
-            if (locked)
-              const Icon(Icons.lock_outline_rounded,
-                  size: 16, color: VH.textTertiary)
-            else
-              const Icon(Icons.chevron_right_rounded,
-                  size: 20, color: VH.textTertiary),
-          ],
+              const SizedBox(width: VH.s3),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Text(label, style: VH.label.copyWith(fontSize: 14.5)),
+                    const SizedBox(height: 2),
+                    Text(subtitle,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: VH.meta.copyWith(fontSize: 11.5)),
+                  ],
+                ),
+              ),
+              if (pill != null)
+                Container(
+                  margin: const EdgeInsets.only(left: VH.s2),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: VH.surface3,
+                    borderRadius: BorderRadius.circular(VH.rPill),
+                  ),
+                  child: Text(pill,
+                      style: VH.badge.copyWith(color: VH.textPrimary, fontSize: 11)),
+                ),
+              const SizedBox(width: VH.s1),
+              if (locked)
+                const Icon(Icons.lock_outline_rounded,
+                    size: 16, color: VH.textTertiary)
+              else
+                const Icon(Icons.chevron_right_rounded,
+                    size: 22, color: VH.textTertiary),
+            ],
+          ),
         ),
       ),
     );

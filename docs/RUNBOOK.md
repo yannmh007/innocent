@@ -732,6 +732,9 @@ it.
 | "The player stopped responding on this file" | libmpv did not answer for 4 s (`MpvLink`); Retry or the next video starts a fresh engine. Diagnostics → playback log has `engine stuck on …` |
 | Category row missing on the All tab | the category has no published title, or `categories.is_visible` is false (migration 034) |
 | Two categories in the wrong order | Console → Categories → ▲▼ (`category_move`, migration 035). Moves the tab and its All row with every film in it; no title is touched. All stays first. Takes effect on the app's next launch/refresh |
+| "Data saver does nothing on Wi-Fi" | Fixed in 1.64.46: on by default for every connection (Movies → account → Data saver; or Downloads). "Mobile data only" is the opt-out. A Wi-Fi marked metered in Android counts as mobile data |
+| Bookmarks missing on a new phone | Bookmarks sync only while signed in (table `bookmarks`, migration 036, RLS per user). Signed-out bookmarks live on that phone only; they are adopted by the first account that signs in there |
+| Signed out after an app update | Fixed in 1.64.46: an expired token answered 403 `bad_jwt` and was read as a refusal. Auth logs: `select ... from logs where source='auth_logs'` around the update time |
 | Upload fails in R2 | **VPN** |
 
 Edge function logs are kept **one day** on the free tier. Copy anything

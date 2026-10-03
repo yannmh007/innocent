@@ -6,6 +6,9 @@ import 'package:innocent/features/local_browser/domain/video.dart';
 import 'package:innocent/features/local_browser/presentation/library_provider.dart';
 import 'package:innocent/features/music/domain/song.dart';
 import 'package:innocent/features/music/presentation/music_providers.dart';
+import 'package:innocent/features/video_hub/data/demo_content_datasource.dart';
+import 'package:innocent/features/video_hub/data/demo_content_repository.dart';
+import 'package:innocent/features/video_hub/domain/video_content.dart';
 
 final _now = DateTime(2026, 10, 3, 12);
 
@@ -66,3 +69,60 @@ List<Override> libraryOverrides() => [
       allVideosProvider.overrideWith((ref) async => videos()),
       allSongsProvider.overrideWith((ref) async => songs()),
     ];
+
+/// A real album's shape (from the live catalogue, 2026-10-03): portrait and
+/// square stills, a long portrait clip, landscape clips — with the blurhash
+/// previews the server sends, so the data saver's frost is the real frost.
+List<AlbumItem> albumItems() {
+  const photos = <(String, int, int)>[
+    ('TGCsBf%M?b~Wt7%MHrRPIUIARjD%', 1080, 2096),
+    ('TSEMB=Mdxa?^WmR*I:xtjFsqV@s:', 719, 1280),
+    ('LCFYV|Mwpc9Z.lI.sCjbof?bI9?a', 960, 960),
+    ('T8CP9V?H0~L2Nc={-;\$Mw]%MsmIp', 960, 1280),
+    ('TB7__=xEEk9FNKrqmPoJxCT|axSh', 957, 1280),
+    ('TML4H8xs~W?ct7NGNdWXIBRkRjRj', 962, 1280),
+    ('TaGuK|%2gN~Vt7%MtlR*-V%LfkxG', 719, 1280),
+    ('ThH2o}xu?v~pIUxuW.RkxaE1M|M_', 763, 1280),
+  ];
+  const clips = <(String, int, int, int)>[
+    ('TXCGPtxaoz~qspt7-;WBt7t7R+of', 720, 1280, 1109),
+    ('LZHBoC\$%S4X900tRaeMx%gozRjM{', 640, 360, 4279),
+    ('LTH.B8I]J9?w?c%h-?WD-;WCM{a#', 1280, 720, 630),
+  ];
+  return <AlbumItem>[
+    for (final (i, c) in clips.indexed)
+      AlbumItem(
+        id: 'clip$i',
+        kind: MediaKind.video,
+        source: MediaRef(provider: 'url', locator: 'https://media.test/c$i.mp4'),
+        thumbnail: MediaRef(provider: 'url', locator: 'https://media.test/c$i.jpg'),
+        width: c.$2,
+        height: c.$3,
+        durationSec: c.$4,
+        bytes: 120000000 + i * 90000000,
+        preview: c.$1,
+      ),
+    for (final (i, p) in photos.indexed)
+      AlbumItem(
+        id: 'photo$i',
+        kind: MediaKind.photo,
+        source: MediaRef(provider: 'url', locator: 'https://media.test/p$i.jpg'),
+        width: p.$2,
+        height: p.$3,
+        bytes: 150000 + i * 20000,
+        preview: p.$1,
+      ),
+  ];
+}
+
+/// The demo catalogue, except that every title's detail carries [albumItems].
+class AlbumDemoRepository extends DemoContentRepository {
+  @override
+  Future<VideoContent?> getById(String id) async {
+    final c = await super.getById(id);
+    return c?.withAlbum(albumItems());
+  }
+}
+
+VideoContent albumTitle() =>
+    const DemoContentDataSource().all().first.withAlbum(albumItems());

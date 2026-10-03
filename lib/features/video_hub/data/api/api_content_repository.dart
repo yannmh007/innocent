@@ -650,6 +650,43 @@ class ApiContentRepository implements ContentRepository {
     return list.first.withAlbum(await _album(id));
   }
 
+  @override
+  Future<List<VideoContent>> getByIds(List<String> ids) async {
+    final clean = ids.where(_isUuid).toSet().toList();
+    if (clean.isEmpty) return const <VideoContent>[];
+    try {
+      final body = await _cachedGet(
+        '/rest/v1/titles',
+        query: <String, String>{
+          'select': _titleColumns,
+          'id': 'in.(${clean.join(',')})',
+          'limit': '${clean.length}',
+        },
+      );
+      return _titles(body);
+    } catch (e) {
+      // OFFLINE, AND THIS EXACT SET WAS NEVER FETCHED: the shelf is built from
+      // every title row already on disk, so a bookmark saved yesterday still
+      // draws on a train today. Only a title never seen at all is missing.
+      final want = clean.toSet();
+      final rows = await CatalogueCache.titleRows();
+      final hits = <VideoContent>[
+        for (final row in rows)
+          if (want.contains('${row['id']}')) _titleFrom(row),
+      ];
+      if (hits.isEmpty) rethrow;
+      final seen = <String>{};
+      return hits.where((t) => seen.add(t.id)).toList();
+    }
+  }
+
+  static final RegExp _uuid = RegExp(
+      r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
+
+  /// Only uuids reach the `in.()` filter: anything else would be a malformed
+  /// query, and a bookmark is an id this app wrote, never free text.
+  static bool _isUuid(String s) => _uuid.hasMatch(s);
+
   /// The album behind a title: the extra stills and clips in its folder.
   ///
   /// A SECOND request, deliberately, and only on the detail screen. The

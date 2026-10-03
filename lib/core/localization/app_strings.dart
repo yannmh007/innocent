@@ -1438,6 +1438,33 @@ class AppStrings {
   String get vhSignInOr => _s('vhSignInOr');
   String get vhLibraryBookmarks => _s('vhLibraryBookmarks');
   String get vhLibraryBookmarksHint => _s('vhLibraryBookmarksHint');
+  String get vhSaverModeAll => _s('vhSaverModeAll');
+  String get vhSaverModeAllHint => _s('vhSaverModeAllHint');
+  String get vhSaverModeMobile => _s('vhSaverModeMobile');
+  String get vhSaverModeMobileHint => _s('vhSaverModeMobileHint');
+  String vhSaverNowOn(String conn) => _s('vhSaverNowOn').replaceFirst('{conn}', conn);
+  String vhSaverNowOff(String conn) => _s('vhSaverNowOff').replaceFirst('{conn}', conn);
+  String get vhConnWifi => _s('vhConnWifi');
+  String get vhConnMobile => _s('vhConnMobile');
+  String get vhConnOffline => _s('vhConnOffline');
+  String get vhConnOther => _s('vhConnOther');
+  String get vhSaverBanner => _s('vhSaverBanner');
+  String get vhSaverTurnOff => _s('vhSaverTurnOff');
+  String get vhSaverHowTitle => _s('vhSaverHowTitle');
+  String get vhSaverHow1 => _s('vhSaverHow1');
+  String get vhSaverHow2 => _s('vhSaverHow2');
+  String get vhSaverHow3 => _s('vhSaverHow3');
+  String get vhLibraryDataSaverHint => _s('vhLibraryDataSaverHint');
+  String get vhBookmark => _s('vhBookmark');
+  String get vhBookmarked => _s('vhBookmarked');
+  String get vhBookmarkAdded => _s('vhBookmarkAdded');
+  String get vhBookmarkRemoved => _s('vhBookmarkRemoved');
+  String get vhUndo => _s('vhUndo');
+  String get vhBookmarksEmpty => _s('vhBookmarksEmpty');
+  String get vhBookmarksSignInHint => _s('vhBookmarksSignInHint');
+  String get vhOn => _s('vhOn');
+  String get vhEdit => _s('vhEdit');
+  String vhBookmarksCount(int n) => _s('vhBookmarksCount').replaceFirst('{n}', '$n');
   String get vhLibraryDownloads => _s('vhLibraryDownloads');
   String get vhDeleteDownloadBody => _s('vhDeleteDownloadBody');
   String get vhDiscardDownloadBody => _s('vhDiscardDownloadBody');
@@ -1925,6 +1952,33 @@ class AppStrings {
     'vhDataSaverWifiHint': 'Off: on Wi-Fi albums load normally.',
     'vhDataSaverOn': 'Data saver is on — tap to show albums normally',
     'vhDataSaverOff': 'Turn on data saver',
+    'vhSaverModeAll': 'All connections',
+    'vhSaverModeAllHint': 'Wi-Fi too — for Wi-Fi bought by the gigabyte',
+    'vhSaverModeMobile': 'Mobile data only',
+    'vhSaverModeMobileHint': 'On Wi-Fi, albums load as usual',
+    'vhSaverNowOn': 'Saving now · {conn}',
+    'vhSaverNowOff': 'Not saving on {conn}',
+    'vhConnWifi': 'Wi-Fi',
+    'vhConnMobile': 'mobile data',
+    'vhConnOffline': 'offline',
+    'vhConnOther': 'this connection',
+    'vhSaverBanner': 'Data saver is on — photos and videos load only when you tap them',
+    'vhSaverTurnOff': 'Turn off',
+    'vhSaverHowTitle': 'How it works',
+    'vhSaverHow1': 'Albums show a soft blurred preview. Nothing is downloaded to draw it.',
+    'vhSaverHow2': 'Each photo and clip shows its size. Tap only the ones you want.',
+    'vhSaverHow3': 'What you open stays on the phone and never costs data twice.',
+    'vhLibraryDataSaverHint': 'Albums load only what you tap',
+    'vhBookmark': 'Save',
+    'vhBookmarked': 'Saved',
+    'vhBookmarkAdded': 'Saved to Bookmarks',
+    'vhBookmarkRemoved': 'Removed from Bookmarks',
+    'vhUndo': 'Undo',
+    'vhBookmarksEmpty': 'Nothing saved yet. Tap the bookmark on any title to keep it here.',
+    'vhBookmarksSignInHint': 'Sign in to keep your bookmarks on every phone you use.',
+    'vhBookmarksCount': '{n} saved',
+    'vhOn': 'On',
+    'vhEdit': 'Edit',
     'playerNoticeIncomplete': 'This file is not fully downloaded. It plays up to {t}.',
     'playerNoticeSeekHeld': 'Not downloaded past {t}.',
     'playerNoticeSoftware': 'The hardware decoder failed on this file. Playing with the software (SW) decoder.',
@@ -3199,6 +3253,33 @@ class AppStrings {
     'vhDataSaverWifiHint': 'ပိတ်ထားရင် Wi-Fi မှာ album တွေ ပုံမှန်အတိုင်း ပြပါမယ်။',
     'vhDataSaverOn': 'ဒေတာ ချွေတာမုဒ် ဖွင့်ထားသည် — ပုံမှန်ပြရန် နှိပ်ပါ',
     'vhDataSaverOff': 'ဒေတာ ချွေတာမုဒ် ဖွင့်မည်',
+    'vhSaverModeAll': 'အင်တာနက် အားလုံး',
+    'vhSaverModeAllHint': 'WiFi ပါ — GB နဲ့ ဝယ်ရတဲ့ WiFi အတွက်',
+    'vhSaverModeMobile': 'ဖုန်းဒေတာ သုံးချိန်သာ',
+    'vhSaverModeMobileHint': 'WiFi ဆိုရင် album ကို ပုံမှန်အတိုင်း ပြပါမယ်',
+    'vhSaverNowOn': 'ယခု ချွေတာနေသည် · {conn}',
+    'vhSaverNowOff': '{conn} မှာ မချွေတာပါ',
+    'vhConnWifi': 'WiFi',
+    'vhConnMobile': 'ဖုန်းဒေတာ',
+    'vhConnOffline': 'အော့ဖ်လိုင်း',
+    'vhConnOther': 'ဒီ connection',
+    'vhSaverBanner': 'ဒေတာ ချွေတာမုဒ် ဖွင့်ထားသည် — ပုံ/ဗီဒီယိုကို နှိပ်မှသာ ဖွင့်ပါမယ်',
+    'vhSaverTurnOff': 'ပိတ်မယ်',
+    'vhSaverHowTitle': 'ဘယ်လို အလုပ်လုပ်လဲ',
+    'vhSaverHow1': 'Album တွေကို ဝေဝေဝါးဝါး preview လေးပဲ ပြပါမယ်။ အဲ့ဒါပြဖို့ ဘာမှ download မလုပ်ပါ။',
+    'vhSaverHow2': 'ပုံနဲ့ ဗီဒီယိုတိုင်းမှာ size ပြထားပါတယ်။ လိုချင်တာကိုပဲ နှိပ်ပါ။',
+    'vhSaverHow3': 'ဖွင့်ပြီးသားဟာ ဖုန်းထဲ ကျန်နေလို့ ဒုတိယအကြိမ် ဒေတာ မကုန်တော့ပါ။',
+    'vhLibraryDataSaverHint': 'Album မှာ နှိပ်တာကိုပဲ ဖွင့်ပါမယ်',
+    'vhBookmark': 'သိမ်းမယ်',
+    'vhBookmarked': 'သိမ်းပြီး',
+    'vhBookmarkAdded': 'သိမ်းထားသည်များထဲ ထည့်ပြီးပါပြီ',
+    'vhBookmarkRemoved': 'သိမ်းထားသည်များမှ ဖယ်ပြီးပါပြီ',
+    'vhUndo': 'ပြန်ထည့်',
+    'vhBookmarksEmpty': 'ဘာမှ မသိမ်းရသေးပါ။ ကြိုက်တဲ့ ဇာတ်ကားရဲ့ သိမ်းမယ် ခလုတ်ကိုနှိပ်ပြီး ဒီမှာ စုထားလို့ရပါတယ်။',
+    'vhBookmarksSignInHint': 'အကောင့်ဝင်ထားရင် သိမ်းထားတာတွေ ဖုန်းတိုင်းမှာ ရှိနေပါမယ်။',
+    'vhBookmarksCount': '{n} ခု သိမ်းထားသည်',
+    'vhOn': 'ဖွင့်ထား',
+    'vhEdit': 'ပြင်မယ်',
     'playerNoticeIncomplete': 'ဒီဖိုင်က အပြည့် download မဆွဲရသေးပါ။ {t} အထိပဲ ကြည့်လို့ရပါမယ်။',
     'playerNoticeSeekHeld': '{t} နောက်ပိုင်း download မဆွဲရသေးပါ။',
     'playerNoticeSoftware': 'ဒီဖိုင်မှာ Hardware decoder အလုပ်မလုပ်လို့ Software (SW) decoder နဲ့ ဆက်ဖွင့်ထားပါတယ်။',
@@ -4462,6 +4543,33 @@ class AppStrings {
     'vhDataSaverWifiHint': 'ปิดไว้: บน Wi-Fi อัลบั้มโหลดตามปกติ',
     'vhDataSaverOn': 'เปิดประหยัดเน็ตอยู่ — แตะเพื่อแสดงตามปกติ',
     'vhDataSaverOff': 'เปิดประหยัดเน็ต',
+    'vhSaverModeAll': 'ทุกการเชื่อมต่อ',
+    'vhSaverModeAllHint': 'รวม Wi-Fi — สำหรับ Wi-Fi ที่คิดตาม GB',
+    'vhSaverModeMobile': 'เฉพาะเน็ตมือถือ',
+    'vhSaverModeMobileHint': 'บน Wi-Fi อัลบั้มโหลดตามปกติ',
+    'vhSaverNowOn': 'กำลังประหยัด · {conn}',
+    'vhSaverNowOff': 'ไม่ประหยัดบน {conn}',
+    'vhConnWifi': 'Wi-Fi',
+    'vhConnMobile': 'เน็ตมือถือ',
+    'vhConnOffline': 'ออฟไลน์',
+    'vhConnOther': 'การเชื่อมต่อนี้',
+    'vhSaverBanner': 'เปิดประหยัดเน็ตอยู่ — รูปและคลิปโหลดเมื่อแตะเท่านั้น',
+    'vhSaverTurnOff': 'ปิด',
+    'vhSaverHowTitle': 'ทำงานอย่างไร',
+    'vhSaverHow1': 'อัลบั้มแสดงภาพเบลอ ไม่มีการดาวน์โหลดเพื่อแสดงภาพนี้',
+    'vhSaverHow2': 'รูปและคลิปแต่ละรายการแสดงขนาด แตะเฉพาะที่ต้องการ',
+    'vhSaverHow3': 'สิ่งที่เปิดแล้วเก็บไว้ในเครื่อง ไม่เสียเน็ตซ้ำ',
+    'vhLibraryDataSaverHint': 'อัลบั้มโหลดเฉพาะที่แตะ',
+    'vhBookmark': 'บันทึก',
+    'vhBookmarked': 'บันทึกแล้ว',
+    'vhBookmarkAdded': 'บันทึกในบุ๊กมาร์กแล้ว',
+    'vhBookmarkRemoved': 'นำออกจากบุ๊กมาร์กแล้ว',
+    'vhUndo': 'เลิกทำ',
+    'vhBookmarksEmpty': 'ยังไม่มีรายการที่บันทึก แตะบุ๊กมาร์กบนเรื่องใดก็ได้เพื่อเก็บไว้ที่นี่',
+    'vhBookmarksSignInHint': 'ลงชื่อเข้าใช้เพื่อเก็บบุ๊กมาร์กไว้ทุกเครื่อง',
+    'vhBookmarksCount': 'บันทึกไว้ {n} รายการ',
+    'vhOn': 'เปิด',
+    'vhEdit': 'แก้ไข',
     'playerNoticeIncomplete': 'ไฟล์นี้ดาวน์โหลดไม่ครบ เล่นได้ถึง {t}',
     'playerNoticeSeekHeld': 'ยังไม่ได้ดาวน์โหลดหลัง {t}',
     'playerNoticeSoftware': 'ตัวถอดรหัสฮาร์ดแวร์ใช้กับไฟล์นี้ไม่ได้ กำลังเล่นด้วยตัวถอดรหัสซอฟต์แวร์ (SW)',

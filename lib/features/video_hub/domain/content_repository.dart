@@ -88,6 +88,10 @@ abstract class ContentRepository {
 
   Future<VideoContent?> getById(String id);
 
+  /// Several titles at once, for the Bookmarks shelf. Order is not promised;
+  /// ids that no longer exist are simply absent.
+  Future<List<VideoContent>> getByIds(List<String> ids);
+
   /// Records that someone opened this title.
   ///
   /// WHAT COUNTS AS A VIEW, stated once so the number means something: the

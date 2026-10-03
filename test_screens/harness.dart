@@ -143,9 +143,10 @@ Future<void> shoot(
   Duration settle = const Duration(seconds: 2),
   Future<void> Function(WidgetTester)? act,
   int scrolls = 0,
+  Map<String, Object> prefs = const {},
 }) async {
   debugDisableShadows = false;
-  _fakePlugins();
+  _fakePlugins(prefs);
   tester.view.physicalSize = phone.size * phone.ratio;
   tester.view.devicePixelRatio = phone.ratio;
   tester.view.padding = FakeViewPadding(top: phone.top * phone.ratio, bottom: phone.bottom * phone.ratio);
@@ -240,6 +241,7 @@ void screens(String name, Widget Function() build,
     List<Locale>? locales,
     Future<void> Function(WidgetTester)? act,
     int scrolls = 0,
+    Map<String, Object> prefs = const {},
     Duration settle = const Duration(seconds: 2)}) {
   for (final p in phones) {
     for (final l in locales ?? [screenLocale]) {
@@ -250,6 +252,7 @@ void screens(String name, Widget Function() build,
             overrides: overrides?.call() ?? const [],
             act: act,
             scrolls: scrolls,
+            prefs: prefs,
             settle: settle);
       });
     }
@@ -265,9 +268,9 @@ Directory? _support;
 
 /// The plugins screens touch on the way in, answered the way a fresh install
 /// would: an empty support folder, an empty keystore, empty preferences.
-void _fakePlugins() {
+void _fakePlugins([Map<String, Object> extra = const {}]) {
   // ignore: invalid_use_of_visible_for_testing_member
-  SharedPreferences.setMockInitialValues(_prefs);
+  SharedPreferences.setMockInitialValues({..._prefs, ...extra});
   _support ??= Directory.systemTemp.createTempSync('screens');
   final m = TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
   m.setMockMethodCallHandler(const MethodChannel('plugins.flutter.io/path_provider'),

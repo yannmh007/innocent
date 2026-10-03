@@ -104,6 +104,21 @@ class ApiClient {
     );
   }
 
+  Future<dynamic> deleteJson(
+    String path, {
+    Map<String, String>? query,
+    Map<String, String>? extraHeaders,
+    bool authenticated = true,
+    Duration? timeout,
+  }) {
+    return _send(
+      (headers) => _http.delete(_uri(path, query), headers: headers),
+      authenticated: authenticated,
+      extraHeaders: extraHeaders,
+      timeout: timeout,
+    );
+  }
+
   /// Runs a request, refreshing the session ONCE on a 401.
   ///
   /// Once, not in a loop: if a fresh token is also rejected the session is

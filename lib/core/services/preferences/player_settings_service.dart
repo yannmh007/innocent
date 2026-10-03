@@ -179,9 +179,17 @@ enum PlayerSetting {
   // clip arrives only when the viewer taps its download button. Off by
   // default: the album looking like an album is the first impression.
   albumDataSaver(default_: false),
-  // On Wi-Fi as well. Off by default, because the point of the saver is the
-  // data bundle; on unmetered Wi-Fi the full album costs nothing extra.
-  albumDataSaverOnWifi(default_: false),
+  // On EVERY connection, Wi-Fi included — ON by default since 1.64.46.
+  //
+  // It was off, on the reasoning that Wi-Fi is unmetered and the saver is
+  // about the data bundle. That is a home-broadband assumption. In Myanmar a
+  // lot of Wi-Fi is a shared router fed by a SIM or sold by the gigabyte, and
+  // Android reports it as unmetered all the same — so a viewer who switched
+  // the saver on and was on Wi-Fi saw it do nothing (reported 2026-10-03).
+  // "On" now means on, the way Telegram's does; the viewer can narrow it to
+  // mobile data only. A Wi-Fi network marked "metered" in Android's settings
+  // counts as mobile data either way.
+  albumDataSaverOnWifi(default_: true),
   decDeinterlace(default_: false),
   decCustomCodec(default_: false),
 

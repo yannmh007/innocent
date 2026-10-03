@@ -14,6 +14,7 @@ import 'album_downloads.dart';
 import 'album_viewer_screen.dart';
 import 'playback.dart';
 import 'video_hub_provider.dart';
+import 'data_saver_panel.dart';
 import 'widgets/hub_states.dart';
 import 'widgets/poster_image.dart';
 import 'widgets/vh_insets.dart';
@@ -73,11 +74,11 @@ class DownloadsScreen extends ConsumerWidget {
           // first thing on the screen now.
           final pending = ref.watch(offlinePendingProvider).valueOrNull ??
               const <PendingProgress>[];
-          if (items.isEmpty && pending.isEmpty) {
-            return HubEmptyState(
-              message: s.vhLibraryDownloadsHint,
-              icon: Icons.download_for_offline_outlined);
-          }
+          // THE SETTINGS SHOW WHEN THE SHELF IS EMPTY TOO. They used to be
+          // drawn only beside a list, so the place the data saver was said to
+          // live showed nothing but "no downloads" to everyone who had not
+          // downloaded yet — exactly the person deciding whether to.
+          final empty = items.isEmpty && pending.isEmpty;
           // WHAT IS LEFT, not only what is taken. Somebody deciding whether
           // to download tonight's film needs the free figure more than the
           // used one, and neither was on this screen.
@@ -117,10 +118,15 @@ class DownloadsScreen extends ConsumerWidget {
               const _WifiOnlyRow(),
               // The album data saver lives with the other "what may this
               // spend" switch. The album heading has a one-tap toggle too.
-              const _DataSaverRow(),
+              const DataSaverPanel(),
+              const SizedBox(height: VH.s4),
               // WHY A DOWNLOAD STOPS WHEN THE PHONE IS PUT DOWN, in the one
               // place the person who noticed it is looking. See _BatteryRow.
               const _BatteryRow(),
+              if (empty)
+                HubEmptyState(
+                    message: s.vhLibraryDownloadsHint,
+                    icon: Icons.download_for_offline_outlined),
               if (pending.isNotEmpty) ...<Widget>[
                 Padding(
                   padding: const EdgeInsets.only(bottom: VH.s2),
@@ -970,52 +976,3 @@ class _WifiOnlyRow extends ConsumerWidget {
   }
 }
 
-/// The album data saver, and whether it also applies on Wi-Fi.
-class _DataSaverRow extends ConsumerWidget {
-  const _DataSaverRow();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final s = AppStrings.of(context);
-    final settings = ref.watch(playerSettingsProvider);
-    final on = settings.get(PlayerSetting.albumDataSaver);
-    final wifi = settings.get(PlayerSetting.albumDataSaverOnWifi);
-    final notifier = ref.read(playerSettingsProvider.notifier);
-    Widget row(String title, String hint, bool value, ValueChanged<bool> set,
-            {Key? key}) =>
-        Padding(
-          padding: const EdgeInsets.only(bottom: VH.s3),
-          child: Row(
-            children: <Widget>[
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(title, style: VH.label.copyWith(fontSize: 13.5)),
-                    const SizedBox(height: 2),
-                    Text(hint, style: VH.meta.copyWith(fontSize: 11.5)),
-                  ],
-                ),
-              ),
-              const SizedBox(width: VH.s2),
-              Switch(key: key, value: value, onChanged: set),
-            ],
-          ),
-        );
-    return Column(
-      children: <Widget>[
-        row(s.vhDataSaver, s.vhDataSaverHint, on,
-            (v) => notifier.setValue(PlayerSetting.albumDataSaver, v),
-            key: const ValueKey('data-saver-switch')),
-        // Only meaningful while the saver is on, so only drawn then.
-        if (on)
-          Padding(
-            padding: const EdgeInsets.only(left: VH.s4),
-            child: row(s.vhDataSaverWifi, s.vhDataSaverWifiHint, wifi,
-                (v) => notifier.setValue(PlayerSetting.albumDataSaverOnWifi, v),
-                key: const ValueKey('data-saver-wifi-switch')),
-          ),
-      ],
-    );
-  }
-}

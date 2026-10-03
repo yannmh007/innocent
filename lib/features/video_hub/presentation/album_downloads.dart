@@ -359,9 +359,13 @@ class AlbumDownloadButton extends ConsumerWidget {
                 ),
               ),
               const SizedBox(width: VH.s2),
-              Text(s.vhAlbumProgress(status.held, status.total),
-                  key: const ValueKey('album-dl-progress'),
-                  style: VH.meta.copyWith(fontSize: 12)),
+              Flexible(
+                child: Text(s.vhAlbumProgress(status.held, status.total),
+                    key: const ValueKey('album-dl-progress'),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: VH.meta.copyWith(fontSize: 12)),
+              ),
               TextButton(
                 key: const ValueKey('album-dl-pause'),
                 onPressed: () => downloads.pause(content, mine),
@@ -382,9 +386,13 @@ class AlbumDownloadButton extends ConsumerWidget {
               const Icon(Icons.download_done_rounded,
                   size: 17, color: VH.textTertiary),
               const SizedBox(width: 5),
-              Text(s.vhAlbumDownloaded,
-                  style: VH.meta.copyWith(
-                      fontSize: 12.5, color: VH.textTertiary)),
+              Flexible(
+                child: Text(s.vhAlbumDownloaded,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: VH.meta.copyWith(
+                        fontSize: 12.5, color: VH.textTertiary)),
+              ),
             ],
           );
         }
@@ -396,7 +404,8 @@ class AlbumDownloadButton extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
             if (status.hasNew)
-              Container(
+              Flexible(
+                child: Container(
                 key: const ValueKey('album-dl-new'),
                 padding:
                     const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -405,9 +414,15 @@ class AlbumDownloadButton extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(news.join(' · '),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: VH.badge.copyWith(color: VH.textPrimary)),
               ),
-            TextButton.icon(
+              ),
+            // FLEXIBLE, so a narrow header (a 360px phone, a Burmese label)
+            // ellipsises the label instead of overflowing the row.
+            Flexible(
+              child: TextButton.icon(
               key: const ValueKey('album-dl-start'),
               onPressed: () => downloadAlbumMissing(context, ref,
                   content: content, status: status),
@@ -415,8 +430,11 @@ class AlbumDownloadButton extends ConsumerWidget {
                   size: 18, color: VH.textSecondary),
               label: Text(
                 status.hasNew ? s.vhAlbumDownloadNew : s.vhAlbumDownloadAll,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: VH.meta.copyWith(fontSize: 12.5),
               ),
+            ),
             ),
           ],
         );

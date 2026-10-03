@@ -312,6 +312,12 @@ class DemoContentRepository implements ContentRepository {
   }
 
   @override
+  Future<List<VideoContent>> getByIds(List<String> ids) async {
+    final want = ids.toSet();
+    return _visible().where((e) => want.contains(e.id)).toList();
+  }
+
+  @override
   Future<PlaybackGrant> requestPlayback({
     required VideoContent content,
     required MediaRef source,

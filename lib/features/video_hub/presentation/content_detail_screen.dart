@@ -1,15 +1,20 @@
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/localization/app_strings.dart';
+import '../../../core/services/preferences/player_settings_service.dart';
 import '../domain/access_policy.dart';
 import '../data/api/event_sender.dart';
 import '../domain/video_content.dart';
 import 'album_downloads.dart';
 import 'album_saver.dart';
 import 'album_viewer_screen.dart';
+import 'bookmarks_provider.dart';
+import 'bookmarks_screen.dart';
+import 'data_saver_panel.dart';
 import 'widgets/media_mosaic.dart';
 import 'playback.dart';
 import 'video_hub_provider.dart';
@@ -135,6 +140,9 @@ class _ContentDetailScreenState extends ConsumerState<ContentDetailScreen> {
               icon: const Icon(Icons.arrow_back, color: Colors.white),
               onPressed: () => Navigator.of(context).maybePop(),
             ),
+            // Where Netflix keeps "My List" and YouTube "Save": pinned with
+            // the back arrow, so it is there however far the page scrolls.
+            actions: <Widget>[_BookmarkButton(content: content)],
             flexibleSpace: FlexibleSpaceBar(
               background: Stack(
                 fit: StackFit.expand,
@@ -191,7 +199,12 @@ class _ContentDetailScreenState extends ConsumerState<ContentDetailScreen> {
                 padding: const EdgeInsets.fromLTRB(14, 18, 14, 10),
                 child: Row(
                   children: <Widget>[
-                    Text(s.vhAlbum, style: VH.heading),
+                    Flexible(
+                      child: Text(s.vhAlbum,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: VH.heading),
+                    ),
                     if (content.albumCount != null) ...<Widget>[
                       const SizedBox(width: 8),
                       // The server's total, not `items.length`: the album may
@@ -202,17 +215,42 @@ class _ContentDetailScreenState extends ConsumerState<ContentDetailScreen> {
                         style: VH.meta.copyWith(fontSize: 12.5),
                       ),
                     ],
-                    const Spacer(),
-                    // Telegram's data saver, one tap away from the album it
-                    // changes — see album_saver.dart.
-                    const AlbumSaverToggle(),
-                    // The album's Download: everything, or only what the
-                    // admin added since — see AlbumDownloadButton.
-                    Flexible(child: AlbumDownloadButton(content: content)),
+                    const SizedBox(width: VH.s2),
+                    // Everything right of the heading shares what is left
+                    // of the row. It was a Spacer plus two fixed-width
+                    // controls, which overflowed a 360px phone by 56px in
+                    // Burmese ("အားလုံး ဒေါင်းမယ်" under the stripe).
+                    Expanded(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: <Widget>[
+                          // Telegram's data saver, one tap away from the
+                          // album it changes — see album_saver.dart.
+                          const AlbumSaverToggle(),
+                          // The album's Download: everything, or only what
+                          // the admin added since — see AlbumDownloadButton.
+                          Flexible(
+                              child: AlbumDownloadButton(content: content)),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),
             ),
+            // What the frost means, in words, and the way out — see
+            // DataSaverBanner. Only while the album IS frosted.
+            if (ref.watch(playerSettingsProvider)
+                    .get(PlayerSetting.albumDataSaver) &&
+                (ref.watch(albumSaverProvider).valueOrNull ?? true))
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 0, 14, 10),
+                  child: DataSaverBanner(
+                    onTurnOff: () => setAlbumSaver(ref, false),
+                  ),
+                ),
+              ),
             // The mosaic, not a grid. A folder holds portrait clips and
             // landscape stills together, and a three-column square grid gave
             // both the same square hole - a 9:16 clip lost about 44% of its
@@ -289,6 +327,58 @@ class _ContentDetailScreenState extends ConsumerState<ContentDetailScreen> {
   /// viewer cannot drift apart about what "Play" does.
   Future<void> _play(BuildContext context, WidgetRef ref) =>
       playContent(context, ref, content);
+}
+
+/// Save for later: a bookmark that fills when the title is saved.
+class _BookmarkButton extends ConsumerWidget {
+  const _BookmarkButton({required this.content});
+  final VideoContent content;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = AppStrings.of(context);
+    final saved = ref.watch(isTitleBookmarkedProvider(content.id));
+    return Padding(
+      padding: const EdgeInsets.only(right: VH.s2),
+      child: Material(
+        color: const Color(0x66000000),
+        shape: const CircleBorder(),
+        child: IconButton(
+          key: const ValueKey('detail-bookmark'),
+          tooltip: saved ? s.vhBookmarked : s.vhBookmark,
+          onPressed: () {
+            HapticFeedback.selectionClick();
+            final now = ref.read(titleBookmarksProvider.notifier).toggle(content);
+            ScaffoldMessenger.of(context)
+              ..hideCurrentSnackBar()
+              ..showSnackBar(SnackBar(
+                behavior: SnackBarBehavior.floating,
+                duration: const Duration(seconds: 3),
+                content: Text(now ? s.vhBookmarkAdded : s.vhBookmarkRemoved),
+                action: now
+                    ? SnackBarAction(
+                        label: s.vhLibraryBookmarks,
+                        onPressed: () => Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                                builder: (_) => const BookmarksScreen())),
+                      )
+                    : null,
+              ));
+          },
+          icon: AnimatedSwitcher(
+            duration: VH.fast,
+            transitionBuilder: (child, a) =>
+                ScaleTransition(scale: a, child: child),
+            child: Icon(
+              saved ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+              key: ValueKey(saved),
+              color: Colors.white,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _Header extends StatelessWidget {
