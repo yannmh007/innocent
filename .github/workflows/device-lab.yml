@@ -138,6 +138,12 @@ jobs:
           fi
           ls -la app.apk
 
+      - name: Probe the stream door (no app)
+        env:
+          SB_URL: ${{ secrets.SUPABASE_URL }}
+          OUT: out
+        run: bash test_device/probe.sh
+
       - name: Install Maestro
         run: |
           curl -fsSL "https://get.maestro.mobile.dev" | bash

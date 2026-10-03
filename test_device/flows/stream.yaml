@@ -11,6 +11,11 @@ appId: com.innocent.media
     text: "1:11:19"
     optional: true
 - waitForAnimationToEnd:
+    timeout: 3000
+# The viewer opens on the clip's poster; its play button is in the middle.
+- tapOn:
+    point: "50%,50%"
+- waitForAnimationToEnd:
     timeout: 15000
 - takeScreenshot: 40_stream_while_dl_15s
 - waitForAnimationToEnd:
