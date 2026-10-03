@@ -1,0 +1,37 @@
+# First look: get from a fresh install to the Movies hub, screenshot every
+# step, and dump what the accessibility tree can see so later flows can tap
+# by label. Every tap is optional — this flow is for learning the way in.
+appId: com.innocent.media
+---
+- launchApp
+- waitForAnimationToEnd:
+    timeout: 15000
+- takeScreenshot: 01_launch
+- tapOn:
+    text: "Skip"
+    optional: true
+- tapOn:
+    text: "Allow.*"
+    optional: true
+- tapOn:
+    text: "Allow.*"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 8000
+- takeScreenshot: 02_home
+- tapOn:
+    text: "Movies"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 10000
+- takeScreenshot: 03_gate
+- tapOn:
+    text: "I am 18 or older.*"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 15000
+- takeScreenshot: 04_hub
+- scroll
+- waitForAnimationToEnd:
+    timeout: 8000
+- takeScreenshot: 05_hub_scrolled
