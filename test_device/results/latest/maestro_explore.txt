@@ -18,16 +18,10 @@ Tap on (Optional) "Allow.*"... WARNED
  Warning: Element not found: Text matching regex: Allow.*
 Wait for animation to end within 8000 ms... COMPLETED
 Take screenshot 02_home... COMPLETED
-Tap on (Optional) "Movies"... WARNED
-
-
- Warning: Element not found: Text matching regex: Movies
+Tap on (Optional) "Movies"... COMPLETED
 Wait for animation to end within 10000 ms... COMPLETED
 Take screenshot 03_gate... COMPLETED
-Tap on (Optional) "I am 18 or older.*"... WARNED
-
-
- Warning: Element not found: Text matching regex: I am 18 or older.*
+Tap on (Optional) "I am 18 or older.*"... COMPLETED
 Wait for animation to end within 15000 ms... COMPLETED
 Take screenshot 04_hub... COMPLETED
 Scroll vertically... COMPLETED

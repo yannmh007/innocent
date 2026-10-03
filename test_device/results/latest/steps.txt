@@ -1,10 +1,10 @@
-[17:08:08] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
-[17:08:08] install
-[17:08:18] network: speed 6000:24000 kbit/s, delay 80:250 ms
-[17:08:38] cold start
+[17:26:58] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
+[17:26:58] install
+[17:27:13] network: speed 6000:24000 kbit/s, delay 80:250 ms
+[17:27:34] cold start
 Status: ok
-TotalTime: 2782
-WaitTime: 2787
-[17:08:52] flow explore
-[17:09:40] flow explore exit 0
-[17:09:49] done
+TotalTime: 4013
+WaitTime: 4070
+[17:27:48] flow explore
+[17:28:44] flow explore exit 0
+[17:28:56] done
