@@ -2768,12 +2768,12 @@ async function loadCategories() {
     // All with everything in them; nothing about the titles changes. `all`
     // is the landing tab and stays first.
     const movable = categories.filter((c) => c.id !== 'all');
-    let position = 1;
+    const lead = categories.length - movable.length; // 1 when All is listed
     for (const c of categories) {
       const label = el('input', { value: c.label || '' });
       const labelMm = el('input', { value: c.label_mm || '' });
-      const pos = c.id === 'all' ? 1 : ++position;
       const idx = movable.findIndex((m) => m.id === c.id);
+      const pos = c.id === 'all' ? 1 : idx + 1 + lead;
       const arrow = (dir, glyph, can) => {
         const b = el('button', { className: 'b', type: 'button',
           title: dir === 'up' ? 'Move up' : 'Move down',

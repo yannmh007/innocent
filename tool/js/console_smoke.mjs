@@ -490,7 +490,17 @@ async function open(browser, role, opts = {}) {
             { at: new Date().toISOString(), actor_email: 'boss@example.com', actor_role: 'owner',
               fn: 'studio', action: 'save', target: 't1', ok: true, error: null }] }),
         list: () => ({ titles: [] }),
-        categories: () => ({ categories: [{ id: 'movies', sort_order: 1 }] }),
+        categories: () => ({ categories: state.cats || [{ id: 'movies', sort_order: 1 }] }),
+        moveCategory: () => {
+          (state.moves = state.moves || []).push({ id: body.id, dir: body.dir });
+          const all = state.cats.filter((c) => c.id === 'all');
+          const rest = state.cats.filter((c) => c.id !== 'all');
+          const i = rest.findIndex((c) => c.id === body.id);
+          const j = body.dir === 'up' ? i - 1 : i + 1;
+          [rest[i], rest[j]] = [rest[j], rest[i]];
+          state.cats = [...all, ...rest];
+          return { ok: true, order: rest.map((c) => c.id) };
+        },
         requests: () => ({ rows: [] }),
         admins: () => ({ admins: [
           { id: 'a1', email: 'boss@example.com', role: 'owner', disabled: false, linked: true, mfa: true, last_seen_at: new Date().toISOString() },
@@ -772,6 +782,42 @@ try {
     check('setup: the owner sees the console rules', await visible(page, '#secSettings'));
     check('setup: no script errors', state.errors.length === 0);
     if (state.errors.length) console.log('     ' + state.errors.join('\n     '));
+    await ctx.close();
+  }
+
+  // ── categories: ▲▼ move a whole section (migration 035) ───────────────
+  {
+    const { page, ctx, state } = await open(browser, 'editor');
+    state.cats = [
+      { id: 'all', label: 'All', label_mm: 'အားလုံး', sort_order: 0, is_visible: true },
+      { id: 'movies', label: 'Movies', label_mm: 'ရုပ်ရှင်', sort_order: 1, is_visible: true },
+      { id: 'series', label: 'Series', label_mm: 'ဇာတ်လမ်းတွဲ', sort_order: 2, is_visible: true },
+      { id: 'reels', label: 'Reels', label_mm: 'Reels', sort_order: 3, is_visible: true },
+    ];
+    await page.waitForSelector('#tab-dashboard:not([hidden])');
+    await page.click('#side a[data-tab=cats]');
+    await page.waitForFunction(() => document.querySelectorAll('#catList button[title="Move up"]').length === 4);
+    await shot(page, 'cats-before');
+    const ups = await page.$$('#catList button[title="Move up"]');
+    const downs = await page.$$('#catList button[title="Move down"]');
+    check('categories: All cannot move', await ups[0].isDisabled() && await downs[0].isDisabled());
+    check('categories: the first section cannot go above All', await ups[1].isDisabled());
+    check('categories: the last cannot go further down', await downs[3].isDisabled());
+    check('categories: there is no order number box any more', !(await page.$('#newCatOrder')));
+    await ups[2].click(); // Series up, past Movies
+    await page.waitForFunction(() => /Moved/.test(document.body.textContent));
+    // The list is cleared and redrawn after the move; wait for the redraw,
+    // not merely for four arrows (the old list has four too).
+    await page.waitForFunction(() => {
+      const v = [...document.querySelectorAll('#catList input:not([type=checkbox])')].map((n) => n.value);
+      return v.length === 8 && v[2] !== 'Movies';
+    }, null, { timeout: 5000 }).catch(() => {});
+    check('categories: one call, by id and direction',
+      JSON.stringify(state.moves) === JSON.stringify([{ id: 'series', dir: 'up' }]));
+    const order = await page.$$eval('#catList input:not([type=checkbox])', (ns) => ns.filter((_, i) => i % 2 === 0).map((n) => n.value));
+    check('categories: Series is now second, Movies third (' + order.join(',') + ')',
+      order.join(',') === 'All,Series,Movies,Reels');
+    await shot(page, 'cats-after');
     await ctx.close();
   }
 
