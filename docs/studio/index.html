@@ -882,8 +882,10 @@ body.sh-on{padding-bottom:calc(76px + env(safe-area-inset-bottom))}
   <section id="tab-cats" hidden>
     <div class="sec">
       <div class="sechead"><h2>Categories</h2></div>
-      <p class="hint">The tab names in the app. Rename, reorder, hide — and now
-        add — with no app build. The <span class="mono">id</span> is not
+      <p class="hint">The tab names in the app. Rename, hide, add — and move
+        with ▲▼ — with no app build. Moving a category moves its whole section:
+        the tab and, on All, its row, with every film in it (films belong to a
+        category by its id, not its place). All always stays first. The <span class="mono">id</span> is not
         editable and never will be: every title stores it, so changing one
         would rewrite every title using it. Hiding a category hides its films
         from the front page as well as its tab.</p>
@@ -905,10 +907,6 @@ body.sh-on{padding-bottom:calc(76px + env(safe-area-inset-bottom))}
         <div style="flex:1;min-width:120px">
           <label>Label (Burmese)</label>
           <input id="newCatLabelMm" placeholder="မှတ်တမ်း">
-        </div>
-        <div style="min-width:88px">
-          <label>Order</label>
-          <input id="newCatOrder" type="number" value="9" style="width:72px">
         </div>
         <div style="align-self:flex-end">
           <button id="newCatAdd" class="b">Add</button>
@@ -2741,13 +2739,12 @@ async function addCategory() {
   btn.disabled = true;
   try {
     await api({ op: 'addCategory', id, label,
-      label_mm: ($('newCatLabelMm').value || '').trim() || null,
-      sort_order: Number($('newCatOrder').value) || 0 });
+      label_mm: ($('newCatLabelMm').value || '').trim() || null });
     $('newCatId').value = '';
     $('newCatLabel').value = '';
     $('newCatLabelMm').value = '';
-    say('ok', 'Added. It is a tab in the app on its next launch, and it is in ' +
-      'the Category picker here straight away.');
+    say('ok', 'Added, as the last tab — move it with ▲▼. It is a tab in the ' +
+      'app on its next launch, and in the Category picker here straight away.');
     // BOTH, and in this order. The picker is what the operator will reach for
     // next — they added the section to put something in it.
     await refreshCategoryOptions();
@@ -2766,11 +2763,43 @@ async function loadCategories() {
   host.textContent = '';
   try {
     const { categories } = await api({ op: 'categories' });
+    // THE ORDER IS ARROWS, NOT NUMBERS (migration 035). A title belongs to a
+    // category by its id, so moving a category moves its tab and its row on
+    // All with everything in them; nothing about the titles changes. `all`
+    // is the landing tab and stays first.
+    const movable = categories.filter((c) => c.id !== 'all');
+    let position = 1;
     for (const c of categories) {
       const label = el('input', { value: c.label || '' });
       const labelMm = el('input', { value: c.label_mm || '' });
-      const order = el('input', { type: 'number',
-        value: String(c.sort_order ?? 0), style: 'width:64px' });
+      const pos = c.id === 'all' ? 1 : ++position;
+      const idx = movable.findIndex((m) => m.id === c.id);
+      const arrow = (dir, glyph, can) => {
+        const b = el('button', { className: 'b', type: 'button',
+          title: dir === 'up' ? 'Move up' : 'Move down',
+          style: 'min-width:36px;padding:0 8px' }, text(glyph));
+        b.disabled = !can;
+        b.onclick = async () => {
+          b.disabled = true;
+          try {
+            await api({ op: 'moveCategory', id: c.id, dir });
+            say('ok', 'Moved. Its tab, its row on All and everything in them '
+              + 'moved together; the app shows it on its next launch.');
+            await refreshCategoryOptions();
+            await loadCategories();
+          } catch (e) {
+            say('bad', String(e.message || e));
+            b.disabled = false;
+          }
+        };
+        return b;
+      };
+      const up = arrow('up', '▲', c.id !== 'all' && idx > 0);
+      const down = arrow('down', '▼', c.id !== 'all' && idx >= 0 && idx < movable.length - 1);
+      const order = el('div', { style: 'display:flex;align-items:center;gap:4px' }, [
+        el('b', { className: 'mono', style: 'min-width:22px;text-align:right' }, text(String(pos))),
+        up, down,
+      ]);
       const vis = el('input', { type: 'checkbox' });
       vis.checked = c.is_visible !== false;
       // `all` is the landing tab and the app refuses to hide it whatever this
@@ -2781,9 +2810,10 @@ async function loadCategories() {
       save.onclick = async () => {
         save.disabled = true;
         try {
+          // NO sort_order here: the arrows own the order, and a number read
+          // when this list was drawn would undo a move made since.
           await api({ op: 'saveCategory', id: c.id, patch: {
-            label: label.value, label_mm: labelMm.value,
-            sort_order: Number(order.value) || 0, is_visible: vis.checked,
+            label: label.value, label_mm: labelMm.value, is_visible: vis.checked,
           } });
           say('ok', 'Saved. The app picks it up on its next launch.');
         } catch (e) { say('bad', String(e.message || e)); }
@@ -2797,7 +2827,7 @@ async function loadCategories() {
           [el('label', {}, text('Label')), label]),
         el('div', { style: 'flex:1;min-width:120px' },
           [el('label', {}, text('Burmese')), labelMm]),
-        el('div', {}, [el('label', {}, text('Order')), order]),
+        el('div', {}, [el('label', {}, text('Position')), order]),
         el('div', { style: 'display:flex;align-items:center;gap:6px;align-self:end;height:var(--ctl)' },
           [vis, el('span', { className: 'hint' },
             text(c.id === 'all' ? 'always shown' : 'visible'))]),

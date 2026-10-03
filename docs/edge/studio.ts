@@ -761,7 +761,8 @@ const NEED: Record<string, Role> = {
   archiveConnect: 'owner', archiveDisconnect: 'owner',
   // publishing and the business
   publish: 'editor', approve: 'editor', reject: 'editor',
-  saveCategory: 'editor', addCategory: 'editor', selftest: 'editor',
+  saveCategory: 'editor', addCategory: 'editor', moveCategory: 'editor',
+  selftest: 'editor',
   audit: 'editor',
   // the owner's
   deleteTitle: 'owner', admins: 'owner', adminSave: 'owner',
@@ -1972,6 +1973,23 @@ async function handleOp(
     return json({ ok: true, id, changed: Object.keys(upd) }, 200, req);
   }
 
+  // --- moveCategory: one place up or down, content and all (migration 035)
+  //
+  // A title belongs to a category by its id, so the order of the tabs — and
+  // of the category rows on All — is only sort_order. category_move swaps
+  // with the neighbour in one transaction, renumbering 1..n first so ties and
+  // gaps cannot make the swap look ignored. `all` stays first.
+  if (body.op === 'moveCategory') {
+    const id = String(body.id ?? '').trim();
+    const dir = body.dir === 'up' ? 'up' : body.dir === 'down' ? 'down' : '';
+    if (!id || !dir) return json({ error: 'bad_move' }, 400, req);
+    const { data, error } = await admin().rpc('category_move', { p_id: id, p_dir: dir });
+    if (error) return json({ error: 'move_failed', detail: error.message }, 500, req);
+    const out = (data ?? {}) as Record<string, unknown>;
+    if (out.error) return json({ error: String(out.error) }, 409, req);
+    return json({ ok: true, id, dir, order: out.order ?? [] }, 200, req);
+  }
+
   // --- addCategory: a new section, without an app release
   //
   // THE ID IS THE ONE THING THAT CANNOT BE FIXED LATER. It is what
@@ -1996,11 +2014,20 @@ async function handleOp(
     // rather than as a form somebody left half-filled.
     if (!label) return json({ error: 'no_label' }, 400, req);
 
+    // A NEW SECTION GOES LAST unless a position is asked for: the console
+    // moves it with ▲▼ afterwards (category_move, migration 035), and a
+    // default of 0 would have put it level with All and ahead of everything.
+    let order = num(body.sort_order);
+    if (order == null) {
+      const { data: last } = await admin().from('categories')
+        .select('sort_order').order('sort_order', { ascending: false }).limit(1);
+      order = (Number(last?.[0]?.sort_order) || 0) + 1;
+    }
     const row: Record<string, unknown> = {
       id,
       label,
       label_mm: str(body.label_mm),
-      sort_order: num(body.sort_order) ?? 0,
+      sort_order: order,
       is_visible: body.is_visible !== false,
       updated_at: new Date().toISOString(),
     };

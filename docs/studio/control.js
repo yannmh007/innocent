@@ -411,6 +411,7 @@ const CR_ACTIONS = {
   setPrimary: 'chose the cover', deleteAsset: 'removed a file', deleteTitle: 'DELETED a title',
   approve: 'approved a request', reject: 'rejected a request',
   saveCategory: 'changed a category', addCategory: 'added a category',
+  moveCategory: 'moved a category',
   completeMultipart: 'finished an upload', abortMultipart: 'abandoned an upload',
   adminSave: 'changed an admin', adminRemove: 'removed an admin',
   settingsSave: 'changed the console rules',
