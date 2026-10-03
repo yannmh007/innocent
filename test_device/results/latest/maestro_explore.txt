@@ -3,10 +3,11 @@ Running on test
 Launch app "com.innocent.media"... COMPLETED
 Wait for animation to end within 15000 ms... COMPLETED
 Take screenshot 01_launch... COMPLETED
-Tap on (Optional) "Skip"... WARNED
+Tap on (Optional) "Wait"... WARNED
 
 
- Warning: Element not found: Text matching regex: Skip
+ Warning: Element not found: Text matching regex: Wait
+Tap on (Optional) "Skip"... COMPLETED
 Tap on (Optional) "Allow.*"... WARNED
 
 
@@ -32,3 +33,4 @@ Take screenshot 04_hub... COMPLETED
 Scroll vertically... COMPLETED
 Wait for animation to end within 8000 ms... COMPLETED
 Take screenshot 05_hub_scrolled... COMPLETED
+Scrolling UP until ".*" is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED

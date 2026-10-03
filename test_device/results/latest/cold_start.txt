@@ -2,6 +2,6 @@ Starting: Intent { cmp=com.innocent.media/.MainActivity }
 Status: ok
 LaunchState: COLD
 Activity: com.innocent.media/.MainActivity
-TotalTime: 3549
-WaitTime: 3563
+TotalTime: 2782
+WaitTime: 2787
 Complete

@@ -1,622 +1,161 @@
-10-03 17:03:33.765 W/CorpusConfigHelper( 1774): android.util.MalformedJsonException: Use JsonReader.setLenient(true) to accept malformed JSON at line 123 column 2
-10-03 17:03:33.781 W/ActivityManager(  520): Scheduling restart of crashed service com.google.android.settings.intelligence/.modules.routines.impl.PruneDatabaseJobService in 1000ms for connection
-10-03 17:03:33.781 W/ActivityManager(  520): Scheduling restart of crashed service com.google.android.settings.intelligence/.modules.routines.impl.RoutinesJobIntentService in 11000ms for connection
-10-03 17:03:33.781 W/ActivityManager(  520): Scheduling restart of crashed service com.google.android.settings.intelligence/.modules.routines.impl.ComputeNewInferencesJobService in 21000ms for connection
-10-03 17:03:34.304 E/AppOps  (  520): java.lang.SecurityException: Specified package "android" under uid 10182 but it is not
-10-03 17:03:34.305 E/AppOps  (  520): java.lang.SecurityException: Specified package "android" under uid 10182 but it is not
-10-03 17:03:34.308 E/AppOps  (  520): java.lang.SecurityException: Specified package "android" under uid 10182 but it is not
-10-03 17:03:34.308 E/AppOps  (  520): java.lang.SecurityException: Specified package "android" under uid 10182 but it is not
-10-03 17:03:34.458 W/CorpusConfigHelper( 1774): android.util.MalformedJsonException: Use JsonReader.setLenient(true) to accept malformed JSON at line 123 column 2
-10-03 17:03:34.770 D/MediaGrants( 1666): Removed 0 media_grants for 0 user for com.innocent.media. Reason: Mode changed: android:read_external_storage
-10-03 17:03:34.838 E/gs.intelligence( 5120): Not starting debugger since process cannot load the jdwp agent.
-10-03 17:03:34.861 D/nativeloader( 5120): InitLlndkLibrariesProduct: libEGL.so:libGLESv1_CM.so:libGLESv2.so:libGLESv3.so:libRS.so:libandroid_net.so:libbinder_ndk.so:libc.so:libcgrouprc.so:libclang_rt.asan-x86_64-android.so:libcom.android.tethering.connectivity_native.so:libdl.so:libft2.so:liblog.so:libm.so:libmediandk.so:libnativewindow.so:libneuralnetworks.so:libselinux.so:libsync.so:libvndksupport.so:libvulkan.so
-10-03 17:03:34.861 D/nativeloader( 5120): InitVndkspLibrariesProduct: android.hardware.common-V2-ndk.so:android.hardware.common.fmq-V1-ndk.so:android.hardware.graphics.allocator-V2-ndk.so:android.hardware.graphics.common-V4-ndk.so:android.hardware.graphics.common@1.0.so:android.hardware.graphics.common@1.1.so:android.hardware.graphics.common@1.2.so:android.hardware.graphics.composer3-V1-ndk.so:android.hardware.graphics.mapper@2.0.so:android.hardware.graphics.mapper@2.1.so:android.hardware.graphics.mapper@3.0.so:android.hardware.graphics.mapper@4.0.so:android.hardware.renderscript@1.0.so:android.hidl.memory.token@1.0.so:android.hidl.memory@1.0-impl.so:android.hidl.memory@1.0.so:android.hidl.safe_union@1.0.so:libRSCpuRef.so:libRSDriver.so:libRS_internal.so:libbase.so:libbcinfo.so:libblas.so:libc++.so:libcompiler_rt.so:libcutils.so:libdmabufheap.so:libgralloctypes.so:libhardware.so:libhidlbase.so:libhidlmemory.so:libion.so:libjsoncpp.so:liblzma.so:libprocessgroup.so:libunwindstack.so:libutils.so:libutilscallstack.so:libz.so
-10-03 17:03:34.944 E/AmbientMusicServiceMana( 1632): oxe: java.lang.reflect.InvocationTargetException
-10-03 17:03:34.944 E/AmbientMusicServiceMana( 1632): Caused by: java.lang.reflect.InvocationTargetException
-10-03 17:03:34.944 E/AmbientMusicServiceMana( 1632): Caused by: java.lang.IllegalStateException: No underlying SoundTriggerModule available
-10-03 17:03:34.974 W/WifiService(  520): Permission violation - getConfiguredNetworks not allowed for uid=10118, packageName=com.google.android.settings.intelligence, reason=java.lang.SecurityException: UID 10118 has no location permission
-10-03 17:03:35.348 W/CorpusConfigHelper( 1774): android.util.MalformedJsonException: Use JsonReader.setLenient(true) to accept malformed JSON at line 123 column 2
-10-03 17:03:35.376 I/ActivityManager(  520): Force stopping com.innocent.media appid=10192 user=0: from pid 5228
-10-03 17:03:35.377 I/ActivityManager(  520): Killing 4263:com.innocent.media/u0a192 (adj 0): stop com.innocent.media due to from pid 5228
-10-03 17:03:35.377 W/ActivityTaskManager(  520): Force removing ActivityRecord{cfcfb3b u0 com.innocent.media/.MainActivity t8 f}}: app died, no saved state
-10-03 17:03:35.379 V/WindowManagerShell(  839): Transition requested: android.os.BinderProxy@a6cee46 TransitionRequestInfo { type = CLOSE, triggerTask = TaskInfo{userId=0 taskId=8 displayId=0 isRunning=false baseIntent=Intent { flg=0x10000000 cmp=com.innocent.media/.MainActivity } baseActivity=null topActivity=null origActivity=null realActivity=ComponentInfo{com.innocent.media/com.innocent.media.MainActivity} numActivities=0 lastActiveTime=50358 supportsMultiWindow=true resizeMode=2 isResizeable=true minWidth=-1 minHeight=-1 defaultMinSize=220 token=WCT{android.window.IWindowContainerToken$Stub$Proxy@11ef807} topActivityType=1 pictureInPictureParams=null shouldDockBigOverlays=false launchIntoPipHostTaskId=-1 lastParentTaskIdBeforePip=-1 displayCutoutSafeInsets=null topActivityInfo=null launchCookies=[] positionInParent=Point(0, 0) parentTaskId=-1 isFocused=true isVisible=true isVisibleRequested=true isSleeping=false topActivityInSizeCompat=false <token>= false topActivityLetterboxed= false isFromDoubleTap= false topActivityLetterboxVerticalPosition= -1 topActivityLetterboxHorizontalPosition= -1 topActivityLetterboxWidth=-1 topActivityLetterboxHeight=-1 locusId=null displayAreaFeatureId=1 cameraCompatControlState=hidden}, remoteTransition = null, displayChange = null }
-10-03 17:03:35.397 I/MediaSessionStack(  520): removeSession | record: com.innocent.media/media-session (userId=0)
-10-03 17:03:35.408 I/WindowManager(  520): WIN DEATH: Window{bb092b0 u0 com.innocent.media/com.innocent.media.MainActivity}
-10-03 17:03:35.410 W/InputManager-JNI(  520): Input channel object 'bb092b0 com.innocent.media/com.innocent.media.MainActivity (client)' was disposed without first being removed with the input manager!
-10-03 17:03:35.413 V/ActivityManager(  520): Got obituary of 4263:com.innocent.media
-10-03 17:03:35.452 D/CarrierSvcBindHelper( 1053): onHandleForceStop: [com.innocent.media]
-10-03 17:03:35.840 V/WindowManagerShell(  839):  Checking filter Pair{{types=[] flags=0x0] notFlags=0x0 checks=[{atype=dream independent=true modes=[OPEN,TO_FRONT] flags=NONE mustBeTask=false order=ANY topActivity=null},{atype=home independent=true modes=[CLOSE,TO_BACK] flags=NONE mustBeTask=false order=ANY topActivity=null}]} RemoteTransition { remoteTransition = android.window.IRemoteTransition$Stub$Proxy@ff51b1b, appThread = android.app.IApplicationThread$Stub$Proxy@b80f4b8, debugName = LauncherToDream }}
-10-03 17:03:35.840 V/WindowManagerShell(  839):  Checking filter Pair{{types=[] flags=0x0] notFlags=0x100 checks=[{atype=home independent=true modes=[OPEN,TO_FRONT] flags=NONE mustBeTask=false order=TOP topActivity=ComponentInfo{com.google.android.apps.nexuslauncher/com.google.android.apps.nexuslauncher.NexusLauncherActivity}},{atype=standard independent=true modes=[CLOSE,TO_BACK] flags=NONE mustBeTask=false order=ANY topActivity=null}]} RemoteTransition { remoteTransition = android.window.IRemoteTransition$Stub$Proxy@ec87291, appThread = android.app.IApplicationThread$Stub$Proxy@b6725f6, debugName = QuickstepLaunchHome }}
-10-03 17:03:35.868 V/WindowManager(  520): Sent Transition #8 createdAt=10-03 17:03:35.377 via request=TransitionRequestInfo { type = CLOSE, triggerTask = TaskInfo{userId=0 taskId=8 displayId=0 isRunning=false baseIntent=Intent { flg=0x10000000 cmp=com.innocent.media/.MainActivity } baseActivity=null topActivity=null origActivity=null realActivity=ComponentInfo{com.innocent.media/com.innocent.media.MainActivity} numActivities=0 lastActiveTime=50358 supportsMultiWindow=true resizeMode=2 isResizeable=true minWidth=-1 minHeight=-1 defaultMinSize=220 token=WCT{RemoteToken{e1a4669 Task{a77b88c #8 type=standard I=com.innocent.media/.MainActivity}}} topActivityType=1 pictureInPictureParams=null shouldDockBigOverlays=false launchIntoPipHostTaskId=-1 lastParentTaskIdBeforePip=-1 displayCutoutSafeInsets=null topActivityInfo=null launchCookies=[] positionInParent=Point(0, 0) parentTaskId=-1 isFocused=true isVisible=true isVisibleRequested=true isSleeping=false topActivityInSizeCompat=false <token>= false topActivityLetterboxed= false isFromDoubleTap= false topActivityLetterboxVerticalPosition= -1 topActivityLetterboxHorizontalPosition= -1 topActivityLetterboxWidth=-1 topActivityLetterboxHeight=-1 locusId=null displayAreaFeatureId=1 cameraCompatControlState=hidden}, remoteTransition = null, displayChange = null }
-10-03 17:03:35.869 V/WindowManager(  520):     info={id=8 t=CLOSE f=0x0 trk=0 r=[0@Point(0, 0)] c=[{WCT{RemoteToken{e1a4669 Task{a77b88c #8 type=standard I=com.innocent.media/.MainActivity}}} m=CLOSE f=NONE leash=Surface(name=Task=8)/@0x46727dd sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) d=0},{WCT{RemoteToken{b70218f Task{5f1df42 #1 type=home}}} m=TO_FRONT f=SHOW_WALLPAPER leash=Surface(name=Task=1)/@0x537c1fc sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) d=0},{null m=TO_FRONT f=IS_WALLPAPER leash=Surface(name=WallpaperWindowToken{f291079 token=android.os.Binder@f3b3940})/@0x6122812 sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) d=0}]}
-10-03 17:03:35.908 W/WindowManager(  520): Exception thrown during dispatchAppVisibility Window{bb092b0 u0 com.innocent.media/com.innocent.media.MainActivity EXITING}
-10-03 17:03:35.908 W/WindowManager(  520): android.os.DeadObjectException
-10-03 17:03:36.165 V/SplashScreenExceptionList(  520): SplashScreen checking exception for package com.innocent.media (target sdk:35) -> false
-10-03 17:03:36.167 I/ActivityTaskManager(  520): START u0 {act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10000000 pkg=com.innocent.media cmp=com.innocent.media/.MainActivity} with LAUNCH_SINGLE_TOP from uid 10193 (BAL_ALLOW_PERMISSION) result code=0
-10-03 17:03:36.169 V/WindowManagerShell(  839): Transition requested: android.os.BinderProxy@c3f0b64 TransitionRequestInfo { type = OPEN, triggerTask = TaskInfo{userId=0 taskId=9 displayId=0 isRunning=true baseIntent=Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10000000 pkg=com.innocent.media cmp=com.innocent.media/.MainActivity } baseActivity=ComponentInfo{com.innocent.media/com.innocent.media.MainActivity} topActivity=ComponentInfo{com.innocent.media/com.innocent.media.MainActivity} origActivity=null realActivity=ComponentInfo{com.innocent.media/com.innocent.media.MainActivity} numActivities=1 lastActiveTime=77122 supportsMultiWindow=true resizeMode=2 isResizeable=true minWidth=-1 minHeight=-1 defaultMinSize=220 token=WCT{android.window.IWindowContainerToken$Stub$Proxy@fa881cd} topActivityType=1 pictureInPictureParams=null shouldDockBigOverlays=false launchIntoPipHostTaskId=-1 lastParentTaskIdBeforePip=-1 displayCutoutSafeInsets=Rect(0, 128 - 0, 0) topActivityInfo=ActivityInfo{3d9ea82 com.innocent.media.MainActivity} launchCookies=[] positionInParent=Point(0, 0) parentTaskId=-1 isFocused=false isVisible=false isVisibleRequested=false isSleeping=false topActivityInSizeCompat=false <token>= false topActivityLetterboxed= false isFromDoubleTap= false topActivityLetterboxVerticalPosition= -1 topActivityLetterboxHorizontalPosition= -1 topActivityLetterboxWidth=-1 topActivityLetterboxHeight=-1 locusId=null displayAreaFeatureId=1 cameraCompatControlState=hidden}, remoteTransition = null, displayChange = null }
-10-03 17:03:36.195 I/ActivityManager(  520): Start proc 5256:com.innocent.media/u0a192 for next-top-activity {com.innocent.media/com.innocent.media.MainActivity}
-10-03 17:03:36.261 I/.innocent.media( 5256): Using CollectorTypeCC GC.
-10-03 17:03:36.289 W/.innocent.media( 5256): Unexpected CPU variant for x86: x86_64.
-10-03 17:03:36.289 W/.innocent.media( 5256): Known variants: atom, sandybridge, silvermont, goldmont, goldmont-plus, tremont, kabylake, default
-10-03 17:03:36.301 W/AiAiAutofill( 1632): java.lang.SecurityException: caller is not user's Augmented Autofill Service
-10-03 17:03:36.302 D/CoreBackPreview(  520): Window{59afa2b u0 Splash Screen com.innocent.media}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@610b5a6, mPriority=0, mIsAnimationCallback=false}
-10-03 17:03:36.306 E/.innocent.media( 5256): Not starting debugger since process cannot load the jdwp agent.
-10-03 17:03:36.597 V/WindowManagerShell(  839):  Checking filter Pair{{types=[] flags=0x0] notFlags=0x0 checks=[{atype=dream independent=true modes=[OPEN,TO_FRONT] flags=NONE mustBeTask=false order=ANY topActivity=null},{atype=home independent=true modes=[CLOSE,TO_BACK] flags=NONE mustBeTask=false order=ANY topActivity=null}]} RemoteTransition { remoteTransition = android.window.IRemoteTransition$Stub$Proxy@ff51b1b, appThread = android.app.IApplicationThread$Stub$Proxy@b80f4b8, debugName = LauncherToDream }}
-10-03 17:03:36.597 V/WindowManagerShell(  839):  Checking filter Pair{{types=[] flags=0x0] notFlags=0x100 checks=[{atype=home independent=true modes=[OPEN,TO_FRONT] flags=NONE mustBeTask=false order=TOP topActivity=ComponentInfo{com.google.android.apps.nexuslauncher/com.google.android.apps.nexuslauncher.NexusLauncherActivity}},{atype=standard independent=true modes=[CLOSE,TO_BACK] flags=NONE mustBeTask=false order=ANY topActivity=null}]} RemoteTransition { remoteTransition = android.window.IRemoteTransition$Stub$Proxy@ec87291, appThread = android.app.IApplicationThread$Stub$Proxy@b6725f6, debugName = QuickstepLaunchHome }}
-10-03 17:03:36.598 V/WindowManager(  520): Sent Transition #9 createdAt=10-03 17:03:36.157 via request=TransitionRequestInfo { type = OPEN, triggerTask = TaskInfo{userId=0 taskId=9 displayId=0 isRunning=true baseIntent=Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10000000 pkg=com.innocent.media cmp=com.innocent.media/.MainActivity } baseActivity=ComponentInfo{com.innocent.media/com.innocent.media.MainActivity} topActivity=ComponentInfo{com.innocent.media/com.innocent.media.MainActivity} origActivity=null realActivity=ComponentInfo{com.innocent.media/com.innocent.media.MainActivity} numActivities=1 lastActiveTime=77122 supportsMultiWindow=true resizeMode=2 isResizeable=true minWidth=-1 minHeight=-1 defaultMinSize=220 token=WCT{RemoteToken{63a70ad Task{31d4d6e #9 type=standard I=com.innocent.media/.MainActivity}}} topActivityType=1 pictureInPictureParams=null shouldDockBigOverlays=false launchIntoPipHostTaskId=-1 lastParentTaskIdBeforePip=-1 displayCutoutSafeInsets=Rect(0, 128 - 0, 0) topActivityInfo=ActivityInfo{804dfe2 com.innocent.media.MainActivity} launchCookies=[] positionInParent=Point(0, 0) parentTaskId=-1 isFocused=false isVisible=false isVisibleRequested=false isSleeping=false topActivityInSizeCompat=false <token>= false topActivityLetterboxed= false isFromDoubleTap= false topActivityLetterboxVerticalPosition= -1 topActivityLetterboxHorizontalPosition= -1 topActivityLetterboxWidth=-1 topActivityLetterboxHeight=-1 locusId=null displayAreaFeatureId=1 cameraCompatControlState=hidden}, remoteTransition = null, displayChange = null }
-10-03 17:03:36.602 V/WindowManager(  520):     info={id=9 t=OPEN f=0x0 trk=0 r=[0@Point(0, 0)] c=[{WCT{RemoteToken{63a70ad Task{31d4d6e #9 type=standard I=com.innocent.media/.MainActivity}}} m=OPEN f=NONE leash=Surface(name=Task=9)/@0x4c7d456 sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) d=0},{WCT{RemoteToken{b70218f Task{5f1df42 #1 type=home}}} m=TO_BACK f=SHOW_WALLPAPER leash=Surface(name=Task=1)/@0x537c1fc sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) d=0}]}
-10-03 17:03:36.793 W/CorpusConfigHelper( 1774): android.util.MalformedJsonException: Use JsonReader.setLenient(true) to accept malformed JSON at line 123 column 2
-10-03 17:03:36.876 D/nativeloader( 5256): Configuring clns-6 for other apk /data/app/~~Am2iQR0DHucOqjqvqtCB7A==/com.innocent.media-p62Ec0y6uhkPxP0nchOVIw==/base.apk. target_sdk_version=35, uses_libraries=, library_path=/data/app/~~Am2iQR0DHucOqjqvqtCB7A==/com.innocent.media-p62Ec0y6uhkPxP0nchOVIw==/lib/x86_64:/data/app/~~Am2iQR0DHucOqjqvqtCB7A==/com.innocent.media-p62Ec0y6uhkPxP0nchOVIw==/base.apk!/lib/x86_64, permitted_path=/data:/mnt/expand:/data/user/0/com.innocent.media
-10-03 17:03:36.923 V/GraphicsEnvironment( 5256): ANGLE GameManagerService for com.innocent.media: false
-10-03 17:03:36.926 V/GraphicsEnvironment( 5256): com.innocent.media is not listed in per-application setting
-10-03 17:03:37.015 W/.innocent.media( 5256): type=1400 audit(0.0:90): avc:  denied  { read } for  name="max_map_count" dev="proc" ino=70950 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:proc_max_map_count:s0 tclass=file permissive=0 app=com.innocent.media
-10-03 17:03:37.102 I/flutter ( 5256): [IMPORTANT:flutter/shell/platform/android/android_context_gl_impeller.cc(94)] Using the Impeller rendering backend (OpenGLES).
-10-03 17:03:37.271 W/libpython.so( 5301): type=1400 audit(0.0:91): avc:  denied  { search } for  name="tests" dev="dm-40" ino=65540 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:shell_test_data_file:s0 tclass=dir permissive=0 app=com.innocent.media
-10-03 17:03:37.279 W/libpython.so( 5301): type=1400 audit(0.0:92): avc:  denied  { search } for  name="tests" dev="dm-40" ino=65540 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:shell_test_data_file:s0 tclass=dir permissive=0 app=com.innocent.media
-10-03 17:03:37.279 W/libpython.so( 5301): type=1400 audit(0.0:93): avc:  denied  { search } for  name="tests" dev="dm-40" ino=65540 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:shell_test_data_file:s0 tclass=dir permissive=0 app=com.innocent.media
-10-03 17:03:37.279 W/libpython.so( 5301): type=1400 audit(0.0:94): avc:  denied  { search } for  name="tests" dev="dm-40" ino=65540 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:shell_test_data_file:s0 tclass=dir permissive=0 app=com.innocent.media
-10-03 17:03:37.291 W/libpython.so( 5301): type=1400 audit(0.0:95): avc:  granted  { execute } for  path="/data/data/com.innocent.media/no_backup/youtubedl-android/packages/python/usr/lib/libandroid-support.so" dev="dm-40" ino=327757 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:app_data_file:s0:c192,c256,c512,c768 tclass=file app=com.innocent.media
-10-03 17:03:37.385 D/CoreBackPreview(  520): Window{be14457 u0 com.innocent.media/com.innocent.media.MainActivity}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@1f0296b, mPriority=0, mIsAnimationCallback=false}
-10-03 17:03:37.848 W/CorpusConfigHelper( 1774): android.util.MalformedJsonException: Use JsonReader.setLenient(true) to accept malformed JSON at line 123 column 2
-10-03 17:03:38.209 I/MediaSessionStack(  520): addSession to bottom of stack | record: com.innocent.media/media-session (userId=0)
-10-03 17:03:38.212 I/System.out( 5256): flutterEngine warmed up
-10-03 17:03:38.451 W/CorpusConfigHelper( 1774): android.util.MalformedJsonException: Use JsonReader.setLenient(true) to accept malformed JSON at line 123 column 2
-10-03 17:03:38.683 W/libpython.so( 5301): type=1400 audit(0.0:143): avc:  granted  { execute } for  path="/data/data/com.innocent.media/no_backup/youtubedl-android/packages/python/usr/lib/python3.12/lib-dynload/_contextvars.cpython-312.so" dev="dm-40" ino=328180 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:app_data_file:s0:c192,c256,c512,c768 tclass=file app=com.innocent.media
-10-03 17:03:38.763 W/libpython.so( 5301): type=1400 audit(0.0:144): avc:  granted  { execute } for  path="/data/data/com.innocent.media/no_backup/youtubedl-android/packages/python/usr/lib/python3.12/lib-dynload/_heapq.cpython-312.so" dev="dm-40" ino=328226 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:app_data_file:s0:c192,c256,c512,c768 tclass=file app=com.innocent.media
-10-03 17:03:38.951 W/libpython.so( 5301): type=1400 audit(0.0:145): avc:  granted  { execute } for  path="/data/data/com.innocent.media/no_backup/youtubedl-android/packages/python/usr/lib/python3.12/lib-dynload/_asyncio.cpython-312.so" dev="dm-40" ino=328184 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:app_data_file:s0:c192,c256,c512,c768 tclass=file app=com.innocent.media
-10-03 17:03:39.009 E/BLASTBufferQueue( 5256): [SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#1](f:0,a:0) rejecting buffer:active_size=1080x2400, requested_size=1080x2400 buffer{size=1080x2337 transform=0}
-10-03 17:03:39.336 I/ActivityTaskManager(  520): Displayed com.innocent.media/.MainActivity for user 0: +3s131ms
-10-03 17:03:39.361 W/InputManager-JNI(  520): Input channel object '59afa2b Splash Screen com.innocent.media (client)' was disposed without first being removed with the input manager!
-10-03 17:03:39.681 W/CorpusConfigHelper( 1774): android.util.MalformedJsonException: Use JsonReader.setLenient(true) to accept malformed JSON at line 123 column 2
-10-03 17:03:39.871 W/libpython.so( 5301): type=1400 audit(0.0:146): avc:  denied  { ioctl } for  path="pipe:[70304]" dev="pipefs" ino=70304 ioctlcmd=0x5413 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tclass=fifo_file permissive=0 app=com.innocent.media
-10-03 17:03:40.107 W/AiAiAutofill( 1632): java.lang.SecurityException: caller is not user's Augmented Autofill Service
-10-03 17:03:40.117 W/AiAiAutofill( 1632): java.lang.SecurityException: caller is not user's Augmented Autofill Service
-10-03 17:03:40.519 E/AppOps  (  520): java.lang.SecurityException: Specified package "android" under uid 10182 but it is not
-10-03 17:03:40.519 E/AppOps  (  520): java.lang.SecurityException: Specified package "android" under uid 10182 but it is not
-10-03 17:03:40.519 W/CorpusConfigHelper( 1774): android.util.MalformedJsonException: Use JsonReader.setLenient(true) to accept malformed JSON at line 123 column 2
-10-03 17:03:40.519 E/AppOps  (  520): java.lang.SecurityException: Specified package "android" under uid 10182 but it is not
-10-03 17:03:40.520 E/AppOps  (  520): java.lang.SecurityException: Specified package "android" under uid 10182 but it is not
-10-03 17:03:40.675 E/AppOps  (  520): java.lang.SecurityException: Specified package "android" under uid 10182 but it is not
-10-03 17:03:40.675 E/AppOps  (  520): java.lang.SecurityException: Specified package "android" under uid 10182 but it is not
-10-03 17:03:40.676 E/AppOps  (  520): java.lang.SecurityException: Specified package "android" under uid 10182 but it is not
-10-03 17:03:40.676 E/AppOps  (  520): java.lang.SecurityException: Specified package "android" under uid 10182 but it is not
-10-03 17:03:40.786 W/ModernMediaScanner( 1666): Failed to visit /data/data/com.android.providers.downloads/cache/ifw-empty-metadata.txt: java.nio.file.NoSuchFileException: /data/data/com.android.providers.downloads/cache/ifw-empty-metadata.txt
-10-03 17:03:40.797 W/ModernMediaScanner( 1666): Failed to visit /data/data/com.android.providers.downloads/cache/ifw-empty.xml: java.nio.file.NoSuchFileException: /data/data/com.android.providers.downloads/cache/ifw-empty.xml
-10-03 17:03:40.886 W/CorpusConfigHelper( 1774): android.util.MalformedJsonException: Use JsonReader.setLenient(true) to accept malformed JSON at line 123 column 2
-10-03 17:03:40.954 W/ModernMediaScanner( 1666): Failed to visit /data/data/com.android.providers.downloads/cache/08202014-metadata.txt: java.nio.file.NoSuchFileException: /data/data/com.android.providers.downloads/cache/08202014-metadata.txt
-10-03 17:03:40.961 W/ModernMediaScanner( 1666): Failed to visit /data/data/com.android.providers.downloads/cache/08202014-pins.txt: java.nio.file.NoSuchFileException: /data/data/com.android.providers.downloads/cache/08202014-pins.txt
-10-03 17:03:41.016 W/ModernMediaScanner( 1666): Failed to visit /data/data/com.android.providers.downloads/cache/05132026-sms-denylist-metadata.txt: java.nio.file.NoSuchFileException: /data/data/com.android.providers.downloads/cache/05132026-sms-denylist-metadata.txt
-10-03 17:03:41.042 W/ModernMediaScanner( 1666): Failed to visit /data/data/com.android.providers.downloads/cache/05132026-sms-denylist.txt: java.nio.file.NoSuchFileException: /data/data/com.android.providers.downloads/cache/05132026-sms-denylist.txt
-10-03 17:03:41.146 W/AsyncOperation( 1418): OperationException[Status{statusCode=Stale snapshot for com.google.android.googlequicksearchbox(change count changed - expected 4  but was 3), resolution=null}]
-10-03 17:03:41.233 W/ModernMediaScanner( 1666): Failed to visit /data/data/com.android.providers.downloads/cache/model.smfb.metadata: java.nio.file.NoSuchFileException: /data/data/com.android.providers.downloads/cache/model.smfb.metadata
-10-03 17:03:41.247 W/ModernMediaScanner( 1666): Failed to visit /data/data/com.android.providers.downloads/cache/model.smfb: java.nio.file.NoSuchFileException: /data/data/com.android.providers.downloads/cache/model.smfb
-10-03 17:03:41.392 W/CorpusConfigHelper( 1774): android.util.MalformedJsonException: Use JsonReader.setLenient(true) to accept malformed JSON at line 123 column 2
-10-03 17:03:42.094 W/CorpusConfigHelper( 1774): android.util.MalformedJsonException: Use JsonReader.setLenient(true) to accept malformed JSON at line 123 column 2
-10-03 17:03:42.171 W/PeoplePU( 1469): android.content.pm.PackageManager$NameNotFoundException: ComponentInfo{com.google.android.gms/com.google.android.gms.people.sync.focus.ContactsSyncAdapterService}
-10-03 17:03:42.175 W/PeoplePU( 1469): java.lang.IllegalArgumentException: Unknown component: ComponentInfo{com.google.android.syncadapters.contacts/com.google.android.syncadapters.contacts.ContactsSyncAdapterService}
-10-03 17:03:42.175 W/PeoplePU( 1469): 	at android.os.Parcel.createExceptionOrNull(Parcel.java:3061)
-10-03 17:03:42.175 W/PeoplePU( 1469): 	at android.os.Parcel.createException(Parcel.java:3041)
-10-03 17:03:42.175 W/PeoplePU( 1469): 	at android.os.Parcel.readException(Parcel.java:3024)
-10-03 17:03:42.175 W/PeoplePU( 1469): 	at android.os.Parcel.readException(Parcel.java:2966)
-10-03 17:03:42.175 W/PeoplePU( 1469): Caused by: android.os.RemoteException: Remote stack trace:
-10-03 17:03:42.183 W/PeoplePU( 1469): java.lang.IllegalArgumentException: Unknown component: ComponentInfo{com.google.android.syncadapters.contacts/com.google.android.syncadapters.contacts.ContactsSyncAdapterService}
-10-03 17:03:42.183 W/PeoplePU( 1469): 	at android.os.Parcel.createExceptionOrNull(Parcel.java:3061)
-10-03 17:03:42.183 W/PeoplePU( 1469): 	at android.os.Parcel.createException(Parcel.java:3041)
-10-03 17:03:42.183 W/PeoplePU( 1469): 	at android.os.Parcel.readException(Parcel.java:3024)
-10-03 17:03:42.183 W/PeoplePU( 1469): 	at android.os.Parcel.readException(Parcel.java:2966)
-10-03 17:03:42.199 W/PeoplePU( 1469): java.lang.IllegalArgumentException: Unknown component: ComponentInfo{com.google.android.syncadapters.contacts/com.google.android.syncadapters.contacts.ProxyGalProvider}
-10-03 17:03:42.199 W/PeoplePU( 1469): 	at android.os.Parcel.createExceptionOrNull(Parcel.java:3061)
-10-03 17:03:42.199 W/PeoplePU( 1469): 	at android.os.Parcel.createException(Parcel.java:3041)
-10-03 17:03:42.199 W/PeoplePU( 1469): 	at android.os.Parcel.readException(Parcel.java:3024)
-10-03 17:03:42.199 W/PeoplePU( 1469): 	at android.os.Parcel.readException(Parcel.java:2966)
-10-03 17:03:42.341 W/ModernMediaScanner( 1666): Failed to visit /data/data/com.android.providers.downloads/cache/en.model.metadata: java.nio.file.NoSuchFileException: /data/data/com.android.providers.downloads/cache/en.model.metadata
-10-03 17:03:42.431 W/CorpusConfigHelper( 1774): android.util.MalformedJsonException: Use JsonReader.setLenient(true) to accept malformed JSON at line 123 column 2
-10-03 17:03:42.532 W/ModernMediaScanner( 1666): Failed to visit /data/data/com.android.providers.downloads/cache/en.model: java.nio.file.NoSuchFileException: /data/data/com.android.providers.downloads/cache/en.model
-10-03 17:03:42.589 I/ContentCaptureHelper( 1094): Setting logging level to DEBUG
-10-03 17:03:42.680 D/ProfileInstaller( 5256): Skipping profile installation for com.innocent.media
-10-03 17:03:42.935 W/ModernMediaScanner( 1666): Failed to visit /data/data/com.android.providers.downloads/cache/en.fb.metadata: java.nio.file.NoSuchFileException: /data/data/com.android.providers.downloads/cache/en.fb.metadata
-10-03 17:03:42.945 W/ModernMediaScanner( 1666): Failed to visit /data/data/com.android.providers.downloads/cache/en.fb: java.nio.file.NoSuchFileException: /data/data/com.android.providers.downloads/cache/en.fb
-10-03 17:03:43.166 W/libc    ( 3073): Access denied finding property "persist.adb.tls_server.enable"
-10-03 17:03:43.170 W/libc    ( 3073): Access denied finding property "service.adb.tls.port"
-10-03 17:03:43.438 W/Conscrypt( 1418): Could not set socket write timeout: java.net.SocketException: Socket closed
-10-03 17:03:43.515 W/CorpusConfigHelper( 1774): android.util.MalformedJsonException: Use JsonReader.setLenient(true) to accept malformed JSON at line 123 column 2
-10-03 17:03:43.713 W/Conscrypt( 1418): Could not set socket write timeout: java.net.SocketException: Socket closed
-10-03 17:03:43.787 W/GLSUser ( 1418): [AppCertManager] Exception while requesting key: 
-10-03 17:03:43.787 W/GLSUser ( 1418): java.io.IOException: Invalid device key response.
-10-03 17:03:43.834 W/CorpusConfigHelper( 1774): android.util.MalformedJsonException: Use JsonReader.setLenient(true) to accept malformed JSON at line 123 column 2
-10-03 17:03:44.318 E/AppOps  (  520): java.lang.SecurityException: Specified package "android" under uid 10182 but it is not
-10-03 17:03:44.318 E/AppOps  (  520): java.lang.SecurityException: Specified package "android" under uid 10182 but it is not
-10-03 17:03:44.319 E/AppOps  (  520): java.lang.SecurityException: Specified package "android" under uid 10182 but it is not
-10-03 17:03:44.319 E/AppOps  (  520): java.lang.SecurityException: Specified package "android" under uid 10182 but it is not
-10-03 17:03:44.450 D/AugmentedAutofillService( 1632): handleOnConnected(): debug=true, verbose=false
-10-03 17:03:45.039 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:45.043 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:48.665 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:48.762 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:48.776 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:48.788 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:48.831 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:48.859 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:48.897 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:49.018 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:49.111 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:49.195 W/CorpusConfigHelper( 1774): android.util.MalformedJsonException: Use JsonReader.setLenient(true) to accept malformed JSON at line 123 column 2
-10-03 17:03:49.329 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:49.422 W/PeoplePU( 1469): java.lang.IllegalArgumentException: Unknown component: ComponentInfo{com.google.android.syncadapters.contacts/com.google.android.syncadapters.contacts.ContactsSyncAdapterService}
-10-03 17:03:49.422 W/PeoplePU( 1469): 	at android.os.Parcel.createExceptionOrNull(Parcel.java:3061)
-10-03 17:03:49.422 W/PeoplePU( 1469): 	at android.os.Parcel.createException(Parcel.java:3041)
-10-03 17:03:49.422 W/PeoplePU( 1469): 	at android.os.Parcel.readException(Parcel.java:3024)
-10-03 17:03:49.422 W/PeoplePU( 1469): 	at android.os.Parcel.readException(Parcel.java:2966)
-10-03 17:03:49.424 W/PeoplePU( 1469): java.lang.IllegalArgumentException: Unknown component: ComponentInfo{com.google.android.syncadapters.contacts/com.google.android.syncadapters.contacts.ContactsSyncAdapterService}
-10-03 17:03:49.424 W/PeoplePU( 1469): 	at android.os.Parcel.createExceptionOrNull(Parcel.java:3061)
-10-03 17:03:49.424 W/PeoplePU( 1469): 	at android.os.Parcel.createException(Parcel.java:3041)
-10-03 17:03:49.424 W/PeoplePU( 1469): 	at android.os.Parcel.readException(Parcel.java:3024)
-10-03 17:03:49.424 W/PeoplePU( 1469): 	at android.os.Parcel.readException(Parcel.java:2966)
-10-03 17:03:49.425 W/PeoplePU( 1469): java.lang.IllegalArgumentException: Unknown component: ComponentInfo{com.google.android.syncadapters.contacts/com.google.android.syncadapters.contacts.ProxyGalProvider}
-10-03 17:03:49.425 W/PeoplePU( 1469): 	at android.os.Parcel.createExceptionOrNull(Parcel.java:3061)
-10-03 17:03:49.425 W/PeoplePU( 1469): 	at android.os.Parcel.createException(Parcel.java:3041)
-10-03 17:03:49.425 W/PeoplePU( 1469): 	at android.os.Parcel.readException(Parcel.java:3024)
-10-03 17:03:49.425 W/PeoplePU( 1469): 	at android.os.Parcel.readException(Parcel.java:2966)
-10-03 17:03:49.518 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:49.520 W/CorpusConfigHelper( 1774): android.util.MalformedJsonException: Use JsonReader.setLenient(true) to accept malformed JSON at line 123 column 2
-10-03 17:03:49.641 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:49.699 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:49.713 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:49.797 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:49.884 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:49.921 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:49.954 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:49.985 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:50.062 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:50.157 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:50.214 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:50.230 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:50.250 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:50.252 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:50.276 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:50.295 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:50.299 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:50.305 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:50.346 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:50.370 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:50.385 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:50.410 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:50.426 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:50.496 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:50.550 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:50.611 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:50.688 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:50.818 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:50.911 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:50.929 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:50.947 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:50.992 W/NetworkScheduler( 1418): java.lang.IllegalArgumentException: Only the following extra parameter types are supported: Integer, Long, Double, String, Boolean, and nested Bundles with the same restrictions.
-10-03 17:03:51.007 W/libc    ( 3073): Access denied finding property "persist.adb.tls_server.enable"
-10-03 17:03:51.007 W/libc    ( 3073): Access denied finding property "service.adb.tls.port"
-10-03 17:03:51.023 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:51.041 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:51.061 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:51.144 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:51.197 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:51.234 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:51.246 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:51.293 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:51.338 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:51.350 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:51.405 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:51.423 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:51.535 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:51.546 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:51.560 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:51.580 W/Conscrypt( 1469): Could not set socket write timeout: java.net.SocketException: Socket closed
-10-03 17:03:51.584 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:51.590 W/TapAndPay( 1418): java.lang.NullPointerException: NfcAdapter is null
-10-03 17:03:51.624 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:51.637 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:51.648 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:51.651 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:51.705 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:51.723 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:51.729 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:51.780 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:51.787 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:51.822 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:51.848 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:51.856 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:51.861 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:51.869 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:51.898 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:51.916 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:51.942 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:51.956 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:51.978 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:51.986 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:52.001 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:52.014 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:52.020 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:52.054 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:52.090 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:52.110 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:52.112 W/Conscrypt( 1469): Could not set socket write timeout: java.net.SocketException: Socket closed
-10-03 17:03:52.113 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:52.131 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:52.135 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:52.149 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:52.180 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:52.191 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:52.251 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:52.335 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:52.387 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:52.465 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:52.473 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:52.511 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:52.550 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:52.610 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:52.614 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:52.620 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:52.643 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:52.675 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:52.685 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:52.687 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:52.691 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:52.699 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:52.735 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:52.743 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:52.745 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:52.748 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:52.764 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:52.768 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:52.831 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:52.852 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:52.856 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:52.882 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:52.893 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:52.939 I/NamespaceManager( 1418): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:53.022 W/ActivityManager(  520): Exception when unbinding service com.google.android.gms/.lockbox.service.LockboxBrokerService
-10-03 17:03:53.022 W/ActivityManager(  520): android.os.DeadObjectException
-10-03 17:03:53.022 W/ActivityManager(  520): Exception when unbinding service com.google.android.gms/.chimera.PersistentApiService
-10-03 17:03:53.022 W/ActivityManager(  520): android.os.DeadObjectException
-10-03 17:03:53.024 W/ActivityManager(  520): Exception when unbinding service com.google.android.gms/.gcm.http.GoogleHttpService
-10-03 17:03:53.024 W/ActivityManager(  520): android.os.DeadObjectException
-10-03 17:03:53.025 W/ActivityManager(  520): Scheduling restart of crashed service com.google.android.gms/.icing.service.IndexService in 1000ms for connection
-10-03 17:03:53.025 W/ActivityManager(  520): Scheduling restart of crashed service com.google.android.gms/.chimera.container.ExternalFileApkService in 11000ms for start-requested
-10-03 17:03:53.025 W/ActivityManager(  520): Scheduling restart of crashed service com.google.android.gms/.chimera.GmsIntentOperationService in 21000ms for start-requested
-10-03 17:03:53.025 W/ActivityManager(  520): Scheduling restart of crashed service com.google.android.gms/.chimera.GmsBoundBrokerService in 31000ms for connection
-10-03 17:03:53.025 W/ActivityManager(  520): Scheduling restart of crashed service com.google.android.gms/.chimera.GmsApiService in 41000ms for connection
-10-03 17:03:53.037 W/ActivityManager(  520): Scheduling restart of crashed service com.google.android.gms/.chimera.PersistentBoundBrokerService in 30988ms for connection
-10-03 17:03:53.037 W/ActivityManager(  520): Scheduling restart of crashed service com.google.android.gms/.fido.fido2.pollux.CableAuthenticatorService in 40988ms for start-requested
-10-03 17:03:53.037 W/ActivityManager(  520): Scheduling restart of crashed service com.google.android.gms/.auth.setup.devicesignals.LockScreenService in 50988ms for start-requested
-10-03 17:03:53.037 W/ActivityManager(  520): Scheduling restart of crashed service com.google.android.gms/.chimera.PersistentIntentOperationService in 60988ms for start-requested
-10-03 17:03:53.037 W/ActivityManager(  520): Scheduling restart of crashed service com.google.android.gms/.location.geocode.GeocodeService in 70988ms for connection
-10-03 17:03:53.037 W/ActivityManager(  520): Scheduling restart of crashed service com.google.android.gms/.deviceconnection.service.DeviceConnectionWatcherService in 80988ms for start-requested
-10-03 17:03:53.037 W/ActivityManager(  520): Scheduling restart of crashed service com.google.android.gms/.common.stats.GmsCoreStatsService in 90988ms for start-requested
-10-03 17:03:53.037 W/ActivityManager(  520): Scheduling restart of crashed service com.google.android.gms/com.google.android.location.fused.FusedLocationService in 100987ms for connection
-10-03 17:03:53.037 W/ActivityManager(  520): Scheduling restart of crashed service com.google.android.gms/com.google.android.location.network.NetworkLocationService in 110987ms for connection
-10-03 17:03:53.037 W/ActivityManager(  520): Scheduling restart of crashed service com.google.android.gms/com.google.android.location.internal.server.HardwareArProviderService in 120987ms for connection
-10-03 17:03:53.037 W/ActivityManager(  520): Scheduling restart of crashed service com.google.android.gms/.chimera.PersistentDirectBootAwareApiService in 130987ms for connection
-10-03 17:03:53.037 W/ActivityManager(  520): Scheduling restart of crashed service com.google.android.gms/com.google.android.contextmanager.service.ContextManagerService in 140987ms for start-requested
-10-03 17:03:53.037 W/ActivityManager(  520): Scheduling restart of crashed service com.google.android.gms/.nearby.messages.service.NearbyMessagesService in 150987ms for start-requested
-10-03 17:03:53.037 W/ActivityManager(  520): Scheduling restart of crashed service com.google.android.gms/.nearby.sharing.ReceiveSurfaceService in 160987ms for start-requested
-10-03 17:03:53.037 W/ActivityManager(  520): Scheduling restart of crashed service com.google.android.gms/.geotimezone.GeoTimeZoneService in 170987ms for connection
-10-03 17:03:53.038 W/ActivityManager(  520): Scheduling restart of crashed service com.google.android.gms/com.google.android.location.internal.server.GoogleLocationService in 180987ms for start-requested
-10-03 17:03:53.038 W/ActivityManager(  520): Scheduling restart of crashed service com.google.android.gms/.clearcut.debug.ClearcutDebugDumpService in 190987ms for start-requested
-10-03 17:03:53.038 W/ActivityManager(  520): Scheduling restart of crashed service com.google.android.gms/.thunderbird.EmergencyPersistentService in 200987ms for start-requested
-10-03 17:03:53.038 W/ActivityManager(  520): Scheduling restart of crashed service com.google.android.gms/.location.persistent.LocationPersistentService in 210987ms for start-requested
-10-03 17:03:53.038 W/ActivityManager(  520): Scheduling restart of crashed service com.google.android.gms/.gcm.nts.SchedulerService in 220987ms for start-requested
-10-03 17:03:53.039 W/ActivityManager(  520): Scheduling restart of crashed service com.google.android.gms/com.google.android.location.internal.GoogleLocationManagerService in 230986ms for start-requested
-10-03 17:03:53.039 W/ActivityManager(  520): Scheduling restart of crashed service com.google.android.gms/.nearby.exposurenotification.service.ExposureMatchingService in 240986ms for start-requested
-10-03 17:03:53.039 W/ActivityManager(  520): Scheduling restart of crashed service com.google.android.gms/.gcm.GcmService in 250986ms for start-requested
-10-03 17:03:53.097 E/.gms.persistent( 5566): Not starting debugger since process cannot load the jdwp agent.
-10-03 17:03:53.105 W/ActivityManager(  520): Rescheduling restart of crashed service com.google.android.gms/.icing.service.IndexService in 920ms for other
-10-03 17:03:53.105 W/ActivityManager(  520): Rescheduling restart of crashed service com.google.android.gms/.chimera.container.ExternalFileApkService in 10920ms for other
-10-03 17:03:53.105 W/ActivityManager(  520): Rescheduling restart of crashed service com.google.android.gms/.chimera.GmsIntentOperationService in 20920ms for other
-10-03 17:03:53.134 D/nativeloader( 5566): InitLlndkLibrariesProduct: libEGL.so:libGLESv1_CM.so:libGLESv2.so:libGLESv3.so:libRS.so:libandroid_net.so:libbinder_ndk.so:libc.so:libcgrouprc.so:libclang_rt.asan-x86_64-android.so:libcom.android.tethering.connectivity_native.so:libdl.so:libft2.so:liblog.so:libm.so:libmediandk.so:libnativewindow.so:libneuralnetworks.so:libselinux.so:libsync.so:libvndksupport.so:libvulkan.so
-10-03 17:03:53.135 D/nativeloader( 5566): InitVndkspLibrariesProduct: android.hardware.common-V2-ndk.so:android.hardware.common.fmq-V1-ndk.so:android.hardware.graphics.allocator-V2-ndk.so:android.hardware.graphics.common-V4-ndk.so:android.hardware.graphics.common@1.0.so:android.hardware.graphics.common@1.1.so:android.hardware.graphics.common@1.2.so:android.hardware.graphics.composer3-V1-ndk.so:android.hardware.graphics.mapper@2.0.so:android.hardware.graphics.mapper@2.1.so:android.hardware.graphics.mapper@3.0.so:android.hardware.graphics.mapper@4.0.so:android.hardware.renderscript@1.0.so:android.hidl.memory.token@1.0.so:android.hidl.memory@1.0-impl.so:android.hidl.memory@1.0.so:android.hidl.safe_union@1.0.so:libRSCpuRef.so:libRSDriver.so:libRS_internal.so:libbase.so:libbcinfo.so:libblas.so:libc++.so:libcompiler_rt.so:libcutils.so:libdmabufheap.so:libgralloctypes.so:libhardware.so:libhidlbase.so:libhidlmemory.so:libion.so:libjsoncpp.so:liblzma.so:libprocessgroup.so:libunwindstack.so:libutils.so:libutilscallstack.so:libz.so
-10-03 17:03:53.672 E/cr_CronetUrlRequestContext( 1774): Exception in upload method
-10-03 17:03:53.761 W/GmsPipelineLogger( 5566): java.lang.NullPointerException
-10-03 17:03:53.784 E/gle.android.gms( 5660): Not starting debugger since process cannot load the jdwp agent.
-10-03 17:03:53.811 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:53.947 D/nativeloader( 5660): InitLlndkLibrariesProduct: libEGL.so:libGLESv1_CM.so:libGLESv2.so:libGLESv3.so:libRS.so:libandroid_net.so:libbinder_ndk.so:libc.so:libcgrouprc.so:libclang_rt.asan-x86_64-android.so:libcom.android.tethering.connectivity_native.so:libdl.so:libft2.so:liblog.so:libm.so:libmediandk.so:libnativewindow.so:libneuralnetworks.so:libselinux.so:libsync.so:libvndksupport.so:libvulkan.so
-10-03 17:03:53.947 D/nativeloader( 5660): InitVndkspLibrariesProduct: android.hardware.common-V2-ndk.so:android.hardware.common.fmq-V1-ndk.so:android.hardware.graphics.allocator-V2-ndk.so:android.hardware.graphics.common-V4-ndk.so:android.hardware.graphics.common@1.0.so:android.hardware.graphics.common@1.1.so:android.hardware.graphics.common@1.2.so:android.hardware.graphics.composer3-V1-ndk.so:android.hardware.graphics.mapper@2.0.so:android.hardware.graphics.mapper@2.1.so:android.hardware.graphics.mapper@3.0.so:android.hardware.graphics.mapper@4.0.so:android.hardware.renderscript@1.0.so:android.hidl.memory.token@1.0.so:android.hidl.memory@1.0-impl.so:android.hidl.memory@1.0.so:android.hidl.safe_union@1.0.so:libRSCpuRef.so:libRSDriver.so:libRS_internal.so:libbase.so:libbcinfo.so:libblas.so:libc++.so:libcompiler_rt.so:libcutils.so:libdmabufheap.so:libgralloctypes.so:libhardware.so:libhidlbase.so:libhidlmemory.so:libion.so:libjsoncpp.so:liblzma.so:libprocessgroup.so:libunwindstack.so:libutils.so:libutilscallstack.so:libz.so
-10-03 17:03:53.970 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:54.052 I/NearbyDiscovery( 5566): FastPairScanner: eventType=SERVICE_INITIALIZE, intReq=false, scanning=false, scanAllowed=true, bleEnabled=true, bleScanAvailable=false, lockScanRate=false, startScanningByLowPowerMode=false [CONTEXT service_id=265 ]
-10-03 17:03:54.326 I/SemanticLocation( 5566): java.io.FileNotFoundException: /data/user/0/com.google.android.gms/files/model_bundle_metadata.pb: open failed: ENOENT (No such file or directory)
-10-03 17:03:54.326 I/SemanticLocation( 5566): 	at libcore.io.IoBridge.open(IoBridge.java:574)
-10-03 17:03:54.326 I/SemanticLocation( 5566): Caused by: android.system.ErrnoException: open failed: ENOENT (No such file or directory)
-10-03 17:03:54.326 I/SemanticLocation( 5566): 	at libcore.io.Linux.open(Native Method)
-10-03 17:03:54.326 I/SemanticLocation( 5566): 	at libcore.io.ForwardingOs.open(ForwardingOs.java:563)
-10-03 17:03:54.326 I/SemanticLocation( 5566): 	at libcore.io.BlockGuardOs.open(BlockGuardOs.java:274)
-10-03 17:03:54.326 I/SemanticLocation( 5566): 	at libcore.io.ForwardingOs.open(ForwardingOs.java:563)
-10-03 17:03:54.326 I/SemanticLocation( 5566): 	at libcore.io.IoBridge.open(IoBridge.java:560)
-10-03 17:03:54.506 I/SemanticLocation( 5566): java.io.FileNotFoundException: /data/user/0/com.google.android.gms/files/model_bundle_metadata.pb: open failed: ENOENT (No such file or directory)
-10-03 17:03:54.506 I/SemanticLocation( 5566): 	at libcore.io.IoBridge.open(IoBridge.java:574)
-10-03 17:03:54.506 I/SemanticLocation( 5566): Caused by: android.system.ErrnoException: open failed: ENOENT (No such file or directory)
-10-03 17:03:54.506 I/SemanticLocation( 5566): 	at libcore.io.Linux.open(Native Method)
-10-03 17:03:54.506 I/SemanticLocation( 5566): 	at libcore.io.ForwardingOs.open(ForwardingOs.java:563)
-10-03 17:03:54.506 I/SemanticLocation( 5566): 	at libcore.io.BlockGuardOs.open(BlockGuardOs.java:274)
-10-03 17:03:54.506 I/SemanticLocation( 5566): 	at libcore.io.ForwardingOs.open(ForwardingOs.java:563)
-10-03 17:03:54.506 I/SemanticLocation( 5566): 	at libcore.io.IoBridge.open(IoBridge.java:560)
-10-03 17:03:54.718 W/ConfigFileUtils( 5660): Failed to read asset ChimeraModuleSetList.pb: java.io.FileNotFoundException: ChimeraModuleSetList.pb
-10-03 17:03:54.804 I/NamespaceManager( 5660): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:03:55.090 W/libc    ( 5660): Access denied finding property "ro.hardware.chipname"
-10-03 17:03:55.417 E/ChimeraUPLUtils( 5660): Failed to invoke updateComplete: android.os.DeadObjectException
-10-03 17:03:55.439 E/ChimeraUPLUtils( 5660): Failed to invoke updateComplete: android.os.DeadObjectException
-10-03 17:03:55.501 W/libc    ( 3073): Access denied finding property "persist.adb.tls_server.enable"
-10-03 17:03:55.510 W/libc    ( 3073): Access denied finding property "service.adb.tls.port"
-10-03 17:03:55.510 E/ChimeraUPLUtils( 5660): Failed to invoke updateComplete: android.os.DeadObjectException
-10-03 17:03:55.862 W/GLSUser ( 5566): [AppCertManager] Exception while requesting key: 
-10-03 17:03:55.862 W/GLSUser ( 5566): java.util.concurrent.ExecutionException: avvw: Parse Proto Exception.
-10-03 17:03:55.862 W/GLSUser ( 5566): Caused by: avvw: Parse Proto Exception.
-10-03 17:03:55.903 W/Conscrypt( 5566): Could not set socket write timeout: java.net.SocketException: Socket closed
-10-03 17:03:56.102 W/Conscrypt( 5566): Could not set socket write timeout: java.net.SocketException: Socket closed
-10-03 17:03:58.836 W/AsyncOperation( 5566): OperationException[Status{statusCode=Stale snapshot for com.google.android.gms.trustlet_onbody(change count changed - expected 1  but was 0), resolution=null}]
-10-03 17:04:00.184 I/NearbyDiscovery( 5566): FastPairScanner: eventType=INTERNAL_DOWNGRADE_SCAN, intReq=true, scanning=true, scanAllowed=true, bleEnabled=true, bleScanAvailable=false, lockScanRate=false, startScanningByLowPowerMode=false [CONTEXT service_id=265 ]
-10-03 17:04:01.551 W/AsyncOperation( 5566): OperationException[Status{statusCode=Stale snapshot for com.google.android.gms.tron.metrics(change count changed - expected 2  but was 0), resolution=null}]
-10-03 17:04:01.554 W/AsyncOperation( 5566): OperationException[Status{statusCode=Stale snapshot for com.google.android.gms.tron.metrics(change count changed - expected 2  but was 0), resolution=null}]
-10-03 17:04:01.572 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:01.709 E/RecoverySnapshotStorage(  520): java.io.FileNotFoundException: /data/system/recoverablekeystore/snapshots/10131.xml: open failed: ENOENT (No such file or directory)
-10-03 17:04:01.709 E/RecoverySnapshotStorage(  520): 	at libcore.io.IoBridge.open(IoBridge.java:574)
-10-03 17:04:01.709 E/RecoverySnapshotStorage(  520): Caused by: android.system.ErrnoException: open failed: ENOENT (No such file or directory)
-10-03 17:04:01.709 E/RecoverySnapshotStorage(  520): 	at libcore.io.Linux.open(Native Method)
-10-03 17:04:01.709 E/RecoverySnapshotStorage(  520): 	at libcore.io.ForwardingOs.open(ForwardingOs.java:563)
-10-03 17:04:01.709 E/RecoverySnapshotStorage(  520): 	at libcore.io.BlockGuardOs.open(BlockGuardOs.java:274)
-10-03 17:04:01.709 E/RecoverySnapshotStorage(  520): 	at libcore.io.IoBridge.open(IoBridge.java:560)
-10-03 17:04:01.718 W/RecoverableKeyStoreGms( 5660): [WrappingKeyManager] InternalRecoveryServiceException during wrapping key generation [CONTEXT service_id=172 ]
-10-03 17:04:01.718 W/RecoverableKeyStoreGms( 5660): android.security.keystore.recovery.InternalRecoveryServiceException: Failed to import secret key.
-10-03 17:04:01.718 W/RecoverableKeyStoreGms( 5660): 	at android.security.keystore.recovery.RecoveryController.wrapUnexpectedServiceSpecificException(RecoveryController.java:783)
-10-03 17:04:01.718 W/RecoverableKeyStoreGms( 5660): Caused by: android.os.ServiceSpecificException: Failed to import secret key. (code 22)
-10-03 17:04:01.718 W/RecoverableKeyStoreGms( 5660): 	at android.os.Parcel.createExceptionOrNull(Parcel.java:3071)
-10-03 17:04:01.718 W/RecoverableKeyStoreGms( 5660): 	at android.os.Parcel.createException(Parcel.java:3041)
-10-03 17:04:01.718 W/RecoverableKeyStoreGms( 5660): 	at android.os.Parcel.readException(Parcel.java:3024)
-10-03 17:04:01.718 W/RecoverableKeyStoreGms( 5660): 	at android.os.Parcel.readException(Parcel.java:2966)
-10-03 17:04:01.757 E/dlpn    ( 5566): RuntimeException while executing runnable dlqc{qze@ddc2886} with executor MoreExecutors.directExecutor()
-10-03 17:04:01.757 E/dlpn    ( 5566): java.lang.NullPointerException: Attempt to get length of null array
-10-03 17:04:02.292 W/libc    ( 3073): Access denied finding property "persist.adb.tls_server.enable"
-10-03 17:04:02.296 W/libc    ( 3073): Access denied finding property "service.adb.tls.port"
-10-03 17:04:02.453 W/libc    ( 5660): Access denied finding property "ro.hardware.chipname"
-10-03 17:04:02.730 W/PeoplePU( 5660): java.lang.IllegalArgumentException: Unknown component: ComponentInfo{com.google.android.syncadapters.contacts/com.google.android.syncadapters.contacts.ProxyGalProvider}
-10-03 17:04:02.730 W/PeoplePU( 5660): 	at android.os.Parcel.createExceptionOrNull(Parcel.java:3061)
-10-03 17:04:02.730 W/PeoplePU( 5660): 	at android.os.Parcel.createException(Parcel.java:3041)
-10-03 17:04:02.730 W/PeoplePU( 5660): 	at android.os.Parcel.readException(Parcel.java:3024)
-10-03 17:04:02.730 W/PeoplePU( 5660): 	at android.os.Parcel.readException(Parcel.java:2966)
-10-03 17:04:02.730 W/PeoplePU( 5660): Caused by: android.os.RemoteException: Remote stack trace:
-10-03 17:04:02.781 I/PeopleInitIntentOp( 5660): Not initializing debuggability [CONTEXT service_id=5 ]
-10-03 17:04:02.908 I/SemanticLocation( 5566): java.io.FileNotFoundException: /data/user/0/com.google.android.gms/files/model_bundle_metadata.pb: open failed: ENOENT (No such file or directory)
-10-03 17:04:02.908 I/SemanticLocation( 5566): 	at libcore.io.IoBridge.open(IoBridge.java:574)
-10-03 17:04:02.908 I/SemanticLocation( 5566): Caused by: android.system.ErrnoException: open failed: ENOENT (No such file or directory)
-10-03 17:04:02.908 I/SemanticLocation( 5566): 	at libcore.io.Linux.open(Native Method)
-10-03 17:04:02.908 I/SemanticLocation( 5566): 	at libcore.io.ForwardingOs.open(ForwardingOs.java:563)
-10-03 17:04:02.908 I/SemanticLocation( 5566): 	at libcore.io.BlockGuardOs.open(BlockGuardOs.java:274)
-10-03 17:04:02.908 I/SemanticLocation( 5566): 	at libcore.io.ForwardingOs.open(ForwardingOs.java:563)
-10-03 17:04:02.908 I/SemanticLocation( 5566): 	at libcore.io.IoBridge.open(IoBridge.java:560)
-10-03 17:04:02.933 I/SemanticLocation( 5566): java.io.FileNotFoundException: /data/user/0/com.google.android.gms/files/model_bundle_metadata.pb: open failed: ENOENT (No such file or directory)
-10-03 17:04:02.933 I/SemanticLocation( 5566): 	at libcore.io.IoBridge.open(IoBridge.java:574)
-10-03 17:04:02.933 I/SemanticLocation( 5566): Caused by: android.system.ErrnoException: open failed: ENOENT (No such file or directory)
-10-03 17:04:02.933 I/SemanticLocation( 5566): 	at libcore.io.Linux.open(Native Method)
-10-03 17:04:02.933 I/SemanticLocation( 5566): 	at libcore.io.ForwardingOs.open(ForwardingOs.java:563)
-10-03 17:04:02.933 I/SemanticLocation( 5566): 	at libcore.io.BlockGuardOs.open(BlockGuardOs.java:274)
-10-03 17:04:02.933 I/SemanticLocation( 5566): 	at libcore.io.ForwardingOs.open(ForwardingOs.java:563)
-10-03 17:04:02.933 I/SemanticLocation( 5566): 	at libcore.io.IoBridge.open(IoBridge.java:560)
-10-03 17:04:02.971 W/Conscrypt( 5660): Could not set socket write timeout: java.net.SocketException: Socket closed
-10-03 17:04:03.351 W/Conscrypt( 5660): Could not set socket write timeout: java.net.SocketException: Socket closed
-10-03 17:04:03.695 W/TapAndPay( 5566): java.lang.NullPointerException: NfcAdapter is null
-10-03 17:04:03.770 W/libc    ( 3073): Access denied finding property "persist.adb.tls_server.enable"
-10-03 17:04:03.783 W/libc    ( 3073): Access denied finding property "service.adb.tls.port"
-10-03 17:04:03.846 W/Conscrypt( 5660): Could not set socket write timeout: java.net.SocketException: Socket closed
-10-03 17:04:03.920 E/PhenotypeFlagCommitter( 5660): java.util.concurrent.TimeoutException: Timed out waiting for Task
-10-03 17:04:04.352 W/Conscrypt( 5660): Could not set socket write timeout: java.net.SocketException: Socket closed
-10-03 17:04:06.404 W/AsyncOperation( 5566): OperationException[Status{statusCode=Stale snapshot for com.google.android.gms.auth.easyunlock(change count changed - expected 1  but was 0), resolution=null}]
-10-03 17:04:06.404 W/AsyncOperation( 5566): OperationException[Status{statusCode=Stale snapshot for com.google.android.gms.magictether(change count changed - expected 1  but was 0), resolution=null}]
-10-03 17:04:06.408 W/AsyncOperation( 5566): OperationException[Status{statusCode=Stale snapshot for com.google.android.gms.dtdi#com.google.android.gms(change count changed - expected 3  but was 1), resolution=null}]
-10-03 17:04:06.411 W/AsyncOperation( 5566): OperationException[Status{statusCode=Stale snapshot for com.google.android.gms.magictether(change count changed - expected 1  but was 0), resolution=null}]
-10-03 17:04:06.439 W/AsyncOperation( 5566): OperationException[Status{statusCode=Stale snapshot for com.google.android.gms.maps#com.google.android.gms(change count changed - expected 3  but was 1), resolution=null}]
-10-03 17:04:06.439 W/AsyncOperation( 5566): OperationException[Status{statusCode=Stale snapshot for com.google.android.gms.personalsafety(change count changed - expected 1  but was 0), resolution=null}]
-10-03 17:04:06.443 W/AsyncOperation( 5566): OperationException[Status{statusCode=Stale snapshot for com.google.android.gms.phonesky_recovery(change count changed - expected 1  but was 0), resolution=null}]
-10-03 17:04:06.443 W/AsyncOperation( 5566): OperationException[Status{statusCode=Stale snapshot for com.google.android.gms.vision(change count changed - expected 1  but was 0), resolution=null}]
-10-03 17:04:06.449 W/AsyncOperation( 5566): OperationException[Status{statusCode=Stale snapshot for com.google.android.gms.trustagent.activeunlock.primary#com.google.android.gms(change count changed - expected 3  but was 1), resolution=null}]
-10-03 17:04:06.453 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:06.464 W/AsyncOperation( 5566): OperationException[Status{statusCode=Stale snapshot for com.google.android.libraries.consentverifier#com.google.android.gms(change count changed - expected 4  but was 1), resolution=null}]
-10-03 17:04:06.551 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:06.560 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:06.580 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:06.596 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:06.604 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:06.636 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:06.644 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:06.668 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:06.680 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:06.693 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:06.735 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:06.768 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:06.784 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:06.814 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:06.858 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:06.905 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:06.949 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:06.956 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:06.975 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:07.015 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:07.026 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:07.042 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:07.102 W/NetworkScheduler( 5566): java.lang.IllegalArgumentException: Only the following extra parameter types are supported: Integer, Long, Double, String, Boolean, and nested Bundles with the same restrictions.
-10-03 17:04:07.190 W/AsyncOperation( 5566): OperationException[Status{statusCode=Stale snapshot for com.google.android.gms.pay(change count changed - expected 4  but was 3), resolution=null}]
-10-03 17:04:07.191 W/PhenotypeFlagCommitter( 5566): java.util.concurrent.ExecutionException: aard: 29501: Stale snapshot for com.google.android.gms.pay(change count changed - expected 4  but was 3)
-10-03 17:04:07.191 W/PhenotypeCommitHelper( 5566): java.util.concurrent.ExecutionException: aard: 29501: Stale snapshot for com.google.android.gms.pay(change count changed - expected 4  but was 3)
-10-03 17:04:07.224 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:07.263 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:07.284 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:07.424 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:07.452 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:07.484 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:07.502 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:07.526 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:07.543 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:07.570 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:07.610 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:07.623 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:07.643 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:07.984 W/CorpusConfigHelper( 1774): android.util.MalformedJsonException: Use JsonReader.setLenient(true) to accept malformed JSON at line 123 column 2
-10-03 17:04:08.386 E/d       ( 1774): RuntimeException while executing runnable cb{com.google.apps.tiktok.tracing.ej@68f30ef} with executor MoreExecutors.directExecutor()
-10-03 17:04:08.386 E/d       ( 1774): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.ae.b' on a null object reference in method 'void com.google.android.libraries.mdi.download.h.bq.gH(java.lang.Object)'
-10-03 17:04:08.391 E/d       ( 1774): RuntimeException while executing runnable cb{com.google.apps.tiktok.tracing.ej@2d1d4a6} with executor MoreExecutors.directExecutor()
-10-03 17:04:08.391 E/d       ( 1774): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.ae.b' on a null object reference in method 'void com.google.android.libraries.mdi.download.h.bq.gH(java.lang.Object)'
-10-03 17:04:08.392 E/d       ( 1774): RuntimeException while executing runnable cb{com.google.apps.tiktok.tracing.ej@d44ee85} with executor MoreExecutors.directExecutor()
-10-03 17:04:08.392 E/d       ( 1774): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.ae.b' on a null object reference in method 'void com.google.android.libraries.mdi.download.h.bq.gH(java.lang.Object)'
-10-03 17:04:08.413 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:08.515 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:08.638 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:08.677 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:08.699 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:08.721 W/CorpusConfigHelper( 1774): android.util.MalformedJsonException: Use JsonReader.setLenient(true) to accept malformed JSON at line 123 column 2
-10-03 17:04:08.858 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:09.053 W/CorpusConfigHelper( 1774): android.util.MalformedJsonException: Use JsonReader.setLenient(true) to accept malformed JSON at line 123 column 2
-10-03 17:04:09.116 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:09.176 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:09.208 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:09.261 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:09.292 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:09.355 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:09.382 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:09.615 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:09.660 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:09.669 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:09.702 W/NetworkScheduler( 5566): java.lang.IllegalArgumentException: Only the following extra parameter types are supported: Integer, Long, Double, String, Boolean, and nested Bundles with the same restrictions.
-10-03 17:04:09.765 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:09.817 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:09.845 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:09.940 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:09.988 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:10.013 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:10.041 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:10.077 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:10.147 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:10.155 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:10.197 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:10.217 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:10.226 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:10.233 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:10.283 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:10.432 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:10.460 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:10.478 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:10.531 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:10.581 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:10.643 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:10.677 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:10.748 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:11.097 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:11.294 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:11.341 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:11.414 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:11.547 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:11.620 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:11.629 W/NetworkScheduler( 5566): java.lang.IllegalArgumentException: Only the following extra parameter types are supported: Integer, Long, Double, String, Boolean, and nested Bundles with the same restrictions.
-10-03 17:04:11.723 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:11.742 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:11.797 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:11.853 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:11.901 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:11.929 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:11.934 W/ActivityManager(  520): Crash of app dev.mobile.maestro running instrumentation ComponentInfo{dev.mobile.maestro.test/androidx.test.runner.AndroidJUnitRunner}
-10-03 17:04:11.941 W/Binder  ( 4873): Caught a RuntimeException from the binder stub implementation.
-10-03 17:04:11.941 W/Binder  ( 4873): java.lang.SecurityException: Calling from not trusted UID!
-10-03 17:04:11.949 I/AndroidRuntime( 4873): VM exiting with result code 0.
-10-03 17:04:12.169 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:12.299 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:12.306 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:12.316 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:12.341 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:12.345 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:12.485 W/ProvidersCache( 3135): android.os.DeadObjectException: Transaction failed on small parcel; remote process probably died, but this could also be caused by running out of binder buffer space
-10-03 17:04:12.639 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:12.805 E/externalstorage( 6170): Not starting debugger since process cannot load the jdwp agent.
-10-03 17:04:12.819 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:12.838 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:12.887 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:12.966 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:13.071 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:13.158 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:13.180 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:13.211 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:13.233 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:13.268 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:13.327 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:13.369 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:13.394 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:13.446 W/AppInfoHelper( 1544): android.content.pm.PackageManager$NameNotFoundException: dev.mobile.maestro.test
-10-03 17:04:13.450 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:13.464 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:13.478 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:13.521 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:13.552 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:13.564 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:13.578 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:13.596 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:13.616 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:13.686 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:13.709 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:13.722 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:13.746 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:13.763 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:13.799 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:13.811 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:13.830 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:13.849 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:13.855 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:13.864 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:13.884 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:13.904 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:13.929 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:13.937 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:13.957 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:13.981 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:14.009 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:14.026 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:14.051 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:14.078 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:14.092 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:14.104 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:14.117 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:14.125 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:14.143 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:14.166 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:14.179 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:14.212 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:14.221 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:14.244 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:14.267 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:14.276 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:14.332 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:14.355 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:14.368 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:14.393 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:14.472 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:14.530 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:14.546 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:14.581 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:14.592 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:14.616 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:14.627 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:14.657 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:14.679 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:14.720 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:14.734 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:14.742 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:14.777 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:14.826 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:14.918 I/NamespaceManager( 5566): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 17:04:18.332 D/AndroidRuntime( 6265): >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-10-03 17:04:18.337 I/AndroidRuntime( 6265): Using default boot image
-10-03 17:04:18.337 I/AndroidRuntime( 6265): Leaving lock profiling enabled
-10-03 17:04:18.397 D/nativeloader( 6265): InitDefaultPublicLibraries for_preload=1: libandroid.so:libaaudio.so:libamidi.so:libbinder_ndk.so:libc.so:libcamera2ndk.so:libdl.so:libEGL.so:libGLESv1_CM.so:libGLESv2.so:libGLESv3.so:libicu.so:libicui18n.so:libicuuc.so:libjnigraphics.so:liblog.so:libmediandk.so:libm.so:libnativehelper.so:libnativewindow.so:libOpenMAXAL.so:libOpenSLES.so:libRS.so:libstdc++.so:libsync.so:libvulkan.so:libwebviewchromium_plat_support.so:libz.so
-10-03 17:04:18.418 W/libc    ( 6265): Access denied finding property "ro.product.name_for_attestation"
-10-03 17:04:18.418 W/libc    ( 6265): Access denied finding property "ro.product.brand_for_attestation"
-10-03 17:04:18.418 W/libc    ( 6265): Access denied finding property "ro.product.model_for_attestation"
-10-03 17:04:18.419 D/AndroidRuntime( 6265): Calling main entry com.android.commands.am.Am
-10-03 17:04:20.161 W/ActivityManager(  520): Crash of app dev.mobile.maestro running instrumentation ComponentInfo{dev.mobile.maestro.test/androidx.test.runner.AndroidJUnitRunner}
-10-03 17:04:20.167 I/AndroidRuntime( 6265): VM exiting with result code 0.
-10-03 17:04:20.790 W/AppInfoHelper( 1544): android.content.pm.PackageManager$NameNotFoundException: dev.mobile.maestro.test
-10-03 17:04:20.944 I/.innocent.media( 5256): Explicit concurrent copying GC freed 716(86KB) AllocSpace objects, 0(0B) LOS objects, 49% free, 2863KB/5726KB, paused 14us,6us total 5.049ms
-10-03 17:04:21.016 E/AdbDebuggingManager(  520): Caught an exception opening the socket: java.io.IOException: Connection refused
-10-03 17:04:22.495 W/FileUtils(  520): Failed to chmod(AtomicFile[/data/system_de/0/system/game-manager-service.xml]): android.system.ErrnoException: chmod failed: ENOENT (No such file or directory)
-10-03 17:04:22.904 W/ProvidersCache( 3135): android.os.DeadObjectException: Transaction failed on small parcel; remote process probably died, but this could also be caused by running out of binder buffer space
+10-03 17:08:59.366 D/MediaGrants( 1664): Removed 0 media_grants for 0 user for com.innocent.media. Reason: Mode changed: android:read_external_storage
+10-03 17:08:59.599 I/ActivityManager(  523): Force stopping com.innocent.media appid=10192 user=0: from pid 6145
+10-03 17:08:59.600 I/ActivityManager(  523): Killing 5392:com.innocent.media/u0a192 (adj 0): stop com.innocent.media due to from pid 6145
+10-03 17:08:59.602 W/ActivityTaskManager(  523): Force removing ActivityRecord{81b26e0 u0 com.innocent.media/.MainActivity t8 f}}: app died, no saved state
+10-03 17:08:59.603 V/WindowManagerShell(  899): Transition requested: android.os.BinderProxy@7132502 TransitionRequestInfo { type = CLOSE, triggerTask = TaskInfo{userId=0 taskId=8 displayId=0 isRunning=false baseIntent=Intent { flg=0x10000000 cmp=com.innocent.media/.MainActivity } baseActivity=null topActivity=null origActivity=null realActivity=ComponentInfo{com.innocent.media/com.innocent.media.MainActivity} numActivities=0 lastActiveTime=62966 supportsMultiWindow=true resizeMode=2 isResizeable=true minWidth=-1 minHeight=-1 defaultMinSize=220 token=WCT{android.window.IWindowContainerToken$Stub$Proxy@9f98e13} topActivityType=1 pictureInPictureParams=null shouldDockBigOverlays=false launchIntoPipHostTaskId=-1 lastParentTaskIdBeforePip=-1 displayCutoutSafeInsets=null topActivityInfo=null launchCookies=[] positionInParent=Point(0, 0) parentTaskId=-1 isFocused=true isVisible=true isVisibleRequested=true isSleeping=false topActivityInSizeCompat=false <token>= false topActivityLetterboxed= false isFromDoubleTap= false topActivityLetterboxVerticalPosition= -1 topActivityLetterboxHorizontalPosition= -1 topActivityLetterboxWidth=-1 topActivityLetterboxHeight=-1 locusId=null displayAreaFeatureId=1 cameraCompatControlState=hidden}, remoteTransition = null, displayChange = null }
+10-03 17:08:59.659 W/WindowManager(  523): Failed to deliver inset control state change to w=Window{8f3e431 u0 com.innocent.media/com.innocent.media.MainActivity}
+10-03 17:08:59.659 W/WindowManager(  523): android.os.DeadObjectException
+10-03 17:08:59.662 I/MediaSessionStack(  523): removeSession | record: com.innocent.media/media-session (userId=0)
+10-03 17:08:59.664 I/ImeTracker(  523): com.innocent.media:7350d783: onRequestHide at ORIGIN_SERVER_HIDE_INPUT reason HIDE_REMOVE_CLIENT
+10-03 17:08:59.667 I/WindowManager(  523): WIN DEATH: Window{8f3e431 u0 com.innocent.media/com.innocent.media.MainActivity}
+10-03 17:08:59.667 W/InputManager-JNI(  523): Input channel object '8f3e431 com.innocent.media/com.innocent.media.MainActivity (client)' was disposed without first being removed with the input manager!
+10-03 17:08:59.668 I/ImeTracker(  523): com.innocent.media:7350d783: onCancelled at PHASE_SERVER_SHOULD_HIDE
+10-03 17:08:59.674 V/ActivityManager(  523): Got obituary of 5392:com.innocent.media
+10-03 17:08:59.713 D/CarrierSvcBindHelper( 1100): onHandleForceStop: [com.innocent.media]
+10-03 17:08:59.901 V/WindowManager(  523): Sent Transition #9 createdAt=10-03 17:08:59.602 via request=TransitionRequestInfo { type = CLOSE, triggerTask = TaskInfo{userId=0 taskId=8 displayId=0 isRunning=false baseIntent=Intent { flg=0x10000000 cmp=com.innocent.media/.MainActivity } baseActivity=null topActivity=null origActivity=null realActivity=ComponentInfo{com.innocent.media/com.innocent.media.MainActivity} numActivities=0 lastActiveTime=62966 supportsMultiWindow=true resizeMode=2 isResizeable=true minWidth=-1 minHeight=-1 defaultMinSize=220 token=WCT{RemoteToken{c7407ca Task{621c85e #8 type=standard I=com.innocent.media/.MainActivity}}} topActivityType=1 pictureInPictureParams=null shouldDockBigOverlays=false launchIntoPipHostTaskId=-1 lastParentTaskIdBeforePip=-1 displayCutoutSafeInsets=null topActivityInfo=null launchCookies=[] positionInParent=Point(0, 0) parentTaskId=-1 isFocused=true isVisible=true isVisibleRequested=true isSleeping=false topActivityInSizeCompat=false <token>= false topActivityLetterboxed= false isFromDoubleTap= false topActivityLetterboxVerticalPosition= -1 topActivityLetterboxHorizontalPosition= -1 topActivityLetterboxWidth=-1 topActivityLetterboxHeight=-1 locusId=null displayAreaFeatureId=1 cameraCompatControlState=hidden}, remoteTransition = null, displayChange = null }
+10-03 17:08:59.901 V/WindowManager(  523):     info={id=9 t=CLOSE f=0x0 trk=0 r=[0@Point(0, 0)] c=[{WCT{RemoteToken{c7407ca Task{621c85e #8 type=standard I=com.innocent.media/.MainActivity}}} m=CLOSE f=NONE leash=Surface(name=Task=8)/@0x9bccdbe sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) d=0},{WCT{RemoteToken{df6cc58 Task{6369d15 #1 type=home}}} m=TO_FRONT f=SHOW_WALLPAPER leash=Surface(name=Task=1)/@0x8f1e272 sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) d=0},{null m=TO_FRONT f=IS_WALLPAPER leash=Surface(name=WallpaperWindowToken{19d6e5a token=android.os.Binder@eeace05})/@0xeea8da sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) d=0}]}
+10-03 17:08:59.902 V/WindowManagerShell(  899):  Checking filter Pair{{types=[] flags=0x0] notFlags=0x0 checks=[{atype=dream independent=true modes=[OPEN,TO_FRONT] flags=NONE mustBeTask=false order=ANY topActivity=null},{atype=home independent=true modes=[CLOSE,TO_BACK] flags=NONE mustBeTask=false order=ANY topActivity=null}]} RemoteTransition { remoteTransition = android.window.IRemoteTransition$Stub$Proxy@48c525a, appThread = android.app.IApplicationThread$Stub$Proxy@c72ac8b, debugName = LauncherToDream }}
+10-03 17:08:59.902 V/WindowManagerShell(  899):  Checking filter Pair{{types=[] flags=0x0] notFlags=0x100 checks=[{atype=home independent=true modes=[OPEN,TO_FRONT] flags=NONE mustBeTask=false order=TOP topActivity=ComponentInfo{com.google.android.apps.nexuslauncher/com.google.android.apps.nexuslauncher.NexusLauncherActivity}},{atype=standard independent=true modes=[CLOSE,TO_BACK] flags=NONE mustBeTask=false order=ANY topActivity=null}]} RemoteTransition { remoteTransition = android.window.IRemoteTransition$Stub$Proxy@be80168, appThread = android.app.IApplicationThread$Stub$Proxy@a67981, debugName = QuickstepLaunchHome }}
+10-03 17:08:59.945 W/WindowManager(  523): Exception thrown during dispatchAppVisibility Window{8f3e431 u0 com.innocent.media/com.innocent.media.MainActivity EXITING}
+10-03 17:08:59.945 W/WindowManager(  523): android.os.DeadObjectException
+10-03 17:09:00.133 V/SplashScreenExceptionList(  523): SplashScreen checking exception for package com.innocent.media (target sdk:35) -> false
+10-03 17:09:00.208 V/WindowManagerShell(  899): Transition requested: android.os.BinderProxy@b1ee3b TransitionRequestInfo { type = OPEN, triggerTask = TaskInfo{userId=0 taskId=9 displayId=0 isRunning=true baseIntent=Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10000000 pkg=com.innocent.media cmp=com.innocent.media/.MainActivity } baseActivity=ComponentInfo{com.innocent.media/com.innocent.media.MainActivity} topActivity=ComponentInfo{com.innocent.media/com.innocent.media.MainActivity} origActivity=null realActivity=ComponentInfo{com.innocent.media/com.innocent.media.MainActivity} numActivities=1 lastActiveTime=83879 supportsMultiWindow=true resizeMode=2 isResizeable=true minWidth=-1 minHeight=-1 defaultMinSize=220 token=WCT{android.window.IWindowContainerToken$Stub$Proxy@efa9958} topActivityType=1 pictureInPictureParams=null shouldDockBigOverlays=false launchIntoPipHostTaskId=-1 lastParentTaskIdBeforePip=-1 displayCutoutSafeInsets=Rect(0, 128 - 0, 0) topActivityInfo=ActivityInfo{d7c4ab1 com.innocent.media.MainActivity} launchCookies=[] positionInParent=Point(0, 0) parentTaskId=-1 isFocused=false isVisible=false isVisibleRequested=false isSleeping=false topActivityInSizeCompat=false <token>= false topActivityLetterboxed= false isFromDoubleTap= false topActivityLetterboxVerticalPosition= -1 topActivityLetterboxHorizontalPosition= -1 topActivityLetterboxWidth=-1 topActivityLetterboxHeight=-1 locusId=null displayAreaFeatureId=1 cameraCompatControlState=hidden}, remoteTransition = null, displayChange = null }
+10-03 17:09:00.209 I/ActivityTaskManager(  523): START u0 {act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10000000 pkg=com.innocent.media cmp=com.innocent.media/.MainActivity} with LAUNCH_SINGLE_TOP from uid 10193 (BAL_ALLOW_PERMISSION) result code=0
+10-03 17:09:00.232 I/ActivityManager(  523): Start proc 6160:com.innocent.media/u0a192 for next-top-activity {com.innocent.media/com.innocent.media.MainActivity}
+10-03 17:09:00.340 D/CoreBackPreview(  523): Window{19c6f4 u0 Splash Screen com.innocent.media}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@f379f19, mPriority=0, mIsAnimationCallback=false}
+10-03 17:09:00.395 W/A       ( 1744): DiscoverPrecheckException(precheckFailureReason=com.google.android.apps.search.googleapp.discover.w.a.c@4196e47)
+10-03 17:09:00.489 I/.innocent.media( 6160): Using CollectorTypeCC GC.
+10-03 17:09:00.490 W/.innocent.media( 6160): Unexpected CPU variant for x86: x86_64.
+10-03 17:09:00.490 W/.innocent.media( 6160): Known variants: atom, sandybridge, silvermont, goldmont, goldmont-plus, tremont, kabylake, default
+10-03 17:09:00.548 E/.innocent.media( 6160): Not starting debugger since process cannot load the jdwp agent.
+10-03 17:09:00.618 V/WindowManager(  523): Sent Transition #10 createdAt=10-03 17:09:00.123 via request=TransitionRequestInfo { type = OPEN, triggerTask = TaskInfo{userId=0 taskId=9 displayId=0 isRunning=true baseIntent=Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10000000 pkg=com.innocent.media cmp=com.innocent.media/.MainActivity } baseActivity=ComponentInfo{com.innocent.media/com.innocent.media.MainActivity} topActivity=ComponentInfo{com.innocent.media/com.innocent.media.MainActivity} origActivity=null realActivity=ComponentInfo{com.innocent.media/com.innocent.media.MainActivity} numActivities=1 lastActiveTime=83879 supportsMultiWindow=true resizeMode=2 isResizeable=true minWidth=-1 minHeight=-1 defaultMinSize=220 token=WCT{RemoteToken{de34a53 Task{da193d7 #9 type=standard I=com.innocent.media/.MainActivity}}} topActivityType=1 pictureInPictureParams=null shouldDockBigOverlays=false launchIntoPipHostTaskId=-1 lastParentTaskIdBeforePip=-1 displayCutoutSafeInsets=Rect(0, 128 - 0, 0) topActivityInfo=ActivityInfo{99e1f90 com.innocent.media.MainActivity} launchCookies=[] positionInParent=Point(0, 0) parentTaskId=-1 isFocused=false isVisible=false isVisibleRequested=false isSleeping=false topActivityInSizeCompat=false <token>= false topActivityLetterboxed= false isFromDoubleTap= false topActivityLetterboxVerticalPosition= -1 topActivityLetterboxHorizontalPosition= -1 topActivityLetterboxWidth=-1 topActivityLetterboxHeight=-1 locusId=null displayAreaFeatureId=1 cameraCompatControlState=hidden}, remoteTransition = null, displayChange = null }
+10-03 17:09:00.618 V/WindowManager(  523):     info={id=10 t=OPEN f=0x0 trk=0 r=[0@Point(0, 0)] c=[{WCT{RemoteToken{de34a53 Task{da193d7 #9 type=standard I=com.innocent.media/.MainActivity}}} m=OPEN f=NONE leash=Surface(name=Task=9)/@0xcea38b6 sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) d=0},{WCT{RemoteToken{df6cc58 Task{6369d15 #1 type=home}}} m=TO_BACK f=SHOW_WALLPAPER leash=Surface(name=Task=1)/@0x8f1e272 sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) d=0}]}
+10-03 17:09:00.620 V/WindowManagerShell(  899):  Checking filter Pair{{types=[] flags=0x0] notFlags=0x0 checks=[{atype=dream independent=true modes=[OPEN,TO_FRONT] flags=NONE mustBeTask=false order=ANY topActivity=null},{atype=home independent=true modes=[CLOSE,TO_BACK] flags=NONE mustBeTask=false order=ANY topActivity=null}]} RemoteTransition { remoteTransition = android.window.IRemoteTransition$Stub$Proxy@48c525a, appThread = android.app.IApplicationThread$Stub$Proxy@c72ac8b, debugName = LauncherToDream }}
+10-03 17:09:00.620 V/WindowManagerShell(  899):  Checking filter Pair{{types=[] flags=0x0] notFlags=0x100 checks=[{atype=home independent=true modes=[OPEN,TO_FRONT] flags=NONE mustBeTask=false order=TOP topActivity=ComponentInfo{com.google.android.apps.nexuslauncher/com.google.android.apps.nexuslauncher.NexusLauncherActivity}},{atype=standard independent=true modes=[CLOSE,TO_BACK] flags=NONE mustBeTask=false order=ANY topActivity=null}]} RemoteTransition { remoteTransition = android.window.IRemoteTransition$Stub$Proxy@be80168, appThread = android.app.IApplicationThread$Stub$Proxy@a67981, debugName = QuickstepLaunchHome }}
+10-03 17:09:00.757 W/A       ( 1744): DiscoverPrecheckException(precheckFailureReason=com.google.android.apps.search.googleapp.discover.w.a.c@4196e47)
+10-03 17:09:00.809 W/A       ( 1744): com.google.android.apps.search.googleapp.discover.v.i: DiscoverPrecheckException(precheckFailureReason=com.google.android.apps.search.googleapp.discover.w.a.c@4196e47)
+10-03 17:09:00.809 W/A       ( 1744): Caused by: DiscoverPrecheckException(precheckFailureReason=com.google.android.apps.search.googleapp.discover.w.a.c@4196e47)
+10-03 17:09:00.814 D/nativeloader( 6160): Configuring clns-6 for other apk /data/app/~~QEwjuOyg37thftP3R6SH4w==/com.innocent.media-VuTGZXL6fZc1S_Jec8qBDg==/base.apk. target_sdk_version=35, uses_libraries=, library_path=/data/app/~~QEwjuOyg37thftP3R6SH4w==/com.innocent.media-VuTGZXL6fZc1S_Jec8qBDg==/lib/x86_64:/data/app/~~QEwjuOyg37thftP3R6SH4w==/com.innocent.media-VuTGZXL6fZc1S_Jec8qBDg==/base.apk!/lib/x86_64, permitted_path=/data:/mnt/expand:/data/user/0/com.innocent.media
+10-03 17:09:00.842 V/GraphicsEnvironment( 6160): ANGLE GameManagerService for com.innocent.media: false
+10-03 17:09:00.842 V/GraphicsEnvironment( 6160): com.innocent.media is not listed in per-application setting
+10-03 17:09:00.987 W/.innocent.media( 6160): type=1400 audit(0.0:106): avc:  denied  { read } for  name="max_map_count" dev="proc" ino=66770 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:proc_max_map_count:s0 tclass=file permissive=0 app=com.innocent.media
+10-03 17:09:01.016 I/flutter ( 6160): [IMPORTANT:flutter/shell/platform/android/android_context_gl_impeller.cc(94)] Using the Impeller rendering backend (OpenGLES).
+10-03 17:09:01.110 E/cr_CronetUrlRequestContext( 1744): Exception in upload method
+10-03 17:09:01.238 D/CoreBackPreview(  523): Window{f98e568 u0 com.innocent.media/com.innocent.media.MainActivity}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@b9e8f5f, mPriority=0, mIsAnimationCallback=false}
+10-03 17:09:01.235 W/libpython.so( 6201): type=1400 audit(0.0:107): avc:  denied  { search } for  name="tests" dev="dm-40" ino=65540 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:shell_test_data_file:s0 tclass=dir permissive=0 app=com.innocent.media
+10-03 17:09:01.235 W/libpython.so( 6201): type=1400 audit(0.0:108): avc:  denied  { search } for  name="tests" dev="dm-40" ino=65540 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:shell_test_data_file:s0 tclass=dir permissive=0 app=com.innocent.media
+10-03 17:09:01.235 W/libpython.so( 6201): type=1400 audit(0.0:109): avc:  denied  { search } for  name="tests" dev="dm-40" ino=65540 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:shell_test_data_file:s0 tclass=dir permissive=0 app=com.innocent.media
+10-03 17:09:01.235 W/libpython.so( 6201): type=1400 audit(0.0:110): avc:  denied  { search } for  name="tests" dev="dm-40" ino=65540 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:shell_test_data_file:s0 tclass=dir permissive=0 app=com.innocent.media
+10-03 17:09:01.299 W/libpython.so( 6201): type=1400 audit(0.0:111): avc:  granted  { execute } for  path="/data/data/com.innocent.media/no_backup/youtubedl-android/packages/python/usr/lib/libpython3.12.so.1.0" dev="dm-40" ino=338024 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:app_data_file:s0:c192,c256,c512,c768 tclass=file app=com.innocent.media
+10-03 17:09:01.299 W/libpython.so( 6201): type=1400 audit(0.0:112): avc:  granted  { execute } for  path="/data/data/com.innocent.media/no_backup/youtubedl-android/packages/python/usr/lib/libandroid-support.so" dev="dm-40" ino=337276 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:app_data_file:s0:c192,c256,c512,c768 tclass=file app=com.innocent.media
+10-03 17:09:01.435 W/libpython.so( 6201): type=1400 audit(0.0:113): avc:  granted  { execute } for  path="/data/data/com.innocent.media/no_backup/youtubedl-android/packages/python/usr/lib/libz.so.1.3.1" dev="dm-40" ino=337281 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:app_data_file:s0:c192,c256,c512,c768 tclass=file app=com.innocent.media
+10-03 17:09:01.923 I/MediaSessionStack(  523): addSession to bottom of stack | record: com.innocent.media/media-session (userId=0)
+10-03 17:09:01.931 I/System.out( 6160): flutterEngine warmed up
+10-03 17:09:02.032 E/ctbc    ( 4213): RuntimeException while executing runnable ctdz{cnpz@24ce7db} with executor MoreExecutors.directExecutor()
+10-03 17:09:02.032 E/ctbc    ( 4213): java.lang.NullPointerException: Attempt to read from field 'java.lang.String cayk.b' on a null object reference in method 'void ccdw.b(java.lang.Object)'
+10-03 17:09:02.033 E/ctbc    ( 4213): RuntimeException while executing runnable ctdz{cnpz@776ed51} with executor MoreExecutors.directExecutor()
+10-03 17:09:02.033 E/ctbc    ( 4213): java.lang.NullPointerException: Attempt to read from field 'java.lang.String cayk.b' on a null object reference in method 'void ccdw.b(java.lang.Object)'
+10-03 17:09:02.033 E/ctbc    ( 4213): RuntimeException while executing runnable ctdz{cnpz@da826b7} with executor MoreExecutors.directExecutor()
+10-03 17:09:02.033 E/ctbc    ( 4213): java.lang.NullPointerException: Attempt to read from field 'java.lang.String cayk.b' on a null object reference in method 'void ccdw.b(java.lang.Object)'
+10-03 17:09:02.033 E/ctbc    ( 4213): RuntimeException while executing runnable ctdz{cnpz@2ec0d8d} with executor MoreExecutors.directExecutor()
+10-03 17:09:02.033 E/ctbc    ( 4213): java.lang.NullPointerException: Attempt to read from field 'java.lang.String cayk.b' on a null object reference in method 'void ccdw.b(java.lang.Object)'
+10-03 17:09:02.033 E/ctbc    ( 4213): RuntimeException while executing runnable ctdz{cnpz@40e7753} with executor MoreExecutors.directExecutor()
+10-03 17:09:02.033 E/ctbc    ( 4213): java.lang.NullPointerException: Attempt to read from field 'java.lang.String cayk.b' on a null object reference in method 'void ccdw.b(java.lang.Object)'
+10-03 17:09:02.033 E/ctbc    ( 4213): RuntimeException while executing runnable ctdz{cnpz@a18f589} with executor MoreExecutors.directExecutor()
+10-03 17:09:02.033 E/ctbc    ( 4213): java.lang.NullPointerException: Attempt to read from field 'java.lang.String cayk.b' on a null object reference in method 'void ccdw.b(java.lang.Object)'
+10-03 17:09:02.033 E/ctbc    ( 4213): RuntimeException while executing runnable ctdz{cnpz@e7f35af} with executor MoreExecutors.directExecutor()
+10-03 17:09:02.033 E/ctbc    ( 4213): java.lang.NullPointerException: Attempt to read from field 'java.lang.String cayk.b' on a null object reference in method 'void ccdw.b(java.lang.Object)'
+10-03 17:09:02.263 W/libpython.so( 6201): type=1400 audit(0.0:160): avc:  granted  { execute } for  path="/data/data/com.innocent.media/no_backup/youtubedl-android/packages/python/usr/lib/python3.12/lib-dynload/_heapq.cpython-312.so" dev="dm-40" ino=337735 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:app_data_file:s0:c192,c256,c512,c768 tclass=file app=com.innocent.media
+10-03 17:09:02.331 W/libpython.so( 6201): type=1400 audit(0.0:161): avc:  granted  { execute } for  path="/data/data/com.innocent.media/no_backup/youtubedl-android/packages/python/usr/lib/python3.12/lib-dynload/_asyncio.cpython-312.so" dev="dm-40" ino=337697 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:app_data_file:s0:c192,c256,c512,c768 tclass=file app=com.innocent.media
+10-03 17:09:02.820 E/BLASTBufferQueue( 6160): [SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#1](f:0,a:0) rejecting buffer:active_size=1080x2400, requested_size=1080x2400 buffer{size=1080x2337 transform=0}
+10-03 17:09:02.843 W/libpython.so( 6201): type=1400 audit(0.0:162): avc:  denied  { ioctl } for  path="pipe:[66784]" dev="pipefs" ino=66784 ioctlcmd=0x5413 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tclass=fifo_file permissive=0 app=com.innocent.media
+10-03 17:09:03.073 I/ActivityTaskManager(  523): Displayed com.innocent.media/.MainActivity for user 0: +3s7ms
+10-03 17:09:03.141 D/CoreBackPreview(  523): Window{19c6f4 u0 Splash Screen com.innocent.media EXITING}: Setting back callback null
+10-03 17:09:03.141 W/InputManager-JNI(  523): Input channel object '19c6f4 Splash Screen com.innocent.media (client)' was disposed without first being removed with the input manager!
+10-03 17:09:03.222 I/ImeTracker(  523): com.innocent.media:bdc8ba1b: onRequestHide at ORIGIN_SERVER_HIDE_INPUT reason HIDE_UNSPECIFIED_WINDOW
+10-03 17:09:03.222 I/ImeTracker(  523): com.innocent.media:bdc8ba1b: onCancelled at PHASE_SERVER_SHOULD_HIDE
+10-03 17:09:03.226 I/GoogleInputMethodService( 1580): GoogleInputMethodService.onStartInput():1877 onStartInput(EditorInfo{inputType=0x0(NULL) imeOptions=0x0 privateImeOptions=null actionName=UNSPECIFIED actionLabel=null actionId=0 initialSelStart=-1 initialSelEnd=-1 initialCapsMode=0x0 hintText=null label=null packageName=com.innocent.media fieldId=0 fieldName=null extras=null}, false)
+10-03 17:09:06.773 D/ProfileInstaller( 6160): Skipping profile installation for com.innocent.media
+10-03 17:09:11.909 D/UiDevice( 5908): Waiting 500ms for window update of package com.innocent.media.
+10-03 17:09:12.410 W/UiDevice( 5908): java.util.concurrent.TimeoutException: Expected event not received within: 500 ms among: []
+10-03 17:09:12.466 D/UiDevice( 5908): Waiting 500ms for window update of package com.innocent.media.
+10-03 17:09:12.967 W/UiDevice( 5908): java.util.concurrent.TimeoutException: Expected event not received within: 500 ms among: []
+10-03 17:09:13.231 W/libpython.so( 6308): type=1400 audit(0.0:163): avc:  denied  { search } for  name="tests" dev="dm-40" ino=65540 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:shell_test_data_file:s0 tclass=dir permissive=0 app=com.innocent.media
+10-03 17:09:13.231 W/libpython.so( 6308): type=1400 audit(0.0:164): avc:  denied  { search } for  name="tests" dev="dm-40" ino=65540 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:shell_test_data_file:s0 tclass=dir permissive=0 app=com.innocent.media
+10-03 17:09:13.231 W/libpython.so( 6308): type=1400 audit(0.0:165): avc:  denied  { search } for  name="tests" dev="dm-40" ino=65540 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:shell_test_data_file:s0 tclass=dir permissive=0 app=com.innocent.media
+10-03 17:09:13.231 W/libpython.so( 6308): type=1400 audit(0.0:166): avc:  denied  { search } for  name="tests" dev="dm-40" ino=65540 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:shell_test_data_file:s0 tclass=dir permissive=0 app=com.innocent.media
+10-03 17:09:13.231 W/libpython.so( 6308): type=1400 audit(0.0:167): avc:  granted  { execute } for  path="/data/data/com.innocent.media/no_backup/youtubedl-android/packages/python/usr/lib/libpython3.12.so.1.0" dev="dm-40" ino=338024 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:app_data_file:s0:c192,c256,c512,c768 tclass=file app=com.innocent.media
+10-03 17:09:13.231 W/libpython.so( 6308): type=1400 audit(0.0:168): avc:  granted  { execute } for  path="/data/data/com.innocent.media/no_backup/youtubedl-android/packages/python/usr/lib/libandroid-support.so" dev="dm-40" ino=337276 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:app_data_file:s0:c192,c256,c512,c768 tclass=file app=com.innocent.media
+10-03 17:09:13.291 W/libpython.so( 6308): type=1400 audit(0.0:169): avc:  granted  { execute } for  path="/data/data/com.innocent.media/no_backup/youtubedl-android/packages/python/usr/lib/libz.so.1.3.1" dev="dm-40" ino=337281 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:app_data_file:s0:c192,c256,c512,c768 tclass=file app=com.innocent.media
+10-03 17:09:13.396 W/TelephonyPermissions(  523): reportAccessDeniedToReadIdentifiers:com.innocent.media:getSerial:-1
+10-03 17:09:14.247 W/libpython.so( 6308): type=1400 audit(0.0:216): avc:  granted  { execute } for  path="/data/data/com.innocent.media/no_backup/youtubedl-android/packages/python/usr/lib/python3.12/lib-dynload/_heapq.cpython-312.so" dev="dm-40" ino=337735 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:app_data_file:s0:c192,c256,c512,c768 tclass=file app=com.innocent.media
+10-03 17:09:14.287 W/libpython.so( 6308): type=1400 audit(0.0:217): avc:  granted  { execute } for  path="/data/data/com.innocent.media/no_backup/youtubedl-android/packages/python/usr/lib/python3.12/lib-dynload/_asyncio.cpython-312.so" dev="dm-40" ino=337697 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:object_r:app_data_file:s0:c192,c256,c512,c768 tclass=file app=com.innocent.media
+10-03 17:09:14.471 W/libpython.so( 6308): type=1400 audit(0.0:218): avc:  denied  { ioctl } for  path="pipe:[67120]" dev="pipefs" ino=67120 ioctlcmd=0x5413 scontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tcontext=u:r:untrusted_app:s0:c192,c256,c512,c768 tclass=fifo_file permissive=0 app=com.innocent.media
+10-03 17:09:15.040 W/.innocent.media( 6160): Long monitor contention with owner Thread-9 (6323) at com.yausername.youtubedl_android.YoutubeDL$UpdateStatus com.yausername.youtubedl_android.YoutubeDL.updateYoutubeDL(android.content.Context, com.yausername.youtubedl_android.YoutubeDL$UpdateChannel)(YoutubeDL.kt:270) waiters=0 in com.yausername.youtubedl_android.YoutubeDL$UpdateStatus com.yausername.youtubedl_android.YoutubeDL.updateYoutubeDL(android.content.Context, com.yausername.youtubedl_android.YoutubeDL$UpdateChannel) for 537ms
+10-03 17:09:15.087 D/StrictMode( 1744): 	at libcore.io.BlockGuardOs.access(BlockGuardOs.java:74)
+10-03 17:09:15.087 D/StrictMode( 1744): 	at libcore.io.ForwardingOs.access(ForwardingOs.java:128)
+10-03 17:09:15.087 D/StrictMode( 1744): 	at libcore.io.BlockGuardOs.access(BlockGuardOs.java:74)
+10-03 17:09:15.087 D/StrictMode( 1744): 	at libcore.io.ForwardingOs.access(ForwardingOs.java:128)
+10-03 17:09:15.189 E/d       ( 1744): RuntimeException while executing runnable cb{com.google.apps.tiktok.tracing.ej@4f452ce} with executor MoreExecutors.directExecutor()
+10-03 17:09:15.189 E/d       ( 1744): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.ae.b' on a null object reference in method 'void com.google.android.libraries.mdi.download.h.bq.gH(java.lang.Object)'
+10-03 17:09:15.193 E/d       ( 1744): RuntimeException while executing runnable cb{com.google.apps.tiktok.tracing.ej@66cad00} with executor MoreExecutors.directExecutor()
+10-03 17:09:15.193 E/d       ( 1744): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.ae.b' on a null object reference in method 'void com.google.android.libraries.mdi.download.h.bq.gH(java.lang.Object)'
+10-03 17:09:15.194 E/d       ( 1744): RuntimeException while executing runnable cb{com.google.apps.tiktok.tracing.ej@83df8fc} with executor MoreExecutors.directExecutor()
+10-03 17:09:15.194 E/d       ( 1744): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.ae.b' on a null object reference in method 'void com.google.android.libraries.mdi.download.h.bq.gH(java.lang.Object)'
+10-03 17:09:21.212 W/TapAndPay( 5193): java.lang.NullPointerException: NfcAdapter is null
+10-03 17:09:39.404 W/ActivityManager(  523): Crash of app dev.mobile.maestro running instrumentation ComponentInfo{dev.mobile.maestro.test/androidx.test.runner.AndroidJUnitRunner}
+10-03 17:09:39.412 W/Binder  ( 5896): Caught a RuntimeException from the binder stub implementation.
+10-03 17:09:39.412 W/Binder  ( 5896): java.lang.SecurityException: Calling from not trusted UID!
+10-03 17:09:39.425 I/AndroidRuntime( 5896): VM exiting with result code 0.
+10-03 17:09:39.798 W/Looper  ( 5193): java.lang.RuntimeException: Handler (acdu) {bfa2cb5} sendMessageAtTime() called with no mQueue
+10-03 17:09:39.820 W/ProvidersCache( 3272): android.os.DeadObjectException: Transaction failed on small parcel; remote process probably died, but this could also be caused by running out of binder buffer space
+10-03 17:09:40.042 E/externalstorage( 6628): Not starting debugger since process cannot load the jdwp agent.
+10-03 17:09:40.077 W/libc    ( 5247): Access denied finding property "ro.hardware.chipname"
+10-03 17:09:40.217 W/PeoplePU( 5247): java.lang.IllegalArgumentException: Unknown component: ComponentInfo{com.google.android.syncadapters.contacts/com.google.android.syncadapters.contacts.ContactsSyncAdapterService}
+10-03 17:09:40.217 W/PeoplePU( 5247): 	at android.os.Parcel.createExceptionOrNull(Parcel.java:3061)
+10-03 17:09:40.217 W/PeoplePU( 5247): 	at android.os.Parcel.createException(Parcel.java:3041)
+10-03 17:09:40.217 W/PeoplePU( 5247): 	at android.os.Parcel.readException(Parcel.java:3024)
+10-03 17:09:40.217 W/PeoplePU( 5247): 	at android.os.Parcel.readException(Parcel.java:2966)
+10-03 17:09:40.217 W/PeoplePU( 5247): Caused by: android.os.RemoteException: Remote stack trace:
+10-03 17:09:40.217 W/PeoplePU( 5247): java.lang.IllegalArgumentException: Unknown component: ComponentInfo{com.google.android.syncadapters.contacts/com.google.android.syncadapters.contacts.ContactsSyncAdapterService}
+10-03 17:09:40.217 W/PeoplePU( 5247): 	at android.os.Parcel.createExceptionOrNull(Parcel.java:3061)
+10-03 17:09:40.217 W/PeoplePU( 5247): 	at android.os.Parcel.createException(Parcel.java:3041)
+10-03 17:09:40.217 W/PeoplePU( 5247): 	at android.os.Parcel.readException(Parcel.java:3024)
+10-03 17:09:40.217 W/PeoplePU( 5247): 	at android.os.Parcel.readException(Parcel.java:2966)
+10-03 17:09:40.217 W/PeoplePU( 5247): java.lang.IllegalArgumentException: Unknown component: ComponentInfo{com.google.android.syncadapters.contacts/com.google.android.syncadapters.contacts.ProxyGalProvider}
+10-03 17:09:40.217 W/PeoplePU( 5247): 	at android.os.Parcel.createExceptionOrNull(Parcel.java:3061)
+10-03 17:09:40.217 W/PeoplePU( 5247): 	at android.os.Parcel.createException(Parcel.java:3041)
+10-03 17:09:40.217 W/PeoplePU( 5247): 	at android.os.Parcel.readException(Parcel.java:3024)
+10-03 17:09:40.217 W/PeoplePU( 5247): 	at android.os.Parcel.readException(Parcel.java:2966)
+10-03 17:09:40.269 W/libc    ( 3009): Access denied finding property "persist.adb.tls_server.enable"
+10-03 17:09:40.270 W/libc    ( 3009): Access denied finding property "service.adb.tls.port"
+10-03 17:09:40.299 I/PeopleInitIntentOp( 5247): Not initializing debuggability [CONTEXT service_id=5 ]
+10-03 17:09:40.538 I/SemanticLocation( 5193): java.io.FileNotFoundException: /data/user/0/com.google.android.gms/files/model_bundle_metadata.pb: open failed: ENOENT (No such file or directory)
+10-03 17:09:40.538 I/SemanticLocation( 5193): 	at libcore.io.IoBridge.open(IoBridge.java:574)
+10-03 17:09:40.538 I/SemanticLocation( 5193): Caused by: android.system.ErrnoException: open failed: ENOENT (No such file or directory)
+10-03 17:09:40.538 I/SemanticLocation( 5193): 	at libcore.io.Linux.open(Native Method)
+10-03 17:09:40.538 I/SemanticLocation( 5193): 	at libcore.io.ForwardingOs.open(ForwardingOs.java:563)
+10-03 17:09:40.538 I/SemanticLocation( 5193): 	at libcore.io.BlockGuardOs.open(BlockGuardOs.java:274)
+10-03 17:09:40.538 I/SemanticLocation( 5193): 	at libcore.io.ForwardingOs.open(ForwardingOs.java:563)
+10-03 17:09:40.538 I/SemanticLocation( 5193): 	at libcore.io.IoBridge.open(IoBridge.java:560)
+10-03 17:09:40.544 I/SemanticLocation( 5193): java.io.FileNotFoundException: /data/user/0/com.google.android.gms/files/model_bundle_metadata.pb: open failed: ENOENT (No such file or directory)
+10-03 17:09:40.544 I/SemanticLocation( 5193): 	at libcore.io.IoBridge.open(IoBridge.java:574)
+10-03 17:09:40.544 I/SemanticLocation( 5193): Caused by: android.system.ErrnoException: open failed: ENOENT (No such file or directory)
+10-03 17:09:40.544 I/SemanticLocation( 5193): 	at libcore.io.Linux.open(Native Method)
+10-03 17:09:40.544 I/SemanticLocation( 5193): 	at libcore.io.ForwardingOs.open(ForwardingOs.java:563)
+10-03 17:09:40.544 I/SemanticLocation( 5193): 	at libcore.io.BlockGuardOs.open(BlockGuardOs.java:274)
+10-03 17:09:40.544 I/SemanticLocation( 5193): 	at libcore.io.ForwardingOs.open(ForwardingOs.java:563)
+10-03 17:09:40.544 I/SemanticLocation( 5193): 	at libcore.io.IoBridge.open(IoBridge.java:560)
+10-03 17:09:40.740 W/NetworkScheduler( 5193): java.lang.IllegalArgumentException: Only the following extra parameter types are supported: Integer, Long, Double, String, Boolean, and nested Bundles with the same restrictions.
+10-03 17:09:44.035 D/AndroidRuntime( 6743): >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-03 17:09:44.037 I/AndroidRuntime( 6743): Using default boot image
+10-03 17:09:44.037 I/AndroidRuntime( 6743): Leaving lock profiling enabled
+10-03 17:09:44.075 D/nativeloader( 6743): InitDefaultPublicLibraries for_preload=1: libandroid.so:libaaudio.so:libamidi.so:libbinder_ndk.so:libc.so:libcamera2ndk.so:libdl.so:libEGL.so:libGLESv1_CM.so:libGLESv2.so:libGLESv3.so:libicu.so:libicui18n.so:libicuuc.so:libjnigraphics.so:liblog.so:libmediandk.so:libm.so:libnativehelper.so:libnativewindow.so:libOpenMAXAL.so:libOpenSLES.so:libRS.so:libstdc++.so:libsync.so:libvulkan.so:libwebviewchromium_plat_support.so:libz.so
+10-03 17:09:44.091 W/libc    ( 6743): Access denied finding property "ro.product.name_for_attestation"
+10-03 17:09:44.091 W/libc    ( 6743): Access denied finding property "ro.product.brand_for_attestation"
+10-03 17:09:44.092 W/libc    ( 6743): Access denied finding property "ro.product.model_for_attestation"
+10-03 17:09:44.092 D/AndroidRuntime( 6743): Calling main entry com.android.commands.am.Am
+10-03 17:09:45.656 W/ActivityManager(  523): Crash of app dev.mobile.maestro running instrumentation ComponentInfo{dev.mobile.maestro.test/androidx.test.runner.AndroidJUnitRunner}
+10-03 17:09:45.658 I/AndroidRuntime( 6743): VM exiting with result code 0.
+10-03 17:09:46.385 I/.innocent.media( 6160): Explicit concurrent copying GC freed 46026(2741KB) AllocSpace objects, 0(0B) LOS objects, 49% free, 3566KB/7132KB, paused 10us,6us total 5.374ms
+10-03 17:09:46.471 E/AdbDebuggingManager(  523): Caught an exception opening the socket: java.io.IOException: Connection refused
