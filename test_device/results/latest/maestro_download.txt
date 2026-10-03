@@ -1,0 +1,16 @@
+Running on test
+ > Flow download
+Tap on (Optional) "Save for offline"... WARNED
+
+
+ Warning: Element not found: Text matching regex: Save for offline
+Wait for animation to end within 5000 ms... COMPLETED
+Take screenshot 30_download_tapped... COMPLETED
+Tap on (Optional) "Download.*"... WARNED
+
+
+ Warning: Element not found: Text matching regex: Download.*
+Wait for animation to end within 5000 ms... COMPLETED
+Take screenshot 31_download_confirm... COMPLETED
+Wait for animation to end within 20000 ms... COMPLETED
+Take screenshot 32_download_20s... COMPLETED
