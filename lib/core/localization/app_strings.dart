@@ -1465,6 +1465,7 @@ class AppStrings {
   String get vhOn => _s('vhOn');
   String get vhEdit => _s('vhEdit');
   String get vhDownloadsActive => _s('vhDownloadsActive');
+  String get vhDownloadYielding => _s('vhDownloadYielding');
   String get vhDownloadsDone => _s('vhDownloadsDone');
   String get vhDownloadsSettings => _s('vhDownloadsSettings');
   String vhBookmarksCount(int n) => _s('vhBookmarksCount').replaceFirst('{n}', '$n');
@@ -1983,6 +1984,7 @@ class AppStrings {
     'vhOn': 'On',
     'vhEdit': 'Edit',
     'vhDownloadsActive': 'Downloading',
+    'vhDownloadYielding': 'slowed while you watch',
     'vhDownloadsDone': 'Downloaded',
     'vhDownloadsSettings': 'Download settings',
     'playerNoticeIncomplete': 'This file is not fully downloaded. It plays up to {t}.',
@@ -3287,6 +3289,7 @@ class AppStrings {
     'vhOn': 'ဖွင့်ထား',
     'vhEdit': 'ပြင်မယ်',
     'vhDownloadsActive': 'ဒေါင်းနေဆဲ',
+    'vhDownloadYielding': 'ကြည့်နေတာကို ဦးစားပေးထားသည်',
     'vhDownloadsDone': 'ဒေါင်းပြီး',
     'vhDownloadsSettings': 'ဒေါင်းလုဒ် ဆက်တင်',
     'playerNoticeIncomplete': 'ဒီဖိုင်က အပြည့် download မဆွဲရသေးပါ။ {t} အထိပဲ ကြည့်လို့ရပါမယ်။',
@@ -4580,6 +4583,7 @@ class AppStrings {
     'vhOn': 'เปิด',
     'vhEdit': 'แก้ไข',
     'vhDownloadsActive': 'กำลังดาวน์โหลด',
+    'vhDownloadYielding': 'ลดความเร็วระหว่างที่ดูอยู่',
     'vhDownloadsDone': 'ดาวน์โหลดแล้ว',
     'vhDownloadsSettings': 'ตั้งค่าดาวน์โหลด',
     'playerNoticeIncomplete': 'ไฟล์นี้ดาวน์โหลดไม่ครบ เล่นได้ถึง {t}',

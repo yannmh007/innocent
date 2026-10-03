@@ -4,6 +4,7 @@ import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 
+import '../../../../core/services/network/foreground_stream.dart';
 import '../../../../core/services/network/throughput_memory.dart';
 import 'stream_cache_store.dart';
 
@@ -407,6 +408,9 @@ class StreamCacheServer {
     var w = writer;
     try {
       await for (final chunk in src) {
+        // The viewer is watching this, from the network, now: background
+        // downloads hold back until it stops — see ForegroundStream.
+        ForegroundStream.touch();
         if (w != null) {
           try {
             await w.write(chunk);

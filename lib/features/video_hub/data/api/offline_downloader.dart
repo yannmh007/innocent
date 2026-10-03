@@ -9,6 +9,7 @@ import 'package:http/http.dart' as http;
 
 import '../../../../core/services/connectivity/connectivity_service.dart';
 import '../../../../core/services/diagnostics/playback_log.dart';
+import '../../../../core/services/network/foreground_stream.dart';
 import '../../../../core/services/offline/offline_service_bridge.dart';
 import '../../domain/access.dart';
 import '../../domain/content_repository.dart';
@@ -55,6 +56,10 @@ class OfflineProgress {
   /// download, and from an error, which has given up.
   final bool waitingForNetwork;
 
+  /// Held back because the viewer is streaming something — see
+  /// ForegroundStream. Said on screen so slow is not mistaken for broken.
+  final bool yielding;
+
   /// Set when the download stopped and will not continue on its own.
   final String? error;
 
@@ -65,6 +70,7 @@ class OfflineProgress {
     this.done = false,
     this.queued = false,
     this.waitingForNetwork = false,
+    this.yielding = false,
     this.bytesPerSecond,
     this.remaining,
     this.error,
@@ -231,6 +237,13 @@ class OfflineDownloader {
   /// takes. Every 32 MB is a `stat` per few seconds at best and stops the
   /// download a long way before the phone becomes unusable.
   static const int _spaceCheckEvery = 32 * 1024 * 1024;
+
+  /// How much is gathered before one trip to the cipher. See the loop.
+  static const int _sealBatch = 512 * 1024;
+
+  /// The longest single pause while yielding, so a cancel or the end of the
+  /// stream is noticed promptly.
+  static const Duration _maxPaceWait = Duration(seconds: 2);
 
   final Map<String, StreamController<OfflineProgress>> _streams =
       <String, StreamController<OfflineProgress>>{};
@@ -660,6 +673,7 @@ class OfflineDownloader {
           key: key,
           received: received,
           total: total,
+          yielding: ForegroundStream.active,
           bytesPerSecond: rate.bytesPerSecond,
           remaining: rate.remaining(received, total),
         ));
@@ -965,26 +979,79 @@ class OfflineDownloader {
         var broke = false;
         var ranOut = false;
         var sealBroke = false;
+        // ═══════════════════════════════════════════════════════════════
+        // BATCHED, NOT PER CHUNK — THE SPEED AND THE HEAT
+        // ═══════════════════════════════════════════════════════════════
+        //
+        // Reported 2026-10-03: the phone's own meter read ~3 MB/s while this
+        // screen said under 1 MB/s, and the phone ran hot. The network hands
+        // the body over in pieces of a few kilobytes; each piece was sent
+        // across the platform channel to be enciphered (Dart → the Android
+        // main thread → back, four or five copies of every byte) and AWAITED
+        // before the next piece was read. At 3 MB/s that is hundreds of round
+        // trips a second: the CPU busy shuttling bytes, and the socket left
+        // unread between them so TCP slowed the sender down to match.
+        //
+        // Now the pieces gather here and go to the cipher half a megabyte at
+        // a time — a handful of round trips a second instead of hundreds. CTR
+        // is addressable by byte (see _Sealer), so the batch size changes
+        // nothing about the file. An unsealed download is written as it
+        // comes; IOSink already buffers that.
+        final batch = BytesBuilder(copy: false);
+        // The pacing window: when it opened, and the byte count then.
+        var paceFrom = DateTime.now();
+        var paceBase = received;
+
+        // Writes what has gathered. False when the cipher failed: everything
+        // already written is under the old keystream and still readable, so
+        // the honest move is to stop the pass rather than write plaintext into
+        // the middle of it — a file that plays until the seam and then not.
+        Future<bool> drain() async {
+          if (batch.isEmpty) return true;
+          final plain = batch.takeBytes();
+          final out = sealer == null ? plain : await sealer.take(plain);
+          if (out == null) return false;
+          sink.add(out);
+          received += plain.length;
+          report();
+          return true;
+        }
+
         try {
           await for (final chunk in response.stream) {
             if (_cancelled.contains(key)) {
               broke = true;
               break;
             }
-            final out = sealer == null ? chunk : await sealer.take(chunk);
-            if (out == null) {
-              // THE CIPHER FAILED MID-FILM. Everything already written is
-              // under the old keystream and still readable, so the honest move
-              // is to stop the pass rather than write plaintext into the middle
-              // of it — which would be a file that plays until the seam and
-              // then does not.
-              broke = true;
-              sealBroke = true;
-              break;
+            if (sealer == null) {
+              sink.add(chunk);
+              received += chunk.length;
+              report();
+            } else {
+              batch.add(chunk);
+              if (batch.length < _sealBatch) continue;
+              if (!await drain()) {
+                broke = true;
+                sealBroke = true;
+                break;
+              }
             }
-            sink.add(out);
-            received += chunk.length;
-            report();
+            // WHAT THE VIEWER IS WATCHING COMES FIRST. While a film streams,
+            // this download keeps to ForegroundStream's pace so the film's
+            // buffer fills first; the moment the viewer stops, full speed.
+            if (ForegroundStream.active) {
+              final wait = ForegroundStream.paceDelay(
+                bytes: received - paceBase,
+                elapsed: DateTime.now().difference(paceFrom),
+              );
+              if (wait > Duration.zero) {
+                await Future<void>.delayed(
+                    wait > _maxPaceWait ? _maxPaceWait : wait);
+              }
+            } else {
+              paceFrom = DateTime.now();
+              paceBase = received;
+            }
             if (received - lastSpaceCheck >= _spaceCheckEvery) {
               lastSpaceCheck = received;
               final free = await _freeBytes(dir.path);
@@ -1012,6 +1079,15 @@ class OfflineDownloader {
           broke = true;
           if (kDebugMode) debugPrint('offline stream broke at $received: $e');
         } finally {
+          // What gathered but was not yet written: written now, so a pass that
+          // ends — cleanly, by cancel, or by a dropped connection — leaves the
+          // part file holding every byte it was handed, and a resume carries
+          // on from exactly there.
+          try {
+            if (!sealBroke && !await drain()) sealBroke = broke = true;
+          } catch (_) {
+            sealBroke = broke = true;
+          }
           await sink.flush();
           await sink.close();
         }

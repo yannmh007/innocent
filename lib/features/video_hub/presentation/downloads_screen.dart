@@ -573,6 +573,9 @@ class _PendingRowState extends ConsumerState<_PendingRow> {
         : '${formatBytes(received)} / ${formatBytes(total)}';
     if (live != null) {
       if (live.waitingForNetwork) return '$got · ${s.vhDownloadWaitingSignal}';
+      // Slow on purpose, and saying so: a film is streaming and gets the
+      // line first. Without the words this reads as the download breaking.
+      if (live.yielding) return '$got · ${s.vhDownloadYielding}';
       final speed = live.bytesPerSecond;
       final left = live.remaining;
       if (speed != null && speed > 0 && left != null) {
