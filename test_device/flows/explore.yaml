@@ -8,6 +8,9 @@ appId: com.innocent.media
     timeout: 15000
 - takeScreenshot: 01_launch
 - tapOn:
+    text: "Wait"
+    optional: true
+- tapOn:
     text: "Skip"
     optional: true
 - tapOn:
@@ -35,3 +38,8 @@ appId: com.innocent.media
 - waitForAnimationToEnd:
     timeout: 8000
 - takeScreenshot: 05_hub_scrolled
+- scrollUntilVisible:
+    element:
+      text: ".*"
+    direction: UP
+    optional: true

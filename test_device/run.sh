@@ -34,6 +34,14 @@ sampler() {
 sampler > "$OUT/samples.txt" 2>&1 &
 SAMPLER=$!
 
+# The emulator's own launcher sometimes ANRs while the image settles, and its
+# dialog sits over the app and eats every tap. Hide system error dialogs and
+# give the image a moment before measuring anything.
+adb shell settings put global hide_error_dialogs 1 || true
+adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS >/dev/null 2>&1 || true
+sleep 20
+adb shell input keyevent KEYCODE_HOME
+
 log "cold start"
 adb shell am force-stop "$PKG"
 adb shell am start -W -n "$PKG/.MainActivity" > "$OUT/cold_start.txt" 2>&1
