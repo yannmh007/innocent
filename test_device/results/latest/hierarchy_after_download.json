@@ -156,8 +156,8 @@
                   },
                   "children" : [ {
                     "attributes" : {
-                      "text" : "6:33 ",
-                      "accessibilityText" : "6:33 PM",
+                      "text" : "6:46 ",
+                      "accessibilityText" : "6:46 PM",
                       "hintText" : "",
                       "ignoreBoundsFiltering" : "false",
                       "resource-id" : "com.android.systemui:id/clock",

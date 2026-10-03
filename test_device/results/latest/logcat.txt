@@ -1,33 +1,27 @@
-10-03 18:35:47.044 I/.innocent.media( 5606): Background concurrent copying GC freed 592(48KB) AllocSpace objects, 4(8208KB) LOS objects, 49% free, 3410KB/6820KB, paused 29us,13us total 458.377ms
-10-03 18:35:47.709 I/.innocent.media( 5606): Background young concurrent copying GC freed 1435(85KB) AllocSpace objects, 4(8208KB) LOS objects, 48% free, 3516KB/6820KB, paused 5.357ms,16us total 440.950ms
-10-03 18:35:48.569 I/NamespaceManager( 5688): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 18:35:48.659 I/NamespaceManager( 5688): Package com.google.android.crashrecovery name not found! Using module version.
-10-03 18:35:49.816 D/AugmentedAutofillService( 1669): handleOnConnected(): debug=true, verbose=false
-10-03 18:35:50.712 I/ContentCaptureHelper( 1111): Setting logging level to DEBUG
-10-03 18:35:50.943 I/.innocent.media( 5606): Background concurrent copying GC freed 239(34KB) AllocSpace objects, 12(24MB) LOS objects, 49% free, 3434KB/6869KB, paused 16us,12us total 197.164ms
-10-03 18:35:54.285 I/.innocent.media( 5606): Background young concurrent copying GC freed 3725(174KB) AllocSpace objects, 10(20MB) LOS objects, 67% free, 7558KB/22MB, paused 10.759ms,6us total 17.454ms
-10-03 18:36:16.205 W/ActivityManager(  521): Crash of app dev.mobile.maestro running instrumentation ComponentInfo{dev.mobile.maestro.test/androidx.test.runner.AndroidJUnitRunner}
-10-03 18:36:16.234 W/Binder  ( 9593): Caught a RuntimeException from the binder stub implementation.
-10-03 18:36:16.234 W/Binder  ( 9593): java.lang.SecurityException: Calling from not trusted UID!
-10-03 18:36:16.241 I/AndroidRuntime( 9593): VM exiting with result code 0.
-10-03 18:36:16.679 W/CorpusConfigHelper( 1802): android.util.MalformedJsonException: Use JsonReader.setLenient(true) to accept malformed JSON at line 123 column 2
-10-03 18:36:18.109 I/.innocent.media( 5606): Background young concurrent copying GC freed 587(95KB) AllocSpace objects, 8(16MB) LOS objects, 49% free, 9593KB/18MB, paused 60us,11us total 115.795ms
-10-03 18:36:20.373 I/.innocent.media( 5606): Background concurrent copying GC freed 363(31KB) AllocSpace objects, 11(22MB) LOS objects, 49% free, 3470KB/6940KB, paused 32us,8us total 114.481ms
-10-03 18:36:20.698 I/.innocent.media( 5606): Background concurrent copying GC freed 211(33KB) AllocSpace objects, 0(0B) LOS objects, 49% free, 11MB/22MB, paused 1.492ms,12us total 141.784ms
-10-03 18:36:25.260 I/.innocent.media( 5606): Background concurrent copying GC freed 54(33KB) AllocSpace objects, 4(8208KB) LOS objects, 49% free, 11MB/22MB, paused 80us,230us total 251.236ms
-10-03 18:36:26.736 D/AndroidRuntime( 9948): >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-10-03 18:36:26.741 I/AndroidRuntime( 9948): Using default boot image
-10-03 18:36:26.741 I/AndroidRuntime( 9948): Leaving lock profiling enabled
-10-03 18:36:26.804 D/nativeloader( 9948): InitDefaultPublicLibraries for_preload=1: libandroid.so:libaaudio.so:libamidi.so:libbinder_ndk.so:libc.so:libcamera2ndk.so:libdl.so:libEGL.so:libGLESv1_CM.so:libGLESv2.so:libGLESv3.so:libicu.so:libicui18n.so:libicuuc.so:libjnigraphics.so:liblog.so:libmediandk.so:libm.so:libnativehelper.so:libnativewindow.so:libOpenMAXAL.so:libOpenSLES.so:libRS.so:libstdc++.so:libsync.so:libvulkan.so:libwebviewchromium_plat_support.so:libz.so
-10-03 18:36:26.839 W/libc    ( 9948): Access denied finding property "ro.product.name_for_attestation"
-10-03 18:36:26.839 W/libc    ( 9948): Access denied finding property "ro.product.brand_for_attestation"
-10-03 18:36:26.839 W/libc    ( 9948): Access denied finding property "ro.product.model_for_attestation"
-10-03 18:36:26.840 D/AndroidRuntime( 9948): Calling main entry com.android.commands.am.Am
-10-03 18:36:27.270 W/FileUtils(  521): Failed to chmod(AtomicFile[/data/system_de/0/system/game-manager-service.xml]): android.system.ErrnoException: chmod failed: ENOENT (No such file or directory)
-10-03 18:36:28.607 W/ActivityManager(  521): Crash of app dev.mobile.maestro running instrumentation ComponentInfo{dev.mobile.maestro.test/androidx.test.runner.AndroidJUnitRunner}
-10-03 18:36:28.612 W/Binder  ( 9948): Caught a RuntimeException from the binder stub implementation.
-10-03 18:36:28.612 W/Binder  ( 9948): java.lang.SecurityException: Calling from not trusted UID!
-10-03 18:36:28.627 I/AndroidRuntime( 9948): VM exiting with result code 0.
-10-03 18:36:29.345 W/AppInfoHelper( 1552): android.content.pm.PackageManager$NameNotFoundException: dev.mobile.maestro.test
-10-03 18:36:29.459 I/.innocent.media( 5606): Explicit concurrent copying GC freed 7746(409KB) AllocSpace objects, 4(208KB) LOS objects, 49% free, 3384KB/6769KB, paused 13us,4us total 7.020ms
-10-03 18:36:29.583 E/AdbDebuggingManager(  521): Caught an exception opening the socket: java.io.IOException: Connection refused
+10-03 18:48:19.326 I/.innocent.media( 5733): Background concurrent copying GC freed 17649(770KB) AllocSpace objects, 22(4632KB) LOS objects, 49% free, 3810KB/7620KB, paused 10.582ms,12us total 117.954ms
+10-03 18:48:31.222 W/ActivityManager(  519): Crash of app dev.mobile.maestro running instrumentation ComponentInfo{dev.mobile.maestro.test/androidx.test.runner.AndroidJUnitRunner}
+10-03 18:48:31.225 W/Binder  ( 9556): Caught a RuntimeException from the binder stub implementation.
+10-03 18:48:31.225 W/Binder  ( 9556): java.lang.SecurityException: Calling from not trusted UID!
+10-03 18:48:31.229 I/AndroidRuntime( 9556): VM exiting with result code 0.
+10-03 18:48:31.553 W/CorpusConfigHelper( 1847): android.util.MalformedJsonException: Use JsonReader.setLenient(true) to accept malformed JSON at line 123 column 2
+10-03 18:48:33.023 W/AppInfoHelper( 1596): android.content.pm.PackageManager$NameNotFoundException: dev.mobile.maestro.test
+10-03 18:48:41.796 W/FileUtils(  519): Failed to chmod(AtomicFile[/data/system_de/0/system/game-manager-service.xml]): android.system.ErrnoException: chmod failed: ENOENT (No such file or directory)
+10-03 18:48:41.971 D/AndroidRuntime( 9949): >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-03 18:48:41.985 I/AndroidRuntime( 9949): Using default boot image
+10-03 18:48:41.985 I/AndroidRuntime( 9949): Leaving lock profiling enabled
+10-03 18:48:42.134 D/nativeloader( 9949): InitDefaultPublicLibraries for_preload=1: libandroid.so:libaaudio.so:libamidi.so:libbinder_ndk.so:libc.so:libcamera2ndk.so:libdl.so:libEGL.so:libGLESv1_CM.so:libGLESv2.so:libGLESv3.so:libicu.so:libicui18n.so:libicuuc.so:libjnigraphics.so:liblog.so:libmediandk.so:libm.so:libnativehelper.so:libnativewindow.so:libOpenMAXAL.so:libOpenSLES.so:libRS.so:libstdc++.so:libsync.so:libvulkan.so:libwebviewchromium_plat_support.so:libz.so
+10-03 18:48:42.253 W/libc    ( 9949): Access denied finding property "ro.product.name_for_attestation"
+10-03 18:48:42.253 W/libc    ( 9949): Access denied finding property "ro.product.brand_for_attestation"
+10-03 18:48:42.253 W/libc    ( 9949): Access denied finding property "ro.product.model_for_attestation"
+10-03 18:48:42.255 D/AndroidRuntime( 9949): Calling main entry com.android.commands.am.Am
+10-03 18:48:45.074 W/ActivityManager(  519): Crash of app dev.mobile.maestro running instrumentation ComponentInfo{dev.mobile.maestro.test/androidx.test.runner.AndroidJUnitRunner}
+10-03 18:48:45.076 W/Binder  ( 9949): Caught a RuntimeException from the binder stub implementation.
+10-03 18:48:45.076 W/Binder  ( 9949): java.lang.SecurityException: Calling from not trusted UID!
+10-03 18:48:45.080 I/AndroidRuntime( 9949): VM exiting with result code 0.
+10-03 18:48:46.305 I/.innocent.media( 5733): Waiting for a blocking GC Explicit
+10-03 18:48:46.362 I/.innocent.media( 5733): Background young concurrent copying GC freed 1164(153KB) AllocSpace objects, 8(4128KB) LOS objects, 36% free, 4557KB/7174KB, paused 55us,6us total 134.237ms
+10-03 18:48:46.362 I/.innocent.media( 5733): WaitForGcToComplete blocked Explicit on Background for 56.209ms
+10-03 18:48:46.428 W/AppInfoHelper( 1596): android.content.pm.PackageManager$NameNotFoundException: dev.mobile.maestro.test
+10-03 18:48:46.431 I/.innocent.media( 5733): Explicit concurrent copying GC freed 20177(647KB) AllocSpace objects, 12(432KB) LOS objects, 49% free, 3686KB/7372KB, paused 707us,13us total 69.204ms
+10-03 18:48:46.436 W/.innocent.media( 5733): Suspending all threads took: 5.271ms
+10-03 18:48:46.648 E/AdbDebuggingManager(  519): Caught an exception opening the socket: java.io.IOException: Connection refused

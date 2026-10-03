@@ -2,14 +2,21 @@ Running on test
  > Flow downloads
 Press back... COMPLETED
 Wait for animation to end within 5000 ms... COMPLETED
-Tap on point (93%,7%)... COMPLETED
-Wait for animation to end within 8000 ms... COMPLETED
-Take screenshot 50_account... COMPLETED
-Tap on (Optional) "Downloads"... WARNED
+Scrolling UP until "Account" is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... WARNED
 
 
- Warning: Element not found: Text matching regex: Downloads
-Wait for animation to end within 8000 ms... COMPLETED
-Take screenshot 51_downloads... COMPLETED
-Wait for animation to end within 20000 ms... COMPLETED
-Take screenshot 52_downloads_20s... COMPLETED
+ Warning: No visible element found: "Account"
+Tap on "Account"... FAILED
+
+Element not found: Text matching regex: Account
+
+Element with Text matching regex: Account not found. Check the UI hierarchy in debug artifacts to verify if the element exists.
+
+Possible causes:
+- Element selector may be incorrect - check if there are similar elements with slightly different names/properties.
+- Element may be temporarily unavailable due to loading state.
+- This could be a real regression that needs to be addressed.
+
+==== Debug output (logs & screenshots) ====
+
+/home/runner/work/innocent/innocent/out/maestro_out/2026-10-03_184750
