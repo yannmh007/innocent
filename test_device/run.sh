@@ -54,9 +54,15 @@ adb shell dumpsys meminfo "$PKG" > "$OUT/meminfo.txt" 2>&1
 adb shell dumpsys gfxinfo "$PKG" > "$OUT/gfxinfo.txt" 2>&1
 adb shell dumpsys activity processes "$PKG" | grep -iE "anr|crash" > "$OUT/anr_crash.txt" 2>&1 || true
 # Logs, with anything that looks like a link or a token cut out.
+# Native crashes: the tombstone says which library and which instruction.
+adb root >/dev/null 2>&1; sleep 2
+mkdir -p "$OUT/tombstones"
+for t in $(adb shell ls /data/tombstones 2>/dev/null | tr -d '\r' | grep tombstone | grep -v '\.pb$'); do
+  adb shell cat "/data/tombstones/$t" 2>/dev/null | head -150 > "$OUT/tombstones/$t.txt"
+done
 adb logcat -d -v time > "$OUT/logcat_raw.txt" 2>&1
 sed -E 's#https?://[^ "]+#<url>#g; s#[A-Za-z0-9_-]{40,}#<token>#g' "$OUT/logcat_raw.txt" \
-  | grep -iE "innocent|flutter|mpv|AndroidRuntime|FATAL|ANR|crash|exception" > "$OUT/logcat.txt"
+  | grep -iE "innocent|flutter|mpv|AndroidRuntime|FATAL|ANR|crash|exception| DEBUG|libc" > "$OUT/logcat.txt"
 rm -f "$OUT/logcat_raw.txt"
 
 # Screenshots at phone-half size: enough to read, small enough to commit.
