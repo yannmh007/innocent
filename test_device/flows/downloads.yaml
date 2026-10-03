@@ -2,9 +2,14 @@
 # Downloads. Two looks, twenty seconds apart, to read the speed it shows.
 appId: com.innocent.media
 ---
-- back
-- waitForAnimationToEnd:
-    timeout: 5000
+- repeat:
+    times: 4
+    while:
+      notVisible: "Account"
+    commands:
+      - back
+      - waitForAnimationToEnd:
+          timeout: 3000
 - scrollUntilVisible:
     element:
       text: "Account"

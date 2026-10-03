@@ -1066,6 +1066,12 @@ class OfflineDownloader {
             RangedFetch.worthSplitting(total - received, partBytes: _partBytes);
         final split = canSplit && !ForegroundStream.active;
         final rejoin = canSplit && !split;
+        // One line per pass: how it fetched and from where. With the line at
+        // its end, a trace says why a download ran at the speed it did.
+        PlaybackLog.add('dl pass ${split ? 'x$_lanes' : rejoin ? 'x1 (watching)' : 'x1'} '
+            'from ${received >> 20}/${total == null ? '?' : total >> 20} MB '
+            'http ${response.statusCode}');
+        final passStarted = DateTime.now();
         final body = split
             ? RangedFetch.ordered(
                 client: _http,
@@ -1146,6 +1152,7 @@ class OfflineDownloader {
           broke = true;
           if (e is RangedFetchException && e.refused) _rangesRefused.add(key);
           if (kDebugMode) debugPrint('offline stream broke at $received: $e');
+          PlaybackLog.add('dl broke: ${e.runtimeType}');
         } finally {
           // What gathered but was not yet written: written now, so a pass that
           // ends — cleanly, by cancel, or by a dropped connection — leaves the
@@ -1160,6 +1167,13 @@ class OfflineDownloader {
           await sink.close();
         }
 
+        {
+          final secs = DateTime.now().difference(passStarted).inMilliseconds / 1000;
+          final got = received - beforePass;
+          PlaybackLog.add('dl pass end +${got >> 20} MB in ${secs.toStringAsFixed(0)} s '
+              '(${secs > 0 ? (got / secs / 1048576).toStringAsFixed(2) : '-'} MB/s)'
+              '${broke ? ' broke' : ''}${sealBroke ? ' seal' : ''}${ranOut ? ' full' : ''}');
+        }
         if (_cancelled.contains(key)) return null;
         // REAL PROGRESS CLEARS THE BUDGET. A download that is moving, however
         // slowly and however often it is interrupted, is a download that is

@@ -72,6 +72,9 @@ for t in $(adb shell ls /data/tombstones 2>/dev/null | tr -d '\r' | grep tombsto
   adb shell cat "/data/tombstones/$t" 2>/dev/null | head -150 > "$OUT/tombstones/$t.txt"
 done
 adb logcat -d -v time > "$OUT/logcat_raw.txt" 2>&1
+# The app's own trail (lab builds echo PlaybackLog to logcat): what each
+# download pass did, when the viewer started and stopped watching.
+grep -o 'LAB .*' "$OUT/logcat_raw.txt" | sed -E 's#https?://[^ "]+#<url>#g' > "$OUT/lab_trace.txt" || true
 sed -E 's#https?://[^ "]+#<url>#g; s#[A-Za-z0-9_-]{40,}#<token>#g' "$OUT/logcat_raw.txt" \
   | grep -iE "innocent|flutter|mpv|AndroidRuntime|FATAL|ANR|crash|exception| DEBUG|libc" > "$OUT/logcat.txt"
 rm -f "$OUT/logcat_raw.txt"

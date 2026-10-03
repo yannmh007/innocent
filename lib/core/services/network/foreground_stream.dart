@@ -1,3 +1,5 @@
+import '../diagnostics/playback_log.dart';
+
 /// Whether the viewer is watching something over the network right now, and
 /// how much a background download should hold back while they are.
 ///
@@ -38,7 +40,12 @@ class ForegroundStream {
   /// still a gigabyte an hour and a half.
   static const int yieldBytesPerSecond = 192 * 1024;
 
-  static void touch() => _last = DateTime.now();
+  static void touch() {
+    // The edge, not every chunk: whether a download yielded, and when it
+    // stopped, is what a trace needs to answer.
+    if (!active) PlaybackLog.add('fg stream: watching');
+    _last = DateTime.now();
+  }
 
   static bool get active {
     final t = _last;
