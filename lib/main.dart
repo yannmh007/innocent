@@ -10,6 +10,7 @@ import 'package:go_router/go_router.dart';
 import 'package:media_kit/media_kit.dart';
 
 import 'app.dart';
+import 'core/app_version.dart';
 import 'core/services/video_player/disk_cache_dir.dart';
 import 'features/video_hub/data/cache/stream_cache_store.dart';
 import 'core/router/app_router.dart';
@@ -25,6 +26,7 @@ import 'core/services/video_player/media_kit_player_service.dart';
 import 'features/music/data/music_audio_service.dart';
 import 'features/music/presentation/music_providers.dart';
 import 'features/onboarding/onboarding_screen.dart';
+import 'features/updater/data/update_download_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -47,6 +49,10 @@ void main() async {
   // exceptions to "should be nothing", where a stray gigabyte would
   // otherwise sit on a viewer's phone with no name and no owner.
   unawaited(DiskCacheDir.sweep());
+
+  // The APK this build was installed from, and any older one, is ~90 MB of
+  // the app's storage doing nothing once the update has gone through.
+  unawaited(UpdateDownloadService.pruneInstalled(AppVersion.build));
 
   // Read the streaming cache's index now rather than on the path to the
   // first frame. It is a directory listing — milliseconds — but those are

@@ -135,6 +135,45 @@ class UpdateDownloadService {
   static final RegExp _ourFile =
       RegExp(r'^innocent-(\d+)\.apk(\.part)?$');
 
+  /// Delete every APK — finished or partial — for a build that is already
+  /// installed or older. Run once at start-up, unawaited.
+  ///
+  /// THE GAP THIS CLOSES. Other versions were only discarded when the NEXT
+  /// download began, so the APK a user had just installed from stayed in the
+  /// cache — about 90 MB, counted in the app's storage in Android Settings —
+  /// until the following release, and then the same again. Once a build is
+  /// running, its APK has done its job: an older one can never be installed
+  /// over it, and the same one is the app itself. A NEWER file is kept: it is
+  /// a finished or resumable download the user has not installed yet.
+  static Future<int> pruneInstalled(
+    int installedBuild, {
+    Future<Directory> Function()? dirOverride,
+  }) async {
+    var removed = 0;
+    try {
+      final Directory dir;
+      if (dirOverride != null) {
+        dir = await dirOverride();
+      } else {
+        final base = await getApplicationCacheDirectory();
+        dir = Directory(p.join(base.path, 'updates'));
+      }
+      if (!await dir.exists()) return 0;
+      await for (final entity in dir.list(followLinks: false)) {
+        if (entity is! File) continue;
+        final match = _ourFile.firstMatch(p.basename(entity.path));
+        final code = match == null ? null : int.tryParse(match.group(1)!);
+        if (code == null || code > installedBuild) continue;
+        await _deleteQuietly(entity);
+        removed++;
+      }
+    } catch (e) {
+      // Housekeeping. Nothing here is worth failing a launch over.
+      if (kDebugMode) debugPrint('UpdateDownloadService.pruneInstalled: $e');
+    }
+    return removed;
+  }
+
   /// Download, verify, and return the finished file.
   ///
   /// WHAT SURVIVES A FAILURE, AND WHAT DOES NOT. §5 says to delete the partial

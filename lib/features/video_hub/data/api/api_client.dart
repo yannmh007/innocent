@@ -123,6 +123,17 @@ class ApiClient {
       );
     }
 
+    // REFRESH BEFORE, NOT ONLY AFTER. An access token lives an hour, so any
+    // launch after a longer gap — every app update is one — starts with an
+    // expired token. Sending it anyway relies on the server's refusal to
+    // trigger the refresh, and that refusal is not always the 401 this
+    // method listens for (see [_isStaleToken]).
+    if (authenticated && allowRefresh && await _session.isExpired()) {
+      // A failed refresh here is not fatal: offline, the stale token still
+      // goes out and the request fails as a network error, as it always did.
+      await _refreshSession();
+    }
+
     http.Response response;
     try {
       final headers =
@@ -136,7 +147,7 @@ class ApiClient {
       throw const ApiException(ApiErrorKind.network, message: 'client error');
     }
 
-    if (response.statusCode == 401 && authenticated && allowRefresh) {
+    if (authenticated && allowRefresh && _isStaleToken(response)) {
       final refreshed = await _refreshSession();
       if (refreshed) {
         return _send(
@@ -150,6 +161,39 @@ class ApiClient {
     }
 
     return _decode(response);
+  }
+
+  /// Whether the server refused this request because the TOKEN is stale,
+  /// which a refresh fixes, as opposed to refusing the USER, which it does not.
+  ///
+  /// THE BUG THIS FIXES (2026-10-03, auth logs): after updating the app, the
+  /// first `GET /auth/v1/user` went out with an hour-old token and Supabase
+  /// Auth answered **403** `bad_jwt` "token has invalid claims: token is
+  /// expired" — not 401. Only 401 triggered a refresh, so the 403 went up as
+  /// `forbidden`, the account provider read a refusal as "not signed in", and
+  /// a user with a perfectly good refresh token was asked to sign in again.
+  /// A 403 is stale-token only when the body says so; a real 403
+  /// (`needs_premium`, a role check) must still reach the UI as itself.
+  static bool _isStaleToken(http.Response response) {
+    if (response.statusCode == 401) return true;
+    if (response.statusCode != 403) return false;
+    final body = response.body;
+    if (body.isEmpty) return false;
+    try {
+      final decoded = jsonDecode(body);
+      if (decoded is Map<String, dynamic>) {
+        final code = '${decoded['error_code'] ?? decoded['code'] ?? ''}';
+        if (code == 'bad_jwt' || code == 'PGRST301' || code == 'PGRST303') {
+          return true;
+        }
+        final msg = '${decoded['msg'] ?? decoded['message'] ?? ''}'
+            .toLowerCase();
+        return msg.contains('token is expired') || msg.contains('jwt expired');
+      }
+    } catch (_) {
+      // Not JSON: a gateway's page, not Auth's verdict on the token.
+    }
+    return false;
   }
 
   dynamic _decode(http.Response response) {
@@ -250,11 +294,20 @@ class ApiClient {
             body: jsonEncode(<String, String>{'refresh_token': refresh}),
           )
           .timeout(BackendConfig.timeout);
-      if (response.statusCode < 200 || response.statusCode >= 300) {
-        // The refresh token is dead too. Clear everything: a half-session
-        // where requests fail forever is worse than an honest signed-out
-        // state the user can act on.
+      if (response.statusCode == 400 || response.statusCode == 401) {
+        // The refresh token is dead too (Auth answers 400 for a revoked,
+        // reused or unknown one). Clear everything: a half-session where
+        // requests fail forever is worse than an honest signed-out state the
+        // user can act on.
         await _session.clear();
+        return false;
+      }
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        // ANY OTHER failure is the server's problem, not the session's: a
+        // 5xx, a 429 from a burst of launches, a gateway page. This used to
+        // clear the session too, so a minute of Auth trouble signed out
+        // everyone who opened the app during it. Keep the tokens; the next
+        // request tries again.
         return false;
       }
       await _session
