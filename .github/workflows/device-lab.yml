@@ -8,9 +8,10 @@
 #   the app with Maestro (taps, scrolls, screenshots), samples what the device
 #   really received, CPU, memory and temperature, and keeps the logs.
 #
-# THE APK IS ARM64-ONLY (see android/app/build.gradle.kts). The x86_64 system
-# image runs it through Android's ARM translation, which is slower than a
-# phone: timings here are upper bounds, behaviour and layout are real.
+# THE APK IS ARM64-ONLY (see android/app/build.gradle.kts). Android 11's
+# x86_64 system image runs it through ARM translation (the Android 13 image
+# has none: INSTALL_FAILED_NO_MATCHING_ABIS). Translation is slower than a
+# phone: timings here are upper bounds; behaviour and layout are real.
 #
 # WHERE THE RESULTS GO
 #   Committed to `test_device/results/latest/` on the branch that ran it, so
@@ -75,7 +76,7 @@ jobs:
       - name: Boot the emulator and run
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 33
+          api-level: 30
           target: google_apis
           arch: x86_64
           profile: pixel_6
