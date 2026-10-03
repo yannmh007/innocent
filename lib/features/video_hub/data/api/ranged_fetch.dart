@@ -62,6 +62,12 @@ class RangedFetch {
   /// renews it exactly as it does for a dropped connection.
   static const int defaultLanes = 3;
 
+  /// How long a connection may go without a single byte before it is taken
+  /// for dead. See [OfflineDownloader] — a mobile link that dies silently
+  /// (a cell handover, Wi-Fi to data) leaves a socket that never errors, and
+  /// without this a download would sit at the same percentage for ever.
+  static const Duration defaultStallAfter = Duration(seconds: 30);
+
   /// Whether a download of [remaining] bytes is worth splitting at all.
   static bool worthSplitting(int remaining, {int partBytes = defaultPartBytes}) =>
       remaining >= partBytes * 4;
@@ -76,10 +82,15 @@ class RangedFetch {
 
   /// The bytes of [url] from [start] to [total], in order.
   ///
-  /// [head] is an already-open response body starting at [start]. While
-  /// [narrow] returns true (the viewer is streaming something) no new lanes
-  /// open, so the download falls back to one connection and its pace is the
-  /// consumer's to set.
+  /// [head] is an already-open response body starting at [start].
+  ///
+  /// WHEN [narrow] TURNS TRUE — the viewer has started streaming something —
+  /// no new part is asked for. The parts already on their way are let finish
+  /// (abandoning them would pay for their bytes twice) and handed on, and
+  /// then the stream ENDS, cleanly and short of [total]. The downloader takes
+  /// a short clean end as "carry on from here" and opens its next pass as a
+  /// single paced connection — which, unlike parts held in memory, a slow
+  /// reader genuinely slows down.
   static Stream<List<int>> ordered({
     required http.Client client,
     required Uri url,
@@ -89,6 +100,7 @@ class RangedFetch {
     int partBytes = defaultPartBytes,
     int lanes = defaultLanes,
     bool Function()? narrow,
+    Duration stallAfter = defaultStallAfter,
   }) async* {
     final stop = Completer<void>();
     final queue = <_Part>[];
@@ -98,10 +110,7 @@ class RangedFetch {
     var failed = false;
 
     // Connections at once. While the head is still open it is one of them.
-    int width() {
-      final n = (narrow?.call() ?? false) ? 1 : lanes;
-      return headOpen ? n - 1 : n;
-    }
+    int width() => headOpen ? lanes - 1 : lanes;
 
     // HOW FAR AHEAD. A lane that finishes its part while an earlier one is
     // still coming starts the next part rather than idling — one slow lane
@@ -110,13 +119,13 @@ class RangedFetch {
     final window = lanes * 2;
 
     void topUp() {
-      if (stop.isCompleted || failed) return;
+      if (stop.isCompleted || failed || (narrow?.call() ?? false)) return;
       while (next < total &&
           queue.length < window &&
           queue.where((p) => !p.settled).length < width()) {
         final end = next + partBytes < total ? next + partBytes : total;
         queue.add(_Part.fetch(client, url, next, end, total, stop.future,
-            onSettled: (ok) {
+            stallAfter: stallAfter, onSettled: (ok) {
           // One part refused (an expired link, a dropped lane): the rest
           // would be refused too. Stop asking; what came back is still used.
           if (!ok) failed = true;
@@ -132,7 +141,7 @@ class RangedFetch {
       // The head, passed straight through until it reaches the first lane's
       // territory.
       var at = start;
-      final it = StreamIterator<List<int>>(head);
+      final it = StreamIterator<List<int>>(head.timeout(stallAfter));
       try {
         while (at < headEnd && await it.moveNext()) {
           final chunk = it.current;
@@ -196,9 +205,10 @@ class _Part {
     int end, // exclusive
     int total,
     Future<void> stop, {
+    required Duration stallAfter,
     required void Function(bool ok) onSettled,
   }) {
-    final f = _get(client, url, start, end, total, stop);
+    final f = _get(client, url, start, end, total, stop, stallAfter);
     final part = _Part(f);
     // Held until its turn; an error before then must not count as unhandled.
     f.then((_) {
@@ -218,11 +228,23 @@ class _Part {
     int end,
     int total,
     Future<void> stop,
+    Duration stallAfter,
   ) async {
     final want = end - start;
-    final req = http.AbortableRequest('GET', url, abortTrigger: stop)
+    // Aborted when the whole fetch stops, or when this part goes quiet.
+    final abort = Completer<void>();
+    unawaited(stop.then((_) {
+      if (!abort.isCompleted) abort.complete();
+    }));
+    final req = http.AbortableRequest('GET', url, abortTrigger: abort.future)
       ..headers['Range'] = 'bytes=$start-${end - 1}';
-    final res = await client.send(req);
+    final http.StreamedResponse res;
+    try {
+      res = await client.send(req).timeout(stallAfter);
+    } on TimeoutException {
+      if (!abort.isCompleted) abort.complete();
+      rethrow;
+    }
     if (res.statusCode != 206) {
       unawaited(res.stream.listen(null).cancel());
       throw RangedFetchException('HTTP ${res.statusCode} for a range',
@@ -237,7 +259,7 @@ class _Part {
           'got ${res.headers['content-range']}');
     }
     final out = BytesBuilder(copy: false);
-    await for (final chunk in res.stream) {
+    await for (final chunk in res.stream.timeout(stallAfter)) {
       out.add(chunk);
       if (out.length > want) break;
     }

@@ -188,10 +188,12 @@ class OfflineDownloader {
     DownloadAllowance? allowance,
     int lanes = RangedFetch.defaultLanes,
     int partBytes = RangedFetch.defaultPartBytes,
+    Duration stallAfter = RangedFetch.defaultStallAfter,
   })  : _http = httpClient ?? http.Client(),
         _allowance = allowance ?? _alwaysAllowed,
         _lanes = lanes,
-        _partBytes = partBytes;
+        _partBytes = partBytes,
+        _stallAfter = stallAfter;
 
   final ContentRepository _repo;
   final OfflineLibrary _library;
@@ -202,6 +204,13 @@ class OfflineDownloader {
   /// See [RangedFetch]. One means a single plain response, as before.
   final int _lanes;
   final int _partBytes;
+
+  /// A connection with no byte for this long is dead, and the pass ends so
+  /// the resume loop can open a new one. Without it, a mobile link that died
+  /// silently — a cell handover, Wi-Fi to data — left a socket that never
+  /// errored, and the download sat at the same percentage until the app was
+  /// killed. Thirty seconds of nothing is far past any real pause.
+  final Duration _stallAfter;
 
   /// Downloads whose server answered a range with the whole file. Asked once;
   /// after that they keep to one connection rather than pay for it again.
@@ -537,7 +546,11 @@ class OfflineDownloader {
       }
       IOSink? sink;
       try {
-        final response = await _http.send(http.Request('GET', Uri.parse(url)));
+        // Bounded like a film: a photo whose connection went quiet would
+        // otherwise hold the whole album's queue behind it.
+        final response = await _http
+            .send(http.Request('GET', Uri.parse(url)))
+            .timeout(_stallAfter);
         if (response.statusCode != 200) {
           try {
             await response.stream.drain<void>();
@@ -551,7 +564,7 @@ class OfflineDownloader {
         sink = part.openWrite();
         var got = 0;
         var broke = false;
-        await for (final chunk in response.stream) {
+        await for (final chunk in response.stream.timeout(_stallAfter)) {
           if (_cancelled.contains(key)) {
             broke = true;
             break;
@@ -856,7 +869,9 @@ class OfflineDownloader {
           continue;
         }
 
-        final request = http.Request('GET', Uri.parse(url));
+        final abort = Completer<void>();
+        final request =
+            http.AbortableRequest('GET', Uri.parse(url), abortTrigger: abort.future);
         if (received > 0) {
           // Resume. A server that ignores this answers 200 with the whole file,
           // which is handled below by starting the file over rather than
@@ -866,8 +881,9 @@ class OfflineDownloader {
 
         http.StreamedResponse response;
         try {
-          response = await _http.send(request);
+          response = await _http.send(request).timeout(_stallAfter);
         } catch (e) {
+          if (!abort.isCompleted) abort.complete();
           if (kDebugMode) debugPrint('offline attempt: $e');
           failures++;
           continue;
@@ -1035,15 +1051,21 @@ class OfflineDownloader {
         //
         // See [RangedFetch]: the rest of the film in parts, two or three at
         // once, handed on in order — so everything below sees one stream of
-        // bytes exactly as before. Not for a film nearly done, not for a
-        // server that has already refused a range, and not while the viewer
-        // is streaming: then it narrows to one connection and the pacing
-        // below decides its speed.
-        final split = _lanes > 1 &&
+        // bytes exactly as before. Not for a film nearly done, and not for a
+        // server that has already refused a range.
+        //
+        // NOT WHILE THE VIEWER IS STREAMING, either way round. A pass that
+        // starts while they watch is one connection, paced below; once they
+        // stop, it ends cleanly and the next pass splits ([rejoin]). A split
+        // pass that sees them start ends cleanly after the parts already on
+        // their way (see [RangedFetch.ordered]), and the next pass is paced.
+        final canSplit = _lanes > 1 &&
             total != null &&
             !_rangesRefused.contains(key) &&
             RangedFetch.acceptsRanges(response) &&
             RangedFetch.worthSplitting(total - received, partBytes: _partBytes);
+        final split = canSplit && !ForegroundStream.active;
+        final rejoin = canSplit && !split;
         final body = split
             ? RangedFetch.ordered(
                 client: _http,
@@ -1054,8 +1076,9 @@ class OfflineDownloader {
                 partBytes: _partBytes,
                 lanes: _lanes,
                 narrow: () => ForegroundStream.active,
+                stallAfter: _stallAfter,
               )
-            : response.stream;
+            : response.stream.timeout(_stallAfter);
 
         try {
           await for (final chunk in body) {
@@ -1091,6 +1114,10 @@ class OfflineDownloader {
             } else {
               paceFrom = DateTime.now();
               paceBase = received;
+              // They stopped watching: end this one-connection pass cleanly
+              // and let the next one split. Only once it has moved enough to
+              // count as progress, so this can never turn into a retry delay.
+              if (rejoin && received - beforePass >= _realProgress) break;
             }
             if (received - lastSpaceCheck >= _spaceCheckEvery) {
               lastSpaceCheck = received;

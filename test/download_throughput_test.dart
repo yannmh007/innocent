@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -55,7 +56,7 @@ class _Repo implements ContentRepository {
 /// Serves [body] in 4 KB chunks, the way a mobile socket hands it over —
 /// honouring `bytes=a-` and `bytes=a-b`, and counting what it does.
 class _Chunky extends http.BaseClient {
-  _Chunky(this.body, {this.ignoreBoundedRanges = false, this.failPartAt, this.slowPartAt});
+  _Chunky(this.body, {this.ignoreBoundedRanges = false, this.failPartAt, this.slowPartAt, this.stallAt, this.pieceDelay = Duration.zero});
   final Uint8List body;
   static const int piece = 4096;
 
@@ -64,6 +65,13 @@ class _Chunky extends http.BaseClient {
 
   /// The first request starting here dies halfway through its body.
   int? failPartAt;
+
+  /// The first request starting here goes silent halfway: no error, no bytes,
+  /// a socket a dead mobile link leaves behind.
+  int? stallAt;
+
+  /// Between packets: a line of a given speed.
+  final Duration pieceDelay;
 
   /// The request starting here takes its time: a lossy lane.
   final int? slowPartAt;
@@ -110,7 +118,7 @@ class _Chunky extends http.BaseClient {
           }
           // A real socket yields to the event loop between packets; this is
           // what lets several lanes run at once.
-          await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(pieceDelay);
           final e = i + piece > last + 1 ? last + 1 : i + piece;
           served += e - i;
           yield body.sublist(i, e);
@@ -121,9 +129,30 @@ class _Chunky extends http.BaseClient {
       }
     }
 
+    Stream<List<int>> silent() {
+      // ignore: close_sinks — never closed on purpose: a dead socket.
+      late final StreamController<List<int>> c;
+      c = StreamController<List<int>>(onCancel: () {
+        inFlight--;
+      });
+      inFlight++;
+      () async {
+        for (var i = from; i < from + (last - from) ~/ 2; i += piece) {
+          await Future<void>.delayed(Duration.zero);
+          if (c.isClosed || !c.hasListener) return;
+          served += piece;
+          c.add(body.sublist(i, i + piece));
+        }
+        // ...and then nothing, for ever.
+      }();
+      return c.stream;
+    }
+
+    final stall = stallAt == from;
+    if (stall) stallAt = null;
     final n = last - from + 1;
     return http.StreamedResponse(
-      pieces(),
+      stall ? silent() : pieces(),
       status,
       contentLength: n,
       headers: <String, String>{
@@ -344,4 +373,71 @@ void main() {
     expect(parseContentRange('bytes */146515'), isNull);
     expect(parseContentRange(null), isNull);
   });
+
+  for (final lanes in const [1, 3]) {
+    test('a connection that goes silent is dropped and the film finishes ($lanes lane${lanes == 1 ? '' : 's'})',
+        () async {
+      final data = body(1024 * 1024);
+      // A resume-shaped stall for one lane; mid-film for the other.
+      final net = _Chunky(data, stallAt: lanes == 1 ? 0 : 6 * part);
+      final d = OfflineDownloader(_Repo(), OfflineLibrary(),
+          httpClient: net,
+          lanes: lanes,
+          partBytes: part,
+          stallAfter: const Duration(milliseconds: 300));
+      final log = <String>[];
+      final item = await d
+          .download(content: film, source: source, onProgress: (p) => log.add('${p.received} ${p.error}'))
+          .timeout(const Duration(seconds: 30));
+      await expectExact(item, data, log);
+      expect(net.stallAt, isNull, reason: 'the stall never happened');
+    }, timeout: const Timeout(Duration(seconds: 60)));
+  }
+
+  test('the viewer starts streaming mid-download: no more parts are asked for', () async {
+    final data = body(2 * 1024 * 1024);
+    // About 0.8 MB/s a lane: the film takes most of a second unhindered.
+    final net = _Chunky(data, pieceDelay: const Duration(milliseconds: 5));
+    final d = OfflineDownloader(_Repo(), OfflineLibrary(),
+        httpClient: net, lanes: 3, partBytes: part);
+    Timer? keepAlive;
+    int? requestsThen; // requests made once they had been watching a moment
+    Timer(const Duration(milliseconds: 150), () {
+      ForegroundStream.touch();
+      keepAlive = Timer.periodic(
+          const Duration(milliseconds: 200), (_) => ForegroundStream.touch());
+    });
+    // The parts already on their way have landed by now.
+    Timer(const Duration(milliseconds: 500), () => requestsThen = net.requests);
+    final log = <String>[];
+    final item = await d.download(
+        content: film, source: source, onProgress: (p) => log.add('${p.received} ${p.error}'));
+    keepAlive?.cancel();
+    await expectExact(item, data, log);
+    expect(requestsThen, isNotNull, reason: 'finished before the viewer started');
+    // At most the one paced single-connection pass — no more parts racing
+    // the film for the line.
+    expect(net.requests - requestsThen!, lessThanOrEqualTo(1),
+        reason: 'parts kept being fetched while the viewer was streaming');
+  }, timeout: const Timeout(Duration(seconds: 60)));
+
+  test('the viewer stops streaming: the download splits again', () async {
+    final data = body(2 * 1024 * 1024);
+    final net = _Chunky(data);
+    final d = OfflineDownloader(_Repo(), OfflineLibrary(),
+        httpClient: net, lanes: 3, partBytes: part);
+    ForegroundStream.touch();
+    final keepAlive = Timer.periodic(
+        const Duration(milliseconds: 200), (_) => ForegroundStream.touch());
+    Timer(const Duration(milliseconds: 1500), () {
+      keepAlive.cancel();
+      ForegroundStream.reset(); // the film closed
+    });
+    final log = <String>[];
+    final item = await d.download(
+        content: film, source: source, onProgress: (p) => log.add('${p.received} ${p.error}'));
+    keepAlive.cancel();
+    await expectExact(item, data, log);
+    expect(net.maxInFlight, 3, reason: 'stayed on one connection after the film closed');
+  }, timeout: const Timeout(Duration(seconds: 60)));
 }
