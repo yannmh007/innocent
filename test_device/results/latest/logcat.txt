@@ -1,120 +1,178 @@
-10-03 16:36:44.222 D/AndroidRuntime( 5526): >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-10-03 16:36:44.223 I/AndroidRuntime( 5526): Using default boot image
-10-03 16:36:44.223 I/AndroidRuntime( 5526): Leaving lock profiling enabled
-10-03 16:36:44.291 D/AndroidRuntime( 5526): Calling main entry com.android.commands.am.Am
-10-03 16:36:45.504 W/GH.DelegateICarSupplier( 4370): java.lang.IllegalArgumentException: Service not registered: bdx@ba1b39c
-10-03 16:36:45.679 I/MediaProvider( 1671): Invalidating LocalCallingIdentity cache for package com.innocent.media. Reason: op android:read_external_storage
-10-03 16:36:45.796 I/ActivityManager(  497): Force stopping com.innocent.media appid=10167 user=0: from pid 5741
-10-03 16:36:45.827 I/ActivityTaskManager(  497): START u0 {act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10000000 pkg=com.innocent.media cmp=com.innocent.media/.MainActivity} from uid 10168
-10-03 16:36:45.886 I/ActivityManager(  497): Start proc 5754:com.innocent.media/u0a167 for pre-top-activity {com.innocent.media/com.innocent.media.MainActivity}
-10-03 16:36:45.906 W/.innocent.medi( 5754): Unexpected CPU variant for X86 using defaults: x86_64
-10-03 16:36:46.075 I/.innocent.medi( 5754): The ClassLoaderContext is a special shared library.
-10-03 16:36:46.384 W/.innocent.media( 5754): type=1400 audit(0.0:60): avc: denied { getattr } for path="/proc/sys/vm/max_map_count" dev="proc" ino=104954 scontext=u:r:untrusted_app:s0:c167,c256,c512,c768 tcontext=u:object_r:proc_max_map_count:s0 tclass=file permissive=0 app=com.innocent.media
-10-03 16:36:46.384 W/.innocent.media( 5754): type=1400 audit(0.0:61): avc: denied { read } for name="max_map_count" dev="proc" ino=104954 scontext=u:r:untrusted_app:s0:c167,c256,c512,c768 tcontext=u:object_r:proc_max_map_count:s0 tclass=file permissive=0 app=com.innocent.media
-10-03 16:36:46.449 E/flutter ( 5754): [ERROR:flutter/impeller/toolkit/egl/egl.cc(56)] EGL Error: Success (12288) in ../../../flutter/impeller/toolkit/egl/display.cc:161
-10-03 16:36:46.450 E/flutter ( 5754): [ERROR:flutter/impeller/toolkit/egl/egl.cc(56)] EGL Error: Success (12288) in ../../../flutter/impeller/toolkit/egl/display.cc:161
-10-03 16:36:46.524 I/flutter ( 5754): [IMPORTANT:flutter/shell/platform/android/android_context_gl_impeller.cc(94)] Using the Impeller rendering backend (OpenGLES).
+10-03 16:42:03.900 D/AndroidRuntime( 5680): >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-03 16:42:03.909 E/libc    ( 5680): Access denied finding property "persist.device_config.runtime_native_boot.profilebootclasspath"
+10-03 16:42:03.909 E/libc    ( 5680): Access denied finding property "persist.device_config.runtime_native_boot.enable_apex_image"
+10-03 16:42:03.909 I/AndroidRuntime( 5680): Using default boot image
+10-03 16:42:03.910 E/libc    ( 5680): Access denied finding property "persist.device_config.runtime_native_boot.disable_lock_profiling"
+10-03 16:42:03.910 I/AndroidRuntime( 5680): Leaving lock profiling enabled
+10-03 16:42:03.910 E/libc    ( 5680): Access denied finding property "persist.device_config.runtime_native_boot.enable_generational_cc"
+10-03 16:42:03.983 D/AndroidRuntime( 5680): Calling main entry com.android.commands.am.Am
+10-03 16:42:05.723 I/MediaProvider( 1681): Invalidating LocalCallingIdentity cache for package com.innocent.media. Reason: op android:read_external_storage
+10-03 16:42:05.760 W/YouTubeMusic( 4925): rff: java.util.concurrent.ExecutionException: qjl: Precondition check failed.
+10-03 16:42:05.760 W/YouTubeMusic( 4925): Caused by: java.util.concurrent.ExecutionException: qjl: Precondition check failed.
+10-03 16:42:05.924 I/ActivityManager(  496): Force stopping com.innocent.media appid=10167 user=0: from pid 5899
+10-03 16:42:05.965 I/ActivityTaskManager(  496): START u0 {act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10000000 pkg=com.innocent.media cmp=com.innocent.media/.MainActivity} from uid 10168
+10-03 16:42:06.043 I/ActivityManager(  496): Start proc 5912:com.innocent.media/u0a167 for pre-top-activity {com.innocent.media/com.innocent.media.MainActivity}
+10-03 16:42:06.079 W/.innocent.medi( 5912): Unexpected CPU variant for X86 using defaults: x86_64
+10-03 16:42:06.304 I/.innocent.medi( 5912): The ClassLoaderContext is a special shared library.
+10-03 16:42:06.860 W/.innocent.media( 5912): type=1400 audit(0.0:57): avc: denied { getattr } for path="/proc/sys/vm/max_map_count" dev="proc" ino=105409 scontext=u:r:untrusted_app:s0:c167,c256,c512,c768 tcontext=u:object_r:proc_max_map_count:s0 tclass=file permissive=0 app=com.innocent.media
+10-03 16:42:06.860 W/.innocent.media( 5912): type=1400 audit(0.0:58): avc: denied { read } for name="max_map_count" dev="proc" ino=105409 scontext=u:r:untrusted_app:s0:c167,c256,c512,c768 tcontext=u:object_r:proc_max_map_count:s0 tclass=file permissive=0 app=com.innocent.media
+10-03 16:42:06.965 E/flutter ( 5912): [ERROR:flutter/impeller/toolkit/egl/egl.cc(56)] EGL Error: Success (12288) in ../../../flutter/impeller/toolkit/egl/display.cc:161
+10-03 16:42:06.968 E/flutter ( 5912): [ERROR:flutter/impeller/toolkit/egl/egl.cc(56)] EGL Error: Success (12288) in ../../../flutter/impeller/toolkit/egl/display.cc:161
+10-03 16:42:07.054 I/flutter ( 5912): [IMPORTANT:flutter/shell/platform/android/android_context_gl_impeller.cc(94)] Using the Impeller rendering backend (OpenGLES).
+10-03 16:42:08.691 I/System.out( 5912): flutterEngine warmed up
 --------- beginning of crash
-10-03 16:36:47.635 F/linker  ( 5803): CANNOT LINK EXECUTABLE "/system/bin/<token>": "/data/data/com.innocent.media/no_backup/youtubedl-android/packages/ffmpeg/usr/lib/libandroid.so" is for EM_AARCH64 (183) instead of EM_X86_64 (62)
-10-03 16:36:48.028 I/System.out( 5754): flutterEngine warmed up
-10-03 16:36:48.534 F/libc    ( 5754): Fatal signal 4 (SIGILL), code -6 (SI_TKILL) in tid 5754 (.innocent.media), pid 5754 (.innocent.media)
-10-03 16:36:48.555 I/crash_dump64( 5820): obtaining output fd from tombstoned, type: kDebuggerdTombstone
-10-03 16:36:48.556 I/tombstoned(  278): received crash request for pid 5754
-10-03 16:36:48.556 I/crash_dump64( 5820): performing dump of process 5754 (target tid = 5754)
-10-03 16:36:48.559 F/DEBUG   ( 5820): pid: 5754, tid: 5754, name: .innocent.media  >>> com.innocent.media <<<
-10-03 16:36:48.695 W/ActivityTaskManager(  497):   Force finishing activity com.innocent.media/.MainActivity
-10-03 16:36:48.698 I/DropBoxManagerService(  497): add tag=data_app_native_crash isTagEnabled=true flags=0x2
-10-03 16:36:48.787 I/WindowManager(  497): WIN DEATH: Window{7e68fa0 u0 com.innocent.media/com.innocent.media.MainActivity}
-10-03 16:36:48.787 W/InputDispatcher(  497): Attempted to unregister already unregistered input channel '7e68fa0 com.innocent.media/com.innocent.media.MainActivity (server)'
-10-03 16:36:48.788 I/ActivityManager(  497): Process com.innocent.media (pid 5754) has died: prcp TOP 
-10-03 16:36:48.795 V/MediaSessionRecord(  497): Removing dead callback in pushSessionDestroyed, this=com.innocent.media/media-session (userId=0), callback package=com.innocent.media, exception=android.os.DeadObjectException
-10-03 16:36:48.866 W/ActivityManager(  497): Ignoring remove of inactive process: ProcessRecord{cf05697 0:com.innocent.media/u0a167}
-10-03 16:36:49.197 W/ActivityTaskManager(  497): Activity top resumed state loss timeout for ActivityRecord{be56d16 u0 com.innocent.media/.MainActivity t-1 f}}
-10-03 16:37:06.843 E/AwarenessRouterSyncMgr( 5937): Exception while syncing fences
-10-03 16:37:06.843 E/AwarenessRouterSyncMgr( 5937): java.util.concurrent.ExecutionException: java.lang.IllegalStateException: Account associated with identity was null
-10-03 16:37:06.843 E/AwarenessRouterSyncMgr( 5937): Caused by: java.lang.IllegalStateException: Account associated with identity was null
-10-03 16:37:09.962 W/YouTubeMusic( 5937): rff: java.util.concurrent.ExecutionException: qjl: Precondition check failed.
-10-03 16:37:09.962 W/YouTubeMusic( 5937): Caused by: java.util.concurrent.ExecutionException: qjl: Precondition check failed.
-10-03 16:37:11.654 W/YouTubeMusic( 5937): rff: java.util.concurrent.ExecutionException: qjl: Precondition check failed.
-10-03 16:37:11.654 W/YouTubeMusic( 5937): Caused by: java.util.concurrent.ExecutionException: qjl: Precondition check failed.
-10-03 16:37:12.193 W/ConnectionTracker( 5937): Exception thrown while unbinding
-10-03 16:37:12.193 W/ConnectionTracker( 5937): java.lang.IllegalArgumentException: Service not registered: lbw@ff545c0
-10-03 16:37:14.256 W/YouTubeMusic( 5937): rff: java.util.concurrent.ExecutionException: qjl: Precondition check failed.
-10-03 16:37:14.256 W/YouTubeMusic( 5937): Caused by: java.util.concurrent.ExecutionException: qjl: Precondition check failed.
-10-03 16:37:14.864 D/AndroidRuntime( 6117): >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-10-03 16:37:14.865 I/AndroidRuntime( 6117): Using default boot image
-10-03 16:37:14.865 I/AndroidRuntime( 6117): Leaving lock profiling enabled
-10-03 16:37:14.905 D/AndroidRuntime( 6117): Calling main entry com.android.commands.input.Input
-10-03 16:37:15.382 D/AndroidRuntime( 6117): Shutting down VM
-10-03 16:37:16.971 W/GLSUser ( 1124): java.io.IOException: Invalid scope
-10-03 16:37:16.994 W/Conscrypt( 1124): Could not set socket write timeout: java.net.SocketException: Socket closed
-10-03 16:37:17.009 W/Conscrypt( 1124): Could not set socket write timeout: java.net.SocketException: Socket closed
-10-03 16:37:17.015 W/Conscrypt( 1124): Could not set socket write timeout: java.net.SocketException: Socket closed
-10-03 16:37:17.029 W/Conscrypt( 1124): Could not set socket write timeout: java.net.SocketException: Socket closed
-10-03 16:37:17.047 W/GLSUser ( 1124): [AppCertManager] IOException while requesting key: 
-10-03 16:37:17.047 W/GLSUser ( 1124): java.io.IOException: Invalid device key response.
-10-03 16:37:17.328 W/Conscrypt( 1124): Could not set socket write timeout: java.net.SocketException: Socket closed
-10-03 16:37:17.598 W/ActivityManager(  497): Crash of app dev.mobile.maestro running instrumentation ComponentInfo{dev.mobile.maestro.test/androidx.test.runner.AndroidJUnitRunner}
-10-03 16:37:17.598 E/AppOps  (  497): java.lang.SecurityException: Specified package dev.mobile.maestro under uid 10168 but it is really -1
-10-03 16:37:17.599 W/Binder  ( 5526): Caught a RuntimeException from the binder stub implementation.
-10-03 16:37:17.599 W/Binder  ( 5526): java.lang.SecurityException: Calling from not trusted UID!
-10-03 16:37:17.601 I/AndroidRuntime( 5526): VM exiting with result code 0.
-10-03 16:37:17.856 W/Conscrypt( 1124): Could not set socket write timeout: java.net.SocketException: Socket closed
-10-03 16:37:17.918 D/ModelWriter(  937): java.lang.Exception
-10-03 16:37:18.087 D/ModelWriter(  937): java.lang.Exception
-10-03 16:37:21.771 W/YouTubeMusic( 5937): rff: java.util.concurrent.ExecutionException: qjl: Precondition check failed.
-10-03 16:37:21.771 W/YouTubeMusic( 5937): Caused by: java.util.concurrent.ExecutionException: qjl: Precondition check failed.
-10-03 16:37:21.826 D/AndroidRuntime( 6583): >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-10-03 16:37:21.827 I/AndroidRuntime( 6583): Using default boot image
-10-03 16:37:21.827 I/AndroidRuntime( 6583): Leaving lock profiling enabled
-10-03 16:37:21.867 D/AndroidRuntime( 6583): Calling main entry com.android.commands.am.Am
-10-03 16:37:22.322 E/com.google.common.v.a.d( 1927): RuntimeException while executing runnable bq{com.google.android.libraries.mdi.download.i.ax@5a3f1ec} with executor MoreExecutors.directExecutor()
-10-03 16:37:22.322 E/com.google.common.v.a.d( 1927): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.s.b' on a null object reference
-10-03 16:37:22.322 E/com.google.common.v.a.d( 1927): RuntimeException while executing runnable bq{com.google.android.libraries.mdi.download.i.ax@2fa484a} with executor MoreExecutors.directExecutor()
-10-03 16:37:22.322 E/com.google.common.v.a.d( 1927): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.s.b' on a null object reference
-10-03 16:37:22.323 E/com.google.common.v.a.d( 1927): RuntimeException while executing runnable bq{com.google.android.libraries.mdi.download.i.ax@ed440d8} with executor MoreExecutors.directExecutor()
-10-03 16:37:22.323 E/com.google.common.v.a.d( 1927): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.s.b' on a null object reference
-10-03 16:37:22.323 E/com.google.common.v.a.d( 1927): RuntimeException while executing runnable bq{com.google.android.libraries.mdi.download.i.ax@9c9f16} with executor MoreExecutors.directExecutor()
-10-03 16:37:22.323 E/com.google.common.v.a.d( 1927): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.s.b' on a null object reference
-10-03 16:37:22.323 E/com.google.common.v.a.d( 1927): RuntimeException while executing runnable bq{com.google.android.libraries.mdi.download.i.ax@3b89284} with executor MoreExecutors.directExecutor()
-10-03 16:37:22.323 E/com.google.common.v.a.d( 1927): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.s.b' on a null object reference
-10-03 16:37:22.324 E/com.google.common.v.a.d( 1927): RuntimeException while executing runnable bq{com.google.android.libraries.mdi.download.i.ax@23b96a2} with executor MoreExecutors.directExecutor()
-10-03 16:37:22.324 E/com.google.common.v.a.d( 1927): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.s.b' on a null object reference
-10-03 16:37:22.327 E/com.google.common.v.a.d( 1927): RuntimeException while executing runnable bq{com.google.android.libraries.mdi.download.i.ax@d6e52f0} with executor MoreExecutors.directExecutor()
-10-03 16:37:22.327 E/com.google.common.v.a.d( 1927): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.s.b' on a null object reference
-10-03 16:37:22.329 E/com.google.common.v.a.d( 1927): RuntimeException while executing runnable bq{com.google.android.libraries.mdi.download.i.ax@a1d0b8f} with executor MoreExecutors.directExecutor()
-10-03 16:37:22.329 E/com.google.common.v.a.d( 1927): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.s.b' on a null object reference
-10-03 16:37:22.330 E/com.google.common.v.a.d( 1927): RuntimeException while executing runnable bq{com.google.android.libraries.mdi.download.i.ax@6dd57fa} with executor MoreExecutors.directExecutor()
-10-03 16:37:22.330 E/com.google.common.v.a.d( 1927): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.s.b' on a null object reference
-10-03 16:37:22.330 E/com.google.common.v.a.d( 1927): RuntimeException while executing runnable bq{com.google.android.libraries.mdi.download.i.ax@bc59008} with executor MoreExecutors.directExecutor()
-10-03 16:37:22.330 E/com.google.common.v.a.d( 1927): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.s.b' on a null object reference
-10-03 16:37:22.330 E/com.google.common.v.a.d( 1927): RuntimeException while executing runnable bq{com.google.android.libraries.mdi.download.i.ax@598f9c6} with executor MoreExecutors.directExecutor()
-10-03 16:37:22.330 E/com.google.common.v.a.d( 1927): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.s.b' on a null object reference
-10-03 16:37:22.331 E/com.google.common.v.a.d( 1927): RuntimeException while executing runnable bq{com.google.android.libraries.mdi.download.i.ax@127a4b4} with executor MoreExecutors.directExecutor()
-10-03 16:37:22.331 E/com.google.common.v.a.d( 1927): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.s.b' on a null object reference
-10-03 16:37:22.390 V/DynamiteModule( 1927): Dynamite loader version >= 2, using loadModule2NoCrashUtils
-10-03 16:37:22.744 E/com.google.common.v.a.d( 1927): RuntimeException while executing runnable bq{com.google.android.libraries.mdi.download.i.ax@1abdb66} with executor MoreExecutors.directExecutor()
-10-03 16:37:22.744 E/com.google.common.v.a.d( 1927): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.s.b' on a null object reference
-10-03 16:37:22.744 E/com.google.common.v.a.d( 1927): RuntimeException while executing runnable bq{com.google.android.libraries.mdi.download.i.ax@7e06f54} with executor MoreExecutors.directExecutor()
-10-03 16:37:22.744 E/com.google.common.v.a.d( 1927): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.s.b' on a null object reference
-10-03 16:37:22.744 E/com.google.common.v.a.d( 1927): RuntimeException while executing runnable bq{com.google.android.libraries.mdi.download.i.ax@d0a47f2} with executor MoreExecutors.directExecutor()
-10-03 16:37:22.744 E/com.google.common.v.a.d( 1927): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.s.b' on a null object reference
-10-03 16:37:22.744 E/com.google.common.v.a.d( 1927): RuntimeException while executing runnable bq{com.google.android.libraries.mdi.download.i.ax@77f2cc0} with executor MoreExecutors.directExecutor()
-10-03 16:37:22.744 E/com.google.common.v.a.d( 1927): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.s.b' on a null object reference
-10-03 16:37:22.745 E/com.google.common.v.a.d( 1927): RuntimeException while executing runnable bq{com.google.android.libraries.mdi.download.i.ax@970f13e} with executor MoreExecutors.directExecutor()
-10-03 16:37:22.745 E/com.google.common.v.a.d( 1927): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.s.b' on a null object reference
-10-03 16:37:22.745 E/com.google.common.v.a.d( 1927): RuntimeException while executing runnable bq{com.google.android.libraries.mdi.download.i.ax@98a54ec} with executor MoreExecutors.directExecutor()
-10-03 16:37:22.745 E/com.google.common.v.a.d( 1927): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.s.b' on a null object reference
-10-03 16:37:22.746 E/com.google.common.v.a.d( 1927): RuntimeException while executing runnable bq{com.google.android.libraries.mdi.download.i.ax@a06e34a} with executor MoreExecutors.directExecutor()
-10-03 16:37:22.746 E/com.google.common.v.a.d( 1927): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.s.b' on a null object reference
-10-03 16:37:22.746 E/com.google.common.v.a.d( 1927): RuntimeException while executing runnable bq{com.google.android.libraries.mdi.download.i.ax@e3dd3d8} with executor MoreExecutors.directExecutor()
-10-03 16:37:22.746 E/com.google.common.v.a.d( 1927): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.s.b' on a null object reference
-10-03 16:37:23.340 D/StrictMode( 1927): 	at android.os.Parcel.readExceptionCode(Parcel.java:2318)
-10-03 16:37:23.340 D/StrictMode( 1927): 	at android.database.DatabaseUtils.readExceptionFromParcel(DatabaseUtils.java:139)
-10-03 16:37:23.373 W/ConnectionTracker( 6347): Exception thrown while unbinding
-10-03 16:37:23.373 W/ConnectionTracker( 6347): java.lang.IllegalArgumentException: Service not registered: lm@f66c826
-10-03 16:37:23.636 W/ActivityManager(  497): Crash of app dev.mobile.maestro running instrumentation ComponentInfo{dev.mobile.maestro.test/androidx.test.runner.AndroidJUnitRunner}
-10-03 16:37:23.637 I/AndroidRuntime( 6583): VM exiting with result code 0.
-10-03 16:37:23.857 D/ModelWriter(  937): java.lang.Exception
-10-03 16:37:23.973 W/AppInfoHelper( 1290): android.content.pm.PackageManager$NameNotFoundException: dev.mobile.maestro.test
-10-03 16:37:24.113 D/ModelWriter(  937): java.lang.Exception
+10-03 16:42:10.719 F/libc    ( 5912): Fatal signal 4 (SIGILL), code -6 (SI_TKILL) in tid 5912 (.innocent.media), pid 5912 (.innocent.media)
+10-03 16:42:10.750 I/crash_dump64( 5975): obtaining output fd from tombstoned, type: kDebuggerdTombstone
+10-03 16:42:10.751 I/tombstoned(  280): received crash request for pid 5912
+10-03 16:42:10.751 I/crash_dump64( 5975): performing dump of process 5912 (target tid = 5912)
+10-03 16:42:10.756 F/DEBUG   ( 5975): pid: 5912, tid: 5912, name: .innocent.media  >>> com.innocent.media <<<
+10-03 16:42:10.759 F/DEBUG   ( 5975):       #00 pc 00000000000b1c77  /apex/com.android.runtime/lib64/bionic/libc.so (tgkill+7) (BuildId: edf0af8d613e7bdf6a416ec8f4edeb0d)
+10-03 16:42:10.971 E/libc    (  429): The property "ro.build.fingerprint" has a value with length 92 that is too large for __system_property_get()/__system_property_read(); use __system_property_read_callback() instead.
+10-03 16:42:10.981 W/ActivityTaskManager(  496):   Force finishing activity com.innocent.media/.MainActivity
+10-03 16:42:10.982 I/DropBoxManagerService(  496): add tag=data_app_native_crash isTagEnabled=true flags=0x2
+10-03 16:42:11.003 W/InputDispatcher(  496): channel 'f7b8ace com.innocent.media/com.innocent.media.MainActivity (server)' ~ Consumer closed input channel or an error occurred.  events=0x9
+10-03 16:42:11.003 E/InputDispatcher(  496): channel 'f7b8ace com.innocent.media/com.innocent.media.MainActivity (server)' ~ Channel is unrecoverably broken and will be disposed!
+10-03 16:42:11.013 V/MediaSessionRecord(  496): Removing dead callback in pushSessionDestroyed, this=com.innocent.media/media-session (userId=0), callback package=com.innocent.media, exception=android.os.DeadObjectException
+10-03 16:42:11.022 W/ActivityTaskManager(  496): Exception thrown during pause
+10-03 16:42:11.022 W/ActivityTaskManager(  496): android.os.DeadObjectException
+10-03 16:42:11.022 W/ActivityTaskManager(  496): 	at com.android.server.wm.ActivityStack.finishTopCrashedActivityLocked(ActivityStack.java:2217)
+10-03 16:42:11.022 W/ActivityTaskManager(  496): 	at com.android.server.wm.RootWindowContainer.finishTopCrashedActivities(RootWindowContainer.java:2275)
+10-03 16:42:11.022 W/ActivityTaskManager(  496): 	at com.android.server.wm.ActivityTaskManagerService$LocalService.finishTopCrashedActivities(ActivityTaskManagerService.java:7271)
+10-03 16:42:11.022 W/ActivityTaskManager(  496): 	at com.android.server.am.AppErrors.handleAppCrashLocked(AppErrors.java:759)
+10-03 16:42:11.022 W/ActivityTaskManager(  496): 	at com.android.server.am.AppErrors.makeAppCrashingLocked(AppErrors.java:606)
+10-03 16:42:11.022 W/ActivityTaskManager(  496): 	at com.android.server.am.AppErrors.crashApplicationInner(AppErrors.java:489)
+10-03 16:42:11.022 W/ActivityTaskManager(  496): 	at com.android.server.am.AppErrors.crashApplication(AppErrors.java:419)
+10-03 16:42:11.022 W/ActivityTaskManager(  496): 	at com.android.server.am.ActivityManagerService.handleApplicationCrashInner(ActivityManagerService.java:9894)
+10-03 16:42:11.022 W/ActivityTaskManager(  496): 	at com.android.server.am.NativeCrashListener$NativeCrashReporter.run(NativeCrashListener.java:84)
+10-03 16:42:11.026 W/WindowManager(  496): Failed to deliver inset state change to w=Window{f7b8ace u0 com.innocent.media/com.innocent.media.MainActivity}
+10-03 16:42:11.026 W/WindowManager(  496): android.os.DeadObjectException
+10-03 16:42:11.026 W/WindowManager(  496): 	at com.android.server.wm.ActivityStack.finishTopCrashedActivityLocked(ActivityStack.java:2217)
+10-03 16:42:11.026 W/WindowManager(  496): 	at com.android.server.wm.RootWindowContainer.finishTopCrashedActivities(RootWindowContainer.java:2275)
+10-03 16:42:11.026 W/WindowManager(  496): 	at com.android.server.wm.ActivityTaskManagerService$LocalService.finishTopCrashedActivities(ActivityTaskManagerService.java:7271)
+10-03 16:42:11.026 W/WindowManager(  496): 	at com.android.server.am.AppErrors.handleAppCrashLocked(AppErrors.java:759)
+10-03 16:42:11.026 W/WindowManager(  496): 	at com.android.server.am.AppErrors.makeAppCrashingLocked(AppErrors.java:606)
+10-03 16:42:11.026 W/WindowManager(  496): 	at com.android.server.am.AppErrors.crashApplicationInner(AppErrors.java:489)
+10-03 16:42:11.026 W/WindowManager(  496): 	at com.android.server.am.AppErrors.crashApplication(AppErrors.java:419)
+10-03 16:42:11.026 W/WindowManager(  496): 	at com.android.server.am.ActivityManagerService.handleApplicationCrashInner(ActivityManagerService.java:9894)
+10-03 16:42:11.026 W/WindowManager(  496): 	at com.android.server.am.NativeCrashListener$NativeCrashReporter.run(NativeCrashListener.java:84)
+10-03 16:42:11.030 I/WindowManager(  496): WIN DEATH: Window{f7b8ace u0 com.innocent.media/com.innocent.media.MainActivity}
+10-03 16:42:11.030 W/InputDispatcher(  496): Attempted to unregister already unregistered input channel 'f7b8ace com.innocent.media/com.innocent.media.MainActivity (server)'
+10-03 16:42:11.043 I/ActivityManager(  496): Process com.innocent.media (pid 5912) has died: prcp TOP 
+10-03 16:42:11.102 W/ActivityManager(  496): Ignoring remove of inactive process: ProcessRecord{171e687 0:com.innocent.media/u0a167}
+10-03 16:42:11.482 W/ActivityTaskManager(  496): Activity top resumed state loss timeout for ActivityRecord{69486c6 u0 com.innocent.media/.MainActivity t-1 f}}
+10-03 16:42:19.605 W/ActivityManager(  496): android.os.DeadObjectException
+10-03 16:42:19.607 W/GH.DelegateICarSupplier( 5176): java.lang.IllegalArgumentException: Service not registered: bdx@588d549
+10-03 16:42:20.534 D/NetworkSecurityConfig( 6074): Using Network Security Config from resource network_security_config debugBuild: false
+10-03 16:42:20.534 D/NetworkSecurityConfig( 6074): Using Network Security Config from resource network_security_config debugBuild: false
+10-03 16:42:20.622 E/AwarenessRouterSyncMgr( 6074): Exception while syncing fences
+10-03 16:42:20.622 E/AwarenessRouterSyncMgr( 6074): java.util.concurrent.ExecutionException: java.lang.IllegalStateException: Account associated with identity was null
+10-03 16:42:20.622 E/AwarenessRouterSyncMgr( 6074): Caused by: java.lang.IllegalStateException: Account associated with identity was null
+10-03 16:42:20.881 I/FA      ( 6074): To enable debug logging run: adb shell setprop log.tag.FA VERBOSE
+10-03 16:42:20.881 I/FA      ( 6074): To enable faster debug mode event logging run:
+10-03 16:42:20.881 I/FA      ( 6074):   adb shell setprop debug.firebase.analytics.app com.google.android.apps.youtube.music
+10-03 16:42:23.787 W/YouTubeMusic( 6074): rff: java.util.concurrent.ExecutionException: qjl: Precondition check failed.
+10-03 16:42:23.787 W/YouTubeMusic( 6074): Caused by: java.util.concurrent.ExecutionException: qjl: Precondition check failed.
+10-03 16:42:25.077 W/YouTubeMusic( 6074): rff: java.util.concurrent.ExecutionException: qjl: Precondition check failed.
+10-03 16:42:25.077 W/YouTubeMusic( 6074): Caused by: java.util.concurrent.ExecutionException: qjl: Precondition check failed.
+10-03 16:42:25.966 W/ConnectionTracker( 6074): Exception thrown while unbinding
+10-03 16:42:25.966 W/ConnectionTracker( 6074): java.lang.IllegalArgumentException: Service not registered: lbw@926fe6c
+10-03 16:42:28.508 W/YouTubeMusic( 6074): rff: java.util.concurrent.ExecutionException: qjl: Precondition check failed.
+10-03 16:42:28.508 W/YouTubeMusic( 6074): Caused by: java.util.concurrent.ExecutionException: qjl: Precondition check failed.
+10-03 16:42:31.310 E/com.google.common.v.a.d( 2064): RuntimeException while executing runnable bq{com.google.android.libraries.mdi.download.i.ax@8835a1a} with executor MoreExecutors.directExecutor()
+10-03 16:42:31.310 E/com.google.common.v.a.d( 2064): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.s.b' on a null object reference
+10-03 16:42:31.311 E/com.google.common.v.a.d( 2064): RuntimeException while executing runnable bq{com.google.android.libraries.mdi.download.i.ax@bff441} with executor MoreExecutors.directExecutor()
+10-03 16:42:31.311 E/com.google.common.v.a.d( 2064): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.s.b' on a null object reference
+10-03 16:42:31.312 E/com.google.common.v.a.d( 2064): RuntimeException while executing runnable bq{com.google.android.libraries.mdi.download.i.ax@ea85f27} with executor MoreExecutors.directExecutor()
+10-03 16:42:31.312 E/com.google.common.v.a.d( 2064): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.s.b' on a null object reference
+10-03 16:42:31.313 E/com.google.common.v.a.d( 2064): RuntimeException while executing runnable bq{com.google.android.libraries.mdi.download.i.ax@ffb1272} with executor MoreExecutors.directExecutor()
+10-03 16:42:31.313 E/com.google.common.v.a.d( 2064): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.s.b' on a null object reference
+10-03 16:42:31.328 E/com.google.common.v.a.d( 2064): RuntimeException while executing runnable bq{com.google.android.libraries.mdi.download.i.ax@c4d6fb1} with executor MoreExecutors.directExecutor()
+10-03 16:42:31.328 E/com.google.common.v.a.d( 2064): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.s.b' on a null object reference
+10-03 16:42:31.328 E/com.google.common.v.a.d( 2064): RuntimeException while executing runnable bq{com.google.android.libraries.mdi.download.i.ax@4d16017} with executor MoreExecutors.directExecutor()
+10-03 16:42:31.328 E/com.google.common.v.a.d( 2064): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.s.b' on a null object reference
+10-03 16:42:31.329 E/com.google.common.v.a.d( 2064): RuntimeException while executing runnable bq{com.google.android.libraries.mdi.download.i.ax@e1855ed} with executor MoreExecutors.directExecutor()
+10-03 16:42:31.329 E/com.google.common.v.a.d( 2064): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.s.b' on a null object reference
+10-03 16:42:31.329 E/com.google.common.v.a.d( 2064): RuntimeException while executing runnable bq{com.google.android.libraries.mdi.download.i.ax@981e6b3} with executor MoreExecutors.directExecutor()
+10-03 16:42:31.329 E/com.google.common.v.a.d( 2064): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.s.b' on a null object reference
+10-03 16:42:31.357 E/com.google.common.v.a.d( 2064): RuntimeException while executing runnable bq{com.google.android.libraries.mdi.download.i.ax@8f0191e} with executor MoreExecutors.directExecutor()
+10-03 16:42:31.357 E/com.google.common.v.a.d( 2064): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.s.b' on a null object reference
+10-03 16:42:31.357 E/com.google.common.v.a.d( 2064): RuntimeException while executing runnable bq{com.google.android.libraries.mdi.download.i.ax@e6e6fcc} with executor MoreExecutors.directExecutor()
+10-03 16:42:31.357 E/com.google.common.v.a.d( 2064): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.s.b' on a null object reference
+10-03 16:42:31.361 E/com.google.common.v.a.d( 2064): RuntimeException while executing runnable bq{com.google.android.libraries.mdi.download.i.ax@580a92a} with executor MoreExecutors.directExecutor()
+10-03 16:42:31.361 E/com.google.common.v.a.d( 2064): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.s.b' on a null object reference
+10-03 16:42:31.361 E/com.google.common.v.a.d( 2064): RuntimeException while executing runnable bq{com.google.android.libraries.mdi.download.i.ax@b89a91} with executor MoreExecutors.directExecutor()
+10-03 16:42:31.361 E/com.google.common.v.a.d( 2064): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.s.b' on a null object reference
+10-03 16:42:31.480 D/NetworkSecurityConfig( 6295): Using Network Security Config from resource network_security_config debugBuild: false
+10-03 16:42:31.481 D/NetworkSecurityConfig( 6295): Using Network Security Config from resource network_security_config debugBuild: false
+10-03 16:42:31.521 V/DynamiteModule( 2064): Dynamite loader version >= 2, using loadModule2NoCrashUtils
+10-03 16:42:31.682 E/libc    ( 6295): Access denied finding property "persist.adb.tls_server.enable"
+10-03 16:42:31.682 E/libc    ( 6295): Access denied finding property "service.adb.tls.port"
+10-03 16:42:31.712 D/NetworkSecurityConfig( 2042): Using Network Security Config from resource network_security_config debugBuild: false
+10-03 16:42:31.713 D/NetworkSecurityConfig( 2042): Using Network Security Config from resource network_security_config debugBuild: false
+10-03 16:42:31.791 E/com.google.common.v.a.d( 2064): RuntimeException while executing runnable bq{com.google.android.libraries.mdi.download.i.ax@91798d4} with executor MoreExecutors.directExecutor()
+10-03 16:42:31.791 E/com.google.common.v.a.d( 2064): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.s.b' on a null object reference
+10-03 16:42:31.791 E/com.google.common.v.a.d( 2064): RuntimeException while executing runnable bq{com.google.android.libraries.mdi.download.i.ax@ea14d72} with executor MoreExecutors.directExecutor()
+10-03 16:42:31.791 E/com.google.common.v.a.d( 2064): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.s.b' on a null object reference
+10-03 16:42:31.791 E/com.google.common.v.a.d( 2064): RuntimeException while executing runnable bq{com.google.android.libraries.mdi.download.i.ax@2bf6e40} with executor MoreExecutors.directExecutor()
+10-03 16:42:31.791 E/com.google.common.v.a.d( 2064): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.s.b' on a null object reference
+10-03 16:42:31.792 E/com.google.common.v.a.d( 2064): RuntimeException while executing runnable bq{com.google.android.libraries.mdi.download.i.ax@132cebe} with executor MoreExecutors.directExecutor()
+10-03 16:42:31.792 E/com.google.common.v.a.d( 2064): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.s.b' on a null object reference
+10-03 16:42:31.793 E/com.google.common.v.a.d( 2064): RuntimeException while executing runnable bq{com.google.android.libraries.mdi.download.i.ax@24d2e6c} with executor MoreExecutors.directExecutor()
+10-03 16:42:31.793 E/com.google.common.v.a.d( 2064): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.s.b' on a null object reference
+10-03 16:42:31.793 E/com.google.common.v.a.d( 2064): RuntimeException while executing runnable bq{com.google.android.libraries.mdi.download.i.ax@bc918ca} with executor MoreExecutors.directExecutor()
+10-03 16:42:31.793 E/com.google.common.v.a.d( 2064): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.s.b' on a null object reference
+10-03 16:42:31.793 E/com.google.common.v.a.d( 2064): RuntimeException while executing runnable bq{com.google.android.libraries.mdi.download.i.ax@614c558} with executor MoreExecutors.directExecutor()
+10-03 16:42:31.793 E/com.google.common.v.a.d( 2064): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.s.b' on a null object reference
+10-03 16:42:31.793 E/com.google.common.v.a.d( 2064): RuntimeException while executing runnable bq{com.google.android.libraries.mdi.download.i.ax@2c7f796} with executor MoreExecutors.directExecutor()
+10-03 16:42:31.793 E/com.google.common.v.a.d( 2064): java.lang.NullPointerException: Attempt to read from field 'java.lang.String com.google.android.libraries.mdi.download.s.b' on a null object reference
+10-03 16:42:31.843 W/GLSUser ( 1159): java.io.IOException: Invalid scope
+10-03 16:42:31.876 W/Conscrypt( 1159): Could not set socket write timeout: java.net.SocketException: Socket closed
+10-03 16:42:31.904 W/Conscrypt( 1159): Could not set socket write timeout: java.net.SocketException: Socket closed
+10-03 16:42:31.935 W/GLSUser ( 1159): [AppCertManager] IOException while requesting key: 
+10-03 16:42:31.935 W/GLSUser ( 1159): java.io.IOException: Invalid device key response.
+10-03 16:42:32.391 D/StrictMode( 2064): 	at android.os.Parcel.readExceptionCode(Parcel.java:2318)
+10-03 16:42:32.391 D/StrictMode( 2064): 	at android.database.DatabaseUtils.readExceptionFromParcel(DatabaseUtils.java:139)
+10-03 16:42:32.849 W/YouTubeMusic( 6074): rff: java.util.concurrent.ExecutionException: qjl: Precondition check failed.
+10-03 16:42:32.849 W/YouTubeMusic( 6074): Caused by: java.util.concurrent.ExecutionException: qjl: Precondition check failed.
+10-03 16:42:36.438 D/AndroidRuntime( 6370): >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-03 16:42:36.440 E/libc    ( 6370): Access denied finding property "persist.device_config.runtime_native_boot.profilebootclasspath"
+10-03 16:42:36.440 E/libc    ( 6370): Access denied finding property "persist.device_config.runtime_native_boot.enable_apex_image"
+10-03 16:42:36.440 I/AndroidRuntime( 6370): Using default boot image
+10-03 16:42:36.440 E/libc    ( 6370): Access denied finding property "persist.device_config.runtime_native_boot.disable_lock_profiling"
+10-03 16:42:36.440 I/AndroidRuntime( 6370): Leaving lock profiling enabled
+10-03 16:42:36.440 E/libc    ( 6370): Access denied finding property "persist.device_config.runtime_native_boot.enable_generational_cc"
+10-03 16:42:36.508 D/AndroidRuntime( 6370): Calling main entry com.android.commands.input.Input
+10-03 16:42:37.024 D/AndroidRuntime( 6370): Shutting down VM
+10-03 16:42:39.617 W/ActivityManager(  496): Crash of app dev.mobile.maestro running instrumentation ComponentInfo{dev.mobile.maestro.test/androidx.test.runner.AndroidJUnitRunner}
+10-03 16:42:39.618 E/AppOps  (  496): java.lang.SecurityException: Specified package dev.mobile.maestro under uid 10168 but it is really -1
+10-03 16:42:39.622 W/Binder  ( 5680): Caught a RuntimeException from the binder stub implementation.
+10-03 16:42:39.622 W/Binder  ( 5680): java.lang.SecurityException: Calling from not trusted UID!
+10-03 16:42:39.622 I/AndroidRuntime( 5680): VM exiting with result code 0.
+10-03 16:42:39.941 D/NetworkSecurityConfig( 6425): Using Network Security Config from resource network_security_config debugBuild: false
+10-03 16:42:39.942 D/NetworkSecurityConfig( 6425): Using Network Security Config from resource network_security_config debugBuild: false
+10-03 16:42:39.973 D/NetworkSecurityConfig( 6475): Using Network Security Config from resource network_security_config debugBuild: false
+10-03 16:42:39.973 D/NetworkSecurityConfig( 6475): Using Network Security Config from resource network_security_config debugBuild: false
+10-03 16:42:40.004 D/ModelWriter(  912): java.lang.Exception
+10-03 16:42:40.271 D/ModelWriter(  912): java.lang.Exception
+10-03 16:42:40.537 I/FA      ( 6521): To enable debug logging run: adb shell setprop log.tag.FA VERBOSE
+10-03 16:42:40.537 I/FA      ( 6521): To enable faster debug mode event logging run:
+10-03 16:42:40.537 I/FA      ( 6521):   adb shell setprop debug.firebase.analytics.app com.google.android.apps.maps
+10-03 16:42:44.555 D/AndroidRuntime( 6681): >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-03 16:42:44.556 E/libc    ( 6681): Access denied finding property "persist.device_config.runtime_native_boot.profilebootclasspath"
+10-03 16:42:44.556 E/libc    ( 6681): Access denied finding property "persist.device_config.runtime_native_boot.enable_apex_image"
+10-03 16:42:44.556 I/AndroidRuntime( 6681): Using default boot image
+10-03 16:42:44.556 E/libc    ( 6681): Access denied finding property "persist.device_config.runtime_native_boot.disable_lock_profiling"
+10-03 16:42:44.556 I/AndroidRuntime( 6681): Leaving lock profiling enabled
+10-03 16:42:44.556 E/libc    ( 6681): Access denied finding property "persist.device_config.runtime_native_boot.enable_generational_cc"
+10-03 16:42:44.616 D/AndroidRuntime( 6681): Calling main entry com.android.commands.am.Am
+10-03 16:42:45.677 W/ConnectionTracker( 6521): Exception thrown while unbinding
+10-03 16:42:45.677 W/ConnectionTracker( 6521): java.lang.IllegalArgumentException: Service not registered: lm@fe652f4
+10-03 16:42:46.372 W/ActivityManager(  496): Crash of app dev.mobile.maestro running instrumentation ComponentInfo{dev.mobile.maestro.test/androidx.test.runner.AndroidJUnitRunner}
+10-03 16:42:46.372 E/AppOps  (  496): java.lang.SecurityException: Specified package dev.mobile.maestro under uid 10170 but it is really -1
+10-03 16:42:46.379 W/Binder  ( 6681): Caught a RuntimeException from the binder stub implementation.
+10-03 16:42:46.379 W/Binder  ( 6681): java.lang.SecurityException: Calling from not trusted UID!
+10-03 16:42:46.380 I/AndroidRuntime( 6681): VM exiting with result code 0.
+10-03 16:42:46.606 D/ModelWriter(  912): java.lang.Exception
+10-03 16:42:46.761 D/ModelWriter(  912): java.lang.Exception
+10-03 16:42:47.888 W/YouTubeMusic( 6074): rff: java.util.concurrent.ExecutionException: qjl: Precondition check failed.
+10-03 16:42:47.888 W/YouTubeMusic( 6074): Caused by: java.util.concurrent.ExecutionException: qjl: Precondition check failed.

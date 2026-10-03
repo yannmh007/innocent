@@ -1,9 +1,9 @@
-[16:36:08] device: sdk_gphone_x86_64 / Android 11 / ABIs x86_64,x86,arm64-v8a,armeabi-v7a,armeabi
-[16:36:08] install
-[16:36:24] network: speed 6000:24000 kbit/s, delay 80:250 ms
-[16:36:24] cold start
+[16:41:16] device: sdk_gphone_x86_64 / Android 11 / ABIs x86_64,x86,arm64-v8a,armeabi-v7a,armeabi
+[16:41:16] install
+[16:41:41] network: speed 6000:24000 kbit/s, delay 80:250 ms
+[16:41:41] cold start
 Status: ok
-WaitTime: 4354
-[16:36:39] flow explore
-[16:37:18] flow explore exit 0
-[16:37:24] done
+WaitTime: 5914
+[16:41:58] flow explore
+[16:42:40] flow explore exit 0
+[16:42:50] done

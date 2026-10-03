@@ -2,5 +2,5 @@ Starting: Intent { cmp=com.innocent.media/.MainActivity }
 Status: ok
 LaunchState: UNKNOWN (-1)
 Activity: com.google.android.apps.nexuslauncher/.NexusLauncherActivity
-WaitTime: 4354
+WaitTime: 5914
 Complete
