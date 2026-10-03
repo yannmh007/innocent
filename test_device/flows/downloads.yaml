@@ -1,0 +1,21 @@
+# The Downloads screen, reached the way a viewer would: hub → account →
+# Downloads. Two looks, twenty seconds apart, to read the speed it shows.
+appId: com.innocent.media
+---
+- back
+- waitForAnimationToEnd:
+    timeout: 5000
+- tapOn:
+    point: "93%,7%"
+- waitForAnimationToEnd:
+    timeout: 8000
+- takeScreenshot: 50_account
+- tapOn:
+    text: "Downloads"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 8000
+- takeScreenshot: 51_downloads
+- waitForAnimationToEnd:
+    timeout: 20000
+- takeScreenshot: 52_downloads_20s

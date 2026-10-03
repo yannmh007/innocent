@@ -1,0 +1,19 @@
+# While the album downloads, play its video — the case reported from the
+# field as "spins and will not play".
+appId: com.innocent.media
+---
+- scrollUntilVisible:
+    element:
+      text: "1:11:19"
+    direction: DOWN
+    optional: true
+- tapOn:
+    text: "1:11:19"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 15000
+- takeScreenshot: 40_stream_while_dl_15s
+- waitForAnimationToEnd:
+    timeout: 15000
+- takeScreenshot: 41_stream_while_dl_30s
+- back

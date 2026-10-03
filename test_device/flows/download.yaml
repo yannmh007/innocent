@@ -1,18 +1,20 @@
-# Save the title for offline, then watch the Downloads screen while it runs.
+# Download the whole album, answering the size question if it is asked.
 appId: com.innocent.media
 ---
+- scrollUntilVisible:
+    element:
+      text: "Download all"
+    direction: UP
+    optional: true
 - tapOn:
-    text: "Save for offline"
+    text: "Download all"
     optional: true
 - waitForAnimationToEnd:
     timeout: 5000
 - takeScreenshot: 30_download_tapped
 - tapOn:
-    text: "Download.*"
+    text: "Download"
     optional: true
 - waitForAnimationToEnd:
-    timeout: 5000
-- takeScreenshot: 31_download_confirm
-- waitForAnimationToEnd:
-    timeout: 20000
-- takeScreenshot: 32_download_20s
+    timeout: 15000
+- takeScreenshot: 31_download_15s

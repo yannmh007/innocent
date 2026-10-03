@@ -1,15 +1,15 @@
-# Play the title's video over the shaped network and look at it at 10 s and
-# 30 s. A playing video never stops animating, so each wait runs its full
-# timeout — that is the clock.
+# Play the title's video (its tile carries the running time) over the shaped
+# network, and look at it at 10 s and 30 s. A playing video never stops
+# animating, so each wait runs its full timeout — that is the clock.
 appId: com.innocent.media
 ---
 - scrollUntilVisible:
     element:
-      text: "Play"
-    direction: UP
+      text: "1:11:19"
+    direction: DOWN
     optional: true
 - tapOn:
-    text: "Play"
+    text: "1:11:19"
     optional: true
 - waitForAnimationToEnd:
     timeout: 10000

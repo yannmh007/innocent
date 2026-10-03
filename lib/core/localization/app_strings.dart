@@ -468,6 +468,7 @@ class AppStrings {
   String get vhDataSaverWifiHint => _s('vhDataSaverWifiHint');
   String get vhDataSaverOn => _s('vhDataSaverOn');
   String get vhDataSaverOff => _s('vhDataSaverOff');
+  String get vhSaverChip => _s('vhSaverChip');
   // Player notices (1.64.43): a half-downloaded file, a failed hardware
   // decoder, an engine that stopped answering.
   String playerNoticeIncomplete(String t) =>
@@ -1956,6 +1957,7 @@ class AppStrings {
     'vhDataSaverWifiHint': 'Off: on Wi-Fi albums load normally.',
     'vhDataSaverOn': 'Data saver is on — tap to show albums normally',
     'vhDataSaverOff': 'Turn on data saver',
+    'vhSaverChip': 'Saver',
     'vhSaverModeAll': 'All connections',
     'vhSaverModeAllHint': 'Wi-Fi too — for Wi-Fi bought by the gigabyte',
     'vhSaverModeMobile': 'Mobile data only',
@@ -3261,6 +3263,7 @@ class AppStrings {
     'vhDataSaverWifiHint': 'ပိတ်ထားရင် Wi-Fi မှာ album တွေ ပုံမှန်အတိုင်း ပြပါမယ်။',
     'vhDataSaverOn': 'ဒေတာ ချွေတာမုဒ် ဖွင့်ထားသည် — ပုံမှန်ပြရန် နှိပ်ပါ',
     'vhDataSaverOff': 'ဒေတာ ချွေတာမုဒ် ဖွင့်မည်',
+    'vhSaverChip': 'ချွေတာ',
     'vhSaverModeAll': 'အင်တာနက် အားလုံး',
     'vhSaverModeAllHint': 'WiFi ပါ — GB နဲ့ ဝယ်ရတဲ့ WiFi အတွက်',
     'vhSaverModeMobile': 'ဖုန်းဒေတာ သုံးချိန်သာ',
@@ -4555,6 +4558,7 @@ class AppStrings {
     'vhDataSaverWifiHint': 'ปิดไว้: บน Wi-Fi อัลบั้มโหลดตามปกติ',
     'vhDataSaverOn': 'เปิดประหยัดเน็ตอยู่ — แตะเพื่อแสดงตามปกติ',
     'vhDataSaverOff': 'เปิดประหยัดเน็ต',
+    'vhSaverChip': 'ประหยัด',
     'vhSaverModeAll': 'ทุกการเชื่อมต่อ',
     'vhSaverModeAllHint': 'รวม Wi-Fi — สำหรับ Wi-Fi ที่คิดตาม GB',
     'vhSaverModeMobile': 'เฉพาะเน็ตมือถือ',
