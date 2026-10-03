@@ -115,6 +115,14 @@ logger.lifecycle(
     " -> " + (releaseKeystoreFile?.name ?: "NO KEYSTORE")
 )
 
+// DEVICE LAB ONLY (.github/workflows/device-lab.yml): INNOCENT_LAB_ABI=x86_64
+// builds the same app for an x86_64 emulator, which cannot run the arm64
+// libraries through Android's ARM translation (it dies on a SIMD instruction
+// the translator does not know). Such an APK is debug-signed, whatever key
+// is present, so it can never be mistaken for — or installed over — a
+// release. Unset, nothing below changes by a byte.
+val labAbi: String? = System.getenv("INNOCENT_LAB_ABI")?.takeIf { it.isNotBlank() }
+
 if (releaseKeystoreFile == null) {
     logger.warn("*****************************************************************")
     logger.warn("* Innocent: NO RELEASE KEYSTORE FOUND.                          *")
@@ -229,7 +237,7 @@ android {
             // The build log is the proof — merged_native_libs held arm64-v8a,
             // armeabi-v7a, x86 AND x86_64.
             abiFilters.clear()
-            abiFilters.add("arm64-v8a")
+            abiFilters.add(labAbi ?: "arm64-v8a")
         }
     }
 
@@ -272,7 +280,9 @@ android {
             // APK" still produced a debug-signed APK. Leaving it unset lets
             // that injection through, and otherwise yields an unsigned APK —
             // a loud failure instead of a silent wrong-key success.
-            if (releaseKeystoreFile != null) {
+            if (labAbi != null) {
+                signingConfig = signingConfigs.getByName("debug")
+            } else if (releaseKeystoreFile != null) {
                 signingConfig = signingConfigs.getByName("release")
             }
         }
@@ -336,8 +346,8 @@ android {
             // `--target-platform android-arm`, and an exclude at this level
             // would silently produce an APK with no native libraries at all —
             // exactly the kind of trap that block already warns about.
-            excludes.add("lib/x86/**")
-            excludes.add("lib/x86_64/**")
+            if (labAbi != "x86") excludes.add("lib/x86/**")
+            if (labAbi != "x86_64") excludes.add("lib/x86_64/**")
         }
     }
 }

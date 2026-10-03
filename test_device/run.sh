@@ -44,8 +44,11 @@ adb exec-out screencap -p > "$OUT/shots/00_cold_start.png"
 export PATH="$HOME/.maestro/bin:$PATH"
 for flow in $FLOWS; do
   log "flow $flow"
-  ( cd "$OUT/shots" && maestro test "$OLDPWD/test_device/flows/$flow.yaml" ) > "$OUT/maestro_$flow.txt" 2>&1
+  ( cd "$OUT/shots" && maestro test --test-output-dir "$OUT/maestro_out" "$OLDPWD/test_device/flows/$flow.yaml" ) > "$OUT/maestro_$flow.txt" 2>&1
   log "flow $flow exit $?"
+  # Maestro has put screenshots in different places across versions.
+  find test_device/flows "$OUT/maestro_out" "$HOME/.maestro/tests" -name '*.png' -newer test_device/config.env \
+    -exec cp {} "$OUT/shots/" \; 2>/dev/null || true
   maestro hierarchy > "$OUT/hierarchy_after_$flow.json" 2>/dev/null || true
 done
 
@@ -66,5 +69,6 @@ sed -E 's#https?://[^ "]+#<url>#g; s#[A-Za-z0-9_-]{40,}#<token>#g' "$OUT/logcat_
 rm -f "$OUT/logcat_raw.txt"
 
 # Screenshots at phone-half size: enough to read, small enough to commit.
+rm -rf "$OUT/maestro_out"
 find "$OUT" -name '*.png' -exec mogrify -resize 540x {} \; 2>/dev/null || true
 log "done"
