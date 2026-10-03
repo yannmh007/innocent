@@ -444,8 +444,13 @@ class AppStrings {
   String vhAlbumProgress(int done, int total) => _s('vhAlbumProgress')
       .replaceFirst('{done}', '$done')
       .replaceFirst('{total}', '$total');
-  String vhAlbumVideos(int n) => _s('vhAlbumVideos').replaceFirst('{n}', '$n');
-  String vhAlbumPhotos(int n) => _s('vhAlbumPhotos').replaceFirst('{n}', '$n');
+  // One of each is its own key: "1 videos + 5 photos" was on the size
+  // question, seen in the device lab. Burmese and Thai do not inflect, so
+  // their singular is the plural with n = 1.
+  String vhAlbumVideos(int n) =>
+      _s(n == 1 ? 'vhAlbumVideo1' : 'vhAlbumVideos').replaceFirst('{n}', '$n');
+  String vhAlbumPhotos(int n) =>
+      _s(n == 1 ? 'vhAlbumPhoto1' : 'vhAlbumPhotos').replaceFirst('{n}', '$n');
 
   /// "{items}, about {size}. You have {free} free. Carry on?"
   String vhAlbumAsk(Object items, Object size, Object free) =>
@@ -1944,6 +1949,8 @@ class AppStrings {
     'vhAlbumProgress': '{done} / {total}',
     'vhAlbumVideos': '{n} videos',
     'vhAlbumPhotos': '{n} photos',
+    'vhAlbumVideo1': '1 video',
+    'vhAlbumPhoto1': '1 photo',
     'vhAlbumAsk': '{items}, about {size} at full quality. You have {free} free on this phone. Carry on?',
     'vhAlbumAskNoSize': '{items} at full quality. You have {free} free on this phone. Carry on?',
     'vhAlbumSomeFailed': '{n} could not be downloaded. Tap Download to try them again.',
@@ -3250,6 +3257,8 @@ class AppStrings {
     'vhAlbumProgress': '{done} / {total}',
     'vhAlbumVideos': 'ဗီဒီယို {n} ခု',
     'vhAlbumPhotos': 'ဓာတ်ပုံ {n} ပုံ',
+    'vhAlbumVideo1': 'ဗီဒီယို 1 ခု',
+    'vhAlbumPhoto1': 'ဓာတ်ပုံ 1 ပုံ',
     'vhAlbumAsk': '{items}၊ မူရင်းအရည်အသွေးနဲ့ {size} ခန့်ရှိပါတယ်။ ဖုန်းထဲမှာ {free} ကျန်ပါတယ်။ ဆက်ဒေါင်းမလား?',
     'vhAlbumAskNoSize': '{items} ကို မူရင်းအရည်အသွေးနဲ့ ဒေါင်းပါမယ်။ ဖုန်းထဲမှာ {free} ကျန်ပါတယ်။ ဆက်ဒေါင်းမလား?',
     'vhAlbumSomeFailed': '{n} ခု ဒေါင်းမရပါ။ ပြန်ကြိုးစားရန် ဒေါင်းမည် ကို နှိပ်ပါ။',
@@ -4545,6 +4554,8 @@ class AppStrings {
     'vhAlbumProgress': '{done} / {total}',
     'vhAlbumVideos': 'วิดีโอ {n} รายการ',
     'vhAlbumPhotos': 'รูป {n} รูป',
+    'vhAlbumVideo1': 'วิดีโอ 1 รายการ',
+    'vhAlbumPhoto1': 'รูป 1 รูป',
     'vhAlbumAsk': '{items} ประมาณ {size} ที่คุณภาพเต็ม เหลือพื้นที่ {free} ดำเนินการต่อไหม?',
     'vhAlbumAskNoSize': '{items} ที่คุณภาพเต็ม เหลือพื้นที่ {free} ดำเนินการต่อไหม?',
     'vhAlbumSomeFailed': 'ดาวน์โหลดไม่ได้ {n} รายการ แตะดาวน์โหลดเพื่อลองอีกครั้ง',
