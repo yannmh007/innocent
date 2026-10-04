@@ -816,6 +816,21 @@ class AppStrings {
   String get cloudDriveBody => _s('cloudDriveBody');
   String get connectCloudCaps => _s('connectCloudCaps');
   String get deviceStorage => _s('deviceStorage');
+  /// "{used} of {total} used"
+  String mmUsedOf(String used, String total) => _s('mmUsedOf')
+      .replaceFirst('{used}', used)
+      .replaceFirst('{total}', total);
+  /// "{free} free"
+  String mmFree(String free) => _s('mmFree').replaceFirst('{free}', free);
+  String get mmVideos => _s('mmVideos');
+  String get mmMusic => _s('mmMusic');
+  String get mmNoAccess => _s('mmNoAccess');
+  String get mmStorageUnknown => _s('mmStorageUnknown');
+  String get mmRecentlyPlayed => _s('mmRecentlyPlayed');
+  String get mmLargeFiles => _s('mmLargeFiles');
+  String get mmLargestVideos => _s('mmLargestVideos');
+  String get mmHaventPlayed => _s('mmHaventPlayed');
+  String get mmAllPlayed => _s('mmAllPlayed');
   String get cleanUpSpace => _s('cleanUpSpace');
   String get scanningCleanable => _s('scanningCleanable');
   String get openingRecentlyPlayed => _s('openingRecentlyPlayed');
@@ -2362,6 +2377,17 @@ class AppStrings {
     'cleanUpSpace': 'Clean up for more space',
     'scanningCleanable': 'Scanning for cleanable files...',
     'openingRecentlyPlayed': 'Opening Recently Played',
+    'mmUsedOf': '{used} of {total} used',
+    'mmFree': '{free} free',
+    'mmVideos': 'Videos',
+    'mmMusic': 'Music',
+    'mmNoAccess': 'No access',
+    'mmStorageUnknown': 'Storage size unavailable',
+    'mmRecentlyPlayed': 'Recently Played',
+    'mmLargeFiles': 'Large Files',
+    'mmLargestVideos': 'Largest videos',
+    'mmHaventPlayed': "Haven't Played",
+    'mmAllPlayed': "You've played every video on this phone.",
     'storagePermissionNeeded': 'Storage permission needed',
     'statusPermissionHint': 'Allow media access so we can read WhatsApp statuses.',
     'openingPrivacyPolicy': 'Opening Privacy Policy...',
@@ -3680,6 +3706,17 @@ class AppStrings {
     'cleanUpSpace': 'နေရာလွတ်ရအောင် ရှင်းလင်းမယ်',
     'scanningCleanable': 'ရှင်းလင်းနိုင်တဲ့ဖိုင်များ ရှာနေသည်...',
     'openingRecentlyPlayed': 'မကြာသေးမီဖွင့်ခဲ့သည်များ ဖွင့်နေသည်',
+    'mmUsedOf': '{total} အနက် {used} သုံးထားသည်',
+    'mmFree': '{free} လွတ်',
+    'mmVideos': 'ဗီဒီယို',
+    'mmMusic': 'သီချင်း',
+    'mmNoAccess': 'ခွင့်မရှိ',
+    'mmStorageUnknown': 'သိုလှောင်မှု ပမာဏ မသိရပါ',
+    'mmRecentlyPlayed': 'မကြာသေးမီ ကြည့်ခဲ့သည်',
+    'mmLargeFiles': 'ဖိုင်အကြီးများ',
+    'mmLargestVideos': 'အကြီးဆုံး ဗီဒီယိုများ',
+    'mmHaventPlayed': 'မကြည့်ရသေးသော',
+    'mmAllPlayed': 'ဒီဖုန်းထဲက ဗီဒီယိုအားလုံး ကြည့်ပြီးပါပြီ။',
     'storagePermissionNeeded': 'သိုလှောင်မှုခွင့်ပြုချက် လိုအပ်ပါတယ်',
     'statusPermissionHint': 'WhatsApp status တွေဖတ်နိုင်ဖို့ media ဝင်ရောက်ခွင့် ပေးပါ။',
     'openingPrivacyPolicy': 'Privacy Policy ဖွင့်နေသည်...',
@@ -4987,6 +5024,17 @@ class AppStrings {
     'cleanUpSpace': 'ล้างเพื่อเพิ่มพื้นที่',
     'scanningCleanable': 'กำลังสแกนไฟล์ที่ล้างได้...',
     'openingRecentlyPlayed': 'กำลังเปิดเล่นล่าสุด',
+    'mmUsedOf': 'ใช้ไป {used} จาก {total}',
+    'mmFree': 'ว่าง {free}',
+    'mmVideos': 'วิดีโอ',
+    'mmMusic': 'เพลง',
+    'mmNoAccess': 'ไม่มีสิทธิ์',
+    'mmStorageUnknown': 'ไม่ทราบขนาดพื้นที่',
+    'mmRecentlyPlayed': 'เล่นล่าสุด',
+    'mmLargeFiles': 'ไฟล์ขนาดใหญ่',
+    'mmLargestVideos': 'วิดีโอที่ใหญ่ที่สุด',
+    'mmHaventPlayed': 'ยังไม่ได้เล่น',
+    'mmAllPlayed': 'คุณเล่นวิดีโอทั้งหมดในเครื่องนี้แล้ว',
     'storagePermissionNeeded': 'ต้องการสิทธิ์พื้นที่จัดเก็บ',
     'statusPermissionHint': 'อนุญาตการเข้าถึงสื่อเพื่ออ่านสถานะ WhatsApp',
     'openingPrivacyPolicy': 'กำลังเปิดนโยบายความเป็นส่วนตัว...',

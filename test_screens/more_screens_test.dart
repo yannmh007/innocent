@@ -64,7 +64,14 @@ void main() {
   screens('help', () => const HelpScreen(), phones: one, scrolls: 1);
   screens('theme', () => const AppThemeScreen(), phones: one);
   screens('backup', () => const BackupRestoreScreen(), phones: one);
-  screens('media_manager', () => const MediaManagerScreen(), overrides: libraryOverrides, phones: one);
+  // Synthetic storage figures: a 128 GB phone, 41 GB free.
+  screens('media_manager', () => const MediaManagerScreen(),
+      overrides: () => [
+            ...libraryOverrides(),
+            storageSummaryProvider.overrideWith((ref) async => const StorageSummary(
+                total: 128 << 30, free: 41 << 30, video: 52 << 30, audio: 3 << 30, image: -1)),
+          ],
+      phones: one);
   screens('statistics', () => const StatisticsScreen(), overrides: libraryOverrides, phones: one);
   screens('status_saver', () => const StatusSaverScreen(), phones: one);
   screens('private_folder', () => const PrivateFolderScreen());

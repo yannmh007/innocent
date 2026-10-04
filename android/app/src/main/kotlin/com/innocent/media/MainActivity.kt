@@ -482,6 +482,57 @@ class MainActivity : AudioServiceFragmentActivity() {
                     }
                     result.success(free)
                 }
+                // Media Manager's numbers, all real: the shared storage's
+                // size and free space (StatFs), and how much of it videos,
+                // music and pictures take (MediaStore's SIZE summed by media
+                // type). A type this app may not read comes back -1, never
+                // a guess. Off the main thread: a sum over a big library is
+                // a full table walk.
+                "storageSummary" -> {
+                    val ctx = applicationContext
+                    Thread {
+                        val out = HashMap<String, Long>()
+                        try {
+                            val st = android.os.StatFs(
+                                android.os.Environment.getExternalStorageDirectory().absolutePath
+                            )
+                            out["total"] = st.totalBytes
+                            out["free"] = st.availableBytes
+                        } catch (_: Throwable) {
+                            out["total"] = -1L
+                            out["free"] = -1L
+                        }
+                        fun sum(uri: android.net.Uri): Long = try {
+                            ctx.contentResolver.query(
+                                uri,
+                                arrayOf(android.provider.MediaStore.MediaColumns.SIZE),
+                                null, null, null
+                            )?.use { c ->
+                                var t = 0L
+                                val i = c.getColumnIndex(android.provider.MediaStore.MediaColumns.SIZE)
+                                while (c.moveToNext()) t += c.getLong(i)
+                                t
+                            } ?: -1L
+                        } catch (_: Throwable) {
+                            -1L
+                        }
+                        // Without the permission MediaStore answers with only
+                        // this app's own files — a small, wrong number.
+                        fun may(perm33: String): Boolean {
+                            val perm = if (Build.VERSION.SDK_INT >= 33) perm33
+                                else android.Manifest.permission.READ_EXTERNAL_STORAGE
+                            return ctx.checkSelfPermission(perm) ==
+                                android.content.pm.PackageManager.PERMISSION_GRANTED
+                        }
+                        out["video"] = if (may("android.permission.READ_MEDIA_VIDEO"))
+                            sum(android.provider.MediaStore.Video.Media.EXTERNAL_CONTENT_URI) else -1L
+                        out["audio"] = if (may("android.permission.READ_MEDIA_AUDIO"))
+                            sum(android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI) else -1L
+                        out["image"] = if (may("android.permission.READ_MEDIA_IMAGES"))
+                            sum(android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI) else -1L
+                        runOnUiThread { result.success(out) }
+                    }.start()
+                }
                 // MediaStore's own change counter, so a cold start can tell
                 // "nothing on this phone changed since the last scan" without
                 // walking 2000+ videos to find out. Every insert, update or
