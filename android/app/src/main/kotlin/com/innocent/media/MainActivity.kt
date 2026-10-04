@@ -291,6 +291,24 @@ class MainActivity : AudioServiceFragmentActivity() {
                 // Android TV (or any leanback device): no touch screen, a
                 // remote, landscape only. Decides orientation and focus
                 // behaviour on the Dart side (DeviceProfile).
+                // What kind of screen this is, known at once: the TV test as
+                // "isTv", and the smallest width in dp from the configuration.
+                // Flutter's own display size is not reported yet before
+                // runApp, which classified a tablet as a phone and locked it
+                // to portrait (Pixel C emulator, run 37219691574).
+                "deviceClass" -> {
+                    var tv = false
+                    try {
+                        val ui = getSystemService(Context.UI_MODE_SERVICE) as android.app.UiModeManager
+                        tv = ui.currentModeType == android.content.res.Configuration.UI_MODE_TYPE_TELEVISION ||
+                            packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_LEANBACK)
+                    } catch (_: Throwable) {
+                    }
+                    result.success(hashMapOf(
+                        "tv" to tv,
+                        "sw" to resources.configuration.smallestScreenWidthDp
+                    ))
+                }
                 "isTv" -> {
                     var tv = false
                     try {

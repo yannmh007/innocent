@@ -23,17 +23,33 @@ class DeviceProfile {
   static const MethodChannel _channel = MethodChannel('mx_clone/pip');
 
   /// Call once before runApp.
+  ///
+  /// The size comes from Android's configuration (smallestScreenWidthDp), not
+  /// from Flutter's display list: before runApp that list can still be empty
+  /// or zero-sized, and reading it there classified a 900 dp tablet as a
+  /// phone and locked it to portrait.
   static Future<void> init() async {
     if (kIsWeb || !Platform.isAndroid) return;
     var tv = false;
+    double? sw;
     try {
-      tv = await _channel.invokeMethod<bool>('isTv') ?? false;
-    } catch (_) {}
+      final m = await _channel.invokeMapMethod<String, dynamic>('deviceClass');
+      tv = m?['tv'] == true;
+      final v = (m?['sw'] as num?)?.toDouble();
+      if (v != null && v > 0) sw = v;
+    } catch (_) {
+      try {
+        tv = await _channel.invokeMethod<bool>('isTv') ?? false;
+      } catch (_) {}
+    }
     if (tv) {
       kind = DeviceKind.tv;
       return;
     }
-    kind = classify(_displayShortestSide());
+    kind = classify(sw ?? _displayShortestSide());
+    if (const bool.fromEnvironment('INNOCENT_LAB')) {
+      debugPrint('LAB device kind=$kind sw=$sw');
+    }
   }
 
   /// A screen whose shorter side is 600 dp or more is a tablet — Android's

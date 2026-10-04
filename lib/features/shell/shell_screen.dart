@@ -222,7 +222,15 @@ class _ShellScreenState extends ConsumerState<ShellScreen>
                 ),
               ),
             ),
-            Expanded(child: widget.child),
+            // The page in its own semantics container. Each page of the
+            // router's Navigator has a ModalBarrier, which wraps itself in
+            // BlockSemantics — and that drops everything painted before it
+            // in the same container: the rail. TalkBack on a tablet or TV
+            // could not reach Video / Music / Transfer / Me at all (Pixel C
+            // emulator; test/rail_semantics_test.dart).
+            Expanded(
+              child: Semantics(container: true, child: widget.child),
+            ),
           ],
         ),
       ));

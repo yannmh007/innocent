@@ -5,21 +5,22 @@ appId: com.innocent.media
 - waitForAnimationToEnd:
     timeout: 3000
 - takeScreenshot: 70_large_video
+# The rail's own tabs, by the label TalkBack reads ("Music\nTab 2 of 4"):
+# found only if the rail is in Android's accessibility tree.
 - tapOn:
-    text: ".*Music.*"
-    index: 0
+    text: "(?s).*Tab 2 of 4.*"
     optional: true
 - waitForAnimationToEnd:
     timeout: 3000
 - takeScreenshot: 71_large_music
 - tapOn:
-    text: "Me"
+    text: "(?s).*Tab 4 of 4.*"
     optional: true
 - waitForAnimationToEnd:
     timeout: 3000
 - takeScreenshot: 72_large_me
 - tapOn:
-    text: "Video"
+    text: "(?s).*Tab 1 of 4.*"
     optional: true
 - waitForAnimationToEnd:
     timeout: 3000
