@@ -17,6 +17,7 @@ import '../../../../core/services/file_transfer/file_transfer_service.dart';
 import '../../../../core/services/preferences/player_settings_service.dart';
 import '../../../../core/services/thumbnail/thumbnail_cache.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/ui/mx_dialog.dart';
 import '../../../../core/ui/app_snackbar.dart';
 import '../../../private_folder/data/private_folder_providers.dart';
 import '../../../shell/shell_screen.dart';
@@ -427,51 +428,30 @@ class BulkActions {
     await showDialog<void>(
       context: context,
       builder: (dctx) => AlertDialog(
-        backgroundColor: AppColors.darkSurface,
-        title:
-            Text(s.properties, style: const TextStyle(color: Colors.white)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            _row(s.videos, '${videos.length}'),
-            _row(s.folders, '${folders.length}'),
-            _row(s.size, _bytes(bytes)),
-            _row(s.duration, _hms(duration)),
-          ],
+        backgroundColor: MxDialog.background,
+        shape: MxDialog.shape,
+        insetPadding: MxDialog.inset,
+        title: Text(s.properties, style: MxDialog.title),
+        // As wide as the inset allows, as MX's is — not shrunk to the
+        // longest value.
+        content: SizedBox(
+          width: double.maxFinite,
+          child: MxDialog.rows(<(String, String)>[
+          (s.videos, '${videos.length}'),
+          (s.folders, '${folders.length}'),
+          (s.size, MxDialog.sizeWithBytes(bytes)),
+          (s.duration, _hms(duration)),
+          ]),
         ),
         actions: <Widget>[
           TextButton(
             onPressed: () => Navigator.of(dctx).pop(),
-            child: Text(s.close,
-                style: const TextStyle(color: AppColors.accentBlue)),
+            child: Text(s.okay, style: MxDialog.ok),
           ),
         ],
       ),
     );
     return true;
-  }
-
-  static Widget _row(String label, String value) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: <Widget>[
-            Text(label,
-                style: const TextStyle(
-                    color: AppColors.darkOnSurfaceMuted, fontSize: 13)),
-            const SizedBox(width: 24),
-            Text(value,
-                style: const TextStyle(color: Colors.white, fontSize: 13)),
-          ],
-        ),
-      );
-
-  static String _bytes(int b) {
-    if (b >= 1 << 30) return '${(b / (1 << 30)).toStringAsFixed(2)} GB';
-    if (b >= 1 << 20) return '${(b / (1 << 20)).toStringAsFixed(1)} MB';
-    if (b >= 1 << 10) return '${(b / (1 << 10)).toStringAsFixed(0)} KB';
-    return '$b B';
   }
 
   static String _hms(Duration d) {

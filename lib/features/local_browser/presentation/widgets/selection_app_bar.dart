@@ -69,7 +69,8 @@ class SelectionAppBar extends ConsumerWidget implements PreferredSizeWidget {
     final s = AppStrings.of(context);
     final count = ref.watch(selectionProvider).length;
     return AppBar(
-      backgroundColor: AppColors.darkSurface,
+      // MX: the bar is the page's own black, not a grey slab.
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       leading: IconButton(
         icon: const Icon(Icons.close),
         tooltip: s.cancel,
@@ -77,15 +78,33 @@ class SelectionAppBar extends ConsumerWidget implements PreferredSizeWidget {
       ),
       // "2 / 99 Selected" — the denominator is the point. Without it there is
       // no way to tell a nearly-complete selection from a barely-started one.
-      title: Text(
-        totalVisible > 0 ? '$count / $totalVisible' : '$count',
-        style: const TextStyle(fontWeight: FontWeight.w600),
+      // MX: "2 / 96 Selected", regular weight, a size up from a title.
+      // Shrinks rather than cutting "2 / 6 ခု ရွေးထားသည်" short.
+      title: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.centerLeft,
+        child: Text(
+          s.selectedCount(
+              totalVisible > 0 ? '$count / $totalVisible' : '$count'),
+          style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w400),
+          maxLines: 1,
+        ),
       ),
       actions: <Widget>[
         IconButton(
           icon: const Icon(Icons.play_arrow),
           tooltip: s.play,
           onPressed: () => _play(context, ref),
+        ),
+        // MX keeps Properties one tap away in this bar.
+        IconButton(
+          icon: const Icon(Icons.info),
+          tooltip: s.properties,
+          onPressed: () async {
+            final videos = _selected(ref);
+            if (videos.isEmpty) return;
+            await BulkActions.properties(context, ref, videos: videos);
+          },
         ),
         PopupMenuButton<String>(
           icon: const Icon(Icons.more_vert),
@@ -108,9 +127,6 @@ class SelectionAppBar extends ConsumerWidget implements PreferredSizeWidget {
               case 'rebuild':
                 handled = await BulkActions.rebuildThumbnails(context, ref,
                     videos: videos);
-              case 'properties':
-                handled = await BulkActions.properties(context, ref,
-                    videos: videos);
             }
             // Only clear on success. A cancelled vault prompt or a refused
             // share used to throw the selection away anyway, so the user had
@@ -124,7 +140,6 @@ class SelectionAppBar extends ConsumerWidget implements PreferredSizeWidget {
             const PopupMenuDivider(),
             _item('hide', Icons.visibility_off_outlined, s.hide),
             _item('rebuild', Icons.refresh, s.rebuildThumbnail),
-            _item('properties', Icons.info_outline, s.properties),
           ],
         ),
       ],

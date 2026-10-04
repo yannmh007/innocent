@@ -107,6 +107,9 @@ class VideoListItem extends ConsumerWidget {
     // tiles don't repaint when only one updates (e.g., its progress
     // bar after a watch session). Measurable smoothness win on long
     // scroll lists.
+    final thumbShown = libPrefs.showThumbnail &&
+        ref.watch(preferencesProvider.select((p) => p.showThumbnails));
+
     return Semantics(
       label: 'Video: $displayTitle',
       button: true,
@@ -117,8 +120,9 @@ class VideoListItem extends ConsumerWidget {
           : onTap,
       onLongPress: onLongPress,
       child: Container(
+        // MX: a selected row is lifted in grey; the blue is on its thumbnail.
         color: isSelected
-            ? AppColors.accentBlue12
+            ? (thumbShown ? const Color(0x29FFFFFF) : AppColors.accentBlue12)
             : null,
         child: Padding(
           // MX: 16 dp from the edge, 96×56 thumb, 78 dp row pitch.
@@ -126,7 +130,9 @@ class VideoListItem extends ConsumerWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              if (selectionActive)
+              // With a thumbnail, MX marks the selection ON it (below) and
+              // leaves the row where it was; without one, a mark is needed.
+              if (selectionActive && !thumbShown)
                 Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: Icon(
@@ -139,13 +145,9 @@ class VideoListItem extends ConsumerWidget {
                     size: 22,
                   ),
                 ),
-              if (libPrefs.showThumbnail &&
-                  // Code-quality audit: was watching the full
-                  // preferencesProvider, which rebuilt the tile when
-                  // ANY preference changed. `.select` narrows the
-                  // subscription to just `showThumbnails`.
-                  ref.watch(preferencesProvider
-                      .select((p) => p.showThumbnails)))
+              // Code-quality audit: `.select` (in thumbShown) narrows the
+              // subscription to just `showThumbnails`.
+              if (thumbShown)
                 Stack(
                   children: [
                     _Thumbnail(videoPath: _localPath(video), assetId: video.id),
@@ -232,6 +234,31 @@ class VideoListItem extends ConsumerWidget {
                         ),
                       );
                     }),
+                    if (isSelected) ...[
+                      Positioned.fill(
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: AppColors.accentBlue.withValues(alpha: 0.45),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                      ),
+                      // MX: a white disc with a blue tick, top right.
+                      Positioned(
+                        top: 4,
+                        right: 4,
+                        child: Container(
+                          width: 22,
+                          height: 22,
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.check,
+                              color: AppColors.accentBlue, size: 16),
+                        ),
+                      ),
+                    ],
                   ],
                 )
               else if (libPrefs.showThumbnail)

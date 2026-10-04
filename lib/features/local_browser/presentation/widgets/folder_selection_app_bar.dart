@@ -37,9 +37,11 @@ class FolderSelectionAppBar extends ConsumerWidget
     final s = AppStrings.of(context);
     final selected = ref.watch(folderSelectionProvider);
     final count = selected.length;
+    final total = ref.watch(foldersProvider).valueOrNull?.length ?? 0;
 
     return AppBar(
-      backgroundColor: AppColors.specSurface,
+      // MX: the bar is the page's own black, not a grey slab.
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       elevation: 0,
       leading: IconButton(
         icon: const Icon(Icons.close),
@@ -47,9 +49,17 @@ class FolderSelectionAppBar extends ConsumerWidget
         onPressed: () =>
             ref.read(folderSelectionProvider.notifier).clear(),
       ),
-      title: Text(s.selectedCount(count),
-          style: const TextStyle(
-              color: Colors.white, fontSize: 17, fontWeight: FontWeight.w600)),
+      // MX: "1 / 25 Selected" and only Play, Properties and the overflow
+      // up here. Five icons left the count itself cut to "1 sel…".
+      title: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.centerLeft,
+        child: Text(
+            s.selectedCount(total > 0 ? '$count / $total' : '$count'),
+            maxLines: 1,
+            style: const TextStyle(
+                color: Colors.white, fontSize: 21, fontWeight: FontWeight.w400)),
+      ),
       actions: [
         IconButton(
           icon: const Icon(Icons.play_arrow),
@@ -57,24 +67,21 @@ class FolderSelectionAppBar extends ConsumerWidget
           onPressed: () => _playAll(context, ref, selected),
         ),
         IconButton(
-          icon: const Icon(Icons.lock_outline),
-          tooltip: s.lockInPrivateFolder,
-          onPressed: () => _lockInPrivate(context, ref, selected),
-        ),
-        IconButton(
-          icon: const Icon(Icons.share_outlined),
-          tooltip: s.share,
-          onPressed: () => _share(context, ref, selected),
-        ),
-        IconButton(
-          icon: const Icon(Icons.delete_outline),
-          tooltip: s.delete,
-          onPressed: () => _delete(context, ref, selected),
+          icon: const Icon(Icons.info),
+          tooltip: s.properties,
+          onPressed: () async {
+            final videos = _videosInSelection(ref, selected);
+            if (videos.isEmpty) return;
+            await BulkActions.properties(context, ref, videos: videos);
+          },
         ),
         PopupMenuButton<String>(
           icon: const Icon(Icons.more_vert),
           color: AppColors.darkSurface,
           onSelected: (v) async {
+            if (v == 'lock') return _lockInPrivate(context, ref, selected);
+            if (v == 'share') return _share(context, ref, selected);
+            if (v == 'delete') return _delete(context, ref, selected);
             if (v == 'all') {
               final folders =
                   ref.read(foldersProvider).valueOrNull ?? const [];
@@ -99,9 +106,6 @@ class FolderSelectionAppBar extends ConsumerWidget
               case 'rebuild':
                 handled = await BulkActions.rebuildThumbnails(context, ref,
                     videos: videos);
-              case 'properties':
-                handled = await BulkActions.properties(context, ref,
-                    videos: videos);
             }
             if (handled) {
               ref.read(folderSelectionProvider.notifier).clear();
@@ -110,10 +114,13 @@ class FolderSelectionAppBar extends ConsumerWidget
           itemBuilder: (_) => <PopupMenuEntry<String>>[
             _menuItem('all', Icons.select_all, s.selectAll),
             const PopupMenuDivider(),
+            _menuItem('share', Icons.share_outlined, s.share),
+            _menuItem('lock', Icons.lock_outline, s.lockInPrivateFolder),
             _menuItem('transfer', Icons.send_to_mobile, s.tabTransfer),
             _menuItem('hide', Icons.visibility_off_outlined, s.hide),
             _menuItem('rebuild', Icons.refresh, s.rebuildThumbnail),
-            _menuItem('properties', Icons.info_outline, s.properties),
+            const PopupMenuDivider(),
+            _menuItem('delete', Icons.delete_outline, s.delete),
           ],
         ),
       ],

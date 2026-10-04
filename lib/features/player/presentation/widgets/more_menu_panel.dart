@@ -89,16 +89,17 @@ class MoreMenuPanel extends StatelessWidget {
             GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              padding: EdgeInsets.zero,
+              // MX (portrait): four columns 89 dp apart, the first centred
+              // 72 dp in — 27 dp from each edge, 12 of them the sheet's.
+              padding: const EdgeInsets.symmetric(horizontal: 15),
               gridDelegate:
                   const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 4,
-                // Fixed-height cells keep the grid compact and identical in
-                // both orientations (56 dp circle + 6 dp gap + a wrapping
-                // 13 sp label ≈ 91 dp).
-                mainAxisExtent: 92,
+                // MX: one row every 84 dp — a 47 dp ring, 9 dp, then a
+                // label of up to two 12.5 sp lines.
+                mainAxisExtent: 84,
                 crossAxisSpacing: 0,
-                mainAxisSpacing: 4,
+                mainAxisSpacing: 0,
               ),
               itemCount: items.length,
               itemBuilder: (_, i) => _MoreMenuItem(data: items[i]),
@@ -126,7 +127,8 @@ class MoreMenuPanel extends StatelessWidget {
               gridDelegate:
                   const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
-                mainAxisExtent: 38,
+                // MX: a checkbox row every 43 dp.
+                mainAxisExtent: 43,
                 crossAxisSpacing: 12,
                 mainAxisSpacing: 0,
               ),
@@ -216,15 +218,15 @@ class _SectionHeader extends StatelessWidget {
         children: [
           Text(
             label,
+            // MX: the section names are plain 16 sp, not small bold caps.
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
+              fontSize: 16,
+              fontWeight: FontWeight.w400,
             ),
           ),
-          // Material Switch scaled down toward the spec's small track.
           Transform.scale(
-            scale: 0.7,
+            scale: 0.85,
             child: Switch(
               value: value,
               onChanged: onChanged,
@@ -257,28 +259,30 @@ class _MoreMenuItem extends StatelessWidget {
           Stack(
             clipBehavior: Clip.none,
             children: [
-              // 56 dp circular icon button with a faint white ring.
+              // MX: a 47 dp ring you can actually see (white at ~45%, not
+              // the 12% hairline it was), a 24 dp icon inside.
               Container(
-                width: 56,
-                height: 56,
+                width: 47,
+                height: 47,
                 decoration: const BoxDecoration(
                   shape: BoxShape.circle,
                   color: Colors.transparent,
                   border: Border.fromBorderSide(
-                    BorderSide(color: AppColors.specRing, width: 1),
+                    BorderSide(color: Color(0x73FFFFFF), width: 1.2),
                   ),
                 ),
-                child: Icon(data.icon, color: Colors.white, size: 20),
+                child: Icon(data.icon, color: Colors.white, size: 24),
               ),
               if (data.hasNotificationDot)
+                // MX: a 10 dp dot sitting on the ring's top-right edge.
                 const Positioned(
-                  top: 5,
-                  right: 4,
+                  top: -1,
+                  right: -1,
                   child: _NotificationDot(),
                 ),
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 9),
           Text(
             data.label,
             textAlign: TextAlign.center,
@@ -286,7 +290,7 @@ class _MoreMenuItem extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 13,
+              fontSize: 12.5,
               height: 1.1,
             ),
           ),
@@ -302,8 +306,8 @@ class _NotificationDot extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 6,
-      height: 6,
+      width: 10,
+      height: 10,
       decoration: const BoxDecoration(
         color: AppColors.specNotifDot,
         shape: BoxShape.circle,
@@ -353,7 +357,7 @@ class _ShortcutCheckRow extends StatelessWidget {
               label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: Colors.white, fontSize: 15),
+              style: const TextStyle(color: Colors.white, fontSize: 16.5),
             ),
           ),
         ],

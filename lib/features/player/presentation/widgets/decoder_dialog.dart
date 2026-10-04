@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/theme/app_colors.dart';
 import '../shortcut_item.dart';
 
 import '../../../../core/localization/app_strings.dart';
@@ -29,25 +28,27 @@ class DecoderDialog extends StatelessWidget {
           ),
         ),
         // Dialog card
+        // MX: a translucent slate card 11 dp from the screen edges (capped
+        // on wide screens), nearly square corners.
         Center(
           child: Container(
-            width: 380,
-            padding: const EdgeInsets.symmetric(vertical: 16),
+            width: (MediaQuery.of(context).size.width - 22).clamp(0.0, 520.0),
+            padding: const EdgeInsets.symmetric(vertical: 12),
             decoration: BoxDecoration(
-              color: AppColors.darkSurfaceVariant,
-              borderRadius: BorderRadius.circular(8),
+              color: const Color(0xF0414249),
+              borderRadius: BorderRadius.circular(3),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
+                  padding: const EdgeInsets.fromLTRB(24, 6, 24, 8),
                   child: Text(AppStrings.of(context).selectDecoder,
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w500,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w400,
                     ),
                   ),
                 ),
@@ -96,22 +97,24 @@ class _DecoderOption extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        // MX: 48 dp rows, white rings, the chosen one in MX's cyan, the
+        // label 73 dp in.
+        padding: const EdgeInsets.symmetric(horizontal: 23, vertical: 12),
         child: Row(
           children: [
             Icon(
               isSelected
                   ? Icons.radio_button_checked
                   : Icons.radio_button_unchecked,
-              color: isSelected ? AppColors.accentBlue : Colors.white54,
-              size: 22,
+              color: isSelected ? const Color(0xFF6AE6FF) : Colors.white,
+              size: 24,
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 26),
             Text(
               _label,
               style: const TextStyle(
                 color: Colors.white,
-                fontSize: 16,
+                fontSize: 17,
               ),
             ),
           ],

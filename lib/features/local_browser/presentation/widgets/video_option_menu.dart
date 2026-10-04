@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'dart:io';
+import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +8,7 @@ import 'package:path/path.dart' as p;
 import 'package:share_plus/share_plus.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/ui/mx_dialog.dart';
 import '../../../../core/utils/media_address.dart';
 import '../../../../core/ui/app_snackbar.dart';
 import '../../../../core/services/private_folder/private_folder_service.dart';
@@ -65,6 +67,9 @@ class VideoOptionMenu extends ConsumerWidget {
     return showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
+      // MX leaves the list behind it readable — the sheet's own frosted
+      // glass sets it apart, not a heavy scrim.
+      barrierColor: const Color(0x33000000),
       // Draggable sheet: opens partially (through "Rename") to avoid eating
       // the whole screen; the user drags up to reveal the rest. The body
       // uses a DraggableScrollableSheet + SafeArea so nothing is ever hidden
@@ -760,6 +765,12 @@ class VideoOptionMenu extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isFav = ref.watch(favouritesProvider).contains(video.uri);
+    // The same title the list row shows: extension only when asked for.
+    final showExt = ref.watch(
+        libraryPreferencesProvider.select((p) => p.showFileExt));
+    final dot = video.title.lastIndexOf('.');
+    final title =
+        showExt || dot <= 0 ? video.title : video.title.substring(0, dot);
 
     final items = [
       // Custom order (user-specified): the most-used actions first, so the
@@ -862,8 +873,8 @@ class VideoOptionMenu extends ConsumerWidget {
     final media = MediaQuery.of(context);
     final screenH = media.size.height;
     final bottomInset = media.padding.bottom; // nav-bar / gesture inset
-    const rowH = 50.0; // InkWell row (14*2 padding + 22 icon ≈ 50)
-    const headerH = 92.0; // handle + title + divider
+    const rowH = 56.0; // MX: 56 dp rows (16*2 padding + 24 icon)
+    const headerH = 57.0; // title row + divider
     final totalContentH =
         headerH + rowH * items.length + bottomInset + 8;
     final initialContentH =
@@ -882,43 +893,57 @@ class VideoOptionMenu extends ConsumerWidget {
       minChildSize: (initialFrac * 0.6).clamp(0.20, initialFrac),
       maxChildSize: maxFrac,
       builder: (context, scrollController) {
-        return Container(
-          decoration: const BoxDecoration(
-            color: AppColors.darkSurface,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
-          ),
+        // MX: frosted glass over the list it came from, 22 dp corners.
+        return ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
+          child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+          child: Container(
+          color: const Color(0xD91A1A1A),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Pinned header (drag handle + title). Not part of the scroll
-              // so it stays visible as the user drags/scrolls the list.
-              Center(
-                child: Container(
-                  margin: const EdgeInsets.only(top: 8, bottom: 12),
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.white24,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
+              // Pinned header (title, with a faint drag handle at its top
+              // edge). Not part of the scroll so it stays visible as the
+              // user drags/scrolls the list. MX: a 56 dp title row, the
+              // title in semi-bold 17 dp from the edge.
+              SizedBox(
+                height: 56,
+                child: Stack(
+                  children: [
+                    Align(
+                      alignment: Alignment.topCenter,
+                      child: Container(
+                        margin: const EdgeInsets.only(top: 6),
+                        width: 32,
+                        height: 3,
+                        decoration: BoxDecoration(
+                          color: Colors.white24,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(17, 4, 17, 0),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          title,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16.5,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                child: Text(
-                  video.title,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              const Divider(height: 1, color: Colors.white12),
+              const Divider(height: 1, color: Colors.white30),
               // The options. This ListView is driven by the sheet's own
               // scrollController, so dragging the sheet and scrolling the
               // list are unified: a drag past the top expands the sheet,
@@ -935,8 +960,9 @@ class VideoOptionMenu extends ConsumerWidget {
                     return InkWell(
                       onTap: item.onTap,
                       child: Padding(
+                        // MX: icon centred 28 dp in, label from 57 dp.
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 24, vertical: 14),
+                            horizontal: 16, vertical: 16),
                         child: Row(
                           children: [
                             Icon(
@@ -944,16 +970,20 @@ class VideoOptionMenu extends ConsumerWidget {
                               color: item.isDestructive
                                   ? AppColors.error
                                   : Colors.white,
-                              size: 22,
+                              size: 24,
                             ),
-                            const SizedBox(width: 20),
-                            Text(
-                              item.label,
-                              style: TextStyle(
-                                color: item.isDestructive
-                                    ? AppColors.error
-                                    : Colors.white,
-                                fontSize: 15,
+                            const SizedBox(width: 17),
+                            Expanded(
+                              child: Text(
+                                item.label,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: item.isDestructive
+                                      ? AppColors.error
+                                      : Colors.white,
+                                  fontSize: 17,
+                                ),
                               ),
                             ),
                           ],
@@ -964,6 +994,8 @@ class VideoOptionMenu extends ConsumerWidget {
                 ),
               ),
             ],
+          ),
+          ),
           ),
         );
       },
@@ -1256,29 +1288,23 @@ class _VideoInfoDialogState extends ConsumerState<VideoInfoDialog> {
     final bitrate = _estimatedBitrate();
 
     return Dialog(
-      backgroundColor: AppColors.darkSurface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      backgroundColor: MxDialog.background,
+      shape: MxDialog.shape,
+      insetPadding: MxDialog.inset,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 400, maxHeight: 560),
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Title = file name (MX Player uses the name as the heading).
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
-              child: Text(
-                fileName,
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700),
-              ),
+              padding: const EdgeInsets.fromLTRB(28, 24, 28, 8),
+              child: Text(fileName, style: MxDialog.title),
             ),
-            const Divider(height: 1, color: Colors.white12),
             Flexible(
               child: SingleChildScrollView(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                padding: const EdgeInsets.fromLTRB(28, 8, 28, 8),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -1328,19 +1354,13 @@ class _VideoInfoDialogState extends ConsumerState<VideoInfoDialog> {
                 ),
               ),
             ),
-            const Divider(height: 1, color: Colors.white12),
             Padding(
-              padding: const EdgeInsets.only(right: 8, top: 4, bottom: 4),
+              padding: const EdgeInsets.only(right: 16, top: 4, bottom: 10),
               child: Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: Text(
-                    s.okay,
-                    style: const TextStyle(
-                        color: AppColors.accentBlue,
-                        fontWeight: FontWeight.w600),
-                  ),
+                  child: Text(s.okay, style: MxDialog.ok),
                 ),
               ),
             ),
@@ -1363,10 +1383,7 @@ class _SectionHeader extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 6),
       child: Text(
         label,
-        style: const TextStyle(
-            color: Colors.white,
-            fontSize: 15,
-            fontWeight: FontWeight.w700),
+        style: MxDialog.title.copyWith(fontSize: 15),
       ),
     );
   }
@@ -1380,29 +1397,19 @@ class _InfoRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: 5),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Wide enough for the Burmese labels ("ကြည်လင်ပြတ်သားမှု") to
+          // stay on one line; a long one may still wrap rather than crush
+          // its value.
           SizedBox(
-            width: 90,
-            child: Text(
-              label,
-              style: const TextStyle(
-                color: AppColors.darkOnSurfaceMuted,
-                fontSize: 13,
-              ),
-            ),
+            width: 124,
+            child: Text(label, style: MxDialog.label),
           ),
           Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 13,
-              ),
-              softWrap: true,
-            ),
+            child: Text(value, style: MxDialog.value, softWrap: true),
           ),
         ],
       ),
