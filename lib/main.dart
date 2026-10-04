@@ -16,6 +16,7 @@ import 'features/video_hub/data/cache/stream_cache_store.dart';
 import 'core/router/app_router.dart';
 import 'core/router/routes.dart';
 import 'core/services/diagnostics/crash_breadcrumbs.dart';
+import 'core/services/diagnostics/cpu_probe.dart';
 import 'core/services/diagnostics/crash_diagnostics.dart';
 import 'core/services/diagnostics/sentry_reporting.dart';
 import 'core/services/equalizer/equalizer_service.dart';
@@ -41,6 +42,8 @@ void main() async {
   // back from Android in Settings → Diagnostics.
   await CrashBreadcrumbs.start();
   CrashDiagnostics.installErrorHooks();
+  // Which thread is using the CPU, every ten seconds — for "Report a problem".
+  CpuProbe.start();
 
   // Anything the streaming disk cache left behind. It should be nothing —
   // the files are unlinked the moment they are created, so even a crash

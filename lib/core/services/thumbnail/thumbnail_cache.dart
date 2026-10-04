@@ -36,6 +36,17 @@ class ThumbnailCache {
 
   final Map<String, Future<Uint8List?>> _inflight = {};
   final Map<String, Uint8List> _memoryCache = {};
+
+  /// Keys whose thumbnail could not be made this session.
+  ///
+  /// A failure used to be forgotten the moment it happened, so a file the
+  /// decoder cannot open (a broken download, a codec MediaMetadataRetriever
+  /// lacks, a file still being written) was decoded again EVERY time its
+  /// tile was built — on each scroll past it, each tab switch, each rebuild of
+  /// "Recently added" — the most expensive thing this class does, repeated
+  /// for an answer that does not change. Remembered until [invalidate] or
+  /// [clear], or the next launch.
+  final Set<String> _failed = <String>{};
   static const int _maxMemoryEntries = 100;
   Directory? _cacheDir;
 
@@ -71,12 +82,17 @@ class ThumbnailCache {
     if (assetId.isEmpty) return null;
     final key = 'a_${assetId.hashCode.toUnsigned(32).toRadixString(16)}.jpg';
     if (_memoryCache.containsKey(key)) return _memoryCache[key];
+    if (_failed.contains(key)) return null;
     if (_inflight.containsKey(key)) return _inflight[key]!;
     final future = _generateByAsset(assetId, key);
     _inflight[key] = future;
     try {
       final result = await future;
-      if (result != null) _addToMemory(key, result);
+      if (result != null) {
+        _addToMemory(key, result);
+      } else {
+        _failed.add(key);
+      }
       return result;
     } finally {
       _inflight.remove(key);
@@ -124,6 +140,8 @@ class ThumbnailCache {
       return _memoryCache[key];
     }
 
+    if (_failed.contains(key)) return null;
+
     // Coalesce concurrent requests for same key
     if (_inflight.containsKey(key)) {
       return _inflight[key]!;
@@ -135,6 +153,8 @@ class ThumbnailCache {
       final result = await future;
       if (result != null) {
         _addToMemory(key, result);
+      } else {
+        _failed.add(key);
       }
       return result;
     } finally {
@@ -278,6 +298,7 @@ class ThumbnailCache {
     final key = _cacheKey(videoPath);
     _memoryCache.remove(key);
     _inflight.remove(key);
+    _failed.remove(key);
     try {
       final dir = await _getCacheDir();
       final file = File('${dir.path}/$key');
@@ -303,6 +324,7 @@ class ThumbnailCache {
       final key = _cacheKey(path);
       _memoryCache.remove(key);
       _inflight.remove(key);
+      _failed.remove(key);
       if (dir == null) continue;
       try {
         final file = File('${dir.path}/$key');
@@ -316,6 +338,7 @@ class ThumbnailCache {
   Future<void> clear() async {
     _memoryCache.clear();
     _inflight.clear();
+    _failed.clear();
     try {
       final dir = await _getCacheDir();
       if (await dir.exists()) {

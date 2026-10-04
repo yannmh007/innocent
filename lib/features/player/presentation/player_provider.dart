@@ -1771,6 +1771,29 @@ class PlayerController extends StateNotifier<PlayerState> {
     // decoder to be behind and no track list to be missing from.
     _startDecodeWatch();
     _armNoAudioCheck();
+    _logPipelineSoon();
+  }
+
+  /// Twice per film — once it has settled, and a minute in — write how it is
+  /// being decoded and drawn into the playback log (see
+  /// [MediaKitPlayerService.describePipeline]). Pairs with CpuProbe's lines:
+  /// together they say whether the CPU is decoding, drawing or idling.
+  void _logPipelineSoon() {
+    for (final after in const <Duration>[
+      Duration(seconds: 8),
+      Duration(seconds: 60),
+    ]) {
+      Timer(after, () async {
+        if (!mounted) return;
+        final svc = _ref.read(videoPlayerServiceProvider);
+        if (svc is! MediaKitPlayerService) return;
+        try {
+          PlaybackLog.add(await svc.describePipeline());
+        } catch (_) {
+          // A log line is never worth an error.
+        }
+      });
+    }
   }
 
   /// True when something currently on screen actually displays the playback

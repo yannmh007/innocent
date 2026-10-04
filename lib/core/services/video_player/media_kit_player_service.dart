@@ -1763,6 +1763,30 @@ class MediaKitPlayerService implements VideoPlayerService {
     );
   }
 
+  /// One line saying HOW this film is being decoded and drawn, for the
+  /// playback log: the decoder actually in use (`hwdec-current` — `no` means
+  /// the CPU is decoding every frame), the video output, the codec and size,
+  /// the frame rate mpv is achieving, and frames dropped so far. The phone's
+  /// own CPU meter cannot tell a hardware decode from a software one; this
+  /// can, and they differ several-fold in battery.
+  Future<String> describePipeline() async {
+    Future<String> p(String k) async =>
+        (await _getMpvProperty(k))?.trim() ?? '?';
+    final hw = await p('hwdec-current');
+    final vo = await p('current-vo');
+    final codec = await p('video-codec');
+    final w = await p('video-params/w');
+    final h = await p('video-params/h');
+    final pix = await p('video-params/hw-pixelformat');
+    final fps = await p('estimated-vf-fps');
+    final dec = await p('decoder-frame-drop-count');
+    final vod = await p('frame-drop-count');
+    final threads = await p('vd-lavc-threads');
+    return 'video ${codec.split(' ').first} ${w}x$h hwdec=$hw($pix) vo=$vo '
+        'fps=${double.tryParse(fps)?.toStringAsFixed(1) ?? fps} '
+        'drop=$dec/$vod thr=$threads';
+  }
+
   /// The cumulative decoder drop count, for the caller to carry between
   /// readings. Separate from [readStallNumbers] so the delta arithmetic lives
   /// in one place and this stays a plain accessor.

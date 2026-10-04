@@ -1,0 +1,29 @@
+# The Video tab, standing still, with a library on the phone (run.sh pushes
+# one when LIBRARY > 0). Nothing is touched for a minute: whatever the app
+# does in that minute, it does on its own. CpuProbe logs which thread spent
+# the CPU and how many frames were drawn ("LAB cpu" lines).
+appId: com.innocent.media
+---
+- launchApp
+- waitForAnimationToEnd:
+    timeout: 10000
+- tapOn:
+    text: "Allow.*"
+    optional: true
+- tapOn:
+    text: "Allow.*"
+    optional: true
+- tapOn:
+    text: "Video"
+    optional: true
+- extendedWaitUntil:
+    visible: "__nothing_has_this_text__"
+    timeout: 60000
+    optional: true
+- takeScreenshot: 30_idle_local
+- scroll
+- extendedWaitUntil:
+    visible: "__nothing_has_this_text__"
+    timeout: 20000
+    optional: true
+- takeScreenshot: 31_idle_scrolled

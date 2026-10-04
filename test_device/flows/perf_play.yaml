@@ -1,0 +1,30 @@
+# A local 720p H.264 film (pushed by run.sh as "aaa_play_720p.mp4" in its own folder,
+# "Perf Test" — "Movies" would also match the Movies chip)
+# played for a minute with the controls hidden — the case the owner measured
+# against MX Player. The emulator forces software decoding (media_kit does
+# that on any emulator), so the decoder's share here is an upper bound; what
+# this measures cleanly is everything else: Flutter's UI and raster threads,
+# libmpv's output thread, and anything of ours that runs during playback.
+appId: com.innocent.media
+---
+- scrollUntilVisible:
+    element:
+      text: "Perf Test"
+    direction: DOWN
+    optional: true
+- tapOn:
+    text: "Perf Test"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- tapOn:
+    text: "aaa_play_720p.*"
+    optional: true
+- extendedWaitUntil:
+    visible: "__nothing_has_this_text__"
+    timeout: 60000
+    optional: true
+- takeScreenshot: 40_playing_60s
+- back
+- waitForAnimationToEnd:
+    timeout: 5000

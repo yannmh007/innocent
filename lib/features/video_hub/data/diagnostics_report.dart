@@ -5,6 +5,7 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../../core/app_version.dart';
+import '../../../core/services/diagnostics/cpu_probe.dart';
 import '../../../core/services/diagnostics/crash_breadcrumbs.dart';
 import '../../../core/services/diagnostics/playback_log.dart';
 import '../../../core/services/network/connection_kind.dart';
@@ -74,12 +75,18 @@ class DiagnosticsReport {
     required String playback,
     required String session,
     required String previous,
+    String cpu = '',
   }) {
     final parts = <String>[
       '== this session (breadcrumbs)',
       session.trim().isEmpty ? '(empty)' : session.trim(),
       '== playback and downloads (latest)',
       playback.trim().isEmpty ? '(empty)' : playback.trim(),
+      // Per-thread CPU and frames drawn, every ten seconds (CpuProbe).
+      if (cpu.trim().isNotEmpty) ...<String>[
+        '== cpu by thread (latest)',
+        cpu.trim(),
+      ],
       if (previous.trim().isNotEmpty) ...<String>[
         '== previous session (it may have ended in a crash)',
         previous.trim(),
@@ -125,6 +132,7 @@ class DiagnosticsReport {
           playback: PlaybackLog.text,
           session: CrashBreadcrumbs.currentSession,
           previous: CrashBreadcrumbs.previousSession,
+          cpu: CpuProbe.text,
         ),
       },
       // Signed in: the row names the account (RLS allows only the caller).
