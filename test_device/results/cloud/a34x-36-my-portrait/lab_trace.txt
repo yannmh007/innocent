@@ -1,5 +1,0 @@
-LAB cpu app 24% · 0.2fps · pool-thread 21% | .innocent.media 2%
-LAB cpu app 0% · 0.0fps · -
-LAB cpu app 0% · 0.0fps · -
-LAB cpu app 0% · 0.0fps · -
-LAB cpu app 0% · 0.0fps · -

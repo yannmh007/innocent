@@ -1,6 +1,6 @@
 LAB    0.0 LAB script: phase default
-LAB cpu app 63% · 0.3fps · pool-thread 53% | .innocent.media 4% | 1.raster 3% | HeapTaskDaemon 1%
+LAB cpu app 63% · 0.5fps · pool-thread 51% | .innocent.media 4% | 1.raster 4% | Thread 2% | HeapTaskDaemon 1%
 LAB   55.0 LAB script: phase hwplus
-LAB cpu app 3% · 0.1fps · .innocent.media 2%
+LAB cpu app 2% · 0.1fps · .innocent.media 2%
 LAB  110.0 LAB script: phase sw
 LAB cpu app 1% · 0.1fps · -

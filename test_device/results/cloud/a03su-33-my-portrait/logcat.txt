@@ -1,522 +1,558 @@
-10-04 04:10:16.825  1370  6451 W ActivityManager: Scheduling restart of crashed service com.samsung.android.app.galaxyfinder/.acceleration.AppCoreService in 1000ms for start-requested
-10-04 04:10:16.849  1370  1410 W ActivityManager: Rescheduling restart of crashed service com.samsung.android.app.galaxyfinder/.acceleration.AppCoreService in 9975ms for mem-pressure-event
-10-04 04:10:17.725  1370  1410 W ActivityManager: Rescheduling restart of crashed service com.samsung.android.app.galaxyfinder/.acceleration.AppCoreService in 98ms for mem-pressure-event
-10-04 04:10:20.687 31903 31903 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-10-04 04:10:20.698 31903 31903 I AndroidRuntime: Using default boot image
-10-04 04:10:20.698 31903 31903 I AndroidRuntime: Leaving lock profiling enabled
-10-04 04:10:20.699 31903 31903 D AndroidRuntime: addProductProperty: pBrand1 is not null
-10-04 04:10:20.699 31903 31903 D AndroidRuntime: addProductProperty: not brand or 7
-10-04 04:10:21.097 31903 31903 D AndroidRuntime: Calling main entry com.android.commands.am.Am
-10-04 04:10:21.510 31903 31903 I AndroidRuntime: VM exiting with result code 0.
-10-04 04:10:21.522  1370  7753 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.droidguard.DroidGuardService in 30000ms for connection
-10-04 04:10:21.546  1370  1587 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.chimera.PersistentBoundBrokerService in 30000ms for connection
-10-04 04:10:21.551  1370  1587 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.crisisalerts.init.CrisisAlertsPersistentService in 69998ms for start-requested
-10-04 04:10:21.553  1370  1587 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/com.google.android.contextmanager.service.ContextManagerService in 109993ms for start-requested
-10-04 04:10:21.554  1370  1587 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.nearby.presence.service.LifeCycleService in 149991ms for start-requested
-10-04 04:10:21.558  1370  1587 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.remotegestures.api.RemoteGesturesService in 189990ms for start-requested
-10-04 04:10:21.571  1370  1587 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.personalsafety.service.SndDetectionService in 229975ms for start-requested
-10-04 04:10:21.574  1370  1587 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.play.integrity.api.service.IntegrityApiPersistentService in 269972ms for start-requested
-10-04 04:10:21.575  1370  1587 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.chimera.PersistentApiService in 309970ms for connection
-10-04 04:10:21.577  1370  1587 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.chimera.GmsIntentOperationService in 349969ms for start-requested
-10-04 04:10:21.579  1370  1587 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/com.google.android.location.internal.server.GoogleLocationService in 389967ms for start-requested
-10-04 04:10:21.580  1370  1587 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.location.geocode.GeocodeService in 429965ms for connection
-10-04 04:10:21.581  1370  1587 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/com.google.android.location.internal.server.HardwareArProviderService in 469964ms for connection
-10-04 04:10:21.584  1370  1587 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.auth.account.authenticator.GoogleAccountAuthenticatorService in 509962ms for connection
-10-04 04:10:21.585  1370  1587 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.presencemanager.service.PresenceManagerPresenceReportService in 549960ms for start-requested
-10-04 04:10:21.586  1370  1587 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.fido.authenticator.service.AuthenticatorService in 589959ms for start-requested
-10-04 04:10:21.588  1370  1587 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/com.google.android.location.internal.GoogleLocationManagerService in 629958ms for start-requested
-10-04 04:10:21.589  1370  1587 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.location.persistent.LocationPersistentService in 669957ms for start-requested
-10-04 04:10:21.590  1370  1587 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.nearby.sharing.SendSurfaceService in 709955ms for start-requested
-10-04 04:10:21.592  1370  1587 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.chimera.GmsBoundBrokerService in 749954ms for connection
-10-04 04:10:21.593  1370  1587 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.dtdi.lifecycle.LifecycleService in 789952ms for start-requested
-10-04 04:10:21.595  1370  1587 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.personalsafety.service.PersonalSafetyService in 829951ms for start-requested
-10-04 04:10:21.596  1370  1587 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.common.stats.GmsCoreStatsService in 869950ms for start-requested
-10-04 04:10:21.597  1370  1587 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/com.google.android.location.network.NetworkLocationService in 909948ms for connection
-10-04 04:10:21.601  1370  1587 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.thunderbird.EmergencyPersistentService in 949945ms for start-requested
-10-04 04:10:21.602  1370  1587 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.chimera.PersistentDirectBootAwareApiService in 989943ms for connection
-10-04 04:10:21.603  1370  1587 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.chimera.PersistentIntentOperationService in 1029942ms for start-requested
-10-04 04:10:21.605  1370  1587 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/com.google.android.location.fused.FusedLocationService in 1069941ms for connection
-10-04 04:10:21.606  1370  1587 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.gcm.GcmService in 1109939ms for start-requested
-10-04 04:10:21.608  1370  1587 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.gcm.nts.SchedulerService in 1149938ms for start-requested
-10-04 04:10:21.609  1370  1587 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.nearby.sharing.ReceiveSurfaceService in 1189937ms for start-requested
-10-04 04:10:21.610  1370  1587 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.geotimezone.GeoTimeZoneService in 1229936ms for connection
-10-04 04:10:21.611  1370  1587 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.auth.setup.devicesignals.LockScreenService in 1269934ms for start-requested
-10-04 04:10:22.031  1370  1411 W ActivityManager: Rescheduling restart of crashed service com.google.android.gms/.auth.account.authenticator.GoogleAccountAuthenticatorService in 551ms for other
-10-04 04:10:22.132  1370  1410 W ActivityManager: Rescheduling restart of crashed service com.google.android.gms/.auth.account.authenticator.GoogleAccountAuthenticatorService in 29451ms for mem-pressure-event
-10-04 04:10:25.577 32284 32284 W DIAGMON_SDK[605052]: ANR Logging can't be enabled because Configuration is null
-10-04 04:10:32.365   482   482 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-10-04 04:10:32.400   482   482 I AndroidRuntime: Using default boot image
-10-04 04:10:32.400   482   482 I AndroidRuntime: Leaving lock profiling enabled
-10-04 04:10:32.401   482   482 D AndroidRuntime: addProductProperty: pBrand1 is not null
-10-04 04:10:32.401   482   482 D AndroidRuntime: addProductProperty: not brand or 7
-10-04 04:10:33.362   482   482 D AndroidRuntime: Calling main entry com.android.commands.am.Am
-10-04 04:10:33.837   482   482 I AndroidRuntime: VM exiting with result code 0.
-10-04 04:10:34.665  1204  1340 V DynamiteModule: Dynamite loader version >= 2, using loadModule2NoCrashUtils
-10-04 04:10:35.518  1353  1353 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-10-04 04:10:35.542  1353  1353 I AndroidRuntime: Using default boot image
-10-04 04:10:35.542  1353  1353 I AndroidRuntime: Leaving lock profiling enabled
-10-04 04:10:35.543  1353  1353 D AndroidRuntime: addProductProperty: pBrand1 is not null
-10-04 04:10:35.543  1353  1353 D AndroidRuntime: addProductProperty: not brand or 7
-10-04 04:10:36.164  1353  1353 D AndroidRuntime: Calling main entry com.android.commands.am.Am
-10-04 04:10:36.293  1284  1529 I org.webrtc.Logging: CrashStartupListener: Checking conference crashes for 0 account(s).
-10-04 04:10:37.102 31966  1687 I serviceentitlement: (REDACTED) [CredManRegistrationManager] [%s] start to register
-10-04 04:10:37.223 31966  1687 I serviceentitlement: (REDACTED) [CredManRegistrationManager] [%s] Data length [%d] to register
-10-04 04:10:37.242 31966  1687 I serviceentitlement: (REDACTED) [CredManRegistrationManager] [%s] register #2
-10-04 04:10:37.246 31966  1687 I serviceentitlement: (REDACTED) [CredManRegistrationManager] [%s] register credential
-10-04 04:10:38.818 31966 31966 I serviceentitlement: (REDACTED) [CredManRegistrationManager] [%s][%s] Success to register credentials
-10-04 04:10:43.058  1353  1353 I AndroidRuntime: VM exiting with result code 0.
-10-04 04:10:43.944  2130  2130 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-10-04 04:10:43.966  2130  2130 I AndroidRuntime: Using default boot image
-10-04 04:10:43.966  2130  2130 I AndroidRuntime: Leaving lock profiling enabled
-10-04 04:10:43.968  2130  2130 D AndroidRuntime: addProductProperty: pBrand1 is not null
-10-04 04:10:43.968  2130  2130 D AndroidRuntime: addProductProperty: not brand or 7
-10-04 04:10:44.638  2130  2130 D AndroidRuntime: Calling main entry com.android.commands.content.Content
-10-04 04:10:44.734  2130  2130 D AndroidRuntime: Shutting down VM
-10-04 04:10:47.137  2507  2507 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-10-04 04:10:47.161  2507  2507 I AndroidRuntime: Using default boot image
-10-04 04:10:47.161  2507  2507 I AndroidRuntime: Leaving lock profiling enabled
-10-04 04:10:47.162  2507  2507 D AndroidRuntime: addProductProperty: pBrand1 is not null
-10-04 04:10:47.162  2507  2507 D AndroidRuntime: addProductProperty: not brand or 7
-10-04 04:10:47.969  2507  2507 D AndroidRuntime: Calling main entry com.android.commands.content.Content
-10-04 04:10:48.048  2507  2507 D AndroidRuntime: Shutting down VM
-10-04 04:10:55.726  1370  1560 W ActivityManager: Scheduling restart of crashed service com.samsung.android.app.galaxyfinder/.acceleration.AppCoreService in 1000ms for start-requested
-10-04 04:10:56.033  1370  1410 W ActivityManager: Rescheduling restart of crashed service com.samsung.android.app.galaxyfinder/.acceleration.AppCoreService in 9692ms for mem-pressure-event
-10-04 04:10:56.464  1370  1410 W ActivityManager: Rescheduling restart of crashed service com.samsung.android.app.galaxyfinder/.acceleration.AppCoreService in 260ms for mem-pressure-event
-10-04 04:10:57.060  1370  4890 W ActivityManager: Scheduling restart of crashed service com.sec.android.app.sbrowser/.custom_tab.CustomTabsConnectionService in 1000ms for connection
-10-04 04:11:01.639   543   543 D io_stats: !@ MemInfo(KB): total 2850444 free 85884 avail 1130916 actv(f) 479116 inactv(f) 676064 dirty 100940 wb 848 anonpg 645656 slab 235876
-10-04 04:11:02.612  1370  1450 I PackageManager:           pkg{com.innocent.media}
-10-04 04:11:03.051  1370  1451 D ApplicationPolicy: getApplicationStateEnabled : pkg = com.innocent.media userId : 0
-10-04 04:11:04.320  1370  1451 W ziparchive: Unable to open '/data/app/~~dCBa4_TCJTrRQvk6uRef6A==/com.innocent.media-QygMoXd2Mjjj51csZE2aGg==/base.dm': No such file or directory
-10-04 04:11:04.322  1370  1451 I PackageDexOptimizer: Running dexopt (dexoptNeeded=1) on: /data/app/~~dCBa4_TCJTrRQvk6uRef6A==/com.innocent.media-QygMoXd2Mjjj51csZE2aGg==/base.apk pkg=com.innocent.media isa=arm64 dexoptFlags=boot_complete,profile_guided,public,enable_hidden_api_checks targetFilter=speed-profile oatDir=/data/app/~~dCBa4_TCJTrRQvk6uRef6A==/com.innocent.media-QygMoXd2Mjjj51csZE2aGg==/oat classLoaderContext=PCL[]{} async=false
-10-04 04:11:04.328  1013  1519 V installd: DexInv: --- BEGIN '/data/app/~~dCBa4_TCJTrRQvk6uRef6A==/com.innocent.media-QygMoXd2Mjjj51csZE2aGg==/base.apk' ---
-10-04 04:11:04.328  1013  1519 V installd: Running /apex/com.android.art/bin/dex2oat32 in=base.apk out=/data/app/~~dCBa4_TCJTrRQvk6uRef6A==/com.innocent.media-QygMoXd2Mjjj51csZE2aGg==/oat/arm64/base.odex
-10-04 04:11:05.801  3501  3501 I dex2oat32: /apex/com.android.art/bin/dex2oat32 --input-vdex-fd=-1 --output-vdex-fd=11 --classpath-dir=/data/app/~~dCBa4_TCJTrRQvk6uRef6A==/com.innocent.media-QygMoXd2Mjjj51csZE2aGg== --class-loader-context=PCL[]{} --compact-dex-level=none --compiler-filter=speed-profile --compilation-reason=install --max-image-block-size=524288 --resolve-startup-const-strings=true --generate-mini-debug-info -j6
-10-04 04:11:09.656   543   543 D io_stats: !@ MemInfo(KB): total 2850444 free 162868 avail 1031952 actv(f) 408464 inactv(f) 569992 dirty 14300 wb 0 anonpg 757720 slab 236900
-10-04 04:11:09.968 20802 20963 V DynamiteModule: Dynamite loader version >= 2, using loadModule2NoCrashUtils
-10-04 04:11:13.646  3967  4038 W .android.scloud: Verification of m2.ch com.google.android.gms.dynamiteloader.DynamiteLoaderV2.loadModule2NoCrashUtils(m2.ch, java.lang.String, int, m2.ch) took 111.351ms (10659.93 bytecodes/s) (39264B approximate peak alloc)
-10-04 04:11:15.489  4121  4181 V DynamiteModule: Dynamite loader version >= 2, using loadModule2NoCrashUtils
-10-04 04:11:15.767  1013  1519 V installd: DexInv: --- END '/data/app/~~dCBa4_TCJTrRQvk6uRef6A==/com.innocent.media-QygMoXd2Mjjj51csZE2aGg==/base.apk' (success) ---
-10-04 04:11:15.975  1370  1451 I AppsFilter: interaction: PackageSetting{7ebf74 com.google.testing.helium.utp.android.companion.backdrop/10249} -> PackageSetting{e2d3608 com.innocent.media/10250} BLOCKED
-10-04 04:11:16.555  1370  1524 D OverlayManager: reconcileSettingsForPackage pkgName=com.innocent.media userId=0
-10-04 04:11:16.555  1370  1524 I OverlayManager: updateOverlaysForTarget() called with: targetPackage = [com.innocent.media], userId = [0], flags = [0], skipUpdateState = [false]
-10-04 04:11:16.589  4815  4815 D FaceWidgetMetadataParser: updatePackage() com.innocent.media true
-10-04 04:11:16.590  1370  4774 I SdkSandboxManager: No SDKs used. Skipping SDK data reconcilation for CallingInfo{mUid=10250, mPackageName='com.innocent.media'}
-10-04 04:11:16.590  4815  4815 D FaceWidgetMetadataParser: removePackage() key = com.innocent.media
-10-04 04:11:16.593  4815  4933 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PEOPLE_HUB_PERSON_EXTRACTOR
-10-04 04:11:16.593  4815  4933 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_SENSOR_MANAGER
-10-04 04:11:16.593  4815  4933 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_TOAST
-10-04 04:11:16.593  4815  4933 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_OVERLAY
-10-04 04:11:16.593  4815  4933 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_LOCKSCREEN_LEFT_BUTTON
-10-04 04:11:16.594  4815  4933 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_VOLUME
-10-04 04:11:16.594  4815  4933 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_QS
-10-04 04:11:16.594  4815  4933 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_GLOBAL_ACTIONS
-10-04 04:11:16.594  4815  4933 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_LOCKSCREEN_RIGHT_BUTTON
-10-04 04:11:16.594  4815  4933 D PluginInstanceManager: queryPkg com.innocent.media com.samsung.systemui.action.PLUGIN_FACE_WIDGET
-10-04 04:11:16.594  4815  4933 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_LOCKSCREEN_LEFT_BUTTON
-10-04 04:11:16.594  4815  4933 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_NOTIFICATION_MENU_ROW
-10-04 04:11:16.594  4815  4933 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_NOTIFICATION_MENU_ROW
-10-04 04:11:16.594  4815  4933 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_NOTIFICATION_MENU_ROW
-10-04 04:11:16.594  4815  4933 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_NOTIFICATION_ASSISTANT
-10-04 04:11:16.594  4815  4933 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_CLOCK
-10-04 04:11:16.594  4815  4933 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_CLOCK
-10-04 04:11:16.594  4815  4933 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_LOCKSCREEN_RIGHT_BUTTON
-10-04 04:11:16.594  4815  4933 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_QS_FACTORY
-10-04 04:11:16.614  2234  2234 I SCS@AiSearch user 0: (PackageBroadcastReceiver) packageName: com.innocent.media
-10-04 04:11:16.614  2234  2234 I SCS@AiSearch user 0: (PackageBroadcastReceiver) Packages changed: [com.innocent.media]
-10-04 04:11:16.623  5127  5127 D CarrierSvcBindHelper: onPackageAdded: com.innocent.media
-10-04 04:11:16.626  5127  5127 I VvmPkgInstalledRcvr: packageName: com.innocent.media, systemDialer: com.samsung.android.dialer
-10-04 04:11:16.649  5127  5127 D ImsResolver: maybeAddedImsService, packageName: com.innocent.media
-10-04 04:11:16.660  1370  1524 D OverlayManager: -> Updating overlay: target=com.innocent.media overlays=[OverlayPaths { resourceDirs = [], overlayPaths = [/data/resource-cache/com.android.systemui-neutral-Iiun.frro, /data/resource-cache/com.android.systemui-accent-GFsz.frro] }] userId=0
-10-04 04:11:16.661  1370  1524 I OMS_DEBUG: [updatePackageManagerLocked] updatedPackages : [com.innocent.media]
-10-04 04:11:16.666  1370  1524 I SWT_ThemeManager: com.innocent.media doesn't have metadata
-10-04 04:11:16.771  1370  1370 D SGM:GameManager: identifyGamePackage. com.innocent.media, mCurrentUserId: 0, callerUserId: 0, callingMethodInfo: com.samsung.android.game.SemGameManager.isGamePackage(SemGameManager.java:104)
-10-04 04:11:16.771  1370  1370 D SGM:PkgDataHelper: getGamePkgData(). com.innocent.media
-10-04 04:11:16.771  1370  1370 D SGM:SemGameManager: isGamePackage(), pkgName=com.innocent.media, ret=false
-10-04 04:11:16.771  1370  1370 I AppWidgetServiceImpl: Received broadcast: android.intent.action.PACKAGE_ADDED, Updates all providers with com.innocent.media, userId: 0
-10-04 04:11:16.775  1370  1370 I AppWidgetServiceImpl: addProviderLocked Provider is added Provider{ProviderId{user:0, app:10250, cmp:ComponentInfo{com.innocent.media/com.innocent.media.MusicWidgetProvider}}} at 39
-10-04 04:11:16.780  1370  4756 D SGM:GameManager: identifyGamePackage. com.innocent.media, mCurrentUserId: 0, callerUserId: 0, callingMethodInfo: com.samsung.android.game.SemGameManager.isGamePackage(SemGameManager.java:104)
-10-04 04:11:16.780  1370  4756 D SGM:PkgDataHelper: getGamePkgData(). com.innocent.media
-10-04 04:11:16.780  1370  4756 D SGM:SemGameManager: isGamePackage(), pkgName=com.innocent.media, ret=false
-10-04 04:11:16.795  1370  1370 I Telecom:<token>: action : android.intent.action.PACKAGE_ADDED / packageName : com.innocent.media
-10-04 04:11:16.802  1370  1370 I DomainFilter: packageAdded() - packageName: com.innocent.media, uid: 0
-10-04 04:11:16.831  1370  4817 D SGM:GameManager: identifyGamePackage. com.innocent.media, mCurrentUserId: 0, callerUserId: 0, callingMethodInfo: com.samsung.android.game.SemGameManager.isGamePackage(SemGameManager.java:104)
-10-04 04:11:16.831  1370  4817 D SGM:PkgDataHelper: getGamePkgData(). com.innocent.media
-10-04 04:11:16.831  1370  4817 D SGM:SemGameManager: isGamePackage(), pkgName=com.innocent.media, ret=false
-10-04 04:11:16.831  1370  4817 I Pageboost: appinfo : com.innocent.media 0 0 0 0
-10-04 04:11:16.837  1370  1370 D ApplicationPolicy: No updatable permission to DENY found for com.innocent.media(0)
-10-04 04:11:16.846  1370  4817 D SGM:GameManager: identifyGamePackage. com.innocent.media, mCurrentUserId: 0, callerUserId: 0, callingMethodInfo: com.samsung.android.game.SemGameManager.isGamePackage(SemGameManager.java:104)
-10-04 04:11:16.846  1370  4817 D SGM:PkgDataHelper: getGamePkgData(). com.innocent.media
-10-04 04:11:16.846  1370  4817 D SGM:SemGameManager: isGamePackage(), pkgName=com.innocent.media, ret=false
-10-04 04:11:16.847  1370  4817 I Pageboost: Reset this app info : com.innocent.media 
-10-04 04:11:16.849  1370  1370 D ApplicationPolicy: No updatable permission to GRANT found for com.innocent.media(0)
-10-04 04:11:16.864  1370  4817 I Pageboost: db create : CREATE TABLE IF NOT EXISTS cominnocentmedia (FILENAME TEXT, OFFSET INTEGER, SIZE INTEGER, FORVRAMDISK INTEGER, BITMAP BLOB, unique (FILENAME, OFFSET) );
-10-04 04:11:16.900 31966  4221 I ProximityAuth: [RecentAppsMediator] Package added: (user=UserHandle{0}) com.innocent.media
-10-04 04:11:16.993  1370  4817 I Pageboost: add app to global @ runtime: com.innocent.media
-10-04 04:11:17.105  1370  4756 W SemWifiTransportLayerUtils: getApplicationCategory - IOException com.innocent.media
-10-04 04:11:17.209  1370  1370 I AppsFilter: interaction: PackageSetting{7ebf74 com.google.testing.helium.utp.android.companion.backdrop/10249} -> PackageSetting{f20da0d com.innocent.media/10250} BLOCKED
-10-04 04:11:17.226  4815  4933 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PEOPLE_HUB_PERSON_EXTRACTOR
-10-04 04:11:17.226  4815  4933 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_SENSOR_MANAGER
-10-04 04:11:17.226  4815  4933 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_TOAST
-10-04 04:11:17.226  4815  4933 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_OVERLAY
-10-04 04:11:17.226  4815  4933 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_LOCKSCREEN_LEFT_BUTTON
-10-04 04:11:17.227  4815  4933 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_VOLUME
-10-04 04:11:17.227  4815  4933 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_QS
-10-04 04:11:17.227  4815  4933 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_GLOBAL_ACTIONS
-10-04 04:11:17.227  4815  4933 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_LOCKSCREEN_RIGHT_BUTTON
-10-04 04:11:17.227  4815  4933 D PluginInstanceManager: queryPkg com.innocent.media com.samsung.systemui.action.PLUGIN_FACE_WIDGET
-10-04 04:11:17.227  4815  4933 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_LOCKSCREEN_LEFT_BUTTON
-10-04 04:11:17.227  4815  4933 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_NOTIFICATION_MENU_ROW
-10-04 04:11:17.227  4815  4933 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_NOTIFICATION_MENU_ROW
-10-04 04:11:17.227  4815  4933 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_NOTIFICATION_MENU_ROW
-10-04 04:11:17.227  4815  4933 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_NOTIFICATION_ASSISTANT
-10-04 04:11:17.227  4815  4933 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_CLOCK
-10-04 04:11:17.227  4815  4933 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_CLOCK
-10-04 04:11:17.227  4815  4933 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_LOCKSCREEN_RIGHT_BUTTON
-10-04 04:11:17.227  4815  4933 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_QS_FACTORY
-10-04 04:11:17.230  5127  5127 D CarrierSvcBindHelper: onPackageModified: com.innocent.media
-10-04 04:11:17.237  5127  5127 D ImsResolver: maybeAddedImsService, packageName: com.innocent.media
-10-04 04:11:17.238  1370  1370 I AppWidgetServiceImpl: Received broadcast: android.intent.action.PACKAGE_CHANGED, Updates all providers with com.innocent.media, userId: 0
-10-04 04:11:17.268  4815  4815 D FaceWidgetMetadataParser: updatePackage() com.innocent.media false
-10-04 04:11:17.269  4815  4815 D FaceWidgetMetadataParser: removePackage() key = com.innocent.media
-10-04 04:11:17.292  1370  1370 D ApplicationPolicy: No updatable permission to DENY found for com.innocent.media(0)
-10-04 04:11:17.300  2234  2234 I SCS@AiSearch user 0: (PackageBroadcastReceiver) packageName: com.innocent.media
-10-04 04:11:17.300  2234  2234 I SCS@AiSearch user 0: (PackageBroadcastReceiver) Packages changed: [com.innocent.media]
-10-04 04:11:17.318  1370  1370 D ApplicationPolicy: No updatable permission to GRANT found for com.innocent.media(0)
-10-04 04:11:17.323 13280 13374 I DWBLocalPackageManager: onPackageAdded Already Exist : com.innocent.media
-10-04 04:11:17.448  1370  1398 I CompanionDeviceManagerService: onPackageModified() u0/com.innocent.media
-10-04 04:11:19.334  1370  1410 D AppWidgetServiceImpl: Provider info from ComponentInfo{com.innocent.media/com.innocent.media.MusicWidgetProvider} won't be persisted.
-10-04 04:11:19.639  2234  2476 I f       : Category not present in BloomFilter, Checking in Manifest:- com.innocent.media
-10-04 04:11:19.640  2234  2476 I f       : Category not found in BF and Manifest for pkg :- com.innocent.media
-10-04 04:11:19.680   543   543 D io_stats: !@ MemInfo(KB): total 2850444 free 75804 avail 1024168 actv(f) 436376 inactv(f) 621988 dirty 17236 wb 588 anonpg 776120 slab 234684
-10-04 04:11:19.737  2234  2476 I SCS@AiSearch user 0: (IndexManager) [UPDATE] index=com.samsung.android.apps, size=1, documents=[com.innocent.media@0@com.innocent.media.MainActivity]
-10-04 04:11:20.763  1370  1410 I SGM:GameManager: PkgUpdateReceiver, onPackageAdded : com.innocent.media userHandle : UserHandle{0} userId : 0
-10-04 04:11:20.768  1370  1607 D SGM:GosNotifyThread: notifyPackageChangedToGos(), before send intent to GOS. type:15, changeType: 0, pkgName:com.innocent.media, userHandleId:0
-10-04 04:11:20.830  1370  1410 D LauncherAppsService: Calling onPackageAdded: com.innocent.media, uid: 10250
-10-04 04:11:20.830  1370  1410 D LauncherAppsService: Calling onPackageAdded: com.innocent.media, listener: android(UserHandle{0}, 1370)
-10-04 04:11:20.830  1370  1410 D LauncherApps: onPackageAdded 0,com.innocent.media
-10-04 04:11:20.831  1370  1410 D LauncherAppsService: Calling onPackageAdded: com.innocent.media, listener: com.sec.android.app.launcher(UserHandle{0}, 5335)
-10-04 04:11:20.831  1370  1410 D LauncherAppsService: Calling onPackageAdded: com.innocent.media, listener: com.android.systemui(UserHandle{0}, 4815)
-10-04 04:11:20.832  4815  7088 D LauncherApps: onPackageAdded 0,com.innocent.media
-10-04 04:11:20.864  3151  4451 I GOS:MainIntentService: onHandleIntent(). type(PACKAGE_CHANGED), changeType(INSTALLED), pkgName(com.innocent.media)
-10-04 04:11:20.868  3151  4451 I GOS:SystemEventReactor: onPackageInstallStarted(). packageName: com.innocent.media
-10-04 04:11:20.871  3151  4451 I GOS:SystemEventReactor: addPkgDataFromServer(), packageName : com.innocent.media
-10-04 04:11:20.970  1370  1410 D MetaDataCollector: onReceive: done pkgName=com.innocent.media
-10-04 04:11:21.026  3151  4451 I GOS:NetworkConnector: getSinglePkg(), packageName : com.innocent.media
-10-04 04:11:21.136  5335  5571 I AppIconSolution: return adaptive icon for com.innocent.media, isNight = false
-10-04 04:11:21.205  5335  5335 I Launcher.Model: package changed received : com.innocent.media
-10-04 04:11:21.343  3151  4451 I GOS:NetworkConnector: doDirectly(), Response isSuccessful, responseCode: 200, URL: PRD_GET/v4/packages/com.innocent.media, response: {"pkg_name":"com.innocent.media", "pkg_type":"undefined"}
-10-04 04:11:21.343  3151  4451 I GOS:NetworkConnector: getSinglePkg(), request: PRD_GET/v4/packages/com.innocent.media
-10-04 04:11:21.343  3151  4451 I GOS:NetworkConnector:  v4PkgResponse: {"pkg_name":"com.innocent.media", "pkg_type":"undefined"}
-10-04 04:11:21.359  3151  4451 I GOS:SystemEventReactor: addPkgDataFromServer(), A package was added : com.innocent.media as undefined
-10-04 04:11:22.400  5335  5571 I PackageUpdatedTask: mAllAppsList.addPackage com.innocent.media
-10-04 04:11:22.433  5335  5571 I AppIconSolution: getThemeIconWithBG called with public API, pkg = com.innocent.media, mode = 48
-10-04 04:11:22.434  5335  5571 I AppIconSolution: return adaptive icon for com.innocent.media, isNight = false
-10-04 04:11:22.439  5335  5571 I LauncherActivityInfo: packageName: com.innocent.media, useThemeIcon: false, height: 126, width: 126, density: 480
-10-04 04:11:22.513  5335  5571 I AppInfo : set ComponentInfo{com.innocent.media/com.innocent.media.MainActivity} app progress level to 100
-10-04 04:11:22.515  5335  5571 I PackageUpdatedTask: added, appInfo : AppInfo(id=58 type=APP hidden=0 container=all_apps screen=-1 rank=0 rankOfList=-1 user=UserHandle{0} title=Innocent componentName=ComponentInfo{com.innocent.media/com.innocent.media.MainActivity} screenType=0 runtimeStatusFlags=384 status=0)
-10-04 04:11:22.518  5335  5571 I AppsModelWriter: addItems(start)> 0, 58, 0, -102, -1, 0, UserHandle{0}, 0, Innocent, -1, -1
-10-04 04:11:22.526  5335  5571 I AppsModelWriter: normalizeVisibleItems(visibleItems)> 0, 58, 0, -102, 1, 0, UserHandle{0}, 0, Innocent, -1, -1
-10-04 04:11:22.542  5335  5571 I AppsModelWriter: addItems(end) : addItem> 0, 58, 0, -102, 1, 0, UserHandle{0}, 0, Innocent, -1, -1
-10-04 04:11:22.544  5335  5335 I Launcher.AppsPagedView: addItems => id: 58, rank: 0, screenId: 1, cellX: 0, cellY: 0, container: -102, dirty: false, title: Innocent, isFolder: false, user: UserHandle{0}, disabled: false, screenType: 0
-10-04 04:11:22.787  5335  5571 I AppIconSolution: return adaptive icon for com.innocent.media, isNight = false
-10-04 04:11:22.871  5335  5571 I PostPositionOperator: addItem() - com.innocent.media, isWidgetOnly : true
-10-04 04:11:22.883  5335  5571 I PackageUpdatedTask: mAllAppsList.updatePackage com.innocent.media
-10-04 04:11:22.905  5335  5571 I AppIconSolution: getThemeIconWithBG called with public API, pkg = com.innocent.media, mode = 48
-10-04 04:11:22.906  5335  5571 I AppIconSolution: return adaptive icon for com.innocent.media, isNight = false
-10-04 04:11:22.907  5335  5571 I LauncherActivityInfo: packageName: com.innocent.media, useThemeIcon: false, height: 126, width: 126, density: 480
-10-04 04:11:22.925  5335  5571 I HsAllAppsList: set ComponentInfo{com.innocent.media/com.innocent.media.MainActivity} app progress level to 100
-10-04 04:11:22.937  5335  5571 I AppIconSolution: return adaptive icon for com.innocent.media, isNight = false
-10-04 04:11:22.973  5335  5571 I PackageUpdatedTask: modified, appInfo : AppInfo(id=58 type=APP hidden=0 container=all_apps screen=1 rank=0 rankOfList=-1 user=UserHandle{0} title=Innocent componentName=ComponentInfo{com.innocent.media/com.innocent.media.MainActivity} screenType=0 runtimeStatusFlags=384 status=0)
-10-04 04:11:22.976  5335  5571 I AppsModelWriter: updateItems(start)> 0, 58, 0, -102, 1, 0, UserHandle{0}, 0, Innocent, -1, -1
-10-04 04:11:22.978  5335  5571 I AppsModelWriter: normalizeVisibleItems(visibleItems)> 0, 58, 0, -102, 1, 0, UserHandle{0}, 0, Innocent, -1, -1
-10-04 04:11:22.984  5335  5571 I AppsModelWriter: updateItems(end) : updateItem> 0, 58, 0, -102, 1, 0, UserHandle{0}, 0, Innocent, -1, -1
-10-04 04:11:22.986  5335  5335 I Launcher.AppsPagedView: UpdateItems => id: 58, rank: 0, screenId: 1, cellX: 0, cellY: 0, container: -102, dirty: false, title: Innocent, isFolder: false, user: UserHandle{0}, disabled: false, screenType: 0
-10-04 04:11:23.043  5335  5571 I PostPositionOperator: addItem() - com.innocent.media, isWidgetOnly : true
-10-04 04:11:23.080  5335  5571 I GameLauncherManagerImp: com.innocent.media does not contain game list
-10-04 04:11:23.088  5335  5571 I AppsModelWriter: normalizeVisibleItems(visibleItems)> 0, 58, 0, -102, 1, 0, UserHandle{0}, 0, Innocent, -1, -1
-10-04 04:11:26.168  3151  3151 I GOS:GameServiceReceiver:  PkgInstallStarted for com.innocent.media UserID : 0
-10-04 04:11:26.192  3151  4847 I GOS:MainIntentService: onHandleIntent(). type(PACKAGE_CHANGED), changeType(INSTALL_STARTED), pkgName(com.innocent.media)
-10-04 04:11:26.193  3151  4847 I GOS:SystemEventReactor: onPackageInstallStarted(). packageName: com.innocent.media
-10-04 04:11:26.195  3151  4847 I GOS:SystemEventReactor: addPkgDataFromServer(), packageName : com.innocent.media
-10-04 04:11:26.292  3151  4847 I GOS:NetworkConnector: getSinglePkg(), packageName : com.innocent.media
-10-04 04:11:26.551  3151  4847 I GOS:NetworkConnector: doDirectly(), Response isSuccessful, responseCode: 200, URL: PRD_GET/v4/packages/com.innocent.media, response: {"pkg_name":"com.innocent.media", "pkg_type":"undefined"}
-10-04 04:11:26.552  3151  4847 I GOS:NetworkConnector: getSinglePkg(), request: PRD_GET/v4/packages/com.innocent.media
-10-04 04:11:26.552  3151  4847 I GOS:NetworkConnector:  v4PkgResponse: {"pkg_name":"com.innocent.media", "pkg_type":"undefined"}
-10-04 04:11:26.567  3151  4847 I GOS:SystemEventReactor: addPkgDataFromServer(), A package was added : com.innocent.media as undefined
-10-04 04:11:29.851  1284  1529 E irz     : 	at anrh.a(PG:59)
-10-04 04:11:30.153  1370  4891 D SettingsProvider: isChangeAllowed() : name = dropbox:data_app_crash
-10-04 04:11:30.209  1370  6447 D SettingsProvider: isChangeAllowed() : name = dropbox:data_app_anr
-10-04 04:11:31.007 31966  1687 I serviceentitlement: (REDACTED) [CredManRegistrationManager] [%s] start to register
-10-04 04:11:31.074 31966  1687 I serviceentitlement: (REDACTED) [CredManRegistrationManager] [%s] Data length [%d] to register
-10-04 04:11:31.083 31966  1687 I serviceentitlement: (REDACTED) [CredManRegistrationManager] [%s] register #2
-10-04 04:11:31.087 31966  1687 I serviceentitlement: (REDACTED) [CredManRegistrationManager] [%s] register credential
-10-04 04:11:31.465 31966 31966 I serviceentitlement: (REDACTED) [CredManRegistrationManager] [%s][%s] Success to register credentials
-10-04 04:11:33.686  5078  5078 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-10-04 04:11:33.867  5078  5078 I AndroidRuntime: Using default boot image
-10-04 04:11:33.867  5078  5078 I AndroidRuntime: Leaving lock profiling enabled
-10-04 04:11:33.872  5078  5078 D AndroidRuntime: addProductProperty: pBrand1 is not null
-10-04 04:11:33.872  5078  5078 D AndroidRuntime: addProductProperty: not brand or 7
-10-04 04:11:34.737  5335  5571 I AppsModelWriter: normalizeVisibleItems(visibleItems)> 0, 58, 0, -102, 1, 0, UserHandle{0}, 0, Innocent, -1, -1
-10-04 04:11:35.331  5078  5078 D AndroidRuntime: Calling main entry com.android.commands.am.Am
-10-04 04:11:37.058  1370  7490 W ActivityManager: Scheduling restart of crashed service android/com.android.server.DrmEventService in 0ms for persistent
-10-04 04:11:37.292  5277  5326 I TestLoopActivity: Starting scenario ၀ in com.innocent.media
-10-04 04:11:37.407  5335  5571 I AppsModelWriter: normalizeVisibleItems(visibleItems)> 0, 58, 0, -102, 1, 0, UserHandle{0}, 0, Innocent, -1, -1
-10-04 04:11:37.433  1370  6451 W ActivityManager: Scheduling restart of crashed service com.samsung.vvm/.service.AppKilledService in 10000ms for start-requested
-10-04 04:11:37.788  1370  1401 I ChimeraSystemEventListener: appLaunchIntent package name is: com.innocent.media
-10-04 04:11:37.791  1370  7490 I ActivityTaskManager: START u0 {act=com.google.intent.action.TEST_LOOP dat=content://com.google.testing.platform.android.driver.testloop.companion/... typ=application/javascript flg=0x2 pkg=com.innocent.media cmp=com.innocent.media/.MainActivity (has extras)} from uid 10251
-10-04 04:11:37.814  1370  7490 D ActivityTaskManager: TaskLaunchParamsModifier:task=null activity=ActivityRecord{7f859c8 u0 com.innocent.media/.MainActivity} display-area-from-source=DefaultTaskDisplayArea@46521468 display-id=0 display-windowing-mode=1 suggested-display-area=DefaultTaskDisplayArea@46521468
-10-04 04:11:37.818  1370  7490 D ActivityTaskManager: TaskLaunchParamsModifier:task=Task{74f61ef #13 type=standard I=com.google.testing.platform.android.driver.testloop.companion/.TestLoopActivity U=0 visible=true visibleRequested=true mode=fullscreen translucent=false sz=1} activity=ActivityRecord{7f859c8 u0 com.innocent.media/.MainActivity} t-1} display-area-from-source=DefaultTaskDisplayArea@46521468 display-id=0 display-windowing-mode=1 suggested-display-area=DefaultTaskDisplayArea@46521468 inherit-from-source=fullscreen activity-options-fullscreen=Rect(0, 0 - 0, 0) non-freeform-display display-area=DefaultTaskDisplayArea@46521468 maximized-bounds
-10-04 04:11:37.838   814  1056 I SurfaceFlinger: id=257 createSurf flag=80004, ActivityRecord{7f859c8 u0 com.innocent.media/.MainActivity} t13}#257
-10-04 04:11:37.882  5335  5571 I GameLauncherManagerImp: com.innocent.media does not contain game list
-10-04 04:11:37.886  1370  7490 V WindowManager: Added starting ActivityRecord{7f859c8 u0 com.innocent.media/.MainActivity} t13}: startingWindow=null startingView=com.android.server.wm.StartingSurfaceController$StartingSurface@6958b1
-10-04 04:11:37.930   814  1056 I SurfaceFlinger: id=258 createSurf flag=80004, cc08d6e Splash Screen com.innocent.media#258
-10-04 04:11:37.932  1370  4901 V WindowManager: addWindow: ActivityRecord{7f859c8 u0 com.innocent.media/.MainActivity} t13} startingWindow=Window{cc08d6e u0 Splash Screen com.innocent.media}
-10-04 04:11:37.935  1370  4891 D MARsPolicyManager: onPackageResumedFG pkgName = com.innocent.media, userId = 0
-10-04 04:11:37.936  4815  4903 D InsetsController: onStateChanged: InsetsState: {mDisplayFrame=Rect(0, 0 - 720, 1600), mDisplayCutout=DisplayCutout{insets=Rect(0, 45 - 0, 0) waterfall=Insets{left=0, top=0, right=0, bottom=0} boundingRect={Bounds=[Rect(0, 0 - 0, 0), Rect(272, 0 - 448, 45), Rect(0, 0 - 0, 0), Rect(0, 0 - 0, 0)]} cutoutPathParserInfo={CutoutPathParserInfo{displayWidth=720 displayHeight=1600 physicalDisplayWidth=720 physicalDisplayHeight=1600 density={1.75} cutoutSpec={M 0,0 H -88 V 45 H 88 V 0 H 0 Z} rotation={0} scale={1.0} physicalPixelDisplaySizeRatio={1.0}}}}, mRoundedCorners=RoundedCorners{[RoundedCorner{position=TopLeft, radius=56, center=Point(56, 56)}, RoundedCorner{position=TopRight, radius=56, center=Point(664, 56)}, RoundedCorner{position=BottomRight, radius=56, center=Point(664, 1544)}, RoundedCorner{position=BottomLeft, radius=56, center=Point(56, 1544)}]}  mRoundedCornerFrame=Rect(0, 0 - 720, 1600), mPrivacyIndicatorBounds=PrivacyIndicatorBounds {static bounds=Rect(643, 0 - 720, 45) rotation=0}, mSources= { InsetsSource: {mType=ITYPE_STATUS_BAR, mFrame=[0,0][720,45], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_NAVIGATION_BAR, mFrame=[0,1516][720,1600], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_LEFT_GESTURES, mFrame=[0,0][0,1600], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_RIGHT_GESTURES, mFrame=[720,0][720,1600], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_MANDATORY_GESTURES, mFrame=[0,0][720,66], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_MANDATORY_GESTURES, mFrame=[0,1516][720,1600], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_LEFT_DISPLAY_CUTOUT, mFrame=[0,0][-100000,1600], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_DISPLAY_CUTOUT, mFrame=[0,0][720,45], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_RIGHT_DISPLAY_CUTOUT, mFrame=[100000,0][720,1600], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_DISPLAY_CUTOUT, mFrame=[0,100000][720,1600], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_TAPPABLE_ELEMENT, mFrame=[0,0][720,45], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_TAPPABLE_ELEMENT, mFrame=[0,1516][720,1600], mVisible=true, mInsetsRoundedCornerFrame=false} } host=Splash Screen com.innocent.media from=android.view.ViewRootImpl.setView:1732
-10-04 04:11:37.940  1370  4891 D WindowManagerServiceExt: notifyOccludeChangeNotice: cn=ComponentInfo{com.innocent.media/com.innocent.media.MainActivity} occludesParent=true inMultiWindow=false styleFloating=false caller=com.android.server.wm.WindowManagerServiceExt.updateOccludeTargetIfNeeded:1402 com.android.server.wm.DisplayContent.ensureActivitiesVisible:7532 com.android.server.wm.RootWindowContainer.ensureActivitiesVisible:2248 com.android.server.wm.RootWindowContainer.ensureActivitiesVisible:2229 com.android.server.wm.TaskFragment.completePause:2076 
-10-04 04:11:37.947  1370  4900 D CoreBackPreview: Window{cc08d6e u0 Splash Screen com.innocent.media}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@e010e88, mPriority=0}
-10-04 04:11:37.948  5335  5571 I AppsModelWriter: normalizeVisibleItems(visibleItems)> 0, 58, 0, -102, 1, 0, UserHandle{0}, 0, Innocent, -1, -1
-10-04 04:11:37.948  1370  7490 V WindowManager: Relayout Window{cc08d6e u0 Splash Screen com.innocent.media}: viewVisibility=0 req=720x1600 d0
-10-04 04:11:37.950   814  1056 I BufferQueueDebug: [Splash Screen com.innocent.media$_4815#259](this:0xb400007ce9273838,id:-1,api:0,p:-1,c:-1) BufferQueue core=(814:/system/bin/surfaceflinger)
-10-04 04:11:37.950   814  1056 I SurfaceFlinger: id=259 createSurf flag=40004, Splash Screen com.innocent.media$_4815#259
-10-04 04:11:37.952  1370  7490 D WindowManager: makeSurface duration=2 name=Splash Screen com.innocent.media$_4815
-10-04 04:11:37.962  1370  7490 D WindowManager: rotationForOrientation, orientationSource=ActivityRecord{7f859c8 u0 com.innocent.media/.MainActivity} t13}
-10-04 04:11:37.968  4815  4903 D InsetsController: onStateChanged: InsetsState: {mDisplayFrame=Rect(0, 0 - 720, 1600), mDisplayCutout=DisplayCutout{insets=Rect(0, 45 - 0, 0) waterfall=Insets{left=0, top=0, right=0, bottom=0} boundingRect={Bounds=[Rect(0, 0 - 0, 0), Rect(272, 0 - 448, 45), Rect(0, 0 - 0, 0), Rect(0, 0 - 0, 0)]} cutoutPathParserInfo={CutoutPathParserInfo{displayWidth=720 displayHeight=1600 physicalDisplayWidth=720 physicalDisplayHeight=1600 density={1.75} cutoutSpec={M 0,0 H -88 V 45 H 88 V 0 H 0 Z} rotation={0} scale={1.0} physicalPixelDisplaySizeRatio={1.0}}}}, mRoundedCorners=RoundedCorners{[RoundedCorner{position=TopLeft, radius=56, center=Point(56, 56)}, RoundedCorner{position=TopRight, radius=56, center=Point(664, 56)}, RoundedCorner{position=BottomRight, radius=56, center=Point(664, 1544)}, RoundedCorner{position=BottomLeft, radius=56, center=Point(56, 1544)}]}  mRoundedCornerFrame=Rect(0, 0 - 720, 1600), mPrivacyIndicatorBounds=PrivacyIndicatorBounds {static bounds=Rect(643, 0 - 720, 45) rotation=0}, mSources= { InsetsSource: {mType=ITYPE_STATUS_BAR, mFrame=[0,0][720,45], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_NAVIGATION_BAR, mFrame=[0,1516][720,1600], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_LEFT_GESTURES, mFrame=[0,0][0,1600], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_RIGHT_GESTURES, mFrame=[720,0][720,1600], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_MANDATORY_GESTURES, mFrame=[0,0][720,66], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_MANDATORY_GESTURES, mFrame=[0,1516][720,1600], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_LEFT_DISPLAY_CUTOUT, mFrame=[0,0][-100000,1600], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_DISPLAY_CUTOUT, mFrame=[0,0][720,45], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_RIGHT_DISPLAY_CUTOUT, mFrame=[100000,0][720,1600], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_DISPLAY_CUTOUT, mFrame=[0,100000][720,1600], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_TAPPABLE_ELEMENT, mFrame=[0,0][720,45], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_TAPPABLE_ELEMENT, mFrame=[0,1516][720,1600], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_IME, mFrame=[0,0][0,0], mVisible=false, mInsetsRoundedCornerFrame=false} } host=Splash Screen com.innocent.media from=android.view.ViewRootImpl.relayoutWindow:9802
-10-04 04:11:38.000   814   814 D BufferStateLayer: Splash Screen com.innocent.media$_4815#259 setBuffer frameId=1, bufferId=20680267530353 fenceId=311, w= 720, h=1600
-10-04 04:11:38.031  1370  7760 D WindowManager: finishDrawingWindow: Window{cc08d6e u0 Splash Screen com.innocent.media} mDrawState=DRAW_PENDING seqId=၀
-10-04 04:11:38.032  1370  7760 V WindowManager: Finishing drawing window Window{cc08d6e u0 Splash Screen com.innocent.media}: mDrawState=DRAW_PENDING
-10-04 04:11:38.032  1370  7760 V WindowManager: Draw state now committed in Window{cc08d6e u0 Splash Screen com.innocent.media}
-10-04 04:11:38.034  1370  1402 D WindowManager: performShow logReadyForDisplay win=Window{cc08d6e u0 Splash Screen com.innocent.media} mToken.waitingToShow:true isTransitionSet:true
-10-04 04:11:38.072  1370  1412 I ActivityManager: Start proc 5512:com.innocent.media/u0a250 for next-top-activity {com.innocent.media/com.innocent.media.MainActivity}
-10-04 04:11:38.082  5512  5512 I .innocent.media: Using CollectorTypeCC GC.
-10-04 04:11:38.094  5512  5512 E .innocent.media: Not starting debugger since process cannot load the jdwp agent.
-10-04 04:11:38.171  1370  4901 D WindowManager: rotationForOrientation, orientationSource=ActivityRecord{7f859c8 u0 com.innocent.media/.MainActivity} t13}
-10-04 04:11:38.171  1370  4901 D WindowManager: rotationForOrientation, orientationSource=ActivityRecord{7f859c8 u0 com.innocent.media/.MainActivity} t13}
-10-04 04:11:38.172  1370  4756 W SemWifiTransportLayerUtils: getApplicationCategory - IOException com.innocent.media
-10-04 04:11:38.363  1370  1402 I WindowManager: Reparenting to original parent: Surface(name=Task=13)/@0x88be738, destroy=true, surface=Surface(name=ActivityRecord{7f859c8 u0 com.innocent.media/.MainActivity} t13})/@0x3ed0e34
-10-04 04:11:38.378  5512  5512 V GraphicsEnvironment: ANGLE Developer option for 'com.innocent.media' set to: 'default'
-10-04 04:11:38.379  5512  5512 V GraphicsEnvironment: ANGLE GameManagerService for com.innocent.media: false
-10-04 04:11:38.392   814   814 I Layer   : id=262 removeFromCurrentState Surface(name=ActivityRecord{7f859c8 u0 com.innocent.media/.MainActivity} t13})/@0x3ed0e34 - animation-leash of app_transition#262 (112)
-10-04 04:11:38.392   814   814 I Layer   : id=263 removeFromCurrentState Surface(name=ActivityRecord{7f859c8 u0 com.innocent.media/.MainActivity} t13})/@0x3ed0e34 - animation-bounds#263 (112)
-10-04 04:11:38.392   814   814 I SurfaceFlinger: id=263 Removed Surface(name=ActivityRecord{7f859c8 u0 com.innocent.media/.MainActivity} t13})/@0x3ed0e34 - animation-bounds#263 (112)
-10-04 04:11:38.392   814   814 I SurfaceFlinger: id=262 Removed Surface(name=ActivityRecord{7f859c8 u0 com.innocent.media/.MainActivity} t13})/@0x3ed0e34 - animation-leash of app_transition#262 (112)
-10-04 04:11:38.394   814   814 I Layer   : id=263 Destroyed Surface(name=ActivityRecord{7f859c8 u0 com.innocent.media/.MainActivity} t13})/@0x3ed0e34 - animation-bounds#263
-10-04 04:11:38.394   814   814 I Layer   : id=262 Destroyed Surface(name=ActivityRecord{7f859c8 u0 com.innocent.media/.MainActivity} t13})/@0x3ed0e34 - animation-leash of app_transition#262
-10-04 04:11:38.416   814   814 D SurfaceFlinger:      DEVICE | 0xb400007d0a6a65e0 | 0100 | RGBA_8888    |    0.0    0.0  720.0 1600.0 |    0    0  720 1600 | Splash Screen com.innocent.media$_4815#259
-10-04 04:11:38.416   814   814 D SurfaceFlinger:      DEVICE | 0xb400007d0a6a65e0 | 0100 | RGBA_8888    |    0.0    0.0  720.0 1600.0 |    0    0  719 1600 | Splash Screen com.innocent.media$_4815#259
-10-04 04:11:38.544  1370  1410 W ActivityManager: Rescheduling restart of crashed service com.samsung.vvm/.service.AppKilledService in 0ms for mem-pressure-event
-10-04 04:11:38.603  1370  5142 D MdnieScenarioControlService:  packageName : com.innocent.media    className : com.innocent.media.MainActivity
-10-04 04:11:39.052  5512  5588 D libMEOW : applied 2 plugins for [com.innocent.media]:
-10-04 04:11:39.516   814   814 D SurfaceFlinger:      DEVICE | 0xb400007d0a6a65e0 | 0100 | RGBA_8888    |    0.0    0.0  720.0 1600.0 |    0    0  720 1600 | Splash Screen com.innocent.media$_4815#259
-10-04 04:11:39.516   814   814 D SurfaceFlinger:      DEVICE | 0xb400007d0a6a65e0 | 0100 | RGBA_8888    |    0.0    0.0  720.0 1600.0 |    0    0  719 1600 | Splash Screen com.innocent.media$_4815#259
-10-04 04:11:39.668  5512  5512 D vulkan  : searching for layers in '/data/app/~~dCBa4_TCJTrRQvk6uRef6A==/com.innocent.media-QygMoXd2Mjjj51csZE2aGg==/lib/arm64'
-10-04 04:11:39.669  5512  5512 D vulkan  : searching for layers in '/data/app/~~dCBa4_TCJTrRQvk6uRef6A==/com.innocent.media-QygMoXd2Mjjj51csZE2aGg==/base.apk!/lib/arm64-v8a'
-10-04 04:11:40.061  5512  5512 I flutter : [INFO:flutter/shell/platform/android/android_context_vk_impeller.cc(65)] Known bad Vulkan driver encountered, falling back to OpenGLES.
-10-04 04:11:40.187  5512  5512 D libMEOW : applied 2 plugins for [com.innocent.media]:
-10-04 04:11:40.232  5512  5512 I flutter : [IMPORTANT:flutter/shell/platform/android/android_context_gl_impeller.cc(94)] Using the Impeller rendering backend (OpenGLES).
-10-04 04:11:40.234  5512  5664 D libMEOW : applied 2 plugins for [com.innocent.media]:
-10-04 04:11:41.008   814   894 D SurfaceFlinger: [SF client] NEW(0xb400007d0a6a5460) for (5512:com.innocent.media)
-10-04 04:11:41.136  5512  5512 I MSHandlerLifeCycle: check: return. pkg=com.innocent.media parent=null callers=com.android.internal.policy.DecorView.setVisibility:4412 android.app.ActivityThread.handleResumeActivity:5476 android.app.servertransaction.ResumeActivityItem.execute:54 android.app.servertransaction.ActivityTransactionItem.execute:45 android.app.servertransaction.TransactionExecutor.executeLifecycleState:176 
-10-04 04:11:41.142   814   894 D SurfaceFlinger: [SF client] NEW(0xb400007ce89446c0) for (5512:com.innocent.media)
-10-04 04:11:41.168   814   894 I SurfaceFlinger: id=272 createSurf flag=80004, 388d932 com.innocent.media/com.innocent.media.MainActivity#272
-10-04 04:11:41.180  5512  5512 D InsetsController: onStateChanged: InsetsState: {mDisplayFrame=Rect(0, 0 - 720, 1600), mDisplayCutout=DisplayCutout{insets=Rect(0, 45 - 0, 0) waterfall=Insets{left=0, top=0, right=0, bottom=0} boundingRect={Bounds=[Rect(0, 0 - 0, 0), Rect(272, 0 - 448, 45), Rect(0, 0 - 0, 0), Rect(0, 0 - 0, 0)]} cutoutPathParserInfo={CutoutPathParserInfo{displayWidth=720 displayHeight=1600 physicalDisplayWidth=720 physicalDisplayHeight=1600 density={1.75} cutoutSpec={M 0,0 H -88 V 45 H 88 V 0 H 0 Z} rotation={0} scale={1.0} physicalPixelDisplaySizeRatio={1.0}}}}, mRoundedCorners=RoundedCorners{[RoundedCorner{position=TopLeft, radius=56, center=Point(56, 56)}, RoundedCorner{position=TopRight, radius=56, center=Point(664, 56)}, RoundedCorner{position=BottomRight, radius=56, center=Point(664, 1544)}, RoundedCorner{position=BottomLeft, radius=56, center=Point(56, 1544)}]}  mRoundedCornerFrame=Rect(0, 0 - 720, 1600), mPrivacyIndicatorBounds=PrivacyIndicatorBounds {static bounds=Rect(643, 0 - 720, 45) rotation=0}, mSources= { InsetsSource: {mType=ITYPE_STATUS_BAR, mFrame=[0,0][720,45], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_NAVIGATION_BAR, mFrame=[0,1516][720,1600], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_LEFT_GESTURES, mFrame=[0,0][0,1600], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_RIGHT_GESTURES, mFrame=[720,0][720,1600], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_MANDATORY_GESTURES, mFrame=[0,0][720,66], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_MANDATORY_GESTURES, mFrame=[0,1516][720,1600], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_LEFT_DISPLAY_CUTOUT, mFrame=[0,0][-100000,1600], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_DISPLAY_CUTOUT, mFrame=[0,0][720,45], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_RIGHT_DISPLAY_CUTOUT, mFrame=[100000,0][720,1600], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_DISPLAY_CUTOUT, mFrame=[0,100000][720,1600], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_TAPPABLE_ELEMENT, mFrame=[0,0][720,45], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_TAPPABLE_ELEMENT, mFrame=[0,1516][720,1600], mVisible=true, mInsetsRoundedCornerFrame=false} } host=com.innocent.media/com.innocent.media.MainActivity from=android.view.ViewRootImpl.setView:1732
-10-04 04:11:41.186  1370  6452 D CoreBackPreview: Window{388d932 u0 com.innocent.media/com.innocent.media.MainActivity}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@f494000, mPriority=0}
-10-04 04:11:41.305  5512  5512 I SurfaceView@12d3cf9: onWindowVisibilityChanged(0) true io.flutter.embedding.android.FlutterSurfaceView{12d3cf9 V.E...... ......I. 0,0-0,0} of ViewRootImpl@3ad1938[MainActivity]
-10-04 04:11:41.318  1370  4901 V WindowManager: Relayout Window{388d932 u0 com.innocent.media/com.innocent.media.MainActivity}: viewVisibility=0 req=720x1600 d0
-10-04 04:11:41.321   814   894 I BufferQueueDebug: [com.innocent.media/com.innocent.media.MainActivity$_5512#273](this:0xb400007ce88d5838,id:-1,api:0,p:-1,c:-1) BufferQueue core=(814:/system/bin/surfaceflinger)
-10-04 04:11:41.322   814   894 I SurfaceFlinger: id=273 createSurf flag=40004, com.innocent.media/com.innocent.media.MainActivity$_5512#273
-10-04 04:11:41.323  1370  4901 D WindowManager: makeSurface duration=3 name=com.innocent.media/com.innocent.media.MainActivity$_5512
-10-04 04:11:41.329  1370  4901 V WindowManager: Changing focus from null to Window{388d932 u0 com.innocent.media/com.innocent.media.MainActivity} displayId=၀ Callers=com.android.server.wm.RootWindowContainer.updateFocusedWindowLocked:595 com.android.server.wm.WindowManagerService.updateFocusedWindowLocked:6810 com.android.server.wm.WindowManagerService.relayoutWindow:2820 com.android.server.wm.Session.relayout:274 
-10-04 04:11:41.329  1370  4901 D MARsPolicyManager: onPackageResumedFG pkgName = com.innocent.media, userId = 0
-10-04 04:11:41.337  1370  4901 D WindowManager: updateSystemBarAttributes: displayId=0, win=Window{388d932 u0 com.innocent.media/com.innocent.media.MainActivity}, navColorWin=Window{cc08d6e u0 Splash Screen com.innocent.media}, focusedCanBeNavColorWin=false, behavior=1, appearance=16, statusBarAppearanceRegions=[AppearanceRegion{LIGHT_STATUS_BARS bounds=[0,0][720,1600]}], requestedVisibilities=, from=com.android.server.wm.DisplayPolicy.focusChangedLw:3247 com.android.server.wm.DisplayContent.updateFocusedWindowLocked:4632 com.android.server.wm.RootWindowContainer.updateFocusedWindowLocked:595 
-10-04 04:11:41.346  4815  4815 D SamsungLightBarControlHelper: onStatusBarAppearanceChanged() -  sbModeChanged:false, statusBarMode:MODE_TRANSPARENT, barState:SHADE, isKeyguardShowing:false, navbarColorManagedByIme:false, stackAppearancesChanged:true, (AppearanceRegion{LIGHT_STATUS_BARS bounds=[0,0][720,1600]}, ), packageName:com.innocent.media
-10-04 04:11:41.357  4815  4815 D SamsungLightBarControlHelper: updateStatus(BLACK icon) NumStacks:1, StatusBarMode:MODE_TRANSPARENT, lightBarBounds:[Rect(0, 0 - 720, 1600)], StatusBarState:SHADE, packageName:com.innocent.media, isWhiteKeyguardStatusBarBySettings:false
-10-04 04:11:41.375   814   978 D SurfaceFlinger: [input] setFocusedWindow: 388d932 com.innocent.media/com.innocent.media.MainActivity
-10-04 04:11:41.377  1370  7760 D InputDispatcher: Focus request (0): 388d932 com.innocent.media/com.innocent.media.MainActivity but waiting because NO_WINDOW
-10-04 04:11:41.383  5512  5512 I SurfaceView@12d3cf9: windowStopped(false) true io.flutter.embedding.android.FlutterSurfaceView{12d3cf9 V.E...... ......ID 0,0-720,1516} of ViewRootImpl@3ad1938[MainActivity]
-10-04 04:11:41.402   814  1441 I SurfaceFlinger: id=276 createSurf flag=20004, Bounds for - com.innocent.media/com.innocent.media.MainActivity@0#276
-10-04 04:11:41.404   814  1056 I SurfaceFlinger: id=277 createSurf flag=80004, SurfaceView[com.innocent.media/com.innocent.media.MainActivity]@0#277
-10-04 04:11:41.405   814   895 I BufferQueueDebug: [SurfaceView[com.innocent.media/com.innocent.media.MainActivity]@0(BLAST)#278](this:0xb400007d0c2f6838,id:-1,api:0,p:-1,c:-1) BufferQueue core=(814:/system/bin/surfaceflinger)
-10-04 04:11:41.405   814   895 I SurfaceFlinger: id=278 createSurf flag=40400, SurfaceView[com.innocent.media/com.innocent.media.MainActivity]@0(BLAST)#278
-10-04 04:11:41.406   814  5568 I SurfaceFlinger: id=279 createSurf flag=20404, Background for SurfaceView[com.innocent.media/com.innocent.media.MainActivity]@0#279
-10-04 04:11:41.421  5512  5512 I SurfaceView@12d3cf9: surfaceCreated 1 #8 io.flutter.embedding.android.FlutterSurfaceView{12d3cf9 V.E...... ......ID 0,0-720,1516}
-10-04 04:11:41.421  5512  5663 D libMEOW : applied 2 plugins for [com.innocent.media]:
-10-04 04:11:43.505  1370  1384 W ActivityManager: Scheduling restart of crashed service com.google.android.googlequicksearchbox/org.chromium.content.app.SandboxedProcessService0:0 in 10000ms for connection
-10-04 04:11:43.509 20802  3540 W cr_ChildProcessConn: onServiceDisconnected (crash or killed by oom): pid=0 bindings:WV  
-10-04 04:11:43.728 20802  3540 W cr_ChildProcessConn: onServiceDisconnected (crash or killed by oom): pid=3656 bindings:W  S
-10-04 04:11:43.740  1370  7491 W ActivityManager: Scheduling restart of crashed service com.google.android.googlequicksearchbox/org.chromium.weblayer.ChildProcessService$Privileged0 in 10000ms for connection
-10-04 04:11:43.750  1370  6451 W ActivityManager: Scheduling restart of crashed service com.sec.android.app.sbrowser/.custom_tab.CustomTabsConnectionService in 29980ms for connection
-10-04 04:11:43.781 20802 20802 W chromium: [WARNING:gpu_process_host.cc(1276)] The GPU process has crashed 1 time(s)
-10-04 04:11:46.184  5512  5512 I SurfaceView@12d3cf9: surfaceChanged (720,1516) 1 #8 io.flutter.embedding.android.FlutterSurfaceView{12d3cf9 V.E...... ......ID 0,0-720,1516}
-10-04 04:11:46.577  5512  5512 I System.out: flutterEngine warmed up
-10-04 04:11:46.645  1370  7757 D MediaSessionRecord: registering controller callback android.media.session.ISessionControllerCallback$Stub$Proxy@dd2d800 from controller com.innocent.media
-10-04 04:11:46.675  1370  7487 V WindowManager: Relayout Window{388d932 u0 com.innocent.media/com.innocent.media.MainActivity}: viewVisibility=0 req=720x1600 d0
-10-04 04:11:46.712  5512  5512 I SurfaceView@12d3cf9: surfaceChanged (720,1600) 1 #5 io.flutter.embedding.android.FlutterSurfaceView{12d3cf9 V.E...... ......ID 0,0-720,1600}
-10-04 04:11:46.725  1370  6451 D WindowManager: rotationForOrientation, orientationSource=ActivityRecord{7f859c8 u0 com.innocent.media/.MainActivity} t13}
-10-04 04:11:46.772  5512  5512 D PhoneWindow: forceLight changed to false [com.innocent.media/com.innocent.media.MainActivity] from com.android.internal.policy.PhoneWindow.updateForceLightNavigationBar:4314 com.android.internal.policy.PhoneWindow.setNavigationBarColor:4033 io.flutter.plugin.platform.PlatformPlugin.setSystemChromeSystemUIOverlayStyle:488 io.flutter.plugin.platform.PlatformPlugin.access$700:36 io.flutter.plugin.platform.PlatformPlugin$1.setSystemUiOverlayStyle:123 
-10-04 04:11:47.075  1370  7487 V WindowManager: Relayout Window{388d932 u0 com.innocent.media/com.innocent.media.MainActivity}: viewVisibility=0 req=720x1600 d0
-10-04 04:11:47.090  5512  5512 I ViewRootImpl@3ad1938[MainActivity]: updateBoundsLayer: t = android.view.SurfaceControl$Transaction@8ab25a2 sc = Surface(name=Bounds for - com.innocent.media/com.innocent.media.MainActivity@0)/@0x3a29233 frame = 1
-10-04 04:11:47.219  5512  6117 D ProfileInstaller: Installing profile for com.innocent.media
-10-04 04:11:47.390  5512  5663 I BLASTBufferQueue: [SurfaceView[com.innocent.media/com.innocent.media.MainActivity]@0#1](f:0,a:0) onFrameAvailable the first frame is available
-10-04 04:11:47.393  5512  5663 I BLASTBufferQueue: [SurfaceView[com.innocent.media/com.innocent.media.MainActivity]@0#1](f:0,a:1) acquireNextBufferLocked size=720x1600 mFrameNumber=1 applyTransaction=true mTimestamp=4100746433397(auto) mPendingTransactions.size=0 graphicBufferId=23673859735554 transform=0
-10-04 04:11:47.409   814   814 D BufferStateLayer: SurfaceView[com.innocent.media/com.innocent.media.MainActivity]@0(BLAST)#278 setBuffer frameId=1, bufferId=23673859735554 fenceId=295, w= 720, h=1600
-10-04 04:11:47.510   814   814 D BufferStateLayer: com.innocent.media/com.innocent.media.MainActivity$_5512#273 setBuffer frameId=1, bufferId=23673859735555 fenceId=196, w= 720, h=1600
-10-04 04:11:47.516  1370  7487 D WindowManager: finishDrawingWindow: Window{388d932 u0 com.innocent.media/com.innocent.media.MainActivity} mDrawState=DRAW_PENDING seqId=၀
-10-04 04:11:47.524  1370  1402 V WindowManager: Finish starting ActivityRecord{7f859c8 u0 com.innocent.media/.MainActivity} t13}: first real window is shown, no animation
-10-04 04:11:47.528  1370  1402 V WindowManager: Schedule remove starting ActivityRecord{7f859c8 u0 com.innocent.media/.MainActivity} t13} startingWindow=null startingView=null Callers=com.android.server.wm.ActivityRecord.removeStartingWindow:3233 com.android.server.wm.ActivityRecord.onFirstWindowDrawn:7460 com.android.server.wm.WindowState.performShowLocked:5502 com.android.server.wm.WindowStateAnimator.commitFinishDrawingLocked:351 com.android.server.wm.DisplayContent.lambda$new$8:1189 
-10-04 04:11:47.529  1370  1402 V WindowManager: performShowLocked: mDrawState=HAS_DRAWN in Window{388d932 u0 com.innocent.media/com.innocent.media.MainActivity}
-10-04 04:11:47.540  1370  1402 D TaskOrganizerController: applyStartingWindowAnimation, window=Window{388d932 u0 com.innocent.media/com.innocent.media.MainActivity}, caller=com.android.server.wm.TaskOrganizerController.removeStartingWindow:573 com.android.server.wm.StartingSurfaceController$StartingSurface.remove:287 com.android.server.wm.ActivityRecord.lambda$removeStartingWindowAnimation$6:3295 
-10-04 04:11:47.540  1370  1402 I WindowManager: Reparenting to leash, surface=Surface(name=388d932 com.innocent.media/com.innocent.media.MainActivity)/@0xe981ba, leashParent=Surface(name=ActivityRecord{7f859c8 u0 com.innocent.media/.MainActivity} t13})/@0x3ed0e34
-10-04 04:11:47.542   814   814 I Layer   : Layer [com.innocent.media/com.innocent.media.MainActivity$_5512#273] hidden!! flag(0)
-10-04 04:11:47.542   814   894 I SurfaceFlinger: id=280 createSurf flag=24000, Surface(name=388d932 com.innocent.media/com.innocent.media.MainActivity)/@0xe981ba - animation-leash of starting_reveal#280
-10-04 04:11:47.543  1370  1402 D WindowManager: makeSurface duration=1 leash=Surface(name=Surface(name=388d932 com.innocent.media/com.innocent.media.MainActivity)/@0xe981ba - animation-leash of starting_reveal)/@0x8cf186b
-10-04 04:11:47.544  1370  7487 D InputDispatcher: Focus entered window (0): 388d932 com.innocent.media/com.innocent.media.MainActivity
-10-04 04:11:47.547  1370  1402 D ActivityTaskManager: mStartingWindow and mStartingData is null for token=ActivityRecord{7f859c8 u0 com.innocent.media/.MainActivity} t13}
-10-04 04:11:47.563  1370  1398 I <token>: reportToNAP uid:10250 com.innocent.media/com.innocent.media.MainActivity thisTime:9741
-10-04 04:11:47.565   814   814 D SurfaceFlinger:      DEVICE | 0xb400007ce8943000 | 0102 | RGBA_8888    |    0.0    0.0  720.0 1600.0 |    0    0  720 1600 | SurfaceView[com.innocent.media/com.innocent.media.MainActivity]@0(BLAST)#278
-10-04 04:11:47.565   814   814 D SurfaceFlinger:      DEVICE | 0xb400007ce8944340 | 0100 | RGBA_8888    |    0.0    0.0  720.0 1600.0 |    0    0  720 1600 | com.innocent.media/com.innocent.media.MainActivity$_5512#273
-10-04 04:11:47.565   814   814 D SurfaceFlinger:      DEVICE | 0xb400007d0a6a65e0 | 0100 | RGBA_8888    |    0.0    0.0  720.0 1600.0 |    0    0  720 1600 | Splash Screen com.innocent.media$_4815#259
-10-04 04:11:47.567   814   814 D SurfaceFlinger:      DEVICE | 0xb400007ce8943000 | 0102 | RGBA_8888    |    0.0    0.0  720.0 1600.0 |    0    0  719 1600 | SurfaceView[com.innocent.media/com.innocent.media.MainActivity]@0(BLAST)#278
-10-04 04:11:47.567   814   814 D SurfaceFlinger:      DEVICE | 0xb400007ce8944340 | 0100 | RGBA_8888    |    0.0    0.0  720.0 1600.0 |    0    0  719 1600 | com.innocent.media/com.innocent.media.MainActivity$_5512#273
-10-04 04:11:47.567   814   814 D SurfaceFlinger:      DEVICE | 0xb400007d0a6a65e0 | 0100 | RGBA_8888    |    0.0    0.0  720.0 1600.0 |    0    0  719 1600 | Splash Screen com.innocent.media$_4815#259
-10-04 04:11:47.594  1370  7491 V WindowManager: Relayout Window{cc08d6e u0 Splash Screen com.innocent.media}: viewVisibility=8 req=720x1600 d0
-10-04 04:11:47.596  1370  7491 D WindowManager: updateSystemBarAttributes: displayId=0, win=Window{388d932 u0 com.innocent.media/com.innocent.media.MainActivity}, navColorWin=Window{388d932 u0 com.innocent.media/com.innocent.media.MainActivity}, focusedCanBeNavColorWin=false, behavior=1, appearance=0, statusBarAppearanceRegions=[AppearanceRegion{ bounds=[0,0][720,1600]}], requestedVisibilities=, from=com.android.server.wm.DisplayPolicy.finishPostLayoutPolicyLw:2527 com.android.server.wm.DisplayContent.applySurfaceChangesTransaction:5713 com.android.server.wm.RootWindowContainer.applySurfaceChangesTransaction:1234 
-10-04 04:11:47.599  4815  4815 D SamsungLightBarControlHelper: onStatusBarAppearanceChanged() -  sbModeChanged:false, statusBarMode:MODE_TRANSPARENT, barState:SHADE, isKeyguardShowing:false, navbarColorManagedByIme:false, stackAppearancesChanged:true, (AppearanceRegion{ bounds=[0,0][720,1600]}, ), packageName:com.innocent.media
-10-04 04:11:47.599  4815  4815 D NavigationBar: onSystemBarAttributesChanged() -  displayId:0, appearance:0, packageName: com.innocent.media, navbarColorManagedByIme:false
-10-04 04:11:47.602  5512  5512 D InsetsController: onStateChanged: InsetsState: {mDisplayFrame=Rect(0, 0 - 720, 1600), mDisplayCutout=DisplayCutout{insets=Rect(0, 45 - 0, 0) waterfall=Insets{left=0, top=0, right=0, bottom=0} boundingRect={Bounds=[Rect(0, 0 - 0, 0), Rect(272, 0 - 448, 45), Rect(0, 0 - 0, 0), Rect(0, 0 - 0, 0)]} cutoutPathParserInfo={CutoutPathParserInfo{displayWidth=720 displayHeight=1600 physicalDisplayWidth=720 physicalDisplayHeight=1600 density={1.75} cutoutSpec={M 0,0 H -88 V 45 H 88 V 0 H 0 Z} rotation={0} scale={1.0} physicalPixelDisplaySizeRatio={1.0}}}}, mRoundedCorners=RoundedCorners{[RoundedCorner{position=TopLeft, radius=56, center=Point(56, 56)}, RoundedCorner{position=TopRight, radius=56, center=Point(664, 56)}, RoundedCorner{position=BottomRight, radius=56, center=Point(664, 1544)}, RoundedCorner{position=BottomLeft, radius=56, center=Point(56, 1544)}]}  mRoundedCornerFrame=Rect(0, 0 - 720, 1600), mPrivacyIndicatorBounds=PrivacyIndicatorBounds {static bounds=Rect(643, 0 - 720, 45) rotation=0}, mSources= { InsetsSource: {mType=ITYPE_STATUS_BAR, mFrame=[0,0][720,45], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_NAVIGATION_BAR, mFrame=[0,1516][720,1600], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_LEFT_GESTURES, mFrame=[0,0][0,1600], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_RIGHT_GESTURES, mFrame=[720,0][720,1600], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_MANDATORY_GESTURES, mFrame=[0,0][720,66], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_MANDATORY_GESTURES, mFrame=[0,1516][720,1600], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_LEFT_DISPLAY_CUTOUT, mFrame=[0,0][-100000,1600], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_DISPLAY_CUTOUT, mFrame=[0,0][720,45], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_RIGHT_DISPLAY_CUTOUT, mFrame=[100000,0][720,1600], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_DISPLAY_CUTOUT, mFrame=[0,100000][720,1600], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_TAPPABLE_ELEMENT, mFrame=[0,0][720,45], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_TAPPABLE_ELEMENT, mFrame=[0,1516][720,1600], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_IME, mFrame=[0,0][0,0], mVisible=false, mInsetsRoundedCornerFrame=false} } host=com.innocent.media/com.innocent.media.MainActivity from=android.view.ViewRootImpl$ViewRootHandler.handleMessageImpl:6740
-10-04 04:11:47.610  4815  4815 D SamsungLightBarControlHelper: updateNavigation(White button) isLightBar:false, hasLightBarNavigationBarFlag:false, packageName:com.innocent.media, DirectReplying:false, NavBarColorManagerdByIme:false, ForceDarkForScrim:false, QsCustomizing:false, PanelHasWhiteBg:true
-10-04 04:11:47.611  1370  5373 D CoreBackPreview: Window{cc08d6e u0 Splash Screen com.innocent.media}: Setting back callback null
-10-04 04:11:47.612  4815  4815 D SamsungLightBarControlHelper: updateStatus(WHITE icon) NumStacks:1, StatusBarMode:MODE_TRANSPARENT, lightBarBounds:[], StatusBarState:SHADE, packageName:com.innocent.media, isWhiteKeyguardStatusBarBySettings:false
-10-04 04:11:47.614  1370  6447 D WindowManager: Starting window removed Window{cc08d6e u0 Splash Screen com.innocent.media}
-10-04 04:11:47.614  1370  6447 I WindowManager: Cancelling animation restarting=false, leash=Surface(name=Surface(name=388d932 com.innocent.media/com.innocent.media.MainActivity)/@0xe981ba - animation-leash of starting_reveal)/@0x8cf186b
-10-04 04:11:47.614  1370  6447 I WindowManager: Reparenting to original parent: Surface(name=ActivityRecord{7f859c8 u0 com.innocent.media/.MainActivity} t13})/@0x3ed0e34, destroy=false, surface=Surface(name=388d932 com.innocent.media/com.innocent.media.MainActivity)/@0xe981ba
-10-04 04:11:47.615  1370  6447 W InputManager-JNI: Input channel object 'cc08d6e Splash Screen com.innocent.media (client)' was disposed without first being removed with the input manager!
-10-04 04:11:47.616  1370  6447 V WindowManager: Remove Window{cc08d6e u0 Splash Screen com.innocent.media}: mSurfaceController=Surface(name=Splash Screen com.innocent.media$_4815)/@0x359d299 mAnimatingExit=false mRemoveOnExit=false mHasSurface=true surfaceShowing=false animating=false app-animation=false mWillReplaceWindow=false mDisplayFrozen=false callers=com.android.server.wm.WindowState.removeIfPossible:3041 com.android.server.wm.WindowManagerService.removeWindow:2289 com.android.server.wm.Session.remove:236 android.view.IWindowSession$Stub.onTransact:743 com.android.server.wm.Session.onTransact:188 android.os.Binder.execTransactInternal:1321 
-10-04 04:11:47.616  1370  6447 I WindowManager: Destroying surface Surface(name=Splash Screen com.innocent.media$_4815)/@0x359d299 called by com.android.server.wm.WindowStateAnimator.destroySurface:942 com.android.server.wm.WindowStateAnimator.destroySurfaceLocked:536 com.android.server.wm.WindowState.removeImmediately:2969 com.android.server.wm.WindowState.removeIfPossible:3228 com.android.server.wm.WindowState.removeIfPossible:3041 com.android.server.wm.WindowManagerService.removeWindow:2289 com.android.server.wm.Session.remove:236 android.view.IWindowSession$Stub.onTransact:743 
-10-04 04:11:47.631  5512  5512 I flutter : LAB    0.0 LAB script: phase default
-10-04 04:11:47.642   814   814 I Layer   : Layer [Splash Screen com.innocent.media$_4815#259] hidden!! flag(1)
-10-04 04:11:47.700   814   814 D SurfaceFlinger:      DEVICE | 0xb400007ce8943000 | 0102 | RGBA_8888    |    0.0    0.0  720.0 1600.0 |    0    0  720 1600 | SurfaceView[com.innocent.media/com.innocent.media.MainActivity]@0(BLAST)#278
-10-04 04:11:47.700   814   814 D SurfaceFlinger:      DEVICE | 0xb400007ce8944340 | 0100 | RGBA_8888    |    0.0    0.0  720.0 1600.0 |    0    0  720 1600 | com.innocent.media/com.innocent.media.MainActivity$_5512#273
-10-04 04:11:47.700   814   814 D SurfaceFlinger:      DEVICE | 0xb400007ce8943000 | 0102 | RGBA_8888    |    0.0    0.0  720.0 1600.0 |    0    0  719 1600 | SurfaceView[com.innocent.media/com.innocent.media.MainActivity]@0(BLAST)#278
-10-04 04:11:47.700   814   814 D SurfaceFlinger:      DEVICE | 0xb400007ce8944340 | 0100 | RGBA_8888    |    0.0    0.0  720.0 1600.0 |    0    0  719 1600 | com.innocent.media/com.innocent.media.MainActivity$_5512#273
-10-04 04:11:47.703   814   814 I Layer   : id=258 removeFromCurrentState cc08d6e Splash Screen com.innocent.media#258 (107)
-10-04 04:11:47.703   814   814 I Layer   : id=259 removeFromCurrentState Splash Screen com.innocent.media$_4815#259 (107)
-10-04 04:11:47.703   814   814 I Layer   : id=280 removeFromCurrentState Surface(name=388d932 com.innocent.media/com.innocent.media.MainActivity)/@0xe981ba - animation-leash of starting_reveal#280 (107)
-10-04 04:11:47.703   814   814 I Layer   : id=259 removeFromCurrentState Splash Screen com.innocent.media$_4815#259 (107)
-10-04 04:11:47.704   814   814 I SurfaceFlinger: id=258 Removed cc08d6e Splash Screen com.innocent.media#258 (107)
-10-04 04:11:47.704   814   814 I SurfaceFlinger: id=259 Removed Splash Screen com.innocent.media$_4815#259 (107)
-10-04 04:11:47.705   814   814 I Layer   : id=258 Destroyed cc08d6e Splash Screen com.innocent.media#258
-10-04 04:11:47.706   814   814 I BufferQueueDebug: [Splash Screen com.innocent.media$_4815#259](this:0xb400007ce9273838,id:-1,api:0,p:-1,c:814) onDestructor()
-10-04 04:11:47.706   814   814 I Layer   : id=259 Destroyed Splash Screen com.innocent.media$_4815#259
-10-04 04:11:47.744  1370  5142 D MdnieScenarioControlService:  packageName : com.innocent.media    className : com.innocent.media.MainActivity
-10-04 04:11:47.848  1370  1398 I ActivityTaskManager: Displayed com.innocent.media/.MainActivity: +9s741ms
-10-04 04:11:47.848  1370  1398 I Pageboost: Launch time gathered : pid 5512 com.innocent.media 9741
-10-04 04:11:48.196  5512  5524 I .innocent.media: Background concurrent copying GC freed 189346(12MB) AllocSpace objects, 22(632KB) LOS objects, 49% free, 4217KB/8435KB, paused 189us,72us total 109.453ms
-10-04 04:11:49.117  5841  5841 D OneDSChannel: Logging for null: QoS/CrashReporting/PreviousProcessDetected with logger com.microsoft.applications.events.Logger@8e1ca5e collector url: 
-10-04 04:11:49.954  3151  3151 I GOS:GameServiceReceiver: pkg: com.innocent.media
-10-04 04:11:50.554  5335  5571 I AppsModelWriter: normalizeVisibleItems(visibleItems)> 0, 58, 0, -102, 1, 0, UserHandle{0}, 0, Innocent, -1, -1
-10-04 04:11:51.784   543   543 D io_stats: !@ MemInfo(KB): total 2850444 free 74884 avail 878948 actv(f) 331320 inactv(f) 581208 dirty 18724 wb 608 anonpg 746708 slab 241168
-10-04 04:11:52.622  6268  6268 I AndroidRuntime: VM exiting with result code 0, cleanup skipped.
-10-04 04:11:54.587  5512  6120 W .innocent.media: Long monitor contention with owner pool-8-thread-1 (5729) at boolean com.innocent.media.DownloadEngine.initBlocking(android.content.Context)(DownloadEngine.kt:1567) waiters=0 in boolean com.innocent.media.DownloadEngine.initBlocking(android.content.Context) for 7.346s
-10-04 04:11:56.305  5512  5512 I flutter : LAB cpu app 63% · 0.3fps · pool-thread 53% | .innocent.media 4% | 1.raster 3% | HeapTaskDaemon 1%
-10-04 04:11:57.393  6468  6468 I AndroidRuntime: VM exiting with result code 0, cleanup skipped.
-10-04 04:11:57.395 31696  6463 I Finsky  : [186] Installer package name of package com.innocent.media is 
-10-04 04:11:57.745  6493  6493 I AndroidRuntime: VM exiting with result code 0, cleanup skipped.
-10-04 04:11:58.529  6555  6555 I AndroidRuntime: VM exiting with result code 0, cleanup skipped.
-10-04 04:11:59.353  5335  5571 I AppsModelWriter: normalizeVisibleItems(visibleItems)> 0, 58, 0, -102, 1, 0, UserHandle{0}, 0, Innocent, -1, -1
-10-04 04:12:06.879  6711  6711 I AndroidRuntime: VM exiting with result code 0, cleanup skipped.
-10-04 04:12:07.369  6732  6752 I AndroidRuntime: VM exiting with result code 0, cleanup skipped.
-10-04 04:12:07.586  6757  6757 I AndroidRuntime: VM exiting with result code 0, cleanup skipped.
-10-04 04:12:07.883  6779  6779 I AndroidRuntime: VM exiting with result code 0, cleanup skipped.
-10-04 04:12:08.145  6800  6800 I AndroidRuntime: VM exiting with result code 0, cleanup skipped.
-10-04 04:12:08.458  6829  6829 I AndroidRuntime: VM exiting with result code 0, cleanup skipped.
-10-04 04:12:08.775  6849  6849 I AndroidRuntime: VM exiting with result code 0, cleanup skipped.
-10-04 04:12:09.086  6883  6883 I AndroidRuntime: VM exiting with result code 0, cleanup skipped.
-10-04 04:12:09.379  6909  6909 I AndroidRuntime: VM exiting with result code 0, cleanup skipped.
-10-04 04:12:14.790  1370  7757 D SettingsProvider: isChangeAllowed() : name = dropbox:data_app_crash
-10-04 04:12:14.812  1370  7487 D SettingsProvider: isChangeAllowed() : name = dropbox:data_app_anr
-10-04 04:12:42.633  5512  5512 I flutter : LAB   55.0 LAB script: phase hwplus
-10-04 04:12:42.840  1370  4900 I MediaFocusControl: requestAudioFocus() from uid/pid 10250/5512 AA=USAGE_MEDIA/CONTENT_TYPE_MOVIE clientId=android.media.AudioManager@fa41049com.innocent.media.MainActivity$$ExternalSyntheticLambda58@7475d4e callingPack=com.innocent.media req=1 flags=0x0 sdk=35
-10-04 04:12:42.900  5512  5512 I media_kit: flutterJNIAPIAvailable = true
-10-04 04:12:42.913  5512  5512 I flutter : {id: 0}
-10-04 04:12:42.936  1370  4900 I MediaFocusControl: abandonAudioFocus() from uid/pid 10250/5512 clientId=android.media.AudioManager@fa41049com.innocent.media.MainActivity$$ExternalSyntheticLambda58@7475d4e
-10-04 04:12:42.940   814   814 I BufferQueueProducer: [SurfaceView[com.innocent.media/com.innocent.media.MainActivity]@0(BLAST)#278](this:0xb400007d0c2f6838,id:-1,api:0,p:-1,c:814) queueBuffer: fps=0.05 dur=55530.25 max=55236.28 min=99.99
-10-04 04:12:42.958  1370  4900 V WindowManager: Relayout Window{388d932 u0 com.innocent.media/com.innocent.media.MainActivity}: viewVisibility=0 req=720x1600 d0
-10-04 04:12:42.974  5512  5512 I ViewRootImpl@3ad1938[MainActivity]: updateBoundsLayer: t = android.view.SurfaceControl$Transaction@8ab25a2 sc = Surface(name=Bounds for - com.innocent.media/com.innocent.media.MainActivity@0)/@0x3a29233 frame = 3
-10-04 04:12:42.990   814   814 I BufferQueueProducer: [com.innocent.media/com.innocent.media.MainActivity$_5512#273](this:0xb400007ce88d5838,id:-1,api:0,p:-1,c:814) queueBuffer: fps=0.04 dur=55480.22 max=55286.28 min=193.94
-10-04 04:12:43.007  5916  5916 D AvrcpMediaPlayerList: onActiveSessionsChanged: controller: com.innocent.media
-10-04 04:12:43.018  5916  5916 I AvrcpMediaPlayerList: addMediaPlayer() : com.innocent.media
-10-04 04:12:43.055  5916  5916 I AvrcpMediaPlayerList: Adding wrapped media player: com.innocent.media at key: 1
-10-04 04:12:46.305  5512  5512 I flutter : LAB cpu app 3% · 0.1fps · .innocent.media 2%
-10-04 04:13:37.633  5512  5512 I flutter : LAB  110.0 LAB script: phase sw
-10-04 04:13:37.640  1370  6447 I MediaFocusControl: requestAudioFocus() from uid/pid 10250/5512 AA=USAGE_MEDIA/CONTENT_TYPE_MOVIE clientId=android.media.AudioManager@fa41049com.innocent.media.MainActivity$$ExternalSyntheticLambda58@d40005a callingPack=com.innocent.media req=1 flags=0x0 sdk=35
-10-04 04:13:37.657   814   814 I BufferQueueProducer: [SurfaceView[com.innocent.media/com.innocent.media.MainActivity]@0(BLAST)#278](this:0xb400007d0c2f6838,id:-1,api:0,p:-1,c:814) queueBuffer: fps=0.02 dur=54717.06 max=54717.06 min=54717.06
-10-04 04:13:37.658  1370  6447 I MediaFocusControl: abandonAudioFocus() from uid/pid 10250/5512 clientId=android.media.AudioManager@fa41049com.innocent.media.MainActivity$$ExternalSyntheticLambda58@d40005a
-10-04 04:13:37.668  1370  6447 V WindowManager: Relayout Window{388d932 u0 com.innocent.media/com.innocent.media.MainActivity}: viewVisibility=0 req=720x1600 d0
-10-04 04:13:37.683  5512  5512 I ViewRootImpl@3ad1938[MainActivity]: updateBoundsLayer: t = android.view.SurfaceControl$Transaction@8ab25a2 sc = Surface(name=Bounds for - com.innocent.media/com.innocent.media.MainActivity@0)/@0x3a29233 frame = 4
-10-04 04:13:37.691   814   814 I BufferQueueProducer: [com.innocent.media/com.innocent.media.MainActivity$_5512#273](this:0xb400007ce88d5838,id:-1,api:0,p:-1,c:814) queueBuffer: fps=0.02 dur=54701.13 max=54701.13 min=54701.13
-10-04 04:13:37.703  5916  5916 D AvrcpMediaPlayerList: onActiveSessionsChanged: controller: com.innocent.media
-10-04 04:13:37.703  5916  5916 I AvrcpMediaPlayerList: addMediaPlayer() : com.innocent.media
-10-04 04:13:46.311  5512  5512 I flutter : LAB cpu app 1% · 0.1fps · -
-10-04 04:14:32.717   814  1056 D SurfaceFlinger: [SF client] REMOVE (0xb400007d0a6a5460) for (5512:com.innocent.media)
-10-04 04:14:32.717   814  1056 D SurfaceFlinger: [SF client] REMOVE (0xb400007ce89446c0) for (5512:com.innocent.media)
-10-04 04:14:32.718   814  5568 I SurfaceFlinger: id=276 Removed Bounds for - com.innocent.media/com.innocent.media.MainActivity@0#276 (105)
-10-04 04:14:32.718   814  5568 I SurfaceFlinger: id=277 Removed SurfaceView[com.innocent.media/com.innocent.media.MainActivity]@0#277 (105)
-10-04 04:14:32.718   814  5568 I SurfaceFlinger: id=278 Removed SurfaceView[com.innocent.media/com.innocent.media.MainActivity]@0(BLAST)#278 (105)
-10-04 04:14:32.718   814  5568 I SurfaceFlinger: id=279 Removed Background for SurfaceView[com.innocent.media/com.innocent.media.MainActivity]@0#279 (105)
-10-04 04:14:32.718  1370  7758 I ActivityManager: Process com.innocent.media (pid 5512) has died: fg  TOP (140,908)
-10-04 04:14:32.724  1370  7757 I WindowManager: WIN DEATH: Window{388d932 u0 com.innocent.media/com.innocent.media.MainActivity}
-10-04 04:14:32.726  1370  7757 W InputManager-JNI: Input channel object '388d932 com.innocent.media/com.innocent.media.MainActivity (client)' was disposed without first being removed with the input manager!
-10-04 04:14:32.731  1370  7757 V WindowManager: Remove Window{388d932 u0 com.innocent.media/com.innocent.media.MainActivity}: mSurfaceController=Surface(name=com.innocent.media/com.innocent.media.MainActivity$_5512)/@0xdfc3eae mAnimatingExit=false mRemoveOnExit=false mHasSurface=true surfaceShowing=true animating=false app-animation=false mWillReplaceWindow=false mDisplayFrozen=false callers=com.android.server.wm.WindowState.-$$Nest$mremoveIfPossible:0 com.android.server.wm.WindowState$DeathRecipient.binderDied:3808 android.os.IBinder$DeathRecipient.binderDied:323 android.os.BinderProxy.sendDeathNotice:781 <bottom of call stack> <bottom of call stack> 
-10-04 04:14:32.732  1370  7488 D InputDispatcher: Focus left window (0): 388d932 com.innocent.media/com.innocent.media.MainActivity
-10-04 04:14:32.734  1370  7757 I WindowManager: Destroying surface Surface(name=com.innocent.media/com.innocent.media.MainActivity$_5512)/@0xdfc3eae called by com.android.server.wm.WindowStateAnimator.destroySurface:942 com.android.server.wm.WindowStateAnimator.destroySurfaceLocked:536 com.android.server.wm.WindowState.removeImmediately:2969 com.android.server.wm.WindowState.removeIfPossible:3228 com.android.server.wm.WindowState.-$$Nest$mremoveIfPossible:0 com.android.server.wm.WindowState$DeathRecipient.binderDied:3808 android.os.IBinder$DeathRecipient.binderDied:323 android.os.BinderProxy.sendDeathNotice:781 
-10-04 04:14:32.747  1370  7757 D WindowManager: updateSystemBarAttributes: displayId=0, win=Window{388d932 u0 com.innocent.media/com.innocent.media.MainActivity}, navColorWin=null, focusedCanBeNavColorWin=false, behavior=1, appearance=0, statusBarAppearanceRegions=[], requestedVisibilities=, from=com.android.server.wm.DisplayPolicy.finishPostLayoutPolicyLw:2527 com.android.server.wm.DisplayContent.applySurfaceChangesTransaction:5713 com.android.server.wm.RootWindowContainer.applySurfaceChangesTransaction:1234 
-10-04 04:14:32.748  4815  4815 D SamsungLightBarControlHelper: onStatusBarAppearanceChanged() -  sbModeChanged:false, statusBarMode:MODE_TRANSPARENT, barState:SHADE, isKeyguardShowing:false, navbarColorManagedByIme:false, stackAppearancesChanged:true, (), packageName:com.innocent.media
-10-04 04:14:32.753  1370  7757 V WindowManager: Changing focus from Window{388d932 u0 com.innocent.media/com.innocent.media.MainActivity} to null displayId=၀ Callers=com.android.server.wm.RootWindowContainer.updateFocusedWindowLocked:595 com.android.server.wm.WindowManagerService.updateFocusedWindowLocked:6810 com.android.server.wm.WindowState.removeIfPossible:3237 com.android.server.wm.WindowState.-$$Nest$mremoveIfPossible:0 
-10-04 04:14:32.753   814   814 I Layer   : id=273 removeFromCurrentState com.innocent.media/com.innocent.media.MainActivity$_5512#273 (106)
-10-04 04:14:32.753   814   814 I Layer   : id=276 removeFromCurrentState Bounds for - com.innocent.media/com.innocent.media.MainActivity@0#276 (106)
-10-04 04:14:32.753   814   814 I Layer   : id=277 removeFromCurrentState SurfaceView[com.innocent.media/com.innocent.media.MainActivity]@0#277 (106)
-10-04 04:14:32.753   814   814 I Layer   : id=279 removeFromCurrentState Background for SurfaceView[com.innocent.media/com.innocent.media.MainActivity]@0#279 (106)
-10-04 04:14:32.754   814   814 I Layer   : id=278 removeFromCurrentState SurfaceView[com.innocent.media/com.innocent.media.MainActivity]@0(BLAST)#278 (106)
-10-04 04:14:32.754   814   814 I Layer   : id=272 removeFromCurrentState 388d932 com.innocent.media/com.innocent.media.MainActivity#272 (106)
-10-04 04:14:32.754   814   814 I SurfaceFlinger: id=273 Removed com.innocent.media/com.innocent.media.MainActivity$_5512#273 (106)
-10-04 04:14:32.754   814   814 I SurfaceFlinger: id=272 Removed 388d932 com.innocent.media/com.innocent.media.MainActivity#272 (106)
-10-04 04:14:32.754  1370  7757 D MARsPolicyManager: onPackageResumedFG pkgName = com.innocent.media, userId = 0
-10-04 04:14:32.754   814   814 I Layer   : id=272 Destroyed 388d932 com.innocent.media/com.innocent.media.MainActivity#272
-10-04 04:14:32.757   814   814 I BufferQueueDebug: [com.innocent.media/com.innocent.media.MainActivity$_5512#273](this:0xb400007ce88d5838,id:-1,api:0,p:-1,c:814) onDestructor()
-10-04 04:14:32.757   814   814 I Layer   : id=273 Destroyed com.innocent.media/com.innocent.media.MainActivity$_5512#273
-10-04 04:14:32.757   814   814 I Layer   : id=276 Destroyed Bounds for - com.innocent.media/com.innocent.media.MainActivity@0#276
-10-04 04:14:32.757   814   814 I Layer   : id=277 Destroyed SurfaceView[com.innocent.media/com.innocent.media.MainActivity]@0#277
-10-04 04:14:32.757   814   814 I Layer   : id=279 Destroyed Background for SurfaceView[com.innocent.media/com.innocent.media.MainActivity]@0#279
-10-04 04:14:32.758   814   814 I BufferQueueDebug: [SurfaceView[com.innocent.media/com.innocent.media.MainActivity]@0(BLAST)#278](this:0xb400007d0c2f6838,id:-1,api:0,p:-1,c:814) onDestructor()
-10-04 04:14:32.758   814   814 I Layer   : id=278 Destroyed SurfaceView[com.innocent.media/com.innocent.media.MainActivity]@0(BLAST)#278
-10-04 04:14:32.778  1370  7758 W ActivityTaskManager: Force removing ActivityRecord{7f859c8 u0 com.innocent.media/.MainActivity} t13}: app died, no saved state
-10-04 04:14:32.793   814  5568 I SurfaceFlinger: id=264 Removed a571bba ActivityRecordInputSink com.innocent.media/.MainActivity#264 (98)
-10-04 04:14:32.856   814   814 I Layer   : id=257 removeFromCurrentState ActivityRecord{7f859c8 u0 com.innocent.media/.MainActivity} t13}#257 (98)
-10-04 04:14:32.856   814   814 I Layer   : id=264 removeFromCurrentState a571bba ActivityRecordInputSink com.innocent.media/.MainActivity#264 (98)
-10-04 04:14:32.856   814   814 I SurfaceFlinger: id=257 Removed ActivityRecord{7f859c8 u0 com.innocent.media/.MainActivity} t13}#257 (98)
-10-04 04:14:32.857   814   814 I Layer   : id=257 Destroyed ActivityRecord{7f859c8 u0 com.innocent.media/.MainActivity} t13}#257
-10-04 04:14:32.857   814   814 I Layer   : id=264 Destroyed a571bba ActivityRecordInputSink com.innocent.media/.MainActivity#264
-10-04 04:14:33.051  5078  5078 I AndroidRuntime: VM exiting with result code 0.
-10-04 04:14:33.849   814   895 I SurfaceFlinger: id=280 Removed Surface(name=388d932 com.innocent.media/com.innocent.media.MainActivity)/@0xe981ba - animation-leash of starting_reveal#280 (95)
-10-04 04:14:33.853   814   814 I Layer   : id=280 Destroyed Surface(name=388d932 com.innocent.media/com.innocent.media.MainActivity)/@0xe981ba - animation-leash of starting_reveal#280
-10-04 04:14:44.518  8471  8471 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-10-04 04:14:44.588  8471  8471 I AndroidRuntime: Using default boot image
-10-04 04:14:44.588  8471  8471 I AndroidRuntime: Leaving lock profiling enabled
-10-04 04:14:44.592  8471  8471 D AndroidRuntime: addProductProperty: pBrand1 is not null
-10-04 04:14:44.592  8471  8471 D AndroidRuntime: addProductProperty: not brand or 7
-10-04 04:14:45.429  8471  8471 D AndroidRuntime: Calling main entry com.android.commands.am.Am
-10-04 04:14:45.682  8471  8471 I AndroidRuntime: VM exiting with result code 0.
-10-04 04:14:46.019  8508  8508 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
-10-04 04:14:46.031  8508  8508 I AndroidRuntime: Using default boot image
-10-04 04:14:46.031  8508  8508 I AndroidRuntime: Leaving lock profiling enabled
-10-04 04:14:46.032  8508  8508 D AndroidRuntime: addProductProperty: pBrand1 is not null
-10-04 04:14:46.032  8508  8508 D AndroidRuntime: addProductProperty: not brand or 7
-10-04 04:14:46.405  8508  8508 D AndroidRuntime: Calling main entry com.android.commands.am.Am
-10-04 04:14:47.745 31696 31696 I AndroidRuntime: VM exiting with result code 0, cleanup skipped.
-10-04 04:14:47.873  8508  8508 I AndroidRuntime: VM exiting with result code 0.
-10-04 04:14:47.910  1370  6451 W ActivityManager: Scheduling restart of crashed service com.android.vending/com.google.android.finsky.setup.PlaySetupServiceV2 in 1000ms for connection
-10-04 04:14:47.921  1370  1410 W ActivityManager: Rescheduling restart of crashed service com.android.vending/com.google.android.finsky.setup.PlaySetupServiceV2 in 9987ms for mem-pressure-event
-10-04 04:14:48.850  1370  1410 W ActivityManager: Rescheduling restart of crashed service com.android.vending/com.google.android.finsky.setup.PlaySetupServiceV2 in 57ms for mem-pressure-event
-10-04 04:14:49.073  8636  8717 I org.webrtc.Logging: CrashStartupListener: Checking conference crashes for 1 account(s).
-10-04 04:14:51.373  5335  5571 I AppsModelWriter: normalizeVisibleItems(visibleItems)> 0, 58, 0, -102, 1, 0, UserHandle{0}, 0, Innocent, -1, -1
+10-04 04:35:47.649 31441 31441 I Finsky:background: [2] [BGP] Initializing crash detector...
+10-04 04:35:49.873 31561 31561 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-04 04:35:49.884 31561 31561 I AndroidRuntime: Using default boot image
+10-04 04:35:49.884 31561 31561 I AndroidRuntime: Leaving lock profiling enabled
+10-04 04:35:49.885 31561 31561 D AndroidRuntime: addProductProperty: pBrand1 is not null
+10-04 04:35:49.885 31561 31561 D AndroidRuntime: addProductProperty: not brand or 7
+10-04 04:35:50.268 31561 31561 D AndroidRuntime: Calling main entry com.android.commands.am.Am
+10-04 04:35:50.728  1366  7880 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.droidguard.DroidGuardService in 1000ms for connection
+10-04 04:35:50.745 31561 31561 I AndroidRuntime: VM exiting with result code 0.
+10-04 04:35:50.782  1366  4894 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.chimera.PersistentDirectBootAwareApiService in 20000ms for connection
+10-04 04:35:50.784  1366  4894 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/com.google.android.location.internal.GoogleLocationManagerService in 49997ms for start-requested
+10-04 04:35:50.786  1366  4894 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.location.geocode.GeocodeService in 79995ms for connection
+10-04 04:35:50.787  1366  4894 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.common.stats.GmsCoreStatsService in 109994ms for start-requested
+10-04 04:35:50.788  1366  4894 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.remotegestures.api.RemoteGesturesService in 139992ms for start-requested
+10-04 04:35:50.790  1366  4894 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.auth.account.authenticator.GoogleAccountAuthenticatorService in 169990ms for connection
+10-04 04:35:50.791  1366  4894 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.location.persistent.LocationPersistentService in 199989ms for start-requested
+10-04 04:35:50.792  1366  4894 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/com.google.android.location.network.NetworkLocationService in 229988ms for connection
+10-04 04:35:50.793  1366  4894 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.thunderbird.EmergencyPersistentService in 259987ms for start-requested
+10-04 04:35:50.795  1366  4894 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.dtdi.lifecycle.LifecycleService in 289986ms for start-requested
+10-04 04:35:50.796  1366  4894 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.presencemanager.service.PresenceManagerPresenceReportService in 319984ms for start-requested
+10-04 04:35:50.799  1366  4894 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/com.google.android.contextmanager.service.ContextManagerService in 349982ms for start-requested
+10-04 04:35:50.800  1366  4894 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.chimera.GmsBoundBrokerService in 379980ms for connection
+10-04 04:35:50.801  1366  4894 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.personalsafety.service.SndDetectionService in 409979ms for start-requested
+10-04 04:35:50.802  1366  4894 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.crisisalerts.init.CrisisAlertsPersistentService in 439977ms for start-requested
+10-04 04:35:50.804  1366  4894 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.play.integrity.api.service.IntegrityApiPersistentService in 469976ms for start-requested
+10-04 04:35:50.805  1366  4894 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/com.google.android.location.internal.server.GoogleLocationService in 499975ms for start-requested
+10-04 04:35:50.806  1366  4894 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.nearby.presence.service.LifeCycleService in 529974ms for start-requested
+10-04 04:35:50.807  1366  4894 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.nearby.sharing.SendSurfaceService in 559973ms for start-requested
+10-04 04:35:50.808  1366  4894 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.gcm.nts.SchedulerService in 589972ms for start-requested
+10-04 04:35:50.809  1366  4894 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.nearby.sharing.ReceiveSurfaceService in 619971ms for start-requested
+10-04 04:35:50.810  1366  4894 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/com.google.android.location.fused.FusedLocationService in 649970ms for connection
+10-04 04:35:50.812  1366  4894 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.chimera.PersistentIntentOperationService in 679969ms for start-requested
+10-04 04:35:50.813  1366  4894 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.auth.setup.devicesignals.LockScreenService in 709968ms for start-requested
+10-04 04:35:50.815  1366  4894 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/com.google.android.location.internal.server.HardwareArProviderService in 739966ms for connection
+10-04 04:35:50.816  1366  4894 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.fido.authenticator.service.AuthenticatorService in 769964ms for start-requested
+10-04 04:35:50.817  1366  4894 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.gcm.GcmService in 799963ms for start-requested
+10-04 04:35:50.819  1366  4894 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.chimera.PersistentBoundBrokerService in 829962ms for connection
+10-04 04:35:50.820  1366  4894 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.geotimezone.GeoTimeZoneService in 859961ms for connection
+10-04 04:35:50.821  1366  4894 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.personalsafety.service.PersonalSafetyService in 889959ms for start-requested
+10-04 04:35:50.822  1366  4894 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.chimera.PersistentApiService in 919958ms for connection
+10-04 04:35:50.823  1366  4894 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.chimera.GmsIntentOperationService in 949957ms for start-requested
+10-04 04:35:54.352 31909 31909 W DIAGMON_SDK[605052]: ANR Logging can't be enabled because Configuration is null
+10-04 04:36:02.884 32647 32647 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-04 04:36:02.921 32647 32647 I AndroidRuntime: Using default boot image
+10-04 04:36:02.921 32647 32647 I AndroidRuntime: Leaving lock profiling enabled
+10-04 04:36:02.922 32647 32647 D AndroidRuntime: addProductProperty: pBrand1 is not null
+10-04 04:36:02.922 32647 32647 D AndroidRuntime: addProductProperty: not brand or 7
+10-04 04:36:03.776 32647 32647 D AndroidRuntime: Calling main entry com.android.commands.am.Am
+10-04 04:36:04.178 32647 32647 I AndroidRuntime: VM exiting with result code 0.
+10-04 04:36:05.128 32737   549 I org.webrtc.Logging: CrashStartupListener: Checking conference crashes for 0 account(s).
+10-04 04:36:05.257   528   528 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-04 04:36:05.289   528   528 I AndroidRuntime: Using default boot image
+10-04 04:36:05.289   528   528 I AndroidRuntime: Leaving lock profiling enabled
+10-04 04:36:05.290   528   528 D AndroidRuntime: addProductProperty: pBrand1 is not null
+10-04 04:36:05.291   528   528 D AndroidRuntime: addProductProperty: not brand or 7
+10-04 04:36:05.935 31625   799 I serviceentitlement: (REDACTED) [CredManRegistrationManager] [%s] start to register
+10-04 04:36:05.985   528   528 D AndroidRuntime: Calling main entry com.android.commands.am.Am
+10-04 04:36:06.112 31625   799 I serviceentitlement: (REDACTED) [CredManRegistrationManager] [%s] Data length [%d] to register
+10-04 04:36:06.131 31625   799 I serviceentitlement: (REDACTED) [CredManRegistrationManager] [%s] register #2
+10-04 04:36:06.132 31625   799 I serviceentitlement: (REDACTED) [CredManRegistrationManager] [%s] register credential
+10-04 04:36:07.322 31625 31625 I serviceentitlement: (REDACTED) [CredManRegistrationManager] [%s][%s] Success to register credentials
+10-04 04:36:12.648   528   528 I AndroidRuntime: VM exiting with result code 0.
+10-04 04:36:13.453  1865  1865 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-04 04:36:13.481  1865  1865 I AndroidRuntime: Using default boot image
+10-04 04:36:13.481  1865  1865 I AndroidRuntime: Leaving lock profiling enabled
+10-04 04:36:13.482  1865  1865 D AndroidRuntime: addProductProperty: pBrand1 is not null
+10-04 04:36:13.482  1865  1865 D AndroidRuntime: addProductProperty: not brand or 7
+10-04 04:36:14.189  1366  7812 W ActivityManager: Scheduling restart of crashed service android/com.android.server.DrmEventService in 0ms for persistent
+10-04 04:36:14.278  1366  6488 W ActivityManager: Scheduling restart of crashed service com.samsung.vvm/.service.AppKilledService in 10000ms for start-requested
+10-04 04:36:14.291  1865  1865 D AndroidRuntime: Calling main entry com.android.commands.content.Content
+10-04 04:36:14.450  1366  1402 W ActivityManager: Rescheduling restart of crashed service com.samsung.vvm/.service.AppKilledService in 827ms for mem-pressure-event
+10-04 04:36:14.458  1865  1865 D AndroidRuntime: Shutting down VM
+10-04 04:36:15.168  1366  1402 W ActivityManager: Rescheduling restart of crashed service com.samsung.vvm/.service.AppKilledService in 29109ms for mem-pressure-event
+10-04 04:36:15.333  1366  5358 W ActivityManager: Scheduling restart of crashed service com.osp.app.signin/com.msc.sa.service.RequestService in 68945ms for connection
+10-04 04:36:15.625  1366  1402 W ActivityManager: Rescheduling restart of crashed service com.samsung.vvm/.service.AppKilledService in 8653ms for mem-pressure-event
+10-04 04:36:15.625  1366  1402 W ActivityManager: Rescheduling restart of crashed service com.osp.app.signin/com.msc.sa.service.RequestService in 28653ms for mem-pressure-event
+10-04 04:36:17.561  2241  2241 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-04 04:36:17.582  2241  2241 I AndroidRuntime: Using default boot image
+10-04 04:36:17.582  2241  2241 I AndroidRuntime: Leaving lock profiling enabled
+10-04 04:36:17.583  2241  2241 D AndroidRuntime: addProductProperty: pBrand1 is not null
+10-04 04:36:17.583  2241  2241 D AndroidRuntime: addProductProperty: not brand or 7
+10-04 04:36:18.294  2241  2241 D AndroidRuntime: Calling main entry com.android.commands.content.Content
+10-04 04:36:18.450  1366  1402 W ActivityManager: Rescheduling restart of crashed service com.samsung.vvm/.service.AppKilledService in 0ms for mem-pressure-event
+10-04 04:36:18.468  2241  2241 D AndroidRuntime: Shutting down VM
+10-04 04:36:21.119 32737   586 E ioz     : 	at anrw.a(PG:2)
+10-04 04:36:21.128 32737   720 E ErrorLoggingExecutor: 	at anrw.a(PG:2)
+10-04 04:36:21.128 32737   596 E ErrorLoggingExecutor: 	at anrw.a(PG:2)
+10-04 04:36:21.128 32737   720 E ErrorLoggingExecutor: 	at anrw.a(PG:2)
+10-04 04:36:21.128 32737   596 E ErrorLoggingExecutor: 	at anrw.a(PG:2)
+10-04 04:36:21.139 32737   690 E ErrorLoggingExecutor: 	at anrw.a(PG:2)
+10-04 04:36:21.139 32737   690 E ErrorLoggingExecutor: 	at anrw.a(PG:2)
+10-04 04:36:21.941 32737   589 E ioz     : 	at anrt.run(PG:2)
+10-04 04:36:21.941 32737   589 E ioz     : 	at anrw.a(PG:2)
+10-04 04:36:21.950 32737   690 E ErrorLoggingExecutor: 	at anrw.a(PG:2)
+10-04 04:36:21.950 32737   690 E ErrorLoggingExecutor: 	at anrw.a(PG:2)
+10-04 04:36:26.034 32737   720 E ErrorLoggingExecutor: 	at anrw.a(PG:2)
+10-04 04:36:26.034 32737   720 E ErrorLoggingExecutor: 	at anrw.a(PG:2)
+10-04 04:36:26.385  1366  7880 W ActivityManager: Scheduling restart of crashed service com.sec.android.app.sbrowser/.custom_tab.CustomTabsConnectionService in 1000ms for connection
+10-04 04:36:26.734  1366  7880 W ActivityManager: Scheduling restart of crashed service com.samsung.android.app.galaxyfinder/.acceleration.AppCoreService in 1000ms for start-requested
+10-04 04:36:29.226 32737   584 E irz     : 	at anrh.a(PG:59)
+10-04 04:36:30.078  1366  4895 W ActivityManager: Scheduling restart of crashed service com.samsung.android.app.galaxyfinder/.acceleration.AppCoreService in 10000ms for start-requested
+10-04 04:36:32.806   544   544 D io_stats: !@ MemInfo(KB): total 2850444 free 94344 avail 1036956 actv(f) 462468 inactv(f) 589884 dirty 92668 wb 6100 anonpg 750716 slab 234560
+10-04 04:36:38.388  1366  1445 I PackageManager:           pkg{com.innocent.media}
+10-04 04:36:38.757  1366  1446 D ApplicationPolicy: getApplicationStateEnabled : pkg = com.innocent.media userId : 0
+10-04 04:36:38.828   544   544 D io_stats: !@ MemInfo(KB): total 2850444 free 74528 avail 1049596 actv(f) 413376 inactv(f) 671776 dirty 74956 wb 840 anonpg 749276 slab 237568
+10-04 04:36:39.709 22255 22399 V DynamiteModule: Dynamite loader version >= 2, using loadModule2NoCrashUtils
+10-04 04:36:39.785  1366  1446 W ziparchive: Unable to open '/data/app/~~BX7CvFlTKrUVeXeb2CGlQA==/com.innocent.media-PxqntW4y6KX5p4Mq9BjgmQ==/base.dm': No such file or directory
+10-04 04:36:39.786  1366  1446 I PackageDexOptimizer: Running dexopt (dexoptNeeded=1) on: /data/app/~~BX7CvFlTKrUVeXeb2CGlQA==/com.innocent.media-PxqntW4y6KX5p4Mq9BjgmQ==/base.apk pkg=com.innocent.media isa=arm64 dexoptFlags=boot_complete,profile_guided,public,enable_hidden_api_checks targetFilter=speed-profile oatDir=/data/app/~~BX7CvFlTKrUVeXeb2CGlQA==/com.innocent.media-PxqntW4y6KX5p4Mq9BjgmQ==/oat classLoaderContext=PCL[]{} async=false
+10-04 04:36:39.802  1012  1012 V installd: DexInv: --- BEGIN '/data/app/~~BX7CvFlTKrUVeXeb2CGlQA==/com.innocent.media-PxqntW4y6KX5p4Mq9BjgmQ==/base.apk' ---
+10-04 04:36:39.802  1012  1012 V installd: Running /apex/com.android.art/bin/dex2oat32 in=base.apk out=/data/app/~~BX7CvFlTKrUVeXeb2CGlQA==/com.innocent.media-PxqntW4y6KX5p4Mq9BjgmQ==/oat/arm64/base.odex
+10-04 04:36:40.500  3573  3573 I dex2oat32: /apex/com.android.art/bin/dex2oat32 --input-vdex-fd=-1 --output-vdex-fd=10 --classpath-dir=/data/app/~~BX7CvFlTKrUVeXeb2CGlQA==/com.innocent.media-PxqntW4y6KX5p4Mq9BjgmQ== --class-loader-context=PCL[]{} --compact-dex-level=none --compiler-filter=speed-profile --compilation-reason=install --max-image-block-size=524288 --resolve-startup-const-strings=true --generate-mini-debug-info -j6
+10-04 04:36:42.780  3686  3737 V DynamiteModule: Dynamite loader version >= 2, using loadModule2NoCrashUtils
+10-04 04:36:46.294  1012  1012 V installd: DexInv: --- END '/data/app/~~BX7CvFlTKrUVeXeb2CGlQA==/com.innocent.media-PxqntW4y6KX5p4Mq9BjgmQ==/base.apk' (success) ---
+10-04 04:36:46.334  1366  1446 I AppsFilter: interaction: PackageSetting{c11b940 com.google.testing.helium.utp.android.companion.backdrop/10249} -> PackageSetting{35ebc5a com.innocent.media/10250} BLOCKED
+10-04 04:36:46.440  1366  1520 D OverlayManager: reconcileSettingsForPackage pkgName=com.innocent.media userId=0
+10-04 04:36:46.440  1366  1520 I OverlayManager: updateOverlaysForTarget() called with: targetPackage = [com.innocent.media], userId = [0], flags = [0], skipUpdateState = [false]
+10-04 04:36:46.450  1366  4771 I SdkSandboxManager: No SDKs used. Skipping SDK data reconcilation for CallingInfo{mUid=10250, mPackageName='com.innocent.media'}
+10-04 04:36:46.474  1366  1520 D OverlayManager: -> Updating overlay: target=com.innocent.media overlays=[OverlayPaths { resourceDirs = [], overlayPaths = [/data/resource-cache/com.android.systemui-neutral-FUsv.frro, /data/resource-cache/com.android.systemui-accent-fIel.frro] }] userId=0
+10-04 04:36:46.476  1366  1520 I OMS_DEBUG: [updatePackageManagerLocked] updatedPackages : [com.innocent.media]
+10-04 04:36:46.486  4814  4930 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_QS
+10-04 04:36:46.486  4814  4930 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PEOPLE_HUB_PERSON_EXTRACTOR
+10-04 04:36:46.486  4814  4930 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_NOTIFICATION_MENU_ROW
+10-04 04:36:46.486  4814  4930 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_LOCKSCREEN_LEFT_BUTTON
+10-04 04:36:46.486  4814  4930 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_CLOCK
+10-04 04:36:46.487  4814  4930 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_NOTIFICATION_ASSISTANT
+10-04 04:36:46.487  4814  4930 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_OVERLAY
+10-04 04:36:46.487  4814  4930 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_QS_FACTORY
+10-04 04:36:46.487  4814  4930 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_GLOBAL_ACTIONS
+10-04 04:36:46.487  4814  4930 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_LOCKSCREEN_RIGHT_BUTTON
+10-04 04:36:46.487  4814  4930 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_LOCKSCREEN_LEFT_BUTTON
+10-04 04:36:46.488  4814  4930 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_LOCKSCREEN_RIGHT_BUTTON
+10-04 04:36:46.491  1366  1520 I SWT_ThemeManager: com.innocent.media doesn't have metadata
+10-04 04:36:46.492  5122  5122 D CarrierSvcBindHelper: onPackageAdded: com.innocent.media
+10-04 04:36:46.506  4814  4930 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_CLOCK
+10-04 04:36:46.506  4814  4930 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_NOTIFICATION_MENU_ROW
+10-04 04:36:46.506  4814  4930 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_TOAST
+10-04 04:36:46.506  4814  4930 D PluginInstanceManager: queryPkg com.innocent.media com.samsung.systemui.action.PLUGIN_FACE_WIDGET
+10-04 04:36:46.506  4814  4930 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_SENSOR_MANAGER
+10-04 04:36:46.506  4814  4930 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_NOTIFICATION_MENU_ROW
+10-04 04:36:46.506  4814  4930 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_VOLUME
+10-04 04:36:46.509   726   726 I SCS@AiSearch user 0: (PackageBroadcastReceiver) packageName: com.innocent.media
+10-04 04:36:46.509   726   726 I SCS@AiSearch user 0: (PackageBroadcastReceiver) Packages changed: [com.innocent.media]
+10-04 04:36:46.515  4814  4814 D FaceWidgetMetadataParser: updatePackage() com.innocent.media true
+10-04 04:36:46.528  4814  4814 D FaceWidgetMetadataParser: removePackage() key = com.innocent.media
+10-04 04:36:46.532  1366  1366 D SGM:GameManager: identifyGamePackage. com.innocent.media, mCurrentUserId: 0, callerUserId: 0, callingMethodInfo: com.samsung.android.game.SemGameManager.isGamePackage(SemGameManager.java:104)
+10-04 04:36:46.532  1366  1366 D SGM:PkgDataHelper: getGamePkgData(). com.innocent.media
+10-04 04:36:46.532  1366  1366 D SGM:SemGameManager: isGamePackage(), pkgName=com.innocent.media, ret=false
+10-04 04:36:46.532  1366  1366 I AppWidgetServiceImpl: Received broadcast: android.intent.action.PACKAGE_ADDED, Updates all providers with com.innocent.media, userId: 0
+10-04 04:36:46.537  1366  1366 I AppWidgetServiceImpl: addProviderLocked Provider is added Provider{ProviderId{user:0, app:10250, cmp:ComponentInfo{com.innocent.media/com.innocent.media.MusicWidgetProvider}}} at 40
+10-04 04:36:46.542  1366  4754 D SGM:GameManager: identifyGamePackage. com.innocent.media, mCurrentUserId: 0, callerUserId: 0, callingMethodInfo: com.samsung.android.game.SemGameManager.isGamePackage(SemGameManager.java:104)
+10-04 04:36:46.542  1366  4754 D SGM:PkgDataHelper: getGamePkgData(). com.innocent.media
+10-04 04:36:46.542  1366  4754 D SGM:SemGameManager: isGamePackage(), pkgName=com.innocent.media, ret=false
+10-04 04:36:46.551  5122  5122 I VvmPkgInstalledRcvr: packageName: com.innocent.media, systemDialer: com.samsung.android.dialer
+10-04 04:36:46.552  1366  1366 I Telecom:<token>: action : android.intent.action.PACKAGE_ADDED / packageName : com.innocent.media
+10-04 04:36:46.553  1366  1366 I DomainFilter: packageAdded() - packageName: com.innocent.media, uid: 0
+10-04 04:36:46.559  1366  4815 D SGM:GameManager: identifyGamePackage. com.innocent.media, mCurrentUserId: 0, callerUserId: 0, callingMethodInfo: com.samsung.android.game.SemGameManager.isGamePackage(SemGameManager.java:104)
+10-04 04:36:46.560  1366  4815 D SGM:PkgDataHelper: getGamePkgData(). com.innocent.media
+10-04 04:36:46.560  1366  4815 D SGM:SemGameManager: isGamePackage(), pkgName=com.innocent.media, ret=false
+10-04 04:36:46.560  1366  4815 I Pageboost: appinfo : com.innocent.media 0 0 0 0
+10-04 04:36:46.573  1366  4815 D SGM:GameManager: identifyGamePackage. com.innocent.media, mCurrentUserId: 0, callerUserId: 0, callingMethodInfo: com.samsung.android.game.SemGameManager.isGamePackage(SemGameManager.java:104)
+10-04 04:36:46.573  1366  4815 D SGM:PkgDataHelper: getGamePkgData(). com.innocent.media
+10-04 04:36:46.573  1366  4815 D SGM:SemGameManager: isGamePackage(), pkgName=com.innocent.media, ret=false
+10-04 04:36:46.573  1366  4815 I Pageboost: Reset this app info : com.innocent.media 
+10-04 04:36:46.575  5122  5122 D ImsResolver: maybeAddedImsService, packageName: com.innocent.media
+10-04 04:36:46.575  1366  4815 I Pageboost: db create : CREATE TABLE IF NOT EXISTS cominnocentmedia (FILENAME TEXT, OFFSET INTEGER, SIZE INTEGER, FORVRAMDISK INTEGER, BITMAP BLOB, unique (FILENAME, OFFSET) );
+10-04 04:36:46.606  1366  1366 D ApplicationPolicy: No updatable permission to DENY found for com.innocent.media(0)
+10-04 04:36:46.641  1366  1366 D ApplicationPolicy: No updatable permission to GRANT found for com.innocent.media(0)
+10-04 04:36:46.642  1366  1366 I AppsFilter: interaction: PackageSetting{c11b940 com.google.testing.helium.utp.android.companion.backdrop/10249} -> PackageSetting{c162225 com.innocent.media/10250} BLOCKED
+10-04 04:36:46.698  1366  1366 I AppWidgetServiceImpl: Received broadcast: android.intent.action.PACKAGE_CHANGED, Updates all providers with com.innocent.media, userId: 0
+10-04 04:36:46.711  4814  4930 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_QS
+10-04 04:36:46.711  4814  4930 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PEOPLE_HUB_PERSON_EXTRACTOR
+10-04 04:36:46.711  4814  4930 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_NOTIFICATION_MENU_ROW
+10-04 04:36:46.711  4814  4930 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_LOCKSCREEN_LEFT_BUTTON
+10-04 04:36:46.711  4814  4930 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_CLOCK
+10-04 04:36:46.711  4814  4930 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_NOTIFICATION_ASSISTANT
+10-04 04:36:46.711  4814  4930 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_OVERLAY
+10-04 04:36:46.711  4814  4930 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_QS_FACTORY
+10-04 04:36:46.711  4814  4930 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_GLOBAL_ACTIONS
+10-04 04:36:46.711  4814  4930 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_LOCKSCREEN_RIGHT_BUTTON
+10-04 04:36:46.711  4814  4930 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_LOCKSCREEN_LEFT_BUTTON
+10-04 04:36:46.711  4814  4930 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_LOCKSCREEN_RIGHT_BUTTON
+10-04 04:36:46.711  4814  4930 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_CLOCK
+10-04 04:36:46.711  4814  4930 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_NOTIFICATION_MENU_ROW
+10-04 04:36:46.711  4814  4930 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_TOAST
+10-04 04:36:46.711  4814  4930 D PluginInstanceManager: queryPkg com.innocent.media com.samsung.systemui.action.PLUGIN_FACE_WIDGET
+10-04 04:36:46.711  4814  4930 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_SENSOR_MANAGER
+10-04 04:36:46.712  4814  4930 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_NOTIFICATION_MENU_ROW
+10-04 04:36:46.712  4814  4930 D PluginInstanceManager: queryPkg com.innocent.media com.android.systemui.action.PLUGIN_VOLUME
+10-04 04:36:46.720  4814  4814 D FaceWidgetMetadataParser: updatePackage() com.innocent.media false
+10-04 04:36:46.721  4814  4814 D FaceWidgetMetadataParser: removePackage() key = com.innocent.media
+10-04 04:36:46.726  5122  5122 D CarrierSvcBindHelper: onPackageModified: com.innocent.media
+10-04 04:36:46.736   726   726 I SCS@AiSearch user 0: (PackageBroadcastReceiver) packageName: com.innocent.media
+10-04 04:36:46.737   726   726 I SCS@AiSearch user 0: (PackageBroadcastReceiver) Packages changed: [com.innocent.media]
+10-04 04:36:46.739  5122  5122 D ImsResolver: maybeAddedImsService, packageName: com.innocent.media
+10-04 04:36:46.755 14192 17631 I DWBLocalPackageManager: onPackageAdded Already Exist : com.innocent.media
+10-04 04:36:46.758  1366  1366 D ApplicationPolicy: No updatable permission to DENY found for com.innocent.media(0)
+10-04 04:36:46.773  1366  1366 D ApplicationPolicy: No updatable permission to GRANT found for com.innocent.media(0)
+10-04 04:36:46.798  1366  4815 I Pageboost: add app to global @ runtime: com.innocent.media
+10-04 04:36:47.039 31625  3838 I ProximityAuth: [RecentAppsMediator] Package added: (user=UserHandle{0}) com.innocent.media
+10-04 04:36:47.050  1366  4754 W SemWifiTransportLayerUtils: getApplicationCategory - IOException com.innocent.media
+10-04 04:36:48.193  1366  1392 I CompanionDeviceManagerService: onPackageModified() u0/com.innocent.media
+10-04 04:36:48.465  1366  1402 I SGM:GameManager: PkgUpdateReceiver, onPackageAdded : com.innocent.media userHandle : UserHandle{0} userId : 0
+10-04 04:36:48.465  1366  1602 D SGM:GosNotifyThread: notifyPackageChangedToGos(), before send intent to GOS. type:15, changeType: 0, pkgName:com.innocent.media, userHandleId:0
+10-04 04:36:48.506  1366  1402 D LauncherAppsService: Calling onPackageAdded: com.innocent.media, uid: 10250
+10-04 04:36:48.507  1366  1402 D LauncherAppsService: Calling onPackageAdded: com.innocent.media, listener: com.android.systemui(UserHandle{0}, 4814)
+10-04 04:36:48.507  4814  5721 D LauncherApps: onPackageAdded 0,com.innocent.media
+10-04 04:36:48.510  1366  1402 D LauncherAppsService: Calling onPackageAdded: com.innocent.media, listener: android(UserHandle{0}, 1366)
+10-04 04:36:48.510  1366  1402 D LauncherApps: onPackageAdded 0,com.innocent.media
+10-04 04:36:48.510  1366  1402 D LauncherAppsService: Calling onPackageAdded: com.innocent.media, listener: com.sec.android.app.launcher(UserHandle{0}, 5324)
+10-04 04:36:48.599  3011  3943 I GOS:MainIntentService: onHandleIntent(). type(PACKAGE_CHANGED), changeType(INSTALLED), pkgName(com.innocent.media)
+10-04 04:36:48.606  3011  3943 I GOS:SystemEventReactor: onPackageInstallStarted(). packageName: com.innocent.media
+10-04 04:36:48.608  3011  3943 I GOS:SystemEventReactor: addPkgDataFromServer(), packageName : com.innocent.media
+10-04 04:36:48.725  3011  3943 I GOS:NetworkConnector: getSinglePkg(), packageName : com.innocent.media
+10-04 04:36:48.885  1366  1402 D MetaDataCollector: onReceive: done pkgName=com.innocent.media
+10-04 04:36:48.965  1366  1402 D AppWidgetServiceImpl: Provider info from ComponentInfo{com.innocent.media/com.innocent.media.MusicWidgetProvider} won't be persisted.
+10-04 04:36:49.026  3011  3943 I GOS:NetworkConnector: doDirectly(), Response isSuccessful, responseCode: 200, URL: PRD_GET/v4/packages/com.innocent.media, response: {"pkg_name":"com.innocent.media", "pkg_type":"undefined"}
+10-04 04:36:49.027  3011  3943 I GOS:NetworkConnector: getSinglePkg(), request: PRD_GET/v4/packages/com.innocent.media
+10-04 04:36:49.027  3011  3943 I GOS:NetworkConnector:  v4PkgResponse: {"pkg_name":"com.innocent.media", "pkg_type":"undefined"}
+10-04 04:36:49.043  3011  3943 I GOS:SystemEventReactor: addPkgDataFromServer(), A package was added : com.innocent.media as undefined
+10-04 04:36:49.142  5324  5324 I Launcher.Model: package changed received : com.innocent.media
+10-04 04:36:49.183  1366  1402 D AppWidgetServiceImpl: Provider info from ComponentInfo{com.innocent.media/com.innocent.media.MusicWidgetProvider} won't be persisted.
+10-04 04:36:49.564  5324  5565 I AppIconSolution: return adaptive icon for com.innocent.media, isNight = false
+10-04 04:36:49.636   726  1492 I f       : Category not present in BloomFilter, Checking in Manifest:- com.innocent.media
+10-04 04:36:49.637   726  1492 I f       : Category not found in BF and Manifest for pkg :- com.innocent.media
+10-04 04:36:49.690   726  1492 I SCS@AiSearch user 0: (IndexManager) [UPDATE] index=com.samsung.android.apps, size=1, documents=[com.innocent.media@0@com.innocent.media.MainActivity]
+10-04 04:36:50.561  5324  5565 I PackageUpdatedTask: mAllAppsList.addPackage com.innocent.media
+10-04 04:36:50.582  5324  5565 I AppIconSolution: getThemeIconWithBG called with public API, pkg = com.innocent.media, mode = 48
+10-04 04:36:50.584  5324  5565 I AppIconSolution: return adaptive icon for com.innocent.media, isNight = false
+10-04 04:36:50.584  5324  5565 I LauncherActivityInfo: packageName: com.innocent.media, useThemeIcon: false, height: 126, width: 126, density: 480
+10-04 04:36:50.607  5324  5565 I AppInfo : set ComponentInfo{com.innocent.media/com.innocent.media.MainActivity} app progress level to 100
+10-04 04:36:50.609  5324  5565 I PackageUpdatedTask: added, appInfo : AppInfo(id=58 type=APP hidden=0 container=all_apps screen=-1 rank=0 rankOfList=-1 user=UserHandle{0} title=Innocent componentName=ComponentInfo{com.innocent.media/com.innocent.media.MainActivity} screenType=0 runtimeStatusFlags=384 status=0)
+10-04 04:36:50.611  5324  5565 I AppsModelWriter: addItems(start)> 0, 58, 0, -102, -1, 0, UserHandle{0}, 0, Innocent, -1, -1
+10-04 04:36:50.613  5324  5565 I AppsModelWriter: normalizeVisibleItems(visibleItems)> 0, 58, 0, -102, 1, 0, UserHandle{0}, 0, Innocent, -1, -1
+10-04 04:36:50.626  5324  5565 I AppsModelWriter: addItems(end) : addItem> 0, 58, 0, -102, 1, 0, UserHandle{0}, 0, Innocent, -1, -1
+10-04 04:36:50.628  5324  5324 I Launcher.AppsPagedView: addItems => id: 58, rank: 0, screenId: 1, cellX: 0, cellY: 0, container: -102, dirty: false, title: Innocent, isFolder: false, user: UserHandle{0}, disabled: false, screenType: 0
+10-04 04:36:50.727  5324  5565 I AppIconSolution: return adaptive icon for com.innocent.media, isNight = false
+10-04 04:36:50.763  5324  5565 I PostPositionOperator: addItem() - com.innocent.media, isWidgetOnly : true
+10-04 04:36:50.769  5324  5565 I PackageUpdatedTask: mAllAppsList.updatePackage com.innocent.media
+10-04 04:36:50.780  5324  5565 I AppIconSolution: getThemeIconWithBG called with public API, pkg = com.innocent.media, mode = 48
+10-04 04:36:50.781  5324  5565 I AppIconSolution: return adaptive icon for com.innocent.media, isNight = false
+10-04 04:36:50.781  5324  5565 I LauncherActivityInfo: packageName: com.innocent.media, useThemeIcon: false, height: 126, width: 126, density: 480
+10-04 04:36:50.797  5324  5565 I HsAllAppsList: set ComponentInfo{com.innocent.media/com.innocent.media.MainActivity} app progress level to 100
+10-04 04:36:50.811  5324  5565 I AppIconSolution: return adaptive icon for com.innocent.media, isNight = false
+10-04 04:36:50.846  5324  5565 I PackageUpdatedTask: modified, appInfo : AppInfo(id=58 type=APP hidden=0 container=all_apps screen=1 rank=0 rankOfList=-1 user=UserHandle{0} title=Innocent componentName=ComponentInfo{com.innocent.media/com.innocent.media.MainActivity} screenType=0 runtimeStatusFlags=384 status=0)
+10-04 04:36:50.848  5324  5565 I AppsModelWriter: updateItems(start)> 0, 58, 0, -102, 1, 0, UserHandle{0}, 0, Innocent, -1, -1
+10-04 04:36:50.850  5324  5565 I AppsModelWriter: normalizeVisibleItems(visibleItems)> 0, 58, 0, -102, 1, 0, UserHandle{0}, 0, Innocent, -1, -1
+10-04 04:36:50.863  5324  5565 I AppsModelWriter: updateItems(end) : updateItem> 0, 58, 0, -102, 1, 0, UserHandle{0}, 0, Innocent, -1, -1
+10-04 04:36:50.866  5324  5324 I Launcher.AppsPagedView: UpdateItems => id: 58, rank: 0, screenId: 1, cellX: 0, cellY: 0, container: -102, dirty: false, title: Innocent, isFolder: false, user: UserHandle{0}, disabled: false, screenType: 0
+10-04 04:36:50.923  5324  5565 I PostPositionOperator: addItem() - com.innocent.media, isWidgetOnly : true
+10-04 04:36:50.945  5324  5565 I GameLauncherManagerImp: com.innocent.media does not contain game list
+10-04 04:36:50.966  5324  5565 I AppsModelWriter: normalizeVisibleItems(visibleItems)> 0, 58, 0, -102, 1, 0, UserHandle{0}, 0, Innocent, -1, -1
+10-04 04:36:53.945 31625   799 I serviceentitlement: (REDACTED) [CredManRegistrationManager] [%s] start to register
+10-04 04:36:54.038 31625   799 I serviceentitlement: (REDACTED) [CredManRegistrationManager] [%s] Data length [%d] to register
+10-04 04:36:54.050 31625   799 I serviceentitlement: (REDACTED) [CredManRegistrationManager] [%s] register #2
+10-04 04:36:54.053 31625   799 I serviceentitlement: (REDACTED) [CredManRegistrationManager] [%s] register credential
+10-04 04:36:54.463 31625 31625 I serviceentitlement: (REDACTED) [CredManRegistrationManager] [%s][%s] Success to register credentials
+10-04 04:36:54.964  1366  5358 W system_server: Long monitor contention with owner PackageManager (1446) at com.android.server.pm.ScanResult com.android.server.pm.InstallPackageHelper.scanPackageNewLI(com.android.server.pm.parsing.pkg.ParsedPackage, int, int, long, android.os.UserHandle, java.lang.String)(InstallPackageHelper.java:5201) waiters=0 in com.android.server.pm.Computer com.android.server.pm.PackageManagerService.snapshotComputer() for 464ms
+10-04 04:37:00.398  4289  4289 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-04 04:37:00.625  5324  5565 I AppsModelWriter: normalizeVisibleItems(visibleItems)> 0, 58, 0, -102, 1, 0, UserHandle{0}, 0, Innocent, -1, -1
+10-04 04:37:00.644  4289  4289 I AndroidRuntime: Using default boot image
+10-04 04:37:00.644  4289  4289 I AndroidRuntime: Leaving lock profiling enabled
+10-04 04:37:00.652  4289  4289 D AndroidRuntime: addProductProperty: pBrand1 is not null
+10-04 04:37:00.652  4289  4289 D AndroidRuntime: addProductProperty: not brand or 7
+10-04 04:37:01.101  5324  5565 I AppsModelWriter: normalizeVisibleItems(visibleItems)> 0, 58, 0, -102, 1, 0, UserHandle{0}, 0, Innocent, -1, -1
+10-04 04:37:01.308  5324  5565 I GameLauncherManagerImp: com.innocent.media does not contain game list
+10-04 04:37:01.325  5324  5565 I AppsModelWriter: normalizeVisibleItems(visibleItems)> 0, 58, 0, -102, 1, 0, UserHandle{0}, 0, Innocent, -1, -1
+10-04 04:37:02.687  4289  4289 D AndroidRuntime: Calling main entry com.android.commands.am.Am
+10-04 04:37:02.706  3011  3011 I GOS:GameServiceReceiver:  PkgInstallStarted for com.innocent.media UserID : 0
+10-04 04:37:02.743  3011  4453 I GOS:MainIntentService: onHandleIntent(). type(PACKAGE_CHANGED), changeType(INSTALL_STARTED), pkgName(com.innocent.media)
+10-04 04:37:02.743  3011  4453 I GOS:SystemEventReactor: onPackageInstallStarted(). packageName: com.innocent.media
+10-04 04:37:02.745  3011  4453 I GOS:SystemEventReactor: addPkgDataFromServer(), packageName : com.innocent.media
+10-04 04:37:02.831  3011  4453 I GOS:NetworkConnector: getSinglePkg(), packageName : com.innocent.media
+10-04 04:37:03.057  3011  4453 I GOS:NetworkConnector: doDirectly(), Response isSuccessful, responseCode: 200, URL: PRD_GET/v4/packages/com.innocent.media, response: {"pkg_name":"com.innocent.media", "pkg_type":"undefined"}
+10-04 04:37:03.057  3011  4453 I GOS:NetworkConnector: getSinglePkg(), request: PRD_GET/v4/packages/com.innocent.media
+10-04 04:37:03.057  3011  4453 I GOS:NetworkConnector:  v4PkgResponse: {"pkg_name":"com.innocent.media", "pkg_type":"undefined"}
+10-04 04:37:03.074  3011  4453 I GOS:SystemEventReactor: addPkgDataFromServer(), A package was added : com.innocent.media as undefined
+10-04 04:37:04.421  4461  4504 I TestLoopActivity: Starting scenario ၀ in com.innocent.media
+10-04 04:37:05.035  1366  1395 I ChimeraSystemEventListener: appLaunchIntent package name is: com.innocent.media
+10-04 04:37:05.037  1366  5744 I ActivityTaskManager: START u0 {act=com.google.intent.action.TEST_LOOP dat=content://com.google.testing.platform.android.driver.testloop.companion/... typ=application/javascript flg=0x2 pkg=com.innocent.media cmp=com.innocent.media/.MainActivity (has extras)} from uid 10251
+10-04 04:37:05.047  1366  5744 D ActivityTaskManager: TaskLaunchParamsModifier:task=null activity=ActivityRecord{41079a9 u0 com.innocent.media/.MainActivity} display-area-from-source=DefaultTaskDisplayArea@98101204 display-id=0 display-windowing-mode=1 suggested-display-area=DefaultTaskDisplayArea@98101204
+10-04 04:37:05.049  1366  5744 D ActivityTaskManager: TaskLaunchParamsModifier:task=Task{db050d6 #13 type=standard I=com.google.testing.platform.android.driver.testloop.companion/.TestLoopActivity U=0 visible=true visibleRequested=true mode=fullscreen translucent=false sz=1} activity=ActivityRecord{41079a9 u0 com.innocent.media/.MainActivity} t-1} display-area-from-source=DefaultTaskDisplayArea@98101204 display-id=0 display-windowing-mode=1 suggested-display-area=DefaultTaskDisplayArea@98101204 inherit-from-source=fullscreen activity-options-fullscreen=Rect(0, 0 - 0, 0) non-freeform-display display-area=DefaultTaskDisplayArea@98101204 maximized-bounds
+10-04 04:37:05.063   820   890 I SurfaceFlinger: id=258 createSurf flag=80004, ActivityRecord{41079a9 u0 com.innocent.media/.MainActivity} t13}#258
+10-04 04:37:05.087  1366  5744 V WindowManager: Added starting ActivityRecord{41079a9 u0 com.innocent.media/.MainActivity} t13}: startingWindow=null startingView=com.android.server.wm.StartingSurfaceController$StartingSurface@90246f4
+10-04 04:37:05.106  1366  1379 D MARsPolicyManager: onPackageResumedFG pkgName = com.innocent.media, userId = 0
+10-04 04:37:05.112  1366  1379 D WindowManagerServiceExt: notifyOccludeChangeNotice: cn=ComponentInfo{com.innocent.media/com.innocent.media.MainActivity} occludesParent=true inMultiWindow=false styleFloating=false caller=com.android.server.wm.WindowManagerServiceExt.updateOccludeTargetIfNeeded:1402 com.android.server.wm.DisplayContent.ensureActivitiesVisible:7532 com.android.server.wm.RootWindowContainer.ensureActivitiesVisible:2248 com.android.server.wm.RootWindowContainer.ensureActivitiesVisible:2229 com.android.server.wm.TaskFragment.completePause:2076 
+10-04 04:37:05.121   820   890 I SurfaceFlinger: id=259 createSurf flag=80004, edb808c Splash Screen com.innocent.media#259
+10-04 04:37:05.123  1366  6346 V WindowManager: addWindow: ActivityRecord{41079a9 u0 com.innocent.media/.MainActivity} t13} startingWindow=Window{edb808c u0 Splash Screen com.innocent.media}
+10-04 04:37:05.125  1366  6346 D WindowManager: rotationForOrientation, orientationSource=ActivityRecord{41079a9 u0 com.innocent.media/.MainActivity} t13}
+10-04 04:37:05.129  4814  4899 D InsetsController: onStateChanged: InsetsState: {mDisplayFrame=Rect(0, 0 - 720, 1600), mDisplayCutout=DisplayCutout{insets=Rect(0, 45 - 0, 0) waterfall=Insets{left=0, top=0, right=0, bottom=0} boundingRect={Bounds=[Rect(0, 0 - 0, 0), Rect(272, 0 - 448, 45), Rect(0, 0 - 0, 0), Rect(0, 0 - 0, 0)]} cutoutPathParserInfo={CutoutPathParserInfo{displayWidth=720 displayHeight=1600 physicalDisplayWidth=720 physicalDisplayHeight=1600 density={1.75} cutoutSpec={M 0,0 H -88 V 45 H 88 V 0 H 0 Z} rotation={0} scale={1.0} physicalPixelDisplaySizeRatio={1.0}}}}, mRoundedCorners=RoundedCorners{[RoundedCorner{position=TopLeft, radius=56, center=Point(56, 56)}, RoundedCorner{position=TopRight, radius=56, center=Point(664, 56)}, RoundedCorner{position=BottomRight, radius=56, center=Point(664, 1544)}, RoundedCorner{position=BottomLeft, radius=56, center=Point(56, 1544)}]}  mRoundedCornerFrame=Rect(0, 0 - 720, 1600), mPrivacyIndicatorBounds=PrivacyIndicatorBounds {static bounds=Rect(643, 0 - 720, 45) rotation=0}, mSources= { InsetsSource: {mType=ITYPE_STATUS_BAR, mFrame=[0,0][720,45], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_NAVIGATION_BAR, mFrame=[0,1516][720,1600], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_LEFT_GESTURES, mFrame=[0,0][0,1600], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_RIGHT_GESTURES, mFrame=[720,0][720,1600], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_MANDATORY_GESTURES, mFrame=[0,0][720,66], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_MANDATORY_GESTURES, mFrame=[0,1516][720,1600], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_LEFT_DISPLAY_CUTOUT, mFrame=[0,0][-100000,1600], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_DISPLAY_CUTOUT, mFrame=[0,0][720,45], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_RIGHT_DISPLAY_CUTOUT, mFrame=[100000,0][720,1600], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_DISPLAY_CUTOUT, mFrame=[0,100000][720,1600], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_TAPPABLE_ELEMENT, mFrame=[0,0][720,45], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_TAPPABLE_ELEMENT, mFrame=[0,1516][720,1600], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_IME, mFrame=[0,0][0,0], mVisible=false, mInsetsRoundedCornerFrame=false} } host=Splash Screen com.innocent.media from=android.view.ViewRootImpl.setView:1732
+10-04 04:37:05.130  1366  6346 D CoreBackPreview: Window{edb808c u0 Splash Screen com.innocent.media}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@9c0688d, mPriority=0}
+10-04 04:37:05.141  1366  5744 V WindowManager: Relayout Window{edb808c u0 Splash Screen com.innocent.media}: viewVisibility=0 req=720x1600 d0
+10-04 04:37:05.144   820  1045 I BufferQueueDebug: [Splash Screen com.innocent.media$_4814#260](this:0xb400007ce395a838,id:-1,api:0,p:-1,c:-1) BufferQueue core=(820:/system/bin/surfaceflinger)
+10-04 04:37:05.144   820  1045 I SurfaceFlinger: id=260 createSurf flag=40004, Splash Screen com.innocent.media$_4814#260
+10-04 04:37:05.146  1366  5744 D WindowManager: makeSurface duration=4 name=Splash Screen com.innocent.media$_4814
+10-04 04:37:05.156  1366  5744 D WindowManager: rotationForOrientation, orientationSource=ActivityRecord{41079a9 u0 com.innocent.media/.MainActivity} t13}
+10-04 04:37:05.208  1366  5744 D WindowManager: finishDrawingWindow: Window{edb808c u0 Splash Screen com.innocent.media} mDrawState=DRAW_PENDING seqId=၀
+10-04 04:37:05.208  1366  5744 V WindowManager: Finishing drawing window Window{edb808c u0 Splash Screen com.innocent.media}: mDrawState=DRAW_PENDING
+10-04 04:37:05.208  1366  5744 V WindowManager: Draw state now committed in Window{edb808c u0 Splash Screen com.innocent.media}
+10-04 04:37:05.210  1366  1396 D WindowManager: performShow logReadyForDisplay win=Window{edb808c u0 Splash Screen com.innocent.media} mToken.waitingToShow:true isTransitionSet:true
+10-04 04:37:05.219   820   820 D BufferStateLayer: Splash Screen com.innocent.media$_4814#260 setBuffer frameId=1, bufferId=20675972563057 fenceId=253, w= 720, h=1600
+10-04 04:37:05.229  1366  1404 I ActivityManager: Start proc 4636:com.innocent.media/u0a250 for next-top-activity {com.innocent.media/com.innocent.media.MainActivity}
+10-04 04:37:05.263  1366  4754 W SemWifiTransportLayerUtils: getApplicationCategory - IOException com.innocent.media
+10-04 04:37:05.282  4636  4636 I .innocent.media: Using CollectorTypeCC GC.
+10-04 04:37:05.292  4636  4636 E .innocent.media: Not starting debugger since process cannot load the jdwp agent.
+10-04 04:37:05.323  5324  5565 I AppsModelWriter: normalizeVisibleItems(visibleItems)> 0, 58, 0, -102, 1, 0, UserHandle{0}, 0, Innocent, -1, -1
+10-04 04:37:05.419  1366  4893 D WindowManager: rotationForOrientation, orientationSource=ActivityRecord{41079a9 u0 com.innocent.media/.MainActivity} t13}
+10-04 04:37:05.419  1366  4893 D WindowManager: rotationForOrientation, orientationSource=ActivityRecord{41079a9 u0 com.innocent.media/.MainActivity} t13}
+10-04 04:37:05.428  1366  4893 D WindowManager: rotationForOrientation, orientationSource=ActivityRecord{41079a9 u0 com.innocent.media/.MainActivity} t13}
+10-04 04:37:05.433  1366  1601 D SGM:FgCheckThread: onLooperPrepared(), msg: MSG_APP_CREATE, pkgName: com.innocent.media, userId: 0
+10-04 04:37:05.434  1366  4893 D SGM:PkgDataHelper: notifyAppCreate(), pkgName: com.innocent.media, userId: 0, sendRet: true
+10-04 04:37:05.435  1366  4893 D MARsPolicyManager: onPackageResumedFG pkgName = com.innocent.media, userId = 0
+10-04 04:37:05.436  1366  4893 D ActivityTaskManager: scheduleTopResumedActivityChanged, onTop=true r=ActivityRecord{41079a9 u0 com.innocent.media/.MainActivity} t13} caller=com.android.server.wm.ActivityTaskSupervisor.scheduleTopResumedActivityStateIfNeeded:2535 com.android.server.wm.ActivityTaskSupervisor.updateTopResumedActivityIfNeeded:2527 com.android.server.wm.TaskFragment.setResumedActivity:493 com.android.server.wm.TaskFragment.onActivityStateChanged:805 com.android.server.wm.ActivityRecord.setState:6406 com.android.server.wm.Task.minimalResumeActivityLocked:6155 
+10-04 04:37:05.437  1366  4893 D InputDispatcher: Focused application(0): ActivityRecord{41079a9 u0 com.innocent.media/.MainActivity} t13}
+10-04 04:37:05.442  1366  1396 D WindowManager: performShow logReadyForDisplay win=Window{edb808c u0 Splash Screen com.innocent.media} mToken.waitingToShow:true isTransitionSet:true
+10-04 04:37:05.474  1366  1396 I WindowManager: Reparenting to leash, surface=Surface(name=ActivityRecord{41079a9 u0 com.innocent.media/.MainActivity} t13})/@0x44aeaa, leashParent=Surface(name=Task=13)/@0xf782b17
+10-04 04:37:05.475   820  1045 I SurfaceFlinger: id=263 createSurf flag=24004, Surface(name=ActivityRecord{41079a9 u0 com.innocent.media/.MainActivity} t13})/@0x44aeaa - animation-leash of app_transition#263
+10-04 04:37:05.475  1366  1396 D WindowManager: makeSurface duration=2 leash=Surface(name=Surface(name=ActivityRecord{41079a9 u0 com.innocent.media/.MainActivity} t13})/@0x44aeaa - animation-leash of app_transition)/@0xcadfe38
+10-04 04:37:05.476   820   890 I SurfaceFlinger: id=264 createSurf flag=80004, Surface(name=ActivityRecord{41079a9 u0 com.innocent.media/.MainActivity} t13})/@0x44aeaa - animation-bounds#264
+10-04 04:37:05.482  1366  1396 V WindowManager: performShowLocked: mDrawState=HAS_DRAWN in Window{edb808c u0 Splash Screen com.innocent.media}
+10-04 04:37:05.490   820  1045 I SurfaceFlinger: id=265 createSurf flag=80000, 4441673 ActivityRecordInputSink com.innocent.media/.MainActivity#265
+10-04 04:37:05.496  4636  4636 D nativeloader: Configuring classloader-namespace for other apk /data/app/~~BX7CvFlTKrUVeXeb2CGlQA==/com.innocent.media-PxqntW4y6KX5p4Mq9BjgmQ==/base.apk. target_sdk_version=35, uses_libraries=, library_path=/data/app/~~BX7CvFlTKrUVeXeb2CGlQA==/com.innocent.media-PxqntW4y6KX5p4Mq9BjgmQ==/lib/arm64:/data/app/~~BX7CvFlTKrUVeXeb2CGlQA==/com.innocent.media-PxqntW4y6KX5p4Mq9BjgmQ==/base.apk!/lib/arm64-v8a, permitted_path=/data:/mnt/expand:/data/user/0/com.innocent.media
+10-04 04:37:05.503   820   820 I Layer   : Layer [Splash Screen com.innocent.media$_4814#260] hidden!! flag(0)
+10-04 04:37:05.507  1366  1395 I GameSDK@LifeCycle: noteResumeComponent(): package name  : com.innocent.media
+10-04 04:37:05.524   820   820 I SurfaceFlinger: operator()(), mtkRenderCntDebug 15, screenshot (Splash Screen com.innocent.media$_4814#260)
+10-04 04:37:05.586  1366  1395 D SGM:GameManager: identifyGamePackage. com.innocent.media, mCurrentUserId: 0, callerUserId: 0, callingMethodInfo: com.samsung.android.game.SemGameManager.isGamePackage(SemGameManager.java:104)
+10-04 04:37:05.586  1366  1395 D SGM:PkgDataHelper: getGamePkgData(). com.innocent.media
+10-04 04:37:05.586  1366  1395 D SGM:SemGameManager: isGamePackage(), pkgName=com.innocent.media, ret=false
+10-04 04:37:05.587  1366  1396 I WindowManager: Reparenting to original parent: Surface(name=Task=13)/@0xf782b17, destroy=true, surface=Surface(name=ActivityRecord{41079a9 u0 com.innocent.media/.MainActivity} t13})/@0x44aeaa
+10-04 04:37:05.592  1366  1395 D SGM:FgCheckThread: noteResumeComponent(), received pkgName: com.innocent.media, userId: 0
+10-04 04:37:05.602   820   820 I Layer   : id=263 removeFromCurrentState Surface(name=ActivityRecord{41079a9 u0 com.innocent.media/.MainActivity} t13})/@0x44aeaa - animation-leash of app_transition#263 (112)
+10-04 04:37:05.602   820   820 I Layer   : id=264 removeFromCurrentState Surface(name=ActivityRecord{41079a9 u0 com.innocent.media/.MainActivity} t13})/@0x44aeaa - animation-bounds#264 (112)
+10-04 04:37:05.604  4636  4636 V GraphicsEnvironment: ANGLE Developer option for 'com.innocent.media' set to: 'default'
+10-04 04:37:05.604   820   890 I SurfaceFlinger: id=263 Removed Surface(name=ActivityRecord{41079a9 u0 com.innocent.media/.MainActivity} t13})/@0x44aeaa - animation-leash of app_transition#263 (112)
+10-04 04:37:05.604   820   890 I SurfaceFlinger: id=264 Removed Surface(name=ActivityRecord{41079a9 u0 com.innocent.media/.MainActivity} t13})/@0x44aeaa - animation-bounds#264 (112)
+10-04 04:37:05.606  4636  4636 V GraphicsEnvironment: ANGLE GameManagerService for com.innocent.media: false
+10-04 04:37:05.620   820   820 D SurfaceFlinger:      DEVICE | 0xb400007ce173d000 | 0100 | RGBA_8888    |    0.0    0.0  720.0 1600.0 |    0    0  720 1600 | Splash Screen com.innocent.media$_4814#260
+10-04 04:37:05.621   820   820 D SurfaceFlinger:      DEVICE | 0xb400007ce173d000 | 0100 | RGBA_8888    |    0.0    0.0  720.0 1600.0 |    0    0  719 1600 | Splash Screen com.innocent.media$_4814#260
+10-04 04:37:05.623   820   820 I Layer   : id=264 Destroyed Surface(name=ActivityRecord{41079a9 u0 com.innocent.media/.MainActivity} t13})/@0x44aeaa - animation-bounds#264
+10-04 04:37:05.624   820   820 I Layer   : id=263 Destroyed Surface(name=ActivityRecord{41079a9 u0 com.innocent.media/.MainActivity} t13})/@0x44aeaa - animation-leash of app_transition#263
+10-04 04:37:05.780  1366  5125 D MdnieScenarioControlService:  packageName : com.innocent.media    className : com.innocent.media.MainActivity
+10-04 04:37:06.225  4636  4795 D libMEOW : applied 2 plugins for [com.innocent.media]:
+10-04 04:37:06.547   820   820 D SurfaceFlinger:      DEVICE | 0xb400007ce173d000 | 0100 | RGBA_8888    |    0.0    0.0  720.0 1600.0 |    0    0  720 1600 | Splash Screen com.innocent.media$_4814#260
+10-04 04:37:06.547   820   820 D SurfaceFlinger:      DEVICE | 0xb400007ce173d000 | 0100 | RGBA_8888    |    0.0    0.0  720.0 1600.0 |    0    0  719 1600 | Splash Screen com.innocent.media$_4814#260
+10-04 04:37:06.622  1366  6509 D SettingsProvider: isChangeAllowed() : name = dropbox:data_app_crash
+10-04 04:37:06.658  1366  6509 D SettingsProvider: isChangeAllowed() : name = dropbox:data_app_anr
+10-04 04:37:06.662  1366  4893 W ActivityManager: Scheduling restart of crashed service com.google.android.googlequicksearchbox/org.chromium.content.app.SandboxedProcessService0:0 in 1000ms for connection
+10-04 04:37:06.664 22255  3264 W cr_ChildProcessConn: onServiceDisconnected (crash or killed by oom): pid=0 bindings:WV  
+10-04 04:37:06.833  4636  4636 D vulkan  : searching for layers in '/data/app/~~BX7CvFlTKrUVeXeb2CGlQA==/com.innocent.media-PxqntW4y6KX5p4Mq9BjgmQ==/lib/arm64'
+10-04 04:37:06.834  4636  4636 D vulkan  : searching for layers in '/data/app/~~BX7CvFlTKrUVeXeb2CGlQA==/com.innocent.media-PxqntW4y6KX5p4Mq9BjgmQ==/base.apk!/lib/arm64-v8a'
+10-04 04:37:07.139  4636  4636 I flutter : [INFO:flutter/shell/platform/android/android_context_vk_impeller.cc(65)] Known bad Vulkan driver encountered, falling back to OpenGLES.
+10-04 04:37:07.210  4636  4636 D libMEOW : applied 2 plugins for [com.innocent.media]:
+10-04 04:37:07.252  4636  4636 I flutter : [IMPORTANT:flutter/shell/platform/android/android_context_gl_impeller.cc(94)] Using the Impeller rendering backend (OpenGLES).
+10-04 04:37:07.254  4636  4866 D libMEOW : applied 2 plugins for [com.innocent.media]:
+10-04 04:37:07.820   820   893 D SurfaceFlinger: [SF client] NEW(0xb400007d08c77260) for (4636:com.innocent.media)
+10-04 04:37:07.917  4636  4636 I MSHandlerLifeCycle: check: return. pkg=com.innocent.media parent=null callers=com.android.internal.policy.DecorView.setVisibility:4412 android.app.ActivityThread.handleResumeActivity:5476 android.app.servertransaction.ResumeActivityItem.execute:54 android.app.servertransaction.ActivityTransactionItem.execute:45 android.app.servertransaction.TransactionExecutor.executeLifecycleState:176 
+10-04 04:37:07.920   820   893 D SurfaceFlinger: [SF client] NEW(0xb400007d08c7b860) for (4636:com.innocent.media)
+10-04 04:37:07.948   820   893 I SurfaceFlinger: id=273 createSurf flag=80004, 50b9815 com.innocent.media/com.innocent.media.MainActivity#273
+10-04 04:37:07.954  4636  4636 D InsetsController: onStateChanged: InsetsState: {mDisplayFrame=Rect(0, 0 - 720, 1600), mDisplayCutout=DisplayCutout{insets=Rect(0, 45 - 0, 0) waterfall=Insets{left=0, top=0, right=0, bottom=0} boundingRect={Bounds=[Rect(0, 0 - 0, 0), Rect(272, 0 - 448, 45), Rect(0, 0 - 0, 0), Rect(0, 0 - 0, 0)]} cutoutPathParserInfo={CutoutPathParserInfo{displayWidth=720 displayHeight=1600 physicalDisplayWidth=720 physicalDisplayHeight=1600 density={1.75} cutoutSpec={M 0,0 H -88 V 45 H 88 V 0 H 0 Z} rotation={0} scale={1.0} physicalPixelDisplaySizeRatio={1.0}}}}, mRoundedCorners=RoundedCorners{[RoundedCorner{position=TopLeft, radius=56, center=Point(56, 56)}, RoundedCorner{position=TopRight, radius=56, center=Point(664, 56)}, RoundedCorner{position=BottomRight, radius=56, center=Point(664, 1544)}, RoundedCorner{position=BottomLeft, radius=56, center=Point(56, 1544)}]}  mRoundedCornerFrame=Rect(0, 0 - 720, 1600), mPrivacyIndicatorBounds=PrivacyIndicatorBounds {static bounds=Rect(643, 0 - 720, 45) rotation=0}, mSources= { InsetsSource: {mType=ITYPE_STATUS_BAR, mFrame=[0,0][720,45], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_NAVIGATION_BAR, mFrame=[0,1516][720,1600], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_LEFT_GESTURES, mFrame=[0,0][0,1600], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_RIGHT_GESTURES, mFrame=[720,0][720,1600], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_MANDATORY_GESTURES, mFrame=[0,0][720,66], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_MANDATORY_GESTURES, mFrame=[0,1516][720,1600], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_LEFT_DISPLAY_CUTOUT, mFrame=[0,0][-100000,1600], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_DISPLAY_CUTOUT, mFrame=[0,0][720,45], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_RIGHT_DISPLAY_CUTOUT, mFrame=[100000,0][720,1600], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_DISPLAY_CUTOUT, mFrame=[0,100000][720,1600], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_TAPPABLE_ELEMENT, mFrame=[0,0][720,45], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_TAPPABLE_ELEMENT, mFrame=[0,1516][720,1600], mVisible=true, mInsetsRoundedCornerFrame=false} } host=com.innocent.media/com.innocent.media.MainActivity from=android.view.ViewRootImpl.setView:1732
+10-04 04:37:07.958  1366  4855 D CoreBackPreview: Window{50b9815 u0 com.innocent.media/com.innocent.media.MainActivity}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@664191b, mPriority=0}
+10-04 04:37:08.096  4636  4636 I SurfaceView@139d17b: onWindowVisibilityChanged(0) true io.flutter.embedding.android.FlutterSurfaceView{139d17b V.E...... ......I. 0,0-0,0} of ViewRootImpl@ade8d3[MainActivity]
+10-04 04:37:08.107  1366  1379 V WindowManager: Relayout Window{50b9815 u0 com.innocent.media/com.innocent.media.MainActivity}: viewVisibility=0 req=720x1600 d0
+10-04 04:37:08.108   820   890 I BufferQueueDebug: [com.innocent.media/com.innocent.media.MainActivity$_4636#274](this:0xb400007ce1716838,id:-1,api:0,p:-1,c:-1) BufferQueue core=(820:/system/bin/surfaceflinger)
+10-04 04:37:08.109   820   890 I SurfaceFlinger: id=274 createSurf flag=40004, com.innocent.media/com.innocent.media.MainActivity$_4636#274
+10-04 04:37:08.110  1366  1379 D WindowManager: makeSurface duration=3 name=com.innocent.media/com.innocent.media.MainActivity$_4636
+10-04 04:37:08.116  1366  1379 V WindowManager: Changing focus from null to Window{50b9815 u0 com.innocent.media/com.innocent.media.MainActivity} displayId=၀ Callers=com.android.server.wm.RootWindowContainer.updateFocusedWindowLocked:595 com.android.server.wm.WindowManagerService.updateFocusedWindowLocked:6810 com.android.server.wm.WindowManagerService.relayoutWindow:2820 com.android.server.wm.Session.relayout:274 
+10-04 04:37:08.116  1366  1379 D MARsPolicyManager: onPackageResumedFG pkgName = com.innocent.media, userId = 0
+10-04 04:37:08.145  1366  1379 D WindowManager: updateSystemBarAttributes: displayId=0, win=Window{50b9815 u0 com.innocent.media/com.innocent.media.MainActivity}, navColorWin=Window{edb808c u0 Splash Screen com.innocent.media}, focusedCanBeNavColorWin=false, behavior=1, appearance=16, statusBarAppearanceRegions=[AppearanceRegion{LIGHT_STATUS_BARS bounds=[0,0][720,1600]}], requestedVisibilities=, from=com.android.server.wm.DisplayPolicy.focusChangedLw:3247 com.android.server.wm.DisplayContent.updateFocusedWindowLocked:4632 com.android.server.wm.RootWindowContainer.updateFocusedWindowLocked:595 
+10-04 04:37:08.148  4814  4814 D SamsungLightBarControlHelper: onStatusBarAppearanceChanged() -  sbModeChanged:false, statusBarMode:MODE_TRANSPARENT, barState:SHADE, isKeyguardShowing:false, navbarColorManagedByIme:false, stackAppearancesChanged:true, (AppearanceRegion{LIGHT_STATUS_BARS bounds=[0,0][720,1600]}, ), packageName:com.innocent.media
+10-04 04:37:08.156  4814  4814 D SamsungLightBarControlHelper: updateStatus(BLACK icon) NumStacks:1, StatusBarMode:MODE_TRANSPARENT, lightBarBounds:[Rect(0, 0 - 720, 1600)], StatusBarState:SHADE, packageName:com.innocent.media, isWhiteKeyguardStatusBarBySettings:false
+10-04 04:37:08.182  4636  4636 I SurfaceView@139d17b: windowStopped(false) true io.flutter.embedding.android.FlutterSurfaceView{139d17b V.E...... ......ID 0,0-720,1516} of ViewRootImpl@ade8d3[MainActivity]
+10-04 04:37:08.184   820   972 D SurfaceFlinger: [input] setFocusedWindow: 50b9815 com.innocent.media/com.innocent.media.MainActivity
+10-04 04:37:08.186  1366  6509 D InputDispatcher: Focus request (0): 50b9815 com.innocent.media/com.innocent.media.MainActivity but waiting because NOT_VISIBLE
+10-04 04:37:08.188   820  6033 I SurfaceFlinger: id=277 createSurf flag=20004, Bounds for - com.innocent.media/com.innocent.media.MainActivity@0#277
+10-04 04:37:08.192   820  6033 I SurfaceFlinger: id=278 createSurf flag=80004, SurfaceView[com.innocent.media/com.innocent.media.MainActivity]@0#278
+10-04 04:37:08.193   820   890 I BufferQueueDebug: [SurfaceView[com.innocent.media/com.innocent.media.MainActivity]@0(BLAST)#279](this:0xb400007ce1719838,id:-1,api:0,p:-1,c:-1) BufferQueue core=(820:/system/bin/surfaceflinger)
+10-04 04:37:08.193   820   890 I SurfaceFlinger: id=279 createSurf flag=40400, SurfaceView[com.innocent.media/com.innocent.media.MainActivity]@0(BLAST)#279
+10-04 04:37:08.195   820   893 I SurfaceFlinger: id=280 createSurf flag=20404, Background for SurfaceView[com.innocent.media/com.innocent.media.MainActivity]@0#280
+10-04 04:37:08.210  4636  4636 I SurfaceView@139d17b: surfaceCreated 1 #8 io.flutter.embedding.android.FlutterSurfaceView{139d17b V.E...... ......ID 0,0-720,1516}
+10-04 04:37:08.212  4636  4865 D libMEOW : applied 2 plugins for [com.innocent.media]:
+10-04 04:37:09.588  4597  4597 D OneDSChannel: Logging for null: QoS/CrashReporting/PreviousProcessDetected with logger com.microsoft.applications.events.Logger@8cc16a1 collector url: 
+10-04 04:37:12.914  4636  4636 I SurfaceView@139d17b: surfaceChanged (720,1516) 1 #8 io.flutter.embedding.android.FlutterSurfaceView{139d17b V.E...... ......ID 0,0-720,1516}
+10-04 04:37:13.245  4636  4636 I System.out: flutterEngine warmed up
+10-04 04:37:13.313  1366  7428 D MediaSessionRecord: registering controller callback android.media.session.ISessionControllerCallback$Stub$Proxy@a705d3f from controller com.innocent.media
+10-04 04:37:13.433  4636  4808 D SharedPreferencesImpl: Time required to fsync /data/user/0/com.innocent.media/shared_prefs/FlutterSharedPreferences.xml: [<1: 0, <2: 0, <4: 0, <8: 0, <16: 0, <32: 0, <64: 0, <128: 0, <256: 0, <512: 1, <1024: 0, <2048: 0, <4096: 0, <8192: 0, <16384: 0, >=16384: 0]
+10-04 04:37:13.705  1366  1379 V WindowManager: Relayout Window{50b9815 u0 com.innocent.media/com.innocent.media.MainActivity}: viewVisibility=0 req=720x1600 d0
+10-04 04:37:13.751  4636  4636 I SurfaceView@139d17b: surfaceChanged (720,1600) 1 #5 io.flutter.embedding.android.FlutterSurfaceView{139d17b V.E...... ......ID 0,0-720,1600}
+10-04 04:37:13.770  4636  5388 D ProfileInstaller: Installing profile for com.innocent.media
+10-04 04:37:13.775  1366  1379 D WindowManager: rotationForOrientation, orientationSource=ActivityRecord{41079a9 u0 com.innocent.media/.MainActivity} t13}
+10-04 04:37:13.812  4636  4636 D PhoneWindow: forceLight changed to false [com.innocent.media/com.innocent.media.MainActivity] from com.android.internal.policy.PhoneWindow.updateForceLightNavigationBar:4314 com.android.internal.policy.PhoneWindow.setNavigationBarColor:4033 io.flutter.plugin.platform.PlatformPlugin.setSystemChromeSystemUIOverlayStyle:488 io.flutter.plugin.platform.PlatformPlugin.access$700:36 io.flutter.plugin.platform.PlatformPlugin$1.setSystemUiOverlayStyle:123 
+10-04 04:37:14.092  4636  5372 D SharedPreferencesImpl: Time required to fsync /data/user/0/com.innocent.media/shared_prefs/audio_service_preferences.xml: [<1: 0, <2: 0, <4: 0, <8: 0, <16: 0, <32: 0, <64: 0, <128: 0, <256: 0, <512: 1, <1024: 0, <2048: 0, <4096: 0, <8192: 0, <16384: 0, >=16384: 0]
+10-04 04:37:14.152  1366  6346 V WindowManager: Relayout Window{50b9815 u0 com.innocent.media/com.innocent.media.MainActivity}: viewVisibility=0 req=720x1600 d0
+10-04 04:37:14.183  4636  4636 I ViewRootImpl@ade8d3[MainActivity]: updateBoundsLayer: t = android.view.SurfaceControl$Transaction@8b7c386 sc = Surface(name=Bounds for - com.innocent.media/com.innocent.media.MainActivity@0)/@0x3754447 frame = 1
+10-04 04:37:14.381  4636  4865 I BLASTBufferQueue: [SurfaceView[com.innocent.media/com.innocent.media.MainActivity]@0#1](f:0,a:0) onFrameAvailable the first frame is available
+10-04 04:37:14.382  4636  4865 I BLASTBufferQueue: [SurfaceView[com.innocent.media/com.innocent.media.MainActivity]@0#1](f:0,a:1) acquireNextBufferLocked size=720x1600 mFrameNumber=1 applyTransaction=true mTimestamp=4486785014650(auto) mPendingTransactions.size=0 graphicBufferId=19911468384258 transform=0
+10-04 04:37:14.390   820   820 D BufferStateLayer: SurfaceView[com.innocent.media/com.innocent.media.MainActivity]@0(BLAST)#279 setBuffer frameId=1, bufferId=19911468384258 fenceId=294, w= 720, h=1600
+10-04 04:37:14.416  5324  5565 I AppsModelWriter: normalizeVisibleItems(visibleItems)> 0, 58, 0, -102, 1, 0, UserHandle{0}, 0, Innocent, -1, -1
+10-04 04:37:14.490   820   820 D BufferStateLayer: com.innocent.media/com.innocent.media.MainActivity$_4636#274 setBuffer frameId=1, bufferId=19911468384260 fenceId=140, w= 720, h=1600
+10-04 04:37:14.525  4636  4636 I flutter : LAB    0.0 LAB script: phase default
+10-04 04:37:14.529  1366  5412 D WindowManager: finishDrawingWindow: Window{50b9815 u0 com.innocent.media/com.innocent.media.MainActivity} mDrawState=DRAW_PENDING seqId=၀
+10-04 04:37:14.542  1366  1396 V WindowManager: Finish starting ActivityRecord{41079a9 u0 com.innocent.media/.MainActivity} t13}: first real window is shown, no animation
+10-04 04:37:14.542  1366  1396 V WindowManager: Schedule remove starting ActivityRecord{41079a9 u0 com.innocent.media/.MainActivity} t13} startingWindow=null startingView=null Callers=com.android.server.wm.ActivityRecord.removeStartingWindow:3233 com.android.server.wm.ActivityRecord.onFirstWindowDrawn:7460 com.android.server.wm.WindowState.performShowLocked:5502 com.android.server.wm.WindowStateAnimator.commitFinishDrawingLocked:351 com.android.server.wm.DisplayContent.lambda$new$8:1189 
+10-04 04:37:14.543  1366  1396 V WindowManager: performShowLocked: mDrawState=HAS_DRAWN in Window{50b9815 u0 com.innocent.media/com.innocent.media.MainActivity}
+10-04 04:37:14.548  1366  1396 D TaskOrganizerController: applyStartingWindowAnimation, window=Window{50b9815 u0 com.innocent.media/com.innocent.media.MainActivity}, caller=com.android.server.wm.TaskOrganizerController.removeStartingWindow:573 com.android.server.wm.StartingSurfaceController$StartingSurface.remove:287 com.android.server.wm.ActivityRecord.lambda$removeStartingWindowAnimation$6:3295 
+10-04 04:37:14.548  1366  1396 I WindowManager: Reparenting to leash, surface=Surface(name=50b9815 com.innocent.media/com.innocent.media.MainActivity)/@0xd2a8599, leashParent=Surface(name=ActivityRecord{41079a9 u0 com.innocent.media/.MainActivity} t13})/@0x44aeaa
+10-04 04:37:14.550   820  5556 I SurfaceFlinger: id=281 createSurf flag=24000, Surface(name=50b9815 com.innocent.media/com.innocent.media.MainActivity)/@0xd2a8599 - animation-leash of starting_reveal#281
+10-04 04:37:14.551  1366  1396 D WindowManager: makeSurface duration=2 leash=Surface(name=Surface(name=50b9815 com.innocent.media/com.innocent.media.MainActivity)/@0xd2a8599 - animation-leash of starting_reveal)/@0xb7cec3f
+10-04 04:37:14.555   820   820 I Layer   : Layer [com.innocent.media/com.innocent.media.MainActivity$_4636#274] hidden!! flag(0)
+10-04 04:37:14.557  1366  1396 D ActivityTaskManager: mStartingWindow and mStartingData is null for token=ActivityRecord{41079a9 u0 com.innocent.media/.MainActivity} t13}
+10-04 04:37:14.558  1366  4893 D InputDispatcher: Focus entered window (0): 50b9815 com.innocent.media/com.innocent.media.MainActivity
+10-04 04:37:14.570  1366  1392 I <token>: reportToNAP uid:10250 com.innocent.media/com.innocent.media.MainActivity thisTime:9508
+10-04 04:37:14.577   820   820 D SurfaceFlinger:      DEVICE | 0xb400007ce173d2a0 | 0102 | RGBA_8888    |    0.0    0.0  720.0 1600.0 |    0    0  720 1600 | SurfaceView[com.innocent.media/com.innocent.media.MainActivity]@0(BLAST)#279
+10-04 04:37:14.577   820   820 D SurfaceFlinger:      DEVICE | 0xb400007ce7f96ba0 | 0100 | RGBA_8888    |    0.0    0.0  720.0 1600.0 |    0    0  720 1600 | com.innocent.media/com.innocent.media.MainActivity$_4636#274
+10-04 04:37:14.577   820   820 D SurfaceFlinger:      DEVICE | 0xb400007ce173d000 | 0100 | RGBA_8888    |    0.0    0.0  720.0 1600.0 |    0    0  720 1600 | Splash Screen com.innocent.media$_4814#260
+10-04 04:37:14.578   820   820 D SurfaceFlinger:      DEVICE | 0xb400007ce173d2a0 | 0102 | RGBA_8888    |    0.0    0.0  720.0 1600.0 |    0    0  719 1600 | SurfaceView[com.innocent.media/com.innocent.media.MainActivity]@0(BLAST)#279
+10-04 04:37:14.578   820   820 D SurfaceFlinger:      DEVICE | 0xb400007ce7f96ba0 | 0100 | RGBA_8888    |    0.0    0.0  720.0 1600.0 |    0    0  719 1600 | com.innocent.media/com.innocent.media.MainActivity$_4636#274
+10-04 04:37:14.578   820   820 D SurfaceFlinger:      DEVICE | 0xb400007ce173d000 | 0100 | RGBA_8888    |    0.0    0.0  720.0 1600.0 |    0    0  719 1600 | Splash Screen com.innocent.media$_4814#260
+10-04 04:37:14.599  1366  4897 V WindowManager: Relayout Window{edb808c u0 Splash Screen com.innocent.media}: viewVisibility=8 req=720x1600 d0
+10-04 04:37:14.603  1366  4897 D WindowManager: updateSystemBarAttributes: displayId=0, win=Window{50b9815 u0 com.innocent.media/com.innocent.media.MainActivity}, navColorWin=Window{50b9815 u0 com.innocent.media/com.innocent.media.MainActivity}, focusedCanBeNavColorWin=false, behavior=1, appearance=0, statusBarAppearanceRegions=[AppearanceRegion{ bounds=[0,0][720,1600]}], requestedVisibilities=, from=com.android.server.wm.DisplayPolicy.finishPostLayoutPolicyLw:2527 com.android.server.wm.DisplayContent.applySurfaceChangesTransaction:5713 com.android.server.wm.RootWindowContainer.applySurfaceChangesTransaction:1234 
+10-04 04:37:14.614  4814  4899 D InsetsController: onStateChanged: InsetsState: {mDisplayFrame=Rect(0, 0 - 720, 1600), mDisplayCutout=DisplayCutout{insets=Rect(0, 45 - 0, 0) waterfall=Insets{left=0, top=0, right=0, bottom=0} boundingRect={Bounds=[Rect(0, 0 - 0, 0), Rect(272, 0 - 448, 45), Rect(0, 0 - 0, 0), Rect(0, 0 - 0, 0)]} cutoutPathParserInfo={CutoutPathParserInfo{displayWidth=720 displayHeight=1600 physicalDisplayWidth=720 physicalDisplayHeight=1600 density={1.75} cutoutSpec={M 0,0 H -88 V 45 H 88 V 0 H 0 Z} rotation={0} scale={1.0} physicalPixelDisplaySizeRatio={1.0}}}}, mRoundedCorners=RoundedCorners{[RoundedCorner{position=TopLeft, radius=56, center=Point(56, 56)}, RoundedCorner{position=TopRight, radius=56, center=Point(664, 56)}, RoundedCorner{position=BottomRight, radius=56, center=Point(664, 1544)}, RoundedCorner{position=BottomLeft, radius=56, center=Point(56, 1544)}]}  mRoundedCornerFrame=Rect(0, 0 - 720, 1600), mPrivacyIndicatorBounds=PrivacyIndicatorBounds {static bounds=Rect(643, 0 - 720, 45) rotation=0}, mSources= { InsetsSource: {mType=ITYPE_STATUS_BAR, mFrame=[0,0][720,45], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_NAVIGATION_BAR, mFrame=[0,1516][720,1600], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_LEFT_GESTURES, mFrame=[0,0][0,1600], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_RIGHT_GESTURES, mFrame=[720,0][720,1600], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_MANDATORY_GESTURES, mFrame=[0,0][720,66], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_MANDATORY_GESTURES, mFrame=[0,1516][720,1600], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_LEFT_DISPLAY_CUTOUT, mFrame=[0,0][-100000,1600], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_DISPLAY_CUTOUT, mFrame=[0,0][720,45], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_RIGHT_DISPLAY_CUTOUT, mFrame=[100000,0][720,1600], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_DISPLAY_CUTOUT, mFrame=[0,100000][720,1600], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_TAPPABLE_ELEMENT, mFrame=[0,0][720,45], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_TAPPABLE_ELEMENT, mFrame=[0,1516][720,1600], mVisible=true, mInsetsRoundedCornerFrame=false} } host=Splash Screen com.innocent.media from=android.view.ViewRootImpl.relayoutWindow:9802
+10-04 04:37:14.619  1366  6509 D WindowManager: Starting window removed Window{edb808c u0 Splash Screen com.innocent.media}
+10-04 04:37:14.619  1366  6509 I WindowManager: Cancelling animation restarting=false, leash=Surface(name=Surface(name=50b9815 com.innocent.media/com.innocent.media.MainActivity)/@0xd2a8599 - animation-leash of starting_reveal)/@0xb7cec3f
+10-04 04:37:14.619  1366  6509 I WindowManager: Reparenting to original parent: Surface(name=ActivityRecord{41079a9 u0 com.innocent.media/.MainActivity} t13})/@0x44aeaa, destroy=false, surface=Surface(name=50b9815 com.innocent.media/com.innocent.media.MainActivity)/@0xd2a8599
+10-04 04:37:14.620  1366  6509 W InputManager-JNI: Input channel object 'edb808c Splash Screen com.innocent.media (client)' was disposed without first being removed with the input manager!
+10-04 04:37:14.621  1366  6509 V WindowManager: Remove Window{edb808c u0 Splash Screen com.innocent.media}: mSurfaceController=Surface(name=Splash Screen com.innocent.media$_4814)/@0xbcced0e mAnimatingExit=false mRemoveOnExit=false mHasSurface=true surfaceShowing=false animating=false app-animation=false mWillReplaceWindow=false mDisplayFrozen=false callers=com.android.server.wm.WindowState.removeIfPossible:3041 com.android.server.wm.WindowManagerService.removeWindow:2289 com.android.server.wm.Session.remove:236 android.view.IWindowSession$Stub.onTransact:743 com.android.server.wm.Session.onTransact:188 android.os.Binder.execTransactInternal:1321 
+10-04 04:37:14.622  1366  6509 I WindowManager: Destroying surface Surface(name=Splash Screen com.innocent.media$_4814)/@0xbcced0e called by com.android.server.wm.WindowStateAnimator.destroySurface:942 com.android.server.wm.WindowStateAnimator.destroySurfaceLocked:536 com.android.server.wm.WindowState.removeImmediately:2969 com.android.server.wm.WindowState.removeIfPossible:3228 com.android.server.wm.WindowState.removeIfPossible:3041 com.android.server.wm.WindowManagerService.removeWindow:2289 com.android.server.wm.Session.remove:236 android.view.IWindowSession$Stub.onTransact:743 
+10-04 04:37:14.623   820   820 I Layer   : Layer [Splash Screen com.innocent.media$_4814#260] hidden!! flag(1)
+10-04 04:37:14.639  4814  4814 D SamsungLightBarControlHelper: onStatusBarAppearanceChanged() -  sbModeChanged:false, statusBarMode:MODE_TRANSPARENT, barState:SHADE, isKeyguardShowing:false, navbarColorManagedByIme:false, stackAppearancesChanged:true, (AppearanceRegion{ bounds=[0,0][720,1600]}, ), packageName:com.innocent.media
+10-04 04:37:14.640  4814  4814 D NavigationBar: onSystemBarAttributesChanged() -  displayId:0, appearance:0, packageName: com.innocent.media, navbarColorManagedByIme:false
+10-04 04:37:14.649  1366  1392 I ActivityTaskManager: Displayed com.innocent.media/.MainActivity: +9s508ms
+10-04 04:37:14.650  1366  1392 I Pageboost: Launch time gathered : pid 4636 com.innocent.media 9508
+10-04 04:37:14.670  4814  4814 D SamsungLightBarControlHelper: updateNavigation(White button) isLightBar:false, hasLightBarNavigationBarFlag:false, packageName:com.innocent.media, DirectReplying:false, NavBarColorManagerdByIme:false, ForceDarkForScrim:false, QsCustomizing:false, PanelHasWhiteBg:true
+10-04 04:37:14.678  4814  4814 D SamsungLightBarControlHelper: updateStatus(WHITE icon) NumStacks:1, StatusBarMode:MODE_TRANSPARENT, lightBarBounds:[], StatusBarState:SHADE, packageName:com.innocent.media, isWhiteKeyguardStatusBarBySettings:false
+10-04 04:37:14.689  4636  4636 D InsetsController: onStateChanged: InsetsState: {mDisplayFrame=Rect(0, 0 - 720, 1600), mDisplayCutout=DisplayCutout{insets=Rect(0, 45 - 0, 0) waterfall=Insets{left=0, top=0, right=0, bottom=0} boundingRect={Bounds=[Rect(0, 0 - 0, 0), Rect(272, 0 - 448, 45), Rect(0, 0 - 0, 0), Rect(0, 0 - 0, 0)]} cutoutPathParserInfo={CutoutPathParserInfo{displayWidth=720 displayHeight=1600 physicalDisplayWidth=720 physicalDisplayHeight=1600 density={1.75} cutoutSpec={M 0,0 H -88 V 45 H 88 V 0 H 0 Z} rotation={0} scale={1.0} physicalPixelDisplaySizeRatio={1.0}}}}, mRoundedCorners=RoundedCorners{[RoundedCorner{position=TopLeft, radius=56, center=Point(56, 56)}, RoundedCorner{position=TopRight, radius=56, center=Point(664, 56)}, RoundedCorner{position=BottomRight, radius=56, center=Point(664, 1544)}, RoundedCorner{position=BottomLeft, radius=56, center=Point(56, 1544)}]}  mRoundedCornerFrame=Rect(0, 0 - 720, 1600), mPrivacyIndicatorBounds=PrivacyIndicatorBounds {static bounds=Rect(643, 0 - 720, 45) rotation=0}, mSources= { InsetsSource: {mType=ITYPE_STATUS_BAR, mFrame=[0,0][720,45], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_NAVIGATION_BAR, mFrame=[0,1516][720,1600], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_LEFT_GESTURES, mFrame=[0,0][0,1600], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_RIGHT_GESTURES, mFrame=[720,0][720,1600], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_MANDATORY_GESTURES, mFrame=[0,0][720,66], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_MANDATORY_GESTURES, mFrame=[0,1516][720,1600], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_LEFT_DISPLAY_CUTOUT, mFrame=[0,0][-100000,1600], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_DISPLAY_CUTOUT, mFrame=[0,0][720,45], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_RIGHT_DISPLAY_CUTOUT, mFrame=[100000,0][720,1600], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_DISPLAY_CUTOUT, mFrame=[0,100000][720,1600], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_TAPPABLE_ELEMENT, mFrame=[0,0][720,45], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_TAPPABLE_ELEMENT, mFrame=[0,1516][720,1600], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_IME, mFrame=[0,0][0,0], mVisible=false, mInsetsRoundedCornerFrame=false} } host=com.innocent.media/com.innocent.media.MainActivity from=android.view.ViewRootImpl$ViewRootHandler.handleMessageImpl:6740
+10-04 04:37:14.692   820   820 D SurfaceFlinger:      DEVICE | 0xb400007ce173d2a0 | 0102 | RGBA_8888    |    0.0    0.0  720.0 1600.0 |    0    0  720 1600 | SurfaceView[com.innocent.media/com.innocent.media.MainActivity]@0(BLAST)#279
+10-04 04:37:14.692   820   820 D SurfaceFlinger:      DEVICE | 0xb400007ce7f96ba0 | 0100 | RGBA_8888    |    0.0    0.0  720.0 1600.0 |    0    0  720 1600 | com.innocent.media/com.innocent.media.MainActivity$_4636#274
+10-04 04:37:14.693   820   820 D SurfaceFlinger:      DEVICE | 0xb400007ce173d2a0 | 0102 | RGBA_8888    |    0.0    0.0  720.0 1600.0 |    0    0  719 1600 | SurfaceView[com.innocent.media/com.innocent.media.MainActivity]@0(BLAST)#279
+10-04 04:37:14.693   820   820 D SurfaceFlinger:      DEVICE | 0xb400007ce7f96ba0 | 0100 | RGBA_8888    |    0.0    0.0  720.0 1600.0 |    0    0  719 1600 | com.innocent.media/com.innocent.media.MainActivity$_4636#274
+10-04 04:37:14.695   820   820 I Layer   : id=259 removeFromCurrentState edb808c Splash Screen com.innocent.media#259 (108)
+10-04 04:37:14.696   820   820 I Layer   : id=260 removeFromCurrentState Splash Screen com.innocent.media$_4814#260 (108)
+10-04 04:37:14.696   820   820 I Layer   : id=281 removeFromCurrentState Surface(name=50b9815 com.innocent.media/com.innocent.media.MainActivity)/@0xd2a8599 - animation-leash of starting_reveal#281 (108)
+10-04 04:37:14.696   820   820 I Layer   : id=260 removeFromCurrentState Splash Screen com.innocent.media$_4814#260 (108)
+10-04 04:37:14.697   820   820 I SurfaceFlinger: id=259 Removed edb808c Splash Screen com.innocent.media#259 (108)
+10-04 04:37:14.697   820   820 I SurfaceFlinger: id=260 Removed Splash Screen com.innocent.media$_4814#260 (108)
+10-04 04:37:14.698   820   820 I Layer   : id=259 Destroyed edb808c Splash Screen com.innocent.media#259
+10-04 04:37:14.698   820   820 I BufferQueueDebug: [Splash Screen com.innocent.media$_4814#260](this:0xb400007ce395a838,id:-1,api:0,p:-1,c:820) onDestructor()
+10-04 04:37:14.698   820   820 I Layer   : id=260 Destroyed Splash Screen com.innocent.media$_4814#260
+10-04 04:37:14.742  1366  5125 D MdnieScenarioControlService:  packageName : com.innocent.media    className : com.innocent.media.MainActivity
+10-04 04:37:15.385  4636  4650 I .innocent.media: Background concurrent copying GC freed 189859(13MB) AllocSpace objects, 22(632KB) LOS objects, 49% free, 4807KB/9615KB, paused 284us,81us total 102.669ms
+10-04 04:37:16.923   544   544 D io_stats: !@ MemInfo(KB): total 2850444 free 71448 avail 824784 actv(f) 358016 inactv(f) 501744 dirty 29548 wb 1396 anonpg 785704 slab 242112
+10-04 04:37:22.473  4636  5428 W .innocent.media: Long monitor contention with owner pool-8-thread-1 (4939) at boolean com.innocent.media.DownloadEngine.initBlocking(android.content.Context)(DownloadEngine.kt:1567) waiters=0 in boolean com.innocent.media.DownloadEngine.initBlocking(android.content.Context) for 7.790s
+10-04 04:37:22.859  4636  4650 I .innocent.media: Background concurrent copying GC freed 41651(4072KB) AllocSpace objects, 6(312KB) LOS objects, 49% free, 5378KB/10MB, paused 1.110ms,78us total 135.178ms
+10-04 04:37:23.062  4636  4636 I flutter : LAB cpu app 63% · 0.5fps · pool-thread 51% | .innocent.media 4% | 1.raster 4% | Thread 2% | HeapTaskDaemon 1%
+10-04 04:37:24.936  5324  5565 I AppsModelWriter: normalizeVisibleItems(visibleItems)> 0, 58, 0, -102, 1, 0, UserHandle{0}, 0, Innocent, -1, -1
+10-04 04:37:25.737  3011  3011 I GOS:GameServiceReceiver: pkg: com.innocent.media
+10-04 04:37:29.716  1366  4854 W ActivityManager: Scheduling restart of crashed service com.google.android.googlequicksearchbox/org.chromium.weblayer.ChildProcessService$Privileged0 in 1000ms for connection
+10-04 04:37:29.726 22255  3264 W cr_ChildProcessConn: onServiceDisconnected (crash or killed by oom): pid=3357 bindings:W  S
+10-04 04:37:29.756 22255 22255 W chromium: [WARNING:gpu_process_host.cc(1276)] The GPU process has crashed 1 time(s)
+10-04 04:37:30.020  5816  5816 I AndroidRuntime: VM exiting with result code 0, cleanup skipped.
+10-04 04:37:31.255  5943  5943 I AndroidRuntime: VM exiting with result code 0, cleanup skipped.
+10-04 04:37:31.709  6004  6004 I AndroidRuntime: VM exiting with result code 0, cleanup skipped.
+10-04 04:37:33.220  6064  6064 I AndroidRuntime: VM exiting with result code 0, cleanup skipped.
+10-04 04:37:33.606 31269 31302 I Finsky  : [49] Installer package name of package com.innocent.media is 
+10-04 04:37:33.925  6102  6102 I AndroidRuntime: VM exiting with result code 0, cleanup skipped.
+10-04 04:37:34.328  6129  6146 I AndroidRuntime: VM exiting with result code 0, cleanup skipped.
+10-04 04:37:34.663  6153  6153 I AndroidRuntime: VM exiting with result code 0, cleanup skipped.
+10-04 04:37:35.748  6182  6182 I AndroidRuntime: VM exiting with result code 0, cleanup skipped.
+10-04 04:37:35.998  6212  6212 I AndroidRuntime: VM exiting with result code 0, cleanup skipped.
+10-04 04:37:36.314  6236  6236 I AndroidRuntime: VM exiting with result code 0, cleanup skipped.
+10-04 04:37:36.651  6262  6262 I AndroidRuntime: VM exiting with result code 0, cleanup skipped.
+10-04 04:37:36.962  6285  6285 I AndroidRuntime: VM exiting with result code 0, cleanup skipped.
+10-04 04:37:37.280  6307  6307 I AndroidRuntime: VM exiting with result code 0, cleanup skipped.
+10-04 04:37:42.072  1366  4854 D SettingsProvider: isChangeAllowed() : name = dropbox:data_app_crash
+10-04 04:37:42.088  1366  5409 D SettingsProvider: isChangeAllowed() : name = dropbox:data_app_anr
+10-04 04:38:09.528  4636  4636 I flutter : LAB   55.0 LAB script: phase hwplus
+10-04 04:38:09.628  1366  4893 I MediaFocusControl: requestAudioFocus() from uid/pid 10250/4636 AA=USAGE_MEDIA/CONTENT_TYPE_MOVIE clientId=android.media.AudioManager@508da4bcom.innocent.media.MainActivity$$ExternalSyntheticLambda58@849fc28 callingPack=com.innocent.media req=1 flags=0x0 sdk=35
+10-04 04:38:09.722  4636  4636 I media_kit: flutterJNIAPIAvailable = true
+10-04 04:38:09.726  4636  4636 I flutter : {id: 0}
+10-04 04:38:09.738   820   820 I BufferQueueProducer: [SurfaceView[com.innocent.media/com.innocent.media.MainActivity]@0(BLAST)#279](this:0xb400007ce1719838,id:-1,api:0,p:-1,c:820) queueBuffer: fps=0.09 dur=55347.94 max=54927.47 min=21.45
+10-04 04:38:09.740  1366  4893 I MediaFocusControl: abandonAudioFocus() from uid/pid 10250/4636 clientId=android.media.AudioManager@508da4bcom.innocent.media.MainActivity$$ExternalSyntheticLambda58@849fc28
+10-04 04:38:09.760  1366  4893 V WindowManager: Relayout Window{50b9815 u0 com.innocent.media/com.innocent.media.MainActivity}: viewVisibility=0 req=720x1600 d0
+10-04 04:38:09.773  4636  4636 I ViewRootImpl@ade8d3[MainActivity]: updateBoundsLayer: t = android.view.SurfaceControl$Transaction@8b7c386 sc = Surface(name=Bounds for - com.innocent.media/com.innocent.media.MainActivity@0)/@0x3754447 frame = 3
+10-04 04:38:09.787   820   820 I BufferQueueProducer: [com.innocent.media/com.innocent.media.MainActivity$_4636#274](this:0xb400007ce1716838,id:-1,api:0,p:-1,c:820) queueBuffer: fps=0.04 dur=55296.90 max=54998.37 min=298.52
+10-04 04:38:09.803  5858  5858 D AvrcpMediaPlayerList: onActiveSessionsChanged: controller: com.innocent.media
+10-04 04:38:09.813  5858  5858 I AvrcpMediaPlayerList: addMediaPlayer() : com.innocent.media
+10-04 04:38:09.845  5858  5858 I AvrcpMediaPlayerList: Adding wrapped media player: com.innocent.media at key: 1
+10-04 04:38:13.047  4636  4636 I flutter : LAB cpu app 2% · 0.1fps · .innocent.media 2%
+10-04 04:39:04.528  4636  4636 I flutter : LAB  110.0 LAB script: phase sw
+10-04 04:39:04.537  1366  6509 I MediaFocusControl: requestAudioFocus() from uid/pid 10250/4636 AA=USAGE_MEDIA/CONTENT_TYPE_MOVIE clientId=android.media.AudioManager@508da4bcom.innocent.media.MainActivity$$ExternalSyntheticLambda58@56b2d4 callingPack=com.innocent.media req=1 flags=0x0 sdk=35
+10-04 04:39:04.555  1366  6509 I MediaFocusControl: abandonAudioFocus() from uid/pid 10250/4636 clientId=android.media.AudioManager@508da4bcom.innocent.media.MainActivity$$ExternalSyntheticLambda58@56b2d4
+10-04 04:39:04.555   820   820 I BufferQueueProducer: [SurfaceView[com.innocent.media/com.innocent.media.MainActivity]@0(BLAST)#279](this:0xb400007ce1719838,id:-1,api:0,p:-1,c:820) queueBuffer: fps=0.02 dur=54816.75 max=54816.75 min=54816.75
+10-04 04:39:04.563  1366  6509 V WindowManager: Relayout Window{50b9815 u0 com.innocent.media/com.innocent.media.MainActivity}: viewVisibility=0 req=720x1600 d0
+10-04 04:39:04.572  4636  4636 I ViewRootImpl@ade8d3[MainActivity]: updateBoundsLayer: t = android.view.SurfaceControl$Transaction@8b7c386 sc = Surface(name=Bounds for - com.innocent.media/com.innocent.media.MainActivity@0)/@0x3754447 frame = 4
+10-04 04:39:04.580  5858  5858 D AvrcpMediaPlayerList: onActiveSessionsChanged: controller: com.innocent.media
+10-04 04:39:04.580  5858  5858 I AvrcpMediaPlayerList: addMediaPlayer() : com.innocent.media
+10-04 04:39:04.588   820   820 I BufferQueueProducer: [com.innocent.media/com.innocent.media.MainActivity$_4636#274](this:0xb400007ce1716838,id:-1,api:0,p:-1,c:820) queueBuffer: fps=0.02 dur=54800.58 max=54800.58 min=54800.58
+10-04 04:39:13.047  4636  4636 I flutter : LAB cpu app 1% · 0.1fps · -
+10-04 04:39:59.626   820   890 I SurfaceFlinger: id=277 Removed Bounds for - com.innocent.media/com.innocent.media.MainActivity@0#277 (105)
+10-04 04:39:59.626   820   890 I SurfaceFlinger: id=278 Removed SurfaceView[com.innocent.media/com.innocent.media.MainActivity]@0#278 (105)
+10-04 04:39:59.626   820  1045 D SurfaceFlinger: [SF client] REMOVE (0xb400007d08c77260) for (4636:com.innocent.media)
+10-04 04:39:59.626   820   890 I SurfaceFlinger: id=279 Removed SurfaceView[com.innocent.media/com.innocent.media.MainActivity]@0(BLAST)#279 (105)
+10-04 04:39:59.626   820  1045 D SurfaceFlinger: [SF client] REMOVE (0xb400007d08c7b860) for (4636:com.innocent.media)
+10-04 04:39:59.626   820   890 I SurfaceFlinger: id=280 Removed Background for SurfaceView[com.innocent.media/com.innocent.media.MainActivity]@0#280 (105)
+10-04 04:39:59.628  1366  1379 I ActivityManager: Process com.innocent.media (pid 4636) has died: fg  TOP (159,921)
+10-04 04:39:59.632  1366  4886 I WindowManager: WIN DEATH: Window{50b9815 u0 com.innocent.media/com.innocent.media.MainActivity}
+10-04 04:39:59.635  1366  4886 W InputManager-JNI: Input channel object '50b9815 com.innocent.media/com.innocent.media.MainActivity (client)' was disposed without first being removed with the input manager!
+10-04 04:39:59.640  1366  4886 V WindowManager: Remove Window{50b9815 u0 com.innocent.media/com.innocent.media.MainActivity}: mSurfaceController=Surface(name=com.innocent.media/com.innocent.media.MainActivity$_4636)/@0xf12f18a mAnimatingExit=false mRemoveOnExit=false mHasSurface=true surfaceShowing=true animating=false app-animation=false mWillReplaceWindow=false mDisplayFrozen=false callers=com.android.server.wm.WindowState.-$$Nest$mremoveIfPossible:0 com.android.server.wm.WindowState$DeathRecipient.binderDied:3808 android.os.IBinder$DeathRecipient.binderDied:323 android.os.BinderProxy.sendDeathNotice:781 <bottom of call stack> <bottom of call stack> 
+10-04 04:39:59.640  1366  6455 D InputDispatcher: Focus left window (0): 50b9815 com.innocent.media/com.innocent.media.MainActivity
+10-04 04:39:59.641  1366  4886 I WindowManager: Destroying surface Surface(name=com.innocent.media/com.innocent.media.MainActivity$_4636)/@0xf12f18a called by com.android.server.wm.WindowStateAnimator.destroySurface:942 com.android.server.wm.WindowStateAnimator.destroySurfaceLocked:536 com.android.server.wm.WindowState.removeImmediately:2969 com.android.server.wm.WindowState.removeIfPossible:3228 com.android.server.wm.WindowState.-$$Nest$mremoveIfPossible:0 com.android.server.wm.WindowState$DeathRecipient.binderDied:3808 android.os.IBinder$DeathRecipient.binderDied:323 android.os.BinderProxy.sendDeathNotice:781 
+10-04 04:39:59.645  1366  4727 V MediaSessionRecord: Removing dead callback in pushSessionDestroyed, this=com.innocent.media/media-session (userId=0), callback package=com.innocent.media, exception=android.os.DeadObjectException
+10-04 04:39:59.660  4814  4814 D SamsungLightBarControlHelper: onStatusBarAppearanceChanged() -  sbModeChanged:false, statusBarMode:MODE_TRANSPARENT, barState:SHADE, isKeyguardShowing:false, navbarColorManagedByIme:false, stackAppearancesChanged:true, (), packageName:com.innocent.media
+10-04 04:39:59.661  1366  4886 D WindowManager: updateSystemBarAttributes: displayId=0, win=Window{50b9815 u0 com.innocent.media/com.innocent.media.MainActivity}, navColorWin=null, focusedCanBeNavColorWin=false, behavior=1, appearance=0, statusBarAppearanceRegions=[], requestedVisibilities=, from=com.android.server.wm.DisplayPolicy.finishPostLayoutPolicyLw:2527 com.android.server.wm.DisplayContent.applySurfaceChangesTransaction:5713 com.android.server.wm.RootWindowContainer.applySurfaceChangesTransaction:1234 
+10-04 04:39:59.669  1366  4886 V WindowManager: Changing focus from Window{50b9815 u0 com.innocent.media/com.innocent.media.MainActivity} to null displayId=၀ Callers=com.android.server.wm.RootWindowContainer.updateFocusedWindowLocked:595 com.android.server.wm.WindowManagerService.updateFocusedWindowLocked:6810 com.android.server.wm.WindowState.removeIfPossible:3237 com.android.server.wm.WindowState.-$$Nest$mremoveIfPossible:0 
+10-04 04:39:59.670  1366  4886 D MARsPolicyManager: onPackageResumedFG pkgName = com.innocent.media, userId = 0
+10-04 04:39:59.675   820   820 I Layer   : id=274 removeFromCurrentState com.innocent.media/com.innocent.media.MainActivity$_4636#274 (106)
+10-04 04:39:59.675   820   820 I Layer   : id=277 removeFromCurrentState Bounds for - com.innocent.media/com.innocent.media.MainActivity@0#277 (106)
+10-04 04:39:59.675   820   820 I Layer   : id=278 removeFromCurrentState SurfaceView[com.innocent.media/com.innocent.media.MainActivity]@0#278 (106)
+10-04 04:39:59.675   820   820 I Layer   : id=280 removeFromCurrentState Background for SurfaceView[com.innocent.media/com.innocent.media.MainActivity]@0#280 (106)
+10-04 04:39:59.675   820   820 I Layer   : id=279 removeFromCurrentState SurfaceView[com.innocent.media/com.innocent.media.MainActivity]@0(BLAST)#279 (106)
+10-04 04:39:59.675   820   820 I Layer   : id=273 removeFromCurrentState 50b9815 com.innocent.media/com.innocent.media.MainActivity#273 (106)
+10-04 04:39:59.676   820   820 I SurfaceFlinger: id=274 Removed com.innocent.media/com.innocent.media.MainActivity$_4636#274 (106)
+10-04 04:39:59.676   820   820 I SurfaceFlinger: id=273 Removed 50b9815 com.innocent.media/com.innocent.media.MainActivity#273 (106)
+10-04 04:39:59.676   820   820 I Layer   : id=273 Destroyed 50b9815 com.innocent.media/com.innocent.media.MainActivity#273
+10-04 04:39:59.679   820   820 I BufferQueueDebug: [com.innocent.media/com.innocent.media.MainActivity$_4636#274](this:0xb400007ce1716838,id:-1,api:0,p:-1,c:820) onDestructor()
+10-04 04:39:59.679   820   820 I Layer   : id=274 Destroyed com.innocent.media/com.innocent.media.MainActivity$_4636#274
+10-04 04:39:59.679   820   820 I Layer   : id=277 Destroyed Bounds for - com.innocent.media/com.innocent.media.MainActivity@0#277
+10-04 04:39:59.679   820   820 I Layer   : id=278 Destroyed SurfaceView[com.innocent.media/com.innocent.media.MainActivity]@0#278
+10-04 04:39:59.679   820   820 I Layer   : id=280 Destroyed Background for SurfaceView[com.innocent.media/com.innocent.media.MainActivity]@0#280
+10-04 04:39:59.680   820   820 I BufferQueueDebug: [SurfaceView[com.innocent.media/com.innocent.media.MainActivity]@0(BLAST)#279](this:0xb400007ce1719838,id:-1,api:0,p:-1,c:820) onDestructor()
+10-04 04:39:59.680   820   820 I Layer   : id=279 Destroyed SurfaceView[com.innocent.media/com.innocent.media.MainActivity]@0(BLAST)#279
+10-04 04:39:59.685  1366  1379 W ActivityTaskManager: Force removing ActivityRecord{41079a9 u0 com.innocent.media/.MainActivity} t13}: app died, no saved state
+10-04 04:39:59.699   820  6033 I SurfaceFlinger: id=265 Removed 4441673 ActivityRecordInputSink com.innocent.media/.MainActivity#265 (99)
+10-04 04:39:59.786   820   820 I Layer   : id=258 removeFromCurrentState ActivityRecord{41079a9 u0 com.innocent.media/.MainActivity} t13}#258 (98)
+10-04 04:39:59.787   820   820 I Layer   : id=265 removeFromCurrentState 4441673 ActivityRecordInputSink com.innocent.media/.MainActivity#265 (98)
+10-04 04:39:59.787   820   820 I SurfaceFlinger: id=258 Removed ActivityRecord{41079a9 u0 com.innocent.media/.MainActivity} t13}#258 (98)
+10-04 04:39:59.787   820   820 I Layer   : id=258 Destroyed ActivityRecord{41079a9 u0 com.innocent.media/.MainActivity} t13}#258
+10-04 04:39:59.787   820   820 I Layer   : id=265 Destroyed 4441673 ActivityRecordInputSink com.innocent.media/.MainActivity#265
+10-04 04:40:00.208  4289  4289 I AndroidRuntime: VM exiting with result code 0.
+10-04 04:40:14.271  7953  7953 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-04 04:40:14.297  7953  7953 I AndroidRuntime: Using default boot image
+10-04 04:40:14.297  7953  7953 I AndroidRuntime: Leaving lock profiling enabled
+10-04 04:40:14.298  7953  7953 D AndroidRuntime: addProductProperty: pBrand1 is not null
+10-04 04:40:14.298  7953  7953 D AndroidRuntime: addProductProperty: not brand or 7
+10-04 04:40:15.019  7953  7953 D AndroidRuntime: Calling main entry com.android.commands.am.Am
+10-04 04:40:15.295  7953  7953 I AndroidRuntime: VM exiting with result code 0.
+10-04 04:40:15.614  7991  7991 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-04 04:40:15.625  7991  7991 I AndroidRuntime: Using default boot image
+10-04 04:40:15.625  7991  7991 I AndroidRuntime: Leaving lock profiling enabled
+10-04 04:40:15.625  7991  7991 D AndroidRuntime: addProductProperty: pBrand1 is not null
+10-04 04:40:15.625  7991  7991 D AndroidRuntime: addProductProperty: not brand or 7
+10-04 04:40:15.994  7991  7991 D AndroidRuntime: Calling main entry com.android.commands.am.Am
+10-04 04:40:17.370 31269 31269 I AndroidRuntime: VM exiting with result code 0, cleanup skipped.
+10-04 04:40:17.516  1366  6346 W ActivityManager: Scheduling restart of crashed service com.android.vending/com.google.android.finsky.setup.PlaySetupServiceV2 in 1000ms for connection
+10-04 04:40:17.541  1366  1402 W ActivityManager: Rescheduling restart of crashed service com.android.vending/com.google.android.finsky.setup.PlaySetupServiceV2 in 19974ms for mem-pressure-event
+10-04 04:40:17.554  7991  7991 I AndroidRuntime: VM exiting with result code 0.
+10-04 04:40:17.682  1366  1402 W ActivityManager: Rescheduling restart of crashed service com.android.vending/com.google.android.finsky.setup.PlaySetupServiceV2 in 9833ms for mem-pressure-event
+10-04 04:40:18.623  8116  8202 I org.webrtc.Logging: CrashStartupListener: Checking conference crashes for 1 account(s).
+10-04 04:40:18.657  1366  1402 W ActivityManager: Rescheduling restart of crashed service com.android.vending/com.google.android.finsky.setup.PlaySetupServiceV2 in 0ms for mem-pressure-event
+10-04 04:40:20.865  5324  5565 I AppsModelWriter: normalizeVisibleItems(visibleItems)> 0, 58, 0, -102, 1, 0, UserHandle{0}, 0, Innocent, -1, -1
