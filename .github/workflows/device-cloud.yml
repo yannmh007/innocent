@@ -109,8 +109,10 @@ jobs:
             --robo-script test_device/robo/movies.json \
             --timeout "${TIMEOUT}s" \
             --results-dir "$dir" \
-            --format=json > out/matrix.json 2> out/run.txt
-          echo "exit $?" >> out/run.txt
+            --format=json > out/matrix.json 2> out/run.txt && rc=0 || rc=$?
+          # Non-zero also means "a phone failed or was inconclusive"; the
+          # results are still there and still worth keeping.
+          echo "exit $rc" >> out/run.txt
           tail -20 out/run.txt
 
           # gcloud names the bucket only inside a console link:
