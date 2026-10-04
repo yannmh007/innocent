@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 
 import '../../../../core/localization/app_strings.dart';
+
 /// Full-screen overlay showing all player gestures (Phase 14).
 /// Tappable to dismiss.
 class GesturesHelpOverlay extends StatelessWidget {
@@ -20,7 +21,8 @@ class GesturesHelpOverlay extends StatelessWidget {
   /// The volume keys move the system volume — they never seek (this list
   /// used to say "Seek ±10s", which MainActivity has never done).
   static List<_Gesture> _gestures(AppStrings s) => <_Gesture>[
-        _Gesture(icon: Icons.touch_app, title: s.gtTap, description: s.gtTapSub),
+        _Gesture(
+            icon: Icons.touch_app, title: s.gtTap, description: s.gtTapSub),
         _Gesture(
             icon: Icons.fast_forward_rounded,
             title: s.gtDoubleTap,
@@ -44,7 +46,10 @@ class GesturesHelpOverlay extends StatelessWidget {
             icon: Icons.zoom_out_map,
             title: s.gtPinch,
             description: s.gtPinchSub),
-        _Gesture(icon: Icons.pan_tool_outlined, title: s.gtPan, description: s.gtPanSub),
+        _Gesture(
+            icon: Icons.pan_tool_outlined,
+            title: s.gtPan,
+            description: s.gtPanSub),
         _Gesture(
             icon: Icons.subtitles_outlined,
             title: s.gtSubtitle,
@@ -62,59 +67,67 @@ class GesturesHelpOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final gestures = _gestures(AppStrings.of(context));
-    return GestureDetector(
-      onTap: () => Navigator.of(context).pop(),
-      child: Container(
-        color: Colors.transparent,
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.touch_app,
-                        color: AppColors.accentBlue, size: 24),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(AppStrings.of(context).playerGestures,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
+    // showDialog puts no Material under its page (Dialog brings its own;
+    // this overlay is not one), so without this every line fell back to
+    // Flutter's "no Material" style: monospace, double yellow underline.
+    return Material(
+      type: MaterialType.transparency,
+      child: GestureDetector(
+        onTap: () => Navigator.of(context).pop(),
+        child: Container(
+          color: Colors.transparent,
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.touch_app,
+                          color: AppColors.accentBlue, size: 24),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          AppStrings.of(context).playerGestures,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
-                    ),
-                    IconButton(
-                      tooltip: 'Close',
-                      icon: const Icon(Icons.close, color: Colors.white),
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Expanded(
-                  child: ListView.separated(
-                    itemCount: gestures.length,
-                    separatorBuilder: (_, __) => const Divider(
-                      height: 16,
-                      color: Colors.white12,
-                    ),
-                    itemBuilder: (_, i) => _GestureItem(gestures[i]),
+                      IconButton(
+                        tooltip: 'Close',
+                        icon: const Icon(Icons.close, color: Colors.white),
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(height: 8),
-                Center(
-                  child: Text(AppStrings.of(context).tapToDismiss,
-                    style: const TextStyle(
-                      color: AppColors.darkOnSurfaceMuted,
-                      fontSize: 12,
+                  const SizedBox(height: 12),
+                  Expanded(
+                    child: ListView.separated(
+                      itemCount: gestures.length,
+                      separatorBuilder: (_, __) => const Divider(
+                        height: 16,
+                        color: Colors.white12,
+                      ),
+                      itemBuilder: (_, i) => _GestureItem(gestures[i]),
                     ),
                   ),
-                ),
-                const SizedBox(height: 8),
-              ],
+                  const SizedBox(height: 8),
+                  Center(
+                    child: Text(
+                      AppStrings.of(context).tapToDismiss,
+                      style: const TextStyle(
+                        color: AppColors.darkOnSurfaceMuted,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+              ),
             ),
           ),
         ),
