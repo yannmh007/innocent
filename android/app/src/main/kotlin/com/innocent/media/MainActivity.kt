@@ -428,6 +428,45 @@ class MainActivity : AudioServiceFragmentActivity() {
                     }
                     result.success(free)
                 }
+                // MediaStore's own change counter, so a cold start can tell
+                // "nothing on this phone changed since the last scan" without
+                // walking 2000+ videos to find out. Every insert, update or
+                // delete on a volume raises its generation; the version
+                // changes when the database itself is rebuilt; the
+                // permission flags make revoking access count as a change.
+                // Null below Android 11, where there is no generation and
+                // the caller simply scans as it always has.
+                "generation" -> {
+                    var stamp: String? = null
+                    if (Build.VERSION.SDK_INT >= 30) {
+                        try {
+                            val ctx = applicationContext
+                            val sb = StringBuilder(android.provider.MediaStore.getVersion(ctx))
+                            for (v in android.provider.MediaStore.getExternalVolumeNames(ctx).sorted()) {
+                                sb.append('|').append(v)
+                                    .append(':').append(android.provider.MediaStore.getVersion(ctx, v))
+                                    .append(':').append(android.provider.MediaStore.getGeneration(ctx, v))
+                            }
+                            val perms = mutableListOf(
+                                if (Build.VERSION.SDK_INT >= 33) "android.permission.READ_MEDIA_VIDEO"
+                                else "android.permission.READ_EXTERNAL_STORAGE"
+                            )
+                            if (Build.VERSION.SDK_INT >= 34) {
+                                perms.add("android.permission.READ_MEDIA_VISUAL_USER_SELECTED")
+                            }
+                            sb.append("|p:")
+                            for (p in perms) {
+                                val granted = ctx.checkSelfPermission(p) ==
+                                    android.content.pm.PackageManager.PERMISSION_GRANTED
+                                sb.append(if (granted) '1' else '0')
+                            }
+                            stamp = sb.toString()
+                        } catch (_: Throwable) {
+                            stamp = null
+                        }
+                    }
+                    result.success(stamp)
+                }
                 else -> result.notImplemented()
             }
         }

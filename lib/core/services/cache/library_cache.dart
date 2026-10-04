@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../features/local_browser/domain/folder.dart';
 import '../../../features/local_browser/domain/video.dart';
+import 'scan_gate.dart';
 
 /// Disk cache for library data — solves "long loading on each app open" (PDF page 10).
 /// Strategy: on cold start, immediately return cached data, then refresh in background.
@@ -209,6 +210,8 @@ class LibraryCache {
     await sp.remove(_kTimestampKey);
     // Phase 44: also wipe per-folder entries.
     await _dropLegacyVideoKeys(sp);
+    // A stamp without its cache would let the next launch trust nothing.
+    await ScanGate.clear();
     try {
       final dir = await _cacheDir();
       if (await dir.exists()) await dir.delete(recursive: true);

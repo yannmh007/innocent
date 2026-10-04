@@ -23,6 +23,9 @@ analyzer:
     - "**/*.g.dart"
     - "**/*.freezed.dart"
     - "build/**"
+    # Vendored packages keep their upstream style; only the INNOCENT PATCH
+    # lines in them are ours.
+    - "third_party/**"
   errors:
     # Promote a genuine crash-class issue to a warning so it stands out in
     # the Problems panel (still non-fatal to the build).

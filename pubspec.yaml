@@ -136,6 +136,13 @@ dependencies:
 dependency_overrides:
   media_kit_libs_android_video:
     path: third_party/media_kit_libs_android_video
+  # 1.2.5 with one change: the Android video output can render through a
+  # Flutter SurfaceProducer instead of a SurfaceTexture (no per-frame copy on
+  # Impeller/Vulkan). Every patched spot is marked "INNOCENT PATCH". Not 1.3,
+  # which has the same idea but needs screen_brightness 2.x and seeks to 0 on
+  # every surface change. See lib/core/services/video_player/video_surface_policy.dart.
+  media_kit_video:
+    path: third_party/media_kit_video
 
 dev_dependencies:
   flutter_test:

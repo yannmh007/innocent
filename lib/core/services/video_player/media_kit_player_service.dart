@@ -18,6 +18,7 @@ import 'mpv_option_range.dart';
 import 'seek_math.dart';
 import 'stall_diagnosis.dart';
 import 'video_player_service.dart';
+import 'video_surface_policy.dart';
 
 /// Decouples the video player from the equalizer service. The EQ service
 /// registers a callback here that returns the shared audio-session id; the
@@ -198,6 +199,13 @@ class MediaKitPlayerService implements VideoPlayerService {
     // VideoControllerConfiguration ctor's other knobs (width, height,
     // hwdec) have varying signatures across media_kit_video versions,
     // so we use only the most stable one.
+    // Which surface libmpv draws into — see VideoSurfacePolicy. Read here,
+    // once per engine, because media_kit creates the output with the
+    // controller and keeps it for the engine's life.
+    if (!kIsWeb && Platform.isAndroid) {
+      mkv.AndroidVideoController.useSurfaceProducer =
+          await VideoSurfacePolicy.useEfficientSurface();
+    }
     _videoController = mkv.VideoController(
       _player,
       configuration: const mkv.VideoControllerConfiguration(
@@ -1782,7 +1790,10 @@ class MediaKitPlayerService implements VideoPlayerService {
     final dec = await p('decoder-frame-drop-count');
     final vod = await p('frame-drop-count');
     final threads = await p('vd-lavc-threads');
-    return 'video ${codec.split(' ').first} ${w}x$h hwdec=$hw($pix) vo=$vo '
+    final surf = (!kIsWeb && Platform.isAndroid)
+        ? (mkv.AndroidVideoController.usingSurfaceProducer ? ' surf=producer' : ' surf=texture')
+        : '';
+    return 'video ${codec.split(' ').first} ${w}x$h hwdec=$hw($pix) vo=$vo$surf '
         'fps=${double.tryParse(fps)?.toStringAsFixed(1) ?? fps} '
         'drop=$dec/$vod thr=$threads';
   }

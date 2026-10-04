@@ -327,6 +327,13 @@ class SettingsDecoderScreen extends ConsumerWidget {
               setting: PlayerSetting.decSpeedupTricks),
           const SettingsSectionHeader('General'),
           _toggle(ref,
+              title: 'Efficient video output',
+              subtitle:
+                  'Draws video straight to the screen with less battery and '
+                  'heat (Android 10+). Turn off if the picture is black or '
+                  'flickers. Applies the next time the app starts.',
+              setting: PlayerSetting.decEfficientOutput),
+          _toggle(ref,
               title: 'Deinterlace',
               subtitle:
                   'Deinterlace by default. Currently deinterlacing works only with SW decoder.',
