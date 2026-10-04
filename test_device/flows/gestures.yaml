@@ -8,8 +8,30 @@ appId: com.innocent.media
 ---
 - launchApp:
     stopApp: false
+- waitForAnimationToEnd:
+    timeout: 10000
+# A fresh install opens on the introduction (when this flow runs first):
+# skip it, then grant access, as perf_idle does.
+- tapOn:
+    text: "Skip"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- tapOn:
+    text: "Allow.*"
+    optional: true
+- tapOn:
+    text: "Allow.*"
+    optional: true
+- tapOn:
+    text: "Skip"
+    optional: true
 - tapOn:
     text: "Video"
+    optional: true
+- extendedWaitUntil:
+    visible: ".*Perf Test.*"
+    timeout: 20000
     optional: true
 - waitForAnimationToEnd:
     timeout: 2000
