@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/localization/app_strings.dart';
 
 /// All 15 shortcuts available in player shortcut row.
 ///
@@ -66,6 +67,43 @@ enum ShortcutItem {
         return 'Mirror\nMode';
       case ShortcutItem.verticalFlip:
         return 'Vertical\nFlip';
+    }
+  }
+
+  /// The label shown on screen, in the app's language — [label] is the
+  /// English one, with MX's line breaks.
+  String labelIn(AppStrings s) {
+    switch (this) {
+      case ShortcutItem.screenRotation:
+        return s.scScreenRotation;
+      case ShortcutItem.playbackSpeed:
+        return s.scSpeed;
+      case ShortcutItem.backgroundPlay:
+        return s.scBackgroundPlay;
+      case ShortcutItem.loop:
+        return s.scLoop;
+      case ShortcutItem.mute:
+        return s.scMute;
+      case ShortcutItem.shuffle:
+        return s.scShuffle;
+      case ShortcutItem.equalizer:
+        return s.scEqualizer;
+      case ShortcutItem.audioEffect:
+        return s.scAudioEffect;
+      case ShortcutItem.sleepTimer:
+        return s.scSleepTimer;
+      case ShortcutItem.abRepeat:
+        return s.scAbRepeat;
+      case ShortcutItem.nightMode:
+        return s.scNightMode;
+      case ShortcutItem.customiseItems:
+        return s.scCustomiseItems;
+      case ShortcutItem.screenshot:
+        return s.scScreenshot;
+      case ShortcutItem.mirrorMode:
+        return s.scMirrorMode;
+      case ShortcutItem.verticalFlip:
+        return s.scVerticalFlip;
     }
   }
 

@@ -49,7 +49,7 @@ void main() {
     test('at 200 % they grow to hold the thumbnail and the title', () {
       const d = VideoGridDelegate(textScaler: TextScaler.linear(2));
       const w = 141.0;
-      final needed = w * 9 / 16 + 9 + 28 * 1.5;
+      const needed = w * 9 / 16 + 9 + 28 * 1.5;
       expect(d.tileHeight(w), greaterThanOrEqualTo(needed));
       expect(d.tileHeight(w), greaterThan(w / 1.15));
     });

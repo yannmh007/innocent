@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../shortcut_item.dart';
 import '../../../../core/ui/tv_focus.dart';
+import '../../../../core/localization/app_strings.dart';
 
 /// Audit fix (B4): logical grouping for the More menu items so the
 /// 14-item grid scans as five small sections instead of one
@@ -80,7 +81,7 @@ class MoreMenuPanel extends StatelessWidget {
         children: [
           // ── Video Display section ──
           _SectionHeader(
-            label: 'Video Display',
+            label: AppStrings.of(context).scVideoDisplay,
             value: videoDisplayEnabled,
             onChanged: onVideoDisplayToggle,
           ),
@@ -111,7 +112,7 @@ class MoreMenuPanel extends StatelessWidget {
           const SizedBox(height: 14),
           // ── Shortcuts section ──
           _SectionHeader(
-            label: 'Shortcuts',
+            label: AppStrings.of(context).shortcuts,
             value: visibleShortcuts.isNotEmpty,
             onChanged: onShortcutsToggle,
           ),
@@ -139,7 +140,7 @@ class MoreMenuPanel extends StatelessWidget {
               itemBuilder: (_, i) {
                 final item = ShortcutItem.values[i];
                 return _ShortcutCheckRow(
-                  label: item.label.replaceAll('\n', ' '),
+                  label: item.labelIn(AppStrings.of(context)),
                   value: visibleShortcuts.contains(item),
                   onChanged: (_) => onShortcutToggle(item),
                 );

@@ -4,6 +4,7 @@ import '../../../../core/ui/tv_focus.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../player_provider.dart';
 import '../shortcut_item.dart';
+import '../../../../core/localization/app_strings.dart';
 
 /// Phase 15: MX Player parity for shortcut row.
 ///
@@ -179,7 +180,7 @@ class _ShortcutButton extends StatelessWidget {
                   // Phase 45 (audit): the Speed shortcut already shows
                   // its value ("1X"/"1.5X"/"2X") as the icon text itself;
                   // the label under it just says "Speed".
-                  isSpeedShortcut ? 'Speed' : item.label.replaceAll('\n', ' '),
+                  item.labelIn(AppStrings.of(context)),
                 ),
               ),
             ],

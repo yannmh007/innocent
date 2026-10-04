@@ -831,6 +831,23 @@ class AppStrings {
   String get mmLargestVideos => _s('mmLargestVideos');
   String get mmHaventPlayed => _s('mmHaventPlayed');
   String get mmAllPlayed => _s('mmAllPlayed');
+  // The player's shortcut row and its checklist (MX's names).
+  String get scNightMode => _s('scNightMode');
+  String get scShuffle => _s('scShuffle');
+  String get scMute => _s('scMute');
+  String get scAbRepeat => _s('scAbRepeat');
+  String get scMirrorMode => _s('scMirrorMode');
+  String get scVerticalFlip => _s('scVerticalFlip');
+  String get scAudioEffect => _s('scAudioEffect');
+  String get scEqualizer => _s('scEqualizer');
+  String get scSpeed => _s('scSpeed');
+  String get scScreenshot => _s('scScreenshot');
+  String get scBackgroundPlay => _s('scBackgroundPlay');
+  String get scScreenRotation => _s('scScreenRotation');
+  String get scLoop => _s('scLoop');
+  String get scCustomiseItems => _s('scCustomiseItems');
+  String get scVideoDisplay => _s('scVideoDisplay');
+  String get scSleepTimer => _s('scSleepTimer');
   String get cleanUpSpace => _s('cleanUpSpace');
   String get scanningCleanable => _s('scanningCleanable');
   String get openingRecentlyPlayed => _s('openingRecentlyPlayed');
@@ -2388,6 +2405,22 @@ class AppStrings {
     'mmLargestVideos': 'Largest videos',
     'mmHaventPlayed': "Haven't Played",
     'mmAllPlayed': "You've played every video on this phone.",
+    'scNightMode': 'Night Mode',
+    'scShuffle': 'Shuffle',
+    'scMute': 'Mute',
+    'scAbRepeat': 'A - B Repeat',
+    'scMirrorMode': 'Mirror Mode',
+    'scVerticalFlip': 'Vertical Flip',
+    'scAudioEffect': 'Audio Effect',
+    'scEqualizer': 'Equalizer',
+    'scSpeed': 'Speed',
+    'scScreenshot': 'Screenshot',
+    'scBackgroundPlay': 'Background Play',
+    'scScreenRotation': 'Screen Rotation',
+    'scLoop': 'Loop',
+    'scCustomiseItems': 'Customise Items',
+    'scVideoDisplay': 'Video Display',
+    'scSleepTimer': 'Sleep Timer',
     'storagePermissionNeeded': 'Storage permission needed',
     'statusPermissionHint': 'Allow media access so we can read WhatsApp statuses.',
     'openingPrivacyPolicy': 'Opening Privacy Policy...',
@@ -3717,6 +3750,22 @@ class AppStrings {
     'mmLargestVideos': 'အကြီးဆုံး ဗီဒီယိုများ',
     'mmHaventPlayed': 'မကြည့်ရသေးသော',
     'mmAllPlayed': 'ဒီဖုန်းထဲက ဗီဒီယိုအားလုံး ကြည့်ပြီးပါပြီ။',
+    'scNightMode': 'ညမုဒ်',
+    'scShuffle': 'ရောမွှေ',
+    'scMute': 'အသံပိတ်',
+    'scAbRepeat': 'A-B ထပ်ဖွင့်',
+    'scMirrorMode': 'မှန်ပုံစံ',
+    'scVerticalFlip': 'အပေါ်အောက်လှန်',
+    'scAudioEffect': 'အသံအထူးပြု',
+    'scEqualizer': 'အသံညှိ',
+    'scSpeed': 'အမြန်နှုန်း',
+    'scScreenshot': 'ဖန်သားပြင်ရိုက်',
+    'scBackgroundPlay': 'နောက်ခံဖွင့်',
+    'scScreenRotation': 'မျက်နှာပြင်လှည့်',
+    'scLoop': 'ထပ်ခါဖွင့်',
+    'scCustomiseItems': 'စိတ်ကြိုက်ပြင်',
+    'scVideoDisplay': 'ဗီဒီယိုပြသမှု',
+    'scSleepTimer': 'အိပ်ချိန်မှတ်',
     'storagePermissionNeeded': 'သိုလှောင်မှုခွင့်ပြုချက် လိုအပ်ပါတယ်',
     'statusPermissionHint': 'WhatsApp status တွေဖတ်နိုင်ဖို့ media ဝင်ရောက်ခွင့် ပေးပါ။',
     'openingPrivacyPolicy': 'Privacy Policy ဖွင့်နေသည်...',
@@ -5035,6 +5084,22 @@ class AppStrings {
     'mmLargestVideos': 'วิดีโอที่ใหญ่ที่สุด',
     'mmHaventPlayed': 'ยังไม่ได้เล่น',
     'mmAllPlayed': 'คุณเล่นวิดีโอทั้งหมดในเครื่องนี้แล้ว',
+    'scNightMode': 'โหมดกลางคืน',
+    'scShuffle': 'สุ่ม',
+    'scMute': 'ปิดเสียง',
+    'scAbRepeat': 'เล่นซ้ำ A-B',
+    'scMirrorMode': 'โหมดกระจก',
+    'scVerticalFlip': 'พลิกแนวตั้ง',
+    'scAudioEffect': 'เอฟเฟกต์เสียง',
+    'scEqualizer': 'อีควอไลเซอร์',
+    'scSpeed': 'ความเร็ว',
+    'scScreenshot': 'ภาพหน้าจอ',
+    'scBackgroundPlay': 'เล่นเบื้องหลัง',
+    'scScreenRotation': 'หมุนหน้าจอ',
+    'scLoop': 'วนซ้ำ',
+    'scCustomiseItems': 'ปรับแต่งรายการ',
+    'scVideoDisplay': 'การแสดงวิดีโอ',
+    'scSleepTimer': 'ตั้งเวลาปิด',
     'storagePermissionNeeded': 'ต้องการสิทธิ์พื้นที่จัดเก็บ',
     'statusPermissionHint': 'อนุญาตการเข้าถึงสื่อเพื่ออ่านสถานะ WhatsApp',
     'openingPrivacyPolicy': 'กำลังเปิดนโยบายความเป็นส่วนตัว...',

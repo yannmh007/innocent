@@ -56,7 +56,7 @@ class CustomiseItemsScreen extends ConsumerWidget {
             activeColor: AppColors.accentBlue,
             controlAffinity: ListTileControlAffinity.leading,
             title: Text(
-              item.label.replaceAll('\n', ' '),
+              item.labelIn(AppStrings.of(context)),
               style: const TextStyle(color: Colors.white, fontSize: 14),
             ),
             onChanged: (newVal) {
