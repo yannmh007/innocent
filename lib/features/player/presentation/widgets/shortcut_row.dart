@@ -21,6 +21,12 @@ import '../shortcut_item.dart';
 /// bg (verified frames 5 vs 20 of 180939). We expose [isPortrait] so
 /// the caller can pick the right styling. Active items are shown as a
 /// solid BLUE filled circle regardless of orientation.
+/// MX geometry (measured on its portrait and landscape screenshots): one
+/// slot every 63 dp from the left edge, so the first item sits under the back
+/// arrow; 44 dp circles; the "1X" text at 15 sp.
+const double _slot = 63;
+const double _circle = 44;
+
 class ShortcutRow extends StatelessWidget {
   final List<ShortcutItem> visibleItems;
   final Set<ShortcutItem> activeItems;
@@ -74,15 +80,13 @@ class ShortcutRow extends StatelessWidget {
     // Phase 16: Collapsed = no labels (more compact, MX Player parity).
     //           Expanded = with labels (matches MX Player landscape view).
     return SizedBox(
-      height: expanded ? 88 : 56,
+      height: expanded ? 90 : 56,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        padding: EdgeInsets.zero,
         itemCount: items.length + 1,
-        // Portrait floats plain icons (no circle bg) so the same gap reads
-        // wider — keep the portrait gap tight so the row sits close like
-        // the landscape (circled) row. Landscape keeps 10.
-        separatorBuilder: (_, __) => SizedBox(width: isPortrait ? 3 : 10),
+        // The slot carries the spacing; MX has no extra gap.
+        separatorBuilder: (_, __) => const SizedBox.shrink(),
         itemBuilder: (_, i) {
           if (i < items.length) {
             final item = items[i];
@@ -149,31 +153,43 @@ class _ShortcutButton extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: SizedBox(
-        // Phase 16: Narrower when label hidden (matches MX Player compact row).
-        // Portrait (no circle bg) tightens further so icons sit close together.
-        width: showLabel ? 64 : (isPortrait ? 44 : 48),
+        width: _slot,
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          // Collapsed and expanded, the circle's centre stays 28 dp down the
+          // row — where MX keeps it — and the labels hang below.
+          mainAxisAlignment:
+              showLabel ? MainAxisAlignment.start : MainAxisAlignment.center,
           children: [
+            if (showLabel) const SizedBox(height: 6),
             iconBox,
             if (showLabel) ...[
-              const SizedBox(height: 4),
-              Text(
-                // Phase 45 (audit): the Speed shortcut already shows
-                // its value ("1X"/"1.5X"/"2X") as the icon text itself,
-                // so duplicating "Speed" underneath would be redundant
-                // and visually heavy. MX Player V3 just shows "Speed"
-                // — but since our "icon" IS the speed text, we keep
-                // the slot empty for it (alignment with sibling
-                // buttons stays consistent).
-                isSpeedShortcut ? 'Speed' : item.label,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 9,
-                  height: 1.1,
+              const SizedBox(height: 6),
+              // MX: one line at 11 sp ("Sleep Timer", "A - B Repeat"),
+              // allowed a little wider than the slot, wrapping only when
+              // it still does not fit ("Customise / Items").
+              SizedBox(
+                height: 28,
+                child: OverflowBox(
+                  maxWidth: _slot + 14,
+                  alignment: Alignment.topCenter,
+                  child: Text(
+                    // Phase 45 (audit): the Speed shortcut already shows
+                    // its value ("1X"/"1.5X"/"2X") as the icon text itself;
+                    // the label under it just says "Speed".
+                    isSpeedShortcut
+                        ? 'Speed'
+                        : item.label.replaceAll('\n', ' '),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      height: 1.15,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
-                maxLines: 2,
               ),
             ],
           ],
@@ -193,8 +209,8 @@ class _ShortcutButton extends StatelessWidget {
     // Active state (any orientation): always a blue circle.
     if (isActive) {
       return Container(
-        width: 36,
-        height: 36,
+        width: _circle,
+        height: _circle,
         decoration: const BoxDecoration(
           shape: BoxShape.circle,
           color: AppColors.specActiveToggle,
@@ -214,8 +230,8 @@ class _ShortcutButton extends StatelessWidget {
     // Speed shortcut renders text-only (no circle bg) when inactive.
     if (isSpeedShortcut) {
       return SizedBox(
-        width: 36,
-        height: 36,
+        width: _circle,
+        height: _circle,
         child: Center(child: _speedText()),
       );
     }
@@ -223,8 +239,8 @@ class _ShortcutButton extends StatelessWidget {
     // Portrait inactive: plain white icon, no background.
     if (isPortrait) {
       return SizedBox(
-        width: 36,
-        height: 36,
+        width: _circle,
+        height: _circle,
         child: Stack(
           alignment: Alignment.center,
           children: [
@@ -238,8 +254,8 @@ class _ShortcutButton extends StatelessWidget {
 
     // Landscape inactive: dark translucent circle.
     return Container(
-      width: 36,
-      height: 36,
+      width: _circle,
+      height: _circle,
       decoration: const BoxDecoration(
         shape: BoxShape.circle,
         color: AppColors.shortcutInactive,
@@ -266,7 +282,7 @@ class _ShortcutButton extends StatelessWidget {
       label,
       style: const TextStyle(
         color: Colors.white,
-        fontSize: 14,
+        fontSize: 15,
         fontWeight: FontWeight.w600,
       ),
     );
@@ -330,22 +346,28 @@ class _ExpandButton extends StatelessWidget {
     final iconWidget = Icon(
       expanded ? Icons.chevron_left : Icons.chevron_right,
       color: Colors.white,
-      size: 28,
+      size: 24,
     );
 
+    // MX: the chevron gets a SMALL circle in landscape (about 28 dp), none
+    // in portrait — it is a way on, not one of the shortcuts.
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: SizedBox(
-        width: expanded ? 64 : (isPortrait ? 44 : 48),
+        width: _slot,
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment:
+              expanded ? MainAxisAlignment.start : MainAxisAlignment.center,
           children: [
+            if (expanded) const SizedBox(height: 6),
             isPortrait
-                ? SizedBox(width: 36, height: 36, child: iconWidget)
+                ? SizedBox(width: _circle, height: _circle, child: iconWidget)
                 : Container(
-                    width: 36,
-                    height: 36,
+                    width: 28,
+                    height: 28,
+                    margin: const EdgeInsets.symmetric(vertical: 8),
                     decoration: const BoxDecoration(
                       shape: BoxShape.circle,
                       color: AppColors.shortcutInactive,
@@ -353,12 +375,8 @@ class _ExpandButton extends StatelessWidget {
                     child: iconWidget,
                   ),
             if (expanded) ...[
-              const SizedBox(height: 4),
               // Empty label slot to align with sibling buttons
-              const Text(
-                '',
-                style: TextStyle(fontSize: 9, height: 1.1),
-              ),
+              const SizedBox(height: 6 + 28),
             ],
           ],
         ),

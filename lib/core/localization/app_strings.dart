@@ -82,6 +82,10 @@ class AppStrings {
   String get favourites => _s('favourites');
   String get watchLater => _s('watchLater');
   String get chipCleaner => _s('chipCleaner');
+  // Quick-access chip labels: one line at 10 sp in a 60 dp slot, so shorter
+  // than the screen titles they open.
+  String get chipPlaylists => _s('chipPlaylists');
+  String get chipPrivate => _s('chipPrivate');
   String get images => _s('images');
   String get playlists => _s('playlists');
   String get recycleBin => _s('recycleBin');
@@ -2053,6 +2057,8 @@ class AppStrings {
     'playlists': 'Playlists',
     'recycleBin': 'Recycle bin',
     'chipCleaner': 'Cleaner',
+    'chipPlaylists': 'Playlists',
+    'chipPrivate': 'Private Folder',
     'images': 'Images',
     'statistics': 'Statistics',
     'about': 'About',
@@ -3369,6 +3375,8 @@ class AppStrings {
     'playlists': 'ဖွင့်စာရင်းများ',
     'recycleBin': 'အမှိုက်ပုံး',
     'chipCleaner': 'ရှင်းလင်းရန်',
+    'chipPlaylists': 'ဖွင့်စာရင်း',
+    'chipPrivate': 'လျှို့ဝှက်',
     'images': 'ဓာတ်ပုံ',
     'statistics': 'စာရင်းအင်း',
     'about': 'အကြောင်း',
@@ -4674,6 +4682,8 @@ class AppStrings {
     'playlists': 'เพลย์ลิสต์',
     'recycleBin': 'ถังขยะ',
     'chipCleaner': 'ล้างไฟล์',
+    'chipPlaylists': 'เพลย์ลิสต์',
+    'chipPrivate': 'ส่วนตัว',
     'images': 'รูปภาพ',
     'statistics': 'สถิติ',
     'about': 'เกี่ยวกับ',

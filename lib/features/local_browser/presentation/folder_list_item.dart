@@ -105,7 +105,8 @@ class FolderListItem extends ConsumerWidget {
       // own info affordance elsewhere.
       onLongPress: onLongPress,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        // 9 + 54 + 9 = MX Player's 72 dp row pitch, 16 dp from the edge.
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
         child: Row(
           children: [
             // Selection checkbox (leading) — shown only in selection mode.
@@ -122,30 +123,43 @@ class FolderListItem extends ConsumerWidget {
                   size: 24,
                 ),
               ),
-            // innocent_folders_spec: 64×41 dp landscape thumbnail, r8,
-            // surface #444D56 (shown as the placeholder when no cover).
+            // MX PLAYER'S FOLDER, measured from its screenshots (2026-10-04,
+            // a 411 dp phone at 2.625x — the density was confirmed from a
+            // screenshot of this app on the same phone): a 72 x 54 dp folder
+            // silhouette — a 25 x 8 tab over the body — in #525C65. It reads as "a folder" at
+            // a glance where the old 64 x 41 rounded box with a glyph read
+            // as "a button". A cover, when there is one and thumbnails are
+            // on, fills the same footprint.
             Stack(
               clipBehavior: Clip.none,
               children: [
                 SizedBox(
-                  width: 64,
-                  height: 41,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: (showThumbs && coverUri != null)
-                        ? _FolderThumbnail(videoUri: coverUri)
-                        : Container(
-                            color: AppColors.specSurface,
-                            alignment: Alignment.center,
-                            child: Icon(
-                              // Phase 17: Special folder icons for known
-                              // names (Movies, Camera, Screen recordings, etc).
-                              _iconForFolder(folder.name),
-                              color: AppColors.specTextSecondary,
-                              size: 26,
-                            ),
-                          ),
-                  ),
+                  width: 72,
+                  height: 54,
+                  child: (showThumbs && coverUri != null)
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(6),
+                          child: _FolderThumbnail(videoUri: coverUri),
+                        )
+                      : CustomPaint(
+                          painter: const FolderShapePainter(),
+                          // A plain folder, as MX draws them; a glyph only
+                          // where it tells the folders apart at a glance
+                          // (Camera, Screen recordings, Download…), never
+                          // the generic one.
+                          child: _iconForFolder(folder.name) == Icons.folder
+                              ? null
+                              : Padding(
+                                  padding: const EdgeInsets.only(top: 8),
+                                  child: Center(
+                                    child: Icon(
+                                      _iconForFolder(folder.name),
+                                      color: const Color(0xFF7D8790),
+                                      size: 22,
+                                    ),
+                                  ),
+                                ),
+                        ),
                 ),
                 // NEW count badge (MX Player parity). Real count from
                 // folderNewCountsProvider — see the note in grid_tiles.
@@ -177,7 +191,7 @@ class FolderListItem extends ConsumerWidget {
                   ),
               ],
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -189,7 +203,7 @@ class FolderListItem extends ConsumerWidget {
                       color: isActiveFolder
                           ? AppColors.specSelectedLabel
                           : AppColors.textPrimary,
-                      fontSize: 17,
+                      fontSize: 15.5,
                       fontWeight: FontWeight.w400,
                     ),
                     maxLines: 1,
@@ -213,14 +227,14 @@ class FolderListItem extends ConsumerWidget {
                                 .vhAlbumVideos(folder.videoCount),
                         style: const TextStyle(
                           color: AppColors.specTextSecondary,
-                          fontSize: 13,
+                          fontSize: 12,
                         ),
                       ),
                       if (sizeLabel.isNotEmpty) ...[
                         const SizedBox(width: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 2),
+                              horizontal: 4, vertical: 1),
                           decoration: BoxDecoration(
                             color: AppColors.specChipSurface,
                             borderRadius: BorderRadius.circular(3),
@@ -229,7 +243,7 @@ class FolderListItem extends ConsumerWidget {
                             sizeLabel,
                             style: const TextStyle(
                               color: AppColors.specTextSecondary,
-                              fontSize: 11,
+                              fontSize: 9,
                               fontWeight: FontWeight.w400,
                             ),
                           ),
@@ -499,4 +513,35 @@ class _FolderThumbnailState extends State<_FolderThumbnail> {
             ),
     );
   }
+}
+
+/// MX Player's folder silhouette: a tab on the upper left over a rounded
+/// body. Shared by the folder list and grid so both read the same.
+class FolderShapePainter extends CustomPainter {
+  const FolderShapePainter({this.color = const Color(0xFF525C65)});
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = color;
+    final w = size.width;
+    final h = size.height;
+    // Proportions from MX: tab 35% of the width and 15% of the height.
+    final tabW = w * 0.35;
+    final tabH = h * 0.15;
+    final r = Radius.circular(h * 0.09);
+    canvas.drawRRect(
+      RRect.fromLTRBAndCorners(0, 0, tabW, tabH + r.y,
+          topLeft: r, topRight: r),
+      paint,
+    );
+    canvas.drawRRect(
+      RRect.fromLTRBAndCorners(0, tabH, w, h,
+          topRight: r, bottomLeft: r, bottomRight: r),
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(FolderShapePainter old) => old.color != color;
 }

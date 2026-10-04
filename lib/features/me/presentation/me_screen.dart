@@ -102,16 +102,22 @@ class MeScreen extends StatelessWidget {
         children: [
           SafeArea(
         child: ListView(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
+          // MX PLAYER'S "ME", measured from its screenshots (2026-10-04, a
+          // 411 dp phone): cards 16 dp from the edges with a 6 dp corner, a
+          // 20 sp title, grid rows 72 dp apart, list rows 50 dp, a 23 dp
+          // Status Saver square. This had 12 dp margins, a 12 dp corner, a
+          // 22 sp title and 98 dp grid rows — the same content a third
+          // taller, which is what read as loose next to MX.
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(4, 14, 4, 14),
+              padding: const EdgeInsets.fromLTRB(2, 14, 2, 14),
               child: Text(
                 s.me,
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w600,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),
@@ -133,9 +139,9 @@ class MeScreen extends StatelessWidget {
                   gridDelegate:
                       const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 3,
-                    mainAxisSpacing: 16,
+                    mainAxisSpacing: 8,
                     crossAxisSpacing: 8,
-                    mainAxisExtent: 82,
+                    mainAxisExtent: 64,
                   ),
                   itemBuilder: (context, i) => _GridItem(grid[i]),
                 ),
@@ -354,7 +360,7 @@ class _Card extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.darkSurface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(6),
       ),
       clipBehavior: Clip.antiAlias,
       child: child,
@@ -386,13 +392,13 @@ class _GridItem extends StatelessWidget {
           : feature.onTap,
       borderRadius: BorderRadius.circular(8),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(feature.icon, color: AppColors.accentBlue, size: 30),
-            const SizedBox(height: 8),
-            // SHRINK, DON'T CUT. The rows are a fixed 82px, so a label gets
+            Icon(feature.icon, color: AppColors.accentBlue, size: 28),
+            const SizedBox(height: 6),
+            // SHRINK, DON'T CUT. The rows are a fixed 64 dp, so a label gets
             // one line; a long one ("မီဒီယာ စီမံခန့်ခွဲမှု" on a 360px phone)
             // was cut to "မီဒီယာ စီမံခန့်…". Scaling it down a little keeps
             // the whole word readable.
@@ -425,28 +431,28 @@ class _StatusSaverTile extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
         child: Row(
           children: [
             // Phase 30: Solid green square (MX parity, not alpha-tinted)
             Container(
-              width: 32,
-              height: 32,
+              width: 23,
+              height: 23,
               decoration: BoxDecoration(
                 color: const Color(0xFF4CAF50),
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(3),
               ),
               child: const Icon(
                 Icons.download,
                 color: Colors.white,
-                size: 18,
+                size: 15,
               ),
             ),
             const SizedBox(width: 16),
             Expanded(
               child: Text(
                 AppStrings.of(context).statusSaver,
-                style: const TextStyle(color: Colors.white, fontSize: 15),
+                style: const TextStyle(color: Colors.white, fontSize: 14.5),
               ),
             ),
             const Icon(
@@ -477,18 +483,18 @@ class _ListTile extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
         child: Row(
           children: [
             // Phase 30: MX uses WHITE outlined icons for these rows
             // (App Theme/Settings/Custom Pop-up Play/Legal/Help),
             // NOT the blue accent used by the 3x3 grid above.
-            Icon(icon, color: Colors.white, size: 22),
+            Icon(icon, color: Colors.white, size: 24),
             const SizedBox(width: 16),
             Expanded(
               child: Text(
                 label,
-                style: const TextStyle(color: Colors.white, fontSize: 15),
+                style: const TextStyle(color: Colors.white, fontSize: 14.5),
               ),
             ),
             const Icon(
@@ -506,10 +512,11 @@ class _ListTile extends StatelessWidget {
 class _SubDivider extends StatelessWidget {
   const _SubDivider();
 
+  // No rule between rows: MX's grouped cards have none, and the grouping
+  // already says which rows belong together. Kept as a widget so the call
+  // sites stay as they are.
   @override
-  Widget build(BuildContext context) {
-    return const Divider(height: 1, color: Colors.white10, indent: 52);
-  }
+  Widget build(BuildContext context) => const SizedBox.shrink();
 }
 
 

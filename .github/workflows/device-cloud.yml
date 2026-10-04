@@ -109,14 +109,20 @@ jobs:
             --robo-script test_device/robo/movies.json \
             --timeout "${TIMEOUT}s" \
             --results-dir "$dir" \
-            --format=json > out/matrix.json 2> out/run.txt
-          echo "exit $?" >> out/run.txt
+            --format=json > out/matrix.json 2> out/run.txt && rc=0 || rc=$?
+          # Non-zero also means "a phone failed or was inconclusive"; the
+          # results are still there and still worth keeping.
+          echo "exit $rc" >> out/run.txt
           tail -20 out/run.txt
 
-          bucket=$(grep -o 'gs://[^/ ]*' out/run.txt | head -1)
+          # gcloud names the bucket only inside a console link:
+          # .../storage/browser/<bucket>/<dir>/
+          bucket=$(sed -n 's#.*storage/browser/\([^/]*\)/.*#\1#p' out/run.txt | head -1 || true)
           echo "bucket: ${bucket:-unknown}"
           if [ -n "$bucket" ]; then
-            gsutil -m -q cp -r "$bucket/$dir" out/raw 2>/dev/null || true
+            mkdir -p out/raw
+            gcloud storage cp -r "gs://$bucket/$dir/*" out/raw/ >/dev/null 2>&1 || true
+            find out/raw -maxdepth 2 | head -20
           fi
 
       - name: Keep the results

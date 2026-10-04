@@ -188,12 +188,13 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen> {
               key: _scrollKey,
               // innocent_videos_grid_spec: 16 dp margins, 18 dp gutter,
               // 16:9 thumbs → 2 columns at 360 dp, more on larger screens.
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+              padding: const EdgeInsets.fromLTRB(18, 8, 18, 8),
               gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
                 maxCrossAxisExtent: 200,
                 mainAxisSpacing: 0,
-                crossAxisSpacing: 18,
-                childAspectRatio: 1.13,
+                // MX: 177 dp tiles, 21 dp apart, 153 dp row pitch.
+                crossAxisSpacing: 21,
+                childAspectRatio: 1.15,
               ),
               itemCount: videos.length,
               itemBuilder: (_, i) {

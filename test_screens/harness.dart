@@ -152,6 +152,15 @@ Future<void> shoot(
   tester.view.padding = FakeViewPadding(top: phone.top * phone.ratio, bottom: phone.bottom * phone.ratio);
   tester.view.viewPadding = FakeViewPadding(top: phone.top * phone.ratio, bottom: phone.bottom * phone.ratio);
   addTearDown(tester.view.reset);
+  // SCREEN_TEXT_SCALE: draw as a phone whose font setting is not 1.0. The
+  // owner's phone renders text at about 0.8 of these fonts (measured from a
+  // screenshot of this app on it, 2026-10-04), which is the scale to compare
+  // against screenshots taken on that phone.
+  final textScale = double.tryParse(Platform.environment['SCREEN_TEXT_SCALE'] ?? '');
+  if (textScale != null) {
+    tester.platformDispatcher.textScaleFactorTestValue = textScale;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+  }
 
   // An overflow is a FINDING here, not a test failure: it is printed (and
   // drawn as the yellow-black stripe) and the run carries on to the picture.

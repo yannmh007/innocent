@@ -291,6 +291,13 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
   void initState() {
     super.initState();
     _startReporting();
+    // A SNACKBAR FROM THE SCREEN BEHIND DOES NOT FOLLOW THE VIEWER IN. Seen on
+    // a real Galaxy A03s in Test Lab: "added to bookmarks" from the title page
+    // sat over the player's controls. The messenger is the app's, so it
+    // outlives the route change; it is dismissed once the player is up.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) ScaffoldMessenger.maybeOf(context)?.hideCurrentSnackBar();
+    });
     // v1.63.1: seed the subtitle timing from the saved value, so the tune
     // panel opens showing what libmpv is actually doing. See the field's note.
     try {
@@ -2586,9 +2593,13 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
           }),
 
           // === LAYER 5: Speed indicator ===
+          // Only a speed other than 1X needs saying, and not while the
+          // shortcut row is on screen showing it as its "1.5X" item.
           if (!state.sleepTimerDialogOpen &&
-              ((state.controlsVisible && !state.isLocked) ||
-                  state.playbackSpeed != 1.0))
+              state.playbackSpeed != 1.0 &&
+              !(state.controlsVisible &&
+                  !state.isLocked &&
+                  visibleShortcutList.contains(ShortcutItem.playbackSpeed)))
             Positioned(
               left: 16,
               top: MediaQuery.of(context).orientation == Orientation.portrait
@@ -2603,11 +2614,11 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
               !state.sleepTimerDialogOpen &&
               visibleShortcutList.isNotEmpty)
             Positioned(
-              left: 70,
+              left: 0,
               right: 0,
-              top: MediaQuery.of(context).orientation == Orientation.portrait
-                  ? 108
-                  : 64,
+              // MX, both orientations: the row's centre sits 59 dp below the
+              // back arrow's (top bar 56 high, row 56 high).
+              top: MediaQuery.of(context).padding.top + 59,
               child: Listener(
                 // MX Player parity: any touch on the shortcut strip —
                 // scrolling through the icons to find one, or a slow
