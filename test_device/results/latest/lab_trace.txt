@@ -1,17 +1,55 @@
 LAB device kind=DeviceKind.phone sw=411.0
-LAB cpu app 22% · 0.2fps · pool-thread 14% | 1.raster 6% | RenderThread 1%
+LAB cpu app 14% · 0.2fps · 1.raster 7% | pool-thread 6%
 LAB phase gestures start
-LAB cpu app 2% · 0.3fps · -
-LAB cpu app 7% · 0.4fps · .innocent.media 7%
-LAB cpu app 16% · 1.0fps · .innocent.media 15% | 1.raster 1%
-LAB cpu app 13% · 0.8fps · .innocent.media 12%
-LAB cpu app 10% · 1.3fps · 1.raster 6% | .innocent.media 4%
-LAB cpu app 10% · 0.4fps · .innocent.media 9% | 1.raster 1%
-LAB cpu app 18% · 1.3fps · .innocent.media 16% | 1.raster 2%
+LAB cpu app 8% · 3.6fps · 1.raster 5% | .innocent.media 2%
 LAB cpu app 1% · 0.4fps · -
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=24.0 bar=24.0
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=24.0 bar=24.0
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=24.0 bar=24.0
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=24.0 bar=24.0
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=24.0 bar=24.0
+LAB    0.0 hwdec -> auto
+LAB    0.7 open scheme=path len=54 hwdec=auto start=0s autoplay=true
+LAB    0.7 wakelock playing=false bg=false priv=false
+LAB    0.8 open ok
+LAB    0.8 wakelock playing=true bg=false priv=false
+LAB    8.8 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
+LAB gesture seek 36 s
+LAB cpu app 22% · 5.9fps · 1.raster 12% | .innocent.media 5% | RenderThread 4%
+LAB gesture volume 0.46
+LAB gesture brightness 0.46
+LAB gesture double tap right 1
+LAB cpu app 12% · 6.6fps · 1.raster 6% | .innocent.media 6%
+LAB gesture double tap right 1
+LAB gesture double tap left 1
+LAB gesture long press
+LAB gesture long press end
+LAB cpu app 29% · 1.4fps · .innocent.media 26% | 1.raster 3%
+LAB gesture tap
+LAB cpu app 4% · 4.5fps · 1.raster 2% | .innocent.media 1%
 LAB phase gestures_land start
-LAB cpu app 1% · 0.6fps · 1.raster 1%
-LAB cpu app 1% · 0.2fps · -
-LAB cpu app 12% · 2.0fps · .innocent.media 7% | 1.raster 5%
-LAB cpu app 7% · 1.0fps · .innocent.media 5% | 1.raster 2%
-LAB cpu app 17% · 0.6fps · .innocent.media 15%
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=24.0
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=24.0
+LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=24.0
+LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=24.0
+LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=24.0
+LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=24.0
+LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=24.0
+LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=24.0
+LAB cpu app 1% · 0.8fps · -
+LAB gesture seek 55 s
+LAB cpu app 9% · 2.3fps · .innocent.media 5% | 1.raster 3%
+LAB gesture volume 0.40
+LAB gesture brightness 0.40
+LAB gesture double tap right 1
+LAB gesture tap
+LAB gesture tap
+LAB cpu app 14% · 6.1fps · 1.raster 7% | .innocent.media 6%
+LAB gesture double tap left 1
+LAB gesture long press
+LAB gesture long press end
+LAB gesture tap
+LAB   78.9 wakelock playing=false bg=false priv=false
+LAB   79.2 player teardown done keepPlaying=false
+LAB cpu app 26% · 1.2fps · .innocent.media 23% | 1.raster 2%
+LAB cpu app 5% · 1.9fps · 1.raster 4%
