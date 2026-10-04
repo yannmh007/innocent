@@ -1,0 +1,62 @@
+[
+  {
+    "eventType": "VIEW_CLICKED",
+    "delayTime": 3000,
+    "elementDescriptors": [
+      {
+        "text": "ကျော်မယ်"
+      }
+    ],
+    "optional": true
+  },
+  {
+    "eventType": "VIEW_CLICKED",
+    "delayTime": 3000,
+    "elementDescriptors": [
+      {
+        "text": "Skip"
+      }
+    ],
+    "optional": true
+  },
+  {
+    "eventType": "VIEW_CLICKED",
+    "delayTime": 4000,
+    "elementDescriptors": [
+      {
+        "text": "ရုပ်ရှင်"
+      }
+    ],
+    "optional": true
+  },
+  {
+    "eventType": "VIEW_CLICKED",
+    "delayTime": 4000,
+    "elementDescriptors": [
+      {
+        "text": "Movies"
+      }
+    ],
+    "optional": true
+  },
+  {
+    "eventType": "VIEW_CLICKED",
+    "delayTime": 4000,
+    "elementDescriptors": [
+      {
+        "text": "အသက် ၁၈ ပြည့်ပြီ - ဝင်မည်"
+      }
+    ],
+    "optional": true
+  },
+  {
+    "eventType": "VIEW_CLICKED",
+    "delayTime": 4000,
+    "elementDescriptors": [
+      {
+        "text": "I am 18 or older - Enter"
+      }
+    ],
+    "optional": true
+  }
+]

@@ -1,0 +1,151 @@
+# Device cloud: the RELEASED APK on real phones in Firebase Test Lab.
+#
+# WHY, NEXT TO THE DEVICE LAB
+#   device-lab.yml runs an emulator: good for flows and layout, but it cannot
+#   run the arm64 release APK, and it has no real video decoder — playback
+#   there proved nothing either way. Test Lab runs the very file people
+#   install on physical phones in Google's racks, with a Robo crawler that
+#   taps through the app on its own after a short script (test_device/robo/)
+#   has walked it into Movies. It returns screenshots, a video, the logcat,
+#   and any crash.
+#
+# SETUP (once, by the owner): a Firebase project used only for testing, its
+# Cloud Testing and Tool Results APIs enabled, and a service account key for
+# it stored as the Actions secret FIREBASE_SA_KEY, with the project id as
+# FIREBASE_PROJECT_ID. No other secret is needed and none is printed.
+# Without them this workflow says what is missing and stops — green.
+#
+# RESULTS are committed to test_device/results/cloud/ on the branch that ran
+# it: per phone, the outcome, Robo's screenshots (resized) and the app's
+# logcat with links and tokens cut out. The video stays in Test Lab — too big
+# for git; its console link is in the summary.
+#
+# QUOTA: the free plan allows five physical-device tests a day; each phone in
+# test_device/cloud.env is one.
+
+name: Device cloud
+
+on:
+  push:
+    branches-ignore: [ main ]
+    paths:
+      - 'test_device/cloud.env'
+      - 'test_device/robo/**'
+      - '.github/workflows/device-cloud.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: device-cloud-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Are the Firebase secrets set?
+        id: ready
+        env:
+          SA: ${{ secrets.FIREBASE_SA_KEY }}
+          PROJECT: ${{ secrets.FIREBASE_PROJECT_ID }}
+        run: |
+          if [ -z "$SA" ] || [ -z "$PROJECT" ]; then
+            echo "::notice::FIREBASE_SA_KEY / FIREBASE_PROJECT_ID are not set yet — see the header of this workflow. Nothing to do."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Fetch the released APK
+        if: steps.ready.outputs.ok == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          source test_device/cloud.env
+          tag="$APK_TAG"
+          [ "$tag" = latest ] && tag=$(gh release view --json tagName --jq .tagName)
+          echo "TAG=$tag" >> "$GITHUB_ENV"
+          gh release download "$tag" -p '*.apk' -O app.apk
+          ls -la app.apk
+
+      - uses: google-github-actions/auth@v2
+        if: steps.ready.outputs.ok == 'true'
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SA_KEY }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+        if: steps.ready.outputs.ok == 'true'
+
+      - name: Run on real phones
+        if: steps.ready.outputs.ok == 'true'
+        env:
+          PROJECT: ${{ secrets.FIREBASE_PROJECT_ID }}
+        run: |
+          set -uo pipefail
+          source test_device/cloud.env
+          gcloud config set project "$PROJECT" >/dev/null
+          mkdir -p out
+          # What Test Lab can offer, so cloud.env can be pointed at the
+          # phones Myanmar actually carries.
+          gcloud firebase test android models list --filter=form=PHYSICAL \
+            --format='table(id,brand,name,supportedVersionIds.list())' > out/models.txt 2>&1 || true
+
+          device_args=()
+          for d in $DEVICES; do
+            m=${d%%,*}; v=${d##*,}
+            device_args+=(--device "model=$m,version=$v,locale=$LOCALE,orientation=portrait")
+          done
+          dir="innocent/${GITHUB_RUN_ID}"
+          gcloud firebase test android run \
+            --type robo \
+            --app app.apk \
+            "${device_args[@]}" \
+            --robo-script test_device/robo/movies.json \
+            --timeout "${TIMEOUT}s" \
+            --results-dir "$dir" \
+            --format=json > out/matrix.json 2> out/run.txt
+          echo "exit $?" >> out/run.txt
+          tail -20 out/run.txt
+
+          bucket=$(grep -o 'gs://[^/ ]*' out/run.txt | head -1)
+          echo "bucket: ${bucket:-unknown}"
+          if [ -n "$bucket" ]; then
+            gsutil -m -q cp -r "$bucket/$dir" out/raw 2>/dev/null || true
+          fi
+
+      - name: Keep the results
+        if: always() && steps.ready.outputs.ok == 'true'
+        run: |
+          set -e
+          dest=test_device/results/cloud
+          rm -rf "$dest"; mkdir -p "$dest"
+          cp out/models.txt out/run.txt out/matrix.json "$dest/" 2>/dev/null || true
+          if [ -d out/raw ]; then
+            for dev in out/raw/*/; do
+              [ -d "$dev" ] || continue
+              name=$(basename "$dev"); mkdir -p "$dest/$name/shots"
+              find "$dev" -name 'logcat' -exec sh -c \
+                "sed -E 's#https?://[^ \"]+#<url>#g; s#[A-Za-z0-9_-]{40,}#<token>#g' '{}' \
+                 | grep -iE 'innocent|flutter|mpv|AndroidRuntime|FATAL|ANR|crash|LAB ' > '$dest/$name/logcat.txt'" \; || true
+              find "$dev" -name '*.png' | head -60 | while read -r p; do
+                cp "$p" "$dest/$name/shots/$(basename "$(dirname "$p")")_$(basename "$p")"
+              done
+              find "$dest/$name/shots" -name '*.png' -exec mogrify -resize 480x {} \; 2>/dev/null || true
+            done
+          fi
+          echo "run ${GITHUB_RUN_ID} of ${GITHUB_SHA} on ${TAG:-?}" > "$dest/RUN.txt"
+          git config user.name "device-cloud"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A "$dest"
+          git commit -q -m "device-cloud: results of run ${GITHUB_RUN_ID}" || exit 0
+          branch="${GITHUB_REF_NAME}"
+          for i in 1 2 3 4; do
+            git pull -q --rebase origin "$branch" && git push -q origin "HEAD:$branch" && exit 0
+            sleep $((i * 5))
+          done
+          exit 1
