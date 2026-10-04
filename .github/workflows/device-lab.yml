@@ -203,19 +203,44 @@ jobs:
 
       - name: Keep the results
         if: always()
+        env:
+          LAB_RESULTS_KEY: ${{ secrets.LAB_RESULTS_KEY }}
         run: |
           set -e
           branch="${GITHUB_REF_NAME}"
-          rm -rf test_device/results/latest
-          mkdir -p test_device/results
-          if [ -d out ]; then cp -r out test_device/results/latest; fi
-          echo "run ${GITHUB_RUN_ID} of ${GITHUB_SHA}" > test_device/results/latest/RUN.txt
+          saved="$RUNNER_TEMP/lab_results"
+          rm -rf "$saved"; mkdir -p "$saved"
+          if [ -d out ]; then cp -r out/. "$saved/"; fi
+          # A run cut short (cancelled, timed out, failed) never reached the end
+          # of run.sh, where screenshots are encrypted and logs are redacted.
+          # Do both here, so that what is committed is the same either way: no
+          # picture of any kind in the clear, no raw log.
+          if [ -d "$saved/shots" ] && [ ! -f "$saved/shots.tar.gz.enc" ] && [ -n "${LAB_RESULTS_KEY:-}" ]; then
+            tar -czf - -C "$saved" shots | openssl enc -aes-256-cbc -pbkdf2 -salt \
+              -pass env:LAB_RESULTS_KEY -out "$saved/shots.tar.gz.enc"
+          fi
+          if [ -f "$saved/logcat_raw.txt" ] && [ ! -f "$saved/logcat.txt" ]; then
+            sed -E 's#https?://[^ "]+#<url>#g; s#[A-Za-z0-9_-]{40,}#<token>#g' "$saved/logcat_raw.txt" \
+              | grep -iE "innocent|flutter|mpv|AndroidRuntime|FATAL|ANR|crash|exception| DEBUG|libc" > "$saved/logcat.txt" || true
+          fi
+          rm -rf "$saved/shots" "$saved/maestro_out" "$saved/logcat_raw.txt"
+          find "$saved" -type f \( -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' \
+            -o -iname '*.webp' -o -iname '*.gif' -o -iname '*.mp4' \) -delete
+          echo "run ${GITHUB_RUN_ID} of ${GITHUB_SHA}" > "$saved/RUN.txt"
           git config user.name "device-lab"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A test_device/results/latest
-          git commit -q -m "device-lab: results of run ${GITHUB_RUN_ID}" || exit 0
+          # The results directory belongs to the lab alone, so it is laid on top
+          # of the branch as it is now rather than rebased: a rebase conflicts
+          # whenever the previous run's results differ from this one's.
           for i in 1 2 3 4; do
-            git pull -q --rebase origin "$branch" && git push -q origin "HEAD:$branch" && exit 0
+            git fetch -q origin "$branch"
+            git checkout -q -f -B lab-results FETCH_HEAD
+            rm -rf test_device/results/latest
+            mkdir -p test_device/results
+            cp -r "$saved" test_device/results/latest
+            git add -A test_device/results/latest
+            git commit -q -m "device-lab: results of run ${GITHUB_RUN_ID}" || exit 0
+            git push -q origin "HEAD:$branch" && exit 0
             sleep $((i * 5))
           done
           exit 1
