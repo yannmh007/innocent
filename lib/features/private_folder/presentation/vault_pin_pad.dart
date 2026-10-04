@@ -295,8 +295,8 @@ class VaultPinPadState extends State<VaultPinPad>
         // left out of this sum, so a short screen decided it needed no scroll
         // and then overflowed by the footer's height.
         final needed = _keypadHeight(keySize) +
-            _chromeHeight +
-            (widget.footer != null ? 40 : 0) +
+            _chromeFor(context, box.maxWidth) +
+            _footerAllowance(context) +
             bottomInset;
         final needsScroll = needed > box.maxHeight;
         final pad = Column(
@@ -336,8 +336,14 @@ class VaultPinPadState extends State<VaultPinPad>
               child: LayoutBuilder(
                 builder: (context, slot) {
                   final fits = (slot.maxHeight / 4 - 12).clamp(44.0, 76.0);
+                  // FittedBox: if the real text left even less room than
+                  // the fit check expected, the pad shrinks a little rather
+                  // than pushing its bottom row under an overflow stripe.
                   return Center(
-                    child: _keypad(math.min(keySize, fits), canSubmit),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: _keypad(math.min(keySize, fits), canSubmit),
+                    ),
                   );
                 },
               ),
@@ -363,13 +369,33 @@ class VaultPinPadState extends State<VaultPinPad>
         // `ConstrainedBox` with only `minHeight` leaves the maximum unbounded
         // and crashes exactly the same way. A fixed height bounds it, so the
         // Spacers resolve and the view scrolls to reach the rest.
+        // Scrolling: everything at its natural height, nothing flexible —
+        // so nothing has to be estimated and nothing can overflow.
         return SingleChildScrollView(
-          padding: EdgeInsets.only(bottom: bottomInset),
-          child: SizedBox(
-            height: _keypadHeight(keySize) +
-                _chromeHeight +
-                (widget.footer != null ? 40 : 0),
-            child: pad,
+          padding: EdgeInsets.only(bottom: bottomInset + 8),
+          child: Column(
+            children: [
+              const SizedBox(height: 16),
+              _header(),
+              const SizedBox(height: 26),
+              _dots(),
+              const SizedBox(height: 12),
+              SizedBox(
+                height: 30,
+                child: AnimatedOpacity(
+                  opacity: widget.errorText != null ? 1 : 0,
+                  duration: const Duration(milliseconds: 140),
+                  child: widget.errorText != null
+                      ? _error()
+                      : const SizedBox.shrink(),
+                ),
+              ),
+              _keypad(keySize, canSubmit),
+              if (widget.footer != null) ...[
+                const SizedBox(height: 6),
+                widget.footer!,
+              ],
+            ],
           ),
         );
       },
@@ -389,6 +415,42 @@ class VaultPinPadState extends State<VaultPinPad>
   /// not reach 0, or the confirm key, and the screen was unusable.
   static const double _chromeHeight = 18 + 26 + 12 + 30 + 62 + 24;
 
+  /// [_chromeHeight], or more when the real header text is taller — MEASURED
+  /// with the actual title and subtitle, in the actual language and text
+  /// scale. The flat estimate was English: in Burmese on a 320 dp phone the
+  /// header ran two lines longer, the fit check said "no scroll", and the
+  /// bottom row overflowed by 48 dp.
+  double _chromeFor(BuildContext context, double width) {
+    final scaler = MediaQuery.textScalerOf(context);
+    final dir = Directionality.of(context);
+    final base = DefaultTextStyle.of(context).style;
+    double h(String t, TextStyle st, double w) {
+      final tp = TextPainter(
+        text: TextSpan(text: t, style: base.merge(st)),
+        textDirection: dir,
+        textScaler: scaler,
+      )..layout(maxWidth: math.max(1, w));
+      return tp.height;
+    }
+
+    final title = h(widget.title,
+        const TextStyle(fontSize: 20, fontWeight: FontWeight.w600), width);
+    final sub = h(widget.subtitle,
+        const TextStyle(fontSize: 13, height: 1.35), width - 64);
+    // icon 58 + 18 + title + 7 + subtitle, then the same gaps as before.
+    final measured = 58 + 18 + title + 7 + sub + 26 + 14 + 12 + 30 + 24;
+    return math.max(_chromeHeight, measured);
+  }
+
+  /// Room for the footer (the fingerprint switch), which is a widget the
+  /// host passes in and cannot be measured before layout: two lines in
+  /// English, three in Burmese, scaled with the system text size.
+  double _footerAllowance(BuildContext context) {
+    if (widget.footer == null) return 0;
+    final my = Localizations.maybeLocaleOf(context)?.languageCode == 'my';
+    return MediaQuery.textScalerOf(context).scale(my ? 72 : 52);
+  }
+
   /// Height of the keypad at a given key size: four rows, each with 6px of
   /// padding above and below.
   static double _keypadHeight(double keySize) => 4 * (keySize + 12);
@@ -397,7 +459,7 @@ class VaultPinPadState extends State<VaultPinPad>
     final byWidth = (math.min(maxW, 340) - 2 * 18) / 3 - 12;
     // What is actually left for the keys after the header, dots and error slot
     // have taken their fixed share.
-    final free = maxH - _chromeHeight - (widget.footer != null ? 34 : 0);
+    final free = maxH - _chromeFor(context, maxW) - _footerAllowance(context);
     final byHeight = free / 4 - 12;
     final size = math.min(byWidth, byHeight);
     // 44 is the floor, not 52. Below a comfortable target but still tappable,

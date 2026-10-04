@@ -41,10 +41,12 @@ const tablet = Phone('tablet', Size(800, 1280), ratio: 2.0, top: 24, bottom: 48)
 const tabletLand = Phone('tablet_land', Size(1280, 800), ratio: 2.0, top: 24, bottom: 48);
 const fold = Phone('fold', Size(673, 841), ratio: 2.6, top: 30, bottom: 24);
 const tv = Phone('tv', Size(960, 540), ratio: 2.0, top: 0, bottom: 0);
+/// The smallest phones still sold (Android Go class, 320 dp wide).
+const tiny = Phone('tiny', Size(320, 640), ratio: 1.5, top: 24, bottom: 48);
 
 const _allPhones = {
   'small': small, 'large': large, 'tablet': tablet,
-  'tablet_land': tabletLand, 'fold': fold, 'tv': tv,
+  'tablet_land': tabletLand, 'fold': fold, 'tv': tv, 'tiny': tiny,
 };
 
 /// SCREEN_PHONES=tablet,tv,... draws every screen on those instead of each
