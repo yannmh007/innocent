@@ -1,16 +1,44 @@
-LAB cpu app 23% · 0.3fps · pool-thread 11% | 1.raster 10% | RenderThread 1%
+LAB cpu app 22% · 0.2fps · pool-thread 13% | 1.raster 7% | RenderThread 1%
 LAB phase perf_idle start
-LAB cpu app 21% · 3.9fps · 1.raster 14% | .innocent.media 3% | RenderThread 2%
-LAB cpu app 1% · 0.0fps · -
-LAB phase screens_large start
-LAB cpu app 1% · 0.3fps · -
-LAB cpu app 1% · 0.2fps · -
-LAB cpu app 1% · 0.3fps · -
-LAB phase screens_large_land start
-LAB cpu app 1% · 0.4fps · -
-LAB cpu app 1% · 0.2fps · -
+LAB cpu app 22% · 3.4fps · 1.raster 16% | .innocent.media 3% | RenderThread 2%
+LAB cpu app 4% · 0.0fps · .innocent.media 3%
 LAB cpu app 1% · 0.1fps · -
-LAB phase remote_nav start
-LAB cpu app 4% · 0.8fps · RenderThread 2% | 1.raster 2%
 LAB phase layout_portrait start
+LAB cpu app 1% · 0.6fps · -
+LAB insets stable=Instance of 'EdgeInsets'
+LAB insets stable=Instance of 'EdgeInsets'
+LAB cpu app 18% · 0.7fps · RenderThread 8% | 1.raster 8%
+LAB insets stable=Instance of 'EdgeInsets'
+LAB    0.0 hwdec -> auto
+LAB    0.5 open scheme=path len=54 hwdec=auto start=0s autoplay=true
+LAB    0.5 wakelock playing=false bg=false priv=false
+LAB    0.7 open ok
+LAB    0.7 wakelock playing=true bg=false priv=false
+LAB    8.5 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
+LAB cpu app 10% · 5.4fps · 1.raster 5% | .innocent.media 3%
+LAB cpu app 5% · 4.4fps · 1.raster 3% | .innocent.media 1%
 LAB phase layout_landscape start
+LAB insets stable=Instance of 'EdgeInsets'
+LAB insets stable=Instance of 'EdgeInsets'
+LAB insets stable=Instance of 'EdgeInsets'
+LAB insets stable=Instance of 'EdgeInsets'
+LAB insets stable=Instance of 'EdgeInsets'
+LAB insets stable=Instance of 'EdgeInsets'
+LAB insets stable=Instance of 'EdgeInsets'
+LAB insets stable=Instance of 'EdgeInsets'
+LAB cpu app 2% · 0.7fps · -
+LAB cpu app 1% · 0.3fps · -
+LAB cpu app 7% · 4.4fps · 1.raster 4% | .innocent.media 2%
+LAB phase remote_nav start
+LAB cpu app 1% · 0.6fps · -
+LAB   60.7 wakelock playing=false bg=false priv=false
+LAB cpu app 3% · 0.7fps · RenderThread 2%
+LAB   71.4 wakelock playing=true bg=false priv=false
+LAB   75.6 wakelock playing=false bg=false priv=false
+LAB   76.1 player teardown done keepPlaying=false
+LAB insets stable=Instance of 'EdgeInsets'
+LAB insets stable=Instance of 'EdgeInsets'
+LAB insets stable=Instance of 'EdgeInsets'
+LAB insets stable=Instance of 'EdgeInsets'
+LAB cpu app 8% · 5.1fps · 1.raster 5% | .innocent.media 2%
+LAB cpu app 1% · 0.4fps · -
