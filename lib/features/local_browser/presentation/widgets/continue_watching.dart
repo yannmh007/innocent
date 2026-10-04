@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -10,6 +9,7 @@ import '../../../../core/router/routes.dart';
 import '../../../../core/services/thumbnail/thumbnail_cache.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../user_data/user_data_providers.dart';
+import '../library_provider.dart';
 import '../../../../core/ui/safe_thumbnail.dart';
 
 import '../../../../core/localization/app_strings.dart';
@@ -31,6 +31,15 @@ class ContinueWatchingSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final history = ref.watch(publicHistoryProvider);
+    // A picture only for a video that is in the phone's library — looked up
+    // here by its address. A film from the Movies hub (a stream, or a
+    // download kept inside the app) is never in it, so it never shows a
+    // frame here: those can be adult material, and this strip sits on the
+    // first screen of the app.
+    final libraryIds = <String, String>{
+      for (final v in ref.watch(allVideosProvider).valueOrNull ?? const [])
+        normalizeMediaUri(v.uri): v.id,
+    };
 
     // Only entries that are 5%-95% watched (i.e. in-progress)
     final inProgress = history
@@ -77,6 +86,7 @@ class ContinueWatchingSection extends ConsumerWidget {
               key: ValueKey(entry.videoUri),
                   title: entry.videoTitle,
                   videoUri: entry.videoUri,
+                  assetId: libraryIds[normalizeMediaUri(entry.videoUri)],
                   progress: entry.progress,
                   remaining: _fmtRemaining(remaining),
                   onTap: () => context.push(
@@ -112,6 +122,8 @@ class ContinueWatchingSection extends ConsumerWidget {
 class _ContinueCard extends StatefulWidget {
   final String title;
   final String videoUri;
+  /// MediaStore id when the video is in the library; null shows no picture.
+  final String? assetId;
   final double progress;
   final String remaining;
   final VoidCallback onTap;
@@ -121,6 +133,7 @@ class _ContinueCard extends StatefulWidget {
     super.key,
     required this.title,
     required this.videoUri,
+    this.assetId,
     required this.progress,
     required this.remaining,
     required this.onTap,
@@ -148,14 +161,14 @@ class _ContinueCardState extends State<_ContinueCard> {
   }
 
   Future<void> _loadThumbnail() async {
+    // BUG FIX: this decoded the file by path only, which fails on scoped
+    // storage, so the strip never had pictures. MediaStore's thumbnail first
+    // (ThumbnailCache.forVideo) — and only for a library video (see above).
+    final assetId = widget.assetId;
+    if (assetId == null) return;
     try {
-      var path = widget.videoUri;
-      if (path.startsWith('file://')) {
-        path = Uri.parse(path).toFilePath();
-      }
-      if (!path.startsWith('/')) return;
-      if (!await File(path).exists()) return;
-      final bytes = await ThumbnailCache.instance.get(path);
+      final bytes = await ThumbnailCache.instance
+          .forVideo(widget.videoUri, assetId: assetId);
       if (!_disposed && mounted) {
         setState(() => _thumb = bytes);
       }

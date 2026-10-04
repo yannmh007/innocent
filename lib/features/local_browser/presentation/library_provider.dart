@@ -41,22 +41,11 @@ final folderCoverPathsProvider = Provider<Map<String, String>>((ref) {
   );
 });
 
-/// folderPath → the MediaStore id of the same video [folderCoverPathsProvider]
-/// picks, so a folder cover can use MediaStore's thumbnail (see
-/// [ThumbnailCache.forVideo]).
-final folderCoverAssetIdsProvider = Provider<Map<String, String>>((ref) {
-  final videosAsync = ref.watch(allVideosProvider);
-  return videosAsync.maybeWhen(
-    data: (videos) {
-      final result = <String, String>{};
-      for (final v in videos) {
-        if (!result.containsKey(v.folderPath)) result[v.folderPath] = v.id;
-      }
-      return result;
-    },
-    orElse: () => const {},
-  );
-});
+/// True for a file inside this app's own storage (internal or
+/// `Android/data/<package>`): Movies-hub downloads, the stream cache, the
+/// vault. Such a file is never shown in "Recently added".
+bool isAppPrivateMedia(String uri) =>
+    uri.contains('com.innocent.media') || uri.contains('private_vault');
 
 /// Sort/view preferences — persisted via SharedPreferences.
 class LibraryPreferences {
@@ -331,6 +320,22 @@ final privateFolderPreferencesProvider =
 /// Search query state
 final searchQueryProvider = StateProvider<String>((ref) => '');
 
+/// A provider that invalidated ITSELF after a background scan found a change
+/// re-runs at once, reads the cache that scan just wrote, and would start
+/// another full scan of the library to check a list it was handed seconds
+/// ago. These flags let that one re-run skip the scan. Any other invalidation
+/// — pull-to-refresh, a delete, a move — leaves them clear and scans as
+/// before.
+///
+/// Belt and braces for the loop measured on the owner's phone (report
+/// HKUND9RY): with a cache that could never equal the scan, every scan
+/// invalidated and every re-run scanned again, forever. The cache no longer
+/// cuts the list short (LibraryCache), and even if something else ever made
+/// the two disagree, this stops it costing more than one scan per change.
+bool _foldersJustScanned = false;
+bool _allVideosJustScanned = false;
+final Set<String> _folderVideosJustScanned = <String>{};
+
 /// All folders, scanned from MediaStore.
 /// Cache-first: returns cached snapshot immediately, kicks off fresh fetch in background.
 final foldersProvider = FutureProvider<List<Folder>>((ref) async {
@@ -339,6 +344,10 @@ final foldersProvider = FutureProvider<List<Folder>>((ref) async {
 
   // Try cache first for instant load
   final cached = await cache.loadFolders();
+  if (cached != null && cached.isNotEmpty && _foldersJustScanned) {
+    _foldersJustScanned = false;
+    return cached;
+  }
   if (cached != null && cached.isNotEmpty) {
     // Kick off background refresh that will invalidate when done
     // ignore: discarded_futures
@@ -348,6 +357,7 @@ final foldersProvider = FutureProvider<List<Folder>>((ref) async {
         await cache.saveFolders(fresh);
         // Trigger consumer update only if data changed materially
         if (_hasFolderDiff(cached, fresh)) {
+          _foldersJustScanned = true;
           ref.invalidateSelf();
         }
       } catch (e, st) {
@@ -381,13 +391,19 @@ final allVideosProvider = FutureProvider<List<Video>>((ref) async {
   final cache = ref.watch(libraryCacheProvider);
 
   final cached = await cache.loadAllVideos();
+  if (cached != null && cached.isNotEmpty && _allVideosJustScanned) {
+    _allVideosJustScanned = false;
+    return cached;
+  }
   if (cached != null && cached.isNotEmpty) {
     // ignore: discarded_futures
     () async {
       try {
         final fresh = await ds.getAllVideos();
         await cache.saveAllVideos(fresh);
-        if (fresh.length != cached.length) {
+        // Which files, not how many: a rename or a swap keeps the count.
+        if (_hasVideoListDiff(cached, fresh)) {
+          _allVideosJustScanned = true;
           ref.invalidateSelf();
         }
       } catch (e, st) {
@@ -1108,6 +1124,11 @@ final videosInFolderProvider =
   // and triggers an invalidate when something actually changed (added,
   // removed or renamed files).
   final cached = await cache.loadVideosInFolder(folderPath);
+  if (cached != null &&
+      cached.isNotEmpty &&
+      _folderVideosJustScanned.remove(folderPath)) {
+    return withAdb(cached);
+  }
   if (cached != null && cached.isNotEmpty) {
     // ignore: discarded_futures
     () async {
@@ -1115,6 +1136,7 @@ final videosInFolderProvider =
         final fresh = await ds.getVideosInFolder(folderPath);
         await cache.saveVideosInFolder(folderPath, fresh);
         if (_hasVideoListDiff(cached, fresh)) {
+          _folderVideosJustScanned.add(folderPath);
           ref.invalidateSelf();
         }
       } catch (e) { if (kDebugMode) debugPrint('library_provider.best-effort: $e'); }

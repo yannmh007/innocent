@@ -19,7 +19,7 @@ import '../../player/presentation/floating_pip_provider.dart';
 import '../../../core/ui/safe_thumbnail.dart';
 
 import '../../../core/localization/app_strings.dart';
-import 'folder_list_item.dart' show VideoCover, FolderShapePainter, FolderTick;
+import 'folder_list_item.dart' show FolderShapePainter, FolderTick;
 /// Phase 15: Grid tile for a folder (MX Player grid layout parity).
 class FolderGridTile extends ConsumerWidget {
   final Folder folder;
@@ -43,11 +43,6 @@ class FolderGridTile extends ConsumerWidget {
     // video does not rebuild every folder tile on screen.
     final newCount = ref.watch(
         folderNewCountsProvider.select((m) => m[folder.path] ?? 0));
-    final showThumbs = ref.watch(preferencesProvider).showThumbnails;
-    final coverPaths = ref.watch(folderCoverPathsProvider);
-    // Phase 44: prefer the cover path from the fast bucket scan; fall
-    // back to the map (which lazily fills from allVideosProvider).
-    final coverUri = folder.coverThumbnailPath ?? coverPaths[folder.path];
     final Widget silhouette = CustomPaint(
       painter: const FolderShapePainter(),
       child: _gridFolderIcon(folder.name) == Icons.folder
@@ -98,13 +93,9 @@ class FolderGridTile extends ConsumerWidget {
               SizedBox(
                 width: 72,
                 height: 54,
-                child: (showThumbs && coverUri != null)
-                    ? VideoCover(
-                        videoUri: coverUri,
-                        assetId: ref.watch(folderCoverAssetIdsProvider)[folder.path],
-                        placeholder: silhouette,
-                      )
-                    : silhouette,
+                // Always the folder, never a frame from inside it — as in
+                // the list (see FolderListItem).
+                child: silhouette,
               ),
               // Unread count badge — 18 dp red bubble, white bold number.
               // Reads the real count (see folderNewCountsProvider); the

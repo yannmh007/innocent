@@ -51,6 +51,12 @@ class RecentlyAddedSection extends ConsumerWidget {
         // of "copied" and "modified", which is what MX Player's window means.
         final recent = videos
             .where((v) {
+              // NEVER anything of the app's own. Films downloaded from the
+              // Movies hub are kept inside the app, where MediaStore cannot
+              // see them — this holds that line here too, should one ever
+              // reach a folder the library scans: they can be adult
+              // material, and this row is the first thing on screen.
+              if (isAppPrivateMedia(v.uri)) return false;
               final d = v.freshestDate;
               return d != null && d.isAfter(cutoff);
             })
