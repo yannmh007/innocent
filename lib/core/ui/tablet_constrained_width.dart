@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'responsive.dart';
 
 /// Phase 45 (audit): on tablets and foldables, list-based screens
 /// (Settings, History, Favourites, etc.) look sparse if they stretch
@@ -26,7 +25,10 @@ class TabletConstrainedWidth extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (!Responsive.isTablet(context)) return child;
+    // By WIDTH: a 1080p TV is 960 x 540 dp — "not a tablet" by its shortest
+    // side, yet a settings list stretched across it reads like a spreadsheet.
+    // A phone is narrower than the cap, so this stays a no-op there.
+    if (MediaQuery.sizeOf(context).width <= maxWidth + 32) return child;
     return Center(
       child: ConstrainedBox(
         constraints: BoxConstraints(maxWidth: maxWidth),

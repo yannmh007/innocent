@@ -237,7 +237,67 @@ class VaultPinPadState extends State<VaultPinPad>
         // difference between an awkward pad and one whose bottom row cannot be
         // reached at all. Silent clipping was the old behaviour and it is the
         // one option that is never acceptable here.
-        final needed = _keypadHeight(keySize) + _chromeHeight + bottomInset;
+        // WIDE AND SHORT — a TV (960x540 dp), a tablet on its side, a
+        // foldable's outer screen turned: the keypad goes BESIDE the header
+        // instead of under it. Stacked, the two need ~620 dp of height a TV
+        // does not have, and the keys shrank to the 44 dp floor and still
+        // pushed the footer 40 dp off the screen.
+        final avail = box.maxHeight - bottomInset;
+        if (box.maxWidth >= 560 && avail < 600 && box.maxWidth > avail * 1.2) {
+          final side = ((avail - 16) / 4 - 12)
+              .clamp(44.0, 76.0)
+              .clamp(44.0, (box.maxWidth / 2 - 36) / 3 - 12);
+          return Padding(
+            padding: EdgeInsets.only(bottom: bottomInset),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Center(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: SizedBox(
+                        width: math.min(box.maxWidth / 2, 420),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            _header(),
+                            const SizedBox(height: 26),
+                            _dots(),
+                            const SizedBox(height: 12),
+                            SizedBox(
+                              height: 30,
+                              child: AnimatedOpacity(
+                                opacity: widget.errorText != null ? 1 : 0,
+                                duration: const Duration(milliseconds: 140),
+                                child: widget.errorText != null
+                                    ? _error()
+                                    : const SizedBox.shrink(),
+                              ),
+                            ),
+                            if (widget.footer != null) ...[
+                              const SizedBox(height: 6),
+                              widget.footer!,
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Center(child: _keypad(side.toDouble(), canSubmit)),
+                ),
+              ],
+            ),
+          );
+        }
+        // The footer (the fingerprint switch) is part of what must fit; it was
+        // left out of this sum, so a short screen decided it needed no scroll
+        // and then overflowed by the footer's height.
+        final needed = _keypadHeight(keySize) +
+            _chromeHeight +
+            (widget.footer != null ? 40 : 0) +
+            bottomInset;
         final needsScroll = needed > box.maxHeight;
         final pad = Column(
           children: [
@@ -306,7 +366,9 @@ class VaultPinPadState extends State<VaultPinPad>
         return SingleChildScrollView(
           padding: EdgeInsets.only(bottom: bottomInset),
           child: SizedBox(
-            height: _keypadHeight(keySize) + _chromeHeight,
+            height: _keypadHeight(keySize) +
+                _chromeHeight +
+                (widget.footer != null ? 40 : 0),
             child: pad,
           ),
         );
