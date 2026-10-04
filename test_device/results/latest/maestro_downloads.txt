@@ -1,0 +1,16 @@
+Running on test
+ > Flow downloads
+Repeat while "Search movies.*" is not visible (up to 5 times)...
+  Press back... COMPLETED
+  Wait for animation to end within 3000 ms... COMPLETED
+  Swiping in DOWN direction in 400 ms... COMPLETED
+  Swiping in DOWN direction in 400 ms... COMPLETED
+Repeat while "Search movies.*" is not visible (up to 5 times)... COMPLETED
+Tap on "Account"... COMPLETED
+Wait for animation to end within 8000 ms... COMPLETED
+Take screenshot 50_account... COMPLETED
+Tap on (Optional) "Downloads.*"... COMPLETED
+Wait for animation to end within 8000 ms... COMPLETED
+Take screenshot 51_downloads... COMPLETED
+Wait for animation to end within 20000 ms... COMPLETED
+Take screenshot 52_downloads_20s... COMPLETED

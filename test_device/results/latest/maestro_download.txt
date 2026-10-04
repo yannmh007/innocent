@@ -1,0 +1,9 @@
+Running on test
+ > Flow download
+Scrolling UP until "Download all" is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Tap on (Optional) "Download all"... COMPLETED
+Wait for animation to end within 5000 ms... COMPLETED
+Take screenshot 30_download_tapped... COMPLETED
+Tap on (Optional) "Download"... COMPLETED
+Wait for animation to end within 15000 ms... COMPLETED
+Take screenshot 31_download_15s... COMPLETED
