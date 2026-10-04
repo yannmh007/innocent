@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 
 import '../../../../core/localization/app_strings.dart';
+import '../../../../core/ui/tv_focus.dart';
 /// Sleep timer mode
 enum SleepTimerMode { off, custom, endOfVideo }
 
@@ -279,7 +280,7 @@ class _SleepTimerDialogState extends State<SleepTimerDialog> {
   }
 
   Widget _closeButton() {
-    return GestureDetector(
+    return RemoteTappable(
       onTap: widget.onDismiss,
       child: Container(
         width: 32,

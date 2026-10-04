@@ -121,8 +121,9 @@ class _FocusRingLayerState extends State<FocusRingLayer> {
 }
 
 /// A tap target a TV remote can reach: focusable, and the remote's select
-/// key (or Enter) does what a tap does. For the places that used a bare
-/// GestureDetector, which a D-pad can never land on.
+/// key (or Enter) does what a tap does; the remote's menu key does what a
+/// long press does. For the places that used a bare GestureDetector, which a
+/// D-pad can never land on.
 class RemoteTappable extends StatelessWidget {
   const RemoteTappable({
     super.key,
@@ -137,22 +138,9 @@ class RemoteTappable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FocusableActionDetector(
-      enabled: onTap != null,
-      shortcuts: const <ShortcutActivator, Intent>{
-        SingleActivator(LogicalKeyboardKey.select): ActivateIntent(),
-        SingleActivator(LogicalKeyboardKey.enter): ActivateIntent(),
-        SingleActivator(LogicalKeyboardKey.numpadEnter): ActivateIntent(),
-        SingleActivator(LogicalKeyboardKey.gameButtonA): ActivateIntent(),
-      },
-      actions: <Type, Action<Intent>>{
-        ActivateIntent: CallbackAction<ActivateIntent>(
-          onInvoke: (_) {
-            onTap?.call();
-            return null;
-          },
-        ),
-      },
+    return RemoteFocusable(
+      onActivate: onTap,
+      onMenu: onLongPress,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
@@ -161,4 +149,55 @@ class RemoteTappable extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Focus and remote keys only, for a target whose touch handling must stay
+/// as it is (a key with a pressed state, a row with its own hit area): wrap
+/// the existing GestureDetector in this rather than replacing it.
+class RemoteFocusable extends StatelessWidget {
+  const RemoteFocusable({
+    super.key,
+    required this.onActivate,
+    required this.child,
+    this.onMenu,
+  });
+
+  final VoidCallback? onActivate;
+
+  /// The remote's menu key — a TV's stand-in for a long press.
+  final VoidCallback? onMenu;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return FocusableActionDetector(
+      enabled: onActivate != null || onMenu != null,
+      shortcuts: const <ShortcutActivator, Intent>{
+        SingleActivator(LogicalKeyboardKey.select): ActivateIntent(),
+        SingleActivator(LogicalKeyboardKey.enter): ActivateIntent(),
+        SingleActivator(LogicalKeyboardKey.numpadEnter): ActivateIntent(),
+        SingleActivator(LogicalKeyboardKey.gameButtonA): ActivateIntent(),
+        SingleActivator(LogicalKeyboardKey.contextMenu): _MenuIntent(),
+      },
+      actions: <Type, Action<Intent>>{
+        ActivateIntent: CallbackAction<ActivateIntent>(
+          onInvoke: (_) {
+            onActivate?.call();
+            return null;
+          },
+        ),
+        _MenuIntent: CallbackAction<_MenuIntent>(
+          onInvoke: (_) {
+            onMenu?.call();
+            return null;
+          },
+        ),
+      },
+      child: child,
+    );
+  }
+}
+
+class _MenuIntent extends Intent {
+  const _MenuIntent();
 }

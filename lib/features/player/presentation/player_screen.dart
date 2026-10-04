@@ -2321,6 +2321,22 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     if (!node.hasPrimaryFocus) return KeyEventResult.ignored;
     final controller = ref.read(playerControllerProvider.notifier);
     final k = event.logicalKey;
+    // A panel or dialog is open (more menu, subtitles, sleep timer…): the
+    // remote is for it, not for seeking the video behind it. Step into it.
+    if (state.openPanel != SidePanel.none ||
+        state.decoderDialogOpen ||
+        state.sleepTimerDialogOpen) {
+      if (k == LogicalKeyboardKey.arrowLeft ||
+          k == LogicalKeyboardKey.arrowRight ||
+          k == LogicalKeyboardKey.arrowUp ||
+          k == LogicalKeyboardKey.arrowDown ||
+          k == LogicalKeyboardKey.select ||
+          k == LogicalKeyboardKey.enter) {
+        node.nextFocus();
+        return KeyEventResult.handled;
+      }
+      return KeyEventResult.ignored;
+    }
     if (k == LogicalKeyboardKey.select ||
         k == LogicalKeyboardKey.enter ||
         k == LogicalKeyboardKey.numpadEnter ||

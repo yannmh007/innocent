@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/ui/tv_focus.dart';
 
 /// The Private Folder's PIN surface: a dot indicator over a purpose-built
 /// numeric keypad.
@@ -802,8 +803,14 @@ class _PadKeyState extends State<_PadKey> {
         ),
       ),
     );
+    // A remote's select key presses it; its menu key is the long press.
+    final focusable = RemoteFocusable(
+      onActivate: widget.onTap,
+      onMenu: widget.onLongPress,
+      child: key,
+    );
     final label = widget.semanticsLabel;
-    if (label == null) return key;
-    return Semantics(button: true, label: label, child: key);
+    if (label == null) return focusable;
+    return Semantics(button: true, label: label, child: focusable);
   }
 }

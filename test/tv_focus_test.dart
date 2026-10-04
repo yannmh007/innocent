@@ -38,6 +38,45 @@ void main() {
     expect(taps, 11);
   });
 
+  testWidgets('menu key long-presses; RemoteFocusable keeps the touch handler',
+      (tester) async {
+    var taps = 0, menus = 0, downs = 0;
+    await tester.pumpWidget(_app(Row(mainAxisSize: MainAxisSize.min, children: [
+      RemoteTappable(
+          onTap: () => taps++,
+          onLongPress: () => menus++,
+          child: const SizedBox(width: 80, height: 60)),
+      RemoteFocusable(
+        onActivate: () => taps += 10,
+        onMenu: () => menus += 10,
+        child: GestureDetector(
+          key: const Key('pressable'),
+          onTapDown: (_) => downs++,
+          onTap: () => taps += 100,
+          child: const ColoredBox(
+              color: Colors.red, child: SizedBox(width: 80, height: 60)),
+        ),
+      ),
+    ])));
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.contextMenu);
+    await tester.pump();
+    expect(menus, 1);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.select);
+    await tester.sendKeyEvent(LogicalKeyboardKey.contextMenu);
+    await tester.pump();
+    expect(taps, 10);
+    expect(menus, 11);
+    // Touch still goes through the original detector, pressed state and all.
+    await tester.tap(find.byKey(const Key('pressable')));
+    await tester.pump();
+    expect(downs, 1);
+    expect(taps, 110);
+  });
+
   testWidgets('the ring follows remote focus and never shows for touch',
       (tester) async {
     await tester.pumpWidget(_app(Column(mainAxisSize: MainAxisSize.min, children: [

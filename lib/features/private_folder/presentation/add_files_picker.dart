@@ -27,6 +27,7 @@ import 'vault_progress.dart';
 import '../../../core/di/core_providers.dart';
 
 import '../../../core/localization/app_strings.dart';
+import '../../../core/ui/tv_focus.dart';
 
 // === Add Files flow spec (innocent_add_files_flow_spec, v0.50) ===
 // One full-screen route. A category strip (Videos · Images · Audio ·
@@ -1012,9 +1013,8 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
   Widget _catChip(_Cat cat, IconData icon, String label) {
     final active = _cat == cat;
     final count = _pickedIn(cat);
-    return GestureDetector(
+    return RemoteTappable(
       key: _catKeys[cat],
-      behavior: HitTestBehavior.opaque,
       onTap: () => _switchCat(cat),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 220),
@@ -2064,7 +2064,7 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
         final checked = _picked.containsKey(item.path);
         final thumbPath =
             videoThumbs != null ? videoThumbs[item.path] : item.path;
-        return GestureDetector(
+        return RemoteTappable(
           onTap: () => _toggle(item, !checked),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(8),
@@ -2183,7 +2183,7 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
                   // Clearing a selection used to mean un-ticking each row,
                   // possibly across several categories the user would have
                   // to remember to revisit.
-                  GestureDetector(
+                  RemoteTappable(
                     onTap: _adding
                         ? null
                         : () {
@@ -2193,7 +2193,6 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
                               _pickedCat.clear();
                             });
                           },
-                    behavior: HitTestBehavior.opaque,
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 4, vertical: 2),

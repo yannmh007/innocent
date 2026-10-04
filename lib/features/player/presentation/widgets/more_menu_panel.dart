@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../shortcut_item.dart';
+import '../../../../core/ui/tv_focus.dart';
 
 /// Audit fix (B4): logical grouping for the More menu items so the
 /// 14-item grid scans as five small sections instead of one
@@ -250,9 +251,8 @@ class _MoreMenuItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return RemoteTappable(
       onTap: data.onTap,
-      behavior: HitTestBehavior.opaque,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
@@ -330,9 +330,8 @@ class _ShortcutCheckRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return RemoteTappable(
       onTap: () => onChanged(!value),
-      behavior: HitTestBehavior.opaque,
       child: Row(
         children: [
           SizedBox(
