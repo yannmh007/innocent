@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  DEVICE LAB BUILDS ONLY (INNOCENT_LAB_ABI set; see build.gradle.kts). Merged
+  into the release manifest of a lab APK, never of a real release.
+
+  Firebase Test Lab's "game loop" test launches the app with this action and
+  then leaves it alone: no crawler tapping around, which is what a timed
+  playback measurement needs. MainActivity treats the launch as "play the
+  file Test Lab pushed to /sdcard/Download/innocent_lab_play.mp4"
+  (.github/workflows/device-cloud.yml, MODE=playback).
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <application>
+        <activity android:name=".MainActivity" tools:node="merge">
+            <intent-filter>
+                <action android:name="com.google.intent.action.TEST_LOOP" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/javascript" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

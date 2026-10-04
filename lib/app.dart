@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io' show exit;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -23,6 +24,9 @@ import 'features/downloader/presentation/downloader_home_screen.dart';
 import 'features/onboarding/onboarding_screen.dart';
 import 'features/updater/presentation/app_update_screen.dart';
 import 'features/player/presentation/floating_pip_overlay.dart';
+import 'features/player/presentation/player_provider.dart';
+import 'features/player/presentation/shortcut_item.dart';
+import 'core/services/diagnostics/playback_log.dart';
 
 class InnocentApp extends ConsumerStatefulWidget {
   final bool showOnboarding;
@@ -55,9 +59,33 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
     super.initState();
     // Phase 29: subscribe to external "open video" intents.
     // Skip during onboarding — first impression matters more than auto-play.
-    if (!_showOnboarding) {
+    // A device-lab build also listens during onboarding: Test Lab's
+    // playback measurement launches a fresh install straight into a film.
+    if (!_showOnboarding || const bool.fromEnvironment('INNOCENT_LAB')) {
       _startIntentListener();
     }
+  }
+
+  /// DEVICE LAB ONLY — Test Lab's playback measurement (device-cloud.yml,
+  /// MODE=playback). The same film is played three ways, about fifty
+  /// seconds each, while CpuProbe and the pipeline line log to logcat:
+  /// "Default" as opened (`auto-safe`: MediaCodec decoding, every frame then
+  /// copied back to memory), "HW+" (`auto`: MediaCodec straight into the
+  /// picture, no copy), and "SW" (the CPU decodes). Then the app closes, which
+  /// ends the test.
+  void _labPlaybackScript() {
+    PlaybackLog.add('LAB script: phase default');
+    Timer(const Duration(seconds: 55), () {
+      if (!mounted) return;
+      PlaybackLog.add('LAB script: phase hwplus');
+      ref.read(playerControllerProvider.notifier).selectDecoder(DecoderType.hwPlus);
+    });
+    Timer(const Duration(seconds: 110), () {
+      if (!mounted) return;
+      PlaybackLog.add('LAB script: phase sw');
+      ref.read(playerControllerProvider.notifier).selectDecoder(DecoderType.sw);
+    });
+    Timer(const Duration(seconds: 165), () => exit(0));
   }
 
   void _startIntentListener() {
@@ -77,6 +105,10 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
           Routes.player,
           extra: {'uri': req.uri, 'title': req.title},
         );
+        if (const bool.fromEnvironment('INNOCENT_LAB') &&
+            req.uri.endsWith('/innocent_lab_play.mp4')) {
+          _labPlaybackScript();
+        }
       });
     });
 
