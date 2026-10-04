@@ -3,15 +3,5 @@
     "axis_value": "a03su-33-my-portrait",
     "outcome": "Passed",
     "test_details": "--"
-  },
-  {
-    "axis_value": "Infinix-X6525-33-my-portrait",
-    "outcome": "Inconclusive",
-    "test_details": "Infrastructure failure"
-  },
-  {
-    "axis_value": "TECNO-KI5k-31-my-portrait",
-    "outcome": "Inconclusive",
-    "test_details": "Infrastructure failure"
   }
 ]

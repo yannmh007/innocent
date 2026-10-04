@@ -4,17 +4,23 @@ Have questions, feedback, or issues? Get support by visiting:
 
 Uploading [app.apk] to Firebase Test Lab...
 Uploading [test_device/robo/movies.json] to Firebase Test Lab...
-Raw results will be stored in your GCS bucket at [https://console.developers.google.com/storage/browser/test-lab-a83h77c3x52vk-yvsvq7a2052yz/innocent/37179958397/]
+Raw results will be stored in your GCS bucket at [https://console.developers.google.com/storage/browser/test-lab-a83h77c3x52vk-yvsvq7a2052yz/innocent/37180497545/]
 
-Test [matrix-2iu5oa9jqh7da] has been created in the Google Cloud.
+Test [matrix-yhrj2z0y62swa] has been created in the Google Cloud.
 Creating individual test executions...
-..............................................done.
-Firebase Test Lab will execute your robo test on 3 device(s). More devices may be added later if flaky test attempts are specified.
+..................................................................................done.
+Firebase Test Lab will execute your robo test on 1 device(s). More devices may be added later if flaky test attempts are specified.
 
-Test results will be streamed to [ https://console.firebase.google.com/project/innocent-lab/testlab/histories/bh.d8fc1d97699ac8b0/matrices/8923746670413968967 ].
-05:28:43 Test matrix status: Pending:3 05:28:55 Test matrix status: Pending:3 05:29:07 Test matrix status: Pending:3 05:29:19 Test matrix status: Pending:3 05:29:31 Test matrix status: Pending:3 05:29:43 Test matrix status: Pending:3 05:29:55 Test matrix status: Running:3 05:30:07 Test matrix status: Running:3 05:30:20 Test matrix status: Pending:1 Running:2 05:30:32 Test matrix status: Pending:1 Running:2 05:30:44 Test matrix status: Pending:1 Running:2 05:30:56 Test matrix status: Pending:1 Running:2 05:31:08 Test matrix status: Running:3           05:31:20 Test matrix status: Pending:1 Running:2 05:31:32 Test matrix status: Pending:1 Running:2 05:31:44 Test matrix status: Running:3           05:31:56 Test matrix status: Running:3           05:32:08 Test matrix status: Error:1 Pending:1 Running:1 05:32:20 Test matrix status: Error:1 Pending:1 Running:1 05:32:32 Test matrix status: Error:1 Pending:1 Running:1 05:32:44 Test matrix status: Error:1 Running:2           05:32:56 Test matrix status: Error:1 Running:2           05:33:08 Test matrix status: Error:1 Running:2           05:33:20 Test matrix status: Error:2 Running:1           05:33:32 Test matrix status: Error:2 Running:1           05:33:44 Test matrix status: Error:2 Running:1           05:33:57 Test matrix status: Error:2 Running:1           05:34:09 Test matrix status: Error:2 Running:1           05:34:21 Test matrix status: Error:2 Running:1           05:34:33 Test matrix status: Error:2 Running:1           05:34:45 Test matrix status: Error:2 Running:1           05:34:57 Test matrix status: Error:2 Running:1           05:35:09 Test matrix status: Error:2 Running:1           05:35:21 Test matrix status: Error:2 Running:1           05:35:33 Test matrix status: Error:2 Running:1           05:35:45 Test matrix status: Error:2 Running:1           05:35:57 Test matrix status: Error:2 Running:1           05:36:09 Test matrix status: Error:2 Running:1           05:36:21 Test matrix status: Error:2 Running:1           05:36:33 Test matrix status: Error:2 Running:1           05:36:45 Test matrix status: Error:2 Running:1           05:36:57 Test matrix status: Error:2 Running:1           05:37:09 Test matrix status: Error:2 Pending:1           05:37:21 Test matrix status: Error:2 Pending:1           05:37:33 Test matrix status: Error:2 Running:1           05:37:45 Test matrix status: Error:2 Running:1           05:37:57 Test matrix status: Error:2 Finished:1          
+Test results will be streamed to [ https://console.firebase.google.com/project/innocent-lab/testlab/histories/bh.d8fc1d97699ac8b0/matrices/4721028208806904187 ].
+05:39:48 Test is Pending
+05:41:01 Starting attempt 1.
+05:41:01 Test is Running
+05:48:47 Done. Test time = 315 (secs)
+05:48:47 Starting results processing. Attempt: 1
+05:49:36 Completed results processing. Time taken = 43 (secs)
+05:49:36 Test is Finished
+
 Robo testing complete.
 
-More details are available at [ https://console.firebase.google.com/project/innocent-lab/testlab/histories/bh.d8fc1d97699ac8b0/matrices/8923746670413968967 ].
-WARNING: Need help for test execution [Infinix-X6525-33-my-portrait]? Please join the #test-lab Slack channel at https://firebase.community/ and include test matrix ID [matrix-2iu5oa9jqh7da] with your question.
-WARNING: Need help for test execution [TECNO-KI5k-31-my-portrait]? Please join the #test-lab Slack channel at https://firebase.community/ and include test matrix ID [matrix-2iu5oa9jqh7da] with your question.
+More details are available at [ https://console.firebase.google.com/project/innocent-lab/testlab/histories/bh.d8fc1d97699ac8b0/matrices/4721028208806904187 ].
+exit 0
