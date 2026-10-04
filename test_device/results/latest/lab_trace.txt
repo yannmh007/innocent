@@ -1,17 +1,29 @@
-LAB cpu app 23% · 0.2fps · 1.raster 11% | pool-thread 9% | RenderThread 2%
+LAB    0.0 LAB script: player pushed
+LAB    0.0 LAB script: phase default
+LAB    1.1 lifecycle resumed mounted=true
+LAB    1.6 hwdec -> auto
+LAB    1.9 lifecycle inactive mounted=true
+LAB    2.8 open scheme=file len=45 hwdec=auto start=0s autoplay=true
+LAB    2.8 wakelock playing=false bg=false priv=false
+LAB    2.8 wakelock playing=true bg=false priv=false
+LAB    2.8 open ok
+LAB cpu app 44% · 7.3fps · 1.raster 19% | pool-thread 18% | .innocent.media 4% | RenderThread 2%
+LAB   10.8 video ? ?x? hwdec=?(?) vo=? fps=? drop=?/? thr=1
+LAB cpu app 3% · 1.1fps · pool-thread 1%
+LAB cpu app 1% · 0.1fps · -
+LAB   55.0 LAB script: phase hwplus
+LAB cpu app 1% · 0.1fps · -
+LAB   60.0 decoder hwPlus: video ? ?x? hwdec=?(?) vo=? fps=? drop=?/? thr=1
+LAB   62.8 video ? ?x? hwdec=?(?) vo=? fps=? drop=?/? thr=1
+LAB   65.6 wakelock playing=false bg=false priv=false
+LAB cpu app 1% · 0.2fps · -
+LAB cpu app 0% · 0.1fps · -
+LAB  110.0 LAB script: phase sw
+LAB  110.0 hwdec -> no
+LAB  115.0 decoder sw: video ? ?x? hwdec=?(?) vo=? fps=? drop=?/? thr=1
+LAB cpu app 0% · 0.2fps · -
+LAB cpu app 10% · 0.2fps · 1.raster 8% | RenderThread 1%
 LAB phase perf_idle start
-LAB cpu app 21% · 5.1fps · 1.raster 13% | .innocent.media 4% | RenderThread 2%
-LAB cpu app 3% · 0.0fps · .innocent.media 3%
-LAB phase perf_play start
-LAB cpu app 1% · 0.4fps · -
-LAB    0.0 hwdec -> auto
-LAB    0.1 open scheme=path len=54 hwdec=auto start=0s autoplay=true
-LAB    0.1 wakelock playing=false bg=false priv=false
-LAB    0.3 wakelock playing=true bg=false priv=false
-LAB    0.3 open ok
-LAB    0.3 lifecycle inactive mounted=true
-LAB cpu app 16% · 1.8fps · 1.raster 9% | RenderThread 5% | .innocent.media 1%
-LAB    8.1 video ? ?x? hwdec=?(?) vo=? fps=? drop=?/? thr=1
-LAB cpu app 6% · 3.4fps · 1.raster 3% | .innocent.media 2%
-LAB cpu app 3% · 0.1fps · .innocent.media 2%
-LAB   60.8 wakelock playing=false bg=false priv=false
+LAB cpu app 32% · 4.1fps · 1.raster 19% | .innocent.media 4% | RenderThread 3% | pool-thread 2%
+LAB cpu app 2% · 0.0fps · .innocent.media 1%
+LAB cpu app 0% · 0.1fps · -
