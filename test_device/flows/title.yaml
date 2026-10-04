@@ -1,0 +1,13 @@
+# From the hub into one title: a free HD title with one video and photos.
+appId: com.innocent.media
+---
+- tapOn:
+    text: "Chester Koong"
+    index: 0
+- waitForAnimationToEnd:
+    timeout: 12000
+- takeScreenshot: 10_detail
+- scroll
+- waitForAnimationToEnd:
+    timeout: 8000
+- takeScreenshot: 11_detail_scrolled

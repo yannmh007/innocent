@@ -444,8 +444,13 @@ class AppStrings {
   String vhAlbumProgress(int done, int total) => _s('vhAlbumProgress')
       .replaceFirst('{done}', '$done')
       .replaceFirst('{total}', '$total');
-  String vhAlbumVideos(int n) => _s('vhAlbumVideos').replaceFirst('{n}', '$n');
-  String vhAlbumPhotos(int n) => _s('vhAlbumPhotos').replaceFirst('{n}', '$n');
+  // One of each is its own key: "1 videos + 5 photos" was on the size
+  // question, seen in the device lab. Burmese and Thai do not inflect, so
+  // their singular is the plural with n = 1.
+  String vhAlbumVideos(int n) =>
+      _s(n == 1 ? 'vhAlbumVideo1' : 'vhAlbumVideos').replaceFirst('{n}', '$n');
+  String vhAlbumPhotos(int n) =>
+      _s(n == 1 ? 'vhAlbumPhoto1' : 'vhAlbumPhotos').replaceFirst('{n}', '$n');
 
   /// "{items}, about {size}. You have {free} free. Carry on?"
   String vhAlbumAsk(Object items, Object size, Object free) =>
@@ -468,6 +473,15 @@ class AppStrings {
   String get vhDataSaverWifiHint => _s('vhDataSaverWifiHint');
   String get vhDataSaverOn => _s('vhDataSaverOn');
   String get vhDataSaverOff => _s('vhDataSaverOff');
+  String get vhSaverChip => _s('vhSaverChip');
+  String get vhDiagTitle => _s('vhDiagTitle');
+  String get vhDiagHint => _s('vhDiagHint');
+  String get vhDiagBody => _s('vhDiagBody');
+  String get vhDiagNoteHint => _s('vhDiagNoteHint');
+  String get vhDiagSent => _s('vhDiagSent');
+  String get vhDiagSentHint => _s('vhDiagSentHint');
+  String get vhDiagFailed => _s('vhDiagFailed');
+  String get vhDiagCopied => _s('vhDiagCopied');
   // Player notices (1.64.43): a half-downloaded file, a failed hardware
   // decoder, an engine that stopped answering.
   String playerNoticeIncomplete(String t) =>
@@ -1673,7 +1687,7 @@ class AppStrings {
     'vhLibraryBookmarks': 'Bookmarks',
     'vhLibraryBookmarksHint': 'Titles you saved for later',
     'vhLibraryDownloads': 'Downloads',
-    'vhLibraryDownloadsHint': 'Watch offline - Premium',
+    'vhLibraryDownloadsHint': 'Watch offline, no connection needed',
     'vhDeleteDownloadBody':
         'Remove this download from your device? You can download it again '
         'while your subscription is active.',
@@ -1943,6 +1957,8 @@ class AppStrings {
     'vhAlbumProgress': '{done} / {total}',
     'vhAlbumVideos': '{n} videos',
     'vhAlbumPhotos': '{n} photos',
+    'vhAlbumVideo1': '1 video',
+    'vhAlbumPhoto1': '1 photo',
     'vhAlbumAsk': '{items}, about {size} at full quality. You have {free} free on this phone. Carry on?',
     'vhAlbumAskNoSize': '{items} at full quality. You have {free} free on this phone. Carry on?',
     'vhAlbumSomeFailed': '{n} could not be downloaded. Tap Download to try them again.',
@@ -1956,6 +1972,15 @@ class AppStrings {
     'vhDataSaverWifiHint': 'Off: on Wi-Fi albums load normally.',
     'vhDataSaverOn': 'Data saver is on — tap to show albums normally',
     'vhDataSaverOff': 'Turn on data saver',
+    'vhSaverChip': 'Saver',
+    'vhDiagTitle': 'Report a problem',
+    'vhDiagHint': 'Send what the app saw, so it can be fixed',
+    'vhDiagBody': 'This sends what the app recorded about downloads and playback on this phone, with the phone model and connection type. Links, passwords and your files are never included.',
+    'vhDiagNoteHint': 'What went wrong? (optional)',
+    'vhDiagSent': 'Sent. Your report code:',
+    'vhDiagSentHint': 'Tell us this code when you describe the problem.',
+    'vhDiagFailed': 'Could not send. Check the connection and try again.',
+    'vhDiagCopied': 'Code copied',
     'vhSaverModeAll': 'All connections',
     'vhSaverModeAllHint': 'Wi-Fi too — for Wi-Fi bought by the gigabyte',
     'vhSaverModeMobile': 'Mobile data only',
@@ -2980,7 +3005,7 @@ class AppStrings {
     'vhLibraryBookmarks': 'သိမ်းထားသည်များ',
     'vhLibraryBookmarksHint': 'နောက်မှကြည့်ရန် သိမ်းထားသော ခေါင်းစဉ်များ',
     'vhLibraryDownloads': 'ဒေါင်းလုဒ်များ',
-    'vhLibraryDownloadsHint': 'အော့ဖ်လိုင်း ကြည့်ရန် - Premium',
+    'vhLibraryDownloadsHint': 'အင်တာနက်မလိုဘဲ အော့ဖ်လိုင်း ကြည့်ရန်',
     'vhDeleteDownloadBody':
         'ဤဒေါင်းလုဒ်ကို ဖုန်းထဲက ဖယ်ရှားမလား။ Premium သက်တမ်း ရှိနေသေးသ၍ '
         'ပြန်ဒေါင်းလုဒ် လုပ်လို့ ရပါတယ်။',
@@ -3248,6 +3273,8 @@ class AppStrings {
     'vhAlbumProgress': '{done} / {total}',
     'vhAlbumVideos': 'ဗီဒီယို {n} ခု',
     'vhAlbumPhotos': 'ဓာတ်ပုံ {n} ပုံ',
+    'vhAlbumVideo1': 'ဗီဒီယို 1 ခု',
+    'vhAlbumPhoto1': 'ဓာတ်ပုံ 1 ပုံ',
     'vhAlbumAsk': '{items}၊ မူရင်းအရည်အသွေးနဲ့ {size} ခန့်ရှိပါတယ်။ ဖုန်းထဲမှာ {free} ကျန်ပါတယ်။ ဆက်ဒေါင်းမလား?',
     'vhAlbumAskNoSize': '{items} ကို မူရင်းအရည်အသွေးနဲ့ ဒေါင်းပါမယ်။ ဖုန်းထဲမှာ {free} ကျန်ပါတယ်။ ဆက်ဒေါင်းမလား?',
     'vhAlbumSomeFailed': '{n} ခု ဒေါင်းမရပါ။ ပြန်ကြိုးစားရန် ဒေါင်းမည် ကို နှိပ်ပါ။',
@@ -3261,6 +3288,15 @@ class AppStrings {
     'vhDataSaverWifiHint': 'ပိတ်ထားရင် Wi-Fi မှာ album တွေ ပုံမှန်အတိုင်း ပြပါမယ်။',
     'vhDataSaverOn': 'ဒေတာ ချွေတာမုဒ် ဖွင့်ထားသည် — ပုံမှန်ပြရန် နှိပ်ပါ',
     'vhDataSaverOff': 'ဒေတာ ချွေတာမုဒ် ဖွင့်မည်',
+    'vhSaverChip': 'ချွေတာ',
+    'vhDiagTitle': 'ပြဿနာ ပို့မယ်',
+    'vhDiagHint': 'ပြင်ဆင်နိုင်ဖို့ app မှတ်ထားတာကို ပို့ပါ',
+    'vhDiagBody': 'ဒီဖုန်းပေါ်က ဒေါင်းလုဒ်နဲ့ ဗီဒီယိုဖွင့်တာနဲ့ပတ်သက်ပြီး app မှတ်ထားတာ၊ ဖုန်းအမျိုးအစားနဲ့ အင်တာနက်အမျိုးအစားကို ပို့ပါမယ်။ Link၊ စကားဝှက်နဲ့ သင့်ဖိုင်တွေ ဘယ်တော့မှ မပါပါ။',
+    'vhDiagNoteHint': 'ဘာဖြစ်သွားလဲ? (မရေးလည်းရ)',
+    'vhDiagSent': 'ပို့ပြီးပါပြီ။ သင့် report code:',
+    'vhDiagSentHint': 'ပြဿနာကို ပြောပြတဲ့အခါ ဒီ code ကို ပြောပေးပါ။',
+    'vhDiagFailed': 'မပို့နိုင်ပါ။ အင်တာနက်စစ်ပြီး ပြန်စမ်းပါ။',
+    'vhDiagCopied': 'Code ကူးပြီးပါပြီ',
     'vhSaverModeAll': 'အင်တာနက် အားလုံး',
     'vhSaverModeAllHint': 'WiFi ပါ — GB နဲ့ ဝယ်ရတဲ့ WiFi အတွက်',
     'vhSaverModeMobile': 'ဖုန်းဒေတာ သုံးချိန်သာ',
@@ -4275,7 +4311,7 @@ class AppStrings {
     'vhLibraryBookmarks': 'บุ๊กมาร์ก',
     'vhLibraryBookmarksHint': 'รายการที่คุณบันทึกไว้',
     'vhLibraryDownloads': 'ดาวน์โหลด',
-    'vhLibraryDownloadsHint': 'ดูออฟไลน์ - Premium',
+    'vhLibraryDownloadsHint': 'ดูออฟไลน์ ไม่ต้องใช้เน็ต',
     'vhDeleteDownloadBody':
         'ลบดาวน์โหลดนี้ออกจากเครื่องหรือไม่ คุณดาวน์โหลดใหม่ได้ '
         'ตราบใดที่สมาชิกยังใช้งานอยู่',
@@ -4542,6 +4578,8 @@ class AppStrings {
     'vhAlbumProgress': '{done} / {total}',
     'vhAlbumVideos': 'วิดีโอ {n} รายการ',
     'vhAlbumPhotos': 'รูป {n} รูป',
+    'vhAlbumVideo1': 'วิดีโอ 1 รายการ',
+    'vhAlbumPhoto1': 'รูป 1 รูป',
     'vhAlbumAsk': '{items} ประมาณ {size} ที่คุณภาพเต็ม เหลือพื้นที่ {free} ดำเนินการต่อไหม?',
     'vhAlbumAskNoSize': '{items} ที่คุณภาพเต็ม เหลือพื้นที่ {free} ดำเนินการต่อไหม?',
     'vhAlbumSomeFailed': 'ดาวน์โหลดไม่ได้ {n} รายการ แตะดาวน์โหลดเพื่อลองอีกครั้ง',
@@ -4555,6 +4593,15 @@ class AppStrings {
     'vhDataSaverWifiHint': 'ปิดไว้: บน Wi-Fi อัลบั้มโหลดตามปกติ',
     'vhDataSaverOn': 'เปิดประหยัดเน็ตอยู่ — แตะเพื่อแสดงตามปกติ',
     'vhDataSaverOff': 'เปิดประหยัดเน็ต',
+    'vhSaverChip': 'ประหยัด',
+    'vhDiagTitle': 'แจ้งปัญหา',
+    'vhDiagHint': 'ส่งสิ่งที่แอปบันทึกไว้ เพื่อให้แก้ไขได้',
+    'vhDiagBody': 'จะส่งสิ่งที่แอปบันทึกเกี่ยวกับการดาวน์โหลดและการเล่นบนเครื่องนี้ พร้อมรุ่นเครื่องและประเภทการเชื่อมต่อ ไม่มีลิงก์ รหัสผ่าน หรือไฟล์ของคุณ',
+    'vhDiagNoteHint': 'เกิดอะไรขึ้น? (ไม่บังคับ)',
+    'vhDiagSent': 'ส่งแล้ว รหัสรายงานของคุณ:',
+    'vhDiagSentHint': 'แจ้งรหัสนี้เมื่อเล่าปัญหาให้เราฟัง',
+    'vhDiagFailed': 'ส่งไม่ได้ ตรวจสอบการเชื่อมต่อแล้วลองอีกครั้ง',
+    'vhDiagCopied': 'คัดลอกรหัสแล้ว',
     'vhSaverModeAll': 'ทุกการเชื่อมต่อ',
     'vhSaverModeAllHint': 'รวม Wi-Fi — สำหรับ Wi-Fi ที่คิดตาม GB',
     'vhSaverModeMobile': 'เฉพาะเน็ตมือถือ',

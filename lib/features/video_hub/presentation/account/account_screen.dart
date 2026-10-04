@@ -15,6 +15,7 @@ import '../video_hub_theme.dart';
 import '../widgets/vh_insets.dart';
 import '../downloads_screen.dart';
 import 'premium_request_screen.dart';
+import 'report_problem_sheet.dart';
 import 'sign_in_sheet.dart';
 
 /// Account and subscription status.
@@ -57,12 +58,11 @@ class AccountScreen extends ConsumerWidget {
             icon: Icons.download_outlined,
             label: s.vhLibraryDownloads,
             subtitle: s.vhLibraryDownloadsHint,
-            locked: !account.entitlement.isActive,
-            // OPENS EVEN WHEN LOCKED. `locked` dims the tile to say what
-            // the feature costs; refusing to open it would hide a shelf
-            // that may still have titles on it — a subscription that
-            // lapsed an hour ago has not yet been swept, and a person
-            // should be able to see and delete what is on their own phone.
+            // NOT LOCKED. It said "Premium" with a padlock, but free titles
+            // download for everyone (AccessPolicy.canDownload) — the device
+            // lab downloaded one on a free account and then found its shelf
+            // behind a lock. A premium title's own button says what it costs.
+            locked: false,
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute<void>(
                 builder: (_) => const DownloadsScreen(),
@@ -82,6 +82,16 @@ class AccountScreen extends ConsumerWidget {
                     .get(PlayerSetting.albumDataSaver)
                 ? s.vhOn
                 : null,
+          ),
+          const SizedBox(height: VH.s2),
+          // REPORT A PROBLEM, beside the things it is usually about. What it
+          // sends, and why it exists, is in DiagnosticsReport.
+          _LibraryTile(
+            icon: Icons.support_agent_rounded,
+            label: s.vhDiagTitle,
+            subtitle: s.vhDiagHint,
+            locked: false,
+            onTap: () => ReportProblemSheet.show(context),
           ),
     ];
 

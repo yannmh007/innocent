@@ -783,6 +783,49 @@ class _LocalScreenState extends ConsumerState<LocalScreen> {
     return _buildFolderList();
   }
 
+  /// An empty library, with the way OUT of it still on screen.
+  ///
+  /// Found on a fresh emulator in the device lab (2026-10-03): a phone with
+  /// no videos on it — which is every new phone, and every first launch
+  /// before the scan finishes — showed one line of grey text and nothing
+  /// else. The quick-access chips live inside the folder list, so they went
+  /// with it, and Movies, which is reached from those chips, could not be
+  /// found at all by exactly the people most likely to want it. The chips
+  /// stay, and so does pull-to-refresh for a scan that has not caught up.
+  Widget _emptyLibrary(String message) {
+    final searching = ref.watch(searchQueryProvider).isNotEmpty;
+    return RefreshIndicator(
+      onRefresh: () async {
+        final res = await refreshLibraryWithAdb(ref);
+        if (mounted && res == LibraryRefreshResult.adbDisconnected) {
+          _showAdbReconnectHint();
+        }
+      },
+      child: CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        slivers: [
+          if (!searching)
+            SliverToBoxAdapter(
+              child: QuickAccessChips(onNavigate: _hideContinueWatching),
+            ),
+          SliverFillRemaining(
+            hasScrollBody: false,
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32),
+                child: Text(
+                  message,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: AppColors.darkOnSurfaceMuted),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildFolderList() {
     final foldersAsync = ref.watch(filteredFoldersProvider);
     final prefs = ref.watch(libraryPreferencesProvider);
@@ -791,14 +834,9 @@ class _LocalScreenState extends ConsumerState<LocalScreen> {
       data: (folders) {
         if (folders.isEmpty) {
           final query = ref.read(searchQueryProvider);
-          return Center(
-            child: Text(
-              query.isNotEmpty
-                  ? 'No folders match "$query"'
-                  : 'No video folders found',
-              style: const TextStyle(color: AppColors.darkOnSurfaceMuted),
-            ),
-          );
+          return _emptyLibrary(query.isNotEmpty
+              ? 'No folders match "$query"'
+              : AppStrings.of(context).noVideosFound);
         }
         return RefreshIndicator(
           onRefresh: () async {
@@ -1080,14 +1118,9 @@ class _LocalScreenState extends ConsumerState<LocalScreen> {
       data: (videos) {
         if (videos.isEmpty) {
           final query = ref.read(searchQueryProvider);
-          return Center(
-            child: Text(
-              query.isNotEmpty
-                  ? '${AppStrings.of(context).noVideosMatch} "$query"'
-                  : AppStrings.of(context).noVideosFound,
-              style: const TextStyle(color: AppColors.darkOnSurfaceMuted),
-            ),
-          );
+          return _emptyLibrary(query.isNotEmpty
+              ? '${AppStrings.of(context).noVideosMatch} "$query"'
+              : AppStrings.of(context).noVideosFound);
         }
         final now = DateTime.now();
         // MX Player's documented rule, applied in one place — see

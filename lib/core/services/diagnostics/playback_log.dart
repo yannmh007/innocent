@@ -76,7 +76,14 @@ class PlaybackLog {
     } catch (_) {
       // A logger must never throw into the code it is observing.
     }
+    // DEVICE LAB BUILDS ONLY (--dart-define=INNOCENT_LAB=true): every line
+    // also goes to logcat, where the lab collects it. A store build leaves
+    // this constant false and the line compiles away.
+    if (labTrace) print('LAB ${_stamp()} $message'); // ignore: avoid_print
   }
+
+  /// See the end of [add].
+  static const bool labTrace = bool.fromEnvironment('INNOCENT_LAB');
 
   /// Most recent entries, oldest first, at most [count].
   static List<String> tail(int count) {

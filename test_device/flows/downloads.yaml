@@ -1,0 +1,34 @@
+# The Downloads screen, reached the way a viewer would: hub → Account →
+# Downloads. Two looks, twenty seconds apart, to read the speed it shows.
+appId: com.innocent.media
+---
+# Back out to the hub's top, where the search field and Account live:
+# player → viewer → title → hub, scrolling each to its top on the way.
+- repeat:
+    times: 5
+    while:
+      notVisible: "Search movies.*"
+    commands:
+      - back
+      - waitForAnimationToEnd:
+          timeout: 3000
+      - swipe:
+          direction: DOWN
+          duration: 400
+      - swipe:
+          direction: DOWN
+          duration: 400
+- tapOn:
+    text: "Account"
+- waitForAnimationToEnd:
+    timeout: 8000
+- takeScreenshot: 50_account
+- tapOn:
+    text: "Downloads.*"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 8000
+- takeScreenshot: 51_downloads
+- waitForAnimationToEnd:
+    timeout: 20000
+- takeScreenshot: 52_downloads_20s

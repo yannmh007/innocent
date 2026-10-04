@@ -153,7 +153,7 @@ class _Badge extends StatelessWidget {
         color: on ? _green.withValues(alpha: 0.16) : VH.surface3,
       ),
       child: Icon(
-        on ? Icons.data_saver_on_rounded : Icons.data_saver_off_rounded,
+        Icons.data_saver_on_rounded,
         size: 21,
         color: on ? _green : VH.textSecondary,
       ),

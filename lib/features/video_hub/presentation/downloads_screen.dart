@@ -1151,7 +1151,7 @@ class _SettingsGroup extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(VH.s3, VH.s3, VH.s2, VH.s3),
               child: Row(
                 children: <Widget>[
-                  Icon(saver ? Icons.data_saver_on_rounded : Icons.data_saver_off_rounded,
+                  Icon(Icons.data_saver_on_rounded,
                       size: 20, color: saver ? const Color(0xFF2EBD6B) : VH.textSecondary),
                   const SizedBox(width: VH.s3),
                   Expanded(

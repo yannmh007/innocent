@@ -377,15 +377,53 @@ class AlbumSaverToggle extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final s = AppStrings.of(context);
     final on = ref.watch(playerSettingsProvider).get(PlayerSetting.albumDataSaver);
-    return IconButton(
-      key: const ValueKey('album-saver-toggle'),
-      visualDensity: VisualDensity.compact,
-      tooltip: on ? s.vhDataSaverOn : s.vhDataSaverOff,
-      onPressed: () => setAlbumSaver(ref, !on),
-      icon: Icon(
-        on ? Icons.data_saver_on_rounded : Icons.data_saver_off_rounded,
-        size: 19,
-        color: on ? VH.textPrimary : VH.textTertiary,
+    // A WORD, NOT AN ICON ALONE. Material's "data saver off" glyph is an
+    // open ring, and next to a gallery that is filling in it read as a
+    // loading spinner that never stopped — seen in the device lab, where it
+    // was taken for exactly that. A labelled pill says what it is, and a
+    // tick says when it is on.
+    final label = Text(
+      s.vhSaverChip,
+      maxLines: 1,
+      style: VH.meta.copyWith(
+        fontSize: 11.5,
+        fontWeight: on ? FontWeight.w700 : FontWeight.w500,
+        color: on ? VH.textPrimary : VH.textSecondary,
+      ),
+    );
+    return Tooltip(
+      message: on ? s.vhDataSaverOn : s.vhDataSaverOff,
+      child: Semantics(
+        button: true,
+        toggled: on,
+        child: InkWell(
+          key: const ValueKey('album-saver-toggle'),
+          borderRadius: BorderRadius.circular(999),
+          onTap: () => setAlbumSaver(ref, !on),
+          child: Padding(
+            // The pill is small; the tap target around it is not.
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 2),
+            child: AnimatedContainer(
+              duration: VH.fast,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: on ? VH.surface2 : Colors.transparent,
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: on ? VH.textTertiary : VH.surface3),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  if (on) ...<Widget>[
+                    const Icon(Icons.check_rounded, size: 13, color: VH.textPrimary),
+                    const SizedBox(width: 3),
+                  ],
+                  Flexible(child: label),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

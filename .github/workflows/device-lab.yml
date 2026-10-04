@@ -1,0 +1,187 @@
+# Device lab: the released APK on a real Android system, driven like a viewer.
+#
+# WHY
+#   Unit and widget tests run the Dart code with fakes in front of it. This
+#   runs the APK people actually install — the same file, signature and all —
+#   on an Android emulator with KVM, against the real Supabase and the real
+#   stream Worker, over a network shaped like a Myanmar mobile line. It drives
+#   the app with Maestro (taps, scrolls, screenshots), samples what the device
+#   really received, CPU, memory and temperature, and keeps the logs.
+#
+# WHICH APK. The released APK is arm64-only. Android 13's x86_64 image will
+# not install it (INSTALL_FAILED_NO_MATCHING_ABIS) and Android 11's, which
+# translates ARM, dies on a SIMD instruction its translator does not know —
+# inside libndk_translation, not the app. So by default the lab builds the
+# SAME source for x86_64 (see INNOCENT_LAB_ABI in build.gradle.kts: debug-signed,
+# never a release) and runs it natively. APK_SOURCE=release in config.env
+# tries the released file instead.
+#
+# WHERE THE RESULTS GO
+#   Committed to `test_device/results/latest/` on the branch that ran it, so
+#   a session can read them with git. Nothing in them may be a signed URL:
+#   run.sh redacts links and long tokens from the logs before they are kept.
+#   Screenshots show the catalogue (adult material; the repository is public)
+#   and are kept only encrypted with the LAB_RESULTS_KEY secret.
+#
+# HOW TO RUN
+#   Push a change under test_device/ (config.env says what the run does), or
+#   dispatch it by hand from the default branch.
+
+name: Device lab
+
+on:
+  push:
+    branches-ignore: [ main ]
+    paths:
+      - 'test_device/flows/**'
+      - 'test_device/run.sh'
+      - 'test_device/config.env'
+      - '.github/workflows/device-lab.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: device-lab-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Is a lab APK of this source already built?
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: lab.apk
+          key: lab-apk-x86_64-trace-${{ hashFiles('lib/**', 'pubspec.lock', 'android/**', 'assets/**', 'third_party/**') }}
+
+      - name: Free runner disk space
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/share/swift /usr/local/.ghcup /opt/ghc \
+                      /usr/local/share/powershell /usr/local/share/boost \
+                      /opt/hostedtoolcache/CodeQL 2>/dev/null || true
+
+      - uses: actions/setup-java@v4
+        if: steps.cache.outputs.cache-hit != 'true'
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        if: steps.cache.outputs.cache-hit != 'true'
+        with:
+          flutter-version: 3.32.8
+          channel: stable
+          cache: true
+
+      - uses: android-actions/setup-android@v3
+        if: steps.cache.outputs.cache-hit != 'true'
+        with:
+          packages: ''
+
+      - name: Build the x86_64 lab APK
+        if: steps.cache.outputs.cache-hit != 'true'
+        env:
+          INNOCENT_LAB_ABI: x86_64
+        run: |
+          set -euo pipefail
+          sdkmanager "platforms;android-36" "build-tools;35.0.0" "build-tools;36.0.0" "ndk;27.0.12077973"
+          echo "org.gradle.jvmargs=-Xmx6144M -XX:MaxMetaspaceSize=1024m -Dfile.encoding=UTF-8" >> android/gradle.properties
+          flutter pub get
+          flutter build apk --release --target-platform android-x64 --dart-define=INNOCENT_LAB=true
+          cp build/app/outputs/flutter-apk/app-release.apk lab.apk
+          unzip -l lab.apk | awk '{print $4}' | grep '^lib/' | cut -d/ -f2 | sort | uniq -c
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lab-apk
+          path: lab.apk
+          retention-days: 3
+
+  run:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: lab-apk
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Choose the APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          source test_device/config.env
+          if [ "${APK_SOURCE:-lab}" = release ]; then
+            tag="$APK_TAG"
+            if [ "$tag" = latest ]; then
+              tag=$(gh release view --json tagName --jq .tagName)
+            fi
+            echo "released APK $tag"
+            gh release download "$tag" -p '*.apk' -O app.apk
+          else
+            echo "lab APK of ${GITHUB_SHA}"
+            mv lab.apk app.apk
+          fi
+          ls -la app.apk
+
+      - name: Probe the stream door (no app)
+        env:
+          SB_URL: ${{ secrets.SUPABASE_URL }}
+          OUT: out
+        run: bash test_device/probe.sh
+
+      - name: Install Maestro
+        run: |
+          curl -fsSL "https://get.maestro.mobile.dev" | bash
+          "$HOME/.maestro/bin/maestro" --version
+
+      - name: Boot the emulator and run
+        uses: reactivecircus/android-emulator-runner@v2
+        env:
+          # Screenshots are kept only encrypted with this — see run.sh.
+          LAB_RESULTS_KEY: ${{ secrets.LAB_RESULTS_KEY }}
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          ram-size: 4096M
+          disk-size: 6G
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          script: bash test_device/run.sh
+
+      - name: Keep the results
+        if: always()
+        run: |
+          set -e
+          branch="${GITHUB_REF_NAME}"
+          rm -rf test_device/results/latest
+          mkdir -p test_device/results
+          if [ -d out ]; then cp -r out test_device/results/latest; fi
+          echo "run ${GITHUB_RUN_ID} of ${GITHUB_SHA}" > test_device/results/latest/RUN.txt
+          git config user.name "device-lab"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A test_device/results/latest
+          git commit -q -m "device-lab: results of run ${GITHUB_RUN_ID}" || exit 0
+          for i in 1 2 3 4; do
+            git pull -q --rebase origin "$branch" && git push -q origin "HEAD:$branch" && exit 0
+            sleep $((i * 5))
+          done
+          exit 1

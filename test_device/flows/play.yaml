@@ -1,0 +1,23 @@
+# Play the title's video (its tile carries the running time) over the shaped
+# network, and look at it at 10 s and 30 s. A playing video never stops
+# animating, so each wait runs its full timeout — that is the clock.
+appId: com.innocent.media
+---
+- scrollUntilVisible:
+    element:
+      text: "1:11:19"
+    direction: DOWN
+    optional: true
+- tapOn:
+    text: "1:11:19"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 10000
+- takeScreenshot: 20_player_10s
+- waitForAnimationToEnd:
+    timeout: 20000
+- takeScreenshot: 21_player_30s
+- back
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: 22_after_player
