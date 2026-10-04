@@ -1,0 +1,200 @@
+MODEL_ID       BRAND     MODEL_NAME                   OS_VERSION_IDS
+A402SO         Sony      Xperia 10 VI                 34
+CPH2449        OnePlus   OnePlus 11 5G                34
+F01L           DOCOMO    F-01L                        27
+Frogger        qti       Nothing Phone (4a)           36
+Infinix-X6525  Infinix   Infinix SMART 8              33
+OP4F39L1       OPPO      CPH2195                      33
+OP535DL1       OnePlus   OnePlus Nord CE 2 Lite 5G    34
+OP5552L1       OnePlus   OnePlus 10T 5G               34
+OP573DL1       OPPO      A79 5G                       34
+OP5759L1       OPPO      A38                          34
+OP5958L1       OnePlus   OnePlus Nord CE 3 Lite 5G    34
+RE58C2         realme    realme C53                   35
+RMX3231        realme    RMX3231                      30
+SC-51C         samsung   Galaxy S22                   36
+SC-51E         samsung   Galaxy S24                   36
+SC-53C         samsung   Galaxy A53 5G                36
+SCG13          samsung   Galaxy S22                   36
+SH-01L         DOCOMO    AQUOS sense2 SH-01L          28
+SO-41A         docomo    Xperia 10 II                 31
+TB370FU        Lenovo    Lenovo Tab P12               35
+TECNO-BF6      TECNO     TECNO POP 7                  31
+TECNO-BF7      TECNO     TECNO                        31
+TECNO-BG6      TECNO     SPARK Go 2024                33
+TECNO-KI5k     TECNO     TECNO SPARK 10C              31
+XQ-DC54        Sony      Xperia 10 V                  34
+XQ-DQ72        Sony      Xperia 1 V                   34
+a03su          samsung   Galaxy A03s                  33
+a03sutfn       samsung   Galaxy A03s                  33
+a04s           samsung   Galaxy A04s                  34
+a05s           samsung   Galaxy A05s                  35
+a06            samsung   Galaxy A06                   35
+a10            samsung   Galaxy A10                   29
+a12            samsung   Galaxy A12                   31
+a13            samsung   Galaxy A13                   34
+a13x           samsung   Galaxy A13 5G                33
+a14m           samsung   Galaxy A14                   34
+a14xm          samsung   Galaxy A14 5G                34
+a14xmsq        samsung   Galaxy A14 5G                35
+a14xmtfn       samsung   Galaxy A14 5G                35
+a15            samsung   Galaxy A15                   34
+a15x           samsung   Galaxy A15 5G                34,36
+a15xtfn        samsung   Galaxy A15 5G                36
+a16            samsung   Galaxy A16                   35
+a16x           samsung   Galaxy A16 5G                35,34,36
+a16xeea        samsung   Galaxy A16 5G                35
+a21            samsung   Galaxy A21                   31
+a23xq          samsung   Galaxy A23 5G                34
+a25x           samsung   Galaxy A25 5G                34
+a26x           samsung   Galaxy A26 5G                36
+a31            samsung   Galaxy A31                   31
+a32            samsung   Galaxy A32                   33
+a34x           samsung   Galaxy A34 5G                36
+a35x           samsung   Galaxy A35 5G                34,35,36
+a36xq          samsung   Galaxy A36 5G                35,36
+a52sxq         samsung   Galaxy A52s 5G               34
+a52xq          samsung   Galaxy A52 5G                34
+a54x           samsung   Galaxy A54 5G                34
+a54xue         samsung   Galaxy A54 5G                36
+a55xzh         samsung   Galaxy A55 5G                36
+a56x           samsung   Galaxy A56 5G                35
+a56xnaeea      samsung   SM-A566b                     36
+akita          google    Pixel 8a                     34,35
+arcfox         motorola  motorola razr plus 2024      34
+aruba          motorola  moto e20                     30
+austin         motorola  moto g 5G (2022)             33
+b0q            samsung   Galaxy S22 Ultra             33,36
+b0qksx         samsung   Galaxy S22 Ultra             36
+b0qxxx         samsung   Galaxy S22 Ultra             36
+b4q            samsung   Galaxy Z Flip4               33
+b4qsqw         samsung   Galaxy Z Flip4               36
+b5q            samsung   Galaxy Z Flip5               34
+b5qsqw         samsung   Galaxy Z Flip5               36
+b5qxeea        samsung   Galaxy Z Flip5               36
+b6q            samsung   Galaxy Z Flip6               34
+b6qksx         samsung   Galaxy Z Flip6               36
+b6qsqw         samsung   Galaxy Z Flip6               36
+blazer         google    Pixel 10 Pro                 36
+bluejay        google    Pixel 6a                     32
+blueline       google    Pixel 3                      28
+c1q            samsung   Galaxy Note20 5G             33
+c1qksw         samsung   Galaxy Note20 5G             33
+c2q            samsung   Galaxy Note20 Ultra 5G       33
+c2qksw         samsung   Galaxy Note20 Ultra 5G       33
+c2s            samsung   Galaxy Note20 Ultra 5G       33
+caiman         google    Pixel 9 Pro                  34,35
+cancun         motorola  moto g14                     34
+cancunf        motorola  moto g54 5G                  34
+caprip         motorola  moto g(30)                   31
+cheetah        google    Pixel 7 Pro                  33
+comet          google    Pixel 9 Pro Fold             34,35,36
+cubs           google    Pixel 11                     37
+cuscoi         motorola  moto g96 5G                  35
+dm1q           samsung   Galaxy S23                   35
+dm1q-SM-S911U  samsung   Galaxy S23                   36
+dm1qcsx        samsung   Galaxy S23                   36
+dm2q           samsung   Galaxy S23+                  34
+dm2qksx        samsung   Galaxy S23+                  36
+dm3q           samsung   Galaxy S23 Ultra             33,34
+dm3qksx        samsung   Galaxy S23 Ultra             36
+dubai          motorola  motorola edge 30             34
+e1q            samsung   Galaxy S24                   34,36
+e1s            samsung   Galaxy S24                   36
+e2q            samsung   Galaxy S24+                  36
+e2s            samsung   Galaxy S24+                  36
+e2sksx         samsung   Galaxy S24+                  36
+e3q            samsung   Galaxy S24 Ultra             34,36
+e3qcsx         samsung   Galaxy S24 Ultra             36
+e3qksx         samsung   Galaxy S24 Ultra             36
+e3qzhx         samsung   Galaxy S24 Ultra             36
+eos            google    Eos                          33
+felix          google    Pixel Fold                   33,34,36
+felix_camera   google    Pixel Fold (Camera-enabled)  33
+fogona         motorola  moto g play - 2024           34
+fogorow        motorola  moto g24                     34
+fogos          motorola  moto g34 5G                  34
+frankel        google    Pixel 10                     36
+g0q            samsung   Galaxy S22+                  34,36
+g0qksx         samsung   Galaxy S22+                  36
+gnevan         motorola  moto g stylus (2023)         33
+grizzly        google    Pixel 11 Pro                 37
+gta4lwifi      samsung   Galaxy Tab A7                31
+gta7lite       samsung   Galaxy Tab A7 Lite           34
+gta8wifi       samsung   Galaxy Tab A8                34
+gta9pwifi      samsung   Galaxy Tab A9+               34
+gts10pwifi     samsung   Galaxy Tab S10+              36
+gts7lwifi      samsung   Galaxy Tab S7                33
+gts7xllite     samsung   Galaxy Tab S7 FE 5G          34
+gts7xlwifi     samsung   Galaxy Tab S7+               33
+gts8uwifi      samsung   Galaxy Tab S8 Ultra          33
+gts8wifi       samsung   Galaxy Tab S8                34
+gts9fe         samsung   Galaxy Tab S9 FE 5G          34
+gts9wifi       samsung   Galaxy Tab S9                34
+guamna         motorola  moto g play (2021)           30
+guamp          motorola  moto g(9) play               30
+houji          Xiaomi    Xiaomi 14                    35
+husky          google    Pixel 8 Pro                  34,35
+java           motorola  Motorola G20                 30
+kansas         motorola  moto g - 2025                35
+komodo         google    Pixel 9 Pro XL               34,35
+lamul          motorola  moto g05                     35
+lion           motorola  moto g04                     34
+lynx           google    Pixel 7a                     33
+lyriq          motorola  motorola edge 40             34
+m1q            samsung   Galaxy S26                   36
+m2q            samsung   Galaxy S26+                  36
+malmo          motorola  moto g85 5G                  36
+manaus         motorola  motorola edge 40 neo         34
+maui           motorola  moto g play - 2023           33
+mustang        google    Pixel 10 Pro XL              36
+o1q            samsung   Galaxy S21 5G                34,35
+o1s            samsung   Galaxy S21 5G                35
+oriole         google    Pixel 6                      32,33,31
+p3q            samsung   Galaxy S21 Ultra 5G          34,35
+p3s            samsung   Galaxy S21 Ultra 5G          35
+pa1q           samsung   Galaxy S25                   36
+pa1qksx        samsung   Galaxy S25                   36
+pa2q           samsung   Galaxy S25+                  36
+pa2qxxx        samsung   Galaxy S25+                  36
+pa3q           samsung   Galaxy S25 Ultra             35,36
+panther        google    Pixel 7                      33
+penang         motorola  moto g53 5G                  34
+psq            samsung   Galaxy S25 Edge              35
+q2qsqw         samsung   Galaxy Z Fold3 5G            35
+q4q            samsung   Galaxy Z Fold4               33
+q4qksx         samsung   Galaxy Z Fold4               36
+q5q            samsung   Galaxy Z Fold5               34
+q5qksx         samsung   Galaxy Z Fold5               36
+q6q            samsung   Galaxy Z Fold6               34
+q6qksx         samsung   Galaxy Z Fold6               36
+q6qsqw         samsung   Galaxy Z Fold6               36
+q7mq           samsung   Galaxy Z TriFold             36
+r0q            samsung   Galaxy S22                   34,36
+r0qcsx         samsung   Galaxy S22                   36
+r0qksx         samsung   Galaxy S22                   36
+r11            google    Pixel Watch                  30
+r11q           samsung   Galaxy S23 FE                34
+r11qcs         samsung   Galaxy S23 FE                36
+r11s           samsung   Galaxy S23 FE                36
+r12s           samsung   Galaxy S24 FE                35
+r8q            samsung   Galaxy S20 FE 5G             33
+r8qcsx         samsung   Galaxy S20 FE 5G             33
+r8qksx         samsung   Galaxy S20 FE 5G             33
+r9q            samsung   Galaxy S21 FE 5G             36
+r9q-SM-G990U   samsung   Galaxy S21 FE 5G             36
+r9q2csx        samsung   Galaxy S21 FE 5G             36
+rango          google    Pixel 10 Pro Fold            36
+redfin         google    Pixel 5                      30
+shiba          google    Pixel 8                      35,34,36
+stallion       google    Pixel 10a                    36
+starlte        samsung   Galaxy S9                    29
+t2q            samsung   Galaxy S21+ 5G               34,35
+tangorpro      google    Pixel Tablet                 33,36
+tegu           google    Pixel 9a                     35
+tokay          google    Pixel 9                      34,35,36
+xcover7        samsung   Galaxy XCover7               34
+xcoverpro      samsung   Galaxy XCover Pro            33
+y2q            samsung   Galaxy S20+ 5G               33
+yogi           google    Pixel 11 Pro Fold            37
+z3q            samsung   Galaxy S20 Ultra 5G          33

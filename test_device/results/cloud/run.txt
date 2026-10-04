@@ -1,0 +1,26 @@
+
+Have questions, feedback, or issues? Get support by visiting:
+  https://firebase.google.com/support/
+
+Uploading [app.apk] to Firebase Test Lab...
+Uploading [test_device/robo/movies.json] to Firebase Test Lab...
+Raw results will be stored in your GCS bucket at [https://console.developers.google.com/storage/browser/test-lab-a83h77c3x52vk-yvsvq7a2052yz/innocent/37179425057/]
+
+Test [matrix-3538qtzy3u793] has been created in the Google Cloud.
+Creating individual test executions...
+..............................................................done.
+Firebase Test Lab will execute your robo test on 1 device(s). More devices may be added later if flaky test attempts are specified.
+
+Test results will be streamed to [ https://console.firebase.google.com/project/innocent-lab/testlab/histories/bh.d8fc1d97699ac8b0/matrices/7782039902848159226 ].
+05:17:39 Test is Pending
+05:18:51 Starting attempt 1.
+05:18:51 Test is Running
+05:25:31 Done. Test time = 312 (secs)
+05:25:31 Starting results processing. Attempt: 1
+05:26:19 Completed results processing. Time taken = 39 (secs)
+05:26:19 Test is Finished
+
+Robo testing complete.
+
+More details are available at [ https://console.firebase.google.com/project/innocent-lab/testlab/histories/bh.d8fc1d97699ac8b0/matrices/7782039902848159226 ].
+exit 0
