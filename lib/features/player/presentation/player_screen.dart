@@ -2608,7 +2608,6 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                 onDecoder: controller.openDecoderDialog,
                 onMore: controller.openMoreMenu,
                 // Phase 45 (audit): PiP icon is in the TOP bar (MX V3 parity).
-                onEnterPip: () => _enterPip(context),
                 onQuality: () => _showQualitySheet(context),
                 activeUri:
                     ref.read(playerControllerProvider.notifier).activeUri,
@@ -2718,6 +2717,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
               right: 0,
               child: _BottomControls(
                 insets: _controlsInsets(context),
+                onEnterPip: () => _enterPip(context),
                 position: state.position,
                 duration: state.duration,
                 isPlaying: state.isPlaying,
@@ -3250,9 +3250,6 @@ class _TopBar extends StatelessWidget {
   final VoidCallback onSubtitle;
   final VoidCallback onDecoder;
   final VoidCallback onMore;
-  /// Phase 45 (audit): MX Player V3 puts the PiP-enter icon in the TOP
-  /// bar alongside HW/HW+ and ⋮, not in the bottom row. We now match.
-  final VoidCallback onEnterPip;
 
   /// The Quality menu. Drawn only while [StreamRenewal.quality] has a menu
   /// for what is playing — a catalogue film with streaming copies.
@@ -3287,7 +3284,6 @@ class _TopBar extends StatelessWidget {
     required this.onSubtitle,
     required this.onDecoder,
     required this.onMore,
-    required this.onEnterPip,
     this.onQuality,
     this.activeUri,
     required this.fmtTimer,
@@ -3425,21 +3421,9 @@ class _TopBar extends StatelessWidget {
             // Phase 28: Audio + subtitle icons ALWAYS in title bar (was landscape-only).
             // Phase 44: small accent dot when there's more than one track,
             // so the user can tell a file has selectable audio/subtitle.
-            // Phase 45 (audit): PiP icon BEFORE audio/subtitle to match
-            // MX Player V3 layout. The PiP icon is always visible
-            // (both orientations), unlike audio/subtitle which are
-            // landscape-only.
-            IconButton(
-              icon: const Icon(
-                Icons.picture_in_picture_alt_outlined,
-                color: Colors.white,
-                size: 20,
-              ),
-              tooltip: 'Picture-in-Picture',
-              onPressed: onEnterPip,
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-            ),
+            // PiP is NOT up here: in the owner's MX (2026-10 screenshots,
+            // both orientations) the top bar is ← title … ♪ CC HW ⋮ and the
+            // PiP button is the last one on the bottom row. It moved there.
             // Phase 45 (audit): Audio + subtitle icons LANDSCAPE ONLY.
             // MX Player hides them in portrait — they're reachable via
             // the More menu instead. This matches frame 20 (180939) which
@@ -3559,6 +3543,9 @@ const bool _kShowFrameStepButtons = false;
 class _BottomControls extends ConsumerStatefulWidget {
   /// Where the controls may go (see `_controlsInsets`).
   final EdgeInsets insets;
+
+  /// Picture-in-picture — the last button on the row, as in MX.
+  final VoidCallback onEnterPip;
   final Duration position;
   final Duration duration;
   final bool isPlaying;
@@ -3615,6 +3602,7 @@ class _BottomControls extends ConsumerStatefulWidget {
 
   const _BottomControls({
     required this.insets,
+    required this.onEnterPip,
     required this.position,
     required this.duration,
     required this.isPlaying,
@@ -4025,13 +4013,17 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
                         tooltip: widget.aspectRatioMode.label,
                       ),
                       const SizedBox(width: 9),
+                      // MX's row ends aspect ratio, picture-in-picture.
+                      // The fit/zoom toggle that sat here duplicated the
+                      // aspect button (its cycle includes Zoom); pinch zoom
+                      // is unchanged.
                       IconButton(
                         icon: const Icon(
-                          Icons.fit_screen_outlined,
+                          Icons.picture_in_picture_alt_outlined,
                           color: Colors.white,
                         ),
-                        tooltip: 'Fill screen',
-                        onPressed: widget.onToggleFullscreenFill,
+                        tooltip: 'Picture-in-Picture',
+                        onPressed: widget.onEnterPip,
                       ),
                     ],
                   ),
