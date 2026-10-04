@@ -156,8 +156,8 @@
                   },
                   "children" : [ {
                     "attributes" : {
-                      "text" : "1:26 ",
-                      "accessibilityText" : "1:26 PM",
+                      "text" : "2:46 ",
+                      "accessibilityText" : "2:46 PM",
                       "hintText" : "",
                       "ignoreBoundsFiltering" : "false",
                       "resource-id" : "com.android.systemui:id/clock",
@@ -463,7 +463,7 @@
                     }, {
                       "attributes" : {
                         "text" : "",
-                        "accessibilityText" : "Phone three bars.",
+                        "accessibilityText" : "Phone signal full.",
                         "hintText" : "",
                         "ignoreBoundsFiltering" : "false",
                         "resource-id" : "com.android.systemui:id/mobile_combo",
@@ -1291,7 +1291,7 @@
                                 "children" : [ {
                                   "attributes" : {
                                     "text" : "",
-                                    "accessibilityText" : "NEW\n00:10\nfilm_1499",
+                                    "accessibilityText" : "NEW\n00:10\nfilm_1847",
                                     "hintText" : "",
                                     "ignoreBoundsFiltering" : "false",
                                     "resource-id" : "",
