@@ -23,9 +23,11 @@ appId: com.innocent.media
     timeout: 2000
 - takeScreenshot: 83_remote_back
 # Back on a tab other than the first goes to the first tab, not out of the
-# app: Music, then Back, must land on Video. First out of whatever folder or
-# player the steps above left open, to the library's tabs.
-- pressKey: Back
+# app: Music, then Back, must land on Video. First back to the library's
+# tabs from wherever the steps above ended (a folder on a phone, the list
+# itself on a tablet — a Back there would rightly leave the app).
+- launchApp:
+    stopApp: false
 - waitForAnimationToEnd:
     timeout: 2000
 - tapOn:
