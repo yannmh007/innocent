@@ -1,0 +1,16 @@
+LAB cpu app 23% · 0.3fps · pool-thread 11% | 1.raster 10% | RenderThread 1%
+LAB phase perf_idle start
+LAB cpu app 21% · 3.9fps · 1.raster 14% | .innocent.media 3% | RenderThread 2%
+LAB cpu app 1% · 0.0fps · -
+LAB phase screens_large start
+LAB cpu app 1% · 0.3fps · -
+LAB cpu app 1% · 0.2fps · -
+LAB cpu app 1% · 0.3fps · -
+LAB phase screens_large_land start
+LAB cpu app 1% · 0.4fps · -
+LAB cpu app 1% · 0.2fps · -
+LAB cpu app 1% · 0.1fps · -
+LAB phase remote_nav start
+LAB cpu app 4% · 0.8fps · RenderThread 2% | 1.raster 2%
+LAB phase layout_portrait start
+LAB phase layout_landscape start

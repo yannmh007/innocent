@@ -1,0 +1,9 @@
+Running on test
+ > Flow layout_landscape
+Assert that (Optional) "__nothing_has_this_text__" is visible... WARNED
+
+
+ Warning: Assertion is false: "__nothing_has_this_text__" is visible
+Tap on point (50%,50%)... COMPLETED
+Wait for animation to end within 1500 ms... COMPLETED
+Take screenshot 61_player_landscape... COMPLETED
