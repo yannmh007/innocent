@@ -1,21 +1,22 @@
-[16:32:48] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
-[16:32:48] install
-[16:33:06] network: speed 6000:24000 kbit/s, delay 80:250 ms
-[16:33:33] overlays: [ ] com.android.internal.display.cutout.emulation.corner [ ] com.android.internal.display.cutout.emulation.double [ ] com.android.internal.display.cutout.emulation.tall [ ] com.android.internal.display.cutout.emulation.emu01 [ ] com.android.internal.display.cutout.emulation.waterfall [x] com.android.internal.systemui.navbar.threebutton [x] com.android.internal.display.cutout.emulation.hole 
-[16:33:33] library: pushing 51 files
-[16:34:07] library: MediaStore lists 51 videos
-[16:34:07] cold start
+[17:01:45] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
+[17:01:45] install
+[17:01:51] network: speed 6000:24000 kbit/s, delay 80:250 ms
+[17:02:19] overlays: [x] com.android.internal.display.cutout.emulation.hole [x] com.android.internal.systemui.navbar.threebutton 
+[17:02:19] nav bar: navigationBars frame=[0,2274][1080,2400] navigationBars frame=[0,2274][1080,2400] 
+[17:02:19] library: pushing 51 files
+[17:02:48] library: MediaStore lists 51 videos
+[17:02:48] cold start
 Status: ok
-TotalTime: 3187
-WaitTime: 3285
-[16:34:20] flow perf_idle
-[16:36:05] flow perf_idle exit 0
-[16:36:15] flow layout_portrait
-[16:36:18] rotation asked 0, now 0
-[16:36:48] flow layout_portrait exit 0
-[16:36:59] flow layout_landscape
-[16:37:01] rotation asked 1, now 90
-[16:37:20] flow layout_landscape exit 0
-[16:37:30] flow remote_nav
-[16:37:53] flow remote_nav exit 0
-[16:38:09] done
+TotalTime: 1939
+WaitTime: 1975
+[17:03:00] flow perf_idle
+[17:04:38] flow perf_idle exit 0
+[17:04:46] flow layout_portrait
+[17:04:48] rotation asked 0, now 0
+[17:05:20] flow layout_portrait exit 0
+[17:05:28] flow layout_landscape
+[17:05:31] rotation asked 1, now 90
+[17:05:44] flow layout_landscape exit 0
+[17:05:53] flow remote_nav
+[17:06:18] flow remote_nav exit 0
+[17:06:31] done

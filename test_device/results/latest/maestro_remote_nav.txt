@@ -15,3 +15,12 @@ Take screenshot 82_remote_opened... COMPLETED
 Press Back key... COMPLETED
 Wait for animation to end within 2000 ms... COMPLETED
 Take screenshot 83_remote_back... COMPLETED
+Tap on (Optional) "(?s).*Tab 2 of 4.*"... WARNED
+
+
+ Warning: Element not found: Text matching regex: (?s).*Tab 2 of 4.*
+Wait for animation to end within 2000 ms... COMPLETED
+Take screenshot 84_on_music... COMPLETED
+Press Back key... COMPLETED
+Wait for animation to end within 2000 ms... COMPLETED
+Take screenshot 85_back_from_music... COMPLETED
