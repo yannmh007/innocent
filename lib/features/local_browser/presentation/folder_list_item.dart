@@ -5,7 +5,6 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/di/preferences_provider.dart';
 import '../../../core/services/thumbnail/thumbnail_cache.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../player/presentation/floating_pip_provider.dart';
@@ -42,13 +41,6 @@ class FolderListItem extends ConsumerWidget {
     // save for one video does not rebuild every folder row.
     final newCount = ref.watch(
         folderNewCountsProvider.select((m) => m[folder.path] ?? 0));
-    // Code-quality audit: `.select` narrows the subscription to the
-    // single boolean we actually consume, so unrelated preference
-    // changes no longer rebuild this list item.
-    final showThumbs = ref.watch(
-        preferencesProvider.select((p) => p.showThumbnails));
-    final coverPaths = ref.watch(folderCoverPathsProvider);
-    final coverAssetIds = ref.watch(folderCoverAssetIdsProvider);
 
     // Size chip: prefer a baked-in size, otherwise the lazily-grouped
     // value from folderSizesProvider (fills in once the full video list
@@ -58,13 +50,9 @@ class FolderListItem extends ConsumerWidget {
         ? folder.totalSizeBytes
         : (folderSizes[folder.path] ?? 0);
     final sizeLabel = _folderSizeLabel(sizeBytes);
-    // Phase 44: prefer the cover path baked into the Folder model by the
-    // fast bucket-based scan (no dependency on allVideosProvider being
-    // ready). Fall back to the map for older cached folders.
-    final coverUri = folder.coverThumbnailPath ?? coverPaths[folder.path];
     // A plain folder, as MX draws them; a glyph only where it tells the
     // folders apart at a glance (Camera, Screen recordings, Download…), never
-    // the generic one. Also what a cover shows until — or unless — it loads.
+    // the generic one.
     final Widget silhouette = CustomPaint(
       painter: const FolderShapePainter(),
       child: _iconForFolder(folder.name) == Icons.folder
@@ -140,13 +128,10 @@ class FolderListItem extends ConsumerWidget {
                 SizedBox(
                   width: 72,
                   height: 54,
-                  child: (showThumbs && coverUri != null)
-                      ? VideoCover(
-                          videoUri: coverUri,
-                          assetId: coverAssetIds[folder.path],
-                          placeholder: silhouette,
-                        )
-                      : silhouette,
+                  // Always the folder, never a frame from inside it (owner,
+                  // 2026-10-04): a cover made folders read as videos at a
+                  // glance. MX draws folders the same way.
+                  child: silhouette,
                 ),
                 // MX marks a selected folder ON its icon — a pale disc with
                 // a tick in the middle — and leaves the row where it was.
