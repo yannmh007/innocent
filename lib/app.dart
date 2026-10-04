@@ -104,7 +104,12 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
       if (labFilm && _showOnboarding && mounted) {
         setState(() => _showOnboarding = false);
       }
-      WidgetsBinding.instance.addPostFrameCallback((_) {
+      // The lab film waits for the router's app to be up after that switch;
+      // a push into a router nothing is showing yet goes nowhere.
+      Future<void>.delayed(
+          labFilm ? const Duration(seconds: 3) : Duration.zero, () {
+        if (!mounted) return;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
         // A share-intent can arrive as the app is closing; touching `ref`
         // after this State is disposed throws and kills whatever is building.
         if (!mounted) return;
@@ -113,7 +118,14 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
           Routes.player,
           extra: {'uri': req.uri, 'title': req.title},
         );
-        if (labFilm) _labPlaybackScript();
+        if (labFilm) {
+          PlaybackLog.add('LAB script: player pushed');
+          _labPlaybackScript();
+        }
+        });
+        // A post-frame callback waits for a frame, and a still screen draws
+        // none: ask for one, or the push can wait until somebody touches it.
+        WidgetsBinding.instance.ensureVisualUpdate();
       });
     });
 

@@ -75,6 +75,22 @@ threads() {
   adb shell top -H -b -n 2 -d 5 -m 25 -p "$pid" 2>/dev/null | tail -32
 }
 
+# Test Lab's playback measurement, rehearsed here: the same TEST_LOOP launch
+# a lab APK answers there (src/lab/AndroidManifest.xml), with the same film
+# path. Checks the script reaches the player before real-phone quota is spent.
+if [ "${LOOP:-0}" = 1 ] && [ -f "lib_media/Movies/Perf Test/aaa_play_720p.mp4" ]; then
+  log "game loop rehearsal"
+  adb push "lib_media/Movies/Perf Test/aaa_play_720p.mp4" /sdcard/Download/innocent_lab_play.mp4 >/dev/null 2>&1
+  adb shell am force-stop "$PKG"
+  adb shell pm clear "$PKG" >/dev/null 2>&1 || true
+  adb shell pm grant "$PKG" android.permission.READ_MEDIA_VIDEO >/dev/null 2>&1 || true
+  adb shell am start -a com.google.intent.action.TEST_LOOP -t application/javascript -n "$PKG/.MainActivity" >/dev/null 2>&1
+  sleep 25
+  adb exec-out screencap -p > "$OUT/shots/50_loop_25s.png"
+  sleep 150
+  log "game loop rehearsal done"
+fi
+
 log "cold start"
 adb shell am force-stop "$PKG"
 adb shell am start -W -n "$PKG/.MainActivity" > "$OUT/cold_start.txt" 2>&1
