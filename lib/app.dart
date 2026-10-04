@@ -4,6 +4,7 @@ import 'dart:io' show exit;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'core/ui/tv_focus.dart';
 import 'core/services/preferences/extra_settings_service.dart';
 import 'core/services/preferences/player_settings_service.dart';
 import 'core/services/thumbnail/thumbnail_cache.dart';
@@ -246,11 +247,14 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
         // hidden and reports zero. Kept as a max, so a later immersive frame
         // reporting 0 won't erase it.
         SystemInsets.observeBottom(MediaQuery.of(context).viewPadding.bottom);
-        return Stack(
-          children: [
-            if (child != null) child,
-            const FloatingPipOverlay(),
-          ],
+        // The D-pad's focus ring sits over everything, the PiP window too.
+        return FocusRingLayer(
+          child: Stack(
+            children: [
+              if (child != null) child,
+              const FloatingPipOverlay(),
+            ],
+          ),
         );
       },
     );

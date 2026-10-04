@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/ui/tv_focus.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../player_provider.dart';
 import '../shortcut_item.dart';
@@ -149,9 +150,8 @@ class _ShortcutButton extends StatelessWidget {
 
     final iconBox = _buildIconBox(isSpeedShortcut, showRedDot);
 
-    return GestureDetector(
+    return RemoteTappable(
       onTap: onTap,
-      behavior: HitTestBehavior.opaque,
       child: SizedBox(
         width: _slot,
         child: Column(
@@ -351,9 +351,8 @@ class _ExpandButton extends StatelessWidget {
 
     // MX: the chevron gets a SMALL circle in landscape (about 28 dp), none
     // in portrait — it is a way on, not one of the shortcuts.
-    return GestureDetector(
+    return RemoteTappable(
       onTap: onTap,
-      behavior: HitTestBehavior.opaque,
       child: SizedBox(
         width: _slot,
         child: Column(

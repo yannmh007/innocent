@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/ui/tv_focus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -112,7 +113,7 @@ class RecentlyAddedSection extends ConsumerWidget {
                       normalize: normalizeMediaUri,
                       now: now,
                     );
-                    return GestureDetector(
+                    return RemoteTappable(
               key: ValueKey(v.uri),
                       onTap: () => context.push(
                         Routes.player,

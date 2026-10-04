@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/ui/device_profile.dart';
 import '../../core/localization/app_strings.dart';
 import '../../core/router/routes.dart';
 import '../../core/theme/app_colors.dart';
@@ -155,6 +156,65 @@ class _ShellScreenState extends ConsumerState<ShellScreen>
     // mounted, so this watch never lets the coordinator drop.
     ref.watch(adbAutoScanProvider);
 
+    void select(int index) {
+      ref.read(shellTabIndexProvider.notifier).state = index;
+      context.go(_shellTabs[index].route);
+    }
+
+    // LARGE SCREENS. Material's adaptive rule, and what every Google app does:
+    // a bottom bar on a phone (< 600 dp wide), a navigation rail down the
+    // left edge on anything wider — a tablet either way up, an unfolded
+    // foldable, a phone-sized window turned into a wide one — and on a TV,
+    // where a remote reaches a column of tabs far more naturally than a row
+    // at the bottom of the screen. A bottom bar stretched across 1280 dp put
+    // four icons a hand-span apart.
+    final wide =
+        MediaQuery.sizeOf(context).width >= 600 || DeviceProfile.isTv;
+    if (wide) {
+      return Scaffold(
+        body: Row(
+          children: [
+            ColoredBox(
+              color: AppColors.specNavBar,
+              child: SafeArea(
+                right: false,
+                child: NavigationRail(
+                  selectedIndex: currentIndex,
+                  onDestinationSelected: select,
+                  backgroundColor: AppColors.specNavBar,
+                  labelType: NavigationRailLabelType.all,
+                  groupAlignment: -0.85,
+                  minWidth: 80,
+                  indicatorColor: AppColors.specPrimary.withValues(alpha: 0.18),
+                  selectedIconTheme:
+                      const IconThemeData(color: AppColors.specPrimary, size: 24),
+                  unselectedIconTheme: const IconThemeData(
+                      color: AppColors.specNavInactive, size: 24),
+                  selectedLabelTextStyle: Theme.of(context)
+                      .textTheme
+                      .labelMedium
+                      ?.copyWith(color: AppColors.specPrimary, fontSize: 12),
+                  unselectedLabelTextStyle: Theme.of(context)
+                      .textTheme
+                      .labelMedium
+                      ?.copyWith(color: AppColors.specNavInactive, fontSize: 12),
+                  destinations: [
+                    for (int i = 0; i < _shellTabs.length; i++)
+                      NavigationRailDestination(
+                        icon: Icon(_shellTabs[i].icon),
+                        selectedIcon: Icon(_shellTabs[i].activeIcon),
+                        label: Text(_navLabel(context, i)),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            Expanded(child: widget.child),
+          ],
+        ),
+      );
+    }
+
     return Scaffold(
       body: widget.child,
       bottomNavigationBar: BottomNavigationBar(
@@ -173,10 +233,7 @@ class _ShellScreenState extends ConsumerState<ShellScreen>
         selectedFontSize: 11,
         unselectedFontSize: 11,
         showUnselectedLabels: true,
-        onTap: (index) {
-          ref.read(shellTabIndexProvider.notifier).state = index;
-          context.go(_shellTabs[index].route);
-        },
+        onTap: select,
         items: [
           for (int i = 0; i < _shellTabs.length; i++)
             BottomNavigationBarItem(

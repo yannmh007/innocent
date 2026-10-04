@@ -1,0 +1,24 @@
+# A TV remote: only the D-pad and Back. Moves focus down the Video tab,
+# opens a folder with the centre key, comes back. Screenshots show where
+# the focus ring is at each step.
+appId: com.innocent.media
+---
+- pressKey: Remote Dpad Down
+- pressKey: Remote Dpad Down
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: 80_remote_focus_1
+- pressKey: Remote Dpad Down
+- pressKey: Remote Dpad Down
+- pressKey: Remote Dpad Down
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: 81_remote_focus_2
+- pressKey: Remote Dpad Center
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: 82_remote_opened
+- pressKey: Back
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: 83_remote_back

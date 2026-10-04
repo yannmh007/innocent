@@ -1,4 +1,5 @@
 import 'dart:io';
+import '../../../core/ui/tv_focus.dart';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -421,9 +422,8 @@ class VideoGridTile extends ConsumerWidget {
                 // right edge, at the title baseline. Wired to the same
                 // VideoOptionMenu the list view uses.
                 if (onMoreTap != null)
-                  GestureDetector(
+                  RemoteTappable(
                     onTap: onMoreTap,
-                    behavior: HitTestBehavior.opaque,
                     child: const Padding(
                       padding: EdgeInsets.only(left: 4, top: 1),
                       child: Icon(

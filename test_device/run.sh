@@ -125,6 +125,14 @@ for flow in $FLOWS; do
       adb shell settings put system accelerometer_rotation 0
       adb shell settings put system user_rotation 1
       sleep 3 ;;
+    screens_large)
+      adb shell settings put system accelerometer_rotation 0
+      adb shell settings put system user_rotation 0
+      sleep 3 ;;
+    screens_large_land)
+      adb shell settings put system accelerometer_rotation 0
+      adb shell settings put system user_rotation 1
+      sleep 3 ;;
   esac
   # The perf flows sit still for a minute; read the threads in the middle of
   # it, while the Video tab idles or the film plays.

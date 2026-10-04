@@ -34,6 +34,27 @@ class Phone {
 const small = Phone('small', Size(360, 740));
 const large = Phone('large', Size(412, 915));
 
+/// Larger screens, for the "works on every Android screen" pass: a 10"
+/// tablet both ways, an unfolded foldable, and a 1080p Android TV (960x540
+/// dp at xhdpi, no system bars).
+const tablet = Phone('tablet', Size(800, 1280), ratio: 2.0, top: 24, bottom: 48);
+const tabletLand = Phone('tablet_land', Size(1280, 800), ratio: 2.0, top: 24, bottom: 48);
+const fold = Phone('fold', Size(673, 841), ratio: 2.6, top: 30, bottom: 24);
+const tv = Phone('tv', Size(960, 540), ratio: 2.0, top: 0, bottom: 0);
+
+const _allPhones = {
+  'small': small, 'large': large, 'tablet': tablet,
+  'tablet_land': tabletLand, 'fold': fold, 'tv': tv,
+};
+
+/// SCREEN_PHONES=tablet,tv,... draws every screen on those instead of each
+/// test's own list.
+List<Phone>? _phonesFromEnv() {
+  final raw = Platform.environment['SCREEN_PHONES'];
+  if (raw == null || raw.trim().isEmpty) return null;
+  return [for (final n in raw.split(',')) if (_allPhones[n.trim()] != null) _allPhones[n.trim()]!];
+}
+
 String? _fontDir() {
   final env = Platform.environment['SCREEN_FONTS'] ?? 'build/screen_fonts';
   return Directory(env).existsSync() ? env : null;
@@ -252,7 +273,7 @@ void screens(String name, Widget Function() build,
     int scrolls = 0,
     Map<String, Object> prefs = const {},
     Duration settle = const Duration(seconds: 2)}) {
-  for (final p in phones) {
+  for (final p in _phonesFromEnv() ?? phones) {
     for (final l in locales ?? [screenLocale]) {
       testWidgets('$name ${p.name} ${l.languageCode}', timeout: const Timeout(Duration(seconds: 90)), (tester) async {
         await shoot(tester, name, build(),

@@ -288,6 +288,19 @@ class MainActivity : AudioServiceFragmentActivity() {
         )
         pipChannel?.setMethodCallHandler { call, result ->
             when (call.method) {
+                // Android TV (or any leanback device): no touch screen, a
+                // remote, landscape only. Decides orientation and focus
+                // behaviour on the Dart side (DeviceProfile).
+                "isTv" -> {
+                    var tv = false
+                    try {
+                        val ui = getSystemService(Context.UI_MODE_SERVICE) as android.app.UiModeManager
+                        tv = ui.currentModeType == android.content.res.Configuration.UI_MODE_TYPE_TELEVISION ||
+                            packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_LEANBACK)
+                    } catch (_: Throwable) {
+                    }
+                    result.success(tv)
+                }
                 // The system bars' and camera cutout's insets for the current
                 // orientation EVEN WHILE THE BARS ARE HIDDEN, in dp. The
                 // immersive player gets zero from Flutter for a hidden bar;

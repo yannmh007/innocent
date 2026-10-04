@@ -867,9 +867,12 @@ class _LocalScreenState extends ConsumerState<LocalScreen> {
           child: Center(
             child: ConstrainedBox(
               constraints: BoxConstraints(
+                // 840 dp: Material's widest single-column body. 640 left a
+                // landscape tablet (1200 dp beside the rail) looking like a
+                // phone screen floating in the middle.
                 maxWidth: prefs.layout == LayoutMode.grid
                     ? double.infinity
-                    : 640,
+                    : 840,
               ),
               child: CustomScrollView(
                 controller: _fabVisibility.controller,

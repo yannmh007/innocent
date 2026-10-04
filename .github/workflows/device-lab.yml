@@ -123,10 +123,14 @@ jobs:
           sudo udevadm trigger --name-match=kvm
 
       - name: Choose the APK
+        id: apk
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           source test_device/config.env
+          # Which screen to emulate (config.env EMU_PROFILE): pixel_6 by
+          # default, pixel_tablet / pixel_c / nexus_10 for large screens.
+          echo "profile=${EMU_PROFILE:-pixel_6}" >> "$GITHUB_OUTPUT"
           if [ "${APK_SOURCE:-lab}" = release ]; then
             tag="$APK_TAG"
             if [ "$tag" = latest ]; then
@@ -190,7 +194,7 @@ jobs:
           api-level: 34
           target: google_apis
           arch: x86_64
-          profile: pixel_6
+          profile: ${{ steps.apk.outputs.profile }}
           ram-size: 4096M
           disk-size: 6G
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none

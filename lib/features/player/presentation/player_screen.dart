@@ -16,6 +16,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
+import '../../../core/ui/device_profile.dart';
 import '../../../core/localization/app_strings.dart';
 import '../../../core/services/adb/adb_service.dart';
 import '../../../core/services/hardware_keys/hardware_keys_service.dart';
@@ -230,14 +231,14 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
   void _applyRotationMode({bool announce = false}) {
     switch (_rotationMode) {
       case 1:
-        SystemChrome.setPreferredOrientations(const [
+        _setOrientations(const [
           DeviceOrientation.portraitUp,
           DeviceOrientation.portraitDown,
         ]);
         if (announce) _showOverlay('Portrait');
         break;
       case 2:
-        SystemChrome.setPreferredOrientations(const [
+        _setOrientations(const [
           DeviceOrientation.landscapeLeft,
           DeviceOrientation.landscapeRight,
         ]);
@@ -246,7 +247,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
       default:
         // Hand control back to the device. This is the state the old button
         // could never reach.
-        SystemChrome.setPreferredOrientations(const [
+        _setOrientations(const [
           DeviceOrientation.portraitUp,
           DeviceOrientation.portraitDown,
           DeviceOrientation.landscapeLeft,
@@ -341,22 +342,22 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
         .read(extraSettingsProvider)
         .getStr(StringSetting.defaultPlayerOrientation);
     if (orientationPref == 'landscape') {
-      SystemChrome.setPreferredOrientations(
+      _setOrientations(
           const [DeviceOrientation.landscapeLeft]);
     } else if (orientationPref == 'landscapeReverse') {
-      SystemChrome.setPreferredOrientations(
+      _setOrientations(
           const [DeviceOrientation.landscapeRight]);
     } else if (orientationPref == 'portrait') {
-      SystemChrome.setPreferredOrientations(
+      _setOrientations(
           const [DeviceOrientation.portraitUp]);
     } else if (autoRotate) {
-      SystemChrome.setPreferredOrientations([
+      _setOrientations([
         DeviceOrientation.landscapeLeft,
         DeviceOrientation.landscapeRight,
         DeviceOrientation.portraitUp,
       ]);
     } else {
-      SystemChrome.setPreferredOrientations([
+      _setOrientations([
         DeviceOrientation.landscapeLeft,
         DeviceOrientation.landscapeRight,
       ]);
@@ -981,6 +982,10 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     try {
       WidgetsBinding.instance.removeObserver(this);
     } catch (_) {}
+    _step('remoteFocus', () {
+      _remoteFocus.dispose();
+      _playFocus.dispose();
+    });
     _step('overlayTimer', () => _overlayTimer?.cancel());
     _step('noticeTimer', () => _noticeTimer?.cancel());
     // The final event has already gone out in deactivate(), where `ref` was
@@ -1054,11 +1059,12 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     // (removeObserver has already run, on the first line.)
     _step('systemUi', () {
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-      // The app is portrait-locked; only the player may rotate to landscape.
-      // So leaving the player must restore portrait — otherwise the whole app
-      // stays stuck in landscape after backing out of a rotated video.
-      SystemChrome.setPreferredOrientations(
-          const [DeviceOrientation.portraitUp]);
+      // On a phone the app is portrait-locked and only the player may rotate,
+      // so leaving it must restore portrait — otherwise the whole app stays
+      // stuck in landscape after backing out of a rotated video. Tablets and
+      // TVs go back to following the device (DeviceProfile).
+      // ignore: discarded_futures
+      DeviceProfile.applyAppOrientation();
     });
     // AUDIT FIX — this used to run unconditionally, including when the user
     // had just popped the video into the in-app floating window. That window
@@ -1803,8 +1809,18 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
   // this synchronously at every exit point flips orientation BEFORE
   // navigation, so the previous screen rebuilds already in portrait.
   void _lockPortraitOnExit() {
-    SystemChrome.setPreferredOrientations(
-        const [DeviceOrientation.portraitUp]);
+    // The app's own policy: portrait on a phone, the device's choice on a
+    // tablet or a TV (DeviceProfile).
+    // ignore: discarded_futures
+    DeviceProfile.applyAppOrientation();
+  }
+
+  /// Every orientation request the player makes goes through here. A TV
+  /// cannot rotate and must never be asked for portrait.
+  void _setOrientations(List<DeviceOrientation> o) {
+    if (DeviceProfile.isTv) return;
+    // ignore: discarded_futures
+    SystemChrome.setPreferredOrientations(o);
   }
 
   /// Retry, and REPLACE the address first if it can be replaced.
@@ -2280,8 +2296,89 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     return result;
   }
 
+  // ─── A TV REMOTE (and a keyboard) ──────────────────────────────────────
+  //
+  // On Android TV the only input is a D-pad: up/down/left/right, a centre
+  // "select" key and Back. Flutter moves focus between buttons with the
+  // arrows by itself, but a full-screen video with its controls hidden has no
+  // button to move between — so the player listens itself:
+  //   centre / Enter / Space → play or pause (and show the controls)
+  //   left / right           → seek 10 s back / forward
+  //   up / down              → show the controls, focus on Play/Pause
+  // While the controls are up, the arrows move between the buttons as on any
+  // screen; when they hide again, focus comes back here.
+  final FocusNode _remoteFocus = FocusNode(debugLabel: 'player-remote');
+  final FocusNode _playFocus = FocusNode(debugLabel: 'player-play');
+
+  KeyEventResult _onRemoteKey(FocusNode node, KeyEvent event) {
+    if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
+      return KeyEventResult.ignored;
+    }
+    final state = ref.read(playerControllerProvider);
+    if (state.isLocked || state.isKidsLocked) return KeyEventResult.ignored;
+    // Only when nothing inside the player has focus: a focused button or the
+    // seek bar handles its own keys (the slider seeks with left/right).
+    if (!node.hasPrimaryFocus) return KeyEventResult.ignored;
+    final controller = ref.read(playerControllerProvider.notifier);
+    final k = event.logicalKey;
+    if (k == LogicalKeyboardKey.select ||
+        k == LogicalKeyboardKey.enter ||
+        k == LogicalKeyboardKey.numpadEnter ||
+        k == LogicalKeyboardKey.space ||
+        k == LogicalKeyboardKey.gameButtonA) {
+      if (event is KeyRepeatEvent) return KeyEventResult.handled;
+      // ignore: discarded_futures
+      controller.playOrPause();
+      controller.showControls();
+      return KeyEventResult.handled;
+    }
+    if (k == LogicalKeyboardKey.arrowLeft) {
+      // ignore: discarded_futures
+      controller.seekRelative(-10);
+      return KeyEventResult.handled;
+    }
+    if (k == LogicalKeyboardKey.arrowRight) {
+      // ignore: discarded_futures
+      controller.seekRelative(10);
+      return KeyEventResult.handled;
+    }
+    if (k == LogicalKeyboardKey.arrowUp || k == LogicalKeyboardKey.arrowDown) {
+      controller.showControls();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _playFocus.canRequestFocus) _playFocus.requestFocus();
+      });
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Controls hidden → focus back on the player itself, so the remote's
+    // keys reach [_onRemoteKey] instead of a button nobody can see.
+    ref.listen<bool>(
+        playerControllerProvider.select((s) => s.controlsVisible), (_, v) {
+      if (v || !mounted || _remoteFocus.hasPrimaryFocus) return;
+      // Never out of a panel or a dialog — one may hold a text field the
+      // viewer is typing in.
+      final st = ref.read(playerControllerProvider);
+      if (st.openPanel != SidePanel.none ||
+          st.decoderDialogOpen ||
+          st.sleepTimerDialogOpen ||
+          st.resumeDialogOpen) {
+        return;
+      }
+      _remoteFocus.requestFocus();
+    });
+    return Focus(
+      focusNode: _remoteFocus,
+      autofocus: true,
+      onKeyEvent: _onRemoteKey,
+      child: _buildPage(context),
+    );
+  }
+
+  Widget _buildPage(BuildContext context) {
     final svc = ref.watch(videoPlayerServiceProvider);
     final state = ref.watch(playerControllerProvider);
     final controller = ref.read(playerControllerProvider.notifier);
@@ -2330,13 +2427,13 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
       if (prevAutoRot != nextAutoRot) {
         final legacyAutoRot = ref.read(preferencesProvider).autoRotate;
         if (legacyAutoRot && nextAutoRot) {
-          SystemChrome.setPreferredOrientations([
+          _setOrientations([
             DeviceOrientation.landscapeLeft,
             DeviceOrientation.landscapeRight,
             DeviceOrientation.portraitUp,
           ]);
         } else {
-          SystemChrome.setPreferredOrientations([
+          _setOrientations([
             DeviceOrientation.landscapeLeft,
             DeviceOrientation.landscapeRight,
           ]);
@@ -2718,6 +2815,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
               child: _BottomControls(
                 insets: _controlsInsets(context),
                 onEnterPip: () => _enterPip(context),
+                playFocus: _playFocus,
                 position: state.position,
                 duration: state.duration,
                 isPlaying: state.isPlaying,
@@ -3546,6 +3644,9 @@ class _BottomControls extends ConsumerStatefulWidget {
 
   /// Picture-in-picture — the last button on the row, as in MX.
   final VoidCallback onEnterPip;
+
+  /// Play/Pause, which a TV remote lands on when the controls come up.
+  final FocusNode? playFocus;
   final Duration position;
   final Duration duration;
   final bool isPlaying;
@@ -3603,6 +3704,7 @@ class _BottomControls extends ConsumerStatefulWidget {
   const _BottomControls({
     required this.insets,
     required this.onEnterPip,
+    this.playFocus,
     required this.position,
     required this.duration,
     required this.isPlaying,
@@ -3958,6 +4060,7 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
                     ],
                     // Phase 16: Plain play/pause icons (NO white filled circle).
                     IconButton(
+                      focusNode: widget.playFocus,
                       tooltip: widget.isPlaying ? 'Pause' : 'Play',
                       icon: Icon(
                         widget.isPlaying ? Icons.pause : Icons.play_arrow,

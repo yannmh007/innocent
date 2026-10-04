@@ -1,0 +1,25 @@
+# The main tabs on a large screen (EMU_PROFILE tablet), turned to landscape by run.sh;
+# orientation run.sh has set: navigation rail, list width, grids.
+appId: com.innocent.media
+---
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: 73_large_land_video
+- tapOn:
+    text: ".*Music.*"
+    index: 0
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: 74_large_land_music
+- tapOn:
+    text: "Me"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: 75_large_land_me
+- tapOn:
+    text: "Video"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000

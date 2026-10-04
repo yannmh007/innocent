@@ -10,6 +10,7 @@ import 'package:go_router/go_router.dart';
 import 'package:media_kit/media_kit.dart';
 
 import 'app.dart';
+import 'core/ui/device_profile.dart';
 import 'core/app_version.dart';
 import 'core/services/video_player/disk_cache_dir.dart';
 import 'features/video_hub/data/cache/stream_cache_store.dart';
@@ -222,9 +223,9 @@ void main() async {
     systemNavigationBarIconBrightness: Brightness.light,
     systemNavigationBarDividerColor: Color(0x00000000),
   ));
-  await SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-  ]);
+  // Portrait on phones only — tablets follow the device, a TV is landscape.
+  await DeviceProfile.init();
+  await DeviceProfile.applyAppOrientation();
 
   // Phase 10: Auto-cleanup recycle bin entries older than 30 days
   // Runs in background, doesn't block startup
