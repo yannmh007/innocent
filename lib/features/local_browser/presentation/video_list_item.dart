@@ -380,7 +380,6 @@ class _Thumbnail extends StatefulWidget {
 
 class _ThumbnailState extends State<_Thumbnail> {
   Uint8List? _bytes;
-  bool _loading = true;
   bool _disposed = false;
 
   @override
@@ -407,7 +406,6 @@ class _ThumbnailState extends State<_Thumbnail> {
           if (!_disposed && mounted) {
             setState(() {
               _bytes = bytes;
-              _loading = false;
             });
           }
           return;
@@ -417,9 +415,6 @@ class _ThumbnailState extends State<_Thumbnail> {
     }
     if (!widget.videoPath.startsWith('/') &&
         !widget.videoPath.startsWith('file://')) {
-      if (!_disposed && mounted) {
-        setState(() => _loading = false);
-      }
       return;
     }
     try {
@@ -427,18 +422,15 @@ class _ThumbnailState extends State<_Thumbnail> {
           ? Uri.parse(widget.videoPath).toFilePath()
           : widget.videoPath;
       if (!await File(path).exists()) {
-        if (!_disposed && mounted) setState(() => _loading = false);
         return;
       }
       final bytes = await ThumbnailCache.instance.get(path);
       if (!_disposed && mounted) {
         setState(() {
           _bytes = bytes;
-          _loading = false;
         });
       }
     } catch (_) {
-      if (!_disposed && mounted) setState(() => _loading = false);
     }
   }
 
@@ -457,21 +449,15 @@ class _ThumbnailState extends State<_Thumbnail> {
               bytes: _bytes!,
               fit: BoxFit.cover,
             )
-          : Center(
-              child: _loading
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 1.5,
-                        color: AppColors.darkOnSurfaceMuted,
-                      ),
-                    )
-                  : const Icon(
-                      Icons.movie_outlined,
-                      color: AppColors.darkOnSurfaceMuted,
-                      size: 28,
-                    ),
+          // A still icon while the frame loads, not a spinner: with a large
+          // library dozens of rings would animate down the screen at 60 fps
+          // for as long as decoding took.
+          : const Center(
+              child: Icon(
+                Icons.movie_outlined,
+                color: AppColors.darkOnSurfaceMuted,
+                size: 28,
+              ),
             ),
     );
   }

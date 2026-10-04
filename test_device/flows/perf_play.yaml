@@ -9,16 +9,16 @@ appId: com.innocent.media
 ---
 - scrollUntilVisible:
     element:
-      text: "Perf Test"
+      text: ".*Perf Test.*"
     direction: DOWN
     optional: true
 - tapOn:
-    text: "Perf Test"
+    text: ".*Perf Test.*"
     optional: true
 - waitForAnimationToEnd:
     timeout: 5000
 - tapOn:
-    text: "aaa_play_720p.*"
+    text: ".*aaa_play_720p.*"
     optional: true
 - extendedWaitUntil:
     visible: "__nothing_has_this_text__"

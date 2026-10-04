@@ -130,6 +130,29 @@ class ThumbnailCache {
     }
   }
 
+  /// A video's thumbnail the way that works on today's phones: MediaStore's
+  /// own thumbnail for [assetId] first ([getByAsset]), and only then a frame
+  /// decoded from the file at [uri] ([get]). The path decoder alone fails on
+  /// scoped storage, SD cards and content URIs — folder covers and "Recently
+  /// added" used it alone, which is why they showed placeholders while the
+  /// list beside them, which already went asset-first, had pictures.
+  Future<Uint8List?> forVideo(String uri, {String? assetId}) async {
+    if (assetId != null && assetId.isNotEmpty) {
+      final bytes = await getByAsset(assetId);
+      if (bytes != null) return bytes;
+    }
+    final String path;
+    if (uri.startsWith('file://')) {
+      path = Uri.parse(uri).toFilePath();
+    } else if (uri.startsWith('/')) {
+      path = uri;
+    } else {
+      return null;
+    }
+    if (!await File(path).exists()) return null;
+    return get(path);
+  }
+
   /// Get thumbnail bytes for the given video path.
   /// Returns null if generation fails or on unsupported platforms.
   Future<Uint8List?> get(String videoPath) async {
