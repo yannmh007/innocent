@@ -291,6 +291,13 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
   void initState() {
     super.initState();
     _startReporting();
+    // A SNACKBAR FROM THE SCREEN BEHIND DOES NOT FOLLOW THE VIEWER IN. Seen on
+    // a real Galaxy A03s in Test Lab: "added to bookmarks" from the title page
+    // sat over the player's controls. The messenger is the app's, so it
+    // outlives the route change; it is dismissed once the player is up.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) ScaffoldMessenger.maybeOf(context)?.hideCurrentSnackBar();
+    });
     // v1.63.1: seed the subtitle timing from the saved value, so the tune
     // panel opens showing what libmpv is actually doing. See the field's note.
     try {
