@@ -11,14 +11,14 @@ void main() {
   test('links, tokens, emails and storage paths are cut out', () {
     final out = DiagnosticsReport.redact(
       'open https://x.workers.dev/v/abcDEF123?sig=1 ok\n'
-      'token eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.payload\n'
+      'token Zq9vR2mXcT7wLp4sKd8nHb3yFg6uJe5aQr1tWx0oPz\n'
       'mail someone@example.com\n'
       'file /storage/emulated/0/Movies/my holiday.mp4\n'
       'content://media/external/video/42\n'
       'dl pass x3 from 0/396 MB http 200',
     );
     expect(out, isNot(contains('workers.dev')));
-    expect(out, isNot(contains('eyJhbGci')));
+    expect(out, isNot(contains('Zq9vR2mXcT7w')));
     expect(out, isNot(contains('someone@')));
     expect(out, isNot(contains('/storage/emulated')));
     expect(out, isNot(contains('content://')));
