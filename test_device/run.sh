@@ -79,6 +79,22 @@ fi
 
 # Which thread of the app is using the CPU right now: two readings of top,
 # five seconds apart, the second kept. Called at the end of each perf phase.
+# Turn the screen and wait until it has turned. The setting is applied
+# asynchronously: without the wait each flow ran in the orientation the
+# previous one had asked for (run 37214751686).
+rotate() {
+  adb shell settings put system accelerometer_rotation 0
+  adb shell settings put system user_rotation "$1"
+  adb shell wm user-rotation lock "$1" >/dev/null 2>&1 || true
+  for _ in $(seq 1 20); do
+    cur=$(adb shell dumpsys window 2>/dev/null | grep -m1 -oE 'mCurrentRotation=(ROTATION_)?[0-9]+' | grep -oE '[0-9]+$')
+    case "$1:$cur" in 0:0|1:1|1:90) break ;; esac
+    sleep 1
+  done
+  sleep 2
+  log "rotation asked $1, now ${cur:-?}"
+}
+
 threads() {
   local pid
   pid=$(adb shell pidof "$PKG" 2>/dev/null | tr -d '\r')
@@ -118,21 +134,8 @@ for flow in $FLOWS; do
   # The layout flows measure one orientation each; the player follows the
   # device by default, so turn the device.
   case "$flow" in
-    layout_portrait)
-      adb shell settings put system accelerometer_rotation 0
-      adb shell settings put system user_rotation 0 ;;
-    layout_landscape)
-      adb shell settings put system accelerometer_rotation 0
-      adb shell settings put system user_rotation 1
-      sleep 3 ;;
-    screens_large)
-      adb shell settings put system accelerometer_rotation 0
-      adb shell settings put system user_rotation 0
-      sleep 3 ;;
-    screens_large_land)
-      adb shell settings put system accelerometer_rotation 0
-      adb shell settings put system user_rotation 1
-      sleep 3 ;;
+    layout_portrait|screens_large) rotate 0 ;;
+    layout_landscape|screens_large_land) rotate 1 ;;
   esac
   # The perf flows sit still for a minute; read the threads in the middle of
   # it, while the Video tab idles or the film plays.
@@ -143,6 +146,10 @@ for flow in $FLOWS; do
   find test_device/flows "$OUT/maestro_out" "$HOME/.maestro/tests" -name '*.png' -newer test_device/config.env \
     -exec cp {} "$OUT/shots/" \; 2>/dev/null || true
   maestro hierarchy > "$OUT/hierarchy_after_$flow.json" 2>/dev/null || true
+  # The same screen as Android's own accessibility dump sees it (what
+  # TalkBack and Switch Access get), to compare with Maestro's view.
+  adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1 \
+    && adb exec-out cat /sdcard/ui.xml > "$OUT/ui_after_$flow.xml" 2>/dev/null || true
 done
 adb shell dumpsys cpuinfo 2>/dev/null | head -40 > "$OUT/cpuinfo.txt" || true
 
