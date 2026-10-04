@@ -275,7 +275,11 @@ class _TracksTabState extends ConsumerState<_TracksTab> {
                 ),
               ),
               const SizedBox(width: 8),
-              InkWell(
+              // May shrink to half the row (the search box keeps the other
+              // half): a long label in a large font cuts short rather than
+              // pushing the sort button off the screen.
+              Flexible(
+                child: InkWell(
                 borderRadius: BorderRadius.circular(8),
                 onTap: () {
                   final list = songsAsync.value ?? const [];
@@ -305,20 +309,26 @@ class _TracksTabState extends ConsumerState<_TracksTab> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       const Icon(Icons.shuffle,
                           size: 16,
                           color: AppColors.white70),
                       const SizedBox(width: 6),
-                      Text(AppStrings.of(context).shuffleAll,
-                        style: const TextStyle(
-                          color: AppColors.white70,
-                          fontSize: 13,
+                      Flexible(
+                        child: Text(AppStrings.of(context).shuffleAll,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: AppColors.white70,
+                            fontSize: 13,
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
+              ),
               ),
               const SizedBox(width: 8),
               // Phase 45 (audit): Sort icon was just visual. Wire it

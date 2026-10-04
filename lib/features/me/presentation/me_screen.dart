@@ -136,12 +136,13 @@ class MeScreen extends StatelessWidget {
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: grid.length,
-                  gridDelegate:
-                      const SliverGridDelegateWithFixedCrossAxisCount(
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 3,
                     mainAxisSpacing: 8,
                     crossAxisSpacing: 8,
-                    mainAxisExtent: 64,
+                    // The label's line grows with the system font size.
+                    mainAxisExtent:
+                        64 + MediaQuery.textScalerOf(context).scale(20) - 20,
                   ),
                   itemBuilder: (context, i) => _GridItem(grid[i]),
                 ),

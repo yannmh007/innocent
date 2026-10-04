@@ -98,7 +98,9 @@ class _QuickAccessChipsState extends ConsumerState<QuickAccessChips> {
           mainAxisSize: MainAxisSize.min,
           children: [
             SizedBox(
-              height: 64,
+              // 36 pill + 6 + a 10 sp line, with room to spare — and the line
+              // grows with the system font size (at 200 % a fixed 64 cut it).
+              height: 52 + MediaQuery.textScalerOf(context).scale(12),
               child: PageView.builder(
                 controller: _controller,
                 itemCount: pageCount,

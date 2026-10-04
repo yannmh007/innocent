@@ -424,6 +424,9 @@ class AlbumDownloadButton extends ConsumerWidget {
             Flexible(
               child: TextButton.icon(
               key: const ValueKey('album-dl-start'),
+              // Tighter than the default 12 dp sides: the header is narrow.
+              style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 8)),
               onPressed: () => downloadAlbumMissing(context, ref,
                   content: content, status: status),
               icon: const Icon(Icons.download_outlined,

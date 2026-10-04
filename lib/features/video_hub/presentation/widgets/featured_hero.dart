@@ -217,7 +217,10 @@ class _HeroButton extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(VH.rControl),
       child: Container(
-        height: 44,
+        // At least 44 dp; taller when the system font is (a fixed height
+        // cut the label at 200 %).
+        constraints: const BoxConstraints(minHeight: 44),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         alignment: Alignment.center,
         decoration: BoxDecoration(
           // The primary action is the ONLY solid-white surface on the page.
@@ -233,12 +236,16 @@ class _HeroButton extends StatelessWidget {
           children: <Widget>[
             Icon(icon, size: primary ? 22 : 18, color: fg),
             const SizedBox(width: 6),
-            Text(
-              label,
-              style: VH.label.copyWith(
-                color: fg,
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: VH.label.copyWith(
+                  color: fg,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
           ],

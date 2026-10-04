@@ -92,7 +92,9 @@ class RecentlyAddedSection extends ConsumerWidget {
               ),
               const SizedBox(height: 10),
               SizedBox(
-                height: 120,
+                // 82 dp thumbnail, 6, a title line — which grows with the
+                // system font size (a fixed 120 cut it at 200 %).
+                height: 106 + MediaQuery.textScalerOf(context).scale(14),
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 12),

@@ -193,13 +193,19 @@ Future<void> shoot(
     final first = details.exceptionAsString().split('\n').first;
     final where = details.context?.toDescription() ?? '';
     String? creator;
+    String? chain;
     for (final n in details.informationCollector?.call() ?? const <DiagnosticsNode>[]) {
       final t = n.toStringDeep();
       if (t.contains('lib/')) {
         creator = RegExp(r'lib/[^ :]+:\d+').firstMatch(t)?.group(0);
         if (creator != null) break;
       }
+      // An overflow names no file, but its RenderFlex's creator chain
+      // ("creator: Column ← Padding ← Row ← …") says which widget it was.
+      chain ??= RegExp(r'creator: ([^\n]+)').firstMatch(t)?.group(1)
+          ?.split(' ← ').take(16).join(' ← ');
     }
+    creator ??= chain;
     // Only LAYOUT is a finding. A plugin the test cannot answer is noise.
     final layout = first.contains('overflow') || first.contains('RenderBox was not laid out') ||
         first.contains('unbounded') || first.contains('BoxConstraints');

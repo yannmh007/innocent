@@ -799,7 +799,12 @@ class _PadKeyState extends State<_PadKey> {
                 ? null
                 : Border.all(color: AppColors.white08, width: 1),
           ),
-          child: widget.child,
+          // A digit and its letters in the system's largest font are taller
+          // than the circle: they shrink to fit it rather than spill out.
+          child: Padding(
+            padding: EdgeInsets.all(widget.size * 0.08),
+            child: FittedBox(fit: BoxFit.scaleDown, child: widget.child),
+          ),
         ),
       ),
     );

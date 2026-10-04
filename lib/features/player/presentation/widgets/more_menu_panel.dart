@@ -93,12 +93,14 @@ class MoreMenuPanel extends StatelessWidget {
               // MX (portrait): four columns 89 dp apart, the first centred
               // 72 dp in — 27 dp from each edge, 12 of them the sheet's.
               padding: const EdgeInsets.symmetric(horizontal: 15),
-              gridDelegate:
-                  const SliverGridDelegateWithFixedCrossAxisCount(
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 4,
                 // MX: one row every 84 dp — a 47 dp ring, 9 dp, then a
-                // label of up to two 12.5 sp lines.
-                mainAxisExtent: 84,
+                // label of up to two 12.5 sp lines (27.5 dp), which grow
+                // with the system font size: at 130 % a fixed 84 cut the
+                // second line by 8 dp.
+                mainAxisExtent:
+                    84 + MediaQuery.textScalerOf(context).scale(28) - 28,
                 crossAxisSpacing: 0,
                 mainAxisSpacing: 0,
               ),

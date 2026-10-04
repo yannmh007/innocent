@@ -27,8 +27,13 @@ Widget _row({required bool expanded, bool loopOn = true}) => Builder(
                 IconButton(
                     onPressed: () {},
                     icon: const Icon(Icons.arrow_back, color: Colors.white)),
-                const Text('5_6280325781230984315',
-                    style: TextStyle(color: Colors.white, fontSize: 14)),
+                // As the player's top bar: the title takes what is left.
+                const Expanded(
+                  child: Text('5_6280325781230984315',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: Colors.white, fontSize: 14)),
+                ),
               ]),
             ),
             Positioned(
