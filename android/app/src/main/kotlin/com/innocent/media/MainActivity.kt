@@ -288,6 +288,47 @@ class MainActivity : AudioServiceFragmentActivity() {
         )
         pipChannel?.setMethodCallHandler { call, result ->
             when (call.method) {
+                // The system bars' and camera cutout's insets for the current
+                // orientation EVEN WHILE THE BARS ARE HIDDEN, in dp. The
+                // immersive player gets zero from Flutter for a hidden bar;
+                // MX lays its controls out inside these stable insets (clear
+                // of the status bar, the side nav bar and the cutout in
+                // landscape), and so does the player now.
+                "stableInsets" -> {
+                    val d = resources.displayMetrics.density
+                    var l = 0; var t = 0; var r = 0; var b = 0
+                    try {
+                        val wi = window.decorView.rootWindowInsets
+                        if (wi != null) {
+                            if (Build.VERSION.SDK_INT >= 30) {
+                                val i = wi.getInsetsIgnoringVisibility(
+                                    android.view.WindowInsets.Type.systemBars() or
+                                        android.view.WindowInsets.Type.displayCutout()
+                                )
+                                l = i.left; t = i.top; r = i.right; b = i.bottom
+                            } else {
+                                @Suppress("DEPRECATION")
+                                run {
+                                    l = wi.stableInsetLeft; t = wi.stableInsetTop
+                                    r = wi.stableInsetRight; b = wi.stableInsetBottom
+                                }
+                                if (Build.VERSION.SDK_INT >= 28) {
+                                    wi.displayCutout?.let {
+                                        l = maxOf(l, it.safeInsetLeft); t = maxOf(t, it.safeInsetTop)
+                                        r = maxOf(r, it.safeInsetRight); b = maxOf(b, it.safeInsetBottom)
+                                    }
+                                }
+                            }
+                        }
+                    } catch (_: Throwable) {
+                    }
+                    result.success(
+                        mapOf(
+                            "left" to l / d, "top" to t / d,
+                            "right" to r / d, "bottom" to b / d
+                        )
+                    )
+                }
                 "enterPip" -> {
                     val w = call.argument<Int>("width") ?: 16
                     val h = call.argument<Int>("height") ?: 9

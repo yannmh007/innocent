@@ -291,6 +291,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
   void initState() {
     super.initState();
     _startReporting();
+    // ignore: discarded_futures
+    _refreshStableInsets();
     // A SNACKBAR FROM THE SCREEN BEHIND DOES NOT FOLLOW THE VIEWER IN. Seen on
     // a real Galaxy A03s in Test Lab: "added to bookmarks" from the title page
     // sat over the player's controls. The messenger is the app's, so it
@@ -766,9 +768,54 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
   /// `resumed` (cancelled PiP) or in `onPipModeChanged` (PiP entered).
   bool _pipTransitionInFlight = false;
 
+  /// The bars' and cutout's insets even while hidden; see [StableInsets].
+  EdgeInsets _stable = EdgeInsets.zero;
+
+  Future<void> _refreshStableInsets() async {
+    final v = await StableInsets.read();
+    if (const bool.fromEnvironment('INNOCENT_LAB')) {
+      debugPrint('LAB insets stable=$v');
+    }
+    if (mounted && v != _stable) setState(() => _stable = v);
+  }
+
+  /// Where the controls may go — MX's geometry, measured on its
+  /// screenshots of the same phone:
+  ///  * portrait: under the status bar, above the navigation bar (reserved
+  ///    even while hidden, so Prev/Play/Next never sit under Back/Home);
+  ///  * landscape: clear of the status bar at the top and of the side nav
+  ///    bar and camera cutout at the sides. The old layout used only what
+  ///    Flutter reports, which is zero for a hidden bar, so in landscape the
+  ///    controls ran edge to edge and the bottom row kept the PORTRAIT nav
+  ///    bar's height under it.
+  EdgeInsets _controlsInsets(BuildContext context) {
+    final mq = MediaQuery.of(context);
+    if (mq.orientation == Orientation.landscape) {
+      return EdgeInsets.fromLTRB(
+        math.max(mq.padding.left, _stable.left),
+        math.max(mq.padding.top, _stable.top),
+        math.max(mq.padding.right, _stable.right),
+        math.max(mq.padding.bottom, _stable.bottom),
+      );
+    }
+    return EdgeInsets.only(
+      top: mq.padding.top,
+      bottom: math.max(math.max(mq.padding.bottom, _stable.bottom),
+          SystemInsets.bottomBar),
+    );
+  }
+
   @override
   void didChangeMetrics() {
     super.didChangeMetrics();
+    // New orientation, new insets — read now and again once the rotation
+    // has settled (the window's insets can arrive a frame after the size).
+    // ignore: discarded_futures
+    _refreshStableInsets();
+    Future<void>.delayed(const Duration(milliseconds: 400), () {
+      // ignore: discarded_futures
+      if (mounted) _refreshStableInsets();
+    });
     // Settings → Player → Controls → "Lock screen on rotation: automatically
     // lock screen when device rotates."
     //
@@ -2547,6 +2594,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                 left: 0,
                 right: 0,
                 child: _TopBar(
+                insets: _controlsInsets(context),
                 title: widget.title,
                 decoderLabel: state.decoder.label,
                 sleepTimerRemaining: state.sleepTimer.remaining,
@@ -2614,11 +2662,12 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
               !state.sleepTimerDialogOpen &&
               visibleShortcutList.isNotEmpty)
             Positioned(
-              left: 0,
-              right: 0,
+              // Landscape: clear of the cutout and side nav bar, as MX is.
+              left: _controlsInsets(context).left,
+              right: _controlsInsets(context).right,
               // MX, both orientations: the row's centre sits 59 dp below the
               // back arrow's (top bar 56 high, row 56 high).
-              top: MediaQuery.of(context).padding.top + 59,
+              top: _controlsInsets(context).top + 59,
               child: Listener(
                 // MX Player parity: any touch on the shortcut strip —
                 // scrolling through the icons to find one, or a slow
@@ -2668,6 +2717,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
               left: 0,
               right: 0,
               child: _BottomControls(
+                insets: _controlsInsets(context),
                 position: state.position,
                 duration: state.duration,
                 isPlaying: state.isPlaying,
@@ -3190,6 +3240,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
 }
 
 class _TopBar extends StatelessWidget {
+  /// Where the controls may go (see `_controlsInsets`).
+  final EdgeInsets insets;
   final String title;
   final String decoderLabel;
   final Duration? sleepTimerRemaining;
@@ -3226,6 +3278,7 @@ class _TopBar extends StatelessWidget {
   final String? sourceLabel;
 
   const _TopBar({
+    required this.insets,
     required this.title,
     required this.decoderLabel,
     required this.sleepTimerRemaining,
@@ -3266,7 +3319,13 @@ class _TopBar extends StatelessWidget {
     final isLandscape =
         MediaQuery.of(context).orientation == Orientation.landscape;
     return Container(
-      padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
+      // Landscape keeps the back arrow and the menu clear of the status bar,
+      // the side nav bar and the camera cutout, as MX does.
+      padding: EdgeInsets.only(
+        top: insets.top,
+        left: insets.left,
+        right: insets.right,
+      ),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
@@ -3498,6 +3557,8 @@ String _stripExtension(String title) {
 const bool _kShowFrameStepButtons = false;
 
 class _BottomControls extends ConsumerStatefulWidget {
+  /// Where the controls may go (see `_controlsInsets`).
+  final EdgeInsets insets;
   final Duration position;
   final Duration duration;
   final bool isPlaying;
@@ -3553,6 +3614,7 @@ class _BottomControls extends ConsumerStatefulWidget {
   final VoidCallback? onScrubEnd;
 
   const _BottomControls({
+    required this.insets,
     required this.position,
     required this.duration,
     required this.isPlaying,
@@ -3704,15 +3766,22 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
                 (widget.duration.inMilliseconds * _dragValue!).round())
         : livePosition;
 
+    final landscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
     return Container(
-      // Reserve the real nav-bar height even in immersive mode (where
-      // MediaQuery.padding.bottom collapses to 0), so the Prev/Play/Next row
-      // never ends up under the system Back/Home/Recent bar when it slides in.
+      // MX GEOMETRY, measured on its screenshots taken on the owner's phone
+      // (1080x2316, 2.625 dpi, 3-button navigation: a 51.4 dp bar) — each
+      // row's centre above the edge of the space the controls may use:
+      //   portrait : buttons 19.4 dp, seek bar 62.5 dp above the nav bar
+      //   landscape: buttons 24 dp,   seek bar 67 dp above the screen edge
+      //              (the nav bar sits at the side there)
+      // This used to reserve the PORTRAIT nav bar in both orientations and
+      // pad the button row 8 dp above and below: 12 dp too high in portrait,
+      // ~58 dp too high in landscape (owner's screenshots, 2026-10-04).
       padding: EdgeInsets.only(
-        bottom: math.max(
-          MediaQuery.of(context).padding.bottom,
-          SystemInsets.bottomBar,
-        ),
+        bottom: widget.insets.bottom + (landscape ? 4 : 0),
+        left: widget.insets.left,
+        right: widget.insets.right,
       ),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -3775,13 +3844,17 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
           // the elapsed and remaining labels with it: they are the seek bar's
           // readout, and leaving two bare timestamps floating above the
           // transport row is not what "hide the seek bar" means.
+          // MX (portrait, measured): each time label starts 18.7 dp in from
+          // the screen edge and the bar's ends sit 79.6 dp in — the labels
+          // used to hug the edges (4 dp) and the bar ran 20 dp longer.
+          // 18 + 56 + the thumb's 5.5 dp inset = 79.5.
           if (widget.showSeekBar)
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 18),
             child: Row(
               children: [
                 SizedBox(
-                  width: 50,
+                  width: 56,
                   child: Text(
                     widget.formatDuration(displayPosition),
                     style: const TextStyle(
@@ -3801,10 +3874,15 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
                       thumbShape: const RoundSliderThumbShape(
                         enabledThumbRadius: 5.5,
                       ),
-                      // Drop the invisible touch-overlay padding so the track
-                      // extends right up to the time labels — they sit snug
-                      // against the seek bar like MX Player.
-                      overlayShape: SliderComponentShape.noOverlay,
+                      // TOUCH BAND. With no overlay at all the slider was
+                      // only as tall as its thumb (11 dp), so a finger had
+                      // to land exactly on the line — the owner's complaint,
+                      // set against MX, which takes a touch anywhere in a
+                      // band roughly 44 dp tall over the bar. This overlay
+                      // paints nothing; it is only tall. Its width stays
+                      // the thumb's, so the track still runs right up to the
+                      // time labels.
+                      overlayShape: const SeekBandShape(),
                     ),
                     child: Slider(
                       value: progress.clamp(0.0, 1.0),
@@ -3837,7 +3915,7 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
                   ),
                 ),
                 SizedBox(
-                  width: 50,
+                  width: 56,
                   child: Text(
                     // MX Player parity: right side shows negative remaining time
                     // e.g. "-1:29:22" rather than total duration
@@ -3855,8 +3933,12 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
               ],
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          if (landscape) const SizedBox(height: 1),
+          // MX (portrait, measured): lock centred 28 dp from the left edge,
+          // fill-screen 37.7 dp from the right, aspect 56.8 dp left of that.
+          Container(
+            height: 40,
+            padding: const EdgeInsets.only(left: 4, right: 14),
             child: Stack(
               alignment: Alignment.center,
               children: [
@@ -3942,6 +4024,7 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
                         onPressed: widget.onCycleAspectRatio,
                         tooltip: widget.aspectRatioMode.label,
                       ),
+                      const SizedBox(width: 9),
                       IconButton(
                         icon: const Icon(
                           Icons.fit_screen_outlined,
@@ -4006,4 +4089,36 @@ class _IconWithDot extends StatelessWidget {
       ],
     );
   }
+}
+
+
+/// The seek bar's touch band: an overlay that draws nothing and is 44 dp
+/// tall, which is what makes the slider itself 44 dp tall — Flutter's slider
+/// takes its height from the tallest of its parts. Its width is the thumb's
+/// so the track's ends do not move. See the comment where it is used.
+class SeekBandShape extends SliderComponentShape {
+  const SeekBandShape({this.height = 44, this.width = 11});
+
+  final double height;
+  final double width;
+
+  @override
+  Size getPreferredSize(bool isEnabled, bool isDiscrete) =>
+      Size(width, height);
+
+  @override
+  void paint(
+    PaintingContext context,
+    Offset center, {
+    required Animation<double> activationAnimation,
+    required Animation<double> enableAnimation,
+    required bool isDiscrete,
+    required TextPainter labelPainter,
+    required RenderBox parentBox,
+    required SliderThemeData sliderTheme,
+    required TextDirection textDirection,
+    required double value,
+    required double textScaleFactor,
+    required Size sizeWithOverflow,
+  }) {}
 }

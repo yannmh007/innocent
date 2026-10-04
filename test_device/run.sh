@@ -46,9 +46,22 @@ LOGCAT=$!
 # dialog sits over the app and eats every tap. Hide system error dialogs and
 # give the image a moment before measuring anything.
 adb shell settings put global hide_error_dialogs 1 || true
+# Android's one-time "Viewing full screen — swipe down to exit" card covers
+# the whole player the first time it goes immersive.
+adb shell settings put secure immersive_mode_confirmations confirmed || true
 adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS >/dev/null 2>&1 || true
 sleep 20
 adb shell input keyevent KEYCODE_HOME
+
+# A phone like the owner's: three-button navigation (a 48 dp bar, not the
+# gesture handle) and a punch-hole camera, so the player's insets are the
+# ones MX's screenshots were taken with.
+if [ "${PHONE_LIKE_OWNER:-0}" = 1 ]; then
+  adb shell cmd overlay enable com.android.internal.systemui.navbar.threebutton >/dev/null 2>&1 || true
+  adb shell cmd overlay enable com.android.internal.display.cutout.emulation.hole >/dev/null 2>&1 || true
+  sleep 5
+  log "overlays: $(adb shell cmd overlay list 2>/dev/null | grep -E 'threebutton|cutout' | tr -d '\r' | tr '\n' ' ')"
+fi
 
 # A LIBRARY LIKE A REAL PHONE'S. The emulator starts with no videos, and an
 # app with nothing to list does nothing — which is how a Video tab that kept a
@@ -102,6 +115,17 @@ export PATH="$HOME/.maestro/bin:$PATH"
 for flow in $FLOWS; do
   log "flow $flow"
   adb shell log -p i -t flutter "LAB phase $flow start" >/dev/null 2>&1 || true
+  # The layout flows measure one orientation each; the player follows the
+  # device by default, so turn the device.
+  case "$flow" in
+    layout_portrait)
+      adb shell settings put system accelerometer_rotation 0
+      adb shell settings put system user_rotation 0 ;;
+    layout_landscape)
+      adb shell settings put system accelerometer_rotation 0
+      adb shell settings put system user_rotation 1
+      sleep 3 ;;
+  esac
   # The perf flows sit still for a minute; read the threads in the middle of
   # it, while the Video tab idles or the film plays.
   case "$flow" in perf_*) ( sleep 40; { echo "== during $flow"; threads; } >> "$OUT/threads.txt" ) & ;; esac
