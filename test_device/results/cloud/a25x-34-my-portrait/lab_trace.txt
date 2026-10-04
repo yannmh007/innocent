@@ -1,0 +1,6 @@
+LAB    0.0 LAB script: phase default
+LAB cpu app 42% · 0.3fps · pool-thread 28% | io.worker. 10% | .innocent.media 2%
+LAB   55.0 LAB script: phase hwplus
+LAB cpu app 1% · 0.1fps · -
+LAB  110.0 LAB script: phase sw
+LAB cpu app 1% · 0.1fps · -
