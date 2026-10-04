@@ -269,8 +269,11 @@ class PlayerState {
     this.decoder = DecoderType.defaultMode,
     // PDF page 4 (verified from screenshot): the collapsed top row shows
     // Screenshot, Background Play (headphones), Screen Rotation, Loop. The
-    // expand chevron reveals everything else.
+    // expand chevron reveals everything else. MX's row also opens with the
+    // speed as a tappable "1X" — it used to be a separate pill here that
+    // could not be tapped and pushed the row 70 dp to the right.
     this.visibleShortcuts = const {
+      ShortcutItem.playbackSpeed,
       ShortcutItem.screenshot,
       ShortcutItem.backgroundPlay,
       ShortcutItem.screenRotation,

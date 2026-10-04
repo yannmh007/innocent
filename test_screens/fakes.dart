@@ -70,6 +70,8 @@ List<Override> libraryOverrides() => [
       foldersProvider.overrideWith((ref) async => folders),
       allVideosProvider.overrideWith((ref) async => videos()),
       allSongsProvider.overrideWith((ref) async => songs()),
+      videosInFolderProvider.overrideWith((ref, path) async =>
+          videos().where((v) => v.folderPath == path).toList()),
     ];
 
 /// A real album's shape (from the live catalogue, 2026-10-03): portrait and

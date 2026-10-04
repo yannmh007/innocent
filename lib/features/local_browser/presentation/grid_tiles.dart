@@ -19,6 +19,7 @@ import '../../player/presentation/floating_pip_provider.dart';
 import '../../../core/ui/safe_thumbnail.dart';
 
 import '../../../core/localization/app_strings.dart';
+import 'folder_list_item.dart' show FolderShapePainter;
 /// Phase 15: Grid tile for a folder (MX Player grid layout parity).
 class FolderGridTile extends ConsumerWidget {
   final Folder folder;
@@ -73,28 +74,35 @@ class FolderGridTile extends ConsumerWidget {
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // innocent_folders_grid_spec: fixed 63×40 landscape thumbnail,
-          // r8, surface #444D56; the badge floats just outside at (-2,-2).
+          // MX PLAYER'S GRID FOLDER: the same 72 x 54 dp silhouette as the
+          // list (FolderShapePainter), three to a row, measured from MX's
+          // screenshots on a 411 dp phone. The badge floats at (-2,-2).
           Stack(
             clipBehavior: Clip.none,
             children: [
               SizedBox(
-                width: 63,
-                height: 40,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: (showThumbs && coverUri != null)
-                      ? _FolderGridThumb(videoUri: coverUri)
-                      : Container(
-                          color: AppColors.specSurface,
-                          alignment: Alignment.center,
-                          child: Icon(
-                            _gridFolderIcon(folder.name),
-                            color: AppColors.specFolderIcon,
-                            size: 22,
-                          ),
-                        ),
-                ),
+                width: 72,
+                height: 54,
+                child: (showThumbs && coverUri != null)
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(6),
+                        child: _FolderGridThumb(videoUri: coverUri),
+                      )
+                    : CustomPaint(
+                        painter: const FolderShapePainter(),
+                        child: _gridFolderIcon(folder.name) == Icons.folder
+                            ? null
+                            : Padding(
+                                padding: const EdgeInsets.only(top: 8),
+                                child: Center(
+                                  child: Icon(
+                                    _gridFolderIcon(folder.name),
+                                    color: const Color(0xFF7D8790),
+                                    size: 22,
+                                  ),
+                                ),
+                              ),
+                      ),
               ),
               // Unread count badge — 18 dp red bubble, white bold number.
               // Reads the real count (see folderNewCountsProvider); the
@@ -141,7 +149,7 @@ class FolderGridTile extends ConsumerWidget {
                       color: selected
                           ? AppColors.accentBlue.withValues(alpha: 0.35)
                           : Colors.black.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(6),
                     ),
                     child: Align(
                       alignment: Alignment.center,
@@ -157,7 +165,7 @@ class FolderGridTile extends ConsumerWidget {
                 ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 9),
           Text(
             folder.name,
             maxLines: 1,
@@ -167,16 +175,20 @@ class FolderGridTile extends ConsumerWidget {
               color: isActiveFolder
                   ? AppColors.specSelectedLabel
                   : Colors.white,
-              fontSize: 17,
+              fontSize: 15.5,
               fontWeight: FontWeight.w400,
             ),
           ),
           Text(
-            '${folder.videoCount} ${folder.videoCount == 1 ? "video" : "videos"}',
+            // Localised: this was English for everyone ("96 videos" on a
+            // Burmese phone). The list view already said it in Burmese.
+            AppStrings.of(context).vhAlbumVideos(folder.videoCount),
             textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               color: AppColors.specTextSecondary,
-              fontSize: 13,
+              fontSize: 12,
             ),
           ),
         ],
@@ -340,6 +352,13 @@ class VideoGridTile extends ConsumerWidget {
     final showThumbs = ref.watch(
         preferencesProvider.select((p) => p.showThumbnails));
     final localPath = _localPath();
+    // The list honours "show file extension"; the grid ignored it and showed
+    // ".mp4" on every title.
+    final showExt = ref.watch(
+        libraryPreferencesProvider.select((p) => p.showFileExt));
+    final dot = video.title.lastIndexOf('.');
+    final title =
+        showExt || dot <= 0 ? video.title : video.title.substring(0, dot);
     // MediaStore reports 0 for a file indexed before its metadata was ready;
     // fall back to the real length read off the header (arrives async, rebuilds
     // this tile). Mirrors the list-item behaviour.
@@ -488,12 +507,13 @@ class VideoGridTile extends ConsumerWidget {
               children: [
                 Expanded(
                   child: Text(
-                    video.title,
-                    maxLines: 2,
+                    title,
+                    // MX: one line under the thumbnail.
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 15,
+                      fontSize: 14,
                     ),
                   ),
                 ),

@@ -22,11 +22,12 @@ import '../../../../core/localization/app_strings.dart';
 /// Updates over Phase 16:
 /// - Shown in BOTH list AND grid mode (MX Player V3 t=2 reference)
 /// - Swipeable carousel with pagination dots underneath
-/// - Each chip uses a 52dp surface disc with a white illustrative icon
+/// - Each chip is a 50 x 36 dp surface pill with a white glyph (MX Player's
+///   proportions — see [_Chip])
 ///
 /// PAGING IS COMPUTED, NOT HARD-CODED (changed when the Video chip was
-/// added). The strip used to be two hand-written pages of six. Six 52dp discs
-/// plus padding fit a 360dp screen with almost nothing to spare, so a seventh
+/// added). The strip used to be two hand-written pages of six. Six chips plus
+/// padding fit a 360dp screen with almost nothing to spare, so a seventh
 /// chip overflowed on small phones - and hand-balanced pages have to be
 /// re-balanced by hand every time an entry is added or removed.
 ///
@@ -49,7 +50,7 @@ class _QuickAccessChipsState extends ConsumerState<QuickAccessChips> {
   int _page = 0;
 
   /// Disc width plus the minimum gap either side of it.
-  static const double _slotWidth = 56;
+  static const double _slotWidth = 60;
 
   /// Matches the horizontal padding used by [_ChipPage].
   static const double _pagePadding = 28;
@@ -96,7 +97,7 @@ class _QuickAccessChipsState extends ConsumerState<QuickAccessChips> {
           mainAxisSize: MainAxisSize.min,
           children: [
             SizedBox(
-              height: 88,
+              height: 64,
               child: PageView.builder(
                 controller: _controller,
                 itemCount: pageCount,
@@ -183,14 +184,14 @@ class _QuickAccessChipsState extends ConsumerState<QuickAccessChips> {
         onTap: () => _open(context, const StatusSaverScreen()),
       ),
       _ChipItem(
-        label: s.playlists,
+        label: s.chipPlaylists,
         // MX shows clipboard-with-plus
         icon: Icons.playlist_add,
         bg: const Color(0xFF8E24AA), // purple
         onTap: () => _open(context, const PlaylistsScreen()),
       ),
       _ChipItem(
-        label: s.privateFolder,
+        label: s.chipPrivate,
         // MX uses a closed-padlock-shield
         icon: Icons.shield_outlined,
         bg: const Color(0xFF1565C0), // dark blue
@@ -270,7 +271,7 @@ class _ChipPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final children = <Widget>[
       for (final it in items) _Chip(item: it),
-      for (int i = items.length; i < slots; i++) const SizedBox(width: 52),
+      for (int i = items.length; i < slots; i++) const SizedBox(width: _Chip.width),
     ];
 
     return Padding(
@@ -301,38 +302,44 @@ class _Chip extends StatelessWidget {
   final _ChipItem item;
   const _Chip({required this.item});
 
+  // MX PLAYER'S PROPORTIONS, measured from its screenshots on a 411 dp phone
+  // (2026-10-04): six chips to a row at a 64 dp pitch, each a 50 x 36 pill
+  // with a 22 dp glyph and ONE line of 10 sp label under it. The old 52 dp
+  // discs fitted five, and their 11 sp labels broke onto two lines ("File /
+  // Transfer"), which is most of why the strip looked heavy next to MX's.
+  static const double width = 60;
+  static const double _pillW = 50;
+  static const double _pillH = 36;
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: item.onTap,
       behavior: HitTestBehavior.opaque,
       child: SizedBox(
-        width: 52,
+        width: width,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // innocent_folders_spec: 52 dp surface (#444D56) disc with a
-            // clean white glyph inside (the spec discs are uniform grey,
-            // not per-item colour).
             Container(
-              width: 52,
-              height: 52,
-              decoration: const BoxDecoration(
+              width: _pillW,
+              height: _pillH,
+              decoration: BoxDecoration(
                 color: AppColors.specSurface,
-                shape: BoxShape.circle,
+                borderRadius: BorderRadius.circular(_pillH / 2),
               ),
-              child: Icon(item.icon, color: Colors.white, size: 26),
+              child: Icon(item.icon, color: Colors.white, size: 22),
             ),
             const SizedBox(height: 6),
             Text(
               item.label,
               textAlign: TextAlign.center,
-              maxLines: 2,
+              maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 color: AppColors.specTextSecondary,
-                fontSize: 11,
-                height: 1.1,
+                fontSize: 10,
+                height: 1.2,
               ),
             ),
           ],

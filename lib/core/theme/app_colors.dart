@@ -66,7 +66,10 @@ class AppColors {
   // Brand #3D8DF0 (=specPrimary) is the seek fill; accent #66BAFF
   // (=specCheckbox) is the seek thumb. Two more are unique here:
   static const Color specSeekRail = Color(0xFF4D4D4D);      // seekbar rail
-  static const Color specActiveToggle = Color(0xFF4D628D);  // active quick-toggle circle
+  // Active quick-toggle circle. MX draws it TRANSLUCENT: (55,86,169) over
+  // black, (141,147,199) over a yellow wall — both fit #5382FF at 66%. The
+  // old opaque #4D628D read grey next to it.
+  static const Color specActiveToggle = Color(0xA85382FF);
   // Player ▸ Sleep Timer dialog (innocent_sleep_timer_spec). Reuses the
   // single accent #66BAFF (=specCheckbox) for STOP/START + the close ring.
   static const Color specSleepKeyFill = Color(0xFF2B2B2B);     // keypad button fill

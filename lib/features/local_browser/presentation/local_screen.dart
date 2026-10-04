@@ -792,7 +792,7 @@ class _LocalScreenState extends ConsumerState<LocalScreen> {
   /// with it, and Movies, which is reached from those chips, could not be
   /// found at all by exactly the people most likely to want it. The chips
   /// stay, and so does pull-to-refresh for a scan that has not caught up.
-  Widget _emptyLibrary(String message) {
+  Widget _emptyLibrary(String message, {bool loading = false}) {
     final searching = ref.watch(searchQueryProvider).isNotEmpty;
     return RefreshIndicator(
       onRefresh: () async {
@@ -811,14 +811,30 @@ class _LocalScreenState extends ConsumerState<LocalScreen> {
           SliverFillRemaining(
             hasScrollBody: false,
             child: Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 32),
-                child: Text(
-                  message,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: AppColors.darkOnSurfaceMuted),
-                ),
-              ),
+              child: loading
+                  // Phase 44's words kept: on a cold scan, say what is
+                  // happening so the app does not look hung.
+                  ? Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const CircularProgressIndicator(),
+                        const SizedBox(height: 16),
+                        Text(
+                          AppStrings.of(context).scanningVideos,
+                          style: const TextStyle(
+                              color: AppColors.darkOnSurfaceMuted),
+                        ),
+                      ],
+                    )
+                  : Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 32),
+                      child: Text(
+                        message,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                            color: AppColors.darkOnSurfaceMuted),
+                      ),
+                    ),
             ),
           ),
         ],
@@ -875,16 +891,16 @@ class _LocalScreenState extends ConsumerState<LocalScreen> {
                     const SliverToBoxAdapter(child: RecentlyAddedSection()),
                   if (prefs.layout == LayoutMode.grid)
                     SliverPadding(
-                      // innocent_folders_grid_spec: 120 dp column pitch
-                      // (→ 3 columns at 360 dp, more on tablets/laptops),
-                      // 95 dp row pitch. Thumbnails are centred inside each
-                      // cell so the side margins land at ~29 dp on phones.
+                      // MX PLAYER'S GRID: three columns on a phone (137 dp
+                      // pitch on 411 dp; more on tablets), 107 dp rows —
+                      // measured from MX's screenshots. Was 120 / 95, which
+                      // made four small columns on the same phone.
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       sliver: SliverGrid(
                         gridDelegate:
                             const SliverGridDelegateWithMaxCrossAxisExtent(
-                          maxCrossAxisExtent: 120,
-                          mainAxisExtent: 95,
+                          maxCrossAxisExtent: 140,
+                          mainAxisExtent: 107,
                           crossAxisSpacing: 0,
                           mainAxisSpacing: 0,
                         ),
@@ -921,24 +937,11 @@ class _LocalScreenState extends ConsumerState<LocalScreen> {
           ),
         );
       },
-      loading: () => Center(
-        // Phase 44: tell the user what's happening on a cold scan so they
-        // don't think the app is hung. The spinner is fast enough on
-        // subsequent launches that this only shows on the very first one.
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const CircularProgressIndicator(),
-            const SizedBox(height: 16),
-            Text(AppStrings.of(context).scanningVideos,
-              style: const TextStyle(
-                color: AppColors.darkOnSurfaceMuted,
-                fontSize: 13,
-              ),
-            ),
-          ],
-        ),
-      ),
+      // THE CHIPS DURING THE FIRST SCAN, TOO. Seen on a real Galaxy A03s in
+      // Test Lab: the first launch spent its whole scan on a spinner with
+      // nothing else on screen, and on a phone with thousands of videos that
+      // is long enough to give up on finding Movies.
+      loading: () => _emptyLibrary('', loading: true),
       error: (e, _) => Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -1133,67 +1136,76 @@ class _LocalScreenState extends ConsumerState<LocalScreen> {
         // playback record. Without this the badge survived being watched and
         // sat there for the rest of the week.
         final playedUris = ref.watch(playedUrisProvider);
-        Widget body;
-        if (prefs.layout == LayoutMode.grid) {
-          body = GridView.builder(
-            controller: _fabVisibility.controller,
-            // innocent_videos_grid_spec: 16 dp side margins, 18 dp gutter,
-            // 155-wide 16:9 thumbs → 2 columns at 360 dp, scaling to more
-            // columns on tablets/laptops at the same thumbnail width.
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-              maxCrossAxisExtent: 200,
-              mainAxisSpacing: 0,
-              crossAxisSpacing: 18,
-              childAspectRatio: 1.13,
-            ),
-            itemCount: videos.length,
-            itemBuilder: (_, i) {
-              final video = videos[i];
-              final isNew = NewBadge.applies(
-                video: video,
-                periodDays: newPeriodDays,
-                playedUris: playedUris,
-                normalize: normalizeMediaUri,
-                now: now,
-              );
-              return VideoGridTile(
-              key: ValueKey(video.uri),
-                video: video,
-                showNewBadge: isNew,
-                onTap: () => _openVideo(video),
-                onMoreTap: () => VideoOptionMenu.show(context, video),
-                onLongPress: () =>
-                    ref.read(selectionProvider.notifier).toggle(video.uri),
-              );
-            },
+        Widget tileAt(int i) {
+          final video = videos[i];
+          final isNew = NewBadge.applies(
+            video: video,
+            periodDays: newPeriodDays,
+            playedUris: playedUris,
+            normalize: normalizeMediaUri,
+            now: now,
           );
-        } else {
-          body = ListView.builder(
-            controller: _fabVisibility.controller,
-            itemCount: videos.length,
-            itemBuilder: (_, i) {
-              final video = videos[i];
-              final isNew = NewBadge.applies(
-                video: video,
-                periodDays: newPeriodDays,
-                playedUris: playedUris,
-                normalize: normalizeMediaUri,
-                now: now,
-              );
-              return VideoListItem(
-              key: ValueKey(video.uri),
-                video: video,
-                showNewBadge: isNew,
-                onTap: () => _openVideo(video),
-                onMoreTap: () => VideoOptionMenu.show(context, video),
-                // Phase 13: Long-press starts selection mode
-                onLongPress: () =>
-                    ref.read(selectionProvider.notifier).toggle(video.uri),
-              );
-            },
-          );
+          void select() =>
+              ref.read(selectionProvider.notifier).toggle(video.uri);
+          return prefs.layout == LayoutMode.grid
+              ? VideoGridTile(
+                  key: ValueKey(video.uri),
+                  video: video,
+                  showNewBadge: isNew,
+                  onTap: () => _openVideo(video),
+                  onMoreTap: () => VideoOptionMenu.show(context, video),
+                  onLongPress: select,
+                )
+              : VideoListItem(
+                  key: ValueKey(video.uri),
+                  video: video,
+                  showNewBadge: isNew,
+                  onTap: () => _openVideo(video),
+                  onMoreTap: () => VideoOptionMenu.show(context, video),
+                  // Phase 13: Long-press starts selection mode
+                  onLongPress: select,
+                );
         }
+
+        // THE CHIPS ON THE VIDEOS VIEW TOO, as MX shows them above its file
+        // list and grid: without them Movies and the other shortcuts could
+        // only be reached by switching back to Folders first.
+        final body = CustomScrollView(
+          controller: _fabVisibility.controller,
+          slivers: [
+            if (ref.watch(searchQueryProvider).isEmpty)
+              SliverToBoxAdapter(
+                child: QuickAccessChips(onNavigate: _hideContinueWatching),
+              ),
+            if (prefs.layout == LayoutMode.grid)
+              SliverPadding(
+                // innocent_videos_grid_spec: 16 dp side margins, 18 dp
+                // gutter, 155-wide 16:9 thumbs → 2 columns at 360 dp,
+                // scaling to more columns on tablets/laptops.
+                padding: const EdgeInsets.fromLTRB(18, 8, 18, 8),
+                sliver: SliverGrid(
+                  gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                    maxCrossAxisExtent: 200,
+                    mainAxisSpacing: 0,
+                    // MX: 177 dp tiles, 21 dp apart, 153 dp row pitch.
+                    crossAxisSpacing: 21,
+                    childAspectRatio: 1.15,
+                  ),
+                  delegate: SliverChildBuilderDelegate(
+                    (_, i) => tileAt(i),
+                    childCount: videos.length,
+                  ),
+                ),
+              )
+            else
+              SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (_, i) => tileAt(i),
+                  childCount: videos.length,
+                ),
+              ),
+          ],
+        );
         return RefreshIndicator(
           onRefresh: () async {
             final res = await refreshLibraryWithAdb(ref);
@@ -1204,21 +1216,7 @@ class _LocalScreenState extends ConsumerState<LocalScreen> {
           child: body,
         );
       },
-      loading: () => Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const CircularProgressIndicator(),
-            const SizedBox(height: 16),
-            Text(AppStrings.of(context).scanningVideos,
-              style: const TextStyle(
-                color: AppColors.darkOnSurfaceMuted,
-                fontSize: 13,
-              ),
-            ),
-          ],
-        ),
-      ),
+      loading: () => _emptyLibrary('', loading: true),
       error: (e, _) => Center(
         child: Text('${AppStrings.of(context).errorWord}: $e',
             style: const TextStyle(color: AppColors.error)),

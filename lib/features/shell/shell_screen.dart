@@ -164,11 +164,14 @@ class _ShellScreenState extends ConsumerState<ShellScreen>
         type: BottomNavigationBarType.fixed,
         selectedItemColor: AppColors.specPrimary,
         unselectedItemColor: AppColors.specNavInactive,
-        // MX-Player-sized nav bar: larger icons + labels (was 24 / 11) so the
-        // bar reads taller and more prominent, matching MX's bottom tabs.
-        iconSize: 28,
-        selectedFontSize: 13,
-        unselectedFontSize: 12,
+        // MX PLAYER'S NAV, measured from its screenshots (2026-10-04, 411 dp
+        // phone): a 24 dp icon and an 11 sp label, the same size selected or
+        // not. The 28 / 13 this used to be — set "to read taller" — was a
+        // third larger than MX's and made the bar the heaviest thing on the
+        // screen.
+        iconSize: 24,
+        selectedFontSize: 11,
+        unselectedFontSize: 11,
         showUnselectedLabels: true,
         onTap: (index) {
           ref.read(shellTabIndexProvider.notifier).state = index;

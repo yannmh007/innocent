@@ -121,7 +121,8 @@ class VideoListItem extends ConsumerWidget {
             ? AppColors.accentBlue12
             : null,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          // MX: 16 dp from the edge, 96×56 thumb, 78 dp row pitch.
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
@@ -235,7 +236,7 @@ class VideoListItem extends ConsumerWidget {
                 )
               else if (libPrefs.showThumbnail)
                 const _ThumbnailPlaceholder(),
-              if (libPrefs.showThumbnail) const SizedBox(width: 12),
+              if (libPrefs.showThumbnail) const SizedBox(width: 11),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -247,12 +248,12 @@ class VideoListItem extends ConsumerWidget {
                         color: isPlaying
                             ? AppColors.accentBlue
                             : AppColors.darkOnSurface,
-                        fontSize: 14,
+                        fontSize: 14.5,
                         height: 1.25,
                         fontWeight:
                             isPlaying ? FontWeight.w500 : FontWeight.w400,
                       ),
-                      maxLines: 2,
+                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     if (video.isHidden || metaParts.isNotEmpty) ...[
