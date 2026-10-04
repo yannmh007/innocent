@@ -1,40 +1,40 @@
-Load: 5.62 / 5.65 / 2.92
-CPU usage from 456915ms to 169577ms ago (2026-10-04 18:00:27.642 to 2026-10-04 18:05:14.981):
-  15% 519/system_server: 10% user + 4.8% kernel / faults: 519496 minor 86 major
-  3.1% 375/android.hardware.graphics.composer3-service.ranchu: 0% user + 3.1% kernel / faults: 2 minor
-  2.9% 415/adbd: 1% user + 1.9% kernel / faults: 407317 minor 2 major
-  2.3% 150/kworker/1:3-slub_flushwq: 0% user + 2.3% kernel
-  1.9% 1084/com.google.android.apps.nexuslauncher: 1% user + 0.9% kernel / faults: 57647 minor 34 major
-  1.9% 1717/com.google.android.googlequicksearchbox:search: 1.3% user + 0.5% kernel / faults: 91325 minor 194 major
-  1.8% 1526/com.google.android.inputmethod.latin: 1.3% user + 0.4% kernel / faults: 55661 minor 16 major
-  1.7% 447/logcat: 0% user + 1.6% kernel / faults: 3 minor
-  1.4% 835/com.android.systemui: 1% user + 0.3% kernel / faults: 37319 minor 49 major
-  1.3% 2745/com.google.android.apps.wallpaper: 1.2% user + 0.1% kernel / faults: 18653 minor 301 major
-  1.1% 1555/com.google.android.apps.wellbeing: 0.8% user + 0.3% kernel / faults: 86403 minor 2685 major
-  1% 838/com.google.android.permissioncontroller: 0.6% user + 0.3% kernel / faults: 33856 minor 1111 major
-  0.9% 1633/com.google.android.as: 0.6% user + 0.2% kernel / faults: 31434 minor 4 major
-  0.9% 131/logd: 0.2% user + 0.6% kernel / faults: 3483 minor 1 major
-  0.8% 353/android.hardware.sensors-service.multihal: 0.2% user + 0.5% kernel / faults: 1 minor
+Load: 3.17 / 4.49 / 2.43
+CPU usage from 406969ms to 123064ms ago (2026-10-04 18:28:45.711 to 2026-10-04 18:33:29.617):
+  15% 522/system_server: 10% user + 4.9% kernel / faults: 526873 minor 72 major
+  3.2% 413/adbd: 0.9% user + 2.3% kernel / faults: 431763 minor 2 major
+  3% 388/android.hardware.graphics.composer3-service.ranchu: 0% user + 2.9% kernel / faults: 5 minor
+  2.5% 3362/com.google.android.gms.unstable: 1.6% user + 0.8% kernel / faults: 45778 minor 5836 major
+  2% 1106/com.google.android.apps.nexuslauncher: 1% user + 1% kernel / faults: 52527 minor 25 major
+  1.7% 1554/com.google.android.inputmethod.latin: 1.3% user + 0.4% kernel / faults: 51121 minor 6 major
+  1.6% 36/kworker/1:1-rcu_gp: 0% user + 1.6% kernel
+  1.7% 437/logcat: 0.1% user + 1.6% kernel / faults: 3 minor
+  1.7% 1796/com.google.android.googlequicksearchbox:search: 1.2% user + 0.4% kernel / faults: 84297 minor 128 major
+  1.5% 147/kworker/1:3-virtio_vsock: 0% user + 1.5% kernel
+  1.4% 3342/com.google.android.apps.wallpaper: 1.3% user + 0% kernel / faults: 26727 minor 316 major
+  1.3% 841/com.android.systemui: 1% user + 0.3% kernel / faults: 31730 minor 44 major
+  1% 1562/com.google.android.apps.wellbeing: 0.7% user + 0.3% kernel / faults: 73040 minor 2329 major
+  1% 842/com.google.android.permissioncontroller: 0.6% user + 0.3% kernel / faults: 33800 minor 1947 major
+  0.9% 1656/com.google.android.as: 0.7% user + 0.2% kernel / faults: 32045 minor 4 major
+  0.8% 130/logd: 0.2% user + 0.6% kernel / faults: 2813 minor
+  0.8% 373/android.hardware.sensors-service.multihal: 0.2% user + 0.5% kernel / faults: 1 minor
+  0.8% 2103/android.process.media: 0.3% user + 0.4% kernel / faults: 7176 minor 1575 major
   0.8% 23/ksoftirqd/1: 0% user + 0.8% kernel
-  0.7% 54/kworker/1:2-kdmflush/254:40: 0% user + 0.7% kernel
-  0.7% 1673/com.google.android.providers.media.module: 0.4% user + 0.2% kernel / faults: 27056 minor 1 major
-  0.6% 320/dhcpclient: 0% user + 0.6% kernel / faults: 1 minor
-  0.6% 2113/android.process.media: 0.3% user + 0.3% kernel / faults: 6222 minor 570 major
-  0.5% 399/surfaceflinger: 0.1% user + 0.3% kernel / faults: 537 minor
-  0.4% 2830/com.google.android.tts: 0.4% user + 0% kernel / faults: 29833 minor 676 major
-  0.4% 187/jbd2/dm-40-8: 0% user + 0.4% kernel
-  0.4% 333/statsd: 0.1% user + 0.2% kernel / faults: 484 minor
-  0.3% 25/kworker/1:0H-kblockd: 0% user + 0.3% kernel
-  0.3% 453/media.extractor: 0.2% user + 0.1% kernel / faults: 3673 minor 2 major
-  0.3% 19/kworker/0:1-cgroup_destroy: 0% user + 0.3% kernel
-  0.3% 455/mediaserver: 0.1% user + 0.2% kernel / faults: 8640 minor 83 major
-  0.3% 1704/com.google.android.apps.youtube.music: 0.3% user + 0% kernel / faults: 22003 minor 1931 major
-  0.3% 1980/com.google.android.as.oss: 0.2% user + 0.1% kernel / faults: 2451 minor 1 major
-  0.3% 1048/com.android.phone: 0.2% user + 0% kernel / faults: 9925 minor 1 major
-  0.2% 243/kworker/u4:3-loop22: 0% user + 0.2% kernel
-  0.2% 1669/com.google.process.gservices: 0.1% user + 0.1% kernel / faults: 5405 minor 442 major
-  0.2% 1055/com.android.settings: 0.1% user + 0% kernel / faults: 15147 minor 461 major
-  0.2% 2335/com.google.android.dialer: 0.1% user + 0% kernel / faults: 16573 minor 860 major
-  0.1% 345/android.hardware.graphics.allocator@3.0-service.ranchu: 0% user + 0.1% kernel
-  0.1% 133/lmkd: 0% user + 0.1% kernel
-  0.1% 134/servicemanager: 0% user + 0.1% kernel / faults: 24 minor
+  0.6% 1677/com.google.android.providers.media.module: 0.4% user + 0.2% kernel / faults: 27235 minor 1 major
+  0.5% 19/kworker/0:1-events: 0% user + 0.5% kernel
+  0.5% 322/dhcpclient: 0% user + 0.4% kernel / faults: 3 minor
+  0.4% 188/jbd2/dm-40-8: 0% user + 0.4% kernel
+  0.4% 400/surfaceflinger: 0.1% user + 0.3% kernel / faults: 611 minor
+  0.4% 266/kworker/1:2H-kverityd: 0% user + 0.4% kernel
+  0.4% 335/statsd: 0.1% user + 0.2% kernel / faults: 465 minor
+  0.3% 1957/com.google.android.as.oss: 0.2% user + 0.1% kernel / faults: 2165 minor 1 major
+  0.3% 459/media.extractor: 0.2% user + 0.1% kernel / faults: 3606 minor 2 major
+  0.3% 464/mediaserver: 0.1% user + 0.2% kernel / faults: 8483 minor 86 major
+  0.2% 1061/com.android.settings: 0.1% user + 0% kernel / faults: 13851 minor 531 major
+  0.2% 1681/com.google.process.gservices: 0.1% user + 0.1% kernel / faults: 4918 minor 418 major
+  0.2% 53/kworker/u4:2-loop21: 0% user + 0.2% kernel
+  0.2% 1054/com.android.phone: 0.1% user + 0% kernel / faults: 7858 minor 1 major
+  0.2% 347/android.hardware.graphics.allocator@3.0-service.ranchu: 0% user + 0.2% kernel / faults: 1 minor
+  0.1% 2880/com.google.android.dialer: 0.1% user + 0% kernel / faults: 12818 minor
+  0.1% 133/servicemanager: 0% user + 0.1% kernel / faults: 21 minor
+  0.1% 131/lmkd: 0% user + 0.1% kernel
+  0.1% 14/rcu_preempt: 0% user + 0.1% kernel

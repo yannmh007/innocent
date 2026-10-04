@@ -15,12 +15,9 @@ Take screenshot 82_remote_opened... COMPLETED
 Press Back key... COMPLETED
 Wait for animation to end within 2000 ms... COMPLETED
 Take screenshot 83_remote_back... COMPLETED
-Press Back key... COMPLETED
+Launch app "com.innocent.media" without stopping app... COMPLETED
 Wait for animation to end within 2000 ms... COMPLETED
-Tap on (Optional) "(?s).*Tab 2 of 4.*"... WARNED
-
-
- Warning: Element not found: Text matching regex: (?s).*Tab 2 of 4.*
+Tap on (Optional) "(?s).*Tab 2 of 4.*"... COMPLETED
 Wait for animation to end within 2000 ms... COMPLETED
 Take screenshot 84_on_music... COMPLETED
 Press Back key... COMPLETED

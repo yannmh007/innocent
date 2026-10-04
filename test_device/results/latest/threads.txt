@@ -1,33 +1,33 @@
 == during perf_idle
 
 
-Threads: 52 total,   0 running,  52 sleeping,   0 stopped,   0 zombie
-  Mem:  4016524K total,  3596552K used,   419972K free,    23656K buffers
- Swap:  3012388K total,   235264K used,  2777124K free,  1858260K cached
-200%cpu  36%user   2%nice  12%sys 147%idle   0%iow   0%irq   1%sirq   2%host
+Threads: 50 total,   0 running,  50 sleeping,   0 stopped,   0 zombie
+  Mem:  4016524K total,  3710532K used,   305992K free,    17752K buffers
+ Swap:  3012388K total,   212480K used,  2799908K free,  1957304K cached
+200%cpu  55%user  21%nice  75%sys   8%idle   0%iow   0%irq  14%sirq  27%host
   TID USER         PR  NI VIRT  RES  SHR S[%CPU] %MEM     TIME+ THREAD          PROCESS
- 6335 u0_a192      10 -10  18G 247M 144M S  1.2   6.2   0:00.57 .innocent.media com.innocent.media
- 6537 u0_a192      20   0  18G 247M 144M S  0.0   6.2   0:00.00 binder:6335_8   com.innocent.media
- 6536 u0_a192      20   0  18G 247M 144M S  0.0   6.2   0:00.00 binder:6335_7   com.innocent.media
- 6478 u0_a192      29   9  18G 247M 144M S  0.0   6.2   0:00.02 glide-source-th com.innocent.media
- 6477 u0_a192      29   9  18G 247M 144M S  0.0   6.2   0:00.00 glide-disk-cach com.innocent.media
- 6479 u0_a192      29   9  18G 247M 144M S  0.0   6.2   0:00.02 glide-source-th com.innocent.media
- 6476 u0_a192      20   0  18G 247M 144M S  0.0   6.2   0:00.00 ConnectivityThr com.innocent.media
- 6475 u0_a192      30  10  18G 247M 144M S  0.0   6.2   0:00.00 glide-active-re com.innocent.media
- 6467 u0_a192      20   0  18G 247M 144M S  0.0   6.2   0:00.00 binder:6335_6   com.innocent.media
- 6466 u0_a192      20   0  18G 247M 144M S  0.0   6.2   0:00.01 binder:6335_5   com.innocent.media
- 6451 u0_a192      20   0  18G 247M 144M S  0.0   6.2   0:00.01 pool-2-thread-4 com.innocent.media
- 6455 u0_a192      20   0  18G 247M 144M S  0.0   6.2   0:00.01 pool-2-thread-8 com.innocent.media
- 6454 u0_a192      20   0  18G 247M 144M S  0.0   6.2   0:00.01 pool-2-thread-7 com.innocent.media
- 6453 u0_a192      20   0  18G 247M 144M S  0.0   6.2   0:00.01 pool-2-thread-6 com.innocent.media
- 6452 u0_a192      20   0  18G 247M 144M S  0.0   6.2   0:00.01 pool-2-thread-5 com.innocent.media
- 6450 u0_a192      20   0  18G 247M 144M S  0.0   6.2   0:00.00 pool-2-thread-3 com.innocent.media
- 6448 u0_a192      20   0  18G 247M 144M S  0.0   6.2   0:00.01 pool-2-thread-2 com.innocent.media
- 6447 u0_a192      20   0  18G 247M 144M S  0.0   6.2   0:00.01 pool-2-thread-1 com.innocent.media
- 6416 u0_a192      20   0  18G 247M 144M S  0.0   6.2   0:00.00 OkHttp Connecti com.innocent.media
- 6406 u0_a192      20   0  18G 247M 144M S  0.0   6.2   0:00.00 SurfaceSyncGrou com.innocent.media
- 6409 u0_a192      18  -2  18G 247M 144M S  0.0   6.2   0:00.00 hwuiTask1       com.innocent.media
- 6408 u0_a192      18  -2  18G 247M 144M S  0.0   6.2   0:00.00 hwuiTask0       com.innocent.media
- 6404 u0_a192      15  -5  18G 247M 144M S  0.0   6.2   0:00.00 1.raster        com.innocent.media
- 6398 u0_a192      20   0  18G 247M 144M S  0.0   6.2   0:00.00 Sqflite         com.innocent.media
- 6397 u0_a192      18  -2  18G 247M 144M S  0.0   6.2   0:00.00 queued-work-loo com.innocent.media
+ 6346 u0_a192      10 -10  18G 257M 146M S  0.2   6.5   0:00.54 .innocent.media com.innocent.media
+ 6508 u0_a192      29   9  18G 257M 146M S  0.0   6.5   0:00.02 glide-source-th com.innocent.media
+ 6507 u0_a192      29   9  18G 257M 146M S  0.0   6.5   0:00.02 glide-source-th com.innocent.media
+ 6506 u0_a192      29   9  18G 257M 146M S  0.0   6.5   0:00.00 glide-disk-cach com.innocent.media
+ 6505 u0_a192      20   0  18G 257M 146M S  0.0   6.5   0:00.00 ConnectivityThr com.innocent.media
+ 6504 u0_a192      30  10  18G 257M 146M S  0.0   6.5   0:00.00 glide-active-re com.innocent.media
+ 6499 u0_a192      20   0  18G 257M 146M S  0.0   6.5   0:00.00 binder:6346_6   com.innocent.media
+ 6485 u0_a192      20   0  18G 257M 146M S  0.0   6.5   0:00.00 binder:6346_5   com.innocent.media
+ 6475 u0_a192      20   0  18G 257M 146M S  0.0   6.5   0:00.00 pool-2-thread-3 com.innocent.media
+ 6480 u0_a192      20   0  18G 257M 146M S  0.0   6.5   0:00.00 pool-2-thread-8 com.innocent.media
+ 6479 u0_a192      20   0  18G 257M 146M S  0.0   6.5   0:00.00 pool-2-thread-7 com.innocent.media
+ 6478 u0_a192      20   0  18G 257M 146M S  0.0   6.5   0:00.00 pool-2-thread-6 com.innocent.media
+ 6477 u0_a192      20   0  18G 257M 146M S  0.0   6.5   0:00.00 pool-2-thread-5 com.innocent.media
+ 6476 u0_a192      20   0  18G 257M 146M S  0.0   6.5   0:00.00 pool-2-thread-4 com.innocent.media
+ 6472 u0_a192      20   0  18G 257M 146M S  0.0   6.5   0:00.01 pool-2-thread-1 com.innocent.media
+ 6473 u0_a192      20   0  18G 257M 146M S  0.0   6.5   0:00.01 pool-2-thread-2 com.innocent.media
+ 6456 u0_a192      20   0  18G 257M 146M S  0.0   6.5   0:00.00 binder:6346_4   com.innocent.media
+ 6429 u0_a192      20   0  18G 257M 146M S  0.0   6.5   0:00.00 binder:6346_3   com.innocent.media
+ 6427 u0_a192      18  -2  18G 257M 146M S  0.0   6.5   0:00.00 hwuiTask0       com.innocent.media
+ 6428 u0_a192      18  -2  18G 257M 146M S  0.0   6.5   0:00.00 hwuiTask1       com.innocent.media
+ 6426 u0_a192      20   0  18G 257M 146M S  0.0   6.5   0:00.00 SurfaceSyncGrou com.innocent.media
+ 6414 u0_a192      20   0  18G 257M 146M S  0.0   6.5   0:00.00 OkHttp Connecti com.innocent.media
+ 6409 u0_a192      20   0  18G 257M 146M S  0.0   6.5   0:00.00 Sqflite         com.innocent.media
+ 6404 u0_a192      18  -2  18G 257M 146M S  0.0   6.5   0:00.00 queued-work-loo com.innocent.media
+ 6403 u0_a192      10 -10  18G 257M 146M S  0.0   6.5   0:00.00 mpv/mpv core    com.innocent.media
