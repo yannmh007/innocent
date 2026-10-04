@@ -13,6 +13,7 @@ import 'music_queue_sheet.dart';
 import 'playlist_detail_screen.dart';
 import 'song_context_menu.dart';
 import '../../../core/utils/async_value_extensions.dart';
+import '../../../core/ui/tablet_constrained_width.dart';
 
 /// Music tab — Tracks / Playlists / Albums / Artists / Folders
 /// Matches MX Player UI (PDF page 5)
@@ -169,7 +170,10 @@ class _MusicScreenState extends ConsumerState<MusicScreen>
           Column(
             children: [
               Expanded(
-                child: TabBarView(
+                // A phone-width column on a tablet or TV, as the Video tab.
+                child: TabletConstrainedWidth(
+                  maxWidth: 840,
+                  child: TabBarView(
                   controller: _tabController,
                   children: [
                     _TracksTab(searchQuery: _searchController.text),
@@ -178,6 +182,7 @@ class _MusicScreenState extends ConsumerState<MusicScreen>
                     const _ArtistsTab(),
                     const _FoldersTab(),
                   ],
+                ),
                 ),
               ),
               // ─── MINI PLAYER BAR ───
