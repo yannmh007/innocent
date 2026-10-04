@@ -96,6 +96,14 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
     _intentService.start();
     _intentSub = _intentService.videoRequests.listen((req) {
       // Wait for the router/widget tree to be ready before pushing.
+      // DEVICE LAB: Test Lab installs fresh, so the introduction is up, and
+      // it is not on the router — a push would land behind it, unseen. Step
+      // past it first (for this run only; nothing is saved).
+      final labFilm = const bool.fromEnvironment('INNOCENT_LAB') &&
+          req.uri.endsWith('/innocent_lab_play.mp4');
+      if (labFilm && _showOnboarding && mounted) {
+        setState(() => _showOnboarding = false);
+      }
       WidgetsBinding.instance.addPostFrameCallback((_) {
         // A share-intent can arrive as the app is closing; touching `ref`
         // after this State is disposed throws and kills whatever is building.
@@ -105,10 +113,7 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
           Routes.player,
           extra: {'uri': req.uri, 'title': req.title},
         );
-        if (const bool.fromEnvironment('INNOCENT_LAB') &&
-            req.uri.endsWith('/innocent_lab_play.mp4')) {
-          _labPlaybackScript();
-        }
+        if (labFilm) _labPlaybackScript();
       });
     });
 
