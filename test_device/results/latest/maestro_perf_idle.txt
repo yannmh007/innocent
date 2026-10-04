@@ -2,6 +2,8 @@ Running on test
  > Flow perf_idle
 Launch app "com.innocent.media"... COMPLETED
 Wait for animation to end within 10000 ms... COMPLETED
+Tap on (Optional) "Skip"... COMPLETED
+Wait for animation to end within 5000 ms... COMPLETED
 Tap on (Optional) "Allow.*"... WARNED
 
 
@@ -10,6 +12,10 @@ Tap on (Optional) "Allow.*"... WARNED
 
 
  Warning: Element not found: Text matching regex: Allow.*
+Tap on (Optional) "Skip"... WARNED
+
+
+ Warning: Element not found: Text matching regex: Skip
 Tap on (Optional) "Video"... WARNED
 
 

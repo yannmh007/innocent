@@ -1,10 +1,10 @@
-LAB cpu app 38% · 0.2fps · 1.raster 17% | pool-thread 17% | RenderThread 2%
+LAB cpu app 25% · 0.2fps · pool-thread 13% | 1.raster 8% | RenderThread 2%
 LAB phase perf_idle start
-LAB cpu app 14% · 0.3fps · 1.raster 11% | RenderThread 2% | .innocent.media 1%
-LAB cpu app 4% · 0.2fps · .innocent.media 3%
-LAB cpu app 1% · 0.1fps · .innocent.media 1%
+LAB cpu app 24% · 4.1fps · 1.raster 16% | .innocent.media 4% | RenderThread 2% | pool-thread 2%
+LAB cpu app 2% · 0.0fps · .innocent.media 2%
+LAB cpu app 1% · 0.1fps · -
 LAB phase perf_play start
 LAB cpu app 1% · 0.3fps · -
-LAB cpu app 10% · 0.6fps · .innocent.media 9%
-LAB cpu app 15% · 1.0fps · .innocent.media 14% | 1.raster 1%
-LAB cpu app 10% · 0.8fps · .innocent.media 9%
+LAB cpu app 18% · 0.2fps · .innocent.media 17%
+LAB cpu app 22% · 0.0fps · .innocent.media 22%
+LAB cpu app 5% · 0.0fps · .innocent.media 4%
