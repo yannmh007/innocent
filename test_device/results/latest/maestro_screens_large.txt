@@ -2,17 +2,11 @@ Running on test
  > Flow screens_large
 Wait for animation to end within 3000 ms... COMPLETED
 Take screenshot 70_large_video... COMPLETED
-Tap on (Optional) ".*Music.*", Index: 0... COMPLETED
+Tap on (Optional) "(?s).*Tab 2 of 4.*"... COMPLETED
 Wait for animation to end within 3000 ms... COMPLETED
 Take screenshot 71_large_music... COMPLETED
-Tap on (Optional) "Me"... WARNED
-
-
- Warning: Element not found: Text matching regex: Me
+Tap on (Optional) "(?s).*Tab 4 of 4.*"... COMPLETED
 Wait for animation to end within 3000 ms... COMPLETED
 Take screenshot 72_large_me... COMPLETED
-Tap on (Optional) "Video"... WARNED
-
-
- Warning: Element not found: Text matching regex: Video
+Tap on (Optional) "(?s).*Tab 1 of 4.*"... COMPLETED
 Wait for animation to end within 3000 ms... COMPLETED
