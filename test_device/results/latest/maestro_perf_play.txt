@@ -1,0 +1,22 @@
+Running on test
+ > Flow perf_play
+Scrolling DOWN until "Perf Test" is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... WARNED
+
+
+ Warning: No visible element found: "Perf Test"
+Tap on (Optional) "Perf Test"... WARNED
+
+
+ Warning: Element not found: Text matching regex: Perf Test
+Wait for animation to end within 5000 ms... COMPLETED
+Tap on (Optional) "aaa_play_720p.*"... WARNED
+
+
+ Warning: Element not found: Text matching regex: aaa_play_720p.*
+Assert that (Optional) "__nothing_has_this_text__" is visible... WARNED
+
+
+ Warning: Assertion is false: "__nothing_has_this_text__" is visible
+Take screenshot 40_playing_60s... COMPLETED
+Press back... COMPLETED
+Wait for animation to end within 5000 ms... COMPLETED

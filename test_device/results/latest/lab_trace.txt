@@ -1,17 +1,10 @@
-LAB    0.0 dl pass x3 from 0/396 MB http 200
-LAB   85.7 hwdec -> auto
-LAB   86.0 open scheme=http len=106 hwdec=auto start=0s autoplay=true
-LAB   86.1 wakelock playing=false bg=false priv=false
-LAB   86.2 lifecycle inactive mounted=true
-LAB   86.2 open ok
-LAB   86.2 wakelock playing=true bg=false priv=false
-LAB   87.6 fg stream: watching
-LAB   89.4 stall #1 unknown {reason: unknown}
-LAB   90.1 lifecycle resumed mounted=true
-LAB   94.1 dl pass end +182 MB in 94 s (1.93 MB/s)
-LAB   94.5 wakelock playing=false bg=false priv=false
-LAB   94.5 player teardown done keepPlaying=false
-LAB   96.5 dl pass x1 (watching) from 182/396 MB http 206
-LAB  103.5 dl pass end +2 MB in 7 s (0.29 MB/s)
-LAB  106.2 dl pass x3 from 184/396 MB http 206
-LAB  181.2 dl pass end +212 MB in 75 s (2.84 MB/s)
+LAB cpu app 38% · 0.2fps · 1.raster 17% | pool-thread 17% | RenderThread 2%
+LAB phase perf_idle start
+LAB cpu app 14% · 0.3fps · 1.raster 11% | RenderThread 2% | .innocent.media 1%
+LAB cpu app 4% · 0.2fps · .innocent.media 3%
+LAB cpu app 1% · 0.1fps · .innocent.media 1%
+LAB phase perf_play start
+LAB cpu app 1% · 0.3fps · -
+LAB cpu app 10% · 0.6fps · .innocent.media 9%
+LAB cpu app 15% · 1.0fps · .innocent.media 14% | 1.raster 1%
+LAB cpu app 10% · 0.8fps · .innocent.media 9%
