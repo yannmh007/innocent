@@ -57,10 +57,14 @@ adb shell input keyevent KEYCODE_HOME
 # gesture handle) and a punch-hole camera, so the player's insets are the
 # ones MX's screenshots were taken with.
 if [ "${PHONE_LIKE_OWNER:-0}" = 1 ]; then
-  adb shell cmd overlay enable com.android.internal.systemui.navbar.threebutton >/dev/null 2>&1 || true
-  adb shell cmd overlay enable com.android.internal.display.cutout.emulation.hole >/dev/null 2>&1 || true
+  # enable-exclusive, not enable: "enable" left the gestural overlay on as
+  # well, and the bar came out 3-button in looks but gesture-sized (24 dp,
+  # run 37216341225) where a real 3-button bar is 48 dp.
+  adb shell cmd overlay enable-exclusive --category com.android.internal.systemui.navbar.threebutton >/dev/null 2>&1 || true
+  adb shell cmd overlay enable-exclusive --category com.android.internal.display.cutout.emulation.hole >/dev/null 2>&1 || true
   sleep 5
-  log "overlays: $(adb shell cmd overlay list 2>/dev/null | grep -E 'threebutton|cutout' | tr -d '\r' | tr '\n' ' ')"
+  log "overlays: $(adb shell cmd overlay list 2>/dev/null | grep -E 'navbar|cutout' | grep -F '[x]' | tr -d '\r' | tr '\n' ' ')"
+  log "nav bar: $(adb shell dumpsys window 2>/dev/null | grep -m3 -oE 'navigationBars[^,]*frame=[^ ]*' | tr '\n' ' ')"
 fi
 
 # A LIBRARY LIKE A REAL PHONE'S. The emulator starts with no videos, and an

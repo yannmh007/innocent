@@ -774,10 +774,16 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
 
   Future<void> _refreshStableInsets() async {
     final v = await StableInsets.read();
+    if (!mounted) return;
     if (const bool.fromEnvironment('INNOCENT_LAB')) {
-      debugPrint('LAB insets stable=$v');
+      // Each side by name: a release build prints an EdgeInsets as
+      // "Instance of 'EdgeInsets'".
+      final pad = MediaQuery.maybeOf(context)?.padding ?? EdgeInsets.zero;
+      debugPrint('LAB insets stable l=${v.left} t=${v.top} r=${v.right} '
+          'b=${v.bottom} padding l=${pad.left} t=${pad.top} r=${pad.right} '
+          'b=${pad.bottom} bar=${SystemInsets.bottomBar}');
     }
-    if (mounted && v != _stable) setState(() => _stable = v);
+    if (v != _stable) setState(() => _stable = v);
   }
 
   /// Where the controls may go — MX's geometry, measured on its
@@ -4042,10 +4048,20 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
           if (landscape) const SizedBox(height: 1),
           // MX (portrait, measured): lock centred 28 dp from the left edge,
           // fill-screen 37.7 dp from the right, aspect 56.8 dp left of that.
+          // The row is laid out 40 dp tall (MX's geometry above), but its
+          // buttons are 48 dp, and Play's 38 dp icon with default padding
+          // 54: squeezed into 40 each one was pushed DOWN by half its excess
+          // — Prev/Next 4 dp, Play 7 dp, so Play sat 3 dp below its
+          // neighbours and the row 4 dp below MX's line (measured on the
+          // emulator, run 37216341225). Drawn at full size about the row's
+          // centre line instead.
           Container(
             height: 40,
             padding: const EdgeInsets.only(left: 4, right: 14),
-            child: Stack(
+            child: OverflowBox(
+              minHeight: 48,
+              maxHeight: 48,
+              child: Stack(
               alignment: Alignment.center,
               children: [
                 // Primary transport — prev / play / next — pinned to the
@@ -4083,6 +4099,8 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
                         color: Colors.white,
                       ),
                       iconSize: 38,
+                      // 38 + 2 × 5 = 48, the row's height: centred, not pushed.
+                      padding: const EdgeInsets.all(5),
                       onPressed: widget.onPlayPause,
                     ),
                     // v1.63.2: hidden — see [_kShowFrameStepButtons].
@@ -4148,6 +4166,7 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
                   ),
                 ),
               ],
+            ),
             ),
           ),
         ],
