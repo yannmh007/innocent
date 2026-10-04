@@ -168,10 +168,23 @@ class _ShellScreenState extends ConsumerState<ShellScreen>
     // where a remote reaches a column of tabs far more naturally than a row
     // at the bottom of the screen. A bottom bar stretched across 1280 dp put
     // four icons a hand-span apart.
+    // BACK, the Android way (and YouTube's, Photos', MX's): on any tab but
+    // the first, Back goes to the first tab; only there does it leave the
+    // app. It used to leave from every tab — on a TV remote, one press too
+    // many from Music and the app was gone. A screen opened inside a tab
+    // still closes first: this only answers when nothing above it can pop.
+    Widget backToFirstTab(Widget shell) => PopScope(
+          canPop: currentIndex == 0,
+          onPopInvokedWithResult: (didPop, _) {
+            if (!didPop) select(0);
+          },
+          child: shell,
+        );
+
     final wide =
         MediaQuery.sizeOf(context).width >= 600 || DeviceProfile.isTv;
     if (wide) {
-      return Scaffold(
+      return backToFirstTab(Scaffold(
         body: Row(
           children: [
             ColoredBox(
@@ -212,10 +225,10 @@ class _ShellScreenState extends ConsumerState<ShellScreen>
             Expanded(child: widget.child),
           ],
         ),
-      );
+      ));
     }
 
-    return Scaffold(
+    return backToFirstTab(Scaffold(
       body: widget.child,
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: currentIndex,
@@ -243,7 +256,7 @@ class _ShellScreenState extends ConsumerState<ShellScreen>
             ),
         ],
       ),
-    );
+    ));
   }
 
   /// Localised label for each tab (the [_shellTabs] entries hold the English
