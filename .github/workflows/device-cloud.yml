@@ -68,6 +68,7 @@ jobs:
         run: |
           source test_device/cloud.env
           echo "mode=${MODE:-robo}" >> "$GITHUB_OUTPUT"
+          echo "fetch=${FETCH_RUN:-}" >> "$GITHUB_OUTPUT"
 
       # ── MODE=playback: this branch, built for arm64 as a lab APK ──────────
       # Debug-signed (see INNOCENT_LAB_ABI in build.gradle.kts), so it can
@@ -75,22 +76,22 @@ jobs:
       # logcat, and answers Test Lab's game-loop launch by playing the film
       # pushed below (src/lab/AndroidManifest.xml, lib/app.dart).
       - uses: actions/setup-java@v4
-        if: steps.mode.outputs.mode == 'playback'
+        if: steps.mode.outputs.mode == 'playback' && steps.mode.outputs.fetch == ''
         with:
           distribution: temurin
           java-version: '17'
       - uses: subosito/flutter-action@v2
-        if: steps.mode.outputs.mode == 'playback'
+        if: steps.mode.outputs.mode == 'playback' && steps.mode.outputs.fetch == ''
         with:
           flutter-version: 3.32.8
           channel: stable
           cache: true
       - uses: android-actions/setup-android@v3
-        if: steps.mode.outputs.mode == 'playback'
+        if: steps.mode.outputs.mode == 'playback' && steps.mode.outputs.fetch == ''
         with:
           packages: ''
       - name: Build the arm64 lab APK and the film
-        if: steps.mode.outputs.mode == 'playback'
+        if: steps.mode.outputs.mode == 'playback' && steps.mode.outputs.fetch == ''
         env:
           INNOCENT_LAB_ABI: arm64-v8a
         run: |
@@ -112,7 +113,7 @@ jobs:
           ls -la app.apk play.mp4
 
       - name: Fetch the released APK
-        if: steps.mode.outputs.mode != 'playback' && steps.ready.outputs.ok == 'true'
+        if: steps.mode.outputs.mode != 'playback' && steps.mode.outputs.fetch == '' && steps.ready.outputs.ok == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -151,7 +152,16 @@ jobs:
             device_args+=(--device "model=$m,version=$v,locale=$LOCALE,orientation=portrait")
           done
           dir="innocent/${GITHUB_RUN_ID}"
-          if [ "${MODE:-robo}" = playback ]; then
+          if [ -n "${FETCH_RUN:-}" ]; then
+            # Only collect what an earlier run left in Test Lab's bucket
+            # (its results are kept there for 90 days) — no new test, no
+            # quota spent.
+            dir="innocent/${FETCH_RUN}"
+            echo "fetching the results of run $FETCH_RUN" > out/run.txt
+            echo "storage/browser/${BUCKET}/${dir}/" >> out/run.txt
+            echo '{}' > out/matrix.json
+            rc=0
+          elif [ "${MODE:-robo}" = playback ]; then
             # Left alone for the whole run: no crawler, just the film.
             gcloud firebase test android run \
               --type game-loop \
@@ -222,6 +232,10 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A "$dest"
           git commit -q -m "device-cloud: results of run ${GITHUB_RUN_ID}" || exit 0
+          # A playback run built the app in this checkout, which leaves
+          # changed and untracked files behind; `pull --rebase` refuses to
+          # run over them, and the results were lost that way once.
+          git stash --include-untracked -q || true
           branch="${GITHUB_REF_NAME}"
           for i in 1 2 3 4; do
             git pull -q --rebase origin "$branch" && git push -q origin "HEAD:$branch" && exit 0
