@@ -474,6 +474,14 @@ class AppStrings {
   String get vhDataSaverOn => _s('vhDataSaverOn');
   String get vhDataSaverOff => _s('vhDataSaverOff');
   String get vhSaverChip => _s('vhSaverChip');
+  String get vhDiagTitle => _s('vhDiagTitle');
+  String get vhDiagHint => _s('vhDiagHint');
+  String get vhDiagBody => _s('vhDiagBody');
+  String get vhDiagNoteHint => _s('vhDiagNoteHint');
+  String get vhDiagSent => _s('vhDiagSent');
+  String get vhDiagSentHint => _s('vhDiagSentHint');
+  String get vhDiagFailed => _s('vhDiagFailed');
+  String get vhDiagCopied => _s('vhDiagCopied');
   // Player notices (1.64.43): a half-downloaded file, a failed hardware
   // decoder, an engine that stopped answering.
   String playerNoticeIncomplete(String t) =>
@@ -1965,6 +1973,14 @@ class AppStrings {
     'vhDataSaverOn': 'Data saver is on — tap to show albums normally',
     'vhDataSaverOff': 'Turn on data saver',
     'vhSaverChip': 'Saver',
+    'vhDiagTitle': 'Report a problem',
+    'vhDiagHint': 'Send what the app saw, so it can be fixed',
+    'vhDiagBody': 'This sends what the app recorded about downloads and playback on this phone, with the phone model and connection type. Links, passwords and your files are never included.',
+    'vhDiagNoteHint': 'What went wrong? (optional)',
+    'vhDiagSent': 'Sent. Your report code:',
+    'vhDiagSentHint': 'Tell us this code when you describe the problem.',
+    'vhDiagFailed': 'Could not send. Check the connection and try again.',
+    'vhDiagCopied': 'Code copied',
     'vhSaverModeAll': 'All connections',
     'vhSaverModeAllHint': 'Wi-Fi too — for Wi-Fi bought by the gigabyte',
     'vhSaverModeMobile': 'Mobile data only',
@@ -3273,6 +3289,14 @@ class AppStrings {
     'vhDataSaverOn': 'ဒေတာ ချွေတာမုဒ် ဖွင့်ထားသည် — ပုံမှန်ပြရန် နှိပ်ပါ',
     'vhDataSaverOff': 'ဒေတာ ချွေတာမုဒ် ဖွင့်မည်',
     'vhSaverChip': 'ချွေတာ',
+    'vhDiagTitle': 'ပြဿနာ ပို့မယ်',
+    'vhDiagHint': 'ပြင်ဆင်နိုင်ဖို့ app မှတ်ထားတာကို ပို့ပါ',
+    'vhDiagBody': 'ဒီဖုန်းပေါ်က ဒေါင်းလုဒ်နဲ့ ဗီဒီယိုဖွင့်တာနဲ့ပတ်သက်ပြီး app မှတ်ထားတာ၊ ဖုန်းအမျိုးအစားနဲ့ အင်တာနက်အမျိုးအစားကို ပို့ပါမယ်။ Link၊ စကားဝှက်နဲ့ သင့်ဖိုင်တွေ ဘယ်တော့မှ မပါပါ။',
+    'vhDiagNoteHint': 'ဘာဖြစ်သွားလဲ? (မရေးလည်းရ)',
+    'vhDiagSent': 'ပို့ပြီးပါပြီ။ သင့် report code:',
+    'vhDiagSentHint': 'ပြဿနာကို ပြောပြတဲ့အခါ ဒီ code ကို ပြောပေးပါ။',
+    'vhDiagFailed': 'မပို့နိုင်ပါ။ အင်တာနက်စစ်ပြီး ပြန်စမ်းပါ။',
+    'vhDiagCopied': 'Code ကူးပြီးပါပြီ',
     'vhSaverModeAll': 'အင်တာနက် အားလုံး',
     'vhSaverModeAllHint': 'WiFi ပါ — GB နဲ့ ဝယ်ရတဲ့ WiFi အတွက်',
     'vhSaverModeMobile': 'ဖုန်းဒေတာ သုံးချိန်သာ',
@@ -4570,6 +4594,14 @@ class AppStrings {
     'vhDataSaverOn': 'เปิดประหยัดเน็ตอยู่ — แตะเพื่อแสดงตามปกติ',
     'vhDataSaverOff': 'เปิดประหยัดเน็ต',
     'vhSaverChip': 'ประหยัด',
+    'vhDiagTitle': 'แจ้งปัญหา',
+    'vhDiagHint': 'ส่งสิ่งที่แอปบันทึกไว้ เพื่อให้แก้ไขได้',
+    'vhDiagBody': 'จะส่งสิ่งที่แอปบันทึกเกี่ยวกับการดาวน์โหลดและการเล่นบนเครื่องนี้ พร้อมรุ่นเครื่องและประเภทการเชื่อมต่อ ไม่มีลิงก์ รหัสผ่าน หรือไฟล์ของคุณ',
+    'vhDiagNoteHint': 'เกิดอะไรขึ้น? (ไม่บังคับ)',
+    'vhDiagSent': 'ส่งแล้ว รหัสรายงานของคุณ:',
+    'vhDiagSentHint': 'แจ้งรหัสนี้เมื่อเล่าปัญหาให้เราฟัง',
+    'vhDiagFailed': 'ส่งไม่ได้ ตรวจสอบการเชื่อมต่อแล้วลองอีกครั้ง',
+    'vhDiagCopied': 'คัดลอกรหัสแล้ว',
     'vhSaverModeAll': 'ทุกการเชื่อมต่อ',
     'vhSaverModeAllHint': 'รวม Wi-Fi — สำหรับ Wi-Fi ที่คิดตาม GB',
     'vhSaverModeMobile': 'เฉพาะเน็ตมือถือ',

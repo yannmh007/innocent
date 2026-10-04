@@ -15,6 +15,7 @@ import '../video_hub_theme.dart';
 import '../widgets/vh_insets.dart';
 import '../downloads_screen.dart';
 import 'premium_request_screen.dart';
+import 'report_problem_sheet.dart';
 import 'sign_in_sheet.dart';
 
 /// Account and subscription status.
@@ -81,6 +82,16 @@ class AccountScreen extends ConsumerWidget {
                     .get(PlayerSetting.albumDataSaver)
                 ? s.vhOn
                 : null,
+          ),
+          const SizedBox(height: VH.s2),
+          // REPORT A PROBLEM, beside the things it is usually about. What it
+          // sends, and why it exists, is in DiagnosticsReport.
+          _LibraryTile(
+            icon: Icons.support_agent_rounded,
+            label: s.vhDiagTitle,
+            subtitle: s.vhDiagHint,
+            locked: false,
+            onTap: () => ReportProblemSheet.show(context),
           ),
     ];
 
