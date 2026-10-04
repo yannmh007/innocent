@@ -36,6 +36,17 @@ class ThumbnailCache {
 
   final Map<String, Future<Uint8List?>> _inflight = {};
   final Map<String, Uint8List> _memoryCache = {};
+
+  /// Keys whose thumbnail could not be made this session.
+  ///
+  /// A failure used to be forgotten the moment it happened, so a file the
+  /// decoder cannot open (a broken download, a codec MediaMetadataRetriever
+  /// lacks, a file still being written) was decoded again EVERY time its
+  /// tile was built — on each scroll past it, each tab switch, each rebuild of
+  /// "Recently added" — the most expensive thing this class does, repeated
+  /// for an answer that does not change. Remembered until [invalidate] or
+  /// [clear], or the next launch.
+  final Set<String> _failed = <String>{};
   static const int _maxMemoryEntries = 100;
   Directory? _cacheDir;
 
@@ -71,12 +82,17 @@ class ThumbnailCache {
     if (assetId.isEmpty) return null;
     final key = 'a_${assetId.hashCode.toUnsigned(32).toRadixString(16)}.jpg';
     if (_memoryCache.containsKey(key)) return _memoryCache[key];
+    if (_failed.contains(key)) return null;
     if (_inflight.containsKey(key)) return _inflight[key]!;
     final future = _generateByAsset(assetId, key);
     _inflight[key] = future;
     try {
       final result = await future;
-      if (result != null) _addToMemory(key, result);
+      if (result != null) {
+        _addToMemory(key, result);
+      } else {
+        _failed.add(key);
+      }
       return result;
     } finally {
       _inflight.remove(key);
@@ -114,6 +130,29 @@ class ThumbnailCache {
     }
   }
 
+  /// A video's thumbnail the way that works on today's phones: MediaStore's
+  /// own thumbnail for [assetId] first ([getByAsset]), and only then a frame
+  /// decoded from the file at [uri] ([get]). The path decoder alone fails on
+  /// scoped storage, SD cards and content URIs — folder covers and "Recently
+  /// added" used it alone, which is why they showed placeholders while the
+  /// list beside them, which already went asset-first, had pictures.
+  Future<Uint8List?> forVideo(String uri, {String? assetId}) async {
+    if (assetId != null && assetId.isNotEmpty) {
+      final bytes = await getByAsset(assetId);
+      if (bytes != null) return bytes;
+    }
+    final String path;
+    if (uri.startsWith('file://')) {
+      path = Uri.parse(uri).toFilePath();
+    } else if (uri.startsWith('/')) {
+      path = uri;
+    } else {
+      return null;
+    }
+    if (!await File(path).exists()) return null;
+    return get(path);
+  }
+
   /// Get thumbnail bytes for the given video path.
   /// Returns null if generation fails or on unsupported platforms.
   Future<Uint8List?> get(String videoPath) async {
@@ -123,6 +162,8 @@ class ThumbnailCache {
     if (_memoryCache.containsKey(key)) {
       return _memoryCache[key];
     }
+
+    if (_failed.contains(key)) return null;
 
     // Coalesce concurrent requests for same key
     if (_inflight.containsKey(key)) {
@@ -135,6 +176,8 @@ class ThumbnailCache {
       final result = await future;
       if (result != null) {
         _addToMemory(key, result);
+      } else {
+        _failed.add(key);
       }
       return result;
     } finally {
@@ -278,6 +321,7 @@ class ThumbnailCache {
     final key = _cacheKey(videoPath);
     _memoryCache.remove(key);
     _inflight.remove(key);
+    _failed.remove(key);
     try {
       final dir = await _getCacheDir();
       final file = File('${dir.path}/$key');
@@ -303,6 +347,7 @@ class ThumbnailCache {
       final key = _cacheKey(path);
       _memoryCache.remove(key);
       _inflight.remove(key);
+      _failed.remove(key);
       if (dir == null) continue;
       try {
         final file = File('${dir.path}/$key');
@@ -316,6 +361,7 @@ class ThumbnailCache {
   Future<void> clear() async {
     _memoryCache.clear();
     _inflight.clear();
+    _failed.clear();
     try {
       final dir = await _getCacheDir();
       if (await dir.exists()) {

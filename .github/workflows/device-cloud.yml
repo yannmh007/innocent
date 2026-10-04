@@ -62,8 +62,58 @@ jobs:
             echo "ok=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Fetch the released APK
+      - name: Which mode
+        id: mode
         if: steps.ready.outputs.ok == 'true'
+        run: |
+          source test_device/cloud.env
+          echo "mode=${MODE:-robo}" >> "$GITHUB_OUTPUT"
+          echo "fetch=${FETCH_RUN:-}" >> "$GITHUB_OUTPUT"
+
+      # ── MODE=playback: this branch, built for arm64 as a lab APK ──────────
+      # Debug-signed (see INNOCENT_LAB_ABI in build.gradle.kts), so it can
+      # never pass for a release; logs CpuProbe and the playback trail to
+      # logcat, and answers Test Lab's game-loop launch by playing the film
+      # pushed below (src/lab/AndroidManifest.xml, lib/app.dart).
+      - uses: actions/setup-java@v4
+        if: steps.mode.outputs.mode == 'playback' && steps.mode.outputs.fetch == ''
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        if: steps.mode.outputs.mode == 'playback' && steps.mode.outputs.fetch == ''
+        with:
+          flutter-version: 3.32.8
+          channel: stable
+          cache: true
+      - uses: android-actions/setup-android@v3
+        if: steps.mode.outputs.mode == 'playback' && steps.mode.outputs.fetch == ''
+        with:
+          packages: ''
+      - name: Build the arm64 lab APK and the film
+        if: steps.mode.outputs.mode == 'playback' && steps.mode.outputs.fetch == ''
+        env:
+          INNOCENT_LAB_ABI: arm64-v8a
+        run: |
+          set -euo pipefail
+          sudo rm -rf /usr/share/dotnet /usr/local/.ghcup /opt/ghc /opt/hostedtoolcache/CodeQL 2>/dev/null || true
+          sdkmanager "platforms;android-36" "build-tools;35.0.0" "build-tools;36.0.0" "ndk;27.0.12077973"
+          echo "org.gradle.jvmargs=-Xmx6144M -XX:MaxMetaspaceSize=1024m -Dfile.encoding=UTF-8" >> android/gradle.properties
+          flutter pub get
+          flutter build apk --release --target-platform android-arm64 --dart-define=INNOCENT_LAB=true
+          cp build/app/outputs/flutter-apk/app-release.apk app.apk
+          echo "TAG=lab-${GITHUB_SHA::7}" >> "$GITHUB_ENV"
+          # The film: 720p H.264 at a film's bitrate, long enough for the
+          # three phases of the script (about 165 s).
+          sudo apt-get install -y -qq ffmpeg >/dev/null
+          ffmpeg -loglevel error -f lavfi -i testsrc2=size=1280x720:rate=24 \
+            -f lavfi -i sine=frequency=330 -t 200 -c:v libx264 -preset veryfast \
+            -b:v 2500k -maxrate 3000k -bufsize 6000k -pix_fmt yuv420p \
+            -c:a aac -b:a 128k -movflags +faststart play.mp4
+          ls -la app.apk play.mp4
+
+      - name: Fetch the released APK
+        if: steps.mode.outputs.mode != 'playback' && steps.mode.outputs.fetch == '' && steps.ready.outputs.ok == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -102,14 +152,35 @@ jobs:
             device_args+=(--device "model=$m,version=$v,locale=$LOCALE,orientation=portrait")
           done
           dir="innocent/${GITHUB_RUN_ID}"
-          gcloud firebase test android run \
-            --type robo \
-            --app app.apk \
-            "${device_args[@]}" \
-            --robo-script test_device/robo/movies.json \
-            --timeout "${TIMEOUT}s" \
-            --results-dir "$dir" \
-            --format=json > out/matrix.json 2> out/run.txt && rc=0 || rc=$?
+          if [ -n "${FETCH_RUN:-}" ]; then
+            # Only collect what an earlier run left in Test Lab's bucket
+            # (its results are kept there for 90 days) — no new test, no
+            # quota spent.
+            dir="innocent/${FETCH_RUN}"
+            echo "fetching the results of run $FETCH_RUN" > out/run.txt
+            echo "storage/browser/${BUCKET}/${dir}/" >> out/run.txt
+            echo '{}' > out/matrix.json
+            rc=0
+          elif [ "${MODE:-robo}" = playback ]; then
+            # Left alone for the whole run: no crawler, just the film.
+            gcloud firebase test android run \
+              --type game-loop \
+              --app app.apk \
+              "${device_args[@]}" \
+              --other-files /sdcard/Download/innocent_lab_play.mp4=play.mp4 \
+              --timeout 240s \
+              --results-dir "$dir" \
+              --format=json > out/matrix.json 2> out/run.txt && rc=0 || rc=$?
+          else
+            gcloud firebase test android run \
+              --type robo \
+              --app app.apk \
+              "${device_args[@]}" \
+              --robo-script test_device/robo/movies.json \
+              --timeout "${TIMEOUT}s" \
+              --results-dir "$dir" \
+              --format=json > out/matrix.json 2> out/run.txt && rc=0 || rc=$?
+          fi
           # Non-zero also means "a phone failed or was inconclusive"; the
           # results are still there and still worth keeping.
           echo "exit $rc" >> out/run.txt
@@ -141,6 +212,9 @@ jobs:
               find "$dev" -name 'logcat' -exec sh -c \
                 "sed -E 's#https?://[^ \"]+#<url>#g; s#[A-Za-z0-9_-]{40,}#<token>#g' '{}' \
                  | grep -iE 'innocent|flutter|mpv|AndroidRuntime|FATAL|ANR|crash|LAB ' > '$dest/$name/logcat.txt'" \; || true
+              # The lab build's own measurements, on their own: CpuProbe's
+              # per-thread lines, the decode pipeline, the script's phases.
+              grep -o 'LAB .*\|video .*hwdec=.*\|decoder [a-zA-Z]*: .*' "$dest/$name/logcat.txt" > "$dest/$name/lab_trace.txt" 2>/dev/null || true
               find "$dev" -name '*.png' | head -60 | while read -r p; do
                 cp "$p" "$dest/$name/shots/$(basename "$(dirname "$p")")_$(basename "$p")"
               done
@@ -158,6 +232,10 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A "$dest"
           git commit -q -m "device-cloud: results of run ${GITHUB_RUN_ID}" || exit 0
+          # A playback run built the app in this checkout, which leaves
+          # changed and untracked files behind; `pull --rebase` refuses to
+          # run over them, and the results were lost that way once.
+          git stash --include-untracked -q || true
           branch="${GITHUB_REF_NAME}"
           for i in 1 2 3 4; do
             git pull -q --rebase origin "$branch" && git push -q origin "HEAD:$branch" && exit 0

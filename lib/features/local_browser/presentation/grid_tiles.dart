@@ -19,7 +19,7 @@ import '../../player/presentation/floating_pip_provider.dart';
 import '../../../core/ui/safe_thumbnail.dart';
 
 import '../../../core/localization/app_strings.dart';
-import 'folder_list_item.dart' show FolderShapePainter, FolderTick;
+import 'folder_list_item.dart' show VideoCover, FolderShapePainter, FolderTick;
 /// Phase 15: Grid tile for a folder (MX Player grid layout parity).
 class FolderGridTile extends ConsumerWidget {
   final Folder folder;
@@ -48,6 +48,21 @@ class FolderGridTile extends ConsumerWidget {
     // Phase 44: prefer the cover path from the fast bucket scan; fall
     // back to the map (which lazily fills from allVideosProvider).
     final coverUri = folder.coverThumbnailPath ?? coverPaths[folder.path];
+    final Widget silhouette = CustomPaint(
+      painter: const FolderShapePainter(),
+      child: _gridFolderIcon(folder.name) == Icons.folder
+          ? null
+          : Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Center(
+                child: Icon(
+                  _gridFolderIcon(folder.name),
+                  color: const Color(0xFF7D8790),
+                  size: 22,
+                ),
+              ),
+            ),
+    );
 
     // Selected-folder highlight (innocent_folders_grid_spec): the folder
     // containing the currently-playing / PiP video gets its name tinted.
@@ -84,25 +99,12 @@ class FolderGridTile extends ConsumerWidget {
                 width: 72,
                 height: 54,
                 child: (showThumbs && coverUri != null)
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(6),
-                        child: _FolderGridThumb(videoUri: coverUri),
+                    ? VideoCover(
+                        videoUri: coverUri,
+                        assetId: ref.watch(folderCoverAssetIdsProvider)[folder.path],
+                        placeholder: silhouette,
                       )
-                    : CustomPaint(
-                        painter: const FolderShapePainter(),
-                        child: _gridFolderIcon(folder.name) == Icons.folder
-                            ? null
-                            : Padding(
-                                padding: const EdgeInsets.only(top: 8),
-                                child: Center(
-                                  child: Icon(
-                                    _gridFolderIcon(folder.name),
-                                    color: const Color(0xFF7D8790),
-                                    size: 22,
-                                  ),
-                                ),
-                              ),
-                      ),
+                    : silhouette,
               ),
               // Unread count badge — 18 dp red bubble, white bold number.
               // Reads the real count (see folderNewCountsProvider); the
@@ -211,78 +213,6 @@ IconData _gridFolderIcon(String name) {
   }
   if (n.contains('tiktok')) return Icons.video_collection_outlined;
   return Icons.folder;
-}
-
-class _FolderGridThumb extends StatefulWidget {
-  final String videoUri;
-  const _FolderGridThumb({required this.videoUri});
-
-  @override
-  State<_FolderGridThumb> createState() => _FolderGridThumbState();
-}
-
-class _FolderGridThumbState extends State<_FolderGridThumb> {
-  Uint8List? _bytes;
-  bool _loading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  Future<void> _load() async {
-    try {
-      String path;
-      if (widget.videoUri.startsWith('file://')) {
-        path = Uri.parse(widget.videoUri).toFilePath();
-      } else if (widget.videoUri.startsWith('/')) {
-        path = widget.videoUri;
-      } else {
-        if (mounted) setState(() => _loading = false);
-        return;
-      }
-      if (!await File(path).exists()) {
-        if (mounted) setState(() => _loading = false);
-        return;
-      }
-      final bytes = await ThumbnailCache.instance.get(path);
-      if (mounted) {
-        setState(() {
-          _bytes = bytes;
-          _loading = false;
-        });
-      }
-    } catch (_) {
-      if (mounted) setState(() => _loading = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_bytes != null) {
-      return SafeThumbnail(bytes: _bytes!);
-    }
-    return Container(
-      color: AppColors.specSurface,
-      child: _loading
-          ? const Center(
-              child: SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(
-                  strokeWidth: 1.5,
-                  color: AppColors.specFolderIcon,
-                ),
-              ),
-            )
-          : const Icon(
-              Icons.folder,
-              color: AppColors.specFolderIcon,
-              size: 22,
-            ),
-    );
-  }
 }
 
 /// Phase 15: Grid tile for a video.
@@ -532,7 +462,6 @@ class _VideoGridThumb extends StatefulWidget {
 
 class _VideoGridThumbState extends State<_VideoGridThumb> {
   Uint8List? _bytes;
-  bool _loading = true;
 
   @override
   void initState() {
@@ -551,7 +480,6 @@ class _VideoGridThumbState extends State<_VideoGridThumb> {
           if (mounted) {
             setState(() {
               _bytes = bytes;
-              _loading = false;
             });
           }
           return;
@@ -560,18 +488,15 @@ class _VideoGridThumbState extends State<_VideoGridThumb> {
     }
     try {
       if (!await File(widget.path).exists()) {
-        if (mounted) setState(() => _loading = false);
         return;
       }
       final bytes = await ThumbnailCache.instance.get(widget.path);
       if (mounted) {
         setState(() {
           _bytes = bytes;
-          _loading = false;
         });
       }
     } catch (_) {
-      if (mounted) setState(() => _loading = false);
     }
   }
 
@@ -583,20 +508,14 @@ class _VideoGridThumbState extends State<_VideoGridThumb> {
     return Container(
       color: AppColors.darkSurfaceVariant,
       alignment: Alignment.center,
-      child: _loading
-          ? const SizedBox(
-              width: 18,
-              height: 18,
-              child: CircularProgressIndicator(
-                strokeWidth: 1.5,
-                color: AppColors.darkOnSurfaceMuted,
-              ),
-            )
-          : const Icon(
-              Icons.movie_outlined,
-              color: AppColors.darkOnSurfaceMuted,
-              size: 32,
-            ),
+      // A still icon while the frame loads, not a spinner: with a large
+      // library dozens of rings would animate down the screen at 60 fps for
+      // as long as decoding took.
+      child: const Icon(
+        Icons.movie_outlined,
+        color: AppColors.darkOnSurfaceMuted,
+        size: 32,
+      ),
     );
   }
 }

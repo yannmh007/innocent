@@ -48,6 +48,7 @@ class FolderListItem extends ConsumerWidget {
     final showThumbs = ref.watch(
         preferencesProvider.select((p) => p.showThumbnails));
     final coverPaths = ref.watch(folderCoverPathsProvider);
+    final coverAssetIds = ref.watch(folderCoverAssetIdsProvider);
 
     // Size chip: prefer a baked-in size, otherwise the lazily-grouped
     // value from folderSizesProvider (fills in once the full video list
@@ -61,6 +62,24 @@ class FolderListItem extends ConsumerWidget {
     // fast bucket-based scan (no dependency on allVideosProvider being
     // ready). Fall back to the map for older cached folders.
     final coverUri = folder.coverThumbnailPath ?? coverPaths[folder.path];
+    // A plain folder, as MX draws them; a glyph only where it tells the
+    // folders apart at a glance (Camera, Screen recordings, Download…), never
+    // the generic one. Also what a cover shows until — or unless — it loads.
+    final Widget silhouette = CustomPaint(
+      painter: const FolderShapePainter(),
+      child: _iconForFolder(folder.name) == Icons.folder
+          ? null
+          : Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Center(
+                child: Icon(
+                  _iconForFolder(folder.name),
+                  color: const Color(0xFF7D8790),
+                  size: 22,
+                ),
+              ),
+            ),
+    );
 
     // Phase 31: MX highlights the folder containing the currently-playing
     // (or recently-played) video in accent-blue. Verified screen recording
@@ -122,29 +141,12 @@ class FolderListItem extends ConsumerWidget {
                   width: 72,
                   height: 54,
                   child: (showThumbs && coverUri != null)
-                      ? ClipRRect(
-                          borderRadius: BorderRadius.circular(6),
-                          child: _FolderThumbnail(videoUri: coverUri),
+                      ? VideoCover(
+                          videoUri: coverUri,
+                          assetId: coverAssetIds[folder.path],
+                          placeholder: silhouette,
                         )
-                      : CustomPaint(
-                          painter: const FolderShapePainter(),
-                          // A plain folder, as MX draws them; a glyph only
-                          // where it tells the folders apart at a glance
-                          // (Camera, Screen recordings, Download…), never
-                          // the generic one.
-                          child: _iconForFolder(folder.name) == Icons.folder
-                              ? null
-                              : Padding(
-                                  padding: const EdgeInsets.only(top: 8),
-                                  child: Center(
-                                    child: Icon(
-                                      _iconForFolder(folder.name),
-                                      color: const Color(0xFF7D8790),
-                                      size: 22,
-                                    ),
-                                  ),
-                                ),
-                        ),
+                      : silhouette,
                 ),
                 // MX marks a selected folder ON its icon — a pale disc with
                 // a tick in the middle — and leaves the row where it was.
@@ -421,18 +423,38 @@ IconData _iconForFolder(String name) {
   return Icons.folder;
 }
 
-class _FolderThumbnail extends StatefulWidget {
+/// A video's picture — a folder's cover, a "Recently added" tile: a frame
+/// from the video, or — while that loads, and when there is none — the
+/// [placeholder].
+///
+/// Shared by the folder list, the folder grid and "Recently added". Two things changed from the two
+/// copies it replaces:
+///  * the picture comes through [ThumbnailCache.forVideo], MediaStore's
+///    thumbnail first. The copies decoded the file by path only, which fails
+///    on scoped storage, so most folders showed a grey box instead of a cover;
+///  * no spinner while loading. Every visible cover span a progress ring
+///    until its frame arrived — with a large library, rings animating at 60
+///    frames a second all down the screen for as long as decoding took.
+class VideoCover extends StatefulWidget {
+  const VideoCover({
+    super.key,
+    required this.videoUri,
+    this.assetId,
+    required this.placeholder,
+    this.radius = 6,
+  });
+
   final String videoUri;
-  const _FolderThumbnail({required this.videoUri});
+  final String? assetId;
+  final Widget placeholder;
+  final double radius;
 
   @override
-  State<_FolderThumbnail> createState() => _FolderThumbnailState();
+  State<VideoCover> createState() => _VideoCoverState();
 }
 
-class _FolderThumbnailState extends State<_FolderThumbnail> {
+class _VideoCoverState extends State<VideoCover> {
   Uint8List? _bytes;
-  bool _loading = true;
-  bool _disposed = false;
 
   @override
   void initState() {
@@ -441,64 +463,34 @@ class _FolderThumbnailState extends State<_FolderThumbnail> {
   }
 
   @override
-  void dispose() {
-    _disposed = true;
-    super.dispose();
+  void didUpdateWidget(VideoCover old) {
+    super.didUpdateWidget(old);
+    if (old.videoUri != widget.videoUri || old.assetId != widget.assetId) {
+      _bytes = null;
+      _load();
+    }
   }
 
   Future<void> _load() async {
+    final uri = widget.videoUri;
     try {
-      String path;
-      if (widget.videoUri.startsWith('file://')) {
-        path = Uri.parse(widget.videoUri).toFilePath();
-      } else if (widget.videoUri.startsWith('/')) {
-        path = widget.videoUri;
-      } else {
-        if (!_disposed && mounted) setState(() => _loading = false);
-        return;
-      }
-      if (!await File(path).exists()) {
-        if (!_disposed && mounted) setState(() => _loading = false);
-        return;
-      }
-      final bytes = await ThumbnailCache.instance.get(path);
-      if (!_disposed && mounted) {
-        setState(() {
-          _bytes = bytes;
-          _loading = false;
-        });
+      final bytes =
+          await ThumbnailCache.instance.forVideo(uri, assetId: widget.assetId);
+      if (mounted && uri == widget.videoUri && bytes != null) {
+        setState(() => _bytes = bytes);
       }
     } catch (_) {
-      if (!_disposed && mounted) setState(() => _loading = false);
+      // The placeholder stays: a cover is decoration.
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_bytes != null) {
-      return SafeThumbnail(
-        bytes: _bytes!,
-        fit: BoxFit.cover,
-      );
-    }
-    return Container(
-      color: AppColors.specSurface,
-      child: _loading
-          ? const Center(
-              child: SizedBox(
-                width: 14,
-                height: 14,
-                child: CircularProgressIndicator(
-                  strokeWidth: 1.5,
-                  color: AppColors.specTextSecondary,
-                ),
-              ),
-            )
-          : const Icon(
-              Icons.folder,
-              color: AppColors.specTextSecondary,
-              size: 26,
-            ),
+    final b = _bytes;
+    if (b == null) return widget.placeholder;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(widget.radius),
+      child: SafeThumbnail(bytes: b, fit: BoxFit.cover),
     );
   }
 }

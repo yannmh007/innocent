@@ -154,6 +154,12 @@ android {
         aidl = true
     }
 
+    // DEVICE LAB ONLY: a lab APK also answers Test Lab's game-loop launch
+    // (src/lab/AndroidManifest.xml). A release build never sees that file.
+    if (labAbi != null) {
+        sourceSets.getByName("release").manifest.srcFile("src/lab/AndroidManifest.xml")
+    }
+
     // v1.64.13 — 11 -> 17, ahead of google_sign_in needing it.
     //
     // NOT REQUIRED BY THE BUILD AS IT RESOLVES TODAY, and saying otherwise

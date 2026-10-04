@@ -50,6 +50,47 @@ adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS >/dev/null 
 sleep 20
 adb shell input keyevent KEYCODE_HOME
 
+# A LIBRARY LIKE A REAL PHONE'S. The emulator starts with no videos, and an
+# app with nothing to list does nothing — which is how a Video tab that kept a
+# real phone at 69 % CPU looked idle here. When the workflow made one
+# (LIBRARY > 0), push it and have MediaStore index it.
+if [ -d lib_media ]; then
+  log "library: pushing $(find lib_media -type f | wc -l) files"
+  adb push lib_media/DCIM /sdcard/ >/dev/null 2>&1
+  adb push lib_media/Download /sdcard/ >/dev/null 2>&1
+  adb push lib_media/Movies /sdcard/ >/dev/null 2>&1
+  adb shell content call --uri content://media --method scan_volume --arg external_primary >/dev/null 2>&1 || true
+  sleep 25
+  log "library: MediaStore lists $(adb shell content query --uri content://media/external/video/media --projection _id 2>/dev/null | grep -c Row) videos"
+fi
+
+# Which thread of the app is using the CPU right now: two readings of top,
+# five seconds apart, the second kept. Called at the end of each perf phase.
+threads() {
+  local pid
+  pid=$(adb shell pidof "$PKG" 2>/dev/null | tr -d '\r')
+  [ -n "$pid" ] || { echo "(app not running)"; return; }
+  # The first screen of `top` counts since the thread started; the second,
+  # five seconds later, is the one that says what is happening now.
+  adb shell top -H -b -n 2 -d 5 -m 25 -p "$pid" 2>/dev/null | tail -32
+}
+
+# Test Lab's playback measurement, rehearsed here: the same TEST_LOOP launch
+# a lab APK answers there (src/lab/AndroidManifest.xml), with the same film
+# path. Checks the script reaches the player before real-phone quota is spent.
+if [ "${LOOP:-0}" = 1 ] && [ -f "lib_media/Movies/Perf Test/aaa_play_720p.mp4" ]; then
+  log "game loop rehearsal"
+  adb push "lib_media/Movies/Perf Test/aaa_play_720p.mp4" /sdcard/Download/innocent_lab_play.mp4 >/dev/null 2>&1
+  adb shell am force-stop "$PKG"
+  adb shell pm clear "$PKG" >/dev/null 2>&1 || true
+  adb shell pm grant "$PKG" android.permission.READ_MEDIA_VIDEO >/dev/null 2>&1 || true
+  adb shell am start -a com.google.intent.action.TEST_LOOP -t application/javascript -n "$PKG/.MainActivity" >/dev/null 2>&1
+  sleep 25
+  adb exec-out screencap -p > "$OUT/shots/50_loop_25s.png"
+  sleep 150
+  log "game loop rehearsal done"
+fi
+
 log "cold start"
 adb shell am force-stop "$PKG"
 adb shell am start -W -n "$PKG/.MainActivity" > "$OUT/cold_start.txt" 2>&1
@@ -60,6 +101,10 @@ adb exec-out screencap -p > "$OUT/shots/00_cold_start.png"
 export PATH="$HOME/.maestro/bin:$PATH"
 for flow in $FLOWS; do
   log "flow $flow"
+  adb shell log -p i -t flutter "LAB phase $flow start" >/dev/null 2>&1 || true
+  # The perf flows sit still for a minute; read the threads in the middle of
+  # it, while the Video tab idles or the film plays.
+  case "$flow" in perf_*) ( sleep 40; { echo "== during $flow"; threads; } >> "$OUT/threads.txt" ) & ;; esac
   ( cd "$OUT/shots" && maestro test --test-output-dir "$OUT/maestro_out" "$OLDPWD/test_device/flows/$flow.yaml" ) > "$OUT/maestro_$flow.txt" 2>&1
   log "flow $flow exit $?"
   # Maestro has put screenshots in different places across versions.
@@ -67,6 +112,7 @@ for flow in $FLOWS; do
     -exec cp {} "$OUT/shots/" \; 2>/dev/null || true
   maestro hierarchy > "$OUT/hierarchy_after_$flow.json" 2>/dev/null || true
 done
+adb shell dumpsys cpuinfo 2>/dev/null | head -40 > "$OUT/cpuinfo.txt" || true
 
 kill $SAMPLER $LOGCAT 2>/dev/null
 adb shell dumpsys meminfo "$PKG" > "$OUT/meminfo.txt" 2>&1

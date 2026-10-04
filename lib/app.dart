@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io' show exit;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -23,6 +24,9 @@ import 'features/downloader/presentation/downloader_home_screen.dart';
 import 'features/onboarding/onboarding_screen.dart';
 import 'features/updater/presentation/app_update_screen.dart';
 import 'features/player/presentation/floating_pip_overlay.dart';
+import 'features/player/presentation/player_provider.dart';
+import 'features/player/presentation/shortcut_item.dart';
+import 'core/services/diagnostics/playback_log.dart';
 
 class InnocentApp extends ConsumerStatefulWidget {
   final bool showOnboarding;
@@ -55,9 +59,33 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
     super.initState();
     // Phase 29: subscribe to external "open video" intents.
     // Skip during onboarding — first impression matters more than auto-play.
-    if (!_showOnboarding) {
+    // A device-lab build also listens during onboarding: Test Lab's
+    // playback measurement launches a fresh install straight into a film.
+    if (!_showOnboarding || const bool.fromEnvironment('INNOCENT_LAB')) {
       _startIntentListener();
     }
+  }
+
+  /// DEVICE LAB ONLY — Test Lab's playback measurement (device-cloud.yml,
+  /// MODE=playback). The same film is played three ways, about fifty
+  /// seconds each, while CpuProbe and the pipeline line log to logcat:
+  /// "Default" as opened (`auto-safe`: MediaCodec decoding, every frame then
+  /// copied back to memory), "HW+" (`auto`: MediaCodec straight into the
+  /// picture, no copy), and "SW" (the CPU decodes). Then the app closes, which
+  /// ends the test.
+  void _labPlaybackScript() {
+    PlaybackLog.add('LAB script: phase default');
+    Timer(const Duration(seconds: 55), () {
+      if (!mounted) return;
+      PlaybackLog.add('LAB script: phase hwplus');
+      ref.read(playerControllerProvider.notifier).selectDecoder(DecoderType.hwPlus);
+    });
+    Timer(const Duration(seconds: 110), () {
+      if (!mounted) return;
+      PlaybackLog.add('LAB script: phase sw');
+      ref.read(playerControllerProvider.notifier).selectDecoder(DecoderType.sw);
+    });
+    Timer(const Duration(seconds: 165), () => exit(0));
   }
 
   void _startIntentListener() {
@@ -68,7 +96,20 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
     _intentService.start();
     _intentSub = _intentService.videoRequests.listen((req) {
       // Wait for the router/widget tree to be ready before pushing.
-      WidgetsBinding.instance.addPostFrameCallback((_) {
+      // DEVICE LAB: Test Lab installs fresh, so the introduction is up, and
+      // it is not on the router — a push would land behind it, unseen. Step
+      // past it first (for this run only; nothing is saved).
+      final labFilm = const bool.fromEnvironment('INNOCENT_LAB') &&
+          req.uri.endsWith('/innocent_lab_play.mp4');
+      if (labFilm && _showOnboarding && mounted) {
+        setState(() => _showOnboarding = false);
+      }
+      // The lab film waits for the router's app to be up after that switch;
+      // a push into a router nothing is showing yet goes nowhere.
+      Future<void>.delayed(
+          labFilm ? const Duration(seconds: 3) : Duration.zero, () {
+        if (!mounted) return;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
         // A share-intent can arrive as the app is closing; touching `ref`
         // after this State is disposed throws and kills whatever is building.
         if (!mounted) return;
@@ -77,6 +118,14 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
           Routes.player,
           extra: {'uri': req.uri, 'title': req.title},
         );
+        if (labFilm) {
+          PlaybackLog.add('LAB script: player pushed');
+          _labPlaybackScript();
+        }
+        });
+        // A post-frame callback waits for a frame, and a still screen draws
+        // none: ask for one, or the push can wait until somebody touches it.
+        WidgetsBinding.instance.ensureVisualUpdate();
       });
     });
 

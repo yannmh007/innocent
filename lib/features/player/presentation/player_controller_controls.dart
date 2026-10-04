@@ -278,6 +278,15 @@ extension PlayerControls on PlayerController {
       // The whole switch, in one property write. mpv reinitialises the
       // decoder and restores the exact frame itself.
       await svc.setHardwareDecoder(hwdec);
+      // What the switch actually achieved — the decoder mpv settled on can
+      // differ from the one asked for — once it has settled.
+      if (svc is MediaKitPlayerService) {
+        Timer(const Duration(seconds: 5), () async {
+          try {
+            PlaybackLog.add('decoder ${type.name}: ${await svc.describePipeline()}');
+          } catch (_) {}
+        });
+      }
       // The buffering profile is a set of runtime properties too, so it can be
       // refreshed without reloading anything. Kept in step with the open path
       // so a decoder switch never silently reinstates desktop-sized buffers.

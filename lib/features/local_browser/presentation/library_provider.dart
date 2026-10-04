@@ -41,6 +41,23 @@ final folderCoverPathsProvider = Provider<Map<String, String>>((ref) {
   );
 });
 
+/// folderPath → the MediaStore id of the same video [folderCoverPathsProvider]
+/// picks, so a folder cover can use MediaStore's thumbnail (see
+/// [ThumbnailCache.forVideo]).
+final folderCoverAssetIdsProvider = Provider<Map<String, String>>((ref) {
+  final videosAsync = ref.watch(allVideosProvider);
+  return videosAsync.maybeWhen(
+    data: (videos) {
+      final result = <String, String>{};
+      for (final v in videos) {
+        if (!result.containsKey(v.folderPath)) result[v.folderPath] = v.id;
+      }
+      return result;
+    },
+    orElse: () => const {},
+  );
+});
+
 /// Sort/view preferences — persisted via SharedPreferences.
 class LibraryPreferences {
   final SortBy sortBy;

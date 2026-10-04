@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/router/routes.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../folder_list_item.dart' show VideoCover;
+import '../../../../core/di/preferences_provider.dart';
 import '../../../../core/services/preferences/extra_settings_service.dart';
 import '../../../user_data/user_data_providers.dart';
 import '../../domain/new_badge.dart';
@@ -24,6 +26,8 @@ class RecentlyAddedSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final showThumbs =
+        ref.watch(preferencesProvider.select((p) => p.showThumbnails));
     final allVideos = ref.watch(allVideosProvider);
     final playedUris = ref.watch(playedUrisProvider);
     // Same window the NEW tag uses, so this row and the badges agree instead
@@ -115,17 +119,28 @@ class RecentlyAddedSection extends ConsumerWidget {
                           children: [
                             Stack(
                               children: [
-                                Container(
+                                // BUG FIX: this was only ever the icon —
+                                // the row never loaded a picture at all,
+                                // where MX shows each video's frame.
+                                SizedBox(
                                   height: 82,
-                                  decoration: BoxDecoration(
-                                    color: AppColors.darkSurfaceVariant,
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: const Icon(
-                                    Icons.movie_outlined,
-                                    color: Colors.white38,
-                                    size: 32,
+                                  width: double.infinity,
+                                  child: VideoCover(
+                                    // Off with Settings → "Show thumbnail", like the list.
+                                    videoUri: showThumbs ? v.uri : '',
+                                    assetId: showThumbs ? v.id : null,
+                                    placeholder: Container(
+                                      decoration: BoxDecoration(
+                                        color: AppColors.darkSurfaceVariant,
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      alignment: Alignment.center,
+                                      child: const Icon(
+                                        Icons.movie_outlined,
+                                        color: Colors.white38,
+                                        size: 32,
+                                      ),
+                                    ),
                                   ),
                                 ),
                                 if (isNew)

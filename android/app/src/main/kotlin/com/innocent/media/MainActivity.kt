@@ -2436,8 +2436,16 @@ class MainActivity : AudioServiceFragmentActivity() {
 
     private fun handleVideoIntent(intent: Intent?, fromNewIntent: Boolean) {
         if (intent == null) return
-        if (intent.action != Intent.ACTION_VIEW) return
-        val data: Uri = intent.data ?: return
+        // Firebase Test Lab's game-loop launch. Only a DEVICE LAB APK declares
+        // this action (src/lab/AndroidManifest.xml), so a real release never
+        // receives it: it means "play the file the test pushed".
+        val labLoop = intent.action == "com.google.intent.action.TEST_LOOP"
+        if (intent.action != Intent.ACTION_VIEW && !labLoop) return
+        val data: Uri = if (labLoop) {
+            Uri.fromFile(java.io.File("/sdcard/Download/innocent_lab_play.mp4"))
+        } else {
+            intent.data ?: return
+        }
         val uriStr = data.toString()
         val title = run {
             val seg = data.lastPathSegment ?: uriStr
