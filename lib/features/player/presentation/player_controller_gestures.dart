@@ -34,7 +34,12 @@ extension PlayerGestures on PlayerController {
 
   Future<void> onVolumeDelta(double delta) async {
     if (state.isLocked && state.lockScope != 'rotation') return;
+    // ABOVE 100 %: with the audio booster on, swiping up past the top keeps
+    // going into gain, as MX does (docs/player_gestures.md); swiping down
+    // takes the gain back to 100 % before the volume itself moves.
+    if (await _volumeBoostDelta(delta)) return;
     final newVolume = (state.volume + delta).clamp(0.0, 1.0);
+    if (newVolume >= 1.0 && state.volume < 1.0) unawaited(HapticService.light());
     // Raising the volume while muted has to lift libmpv's mute flag too,
     // otherwise the slider climbs and nothing is heard.
     if (state.isMuted && newVolume > 0.0) {
@@ -67,6 +72,41 @@ extension PlayerGestures on PlayerController {
     }
     _persistVolumeDebounced(newVolume);
     _scheduleIndicatorClear();
+  }
+
+  /// The booster's ceiling for a swipe: 200 % (MX), or the user's own
+  /// booster level if that is set higher.
+  double get _swipeBoostMax {
+    final mult = _ref.read(preferencesProvider).audioVolumeBoost;
+    return math.max(2.0, mult.clamp(1.0, 4.0).toDouble());
+  }
+
+  /// Handles the part of a volume swipe above 100 %. Returns true when it
+  /// used [delta] (the gain moved), false when the ordinary volume should.
+  Future<bool> _volumeBoostDelta(double delta) async {
+    final boostOn =
+        _ref.read(playerSettingsProvider).get(PlayerSetting.audioVolumeBoost);
+    if (!boostOn) return false;
+    final svc = _ref.read(videoPlayerServiceProvider);
+    if (svc is! MediaKitPlayerService) return false;
+    final gain = svc.outputVolumePct / 100.0;
+    // Only from the top of the ordinary range: below 100 % a swipe moves
+    // the volume as it always has, whatever gain the booster was opened at.
+    if (state.volume < 1.0) return false;
+    if (!(delta > 0) && !(gain > 1.0 && delta < 0)) return false;
+    final next = (gain + delta).clamp(1.0, _swipeBoostMax).toDouble();
+    if ((next - _swipeBoostMax).abs() < 1e-6 && gain < _swipeBoostMax) {
+      unawaited(HapticService.light());
+    }
+    if (next <= 1.0 && gain > 1.0) unawaited(HapticService.light());
+    await svc.setAudioGain(next);
+    state = state.copyWith(
+      activeIndicator: GestureIndicator.volume(next),
+      zoomIndicatorValue: null,
+    );
+    _zoomIndicatorTimer?.cancel();
+    _scheduleIndicatorClear();
+    return true;
   }
 
   // Audit fix (B5): debounced per-URI persistence helpers + restore.
@@ -251,6 +291,135 @@ extension PlayerGestures on PlayerController {
     playOrPause();
   }
 
+  /// A double tap on a side, and each further tap of the same run (the
+  /// engine counts them): one more step each, with the run's total shown
+  /// on that side — YouTube's and VLC's stacked seek.
+  void onDoubleTapStacked({required bool forward, required int count}) {
+    if (state.isLocked && state.lockScope != 'rotation') return;
+    final ps = _ref.read(playerSettingsProvider);
+    if (!ps.get(PlayerSetting.ctlDoubleTapSeek)) return;
+    final seconds = _ref.read(preferencesProvider).doubleTapSeekSeconds;
+    HapticService.light();
+    seekRelative(forward ? seconds : -seconds);
+    _rippleSerial++;
+    state = state.copyWith(
+      doubleTapRipple: DoubleTapRipple(
+        forward: forward,
+        seconds: seconds * count,
+        serial: _rippleSerial,
+      ),
+    );
+    _rippleTimer?.cancel();
+    _rippleTimer = Timer(const Duration(milliseconds: 750), () {
+      if (mounted) state = state.copyWith(doubleTapRipple: null);
+    });
+  }
+
+  // ── two-finger speed (MX) ────────────────────────────────────────
+
+  void onSpeedGestureStart() {
+    if (state.isLocked && state.lockScope != 'rotation') return;
+    _speedGestureBase = state.playbackSpeed;
+    HapticService.light();
+    state = state.copyWith(
+        activeIndicator: GestureIndicator.speed(state.playbackSpeed));
+  }
+
+  /// [steps] whole 0.1x steps from where the swipe began, 0.25x to 4x.
+  void onSpeedGestureSteps(int steps) {
+    if (state.isLocked && state.lockScope != 'rotation') return;
+    final base = _speedGestureBase ?? state.playbackSpeed;
+    final raw = (base + steps * 0.1).clamp(0.25, 4.0);
+    final speed = (raw * 20).round() / 20; // to the nearest 0.05
+    if ((speed - state.playbackSpeed).abs() > 0.001) {
+      _ref.read(videoPlayerServiceProvider).setRate(speed);
+      HapticService.selection();
+    }
+    state = state.copyWith(
+      playbackSpeed: speed,
+      activeIndicator: GestureIndicator.speed(speed),
+    );
+  }
+
+  void onSpeedGestureEnd() {
+    _speedGestureBase = null;
+    _scheduleIndicatorClear();
+  }
+
+  // ── pan while zoomed (MX "zoom and pan") ─────────────────────────
+
+  /// Moves a zoomed picture with the fingers, never so far that a black
+  /// edge is dragged into view. [view] is the player's size in dp.
+  void onPanDelta(Offset delta, Size view) {
+    if (state.isLocked && state.lockScope != 'rotation') return;
+    _lastPanView = view;
+    final next = clampVideoOffset(
+        state.videoOffset + delta, state.videoScale, view);
+    if (next != state.videoOffset) state = state.copyWith(videoOffset: next);
+  }
+
+  // ── subtitle gestures (MX) ───────────────────────────────────────
+
+  /// A vertical drag that started on the subtitle: move it.
+  /// [delta] is a fraction of the player's height (+ = down).
+  Future<void> onSubtitleMoveDelta(double delta) async {
+    if (state.isLocked && state.lockScope != 'rotation') return;
+    final svc = _ref.read(videoPlayerServiceProvider);
+    if (svc is! MediaKitPlayerService) return;
+    final ex = _ref.read(extraSettingsProvider);
+    final from = _subtitlePosDrag ??
+        ex.getInt(IntSetting.subtitleVerticalPos).toDouble();
+    final pos = (from + delta * 100).clamp(0.0, 100.0).toDouble();
+    _subtitlePosDrag = pos;
+    await svc.setSubtitleVerticalPos(pos.round());
+    state = state.copyWith(
+        activeIndicator: GestureIndicator.subtitlePosition(pos));
+  }
+
+  /// A pinch that started on the subtitle: size it.
+  Future<void> onSubtitleScaleDelta(double scaleDelta) async {
+    if (state.isLocked && state.lockScope != 'rotation') return;
+    final svc = _ref.read(videoPlayerServiceProvider);
+    if (svc is! MediaKitPlayerService) return;
+    final ex = _ref.read(extraSettingsProvider);
+    final from =
+        _subtitleScaleDrag ?? ex.getInt(IntSetting.subtitleScale) / 100.0;
+    final scale = (from * scaleDelta).clamp(0.3, 2.0).toDouble();
+    _subtitleScaleDrag = scale;
+    await svc.setSubtitleScale(scale);
+    state =
+        state.copyWith(activeIndicator: GestureIndicator.subtitleSize(scale));
+  }
+
+  /// A horizontal swipe on the subtitle: the next / previous line.
+  Future<void> onSubtitleStep(int direction) async {
+    if (state.isLocked && state.lockScope != 'rotation') return;
+    final svc = _ref.read(videoPlayerServiceProvider);
+    if (svc is! MediaKitPlayerService) return;
+    unawaited(HapticService.selection());
+    await svc.subSeek(direction);
+  }
+
+  /// Keeps what the subtitle gestures set, as the Subtitle settings would.
+  Future<void> onSubtitleGestureEnd() async {
+    final n = _ref.read(extraSettingsProvider.notifier);
+    final pos = _subtitlePosDrag;
+    final scale = _subtitleScaleDrag;
+    _subtitlePosDrag = null;
+    _subtitleScaleDrag = null;
+    _scheduleIndicatorClear();
+    try {
+      if (pos != null) {
+        await n.setInt(IntSetting.subtitleVerticalPos, pos.round());
+      }
+      if (scale != null) {
+        await n.setInt(IntSetting.subtitleScale, (scale * 100).round());
+      }
+    } catch (e) {
+      if (kDebugMode) debugPrint('PlayerGestures: $e');
+    }
+  }
+
   /// Long-press now shows speed slider (PDF page 9 spec)
   Future<void> onLongPressStart() async {
     if (state.isLocked && state.lockScope != 'rotation') return;
@@ -407,6 +576,9 @@ extension PlayerGestures on PlayerController {
     state = state.copyWith(
       videoScale: newScale,
       zoomIndicatorValue: newScale,
+      // Zooming out pulls a panned picture back with it.
+      videoOffset: clampVideoOffset(
+          state.videoOffset, newScale, _lastPanView ?? Size.zero),
     );
   }
 
@@ -430,7 +602,8 @@ extension PlayerGestures on PlayerController {
 
   void resetZoom() {
     _zoomIndicatorTimer?.cancel();
-    state = state.copyWith(videoScale: 1.0, zoomIndicatorValue: null);
+    state = state.copyWith(
+        videoScale: 1.0, zoomIndicatorValue: null, videoOffset: Offset.zero);
   }
 
   void _scheduleIndicatorClear() {
@@ -442,4 +615,17 @@ extension PlayerGestures on PlayerController {
     if (mounted) state = state.copyWith(activeIndicator: null);
   }
 
+}
+
+/// How far a picture zoomed to [scale] may be dragged in a [view]: half of
+/// what the zoom added on each axis, so an edge never comes into view.
+@visibleForTesting
+Offset clampVideoOffset(Offset offset, double scale, Size view) {
+  if (scale <= 1.0 || view.isEmpty) return Offset.zero;
+  final mx = (scale - 1) * view.width / 2;
+  final my = (scale - 1) * view.height / 2;
+  return Offset(
+    offset.dx.clamp(-mx, mx).toDouble(),
+    offset.dy.clamp(-my, my).toDouble(),
+  );
 }

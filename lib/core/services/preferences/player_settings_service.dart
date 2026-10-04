@@ -105,6 +105,10 @@ enum PlayerSetting {
   ctlDoubleTapSeek(default_: true),
   ctlLongPressSpeed(default_: true),
   ctlPinchZoom(default_: true),
+  // docs/player_gestures.md — MX's other gestures.
+  ctlZoomPan(default_: true),
+  ctlTwoFingerSpeed(default_: true),
+  ctlSubtitleGestures(default_: true),
   ctlTapToggle(default_: true),
   ctlLockOnRotation(default_: false),
 

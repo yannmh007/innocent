@@ -33,45 +33,52 @@ class PlayerControlsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final s = AppStrings.of(context);
     return Scaffold(
       backgroundColor: AppColors.darkBackground,
-      appBar: AppBar(title: Text(AppStrings.of(context).controlsTitle)),
+      appBar: AppBar(title: Text(s.controlsTitle)),
       body: ListView(
         children: [
-          const SettingsSectionHeader('Touch Gestures'),
+          SettingsSectionHeader(s.gtSection),
           _toggle(ref,
-              title: 'Swipe to adjust brightness',
-              subtitle:
-                  'Swipe up/down on the left side of the screen to adjust brightness.',
+              title: s.gtBrightness,
+              subtitle: s.gtBrightnessSub,
               setting: PlayerSetting.ctlSwipeBrightness),
           _toggle(ref,
-              title: 'Swipe to adjust volume',
-              subtitle:
-                  'Swipe up/down on the right side of the screen to adjust volume.',
+              title: s.gtVolume,
+              subtitle: s.gtVolumeSub,
               setting: PlayerSetting.ctlSwipeVolume),
           _toggle(ref,
-              title: 'Swipe to seek',
-              subtitle:
-                  'Swipe left/right on the screen to seek forward/backward.',
+              title: s.gtSeek,
+              subtitle: s.gtSeekSub,
               setting: PlayerSetting.ctlSwipeSeek),
           _toggle(ref,
-              title: 'Double-tap to seek',
-              subtitle:
-                  'Double-tap on left/right side to seek backward/forward by 10 seconds.',
+              title: s.gtDoubleTap,
+              subtitle: s.gtDoubleTapSub,
               setting: PlayerSetting.ctlDoubleTapSeek),
           _toggle(ref,
-              title: 'Long press to speed up',
-              subtitle:
-                  'Long press and hold to temporarily increase playback speed to 2x.',
+              title: s.gtLongPress,
+              subtitle: s.gtLongPressSub,
               setting: PlayerSetting.ctlLongPressSpeed),
           _toggle(ref,
-              title: 'Pinch to zoom',
-              subtitle: 'Pinch two fingers to zoom in/out on video.',
+              title: s.gtSpeed,
+              subtitle: s.gtSpeedSub,
+              setting: PlayerSetting.ctlTwoFingerSpeed),
+          _toggle(ref,
+              title: s.gtPinch,
+              subtitle: s.gtPinchSub,
               setting: PlayerSetting.ctlPinchZoom),
           _toggle(ref,
-              title: 'Tap to show/hide controls',
-              subtitle:
-                  'Single tap on the screen to toggle player controls visibility.',
+              title: s.gtPan,
+              subtitle: s.gtPanSub,
+              setting: PlayerSetting.ctlZoomPan),
+          _toggle(ref,
+              title: s.gtSubtitle,
+              subtitle: s.gtSubtitleSub,
+              setting: PlayerSetting.ctlSubtitleGestures),
+          _toggle(ref,
+              title: s.gtTap,
+              subtitle: s.gtTapSub,
               setting: PlayerSetting.ctlTapToggle),
           const SettingsSectionHeader('Lock'),
           // Audit fix (standard high-quality): wire lock mode to

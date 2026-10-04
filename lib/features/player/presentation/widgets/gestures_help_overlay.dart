@@ -16,66 +16,52 @@ class GesturesHelpOverlay extends StatelessWidget {
     );
   }
 
-  static const _gestures = <_Gesture>[
-    _Gesture(
-      icon: Icons.touch_app,
-      title: 'Tap',
-      description: 'Show / hide player controls',
-    ),
-    _Gesture(
-      icon: Icons.touch_app_outlined,
-      title: 'Double tap left',
-      description: 'Seek backward 10 seconds',
-    ),
-    _Gesture(
-      icon: Icons.pause_circle_outline,
-      title: 'Double tap center',
-      description: 'Play / pause',
-    ),
-    _Gesture(
-      icon: Icons.touch_app_outlined,
-      title: 'Double tap right',
-      description: 'Seek forward 10 seconds',
-    ),
-    _Gesture(
-      icon: Icons.swipe_vertical,
-      title: 'Vertical swipe left',
-      description: 'Adjust brightness',
-    ),
-    _Gesture(
-      icon: Icons.swipe_vertical,
-      title: 'Vertical swipe right',
-      description: 'Adjust volume',
-    ),
-    _Gesture(
-      icon: Icons.swipe,
-      title: 'Horizontal swipe',
-      description: 'Seek video timeline',
-    ),
-    _Gesture(
-      icon: Icons.zoom_out_map,
-      title: 'Pinch (2 fingers)',
-      description: 'Zoom video 25% to 1000%',
-    ),
-    _Gesture(
-      icon: Icons.timer_outlined,
-      title: 'Long press + drag',
-      description: 'Quick playback speed change',
-    ),
-    _Gesture(
-      icon: Icons.volume_up_outlined,
-      title: 'Volume hardware key',
-      description: 'Seek ±10s (only in player)',
-    ),
-    _Gesture(
-      icon: Icons.headphones_outlined,
-      title: 'Headset button',
-      description: 'Play / pause',
-    ),
-  ];
+  /// Every gesture, as Settings → Controls names it (docs/player_gestures.md).
+  /// The volume keys move the system volume — they never seek (this list
+  /// used to say "Seek ±10s", which MainActivity has never done).
+  static List<_Gesture> _gestures(AppStrings s) => <_Gesture>[
+        _Gesture(icon: Icons.touch_app, title: s.gtTap, description: s.gtTapSub),
+        _Gesture(
+            icon: Icons.fast_forward_rounded,
+            title: s.gtDoubleTap,
+            description: s.gtDoubleTapSub),
+        _Gesture(
+            icon: Icons.swipe_vertical,
+            title: s.gtBrightness,
+            description: s.gtBrightnessSub),
+        _Gesture(
+            icon: Icons.swipe_vertical,
+            title: s.gtVolume,
+            description: s.gtVolumeSub),
+        _Gesture(icon: Icons.swipe, title: s.gtSeek, description: s.gtSeekSub),
+        _Gesture(
+            icon: Icons.speed, title: s.gtSpeed, description: s.gtSpeedSub),
+        _Gesture(
+            icon: Icons.timer_outlined,
+            title: s.gtLongPress,
+            description: s.gtLongPressSub),
+        _Gesture(
+            icon: Icons.zoom_out_map,
+            title: s.gtPinch,
+            description: s.gtPinchSub),
+        _Gesture(icon: Icons.pan_tool_outlined, title: s.gtPan, description: s.gtPanSub),
+        _Gesture(
+            icon: Icons.subtitles_outlined,
+            title: s.gtSubtitle,
+            description: s.gtSubtitleSub),
+        _Gesture(
+            icon: Icons.volume_up_outlined,
+            title: s.gtVolumeKey,
+            description: s.gtVolumeKeySub),
+        _Gesture(
+            icon: Icons.headphones_outlined,
+            title: s.gtHeadset,
+            description: s.gtHeadsetSub),
+      ];
 
   @override
   Widget build(BuildContext context) {
+    final gestures = _gestures(AppStrings.of(context));
     return GestureDetector(
       onTap: () => Navigator.of(context).pop(),
       child: Container(
@@ -110,12 +96,12 @@ class GesturesHelpOverlay extends StatelessWidget {
                 const SizedBox(height: 12),
                 Expanded(
                   child: ListView.separated(
-                    itemCount: _gestures.length,
+                    itemCount: gestures.length,
                     separatorBuilder: (_, __) => const Divider(
                       height: 16,
                       color: Colors.white12,
                     ),
-                    itemBuilder: (_, i) => _GestureItem(_gestures[i]),
+                    itemBuilder: (_, i) => _GestureItem(gestures[i]),
                   ),
                 ),
                 const SizedBox(height: 8),

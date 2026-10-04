@@ -6,7 +6,7 @@ import '../../../../core/theme/app_colors.dart';
 /// (MX Player parity — Mercy 2026 screen recording).
 /// Shows: % at top, blue vertical fill bar, speaker icon at bottom.
 class VolumeIndicator extends StatelessWidget {
-  final double value; // 0.0 - 1.0
+  final double value; // 0.0 - 1.0, up to 2.0 with the booster
 
   const VolumeIndicator({super.key, required this.value});
 
@@ -68,6 +68,17 @@ class VolumeIndicator extends StatelessWidget {
                           child: Container(color: AppColors.accentBlue),
                         ),
                       ),
+                      // Above 100 % (the booster, reached by swiping on past
+                      // the top): the boost fills the bar again in amber.
+                      if (value > 1.0)
+                        Align(
+                          alignment: Alignment.bottomCenter,
+                          child: FractionallySizedBox(
+                            alignment: Alignment.bottomCenter,
+                            heightFactor: (value - 1.0).clamp(0.0, 1.0),
+                            child: Container(color: const Color(0xFFFFB300)),
+                          ),
+                        ),
                     ],
                   ),
                 ),

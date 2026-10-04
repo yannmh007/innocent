@@ -157,6 +157,15 @@ class PlayerController extends StateNotifier<PlayerState> {
 
   Duration? _seekStartPosition;
   bool _wasLongPressActive = false;
+
+  // docs/player_gestures.md — state for the gestures in
+  // player_controller_gestures.dart (an extension cannot hold fields).
+  int _rippleSerial = 0;
+  Timer? _rippleTimer;
+  double? _speedGestureBase;
+  Size? _lastPanView;
+  double? _subtitlePosDrag;
+  double? _subtitleScaleDrag;
   double _volumeBeforeMute = 0.5;
   String? _currentUri;
 
@@ -1825,6 +1834,7 @@ class PlayerController extends StateNotifier<PlayerState> {
     _autoSaveTimer?.cancel();
     _sleepTimerTicker?.cancel();
     _zoomIndicatorTimer?.cancel();
+    _rippleTimer?.cancel();
     _bufferStallTimer?.cancel();
     _bufferSlowTimer?.cancel();
     _bufferSpinnerTimer?.cancel();

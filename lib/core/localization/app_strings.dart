@@ -848,6 +848,32 @@ class AppStrings {
   String get scCustomiseItems => _s('scCustomiseItems');
   String get scVideoDisplay => _s('scVideoDisplay');
   String get scSleepTimer => _s('scSleepTimer');
+  // Settings → Controls and the gesture guide (docs/player_gestures.md).
+  String get gtSection => _s('gtSection');
+  String get gtBrightness => _s('gtBrightness');
+  String get gtBrightnessSub => _s('gtBrightnessSub');
+  String get gtVolume => _s('gtVolume');
+  String get gtVolumeSub => _s('gtVolumeSub');
+  String get gtSeek => _s('gtSeek');
+  String get gtSeekSub => _s('gtSeekSub');
+  String get gtDoubleTap => _s('gtDoubleTap');
+  String get gtDoubleTapSub => _s('gtDoubleTapSub');
+  String get gtLongPress => _s('gtLongPress');
+  String get gtLongPressSub => _s('gtLongPressSub');
+  String get gtPinch => _s('gtPinch');
+  String get gtPinchSub => _s('gtPinchSub');
+  String get gtPan => _s('gtPan');
+  String get gtPanSub => _s('gtPanSub');
+  String get gtSpeed => _s('gtSpeed');
+  String get gtSpeedSub => _s('gtSpeedSub');
+  String get gtSubtitle => _s('gtSubtitle');
+  String get gtSubtitleSub => _s('gtSubtitleSub');
+  String get gtTap => _s('gtTap');
+  String get gtTapSub => _s('gtTapSub');
+  String get gtVolumeKey => _s('gtVolumeKey');
+  String get gtVolumeKeySub => _s('gtVolumeKeySub');
+  String get gtHeadset => _s('gtHeadset');
+  String get gtHeadsetSub => _s('gtHeadsetSub');
   String get cleanUpSpace => _s('cleanUpSpace');
   String get scanningCleanable => _s('scanningCleanable');
   String get openingRecentlyPlayed => _s('openingRecentlyPlayed');
@@ -2421,6 +2447,31 @@ class AppStrings {
     'scCustomiseItems': 'Customise Items',
     'scVideoDisplay': 'Video Display',
     'scSleepTimer': 'Sleep Timer',
+    'gtSection': 'Touch gestures',
+    'gtBrightness': 'Swipe for brightness',
+    'gtBrightnessSub': 'Swipe up or down on the left half.',
+    'gtVolume': 'Swipe for volume',
+    'gtVolumeSub': 'Swipe up or down on the right half. With Volume boost on, keep going past 100 % up to 200 %.',
+    'gtSeek': 'Swipe to seek',
+    'gtSeekSub': 'Swipe left or right; the film follows your finger.',
+    'gtDoubleTap': 'Double tap to seek',
+    'gtDoubleTapSub': 'Double tap the left or right side. Keep tapping to go further (10, 20, 30 s…). Double tap the middle to play or pause.',
+    'gtLongPress': 'Hold for speed',
+    'gtLongPressSub': 'Press and hold, then slide left or right without lifting.',
+    'gtPinch': 'Pinch to zoom',
+    'gtPinchSub': 'Spread or pinch two fingers.',
+    'gtPan': 'Move while zoomed',
+    'gtPanSub': 'When zoomed in, drag with two fingers to move the picture.',
+    'gtSpeed': 'Two fingers for speed',
+    'gtSpeedSub': 'Swipe up or down with two fingers (0.25x – 4x).',
+    'gtSubtitle': 'Subtitle gestures',
+    'gtSubtitleSub': 'On the subtitle: drag up or down to move it, swipe left or right for the previous or next line, pinch to resize.',
+    'gtTap': 'Tap to show or hide controls',
+    'gtTapSub': 'Tap the screen once.',
+    'gtVolumeKey': 'Volume keys',
+    'gtVolumeKeySub': 'Change the volume.',
+    'gtHeadset': 'Headset button',
+    'gtHeadsetSub': 'Play or pause.',
     'storagePermissionNeeded': 'Storage permission needed',
     'statusPermissionHint': 'Allow media access so we can read WhatsApp statuses.',
     'openingPrivacyPolicy': 'Opening Privacy Policy...',
@@ -3766,6 +3817,31 @@ class AppStrings {
     'scCustomiseItems': 'စိတ်ကြိုက်ပြင်',
     'scVideoDisplay': 'ဗီဒီယိုပြသမှု',
     'scSleepTimer': 'အိပ်ချိန်မှတ်',
+    'gtSection': 'လက်ဟန်များ (Gestures)',
+    'gtBrightness': 'ပွတ်ဆွဲ၍ အလင်းချိန်',
+    'gtBrightnessSub': 'ဘယ်ဘက်ခြမ်းကို အပေါ်/အောက် ပွတ်ဆွဲပါ။',
+    'gtVolume': 'ပွတ်ဆွဲ၍ အသံချိန်',
+    'gtVolumeSub': 'ညာဘက်ခြမ်းကို အပေါ်/အောက် ပွတ်ဆွဲပါ။ Volume boost ဖွင့်ထားရင် 100% ကျော်ပြီး 200% ထိ ဆက်တင်နိုင်ပါတယ်။',
+    'gtSeek': 'ပွတ်ဆွဲ၍ ရှေ့/နောက် ရွှေ့',
+    'gtSeekSub': 'ဘယ်/ညာ ပွတ်ဆွဲပါ။ ဆွဲသလောက် ရုပ်ရှင်က လိုက်ရွှေ့ပါတယ်။',
+    'gtDoubleTap': 'နှစ်ချက်တို့၍ ခုန်ကျော်',
+    'gtDoubleTapSub': 'ဘယ် သို့မဟုတ် ညာဘက်ကို နှစ်ချက်တို့ပါ။ ဆက်တို့လေ ပိုခုန်လေ (10၊ 20၊ 30 စက္ကန့်…)။ အလယ်ကို နှစ်ချက်တို့ရင် ရပ်/ဖွင့်။',
+    'gtLongPress': 'ဖိထား၍ အမြန်နှုန်း',
+    'gtLongPressSub': 'ဖိထားပြီး လက်မကြွဘဲ ဘယ်/ညာ ဆွဲပါ။',
+    'gtPinch': 'လက်နှစ်ချောင်းဖြင့် Zoom',
+    'gtPinchSub': 'လက်နှစ်ချောင်းကို ဆွဲချဲ့ သို့မဟုတ် ချုံ့ပါ။',
+    'gtPan': 'Zoom ထားစဉ် ရွှေ့',
+    'gtPanSub': 'Zoom ထားတုန်း လက်နှစ်ချောင်းနဲ့ ဆွဲပြီး ရုပ်ပုံကို ရွှေ့ပါ။',
+    'gtSpeed': 'လက်နှစ်ချောင်းဖြင့် အမြန်နှုန်း',
+    'gtSpeedSub': 'လက်နှစ်ချောင်းနဲ့ အပေါ်/အောက် ပွတ်ဆွဲပါ (0.25x – 4x)။',
+    'gtSubtitle': 'စာတန်းထိုး လက်ဟန်',
+    'gtSubtitleSub': 'စာတန်းပေါ်မှာ အပေါ်/အောက်ဆွဲရင် နေရာရွှေ့၊ ဘယ်/ညာဆွဲရင် ရှေ့/နောက် စာကြောင်း၊ ဆွဲချဲ့/ချုံ့ရင် အရွယ်ပြောင်း။',
+    'gtTap': 'တစ်ချက်တို့၍ ခလုတ်များ ပြ/ဖျောက်',
+    'gtTapSub': 'စခရင်ကို တစ်ချက်တို့ပါ။',
+    'gtVolumeKey': 'အသံခလုတ်များ',
+    'gtVolumeKeySub': 'အသံ အတိုး/အလျှော့။',
+    'gtHeadset': 'နားကြပ် ခလုတ်',
+    'gtHeadsetSub': 'ရပ်/ဖွင့်။',
     'storagePermissionNeeded': 'သိုလှောင်မှုခွင့်ပြုချက် လိုအပ်ပါတယ်',
     'statusPermissionHint': 'WhatsApp status တွေဖတ်နိုင်ဖို့ media ဝင်ရောက်ခွင့် ပေးပါ။',
     'openingPrivacyPolicy': 'Privacy Policy ဖွင့်နေသည်...',
@@ -5100,6 +5176,31 @@ class AppStrings {
     'scCustomiseItems': 'ปรับแต่งรายการ',
     'scVideoDisplay': 'การแสดงวิดีโอ',
     'scSleepTimer': 'ตั้งเวลาปิด',
+    'gtSection': 'ท่าทางสัมผัส',
+    'gtBrightness': 'ปัดเพื่อปรับความสว่าง',
+    'gtBrightnessSub': 'ปัดขึ้นหรือลงที่ครึ่งซ้าย',
+    'gtVolume': 'ปัดเพื่อปรับเสียง',
+    'gtVolumeSub': 'ปัดขึ้นหรือลงที่ครึ่งขวา เมื่อเปิดเพิ่มเสียง ปัดต่อเกิน 100% ได้ถึง 200%',
+    'gtSeek': 'ปัดเพื่อเลื่อน',
+    'gtSeekSub': 'ปัดซ้ายหรือขวา วิดีโอเลื่อนตามนิ้ว',
+    'gtDoubleTap': 'แตะสองครั้งเพื่อข้าม',
+    'gtDoubleTapSub': 'แตะสองครั้งที่ด้านซ้ายหรือขวา แตะต่อเพื่อข้ามเพิ่ม (10, 20, 30 วินาที…) แตะสองครั้งตรงกลางเพื่อเล่นหรือหยุด',
+    'gtLongPress': 'กดค้างเพื่อปรับความเร็ว',
+    'gtLongPressSub': 'กดค้างแล้วเลื่อนซ้ายหรือขวาโดยไม่ยกนิ้ว',
+    'gtPinch': 'บีบเพื่อซูม',
+    'gtPinchSub': 'กางหรือบีบสองนิ้ว',
+    'gtPan': 'เลื่อนภาพขณะซูม',
+    'gtPanSub': 'ขณะซูม ลากด้วยสองนิ้วเพื่อเลื่อนภาพ',
+    'gtSpeed': 'สองนิ้วเพื่อปรับความเร็ว',
+    'gtSpeedSub': 'ปัดขึ้นหรือลงด้วยสองนิ้ว (0.25x – 4x)',
+    'gtSubtitle': 'ท่าทางคำบรรยาย',
+    'gtSubtitleSub': 'บนคำบรรยาย: ลากขึ้นลงเพื่อย้าย ปัดซ้ายขวาเพื่อไปบรรทัดก่อนหน้าหรือถัดไป บีบเพื่อปรับขนาด',
+    'gtTap': 'แตะเพื่อแสดงหรือซ่อนปุ่ม',
+    'gtTapSub': 'แตะหน้าจอหนึ่งครั้ง',
+    'gtVolumeKey': 'ปุ่มปรับเสียง',
+    'gtVolumeKeySub': 'เพิ่มหรือลดเสียง',
+    'gtHeadset': 'ปุ่มหูฟัง',
+    'gtHeadsetSub': 'เล่นหรือหยุด',
     'storagePermissionNeeded': 'ต้องการสิทธิ์พื้นที่จัดเก็บ',
     'statusPermissionHint': 'อนุญาตการเข้าถึงสื่อเพื่ออ่านสถานะ WhatsApp',
     'openingPrivacyPolicy': 'กำลังเปิดนโยบายความเป็นส่วนตัว...',

@@ -92,6 +92,8 @@ import '../../../core/services/video_player/stream_renewal.dart';
 import '../../../core/utils/media_address.dart';
 import '../../video_hub/data/api/playback_reporter.dart';
 import '../../video_hub/presentation/video_hub_provider.dart';
+import 'gestures/subtitle_band.dart';
+import 'widgets/gesture_hud.dart';
 
 class PlayerScreen extends ConsumerStatefulWidget {
   final String videoUri;
@@ -2533,12 +2535,17 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                                 fit: state.aspectRatioMode.boxFit),
                             state,
                           )
-                        : Transform.scale(
-                            scale: state.videoScale,
-                            child: _wrapVideoTransforms(
-                              svc.buildVideoWidget(
-                                  fit: state.aspectRatioMode.boxFit),
-                              state,
+                        // Zoomed: scaled about the centre, then moved by
+                        // the two-finger pan (zero unless zoomed in).
+                        : Transform.translate(
+                            offset: state.videoOffset,
+                            child: Transform.scale(
+                              scale: state.videoScale,
+                              child: _wrapVideoTransforms(
+                                svc.buildVideoWidget(
+                                    fit: state.aspectRatioMode.boxFit),
+                                state,
+                              ),
                             ),
                           ))
                     : (svc.isInitialized
@@ -2672,6 +2679,28 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                 onLongPressMoveGlobal: controller.onLongPressDragSpeed,
                 onPinchUpdate: controller.onPinchUpdate,
                 onPinchEnd: controller.onPinchEnd,
+                // docs/player_gestures.md — MX's other gestures.
+                onDoubleTapStacked: (forward, count) => controller
+                    .onDoubleTapStacked(forward: forward, count: count),
+                onPan: controller.onPanDelta,
+                onSpeedStart: controller.onSpeedGestureStart,
+                onSpeedSteps: controller.onSpeedGestureSteps,
+                onSpeedEnd: controller.onSpeedGestureEnd,
+                onSubtitleMove: controller.onSubtitleMoveDelta,
+                onSubtitleScale: controller.onSubtitleScaleDelta,
+                onSubtitleStep: controller.onSubtitleStep,
+                onSubtitleEnd: controller.onSubtitleGestureEnd,
+                subtitleBand: _subtitleBand,
+                duration: state.duration,
+                panEnabled: ref
+                    .watch(playerSettingsProvider)
+                    .get(PlayerSetting.ctlZoomPan),
+                twoFingerSpeedEnabled: ref
+                    .watch(playerSettingsProvider)
+                    .get(PlayerSetting.ctlTwoFingerSpeed),
+                subtitleGesturesEnabled: ref
+                    .watch(playerSettingsProvider)
+                    .get(PlayerSetting.ctlSubtitleGestures),
                 // Phase 45: respect the user's per-gesture toggles from
                 // Settings → Controls. Each gate is independent so the
                 // user can, e.g., keep brightness swipe but disable
@@ -2966,6 +2995,10 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
             ),
 
           // === LAYER 9: Gesture indicator ===
+          if (state.doubleTapRipple != null)
+            Positioned.fill(
+              child: DoubleTapRippleView(ripple: state.doubleTapRipple!),
+            ),
           if (state.activeIndicator != null)
             _buildIndicator(state.activeIndicator!),
 
@@ -3355,7 +3388,43 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
           delta: indicator.delta!,
           targetPosition: indicator.target!,
         );
+      case IndicatorType.speed:
+        final v = indicator.value!;
+        return GestureValueText(
+          value: '${v.toStringAsFixed(v == v.roundToDouble() ? 1 : 2)}x',
+          caption: AppStrings.of(context).scSpeed,
+        );
+      case IndicatorType.subtitleSize:
+        return GestureValueText(
+          value: '${(indicator.value! * 100).round()}%',
+          caption: AppStrings.of(context).gtSubtitle,
+        );
+      case IndicatorType.subtitlePosition:
+        return GestureValueText(
+          value: '${indicator.value!.round()}%',
+          caption: AppStrings.of(context).gtSubtitle,
+        );
     }
+  }
+
+  /// Where the subtitle on screen is, for the subtitle gestures; null when
+  /// none is showing (docs/player_gestures.md).
+  Rect? _subtitleBand(Size size) {
+    final svc = ref.read(videoPlayerServiceProvider);
+    if (svc is! MediaKitPlayerService) return null;
+    final text = svc.subtitleText;
+    if (text.isEmpty) return null;
+    final lines =
+        text.fold<int>(0, (n, t) => n + '\n'.allMatches(t).length + 1);
+    final ex = ref.read(extraSettingsProvider);
+    return subtitleBandFor(
+      player: size,
+      video: svc.videoSize,
+      fit: ref.read(playerControllerProvider).aspectRatioMode.boxFit,
+      positionPct: ex.getInt(IntSetting.subtitleVerticalPos),
+      scale: ex.getInt(IntSetting.subtitleScale) / 100.0,
+      lines: lines,
+    );
   }
 }
 
