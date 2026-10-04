@@ -19,7 +19,7 @@ import '../../player/presentation/floating_pip_provider.dart';
 import '../../../core/ui/safe_thumbnail.dart';
 
 import '../../../core/localization/app_strings.dart';
-import 'folder_list_item.dart' show FolderShapePainter;
+import 'folder_list_item.dart' show FolderShapePainter, FolderTick;
 /// Phase 15: Grid tile for a folder (MX Player grid layout parity).
 class FolderGridTile extends ConsumerWidget {
   final Folder folder;
@@ -139,30 +139,9 @@ class FolderGridTile extends ConsumerWidget {
                   left: 2,
                   child: HiddenCornerBadge(),
                 ),
-              // Selection checkmark overlay (grid): a filled circle in the
-              // corner when this folder is selected, dimming the thumbnail
-              // so the selection reads clearly at grid size.
-              if (selectionMode)
-                Positioned.fill(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: selected
-                          ? AppColors.accentBlue.withValues(alpha: 0.35)
-                          : Colors.black.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Align(
-                      alignment: Alignment.center,
-                      child: Icon(
-                        selected
-                            ? Icons.check_circle
-                            : Icons.radio_button_unchecked,
-                        color: Colors.white,
-                        size: 22,
-                      ),
-                    ),
-                  ),
-                ),
+              // Selection (grid): the same pale disc and tick MX draws on a
+              // selected folder in the list.
+              if (selected) const Positioned.fill(child: FolderTick()),
             ],
           ),
           const SizedBox(height: 9),

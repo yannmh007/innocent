@@ -92,9 +92,8 @@ class FolderListItem extends ConsumerWidget {
       selected: selected,
       child: RepaintBoundary(
       child: Material(
-        color: selected
-            ? AppColors.accentBlue.withValues(alpha: 0.16)
-            : Colors.transparent,
+        // MX: a selected row is lifted in grey.
+        color: selected ? const Color(0x29FFFFFF) : Colors.transparent,
         child: InkWell(
       // In selection mode a tap toggles this folder; otherwise it opens.
       onTap: selectionMode ? onLongPress : onTap,
@@ -109,20 +108,6 @@ class FolderListItem extends ConsumerWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
         child: Row(
           children: [
-            // Selection checkbox (leading) — shown only in selection mode.
-            if (selectionMode)
-              Padding(
-                padding: const EdgeInsets.only(right: 10),
-                child: Icon(
-                  selected
-                      ? Icons.check_circle
-                      : Icons.radio_button_unchecked,
-                  color: selected
-                      ? AppColors.accentBlue
-                      : AppColors.white40,
-                  size: 24,
-                ),
-              ),
             // MX PLAYER'S FOLDER, measured from its screenshots (2026-10-04,
             // a 411 dp phone at 2.625x — the density was confirmed from a
             // screenshot of this app on the same phone): a 72 x 54 dp folder
@@ -161,6 +146,9 @@ class FolderListItem extends ConsumerWidget {
                                 ),
                         ),
                 ),
+                // MX marks a selected folder ON its icon — a pale disc with
+                // a tick in the middle — and leaves the row where it was.
+                if (selected) const Positioned.fill(child: FolderTick()),
                 // NEW count badge (MX Player parity). Real count from
                 // folderNewCountsProvider — see the note in grid_tiles.
                 if (newCount > 0)
@@ -544,4 +532,28 @@ class FolderShapePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(FolderShapePainter old) => old.color != color;
+}
+
+/// The tick MX draws on a selected folder: a pale disc, a dark tick, centred
+/// on the body of the folder (below its tab).
+class FolderTick extends StatelessWidget {
+  const FolderTick({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 6),
+      child: Center(
+        child: Container(
+          width: 28,
+          height: 28,
+          decoration: const BoxDecoration(
+            color: Color(0xFFDCDCE0),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(Icons.check, color: Color(0xFF3A3F45), size: 20),
+        ),
+      ),
+    );
+  }
 }

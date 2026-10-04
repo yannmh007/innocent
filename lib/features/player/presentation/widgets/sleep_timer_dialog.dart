@@ -20,11 +20,13 @@ class SleepTimerOption {
 // A fixed 3×4 keypad laid out as explicit Rows (so the "0" can sit centred
 // in the bottom row). Identical metrics + tokens in both orientations —
 // only the arrangement differs (portrait column / landscape split).
-const double _kKeyBtn = 44.0; // circle diameter
-const double _kKeyColPitch = 70.0; // column centre-to-centre
-const double _kKeyRowPitch = 46.0; // row centre-to-centre
-const double _kTimeNumeral = 36.0; // big h/m numerals
-const double _kTimeSuffix = 14.0; // small "h" / "m" suffix
+// Re-measured against MX's portrait screenshot (411 dp phone): smaller keys
+// spread wider, and a larger, lighter time read-out centred over them.
+const double _kKeyBtn = 36.0; // circle diameter
+const double _kKeyColPitch = 80.0; // column centre-to-centre
+const double _kKeyRowPitch = 53.0; // row centre-to-centre
+const double _kTimeNumeral = 44.0; // big h/m numerals
+const double _kTimeSuffix = 16.0; // small "h" / "m" suffix
 
 const TextStyle _kTitleStyle = TextStyle(
   color: Colors.white,
@@ -155,12 +157,17 @@ class _SleepTimerDialogState extends State<SleepTimerDialog> {
                 child: Text(AppStrings.of(context).sleepTimer, style: _kTitleStyle),
               ),
               const SizedBox(height: 16),
-              Row(
-                children: [
-                  _timeDisplay(),
-                  const Spacer(),
-                  _closeButton(),
-                ],
+              // MX: the time centred, the close button at the right end.
+              SizedBox(
+                height: 48,
+                child: Stack(
+                  children: [
+                    Center(child: _timeDisplay()),
+                    Align(
+                        alignment: Alignment.centerRight,
+                        child: _closeButton()),
+                  ],
+                ),
               ),
               const SizedBox(height: 8),
               const Divider(
@@ -256,7 +263,7 @@ class _SleepTimerDialogState extends State<SleepTimerDialog> {
         TextSpan(
           style: const TextStyle(
             color: Colors.white,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w400,
             height: 1.0,
           ),
           children: [
@@ -332,8 +339,8 @@ class _SleepTimerDialogState extends State<SleepTimerDialog> {
                   digit,
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w500,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w400,
                   ),
                 ),
               ),
