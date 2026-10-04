@@ -1,14 +1,14 @@
-[11:58:28] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
-[11:58:28] install
-[11:58:48] network: speed 6000:24000 kbit/s, delay 80:250 ms
-[11:59:09] library: pushing 311 files
-[11:59:47] library: MediaStore lists 311 videos
-[11:59:47] game loop rehearsal
-[12:02:43] game loop rehearsal done
-[12:02:43] cold start
+[13:21:04] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
+[13:21:04] install
+[13:21:14] network: speed 6000:24000 kbit/s, delay 80:250 ms
+[13:21:43] library: pushing 2111 files
+[13:22:43] library: MediaStore lists 2111 videos
+[13:22:43] cold start
 Status: ok
-TotalTime: 2427
-WaitTime: 2429
-[12:02:56] flow perf_idle
-[12:04:41] flow perf_idle exit 0
-[12:04:55] done
+TotalTime: 1966
+WaitTime: 1971
+[13:22:55] flow perf_idle
+[13:24:33] flow perf_idle exit 0
+[13:24:39] flow perf_idle
+[13:26:19] flow perf_idle exit 0
+[13:26:28] done
