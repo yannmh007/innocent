@@ -20,6 +20,8 @@
 #   Committed to `test_device/results/latest/` on the branch that ran it, so
 #   a session can read them with git. Nothing in them may be a signed URL:
 #   run.sh redacts links and long tokens from the logs before they are kept.
+#   Screenshots show the catalogue (adult material; the repository is public)
+#   and are kept only encrypted with the LAB_RESULTS_KEY secret.
 #
 # HOW TO RUN
 #   Push a change under test_device/ (config.env says what the run does), or
@@ -151,6 +153,9 @@ jobs:
 
       - name: Boot the emulator and run
         uses: reactivecircus/android-emulator-runner@v2
+        env:
+          # Screenshots are kept only encrypted with this — see run.sh.
+          LAB_RESULTS_KEY: ${{ secrets.LAB_RESULTS_KEY }}
         with:
           api-level: 34
           target: google_apis

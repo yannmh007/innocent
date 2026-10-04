@@ -1,8 +1,0 @@
-Running on test
- > Flow title
-Tap on "Chester Koong", Index: 0... COMPLETED
-Wait for animation to end within 12000 ms... COMPLETED
-Take screenshot 10_detail... COMPLETED
-Scroll vertically... COMPLETED
-Wait for animation to end within 8000 ms... COMPLETED
-Take screenshot 11_detail_scrolled... COMPLETED

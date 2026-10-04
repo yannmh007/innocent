@@ -16,8 +16,9 @@
 # Without them this workflow says what is missing and stops — green.
 #
 # RESULTS are committed to test_device/results/cloud/ on the branch that ran
-# it: per phone, the outcome, Robo's screenshots (resized) and the app's
-# logcat with links and tokens cut out. The video stays in Test Lab — too big
+# it: per phone, the outcome, Robo's screenshots (resized, and ENCRYPTED with
+# the LAB_RESULTS_KEY secret — they show adult material and the repository is
+# public) and the app's logcat with links and tokens cut out. The video stays in Test Lab — too big
 # for git; its console link is in the summary.
 #
 # QUOTA: the free plan allows five physical-device tests a day; each phone in
@@ -120,6 +121,8 @@ jobs:
 
       - name: Keep the results
         if: always() && steps.ready.outputs.ok == 'true'
+        env:
+          LAB_RESULTS_KEY: ${{ secrets.LAB_RESULTS_KEY }}
         run: |
           set -e
           dest=test_device/results/cloud
@@ -136,6 +139,12 @@ jobs:
                 cp "$p" "$dest/$name/shots/$(basename "$(dirname "$p")")_$(basename "$p")"
               done
               find "$dest/$name/shots" -name '*.png' -exec mogrify -resize 480x {} \; 2>/dev/null || true
+              # Never in the clear — see test_device/run.sh.
+              if [ -n "${LAB_RESULTS_KEY:-}" ]; then
+                tar -czf - -C "$dest/$name" shots | openssl enc -aes-256-cbc -pbkdf2 -salt \
+                  -pass env:LAB_RESULTS_KEY -out "$dest/$name/shots.tar.gz.enc"
+              fi
+              rm -rf "$dest/$name/shots"
             done
           fi
           echo "run ${GITHUB_RUN_ID} of ${GITHUB_SHA} on ${TAG:-?}" > "$dest/RUN.txt"

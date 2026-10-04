@@ -89,4 +89,18 @@ rm -f "$OUT/logcat_raw.txt"
 # Screenshots at phone-half size: enough to read, small enough to commit.
 rm -rf "$OUT/maestro_out"
 find "$OUT" -name '*.png' -exec mogrify -resize 540x {} \; 2>/dev/null || true
+# SCREENSHOTS NEVER GO INTO THE REPOSITORY IN THE CLEAR. They show the
+# catalogue, which is adult material, and this repository is public — GitHub
+# does not allow that content. Encrypted with LAB_RESULTS_KEY (an Actions
+# secret) they are unreadable to anyone without it; with no key set they are
+# not kept at all.
+if [ -d "$OUT/shots" ]; then
+  if [ -n "${LAB_RESULTS_KEY:-}" ]; then
+    tar -czf - -C "$OUT" shots | openssl enc -aes-256-cbc -pbkdf2 -salt \
+      -pass env:LAB_RESULTS_KEY -out "$OUT/shots.tar.gz.enc"
+  else
+    echo "screenshots not kept: LAB_RESULTS_KEY is not set" > "$OUT/shots_not_kept.txt"
+  fi
+  rm -rf "$OUT/shots"
+fi
 log "done"
