@@ -33,6 +33,14 @@ import io.flutter.view.TextureRegistry;
 
 
 public class VideoOutput {
+    /**
+     * INNOCENT PATCH — device lab only. Test Lab's game loop runs the app once
+     * per scenario; the app's lab manifest sets this from the scenario number
+     * so one test measures both outputs on the same phone. Null (always, in a
+     * store build) means: do what the app asked for.
+     */
+    public static volatile Boolean labForceSurfaceProducer = null;
+
     public long id = 0;
     public long wid = 0;
 
@@ -90,6 +98,9 @@ public class VideoOutput {
         // when the app goes to the background — background play and the
         // screen-off path keep libmpv attached to it exactly as they did to
         // the SurfaceTexture.
+        if (labForceSurfaceProducer != null) {
+            useSurfaceProducer = labForceSurfaceProducer;
+        }
         if (useSurfaceProducer && Build.VERSION.SDK_INT >= 29) {
             surfaceProducer = textureRegistryReference.createSurfaceProducer(
                     TextureRegistry.SurfaceLifecycle.manual);

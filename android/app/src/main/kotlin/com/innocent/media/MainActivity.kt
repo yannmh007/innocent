@@ -2481,6 +2481,18 @@ class MainActivity : AudioServiceFragmentActivity() {
         val labLoop = intent.action == "com.google.intent.action.TEST_LOOP"
         if (intent.action != Intent.ACTION_VIEW && !labLoop) return
         val data: Uri = if (labLoop) {
+            // Scenario 1 = the SurfaceTexture output, 2 = SurfaceProducer, so
+            // one game-loop test compares both on the same phone. Read by the
+            // video plugin when the player engine creates its output.
+            when (intent.getIntExtra("scenario", 0)) {
+                1 -> com.alexmercerind.media_kit_video.VideoOutput.labForceSurfaceProducer = false
+                2 -> com.alexmercerind.media_kit_video.VideoOutput.labForceSurfaceProducer = true
+            }
+            android.util.Log.i(
+                "innocent",
+                "LAB scenario ${intent.getIntExtra("scenario", 0)} " +
+                    "surfaceProducer=${com.alexmercerind.media_kit_video.VideoOutput.labForceSurfaceProducer}"
+            )
             Uri.fromFile(java.io.File("/sdcard/Download/innocent_lab_play.mp4"))
         } else {
             intent.data ?: return

@@ -168,7 +168,8 @@ jobs:
               --app app.apk \
               "${device_args[@]}" \
               --other-files /sdcard/Download/innocent_lab_play.mp4=play.mp4 \
-              --timeout 240s \
+              --scenario-numbers 1,2 \
+              --timeout 480s \
               --results-dir "$dir" \
               --format=json > out/matrix.json 2> out/run.txt && rc=0 || rc=$?
           else
