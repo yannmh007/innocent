@@ -3,6 +3,15 @@
 # stays in the player for layout_landscape, which run.sh rotates to.
 appId: com.innocent.media
 ---
+# Bring the app back to the front whatever ran before (a flow that ended with
+# Back may have left the launcher showing), on the Video tab.
+- launchApp:
+    stopApp: false
+- tapOn:
+    text: "Video"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 2000
 - scrollUntilVisible:
     element:
       text: ".*Perf Test.*"

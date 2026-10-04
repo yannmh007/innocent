@@ -22,3 +22,16 @@ appId: com.innocent.media
 - waitForAnimationToEnd:
     timeout: 2000
 - takeScreenshot: 83_remote_back
+# Back on a tab other than the first goes to the first tab, not out of the
+# app: Music, then Back, must land on Video.
+- tapOn:
+    # The tab itself ("Music\nTab 2 of 4"), not the Music chip.
+    text: "(?s).*Tab 2 of 4.*"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: 84_on_music
+- pressKey: Back
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: 85_back_from_music
