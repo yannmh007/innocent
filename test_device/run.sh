@@ -138,8 +138,8 @@ for flow in $FLOWS; do
   # The layout flows measure one orientation each; the player follows the
   # device by default, so turn the device.
   case "$flow" in
-    layout_portrait|screens_large) rotate 0 ;;
-    layout_landscape|screens_large_land) rotate 1 ;;
+    layout_portrait|screens_large|gestures) rotate 0 ;;
+    layout_landscape|screens_large_land|gestures_land) rotate 1 ;;
   esac
   # The perf flows sit still for a minute; read the threads in the middle of
   # it, while the Video tab idles or the film plays.

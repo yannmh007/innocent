@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/services/diagnostics/playback_log.dart';
 import '../gestures/player_gesture_engine.dart';
 
 /// The player's touch surface: raw pointer events in, MX Player's gestures
@@ -138,7 +139,7 @@ class _GestureOverlayState extends State<GestureOverlay> {
         twoFingerSpeed: w.twoFingerSpeedEnabled,
         subtitles: w.subtitleGesturesEnabled,
       )
-      ..callbacks = GestureCallbacks(
+      ..callbacks = _labTraced(GestureCallbacks(
         onTap: w.onTap,
         onDoubleTap: (zone, count) {
           switch (zone) {
@@ -178,7 +179,75 @@ class _GestureOverlayState extends State<GestureOverlay> {
         onSubtitleScale: w.onSubtitleScale,
         onSubtitleSeek: w.onSubtitleStep,
         onSubtitleEnd: w.onSubtitleEnd,
-      );
+      ));
+  }
+
+  // DEVICE LAB BUILDS ONLY: what each touch was recognised as, one line per
+  // gesture in logcat, so the lab can check its swipes and taps landed as
+  // the gestures they were meant to be. Store builds return [c] unchanged.
+  double _labBrightness = 0, _labVolume = 0;
+  int _labSeek = 0;
+  GestureCallbacks _labTraced(GestureCallbacks c) {
+    if (!PlaybackLog.labTrace) return c;
+    void log(String m) => debugPrint('LAB gesture $m');
+    void endVertical() {
+      if (_labBrightness != 0) {
+        log('brightness ${_labBrightness.toStringAsFixed(2)}');
+      }
+      if (_labVolume != 0) log('volume ${_labVolume.toStringAsFixed(2)}');
+      _labBrightness = _labVolume = 0;
+    }
+
+    return GestureCallbacks(
+      onTap: () {
+        log('tap');
+        c.onTap?.call();
+      },
+      onDoubleTap: (zone, count) {
+        log('double tap ${zone.name} $count');
+        c.onDoubleTap?.call(zone, count);
+      },
+      onLongPressStart: () {
+        log('long press');
+        c.onLongPressStart?.call();
+      },
+      onLongPressMove: c.onLongPressMove,
+      onLongPressEnd: () {
+        log('long press end');
+        c.onLongPressEnd?.call();
+      },
+      onBrightness: (d) {
+        _labBrightness += d;
+        c.onBrightness?.call(d);
+      },
+      onVolume: (d) {
+        _labVolume += d;
+        c.onVolume?.call(d);
+      },
+      onVerticalEnd: () {
+        endVertical();
+        c.onVerticalEnd?.call();
+      },
+      onSeekStart: c.onSeekStart,
+      onSeekUpdate: (s) {
+        _labSeek = s;
+        c.onSeekUpdate?.call(s);
+      },
+      onSeekEnd: () {
+        log('seek $_labSeek s');
+        c.onSeekEnd?.call();
+      },
+      onSpeedStart: c.onSpeedStart,
+      onSpeedSteps: c.onSpeedSteps,
+      onSpeedEnd: c.onSpeedEnd,
+      onPinch: c.onPinch,
+      onPan: c.onPan,
+      onPinchEnd: c.onPinchEnd,
+      onSubtitleMove: c.onSubtitleMove,
+      onSubtitleScale: c.onSubtitleScale,
+      onSubtitleSeek: c.onSubtitleSeek,
+      onSubtitleEnd: c.onSubtitleEnd,
+    );
   }
 
   @override

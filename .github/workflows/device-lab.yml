@@ -173,9 +173,10 @@ jobs:
           done
           # Ten files no thumbnailer can open: cut off a few KB in.
           for i in $(seq 1 10); do head -c 20000 clip.mp4 > "lib_media/Download/broken_$i.mp4"; done
-          # The film to play: a minute of 720p H.264, the owner's case.
+          # The film to play: three minutes of 720p H.264, the owner's case (long
+          # enough that the gesture flows' seeks never run it to its end).
           ffmpeg -loglevel error -f lavfi -i testsrc2=size=1280x720:rate=24 \
-            -f lavfi -i sine=frequency=330 -t 60 -c:v libx264 -preset veryfast \
+            -f lavfi -i sine=frequency=330 -t 180 -c:v libx264 -preset veryfast \
             -crf 28 -pix_fmt yuv420p -c:a aac -b:a 96k -movflags +faststart \
             "lib_media/Movies/Perf Test/aaa_play_720p.mp4"
           du -sh lib_media; find lib_media -type f | wc -l

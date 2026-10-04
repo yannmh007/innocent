@@ -1,0 +1,79 @@
+# gestures.yaml again in landscape (run.sh turns the device first). Stays
+# in the player, which gestures.yaml left open.
+appId: com.innocent.media
+---
+# Let the controls the last tap showed hide again.
+- extendedWaitUntil:
+    visible: "__nothing_has_this_text__"
+    timeout: 5000
+    optional: true
+# Seek: a slow drag across the middle (the lab trace logs the seconds).
+- swipe:
+    start: "30%,50%"
+    end: "70%,50%"
+    duration: 900
+- takeScreenshot: 90_seek_land
+- extendedWaitUntil:
+    visible: "__nothing_has_this_text__"
+    timeout: 1500
+    optional: true
+# Volume: up on the right half.
+- swipe:
+    start: "80%,62%"
+    end: "80%,38%"
+    duration: 900
+- takeScreenshot: 91_volume_land
+- extendedWaitUntil:
+    visible: "__nothing_has_this_text__"
+    timeout: 1500
+    optional: true
+# Brightness: up on the left half.
+- swipe:
+    start: "20%,62%"
+    end: "20%,38%"
+    duration: 900
+- takeScreenshot: 92_brightness_land
+- extendedWaitUntil:
+    visible: "__nothing_has_this_text__"
+    timeout: 1500
+    optional: true
+# Double tap on the right, then two more taps: the seek stacks.
+- doubleTapOn:
+    point: "85%,50%"
+- tapOn:
+    point: "85%,50%"
+    retryTapIfNoChange: false
+    waitToSettleTimeoutMs: 0
+- tapOn:
+    point: "85%,50%"
+    retryTapIfNoChange: false
+    waitToSettleTimeoutMs: 0
+- takeScreenshot: 93_double_tap_right_land
+- extendedWaitUntil:
+    visible: "__nothing_has_this_text__"
+    timeout: 1500
+    optional: true
+# Double tap on the left: back.
+- doubleTapOn:
+    point: "15%,50%"
+- takeScreenshot: 94_double_tap_left_land
+- extendedWaitUntil:
+    visible: "__nothing_has_this_text__"
+    timeout: 1500
+    optional: true
+# Long press: the speed slider.
+- longPressOn:
+    point: "50%,45%"
+- takeScreenshot: 95_long_press_land
+- extendedWaitUntil:
+    visible: "__nothing_has_this_text__"
+    timeout: 2500
+    optional: true
+# One tap: the controls.
+- tapOn:
+    point: "50%,45%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: 96_tap_controls_land
+- back
+- back
