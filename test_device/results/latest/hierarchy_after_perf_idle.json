@@ -156,8 +156,8 @@
                   },
                   "children" : [ {
                     "attributes" : {
-                      "text" : "10:40 ",
-                      "accessibilityText" : "10:40 AM",
+                      "text" : "11:08 ",
+                      "accessibilityText" : "11:08 AM",
                       "hintText" : "",
                       "ignoreBoundsFiltering" : "false",
                       "resource-id" : "com.android.systemui:id/clock",
@@ -463,7 +463,7 @@
                     }, {
                       "attributes" : {
                         "text" : "",
-                        "accessibilityText" : "Phone signal full.",
+                        "accessibilityText" : "Phone three bars.",
                         "hintText" : "",
                         "ignoreBoundsFiltering" : "false",
                         "resource-id" : "com.android.systemui:id/mobile_combo",
@@ -1291,7 +1291,7 @@
                                 "children" : [ {
                                   "attributes" : {
                                     "text" : "",
-                                    "accessibilityText" : "NEW\n01:00\naaa_play_720p",
+                                    "accessibilityText" : "NEW\n00:10\nbroken_9",
                                     "hintText" : "",
                                     "ignoreBoundsFiltering" : "false",
                                     "resource-id" : "",
@@ -1302,7 +1302,7 @@
                                     "checked" : "false",
                                     "scrollable" : "false",
                                     "selected" : "false",
-                                    "class" : "android.view.View",
+                                    "class" : "android.widget.ImageView",
                                     "important-for-accessibility" : "true",
                                     "error" : ""
                                   },
@@ -1315,7 +1315,7 @@
                                 }, {
                                   "attributes" : {
                                     "text" : "",
-                                    "accessibilityText" : "NEW\n00:10\nmovie_52",
+                                    "accessibilityText" : "NEW\n00:10\nfilm_71",
                                     "hintText" : "",
                                     "ignoreBoundsFiltering" : "false",
                                     "resource-id" : "",
@@ -1326,7 +1326,7 @@
                                     "checked" : "false",
                                     "scrollable" : "false",
                                     "selected" : "false",
-                                    "class" : "android.view.View",
+                                    "class" : "android.widget.ImageView",
                                     "important-for-accessibility" : "true",
                                     "error" : ""
                                   },
@@ -1339,7 +1339,7 @@
                                 }, {
                                   "attributes" : {
                                     "text" : "",
-                                    "accessibilityText" : "NEW\n00:10\nmovie_148",
+                                    "accessibilityText" : "NEW\n00:10\nmovie_280",
                                     "hintText" : "",
                                     "ignoreBoundsFiltering" : "false",
                                     "resource-id" : "",
@@ -1350,7 +1350,7 @@
                                     "checked" : "false",
                                     "scrollable" : "false",
                                     "selected" : "false",
-                                    "class" : "android.view.View",
+                                    "class" : "android.widget.ImageView",
                                     "important-for-accessibility" : "true",
                                     "error" : ""
                                   },
@@ -1386,7 +1386,7 @@
                                 "checked" : "false",
                                 "scrollable" : "false",
                                 "selected" : "false",
-                                "class" : "android.widget.Button",
+                                "class" : "android.widget.ImageView",
                                 "important-for-accessibility" : "true",
                                 "error" : ""
                               },
@@ -1410,7 +1410,7 @@
                                 "checked" : "false",
                                 "scrollable" : "false",
                                 "selected" : "false",
-                                "class" : "android.widget.Button",
+                                "class" : "android.widget.ImageView",
                                 "important-for-accessibility" : "true",
                                 "error" : ""
                               },
@@ -1434,7 +1434,7 @@
                                 "checked" : "false",
                                 "scrollable" : "false",
                                 "selected" : "false",
-                                "class" : "android.widget.Button",
+                                "class" : "android.widget.ImageView",
                                 "important-for-accessibility" : "true",
                                 "error" : ""
                               },
@@ -1458,7 +1458,7 @@
                                 "checked" : "false",
                                 "scrollable" : "false",
                                 "selected" : "false",
-                                "class" : "android.widget.Button",
+                                "class" : "android.widget.ImageView",
                                 "important-for-accessibility" : "true",
                                 "error" : ""
                               },
@@ -1482,7 +1482,7 @@
                                 "checked" : "false",
                                 "scrollable" : "false",
                                 "selected" : "false",
-                                "class" : "android.widget.Button",
+                                "class" : "android.widget.ImageView",
                                 "important-for-accessibility" : "true",
                                 "error" : ""
                               },

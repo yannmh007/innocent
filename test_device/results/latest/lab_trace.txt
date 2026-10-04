@@ -1,10 +1,17 @@
-LAB cpu app 25% · 0.2fps · pool-thread 13% | 1.raster 8% | RenderThread 2%
+LAB cpu app 23% · 0.2fps · 1.raster 11% | pool-thread 9% | RenderThread 2%
 LAB phase perf_idle start
-LAB cpu app 24% · 4.1fps · 1.raster 16% | .innocent.media 4% | RenderThread 2% | pool-thread 2%
-LAB cpu app 2% · 0.0fps · .innocent.media 2%
-LAB cpu app 1% · 0.1fps · -
+LAB cpu app 21% · 5.1fps · 1.raster 13% | .innocent.media 4% | RenderThread 2%
+LAB cpu app 3% · 0.0fps · .innocent.media 3%
 LAB phase perf_play start
-LAB cpu app 1% · 0.3fps · -
-LAB cpu app 18% · 0.2fps · .innocent.media 17%
-LAB cpu app 22% · 0.0fps · .innocent.media 22%
-LAB cpu app 5% · 0.0fps · .innocent.media 4%
+LAB cpu app 1% · 0.4fps · -
+LAB    0.0 hwdec -> auto
+LAB    0.1 open scheme=path len=54 hwdec=auto start=0s autoplay=true
+LAB    0.1 wakelock playing=false bg=false priv=false
+LAB    0.3 wakelock playing=true bg=false priv=false
+LAB    0.3 open ok
+LAB    0.3 lifecycle inactive mounted=true
+LAB cpu app 16% · 1.8fps · 1.raster 9% | RenderThread 5% | .innocent.media 1%
+LAB    8.1 video ? ?x? hwdec=?(?) vo=? fps=? drop=?/? thr=1
+LAB cpu app 6% · 3.4fps · 1.raster 3% | .innocent.media 2%
+LAB cpu app 3% · 0.1fps · .innocent.media 2%
+LAB   60.8 wakelock playing=false bg=false priv=false
