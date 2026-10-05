@@ -1,80 +1,88 @@
 LAB device kind=DeviceKind.phone sw=411.0
-LAB cpu app 26% · 0.2fps · pool-thread 12% | 1.raster 11% | RenderThread 2%
+LAB cpu app 21% · 0.2fps · 1.raster 10% | pool-thread 10% | RenderThread 1%
 LAB phase screen_modes start
 LAB device kind=DeviceKind.phone sw=411.0
-LAB cpu app 23% · 3.4fps · 1.raster 17% | .innocent.media 2% | RenderThread 2%
+LAB cpu app 20% · 3.7fps · 1.raster 15% | .innocent.media 2% | RenderThread 2%
 LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=24.0 bar=24.0
 LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=24.0
-LAB    0.0 hwdec -> auto
-LAB    0.1 open scheme=path len=54 hwdec=auto start=0s autoplay=true
-LAB    0.1 wakelock playing=false bg=false priv=false
-LAB    0.1 open ok
-LAB    0.1 wakelock playing=true bg=false priv=false
 LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=24.0
+LAB    0.0 hwdec -> auto
+LAB    1.5 open scheme=path len=54 hwdec=auto start=0s autoplay=true
+LAB    1.6 wakelock playing=false bg=false priv=false
+LAB    1.6 open ok
+LAB    1.6 wakelock playing=true bg=false priv=false
+LAB subtitle "စာတန်းထိုး 1 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 1" bottom=780 of 914 font=20.6 box=12..399
 LAB subtitle "စာတန်းထိုး 1 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 1" bottom=544 of 914 font=20.6 box=12..399
-LAB cpu app 16% · 3.6fps · 1.raster 6% | RenderThread 4% | .innocent.media 3% | Thread 2%
+LAB cpu app 30% · 6.7fps · 1.raster 19% | RenderThread 6% | .innocent.media 3%
 LAB subtitle "စာတန်းထိုး 2 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 2" bottom=544 of 914 font=20.6 box=12..399
-LAB    8.1 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
-LAB subtitle "စာတန်းထိုး 3 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 3" bottom=544 of 914 font=20.6 box=12..399
+LAB    9.6 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
 LAB gesture tap
-LAB   13.5 screen crop x3.95
-LAB subtitle "စာတန်းထိုး 4 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 4" bottom=886 of 914 font=20.6 box=12..399
-LAB   15.1 screen original x1.19
+LAB subtitle "စာတန်းထိုး 3 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 3" bottom=544 of 914 font=20.6 box=12..399
+LAB   13.7 screen crop x3.95
+LAB subtitle "စာတန်းထိုး 3 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 3" bottom=780 of 914 font=20.6 box=12..399
+LAB subtitle "စာတန်းထိုး 4 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 4" bottom=780 of 914 font=20.6 box=12..399
+LAB cpu app 9% · 6.8fps · 1.raster 6% | .innocent.media 2%
+LAB   15.3 screen original x1.19
 LAB subtitle "စာတန်းထိုး 4 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 4" bottom=566 of 914 font=20.6 box=12..399
-LAB cpu app 9% · 6.3fps · 1.raster 7% | .innocent.media 2%
-LAB   16.7 screen custom x1.00
+LAB   16.9 screen custom x1.00
 LAB subtitle "စာတန်းထိုး 4 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 4" bottom=544 of 914 font=20.6 box=12..399
+LAB   18.6 screen fit x1.00
 LAB subtitle "စာတန်းထိုး 5 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 5" bottom=544 of 914 font=20.6 box=12..399
-LAB   18.3 screen fit x1.00
-LAB   19.9 screen crop x3.95
-LAB subtitle "စာတန်းထိုး 5 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 5" bottom=886 of 914 font=20.6 box=12..399
+LAB   20.3 screen crop x3.95
+LAB subtitle "စာတန်းထိုး 5 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 5" bottom=780 of 914 font=20.6 box=12..399
+LAB subtitle "စာတန်းထိုး 6 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 6" bottom=780 of 914 font=20.6 box=12..399
 LAB subtitle "စာတန်းထိုး 6 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 6" bottom=886 of 914 font=20.6 box=12..399
-LAB cpu app 16% · 9.5fps · 1.raster 13% | .innocent.media 2%
+LAB cpu app 18% · 10.8fps · 1.raster 15% | .innocent.media 2%
 LAB subtitle "စာတန်းထိုး 7 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 7" bottom=886 of 914 font=20.6 box=12..399
 LAB subtitle "စာတန်းထိုး 8 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 8" bottom=886 of 914 font=20.6 box=12..399
 LAB phase screen_modes_land start
-LAB subtitle "စာတန်းထိုး 9 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 9" bottom=886 of 914 font=20.6 box=12..399
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=24.0
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=24.0
+LAB subtitle "စာတန်းထိုး 8 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 8" bottom=383 of 411 font=20.6 box=27..887
+LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=24.0
+LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=24.0
+LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=24.0
+LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=24.0
+LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=24.0
+LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=24.0
+LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=24.0
+LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=24.0
 LAB subtitle "စာတန်းထိုး 9 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 9" bottom=383 of 411 font=20.6 box=27..887
-LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=24.0
-LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=24.0
-LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=24.0
-LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=24.0
-LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=24.0
-LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=24.0
-LAB cpu app 3% · 1.4fps · 1.raster 1%
+LAB cpu app 3% · 1.3fps · 1.raster 1%
 LAB subtitle "စာတန်းထိုး 10 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 10" bottom=383 of 411 font=20.6 box=27..887
 LAB subtitle "စာတန်းထိုး 11 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 11" bottom=383 of 411 font=20.6 box=27..887
-LAB cpu app 1% · 0.5fps · -
+LAB cpu app 1% · 0.6fps · -
 LAB subtitle "စာတန်းထိုး 12 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 12" bottom=383 of 411 font=20.6 box=27..887
 LAB subtitle "စာတန်းထိုး 13 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 13" bottom=383 of 411 font=20.6 box=27..887
+LAB cpu app 1% · 0.4fps · -
 LAB subtitle "စာတန်းထိုး 14 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 14" bottom=383 of 411 font=20.6 box=27..887
-LAB cpu app 1% · 0.6fps · -
 LAB subtitle "စာတန်းထိုး 15 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 15" bottom=383 of 411 font=20.6 box=27..887
-LAB   60.1 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
+LAB   61.6 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
 LAB subtitle "စာတန်းထိုး 16 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 16" bottom=383 of 411 font=20.6 box=27..887
-LAB cpu app 2% · 0.4fps · -
+LAB cpu app 2% · 0.6fps · -
 LAB subtitle "စာတန်းထိုး 17 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 17" bottom=383 of 411 font=20.6 box=27..887
 LAB subtitle "စာတန်းထိုး 18 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 18" bottom=383 of 411 font=20.6 box=27..887
-LAB subtitle "စာတန်းထိုး 19 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 19" bottom=383 of 411 font=20.6 box=27..887
 LAB gesture tap
-LAB cpu app 4% · 1.0fps · 1.raster 2% | .innocent.media 2%
-LAB subtitle "စာတန်းထိုး 20 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 20" bottom=383 of 411 font=20.6 box=27..887
-LAB gesture tap
-LAB subtitle "စာတန်းထိုး 21 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 21" bottom=383 of 411 font=20.6 box=27..887
-LAB gesture tap
-LAB cpu app 11% · 9.2fps · 1.raster 8% | .innocent.media 2%
-LAB   85.5 lifecycle inactive mounted=true
+LAB subtitle "စာတန်းထိုး 18 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 18" bottom=277 of 411 font=20.6 box=27..887
+LAB cpu app 4% · 0.8fps · .innocent.media 2% | 1.raster 2%
+LAB subtitle "စာတန်းထိုး 19 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 19" bottom=277 of 411 font=20.6 box=27..887
+LAB   77.8 screen original x0.67
+LAB subtitle "စာတန်းထိုး 19 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 19" bottom=277 of 411 font=20.6 box=228..686
+LAB subtitle "စာတန်းထိုး 20 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 20" bottom=277 of 411 font=20.6 box=228..686
+LAB   79.4 screen custom x1.00
+LAB subtitle "စာတန်းထိုး 20 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 20" bottom=277 of 411 font=20.6 box=113..801
+LAB   81.1 screen fit x1.00
+LAB   82.7 screen crop x1.25
+LAB subtitle "စာတန်းထိုး 21 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 21" bottom=277 of 411 font=20.6 box=27..887
+LAB   84.3 screen original x0.67
+LAB subtitle "စာတန်းထိုး 21 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 21" bottom=277 of 411 font=20.6 box=228..686
+LAB cpu app 20% · 12.2fps · 1.raster 16% | .innocent.media 3%
+LAB   86.0 lifecycle inactive mounted=true
+LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=24.0
+LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=24.0
 LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=24.0
 LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=24.0 r=0.0 b=24.0 bar=24.0
-LAB subtitle "စာတန်းထိုး 22 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 22" bottom=383 of 411 font=20.6 box=27..887
+LAB subtitle "စာတန်းထိုး 22 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 22" bottom=277 of 411 font=20.6 box=228..686
 LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=24.0 r=0.0 b=24.0 bar=24.0
-LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=24.0 r=0.0 b=24.0 bar=24.0
-LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=24.0 r=0.0 b=24.0 bar=24.0
-LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=24.0 r=0.0 b=24.0 bar=24.0
-LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=24.0 r=0.0 b=24.0 bar=24.0
-LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=24.0 r=0.0 b=24.0 bar=24.0
+LAB subtitle "စာတန်းထိုး 22 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 22" bottom=314 of 411 font=20.6 box=228..686
 LAB subtitle "စာတန်းထိုး 22 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 22" bottom=119 of 128 font=8.0 box=7..221
 LAB insets stable l=0.0 t=0.0 r=0.0 b=0.0 padding l=0.0 t=0.0 r=0.0 b=0.0 bar=24.0
 LAB insets stable l=0.0 t=0.0 r=0.0 b=0.0 padding l=0.0 t=0.0 r=0.0 b=0.0 bar=24.0
@@ -86,10 +94,12 @@ LAB insets stable l=0.0 t=0.0 r=0.0 b=0.0 padding l=0.0 t=0.0 r=0.0 b=0.0 bar=24
 LAB insets stable l=0.0 t=0.0 r=0.0 b=0.0 padding l=0.0 t=0.0 r=0.0 b=0.0 bar=24.0
 LAB insets stable l=0.0 t=0.0 r=0.0 b=0.0 padding l=0.0 t=0.0 r=0.0 b=0.0 bar=24.0
 LAB insets stable l=0.0 t=0.0 r=0.0 b=0.0 padding l=0.0 t=0.0 r=0.0 b=0.0 bar=24.0
+LAB insets stable l=0.0 t=0.0 r=0.0 b=0.0 padding l=0.0 t=0.0 r=0.0 b=0.0 bar=24.0
+LAB insets stable l=0.0 t=0.0 r=0.0 b=0.0 padding l=0.0 t=0.0 r=0.0 b=0.0 bar=24.0
+LAB insets stable l=0.0 t=0.0 r=0.0 b=0.0 padding l=0.0 t=0.0 r=0.0 b=0.0 bar=24.0
 LAB subtitle "စာတန်းထိုး 23 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 23" bottom=119 of 128 font=8.0 box=7..221
+LAB cpu app 8% · 3.3fps · 1.raster 6% | .innocent.media 1%
 LAB subtitle "စာတန်းထိုး 24 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 24" bottom=119 of 128 font=8.0 box=7..221
-LAB cpu app 7% · 2.1fps · 1.raster 4% | .innocent.media 1%
 LAB subtitle "စာတန်းထိုး 25 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 25" bottom=119 of 128 font=8.0 box=7..221
 LAB subtitle "စာတန်းထိုး 26 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 26" bottom=119 of 128 font=8.0 box=7..221
-LAB cpu app 1% · 0.8fps · -
-LAB subtitle "စာတန်းထိုး 27 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 27" bottom=119 of 128 font=8.0 box=7..221
+LAB cpu app 2% · 1.1fps · -
