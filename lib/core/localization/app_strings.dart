@@ -445,6 +445,9 @@ class AppStrings {
       _s('vhAlbumPlusPhotos').replaceFirst('{n}', '$n');
 
   /// "3 / 9" while an album is arriving.
+  /// The album viewer's place: "3 of 10", Telegram's wording.
+  String vhCountOf(int i, int n) =>
+      _s('vhCountOf').replaceFirst('{i}', '$i').replaceFirst('{n}', '$n');
   String vhAlbumProgress(int done, int total) => _s('vhAlbumProgress')
       .replaceFirst('{done}', '$done')
       .replaceFirst('{total}', '$total');
@@ -2023,6 +2026,7 @@ class AppStrings {
     'vhAlbumPlusVideos': '+{n} Video',
     'vhAlbumPlusPhotos': '+{n} Photo',
     'vhAlbumProgress': '{done} / {total}',
+    'vhCountOf': '{i} of {n}',
     'vhAlbumVideos': '{n} videos',
     'vhAlbumPhotos': '{n} photos',
     'vhAlbumVideo1': '1 video',
@@ -3399,6 +3403,7 @@ class AppStrings {
     'vhAlbumPlusVideos': '+{n} Video',
     'vhAlbumPlusPhotos': '+{n} ပုံ',
     'vhAlbumProgress': '{done} / {total}',
+    'vhCountOf': '{n} ခုမှ {i}',
     'vhAlbumVideos': 'ဗီဒီယို {n} ခု',
     'vhAlbumPhotos': 'ဓာတ်ပုံ {n} ပုံ',
     'vhAlbumVideo1': 'ဗီဒီယို 1 ခု',
@@ -4764,6 +4769,7 @@ class AppStrings {
     'vhAlbumPlusVideos': '+{n} วิดีโอ',
     'vhAlbumPlusPhotos': '+{n} รูป',
     'vhAlbumProgress': '{done} / {total}',
+    'vhCountOf': '{i} จาก {n}',
     'vhAlbumVideos': 'วิดีโอ {n} รายการ',
     'vhAlbumPhotos': 'รูป {n} รูป',
     'vhAlbumVideo1': 'วิดีโอ 1 รายการ',

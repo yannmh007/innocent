@@ -16,7 +16,7 @@ import 'album_viewer_screen.dart';
 import 'bookmarks_provider.dart';
 import 'bookmarks_screen.dart';
 import 'data_saver_panel.dart';
-import 'widgets/media_mosaic.dart';
+import 'widgets/telegram_album.dart';
 import 'playback.dart';
 import 'video_hub_provider.dart';
 import 'widgets/download_action.dart';
@@ -256,53 +256,50 @@ class _ContentDetailScreenState extends ConsumerState<ContentDetailScreen> {
                   ),
                 ),
               ),
-            // The mosaic, not a grid. A folder holds portrait clips and
-            // landscape stills together, and a three-column square grid gave
-            // both the same square hole - a 9:16 clip lost about 44% of its
-            // frame to the crop. MediaMosaic sizes each row from the items in
-            // it, so nothing is forced into a shape it does not have.
-            //
-            // SliverToBoxAdapter with a LayoutBuilder rather than a SliverGrid:
-            // the row heights are computed from the content, which no
-            // SliverGridDelegate can express. The album is one title's folder,
-            // so there is nothing here worth virtualising.
+            // Telegram's media-group layout (TelegramAlbum): groups of up to
+            // ten, each cell shaped by its own picture, outer corners
+            // rounded — the album as people already know it from Telegram.
+            // A SliverToBoxAdapter, not a SliverGrid: the cell sizes come from
+            // the content, which no grid delegate can express, and one title's
+            // folder is small enough not to need virtualising.
             SliverPadding(
               padding: EdgeInsets.fromLTRB(
                   14, 0, 14, VhInsets.scrollBottom(context)),
               sliver: SliverToBoxAdapter(
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    return MediaMosaic.build(
-                      items: content.items,
-                      width: constraints.maxWidth,
-                      tileBuilder: (index) {
-                        final item = content.items[index];
-                        final unlocked = policy.canOpenItem(
-                          parent: content,
-                          item: item,
-                          photoOrdinal: ordinals[index],
-                          tier: tier,
-                        );
-                        return _AlbumTile(
+                child: TelegramAlbum(
+                  items: content.items,
+                  tileBuilder: (index) {
+                    final item = content.items[index];
+                    final unlocked = policy.canOpenItem(
+                      parent: content,
+                      item: item,
+                      photoOrdinal: ordinals[index],
+                      tier: tier,
+                    );
+                    // Named "3 of 10" for TalkBack (and the device lab):
+                    // a picture with no text is otherwise an unlabeled button.
+                    return Semantics(
+                      label: s.vhCountOf(index + 1, content.items.length),
+                      button: true,
+                      child: _AlbumTile(
+                      content: content,
+                      item: item,
+                      parentTitle: shownTitle,
+                      locked: !unlocked,
+                      onPlay: () => playMedia(context, ref,
                           content: content,
-                          item: item,
-                          parentTitle: shownTitle,
-                          locked: !unlocked,
-                          onPlay: () => playMedia(context, ref,
-                              content: content,
-                              source: item.source,
-                              titleOverride: shownTitle),
-                          badge: unlocked
-                              ? AlbumItemBadge(content: content, item: item)
-                              : null,
-                          // A locked tile still opens the viewer rather than
-                          // jumping straight to the paywall: landing on the
-                          // locked page in context, surrounded by what is
-                          // unlocked, makes the offer concrete instead of
-                          // abrupt.
-                          onTap: () => _openAlbum(context, index),
-                        );
-                      },
+                          source: item.source,
+                          titleOverride: shownTitle),
+                      badge: unlocked
+                          ? AlbumItemBadge(content: content, item: item)
+                          : null,
+                      // A locked tile still opens the viewer rather than
+                      // jumping straight to the paywall: landing on the
+                      // locked page in context, surrounded by what is
+                      // unlocked, makes the offer concrete instead of
+                      // abrupt.
+                      onTap: () => _openAlbum(context, index),
+                    ),
                     );
                   },
                 ),
@@ -316,14 +313,7 @@ class _ContentDetailScreenState extends ConsumerState<ContentDetailScreen> {
   }
 
   void _openAlbum(BuildContext context, int index) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => AlbumViewerScreen(
-          content: content,
-          initialIndex: index,
-        ),
-      ),
-    );
+    Navigator.of(context).push(AlbumViewerScreen.route(content, index));
   }
 
   /// Hands the entry's primary source to the app's player.
@@ -651,11 +641,16 @@ class _AlbumTile extends StatelessWidget {
         // pixels outward and paints a dirty border around every locked tile.
         _blurred(
           locked,
-          PosterImage(
-            mediaRef: _art(),
-            title: '$parentTitle ${item.id}',
-            glyph:
-                item.isVideo ? Icons.play_circle_outline : Icons.image_outlined,
+          // Flies into the viewer and back, as a Telegram album cell does.
+          Hero(
+            tag: albumHeroTag(content, item),
+            child: PosterImage(
+              mediaRef: _art(),
+              title: '$parentTitle ${item.id}',
+              glyph: item.isVideo
+                  ? Icons.play_circle_outline
+                  : Icons.image_outlined,
+            ),
           ),
         ),
         if (locked) ...<Widget>[
@@ -669,44 +664,76 @@ class _AlbumTile extends StatelessWidget {
           const Center(
             child: Icon(Icons.lock_rounded, size: 18, color: VH.textPrimary),
           ),
-        ] else if (item.isPreview && item.isVideo) ...<Widget>[
-          const Center(
-            child:
-                Icon(Icons.play_circle_fill, size: 30, color: VH.textPrimary),
-          ),
-          const Positioned(
-            left: 4,
-            top: 4,
-            child: _PreviewTag(),
-          ),
         ] else if (item.isVideo) ...<Widget>[
-          const Center(
-            child:
-                Icon(Icons.play_circle_fill, size: 30, color: VH.textPrimary),
+          // Telegram's video cell: a round dark play button in the middle and
+          // the length in a pill at the top left (the top right is the
+          // download badge's).
+          const Center(child: _PlayDisc()),
+          Positioned(
+            left: 5,
+            top: 5,
+            child: item.isPreview
+                ? const _PreviewTag()
+                : (item.durationLabel.isEmpty
+                    ? const SizedBox.shrink()
+                    : _DurationPill(item.durationLabel)),
           ),
-          if (item.durationLabel.isNotEmpty)
-            Positioned(
-              right: 4,
-              bottom: 4,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.65),
-                  borderRadius: BorderRadius.circular(3),
-                ),
-                child: Text(
-                  item.durationLabel,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 9.5,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
         ],
         if (badge != null) Positioned(right: 4, top: 4, child: badge!),
       ],
+    );
+  }
+}
+
+/// The Hero tag shared by an album cell and its page in the viewer.
+String albumHeroTag(VideoContent content, AlbumItem item) =>
+    'album-${content.id}-${item.id}';
+
+/// Telegram's play button on a video cell: a translucent black disc, a white
+/// arrow. Scales down on small cells so it never covers the picture.
+class _PlayDisc extends StatelessWidget {
+  const _PlayDisc();
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(builder: (context, c) {
+      final d = (c.biggest.shortestSide * 0.42).clamp(28.0, 48.0);
+      return Container(
+        width: d,
+        height: d,
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: 0.45),
+          shape: BoxShape.circle,
+        ),
+        child: Icon(Icons.play_arrow_rounded,
+            color: Colors.white, size: d * 0.62),
+      );
+    });
+  }
+}
+
+/// A video's length on its cell, Telegram's way: white on a dark pill.
+class _DurationPill extends StatelessWidget {
+  const _DurationPill(this.label);
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 11,
+          fontWeight: FontWeight.w500,
+          fontFeatures: [FontFeature.tabularFigures()],
+        ),
+      ),
     );
   }
 }

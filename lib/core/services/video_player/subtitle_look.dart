@@ -12,18 +12,18 @@ import 'dart:ui' show Color;
 /// [MediaKitPlayerService] keeps in step with every `sub-*` property it
 /// sets, so the existing settings code works unchanged.
 ///
-/// Units are libmpv's: font size and outline in "scaled pixels" of a
-/// 720-line screen, position in percent of the picture's height from its
-/// top (100 = bottom), margin in the same 720-line pixels.
+/// Values are as set: size, outline, shadow and margin in the app's subtitle
+/// units (dp on a phone — see subtitle_band.dart), position in percent of
+/// the picture's height from its top (100 = bottom).
 class SubtitleLook {
   const SubtitleLook({
-    this.fontSize = 55,
+    this.fontSize = 18,
     this.scale = 1.0,
     this.position = 100,
-    this.marginY = 22,
+    this.marginY = 14,
     this.color = const Color(0xFFFFFFFF),
     this.borderColor = const Color(0xFF000000),
-    this.borderSize = 3,
+    this.borderSize = 1.5,
     this.shadowColor = const Color(0x80000000),
     this.shadowOffset = 0,
     this.backColor = const Color(0x00000000),

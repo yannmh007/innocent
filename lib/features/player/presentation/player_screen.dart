@@ -3077,13 +3077,18 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
             ),
           if (state.activeIndicator != null)
             _buildIndicator(state.activeIndicator!),
+          // Out of the semantics tree: the button already carries the same
+          // name, and two of them would leave a screen reader (and the lab's
+          // Maestro) guessing which one is the button.
           if (state.screenModeToast != null && state.activeIndicator == null)
-            GestureValueText(
-              value: state.screenModeToast!.labelIn(AppStrings.of(context)),
-              caption: state.screenModeToast == AspectRatioMode.custom
-                  ? AppStrings.of(context).zmCustomHint
-                  : null,
-              valueSize: 26,
+            ExcludeSemantics(
+              child: GestureValueText(
+                value: state.screenModeToast!.labelIn(AppStrings.of(context)),
+                caption: state.screenModeToast == AspectRatioMode.custom
+                    ? AppStrings.of(context).zmCustomHint
+                    : null,
+                valueSize: 26,
+              ),
             ),
 
           // === LAYER 10: Side panels ===

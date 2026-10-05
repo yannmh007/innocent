@@ -10,10 +10,16 @@ import '../../../../core/services/video_player/subtitle_look.dart';
 /// Placed on the part of the picture that is on screen, so a Crop or a
 /// pinch zoom never pushes it off the edge with the overflow, and sized
 /// from the SCREEN, not the picture, so zooming does not enlarge it (MX).
-/// libmpv's arithmetic: sizes are pixels of a 720-line screen, here the
-/// screen's shorter side (the same physical size in both orientations);
-/// the text's bottom is at `sub-pos` % of the picture's height, lifted by
-/// `sub-margin-y`.
+///
+/// Units: the app's subtitle sizes (Small 14 … Extra large 28, Medium 18)
+/// were chosen as dp on a phone, so a size, outline, shadow and margin are
+/// dp on a screen whose shorter side is [_refShortSide] dp, scaled with the
+/// screen's shorter side (the same physical size in both orientations,
+/// larger on a tablet, capped so a TV does not get billboards). The text's
+/// bottom is at `sub-pos` % of the picture's height, lifted by the margin.
+const double _refShortSide = 360;
+const double _maxShortSide = 640;
+
 class SubtitleGeometry {
   const SubtitleGeometry({
     required this.fontSize,
@@ -58,7 +64,8 @@ SubtitleGeometry subtitleGeometry({
   final screen = Offset.zero & view;
   var visible = picture.intersect(screen);
   if (visible.width <= 0 || visible.height <= 0) visible = screen;
-  final k = math.min(view.width, view.height) / 720;
+  final k = math.min(math.min(view.width, view.height), _maxShortSide) /
+      _refShortSide;
   final scale = look.scale.clamp(0.1, 4.0);
   final fontSize = math.max(8.0, look.fontSize * scale * k);
   final outline = look.borderSize * scale * k;

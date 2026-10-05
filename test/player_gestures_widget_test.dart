@@ -115,8 +115,8 @@ void main() {
           view: view, picture: frame, look: const SubtitleLook());
       expect(g.bottom, lessThan(frame.bottom));
       expect(g.bottom, greaterThan(frame.center.dy));
-      // 55 "points" of a 720-line screen, the screen's short side 400 dp.
-      expect(g.fontSize, closeTo(55 * 400 / 720, 0.01));
+      // Medium (18) on a phone whose short side is 400 dp: 18 x 400/360.
+      expect(g.fontSize, closeTo(18 * 400 / 360, 0.01));
       final band = g.touchBand(2);
       expect(band.bottom, lessThanOrEqualTo(frame.bottom + 20));
       expect(band.left, greaterThan(frame.left));
@@ -160,7 +160,7 @@ void main() {
       expect(look.borderSize, 1.5);
       expect(look.backColor, const Color(0x80000000));
       expect(look.font, 'serif');
-      expect(look.fontSize, 55);
+      expect(look.fontSize, 18);
       expect(look.apply('sub-font', '/sdcard/x.ttf').font, isNull);
     });
   });

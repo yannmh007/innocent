@@ -242,9 +242,7 @@ class _AlbumRow extends ConsumerWidget {
         .indexWhere((i) => keys.contains(albumItemKey(content!.id, i)));
     if (start < 0) start = 0;
     final album = content;
-    await Navigator.of(context).push(MaterialPageRoute<void>(
-      builder: (_) => AlbumViewerScreen(content: album, initialIndex: start),
-    ));
+    await Navigator.of(context).push(AlbumViewerScreen.route(album, start));
   }
 
   Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
