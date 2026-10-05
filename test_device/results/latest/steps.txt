@@ -1,22 +1,16 @@
-[12:59:05] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
-[12:59:05] install
-[12:59:19] network: speed 6000:24000 kbit/s, delay 80:250 ms
-[12:59:41] library: pushing 17 files
-[13:00:09] library: MediaStore lists 17 videos
-[13:00:09] cold start
+[15:10:20] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
+[15:10:20] install
+[15:10:38] network: speed 6000:24000 kbit/s, delay 80:250 ms
+[15:10:58] library: pushing 17 files
+[15:11:32] library: MediaStore lists 17 videos
+[15:11:32] cold start
 Status: ok
-TotalTime: 3259
-WaitTime: 3265
-[13:00:23] flow screen_modes
-[13:00:26] rotation asked 0, now 0
-[13:01:17] flow screen_modes exit 0
-[13:01:22] screen_modes: screen button bounds="[768,2222][894,2348]" (screen 1080x2400, attempt 1)
-[13:01:31] screen_modes: pressed 831,2285 five times
-[13:01:45] flow screen_modes_land
-[13:02:08] rotation asked 1, now 0
-[13:02:26] flow screen_modes_land exit 0
-[13:02:59] screen_modes_land: screen button  (screen 2400x1080, attempt 3)
-[13:02:59] screen_modes_land: pressing the drawn button instead, [2140,943][2160,963]
-[13:03:08] screen_modes_land: pressed 2150,953 five times
-[13:03:16] after Home: activities mentioning pinned=8
-[13:03:36] done
+TotalTime: 3752
+WaitTime: 3816
+[15:11:46] flow explore
+[15:12:37] flow explore exit 0
+[15:12:48] flow title
+[15:13:13] flow title exit 0
+[15:13:24] flow album
+[15:14:10] flow album exit 0
+[15:14:24] done
