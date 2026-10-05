@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/localization/app_strings.dart';
+import '../data/api/event_sender.dart';
 import '../data/cache/catalogue_cache.dart';
 import '../domain/content_category.dart';
 import '../domain/content_filters.dart';
@@ -341,9 +342,15 @@ class _VideoHubScreenState extends ConsumerState<VideoHubScreen>
                   // Continue watching plays at once, from where it was left
                   // — the row's whole point (Netflix, YouTube). Every other
                   // card opens the title's page.
-                  onItemTap: cw
-                      ? (item) => _resume(context, row, item)
-                      : (item) => _openDetail(context, item),
+                  onItemTap: (item) {
+                    _logClick(row, item);
+                    if (cw) {
+                      _resume(context, row, item);
+                    } else {
+                      _openDetail(context, item);
+                    }
+                  },
+                  onShown: (item, i) => _logShown(row, item, i),
                   onSeeAll: _openSeeAll,
                   isPremiumFor: _isPremiumFor,
                   progressFor:
@@ -474,6 +481,33 @@ class _VideoHubScreenState extends ConsumerState<VideoHubScreen>
       ),
     );
   }
+
+  /// Cards seen this session, by row and title, so a card scrolled past and
+  /// back counts once — an impression is "was offered", not "was drawn".
+  static final Set<String> _shown = <String>{};
+
+  /// `impression`: a card was offered on a row, at a position. With
+  /// `card_click` below it is the click rate per row and per position, which
+  /// is how a ranking is told apart from the luck of being first.
+  void _logShown(ContentRow row, VideoContent item, int index) {
+    if (!_shown.add('${row.key}|${item.id}')) return;
+    logEvent(ref, Ev.impression,
+        titleId: item.id,
+        meta: <String, dynamic>{'row': _rowKind(row.key), 'pos': index});
+  }
+
+  void _logClick(ContentRow row, VideoContent item) {
+    logEvent(ref, Ev.cardClick,
+        titleId: item.id,
+        meta: <String, dynamic>{
+          'row': _rowKind(row.key),
+          'pos': row.items.indexWhere((c) => c.id == item.id),
+        });
+  }
+
+  /// `because:<uuid>` is one kind of row, whatever the seed.
+  static String _rowKind(String key) =>
+      key.startsWith('because:') ? 'because' : key;
 
   /// Plays a Continue watching card from where it was left: its clip, at
   /// its position (playMedia reads the position from the ledger).

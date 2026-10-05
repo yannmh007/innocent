@@ -18,6 +18,7 @@ import 'bookmarks_screen.dart';
 import 'data_saver_panel.dart';
 import 'widgets/telegram_album.dart';
 import 'playback.dart';
+import 'similar_titles.dart';
 import 'video_hub_provider.dart';
 import 'widgets/download_action.dart';
 import 'widgets/poster_image.dart';
@@ -278,8 +279,7 @@ class _ContentDetailScreenState extends ConsumerState<ContentDetailScreen> {
             // the content, which no grid delegate can express, and one title's
             // folder is small enough not to need virtualising.
             SliverPadding(
-              padding: EdgeInsets.fromLTRB(
-                  14, 0, 14, VhInsets.scrollBottom(context)),
+              padding: const EdgeInsets.fromLTRB(14, 0, 14, 4),
               sliver: SliverToBoxAdapter(
                 child: TelegramAlbum(
                   items: content.items,
@@ -321,7 +321,24 @@ class _ContentDetailScreenState extends ConsumerState<ContentDetailScreen> {
               ),
             ),
           ] else
-            const SliverToBoxAdapter(child: SizedBox(height: 28)),
+            const SliverToBoxAdapter(child: SizedBox(height: 12)),
+          // Netflix's "More like this", YouTube's "Up next" list: the page
+          // does not end in a wall — the next thing to watch is one swipe
+          // away (similar_titles, migration 039).
+          SliverPadding(
+            padding: EdgeInsets.only(bottom: VhInsets.scrollBottom(context)),
+            sliver: SliverToBoxAdapter(
+              child: MoreLikeThis(
+                content: content,
+                isPremiumFor: (c) => policy.showsPremiumBadge(c, tier),
+                onOpen: (c) => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => ContentDetailScreen(content: c),
+                  ),
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
