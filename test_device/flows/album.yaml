@@ -1,0 +1,53 @@
+# The Telegram-style album: from the hub (explore.yaml leaves it open) into
+# a title with photos and a clip, the album's groups, the viewer opened from
+# a cell (the picture flies in), a swipe to the next, a tap to hide the bars,
+# and a drag down to close it again. Album cells are labelled "N of M" for
+# TalkBack, which is what the taps here use.
+appId: com.innocent.media
+---
+- tapOn:
+    text: "Chester Koong"
+    index: 0
+- waitForAnimationToEnd:
+    timeout: 12000
+- scrollUntilVisible:
+    element:
+      text: "1 of [0-9]+"
+    direction: DOWN
+    timeout: 15000
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 6000
+- takeScreenshot: 20_album
+- scroll
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: 21_album_scrolled
+- tapOn:
+    text: "1 of [0-9]+"
+    index: 0
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: 22_viewer
+- swipe:
+    start: "85%,50%"
+    end: "15%,50%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: 23_viewer_next
+- tapOn:
+    point: "50%,50%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: 24_viewer_no_bars
+- swipe:
+    start: "50%,40%"
+    end: "50%,85%"
+    duration: 350
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: 25_after_drag_down
+- back
+- waitForAnimationToEnd:
+    timeout: 3000

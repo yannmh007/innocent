@@ -58,6 +58,12 @@ appId: com.innocent.media
 # Crop, 100%, Custom, back to Fit to screen. Each new mode's name shows
 # over the video for a moment; the lab trace logs the zoom ("screen crop
 # x1.33") and where each subtitle line was drawn.
+# Let the controls the film opened with hide, then one tap brings them
+# back (a tap while they are up would hide them).
+- extendedWaitUntil:
+    visible: "__nothing_has_this_text__"
+    timeout: 6000
+    optional: true
 - tapOn:
     point: "50%,30%"
 - waitForAnimationToEnd:
@@ -72,7 +78,7 @@ appId: com.innocent.media
 - takeScreenshot: 7x_mode_stretch_port
 - extendedWaitUntil:
     visible: "__nothing_has_this_text__"
-    timeout: 1500
+    timeout: 900
     optional: true
 - tapOn:
     text: "(Fit to screen|Stretch|Crop|100%|Custom)"
@@ -84,7 +90,7 @@ appId: com.innocent.media
 - takeScreenshot: 7x_mode_crop_port
 - extendedWaitUntil:
     visible: "__nothing_has_this_text__"
-    timeout: 1500
+    timeout: 900
     optional: true
 - tapOn:
     text: "(Fit to screen|Stretch|Crop|100%|Custom)"
@@ -96,7 +102,7 @@ appId: com.innocent.media
 - takeScreenshot: 7x_mode_original_port
 - extendedWaitUntil:
     visible: "__nothing_has_this_text__"
-    timeout: 1500
+    timeout: 900
     optional: true
 - tapOn:
     text: "(Fit to screen|Stretch|Crop|100%|Custom)"
@@ -108,7 +114,7 @@ appId: com.innocent.media
 - takeScreenshot: 7x_mode_custom_port
 - extendedWaitUntil:
     visible: "__nothing_has_this_text__"
-    timeout: 1500
+    timeout: 900
     optional: true
 - tapOn:
     text: "(Fit to screen|Stretch|Crop|100%|Custom)"
@@ -120,5 +126,5 @@ appId: com.innocent.media
 - takeScreenshot: 7x_mode_fit_port
 - extendedWaitUntil:
     visible: "__nothing_has_this_text__"
-    timeout: 1500
+    timeout: 900
     optional: true
