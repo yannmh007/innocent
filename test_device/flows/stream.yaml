@@ -13,6 +13,11 @@ appId: com.innocent.media
 - waitForAnimationToEnd:
     timeout: 3000
 # The viewer opens on the clip's poster; its play button is in the middle.
+# A viewer looks before tapping: the app asks the server ahead meanwhile.
+- extendedWaitUntil:
+    visible: "__nothing_has_this_text__"
+    timeout: 3000
+    optional: true
 - tapOn:
     point: "50%,50%"
 - tapOn:
