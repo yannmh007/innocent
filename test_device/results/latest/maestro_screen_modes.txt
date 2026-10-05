@@ -2,10 +2,7 @@ Running on test
  > Flow screen_modes
 Launch app "com.innocent.media"... COMPLETED
 Wait for animation to end within 10000 ms... COMPLETED
-Tap on (Optional) "Skip"... WARNED
-
-
- Warning: Element not found: Text matching regex: Skip
+Tap on (Optional) "Skip"... COMPLETED
 Wait for animation to end within 5000 ms... COMPLETED
 Tap on (Optional) "Allow.*"... WARNED
 
@@ -61,4 +58,4 @@ Possible causes:
 
 ==== Debug output (logs & screenshots) ====
 
-/home/runner/work/innocent/innocent/out/maestro_out/2026-10-05_065245
+/home/runner/work/innocent/innocent/out/maestro_out/2026-10-05_071805
