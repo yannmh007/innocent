@@ -3660,8 +3660,15 @@ class _TopBar extends StatelessWidget {
               onPressed: onBack,
             ),
             Expanded(
+              // Each text in the controls is its own TalkBack node: loose,
+              // they all joined one full-screen node with the subtitle
+              // (lab run 37308309328), read as one sentence wherever the
+              // finger landed.
               child: showTitle
-                  ? Text(
+                  ? Semantics(
+                      container: true,
+                      header: true,
+                      child: Text(
                 // Phase 18: Strip common video file extensions for cleaner display
                 // (MX Player parity — Picsart 06-50-457 reference).
                 _stripExtension(title),
@@ -3674,7 +3681,8 @@ class _TopBar extends StatelessWidget {
                 // Phase 17: 2-line wrap (MX Player parity, V1 t=20)
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-              )
+              ),
+                    )
                   // Title hidden: keep the Expanded so the icons on the right
                   // stay where they are instead of sliding across the bar.
                   : const SizedBox.shrink(),
@@ -3686,7 +3694,9 @@ class _TopBar extends StatelessWidget {
               Flexible(
                 child: Padding(
                   padding: const EdgeInsets.only(left: 8),
-                  child: Text(
+                  child: Semantics(
+                    container: true,
+                    child: Text(
                     sourceLabel!,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -3695,13 +3705,16 @@ class _TopBar extends StatelessWidget {
                       fontSize: 11,
                     ),
                   ),
+                  ),
                 ),
               ),
             // Settings → Style → "Show system clock".
             if (showClock)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 6),
-                child: Text(
+                child: Semantics(
+                  container: true,
+                  child: Text(
                   _clockNow(),
                   style: const TextStyle(
                     color: Colors.white,
@@ -3710,10 +3723,13 @@ class _TopBar extends StatelessWidget {
                     fontFeatures: [FontFeature.tabularFigures()],
                   ),
                 ),
+                ),
               ),
             // Sleep timer remaining badge
             if (sleepTimerRemaining != null)
-              Container(
+              Semantics(
+                container: true,
+                child: Container(
                 margin: const EdgeInsets.symmetric(horizontal: 4),
                 padding:
                     const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -3738,6 +3754,7 @@ class _TopBar extends StatelessWidget {
                     ),
                   ],
                 ),
+              ),
               ),
             // Phase 28: Audio + subtitle icons ALWAYS in title bar (was landscape-only).
             // Phase 44: small accent dot when there's more than one track,
@@ -4168,13 +4185,16 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
               children: [
                 SizedBox(
                   width: 56,
-                  child: Text(
+                  child: Semantics(
+                    container: true,
+                    child: Text(
                     widget.formatDuration(displayPosition),
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 13,
                       fontFeatures: [FontFeature.tabularFigures()],
                     ),
+                  ),
                   ),
                 ),
                 Expanded(
@@ -4229,7 +4249,9 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
                 ),
                 SizedBox(
                   width: 56,
-                  child: Text(
+                  child: Semantics(
+                    container: true,
+                    child: Text(
                     // MX Player parity: right side shows negative remaining time
                     // e.g. "-1:29:22" rather than total duration
                     hasDuration
@@ -4241,6 +4263,7 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
                       fontFeatures: [FontFeature.tabularFigures()],
                     ),
                     textAlign: TextAlign.right,
+                  ),
                   ),
                 ),
               ],
@@ -4346,13 +4369,20 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
                     children: [
                       // Named for TalkBack (and the device lab): a tooltip
                       // alone reaches Android as tooltip text, not as the
-                      // button's name, so the button was nameless.
+                      // button's name, so the button was nameless. Its own
+                      // node (container): without it the name and the id
+                      // went up into the full-screen node above, and the
+                      // lab's taps on "the button" landed mid-screen (run
+                      // 37308309328). One node, read "Fit to screen, button".
                       Semantics(
+                        container: true,
                         // A stable id for automation (Android resource-id).
                         identifier: 'player-screen-mode',
                         label: widget.aspectRatioMode
                             .labelIn(AppStrings.of(context)),
                         button: true,
+                        onTap: widget.onCycleAspectRatio,
+                        excludeSemantics: true,
                         child: IconButton(
                           icon: const Icon(Icons.crop_landscape_outlined,
                               color: Colors.white),

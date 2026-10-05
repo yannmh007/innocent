@@ -192,8 +192,9 @@ for flow in $FLOWS; do
       sleep 4.5 # they were up and that tap hid them; let them settle hidden
     done
     log "$flow: screen button $bounds (screen ${w}x${h}, attempt $attempt)"
-    # Run 37280515740: inside the player every accessibility node came back
-    # as the whole screen, so its centre is the video, not the button. Then
+    # Run 37280515740: the button's id came back on a full-screen node (its
+    # name and id had merged into the node above; fixed in the app, run
+    # 37308309328), so its centre was the video. If that recurs,
     # press where the button is drawn, measured on the lab's screenshots
     # (portrait 830,2280 of 1080x2400; landscape 2150,954 of
     # 2400x1080, run 37281576125).
