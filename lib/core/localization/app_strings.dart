@@ -448,6 +448,17 @@ class AppStrings {
   /// The album viewer's place: "3 of 10", Telegram's wording.
   String vhCountOf(int i, int n) =>
       _s('vhCountOf').replaceFirst('{i}', '$i').replaceFirst('{n}', '$n');
+  String vhResumeAt(String t) => _s('vhResumeAt').replaceFirst('{t}', t);
+  String get vhStartOver => _s('vhStartOver');
+  String vhMinutesLeft(int m) => _s('vhMinutesLeft').replaceFirst('{m}', '$m');
+  String get vhRemoveFromContinue => _s('vhRemoveFromContinue');
+  String get vhRemovedFromContinue => _s('vhRemovedFromContinue');
+  String get vhMoreLikeThis => _s('vhMoreLikeThis');
+  String get vhUpNext => _s('vhUpNext');
+  String vhUpNextIn(int s) => _s('vhUpNextIn').replaceFirst('{s}', '$s');
+  String get vhPlayNow => _s('vhPlayNow');
+  String get vhStillWatching => _s('vhStillWatching');
+  String get vhKeepWatching => _s('vhKeepWatching');
   String vhAlbumProgress(int done, int total) => _s('vhAlbumProgress')
       .replaceFirst('{done}', '$done')
       .replaceFirst('{total}', '$total');
@@ -2027,6 +2038,17 @@ class AppStrings {
     'vhAlbumPlusPhotos': '+{n} Photo',
     'vhAlbumProgress': '{done} / {total}',
     'vhCountOf': '{i} of {n}',
+    'vhResumeAt': 'Resume {t}',
+    'vhStartOver': 'Start over',
+    'vhMinutesLeft': '{m} min left',
+    'vhRemoveFromContinue': 'Remove from Continue watching',
+    'vhRemovedFromContinue': 'Removed from Continue watching',
+    'vhMoreLikeThis': 'More like this',
+    'vhUpNext': 'Up next',
+    'vhUpNextIn': 'Next in {s}',
+    'vhPlayNow': 'Play now',
+    'vhStillWatching': 'Still watching?',
+    'vhKeepWatching': 'Keep watching',
     'vhAlbumVideos': '{n} videos',
     'vhAlbumPhotos': '{n} photos',
     'vhAlbumVideo1': '1 video',
@@ -3404,6 +3426,17 @@ class AppStrings {
     'vhAlbumPlusPhotos': '+{n} ပုံ',
     'vhAlbumProgress': '{done} / {total}',
     'vhCountOf': '{n} ခုမှ {i}',
+    'vhResumeAt': '{t} ကနေ ဆက်ကြည့်',
+    'vhStartOver': 'အစကပြန်ကြည့်',
+    'vhMinutesLeft': 'ကျန် {m} မိနစ်',
+    'vhRemoveFromContinue': 'ဆက်ကြည့်ရန်ထဲက ဖယ်မည်',
+    'vhRemovedFromContinue': 'ဆက်ကြည့်ရန်ထဲက ဖယ်ပြီးပါပြီ',
+    'vhMoreLikeThis': 'ဒီလိုမျိုး နောက်ထပ်',
+    'vhUpNext': 'နောက်တစ်ခု',
+    'vhUpNextIn': '{s} စက္ကန့်နေရင် နောက်တစ်ခု',
+    'vhPlayNow': 'အခုဖွင့်မည်',
+    'vhStillWatching': 'ဆက်ကြည့်နေတုန်းလား?',
+    'vhKeepWatching': 'ဆက်ကြည့်မည်',
     'vhAlbumVideos': 'ဗီဒီယို {n} ခု',
     'vhAlbumPhotos': 'ဓာတ်ပုံ {n} ပုံ',
     'vhAlbumVideo1': 'ဗီဒီယို 1 ခု',
@@ -4770,6 +4803,17 @@ class AppStrings {
     'vhAlbumPlusPhotos': '+{n} รูป',
     'vhAlbumProgress': '{done} / {total}',
     'vhCountOf': '{i} จาก {n}',
+    'vhResumeAt': 'ดูต่อ {t}',
+    'vhStartOver': 'เริ่มใหม่',
+    'vhMinutesLeft': 'เหลือ {m} นาที',
+    'vhRemoveFromContinue': 'นำออกจากดูต่อ',
+    'vhRemovedFromContinue': 'นำออกจากดูต่อแล้ว',
+    'vhMoreLikeThis': 'เรื่องที่คล้ายกัน',
+    'vhUpNext': 'ถัดไป',
+    'vhUpNextIn': 'ถัดไปใน {s}',
+    'vhPlayNow': 'เล่นเลย',
+    'vhStillWatching': 'ยังดูอยู่ไหม?',
+    'vhKeepWatching': 'ดูต่อ',
     'vhAlbumVideos': 'วิดีโอ {n} รายการ',
     'vhAlbumPhotos': 'รูป {n} รูป',
     'vhAlbumVideo1': 'วิดีโอ 1 รายการ',

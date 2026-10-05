@@ -304,6 +304,10 @@ class ApiContentRepository implements ContentRepository {
     for (final entry in body.whereType<Map<String, dynamic>>()) {
       final items = _titles(entry['items']);
       if (items.isEmpty) continue;
+      final resume = <String, ResumeHint>{
+        for (final m in (entry['items'] as List).whereType<Map<String, dynamic>>())
+          if (ResumeHint.fromJson(m['resume']) case final h?) '${m['id']}': h,
+      };
       rows.add(ContentRow(
         key: '${entry['key']}',
         fallbackTitle: '${entry['title'] ?? entry['key']}',
@@ -313,6 +317,7 @@ class ApiContentRepository implements ContentRepository {
         categoryId: entry['category'] is String ? entry['category'] as String : null,
         fallbackTitleMm:
             entry['title_mm'] is String ? entry['title_mm'] as String : null,
+        resume: resume,
       ));
     }
     return rows;
@@ -917,6 +922,10 @@ class ApiContentRepository implements ContentRepository {
   }
 
   // ---- parsing ------------------------------------------------------------
+
+  /// A title card as the server sends it (`_card` in migration 039, the
+  /// same columns as `title_cards`).
+  static VideoContent titleFromJson(Map<String, dynamic> m) => _titleFrom(m);
 
   static List<VideoContent> _titles(dynamic body) {
     if (body is! List) return const <VideoContent>[];

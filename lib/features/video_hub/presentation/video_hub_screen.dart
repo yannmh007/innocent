@@ -10,11 +10,13 @@ import 'account/account_screen.dart';
 import 'account_provider.dart';
 import 'content_detail_screen.dart';
 import 'content_list_screen.dart';
+import 'continue_row.dart';
 import 'paged_catalogue.dart';
 import 'playback.dart';
 import 'video_hub_provider.dart';
 import 'video_hub_theme.dart';
 import 'video_search_screen.dart';
+import 'watch_points_provider.dart';
 import 'widgets/category_tab_bar.dart';
 import 'widgets/content_row_view.dart';
 import 'widgets/featured_hero.dart';
@@ -312,7 +314,10 @@ class _VideoHubScreenState extends ConsumerState<VideoHubScreen>
           ),
         ),
       ],
-      data: (rows) {
+      data: (serverRows) {
+        // Continue watching as this phone knows it — see withLocalContinue.
+        final rows =
+            withLocalContinue(serverRows, ref.watch(watchPointsProvider));
         if (rows.isEmpty) {
           return <Widget>[
             SliverToBoxAdapter(
@@ -328,13 +333,23 @@ class _VideoHubScreenState extends ConsumerState<VideoHubScreen>
             delegate: SliverChildBuilderDelegate(
               (context, index) {
                 final row = rows[index];
+                final cw = row.key == kRowContinue;
                 return ContentRowView(
                   row: row,
                   title: rowTitle(s, row,
                       styles: ref.watch(categoryStylesProvider)),
-                  onItemTap: (item) => _openDetail(context, item),
+                  // Continue watching plays at once, from where it was left
+                  // — the row's whole point (Netflix, YouTube). Every other
+                  // card opens the title's page.
+                  onItemTap: cw
+                      ? (item) => _resume(context, row, item)
+                      : (item) => _openDetail(context, item),
                   onSeeAll: _openSeeAll,
                   isPremiumFor: _isPremiumFor,
+                  progressFor:
+                      cw ? (item) => row.resume[item.id]?.fraction : null,
+                  onItemLongPress:
+                      cw ? (item) => _continueActions(context, item) : null,
                 );
               },
               childCount: rows.length,
@@ -458,6 +473,67 @@ class _VideoHubScreenState extends ConsumerState<VideoHubScreen>
         ),
       ),
     );
+  }
+
+  /// Plays a Continue watching card from where it was left: its clip, at
+  /// its position (playMedia reads the position from the ledger).
+  void _resume(BuildContext context, ContentRow row, VideoContent item) {
+    final asset = row.resume[item.id]?.assetId;
+    // ignore: discarded_futures
+    playMedia(
+      context,
+      ref,
+      content: item,
+      source: asset == null
+          ? item.source
+          : MediaRef(provider: 'asset', locator: asset),
+    );
+  }
+
+  /// Long press on a Continue watching card: open the title, or take it out
+  /// of the row (Netflix's "Remove from row"), with an Undo.
+  Future<void> _continueActions(BuildContext context, VideoContent item) async {
+    final s = AppStrings.of(context);
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: VH.surface1,
+      builder: (sheet) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            ListTile(
+              leading: const Icon(Icons.info_outline_rounded, color: VH.textPrimary),
+              title: Text(item.displayTitle(s.locale.languageCode),
+                  maxLines: 1, overflow: TextOverflow.ellipsis,
+                  style: VH.label),
+              onTap: () => Navigator.of(sheet).pop('open'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.remove_circle_outline_rounded,
+                  color: VH.textPrimary),
+              title: Text(s.vhRemoveFromContinue, style: VH.label),
+              onTap: () => Navigator.of(sheet).pop('remove'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (!context.mounted) return;
+    if (choice == 'open') {
+      _openDetail(context, item);
+    } else if (choice == 'remove') {
+      final before = ref.read(watchPointsProvider);
+      ref.read(watchPointsProvider.notifier).hide(item.id);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(s.vhRemovedFromContinue),
+        action: SnackBarAction(
+          label: s.vhUndo,
+          // Undo puts the ledger back; the server's copy returns with the
+          // next viewing (as on Netflix, a removal is not a deletion).
+          onPressed: () => ref.read(watchPointsProvider.notifier).restore(before),
+        ),
+      ));
+    }
   }
 
   static void _openDetail(BuildContext context, VideoContent content) {

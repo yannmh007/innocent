@@ -25,6 +25,7 @@ import '../domain/video_content.dart';
 import 'video_hub_provider.dart';
 import 'widgets/paywall_sheet.dart';
 import 'account_provider.dart';
+import 'watch_points_provider.dart';
 
 /// Asks the repository for a playable URL and acts on the answer.
 ///
@@ -51,8 +52,15 @@ Future<void> playMedia(
   required VideoContent content,
   required MediaRef source,
   String? titleOverride,
+  bool fromStart = false,
 }) async {
   final s = AppStrings.of(context);
+  // Where this viewer stopped in this video, on any of their phones — a
+  // stream opens there (Netflix, YouTube), unless they asked to start over.
+  final held = fromStart
+      ? null
+      : ref.read(watchPointsProvider).pointFor(content.id, assetIdOf(source));
+  final startAtS = held != null && held.resumable ? held.positionS : null;
 
   // ─── NO RADIO, NO REQUEST ─────────────────────────────────────────────
   //
@@ -385,8 +393,8 @@ Future<void> playMedia(
         // What the player reports progress against. Two opaque strings: it
         // never learns what a title is, only what to put in an event.
         'titleId': content.id,
-        if (source.provider == 'asset' && source.locator.isNotEmpty)
-          'assetId': source.locator,
+        if (assetIdOf(source) case final a?) 'assetId': a,
+        if (startAtS != null) 'startAtS': startAtS,
         // NEVER WRITE THIS URL DOWN.
         //
         // It is a different string every time the same title is opened, so a
@@ -756,10 +764,19 @@ Future<PlaybackGrant?> _takePrefetched(
 Future<void> playContent(
   BuildContext context,
   WidgetRef ref,
-  VideoContent content,
-) {
-  return playMedia(context, ref, content: content, source: content.source);
+  VideoContent content, {
+  bool fromStart = false,
+}) {
+  return playMedia(context, ref,
+      content: content, source: content.source, fromStart: fromStart);
 }
+
+/// The clip id the player reports against, or null for a title's main film
+/// — the same key [WatchPoint] is held under.
+String? assetIdOf(MediaRef source) =>
+    source.provider == 'asset' && source.locator.isNotEmpty
+        ? source.locator
+        : null;
 
 /// Plays a title that is already on this device.
 ///

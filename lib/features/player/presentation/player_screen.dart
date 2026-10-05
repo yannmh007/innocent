@@ -94,6 +94,7 @@ import '../../../core/services/video_player/stream_renewal.dart';
 import '../../../core/utils/media_address.dart';
 import '../../video_hub/data/api/playback_reporter.dart';
 import '../../video_hub/presentation/video_hub_provider.dart';
+import '../../video_hub/presentation/watch_points_provider.dart';
 import 'gestures/subtitle_band.dart';
 import 'subtitles/player_subtitles.dart';
 import 'video_geometry.dart';
@@ -139,6 +140,10 @@ class PlayerScreen extends ConsumerStatefulWidget {
   /// The album clip, when this is one rather than the title's main film.
   final String? assetId;
 
+  /// Where to begin, for a stream the Movies feature has a position for
+  /// (WatchPoint). The player keeps no resume point for a stream itself.
+  final Duration? startAt;
+
   const PlayerScreen({
     super.key,
     required this.videoUri,
@@ -148,6 +153,7 @@ class PlayerScreen extends ConsumerStatefulWidget {
     this.ephemeral = false,
     this.titleId,
     this.assetId,
+    this.startAt,
   });
 
   @override
@@ -497,7 +503,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
       notifier.openVideo(widget.videoUri,
           title: widget.title,
           isPrivate: widget.isPrivate,
-          ephemeral: widget.ephemeral);
+          ephemeral: widget.ephemeral,
+          startAt: widget.startAt);
     });
 
     // Phase 45: Android system Picture-in-Picture.
@@ -967,9 +974,29 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     try {
       final svc = ref.read(videoPlayerServiceProvider);
       reporter.report(svc.position, svc.duration);
+      _rememberPoint(svc.position, svc.duration);
     } catch (e) {
       PlaybackLog.add('progress report failed: $e');
     }
+  }
+
+  /// Where this catalogue video stands, kept by the Movies feature so the
+  /// film reopens here (see WatchPoint). The player itself still writes
+  /// nothing down for a stream.
+  void _rememberPoint(Duration position, Duration duration,
+      {bool last = false}) {
+    final id = widget.titleId;
+    if (id == null || id.isEmpty || position <= Duration.zero) return;
+    ref.read(watchPointsProvider.notifier).record(
+          titleId: id,
+          assetId: widget.assetId,
+          position: position,
+          duration: duration,
+          finished: last &&
+              PlaybackReporter.completed(
+                  furthestS: position.inSeconds,
+                  durationS: duration.inSeconds),
+        );
   }
 
   /// v1.61 — the last moment `ref` is legal.
@@ -988,6 +1015,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     try {
       final svc = ref.read(videoPlayerServiceProvider);
       _reporter?.finish(position: svc.position, duration: svc.duration);
+      _rememberPoint(svc.position, svc.duration, last: true);
     } catch (e) {
       // Still finish, with whatever the reporter already saw.
       PlaybackLog.add('final report failed: $e');

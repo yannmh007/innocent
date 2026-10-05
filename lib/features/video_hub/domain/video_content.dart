@@ -413,6 +413,10 @@ class ContentRow {
   /// The server's Burmese heading, for a row the build has no string for.
   final String? fallbackTitleMm;
 
+  /// Continue watching: where each title was left, by title id, as the
+  /// server knows it (migration 039). Empty on every other row.
+  final Map<String, ResumeHint> resume;
+
   const ContentRow({
     required this.key,
     required this.fallbackTitle,
@@ -421,9 +425,35 @@ class ContentRow {
     this.ranked = false,
     this.categoryId,
     this.fallbackTitleMm,
+    this.resume = const <String, ResumeHint>{},
   });
 
   bool get isEmpty => items.isEmpty;
+}
+
+/// Where a title was left: the clip (null for the main film) and the
+/// position, as a Continue watching row carries it.
+class ResumeHint {
+  const ResumeHint({this.assetId, required this.positionS, this.durationS = 0});
+  final String? assetId;
+  final int positionS;
+  final int durationS;
+
+  double? get fraction =>
+      durationS > 0 ? (positionS / durationS).clamp(0.0, 1.0) : null;
+
+  static ResumeHint? fromJson(Object? o) {
+    if (o is! Map) return null;
+    final p = o['position_s'];
+    if (p is! num) return null;
+    final a = o['asset_id'];
+    final d = o['duration_s'];
+    return ResumeHint(
+      assetId: a is String && a.isNotEmpty ? a : null,
+      positionS: p.toInt(),
+      durationS: d is num ? d.toInt() : 0,
+    );
+  }
 }
 
 /// A page of catalogue results. Carries [hasMore] so the grid can page without

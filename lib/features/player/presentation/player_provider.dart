@@ -209,6 +209,11 @@ class PlayerController extends StateNotifier<PlayerState> {
   /// write this string down".
   bool _isEphemeral = false;
 
+  /// A start position handed to [openVideo] by its caller, and the URI it is
+  /// for; consumed by the open of that URI (PlayerPlayback._doOpenVideo).
+  Duration? _explicitStartAt;
+  String? _explicitStartUri;
+
   /// Phase 45: guards against piling up retries when libmpv emits the
   /// same error multiple times in quick succession during a network
   /// glitch. Cleared when the retry attempt completes (success or fail).

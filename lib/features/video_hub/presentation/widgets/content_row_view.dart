@@ -34,6 +34,12 @@ class ContentRowView extends StatelessWidget {
   /// Whether a premium marker belongs on a given title.
   final bool Function(VideoContent)? isPremiumFor;
 
+  /// How far through each title the viewer is (Continue watching), or null.
+  final double? Function(VideoContent)? progressFor;
+
+  /// A card's long press (Continue watching: remove from the row).
+  final void Function(VideoContent content)? onItemLongPress;
+
   const ContentRowView({
     super.key,
     required this.row,
@@ -41,6 +47,8 @@ class ContentRowView extends StatelessWidget {
     required this.onItemTap,
     required this.onSeeAll,
     this.isPremiumFor,
+    this.progressFor,
+    this.onItemLongPress,
   });
 
   @override
@@ -103,7 +111,11 @@ class ContentRowView extends StatelessWidget {
                 width: PosterMetrics.rowCardWidth,
                 rank: row.ranked ? index + 1 : null,
                 premium: isPremiumFor?.call(item) ?? false,
+                progress: progressFor?.call(item),
                 onTap: () => onItemTap(item),
+                onLongPress: onItemLongPress == null
+                    ? null
+                    : () => onItemLongPress!(item),
               );
             },
           ),
