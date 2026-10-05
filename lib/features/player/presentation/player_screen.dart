@@ -2380,11 +2380,10 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
             scale: scale),
         state.videoOffset,
       );
-      final pad = MediaQuery.paddingOf(context);
       return PlayerSubtitles(
         service: svc,
         picture: picture,
-        padding: EdgeInsets.only(top: pad.top, bottom: pad.bottom),
+        padding: _subtitlePadding(state),
       );
     });
   }
@@ -3514,13 +3513,27 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
           mode: state.aspectRatioMode, view: size, video: video, scale: scale),
       state.videoOffset,
     );
-    final pad = MediaQuery.paddingOf(context);
     return subtitleGeometry(
       view: size,
       picture: picture,
       look: svc.subtitleLook.value,
-      padding: EdgeInsets.only(top: pad.top, bottom: pad.bottom),
+      padding: _subtitlePadding(state),
     ).touchBand('\n'.allMatches(main).length + 1);
+  }
+
+  /// Where the subtitle may go: inside the system bars, and above the seek
+  /// bar and buttons while they are up — as YouTube lifts its captions
+  /// over its controls. Sideways the picture reaches the bottom edge, so the
+  /// text sat on the play button (lab, run 37281576125).
+  EdgeInsets _subtitlePadding(PlayerState state) {
+    final pad = MediaQuery.paddingOf(context);
+    final controlsUp = state.controlsVisible &&
+        !state.isLocked &&
+        !state.sleepTimerDialogOpen;
+    final bottom = controlsUp
+        ? math.max(pad.bottom, _controlsInsets(context).bottom + 108)
+        : pad.bottom;
+    return EdgeInsets.only(top: pad.top, bottom: bottom);
   }
 }
 
