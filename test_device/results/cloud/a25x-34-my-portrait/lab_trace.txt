@@ -1,5 +1,17 @@
+LAB scenario 1 surfaceProducer=false
+LAB device kind=DeviceKind.phone sw=384.0
+LAB    0.0 LAB script: player pushed
 LAB    0.0 LAB script: phase default
-LAB cpu app 34% · 0.4fps · pool-thread 24% | io.worker. 7% | .innocent.media 2%
+LAB cpu app 32% · 0.6fps · pool-thread 23% | io.worker. 6% | .innocent.media 1%
+LAB   55.0 LAB script: phase hwplus
+LAB cpu app 1% · 0.1fps · -
+LAB  110.0 LAB script: phase sw
+LAB cpu app 1% · 0.1fps · -
+LAB scenario 2 surfaceProducer=true
+LAB device kind=DeviceKind.phone sw=384.0
+LAB    0.0 LAB script: player pushed
+LAB    0.0 LAB script: phase default
+LAB cpu app 9% · 0.6fps · io.worker. 7% | .innocent.media 1%
 LAB   55.0 LAB script: phase hwplus
 LAB cpu app 1% · 0.1fps · -
 LAB  110.0 LAB script: phase sw
