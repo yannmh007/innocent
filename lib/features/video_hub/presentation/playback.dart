@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/localization/app_strings.dart';
 import '../../../core/router/routes.dart';
+import '../../../core/services/diagnostics/playback_log.dart';
 import '../../../core/services/video_player/stream_renewal.dart';
 import '../data/api/event_sender.dart';
 import '../data/api/offline_library.dart';
@@ -83,6 +84,10 @@ Future<void> playMedia(
   // The device id lets the server bind this grant and enforce the
   // concurrency cap. It is sent as information, not as an argument for
   // access - the server ignores anything the client claims about its rights.
+  // Tap to answer, in the playback trail (Settings → Player → Debug, the
+  // diagnostics report, the device lab): the server's half of "how long
+  // until the picture". Never the address — it is signed.
+  final asked = Stopwatch()..start();
   final deviceId = await DeviceIdentity.get();
   final grant = await ref.read(contentRepositoryProvider).requestPlayback(
         content: content,
@@ -90,6 +95,9 @@ Future<void> playMedia(
         deviceId: deviceId,
       );
 
+  PlaybackLog.add('play ${source.provider} '
+      '${grant.isGranted ? 'granted' : 'refused ${grant.denial?.name ?? '?'}'} '
+      'in ${asked.elapsedMilliseconds} ms, ${grant.renditions.length} rungs');
   if (!context.mounted) return;
 
   // BOTH BRANCHES ARE RECORDED, and the refusal is the more valuable of the
@@ -181,6 +189,9 @@ Future<void> playMedia(
       preferred,
       measuredKbps: ThroughputMemory.current,
     );
+    PlaybackLog.add('play rung ${chosen == null ? 'original' : '${chosen.height}p '
+        '${chosen.kbps} kbps'} (choice $preferred, measured '
+        '${ThroughputMemory.current ?? '-'} kbps)');
     final playUrl = chosen?.url ?? grant.url!;
     final menuOptions = qualityMenuFor(
       grant.renditions,
