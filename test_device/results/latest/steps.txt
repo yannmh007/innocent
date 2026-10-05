@@ -1,17 +1,17 @@
-[03:10:05] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
-[03:10:05] install
-[03:10:27] network: speed 6000:24000 kbit/s, delay 80:250 ms
-[03:10:49] library: pushing 17 files
-[03:11:20] library: MediaStore lists 17 videos
-[03:11:20] cold start
+[05:02:24] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
+[05:02:24] install
+[05:02:34] network: speed 6000:24000 kbit/s, delay 80:250 ms
+[05:03:03] library: pushing 17 files
+[05:03:33] library: MediaStore lists 17 videos
+[05:03:33] cold start
 Status: ok
-TotalTime: 5003
-WaitTime: 5042
-[03:11:35] flow gestures
-[03:11:38] rotation asked 0, now 0
-[03:13:01] flow gestures exit 0
-[03:13:07] stacked taps at 2176,900: 4 taps in 514 ms
-[03:13:18] flow gestures_land
-[03:13:20] rotation asked 1, now 90
-[03:14:04] flow gestures_land exit 0
-[03:14:19] done
+TotalTime: 2318
+WaitTime: 2319
+[05:03:45] flow screen_modes
+[05:03:47] rotation asked 0, now 0
+[05:04:41] flow screen_modes exit 1
+[05:04:50] flow screen_modes_land
+[05:04:52] rotation asked 1, now 90
+[05:05:23] flow screen_modes_land exit 1
+[05:05:27] after Home: activities mentioning pinned=8
+[05:05:43] done

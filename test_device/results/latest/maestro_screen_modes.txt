@@ -1,0 +1,52 @@
+Running on test
+ > Flow screen_modes
+Launch app "com.innocent.media" without stopping app... COMPLETED
+Wait for animation to end within 10000 ms... COMPLETED
+Tap on (Optional) "Skip"... COMPLETED
+Wait for animation to end within 5000 ms... COMPLETED
+Tap on (Optional) "Allow.*"... WARNED
+
+
+ Warning: Element not found: Text matching regex: Allow.*
+Tap on (Optional) "Allow.*"... WARNED
+
+
+ Warning: Element not found: Text matching regex: Allow.*
+Tap on (Optional) "Skip"... WARNED
+
+
+ Warning: Element not found: Text matching regex: Skip
+Tap on (Optional) "Video"... WARNED
+
+
+ Warning: Element not found: Text matching regex: Video
+Assert that (Optional) ".*Perf Test.*" is visible... COMPLETED
+Wait for animation to end within 2000 ms... COMPLETED
+Scrolling DOWN until ".*Perf Test.*" is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Tap on (Optional) ".*Perf Test.*"... COMPLETED
+Wait for animation to end within 5000 ms... COMPLETED
+Tap on (Optional) ".*aaa_play_720p.*"... COMPLETED
+Assert that (Optional) "__nothing_has_this_text__" is visible... WARNED
+
+
+ Warning: Assertion is false: "__nothing_has_this_text__" is visible
+Assert that (Optional) "__nothing_has_this_text__" is visible... WARNED
+
+
+ Warning: Assertion is false: "__nothing_has_this_text__" is visible
+Tap on point (50%,30%)... COMPLETED
+Wait for animation to end within 1000 ms... COMPLETED
+Tap on "(Fit to screen|Stretch|Crop|100%|Custom)"... FAILED
+
+Element not found: Text matching regex: (Fit to screen|Stretch|Crop|100%|Custom)
+
+Element with Text matching regex: (Fit to screen|Stretch|Crop|100%|Custom) not found. Check the UI hierarchy in debug artifacts to verify if the element exists.
+
+Possible causes:
+- Element selector may be incorrect - check if there are similar elements with slightly different names/properties.
+- Element may be temporarily unavailable due to loading state.
+- This could be a real regression that needs to be addressed.
+
+==== Debug output (logs & screenshots) ====
+
+/home/runner/work/innocent/innocent/out/maestro_out/2026-10-05_050348
