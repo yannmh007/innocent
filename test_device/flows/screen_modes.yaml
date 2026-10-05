@@ -4,8 +4,10 @@
 # the subtitle must stay on screen at its own size in every mode.
 appId: com.innocent.media
 ---
+# A clean start: an earlier flow may have left the app deep in Movies,
+# where the Video tab is not on screen.
 - launchApp:
-    stopApp: false
+    stopApp: true
 - waitForAnimationToEnd:
     timeout: 10000
 # A fresh install opens on the introduction (when this flow runs first):
