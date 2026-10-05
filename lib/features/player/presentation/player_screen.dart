@@ -4308,12 +4308,20 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      IconButton(
-                        icon: const Icon(Icons.crop_landscape_outlined,
-                            color: Colors.white),
-                        onPressed: widget.onCycleAspectRatio,
-                        tooltip: widget.aspectRatioMode
+                      // Named for TalkBack (and the device lab): a tooltip
+                      // alone reaches Android as tooltip text, not as the
+                      // button's name, so the button was nameless.
+                      Semantics(
+                        label: widget.aspectRatioMode
                             .labelIn(AppStrings.of(context)),
+                        button: true,
+                        child: IconButton(
+                          icon: const Icon(Icons.crop_landscape_outlined,
+                              color: Colors.white),
+                          onPressed: widget.onCycleAspectRatio,
+                          tooltip: widget.aspectRatioMode
+                              .labelIn(AppStrings.of(context)),
+                        ),
                       ),
                       const SizedBox(width: 9),
                       // MX's row ends aspect ratio, picture-in-picture.
