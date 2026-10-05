@@ -4,11 +4,11 @@ appId: com.innocent.media
 ---
 - scrollUntilVisible:
     element:
-      text: "1:11:19"
+      text: ".*1:11:19.*"
     direction: DOWN
     optional: true
 - tapOn:
-    text: "1:11:19"
+    text: ".*1:11:19.*"
     optional: true
 - waitForAnimationToEnd:
     timeout: 3000

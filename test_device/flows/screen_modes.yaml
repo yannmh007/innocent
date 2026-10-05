@@ -66,10 +66,16 @@ appId: com.innocent.media
     visible: "__nothing_has_this_text__"
     timeout: 6000
     optional: true
-- tapOn:
-    point: "50%,30%"
-- waitForAnimationToEnd:
-    timeout: 1000
+- runFlow:
+    when:
+      notVisible: "(Fit to screen|Stretch|Crop|100%|Custom)"
+    commands:
+      - tapOn:
+          point: "50%,30%"
+- extendedWaitUntil:
+    visible: "(Fit to screen|Stretch|Crop|100%|Custom)"
+    timeout: 4000
+    optional: true
 - tapOn:
     text: "(Fit to screen|Stretch|Crop|100%|Custom)"
     retryTapIfNoChange: false
