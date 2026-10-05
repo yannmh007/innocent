@@ -183,7 +183,12 @@ for flow in $FLOWS; do
       bounds=$(adb exec-out cat /sdcard/ui_mode.xml 2>/dev/null \
         | grep -o 'resource-id="player-screen-mode"[^>]*bounds="[^"]*"' \
         | grep -o 'bounds="[^"]*"' | head -1)
-      [ -n "$bounds" ] && break
+      if [ -n "$bounds" ]; then
+        # The whole dump with the controls up: what TalkBack is told, to set
+        # against the app's own view of it ("LAB sem" in lab_trace.txt).
+        adb exec-out cat /sdcard/ui_mode.xml > "$OUT/ui_controls_$sfx.xml" 2>/dev/null || true
+        break
+      fi
       sleep 4.5 # they were up and that tap hid them; let them settle hidden
     done
     log "$flow: screen button $bounds (screen ${w}x${h}, attempt $attempt)"

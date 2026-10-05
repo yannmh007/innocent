@@ -38,6 +38,7 @@ import '../../local_browser/presentation/widgets/video_option_menu.dart'
 
 import '../../../core/di/core_providers.dart';
 import '../../../core/services/diagnostics/playback_log.dart';
+import '../../../core/services/diagnostics/semantics_dump.dart';
 import '../../../core/services/file_transfer/file_transfer_service.dart';
 import '../../../core/router/routes.dart';
 import '../../shell/shell_screen.dart';
@@ -2487,12 +2488,21 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     return KeyEventResult.ignored;
   }
 
+  int _labSemDumps = 0;
+
   @override
   Widget build(BuildContext context) {
     // Controls hidden → focus back on the player itself, so the remote's
     // keys reach [_onRemoteKey] instead of a button nobody can see.
     ref.listen<bool>(
         playerControllerProvider.select((s) => s.controlsVisible), (_, v) {
+      // Lab: what TalkBack is told about the controls once they are drawn.
+      if (PlaybackLog.labTrace && v && _labSemDumps < 4) {
+        _labSemDumps++;
+        Future<void>.delayed(const Duration(milliseconds: 400), () {
+          if (mounted) labDumpSemantics('controls $_labSemDumps');
+        });
+      }
       if (v || !mounted || _remoteFocus.hasPrimaryFocus) return;
       // Never out of a panel or a dialog — one may hold a text field the
       // viewer is typing in.
