@@ -161,6 +161,11 @@ made about that, deliberately:
   no countdown when asking or when autoplay is off).
 * Harness renders: hub with Continue watching, the title page with Resume /
   Start over / More like this, the Up next card and Still watching.
+* Device lab, live catalogue (run 37328292300, Android 14, a fresh
+  install): hub, title page and album flows pass, no crash or ANR. The
+  title page drew More like this from the live `similar_titles`; the hub
+  had no personal rows, which is right for a viewer with no history; 19
+  impressions and the card click reached `events` with their row names.
 * Not verifiable in the device lab: the emulator cannot play a stream past
   ~3.5 s, so a real resume and a real Up next need a phone.
 
