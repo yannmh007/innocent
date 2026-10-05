@@ -4312,6 +4312,8 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
                       // alone reaches Android as tooltip text, not as the
                       // button's name, so the button was nameless.
                       Semantics(
+                        // A stable id for automation (Android resource-id).
+                        identifier: 'player-screen-mode',
                         label: widget.aspectRatioMode
                             .labelIn(AppStrings.of(context)),
                         button: true,
