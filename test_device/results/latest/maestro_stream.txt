@@ -1,0 +1,21 @@
+Running on test
+ > Flow stream
+Scrolling DOWN until "1:11:19" is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... WARNED
+
+
+ Warning: No visible element found: "1:11:19"
+Tap on (Optional) "1:11:19"... WARNED
+
+
+ Warning: Element not found: Text matching regex: 1:11:19
+Wait for animation to end within 3000 ms... COMPLETED
+Tap on point (50%,50%)... COMPLETED
+Tap on (Optional) "Got it"... WARNED
+
+
+ Warning: Element not found: Text matching regex: Got it
+Wait for animation to end within 15000 ms... COMPLETED
+Take screenshot 40_stream_while_dl_15s... COMPLETED
+Wait for animation to end within 15000 ms... COMPLETED
+Take screenshot 41_stream_while_dl_30s... COMPLETED
+Press back... COMPLETED

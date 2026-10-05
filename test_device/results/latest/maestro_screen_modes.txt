@@ -1,6 +1,6 @@
 Running on test
  > Flow screen_modes
-Launch app "com.innocent.media" without stopping app... COMPLETED
+Launch app "com.innocent.media"... COMPLETED
 Wait for animation to end within 10000 ms... COMPLETED
 Tap on (Optional) "Skip"... WARNED
 
@@ -23,24 +23,12 @@ Tap on (Optional) "Video"... WARNED
 
 
  Warning: Element not found: Text matching regex: Video
-Assert that (Optional) ".*Perf Test.*" is visible... WARNED
-
-
- Warning: Assertion is false: ".*Perf Test.*" is visible
+Assert that (Optional) ".*Perf Test.*" is visible... COMPLETED
 Wait for animation to end within 2000 ms... COMPLETED
-Scrolling DOWN until ".*Perf Test.*" is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... WARNED
-
-
- Warning: No visible element found: ".*Perf Test.*"
-Tap on (Optional) ".*Perf Test.*"... WARNED
-
-
- Warning: Element not found: Text matching regex: .*Perf Test.*
+Scrolling DOWN until ".*Perf Test.*" is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Tap on (Optional) ".*Perf Test.*"... COMPLETED
 Wait for animation to end within 5000 ms... COMPLETED
-Tap on (Optional) ".*aaa_play_720p.*"... WARNED
-
-
- Warning: Element not found: Text matching regex: .*aaa_play_720p.*
+Tap on (Optional) ".*aaa_play_720p.*"... COMPLETED
 Assert that (Optional) "__nothing_has_this_text__" is visible... WARNED
 
 
@@ -68,4 +56,4 @@ Possible causes:
 
 ==== Debug output (logs & screenshots) ====
 
-/home/runner/work/innocent/innocent/out/maestro_out/2026-10-05_053503
+/home/runner/work/innocent/innocent/out/maestro_out/2026-10-05_055228
