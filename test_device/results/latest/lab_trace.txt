@@ -1,35 +1,13 @@
 LAB device kind=DeviceKind.phone sw=411.0
-LAB cpu app 31% · 0.2fps · pool-thread 24% | 1.raster 6% | RenderThread 1%
+LAB cpu app 17% · 0.3fps · pool-thread 10% | 1.raster 5% | RenderThread 1%
 LAB phase explore start
 LAB device kind=DeviceKind.phone sw=411.0
-LAB cpu app 12% · 0.3fps · 1.raster 10% | .innocent.media 2%
-LAB cpu app 10% · 2.6fps · 1.raster 5% | .innocent.media 3%
-LAB cpu app 7% · 0.4fps · 1.raster 3% | .innocent.media 2% | estorage.worker 1%
-LAB cpu app 14% · 2.8fps · .innocent.media 6% | 1.raster 3% | io.worker. 3% | 1.io 1%
-LAB phase title start
-LAB cpu app 3% · 0.6fps · 1.raster 2%
-LAB cpu app 3% · 0.2fps · 1.raster 1%
-LAB cpu app 12% · 2.6fps · 1.raster 7% | .innocent.media 3%
-LAB cpu app 1% · 0.1fps · -
-LAB phase album start
-LAB cpu app 3% · 0.6fps · 1.raster 2%
+LAB cpu app 12% · 0.3fps · 1.raster 8% | RenderThread 2% | .innocent.media 1%
+LAB cpu app 11% · 3.2fps · 1.raster 6% | .innocent.media 3%
 LAB cpu app 2% · 0.4fps · 1.raster 1%
-LAB cpu app 12% · 0.6fps · 1.raster 10% | .innocent.media 2%
-LAB cpu app 8% · 1.8fps · 1.raster 6% | .innocent.media 2%
-LAB    0.0 play asset granted in 0 ms (asked ahead), 1 rungs
-LAB    0.0 play rung 360p 415 kbps (choice auto, measured - kbps)
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=24.0 bar=24.0
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=24.0
-LAB    0.5 hwdec -> auto
-LAB    0.5 open scheme=http len=106 hwdec=auto start=0s autoplay=true
-LAB    0.6 wakelock playing=false bg=false priv=false
-LAB    0.6 open ok
-LAB    0.6 wakelock playing=true bg=false priv=false
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=24.0
-LAB    1.4 fg stream: watching
-LAB    3.7 stall #1 unknown {reason: unknown}
-LAB gesture volume -0.86
-LAB    7.2 wakelock playing=false bg=false priv=false
-LAB    7.3 player teardown done keepPlaying=false
-LAB cpu app 34% · 9.3fps · .innocent.media 14% | 1.raster 13% | DartWorker 4% | dart:io EventHa 1%
+LAB cpu app 25% · 3.4fps · 1.raster 8% | .innocent.media 7% | io.worker. 3% | DartWorker 3% | 1.io 2% | estorage.worker 1%
 LAB cpu app 2% · 0.5fps · 1.raster 2%
+LAB phase title start
+LAB cpu app 2% · 0.4fps · 1.raster 1%
+LAB cpu app 16% · 2.2fps · 1.raster 10% | .innocent.media 4%
+LAB cpu app 1% · 0.2fps · -
