@@ -187,6 +187,22 @@ for flow in $FLOWS; do
       sleep 4.5 # they were up and that tap hid them; let them settle hidden
     done
     log "$flow: screen button $bounds (screen ${w}x${h}, attempt $attempt)"
+    # Run 37280515740: inside the player every accessibility node came back
+    # as the whole screen, so its centre is the video, not the button. Then
+    # press where the button is drawn: measured on that run's portrait
+    # screenshot (830,2280 of 1080x2400); landscape from the same layout
+    # (14 dp margin, PiP 48 dp, 9 dp gap; row centre 24 dp up).
+    full="bounds=\"[0,0][${w},${h}]\""
+    shown=1; [ -z "$bounds" ] && shown=0
+    if [ -z "$bounds" ] || [ "$bounds" = "$full" ]; then
+      if [ "$sfx" = port ]; then bounds="[$((w * 768 / 1000 - 10)),$((h * 950 / 1000 - 10))][$((w * 768 / 1000 + 10)),$((h * 950 / 1000 + 10))]"
+      else bounds="[$((w * 896 / 1000 - 10)),$((h * 941 / 1000 - 10))][$((w * 896 / 1000 + 10)),$((h * 941 / 1000 + 10))]"; fi
+      log "$flow: pressing the drawn button instead, $bounds"
+      if [ $shown = 0 ]; then # the last tap hid them: bring them back
+        adb shell "cmd input tap $((w / 2)) $((h * 30 / 100))"
+        sleep 0.6
+      fi
+    fi
     if [ -n "$bounds" ]; then
       set -- $(echo "$bounds" | grep -o '[0-9]\+')
       bx=$(( ($1 + $3) / 2 )); by=$(( ($2 + $4) / 2 ))
