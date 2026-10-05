@@ -131,6 +131,11 @@ class _ContentDetailScreenState extends ConsumerState<ContentDetailScreen> {
     final ordinals = AccessPolicy.photoOrdinalsOf(content.items);
     final lockedCount = policy.lockedCountFor(content, tier);
     final locked = !policy.canPlayTitle(content, tier);
+    // Ask the server ahead for the film's Play, so the tap opens at once
+    // (prefetchPlayback; a fresh question is never asked twice).
+    if (!locked) {
+      prefetchPlayback(ref, content: content, source: content.source);
+    }
 
     return Scaffold(
       backgroundColor: VH.canvas,

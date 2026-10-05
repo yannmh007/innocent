@@ -88,16 +88,31 @@ Future<void> playMedia(
   // diagnostics report, the device lab): the server's half of "how long
   // until the picture". Never the address — it is signed.
   final asked = Stopwatch()..start();
+  // Asked for already, a moment ago, while the viewer looked at it — see
+  // [prefetchPlayback]. Only a GRANT is reused; a refusal is asked again,
+  // because the viewer may have just subscribed.
+  final early = await _takePrefetched(content, source);
+  final reused = early != null && early.isGranted;
+  // Also what a renewal mid-film asks with, below.
   final deviceId = await DeviceIdentity.get();
-  final grant = await ref.read(contentRepositoryProvider).requestPlayback(
-        content: content,
-        source: source,
-        deviceId: deviceId,
-      );
+  final PlaybackGrant grant;
+  if (reused) {
+    grant = early;
+  } else {
+    grant = await ref.read(contentRepositoryProvider).requestPlayback(
+          content: content,
+          source: source,
+          deviceId: deviceId,
+        );
+  }
 
-  PlaybackLog.add('play ${source.provider} '
-      '${grant.isGranted ? 'granted' : 'refused ${grant.denial?.name ?? '?'}'} '
-      'in ${asked.elapsedMilliseconds} ms, ${grant.renditions.length} rungs');
+  final answer = grant.isGranted
+      ? 'granted'
+      : 'refused ${grant.denial?.name ?? 'unknown'}';
+  final ahead = reused ? ' (asked ahead)' : '';
+  PlaybackLog.add('play ${source.provider} $answer in '
+      '${asked.elapsedMilliseconds} ms$ahead, '
+      '${grant.renditions.length} rungs');
   if (!context.mounted) return;
 
   // BOTH BRANCHES ARE RECORDED, and the refusal is the more valuable of the
@@ -189,9 +204,11 @@ Future<void> playMedia(
       preferred,
       measuredKbps: ThroughputMemory.current,
     );
-    PlaybackLog.add('play rung ${chosen == null ? 'original' : '${chosen.height}p '
-        '${chosen.kbps} kbps'} (choice $preferred, measured '
-        '${ThroughputMemory.current ?? '-'} kbps)');
+    final rung =
+        chosen == null ? 'original' : '${chosen.height}p ${chosen.kbps} kbps';
+    final measured = ThroughputMemory.current?.toString() ?? '-';
+    PlaybackLog.add('play rung $rung (choice $preferred, '
+        'measured $measured kbps)');
     final playUrl = chosen?.url ?? grant.url!;
     final menuOptions = qualityMenuFor(
       grant.renditions,
@@ -673,6 +690,69 @@ Future<OfflineItem?> heldCopyOf(
 }
 
 /// Convenience for a catalogue entry's primary source.
+// ─── ASK BEFORE THE TAP ──────────────────────────────────────────────────
+//
+// Measured in the device lab (run 37270139850, a Myanmar-shaped line): the
+// server took 1.5 s to answer "may this be played" — a second and a half of
+// nothing between the tap and the player opening, before a byte of film was
+// asked for. YouTube and Telegram both start that work while the viewer is
+// still looking at the thing, so the tap only has to open it.
+//
+// So a page that shows something playable asks ahead, in the background,
+// and Play uses the answer if it is fresh. What this is NOT: a cache of
+// signed URLs. The answer lives in memory only, for [_aheadFresh], and is
+// used once — taken out when Play reads it — so every playback still rests
+// on an answer seconds old, as the rule in [PlaybackGrant] requires. The
+// request has no side effect on the server beyond the device's one-time
+// registration, which the tap would have made anyway.
+const Duration _aheadFresh = Duration(seconds: 40);
+
+class _Ahead {
+  _Ahead(this.grant) : at = DateTime.now();
+  final Future<PlaybackGrant?> grant;
+  final DateTime at;
+  bool get fresh => DateTime.now().difference(at) < _aheadFresh;
+}
+
+final Map<String, _Ahead> _ahead = <String, _Ahead>{};
+
+String _aheadKey(VideoContent c, MediaRef s) =>
+    '${c.id}|${s.provider}|${s.locator}';
+
+/// Start asking the server whether [source] may be played, so that a tap on
+/// Play a moment later opens at once. Safe to call on every build: a fresh
+/// question is not asked twice, offline asks nothing, and a failure is
+/// forgotten (Play then asks as it always did).
+void prefetchPlayback(
+  WidgetRef ref, {
+  required VideoContent content,
+  required MediaRef source,
+}) {
+  if (source.isEmpty) return;
+  final key = _aheadKey(content, source);
+  if (_ahead[key]?.fresh ?? false) return;
+  _ahead.removeWhere((_, v) => !v.fresh);
+  final repo = ref.read(contentRepositoryProvider);
+  _ahead[key] = _Ahead(() async {
+    try {
+      if ((await ConnectionInfo.read()).isOffline) return null;
+      final deviceId = await DeviceIdentity.get();
+      return await repo.requestPlayback(
+          content: content, source: source, deviceId: deviceId);
+    } catch (_) {
+      return null;
+    }
+  }());
+}
+
+/// The answer asked ahead for [source], if still fresh — once.
+Future<PlaybackGrant?> _takePrefetched(
+    VideoContent content, MediaRef source) async {
+  final a = _ahead.remove(_aheadKey(content, source));
+  if (a == null || !a.fresh) return null;
+  return a.grant;
+}
+
 Future<void> playContent(
   BuildContext context,
   WidgetRef ref,

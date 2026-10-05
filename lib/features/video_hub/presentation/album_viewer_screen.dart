@@ -97,8 +97,19 @@ class _AlbumViewerScreenState extends ConsumerState<AlbumViewerScreen>
     // frame, even when this viewer is the first thing to ask since launch.
     // ignore: discarded_futures
     ref.read(offlineLibraryProvider).warmPhotoIndex();
-    WidgetsBinding.instance
-        .addPostFrameCallback((_) => _centreStrip(jump: true));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _centreStrip(jump: true);
+      _askAhead(_index);
+    });
+  }
+
+  /// A clip on screen is about to be played: ask the server now, so the tap
+  /// on its play button opens the player at once (prefetchPlayback).
+  void _askAhead(int i) {
+    if (i < 0 || i >= _items.length) return;
+    final item = _items[i];
+    if (!item.isVideo || !_canOpen(i)) return;
+    prefetchPlayback(ref, content: widget.content, source: item.source);
   }
 
   @override
@@ -210,6 +221,7 @@ class _AlbumViewerScreenState extends ConsumerState<AlbumViewerScreen>
                           _pagingLocked = false;
                         });
                         _centreStrip();
+                        _askAhead(i);
                       },
                       itemBuilder: _page,
                     ),
