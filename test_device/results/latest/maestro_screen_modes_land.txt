@@ -8,8 +8,13 @@ Assert that (Optional) "__nothing_has_this_text__" is visible... WARNED
 
 
  Warning: Assertion is false: "__nothing_has_this_text__" is visible
-Tap on point (50%,30%)... COMPLETED
-Wait for animation to end within 1000 ms... COMPLETED
+Run flow when "(Fit to screen|Stretch|Crop|100%|Custom)" is not visible...
+  Tap on point (50%,30%)... COMPLETED
+Run flow when "(Fit to screen|Stretch|Crop|100%|Custom)" is not visible... COMPLETED
+Assert that (Optional) "(Fit to screen|Stretch|Crop|100%|Custom)" is visible... WARNED
+
+
+ Warning: Assertion is false: "(Fit to screen|Stretch|Crop|100%|Custom)" is visible
 Tap on "(Fit to screen|Stretch|Crop|100%|Custom)"... FAILED
 
 Element not found: Text matching regex: (Fit to screen|Stretch|Crop|100%|Custom)
@@ -23,4 +28,4 @@ Possible causes:
 
 ==== Debug output (logs & screenshots) ====
 
-/home/runner/work/innocent/innocent/out/maestro_out/2026-10-05_055455
+/home/runner/work/innocent/innocent/out/maestro_out/2026-10-05_062257

@@ -1,126 +1,143 @@
 LAB device kind=DeviceKind.phone sw=411.0
-LAB cpu app 19% · 0.2fps · pool-thread 13% | 1.raster 4% | RenderThread 1%
+LAB cpu app 31% · 0.2fps · pool-thread 22% | 1.raster 7% | RenderThread 2%
 LAB phase explore start
 LAB device kind=DeviceKind.phone sw=411.0
-LAB cpu app 13% · 0.3fps · 1.raster 10% | RenderThread 2% | .innocent.media 1%
-LAB cpu app 11% · 3.2fps · 1.raster 7% | .innocent.media 3%
-LAB cpu app 8% · 1.9fps · 1.raster 4% | .innocent.media 2%
-LAB cpu app 15% · 1.2fps · 1.raster 6% | .innocent.media 5% | io.worker. 4%
-LAB cpu app 1% · 0.8fps · -
+LAB cpu app 13% · 0.3fps · 1.raster 9% | .innocent.media 2% | RenderThread 1%
+LAB cpu app 11% · 3.4fps · 1.raster 6% | .innocent.media 3%
+LAB cpu app 3% · 0.3fps · 1.raster 1% | .innocent.media 1%
+LAB cpu app 24% · 3.2fps · 1.raster 9% | .innocent.media 8% | io.worker. 3% | 1.io 2% | estorage.worker 1%
+LAB cpu app 3% · 0.6fps · 1.raster 2%
 LAB phase title start
-LAB cpu app 2% · 0.6fps · 1.raster 1%
-LAB cpu app 6% · 1.2fps · 1.raster 3% | .innocent.media 2%
-LAB cpu app 3% · 1.0fps · 1.raster 2% | .innocent.media 1%
+LAB cpu app 2% · 0.2fps · 1.raster 1%
+LAB cpu app 14% · 1.9fps · 1.raster 9% | .innocent.media 3%
+LAB cpu app 1% · 0.1fps · -
 LAB phase stream start
-LAB cpu app 2% · 0.6fps · 1.raster 1%
-LAB cpu app 12% · 0.6fps · 1.raster 9% | .innocent.media 4%
-LAB cpu app 29% · 4.6fps · 1.raster 22% | .innocent.media 7%
-LAB cpu app 22% · 3.6fps · 1.raster 17% | .innocent.media 5%
-LAB cpu app 2% · 0.3fps · .innocent.media 1% | 1.raster 1%
-LAB cpu app 1% · 0.3fps · -
-LAB phase download start
-LAB cpu app 2% · 0.5fps · 1.raster 1%
-LAB cpu app 2% · 0.5fps · 1.raster 1%
-LAB    0.0 dl pass x3 from 0/396 MB http 200
-LAB cpu app 20% · 6.3fps · 1.raster 13% | .innocent.media 5%
-LAB cpu app 38% · 8.7fps · .innocent.media 16% | 1.raster 13% | DartWorker 8%
-LAB cpu app 38% · 9.3fps · .innocent.media 14% | 1.raster 13% | DartWorker 9% | HeapTaskDaemon 1%
-LAB cpu app 34% · 8.6fps · 1.raster 13% | .innocent.media 13% | DartWorker 6%
-LAB cpu app 26% · 6.8fps · .innocent.media 10% | 1.raster 10% | DartWorker 5% | HeapTaskDaemon 1%
-LAB cpu app 31% · 8.7fps · .innocent.media 12% | 1.raster 11% | DartWorker 7%
-LAB cpu app 32% · 9.0fps · .innocent.media 13% | 1.raster 11% | DartWorker 6% | HeapTaskDaemon 1%
-LAB phase screen_modes start
-LAB cpu app 34% · 8.2fps · .innocent.media 14% | 1.raster 10% | DartWorker 8%
-LAB cpu app 24% · 6.4fps · .innocent.media 10% | 1.raster 10% | DartWorker 4%
-LAB cpu app 29% · 7.8fps · .innocent.media 12% | 1.raster 10% | DartWorker 6%
-LAB cpu app 33% · 7.8fps · .innocent.media 14% | 1.raster 9% | DartWorker 8%
-LAB device kind=DeviceKind.phone sw=411.0
-LAB    0.0 dl pass x3 from 154/396 MB http 206
-LAB cpu app 37% · 1.2fps · .innocent.media 18% | DartWorker 7% | 1.raster 5% | dart:io EventHa 3% | RenderThread 2%
-LAB cpu app 52% · 0.0fps · .innocent.media 31% | DartWorker 13% | dart:io EventHa 6% | HeapTaskDaemon 2%
-LAB cpu app 55% · 0.0fps · .innocent.media 31% | DartWorker 13% | dart:io EventHa 5% | 1.raster 4% | HeapTaskDaemon 1%
+LAB cpu app 3% · 0.6fps · 1.raster 2%
+LAB cpu app 3% · 0.4fps · 1.raster 2%
+LAB    0.0 play asset granted in 1493 ms, 1 rungs
+LAB    0.0 play rung 360p 415 kbps (choice auto, measured - kbps)
 LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=24.0 bar=24.0
 LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=24.0
-LAB   30.4 hwdec -> auto
+LAB    0.3 hwdec -> auto
+LAB    0.3 open scheme=http len=106 hwdec=auto start=0s autoplay=true
+LAB    0.3 wakelock playing=false bg=false priv=false
+LAB    0.5 wakelock playing=true bg=false priv=false
+LAB    0.5 open ok
 LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=24.0
-LAB   33.6 open scheme=path len=54 hwdec=auto start=0s autoplay=true
-LAB   33.6 wakelock playing=false bg=false priv=false
-LAB   33.9 open ok
-LAB   33.9 wakelock playing=true bg=false priv=false
-LAB subtitle "စာတန်းထိုး 1 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 1" bottom=886 of 914 font=20.6 box=12..399
-LAB cpu app 47% · 6.5fps · .innocent.media 25% | DartWorker 10% | 1.raster 8% | dart:io EventHa 3% | HeapTaskDaemon 1%
+LAB    1.5 fg stream: watching
+LAB    3.5 stall #1 unknown {reason: unknown}
+LAB    8.3 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
+LAB cpu app 36% · 10.6fps · .innocent.media 17% | 1.raster 12% | DartWorker 5% | dart:io EventHa 1%
+LAB    9.7 wakelock playing=false bg=false priv=false
+LAB    9.9 player teardown done keepPlaying=false
+LAB cpu app 12% · 0.4fps · RenderThread 4% | .innocent.media 4% | 1.raster 4%
+LAB phase download start
+LAB cpu app 3% · 0.6fps · 1.raster 2%
+LAB cpu app 7% · 1.3fps · 1.raster 4% | .innocent.media 2%
+LAB   46.0 dl pass x3 from 0/396 MB http 200
+LAB cpu app 18% · 5.0fps · 1.raster 11% | .innocent.media 5% | DartWorker 1%
+LAB cpu app 34% · 8.8fps · .innocent.media 13% | 1.raster 13% | DartWorker 6%
+LAB cpu app 39% · 8.2fps · .innocent.media 15% | 1.raster 13% | DartWorker 9% | HeapTaskDaemon 2%
+LAB cpu app 34% · 8.4fps · .innocent.media 14% | 1.raster 12% | DartWorker 7%
+LAB cpu app 30% · 6.8fps · 1.raster 12% | .innocent.media 10% | DartWorker 6% | HeapTaskDaemon 1%
+LAB cpu app 21% · 6.3fps · .innocent.media 8% | 1.raster 8% | DartWorker 4%
+LAB cpu app 36% · 8.2fps · .innocent.media 15% | 1.raster 11% | DartWorker 7% | HeapTaskDaemon 2%
+LAB cpu app 30% · 7.9fps · .innocent.media 12% | 1.raster 11% | DartWorker 6%
+LAB phase screen_modes start
+LAB cpu app 31% · 7.3fps · .innocent.media 12% | 1.raster 11% | DartWorker 6% | HeapTaskDaemon 1%
+LAB cpu app 27% · 7.0fps · 1.raster 12% | .innocent.media 11% | DartWorker 3%
+LAB cpu app 30% · 6.1fps · .innocent.media 12% | 1.raster 11% | DartWorker 6% | HeapTaskDaemon 1%
+LAB cpu app 30% · 8.3fps · .innocent.media 13% | 1.raster 9% | DartWorker 7%
+LAB cpu app 31% · 7.7fps · 1.raster 12% | .innocent.media 11% | DartWorker 7% | HeapTaskDaemon 1%
+LAB device kind=DeviceKind.phone sw=411.0
+LAB    0.0 dl pass x3 from 144/396 MB http 206
+LAB cpu app 43% · 1.1fps · .innocent.media 21% | DartWorker 9% | 1.raster 6% | dart:io EventHa 3% | RenderThread 2%
+LAB cpu app 57% · 0.0fps · .innocent.media 34% | DartWorker 16% | dart:io EventHa 5% | HeapTaskDaemon 2%
+LAB cpu app 58% · 0.0fps · .innocent.media 35% | DartWorker 16% | dart:io EventHa 5% | HeapTaskDaemon 1%
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=24.0 bar=24.0
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=24.0
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=24.0
+LAB   32.9 hwdec -> auto
+LAB cpu app 54% · 4.3fps · .innocent.media 27% | DartWorker 12% | 1.raster 9% | dart:io EventHa 3% | HeapTaskDaemon 1%
+LAB   36.0 open scheme=path len=54 hwdec=auto start=0s autoplay=true
+LAB   36.1 wakelock playing=false bg=false priv=false
+LAB   36.3 open ok
+LAB   36.3 wakelock playing=true bg=false priv=false
 LAB subtitle "စာတန်းထိုး 1 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 1" bottom=544 of 914 font=20.6 box=12..399
 LAB subtitle "စာတန်းထိုး 2 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 2" bottom=544 of 914 font=20.6 box=12..399
-LAB   41.6 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
 LAB gesture tap
+LAB   44.3 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
 LAB subtitle "စာတန်းထိုး 3 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 3" bottom=544 of 914 font=20.6 box=12..399
-LAB cpu app 51% · 5.8fps · .innocent.media 29% | DartWorker 11% | 1.raster 5% | dart:io EventHa 4%
+LAB cpu app 52% · 6.4fps · .innocent.media 28% | DartWorker 14% | 1.raster 6% | dart:io EventHa 2% | HeapTaskDaemon 1% | Thread 1%
 LAB subtitle "စာတန်းထိုး 4 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 4" bottom=544 of 914 font=20.6 box=12..399
 LAB subtitle "စာတန်းထိုး 5 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 5" bottom=544 of 914 font=20.6 box=12..399
+LAB cpu app 58% · 3.2fps · .innocent.media 34% | DartWorker 15% | dart:io EventHa 4% | 1.raster 2% | HeapTaskDaemon 2%
 LAB subtitle "စာတန်းထိုး 6 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 6" bottom=544 of 914 font=20.6 box=12..399
-LAB cpu app 58% · 2.5fps · .innocent.media 34% | DartWorker 14% | dart:io EventHa 6% | 1.raster 1% | HeapTaskDaemon 1%
 LAB subtitle "စာတန်းထိုး 7 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 7" bottom=544 of 914 font=20.6 box=12..399
 LAB subtitle "စာတန်းထိုး 8 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 8" bottom=544 of 914 font=20.6 box=12..399
-LAB cpu app 50% · 0.7fps · .innocent.media 31% | DartWorker 11% | dart:io EventHa 6% | HeapTaskDaemon 1%
+LAB cpu app 52% · 0.5fps · .innocent.media 31% | DartWorker 15% | dart:io EventHa 3% | HeapTaskDaemon 2%
 LAB subtitle "စာတန်းထိုး 9 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 9" bottom=544 of 914 font=20.6 box=12..399
 LAB subtitle "စာတန်းထိုး 10 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 10" bottom=544 of 914 font=20.6 box=12..399
-LAB   74.2 dl pass end +242 MB in 74 s (3.27 MB/s)
+LAB cpu app 36% · 0.7fps · .innocent.media 22% | DartWorker 10% | dart:io EventHa 2% | HeapTaskDaemon 1%
 LAB subtitle "စာတန်းထိုး 11 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 11" bottom=544 of 914 font=20.6 box=12..399
-LAB cpu app 37% · 0.5fps · .innocent.media 21% | DartWorker 11% | dart:io EventHa 2% | HeapTaskDaemon 1%
 LAB subtitle "စာတန်းထိုး 12 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 12" bottom=544 of 914 font=20.6 box=12..399
+LAB   85.6 dl pass end +252 MB in 86 s (2.95 MB/s)
 LAB phase screen_modes_land start
-LAB subtitle "စာတန်းထိုး 12 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 12" bottom=383 of 411 font=20.6 box=113..801
-LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=24.0
-LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=24.0
-LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=24.0
-LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=24.0
-LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=24.0
-LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=24.0
-LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=24.0
-LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=24.0
+LAB subtitle "စာတန်းထိုး 13 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 13" bottom=544 of 914 font=20.6 box=12..399
+LAB cpu app 44% · 1.1fps · .innocent.media 25% | DartWorker 13% | dart:io EventHa 3% | HeapTaskDaemon 1%
 LAB subtitle "စာတန်းထိုး 13 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 13" bottom=383 of 411 font=20.6 box=113..801
-LAB cpu app 2% · 1.3fps · -
+LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=24.0
+LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=24.0
+LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=24.0
+LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=24.0
+LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=24.0
+LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=24.0
+LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=24.0
+LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=24.0
 LAB subtitle "စာတန်းထိုး 14 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 14" bottom=383 of 411 font=20.6 box=113..801
 LAB subtitle "စာတန်းထိုး 15 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 15" bottom=383 of 411 font=20.6 box=113..801
-LAB   93.6 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
+LAB cpu app 3% · 0.7fps · -
+LAB   96.1 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
 LAB subtitle "စာတန်းထိုး 16 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 16" bottom=383 of 411 font=20.6 box=113..801
-LAB cpu app 1% · 0.4fps · -
 LAB subtitle "စာတန်းထိုး 17 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 17" bottom=383 of 411 font=20.6 box=113..801
 LAB subtitle "စာတန်းထိုး 18 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 18" bottom=383 of 411 font=20.6 box=113..801
-LAB cpu app 1% · 0.7fps · -
+LAB cpu app 2% · 0.5fps · -
 LAB subtitle "စာတန်းထိုး 19 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 19" bottom=383 of 411 font=20.6 box=113..801
 LAB subtitle "စာတန်းထိုး 20 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 20" bottom=383 of 411 font=20.6 box=113..801
-LAB subtitle "စာတန်းထိုး 21 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 21" bottom=383 of 411 font=20.6 box=113..801
 LAB cpu app 2% · 0.6fps · -
+LAB subtitle "စာတန်းထိုး 21 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 21" bottom=383 of 411 font=20.6 box=113..801
 LAB subtitle "စာတန်းထိုး 22 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 22" bottom=383 of 411 font=20.6 box=113..801
 LAB gesture tap
 LAB subtitle "စာတန်းထိုး 23 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 23" bottom=383 of 411 font=20.6 box=113..801
-LAB cpu app 7% · 4.4fps · 1.raster 5% | .innocent.media 2%
+LAB cpu app 5% · 0.6fps · .innocent.media 2% | 1.raster 1%
 LAB subtitle "စာတန်းထိုး 24 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 24" bottom=383 of 411 font=20.6 box=113..801
 LAB subtitle "စာတန်းထိုး 25 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 25" bottom=383 of 411 font=20.6 box=113..801
+LAB cpu app 9% · 4.3fps · 1.raster 4% | .innocent.media 3%
 LAB subtitle "စာတန်းထိုး 26 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 26" bottom=383 of 411 font=20.6 box=113..801
-LAB cpu app 3% · 0.5fps · .innocent.media 2%
 LAB subtitle "စာတန်းထိုး 27 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 27" bottom=383 of 411 font=20.6 box=113..801
-LAB  141.1 lifecycle inactive mounted=true
+LAB  144.2 lifecycle inactive mounted=true
+LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=24.0
 LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=24.0
 LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=24.0
 LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=24.0 r=0.0 b=24.0 bar=24.0
+LAB subtitle "စာတန်းထိုး 28 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 28" bottom=383 of 411 font=20.6 box=113..801
+LAB cpu app 3% · 0.6fps · .innocent.media 2%
 LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=24.0 r=0.0 b=24.0 bar=24.0
-LAB subtitle "စာတန်းထိုး 27 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 27" bottom=119 of 128 font=8.0 box=7..221
-LAB insets stable l=0.0 t=0.0 r=0.0 b=0.0 padding l=0.0 t=0.0 r=0.0 b=0.0 bar=24.0
-LAB insets stable l=0.0 t=0.0 r=0.0 b=0.0 padding l=0.0 t=0.0 r=0.0 b=0.0 bar=24.0
-LAB insets stable l=0.0 t=0.0 r=0.0 b=0.0 padding l=0.0 t=0.0 r=0.0 b=0.0 bar=24.0
-LAB insets stable l=0.0 t=0.0 r=0.0 b=0.0 padding l=0.0 t=0.0 r=0.0 b=0.0 bar=24.0
-LAB insets stable l=0.0 t=0.0 r=0.0 b=0.0 padding l=0.0 t=0.0 r=0.0 b=0.0 bar=24.0
-LAB insets stable l=0.0 t=0.0 r=0.0 b=0.0 padding l=0.0 t=0.0 r=0.0 b=0.0 bar=24.0
-LAB insets stable l=0.0 t=0.0 r=0.0 b=0.0 padding l=0.0 t=0.0 r=0.0 b=0.0 bar=24.0
-LAB insets stable l=0.0 t=0.0 r=0.0 b=0.0 padding l=0.0 t=0.0 r=0.0 b=0.0 bar=24.0
-LAB insets stable l=0.0 t=0.0 r=0.0 b=0.0 padding l=0.0 t=0.0 r=0.0 b=0.0 bar=24.0
-LAB insets stable l=0.0 t=0.0 r=0.0 b=0.0 padding l=0.0 t=0.0 r=0.0 b=0.0 bar=24.0
+LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=24.0
+LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=24.0 r=0.0 b=24.0 bar=24.0
+LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=24.0 r=0.0 b=24.0 bar=24.0
 LAB subtitle "စာတန်းထိုး 28 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 28" bottom=119 of 128 font=8.0 box=7..221
-LAB cpu app 3% · 1.0fps · .innocent.media 1% | 1.raster 1%
+LAB insets stable l=0.0 t=0.0 r=0.0 b=0.0 padding l=0.0 t=0.0 r=0.0 b=0.0 bar=24.0
+LAB insets stable l=0.0 t=0.0 r=0.0 b=0.0 padding l=0.0 t=0.0 r=0.0 b=0.0 bar=24.0
+LAB insets stable l=0.0 t=0.0 r=0.0 b=0.0 padding l=0.0 t=0.0 r=0.0 b=0.0 bar=24.0
+LAB insets stable l=0.0 t=0.0 r=0.0 b=0.0 padding l=0.0 t=0.0 r=0.0 b=0.0 bar=24.0
+LAB insets stable l=0.0 t=0.0 r=0.0 b=0.0 padding l=0.0 t=0.0 r=0.0 b=0.0 bar=24.0
+LAB insets stable l=0.0 t=0.0 r=0.0 b=0.0 padding l=0.0 t=0.0 r=0.0 b=0.0 bar=24.0
+LAB insets stable l=0.0 t=0.0 r=0.0 b=0.0 padding l=0.0 t=0.0 r=0.0 b=0.0 bar=24.0
+LAB insets stable l=0.0 t=0.0 r=0.0 b=0.0 padding l=0.0 t=0.0 r=0.0 b=0.0 bar=24.0
 LAB subtitle "စာတန်းထိုး 29 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 29" bottom=119 of 128 font=8.0 box=7..221
 LAB subtitle "စာတန်းထိုး 30 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 30" bottom=119 of 128 font=8.0 box=7..221
-LAB cpu app 1% · 0.4fps · -
+LAB cpu app 3% · 1.1fps · 1.raster 1%
 LAB subtitle "စာတန်းထိုး 31 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 31" bottom=119 of 128 font=8.0 box=7..221
 LAB subtitle "စာတန်းထိုး 32 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 32" bottom=119 of 128 font=8.0 box=7..221
+LAB cpu app 2% · 0.8fps · .innocent.media 1%

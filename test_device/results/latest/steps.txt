@@ -1,25 +1,25 @@
-[05:46:44] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
-[05:46:44] install
-[05:47:00] network: speed 6000:24000 kbit/s, delay 80:250 ms
-[05:47:22] library: pushing 17 files
-[05:47:53] library: MediaStore lists 17 videos
-[05:47:53] cold start
+[06:14:21] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
+[06:14:21] install
+[06:14:40] network: speed 6000:24000 kbit/s, delay 80:250 ms
+[06:15:23] library: pushing 17 files
+[06:15:55] library: MediaStore lists 17 videos
+[06:15:55] cold start
 Status: ok
-TotalTime: 3669
-WaitTime: 3679
-[05:48:08] flow explore
-[05:49:09] flow explore exit 0
-[05:49:20] flow title
-[05:49:43] flow title exit 0
-[05:49:53] flow stream
-[05:50:43] flow stream exit 0
-[05:50:53] flow download
-[05:51:46] flow download exit 0
-[05:52:21] flow screen_modes
-[05:52:24] rotation asked 0, now 0
-[05:54:15] flow screen_modes exit 1
-[05:54:31] flow screen_modes_land
-[05:54:54] rotation asked 1, now 0
-[05:55:31] flow screen_modes_land exit 1
-[05:55:35] after Home: activities mentioning pinned=8
-[05:55:55] done
+TotalTime: 4586
+WaitTime: 4595
+[06:16:11] flow explore
+[06:17:03] flow explore exit 0
+[06:17:14] flow title
+[06:17:37] flow title exit 0
+[06:17:48] flow stream
+[06:18:18] flow stream exit 0
+[06:18:29] flow download
+[06:19:31] flow download exit 0
+[06:20:11] flow screen_modes
+[06:20:14] rotation asked 0, now 0
+[06:22:11] flow screen_modes exit 1
+[06:22:32] flow screen_modes_land
+[06:22:55] rotation asked 1, now 0
+[06:23:30] flow screen_modes_land exit 1
+[06:23:36] after Home: activities mentioning pinned=8
+[06:23:57] done
