@@ -19,6 +19,7 @@ extension PlayerPlayback on PlayerController {
     // Same, for a URI that is not a stable identity (a signed, expiring stream
     // URL). See [_isEphemeral] for why writing one down is three bugs.
     _isEphemeral = ephemeral;
+    openGeneration++;
     // A position the caller holds (a catalogue stream's WatchPoint): used
     // instead of the player's own store, once, by the open below.
     _explicitStartAt = startAt != null && startAt > Duration.zero ? startAt : null;

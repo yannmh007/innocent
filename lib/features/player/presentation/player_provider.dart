@@ -220,6 +220,11 @@ class PlayerController extends StateNotifier<PlayerState> {
   Duration? _explicitStartAt;
   String? _explicitStartUri;
 
+  /// Counts [openVideo] calls. A player screen that is closing compares it
+  /// with the count it saw when it began to go, so it never stops a video
+  /// another screen has opened since (Up next).
+  int openGeneration = 0;
+
   /// Phase 45: guards against piling up retries when libmpv emits the
   /// same error multiple times in quick succession during a network
   /// glitch. Cleared when the retry attempt completes (success or fail).

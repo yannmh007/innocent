@@ -218,6 +218,11 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
   // Snapshot taken in [deactivate], while `ref` is still usable, because
   // dispose() must not touch `ref` at all.
   bool _floatingPipActiveAtTeardown = false;
+
+  /// The controller's open count when this screen began to go. A different
+  /// count at dispose() means another player screen has opened a video in
+  /// between (Up next), and stopping "this" playback would stop that one.
+  int? _openGenerationAtTeardown;
   PlayerController? _controllerAtTeardown;
   PipService? _pipServiceAtTeardown;
 
@@ -922,6 +927,9 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
   /// The next video, while its card is up (see [UpNextCard]).
   UpNextOffer? _upNext;
 
+  /// Completed by dispose(), for [_playUpNext].
+  Completer<void>? _gone;
+
   /// The film ended: if its opener said what comes next, show the card and
   /// tell the controller the end is handled.
   bool _takeOverEnd() {
@@ -945,7 +953,13 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     setState(() => _upNext = null);
     if (offer == null || !mounted) return;
     _stopAudioIfLeaving();
+    final gone = _gone = Completer<void>();
     if (context.canPop()) context.pop();
+    // This State is closing; the code below runs on after it, which is the
+    // point: it waits until the teardown has run, so nothing of it can land
+    // on the next player.
+    await gone.future
+        .timeout(const Duration(seconds: 3), onTimeout: () {});
     await offer.play();
   }
 
@@ -1071,6 +1085,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     try {
       _floatingPipActiveAtTeardown = ref.read(floatingPipProvider).isActive;
       _controllerAtTeardown = ref.read(playerControllerProvider.notifier);
+      _openGenerationAtTeardown = _controllerAtTeardown?.openGeneration;
       _pipServiceAtTeardown = ref.read(pipServiceProvider);
     } catch (e) {
       // Never let a snapshot failure stop the teardown that follows it.
@@ -1155,6 +1170,11 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
           PlaybackLog.add('TEARDOWN: no controller snapshot — playback NOT stopped');
           return;
         }
+        if (_openGenerationAtTeardown != null &&
+            notifier.openGeneration != _openGenerationAtTeardown) {
+          PlaybackLog.add('TEARDOWN: a newer video took over — not stopped');
+          return;
+        }
         // Stop the audio-only foreground service if it was started, then
         // hard-stop the player so no audio lingers in the background.
         notifier.stopBackgroundPlaybackService();
@@ -1210,6 +1230,10 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     // missing line here is the signal that something threw in a place still
     // not covered.
     PlaybackLog.add('player teardown done keepPlaying=$keepPlaying');
+    // Up next waits for this: the next video opens only once this one is
+    // fully torn down (its stop(), PiP callbacks and orientation are this
+    // screen's, and would otherwise land on the new player).
+    _gone?.complete();
     super.dispose();
   }
 
