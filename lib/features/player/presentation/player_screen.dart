@@ -95,6 +95,8 @@ import '../../../core/utils/media_address.dart';
 import '../../video_hub/data/api/playback_reporter.dart';
 import '../../video_hub/presentation/video_hub_provider.dart';
 import '../../video_hub/presentation/watch_points_provider.dart';
+import 'up_next.dart';
+import 'widgets/up_next_card.dart';
 import 'gestures/subtitle_band.dart';
 import 'subtitles/player_subtitles.dart';
 import 'video_geometry.dart';
@@ -500,6 +502,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
         return;
       }
       ref.read(floatingPipProvider.notifier).hideForExpand();
+      // Whoever opened this video may have said what comes next (Up next).
+      notifier.onFinished = _takeOverEnd;
       notifier.openVideo(widget.videoUri,
           title: widget.title,
           isPrivate: widget.isPrivate,
@@ -915,6 +919,36 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
   /// toward the fix without nagging on every PiP tap.
   static bool _pipPermPromptedThisSession = false;
 
+  /// The next video, while its card is up (see [UpNextCard]).
+  UpNextOffer? _upNext;
+
+  /// The film ended: if its opener said what comes next, show the card and
+  /// tell the controller the end is handled.
+  bool _takeOverEnd() {
+    if (!mounted) return false;
+    final offer = UpNext.offerFor(widget.videoUri);
+    if (offer == null) return false;
+    setState(() => _upNext = offer);
+    return true;
+  }
+
+  /// Closes this player and opens the next video. The opener's function
+  /// pushes a fresh player for it, with its own grant, resume point and Up
+  /// next.
+  Future<void> _playUpNext({required bool byItself}) async {
+    if (byItself) {
+      UpNext.noteUnattended();
+    } else {
+      UpNext.noteChosen();
+    }
+    final offer = UpNext.take(widget.videoUri);
+    setState(() => _upNext = null);
+    if (offer == null || !mounted) return;
+    _stopAudioIfLeaving();
+    if (context.canPop()) context.pop();
+    await offer.play();
+  }
+
   /// Begins reporting progress, for catalogue playback only.
   ///
   /// NOTHING HAPPENS FOR A LOCAL FILE, and that is the first check rather than
@@ -1030,6 +1064,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     try {
       ref.read(playerControllerProvider.notifier).onFirstFrame = null;
       ref.read(playerControllerProvider.notifier).onStall = null;
+      ref.read(playerControllerProvider.notifier).onFinished = null;
     } catch (_) {
       // Nothing to release if the provider is already gone.
     }
@@ -3442,6 +3477,22 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                     ],
                   ),
                 ),
+              ),
+            ),
+
+          // === LAYER 14b: Up next — what plays after this one ===
+          if (_upNext != null)
+            Positioned(
+              right: 16 + MediaQuery.paddingOf(context).right,
+              bottom: 96 + MediaQuery.paddingOf(context).bottom,
+              child: UpNextCard(
+                title: _upNext!.title,
+                // Settings → Player → "Play next automatically": off means
+                // the card waits for a tap.
+                autoplay: ref.read(preferencesProvider).autoPlayNext,
+                askFirst: UpNext.askStillWatching,
+                onPlay: _playUpNext,
+                onClose: () => setState(() => _upNext = null),
               ),
             ),
 

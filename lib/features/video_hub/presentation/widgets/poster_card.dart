@@ -87,7 +87,7 @@ class PosterCard extends StatelessWidget {
             // Scrim only where a badge sits, and only strong enough to carry
             // it. A full-width bar across every poster dulls the artwork on
             // the cards that have no badge at all.
-            if (content.viewCount != null)
+            if (content.viewCount != null && progress == null)
               Positioned(
                 left: 0,
                 right: 0,
@@ -115,7 +115,10 @@ class PosterCard extends StatelessWidget {
                   prominent: cornerIsRank,
                 ),
               ),
-            if (content.viewCount != null)
+            // A card with a progress bar shows the bar alone along its foot
+            // (Netflix): the counts are about the title, the bar is about
+            // you, and both in one strip is noise.
+            if (content.viewCount != null && progress == null)
               Positioned(
                 right: VH.s1,
                 bottom: VH.s1,
@@ -125,8 +128,9 @@ class PosterCard extends StatelessWidget {
             // of equal weight, balanced rather than stacked. Absent counts
             // draw nothing - "0 photos" and "we were not told" look identical
             // to a reader and only one of them is true.
-            if (content.displayPhotoCount != null ||
-                content.displayVideoCount != null)
+            if (progress == null &&
+                (content.displayPhotoCount != null ||
+                    content.displayVideoCount != null))
               Positioned(
                 left: VH.s1,
                 bottom: VH.s1,

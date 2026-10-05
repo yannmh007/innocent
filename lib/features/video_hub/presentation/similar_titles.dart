@@ -19,7 +19,10 @@ import 'widgets/content_row_view.dart';
 /// answers it from the same category.
 final similarTitlesProvider = FutureProvider.autoDispose
     .family<List<VideoContent>, String>((ref, titleId) async {
-  if (!BackendConfig.isConfigured) {
+  // The live ranking only where the catalogue is the live one: a demo or a
+  // test catalogue answers from its own rows.
+  if (!BackendConfig.isConfigured ||
+      ref.watch(contentRepositoryProvider) is! ApiContentRepository) {
     final rows = await ref.watch(contentRowsProvider.future);
     final all = <String, VideoContent>{
       for (final r in rows)

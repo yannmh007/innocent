@@ -134,6 +134,17 @@ class _ContentDetailScreenState extends ConsumerState<ContentDetailScreen> {
     final ordinals = AccessPolicy.photoOrdinalsOf(content.items);
     final lockedCount = policy.lockedCountFor(content, tier);
     final locked = !policy.canPlayTitle(content, tier);
+    final ledger = ref.watch(watchPointsProvider);
+    final WatchPoint? resume = content.expectsAlbum
+        ? _resumable(ledger.latestFor(content.id))
+        : _resumable(ledger.pointFor(content.id, assetIdOf(content.source)));
+    final videos = content.items.where((i) => i.isVideo).toList();
+    final clipAt = resume?.assetId == null
+        ? -1
+        : videos.indexWhere((i) => i.source.locator == resume!.assetId);
+    final String? resumeClip = clipAt < 0
+        ? null
+        : s.vhCountOf(clipAt + 1, videos.length);
     // Ask the server ahead for the film's Play, so the tap opens at once
     // (prefetchPlayback; a fresh question is never asked twice).
     if (!locked) {
@@ -200,14 +211,15 @@ class _ContentDetailScreenState extends ConsumerState<ContentDetailScreen> {
                 locked: locked,
               ),
               onPlay: () => _play(context, ref),
-              // Where this viewer stopped in the film, on any of their
-              // phones (WatchPoint): Play becomes "Resume 12:34", with
-              // Start over beside it — Netflix's two buttons.
-              resume: _resumable(ref
-                  .watch(watchPointsProvider)
-                  .pointFor(content.id, assetIdOf(content.source))),
-              onStartOver: () => playContent(context, ref, content,
-                  fromStart: true),
+              // Where this viewer stopped, on any of their phones
+              // (WatchPoint): Play becomes "Resume 12:34", with Start over
+              // beside it — Netflix's two buttons. For a title whose way in
+              // is its album, the button appears only to resume: the clip
+              // they were watching, where they left it.
+              resume: resume,
+              resumeClip: resumeClip,
+              onResume: () => _resume(context, ref, resume),
+              onStartOver: () => _resume(context, ref, resume, fromStart: true),
             ),
           ),
           // Drawn from the moment the title is known to have one, so the
@@ -308,6 +320,10 @@ class _ContentDetailScreenState extends ConsumerState<ContentDetailScreen> {
                       badge: unlocked
                           ? AlbumItemBadge(content: content, item: item)
                           : null,
+                      progress: item.isVideo
+                          ? ledger.pointFor(content.id, item.source.locator)
+                              ?.fraction
+                          : null,
                       // A locked tile still opens the viewer rather than
                       // jumping straight to the paywall: landing on the
                       // locked page in context, surrounded by what is
@@ -357,6 +373,21 @@ class _ContentDetailScreenState extends ConsumerState<ContentDetailScreen> {
 
   static WatchPoint? _resumable(WatchPoint? p) =>
       p != null && p.resumable ? p : null;
+
+  /// Plays the video [p] is about — the film, or the album clip — from the
+  /// held position, or from the start.
+  Future<void> _resume(BuildContext context, WidgetRef ref, WatchPoint? p,
+      {bool fromStart = false}) {
+    final asset = p?.assetId;
+    if (asset == null) {
+      return playContent(context, ref, content, fromStart: fromStart);
+    }
+    return playMedia(context, ref,
+        content: content,
+        source: MediaRef(provider: 'asset', locator: asset),
+        titleOverride: content.displayTitle(AppStrings.of(context).locale.languageCode),
+        fromStart: fromStart);
+  }
 }
 
 /// 12:34, or 1:02:03 past the hour.
@@ -436,6 +467,10 @@ class _Header extends StatelessWidget {
 
   /// Where the viewer stopped, when it is worth continuing from.
   final WatchPoint? resume;
+
+  /// "3 of 7" when [resume] is an album clip.
+  final String? resumeClip;
+  final VoidCallback onResume;
   final VoidCallback onStartOver;
 
   const _Header({
@@ -445,6 +480,8 @@ class _Header extends StatelessWidget {
     required this.lockedCount,
     required this.showButton,
     this.resume,
+    this.resumeClip,
+    required this.onResume,
     required this.onStartOver,
   });
 
@@ -534,12 +571,13 @@ class _Header extends StatelessWidget {
           // place it: under a long synopsis on a small phone it was below
           // the fold, and the one thing the page is for had to be scrolled
           // to.
-          if (showButton) ...<Widget>[
+          if (showButton || (!locked && resume != null)) ...<Widget>[
             const SizedBox(height: 14),
             _PlayButton(
               locked: locked,
               resume: locked ? null : resume,
-              onPlay: onPlay,
+              clip: resumeClip,
+              onPlay: !locked && resume != null ? onResume : onPlay,
             ),
             if (!locked && resume != null) ...<Widget>[
               const SizedBox(height: 8),
@@ -558,10 +596,14 @@ class _Header extends StatelessWidget {
 
 /// Play, Upgrade or "Resume 12:34" — one full-width button.
 class _PlayButton extends StatelessWidget {
-  const _PlayButton({required this.locked, required this.onPlay, this.resume});
+  const _PlayButton(
+      {required this.locked, required this.onPlay, this.resume, this.clip});
 
   final bool locked;
   final WatchPoint? resume;
+
+  /// "3 of 7" when resuming an album clip.
+  final String? clip;
   final VoidCallback onPlay;
 
   @override
@@ -571,7 +613,9 @@ class _PlayButton extends StatelessWidget {
     final label = locked
         ? s.vhUpgrade
         : r != null
-            ? s.vhResumeAt(clockOf(r.position))
+            ? clip == null
+                ? s.vhResumeAt(clockOf(r.position))
+                : '${s.vhResumeAt(clockOf(r.position))} · $clip'
             : s.vhPlay;
     return SizedBox(
       width: double.infinity,
@@ -704,6 +748,10 @@ class _AlbumTile extends StatelessWidget {
   /// one corner nothing else on a tile uses.
   final Widget? badge;
 
+  /// How far through this clip the viewer is — YouTube's line along the
+  /// foot of a watched video — or null.
+  final double? progress;
+
   const _AlbumTile({
     required this.content,
     required this.item,
@@ -712,6 +760,7 @@ class _AlbumTile extends StatelessWidget {
     required this.onTap,
     this.locked = false,
     this.badge,
+    this.progress,
   });
 
   @override
@@ -812,6 +861,19 @@ class _AlbumTile extends StatelessWidget {
           ),
         ],
         if (badge != null) Positioned(right: 4, top: 4, child: badge!),
+        if (!locked && progress != null)
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: 3,
+            child: LinearProgressIndicator(
+              value: progress!.clamp(0.0, 1.0),
+              minHeight: 3,
+              backgroundColor: const Color(0x40FFFFFF),
+              valueColor: const AlwaysStoppedAnimation<Color>(VH.accent),
+            ),
+          ),
       ],
     );
   }

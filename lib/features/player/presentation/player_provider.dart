@@ -133,6 +133,12 @@ class PlayerController extends StateNotifier<PlayerState> {
   /// belongs in the event log.
   void Function(StallDiagnosis reason)? onStall;
 
+  /// Called when a file plays to its end with no loop or sleep timer in the
+  /// way. Returns true when the screen takes the end over (Up next), so the
+  /// folder's next file and "Back to list" stand aside. Null for playback
+  /// nobody offered a next video for.
+  bool Function()? onFinished;
+
   /// The decoder's cumulative drop count at the last reading. The property is
   /// a running total for the whole file, so without this every stall after
   /// the first would inherit the first one's drops and be filed as a decode
@@ -1151,6 +1157,8 @@ class PlayerController extends StateNotifier<PlayerState> {
             seek(Duration.zero);
             _ref.read(videoPlayerServiceProvider).play();
           }
+        } else if (onFinished?.call() == true) {
+          // The screen shows what plays next (Up next) and decides.
         } else {
           // Phase 14: Auto-play next in folder
           // Phase 41: respect "Back to list" (Settings → Player → Playback).
