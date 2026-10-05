@@ -146,6 +146,24 @@ for flow in $FLOWS; do
   case "$flow" in perf_*) ( sleep 40; { echo "== during $flow"; threads; } >> "$OUT/threads.txt" ) & ;; esac
   ( cd "$OUT/shots" && maestro test --test-output-dir "$OUT/maestro_out" "$OLDPWD/test_device/flows/$flow.yaml" ) > "$OUT/maestro_$flow.txt" 2>&1
   log "flow $flow exit $?"
+  # STACKED DOUBLE TAP. Maestro needs most of a second per tap, longer than
+  # the 0.6 s a run of taps stays open, so it can only ever make a plain
+  # double tap. Four taps from one adb shell come a few hundred ms apart,
+  # as a thumb's do: the trace should read "double tap right 1, 2, 3".
+  case "$flow" in gestures)
+    sleep 5 # the controls the flow's last tap showed hide again
+    wh=$(adb shell wm size | tail -1 | awk '{print $NF}' | tr -d '\r')
+    w=${wh%x*}; h=${wh#*x}
+    x=$((w * 85 / 100)); y=$((h / 2))
+    t0=$(date +%s%N)
+    # `cmd input` runs in system_server: no app_process start per tap, so
+    # the taps come ~0.15 s apart rather than ~0.5 s.
+    adb shell "cmd input tap $x $y; sleep 0.1; cmd input tap $x $y; sleep 0.1; cmd input tap $x $y; sleep 0.1; cmd input tap $x $y"
+    t1=$(date +%s%N)
+    adb exec-out screencap -p > "$OUT/shots/97_stacked_taps.png"
+    log "stacked taps at $x,$y: 4 taps in $(( (t1 - t0) / 1000000 )) ms"
+    ;;
+  esac
   # Maestro has put screenshots in different places across versions.
   find test_device/flows "$OUT/maestro_out" "$HOME/.maestro/tests" -name '*.png' -newer test_device/config.env \
     -exec cp {} "$OUT/shots/" \; 2>/dev/null || true

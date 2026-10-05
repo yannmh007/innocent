@@ -20,10 +20,21 @@ class VolumeServiceImpl implements VolumeService {
     }
   }
 
+  /// The plugin shows Android's own volume panel on every change unless
+  /// told otherwise. The player's swipe draws its own bar (as MX does);
+  /// the system panel on top of it covered the picture and the gesture.
+  /// The hardware volume keys are not affected: Android shows its panel
+  /// for those whatever this says.
+  static bool _systemUiOff = false;
+
   @override
   Future<void> setVolume(double value) async {
     try {
       final clamped = value.clamp(0.0, 1.0);
+      if (!_systemUiOff) {
+        await FlutterVolumeController.updateShowSystemUI(false);
+        _systemUiOff = true;
+      }
       await FlutterVolumeController.setVolume(clamped);
     } catch (_) {
       // Silently fail

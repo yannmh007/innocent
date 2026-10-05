@@ -69,10 +69,15 @@ class DoubleTapRippleView extends StatelessWidget {
             curve: Curves.easeOut,
             builder: (context, t, child) =>
                 Opacity(opacity: t.clamp(0.0, 1.0), child: child),
+            // Half an ellipse as tall as the player: an arc from the edge in
+            // either orientation (a circular radius made a pill in portrait,
+            // where the player is taller than the band is wide).
             child: ClipRRect(
               borderRadius: forward
-                  ? BorderRadius.horizontal(left: Radius.circular(w))
-                  : BorderRadius.horizontal(right: Radius.circular(w)),
+                  ? BorderRadius.horizontal(
+                      left: Radius.elliptical(w, c.maxHeight / 2))
+                  : BorderRadius.horizontal(
+                      right: Radius.elliptical(w, c.maxHeight / 2)),
               child: Container(
                 width: w,
                 height: c.maxHeight,
