@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'dart:convert';
 
 import 'package:google_sign_in/google_sign_in.dart';
@@ -383,9 +384,42 @@ class ApiAccountRepository implements AccountRepository {
   @override
   Future<PremiumRequest> submitPremiumRequest({
     required String planId,
-    required String reference,
+    String reference = '',
     String? senderPhone,
+    Uint8List? proof,
+    String? priceShown,
   }) async {
+    // WITH A SCREENSHOT: the premium-request edge function (migration 040).
+    // It checks the image, stores it privately, notices a receipt already
+    // filed, files the request and sends it to the owner — none of which
+    // the app may be trusted to do. Retrying the same screenshot after a
+    // timeout returns the request already filed, never a second one.
+    if (proof != null) {
+      final body = await _api.postJson(
+        '/functions/v1/premium-request',
+        body: <String, dynamic>{
+          'plan_id': planId,
+          if (reference.trim().isNotEmpty) 'reference': reference.trim(),
+          if (senderPhone != null && senderPhone.isNotEmpty)
+            'sender_phone': senderPhone,
+          if (priceShown != null && priceShown.isNotEmpty)
+            'price_shown': priceShown,
+          'image_b64': base64Encode(proof),
+        },
+        // A receipt on a slow cell takes longer than a catalogue page.
+        timeout: const Duration(seconds: 60),
+      );
+      final m = body is Map<String, dynamic> ? body['request'] : null;
+      if (m is Map<String, dynamic>) return _requestFrom(m);
+      return PremiumRequest(
+        id: '',
+        planId: planId,
+        reference: reference,
+        senderPhone: senderPhone,
+        status: PremiumRequestStatus.pending,
+        submittedAt: DateTime.now(),
+      );
+    }
     // `status` is deliberately NOT sent. The insert policy only accepts
     // 'pending', and letting the client name a status is exactly the hole that
     // would let someone submit an approved one.
@@ -473,7 +507,7 @@ class ApiAccountRepository implements AccountRepository {
     return PremiumRequest(
       id: '${m['id']}',
       planId: '${m['plan_id']}',
-      reference: '${m['reference']}',
+      reference: m['reference'] as String? ?? '',
       senderPhone: m['sender_phone'] as String?,
       status: _statusFrom(m['status'] as String?),
       submittedAt:

@@ -1124,6 +1124,8 @@ const API = SB_URL + '/functions/v1/studio';
 const PROBE_API = SB_URL + '/functions/v1/probe-media';
 const TRANSCODE_API = SB_URL + '/functions/v1/transcode';
 const INGEST_API = SB_URL + '/functions/v1/ingest';
+// Payment screenshots (migration 040): signed addresses for the Requests page.
+const PREMIUM_API = SB_URL + '/functions/v1/premium-request';
 
 // WHAT THE CATEGORY PICKER OFFERS, read from the database rather than compiled.
 //
@@ -2688,6 +2690,11 @@ async function loadRequests() {
       host.append(el('div', { className: 'empty' }, text('Nothing pending.')));
       return;
     }
+    // The receipts, as ten-minute signed addresses. A failure here leaves the
+    // list usable (the transaction id, if any, is still shown).
+    let urls = {};
+    try { urls = (await api({ op: 'proofs' }, PREMIUM_API)).urls || {}; }
+    catch (e) { say('bad', 'Screenshots could not be loaded: ' + String(e.message || e)); }
     for (const r of requests) {
       const days = el('input', { type: 'number', value: '365',
         style: 'width:72px' });
@@ -2708,14 +2715,35 @@ async function loadRequests() {
         try { await api({ op: 'reject', id: r.id }); say('ok', 'Rejected.'); loadRequests(); }
         catch (e) { say('bad', String(e.message || e)); }
       };
+      // The receipt: tap for the full size. Check the amount, the receiver
+      // and the time against the price the viewer was shown.
+      const url = urls[r.id];
+      const proof = url
+        ? el('a', { href: url, target: '_blank', rel: 'noopener',
+            title: 'Open the receipt' }, [
+            el('img', { src: url, alt: 'receipt', style:
+              'width:72px;height:128px;object-fit:cover;border-radius:6px;border:1px solid var(--line)' }),
+          ])
+        : el('div', { className: 'hint', style: 'width:72px' },
+            text(r.proof_path ? 'receipt…' : 'no screenshot'));
+      const warn = r.duplicate_of
+        ? el('div', { style: 'color:var(--bad, #d33);font-weight:600' },
+            text('⚠ This screenshot was already used for request '
+              + String(r.duplicate_of).slice(0, 8)))
+        : null;
       host.append(el('div', { className: 'sechead',
-        style: 'border-bottom:1px solid var(--line);padding-bottom:8px' }, [
+        style: 'border-bottom:1px solid var(--line);padding-bottom:8px;gap:10px' }, [
+        proof,
         el('div', { style: 'min-width:150px' }, [
           el('div', {}, text(r.email || r.phone || r.id)),
-          el('div', { className: 'hint mono' }, text([r.plan_id, r.reference,
-            r.sender_phone, (r.submitted_at || '').slice(0, 16).replace('T', ' ')]
+          el('div', {}, text([r.plan_id, r.price_shown].filter(Boolean).join(' · '))),
+          el('div', { className: 'hint mono' }, text([
+            r.sender_phone ? 'from ' + r.sender_phone : null,
+            r.reference ? 'txn ' + r.reference : null,
+            (r.submitted_at || '').slice(0, 16).replace('T', ' ')]
             .filter(Boolean).join(' · '))),
-        ]),
+          warn,
+        ].filter(Boolean)),
         el('span', { className: 'spacer' }),
         el('span', { className: 'hint' }, text('days')), days, ok, no,
       ]));

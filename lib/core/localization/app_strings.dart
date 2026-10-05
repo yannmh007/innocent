@@ -1448,6 +1448,17 @@ class AppStrings {
   String get vhPaySenderHint => _s('vhPaySenderHint');
   String get vhPaySubmit => _s('vhPaySubmit');
   String get vhPayManualNote => _s('vhPayManualNote');
+  String get vhPayOpenKpay => _s('vhPayOpenKpay');
+  String get vhPayNoKpay => _s('vhPayNoKpay');
+  String get vhPayRecentShots => _s('vhPayRecentShots');
+  String get vhPayChooseShot => _s('vhPayChooseShot');
+  String get vhPayShotAttached => _s('vhPayShotAttached');
+  String get vhPayShotCheck => _s('vhPayShotCheck');
+  String get vhPayShotChange => _s('vhPayShotChange');
+  String get vhPayAddTxn => _s('vhPayAddTxn');
+  String get vhPayNeedProof => _s('vhPayNeedProof');
+  String get vhPayTooMany => _s('vhPayTooMany');
+  String get vhPayBadImage => _s('vhPayBadImage');
   String get vhPaySubmitFailed => _s('vhPaySubmitFailed');
   String get vhPayDetailsStale => _s('vhPayDetailsStale');
   String get vhPayDetailsUnavailable => _s('vhPayDetailsUnavailable');
@@ -1841,8 +1852,8 @@ class AppStrings {
     'vhDevApprove': 'Approve locally (development only)',
     'vhPayTitle': 'Pay with KPay',
     'vhPayStep1': 'Send the amount to this KPay account',
-    'vhPayStep2': 'Keep the KPay transaction ID from your receipt',
-    'vhPayStep3': 'Enter the details below',
+    'vhPayStep2': 'Pay in KPay, then take a screenshot of the receipt',
+    'vhPayStep3': 'Attach the receipt screenshot',
     'vhPayPayee': 'Account name',
     'vhPayNumber': 'KPay number',
     'vhPayAmount': 'Amount',
@@ -1851,6 +1862,17 @@ class AppStrings {
     'vhPaySenderHint': 'Number you paid from',
     'vhPaySubmit': 'Submit payment',
     'vhPayManualNote': 'Payments are checked by hand against the KPay statement, so activation is not instant.',
+    'vhPayOpenKpay': 'Open KPay',
+    'vhPayNoKpay': 'KPay is not installed on this phone.',
+    'vhPayRecentShots': 'Recent screenshots — tap your receipt',
+    'vhPayChooseShot': 'Choose the screenshot from your photos',
+    'vhPayShotAttached': 'Receipt attached',
+    'vhPayShotCheck': 'Check that the amount and the transaction are visible.',
+    'vhPayShotChange': 'Change',
+    'vhPayAddTxn': 'Add the transaction ID (optional)',
+    'vhPayNeedProof': 'Attach the receipt screenshot, or enter the transaction ID.',
+    'vhPayTooMany': 'You already have payments waiting to be checked. Please wait for them.',
+    'vhPayBadImage': 'That file is not a picture we can read. Choose the screenshot again.',
     'vhPaySubmitFailed': 'Could not send your payment details. Nothing was recorded - check your connection and try again.',
     'vhPayDetailsStale': 'Could not reach the server. These are the details saved on this device last time - check them before you send money.',
     'vhPayDetailsUnavailable': 'Could not load the payment details. Do not send money until they appear.',
@@ -3230,8 +3252,8 @@ class AppStrings {
     'vhDevApprove': 'စက်တွင်း အတည်ပြုရန် (စမ်းသပ်ရန်သာ)',
     'vhPayTitle': 'KPay ဖြင့် ပေးချေရန်',
     'vhPayStep1': 'ဤ KPay အကောင့်သို့ ငွေလွှဲပါ',
-    'vhPayStep2': 'ပြေစာမှ KPay လွှဲပြောင်းမှု ID ကို သိမ်းထားပါ',
-    'vhPayStep3': 'အောက်တွင် အချက်အလက် ဖြည့်ပါ',
+    'vhPayStep2': 'KPay မှာ ငွေလွှဲပြီး ပြေစာကို screenshot ရိုက်ပါ',
+    'vhPayStep3': 'ပြေစာ screenshot ကို ထည့်ပါ',
     'vhPayPayee': 'အကောင့်အမည်',
     'vhPayNumber': 'KPay နံပါတ်',
     'vhPayAmount': 'ပမာဏ',
@@ -3240,6 +3262,17 @@ class AppStrings {
     'vhPaySenderHint': 'ငွေလွှဲသည့် နံပါတ်',
     'vhPaySubmit': 'ငွေပေးချေမှု တင်ရန်',
     'vhPayManualNote': 'ငွေပေးချေမှုများကို KPay စာရင်းနှင့် လူကိုယ်တိုင် တိုက်စစ်သဖြင့် ချက်ချင်း အသက်မဝင်ပါ။',
+    'vhPayOpenKpay': 'KPay ဖွင့်မည်',
+    'vhPayNoKpay': 'ဒီဖုန်းမှာ KPay မရှိပါ။',
+    'vhPayRecentShots': 'မကြာသေးခင်က screenshot များ — ပြေစာကို နှိပ်ပါ',
+    'vhPayChooseShot': 'ဓာတ်ပုံထဲက screenshot ကို ရွေးမည်',
+    'vhPayShotAttached': 'ပြေစာ ထည့်ပြီးပါပြီ',
+    'vhPayShotCheck': 'ငွေပမာဏနဲ့ လွှဲပြောင်းမှု မြင်ရရဲ့လား စစ်ပါ။',
+    'vhPayShotChange': 'ပြောင်းမည်',
+    'vhPayAddTxn': 'Transaction ID ထည့်မည် (မထည့်လည်းရ)',
+    'vhPayNeedProof': 'ပြေစာ screenshot ထည့်ပါ၊ ဒါမှမဟုတ် Transaction ID ရိုက်ထည့်ပါ။',
+    'vhPayTooMany': 'စစ်ဆေးဖို့ စောင့်နေတဲ့ ငွေပေးချေမှုတွေ ရှိနေပါပြီ။ ခဏစောင့်ပေးပါ။',
+    'vhPayBadImage': 'ဒီဖိုင်ကို ဖတ်လို့မရပါ။ screenshot ကို ပြန်ရွေးပါ။',
     'vhPaySubmitFailed': 'ငွေပေးချေမှု အချက်အလက် မပို့နိုင်ပါ။ ဘာမှ မမှတ်တမ်းတင်ရသေးပါ - အင်တာနက် စစ်ပြီး ထပ်စမ်းပါ။',
     'vhPayDetailsStale': 'ဆာဗာသို့ မဆက်သွယ်နိုင်ပါ။ ဤအချက်အလက်များမှာ ဤဖုန်းတွင် နောက်ဆုံး သိမ်းထားသည့်များ ဖြစ်သည် - ငွေမပို့မီ သေချာစစ်ပါ။',
     'vhPayDetailsUnavailable': 'ငွေပေးချေမှု အချက်အလက်များ မရယူနိုင်ပါ။ ၎င်းတို့ မပေါ်မချင်း ငွေမပို့ပါနှင့်။',
@@ -4607,8 +4640,8 @@ class AppStrings {
     'vhDevApprove': 'อนุมัติในเครื่อง (สำหรับพัฒนาเท่านั้น)',
     'vhPayTitle': 'ชำระด้วย KPay',
     'vhPayStep1': 'โอนยอดไปยังบัญชี KPay นี้',
-    'vhPayStep2': 'เก็บรหัสธุรกรรม KPay จากใบเสร็จไว้',
-    'vhPayStep3': 'กรอกรายละเอียดด้านล่าง',
+    'vhPayStep2': 'โอนใน KPay แล้วแคปหน้าจอใบเสร็จ',
+    'vhPayStep3': 'แนบภาพหน้าจอใบเสร็จ',
     'vhPayPayee': 'ชื่อบัญชี',
     'vhPayNumber': 'เบอร์ KPay',
     'vhPayAmount': 'จำนวนเงิน',
@@ -4617,6 +4650,17 @@ class AppStrings {
     'vhPaySenderHint': 'เบอร์ที่ใช้โอน',
     'vhPaySubmit': 'ส่งการชำระเงิน',
     'vhPayManualNote': 'การชำระเงินตรวจสอบด้วยคนเทียบกับรายการ KPay จึงไม่เปิดใช้งานทันที',
+    'vhPayOpenKpay': 'เปิด KPay',
+    'vhPayNoKpay': 'เครื่องนี้ไม่มี KPay',
+    'vhPayRecentShots': 'ภาพหน้าจอล่าสุด — แตะใบเสร็จ',
+    'vhPayChooseShot': 'เลือกภาพหน้าจอจากรูปภาพ',
+    'vhPayShotAttached': 'แนบใบเสร็จแล้ว',
+    'vhPayShotCheck': 'ตรวจว่ามองเห็นยอดเงินและรายการ',
+    'vhPayShotChange': 'เปลี่ยน',
+    'vhPayAddTxn': 'ใส่รหัสธุรกรรม (ไม่บังคับ)',
+    'vhPayNeedProof': 'แนบภาพใบเสร็จ หรือใส่รหัสธุรกรรม',
+    'vhPayTooMany': 'คุณมีการชำระเงินที่รอตรวจอยู่แล้ว โปรดรอสักครู่',
+    'vhPayBadImage': 'อ่านไฟล์นี้ไม่ได้ โปรดเลือกภาพหน้าจออีกครั้ง',
     'vhPaySubmitFailed': 'ส่งรายละเอียดการชำระเงินไม่สำเร็จ ยังไม่มีการบันทึกใด ๆ - ตรวจสอบการเชื่อมต่อแล้วลองใหม่',
     'vhPayDetailsStale': 'ติดต่อเซิร์ฟเวอร์ไม่ได้ นี่คือรายละเอียดที่บันทึกไว้ในเครื่องครั้งล่าสุด - ตรวจสอบก่อนโอนเงิน',
     'vhPayDetailsUnavailable': 'โหลดรายละเอียดการชำระเงินไม่ได้ อย่าโอนเงินจนกว่าจะแสดงขึ้น',
