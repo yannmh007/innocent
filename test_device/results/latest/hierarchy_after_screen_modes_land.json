@@ -948,8 +948,8 @@
                   },
                   "children" : [ {
                     "attributes" : {
-                      "text" : "12:12 ",
-                      "accessibilityText" : "12:12 PM",
+                      "text" : "12:36 ",
+                      "accessibilityText" : "12:36 PM",
                       "hintText" : "",
                       "ignoreBoundsFiltering" : "false",
                       "resource-id" : "com.android.systemui:id/clock",
@@ -1255,7 +1255,7 @@
                     }, {
                       "attributes" : {
                         "text" : "",
-                        "accessibilityText" : "Phone three bars.",
+                        "accessibilityText" : "Phone signal full.",
                         "hintText" : "",
                         "ignoreBoundsFiltering" : "false",
                         "resource-id" : "com.android.systemui:id/mobile_combo",
@@ -1591,7 +1591,7 @@
                     "children" : [ {
                       "attributes" : {
                         "text" : "",
-                        "accessibilityText" : "စာတန်းထိုး 22 ဘယ်သူမှ မသိခဲ့ကြဘူး\nSubtitle line 22\nစာတန်းထိုး 22 ဘယ်သူမှ မသိခဲ့ကြဘူး\nSubtitle line 22",
+                        "accessibilityText" : "စာတန်းထိုး 24 ဘယ်သူမှ မသိခဲ့ကြဘူး\nSubtitle line 24\nစာတန်းထိုး 24 ဘယ်သူမှ မသိခဲ့ကြဘူး\nSubtitle line 24",
                         "hintText" : "",
                         "ignoreBoundsFiltering" : "false",
                         "resource-id" : "",
