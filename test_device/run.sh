@@ -163,6 +163,44 @@ for flow in $FLOWS; do
     adb exec-out screencap -p > "$OUT/shots/97_stacked_taps.png"
     log "stacked taps at $x,$y: 4 taps in $(( (t1 - t0) / 1000000 )) ms"
     ;;
+  esac
+  # MX'S SCREEN BUTTON, pressed from here: Maestro spends seconds per tap
+  # and the controls hide 4 s after the last touch. Show the controls, read
+  # the button's bounds from Android's accessibility dump (the same node
+  # TalkBack and Maestro see), then press its centre five times: Stretch,
+  # Crop, 100%, Custom, back to Fit. The trace must read "screen <mode>"
+  # after each press; a "gesture tap" instead means the press missed.
+  case "$flow" in screen_modes|screen_modes_land)
+    sfx=port; [ "$flow" = screen_modes_land ] && sfx=land
+    wh=$(adb shell wm size | tail -1 | awk '{print $NF}' | tr -d '\r')
+    w=${wh%x*}; h=${wh#*x}
+    [ "$sfx" = land ] && { t=$w; w=$h; h=$t; }
+    bounds=""
+    for attempt in 1 2 3; do
+      adb shell "cmd input tap $((w / 2)) $((h * 30 / 100))"
+      sleep 0.6
+      adb shell uiautomator dump /sdcard/ui_mode.xml >/dev/null 2>&1
+      bounds=$(adb exec-out cat /sdcard/ui_mode.xml 2>/dev/null \
+        | grep -o 'resource-id="player-screen-mode"[^>]*bounds="[^"]*"' \
+        | grep -o 'bounds="[^"]*"' | head -1)
+      [ -n "$bounds" ] && break
+      sleep 4.5 # they were up and that tap hid them; let them settle hidden
+    done
+    log "$flow: screen button $bounds (screen ${w}x${h}, attempt $attempt)"
+    if [ -n "$bounds" ]; then
+      set -- $(echo "$bounds" | grep -o '[0-9]\+')
+      bx=$(( ($1 + $3) / 2 )); by=$(( ($2 + $4) / 2 ))
+      for m in stretch crop original custom fit; do
+        adb shell "cmd input tap $bx $by"
+        sleep 0.5
+        adb exec-out screencap -p > "$OUT/shots/7x_mode_${m}_${sfx}.png"
+        sleep 0.7
+      done
+      log "$flow: pressed $bx,$by five times"
+    fi
+    ;;
+  esac
+  case "$flow" in
   # PICTURE-IN-PICTURE ON LEAVING. The film is playing; Home must put it in
   # a PiP window by itself (Android 12+ auto-enter), still playing.
   screen_modes_land)

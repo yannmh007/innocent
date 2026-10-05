@@ -11,81 +11,9 @@ appId: com.innocent.media
 # Crop, 100%, Custom, back to Fit to screen. Each new mode's name shows
 # over the video for a moment; the lab trace logs the zoom ("screen crop
 # x1.33") and where each subtitle line was drawn.
-# Let the controls the film opened with hide, then one tap brings them
-# back (a tap while they are up would hide them).
+# Let the controls the film opened with hide; run.sh presses the button
+# (Maestro needs seconds per tap, the controls hide after 4).
 - extendedWaitUntil:
     visible: "__nothing_has_this_text__"
     timeout: 6000
-    optional: true
-- runFlow:
-    when:
-      notVisible:
-        id: "player-screen-mode"
-    commands:
-      - tapOn:
-          point: "50%,30%"
-- extendedWaitUntil:
-    visible:
-      id: "player-screen-mode"
-    timeout: 4000
-    optional: true
-- tapOn:
-    id: "player-screen-mode"
-    retryTapIfNoChange: false
-- extendedWaitUntil:
-    visible: "__nothing_has_this_text__"
-    timeout: 400
-    optional: true
-- takeScreenshot: 7x_mode_stretch_land
-- extendedWaitUntil:
-    visible: "__nothing_has_this_text__"
-    timeout: 900
-    optional: true
-- tapOn:
-    id: "player-screen-mode"
-    retryTapIfNoChange: false
-- extendedWaitUntil:
-    visible: "__nothing_has_this_text__"
-    timeout: 400
-    optional: true
-- takeScreenshot: 7x_mode_crop_land
-- extendedWaitUntil:
-    visible: "__nothing_has_this_text__"
-    timeout: 900
-    optional: true
-- tapOn:
-    id: "player-screen-mode"
-    retryTapIfNoChange: false
-- extendedWaitUntil:
-    visible: "__nothing_has_this_text__"
-    timeout: 400
-    optional: true
-- takeScreenshot: 7x_mode_original_land
-- extendedWaitUntil:
-    visible: "__nothing_has_this_text__"
-    timeout: 900
-    optional: true
-- tapOn:
-    id: "player-screen-mode"
-    retryTapIfNoChange: false
-- extendedWaitUntil:
-    visible: "__nothing_has_this_text__"
-    timeout: 400
-    optional: true
-- takeScreenshot: 7x_mode_custom_land
-- extendedWaitUntil:
-    visible: "__nothing_has_this_text__"
-    timeout: 900
-    optional: true
-- tapOn:
-    id: "player-screen-mode"
-    retryTapIfNoChange: false
-- extendedWaitUntil:
-    visible: "__nothing_has_this_text__"
-    timeout: 400
-    optional: true
-- takeScreenshot: 7x_mode_fit_land
-- extendedWaitUntil:
-    visible: "__nothing_has_this_text__"
-    timeout: 900
     optional: true
