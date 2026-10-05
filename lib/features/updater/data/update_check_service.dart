@@ -40,7 +40,10 @@ class UpdateCheckService {
   static const String _columns = 'version_name,version_code,'
       'apk_url,apk_sha256,apk_bytes,'
       'min_supported,priority,'
-      'notes_en,notes_mm,released_at';
+      'notes_en,notes_mm,released_at,'
+      // 038 — remote player switches. Added to the database before the build
+      // that reads it shipped, so no install ever asked for a missing column.
+      'player_flags';
 
   /// The newest published release, or null when the table holds no row.
   ///

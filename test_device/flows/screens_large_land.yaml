@@ -1,0 +1,26 @@
+# The main tabs on a large screen (EMU_PROFILE tablet), turned to landscape by run.sh;
+# orientation run.sh has set: navigation rail, list width, grids.
+appId: com.innocent.media
+---
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: 73_large_land_video
+# The rail's own tabs, by the label TalkBack reads ("Music\nTab 2 of 4"):
+# found only if the rail is in Android's accessibility tree.
+- tapOn:
+    text: "(?s).*Tab 2 of 4.*"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: 74_large_land_music
+- tapOn:
+    text: "(?s).*Tab 4 of 4.*"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: 75_large_land_me
+- tapOn:
+    text: "(?s).*Tab 1 of 4.*"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000

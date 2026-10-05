@@ -13,6 +13,7 @@ import 'music_providers.dart';
 import 'music_queue_sheet.dart';
 
 import '../../../core/localization/app_strings.dart';
+import '../../../core/ui/tv_focus.dart';
 /// Full-screen Music Player matching MX Player (UI PDF page 5 right)
 /// Vinyl record + controls + Lyrics/Playing Queue tabs
 class MusicPlayerScreen extends ConsumerStatefulWidget {
@@ -757,7 +758,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                     },
                   ),
                   // Big play button — outlined white circle (MX parity)
-                  GestureDetector(
+                  RemoteTappable(
                     onTap: _togglePlay,
                     child: Semantics(
                       // Audit fix (Phase B): the play/pause control is a

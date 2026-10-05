@@ -288,6 +288,78 @@ class MainActivity : AudioServiceFragmentActivity() {
         )
         pipChannel?.setMethodCallHandler { call, result ->
             when (call.method) {
+                // Android TV (or any leanback device): no touch screen, a
+                // remote, landscape only. Decides orientation and focus
+                // behaviour on the Dart side (DeviceProfile).
+                // What kind of screen this is, known at once: the TV test as
+                // "isTv", and the smallest width in dp from the configuration.
+                // Flutter's own display size is not reported yet before
+                // runApp, which classified a tablet as a phone and locked it
+                // to portrait (Pixel C emulator, run 37219691574).
+                "deviceClass" -> {
+                    var tv = false
+                    try {
+                        val ui = getSystemService(Context.UI_MODE_SERVICE) as android.app.UiModeManager
+                        tv = ui.currentModeType == android.content.res.Configuration.UI_MODE_TYPE_TELEVISION ||
+                            packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_LEANBACK)
+                    } catch (_: Throwable) {
+                    }
+                    result.success(hashMapOf(
+                        "tv" to tv,
+                        "sw" to resources.configuration.smallestScreenWidthDp
+                    ))
+                }
+                "isTv" -> {
+                    var tv = false
+                    try {
+                        val ui = getSystemService(Context.UI_MODE_SERVICE) as android.app.UiModeManager
+                        tv = ui.currentModeType == android.content.res.Configuration.UI_MODE_TYPE_TELEVISION ||
+                            packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_LEANBACK)
+                    } catch (_: Throwable) {
+                    }
+                    result.success(tv)
+                }
+                // The system bars' and camera cutout's insets for the current
+                // orientation EVEN WHILE THE BARS ARE HIDDEN, in dp. The
+                // immersive player gets zero from Flutter for a hidden bar;
+                // MX lays its controls out inside these stable insets (clear
+                // of the status bar, the side nav bar and the cutout in
+                // landscape), and so does the player now.
+                "stableInsets" -> {
+                    val d = resources.displayMetrics.density
+                    var l = 0; var t = 0; var r = 0; var b = 0
+                    try {
+                        val wi = window.decorView.rootWindowInsets
+                        if (wi != null) {
+                            if (Build.VERSION.SDK_INT >= 30) {
+                                val i = wi.getInsetsIgnoringVisibility(
+                                    android.view.WindowInsets.Type.systemBars() or
+                                        android.view.WindowInsets.Type.displayCutout()
+                                )
+                                l = i.left; t = i.top; r = i.right; b = i.bottom
+                            } else {
+                                @Suppress("DEPRECATION")
+                                run {
+                                    l = wi.stableInsetLeft; t = wi.stableInsetTop
+                                    r = wi.stableInsetRight; b = wi.stableInsetBottom
+                                }
+                                if (Build.VERSION.SDK_INT >= 28) {
+                                    wi.displayCutout?.let {
+                                        l = maxOf(l, it.safeInsetLeft); t = maxOf(t, it.safeInsetTop)
+                                        r = maxOf(r, it.safeInsetRight); b = maxOf(b, it.safeInsetBottom)
+                                    }
+                                }
+                            }
+                        }
+                    } catch (_: Throwable) {
+                    }
+                    result.success(
+                        mapOf(
+                            "left" to l / d, "top" to t / d,
+                            "right" to r / d, "bottom" to b / d
+                        )
+                    )
+                }
                 "enterPip" -> {
                     val w = call.argument<Int>("width") ?: 16
                     val h = call.argument<Int>("height") ?: 9
@@ -427,6 +499,96 @@ class MainActivity : AudioServiceFragmentActivity() {
                     } catch (_: Throwable) {
                     }
                     result.success(free)
+                }
+                // Media Manager's numbers, all real: the shared storage's
+                // size and free space (StatFs), and how much of it videos,
+                // music and pictures take (MediaStore's SIZE summed by media
+                // type). A type this app may not read comes back -1, never
+                // a guess. Off the main thread: a sum over a big library is
+                // a full table walk.
+                "storageSummary" -> {
+                    val ctx = applicationContext
+                    Thread {
+                        val out = HashMap<String, Long>()
+                        try {
+                            val st = android.os.StatFs(
+                                android.os.Environment.getExternalStorageDirectory().absolutePath
+                            )
+                            out["total"] = st.totalBytes
+                            out["free"] = st.availableBytes
+                        } catch (_: Throwable) {
+                            out["total"] = -1L
+                            out["free"] = -1L
+                        }
+                        fun sum(uri: android.net.Uri): Long = try {
+                            ctx.contentResolver.query(
+                                uri,
+                                arrayOf(android.provider.MediaStore.MediaColumns.SIZE),
+                                null, null, null
+                            )?.use { c ->
+                                var t = 0L
+                                val i = c.getColumnIndex(android.provider.MediaStore.MediaColumns.SIZE)
+                                while (c.moveToNext()) t += c.getLong(i)
+                                t
+                            } ?: -1L
+                        } catch (_: Throwable) {
+                            -1L
+                        }
+                        // Without the permission MediaStore answers with only
+                        // this app's own files — a small, wrong number.
+                        fun may(perm33: String): Boolean {
+                            val perm = if (Build.VERSION.SDK_INT >= 33) perm33
+                                else android.Manifest.permission.READ_EXTERNAL_STORAGE
+                            return ctx.checkSelfPermission(perm) ==
+                                android.content.pm.PackageManager.PERMISSION_GRANTED
+                        }
+                        out["video"] = if (may("android.permission.READ_MEDIA_VIDEO"))
+                            sum(android.provider.MediaStore.Video.Media.EXTERNAL_CONTENT_URI) else -1L
+                        out["audio"] = if (may("android.permission.READ_MEDIA_AUDIO"))
+                            sum(android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI) else -1L
+                        out["image"] = if (may("android.permission.READ_MEDIA_IMAGES"))
+                            sum(android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI) else -1L
+                        runOnUiThread { result.success(out) }
+                    }.start()
+                }
+                // MediaStore's own change counter, so a cold start can tell
+                // "nothing on this phone changed since the last scan" without
+                // walking 2000+ videos to find out. Every insert, update or
+                // delete on a volume raises its generation; the version
+                // changes when the database itself is rebuilt; the
+                // permission flags make revoking access count as a change.
+                // Null below Android 11, where there is no generation and
+                // the caller simply scans as it always has.
+                "generation" -> {
+                    var stamp: String? = null
+                    if (Build.VERSION.SDK_INT >= 30) {
+                        try {
+                            val ctx = applicationContext
+                            val sb = StringBuilder(android.provider.MediaStore.getVersion(ctx))
+                            for (v in android.provider.MediaStore.getExternalVolumeNames(ctx).sorted()) {
+                                sb.append('|').append(v)
+                                    .append(':').append(android.provider.MediaStore.getVersion(ctx, v))
+                                    .append(':').append(android.provider.MediaStore.getGeneration(ctx, v))
+                            }
+                            val perms = mutableListOf(
+                                if (Build.VERSION.SDK_INT >= 33) "android.permission.READ_MEDIA_VIDEO"
+                                else "android.permission.READ_EXTERNAL_STORAGE"
+                            )
+                            if (Build.VERSION.SDK_INT >= 34) {
+                                perms.add("android.permission.READ_MEDIA_VISUAL_USER_SELECTED")
+                            }
+                            sb.append("|p:")
+                            for (p in perms) {
+                                val granted = ctx.checkSelfPermission(p) ==
+                                    android.content.pm.PackageManager.PERMISSION_GRANTED
+                                sb.append(if (granted) '1' else '0')
+                            }
+                            stamp = sb.toString()
+                        } catch (_: Throwable) {
+                            stamp = null
+                        }
+                    }
+                    result.success(stamp)
                 }
                 else -> result.notImplemented()
             }
@@ -2442,6 +2604,18 @@ class MainActivity : AudioServiceFragmentActivity() {
         val labLoop = intent.action == "com.google.intent.action.TEST_LOOP"
         if (intent.action != Intent.ACTION_VIEW && !labLoop) return
         val data: Uri = if (labLoop) {
+            // Scenario 1 = the SurfaceTexture output, 2 = SurfaceProducer, so
+            // one game-loop test compares both on the same phone. Read by the
+            // video plugin when the player engine creates its output.
+            when (intent.getIntExtra("scenario", 0)) {
+                1 -> com.alexmercerind.media_kit_video.VideoOutput.labForceSurfaceProducer = false
+                2 -> com.alexmercerind.media_kit_video.VideoOutput.labForceSurfaceProducer = true
+            }
+            android.util.Log.i(
+                "innocent",
+                "LAB scenario ${intent.getIntExtra("scenario", 0)} " +
+                    "surfaceProducer=${com.alexmercerind.media_kit_video.VideoOutput.labForceSurfaceProducer}"
+            )
             Uri.fromFile(java.io.File("/sdcard/Download/innocent_lab_play.mp4"))
         } else {
             intent.data ?: return

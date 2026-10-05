@@ -10,6 +10,7 @@ import '../../../core/theme/app_colors.dart';
 import 'equalizer_screen.dart' show equalizerServiceProvider;
 
 import '../../../core/localization/app_strings.dart';
+import '../../../core/ui/tv_focus.dart';
 
 // ── MX Player-sampled palette (v0.49.2 visual parity pass). Values were
 // measured from reference screenshots at density 3.0, so this sheet
@@ -389,8 +390,7 @@ class _AudioEffectSheetState extends ConsumerState<AudioEffectSheet>
   Widget _tabItem(String label, int index) {
     final active = _tab.index == index;
     return Expanded(
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
+      child: RemoteTappable(
         onTap: () => setState(() => _tab.animateTo(index)),
         child: Stack(
           children: [
@@ -523,13 +523,12 @@ class _AudioEffectSheetState extends ConsumerState<AudioEffectSheet>
         itemBuilder: (_, i) {
           final p = items[i];
           final active = _activePreset == p.index;
-          return GestureDetector(
+          return RemoteTappable(
             key: active ? _activeChipKey : null,
             onTap: () {
               HapticFeedback.selectionClick();
               _applyPreset(p.index);
             },
-            behavior: HitTestBehavior.opaque,
             child: Center(
               child: Text(
                 p.label,
@@ -732,12 +731,11 @@ class _AudioEffectSheetState extends ConsumerState<AudioEffectSheet>
     final preset = _effectPresets[name]!;
     final active = _activeEffect == name;
     return Expanded(
-      child: GestureDetector(
+      child: RemoteTappable(
         onTap: () {
           HapticFeedback.selectionClick();
           _applyEffect(name);
         },
-        behavior: HitTestBehavior.opaque,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
           decoration: BoxDecoration(

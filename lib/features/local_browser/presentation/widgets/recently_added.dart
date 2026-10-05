@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/ui/tv_focus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -91,7 +92,9 @@ class RecentlyAddedSection extends ConsumerWidget {
               ),
               const SizedBox(height: 10),
               SizedBox(
-                height: 120,
+                // 82 dp thumbnail, 6, a title line — which grows with the
+                // system font size (a fixed 120 cut it at 200 %).
+                height: 106 + MediaQuery.textScalerOf(context).scale(14),
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -112,7 +115,7 @@ class RecentlyAddedSection extends ConsumerWidget {
                       normalize: normalizeMediaUri,
                       now: now,
                     );
-                    return GestureDetector(
+                    return RemoteTappable(
               key: ValueKey(v.uri),
                       onTap: () => context.push(
                         Routes.player,

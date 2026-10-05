@@ -867,9 +867,12 @@ class _LocalScreenState extends ConsumerState<LocalScreen> {
           child: Center(
             child: ConstrainedBox(
               constraints: BoxConstraints(
+                // 840 dp: Material's widest single-column body. 640 left a
+                // landscape tablet (1200 dp beside the rail) looking like a
+                // phone screen floating in the middle.
                 maxWidth: prefs.layout == LayoutMode.grid
                     ? double.infinity
-                    : 640,
+                    : 840,
               ),
               child: CustomScrollView(
                 controller: _fabVisibility.controller,
@@ -898,9 +901,14 @@ class _LocalScreenState extends ConsumerState<LocalScreen> {
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       sliver: SliverGrid(
                         gridDelegate:
-                            const SliverGridDelegateWithMaxCrossAxisExtent(
+                            SliverGridDelegateWithMaxCrossAxisExtent(
                           maxCrossAxisExtent: 140,
-                          mainAxisExtent: 107,
+                          // The two text lines (name, count) grow with the
+                          // system font size; a fixed 107 cut the count by
+                          // up to 11 dp at 130 % in Burmese.
+                          mainAxisExtent: 107 +
+                              MediaQuery.textScalerOf(context).scale(41) -
+                              41,
                           crossAxisSpacing: 0,
                           mainAxisSpacing: 0,
                         ),
@@ -1184,12 +1192,10 @@ class _LocalScreenState extends ConsumerState<LocalScreen> {
                 // scaling to more columns on tablets/laptops.
                 padding: const EdgeInsets.fromLTRB(18, 8, 18, 8),
                 sliver: SliverGrid(
-                  gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                    maxCrossAxisExtent: 200,
-                    mainAxisSpacing: 0,
-                    // MX: 177 dp tiles, 21 dp apart, 153 dp row pitch.
-                    crossAxisSpacing: 21,
-                    childAspectRatio: 1.15,
+                  // MX: 177 dp tiles, 21 dp apart, 153 dp row pitch; taller
+                  // only when the title's font size needs it.
+                  gridDelegate: VideoGridDelegate(
+                    textScaler: MediaQuery.textScalerOf(context),
                   ),
                   delegate: SliverChildBuilderDelegate(
                     (_, i) => tileAt(i),

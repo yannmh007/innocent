@@ -16,6 +16,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
+import '../../../core/ui/device_profile.dart';
 import '../../../core/localization/app_strings.dart';
 import '../../../core/services/adb/adb_service.dart';
 import '../../../core/services/hardware_keys/hardware_keys_service.dart';
@@ -91,6 +92,8 @@ import '../../../core/services/video_player/stream_renewal.dart';
 import '../../../core/utils/media_address.dart';
 import '../../video_hub/data/api/playback_reporter.dart';
 import '../../video_hub/presentation/video_hub_provider.dart';
+import 'gestures/subtitle_band.dart';
+import 'widgets/gesture_hud.dart';
 
 class PlayerScreen extends ConsumerStatefulWidget {
   final String videoUri;
@@ -230,14 +233,14 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
   void _applyRotationMode({bool announce = false}) {
     switch (_rotationMode) {
       case 1:
-        SystemChrome.setPreferredOrientations(const [
+        _setOrientations(const [
           DeviceOrientation.portraitUp,
           DeviceOrientation.portraitDown,
         ]);
         if (announce) _showOverlay('Portrait');
         break;
       case 2:
-        SystemChrome.setPreferredOrientations(const [
+        _setOrientations(const [
           DeviceOrientation.landscapeLeft,
           DeviceOrientation.landscapeRight,
         ]);
@@ -246,7 +249,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
       default:
         // Hand control back to the device. This is the state the old button
         // could never reach.
-        SystemChrome.setPreferredOrientations(const [
+        _setOrientations(const [
           DeviceOrientation.portraitUp,
           DeviceOrientation.portraitDown,
           DeviceOrientation.landscapeLeft,
@@ -291,6 +294,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
   void initState() {
     super.initState();
     _startReporting();
+    // ignore: discarded_futures
+    _refreshStableInsets();
     // A SNACKBAR FROM THE SCREEN BEHIND DOES NOT FOLLOW THE VIEWER IN. Seen on
     // a real Galaxy A03s in Test Lab: "added to bookmarks" from the title page
     // sat over the player's controls. The messenger is the app's, so it
@@ -339,22 +344,22 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
         .read(extraSettingsProvider)
         .getStr(StringSetting.defaultPlayerOrientation);
     if (orientationPref == 'landscape') {
-      SystemChrome.setPreferredOrientations(
+      _setOrientations(
           const [DeviceOrientation.landscapeLeft]);
     } else if (orientationPref == 'landscapeReverse') {
-      SystemChrome.setPreferredOrientations(
+      _setOrientations(
           const [DeviceOrientation.landscapeRight]);
     } else if (orientationPref == 'portrait') {
-      SystemChrome.setPreferredOrientations(
+      _setOrientations(
           const [DeviceOrientation.portraitUp]);
     } else if (autoRotate) {
-      SystemChrome.setPreferredOrientations([
+      _setOrientations([
         DeviceOrientation.landscapeLeft,
         DeviceOrientation.landscapeRight,
         DeviceOrientation.portraitUp,
       ]);
     } else {
-      SystemChrome.setPreferredOrientations([
+      _setOrientations([
         DeviceOrientation.landscapeLeft,
         DeviceOrientation.landscapeRight,
       ]);
@@ -766,9 +771,60 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
   /// `resumed` (cancelled PiP) or in `onPipModeChanged` (PiP entered).
   bool _pipTransitionInFlight = false;
 
+  /// The bars' and cutout's insets even while hidden; see [StableInsets].
+  EdgeInsets _stable = EdgeInsets.zero;
+
+  Future<void> _refreshStableInsets() async {
+    final v = await StableInsets.read();
+    if (!mounted) return;
+    if (const bool.fromEnvironment('INNOCENT_LAB')) {
+      // Each side by name: a release build prints an EdgeInsets as
+      // "Instance of 'EdgeInsets'".
+      final pad = MediaQuery.maybeOf(context)?.padding ?? EdgeInsets.zero;
+      debugPrint('LAB insets stable l=${v.left} t=${v.top} r=${v.right} '
+          'b=${v.bottom} padding l=${pad.left} t=${pad.top} r=${pad.right} '
+          'b=${pad.bottom} bar=${SystemInsets.bottomBar}');
+    }
+    if (v != _stable) setState(() => _stable = v);
+  }
+
+  /// Where the controls may go — MX's geometry, measured on its
+  /// screenshots of the same phone:
+  ///  * portrait: under the status bar, above the navigation bar (reserved
+  ///    even while hidden, so Prev/Play/Next never sit under Back/Home);
+  ///  * landscape: clear of the status bar at the top and of the side nav
+  ///    bar and camera cutout at the sides. The old layout used only what
+  ///    Flutter reports, which is zero for a hidden bar, so in landscape the
+  ///    controls ran edge to edge and the bottom row kept the PORTRAIT nav
+  ///    bar's height under it.
+  EdgeInsets _controlsInsets(BuildContext context) {
+    final mq = MediaQuery.of(context);
+    if (mq.orientation == Orientation.landscape) {
+      return EdgeInsets.fromLTRB(
+        math.max(mq.padding.left, _stable.left),
+        math.max(mq.padding.top, _stable.top),
+        math.max(mq.padding.right, _stable.right),
+        math.max(mq.padding.bottom, _stable.bottom),
+      );
+    }
+    return EdgeInsets.only(
+      top: mq.padding.top,
+      bottom: math.max(math.max(mq.padding.bottom, _stable.bottom),
+          SystemInsets.bottomBar),
+    );
+  }
+
   @override
   void didChangeMetrics() {
     super.didChangeMetrics();
+    // New orientation, new insets — read now and again once the rotation
+    // has settled (the window's insets can arrive a frame after the size).
+    // ignore: discarded_futures
+    _refreshStableInsets();
+    Future<void>.delayed(const Duration(milliseconds: 400), () {
+      // ignore: discarded_futures
+      if (mounted) _refreshStableInsets();
+    });
     // Settings → Player → Controls → "Lock screen on rotation: automatically
     // lock screen when device rotates."
     //
@@ -934,6 +990,10 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     try {
       WidgetsBinding.instance.removeObserver(this);
     } catch (_) {}
+    _step('remoteFocus', () {
+      _remoteFocus.dispose();
+      _playFocus.dispose();
+    });
     _step('overlayTimer', () => _overlayTimer?.cancel());
     _step('noticeTimer', () => _noticeTimer?.cancel());
     // The final event has already gone out in deactivate(), where `ref` was
@@ -1007,11 +1067,12 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     // (removeObserver has already run, on the first line.)
     _step('systemUi', () {
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-      // The app is portrait-locked; only the player may rotate to landscape.
-      // So leaving the player must restore portrait — otherwise the whole app
-      // stays stuck in landscape after backing out of a rotated video.
-      SystemChrome.setPreferredOrientations(
-          const [DeviceOrientation.portraitUp]);
+      // On a phone the app is portrait-locked and only the player may rotate,
+      // so leaving it must restore portrait — otherwise the whole app stays
+      // stuck in landscape after backing out of a rotated video. Tablets and
+      // TVs go back to following the device (DeviceProfile).
+      // ignore: discarded_futures
+      DeviceProfile.applyAppOrientation();
     });
     // AUDIT FIX — this used to run unconditionally, including when the user
     // had just popped the video into the in-app floating window. That window
@@ -1756,8 +1817,18 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
   // this synchronously at every exit point flips orientation BEFORE
   // navigation, so the previous screen rebuilds already in portrait.
   void _lockPortraitOnExit() {
-    SystemChrome.setPreferredOrientations(
-        const [DeviceOrientation.portraitUp]);
+    // The app's own policy: portrait on a phone, the device's choice on a
+    // tablet or a TV (DeviceProfile).
+    // ignore: discarded_futures
+    DeviceProfile.applyAppOrientation();
+  }
+
+  /// Every orientation request the player makes goes through here. A TV
+  /// cannot rotate and must never be asked for portrait.
+  void _setOrientations(List<DeviceOrientation> o) {
+    if (DeviceProfile.isTv) return;
+    // ignore: discarded_futures
+    SystemChrome.setPreferredOrientations(o);
   }
 
   /// Retry, and REPLACE the address first if it can be replaced.
@@ -2233,8 +2304,105 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     return result;
   }
 
+  // ─── A TV REMOTE (and a keyboard) ──────────────────────────────────────
+  //
+  // On Android TV the only input is a D-pad: up/down/left/right, a centre
+  // "select" key and Back. Flutter moves focus between buttons with the
+  // arrows by itself, but a full-screen video with its controls hidden has no
+  // button to move between — so the player listens itself:
+  //   centre / Enter / Space → play or pause (and show the controls)
+  //   left / right           → seek 10 s back / forward
+  //   up / down              → show the controls, focus on Play/Pause
+  // While the controls are up, the arrows move between the buttons as on any
+  // screen; when they hide again, focus comes back here.
+  final FocusNode _remoteFocus = FocusNode(debugLabel: 'player-remote');
+  final FocusNode _playFocus = FocusNode(debugLabel: 'player-play');
+
+  KeyEventResult _onRemoteKey(FocusNode node, KeyEvent event) {
+    if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
+      return KeyEventResult.ignored;
+    }
+    final state = ref.read(playerControllerProvider);
+    if (state.isLocked || state.isKidsLocked) return KeyEventResult.ignored;
+    // Only when nothing inside the player has focus: a focused button or the
+    // seek bar handles its own keys (the slider seeks with left/right).
+    if (!node.hasPrimaryFocus) return KeyEventResult.ignored;
+    final controller = ref.read(playerControllerProvider.notifier);
+    final k = event.logicalKey;
+    // A panel or dialog is open (more menu, subtitles, sleep timer…): the
+    // remote is for it, not for seeking the video behind it. Step into it.
+    if (state.openPanel != SidePanel.none ||
+        state.decoderDialogOpen ||
+        state.sleepTimerDialogOpen) {
+      if (k == LogicalKeyboardKey.arrowLeft ||
+          k == LogicalKeyboardKey.arrowRight ||
+          k == LogicalKeyboardKey.arrowUp ||
+          k == LogicalKeyboardKey.arrowDown ||
+          k == LogicalKeyboardKey.select ||
+          k == LogicalKeyboardKey.enter) {
+        node.nextFocus();
+        return KeyEventResult.handled;
+      }
+      return KeyEventResult.ignored;
+    }
+    if (k == LogicalKeyboardKey.select ||
+        k == LogicalKeyboardKey.enter ||
+        k == LogicalKeyboardKey.numpadEnter ||
+        k == LogicalKeyboardKey.space ||
+        k == LogicalKeyboardKey.gameButtonA) {
+      if (event is KeyRepeatEvent) return KeyEventResult.handled;
+      // ignore: discarded_futures
+      controller.playOrPause();
+      controller.showControls();
+      return KeyEventResult.handled;
+    }
+    if (k == LogicalKeyboardKey.arrowLeft) {
+      // ignore: discarded_futures
+      controller.seekRelative(-10);
+      return KeyEventResult.handled;
+    }
+    if (k == LogicalKeyboardKey.arrowRight) {
+      // ignore: discarded_futures
+      controller.seekRelative(10);
+      return KeyEventResult.handled;
+    }
+    if (k == LogicalKeyboardKey.arrowUp || k == LogicalKeyboardKey.arrowDown) {
+      controller.showControls();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _playFocus.canRequestFocus) _playFocus.requestFocus();
+      });
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Controls hidden → focus back on the player itself, so the remote's
+    // keys reach [_onRemoteKey] instead of a button nobody can see.
+    ref.listen<bool>(
+        playerControllerProvider.select((s) => s.controlsVisible), (_, v) {
+      if (v || !mounted || _remoteFocus.hasPrimaryFocus) return;
+      // Never out of a panel or a dialog — one may hold a text field the
+      // viewer is typing in.
+      final st = ref.read(playerControllerProvider);
+      if (st.openPanel != SidePanel.none ||
+          st.decoderDialogOpen ||
+          st.sleepTimerDialogOpen ||
+          st.resumeDialogOpen) {
+        return;
+      }
+      _remoteFocus.requestFocus();
+    });
+    return Focus(
+      focusNode: _remoteFocus,
+      autofocus: true,
+      onKeyEvent: _onRemoteKey,
+      child: _buildPage(context),
+    );
+  }
+
+  Widget _buildPage(BuildContext context) {
     final svc = ref.watch(videoPlayerServiceProvider);
     final state = ref.watch(playerControllerProvider);
     final controller = ref.read(playerControllerProvider.notifier);
@@ -2283,13 +2451,13 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
       if (prevAutoRot != nextAutoRot) {
         final legacyAutoRot = ref.read(preferencesProvider).autoRotate;
         if (legacyAutoRot && nextAutoRot) {
-          SystemChrome.setPreferredOrientations([
+          _setOrientations([
             DeviceOrientation.landscapeLeft,
             DeviceOrientation.landscapeRight,
             DeviceOrientation.portraitUp,
           ]);
         } else {
-          SystemChrome.setPreferredOrientations([
+          _setOrientations([
             DeviceOrientation.landscapeLeft,
             DeviceOrientation.landscapeRight,
           ]);
@@ -2367,12 +2535,17 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                                 fit: state.aspectRatioMode.boxFit),
                             state,
                           )
-                        : Transform.scale(
-                            scale: state.videoScale,
-                            child: _wrapVideoTransforms(
-                              svc.buildVideoWidget(
-                                  fit: state.aspectRatioMode.boxFit),
-                              state,
+                        // Zoomed: scaled about the centre, then moved by
+                        // the two-finger pan (zero unless zoomed in).
+                        : Transform.translate(
+                            offset: state.videoOffset,
+                            child: Transform.scale(
+                              scale: state.videoScale,
+                              child: _wrapVideoTransforms(
+                                svc.buildVideoWidget(
+                                    fit: state.aspectRatioMode.boxFit),
+                                state,
+                              ),
                             ),
                           ))
                     : (svc.isInitialized
@@ -2506,6 +2679,28 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                 onLongPressMoveGlobal: controller.onLongPressDragSpeed,
                 onPinchUpdate: controller.onPinchUpdate,
                 onPinchEnd: controller.onPinchEnd,
+                // docs/player_gestures.md — MX's other gestures.
+                onDoubleTapStacked: (forward, count) => controller
+                    .onDoubleTapStacked(forward: forward, count: count),
+                onPan: controller.onPanDelta,
+                onSpeedStart: controller.onSpeedGestureStart,
+                onSpeedSteps: controller.onSpeedGestureSteps,
+                onSpeedEnd: controller.onSpeedGestureEnd,
+                onSubtitleMove: controller.onSubtitleMoveDelta,
+                onSubtitleScale: controller.onSubtitleScaleDelta,
+                onSubtitleStep: controller.onSubtitleStep,
+                onSubtitleEnd: controller.onSubtitleGestureEnd,
+                subtitleBand: _subtitleBand,
+                duration: state.duration,
+                panEnabled: ref
+                    .watch(playerSettingsProvider)
+                    .get(PlayerSetting.ctlZoomPan),
+                twoFingerSpeedEnabled: ref
+                    .watch(playerSettingsProvider)
+                    .get(PlayerSetting.ctlTwoFingerSpeed),
+                subtitleGesturesEnabled: ref
+                    .watch(playerSettingsProvider)
+                    .get(PlayerSetting.ctlSubtitleGestures),
                 // Phase 45: respect the user's per-gesture toggles from
                 // Settings → Controls. Each gate is independent so the
                 // user can, e.g., keep brightness swipe but disable
@@ -2547,6 +2742,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                 left: 0,
                 right: 0,
                 child: _TopBar(
+                insets: _controlsInsets(context),
                 title: widget.title,
                 decoderLabel: state.decoder.label,
                 sleepTimerRemaining: state.sleepTimer.remaining,
@@ -2560,7 +2756,6 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                 onDecoder: controller.openDecoderDialog,
                 onMore: controller.openMoreMenu,
                 // Phase 45 (audit): PiP icon is in the TOP bar (MX V3 parity).
-                onEnterPip: () => _enterPip(context),
                 onQuality: () => _showQualitySheet(context),
                 activeUri:
                     ref.read(playerControllerProvider.notifier).activeUri,
@@ -2614,11 +2809,12 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
               !state.sleepTimerDialogOpen &&
               visibleShortcutList.isNotEmpty)
             Positioned(
-              left: 0,
-              right: 0,
+              // Landscape: clear of the cutout and side nav bar, as MX is.
+              left: _controlsInsets(context).left,
+              right: _controlsInsets(context).right,
               // MX, both orientations: the row's centre sits 59 dp below the
               // back arrow's (top bar 56 high, row 56 high).
-              top: MediaQuery.of(context).padding.top + 59,
+              top: _controlsInsets(context).top + 59,
               child: Listener(
                 // MX Player parity: any touch on the shortcut strip —
                 // scrolling through the icons to find one, or a slow
@@ -2668,6 +2864,9 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
               left: 0,
               right: 0,
               child: _BottomControls(
+                insets: _controlsInsets(context),
+                onEnterPip: () => _enterPip(context),
+                playFocus: _playFocus,
                 position: state.position,
                 duration: state.duration,
                 isPlaying: state.isPlaying,
@@ -2796,6 +2995,10 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
             ),
 
           // === LAYER 9: Gesture indicator ===
+          if (state.doubleTapRipple != null)
+            Positioned.fill(
+              child: DoubleTapRippleView(ripple: state.doubleTapRipple!),
+            ),
           if (state.activeIndicator != null)
             _buildIndicator(state.activeIndicator!),
 
@@ -3185,11 +3388,49 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
           delta: indicator.delta!,
           targetPosition: indicator.target!,
         );
+      case IndicatorType.speed:
+        final v = indicator.value!;
+        return GestureValueText(
+          value: '${v.toStringAsFixed(v == v.roundToDouble() ? 1 : 2)}x',
+          caption: AppStrings.of(context).scSpeed,
+        );
+      case IndicatorType.subtitleSize:
+        return GestureValueText(
+          value: '${(indicator.value! * 100).round()}%',
+          caption: AppStrings.of(context).gtSubtitle,
+        );
+      case IndicatorType.subtitlePosition:
+        return GestureValueText(
+          value: '${indicator.value!.round()}%',
+          caption: AppStrings.of(context).gtSubtitle,
+        );
     }
+  }
+
+  /// Where the subtitle on screen is, for the subtitle gestures; null when
+  /// none is showing (docs/player_gestures.md).
+  Rect? _subtitleBand(Size size) {
+    final svc = ref.read(videoPlayerServiceProvider);
+    if (svc is! MediaKitPlayerService) return null;
+    final text = svc.subtitleText;
+    if (text.isEmpty) return null;
+    final lines =
+        text.fold<int>(0, (n, t) => n + '\n'.allMatches(t).length + 1);
+    final ex = ref.read(extraSettingsProvider);
+    return subtitleBandFor(
+      player: size,
+      video: svc.videoSize,
+      fit: ref.read(playerControllerProvider).aspectRatioMode.boxFit,
+      positionPct: ex.getInt(IntSetting.subtitleVerticalPos),
+      scale: ex.getInt(IntSetting.subtitleScale) / 100.0,
+      lines: lines,
+    );
   }
 }
 
 class _TopBar extends StatelessWidget {
+  /// Where the controls may go (see `_controlsInsets`).
+  final EdgeInsets insets;
   final String title;
   final String decoderLabel;
   final Duration? sleepTimerRemaining;
@@ -3198,9 +3439,6 @@ class _TopBar extends StatelessWidget {
   final VoidCallback onSubtitle;
   final VoidCallback onDecoder;
   final VoidCallback onMore;
-  /// Phase 45 (audit): MX Player V3 puts the PiP-enter icon in the TOP
-  /// bar alongside HW/HW+ and ⋮, not in the bottom row. We now match.
-  final VoidCallback onEnterPip;
 
   /// The Quality menu. Drawn only while [StreamRenewal.quality] has a menu
   /// for what is playing — a catalogue film with streaming copies.
@@ -3226,6 +3464,7 @@ class _TopBar extends StatelessWidget {
   final String? sourceLabel;
 
   const _TopBar({
+    required this.insets,
     required this.title,
     required this.decoderLabel,
     required this.sleepTimerRemaining,
@@ -3234,7 +3473,6 @@ class _TopBar extends StatelessWidget {
     required this.onSubtitle,
     required this.onDecoder,
     required this.onMore,
-    required this.onEnterPip,
     this.onQuality,
     this.activeUri,
     required this.fmtTimer,
@@ -3266,7 +3504,13 @@ class _TopBar extends StatelessWidget {
     final isLandscape =
         MediaQuery.of(context).orientation == Orientation.landscape;
     return Container(
-      padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
+      // Landscape keeps the back arrow and the menu clear of the status bar,
+      // the side nav bar and the camera cutout, as MX does.
+      padding: EdgeInsets.only(
+        top: insets.top,
+        left: insets.left,
+        right: insets.right,
+      ),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
@@ -3366,21 +3610,9 @@ class _TopBar extends StatelessWidget {
             // Phase 28: Audio + subtitle icons ALWAYS in title bar (was landscape-only).
             // Phase 44: small accent dot when there's more than one track,
             // so the user can tell a file has selectable audio/subtitle.
-            // Phase 45 (audit): PiP icon BEFORE audio/subtitle to match
-            // MX Player V3 layout. The PiP icon is always visible
-            // (both orientations), unlike audio/subtitle which are
-            // landscape-only.
-            IconButton(
-              icon: const Icon(
-                Icons.picture_in_picture_alt_outlined,
-                color: Colors.white,
-                size: 20,
-              ),
-              tooltip: 'Picture-in-Picture',
-              onPressed: onEnterPip,
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-            ),
+            // PiP is NOT up here: in the owner's MX (2026-10 screenshots,
+            // both orientations) the top bar is ← title … ♪ CC HW ⋮ and the
+            // PiP button is the last one on the bottom row. It moved there.
             // Phase 45 (audit): Audio + subtitle icons LANDSCAPE ONLY.
             // MX Player hides them in portrait — they're reachable via
             // the More menu instead. This matches frame 20 (180939) which
@@ -3498,6 +3730,14 @@ String _stripExtension(String title) {
 const bool _kShowFrameStepButtons = false;
 
 class _BottomControls extends ConsumerStatefulWidget {
+  /// Where the controls may go (see `_controlsInsets`).
+  final EdgeInsets insets;
+
+  /// Picture-in-picture — the last button on the row, as in MX.
+  final VoidCallback onEnterPip;
+
+  /// Play/Pause, which a TV remote lands on when the controls come up.
+  final FocusNode? playFocus;
   final Duration position;
   final Duration duration;
   final bool isPlaying;
@@ -3553,6 +3793,9 @@ class _BottomControls extends ConsumerStatefulWidget {
   final VoidCallback? onScrubEnd;
 
   const _BottomControls({
+    required this.insets,
+    required this.onEnterPip,
+    this.playFocus,
     required this.position,
     required this.duration,
     required this.isPlaying,
@@ -3704,15 +3947,22 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
                 (widget.duration.inMilliseconds * _dragValue!).round())
         : livePosition;
 
+    final landscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
     return Container(
-      // Reserve the real nav-bar height even in immersive mode (where
-      // MediaQuery.padding.bottom collapses to 0), so the Prev/Play/Next row
-      // never ends up under the system Back/Home/Recent bar when it slides in.
+      // MX GEOMETRY, measured on its screenshots taken on the owner's phone
+      // (1080x2316, 2.625 dpi, 3-button navigation: a 51.4 dp bar) — each
+      // row's centre above the edge of the space the controls may use:
+      //   portrait : buttons 19.4 dp, seek bar 62.5 dp above the nav bar
+      //   landscape: buttons 24 dp,   seek bar 67 dp above the screen edge
+      //              (the nav bar sits at the side there)
+      // This used to reserve the PORTRAIT nav bar in both orientations and
+      // pad the button row 8 dp above and below: 12 dp too high in portrait,
+      // ~58 dp too high in landscape (owner's screenshots, 2026-10-04).
       padding: EdgeInsets.only(
-        bottom: math.max(
-          MediaQuery.of(context).padding.bottom,
-          SystemInsets.bottomBar,
-        ),
+        bottom: widget.insets.bottom + (landscape ? 4 : 0),
+        left: widget.insets.left,
+        right: widget.insets.right,
       ),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -3775,13 +4025,17 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
           // the elapsed and remaining labels with it: they are the seek bar's
           // readout, and leaving two bare timestamps floating above the
           // transport row is not what "hide the seek bar" means.
+          // MX (portrait, measured): each time label starts 18.7 dp in from
+          // the screen edge and the bar's ends sit 79.6 dp in — the labels
+          // used to hug the edges (4 dp) and the bar ran 20 dp longer.
+          // 18 + 56 + the thumb's 5.5 dp inset = 79.5.
           if (widget.showSeekBar)
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 18),
             child: Row(
               children: [
                 SizedBox(
-                  width: 50,
+                  width: 56,
                   child: Text(
                     widget.formatDuration(displayPosition),
                     style: const TextStyle(
@@ -3801,10 +4055,15 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
                       thumbShape: const RoundSliderThumbShape(
                         enabledThumbRadius: 5.5,
                       ),
-                      // Drop the invisible touch-overlay padding so the track
-                      // extends right up to the time labels — they sit snug
-                      // against the seek bar like MX Player.
-                      overlayShape: SliderComponentShape.noOverlay,
+                      // TOUCH BAND. With no overlay at all the slider was
+                      // only as tall as its thumb (11 dp), so a finger had
+                      // to land exactly on the line — the owner's complaint,
+                      // set against MX, which takes a touch anywhere in a
+                      // band roughly 44 dp tall over the bar. This overlay
+                      // paints nothing; it is only tall. Its width stays
+                      // the thumb's, so the track still runs right up to the
+                      // time labels.
+                      overlayShape: const SeekBandShape(),
                     ),
                     child: Slider(
                       value: progress.clamp(0.0, 1.0),
@@ -3837,7 +4096,7 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
                   ),
                 ),
                 SizedBox(
-                  width: 50,
+                  width: 56,
                   child: Text(
                     // MX Player parity: right side shows negative remaining time
                     // e.g. "-1:29:22" rather than total duration
@@ -3855,9 +4114,23 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
               ],
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Stack(
+          if (landscape) const SizedBox(height: 1),
+          // MX (portrait, measured): lock centred 28 dp from the left edge,
+          // fill-screen 37.7 dp from the right, aspect 56.8 dp left of that.
+          // The row is laid out 40 dp tall (MX's geometry above), but its
+          // buttons are 48 dp, and Play's 38 dp icon with default padding
+          // 54: squeezed into 40 each one was pushed DOWN by half its excess
+          // — Prev/Next 4 dp, Play 7 dp, so Play sat 3 dp below its
+          // neighbours and the row 4 dp below MX's line (measured on the
+          // emulator, run 37216341225). Drawn at full size about the row's
+          // centre line instead.
+          Container(
+            height: 40,
+            padding: const EdgeInsets.only(left: 4, right: 14),
+            child: OverflowBox(
+              minHeight: 48,
+              maxHeight: 48,
+              child: Stack(
               alignment: Alignment.center,
               children: [
                 // Primary transport — prev / play / next — pinned to the
@@ -3888,12 +4161,15 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
                     ],
                     // Phase 16: Plain play/pause icons (NO white filled circle).
                     IconButton(
+                      focusNode: widget.playFocus,
                       tooltip: widget.isPlaying ? 'Pause' : 'Play',
                       icon: Icon(
                         widget.isPlaying ? Icons.pause : Icons.play_arrow,
                         color: Colors.white,
                       ),
                       iconSize: 38,
+                      // 38 + 2 × 5 = 48, the row's height: centred, not pushed.
+                      padding: const EdgeInsets.all(5),
                       onPressed: widget.onPlayPause,
                     ),
                     // v1.63.2: hidden — see [_kShowFrameStepButtons].
@@ -3942,18 +4218,24 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
                         onPressed: widget.onCycleAspectRatio,
                         tooltip: widget.aspectRatioMode.label,
                       ),
+                      const SizedBox(width: 9),
+                      // MX's row ends aspect ratio, picture-in-picture.
+                      // The fit/zoom toggle that sat here duplicated the
+                      // aspect button (its cycle includes Zoom); pinch zoom
+                      // is unchanged.
                       IconButton(
                         icon: const Icon(
-                          Icons.fit_screen_outlined,
+                          Icons.picture_in_picture_alt_outlined,
                           color: Colors.white,
                         ),
-                        tooltip: 'Fill screen',
-                        onPressed: widget.onToggleFullscreenFill,
+                        tooltip: 'Picture-in-Picture',
+                        onPressed: widget.onEnterPip,
                       ),
                     ],
                   ),
                 ),
               ],
+            ),
             ),
           ),
         ],
@@ -4006,4 +4288,36 @@ class _IconWithDot extends StatelessWidget {
       ],
     );
   }
+}
+
+
+/// The seek bar's touch band: an overlay that draws nothing and is 44 dp
+/// tall, which is what makes the slider itself 44 dp tall — Flutter's slider
+/// takes its height from the tallest of its parts. Its width is the thumb's
+/// so the track's ends do not move. See the comment where it is used.
+class SeekBandShape extends SliderComponentShape {
+  const SeekBandShape({this.height = 44, this.width = 11});
+
+  final double height;
+  final double width;
+
+  @override
+  Size getPreferredSize(bool isEnabled, bool isDiscrete) =>
+      Size(width, height);
+
+  @override
+  void paint(
+    PaintingContext context,
+    Offset center, {
+    required Animation<double> activationAnimation,
+    required Animation<double> enableAnimation,
+    required bool isDiscrete,
+    required TextPainter labelPainter,
+    required RenderBox parentBox,
+    required SliderThemeData sliderTheme,
+    required TextDirection textDirection,
+    required double value,
+    required double textScaleFactor,
+    required Size sizeWithOverflow,
+  }) {}
 }

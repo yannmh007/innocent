@@ -1,3 +1,9 @@
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
+
 /// Remembers the device's real system-bar insets captured while the bars are
 /// actually visible.
 ///
@@ -21,5 +27,35 @@ class SystemInsets {
   /// immersive frame reporting 0 doesn't wipe the real value.
   static void observeBottom(double inset) {
     if (inset > bottomBar) bottomBar = inset;
+  }
+}
+
+/// The system bars' and the camera cutout's insets for the current
+/// orientation, read from Android even while the immersive player hides the
+/// bars (`getInsetsIgnoringVisibility`). Flutter reports a hidden bar as
+/// zero, which is why the player's controls used to run edge to edge in
+/// landscape — under the camera hole and where the side nav bar appears —
+/// while MX keeps them inside these insets.
+class StableInsets {
+  StableInsets._();
+
+  static const MethodChannel _channel = MethodChannel('mx_clone/pip');
+
+  /// Zero when unknown (not Android, an old OS, an error): the layout then
+  /// falls back to what Flutter reports, which is what it always used.
+  static Future<EdgeInsets> read() async {
+    if (kIsWeb || !Platform.isAndroid) return EdgeInsets.zero;
+    try {
+      final m = await _channel.invokeMapMethod<String, dynamic>('stableInsets');
+      if (m == null) return EdgeInsets.zero;
+      double v(String k) {
+        final x = m[k];
+        return x is num && x.isFinite && x >= 0 && x < 200 ? x.toDouble() : 0;
+      }
+
+      return EdgeInsets.fromLTRB(v('left'), v('top'), v('right'), v('bottom'));
+    } catch (_) {
+      return EdgeInsets.zero;
+    }
   }
 }

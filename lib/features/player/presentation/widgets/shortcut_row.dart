@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/ui/tv_focus.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../player_provider.dart';
 import '../shortcut_item.dart';
+import '../../../../core/localization/app_strings.dart';
 
 /// Phase 15: MX Player parity for shortcut row.
 ///
@@ -149,9 +151,8 @@ class _ShortcutButton extends StatelessWidget {
 
     final iconBox = _buildIconBox(isSpeedShortcut, showRedDot);
 
-    return GestureDetector(
+    return RemoteTappable(
       onTap: onTap,
-      behavior: HitTestBehavior.opaque,
       child: SizedBox(
         width: _slot,
         child: Column(
@@ -166,29 +167,20 @@ class _ShortcutButton extends StatelessWidget {
             if (showLabel) ...[
               const SizedBox(height: 6),
               // MX: one line at 11 sp ("Sleep Timer", "A - B Repeat"),
-              // allowed a little wider than the slot, wrapping only when
-              // it still does not fit ("Customise / Items").
+              // wrapping only when it still does not fit ("Customise /
+              // Items"). Two long neighbours used to be allowed 7 dp into
+              // each other's slot and ran together ("Sleep TimerA - B
+              // Repeat", seen on TV and tablet renders), so a label keeps
+              // to its own slot less a 4 dp gap: a little too long and it
+              // is set a touch smaller (down to 10 sp), longer than that
+              // and it wraps.
               SizedBox(
                 height: 28,
-                child: OverflowBox(
-                  maxWidth: _slot + 14,
-                  alignment: Alignment.topCenter,
-                  child: Text(
-                    // Phase 45 (audit): the Speed shortcut already shows
-                    // its value ("1X"/"1.5X"/"2X") as the icon text itself;
-                    // the label under it just says "Speed".
-                    isSpeedShortcut
-                        ? 'Speed'
-                        : item.label.replaceAll('\n', ' '),
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 11,
-                      height: 1.15,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                child: _ShortcutLabel(
+                  // Phase 45 (audit): the Speed shortcut already shows
+                  // its value ("1X"/"1.5X"/"2X") as the icon text itself;
+                  // the label under it just says "Speed".
+                  item.labelIn(AppStrings.of(context)),
                 ),
               ),
             ],
@@ -351,9 +343,8 @@ class _ExpandButton extends StatelessWidget {
 
     // MX: the chevron gets a SMALL circle in landscape (about 28 dp), none
     // in portrait — it is a way on, not one of the shortcuts.
-    return GestureDetector(
+    return RemoteTappable(
       onTap: onTap,
-      behavior: HitTestBehavior.opaque,
       child: SizedBox(
         width: _slot,
         child: Column(
@@ -379,6 +370,73 @@ class _ExpandButton extends StatelessWidget {
               const SizedBox(height: 6 + 28),
             ],
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A shortcut's label under its circle: see the note where it is used.
+class _ShortcutLabel extends StatelessWidget {
+  const _ShortcutLabel(this.text);
+
+  final String text;
+
+  static const double _base = 11;
+  static const double _min = 10;
+
+  @override
+  Widget build(BuildContext context) {
+    const room = _slot - 4;
+    final scaler = MediaQuery.textScalerOf(context);
+    final style = DefaultTextStyle.of(context).style.merge(const TextStyle(
+      color: Colors.white,
+      fontSize: _base,
+      height: 1.15,
+    ));
+    // Measured in the font the label is drawn in.
+    double widthOf(String t) {
+      final painter = TextPainter(
+        text: TextSpan(text: t, style: style),
+        textDirection: Directionality.of(context),
+        textScaler: scaler,
+        maxLines: 1,
+      )..layout();
+      final w = painter.width;
+      painter.dispose();
+      return w;
+    }
+
+    // A text set to fill its box exactly can still come out a hair wider
+    // and be cut off, so it is fitted 1 dp inside.
+    const fit = room - 1;
+    final width = widthOf(text);
+    var size = _base;
+    var lines = 1;
+    if (width > fit) {
+      if (width * _min / _base <= fit) {
+        size = _base * fit / width;
+      } else {
+        // Two lines, and never a word broken in half ("Backgroun / d").
+        lines = 2;
+        final longest = text
+            .split(' ')
+            .map(widthOf)
+            .fold<double>(0, (a, b) => a > b ? a : b);
+        if (longest > fit) size = _base * fit / longest;
+      }
+    }
+    return Align(
+      alignment: Alignment.topCenter,
+      child: SizedBox(
+        width: room,
+        child: Text(
+          text,
+          textAlign: TextAlign.center,
+          softWrap: lines > 1,
+          style: style.copyWith(fontSize: size),
+          maxLines: lines,
+          overflow: TextOverflow.ellipsis,
         ),
       ),
     );

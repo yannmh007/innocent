@@ -1,7 +1,10 @@
 import 'dart:io';
+import 'dart:math' as math;
+import '../../../core/ui/tv_focus.dart';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/di/preferences_provider.dart';
@@ -421,9 +424,8 @@ class VideoGridTile extends ConsumerWidget {
                 // right edge, at the title baseline. Wired to the same
                 // VideoOptionMenu the list view uses.
                 if (onMoreTap != null)
-                  GestureDetector(
+                  RemoteTappable(
                     onTap: onMoreTap,
-                    behavior: HitTestBehavior.opaque,
                     child: const Padding(
                       padding: EdgeInsets.only(left: 4, top: 1),
                       child: Icon(
@@ -509,4 +511,58 @@ class _VideoGridThumbState extends State<_VideoGridThumb> {
       ),
     );
   }
+}
+
+/// The grid [VideoGridTile]s sit in: as many columns as fit at
+/// [maxCrossAxisExtent], each tile MX's 1.15 : 1 — or taller, when a 16:9
+/// thumbnail, the 9 dp gap and one title line in the viewer's font size need
+/// more. A fixed ratio ignored the font: at Android's largest size the title
+/// ran 8–12 dp out of the bottom of every tile.
+class VideoGridDelegate extends SliverGridDelegate {
+  const VideoGridDelegate({
+    required this.textScaler,
+    this.maxCrossAxisExtent = 200,
+    this.crossAxisSpacing = 21,
+    this.mainAxisSpacing = 0,
+  });
+
+  final TextScaler textScaler;
+  final double maxCrossAxisExtent;
+  final double crossAxisSpacing;
+  final double mainAxisSpacing;
+
+  /// A tile [width] wide: the taller of MX's ratio and what its content needs.
+  double tileHeight(double width) => math.max(
+        width / 1.15,
+        // A Burmese line is taller than a Latin one: 1.5 of the font size.
+        width * 9 / 16 + 9 + textScaler.scale(14) * 1.5 + 4,
+      );
+
+  @override
+  SliverGridLayout getLayout(SliverConstraints constraints) {
+    // The column count exactly as SliverGridDelegateWithMaxCrossAxisExtent.
+    final count = math.max(
+        1,
+        (constraints.crossAxisExtent / (maxCrossAxisExtent + crossAxisSpacing))
+            .ceil());
+    final usable = math.max(
+        0.0, constraints.crossAxisExtent - crossAxisSpacing * (count - 1));
+    final width = usable / count;
+    final height = tileHeight(width);
+    return SliverGridRegularTileLayout(
+      crossAxisCount: count,
+      mainAxisStride: height + mainAxisSpacing,
+      crossAxisStride: width + crossAxisSpacing,
+      childMainAxisExtent: height,
+      childCrossAxisExtent: width,
+      reverseCrossAxis: axisDirectionIsReversed(constraints.crossAxisDirection),
+    );
+  }
+
+  @override
+  bool shouldRelayout(VideoGridDelegate oldDelegate) =>
+      oldDelegate.textScaler != textScaler ||
+      oldDelegate.maxCrossAxisExtent != maxCrossAxisExtent ||
+      oldDelegate.crossAxisSpacing != crossAxisSpacing ||
+      oldDelegate.mainAxisSpacing != mainAxisSpacing;
 }

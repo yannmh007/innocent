@@ -6,6 +6,7 @@ import '../../../core/localization/app_strings.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/services/downloader/downloader_engine_service.dart';
 import '../../../core/services/file_transfer/file_receiver_service.dart';
+import '../../../core/services/video_player/video_surface_policy.dart';
 import '../../downloader/presentation/downloader_providers.dart';
 import '../../music/presentation/music_providers.dart';
 import '../data/update_check_service.dart';
@@ -78,6 +79,9 @@ class UpdatePrompt {
     // Recording later, or only on some branches, is exactly how this ended up
     // fetching on every resume the first time.
     await store.recordChecked(now);
+    if (release != null) {
+      await VideoSurfacePolicy.storeRemoteFlags(release.playerFlags);
+    }
 
     // STEP 7, AND IT COMES FIRST. `min_supported` is the only thing that can
     // refuse to let someone keep using the app, so it is asked before any

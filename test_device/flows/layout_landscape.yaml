@@ -1,0 +1,12 @@
+# Same player, landscape (run.sh turns the screen before this flow).
+appId: com.innocent.media
+---
+- extendedWaitUntil:
+    visible: "__nothing_has_this_text__"
+    timeout: 5000
+    optional: true
+- tapOn:
+    point: "50%,50%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: 61_player_landscape

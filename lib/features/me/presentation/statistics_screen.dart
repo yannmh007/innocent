@@ -233,9 +233,14 @@ class _StatGrid extends StatelessWidget {
       child: GridView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
-          childAspectRatio: 2.4,
+          // A fixed height, not an aspect ratio: 2.4:1 was 60 dp tall on a
+          // 320 dp phone — too short for a value and a Burmese label — and
+          // grew to 130 dp tiles on a tablet. It grows with the system font
+          // size: 68 dp was 8 dp short at 130 %.
+          mainAxisExtent:
+              68 + MediaQuery.textScalerOf(context).scale(35) - 35,
           mainAxisSpacing: 8,
           crossAxisSpacing: 8,
         ),
@@ -276,6 +281,8 @@ class _StatGrid extends StatelessWidget {
                           color: AppColors.darkOnSurfaceMuted,
                           fontSize: 11,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),

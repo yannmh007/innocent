@@ -13,6 +13,7 @@ import '../library_provider.dart';
 import '../../../../core/ui/safe_thumbnail.dart';
 
 import '../../../../core/localization/app_strings.dart';
+import '../../../../core/ui/tv_focus.dart';
 /// Horizontal "Continue Watching" carousel — partial-watch videos.
 /// Shown at top of Local tab when there's at least 1 in-progress entry.
 class ContinueWatchingSection extends ConsumerWidget {
@@ -177,7 +178,7 @@ class _ContinueCardState extends State<_ContinueCard> {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return RemoteTappable(
       onTap: widget.onTap,
       // Phase 45 (audit): long-press a Continue-Watching card → small
       // dialog to remove it from the list. MX Player's UX. We use a
@@ -217,7 +218,6 @@ class _ContinueCardState extends State<_ContinueCard> {
                 widget.onRemove!();
               }
             },
-      behavior: HitTestBehavior.opaque,
       child: SizedBox(
         width: 144,
         child: Column(

@@ -28,6 +28,7 @@ import 'media_manager_screen.dart';
 import 'statistics_screen.dart';
 import 'status_saver_screen.dart';
 import '../../transfer/presentation/transfer_screen.dart';
+import '../../../core/ui/tablet_constrained_width.dart';
 
 /// Phase 19: Me tab — full MX Player parity.
 ///
@@ -100,7 +101,11 @@ class MeScreen extends StatelessWidget {
       backgroundColor: AppColors.darkBackground,
       body: Stack(
         children: [
-          SafeArea(
+          // A phone-width column on a tablet or TV (as the Video tab): a
+          // list of settings 1200 dp wide read like a spreadsheet.
+          TabletConstrainedWidth(
+            maxWidth: 840,
+            child: SafeArea(
         child: ListView(
           // MX PLAYER'S "ME", measured from its screenshots (2026-10-04, a
           // 411 dp phone): cards 16 dp from the edges with a 6 dp corner, a
@@ -136,12 +141,13 @@ class MeScreen extends StatelessWidget {
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: grid.length,
-                  gridDelegate:
-                      const SliverGridDelegateWithFixedCrossAxisCount(
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 3,
                     mainAxisSpacing: 8,
                     crossAxisSpacing: 8,
-                    mainAxisExtent: 64,
+                    // The label's line grows with the system font size.
+                    mainAxisExtent:
+                        64 + MediaQuery.textScalerOf(context).scale(20) - 20,
                   ),
                   itemBuilder: (context, i) => _GridItem(grid[i]),
                 ),
@@ -328,6 +334,7 @@ class MeScreen extends StatelessWidget {
           ],
         ),
       ),
+          ),
         ],
       ),
     );

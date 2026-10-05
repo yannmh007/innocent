@@ -13,6 +13,7 @@ import 'music_queue_sheet.dart';
 import 'playlist_detail_screen.dart';
 import 'song_context_menu.dart';
 import '../../../core/utils/async_value_extensions.dart';
+import '../../../core/ui/tablet_constrained_width.dart';
 
 /// Music tab — Tracks / Playlists / Albums / Artists / Folders
 /// Matches MX Player UI (PDF page 5)
@@ -169,7 +170,10 @@ class _MusicScreenState extends ConsumerState<MusicScreen>
           Column(
             children: [
               Expanded(
-                child: TabBarView(
+                // A phone-width column on a tablet or TV, as the Video tab.
+                child: TabletConstrainedWidth(
+                  maxWidth: 840,
+                  child: TabBarView(
                   controller: _tabController,
                   children: [
                     _TracksTab(searchQuery: _searchController.text),
@@ -178,6 +182,7 @@ class _MusicScreenState extends ConsumerState<MusicScreen>
                     const _ArtistsTab(),
                     const _FoldersTab(),
                   ],
+                ),
                 ),
               ),
               // ─── MINI PLAYER BAR ───
@@ -275,7 +280,11 @@ class _TracksTabState extends ConsumerState<_TracksTab> {
                 ),
               ),
               const SizedBox(width: 8),
-              InkWell(
+              // May shrink to half the row (the search box keeps the other
+              // half): a long label in a large font cuts short rather than
+              // pushing the sort button off the screen.
+              Flexible(
+                child: InkWell(
                 borderRadius: BorderRadius.circular(8),
                 onTap: () {
                   final list = songsAsync.value ?? const [];
@@ -305,20 +314,26 @@ class _TracksTabState extends ConsumerState<_TracksTab> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       const Icon(Icons.shuffle,
                           size: 16,
                           color: AppColors.white70),
                       const SizedBox(width: 6),
-                      Text(AppStrings.of(context).shuffleAll,
-                        style: const TextStyle(
-                          color: AppColors.white70,
-                          fontSize: 13,
+                      Flexible(
+                        child: Text(AppStrings.of(context).shuffleAll,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: AppColors.white70,
+                            fontSize: 13,
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
+              ),
               ),
               const SizedBox(width: 8),
               // Phase 45 (audit): Sort icon was just visual. Wire it

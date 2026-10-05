@@ -48,8 +48,18 @@ class FeaturedHero extends StatelessWidget {
     final s = AppStrings.of(context);
     // audit_video_hub.md M5.
     final shownTitle = content.displayTitle(s.locale.languageCode);
-    final width = MediaQuery.of(context).size.width;
-    final height = (width / _aspect).clamp(0.0, _maxHeight);
+    final screen = MediaQuery.sizeOf(context);
+    final width = screen.width;
+    // On a screen wider than tall (TV, tablet held sideways) the hero would
+    // be most of the page — 460 of a TV's 540 dp — so there it takes at most
+    // 62 % of the height and leaves the first row in view.
+    final cap = screen.width > screen.height
+        ? (screen.height * 0.62).clamp(0.0, _maxHeight).toDouble()
+        : _maxHeight;
+    final height = (width / _aspect).clamp(0.0, cap);
+    // Title, details and buttons keep to a column a reader's eye can take
+    // in: on a TV the two buttons were 480 dp apiece.
+    final textWidth = (width - 2 * VH.gutter).clamp(0.0, 520.0).toDouble();
 
     final meta = <String>[
       if (content.year != null) '${content.year}',
@@ -85,7 +95,7 @@ class FeaturedHero extends StatelessWidget {
 
           Positioned(
             left: VH.gutter,
-            right: VH.gutter,
+            width: textWidth,
             bottom: VH.s4,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -217,7 +227,10 @@ class _HeroButton extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(VH.rControl),
       child: Container(
-        height: 44,
+        // At least 44 dp; taller when the system font is (a fixed height
+        // cut the label at 200 %).
+        constraints: const BoxConstraints(minHeight: 44),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         alignment: Alignment.center,
         decoration: BoxDecoration(
           // The primary action is the ONLY solid-white surface on the page.
@@ -233,12 +246,16 @@ class _HeroButton extends StatelessWidget {
           children: <Widget>[
             Icon(icon, size: primary ? 22 : 18, color: fg),
             const SizedBox(width: 6),
-            Text(
-              label,
-              style: VH.label.copyWith(
-                color: fg,
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: VH.label.copyWith(
+                  color: fg,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
           ],

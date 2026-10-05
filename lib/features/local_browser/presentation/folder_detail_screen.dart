@@ -189,12 +189,10 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen> {
               // innocent_videos_grid_spec: 16 dp margins, 18 dp gutter,
               // 16:9 thumbs → 2 columns at 360 dp, more on larger screens.
               padding: const EdgeInsets.fromLTRB(18, 8, 18, 8),
-              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                maxCrossAxisExtent: 200,
-                mainAxisSpacing: 0,
-                // MX: 177 dp tiles, 21 dp apart, 153 dp row pitch.
-                crossAxisSpacing: 21,
-                childAspectRatio: 1.15,
+              // MX: 177 dp tiles, 21 dp apart, 153 dp row pitch; taller only
+              // when the title's font size needs it.
+              gridDelegate: VideoGridDelegate(
+                textScaler: MediaQuery.textScalerOf(context),
               ),
               itemCount: videos.length,
               itemBuilder: (_, i) {

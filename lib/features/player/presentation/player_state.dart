@@ -1,6 +1,14 @@
 part of 'player_provider.dart';
 
-enum IndicatorType { brightness, volume, seek }
+enum IndicatorType {
+  brightness,
+  volume,
+  seek,
+  // docs/player_gestures.md: two-finger speed, subtitle pinch / drag.
+  speed,
+  subtitleSize,
+  subtitlePosition,
+}
 enum SidePanel { none, more, subtitle }
 
 class GestureIndicator {
@@ -24,6 +32,43 @@ class GestureIndicator {
   const GestureIndicator.seek({required this.delta, required this.target})
       : type = IndicatorType.seek,
         value = null;
+
+  const GestureIndicator.speed(double v)
+      : type = IndicatorType.speed,
+        value = v,
+        delta = null,
+        target = null;
+
+  /// Subtitle size, 1.0 = 100 %.
+  const GestureIndicator.subtitleSize(double v)
+      : type = IndicatorType.subtitleSize,
+        value = v,
+        delta = null,
+        target = null;
+
+  /// Subtitle position, libmpv `sub-pos` 0 (top) .. 100 (bottom).
+  const GestureIndicator.subtitlePosition(double v)
+      : type = IndicatorType.subtitlePosition,
+        value = v,
+        delta = null,
+        target = null;
+}
+
+/// The "« 30 s" bubble a stacked double tap shows on its side.
+class DoubleTapRipple {
+  const DoubleTapRipple({
+    required this.forward,
+    required this.seconds,
+    required this.serial,
+  });
+
+  final bool forward;
+
+  /// The run's total so far.
+  final int seconds;
+
+  /// Bumped on every tap, so the bubble restarts its pulse.
+  final int serial;
 }
 
 /// Sleep timer state
@@ -225,6 +270,13 @@ class PlayerState {
   /// Auto-hide zoom indicator. null = no indicator visible
   final double? zoomIndicatorValue;
 
+  /// Where the zoomed picture has been dragged to (two-finger pan), in dp.
+  /// Always zero at a zoom of 1 or less.
+  final Offset videoOffset;
+
+  /// The running total of a stacked double tap, while it shows.
+  final DoubleTapRipple? doubleTapRipple;
+
   // Phase 3: Resume
   final Duration? pendingResumePosition;
 
@@ -292,6 +344,8 @@ class PlayerState {
     this.shortcutsExpanded = false,
     this.videoScale = 1.0,
     this.zoomIndicatorValue,
+    this.videoOffset = Offset.zero,
+    this.doubleTapRipple,
     this.introEndMs,
     this.outroStartMs,
     this.pendingResumePosition,
@@ -348,6 +402,8 @@ class PlayerState {
     bool? shortcutsExpanded,
     double? videoScale,
     Object? zoomIndicatorValue = _sentinel,
+    Offset? videoOffset,
+    Object? doubleTapRipple = _sentinel,
     Object? introEndMs = _sentinel,
     Object? outroStartMs = _sentinel,
     Object? pendingResumePosition = _sentinel,
@@ -418,6 +474,10 @@ class PlayerState {
       zoomIndicatorValue: zoomIndicatorValue == _sentinel
           ? this.zoomIndicatorValue
           : zoomIndicatorValue as double?,
+      videoOffset: videoOffset ?? this.videoOffset,
+      doubleTapRipple: doubleTapRipple == _sentinel
+          ? this.doubleTapRipple
+          : doubleTapRipple as DoubleTapRipple?,
       introEndMs: introEndMs == _sentinel ? this.introEndMs : introEndMs as int?,
       outroStartMs: outroStartMs == _sentinel ? this.outroStartMs : outroStartMs as int?,
       pendingResumePosition: pendingResumePosition == _sentinel

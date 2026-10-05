@@ -932,13 +932,26 @@ class _StorageCard extends StatelessWidget {
             children: <Widget>[
               const Icon(Icons.sd_storage_outlined, size: 17, color: VH.textSecondary),
               const SizedBox(width: VH.s2),
+              // One line when both fit, the figures under the title when not
+              // (Burmese in a large font on a narrow phone squeezed the
+              // title to a letter a line beside them).
               Expanded(
-                child: Text(s.vhDownloadStorageLine,
-                    style: VH.label.copyWith(fontSize: 13)),
-              ),
-              Text(
-                s.vhDownloadStorage(formatBytes(used), known ? formatBytes(free) : '—'),
-                style: VH.meta.copyWith(fontSize: 11.5, color: VH.textSecondary),
+                child: Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: VH.s2,
+                  runSpacing: 2,
+                  children: <Widget>[
+                    Text(s.vhDownloadStorageLine,
+                        style: VH.label.copyWith(fontSize: 13)),
+                    Text(
+                      s.vhDownloadStorage(
+                          formatBytes(used), known ? formatBytes(free) : '—'),
+                      style: VH.meta
+                          .copyWith(fontSize: 11.5, color: VH.textSecondary),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),

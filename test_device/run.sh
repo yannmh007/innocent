@@ -46,9 +46,26 @@ LOGCAT=$!
 # dialog sits over the app and eats every tap. Hide system error dialogs and
 # give the image a moment before measuring anything.
 adb shell settings put global hide_error_dialogs 1 || true
+# Android's one-time "Viewing full screen — swipe down to exit" card covers
+# the whole player the first time it goes immersive.
+adb shell settings put secure immersive_mode_confirmations confirmed || true
 adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS >/dev/null 2>&1 || true
 sleep 20
 adb shell input keyevent KEYCODE_HOME
+
+# A phone like the owner's: three-button navigation (a 48 dp bar, not the
+# gesture handle) and a punch-hole camera, so the player's insets are the
+# ones MX's screenshots were taken with.
+if [ "${PHONE_LIKE_OWNER:-0}" = 1 ]; then
+  # enable-exclusive, not enable: "enable" left the gestural overlay on as
+  # well, and the bar came out 3-button in looks but gesture-sized (24 dp,
+  # run 37216341225) where a real 3-button bar is 48 dp.
+  adb shell cmd overlay enable-exclusive --category com.android.internal.systemui.navbar.threebutton >/dev/null 2>&1 || true
+  adb shell cmd overlay enable-exclusive --category com.android.internal.display.cutout.emulation.hole >/dev/null 2>&1 || true
+  sleep 5
+  log "overlays: $(adb shell cmd overlay list 2>/dev/null | grep -E 'navbar|cutout' | grep -F '[x]' | tr -d '\r' | tr '\n' ' ')"
+  log "nav bar: $(adb shell dumpsys window 2>/dev/null | grep -m3 -oE 'navigationBars[^,]*frame=[^ ]*' | tr '\n' ' ')"
+fi
 
 # A LIBRARY LIKE A REAL PHONE'S. The emulator starts with no videos, and an
 # app with nothing to list does nothing — which is how a Video tab that kept a
@@ -66,6 +83,22 @@ fi
 
 # Which thread of the app is using the CPU right now: two readings of top,
 # five seconds apart, the second kept. Called at the end of each perf phase.
+# Turn the screen and wait until it has turned. The setting is applied
+# asynchronously: without the wait each flow ran in the orientation the
+# previous one had asked for (run 37214751686).
+rotate() {
+  adb shell settings put system accelerometer_rotation 0
+  adb shell settings put system user_rotation "$1"
+  adb shell wm user-rotation lock "$1" >/dev/null 2>&1 || true
+  for _ in $(seq 1 20); do
+    cur=$(adb shell dumpsys window 2>/dev/null | grep -m1 -oE 'mCurrentRotation=(ROTATION_)?[0-9]+' | grep -oE '[0-9]+$')
+    case "$1:$cur" in 0:0|1:1|1:90) break ;; esac
+    sleep 1
+  done
+  sleep 2
+  log "rotation asked $1, now ${cur:-?}"
+}
+
 threads() {
   local pid
   pid=$(adb shell pidof "$PKG" 2>/dev/null | tr -d '\r')
@@ -102,15 +135,43 @@ export PATH="$HOME/.maestro/bin:$PATH"
 for flow in $FLOWS; do
   log "flow $flow"
   adb shell log -p i -t flutter "LAB phase $flow start" >/dev/null 2>&1 || true
+  # The layout flows measure one orientation each; the player follows the
+  # device by default, so turn the device.
+  case "$flow" in
+    layout_portrait|screens_large|gestures) rotate 0 ;;
+    layout_landscape|screens_large_land|gestures_land) rotate 1 ;;
+  esac
   # The perf flows sit still for a minute; read the threads in the middle of
   # it, while the Video tab idles or the film plays.
   case "$flow" in perf_*) ( sleep 40; { echo "== during $flow"; threads; } >> "$OUT/threads.txt" ) & ;; esac
   ( cd "$OUT/shots" && maestro test --test-output-dir "$OUT/maestro_out" "$OLDPWD/test_device/flows/$flow.yaml" ) > "$OUT/maestro_$flow.txt" 2>&1
   log "flow $flow exit $?"
+  # STACKED DOUBLE TAP. Maestro needs most of a second per tap, longer than
+  # the 0.6 s a run of taps stays open, so it can only ever make a plain
+  # double tap. Four taps from one adb shell come a few hundred ms apart,
+  # as a thumb's do: the trace should read "double tap right 1, 2, 3".
+  case "$flow" in gestures)
+    sleep 5 # the controls the flow's last tap showed hide again
+    wh=$(adb shell wm size | tail -1 | awk '{print $NF}' | tr -d '\r')
+    w=${wh%x*}; h=${wh#*x}
+    x=$((w * 85 / 100)); y=$((h / 2))
+    t0=$(date +%s%N)
+    # `cmd input` runs in system_server: no app_process start per tap, so
+    # the taps come ~0.15 s apart rather than ~0.5 s.
+    adb shell "cmd input tap $x $y; sleep 0.1; cmd input tap $x $y; sleep 0.1; cmd input tap $x $y; sleep 0.1; cmd input tap $x $y"
+    t1=$(date +%s%N)
+    adb exec-out screencap -p > "$OUT/shots/97_stacked_taps.png"
+    log "stacked taps at $x,$y: 4 taps in $(( (t1 - t0) / 1000000 )) ms"
+    ;;
+  esac
   # Maestro has put screenshots in different places across versions.
   find test_device/flows "$OUT/maestro_out" "$HOME/.maestro/tests" -name '*.png' -newer test_device/config.env \
     -exec cp {} "$OUT/shots/" \; 2>/dev/null || true
   maestro hierarchy > "$OUT/hierarchy_after_$flow.json" 2>/dev/null || true
+  # The same screen as Android's own accessibility dump sees it (what
+  # TalkBack and Switch Access get), to compare with Maestro's view.
+  adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1 \
+    && adb exec-out cat /sdcard/ui.xml > "$OUT/ui_after_$flow.xml" 2>/dev/null || true
 done
 adb shell dumpsys cpuinfo 2>/dev/null | head -40 > "$OUT/cpuinfo.txt" || true
 

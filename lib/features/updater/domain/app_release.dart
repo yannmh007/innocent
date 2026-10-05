@@ -22,6 +22,7 @@ class AppRelease {
     this.notesEn,
     this.notesMm,
     this.releasedAt,
+    this.playerFlags = const <String>{},
   });
 
   /// Shown to the user: '1.64.6'.
@@ -68,6 +69,9 @@ class AppRelease {
   final String? notesMm;
   final DateTime? releasedAt;
 
+  /// Remote player switches (migration 038), e.g. `legacy_surface`.
+  final Set<String> playerFlags;
+
   /// Builds a release from one PostgREST row, or null if the row is unusable.
   ///
   /// Returns null rather than throwing on a malformed row: a broken manifest
@@ -102,7 +106,21 @@ class AppRelease {
       notesEn: json['notes_en'] is String ? json['notes_en'] as String : null,
       notesMm: json['notes_mm'] is String ? json['notes_mm'] as String : null,
       releasedAt: released is String ? DateTime.tryParse(released) : null,
+      playerFlags: parsePlayerFlags(json['player_flags']),
     );
+  }
+
+  /// Words of `player_flags`: lower-case `[a-z0-9_]` only, at most 16, so a
+  /// stray value in the SQL editor cannot turn into anything but "no flag".
+  static Set<String> parsePlayerFlags(Object? raw) {
+    if (raw is! String) return const <String>{};
+    final ok = RegExp(r'^[a-z0-9_]{1,40}$');
+    return raw
+        .toLowerCase()
+        .split(RegExp(r'[\s,]+'))
+        .where(ok.hasMatch)
+        .take(16)
+        .toSet();
   }
 
   /// True only when the server build is strictly higher than the installed one.

@@ -30,6 +30,7 @@ import '../../local_browser/presentation/sort_view_dialog.dart';
 import '../../local_browser/domain/sort_options.dart';
 
 import '../../../core/localization/app_strings.dart';
+import '../../../core/ui/tv_focus.dart';
 
 part 'private_folder_pin_widgets.dart';
 
@@ -882,7 +883,7 @@ class _PrivateFolderScreenState extends ConsumerState<PrivateFolderScreen>
         itemBuilder: (_, i) {
           final (cat, icon, label) = items[i];
           final active = _cat == cat;
-          return GestureDetector(
+          return RemoteTappable(
             onTap: () => setState(() => _cat = cat),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -1107,7 +1108,7 @@ class _PrivateFolderScreenState extends ConsumerState<PrivateFolderScreen>
   }
 
   Widget _folderCell(PrivateFolderMeta f) {
-    return GestureDetector(
+    return RemoteTappable(
       onTap: () => setState(() => _openFolderId = f.id),
       onLongPress: () => _folderMenu(f),
       child: Container(
@@ -1189,7 +1190,7 @@ class _PrivateFolderScreenState extends ConsumerState<PrivateFolderScreen>
   Widget _entryCell(PrivateEntry e) {
     final kind = _kindOf(e.playablePath);
     final selected = _selected.contains(e.videoUri);
-    return GestureDetector(
+    return RemoteTappable(
       onTap: () =>
           _selectionMode ? _toggleSelected(e) : _openEntry(e, kind),
       onLongPress: () =>

@@ -12,6 +12,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/ui/app_snackbar.dart';
 
 import '../../../core/localization/app_strings.dart';
+import '../../../core/ui/tv_focus.dart';
 /// Status Saver — lets the user view and keep WhatsApp / WA Business
 /// statuses (images & videos) before they disappear.
 ///
@@ -321,7 +322,7 @@ class _StatusSaverScreenState extends State<StatusSaverScreen>
   Widget _tile(File file, {required bool isVideo}) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(10),
-      child: GestureDetector(
+      child: RemoteTappable(
         onTap: () => isVideo ? _playVideo(file) : _previewImage(file),
         child: Stack(
           fit: StackFit.expand,

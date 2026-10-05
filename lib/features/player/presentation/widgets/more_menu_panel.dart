@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../shortcut_item.dart';
+import '../../../../core/ui/tv_focus.dart';
+import '../../../../core/localization/app_strings.dart';
 
 /// Audit fix (B4): logical grouping for the More menu items so the
 /// 14-item grid scans as five small sections instead of one
@@ -79,7 +81,7 @@ class MoreMenuPanel extends StatelessWidget {
         children: [
           // ── Video Display section ──
           _SectionHeader(
-            label: 'Video Display',
+            label: AppStrings.of(context).scVideoDisplay,
             value: videoDisplayEnabled,
             onChanged: onVideoDisplayToggle,
           ),
@@ -92,12 +94,14 @@ class MoreMenuPanel extends StatelessWidget {
               // MX (portrait): four columns 89 dp apart, the first centred
               // 72 dp in — 27 dp from each edge, 12 of them the sheet's.
               padding: const EdgeInsets.symmetric(horizontal: 15),
-              gridDelegate:
-                  const SliverGridDelegateWithFixedCrossAxisCount(
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 4,
                 // MX: one row every 84 dp — a 47 dp ring, 9 dp, then a
-                // label of up to two 12.5 sp lines.
-                mainAxisExtent: 84,
+                // label of up to two 12.5 sp lines (27.5 dp), which grow
+                // with the system font size: at 130 % a fixed 84 cut the
+                // second line by 8 dp.
+                mainAxisExtent:
+                    84 + MediaQuery.textScalerOf(context).scale(28) - 28,
                 crossAxisSpacing: 0,
                 mainAxisSpacing: 0,
               ),
@@ -108,7 +112,7 @@ class MoreMenuPanel extends StatelessWidget {
           const SizedBox(height: 14),
           // ── Shortcuts section ──
           _SectionHeader(
-            label: 'Shortcuts',
+            label: AppStrings.of(context).shortcuts,
             value: visibleShortcuts.isNotEmpty,
             onChanged: onShortcutsToggle,
           ),
@@ -136,7 +140,7 @@ class MoreMenuPanel extends StatelessWidget {
               itemBuilder: (_, i) {
                 final item = ShortcutItem.values[i];
                 return _ShortcutCheckRow(
-                  label: item.label.replaceAll('\n', ' '),
+                  label: item.labelIn(AppStrings.of(context)),
                   value: visibleShortcuts.contains(item),
                   onChanged: (_) => onShortcutToggle(item),
                 );
@@ -250,9 +254,8 @@ class _MoreMenuItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return RemoteTappable(
       onTap: data.onTap,
-      behavior: HitTestBehavior.opaque,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
@@ -330,9 +333,8 @@ class _ShortcutCheckRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return RemoteTappable(
       onTap: () => onChanged(!value),
-      behavior: HitTestBehavior.opaque,
       child: Row(
         children: [
           SizedBox(

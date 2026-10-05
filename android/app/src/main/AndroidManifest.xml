@@ -64,6 +64,23 @@
         android:name="android.hardware.wifi.direct"
         android:required="false" />
 
+    <!-- ANDROID TV AND OTHER LARGE SCREENS. The app runs on phones, tablets,
+         foldables and Android TV; none of these is required hardware, so
+         nothing here keeps a TV (no touch screen, no portrait, often no
+         camera, telephony or GPS) from installing it. "leanback" with
+         required=false lists the app on TV without making TV a requirement. -->
+    <uses-feature android:name="android.software.leanback" android:required="false" />
+    <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
+    <uses-feature android:name="android.hardware.faketouch" android:required="false" />
+    <uses-feature android:name="android.hardware.screen.portrait" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.front" android:required="false" />
+    <uses-feature android:name="android.hardware.location" android:required="false" />
+    <uses-feature android:name="android.hardware.location.gps" android:required="false" />
+    <uses-feature android:name="android.hardware.wifi" android:required="false" />
+    <uses-feature android:name="android.hardware.fingerprint" android:required="false" />
+    <uses-feature android:name="android.hardware.telephony" android:required="false" />
+
     <!-- QR scanning on Transfer "Receive". Camera is not required for the
          rest of the app, so devices without one still install fine. -->
     <uses-permission android:name="android.permission.CAMERA" />
@@ -154,6 +171,7 @@
         android:label="Innocent"
         android:name=".InnocentApplication"
         android:icon="@mipmap/ic_launcher"
+        android:banner="@drawable/tv_banner"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:extractNativeLibs="true"
         android:requestLegacyExternalStorage="true"
@@ -178,6 +196,11 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+            <!-- The Android TV home screen lists apps that declare this. -->
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LEANBACK_LAUNCHER"/>
             </intent-filter>
 
             <!-- v0.99.5: put Innocent in the share sheet for plain text.

@@ -6,6 +6,7 @@ import '../../../core/services/preferences/preferences_service.dart';
 import '../../../core/theme/app_colors.dart';
 
 import '../../../core/localization/app_strings.dart';
+import '../../../core/ui/tv_focus.dart';
 /// App Theme picker matching MX Player (UI PDF page 13).
 /// 3 special themes (Adaptive, Light, Dark) + Classic Themes color grid.
 ///
@@ -171,7 +172,7 @@ class AppThemeScreen extends ConsumerWidget {
             itemCount: _classicColors.length,
             itemBuilder: (_, i) {
               final sw = _classicColors[i];
-              return GestureDetector(
+              return RemoteTappable(
                 onTap: () {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
@@ -216,7 +217,7 @@ class AppThemeScreen extends ConsumerWidget {
   }) {
     final selected = currentMode == mode;
     return Expanded(
-      child: GestureDetector(
+      child: RemoteTappable(
         onTap: () =>
             ref.read(preferencesProvider.notifier).setThemeMode(mode),
         child: Stack(

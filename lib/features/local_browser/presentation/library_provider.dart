@@ -6,6 +6,7 @@ import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/services/cache/library_cache.dart';
+import '../../../core/services/cache/scan_gate.dart';
 import '../../../core/services/adb/adb_service.dart';
 import '../../private_folder/data/private_folder_providers.dart';
 import '../../../core/services/saf/saf_service.dart';
@@ -349,12 +350,17 @@ final foldersProvider = FutureProvider<List<Folder>>((ref) async {
     return cached;
   }
   if (cached != null && cached.isNotEmpty) {
+    // Nothing in MediaStore moved since the scan that wrote this cache: it
+    // IS the scan's answer. Cold start only — see ScanGate.
+    if (await ScanGate.trustCache('folders')) return cached;
     // Kick off background refresh that will invalidate when done
     // ignore: discarded_futures
     () async {
       try {
+        final stamp = await ScanGate.before();
         final fresh = await ds.getFolders();
         await cache.saveFolders(fresh);
+        await ScanGate.record('folders', stamp);
         // Trigger consumer update only if data changed materially
         if (_hasFolderDiff(cached, fresh)) {
           _foldersJustScanned = true;
@@ -372,8 +378,10 @@ final foldersProvider = FutureProvider<List<Folder>>((ref) async {
   }
 
   // No cache → fetch fresh, then save
+  final stamp = await ScanGate.before();
   final fresh = await ds.getFolders();
   await cache.saveFolders(fresh);
+  await ScanGate.record('folders', stamp);
   return fresh;
 });
 
@@ -396,11 +404,14 @@ final allVideosProvider = FutureProvider<List<Video>>((ref) async {
     return cached;
   }
   if (cached != null && cached.isNotEmpty) {
+    if (await ScanGate.trustCache('all')) return cached;
     // ignore: discarded_futures
     () async {
       try {
+        final stamp = await ScanGate.before();
         final fresh = await ds.getAllVideos();
         await cache.saveAllVideos(fresh);
+        await ScanGate.record('all', stamp);
         // Which files, not how many: a rename or a swap keeps the count.
         if (_hasVideoListDiff(cached, fresh)) {
           _allVideosJustScanned = true;
@@ -415,8 +426,10 @@ final allVideosProvider = FutureProvider<List<Video>>((ref) async {
     return cached;
   }
 
+  final stamp = await ScanGate.before();
   final fresh = await ds.getAllVideos();
   await cache.saveAllVideos(fresh);
+  await ScanGate.record('all', stamp);
   return fresh;
 });
 
@@ -1130,11 +1143,14 @@ final videosInFolderProvider =
     return withAdb(cached);
   }
   if (cached != null && cached.isNotEmpty) {
+    if (await ScanGate.trustCache('folder:$folderPath')) return withAdb(cached);
     // ignore: discarded_futures
     () async {
       try {
+        final stamp = await ScanGate.before();
         final fresh = await ds.getVideosInFolder(folderPath);
         await cache.saveVideosInFolder(folderPath, fresh);
+        await ScanGate.record('folder:$folderPath', stamp);
         if (_hasVideoListDiff(cached, fresh)) {
           _folderVideosJustScanned.add(folderPath);
           ref.invalidateSelf();
@@ -1145,8 +1161,10 @@ final videosInFolderProvider =
   }
 
   // No cache → fetch fresh, then save for next visit.
+  final stamp = await ScanGate.before();
   final fresh = await ds.getVideosInFolder(folderPath);
   await cache.saveVideosInFolder(folderPath, fresh);
+  await ScanGate.record('folder:$folderPath', stamp);
   return withAdb(fresh);
 });
 

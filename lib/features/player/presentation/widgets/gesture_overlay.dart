@@ -1,22 +1,31 @@
 import 'package:flutter/material.dart';
 
-/// Gesture overlay - emits semantic gesture events for the player.
+import '../../../../core/services/diagnostics/playback_log.dart';
+import '../gestures/player_gesture_engine.dart';
+
+/// The player's touch surface: raw pointer events in, MX Player's gestures
+/// out. The decisions are all in [PlayerGestureEngine] (and its tests);
+/// this widget only measures the player, knows where the system gesture
+/// zones and the subtitle are, and passes the results on.
 ///
-/// Behavior:
-/// - Single tap → toggle controls
-/// - Double tap (left 1/3) → rewind 10s
-/// - Double tap (middle 1/3) → play/pause
-/// - Double tap (right 1/3) → forward 10s
-/// - 1-finger vertical swipe (left half) → brightness
-/// - 1-finger vertical swipe (right half) → volume
+/// - Tap → controls; double tap left / right → seek, stacking per tap;
+///   double tap centre → play / pause
+/// - 1-finger vertical swipe: left half brightness, right half volume
+///   (past 100 % into the booster, when it is on)
 /// - 1-finger horizontal swipe → seek
-/// - 2-finger pinch → zoom (PDF page 7)
-/// - Long press → speed slider, drag-without-release adjusts (PDF page 9)
+/// - 2-finger vertical swipe → playback speed
+/// - Pinch → zoom; the two fingers' midpoint pans the zoomed picture
+/// - Long press → speed slider, drag without lifting
+/// - On the subtitle: drag moves it, swipe steps lines, pinch sizes it
 class GestureOverlay extends StatefulWidget {
   final VoidCallback onTap;
   final VoidCallback onDoubleTapRewind;
   final VoidCallback onDoubleTapForward;
   final VoidCallback onDoubleTapCenter;
+
+  /// A side double tap and each further tap of the run ([count] 1, 2, 3…).
+  /// When set, it replaces [onDoubleTapRewind] / [onDoubleTapForward].
+  final void Function(bool forward, int count)? onDoubleTapStacked;
   final ValueChanged<double> onBrightnessDelta;
   final ValueChanged<double> onVolumeDelta;
   final VoidCallback onSeekStart;
@@ -28,17 +37,33 @@ class GestureOverlay extends StatefulWidget {
   final ValueChanged<double>? onPinchUpdate; // scaleDelta (multiplicative)
   final VoidCallback? onPinchEnd;
 
-  final double verticalSensitivity;
-  final double seekSecondsPerWidth;
+  /// Two-finger pan of the zoomed picture: the move, and the player's size.
+  final void Function(Offset delta, Size view)? onPan;
+  final VoidCallback? onSpeedStart;
+  final ValueChanged<int>? onSpeedSteps;
+  final VoidCallback? onSpeedEnd;
+  final ValueChanged<double>? onSubtitleMove;
+  final ValueChanged<double>? onSubtitleScale;
+  final ValueChanged<int>? onSubtitleStep;
+  final VoidCallback? onSubtitleEnd;
 
-  /// Phase 45: per-gesture gates wired to Settings → Controls. When a
-  /// flag is false the corresponding gesture is silently ignored,
-  /// exactly like MX Player's per-gesture toggles.
+  /// The band the visible subtitle occupies in a player of the given size,
+  /// or null when no subtitle is on screen. Asked at each touch.
+  final Rect? Function(Size size)? subtitleBand;
+
+  /// The film's length (keeps the seek scale sane on a short clip).
+  final Duration duration;
+
+  /// Per-gesture switches (Settings → Controls), as in MX Player.
   final bool brightnessSwipeEnabled;
   final bool volumeSwipeEnabled;
   final bool seekSwipeEnabled;
   final bool pinchZoomEnabled;
   final bool longPressSpeedEnabled;
+  final bool doubleTapEnabled;
+  final bool twoFingerSpeedEnabled;
+  final bool panEnabled;
+  final bool subtitleGesturesEnabled;
 
   const GestureOverlay({
     super.key,
@@ -46,6 +71,7 @@ class GestureOverlay extends StatefulWidget {
     required this.onDoubleTapRewind,
     required this.onDoubleTapForward,
     required this.onDoubleTapCenter,
+    this.onDoubleTapStacked,
     required this.onBrightnessDelta,
     required this.onVolumeDelta,
     required this.onSeekStart,
@@ -56,155 +82,211 @@ class GestureOverlay extends StatefulWidget {
     this.onLongPressMoveGlobal,
     this.onPinchUpdate,
     this.onPinchEnd,
-    this.verticalSensitivity = 0.6,
-    this.seekSecondsPerWidth = 90.0,
+    this.onPan,
+    this.onSpeedStart,
+    this.onSpeedSteps,
+    this.onSpeedEnd,
+    this.onSubtitleMove,
+    this.onSubtitleScale,
+    this.onSubtitleStep,
+    this.onSubtitleEnd,
+    this.subtitleBand,
+    this.duration = Duration.zero,
     this.brightnessSwipeEnabled = true,
     this.volumeSwipeEnabled = true,
     this.seekSwipeEnabled = true,
     this.pinchZoomEnabled = true,
     this.longPressSpeedEnabled = true,
+    this.doubleTapEnabled = true,
+    this.twoFingerSpeedEnabled = true,
+    this.panEnabled = true,
+    this.subtitleGesturesEnabled = true,
   });
 
   @override
   State<GestureOverlay> createState() => _GestureOverlayState();
 }
 
-enum _GestureType { none, brightness, volume, seek, pinch }
-
 class _GestureOverlayState extends State<GestureOverlay> {
-  _GestureType _type = _GestureType.none;
-  Offset _startPosition = Offset.zero;
-  double _accumDx = 0;
-  double _accumDy = 0;
-  double _lastScale = 1.0;
-  static const double _gestureThreshold = 16.0;
+  late final PlayerGestureEngine _engine =
+      PlayerGestureEngine(callbacks: const GestureCallbacks());
+  Size _size = Size.zero;
 
-  void _handleDoubleTap(TapDownDetails details) {
-    final width = context.size?.width ?? 1;
-    final x = details.localPosition.dx;
-    if (x < width / 3) {
-      widget.onDoubleTapRewind();
-    } else if (x > width * 2 / 3) {
-      widget.onDoubleTapForward();
-    } else {
-      widget.onDoubleTapCenter();
-    }
+  /// The top of the screen belongs to the notification shade even with the
+  /// status bar hidden (an immersive player): no swipe starts there.
+  static const double _shadeZone = 24;
+
+  void _configure(BuildContext context) {
+    final w = widget;
+    final sys = MediaQuery.systemGestureInsetsOf(context);
+    _engine
+      ..size = _size
+      ..duration = w.duration
+      ..noSwipeInsets = EdgeInsets.fromLTRB(
+        sys.left,
+        sys.top > _shadeZone ? sys.top : _shadeZone,
+        sys.right,
+        sys.bottom,
+      )
+      ..switches = GestureSwitches(
+        brightness: w.brightnessSwipeEnabled,
+        volume: w.volumeSwipeEnabled,
+        seek: w.seekSwipeEnabled,
+        doubleTap: w.doubleTapEnabled,
+        longPress: w.longPressSpeedEnabled,
+        pinch: w.pinchZoomEnabled,
+        pan: w.panEnabled,
+        twoFingerSpeed: w.twoFingerSpeedEnabled,
+        subtitles: w.subtitleGesturesEnabled,
+      )
+      ..callbacks = _labTraced(GestureCallbacks(
+        onTap: w.onTap,
+        onDoubleTap: (zone, count) {
+          switch (zone) {
+            case TapZone.centre:
+              w.onDoubleTapCenter();
+              break;
+            case TapZone.left:
+            case TapZone.right:
+              final forward = zone == TapZone.right;
+              final stacked = w.onDoubleTapStacked;
+              if (stacked != null) {
+                stacked(forward, count);
+              } else if (forward) {
+                w.onDoubleTapForward();
+              } else {
+                w.onDoubleTapRewind();
+              }
+          }
+        },
+        onLongPressStart: w.onLongPressStart,
+        onLongPressMove: w.onLongPressMoveGlobal,
+        onLongPressEnd: w.onLongPressEnd,
+        onBrightness: w.onBrightnessDelta,
+        onVolume: w.onVolumeDelta,
+        onSeekStart: w.onSeekStart,
+        onSeekUpdate: w.onSeekUpdate,
+        onSeekEnd: w.onSeekEnd,
+        onSpeedStart: w.onSpeedStart,
+        onSpeedSteps: w.onSpeedSteps,
+        onSpeedEnd: w.onSpeedEnd,
+        onPinch: w.onPinchUpdate == null
+            ? null
+            : (scale, _) => w.onPinchUpdate!(scale),
+        onPan: w.onPan == null ? null : (d) => w.onPan!(d, _size),
+        onPinchEnd: w.onPinchEnd,
+        onSubtitleMove: w.onSubtitleMove,
+        onSubtitleScale: w.onSubtitleScale,
+        onSubtitleSeek: w.onSubtitleStep,
+        onSubtitleEnd: w.onSubtitleEnd,
+      ));
   }
 
-  void _onScaleStart(ScaleStartDetails details) {
-    _startPosition = details.localFocalPoint;
-    _accumDx = 0;
-    _accumDy = 0;
-    _lastScale = 1.0;
-    _type = _GestureType.none;
-  }
-
-  void _onScaleUpdate(ScaleUpdateDetails details) {
-    // Two+ fingers → pinch zoom mode
-    if (details.pointerCount >= 2) {
-      // Phase 45: respect user's pinch-zoom gate.
-      if (!widget.pinchZoomEnabled) return;
-      if (_type != _GestureType.pinch) {
-        // Cancel any pending pan gesture
-        if (_type == _GestureType.seek) widget.onSeekEnd();
-        _type = _GestureType.pinch;
-        _lastScale = 1.0;
+  // DEVICE LAB BUILDS ONLY: what each touch was recognised as, one line per
+  // gesture in logcat, so the lab can check its swipes and taps landed as
+  // the gestures they were meant to be. Store builds return [c] unchanged.
+  double _labBrightness = 0, _labVolume = 0;
+  int _labSeek = 0;
+  GestureCallbacks _labTraced(GestureCallbacks c) {
+    if (!PlaybackLog.labTrace) return c;
+    void log(String m) => debugPrint('LAB gesture $m');
+    void endVertical() {
+      if (_labBrightness != 0) {
+        log('brightness ${_labBrightness.toStringAsFixed(2)}');
       }
-      // Compute incremental scale change since last update
-      final scaleDelta = details.scale / _lastScale;
-      _lastScale = details.scale;
-      widget.onPinchUpdate?.call(scaleDelta);
-      return;
+      if (_labVolume != 0) log('volume ${_labVolume.toStringAsFixed(2)}');
+      _labBrightness = _labVolume = 0;
     }
 
-    // One finger → pan / swipe
-    _accumDx = details.focalPointDelta.dx + _accumDx;
-    _accumDy = details.focalPointDelta.dy + _accumDy;
-
-    if (_type == _GestureType.none) {
-      final dx = _accumDx.abs();
-      final dy = _accumDy.abs();
-      if (dx < _gestureThreshold && dy < _gestureThreshold) return;
-
-      if (dx > dy) {
-        // Phase 45: respect seek-swipe gate.
-        if (!widget.seekSwipeEnabled) return;
-        _type = _GestureType.seek;
-        widget.onSeekStart();
-      } else {
-        final width = context.size?.width ?? 1;
-        final side = _startPosition.dx < width / 2;
-        // Phase 45: respect brightness / volume gates. If the chosen
-        // side is gated off, abandon this gesture rather than fall
-        // through to the wrong side.
-        if (side && !widget.brightnessSwipeEnabled) return;
-        if (!side && !widget.volumeSwipeEnabled) return;
-        _type = side ? _GestureType.brightness : _GestureType.volume;
-      }
-    }
-
-    switch (_type) {
-      case _GestureType.brightness:
-      case _GestureType.volume:
-        final height = context.size?.height ?? 1;
-        final delta = -details.focalPointDelta.dy /
-            (height * widget.verticalSensitivity);
-        if (_type == _GestureType.brightness) {
-          widget.onBrightnessDelta(delta);
-        } else {
-          widget.onVolumeDelta(delta);
-        }
-        break;
-      case _GestureType.seek:
-        final width = context.size?.width ?? 1;
-        final seconds =
-            (_accumDx / width * widget.seekSecondsPerWidth).round();
-        widget.onSeekUpdate(seconds);
-        break;
-      case _GestureType.pinch:
-      case _GestureType.none:
-        break;
-    }
+    return GestureCallbacks(
+      onTap: () {
+        log('tap');
+        c.onTap?.call();
+      },
+      onDoubleTap: (zone, count) {
+        log('double tap ${zone.name} $count');
+        c.onDoubleTap?.call(zone, count);
+      },
+      onLongPressStart: () {
+        log('long press');
+        c.onLongPressStart?.call();
+      },
+      onLongPressMove: c.onLongPressMove,
+      onLongPressEnd: () {
+        log('long press end');
+        c.onLongPressEnd?.call();
+      },
+      onBrightness: (d) {
+        _labBrightness += d;
+        c.onBrightness?.call(d);
+      },
+      onVolume: (d) {
+        _labVolume += d;
+        c.onVolume?.call(d);
+      },
+      onVerticalEnd: () {
+        endVertical();
+        c.onVerticalEnd?.call();
+      },
+      onSeekStart: c.onSeekStart,
+      onSeekUpdate: (s) {
+        _labSeek = s;
+        c.onSeekUpdate?.call(s);
+      },
+      onSeekEnd: () {
+        log('seek $_labSeek s');
+        c.onSeekEnd?.call();
+      },
+      onSpeedStart: c.onSpeedStart,
+      onSpeedSteps: c.onSpeedSteps,
+      onSpeedEnd: c.onSpeedEnd,
+      onPinch: c.onPinch,
+      onPan: c.onPan,
+      onPinchEnd: c.onPinchEnd,
+      onSubtitleMove: c.onSubtitleMove,
+      onSubtitleScale: c.onSubtitleScale,
+      onSubtitleSeek: c.onSubtitleSeek,
+      onSubtitleEnd: c.onSubtitleEnd,
+    );
   }
 
-  void _onScaleEnd(ScaleEndDetails details) {
-    if (_type == _GestureType.seek) {
-      widget.onSeekEnd();
-    } else if (_type == _GestureType.pinch) {
-      widget.onPinchEnd?.call();
-    }
-    _type = _GestureType.none;
-    _accumDx = 0;
-    _accumDy = 0;
-    _lastScale = 1.0;
+  @override
+  void dispose() {
+    _engine.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: widget.onTap,
-      onDoubleTapDown: _handleDoubleTap,
-      onDoubleTap: () {},
-      onScaleStart: _onScaleStart,
-      onScaleUpdate: _onScaleUpdate,
-      onScaleEnd: _onScaleEnd,
-      // Phase 45: only wire long-press callbacks when the user enabled
-      // the gesture. When `longPressSpeedEnabled` is false we pass null
-      // to GestureDetector, leaving the long-press unbound so the system
-      // text-selection / OS gestures aren't swallowed either.
-      onLongPressStart: widget.longPressSpeedEnabled
-          ? (_) => widget.onLongPressStart()
-          : null,
-      onLongPressMoveUpdate: widget.longPressSpeedEnabled
-          ? (details) {
-              widget.onLongPressMoveGlobal?.call(details.globalPosition);
-            }
-          : null,
-      onLongPressEnd: widget.longPressSpeedEnabled
-          ? (_) => widget.onLongPressEnd()
-          : null,
-      child: const SizedBox.expand(),
-    );
+    return LayoutBuilder(builder: (context, c) {
+      _size = Size(c.maxWidth, c.maxHeight);
+      _configure(context);
+      // A raw Listener carries no semantics, where the GestureDetector it
+      // replaced gave TalkBack a tap action on the whole player. Kept: a
+      // TalkBack double tap anywhere still shows or hides the controls.
+      return Semantics(
+        container: true,
+        onTap: widget.onTap,
+        child: Listener(
+          behavior: HitTestBehavior.opaque,
+          onPointerDown: (e) {
+            if (_engine.size.isEmpty) return;
+            // Where the subtitle is right now, for a gesture starting now.
+            _engine.subtitleBand = widget.subtitleGesturesEnabled
+                ? widget.subtitleBand?.call(_size)
+                : null;
+            _engine.pointerDown(e.pointer, e.localPosition, e.timeStamp,
+                global: e.position);
+          },
+          onPointerMove: (e) => _engine.pointerMove(
+              e.pointer, e.localPosition, e.timeStamp,
+              global: e.position),
+          onPointerUp: (e) =>
+              _engine.pointerUp(e.pointer, e.localPosition, e.timeStamp),
+          onPointerCancel: (e) => _engine.pointerCancel(e.pointer),
+          child: const SizedBox.expand(),
+        ),
+      );
+    });
   }
 }

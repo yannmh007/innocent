@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 
 import '../../../../core/localization/app_strings.dart';
+import '../../../../core/ui/tv_focus.dart';
 /// Sleep timer mode
 enum SleepTimerMode { off, custom, endOfVideo }
 
@@ -279,7 +280,7 @@ class _SleepTimerDialogState extends State<SleepTimerDialog> {
   }
 
   Widget _closeButton() {
-    return GestureDetector(
+    return RemoteTappable(
       onTap: widget.onDismiss,
       child: Container(
         width: 32,
@@ -370,8 +371,11 @@ class _SleepTimerDialogState extends State<SleepTimerDialog> {
           ),
         ),
         const SizedBox(width: 12),
-        Text(AppStrings.of(context).playLastToEnd,
-          style: const TextStyle(color: AppColors.white70, fontSize: 15),
+        // Flexible: in Burmese the label is longer than a 320 dp phone.
+        Flexible(
+          child: Text(AppStrings.of(context).playLastToEnd,
+            style: const TextStyle(color: AppColors.white70, fontSize: 15),
+          ),
         ),
       ],
     );

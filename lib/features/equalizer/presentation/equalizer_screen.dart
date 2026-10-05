@@ -9,6 +9,7 @@ import '../../../core/services/preferences/player_settings_service.dart';
 import '../../../core/theme/app_colors.dart';
 
 import '../../../core/localization/app_strings.dart';
+import '../../../core/ui/tv_focus.dart';
 final equalizerServiceProvider = Provider<EqualizerService>((ref) {
   // Reuse the process-wide instance so the UI, the startup audio-session
   // hook, and the playback-start reapply all share one session id + state.
@@ -743,9 +744,8 @@ class _ProfileCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return RemoteTappable(
       onTap: onTap,
-      behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
         decoration: BoxDecoration(

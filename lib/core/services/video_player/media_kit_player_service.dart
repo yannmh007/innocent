@@ -18,6 +18,7 @@ import 'mpv_option_range.dart';
 import 'seek_math.dart';
 import 'stall_diagnosis.dart';
 import 'video_player_service.dart';
+import 'video_surface_policy.dart';
 
 /// Decouples the video player from the equalizer service. The EQ service
 /// registers a callback here that returns the shared audio-session id; the
@@ -198,6 +199,13 @@ class MediaKitPlayerService implements VideoPlayerService {
     // VideoControllerConfiguration ctor's other knobs (width, height,
     // hwdec) have varying signatures across media_kit_video versions,
     // so we use only the most stable one.
+    // Which surface libmpv draws into — see VideoSurfacePolicy. Read here,
+    // once per engine, because media_kit creates the output with the
+    // controller and keeps it for the engine's life.
+    if (!kIsWeb && Platform.isAndroid) {
+      mkv.AndroidVideoController.useSurfaceProducer =
+          await VideoSurfacePolicy.useEfficientSurface();
+    }
     _videoController = mkv.VideoController(
       _player,
       configuration: const mkv.VideoControllerConfiguration(
@@ -1233,6 +1241,36 @@ class MediaKitPlayerService implements VideoPlayerService {
     await _setMpvProperty('sub-pos', clamped.toString());
   }
 
+  /// The subtitle text on screen now (empty when none), from libmpv's
+  /// `sub-text`. The player's subtitle gestures only act while there is one.
+  List<String> get subtitleText {
+    try {
+      return _player.state.subtitle.where((l) => l.trim().isNotEmpty).toList();
+    } catch (_) {
+      return const <String>[];
+    }
+  }
+
+  /// The video's own size in pixels, or null before it is known.
+  Size? get videoSize {
+    try {
+      final w = _player.state.width, h = _player.state.height;
+      if (w == null || h == null || w <= 0 || h <= 0) return null;
+      return Size(w.toDouble(), h.toDouble());
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Jump to the next (+1) or previous (−1) subtitle line — MX's "subtitle
+  /// scroll" gesture. libmpv's `sub-seek` seeks the video to that line.
+  Future<bool> subSeek(int direction) =>
+      _sendMpvCommand(<String>['sub-seek', direction >= 0 ? '1' : '-1']);
+
+  /// libmpv's output volume in percent: 100 is the file's own level, above
+  /// 100 is the audio booster's gain.
+  double get outputVolumePct => _volumePct;
+
   /// Phase 45 (audit refined, build 63): subtitle shadow intensity.
   /// [level]: 0=None, 1=Subtle, 2=Default, 3=Strong. Maps to libmpv's
   /// `sub-shadow-color` (alpha) and `sub-shadow-offset`.
@@ -1782,7 +1820,10 @@ class MediaKitPlayerService implements VideoPlayerService {
     final dec = await p('decoder-frame-drop-count');
     final vod = await p('frame-drop-count');
     final threads = await p('vd-lavc-threads');
-    return 'video ${codec.split(' ').first} ${w}x$h hwdec=$hw($pix) vo=$vo '
+    final surf = (!kIsWeb && Platform.isAndroid)
+        ? (mkv.AndroidVideoController.usingSurfaceProducer ? ' surf=producer' : ' surf=texture')
+        : '';
+    return 'video ${codec.split(' ').first} ${w}x$h hwdec=$hw($pix) vo=$vo$surf '
         'fps=${double.tryParse(fps)?.toStringAsFixed(1) ?? fps} '
         'drop=$dec/$vod thr=$threads';
   }

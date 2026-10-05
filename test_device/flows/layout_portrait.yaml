@@ -1,0 +1,36 @@
+# The player's controls, portrait, to measure against MX's screenshots
+# (seek bar and button row heights, side margins). Opens the lab film and
+# stays in the player for layout_landscape, which run.sh rotates to.
+appId: com.innocent.media
+---
+# Bring the app back to the front whatever ran before (a flow that ended with
+# Back may have left the launcher showing), on the Video tab.
+- launchApp:
+    stopApp: false
+- tapOn:
+    text: "Video"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 2000
+- scrollUntilVisible:
+    element:
+      text: ".*Perf Test.*"
+    direction: DOWN
+    optional: true
+- tapOn:
+    text: ".*Perf Test.*"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- tapOn:
+    text: ".*aaa_play_720p.*"
+    optional: true
+- extendedWaitUntil:
+    visible: "__nothing_has_this_text__"
+    timeout: 8000
+    optional: true
+- tapOn:
+    point: "50%,50%"
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: 60_player_portrait

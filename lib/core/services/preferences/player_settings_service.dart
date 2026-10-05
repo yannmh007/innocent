@@ -105,6 +105,10 @@ enum PlayerSetting {
   ctlDoubleTapSeek(default_: true),
   ctlLongPressSpeed(default_: true),
   ctlPinchZoom(default_: true),
+  // docs/player_gestures.md — MX's other gestures.
+  ctlZoomPan(default_: true),
+  ctlTwoFingerSpeed(default_: true),
+  ctlSubtitleGestures(default_: true),
   ctlTapToggle(default_: true),
   ctlLockOnRotation(default_: false),
 
@@ -144,6 +148,12 @@ enum PlayerSetting {
   decHwNetwork(default_: true),
   decTryHw(default_: true),
   decTryHwPlus(default_: true),
+  // Settings → Decoder → General → Efficient video output. Read once, when
+  // the player engine starts (VideoSurfacePolicy). ON: video is drawn into a
+  // SurfaceProducer that the GPU samples directly; OFF: the SurfaceTexture
+  // path every build before 1.64.54 used, kept as the way back for a phone
+  // that draws the new one wrong.
+  decEfficientOutput(default_: true),
   decHwAudioOnSwVideo(default_: true),
   decCorrectAspect(default_: true),
   decHwAudioTrackSelectable(default_: true),

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/ui/device_profile.dart';
 import '../../core/localization/app_strings.dart';
 import '../../core/router/routes.dart';
 import '../../core/theme/app_colors.dart';
@@ -155,7 +156,87 @@ class _ShellScreenState extends ConsumerState<ShellScreen>
     // mounted, so this watch never lets the coordinator drop.
     ref.watch(adbAutoScanProvider);
 
-    return Scaffold(
+    void select(int index) {
+      ref.read(shellTabIndexProvider.notifier).state = index;
+      context.go(_shellTabs[index].route);
+    }
+
+    // LARGE SCREENS. Material's adaptive rule, and what every Google app does:
+    // a bottom bar on a phone (< 600 dp wide), a navigation rail down the
+    // left edge on anything wider — a tablet either way up, an unfolded
+    // foldable, a phone-sized window turned into a wide one — and on a TV,
+    // where a remote reaches a column of tabs far more naturally than a row
+    // at the bottom of the screen. A bottom bar stretched across 1280 dp put
+    // four icons a hand-span apart.
+    // BACK, the Android way (and YouTube's, Photos', MX's): on any tab but
+    // the first, Back goes to the first tab; only there does it leave the
+    // app. It used to leave from every tab — on a TV remote, one press too
+    // many from Music and the app was gone. A screen opened inside a tab
+    // still closes first: this only answers when nothing above it can pop.
+    Widget backToFirstTab(Widget shell) => PopScope(
+          canPop: currentIndex == 0,
+          onPopInvokedWithResult: (didPop, _) {
+            if (!didPop) select(0);
+          },
+          child: shell,
+        );
+
+    final wide =
+        MediaQuery.sizeOf(context).width >= 600 || DeviceProfile.isTv;
+    if (wide) {
+      return backToFirstTab(Scaffold(
+        body: Row(
+          children: [
+            ColoredBox(
+              color: AppColors.specNavBar,
+              child: SafeArea(
+                right: false,
+                child: NavigationRail(
+                  selectedIndex: currentIndex,
+                  onDestinationSelected: select,
+                  backgroundColor: AppColors.specNavBar,
+                  labelType: NavigationRailLabelType.all,
+                  groupAlignment: -0.85,
+                  minWidth: 80,
+                  indicatorColor: AppColors.specPrimary.withValues(alpha: 0.18),
+                  selectedIconTheme:
+                      const IconThemeData(color: AppColors.specPrimary, size: 24),
+                  unselectedIconTheme: const IconThemeData(
+                      color: AppColors.specNavInactive, size: 24),
+                  selectedLabelTextStyle: Theme.of(context)
+                      .textTheme
+                      .labelMedium
+                      ?.copyWith(color: AppColors.specPrimary, fontSize: 12),
+                  unselectedLabelTextStyle: Theme.of(context)
+                      .textTheme
+                      .labelMedium
+                      ?.copyWith(color: AppColors.specNavInactive, fontSize: 12),
+                  destinations: [
+                    for (int i = 0; i < _shellTabs.length; i++)
+                      NavigationRailDestination(
+                        icon: Icon(_shellTabs[i].icon),
+                        selectedIcon: Icon(_shellTabs[i].activeIcon),
+                        label: Text(_navLabel(context, i)),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            // The page in its own semantics container. Each page of the
+            // router's Navigator has a ModalBarrier, which wraps itself in
+            // BlockSemantics — and that drops everything painted before it
+            // in the same container: the rail. TalkBack on a tablet or TV
+            // could not reach Video / Music / Transfer / Me at all (Pixel C
+            // emulator; test/rail_semantics_test.dart).
+            Expanded(
+              child: Semantics(container: true, child: widget.child),
+            ),
+          ],
+        ),
+      ));
+    }
+
+    return backToFirstTab(Scaffold(
       body: widget.child,
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: currentIndex,
@@ -173,10 +254,7 @@ class _ShellScreenState extends ConsumerState<ShellScreen>
         selectedFontSize: 11,
         unselectedFontSize: 11,
         showUnselectedLabels: true,
-        onTap: (index) {
-          ref.read(shellTabIndexProvider.notifier).state = index;
-          context.go(_shellTabs[index].route);
-        },
+        onTap: select,
         items: [
           for (int i = 0; i < _shellTabs.length; i++)
             BottomNavigationBarItem(
@@ -186,7 +264,7 @@ class _ShellScreenState extends ConsumerState<ShellScreen>
             ),
         ],
       ),
-    );
+    ));
   }
 
   /// Localised label for each tab (the [_shellTabs] entries hold the English
