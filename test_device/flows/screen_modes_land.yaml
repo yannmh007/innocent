@@ -19,16 +19,16 @@ appId: com.innocent.media
     optional: true
 - runFlow:
     when:
-      notVisible: "(Fit to screen|Stretch|Crop|100%|Custom)"
+      notVisible: "(?s).*(Fit to screen|Stretch|Crop|100%|Custom).*"
     commands:
       - tapOn:
           point: "50%,30%"
 - extendedWaitUntil:
-    visible: "(Fit to screen|Stretch|Crop|100%|Custom)"
+    visible: "(?s).*(Fit to screen|Stretch|Crop|100%|Custom).*"
     timeout: 4000
     optional: true
 - tapOn:
-    text: "(Fit to screen|Stretch|Crop|100%|Custom)"
+    text: "(?s).*(Fit to screen|Stretch|Crop|100%|Custom).*"
     retryTapIfNoChange: false
 - extendedWaitUntil:
     visible: "__nothing_has_this_text__"
@@ -40,7 +40,7 @@ appId: com.innocent.media
     timeout: 900
     optional: true
 - tapOn:
-    text: "(Fit to screen|Stretch|Crop|100%|Custom)"
+    text: "(?s).*(Fit to screen|Stretch|Crop|100%|Custom).*"
     retryTapIfNoChange: false
 - extendedWaitUntil:
     visible: "__nothing_has_this_text__"
@@ -52,7 +52,7 @@ appId: com.innocent.media
     timeout: 900
     optional: true
 - tapOn:
-    text: "(Fit to screen|Stretch|Crop|100%|Custom)"
+    text: "(?s).*(Fit to screen|Stretch|Crop|100%|Custom).*"
     retryTapIfNoChange: false
 - extendedWaitUntil:
     visible: "__nothing_has_this_text__"
@@ -64,7 +64,7 @@ appId: com.innocent.media
     timeout: 900
     optional: true
 - tapOn:
-    text: "(Fit to screen|Stretch|Crop|100%|Custom)"
+    text: "(?s).*(Fit to screen|Stretch|Crop|100%|Custom).*"
     retryTapIfNoChange: false
 - extendedWaitUntil:
     visible: "__nothing_has_this_text__"
@@ -76,7 +76,7 @@ appId: com.innocent.media
     timeout: 900
     optional: true
 - tapOn:
-    text: "(Fit to screen|Stretch|Crop|100%|Custom)"
+    text: "(?s).*(Fit to screen|Stretch|Crop|100%|Custom).*"
     retryTapIfNoChange: false
 - extendedWaitUntil:
     visible: "__nothing_has_this_text__"
