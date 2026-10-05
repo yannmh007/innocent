@@ -38,18 +38,25 @@ Assert that (Optional) "__nothing_has_this_text__" is visible... WARNED
 
 
  Warning: Assertion is false: "__nothing_has_this_text__" is visible
-Run flow when "(Fit to screen|Stretch|Crop|100%|Custom)" is not visible...
+Run flow when "(?s).*(Fit to screen|Stretch|Crop|100%|Custom).*" is not visible...
   Tap on point (50%,30%)... COMPLETED
-Run flow when "(Fit to screen|Stretch|Crop|100%|Custom)" is not visible... COMPLETED
-Assert that (Optional) "(Fit to screen|Stretch|Crop|100%|Custom)" is visible... WARNED
+Run flow when "(?s).*(Fit to screen|Stretch|Crop|100%|Custom).*" is not visible... COMPLETED
+Assert that (Optional) "(?s).*(Fit to screen|Stretch|Crop|100%|Custom).*" is visible... COMPLETED
+Tap on "(?s).*(Fit to screen|Stretch|Crop|100%|Custom).*"... COMPLETED
+Assert that (Optional) "__nothing_has_this_text__" is visible... WARNED
 
 
- Warning: Assertion is false: "(Fit to screen|Stretch|Crop|100%|Custom)" is visible
-Tap on "(Fit to screen|Stretch|Crop|100%|Custom)"... FAILED
+ Warning: Assertion is false: "__nothing_has_this_text__" is visible
+Take screenshot 7x_mode_stretch_port... COMPLETED
+Assert that (Optional) "__nothing_has_this_text__" is visible... WARNED
 
-Element not found: Text matching regex: (Fit to screen|Stretch|Crop|100%|Custom)
 
-Element with Text matching regex: (Fit to screen|Stretch|Crop|100%|Custom) not found. Check the UI hierarchy in debug artifacts to verify if the element exists.
+ Warning: Assertion is false: "__nothing_has_this_text__" is visible
+Tap on "(?s).*(Fit to screen|Stretch|Crop|100%|Custom).*"... FAILED
+
+Element not found: Text matching regex: (?s).*(Fit to screen|Stretch|Crop|100%|Custom).*
+
+Element with Text matching regex: (?s).*(Fit to screen|Stretch|Crop|100%|Custom).* not found. Check the UI hierarchy in debug artifacts to verify if the element exists.
 
 Possible causes:
 - Element selector may be incorrect - check if there are similar elements with slightly different names/properties.
@@ -58,4 +65,4 @@ Possible causes:
 
 ==== Debug output (logs & screenshots) ====
 
-/home/runner/work/innocent/innocent/out/maestro_out/2026-10-05_071805
+/home/runner/work/innocent/innocent/out/maestro_out/2026-10-05_072615
