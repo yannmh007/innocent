@@ -34,6 +34,7 @@ import '../../../core/services/video_player/models/video_track_info.dart';
 import '../../equalizer/presentation/equalizer_screen.dart'
     show equalizerServiceProvider;
 import 'aspect_ratio_mode.dart';
+import 'video_geometry.dart';
 import 'shortcut_item.dart';
 import 'widgets/sleep_timer_dialog.dart';
 // v1.63: the canonical subtitle-format list, used by the sidecar scan in
@@ -89,6 +90,9 @@ class PlayerController extends StateNotifier<PlayerState> {
   Timer? _indicatorTimer;
   Timer? _autoSaveTimer;
   Timer? _sleepTimerTicker;
+  // The sleep timer's closing fade (player_controller_tracks.dart).
+  bool _sleepFading = false;
+  static const Duration _sleepFadeLength = Duration(seconds: 10);
   /// Audit + industry pattern: fires after 10s of continuous network
   /// buffering, surfacing a clear "playback stalled" message so the
   /// user doesn't sit watching a spinner with no explanation.
@@ -163,7 +167,13 @@ class PlayerController extends StateNotifier<PlayerState> {
   int _rippleSerial = 0;
   Timer? _rippleTimer;
   double? _speedGestureBase;
-  Size? _lastPanView;
+  // The player's size and density, for the screen modes' arithmetic
+  // (video_geometry.dart); set by the screen as it lays out.
+  Size _viewport = Size.zero;
+  double _devicePixelRatio = 1.0;
+  // Where Custom was last panned to, so cycling back to it restores it.
+  Offset _customOffset = Offset.zero;
+  Timer? _modeToastTimer;
   double? _subtitlePosDrag;
   double? _subtitleScaleDrag;
   double _volumeBeforeMute = 0.5;
@@ -378,6 +388,12 @@ class PlayerController extends StateNotifier<PlayerState> {
       case 'previous':
         // ignore: discarded_futures
         playPreviousInFolder();
+        break;
+      case 'rewind':
+      case 'forward':
+        // The notification's, the lock screen's and the shade's ±10 s.
+        // ignore: discarded_futures
+        seekRelative(action == 'rewind' ? -10 : 10);
         break;
       case 'seek':
         if (positionMs >= 0) {
@@ -1835,6 +1851,7 @@ class PlayerController extends StateNotifier<PlayerState> {
     _sleepTimerTicker?.cancel();
     _zoomIndicatorTimer?.cancel();
     _rippleTimer?.cancel();
+    _modeToastTimer?.cancel();
     _bufferStallTimer?.cancel();
     _bufferSlowTimer?.cancel();
     _bufferSpinnerTimer?.cancel();

@@ -101,10 +101,16 @@ class MainActivity : AudioServiceFragmentActivity() {
         const val PLAYBACK_CONTROL_NEXT = "next"
         const val PLAYBACK_CONTROL_PREVIOUS = "previous"
         const val PLAYBACK_CONTROL_SEEK = "seek"
+        const val PLAYBACK_CONTROL_REWIND = "rewind"
+        const val PLAYBACK_CONTROL_FORWARD = "forward"
         const val EXTRA_PLAYBACK_POSITION = "positionMs"
         private const val EXTRA_PIP_CONTROL = "control"
         private const val CONTROL_PLAY_PAUSE = "play_pause"
+        private const val CONTROL_REWIND = "rewind"
+        private const val CONTROL_FORWARD = "forward"
         private const val ACTION_PIP_PLAY_PAUSE_CODE = 1001
+        private const val ACTION_PIP_REWIND_CODE = 1002
+        private const val ACTION_PIP_FORWARD_CODE = 1003
         private const val EQ_CHANNEL = "mx_clone/equalizer"
         private const val KEYS_CHANNEL = "mx_clone/keys"
         private const val THUMB_CHANNEL = "mx_clone/thumbnail"
@@ -391,7 +397,15 @@ class MainActivity : AudioServiceFragmentActivity() {
                     val enable = call.argument<Boolean>("enable") ?: false
                     val w = call.argument<Int>("width") ?: 16
                     val h = call.argument<Int>("height") ?: 9
-                    setAutoEnterPip(enable, w, h)
+                    val l = call.argument<Int>("left")
+                    val t = call.argument<Int>("top")
+                    val r = call.argument<Int>("right")
+                    val b = call.argument<Int>("bottom")
+                    val rect = if (l != null && t != null && r != null && b != null) {
+                        Rect(l, t, r, b)
+                    } else null
+                    pipIsPlaying = call.argument<Boolean>("isPlaying") ?: pipIsPlaying
+                    setAutoEnterPip(enable, w, h, rect)
                     result.success(true)
                 }
                 else -> result.notImplemented()
@@ -1961,31 +1975,42 @@ class MainActivity : AudioServiceFragmentActivity() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return emptyList()
         val actions = ArrayList<RemoteAction>()
         try {
-            val playPauseIcon = Icon.createWithResource(
-                this,
-                if (pipIsPlaying) android.R.drawable.ic_media_pause
-                else android.R.drawable.ic_media_play
-            )
             val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             } else {
                 PendingIntent.FLAG_UPDATE_CURRENT
             }
-            val intent = PendingIntent.getBroadcast(
-                this,
-                ACTION_PIP_PLAY_PAUSE_CODE,
-                Intent(ACTION_PIP_CONTROL).setPackage(packageName)
-                    .putExtra(EXTRA_PIP_CONTROL, CONTROL_PLAY_PAUSE),
-                flags
-            )
-            actions.add(
+            fun action(icon: Int, label: String, control: String, code: Int) =
                 RemoteAction(
-                    playPauseIcon,
-                    if (pipIsPlaying) "Pause" else "Play",
-                    if (pipIsPlaying) "Pause" else "Play",
-                    intent
+                    Icon.createWithResource(this, icon),
+                    label,
+                    label,
+                    PendingIntent.getBroadcast(
+                        this,
+                        code,
+                        Intent(ACTION_PIP_CONTROL).setPackage(packageName)
+                            .putExtra(EXTRA_PIP_CONTROL, control),
+                        flags
+                    )
                 )
+            val playPause = action(
+                if (pipIsPlaying) android.R.drawable.ic_media_pause
+                else android.R.drawable.ic_media_play,
+                if (pipIsPlaying) "Pause" else "Play",
+                CONTROL_PLAY_PAUSE,
+                ACTION_PIP_PLAY_PAUSE_CODE
             )
+            // Back 10 s, play/pause, forward 10 s — the YouTube / MX row —
+            // when the window has room for three; play/pause alone when not.
+            if (maxNumPictureInPictureActions >= 3) {
+                actions.add(action(android.R.drawable.ic_media_rew,
+                    "Back 10 s", CONTROL_REWIND, ACTION_PIP_REWIND_CODE))
+                actions.add(playPause)
+                actions.add(action(android.R.drawable.ic_media_ff,
+                    "Forward 10 s", CONTROL_FORWARD, ACTION_PIP_FORWARD_CODE))
+            } else {
+                actions.add(playPause)
+            }
         } catch (_: Exception) {
             // If action assembly fails for any reason, PiP still works
             // without custom controls — never let this crash the entry.
@@ -2030,7 +2055,12 @@ class MainActivity : AudioServiceFragmentActivity() {
      * No-op below Android 12, where we fall back to the manual
      * onUserLeaveHint → enterPip path.
      */
-    private fun setAutoEnterPip(enable: Boolean, width: Int, height: Int) {
+    private fun setAutoEnterPip(
+        enable: Boolean,
+        width: Int,
+        height: Int,
+        srcRect: Rect? = null
+    ) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return
         autoEnterArmed = enable
         try {
@@ -2038,11 +2068,13 @@ class MainActivity : AudioServiceFragmentActivity() {
                 lastPipW = width
                 lastPipH = height
             }
+            // The source rect is what makes the system's own animation morph
+            // the on-screen video into the window (Android 12+ auto-enter).
             setPictureInPictureParams(
                 buildPipParams(
                     if (enable) width else lastPipW,
                     if (enable) height else lastPipH,
-                    null,
+                    if (enable) srcRect else null,
                     enable
                 )
             )
@@ -2138,7 +2170,9 @@ class MainActivity : AudioServiceFragmentActivity() {
         pipIsPlaying = isPlaying
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         try {
-            setPictureInPictureParams(buildPipParams(lastPipW, lastPipH, null))
+            setPictureInPictureParams(
+                buildPipParams(lastPipW, lastPipH, null, autoEnterArmed)
+            )
         } catch (_: Exception) {}
     }
 
@@ -2327,6 +2361,10 @@ class MainActivity : AudioServiceFragmentActivity() {
                 when (intent.getStringExtra(EXTRA_PIP_CONTROL)) {
                     CONTROL_PLAY_PAUSE ->
                         pipChannel?.invokeMethod("onPipPlayPause", null)
+                    CONTROL_REWIND ->
+                        pipChannel?.invokeMethod("onPipSeek", -10)
+                    CONTROL_FORWARD ->
+                        pipChannel?.invokeMethod("onPipSeek", 10)
                 }
             }
         }

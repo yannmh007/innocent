@@ -265,7 +265,9 @@ class PlayerState {
   final int? introEndMs;
   final int? outroStartMs;
 
-  // Phase 7: Pinch-to-zoom (1.0 = 100%, range 0.25 - 10.0)
+  /// The Custom screen mode's zoom (the user's own pinch), as a factor of
+  /// the whole-frame picture: 1.0 = Fit to screen. The other modes'
+  /// zoom is worked out from the screen and the film (video_geometry.dart).
   final double videoScale;
   /// Auto-hide zoom indicator. null = no indicator visible
   final double? zoomIndicatorValue;
@@ -276,6 +278,10 @@ class PlayerState {
 
   /// The running total of a stacked double tap, while it shows.
   final DoubleTapRipple? doubleTapRipple;
+
+  /// The screen mode just chosen with the button, named over the video for
+  /// a moment ("Crop"), as MX does; null when nothing is shown.
+  final AspectRatioMode? screenModeToast;
 
   // Phase 3: Resume
   final Duration? pendingResumePosition;
@@ -346,6 +352,7 @@ class PlayerState {
     this.zoomIndicatorValue,
     this.videoOffset = Offset.zero,
     this.doubleTapRipple,
+    this.screenModeToast,
     this.introEndMs,
     this.outroStartMs,
     this.pendingResumePosition,
@@ -404,6 +411,7 @@ class PlayerState {
     Object? zoomIndicatorValue = _sentinel,
     Offset? videoOffset,
     Object? doubleTapRipple = _sentinel,
+    Object? screenModeToast = _sentinel,
     Object? introEndMs = _sentinel,
     Object? outroStartMs = _sentinel,
     Object? pendingResumePosition = _sentinel,
@@ -478,6 +486,9 @@ class PlayerState {
       doubleTapRipple: doubleTapRipple == _sentinel
           ? this.doubleTapRipple
           : doubleTapRipple as DoubleTapRipple?,
+      screenModeToast: screenModeToast == _sentinel
+          ? this.screenModeToast
+          : screenModeToast as AspectRatioMode?,
       introEndMs: introEndMs == _sentinel ? this.introEndMs : introEndMs as int?,
       outroStartMs: outroStartMs == _sentinel ? this.outroStartMs : outroStartMs as int?,
       pendingResumePosition: pendingResumePosition == _sentinel

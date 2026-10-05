@@ -1,4 +1,4 @@
-import 'dart:ui' show Rect;
+import 'dart:ui' show PlatformDispatcher, Rect;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -45,6 +45,10 @@ class PipService {
         case 'onPipPlayPause':
           onPipPlayPause?.call();
           break;
+        case 'onPipSeek':
+          final secs = call.arguments;
+          if (secs is int) onPipSeek?.call(secs);
+          break;
         case 'onPipClosed':
           onPipClosed?.call();
           break;
@@ -87,14 +91,42 @@ class PipService {
   /// floating window is live (so leaving the app hands off to system PiP over
   /// other apps even if the manual onUserLeaveHint path is too late), disarmed
   /// when it closes. No-op below Android 12.
-  Future<void> setAutoEnterPip(bool enable, {int width = 16, int height = 9}) async {
+  ///
+  /// The full-screen player arms it too, while a film plays (Android's
+  /// recommended path for video: the system morphs the picture from
+  /// [sourceRect] into the window as the user swipes home, instead of the
+  /// late manual entry from onUserLeaveHint).
+  Future<void> setAutoEnterPip(
+    bool enable, {
+    int width = 16,
+    int height = 9,
+    Rect? sourceRect,
+    bool? isPlaying,
+  }) async {
     try {
       await _channel.invokeMethod('setAutoEnterPip', {
         'enable': enable,
         'width': width.clamp(1, 9999),
         'height': height.clamp(1, 9999),
+        if (isPlaying != null) 'isPlaying': isPlaying,
+        ..._rectArgs(sourceRect),
       });
     } catch (_) {}
+  }
+
+  /// [r] in logical pixels as Android wants it: physical pixels of the
+  /// window. (Sent unscaled, a source rect hint pointed at the top-left
+  /// third of the screen on a 3x phone.)
+  static Map<String, int> _rectArgs(Rect? r) {
+    if (r == null || r.isEmpty) return const {};
+    final dpr =
+        PlatformDispatcher.instance.implicitView?.devicePixelRatio ?? 1.0;
+    return {
+      'left': (r.left * dpr).round(),
+      'top': (r.top * dpr).round(),
+      'right': (r.right * dpr).round(),
+      'bottom': (r.bottom * dpr).round(),
+    };
   }
 
   /// Attempt to enter PiP with the given video aspect (width:height).
@@ -104,6 +136,10 @@ class PipService {
   /// The player should toggle playback and then call [setPipPlaying] so the
   /// little control's icon updates.
   VoidCallback? onPipPlayPause;
+
+  /// Fired by the back / forward buttons inside the PiP window, with the
+  /// seconds to move (−10 or +10).
+  ValueChanged<int>? onPipSeek;
 
   /// Fired when the user DISMISSES the system PiP window with × (as opposed to
   /// expanding it back into the app). Playback should fully stop and the
@@ -122,12 +158,7 @@ class PipService {
         'height': height.clamp(1, 9999),
         'isPlaying': isPlaying,
       };
-      if (sourceRect != null) {
-        args['left'] = sourceRect.left.round();
-        args['top'] = sourceRect.top.round();
-        args['right'] = sourceRect.right.round();
-        args['bottom'] = sourceRect.bottom.round();
-      }
+      args.addAll(_rectArgs(sourceRect));
       final ok = await _channel.invokeMethod<bool>('enterPip', args);
       return ok ?? false;
     } catch (_) {

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
@@ -17,6 +18,7 @@ import 'mpv_link.dart';
 import 'mpv_option_range.dart';
 import 'seek_math.dart';
 import 'stall_diagnosis.dart';
+import 'subtitle_look.dart';
 import 'video_player_service.dart';
 import 'video_surface_policy.dart';
 
@@ -548,6 +550,12 @@ class MediaKitPlayerService implements VideoPlayerService {
       PlaybackLog.add('mpv option refused locally: $problem');
       assert(false, problem);
       return false;
+    }
+    // The subtitle is drawn by the player, not libmpv (see SubtitleLook):
+    // every look-and-place property is mirrored here as it is sent.
+    if (key.startsWith('sub-')) {
+      final look = subtitleLook.value.apply(key, value);
+      if (look != subtitleLook.value) subtitleLook.value = look;
     }
     // Off the UI thread when it can be (see [MpvLink]). A stuck engine
     // answers false at once instead of freezing the app; only a platform
@@ -1105,6 +1113,37 @@ class MediaKitPlayerService implements VideoPlayerService {
     }
   }
 
+  /// The sleep timer's fade: the level falls evenly in decibels, from the
+  /// current level to −40 dB, over [duration], then the caller pauses. An
+  /// even fall in amplitude is heard as nothing much and then a sudden drop;
+  /// an even fall in decibels is heard as an even fade (Pocket Casts' sleep
+  /// timer, docs/player_playback_modes.md). The volume setting itself is not
+  /// touched — [restoreVolume] puts the level back.
+  Future<void> fadeOutVolume(Duration duration) async {
+    final from = _volumePct;
+    final gen = ++_fadeGen;
+    const steps = 25;
+    final stepMs = math.max(20, duration.inMilliseconds ~/ steps);
+    for (var i = 1; i <= steps; i++) {
+      if (gen != _fadeGen) return;
+      final pct = from * math.pow(10, (-40.0 * i / steps) / 20);
+      try {
+        await _player.setVolume(pct.toDouble());
+      } catch (_) {
+        return;
+      }
+      await Future.delayed(Duration(milliseconds: stepMs));
+    }
+  }
+
+  /// Back to the level the volume setting calls for, ending any fade.
+  Future<void> restoreVolume() async {
+    ++_fadeGen;
+    try {
+      await _player.setVolume(_volumePct);
+    } catch (_) {}
+  }
+
   @override
   Future<void> setAudioTrack(AudioTrackInfo track) async {
     final tracks = _player.state.tracks.audio;
@@ -1239,6 +1278,26 @@ class MediaKitPlayerService implements VideoPlayerService {
   Future<void> setSubtitleVerticalPos(int percent) async {
     final clamped = percent.clamp(0, 150);
     await _setMpvProperty('sub-pos', clamped.toString());
+  }
+
+  /// How the subtitle should look — every `sub-*` property this service
+  /// has set, kept for the player's own subtitle layer.
+  final ValueNotifier<SubtitleLook> subtitleLook =
+      ValueNotifier<SubtitleLook>(const SubtitleLook());
+
+  /// The subtitle lines as they change: [0] the main track's, [1] the
+  /// secondary track's (empty when none).
+  Stream<List<String>> get subtitleStream => _initialized
+      ? _player.stream.subtitle
+      : const Stream<List<String>>.empty();
+
+  /// The subtitle lines on screen now, both tracks, as [subtitleStream].
+  List<String> get subtitleLines {
+    try {
+      return _initialized ? _player.state.subtitle : const <String>[];
+    } catch (_) {
+      return const <String>[];
+    }
   }
 
   /// The subtitle text on screen now (empty when none), from libmpv's
@@ -2301,6 +2360,10 @@ class MediaKitPlayerService implements VideoPlayerService {
       controller: _videoController,
       fit: fit,
       controls: mkv.NoVideoControls,
+      // The player draws the subtitle itself, outside the zoom, in the
+      // user's style (SubtitleLook); media_kit's own would be a second copy.
+      subtitleViewConfiguration:
+          const mkv.SubtitleViewConfiguration(visible: false),
     );
   }
 

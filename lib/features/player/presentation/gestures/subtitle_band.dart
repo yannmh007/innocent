@@ -1,39 +1,82 @@
+import 'dart:math' as math;
+
 import 'package:flutter/painting.dart';
 
-/// Where libmpv draws the subtitle, near enough for a finger to find it.
+import '../../../../core/services/video_player/subtitle_look.dart';
+
+/// Where the subtitle goes on screen — one answer for the layer that draws
+/// it (player_subtitles.dart) and for the gestures that grab it.
 ///
-/// libmpv renders subtitles into the video frame, so they sit in the video's
-/// rectangle on screen ([fit] of [video] in [player]), not the player's. Its
-/// defaults: a 55-point font scaled to a 720-line frame (about 8 % of the
-/// frame's height per line, times `sub-scale`), the text's bottom at
-/// `sub-pos` % of the frame from the top, lifted by a 22-line margin (3 %).
-/// The band is padded by [touchPad] dp so the finger need not land on the
-/// letters, and kept clear of the outer tenth on each side, which is where
-/// brightness and volume swipes start.
-Rect subtitleBandFor({
-  required Size player,
-  required Size? video,
-  required BoxFit fit,
-  required int positionPct,
-  required double scale,
-  required int lines,
-  double touchPad = 20,
+/// Placed on the part of the picture that is on screen, so a Crop or a
+/// pinch zoom never pushes it off the edge with the overflow, and sized
+/// from the SCREEN, not the picture, so zooming does not enlarge it (MX).
+/// libmpv's arithmetic: sizes are pixels of a 720-line screen, here the
+/// screen's shorter side (the same physical size in both orientations);
+/// the text's bottom is at `sub-pos` % of the picture's height, lifted by
+/// `sub-margin-y`.
+class SubtitleGeometry {
+  const SubtitleGeometry({
+    required this.fontSize,
+    required this.outline,
+    required this.shadow,
+    required this.bottom,
+    required this.box,
+  });
+
+  /// Text size, outline width and shadow offset, in dp.
+  final double fontSize;
+  final double outline;
+  final double shadow;
+
+  /// Where the last line's bottom sits, in dp from the player's top.
+  final double bottom;
+
+  /// The horizontal band the lines are centred and wrapped in (its top and
+  /// bottom are the visible picture's).
+  final Rect box;
+
+  /// A finger-sized band around [lines] lines of text: padded by [touchPad]
+  /// and kept off the outer tenth of the picture on each side, where the
+  /// brightness and volume swipes start.
+  Rect touchBand(int lines, {double touchPad = 20}) {
+    final textH = fontSize * 1.25 * lines.clamp(1, 4);
+    return Rect.fromLTRB(
+      box.left + box.width * 0.06,
+      bottom - textH - touchPad,
+      box.right - box.width * 0.06,
+      bottom + touchPad,
+    );
+  }
+}
+
+SubtitleGeometry subtitleGeometry({
+  required Size view,
+  required Rect picture,
+  required SubtitleLook look,
+  EdgeInsets padding = EdgeInsets.zero,
 }) {
-  final frame = video == null || video.isEmpty
-      ? Offset.zero & player
-      : Alignment.center.inscribe(
-          applyBoxFit(fit, video, player).destination, Offset.zero & player);
-  final lineH = frame.height * 0.08 * scale.clamp(0.3, 2.0);
-  final textH = lineH * lines.clamp(1, 4);
+  final screen = Offset.zero & view;
+  var visible = picture.intersect(screen);
+  if (visible.width <= 0 || visible.height <= 0) visible = screen;
+  final k = math.min(view.width, view.height) / 720;
+  final scale = look.scale.clamp(0.1, 4.0);
+  final fontSize = math.max(8.0, look.fontSize * scale * k);
+  final outline = look.borderSize * scale * k;
+  final shadow = look.shadowOffset * scale * k;
+  final lowest = view.height - padding.bottom - 2;
+  final highest = math.min(lowest, padding.top + fontSize * 1.4);
   final bottom =
-      frame.top + frame.height * (positionPct.clamp(0, 100) / 100) -
-          frame.height * 0.03;
-  final top = bottom - textH;
-  final visible = Offset.zero & player;
-  return Rect.fromLTRB(
-    frame.left + frame.width * 0.1,
-    top - touchPad,
-    frame.right - frame.width * 0.1,
-    bottom + touchPad,
-  ).intersect(visible);
+      (visible.top + visible.height * look.position / 100 - look.marginY * k)
+          .clamp(highest, lowest)
+          .toDouble();
+  final width = visible.width * 0.94;
+  final box = Rect.fromLTWH(
+      visible.center.dx - width / 2, visible.top, width, visible.height);
+  return SubtitleGeometry(
+    fontSize: fontSize,
+    outline: outline,
+    shadow: shadow,
+    bottom: bottom,
+    box: box,
+  );
 }
