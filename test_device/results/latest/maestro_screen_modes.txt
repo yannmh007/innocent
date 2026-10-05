@@ -61,4 +61,4 @@ Possible causes:
 
 ==== Debug output (logs & screenshots) ====
 
-/home/runner/work/innocent/innocent/out/maestro_out/2026-10-05_062018
+/home/runner/work/innocent/innocent/out/maestro_out/2026-10-05_065245

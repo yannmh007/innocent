@@ -3,6 +3,10 @@ Running on test
 Scrolling DOWN until ".*1:11:19.*" is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
 Tap on (Optional) ".*1:11:19.*"... COMPLETED
 Wait for animation to end within 3000 ms... COMPLETED
+Assert that (Optional) "__nothing_has_this_text__" is visible... WARNED
+
+
+ Warning: Assertion is false: "__nothing_has_this_text__" is visible
 Tap on point (50%,50%)... COMPLETED
 Tap on (Optional) "Got it"... WARNED
 

@@ -28,4 +28,4 @@ Possible causes:
 
 ==== Debug output (logs & screenshots) ====
 
-/home/runner/work/innocent/innocent/out/maestro_out/2026-10-05_062257
+/home/runner/work/innocent/innocent/out/maestro_out/2026-10-05_065457
