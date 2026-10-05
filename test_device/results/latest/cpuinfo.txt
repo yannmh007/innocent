@@ -1,40 +1,40 @@
-Load: 5.67 / 1.27 / 0.42
-CPU usage from 197492ms to 191344ms ago (2026-10-04 19:46:40.586 to 2026-10-04 19:46:46.735):
-  36% 523/system_server: 26% user + 10% kernel / faults: 28010 minor 90 major
-  13% 1718/com.google.android.googlequicksearchbox:search: 10% user + 2.6% kernel / faults: 30342 minor 83 major
-  11% 843/com.android.systemui: 5.2% user + 6.6% kernel / faults: 22326 minor 6 major
-  11% 1096/com.google.android.apps.nexuslauncher: 4.3% user + 6.6% kernel / faults: 11897 minor 12 major
-  8.6% 391/android.hardware.graphics.composer3-service.ranchu: 0% user + 8.6% kernel / faults: 3 minor
-  8.4% 1618/com.google.android.as: 6.1% user + 2.2% kernel / faults: 19922 minor 41 major
-  6.8% 403/surfaceflinger: 1.6% user + 5.2% kernel / faults: 124 minor
-  6.6% 1441/com.google.android.gms.persistent: 4.8% user + 1.7% kernel / faults: 9152 minor 80 major
-  6.5% 1728/com.google.android.youtube: 5.3% user + 1.1% kernel / faults: 12904 minor 10 major
-  5.8% 458/logcat: 0.3% user + 5.5% kernel
-  4% 1486/com.google.android.gms: 3% user + 0.9% kernel / faults: 5647 minor 4193 major
-  3.5% 1693/com.google.android.apps.youtube.music: 2.6% user + 0.9% kernel / faults: 7441 minor 12 major
-  3% 1655/com.google.android.googlequicksearchbox:interactor: 2.6% user + 0.4% kernel / faults: 8199 minor 5 major
-  2.7% 1052/com.android.phone: 2.1% user + 0.6% kernel / faults: 3145 minor
-  2.2% 1554/com.google.android.inputmethod.latin: 1.9% user + 0.3% kernel / faults: 6095 minor 642 major
-  2.1% 36/kworker/1:1-kdmflush/254:40: 0% user + 2.1% kernel
-  2.1% 1563/com.google.android.apps.wellbeing: 1.7% user + 0.3% kernel / faults: 4287 minor
-  1.9% 134/logd: 0.8% user + 1.1% kernel / faults: 306 minor
-  1.7% 70/kworker/1:2H-kverityd: 0% user + 1.7% kernel
-  1.7% 413/adbd: 0.1% user + 1.6% kernel / faults: 21594 minor
-  1.6% 189/jbd2/dm-40-8: 0% user + 1.6% kernel
-  1.6% 1651/android.process.acore: 0.9% user + 0.6% kernel / faults: 2250 minor 21 major
-  1.4% 856/com.google.android.permissioncontroller: 1.1% user + 0.3% kernel / faults: 2747 minor 1 major
-  1.4% 1638/com.google.android.providers.media.module: 0.9% user + 0.4% kernel / faults: 1637 minor
-  1.1% 41/kswapd0: 0% user + 1.1% kernel
-  1.1% 338/zygote64: 0% user + 1.1% kernel / faults: 624 minor
-  0.9% 136/servicemanager: 0.3% user + 0.6% kernel
-  0.8% 336/statsd: 0.1% user + 0.6% kernel / faults: 10 minor
-  0.8% 1006/com.android.networkstack.process: 0.4% user + 0.3% kernel / faults: 898 minor 2 major
-  0.6% 359/android.hardware.graphics.allocator@3.0-service.ranchu: 0.1% user + 0.4% kernel
-  0.6% 1056/com.android.settings: 0.3% user + 0.3% kernel / faults: 757 minor 10 major
-  0.4% 1/init: 0.1% user + 0.3% kernel / faults: 16 minor
-  0.1% 135/lmkd: 0% user + 0% kernel / faults: 3 minor
-  0.4% 400/audioserver: 0.3% user + 0.1% kernel / faults: 2 minor
-  0.4% 462/idmap2d: 0.3% user + 0.1% kernel / faults: 2670 minor
-  0.4% 1766/com.google.process.gservices: 0.3% user + 0.1% kernel / faults: 480 minor
-  0.4% 1984/com.google.process.gapps: 0.3% user + 0.1% kernel / faults: 1138 minor
-  0.3% 10/kworker/u4:1-loop29: 0% user + 0.3% kernel
+Load: 11.12 / 2.55 / 0.84
+CPU usage from 268180ms to 259222ms ago (2026-10-05 03:01:34.667 to 2026-10-05 03:01:43.625):
+  34% 523/system_server: 24% user + 9.7% kernel / faults: 27292 minor 58 major
+  14% 1094/com.google.android.apps.nexuslauncher: 5.3% user + 9.4% kernel / faults: 26251 minor 27 major
+  13% 1755/com.google.android.googlequicksearchbox:search: 10% user + 3.9% kernel / faults: 35424 minor 2820 major
+  9.3% 389/android.hardware.graphics.composer3-service.ranchu: 0.3% user + 9% kernel / faults: 9 minor
+  8.3% 1725/com.google.android.apps.youtube.music: 6.3% user + 1.9% kernel / faults: 22628 minor 820 major
+  8.1% 1402/com.google.android.gms.persistent: 6% user + 2% kernel / faults: 16330 minor
+  7.9% 400/surfaceflinger: 0.6% user + 7.2% kernel / faults: 880 minor
+  7.2% 1442/com.google.android.gms: 5.5% user + 1.7% kernel / faults: 6213 minor 2511 major
+  7% 1760/com.google.android.youtube: 6.3% user + 0.6% kernel / faults: 11782 minor
+  6.7% 1633/com.google.android.as: 5% user + 1.6% kernel / faults: 17064 minor 38 major
+  6% 843/com.android.systemui: 4.1% user + 1.8% kernel / faults: 10195 minor 4 major
+  5% 453/logcat: 0.4% user + 4.6% kernel
+  3.9% 2182/com.google.android.gm: 2.9% user + 0.9% kernel / faults: 9513 minor 1 major
+  2.6% 857/com.google.android.permissioncontroller: 1.7% user + 0.8% kernel / faults: 3203 minor
+  2.6% 1049/com.android.phone: 1.7% user + 0.8% kernel / faults: 4154 minor 1 major
+  2.6% 2255/com.google.android.dialer: 1.9% user + 0.6% kernel / faults: 5966 minor 1 major
+  2.1% 160/kworker/1:3-virtio_vsock: 0% user + 2.1% kernel
+  1.7% 1522/com.google.android.inputmethod.latin: 1.4% user + 0.3% kernel / faults: 2517 minor 7 major
+  1.6% 131/logd: 0.6% user + 1% kernel / faults: 360 minor
+  1.6% 263/kworker/1:2H-kverityd: 0% user + 1.6% kernel
+  1.6% 1531/com.google.android.apps.wellbeing: 1.4% user + 0.2% kernel / faults: 2278 minor
+  1.4% 188/jbd2/dm-40-8: 0% user + 1.4% kernel
+  1.3% 335/statsd: 0.4% user + 0.8% kernel / faults: 316 minor
+  1.2% 1677/com.google.android.googlequicksearchbox:interactor: 0.9% user + 0.2% kernel / faults: 5064 minor 1 major
+  1.1% 1/init: 0.2% user + 0.8% kernel / faults: 3 minor
+  1.1% 416/adbd: 0.1% user + 0.9% kernel / faults: 17137 minor
+  1.1% 999/com.android.networkstack.process: 0.6% user + 0.4% kernel / faults: 1576 minor 5 major
+  1.1% 1628/com.google.android.providers.media.module: 0.7% user + 0.3% kernel / faults: 2029 minor
+  0.6% 461/media.extractor: 0.4% user + 0.2% kernel / faults: 1025 minor 6 major
+  0.7% 41/kswapd0: 0% user + 0.7% kernel
+  0.7% 1726/com.google.process.gservices: 0.3% user + 0.4% kernel / faults: 465 minor
+  0.6% 1980/com.google.android.contacts: 0.4% user + 0.2% kernel / faults: 2287 minor
+  0.1% 336/netd: 0% user + 0.1% kernel / faults: 657 minor 11 major
+  0.3% 467/mediaserver: 0% user + 0.2% kernel / faults: 300 minor 4 major
+  0.5% 2424/com.google.android.as.oss: 0.5% user + 0% kernel / faults: 1781 minor 3 major
+  0.4% 337/zygote64: 0% user + 0.4% kernel / faults: 392 minor
+  0.4% 1629/android.process.acore: 0.3% user + 0.1% kernel / faults: 571 minor
+  0% 53/kworker/u4:2-loop11: 0% user + 0% kernel

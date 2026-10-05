@@ -1,16 +1,17 @@
-[19:46:45] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
-[19:46:45] install
-[19:46:55] network: speed 6000:24000 kbit/s, delay 80:250 ms
-[19:47:16] library: pushing 17 files
-[19:47:46] library: MediaStore lists 17 videos
-[19:47:46] cold start
+[03:01:40] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
+[03:01:40] install
+[03:01:57] network: speed 6000:24000 kbit/s, delay 80:250 ms
+[03:02:37] library: pushing 17 files
+[03:03:08] library: MediaStore lists 17 videos
+[03:03:08] cold start
 Status: ok
-TotalTime: 2198
-WaitTime: 2206
-[19:47:58] flow gestures
-[19:48:00] rotation asked 0, now 0
-[19:49:01] flow gestures exit 0
-[19:49:10] flow gestures_land
-[19:49:13] rotation asked 1, now 90
-[19:49:50] flow gestures_land exit 0
-[19:50:02] done
+TotalTime: 3151
+WaitTime: 3168
+[03:03:22] flow gestures
+[03:03:24] rotation asked 0, now 0
+[03:04:31] flow gestures exit 0
+[03:04:37] stacked taps at 918,1200: 4 taps in 406 ms
+[03:04:47] flow gestures_land
+[03:05:10] rotation asked 1, now 0
+[03:05:52] flow gestures_land exit 0
+[03:06:07] done
