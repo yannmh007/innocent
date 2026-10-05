@@ -1,20 +1,23 @@
-[07:58:47] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
-[07:58:47] install
-[07:59:05] network: speed 6000:24000 kbit/s, delay 80:250 ms
-[07:59:27] library: pushing 17 files
-[07:59:56] library: MediaStore lists 17 videos
-[07:59:56] cold start
+[08:09:24] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
+[08:09:24] install
+[08:09:47] network: speed 6000:24000 kbit/s, delay 80:250 ms
+[08:10:24] library: pushing 17 files
+[08:10:52] library: MediaStore lists 17 videos
+[08:10:52] cold start
 Status: ok
-TotalTime: 4792
-WaitTime: 4798
-[08:00:11] flow screen_modes
-[08:00:13] rotation asked 0, now 0
-[08:01:08] flow screen_modes exit 0
-[08:01:36] screen_modes: screen button bounds="[0,0][1080,2400]" (screen 1080x2400, attempt 3)
-[08:01:44] screen_modes: pressed 540,1200 five times
-[08:01:56] flow screen_modes_land
-[08:02:19] rotation asked 1, now 0
-[08:02:37] flow screen_modes_land exit 0
-[08:03:11] screen_modes_land: screen button  (screen 2400x1080, attempt 3)
-[08:03:16] after Home: activities mentioning pinned=8
-[08:03:36] done
+TotalTime: 3467
+WaitTime: 3471
+[08:11:06] flow screen_modes
+[08:11:08] rotation asked 0, now 0
+[08:11:55] flow screen_modes exit 0
+[08:11:59] screen_modes: screen button bounds="[0,0][1080,2400]" (screen 1080x2400, attempt 1)
+[08:11:59] screen_modes: pressing the drawn button instead, [819,2270][839,2290]
+[08:12:07] screen_modes: pressed 829,2280 five times
+[08:12:19] flow screen_modes_land
+[08:12:43] rotation asked 1, now 0
+[08:13:00] flow screen_modes_land exit 0
+[08:13:03] screen_modes_land: screen button bounds="[0,0][2400,1080]" (screen 2400x1080, attempt 1)
+[08:13:03] screen_modes_land: pressing the drawn button instead, [2140,1006][2160,1026]
+[08:13:11] screen_modes_land: pressed 2150,1016 five times
+[08:13:16] after Home: activities mentioning pinned=8
+[08:13:36] done
