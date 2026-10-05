@@ -1,17 +1,17 @@
-  * Task{ca490c9 #9 type=standard I=com.innocent.media/.MainActivity U=0 visible=true visibleRequested=true mode=pinned translucent=false sz=1}
-        mGlobalConfig={1.0 310mcc260mnc [en_US] ldltr sw128dp w228dp h128dp 420dpi smll land finger qwerty/v/v -nav/h winConfig={ mBounds=Rect(440, 1959 - 1038, 2295) mAppBounds=Rect(440, 1959 - 1038, 2295) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=pinned mDisplayWindowingMode=fullscreen mActivityType=undefined mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.326 fontWeightAdjustment=0}
+  * Task{ec1aa5b #9 type=standard I=com.innocent.media/.MainActivity U=0 visible=true visibleRequested=true mode=pinned translucent=false sz=1}
+        mGlobalConfig={1.0 310mcc260mnc [en_US] ldltr sw128dp w228dp h128dp 420dpi smll land finger qwerty/v/v -nav/h winConfig={ mBounds=Rect(440, 1959 - 1038, 2295) mAppBounds=Rect(440, 1959 - 1038, 2295) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=pinned mDisplayWindowingMode=fullscreen mActivityType=undefined mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.331 fontWeightAdjustment=0}
         mOverrideConfig={1.0 310mcc260mnc [en_US] ldltr sw128dp w228dp h128dp 420dpi smll land finger qwerty/v/v -nav/h winConfig={ mBounds=Rect(440, 1959 - 1038, 2295) mAppBounds=Rect(440, 1959 - 1038, 2295) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=pinned mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.8 fontWeightAdjustment=0}
       CurrentConfiguration={1.0 310mcc260mnc [en_US] ldltr sw128dp w228dp h128dp 420dpi smll land finger qwerty/v/v -nav/h winConfig={ mBounds=Rect(440, 1959 - 1038, 2295) mAppBounds=Rect(440, 1959 - 1038, 2295) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=pinned mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.9 fontWeightAdjustment=0}
-      * Task{ca490c9 #9 type=standard I=com.innocent.media/.MainActivity U=0 visible=true visibleRequested=true mode=pinned translucent=false sz=1}
+      * Task{ec1aa5b #9 type=standard I=com.innocent.media/.MainActivity U=0 visible=true visibleRequested=true mode=pinned translucent=false sz=1}
   rootPinnedTask=Task=9
   PinnedTaskController
-        (pinned) Task{ca490c9 #9 type=standard I=com.innocent.media/.MainActivity}
+        (pinned) Task{ec1aa5b #9 type=standard I=com.innocent.media/.MainActivity}
 MEDIA SESSION SERVICE (dumpsys media_session)
 
 6 sessions listeners.
 Global priority session is com.android.server.telecom/HeadsetMediaButton (userId=0)
   HeadsetMediaButton com.android.server.telecom/HeadsetMediaButton (userId=0)
-    ownerPid=521, ownerUid=1000, userId=0
+    ownerPid=518, ownerUid=1000, userId=0
     package=com.android.server.telecom
     launchIntent=null
     mediaButtonReceiver=null
@@ -34,11 +34,11 @@ Record for full_user=0
   OnMediaKeyEventSessionChangedListener: added 2 listener(s)
     from com.google.android.bluetooth
     from com.google.android.bluetooth
-  Last MediaButtonReceiver: MBR {pi=PendingIntent{32d23c9: PendingIntentRecord{195aace com.innocent.media broadcastIntent}}, componentName=ComponentInfo{com.innocent.media/com.ryanheise.audioservice.MediaButtonReceiver}, type=1, pkg=com.innocent.media}
+  Last MediaButtonReceiver: MBR {pi=PendingIntent{9f20d1a: PendingIntentRecord{829b04b com.innocent.media broadcastIntent}}, componentName=ComponentInfo{com.innocent.media/com.ryanheise.audioservice.MediaButtonReceiver}, type=1, pkg=com.innocent.media}
   Media button session is com.innocent.media/media-session (userId=0)
-  Sessions Stack - have 8 sessions:
+  Sessions Stack - have 7 sessions:
     BluetoothMediaBrowserService com.google.android.bluetooth/BluetoothMediaBrowserService (userId=0)
-      ownerPid=1031, ownerUid=1002, userId=0
+      ownerPid=1029, ownerUid=1002, userId=0
       package=com.google.android.bluetooth
       launchIntent=null
       mediaButtonReceiver=null
@@ -46,13 +46,13 @@ Record for full_user=0
       flags=3
       rating type=0
       controllers: 0
-      state=PlaybackState {state=ERROR(7), position=0, buffered position=0, speed=0.0, updated=32949, actions=0, custom actions=[], active item id=-1, error=Bluetooth audio disconnected}
+      state=PlaybackState {state=ERROR(7), position=0, buffered position=0, speed=0.0, updated=27344, actions=0, custom actions=[], active item id=-1, error=Bluetooth audio disconnected}
       audioAttrs=AudioAttributes: usage=USAGE_MEDIA content=CONTENT_TYPE_UNKNOWN flags=0x800 tags= bundle=null
       volumeType=LOCAL, controlType=ABSOLUTE, max=0, current=0, volumeControlId=null
       metadata: null
       queueTitle=Now Playing, size=0
     BluetoothMediaBrowserService com.google.android.bluetooth/BluetoothMediaBrowserService (userId=0)
-      ownerPid=1031, ownerUid=1002, userId=0
+      ownerPid=1029, ownerUid=1002, userId=0
       package=com.google.android.bluetooth
       launchIntent=null
       mediaButtonReceiver=null
@@ -60,7 +60,7 @@ Record for full_user=0
       flags=3
       rating type=0
       controllers: 0
-      state=PlaybackState {state=ERROR(7), position=0, buffered position=0, speed=0.0, updated=32974, actions=0, custom actions=[], active item id=-1, error=Bluetooth audio disconnected}
+      state=PlaybackState {state=ERROR(7), position=0, buffered position=0, speed=0.0, updated=27405, actions=0, custom actions=[], active item id=-1, error=Bluetooth audio disconnected}
       audioAttrs=AudioAttributes: usage=USAGE_MEDIA content=CONTENT_TYPE_UNKNOWN flags=0x800 tags= bundle=null
       volumeType=LOCAL, controlType=ABSOLUTE, max=0, current=0, volumeControlId=null
       metadata: null

@@ -1,23 +1,23 @@
-[09:25:12] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
-[09:25:12] install
-[09:25:28] network: speed 6000:24000 kbit/s, delay 80:250 ms
-[09:25:48] library: pushing 17 files
-[09:26:18] library: MediaStore lists 17 videos
-[09:26:18] cold start
+[12:08:43] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
+[12:08:43] install
+[12:08:55] network: speed 6000:24000 kbit/s, delay 80:250 ms
+[12:09:16] library: pushing 17 files
+[12:09:45] library: MediaStore lists 17 videos
+[12:09:45] cold start
 Status: ok
-TotalTime: 4251
-WaitTime: 4270
-[09:26:33] flow screen_modes
-[09:26:36] rotation asked 0, now 0
-[09:27:25] flow screen_modes exit 0
-[09:27:29] screen_modes: screen button bounds="[0,0][1080,2400]" (screen 1080x2400, attempt 1)
-[09:27:29] screen_modes: pressing the drawn button instead, [819,2270][839,2290]
-[09:27:37] screen_modes: pressed 829,2280 five times
-[09:27:49] flow screen_modes_land
-[09:28:12] rotation asked 1, now 0
-[09:28:29] flow screen_modes_land exit 0
-[09:28:33] screen_modes_land: screen button bounds="[0,0][2400,1080]" (screen 2400x1080, attempt 1)
-[09:28:33] screen_modes_land: pressing the drawn button instead, [2140,943][2160,963]
-[09:28:41] screen_modes_land: pressed 2150,953 five times
-[09:28:46] after Home: activities mentioning pinned=8
-[09:29:05] done
+TotalTime: 2554
+WaitTime: 2567
+[12:09:58] flow screen_modes
+[12:10:00] rotation asked 0, now 0
+[12:10:46] flow screen_modes exit 0
+[12:11:00] screen_modes: screen button bounds="[0,0][1080,2400]" (screen 1080x2400, attempt 2)
+[12:11:00] screen_modes: pressing the drawn button instead, [819,2270][839,2290]
+[12:11:09] screen_modes: pressed 829,2280 five times
+[12:11:19] flow screen_modes_land
+[12:11:21] rotation asked 1, now 90
+[12:11:36] flow screen_modes_land exit 0
+[12:11:40] screen_modes_land: screen button bounds="[0,0][2400,1080]" (screen 2400x1080, attempt 1)
+[12:11:40] screen_modes_land: pressing the drawn button instead, [2140,943][2160,963]
+[12:11:48] screen_modes_land: pressed 2150,953 five times
+[12:11:52] after Home: activities mentioning pinned=8
+[12:12:10] done
