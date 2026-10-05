@@ -1,0 +1,77 @@
+# screen_modes.yaml again in landscape (run.sh turns the device first),
+# in the player it left open; run.sh then presses Home to check the film
+# goes into picture-in-picture by itself.
+appId: com.innocent.media
+---
+- extendedWaitUntil:
+    visible: "__nothing_has_this_text__"
+    timeout: 5000
+    optional: true
+# Show the controls, then press MX's screen button five times: Stretch,
+# Crop, 100%, Custom, back to Fit to screen. Each new mode's name shows
+# over the video for a moment; the lab trace logs the zoom ("screen crop
+# x1.33") and where each subtitle line was drawn.
+- tapOn:
+    point: "50%,30%"
+- waitForAnimationToEnd:
+    timeout: 1000
+- tapOn:
+    text: "(Fit to screen|Stretch|Crop|100%|Custom)"
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible: "__nothing_has_this_text__"
+    timeout: 400
+    optional: true
+- takeScreenshot: 7x_mode_stretch_land
+- extendedWaitUntil:
+    visible: "__nothing_has_this_text__"
+    timeout: 1500
+    optional: true
+- tapOn:
+    text: "(Fit to screen|Stretch|Crop|100%|Custom)"
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible: "__nothing_has_this_text__"
+    timeout: 400
+    optional: true
+- takeScreenshot: 7x_mode_crop_land
+- extendedWaitUntil:
+    visible: "__nothing_has_this_text__"
+    timeout: 1500
+    optional: true
+- tapOn:
+    text: "(Fit to screen|Stretch|Crop|100%|Custom)"
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible: "__nothing_has_this_text__"
+    timeout: 400
+    optional: true
+- takeScreenshot: 7x_mode_original_land
+- extendedWaitUntil:
+    visible: "__nothing_has_this_text__"
+    timeout: 1500
+    optional: true
+- tapOn:
+    text: "(Fit to screen|Stretch|Crop|100%|Custom)"
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible: "__nothing_has_this_text__"
+    timeout: 400
+    optional: true
+- takeScreenshot: 7x_mode_custom_land
+- extendedWaitUntil:
+    visible: "__nothing_has_this_text__"
+    timeout: 1500
+    optional: true
+- tapOn:
+    text: "(Fit to screen|Stretch|Crop|100%|Custom)"
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible: "__nothing_has_this_text__"
+    timeout: 400
+    optional: true
+- takeScreenshot: 7x_mode_fit_land
+- extendedWaitUntil:
+    visible: "__nothing_has_this_text__"
+    timeout: 1500
+    optional: true

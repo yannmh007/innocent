@@ -175,9 +175,24 @@ jobs:
           for i in $(seq 1 10); do head -c 20000 clip.mp4 > "lib_media/Download/broken_$i.mp4"; done
           # The film to play: three minutes of 720p H.264, the owner's case (long
           # enough that the gesture flows' seeks never run it to its end).
+          # With a soft subtitle track (Burmese and English, a new line every
+          # 4 s), so the screen-mode flows can check the subtitle stays on
+          # screen and unzoomed in Crop and 100%.
+          python3 - > subs.srt <<'PY'
+          for i in range(45):
+              a, b = i * 4, i * 4 + 3
+              print(i + 1)
+              print(f"00:{a//60:02d}:{a%60:02d},200 --> 00:{b//60:02d}:{b%60:02d},800")
+              print(f"စာတန်းထိုး {i + 1} ဘယ်သူမှ မသိခဲ့ကြဘူး")
+              print(f"Subtitle line {i + 1}")
+              print()
+          PY
           ffmpeg -loglevel error -f lavfi -i testsrc2=size=1280x720:rate=24 \
-            -f lavfi -i sine=frequency=330 -t 180 -c:v libx264 -preset veryfast \
-            -crf 28 -pix_fmt yuv420p -c:a aac -b:a 96k -movflags +faststart \
+            -f lavfi -i sine=frequency=330 -i subs.srt -t 180 \
+            -map 0:v -map 1:a -map 2:s -c:v libx264 -preset veryfast \
+            -crf 28 -pix_fmt yuv420p -c:a aac -b:a 96k -c:s mov_text \
+            -metadata:s:s:0 language=eng -disposition:s:0 default \
+            -movflags +faststart \
             "lib_media/Movies/Perf Test/aaa_play_720p.mp4"
           du -sh lib_media; find lib_media -type f | wc -l
 

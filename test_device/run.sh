@@ -138,8 +138,8 @@ for flow in $FLOWS; do
   # The layout flows measure one orientation each; the player follows the
   # device by default, so turn the device.
   case "$flow" in
-    layout_portrait|screens_large|gestures) rotate 0 ;;
-    layout_landscape|screens_large_land|gestures_land) rotate 1 ;;
+    layout_portrait|screens_large|gestures|screen_modes) rotate 0 ;;
+    layout_landscape|screens_large_land|gestures_land|screen_modes_land) rotate 1 ;;
   esac
   # The perf flows sit still for a minute; read the threads in the middle of
   # it, while the Video tab idles or the film plays.
@@ -162,6 +162,21 @@ for flow in $FLOWS; do
     t1=$(date +%s%N)
     adb exec-out screencap -p > "$OUT/shots/97_stacked_taps.png"
     log "stacked taps at $x,$y: 4 taps in $(( (t1 - t0) / 1000000 )) ms"
+    ;;
+  # PICTURE-IN-PICTURE ON LEAVING. The film is playing; Home must put it in
+  # a PiP window by itself (Android 12+ auto-enter), still playing.
+  screen_modes_land)
+    adb shell input keyevent KEYCODE_HOME
+    sleep 3
+    adb exec-out screencap -p > "$OUT/shots/98_pip_after_home.png"
+    pinned=$(adb shell dumpsys activity activities 2>/dev/null \
+      | grep -ciE "mode=pinned|windowingMode=pinned|pinned")
+    log "after Home: activities mentioning pinned=$pinned"
+    adb shell dumpsys activity activities 2>/dev/null \
+      | grep -iE "pinned|mResumedActivity" | head -8 >> "$OUT/pip.txt" || true
+    adb shell dumpsys media_session 2>/dev/null | head -60 >> "$OUT/pip.txt" || true
+    sleep 4
+    adb exec-out screencap -p > "$OUT/shots/99_pip_later.png"
     ;;
   esac
   # Maestro has put screenshots in different places across versions.
