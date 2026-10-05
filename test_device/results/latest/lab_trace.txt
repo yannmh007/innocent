@@ -1,160 +1,226 @@
 LAB device kind=DeviceKind.phone sw=411.0
-LAB cpu app 31% · 0.2fps · pool-thread 22% | 1.raster 7% | RenderThread 1%
+LAB cpu app 24% · 0.2fps · pool-thread 14% | 1.raster 7% | RenderThread 2%
 LAB phase screen_modes start
-LAB cpu app 1% · 0.1fps · -
 LAB device kind=DeviceKind.phone sw=411.0
-LAB cpu app 20% · 3.0fps · 1.raster 15% | .innocent.media 2% | RenderThread 2%
-LAB cpu app 5% · 1.3fps · 1.raster 2% | .innocent.media 2%
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=24.0 bar=24.0
+LAB cpu app 24% · 3.7fps · 1.raster 18% | .innocent.media 3% | RenderThread 2%
 LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=24.0 bar=24.0
 LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=24.0
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=24.0
 LAB    0.0 hwdec -> auto
-LAB cpu app 15% · 0.5fps · RenderThread 7% | 1.raster 6% | .innocent.media 2%
-LAB    2.4 open scheme=path len=54 hwdec=auto start=0s autoplay=true
-LAB    2.4 wakelock playing=false bg=false priv=false
-LAB    2.5 wakelock playing=true bg=false priv=false
-LAB    2.5 open ok
+LAB    2.0 open scheme=path len=54 hwdec=auto start=0s autoplay=true
+LAB    2.0 wakelock playing=false bg=false priv=false
+LAB    2.2 wakelock playing=true bg=false priv=false
+LAB    2.2 open ok
 LAB subtitle "စာတန်းထိုး 1 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 1" bottom=780 of 914 font=20.6 box=12..399
 LAB subtitle "စာတန်းထိုး 1 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 1" bottom=544 of 914 font=20.6 box=12..399
+LAB cpu app 30% · 6.9fps · 1.raster 18% | RenderThread 8% | .innocent.media 3%
 LAB subtitle "စာတန်းထိုး 2 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 2" bottom=544 of 914 font=20.6 box=12..399
-LAB cpu app 14% · 9.2fps · 1.raster 9% | .innocent.media 4% | Thread 1%
-LAB   10.4 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
+LAB   10.0 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
 LAB gesture tap
+LAB subtitle "စာတန်းထိုး 3 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 3" bottom=544 of 914 font=20.6 box=12..399
 LAB sem controls 1 after 1000 ms: view Instance of 'Size' dpr 2.625
 LAB sem #0 0,0 1080x2400 own=0,0 1080x2400 
-LAB sem   #92 0,0 1080x2400 own=0,0 411x914 T=[sx 2.63 sy 2.63 tx 0 ty 0] 
-LAB sem     #93 0,0 1080x2400 own=0,0 411x914 
-LAB sem       #94 0,0 1080x2400 own=0,0 411x914 id=player-screen-mode label="စာတန်းထိုး 2 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 2 / စာတန်းထိုး 2 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 2 / aaa_play_720p / 12:34 / 00:07 / -02:52 / Fit to screen"
-LAB sem         #95 0,0 1080x2400 own=0,0 411x914 tap
-LAB sem         #96 0,139 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 0 ty 52.76] tip="Back" tap
-LAB sem         #97 800,139 154x126 own=0,0 59x48 T=[sx 1 sy 1 tx 304.66 ty 52.76] label="Default" tap
-LAB sem         #98 954,139 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 363.43 ty 52.76] tip="More" tap
-LAB sem         #99 0,283 1080x147 own=0,0 411x56 T=[sx 1 sy 1 tx 0 ty 107.76] 
-LAB sem           #106 0,283 1080x147 own=0,0 411x56 
-LAB sem             #100 0,283 165x147 own=0,0 63x56 label="1X" tap
-LAB sem             #101 165,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 63 ty 0] tap
-LAB sem             #102 331,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 126 ty 0] tap
-LAB sem             #103 496,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 189 ty 0] tap
-LAB sem             #104 662,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 252 ty 0] tap
-LAB sem             #105 827,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 315 ty 0] tap
-LAB sem         #107 194,2117 692x116 own=0,0 263x44 T=[sx 1 sy 1 tx 74 ty 806.29] 
-LAB sem         #108 317,2222 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 120.71 ty 846.29] tip="Previous video" tap
-LAB sem         #109 464,2222 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 176.71 ty 846.29] tip="Pause" tap
-LAB sem         #110 611,2222 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 232.71 ty 846.29] tip="Next (long-press for Loop menu)" tap
-LAB sem         #111 11,2222 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 4 ty 846.29] tip="Lock controls" tap
-LAB sem         #112 768,2222 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 292.43 ty 846.29] tip="Fit to screen" tap
-LAB sem         #113 917,2222 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 349.43 ty 846.29] tip="Picture-in-Picture" tap
-LAB subtitle "စာတန်းထိုး 3 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 3" bottom=544 of 914 font=20.6 box=12..399
-LAB gesture tap
+LAB sem   #98 0,0 1080x2400 own=0,0 411x914 T=[sx 2.63 sy 2.63 tx 0 ty 0] 
+LAB sem     #99 0,0 1080x2400 own=0,0 411x914 
+LAB sem       #100 0,0 1080x2400 own=0,0 411x914 
+LAB sem         #101 32,1287 1015x142 own=0,0 387x54 T=[sx 1 sy 1 tx 12.34 ty 490.29] label="စာတန်းထိုး 3 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 3"
+LAB sem         #102 0,0 1080x2400 own=0,0 411x914 tap
+LAB sem         #103 0,139 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 0 ty 52.76] tip="Back" tap
+LAB sem         #104 126,178 552x47 own=0,0 210x18 T=[sx 1 sy 1 tx 48 ty 67.76] label="aaa_play_720p"
+LAB sem         #105 693,177 91x50 own=0,0 34x19 T=[sx 1 sy 1 tx 264.16 ty 67.26] label="13:01"
+LAB sem         #106 800,139 154x126 own=0,0 59x48 T=[sx 1 sy 1 tx 304.66 ty 52.76] label="Default" tap
+LAB sem         #107 954,139 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 363.43 ty 52.76] tip="More" tap
+LAB sem         #108 0,283 1080x147 own=0,0 411x56 T=[sx 1 sy 1 tx 0 ty 107.76] 
+LAB sem           #115 0,283 1080x147 own=0,0 411x56 
+LAB sem             #109 0,283 165x147 own=0,0 63x56 label="1X" tap
+LAB sem             #110 165,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 63 ty 0] tap
+LAB sem             #111 331,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 126 ty 0] tap
+LAB sem             #112 496,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 189 ty 0] tap
+LAB sem             #113 662,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 252 ty 0] tap
+LAB sem             #114 827,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 315 ty 0] tap
+LAB sem         #116 47,2149 147x50 own=0,0 56x19 T=[sx 1 sy 1 tx 18 ty 818.79] label="00:08"
+LAB sem         #117 194,2117 692x116 own=0,0 263x44 T=[sx 1 sy 1 tx 74 ty 806.29] 
+LAB sem         #118 886,2149 147x50 own=0,0 56x19 T=[sx 1 sy 1 tx 337.43 ty 818.79] label="-02:51"
+LAB sem         #119 317,2222 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 120.71 ty 846.29] tip="Previous video" tap
+LAB sem         #120 464,2222 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 176.71 ty 846.29] tip="Pause" tap
+LAB sem         #121 611,2222 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 232.71 ty 846.29] tip="Next (long-press for Loop menu)" tap
+LAB sem         #122 11,2222 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 4 ty 846.29] tip="Lock controls" tap
+LAB sem         #123 768,2222 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 292.43 ty 846.29] id=player-screen-mode label="Fit to screen" tap
+LAB sem         #124 917,2222 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 349.43 ty 846.29] tip="Picture-in-Picture" tap
+LAB cpu app 8% · 5.6fps · 1.raster 5% | .innocent.media 2%
 LAB subtitle "စာတန်းထိုး 4 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 4" bottom=544 of 914 font=20.6 box=12..399
+LAB gesture tap
 LAB   17.2 screen crop x3.95
 LAB subtitle "စာတန်းထိုး 4 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 4" bottom=780 of 914 font=20.6 box=12..399
-LAB   19.0 screen original x1.19
-LAB subtitle "စာတန်းထိုး 4 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 4" bottom=566 of 914 font=20.6 box=12..399
-LAB cpu app 18% · 8.6fps · 1.raster 13% | .innocent.media 3%
+LAB   18.9 screen original x1.19
 LAB subtitle "စာတန်းထိုး 5 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 5" bottom=566 of 914 font=20.6 box=12..399
-LAB   20.9 screen custom x1.00
+LAB   20.5 screen custom x1.00
 LAB subtitle "စာတန်းထိုး 5 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 5" bottom=544 of 914 font=20.6 box=12..399
-LAB   22.8 screen fit x1.00
+LAB   22.2 screen fit x1.00
 LAB subtitle "စာတန်းထိုး 6 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 6" bottom=544 of 914 font=20.6 box=12..399
-LAB sem controls 2 after 9500 ms: view Instance of 'Size' dpr 2.625
+LAB sem controls 2 after 8750 ms: view Instance of 'Size' dpr 2.625
 LAB sem #0 0,0 1080x2400 own=0,0 1080x2400 
-LAB sem   #114 0,0 1080x2400 own=0,0 411x914 T=[sx 2.63 sy 2.63 tx 0 ty 0] 
-LAB sem     #115 0,0 1080x2400 own=0,0 411x914 
-LAB sem       #116 0,0 1080x2400 own=0,0 411x914 id=player-screen-mode label="စာတန်းထိုး 6 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 6 / စာတန်းထိုး 6 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 6 / aaa_play_720p / 12:34 / 00:20 / -02:39 / Fit to screen"
-LAB sem         #117 0,0 1080x2400 own=0,0 411x914 tap
-LAB sem         #118 0,139 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 0 ty 52.76] tip="Back" tap
-LAB sem         #119 800,139 154x126 own=0,0 59x48 T=[sx 1 sy 1 tx 304.66 ty 52.76] label="Default" tap
-LAB sem         #120 954,139 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 363.43 ty 52.76] tip="More" tap
-LAB sem         #121 0,283 1080x147 own=0,0 411x56 T=[sx 1 sy 1 tx 0 ty 107.76] 
-LAB sem           #128 0,283 1080x147 own=0,0 411x56 
-LAB sem             #122 0,283 165x147 own=0,0 63x56 label="1X" tap
-LAB sem             #123 165,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 63 ty 0] tap
-LAB sem             #124 331,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 126 ty 0] tap
-LAB sem             #125 496,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 189 ty 0] tap
-LAB sem             #126 662,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 252 ty 0] tap
-LAB sem             #127 827,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 315 ty 0] tap
-LAB sem         #129 194,2117 692x116 own=0,0 263x44 T=[sx 1 sy 1 tx 74 ty 806.29] 
-LAB sem         #130 317,2222 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 120.71 ty 846.29] tip="Previous video" tap
-LAB sem         #131 464,2222 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 176.71 ty 846.29] tip="Pause" tap
-LAB sem         #132 611,2222 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 232.71 ty 846.29] tip="Next (long-press for Loop menu)" tap
-LAB sem         #133 11,2222 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 4 ty 846.29] tip="Lock controls" tap
-LAB sem         #134 768,2222 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 292.43 ty 846.29] tip="Fit to screen" tap
-LAB sem         #135 917,2222 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 349.43 ty 846.29] tip="Picture-in-Picture" tap
+LAB sem   #125 0,0 1080x2400 own=0,0 411x914 T=[sx 2.63 sy 2.63 tx 0 ty 0] 
+LAB sem     #126 0,0 1080x2400 own=0,0 411x914 
+LAB sem       #127 0,0 1080x2400 own=0,0 411x914 
+LAB sem         #128 32,1287 1015x142 own=0,0 387x54 T=[sx 1 sy 1 tx 12.34 ty 490.29] label="စာတန်းထိုး 6 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 6"
+LAB sem         #129 0,0 1080x2400 own=0,0 411x914 tap
+LAB sem         #130 0,139 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 0 ty 52.76] tip="Back" tap
+LAB sem         #131 126,178 552x47 own=0,0 210x18 T=[sx 1 sy 1 tx 48 ty 67.76] label="aaa_play_720p"
+LAB sem         #132 693,177 91x50 own=0,0 34x19 T=[sx 1 sy 1 tx 264.16 ty 67.26] label="13:01"
+LAB sem         #133 800,139 154x126 own=0,0 59x48 T=[sx 1 sy 1 tx 304.66 ty 52.76] label="Default" tap
+LAB sem         #134 954,139 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 363.43 ty 52.76] tip="More" tap
+LAB sem         #135 0,283 1080x147 own=0,0 411x56 T=[sx 1 sy 1 tx 0 ty 107.76] 
+LAB sem           #142 0,283 1080x147 own=0,0 411x56 
+LAB sem             #136 0,283 165x147 own=0,0 63x56 label="1X" tap
+LAB sem             #137 165,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 63 ty 0] tap
+LAB sem             #138 331,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 126 ty 0] tap
+LAB sem             #139 496,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 189 ty 0] tap
+LAB sem             #140 662,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 252 ty 0] tap
+LAB sem             #141 827,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 315 ty 0] tap
+LAB sem         #143 47,2149 147x50 own=0,0 56x19 T=[sx 1 sy 1 tx 18 ty 818.79] label="00:21"
+LAB sem         #144 194,2117 692x116 own=0,0 263x44 T=[sx 1 sy 1 tx 74 ty 806.29] 
+LAB sem         #145 886,2149 147x50 own=0,0 56x19 T=[sx 1 sy 1 tx 337.43 ty 818.79] label="-02:38"
+LAB sem         #146 317,2222 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 120.71 ty 846.29] tip="Previous video" tap
+LAB sem         #147 464,2222 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 176.71 ty 846.29] tip="Pause" tap
+LAB sem         #148 611,2222 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 232.71 ty 846.29] tip="Next (long-press for Loop menu)" tap
+LAB sem         #149 11,2222 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 4 ty 846.29] tip="Lock controls" tap
+LAB sem         #150 768,2222 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 292.43 ty 846.29] id=player-screen-mode label="Fit to screen" tap
+LAB sem         #151 917,2222 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 349.43 ty 846.29] tip="Picture-in-Picture" tap
+LAB cpu app 17% · 10.9fps · 1.raster 14% | .innocent.media 3%
 LAB subtitle "စာတန်းထိုး 7 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 7" bottom=544 of 914 font=20.6 box=12..399
-LAB cpu app 18% · 8.0fps · 1.raster 14% | .innocent.media 3%
 LAB subtitle "စာတန်းထိုး 8 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 8" bottom=544 of 914 font=20.6 box=12..399
+LAB cpu app 3% · 2.8fps · 1.raster 1%
 LAB subtitle "စာတန်းထိုး 9 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 9" bottom=544 of 914 font=20.6 box=12..399
 LAB phase screen_modes_land start
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=24.0
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=24.0
 LAB subtitle "စာတန်းထိုး 9 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 9" bottom=383 of 411 font=20.6 box=113..801
 LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=24.0
 LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=24.0
-LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=24.0
-LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=24.0
-LAB cpu app 4% · 1.0fps · 1.raster 1% | .innocent.media 1%
 LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=24.0
 LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=24.0
 LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=24.0
 LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=24.0
 LAB subtitle "စာတန်းထိုး 10 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 10" bottom=383 of 411 font=20.6 box=113..801
 LAB subtitle "စာတန်းထိုး 11 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 11" bottom=383 of 411 font=20.6 box=113..801
+LAB cpu app 2% · 1.3fps · -
 LAB subtitle "စာတန်းထိုး 12 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 12" bottom=383 of 411 font=20.6 box=113..801
-LAB cpu app 3% · 0.8fps · -
 LAB subtitle "စာတန်းထိုး 13 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 13" bottom=383 of 411 font=20.6 box=113..801
+LAB cpu app 1% · 0.4fps · -
 LAB subtitle "စာတန်းထိုး 14 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 14" bottom=383 of 411 font=20.6 box=113..801
-LAB cpu app 4% · 0.6fps · .innocent.media 2%
 LAB subtitle "စာတန်းထိုး 15 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 15" bottom=383 of 411 font=20.6 box=113..801
+LAB   62.0 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
+LAB subtitle "စာတန်းထိုး 16 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 16" bottom=383 of 411 font=20.6 box=113..801
+LAB cpu app 2% · 0.6fps · -
+LAB subtitle "စာတန်းထိုး 17 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 17" bottom=383 of 411 font=20.6 box=113..801
+LAB subtitle "စာတန်းထိုး 18 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 18" bottom=383 of 411 font=20.6 box=113..801
+LAB cpu app 3% · 0.7fps · .innocent.media 1%
+LAB subtitle "စာတန်းထိုး 19 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 19" bottom=383 of 411 font=20.6 box=113..801
 LAB gesture tap
-LAB subtitle "စာတန်းထိုး 15 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 15" bottom=277 of 411 font=20.6 box=113..801
-LAB   62.5 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
-LAB sem controls 3 after 1250 ms: view Instance of 'Size' dpr 2.625
+LAB subtitle "စာတန်းထိုး 20 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 20" bottom=277 of 411 font=20.6 box=113..801
+LAB sem controls 3 after 1000 ms: view Instance of 'Size' dpr 2.625
 LAB sem #0 0,0 2400x1080 own=0,0 2400x1080 
-LAB sem   #148 0,0 2400x1080 own=0,0 914x411 T=[sx 2.63 sy 2.63 tx 0 ty 0] 
-LAB sem     #149 0,0 2400x1080 own=0,0 914x411 
-LAB sem       #150 0,0 2400x1080 own=0,0 914x411 id=player-screen-mode label="စာတန်းထိုး 15 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 15 / စာတန်းထိုး 15 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 15 / aaa_play_720p / 12:35 / 00:58 / -02:01 / Fit to screen"
-LAB sem         #151 0,0 2400x1080 own=0,0 914x411 tap
-LAB sem         #152 128,74 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 48.76 ty 28] tip="Back" tap
-LAB sem         #153 1868,74 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 711.52 ty 28] tip="Audio track" tap
-LAB sem         #154 1994,74 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 759.52 ty 28] tip="Subtitle" tap
-LAB sem         #155 2120,74 154x126 own=0,0 59x48 T=[sx 1 sy 1 tx 807.52 ty 28] label="Default" tap
-LAB sem         #156 2274,74 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 866.29 ty 28] tip="More" tap
-LAB sem         #157 128,218 2272x147 own=0,0 866x56 T=[sx 1 sy 1 tx 48.76 ty 83] 
-LAB sem           #164 128,218 2272x147 own=0,0 866x56 
-LAB sem             #158 128,218 165x147 own=0,0 63x56 label="1X" tap
-LAB sem             #159 293,218 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 63 ty 0] tap
-LAB sem             #160 459,218 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 126 ty 0] tap
-LAB sem             #161 624,218 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 189 ty 0] tap
-LAB sem             #162 790,218 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 252 ty 0] tap
-LAB sem             #163 955,218 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 315 ty 0] tap
-LAB sem         #165 322,783 1883x116 own=0,0 718x44 T=[sx 1 sy 1 tx 122.76 ty 298.43] 
-LAB sem         #166 915,891 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 348.52 ty 339.43] tip="Previous video" tap
-LAB sem         #167 1188,891 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 452.52 ty 339.43] tip="Pause" tap
-LAB sem         #168 1461,891 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 556.52 ty 339.43] tip="Next (long-press for Loop menu)" tap
-LAB sem         #169 139,891 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 52.76 ty 339.43] tip="Lock controls" tap
-LAB sem         #170 2088,891 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 795.29 ty 339.43] tip="Fit to screen" tap
-LAB sem         #171 2237,891 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 852.29 ty 339.43] tip="Picture-in-Picture" tap
-LAB   64.9 screen crop x1.25
-LAB subtitle "စာတန်းထိုး 16 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 16" bottom=277 of 411 font=20.6 box=27..887
-LAB   67.1 screen original x0.67
-LAB subtitle "စာတန်းထိုး 16 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 16" bottom=277 of 411 font=20.6 box=228..686
-LAB subtitle "စာတန်းထိုး 17 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 17" bottom=277 of 411 font=20.6 box=228..686
-LAB   69.6 screen custom x1.00
-LAB subtitle "စာတန်းထိုး 17 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 17" bottom=277 of 411 font=20.6 box=113..801
-LAB cpu app 24% · 8.4fps · 1.raster 19% | .innocent.media 4%
-LAB   71.7 screen fit x1.00
-LAB subtitle "စာတန်းထိုး 18 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 18" bottom=277 of 411 font=20.6 box=113..801
-LAB   73.5 screen crop x1.25
-LAB subtitle "စာတန်းထိုး 18 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 18" bottom=277 of 411 font=20.6 box=27..887
-LAB subtitle "စာတန်းထိုး 19 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 19" bottom=277 of 411 font=20.6 box=27..887
-LAB subtitle "စာတန်းထိုး 19 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 19" bottom=383 of 411 font=20.6 box=27..887
-LAB   79.5 lifecycle inactive mounted=true
+LAB sem   #169 0,0 2400x1080 own=0,0 914x411 T=[sx 2.63 sy 2.63 tx 0 ty 0] 
+LAB sem     #170 0,0 2400x1080 own=0,0 914x411 
+LAB sem       #171 0,0 2400x1080 own=0,0 914x411 
+LAB sem         #172 298,587 1805x142 own=0,0 688x54 T=[sx 1 sy 1 tx 113.37 ty 223.43] label="စာတန်းထိုး 20 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 20"
+LAB sem         #173 0,0 2400x1080 own=0,0 914x411 tap
+LAB sem         #174 128,74 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 48.76 ty 28] tip="Back" tap
+LAB sem         #175 254,113 1492x47 own=0,0 568x18 T=[sx 1 sy 1 tx 96.76 ty 43] label="aaa_play_720p"
+LAB sem         #176 1761,112 91x50 own=0,0 34x19 T=[sx 1 sy 1 tx 671.02 ty 42.50] label="13:02"
+LAB sem         #177 1868,74 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 711.52 ty 28] tip="Audio track" tap
+LAB sem         #178 1994,74 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 759.52 ty 28] tip="Subtitle" tap
+LAB sem         #179 2120,74 154x126 own=0,0 59x48 T=[sx 1 sy 1 tx 807.52 ty 28] label="Default" tap
+LAB sem         #180 2274,74 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 866.29 ty 28] tip="More" tap
+LAB sem         #181 128,218 2272x147 own=0,0 866x56 T=[sx 1 sy 1 tx 48.76 ty 83] 
+LAB sem           #188 128,218 2272x147 own=0,0 866x56 
+LAB sem             #182 128,218 165x147 own=0,0 63x56 label="1X" tap
+LAB sem             #183 293,218 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 63 ty 0] tap
+LAB sem             #184 459,218 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 126 ty 0] tap
+LAB sem             #185 624,218 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 189 ty 0] tap
+LAB sem             #186 790,218 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 252 ty 0] tap
+LAB sem             #187 955,218 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 315 ty 0] tap
+LAB sem         #189 175,816 147x50 own=0,0 56x19 T=[sx 1 sy 1 tx 66.76 ty 310.93] label="01:17"
+LAB sem         #190 322,783 1883x116 own=0,0 718x44 T=[sx 1 sy 1 tx 122.76 ty 298.43] 
+LAB sem         #191 2206,816 147x50 own=0,0 56x19 T=[sx 1 sy 1 tx 840.29 ty 310.93] label="-01:42"
+LAB sem         #192 915,891 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 348.52 ty 339.43] tip="Previous video" tap
+LAB sem         #193 1188,891 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 452.52 ty 339.43] tip="Pause" tap
+LAB sem         #194 1461,891 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 556.52 ty 339.43] tip="Next (long-press for Loop menu)" tap
+LAB sem         #195 139,891 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 52.76 ty 339.43] tip="Lock controls" tap
+LAB sem         #196 2088,891 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 795.29 ty 339.43] id=player-screen-mode label="Fit to screen" tap
+LAB sem         #197 2237,891 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 852.29 ty 339.43] tip="Picture-in-Picture" tap
+LAB subtitle "စာတန်းထိုး 21 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 21" bottom=277 of 411 font=20.6 box=113..801
+LAB subtitle "စာတန်းထိုး 21 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 21" bottom=383 of 411 font=20.6 box=113..801
+LAB cpu app 7% · 4.4fps · 1.raster 4% | .innocent.media 1%
+LAB subtitle "စာတန်းထိုး 22 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 22" bottom=383 of 411 font=20.6 box=113..801
+LAB gesture tap
+LAB subtitle "စာတန်းထိုး 22 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 22" bottom=277 of 411 font=20.6 box=113..801
+LAB sem controls 4 after 1000 ms: view Instance of 'Size' dpr 2.625
+LAB sem #0 0,0 2400x1080 own=0,0 2400x1080 
+LAB sem   #199 0,0 2400x1080 own=0,0 914x411 T=[sx 2.63 sy 2.63 tx 0 ty 0] 
+LAB sem     #200 0,0 2400x1080 own=0,0 914x411 
+LAB sem       #201 0,0 2400x1080 own=0,0 914x411 
+LAB sem         #203 0,0 2400x1080 own=0,0 914x411 tap
+LAB sem         #204 128,74 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 48.76 ty 28] tip="Back" tap
+LAB sem         #205 254,113 1492x47 own=0,0 568x18 T=[sx 1 sy 1 tx 96.76 ty 43] label="aaa_play_720p"
+LAB sem         #206 1761,112 91x50 own=0,0 34x19 T=[sx 1 sy 1 tx 671.02 ty 42.50] label="13:02"
+LAB sem         #207 1868,74 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 711.52 ty 28] tip="Audio track" tap
+LAB sem         #208 1994,74 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 759.52 ty 28] tip="Subtitle" tap
+LAB sem         #209 2120,74 154x126 own=0,0 59x48 T=[sx 1 sy 1 tx 807.52 ty 28] label="Default" tap
+LAB sem         #210 2274,74 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 866.29 ty 28] tip="More" tap
+LAB sem         #211 128,218 2272x147 own=0,0 866x56 T=[sx 1 sy 1 tx 48.76 ty 83] 
+LAB sem           #218 128,218 2272x147 own=0,0 866x56 
+LAB sem             #212 128,218 165x147 own=0,0 63x56 label="1X" tap
+LAB sem             #213 293,218 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 63 ty 0] tap
+LAB sem             #214 459,218 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 126 ty 0] tap
+LAB sem             #215 624,218 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 189 ty 0] tap
+LAB sem             #216 790,218 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 252 ty 0] tap
+LAB sem             #217 955,218 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 315 ty 0] tap
+LAB sem         #219 175,816 147x50 own=0,0 56x19 T=[sx 1 sy 1 tx 66.76 ty 310.93] label="01:27"
+LAB sem         #220 322,783 1883x116 own=0,0 718x44 T=[sx 1 sy 1 tx 122.76 ty 298.43] 
+LAB sem         #221 2206,816 147x50 own=0,0 56x19 T=[sx 1 sy 1 tx 840.29 ty 310.93] label="-01:32"
+LAB sem         #222 915,891 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 348.52 ty 339.43] tip="Previous video" tap
+LAB sem         #223 1188,891 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 452.52 ty 339.43] tip="Pause" tap
+LAB sem         #224 1461,891 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 556.52 ty 339.43] tip="Next (long-press for Loop menu)" tap
+LAB sem         #225 139,891 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 52.76 ty 339.43] tip="Lock controls" tap
+LAB sem         #226 2088,891 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 795.29 ty 339.43] id=player-screen-mode label="Fit to screen" tap
+LAB sem         #227 2237,891 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 852.29 ty 339.43] tip="Picture-in-Picture" tap
+LAB subtitle "စာတန်းထိုး 23 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 23" bottom=277 of 411 font=20.6 box=113..801
+LAB subtitle "စာတန်းထိုး 23 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 23" bottom=383 of 411 font=20.6 box=113..801
+LAB cpu app 7% · 4.2fps · 1.raster 4% | .innocent.media 1%
+LAB subtitle "စာတန်းထိုး 24 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 24" bottom=383 of 411 font=20.6 box=113..801
+LAB subtitle "စာတန်းထိုး 25 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 25" bottom=383 of 411 font=20.6 box=113..801
+LAB gesture tap
+LAB subtitle "စာတန်းထိုး 25 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 25" bottom=277 of 411 font=20.6 box=113..801
+LAB subtitle "စာတန်းထိုး 26 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 26" bottom=277 of 411 font=20.6 box=113..801
+LAB cpu app 6% · 2.5fps · 1.raster 4%
+LAB subtitle "စာတန်းထိုး 26 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 26" bottom=383 of 411 font=20.6 box=113..801
+LAB subtitle "စာတန်းထိုး 27 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 27" bottom=383 of 411 font=20.6 box=113..801
+LAB subtitle "စာတန်းထိုး 28 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 28" bottom=383 of 411 font=20.6 box=113..801
+LAB gesture tap
+LAB subtitle "စာတန်းထိုး 28 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 28" bottom=277 of 411 font=20.6 box=113..801
+LAB  112.9 screen crop x1.25
+LAB subtitle "စာတန်းထိုး 28 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 28" bottom=277 of 411 font=20.6 box=27..887
+LAB  114.5 screen original x0.67
+LAB subtitle "စာတန်းထိုး 28 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 28" bottom=277 of 411 font=20.6 box=228..686
+LAB cpu app 9% · 5.5fps · 1.raster 7% | .innocent.media 1%
+LAB subtitle "စာတန်းထိုး 29 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 29" bottom=277 of 411 font=20.6 box=228..686
+LAB  116.2 screen custom x1.00
+LAB subtitle "စာတန်းထိုး 29 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 29" bottom=277 of 411 font=20.6 box=113..801
+LAB  117.9 screen fit x1.00
+LAB subtitle "စာတန်းထိုး 30 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 30" bottom=277 of 411 font=20.6 box=113..801
+LAB  119.4 screen crop x1.25
+LAB subtitle "စာတန်းထိုး 30 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 30" bottom=277 of 411 font=20.6 box=27..887
+LAB subtitle "စာတန်းထိုး 31 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 31" bottom=277 of 411 font=20.6 box=27..887
+LAB subtitle "စာတန်းထိုး 31 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 31" bottom=383 of 411 font=20.6 box=27..887
+LAB cpu app 16% · 8.9fps · 1.raster 13% | .innocent.media 2%
+LAB  125.3 lifecycle inactive mounted=true
 LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=24.0
 LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=24.0
-LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=24.0
-LAB cpu app 18% · 8.3fps · 1.raster 13% | .innocent.media 3%
 LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=24.0 r=0.0 b=24.0 bar=24.0
-LAB subtitle "စာတန်းထိုး 20 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 20" bottom=383 of 411 font=20.6 box=27..887
-LAB subtitle "စာတန်းထိုး 20 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 20" bottom=119 of 128 font=8.0 box=7..221
+LAB insets stable l=48.761905670166016 t=24.0 r=0.0 b=24.0 padding l=48.76190476190476 t=24.0 r=0.0 b=24.0 bar=24.0
+LAB subtitle "စာတန်းထိုး 31 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 31" bottom=119 of 128 font=8.0 box=7..221
 LAB insets stable l=0.0 t=0.0 r=0.0 b=0.0 padding l=0.0 t=0.0 r=0.0 b=0.0 bar=24.0
 LAB insets stable l=0.0 t=0.0 r=0.0 b=0.0 padding l=0.0 t=0.0 r=0.0 b=0.0 bar=24.0
 LAB insets stable l=0.0 t=0.0 r=0.0 b=0.0 padding l=0.0 t=0.0 r=0.0 b=0.0 bar=24.0
@@ -165,12 +231,12 @@ LAB insets stable l=0.0 t=0.0 r=0.0 b=0.0 padding l=0.0 t=0.0 r=0.0 b=0.0 bar=24
 LAB insets stable l=0.0 t=0.0 r=0.0 b=0.0 padding l=0.0 t=0.0 r=0.0 b=0.0 bar=24.0
 LAB insets stable l=0.0 t=0.0 r=0.0 b=0.0 padding l=0.0 t=0.0 r=0.0 b=0.0 bar=24.0
 LAB insets stable l=0.0 t=0.0 r=0.0 b=0.0 padding l=0.0 t=0.0 r=0.0 b=0.0 bar=24.0
+LAB subtitle "စာတန်းထိုး 32 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 32" bottom=119 of 128 font=8.0 box=7..221
 LAB insets stable l=0.0 t=0.0 r=0.0 b=0.0 padding l=0.0 t=0.0 r=0.0 b=0.0 bar=24.0
 LAB insets stable l=0.0 t=0.0 r=0.0 b=0.0 padding l=0.0 t=0.0 r=0.0 b=0.0 bar=24.0
-LAB subtitle "စာတန်းထိုး 21 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 21" bottom=119 of 128 font=8.0 box=7..221
-LAB subtitle "စာတန်းထိုး 22 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 22" bottom=119 of 128 font=8.0 box=7..221
-LAB cpu app 5% · 1.1fps · 1.raster 2% | .innocent.media 1%
-LAB subtitle "စာတန်းထိုး 23 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 23" bottom=119 of 128 font=8.0 box=7..221
-LAB subtitle "စာတန်းထိုး 24 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 24" bottom=119 of 128 font=8.0 box=7..221
-LAB cpu app 2% · 0.9fps · -
-LAB subtitle "စာတန်းထိုး 25 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 25" bottom=119 of 128 font=8.0 box=7..221
+LAB subtitle "စာတန်းထိုး 33 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 33" bottom=119 of 128 font=8.0 box=7..221
+LAB cpu app 3% · 1.0fps · 1.raster 1%
+LAB subtitle "စာတန်းထိုး 34 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 34" bottom=119 of 128 font=8.0 box=7..221
+LAB subtitle "စာတန်းထိုး 35 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 35" bottom=119 of 128 font=8.0 box=7..221
+LAB subtitle "စာတန်းထိုး 36 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 36" bottom=119 of 128 font=8.0 box=7..221
+LAB cpu app 2% · 1.0fps · -

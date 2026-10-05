@@ -1,23 +1,22 @@
-[12:32:10] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
-[12:32:10] install
-[12:32:31] network: speed 6000:24000 kbit/s, delay 80:250 ms
-[12:32:52] library: pushing 17 files
-[12:33:21] library: MediaStore lists 17 videos
-[12:33:21] cold start
+[12:59:05] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
+[12:59:05] install
+[12:59:19] network: speed 6000:24000 kbit/s, delay 80:250 ms
+[12:59:41] library: pushing 17 files
+[13:00:09] library: MediaStore lists 17 videos
+[13:00:09] cold start
 Status: ok
-TotalTime: 4110
-WaitTime: 4114
-[12:33:35] flow screen_modes
-[12:33:38] rotation asked 0, now 0
-[12:34:37] flow screen_modes exit 0
-[12:34:42] screen_modes: screen button bounds="[0,0][1080,2400]" (screen 1080x2400, attempt 1)
-[12:34:42] screen_modes: pressing the drawn button instead, [819,2270][839,2290]
-[12:34:51] screen_modes: pressed 829,2280 five times
-[12:35:06] flow screen_modes_land
-[12:35:09] rotation asked 1, now 90
-[12:35:28] flow screen_modes_land exit 0
-[12:35:32] screen_modes_land: screen button bounds="[0,0][2400,1080]" (screen 2400x1080, attempt 1)
-[12:35:32] screen_modes_land: pressing the drawn button instead, [2140,943][2160,963]
-[12:35:42] screen_modes_land: pressed 2150,953 five times
-[12:35:53] after Home: activities mentioning pinned=8
-[12:36:14] done
+TotalTime: 3259
+WaitTime: 3265
+[13:00:23] flow screen_modes
+[13:00:26] rotation asked 0, now 0
+[13:01:17] flow screen_modes exit 0
+[13:01:22] screen_modes: screen button bounds="[768,2222][894,2348]" (screen 1080x2400, attempt 1)
+[13:01:31] screen_modes: pressed 831,2285 five times
+[13:01:45] flow screen_modes_land
+[13:02:08] rotation asked 1, now 0
+[13:02:26] flow screen_modes_land exit 0
+[13:02:59] screen_modes_land: screen button  (screen 2400x1080, attempt 3)
+[13:02:59] screen_modes_land: pressing the drawn button instead, [2140,943][2160,963]
+[13:03:08] screen_modes_land: pressed 2150,953 five times
+[13:03:16] after Home: activities mentioning pinned=8
+[13:03:36] done
