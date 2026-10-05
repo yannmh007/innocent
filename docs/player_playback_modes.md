@@ -142,3 +142,15 @@ a pro media app", AppUnite)
 * The screen-mode button had no accessible name (only a tooltip), so
   TalkBack announced nothing and the lab could not find it; it is named now.
 
+* The screen button, pressed five times on the phone held upright (run
+  37281576125): the trace reads `screen crop x3.95`, `screen original
+  x1.19`, `screen custom x1.00`, `screen fit x1.00`, … — one mode per press,
+  in MX's order, the mode remembered per film.
+* Inside the player Android's accessibility dump gives every node the
+  whole screen's bounds (`[0,0][1080,2400]`), so Maestro — which taps the
+  centre of a node's bounds — pressed the video instead of the button. A
+  finger is hit-tested by Flutter and is not affected; the lab now presses
+  the button where it is drawn. TalkBack in the player is a follow-up.
+* Sideways, with the controls up, the subtitle sat on the seek bar and the
+  play button; it now moves above the controls while they are shown (as
+  YouTube's captions do).
