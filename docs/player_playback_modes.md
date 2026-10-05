@@ -107,8 +107,11 @@ a pro media app", AppUnite)
   zoom, from a `SubtitleLook` that `MediaKitPlayerService` keeps in step
   with every `sub-*` property it sets — so every existing setting and
   gesture now takes effect, with no change to their code. Placed on the
-  visible part of the picture, sized from the screen (libmpv's 720-line
-  arithmetic on the shorter side), Burmese through the system font.
+  visible part of the picture, sized from the screen: the app's sizes
+  (Small 14 … Extra large 28) are dp on a phone whose shorter side is
+  360 dp, scaled with the shorter side (capped at 640). The first device
+  run read them as libmpv's 720-line units and drew 10 dp text; fixed.
+  Burmese through the system font.
 * PiP: the full-screen player keeps auto-enter armed while playing
   (disarmed when paused, private, or "leave = stop/background"), with the
   source rect in window pixels; back 10 s / play-pause / forward 10 s in
@@ -129,3 +132,13 @@ a pro media app", AppUnite)
 * Device lab (`screen_modes*.yaml`): the lab film now carries a soft
   subtitle track; the flows press the screen button through all five modes
   in both orientations, then Home to check PiP is entered by itself.
+
+### Device-lab results (Android 14 phone, 2026-10-05)
+
+* Home while playing → the task goes `mode=pinned` by itself (auto-enter),
+  the subtitle keeps drawing inside the PiP window.
+* Subtitles: Burmese + English lines drawn by the player at the picture's
+  bottom in both orientations, at ~20 dp on a 411 dp phone.
+* The screen-mode button had no accessible name (only a tooltip), so
+  TalkBack announced nothing and the lab could not find it; it is named now.
+
