@@ -106,3 +106,26 @@ fake clock.
 * **Haptics.** A tick at the limits (0 / 100 / 200 %), on each speed step,
   and on each stacked double tap.
 * **Lock.** Locked: taps only bring up the unlock button; no gesture acts.
+
+## 5. Verified on Android (device lab, 2026-10-05)
+
+`test_device/flows/gestures*.yaml` on Android 14 emulators, lab build of this
+branch; each line is what the engine recognised (`LAB gesture …` in
+`lab_trace.txt`). 0 FATAL / ANR in every run.
+
+| Touch | Phone (pixel_6) portrait / landscape | Tablet (pixel_c) landscape / portrait |
+|---|---|---|
+| Drag across 40 % of the width | seek 36 s / 55 s | seek 77 s / 54 s |
+| Drag up 24 % on the right | volume +0.46 / +0.40 (into the booster: 119 %) | volume +0.45 / +0.64 (142 %) |
+| Drag up 24 % on the left | brightness +0.46 / +0.40 | brightness +0.45 / +0.64 |
+| Double tap right / left | double tap right 1 / left 1 | same |
+| Four quick taps on the right (adb) | double tap right 1, 2, 3 ("30 s" arc) | same |
+| Long press | long press → speed slider, end | same |
+| Tap | tap → controls | same |
+
+Found and fixed on the way: the volume plugin showed Android's own volume
+panel over every volume swipe; the stacked-tap band was a pill in portrait;
+the gestures help had no Material under it (yellow-underlined text).
+Two-finger speed, pinch / pan and the subtitle gestures are beyond Maestro;
+they are covered by `test/player_gesture_engine_test.dart` and
+`test/player_gestures_widget_test.dart`.
