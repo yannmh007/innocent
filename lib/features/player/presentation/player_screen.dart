@@ -2497,10 +2497,23 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     ref.listen<bool>(
         playerControllerProvider.select((s) => s.controlsVisible), (_, v) {
       // Lab: what TalkBack is told about the controls once they are drawn.
+      // Semantics is built only while an accessibility client (TalkBack,
+      // uiautomator) is connected, so wait for it, up to 15 s.
       if (PlaybackLog.labTrace && v && _labSemDumps < 4) {
         _labSemDumps++;
-        Future<void>.delayed(const Duration(milliseconds: 400), () {
-          if (mounted) labDumpSemantics('controls $_labSemDumps');
+        final n = _labSemDumps;
+        var ticks = 0, onTicks = 0;
+        Timer.periodic(const Duration(milliseconds: 250), (t) {
+          ticks++;
+          onTicks = SemanticsBinding.instance.semanticsEnabled ? onTicks + 1 : 0;
+          if (!mounted ||
+              ticks > 60 ||
+              !ref.read(playerControllerProvider).controlsVisible) {
+            t.cancel();
+          } else if (onTicks >= 2) {
+            t.cancel();
+            labDumpSemantics('controls $n after ${ticks * 250} ms');
+          }
         });
       }
       if (v || !mounted || _remoteFocus.hasPrimaryFocus) return;

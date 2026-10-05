@@ -218,6 +218,10 @@ for flow in $FLOWS; do
         sleep 0.7
       done
       log "$flow: pressed $bx,$by five times"
+      # Again, the controls still up from the last press: is the first dump
+      # wrong only because the app had just been asked for its semantics?
+      adb shell uiautomator dump /sdcard/ui_mode2.xml >/dev/null 2>&1
+      adb exec-out cat /sdcard/ui_mode2.xml > "$OUT/ui_controls2_$sfx.xml" 2>/dev/null || true
     fi
     ;;
   esac
