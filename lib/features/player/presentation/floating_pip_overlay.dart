@@ -109,6 +109,10 @@ class _FloatingPipOverlayState extends ConsumerState<FloatingPipOverlay>
     pipSvc.onUserLeaveHint = _onLeaveWhileFloating;
     pipSvc.onPipModeChanged = _onPipModeChangedWhileFloating;
     pipSvc.onPipPlayPause = _onPipPlayPause;
+    pipSvc.onPipSeek = (seconds) {
+      // ignore: discarded_futures
+      ref.read(playerControllerProvider.notifier).seekRelative(seconds);
+    };
     pipSvc.onPipClosed = _onPipClosedWhileFloating;
     _handlersInstalled = true;
   }
@@ -212,6 +216,7 @@ class _FloatingPipOverlayState extends ConsumerState<FloatingPipOverlay>
         pipSvc.onUserLeaveHint = null;
         pipSvc.onPipModeChanged = null;
         pipSvc.onPipPlayPause = null;
+        pipSvc.onPipSeek = null;
         pipSvc.onPipClosed = null;
       }
     } catch (_) {}

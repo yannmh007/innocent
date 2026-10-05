@@ -46,6 +46,7 @@ import '../../../core/services/preferences/extra_settings_service.dart';
 // v1.63: the subtitle tune panel calls setSubtitleScale /
 // setSubtitleVerticalPos, which live on the concrete service rather than
 // on the VideoPlayerService interface.
+import '../../../core/services/video_player/video_player_service.dart';
 import '../../../core/services/video_player/media_kit_player_service.dart';
 import '../../../core/services/video_player/stall_diagnosis.dart';
 import '../../../core/theme/app_colors.dart';
@@ -93,6 +94,8 @@ import '../../../core/utils/media_address.dart';
 import '../../video_hub/data/api/playback_reporter.dart';
 import '../../video_hub/presentation/video_hub_provider.dart';
 import 'gestures/subtitle_band.dart';
+import 'subtitles/player_subtitles.dart';
+import 'video_geometry.dart';
 import 'widgets/gesture_hud.dart';
 
 class PlayerScreen extends ConsumerStatefulWidget {
@@ -615,6 +618,53 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
       // ignore: discarded_futures
       pipSvc.setPipPlaying(!playing);
     };
+    // The back / forward buttons inside the PiP window.
+    pipSvc.onPipSeek = (seconds) {
+      // ignore: discarded_futures
+      ref.read(playerControllerProvider.notifier).seekRelative(seconds);
+    };
+    // A player opened onto a film already playing (back from the floating
+    // window) arms PiP-on-leave at once rather than at the next play/pause.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _syncAutoPip());
+  }
+
+  /// Android 12+: keep system auto-enter PiP armed while a film plays and
+  /// leaving the app is set to mean PiP, so a home swipe morphs the picture
+  /// into the window (Android's recommended path, and AEP's "smooth, no
+  /// pause" requirement) instead of the late manual entry from
+  /// onUserLeaveHint, which the gesture-navigation animation outruns.
+  /// Disarmed when paused, in a Private Folder video, or when leaving the
+  /// app means "stop" or "background audio".
+  bool _autoPipArmed = false;
+  void _syncAutoPip() {
+    if (!mounted || !Platform.isAndroid) return;
+    final st = ref.read(playerControllerProvider);
+    final mode =
+        ref.read(extraSettingsProvider).getStr(StringSetting.stickyVideo);
+    final want = !widget.isPrivate &&
+        st.isPlaying &&
+        !st.inSystemPip &&
+        mode != 'stop' &&
+        mode != 'background' &&
+        ref.read(playerSettingsProvider).get(PlayerSetting.bgPipMode);
+    if (!want && !_autoPipArmed) return;
+    int w = 16, h = 9;
+    if (st.videoTracks.isNotEmpty) {
+      final v = st.videoTracks.first;
+      if ((v.width ?? 0) > 0 && (v.height ?? 0) > 0) {
+        w = v.width!;
+        h = v.height!;
+      }
+    }
+    Rect? src;
+    final ro = _videoBoundaryKey.currentContext?.findRenderObject();
+    if (ro is RenderBox && ro.hasSize) {
+      src = ro.localToGlobal(Offset.zero) & ro.size;
+    }
+    _autoPipArmed = want;
+    // ignore: discarded_futures
+    ref.read(pipServiceProvider).setAutoEnterPip(want,
+        width: w, height: h, sourceRect: src, isPlaying: st.isPlaying);
   }
 
   @override
@@ -1062,6 +1112,10 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
         pipSvc.onUserLeaveHint = null;
         pipSvc.onPipModeChanged = null;
         pipSvc.onPipPlayPause = null;
+        pipSvc.onPipSeek = null;
+        // Leaving the player for the library must not PiP the library.
+        // ignore: discarded_futures
+        if (_autoPipArmed) pipSvc.setAutoEnterPip(false);
       }
     });
     // (removeObserver has already run, on the first line.)
@@ -2277,6 +2331,63 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     ];
   }
 
+  /// The video in the current screen mode (video_geometry.dart): laid out
+  /// whole (or filled, for Stretch), then zoomed about the centre and moved
+  /// by the pan. Nothing is wrapped at Fit with no pan — a transform layer
+  /// at identity still costs the compositor on every frame.
+  Widget _screenModeVideo(VideoPlayerService svc, PlayerState state) {
+    return LayoutBuilder(builder: (context, c) {
+      final view = Size(c.maxWidth, c.maxHeight);
+      final dpr = MediaQuery.devicePixelRatioOf(context);
+      final controller = ref.read(playerControllerProvider.notifier);
+      controller.setViewport(view, dpr);
+      final scale = screenModeScale(
+        mode: state.aspectRatioMode,
+        view: view,
+        video: controller.displayVideoSize,
+        devicePixelRatio: dpr,
+        customScale: state.videoScale,
+      );
+      final video = _wrapVideoTransforms(
+          svc.buildVideoWidget(fit: state.aspectRatioMode.boxFit), state);
+      if (scale == 1.0 && state.videoOffset == Offset.zero) return video;
+      return Transform.translate(
+        offset: state.videoOffset,
+        child: Transform.scale(scale: scale, child: video),
+      );
+    });
+  }
+
+  /// The subtitle on the part of the picture that is on screen.
+  Widget _subtitleLayer(MediaKitPlayerService svc, PlayerState state) {
+    return LayoutBuilder(builder: (context, c) {
+      final view = Size(c.maxWidth, c.maxHeight);
+      final controller = ref.read(playerControllerProvider.notifier);
+      final video = controller.displayVideoSize;
+      final scale = screenModeScale(
+        mode: state.aspectRatioMode,
+        view: view,
+        video: video,
+        devicePixelRatio: MediaQuery.devicePixelRatioOf(context),
+        customScale: state.videoScale,
+      );
+      final picture = pictureRect(
+        view,
+        pictureSize(
+            mode: state.aspectRatioMode,
+            view: view,
+            video: video,
+            scale: scale),
+        state.videoOffset,
+      );
+      return PlayerSubtitles(
+        service: svc,
+        picture: picture,
+        padding: _subtitlePadding(state),
+      );
+    });
+  }
+
   Widget _wrapVideoTransforms(Widget child, PlayerState state) {
     Widget result = child;
     if (state.isMirrorMode || state.isVerticalFlip) {
@@ -2431,6 +2542,13 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
       );
     });
 
+    // Re-arm (or disarm) PiP-on-leave as playback starts and stops, and
+    // when the film's shape becomes known.
+    ref.listen<(bool, bool, int)>(
+        playerControllerProvider.select(
+            (s) => (s.isPlaying, s.inSystemPip, s.videoTracks.length)),
+        (_, __) => _syncAutoPip());
+
     ref.listen<PlayerState>(playerControllerProvider, (prev, next) {
       if (prev?.playbackCompleted == next.playbackCompleted) return;
       if (next.playbackCompleted && context.mounted) {
@@ -2525,29 +2643,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
               child: Container(
                 color: Colors.black,
                 child: _videoDisplayEnabled && svc.isInitialized
-                    // Only wrap in a Transform when the user has actually
-                    // pinch-zoomed. At 1.0 the transform is the identity, but
-                    // it still pushes a transform layer the compositor has to
-                    // carry on every single frame for no visible effect.
-                    ? (state.videoScale == 1.0
-                        ? _wrapVideoTransforms(
-                            svc.buildVideoWidget(
-                                fit: state.aspectRatioMode.boxFit),
-                            state,
-                          )
-                        // Zoomed: scaled about the centre, then moved by
-                        // the two-finger pan (zero unless zoomed in).
-                        : Transform.translate(
-                            offset: state.videoOffset,
-                            child: Transform.scale(
-                              scale: state.videoScale,
-                              child: _wrapVideoTransforms(
-                                svc.buildVideoWidget(
-                                    fit: state.aspectRatioMode.boxFit),
-                                state,
-                              ),
-                            ),
-                          ))
+                    ? _screenModeVideo(svc, state)
                     : (svc.isInitialized
                         ? const Center(
                             child: Icon(
@@ -2560,6 +2656,12 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
               ),
             ),
           ),
+
+          // === LAYER 1b: Subtitles — over the video, outside its zoom ===
+          if (_videoDisplayEnabled &&
+              svc.isInitialized &&
+              svc is MediaKitPlayerService)
+            Positioned.fill(child: _subtitleLayer(svc, state)),
 
           // === LAYER 2: Buffering ===
           // Phase 41: gated by "Loading circle animation" (Settings →
@@ -2897,37 +2999,10 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                 onPlayPause: controller.playOrPause,
                 onSeekRelative: controller.seekRelative,
                 onLock: controller.toggleLock,
-                onCycleAspectRatio: () {
-                  controller.cycleAspectRatio();
-                  // Phase 42: MX Player parity — show the new mode name as a
-                  // brief toast so the user knows which mode is active even
-                  // before the video visibly reflows.
-                  final mode =
-                      ref.read(playerControllerProvider).aspectRatioMode;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(mode.label),
-                      duration: const Duration(milliseconds: 1200),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                },
-                // Phase 45 (audit): bottom row toggles fit↔crop, NOT PiP.
-                // PiP icon moved to top bar (MX Player V3 parity).
-                onToggleFullscreenFill: () {
-                  controller.toggleFullscreenFill();
-                  final mode =
-                      ref.read(playerControllerProvider).aspectRatioMode;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(mode == AspectRatioMode.crop
-                          ? 'Fill screen'
-                          : 'Original aspect'),
-                      duration: const Duration(milliseconds: 1200),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                },
+                // MX's screen button; the new mode's name shows over the
+                // video for a moment (LAYER 9).
+                onCycleAspectRatio: controller.cycleAspectRatio,
+                onToggleFullscreenFill: controller.toggleFullscreenFill,
                 formatDuration: _fmt,
                 onPrevious: controller.onBackwardButton,
                 onNext: controller.onForwardButton,
@@ -3001,6 +3076,19 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
             ),
           if (state.activeIndicator != null)
             _buildIndicator(state.activeIndicator!),
+          // Out of the semantics tree: the button already carries the same
+          // name, and two of them would leave a screen reader (and the lab's
+          // Maestro) guessing which one is the button.
+          if (state.screenModeToast != null && state.activeIndicator == null)
+            ExcludeSemantics(
+              child: GestureValueText(
+                value: state.screenModeToast!.labelIn(AppStrings.of(context)),
+                caption: state.screenModeToast == AspectRatioMode.custom
+                    ? AppStrings.of(context).zmCustomHint
+                    : null,
+                valueSize: 26,
+              ),
+            ),
 
           // === LAYER 10: Side panels ===
           if (state.openPanel == SidePanel.more)
@@ -3412,19 +3500,40 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
   Rect? _subtitleBand(Size size) {
     final svc = ref.read(videoPlayerServiceProvider);
     if (svc is! MediaKitPlayerService) return null;
-    final text = svc.subtitleText;
-    if (text.isEmpty) return null;
-    final lines =
-        text.fold<int>(0, (n, t) => n + '\n'.allMatches(t).length + 1);
-    final ex = ref.read(extraSettingsProvider);
-    return subtitleBandFor(
-      player: size,
-      video: svc.videoSize,
-      fit: ref.read(playerControllerProvider).aspectRatioMode.boxFit,
-      positionPct: ex.getInt(IntSetting.subtitleVerticalPos),
-      scale: ex.getInt(IntSetting.subtitleScale) / 100.0,
-      lines: lines,
+    final lines = svc.subtitleLines;
+    final main = lines.isNotEmpty ? lines[0].trim() : '';
+    if (main.isEmpty) return null;
+    final state = ref.read(playerControllerProvider);
+    final controller = ref.read(playerControllerProvider.notifier);
+    final video = controller.displayVideoSize;
+    final scale = controller.effectiveVideoScale;
+    final picture = pictureRect(
+      size,
+      pictureSize(
+          mode: state.aspectRatioMode, view: size, video: video, scale: scale),
+      state.videoOffset,
     );
+    return subtitleGeometry(
+      view: size,
+      picture: picture,
+      look: svc.subtitleLook.value,
+      padding: _subtitlePadding(state),
+    ).touchBand('\n'.allMatches(main).length + 1);
+  }
+
+  /// Where the subtitle may go: inside the system bars, and above the seek
+  /// bar and buttons while they are up — as YouTube lifts its captions
+  /// over its controls. Sideways the picture reaches the bottom edge, so the
+  /// text sat on the play button (lab, run 37281576125).
+  EdgeInsets _subtitlePadding(PlayerState state) {
+    final pad = MediaQuery.paddingOf(context);
+    final controlsUp = state.controlsVisible &&
+        !state.isLocked &&
+        !state.sleepTimerDialogOpen;
+    final bottom = controlsUp
+        ? math.max(pad.bottom, _controlsInsets(context).bottom + 108)
+        : pad.bottom;
+    return EdgeInsets.only(top: pad.top, bottom: bottom);
   }
 }
 
@@ -4212,11 +4321,22 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      IconButton(
-                        icon: const Icon(Icons.crop_landscape_outlined,
-                            color: Colors.white),
-                        onPressed: widget.onCycleAspectRatio,
-                        tooltip: widget.aspectRatioMode.label,
+                      // Named for TalkBack (and the device lab): a tooltip
+                      // alone reaches Android as tooltip text, not as the
+                      // button's name, so the button was nameless.
+                      Semantics(
+                        // A stable id for automation (Android resource-id).
+                        identifier: 'player-screen-mode',
+                        label: widget.aspectRatioMode
+                            .labelIn(AppStrings.of(context)),
+                        button: true,
+                        child: IconButton(
+                          icon: const Icon(Icons.crop_landscape_outlined,
+                              color: Colors.white),
+                          onPressed: widget.onCycleAspectRatio,
+                          tooltip: widget.aspectRatioMode
+                              .labelIn(AppStrings.of(context)),
+                        ),
                       ),
                       const SizedBox(width: 9),
                       // MX's row ends aspect ratio, picture-in-picture.

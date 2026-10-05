@@ -5,10 +5,14 @@ import '../player_provider.dart';
 /// A gesture's value over the video, MX style: large white text with a
 /// shadow and no box ("1.5x", "120%"), a small caption under it.
 class GestureValueText extends StatelessWidget {
-  const GestureValueText({super.key, required this.value, this.caption});
+  const GestureValueText(
+      {super.key, required this.value, this.caption, this.valueSize = 44});
 
   final String value;
   final String? caption;
+
+  /// The value's text size: 44 for a number, smaller for a word.
+  final double valueSize;
 
   static const _shadow = [Shadow(blurRadius: 4, color: Colors.black54)];
 
@@ -21,11 +25,12 @@ class GestureValueText extends StatelessWidget {
           children: [
             Text(
               value,
-              style: const TextStyle(
+              textAlign: TextAlign.center,
+              style: TextStyle(
                 color: Colors.white,
-                fontSize: 44,
+                fontSize: valueSize,
                 fontWeight: FontWeight.w600,
-                fontFeatures: [FontFeature.tabularFigures()],
+                fontFeatures: const [FontFeature.tabularFigures()],
                 shadows: _shadow,
               ),
             ),

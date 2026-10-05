@@ -108,58 +108,97 @@ extension PlayerControls on PlayerController {
     if (!on) _scheduleHideControls();
   }
 
-  /// Phase 45 (audit): MX Player bottom row has a "fullscreen-fill"
-  /// toggle (icon: 2-arrow square / expand-fullscreen) that flips
-  /// between letterbox (fit) and fill (crop). Tapping it on a
-  /// fit-mode video maximises it to fill the screen; tapping again
-  /// restores the original aspect.
-  ///
-  /// We toggle ONLY between fit and crop, not the full 4-step cycle.
-  /// The bottom row's separate `cycleAspectRatio` icon still cycles
-  /// through all 4 modes for users who want stretch / original.
+  /// The screen's size and density, from the player's layout. Kept on the
+  /// controller (not in the state: nothing redraws for it) so a mode
+  /// change or a pinch can turn a mode into a zoom factor.
+  void setViewport(Size view, double devicePixelRatio) {
+    _viewport = view;
+    _devicePixelRatio = devicePixelRatio;
+  }
+
+  /// The film's shape on screen: its pixel size with the user's aspect
+  /// ratio override (Display → Aspect ratio) applied, or null before the
+  /// first frame.
+  Size? get displayVideoSize {
+    final svc = _ref.read(videoPlayerServiceProvider);
+    if (svc is! MediaKitPlayerService) return null;
+    final v = svc.videoSize;
+    if (v == null) return null;
+    final ar = AspectRatioOverride.fromString(_ref
+            .read(extraSettingsProvider)
+            .getStr(StringSetting.aspectRatioOverride))
+        .value;
+    return ar == null ? v : Size(v.height * ar, v.height);
+  }
+
+  /// How much the contained picture is enlarged right now.
+  double get effectiveVideoScale => screenModeScale(
+        mode: state.aspectRatioMode,
+        view: _viewport,
+        video: displayVideoSize,
+        devicePixelRatio: _devicePixelRatio,
+        customScale: state.videoScale,
+      );
+
+  /// The picture's size on screen right now.
+  Size get _pictureSize => pictureSize(
+        mode: state.aspectRatioMode,
+        view: _viewport,
+        video: displayVideoSize,
+        scale: effectiveVideoScale,
+      );
+
+  /// MX's fill toggle (Fit ↔ Crop), kept for the shortcut that calls it.
   void toggleFullscreenFill() {
-    final next = state.aspectRatioMode == AspectRatioMode.crop
+    _setScreenMode(state.aspectRatioMode == AspectRatioMode.crop
         ? AspectRatioMode.fit
-        : AspectRatioMode.crop;
-    state = state.copyWith(aspectRatioMode: next);
-    _applyPanscanForMode(next);
+        : AspectRatioMode.crop);
     _scheduleHideControls();
   }
 
-  /// Push the mode's panscan (zoom-to-fill) value to libmpv. Keeps the
-  /// "Zoom/Fit" behaviour a smooth scale instead of a hard texture crop.
-  void _applyPanscanForMode(AspectRatioMode mode) {
-    try {
-      // ignore: discarded_futures
-      _ref.read(videoPlayerServiceProvider).setPanscan(mode.panscan);
-    } catch (e) {
-      if (kDebugMode) debugPrint('PlayerControls.panscan: $e');
-    }
-  }
-
+  /// MX Player's screen button: Fit to screen → Stretch → Crop → 100% →
+  /// Custom → … (docs/player_playback_modes.md).
   void cycleAspectRatio() {
-    // Phase 41: respect "Quick zoom" (Settings → Player → Interface).
-    // When on, the user wants to skip uncommon zoom steps — MX Player's
-    // documented behaviour is to skip 'stretch' so users cycle only
-    // through the three useful modes (fit → crop → original → fit).
+    // Settings → Player → "Quick zoom": skip Stretch, the one mode that
+    // changes the film's shape.
     final quickZoom =
         _ref.read(playerSettingsProvider).get(PlayerSetting.quickZoom);
     var nextMode = state.aspectRatioMode.next;
     if (quickZoom && nextMode == AspectRatioMode.stretch) {
       nextMode = nextMode.next;
     }
-    // Audit fix (B6): haptic so cycling feels deliberate not accidental.
     HapticService.selection();
-    state = state.copyWith(aspectRatioMode: nextMode);
-    _applyPanscanForMode(nextMode);
-    // Audit fix (B5 cont.): persist per-URI so the same file reopens
-    // with the same aspect. Fire-and-forget — failure is a non-event.
+    _setScreenMode(nextMode);
+    // Kept per file, so the same film reopens the way it was watched.
     final uri = _currentUri;
     if (uri != null) {
       // ignore: unawaited_futures
       _ref.read(userDataServiceProvider).setVideoAspectName(uri, nextMode.name);
     }
     _scheduleHideControls();
+  }
+
+  /// Switch to [mode]: a preset mode starts centred; Custom comes back to
+  /// the zoom and pan the user last pinched to.
+  void _setScreenMode(AspectRatioMode mode) {
+    final offset =
+        mode == AspectRatioMode.custom ? _customOffset : Offset.zero;
+    state = state.copyWith(
+      aspectRatioMode: mode,
+      videoOffset: offset,
+      screenModeToast: mode,
+      zoomIndicatorValue: null,
+    );
+    if (mode == AspectRatioMode.custom) {
+      state = state.copyWith(
+          videoOffset: clampPan(offset, _pictureSize, _viewport));
+    }
+    PlaybackLog.add('screen ${mode.name} '
+        'x${effectiveVideoScale.toStringAsFixed(2)}');
+    _modeToastTimer?.cancel();
+    _modeToastTimer = Timer(const Duration(milliseconds: 1200), () {
+      if (mounted) state = state.copyWith(screenModeToast: null);
+    });
   }
 
   /// Phase 45 (audit refined): set the EXPLICIT aspect ratio override.

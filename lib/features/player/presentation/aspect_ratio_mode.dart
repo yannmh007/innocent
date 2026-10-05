@@ -1,64 +1,66 @@
 import 'package:flutter/widgets.dart';
 
-/// Aspect ratio modes for video display.
-///
-/// The zoom-style modes (fit / crop) keep the video's aspect ratio and use
-/// libmpv `panscan` to SCALE toward filling the screen — a smooth zoom the
-/// user can further adjust by pinching — rather than hard-cropping the
-/// texture. Only [stretch] distorts, and [original] shows true pixel size.
-enum AspectRatioMode {
-  fit,        // letterbox - keep ratio, black bars (panscan 0.0)
-  crop,       // zoom to fill - keep ratio (panscan 1.0), NOT a hard crop
-  stretch,    // fill screen - ignore ratio, distorted
-  original;   // 100% original size
+import '../../../core/localization/app_strings.dart';
 
+/// MX Player's screen modes, in the order its one button cycles them:
+/// Fit to screen → Stretch → Crop → 100% → Custom
+/// (docs/player_playback_modes.md).
+///
+/// Every mode but Stretch keeps the film's shape. Crop is a ZOOM until the
+/// black bars are gone — nothing is cut away: the picture past the screen's
+/// edges is still there and a two-finger drag brings it into view. 100% is
+/// one video pixel on one screen pixel; Custom is the user's own pinch zoom
+/// and pan, which any pinch switches to. The arithmetic is in
+/// video_geometry.dart.
+enum AspectRatioMode {
+  fit, // whole frame, letterboxed
+  stretch, // fills the screen, shape ignored
+  crop, // zoomed to fill, shape kept, the overflow pannable
+  original, // 100 %: one video pixel per screen pixel
+  custom; // the user's pinch zoom and pan
+
+  /// English name, for logs and tooltips without a context.
   String get label {
     switch (this) {
       case AspectRatioMode.fit:
-        return 'Fit';
-      case AspectRatioMode.crop:
-        return 'Zoom';
+        return 'Fit to screen';
       case AspectRatioMode.stretch:
         return 'Stretch';
+      case AspectRatioMode.crop:
+        return 'Crop';
       case AspectRatioMode.original:
         return '100%';
+      case AspectRatioMode.custom:
+        return 'Custom';
     }
   }
 
-  BoxFit get boxFit {
+  /// The name on the button's tooltip and over the video, in the app's
+  /// language.
+  String labelIn(AppStrings s) {
     switch (this) {
-      // fit + crop both render the FULL frame (contain) in the Flutter
-      // layer; the "fill" look for crop comes from libmpv panscan, so we
-      // never hard-crop the texture and the zoom stays smooth + adjustable.
       case AspectRatioMode.fit:
-        return BoxFit.contain;
-      case AspectRatioMode.crop:
-        return BoxFit.contain;
+        return s.zmFit;
       case AspectRatioMode.stretch:
-        return BoxFit.fill;
+        return s.zmStretch;
+      case AspectRatioMode.crop:
+        return s.zmCrop;
       case AspectRatioMode.original:
-        return BoxFit.none;
+        return s.zmOriginal;
+      case AspectRatioMode.custom:
+        return s.zmCustom;
     }
   }
 
-  /// libmpv panscan (0.0–1.0) for this mode: 1.0 zooms the video to fill the
-  /// screen keeping aspect (the MX-Player "Fit to Screen" feel), 0.0 fits.
-  double get panscan {
-    switch (this) {
-      case AspectRatioMode.crop:
-        return 1.0; // zoom to fill
-      case AspectRatioMode.fit:
-      case AspectRatioMode.stretch:
-      case AspectRatioMode.original:
-        return 0.0;
-    }
-  }
+  /// How the texture is laid out before the mode's zoom is applied: the
+  /// whole frame for every mode but Stretch, which fills the player.
+  BoxFit get boxFit =>
+      this == AspectRatioMode.stretch ? BoxFit.fill : BoxFit.contain;
 
-  /// Cycle to next aspect ratio mode
+  /// The next mode on the button (MX's order, wrapping round).
   AspectRatioMode get next {
     const values = AspectRatioMode.values;
-    final nextIndex = (index + 1) % values.length;
-    return values[nextIndex];
+    return values[(index + 1) % values.length];
   }
 }
 

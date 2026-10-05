@@ -48,6 +48,8 @@ class PlaybackService : Service() {
         const val EXTRA_PLAYING = "isPlaying"
         const val EXTRA_POSITION = "positionMs"
         const val EXTRA_DURATION = "durationMs"
+        private const val CUSTOM_REWIND = "innocent.rewind10"
+        private const val CUSTOM_FORWARD = "innocent.forward10"
 
         /** Start the foreground service. Idempotent — repeated calls update the title. */
         fun start(
@@ -333,6 +335,24 @@ class PlaybackService : Service() {
 
                     override fun onSeekTo(pos: Long) =
                         broadcast(MainActivity.PLAYBACK_CONTROL_SEEK, pos)
+
+                    // ±10 s: the shade's and lock screen's custom buttons
+                    // (Android 13+ builds its media controls from the
+                    // session's actions, not from the notification's).
+                    override fun onCustomAction(action: String, extras: android.os.Bundle?) {
+                        when (action) {
+                            CUSTOM_REWIND ->
+                                broadcast(MainActivity.PLAYBACK_CONTROL_REWIND)
+                            CUSTOM_FORWARD ->
+                                broadcast(MainActivity.PLAYBACK_CONTROL_FORWARD)
+                        }
+                    }
+
+                    override fun onRewind() =
+                        broadcast(MainActivity.PLAYBACK_CONTROL_REWIND)
+
+                    override fun onFastForward() =
+                        broadcast(MainActivity.PLAYBACK_CONTROL_FORWARD)
                 })
                 // Tell the framework which stream this session speaks for.
                 // Without it the session is not associated with a stream, so
@@ -400,7 +420,21 @@ class PlaybackService : Service() {
                         PlaybackState.ACTION_STOP or
                         PlaybackState.ACTION_SEEK_TO or
                         PlaybackState.ACTION_SKIP_TO_NEXT or
-                        PlaybackState.ACTION_SKIP_TO_PREVIOUS
+                        PlaybackState.ACTION_SKIP_TO_PREVIOUS or
+                        PlaybackState.ACTION_REWIND or
+                        PlaybackState.ACTION_FAST_FORWARD
+                )
+                .addCustomAction(
+                    PlaybackState.CustomAction.Builder(
+                        CUSTOM_REWIND, "Back 10 s",
+                        android.R.drawable.ic_media_rew
+                    ).build()
+                )
+                .addCustomAction(
+                    PlaybackState.CustomAction.Builder(
+                        CUSTOM_FORWARD, "Forward 10 s",
+                        android.R.drawable.ic_media_ff
+                    ).build()
                 )
                 .setState(
                     if (isPlaying) PlaybackState.STATE_PLAYING
@@ -464,6 +498,8 @@ class PlaybackService : Service() {
         }
         val playPausePi = controlIntent(playPause, 1)
         val stopPi = controlIntent(MainActivity.PLAYBACK_CONTROL_STOP, 2)
+        val rewindPi = controlIntent(MainActivity.PLAYBACK_CONTROL_REWIND, 3)
+        val forwardPi = controlIntent(MainActivity.PLAYBACK_CONTROL_FORWARD, 4)
 
         // RESEARCH CORRECTION (v1.55.1) — this was a NotificationCompat build
         // that merely stuffed the session token into `EXTRA_MEDIA_SESSION` and
@@ -498,6 +534,16 @@ class PlaybackService : Service() {
             .setVisibility(Notification.VISIBILITY_PUBLIC)
 
         if (contentPi != null) builder.setContentIntent(contentPi)
+        // Back 10 s · play/pause · forward 10 s · stop — MX's and YouTube's
+        // row; the first three are the compact view (Android 12 and older
+        // draw the shade's controls from these).
+        var index = 0
+        val compact = ArrayList<Int>()
+        if (rewindPi != null) {
+            @Suppress("DEPRECATION")
+            builder.addAction(android.R.drawable.ic_media_rew, "Back 10 s", rewindPi)
+            compact.add(index++)
+        }
         if (playPausePi != null) {
             @Suppress("DEPRECATION")
             builder.addAction(
@@ -506,6 +552,12 @@ class PlaybackService : Service() {
                 if (isPlaying) "Pause" else "Play",
                 playPausePi
             )
+            compact.add(index++)
+        }
+        if (forwardPi != null) {
+            @Suppress("DEPRECATION")
+            builder.addAction(android.R.drawable.ic_media_ff, "Forward 10 s", forwardPi)
+            compact.add(index++)
         }
         if (stopPi != null) {
             @Suppress("DEPRECATION")
@@ -514,17 +566,14 @@ class PlaybackService : Service() {
                 "Stop",
                 stopPi
             )
+            index++
         }
 
         val token = mediaSession?.sessionToken
         if (token != null) {
             val style = Notification.MediaStyle().setMediaSession(token)
-            // Which actions collapse into the compact row. Play/pause first —
-            // it is the one people reach for without looking.
-            if (playPausePi != null && stopPi != null) {
-                style.setShowActionsInCompactView(0, 1)
-            } else if (playPausePi != null || stopPi != null) {
-                style.setShowActionsInCompactView(0)
+            if (compact.isNotEmpty()) {
+                style.setShowActionsInCompactView(*compact.toIntArray())
             }
             builder.setStyle(style)
         }

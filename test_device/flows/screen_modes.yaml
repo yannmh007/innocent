@@ -1,0 +1,68 @@
+# MX's screen button in the player, portrait: Fit to screen → Stretch →
+# Crop → 100% → Custom, on the lab film, which carries a soft subtitle
+# track (device-lab.yml). Crop must zoom (no bars, nothing cut away) and
+# the subtitle must stay on screen at its own size in every mode.
+appId: com.innocent.media
+---
+# A clean start: an earlier flow may have left the app deep in Movies,
+# where the Video tab is not on screen.
+- launchApp:
+    stopApp: true
+- waitForAnimationToEnd:
+    timeout: 10000
+# A fresh install opens on the introduction (when this flow runs first):
+# skip it, then grant access, as perf_idle does.
+- tapOn:
+    text: "Skip"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- tapOn:
+    text: "Allow.*"
+    optional: true
+- tapOn:
+    text: "Allow.*"
+    optional: true
+- tapOn:
+    text: "Skip"
+    optional: true
+- tapOn:
+    text: "Video"
+    optional: true
+- extendedWaitUntil:
+    visible: ".*Perf Test.*"
+    timeout: 20000
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 2000
+- scrollUntilVisible:
+    element:
+      text: ".*Perf Test.*"
+    direction: DOWN
+    optional: true
+- tapOn:
+    text: ".*Perf Test.*"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- tapOn:
+    text: ".*aaa_play_720p.*"
+    optional: true
+- extendedWaitUntil:
+    visible: "__nothing_has_this_text__"
+    timeout: 6000
+    optional: true
+- extendedWaitUntil:
+    visible: "__nothing_has_this_text__"
+    timeout: 4000
+    optional: true
+# Show the controls, then press MX's screen button five times: Stretch,
+# Crop, 100%, Custom, back to Fit to screen. Each new mode's name shows
+# over the video for a moment; the lab trace logs the zoom ("screen crop
+# x1.33") and where each subtitle line was drawn.
+# Let the controls the film opened with hide; run.sh presses the button
+# (Maestro needs seconds per tap, the controls hide after 4).
+- extendedWaitUntil:
+    visible: "__nothing_has_this_text__"
+    timeout: 6000
+    optional: true

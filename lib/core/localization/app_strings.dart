@@ -445,6 +445,9 @@ class AppStrings {
       _s('vhAlbumPlusPhotos').replaceFirst('{n}', '$n');
 
   /// "3 / 9" while an album is arriving.
+  /// The album viewer's place: "3 of 10", Telegram's wording.
+  String vhCountOf(int i, int n) =>
+      _s('vhCountOf').replaceFirst('{i}', '$i').replaceFirst('{n}', '$n');
   String vhAlbumProgress(int done, int total) => _s('vhAlbumProgress')
       .replaceFirst('{done}', '$done')
       .replaceFirst('{total}', '$total');
@@ -868,6 +871,12 @@ class AppStrings {
   String get gtSpeedSub => _s('gtSpeedSub');
   String get gtSubtitle => _s('gtSubtitle');
   String get gtSubtitleSub => _s('gtSubtitleSub');
+  String get zmFit => _s('zmFit');
+  String get zmStretch => _s('zmStretch');
+  String get zmCrop => _s('zmCrop');
+  String get zmOriginal => _s('zmOriginal');
+  String get zmCustom => _s('zmCustom');
+  String get zmCustomHint => _s('zmCustomHint');
   String get gtTap => _s('gtTap');
   String get gtTapSub => _s('gtTapSub');
   String get gtVolumeKey => _s('gtVolumeKey');
@@ -2017,6 +2026,7 @@ class AppStrings {
     'vhAlbumPlusVideos': '+{n} Video',
     'vhAlbumPlusPhotos': '+{n} Photo',
     'vhAlbumProgress': '{done} / {total}',
+    'vhCountOf': '{i} of {n}',
     'vhAlbumVideos': '{n} videos',
     'vhAlbumPhotos': '{n} photos',
     'vhAlbumVideo1': '1 video',
@@ -2466,6 +2476,12 @@ class AppStrings {
     'gtSpeedSub': 'Swipe up or down with two fingers (0.25x – 4x).',
     'gtSubtitle': 'Subtitle gestures',
     'gtSubtitleSub': 'On the subtitle: drag up or down to move it, swipe left or right for the previous or next line, pinch to resize.',
+    'zmFit': 'Fit to screen',
+    'zmStretch': 'Stretch',
+    'zmCrop': 'Crop',
+    'zmOriginal': '100%',
+    'zmCustom': 'Custom',
+    'zmCustomHint': 'Pinch to zoom, two fingers to move',
     'gtTap': 'Tap to show or hide controls',
     'gtTapSub': 'Tap the screen once.',
     'gtVolumeKey': 'Volume keys',
@@ -3387,6 +3403,7 @@ class AppStrings {
     'vhAlbumPlusVideos': '+{n} Video',
     'vhAlbumPlusPhotos': '+{n} ပုံ',
     'vhAlbumProgress': '{done} / {total}',
+    'vhCountOf': '{n} ခုမှ {i}',
     'vhAlbumVideos': 'ဗီဒီယို {n} ခု',
     'vhAlbumPhotos': 'ဓာတ်ပုံ {n} ပုံ',
     'vhAlbumVideo1': 'ဗီဒီယို 1 ခု',
@@ -3836,6 +3853,12 @@ class AppStrings {
     'gtSpeedSub': 'လက်နှစ်ချောင်းနဲ့ အပေါ်/အောက် ပွတ်ဆွဲပါ (0.25x – 4x)။',
     'gtSubtitle': 'စာတန်းထိုး လက်ဟန်',
     'gtSubtitleSub': 'စာတန်းပေါ်မှာ အပေါ်/အောက်ဆွဲရင် နေရာရွှေ့၊ ဘယ်/ညာဆွဲရင် ရှေ့/နောက် စာကြောင်း၊ ဆွဲချဲ့/ချုံ့ရင် အရွယ်ပြောင်း။',
+    'zmFit': 'မျက်နှာပြင်နဲ့ကိုက် (Fit)',
+    'zmStretch': 'ဆွဲဆန့် (Stretch)',
+    'zmCrop': 'ချဲ့ဖြည့် (Crop)',
+    'zmOriginal': '100%',
+    'zmCustom': 'စိတ်ကြိုက် (Custom)',
+    'zmCustomHint': 'လက်နှစ်ချောင်းနဲ့ ချဲ့/ချုံ့၊ ရွှေ့ကြည့်ပါ',
     'gtTap': 'တစ်ချက်တို့၍ ခလုတ်များ ပြ/ဖျောက်',
     'gtTapSub': 'စခရင်ကို တစ်ချက်တို့ပါ။',
     'gtVolumeKey': 'အသံခလုတ်များ',
@@ -4746,6 +4769,7 @@ class AppStrings {
     'vhAlbumPlusVideos': '+{n} วิดีโอ',
     'vhAlbumPlusPhotos': '+{n} รูป',
     'vhAlbumProgress': '{done} / {total}',
+    'vhCountOf': '{i} จาก {n}',
     'vhAlbumVideos': 'วิดีโอ {n} รายการ',
     'vhAlbumPhotos': 'รูป {n} รูป',
     'vhAlbumVideo1': 'วิดีโอ 1 รายการ',
@@ -5195,6 +5219,12 @@ class AppStrings {
     'gtSpeedSub': 'ปัดขึ้นหรือลงด้วยสองนิ้ว (0.25x – 4x)',
     'gtSubtitle': 'ท่าทางคำบรรยาย',
     'gtSubtitleSub': 'บนคำบรรยาย: ลากขึ้นลงเพื่อย้าย ปัดซ้ายขวาเพื่อไปบรรทัดก่อนหน้าหรือถัดไป บีบเพื่อปรับขนาด',
+    'zmFit': 'พอดีหน้าจอ',
+    'zmStretch': 'ยืด',
+    'zmCrop': 'ครอบตัด',
+    'zmOriginal': '100%',
+    'zmCustom': 'กำหนดเอง',
+    'zmCustomHint': 'บีบเพื่อซูม ใช้สองนิ้วเพื่อเลื่อน',
     'gtTap': 'แตะเพื่อแสดงหรือซ่อนปุ่ม',
     'gtTapSub': 'แตะหน้าจอหนึ่งครั้ง',
     'gtVolumeKey': 'ปุ่มปรับเสียง',

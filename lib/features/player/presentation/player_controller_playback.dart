@@ -343,11 +343,12 @@ extension PlayerPlayback on PlayerController {
             extras.getStr(StringSetting.aspectRatioOverride));
         await svc.setAspectRatioOverride(ar.value);
       } catch (e) { if (kDebugMode) debugPrint('PlayerPlayback: $e'); }
-      // Apply the panscan (zoom-to-fill) that matches the current aspect
-      // mode, so a fresh video starts consistent with the selected Fit/Zoom
-      // state instead of libmpv's default. Fit/original/stretch → 0.0.
+      // libmpv's own zoom stays at zero: the screen modes are drawn by the
+      // player (video_geometry.dart). `panscan` only fills libmpv's window,
+      // and that window is the texture, already the film's own shape — so
+      // the old "Zoom" mode, which set it, drew exactly what Fit drew.
       try {
-        await svc.setPanscan(state.aspectRatioMode.panscan);
+        await svc.setPanscan(0.0);
       } catch (e) { if (kDebugMode) debugPrint('PlayerPlayback: $e'); }
       // Four switches that had a label, a description, a saved value — and
       // no reader anywhere, so flipping them did nothing at all. Each maps to

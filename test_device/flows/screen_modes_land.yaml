@@ -1,0 +1,19 @@
+# screen_modes.yaml again in landscape (run.sh turns the device first),
+# in the player it left open; run.sh then presses Home to check the film
+# goes into picture-in-picture by itself.
+appId: com.innocent.media
+---
+- extendedWaitUntil:
+    visible: "__nothing_has_this_text__"
+    timeout: 5000
+    optional: true
+# Show the controls, then press MX's screen button five times: Stretch,
+# Crop, 100%, Custom, back to Fit to screen. Each new mode's name shows
+# over the video for a moment; the lab trace logs the zoom ("screen crop
+# x1.33") and where each subtitle line was drawn.
+# Let the controls the film opened with hide; run.sh presses the button
+# (Maestro needs seconds per tap, the controls hide after 4).
+- extendedWaitUntil:
+    visible: "__nothing_has_this_text__"
+    timeout: 6000
+    optional: true

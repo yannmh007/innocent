@@ -348,14 +348,16 @@ extension PlayerGestures on PlayerController {
 
   // ── pan while zoomed (MX "zoom and pan") ─────────────────────────
 
-  /// Moves a zoomed picture with the fingers, never so far that a black
-  /// edge is dragged into view. [view] is the player's size in dp.
+  /// Moves a picture larger than the screen (Crop, 100 %, a pinch zoom)
+  /// with two fingers, never so far that a black edge is pulled into
+  /// view. [view] is the player's size in dp.
   void onPanDelta(Offset delta, Size view) {
     if (state.isLocked && state.lockScope != 'rotation') return;
-    _lastPanView = view;
-    final next = clampVideoOffset(
-        state.videoOffset + delta, state.videoScale, view);
-    if (next != state.videoOffset) state = state.copyWith(videoOffset: next);
+    if (_viewport.isEmpty) _viewport = view;
+    final next = clampPan(state.videoOffset + delta, _pictureSize, _viewport);
+    if (next == state.videoOffset) return;
+    state = state.copyWith(videoOffset: next);
+    if (state.aspectRatioMode == AspectRatioMode.custom) _customOffset = next;
   }
 
   // ── subtitle gestures (MX) ───────────────────────────────────────
@@ -558,28 +560,32 @@ extension PlayerGestures on PlayerController {
 
   /// Called by ScaleGestureRecognizer during pinch
   /// [scaleDelta] is the multiplicative change (1.0 = no change)
+  /// A pinch zooms from whatever is on screen and makes the mode Custom,
+  /// as in MX: the zoom the user pinched to is what Custom then means.
   void onPinchUpdate(double scaleDelta) {
     if (state.isLocked && state.lockScope != 'rotation') return;
-    var newScale = state.videoScale * scaleDelta;
+    final from = state.aspectRatioMode == AspectRatioMode.custom
+        ? state.videoScale
+        : effectiveVideoScale;
     // Settings → Player → "Limit Video Resizing". 2x is the point past which a
     // 1080p source is being magnified more than the panel can repay — beyond
-    // it you are enlarging compression artefacts, not seeing more detail. The
-    // switch had no reader, so zoom always went to 10x.
+    // it you are enlarging compression artefacts, not seeing more detail.
     final maxScale = _ref
             .read(playerSettingsProvider)
             .get(PlayerSetting.limitResize)
         ? 2.0
         : 10.0;
-    // Clamp 0.25x - max (PDF says 25% to 1000% unlimited)
-    if (newScale < 0.25) newScale = 0.25;
-    if (newScale > maxScale) newScale = maxScale;
+    final newScale = (from * scaleDelta).clamp(0.25, maxScale).toDouble();
     state = state.copyWith(
+      aspectRatioMode: AspectRatioMode.custom,
       videoScale: newScale,
       zoomIndicatorValue: newScale,
-      // Zooming out pulls a panned picture back with it.
-      videoOffset: clampVideoOffset(
-          state.videoOffset, newScale, _lastPanView ?? Size.zero),
+      screenModeToast: null,
     );
+    // Zooming out pulls a panned picture back with it.
+    final offset = clampPan(state.videoOffset, _pictureSize, _viewport);
+    if (offset != state.videoOffset) state = state.copyWith(videoOffset: offset);
+    _customOffset = state.videoOffset;
   }
 
   void onPinchEnd() {
@@ -595,15 +601,23 @@ extension PlayerGestures on PlayerController {
     // during, to avoid hammering shared_prefs across the pinch).
     final uri = _currentUri;
     if (uri != null) {
+      final uds = _ref.read(userDataServiceProvider);
       // ignore: unawaited_futures
-      _ref.read(userDataServiceProvider).setVideoZoom(uri, state.videoScale);
+      uds.setVideoZoom(uri, state.videoScale);
+      // ignore: unawaited_futures
+      uds.setVideoAspectName(uri, state.aspectRatioMode.name);
     }
   }
 
   void resetZoom() {
     _zoomIndicatorTimer?.cancel();
+    _customOffset = Offset.zero;
     state = state.copyWith(
-        videoScale: 1.0, zoomIndicatorValue: null, videoOffset: Offset.zero);
+      aspectRatioMode: AspectRatioMode.fit,
+      videoScale: 1.0,
+      zoomIndicatorValue: null,
+      videoOffset: Offset.zero,
+    );
   }
 
   void _scheduleIndicatorClear() {
@@ -615,17 +629,4 @@ extension PlayerGestures on PlayerController {
     if (mounted) state = state.copyWith(activeIndicator: null);
   }
 
-}
-
-/// How far a picture zoomed to [scale] may be dragged in a [view]: half of
-/// what the zoom added on each axis, so an edge never comes into view.
-@visibleForTesting
-Offset clampVideoOffset(Offset offset, double scale, Size view) {
-  if (scale <= 1.0 || view.isEmpty) return Offset.zero;
-  final mx = (scale - 1) * view.width / 2;
-  final my = (scale - 1) * view.height / 2;
-  return Offset(
-    offset.dx.clamp(-mx, mx).toDouble(),
-    offset.dy.clamp(-my, my).toDouble(),
-  );
 }

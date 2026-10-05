@@ -64,6 +64,7 @@ extension PlayerTracks on PlayerController {
 
   void selectSleepTimer(SleepTimerOption option, {bool playToEnd = false}) {
     _sleepTimerTicker?.cancel();
+    _endSleepFade();
     if (option.mode == SleepTimerMode.off) {
       _clearSleepTimer();
       state = state.copyWith(sleepTimerDialogOpen: false);
@@ -112,6 +113,19 @@ extension PlayerTracks on PlayerController {
       }
       // Real elapsed time drives everything — not a decrementing counter.
       final remaining = dl.difference(DateTime.now());
+      // The last ten seconds fade the sound out rather than cutting it —
+      // unless the film is to finish first, which is no fade at all.
+      if (!playToEnd &&
+          !_sleepFading &&
+          remaining > Duration.zero &&
+          remaining <= PlayerController._sleepFadeLength) {
+        final svc = _ref.read(videoPlayerServiceProvider);
+        if (svc is MediaKitPlayerService && state.isPlaying) {
+          _sleepFading = true;
+          // ignore: discarded_futures
+          svc.fadeOutVolume(remaining);
+        }
+      }
       if (remaining <= Duration.zero) {
         timer.cancel();
         if (playToEnd) {
@@ -124,7 +138,11 @@ extension PlayerTracks on PlayerController {
             );
           }
         } else {
-          _ref.read(videoPlayerServiceProvider).pause();
+          final svc = _ref.read(videoPlayerServiceProvider);
+          // Pause first, then put the level back: the next play must not
+          // start silent.
+          // ignore: discarded_futures
+          svc.pause().whenComplete(_endSleepFade);
           // The whole point of a sleep timer is to save power overnight — so
           // once it fires and pauses, tear down the background foreground
           // service + its partial WakeLock too. Leaving them up would keep the
@@ -166,9 +184,19 @@ extension PlayerTracks on PlayerController {
     });
   }
 
+  /// Undo the sleep fade, if one ran: the volume back to its setting.
+  void _endSleepFade() {
+    if (!_sleepFading) return;
+    _sleepFading = false;
+    final svc = _ref.read(videoPlayerServiceProvider);
+    // ignore: discarded_futures
+    if (svc is MediaKitPlayerService) svc.restoreVolume();
+  }
+
   void _clearSleepTimer() {
     _sleepTimerTicker?.cancel();
     _sleepTimerTicker = null;
+    _endSleepFade();
     if (mounted) {
       state = state.copyWith(sleepTimer: const SleepTimerState());
     }

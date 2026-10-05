@@ -138,8 +138,8 @@ for flow in $FLOWS; do
   # The layout flows measure one orientation each; the player follows the
   # device by default, so turn the device.
   case "$flow" in
-    layout_portrait|screens_large|gestures) rotate 0 ;;
-    layout_landscape|screens_large_land|gestures_land) rotate 1 ;;
+    layout_portrait|screens_large|gestures|screen_modes) rotate 0 ;;
+    layout_landscape|screens_large_land|gestures_land|screen_modes_land) rotate 1 ;;
   esac
   # The perf flows sit still for a minute; read the threads in the middle of
   # it, while the Video tab idles or the film plays.
@@ -162,6 +162,75 @@ for flow in $FLOWS; do
     t1=$(date +%s%N)
     adb exec-out screencap -p > "$OUT/shots/97_stacked_taps.png"
     log "stacked taps at $x,$y: 4 taps in $(( (t1 - t0) / 1000000 )) ms"
+    ;;
+  esac
+  # MX'S SCREEN BUTTON, pressed from here: Maestro spends seconds per tap
+  # and the controls hide 4 s after the last touch. Show the controls, read
+  # the button's bounds from Android's accessibility dump (the same node
+  # TalkBack and Maestro see), then press its centre five times: Stretch,
+  # Crop, 100%, Custom, back to Fit. The trace must read "screen <mode>"
+  # after each press; a "gesture tap" instead means the press missed.
+  case "$flow" in screen_modes|screen_modes_land)
+    sfx=port; [ "$flow" = screen_modes_land ] && sfx=land
+    wh=$(adb shell wm size | tail -1 | awk '{print $NF}' | tr -d '\r')
+    w=${wh%x*}; h=${wh#*x}
+    [ "$sfx" = land ] && { t=$w; w=$h; h=$t; }
+    bounds=""
+    for attempt in 1 2 3; do
+      adb shell "cmd input tap $((w / 2)) $((h * 30 / 100))"
+      sleep 0.6
+      adb shell uiautomator dump /sdcard/ui_mode.xml >/dev/null 2>&1
+      bounds=$(adb exec-out cat /sdcard/ui_mode.xml 2>/dev/null \
+        | grep -o 'resource-id="player-screen-mode"[^>]*bounds="[^"]*"' \
+        | grep -o 'bounds="[^"]*"' | head -1)
+      [ -n "$bounds" ] && break
+      sleep 4.5 # they were up and that tap hid them; let them settle hidden
+    done
+    log "$flow: screen button $bounds (screen ${w}x${h}, attempt $attempt)"
+    # Run 37280515740: inside the player every accessibility node came back
+    # as the whole screen, so its centre is the video, not the button. Then
+    # press where the button is drawn, measured on the lab's screenshots
+    # (portrait 830,2280 of 1080x2400; landscape 2150,954 of
+    # 2400x1080, run 37281576125).
+    full="bounds=\"[0,0][${w},${h}]\""
+    shown=1; [ -z "$bounds" ] && shown=0
+    if [ -z "$bounds" ] || [ "$bounds" = "$full" ]; then
+      if [ "$sfx" = port ]; then bounds="[$((w * 768 / 1000 - 10)),$((h * 950 / 1000 - 10))][$((w * 768 / 1000 + 10)),$((h * 950 / 1000 + 10))]"
+      else bounds="[$((w * 896 / 1000 - 10)),$((h * 883 / 1000 - 10))][$((w * 896 / 1000 + 10)),$((h * 883 / 1000 + 10))]"; fi
+      log "$flow: pressing the drawn button instead, $bounds"
+      if [ $shown = 0 ]; then # the last tap hid them: bring them back
+        adb shell "cmd input tap $((w / 2)) $((h * 30 / 100))"
+        sleep 0.6
+      fi
+    fi
+    if [ -n "$bounds" ]; then
+      set -- $(echo "$bounds" | grep -o '[0-9]\+')
+      bx=$(( ($1 + $3) / 2 )); by=$(( ($2 + $4) / 2 ))
+      for m in stretch crop original custom fit; do
+        adb shell "cmd input tap $bx $by"
+        sleep 0.5
+        adb exec-out screencap -p > "$OUT/shots/7x_mode_${m}_${sfx}.png"
+        sleep 0.7
+      done
+      log "$flow: pressed $bx,$by five times"
+    fi
+    ;;
+  esac
+  case "$flow" in
+  # PICTURE-IN-PICTURE ON LEAVING. The film is playing; Home must put it in
+  # a PiP window by itself (Android 12+ auto-enter), still playing.
+  screen_modes_land)
+    adb shell input keyevent KEYCODE_HOME
+    sleep 3
+    adb exec-out screencap -p > "$OUT/shots/98_pip_after_home.png"
+    pinned=$(adb shell dumpsys activity activities 2>/dev/null \
+      | grep -ciE "mode=pinned|windowingMode=pinned|pinned")
+    log "after Home: activities mentioning pinned=$pinned"
+    adb shell dumpsys activity activities 2>/dev/null \
+      | grep -iE "pinned|mResumedActivity" | head -8 >> "$OUT/pip.txt" || true
+    adb shell dumpsys media_session 2>/dev/null | head -60 >> "$OUT/pip.txt" || true
+    sleep 4
+    adb exec-out screencap -p > "$OUT/shots/99_pip_later.png"
     ;;
   esac
   # Maestro has put screenshots in different places across versions.
