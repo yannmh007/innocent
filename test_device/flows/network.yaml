@@ -71,8 +71,17 @@ appId: com.innocent.media
     visible: "(?s)clip\\.mp4.*"
     timeout: 20000
 - assertVisible: "(?s)film\\.mkv.*"
-- assertVisible: "(?s)ငါ့ဇာတ်ကား\\.mp4.*"
 - takeScreenshot: 45_smb_movies
+# Names with spaces and Burmese, one folder down; Back comes up one.
+- tapOn: "(?s)Sub dir.*"
+- extendedWaitUntil:
+    visible: "(?s)ငါ့ဇာတ်ကား\\.mp4.*"
+    timeout: 20000
+- assertVisible: "(?s)space name\\.mp4.*"
+- back
+- extendedWaitUntil:
+    visible: "(?s)clip\\.mp4.*"
+    timeout: 20000
 - tapOn: "(?s)clip\\.mp4.*"
 - waitForAnimationToEnd:
     timeout: 8000
