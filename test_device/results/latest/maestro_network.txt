@@ -44,17 +44,49 @@ Assert that "(?s)Movies.*" is visible... COMPLETED
 Tap on "(?s)Movies.*"... COMPLETED
 Assert that "(?s)clip\.mp4.*" is visible... COMPLETED
 Assert that "(?s)film\.mkv.*" is visible... COMPLETED
-Assert that "(?s)ငါ့ဇာတ်ကား\.mp4.*" is visible... FAILED
+Take screenshot 45_smb_movies... COMPLETED
+Tap on "(?s)Sub dir.*"... COMPLETED
+Assert that "(?s)ငါ့ဇာတ်ကား\.mp4.*" is visible... COMPLETED
+Assert that "(?s)space name\.mp4.*" is visible... COMPLETED
+Press back... COMPLETED
+Assert that "(?s)clip\.mp4.*" is visible... COMPLETED
+Tap on "(?s)clip\.mp4.*"... COMPLETED
+Wait for animation to end within 8000 ms... COMPLETED
+Take screenshot 46_smb_playing... COMPLETED
+Press back... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Repeat while "(?s).*SUPPORTED PROTOCOLS.*" is not visible (up to 6 times)...
+  Press back... COMPLETED
+  Wait for animation to end within 2000 ms... COMPLETED
+Repeat while "(?s).*SUPPORTED PROTOCOLS.*" is not visible (up to 6 times)... COMPLETED
+Assert that "(?s).*10\.0\.2\.2.*" is visible... COMPLETED
+Take screenshot 47_networks_list... COMPLETED
+Tap on "(?s).*Add a new server.*"... COMPLETED
+Tap on "FTP"... COMPLETED
+Tap on "Server IP"... COMPLETED
+Input text 10.0.2.2... COMPLETED
+Tap on "21"... COMPLETED
+Erase 4 characters... COMPLETED
+Input text 2121... COMPLETED
+Tap on "Username"... COMPLETED
+Input text netlab... COMPLETED
+Tap on "Password"... COMPLETED
+Input text wrong... COMPLETED
+Hide Keyboard... COMPLETED
+Tap on "Connect"... COMPLETED
+Assert that "(?s).*Wrong username or password.*" is visible... COMPLETED
+Take screenshot 48_ftp_wrong_password... COMPLETED
+Tap on "wrong"... FAILED
 
-Assertion is false: "(?s)ငါ့ဇာတ်ကား\.mp4.*" is visible
+Element not found: Text matching regex: wrong
 
-Assertion '"(?s)ငါ့ဇာတ်ကား\.mp4.*" is visible' failed. Check the UI hierarchy in debug artifacts to verify the element state and properties.
+Element with Text matching regex: wrong not found. Check the UI hierarchy in debug artifacts to verify if the element exists.
 
 Possible causes:
 - Element selector may be incorrect - check if there are similar elements with slightly different names/properties.
-- Element may be temporarily unavailable due to loading state
-- This could be a real regression that needs to be addressed
+- Element may be temporarily unavailable due to loading state.
+- This could be a real regression that needs to be addressed.
 
 ==== Debug output (logs & screenshots) ====
 
-/home/runner/work/innocent/innocent/out/maestro_out/2026-10-06_110058
+/home/runner/work/innocent/innocent/out/maestro_out/2026-10-06_111122
