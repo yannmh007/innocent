@@ -177,7 +177,20 @@ catalogue row and queues the ladder. The operator's part is one tap.
    TELEGRAM_BOT_TOKEN        the same token (used only to reply to you)
    TELEGRAM_WEBHOOK_SECRET   another long random string you invent
    TELEGRAM_CHAT_IDS         your chat id from step 3, comma separated
+   GH_DISPATCH_TOKEN         optional but strongly advised — see below
    ```
+
+   **`GH_DISPATCH_TOKEN` is what makes a forwarded file move in minutes
+   instead of hours.** Without it the runner only comes when GitHub runs the
+   schedule, and on a bad day that is six hours apart. With it, the function
+   starts the Ingest workflow the moment a file is queued. Make it at GitHub →
+   Settings → Developer settings → Personal access tokens → **Fine-grained
+   tokens** → Generate: *Repository access* → **Only select repositories** →
+   this one; *Permissions* → **Actions: Read and write**, nothing else. Its
+   whole power is starting or cancelling workflow runs of this repository; it
+   cannot read or change code, secrets or settings. Give it the longest expiry
+   offered and put a reminder in the calendar: an expired token silently puts
+   the queue back on the schedule (the console's Telegram page says so).
 
 6. **Deploy `ingest`** (see the section below) with **Verify JWT OFF** —
    Telegram cannot present a JWT.
@@ -284,12 +297,17 @@ folder first instead:
 
 `tool/sql/bot_folders_test.sql` is the database test (`BOT FOLDERS TEST PASSED`).
 
-**How long it takes.** `*/5` in the workflow is what GitHub accepts, not what
-it runs — a schedule on a free public repository fires when it gets to it,
-measured at fourteen to twenty minutes apart. A run now drains the WHOLE queue
-rather than taking one file, so ten photos are ten minutes of transfers after
-one wait, not ten waits. To skip the wait entirely, run the **Ingest**
-workflow by hand from the Actions tab.
+**How long it takes.** With `GH_DISPATCH_TOKEN` set, a runner starts within
+about a minute of the first file, drains the WHOLE queue in one Telegram
+sign-in, waits ninety seconds for the rest of an album still arriving, and if
+it stops with files left (400 files, or ninety minutes) it starts the next run
+itself. A 70 MB video is about a minute of transfer; a photo, a second.
+
+Without the token it is the schedule: `*/5` in the workflow is what GitHub
+accepts, not what it runs — fourteen to twenty minutes apart on a good day,
+and on 2026-10-05/06 five runs in twenty-four hours. **Console → Telegram →
+Start now** (shown while anything is waiting) starts one by hand; so does the
+**Ingest** workflow's *Run workflow* button in the Actions tab.
 
 **`waiting: Telegram asked for …s` is not a failure.** The run signs in to
 Telegram once and moves every file in that one session. If Telegram still

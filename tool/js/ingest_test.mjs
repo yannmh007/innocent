@@ -454,6 +454,67 @@ const studio = await import('data:text/javascript,' + encodeURIComponent(
     /ingestTitles = null/.test(born));
 }
 
+// ── waking the runner (2026-10-06) ───────────────────────────────────────
+//
+// An album forwarded at 09:51 sat "waiting for a runner" until 14:08, because
+// GitHub fired the `*/5` schedule five times in a day. The webhook now asks
+// GitHub to start the run itself. What must hold: ONE dispatch for a burst of
+// forty webhooks, NONE when a run is already waiting (it would only find an
+// empty queue), nothing at all without the token, and a failure that never
+// throws into the enqueue that already succeeded.
+{
+  const body = sliceOut('docs/edge/ingest.ts', 'let lastKick = 0;', '// ── bot commands')
+    .replace('force = false): Promise<string>', 'force = false)')
+    .replace(/ as \{ workflow_runs\?: Array<\{ status\?: string \}> \}/, '');
+  const make = async (token) => (await import('data:text/javascript,' + encodeURIComponent(
+    `const GH_DISPATCH_TOKEN = ${JSON.stringify(token)};\n`
+    + "const GH_REPO = 'o/r'; const GH_REF = 'main';\n"
+    + body + '\nexport { kickRunner };' + `\n// ${Math.random()}`))).kickRunner;
+
+  const calls = [];
+  let runs = [];
+  let answer = 204;
+  globalThis.fetch = async (url, init = {}) => {
+    calls.push([init.method || 'GET', String(url)]);
+    if (String(url).endsWith('/dispatches')) return { status: answer, ok: answer < 300 };
+    return { ok: true, status: 200, json: async () => ({ workflow_runs: runs }) };
+  };
+  const dispatches = () => calls.filter(([m, u]) => m === 'POST' && u.endsWith('/dispatches'));
+
+  check('no token: nothing is asked of GitHub', await (await make(''))() === 'off' && !calls.length);
+
+  let kick = await make('tok');
+  check('a file with nothing running starts a run', await kick() === 'started');
+  check('at the Ingest workflow on main',
+    dispatches().length === 1 && /\/repos\/o\/r\/actions\/workflows\/ingest\.yml\/dispatches$/.test(dispatches()[0][1]));
+  for (let i = 0; i < 39; i++) await kick();
+  check('forty webhooks of one album are ONE dispatch', dispatches().length === 1);
+
+  kick = await make('tok');
+  runs = [{ status: 'completed' }, { status: 'queued' }];
+  check('a run already waiting takes the file; no second one', await kick() === 'waiting'
+    && dispatches().length === 1);
+  runs = [{ status: 'pending' }];
+  check('"pending" behind the concurrency group counts as waiting',
+    await kick(true) === 'waiting' && dispatches().length === 1);
+  runs = [{ status: 'in_progress' }];
+  check('a run already going still gets one behind it (it may be leaving)',
+    await kick(true) === 'started' && dispatches().length === 2);
+
+  answer = 403;
+  check('a refused token says failed', await (await make('tok'))() === 'failed');
+  globalThis.fetch = async () => { throw new Error('network down'); };
+  let threw = false;
+  try { check('and a dead network says failed too, without throwing',
+    await (await make('tok'))() === 'failed'); } catch { threw = true; }
+  check('(never throws)', !threw);
+
+  check('the webhook wakes it after queueing, not before',
+    ingestSrc.indexOf("rpc('enqueue_ingest'") < ingestSrc.indexOf('await kickRunner()'));
+  check('the console can press it', /kick: 'uploader'/.test(ingestSrc)
+    && /op: 'kick'/.test(readFileSync(join(ROOT, 'docs/studio/index.html'), 'utf8')));
+}
+
 if (failures) {
   console.error(failures + ' ingest check(s) failed');
   process.exit(1);

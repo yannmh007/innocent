@@ -121,6 +121,21 @@ const WEBHOOK_SECRET = Deno.env.get('TELEGRAM_WEBHOOK_SECRET') ?? '';
 const TG_CHATS = (Deno.env.get('TELEGRAM_CHAT_IDS') ?? '')
   .split(',').map((s) => s.trim()).filter(Boolean);
 
+// WAKING THE RUNNER THE MOMENT A FILE ARRIVES, instead of waiting for a
+// schedule GitHub keeps when it likes. `*/5` in ingest.yml was measured at
+// fourteen to twenty minutes apart on a good day; on 2026-10-05/06 it fired
+// at 10:25, 19:21, 00:53, 07:06 and 14:08 — an album forwarded at 09:51 sat
+// "waiting for a runner" for four hours, and its last two videos for six
+// more because one run stops at a set number of files.
+//
+// A fine-grained GitHub token for THIS repository only, with one permission:
+// Actions read and write. Its whole power is starting, re-running or
+// cancelling workflow runs here — it cannot read or write code, secrets or
+// settings. Absent, nothing changes: files queue and the schedule comes by.
+const GH_DISPATCH_TOKEN = Deno.env.get('GH_DISPATCH_TOKEN') ?? '';
+const GH_REPO = Deno.env.get('GH_REPO') ?? 'yannmh007/innocent';
+const GH_REF = Deno.env.get('GH_REF') ?? 'main';
+
 const ALLOWED_ORIGINS = (Deno.env.get('STUDIO_ORIGINS') ??
   'https://yannmh007.github.io')
   .split(',').map((s) => s.trim()).filter(Boolean);
@@ -543,6 +558,57 @@ async function say(chatId: number | string, text: string): Promise<void> {
   }
 }
 
+// An album is ten or forty webhooks inside a few seconds; one wake-up covers
+// them all, because the runner drains the whole queue and then waits a minute
+// for stragglers before it leaves. Kept per isolate, so a burst that lands on
+// two isolates costs one extra dispatch, which GitHub folds into the same
+// pending run (the workflow's concurrency group keeps at most one waiting).
+let lastKick = 0;
+
+/// Ask GitHub to start the Ingest workflow now.
+///
+///   started  a run was dispatched
+///   waiting  one is already queued and will take this file too
+///   off      no GH_DISPATCH_TOKEN: the schedule is the only way in
+///   failed   GitHub said no (a revoked or wrong-scoped token, usually)
+///
+/// Best effort in every direction, like `say`: the file is already queued,
+/// and nothing here may fail that.
+async function kickRunner(force = false): Promise<string> {
+  if (!GH_DISPATCH_TOKEN) return 'off';
+  const now = Date.now();
+  if (!force && now - lastKick < 30_000) return 'waiting';
+  const base = `https://api.github.com/repos/${GH_REPO}/actions/workflows/ingest.yml`;
+  const headers = {
+    'Authorization': `Bearer ${GH_DISPATCH_TOKEN}`,
+    'Accept': 'application/vnd.github+json',
+    'X-GitHub-Api-Version': '2022-11-28',
+    'User-Agent': 'innocent-ingest',
+  };
+  try {
+    // A run that has not started yet will claim this file when it does; a
+    // second one behind it would only find an empty queue.
+    const q = await fetch(`${base}/runs?per_page=5`, { headers });
+    if (q.ok) {
+      const j = await q.json() as { workflow_runs?: Array<{ status?: string }> };
+      const pending = (j.workflow_runs ?? []).some((r) =>
+        ['queued', 'pending', 'requested', 'waiting'].includes(String(r.status)));
+      if (pending) { lastKick = now; return 'waiting'; }
+    }
+    const r = await fetch(`${base}/dispatches`, {
+      method: 'POST',
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ref: GH_REF }),
+    });
+    if (r.status === 204) { lastKick = now; return 'started'; }
+    console.log(`kick: GitHub answered ${r.status}`);
+    return 'failed';
+  } catch (e) {
+    console.log('kick: ' + String(e).slice(0, 160));
+    return 'failed';
+  }
+}
+
 // ── bot commands (migration 033) ────────────────────────────────────────────
 //
 // THE FOLDER IS CHOSEN IN THE CHAT, NOT GUESSED FROM A CAPTION. A forwarded
@@ -747,12 +813,20 @@ async function botCommand(chatId: string, raw: string, req: Request): Promise<Re
     if (cmd === 'status') {
       const q = await rpc('bot_queue_status', {}) as Record<string, unknown>;
       const cur = await rpc('bot_folder_current', { p_chat: chat }) as Record<string, unknown>;
+      // Asking is also a nudge: anything still waiting gets a runner now.
+      const kick = Number(q.queued ?? 0) > 0 ? await kickRunner(true) : '';
       await say(chatId, [
         `Queue: စောင့်ဆဲ ${Number(q.queued ?? 0)} · ရွှေ့နေဆဲ ${Number(q.running ?? 0)}`
           + (Number(q.waiting_mb) ? ` (${Number(q.waiting_mb)} MB)` : ''),
         `Title မထည့်ရသေး: ${Number(q.unattached ?? 0)} · မအောင်မြင်: ${Number(q.failed ?? 0)}`,
         `Archive channel သို့ ကူးဖို့ကျန်: ${Number(q.archive_queued ?? 0)}`,
-        `Runner နောက်ဆုံး: ${ago(q.runner_at)} (ပုံမှန် ၁၅–၂၀ မိနစ်တစ်ခါ)`,
+        `Runner နောက်ဆုံး: ${ago(q.runner_at)}`
+          + (GH_DISPATCH_TOKEN
+            ? ' (ဖိုင်ရောက်တာနဲ့ ချက်ချင်း စတယ်)'
+            : ' (GitHub schedule ကိုပဲ စောင့်ရတယ် — နာရီချီ ကြာနိုင်)'),
+        ...(kick === 'started' || kick === 'waiting'
+          ? ['Runner ကို အခု စခိုင်းလိုက်ပြီ — မိနစ်အနည်းငယ်အတွင်း bucket ထဲ ရောက်မယ်']
+          : kick === 'failed' ? ['Runner ကို စခိုင်းလို့ မရဘူး — GH_DISPATCH_TOKEN ကို စစ်ပါ'] : []),
         `ဖွင့်ထားတဲ့ folder: ${String(cur?.folder ?? 'မရှိ')}`,
       ].join('\n'));
       return done('status');
@@ -1037,6 +1111,8 @@ Deno.serve(async (req: Request) => {
 
     const mb = file.bytes ? Math.round(file.bytes / 1048576) : 0;
     const moved = Number(queued.moved ?? 0) || 0;
+    const kicked = await kickRunner();
+    const soon = kicked === 'started' || kicked === 'waiting';
     // INSIDE A /folder SESSION, ONE LINE. Four albums of ten is forty
     // replies, and the paragraph below forty times buries the one line that
     // matters; /done gives the totals and the next step.
@@ -1059,13 +1135,16 @@ Deno.serve(async (req: Request) => {
           + `ဆက်ထည့်ချင်ရင် /folder ${String(session.expired)} ပြန်ရိုက်ပါ)\n`
         : '')
       + (moved ? `Moved ${moved} more from this album into it.\n` : '')
-      // NOT "within five minutes", which is what this said and what the
-      // cron expression claims. GitHub runs a free public repository's
-      // schedule when it gets to it — fourteen to twenty minutes apart,
-      // measured — and a promise the system cannot keep is how somebody comes
-      // to believe the thing is broken and forwards it all again.
-      + 'A runner usually picks it up within twenty minutes, and takes the '
-      + 'whole queue when it does. Choose the title in the console after.');
+      // ONLY PROMISE WHAT WILL HAPPEN. Woken directly, a runner starts in
+      // well under a minute. Left to the schedule it is whenever GitHub gets
+      // to it — twenty minutes on a good day, hours on a bad one — and a
+      // promise the system cannot keep is how somebody comes to believe the
+      // thing is broken and forwards it all again.
+      + (soon
+        ? 'A runner is starting now and takes the whole queue — usually in the '
+          + 'bucket within a few minutes. Choose the title in the console after.'
+        : 'Waiting for the scheduled runner (GitHub decides when — it can be '
+          + 'hours). Console → Telegram → “Start now” fetches it straight away.'));
     return json({ ok: true, queued: true }, 200, req);
   }
 
@@ -1491,6 +1570,9 @@ const NEED: Record<string, Role> = {
   list: 'viewer',
   attach: 'uploader', attach_folder: 'uploader', create_title: 'uploader',
   retry: 'uploader',
+  // Starting a fetch of what is already queued decides nothing about the
+  // catalogue; it only stops a wait.
+  kick: 'uploader',
   // Taking forwarded files out of the inbox is a decision about what the
   // catalogue receives, so it is an editor's — the review queue's reject.
   discard: 'editor',
@@ -1529,7 +1611,18 @@ async function consoleOp(
       + 'title_id,created_at,finished_at,tg_caption,tg_media_group'
       + '&order=created_at.desc&limit=200');
     if (!res.ok) return json({ error: 'list_failed' }, 500, req);
-    return json({ rows: await res.json(), runner: !!RUNNER_SECRET }, 200, req);
+    return json({
+      rows: await res.json(), runner: !!RUNNER_SECRET, instant: !!GH_DISPATCH_TOKEN,
+    }, 200, req);
+  }
+
+  // ── kick ─────────────────────────────────────────────────────────────────
+  // "Start now" on the console: the same wake-up a forwarded file gives, for
+  // a queue that was filled before the token existed, or a run that ended
+  // early. Forced past the per-isolate pause; GitHub's own pending check
+  // still keeps it to one waiting run.
+  if (op === 'kick') {
+    return json({ ok: true, kick: await kickRunner(true) }, 200, req);
   }
 
   // ── attach ───────────────────────────────────────────────────────────────

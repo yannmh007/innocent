@@ -84,9 +84,36 @@ SLEEP_THRESHOLD = 300
 # can finish rather than be killed halfway with a part-written object and a
 # row stuck on 'running' until the seven-hour recovery in claim_ingest.
 BUDGET_MIN = int(os.environ.get('INGEST_BUDGET_MIN', '90') or 90)
-# A belt to the budget's braces. Nothing should queue this many at once, and a
-# loop that cannot end is worse than a queue that waits for the next tick.
-MAX_JOBS = int(os.environ.get('INGEST_MAX_JOBS', '40') or 40)
+# A belt to the budget's braces: a loop that cannot end is worse than a queue
+# that waits. It was 40, and that was the bug of 2026-10-06 — one album of 4
+# videos and 38 photos is 42 files, the run stopped at 40, and the last two
+# videos waited six hours for GitHub's next scheduled run. Photos are 100 KB
+# each; the time budget above is the real limit, and when either one stops a
+# run with work left, MORE tells the workflow to start the next run at once.
+MAX_JOBS = 400
+
+# HOW LONG AN EMPTY QUEUE IS WAITED ON before the run leaves. Telegram
+# delivers an album as one webhook per file over several seconds, and the
+# operator often forwards a second album right after the first; a runner
+# woken by the first file that left the moment the queue looked empty would
+# leave the rest for the next one. Polled, not slept through: one claim
+# every LINGER_STEP seconds.
+LINGER_SEC = 90
+LINGER_STEP = 10
+
+# Written when the run stopped with work still queued (the job limit or the
+# time budget), so the workflow dispatches the next run now rather than the
+# schedule doing it hours later.
+MORE = '/tmp/ingest.more'
+
+_sleep = time.sleep
+
+
+def _env_int(name, default):
+    try:
+        return int(os.environ.get(name, '') or default)
+    except ValueError:
+        return default
 
 
 def load_job():
@@ -474,6 +501,15 @@ def handle(app, job, flood_type):
         fetch_one(app, job, flood_type)
 
 
+def more():
+    """Leave word for the workflow that work is still queued."""
+    try:
+        with open(MORE, 'w', encoding='utf-8') as fh:
+            fh.write('1')
+    except OSError:
+        pass
+
+
 def claim_next():
     """Ask for the next job. Writes JOB_FILE and answers it, or None.
 
@@ -664,6 +700,8 @@ def main():
         print('sign-in failed: %s' % exc)
         return 1
 
+    max_jobs = _env_int('INGEST_MAX_JOBS', MAX_JOBS)
+    linger = _env_int('INGEST_LINGER_SEC', LINGER_SEC)
     deadline = time.time() + BUDGET_MIN * 60
     handled = 0
     try:
@@ -673,13 +711,21 @@ def main():
             except _Stop:
                 break
             handled += 1
-            if handled >= MAX_JOBS:
-                print('stopping at %d jobs; the next run takes the rest' % MAX_JOBS)
+            if handled >= max_jobs:
+                print('stopping at %d jobs; asking for the next run now' % max_jobs)
+                more()
                 break
             if time.time() >= deadline:
-                print('stopping after %dm; the next run takes the rest' % BUDGET_MIN)
+                print('stopping after %dm; asking for the next run now' % BUDGET_MIN)
+                more()
                 break
             job = claim_next()
+            # The rest of an album, or the next one, still arriving.
+            polls = linger // LINGER_STEP if LINGER_STEP > 0 else 0
+            while job is None and polls > 0:
+                _sleep(LINGER_STEP)
+                polls -= 1
+                job = claim_next()
             if job is None:
                 print('queue is empty')
                 break
