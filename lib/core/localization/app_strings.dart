@@ -701,6 +701,34 @@ class AppStrings {
   String get shareScanHint => _s('shareScanHint');
   String get urlCopied => _s('urlCopied');
   String get stopSharing => _s('stopSharing');
+  String trSharingNow(int n) => _s('trSharingNow').replaceFirst('{n}', '$n');
+  String get trSharingComputer => _s('trSharingComputer');
+  String get trViaWifi => _s('trViaWifi');
+  String get trReceivingNow => _s('trReceivingNow');
+  String get trConnectedTo => _s('trConnectedTo');
+  String get trResumeReceiving => _s('trResumeReceiving');
+  String get trShareWith => _s('trShareWith');
+  String get trPc => _s('trPc');
+  String get trTablet => _s('trTablet');
+  String get trSendAppShort => _s('trSendAppShort');
+  String get trTurboOnShort => _s('trTurboOnShort');
+  String get trTurboOffShort => _s('trTurboOffShort');
+  String get trSettings => _s('trSettings');
+  String get trHistoryEmpty => _s('trHistoryEmpty');
+  String get trPcTitle => _s('trPcTitle');
+  String get trPcLead => _s('trPcLead');
+  String get trPcStep1Turbo => _s('trPcStep1Turbo');
+  String get trPcStep1Wifi => _s('trPcStep1Wifi');
+  String get trPcStep2 => _s('trPcStep2');
+  String get trPcStep3 => _s('trPcStep3');
+  String trPcConnected(int n) => _s('trPcConnected').replaceFirst('{n}', '$n');
+  String trPcSharingFiles(int n) =>
+      _s('trPcSharingFiles').replaceFirst('{n}', '$n');
+  String get trPcStart => _s('trPcStart');
+  String get trScanTitle => _s('trScanTitle');
+  String get trScanBody => _s('trScanBody');
+  String get trSendTitle => _s('trSendTitle');
+  String get trReceiveTitle => _s('trReceiveTitle');
   String get cameraPermissionNeeded => _s('cameraPermissionNeeded');
   String get scanQrCode => _s('scanQrCode');
   String get orEnterAddress => _s('orEnterAddress');
@@ -1665,6 +1693,33 @@ class AppStrings {
   };
 
   static const Map<String, String> _en = <String, String>{
+    'trSharingNow': 'Sharing {n} file(s) — tap to see',
+    'trSharingComputer': 'Sharing with a computer — tap to see',
+    'trViaWifi': 'Over your Wi-Fi',
+    'trReceivingNow': 'Receiving — tap to see',
+    'trConnectedTo': 'Connected — tap to see',
+    'trResumeReceiving': 'A download stopped part-way — tap to resume',
+    'trShareWith': 'Share with',
+    'trPc': 'PC',
+    'trTablet': 'Tablet',
+    'trSendAppShort': 'Give a friend the app — no internet needed',
+    'trTurboOnShort': 'On — phone to phone, no router. Fastest.',
+    'trTurboOffShort': 'Off — sends through your Wi-Fi router',
+    'trSettings': 'Transfer settings',
+    'trHistoryEmpty': 'Files you receive appear here.',
+    'trPcTitle': 'Share with a computer, iPhone or tablet',
+    'trPcLead': 'Nothing to install on the other side — just a web browser. Download from this phone, or drop files to send them to it.',
+    'trPcStep1Turbo': 'On the computer or iPhone, join this Wi-Fi — or scan the code with its camera',
+    'trPcStep1Wifi': 'Put the computer or iPhone on the same Wi-Fi as this phone',
+    'trPcStep2': 'Open this address in its browser',
+    'trPcStep3': 'Download files, or drop files on the page to send them here',
+    'trPcConnected': '{n} connected',
+    'trPcSharingFiles': 'Sharing {n} file(s) from this phone',
+    'trPcStart': 'Start',
+    'trScanTitle': 'Scan the sender\'s QR code',
+    'trScanBody': 'On the other phone, tap Send — a QR code appears. Scan it and the two phones connect directly.',
+    'trSendTitle': 'Send',
+    'trReceiveTitle': 'Receive',
     'subSecColor': 'Color',
     'subSecBorder': 'Border',
     'subSecAppearance': 'Appearance',
@@ -3088,6 +3143,33 @@ class AppStrings {
   };
 
   static const Map<String, String> _my = <String, String>{
+    'trSharingNow': 'ဖိုင် {n} ခု ပို့နေသည် — ကြည့်ရန် နှိပ်ပါ',
+    'trSharingComputer': 'ကွန်ပျူတာနဲ့ မျှဝေနေသည် — ကြည့်ရန် နှိပ်ပါ',
+    'trViaWifi': 'Wi-Fi router ကနေ',
+    'trReceivingNow': 'လက်ခံနေသည် — ကြည့်ရန် နှိပ်ပါ',
+    'trConnectedTo': 'ချိတ်ဆက်ထားသည် — ကြည့်ရန် နှိပ်ပါ',
+    'trResumeReceiving': 'Download တစ်ဝက်တစ်ပျက် ရပ်သွားသည် — ဆက်ရန် နှိပ်ပါ',
+    'trShareWith': 'မျှဝေရန်',
+    'trPc': 'PC',
+    'trTablet': 'Tablet',
+    'trSendAppShort': 'သူငယ်ချင်းဆီ app ကို ပို့ပါ — အင်တာနက် မလို',
+    'trTurboOnShort': 'ဖွင့်ထား — ဖုန်းချင်း တိုက်ရိုက်၊ router မလို။ အမြန်ဆုံး။',
+    'trTurboOffShort': 'ပိတ်ထား — Wi-Fi router ကနေ ပို့ပါမယ်',
+    'trSettings': 'ပို့ခြင်း ဆက်တင်များ',
+    'trHistoryEmpty': 'လက်ခံရရှိတဲ့ ဖိုင်တွေ ဒီမှာ ပေါ်ပါမယ်။',
+    'trPcTitle': 'ကွန်ပျူတာ၊ iPhone၊ Tablet နဲ့ မျှဝေရန်',
+    'trPcLead': 'တစ်ဖက်မှာ ဘာမှ install မလုပ်ရ — browser တစ်ခုပဲ လိုပါတယ်။ ဒီဖုန်းထဲက ဖိုင်တွေ download ဆွဲပါ၊ ဒါမှမဟုတ် ဖိုင်တွေကို page ပေါ် ဆွဲချပြီး ဖုန်းဆီ ပို့ပါ။',
+    'trPcStep1Turbo': 'ကွန်ပျူတာ (သို့) iPhone ကို ဒီ Wi-Fi နဲ့ ချိတ်ပါ — ဒါမှမဟုတ် ကင်မရာနဲ့ ဒီ QR ကို scan ဖတ်ပါ',
+    'trPcStep1Wifi': 'ကွန်ပျူတာ (သို့) iPhone ကို ဒီဖုန်းနဲ့ Wi-Fi တစ်ခုတည်းမှာ ချိတ်ပါ',
+    'trPcStep2': 'သူ့ browser မှာ ဒီလိပ်စာကို ဖွင့်ပါ',
+    'trPcStep3': 'ဖိုင်တွေ download ဆွဲပါ၊ ဒါမှမဟုတ် page ပေါ်ကို ဖိုင်တွေ ဆွဲချပြီး ဒီဖုန်းဆီ ပို့ပါ',
+    'trPcConnected': '{n} ခု ချိတ်ထားသည်',
+    'trPcSharingFiles': 'ဒီဖုန်းကနေ ဖိုင် {n} ခု မျှဝေနေသည်',
+    'trPcStart': 'စတင်မည်',
+    'trScanTitle': 'ပို့သူရဲ့ QR ကို scan ဖတ်ပါ',
+    'trScanBody': 'တစ်ဖက်ဖုန်းမှာ "ပို့မယ်" ကို နှိပ်ပါ — QR ပေါ်လာပါမယ်။ Scan ဖတ်လိုက်တာနဲ့ ဖုန်းနှစ်လုံး တိုက်ရိုက် ချိတ်ဆက်ပါမယ်။',
+    'trSendTitle': 'ပို့မယ်',
+    'trReceiveTitle': 'လက်ခံမယ်',
     'subSecColor': 'အရောင်',
     'subSecBorder': 'ဘောင်',
     'subSecAppearance': 'အသွင်အပြင်',
@@ -4499,6 +4581,33 @@ class AppStrings {
   };
 
   static const Map<String, String> _th = <String, String>{
+    'trSharingNow': 'กำลังส่ง {n} ไฟล์ — แตะเพื่อดู',
+    'trSharingComputer': 'กำลังแชร์กับคอมพิวเตอร์ — แตะเพื่อดู',
+    'trViaWifi': 'ผ่าน Wi-Fi ของคุณ',
+    'trReceivingNow': 'กำลังรับ — แตะเพื่อดู',
+    'trConnectedTo': 'เชื่อมต่อแล้ว — แตะเพื่อดู',
+    'trResumeReceiving': 'การดาวน์โหลดหยุดกลางคัน — แตะเพื่อทำต่อ',
+    'trShareWith': 'แชร์กับ',
+    'trPc': 'PC',
+    'trTablet': 'แท็บเล็ต',
+    'trSendAppShort': 'ส่งแอปให้เพื่อน — ไม่ต้องใช้อินเทอร์เน็ต',
+    'trTurboOnShort': 'เปิด — ส่งตรงระหว่างโทรศัพท์ ไม่ผ่านเราเตอร์ เร็วที่สุด',
+    'trTurboOffShort': 'ปิด — ส่งผ่านเราเตอร์ Wi-Fi',
+    'trSettings': 'การตั้งค่าการส่ง',
+    'trHistoryEmpty': 'ไฟล์ที่คุณได้รับจะแสดงที่นี่',
+    'trPcTitle': 'แชร์กับคอมพิวเตอร์ iPhone หรือแท็บเล็ต',
+    'trPcLead': 'ไม่ต้องติดตั้งอะไรอีกฝั่ง แค่มีเบราว์เซอร์ ดาวน์โหลดจากโทรศัพท์นี้ หรือลากไฟล์มาวางเพื่อส่งมาที่นี่',
+    'trPcStep1Turbo': 'ให้คอมพิวเตอร์หรือ iPhone เชื่อม Wi-Fi นี้ — หรือสแกนโค้ดด้วยกล้อง',
+    'trPcStep1Wifi': 'ให้คอมพิวเตอร์หรือ iPhone อยู่ใน Wi-Fi เดียวกับโทรศัพท์นี้',
+    'trPcStep2': 'เปิดที่อยู่นี้ในเบราว์เซอร์',
+    'trPcStep3': 'ดาวน์โหลดไฟล์ หรือลากไฟล์วางบนหน้าเพื่อส่งมาที่นี่',
+    'trPcConnected': 'เชื่อมต่อแล้ว {n}',
+    'trPcSharingFiles': 'กำลังแชร์ {n} ไฟล์จากโทรศัพท์นี้',
+    'trPcStart': 'เริ่ม',
+    'trScanTitle': 'สแกน QR ของผู้ส่ง',
+    'trScanBody': 'บนโทรศัพท์อีกเครื่อง แตะส่ง — จะมี QR ขึ้นมา สแกนแล้วโทรศัพท์ทั้งสองจะเชื่อมต่อกันโดยตรง',
+    'trSendTitle': 'ส่ง',
+    'trReceiveTitle': 'รับ',
     'subSecColor': 'สี',
     'subSecBorder': 'ขอบ',
     'subSecAppearance': 'ลักษณะ',

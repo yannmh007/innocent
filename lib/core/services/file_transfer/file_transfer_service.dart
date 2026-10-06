@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:network_info_plus/network_info_plus.dart';
 import 'package:path/path.dart' as p;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart' as shelf_io;
 import 'package:shelf_router/shelf_router.dart';
@@ -131,6 +132,11 @@ class TransferState {
   /// User asked for the direct radio link. Requested != active: the radio can
   /// refuse, and the share still has to work when it does.
   final bool turboRequested;
+
+  /// This share is for a computer, an iPhone or a tablet — a browser, not an
+  /// Innocent app. It may start with no files (the browser sends to the
+  /// phone), and its screen leads with the address to type.
+  final bool forComputer;
   final bool turboActive;
   /// 'p2p' (Wi-Fi Direct group) or 'lohs' (local-only hotspot).
   final String turboMode;
@@ -161,7 +167,13 @@ class TransferState {
     this.starting = false,
     this.paused = false,
     this.pin = '',
-    this.turboRequested = false,
+    // ON BY DEFAULT (owner's decision, 2026-10-06): the direct link is the
+    // fast path and the one MX Player, SHAREit and Zapya all default to. A
+    // phone that cannot make one falls back to the shared Wi-Fi by itself,
+    // with a sentence saying why (see turboNotice), so the default costs a
+    // phone without Turbo nothing.
+    this.turboRequested = true,
+    this.forComputer = false,
     this.turboActive = false,
     this.turboMode = '',
     this.turboBand = '',
@@ -201,6 +213,7 @@ class TransferState {
     bool? paused,
     String? pin,
     bool? turboRequested,
+    bool? forComputer,
     bool? turboActive,
     String? turboMode,
     String? turboBand,
@@ -231,6 +244,7 @@ class TransferState {
       paused: paused ?? this.paused,
       pin: pin ?? this.pin,
       turboRequested: turboRequested ?? this.turboRequested,
+      forComputer: forComputer ?? this.forComputer,
       turboActive: clearTurbo ? false : (turboActive ?? this.turboActive),
       turboMode: clearTurbo ? '' : (turboMode ?? this.turboMode),
       turboBand: clearTurbo ? '' : (turboBand ?? this.turboBand),
@@ -1038,6 +1052,7 @@ class FileTransferService {
   Future<({String ip, int port})> start(
     List<SharedFile> files, {
     String? preferredIp,
+    bool allowEmpty = false,
   }) async {
     // Audit fix: dart:io's HttpServer / File / NetworkInterface aren't
     // available on web. Fail fast on web preview with a clear message.
@@ -1049,7 +1064,10 @@ class FileTransferService {
     if (_server != null) {
       throw StateError('Transfer already running — stop first.');
     }
-    if (files.isEmpty) {
+    // A browser share (computer / iPhone / tablet) may start empty: the
+    // browser can send TO the phone. Between two phones there is nothing to
+    // pull from an empty share.
+    if (files.isEmpty && !allowEmpty) {
       throw ArgumentError('Pick at least one file to share.');
     }
     final ip = (preferredIp != null && preferredIp.trim().isNotEmpty)
@@ -1144,6 +1162,23 @@ class TransferNotifier extends StateNotifier<TransferState> {
       state = state.copyWith(pending: req);
     });
     _loadDeviceName();
+    _loadTurboDefault();
+  }
+
+  static const String _kTurboDefault = 'transfer.turbo_default';
+
+  /// The owner's choice, remembered: Turbo is on unless this phone's user
+  /// switched it off (Transfer → ⋮ → Turbo direct link).
+  Future<void> _loadTurboDefault() async {
+    try {
+      final sp = await SharedPreferences.getInstance();
+      final on = sp.getBool(_kTurboDefault) ?? true;
+      if (mounted && !state.isRunning) {
+        state = state.copyWith(turboRequested: on);
+      }
+    } catch (_) {
+      // Keep the default.
+    }
   }
 
   Future<void> _loadDeviceName() async {
@@ -1199,6 +1234,9 @@ class TransferNotifier extends StateNotifier<TransferState> {
   void setTurboRequested(bool value) {
     if (state.isRunning) return;
     state = state.copyWith(turboRequested: value, clearTurboNotice: true);
+    unawaited(SharedPreferences.getInstance()
+        .then((sp) => sp.setBool(_kTurboDefault, value))
+        .catchError((Object _) => false));
   }
 
   /// Answer a pending pair request (approval mode).
@@ -1246,9 +1284,13 @@ class TransferNotifier extends StateNotifier<TransferState> {
     state = state.copyWith(files: const [], clearError: true);
   }
 
-  Future<void> start() async {
+  /// Start sharing. [forComputer]: the share is for a browser (a computer,
+  /// an iPhone, a tablet) — it may have no files, because the browser can
+  /// send to the phone instead.
+  Future<void> start({bool forComputer = false}) async {
     if (state.isRunning || state.starting) return;
-    state = state.copyWith(starting: true, clearError: true);
+    state = state.copyWith(
+        starting: true, clearError: true, forComputer: forComputer);
     String? turboIp;
     String? notice;
     if (state.turboRequested) {
@@ -1264,7 +1306,8 @@ class TransferNotifier extends StateNotifier<TransferState> {
       state = state.copyWith(starting: true);
     }
     try {
-      final result = await _svc.start(state.files, preferredIp: turboIp);
+      final result = await _svc.start(state.files,
+          preferredIp: turboIp, allowEmpty: forComputer);
       // Give the server somewhere to put browser uploads. Best-effort: a
       // failure here only disables uploads, never the share itself.
       try {
@@ -1382,6 +1425,7 @@ class TransferNotifier extends StateNotifier<TransferState> {
     } catch (e) { if (kDebugMode) debugPrint('FileTransferService: $e'); }
     state = state.copyWith(
       isRunning: false,
+      forComputer: false,
       clearAddress: true,
       bytesServed: 0,
       servedPerFile: const {},
@@ -1423,6 +1467,28 @@ class TransferNotifier extends StateNotifier<TransferState> {
       senderName: state.deviceName ?? 'Innocent phone',
       mode: state.turboMode,
     ).encode();
+  }
+
+  /// The standard Wi-Fi QR (`WIFI:T:WPA;S:…;P:…;;`) for the direct link, or
+  /// '' when there is none. An iPhone's or an Android phone's own camera
+  /// joins the network from it, and so does Windows' camera — which is what
+  /// lets a computer or an iPhone reach a Turbo share without typing a
+  /// password.
+  String get wifiQrPayload {
+    final ssid = state.turboSsid;
+    if (!state.isRunning || !state.turboActive || ssid == null || ssid.isEmpty) {
+      return '';
+    }
+    return wifiQr(ssid, state.turboPass ?? '');
+  }
+
+  /// `WIFI:` QR text with the reserved characters escaped (\ ; , : ").
+  static String wifiQr(String ssid, String pass) {
+    String esc(String v) => v.replaceAllMapped(
+        RegExp(r'([\\;,:"])'), (m) => '\\${m[1]}');
+    final auth = pass.isEmpty ? 'nopass' : 'WPA';
+    return 'WIFI:T:$auth;S:${esc(ssid)};'
+        '${pass.isEmpty ? '' : 'P:${esc(pass)};'};';
   }
 
   /// The PIN a discovered device must quote, or '' when the gate is off.

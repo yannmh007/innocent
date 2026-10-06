@@ -46,6 +46,19 @@ void main() {
   screens('music', () => const ShellScreen(child: MusicScreen()),
       overrides: libraryOverrides);
   screens('transfer', () => const ShellScreen(child: TransferScreen()), scrolls: 1);
+  // The Transfer tab's other pages, reached the way a person does.
+  screens('transfer_receive', () => const ShellScreen(child: TransferScreen()),
+      act: (t) async {
+        await t.tap(find.byKey(const ValueKey('transfer-receive')));
+        await t.pump();
+        await t.pump(const Duration(milliseconds: 400));
+      });
+  screens('transfer_computer', () => const ShellScreen(child: TransferScreen()),
+      act: (t) async {
+        await t.tap(find.byKey(const ValueKey('transfer-computer')));
+        await t.pump();
+        await t.pump(const Duration(milliseconds: 400));
+      });
   screens('me', () => const ShellScreen(child: MeScreen()), scrolls: 2);
 }
 
