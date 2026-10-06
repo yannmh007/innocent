@@ -30,6 +30,8 @@ class _Upstream {
   int inFlight = 0;
   int maxInFlight = 0;
   int refused = 0;
+  final Map<int, String> open = <int, String>{};
+  int _seq = 0;
 
   String url(String token) => 'http://127.0.0.1:${server.port}/v/$token';
 
@@ -52,6 +54,8 @@ class _Upstream {
     inFlight++;
     maxInFlight = max(maxInFlight, inFlight);
     var counted = true;
+    final me = _seq++;
+    open[me] = '${req.headers.value(HttpHeaders.rangeHeader)}';
     try {
       var start = 0, end = body.length - 1;
       final h = req.headers.value(HttpHeaders.rangeHeader);
@@ -76,11 +80,13 @@ class _Upstream {
       // handshake finishes — that lag is not a second request in flight.
       inFlight--;
       counted = false;
+      open.remove(me);
       await res.close();
     } catch (_) {
       // The proxy closed early (a seek): fine.
     } finally {
       if (counted) inFlight--;
+      open.remove(me);
     }
   }
 }
@@ -166,6 +172,17 @@ void main() {
     const from = 17 * mb + 4321;
     final got = await _get(local!, from: from, take: 12 * mb);
     expect(got, Uint8List.sublistView(up.body, from, from + 12 * mb));
+    // The player went away part way through a stretch: nothing it started
+    // may stay open on the server (a leaked lane holds a pooled connection
+    // mid-response, and enough seeks would starve the pool).
+    for (var i = 0; i < 100 && up.inFlight > 0; i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+    }
+    if (up.inFlight > 0) {
+      // ignore: avoid_print
+      print('still open after the seek: ${up.open}');
+    }
+    expect(up.inFlight, 0, reason: 'connections left open after a seek');
     StreamCacheServer.instance.release('film-b');
   });
 

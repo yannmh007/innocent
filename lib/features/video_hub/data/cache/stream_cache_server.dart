@@ -1,10 +1,9 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:math';
+import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
-import 'package:http/io_client.dart';
 
 import 'package:path_provider/path_provider.dart';
 
@@ -79,7 +78,7 @@ class StreamCacheServer {
   static const int _upstreamTries = 3;
 
   /// ═══════════════════════════════════════════════════════════════════════
-  /// THREE CONNECTIONS, NOT ONE — WHY "4 MB/s AND STILL BUFFERING" HAPPENED
+  /// SEVERAL CONNECTIONS, NOT ONE — WHY "4 MB/s AND STILL BUFFERING" HAPPENED
   /// ═══════════════════════════════════════════════════════════════════════
   ///
   /// A speed test opens several connections and adds them up. This proxy
@@ -93,7 +92,7 @@ class StreamCacheServer {
   /// stream, which is what people watch, did not. Now it does: each stretch
   /// of film is asked for as 2 MB parts on [lanes] connections at once and
   /// handed to the player in order, so a loss on one connection leaves the
-  /// other two running. The same thing Telegram's loader and every download
+  /// others running. The same thing Telegram's loader and every download
   /// manager do, and the reason a DASH/HLS player's short segments recover
   /// from loss better than one long response.
   ///
@@ -102,9 +101,23 @@ class StreamCacheServer {
   /// nothing, every few seconds of a film. One pooled client per film now
   /// carries every request of the session.
   ///
-  /// Settable for the bench (`lanes = 1` is the old single connection).
+  /// SIX, MEASURED (test_bench/stream_bench.dart under `tc netem`, run
+  /// 37518953988, a 6 Mbps film):
+  ///
+  ///   150 ms RTT, 0.5 % loss   1 lane 0.25 MB/s, 60 s stalled
+  ///                            3 lanes 0.87 MB/s, 5.7 s
+  ///                            6 lanes 1.78 MB/s, none
+  ///   250 ms RTT, 2 % loss     1 lane 0.07 MB/s, 285 s · 3 lanes 77 s · 6 lanes 18 s
+  ///
+  /// On a clean line every count is the same speed, so six costs nothing
+  /// there. The price is memory — at most twelve 2 MB parts held while an
+  /// earlier one finishes — and requests: one per 2 MB through the Worker,
+  /// five hundred for a gigabyte, far inside its allowance.
+  ///
+  /// Settable for the bench and the lab (`lanes = 1` is the old single
+  /// connection).
   @visibleForTesting
-  static int lanes = RangedFetch.defaultLanes;
+  static int lanes = 6;
 
   /// How much one parallel stretch covers before the loop comes round again
   /// (to check the cache, renew a link, record the speed).
@@ -362,6 +375,14 @@ class StreamCacheServer {
     }
 
     var pos = start;
+    // THE PLAYER HANGING UP, noticed when it happens rather than at the next
+    // write — which, with the next part still in flight on six lanes, could
+    // be seconds of the viewer's data spent on a film they seeked away from.
+    final gone = _Gone();
+    unawaited(res.done.then((_) {}, onError: (_) {}).whenComplete(() {
+      gone.value = true;
+      if (gone.parallel) src.close();
+    }));
     try {
       while (pos <= endInclusive) {
         final before = pos;
@@ -381,7 +402,8 @@ class StreamCacheServer {
         // honest signal: the player reads it as a dropped connection, which is
         // what it is, and its own retry path handles it.
         if (src.offline) break;
-        pos = await _fromUpstream(res, store, entry, src, pos, endInclusive);
+        if (gone.value) break;
+        pos = await _fromUpstream(res, store, entry, src, pos, endInclusive, gone);
         // No progress means upstream gave nothing and will keep giving
         // nothing. The response is already committed, so the honest end is
         // to stop writing: the player sees a short read, treats it as a
@@ -423,7 +445,8 @@ class StreamCacheServer {
   }
 
   Future<int> _fromUpstream(HttpResponse res, StreamCacheStore store,
-      CacheEntry entry, _Source src, int pos, int endInclusive) async {
+      CacheEntry entry, _Source src, int pos, int endInclusive,
+      [_Gone? gone]) async {
     // Read ahead past what was asked, but never past a run already held:
     // those bytes are here, and fetching them again would waste the
     // viewer's data to write a duplicate.
@@ -435,22 +458,14 @@ class StreamCacheServer {
     // two cached runs is one request, as before.
     final Stream<List<int>> upstream;
     final stretchEnd = min(until, pos + span); // exclusive
+    var parallel = false;
     if (lanes > 1 &&
         RangedFetch.worthSplitting(stretchEnd - pos,
             partBytes: RangedFetch.defaultPartBytes)) {
-      final head = await _openHead(src, pos,
-          min(pos + RangedFetch.defaultPartBytes, stretchEnd));
-      if (head == null) return pos;
-      upstream = RangedFetch.ordered(
-        client: src.client,
-        url: Uri.parse(src.upstream),
-        head: head,
-        start: pos,
-        total: entry.total,
-        end: stretchEnd,
-        lanes: lanes,
-        stallAfter: _laneStall,
-      );
+      parallel = true;
+      gone?.parallel = true;
+      upstream = _lanesFetch(src, pos, stretchEnd, entry.total,
+          gone: () => gone?.value ?? false);
     } else {
       final fetchEnd = min(min(pos + _chunk, until) - 1, entry.total - 1);
       if (fetchEnd < pos) return pos;
@@ -469,8 +484,23 @@ class StreamCacheServer {
     // to resume from what actually went out, not from what was asked for.
     var sent = 0;
     final startedAt = DateTime.now();
+    // WRITTEN AND FLUSHED A PIECE AT A TIME, NOT `addStream`. A player that
+    // hangs up (a seek, Back) does not stop `addStream` from pulling: it kept
+    // draining the stretch into a dead socket, and the lanes kept fetching a
+    // film nobody was watching. A flush fails once the socket is gone, and
+    // that is where this stops — cancelling the stretch, which stops its
+    // lanes. It is also the back-pressure: nothing is read from upstream
+    // faster than the player takes it, past the lanes' own small window.
+    final pieces = StreamIterator<List<int>>(
+        _tee(upstream, writer, (n) => sent += n));
     try {
-      await res.addStream(_tee(upstream, writer, (n) => sent += n));
+      var written = 0;
+      while (await pieces.moveNext()) {
+        res.add(pieces.current);
+        written += pieces.current.length;
+        await res.flush();
+      }
+      sent = min(sent, written);
       final took = DateTime.now().difference(startedAt);
       _recordThroughput(sent, took);
       if (sent >= 1024 * 1024) {
@@ -481,10 +511,27 @@ class StreamCacheServer {
       }
       return pos + sent;
     } catch (e) {
+      // `_tee` swallows upstream failures, so an error HERE is the player's
+      // side: the response could not be written, it has hung up. The loop
+      // must not open another stretch for nobody — that is exactly how a
+      // seek used to leave a lane open on the server.
+      gone?.value = true;
       if (kDebugMode) debugPrint('StreamCacheServer._fromUpstream: $e');
       return pos + sent;
     } finally {
+      await pieces.cancel();
       if (writer != null) await store.touch(entry);
+      // A STRETCH THAT STOPPED SHORT — the player seeked away, or a lane
+      // failed — LEAVES CONNECTIONS BEHIND. An aborted part cancels its
+      // response, but dart:io keeps the socket in the pool with the rest of
+      // that response unread, so the server holds it open, mid-write, until
+      // its own timeout: found by test/stream_cache_server_test.dart, a
+      // connection still open thirty seconds after a seek. Enough seeks and
+      // every pooled connection is one of these, and the next stretch waits
+      // for a slot. Dropping the pool here costs one handshake per lane on
+      // the next stretch, and only after a seek or a failure.
+      if (parallel && pos + sent < stretchEnd) src.close();
+      gone?.parallel = false;
     }
   }
 
@@ -639,32 +686,72 @@ class StreamCacheServer {
     return null;
   }
 
-  /// The first part of a parallel stretch, on the film's pooled client:
-  /// exactly `[start, endExclusive)`, so the connection is whole again — and
-  /// reused — the moment the part is read. Renews an expired link once, the
-  /// way [_openUpstream] does.
-  Future<Stream<List<int>>?> _openHead(
-      _Source src, int start, int endExclusive) async {
-    for (var attempt = 0; attempt < _upstreamTries; attempt++) {
-      try {
-        final req = http.Request('GET', Uri.parse(src.upstream))
-          ..headers[HttpHeaders.rangeHeader] = 'bytes=$start-${endExclusive - 1}';
-        final resp = await src.client.send(req).timeout(_laneStall);
-        if (resp.statusCode == 206) return resp.stream;
-        unawaited(resp.stream.listen(null).cancel());
-        if (resp.statusCode == 403 ||
-            resp.statusCode == 404 ||
-            resp.statusCode == 410) {
-          if (!await _refresh(src)) return null;
-          continue;
+  /// THE STRETCH, AS [lanes] RANGE REQUESTS AT ONCE, HANDED ON IN ORDER.
+  ///
+  /// The same shape as [RangedFetch.ordered], which downloads use, but on
+  /// dart:io directly — and the reason is the teardown. A seek abandons the
+  /// parts still in flight, and through package:http an aborted part whose
+  /// response had just arrived is never read and never cancelled: its socket
+  /// stays in the pool, the server holds it open mid-write, and enough seeks
+  /// starve the pool (test/stream_cache_server_test.dart caught one still
+  /// open thirty seconds after a seek). Here every part keeps its own
+  /// response, and stopping cancels it, which is what closes the socket.
+  ///
+  /// An expired link on the FIRST part is renewed and the stretch starts
+  /// again, as a single request's would; later, a refused part ends the
+  /// stretch and the serve loop renews on its next pass.
+  Stream<List<int>> _lanesFetch(_Source src, int start, int end, int total,
+      {required bool Function() gone}) async* {
+    const partBytes = RangedFetch.defaultPartBytes;
+    final window = lanes * 2;
+    for (var attempt = 0; attempt < 2; attempt++) {
+      final url = Uri.parse(src.upstream);
+      final parts = <_LanePart>[];
+      var next = start;
+      var failed = false;
+      var stopped = false;
+
+      void topUp() {
+        if (stopped || failed || gone()) return;
+        while (next < end &&
+            parts.length < window &&
+            parts.where((p) => !p.settled).length < lanes) {
+          final partEnd = min(next + partBytes, end);
+          final part = _LanePart(src.io, url, next, partEnd, total, _laneStall);
+          part.bytes.then((_) => topUp(), onError: (_) {
+            failed = true;
+          });
+          parts.add(part);
+          next = partEnd;
         }
-        if (resp.statusCode >= 500) continue;
-        return null;
-      } catch (e) {
-        if (kDebugMode) debugPrint('StreamCacheServer._openHead: $e');
+      }
+
+      var yielded = false;
+      try {
+        topUp();
+        while (parts.isNotEmpty) {
+          final Uint8List b;
+          try {
+            b = await parts.first.bytes;
+          } on _LaneRefused catch (e) {
+            if (!yielded && attempt == 0 && e.expired && await _refresh(src)) {
+              break; // a fresh link: start the stretch again
+            }
+            rethrow;
+          }
+          parts.removeAt(0);
+          topUp();
+          yielded = true;
+          yield b;
+        }
+        if (parts.isEmpty) return;
+      } finally {
+        stopped = true;
+        for (final p in parts) {
+          p.kill();
+        }
       }
     }
-    return null;
   }
 
   Stream<List<int>> _closing(HttpClientResponse resp, HttpClient client) async* {
@@ -699,6 +786,13 @@ class StreamCacheServer {
   }
 }
 
+/// Whether the player has hung up on one request, and whether a parallel
+/// stretch is running for it right now (the pool to drop if it has).
+class _Gone {
+  bool value = false;
+  bool parallel = false;
+}
+
 class _Source {
   _Source({required this.upstream, required this.refresh, this.offline = false});
 
@@ -708,15 +802,15 @@ class _Source {
 
   /// One pool of connections for the whole of this film's session — kept
   /// alive between requests, so a stretch costs no new handshake.
-  http.Client? _client;
-  http.Client get client => _client ??= IOClient(HttpClient()
+  HttpClient? _io;
+  HttpClient get io => _io ??= HttpClient()
     ..connectionTimeout = const Duration(seconds: 15)
     ..idleTimeout = const Duration(seconds: 30)
-    ..maxConnectionsPerHost = StreamCacheServer.lanes + 1);
+    ..maxConnectionsPerHost = StreamCacheServer.lanes + 1;
 
   void close() {
-    _client?.close();
-    _client = null;
+    _io?.close(force: true);
+    _io = null;
   }
 
   /// THIS FILM IS SERVED FROM DISK AND NOWHERE ELSE.
@@ -735,4 +829,125 @@ class _Source {
   /// the app started. One check per film per session: enough to catch a
   /// replaced file, cheap enough not to think about.
   bool checkedTotal = false;
+}
+
+/// A part refused by the server. [expired] is the 403 / 404 / 410 a stale
+/// signed link answers with.
+class _LaneRefused implements Exception {
+  _LaneRefused(this.message, {this.expired = false});
+  final String message;
+  final bool expired;
+  @override
+  String toString() => '_LaneRefused: $message';
+}
+
+/// One 2 MB part of a stretch on its own pooled connection, collected in
+/// memory until its turn. [kill] really closes it: an unread response is
+/// cancelled (which drops the socket), a request not yet answered aborted.
+class _LanePart {
+  _LanePart(HttpClient client, Uri url, this.start, this.end, int total,
+      Duration stall) {
+    bytes = _get(client, url, total, stall);
+    // Held until its turn; an error before then must not count as unhandled.
+    bytes.then((_) => settled = true, onError: (_) => settled = true);
+  }
+
+  final int start;
+  final int end; // exclusive
+  late final Future<Uint8List> bytes;
+  bool settled = false;
+  bool _killed = false;
+  HttpClientRequest? _req;
+  HttpClientResponse? _resp;
+  StreamSubscription<List<int>>? _sub;
+  Completer<Uint8List>? _done;
+
+  void kill() {
+    if (_killed) return;
+    _killed = true;
+    final sub = _sub;
+    if (sub != null) {
+      unawaited(sub.cancel());
+    } else if (_resp != null) {
+      // Answered, never read: listen only to cancel, which closes it.
+      _drop(_resp!);
+    } else {
+      _req?.abort();
+    }
+    final d = _done;
+    if (d != null && !d.isCompleted) d.completeError(_LaneRefused('stopped'));
+  }
+
+  /// Cancel a response nobody will read — once. A second listen throws.
+  bool _dropped = false;
+  void _drop(HttpClientResponse r) {
+    if (_dropped || _sub != null) return;
+    _dropped = true;
+    try {
+      unawaited(r.listen(null).cancel());
+    } catch (_) {}
+  }
+
+  Future<Uint8List> _get(
+      HttpClient client, Uri url, int total, Duration stall) async {
+    final want = end - start;
+    final req = await client.getUrl(url).timeout(stall);
+    _req = req;
+    if (_killed) {
+      req.abort();
+      throw _LaneRefused('stopped');
+    }
+    req.headers.set(HttpHeaders.rangeHeader, 'bytes=$start-${end - 1}');
+    final resp = await req.close().timeout(stall);
+    _resp = resp;
+    if (_killed) {
+      _drop(resp);
+      throw _LaneRefused('stopped');
+    }
+    final code = resp.statusCode;
+    if (code != 206) {
+      _drop(resp);
+      throw _LaneRefused('HTTP $code for a range',
+          expired: code == 403 || code == 404 || code == 410);
+    }
+    final cr = resp.headers.value(HttpHeaders.contentRangeHeader) ?? '';
+    if (!cr.startsWith('bytes $start-${end - 1}/$total')) {
+      _drop(resp);
+      throw _LaneRefused('asked for $start-${end - 1}/$total, got $cr');
+    }
+    final out = BytesBuilder(copy: false);
+    final done = Completer<Uint8List>();
+    _done = done;
+    Timer? quiet;
+    void arm() {
+      quiet?.cancel();
+      quiet = Timer(stall, () {
+        unawaited(_sub?.cancel());
+        if (!done.isCompleted) done.completeError(_LaneRefused('part $start went quiet'));
+      });
+    }
+
+    arm();
+    _sub = resp.listen((chunk) {
+      out.add(chunk);
+      arm();
+      if (out.length > want) {
+        quiet?.cancel();
+        unawaited(_sub?.cancel());
+        if (!done.isCompleted) done.completeError(_LaneRefused('part $start: too long'));
+      }
+    }, onError: (Object e) {
+      quiet?.cancel();
+      if (!done.isCompleted) done.completeError(e);
+    }, onDone: () {
+      quiet?.cancel();
+      if (done.isCompleted) return;
+      if (out.length != want) {
+        done.completeError(_LaneRefused('part $start: ${out.length} of $want bytes'));
+      } else {
+        done.complete(out.takeBytes());
+      }
+    }, cancelOnError: true);
+    return done.future;
+  }
 }

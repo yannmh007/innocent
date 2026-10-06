@@ -91,17 +91,12 @@ class RangedFetch {
   /// a short clean end as "carry on from here" and opens its next pass as a
   /// single paced connection — which, unlike parts held in memory, a slow
   /// reader genuinely slows down.
-  ///
-  /// [end] stops short of [total] (exclusive): the stream cache fetches a
-  /// film a stretch at a time, up to the next run it already holds, while
-  /// every part is still checked against the FILE's length in [total].
   static Stream<List<int>> ordered({
     required http.Client client,
     required Uri url,
     required Stream<List<int>> head,
     required int start,
     required int total,
-    int? end,
     int partBytes = defaultPartBytes,
     int lanes = defaultLanes,
     bool Function()? narrow,
@@ -109,8 +104,7 @@ class RangedFetch {
   }) async* {
     final stop = Completer<void>();
     final queue = <_Part>[];
-    final last = end != null && end < total ? end : total;
-    final headEnd = start + partBytes < last ? start + partBytes : last;
+    final headEnd = start + partBytes < total ? start + partBytes : total;
     var next = headEnd;
     var headOpen = true;
     var failed = false;
@@ -126,18 +120,18 @@ class RangedFetch {
 
     void topUp() {
       if (stop.isCompleted || failed || (narrow?.call() ?? false)) return;
-      while (next < last &&
+      while (next < total &&
           queue.length < window &&
           queue.where((p) => !p.settled).length < width()) {
-        final partEnd = next + partBytes < last ? next + partBytes : last;
-        queue.add(_Part.fetch(client, url, next, partEnd, total, stop.future,
+        final end = next + partBytes < total ? next + partBytes : total;
+        queue.add(_Part.fetch(client, url, next, end, total, stop.future,
             stallAfter: stallAfter, onSettled: (ok) {
           // One part refused (an expired link, a dropped lane): the rest
           // would be refused too. Stop asking; what came back is still used.
           if (!ok) failed = true;
           topUp();
         }));
-        next = partEnd;
+        next = end;
       }
     }
 

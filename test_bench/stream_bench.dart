@@ -98,7 +98,11 @@ void main() {
     final out = env['BENCH_OUT'];
     if (out != null) File(out).writeAsStringSync('${lines.join('\n')}\n');
     await server.close(force: true);
-    await temp.delete(recursive: true);
+    // The cache may still be writing its last record; a leftover temp
+    // directory is not a result.
+    try {
+      await temp.delete(recursive: true);
+    } catch (_) {}
   }, timeout: const Timeout(Duration(minutes: 20)));
 }
 
