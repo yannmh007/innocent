@@ -463,6 +463,30 @@ where t.slug = 'spiderman' and a.kind = 'photo' order by a.sort_order;
 select public.set_primary_asset('<the id you want>');
 ```
 
+### A video's own thumbnail: the cover picker (migration 043)
+
+Every video gets **ten stills** made on the Transcode runner — frame 0 at one
+second, then 10 %, 20 % … 90 % of the running time, 640 px on the long edge,
+HDR tone-mapped — and stored in the public bucket under
+`<folder>/thumb/<video>-f00.jpg … -f09.jpg`. A video with no thumbnail gets
+frame 0 automatically; one the operator chose is never replaced.
+
+In the console: the title's editor → the video tile's **🖼** → **Choose the
+cover** shows the ten frames; one tap makes it the thumbnail (nothing is
+uploaded). *Make the frames again* re-queues them (after replacing the file,
+or if the first try failed). An image file, a photo of the title, or a frame
+scrubbed from the local video file are still offered below.
+
+The runner makes frames for up to twenty videos per run, before any ladder,
+by seeking the R2 object over HTTP (a few MB per video, never the whole film).
+`select frames_state, count(*) from title_assets where kind <> 'photo' group by 1`
+says how far it has got; `tool/sql/video_frames_test.sql` is the database test.
+
+**The Transcode workflow is started by the functions too** (the same
+`GH_DISPATCH_TOKEN`): when a video is queued from the console, when Telegram
+files are filed into a title, and by itself after each ladder — instead of
+waiting for a schedule GitHub kept five times in a day on 2026-10-05/06.
+
 ---
 
 ## PART 3b — RELEASING A NEW VERSION OF THE APP
