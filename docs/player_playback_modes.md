@@ -146,11 +146,17 @@ a pro media app", AppUnite)
   37281576125): the trace reads `screen crop x3.95`, `screen original
   x1.19`, `screen custom x1.00`, `screen fit x1.00`, … — one mode per press,
   in MX's order, the mode remembered per film.
-* Inside the player Android's accessibility dump gives every node the
-  whole screen's bounds (`[0,0][1080,2400]`), so Maestro — which taps the
-  centre of a node's bounds — pressed the video instead of the button. A
-  finger is hit-tested by Flutter and is not affected; the lab now presses
-  the button where it is drawn. TalkBack in the player is a follow-up.
+* TalkBack: Android's accessibility dump gave the screen button the whole
+  screen's bounds (`[0,0][1080,2400]`), so Maestro — which taps the centre
+  of a node's bounds — pressed the video. A lab-only dump of the app's own
+  semantics tree (run 37308309328) showed why: every loose text in the
+  player (the subtitle twice, the title, the clock, both times) and the
+  button's name, role and id had merged into one full-screen node, which
+  TalkBack read as one sentence, announced as the screen button, wherever a
+  finger landed. Each of them is its own node now (the subtitle's outline
+  copy excluded); run 37311495516: the button reads "Fit to screen" at
+  `[768,2222][894,2348]`, and pressing the centre of those bounds cycles
+  the modes. A finger was never affected (Flutter hit-tests it itself).
 * Sideways, with the controls up, the subtitle sat on the seek bar and the
   play button; it now moves above the controls while they are shown (as
   YouTube's captions do).

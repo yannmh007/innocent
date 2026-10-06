@@ -94,7 +94,10 @@ jobs:
           sdkmanager "platforms;android-36" "build-tools;35.0.0" "build-tools;36.0.0" "ndk;27.0.12077973"
           echo "org.gradle.jvmargs=-Xmx6144M -XX:MaxMetaspaceSize=1024m -Dfile.encoding=UTF-8" >> android/gradle.properties
           flutter pub get
-          flutter build apk --release --target-platform android-x64 --dart-define=INNOCENT_LAB=true
+          # Obfuscated, as the release is (build.yml): the lab must drive the
+          # same kind of binary that ships, or a name-dependent bug passes here.
+          flutter build apk --release --target-platform android-x64 --dart-define=INNOCENT_LAB=true \
+            --obfuscate --split-debug-info=build/symbols
           cp build/app/outputs/flutter-apk/app-release.apk lab.apk
           unzip -l lab.apk | awk '{print $4}' | grep '^lib/' | cut -d/ -f2 | sort | uniq -c
 

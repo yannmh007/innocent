@@ -114,15 +114,22 @@ class SubtitleText extends StatelessWidget {
           style: style,
         );
     final hasBack = look.backColor.a > 0;
-    return Stack(alignment: Alignment.center, children: [
+    // Its own node for TalkBack, read once: without the container the text
+    // (twice, outline and fill) joined the full-screen node that also took
+    // the title, the clock and the times (lab run 37308309328).
+    return Semantics(
+      container: true,
+      child: Stack(alignment: Alignment.center, children: [
       if (geometry.outline > 0 && look.borderColor.a > 0)
-        text(base.copyWith(
-          foreground: Paint()
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = geometry.outline * 2
-            ..strokeJoin = StrokeJoin.round
-            ..color = look.borderColor,
-        )),
+        ExcludeSemantics(
+          child: text(base.copyWith(
+            foreground: Paint()
+              ..style = PaintingStyle.stroke
+              ..strokeWidth = geometry.outline * 2
+              ..strokeJoin = StrokeJoin.round
+              ..color = look.borderColor,
+          )),
+        ),
       text(base.copyWith(
         color: look.color,
         backgroundColor: hasBack ? look.backColor : null,
@@ -136,6 +143,7 @@ class SubtitleText extends StatelessWidget {
               ]
             : null,
       )),
-    ]);
+      ]),
+    );
   }
 }

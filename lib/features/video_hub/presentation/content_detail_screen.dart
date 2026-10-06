@@ -18,6 +18,7 @@ import 'bookmarks_screen.dart';
 import 'data_saver_panel.dart';
 import 'widgets/telegram_album.dart';
 import 'playback.dart';
+import 'similar_titles.dart';
 import 'video_hub_provider.dart';
 import 'widgets/download_action.dart';
 import 'widgets/poster_image.dart';
@@ -25,6 +26,8 @@ import 'widgets/vh_insets.dart';
 import 'widgets/view_count_badge.dart';
 import 'video_hub_theme.dart';
 import 'account_provider.dart';
+import 'watch_points_provider.dart';
+import '../data/watch_state_store.dart';
 
 /// One catalogue entry in full: artwork, facts, and the mixed photo/video
 /// album behind it.
@@ -131,6 +134,17 @@ class _ContentDetailScreenState extends ConsumerState<ContentDetailScreen> {
     final ordinals = AccessPolicy.photoOrdinalsOf(content.items);
     final lockedCount = policy.lockedCountFor(content, tier);
     final locked = !policy.canPlayTitle(content, tier);
+    final ledger = ref.watch(watchPointsProvider);
+    final WatchPoint? resume = content.expectsAlbum
+        ? _resumable(ledger.latestFor(content.id))
+        : _resumable(ledger.pointFor(content.id, assetIdOf(content.source)));
+    final videos = content.items.where((i) => i.isVideo).toList();
+    final clipAt = resume?.assetId == null
+        ? -1
+        : videos.indexWhere((i) => i.source.locator == resume!.assetId);
+    final String? resumeClip = clipAt < 0
+        ? null
+        : s.vhCountOf(clipAt + 1, videos.length);
     // Ask the server ahead for the film's Play, so the tap opens at once
     // (prefetchPlayback; a fresh question is never asked twice).
     if (!locked) {
@@ -197,6 +211,15 @@ class _ContentDetailScreenState extends ConsumerState<ContentDetailScreen> {
                 locked: locked,
               ),
               onPlay: () => _play(context, ref),
+              // Where this viewer stopped, on any of their phones
+              // (WatchPoint): Play becomes "Resume 12:34", with Start over
+              // beside it — Netflix's two buttons. For a title whose way in
+              // is its album, the button appears only to resume: the clip
+              // they were watching, where they left it.
+              resume: resume,
+              resumeClip: resumeClip,
+              onResume: () => _resume(context, ref, resume),
+              onStartOver: () => _resume(context, ref, resume, fromStart: true),
             ),
           ),
           // Drawn from the moment the title is known to have one, so the
@@ -268,8 +291,7 @@ class _ContentDetailScreenState extends ConsumerState<ContentDetailScreen> {
             // the content, which no grid delegate can express, and one title's
             // folder is small enough not to need virtualising.
             SliverPadding(
-              padding: EdgeInsets.fromLTRB(
-                  14, 0, 14, VhInsets.scrollBottom(context)),
+              padding: const EdgeInsets.fromLTRB(14, 0, 14, 4),
               sliver: SliverToBoxAdapter(
                 child: TelegramAlbum(
                   items: content.items,
@@ -298,6 +320,10 @@ class _ContentDetailScreenState extends ConsumerState<ContentDetailScreen> {
                       badge: unlocked
                           ? AlbumItemBadge(content: content, item: item)
                           : null,
+                      progress: item.isVideo
+                          ? ledger.pointFor(content.id, item.source.locator)
+                              ?.fraction
+                          : null,
                       // A locked tile still opens the viewer rather than
                       // jumping straight to the paywall: landing on the
                       // locked page in context, surrounded by what is
@@ -311,7 +337,24 @@ class _ContentDetailScreenState extends ConsumerState<ContentDetailScreen> {
               ),
             ),
           ] else
-            const SliverToBoxAdapter(child: SizedBox(height: 28)),
+            const SliverToBoxAdapter(child: SizedBox(height: 12)),
+          // Netflix's "More like this", YouTube's "Up next" list: the page
+          // does not end in a wall — the next thing to watch is one swipe
+          // away (similar_titles, migration 039).
+          SliverPadding(
+            padding: EdgeInsets.only(bottom: VhInsets.scrollBottom(context)),
+            sliver: SliverToBoxAdapter(
+              child: MoreLikeThis(
+                content: content,
+                isPremiumFor: (c) => policy.showsPremiumBadge(c, tier),
+                onOpen: (c) => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => ContentDetailScreen(content: c),
+                  ),
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -327,6 +370,33 @@ class _ContentDetailScreenState extends ConsumerState<ContentDetailScreen> {
   /// viewer cannot drift apart about what "Play" does.
   Future<void> _play(BuildContext context, WidgetRef ref) =>
       playContent(context, ref, content);
+
+  static WatchPoint? _resumable(WatchPoint? p) =>
+      p != null && p.resumable ? p : null;
+
+  /// Plays the video [p] is about — the film, or the album clip — from the
+  /// held position, or from the start.
+  Future<void> _resume(BuildContext context, WidgetRef ref, WatchPoint? p,
+      {bool fromStart = false}) {
+    final asset = p?.assetId;
+    if (asset == null) {
+      return playContent(context, ref, content, fromStart: fromStart);
+    }
+    return playMedia(context, ref,
+        content: content,
+        source: MediaRef(provider: 'asset', locator: asset),
+        titleOverride: content.displayTitle(AppStrings.of(context).locale.languageCode),
+        fromStart: fromStart);
+  }
+}
+
+/// 12:34, or 1:02:03 past the hour.
+String clockOf(Duration d) {
+  final h = d.inHours;
+  final m = d.inMinutes % 60;
+  final sec = d.inSeconds % 60;
+  final ss = sec.toString().padLeft(2, '0');
+  return h > 0 ? '$h:${m.toString().padLeft(2, '0')}:$ss' : '$m:$ss';
 }
 
 /// Save for later: a bookmark that fills when the title is saved.
@@ -395,12 +465,24 @@ class _Header extends StatelessWidget {
 
   final int lockedCount;
 
+  /// Where the viewer stopped, when it is worth continuing from.
+  final WatchPoint? resume;
+
+  /// "3 of 7" when [resume] is an album clip.
+  final String? resumeClip;
+  final VoidCallback onResume;
+  final VoidCallback onStartOver;
+
   const _Header({
     required this.content,
     required this.onPlay,
     required this.locked,
     required this.lockedCount,
     required this.showButton,
+    this.resume,
+    this.resumeClip,
+    required this.onResume,
+    required this.onStartOver,
   });
 
   @override
@@ -485,41 +567,130 @@ class _Header extends StatelessWidget {
               ],
             ),
           ],
+          // THE PRIMARY ACTION ABOVE THE SYNOPSIS, as Netflix and YouTube
+          // place it: under a long synopsis on a small phone it was below
+          // the fold, and the one thing the page is for had to be scrolled
+          // to.
+          if (showButton || (!locked && resume != null)) ...<Widget>[
+            const SizedBox(height: 14),
+            _PlayButton(
+              locked: locked,
+              resume: locked ? null : resume,
+              clip: resumeClip,
+              onPlay: !locked && resume != null ? onResume : onPlay,
+            ),
+            if (!locked && resume != null) ...<Widget>[
+              const SizedBox(height: 8),
+              _ResumeLine(point: resume!, onStartOver: onStartOver),
+            ],
+          ],
           if (content.synopsis != null) ...<Widget>[
             const SizedBox(height: 12),
             Text(content.synopsis!, style: VH.body),
           ],
-          if (showButton) ...<Widget>[
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: onPlay,
-                icon: Icon(
-                  locked ? Icons.lock_rounded : Icons.play_arrow_rounded,
-                  size: locked ? 18 : 22,
-                ),
-                label: Text(
-                  locked ? s.vhUpgrade : s.vhPlay,
-                  style: VH.label.copyWith(
-                    color: VH.textInverse,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                style: FilledButton.styleFrom(
-                  backgroundColor: VH.textPrimary,
-                  foregroundColor: VH.textInverse,
-                  padding: const EdgeInsets.symmetric(vertical: 13),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(VH.rControl),
-                  ),
-                ),
-              ),
-            ),
-          ],
         ],
       ),
+    );
+  }
+}
+
+/// Play, Upgrade or "Resume 12:34" — one full-width button.
+class _PlayButton extends StatelessWidget {
+  const _PlayButton(
+      {required this.locked, required this.onPlay, this.resume, this.clip});
+
+  final bool locked;
+  final WatchPoint? resume;
+
+  /// "3 of 7" when resuming an album clip.
+  final String? clip;
+  final VoidCallback onPlay;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppStrings.of(context);
+    final r = resume;
+    final label = locked
+        ? s.vhUpgrade
+        : r != null
+            ? clip == null
+                ? s.vhResumeAt(clockOf(r.position))
+                : '${s.vhResumeAt(clockOf(r.position))} · $clip'
+            : s.vhPlay;
+    return SizedBox(
+      width: double.infinity,
+      child: FilledButton.icon(
+        onPressed: onPlay,
+        icon: Icon(
+          locked ? Icons.lock_rounded : Icons.play_arrow_rounded,
+          size: locked ? 18 : 22,
+        ),
+        label: Text(
+          label,
+          style: VH.label.copyWith(
+            color: VH.textInverse,
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        style: FilledButton.styleFrom(
+          backgroundColor: VH.textPrimary,
+          foregroundColor: VH.textInverse,
+          padding: const EdgeInsets.symmetric(vertical: 13),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(VH.rControl),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Under "Resume": how far through, how long is left, and Start over.
+class _ResumeLine extends StatelessWidget {
+  const _ResumeLine({required this.point, required this.onStartOver});
+
+  final WatchPoint point;
+  final VoidCallback onStartOver;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppStrings.of(context);
+    final f = point.fraction;
+    final left = point.durationS > 0
+        ? ((point.durationS - point.positionS) / 60).ceil()
+        : null;
+    return Row(
+      children: <Widget>[
+        if (f != null)
+          Expanded(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(2),
+              child: LinearProgressIndicator(
+                value: f,
+                minHeight: 3,
+                backgroundColor: VH.surface2,
+                valueColor: const AlwaysStoppedAnimation<Color>(VH.accent),
+              ),
+            ),
+          )
+        else
+          const Spacer(),
+        if (left != null) ...<Widget>[
+          const SizedBox(width: 10),
+          Text(s.vhMinutesLeft(left), style: VH.meta.copyWith(fontSize: 12)),
+        ],
+        const SizedBox(width: 6),
+        TextButton.icon(
+          onPressed: onStartOver,
+          icon: const Icon(Icons.replay_rounded, size: 16),
+          label: Text(s.vhStartOver),
+          style: TextButton.styleFrom(
+            foregroundColor: VH.textSecondary,
+            visualDensity: VisualDensity.compact,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -577,6 +748,10 @@ class _AlbumTile extends StatelessWidget {
   /// one corner nothing else on a tile uses.
   final Widget? badge;
 
+  /// How far through this clip the viewer is — YouTube's line along the
+  /// foot of a watched video — or null.
+  final double? progress;
+
   const _AlbumTile({
     required this.content,
     required this.item,
@@ -585,6 +760,7 @@ class _AlbumTile extends StatelessWidget {
     required this.onTap,
     this.locked = false,
     this.badge,
+    this.progress,
   });
 
   @override
@@ -636,28 +812,30 @@ class _AlbumTile extends StatelessWidget {
         // judge what they can see far more readily than what they have to
         // imagine.
         //
-        // HONEST ABOUT WHAT THIS IS: a presentation choice, not a control.
-        // These photos live in the PUBLIC bucket and their URLs are already
-        // reachable. The blur exists to sell, not to protect. Anything that
-        // genuinely must not be seen belongs in the private bucket behind
-        // request-playback, like the video.
+        // The blur sells; it does not protect. What protects a locked PHOTO
+        // is that the server no longer sends its address (migration 041):
+        // such a tile is drawn from its blurhash, the only thing it has.
+        // A locked clip still has its thumbnail, blurred here.
         //
         // TileMode.decal, not the default clamp: clamping smears the edge
         // pixels outward and paints a dirty border around every locked tile.
-        _blurred(
-          locked,
-          // Flies into the viewer and back, as a Telegram album cell does.
-          Hero(
-            tag: albumHeroTag(content, item),
-            child: PosterImage(
-              mediaRef: _art(),
-              title: '$parentTitle ${item.id}',
-              glyph: item.isVideo
-                  ? Icons.play_circle_outline
-                  : Icons.image_outlined,
+        if (item.withheld)
+          BlurPreview(hash: item.preview)
+        else
+          _blurred(
+            locked,
+            // Flies into the viewer and back, as a Telegram album cell does.
+            Hero(
+              tag: albumHeroTag(content, item),
+              child: PosterImage(
+                mediaRef: _art(),
+                title: '$parentTitle ${item.id}',
+                glyph: item.isVideo
+                    ? Icons.play_circle_outline
+                    : Icons.image_outlined,
+              ),
             ),
           ),
-        ),
         if (locked) ...<Widget>[
           // A much lighter scrim than before. The blur already removes the
           // detail; this only darkens enough for the lock glyph to read.
@@ -685,6 +863,19 @@ class _AlbumTile extends StatelessWidget {
           ),
         ],
         if (badge != null) Positioned(right: 4, top: 4, child: badge!),
+        if (!locked && progress != null)
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: 3,
+            child: LinearProgressIndicator(
+              value: progress!.clamp(0.0, 1.0),
+              minHeight: 3,
+              backgroundColor: const Color(0x40FFFFFF),
+              valueColor: const AlwaysStoppedAnimation<Color>(VH.accent),
+            ),
+          ),
       ],
     );
   }

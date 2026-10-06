@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -140,8 +141,10 @@ class LocalAccountRepository implements AccountRepository {
   @override
   Future<PremiumRequest> submitPremiumRequest({
     required String planId,
-    required String reference,
+    String reference = '',
     String? senderPhone,
+    Uint8List? proof,
+    String? priceShown,
   }) async {
     await Future<void>.delayed(const Duration(milliseconds: 300));
     final req = PremiumRequest(

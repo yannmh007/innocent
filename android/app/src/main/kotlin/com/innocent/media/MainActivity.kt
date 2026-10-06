@@ -466,6 +466,24 @@ class MainActivity : AudioServiceFragmentActivity() {
                         }
                     }
                 }
+            } else if (call.method == "launchPackage") {
+                // Opens another app by package (the payment screen's "Open
+                // KPay"). False when it is not installed, so the screen can
+                // say so instead of doing nothing.
+                val pkg = call.argument<String>("package") ?: ""
+                val launch = if (pkg.isEmpty()) null
+                    else packageManager.getLaunchIntentForPackage(pkg)
+                if (launch == null) {
+                    result.success(false)
+                } else {
+                    try {
+                        launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        startActivity(launch)
+                        result.success(true)
+                    } catch (e: Exception) {
+                        result.success(false)
+                    }
+                }
             } else {
                 result.notImplemented()
             }

@@ -39,6 +39,13 @@ class PosterCard extends StatelessWidget {
   /// card never has to know what a policy is.
   final bool premium;
 
+  /// How far through the viewer is, 0..1, drawn as a bar along the poster's
+  /// foot (Continue watching — YouTube's red line, Netflix's grey one).
+  final double? progress;
+
+  /// Long press: the card's actions (Continue watching: remove from row).
+  final VoidCallback? onLongPress;
+
   const PosterCard({
     super.key,
     required this.content,
@@ -46,6 +53,8 @@ class PosterCard extends StatelessWidget {
     this.width,
     this.rank,
     this.premium = false,
+    this.progress,
+    this.onLongPress,
   });
 
   @override
@@ -78,7 +87,7 @@ class PosterCard extends StatelessWidget {
             // Scrim only where a badge sits, and only strong enough to carry
             // it. A full-width bar across every poster dulls the artwork on
             // the cards that have no badge at all.
-            if (content.viewCount != null)
+            if (content.viewCount != null && progress == null)
               Positioned(
                 left: 0,
                 right: 0,
@@ -106,7 +115,10 @@ class PosterCard extends StatelessWidget {
                   prominent: cornerIsRank,
                 ),
               ),
-            if (content.viewCount != null)
+            // A card with a progress bar shows the bar alone along its foot
+            // (Netflix): the counts are about the title, the bar is about
+            // you, and both in one strip is noise.
+            if (content.viewCount != null && progress == null)
               Positioned(
                 right: VH.s1,
                 bottom: VH.s1,
@@ -116,8 +128,9 @@ class PosterCard extends StatelessWidget {
             // of equal weight, balanced rather than stacked. Absent counts
             // draw nothing - "0 photos" and "we were not told" look identical
             // to a reader and only one of them is true.
-            if (content.displayPhotoCount != null ||
-                content.displayVideoCount != null)
+            if (progress == null &&
+                (content.displayPhotoCount != null ||
+                    content.displayVideoCount != null))
               Positioned(
                 left: VH.s1,
                 bottom: VH.s1,
@@ -133,6 +146,19 @@ class PosterCard extends StatelessWidget {
                 top: VH.s1,
                 right: VH.s1,
                 child: _PremiumTag(),
+              ),
+            if (progress != null)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                height: 3,
+                child: LinearProgressIndicator(
+                  value: progress!.clamp(0.0, 1.0),
+                  minHeight: 3,
+                  backgroundColor: const Color(0x40FFFFFF),
+                  valueColor: const AlwaysStoppedAnimation<Color>(VH.accent),
+                ),
               ),
             // Hairline: on a true-black page a dark poster has no edge at all
             // and the grid stops looking like a grid.
@@ -156,6 +182,7 @@ class PosterCard extends StatelessWidget {
                 type: MaterialType.transparency,
                 child: InkWell(
                   onTap: onTap,
+                  onLongPress: onLongPress,
                   splashColor: Colors.white.withOpacity(0.10),
                   highlightColor: Colors.white.withOpacity(0.05),
                 ),

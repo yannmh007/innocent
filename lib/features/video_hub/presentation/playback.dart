@@ -25,6 +25,8 @@ import '../domain/video_content.dart';
 import 'video_hub_provider.dart';
 import 'widgets/paywall_sheet.dart';
 import 'account_provider.dart';
+import 'watch_points_provider.dart';
+import '../../player/presentation/up_next.dart';
 
 /// Asks the repository for a playable URL and acts on the answer.
 ///
@@ -51,8 +53,15 @@ Future<void> playMedia(
   required VideoContent content,
   required MediaRef source,
   String? titleOverride,
+  bool fromStart = false,
 }) async {
   final s = AppStrings.of(context);
+  // Where this viewer stopped in this video, on any of their phones — a
+  // stream opens there (Netflix, YouTube), unless they asked to start over.
+  final held = fromStart
+      ? null
+      : ref.read(watchPointsProvider).pointFor(content.id, assetIdOf(source));
+  final startAtS = held != null && held.resumable ? held.positionS : null;
 
   // ─── NO RADIO, NO REQUEST ─────────────────────────────────────────────
   //
@@ -374,6 +383,15 @@ Future<void> playMedia(
                 selected: preferred,
                 playing: chosen == null ? 'Original' : '${chosen.height}p',
               ));
+    // What plays when this ends: the album's next video (Up next).
+    if (!context.mounted) return;
+    UpNext.register(
+        openUrl,
+        _nextInAlbum(context, ref,
+            content: content,
+            source: source,
+            shownTitle:
+                titleOverride ?? content.displayTitle(s.locale.languageCode)));
     context.push(
       Routes.player,
       extra: <String, dynamic>{
@@ -385,8 +403,8 @@ Future<void> playMedia(
         // What the player reports progress against. Two opaque strings: it
         // never learns what a title is, only what to put in an event.
         'titleId': content.id,
-        if (source.provider == 'asset' && source.locator.isNotEmpty)
-          'assetId': source.locator,
+        if (assetIdOf(source) case final a?) 'assetId': a,
+        if (startAtS != null) 'startAtS': startAtS,
         // NEVER WRITE THIS URL DOWN.
         //
         // It is a different string every time the same title is opened, so a
@@ -756,10 +774,73 @@ Future<PlaybackGrant?> _takePrefetched(
 Future<void> playContent(
   BuildContext context,
   WidgetRef ref,
-  VideoContent content,
-) {
-  return playMedia(context, ref, content: content, source: content.source);
+  VideoContent content, {
+  bool fromStart = false,
+}) {
+  return playMedia(context, ref,
+      content: content, source: content.source, fromStart: fromStart);
 }
+
+/// The album's next video after [source], as an Up next offer — or null at
+/// the end of the album, for a title with no album, and for a clip this
+/// viewer may not open (an autoplay that lands on a paywall is an advert,
+/// not a next episode).
+///
+/// The order is the album's own (the admin's), which for a series is the
+/// episode order. The title's main film, when the album lists it, counts
+/// as its first video.
+UpNextOffer? _nextInAlbum(
+  BuildContext context,
+  WidgetRef ref, {
+  required VideoContent content,
+  required MediaRef source,
+  required String shownTitle,
+}) {
+  final videos = <AlbumItem>[
+    for (final i in content.items)
+      if (i.isVideo) i,
+  ];
+  if (videos.isEmpty) return null;
+  final current = assetIdOf(source);
+  final at = current == null
+      ? videos.indexWhere((i) => i.isMain)
+      : videos.indexWhere((i) => i.source.locator == current);
+  // Not found (a main film the album does not list): its first video is
+  // next, skipping the film itself.
+  final from = at < 0 ? 0 : at + 1;
+  AlbumItem? next;
+  for (var k = from; k < videos.length; k++) {
+    if (current == null && videos[k].isMain) continue;
+    next = videos[k];
+    break;
+  }
+  if (next == null) return null;
+  final allowed = ref.read(accessPolicyProvider).canOpenItem(
+        parent: content,
+        item: next,
+        photoOrdinal: -1,
+        tier: ref.read(viewerProvider).tier,
+      );
+  if (!allowed) return null;
+  final s = AppStrings.of(context);
+  final n = videos.indexOf(next) + 1;
+  final item = next;
+  return UpNextOffer(
+    title: '$shownTitle · ${s.vhCountOf(n, videos.length)}',
+    play: () async {
+      if (!context.mounted) return;
+      await playMedia(context, ref,
+          content: content, source: item.source, titleOverride: shownTitle);
+    },
+  );
+}
+
+/// The clip id the player reports against, or null for a title's main film
+/// — the same key [WatchPoint] is held under.
+String? assetIdOf(MediaRef source) =>
+    source.provider == 'asset' && source.locator.isNotEmpty
+        ? source.locator
+        : null;
 
 /// Plays a title that is already on this device.
 ///

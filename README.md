@@ -7566,4 +7566,7 @@ Current: **0.46.0+63**. See `lib/core/app_version.dart`.
 
 ## License
 
-This is a personal learning project. No license granted for redistribution.
+**Source-available, all rights reserved** — see [LICENSE](LICENSE). You may
+read and study this code and learn from it; you may not copy, redistribute,
+modify, rebuild or publish it, or any app made from it, without written
+permission.

@@ -273,7 +273,14 @@ jobs:
           INNOCENT_STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           INNOCENT_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           INNOCENT_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: flutter build apk --release
+        # OBFUSCATED (security review, 2026-10-05). The release APK is the one
+        # copy of Innocent that leaves the owner's hands, and without this
+        # every Dart class, method and field name ships in libapp.so, where a
+        # decompiler turns it back into a readable map of the app. With it the
+        # names are gone; the symbols to read a stack trace again are written
+        # to build/symbols and kept, ENCRYPTED, next to the APK (below).
+        # Not R8: that stays off for the memory reason in build.gradle.kts.
+        run: flutter build apk --release --obfuscate --split-debug-info=build/symbols
 
       # THE CHECK THIS WHOLE PIPELINE EXISTS TO MAKE IMPOSSIBLE TO SKIP.
       #
@@ -432,6 +439,26 @@ jobs:
             echo "reliably carry ninety megabytes to Myanmar; this is the"
             echo "same Cloudflare edge that already serves every poster."
           } >> "$GITHUB_STEP_SUMMARY"
+
+      # The symbols that turn an obfuscated stack trace back into names
+      # (`flutter symbolize`). Readable by whoever holds them, so — the repo
+      # being public — they are published only encrypted with the lab key,
+      # as the lab's screenshots are:
+      #   openssl enc -d -aes-256-cbc -pbkdf2 -pass pass:$KEY \
+      #     -in innocent-X-Y.apk.symbols.tar.gz.enc | tar -xz
+      - name: Seal the Dart symbols
+        env:
+          LAB_RESULTS_KEY: ${{ secrets.LAB_RESULTS_KEY }}
+        run: |
+          set -euo pipefail
+          OUT="${{ steps.facts.outputs.name }}.symbols.tar.gz.enc"
+          if [ -z "${LAB_RESULTS_KEY:-}" ]; then
+            echo "::warning::LAB_RESULTS_KEY not set; symbols not kept"
+            exit 0
+          fi
+          tar -czf - -C build symbols | openssl enc -aes-256-cbc -pbkdf2 -salt \
+            -pass env:LAB_RESULTS_KEY -out "$OUT"
+          ls -l "$OUT"
 
       - name: Publish the APK as a Release asset
         # WHY A RELEASE AND NOT AN ARTIFACT (18 Sep 2026)
@@ -638,5 +665,8 @@ jobs:
           # carries a complete asset returned above and never gets this far,
           # which is the point — see case (1).
           gh release upload "$TAG" "$NAME" --clobber
+          if [ -f "$NAME.symbols.tar.gz.enc" ]; then
+            gh release upload "$TAG" "$NAME.symbols.tar.gz.enc" --clobber
+          fi
 
           echo "published: $(gh release view "$TAG" --json url --jq .url)"

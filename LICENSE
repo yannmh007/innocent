@@ -1,0 +1,59 @@
+Innocent — Source-Available License (All Rights Reserved)
+
+Copyright (c) 2026 yannmh007. All rights reserved.
+
+This repository — the source code, database migrations, server functions,
+console, scripts, documentation, designs, text and images in it, and the
+"Innocent" name and icon (together, "the Software") — is the property of the
+copyright holder. It is published so that people can READ it and LEARN from
+it. It is not open source.
+
+1. WHAT YOU MAY DO
+
+   a. Read and study the Software, on GitHub or in a copy on your own
+      computer, for your own personal learning, teaching or research.
+   b. Quote short excerpts (no more than a few functions or about fifty
+      lines at a time) in a review, an article, a lesson or a question
+      asking for help, if you name "Innocent" and link to this repository.
+   c. Use what you learn — general ideas, techniques and approaches — in
+      your own work, written by you in your own words. Ideas are free;
+      this code is not.
+   d. Fork this repository on GitHub, as GitHub's Terms of Service allow
+      for any public repository, for the purposes in (a) and (b) only.
+
+2. WHAT YOU MAY NOT DO without the copyright holder's prior written
+   permission
+
+   a. Copy, reproduce or redistribute the Software or any substantial part
+      of it, in source or compiled form, in any medium.
+   b. Modify it, translate it, or make derivative works from it — including
+      porting it to another language or framework, or rebuilding it with
+      the names changed.
+   c. Build, publish, sell, rent or distribute any application, APK,
+      website or service that contains or is derived from the Software,
+      whether paid or free.
+   d. Use the Software, or any part of it, commercially.
+   e. Use the "Innocent" name, icon or branding, or present any other
+      product as Innocent or as connected with it.
+   f. Use the Software to access, test, load or attack Innocent's servers,
+      storage or accounts, or anyone else's.
+   g. Remove or alter this notice or any copyright notice in the Software.
+   h. Use the Software, in whole or in part, to train, fine-tune or evaluate
+      a machine-learning model, or to build a dataset for that purpose.
+
+3. NO OTHER RIGHTS. Nothing in this license grants any right not expressly
+   stated in section 1. Every right not granted is reserved. Publishing the
+   source does not place it in the public domain or under any open-source
+   license.
+
+4. ENFORCEMENT. Any use outside section 1 ends your permission to use the
+   Software at all, immediately and without notice, and may be reported to
+   the hosting platform, app store or service provider concerned (for
+   example, through a DMCA or copyright takedown notice).
+
+5. NO WARRANTY. The Software is provided "as is", without warranty of any
+   kind. The copyright holder is not liable for any claim, damages or other
+   liability arising from it or from its use.
+
+6. PERMISSION. To ask for permission beyond this license, open an issue in
+   this repository.

@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'access.dart';
 import 'account.dart';
 
@@ -52,10 +54,17 @@ abstract class AccountRepository {
   ///
   /// Returns the queued request. It grants NOTHING on its own — approval is a
   /// separate, human step against the real KPay ledger.
+  ///
+  /// [proof] is the receipt's screenshot (migration 040), the proof people
+  /// actually have; [reference] (the transaction id) is optional when it is
+  /// given. At least one of the two. [priceShown] is the price as this screen
+  /// showed it, for the operator to compare with the receipt.
   Future<PremiumRequest> submitPremiumRequest({
     required String planId,
-    required String reference,
+    String reference = '',
     String? senderPhone,
+    Uint8List? proof,
+    String? priceShown,
   });
 
   /// This account's requests, newest first, so the user can see that their

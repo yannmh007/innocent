@@ -78,6 +78,9 @@ class AccessPolicy {
     required int photoOrdinal,
     required ViewerTier tier,
   }) {
+    // No address, nothing to open — and no tier the client believes it has
+    // changes that (migration 041).
+    if (item.withheld) return false;
     if (parent.accessTier == AccessTier.free) return true;
     if (CapabilityMatrix.allows(tier, Capability.viewFullAlbum)) return true;
     // The trailer slot: an explicit taste of a paid title.

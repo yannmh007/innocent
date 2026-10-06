@@ -10,6 +10,7 @@ extension PlayerPlayback on PlayerController {
     String? title,
     bool isPrivate = false,
     bool ephemeral = false,
+    Duration? startAt,
   }) async {
     // Remember privacy state for THIS video so all the persistence paths
     // (resume, last-playing, history) can skip writing when it's a vault
@@ -18,6 +19,11 @@ extension PlayerPlayback on PlayerController {
     // Same, for a URI that is not a stable identity (a signed, expiring stream
     // URL). See [_isEphemeral] for why writing one down is three bugs.
     _isEphemeral = ephemeral;
+    openGeneration++;
+    // A position the caller holds (a catalogue stream's WatchPoint): used
+    // instead of the player's own store, once, by the open below.
+    _explicitStartAt = startAt != null && startAt > Duration.zero ? startAt : null;
+    _explicitStartUri = _explicitStartAt == null ? null : uri;
     if (!ephemeral) {
       // A plain file supersedes any stream renewal still registered from the
       // last one, so a renewer can never be applied to the wrong media.
@@ -432,8 +438,13 @@ extension PlayerPlayback on PlayerController {
       } catch (e) { if (kDebugMode) debugPrint('PlayerPlayback: $e'); }
     } catch (e) { if (kDebugMode) debugPrint('PlayerPlayback: $e'); }
 
-    // Check for resume position before opening
-    final savedPos =
+    // Check for resume position before opening. A position handed in by the
+    // caller wins, for this one file, and resumes without asking: the
+    // caller has already asked ("Resume 12:34" / "Start over").
+    final explicit = _explicitStartUri == uri ? _explicitStartAt : null;
+    _explicitStartAt = null;
+    _explicitStartUri = null;
+    final savedPos = explicit ??
         await _ref.read(resumeStorageProvider).getPosition(uri);
 
     // Decide UP-FRONT whether this file must open PAUSED. When the resume
@@ -449,7 +460,8 @@ extension PlayerPlayback on PlayerController {
         _ref.read(extraSettingsProvider).getStr(StringSetting.resumeLast);
     final resumeOnlyFirstAtOpen =
         _ref.read(playerSettingsProvider).get(PlayerSetting.resumeOnlyFirst);
-    final willAskResume = savedPos != null &&
+    final willAskResume = explicit == null &&
+        savedPos != null &&
         savedPos > const Duration(seconds: 30) &&
         (!resumeOnlyFirstAtOpen || !_hasOpenedFirstFile) &&
         resumeModeAtOpen == 'ask';
@@ -463,10 +475,11 @@ extension PlayerPlayback on PlayerController {
     // the wrong scene and audio before snapping forward. open(startAt:) also
     // uses keyframe seeking, so the first frame appears immediately instead of
     // libmpv decoding forward to an exact timestamp nobody can perceive.
-    final bool willSilentResume = savedPos != null &&
-        savedPos > const Duration(seconds: 30) &&
-        (!resumeOnlyFirstAtOpen || !_hasOpenedFirstFile) &&
-        resumeModeAtOpen == 'resume';
+    final bool willSilentResume = explicit != null ||
+        (savedPos != null &&
+            savedPos > const Duration(seconds: 30) &&
+            (!resumeOnlyFirstAtOpen || !_hasOpenedFirstFile) &&
+            resumeModeAtOpen == 'resume');
     // A HALF-DOWNLOADED FILE is played only as far as its data goes (see
     // IncompleteFile). Its resume point is held until the length is known:
     // handed to `start` it could land in the zeros, which is precisely where
@@ -746,7 +759,7 @@ extension PlayerPlayback on PlayerController {
           .read(playerSettingsProvider)
           .get(PlayerSetting.resumeOnlyFirst);
       final shouldConsiderRestore =
-          !resumeOnlyFirst || !_hasOpenedFirstFile;
+          explicit != null || !resumeOnlyFirst || !_hasOpenedFirstFile;
       _hasOpenedFirstFile = true;
 
       // Phase 45 (audit): MX Player V3 `resume_last` setting has THREE
@@ -757,9 +770,12 @@ extension PlayerPlayback on PlayerController {
       //                 you stopped?" with [Resume] / [Start over] buttons
       // We previously hard-coded the 'resume' branch + auto-dismiss
       // banner. Now we honour the setting.
-      final mode = _ref
-          .read(extraSettingsProvider)
-          .getStr(StringSetting.resumeLast);
+      // A caller's position has already been asked about, and has already
+      // been sought to: it takes the 'resume' path (the brief "Resumed"
+      // banner with its Start over), never the dialog.
+      final mode = explicit != null
+          ? 'resume'
+          : _ref.read(extraSettingsProvider).getStr(StringSetting.resumeLast);
       if (shouldConsiderRestore) {
         if (mode == 'startover') {
           // User explicitly opted out — start from 0, do nothing.

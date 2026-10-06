@@ -169,6 +169,9 @@ final routerProvider = Provider<GoRouter>((ref) {
           // not the catalogue's business.
           final titleId = extra?['titleId'] as String?;
           final assetId = extra?['assetId'] as String?;
+          // Where a catalogue stream should begin (the Movies feature's
+          // WatchPoint), in whole seconds.
+          final startAtS = extra?['startAtS'] as int?;
           return PlayerScreen(
             videoUri: uri,
             title: title,
@@ -177,6 +180,9 @@ final routerProvider = Provider<GoRouter>((ref) {
             ephemeral: ephemeral,
             titleId: titleId,
             assetId: assetId,
+            startAt: startAtS == null || startAtS <= 0
+                ? null
+                : Duration(seconds: startAtS),
           );
         },
       ),

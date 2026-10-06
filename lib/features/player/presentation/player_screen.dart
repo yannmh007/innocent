@@ -38,6 +38,7 @@ import '../../local_browser/presentation/widgets/video_option_menu.dart'
 
 import '../../../core/di/core_providers.dart';
 import '../../../core/services/diagnostics/playback_log.dart';
+import '../../../core/services/diagnostics/semantics_dump.dart';
 import '../../../core/services/file_transfer/file_transfer_service.dart';
 import '../../../core/router/routes.dart';
 import '../../shell/shell_screen.dart';
@@ -93,6 +94,9 @@ import '../../../core/services/video_player/stream_renewal.dart';
 import '../../../core/utils/media_address.dart';
 import '../../video_hub/data/api/playback_reporter.dart';
 import '../../video_hub/presentation/video_hub_provider.dart';
+import '../../video_hub/presentation/watch_points_provider.dart';
+import 'up_next.dart';
+import 'widgets/up_next_card.dart';
 import 'gestures/subtitle_band.dart';
 import 'subtitles/player_subtitles.dart';
 import 'video_geometry.dart';
@@ -138,6 +142,10 @@ class PlayerScreen extends ConsumerStatefulWidget {
   /// The album clip, when this is one rather than the title's main film.
   final String? assetId;
 
+  /// Where to begin, for a stream the Movies feature has a position for
+  /// (WatchPoint). The player keeps no resume point for a stream itself.
+  final Duration? startAt;
+
   const PlayerScreen({
     super.key,
     required this.videoUri,
@@ -147,6 +155,7 @@ class PlayerScreen extends ConsumerStatefulWidget {
     this.ephemeral = false,
     this.titleId,
     this.assetId,
+    this.startAt,
   });
 
   @override
@@ -209,6 +218,11 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
   // Snapshot taken in [deactivate], while `ref` is still usable, because
   // dispose() must not touch `ref` at all.
   bool _floatingPipActiveAtTeardown = false;
+
+  /// The controller's open count when this screen began to go. A different
+  /// count at dispose() means another player screen has opened a video in
+  /// between (Up next), and stopping "this" playback would stop that one.
+  int? _openGenerationAtTeardown;
   PlayerController? _controllerAtTeardown;
   PipService? _pipServiceAtTeardown;
 
@@ -493,10 +507,13 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
         return;
       }
       ref.read(floatingPipProvider.notifier).hideForExpand();
+      // Whoever opened this video may have said what comes next (Up next).
+      notifier.onFinished = _takeOverEnd;
       notifier.openVideo(widget.videoUri,
           title: widget.title,
           isPrivate: widget.isPrivate,
-          ephemeral: widget.ephemeral);
+          ephemeral: widget.ephemeral,
+          startAt: widget.startAt);
     });
 
     // Phase 45: Android system Picture-in-Picture.
@@ -907,6 +924,45 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
   /// toward the fix without nagging on every PiP tap.
   static bool _pipPermPromptedThisSession = false;
 
+  /// The next video, while its card is up (see [UpNextCard]).
+  UpNextOffer? _upNext;
+
+  /// Completed by dispose(), for [_playUpNext].
+  Completer<void>? _gone;
+
+  /// The film ended: if its opener said what comes next, show the card and
+  /// tell the controller the end is handled.
+  bool _takeOverEnd() {
+    if (!mounted) return false;
+    final offer = UpNext.offerFor(widget.videoUri);
+    if (offer == null) return false;
+    setState(() => _upNext = offer);
+    return true;
+  }
+
+  /// Closes this player and opens the next video. The opener's function
+  /// pushes a fresh player for it, with its own grant, resume point and Up
+  /// next.
+  Future<void> _playUpNext({required bool byItself}) async {
+    if (byItself) {
+      UpNext.noteUnattended();
+    } else {
+      UpNext.noteChosen();
+    }
+    final offer = UpNext.take(widget.videoUri);
+    setState(() => _upNext = null);
+    if (offer == null || !mounted) return;
+    _stopAudioIfLeaving();
+    final gone = _gone = Completer<void>();
+    if (context.canPop()) context.pop();
+    // This State is closing; the code below runs on after it, which is the
+    // point: it waits until the teardown has run, so nothing of it can land
+    // on the next player.
+    await gone.future
+        .timeout(const Duration(seconds: 3), onTimeout: () {});
+    await offer.play();
+  }
+
   /// Begins reporting progress, for catalogue playback only.
   ///
   /// NOTHING HAPPENS FOR A LOCAL FILE, and that is the first check rather than
@@ -966,9 +1022,29 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     try {
       final svc = ref.read(videoPlayerServiceProvider);
       reporter.report(svc.position, svc.duration);
+      _rememberPoint(svc.position, svc.duration);
     } catch (e) {
       PlaybackLog.add('progress report failed: $e');
     }
+  }
+
+  /// Where this catalogue video stands, kept by the Movies feature so the
+  /// film reopens here (see WatchPoint). The player itself still writes
+  /// nothing down for a stream.
+  void _rememberPoint(Duration position, Duration duration,
+      {bool last = false}) {
+    final id = widget.titleId;
+    if (id == null || id.isEmpty || position <= Duration.zero) return;
+    ref.read(watchPointsProvider.notifier).record(
+          titleId: id,
+          assetId: widget.assetId,
+          position: position,
+          duration: duration,
+          finished: last &&
+              PlaybackReporter.completed(
+                  furthestS: position.inSeconds,
+                  durationS: duration.inSeconds),
+        );
   }
 
   /// v1.61 — the last moment `ref` is legal.
@@ -987,6 +1063,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     try {
       final svc = ref.read(videoPlayerServiceProvider);
       _reporter?.finish(position: svc.position, duration: svc.duration);
+      _rememberPoint(svc.position, svc.duration, last: true);
     } catch (e) {
       // Still finish, with whatever the reporter already saw.
       PlaybackLog.add('final report failed: $e');
@@ -1001,12 +1078,14 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     try {
       ref.read(playerControllerProvider.notifier).onFirstFrame = null;
       ref.read(playerControllerProvider.notifier).onStall = null;
+      ref.read(playerControllerProvider.notifier).onFinished = null;
     } catch (_) {
       // Nothing to release if the provider is already gone.
     }
     try {
       _floatingPipActiveAtTeardown = ref.read(floatingPipProvider).isActive;
       _controllerAtTeardown = ref.read(playerControllerProvider.notifier);
+      _openGenerationAtTeardown = _controllerAtTeardown?.openGeneration;
       _pipServiceAtTeardown = ref.read(pipServiceProvider);
     } catch (e) {
       // Never let a snapshot failure stop the teardown that follows it.
@@ -1091,6 +1170,11 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
           PlaybackLog.add('TEARDOWN: no controller snapshot — playback NOT stopped');
           return;
         }
+        if (_openGenerationAtTeardown != null &&
+            notifier.openGeneration != _openGenerationAtTeardown) {
+          PlaybackLog.add('TEARDOWN: a newer video took over — not stopped');
+          return;
+        }
         // Stop the audio-only foreground service if it was started, then
         // hard-stop the player so no audio lingers in the background.
         notifier.stopBackgroundPlaybackService();
@@ -1146,6 +1230,10 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     // missing line here is the signal that something threw in a place still
     // not covered.
     PlaybackLog.add('player teardown done keepPlaying=$keepPlaying');
+    // Up next waits for this: the next video opens only once this one is
+    // fully torn down (its stop(), PiP callbacks and orientation are this
+    // screen's, and would otherwise land on the new player).
+    _gone?.complete();
     super.dispose();
   }
 
@@ -2487,12 +2575,34 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     return KeyEventResult.ignored;
   }
 
+  int _labSemDumps = 0;
+
   @override
   Widget build(BuildContext context) {
     // Controls hidden → focus back on the player itself, so the remote's
     // keys reach [_onRemoteKey] instead of a button nobody can see.
     ref.listen<bool>(
         playerControllerProvider.select((s) => s.controlsVisible), (_, v) {
+      // Lab: what TalkBack is told about the controls once they are drawn.
+      // Semantics is built only while an accessibility client (TalkBack,
+      // uiautomator) is connected, so wait for it, up to 15 s.
+      if (PlaybackLog.labTrace && v && _labSemDumps < 4) {
+        _labSemDumps++;
+        final n = _labSemDumps;
+        var ticks = 0, onTicks = 0;
+        Timer.periodic(const Duration(milliseconds: 250), (t) {
+          ticks++;
+          onTicks = SemanticsBinding.instance.semanticsEnabled ? onTicks + 1 : 0;
+          if (!mounted ||
+              ticks > 60 ||
+              !ref.read(playerControllerProvider).controlsVisible) {
+            t.cancel();
+          } else if (onTicks >= 2) {
+            t.cancel();
+            labDumpSemantics('controls $n after ${ticks * 250} ms');
+          }
+        });
+      }
       if (v || !mounted || _remoteFocus.hasPrimaryFocus) return;
       // Never out of a panel or a dialog — one may hold a text field the
       // viewer is typing in.
@@ -3394,6 +3504,22 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
               ),
             ),
 
+          // === LAYER 14b: Up next — what plays after this one ===
+          if (_upNext != null)
+            Positioned(
+              right: 16 + MediaQuery.paddingOf(context).right,
+              bottom: 96 + MediaQuery.paddingOf(context).bottom,
+              child: UpNextCard(
+                title: _upNext!.title,
+                // Settings → Player → "Play next automatically": off means
+                // the card waits for a tap.
+                autoplay: ref.read(preferencesProvider).autoPlayNext,
+                askFirst: UpNext.askStillWatching,
+                onPlay: _playUpNext,
+                onClose: () => setState(() => _upNext = null),
+              ),
+            ),
+
           // === LAYER 15: Notice — what the player did about a problem ===
           // IgnorePointer: it must never be the thing a tap lands on.
           if (state.notice != null && state.errorMessage == null)
@@ -3637,8 +3763,15 @@ class _TopBar extends StatelessWidget {
               onPressed: onBack,
             ),
             Expanded(
+              // Each text in the controls is its own TalkBack node: loose,
+              // they all joined one full-screen node with the subtitle
+              // (lab run 37308309328), read as one sentence wherever the
+              // finger landed.
               child: showTitle
-                  ? Text(
+                  ? Semantics(
+                      container: true,
+                      header: true,
+                      child: Text(
                 // Phase 18: Strip common video file extensions for cleaner display
                 // (MX Player parity — Picsart 06-50-457 reference).
                 _stripExtension(title),
@@ -3651,7 +3784,8 @@ class _TopBar extends StatelessWidget {
                 // Phase 17: 2-line wrap (MX Player parity, V1 t=20)
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-              )
+              ),
+                    )
                   // Title hidden: keep the Expanded so the icons on the right
                   // stay where they are instead of sliding across the bar.
                   : const SizedBox.shrink(),
@@ -3663,7 +3797,9 @@ class _TopBar extends StatelessWidget {
               Flexible(
                 child: Padding(
                   padding: const EdgeInsets.only(left: 8),
-                  child: Text(
+                  child: Semantics(
+                    container: true,
+                    child: Text(
                     sourceLabel!,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -3672,13 +3808,16 @@ class _TopBar extends StatelessWidget {
                       fontSize: 11,
                     ),
                   ),
+                  ),
                 ),
               ),
             // Settings → Style → "Show system clock".
             if (showClock)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 6),
-                child: Text(
+                child: Semantics(
+                  container: true,
+                  child: Text(
                   _clockNow(),
                   style: const TextStyle(
                     color: Colors.white,
@@ -3687,10 +3826,13 @@ class _TopBar extends StatelessWidget {
                     fontFeatures: [FontFeature.tabularFigures()],
                   ),
                 ),
+                ),
               ),
             // Sleep timer remaining badge
             if (sleepTimerRemaining != null)
-              Container(
+              Semantics(
+                container: true,
+                child: Container(
                 margin: const EdgeInsets.symmetric(horizontal: 4),
                 padding:
                     const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -3715,6 +3857,7 @@ class _TopBar extends StatelessWidget {
                     ),
                   ],
                 ),
+              ),
               ),
             // Phase 28: Audio + subtitle icons ALWAYS in title bar (was landscape-only).
             // Phase 44: small accent dot when there's more than one track,
@@ -4145,13 +4288,16 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
               children: [
                 SizedBox(
                   width: 56,
-                  child: Text(
+                  child: Semantics(
+                    container: true,
+                    child: Text(
                     widget.formatDuration(displayPosition),
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 13,
                       fontFeatures: [FontFeature.tabularFigures()],
                     ),
+                  ),
                   ),
                 ),
                 Expanded(
@@ -4206,7 +4352,9 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
                 ),
                 SizedBox(
                   width: 56,
-                  child: Text(
+                  child: Semantics(
+                    container: true,
+                    child: Text(
                     // MX Player parity: right side shows negative remaining time
                     // e.g. "-1:29:22" rather than total duration
                     hasDuration
@@ -4218,6 +4366,7 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
                       fontFeatures: [FontFeature.tabularFigures()],
                     ),
                     textAlign: TextAlign.right,
+                  ),
                   ),
                 ),
               ],
@@ -4323,13 +4472,20 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
                     children: [
                       // Named for TalkBack (and the device lab): a tooltip
                       // alone reaches Android as tooltip text, not as the
-                      // button's name, so the button was nameless.
+                      // button's name, so the button was nameless. Its own
+                      // node (container): without it the name and the id
+                      // went up into the full-screen node above, and the
+                      // lab's taps on "the button" landed mid-screen (run
+                      // 37308309328). One node, read "Fit to screen, button".
                       Semantics(
+                        container: true,
                         // A stable id for automation (Android resource-id).
                         identifier: 'player-screen-mode',
                         label: widget.aspectRatioMode
                             .labelIn(AppStrings.of(context)),
                         button: true,
+                        onTap: widget.onCycleAspectRatio,
+                        excludeSemantics: true,
                         child: IconButton(
                           icon: const Icon(Icons.crop_landscape_outlined,
                               color: Colors.white),

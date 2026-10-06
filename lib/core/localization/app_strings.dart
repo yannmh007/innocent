@@ -448,6 +448,17 @@ class AppStrings {
   /// The album viewer's place: "3 of 10", Telegram's wording.
   String vhCountOf(int i, int n) =>
       _s('vhCountOf').replaceFirst('{i}', '$i').replaceFirst('{n}', '$n');
+  String vhResumeAt(String t) => _s('vhResumeAt').replaceFirst('{t}', t);
+  String get vhStartOver => _s('vhStartOver');
+  String vhMinutesLeft(int m) => _s('vhMinutesLeft').replaceFirst('{m}', '$m');
+  String get vhRemoveFromContinue => _s('vhRemoveFromContinue');
+  String get vhRemovedFromContinue => _s('vhRemovedFromContinue');
+  String get vhMoreLikeThis => _s('vhMoreLikeThis');
+  String get vhUpNext => _s('vhUpNext');
+  String vhUpNextIn(int s) => _s('vhUpNextIn').replaceFirst('{s}', '$s');
+  String get vhPlayNow => _s('vhPlayNow');
+  String get vhStillWatching => _s('vhStillWatching');
+  String get vhKeepWatching => _s('vhKeepWatching');
   String vhAlbumProgress(int done, int total) => _s('vhAlbumProgress')
       .replaceFirst('{done}', '$done')
       .replaceFirst('{total}', '$total');
@@ -1437,6 +1448,32 @@ class AppStrings {
   String get vhPaySenderHint => _s('vhPaySenderHint');
   String get vhPaySubmit => _s('vhPaySubmit');
   String get vhPayManualNote => _s('vhPayManualNote');
+  String get vhPayOpenKpay => _s('vhPayOpenKpay');
+  String get vhPayNoKpay => _s('vhPayNoKpay');
+  String get vhPayRecentShots => _s('vhPayRecentShots');
+  String get vhPayChooseShot => _s('vhPayChooseShot');
+  String get aboutTagline => _s('aboutTagline');
+  String aboutVersionFull(String v, String b) =>
+      _s('aboutVersionFull').replaceFirst('{v}', v).replaceFirst('{b}', b);
+  String get aboutCopied => _s('aboutCopied');
+  String get aboutCopyHint => _s('aboutCopyHint');
+  String get aboutSectionApp => _s('aboutSectionApp');
+  String get aboutSectionSupport => _s('aboutSectionSupport');
+  String get aboutSoftwareUpdate => _s('aboutSoftwareUpdate');
+  String get aboutUpToDate => _s('aboutUpToDate');
+  String get aboutUpdateReady => _s('aboutUpdateReady');
+  String get aboutWhatsNew => _s('aboutWhatsNew');
+  String aboutWhatsNewIn(String v) =>
+      _s('aboutWhatsNewIn').replaceFirst('{v}', v);
+  String get aboutHelpFaq => _s('aboutHelpFaq');
+  String get aboutRights => _s('aboutRights');
+  String get vhPayShotAttached => _s('vhPayShotAttached');
+  String get vhPayShotCheck => _s('vhPayShotCheck');
+  String get vhPayShotChange => _s('vhPayShotChange');
+  String get vhPayAddTxn => _s('vhPayAddTxn');
+  String get vhPayNeedProof => _s('vhPayNeedProof');
+  String get vhPayTooMany => _s('vhPayTooMany');
+  String get vhPayBadImage => _s('vhPayBadImage');
   String get vhPaySubmitFailed => _s('vhPaySubmitFailed');
   String get vhPayDetailsStale => _s('vhPayDetailsStale');
   String get vhPayDetailsUnavailable => _s('vhPayDetailsUnavailable');
@@ -1830,8 +1867,8 @@ class AppStrings {
     'vhDevApprove': 'Approve locally (development only)',
     'vhPayTitle': 'Pay with KPay',
     'vhPayStep1': 'Send the amount to this KPay account',
-    'vhPayStep2': 'Keep the KPay transaction ID from your receipt',
-    'vhPayStep3': 'Enter the details below',
+    'vhPayStep2': 'Pay in KPay, then take a screenshot of the receipt',
+    'vhPayStep3': 'Attach the receipt screenshot',
     'vhPayPayee': 'Account name',
     'vhPayNumber': 'KPay number',
     'vhPayAmount': 'Amount',
@@ -1840,6 +1877,30 @@ class AppStrings {
     'vhPaySenderHint': 'Number you paid from',
     'vhPaySubmit': 'Submit payment',
     'vhPayManualNote': 'Payments are checked by hand against the KPay statement, so activation is not instant.',
+    'vhPayOpenKpay': 'Open KPay',
+    'vhPayNoKpay': 'KPay is not installed on this phone.',
+    'vhPayRecentShots': 'Recent screenshots — tap your receipt',
+    'vhPayChooseShot': 'Choose the screenshot from your photos',
+    'aboutTagline': 'Your videos, beautifully played.',
+    'aboutVersionFull': 'Version {v} ({b})',
+    'aboutCopied': 'Version copied',
+    'aboutCopyHint': 'Double tap to copy',
+    'aboutSectionApp': 'App',
+    'aboutSectionSupport': 'Support',
+    'aboutSoftwareUpdate': 'Software update',
+    'aboutUpToDate': 'Up to date',
+    'aboutUpdateReady': 'A new version is ready to install',
+    'aboutWhatsNew': "What's new",
+    'aboutWhatsNewIn': "What's new in {v}",
+    'aboutHelpFaq': 'Help & FAQ',
+    'aboutRights': '© 2026 Innocent. All rights reserved.',
+    'vhPayShotAttached': 'Receipt attached',
+    'vhPayShotCheck': 'Check that the amount and the transaction are visible.',
+    'vhPayShotChange': 'Change',
+    'vhPayAddTxn': 'Add the transaction ID (optional)',
+    'vhPayNeedProof': 'Attach the receipt screenshot, or enter the transaction ID.',
+    'vhPayTooMany': 'You already have payments waiting to be checked. Please wait for them.',
+    'vhPayBadImage': 'That file is not a picture we can read. Choose the screenshot again.',
     'vhPaySubmitFailed': 'Could not send your payment details. Nothing was recorded - check your connection and try again.',
     'vhPayDetailsStale': 'Could not reach the server. These are the details saved on this device last time - check them before you send money.',
     'vhPayDetailsUnavailable': 'Could not load the payment details. Do not send money until they appear.',
@@ -2027,6 +2088,17 @@ class AppStrings {
     'vhAlbumPlusPhotos': '+{n} Photo',
     'vhAlbumProgress': '{done} / {total}',
     'vhCountOf': '{i} of {n}',
+    'vhResumeAt': 'Resume {t}',
+    'vhStartOver': 'Start over',
+    'vhMinutesLeft': '{m} min left',
+    'vhRemoveFromContinue': 'Remove from Continue watching',
+    'vhRemovedFromContinue': 'Removed from Continue watching',
+    'vhMoreLikeThis': 'More like this',
+    'vhUpNext': 'Up next',
+    'vhUpNextIn': 'Next in {s}',
+    'vhPlayNow': 'Play now',
+    'vhStillWatching': 'Still watching?',
+    'vhKeepWatching': 'Keep watching',
     'vhAlbumVideos': '{n} videos',
     'vhAlbumPhotos': '{n} photos',
     'vhAlbumVideo1': '1 video',
@@ -3208,8 +3280,8 @@ class AppStrings {
     'vhDevApprove': 'စက်တွင်း အတည်ပြုရန် (စမ်းသပ်ရန်သာ)',
     'vhPayTitle': 'KPay ဖြင့် ပေးချေရန်',
     'vhPayStep1': 'ဤ KPay အကောင့်သို့ ငွေလွှဲပါ',
-    'vhPayStep2': 'ပြေစာမှ KPay လွှဲပြောင်းမှု ID ကို သိမ်းထားပါ',
-    'vhPayStep3': 'အောက်တွင် အချက်အလက် ဖြည့်ပါ',
+    'vhPayStep2': 'KPay မှာ ငွေလွှဲပြီး ပြေစာကို screenshot ရိုက်ပါ',
+    'vhPayStep3': 'ပြေစာ screenshot ကို ထည့်ပါ',
     'vhPayPayee': 'အကောင့်အမည်',
     'vhPayNumber': 'KPay နံပါတ်',
     'vhPayAmount': 'ပမာဏ',
@@ -3218,6 +3290,30 @@ class AppStrings {
     'vhPaySenderHint': 'ငွေလွှဲသည့် နံပါတ်',
     'vhPaySubmit': 'ငွေပေးချေမှု တင်ရန်',
     'vhPayManualNote': 'ငွေပေးချေမှုများကို KPay စာရင်းနှင့် လူကိုယ်တိုင် တိုက်စစ်သဖြင့် ချက်ချင်း အသက်မဝင်ပါ။',
+    'vhPayOpenKpay': 'KPay ဖွင့်မည်',
+    'vhPayNoKpay': 'ဒီဖုန်းမှာ KPay မရှိပါ။',
+    'vhPayRecentShots': 'မကြာသေးခင်က screenshot များ — ပြေစာကို နှိပ်ပါ',
+    'vhPayChooseShot': 'ဓာတ်ပုံထဲက screenshot ကို ရွေးမည်',
+    'aboutTagline': 'သင့်ဗီဒီယိုတွေကို အကောင်းဆုံး ကြည့်ရှုနိုင်ဖို့',
+    'aboutVersionFull': 'ဗားရှင်း {v} ({b})',
+    'aboutCopied': 'ဗားရှင်းကို ကူးယူပြီးပါပြီ',
+    'aboutCopyHint': 'ကူးယူရန် နှစ်ချက်နှိပ်ပါ',
+    'aboutSectionApp': 'App',
+    'aboutSectionSupport': 'အကူအညီ',
+    'aboutSoftwareUpdate': 'App အပ်ဒိတ်',
+    'aboutUpToDate': 'နောက်ဆုံးဗားရှင်းကို သုံးနေပါပြီ',
+    'aboutUpdateReady': 'အသစ် ထွက်ပါပြီ',
+    'aboutWhatsNew': 'ဒီဗားရှင်းမှာ ဘာအသစ်ပါလဲ',
+    'aboutWhatsNewIn': '{v} မှာ ပါဝင်တဲ့ အသစ်များ',
+    'aboutHelpFaq': 'အသုံးပြုနည်း လမ်းညွှန်',
+    'aboutRights': '© 2026 Innocent — မူပိုင်ခွင့်အားလုံး ရယူထားသည်။',
+    'vhPayShotAttached': 'ပြေစာ ထည့်ပြီးပါပြီ',
+    'vhPayShotCheck': 'ငွေပမာဏနဲ့ လွှဲပြောင်းမှု မြင်ရရဲ့လား စစ်ပါ။',
+    'vhPayShotChange': 'ပြောင်းမည်',
+    'vhPayAddTxn': 'Transaction ID ထည့်မည် (မထည့်လည်းရ)',
+    'vhPayNeedProof': 'ပြေစာ screenshot ထည့်ပါ၊ ဒါမှမဟုတ် Transaction ID ရိုက်ထည့်ပါ။',
+    'vhPayTooMany': 'စစ်ဆေးဖို့ စောင့်နေတဲ့ ငွေပေးချေမှုတွေ ရှိနေပါပြီ။ ခဏစောင့်ပေးပါ။',
+    'vhPayBadImage': 'ဒီဖိုင်ကို ဖတ်လို့မရပါ။ screenshot ကို ပြန်ရွေးပါ။',
     'vhPaySubmitFailed': 'ငွေပေးချေမှု အချက်အလက် မပို့နိုင်ပါ။ ဘာမှ မမှတ်တမ်းတင်ရသေးပါ - အင်တာနက် စစ်ပြီး ထပ်စမ်းပါ။',
     'vhPayDetailsStale': 'ဆာဗာသို့ မဆက်သွယ်နိုင်ပါ။ ဤအချက်အလက်များမှာ ဤဖုန်းတွင် နောက်ဆုံး သိမ်းထားသည့်များ ဖြစ်သည် - ငွေမပို့မီ သေချာစစ်ပါ။',
     'vhPayDetailsUnavailable': 'ငွေပေးချေမှု အချက်အလက်များ မရယူနိုင်ပါ။ ၎င်းတို့ မပေါ်မချင်း ငွေမပို့ပါနှင့်။',
@@ -3404,6 +3500,17 @@ class AppStrings {
     'vhAlbumPlusPhotos': '+{n} ပုံ',
     'vhAlbumProgress': '{done} / {total}',
     'vhCountOf': '{n} ခုမှ {i}',
+    'vhResumeAt': '{t} ကနေ ဆက်ကြည့်',
+    'vhStartOver': 'အစကပြန်ကြည့်',
+    'vhMinutesLeft': 'ကျန် {m} မိနစ်',
+    'vhRemoveFromContinue': 'ဆက်ကြည့်ရန်ထဲက ဖယ်မည်',
+    'vhRemovedFromContinue': 'ဆက်ကြည့်ရန်ထဲက ဖယ်ပြီးပါပြီ',
+    'vhMoreLikeThis': 'ဒီလိုမျိုး နောက်ထပ်',
+    'vhUpNext': 'နောက်တစ်ခု',
+    'vhUpNextIn': '{s} စက္ကန့်နေရင် နောက်တစ်ခု',
+    'vhPlayNow': 'အခုဖွင့်မည်',
+    'vhStillWatching': 'ဆက်ကြည့်နေတုန်းလား?',
+    'vhKeepWatching': 'ဆက်ကြည့်မည်',
     'vhAlbumVideos': 'ဗီဒီယို {n} ခု',
     'vhAlbumPhotos': 'ဓာတ်ပုံ {n} ပုံ',
     'vhAlbumVideo1': 'ဗီဒီယို 1 ခု',
@@ -4574,8 +4681,8 @@ class AppStrings {
     'vhDevApprove': 'อนุมัติในเครื่อง (สำหรับพัฒนาเท่านั้น)',
     'vhPayTitle': 'ชำระด้วย KPay',
     'vhPayStep1': 'โอนยอดไปยังบัญชี KPay นี้',
-    'vhPayStep2': 'เก็บรหัสธุรกรรม KPay จากใบเสร็จไว้',
-    'vhPayStep3': 'กรอกรายละเอียดด้านล่าง',
+    'vhPayStep2': 'โอนใน KPay แล้วแคปหน้าจอใบเสร็จ',
+    'vhPayStep3': 'แนบภาพหน้าจอใบเสร็จ',
     'vhPayPayee': 'ชื่อบัญชี',
     'vhPayNumber': 'เบอร์ KPay',
     'vhPayAmount': 'จำนวนเงิน',
@@ -4584,6 +4691,30 @@ class AppStrings {
     'vhPaySenderHint': 'เบอร์ที่ใช้โอน',
     'vhPaySubmit': 'ส่งการชำระเงิน',
     'vhPayManualNote': 'การชำระเงินตรวจสอบด้วยคนเทียบกับรายการ KPay จึงไม่เปิดใช้งานทันที',
+    'vhPayOpenKpay': 'เปิด KPay',
+    'vhPayNoKpay': 'เครื่องนี้ไม่มี KPay',
+    'vhPayRecentShots': 'ภาพหน้าจอล่าสุด — แตะใบเสร็จ',
+    'vhPayChooseShot': 'เลือกภาพหน้าจอจากรูปภาพ',
+    'aboutTagline': 'ดูวิดีโอของคุณได้อย่างสวยงาม',
+    'aboutVersionFull': 'เวอร์ชัน {v} ({b})',
+    'aboutCopied': 'คัดลอกเวอร์ชันแล้ว',
+    'aboutCopyHint': 'แตะสองครั้งเพื่อคัดลอก',
+    'aboutSectionApp': 'แอป',
+    'aboutSectionSupport': 'ความช่วยเหลือ',
+    'aboutSoftwareUpdate': 'อัปเดตซอฟต์แวร์',
+    'aboutUpToDate': 'เป็นเวอร์ชันล่าสุด',
+    'aboutUpdateReady': 'มีเวอร์ชันใหม่พร้อมติดตั้ง',
+    'aboutWhatsNew': 'มีอะไรใหม่',
+    'aboutWhatsNewIn': 'มีอะไรใหม่ใน {v}',
+    'aboutHelpFaq': 'ความช่วยเหลือและคำถามที่พบบ่อย',
+    'aboutRights': '© 2026 Innocent สงวนลิขสิทธิ์',
+    'vhPayShotAttached': 'แนบใบเสร็จแล้ว',
+    'vhPayShotCheck': 'ตรวจว่ามองเห็นยอดเงินและรายการ',
+    'vhPayShotChange': 'เปลี่ยน',
+    'vhPayAddTxn': 'ใส่รหัสธุรกรรม (ไม่บังคับ)',
+    'vhPayNeedProof': 'แนบภาพใบเสร็จ หรือใส่รหัสธุรกรรม',
+    'vhPayTooMany': 'คุณมีการชำระเงินที่รอตรวจอยู่แล้ว โปรดรอสักครู่',
+    'vhPayBadImage': 'อ่านไฟล์นี้ไม่ได้ โปรดเลือกภาพหน้าจออีกครั้ง',
     'vhPaySubmitFailed': 'ส่งรายละเอียดการชำระเงินไม่สำเร็จ ยังไม่มีการบันทึกใด ๆ - ตรวจสอบการเชื่อมต่อแล้วลองใหม่',
     'vhPayDetailsStale': 'ติดต่อเซิร์ฟเวอร์ไม่ได้ นี่คือรายละเอียดที่บันทึกไว้ในเครื่องครั้งล่าสุด - ตรวจสอบก่อนโอนเงิน',
     'vhPayDetailsUnavailable': 'โหลดรายละเอียดการชำระเงินไม่ได้ อย่าโอนเงินจนกว่าจะแสดงขึ้น',
@@ -4770,6 +4901,17 @@ class AppStrings {
     'vhAlbumPlusPhotos': '+{n} รูป',
     'vhAlbumProgress': '{done} / {total}',
     'vhCountOf': '{i} จาก {n}',
+    'vhResumeAt': 'ดูต่อ {t}',
+    'vhStartOver': 'เริ่มใหม่',
+    'vhMinutesLeft': 'เหลือ {m} นาที',
+    'vhRemoveFromContinue': 'นำออกจากดูต่อ',
+    'vhRemovedFromContinue': 'นำออกจากดูต่อแล้ว',
+    'vhMoreLikeThis': 'เรื่องที่คล้ายกัน',
+    'vhUpNext': 'ถัดไป',
+    'vhUpNextIn': 'ถัดไปใน {s}',
+    'vhPlayNow': 'เล่นเลย',
+    'vhStillWatching': 'ยังดูอยู่ไหม?',
+    'vhKeepWatching': 'ดูต่อ',
     'vhAlbumVideos': 'วิดีโอ {n} รายการ',
     'vhAlbumPhotos': 'รูป {n} รูป',
     'vhAlbumVideo1': 'วิดีโอ 1 รายการ',

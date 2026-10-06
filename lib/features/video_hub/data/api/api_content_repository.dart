@@ -304,6 +304,10 @@ class ApiContentRepository implements ContentRepository {
     for (final entry in body.whereType<Map<String, dynamic>>()) {
       final items = _titles(entry['items']);
       if (items.isEmpty) continue;
+      final resume = <String, ResumeHint>{
+        for (final m in (entry['items'] as List).whereType<Map<String, dynamic>>())
+          if (ResumeHint.fromJson(m['resume']) case final h?) '${m['id']}': h,
+      };
       rows.add(ContentRow(
         key: '${entry['key']}',
         fallbackTitle: '${entry['title'] ?? entry['key']}',
@@ -313,6 +317,7 @@ class ApiContentRepository implements ContentRepository {
         categoryId: entry['category'] is String ? entry['category'] as String : null,
         fallbackTitleMm:
             entry['title_mm'] is String ? entry['title_mm'] as String : null,
+        resume: resume,
       ));
     }
     return rows;
@@ -728,13 +733,19 @@ class ApiContentRepository implements ContentRepository {
         final m = row.cast<String, dynamic>();
         final isPhoto = m['kind'] == 'photo';
 
-        // A photo with no URL cannot be drawn, and a clip with no id cannot be
-        // requested. Either way there is nothing to show, so it is skipped
-        // rather than added as a tile that does nothing when tapped.
+        // A clip with no id cannot be requested, and is skipped.
+        //
+        // A photo with no URL is one this viewer has not paid for: since
+        // migration 041 the server sends a locked photo's blurhash and NOT
+        // its address. It stays in the album, frosted behind its lock —
+        // "eleven more like this" is the offer. Without even a blurhash there
+        // is nothing to draw, and it is skipped.
         final url = m['url'] as String?;
         final id = '${m['id'] ?? ''}';
         if (id.isEmpty) continue;
-        if (isPhoto && (url == null || url.isEmpty)) continue;
+        final preview = m['preview'] is String ? m['preview'] as String : null;
+        final withheld = isPhoto && (url == null || url.isEmpty);
+        if (withheld && (preview == null || preview.isEmpty)) continue;
 
         items.add(AlbumItem(
           id: id,
@@ -752,7 +763,8 @@ class ApiContentRepository implements ContentRepository {
           height: _int(m['height']),
           isMain: m['is_main'] == true,
           bytes: _int(m['bytes']),
-          preview: m['preview'] is String ? m['preview'] as String : null,
+          preview: preview,
+          withheld: withheld,
         ));
       }
       return items;
@@ -917,6 +929,10 @@ class ApiContentRepository implements ContentRepository {
   }
 
   // ---- parsing ------------------------------------------------------------
+
+  /// A title card as the server sends it (`_card` in migration 039, the
+  /// same columns as `title_cards`).
+  static VideoContent titleFromJson(Map<String, dynamic> m) => _titleFrom(m);
 
   static List<VideoContent> _titles(dynamic body) {
     if (body is! List) return const <VideoContent>[];

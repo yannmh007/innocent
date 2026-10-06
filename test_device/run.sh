@@ -183,12 +183,18 @@ for flow in $FLOWS; do
       bounds=$(adb exec-out cat /sdcard/ui_mode.xml 2>/dev/null \
         | grep -o 'resource-id="player-screen-mode"[^>]*bounds="[^"]*"' \
         | grep -o 'bounds="[^"]*"' | head -1)
-      [ -n "$bounds" ] && break
+      if [ -n "$bounds" ]; then
+        # The whole dump with the controls up: what TalkBack is told, to set
+        # against the app's own view of it ("LAB sem" in lab_trace.txt).
+        adb exec-out cat /sdcard/ui_mode.xml > "$OUT/ui_controls_$sfx.xml" 2>/dev/null || true
+        break
+      fi
       sleep 4.5 # they were up and that tap hid them; let them settle hidden
     done
     log "$flow: screen button $bounds (screen ${w}x${h}, attempt $attempt)"
-    # Run 37280515740: inside the player every accessibility node came back
-    # as the whole screen, so its centre is the video, not the button. Then
+    # Run 37280515740: the button's id came back on a full-screen node (its
+    # name and id had merged into the node above; fixed in the app, run
+    # 37308309328), so its centre was the video. If that recurs,
     # press where the button is drawn, measured on the lab's screenshots
     # (portrait 830,2280 of 1080x2400; landscape 2150,954 of
     # 2400x1080, run 37281576125).
@@ -213,6 +219,10 @@ for flow in $FLOWS; do
         sleep 0.7
       done
       log "$flow: pressed $bx,$by five times"
+      # Again, the controls still up from the last press: is the first dump
+      # wrong only because the app had just been asked for its semantics?
+      adb shell uiautomator dump /sdcard/ui_mode2.xml >/dev/null 2>&1
+      adb exec-out cat /sdcard/ui_mode2.xml > "$OUT/ui_controls2_$sfx.xml" 2>/dev/null || true
     fi
     ;;
   esac

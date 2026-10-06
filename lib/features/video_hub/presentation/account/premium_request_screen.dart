@@ -3,10 +3,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/localization/app_strings.dart';
+import '../../data/api/api_exception.dart';
 import '../../domain/account.dart';
 import '../account_provider.dart';
 import '../video_hub_theme.dart';
 import '../widgets/vh_insets.dart';
+import 'receipt_picker.dart';
 
 /// KPay payment instructions, and the form that records the claim.
 ///
@@ -34,6 +36,14 @@ class _PremiumRequestScreenState
   final TextEditingController _sender = TextEditingController();
   bool _busy = false;
   bool _submitted = false;
+
+  /// The receipt's screenshot — the proof (migration 040). The transaction
+  /// id is optional once there is one.
+  Uint8List? _proof;
+
+  /// The transaction id field, folded away until asked for: most people do
+  /// not know what it is, and a field they cannot fill is where they stop.
+  bool _showTxn = false;
 
   /// audit_video_hub.md M1. There was no such field, because there was no
   /// catch: `_submit` was try/finally. On a timeout the spinner became a
@@ -63,22 +73,42 @@ class _PremiumRequestScreenState
   }
 
   Future<void> _submit() async {
-    if (_reference.text.trim().isEmpty) return;
+    final s = AppStrings.of(context);
+    if (_proof == null && _reference.text.trim().isEmpty) {
+      setState(() => _error = s.vhPayNeedProof);
+      return;
+    }
     setState(() {
       _busy = true;
       _error = null;
     });
     try {
+      final proof = _proof == null ? null : await shrinkReceipt(_proof!);
+      final price = ref
+          .read(paymentInstructionsProvider)
+          .asData
+          ?.value
+          .prices[widget.planId];
       await ref.read(accountRepositoryProvider).submitPremiumRequest(
             planId: widget.planId,
             reference: _reference.text.trim(),
             senderPhone: _sender.text.trim().isEmpty
                 ? null
                 : _sender.text.trim(),
+            proof: proof,
+            priceShown: price,
           );
       ref.invalidate(myPremiumRequestsProvider);
       if (!mounted) return;
       setState(() => _submitted = true);
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      final s = AppStrings.of(context);
+      setState(() => _error = e.kind == ApiErrorKind.tooManyRequests
+          ? s.vhPayTooMany
+          : (e.code == 'bad_image' || e.code == 'too_big')
+              ? s.vhPayBadImage
+              : s.vhPaySubmitFailed);
     } catch (_) {
       // The message says NOTHING WAS RECORDED, deliberately. A user who is
       // unsure whether their claim went through submits again, and a second
@@ -138,18 +168,56 @@ class _PremiumRequestScreenState
                       planId: widget.planId,
                     ),
                   ),
-                  _Step(number: 2, title: s.vhPayStep2),
+                  _Step(
+                    number: 2,
+                    title: s.vhPayStep2,
+                    // One tap to the wallet, with the number already copied
+                    // from the card above.
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: VH.s3),
+                      child: OutlinedButton.icon(
+                        onPressed: () => _openKpay(context),
+                        icon: const Icon(Icons.open_in_new_rounded, size: 18),
+                        label: Text(s.vhPayOpenKpay),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: VH.textPrimary,
+                          side: const BorderSide(color: VH.hairline),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(VH.rControl),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                   _Step(
                     number: 3,
                     title: s.vhPayStep3,
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
                         const SizedBox(height: VH.s3),
-                        _Field(
-                          controller: _reference,
-                          hint: s.vhPayReferenceHint,
-                          keyboardType: TextInputType.text,
+                        ReceiptPicker(
+                          selected: _proof,
+                          onChanged: (b) => setState(() {
+                            _proof = b;
+                            _error = null;
+                          }),
                         ),
+                        const SizedBox(height: VH.s3),
+                        if (_showTxn || _reference.text.isNotEmpty)
+                          _Field(
+                            controller: _reference,
+                            hint: s.vhPayReferenceHint,
+                            keyboardType: TextInputType.text,
+                          )
+                        else
+                          TextButton.icon(
+                            onPressed: () => setState(() => _showTxn = true),
+                            icon: const Icon(Icons.add_rounded, size: 18),
+                            label: Text(s.vhPayAddTxn),
+                            style: TextButton.styleFrom(
+                                foregroundColor: VH.textSecondary),
+                          ),
                         const SizedBox(height: VH.s3),
                         _Field(
                           controller: _sender,
@@ -256,6 +324,25 @@ class _PremiumRequestScreenState
               ],
             ),
     );
+  }
+}
+
+/// KPay's package. Opening it saves hunting for the wallet on the home
+/// screen with the amount and the number in mind.
+const String _kpayPackage = 'com.kbzbank.kpaycustomer';
+
+Future<void> _openKpay(BuildContext context) async {
+  bool opened = false;
+  try {
+    opened = await const MethodChannel('mx_clone/apps').invokeMethod<bool>(
+            'launchPackage', <String, dynamic>{'package': _kpayPackage}) ??
+        false;
+  } catch (_) {}
+  if (!opened && context.mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(AppStrings.of(context).vhPayNoKpay),
+      duration: const Duration(seconds: 2),
+    ));
   }
 }
 

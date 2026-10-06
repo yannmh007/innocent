@@ -276,4 +276,8 @@ class Ev {
   static const String downloadComplete = 'download_complete';
   static const String appOpen = 'app_open';
   static const String error = 'error';
+
+  /// Taken out of Continue watching by hand (migration 039). The server
+  /// leaves the title out of the row until it is played again.
+  static const String cwRemove = 'cw_remove';
 }
