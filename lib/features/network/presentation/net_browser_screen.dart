@@ -78,7 +78,7 @@ class _NetBrowserScreenState extends ConsumerState<NetBrowserScreen> {
     try {
       var target = path;
       if (target == null || target.isEmpty) {
-        final r = await channel.connect(await _spec());
+        final r = await channel.connect(await _spec(), fresh: false);
         _home = r.home;
         target = r.home;
       }

@@ -62,10 +62,15 @@ class NetChannel {
   }
 
   /// Signs in; returns the start folder and the server's fingerprint.
+  /// [fresh] signs in again even over a live session (the form's test);
+  /// false reuses one (the browser, opened right after the form).
   Future<({String home, String? fingerprint})> connect(
-      Map<String, dynamic> spec) async {
-    final m = await _call<Map<dynamic, dynamic>>('connect',
-        <String, dynamic>{'spec': spec}, const Duration(seconds: 45));
+      Map<String, dynamic> spec,
+      {bool fresh = true}) async {
+    final m = await _call<Map<dynamic, dynamic>>(
+        'connect',
+        <String, dynamic>{'spec': spec, 'fresh': fresh},
+        const Duration(seconds: 45));
     return (
       home: m['home'] as String,
       fingerprint: m['fingerprint'] as String?

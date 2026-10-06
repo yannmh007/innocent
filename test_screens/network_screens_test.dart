@@ -16,7 +16,8 @@ class _FakeChannel extends NetChannel {
   final String? fail;
 
   @override
-  Future<({String home, String? fingerprint})> connect(Map<String, dynamic> spec) async {
+  Future<({String home, String? fingerprint})> connect(Map<String, dynamic> spec,
+      {bool fresh = true}) async {
     if (fail != null) throw NetFailure(fail!);
     return (home: '/Movies', fingerprint: null);
   }

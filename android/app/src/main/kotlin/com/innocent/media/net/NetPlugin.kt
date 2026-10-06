@@ -84,10 +84,15 @@ object NetPlugin {
             val value: Any? = when (call.method) {
                 "connect" -> {
                     val spec = spec(call.argument<Map<String, Any?>>("spec")!!)
-                    // A test connection is always a fresh login, never a pooled one.
-                    forget(spec.id)
-                    val c = open(spec)
-                    mapOf("home" to c.client.home(), "fingerprint" to c.client.fingerprint)
+                    // The form's test is always a fresh login; the browser
+                    // opening right after it reuses that one (fresh=false).
+                    val c = if (call.argument<Boolean>("fresh") != false) {
+                        forget(spec.id)
+                        open(spec).client
+                    } else {
+                        sessionFor(spec.id) ?: open(spec).client
+                    }
+                    mapOf("home" to c.home(), "fingerprint" to c.fingerprint)
                 }
                 "list" -> {
                     val spec = spec(call.argument<Map<String, Any?>>("spec")!!)
