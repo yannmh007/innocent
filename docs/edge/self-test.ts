@@ -71,7 +71,60 @@ function asAnon(path: string, init: RequestInit = {}) {
   });
 }
 
-Deno.serve(async () => {
+// ── ADMINS ONLY (security review 2026-10-05) ────────────────────────────────
+// This function was deployed with verify_jwt off and no check of its own, so
+// anybody on the internet could run it — and it answers with what it found
+// (key lengths, table errors, object keys), using the service key. Now only
+// a console admin (editor or owner) may, with the same MFA rule as the
+// console (studio.ts whoIsAsking).
+const GATE_RANK: Record<string, number> = { viewer: 1, uploader: 2, editor: 3, owner: 4 };
+
+async function adminGate(req: Request): Promise<Response | null> {
+  const no = (code: string, status: number) => new Response(
+    JSON.stringify({ error: code }),
+    { status, headers: { 'Content-Type': 'application/json' } });
+  const url = Deno.env.get('SUPABASE_URL') ?? '';
+  const key = Deno.env.get('SB_SERVICE_KEY') ??
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+  const anon = Deno.env.get('SB_ANON_KEY') ?? Deno.env.get('SUPABASE_ANON_KEY') ?? '';
+  const auth = req.headers.get('Authorization') ?? '';
+  if (!auth.toLowerCase().startsWith('bearer ') || !url || !key) {
+    return no('not_signed_in', 401);
+  }
+  const u = await fetch(`${url}/auth/v1/user`, {
+    headers: { Authorization: auth, apikey: anon || key },
+  });
+  if (!u.ok) return no('not_signed_in', 401);
+  const id = (await u.json())?.id;
+  if (typeof id !== 'string' || !id) return no('not_signed_in', 401);
+  const r = await fetch(`${url}/rest/v1/rpc/admin_resolve`, {
+    method: 'POST',
+    headers: { apikey: key, Authorization: `Bearer ${key}`,
+               'Content-Type': 'application/json' },
+    body: JSON.stringify({ p_user: id }),
+  });
+  if (!r.ok) return no('admin_lookup_failed', 500);
+  const rows = await r.json();
+  const row = Array.isArray(rows) ? rows[0] : null;
+  if (!row || (GATE_RANK[String(row.role ?? '')] ?? 0) < GATE_RANK.editor) {
+    return no('not_an_admin', 403);
+  }
+  if (row.require_mfa === true) {
+    try {
+      const part = auth.slice(7).split('.')[1] ?? '';
+      const b = part.replace(/-/g, '+').replace(/_/g, '/');
+      const claims = JSON.parse(atob(b + '='.repeat((4 - b.length % 4) % 4)));
+      if (claims.aal !== 'aal2') return no('mfa_required', 403);
+    } catch {
+      return no('mfa_required', 403);
+    }
+  }
+  return null;
+}
+
+Deno.serve(async (req) => {
+  const refused = await adminGate(req);
+  if (refused) return refused;
   checks.length = 0;
 
   // --- 0. the function's own prerequisites ---------------------------------
