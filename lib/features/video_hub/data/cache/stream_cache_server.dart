@@ -465,7 +465,9 @@ class StreamCacheServer {
       parallel = true;
       gone?.parallel = true;
       upstream = _lanesFetch(src, pos, stretchEnd, entry.total,
-          gone: () => gone?.value ?? false);
+          gone: () => gone?.value ?? false,
+          measured: (bytes, ms) =>
+              _recordThroughput(bytes, Duration(milliseconds: ms)));
     } else {
       final fetchEnd = min(min(pos + _chunk, until) - 1, entry.total - 1);
       if (fetchEnd < pos) return pos;
@@ -502,7 +504,9 @@ class StreamCacheServer {
       }
       sent = min(sent, written);
       final took = DateTime.now().difference(startedAt);
-      _recordThroughput(sent, took);
+      // A parallel stretch measures its own lanes (see [_lanesFetch]); this
+      // figure includes the time the player was not reading.
+      if (!parallel) _recordThroughput(sent, took);
       if (sent >= 1024 * 1024) {
         // Includes any time the player was not reading (its buffer full),
         // so a floor on the line's speed, not a measurement of it.
@@ -700,11 +704,34 @@ class StreamCacheServer {
   /// An expired link on the FIRST part is renewed and the stretch starts
   /// again, as a single request's would; later, a refused part ends the
   /// stretch and the serve loop renews on its next pass.
+  ///
+  /// [measured] gets the line's speed the way ExoPlayer's bandwidth meter
+  /// takes it: bytes over the time at least one lane was actually
+  /// transferring. Time the player spent not reading — its buffer full, the
+  /// window of parts full — is not on the clock, so Auto does not read a
+  /// fast line as a slow one and pick a rung below what it can carry.
   Stream<List<int>> _lanesFetch(_Source src, int start, int end, int total,
-      {required bool Function() gone}) async* {
+      {required bool Function() gone,
+      void Function(int bytes, int ms)? measured}) async* {
     const partBytes = RangedFetch.defaultPartBytes;
     final window = lanes * 2;
+
     for (var attempt = 0; attempt < 2; attempt++) {
+      // Per attempt: parts killed by the last one still settle afterwards,
+      // and must not move this attempt's clock.
+      var inFlight = 0, bytesDone = 0, activeMs = 0, activeFrom = 0;
+      var measuring = true;
+      final clock = Stopwatch()..start();
+      void began() {
+        if (inFlight++ == 0) activeFrom = clock.elapsedMilliseconds;
+      }
+
+      void ended(int bytes) {
+        if (!measuring) return;
+        bytesDone += bytes;
+        if (--inFlight == 0) activeMs += clock.elapsedMilliseconds - activeFrom;
+      }
+
       final url = Uri.parse(src.upstream);
       final parts = <_LanePart>[];
       var next = start;
@@ -723,7 +750,12 @@ class StreamCacheServer {
           final size = next == start ? 512 * 1024 : partBytes;
           final partEnd = min(next + size, end);
           final part = _LanePart(src.io, url, next, partEnd, total, _laneStall);
-          part.bytes.then((_) => topUp(), onError: (_) {
+          began();
+          part.bytes.then((b) {
+            ended(b.length);
+            topUp();
+          }, onError: (_) {
+            ended(0);
             failed = true;
           });
           parts.add(part);
@@ -755,6 +787,9 @@ class StreamCacheServer {
         for (final p in parts) {
           p.kill();
         }
+        measuring = false;
+        if (inFlight > 0) activeMs += clock.elapsedMilliseconds - activeFrom;
+        if (measured != null && bytesDone > 0) measured(bytesDone, activeMs);
       }
     }
   }
