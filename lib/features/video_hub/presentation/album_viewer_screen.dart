@@ -426,8 +426,8 @@ class _AlbumViewerScreenState extends ConsumerState<AlbumViewerScreen>
 /// is not - which is the difference between "there is more" and "there is
 /// more OF THIS".
 ///
-/// The blur is a presentation choice, not a control: these photos sit in the
-/// public bucket and their URLs are already reachable. It exists to sell.
+/// The blur sells; it does not protect. A locked photo's address is not sent
+/// at all (migration 041), so its page is drawn from its blurhash.
 class _LockedPage extends ConsumerWidget {
   final AlbumItem item;
   final String parentTitle;
@@ -446,7 +446,7 @@ class _LockedPage extends ConsumerWidget {
     // only to blur it is the cost the saver exists to avoid.
     // Frosted while the connection question is pending, for the same reason
     // as AlbumSaverGate: the first frame must not fetch.
-    final saver =
+    final saver = item.withheld ||
         ref.watch(playerSettingsProvider).get(PlayerSetting.albumDataSaver) &&
             (ref.watch(albumSaverProvider).valueOrNull ?? true);
     return Stack(

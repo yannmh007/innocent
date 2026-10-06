@@ -237,6 +237,24 @@ void main() {
       expect(canOpen(9, ViewerTier.premium), isTrue);
     });
 
+    test('a photo the server withheld never opens, whatever the tier', () {
+      // Migration 041: the server sends no address for a photo this viewer
+      // has not paid for. A tier the client believes (a stale cache, a
+      // subscription that just lapsed) must not turn that into an open tile.
+      const item = AlbumItem(
+          id: 'p0', kind: MediaKind.photo, source: MediaRef.none,
+          preview: 'LEHV6nWB2yk8', withheld: true);
+      final parent = _title(items: const <AlbumItem>[item]);
+      for (final tier in ViewerTier.values) {
+        expect(
+          policy.canOpenItem(
+              parent: parent, item: item, photoOrdinal: 0, tier: tier),
+          isFalse,
+          reason: '$tier',
+        );
+      }
+    });
+
     test('lockedCountFor is zero for premium and for free titles', () {
       final items = List<AlbumItem>.generate(6, (i) => _photo('p$i'));
       expect(policy.lockedCountFor(_title(items: items), ViewerTier.premium), 0);

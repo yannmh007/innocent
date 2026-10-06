@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Who the app trusts on the network (security review, 2026-10-05).
+
+  THE BASE stays as it was: cleartext allowed, because the player opens any
+  http:// stream a viewer pastes and the LAN transfer talks to phones on the
+  same Wi-Fi, which have no certificates. And only the SYSTEM's certificate
+  authorities — never one a user (or a captive portal, or an attacker with a
+  minute alone with the phone) installed: that is what makes an intercepting
+  proxy on the network show its own certificate and fail.
+
+  INNOCENT'S OWN SERVERS are HTTPS-only, whatever URL reaches the code: a
+  database, storage or Worker address that somehow arrived as http:// is
+  refused rather than sent in the clear, where anyone on the path could read
+  the session token in it.
+
+  No certificate PINNING, deliberately: without a store to push an urgent
+  update through, a pin that outlives its certificate breaks the updater too,
+  and every install would be stranded. docs/security.md.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">supabase.co</domain>
+        <domain includeSubdomains="true">r2.dev</domain>
+        <domain includeSubdomains="true">r2.cloudflarestorage.com</domain>
+        <domain includeSubdomains="true">workers.dev</domain>
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </domain-config>
+</network-security-config>

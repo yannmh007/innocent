@@ -812,28 +812,30 @@ class _AlbumTile extends StatelessWidget {
         // judge what they can see far more readily than what they have to
         // imagine.
         //
-        // HONEST ABOUT WHAT THIS IS: a presentation choice, not a control.
-        // These photos live in the PUBLIC bucket and their URLs are already
-        // reachable. The blur exists to sell, not to protect. Anything that
-        // genuinely must not be seen belongs in the private bucket behind
-        // request-playback, like the video.
+        // The blur sells; it does not protect. What protects a locked PHOTO
+        // is that the server no longer sends its address (migration 041):
+        // such a tile is drawn from its blurhash, the only thing it has.
+        // A locked clip still has its thumbnail, blurred here.
         //
         // TileMode.decal, not the default clamp: clamping smears the edge
         // pixels outward and paints a dirty border around every locked tile.
-        _blurred(
-          locked,
-          // Flies into the viewer and back, as a Telegram album cell does.
-          Hero(
-            tag: albumHeroTag(content, item),
-            child: PosterImage(
-              mediaRef: _art(),
-              title: '$parentTitle ${item.id}',
-              glyph: item.isVideo
-                  ? Icons.play_circle_outline
-                  : Icons.image_outlined,
+        if (item.withheld)
+          BlurPreview(hash: item.preview)
+        else
+          _blurred(
+            locked,
+            // Flies into the viewer and back, as a Telegram album cell does.
+            Hero(
+              tag: albumHeroTag(content, item),
+              child: PosterImage(
+                mediaRef: _art(),
+                title: '$parentTitle ${item.id}',
+                glyph: item.isVideo
+                    ? Icons.play_circle_outline
+                    : Icons.image_outlined,
+              ),
             ),
           ),
-        ),
         if (locked) ...<Widget>[
           // A much lighter scrim than before. The blur already removes the
           // detail; this only darkens enough for the lock glyph to read.

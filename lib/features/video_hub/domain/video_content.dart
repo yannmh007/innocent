@@ -96,6 +96,12 @@ class AlbumItem {
   /// runner has made one, and the tile is then a plain frosted square.
   final String? preview;
 
+  /// The server did not send this photo's address: this viewer has not paid
+  /// for it (migration 041). Drawn from [preview] behind a lock, and never
+  /// opened, whatever the client-side counting says — the server's answer is
+  /// the one that counts.
+  final bool withheld;
+
   const AlbumItem({
     required this.id,
     required this.kind,
@@ -108,6 +114,7 @@ class AlbumItem {
     this.isMain = false,
     this.bytes,
     this.preview,
+    this.withheld = false,
   });
 
   bool get isVideo => kind == MediaKind.video;
