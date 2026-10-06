@@ -119,6 +119,8 @@ appId: com.innocent.media
     timeout: 30000
 - takeScreenshot: 48_ftp_wrong_password
 # ── …and the right one opens it (FTP, passive, through the emulator's NAT)
+# The eye shows what was typed, so it can be corrected.
+- tapOn: "Show password"
 - tapOn: "wrong"
 - eraseText: 8
 - inputText: "netlab-pass"

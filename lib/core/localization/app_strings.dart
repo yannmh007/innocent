@@ -927,6 +927,7 @@ class AppStrings {
   String netItems(int n) => _s('netItems').replaceFirst('{n}', '$n');
   String get netAnonymousTag => _s('netAnonymousTag');
   String get netShares => _s('netShares');
+  String get netShowPassword => _s('netShowPassword');
   String get aboutCloudDrive => _s('aboutCloudDrive');
   String get cloudDriveBody => _s('cloudDriveBody');
   String get connectCloudCaps => _s('connectCloudCaps');
@@ -2713,6 +2714,7 @@ class AppStrings {
     'netItems': '{n} items',
     'netAnonymousTag': 'Anonymous',
     'netShares': 'Shares',
+    'netShowPassword': 'Show password',
     'aboutCloudDrive': 'About Cloud Drive',
     'cloudDriveBody': 'Stream videos and music directly from your cloud accounts without downloading. Connect a provider below to browse its files inside Innocent.',
     'connectCloudCaps': 'CONNECT YOUR CLOUD STORAGE',
@@ -4233,6 +4235,7 @@ class AppStrings {
     'netItems': '{n} ခု',
     'netAnonymousTag': 'Anonymous',
     'netShares': 'Share များ',
+    'netShowPassword': 'Password ပြမည်',
     'aboutCloudDrive': 'Cloud Drive အကြောင်း',
     'cloudDriveBody': 'သင့် cloud account တွေထဲက ဗီဒီယိုနဲ့ သီချင်းတွေကို ဒေါင်းလုဒ်မလုပ်ဘဲ တိုက်ရိုက် ဖွင့်နိုင်ပါမယ်။ အောက်က provider တစ်ခုကို ချိတ်ပြီး Innocent ထဲကနေ ဖိုင်တွေ ကြည့်နိုင်ပါတယ်။',
     'connectCloudCaps': 'သင့် CLOUD STORAGE ကို ချိတ်ဆက်ပါ',
@@ -5742,6 +5745,7 @@ class AppStrings {
     'netItems': '{n} รายการ',
     'netAnonymousTag': 'ไม่ระบุตัวตน',
     'netShares': 'แชร์',
+    'netShowPassword': 'แสดงรหัสผ่าน',
     'aboutCloudDrive': 'เกี่ยวกับ Cloud Drive',
     'cloudDriveBody': 'สตรีมวิดีโอและเพลงจากบัญชีคลาวด์โดยตรงไม่ต้องดาวน์โหลด เชื่อมต่อผู้ให้บริการด้านล่างเพื่อดูไฟล์ใน Innocent',
     'connectCloudCaps': 'เชื่อมต่อคลาวด์ของคุณ',

@@ -347,7 +347,8 @@ class _ServerFormDialogState extends ConsumerState<ServerFormDialog> {
                             ? Icons.visibility_off_rounded
                             : Icons.visibility_rounded,
                         size: 18,
-                        color: NetColors.hint),
+                        color: NetColors.hint,
+                        semanticLabel: s.netShowPassword),
                     onPressed: () => setState(() => _showPass = !_showPass),
                   ))),
       ],
