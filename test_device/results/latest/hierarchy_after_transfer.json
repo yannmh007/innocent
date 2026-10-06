@@ -156,8 +156,8 @@
                   },
                   "children" : [ {
                     "attributes" : {
-                      "text" : "8:57 ",
-                      "accessibilityText" : "8:57 AM",
+                      "text" : "9:24 ",
+                      "accessibilityText" : "9:24 AM",
                       "hintText" : "",
                       "ignoreBoundsFiltering" : "false",
                       "resource-id" : "com.android.systemui:id/clock",
@@ -463,7 +463,7 @@
                     }, {
                       "attributes" : {
                         "text" : "",
-                        "accessibilityText" : "Phone signal full.",
+                        "accessibilityText" : "Phone three bars.",
                         "hintText" : "",
                         "ignoreBoundsFiltering" : "false",
                         "resource-id" : "com.android.systemui:id/mobile_combo",
