@@ -1,0 +1,43 @@
+Running on test
+ > Flow network
+Launch app "com.innocent.media"... COMPLETED
+Wait for animation to end within 15000 ms... COMPLETED
+Tap on (Optional) "Wait"... WARNED
+
+
+ Warning: Element not found: Text matching regex: Wait
+Tap on (Optional) "Skip"... COMPLETED
+Tap on (Optional) "Allow.*"... WARNED
+
+
+ Warning: Element not found: Text matching regex: Allow.*
+Tap on (Optional) "Allow.*"... WARNED
+
+
+ Warning: Element not found: Text matching regex: Allow.*
+Tap on "(?s).*Tab 4 of 4.*"... COMPLETED
+Wait for animation to end within 5000 ms... COMPLETED
+Tap on "(?s).*Local Network.*"... COMPLETED
+Wait for animation to end within 5000 ms... COMPLETED
+Take screenshot 40_networks_empty... COMPLETED
+Assert that "(?s).*SUPPORTED PROTOCOLS.*" is visible... COMPLETED
+Assert that "(?s).*How to use\?.*" is visible... COMPLETED
+Tap on "(?s).*How to use\?.*"... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Take screenshot 41_networks_info... COMPLETED
+Tap on "GOT IT"... COMPLETED
+Tap on "(?s).*Add a new server.*"... COMPLETED
+Tap on "SMB"... FAILED
+
+Element not found: Text matching regex: SMB
+
+Element with Text matching regex: SMB not found. Check the UI hierarchy in debug artifacts to verify if the element exists.
+
+Possible causes:
+- Element selector may be incorrect - check if there are similar elements with slightly different names/properties.
+- Element may be temporarily unavailable due to loading state.
+- This could be a real regression that needs to be addressed.
+
+==== Debug output (logs & screenshots) ====
+
+/home/runner/work/innocent/innocent/out/maestro_out/2026-10-06_103602
