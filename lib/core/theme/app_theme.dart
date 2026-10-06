@@ -18,15 +18,20 @@ class AppTheme {
           onSurface: AppColors.darkOnSurface,
           error: AppColors.error,
         ),
+        // Every bar's title: 20 sp bold, white, with white icons beside it —
+        // the same as the four tabs (kAppBarTitleStyle). It was 20 sp medium
+        // in #E0E0E0, so a plain screen's title read greyer and lighter than
+        // a tab's, and icons a shade off the title next to them.
         appBarTheme: const AppBarTheme(
           backgroundColor: AppColors.darkBackground,
-          foregroundColor: AppColors.darkOnSurface,
+          foregroundColor: Colors.white,
           elevation: 0,
           centerTitle: false,
           titleTextStyle: TextStyle(
-            color: AppColors.darkOnSurface,
+            color: Colors.white,
             fontSize: 20,
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0,
           ),
         ),
         bottomNavigationBarTheme: const BottomNavigationBarThemeData(

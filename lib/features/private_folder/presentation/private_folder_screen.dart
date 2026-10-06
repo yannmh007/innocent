@@ -31,6 +31,7 @@ import '../../local_browser/domain/sort_options.dart';
 
 import '../../../core/localization/app_strings.dart';
 import '../../../core/ui/tv_focus.dart';
+import '../../../core/theme/tab_title.dart';
 
 part 'private_folder_pin_widgets.dart';
 
@@ -507,10 +508,7 @@ class _PrivateFolderScreenState extends ConsumerState<PrivateFolderScreen>
               ),
               title: Text(
                 AppStrings.of(context).selectedCount(_selected.length),
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 17,
-                    fontWeight: FontWeight.w600),
+                style: kAppBarTitleStyle.copyWith(color: Colors.white),
               ),
               actions: [
                 IconButton(
@@ -594,11 +592,7 @@ class _PrivateFolderScreenState extends ConsumerState<PrivateFolderScreen>
                       children: [
                         Text(
                           AppStrings.of(context).foldersTitle,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 17,
-                            fontWeight: FontWeight.w700,
-                          ),
+                          style: kAppBarTitleStyle.copyWith(color: Colors.white),
                         ),
                         Text(
                           AppStrings.of(context).vaultStorageUsed(

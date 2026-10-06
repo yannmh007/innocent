@@ -17,6 +17,7 @@ import '../downloads_screen.dart';
 import 'premium_request_screen.dart';
 import 'report_problem_sheet.dart';
 import 'sign_in_sheet.dart';
+import '../../../../core/theme/tab_title.dart';
 
 /// Account and subscription status.
 ///
@@ -105,7 +106,7 @@ class AccountScreen extends ConsumerWidget {
           icon: const Icon(Icons.arrow_back, color: VH.textPrimary),
           onPressed: () => Navigator.of(context).maybePop(),
         ),
-        title: Text(s.vhAccountTitle, style: VH.heading),
+        title: Text(s.vhAccountTitle, style: kAppBarTitleStyle.copyWith(color: VH.textPrimary)),
       ),
       body: RefreshIndicator(
         onRefresh: () async {

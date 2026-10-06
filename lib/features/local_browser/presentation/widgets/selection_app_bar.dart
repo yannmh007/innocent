@@ -11,6 +11,7 @@ import '../../domain/video.dart';
 import '../library_provider.dart';
 import 'bulk_actions.dart';
 import '../selection_provider.dart';
+import '../../../../core/theme/tab_title.dart';
 
 /// Top bar shown while videos are selected.
 ///
@@ -86,7 +87,7 @@ class SelectionAppBar extends ConsumerWidget implements PreferredSizeWidget {
         child: Text(
           s.selectedCount(
               totalVisible > 0 ? '$count / $totalVisible' : '$count'),
-          style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w400),
+          style: kAppBarTitleStyle,
           maxLines: 1,
         ),
       ),

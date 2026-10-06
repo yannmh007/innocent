@@ -7,6 +7,7 @@ import '../../../core/services/private_folder/private_folder_service.dart';
 import '../../../core/services/secure_screen/secure_screen_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../data/private_folder_providers.dart';
+import '../../../core/theme/tab_title.dart';
 
 /// Stable IDs for the built-in security questions. We store the ID (not the
 /// display text) so the question renders in the user's current language and
@@ -90,8 +91,7 @@ class _RecoverySetupScreenState extends ConsumerState<RecoverySetupScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: Text(s.recoveryOptions,
-            style: const TextStyle(
-                color: Colors.white, fontSize: 17, fontWeight: FontWeight.w700)),
+            style: kAppBarTitleStyle.copyWith(color: Colors.white)),
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
@@ -505,10 +505,7 @@ class _RecoveryFlowScreenState extends ConsumerState<RecoveryFlowScreen> {
                   }),
                 ),
           title: Text(s.recoverVault,
-              style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700)),
+              style: kAppBarTitleStyle.copyWith(color: Colors.white)),
         ),
         body: _loading
             ? const Center(child: CircularProgressIndicator())

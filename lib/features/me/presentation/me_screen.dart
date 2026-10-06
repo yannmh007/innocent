@@ -19,7 +19,6 @@ import '../../user_data/presentation/recycle_bin_screen.dart';
 import '../../user_data/presentation/watch_later_screen.dart';
 import 'app_theme_screen.dart';
 import 'backup_restore_screen.dart';
-import 'cloud_drive_screen.dart';
 import 'custom_popup_play_screen.dart';
 import 'help_screen.dart';
 import 'legal_screen.dart';
@@ -54,6 +53,12 @@ class MeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = AppStrings.of(context);
+    // The owner's order (2026-10-06), three by three:
+    //   Download        File Transfer   Private Folder
+    //   Movies          Media Manager   Local Network
+    //   Network Stream  Video Playlists Recycle Bin
+    // Cloud Drive left the grid for Backup & Restore (it is a backup and
+    // cloud-streaming feature, and not ready yet); Movies took its place.
     final grid = <_GridFeature>[
       _GridFeature(
         s.downloads,
@@ -66,15 +71,13 @@ class MeScreen extends StatelessWidget {
         s.fileTransfer,
         Icons.video_file_outlined,
         () => _open(context, const TransferScreen()),
-        // Audit fix (Transfer real impl): pick files + QR + same-Wi-Fi
-        // HTTP server wired (shelf + qr_flutter + network_info_plus).
-        // Not Wi-Fi-Direct (needs native code) but works the
-        // AirDroid / Snapdrop / Zapya-LAN way.
       ),
       _GridFeature(s.privateFolder, Icons.folder_special_outlined,
           () => context.push(Routes.privateFolder)),
-      _GridFeature(s.videoPlaylists, Icons.queue_music_outlined,
-          () => _open(context, const PlaylistsScreen())),
+      // The Movies hub, as the Video tab's red chip opens it: a top-level
+      // route on the root navigator, so the tab bar is not drawn under it.
+      _GridFeature(s.vhVideoChip, Icons.movie_outlined,
+          () => context.push(Routes.videoHub)),
       _GridFeature(s.mediaManager, Icons.folder_zip_outlined,
           () => _open(context, const MediaManagerScreen())),
       _GridFeature(
@@ -84,15 +87,8 @@ class MeScreen extends StatelessWidget {
       ),
       _GridFeature(s.networkStream, Icons.public,
           () => _open(context, const NetworkStreamScreen())),
-      _GridFeature(
-        s.cloudDrive,
-        Icons.cloud_outlined,
-        () => _open(context, const CloudDriveScreen()),
-        // Audit fix (standard high-quality): no OAuth, no actual
-        // cloud SDK integration — connect state is in-memory only.
-        // 7 providers shown but none actually authenticate.
-        comingSoon: true,
-      ),
+      _GridFeature(s.videoPlaylists, Icons.queue_music_outlined,
+          () => _open(context, const PlaylistsScreen())),
       _GridFeature(s.recycleBin, Icons.delete_outline,
           () => _open(context, const RecycleBinScreen())),
     ];
@@ -343,17 +339,7 @@ class _GridFeature {
   final String label;
   final IconData icon;
   final VoidCallback onTap;
-  /// Audit fix (Phase A1): mark features that look complete but
-  /// aren't yet wired to a real backend. The grid item renders a
-  /// "Coming soon" badge and shows a transparent disabled state.
-  /// Honest UX > confidently-broken UX.
-  final bool comingSoon;
-  _GridFeature(
-    this.label,
-    this.icon,
-    this.onTap, {
-    this.comingSoon = false,
-  });
+  _GridFeature(this.label, this.icon, this.onTap);
 }
 
 class _Card extends StatelessWidget {
@@ -379,22 +365,11 @@ class _GridItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // "Coming soon" stubs still intercept the tap with an honest
-    // snackbar, but render identically to live items — no badge, no
-    // dimming — for a clean, uniform 3x3 grid.
+    // Every tile in the grid is a working feature now: the last stub
+    // (Cloud Drive) moved into Backup & Restore, where it says "Coming soon"
+    // in words.
     return InkWell(
-      onTap: feature.comingSoon
-          ? () {
-              ScaffoldMessenger.of(context)
-                ..hideCurrentSnackBar()
-                ..showSnackBar(SnackBar(
-                  content: Text(
-                      '${feature.label} — ${AppStrings.of(context).comingSoon}'),
-                  duration: const Duration(seconds: 2),
-                  behavior: SnackBarBehavior.floating,
-                ));
-            }
-          : feature.onTap,
+      onTap: feature.onTap,
       borderRadius: BorderRadius.circular(8),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),

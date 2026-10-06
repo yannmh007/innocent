@@ -6,6 +6,7 @@ import '../../../core/services/backup/backup_service.dart';
 import '../../../core/services/cache/library_cache.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../user_data/user_data_providers.dart';
+import 'cloud_drive_screen.dart';
 
 import '../../../core/localization/app_strings.dart';
 /// Backup & Restore screen — export/import app settings and playlists.
@@ -39,13 +40,13 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
       final service = BackupService(ref.read(userDataServiceProvider));
       final path = await service.exportToFile();
       if (!mounted) return;
-      _snack('Exported to: $path');
+      final s = AppStrings.of(context);
       await Clipboard.setData(ClipboardData(text: path));
       if (!mounted) return;
-      _snack('Path copied to clipboard');
+      _snack(s.bkExported(path));
     } catch (e) {
       if (!mounted) return;
-      _snack('Export failed: $e');
+      _snack(AppStrings.of(context).bkFailed('$e'));
     } finally {
       if (mounted) setState(() => _working = false);
     }
@@ -58,9 +59,9 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
         backgroundColor: AppColors.darkSurface,
         title: Text(AppStrings.of(context).restoreBackupTitle,
             style: const TextStyle(color: Colors.white)),
-        content: const Text(
-          'This will REPLACE all current favourites, playlists, bookmarks, history, and recycle bin entries with those from the backup file.',
-          style: TextStyle(color: Colors.white70),
+        content: Text(
+          AppStrings.of(context).bkRestoreWarn,
+          style: const TextStyle(color: Colors.white70),
         ),
         actions: [
           TextButton(
@@ -86,23 +87,21 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
       final service = BackupService(ref.read(userDataServiceProvider));
       final result = await service.importFromFile();
       if (!mounted) return;
+      final s = AppStrings.of(context);
       if (result == null) {
-        _snack('No file selected');
+        _snack(s.bkNoFile);
       } else {
         ref.invalidate(favouritesProvider);
         ref.invalidate(playlistsProvider);
         ref.invalidate(bookmarksProvider);
         ref.invalidate(historyProvider);
         ref.invalidate(recycleBinProvider);
-        _snack(
-          'Restored: ${result.favourites} favourites, '
-          '${result.playlists} playlists, ${result.bookmarks} bookmarks, '
-          '${result.history} history, ${result.recycleBin} recycle',
-        );
+        _snack(s.bkRestored('${result.favourites}', '${result.playlists}',
+            '${result.bookmarks}', '${result.history}'));
       }
     } catch (e) {
       if (!mounted) return;
-      _snack('Restore failed: $e');
+      _snack(AppStrings.of(context).bkFailed('$e'));
     } finally {
       if (mounted) setState(() => _working = false);
     }
@@ -115,9 +114,9 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
         backgroundColor: AppColors.darkSurface,
         title: Text(AppStrings.of(context).clearLibraryCacheTitle,
             style: const TextStyle(color: Colors.white)),
-        content: const Text(
-          'Next app open will re-scan all videos from device storage. This is safe but slower the next time.',
-          style: TextStyle(color: Colors.white70),
+        content: Text(
+          AppStrings.of(context).bkClearWarn,
+          style: const TextStyle(color: Colors.white70),
         ),
         actions: [
           TextButton(
@@ -136,11 +135,12 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
     if (confirm != true) return;
     await LibraryCache().clear();
     if (!mounted) return;
-    _snack('Library cache cleared. Restart app to re-scan.');
+    _snack(AppStrings.of(context).bkCacheCleared);
   }
 
   @override
   Widget build(BuildContext context) {
+    final s = AppStrings.of(context);
     return Scaffold(
       backgroundColor: AppColors.darkBackground,
       appBar: AppBar(title: Text(AppStrings.of(context).backupRestore)),
@@ -160,13 +160,13 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
                     color: AppColors.accentBlue70,
                     size: 20),
                 const SizedBox(width: 12),
-                const Expanded(
+                Expanded(
                   child: Text(
-                    'Back up your settings, playlists, and preferences. Restore them on any device.',
-                    style: TextStyle(
+                    s.bkInfo,
+                    style: const TextStyle(
                       color: AppColors.white60,
                       fontSize: 13,
-                      height: 1.4,
+                      height: 1.5,
                     ),
                   ),
                 ),
@@ -182,59 +182,57 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
             ),
           ),
           const SizedBox(height: 24),
-          _sectionTitle('Backup'),
+          _sectionTitle(s.bkSectionBackup),
           const SizedBox(height: 12),
           _actionCard(
             context,
             icon: Icons.backup_outlined,
-            title: 'Export backup to file',
-            subtitle:
-                'Save favourites, playlists, bookmarks & history as JSON',
+            title: s.bkExport,
+            subtitle: s.bkExportSub,
             color: AppColors.primaryBlue,
             onTap: _working ? null : _export,
           ),
-          const SizedBox(height: 12),
-          _actionCard(
-            context,
-            icon: Icons.cloud_upload_outlined,
-            title: 'Backup to Cloud',
-            subtitle: 'Save backup to Google Drive or other cloud storage',
-            color: const Color(0xFF4CAF50),
-            onTap: () => _snack('Cloud backup requires sign-in'),
-          ),
           const SizedBox(height: 28),
-          _sectionTitle('Restore'),
+          _sectionTitle(s.bkSectionRestore),
           const SizedBox(height: 12),
           _actionCard(
             context,
             icon: Icons.restore,
-            title: 'Restore from file',
-            subtitle: 'Import settings from a local backup file',
+            title: s.bkRestoreFile,
+            subtitle: s.bkRestoreFileSub,
             color: const Color(0xFFFF9800),
             onTap: _working ? null : _import,
           ),
+          // Cloud Drive lives here now (it left the Me grid, 2026-10-06):
+          // backing up to and streaming from the cloud is one place. It
+          // replaces "Backup to Cloud" / "Restore from Cloud", two cards
+          // that only ever said "requires sign-in".
+          const SizedBox(height: 28),
+          _sectionTitle(s.bkSectionCloud),
           const SizedBox(height: 12),
           _actionCard(
             context,
-            icon: Icons.cloud_download_outlined,
-            title: 'Restore from Cloud',
-            subtitle: 'Download and restore from cloud backup',
-            color: const Color(0xFF9C27B0),
-            onTap: () => _snack('Cloud restore requires sign-in'),
+            icon: Icons.cloud_outlined,
+            title: s.cloudDrive,
+            subtitle: s.bkCloudSub,
+            color: const Color(0xFF29B6F6),
+            badge: s.comingSoon,
+            onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
+                builder: (_) => const CloudDriveScreen())),
           ),
           const SizedBox(height: 28),
-          _sectionTitle('Cache'),
+          _sectionTitle(s.bkSectionCache),
           const SizedBox(height: 12),
           _actionCard(
             context,
             icon: Icons.delete_sweep_outlined,
-            title: 'Clear library cache',
-            subtitle: 'Forces re-scan of videos on next launch',
+            title: s.bkClearCache,
+            subtitle: s.bkClearCacheSub,
             color: AppColors.error,
             onTap: _working ? null : _clearLibraryCache,
           ),
           const SizedBox(height: 28),
-          _sectionTitle('What gets backed up'),
+          _sectionTitle(s.bkWhat),
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.all(16),
@@ -244,17 +242,17 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
             ),
             child: Column(
               children: [
-                _backupItem(Icons.settings, 'App settings & preferences'),
+                _backupItem(Icons.settings, s.bkItemSettings),
                 const Divider(height: 24, color: Colors.white10),
-                _backupItem(Icons.playlist_play, 'Video playlists'),
+                _backupItem(Icons.playlist_play, s.bkItemPlaylists),
                 const Divider(height: 24, color: Colors.white10),
-                _backupItem(Icons.favorite_outline, 'Favourites'),
+                _backupItem(Icons.favorite_outline, s.bkItemFavourites),
                 const Divider(height: 24, color: Colors.white10),
-                _backupItem(Icons.history, 'Watch history'),
+                _backupItem(Icons.history, s.bkItemHistory),
                 const Divider(height: 24, color: Colors.white10),
-                _backupItem(Icons.watch_later_outlined, 'Watch later list'),
+                _backupItem(Icons.watch_later_outlined, s.bkItemLater),
                 const Divider(height: 24, color: Colors.white10),
-                _backupItem(Icons.bookmark_outline, 'Bookmarks'),
+                _backupItem(Icons.bookmark_outline, s.bkItemBookmarks),
               ],
             ),
           ),
@@ -283,6 +281,7 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
     required String subtitle,
     required Color color,
     required VoidCallback? onTap,
+    String? badge,
   }) {
     final disabled = onTap == null;
     return Material(
@@ -314,15 +313,37 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        color: disabled
-                            ? AppColors.white40
-                            : Colors.white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
-                      ),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            title,
+                            style: TextStyle(
+                              color: disabled
+                                  ? AppColors.white40
+                                  : Colors.white,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                        if (badge != null) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.white10,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(badge,
+                                style: const TextStyle(
+                                    color: AppColors.white70,
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w600)),
+                          ),
+                        ],
+                      ],
                     ),
                     const SizedBox(height: 2),
                     Text(
@@ -330,6 +351,9 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
                       style: const TextStyle(
                         color: AppColors.white50,
                         fontSize: 12,
+                        // Room for Burmese, whose stacked marks collide at
+                        // the default line height.
+                        height: 1.45,
                       ),
                     ),
                   ],

@@ -21,6 +21,7 @@ import 'widgets/vh_insets.dart';
 import '../domain/byte_size.dart';
 import '../domain/video_content.dart';
 import 'video_hub_theme.dart';
+import '../../../core/theme/tab_title.dart';
 
 /// What is kept on this device.
 ///
@@ -46,7 +47,7 @@ class DownloadsScreen extends ConsumerWidget {
         backgroundColor: VH.canvas,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
-        title: Text(s.vhLibraryDownloads, style: VH.heading),
+        title: Text(s.vhLibraryDownloads, style: kAppBarTitleStyle.copyWith(color: VH.textPrimary)),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: VH.textPrimary),
           onPressed: () => Navigator.of(context).maybePop(),

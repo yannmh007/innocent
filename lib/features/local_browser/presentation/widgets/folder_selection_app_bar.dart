@@ -13,6 +13,7 @@ import '../../domain/video.dart';
 import '../library_provider.dart';
 import 'bulk_actions.dart';
 import '../selection_provider.dart';
+import '../../../../core/theme/tab_title.dart';
 
 /// Contextual app bar shown when one or more FOLDERS are selected in the
 /// Local tab (long-press to enter). Mirrors MX Player's folder multi-select:
@@ -57,8 +58,7 @@ class FolderSelectionAppBar extends ConsumerWidget
         child: Text(
             s.selectedCount(total > 0 ? '$count / $total' : '$count'),
             maxLines: 1,
-            style: const TextStyle(
-                color: Colors.white, fontSize: 21, fontWeight: FontWeight.w400)),
+            style: kAppBarTitleStyle.copyWith(color: Colors.white)),
       ),
       actions: [
         IconButton(

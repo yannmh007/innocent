@@ -6,6 +6,7 @@ import '../../../core/services/insights/watch_insights_service.dart';
 import '../../../core/theme/app_colors.dart';
 
 import '../../../core/localization/app_strings.dart';
+import '../../../core/theme/tab_title.dart';
 /// Personal watch-history dashboard. Reads entirely from on-device
 /// history; nothing leaves the device. Surface cards from highest
 /// emotional weight (total time + streak) to most analytical
@@ -23,7 +24,7 @@ class WatchInsightsScreen extends ConsumerWidget {
         backgroundColor: AppColors.darkBackground,
         elevation: 0,
         title: Text(AppStrings.of(context).yourWatchInsights,
-            style: const TextStyle(color: Colors.white, fontSize: 18)),
+            style: kAppBarTitleStyle.copyWith(color: Colors.white)),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: insights.videosWatched == 0

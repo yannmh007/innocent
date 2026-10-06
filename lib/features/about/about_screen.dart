@@ -12,6 +12,7 @@ import '../me/presentation/help_screen.dart';
 import '../updater/data/update_check_service.dart';
 import '../updater/domain/app_release.dart';
 import '../updater/presentation/app_update_screen.dart';
+import '../../core/theme/tab_title.dart';
 
 /// Me → About.
 ///
@@ -139,10 +140,7 @@ class _AboutScreenState extends State<AboutScreen> {
         scrolledUnderElevation: 0,
         elevation: 0,
         title: Text(s.about,
-            style: const TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.w600)),
+            style: kAppBarTitleStyle.copyWith(color: Colors.white)),
       ),
       body: TabletConstrainedWidth(
         maxWidth: 640,

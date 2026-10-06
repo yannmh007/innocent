@@ -12,6 +12,7 @@ import '../../../core/services/private_folder/private_folder_service.dart';
 import '../../../core/services/secure_screen/secure_screen_service.dart';
 import 'vault_pin_flow.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/tab_title.dart';
 
 /// The provider is defined in private_folder_screen.dart; re-declared as an
 /// extern reference would be circular, so callers pass the service in.
@@ -131,8 +132,7 @@ class _AntiTheftScreenState extends ConsumerState<AntiTheftScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: Text(s.antiTheft,
-            style: const TextStyle(
-                color: Colors.white, fontSize: 17, fontWeight: FontWeight.w700)),
+            style: kAppBarTitleStyle.copyWith(color: Colors.white)),
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())

@@ -854,6 +854,33 @@ class AppStrings {
   String get networks => _s('networks');
   String get supportedProtocols => _s('supportedProtocols');
   String get howToUse => _s('howToUse');
+  // Backup & Restore
+  String get bkInfo => _s('bkInfo');
+  String get bkSectionBackup => _s('bkSectionBackup');
+  String get bkExport => _s('bkExport');
+  String get bkExportSub => _s('bkExportSub');
+  String get bkSectionRestore => _s('bkSectionRestore');
+  String get bkRestoreFile => _s('bkRestoreFile');
+  String get bkRestoreFileSub => _s('bkRestoreFileSub');
+  String get bkSectionCloud => _s('bkSectionCloud');
+  String get bkCloudSub => _s('bkCloudSub');
+  String get bkSectionCache => _s('bkSectionCache');
+  String get bkClearCache => _s('bkClearCache');
+  String get bkClearCacheSub => _s('bkClearCacheSub');
+  String get bkWhat => _s('bkWhat');
+  String get bkItemSettings => _s('bkItemSettings');
+  String get bkItemPlaylists => _s('bkItemPlaylists');
+  String get bkItemFavourites => _s('bkItemFavourites');
+  String get bkItemHistory => _s('bkItemHistory');
+  String get bkItemLater => _s('bkItemLater');
+  String get bkItemBookmarks => _s('bkItemBookmarks');
+  String get bkRestoreWarn => _s('bkRestoreWarn');
+  String get bkClearWarn => _s('bkClearWarn');
+  String bkExported(String path) => _s('bkExported').replaceAll('{path}', path);
+  String bkFailed(String e) => _s('bkFailed').replaceAll('{e}', e);
+  String get bkNoFile => _s('bkNoFile');
+  String bkRestored(String f, String p, String b, String h) => _s('bkRestored').replaceAll('{f}', f).replaceAll('{p}', p).replaceAll('{b}', b).replaceAll('{h}', h);
+  String get bkCacheCleared => _s('bkCacheCleared');
   // Local Network (lib/features/network)
   String get netHowStep1 => _s('netHowStep1');
   String get netHowStep2 => _s('netHowStep2');
@@ -2642,6 +2669,32 @@ class AppStrings {
     'networks': 'Networks',
     'supportedProtocols': 'SUPPORTED PROTOCOLS',
     'howToUse': 'How to use?',
+    'bkInfo': 'Back up your favourites, playlists, bookmarks and history, and restore them on any phone.',
+    'bkSectionBackup': 'Backup',
+    'bkExport': 'Export backup to file',
+    'bkExportSub': 'Favourites, playlists, bookmarks and history as a JSON file',
+    'bkSectionRestore': 'Restore',
+    'bkRestoreFile': 'Restore from file',
+    'bkRestoreFileSub': 'Bring back a backup file made by Innocent',
+    'bkSectionCloud': 'Cloud',
+    'bkCloudSub': 'Google Drive, OneDrive, Dropbox and more — back up and stream from the cloud',
+    'bkSectionCache': 'Cache',
+    'bkClearCache': 'Clear library cache',
+    'bkClearCacheSub': 'Videos are scanned again the next time the app opens',
+    'bkWhat': 'What gets backed up',
+    'bkItemSettings': 'App settings & preferences',
+    'bkItemPlaylists': 'Video playlists',
+    'bkItemFavourites': 'Favourites',
+    'bkItemHistory': 'Watch history',
+    'bkItemLater': 'Watch later list',
+    'bkItemBookmarks': 'Bookmarks',
+    'bkRestoreWarn': 'This REPLACES your current favourites, playlists, bookmarks, history and recycle bin with the ones in the backup file.',
+    'bkClearWarn': 'The next time the app opens it scans all videos again. Safe, just slower that once.',
+    'bkExported': 'Saved to {path} — the path is copied',
+    'bkFailed': 'Something went wrong: {e}',
+    'bkNoFile': 'No file chosen',
+    'bkRestored': 'Restored: {f} favourites, {p} playlists, {b} bookmarks, {h} history',
+    'bkCacheCleared': 'Library cache cleared. Reopen the app to scan again.',
     'netHowStep1': 'Add a server by tapping the {+} button.',
     'netHowStep2': 'Access all your remote files directly from your device.',
     'netHowStep3': 'Use the same Wi-Fi as the computer or NAS — Scan finds it for you.',
@@ -4163,6 +4216,32 @@ class AppStrings {
     'networks': 'ကွန်ရက်များ',
     'supportedProtocols': 'ပံ့ပိုးထားသော PROTOCOL များ',
     'howToUse': 'ဘယ်လိုသုံးရမလဲ?',
+    'bkInfo': 'အကြိုက်ဆုံး၊ playlist၊ bookmark နဲ့ ကြည့်ခဲ့သမျှ မှတ်တမ်းတွေကို အရန်သိမ်းပြီး ဘယ်ဖုန်းမှာမဆို ပြန်ယူနိုင်ပါတယ်။',
+    'bkSectionBackup': 'အရန်သိမ်း',
+    'bkExport': 'ဖိုင်အဖြစ် အရန်သိမ်းမည်',
+    'bkExportSub': 'အကြိုက်ဆုံး၊ playlist၊ bookmark၊ မှတ်တမ်း — JSON ဖိုင်တစ်ခုအဖြစ်',
+    'bkSectionRestore': 'ပြန်ယူ',
+    'bkRestoreFile': 'ဖိုင်ကနေ ပြန်ယူမည်',
+    'bkRestoreFileSub': 'Innocent နဲ့ သိမ်းခဲ့တဲ့ backup ဖိုင်ကို ပြန်ထည့်မည်',
+    'bkSectionCloud': 'Cloud',
+    'bkCloudSub': 'Google Drive, OneDrive, Dropbox စသည် — cloud ထဲ အရန်သိမ်းခြင်းနဲ့ တိုက်ရိုက်ကြည့်ခြင်း',
+    'bkSectionCache': 'Cache',
+    'bkClearCache': 'Library cache ရှင်းမည်',
+    'bkClearCacheSub': 'App နောက်တစ်ခါဖွင့်ရင် ဗီဒီယိုတွေကို ပြန်ရှာပါမယ်',
+    'bkWhat': 'ဘာတွေ အရန်သိမ်းမလဲ',
+    'bkItemSettings': 'App settings များ',
+    'bkItemPlaylists': 'Video playlist များ',
+    'bkItemFavourites': 'အကြိုက်ဆုံးများ',
+    'bkItemHistory': 'ကြည့်ခဲ့သော မှတ်တမ်း',
+    'bkItemLater': 'နောက်မှကြည့်မည့် စာရင်း',
+    'bkItemBookmarks': 'Bookmark များ',
+    'bkRestoreWarn': 'လက်ရှိ အကြိုက်ဆုံး၊ playlist၊ bookmark၊ မှတ်တမ်း နဲ့ Recycle Bin တွေကို backup ဖိုင်ထဲကဟာတွေနဲ့ အစားထိုးပါမယ်။',
+    'bkClearWarn': 'App နောက်တစ်ခါဖွင့်ရင် ဗီဒီယိုအားလုံးကို ပြန်ရှာပါမယ်။ ဘေးကင်းပါတယ်၊ အဲဒီတစ်ခါပဲ နည်းနည်းကြာပါမယ်။',
+    'bkExported': '{path} မှာ သိမ်းပြီးပါပြီ — လမ်းကြောင်းကို copy ကူးထားပါတယ်',
+    'bkFailed': 'မအောင်မြင်ပါ: {e}',
+    'bkNoFile': 'ဖိုင် မရွေးရသေးပါ',
+    'bkRestored': 'ပြန်ယူပြီး: အကြိုက်ဆုံး {f}၊ playlist {p}၊ bookmark {b}၊ မှတ်တမ်း {h}',
+    'bkCacheCleared': 'Library cache ရှင်းပြီးပါပြီ။ App ကို ပြန်ဖွင့်ရင် ပြန်ရှာပါမယ်။',
     'netHowStep1': '{+} ခလုတ်ကို နှိပ်ပြီး server တစ်ခု ထည့်ပါ။',
     'netHowStep2': 'ကွန်ပျူတာ / NAS ထဲက ဖိုင်တွေကို ဖုန်းကနေ တိုက်ရိုက် ကြည့်နိုင်ပါတယ်။',
     'netHowStep3': 'ကွန်ပျူတာ / NAS နဲ့ Wi-Fi တစ်ခုတည်းမှာ ရှိပါစေ — Scan က ရှာပေးပါမယ်။',
@@ -5673,6 +5752,32 @@ class AppStrings {
     'networks': 'เครือข่าย',
     'supportedProtocols': 'โปรโตคอลที่รองรับ',
     'howToUse': 'ใช้อย่างไร?',
+    'bkInfo': 'สำรองรายการโปรด เพลย์ลิสต์ บุ๊กมาร์ก และประวัติ แล้วกู้คืนบนโทรศัพท์เครื่องใดก็ได้',
+    'bkSectionBackup': 'สำรองข้อมูล',
+    'bkExport': 'ส่งออกข้อมูลสำรองเป็นไฟล์',
+    'bkExportSub': 'รายการโปรด เพลย์ลิสต์ บุ๊กมาร์ก และประวัติเป็นไฟล์ JSON',
+    'bkSectionRestore': 'กู้คืน',
+    'bkRestoreFile': 'กู้คืนจากไฟล์',
+    'bkRestoreFileSub': 'นำไฟล์สำรองที่สร้างโดย Innocent กลับมา',
+    'bkSectionCloud': 'คลาวด์',
+    'bkCloudSub': 'Google Drive, OneDrive, Dropbox และอื่นๆ — สำรองและสตรีมจากคลาวด์',
+    'bkSectionCache': 'แคช',
+    'bkClearCache': 'ล้างแคชไลบรารี',
+    'bkClearCacheSub': 'สแกนวิดีโอใหม่เมื่อเปิดแอปครั้งถัดไป',
+    'bkWhat': 'สิ่งที่สำรองไว้',
+    'bkItemSettings': 'การตั้งค่าแอป',
+    'bkItemPlaylists': 'เพลย์ลิสต์วิดีโอ',
+    'bkItemFavourites': 'รายการโปรด',
+    'bkItemHistory': 'ประวัติการดู',
+    'bkItemLater': 'รายการดูภายหลัง',
+    'bkItemBookmarks': 'บุ๊กมาร์ก',
+    'bkRestoreWarn': 'การดำเนินการนี้จะแทนที่รายการโปรด เพลย์ลิสต์ บุ๊กมาร์ก ประวัติ และถังขยะปัจจุบันด้วยข้อมูลในไฟล์สำรอง',
+    'bkClearWarn': 'เมื่อเปิดแอปครั้งถัดไปจะสแกนวิดีโอทั้งหมดใหม่ ปลอดภัย แค่ช้ากว่าปกติครั้งเดียว',
+    'bkExported': 'บันทึกที่ {path} — คัดลอกตำแหน่งแล้ว',
+    'bkFailed': 'เกิดข้อผิดพลาด: {e}',
+    'bkNoFile': 'ไม่ได้เลือกไฟล์',
+    'bkRestored': 'กู้คืนแล้ว: รายการโปรด {f} เพลย์ลิสต์ {p} บุ๊กมาร์ก {b} ประวัติ {h}',
+    'bkCacheCleared': 'ล้างแคชแล้ว เปิดแอปใหม่เพื่อสแกนอีกครั้ง',
     'netHowStep1': 'เพิ่มเซิร์ฟเวอร์โดยแตะปุ่ม {+}',
     'netHowStep2': 'เข้าถึงไฟล์ระยะไกลทั้งหมดได้โดยตรงจากอุปกรณ์ของคุณ',
     'netHowStep3': 'ใช้ Wi-Fi เดียวกับคอมพิวเตอร์หรือ NAS — กด Scan เพื่อค้นหา',

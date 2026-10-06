@@ -9,6 +9,7 @@ import '../../network/data/net_server.dart';
 import '../../network/presentation/net_browser_screen.dart';
 import '../../network/presentation/net_widgets.dart';
 import '../../network/presentation/server_form.dart';
+import '../../../core/theme/tab_title.dart';
 
 /// Me → Local Network: MX Player's "Networks" — SMB, FTP, FTPS and SFTP
 /// servers on this Wi-Fi, browsed and played like files on the phone.
@@ -93,10 +94,7 @@ class LocalNetworkScreen extends ConsumerWidget {
         backgroundColor: const Color(0xFF121212),
         foregroundColor: Colors.white,
         title: Text(s.networks,
-            style: const TextStyle(
-                color: Colors.white,
-                fontSize: 19,
-                fontWeight: FontWeight.w700)),
+            style: kAppBarTitleStyle.copyWith(color: Colors.white)),
         actions: <Widget>[
           IconButton(
             key: const ValueKey('net-info'),

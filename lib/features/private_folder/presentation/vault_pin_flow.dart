@@ -6,6 +6,7 @@ import '../../../core/services/private_folder/private_folder_service.dart';
 import '../../../core/services/secure_screen/secure_screen_service.dart';
 import '../../../core/theme/app_colors.dart';
 import 'vault_pin_pad.dart';
+import '../../../core/theme/tab_title.dart';
 
 /// Multi-step PIN entry built on [VaultPinPad].
 ///
@@ -157,10 +158,7 @@ class _VaultPinFlowScreenState extends State<VaultPinFlowScreen> {
             ),
             title: Text(
               widget.appBarTitle,
-              style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700),
+              style: kAppBarTitleStyle.copyWith(color: Colors.white),
             ),
             bottom: widget.steps.length > 1
                 ? PreferredSize(

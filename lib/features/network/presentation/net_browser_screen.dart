@@ -12,6 +12,7 @@ import '../data/net_repository.dart';
 import '../data/net_server.dart';
 import 'net_errors.dart';
 import 'net_widgets.dart';
+import '../../../core/theme/tab_title.dart';
 
 enum _Sort { name, date, size }
 
@@ -245,10 +246,7 @@ class _NetBrowserScreenState extends ConsumerState<NetBrowserScreen> {
               Text(folderName,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 17,
-                      fontWeight: FontWeight.w700)),
+                  style: kAppBarTitleStyle.copyWith(color: Colors.white)),
               Text(_server.address,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
