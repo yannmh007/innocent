@@ -76,17 +76,75 @@ Hide Keyboard... COMPLETED
 Tap on "Connect"... COMPLETED
 Assert that "(?s).*Wrong username or password.*" is visible... COMPLETED
 Take screenshot 48_ftp_wrong_password... COMPLETED
-Tap on "wrong"... FAILED
-
-Element not found: Text matching regex: wrong
-
-Element with Text matching regex: wrong not found. Check the UI hierarchy in debug artifacts to verify if the element exists.
-
-Possible causes:
-- Element selector may be incorrect - check if there are similar elements with slightly different names/properties.
-- Element may be temporarily unavailable due to loading state.
-- This could be a real regression that needs to be addressed.
-
-==== Debug output (logs & screenshots) ====
-
-/home/runner/work/innocent/innocent/out/maestro_out/2026-10-06_111122
+Tap on "Show password"... COMPLETED
+Tap on "wrong"... COMPLETED
+Erase 8 characters... COMPLETED
+Input text netlab-pass... COMPLETED
+Hide Keyboard... COMPLETED
+Tap on "Connect"... COMPLETED
+Assert that "(?s)Movies.*" is visible... COMPLETED
+Tap on "(?s)Movies.*"... COMPLETED
+Assert that "(?s)clip\.mp4.*" is visible... COMPLETED
+Take screenshot 49_ftp_movies... COMPLETED
+Tap on "(?s)clip\.mp4.*"... COMPLETED
+Wait for animation to end within 8000 ms... COMPLETED
+Take screenshot 50_ftp_playing... COMPLETED
+Press back... COMPLETED
+Repeat while "(?s).*SUPPORTED PROTOCOLS.*" is not visible (up to 6 times)...
+  Press back... COMPLETED
+  Wait for animation to end within 2000 ms... COMPLETED
+Repeat while "(?s).*SUPPORTED PROTOCOLS.*" is not visible (up to 6 times)... COMPLETED
+Tap on "(?s).*Add a new server.*"... COMPLETED
+Tap on "FTPS"... COMPLETED
+Tap on "Server IP"... COMPLETED
+Input text 10.0.2.2... COMPLETED
+Tap on "21"... COMPLETED
+Erase 4 characters... COMPLETED
+Input text 2122... COMPLETED
+Tap on "Username"... COMPLETED
+Input text netlab... COMPLETED
+Tap on "Password"... COMPLETED
+Input text netlab-pass... COMPLETED
+Hide Keyboard... COMPLETED
+Tap on "Connect"... COMPLETED
+Assert that "(?s)Movies.*" is visible... COMPLETED
+Tap on "(?s)Movies.*"... COMPLETED
+Assert that "(?s)clip\.mp4.*" is visible... COMPLETED
+Take screenshot 51_ftps_movies... COMPLETED
+Tap on "(?s)clip\.mp4.*"... COMPLETED
+Wait for animation to end within 8000 ms... COMPLETED
+Take screenshot 52_ftps_playing... COMPLETED
+Press back... COMPLETED
+Repeat while "(?s).*SUPPORTED PROTOCOLS.*" is not visible (up to 6 times)...
+  Press back... COMPLETED
+  Wait for animation to end within 2000 ms... COMPLETED
+Repeat while "(?s).*SUPPORTED PROTOCOLS.*" is not visible (up to 6 times)... COMPLETED
+Tap on "(?s).*Add a new server.*"... COMPLETED
+Tap on "SFTP"... COMPLETED
+Tap on "Server IP"... COMPLETED
+Input text 10.0.2.2... COMPLETED
+Tap on "22"... COMPLETED
+Erase 4 characters... COMPLETED
+Input text 2222... COMPLETED
+Tap on "Username"... COMPLETED
+Input text netlab... COMPLETED
+Tap on "Password"... COMPLETED
+Input text netlab-pass... COMPLETED
+Hide Keyboard... COMPLETED
+Tap on "Connect"... COMPLETED
+Assert that "(?s)media.*" is visible... COMPLETED
+Tap on "(?s)media.*"... COMPLETED
+Assert that "(?s)Movies.*" is visible... COMPLETED
+Tap on "(?s)Movies.*"... COMPLETED
+Assert that "(?s)clip\.mp4.*" is visible... COMPLETED
+Take screenshot 53_sftp_movies... COMPLETED
+Tap on "(?s)clip\.mp4.*"... COMPLETED
+Wait for animation to end within 8000 ms... COMPLETED
+Take screenshot 54_sftp_playing... COMPLETED
+Press back... COMPLETED
+Repeat while "(?s).*SUPPORTED PROTOCOLS.*" is not visible (up to 6 times)...
+  Press back... COMPLETED
+  Wait for animation to end within 2000 ms... COMPLETED
+Repeat while "(?s).*SUPPORTED PROTOCOLS.*" is not visible (up to 6 times)... COMPLETED
+Take screenshot 55_networks_four... COMPLETED
+Assert that "(?s).*sftp://10\.0\.2\.2.*" is visible... COMPLETED
