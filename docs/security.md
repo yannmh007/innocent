@@ -33,7 +33,7 @@ GitHub logins, the signing keystore.
 
 | # | Layer | Finding | Severity | Status |
 |---|---|---|---|---|
-| 1 | R2 | An R2 **secret access key** was once committed and later removed (2026-09-25). Removal does not erase history: the key is still readable in the public repository. Rewriting history was ruled out. | **Critical** | **Owner: confirm the key was rotated in Cloudflare** (§5) |
+| 1 | R2 | An R2 **secret access key** was once committed and later removed (2026-09-25). Removal does not erase history: the key is still readable in the public repository. Rewriting history was ruled out. | **Critical** | **Closed** — the owner rotated the key (confirmed 2026-10-06); the old one no longer works |
 | 2 | DB | `title_media` gave anon the public URL of **every** photo of a premium title; the app blurred locked ones, but one request opened the whole album. | High (paywall bypass) | **Fixed** — migration 041 |
 | 3 | Server | `self-test` and `backfill-dimensions` ran with verify_jwt off and no check, using the service key; `backfill-dimensions` writes to the database and spends R2 reads. | High | **Fixed** — admin + MFA gate; deployed v19 / v15 |
 | 4 | DB | `record_events` had no budget: a loop writes 200 rows a call until the free 500 MB database is full, and the rows feed Trending. | High (outage, ranking poisoning) | **Fixed** — 600/h per install, 4000/h per network, 30 000/h in all, server clock, meta ≤ 2 KB |
@@ -41,7 +41,7 @@ GitHub logins, the signing keystore.
 | 6 | DB | TRUNCATE / TRIGGER / REFERENCES granted to anon and authenticated on every table; trigger functions in the RPC surface; 5 functions without a fixed search_path. | Low (defence in depth) | **Fixed** — 041 |
 | 7 | Client | Release APK not obfuscated: every Dart class and method name ships in `libapp.so`. | Medium (reverse engineering) | **Fixed** — `--obfuscate --split-debug-info`; symbols kept encrypted |
 | 8 | Network | No network security config: backend hosts could be reached over http:// if a URL was ever downgraded. | Low | **Fixed** — own hosts HTTPS-only, system CAs only |
-| 9 | Auth | Leaked-password protection (HaveIBeenPwned) is off. | Low | **Owner: one switch** (§5) |
+| 9 | Auth | Leaked-password protection (HaveIBeenPwned) is off. | None today | Not applicable: the only sign-in is Google (no passwords), and the check is a Pro-plan feature. What matters instead: the Email and Phone providers must be OFF if unused (§5) |
 | 10 | R2 | Media is served from `pub-….r2.dev`. Cloudflare: r2.dev "is not intended for production usage and has a rate limit" (429 at hundreds of requests/second). It also names the bucket, and every request is a billable Class B read. | Medium (availability, cost) | **Owner: custom domain** (§4) |
 | 11 | Server | Worker stream tokens are not bound to a device: a token copied within its lifetime plays elsewhere. | Low (lifetime is short) | Open — see §6 |
 | 12 | Repo | Source is public. | — | Owner decision (§7) |
@@ -114,17 +114,16 @@ legitimate, so a report is rejected on its face:
 
 ## 5. Owner actions (only you can do these)
 
-1. **Rotate the R2 key** (finding 1), if not done on 2026-09-25: Cloudflare
-   → R2 → Manage R2 API Tokens → delete the token that was created before
-   2026-09-25, create a new one, and put the new secret only where it is
-   used (Supabase Edge secrets / the transcode runner) — never in the repo.
-   Until then anyone can read, overwrite or delete the buckets.
-2. **Leaked-password protection**: Supabase → Authentication → Policies →
-   enable "Prevent use of leaked passwords".
-3. **Custom domain for R2** (§4).
+1. ~~Rotate the R2 key~~ — done by the owner.
+2. **Turn off sign-in methods the app does not use**: Supabase →
+   Authentication → Sign In / Providers → **Email** and **Phone** off
+   (Google stays on). Otherwise anyone with the anon key can create
+   accounts by script (each one a "registered" viewer) and, with email
+   confirmation on, spend the project's email quota.
+3. **Custom domain for R2 and the Worker** (§4), when there is one.
 4. Drop the three `*_v039` test functions (they have no grants; this is
    tidiness): `drop function public.<name>_v039(...)`.
-5. A takedown/contact address (§4.3).
+5. A takedown/contact address and an in-app Report (§4.3).
 
 ## 6. Interception and the phone itself
 
@@ -146,15 +145,14 @@ legitimate, so a report is rejected on its face:
 A public repository can always be read and copied; nothing on GitHub
 prevents a clone. The options, strongest first:
 
-1. **Make it private.** The real protection. Costs: GitHub Pages for the
-   console needs a paid plan on a private repo (or host the console on
-   Cloudflare Pages, free); private repos get 2 000 Actions minutes a month
-   on the free plan, and this pipeline uses a large share of that — the
-   device lab most of all.
-2. **Add a proprietary LICENSE** ("All rights reserved; no permission to
-   copy, modify or distribute"). With no licence the code is already not
-   free to reuse, but an explicit one makes a DMCA takedown against a copy
-   straightforward.
+1. **Make it private** — declined by the owner (2026-10-06): public
+   repositories run GitHub Actions without the free plan's 2 000-minute
+   monthly limit, and this pipeline needs that.
+2. **A proprietary licence** — done (`LICENSE`, 2026-10-06): reading and
+   studying allowed; copying, redistributing, modifying, rebuilding or
+   publishing anything made from it is not. A legal tool, not a lock: it
+   is what makes a DMCA takedown of a copy on GitHub, an app store or a
+   host straightforward. Copyright covers the code, not the ideas in it.
 3. **Keep secrets and infrastructure out of it** (done: credentials live
    only in Supabase, Cloudflare and Actions secrets; `tool/security_invariants.py`
    rejects key-shaped strings).
