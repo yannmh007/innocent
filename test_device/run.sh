@@ -20,6 +20,28 @@ log "network: speed $NET_SPEED kbit/s, delay $NET_DELAY ms"
 adb emu network speed "$NET_SPEED" || true
 adb emu network delay "$NET_DELAY" || true
 
+# LOSS, WHICH THE EMULATOR'S OWN SHAPING CANNOT ADD. Speed and delay alone
+# leave a single TCP connection unhurt; on a real mobile line it is loss that
+# holds one connection to a fraction of the meter. The emulator's traffic
+# leaves through this host (QEMU re-originates each connection here), so
+# dropping a share of the packets ARRIVING on the host's interface is loss on
+# the very connections the app opened. Removed again at the end of the run.
+LOSS_DEV=""
+if [ -n "${NET_LOSS:-}" ]; then
+  LOSS_DEV=$(ip route | awk '/^default/ {print $5; exit}')
+  if sudo modprobe ifb 2>/dev/null && sudo ip link add ifb0 type ifb 2>/dev/null; then
+    sudo ip link set ifb0 up
+    sudo tc qdisc add dev "$LOSS_DEV" handle ffff: ingress
+    sudo tc filter add dev "$LOSS_DEV" parent ffff: protocol ip u32 match u32 0 0 \
+      action mirred egress redirect dev ifb0
+    sudo tc qdisc add dev ifb0 root netem loss "$NET_LOSS"
+    log "network: $NET_LOSS of incoming packets dropped on $LOSS_DEV"
+  else
+    log "network: could not add loss (no ifb) — speed and delay only"
+    LOSS_DEV=""
+  fi
+fi
+
 # Bytes received by the whole device, every two seconds, alongside the app's
 # CPU and memory — the ground truth to hold the app's own speed figure to.
 sampler() {
@@ -144,7 +166,23 @@ for flow in $FLOWS; do
   # The perf flows sit still for a minute; read the threads in the middle of
   # it, while the Video tab idles or the film plays.
   case "$flow" in perf_*) ( sleep 40; { echo "== during $flow"; threads; } >> "$OUT/threads.txt" ) & ;; esac
-  ( cd "$OUT/shots" && maestro test --test-output-dir "$OUT/maestro_out" "$OLDPWD/test_device/flows/$flow.yaml" ) > "$OUT/maestro_$flow.txt" 2>&1
+  # ONE FILM, TWO WAYS, ONE LINE: stream_lanes1 and stream_lanes3 play the
+  # same title through flows/stream_ab.yaml on a fresh install each (nothing
+  # of the film cached), with the proxy told how many connections to use
+  # through the lab-only lab_lanes file. The trail then reads "stream lanes=N"
+  # and its stretches and rebuffers for each.
+  file="$flow"
+  case "$flow" in stream_lanes*)
+    n="${flow#stream_lanes}"
+    adb shell am force-stop "$PKG"
+    adb shell pm clear "$PKG" >/dev/null 2>&1 || true
+    adb shell mkdir -p "/sdcard/Android/data/$PKG/files" >/dev/null 2>&1
+    adb shell "echo $n > /sdcard/Android/data/$PKG/files/lab_lanes"
+    log "stream A/B: lanes=$n (fresh install state)"
+    file=stream_ab
+    ;;
+  esac
+  ( cd "$OUT/shots" && maestro test --test-output-dir "$OUT/maestro_out" "$OLDPWD/test_device/flows/$file.yaml" ) > "$OUT/maestro_$flow.txt" 2>&1
   log "flow $flow exit $?"
   # STACKED DOUBLE TAP. Maestro needs most of a second per tap, longer than
   # the 0.6 s a run of taps stays open, so it can only ever make a plain
@@ -254,6 +292,10 @@ for flow in $FLOWS; do
 done
 adb shell dumpsys cpuinfo 2>/dev/null | head -40 > "$OUT/cpuinfo.txt" || true
 
+if [ -n "$LOSS_DEV" ]; then
+  sudo tc qdisc del dev "$LOSS_DEV" ingress 2>/dev/null || true
+  sudo ip link del ifb0 2>/dev/null || true
+fi
 kill $SAMPLER $LOGCAT 2>/dev/null
 adb shell dumpsys meminfo "$PKG" > "$OUT/meminfo.txt" 2>&1
 adb shell dumpsys gfxinfo "$PKG" > "$OUT/gfxinfo.txt" 2>&1
