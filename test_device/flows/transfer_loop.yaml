@@ -1,0 +1,76 @@
+# Send and receive for real, on one phone: SEND a video (Turbo on, as the
+# app defaults), then on RECEIVE type the share's own address and pull it
+# back through the app's receiver — picker, server, Turbo address, isolate
+# download, saving, history. Two phones run exactly these two halves.
+appId: com.innocent.media
+---
+- launchApp
+- waitForAnimationToEnd:
+    timeout: 15000
+- tapOn:
+    text: "Wait"
+    optional: true
+- tapOn:
+    text: "Skip"
+    optional: true
+- tapOn:
+    text: "Allow.*"
+    optional: true
+- tapOn:
+    text: "Allow.*"
+    optional: true
+- tapOn:
+    text: "(?s).*Tab 3 of 4.*"
+- waitForAnimationToEnd:
+    timeout: 5000
+- tapOn: "SEND"
+- extendedWaitUntil:
+    visible: "(?s).*Select Files To Send.*"
+    timeout: 15000
+- tapOn: "(?s)Movies\\n.*"
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: 60_loop_picker_folder
+- tapOn: "(?s).*movie_.*"
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: 61_loop_picked
+- assertVisible: "(?s)Send.*\\(1\\).*"
+- tapOn: "(?s)Send.*\\(1\\).*"
+- tapOn:
+    text: "Allow"
+    optional: true
+- tapOn:
+    text: "While using the app"
+    optional: true
+- extendedWaitUntil:
+    visible: "http://.*"
+    timeout: 70000
+- takeScreenshot: 62_loop_sharing
+- copyTextFrom: "http://.*"
+- back
+- waitForAnimationToEnd:
+    timeout: 3000
+# Home shows the live share; receive from it.
+- tapOn: "RECEIVE"
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn: "(?s).*or enter address.*"
+- tapOn: "http://192\\.168\\.0\\.12.*"
+- pasteText
+- hideKeyboard
+- tapOn: "(?s)Connect"
+- extendedWaitUntil:
+    visible: "(?s).*Download all.*"
+    timeout: 30000
+- takeScreenshot: 63_loop_manifest
+- tapOn: "(?s).*Download all.*"
+- extendedWaitUntil:
+    visible: "(?s).*All files received.*"
+    timeout: 90000
+- takeScreenshot: 64_loop_received
+- back
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: 65_loop_home
+- assertVisible: "(?s).*Received files.*1.*"

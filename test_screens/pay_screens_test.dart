@@ -28,6 +28,11 @@ void main() {
   screens('pay', () => const PremiumRequestScreen(planId: 'monthly'),
       overrides: pay, scrolls: 1);
 
+  // After sending: what happens next.
+  screens('pay_sent',
+      () => const PremiumRequestScreen(planId: 'monthly', startSubmitted: true),
+      overrides: pay, phones: const [small]);
+
   Uint8List? receipt;
   setUpAll(() async {
     // A synthetic receipt: a white card with a green tick band.

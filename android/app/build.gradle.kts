@@ -196,6 +196,11 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+        // Local Network (net/): Apache Commons Net times every FTP data
+        // connection with java.time.Duration, which Android only has from
+        // API 26. Desugaring supplies it on 24–25 (Android 7), the same way
+        // Material Files ships the same library.
+        isCoreLibraryDesugaringEnabled = true
     }
 
     kotlinOptions {
@@ -355,6 +360,19 @@ android {
             if (labAbi != "x86") excludes.add("lib/x86/**")
             if (labAbi != "x86_64") excludes.add("lib/x86_64/**")
         }
+        // The Local Network jars (smbj, sshj, jcifs-ng, Commons Net/IO) each
+        // carry their own licence files and Java-9 module descriptors under
+        // the same names; none of it is read at run time.
+        resources {
+            excludes += setOf(
+                "META-INF/DEPENDENCIES",
+                "META-INF/LICENSE*",
+                "META-INF/NOTICE*",
+                "META-INF/INDEX.LIST",
+                "**/module-info.class",
+                "META-INF/versions/9/OSGI-INF/MANIFEST.MF",
+            )
+        }
     }
 }
 
@@ -393,6 +411,26 @@ dependencies {
     // Lifts Android 9+ hidden-API restrictions so libadb's TLS handshake can
     // reach the platform Conscrypt provider (see InnocentApplication).
     implementation("org.lsposed.hiddenapibypass:hiddenapibypass:4.3")
+
+    // ── Local Network (Me → Local Network; net/, tested in tool/netlab) ──
+    // The set Android's open-source file managers settled on (Material
+    // Files): smbj for SMB 2/3, jcifs-ng for share lists and SMB1-only
+    // boxes, Apache Commons Net for FTP/FTPS, sshj for SFTP. All share the
+    // ONE BouncyCastle above (bcprov via libadb-android, bcpkix here), so
+    // their own BC pins are excluded.
+    // smbj stays at 0.11.5: 0.12.0 broke anonymous / guest sign-in
+    // (hierynomus/smbj#792), and "Connect Anonymously" is MX's default.
+    implementation("com.hierynomus:smbj:0.11.5") {
+        exclude(group = "org.bouncycastle")
+    }
+    implementation("eu.agno3.jcifs:jcifs-ng:2.1.10") {
+        exclude(group = "org.bouncycastle")
+    }
+    implementation("com.hierynomus:sshj:0.40.0") {
+        exclude(group = "org.bouncycastle")
+    }
+    implementation("commons-net:commons-net:3.13.0")
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
 
     // v0.93 Backend 2 (iADB app client). Four prebuilt AARs from the iAdb-api
     // project (github.com/FileContainer/iAdb-api, a simplified Shizuku-API fork

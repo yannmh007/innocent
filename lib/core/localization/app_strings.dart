@@ -701,6 +701,34 @@ class AppStrings {
   String get shareScanHint => _s('shareScanHint');
   String get urlCopied => _s('urlCopied');
   String get stopSharing => _s('stopSharing');
+  String trSharingNow(int n) => _s('trSharingNow').replaceFirst('{n}', '$n');
+  String get trSharingComputer => _s('trSharingComputer');
+  String get trViaWifi => _s('trViaWifi');
+  String get trReceivingNow => _s('trReceivingNow');
+  String get trConnectedTo => _s('trConnectedTo');
+  String get trResumeReceiving => _s('trResumeReceiving');
+  String get trShareWith => _s('trShareWith');
+  String get trPc => _s('trPc');
+  String get trTablet => _s('trTablet');
+  String get trSendAppShort => _s('trSendAppShort');
+  String get trTurboOnShort => _s('trTurboOnShort');
+  String get trTurboOffShort => _s('trTurboOffShort');
+  String get trSettings => _s('trSettings');
+  String get trHistoryEmpty => _s('trHistoryEmpty');
+  String get trPcTitle => _s('trPcTitle');
+  String get trPcLead => _s('trPcLead');
+  String get trPcStep1Turbo => _s('trPcStep1Turbo');
+  String get trPcStep1Wifi => _s('trPcStep1Wifi');
+  String get trPcStep2 => _s('trPcStep2');
+  String get trPcStep3 => _s('trPcStep3');
+  String trPcConnected(int n) => _s('trPcConnected').replaceFirst('{n}', '$n');
+  String trPcSharingFiles(int n) =>
+      _s('trPcSharingFiles').replaceFirst('{n}', '$n');
+  String get trPcStart => _s('trPcStart');
+  String get trScanTitle => _s('trScanTitle');
+  String get trScanBody => _s('trScanBody');
+  String get trSendTitle => _s('trSendTitle');
+  String get trReceiveTitle => _s('trReceiveTitle');
   String get cameraPermissionNeeded => _s('cameraPermissionNeeded');
   String get scanQrCode => _s('scanQrCode');
   String get orEnterAddress => _s('orEnterAddress');
@@ -826,6 +854,80 @@ class AppStrings {
   String get networks => _s('networks');
   String get supportedProtocols => _s('supportedProtocols');
   String get howToUse => _s('howToUse');
+  // Local Network (lib/features/network)
+  String get netHowStep1 => _s('netHowStep1');
+  String get netHowStep2 => _s('netHowStep2');
+  String get netHowStep3 => _s('netHowStep3');
+  String get netGotIt => _s('netGotIt');
+  String netNewServer(String p) => _s('netNewServer').replaceAll('{p}', p);
+  String netEditServer(String p) => _s('netEditServer').replaceAll('{p}', p);
+  String get netScan => _s('netScan');
+  String get netServer => _s('netServer');
+  String get netServerIp => _s('netServerIp');
+  String get netServerName => _s('netServerName');
+  String get netServerNameHint => _s('netServerNameHint');
+  String get netSharedPath => _s('netSharedPath');
+  String get netSharedPathHint => _s('netSharedPathHint');
+  String get netFolder => _s('netFolder');
+  String get netFolderHint => _s('netFolderHint');
+  String get netPort => _s('netPort');
+  String get netUsername => _s('netUsername');
+  String get netPassword => _s('netPassword');
+  String get netAnonymous => _s('netAnonymous');
+  String get netMode => _s('netMode');
+  String get netActive => _s('netActive');
+  String get netPassive => _s('netPassive');
+  String get netEncoding => _s('netEncoding');
+  String get netSecurityMode => _s('netSecurityMode');
+  String get netImplicit => _s('netImplicit');
+  String get netExplicit => _s('netExplicit');
+  String get netUseKey => _s('netUseKey');
+  String get netPrivateKey => _s('netPrivateKey');
+  String get netPrivateKeyHint => _s('netPrivateKeyHint');
+  String get netChooseKeyFile => _s('netChooseKeyFile');
+  String get netPassphrase => _s('netPassphrase');
+  String get netPassphraseHint => _s('netPassphraseHint');
+  String get netConnect => _s('netConnect');
+  String get netSave => _s('netSave');
+  String get netConnecting => _s('netConnecting');
+  String netErrUnreachable(String host) => _s('netErrUnreachable').replaceAll('{host}', host);
+  String get netErrTimeout => _s('netErrTimeout');
+  String get netErrAuth => _s('netErrAuth');
+  String get netErrAuthAnon => _s('netErrAuthAnon');
+  String get netErrDenied => _s('netErrDenied');
+  String get netErrNotFound => _s('netErrNotFound');
+  String get netErrTls => _s('netErrTls');
+  String get netErrKey => _s('netErrKey');
+  String netErrProtocol(String p) => _s('netErrProtocol').replaceAll('{p}', p);
+  String get netErrHostKey => _s('netErrHostKey');
+  String get netErrHostKeyBody => _s('netErrHostKeyBody');
+  String get netTrustNew => _s('netTrustNew');
+  String get netErrNeedHost => _s('netErrNeedHost');
+  String get netErrBadPort => _s('netErrBadPort');
+  String get netErrNeedKey => _s('netErrNeedKey');
+  String get netErrUnsupported => _s('netErrUnsupported');
+  String get netScanTitle => _s('netScanTitle');
+  String netScanning(String p, String subnet) => _s('netScanning').replaceAll('{p}', p).replaceAll('{subnet}', subnet);
+  String netScanNone(String p) => _s('netScanNone').replaceAll('{p}', p);
+  String get netScanNoneHint => _s('netScanNoneHint');
+  String get netScanAgain => _s('netScanAgain');
+  String get netScanNoWifi => _s('netScanNoWifi');
+  String get netMyServers => _s('netMyServers');
+  String get netEdit => _s('netEdit');
+  String get netDelete => _s('netDelete');
+  String netDeleteConfirm(String name) => _s('netDeleteConfirm').replaceAll('{name}', name);
+  String get netDeleteBody => _s('netDeleteBody');
+  String get netEmptyFolder => _s('netEmptyFolder');
+  String get netRetry => _s('netRetry');
+  String get netSortName => _s('netSortName');
+  String get netSortDate => _s('netSortDate');
+  String get netSortSize => _s('netSortSize');
+  String get netMediaOnly => _s('netMediaOnly');
+  String get netNotPlayable => _s('netNotPlayable');
+  String netItems(int n) => _s('netItems').replaceFirst('{n}', '$n');
+  String get netAnonymousTag => _s('netAnonymousTag');
+  String get netShares => _s('netShares');
+  String get netShowPassword => _s('netShowPassword');
   String get aboutCloudDrive => _s('aboutCloudDrive');
   String get cloudDriveBody => _s('cloudDriveBody');
   String get connectCloudCaps => _s('connectCloudCaps');
@@ -1440,6 +1542,15 @@ class AppStrings {
   String get vhPayStep1 => _s('vhPayStep1');
   String get vhPayStep2 => _s('vhPayStep2');
   String get vhPayStep3 => _s('vhPayStep3');
+  String get vhPayStep4 => _s('vhPayStep4');
+  String get vhPayNoteHint => _s('vhPayNoteHint');
+  String get vhPayPrivate => _s('vhPayPrivate');
+  String get vhPayNextTitle => _s('vhPayNextTitle');
+  String get vhPayNext1 => _s('vhPayNext1');
+  String get vhPayNext2 => _s('vhPayNext2');
+  String get vhPayNext3 => _s('vhPayNext3');
+  String get vhRequestYouWrote => _s('vhRequestYouWrote');
+  String get vhRequestReply => _s('vhRequestReply');
   String get vhPayPayee => _s('vhPayPayee');
   String get vhPayNumber => _s('vhPayNumber');
   String get vhPayAmount => _s('vhPayAmount');
@@ -1656,6 +1767,33 @@ class AppStrings {
   };
 
   static const Map<String, String> _en = <String, String>{
+    'trSharingNow': 'Sharing {n} file(s) — tap to see',
+    'trSharingComputer': 'Sharing with a computer — tap to see',
+    'trViaWifi': 'Over your Wi-Fi',
+    'trReceivingNow': 'Receiving — tap to see',
+    'trConnectedTo': 'Connected — tap to see',
+    'trResumeReceiving': 'A download stopped part-way — tap to resume',
+    'trShareWith': 'Share with',
+    'trPc': 'PC',
+    'trTablet': 'Tablet',
+    'trSendAppShort': 'Give a friend the app — no internet needed',
+    'trTurboOnShort': 'On — phone to phone, no router. Fastest.',
+    'trTurboOffShort': 'Off — sends through your Wi-Fi router',
+    'trSettings': 'Transfer settings',
+    'trHistoryEmpty': 'Files you receive appear here.',
+    'trPcTitle': 'Share with a computer, iPhone or tablet',
+    'trPcLead': 'Nothing to install on the other side — just a web browser. Download from this phone, or drop files to send them to it.',
+    'trPcStep1Turbo': 'On the computer or iPhone, join this Wi-Fi — or scan the code with its camera',
+    'trPcStep1Wifi': 'Put the computer or iPhone on the same Wi-Fi as this phone',
+    'trPcStep2': 'Open this address in its browser',
+    'trPcStep3': 'Download files, or drop files on the page to send them here',
+    'trPcConnected': '{n} connected',
+    'trPcSharingFiles': 'Sharing {n} file(s) from this phone',
+    'trPcStart': 'Start',
+    'trScanTitle': 'Scan the sender\'s QR code',
+    'trScanBody': 'On the other phone, tap Send — a QR code appears. Scan it and the two phones connect directly.',
+    'trSendTitle': 'Send',
+    'trReceiveTitle': 'Receive',
     'subSecColor': 'Color',
     'subSecBorder': 'Border',
     'subSecAppearance': 'Appearance',
@@ -1869,13 +2007,22 @@ class AppStrings {
     'vhPayStep1': 'Send the amount to this KPay account',
     'vhPayStep2': 'Pay in KPay, then take a screenshot of the receipt',
     'vhPayStep3': 'Attach the receipt screenshot',
+    'vhPayStep4': 'Add a note (optional)',
+    'vhPayNoteHint': 'e.g. Paid from my sister\'s KPay around 9 pm. Anything we should know.',
+    'vhPayPrivate': 'Only the Innocent team sees your receipt.',
+    'vhPayNextTitle': 'What happens next',
+    'vhPayNext1': 'Your receipt has been received.',
+    'vhPayNext2': 'We check it against the KPay statement.',
+    'vhPayNext3': 'Premium turns on by itself — you will see it in Account.',
+    'vhRequestYouWrote': 'You wrote',
+    'vhRequestReply': 'From Innocent',
     'vhPayPayee': 'Account name',
     'vhPayNumber': 'KPay number',
     'vhPayAmount': 'Amount',
     'vhPayCopied': 'Copied',
     'vhPayReferenceHint': 'KPay transaction ID',
     'vhPaySenderHint': 'Number you paid from',
-    'vhPaySubmit': 'Submit payment',
+    'vhPaySubmit': 'Send for review',
     'vhPayManualNote': 'Payments are checked by hand against the KPay statement, so activation is not instant.',
     'vhPayOpenKpay': 'Open KPay',
     'vhPayNoKpay': 'KPay is not installed on this phone.',
@@ -2495,6 +2642,79 @@ class AppStrings {
     'networks': 'Networks',
     'supportedProtocols': 'SUPPORTED PROTOCOLS',
     'howToUse': 'How to use?',
+    'netHowStep1': 'Add a server by tapping the {+} button.',
+    'netHowStep2': 'Access all your remote files directly from your device.',
+    'netHowStep3': 'Use the same Wi-Fi as the computer or NAS — Scan finds it for you.',
+    'netGotIt': 'GOT IT',
+    'netNewServer': 'New {p} Server',
+    'netEditServer': 'Edit {p} Server',
+    'netScan': 'Scan',
+    'netServer': 'Server',
+    'netServerIp': 'Server IP',
+    'netServerName': 'Server Name',
+    'netServerNameHint': 'My Server Name (optional)',
+    'netSharedPath': 'Shared Path',
+    'netSharedPathHint': 'Shared Path (optional)',
+    'netFolder': 'Folder',
+    'netFolderHint': 'Start folder (optional)',
+    'netPort': 'Port',
+    'netUsername': 'Username',
+    'netPassword': 'Password',
+    'netAnonymous': 'Connect Anonymously',
+    'netMode': 'Mode',
+    'netActive': 'Active',
+    'netPassive': 'Passive',
+    'netEncoding': 'Encoding',
+    'netSecurityMode': 'Security Mode',
+    'netImplicit': 'Implicit',
+    'netExplicit': 'Explicit',
+    'netUseKey': 'Login With Private Key',
+    'netPrivateKey': 'Private Key',
+    'netPrivateKeyHint': 'Paste the key (-----BEGIN …)',
+    'netChooseKeyFile': 'Choose key file',
+    'netPassphrase': 'Passphrase',
+    'netPassphraseHint': 'Passphrase (optional)',
+    'netConnect': 'Connect',
+    'netSave': 'Save',
+    'netConnecting': 'Connecting…',
+    'netErrUnreachable': 'Can\'t reach {host}. Is it switched on, and on the same Wi-Fi as this phone?',
+    'netErrTimeout': 'The server took too long to answer. Try again.',
+    'netErrAuth': 'Wrong username or password.',
+    'netErrAuthAnon': 'This server does not allow anonymous access. Untick "Connect Anonymously" and sign in.',
+    'netErrDenied': 'This account is not allowed to open that folder.',
+    'netErrNotFound': 'That share or folder does not exist on the server.',
+    'netErrTls': 'Secure connection failed. Check the port and the Security Mode.',
+    'netErrKey': 'The private key could not be read. Check the key and its passphrase.',
+    'netErrProtocol': 'The server answered, but not as {p}. Check the protocol and the port.',
+    'netErrHostKey': 'This server\'s identity has changed since you last connected.',
+    'netErrHostKeyBody': 'If you reinstalled or replaced the server, trust the new identity. If not, someone on this network may be pretending to be it.',
+    'netTrustNew': 'Trust new identity',
+    'netErrNeedHost': 'Enter the server address.',
+    'netErrBadPort': 'Port must be between 1 and 65535.',
+    'netErrNeedKey': 'Paste or choose a private key.',
+    'netErrUnsupported': 'Local Network is not available on this device.',
+    'netScanTitle': 'Servers on this Wi-Fi',
+    'netScanning': 'Looking for {p} servers on {subnet}…',
+    'netScanNone': 'No {p} servers found on this Wi-Fi.',
+    'netScanNoneHint': 'Turn on file sharing on the computer, or type its address.',
+    'netScanAgain': 'Scan again',
+    'netScanNoWifi': 'Connect to Wi-Fi to scan.',
+    'netMyServers': 'Servers',
+    'netEdit': 'Edit',
+    'netDelete': 'Delete',
+    'netDeleteConfirm': 'Remove "{name}"?',
+    'netDeleteBody': 'Its saved password is removed from this phone too.',
+    'netEmptyFolder': 'This folder is empty',
+    'netRetry': 'Retry',
+    'netSortName': 'Name',
+    'netSortDate': 'Date',
+    'netSortSize': 'Size',
+    'netMediaOnly': 'Media only',
+    'netNotPlayable': 'This file can\'t be played here.',
+    'netItems': '{n} items',
+    'netAnonymousTag': 'Anonymous',
+    'netShares': 'Shares',
+    'netShowPassword': 'Show password',
     'aboutCloudDrive': 'About Cloud Drive',
     'cloudDriveBody': 'Stream videos and music directly from your cloud accounts without downloading. Connect a provider below to browse its files inside Innocent.',
     'connectCloudCaps': 'CONNECT YOUR CLOUD STORAGE',
@@ -3070,6 +3290,33 @@ class AppStrings {
   };
 
   static const Map<String, String> _my = <String, String>{
+    'trSharingNow': 'ဖိုင် {n} ခု ပို့နေသည် — ကြည့်ရန် နှိပ်ပါ',
+    'trSharingComputer': 'ကွန်ပျူတာနဲ့ မျှဝေနေသည် — ကြည့်ရန် နှိပ်ပါ',
+    'trViaWifi': 'Wi-Fi router ကနေ',
+    'trReceivingNow': 'လက်ခံနေသည် — ကြည့်ရန် နှိပ်ပါ',
+    'trConnectedTo': 'ချိတ်ဆက်ထားသည် — ကြည့်ရန် နှိပ်ပါ',
+    'trResumeReceiving': 'Download တစ်ဝက်တစ်ပျက် ရပ်သွားသည် — ဆက်ရန် နှိပ်ပါ',
+    'trShareWith': 'မျှဝေရန်',
+    'trPc': 'PC',
+    'trTablet': 'Tablet',
+    'trSendAppShort': 'သူငယ်ချင်းဆီ app ကို ပို့ပါ — အင်တာနက် မလို',
+    'trTurboOnShort': 'ဖွင့်ထား — ဖုန်းချင်း တိုက်ရိုက်၊ router မလို။ အမြန်ဆုံး။',
+    'trTurboOffShort': 'ပိတ်ထား — Wi-Fi router ကနေ ပို့ပါမယ်',
+    'trSettings': 'ပို့ခြင်း ဆက်တင်များ',
+    'trHistoryEmpty': 'လက်ခံရရှိတဲ့ ဖိုင်တွေ ဒီမှာ ပေါ်ပါမယ်။',
+    'trPcTitle': 'ကွန်ပျူတာ၊ iPhone၊ Tablet နဲ့ မျှဝေရန်',
+    'trPcLead': 'တစ်ဖက်မှာ ဘာမှ install မလုပ်ရ — browser တစ်ခုပဲ လိုပါတယ်။ ဒီဖုန်းထဲက ဖိုင်တွေ download ဆွဲပါ၊ ဒါမှမဟုတ် ဖိုင်တွေကို page ပေါ် ဆွဲချပြီး ဖုန်းဆီ ပို့ပါ။',
+    'trPcStep1Turbo': 'ကွန်ပျူတာ (သို့) iPhone ကို ဒီ Wi-Fi နဲ့ ချိတ်ပါ — ဒါမှမဟုတ် ကင်မရာနဲ့ ဒီ QR ကို scan ဖတ်ပါ',
+    'trPcStep1Wifi': 'ကွန်ပျူတာ (သို့) iPhone ကို ဒီဖုန်းနဲ့ Wi-Fi တစ်ခုတည်းမှာ ချိတ်ပါ',
+    'trPcStep2': 'သူ့ browser မှာ ဒီလိပ်စာကို ဖွင့်ပါ',
+    'trPcStep3': 'ဖိုင်တွေ download ဆွဲပါ၊ ဒါမှမဟုတ် page ပေါ်ကို ဖိုင်တွေ ဆွဲချပြီး ဒီဖုန်းဆီ ပို့ပါ',
+    'trPcConnected': '{n} ခု ချိတ်ထားသည်',
+    'trPcSharingFiles': 'ဒီဖုန်းကနေ ဖိုင် {n} ခု မျှဝေနေသည်',
+    'trPcStart': 'စတင်မည်',
+    'trScanTitle': 'ပို့သူရဲ့ QR ကို scan ဖတ်ပါ',
+    'trScanBody': 'တစ်ဖက်ဖုန်းမှာ "ပို့မယ်" ကို နှိပ်ပါ — QR ပေါ်လာပါမယ်။ Scan ဖတ်လိုက်တာနဲ့ ဖုန်းနှစ်လုံး တိုက်ရိုက် ချိတ်ဆက်ပါမယ်။',
+    'trSendTitle': 'ပို့မယ်',
+    'trReceiveTitle': 'လက်ခံမယ်',
     'subSecColor': 'အရောင်',
     'subSecBorder': 'ဘောင်',
     'subSecAppearance': 'အသွင်အပြင်',
@@ -3282,13 +3529,22 @@ class AppStrings {
     'vhPayStep1': 'ဤ KPay အကောင့်သို့ ငွေလွှဲပါ',
     'vhPayStep2': 'KPay မှာ ငွေလွှဲပြီး ပြေစာကို screenshot ရိုက်ပါ',
     'vhPayStep3': 'ပြေစာ screenshot ကို ထည့်ပါ',
+    'vhPayStep4': 'မှတ်ချက် ရေးရန် (မရေးလည်းရ)',
+    'vhPayNoteHint': 'ဥပမာ — ညီမရဲ့ KPay ကနေ ည ၉ နာရီလောက်က လွှဲထားပါတယ်။ သိစေချင်တာ ရှိရင် ရေးပါ။',
+    'vhPayPrivate': 'သင့်ပြေစာကို Innocent အဖွဲ့ကသာ မြင်ရပါသည်။',
+    'vhPayNextTitle': 'နောက်ဘာဖြစ်မလဲ',
+    'vhPayNext1': 'သင့်ပြေစာ ရောက်ရှိပါပြီ။',
+    'vhPayNext2': 'KPay စာရင်းနဲ့ တိုက်စစ်ပါမယ်။',
+    'vhPayNext3': 'Premium အလိုလို ပွင့်လာပါမယ် — Account မှာ မြင်ရပါမယ်။',
+    'vhRequestYouWrote': 'သင်ရေးခဲ့သည်',
+    'vhRequestReply': 'Innocent ထံမှ',
     'vhPayPayee': 'အကောင့်အမည်',
     'vhPayNumber': 'KPay နံပါတ်',
     'vhPayAmount': 'ပမာဏ',
     'vhPayCopied': 'ကူးယူပြီး',
     'vhPayReferenceHint': 'KPay လွှဲပြောင်းမှု ID',
     'vhPaySenderHint': 'ငွေလွှဲသည့် နံပါတ်',
-    'vhPaySubmit': 'ငွေပေးချေမှု တင်ရန်',
+    'vhPaySubmit': 'စစ်ဆေးရန် ပို့မည်',
     'vhPayManualNote': 'ငွေပေးချေမှုများကို KPay စာရင်းနှင့် လူကိုယ်တိုင် တိုက်စစ်သဖြင့် ချက်ချင်း အသက်မဝင်ပါ။',
     'vhPayOpenKpay': 'KPay ဖွင့်မည်',
     'vhPayNoKpay': 'ဒီဖုန်းမှာ KPay မရှိပါ။',
@@ -3907,6 +4163,79 @@ class AppStrings {
     'networks': 'ကွန်ရက်များ',
     'supportedProtocols': 'ပံ့ပိုးထားသော PROTOCOL များ',
     'howToUse': 'ဘယ်လိုသုံးရမလဲ?',
+    'netHowStep1': '{+} ခလုတ်ကို နှိပ်ပြီး server တစ်ခု ထည့်ပါ။',
+    'netHowStep2': 'ကွန်ပျူတာ / NAS ထဲက ဖိုင်တွေကို ဖုန်းကနေ တိုက်ရိုက် ကြည့်နိုင်ပါတယ်။',
+    'netHowStep3': 'ကွန်ပျူတာ / NAS နဲ့ Wi-Fi တစ်ခုတည်းမှာ ရှိပါစေ — Scan က ရှာပေးပါမယ်။',
+    'netGotIt': 'နားလည်ပြီ',
+    'netNewServer': '{p} Server အသစ်',
+    'netEditServer': '{p} Server ပြင်ရန်',
+    'netScan': 'Scan',
+    'netServer': 'Server',
+    'netServerIp': 'Server IP',
+    'netServerName': 'အမည်',
+    'netServerNameHint': 'ကိုယ်ပိုင်အမည် (မထည့်လည်းရ)',
+    'netSharedPath': 'Shared Path',
+    'netSharedPathHint': 'Share အမည် (မထည့်လည်းရ)',
+    'netFolder': 'Folder',
+    'netFolderHint': 'စဖွင့်မည့် folder (မထည့်လည်းရ)',
+    'netPort': 'Port',
+    'netUsername': 'Username',
+    'netPassword': 'Password',
+    'netAnonymous': 'အကောင့်မပါဘဲ ချိတ်မည်',
+    'netMode': 'Mode',
+    'netActive': 'Active',
+    'netPassive': 'Passive',
+    'netEncoding': 'Encoding',
+    'netSecurityMode': 'Security Mode',
+    'netImplicit': 'Implicit',
+    'netExplicit': 'Explicit',
+    'netUseKey': 'Private Key ဖြင့် ဝင်မည်',
+    'netPrivateKey': 'Private Key',
+    'netPrivateKeyHint': 'Key ကို ကူးထည့်ပါ (-----BEGIN …)',
+    'netChooseKeyFile': 'Key ဖိုင် ရွေးမည်',
+    'netPassphrase': 'Passphrase',
+    'netPassphraseHint': 'Passphrase (မထည့်လည်းရ)',
+    'netConnect': 'ချိတ်မည်',
+    'netSave': 'သိမ်းမည်',
+    'netConnecting': 'ချိတ်ဆက်နေသည်…',
+    'netErrUnreachable': '{host} ကို မရောက်နိုင်ပါ။ စက်ဖွင့်ထားလား၊ ဒီဖုန်းနဲ့ Wi-Fi တစ်ခုတည်းမှာ ရှိလား စစ်ပါ။',
+    'netErrTimeout': 'Server က အဖြေပြန်တာ ကြာလွန်းပါတယ်။ ထပ်စမ်းပါ။',
+    'netErrAuth': 'Username သို့မဟုတ် Password မှားနေပါတယ်။',
+    'netErrAuthAnon': 'ဒီ server က အကောင့်မပါဘဲ ဝင်ခွင့်မပေးပါ။ "အကောင့်မပါဘဲ ချိတ်မည်" ကို ဖြုတ်ပြီး Username/Password ထည့်ပါ။',
+    'netErrDenied': 'ဒီအကောင့်နဲ့ အဲဒီ folder ကို ဖွင့်ခွင့် မရှိပါ။',
+    'netErrNotFound': 'အဲဒီ share / folder က server ပေါ်မှာ မရှိပါ။',
+    'netErrTls': 'လုံခြုံသော ချိတ်ဆက်မှု မအောင်မြင်ပါ။ Port နဲ့ Security Mode ကို စစ်ပါ။',
+    'netErrKey': 'Private key ကို ဖတ်မရပါ။ Key နဲ့ passphrase ကို စစ်ပါ။',
+    'netErrProtocol': 'Server က ပြန်ဖြေပေမယ့် {p} မဟုတ်ပါ။ Protocol နဲ့ Port ကို စစ်ပါ။',
+    'netErrHostKey': 'နောက်ဆုံးချိတ်ခဲ့ချိန်ကနေ ဒီ server ရဲ့ identity ပြောင်းသွားပါပြီ။',
+    'netErrHostKeyBody': 'Server ကို ပြန်တင်ထား/အသစ်လဲထားတာဆိုရင် identity အသစ်ကို ယုံကြည်ပါ။ မဟုတ်ရင် ဒီ network ပေါ်မှာ တစ်ယောက်ယောက်က အယောင်ဆောင်နေတာ ဖြစ်နိုင်ပါတယ်။',
+    'netTrustNew': 'Identity အသစ်ကို ယုံမည်',
+    'netErrNeedHost': 'Server လိပ်စာ ထည့်ပါ။',
+    'netErrBadPort': 'Port က 1 မှ 65535 ကြား ဖြစ်ရပါမယ်။',
+    'netErrNeedKey': 'Private key ကူးထည့်ပါ သို့မဟုတ် ဖိုင်ရွေးပါ။',
+    'netErrUnsupported': 'ဒီစက်မှာ Local Network မရနိုင်ပါ။',
+    'netScanTitle': 'ဒီ Wi-Fi ပေါ်က Server များ',
+    'netScanning': '{subnet} ပေါ်မှာ {p} server ရှာနေသည်…',
+    'netScanNone': 'ဒီ Wi-Fi ပေါ်မှာ {p} server မတွေ့ပါ။',
+    'netScanNoneHint': 'ကွန်ပျူတာမှာ file sharing ဖွင့်ပါ၊ သို့မဟုတ် လိပ်စာကို ကိုယ်တိုင် ရိုက်ထည့်ပါ။',
+    'netScanAgain': 'ထပ်ရှာမည်',
+    'netScanNoWifi': 'Scan ဖို့ Wi-Fi ချိတ်ပါ။',
+    'netMyServers': 'Server များ',
+    'netEdit': 'ပြင်မည်',
+    'netDelete': 'ဖျက်မည်',
+    'netDeleteConfirm': '"{name}" ကို ဖယ်ရှားမလား?',
+    'netDeleteBody': 'သိမ်းထားတဲ့ password ကိုပါ ဒီဖုန်းထဲကနေ ဖျက်ပါမယ်။',
+    'netEmptyFolder': 'ဒီ folder ထဲမှာ ဘာမှမရှိပါ',
+    'netRetry': 'ထပ်စမ်းမည်',
+    'netSortName': 'အမည်',
+    'netSortDate': 'ရက်စွဲ',
+    'netSortSize': 'အရွယ်အစား',
+    'netMediaOnly': 'Media သာ',
+    'netNotPlayable': 'ဒီဖိုင်ကို ဒီမှာ ဖွင့်လို့ မရပါ။',
+    'netItems': '{n} ခု',
+    'netAnonymousTag': 'Anonymous',
+    'netShares': 'Share များ',
+    'netShowPassword': 'Password ပြမည်',
     'aboutCloudDrive': 'Cloud Drive အကြောင်း',
     'cloudDriveBody': 'သင့် cloud account တွေထဲက ဗီဒီယိုနဲ့ သီချင်းတွေကို ဒေါင်းလုဒ်မလုပ်ဘဲ တိုက်ရိုက် ဖွင့်နိုင်ပါမယ်။ အောက်က provider တစ်ခုကို ချိတ်ပြီး Innocent ထဲကနေ ဖိုင်တွေ ကြည့်နိုင်ပါတယ်။',
     'connectCloudCaps': 'သင့် CLOUD STORAGE ကို ချိတ်ဆက်ပါ',
@@ -4472,6 +4801,33 @@ class AppStrings {
   };
 
   static const Map<String, String> _th = <String, String>{
+    'trSharingNow': 'กำลังส่ง {n} ไฟล์ — แตะเพื่อดู',
+    'trSharingComputer': 'กำลังแชร์กับคอมพิวเตอร์ — แตะเพื่อดู',
+    'trViaWifi': 'ผ่าน Wi-Fi ของคุณ',
+    'trReceivingNow': 'กำลังรับ — แตะเพื่อดู',
+    'trConnectedTo': 'เชื่อมต่อแล้ว — แตะเพื่อดู',
+    'trResumeReceiving': 'การดาวน์โหลดหยุดกลางคัน — แตะเพื่อทำต่อ',
+    'trShareWith': 'แชร์กับ',
+    'trPc': 'PC',
+    'trTablet': 'แท็บเล็ต',
+    'trSendAppShort': 'ส่งแอปให้เพื่อน — ไม่ต้องใช้อินเทอร์เน็ต',
+    'trTurboOnShort': 'เปิด — ส่งตรงระหว่างโทรศัพท์ ไม่ผ่านเราเตอร์ เร็วที่สุด',
+    'trTurboOffShort': 'ปิด — ส่งผ่านเราเตอร์ Wi-Fi',
+    'trSettings': 'การตั้งค่าการส่ง',
+    'trHistoryEmpty': 'ไฟล์ที่คุณได้รับจะแสดงที่นี่',
+    'trPcTitle': 'แชร์กับคอมพิวเตอร์ iPhone หรือแท็บเล็ต',
+    'trPcLead': 'ไม่ต้องติดตั้งอะไรอีกฝั่ง แค่มีเบราว์เซอร์ ดาวน์โหลดจากโทรศัพท์นี้ หรือลากไฟล์มาวางเพื่อส่งมาที่นี่',
+    'trPcStep1Turbo': 'ให้คอมพิวเตอร์หรือ iPhone เชื่อม Wi-Fi นี้ — หรือสแกนโค้ดด้วยกล้อง',
+    'trPcStep1Wifi': 'ให้คอมพิวเตอร์หรือ iPhone อยู่ใน Wi-Fi เดียวกับโทรศัพท์นี้',
+    'trPcStep2': 'เปิดที่อยู่นี้ในเบราว์เซอร์',
+    'trPcStep3': 'ดาวน์โหลดไฟล์ หรือลากไฟล์วางบนหน้าเพื่อส่งมาที่นี่',
+    'trPcConnected': 'เชื่อมต่อแล้ว {n}',
+    'trPcSharingFiles': 'กำลังแชร์ {n} ไฟล์จากโทรศัพท์นี้',
+    'trPcStart': 'เริ่ม',
+    'trScanTitle': 'สแกน QR ของผู้ส่ง',
+    'trScanBody': 'บนโทรศัพท์อีกเครื่อง แตะส่ง — จะมี QR ขึ้นมา สแกนแล้วโทรศัพท์ทั้งสองจะเชื่อมต่อกันโดยตรง',
+    'trSendTitle': 'ส่ง',
+    'trReceiveTitle': 'รับ',
     'subSecColor': 'สี',
     'subSecBorder': 'ขอบ',
     'subSecAppearance': 'ลักษณะ',
@@ -4683,13 +5039,22 @@ class AppStrings {
     'vhPayStep1': 'โอนยอดไปยังบัญชี KPay นี้',
     'vhPayStep2': 'โอนใน KPay แล้วแคปหน้าจอใบเสร็จ',
     'vhPayStep3': 'แนบภาพหน้าจอใบเสร็จ',
+    'vhPayStep4': 'เพิ่มหมายเหตุ (ไม่บังคับ)',
+    'vhPayNoteHint': 'เช่น โอนจาก KPay ของน้องสาวราว 3 ทุ่ม หรือสิ่งที่อยากให้เรารู้',
+    'vhPayPrivate': 'ใบเสร็จของคุณจะเห็นได้เฉพาะทีม Innocent',
+    'vhPayNextTitle': 'ขั้นตอนถัดไป',
+    'vhPayNext1': 'ได้รับใบเสร็จของคุณแล้ว',
+    'vhPayNext2': 'เราจะตรวจสอบกับรายการ KPay',
+    'vhPayNext3': 'Premium จะเปิดเอง — ดูได้ที่บัญชี',
+    'vhRequestYouWrote': 'คุณเขียนว่า',
+    'vhRequestReply': 'จาก Innocent',
     'vhPayPayee': 'ชื่อบัญชี',
     'vhPayNumber': 'เบอร์ KPay',
     'vhPayAmount': 'จำนวนเงิน',
     'vhPayCopied': 'คัดลอกแล้ว',
     'vhPayReferenceHint': 'รหัสธุรกรรม KPay',
     'vhPaySenderHint': 'เบอร์ที่ใช้โอน',
-    'vhPaySubmit': 'ส่งการชำระเงิน',
+    'vhPaySubmit': 'ส่งให้ตรวจสอบ',
     'vhPayManualNote': 'การชำระเงินตรวจสอบด้วยคนเทียบกับรายการ KPay จึงไม่เปิดใช้งานทันที',
     'vhPayOpenKpay': 'เปิด KPay',
     'vhPayNoKpay': 'เครื่องนี้ไม่มี KPay',
@@ -5308,6 +5673,79 @@ class AppStrings {
     'networks': 'เครือข่าย',
     'supportedProtocols': 'โปรโตคอลที่รองรับ',
     'howToUse': 'ใช้อย่างไร?',
+    'netHowStep1': 'เพิ่มเซิร์ฟเวอร์โดยแตะปุ่ม {+}',
+    'netHowStep2': 'เข้าถึงไฟล์ระยะไกลทั้งหมดได้โดยตรงจากอุปกรณ์ของคุณ',
+    'netHowStep3': 'ใช้ Wi-Fi เดียวกับคอมพิวเตอร์หรือ NAS — กด Scan เพื่อค้นหา',
+    'netGotIt': 'เข้าใจแล้ว',
+    'netNewServer': 'เซิร์ฟเวอร์ {p} ใหม่',
+    'netEditServer': 'แก้ไขเซิร์ฟเวอร์ {p}',
+    'netScan': 'สแกน',
+    'netServer': 'เซิร์ฟเวอร์',
+    'netServerIp': 'IP เซิร์ฟเวอร์',
+    'netServerName': 'ชื่อเซิร์ฟเวอร์',
+    'netServerNameHint': 'ชื่อเซิร์ฟเวอร์ของฉัน (ไม่บังคับ)',
+    'netSharedPath': 'พาธที่แชร์',
+    'netSharedPathHint': 'พาธที่แชร์ (ไม่บังคับ)',
+    'netFolder': 'โฟลเดอร์',
+    'netFolderHint': 'โฟลเดอร์เริ่มต้น (ไม่บังคับ)',
+    'netPort': 'พอร์ต',
+    'netUsername': 'ชื่อผู้ใช้',
+    'netPassword': 'รหัสผ่าน',
+    'netAnonymous': 'เชื่อมต่อแบบไม่ระบุตัวตน',
+    'netMode': 'โหมด',
+    'netActive': 'Active',
+    'netPassive': 'Passive',
+    'netEncoding': 'การเข้ารหัส',
+    'netSecurityMode': 'โหมดความปลอดภัย',
+    'netImplicit': 'Implicit',
+    'netExplicit': 'Explicit',
+    'netUseKey': 'เข้าสู่ระบบด้วย Private Key',
+    'netPrivateKey': 'Private Key',
+    'netPrivateKeyHint': 'วางคีย์ (-----BEGIN …)',
+    'netChooseKeyFile': 'เลือกไฟล์คีย์',
+    'netPassphrase': 'Passphrase',
+    'netPassphraseHint': 'Passphrase (ไม่บังคับ)',
+    'netConnect': 'เชื่อมต่อ',
+    'netSave': 'บันทึก',
+    'netConnecting': 'กำลังเชื่อมต่อ…',
+    'netErrUnreachable': 'เข้าถึง {host} ไม่ได้ เปิดเครื่องอยู่และใช้ Wi-Fi เดียวกับโทรศัพท์นี้หรือไม่?',
+    'netErrTimeout': 'เซิร์ฟเวอร์ตอบช้าเกินไป ลองอีกครั้ง',
+    'netErrAuth': 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง',
+    'netErrAuthAnon': 'เซิร์ฟเวอร์นี้ไม่อนุญาตการเข้าถึงแบบไม่ระบุตัวตน เอาเครื่องหมายออกแล้วลงชื่อเข้าใช้',
+    'netErrDenied': 'บัญชีนี้ไม่มีสิทธิ์เปิดโฟลเดอร์นั้น',
+    'netErrNotFound': 'ไม่มีแชร์หรือโฟลเดอร์นั้นบนเซิร์ฟเวอร์',
+    'netErrTls': 'การเชื่อมต่อที่ปลอดภัยล้มเหลว ตรวจสอบพอร์ตและโหมดความปลอดภัย',
+    'netErrKey': 'อ่าน Private key ไม่ได้ ตรวจสอบคีย์และ passphrase',
+    'netErrProtocol': 'เซิร์ฟเวอร์ตอบกลับ แต่ไม่ใช่ {p} ตรวจสอบโปรโตคอลและพอร์ต',
+    'netErrHostKey': 'ข้อมูลระบุตัวตนของเซิร์ฟเวอร์นี้เปลี่ยนไปตั้งแต่การเชื่อมต่อครั้งล่าสุด',
+    'netErrHostKeyBody': 'หากคุณติดตั้งใหม่หรือเปลี่ยนเซิร์ฟเวอร์ ให้เชื่อถือข้อมูลใหม่ หากไม่ใช่ อาจมีผู้ปลอมตัวบนเครือข่ายนี้',
+    'netTrustNew': 'เชื่อถือข้อมูลใหม่',
+    'netErrNeedHost': 'ใส่ที่อยู่เซิร์ฟเวอร์',
+    'netErrBadPort': 'พอร์ตต้องอยู่ระหว่าง 1 ถึง 65535',
+    'netErrNeedKey': 'วางหรือเลือก Private key',
+    'netErrUnsupported': 'อุปกรณ์นี้ใช้ Local Network ไม่ได้',
+    'netScanTitle': 'เซิร์ฟเวอร์บน Wi-Fi นี้',
+    'netScanning': 'กำลังค้นหาเซิร์ฟเวอร์ {p} บน {subnet}…',
+    'netScanNone': 'ไม่พบเซิร์ฟเวอร์ {p} บน Wi-Fi นี้',
+    'netScanNoneHint': 'เปิดการแชร์ไฟล์บนคอมพิวเตอร์ หรือพิมพ์ที่อยู่เอง',
+    'netScanAgain': 'สแกนอีกครั้ง',
+    'netScanNoWifi': 'เชื่อมต่อ Wi-Fi เพื่อสแกน',
+    'netMyServers': 'เซิร์ฟเวอร์',
+    'netEdit': 'แก้ไข',
+    'netDelete': 'ลบ',
+    'netDeleteConfirm': 'ลบ "{name}" หรือไม่?',
+    'netDeleteBody': 'รหัสผ่านที่บันทึกไว้จะถูกลบออกจากโทรศัพท์นี้ด้วย',
+    'netEmptyFolder': 'โฟลเดอร์นี้ว่างเปล่า',
+    'netRetry': 'ลองอีกครั้ง',
+    'netSortName': 'ชื่อ',
+    'netSortDate': 'วันที่',
+    'netSortSize': 'ขนาด',
+    'netMediaOnly': 'เฉพาะสื่อ',
+    'netNotPlayable': 'ไม่สามารถเล่นไฟล์นี้ได้',
+    'netItems': '{n} รายการ',
+    'netAnonymousTag': 'ไม่ระบุตัวตน',
+    'netShares': 'แชร์',
+    'netShowPassword': 'แสดงรหัสผ่าน',
     'aboutCloudDrive': 'เกี่ยวกับ Cloud Drive',
     'cloudDriveBody': 'สตรีมวิดีโอและเพลงจากบัญชีคลาวด์โดยตรงไม่ต้องดาวน์โหลด เชื่อมต่อผู้ให้บริการด้านล่างเพื่อดูไฟล์ใน Innocent',
     'connectCloudCaps': 'เชื่อมต่อคลาวด์ของคุณ',

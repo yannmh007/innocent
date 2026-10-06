@@ -1,0 +1,227 @@
+# Me → Local Network, end to end against REAL servers on the lab runner
+# (tool/netlab/servers.sh: Samba, vsftpd, OpenSSH), which the emulator
+# reaches at 10.0.2.2:
+#   SMB anonymous → share list → public/Movies → play clip.mp4
+#   Scan (SMB) finds the runner and fills the form
+#   FTP account (2121) → Movies → play
+#   FTPS explicit (2122, TLS session reuse REQUIRED by vsftpd) → play
+#   SFTP password (2222) → media/Movies → play
+#   wrong password → the sentence, not a stack trace
+appId: com.innocent.media
+---
+- launchApp
+- waitForAnimationToEnd:
+    timeout: 15000
+- tapOn:
+    text: "Wait"
+    optional: true
+- tapOn:
+    text: "Skip"
+    optional: true
+- tapOn:
+    text: "Allow.*"
+    optional: true
+- tapOn:
+    text: "Allow.*"
+    optional: true
+- tapOn:
+    text: "(?s).*Tab 4 of 4.*"
+- waitForAnimationToEnd:
+    timeout: 5000
+- tapOn: "(?s).*Local Network.*"
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: 40_networks_empty
+- assertVisible: "(?s).*SUPPORTED PROTOCOLS.*"
+- assertVisible: "(?s).*How to use\\?.*"
+# MX's (i).
+- tapOn: "(?s).*How to use\\?.*"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: 41_networks_info
+- tapOn: "GOT IT"
+
+# ── SMB, anonymous: the share list, then a film ─────────────────────────
+- tapOn: "(?s).*Add a new server.*"
+- tapOn: "SMB"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: 42_smb_form
+# Scan: the runner (10.0.2.2) answers on 445.
+- tapOn: "Scan"
+- extendedWaitUntil:
+    visible: "(?s).*10\\.0\\.2\\.2.*"
+    timeout: 30000
+- takeScreenshot: 43_smb_scan
+- tapOn: "(?s).*10\\.0\\.2\\.2.*"
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn: "Connect"
+- extendedWaitUntil:
+    visible: "(?s)public.*"
+    timeout: 45000
+- takeScreenshot: 44_smb_shares
+- assertVisible: "(?s)private.*"
+- tapOn: "(?s)public.*"
+- extendedWaitUntil:
+    visible: "(?s)Movies.*"
+    timeout: 20000
+- tapOn: "(?s)Movies.*"
+- extendedWaitUntil:
+    visible: "(?s)clip\\.mp4.*"
+    timeout: 20000
+- assertVisible: "(?s)film\\.mkv.*"
+- takeScreenshot: 45_smb_movies
+# Names with spaces and Burmese, one folder down; Back comes up one.
+- tapOn: "(?s)Sub dir.*"
+- extendedWaitUntil:
+    visible: "(?s)ငါ့ဇာတ်ကား\\.mp4.*"
+    timeout: 20000
+- assertVisible: "(?s)space name\\.mp4.*"
+- back
+- extendedWaitUntil:
+    visible: "(?s)clip\\.mp4.*"
+    timeout: 20000
+- tapOn: "(?s)clip\\.mp4.*"
+- waitForAnimationToEnd:
+    timeout: 8000
+- takeScreenshot: 46_smb_playing
+- back
+- waitForAnimationToEnd:
+    timeout: 3000
+- repeat:
+    while:
+      notVisible: "(?s).*SUPPORTED PROTOCOLS.*"
+    times: 6
+    commands:
+      - back
+      - waitForAnimationToEnd:
+          timeout: 2000
+- assertVisible: "(?s).*10\\.0\\.2\\.2.*"
+- takeScreenshot: 47_networks_list
+
+# ── a wrong password says so ───────────────────────────────────────────
+- tapOn: "(?s).*Add a new server.*"
+- tapOn: "FTP"
+- tapOn: "Server IP"
+- inputText: "10.0.2.2"
+- tapOn: "21"
+- eraseText: 4
+- inputText: "2121"
+- tapOn: "Username"
+- inputText: "netlab"
+- tapOn: "Password"
+- inputText: "wrong"
+- hideKeyboard
+- tapOn: "Connect"
+- extendedWaitUntil:
+    visible: "(?s).*Wrong username or password.*"
+    timeout: 30000
+- takeScreenshot: 48_ftp_wrong_password
+# ── …and the right one opens it (FTP, passive, through the emulator's NAT)
+# The eye shows what was typed, so it can be corrected.
+- tapOn: "Show password"
+- tapOn: "wrong"
+- eraseText: 8
+- inputText: "netlab-pass"
+- hideKeyboard
+- tapOn: "Connect"
+- extendedWaitUntil:
+    visible: "(?s)Movies.*"
+    timeout: 45000
+- tapOn: "(?s)Movies.*"
+- extendedWaitUntil:
+    visible: "(?s)clip\\.mp4.*"
+    timeout: 20000
+- takeScreenshot: 49_ftp_movies
+- tapOn: "(?s)clip\\.mp4.*"
+- waitForAnimationToEnd:
+    timeout: 8000
+- takeScreenshot: 50_ftp_playing
+- back
+- repeat:
+    while:
+      notVisible: "(?s).*SUPPORTED PROTOCOLS.*"
+    times: 6
+    commands:
+      - back
+      - waitForAnimationToEnd:
+          timeout: 2000
+
+# ── FTPS explicit: TLS on control AND data, session reuse required ──────
+- tapOn: "(?s).*Add a new server.*"
+- tapOn: "FTPS"
+- tapOn: "Server IP"
+- inputText: "10.0.2.2"
+- tapOn: "21"
+- eraseText: 4
+- inputText: "2122"
+- tapOn: "Username"
+- inputText: "netlab"
+- tapOn: "Password"
+- inputText: "netlab-pass"
+- hideKeyboard
+- tapOn: "Connect"
+- extendedWaitUntil:
+    visible: "(?s)Movies.*"
+    timeout: 45000
+- tapOn: "(?s)Movies.*"
+- extendedWaitUntil:
+    visible: "(?s)clip\\.mp4.*"
+    timeout: 20000
+- takeScreenshot: 51_ftps_movies
+- tapOn: "(?s)clip\\.mp4.*"
+- waitForAnimationToEnd:
+    timeout: 8000
+- takeScreenshot: 52_ftps_playing
+- back
+- repeat:
+    while:
+      notVisible: "(?s).*SUPPORTED PROTOCOLS.*"
+    times: 6
+    commands:
+      - back
+      - waitForAnimationToEnd:
+          timeout: 2000
+
+# ── SFTP, password ────────────────────────────────────────────────────
+- tapOn: "(?s).*Add a new server.*"
+- tapOn: "SFTP"
+- tapOn: "Server IP"
+- inputText: "10.0.2.2"
+- tapOn: "22"
+- eraseText: 4
+- inputText: "2222"
+- tapOn: "Username"
+- inputText: "netlab"
+- tapOn: "Password"
+- inputText: "netlab-pass"
+- hideKeyboard
+- tapOn: "Connect"
+- extendedWaitUntil:
+    visible: "(?s)media.*"
+    timeout: 45000
+- tapOn: "(?s)media.*"
+- extendedWaitUntil:
+    visible: "(?s)Movies.*"
+    timeout: 20000
+- tapOn: "(?s)Movies.*"
+- extendedWaitUntil:
+    visible: "(?s)clip\\.mp4.*"
+    timeout: 20000
+- takeScreenshot: 53_sftp_movies
+- tapOn: "(?s)clip\\.mp4.*"
+- waitForAnimationToEnd:
+    timeout: 8000
+- takeScreenshot: 54_sftp_playing
+- back
+- repeat:
+    while:
+      notVisible: "(?s).*SUPPORTED PROTOCOLS.*"
+    times: 6
+    commands:
+      - back
+      - waitForAnimationToEnd:
+          timeout: 2000
+- takeScreenshot: 55_networks_four
+- assertVisible: "(?s).*sftp://10\\.0\\.2\\.2.*"

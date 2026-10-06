@@ -91,6 +91,9 @@ class PremiumRequest {
   /// Reviewer's message — the reason on a rejection, a note on an approval.
   final String? note;
 
+  /// What the payer wrote with the receipt (migration 042), if anything.
+  final String? message;
+
   const PremiumRequest({
     required this.id,
     required this.planId,
@@ -99,6 +102,7 @@ class PremiumRequest {
     required this.submittedAt,
     this.senderPhone,
     this.note,
+    this.message,
   });
 
   bool get isPending => status == PremiumRequestStatus.pending;

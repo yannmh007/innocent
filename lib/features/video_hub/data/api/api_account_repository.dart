@@ -388,55 +388,33 @@ class ApiAccountRepository implements AccountRepository {
     String? senderPhone,
     Uint8List? proof,
     String? priceShown,
+    String? message,
   }) async {
-    // WITH A SCREENSHOT: the premium-request edge function (migration 040).
-    // It checks the image, stores it privately, notices a receipt already
-    // filed, files the request and sends it to the owner — none of which
-    // the app may be trusted to do. Retrying the same screenshot after a
-    // timeout returns the request already filed, never a second one.
-    if (proof != null) {
-      final body = await _api.postJson(
-        '/functions/v1/premium-request',
-        body: <String, dynamic>{
-          'plan_id': planId,
-          if (reference.trim().isNotEmpty) 'reference': reference.trim(),
-          if (senderPhone != null && senderPhone.isNotEmpty)
-            'sender_phone': senderPhone,
-          if (priceShown != null && priceShown.isNotEmpty)
-            'price_shown': priceShown,
-          'image_b64': base64Encode(proof),
-        },
-        // A receipt on a slow cell takes longer than a catalogue page.
-        timeout: const Duration(seconds: 60),
-      );
-      final m = body is Map<String, dynamic> ? body['request'] : null;
-      if (m is Map<String, dynamic>) return _requestFrom(m);
-      return PremiumRequest(
-        id: '',
-        planId: planId,
-        reference: reference,
-        senderPhone: senderPhone,
-        status: PremiumRequestStatus.pending,
-        submittedAt: DateTime.now(),
-      );
-    }
-    // `status` is deliberately NOT sent. The insert policy only accepts
-    // 'pending', and letting the client name a status is exactly the hole that
-    // would let someone submit an approved one.
+    // ALWAYS the premium-request edge function (migrations 040, 042). It
+    // checks the image, stores it privately, notices a receipt already
+    // filed, keeps the payer's note, files the request and tells the owner —
+    // none of which the app may be trusted to do. Retrying the same
+    // screenshot after a timeout returns the request already filed, never a
+    // second one. (A transaction id with no screenshot goes the same way: the
+    // direct insert this used to make could not carry the note.)
+    final note = message?.trim();
     final body = await _api.postJson(
-      '/rest/v1/premium_requests',
+      '/functions/v1/premium-request',
       body: <String, dynamic>{
         'plan_id': planId,
-        'reference': reference,
+        if (reference.trim().isNotEmpty) 'reference': reference.trim(),
         if (senderPhone != null && senderPhone.isNotEmpty)
           'sender_phone': senderPhone,
+        if (priceShown != null && priceShown.isNotEmpty)
+          'price_shown': priceShown,
+        if (note != null && note.isNotEmpty) 'message': note,
+        if (proof != null) 'image_b64': base64Encode(proof),
       },
-      extraHeaders: <String, String>{'Prefer': 'return=representation'},
+      // A receipt on a slow cell takes longer than a catalogue page.
+      timeout: const Duration(seconds: 60),
     );
-    if (body is List && body.isNotEmpty) {
-      final m = body.first;
-      if (m is Map<String, dynamic>) return _requestFrom(m);
-    }
+    final m = body is Map<String, dynamic> ? body['request'] : null;
+    if (m is Map<String, dynamic>) return _requestFrom(m);
     // Accepted but nothing echoed back: report it as queued rather than as a
     // failure, because it IS queued and telling the user otherwise makes them
     // pay twice.
@@ -447,6 +425,7 @@ class ApiAccountRepository implements AccountRepository {
       senderPhone: senderPhone,
       status: PremiumRequestStatus.pending,
       submittedAt: DateTime.now(),
+      message: note,
     );
   }
 
@@ -455,7 +434,8 @@ class ApiAccountRepository implements AccountRepository {
     final rows = await _api.getJson(
       '/rest/v1/premium_requests',
       query: <String, String>{
-        'select': 'id,plan_id,reference,sender_phone,status,note,submitted_at',
+        'select':
+            'id,plan_id,reference,sender_phone,status,note,submitted_at,message',
         'order': 'submitted_at.desc',
         'limit': '20',
       },
@@ -514,6 +494,7 @@ class ApiAccountRepository implements AccountRepository {
           DateTime.tryParse('${m['submitted_at']}')?.toLocal() ??
               DateTime.now(),
       note: m['note'] as String?,
+      message: m['message'] as String?,
     );
   }
 

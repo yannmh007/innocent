@@ -19,8 +19,10 @@ import '../../../core/theme/app_colors.dart';
 import '../../private_folder/presentation/add_files_picker.dart';
 import 'folder_send_picker.dart';
 import 'qr_scan_screen.dart';
+import 'transfer_home.dart';
 
 import '../../../core/localization/app_strings.dart';
+
 /// Transfer tab — same-Wi-Fi file sharing.
 ///
 /// Audit fix (real user report "Transfer UI သက်သက်ပဲ"): rewritten
@@ -40,16 +42,27 @@ class TransferScreen extends ConsumerStatefulWidget {
   ConsumerState<TransferScreen> createState() => _TransferScreenState();
 }
 
+/// Set while the Transfer tab shows an inner page (Send, Receive, Share
+/// with): what Back should do instead of leaving the tab. The shell reads it,
+/// because two PopScopes on one route are both told of a blocked pop — the
+/// shell's would jump to the first tab while ours went home.
+final transferBackProvider = StateProvider<VoidCallback?>((ref) => null);
+
+enum _View { home, send, receive, computer }
+
 class _TransferScreenState extends ConsumerState<TransferScreen> {
   bool _picking = false;
-  // 0 = Send (this device serves files), 1 = Receive (pull from another
-  // Innocent device on the same Wi-Fi, in-app).
-  int _mode = 0;
+
+  /// Which page of the tab is showing. HOME is MX's front door — SEND,
+  /// RECEIVE, Share with PC, History; the other three are one tap in, and
+  /// Back returns home without stopping anything that is running.
+  _View _view = _View.home;
   bool _pairDialogOpen = false;
   // Captured in initState so dispose() never has to touch `ref`, which is on
   // its way out by then. The notifier itself outlives this screen
   // (receiverProvider is not autoDispose), so holding it is safe.
   ReceiverNotifier? _receiver;
+  StateController<VoidCallback?>? _back;
 
   @override
   void initState() {
@@ -60,6 +73,7 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _receiver = ref.read(receiverProvider.notifier);
+      _back = ref.read(transferBackProvider.notifier);
       _syncDiscovery();
     });
   }
@@ -71,23 +85,76 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
     // If the user walked away from a finished Turbo receive, give the phone
     // its internet back. An in-flight transfer is left alone on purpose.
     _receiver?.releaseTurboIfIdle();
+    // After the frame: providers may not change while the tree is finalised.
+    final back = _back;
+    if (back != null) Future<void>.microtask(() => back.state = null);
     super.dispose();
   }
 
   void _syncDiscovery() {
     if (!mounted) return;
     final n = ref.read(receiverProvider.notifier);
-    if (_mode == 1) {
+    if (_view == _View.receive) {
       n.startDiscovery();
     } else {
       n.stopDiscovery();
     }
   }
 
-  void _setMode(int m) {
-    if (_mode == m) return;
-    setState(() => _mode = m);
+  void _go(_View v) {
+    if (_view == v) return;
+    setState(() => _view = v);
     _syncDiscovery();
+    _back?.state = v == _View.home ? null : () => _go(_View.home);
+  }
+
+  /// SEND, the way MX does it: straight into the picker; what is picked is
+  /// shared at once — over the Turbo direct link unless it is switched off —
+  /// and the page shows the QR for the other phone. Backing out of the
+  /// picker with nothing chosen goes back home.
+  Future<void> _send() async {
+    final st = ref.read(transferProvider);
+    // A browser share is a different page; a phone share already running is
+    // where this button should take you.
+    if (st.isRunning && !st.forComputer) return _go(_View.send);
+    if (st.isRunning && st.forComputer) return _go(_View.computer);
+    _go(_View.send);
+    if (st.files.isNotEmpty) return;
+    await _pickFiles();
+    if (!mounted) return;
+    final now = ref.read(transferProvider);
+    if (now.files.isEmpty) {
+      _go(_View.home);
+      return;
+    }
+    if (!now.isRunning && !now.starting) {
+      await ref.read(transferProvider.notifier).start();
+    }
+  }
+
+  /// "Send Innocent app": the APK, shared straight away.
+  Future<void> _sendApp() async {
+    final st = ref.read(transferProvider);
+    if (st.isRunning) {
+      await _addOwnApk();
+      if (mounted) _go(st.forComputer ? _View.computer : _View.send);
+      return;
+    }
+    await _addOwnApk();
+    if (!mounted) return;
+    if (ref.read(transferProvider).files.isEmpty) return;
+    _go(_View.send);
+    await ref.read(transferProvider.notifier).start();
+  }
+
+  void _openHistory() {
+    Navigator.of(context, rootNavigator: true).push<void>(MaterialPageRoute(
+      builder: (_) => Consumer(
+        builder: (ctx, r, _) => TransferHistoryScreen(
+          onOpen: (item) => openReceivedItem(ctx, r, item),
+        ),
+      ),
+    ));
   }
 
   Future<void> _pickFiles() async {
@@ -100,6 +167,7 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
     // it, and `State.context` throws "Null check operator used on a null
     // value" once the element is gone. That was the Transfer-tab crash.
     final pickerTitle = AppStrings.of(context).selectFilesToSend;
+    final sendLabel = AppStrings.of(context).send;
     try {
       // In-app picker: browse storage by folder and multi-select videos,
       // mirroring the Private Folder "Add Files" flow, instead of leaving the
@@ -118,6 +186,8 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
         MaterialPageRoute(
           builder: (_) => AddFilesPicker(
             title: pickerTitle,
+            commitLabel: sendLabel,
+            commitIcon: Icons.send_rounded,
             // v0.50: the picker now hands back generic PickedFiles
             // (videos, images, audio, any file, APKs) — map them 1:1
             // onto SharedFile entries for the LAN server.
@@ -185,7 +255,8 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${AppStrings.of(context).failedPickFiles}: $e')),
+        SnackBar(
+            content: Text('${AppStrings.of(context).failedPickFiles}: $e')),
       );
     } finally {
       if (mounted) setState(() => _picking = false);
@@ -256,7 +327,8 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
         backgroundColor: AppColors.darkSurface,
         title: Row(
           children: [
-            const Icon(Icons.phone_android, color: AppColors.accentBlue, size: 22),
+            const Icon(Icons.phone_android,
+                color: AppColors.accentBlue, size: 22),
             const SizedBox(width: 10),
             Expanded(
               child: Text(req.deviceName,
@@ -301,19 +373,32 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
     // no send is in progress.
     ref.listen(receiverProvider.select((s) => s.resumeAvailable),
         (prev, hasResume) {
-      if (hasResume == true && _mode == 0 && !state.isRunning && mounted) {
-        setState(() => _mode = 1);
-        _syncDiscovery();
+      if (hasResume == true &&
+          _view == _View.home &&
+          !state.isRunning &&
+          mounted) {
+        _go(_View.receive);
       }
     });
     ref.listen(transferProvider.select((s) => s.pending), (prev, req) {
       if (req != null) _showPairDialog(req);
     });
+    final s = AppStrings.of(context);
+    final title = switch (_view) {
+      _View.home => s.fileTransfer,
+      _View.send => s.trSendTitle,
+      _View.receive => s.trReceiveTitle,
+      _View.computer => s.trShareWith,
+    };
+    // Back inside the tab goes home first (nothing running is stopped). The
+    // shell answers Back — see [transferBackProvider] — because a PopScope of
+    // our own would fire alongside the shell's, which jumps to the first tab.
     return Scaffold(
       backgroundColor: AppColors.darkBackground,
       appBar: AppBar(
-        title: Text(AppStrings.of(context).fileTransfer,
-            style: const TextStyle(color: Colors.white)),
+        title: Text(title,
+            style: const TextStyle(
+                color: Colors.white, fontWeight: FontWeight.w700)),
         backgroundColor: AppColors.darkBackground,
         // Hardcoded dark background, so the foreground is stated here too
         // rather than inherited. The title needs its own colour on top of
@@ -321,61 +406,56 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
         // and outranks it. See test/appbar_contrast_test.dart.
         foregroundColor: Colors.white,
         elevation: 0,
+        leading: _view == _View.home
+            ? null
+            : IconButton(
+                tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+                icon: const Icon(Icons.arrow_back_rounded),
+                onPressed: () => _go(_View.home),
+              ),
+        automaticallyImplyLeading: false,
         actions: [
           IconButton(
-            tooltip: 'How it works',
-            icon: const Icon(Icons.info_outline, size: 22),
-            onPressed: _showHelp,
+            tooltip: s.trSettings,
+            icon: const Icon(Icons.more_vert_rounded),
+            onPressed: () =>
+                TransferOptionsSheet.show(context, onHelp: _showHelp),
           ),
         ],
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-            child: SegmentedButton<int>(
-              segments: [
-                ButtonSegment(
-                    value: 0,
-                    label: Text(AppStrings.of(context).send),
-                    icon: const Icon(Icons.upload_outlined, size: 18)),
-                ButtonSegment(
-                    value: 1,
-                    label: Text(AppStrings.of(context).receive),
-                    icon: const Icon(Icons.download_outlined, size: 18)),
-              ],
-              selected: {_mode},
-              onSelectionChanged: (s) => _setMode(s.first),
-            ),
+      body: switch (_view) {
+        _View.home => TransferHome(
+            onSend: _send,
+            onReceive: () => _go(_View.receive),
+            onComputer: () => _go(_View.computer),
+            onHistory: _openHistory,
+            onSendApp: _sendApp,
+            onRename: () => _promptRename(state.deviceName),
+            onOpenSend: () =>
+                _go(state.forComputer ? _View.computer : _View.send),
+            onOpenReceive: () => _go(_View.receive),
           ),
-          Expanded(
-            child: _mode == 1
-                ? const _ReceivePane()
-                : (state.isRunning
-                    ? _RunningPane(
-                        state: state,
-                        shareUrl: notifier.shareUrl,
-                        qrPayload: notifier.qrPayload,
-                        onStop: notifier.stop,
-                        onTogglePause: notifier.setPaused,
-                        onAddMore: _pickFiles,
-                      )
-                    : _PreparePane(
-                        state: state,
-                        picking: _picking,
-                        onPickFiles: _pickFiles,
-                        onRemove: notifier.removeFile,
-                        onStart: notifier.start,
-                        onToggleApproval: notifier.setRequireApproval,
-                        onToggleTurbo: notifier.setTurboRequested,
-                        onTogglePin: notifier.setPinEnabled,
-                        onRename: () => _promptRename(state.deviceName),
-                        onSendApp: _addOwnApk,
-                        onSendFolder: _pickFolder,
-                      )),
-          ),
-        ],
-      ),
+        _View.receive => const _ReceivePane(),
+        _View.computer => ComputerSharePane(onAddFiles: _pickFiles),
+        _View.send => (state.isRunning && !state.forComputer)
+            ? _RunningPane(
+                state: state,
+                shareUrl: notifier.shareUrl,
+                qrPayload: notifier.qrPayload,
+                onStop: notifier.stop,
+                onTogglePause: notifier.setPaused,
+                onAddMore: _pickFiles,
+              )
+            : _PreparePane(
+                state: state,
+                picking: _picking,
+                onPickFiles: _pickFiles,
+                onRemove: notifier.removeFile,
+                onStart: notifier.start,
+                onSendApp: _addOwnApk,
+                onSendFolder: _pickFolder,
+              ),
+      },
     );
   }
 
@@ -428,7 +508,8 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
         title: Text(AppStrings.of(context).howTransferWorksTitle,
             style: const TextStyle(color: Colors.white)),
         content: SingleChildScrollView(
-          child: Text(AppStrings.of(context).howTransferWorksBody,
+          child: Text(
+            AppStrings.of(context).howTransferWorksBody,
             style: const TextStyle(color: Colors.white70, height: 1.55),
           ),
         ),
@@ -576,10 +657,6 @@ class _PreparePane extends StatelessWidget {
   final VoidCallback onPickFiles;
   final void Function(String id) onRemove;
   final VoidCallback onStart;
-  final void Function(bool) onToggleApproval;
-  final void Function(bool) onToggleTurbo;
-  final void Function(bool) onTogglePin;
-  final VoidCallback onRename;
   final VoidCallback onSendApp;
   final VoidCallback onSendFolder;
 
@@ -589,10 +666,6 @@ class _PreparePane extends StatelessWidget {
     required this.onPickFiles,
     required this.onRemove,
     required this.onStart,
-    required this.onToggleApproval,
-    required this.onToggleTurbo,
-    required this.onTogglePin,
-    required this.onRename,
     required this.onSendApp,
     required this.onSendFolder,
   });
@@ -620,34 +693,6 @@ class _PreparePane extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // Identity row: this is the name the other phone will tap on, so it
-                      // needs to be visible and changeable before the share starts.
-                      Row(
-                        children: [
-                          const Icon(Icons.smartphone,
-                              size: 16, color: AppColors.white55),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              '${s.thisPhoneName}: ${state.deviceName ?? '…'}',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                  color: AppColors.white70, fontSize: 12.5),
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: onRename,
-                            style: TextButton.styleFrom(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 8),
-                                minimumSize: const Size(0, 32)),
-                            child: Text(s.rename,
-                                style: const TextStyle(fontSize: 12)),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
                       Row(
                         children: [
                           Expanded(
@@ -771,98 +816,9 @@ class _PreparePane extends StatelessWidget {
                       );
                     },
                   ),
-                SliverToBoxAdapter(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const SizedBox(height: 8),
-                      // The speed switch. Off by default on purpose: it takes the phone
-                      // off the internet for the duration, which is a real cost, and the
-                      // user should be the one deciding to pay it.
-                      SwitchListTile(
-                        value: state.turboRequested,
-                        onChanged: onToggleTurbo,
-                        dense: true,
-                        contentPadding: EdgeInsets.zero,
-                        secondary: Icon(Icons.bolt,
-                            color: state.turboRequested
-                                ? AppColors.success
-                                : AppColors.white50,
-                            size: 20),
-                        title: Text(s.turboTitle,
-                            style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 13.5,
-                                fontWeight: FontWeight.w600)),
-                        subtitle: Text(s.turboSubtitle,
-                            style: const TextStyle(
-                                color: AppColors.white55,
-                                fontSize: 11.5,
-                                height: 1.35)),
-                        activeColor: AppColors.success,
-                      ),
-                      // Shown only once Turbo is armed, because it is advice about the
-                      // thing they just switched on. It is the single most useful sentence
-                      // on this screen: acting on it is the difference between a 2.4 GHz
-                      // link and a 5 GHz one.
-                      if (state.turboRequested)
-                        Padding(
-                          padding: const EdgeInsets.only(left: 4, bottom: 6),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Icon(Icons.lightbulb_outline,
-                                  size: 14, color: AppColors.warning),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(s.turboSccTip,
-                                    style: const TextStyle(
-                                        color: AppColors.white70,
-                                        fontSize: 11.5,
-                                        height: 1.4)),
-                              ),
-                            ],
-                          ),
-                        ),
-                      // Safety switch for shared/public Wi-Fi. Off by default because the
-                      // one-tap path is the point; on, nobody downloads without a tap here.
-                      SwitchListTile(
-                        value: state.requireApproval,
-                        onChanged: onToggleApproval,
-                        dense: true,
-                        contentPadding: EdgeInsets.zero,
-                        secondary: const Icon(Icons.verified_user_outlined,
-                            color: AppColors.white50, size: 20),
-                        title: Text(s.askBeforeSending,
-                            style: const TextStyle(
-                                color: Colors.white, fontSize: 13.5)),
-                        subtitle: Text(s.askBeforeSendingHint,
-                            style: const TextStyle(
-                                color: AppColors.white55,
-                                fontSize: 11.5,
-                                height: 1.35)),
-                        activeColor: AppColors.accentBlue,
-                      ),
-                      SwitchListTile(
-                        value: state.pin.isNotEmpty,
-                        onChanged: onTogglePin,
-                        dense: true,
-                        contentPadding: EdgeInsets.zero,
-                        secondary: const Icon(Icons.pin_outlined,
-                            color: AppColors.white50, size: 20),
-                        title: Text(s.protectWithPin,
-                            style: const TextStyle(
-                                color: Colors.white, fontSize: 13.5)),
-                        subtitle: Text(s.protectWithPinHint,
-                            style: const TextStyle(
-                                color: AppColors.white55,
-                                fontSize: 11.5,
-                                height: 1.35)),
-                        activeColor: AppColors.accentBlue,
-                      ),
-                    ],
-                  ),
-                ),
+                // Turbo, ask-before-sending and the PIN moved to the ⋮ menu
+                // (TransferOptionsSheet): three switches with two-line
+                // subtitles here overflowed a small phone in Burmese.
               ],
             ),
           ),
@@ -958,6 +914,7 @@ class _PreparePane extends StatelessWidget {
 class _RunningPane extends StatelessWidget {
   final TransferState state;
   final String shareUrl;
+
   /// What the QR encodes. Under Turbo this is a `innocent://turbo?…` invite
   /// carrying the Wi-Fi credentials, because no URL is reachable until the
   /// other phone has joined the link.
@@ -984,11 +941,10 @@ class _RunningPane extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(s.shareIsLive,
+          Text(
+            s.shareIsLive,
             style: const TextStyle(
-                color: Colors.white,
-                fontSize: 22,
-                fontWeight: FontWeight.w700),
+                color: Colors.white, fontSize: 22, fontWeight: FontWeight.w700),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 4),
@@ -998,11 +954,6 @@ class _RunningPane extends StatelessWidget {
                 color: AppColors.white70, fontSize: 13, height: 1.4),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 16),
-          // Who's actually pulling. Before this the sender was blind: it could
-          // only show a running byte total with no idea whether anyone had
-          // even connected.
-          _peersCard(context, s),
           const SizedBox(height: 16),
           Center(
             child: Container(
@@ -1026,11 +977,18 @@ class _RunningPane extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          Text(s.shareScanHint,
+          Text(
+            s.shareScanHint,
             style: const TextStyle(
                 color: AppColors.white55, fontSize: 11.5, height: 1.4),
             textAlign: TextAlign.center,
           ),
+          const SizedBox(height: 16),
+          // Who's actually pulling — under the code, as MX draws it: the QR
+          // is what the other phone needs first. Before this card the sender
+          // was blind, with a byte total and no idea whether anyone had
+          // connected.
+          _peersCard(context, s),
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -1078,9 +1036,8 @@ class _RunningPane extends StatelessWidget {
               (i) {
             final f = state.files[i];
             final served = state.servedPerFile[i] ?? 0;
-            final frac = f.sizeBytes > 0
-                ? (served / f.sizeBytes).clamp(0.0, 1.0)
-                : 0.0;
+            final frac =
+                f.sizeBytes > 0 ? (served / f.sizeBytes).clamp(0.0, 1.0) : 0.0;
             final complete = f.sizeBytes > 0 && served >= f.sizeBytes;
             return Padding(
               padding: const EdgeInsets.only(bottom: 10),
@@ -1176,8 +1133,8 @@ class _RunningPane extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 6),
                   minimumSize: const Size(0, 34)),
               icon: const Icon(Icons.add, size: 17),
-              label: Text(s.addMoreFiles,
-                  style: const TextStyle(fontSize: 12.5)),
+              label:
+                  Text(s.addMoreFiles, style: const TextStyle(fontSize: 12.5)),
             ),
           ),
           const SizedBox(height: 4),
@@ -1497,8 +1454,7 @@ class _RunningPane extends StatelessWidget {
           if (state.peers.length > 1) ...[
             const SizedBox(height: 4),
             Text('${s.receiversLabel}: ${state.peers.length}',
-                style: const TextStyle(
-                    color: AppColors.white55, fontSize: 11)),
+                style: const TextStyle(color: AppColors.white55, fontSize: 11)),
           ],
         ],
       ),
@@ -1580,8 +1536,14 @@ class _ReceivePaneState extends ConsumerState<_ReceivePane> {
           if (st.turboJoined) _turboBanner(s, notifier),
           if (st.turboJoining) _turboJoiningCard(s),
           if (!st.connected && !st.turboJoining) ...[
-            _nearbyCard(s, st, notifier),
+            // The QR first. With Turbo on by default the sender is on its own
+            // direct link, which the radar cannot see from a router — the code
+            // carries the link's name and key, so scanning is the one way in
+            // that always works.
+            _scanHero(s, st),
             const SizedBox(height: 14),
+            _nearbyCard(s, st, notifier),
+            const SizedBox(height: 6),
             _fallbackConnectors(s, st, notifier),
           ],
           if (st.error != null) ...[
@@ -1596,8 +1558,8 @@ class _ReceivePaneState extends ConsumerState<_ReceivePane> {
             if (st.saveDir != null) ...[
               const SizedBox(height: 16),
               Text(AppStrings.of(context).savedToPath(st.saveDir!),
-                  style: const TextStyle(
-                      color: AppColors.white55, fontSize: 11)),
+                  style:
+                      const TextStyle(color: AppColors.white55, fontSize: 11)),
             ],
             const SizedBox(height: 12),
             TextButton.icon(
@@ -1612,8 +1574,6 @@ class _ReceivePaneState extends ConsumerState<_ReceivePane> {
               label: Text(s.nearbyDevices),
             ),
           ],
-          const SizedBox(height: 18),
-          _historySection(s),
         ],
       ),
     );
@@ -1675,7 +1635,8 @@ class _ReceivePaneState extends ConsumerState<_ReceivePane> {
         children: [
           Row(
             children: [
-              const Icon(Icons.pin_outlined, color: AppColors.accentBlue, size: 20),
+              const Icon(Icons.pin_outlined,
+                  color: AppColors.accentBlue, size: 20),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(device.name,
@@ -1699,9 +1660,8 @@ class _ReceivePaneState extends ConsumerState<_ReceivePane> {
           const SizedBox(height: 4),
           Text(_pinTries > 0 ? s.wrongPin : s.enterSharePin,
               style: TextStyle(
-                  color: _pinTries > 0
-                      ? const Color(0xFFFFCDD2)
-                      : Colors.white70,
+                  color:
+                      _pinTries > 0 ? const Color(0xFFFFCDD2) : Colors.white70,
                   fontSize: 12,
                   height: 1.4)),
           const SizedBox(height: 10),
@@ -1730,9 +1690,8 @@ class _ReceivePaneState extends ConsumerState<_ReceivePane> {
               ),
               const SizedBox(width: 10),
               FilledButton(
-                onPressed: st.connecting
-                    ? null
-                    : () => _submitPin(device, notifier),
+                onPressed:
+                    st.connecting ? null : () => _submitPin(device, notifier),
                 child: Text(s.connectAction),
               ),
             ],
@@ -1824,8 +1783,7 @@ class _ReceivePaneState extends ConsumerState<_ReceivePane> {
                 if (mounted) notifier.startDiscovery();
               },
               icon: const Icon(Icons.link_off, size: 16),
-              label: Text(s.turboLeave,
-                  style: const TextStyle(fontSize: 12.5)),
+              label: Text(s.turboLeave, style: const TextStyle(fontSize: 12.5)),
             ),
           ),
         ],
@@ -1838,117 +1796,60 @@ class _ReceivePaneState extends ConsumerState<_ReceivePane> {
   /// and the user had to go hunting in a file manager for what they had just
   /// been handed. Collapsed by default so it never gets in the way of the
   /// thing people came here to do.
-  Widget _historySection(AppStrings s) {
-    final items = ref.watch(receivedHistoryProvider);
-    if (items.isEmpty) return const SizedBox.shrink();
-    return Theme(
-      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-      child: ExpansionTile(
-        tilePadding: EdgeInsets.zero,
-        childrenPadding: EdgeInsets.zero,
-        iconColor: AppColors.white70,
-        collapsedIconColor: AppColors.white70,
-        title: Text('${s.transferHistory} (${items.length})',
-            style: const TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.w600)),
-        children: [
-          for (final item in items.take(30))
-            ListTile(
-              dense: true,
-              contentPadding: EdgeInsets.zero,
-              leading: Icon(_PreparePane._iconFor(item.name),
-                  color: AppColors.white70, size: 20),
-              title: Text(item.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: Colors.white, fontSize: 13)),
-              subtitle: Text(
-                item.senderName == null
-                    ? _fmtBytes(item.sizeBytes)
-                    : '${_fmtBytes(item.sizeBytes)} • ${s.receivedFromDevice} ${item.senderName}',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                    color: AppColors.white55, fontSize: 11.5),
-              ),
-              onTap: () => _openReceived(s, item),
-            ),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: TextButton(
-              onPressed: () =>
-                  ref.read(receivedHistoryProvider.notifier).clear(),
-              child: Text(s.clearHistory,
-                  style: const TextStyle(fontSize: 12)),
+  /// The big blue card: scan the sender's code. MX's Receive opens on its
+  /// camera for the same reason.
+  Widget _scanHero(AppStrings s, ReceiverState st) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        key: const ValueKey('transfer-scan'),
+        borderRadius: BorderRadius.circular(16),
+        onTap: st.connecting ? null : _scanQr,
+        child: Ink(
+          padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: TransferColors.receiveGradient,
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _openReceived(AppStrings s, ReceivedItem item) async {
-    // Check first: a file the user deleted from a file manager would otherwise
-    // open a black player screen with no explanation.
-    final exists = await ReceivedHistoryNotifier.stillExists(item.path);
-    if (!mounted) return;
-    if (!exists) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(s.fileMissing)),
-      );
-      ref.read(receivedHistoryProvider.notifier).remove(item.path);
-      return;
-    }
-    final category = FileReceiverService.categoryFor(item.name);
-    if (category == 'Videos' || category == 'Music') {
-      context.push(
-        Routes.player,
-        extra: <String, String>{'uri': item.path, 'title': item.name},
-      );
-      return;
-    }
-    // An APK is the reason most people in this market install a share app at
-    // all: a friend hands you the app over Wi-Fi. Android 8+ gates that behind
-    // a per-app switch, so check before dropping the user on a system screen
-    // with no idea why.
-    if (item.name.toLowerCase().endsWith('.apk')) {
-      if (!await ReceivedHistoryNotifier.canInstallApks()) {
-        if (!mounted) return;
-        final go = await showDialog<bool>(
-          context: context,
-          builder: (dctx) => AlertDialog(
-            backgroundColor: AppColors.darkSurface,
-            title: Text(s.allowInstallTitle,
-                style: const TextStyle(color: Colors.white, fontSize: 17)),
-            content: Text(s.allowInstallBody,
-                style: const TextStyle(color: Colors.white70, height: 1.5)),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(dctx).pop(false),
-                child: Text(s.cancel,
-                    style: const TextStyle(color: AppColors.white70)),
+          child: Row(
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: Colors.white.withAlpha(0x33),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(Icons.qr_code_scanner_rounded,
+                    color: Colors.white, size: 32),
               ),
-              FilledButton(
-                onPressed: () => Navigator.of(dctx).pop(true),
-                child: Text(s.allowInstallAction),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(s.trScanTitle,
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            height: 1.45)),
+                    const SizedBox(height: 2),
+                    Text(s.trScanBody,
+                        style: const TextStyle(
+                            color: Color(0xE6FFFFFF),
+                            fontSize: 12,
+                            height: 1.5)),
+                  ],
+                ),
               ),
             ],
           ),
-        );
-        if (go == true) await ReceivedHistoryNotifier.openInstallPermission();
-        return;
-      }
-    }
-    // Everything else belongs to whichever app owns that type; Innocent has no
-    // business rendering a PDF.
-    final opened = await ReceivedHistoryNotifier.openExternally(item.path);
-    if (!mounted || opened) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('${s.cannotOpenFile}\n${item.path}'),
-        behavior: SnackBarBehavior.floating,
+        ),
       ),
     );
   }
@@ -2010,19 +1911,17 @@ class _ReceivePaneState extends ConsumerState<_ReceivePane> {
           ] else ...[
             const SizedBox(height: 4),
             Text(s.tapDeviceToConnect,
-                style: const TextStyle(
-                    color: AppColors.white55, fontSize: 11.5)),
+                style:
+                    const TextStyle(color: AppColors.white55, fontSize: 11.5)),
             const SizedBox(height: 8),
             for (final d in st.nearby)
               InkWell(
-                onTap: st.connecting
-                    ? null
-                    : () => notifier.connectToDevice(d),
+                onTap: st.connecting ? null : () => notifier.connectToDevice(d),
                 borderRadius: BorderRadius.circular(10),
                 child: Container(
                   margin: const EdgeInsets.only(bottom: 8),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                   decoration: BoxDecoration(
                     color: AppColors.darkSurfaceVariant,
                     borderRadius: BorderRadius.circular(10),
@@ -2033,8 +1932,7 @@ class _ReceivePaneState extends ConsumerState<_ReceivePane> {
                     children: [
                       CircleAvatar(
                         radius: 16,
-                        backgroundColor:
-                            AppColors.accentBlue.withOpacity(0.20),
+                        backgroundColor: AppColors.accentBlue.withOpacity(0.20),
                         child: const Icon(Icons.phone_android,
                             size: 17, color: AppColors.accentBlue),
                       ),
@@ -2088,29 +1986,18 @@ class _ReceivePaneState extends ConsumerState<_ReceivePane> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: st.connecting ? null : _scanQr,
-                icon: const Icon(Icons.qr_code_scanner, size: 18),
-                label: Text(s.scanQrCode,
-                    style: const TextStyle(fontSize: 13)),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () => setState(() => _manualOpen = !_manualOpen),
-                icon: Icon(
-                    _manualOpen ? Icons.expand_less : Icons.keyboard, size: 18),
-                label: Text(s.orEnterAddress,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 13)),
-              ),
-            ),
-          ],
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            onPressed: () => setState(() => _manualOpen = !_manualOpen),
+            icon: Icon(_manualOpen ? Icons.expand_less : Icons.keyboard,
+                size: 18),
+            label: Text(s.orEnterAddress,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 13)),
+            style: TextButton.styleFrom(foregroundColor: AppColors.white70),
+          ),
         ),
         if (_manualOpen) ...[
           const SizedBox(height: 12),
@@ -2145,8 +2032,8 @@ class _ReceivePaneState extends ConsumerState<_ReceivePane> {
                       height: 16,
                       child: CircularProgressIndicator(strokeWidth: 2))
                   : const Icon(Icons.cloud_download_outlined),
-              label: Text(
-                  st.connecting ? s.connectingToDevice : s.connectAction),
+              label:
+                  Text(st.connecting ? s.connectingToDevice : s.connectAction),
             ),
           ),
         ],
@@ -2274,8 +2161,8 @@ class _ReceivePaneState extends ConsumerState<_ReceivePane> {
                       ? s.allFilesReceived
                       : '${s.overallProgress}: ${st.doneCount}/${st.files.length} • '
                           '${_fmtBytes(received)} / ${_fmtBytes(total)}',
-                  style: const TextStyle(
-                      color: AppColors.white70, fontSize: 11.5),
+                  style:
+                      const TextStyle(color: AppColors.white70, fontSize: 11.5),
                 ),
               ),
               if (!allDone && speed > 0)
@@ -2330,13 +2217,10 @@ class _ReceivePaneState extends ConsumerState<_ReceivePane> {
                       : (st.userPaused
                           ? notifier.resumeBatch
                           : (st.batchRunning ? null : notifier.downloadAll)),
-                  icon: Icon(
-                      st.userPaused ? Icons.play_arrow : Icons.download,
+                  icon: Icon(st.userPaused ? Icons.play_arrow : Icons.download,
                       size: 18),
-                  label: Text(
-                      st.userPaused ? s.resumeReceive : s.downloadAll,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis),
+                  label: Text(st.userPaused ? s.resumeReceive : s.downloadAll,
+                      maxLines: 1, overflow: TextOverflow.ellipsis),
                 ),
               ),
               if (st.batchRunning) ...[
@@ -2435,8 +2319,8 @@ class _ReceivePaneState extends ConsumerState<_ReceivePane> {
               children: [
                 Text(
                   '${_fmtBytes(pr.received)} / ${_fmtBytes(pr.total)}',
-                  style: const TextStyle(
-                      color: AppColors.white55, fontSize: 10.5),
+                  style:
+                      const TextStyle(color: AppColors.white55, fontSize: 10.5),
                 ),
                 if (pr.bytesPerSec > 0)
                   Text(
@@ -2452,21 +2336,18 @@ class _ReceivePaneState extends ConsumerState<_ReceivePane> {
           if (pr != null && pr.error != null) ...[
             const SizedBox(height: 6),
             Text(pr.error!,
-                style:
-                    const TextStyle(color: Colors.redAccent, fontSize: 11)),
+                style: const TextStyle(color: Colors.redAccent, fontSize: 11)),
           ],
         ],
       ),
     );
   }
 
-  Widget _trailing(RemoteFile f, ReceiveProgress? pr,
-      ReceiverNotifier notifier, bool batchRunning) {
+  Widget _trailing(RemoteFile f, ReceiveProgress? pr, ReceiverNotifier notifier,
+      bool batchRunning) {
     if (pr != null && pr.done) {
-      return Icon(
-          pr.skipped ? Icons.check_circle_outline : Icons.check_circle,
-          color: pr.skipped ? AppColors.white50 : Colors.green,
-          size: 22);
+      return Icon(pr.skipped ? Icons.check_circle_outline : Icons.check_circle,
+          color: pr.skipped ? AppColors.white50 : Colors.green, size: 22);
     }
     if (pr != null && pr.error == null && pr.total > 0 && !pr.done) {
       if (pr.pausedBySender) {
@@ -2482,4 +2363,73 @@ class _ReceivePaneState extends ConsumerState<_ReceivePane> {
       onPressed: batchRunning ? null : () => notifier.downloadOne(f),
     );
   }
+}
+
+/// Opens a received file: the player for video and music, the installer
+/// (after the per-app permission) for an APK, the owning app for anything
+/// else. Shared by the Receive page and the History page.
+Future<void> openReceivedItem(
+    BuildContext context, WidgetRef ref, ReceivedItem item) async {
+  final s = AppStrings.of(context);
+  // Check first: a file the user deleted from a file manager would otherwise
+  // open a black player screen with no explanation.
+  final exists = await ReceivedHistoryNotifier.stillExists(item.path);
+  if (!context.mounted) return;
+  if (!exists) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(s.fileMissing)),
+    );
+    ref.read(receivedHistoryProvider.notifier).remove(item.path);
+    return;
+  }
+  final category = FileReceiverService.categoryFor(item.name);
+  if (category == 'Videos' || category == 'Music') {
+    context.push(
+      Routes.player,
+      extra: <String, String>{'uri': item.path, 'title': item.name},
+    );
+    return;
+  }
+  // An APK is the reason most people in this market install a share app at
+  // all: a friend hands you the app over Wi-Fi. Android 8+ gates that behind
+  // a per-app switch, so check before dropping the user on a system screen
+  // with no idea why.
+  if (item.name.toLowerCase().endsWith('.apk')) {
+    if (!await ReceivedHistoryNotifier.canInstallApks()) {
+      if (!context.mounted) return;
+      final go = await showDialog<bool>(
+        context: context,
+        builder: (dctx) => AlertDialog(
+          backgroundColor: AppColors.darkSurface,
+          title: Text(s.allowInstallTitle,
+              style: const TextStyle(color: Colors.white, fontSize: 17)),
+          content: Text(s.allowInstallBody,
+              style: const TextStyle(color: Colors.white70, height: 1.5)),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dctx).pop(false),
+              child: Text(s.cancel,
+                  style: const TextStyle(color: AppColors.white70)),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dctx).pop(true),
+              child: Text(s.allowInstallAction),
+            ),
+          ],
+        ),
+      );
+      if (go == true) await ReceivedHistoryNotifier.openInstallPermission();
+      return;
+    }
+  }
+  // Everything else belongs to whichever app owns that type; Innocent has no
+  // business rendering a PDF.
+  final opened = await ReceivedHistoryNotifier.openExternally(item.path);
+  if (!context.mounted || opened) return;
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text('${s.cannotOpenFile}\n${item.path}'),
+      behavior: SnackBarBehavior.floating,
+    ),
+  );
 }

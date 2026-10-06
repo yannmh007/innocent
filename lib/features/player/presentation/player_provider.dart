@@ -465,8 +465,9 @@ class PlayerController extends StateNotifier<PlayerState> {
   /// period and restarts the instant playback resumes. The user's toggle state
   /// is untouched, so nothing about the feature changes from their side.
   void _updateBackgroundWakeLock(bool playing) {
+    // pos: how far the film got — the lab's proof a stream really played.
     PlaybackLog.add('wakelock playing=$playing bg=${state.isBackgroundPlay} '
-        'priv=$_isPrivate');
+        'priv=$_isPrivate pos=${state.position.inMilliseconds}ms');
     if (!state.isBackgroundPlay || _isPrivate) return;
     _bgPauseTimer?.cancel();
     _decodeWatchTimer?.cancel();

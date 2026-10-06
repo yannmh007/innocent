@@ -66,13 +66,14 @@ project at all.
 poster, or no assets), start-up checks, streaming copies and the stream
 secret.
 
-The page is seven files: `index.html` (the pages), `shell.js` (menu, routes,
+The page is eight files: `index.html` (the pages), `shell.js` (menu, routes,
 dashboard, idle sign-out), `control.js` (2-step sign-in, Security, Admins,
 Activity), `review.js` (the review queue, the editor's review bar, the
 in-console preview) and `upload.js` (16 MB parts, waiting out a dropped
 connection, the stall watchdog, keeping the screen on, and the record in the
 phone that lets an upload resume after the tab died — RUNBOOK → *Uploading
-from a phone*), `files.js` (the Files page — RUNBOOK → *The Files page*) and `storage.js` (the Storage page — RUNBOOK → *Storage: Telegram is the archive*). supabase-js is vendored in `vendor/`, pinned to one version with an
+from a phone*), `inbox.js` (the payment inbox and its notifications — a
+badge, the tab title, a card, and opt-in system notifications and chime), `files.js` (the Files page — RUNBOOK → *The Files page*) and `storage.js` (the Storage page — RUNBOOK → *Storage: Telegram is the archive*). supabase-js is vendored in `vendor/`, pinned to one version with an
 integrity hash — not loaded from a CDN. `tool/js/console_smoke.mjs` drives the
 page in Chromium against a fake backend for each role.
 

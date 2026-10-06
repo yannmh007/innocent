@@ -15,6 +15,7 @@ import 'received_history.dart';
 import 'transfer_discovery.dart';
 import 'transfer_foreground_service.dart';
 import 'turbo_link_service.dart';
+import '../diagnostics/playback_log.dart';
 
 /// The sender wants a PIN (or the one we sent was wrong).
 class PinRequired implements Exception {
@@ -1303,6 +1304,10 @@ class ReceiverNotifier extends StateNotifier<ReceiverState> {
       title: 'Receiving file${n == 1 ? '' : 's'}',
       text: 'Starting\u2026',
     );
+    // How fast this batch really went, for the diagnostics log (and the
+    // device lab's speed test): bytes actually pulled over the link.
+    final clock = Stopwatch()..start();
+    var pulled = 0;
     try {
       for (final f in state.files) {
         // Stop the whole batch if the user cancelled mid-way.
@@ -1325,11 +1330,19 @@ class ReceiverNotifier extends StateNotifier<ReceiverState> {
           continue;
         }
         await downloadOne(f);
+        if (state.progress[f.index]?.done ?? false) pulled += f.size;
         // Record progress as we go (throttled) so a crash loses at most the
         // partially-downloaded current file, which itself resumes by byte.
         await _saveResumeSession();
       }
     } finally {
+      clock.stop();
+      if (pulled > 0) {
+        final s = clock.elapsedMilliseconds / 1000;
+        PlaybackLog.add('transfer received ${(pulled / 1e6).toStringAsFixed(1)} MB '
+            'in ${s.toStringAsFixed(1)} s = '
+            '${(pulled / 1e6 / (s <= 0 ? 0.001 : s)).toStringAsFixed(1)} MB/s');
+      }
       _fgActive = false;
       // One MediaScanner call for the whole batch instead of one per file.
       await _svc.flushMediaScans();

@@ -114,6 +114,9 @@ async function startShell() {
   shIdleTimer = setInterval(shIdleTick, 15000);
   routeFromHash(true);
   refreshBadges();
+  // Payments announce themselves (inbox.js): badge, tab title, a card, and
+  // — when switched on — a system notification and a chime.
+  startPulse();
 }
 
 function stopShell() {
@@ -126,6 +129,7 @@ function stopShell() {
   $('crumb').textContent = '';
   clearInterval(shIdleTimer);
   shIdleTimer = null;
+  stopPulse();
   const idle = document.querySelector('.cr-idle');
   if (idle) idle.remove();
 }
@@ -298,7 +302,9 @@ function shApplySummary(s) {
   shBadges = {
     review: decides ? { n: rv.waiting || 0, bad: false } : { n: rv.mine || 0, bad: true },
     telegram: { n: (tg.unattached || 0) + (tg.failed || 0), bad: (tg.failed || 0) > 0 },
-    requests: { n: s.requests || 0, bad: false },
+    // Red while a payment nobody has looked at is waiting — which only the
+    // pulse knows (inbox.js); the summary keeps whatever it last said.
+    requests: { n: s.requests || 0, bad: !!(shBadges.requests && shBadges.requests.bad) },
   };
   drawBadges();
 }

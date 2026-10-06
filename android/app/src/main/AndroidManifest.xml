@@ -14,6 +14,11 @@
 
     <!-- Network -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Local Network (SMB/FTP/SFTP) and Transfer talk to this Wi-Fi's own
+         devices. Android 17 turns that into a runtime permission for apps
+         that TARGET 37+; below that, INTERNET still covers it. Declared now
+         so moving the target is a request, not a surprise. -->
+    <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <!--
       Audit fix (Transfer real impl): ACCESS_WIFI_STATE is required by

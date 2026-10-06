@@ -1,0 +1,96 @@
+# The Transfer tab, redesigned (MX's front door): SEND / RECEIVE, Turbo on
+# by default, Share with PC / iPhone / Tablet, History. On the emulator there
+# is no Wi-Fi Direct, so a Turbo start must FALL BACK to the emulator's Wi-Fi
+# by itself and still serve — which is the path every phone without Turbo
+# takes, and the one this checks end to end on a real Android.
+appId: com.innocent.media
+---
+- launchApp
+- waitForAnimationToEnd:
+    timeout: 15000
+- tapOn:
+    text: "Wait"
+    optional: true
+- tapOn:
+    text: "Skip"
+    optional: true
+- tapOn:
+    text: "Allow.*"
+    optional: true
+- tapOn:
+    text: "Allow.*"
+    optional: true
+# The tab itself ("Transfer\nTab 3 of 4"), not the Folders "File Transfer".
+- tapOn:
+    text: "(?s).*Tab 3 of 4.*"
+- waitForAnimationToEnd:
+    timeout: 8000
+- takeScreenshot: 30_transfer_home
+- assertVisible: "SEND"
+- assertVisible: "RECEIVE"
+- assertVisible: "(?s)Share with.*"
+- assertVisible: "(?s).*On — phone to phone.*"
+# Receive: the scan card leads.
+- tapOn: "RECEIVE"
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: 31_transfer_receive
+- assertVisible: "(?s).*Scan the sender.*"
+- back
+- waitForAnimationToEnd:
+    timeout: 3000
+- assertVisible: "SEND"
+# Share with a computer: starts with no files; Turbo tries, falls back.
+- tapOn: "(?s)Share with.*"
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: 32_transfer_pc
+- tapOn: "(?s)Start.*"
+- tapOn:
+    text: "Allow"
+    optional: true
+- tapOn:
+    text: "While using the app"
+    optional: true
+- extendedWaitUntil:
+    visible: "(?s).*Stop sharing.*"
+    timeout: 70000
+- takeScreenshot: 33_transfer_pc_live
+- assertVisible: "(?s).*http://.*"
+- tapOn: "(?s).*Stop sharing.*"
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: 34_transfer_pc_stopped
+- back
+- waitForAnimationToEnd:
+    timeout: 3000
+# Back from an inner page lands on Transfer's home, not on the first tab.
+- assertVisible: "RECEIVE"
+# Settings: the switches that used to crowd the Send page.
+# (Flutter puts an IconButton's tooltip in Android's tooltip, not its
+# content-desc, so the ⋮ is tapped where it sits.)
+- tapOn:
+    point: "94%,8%"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: 35_transfer_settings
+- assertVisible: "(?s).*Ask before sending.*"
+- back
+- waitForAnimationToEnd:
+    timeout: 3000
+- assertVisible: "RECEIVE"
+# Send opens the picker straight away; backing out returns home.
+- tapOn: "SEND"
+- waitForAnimationToEnd:
+    timeout: 8000
+- takeScreenshot: 36_transfer_send_picker
+- back
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: 37_transfer_back_home
+- assertVisible: "RECEIVE"
+# And from Transfer's home, Back goes to the first tab (Video).
+- back
+- waitForAnimationToEnd:
+    timeout: 3000
+- assertVisible: "(?s).*Recently Added.*"

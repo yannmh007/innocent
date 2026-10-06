@@ -335,6 +335,34 @@ async function open(browser, role, opts = {}) {
         tg_caption: 'Album Name\nthe synopsis', file_name: '2.jpg' },
     ],
     decisions: [],
+    // The payment inbox (premium-request, migration 042): two waiting, one
+    // decided. `pulse` is what the half-minute count answers.
+    pay: {
+      calls: [],
+      pulse: { pending: 2, unseen: 1, newest: { id: 'r-new', plan_id: 'monthly', price_shown: '10,500 MMK' } },
+      reqs: [
+        { id: '11111111-1111-4111-8111-111111111111', status: 'pending', plan_id: 'monthly',
+          price_shown: '10,500 MMK', message: 'ညီမရဲ့ KPay ကနေ လွှဲထားပါတယ်။ 9 နာရီလောက်က ပို့ခဲ့တာပါ။',
+          reference: null, sender_phone: '09 777 123 456', email: 'mya@example.com',
+          display_name: 'Mya Mya', submitted_at: new Date(Date.now() - 600e3).toISOString(),
+          seen_at: null, reviewed_at: null, reviewed_by: null, note: null,
+          proof_path: 'u/1.png', duplicate_of: null, approved_before: 1,
+          premium_until: new Date(Date.now() + 5 * 86400e3).toISOString(), user_id: 'u1' },
+        { id: '22222222-2222-4222-8222-222222222222', status: 'pending', plan_id: 'yearly',
+          price_shown: '100,000 MMK', message: null, reference: '01003984021', sender_phone: null,
+          email: 'kyaw@example.com', display_name: null,
+          submitted_at: new Date(Date.now() - 7200e3).toISOString(), seen_at: new Date().toISOString(),
+          reviewed_at: null, reviewed_by: null, note: null, proof_path: 'u/2.png',
+          duplicate_of: '11111111-1111-4111-8111-111111111111', approved_before: 0,
+          premium_until: null, user_id: 'u2' },
+        { id: '33333333-3333-4333-8333-333333333333', status: 'approved', plan_id: 'yearly',
+          price_shown: '100,000 MMK', message: 'Thank you!', reference: null, sender_phone: '09 400 000 000',
+          email: 'aung@example.com', display_name: 'Aung', submitted_at: new Date(Date.now() - 86400e3).toISOString(),
+          seen_at: new Date().toISOString(), reviewed_at: new Date(Date.now() - 80000e3).toISOString(),
+          reviewed_by: 'boss@example.com', note: 'Welcome to Premium', proof_path: 'u/3.png',
+          duplicate_of: null, approved_before: 0, premium_until: null, user_id: 'u3' },
+      ],
+    },
     // A fake R2 for the uploader: the multipart uploads it holds, every PUT
     // it was sent, and the knobs a test turns — hold a part, refuse
     // everything, report the wrong size.
@@ -374,6 +402,16 @@ async function open(browser, role, opts = {}) {
   // The bucket. Parts are PUT to https://r2.test/up/<uploadId>/<n>, small
   // files to https://r2.test/one/<key>. Answers with the CORS headers a real
   // bucket rule gives, ETag exposed — the MD5 of the part, as R2's is.
+  // A synthetic receipt for the inbox: a drawing, not anybody's payment.
+  await page.route('https://proof.test/**', (route) => route.fulfill({
+    status: 200, contentType: 'image/svg+xml',
+    body: '<svg xmlns="http://www.w3.org/2000/svg" width="360" height="760">' +
+      '<rect width="360" height="760" fill="#fff"/><rect width="360" height="200" fill="#0b63ce"/>' +
+      '<circle cx="180" cy="100" r="44" fill="#fff"/><path d="M160 100l14 14 28-30" stroke="#0b63ce" stroke-width="8" fill="none"/>' +
+      '<text x="180" y="260" font-size="26" text-anchor="middle" font-family="sans-serif" fill="#111">10,500 MMK</text>' +
+      '<rect x="40" y="310" width="280" height="14" fill="#ddd"/><rect x="40" y="350" width="220" height="14" fill="#ddd"/>' +
+      '<rect x="40" y="390" width="250" height="14" fill="#ddd"/></svg>' }));
+
   await page.route('https://r2.test/**', async (route) => {
     const req = route.request();
     const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'PUT',
@@ -587,6 +625,35 @@ async function open(browser, role, opts = {}) {
       return json(route, 200, { rows: state.inbox, runner: true });
     }
     if (p === '/functions/v1/transcode') return json(route, 200, { rows: [], runner: true });
+    if (p === '/functions/v1/premium-request') {
+      const pay = state.pay;
+      pay.calls.push(body);
+      if (!['editor', 'owner'].includes(state.role)) return json(route, 403, { error: 'not_an_admin' });
+      if (body.op === 'pulse') return json(route, 200, pay.pulse);
+      if (body.op === 'inbox') {
+        const rows = body.status === 'all' ? pay.reqs : pay.reqs.filter((r) => r.status === body.status);
+        const c = (st) => pay.reqs.filter((r) => r.status === st).length;
+        return json(route, 200, { requests: rows, counts: { pending: c('pending'), approved: c('approved'), rejected: c('rejected') } });
+      }
+      if (body.op === 'proofs') {
+        return json(route, 200, { urls: Object.fromEntries((body.ids || []).map((id) => [id, 'https://proof.test/' + id + '.svg'])) });
+      }
+      if (body.op === 'seen') {
+        for (const r of pay.reqs) if ((body.ids || []).includes(r.id) && !r.seen_at) r.seen_at = new Date().toISOString();
+        pay.pulse = { ...pay.pulse, unseen: 0, newest: null };
+        return json(route, 200, { ok: true });
+      }
+      if (body.op === 'approve' || body.op === 'reject') {
+        const r = pay.reqs.find((x) => x.id === body.id);
+        r.status = body.op === 'approve' ? 'approved' : 'rejected';
+        r.reviewed_at = new Date().toISOString();
+        r.reviewed_by = 'boss@example.com';
+        r.note = body.note || r.note;
+        return json(route, 200, { ok: true });
+      }
+      state.unexpected.push('premium-request op ' + body.op);
+      return json(route, 400, { error: 'unknown_op' });
+    }
     state.unexpected.push(req.method() + ' ' + p);
     return json(route, 404, { error: 'not_stubbed' });
   });
@@ -1395,6 +1462,99 @@ try {
     check('editor: the status page fits the phone (' + w + 'px)', w <= 390);
     check('editor: no script errors on status', state.errors.length === 0);
     if (state.errors.length) console.log('     ' + state.errors.join('\n     '));
+    await ctx.close();
+  }
+
+  // ── payments: the inbox, on a desk ──────────────────────────────────────
+  {
+    const { page, ctx, state } = await open(browser, 'editor', { hash: '#/requests' });
+    await page.waitForSelector('#reqList .rq-card img');
+    await shot(page, 'payments-waiting');
+    const pay = state.pay;
+    check('payments: the waiting ones are cards (' + (await page.$$('#reqList .rq-card')).length + ')',
+      (await page.$$('#reqList .rq-card')).length === 2);
+    check('payments: the receipt is right there on each', (await page.$$('#reqList .rq-proof img')).length === 2);
+    check('payments: the payer\'s own note is shown', /ညီမရဲ့ KPay/.test(await page.textContent('#reqList .rq-msg')));
+    check('payments: a request nobody has seen is marked NEW', !!(await page.$('#reqList .rq-card.new')));
+    check('payments: a returning payer says so', /Returning · paid 1×/.test(await page.textContent('#reqList')));
+    check('payments: a reused receipt is flagged', /Receipt already used/.test(await page.textContent('#reqList')));
+    check('payments: the filter chips carry counts', /Waiting2/.test((await page.textContent('#reqTabs')).replace(/\s/g, '')));
+    await page.waitForFunction(() => document.title.indexOf('(') !== 0);
+    check('payments: having the list open marks it seen',
+      pay.calls.some((c) => c.op === 'seen' && c.ids.includes('11111111-1111-4111-8111-111111111111')));
+    check('payments: and the tab title clears', !(await page.title()).startsWith('('));
+
+    await page.click('#reqList .rq-proof');
+    await page.waitForSelector('.rq-light img');
+    await shot(page, 'payments-receipt');
+    check('payments: a receipt opens full size over the page', await visible(page, '.rq-light'));
+    await page.keyboard.press('Escape');
+    check('payments: Escape closes it', !(await page.$('.rq-light')));
+
+    const first = page.locator('#reqList .rq-card').first();
+    check('payments: a monthly plan offers 30 days', (await first.locator('.rq-days').inputValue()) === '30');
+    await first.locator('.rq-note').fill('Thank you!');
+    await first.locator('.rq-approve').click();
+    await page.waitForFunction(() => /Premium for/.test(document.querySelector('#msg')?.textContent || ''));
+    const ap = pay.calls.find((c) => c.op === 'approve');
+    check('payments: approve sends the days and the note', ap && ap.days === 30 && ap.note === 'Thank you!');
+
+    await page.waitForFunction(() => document.querySelectorAll('#reqList .rq-card').length === 1);
+    await page.click('#reqList button:has-text("Reject…")');
+    await page.waitForSelector('#reqList .rq-reject');
+    await shot(page, 'payments-reject');
+    await page.selectOption('#reqList .rq-reject select', { index: 1 });
+    await page.click('#reqList button:has-text("Reject with this reason")');
+    await page.waitForFunction(() => /payer sees/.test(document.querySelector('#msg')?.textContent || ''));
+    const rj = pay.calls.find((c) => c.op === 'reject');
+    check('payments: reject sends the reason the payer will read',
+      rj && /amount is not the price/.test(rj.note));
+
+    await page.click('#reqTabs button:has-text("Approved")');
+    await page.waitForSelector('#reqList .rq-outcome.ok');
+    await shot(page, 'payments-approved');
+    check('payments: a decided one says who and when', /by boss@example\.com/.test(await page.textContent('#reqList')));
+
+    // A new one arrives while the operator is elsewhere.
+    await page.click('#side a[data-tab=dashboard]');
+    await page.waitForSelector('#tab-dashboard:not([hidden])');
+    pay.pulse = { pending: 1, unseen: 1, newest: { id: 'r-next', plan_id: 'yearly', price_shown: '100,000 MMK' } };
+    await page.evaluate(() => rqPulse());
+    await page.waitForSelector('.rq-toast');
+    await shot(page, 'payments-toast');
+    check('payments: the unseen count is in the tab title', (await page.title()).startsWith('(1)'));
+    check('payments: the menu badge is red while one is unseen',
+      /bad/.test(await page.getAttribute('#side [data-badge=requests]', 'class')));
+    check('payments: a new one is announced on whatever page is open',
+      /New payment to check/.test(await page.textContent('.rq-toast')) &&
+      /100,000 MMK/.test(await page.textContent('.rq-toast')));
+    const before = state.calls.length;
+    const quiet = await page.evaluate(() => { const t = shLastActive; return rqQuiet({ op: 'pulse' }).then(() => shLastActive === t); });
+    check('payments: the count is not activity (the idle sign-out still works)', quiet && state.calls.length > before);
+
+    check('payments: no script errors', state.errors.length === 0);
+    if (state.errors.length) console.log('     ' + state.errors.join('\n     '));
+    check('payments: nothing unexpected was called', state.unexpected.length === 0);
+    if (state.unexpected.length) console.log('     ' + state.unexpected.join('\n     '));
+    await ctx.close();
+  }
+
+  // ── payments: on a phone, and not for an uploader ───────────────────────
+  {
+    const { page, ctx, state } = await open(browser, 'owner', { phone: true, hash: '#/requests' });
+    await page.waitForSelector('#reqList .rq-card img');
+    await shot(page, 'payments-phone');
+    const w = await page.evaluate(() => document.documentElement.scrollWidth);
+    check('payments: the inbox fits the phone (' + w + 'px)', w <= 390);
+    check('payments: phone: no script errors', state.errors.length === 0);
+    await ctx.close();
+  }
+  {
+    const { page, ctx, state } = await open(browser, 'uploader', { hash: '#/dashboard' });
+    await page.waitForSelector('#tab-dashboard:not([hidden])');
+    await page.waitForTimeout(300);
+    check('payments: an uploader\'s console never asks for the count',
+      !state.pay.calls.length);
     await ctx.close();
   }
 

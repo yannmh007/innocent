@@ -197,7 +197,27 @@ jobs:
             -metadata:s:s:0 language=eng -disposition:s:0 default \
             -movflags +faststart \
             "lib_media/Movies/Perf Test/aaa_play_720p.mp4"
+          # The transfer speed test (flows/transfer_speed.yaml): one big file.
+          if [ "${BIGFILE_MB:-0}" -gt 0 ]; then
+            mkdir -p lib_media/Movies/Speed
+            head -c "$((BIGFILE_MB * 1024 * 1024))" /dev/urandom > lib_media/Movies/Speed/speed_test.mp4
+          fi
           du -sh lib_media; find lib_media -type f | wc -l
+
+      # Local Network (Me → Local Network): real Samba, vsftpd and OpenSSH on
+      # this runner, which the emulator reaches at 10.0.2.2 — and the core's
+      # own JVM tests against them first (tool/netlab).
+      - name: Local Network test servers
+        run: |
+          source test_device/config.env
+          [ "${NETLAB:-0}" = 1 ] || { echo "no netlab this run"; exit 0; }
+          sudo apt-get install -y -qq --no-install-recommends samba vsftpd openssh-server ffmpeg >/dev/null
+          sudo systemctl stop smbd nmbd vsftpd ssh 2>/dev/null || true
+          sudo bash tool/netlab/servers.sh start
+          mkdir -p out
+          (cd tool/netlab && gradle test --no-daemon) 2>&1 \
+            | grep -E "PASSED|FAILED|SKIPPED|tests completed|BUILD|Exception|expected" \
+            | tee out/netlab_jvm.txt | tail -60 || true
 
       - name: Install Maestro
         run: |

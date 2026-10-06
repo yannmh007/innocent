@@ -27,9 +27,13 @@
 //      viewer saw, the sending number and the id. Best effort: a Telegram
 //      outage never loses a request.
 //
-// Body (JSON): { plan_id, reference?, sender_phone?, price_shown?,
+// Body (JSON): { plan_id, reference?, sender_phone?, price_shown?, message?,
 //                image_b64?, image_mime? }
-//          or, from the console: { op: 'proofs' } → { urls: { id: url } }
+//          or, from the console: { op, ... } — see THE CONSOLE'S PAYMENT INBOX
+//
+// `message` (migration 042): the payer's own note, up to 500 characters —
+// "paid from my sister's account", "sent it at 9 pm". It goes to the owner's
+// Telegram with the screenshot and into the console's inbox.
 // Answers: 200 { request }, 400 { code }, 401 { code: 'sign_in' },
 //          429 { code: 'too_many' }, 500 { code: 'failed' }.
 
@@ -123,7 +127,7 @@ async function tellOwner(opts: {
   }
 }
 
-const SELECT = 'id,plan_id,reference,sender_phone,status,note,submitted_at';
+const SELECT = 'id,plan_id,reference,sender_phone,status,note,submitted_at,message';
 
 const RANK: Record<string, number> = { viewer: 1, uploader: 2, editor: 3, owner: 4 };
 
@@ -137,33 +141,163 @@ function jwtClaims(token: string): Record<string, unknown> {
   }
 }
 
-/// The console's view of the screenshots: a ten-minute signed address for
-/// each pending request's proof. Editors and owners only — the same rule,
-/// and the same MFA rule, as approving in the console (studio.ts).
-async function proofsForConsole(
+// ── THE CONSOLE'S PAYMENT INBOX (migration 042) ─────────────────────────────
+//
+// Everything the console's Requests page does goes through here, behind one
+// gate: an editor or owner (the role that approves payments in studio.ts),
+// with an authenticator code when that admin's row requires MFA. It lives in
+// this function, beside the code that files a request, so the two halves of
+// one feature cannot drift apart.
+//
+//   { op: 'pulse' }               → { pending, unseen, newest }
+//   { op: 'inbox', status }       → { requests, counts }   (pending|approved|rejected|all)
+//   { op: 'seen', ids }           → marks those still unseen as seen
+//   { op: 'proofs', ids? }        → { urls: { id: signedUrl } } for 10 minutes
+//   { op: 'approve', id, days, note? }
+//   { op: 'reject', id, note }    → the note is what the payer's app shows
+//
+// Approve and reject are written to admin_audit, as every console write is.
+
+type Gate = { id: string; email: string; role: string };
+
+async function consoleGate(
   admin: ReturnType<typeof createClient>,
   userId: string,
   token: string,
-): Promise<Response> {
+): Promise<Gate | Response> {
   const { data: rows, error } = await admin.rpc('admin_resolve', { p_user: userId });
-  const row = Array.isArray(rows) ? rows[0] : rows;
-  const role = String((row as Record<string, unknown> | null)?.role ?? '');
+  const row = (Array.isArray(rows) ? rows[0] : rows) as Record<string, unknown> | null;
+  const role = String(row?.role ?? '');
   if (error || !row || (RANK[role] ?? 0) < RANK.editor) {
     return json({ error: 'not_an_admin' }, 403);
   }
-  const claims = jwtClaims(token);
-  if ((row as Record<string, unknown>).require_mfa === true && claims.aal !== 'aal2') {
+  if (row.require_mfa === true && jwtClaims(token).aal !== 'aal2') {
     return json({ error: 'mfa_required' }, 403);
   }
-  const { data: pending } = await admin.from('premium_requests')
-    .select('id, proof_path').eq('status', 'pending').not('proof_path', 'is', null);
-  const urls: Record<string, string> = {};
-  for (const r of pending ?? []) {
-    const { data: signed } = await admin.storage.from(BUCKET)
-      .createSignedUrl(String(r.proof_path), 600);
-    if (signed?.signedUrl) urls[String(r.id)] = signed.signedUrl;
+  return { id: userId, email: String(row.email ?? ''), role };
+}
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function idList(v: unknown, max: number): string[] {
+  return (Array.isArray(v) ? v : []).map(String).filter((x) => UUID.test(x)).slice(0, max);
+}
+
+async function audit(
+  admin: ReturnType<typeof createClient>,
+  who: Gate, action: string, target: string, detail: unknown, ok: boolean, err: string | null,
+): Promise<void> {
+  try {
+    await admin.from('admin_audit').insert({
+      actor: who.id, actor_email: who.email, actor_role: who.role,
+      fn: 'premium-request', action, target, detail, ok, error: err,
+    });
+  } catch {
+    // A failed audit write never fails the decision it records.
   }
-  return json({ urls }, 200);
+}
+
+async function consoleOp(
+  admin: ReturnType<typeof createClient>,
+  who: Gate,
+  body: Record<string, unknown>,
+): Promise<Response> {
+  const op = String(body.op);
+
+  if (op === 'pulse') {
+    const [p, u, n] = await Promise.all([
+      admin.from('premium_requests').select('id', { count: 'exact', head: true })
+        .eq('status', 'pending'),
+      admin.from('premium_requests').select('id', { count: 'exact', head: true })
+        .eq('status', 'pending').is('seen_at', null),
+      admin.from('premium_requests').select('id,submitted_at,plan_id,price_shown')
+        .eq('status', 'pending').is('seen_at', null)
+        .order('submitted_at', { ascending: false }).limit(1),
+    ]);
+    return json({ pending: p.count ?? 0, unseen: u.count ?? 0,
+      newest: (n.data ?? [])[0] ?? null });
+  }
+
+  if (op === 'inbox') {
+    const status = String(body.status ?? 'pending');
+    // Waiting: oldest first, as a queue. Decided: the latest decision first.
+    const waiting = status === 'pending';
+    const decided = status === 'approved' || status === 'rejected';
+    const base = admin.from('admin_requests').select('*');
+    const filtered = waiting || decided ? base.eq('status', status) : base;
+    const { data, error } = await filtered
+      .order(decided ? 'reviewed_at' : 'submitted_at', { ascending: waiting })
+      .limit(waiting ? 200 : 60);
+    if (error) return json({ error: 'inbox_failed', detail: error.message }, 500);
+    const count = async (st: string) => (await admin.from('premium_requests')
+      .select('id', { count: 'exact', head: true }).eq('status', st)).count ?? 0;
+    const [pending, approved, rejected] = await Promise.all(
+      [count('pending'), count('approved'), count('rejected')]);
+    return json({ requests: data ?? [], counts: { pending, approved, rejected } });
+  }
+
+  if (op === 'seen') {
+    const ids = idList(body.ids, 200);
+    if (ids.length) {
+      await admin.from('premium_requests')
+        .update({ seen_at: new Date().toISOString() })
+        .in('id', ids).is('seen_at', null);
+    }
+    return json({ ok: true });
+  }
+
+  if (op === 'proofs') {
+    const ids = Array.isArray(body.ids) ? idList(body.ids, 60) : null;
+    let q = admin.from('premium_requests')
+      .select('id, proof_path').not('proof_path', 'is', null);
+    q = ids ? q.in('id', ids) : q.eq('status', 'pending');
+    const { data } = await q;
+    const urls: Record<string, string> = {};
+    for (const r of data ?? []) {
+      const { data: signed } = await admin.storage.from(BUCKET)
+        .createSignedUrl(String(r.proof_path), 600);
+      if (signed?.signedUrl) urls[String(r.id)] = signed.signedUrl;
+    }
+    return json({ urls });
+  }
+
+  if (op === 'approve' || op === 'reject') {
+    const id = String(body.id ?? '');
+    if (!UUID.test(id)) return json({ error: 'no_id' }, 400);
+    const note = clean(body.note, 300);
+    let res: Response;
+    if (op === 'approve') {
+      const days = Math.max(1, Math.min(Math.floor(Number(body.days ?? 365)) || 365, 3650));
+      const { data: said, error } = await admin
+        .rpc('approve_request', { p_request_id: id, p_days: days });
+      if (error) res = json({ error: 'approve_failed', detail: error.message }, 500);
+      else if (typeof said === 'string' && !said.startsWith('APPROVED')) {
+        res = json({ error: 'not_pending', detail: said }, 409);
+      } else {
+        await admin.from('premium_requests')
+          .update({ reviewed_by: who.email, ...(note ? { note } : {}) }).eq('id', id);
+        res = json({ ok: true, id, days });
+      }
+      await audit(admin, who, 'approve', id, { days, note }, res.status < 400,
+        res.status < 400 ? null : String(res.status));
+    } else {
+      const { data: said, error } = await admin.rpc('reject_request', {
+        p_request_id: id, p_note: note ?? 'Not approved',
+      });
+      if (error) res = json({ error: 'reject_failed', detail: error.message }, 500);
+      else if (typeof said === 'string' && said !== 'REJECTED') {
+        res = json({ error: 'not_pending', detail: said }, 409);
+      } else {
+        await admin.from('premium_requests').update({ reviewed_by: who.email }).eq('id', id);
+        res = json({ ok: true, id });
+      }
+      await audit(admin, who, 'reject', id, { note }, res.status < 400,
+        res.status < 400 ? null : String(res.status));
+    }
+    return res;
+  }
+
+  return json({ error: 'unknown_op' }, 400);
 }
 
 Deno.serve(async (req) => {
@@ -189,8 +323,12 @@ Deno.serve(async (req) => {
     return json({ code: 'bad_request' }, 400);
   }
 
-  // The console asking for the screenshots, not a viewer filing one.
-  if (body.op === 'proofs') return proofsForConsole(admin, user.id, token);
+  // The console, not a viewer filing a request.
+  if (typeof body.op === 'string') {
+    const gate = await consoleGate(admin, user.id, token);
+    if (gate instanceof Response) return gate;
+    return consoleOp(admin, gate, body);
+  }
 
   // 2. what
   const planId = clean(body.plan_id, 40);
@@ -204,6 +342,7 @@ Deno.serve(async (req) => {
   const reference = clean(body.reference, 80);
   const senderPhone = clean(body.sender_phone, 30);
   const priceShown = clean(body.price_shown, 40) ?? prices[planId] ?? null;
+  const message = clean(body.message, 500);
   let image: Uint8Array | null = null;
   let kind: { mime: string; ext: string } | null = null;
   if (typeof body.image_b64 === 'string' && body.image_b64.length) {
@@ -271,6 +410,7 @@ Deno.serve(async (req) => {
     proof_bytes: image?.length ?? null,
     duplicate_of: duplicateOf,
     price_shown: priceShown,
+    message,
   }).select(SELECT).single();
   if (insErr || !row) {
     console.log(JSON.stringify({ insert_failed: insErr?.message }));
@@ -288,6 +428,7 @@ Deno.serve(async (req) => {
     senderPhone ? `paid from ${senderPhone}` : null,
     reference ? `transaction ${reference}` : null,
     image ? null : 'no screenshot',
+    message ? `💬 "${message}"` : null,
     `id ${id.slice(0, 8)} — approve in the console, Requests`,
   ].filter(Boolean);
   await tellOwner({ image, mime: kind?.mime ?? 'image/png', caption: lines.join('\n') });
