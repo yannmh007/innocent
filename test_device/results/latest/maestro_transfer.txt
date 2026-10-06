@@ -50,23 +50,20 @@ Take screenshot 34_transfer_pc_stopped... COMPLETED
 Press back... COMPLETED
 Wait for animation to end within 3000 ms... COMPLETED
 Assert that "RECEIVE" is visible... COMPLETED
-Tap on (Optional) "Transfer settings"... WARNED
-
-
- Warning: Element not found: Text matching regex: Transfer settings
+Tap on point (94%,8%)... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
 Take screenshot 35_transfer_settings... COMPLETED
+Assert that "(?s).*Ask before sending.*" is visible... COMPLETED
 Press back... COMPLETED
-Tap on "SEND"... FAILED
-
-Element not found: Text matching regex: SEND
-
-Element with Text matching regex: SEND not found. Check the UI hierarchy in debug artifacts to verify if the element exists.
-
-Possible causes:
-- Element selector may be incorrect - check if there are similar elements with slightly different names/properties.
-- Element may be temporarily unavailable due to loading state.
-- This could be a real regression that needs to be addressed.
-
-==== Debug output (logs & screenshots) ====
-
-/home/runner/work/innocent/innocent/out/maestro_out/2026-10-06_092225
+Wait for animation to end within 3000 ms... COMPLETED
+Assert that "RECEIVE" is visible... COMPLETED
+Tap on "SEND"... COMPLETED
+Wait for animation to end within 8000 ms... COMPLETED
+Take screenshot 36_transfer_send_picker... COMPLETED
+Press back... COMPLETED
+Wait for animation to end within 5000 ms... COMPLETED
+Take screenshot 37_transfer_back_home... COMPLETED
+Assert that "RECEIVE" is visible... COMPLETED
+Press back... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Assert that "(?s).*Recently Added.*" is visible... COMPLETED
