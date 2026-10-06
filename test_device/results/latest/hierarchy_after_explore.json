@@ -385,7 +385,7 @@
                               "children" : [ {
                                 "attributes" : {
                                   "text" : "",
-                                  "accessibilityText" : "1\n18\n5\n1\nChester Koong",
+                                  "accessibilityText" : "1\n19\n5\n1\nChester Koong",
                                   "hintText" : "",
                                   "ignoreBoundsFiltering" : "false",
                                   "resource-id" : "",
@@ -961,7 +961,7 @@
                               }, {
                                 "attributes" : {
                                   "text" : "",
-                                  "accessibilityText" : "HD\n18\n5\n1\nChester Koong",
+                                  "accessibilityText" : "HD\n19\n5\n1\nChester Koong",
                                   "hintText" : "",
                                   "ignoreBoundsFiltering" : "false",
                                   "resource-id" : "",
@@ -1249,7 +1249,7 @@
                               }, {
                                 "attributes" : {
                                   "text" : "",
-                                  "accessibilityText" : "HD\n18\n5\n1\nChester Koong",
+                                  "accessibilityText" : "HD\n19\n5\n1\nChester Koong",
                                   "hintText" : "",
                                   "ignoreBoundsFiltering" : "false",
                                   "resource-id" : "",
@@ -1788,8 +1788,8 @@
                   },
                   "children" : [ {
                     "attributes" : {
-                      "text" : "4:28 ",
-                      "accessibilityText" : "4:28 PM",
+                      "text" : "4:03 ",
+                      "accessibilityText" : "4:03 AM",
                       "hintText" : "",
                       "ignoreBoundsFiltering" : "false",
                       "resource-id" : "com.android.systemui:id/clock",

@@ -1,13 +1,13 @@
 LAB device kind=DeviceKind.phone sw=411.0
-LAB cpu app 17% · 0.3fps · pool-thread 10% | 1.raster 5% | RenderThread 1%
+LAB cpu app 23% · 0.2fps · pool-thread 11% | 1.raster 10% | RenderThread 2%
 LAB phase explore start
 LAB device kind=DeviceKind.phone sw=411.0
-LAB cpu app 12% · 0.3fps · 1.raster 8% | RenderThread 2% | .innocent.media 1%
-LAB cpu app 11% · 3.2fps · 1.raster 6% | .innocent.media 3%
-LAB cpu app 2% · 0.4fps · 1.raster 1%
-LAB cpu app 25% · 3.4fps · 1.raster 8% | .innocent.media 7% | io.worker. 3% | DartWorker 3% | 1.io 2% | estorage.worker 1%
-LAB cpu app 2% · 0.5fps · 1.raster 2%
+LAB cpu app 10% · 0.3fps · 1.raster 7% | RenderThread 2% | .innocent.media 1%
+LAB cpu app 12% · 2.8fps · 1.raster 6% | .innocent.media 3% | 1.io 2%
+LAB cpu app 7% · 0.4fps · 1.raster 4% | .innocent.media 1% | estorage.worker 1%
+LAB cpu app 20% · 2.9fps · 1.raster 7% | .innocent.media 7% | io.worker. 3% | 1.io 2%
+LAB cpu app 3% · 0.4fps · 1.raster 2%
 LAB phase title start
-LAB cpu app 2% · 0.4fps · 1.raster 1%
-LAB cpu app 16% · 2.2fps · 1.raster 10% | .innocent.media 4%
-LAB cpu app 1% · 0.2fps · -
+LAB cpu app 1% · 0.4fps · -
+LAB cpu app 16% · 2.5fps · 1.raster 11% | .innocent.media 3%
+LAB cpu app 0% · 0.1fps · -

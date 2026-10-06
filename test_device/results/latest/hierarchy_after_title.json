@@ -156,8 +156,8 @@
                   },
                   "children" : [ {
                     "attributes" : {
-                      "text" : "4:29 ",
-                      "accessibilityText" : "4:29 PM",
+                      "text" : "4:04 ",
+                      "accessibilityText" : "4:04 AM",
                       "hintText" : "",
                       "ignoreBoundsFiltering" : "false",
                       "resource-id" : "com.android.systemui:id/clock",
@@ -1099,12 +1099,12 @@
                         }, {
                           "attributes" : {
                             "text" : "",
-                            "accessibilityText" : "1 of 6",
+                            "accessibilityText" : "1 of 6\n1:11:19",
                             "hintText" : "",
                             "ignoreBoundsFiltering" : "false",
                             "resource-id" : "",
                             "clickable" : "true",
-                            "bounds" : "[37,368][1043,940]",
+                            "bounds" : "[37,368][1043,935]",
                             "enabled" : "true",
                             "focused" : "false",
                             "checked" : "false",
@@ -1117,12 +1117,12 @@
                           "children" : [ {
                             "attributes" : {
                               "text" : "",
-                              "accessibilityText" : "Chester Koong d46c3e3c-87fd-4394-bea3-92aa3af89555",
+                              "accessibilityText" : "Chester Koong 66c43d3e-4e01-456a-aa86-47c73c778963",
                               "hintText" : "",
                               "ignoreBoundsFiltering" : "false",
                               "resource-id" : "",
                               "clickable" : "false",
-                              "bounds" : "[37,368][1043,940]",
+                              "bounds" : "[37,368][1043,935]",
                               "enabled" : "true",
                               "focused" : "false",
                               "checked" : "false",
@@ -1147,12 +1147,12 @@
                         }, {
                           "attributes" : {
                             "text" : "",
-                            "accessibilityText" : "2 of 6\n1:11:19",
+                            "accessibilityText" : "2 of 6",
                             "hintText" : "",
                             "ignoreBoundsFiltering" : "false",
                             "resource-id" : "",
                             "clickable" : "true",
-                            "bounds" : "[37,946][1043,1513]",
+                            "bounds" : "[37,940][1043,1513]",
                             "enabled" : "true",
                             "focused" : "false",
                             "checked" : "false",
@@ -1165,12 +1165,12 @@
                           "children" : [ {
                             "attributes" : {
                               "text" : "",
-                              "accessibilityText" : "Chester Koong 66c43d3e-4e01-456a-aa86-47c73c778963",
+                              "accessibilityText" : "Chester Koong d46c3e3c-87fd-4394-bea3-92aa3af89555",
                               "hintText" : "",
                               "ignoreBoundsFiltering" : "false",
                               "resource-id" : "",
                               "clickable" : "false",
-                              "bounds" : "[37,946][1043,1513]",
+                              "bounds" : "[37,940][1043,1513]",
                               "enabled" : "true",
                               "focused" : "false",
                               "checked" : "false",
