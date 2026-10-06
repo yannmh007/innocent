@@ -1,0 +1,34 @@
+LAB device kind=DeviceKind.phone sw=411.0
+LAB cpu app 26% · 0.2fps · pool-thread 13% | 1.raster 10% | RenderThread 2%
+LAB phase stream_lanes1 start
+LAB device kind=DeviceKind.phone sw=411.0
+LAB cpu app 36% · 0.3fps · pool-thread 17% | 1.raster 15% | .innocent.media 2% | RenderThread 2%
+LAB cpu app 12% · 3.2fps · 1.raster 7% | .innocent.media 3%
+LAB cpu app 6% · 1.4fps · 1.raster 3% | .innocent.media 2% | estorage.worker 1%
+LAB cpu app 20% · 2.6fps · 1.raster 9% | .innocent.media 5% | io.worker. 3% | 1.io 2% | DartWorker 1%
+LAB cpu app 22% · 2.3fps · 1.raster 15% | .innocent.media 7%
+LAB cpu app 29% · 3.5fps · 1.raster 21% | .innocent.media 8%
+LAB cpu app 14% · 2.6fps · 1.raster 11% | .innocent.media 4%
+LAB cpu app 1% · 0.3fps · .innocent.media 1%
+LAB cpu app 1% · 0.2fps · -
+LAB cpu app 2% · 0.4fps · 1.raster 1%
+LAB phase stream_lanes3 start
+LAB device kind=DeviceKind.phone sw=411.0
+LAB cpu app 31% · 0.3fps · pool-thread 15% | 1.raster 11% | RenderThread 3% | .innocent.media 2%
+LAB cpu app 10% · 2.6fps · 1.raster 6% | .innocent.media 3%
+LAB cpu app 17% · 2.4fps · 1.raster 8% | .innocent.media 4% | io.worker. 1% | estorage.worker 1%
+LAB cpu app 12% · 1.9fps · 1.raster 6% | .innocent.media 2% | 1.io 2% | io.worker. 1%
+LAB cpu app 31% · 3.6fps · 1.raster 22% | .innocent.media 9%
+LAB cpu app 29% · 4.4fps · 1.raster 20% | .innocent.media 8%
+LAB cpu app 8% · 1.2fps · 1.raster 5% | .innocent.media 3%
+LAB cpu app 2% · 0.3fps · 1.raster 1%
+LAB phase stream_lanes6 start
+LAB device kind=DeviceKind.phone sw=411.0
+LAB cpu app 38% · 0.3fps · pool-thread 17% | 1.raster 16% | RenderThread 2% | .innocent.media 2%
+LAB cpu app 8% · 2.3fps · 1.raster 5% | .innocent.media 3%
+LAB cpu app 16% · 2.1fps · 1.raster 8% | .innocent.media 4% | io.worker. 1%
+LAB cpu app 17% · 2.4fps · 1.raster 9% | .innocent.media 4% | io.worker. 1% | 1.io 1%
+LAB cpu app 27% · 4.0fps · 1.raster 19% | .innocent.media 7%
+LAB cpu app 21% · 3.5fps · 1.raster 15% | .innocent.media 6%
+LAB cpu app 3% · 0.3fps · 1.raster 2% | .innocent.media 1%
+LAB cpu app 2% · 0.3fps · -
