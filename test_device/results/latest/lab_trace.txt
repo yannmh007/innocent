@@ -1,7 +1,9 @@
 LAB device kind=DeviceKind.phone sw=411.0
-LAB cpu app 24% · 0.2fps · pool-thread 12% | 1.raster 9% | RenderThread 2%
+LAB cpu app 13% · 0.2fps · 1.raster 6% | pool-thread 5% | RenderThread 1%
 LAB phase transfer start
 LAB device kind=DeviceKind.phone sw=411.0
-LAB cpu app 12% · 0.3fps · 1.raster 9% | RenderThread 2% | .innocent.media 1%
-LAB cpu app 10% · 2.8fps · 1.raster 6% | .innocent.media 3%
-LAB cpu app 1% · 0.1fps · -
+LAB cpu app 7% · 0.3fps · 1.raster 5% | .innocent.media 1%
+LAB cpu app 9% · 3.0fps · 1.raster 6% | .innocent.media 2%
+LAB cpu app 15% · 7.4fps · 1.raster 13% | .innocent.media 2%
+LAB cpu app 14% · 8.9fps · 1.raster 12% | .innocent.media 2%
+LAB cpu app 1% · 0.3fps · -
