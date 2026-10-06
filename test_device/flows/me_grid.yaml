@@ -1,7 +1,8 @@
 # Me: the grid in the owner's order (Download, File Transfer, Private Folder /
 # Movies, Media Manager, Local Network / Network Stream, Video Playlists,
 # Recycle Bin) — every tile opens; Movies reaches the hub; Cloud Drive now
-# lives in Backup & Restore.
+# lives in Backup & Restore. Below it the short list: Library shortcuts,
+# App theme and Pop-up play inside Settings, statistics inside Insights.
 appId: com.innocent.media
 ---
 - launchApp
@@ -24,7 +25,8 @@ appId: com.innocent.media
 - waitForAnimationToEnd:
     timeout: 5000
 - takeScreenshot: 80_me_grid
-- assertNotVisible: "(?s).*Cloud Drive.*"
+# Exact text: Backup & Restore's own hint below mentions Cloud Drive.
+- assertNotVisible: "Cloud Drive"
 - assertVisible: "(?s).*Movies.*"
 - assertVisible: "(?s).*Recycle bin.*"
 # Movies: the hub (its age gate on a fresh install).
@@ -87,3 +89,46 @@ appId: com.innocent.media
 - waitForAnimationToEnd:
     timeout: 3000
 - assertVisible: "(?s).*Recycle bin.*"
+# Your library: the shortcuts open.
+- scrollUntilVisible:
+    element:
+      text: "(?s).*Watch later.*"
+    direction: DOWN
+- tapOn: "(?s).*History.*"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: 89_me_history
+- back
+- tapOn: "(?s).*Watch later.*"
+- waitForAnimationToEnd:
+    timeout: 3000
+- back
+# Insights holds Library statistics now.
+- tapOn: "(?s).*Insights.*"
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn: "(?s).*Library statistics.*"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: 90_me_statistics
+- back
+- back
+# Settings holds App theme and Pop-up play now.
+- tapOn: "(?s)Settings\\n.*"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: 91_settings
+- tapOn: "(?s).*App Theme.*"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: 92_app_theme
+- back
+- tapOn: "(?s).*Pop-up Play.*"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: 93_popup_play
+- back
+- back
+- waitForAnimationToEnd:
+    timeout: 3000
+- assertVisible: "(?s).*About.*"

@@ -854,6 +854,14 @@ class AppStrings {
   String get networks => _s('networks');
   String get supportedProtocols => _s('supportedProtocols');
   String get howToUse => _s('howToUse');
+  // Me tab
+  String get meSettingsHint => _s('meSettingsHint');
+  String get meBackupHint => _s('meBackupHint');
+  String get meHelpHint => _s('meHelpHint');
+  String get meAboutHint => _s('meAboutHint');
+  String get meLibrary => _s('meLibrary');
+  String get meInsights => _s('meInsights');
+  String get meLibraryStats => _s('meLibraryStats');
   // Backup & Restore
   String get bkInfo => _s('bkInfo');
   String get bkSectionBackup => _s('bkSectionBackup');
@@ -2669,6 +2677,13 @@ class AppStrings {
     'networks': 'Networks',
     'supportedProtocols': 'SUPPORTED PROTOCOLS',
     'howToUse': 'How to use?',
+    'meSettingsHint': 'Theme, pop-up play, language',
+    'meBackupHint': 'Your lists, and Cloud Drive',
+    'meHelpHint': 'Questions, and how to reach us',
+    'meAboutHint': 'Version, updates, licences',
+    'meLibrary': 'Your library',
+    'meInsights': 'Insights',
+    'meLibraryStats': 'Library statistics',
     'bkInfo': 'Back up your favourites, playlists, bookmarks and history, and restore them on any phone.',
     'bkSectionBackup': 'Backup',
     'bkExport': 'Export backup to file',
@@ -4216,6 +4231,13 @@ class AppStrings {
     'networks': 'ကွန်ရက်များ',
     'supportedProtocols': 'ပံ့ပိုးထားသော PROTOCOL များ',
     'howToUse': 'ဘယ်လိုသုံးရမလဲ?',
+    'meSettingsHint': 'အသွင်အပြင်၊ Pop-up၊ ဘာသာစကား',
+    'meBackupHint': 'သင့်စာရင်းများ နှင့် Cloud Drive',
+    'meHelpHint': 'မေးခွန်းများ နှင့် ဆက်သွယ်ရန်',
+    'meAboutHint': 'Version၊ Update၊ License',
+    'meLibrary': 'သင့် Library',
+    'meInsights': 'စာရင်းဇယား',
+    'meLibraryStats': 'Library စာရင်းဇယား',
     'bkInfo': 'အကြိုက်ဆုံး၊ playlist၊ bookmark နဲ့ ကြည့်ခဲ့သမျှ မှတ်တမ်းတွေကို အရန်သိမ်းပြီး ဘယ်ဖုန်းမှာမဆို ပြန်ယူနိုင်ပါတယ်။',
     'bkSectionBackup': 'အရန်သိမ်း',
     'bkExport': 'ဖိုင်အဖြစ် အရန်သိမ်းမည်',
@@ -5752,6 +5774,13 @@ class AppStrings {
     'networks': 'เครือข่าย',
     'supportedProtocols': 'โปรโตคอลที่รองรับ',
     'howToUse': 'ใช้อย่างไร?',
+    'meSettingsHint': 'ธีม ป๊อปอัป ภาษา',
+    'meBackupHint': 'รายการของคุณ และคลาวด์ไดรฟ์',
+    'meHelpHint': 'คำถาม และการติดต่อเรา',
+    'meAboutHint': 'เวอร์ชัน อัปเดต ใบอนุญาต',
+    'meLibrary': 'คลังของคุณ',
+    'meInsights': 'สถิติ',
+    'meLibraryStats': 'สถิติคลัง',
     'bkInfo': 'สำรองรายการโปรด เพลย์ลิสต์ บุ๊กมาร์ก และประวัติ แล้วกู้คืนบนโทรศัพท์เครื่องใดก็ได้',
     'bkSectionBackup': 'สำรองข้อมูล',
     'bkExport': 'ส่งออกข้อมูลสำรองเป็นไฟล์',
