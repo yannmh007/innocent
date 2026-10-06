@@ -3,9 +3,12 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/io_client.dart';
 
 import '../../../../core/services/network/foreground_stream.dart';
 import '../../../../core/services/network/throughput_memory.dart';
+import '../api/ranged_fetch.dart';
 import 'stream_cache_store.dart';
 
 /// Gives the player a local address for a remote film, and keeps what passes
@@ -72,6 +75,43 @@ class StreamCacheServer {
 
   static const int _upstreamTries = 3;
 
+  /// ═══════════════════════════════════════════════════════════════════════
+  /// THREE CONNECTIONS, NOT ONE — WHY "4 MB/s AND STILL BUFFERING" HAPPENED
+  /// ═══════════════════════════════════════════════════════════════════════
+  ///
+  /// A speed test opens several connections and adds them up. This proxy
+  /// opened ONE, and on a mobile line one TCP connection is held to a
+  /// fraction of the line by its loss and round trip: throughput falls as
+  /// RTT × √loss rises, and at 150 ms and 1 % loss a single connection
+  /// uses roughly a seventh of the bandwidth. The meter said 4 MB/s; the
+  /// film received a few hundred KB/s of it, and the spinner was the result.
+  ///
+  /// Downloads already fetched three parts at once ([RangedFetch]) — the
+  /// stream, which is what people watch, did not. Now it does: each stretch
+  /// of film is asked for as 2 MB parts on [lanes] connections at once and
+  /// handed to the player in order, so a loss on one connection leaves the
+  /// other two running. The same thing Telegram's loader and every download
+  /// manager do, and the reason a DASH/HLS player's short segments recover
+  /// from loss better than one long response.
+  ///
+  /// AND THE CONNECTIONS ARE KEPT. Every 8 MB used to open a new HttpClient
+  /// and close it: a TCP handshake, a TLS negotiation and slow start from
+  /// nothing, every few seconds of a film. One pooled client per film now
+  /// carries every request of the session.
+  ///
+  /// Settable for the bench (`lanes = 1` is the old single connection).
+  @visibleForTesting
+  static int lanes = RangedFetch.defaultLanes;
+
+  /// How much one parallel stretch covers before the loop comes round again
+  /// (to check the cache, renew a link, record the speed).
+  @visibleForTesting
+  static int span = 32 * 1024 * 1024;
+
+  /// A lane silent this long is taken for dead and the stretch ends; the
+  /// loop reopens from the last byte the player received.
+  static const Duration _laneStall = Duration(seconds: 15);
+
   bool get running => _server != null;
 
   Future<void> _ensureStarted() async {
@@ -108,6 +148,8 @@ class StreamCacheServer {
 
       await StreamCacheStore.instance
           .entryFor(cacheId, total: total, label: label);
+      // The film's previous registration, if any, gives up its connections.
+      _sources[cacheId]?.close();
       _sources[cacheId] = _Source(upstream: upstream, refresh: refresh);
       // THE BUDGET IS NOT ENFORCED HERE, and that is deliberate. This runs on
       // the path to the first frame — the path this project has spent weeks
@@ -147,6 +189,7 @@ class StreamCacheServer {
       // NO `entryFor` CALL, deliberately: the entry must already exist, and
       // creating one here would mint an empty directory for a film this phone
       // does not have and then serve a 502 out of it.
+      _sources[cacheId]?.close();
       _sources[cacheId] = _Source(
         upstream: '',
         refresh: () async => null,
@@ -166,7 +209,7 @@ class StreamCacheServer {
 
   /// Stop serving a film, so a stale signed URL and its refresh closure do
   /// not outlive the screen that made them.
-  void release(String cacheId) => _sources.remove(cacheId);
+  void release(String cacheId) => _sources.remove(cacheId)?.close();
 
   /// Forget every film but these.
   ///
@@ -176,7 +219,11 @@ class StreamCacheServer {
   /// after the screen is gone. Registering is the only moment at which it is
   /// certain which ones still matter.
   void releaseAllExcept(Set<String> keep) {
-    _sources.removeWhere((id, _) => !keep.contains(id));
+    _sources.removeWhere((id, src) {
+      if (keep.contains(id)) return false;
+      src.close();
+      return true;
+    });
   }
 
   Future<void> _handle(HttpRequest req) async {
@@ -360,11 +407,36 @@ class StreamCacheServer {
     // those bytes are here, and fetching them again would waste the
     // viewer's data to write a duplicate.
     final until = min(entry.nextPartStart(pos, entry.total), entry.total);
-    final fetchEnd = min(min(pos + _chunk, until) - 1, entry.total - 1);
-    if (fetchEnd < pos) return pos;
 
-    final upstream = await _openUpstream(src, pos, fetchEnd);
-    if (upstream == null) return pos;
+    // ── several connections at once, in order (see [lanes]) ─────────────
+    //
+    // Only for a stretch worth splitting: a gap of a few megabytes between
+    // two cached runs is one request, as before.
+    final Stream<List<int>> upstream;
+    final stretchEnd = min(until, pos + span); // exclusive
+    if (lanes > 1 &&
+        RangedFetch.worthSplitting(stretchEnd - pos,
+            partBytes: RangedFetch.defaultPartBytes)) {
+      final head = await _openHead(src, pos,
+          min(pos + RangedFetch.defaultPartBytes, stretchEnd));
+      if (head == null) return pos;
+      upstream = RangedFetch.ordered(
+        client: src.client,
+        url: Uri.parse(src.upstream),
+        head: head,
+        start: pos,
+        total: entry.total,
+        end: stretchEnd,
+        lanes: lanes,
+        stallAfter: _laneStall,
+      );
+    } else {
+      final fetchEnd = min(min(pos + _chunk, until) - 1, entry.total - 1);
+      if (fetchEnd < pos) return pos;
+      final single = await _openUpstream(src, pos, fetchEnd);
+      if (single == null) return pos;
+      upstream = single;
+    }
 
     CacheWriter? writer;
     if (await store.hasRoom(protecting: entry.id)) {
@@ -407,31 +479,41 @@ class StreamCacheServer {
     var sinceFlush = 0;
     var w = writer;
     try {
-      await for (final chunk in src) {
-        // The viewer is watching this, from the network, now: background
-        // downloads hold back until it stops — see ForegroundStream.
-        ForegroundStream.touch();
-        if (w != null) {
-          try {
-            await w.write(chunk);
-            sinceFlush += chunk.length;
-            if (sinceFlush >= _flushEvery) {
-              await w.flush();
-              sinceFlush = 0;
+      // AN UPSTREAM THAT FAILS PART WAY ENDS THIS STRETCH, NOT THE PLAYER'S
+      // CONNECTION. Handed to `addStream`, an error closes the response the
+      // player is reading — mpv sees a reset and reconnects, which is a
+      // visible stall. Ending the stretch quietly instead lets [_serve]'s
+      // loop carry on from the last byte sent, on the same response: a fresh
+      // link, a fresh lane, and the player never knows.
+      try {
+        await for (final chunk in src) {
+          // The viewer is watching this, from the network, now: background
+          // downloads hold back until it stops — see ForegroundStream.
+          ForegroundStream.touch();
+          if (w != null) {
+            try {
+              await w.write(chunk);
+              sinceFlush += chunk.length;
+              if (sinceFlush >= _flushEvery) {
+                await w.flush();
+                sinceFlush = 0;
+              }
+            } catch (e) {
+              // A DISK THAT WILL NOT TAKE THE BYTES IS NOT A REASON TO STOP
+              // THE FILM. Full, read-only, removed, whatever it is: give up on
+              // keeping this one and keep playing. The rest of the film simply
+              // is not cached, which is the state everything was in yesterday.
+              if (kDebugMode) debugPrint('StreamCacheServer: cache write: $e');
+              final dead = w;
+              w = null;
+              await dead.close();
             }
-          } catch (e) {
-            // A DISK THAT WILL NOT TAKE THE BYTES IS NOT A REASON TO STOP
-            // THE FILM. Full, read-only, removed, whatever it is: give up on
-            // keeping this one and keep playing. The rest of the film simply
-            // is not cached, which is the state everything was in yesterday.
-            if (kDebugMode) debugPrint('StreamCacheServer: cache write: $e');
-            final dead = w;
-            w = null;
-            await dead.close();
           }
+          counted(chunk.length);
+          yield chunk;
         }
-        counted(chunk.length);
-        yield chunk;
+      } catch (e) {
+        if (kDebugMode) debugPrint('StreamCacheServer: upstream ended: $e');
       }
     } finally {
       await w?.close();
@@ -529,6 +611,34 @@ class StreamCacheServer {
     return null;
   }
 
+  /// The first part of a parallel stretch, on the film's pooled client:
+  /// exactly `[start, endExclusive)`, so the connection is whole again — and
+  /// reused — the moment the part is read. Renews an expired link once, the
+  /// way [_openUpstream] does.
+  Future<Stream<List<int>>?> _openHead(
+      _Source src, int start, int endExclusive) async {
+    for (var attempt = 0; attempt < _upstreamTries; attempt++) {
+      try {
+        final req = http.Request('GET', Uri.parse(src.upstream))
+          ..headers[HttpHeaders.rangeHeader] = 'bytes=$start-${endExclusive - 1}';
+        final resp = await src.client.send(req).timeout(_laneStall);
+        if (resp.statusCode == 206) return resp.stream;
+        unawaited(resp.stream.listen(null).cancel());
+        if (resp.statusCode == 403 ||
+            resp.statusCode == 404 ||
+            resp.statusCode == 410) {
+          if (!await _refresh(src)) return null;
+          continue;
+        }
+        if (resp.statusCode >= 500) continue;
+        return null;
+      } catch (e) {
+        if (kDebugMode) debugPrint('StreamCacheServer._openHead: $e');
+      }
+    }
+    return null;
+  }
+
   Stream<List<int>> _closing(HttpClientResponse resp, HttpClient client) async* {
     try {
       yield* resp;
@@ -567,6 +677,19 @@ class _Source {
   String upstream;
   final Future<String?> Function() refresh;
   Future<bool>? refreshing;
+
+  /// One pool of connections for the whole of this film's session — kept
+  /// alive between requests, so a stretch costs no new handshake.
+  http.Client? _client;
+  http.Client get client => _client ??= IOClient(HttpClient()
+    ..connectionTimeout = const Duration(seconds: 15)
+    ..idleTimeout = const Duration(seconds: 30)
+    ..maxConnectionsPerHost = StreamCacheServer.lanes + 1);
+
+  void close() {
+    _client?.close();
+    _client = null;
+  }
 
   /// THIS FILM IS SERVED FROM DISK AND NOWHERE ELSE.
   ///
