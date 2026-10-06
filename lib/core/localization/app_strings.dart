@@ -854,6 +854,79 @@ class AppStrings {
   String get networks => _s('networks');
   String get supportedProtocols => _s('supportedProtocols');
   String get howToUse => _s('howToUse');
+  // Local Network (lib/features/network)
+  String get netHowStep1 => _s('netHowStep1');
+  String get netHowStep2 => _s('netHowStep2');
+  String get netHowStep3 => _s('netHowStep3');
+  String get netGotIt => _s('netGotIt');
+  String netNewServer(String p) => _s('netNewServer').replaceAll('{p}', p);
+  String netEditServer(String p) => _s('netEditServer').replaceAll('{p}', p);
+  String get netScan => _s('netScan');
+  String get netServer => _s('netServer');
+  String get netServerIp => _s('netServerIp');
+  String get netServerName => _s('netServerName');
+  String get netServerNameHint => _s('netServerNameHint');
+  String get netSharedPath => _s('netSharedPath');
+  String get netSharedPathHint => _s('netSharedPathHint');
+  String get netFolder => _s('netFolder');
+  String get netFolderHint => _s('netFolderHint');
+  String get netPort => _s('netPort');
+  String get netUsername => _s('netUsername');
+  String get netPassword => _s('netPassword');
+  String get netAnonymous => _s('netAnonymous');
+  String get netMode => _s('netMode');
+  String get netActive => _s('netActive');
+  String get netPassive => _s('netPassive');
+  String get netEncoding => _s('netEncoding');
+  String get netSecurityMode => _s('netSecurityMode');
+  String get netImplicit => _s('netImplicit');
+  String get netExplicit => _s('netExplicit');
+  String get netUseKey => _s('netUseKey');
+  String get netPrivateKey => _s('netPrivateKey');
+  String get netPrivateKeyHint => _s('netPrivateKeyHint');
+  String get netChooseKeyFile => _s('netChooseKeyFile');
+  String get netPassphrase => _s('netPassphrase');
+  String get netPassphraseHint => _s('netPassphraseHint');
+  String get netConnect => _s('netConnect');
+  String get netSave => _s('netSave');
+  String get netConnecting => _s('netConnecting');
+  String netErrUnreachable(String host) => _s('netErrUnreachable').replaceAll('{host}', host);
+  String get netErrTimeout => _s('netErrTimeout');
+  String get netErrAuth => _s('netErrAuth');
+  String get netErrAuthAnon => _s('netErrAuthAnon');
+  String get netErrDenied => _s('netErrDenied');
+  String get netErrNotFound => _s('netErrNotFound');
+  String get netErrTls => _s('netErrTls');
+  String get netErrKey => _s('netErrKey');
+  String netErrProtocol(String p) => _s('netErrProtocol').replaceAll('{p}', p);
+  String get netErrHostKey => _s('netErrHostKey');
+  String get netErrHostKeyBody => _s('netErrHostKeyBody');
+  String get netTrustNew => _s('netTrustNew');
+  String get netErrNeedHost => _s('netErrNeedHost');
+  String get netErrBadPort => _s('netErrBadPort');
+  String get netErrNeedKey => _s('netErrNeedKey');
+  String get netErrUnsupported => _s('netErrUnsupported');
+  String get netScanTitle => _s('netScanTitle');
+  String netScanning(String p, String subnet) => _s('netScanning').replaceAll('{p}', p).replaceAll('{subnet}', subnet);
+  String netScanNone(String p) => _s('netScanNone').replaceAll('{p}', p);
+  String get netScanNoneHint => _s('netScanNoneHint');
+  String get netScanAgain => _s('netScanAgain');
+  String get netScanNoWifi => _s('netScanNoWifi');
+  String get netMyServers => _s('netMyServers');
+  String get netEdit => _s('netEdit');
+  String get netDelete => _s('netDelete');
+  String netDeleteConfirm(String name) => _s('netDeleteConfirm').replaceAll('{name}', name);
+  String get netDeleteBody => _s('netDeleteBody');
+  String get netEmptyFolder => _s('netEmptyFolder');
+  String get netRetry => _s('netRetry');
+  String get netSortName => _s('netSortName');
+  String get netSortDate => _s('netSortDate');
+  String get netSortSize => _s('netSortSize');
+  String get netMediaOnly => _s('netMediaOnly');
+  String get netNotPlayable => _s('netNotPlayable');
+  String netItems(int n) => _s('netItems').replaceFirst('{n}', '$n');
+  String get netAnonymousTag => _s('netAnonymousTag');
+  String get netShares => _s('netShares');
   String get aboutCloudDrive => _s('aboutCloudDrive');
   String get cloudDriveBody => _s('cloudDriveBody');
   String get connectCloudCaps => _s('connectCloudCaps');
@@ -2568,6 +2641,78 @@ class AppStrings {
     'networks': 'Networks',
     'supportedProtocols': 'SUPPORTED PROTOCOLS',
     'howToUse': 'How to use?',
+    'netHowStep1': 'Add a server by tapping the {+} button.',
+    'netHowStep2': 'Access all your remote files directly from your device.',
+    'netHowStep3': 'Use the same Wi-Fi as the computer or NAS — Scan finds it for you.',
+    'netGotIt': 'GOT IT',
+    'netNewServer': 'New {p} Server',
+    'netEditServer': 'Edit {p} Server',
+    'netScan': 'Scan',
+    'netServer': 'Server',
+    'netServerIp': 'Server IP',
+    'netServerName': 'Server Name',
+    'netServerNameHint': 'My Server Name (optional)',
+    'netSharedPath': 'Shared Path',
+    'netSharedPathHint': 'Shared Path (optional)',
+    'netFolder': 'Folder',
+    'netFolderHint': 'Start folder (optional)',
+    'netPort': 'Port',
+    'netUsername': 'Username',
+    'netPassword': 'Password',
+    'netAnonymous': 'Connect Anonymously',
+    'netMode': 'Mode',
+    'netActive': 'Active',
+    'netPassive': 'Passive',
+    'netEncoding': 'Encoding',
+    'netSecurityMode': 'Security Mode',
+    'netImplicit': 'Implicit',
+    'netExplicit': 'Explicit',
+    'netUseKey': 'Login With Private Key',
+    'netPrivateKey': 'Private Key',
+    'netPrivateKeyHint': 'Paste the key (-----BEGIN …)',
+    'netChooseKeyFile': 'Choose key file',
+    'netPassphrase': 'Passphrase',
+    'netPassphraseHint': 'Passphrase (optional)',
+    'netConnect': 'Connect',
+    'netSave': 'Save',
+    'netConnecting': 'Connecting…',
+    'netErrUnreachable': 'Can\'t reach {host}. Is it switched on, and on the same Wi-Fi as this phone?',
+    'netErrTimeout': 'The server took too long to answer. Try again.',
+    'netErrAuth': 'Wrong username or password.',
+    'netErrAuthAnon': 'This server does not allow anonymous access. Untick "Connect Anonymously" and sign in.',
+    'netErrDenied': 'This account is not allowed to open that folder.',
+    'netErrNotFound': 'That share or folder does not exist on the server.',
+    'netErrTls': 'Secure connection failed. Check the port and the Security Mode.',
+    'netErrKey': 'The private key could not be read. Check the key and its passphrase.',
+    'netErrProtocol': 'The server answered, but not as {p}. Check the protocol and the port.',
+    'netErrHostKey': 'This server\'s identity has changed since you last connected.',
+    'netErrHostKeyBody': 'If you reinstalled or replaced the server, trust the new identity. If not, someone on this network may be pretending to be it.',
+    'netTrustNew': 'Trust new identity',
+    'netErrNeedHost': 'Enter the server address.',
+    'netErrBadPort': 'Port must be between 1 and 65535.',
+    'netErrNeedKey': 'Paste or choose a private key.',
+    'netErrUnsupported': 'Local Network is not available on this device.',
+    'netScanTitle': 'Servers on this Wi-Fi',
+    'netScanning': 'Looking for {p} servers on {subnet}…',
+    'netScanNone': 'No {p} servers found on this Wi-Fi.',
+    'netScanNoneHint': 'Turn on file sharing on the computer, or type its address.',
+    'netScanAgain': 'Scan again',
+    'netScanNoWifi': 'Connect to Wi-Fi to scan.',
+    'netMyServers': 'Servers',
+    'netEdit': 'Edit',
+    'netDelete': 'Delete',
+    'netDeleteConfirm': 'Remove "{name}"?',
+    'netDeleteBody': 'Its saved password is removed from this phone too.',
+    'netEmptyFolder': 'This folder is empty',
+    'netRetry': 'Retry',
+    'netSortName': 'Name',
+    'netSortDate': 'Date',
+    'netSortSize': 'Size',
+    'netMediaOnly': 'Media only',
+    'netNotPlayable': 'This file can\'t be played here.',
+    'netItems': '{n} items',
+    'netAnonymousTag': 'Anonymous',
+    'netShares': 'Shares',
     'aboutCloudDrive': 'About Cloud Drive',
     'cloudDriveBody': 'Stream videos and music directly from your cloud accounts without downloading. Connect a provider below to browse its files inside Innocent.',
     'connectCloudCaps': 'CONNECT YOUR CLOUD STORAGE',
@@ -4016,6 +4161,78 @@ class AppStrings {
     'networks': 'ကွန်ရက်များ',
     'supportedProtocols': 'ပံ့ပိုးထားသော PROTOCOL များ',
     'howToUse': 'ဘယ်လိုသုံးရမလဲ?',
+    'netHowStep1': '{+} ခလုတ်ကို နှိပ်ပြီး server တစ်ခု ထည့်ပါ။',
+    'netHowStep2': 'ကွန်ပျူတာ / NAS ထဲက ဖိုင်တွေကို ဖုန်းကနေ တိုက်ရိုက် ကြည့်နိုင်ပါတယ်။',
+    'netHowStep3': 'ကွန်ပျူတာ / NAS နဲ့ Wi-Fi တစ်ခုတည်းမှာ ရှိပါစေ — Scan က ရှာပေးပါမယ်။',
+    'netGotIt': 'နားလည်ပြီ',
+    'netNewServer': '{p} Server အသစ်',
+    'netEditServer': '{p} Server ပြင်ရန်',
+    'netScan': 'Scan',
+    'netServer': 'Server',
+    'netServerIp': 'Server IP',
+    'netServerName': 'အမည်',
+    'netServerNameHint': 'ကိုယ်ပိုင်အမည် (မထည့်လည်းရ)',
+    'netSharedPath': 'Shared Path',
+    'netSharedPathHint': 'Share အမည် (မထည့်လည်းရ)',
+    'netFolder': 'Folder',
+    'netFolderHint': 'စဖွင့်မည့် folder (မထည့်လည်းရ)',
+    'netPort': 'Port',
+    'netUsername': 'Username',
+    'netPassword': 'Password',
+    'netAnonymous': 'အကောင့်မပါဘဲ ချိတ်မည်',
+    'netMode': 'Mode',
+    'netActive': 'Active',
+    'netPassive': 'Passive',
+    'netEncoding': 'Encoding',
+    'netSecurityMode': 'Security Mode',
+    'netImplicit': 'Implicit',
+    'netExplicit': 'Explicit',
+    'netUseKey': 'Private Key ဖြင့် ဝင်မည်',
+    'netPrivateKey': 'Private Key',
+    'netPrivateKeyHint': 'Key ကို ကူးထည့်ပါ (-----BEGIN …)',
+    'netChooseKeyFile': 'Key ဖိုင် ရွေးမည်',
+    'netPassphrase': 'Passphrase',
+    'netPassphraseHint': 'Passphrase (မထည့်လည်းရ)',
+    'netConnect': 'ချိတ်မည်',
+    'netSave': 'သိမ်းမည်',
+    'netConnecting': 'ချိတ်ဆက်နေသည်…',
+    'netErrUnreachable': '{host} ကို မရောက်နိုင်ပါ။ စက်ဖွင့်ထားလား၊ ဒီဖုန်းနဲ့ Wi-Fi တစ်ခုတည်းမှာ ရှိလား စစ်ပါ။',
+    'netErrTimeout': 'Server က အဖြေပြန်တာ ကြာလွန်းပါတယ်။ ထပ်စမ်းပါ။',
+    'netErrAuth': 'Username သို့မဟုတ် Password မှားနေပါတယ်။',
+    'netErrAuthAnon': 'ဒီ server က အကောင့်မပါဘဲ ဝင်ခွင့်မပေးပါ။ "အကောင့်မပါဘဲ ချိတ်မည်" ကို ဖြုတ်ပြီး Username/Password ထည့်ပါ။',
+    'netErrDenied': 'ဒီအကောင့်နဲ့ အဲဒီ folder ကို ဖွင့်ခွင့် မရှိပါ။',
+    'netErrNotFound': 'အဲဒီ share / folder က server ပေါ်မှာ မရှိပါ။',
+    'netErrTls': 'လုံခြုံသော ချိတ်ဆက်မှု မအောင်မြင်ပါ။ Port နဲ့ Security Mode ကို စစ်ပါ။',
+    'netErrKey': 'Private key ကို ဖတ်မရပါ။ Key နဲ့ passphrase ကို စစ်ပါ။',
+    'netErrProtocol': 'Server က ပြန်ဖြေပေမယ့် {p} မဟုတ်ပါ။ Protocol နဲ့ Port ကို စစ်ပါ။',
+    'netErrHostKey': 'နောက်ဆုံးချိတ်ခဲ့ချိန်ကနေ ဒီ server ရဲ့ identity ပြောင်းသွားပါပြီ။',
+    'netErrHostKeyBody': 'Server ကို ပြန်တင်ထား/အသစ်လဲထားတာဆိုရင် identity အသစ်ကို ယုံကြည်ပါ။ မဟုတ်ရင် ဒီ network ပေါ်မှာ တစ်ယောက်ယောက်က အယောင်ဆောင်နေတာ ဖြစ်နိုင်ပါတယ်။',
+    'netTrustNew': 'Identity အသစ်ကို ယုံမည်',
+    'netErrNeedHost': 'Server လိပ်စာ ထည့်ပါ။',
+    'netErrBadPort': 'Port က 1 မှ 65535 ကြား ဖြစ်ရပါမယ်။',
+    'netErrNeedKey': 'Private key ကူးထည့်ပါ သို့မဟုတ် ဖိုင်ရွေးပါ။',
+    'netErrUnsupported': 'ဒီစက်မှာ Local Network မရနိုင်ပါ။',
+    'netScanTitle': 'ဒီ Wi-Fi ပေါ်က Server များ',
+    'netScanning': '{subnet} ပေါ်မှာ {p} server ရှာနေသည်…',
+    'netScanNone': 'ဒီ Wi-Fi ပေါ်မှာ {p} server မတွေ့ပါ။',
+    'netScanNoneHint': 'ကွန်ပျူတာမှာ file sharing ဖွင့်ပါ၊ သို့မဟုတ် လိပ်စာကို ကိုယ်တိုင် ရိုက်ထည့်ပါ။',
+    'netScanAgain': 'ထပ်ရှာမည်',
+    'netScanNoWifi': 'Scan ဖို့ Wi-Fi ချိတ်ပါ။',
+    'netMyServers': 'Server များ',
+    'netEdit': 'ပြင်မည်',
+    'netDelete': 'ဖျက်မည်',
+    'netDeleteConfirm': '"{name}" ကို ဖယ်ရှားမလား?',
+    'netDeleteBody': 'သိမ်းထားတဲ့ password ကိုပါ ဒီဖုန်းထဲကနေ ဖျက်ပါမယ်။',
+    'netEmptyFolder': 'ဒီ folder ထဲမှာ ဘာမှမရှိပါ',
+    'netRetry': 'ထပ်စမ်းမည်',
+    'netSortName': 'အမည်',
+    'netSortDate': 'ရက်စွဲ',
+    'netSortSize': 'အရွယ်အစား',
+    'netMediaOnly': 'Media သာ',
+    'netNotPlayable': 'ဒီဖိုင်ကို ဒီမှာ ဖွင့်လို့ မရပါ။',
+    'netItems': '{n} ခု',
+    'netAnonymousTag': 'Anonymous',
+    'netShares': 'Share များ',
     'aboutCloudDrive': 'Cloud Drive အကြောင်း',
     'cloudDriveBody': 'သင့် cloud account တွေထဲက ဗီဒီယိုနဲ့ သီချင်းတွေကို ဒေါင်းလုဒ်မလုပ်ဘဲ တိုက်ရိုက် ဖွင့်နိုင်ပါမယ်။ အောက်က provider တစ်ခုကို ချိတ်ပြီး Innocent ထဲကနေ ဖိုင်တွေ ကြည့်နိုင်ပါတယ်။',
     'connectCloudCaps': 'သင့် CLOUD STORAGE ကို ချိတ်ဆက်ပါ',
@@ -5453,6 +5670,78 @@ class AppStrings {
     'networks': 'เครือข่าย',
     'supportedProtocols': 'โปรโตคอลที่รองรับ',
     'howToUse': 'ใช้อย่างไร?',
+    'netHowStep1': 'เพิ่มเซิร์ฟเวอร์โดยแตะปุ่ม {+}',
+    'netHowStep2': 'เข้าถึงไฟล์ระยะไกลทั้งหมดได้โดยตรงจากอุปกรณ์ของคุณ',
+    'netHowStep3': 'ใช้ Wi-Fi เดียวกับคอมพิวเตอร์หรือ NAS — กด Scan เพื่อค้นหา',
+    'netGotIt': 'เข้าใจแล้ว',
+    'netNewServer': 'เซิร์ฟเวอร์ {p} ใหม่',
+    'netEditServer': 'แก้ไขเซิร์ฟเวอร์ {p}',
+    'netScan': 'สแกน',
+    'netServer': 'เซิร์ฟเวอร์',
+    'netServerIp': 'IP เซิร์ฟเวอร์',
+    'netServerName': 'ชื่อเซิร์ฟเวอร์',
+    'netServerNameHint': 'ชื่อเซิร์ฟเวอร์ของฉัน (ไม่บังคับ)',
+    'netSharedPath': 'พาธที่แชร์',
+    'netSharedPathHint': 'พาธที่แชร์ (ไม่บังคับ)',
+    'netFolder': 'โฟลเดอร์',
+    'netFolderHint': 'โฟลเดอร์เริ่มต้น (ไม่บังคับ)',
+    'netPort': 'พอร์ต',
+    'netUsername': 'ชื่อผู้ใช้',
+    'netPassword': 'รหัสผ่าน',
+    'netAnonymous': 'เชื่อมต่อแบบไม่ระบุตัวตน',
+    'netMode': 'โหมด',
+    'netActive': 'Active',
+    'netPassive': 'Passive',
+    'netEncoding': 'การเข้ารหัส',
+    'netSecurityMode': 'โหมดความปลอดภัย',
+    'netImplicit': 'Implicit',
+    'netExplicit': 'Explicit',
+    'netUseKey': 'เข้าสู่ระบบด้วย Private Key',
+    'netPrivateKey': 'Private Key',
+    'netPrivateKeyHint': 'วางคีย์ (-----BEGIN …)',
+    'netChooseKeyFile': 'เลือกไฟล์คีย์',
+    'netPassphrase': 'Passphrase',
+    'netPassphraseHint': 'Passphrase (ไม่บังคับ)',
+    'netConnect': 'เชื่อมต่อ',
+    'netSave': 'บันทึก',
+    'netConnecting': 'กำลังเชื่อมต่อ…',
+    'netErrUnreachable': 'เข้าถึง {host} ไม่ได้ เปิดเครื่องอยู่และใช้ Wi-Fi เดียวกับโทรศัพท์นี้หรือไม่?',
+    'netErrTimeout': 'เซิร์ฟเวอร์ตอบช้าเกินไป ลองอีกครั้ง',
+    'netErrAuth': 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง',
+    'netErrAuthAnon': 'เซิร์ฟเวอร์นี้ไม่อนุญาตการเข้าถึงแบบไม่ระบุตัวตน เอาเครื่องหมายออกแล้วลงชื่อเข้าใช้',
+    'netErrDenied': 'บัญชีนี้ไม่มีสิทธิ์เปิดโฟลเดอร์นั้น',
+    'netErrNotFound': 'ไม่มีแชร์หรือโฟลเดอร์นั้นบนเซิร์ฟเวอร์',
+    'netErrTls': 'การเชื่อมต่อที่ปลอดภัยล้มเหลว ตรวจสอบพอร์ตและโหมดความปลอดภัย',
+    'netErrKey': 'อ่าน Private key ไม่ได้ ตรวจสอบคีย์และ passphrase',
+    'netErrProtocol': 'เซิร์ฟเวอร์ตอบกลับ แต่ไม่ใช่ {p} ตรวจสอบโปรโตคอลและพอร์ต',
+    'netErrHostKey': 'ข้อมูลระบุตัวตนของเซิร์ฟเวอร์นี้เปลี่ยนไปตั้งแต่การเชื่อมต่อครั้งล่าสุด',
+    'netErrHostKeyBody': 'หากคุณติดตั้งใหม่หรือเปลี่ยนเซิร์ฟเวอร์ ให้เชื่อถือข้อมูลใหม่ หากไม่ใช่ อาจมีผู้ปลอมตัวบนเครือข่ายนี้',
+    'netTrustNew': 'เชื่อถือข้อมูลใหม่',
+    'netErrNeedHost': 'ใส่ที่อยู่เซิร์ฟเวอร์',
+    'netErrBadPort': 'พอร์ตต้องอยู่ระหว่าง 1 ถึง 65535',
+    'netErrNeedKey': 'วางหรือเลือก Private key',
+    'netErrUnsupported': 'อุปกรณ์นี้ใช้ Local Network ไม่ได้',
+    'netScanTitle': 'เซิร์ฟเวอร์บน Wi-Fi นี้',
+    'netScanning': 'กำลังค้นหาเซิร์ฟเวอร์ {p} บน {subnet}…',
+    'netScanNone': 'ไม่พบเซิร์ฟเวอร์ {p} บน Wi-Fi นี้',
+    'netScanNoneHint': 'เปิดการแชร์ไฟล์บนคอมพิวเตอร์ หรือพิมพ์ที่อยู่เอง',
+    'netScanAgain': 'สแกนอีกครั้ง',
+    'netScanNoWifi': 'เชื่อมต่อ Wi-Fi เพื่อสแกน',
+    'netMyServers': 'เซิร์ฟเวอร์',
+    'netEdit': 'แก้ไข',
+    'netDelete': 'ลบ',
+    'netDeleteConfirm': 'ลบ "{name}" หรือไม่?',
+    'netDeleteBody': 'รหัสผ่านที่บันทึกไว้จะถูกลบออกจากโทรศัพท์นี้ด้วย',
+    'netEmptyFolder': 'โฟลเดอร์นี้ว่างเปล่า',
+    'netRetry': 'ลองอีกครั้ง',
+    'netSortName': 'ชื่อ',
+    'netSortDate': 'วันที่',
+    'netSortSize': 'ขนาด',
+    'netMediaOnly': 'เฉพาะสื่อ',
+    'netNotPlayable': 'ไม่สามารถเล่นไฟล์นี้ได้',
+    'netItems': '{n} รายการ',
+    'netAnonymousTag': 'ไม่ระบุตัวตน',
+    'netShares': 'แชร์',
     'aboutCloudDrive': 'เกี่ยวกับ Cloud Drive',
     'cloudDriveBody': 'สตรีมวิดีโอและเพลงจากบัญชีคลาวด์โดยตรงไม่ต้องดาวน์โหลด เชื่อมต่อผู้ให้บริการด้านล่างเพื่อดูไฟล์ใน Innocent',
     'connectCloudCaps': 'เชื่อมต่อคลาวด์ของคุณ',

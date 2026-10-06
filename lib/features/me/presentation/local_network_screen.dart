@@ -1,237 +1,251 @@
-import 'package:flutter/material.dart';
+import 'dart:async';
 
-import '../../../core/theme/app_colors.dart';
-import '../../../core/ui/app_snackbar.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/localization/app_strings.dart';
-/// Local Network / Networks screen matching MX Player (UI PDF page 10)
-/// Blue hero banner + How to use + FAB → Add A New Server picker
-class LocalNetworkScreen extends StatelessWidget {
+import '../../network/data/net_repository.dart';
+import '../../network/data/net_server.dart';
+import '../../network/presentation/net_browser_screen.dart';
+import '../../network/presentation/net_widgets.dart';
+import '../../network/presentation/server_form.dart';
+
+/// Me → Local Network: MX Player's "Networks" — SMB, FTP, FTPS and SFTP
+/// servers on this Wi-Fi, browsed and played like files on the phone.
+///
+/// The page is MX's: the blue band with the protocols, "How to use?" until
+/// there is a server to show, and the blue + that adds one. What is added on
+/// top: the saved servers themselves (MX keeps them in a drawer), signing in
+/// before saving, Scan that names what it finds, and errors in words.
+class LocalNetworkScreen extends ConsumerWidget {
   const LocalNetworkScreen({super.key});
 
-  void _showAddServer(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppColors.darkSurface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (_) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
-                child: Text(AppStrings.of(context).addNewServer,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              _protocolTile('SMB', const Color(0xFF2196F3)),
-              _protocolTile('FTP', const Color(0xFF4CAF50)),
-              _protocolTile('FTPS', const Color(0xFFFF9800)),
-              _protocolTile('SFTP', const Color(0xFF9C27B0)),
-              const SizedBox(height: 16),
-            ],
-          ),
-        );
-      },
-    );
+  Future<void> _add(BuildContext context) async {
+    final p = await pickProtocol(context);
+    if (p == null || !context.mounted) return;
+    final server = await showServerForm(context, protocol: p);
+    if (server == null || !context.mounted) return;
+    unawaited(_browse(context, server));
   }
 
-  static Widget _protocolTile(String protocol, Color color) {
-    return Builder(
-      builder: (context) => ListTile(
-        leading: Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.15),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Center(
-            child: Text(
-              protocol,
-              style: TextStyle(
-                color: color,
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
+  Future<void> _browse(BuildContext context, NetServer server) {
+    return Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (_) => NetBrowserScreen(server: server),
+    ));
+  }
+
+  Future<void> _edit(BuildContext context, NetServer server) async {
+    final saved = await showServerForm(context,
+        protocol: server.protocol, existing: server);
+    if (saved == null || !context.mounted) return;
+    unawaited(_browse(context, saved));
+  }
+
+  Future<void> _delete(
+      BuildContext context, WidgetRef ref, NetServer server) async {
+    final s = AppStrings.of(context);
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => NetDialog(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(s.netDeleteConfirm(server.title),
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700)),
+            const SizedBox(height: 8),
+            Text(s.netDeleteBody,
+                style: const TextStyle(color: Colors.white70, fontSize: 13.5)),
+            const SizedBox(height: 8),
+            Row(mainAxisAlignment: MainAxisAlignment.end, children: <Widget>[
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(false),
+                child:
+                    Text(s.cancel, style: const TextStyle(color: Colors.white)),
               ),
-            ),
-          ),
+              TextButton(
+                key: const ValueKey('net-delete-ok'),
+                onPressed: () => Navigator.of(ctx).pop(true),
+                child: Text(s.netDelete,
+                    style: const TextStyle(color: NetColors.error)),
+              ),
+            ]),
+          ],
         ),
-        title: Text(protocol, style: const TextStyle(color: Colors.white)),
-        onTap: () {
-          Navigator.pop(context);
-          // Phase 41: use the root messenger so the toast survives the pop.
-          AppSnackbar.global('$protocol server setup');
-        },
       ),
     );
+    if (ok == true) {
+      await ref.read(netServersProvider.notifier).remove(server.id);
+    }
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = AppStrings.of(context);
+    final servers = ref.watch(netServersProvider);
+    final mm = s.locale.languageCode == 'my';
     return Scaffold(
-      backgroundColor: AppColors.darkBackground,
+      backgroundColor: const Color(0xFF121212),
       appBar: AppBar(
-        title: Text(AppStrings.of(context).networks),
-        actions: [
+        backgroundColor: const Color(0xFF121212),
+        foregroundColor: Colors.white,
+        title: Text(s.networks,
+            style: const TextStyle(
+                color: Colors.white,
+                fontSize: 19,
+                fontWeight: FontWeight.w700)),
+        actions: <Widget>[
           IconButton(
-            tooltip: 'Info',
-            icon: const Icon(Icons.info_outline),
-            onPressed: () {
-              showDialog(
-                context: context,
-                builder: (_) => AlertDialog(
-                  backgroundColor: AppColors.darkSurface,
-                  title: Text(AppStrings.of(context).networks, style: const TextStyle(color: Colors.white)),
-                  content: const Text(
-                    'Access remote files from SMB, FTP, FTPS or SFTP servers directly on your device.',
-                    style: TextStyle(color: Colors.white70),
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: Text(AppStrings.of(context).ok),
-                    ),
-                  ],
-                ),
-              );
-            },
+            key: const ValueKey('net-info'),
+            tooltip: s.howToUse,
+            icon: Icon(Icons.info_outline_rounded,
+                color: Colors.white, semanticLabel: s.howToUse),
+            onPressed: () => unawaited(showNetInfo(context)),
           ),
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: AppColors.primaryBlue,
-        child: const Icon(Icons.add, color: Colors.white),
-        onPressed: () => _showAddServer(context),
+        key: const ValueKey('net-add'),
+        tooltip: s.addNewServer,
+        backgroundColor: NetColors.fab,
+        shape: const CircleBorder(),
+        onPressed: () => unawaited(_add(context)),
+        child: Icon(Icons.add_rounded,
+            color: Colors.white, size: 30, semanticLabel: s.addNewServer),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          // ─── BLUE HERO BANNER ───
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF1565C0), Color(0xFF1E88E5)],
+      body: CustomScrollView(
+        slivers: <Widget>[
+          const SliverToBoxAdapter(child: NetHero()),
+          if (servers.isEmpty)
+            const SliverPadding(
+              padding: EdgeInsets.fromLTRB(20, 24, 20, 100),
+              sliver: SliverToBoxAdapter(child: NetHowTo()),
+            )
+          else ...<Widget>[
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 6),
+                child: Text(s.netMyServers,
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 15.5,
+                        fontWeight: FontWeight.w700,
+                        height: mm ? 1.6 : 1.2)),
               ),
-              borderRadius: BorderRadius.circular(16),
             ),
-            child: Column(
-              children: [
-                const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.computer,
-                        color: AppColors.white90, size: 40),
-                    SizedBox(width: 16),
-                    Icon(Icons.storage,
-                        color: AppColors.white90, size: 40),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Text(AppStrings.of(context).supportedProtocols,
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 12,
-                    letterSpacing: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'SMB  |  FTP  |  FTPS  |  SFTP',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
+            SliverList.builder(
+              itemCount: servers.length,
+              itemBuilder: (_, i) => _ServerTile(
+                server: servers[i],
+                onOpen: () => unawaited(_browse(context, servers[i])),
+                onEdit: () => unawaited(_edit(context, servers[i])),
+                onDelete: () => unawaited(_delete(context, ref, servers[i])),
+              ),
             ),
-          ),
-
-          const SizedBox(height: 24),
-
-          // ─── HOW TO USE ───
-          Text(AppStrings.of(context).howToUse,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 12),
-          _instructionStep(
-            '1.',
-            'Add a server by tapping the ',
-            icon: Icons.add_circle,
-          ),
-          const SizedBox(height: 8),
-          const _InstructionText(
-            number: '2.',
-            text:
-                'Access all your remote files directly from your device.',
-          ),
+            const SliverToBoxAdapter(child: SizedBox(height: 96)),
+          ],
         ],
       ),
     );
   }
-
-  static Widget _instructionStep(String number, String text,
-      {IconData? icon}) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(number,
-            style: const TextStyle(color: Colors.white70, fontSize: 14)),
-        const SizedBox(width: 8),
-        Expanded(
-          child: RichText(
-            text: TextSpan(
-              style: const TextStyle(color: Colors.white70, fontSize: 14),
-              children: [
-                TextSpan(text: text),
-                if (icon != null)
-                  WidgetSpan(
-                    child: Icon(icon,
-                        color: AppColors.primaryBlue, size: 18),
-                    alignment: PlaceholderAlignment.middle,
-                  ),
-                if (icon != null) const TextSpan(text: ' button.'),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
 }
 
-class _InstructionText extends StatelessWidget {
-  final String number;
-  final String text;
-  const _InstructionText({required this.number, required this.text});
+class _ServerTile extends StatelessWidget {
+  const _ServerTile(
+      {required this.server,
+      required this.onOpen,
+      required this.onEdit,
+      required this.onDelete});
+  final NetServer server;
+  final VoidCallback onOpen;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(number,
-            style: const TextStyle(color: Colors.white70, fontSize: 14)),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(text,
-              style: const TextStyle(color: Colors.white70, fontSize: 14)),
+    final s = AppStrings.of(context);
+    final who = server.anonymous
+        ? s.netAnonymousTag
+        : (server.domain.isNotEmpty
+            ? '${server.domain}\\${server.user}'
+            : server.user);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      child: Material(
+        color: const Color(0xFF1E1E20),
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          key: ValueKey('net-server-${server.title}'),
+          borderRadius: BorderRadius.circular(12),
+          onTap: onOpen,
+          onLongPress: onEdit,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(14, 12, 4, 12),
+            child: Row(children: <Widget>[
+              ProtocolGlyph(server.protocol, size: 40),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(server.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 15.5,
+                              fontWeight: FontWeight.w600)),
+                      const SizedBox(height: 3),
+                      Text(server.address,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                              color: Colors.white60, fontSize: 12.5)),
+                      if (who.isNotEmpty) ...<Widget>[
+                        const SizedBox(height: 2),
+                        Row(children: <Widget>[
+                          Icon(
+                              server.anonymous
+                                  ? Icons.public_rounded
+                                  : Icons.person_rounded,
+                              size: 13,
+                              color: Colors.white38),
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(who,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                    color: Colors.white38, fontSize: 12)),
+                          ),
+                        ]),
+                      ],
+                    ]),
+              ),
+              PopupMenuButton<int>(
+                key: ValueKey('net-menu-${server.title}'),
+                icon:
+                    const Icon(Icons.more_vert_rounded, color: Colors.white70),
+                color: NetColors.dialog,
+                onSelected: (v) => v == 0 ? onEdit() : onDelete(),
+                itemBuilder: (_) => <PopupMenuEntry<int>>[
+                  PopupMenuItem<int>(
+                      value: 0,
+                      child: Text(s.netEdit,
+                          style: const TextStyle(color: Colors.white))),
+                  PopupMenuItem<int>(
+                      value: 1,
+                      child: Text(s.netDelete,
+                          style: const TextStyle(color: NetColors.error))),
+                ],
+              ),
+            ]),
+          ),
         ),
-      ],
+      ),
     );
   }
 }

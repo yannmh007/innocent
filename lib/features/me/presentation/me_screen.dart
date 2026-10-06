@@ -80,7 +80,6 @@ class MeScreen extends StatelessWidget {
         s.localNetwork,
         Icons.desktop_windows_outlined,
         () => _open(context, const LocalNetworkScreen()),
-        comingSoon: true, // Audit Phase A1: SMB/FTP not actually wired
       ),
       _GridFeature(s.networkStream, Icons.public,
           () => _open(context, const NetworkStreamScreen())),

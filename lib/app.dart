@@ -8,6 +8,7 @@ import 'core/ui/tv_focus.dart';
 import 'core/services/preferences/extra_settings_service.dart';
 import 'core/services/preferences/player_settings_service.dart';
 import 'core/services/thumbnail/thumbnail_cache.dart';
+import 'features/network/data/net_repository.dart';
 import 'features/local_browser/data/library_local_datasource.dart';
 
 import 'core/di/preferences_provider.dart';
@@ -65,6 +66,11 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
     if (!_showOnboarding || const bool.fromEnvironment('INNOCENT_LAB')) {
       _startIntentListener();
     }
+    // Local Network: hand the saved servers to the native side, so a film
+    // from a NAS resumed straight from History after a restart can open.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) ref.read(netServersProvider);
+    });
   }
 
   /// DEVICE LAB ONLY — Test Lab's playback measurement (device-cloud.yml,

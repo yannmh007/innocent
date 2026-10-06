@@ -265,6 +265,12 @@ class MainActivity : AudioServiceFragmentActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
 
+        // Me → Local Network: SMB / FTP / FTPS / SFTP (net/NetPlugin.kt).
+        com.innocent.media.net.NetPlugin.register(
+            flutterEngine.dartExecutor.binaryMessenger,
+            applicationContext
+        )
+
         // v1.61 — the diagnostics channel. Read-only: it hands Dart the
         // process-exit history the system keeps for us plus the device
         // environment, so a crash can be looked at from the phone instead of
