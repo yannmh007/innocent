@@ -1,7 +1,8 @@
+// A bench, run like a test: the test-only hooks are the point of it.
+// ignore_for_file: invalid_use_of_visible_for_testing_member
 import 'dart:async';
 import 'dart:io';
 import 'dart:math';
-import 'dart:typed_data';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -52,7 +53,11 @@ void main() {
     final body = Uint8List.fromList(List<int>.generate(mb << 20, (_) => r.nextInt(256)));
     // The Worker's part: ranges, 206, Content-Range. Bound to the loopback
     // ADDRESS of the shaped interface, so every byte crosses the netem queue.
-    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    // A FIXED PORT when the workflow names one, so `tc` can shape this
+    // server's traffic and nothing else: the proxy-to-player hop is inside
+    // the phone and must not cross the shaped line.
+    final server = await HttpServer.bind(InternetAddress.loopbackIPv4,
+        int.tryParse(env['BENCH_PORT'] ?? '') ?? 0);
     server.listen((req) async {
       final res = req.response;
       var start = 0, end = body.length - 1;
@@ -73,7 +78,9 @@ void main() {
     final upstream = 'http://127.0.0.1:${server.port}/film.mp4';
 
     final lines = <String>[];
-    for (final lanes in <int>[1, 3]) {
+    final laneCounts = (env['BENCH_LANES'] ?? '1,3')
+        .split(',').map(int.parse).toList();
+    for (final lanes in laneCounts) {
       StreamCacheServer.lanes = lanes;
       final id = 'bench-$lanes-${DateTime.now().microsecondsSinceEpoch}';
       final local = await StreamCacheServer.instance

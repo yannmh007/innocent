@@ -123,10 +123,26 @@ jobs:
 
       - name: Install ffmpeg
         if: steps.claim.outputs.job == 'yes' || steps.frames.outputs.frames == 'yes'
+        # A STATIC BUILD FROM A GITHUB RELEASE, NOT apt. On 2026-10-06 the
+        # apt route took thirteen minutes (mirror and dependency resolution)
+        # before a single frame was encoded — thirteen minutes added to every
+        # film's wait for its streaming copies. The BtbN build is one archive
+        # from GitHub's own storage, seconds away, and carries zscale (zimg)
+        # for the HDR tone-mapping. apt stays as the fallback.
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq ffmpeg
-          ffmpeg -version | head -1
+          set -u
+          url=https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-n7.1-latest-linux64-gpl-7.1.tar.xz
+          if curl -fsSL --retry 3 -o /tmp/ffmpeg.tar.xz "$url" \
+             && mkdir -p /tmp/ffmpeg && tar -xJf /tmp/ffmpeg.tar.xz -C /tmp/ffmpeg --strip-components=1 \
+             && /tmp/ffmpeg/bin/ffmpeg -version >/dev/null 2>&1; then
+            echo "/tmp/ffmpeg/bin" >> "$GITHUB_PATH"
+            /tmp/ffmpeg/bin/ffmpeg -version | head -1
+          else
+            echo "static build unavailable - falling back to apt"
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq ffmpeg
+            ffmpeg -version | head -1
+          fi
 
       - name: Make the frames
         if: steps.frames.outputs.frames == 'yes'

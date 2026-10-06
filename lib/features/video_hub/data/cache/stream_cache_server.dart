@@ -6,6 +6,9 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart';
 
+import 'package:path_provider/path_provider.dart';
+
+import '../../../../core/services/diagnostics/playback_log.dart';
 import '../../../../core/services/network/foreground_stream.dart';
 import '../../../../core/services/network/throughput_memory.dart';
 import '../api/ranged_fetch.dart';
@@ -142,6 +145,7 @@ class StreamCacheServer {
     try {
       await StreamCacheStore.instance.load();
       await _ensureStarted();
+      await _labLanes();
       final port = _server?.port;
       final token = _token;
       if (port == null || token == null) return null;
@@ -166,6 +170,23 @@ class StreamCacheServer {
       if (kDebugMode) debugPrint('StreamCacheServer.localUrlFor: $e');
       return null;
     }
+  }
+
+  /// THE DEVICE LAB'S A/B SWITCH, AND ONLY THERE. A lab build reads the lane
+  /// count from `lab_lanes` in the app's external files directory, which the
+  /// lab writes with adb between two plays of the same film over the same
+  /// shaped line — one connection, then three. A release build never looks.
+  static Future<void> _labLanes() async {
+    if (!const bool.fromEnvironment('INNOCENT_LAB')) return;
+    try {
+      final dir = await getExternalStorageDirectory();
+      final f = File('${dir?.path}/lab_lanes');
+      if (dir != null && await f.exists()) {
+        final n = int.tryParse((await f.readAsString()).trim());
+        if (n != null) lanes = n.clamp(1, 6);
+      }
+      PlaybackLog.add('stream lanes=$lanes');
+    } catch (_) {}
   }
 
   /// A local address for a film that is served ENTIRELY from what is on disk.
@@ -450,7 +471,14 @@ class StreamCacheServer {
     final startedAt = DateTime.now();
     try {
       await res.addStream(_tee(upstream, writer, (n) => sent += n));
-      _recordThroughput(sent, DateTime.now().difference(startedAt));
+      final took = DateTime.now().difference(startedAt);
+      _recordThroughput(sent, took);
+      if (sent >= 1024 * 1024) {
+        // Includes any time the player was not reading (its buffer full),
+        // so a floor on the line's speed, not a measurement of it.
+        PlaybackLog.add('stream stretch ${(sent / 1048576).toStringAsFixed(1)} MB '
+            'in ${took.inMilliseconds} ms lanes=$lanes');
+      }
       return pos + sent;
     } catch (e) {
       if (kDebugMode) debugPrint('StreamCacheServer._fromUpstream: $e');

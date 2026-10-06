@@ -101,6 +101,10 @@ class PlayerController extends StateNotifier<PlayerState> {
   /// buffering — soft "slow connection" hint, supersedes by the
   /// 10 s hard "stalled" error if buffering doesn't recover.
   Timer? _bufferSlowTimer;
+
+  /// When the current mid-film refill began — for the trail, which is how the
+  /// device lab counts stalls and their length.
+  DateTime? _rebufferSince;
   /// Debounce timer for the buffering SPINNER. A brief buffer refill
   /// after a seek/skip should not flash a loading circle, so the spinner
   /// only appears if buffering is still active after this delay.
@@ -834,6 +838,16 @@ class PlayerController extends StateNotifier<PlayerState> {
     }));
     _subs.add(svc.bufferingStream.listen((b) {
       if (!mounted) return;
+      // A refill after the first frame is a stall the viewer saw; one line
+      // each way, so a trail says how many and how long.
+      if (b && _firstFrameSeen && _rebufferSince == null) {
+        _rebufferSince = DateTime.now();
+        PlaybackLog.add('rebuffer start');
+      } else if (!b && _rebufferSince != null) {
+        PlaybackLog.add('rebuffer end '
+            '${DateTime.now().difference(_rebufferSince!).inMilliseconds} ms');
+        _rebufferSince = null;
+      }
       // Buffering going FALSE is the first-frame signal: libmpv only stops
       // reporting a starved demuxer once it has enough to render, so this is
       // the moment the black screen ends.
