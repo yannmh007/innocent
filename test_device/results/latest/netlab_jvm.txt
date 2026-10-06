@@ -19,4 +19,4 @@ NetLabTest > smbMissingShareIsNotFound() PASSED
 NetLabTest > smbAnonymousListsSharesAndReads() PASSED
 NetLabTest > ftpAnonymous() PASSED
 NetLabTest > sftpEd25519Key() PASSED
-BUILD SUCCESSFUL in 2m 19s
+BUILD SUCCESSFUL in 1m 55s

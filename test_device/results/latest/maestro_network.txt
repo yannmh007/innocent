@@ -6,7 +6,10 @@ Tap on (Optional) "Wait"... WARNED
 
 
  Warning: Element not found: Text matching regex: Wait
-Tap on (Optional) "Skip"... COMPLETED
+Tap on (Optional) "Skip"... WARNED
+
+
+ Warning: Element not found: Text matching regex: Skip
 Tap on (Optional) "Allow.*"... WARNED
 
 
