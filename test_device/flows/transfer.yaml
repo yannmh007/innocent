@@ -20,30 +20,32 @@ appId: com.innocent.media
 - tapOn:
     text: "Allow.*"
     optional: true
-- tapOn: "Transfer"
+# The tab itself ("Transfer\nTab 3 of 4"), not the Folders "File Transfer".
+- tapOn:
+    text: "(?s).*Tab 3 of 4.*"
 - waitForAnimationToEnd:
     timeout: 8000
 - takeScreenshot: 30_transfer_home
 - assertVisible: "SEND"
 - assertVisible: "RECEIVE"
-- assertVisible: "Share with"
-- assertVisible: "On — phone to phone.*"
+- assertVisible: "(?s)Share with.*"
+- assertVisible: "(?s).*On — phone to phone.*"
 # Receive: the scan card leads.
 - tapOn: "RECEIVE"
 - waitForAnimationToEnd:
     timeout: 5000
 - takeScreenshot: 31_transfer_receive
-- assertVisible: "Scan the sender.*"
+- assertVisible: "(?s).*Scan the sender.*"
 - back
 - waitForAnimationToEnd:
     timeout: 3000
 - assertVisible: "SEND"
 # Share with a computer: starts with no files; Turbo tries, falls back.
-- tapOn: "Share with"
+- tapOn: "(?s)Share with.*"
 - waitForAnimationToEnd:
     timeout: 5000
 - takeScreenshot: 32_transfer_pc
-- tapOn: "Start"
+- tapOn: "(?s)Start.*"
 - tapOn:
     text: "Allow"
     optional: true
@@ -51,11 +53,11 @@ appId: com.innocent.media
     text: "While using the app"
     optional: true
 - extendedWaitUntil:
-    visible: "Stop sharing"
+    visible: "(?s).*Stop sharing.*"
     timeout: 70000
 - takeScreenshot: 33_transfer_pc_live
-- assertVisible: "http://.*"
-- tapOn: "Stop sharing"
+- assertVisible: "(?s).*http://.*"
+- tapOn: "(?s).*Stop sharing.*"
 - waitForAnimationToEnd:
     timeout: 5000
 - takeScreenshot: 34_transfer_pc_stopped
