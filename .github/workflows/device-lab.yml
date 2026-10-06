@@ -197,6 +197,11 @@ jobs:
             -metadata:s:s:0 language=eng -disposition:s:0 default \
             -movflags +faststart \
             "lib_media/Movies/Perf Test/aaa_play_720p.mp4"
+          # The transfer speed test (flows/transfer_speed.yaml): one big file.
+          if [ "${BIGFILE_MB:-0}" -gt 0 ]; then
+            mkdir -p lib_media/Movies/Speed
+            head -c "$((BIGFILE_MB * 1024 * 1024))" /dev/urandom > lib_media/Movies/Speed/speed_test.mp4
+          fi
           du -sh lib_media; find lib_media -type f | wc -l
 
       # Local Network (Me → Local Network): real Samba, vsftpd and OpenSSH on

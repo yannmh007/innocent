@@ -1,0 +1,77 @@
+# Speed: 1 GB (BIGFILE_MB in config.env) sent with Turbo and received back
+# by the app's own receiver on the same phone. The radio is not in this
+# path (it is the phone talking to itself), so the figure is what the
+# PHONE costs — reading flash, serving HTTP, the isolate engine's 8 ranges,
+# writing flash — the ceiling a real link cannot exceed. lab_trace.txt
+# carries "transfer received … MB in … s = … MB/s".
+appId: com.innocent.media
+---
+- launchApp
+- waitForAnimationToEnd:
+    timeout: 15000
+- tapOn:
+    text: "Wait"
+    optional: true
+- tapOn:
+    text: "Skip"
+    optional: true
+- tapOn:
+    text: "Allow.*"
+    optional: true
+- tapOn:
+    text: "Allow.*"
+    optional: true
+- tapOn:
+    text: "(?s).*Tab 3 of 4.*"
+- waitForAnimationToEnd:
+    timeout: 5000
+- tapOn: "SEND"
+- extendedWaitUntil:
+    visible: "(?s).*Select Files To Send.*"
+    timeout: 15000
+- tapOn: "(?s)Speed\\n.*"
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: 70_speed_picker_folder
+- tapOn: "(?s).*speed_test.*"
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: 71_speed_picked
+- assertVisible: "(?s)Send.*\\(1\\).*"
+- tapOn: "(?s)Send.*\\(1\\).*"
+- tapOn:
+    text: "Allow"
+    optional: true
+- tapOn:
+    text: "While using the app"
+    optional: true
+- extendedWaitUntil:
+    visible: "http://.*"
+    timeout: 70000
+- takeScreenshot: 72_speed_sharing
+- copyTextFrom: "http://.*"
+- back
+- waitForAnimationToEnd:
+    timeout: 3000
+# Home shows the live share; receive from it.
+- tapOn: "RECEIVE"
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn: "(?s).*or enter address.*"
+- tapOn: "http://192\\.168\\.0\\.12.*"
+- pasteText
+- hideKeyboard
+- tapOn: "(?s)Connect"
+- extendedWaitUntil:
+    visible: "(?s).*Download all.*"
+    timeout: 30000
+- takeScreenshot: 73_speed_manifest
+- tapOn: "(?s).*Download all.*"
+- extendedWaitUntil:
+    visible: "(?s).*All files received.*"
+    timeout: 900000
+- takeScreenshot: 74_speed_received
+- back
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: 75_speed_home
