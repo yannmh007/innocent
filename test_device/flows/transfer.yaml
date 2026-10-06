@@ -64,6 +64,8 @@ appId: com.innocent.media
 - back
 - waitForAnimationToEnd:
     timeout: 3000
+# Back from an inner page lands on Transfer's home, not on the first tab.
+- assertVisible: "RECEIVE"
 # Settings: the switches that used to crowd the Send page.
 - tapOn:
     text: "Transfer settings"
@@ -80,3 +82,8 @@ appId: com.innocent.media
     timeout: 5000
 - takeScreenshot: 37_transfer_back_home
 - assertVisible: "RECEIVE"
+# And from Transfer's home, Back goes to the first tab (Video).
+- back
+- waitForAnimationToEnd:
+    timeout: 3000
+- assertVisible: "(?s).*Recently Added.*"
