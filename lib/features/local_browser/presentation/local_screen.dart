@@ -37,6 +37,7 @@ import 'widgets/selection_app_bar.dart';
 import 'widgets/folder_selection_app_bar.dart';
 import 'widgets/video_option_menu.dart';
 import '../../../core/utils/async_value_extensions.dart';
+import '../../../core/theme/tab_title.dart';
 
 /// Local tab — shows folders/videos with view mode, sort, search
 class LocalScreen extends ConsumerStatefulWidget {
@@ -544,11 +545,7 @@ class _LocalScreenState extends ConsumerState<LocalScreen> {
                 prefs.viewMode == ViewMode.files
                     ? AppStrings.of(context).videos
                     : AppStrings.of(context).foldersTitle,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
-                ),
+                style: kTabTitleStyle.copyWith(color: Colors.white),
               ),
               actions: [
                 IconButton(

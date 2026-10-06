@@ -22,6 +22,7 @@ import 'qr_scan_screen.dart';
 import 'transfer_home.dart';
 
 import '../../../core/localization/app_strings.dart';
+import '../../../core/theme/tab_title.dart';
 
 /// Transfer tab — same-Wi-Fi file sharing.
 ///
@@ -86,8 +87,15 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
     // its internet back. An in-flight transfer is left alone on purpose.
     _receiver?.releaseTurboIfIdle();
     // After the frame: providers may not change while the tree is finalised.
+    // And only if the provider is still there — when the whole app (or a
+    // test) is torn down, the ProviderScope goes in the same frame and a
+    // late write throws "used after dispose".
     final back = _back;
-    if (back != null) Future<void>.microtask(() => back.state = null);
+    if (back != null) {
+      Future<void>.microtask(() {
+        if (back.mounted) back.state = null;
+      });
+    }
     super.dispose();
   }
 
@@ -397,8 +405,7 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
       backgroundColor: AppColors.darkBackground,
       appBar: AppBar(
         title: Text(title,
-            style: const TextStyle(
-                color: Colors.white, fontWeight: FontWeight.w700)),
+            style: kTabTitleStyle.copyWith(color: Colors.white)),
         backgroundColor: AppColors.darkBackground,
         // Hardcoded dark background, so the foreground is stated here too
         // rather than inherited. The title needs its own colour on top of

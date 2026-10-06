@@ -29,6 +29,7 @@ import 'statistics_screen.dart';
 import 'status_saver_screen.dart';
 import '../../transfer/presentation/transfer_screen.dart';
 import '../../../core/ui/tablet_constrained_width.dart';
+import '../../../core/theme/tab_title.dart';
 
 /// Phase 19: Me tab — full MX Player parity.
 ///
@@ -115,14 +116,12 @@ class MeScreen extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(2, 14, 2, 14),
+              // Where an AppBar puts its title on the other tabs: 16 dp in
+              // (the list's own 16), centred in the first 56 dp.
+              padding: const EdgeInsets.fromLTRB(0, 16, 0, 16),
               child: Text(
                 s.me,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                ),
+                style: kTabTitleStyle.copyWith(color: Colors.white),
               ),
             ),
 
