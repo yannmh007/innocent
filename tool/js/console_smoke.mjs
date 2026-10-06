@@ -396,8 +396,22 @@ async function open(browser, role, opts = {}) {
   });
 
   // Media the preview and the covers point at: answered, so nothing leaves.
-  await page.route(/https:\/\/(media|pub)\.test\//, (route) =>
-    route.fulfill({ status: 404, body: '' }));
+  await page.route(/https:\/\/(media|pub)\.test\//, (route) => {
+    // The cover picker's stills: a numbered colour card each, so a
+    // screenshot shows ten different frames without any real picture.
+    const m = /\/thumb\/.*-f0(\d)\.jpg$/.exec(route.request().url());
+    if (m) {
+      const i = Number(m[1]);
+      const hue = (i * 36 + 200) % 360;
+      return route.fulfill({ status: 200, contentType: 'image/svg+xml', body:
+        `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360">` +
+        `<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="hsl(${hue},55%,45%)"/>` +
+        `<stop offset="1" stop-color="hsl(${(hue + 40) % 360},60%,25%)"/></linearGradient></defs>` +
+        `<rect width="640" height="360" fill="url(#g)"/>` +
+        `<text x="320" y="200" font-size="64" font-family="sans-serif" fill="rgba(255,255,255,.85)" text-anchor="middle">frame ${i}</text></svg>` });
+    }
+    return route.fulfill({ status: 404, body: '' });
+  });
 
   // The bucket. Parts are PUT to https://r2.test/up/<uploadId>/<n>, small
   // files to https://r2.test/one/<key>. Answers with the CORS headers a real
@@ -560,7 +574,10 @@ async function open(browser, role, opts = {}) {
           const t = state.titles.find((x) => x.id === body.id) || state.titles[0];
           return { title: { ...t, slug: t.folder }, folder: t.folder, publicBase: 'https://pub.test',
             assets: [
-              { id: 'as1', kind: 'video', bucket: 'innocent-media', object_key: t.folder + '/video/a.mp4', sort_order: 0, is_primary: true },
+              // 043: ten frames from across the video for the cover picker.
+              { id: 'as1', kind: 'video', bucket: 'innocent-media', object_key: t.folder + '/video/a.mp4', sort_order: 0, is_primary: true,
+                width: 1280, height: 720, duration_s: 600, thumb_key: null, frames_state: 'done',
+                frames: Array.from({ length: 10 }, (_, i) => ({ at: i ? i * 60 : 1, key: t.folder + '/thumb/a-f0' + i + '.jpg' })) },
               { id: 'as2', kind: 'photo', bucket: 'innocent-public', object_key: t.folder + '/photo/p.jpg', sort_order: 1, is_primary: true },
             ] };
         },
@@ -589,6 +606,7 @@ async function open(browser, role, opts = {}) {
         },
         abortMultipart: () => { state.r2.aborts.push(body.uploadId); return { ok: true }; },
         create: () => { state.r2.creates.push(body); return { id: MINE, title: body.title, status: 'draft' }; },
+        updateAsset: () => { (state.assetPatches ||= []).push(body); return { ok: true }; },
       };
       // The decisions, with the two rules the page must not be trusted with:
       // only an editor or owner approves, and a send-back needs a note.
@@ -942,6 +960,22 @@ try {
       (await page.getAttribute('.modal video', 'src')) === 'https://media.test/p.mp4');
     check('editor: and says which copy it is', /720p streaming copy/.test(await page.textContent('.modal')));
     await page.click('.modal button.b');
+
+    // 043: the cover picker — ten frames from the video, one tap sets it.
+    await page.click('#mGrid button[title^="No thumbnail"]');
+    await page.waitForSelector('.modal .framegrid .fk');
+    check('cover: the menu offers the ten frames of the video',
+      (await page.locator('.modal .framegrid .fk').count()) === 10);
+    check('cover: each says where in the film it is',
+      /0:01/.test(await page.textContent('.modal .framegrid')) &&
+      /9:00/.test(await page.textContent('.modal .framegrid')));
+    await shot(page, 'desk-cover-picker');
+    await page.locator('.modal .framegrid .fk').nth(3).click();
+    await page.waitForFunction(() => /Thumbnail set from the frame at 3:00/.test(document.querySelector('#msg')?.textContent || ''));
+    check('cover: one tap makes that frame the thumbnail — nothing uploaded',
+      (state.assetPatches || []).some((x) => x.id === 'as1' &&
+        /\/thumb\/a-f03\.jpg$/.test(String(x.patch && x.patch.thumb_key))) &&
+      !state.calls.some((c) => c.op === 'sign'));
     await page.click('#side a[data-tab=new]');
     await page.waitForSelector('#tab-new:not([hidden])');
     check('upload: no Published checkbox — everything starts as a draft', !(await page.$('#n_published')));
