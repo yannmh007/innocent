@@ -22,6 +22,7 @@ import 'qr_scan_screen.dart';
 import 'transfer_home.dart';
 
 import '../../../core/localization/app_strings.dart';
+
 /// Transfer tab — same-Wi-Fi file sharing.
 ///
 /// Audit fix (real user report "Transfer UI သက်သက်ပဲ"): rewritten
@@ -41,6 +42,12 @@ class TransferScreen extends ConsumerStatefulWidget {
   ConsumerState<TransferScreen> createState() => _TransferScreenState();
 }
 
+/// Set while the Transfer tab shows an inner page (Send, Receive, Share
+/// with): what Back should do instead of leaving the tab. The shell reads it,
+/// because two PopScopes on one route are both told of a blocked pop — the
+/// shell's would jump to the first tab while ours went home.
+final transferBackProvider = StateProvider<VoidCallback?>((ref) => null);
+
 enum _View { home, send, receive, computer }
 
 class _TransferScreenState extends ConsumerState<TransferScreen> {
@@ -55,6 +62,7 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
   // its way out by then. The notifier itself outlives this screen
   // (receiverProvider is not autoDispose), so holding it is safe.
   ReceiverNotifier? _receiver;
+  StateController<VoidCallback?>? _back;
 
   @override
   void initState() {
@@ -65,6 +73,7 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _receiver = ref.read(receiverProvider.notifier);
+      _back = ref.read(transferBackProvider.notifier);
       _syncDiscovery();
     });
   }
@@ -76,6 +85,9 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
     // If the user walked away from a finished Turbo receive, give the phone
     // its internet back. An in-flight transfer is left alone on purpose.
     _receiver?.releaseTurboIfIdle();
+    // After the frame: providers may not change while the tree is finalised.
+    final back = _back;
+    if (back != null) Future<void>.microtask(() => back.state = null);
     super.dispose();
   }
 
@@ -93,6 +105,7 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
     if (_view == v) return;
     setState(() => _view = v);
     _syncDiscovery();
+    _back?.state = v == _View.home ? null : () => _go(_View.home);
   }
 
   /// SEND, the way MX does it: straight into the picker; what is picked is
@@ -239,7 +252,8 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${AppStrings.of(context).failedPickFiles}: $e')),
+        SnackBar(
+            content: Text('${AppStrings.of(context).failedPickFiles}: $e')),
       );
     } finally {
       if (mounted) setState(() => _picking = false);
@@ -310,7 +324,8 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
         backgroundColor: AppColors.darkSurface,
         title: Row(
           children: [
-            const Icon(Icons.phone_android, color: AppColors.accentBlue, size: 22),
+            const Icon(Icons.phone_android,
+                color: AppColors.accentBlue, size: 22),
             const SizedBox(width: 10),
             Expanded(
               child: Text(req.deviceName,
@@ -355,7 +370,9 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
     // no send is in progress.
     ref.listen(receiverProvider.select((s) => s.resumeAvailable),
         (prev, hasResume) {
-      if (hasResume == true && _view == _View.home && !state.isRunning &&
+      if (hasResume == true &&
+          _view == _View.home &&
+          !state.isRunning &&
           mounted) {
         _go(_View.receive);
       }
@@ -370,76 +387,72 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
       _View.receive => s.trReceiveTitle,
       _View.computer => s.trShareWith,
     };
-    return PopScope(
-      // Back inside the tab goes home first; nothing running is stopped.
-      canPop: _view == _View.home,
-      onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) _go(_View.home);
-      },
-      child: Scaffold(
+    // Back inside the tab goes home first (nothing running is stopped). The
+    // shell answers Back — see [transferBackProvider] — because a PopScope of
+    // our own would fire alongside the shell's, which jumps to the first tab.
+    return Scaffold(
+      backgroundColor: AppColors.darkBackground,
+      appBar: AppBar(
+        title: Text(title,
+            style: const TextStyle(
+                color: Colors.white, fontWeight: FontWeight.w700)),
         backgroundColor: AppColors.darkBackground,
-        appBar: AppBar(
-          title: Text(title,
-              style: const TextStyle(
-                  color: Colors.white, fontWeight: FontWeight.w700)),
-          backgroundColor: AppColors.darkBackground,
-          // Hardcoded dark background, so the foreground is stated here too
-          // rather than inherited. The title needs its own colour on top of
-          // `foregroundColor` because `appBarTheme.titleTextStyle` carries one
-          // and outranks it. See test/appbar_contrast_test.dart.
-          foregroundColor: Colors.white,
-          elevation: 0,
-          leading: _view == _View.home
-              ? null
-              : IconButton(
-                  tooltip: MaterialLocalizations.of(context).backButtonTooltip,
-                  icon: const Icon(Icons.arrow_back_rounded),
-                  onPressed: () => _go(_View.home),
-                ),
-          automaticallyImplyLeading: false,
-          actions: [
-            IconButton(
-              tooltip: s.trSettings,
-              icon: const Icon(Icons.more_vert_rounded),
-              onPressed: () =>
-                  TransferOptionsSheet.show(context, onHelp: _showHelp),
-            ),
-          ],
-        ),
-        body: switch (_view) {
-          _View.home => TransferHome(
-              onSend: _send,
-              onReceive: () => _go(_View.receive),
-              onComputer: () => _go(_View.computer),
-              onHistory: _openHistory,
-              onSendApp: _sendApp,
-              onRename: () => _promptRename(state.deviceName),
-              onOpenSend: () =>
-                  _go(state.forComputer ? _View.computer : _View.send),
-              onOpenReceive: () => _go(_View.receive),
-            ),
-          _View.receive => const _ReceivePane(),
-          _View.computer => ComputerSharePane(onAddFiles: _pickFiles),
-          _View.send => (state.isRunning && !state.forComputer)
-              ? _RunningPane(
-                  state: state,
-                  shareUrl: notifier.shareUrl,
-                  qrPayload: notifier.qrPayload,
-                  onStop: notifier.stop,
-                  onTogglePause: notifier.setPaused,
-                  onAddMore: _pickFiles,
-                )
-              : _PreparePane(
-                  state: state,
-                  picking: _picking,
-                  onPickFiles: _pickFiles,
-                  onRemove: notifier.removeFile,
-                  onStart: notifier.start,
-                  onSendApp: _addOwnApk,
-                  onSendFolder: _pickFolder,
-                ),
-        },
+        // Hardcoded dark background, so the foreground is stated here too
+        // rather than inherited. The title needs its own colour on top of
+        // `foregroundColor` because `appBarTheme.titleTextStyle` carries one
+        // and outranks it. See test/appbar_contrast_test.dart.
+        foregroundColor: Colors.white,
+        elevation: 0,
+        leading: _view == _View.home
+            ? null
+            : IconButton(
+                tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+                icon: const Icon(Icons.arrow_back_rounded),
+                onPressed: () => _go(_View.home),
+              ),
+        automaticallyImplyLeading: false,
+        actions: [
+          IconButton(
+            tooltip: s.trSettings,
+            icon: const Icon(Icons.more_vert_rounded),
+            onPressed: () =>
+                TransferOptionsSheet.show(context, onHelp: _showHelp),
+          ),
+        ],
       ),
+      body: switch (_view) {
+        _View.home => TransferHome(
+            onSend: _send,
+            onReceive: () => _go(_View.receive),
+            onComputer: () => _go(_View.computer),
+            onHistory: _openHistory,
+            onSendApp: _sendApp,
+            onRename: () => _promptRename(state.deviceName),
+            onOpenSend: () =>
+                _go(state.forComputer ? _View.computer : _View.send),
+            onOpenReceive: () => _go(_View.receive),
+          ),
+        _View.receive => const _ReceivePane(),
+        _View.computer => ComputerSharePane(onAddFiles: _pickFiles),
+        _View.send => (state.isRunning && !state.forComputer)
+            ? _RunningPane(
+                state: state,
+                shareUrl: notifier.shareUrl,
+                qrPayload: notifier.qrPayload,
+                onStop: notifier.stop,
+                onTogglePause: notifier.setPaused,
+                onAddMore: _pickFiles,
+              )
+            : _PreparePane(
+                state: state,
+                picking: _picking,
+                onPickFiles: _pickFiles,
+                onRemove: notifier.removeFile,
+                onStart: notifier.start,
+                onSendApp: _addOwnApk,
+                onSendFolder: _pickFolder,
+              ),
+      },
     );
   }
 
@@ -492,7 +505,8 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
         title: Text(AppStrings.of(context).howTransferWorksTitle,
             style: const TextStyle(color: Colors.white)),
         content: SingleChildScrollView(
-          child: Text(AppStrings.of(context).howTransferWorksBody,
+          child: Text(
+            AppStrings.of(context).howTransferWorksBody,
             style: const TextStyle(color: Colors.white70, height: 1.55),
           ),
         ),
@@ -897,6 +911,7 @@ class _PreparePane extends StatelessWidget {
 class _RunningPane extends StatelessWidget {
   final TransferState state;
   final String shareUrl;
+
   /// What the QR encodes. Under Turbo this is a `innocent://turbo?…` invite
   /// carrying the Wi-Fi credentials, because no URL is reachable until the
   /// other phone has joined the link.
@@ -923,11 +938,10 @@ class _RunningPane extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(s.shareIsLive,
+          Text(
+            s.shareIsLive,
             style: const TextStyle(
-                color: Colors.white,
-                fontSize: 22,
-                fontWeight: FontWeight.w700),
+                color: Colors.white, fontSize: 22, fontWeight: FontWeight.w700),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 4),
@@ -960,7 +974,8 @@ class _RunningPane extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          Text(s.shareScanHint,
+          Text(
+            s.shareScanHint,
             style: const TextStyle(
                 color: AppColors.white55, fontSize: 11.5, height: 1.4),
             textAlign: TextAlign.center,
@@ -1018,9 +1033,8 @@ class _RunningPane extends StatelessWidget {
               (i) {
             final f = state.files[i];
             final served = state.servedPerFile[i] ?? 0;
-            final frac = f.sizeBytes > 0
-                ? (served / f.sizeBytes).clamp(0.0, 1.0)
-                : 0.0;
+            final frac =
+                f.sizeBytes > 0 ? (served / f.sizeBytes).clamp(0.0, 1.0) : 0.0;
             final complete = f.sizeBytes > 0 && served >= f.sizeBytes;
             return Padding(
               padding: const EdgeInsets.only(bottom: 10),
@@ -1116,8 +1130,8 @@ class _RunningPane extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 6),
                   minimumSize: const Size(0, 34)),
               icon: const Icon(Icons.add, size: 17),
-              label: Text(s.addMoreFiles,
-                  style: const TextStyle(fontSize: 12.5)),
+              label:
+                  Text(s.addMoreFiles, style: const TextStyle(fontSize: 12.5)),
             ),
           ),
           const SizedBox(height: 4),
@@ -1437,8 +1451,7 @@ class _RunningPane extends StatelessWidget {
           if (state.peers.length > 1) ...[
             const SizedBox(height: 4),
             Text('${s.receiversLabel}: ${state.peers.length}',
-                style: const TextStyle(
-                    color: AppColors.white55, fontSize: 11)),
+                style: const TextStyle(color: AppColors.white55, fontSize: 11)),
           ],
         ],
       ),
@@ -1542,8 +1555,8 @@ class _ReceivePaneState extends ConsumerState<_ReceivePane> {
             if (st.saveDir != null) ...[
               const SizedBox(height: 16),
               Text(AppStrings.of(context).savedToPath(st.saveDir!),
-                  style: const TextStyle(
-                      color: AppColors.white55, fontSize: 11)),
+                  style:
+                      const TextStyle(color: AppColors.white55, fontSize: 11)),
             ],
             const SizedBox(height: 12),
             TextButton.icon(
@@ -1619,7 +1632,8 @@ class _ReceivePaneState extends ConsumerState<_ReceivePane> {
         children: [
           Row(
             children: [
-              const Icon(Icons.pin_outlined, color: AppColors.accentBlue, size: 20),
+              const Icon(Icons.pin_outlined,
+                  color: AppColors.accentBlue, size: 20),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(device.name,
@@ -1643,9 +1657,8 @@ class _ReceivePaneState extends ConsumerState<_ReceivePane> {
           const SizedBox(height: 4),
           Text(_pinTries > 0 ? s.wrongPin : s.enterSharePin,
               style: TextStyle(
-                  color: _pinTries > 0
-                      ? const Color(0xFFFFCDD2)
-                      : Colors.white70,
+                  color:
+                      _pinTries > 0 ? const Color(0xFFFFCDD2) : Colors.white70,
                   fontSize: 12,
                   height: 1.4)),
           const SizedBox(height: 10),
@@ -1674,9 +1687,8 @@ class _ReceivePaneState extends ConsumerState<_ReceivePane> {
               ),
               const SizedBox(width: 10),
               FilledButton(
-                onPressed: st.connecting
-                    ? null
-                    : () => _submitPin(device, notifier),
+                onPressed:
+                    st.connecting ? null : () => _submitPin(device, notifier),
                 child: Text(s.connectAction),
               ),
             ],
@@ -1768,8 +1780,7 @@ class _ReceivePaneState extends ConsumerState<_ReceivePane> {
                 if (mounted) notifier.startDiscovery();
               },
               icon: const Icon(Icons.link_off, size: 16),
-              label: Text(s.turboLeave,
-                  style: const TextStyle(fontSize: 12.5)),
+              label: Text(s.turboLeave, style: const TextStyle(fontSize: 12.5)),
             ),
           ),
         ],
@@ -1897,19 +1908,17 @@ class _ReceivePaneState extends ConsumerState<_ReceivePane> {
           ] else ...[
             const SizedBox(height: 4),
             Text(s.tapDeviceToConnect,
-                style: const TextStyle(
-                    color: AppColors.white55, fontSize: 11.5)),
+                style:
+                    const TextStyle(color: AppColors.white55, fontSize: 11.5)),
             const SizedBox(height: 8),
             for (final d in st.nearby)
               InkWell(
-                onTap: st.connecting
-                    ? null
-                    : () => notifier.connectToDevice(d),
+                onTap: st.connecting ? null : () => notifier.connectToDevice(d),
                 borderRadius: BorderRadius.circular(10),
                 child: Container(
                   margin: const EdgeInsets.only(bottom: 8),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                   decoration: BoxDecoration(
                     color: AppColors.darkSurfaceVariant,
                     borderRadius: BorderRadius.circular(10),
@@ -1920,8 +1929,7 @@ class _ReceivePaneState extends ConsumerState<_ReceivePane> {
                     children: [
                       CircleAvatar(
                         radius: 16,
-                        backgroundColor:
-                            AppColors.accentBlue.withOpacity(0.20),
+                        backgroundColor: AppColors.accentBlue.withOpacity(0.20),
                         child: const Icon(Icons.phone_android,
                             size: 17, color: AppColors.accentBlue),
                       ),
@@ -2021,8 +2029,8 @@ class _ReceivePaneState extends ConsumerState<_ReceivePane> {
                       height: 16,
                       child: CircularProgressIndicator(strokeWidth: 2))
                   : const Icon(Icons.cloud_download_outlined),
-              label: Text(
-                  st.connecting ? s.connectingToDevice : s.connectAction),
+              label:
+                  Text(st.connecting ? s.connectingToDevice : s.connectAction),
             ),
           ),
         ],
@@ -2150,8 +2158,8 @@ class _ReceivePaneState extends ConsumerState<_ReceivePane> {
                       ? s.allFilesReceived
                       : '${s.overallProgress}: ${st.doneCount}/${st.files.length} • '
                           '${_fmtBytes(received)} / ${_fmtBytes(total)}',
-                  style: const TextStyle(
-                      color: AppColors.white70, fontSize: 11.5),
+                  style:
+                      const TextStyle(color: AppColors.white70, fontSize: 11.5),
                 ),
               ),
               if (!allDone && speed > 0)
@@ -2206,13 +2214,10 @@ class _ReceivePaneState extends ConsumerState<_ReceivePane> {
                       : (st.userPaused
                           ? notifier.resumeBatch
                           : (st.batchRunning ? null : notifier.downloadAll)),
-                  icon: Icon(
-                      st.userPaused ? Icons.play_arrow : Icons.download,
+                  icon: Icon(st.userPaused ? Icons.play_arrow : Icons.download,
                       size: 18),
-                  label: Text(
-                      st.userPaused ? s.resumeReceive : s.downloadAll,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis),
+                  label: Text(st.userPaused ? s.resumeReceive : s.downloadAll,
+                      maxLines: 1, overflow: TextOverflow.ellipsis),
                 ),
               ),
               if (st.batchRunning) ...[
@@ -2311,8 +2316,8 @@ class _ReceivePaneState extends ConsumerState<_ReceivePane> {
               children: [
                 Text(
                   '${_fmtBytes(pr.received)} / ${_fmtBytes(pr.total)}',
-                  style: const TextStyle(
-                      color: AppColors.white55, fontSize: 10.5),
+                  style:
+                      const TextStyle(color: AppColors.white55, fontSize: 10.5),
                 ),
                 if (pr.bytesPerSec > 0)
                   Text(
@@ -2328,21 +2333,18 @@ class _ReceivePaneState extends ConsumerState<_ReceivePane> {
           if (pr != null && pr.error != null) ...[
             const SizedBox(height: 6),
             Text(pr.error!,
-                style:
-                    const TextStyle(color: Colors.redAccent, fontSize: 11)),
+                style: const TextStyle(color: Colors.redAccent, fontSize: 11)),
           ],
         ],
       ),
     );
   }
 
-  Widget _trailing(RemoteFile f, ReceiveProgress? pr,
-      ReceiverNotifier notifier, bool batchRunning) {
+  Widget _trailing(RemoteFile f, ReceiveProgress? pr, ReceiverNotifier notifier,
+      bool batchRunning) {
     if (pr != null && pr.done) {
-      return Icon(
-          pr.skipped ? Icons.check_circle_outline : Icons.check_circle,
-          color: pr.skipped ? AppColors.white50 : Colors.green,
-          size: 22);
+      return Icon(pr.skipped ? Icons.check_circle_outline : Icons.check_circle,
+          color: pr.skipped ? AppColors.white50 : Colors.green, size: 22);
     }
     if (pr != null && pr.error == null && pr.total > 0 && !pr.done) {
       if (pr.pausedBySender) {
@@ -2364,8 +2366,8 @@ class _ReceivePaneState extends ConsumerState<_ReceivePane> {
 /// (after the per-app permission) for an APK, the owning app for anything
 /// else. Shared by the Receive page and the History page.
 Future<void> openReceivedItem(
-  BuildContext context, WidgetRef ref, ReceivedItem item) async {
-final s = AppStrings.of(context);
+    BuildContext context, WidgetRef ref, ReceivedItem item) async {
+  final s = AppStrings.of(context);
   // Check first: a file the user deleted from a file manager would otherwise
   // open a black player screen with no explanation.
   final exists = await ReceivedHistoryNotifier.stillExists(item.path);

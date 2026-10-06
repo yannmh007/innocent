@@ -42,6 +42,8 @@ const List<_ShellTab> _shellTabs = [
   _ShellTab(Icons.person_outline, Icons.person, 'Me', Routes.me),
 ];
 
+const int _transferTab = 2;
+
 /// Shell wraps tabs with persistent bottom nav.
 class ShellScreen extends ConsumerStatefulWidget {
   final Widget child;
@@ -79,7 +81,8 @@ class _ShellScreenState extends ConsumerState<ShellScreen>
     // reason the update prompt is: the first resume of a cold start never fires
     // the lifecycle callback, so anything that waits for one waits until the
     // user has backgrounded the app and come back.
-    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeResumeDownloads());
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => _maybeResumeDownloads());
   }
 
   /// Carry on with downloads the network or the app interrupted — never with
@@ -173,16 +176,24 @@ class _ShellScreenState extends ConsumerState<ShellScreen>
     // app. It used to leave from every tab — on a TV remote, one press too
     // many from Music and the app was gone. A screen opened inside a tab
     // still closes first: this only answers when nothing above it can pop.
+    // A tab with pages of its own (Transfer's Send / Receive / Share with)
+    // gets Back first: it goes to that tab's home, then to the first tab.
+    final innerBack =
+        currentIndex == _transferTab ? ref.watch(transferBackProvider) : null;
     Widget backToFirstTab(Widget shell) => PopScope(
-          canPop: currentIndex == 0,
+          canPop: currentIndex == 0 && innerBack == null,
           onPopInvokedWithResult: (didPop, _) {
-            if (!didPop) select(0);
+            if (didPop) return;
+            if (innerBack != null) {
+              innerBack();
+            } else {
+              select(0);
+            }
           },
           child: shell,
         );
 
-    final wide =
-        MediaQuery.sizeOf(context).width >= 600 || DeviceProfile.isTv;
+    final wide = MediaQuery.sizeOf(context).width >= 600 || DeviceProfile.isTv;
     if (wide) {
       return backToFirstTab(Scaffold(
         body: Row(
@@ -199,8 +210,8 @@ class _ShellScreenState extends ConsumerState<ShellScreen>
                   groupAlignment: -0.85,
                   minWidth: 80,
                   indicatorColor: AppColors.specPrimary.withValues(alpha: 0.18),
-                  selectedIconTheme:
-                      const IconThemeData(color: AppColors.specPrimary, size: 24),
+                  selectedIconTheme: const IconThemeData(
+                      color: AppColors.specPrimary, size: 24),
                   unselectedIconTheme: const IconThemeData(
                       color: AppColors.specNavInactive, size: 24),
                   selectedLabelTextStyle: Theme.of(context)
@@ -210,7 +221,8 @@ class _ShellScreenState extends ConsumerState<ShellScreen>
                   unselectedLabelTextStyle: Theme.of(context)
                       .textTheme
                       .labelMedium
-                      ?.copyWith(color: AppColors.specNavInactive, fontSize: 12),
+                      ?.copyWith(
+                          color: AppColors.specNavInactive, fontSize: 12),
                   destinations: [
                     for (int i = 0; i < _shellTabs.length; i++)
                       NavigationRailDestination(
