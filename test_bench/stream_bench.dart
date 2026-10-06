@@ -30,7 +30,7 @@ class _FakePaths extends PathProviderPlatform with MockPlatformInterfaceMixin {
 /// consumed at the film's bitrate after a start-up buffer — and reports:
 ///
 ///   delivered   MB/s the proxy delivered while the player was waiting on it
-///   first 2 MB  how long the black screen lasts (time to the first frame's bytes)
+///   first 512 KB  how long the black screen lasts (time to the first frame's bytes)
 ///   stalls      how many times playback ran dry, and for how long in all
 ///
 ///   BENCH_MB=48 BENCH_KBPS=6000 flutter test test_bench/stream_bench.dart
@@ -88,7 +88,7 @@ void main() {
       final res = await _play(local!, body.length, kbps);
       StreamCacheServer.instance.release(id);
       final line = 'lanes=$lanes  delivered ${res.mbps.toStringAsFixed(2)} MB/s  '
-          'first 2 MB ${res.firstMs} ms  stalls ${res.stalls} '
+          'first 512 KB ${res.firstMs} ms  stalls ${res.stalls} '
           '(${(res.stalledMs / 1000).toStringAsFixed(1)} s)  '
           'film ${(body.length * 8 / kbps / 1000).toStringAsFixed(0)} s at $kbps kbps';
       lines.add(line);
@@ -159,7 +159,7 @@ Future<_Result> _play(String url, int total, int kbps) async {
   final timer = Timer.periodic(const Duration(milliseconds: 50), (_) => tick());
   await for (final chunk in resp) {
     got += chunk.length;
-    if (firstMs < 0 && got >= 2 << 20) firstMs = sw.elapsedMilliseconds;
+    if (firstMs < 0 && got >= 512 * 1024) firstMs = sw.elapsedMilliseconds;
     tick();
   }
   final ms = sw.elapsedMilliseconds;

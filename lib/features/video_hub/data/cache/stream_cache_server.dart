@@ -716,7 +716,12 @@ class StreamCacheServer {
         while (next < end &&
             parts.length < window &&
             parts.where((p) => !p.settled).length < lanes) {
-          final partEnd = min(next + partBytes, end);
+          // THE FIRST PART IS SMALL. It holds what the player needs before
+          // it can draw anything — the index, the first keyframe — and six
+          // lanes starting at once share the line six ways. 512 KB arrives
+          // in a sixth of the time a 2 MB part would; the rest are full size.
+          final size = next == start ? 512 * 1024 : partBytes;
+          final partEnd = min(next + size, end);
           final part = _LanePart(src.io, url, next, partEnd, total, _laneStall);
           part.bytes.then((_) => topUp(), onError: (_) {
             failed = true;
