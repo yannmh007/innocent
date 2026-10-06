@@ -17,26 +17,21 @@ import '../../user_data/presentation/watch_insights_screen.dart';
 import '../../user_data/presentation/playlists_screen.dart';
 import '../../user_data/presentation/recycle_bin_screen.dart';
 import '../../user_data/presentation/watch_later_screen.dart';
-import 'app_theme_screen.dart';
 import 'backup_restore_screen.dart';
-import 'cloud_drive_screen.dart';
-import 'custom_popup_play_screen.dart';
 import 'help_screen.dart';
-import 'legal_screen.dart';
 import 'local_network_screen.dart';
 import 'media_manager_screen.dart';
-import 'statistics_screen.dart';
 import 'status_saver_screen.dart';
 import '../../transfer/presentation/transfer_screen.dart';
 import '../../../core/ui/tablet_constrained_width.dart';
+import '../../../core/theme/tab_title.dart';
 
 /// Phase 19: Me tab — full MX Player parity.
 ///
 /// Top: 9-icon grid (3x3) inside a rounded card.
 /// Then: Status Saver row.
-/// Then: App Theme / Settings / Custom Pop-up Play group.
-/// Then: Legal / Help group.
-/// Bottom: Extra features (History, Favourites, Watch Later, Statistics).
+/// Then: Your library (History, Favourites, Watch later, Insights).
+/// Then: Settings / Backup & Restore, and Help / About.
 class MeScreen extends StatelessWidget {
   const MeScreen({super.key});
 
@@ -53,6 +48,12 @@ class MeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = AppStrings.of(context);
+    // The owner's order (2026-10-06), three by three:
+    //   Download        File Transfer   Private Folder
+    //   Movies          Media Manager   Local Network
+    //   Network Stream  Video Playlists Recycle Bin
+    // Cloud Drive left the grid for Backup & Restore (it is a backup and
+    // cloud-streaming feature, and not ready yet); Movies took its place.
     final grid = <_GridFeature>[
       _GridFeature(
         s.downloads,
@@ -65,15 +66,13 @@ class MeScreen extends StatelessWidget {
         s.fileTransfer,
         Icons.video_file_outlined,
         () => _open(context, const TransferScreen()),
-        // Audit fix (Transfer real impl): pick files + QR + same-Wi-Fi
-        // HTTP server wired (shelf + qr_flutter + network_info_plus).
-        // Not Wi-Fi-Direct (needs native code) but works the
-        // AirDroid / Snapdrop / Zapya-LAN way.
       ),
       _GridFeature(s.privateFolder, Icons.folder_special_outlined,
           () => context.push(Routes.privateFolder)),
-      _GridFeature(s.videoPlaylists, Icons.queue_music_outlined,
-          () => _open(context, const PlaylistsScreen())),
+      // The Movies hub, as the Video tab's red chip opens it: a top-level
+      // route on the root navigator, so the tab bar is not drawn under it.
+      _GridFeature(s.vhVideoChip, Icons.movie_outlined,
+          () => context.push(Routes.videoHub)),
       _GridFeature(s.mediaManager, Icons.folder_zip_outlined,
           () => _open(context, const MediaManagerScreen())),
       _GridFeature(
@@ -83,15 +82,8 @@ class MeScreen extends StatelessWidget {
       ),
       _GridFeature(s.networkStream, Icons.public,
           () => _open(context, const NetworkStreamScreen())),
-      _GridFeature(
-        s.cloudDrive,
-        Icons.cloud_outlined,
-        () => _open(context, const CloudDriveScreen()),
-        // Audit fix (standard high-quality): no OAuth, no actual
-        // cloud SDK integration — connect state is in-memory only.
-        // 7 providers shown but none actually authenticate.
-        comingSoon: true,
-      ),
+      _GridFeature(s.videoPlaylists, Icons.queue_music_outlined,
+          () => _open(context, const PlaylistsScreen())),
       _GridFeature(s.recycleBin, Icons.delete_outline,
           () => _open(context, const RecycleBinScreen())),
     ];
@@ -115,14 +107,12 @@ class MeScreen extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(2, 14, 2, 14),
+              // Where an AppBar puts its title on the other tabs: 16 dp in
+              // (the list's own 16), centred in the first 56 dp.
+              padding: const EdgeInsets.fromLTRB(0, 16, 0, 16),
               child: Text(
                 s.me,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                ),
+                style: kTabTitleStyle.copyWith(color: Colors.white),
               ),
             ),
 
@@ -154,118 +144,122 @@ class MeScreen extends StatelessWidget {
             ),
             const SizedBox(height: 12),
 
-            // Status Saver
+            // BELOW THE GRID (redesigned 2026-10-06, owner's request: "too
+            // many rows, cluttered, not premium"). It was 13 rows in 6 cards.
+            // Now, the way YouTube's "You", Netflix's "My Netflix" and
+            // MX Player's Me are laid out — things you made first, then the
+            // app's own housekeeping, each said once:
+            //   Status Saver                       (MX's signature row)
+            //   Your library   History · Favourites · Watch later · Insights
+            //   Settings  (+ App theme, Pop-up play)   Backup & Restore
+            //   Help                                    About (+ Legal)
+            // Nothing was removed: App theme and Custom pop-up play are in
+            // Settings, Statistics is inside Insights, Legal inside About.
             _Card(
-              child: _StatusSaverTile(
-                  onTap: () => _open(context, const StatusSaverScreen())),
+              child: _MeRow(
+                icon: Icons.download_rounded,
+                tint: const Color(0xFF25D366),
+                filled: true,
+                label: s.statusSaver,
+                onTap: () => _open(context, const StatusSaverScreen()),
+              ),
             ),
             const SizedBox(height: 12),
 
-            // App Theme / Settings / Custom Pop-up Play
+            _Card(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(left: 2, bottom: 10),
+                      child: Text(
+                        s.meLibrary,
+                        style: const TextStyle(
+                          color: AppColors.white60,
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                    ),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _Shortcut(
+                          icon: Icons.history_rounded,
+                          tint: const Color(0xFF5AC8FA),
+                          label: s.history,
+                          onTap: () => _open(context, const HistoryScreen()),
+                        ),
+                        _Shortcut(
+                          icon: Icons.favorite_rounded,
+                          tint: const Color(0xFFFF5A7A),
+                          label: s.favourites,
+                          onTap: () =>
+                              _open(context, const FavouritesScreen()),
+                        ),
+                        _Shortcut(
+                          icon: Icons.watch_later_rounded,
+                          tint: const Color(0xFFFFB020),
+                          label: s.watchLater,
+                          onTap: () =>
+                              _open(context, const WatchLaterScreen()),
+                        ),
+                        _Shortcut(
+                          icon: Icons.insights_rounded,
+                          tint: const Color(0xFFAF7BFF),
+                          label: s.meInsights,
+                          onTap: () =>
+                              _open(context, const WatchInsightsScreen()),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+
             _Card(
               child: Column(
                 children: [
-                  _ListTile(
-                    icon: Icons.checkroom,
-                    label: s.appTheme,
-                    onTap: () => _open(context, const AppThemeScreen()),
-                  ),
-                  const _SubDivider(),
-                  _ListTile(
-                    icon: Icons.settings,
+                  _MeRow(
+                    icon: Icons.settings_rounded,
+                    tint: const Color(0xFF8E8E93),
                     label: s.settings,
+                    hint: s.meSettingsHint,
                     onTap: () => _open(context, const SettingsScreen()),
                   ),
-                  const _SubDivider(),
-                  _ListTile(
-                    icon: Icons.crop_din,
-                    label: s.popupPlay,
-                    onTap: () =>
-                        _open(context, const CustomPopupPlayScreen()),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            // Phase 42: My Lists card — surface History/Favourites/Watch
-            // Later in Me tab the way MX Player V3 does. They were already
-            // reachable from the Local-tab Quick chips and the video option
-            // menu, but daily users also expect to find them in Me.
-            _Card(
-              child: Column(
-                children: [
-                  _ListTile(
-                    icon: Icons.history,
-                    label: s.history,
-                    onTap: () => _open(context, const HistoryScreen()),
-                  ),
-                  const _SubDivider(),
-                  _ListTile(
-                    icon: Icons.favorite_outline,
-                    label: s.favourites,
-                    onTap: () => _open(context, const FavouritesScreen()),
-                  ),
-                  const _SubDivider(),
-                  _ListTile(
-                    icon: Icons.watch_later_outlined,
-                    label: s.watchLater,
-                    onTap: () => _open(context, const WatchLaterScreen()),
-                  ),
-                  const _SubDivider(),
-                  _ListTile(
-                    icon: Icons.insights,
-                    label: s.watchInsights,
-                    onTap: () =>
-                        _open(context, const WatchInsightsScreen()),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            // Legal / Help
-            _Card(
-              child: Column(
-                children: [
-                  _ListTile(
-                    icon: Icons.balance,
-                    label: s.legal,
-                    onTap: () => _open(context, const LegalScreen()),
-                  ),
-                  const _SubDivider(),
-                  _ListTile(
-                    icon: Icons.help_outline,
-                    label: s.help,
-                    onTap: () => _open(context, const HelpScreen()),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            // Phase 41: Backup / Statistics / About — surface previously
-            // orphaned screens so users can actually reach them.
-            _Card(
-              child: Column(
-                children: [
-                  _ListTile(
-                    icon: Icons.backup_outlined,
+                  _MeRow(
+                    icon: Icons.cloud_sync_rounded,
+                    tint: const Color(0xFF29B6F6),
                     label: s.backupRestore,
+                    hint: s.meBackupHint,
                     onTap: () =>
                         _open(context, const BackupRestoreScreen()),
                   ),
-                  const _SubDivider(),
-                  _ListTile(
-                    icon: Icons.bar_chart,
-                    label: s.statistics,
-                    onTap: () =>
-                        _open(context, const StatisticsScreen()),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            _Card(
+              child: Column(
+                children: [
+                  _MeRow(
+                    icon: Icons.help_rounded,
+                    tint: const Color(0xFF34C759),
+                    label: s.help,
+                    hint: s.meHelpHint,
+                    onTap: () => _open(context, const HelpScreen()),
                   ),
-                  const _SubDivider(),
-                  _ListTile(
-                    icon: Icons.info_outline,
+                  _MeRow(
+                    icon: Icons.info_rounded,
+                    tint: AppColors.accentBlue,
                     label: s.about,
+                    hint: s.meAboutHint,
                     onTap: () => _open(context, const AboutScreen()),
                   ),
                 ],
@@ -344,17 +338,7 @@ class _GridFeature {
   final String label;
   final IconData icon;
   final VoidCallback onTap;
-  /// Audit fix (Phase A1): mark features that look complete but
-  /// aren't yet wired to a real backend. The grid item renders a
-  /// "Coming soon" badge and shows a transparent disabled state.
-  /// Honest UX > confidently-broken UX.
-  final bool comingSoon;
-  _GridFeature(
-    this.label,
-    this.icon,
-    this.onTap, {
-    this.comingSoon = false,
-  });
+  _GridFeature(this.label, this.icon, this.onTap);
 }
 
 class _Card extends StatelessWidget {
@@ -380,22 +364,11 @@ class _GridItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // "Coming soon" stubs still intercept the tap with an honest
-    // snackbar, but render identically to live items — no badge, no
-    // dimming — for a clean, uniform 3x3 grid.
+    // Every tile in the grid is a working feature now: the last stub
+    // (Cloud Drive) moved into Backup & Restore, where it says "Coming soon"
+    // in words.
     return InkWell(
-      onTap: feature.comingSoon
-          ? () {
-              ScaffoldMessenger.of(context)
-                ..hideCurrentSnackBar()
-                ..showSnackBar(SnackBar(
-                  content: Text(
-                      '${feature.label} — ${AppStrings.of(context).comingSoon}'),
-                  duration: const Duration(seconds: 2),
-                  behavior: SnackBarBehavior.floating,
-                ));
-            }
-          : feature.onTap,
+      onTap: feature.onTap,
       borderRadius: BorderRadius.circular(8),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
@@ -420,51 +393,6 @@ class _GridItem extends StatelessWidget {
                   fontWeight: FontWeight.w400,
                 ),
               ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _StatusSaverTile extends StatelessWidget {
-  final VoidCallback onTap;
-  const _StatusSaverTile({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
-        child: Row(
-          children: [
-            // Phase 30: Solid green square (MX parity, not alpha-tinted)
-            Container(
-              width: 23,
-              height: 23,
-              decoration: BoxDecoration(
-                color: const Color(0xFF4CAF50),
-                borderRadius: BorderRadius.circular(3),
-              ),
-              child: const Icon(
-                Icons.download,
-                color: Colors.white,
-                size: 15,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Text(
-                AppStrings.of(context).statusSaver,
-                style: const TextStyle(color: Colors.white, fontSize: 14.5),
-              ),
-            ),
-            const Icon(
-              Icons.chevron_right,
-              color: AppColors.darkOnSurfaceMuted,
-              size: 20,
             ),
           ],
         ),
@@ -515,14 +443,141 @@ class _ListTile extends StatelessWidget {
   }
 }
 
-class _SubDivider extends StatelessWidget {
-  const _SubDivider();
+/// A Me row: a tinted icon tile, the name, and (optionally) one line saying
+/// what is inside — so "Settings" tells you App theme lives there now.
+class _MeRow extends StatelessWidget {
+  const _MeRow({
+    required this.icon,
+    required this.tint,
+    required this.label,
+    required this.onTap,
+    this.hint,
+    this.filled = false,
+  });
 
-  // No rule between rows: MX's grouped cards have none, and the grouping
-  // already says which rows belong together. Kept as a widget so the call
-  // sites stay as they are.
+  final IconData icon;
+  final Color tint;
+  final String label;
+  final String? hint;
+  final VoidCallback onTap;
+
+  /// A solid tile with a white glyph (Status Saver, MX's green square)
+  /// instead of the tinted one.
+  final bool filled;
+
   @override
-  Widget build(BuildContext context) => const SizedBox.shrink();
+  Widget build(BuildContext context) {
+    final mm = AppStrings.of(context).locale.languageCode == 'my';
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 11, 10, 11),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: filled ? tint : tint.withValues(alpha: 0.16),
+                borderRadius: BorderRadius.circular(9),
+              ),
+              child: Icon(icon, color: filled ? Colors.white : tint, size: 21),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                      height: mm ? 1.5 : 1.25,
+                    ),
+                  ),
+                  if (hint != null)
+                    Text(
+                      hint!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: AppColors.white50,
+                        fontSize: 12.5,
+                        height: mm ? 1.5 : 1.3,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded,
+                color: AppColors.darkOnSurfaceMuted, size: 22),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
+/// One of the four "Your library" shortcuts: a tinted circle and a label.
+class _Shortcut extends StatelessWidget {
+  const _Shortcut({
+    required this.icon,
+    required this.tint,
+    required this.label,
+    required this.onTap,
+  });
 
+  final IconData icon;
+  final Color tint;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: tint.withValues(alpha: 0.16),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: tint, size: 23),
+              ),
+              const SizedBox(height: 7),
+              // Two centred lines rather than one shrunk one: Burmese
+              // names ("နောက်မှ ကြည့်ရန်") are wider than the quarter they
+              // get, and squeezed to fit they ran into each other.
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 3),
+                child: Text(
+                  label,
+                  maxLines: 2,
+                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    height: Localizations.localeOf(context).languageCode == 'my'
+                        ? 1.45
+                        : 1.25,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

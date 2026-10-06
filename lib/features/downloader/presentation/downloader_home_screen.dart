@@ -34,6 +34,7 @@ import 'package:share_plus/share_plus.dart';
 import 'playlist_sheet.dart';
 import 'preflight_gate.dart';
 import 'quality_sheet.dart';
+import '../../../core/theme/tab_title.dart';
 
 /// Home of the downloader.
 ///
@@ -1671,8 +1672,7 @@ class _DownloaderHomeScreenState extends ConsumerState<DownloaderHomeScreen>
         titleSpacing: Navigator.of(context).canPop() ? 0 : null,
         title: Text(
           s.downloaderTitle,
-          style: const TextStyle(
-              color: Colors.white, fontSize: 19, fontWeight: FontWeight.w600),
+          style: kAppBarTitleStyle.copyWith(color: Colors.white),
         ),
         actions: <Widget>[
           IconButton(

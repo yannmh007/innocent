@@ -8,6 +8,7 @@ import 'song_context_menu.dart';
 import '../../../core/utils/async_value_extensions.dart';
 
 import '../../../core/localization/app_strings.dart';
+import '../../../core/theme/tab_title.dart';
 /// Phase 34: Music folder detail screen.
 class MusicFolderDetailScreen extends ConsumerWidget {
   final String name;
@@ -29,10 +30,7 @@ class MusicFolderDetailScreen extends ConsumerWidget {
         backgroundColor: AppColors.darkBackground,
         elevation: 0,
         title: Text(name,
-            style: const TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.w600)),
+            style: kAppBarTitleStyle.copyWith(color: Colors.white)),
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           IconButton(

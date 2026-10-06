@@ -14,6 +14,7 @@ import 'widgets/hub_states.dart';
 import 'widgets/poster_card.dart';
 import 'widgets/poster_metrics.dart';
 import 'widgets/vh_insets.dart';
+import '../../../core/theme/tab_title.dart';
 
 /// The Bookmarks shelf: the titles the viewer saved, newest first.
 ///
@@ -68,7 +69,7 @@ class _BookmarksScreenState extends ConsumerState<BookmarksScreen> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Text(s.vhLibraryBookmarks, style: VH.heading),
+            Text(s.vhLibraryBookmarks, style: kAppBarTitleStyle.copyWith(color: VH.textPrimary)),
             if (ledger.length > 0)
               Text(s.vhBookmarksCount(ledger.length),
                   style: VH.meta.copyWith(fontSize: 11.5)),

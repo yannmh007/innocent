@@ -9,6 +9,7 @@ import '../account_provider.dart';
 import '../video_hub_theme.dart';
 import '../widgets/vh_insets.dart';
 import 'receipt_picker.dart';
+import '../../../../core/theme/tab_title.dart';
 
 /// KPay payment instructions, and the form that records the claim.
 ///
@@ -159,7 +160,7 @@ class _PremiumRequestScreenState
           icon: const Icon(Icons.arrow_back, color: VH.textPrimary),
           onPressed: () => Navigator.of(context).maybePop(),
         ),
-        title: Text(s.vhPayTitle, style: VH.heading),
+        title: Text(s.vhPayTitle, style: kAppBarTitleStyle.copyWith(color: VH.textPrimary)),
       ),
       body: _submitted
           ? _SubmittedState(onDone: () => Navigator.of(context).pop(true))

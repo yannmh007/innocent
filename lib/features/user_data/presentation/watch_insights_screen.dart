@@ -6,6 +6,8 @@ import '../../../core/services/insights/watch_insights_service.dart';
 import '../../../core/theme/app_colors.dart';
 
 import '../../../core/localization/app_strings.dart';
+import '../../../core/theme/tab_title.dart';
+import '../../me/presentation/statistics_screen.dart';
 /// Personal watch-history dashboard. Reads entirely from on-device
 /// history; nothing leaves the device. Surface cards from highest
 /// emotional weight (total time + streak) to most analytical
@@ -23,8 +25,21 @@ class WatchInsightsScreen extends ConsumerWidget {
         backgroundColor: AppColors.darkBackground,
         elevation: 0,
         title: Text(AppStrings.of(context).yourWatchInsights,
-            style: const TextStyle(color: Colors.white, fontSize: 18)),
+            style: kAppBarTitleStyle.copyWith(color: Colors.white)),
         iconTheme: const IconThemeData(color: Colors.white),
+        // Library statistics (file counts, sizes) used to be its own row on
+        // Me; it is the other half of "how much do I have / watch", so it
+        // lives here now — reachable even before anything has been watched.
+        actions: [
+          IconButton(
+            key: const ValueKey('insights-library-stats'),
+            icon: Icon(Icons.bar_chart_rounded,
+                semanticLabel: AppStrings.of(context).meLibraryStats),
+            tooltip: AppStrings.of(context).meLibraryStats,
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => const StatisticsScreen())),
+          ),
+        ],
       ),
       body: insights.videosWatched == 0
           ? const _EmptyState()

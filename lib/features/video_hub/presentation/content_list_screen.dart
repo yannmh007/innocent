@@ -13,6 +13,7 @@ import 'widgets/hub_states.dart';
 import 'widgets/paged_poster_grid.dart';
 import 'widgets/sticky_bar.dart';
 import 'account_provider.dart';
+import '../../../core/theme/tab_title.dart';
 
 /// The full list behind one landing row.
 ///
@@ -119,7 +120,7 @@ class _ContentListScreenState extends ConsumerState<ContentListScreen> {
           icon: const Icon(Icons.arrow_back, color: VH.textPrimary),
           onPressed: () => Navigator.of(context).maybePop(),
         ),
-        title: Text(widget.title, style: VH.heading),
+        title: Text(widget.title, style: kAppBarTitleStyle.copyWith(color: VH.textPrimary)),
       ),
       body: RefreshIndicator(
         onRefresh: () =>

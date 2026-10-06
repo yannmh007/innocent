@@ -6,6 +6,7 @@ import '../../../core/services/network/connection_kind.dart';
 import '../../../core/services/preferences/player_settings_service.dart';
 import 'video_hub_theme.dart';
 import 'widgets/vh_insets.dart';
+import '../../../core/theme/tab_title.dart';
 
 /// The connection the phone is on now, for the saver's status line.
 ///
@@ -315,7 +316,7 @@ class DataSaverScreen extends StatelessWidget {
         backgroundColor: VH.canvas,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
-        title: Text(s.vhDataSaver, style: VH.heading),
+        title: Text(s.vhDataSaver, style: kAppBarTitleStyle.copyWith(color: VH.textPrimary)),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: VH.textPrimary),
           onPressed: () => Navigator.of(context).maybePop(),

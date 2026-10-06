@@ -23,7 +23,7 @@ class _VaultImageViewer extends StatelessWidget {
         title: Text(title,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(color: Colors.white, fontSize: 15)),
+            style: kAppBarTitleStyle.copyWith(color: Colors.white)),
       ),
       body: Center(
         child: InteractiveViewer(

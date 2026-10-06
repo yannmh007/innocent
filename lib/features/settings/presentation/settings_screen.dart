@@ -14,6 +14,8 @@ import 'settings_list_screen.dart';
 import 'settings_player_screen.dart';
 import 'settings_subtitle_screen.dart';
 import '../../updater/presentation/app_update_screen.dart';
+import '../../me/presentation/app_theme_screen.dart';
+import '../../me/presentation/custom_popup_play_screen.dart';
 
 /// Settings screen matching MX Player (UI PDF page 14)
 /// 8 items with specific icons matching the real app exactly
@@ -47,8 +49,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     final s = AppStrings.of(context);
     final items = <_SettingsEntry>[
+      // App theme and Pop-up play were rows of their own on Me; they are
+      // settings, so they live with the rest of them now.
+      _SettingsEntry(Icons.palette_outlined, s.appTheme),
       _SettingsEntry(Icons.list_alt, s.settingsList),
       _SettingsEntry(Icons.hexagon_outlined, s.settingsPlayer),
+      _SettingsEntry(Icons.picture_in_picture_alt_outlined, s.popupPlay),
       // Phase 30: Decoder uses chip/memory icon (verified against MX recording)
       _SettingsEntry(Icons.memory, s.settingsDecoder),
       // Phase 30: Audio uses music-note-in-square icon
@@ -69,8 +75,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ];
 
     final screens = <Widget>[
+      const AppThemeScreen(),
       const SettingsListScreen(),
       const SettingsPlayerScreen(),
+      const CustomPopupPlayScreen(),
       const SettingsDecoderScreen(),
       const SettingsAudioScreen(),
       const SettingsSubtitleScreen(),

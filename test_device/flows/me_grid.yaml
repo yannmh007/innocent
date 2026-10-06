@@ -1,0 +1,134 @@
+# Me: the grid in the owner's order (Download, File Transfer, Private Folder /
+# Movies, Media Manager, Local Network / Network Stream, Video Playlists,
+# Recycle Bin) — every tile opens; Movies reaches the hub; Cloud Drive now
+# lives in Backup & Restore. Below it the short list: Library shortcuts,
+# App theme and Pop-up play inside Settings, statistics inside Insights.
+appId: com.innocent.media
+---
+- launchApp
+- waitForAnimationToEnd:
+    timeout: 15000
+- tapOn:
+    text: "Wait"
+    optional: true
+- tapOn:
+    text: "Skip"
+    optional: true
+- tapOn:
+    text: "Allow.*"
+    optional: true
+- tapOn:
+    text: "Allow.*"
+    optional: true
+- tapOn:
+    text: "(?s).*Tab 4 of 4.*"
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: 80_me_grid
+# Exact text: Backup & Restore's own hint below mentions Cloud Drive.
+- assertNotVisible: "Cloud Drive"
+- assertVisible: "(?s).*Movies.*"
+- assertVisible: "(?s).*Recycle bin.*"
+# Movies: the hub (its age gate on a fresh install).
+- tapOn: "(?s).*Movies.*"
+- waitForAnimationToEnd:
+    timeout: 10000
+- takeScreenshot: 81_me_movies
+- assertNotVisible: "(?s).*Tab 4 of 4.*"
+- back
+- waitForAnimationToEnd:
+    timeout: 4000
+- assertVisible: "(?s).*Recycle bin.*"
+# Each of the other tiles opens and comes back.
+- tapOn: "(?s).*Media Manager.*"
+- waitForAnimationToEnd:
+    timeout: 6000
+- takeScreenshot: 82_me_media_manager
+- back
+- tapOn: "(?s).*Network Stream.*"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: 83_me_network_stream
+- back
+- tapOn: "(?s).*Video Playlists.*"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: 84_me_playlists
+- back
+- tapOn: "(?s).*Recycle bin.*"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: 85_me_recycle
+- back
+- tapOn: "(?s).*Downloads.*"
+- waitForAnimationToEnd:
+    timeout: 6000
+- takeScreenshot: 86_me_downloads
+- back
+- waitForAnimationToEnd:
+    timeout: 3000
+# Backup & Restore: Cloud Drive is in it, and opens.
+- scrollUntilVisible:
+    element:
+      text: "(?s).*Backup & Restore.*"
+    direction: DOWN
+- tapOn: "(?s).*Backup & Restore.*"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: 87_backup
+- scrollUntilVisible:
+    element:
+      text: "(?s).*Cloud Drive.*"
+    direction: DOWN
+- tapOn: "(?s).*Cloud Drive.*"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: 88_cloud_drive
+- back
+- back
+- waitForAnimationToEnd:
+    timeout: 3000
+- assertVisible: "(?s).*Recycle bin.*"
+# Your library: the shortcuts open.
+- scrollUntilVisible:
+    element:
+      text: "(?s).*Watch later.*"
+    direction: DOWN
+- tapOn: "(?s).*History.*"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: 89_me_history
+- back
+- tapOn: "(?s).*Watch later.*"
+- waitForAnimationToEnd:
+    timeout: 3000
+- back
+# Insights holds Library statistics now.
+- tapOn: "(?s).*Insights.*"
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn: "(?s).*Library statistics.*"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: 90_me_statistics
+- back
+- back
+# Settings holds App theme and Pop-up play now.
+- tapOn: "(?s)Settings\\n.*"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: 91_settings
+- tapOn: "(?s).*App Theme.*"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: 92_app_theme
+- back
+- tapOn: "(?s).*Pop-up Play.*"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: 93_popup_play
+- back
+- back
+- waitForAnimationToEnd:
+    timeout: 3000
+- assertVisible: "(?s).*About.*"

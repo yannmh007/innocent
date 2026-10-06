@@ -14,6 +14,7 @@ import 'playlist_detail_screen.dart';
 import 'song_context_menu.dart';
 import '../../../core/utils/async_value_extensions.dart';
 import '../../../core/ui/tablet_constrained_width.dart';
+import '../../../core/theme/tab_title.dart';
 
 /// Music tab — Tracks / Playlists / Albums / Artists / Folders
 /// Matches MX Player UI (PDF page 5)
@@ -63,7 +64,8 @@ class _MusicScreenState extends ConsumerState<MusicScreen>
                   border: InputBorder.none,
                 ),
               )
-            : Text(s.tabMusic),
+            : Text(s.tabMusic,
+                style: kTabTitleStyle.copyWith(color: Colors.white)),
         actions: [
           if (_searching)
             IconButton(

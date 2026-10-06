@@ -157,8 +157,10 @@ class Edge:
     def post(self, url, payload, bearer=None):
         self.calls.append(payload)
         if payload.get('op') == 'claim':
+            # None in the queue is one claim that finds it empty: a file of
+            # the album still on its way.
             if self.queue:
-                return 200, self.queue.pop(0)
+                return 200, self.queue.pop(0) or {}
             return 200, {}
         return 200, {'ok': True}
 
@@ -219,6 +221,9 @@ def run(first, rest, env=None, start_flood=None, flood=None, error=None,
     tmp = tempfile.mkdtemp(prefix='ingest-test-')
     ingest.JOB_FILE = os.path.join(tmp, 'ingest.json')
     ingest.REPORTED = os.path.join(tmp, 'ingest.reported')
+    ingest.MORE = os.path.join(tmp, 'ingest.more')
+    W.sleeps = []
+    ingest._sleep = W.sleeps.append
     with open(ingest.JOB_FILE, 'w') as fh:
         json.dump(first, fh)
     edge = Edge(rest)
@@ -237,6 +242,8 @@ def run(first, rest, env=None, start_flood=None, flood=None, error=None,
         'TG_API_ID': '1', 'TG_API_HASH': 'h', 'TG_BOT_TOKEN': 't',
         'JOB_TOKEN': 'tok', 'RUNNER_SECRET': 'tok',
         'SB_URL': 'https://edge.invalid',
+        # No waiting on an empty queue unless a test is about exactly that.
+        'INGEST_LINGER_SEC': '0', 'INGEST_MAX_JOBS': None,
     }
     base.update(env or {})
     saved = {k: os.environ.get(k) for k in base}
@@ -255,6 +262,7 @@ def run(first, rest, env=None, start_flood=None, flood=None, error=None,
                 os.environ[k] = v
     edge.marker = open(ingest.REPORTED).read() \
         if os.path.exists(ingest.REPORTED) else None
+    edge.more = os.path.exists(ingest.MORE)
     return rc, edge
 
 
@@ -272,6 +280,35 @@ check('no session file is written to the runner',
       (W.kwargs or {}).get('in_memory') is True)
 check('the marker names the last job reported, not just "something"',
       edge.marker == 'job-5')
+
+check('a drained queue asks for no follow-up run', edge.more is False)
+
+# ── AN ALBUM BIGGER THAN THE OLD LIMIT IS ONE RUN (2026-10-06) ──────────
+#
+# 4 videos and 38 photos: the run stopped at 40 and the last two videos
+# waited six hours for GitHub's next scheduled run.
+rc, edge = run(job(1), [job(n) for n in range(2, 43)])
+check('42 files of one album are all moved in one run',
+      len([c for c in edge.ops('done') if c['ok']]) == 42 and W.started == 1)
+
+# ── A RUN THAT STOPS WITH WORK LEFT ASKS FOR THE NEXT ONE NOW ───────────
+rc, edge = run(job(1), [job(2), job(3), job(4)], env={'INGEST_MAX_JOBS': '2'})
+check('the job limit still ends the run', len(edge.ops('done')) == 2)
+check('and leaves word for the workflow to start the next run at once',
+      edge.more is True)
+
+# ── THE REST OF AN ALBUM, STILL ARRIVING, IS WAITED FOR ─────────────────
+rc, edge = run(job(1), [job(2), None, None, job(3)],
+               env={'INGEST_LINGER_SEC': '30'})
+check('files that arrive while the runner waits are taken by the same run',
+      [c['job_id'] for c in edge.ops('done') if c['ok']] == ['job-1', 'job-2', 'job-3'])
+check('by polling, ten seconds apart, not by one long sleep',
+      W.sleeps and set(W.sleeps) == {10})
+check('still one sign-in', W.started == 1)
+rc, edge = run(job(1), [None, None, None, None, job(9)],
+               env={'INGEST_LINGER_SEC': '30'})
+check('and the wait ends: three empty polls in thirty seconds, then it leaves',
+      len(W.sleeps) == 3 and 'job-9' not in [c['job_id'] for c in edge.ops('done')])
 
 # ── A WAIT ON SIGN-IN IS NOT A FAILURE ────────────────────────────────────
 #

@@ -1122,12 +1122,13 @@ body.sh-on{padding-bottom:calc(76px + env(safe-area-inset-bottom))}
       <div class="sechead">
         <h2>From Telegram</h2>
         <span class="spacer"></span>
+        <button class="b" id="ingestKick" hidden>Start now</button>
         <button class="b" id="ingestBtn">Refresh</button>
       </div>
       <div class="hint">
         Forward a film to the bot <b>as a file</b>, with the folder name as
-        the caption. A runner fetches it within twenty minutes and puts it in
-        the bucket; then choose which title it belongs to here, and the
+        the caption. A runner starts the moment it arrives and puts it in the
+        bucket within a few minutes; then choose which title it belongs to here, and the
         streaming copies are made automatically. Send it as a <i>file</i> and
         not as a video — Telegram re-encodes anything sent as a video, and
         the whole point is the original. Telegram stops at 2 GB; anything
@@ -3332,6 +3333,17 @@ function drawIngest(got) {
       + 'project. Films can be forwarded and will queue, and nothing will '
       + 'fetch them until it is.')));
   }
+  // START NOW, whenever something is still waiting. Forwarding wakes the
+  // runner by itself once GH_DISPATCH_TOKEN is set; this is for a queue that
+  // filled before it was, or a wait that has gone on too long anyway.
+  const waiting = rows.filter((r) => r.state === 'queued').length;
+  $('ingestKick').hidden = !waiting || !got.runner;
+  if (waiting && !got.instant) {
+    host.append(el('div', { className: 'msg warn' }, text(
+      'Waiting files are fetched only when GitHub runs the schedule, which can '
+      + 'be hours apart. Set GH_DISPATCH_TOKEN on the ingest function (see '
+      + 'RUNBOOK → From Telegram) and every forwarded file starts a runner at once.')));
+  }
   if (!rows.length) {
     host.append(el('div', { className: 'hint' }, text(
       'Nothing forwarded yet. Send a film to the bot as a file.')));
@@ -3630,6 +3642,23 @@ async function startTitleFromIngest(folder, caption, btn) {
 }
 
 $('ingestBtn').onclick = loadIngest;
+$('ingestKick').onclick = async () => {
+  const b = $('ingestKick');
+  b.disabled = true;
+  try {
+    const got = await api({ op: 'kick' }, INGEST_API);
+    const k = got.kick;
+    say(k === 'started' || k === 'waiting' ? 'ok' : 'bad',
+      k === 'started' ? 'Runner starting — files land in the bucket within a few minutes.'
+      : k === 'waiting' ? 'A runner is already on its way; it takes the whole queue.'
+      : k === 'off' ? 'GH_DISPATCH_TOKEN is not set on the ingest function, so only the schedule can start a runner.'
+      : 'GitHub refused to start the runner. Check GH_DISPATCH_TOKEN (Actions: read and write, this repository).');
+  } catch (e) {
+    say('bad', String(e.message || e));
+  } finally {
+    b.disabled = false;
+  }
+};
 
 // ── unused files ─────────────────────────────────────────────────────────
 //

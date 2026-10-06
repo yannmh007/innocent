@@ -27,11 +27,17 @@
 name: Ingest
 
 on:
-  # Five minutes is the finest GitHub offers, and it is NOT what happens. A
-  # cron on a free public repository is best effort and queues behind
-  # everyone else's: measured over one morning this fired fourteen to twenty
-  # minutes apart. Which is why a run drains the whole queue rather than
-  # taking one file and trusting the next tick to be along shortly.
+  # THE SCHEDULE IS THE FALLBACK NOW, NOT THE WAY IN. Five minutes is the
+  # finest GitHub offers, and it is not what happens: a cron on a free public
+  # repository is best effort. Measured, it fired fourteen to twenty minutes
+  # apart on a good morning — and on 2026-10-05/06 at 10:25, 19:21, 00:53,
+  # 07:06 and 14:08, so an album forwarded at 09:51 waited four hours.
+  #
+  # So the ingest function starts this workflow itself (workflow_dispatch,
+  # with GH_DISPATCH_TOKEN) the moment a file is queued, and a run that stops
+  # with work left starts the next one (below). The schedule still matters:
+  # it empties the R2 bin, makes the daily backup, and picks up anything
+  # queued while the token was missing.
   schedule:
     - cron: '*/5 * * * *'
   workflow_dispatch:
@@ -52,6 +58,10 @@ jobs:
     timeout-minutes: 120
     permissions:
       contents: read
+      # Only to start the NEXT run of this same workflow when this one stops
+      # with files still queued. GITHUB_TOKEN may trigger workflow_dispatch;
+      # it is the one event it is allowed to.
+      actions: write
 
     steps:
       - uses: actions/checkout@v4
@@ -119,6 +129,20 @@ jobs:
           TG_API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
           TG_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
         run: python3 tool/ingest.py
+
+      # MORE QUEUED THAN ONE RUN TOOK — the job limit or the time budget
+      # ended it. The next run starts now instead of whenever the schedule
+      # next fires; the concurrency group holds it until this one is done.
+      - name: Start the next run if files are left
+        if: always() && steps.claim.outputs.job == 'yes'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REF: ${{ github.ref_name }}
+        run: |
+          if [ -f /tmp/ingest.more ]; then
+            gh workflow run ingest.yml --repo "$GITHUB_REPOSITORY" --ref "$REF" \
+              && echo "next run requested" || echo "could not request the next run"
+          fi
 
       # THE PROCESS DIED WITHOUT SAYING SO — killed for memory, or by the job
       # timeout. Every failure ingest.py can see, it reports itself and exits
