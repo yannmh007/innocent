@@ -368,6 +368,20 @@ td.num{text-align:right;font-variant-numeric:tabular-nums;color:var(--dim)}
   overflow:hidden;aspect-ratio:1;background:var(--panel2)}
 .pickgrid .pk img{width:100%;height:100%;object-fit:cover;display:block}
 .pickgrid .pk:hover{border-color:var(--acc)}
+/* 043: the cover picker — ten stills from the video, TikTok-style. */
+.framegrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));
+  gap:6px;max-height:52vh;overflow:auto;margin:6px 0 4px}
+.framegrid .fk{position:relative;padding:0;border:2px solid transparent;
+  border-radius:6px;overflow:hidden;aspect-ratio:16/9;background:var(--panel2)}
+.framegrid .fk.tall{aspect-ratio:9/16}
+.framegrid .fk img{width:100%;height:100%;object-fit:cover;display:block}
+.framegrid .fk .t{position:absolute;left:4px;bottom:3px;font:600 10.5px var(--mono);
+  color:#fff;background:rgba(0,0,0,.6);padding:1px 4px;border-radius:3px}
+.framegrid .fk.on{border-color:var(--acc)}
+.framegrid .fk.on::after{content:'✓';position:absolute;right:4px;top:3px;
+  font:700 12px/1 var(--mono);color:#000;background:var(--acc);
+  padding:3px 4px;border-radius:3px}
+.framegrid .fk:hover{border-color:var(--acc)}
 
 /* ── upload / drop ─────────────────────────────────────────────────────── */
 .drop{border:1px dashed var(--line2);border-radius:var(--r);padding:14px;
@@ -1355,9 +1369,11 @@ function measure(file) {
         width: v.videoWidth || null,
         height: v.videoHeight || null,
       };
-      // 10% in, capped at 3s. The first frame is very often black or a
-      // fade-in, which makes a useless thumbnail.
-      const at = Math.min(3, (v.duration || 0) * 0.1);
+      // ONE SECOND IN — the owner's rule (2026-10-06), and the same frame
+      // the runner takes as frame 0 of the cover picker (043), so a video
+      // uploaded here and one forwarded to the bot start with the same
+      // picture. Anything shorter than two seconds: half-way.
+      const at = (v.duration || 0) >= 2 ? 1 : (v.duration || 0) / 2;
       v.onseeked = () => {
         clearTimeout(bail);
         try {
@@ -2389,10 +2405,71 @@ async function setThumbBlob(a, blob, extra) {
   await patchAsset(a, patch);
 }
 
+/// The cover picker (043): the ten stills the transcode runner took from the
+/// video itself — frame 0 at one second, then every tenth of the running
+/// time. One tap makes one the thumbnail. Nothing is uploaded; the still is
+/// already in the public bucket, so this only points the video at it.
+///
+/// WHY THIS IS THE FIRST THING IN THE MENU. The old first option asked the
+/// operator to find the original file on the phone again and scrub it, which
+/// for a film forwarded from Telegram means finding it in Telegram, saving
+/// it, and picking it here — for a 30 KB picture.
+function drawFramePicker(a, close) {
+  const box = el('div', {});
+  const frames = Array.isArray(a.frames) ? a.frames : [];
+  const tall = (a.height || 0) > (a.width || 0);
+  if (frames.length) {
+    const grid = el('div', { className: 'framegrid' });
+    frames.forEach((f, i) => {
+      const b = el('button', {
+        className: 'fk' + (tall ? ' tall' : '') + (a.thumb_key === f.key ? ' on' : ''),
+        title: i === 0 ? 'Default — one second in' : 'At ' + fmtDur(Math.round(f.at)),
+        type: 'button',
+      }, [
+        el('img', { src: cur.publicBase + '/' + f.key, alt: '', loading: 'lazy' }),
+        el('span', { className: 't' }, text(fmtDur(Math.round(f.at)) || '0:00')),
+      ]);
+      b.onclick = async () => {
+        close();
+        if (a.thumb_key === f.key) return;
+        await patchAsset(a, { thumb_key: f.key });
+        say('ok', 'Thumbnail set from the frame at ' + (fmtDur(Math.round(f.at)) || '0:00') + '.');
+      };
+      grid.append(b);
+    });
+    box.append(grid);
+  } else {
+    const st = a.frames_state;
+    box.append(el('div', { className: 'hint' }, text(
+      st === 'failed'
+        ? 'The frames could not be made: ' + (a.frames_note || 'unknown reason') + '.'
+        : 'The frames for this video are being made on the runner — usually a ' +
+          'minute or two. Close this and open it again shortly.')));
+  }
+  // "Again": after replacing the file, or when the first try failed.
+  const again = el('button', {}, text(frames.length ? 'Make the frames again' : 'Make the frames now'));
+  again.onclick = async () => {
+    again.disabled = true;
+    try {
+      const got = await api({ op: 'frames', asset_id: a.id }, TRANSCODE_API);
+      a.frames_state = 'queued';
+      say('ok', got.kick === 'started' || got.kick === 'waiting'
+        ? 'Making the frames now — they appear here in a minute or two.'
+        : 'Queued. The runner makes them on its next pass.');
+      close();
+    } catch (e) {
+      say('bad', String(e.message || e));
+      again.disabled = false;
+    }
+  };
+  box.append(el('div', { className: 'srow end' }, [again]));
+  return box;
+}
+
 /// The per-video thumbnail menu.
 async function thumbMenu(a) {
   const photos = cur.assets.filter((o) => o.kind === 'photo');
-  const fromVideo = el('button', {}, text('From the video file…'));
+  const fromVideo = el('button', {}, text('From the video file on this device…'));
   const fromImage = el('button', {}, text('From an image file…'));
   const fromPhoto = photos.length
     ? el('button', {}, text('From a photo in this title…')) : null;
@@ -2469,13 +2546,14 @@ async function thumbMenu(a) {
   cancel.onclick = close;
   back = el('div', { className: 'modal' }, [
     el('div', { className: 'sheet' }, [
-      el('div', { className: 'sh' }, text('Video thumbnail')),
+      el('div', { className: 'sh' }, text('Choose the cover')),
       el('div', { className: 'hint' }, text(
-        'A frame from the video itself is what viewers expect. Pick the ' +
-        'same file from this device — only the still is uploaded, not the ' +
-        'video.')),
+        'Ten frames from across the video. Tap one to make it the thumbnail ' +
+        'viewers see.')),
+      drawFramePicker(a, close),
+      el('div', { className: 'hint', style: 'margin-top:8px' }, text('Or use something else:')),
       el('div', { className: 'stack' },
-        [fromVideo, fromImage, fromPhoto]),
+        [fromImage, fromPhoto, fromVideo]),
       el('div', { className: 'srow end' }, [cancel]),
     ]),
   ]);

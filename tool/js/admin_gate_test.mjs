@@ -185,10 +185,15 @@ const show = (s) => [...s].sort().join(', ');
 {
   const s = src.transcode;
   const need = needOf(s, 'transcode');
-  check('transcode: NEED is health and queue',
-    sameSet(new Set(Object.keys(need)), new Set(['health', 'queue'])));
+  check('transcode: NEED is health, queue and frames (043)',
+    sameSet(new Set(Object.keys(need)), new Set(['health', 'queue', 'frames'])));
   check('transcode: queue answers only behind the gate',
     /if \(op === 'queue' && who\)/.test(s));
+  check('transcode: frames answers only behind the gate',
+    /if \(op === 'frames' && who\)/.test(s));
+  check('transcode: the runner\'s frame ops answer to the runner secret',
+    /op === 'frames_claim'[\s\S]{0,200}sameSecret\(given, RUNNER_SECRET\)/.test(s) &&
+    /op === 'frames_done'[\s\S]{0,200}sameSecret\(given, RUNNER_SECRET\)/.test(s));
   check('transcode: health answers only behind the gate',
     /if \(op === 'health' && who\)/.test(s));
   check('transcode: the runner\'s claim still checks its secret',
