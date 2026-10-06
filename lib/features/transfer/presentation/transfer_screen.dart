@@ -167,6 +167,7 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
     // it, and `State.context` throws "Null check operator used on a null
     // value" once the element is gone. That was the Transfer-tab crash.
     final pickerTitle = AppStrings.of(context).selectFilesToSend;
+    final sendLabel = AppStrings.of(context).send;
     try {
       // In-app picker: browse storage by folder and multi-select videos,
       // mirroring the Private Folder "Add Files" flow, instead of leaving the
@@ -185,6 +186,8 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
         MaterialPageRoute(
           builder: (_) => AddFilesPicker(
             title: pickerTitle,
+            commitLabel: sendLabel,
+            commitIcon: Icons.send_rounded,
             // v0.50: the picker now hands back generic PickedFiles
             // (videos, images, audio, any file, APKs) — map them 1:1
             // onto SharedFile entries for the LAN server.

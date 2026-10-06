@@ -140,12 +140,20 @@ class AddFilesPicker extends ConsumerStatefulWidget {
   /// [onCommit] is supplied.
   final String? targetFolderId;
 
+  /// The commit button's word and icon. Default: the vault's ("Add Now",
+  /// a lock). Transfer passes "Send" and a send arrow — a lock on a button
+  /// that SENDS files told people the opposite of what it does.
+  final String? commitLabel;
+  final IconData commitIcon;
+
   const AddFilesPicker({
     super.key,
     this.service,
     this.onCommit,
     this.title = 'Select Files To Add',
     this.targetFolderId,
+    this.commitLabel,
+    this.commitIcon = Icons.lock_outline,
   });
 
   @override
@@ -2232,9 +2240,10 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
                       : Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(Icons.lock_outline, size: 17),
+                            Icon(widget.commitIcon, size: 17),
                             const SizedBox(width: 8),
-                            Text('${s.addNow}  (${_picked.length})',
+                            Text(
+                                '${widget.commitLabel ?? s.addNow}  (${_picked.length})',
                                 style: const TextStyle(
                                     fontSize: 15,
                                     fontWeight: FontWeight.w600)),
