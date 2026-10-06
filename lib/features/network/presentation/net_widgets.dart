@@ -209,7 +209,10 @@ class ProtocolGlyph extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
+    // A picture of the label beside it: TalkBack reads that label once,
+    // not "SMB SMB".
+    return ExcludeSemantics(
+        child: SizedBox(
       width: size,
       height: size,
       child: Stack(
@@ -250,7 +253,7 @@ class ProtocolGlyph extends StatelessWidget {
           ),
         ],
       ),
-    );
+    ));
   }
 }
 

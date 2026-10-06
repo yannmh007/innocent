@@ -209,7 +209,10 @@ jobs:
           sudo apt-get install -y -qq --no-install-recommends samba vsftpd openssh-server ffmpeg >/dev/null
           sudo systemctl stop smbd nmbd vsftpd ssh 2>/dev/null || true
           sudo bash tool/netlab/servers.sh start
-          (cd tool/netlab && gradle test --no-daemon) 2>&1 | grep -E "PASSED|FAILED|tests completed|BUILD|Exception" | tail -60 || true
+          mkdir -p out
+          (cd tool/netlab && gradle test --no-daemon) 2>&1 \
+            | grep -E "PASSED|FAILED|SKIPPED|tests completed|BUILD|Exception|expected" \
+            | tee out/netlab_jvm.txt | tail -60 || true
 
       - name: Install Maestro
         run: |
