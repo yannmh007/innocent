@@ -1452,6 +1452,21 @@ class AppStrings {
   String get vhPayNoKpay => _s('vhPayNoKpay');
   String get vhPayRecentShots => _s('vhPayRecentShots');
   String get vhPayChooseShot => _s('vhPayChooseShot');
+  String get aboutTagline => _s('aboutTagline');
+  String aboutVersionFull(String v, String b) =>
+      _s('aboutVersionFull').replaceFirst('{v}', v).replaceFirst('{b}', b);
+  String get aboutCopied => _s('aboutCopied');
+  String get aboutCopyHint => _s('aboutCopyHint');
+  String get aboutSectionApp => _s('aboutSectionApp');
+  String get aboutSectionSupport => _s('aboutSectionSupport');
+  String get aboutSoftwareUpdate => _s('aboutSoftwareUpdate');
+  String get aboutUpToDate => _s('aboutUpToDate');
+  String get aboutUpdateReady => _s('aboutUpdateReady');
+  String get aboutWhatsNew => _s('aboutWhatsNew');
+  String aboutWhatsNewIn(String v) =>
+      _s('aboutWhatsNewIn').replaceFirst('{v}', v);
+  String get aboutHelpFaq => _s('aboutHelpFaq');
+  String get aboutRights => _s('aboutRights');
   String get vhPayShotAttached => _s('vhPayShotAttached');
   String get vhPayShotCheck => _s('vhPayShotCheck');
   String get vhPayShotChange => _s('vhPayShotChange');
@@ -1866,6 +1881,19 @@ class AppStrings {
     'vhPayNoKpay': 'KPay is not installed on this phone.',
     'vhPayRecentShots': 'Recent screenshots — tap your receipt',
     'vhPayChooseShot': 'Choose the screenshot from your photos',
+    'aboutTagline': 'Your videos, beautifully played.',
+    'aboutVersionFull': 'Version {v} ({b})',
+    'aboutCopied': 'Version copied',
+    'aboutCopyHint': 'Double tap to copy',
+    'aboutSectionApp': 'App',
+    'aboutSectionSupport': 'Support',
+    'aboutSoftwareUpdate': 'Software update',
+    'aboutUpToDate': 'Up to date',
+    'aboutUpdateReady': 'A new version is ready to install',
+    'aboutWhatsNew': "What's new",
+    'aboutWhatsNewIn': "What's new in {v}",
+    'aboutHelpFaq': 'Help & FAQ',
+    'aboutRights': '© 2026 Innocent. All rights reserved.',
     'vhPayShotAttached': 'Receipt attached',
     'vhPayShotCheck': 'Check that the amount and the transaction are visible.',
     'vhPayShotChange': 'Change',
@@ -3266,6 +3294,19 @@ class AppStrings {
     'vhPayNoKpay': 'ဒီဖုန်းမှာ KPay မရှိပါ။',
     'vhPayRecentShots': 'မကြာသေးခင်က screenshot များ — ပြေစာကို နှိပ်ပါ',
     'vhPayChooseShot': 'ဓာတ်ပုံထဲက screenshot ကို ရွေးမည်',
+    'aboutTagline': 'သင့်ဗီဒီယိုတွေကို အကောင်းဆုံး ကြည့်ရှုနိုင်ဖို့',
+    'aboutVersionFull': 'ဗားရှင်း {v} ({b})',
+    'aboutCopied': 'ဗားရှင်းကို ကူးယူပြီးပါပြီ',
+    'aboutCopyHint': 'ကူးယူရန် နှစ်ချက်နှိပ်ပါ',
+    'aboutSectionApp': 'App',
+    'aboutSectionSupport': 'အကူအညီ',
+    'aboutSoftwareUpdate': 'App အပ်ဒိတ်',
+    'aboutUpToDate': 'နောက်ဆုံးဗားရှင်းကို သုံးနေပါပြီ',
+    'aboutUpdateReady': 'အသစ် ထွက်ပါပြီ',
+    'aboutWhatsNew': 'ဒီဗားရှင်းမှာ ဘာအသစ်ပါလဲ',
+    'aboutWhatsNewIn': '{v} မှာ ပါဝင်တဲ့ အသစ်များ',
+    'aboutHelpFaq': 'အသုံးပြုနည်း လမ်းညွှန်',
+    'aboutRights': '© 2026 Innocent — မူပိုင်ခွင့်အားလုံး ရယူထားသည်။',
     'vhPayShotAttached': 'ပြေစာ ထည့်ပြီးပါပြီ',
     'vhPayShotCheck': 'ငွေပမာဏနဲ့ လွှဲပြောင်းမှု မြင်ရရဲ့လား စစ်ပါ။',
     'vhPayShotChange': 'ပြောင်းမည်',
@@ -4654,6 +4695,19 @@ class AppStrings {
     'vhPayNoKpay': 'เครื่องนี้ไม่มี KPay',
     'vhPayRecentShots': 'ภาพหน้าจอล่าสุด — แตะใบเสร็จ',
     'vhPayChooseShot': 'เลือกภาพหน้าจอจากรูปภาพ',
+    'aboutTagline': 'ดูวิดีโอของคุณได้อย่างสวยงาม',
+    'aboutVersionFull': 'เวอร์ชัน {v} ({b})',
+    'aboutCopied': 'คัดลอกเวอร์ชันแล้ว',
+    'aboutCopyHint': 'แตะสองครั้งเพื่อคัดลอก',
+    'aboutSectionApp': 'แอป',
+    'aboutSectionSupport': 'ความช่วยเหลือ',
+    'aboutSoftwareUpdate': 'อัปเดตซอฟต์แวร์',
+    'aboutUpToDate': 'เป็นเวอร์ชันล่าสุด',
+    'aboutUpdateReady': 'มีเวอร์ชันใหม่พร้อมติดตั้ง',
+    'aboutWhatsNew': 'มีอะไรใหม่',
+    'aboutWhatsNewIn': 'มีอะไรใหม่ใน {v}',
+    'aboutHelpFaq': 'ความช่วยเหลือและคำถามที่พบบ่อย',
+    'aboutRights': '© 2026 Innocent สงวนลิขสิทธิ์',
     'vhPayShotAttached': 'แนบใบเสร็จแล้ว',
     'vhPayShotCheck': 'ตรวจว่ามองเห็นยอดเงินและรายการ',
     'vhPayShotChange': 'เปลี่ยน',
