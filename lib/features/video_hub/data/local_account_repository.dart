@@ -145,6 +145,7 @@ class LocalAccountRepository implements AccountRepository {
     String? senderPhone,
     Uint8List? proof,
     String? priceShown,
+    String? message,
   }) async {
     await Future<void>.delayed(const Duration(milliseconds: 300));
     final req = PremiumRequest(
@@ -154,6 +155,7 @@ class LocalAccountRepository implements AccountRepository {
       senderPhone: senderPhone,
       status: PremiumRequestStatus.pending,
       submittedAt: DateTime.now(),
+      message: message,
     );
     final all = await myRequests();
     await _saveRequests(<PremiumRequest>[req, ...all]);
@@ -180,6 +182,7 @@ class LocalAccountRepository implements AccountRepository {
         submittedAt:
             DateTime.fromMillisecondsSinceEpoch(m['submittedAt'] as int),
         note: m['note'] as String?,
+        message: m['message'] as String?,
       );
     }).toList();
   }
@@ -197,6 +200,7 @@ class LocalAccountRepository implements AccountRepository {
                 'status': r.status.name,
                 'submittedAt': r.submittedAt.millisecondsSinceEpoch,
                 'note': r.note,
+                'message': r.message,
               })
           .toList()),
     );

@@ -1440,6 +1440,15 @@ class AppStrings {
   String get vhPayStep1 => _s('vhPayStep1');
   String get vhPayStep2 => _s('vhPayStep2');
   String get vhPayStep3 => _s('vhPayStep3');
+  String get vhPayStep4 => _s('vhPayStep4');
+  String get vhPayNoteHint => _s('vhPayNoteHint');
+  String get vhPayPrivate => _s('vhPayPrivate');
+  String get vhPayNextTitle => _s('vhPayNextTitle');
+  String get vhPayNext1 => _s('vhPayNext1');
+  String get vhPayNext2 => _s('vhPayNext2');
+  String get vhPayNext3 => _s('vhPayNext3');
+  String get vhRequestYouWrote => _s('vhRequestYouWrote');
+  String get vhRequestReply => _s('vhRequestReply');
   String get vhPayPayee => _s('vhPayPayee');
   String get vhPayNumber => _s('vhPayNumber');
   String get vhPayAmount => _s('vhPayAmount');
@@ -1869,13 +1878,22 @@ class AppStrings {
     'vhPayStep1': 'Send the amount to this KPay account',
     'vhPayStep2': 'Pay in KPay, then take a screenshot of the receipt',
     'vhPayStep3': 'Attach the receipt screenshot',
+    'vhPayStep4': 'Add a note (optional)',
+    'vhPayNoteHint': 'e.g. Paid from my sister\'s KPay around 9 pm. Anything we should know.',
+    'vhPayPrivate': 'Only the Innocent team sees your receipt.',
+    'vhPayNextTitle': 'What happens next',
+    'vhPayNext1': 'Your receipt has been received.',
+    'vhPayNext2': 'We check it against the KPay statement.',
+    'vhPayNext3': 'Premium turns on by itself — you will see it in Account.',
+    'vhRequestYouWrote': 'You wrote',
+    'vhRequestReply': 'From Innocent',
     'vhPayPayee': 'Account name',
     'vhPayNumber': 'KPay number',
     'vhPayAmount': 'Amount',
     'vhPayCopied': 'Copied',
     'vhPayReferenceHint': 'KPay transaction ID',
     'vhPaySenderHint': 'Number you paid from',
-    'vhPaySubmit': 'Submit payment',
+    'vhPaySubmit': 'Send for review',
     'vhPayManualNote': 'Payments are checked by hand against the KPay statement, so activation is not instant.',
     'vhPayOpenKpay': 'Open KPay',
     'vhPayNoKpay': 'KPay is not installed on this phone.',
@@ -3282,13 +3300,22 @@ class AppStrings {
     'vhPayStep1': 'ဤ KPay အကောင့်သို့ ငွေလွှဲပါ',
     'vhPayStep2': 'KPay မှာ ငွေလွှဲပြီး ပြေစာကို screenshot ရိုက်ပါ',
     'vhPayStep3': 'ပြေစာ screenshot ကို ထည့်ပါ',
+    'vhPayStep4': 'မှတ်ချက် ရေးရန် (မရေးလည်းရ)',
+    'vhPayNoteHint': 'ဥပမာ — ညီမရဲ့ KPay ကနေ ည ၉ နာရီလောက်က လွှဲထားပါတယ်။ သိစေချင်တာ ရှိရင် ရေးပါ။',
+    'vhPayPrivate': 'သင့်ပြေစာကို Innocent အဖွဲ့ကသာ မြင်ရပါသည်။',
+    'vhPayNextTitle': 'နောက်ဘာဖြစ်မလဲ',
+    'vhPayNext1': 'သင့်ပြေစာ ရောက်ရှိပါပြီ။',
+    'vhPayNext2': 'KPay စာရင်းနဲ့ တိုက်စစ်ပါမယ်။',
+    'vhPayNext3': 'Premium အလိုလို ပွင့်လာပါမယ် — Account မှာ မြင်ရပါမယ်။',
+    'vhRequestYouWrote': 'သင်ရေးခဲ့သည်',
+    'vhRequestReply': 'Innocent ထံမှ',
     'vhPayPayee': 'အကောင့်အမည်',
     'vhPayNumber': 'KPay နံပါတ်',
     'vhPayAmount': 'ပမာဏ',
     'vhPayCopied': 'ကူးယူပြီး',
     'vhPayReferenceHint': 'KPay လွှဲပြောင်းမှု ID',
     'vhPaySenderHint': 'ငွေလွှဲသည့် နံပါတ်',
-    'vhPaySubmit': 'ငွေပေးချေမှု တင်ရန်',
+    'vhPaySubmit': 'စစ်ဆေးရန် ပို့မည်',
     'vhPayManualNote': 'ငွေပေးချေမှုများကို KPay စာရင်းနှင့် လူကိုယ်တိုင် တိုက်စစ်သဖြင့် ချက်ချင်း အသက်မဝင်ပါ။',
     'vhPayOpenKpay': 'KPay ဖွင့်မည်',
     'vhPayNoKpay': 'ဒီဖုန်းမှာ KPay မရှိပါ။',
@@ -4683,13 +4710,22 @@ class AppStrings {
     'vhPayStep1': 'โอนยอดไปยังบัญชี KPay นี้',
     'vhPayStep2': 'โอนใน KPay แล้วแคปหน้าจอใบเสร็จ',
     'vhPayStep3': 'แนบภาพหน้าจอใบเสร็จ',
+    'vhPayStep4': 'เพิ่มหมายเหตุ (ไม่บังคับ)',
+    'vhPayNoteHint': 'เช่น โอนจาก KPay ของน้องสาวราว 3 ทุ่ม หรือสิ่งที่อยากให้เรารู้',
+    'vhPayPrivate': 'ใบเสร็จของคุณจะเห็นได้เฉพาะทีม Innocent',
+    'vhPayNextTitle': 'ขั้นตอนถัดไป',
+    'vhPayNext1': 'ได้รับใบเสร็จของคุณแล้ว',
+    'vhPayNext2': 'เราจะตรวจสอบกับรายการ KPay',
+    'vhPayNext3': 'Premium จะเปิดเอง — ดูได้ที่บัญชี',
+    'vhRequestYouWrote': 'คุณเขียนว่า',
+    'vhRequestReply': 'จาก Innocent',
     'vhPayPayee': 'ชื่อบัญชี',
     'vhPayNumber': 'เบอร์ KPay',
     'vhPayAmount': 'จำนวนเงิน',
     'vhPayCopied': 'คัดลอกแล้ว',
     'vhPayReferenceHint': 'รหัสธุรกรรม KPay',
     'vhPaySenderHint': 'เบอร์ที่ใช้โอน',
-    'vhPaySubmit': 'ส่งการชำระเงิน',
+    'vhPaySubmit': 'ส่งให้ตรวจสอบ',
     'vhPayManualNote': 'การชำระเงินตรวจสอบด้วยคนเทียบกับรายการ KPay จึงไม่เปิดใช้งานทันที',
     'vhPayOpenKpay': 'เปิด KPay',
     'vhPayNoKpay': 'เครื่องนี้ไม่มี KPay',

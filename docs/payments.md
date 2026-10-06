@@ -74,7 +74,39 @@ before (`approve_request` writes the subscription; nothing else does).
   is its end-to-end test**: the Telegram photo arriving is the sign it works.
 * Unit tests: the receipt shrinking. Harness renders: the new screen.
 
-## 4. Next
+## 4. The note, and the inbox (2026-10-06, migration 042)
+
+Owner, after trying it: "a screenshot alone is not enough — there must be
+somewhere to write a note; and the console must announce these, with the
+receipts right there."
+
+**Viewer.** Step 4, *Add a note (optional)*: up to 500 characters in the
+payer's own words. Every request now goes through the function (a
+transaction id with no screenshot too), so the note is never lost. The
+screen opens with what is being bought (plan, price, what it opens); the
+steps are a stepper that ticks when the receipt is attached; after sending,
+*What happens next* — received, checked against KPay, Premium turns on by
+itself. In Account each request shows its state in colour, what the payer
+wrote, and Innocent's reply.
+
+**Console** (`docs/studio/inbox.js`). The Payments page: a card per request
+with the receipt large (tap for full size), the payer's note, the account
+(NEW, returning payer, Premium until, receipt already used), the plan and the
+price shown. Approve with the plan's days and an optional word to the payer;
+Reject with a reason (presets or typed) — the payer's app shows it.
+Waiting / Approved / Rejected / All; decided ones say who and when. A new
+payment is announced on any page: menu badge (red while unseen), "(n)" in
+the tab title, a card in the corner, and — once switched on with *Notify me*
+and *Sound* — a system notification and a chime. Opening the waiting list
+marks it seen. The count every 30 s is not "activity": the idle sign-out
+still works.
+
+**Server.** `premium_requests.message / seen_at / reviewed_by`;
+`admin_requests` (service role only). premium-request v3 serves the
+console's ops (pulse, inbox, seen, proofs, approve, reject) behind the
+editor+/MFA gate, and writes approvals and rejections to `admin_audit`.
+
+## 5. Next
 
 * KBZPay merchant gateway, once there is a registered business: payment
   confirms itself, Premium turns on in seconds, no screenshot.

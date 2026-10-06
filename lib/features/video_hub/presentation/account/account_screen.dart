@@ -436,71 +436,128 @@ class _StatusCard extends StatelessWidget {
   }
 }
 
+/// One payment, as the payer sees it: what state it is in, in a colour that
+/// says so; what they wrote with it; and Innocent's reply — the reason on a
+/// rejection, a word on an approval.
 class _RequestRow extends StatelessWidget {
   final PremiumRequest request;
 
   const _RequestRow({required this.request});
 
-  static IconData _iconFor(PremiumRequestStatus status) {
-    switch (status) {
-      case PremiumRequestStatus.pending:
-        return Icons.schedule_rounded;
-      case PremiumRequestStatus.approved:
-        return Icons.check_circle_outline_rounded;
-      case PremiumRequestStatus.rejected:
-        return Icons.cancel_outlined;
-    }
-  }
-
-  static String _labelFor(AppStrings s, PremiumRequestStatus status) {
-    switch (status) {
-      case PremiumRequestStatus.pending:
-        return s.vhRequestPending;
-      case PremiumRequestStatus.approved:
-        return s.vhRequestApproved;
-      case PremiumRequestStatus.rejected:
-        return s.vhRequestRejected;
-    }
-  }
+  static const Color _amber = Color(0xFFF0B429);
+  static const Color _green = Color(0xFF34D399);
+  static const Color _red = Color(0xFFF87171);
 
   @override
   Widget build(BuildContext context) {
     final s = AppStrings.of(context);
-    final IconData icon = _iconFor(request.status);
-    final String label = _labelFor(s, request.status);
+    final (IconData icon, String label, Color tone) = switch (request.status) {
+      PremiumRequestStatus.pending =>
+        (Icons.schedule_rounded, s.vhRequestPending, _amber),
+      PremiumRequestStatus.approved =>
+        (Icons.check_circle_rounded, s.vhRequestApproved, _green),
+      PremiumRequestStatus.rejected =>
+        (Icons.cancel_rounded, s.vhRequestRejected, _red),
+    };
+    final plan = request.planId == 'yearly'
+        ? s.vhPlanYearly
+        : request.planId == 'monthly'
+            ? s.vhPlanMonthly
+            : request.planId;
+    final d = request.submittedAt;
+    final when = '${d.year}-${d.month.toString().padLeft(2, '0')}-'
+        '${d.day.toString().padLeft(2, '0')} '
+        '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
+    final message = request.message;
+    final note = request.note;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: VH.s2),
-      padding: const EdgeInsets.all(VH.s3),
+      margin: const EdgeInsets.only(bottom: VH.s3),
+      padding: const EdgeInsets.all(VH.s4),
       decoration: BoxDecoration(
         color: VH.surface1,
-        borderRadius: BorderRadius.circular(VH.rControl),
-        border: Border.all(color: VH.hairline),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: tone.withAlpha(0x40)),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Icon(icon, size: 18, color: VH.textSecondary),
-          const SizedBox(width: VH.s3),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Text(label, style: VH.label.copyWith(fontSize: 13.5)),
-                const SizedBox(height: 2),
-                Text(
-                  request.reference,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: VH.meta.copyWith(fontSize: 11.5),
+          Row(
+            children: <Widget>[
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                decoration: BoxDecoration(
+                  color: tone.withAlpha(0x24),
+                  borderRadius: BorderRadius.circular(VH.rPill),
                 ),
-                if (request.note != null) ...<Widget>[
-                  const SizedBox(height: 2),
-                  Text(request.note!, style: VH.meta.copyWith(fontSize: 11.5)),
-                ],
-              ],
-            ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Icon(icon, size: 14, color: tone),
+                    const SizedBox(width: 5),
+                    Text(label,
+                        style: VH.label.copyWith(
+                            fontSize: 12, color: tone, height: 1.35)),
+                  ],
+                ),
+              ),
+              const Spacer(),
+              Text(plan,
+                  style: VH.label.copyWith(
+                      fontSize: 13, fontWeight: FontWeight.w700)),
+            ],
           ),
+          const SizedBox(height: VH.s2),
+          Text(
+            [when, if (request.reference.isNotEmpty) request.reference]
+                .join(' · '),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: VH.meta.copyWith(fontSize: 11.5),
+          ),
+          if (message != null && message.isNotEmpty) ...<Widget>[
+            const SizedBox(height: VH.s3),
+            _Quote(label: s.vhRequestYouWrote, text: message,
+                color: VH.textTertiary),
+          ],
+          if (note != null && note.isNotEmpty) ...<Widget>[
+            const SizedBox(height: VH.s3),
+            _Quote(label: s.vhRequestReply, text: note, color: tone),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _Quote extends StatelessWidget {
+  final String label;
+  final String text;
+  final Color color;
+
+  const _Quote({required this.label, required this.text, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(VH.s3, VH.s2, VH.s3, VH.s2),
+      decoration: BoxDecoration(
+        color: VH.surface2,
+        borderRadius: const BorderRadius.only(
+          topRight: Radius.circular(10),
+          bottomRight: Radius.circular(10),
+        ),
+        border: Border(left: BorderSide(color: color, width: 3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(label,
+              style: VH.meta.copyWith(fontSize: 11, color: color, height: 1.4)),
+          const SizedBox(height: 2),
+          Text(text, style: VH.body.copyWith(fontSize: 13, height: 1.55)),
         ],
       ),
     );

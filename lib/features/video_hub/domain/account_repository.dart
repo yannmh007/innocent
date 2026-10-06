@@ -65,6 +65,7 @@ abstract class AccountRepository {
     String? senderPhone,
     Uint8List? proof,
     String? priceShown,
+    String? message,
   });
 
   /// This account's requests, newest first, so the user can see that their
