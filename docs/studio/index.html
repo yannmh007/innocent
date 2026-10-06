@@ -73,6 +73,7 @@
 <script src="files.js"></script>
 <script src="storage.js"></script>
 <script src="status.js"></script>
+<script src="inbox.js"></script>
 <style>
 :root{
   --bg:#0c0d10; --panel:#131519; --panel2:#181b20;
@@ -629,6 +630,86 @@ body.sh-on{padding-bottom:calc(76px + env(safe-area-inset-bottom))}
   bottom:calc(88px + env(safe-area-inset-bottom));background:#241d0c;
   color:#fde68a;border:1px solid #5b4a19;border-radius:8px;padding:8px 12px;
   font-size:12.5px;box-shadow:0 8px 30px rgba(0,0,0,.5)}
+/* ── the payment inbox (inbox.js) ─────────────────────────────────────── */
+.rq-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0 14px}
+.rq-tab{height:30px;padding:0 12px;border-radius:999px;font:inherit;font-size:12.5px;
+  background:var(--panel);border:1px solid var(--line2);color:var(--dim);cursor:pointer;
+  display:inline-flex;align-items:center;gap:7px}
+.rq-tab:hover{color:var(--fg)}
+.rq-tab.on{background:#211a08;border-color:#4a3a12;color:var(--acc);font-weight:600}
+.rq-tab-n{min-width:18px;height:18px;padding:0 5px;border-radius:999px;
+  background:var(--panel2);color:inherit;font-size:10.5px;display:grid;
+  place-items:center;font-variant-numeric:tabular-nums}
+.b.rq-on{border-color:#4a3a12;color:var(--acc)}
+.rq-card{display:flex;gap:16px;padding:14px;margin-bottom:12px;
+  background:linear-gradient(180deg,var(--panel2),var(--panel));
+  border:1px solid var(--line);border-radius:14px;position:relative}
+.rq-card.new{border-color:#4a3a12;box-shadow:0 0 0 1px #4a3a1255,0 8px 24px -16px #f0b42955}
+.rq-card.new::before{content:"";position:absolute;left:-1px;top:16px;bottom:16px;width:3px;
+  border-radius:0 3px 3px 0;background:var(--acc)}
+.rq-proof{flex:0 0 auto;width:132px;height:236px;padding:0;border-radius:10px;overflow:hidden;
+  border:1px solid var(--line2);background:#0a0b0d;cursor:zoom-in;position:relative}
+.rq-proof img{width:100%;height:100%;object-fit:cover;object-position:top;display:block;
+  transition:transform .25s ease}
+.rq-proof:hover img{transform:scale(1.03)}
+.rq-proof.none{display:grid;place-items:center;color:var(--dim2);font-size:11.5px;cursor:default}
+.rq-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:10px}
+.rq-top{display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap}
+.rq-who{font-size:15px;font-weight:650;color:var(--fg);flex:1;min-width:140px;
+  overflow-wrap:anywhere}
+.rq-plan{display:flex;align-items:center;gap:8px}
+.rq-plan-id{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--dim)}
+.rq-price{font-size:16px;font-weight:700;color:var(--acc);font-variant-numeric:tabular-nums}
+.rq-badges{display:flex;gap:6px;flex-wrap:wrap}
+.rq-msg{margin:0;padding:10px 12px;border-left:3px solid var(--info);border-radius:0 10px 10px 0;
+  background:#0d1826;color:#dbe7f7;font-size:13.5px;line-height:1.6;white-space:pre-wrap;
+  overflow-wrap:anywhere}
+.rq-facts{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;margin:0;font-size:12.5px}
+.rq-facts dt{color:var(--dim2)}
+.rq-facts dd{margin:0;color:var(--fg);overflow-wrap:anywhere}
+.rq-acts{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:auto}
+.rq-for{display:flex;align-items:center;gap:6px;margin:0;font-size:12px;color:var(--dim)}
+.rq-days{width:auto;min-width:96px}
+.rq-note{flex:1;min-width:180px}
+.rq-approve{min-width:110px}
+.rq-reject{display:flex;flex-direction:column;gap:8px;padding:10px;border-radius:10px;
+  background:#1a0f10;border:1px solid #5b2626}
+.rq-outcome{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline;padding:9px 11px;
+  border-radius:10px;font-size:12.5px;color:var(--dim)}
+.rq-outcome.ok{background:#0f2019;border:1px solid #1e4637}
+.rq-outcome.bad{background:#241012;border:1px solid #5b2626}
+.rq-outcome-t{font-weight:700}
+.rq-outcome.ok .rq-outcome-t{color:var(--ok)}
+.rq-outcome.bad .rq-outcome-t{color:var(--bad)}
+.rq-outcome-note{flex-basis:100%;color:var(--fg)}
+.rq-empty{padding:42px 10px;text-align:center;color:var(--dim);font-size:13px}
+.rq-empty-ico{width:44px;height:44px;margin:0 auto 10px;border-radius:50%;display:grid;
+  place-items:center;background:#0f2019;color:var(--ok);font-size:20px;font-weight:700}
+@media(max-width:560px){
+  .rq-card{flex-direction:column}
+  .rq-proof{width:100%;height:300px}
+}
+.rq-light{position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.92);display:flex;
+  flex-direction:column;align-items:center;justify-content:center;padding:16px;gap:12px;
+  cursor:zoom-out}
+.rq-light img{max-width:100%;max-height:calc(100vh - 90px);object-fit:contain;border-radius:8px;
+  box-shadow:0 20px 60px #000}
+.rq-light-bar{display:flex;gap:12px;align-items:center;color:var(--dim);font-size:12.5px}
+.rq-toast{position:fixed;right:16px;bottom:calc(84px + env(safe-area-inset-bottom));z-index:70;
+  display:flex;align-items:center;gap:12px;padding:12px 12px 12px 14px;max-width:min(380px,calc(100vw - 32px));
+  background:#16181d;border:1px solid #4a3a12;border-radius:14px;
+  box-shadow:0 18px 40px -12px #000;animation:rq-in .25s ease-out}
+@media(min-width:900px){.rq-toast{bottom:24px}}
+.rq-toast-ico{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;
+  background:#211a08;font-size:18px;flex:0 0 auto}
+.rq-toast-words{flex:1;min-width:0}
+.rq-toast-t{font-weight:650;font-size:13.5px}
+.rq-toast-s{color:var(--dim);font-size:12px;margin-top:2px}
+.rq-toast-go,.rq-light-bar a{display:inline-flex;align-items:center;height:var(--ctl);
+  padding:0 12px;border-radius:var(--r);text-decoration:none;font-size:12.5px;font-weight:650}
+.rq-toast-go{background:var(--acc);color:#141414}
+.rq-light-bar a{background:var(--panel2);border:1px solid var(--line2);color:var(--fg)}
+@keyframes rq-in{from{transform:translateY(12px);opacity:0}to{transform:none;opacity:1}}
 </style>
 </head>
 <body>
@@ -870,11 +951,21 @@ body.sh-on{padding-bottom:calc(76px + env(safe-area-inset-bottom))}
   </section>
 
   <!-- ══ REQUESTS ═══════════════════════════════════════════════════════ -->
+  <!-- The payment inbox: inbox.js. -->
   <section id="tab-requests" hidden>
     <div class="sec">
-      <div class="sechead"><h2>Premium requests</h2></div>
-      <p class="hint">Approving writes the subscription. Nothing else does.</p>
-      <div id="reqList" style="margin-top:10px"></div>
+      <div class="sechead">
+        <h2>Payments</h2>
+        <span class="spacer"></span>
+        <button class="b" type="button" id="reqSound"></button>
+        <button class="b" type="button" id="reqNotify"></button>
+      </div>
+      <p class="hint">Check each receipt against the KPay statement: the amount,
+        the time and the sending number. Approving gives the account Premium
+        for the days chosen — nothing else does. A rejection's reason is what
+        the payer's app shows.</p>
+      <div class="rq-tabs" id="reqTabs"></div>
+      <div id="reqList"></div>
     </div>
   </section>
 
@@ -2679,77 +2770,6 @@ $('selftest').onclick = async () => {
 
 wireDrop($('nDrop'), $('nFiles'), () => $('nFiles').onchange());
 wireDrop($('addDrop'), $('addFiles'), () => $('addFiles').onchange());
-
-// ── requests ─────────────────────────────────────────────────────────────
-async function loadRequests() {
-  const host = $('reqList');
-  host.textContent = '';
-  try {
-    const { requests } = await api({ op: 'requests' });
-    if (!requests.length) {
-      host.append(el('div', { className: 'empty' }, text('Nothing pending.')));
-      return;
-    }
-    // The receipts, as ten-minute signed addresses. A failure here leaves the
-    // list usable (the transaction id, if any, is still shown).
-    let urls = {};
-    try { urls = (await api({ op: 'proofs' }, PREMIUM_API)).urls || {}; }
-    catch (e) { say('bad', 'Screenshots could not be loaded: ' + String(e.message || e)); }
-    for (const r of requests) {
-      const days = el('input', { type: 'number', value: '365',
-        style: 'width:72px' });
-      const ok = el('button', { className: 'b p' }, text('Approve'));
-      const no = el('button', { className: 'b d' }, text('Reject'));
-      ok.onclick = async () => {
-        ok.disabled = no.disabled = true;
-        try {
-          await api({ op: 'approve', id: r.id, days: Number(days.value) || 365 });
-          say('ok', 'Approved.'); loadRequests();
-        } catch (e) {
-          say('bad', String(e.message || e));
-          ok.disabled = no.disabled = false;
-        }
-      };
-      no.onclick = async () => {
-        if (!confirm('Reject this request?')) return;
-        try { await api({ op: 'reject', id: r.id }); say('ok', 'Rejected.'); loadRequests(); }
-        catch (e) { say('bad', String(e.message || e)); }
-      };
-      // The receipt: tap for the full size. Check the amount, the receiver
-      // and the time against the price the viewer was shown.
-      const url = urls[r.id];
-      const proof = url
-        ? el('a', { href: url, target: '_blank', rel: 'noopener',
-            title: 'Open the receipt' }, [
-            el('img', { src: url, alt: 'receipt', style:
-              'width:72px;height:128px;object-fit:cover;border-radius:6px;border:1px solid var(--line)' }),
-          ])
-        : el('div', { className: 'hint', style: 'width:72px' },
-            text(r.proof_path ? 'receipt…' : 'no screenshot'));
-      const warn = r.duplicate_of
-        ? el('div', { style: 'color:var(--bad, #d33);font-weight:600' },
-            text('⚠ This screenshot was already used for request '
-              + String(r.duplicate_of).slice(0, 8)))
-        : null;
-      host.append(el('div', { className: 'sechead',
-        style: 'border-bottom:1px solid var(--line);padding-bottom:8px;gap:10px' }, [
-        proof,
-        el('div', { style: 'min-width:150px' }, [
-          el('div', {}, text(r.email || r.phone || r.id)),
-          el('div', {}, text([r.plan_id, r.price_shown].filter(Boolean).join(' · '))),
-          el('div', { className: 'hint mono' }, text([
-            r.sender_phone ? 'from ' + r.sender_phone : null,
-            r.reference ? 'txn ' + r.reference : null,
-            (r.submitted_at || '').slice(0, 16).replace('T', ' ')]
-            .filter(Boolean).join(' · '))),
-          warn,
-        ].filter(Boolean)),
-        el('span', { className: 'spacer' }),
-        el('span', { className: 'hint' }, text('days')), days, ok, no,
-      ]));
-    }
-  } catch (e) { say('bad', String(e.message || e)); }
-}
 
 // ── categories ───────────────────────────────────────────────────────────
 async function addCategory() {
