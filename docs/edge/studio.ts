@@ -1479,7 +1479,9 @@ async function handleOp(
     const { data: assets, error: aErr } = await db
       .from('title_assets')
       .select('id,kind,bucket,object_key,thumb_key,is_primary,is_free,' +
-        'sort_order,label,language,duration_s,width,height,bytes,mime,added_at')
+        'sort_order,label,language,duration_s,width,height,bytes,mime,added_at,' +
+        // 043: the ten stills the cover picker offers, and where they are at.
+        'frames,frames_state,frames_note')
       .eq('title_id', id)
       // SORT_ORDER FIRST, NOT KIND. The app asks title_media for
       // `order=sort_order.asc` and draws photos and clips interleaved in that

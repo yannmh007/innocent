@@ -463,8 +463,9 @@ const studio = await import('data:text/javascript,' + encodeURIComponent(
 // empty queue), nothing at all without the token, and a failure that never
 // throws into the enqueue that already succeeded.
 {
-  const body = sliceOut('docs/edge/ingest.ts', 'let lastKick = 0;', '// ── bot commands')
-    .replace('force = false): Promise<string>', 'force = false)')
+  const body = sliceOut('docs/edge/ingest.ts', 'const lastKick: Record<string, number> = {};', '// ── bot commands')
+    .replace('const lastKick: Record<string, number> = {};', 'const lastKick = {};')
+    .replace("workflow = 'ingest.yml'): Promise<string>", "workflow = 'ingest.yml')")
     .replace(/ as \{ workflow_runs\?: Array<\{ status\?: string \}> \}/, '');
   const make = async (token) => (await import('data:text/javascript,' + encodeURIComponent(
     `const GH_DISPATCH_TOKEN = ${JSON.stringify(token)};\n`
@@ -508,6 +509,22 @@ const studio = await import('data:text/javascript,' + encodeURIComponent(
   try { check('and a dead network says failed too, without throwing',
     await (await make('tok'))() === 'failed'); } catch { threw = true; }
   check('(never throws)', !threw);
+
+  // Filing a forwarded film into a title queues its streaming copies; the
+  // transcode runner is woken the same way, and on its own clock.
+  calls.length = 0;
+  globalThis.fetch = async (url, init = {}) => {
+    calls.push([init.method || 'GET', String(url)]);
+    if (String(url).endsWith('/dispatches')) return { status: 204, ok: true };
+    return { ok: true, status: 200, json: async () => ({ workflow_runs: [] }) };
+  };
+  kick = await make('tok');
+  await kick();
+  check('a transcode wake-up right after an ingest one is not swallowed by its pause',
+    await kick(false, 'transcode.yml') === 'started'
+    && /workflows\/transcode\.yml\/dispatches$/.test(dispatches().pop()[1]));
+  check('attach, attach_folder and create_title all wake the transcode runner',
+    (ingestSrc.match(/kickRunner\(false, 'transcode\.yml'\)/g) || []).length === 3);
 
   check('the webhook wakes it after queueing, not before',
     ingestSrc.indexOf("rpc('enqueue_ingest'") < ingestSrc.indexOf('await kickRunner()'));

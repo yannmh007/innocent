@@ -563,7 +563,7 @@ async function say(chatId: number | string, text: string): Promise<void> {
 // for stragglers before it leaves. Kept per isolate, so a burst that lands on
 // two isolates costs one extra dispatch, which GitHub folds into the same
 // pending run (the workflow's concurrency group keeps at most one waiting).
-let lastKick = 0;
+const lastKick: Record<string, number> = {};
 
 /// Ask GitHub to start the Ingest workflow now.
 ///
@@ -574,11 +574,15 @@ let lastKick = 0;
 ///
 /// Best effort in every direction, like `say`: the file is already queued,
 /// and nothing here may fail that.
-async function kickRunner(force = false): Promise<string> {
+///
+/// `workflow` is ingest.yml by default; filing a forwarded film into a title
+/// queues its streaming copies, so the console's attach ops wake
+/// transcode.yml the same way.
+async function kickRunner(force = false, workflow = 'ingest.yml'): Promise<string> {
   if (!GH_DISPATCH_TOKEN) return 'off';
   const now = Date.now();
-  if (!force && now - lastKick < 30_000) return 'waiting';
-  const base = `https://api.github.com/repos/${GH_REPO}/actions/workflows/ingest.yml`;
+  if (!force && now - (lastKick[workflow] ?? 0) < 30_000) return 'waiting';
+  const base = `https://api.github.com/repos/${GH_REPO}/actions/workflows/${workflow}`;
   const headers = {
     'Authorization': `Bearer ${GH_DISPATCH_TOKEN}`,
     'Accept': 'application/vnd.github+json',
@@ -593,14 +597,14 @@ async function kickRunner(force = false): Promise<string> {
       const j = await q.json() as { workflow_runs?: Array<{ status?: string }> };
       const pending = (j.workflow_runs ?? []).some((r) =>
         ['queued', 'pending', 'requested', 'waiting'].includes(String(r.status)));
-      if (pending) { lastKick = now; return 'waiting'; }
+      if (pending) { lastKick[workflow] = now; return 'waiting'; }
     }
     const r = await fetch(`${base}/dispatches`, {
       method: 'POST',
       headers: { ...headers, 'Content-Type': 'application/json' },
       body: JSON.stringify({ ref: GH_REF }),
     });
-    if (r.status === 204) { lastKick = now; return 'started'; }
+    if (r.status === 204) { lastKick[workflow] = now; return 'started'; }
     console.log(`kick: GitHub answered ${r.status}`);
     return 'failed';
   } catch (e) {
@@ -1634,6 +1638,8 @@ async function consoleOp(
     const result = await rpc('attach_ingest', {
       p_job: jobId, p_title: titleId,
     });
+    // Filing it queued its streaming copies and its frames (043).
+    await kickRunner(false, 'transcode.yml');
     return json({ ok: true, result }, 200, req);
   }
 
@@ -1653,6 +1659,7 @@ async function consoleOp(
     const result = await rpc('attach_ingest_folder', {
       p_folder: folder, p_title: titleId,
     });
+    await kickRunner(false, 'transcode.yml');
     return json({ ok: true, attached: result }, 200, req);
   }
 
@@ -1688,6 +1695,7 @@ async function consoleOp(
         p_actor: who.id,
       }) as Array<Record<string, unknown>>;
       const made = (Array.isArray(rows) ? rows[0] : rows) ?? {};
+      await kickRunner(false, 'transcode.yml');
       return json({
         ok: true,
         id: made.title_id ?? null,

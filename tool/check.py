@@ -82,6 +82,11 @@ CHECKS = [
      'an album blurhash the app cannot read back: the runner encodes and the '
      'app decodes with two ports of one algorithm, and a slip in either draws '
      'every data-saver tile the wrong colour without an error anywhere'),
+    ('frames_test.py', None,
+     'a cover picker that offers the wrong frames: frame 0 not at one second, '
+     'stills upscaled or squashed for portrait video, a frame PUT under a key '
+     'the claim did not give, or one unreadable video ending the batch for '
+     'the nineteen after it (the ffmpeg half runs wherever ffmpeg is on PATH)'),
     ('unread_contract.py', None,
      'a repository method built, implemented twice and called by nothing — '
      'the same bug class as dead_settings one level up. getById was the only '

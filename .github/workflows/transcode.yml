@@ -27,7 +27,11 @@
 name: Transcode
 
 on:
-  # Five minutes is the finest GitHub offers and far finer than this needs.
+  # The fallback, not the way in. Measured on 2026-10-05/06 this fired five
+  # times in a day; four videos queued at 16:30 waited hours for streaming
+  # copies. The transcode function now starts this workflow itself when a
+  # video is queued (workflow_dispatch, GH_DISPATCH_TOKEN), and a run that
+  # did a ladder starts the next one in case more are waiting.
   schedule:
     - cron: '*/5 * * * *'
   # For starting one immediately rather than waiting for the tick.
@@ -50,6 +54,8 @@ jobs:
     timeout-minutes: 330
     permissions:
       contents: read
+      # Only to start the next run of this workflow after a ladder (below).
+      actions: write
 
     steps:
       - uses: actions/checkout@v4
@@ -87,12 +93,46 @@ jobs:
             echo "job=none" >> "$GITHUB_OUTPUT"
           fi
 
+      # ── ten stills per video for the cover picker (migration 043) ────────
+      #
+      # A batch of up to twenty, every run, before the ladder: frames take
+      # seconds a video and the console is waiting on them; a ladder can take
+      # an hour. Asked separately from the ladder, so a run with no ladder to
+      # build still makes the frames.
+      - name: Ask for frames
+        id: frames
+        env:
+          SB_URL: ${{ secrets.SUPABASE_URL }}
+          RUNNER_SECRET: ${{ secrets.TRANSCODE_SECRET }}
+        run: |
+          if [ -z "${SB_URL:-}" ] || [ -z "${RUNNER_SECRET:-}" ]; then
+            echo "frames=none" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          code=$(curl -sS -o /tmp/frames.json -w '%{http_code}' \
+            -X POST "$SB_URL/functions/v1/transcode" \
+            -H "Authorization: Bearer $RUNNER_SECRET" \
+            -H 'Content-Type: application/json' \
+            -d '{"op":"frames_claim"}' || echo 000)
+          n=$(python3 -c "import json;print(len(json.load(open('/tmp/frames.json')).get('jobs') or []))" 2>/dev/null || echo 0)
+          echo "frames: HTTP $code, $n video(s)"
+          if [ "$code" = "200" ] && [ "$n" -gt 0 ]; then
+            echo "frames=yes" >> "$GITHUB_OUTPUT"
+          else
+            echo "frames=none" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Install ffmpeg
-        if: steps.claim.outputs.job == 'yes'
+        if: steps.claim.outputs.job == 'yes' || steps.frames.outputs.frames == 'yes'
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq ffmpeg
           ffmpeg -version | head -1
+
+      - name: Make the frames
+        if: steps.frames.outputs.frames == 'yes'
+        env:
+          JOB_TOKEN: ${{ secrets.TRANSCODE_SECRET }}
+        run: python3 tool/frames.py
 
       - name: Build the ladder
         if: steps.claim.outputs.job == 'yes'
@@ -126,3 +166,16 @@ jobs:
           PY
           curl -fsS -X POST "$(python3 -c "import json;print(json.load(open('/tmp/job.json'))['done_url'])")" \
             -H 'Content-Type: application/json' -d @/tmp/fail.json || true
+
+      # ONE LADDER PER RUN, SO ASK FOR THE NEXT RUN NOW. Two videos queued
+      # together used to be one ladder now and one whenever the schedule next
+      # fired. If nothing else is waiting, that next run claims nothing and
+      # ends in seconds.
+      - name: Start the next run
+        if: always() && steps.claim.outputs.job == 'yes'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REF: ${{ github.ref_name }}
+        run: |
+          gh workflow run transcode.yml --repo "$GITHUB_REPOSITORY" --ref "$REF" \
+            && echo "next run requested" || echo "could not request the next run"

@@ -31,6 +31,18 @@ const R2_ACCOUNT_ID = Deno.env.get('R2_ACCOUNT_ID')!;
 const R2_ACCESS_KEY_ID = Deno.env.get('R2_ACCESS_KEY_ID')!;
 const R2_SECRET_ACCESS_KEY = Deno.env.get('R2_SECRET_ACCESS_KEY')!;
 const MEDIA_BUCKET = Deno.env.get('R2_BUCKET') ?? 'innocent-media';
+// Where thumbnails live (043's frames among them): served straight off the
+// public bucket's domain, which is what `title_media.thumb_url` builds on.
+const PUBLIC_BUCKET = Deno.env.get('R2_PUBLIC_BUCKET') ?? 'innocent-public';
+
+// Starting the Transcode workflow the moment there is work, instead of
+// waiting for GitHub's schedule — which on 2026-10-05/06 fired five times in
+// a day, so four videos queued at 16:30 sat with no streaming copies for
+// hours. The same fine-grained token the ingest function uses (Actions: read
+// and write, this repository only). Absent, the schedule still comes by.
+const GH_DISPATCH_TOKEN = Deno.env.get('GH_DISPATCH_TOKEN') ?? '';
+const GH_REPO = Deno.env.get('GH_REPO') ?? 'yannmh007/innocent';
+const GH_REF = Deno.env.get('GH_REF') ?? 'main';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
 const ANON_KEY = Deno.env.get('SB_ANON_KEY') ??
@@ -71,6 +83,7 @@ function encodeKey(key: string): string {
 
 async function presign(
   method: 'GET' | 'PUT', objectKey: string, seconds: number,
+  bucket: string = MEDIA_BUCKET,
 ): Promise<string> {
   const host = `${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`;
   const amzDate = new Date().toISOString().replace(/[:-]|\.\d{3}/g, '');
@@ -85,7 +98,7 @@ async function presign(
   };
   const canonicalQuery = Object.keys(params).sort()
     .map((k) => `${rfc3986(k)}=${rfc3986(params[k])}`).join('&');
-  const canonicalPath = `/${MEDIA_BUCKET}/${encodeKey(objectKey)}`;
+  const canonicalPath = `/${bucket}/${encodeKey(objectKey)}`;
   const canonicalRequest = [
     method, canonicalPath, canonicalQuery, `host:${host}\n`, 'host',
     'UNSIGNED-PAYLOAD',
@@ -310,10 +323,74 @@ const RUNGS = [360, 480, 720, 1080, 1440, 2160];
 const NEED: Record<string, Role> = {
   health: 'viewer',
   queue: 'uploader',
+  // 043: make a video's ten frames again (or for the first time, now).
+  frames: 'uploader',
 };
 
 function rungKey(masterKey: string, height: number): string {
   return masterKey.replace(/\.[^./]+$/, '') + `-${height}p.mp4`;
+}
+
+// ── frames (043) ─────────────────────────────────────────────────────────
+//
+// Ten stills per video for the console's cover picker: frame 0 at one
+// second — the default thumbnail — and frames 1–9 at 10 %, 20 % … 90 %.
+const FRAME_COUNT = 10;
+
+/// Where frame `i` of a video goes: the video's folder, `thumb/`, the video's
+/// own name and the frame number. `<folder>/video/<stem>.mp4` →
+/// `<folder>/thumb/<stem>-f03.jpg`. Lower-cased and cleaned, because the key
+/// has to pass `record_frames`' check and `isMintedKey` in studio.ts, and a
+/// few early keys (`v/index-v1-a1.mp4`) predate the minted shape.
+function frameKey(masterKey: string, i: number): string {
+  const base = masterKey.replace(/\.[^./]+$/, '').toLowerCase();
+  const parts = base.split('/').filter(Boolean);
+  const name = parts.pop() ?? 'video';
+  if (parts.length && parts[parts.length - 1] === 'video') parts.pop();
+  const clean = (s: string) =>
+    s.replace(/[^a-z0-9.\-]+/g, '-').replace(/^[^a-z0-9]+/, '').replace(/-+$/, '');
+  const folder = parts.map(clean).filter(Boolean).join('/');
+  const stem = clean(name) || 'video';
+  return `${folder ? folder + '/' : ''}thumb/${stem}-f${String(i).padStart(2, '0')}.jpg`;
+}
+
+// One wake-up per burst, as in ingest.ts: a page that queues six uploads in
+// a row starts one run, and a run already waiting takes them all.
+let lastKick = 0;
+
+/// Ask GitHub to start the Transcode workflow now. 'started', 'waiting'
+/// (one is already queued), 'off' (no token) or 'failed'. Never throws.
+async function kickTranscode(force = false): Promise<string> {
+  if (!GH_DISPATCH_TOKEN) return 'off';
+  const now = Date.now();
+  if (!force && now - lastKick < 30_000) return 'waiting';
+  const base = `https://api.github.com/repos/${GH_REPO}/actions/workflows/transcode.yml`;
+  const headers = {
+    'Authorization': `Bearer ${GH_DISPATCH_TOKEN}`,
+    'Accept': 'application/vnd.github+json',
+    'X-GitHub-Api-Version': '2022-11-28',
+    'User-Agent': 'innocent-transcode',
+  };
+  try {
+    const q = await fetch(`${base}/runs?per_page=5`, { headers });
+    if (q.ok) {
+      const j = await q.json() as { workflow_runs?: Array<{ status?: string }> };
+      const pending = (j.workflow_runs ?? []).some((r) =>
+        ['queued', 'pending', 'requested', 'waiting'].includes(String(r.status)));
+      if (pending) { lastKick = now; return 'waiting'; }
+    }
+    const r = await fetch(`${base}/dispatches`, {
+      method: 'POST',
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ref: GH_REF }),
+    });
+    if (r.status === 204) { lastKick = now; return 'started'; }
+    console.log(`kick: GitHub answered ${r.status}`);
+    return 'failed';
+  } catch (e) {
+    console.log('kick: ' + String(e).slice(0, 160));
+    return 'failed';
+  }
 }
 
 Deno.serve(async (req: Request) => {
@@ -387,8 +464,21 @@ Deno.serve(async (req: Request) => {
       return json({ error: 'master_in_telegram' }, 409, req);
     }
     await audit(who, 'transcode', 'queue', asset, auditDetail(body), true, null);
-    return json({ ok: true, asset_id: asset, state, runner: !!RUNNER_SECRET },
+    const kick = await kickTranscode();
+    return json({ ok: true, asset_id: asset, state, runner: !!RUNNER_SECRET, kick },
       200, req);
+  }
+
+  // ── frames (043): "make the frames again" ────────────────────────────────
+  if (op === 'frames' && who) {
+    const asset = String(body.asset_id ?? '');
+    if (!/^[0-9a-f-]{36}$/i.test(asset)) return json({ error: 'no_asset' }, 400, req);
+    const state = await rpc('queue_frames', { p_asset: asset });
+    if (state === null || (Array.isArray(state) && !state.length)) {
+      return json({ error: 'not_a_video' }, 409, req);
+    }
+    await audit(who, 'transcode', 'frames', asset, auditDetail(body), true, null);
+    return json({ ok: true, state, kick: await kickTranscode(true) }, 200, req);
   }
 
   // ── health ──────────────────────────────────────────────────────────────
@@ -434,6 +524,56 @@ Deno.serve(async (req: Request) => {
       duration_s: job.duration_s ?? null,
       height: srcHeight,
     }, 200, req);
+  }
+
+  // ── frames_claim / frames_done (043) ────────────────────────────────────
+  //
+  // A BATCH, not one: ten seeks of a video take seconds, a run happens when
+  // GitHub gets to it, and the eleven videos that had no thumbnail when this
+  // was built should all have one after the first run.
+  //
+  // frames_done is matched before `done` below, which answers to any body
+  // carrying a token.
+  if (op === 'frames_claim') {
+    const given = (req.headers.get('Authorization') ?? '').replace(/^Bearer /i, '');
+    if (!sameSecret(given, RUNNER_SECRET)) return json({ error: 'no' }, 403, req);
+    const rows = await rpc('claim_frames', { p_limit: 20 }) as Array<Record<string, unknown>>;
+    if (!Array.isArray(rows) || !rows.length) return json({ jobs: [] }, 200, req);
+    const jobs = [];
+    for (const r of rows) {
+      const master = String(r.master_key ?? '');
+      const src = String(r.src_key ?? '');
+      if (!master || !src) continue;
+      const frames = [];
+      for (let i = 0; i < FRAME_COUNT; i++) {
+        const key = frameKey(master, i);
+        frames.push({ key, put: await presign('PUT', key, 86400, PUBLIC_BUCKET) });
+      }
+      jobs.push({
+        asset_id: r.asset_id,
+        // Six hours: ffmpeg seeks inside it with range requests, ten times.
+        src_url: await presign('GET', src, 21600),
+        duration_s: r.duration_s ?? null,
+        frames,
+      });
+    }
+    return json({ jobs, done_url: `${SUPABASE_URL}/functions/v1/transcode` }, 200, req);
+  }
+  if (op === 'frames_done') {
+    const given = String(body.token ?? '');
+    if (!sameSecret(given, RUNNER_SECRET)) return json({ error: 'no' }, 403, req);
+    const asset = String(body.asset_id ?? '');
+    if (!/^[0-9a-f-]{36}$/i.test(asset)) return json({ error: 'no_asset' }, 400, req);
+    const frames = Array.isArray(body.frames) ? body.frames : null;
+    try {
+      const thumb = await rpc('record_frames', {
+        p_asset: asset, p_frames: frames && frames.length ? frames : null,
+        p_note: String(body.note ?? '').slice(0, 200) || null,
+      });
+      return json({ ok: true, thumb }, 200, req);
+    } catch (e) {
+      return json({ error: 'record_failed', detail: String(e).slice(0, 200) }, 400, req);
+    }
   }
 
   // ── done ────────────────────────────────────────────────────────────────
