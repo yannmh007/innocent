@@ -67,11 +67,18 @@ appId: com.innocent.media
 # Back from an inner page lands on Transfer's home, not on the first tab.
 - assertVisible: "RECEIVE"
 # Settings: the switches that used to crowd the Send page.
+# (Flutter puts an IconButton's tooltip in Android's tooltip, not its
+# content-desc, so the ⋮ is tapped where it sits.)
 - tapOn:
-    text: "Transfer settings"
-    optional: true
+    point: "94%,8%"
+- waitForAnimationToEnd:
+    timeout: 3000
 - takeScreenshot: 35_transfer_settings
+- assertVisible: "(?s).*Ask before sending.*"
 - back
+- waitForAnimationToEnd:
+    timeout: 3000
+- assertVisible: "RECEIVE"
 # Send opens the picker straight away; backing out returns home.
 - tapOn: "SEND"
 - waitForAnimationToEnd:
