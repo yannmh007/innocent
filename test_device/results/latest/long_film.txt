@@ -1,14 +1,14 @@
 could not fetch bbb
 fetched Sintel.2010.1080p.mkv (1.1G)
 fetched tears_of_steel_720p.mov (355M)
-encoded sintel: 888s of film in 468s for 1080p+720p (1.9x real time)
-encoded tos: 734s of film in 377s for 1080p+720p (1.95x real time)
-all: 1622s of film in 845s (1.92x real time, 1080p+720p together)
+encoded sintel: 888s of film in 471s for 1080p+720p (1.89x real time)
+encoded tos: 734s of film in 370s for 1080p+720p (1.98x real time)
+all: 1622s of film in 841s (1.93x real time, 1080p+720p together)
 joined 6 times over
-long_1080.mp4: 3.0G, 162 min, 2631 kbps; boxes: ftyp 0.00 MB at 0.0 MB | moov 6.30 MB at 0.0 MB | free 0.00 MB at 6.3 MB | mdat 3046.80 MB at 6.3 MB
-long_720.mp4: 1.7G, 162 min, 1428 kbps; boxes: ftyp 0.00 MB at 0.0 MB | moov 6.36 MB at 0.0 MB | free 0.00 MB at 6.4 MB | mdat 1650.66 MB at 6.4 MB
-long_1080frag.mp4: 3.0G, 162 min, 2629 kbps; boxes: ftyp 0.00 MB at 0.0 MB | moov 0.00 MB at 0.0 MB | sidx 0.06 MB at 0.0 MB | sidx 0.06 MB at 0.1 MB | moof 0.00 MB at 0.1 MB | mdat 0.03 MB at 0.1 MB
-long_720frag.mp4: 1.7G, 162 min, 1426 kbps; boxes: ftyp 0.00 MB at 0.0 MB | moov 0.00 MB at 0.0 MB | sidx 0.06 MB at 0.0 MB | sidx 0.06 MB at 0.1 MB | moof 0.00 MB at 0.1 MB | mdat 0.03 MB at 0.1 MB
+long_1080.mp4: 3.0G, 162 min, 2631 kbps; boxes: ftyp 0.00 MB at 0.0 MB | moov 6.30 MB at 0.0 MB | free 0.00 MB at 6.3 MB | mdat 3047.03 MB at 6.3 MB
+long_720.mp4: 1.7G, 162 min, 1427 kbps; boxes: ftyp 0.00 MB at 0.0 MB | moov 6.36 MB at 0.0 MB | free 0.00 MB at 6.4 MB | mdat 1650.37 MB at 6.4 MB
+long_1080frag.mp4: 3.0G, 162 min, 2630 kbps; boxes: ftyp 0.00 MB at 0.0 MB | moov 0.00 MB at 0.0 MB | sidx 0.02 MB at 0.0 MB | sidx 0.02 MB at 0.0 MB | moof 0.00 MB at 0.0 MB | mdat 0.62 MB at 0.0 MB
+long_720frag.mp4: 1.7G, 162 min, 1426 kbps; boxes: ftyp 0.00 MB at 0.0 MB | moov 0.00 MB at 0.0 MB | sidx 0.02 MB at 0.0 MB | sidx 0.02 MB at 0.0 MB | moof 0.00 MB at 0.0 MB | mdat 0.38 MB at 0.0 MB
 frame 0 at 1s: ok in 0.2s
 frame 1 at 973s: ok in 0.2s
 frame 2 at 1946s: ok in 0.2s
