@@ -30,7 +30,8 @@ class _FakePaths extends PathProviderPlatform with MockPlatformInterfaceMixin {
 /// consumed at the film's bitrate after a start-up buffer — and reports:
 ///
 ///   delivered   MB/s the proxy delivered while the player was waiting on it
-///   first 512 KB  how long the black screen lasts (time to the first frame's bytes)
+///   first 512 KB  time to the first bytes the player can start reading
+///   start       how long the black screen lasts: Play until 2 s of film is held
 ///   stalls      how many times playback ran dry, and for how long in all
 ///
 ///   BENCH_MB=48 BENCH_KBPS=6000 flutter test test_bench/stream_bench.dart
@@ -88,7 +89,7 @@ void main() {
       final res = await _play(local!, body.length, kbps);
       StreamCacheServer.instance.release(id);
       final line = 'lanes=$lanes  delivered ${res.mbps.toStringAsFixed(2)} MB/s  '
-          'first 512 KB ${res.firstMs} ms  stalls ${res.stalls} '
+          'first 512 KB ${res.firstMs} ms  start ${res.startMs} ms  stalls ${res.stalls} '
           '(${(res.stalledMs / 1000).toStringAsFixed(1)} s)  '
           'film ${(body.length * 8 / kbps / 1000).toStringAsFixed(0)} s at $kbps kbps';
       lines.add(line);
@@ -107,9 +108,10 @@ void main() {
 }
 
 class _Result {
-  _Result(this.mbps, this.firstMs, this.stalls, this.stalledMs);
+  _Result(this.mbps, this.firstMs, this.startMs, this.stalls, this.stalledMs);
   final double mbps;
   final int firstMs;
+  final int startMs;
   final int stalls;
   final int stalledMs;
 }
@@ -127,6 +129,7 @@ Future<_Result> _play(String url, int total, int kbps) async {
   final resp = await req.close();
   var got = 0;
   var firstMs = -1;
+  var startMs = -1;
   var playing = false;
   var playedBytes = 0.0;
   var lastTick = 0;
@@ -150,6 +153,7 @@ Future<_Result> _play(String url, int total, int kbps) async {
       final need = playedBytes == 0 ? startBuffer : resumeBuffer;
       if (heldMs >= need || got >= total) {
         if (playedBytes > 0) stalledMs += now - stallStart;
+        if (startMs < 0) startMs = now;
         playing = true;
       }
     }
@@ -165,5 +169,5 @@ Future<_Result> _play(String url, int total, int kbps) async {
   final ms = sw.elapsedMilliseconds;
   timer.cancel();
   c.close(force: true);
-  return _Result(got / 1048576 / (ms / 1000), firstMs, stalls, stalledMs);
+  return _Result(got / 1048576 / (ms / 1000), firstMs, startMs, stalls, stalledMs);
 }

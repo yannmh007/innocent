@@ -31,6 +31,8 @@ class _Upstream {
   int maxInFlight = 0;
   int refused = 0;
   final Map<int, String> open = <int, String>{};
+  /// The size of every range asked for, in the order the requests arrived.
+  final List<int> sizes = <int>[];
   int _seq = 0;
 
   String url(String token) => 'http://127.0.0.1:${server.port}/v/$token';
@@ -66,6 +68,7 @@ class _Upstream {
         res.statusCode = 206;
         res.headers.set(HttpHeaders.contentRangeHeader, 'bytes $start-$end/${body.length}');
       }
+      sizes.add(end - start + 1);
       res.headers.contentLength = end - start + 1;
       // Paced a little, so lanes genuinely overlap rather than finishing in
       // the instant each is opened.
@@ -144,6 +147,7 @@ void main() {
     up.maxInFlight = 0;
     up.refused = 0;
     up.ports.clear();
+    up.sizes.clear();
     up.valid
       ..clear()
       ..add('t1');
@@ -164,6 +168,29 @@ void main() {
         reason: 'connections are kept and reused, not opened per request '
             '(${up.ports.length} connections for ${up.requests} requests)');
     StreamCacheServer.instance.release('film-a');
+  });
+
+  test('a stretch starts on small parts and grows to full size', () async {
+    const k = 1024;
+    expect(StreamCacheServer.rampedPartBytes(0, 6), 256 * k);
+    expect(StreamCacheServer.rampedPartBytes(5, 6), 256 * k);
+    expect(StreamCacheServer.rampedPartBytes(6, 6), 512 * k);
+    expect(StreamCacheServer.rampedPartBytes(12, 6), mb);
+    expect(StreamCacheServer.rampedPartBytes(18, 6), 2 * mb);
+    expect(StreamCacheServer.rampedPartBytes(500, 6), 2 * mb);
+    expect(StreamCacheServer.rampedPartBytes(3, 1), 2 * mb);
+
+    final local = await StreamCacheServer.instance.localUrlFor(
+        cacheId: 'film-ramp', upstream: up.url('t1'), refresh: () async => null);
+    final got = await _get(local!);
+    expect(got, up.body);
+    // The two-byte length check aside, the first round is one small part
+    // per lane: that round is what stands between Play and the picture.
+    final parts = up.sizes.where((s) => s > 2).toList();
+    expect(parts.take(3), everyElement(256 * k),
+        reason: 'first round of requests: $parts');
+    expect(parts, contains(2 * mb));
+    StreamCacheServer.instance.release('film-ramp');
   });
 
   test('a seek into the middle gets exactly those bytes', () async {

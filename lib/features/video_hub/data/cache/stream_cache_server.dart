@@ -128,6 +128,22 @@ class StreamCacheServer {
   /// loop reopens from the last byte the player received.
   static const Duration _laneStall = Duration(seconds: 15);
 
+  /// THE PARTS OF A STRETCH START SMALL AND GROW: the first round of [lanes]
+  /// parts is 256 KB each, the next 512 KB, then 1 MB, then 2 MB from there.
+  ///
+  /// A part reaches the player only once it is whole, and the lanes share the
+  /// line evenly. Six lanes opening on 512 KB and then 2 MB parts gave the
+  /// second part a sixth of the line, so the player waited for 2.5 MB at a
+  /// sixth of the speed before it had a picture: 12.6 s of black screen in
+  /// the device lab (run 37743949143, 150 ms RTT, 1 % loss) where one lane
+  /// took 2.2 s. Small parts in the first round finish together, so the
+  /// first 1.5 MB arrives at the speed of the whole line; doubling each
+  /// round gets back to 2 MB parts within a few seconds of film.
+  static int rampedPartBytes(int index, int lanes) {
+    final round = index ~/ max(1, lanes);
+    return min(RangedFetch.defaultPartBytes, (256 * 1024) << min(round, 4));
+  }
+
   bool get running => _server != null;
 
   Future<void> _ensureStarted() async {
@@ -713,7 +729,6 @@ class StreamCacheServer {
   Stream<List<int>> _lanesFetch(_Source src, int start, int end, int total,
       {required bool Function() gone,
       void Function(int bytes, int ms)? measured}) async* {
-    const partBytes = RangedFetch.defaultPartBytes;
     final window = lanes * 2;
 
     for (var attempt = 0; attempt < 2; attempt++) {
@@ -735,6 +750,7 @@ class StreamCacheServer {
       final url = Uri.parse(src.upstream);
       final parts = <_LanePart>[];
       var next = start;
+      var opened = 0;
       var failed = false;
       var stopped = false;
 
@@ -743,11 +759,7 @@ class StreamCacheServer {
         while (next < end &&
             parts.length < window &&
             parts.where((p) => !p.settled).length < lanes) {
-          // THE FIRST PART IS SMALL. It holds what the player needs before
-          // it can draw anything — the index, the first keyframe — and six
-          // lanes starting at once share the line six ways. 512 KB arrives
-          // in a sixth of the time a 2 MB part would; the rest are full size.
-          final size = next == start ? 512 * 1024 : partBytes;
+          final size = rampedPartBytes(opened++, lanes);
           final partEnd = min(next + size, end);
           final part = _LanePart(src.io, url, next, partEnd, total, _laneStall);
           began();
