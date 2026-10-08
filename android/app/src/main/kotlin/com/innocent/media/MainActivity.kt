@@ -502,6 +502,9 @@ class MainActivity : AudioServiceFragmentActivity() {
             flutterEngine.dartExecutor.binaryMessenger,
             MEDIA_SCAN_CHANNEL
         )
+        // The library hears about new, changed and removed videos as they
+        // happen (lib/features/local_browser/data/library_watcher.dart).
+        MediaChangeWatcher.register(flutterEngine.dartExecutor.binaryMessenger, applicationContext)
         mediaScanChannel?.setMethodCallHandler { call, result ->
             when (call.method) {
                 "scan" -> {
@@ -597,6 +600,15 @@ class MainActivity : AudioServiceFragmentActivity() {
                 // permission flags make revoking access count as a change.
                 // Null below Android 11, where there is no generation and
                 // the caller simply scans as it always has.
+                // id -> DATE_ADDED for every video, off the main thread: the
+                // NEW tag and Recently added measure when a file ARRIVED.
+                "datesAdded" -> {
+                    val ctx = applicationContext
+                    Thread {
+                        val m = try { MediaChangeWatcher.datesAdded(ctx) } catch (_: Throwable) { emptyMap() }
+                        runOnUiThread { result.success(m) }
+                    }.start()
+                }
                 "generation" -> {
                     var stamp: String? = null
                     if (Build.VERSION.SDK_INT >= 30) {

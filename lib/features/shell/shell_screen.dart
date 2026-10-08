@@ -8,6 +8,7 @@ import '../../core/localization/app_strings.dart';
 import '../../core/router/routes.dart';
 import '../../core/theme/app_colors.dart';
 import '../local_browser/presentation/library_provider.dart';
+import '../local_browser/presentation/library_watcher.dart';
 import '../video_hub/data/api/offline_auto_resume.dart';
 import '../video_hub/data/api/offline_downloader.dart';
 import '../local_browser/presentation/local_screen.dart';
@@ -158,6 +159,8 @@ class _ShellScreenState extends ConsumerState<ShellScreen>
     // in Local automatically, no ADB-screen visit needed. The shell is always
     // mounted, so this watch never lets the coordinator drop.
     ref.watch(adbAutoScanProvider);
+    // New, changed and removed videos reach the library as they happen.
+    ref.watch(libraryWatcherProvider);
 
     void select(int index) {
       ref.read(shellTabIndexProvider.notifier).state = index;

@@ -242,8 +242,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen> {
           }
           return RefreshIndicator(
             onRefresh: () async {
-              ref.invalidate(videosInFolderProvider(widget.folderPath));
-              await ref.read(videosInFolderProvider(widget.folderPath).future);
+              await refreshFolder(ref, widget.folderPath);
             },
             child: body,
           );

@@ -337,11 +337,64 @@ bool _foldersJustScanned = false;
 bool _allVideosJustScanned = false;
 final Set<String> _folderVideosJustScanned = <String>{};
 
+/// A RESCAN SOMEONE ASKED FOR SCANS — it does not hand back the cache.
+///
+/// Pull-to-refresh, ⋮ Refresh, and the phone saying its videos changed
+/// ([LibraryWatcher]) all invalidate the lists. Each list used to answer an
+/// invalidation with its cache at once and check MediaStore in the
+/// background, so the pull's spinner stopped on the old list; and for the
+/// folder list the background check compared folder NAMES only, so a video
+/// added to a folder that already existed never reached the screen at all.
+/// The owner saw a new video take more than ten minutes to appear
+/// (2026-10-08). Now each list re-run after one of these scans MediaStore
+/// first, and the previous list stays on screen while it does.
+bool _scanFolders = false;
+bool _scanAll = false;
+int _folderScanEpoch = 0;
+final Map<String, int> _folderEpochSeen = <String, int>{};
+
+/// Marks every library list for a real scan on its next run. The caller then
+/// invalidates them ([rescanLibrary] does both).
+void _wantFreshScan() {
+  _scanFolders = true;
+  _scanAll = true;
+  _folderScanEpoch++;
+}
+
+/// Rescan the whole local library now: folders, the flat list and every
+/// folder's contents. What [LibraryWatcher] calls when MediaStore changes.
+void rescanLibrary(Ref ref) {
+  _wantFreshScan();
+  ref.invalidate(foldersProvider);
+  ref.invalidate(allVideosProvider);
+  ref.invalidate(videosInFolderProvider);
+}
+
+/// Pull-to-refresh inside one folder: that folder is scanned before the
+/// spinner stops.
+Future<void> refreshFolder(WidgetRef ref, String folderPath) async {
+  _folderEpochSeen[folderPath] = -1;
+  ref.invalidate(videosInFolderProvider(folderPath));
+  try {
+    await ref.read(videosInFolderProvider(folderPath).future);
+  } catch (_) {}
+}
+
 /// All folders, scanned from MediaStore.
 /// Cache-first: returns cached snapshot immediately, kicks off fresh fetch in background.
 final foldersProvider = FutureProvider<List<Folder>>((ref) async {
   final ds = ref.watch(libraryDataSourceProvider);
   final cache = ref.watch(libraryCacheProvider);
+
+  if (_scanFolders) {
+    _scanFolders = false;
+    _foldersJustScanned = false;
+    final stamp = await ScanGate.before();
+    final fresh = await ds.getFolders();
+    await cache.saveFolders(fresh);
+    await ScanGate.record('folders', stamp);
+    return fresh;
+  }
 
   // Try cache first for instant load
   final cached = await cache.loadFolders();
@@ -385,11 +438,15 @@ final foldersProvider = FutureProvider<List<Folder>>((ref) async {
   return fresh;
 });
 
+/// Whether two folder lists differ in anything the folder list shows: which
+/// folders, how many videos each holds, and each one's cover. Folder paths
+/// alone missed every video added to a folder that already existed.
 bool _hasFolderDiff(List<Folder> a, List<Folder> b) {
   if (a.length != b.length) return true;
-  final aPaths = a.map((f) => f.path).toSet();
-  final bPaths = b.map((f) => f.path).toSet();
-  return aPaths.length != bPaths.length || !aPaths.containsAll(bPaths);
+  String key(Folder f) => '${f.path}|${f.videoCount}|${f.coverThumbnailPath ?? ''}';
+  final aKeys = a.map(key).toSet();
+  final bKeys = b.map(key).toSet();
+  return aKeys.length != bKeys.length || !aKeys.containsAll(bKeys);
 }
 
 /// All videos across folders (flat list, for "Videos" view mode).
@@ -397,6 +454,16 @@ bool _hasFolderDiff(List<Folder> a, List<Folder> b) {
 final allVideosProvider = FutureProvider<List<Video>>((ref) async {
   final ds = ref.watch(libraryDataSourceProvider);
   final cache = ref.watch(libraryCacheProvider);
+
+  if (_scanAll) {
+    _scanAll = false;
+    _allVideosJustScanned = false;
+    final stamp = await ScanGate.before();
+    final fresh = await ds.getAllVideos();
+    await cache.saveAllVideos(fresh);
+    await ScanGate.record('all', stamp);
+    return fresh;
+  }
 
   final cached = await cache.loadAllVideos();
   if (cached != null && cached.isNotEmpty && _allVideosJustScanned) {
@@ -633,9 +700,12 @@ enum LibraryRefreshResult {
 /// app-data videos are DELIBERATELY kept (not wiped) and the result reports
 /// [LibraryRefreshResult.adbDisconnected] so the caller can prompt a reconnect.
 Future<LibraryRefreshResult> refreshLibraryWithAdb(WidgetRef ref) async {
-  // Kick off the device media refresh (always).
+  // Kick off the device media refresh (always) — a real scan, see
+  // [_wantFreshScan].
+  _wantFreshScan();
   ref.invalidate(foldersProvider);
   ref.invalidate(allVideosProvider);
+  ref.invalidate(videosInFolderProvider);
 
   var result = LibraryRefreshResult.deviceOnly;
   // If iADB is the backend, re-scan Android/data and refresh the adb videos.
@@ -1136,6 +1206,20 @@ final videosInFolderProvider =
   // its videos instantly. A fresh MediaStore scan runs in the background
   // and triggers an invalidate when something actually changed (added,
   // removed or renamed files).
+  // A folder seen for the first time takes the cache-first path below (its
+  // background check compares files, so it catches up on its own); one
+  // already shown before a rescan was asked for scans now.
+  final seen = _folderEpochSeen[folderPath];
+  _folderEpochSeen[folderPath] = _folderScanEpoch;
+  if (seen != null && seen != _folderScanEpoch) {
+    _folderVideosJustScanned.remove(folderPath);
+    final stamp = await ScanGate.before();
+    final fresh = await ds.getVideosInFolder(folderPath);
+    await cache.saveVideosInFolder(folderPath, fresh);
+    await ScanGate.record('folder:$folderPath', stamp);
+    return withAdb(fresh);
+  }
+
   final cached = await cache.loadVideosInFolder(folderPath);
   if (cached != null &&
       cached.isNotEmpty &&
