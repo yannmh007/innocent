@@ -30,6 +30,8 @@ class _Upstream {
   int inFlight = 0;
   int maxInFlight = 0;
   int refused = 0;
+  /// Bytes written to the proxy, all requests together.
+  int sent = 0;
   final Map<int, String> open = <int, String>{};
   /// The size of every range asked for, in the order the requests arrived.
   final List<int> sizes = <int>[];
@@ -74,7 +76,12 @@ class _Upstream {
       // the instant each is opened.
       for (var at = start; at <= end; at += 256 * 1024) {
         res.add(Uint8List.sublistView(body, at, min(at + 256 * 1024, end + 1)));
-        await res.flush();
+        // A flush that does not finish is a client that has gone: dart:io
+        // waits on a destroyed connection forever, and "still open" would
+        // then measure this server, not the proxy. The proxy reads every
+        // part as fast as it arrives, so two seconds is never a slow reader.
+        await res.flush().timeout(const Duration(seconds: 2));
+        sent += min(256 * 1024, end + 1 - at);
         if (at + 256 * 1024 <= end) {
           await Future<void>.delayed(const Duration(milliseconds: 2));
         }
@@ -185,13 +192,68 @@ void main() {
     // The two-byte length check aside, the stretch opens on its three
     // smallest parts — what stands between Play and the picture — and every
     // part after is no smaller than the one before, up to full size.
-    final parts = up.sizes.where((s) => s > 2).toList();
+    // (The 64 KB is the length check, which also reads where the index is.)
+    final parts = up.sizes.where((s) => s != 64 * 1024).toList();
     expect(parts.take(3).toSet(), {128 * k, 256 * k, 384 * k},
         reason: 'first requests: $parts');
     expect(parts.where((s) => s < 2 * mb).length, greaterThanOrEqualTo(15),
         reason: '$parts');
     expect(parts, contains(2 * mb));
     StreamCacheServer.instance.release('film-ramp');
+  });
+
+  test('the index is found in the first bytes, wherever it is', () {
+    Uint8List box(String kind, int size, [int fill = 0]) {
+      final b = Uint8List(size < 16 ? 16 : 16);
+      final v = ByteData.sublistView(b);
+      v.setUint32(0, size);
+      b.setRange(4, 8, kind.codeUnits);
+      return b.sublist(0, 8);
+    }
+    Uint8List cat(List<Uint8List> parts, [int pad = 0]) =>
+        Uint8List.fromList([for (final p in parts) ...p, ...List<int>.filled(pad, 0)]);
+    // faststart: ftyp(32) moov(4 MB) mdat(...)
+    final ftyp = Uint8List.fromList([...box('ftyp', 32), ...List<int>.filled(24, 0)]);
+    final fast = cat([ftyp, box('moov', 4 * mb)], 1000);
+    expect(StreamCacheServer.indexRange(fast, 900 * mb), (32, 32 + 4 * mb));
+    // written straight out: ftyp(32) free(8) mdat(800 MB) moov(...) to the end
+    final last = cat([ftyp, box('free', 8), box('mdat', 800 * mb)], 1000);
+    expect(StreamCacheServer.indexRange(last, 806 * mb), (40 + 800 * mb, 806 * mb));
+    // a 64-bit mdat size
+    final big = BytesBuilder()
+      ..add(ftyp)
+      ..add([0, 0, 0, 1, ...'mdat'.codeUnits]);
+    final ext = ByteData(8)..setUint64(0, 5000 * mb);
+    big.add(ext.buffer.asUint8List());
+    expect(StreamCacheServer.indexRange(big.takeBytes(), 5006 * mb), (32 + 5000 * mb, 5006 * mb));
+    // not an MP4 at all
+    expect(StreamCacheServer.indexRange(Uint8List.fromList(List<int>.generate(4096, (i) => i % 7)), 10 * mb), isNull);
+  });
+
+  test('a film whose index is at the front gets the index on every lane at once', () async {
+    // An MP4 head on the test body: ftyp, then a 3 MB moov.
+    final saved = Uint8List.fromList(up.body.sublist(0, 40));
+    final v = ByteData.sublistView(up.body);
+    v.setUint32(0, 32);
+    up.body.setRange(4, 8, 'ftyp'.codeUnits);
+    v.setUint32(32, 3 * mb);
+    up.body.setRange(36, 40, 'moov'.codeUnits);
+    try {
+      final local = await StreamCacheServer.instance.localUrlFor(
+          cacheId: 'film-index', upstream: up.url('t1'), refresh: () async => null);
+      final got = await _get(local!, take: 6 * mb);
+      expect(got, Uint8List.sublistView(up.body, 0, 6 * mb));
+      final parts = up.sizes.where((s) => s != 64 * 1024).toList();
+      // 3 MB of index + 32 bytes + 1 MB of film, over three lanes: three
+      // equal parts of about 1.4 MB in the first round, not 128/256/384 KB.
+      final first = parts.take(3).toList();
+      expect(first.fold<int>(0, (a, b) => a + b), 3 * mb + 32 + mb,
+          reason: 'first requests: $parts');
+      expect(first.every((s) => s >= mb), isTrue, reason: 'first requests: $parts');
+    } finally {
+      up.body.setRange(0, 40, saved);
+      StreamCacheServer.instance.release('film-index');
+    }
   });
 
   test('a seek into the middle gets exactly those bytes', () async {
@@ -212,6 +274,24 @@ void main() {
     }
     expect(up.inFlight, 0, reason: 'connections left open after a seek');
     StreamCacheServer.instance.release('film-b');
+  });
+
+  test('a player that hangs up stops the download', () async {
+    // The bug this guards: dart:io's HttpResponse never tells a server its
+    // client has gone, so after a seek the proxy went on fetching the rest of
+    // the stretch — 32 MB — and then the rest of the film, for nobody.
+    final local = await StreamCacheServer.instance.localUrlFor(
+        cacheId: 'film-gone', upstream: up.url('t1'), refresh: () async => null);
+    up.sent = 0;
+    final got = await _get(local!, take: 2 * mb);
+    expect(got, Uint8List.sublistView(up.body, 0, 2 * mb));
+    await Future<void>.delayed(const Duration(seconds: 1));
+    final after = up.sent;
+    await Future<void>.delayed(const Duration(seconds: 1));
+    expect(up.sent, after, reason: 'still downloading a second after the hang-up');
+    expect(up.sent, lessThan(12 * mb),
+        reason: '${(up.sent / mb).toStringAsFixed(1)} MB fetched for a player that took 2 MB');
+    StreamCacheServer.instance.release('film-gone');
   });
 
   test('a link that expires mid-film is renewed and the film carries on', () async {

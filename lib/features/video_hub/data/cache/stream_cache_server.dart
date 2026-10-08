@@ -149,6 +149,67 @@ class StreamCacheServer {
   static int rampedPartBytes(int index) =>
       min(RangedFetch.defaultPartBytes, 128 * 1024 * (index + 1));
 
+  static const int _headBytes = 64 * 1024;
+
+  /// WHERE THE FILM'S INDEX IS, from its first bytes: `(start, end)` of the
+  /// `moov` box, or null.
+  ///
+  /// The index of an MP4 grows with its running time — 4.2 MB for 108
+  /// minutes (device lab run 37757920331), about 6 MB for a two-and-a-half
+  /// hour film — and the player reads all of it before the first picture.
+  /// Fetched like any other stretch, on parts that start small and grow, the
+  /// last of it arrived seconds after the first: 8.8 s to a picture on a good
+  /// 4G line where a short film took 1.4 s. Knowing where it is lets the
+  /// first stretch take it whole, on every lane at once ([_indexPlan]).
+  ///
+  /// The top-level boxes are walked from the start: `ftyp`, `free`, then
+  /// either `moov` (a faststart file — the index is right here) or `mdat`,
+  /// whose size says where the box after it, the index, begins (a file
+  /// written straight out, index last; it runs to the end of the file).
+  @visibleForTesting
+  static (int, int)? indexRange(Uint8List head, int total) {
+    var at = 0;
+    for (var i = 0; i < 8 && at + 8 <= head.length; i++) {
+      final view = ByteData.sublistView(head);
+      var size = view.getUint32(at);
+      final kind = String.fromCharCodes(head.sublist(at + 4, at + 8));
+      if (size == 1) {
+        if (at + 16 > head.length) return null;
+        size = view.getUint64(at + 8);
+      } else if (size == 0) {
+        size = total - at; // to the end of the file
+      }
+      if (size < 8) return null;
+      if (kind == 'moov') return (at, min(total, at + size));
+      if (kind == 'mdat') {
+        final after = at + size;
+        if (after >= total) return null; // no index after it
+        return (after, total);
+      }
+      at += size;
+    }
+    return null;
+  }
+
+  /// The first parts of a stretch that starts in [index]: the rest of the
+  /// index (and, for one at the front, 1 MB of film after it) split evenly
+  /// over the lanes, in 64 KB multiples. Empty when the stretch does not
+  /// start in it, or there is too little left to be worth it.
+  /// Whether a stretch from [pos] begins in the index — or in the few bytes
+  /// before it (a stretch from 0 starts at `ftyp`, 32 bytes ahead of it).
+  static bool _startsInIndex((int, int)? index, int pos) =>
+      index != null && pos >= index.$1 - _headBytes && pos < index.$2;
+
+  static List<int> _indexPlan((int, int)? index, int start, int end) {
+    if (index == null || !_startsInIndex(index, start)) return const [];
+    final front = index.$1 < 1024 * 1024;
+    final upto = min(end, index.$2 + (front ? 1024 * 1024 : 0));
+    final len = upto - start;
+    if (len < 512 * 1024) return const [];
+    final each = ((len / max(1, lanes)).ceil() + 65535) & ~65535;
+    return [for (var at = start; at < upto; at += each) min(each, upto - at)];
+  }
+
   bool get running => _server != null;
 
   Future<void> _ensureStarted() async {
@@ -396,14 +457,28 @@ class StreamCacheServer {
     }
 
     var pos = start;
-    // THE PLAYER HANGING UP, noticed when it happens rather than at the next
-    // write — which, with the next part still in flight on six lanes, could
-    // be seconds of the viewer's data spent on a film they seeked away from.
+    // THE BODY GOES STRAIGHT ONTO THE SOCKET, because that is the only place
+    // the player hanging up can be seen.
+    //
+    // Measured (2026-10-08): once a client has gone, dart:io's HttpResponse
+    // goes on accepting writes — a hundred megabytes of them, every flush
+    // completing — and its `done` never completes. The player seeks, closes
+    // its connection and opens another, and this loop carried on fetching the
+    // rest of the film for nobody: in the device lab the abandoned 32 MB
+    // stretch finished a minute after the seek, on the same line as the one
+    // the viewer was waiting for. A detached socket says at once — its input
+    // ends — and a write to it fails.
+    res.headers.set(HttpHeaders.connectionHeader, 'close');
+    final Socket out;
+    try {
+      out = await res.detachSocket(writeHeaders: true);
+    } catch (_) {
+      return;
+    }
     final gone = _Gone();
-    unawaited(res.done.then((_) {}, onError: (_) {}).whenComplete(() {
-      gone.value = true;
-      if (gone.parallel) src.close();
-    }));
+    out.listen((_) {}, onDone: gone.hangUp, onError: (Object _) => gone.hangUp(),
+        cancelOnError: true);
+    var complete = false;
     try {
       while (pos <= endInclusive) {
         final before = pos;
@@ -411,7 +486,7 @@ class StreamCacheServer {
         // ── from disk, for as far as this run reaches ──────────────────
         final part = entry.partAt(pos);
         if (part != null) {
-          pos = await _fromDisk(res, part, pos, endInclusive);
+          pos = await _fromDisk(out, part, pos, endInclusive);
           if (pos == before) break;
           continue;
         }
@@ -424,17 +499,27 @@ class StreamCacheServer {
         // what it is, and its own retry path handles it.
         if (src.offline) break;
         if (gone.value) break;
-        pos = await _fromUpstream(res, store, entry, src, pos, endInclusive, gone);
+        pos = await _fromUpstream(out, store, entry, src, pos, endInclusive, gone);
         // No progress means upstream gave nothing and will keep giving
         // nothing. The response is already committed, so the honest end is
         // to stop writing: the player sees a short read, treats it as a
         // dropped connection, and its retry path is exactly for that.
         if (pos == before) break;
       }
+      complete = pos > endInclusive && !gone.value;
     } finally {
-      try {
-        await res.close();
-      } catch (_) {}
+      if (complete) {
+        try {
+          await out.flush();
+          await out.close();
+        } catch (_) {
+          out.destroy();
+        }
+      } else {
+        // Short: the player sees the connection end where the bytes did,
+        // reads it as a dropped connection, and reconnects from there.
+        out.destroy();
+      }
     }
   }
 
@@ -449,7 +534,7 @@ class StreamCacheServer {
   /// `addStream` propagates back-pressure: the socket pauses the file stream,
   /// and the read slows to the speed the player consumes. Nothing is held.
   Future<int> _fromDisk(
-      HttpResponse res, CachePart part, int pos, int endInclusive) async {
+      IOSink res, CachePart part, int pos, int endInclusive) async {
     final from = pos - part.start;
     final toExclusive = min(part.end - 1, endInclusive) - part.start + 1;
     if (toExclusive <= from) return pos;
@@ -465,7 +550,7 @@ class StreamCacheServer {
     }
   }
 
-  Future<int> _fromUpstream(HttpResponse res, StreamCacheStore store,
+  Future<int> _fromUpstream(IOSink res, StreamCacheStore store,
       CacheEntry entry, _Source src, int pos, int endInclusive,
       [_Gone? gone]) async {
     // Read ahead past what was asked, but never past a run already held:
@@ -480,13 +565,16 @@ class StreamCacheServer {
     final Stream<List<int>> upstream;
     final stretchEnd = min(until, pos + span); // exclusive
     var parallel = false;
+    final idx = src.index;
+    final inIndex = _startsInIndex(idx, pos) && stretchEnd - pos >= 512 * 1024;
     if (lanes > 1 &&
-        RangedFetch.worthSplitting(stretchEnd - pos,
-            partBytes: RangedFetch.defaultPartBytes)) {
+        (inIndex ||
+            RangedFetch.worthSplitting(stretchEnd - pos,
+                partBytes: RangedFetch.defaultPartBytes))) {
       parallel = true;
-      gone?.parallel = true;
       upstream = _lanesFetch(src, pos, stretchEnd, entry.total,
           gone: () => gone?.value ?? false,
+          hungUp: gone?.hungUp,
           measured: (bytes, ms) =>
               _recordThroughput(bytes, Duration(milliseconds: ms)));
     } else {
@@ -546,17 +634,10 @@ class StreamCacheServer {
     } finally {
       await pieces.cancel();
       if (writer != null) await store.touch(entry);
-      // A STRETCH THAT STOPPED SHORT — the player seeked away, or a lane
-      // failed — LEAVES CONNECTIONS BEHIND. An aborted part cancels its
-      // response, but dart:io keeps the socket in the pool with the rest of
-      // that response unread, so the server holds it open, mid-write, until
-      // its own timeout: found by test/stream_cache_server_test.dart, a
-      // connection still open thirty seconds after a seek. Enough seeks and
-      // every pooled connection is one of these, and the next stretch waits
-      // for a slot. Dropping the pool here costs one handshake per lane on
-      // the next stretch, and only after a seek or a failure.
-      if (parallel && pos + sent < stretchEnd) src.close();
-      gone?.parallel = false;
+      // A stretch that stopped short — the player seeked away, or a lane
+      // failed — has already destroyed the connections of its unfinished
+      // parts ([_LanePart.kill]). The pool itself is left alone: the
+      // stretch the player opened after its seek is using it right now.
     }
   }
 
@@ -646,14 +727,30 @@ class StreamCacheServer {
         ..connectionTimeout = const Duration(seconds: 15);
       try {
         final r = await client.getUrl(Uri.parse(src.upstream));
-        r.headers.set(HttpHeaders.rangeHeader, 'bytes=0-1');
+        // The first 64 KB, not two bytes: they say where the film's index is
+        // (see [indexRange]) for the same round trip.
+        r.headers.set(HttpHeaders.rangeHeader, 'bytes=0-${_headBytes - 1}');
         final resp = await r.close();
         final cr = resp.headers.value(HttpHeaders.contentRangeHeader);
         final code = resp.statusCode;
         final len = resp.contentLength;
-        await resp.drain<void>();
+        final head = BytesBuilder(copy: false);
+        if (code == 206) {
+          await for (final chunk in resp) {
+            head.add(chunk);
+            if (head.length >= _headBytes) break;
+          }
+        } else {
+          await resp.drain<void>();
+        }
         if (code == 206 && cr != null && cr.contains('/')) {
-          return int.tryParse(cr.split('/').last.trim()) ?? 0;
+          final total = int.tryParse(cr.split('/').last.trim()) ?? 0;
+          src.index = indexRange(head.takeBytes(), total);
+          if (src.index != null) {
+            PlaybackLog.add('stream index ${((src.index!.$2 - src.index!.$1) / 1048576).toStringAsFixed(1)} MB '
+                'at ${(src.index!.$1 / 1048576).toStringAsFixed(1)} MB');
+          }
+          return total;
         }
         if (code == 200 && len > 0) return len;
         if (code == 403 || code == 404 || code == 410) {
@@ -733,6 +830,7 @@ class StreamCacheServer {
   /// fast line as a slow one and pick a rung below what it can carry.
   Stream<List<int>> _lanesFetch(_Source src, int start, int end, int total,
       {required bool Function() gone,
+      Future<void>? hungUp,
       void Function(int bytes, int ms)? measured}) async* {
     final window = lanes * 2;
 
@@ -758,13 +856,22 @@ class StreamCacheServer {
       var opened = 0;
       var failed = false;
       var stopped = false;
+      // A stretch that starts in the film's index takes the index — and, at
+      // the front of the film, the first second or so after it — as one
+      // round of equal parts, one per lane: nothing plays until all of it
+      // is here, so it should all arrive at once, at the speed of the whole
+      // line. Then the ramp carries on from 1 MB parts.
+      final plan = _indexPlan(src.index, start, end);
+      if (plan.isNotEmpty) opened = 8;
+      var planned = 0;
 
       void topUp() {
         if (stopped || failed || gone()) return;
         while (next < end &&
             parts.length < window &&
             parts.where((p) => !p.settled).length < lanes) {
-          final size = rampedPartBytes(opened++);
+          final size =
+              planned < plan.length ? plan[planned++] : rampedPartBytes(opened++);
           final partEnd = min(next + size, end);
           final part = _LanePart(src.io, url, next, partEnd, total, _laneStall);
           began();
@@ -786,6 +893,15 @@ class StreamCacheServer {
         while (parts.isNotEmpty) {
           final Uint8List b;
           try {
+            // The player hanging up ends the wait at once, and the stretch
+            // with it: its parts are killed below, not finished for nobody.
+            if (hungUp != null) {
+              await Future.any<void>([
+                parts.first.bytes.then((_) {}, onError: (Object _) {}),
+                hungUp,
+              ]);
+              if (gone()) return;
+            }
             b = await parts.first.bytes;
           } on _LaneRefused catch (e) {
             if (!yielded && attempt == 0 && e.expired && await _refresh(src)) {
@@ -843,11 +959,18 @@ class StreamCacheServer {
   }
 }
 
-/// Whether the player has hung up on one request, and whether a parallel
-/// stretch is running for it right now (the pool to drop if it has).
+/// Whether the player has hung up on one request.
 class _Gone {
   bool value = false;
-  bool parallel = false;
+  final Completer<void> _hung = Completer<void>();
+
+  /// Completes when the player hangs up.
+  Future<void> get hungUp => _hung.future;
+
+  void hangUp() {
+    value = true;
+    if (!_hung.isCompleted) _hung.complete();
+  }
 }
 
 class _Source {
@@ -881,6 +1004,12 @@ class _Source {
   /// would watch a spinner for forty-five seconds before the film they already
   /// have started.
   final bool offline;
+
+  /// Where the film's index (`moov`) lies, `(start, end)` — at the front of
+  /// a faststart file, at the end of one written straight out. Read from the
+  /// first 64 KB by [StreamCacheServer.indexRange]; null when not an MP4 or
+  /// not found.
+  (int, int)? index;
 
   /// Whether this film's length has been confirmed against the server since
   /// the app started. One check per film per session: enough to catch a
@@ -919,15 +1048,32 @@ class _LanePart {
   StreamSubscription<List<int>>? _sub;
   Completer<Uint8List>? _done;
 
+  /// The response has been read to its end, or failed: its connection is
+  /// back with the pool (or gone) and must not be touched.
+  bool _ended = false;
+
+  /// THE CONNECTION IS DESTROYED, NOT LET GO. Cancelling a dart:io response
+  /// — or aborting its request — does not close it: the client goes on
+  /// reading the rest of the part in the background so the connection can be
+  /// reused, up to 2 MB a lane of the viewer's data after every seek
+  /// (measured, 2026-10-08). Detached, it is ours to close, and the server
+  /// sees it go at once.
+  void _destroy() {
+    final resp = _resp;
+    if (resp == null || _ended) return;
+    _ended = true;
+    // The subscription is cancelled once the socket is ours, not before:
+    // cancelled first, the client starts draining the rest of the part.
+    unawaited(resp.detachSocket().then((s) => s.destroy(), onError: (Object _) {
+      _drop(resp);
+    }).whenComplete(() => _sub?.cancel()));
+  }
+
   void kill() {
     if (_killed) return;
     _killed = true;
-    final sub = _sub;
-    if (sub != null) {
-      unawaited(sub.cancel());
-    } else if (_resp != null) {
-      // Answered, never read: listen only to cancel, which closes it.
-      _drop(_resp!);
+    if (_resp != null) {
+      _destroy();
     } else {
       _req?.abort();
     }
@@ -979,7 +1125,7 @@ class _LanePart {
     void arm() {
       quiet?.cancel();
       quiet = Timer(stall, () {
-        unawaited(_sub?.cancel());
+        _destroy();
         if (!done.isCompleted) done.completeError(_LaneRefused('part $start went quiet'));
       });
     }
@@ -990,13 +1136,15 @@ class _LanePart {
       arm();
       if (out.length > want) {
         quiet?.cancel();
-        unawaited(_sub?.cancel());
+        _destroy();
         if (!done.isCompleted) done.completeError(_LaneRefused('part $start: too long'));
       }
     }, onError: (Object e) {
+      _ended = true;
       quiet?.cancel();
       if (!done.isCompleted) done.completeError(e);
     }, onDone: () {
+      _ended = true;
       quiet?.cancel();
       if (done.isCompleted) return;
       if (out.length != want) {

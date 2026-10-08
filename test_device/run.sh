@@ -191,11 +191,11 @@ esac
 # then jumps to the middle of the film (`lab_seek`) and plays on. The trail's
 # first frame, rebuffer and stretch lines say how each went.
 LONG_PORT=47125
-shape_long() {
+shape_long() { # delay loss rate [queue, packets]
   sudo tc qdisc del dev lo root 2>/dev/null || true
   sudo tc qdisc add dev lo root handle 1: prio bands 5
   # shellcheck disable=SC2086
-  sudo tc qdisc add dev lo parent 1:4 handle 40: netem delay "$1" loss "$2" rate "$3" limit 10000
+  sudo tc qdisc add dev lo parent 1:4 handle 40: netem delay "$1" loss "$2" rate "$3" limit "${4:-10000}"
   sudo tc qdisc add dev lo parent 1:5 handle 50: netem delay "$1" limit 10000
   sudo tc filter add dev lo parent 1:0 protocol ip prio 1 u32 match ip sport "$LONG_PORT" 0xffff flowid 1:4
   sudo tc filter add dev lo parent 1:0 protocol ip prio 2 u32 match ip dport "$LONG_PORT" 0xffff flowid 1:5
@@ -251,15 +251,63 @@ for flow in $FLOWS; do
     continue
     ;;
   esac
+  # NEW VIDEO — does a video copied onto the phone appear in the open Video
+  # tab by itself, and how fast? MX Player shows it within seconds. The tab is
+  # opened (flows/new_video_open.yaml), a clip is pushed into a folder that
+  # does not exist yet, then a second into the same folder, and the screen's
+  # accessibility tree is read every second for the folder tile's label
+  # ("Folder: LabNew, N videos"). Nothing touches the screen meanwhile.
+  case "$flow" in newvideo)
+    ( cd "$OUT/shots" && maestro test --test-output-dir "$OUT/maestro_out" "$OLDPWD/test_device/flows/new_video_open.yaml" ) > "$OUT/maestro_$flow.txt" 2>&1
+    log "flow $flow: Video tab open (maestro exit $?)"
+    if ! command -v ffmpeg >/dev/null 2>&1; then log "newvideo: no ffmpeg — skipped"; continue; fi
+    ffmpeg -loglevel error -y -f lavfi -i testsrc2=size=640x360:rate=24 -t 6 \
+      -c:v libx264 -preset veryfast -pix_fmt yuv420p /tmp/lab_new.mp4
+    wait_for() { # $1 = label text, $2 = seconds allowed
+      local t0 n=0
+      t0=$(date +%s)
+      while [ $n -lt "$2" ]; do
+        adb shell uiautomator dump /sdcard/ui_nv.xml >/dev/null 2>&1
+        if adb exec-out cat /sdcard/ui_nv.xml 2>/dev/null | grep -q "$1"; then
+          echo $(( $(date +%s) - t0 )); return 0
+        fi
+        sleep 1; n=$((n + 1))
+      done
+      echo "never"; return 1
+    }
+    push_new() { # $1 = file name in Movies/LabNew
+      adb shell mkdir -p /sdcard/Movies/LabNew
+      adb push /tmp/lab_new.mp4 "/sdcard/Movies/LabNew/$1" >/dev/null 2>&1
+      adb shell am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE \
+        -d "file:///sdcard/Movies/LabNew/$1" >/dev/null 2>&1 || true
+    }
+    push_new lab_new_1.mp4
+    s1=$(wait_for "Folder: LabNew, 1 video" 45)
+    log "newvideo: a new folder with one video appeared after ${s1} s"
+    adb exec-out screencap -p > "$OUT/shots/91_newvideo_first.png"
+    push_new lab_new_2.mp4
+    s2=$(wait_for "Folder: LabNew, 2 videos" 45)
+    log "newvideo: a second video in that folder showed after ${s2} s"
+    adb exec-out screencap -p > "$OUT/shots/92_newvideo_second.png"
+    adb shell log -p i -t flutter "LAB newvideo first=${s1}s second=${s2}s" >/dev/null 2>&1 || true
+    adb shell rm -rf /sdcard/Movies/LabNew >/dev/null 2>&1 || true
+    rm -f /tmp/lab_new.mp4
+    adb shell log -p i -t flutter "LAB phase $flow end" >/dev/null 2>&1 || true
+    log "flow $flow done"
+    continue
+    ;;
+  esac
   case "$flow" in streamlong_*)
     rest="${flow#streamlong_}"
     n="${rest##*_}"
     prof="${rest%_*}"
     var="PROFILE_$prof"
-    read -r rung delay loss rate <<< "${!var:-}"
+    queue=""
+    read -r rung delay loss rate queue <<< "${!var:-}"
     if [ -z "${rate:-}" ]; then log "flow $flow: no $var in config.env — skipped"; continue; fi
-    shape_long "$delay" "$loss" "$rate"
-    log "long film: $prof — ${rung}p, round trip 2x$delay, loss $loss, rate $rate; lanes=$n"
+    if [ ! -f "$LONG_DIR/long_${rung}.mp4" ]; then log "flow $flow: no long_${rung}.mp4 — skipped"; continue; fi
+    shape_long "$delay" "$loss" "$rate" "${queue:-10000}"
+    log "long film: $prof — $rung, round trip 2x$delay, loss $loss, rate $rate, queue ${queue:-10000} packets; lanes=$n"
     adb shell am force-stop "$PKG"
     adb shell pm clear "$PKG" >/dev/null 2>&1 || true
     d="/sdcard/Android/data/$PKG/files"
@@ -267,7 +315,7 @@ for flow in $FLOWS; do
     adb shell "echo $n > $d/lab_lanes"
     adb shell "echo http://10.0.2.2:${LONG_PORT}/long_${rung}.mp4 > $d/lab_stream_url"
     adb shell "echo ${LONG_SEEK_AFTER:-45}:$((LONG_DUR / 2)) > $d/lab_seek"
-    adb shell log -p i -t flutter "LAB long $prof rung=${rung}p rtt=2x$delay loss=$loss rate=$rate lanes=$n" >/dev/null 2>&1 || true
+    adb shell log -p i -t flutter "LAB long $prof file=$rung rtt=2x$delay loss=$loss rate=$rate queue=${queue:-10000} lanes=$n" >/dev/null 2>&1 || true
     adb shell am start -W -n "$PKG/.MainActivity" >/dev/null 2>&1
     sleep $(( ${LONG_SEEK_AFTER:-45} + 2 ))
     adb exec-out screencap -p > "$OUT/shots/8_${flow}_before_seek.png"

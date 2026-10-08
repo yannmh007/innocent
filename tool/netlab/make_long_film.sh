@@ -11,10 +11,11 @@
 # like a test pattern. So: the Blender Foundation's open films (Big Buck
 # Bunny, Sintel, Tears of Steel; CC-BY, © Blender Foundation |
 # www.blender.org), each encoded with tool/transcode.sh's settings for the
-# 1080p and 720p rungs, then played four times over without re-encoding —
-# about two and a half hours. Lab only: nothing here is published.
+# 1080p and 720p rungs, then played over and over without re-encoding to
+# at least two and a half hours. Lab only: nothing here is published.
 #
-# Writes DIR/long_1080.mp4 and DIR/long_720.mp4, and to REPORT: what was
+# Writes DIR/long_1080.mp4, DIR/long_720.mp4 and DIR/long_1080frag.mp4 (the
+# 1080p film as fragmented MP4, to compare), and to REPORT: what was
 # fetched, how fast it encoded (times real time — the ladder's cost for a
 # film), how big each file and its index are, and how long ten cover frames
 # took over HTTP (tool/frames.py's own grab, as the transcode runner does).
@@ -41,7 +42,8 @@ fetch() {
 fetch "$DIR/src/bbb" \
   https://download.blender.org/demo/movies/BBB/bbb_sunflower_1080p_30fps_normal.mp4 \
   https://download.blender.org/peach/bigbuckbunny_movies/big_buck_bunny_1080p_h264.mov \
-  https://download.blender.org/peach/bigbuckbunny_movies/big_buck_bunny_720p_h264.mov
+  https://download.blender.org/peach/bigbuckbunny_movies/big_buck_bunny_720p_h264.mov \
+  https://download.blender.org/peach/bigbuckbunny_movies/BigBuckBunny_640x360.m4v
 fetch "$DIR/src/sintel" \
   https://download.blender.org/durian/movies/sintel-2048-surround.mp4 \
   https://download.blender.org/durian/movies/sintel-1280-surround.mp4 \
@@ -83,17 +85,30 @@ done
 [ "$total_s" -gt 0 ] || { say "no film could be made"; exit 1; }
 say "all: ${total_s}s of film in ${enc_s}s ($(python3 -c "print(round($total_s/max(1,$enc_s),2))")x real time, 1080p+720p together)"
 
-# Four times over, joined without re-encoding: a feature's length, a
-# feature's index.
+# Over and over, joined without re-encoding, to at least 150 minutes: a
+# feature's length, a feature's index.
+loops=$(( (9000 + total_s - 1) / total_s ))
+say "joined $loops times over"
 for h in 1080 720; do
-  for _ in 1 2 3 4; do cat "$DIR/list_$h.txt"; done > "$DIR/loop_$h.txt"
+  for _ in $(seq 1 "$loops"); do cat "$DIR/list_$h.txt"; done > "$DIR/loop_$h.txt"
   ffmpeg -nostdin -y -hide_banner -loglevel error -f concat -safe 0 -i "$DIR/loop_$h.txt" \
     -c copy -movflags +faststart "$DIR/long_$h.mp4" || say "join of ${h}p FAILED"
 done
 rm -f "$DIR"/bbb_*.mp4 "$DIR"/sintel_*.mp4 "$DIR"/tos_*.mp4
 
+# The same 1080p film as FRAGMENTED MP4: a moof per two-second keyframe
+# interval and a global sidx, so the front of the file holds a few kilobytes
+# of index instead of megabytes. Whether that starts sooner over a long round
+# trip — it costs the player more requests to open and to seek — is what the
+# *frag profiles measure.
+if [ -f "$DIR/long_1080.mp4" ]; then
+  ffmpeg -nostdin -y -hide_banner -loglevel error -i "$DIR/long_1080.mp4" -c copy \
+    -movflags +frag_keyframe+empty_moov+default_base_moof+global_sidx "$DIR/long_1080frag.mp4" \
+    || say "fragmented remux FAILED"
+fi
+
 # What the player has to read before anything else: the top-level boxes.
-for h in 1080 720; do
+for h in 1080 720 1080frag; do
   f="$DIR/long_$h.mp4"
   [ -f "$f" ] || continue
   dur=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$f" | cut -d. -f1)
