@@ -149,7 +149,14 @@ class StreamCacheServer {
   static int rampedPartBytes(int index) =>
       min(RangedFetch.defaultPartBytes, 128 * 1024 * (index + 1));
 
+  /// How far ahead of the index a stretch may start and still be taken as
+  /// the index's (a stretch from 0 starts at `ftyp`, 32 bytes ahead of it).
   static const int _headBytes = 64 * 1024;
+
+  /// The length check's read: the film's first box headers, which say where
+  /// its index is, in one round trip — 8 KB fits a fresh connection's first
+  /// flight, where 64 KB took three more round trips at 250 ms each.
+  static const int _probeBytes = 8 * 1024;
 
   /// WHERE THE FILM'S INDEX IS, from its first bytes: `(start, end)` of the
   /// `moov` box, or null.
@@ -249,7 +256,12 @@ class StreamCacheServer {
           .entryFor(cacheId, total: total, label: label);
       // The film's previous registration, if any, gives up its connections.
       _sources[cacheId]?.close();
-      _sources[cacheId] = _Source(upstream: upstream, refresh: refresh);
+      final src = _sources[cacheId] = _Source(upstream: upstream, refresh: refresh);
+      // THE LENGTH CHECK STARTS NOW, while the player is still being built,
+      // rather than when its first request arrives: it was 1 to 2.3 s of
+      // every start in the device lab (run 37776589997), all of it before the
+      // first lane opened. Its connection then carries the first lane.
+      src.probing = _probeTotal(src);
       // THE BUDGET IS NOT ENFORCED HERE, and that is deliberate. This runs on
       // the path to the first frame — the path this project has spent weeks
       // taking delays out of — and enforcing the budget can mean deleting
@@ -278,7 +290,7 @@ class StreamCacheServer {
       final f = File('${dir?.path}/lab_lanes');
       if (dir != null && await f.exists()) {
         final n = int.tryParse((await f.readAsString()).trim());
-        if (n != null) lanes = n.clamp(1, 6);
+        if (n != null) lanes = n.clamp(1, 8);
       }
       PlaybackLog.add('stream lanes=$lanes');
     } catch (_) {}
@@ -397,7 +409,12 @@ class StreamCacheServer {
         return;
       }
     } else if (entry.total <= 0 || !src.checkedTotal) {
-      final probed = await _probeTotal(src);
+      // The one started when the film was registered, if it is still to be
+      // had; failing that, or if it failed, once more now.
+      final early = src.probing;
+      src.probing = null;
+      var probed = early == null ? 0 : await early;
+      if (probed <= 0) probed = await _probeTotal(src);
       if (probed <= 0 && entry.total <= 0) {
         res.statusCode = HttpStatus.badGateway;
         await res.close();
@@ -556,7 +573,11 @@ class StreamCacheServer {
     // Read ahead past what was asked, but never past a run already held:
     // those bytes are here, and fetching them again would waste the
     // viewer's data to write a duplicate.
-    final until = min(entry.nextPartStart(pos, entry.total), entry.total);
+    //
+    // And never past what the player asked for: the response's length is
+    // already promised, and a byte beyond it is a byte of the next answer.
+    final until = min(min(entry.nextPartStart(pos, entry.total), entry.total),
+        endInclusive + 1);
 
     // ── several connections at once, in order (see [lanes]) ─────────────
     //
@@ -723,27 +744,28 @@ class StreamCacheServer {
 
   Future<int> _probeTotal(_Source src) async {
     for (var attempt = 0; attempt < 2; attempt++) {
-      final client = HttpClient()
-        ..connectionTimeout = const Duration(seconds: 15);
+      HttpClientResponse? resp;
       try {
-        final r = await client.getUrl(Uri.parse(src.upstream));
-        // The first 64 KB, not two bytes: they say where the film's index is
-        // (see [indexRange]) for the same round trip.
-        r.headers.set(HttpHeaders.rangeHeader, 'bytes=0-${_headBytes - 1}');
-        final resp = await r.close();
-        final cr = resp.headers.value(HttpHeaders.contentRangeHeader);
-        final code = resp.statusCode;
-        final len = resp.contentLength;
-        final head = BytesBuilder(copy: false);
-        if (code == 206) {
-          await for (final chunk in resp) {
-            head.add(chunk);
-            if (head.length >= _headBytes) break;
-          }
-        } else {
-          await resp.drain<void>();
+        // On the film's own pool: the connection stays open for the lanes,
+        // which then start without a handshake.
+        final r = await src.io.getUrl(Uri.parse(src.upstream)).timeout(_laneStall);
+        r.headers.set(HttpHeaders.rangeHeader, 'bytes=0-${_probeBytes - 1}');
+        final got = resp = await r.close().timeout(_laneStall);
+        final cr = got.headers.value(HttpHeaders.contentRangeHeader);
+        final code = got.statusCode;
+        final len = got.contentLength;
+        if (code != 206) {
+          // NEVER READ A BODY NOBODY ASKED FOR. A server that ignores the
+          // range answers 200 with the whole film, and draining that to
+          // reuse the connection would download it.
+          resp = null;
+          unawaited(got.detachSocket().then((s) => s.destroy(), onError: (Object _) {}));
         }
         if (code == 206 && cr != null && cr.contains('/')) {
+          final head = await got
+              .fold<BytesBuilder>(BytesBuilder(copy: false), (b, c) => b..add(c))
+              .timeout(_laneStall);
+          resp = null;
           final total = int.tryParse(cr.split('/').last.trim()) ?? 0;
           src.index = indexRange(head.takeBytes(), total);
           if (src.index != null) {
@@ -758,10 +780,13 @@ class StreamCacheServer {
         }
         return 0;
       } catch (e) {
+        // Timed out part way: that connection is not going back to the pool.
+        final stuck = resp;
+        if (stuck != null) {
+          unawaited(stuck.detachSocket().then((s) => s.destroy(), onError: (Object _) {}));
+        }
         if (kDebugMode) debugPrint('StreamCacheServer._probeTotal: $e');
         return 0;
-      } finally {
-        client.close(force: true);
       }
     }
     return 0;
@@ -781,23 +806,28 @@ class StreamCacheServer {
         final r = await client.getUrl(Uri.parse(src.upstream));
         r.headers.set(HttpHeaders.rangeHeader, 'bytes=$start-$endInclusive');
         final resp = await r.close();
-        if (resp.statusCode == 206 || resp.statusCode == 200) {
+        final code = resp.statusCode;
+        final cr = resp.headers.value(HttpHeaders.contentRangeHeader) ?? '';
+        // THE BYTES MUST BE THE ONES ASKED FOR. A 206 says where it starts;
+        // a 200 is a server that ignored the range and sent the film from
+        // its first byte — right only for a stretch that starts there, and
+        // only up to its end.
+        if ((code == 206 && cr.startsWith('bytes $start-')) ||
+            (code == 200 && start == 0)) {
           handedOver = true;
           // The client is closed when the body ends, not here, or the film
           // would be cut off mid-chunk.
-          return _closing(resp, client);
+          return _closing(resp, client, endInclusive - start + 1);
         }
-        await resp.drain<void>();
+        // Not read: the client is destroyed below, body and all.
         // 403, 404 and 410 are what an expired token looks like from here.
         // One refresh, then try again; a second failure is a real refusal
         // and belongs to the player.
-        if (resp.statusCode == 403 ||
-            resp.statusCode == 404 ||
-            resp.statusCode == 410) {
+        if (code == 403 || code == 404 || code == 410) {
           if (!await _refresh(src)) return null;
           continue;
         }
-        if (resp.statusCode >= 500) continue;
+        if (code >= 500) continue;
         return null;
       } catch (e) {
         if (kDebugMode) debugPrint('StreamCacheServer._openUpstream: $e');
@@ -875,8 +905,8 @@ class StreamCacheServer {
           final partEnd = min(next + size, end);
           final part = _LanePart(src.io, url, next, partEnd, total, _laneStall);
           began();
-          part.bytes.then((b) {
-            ended(b.length);
+          part.done.then((n) {
+            ended(n);
             topUp();
           }, onError: (_) {
             ended(0);
@@ -890,29 +920,38 @@ class StreamCacheServer {
       var yielded = false;
       try {
         topUp();
+        stretch:
         while (parts.isNotEmpty) {
-          final Uint8List b;
-          try {
+          final p = parts.first;
+          // THE FIRST PART GOES TO THE PLAYER AS IT ARRIVES, the parts behind
+          // it once it is through. Held until whole, the index of a long
+          // film — 6.4 MB over six lanes, the first part 1.25 MB of it at a
+          // sixth of a 4 Mbit line — gave the player nothing for twenty
+          // seconds; mpv gives up on a connection silent for ten
+          // (`network-timeout`), asked again, and the stretch started over:
+          // a film that never opened (device lab run 37776589997).
+          while (true) {
+            if (p.holding) {
+              yielded = true;
+              yield p.take();
+              continue;
+            }
+            if (p.settled) break;
             // The player hanging up ends the wait at once, and the stretch
             // with it: its parts are killed below, not finished for nobody.
-            if (hungUp != null) {
-              await Future.any<void>([
-                parts.first.bytes.then((_) {}, onError: (Object _) {}),
-                hungUp,
-              ]);
-              if (gone()) return;
-            }
-            b = await parts.first.bytes;
+            await Future.any<void>([p.more, if (hungUp != null) hungUp]);
+            if (gone()) return;
+          }
+          try {
+            await p.done;
           } on _LaneRefused catch (e) {
             if (!yielded && attempt == 0 && e.expired && await _refresh(src)) {
-              break; // a fresh link: start the stretch again
+              break stretch; // a fresh link: start the stretch again
             }
             rethrow;
           }
           parts.removeAt(0);
           topUp();
-          yielded = true;
-          yield b;
         }
         if (parts.isEmpty) return;
       } finally {
@@ -927,9 +966,19 @@ class StreamCacheServer {
     }
   }
 
-  Stream<List<int>> _closing(HttpClientResponse resp, HttpClient client) async* {
+  /// [resp]'s body up to [want] bytes, then its connection closed.
+  Stream<List<int>> _closing(
+      HttpClientResponse resp, HttpClient client, int want) async* {
+    var left = want;
     try {
-      yield* resp;
+      await for (final chunk in resp) {
+        if (chunk.length >= left) {
+          yield chunk.length == left ? chunk : chunk.sublist(0, left);
+          return;
+        }
+        left -= chunk.length;
+        yield chunk;
+      }
     } finally {
       client.close(force: true);
     }
@@ -980,6 +1029,10 @@ class _Source {
   final Future<String?> Function() refresh;
   Future<bool>? refreshing;
 
+  /// The length check started when the film was registered, until a request
+  /// takes it.
+  Future<int>? probing;
+
   /// One pool of connections for the whole of this film's session — kept
   /// alive between requests, so a stretch costs no new handshake.
   HttpClient? _io;
@@ -1027,26 +1080,59 @@ class _LaneRefused implements Exception {
   String toString() => '_LaneRefused: $message';
 }
 
-/// One 2 MB part of a stretch on its own pooled connection, collected in
-/// memory until its turn. [kill] really closes it: an unread response is
-/// cancelled (which drops the socket), a request not yet answered aborted.
+/// One part of a stretch on its own pooled connection. What arrives is held
+/// in memory until the player reaches it — at once for the first part in
+/// line, which hands its bytes on as they come ([take]). [kill] really
+/// closes it: an unread response is cancelled (which drops the socket), a
+/// request not yet answered aborted.
 class _LanePart {
   _LanePart(HttpClient client, Uri url, this.start, this.end, int total,
       Duration stall) {
-    bytes = _get(client, url, total, stall);
+    done = _get(client, url, total, stall);
     // Held until its turn; an error before then must not count as unhandled.
-    bytes.then((_) => settled = true, onError: (_) => settled = true);
+    done.then((_) => _settle(), onError: (_) => _settle());
   }
 
   final int start;
   final int end; // exclusive
-  late final Future<Uint8List> bytes;
+
+  /// The part's length once all of it has arrived; fails if it did not.
+  late final Future<int> done;
+
+  /// Arrived, failed or stopped: nothing more will come.
   bool settled = false;
+
+  /// What has arrived and not yet been taken, in order.
+  final BytesBuilder _held = BytesBuilder(copy: false);
+  int _received = 0;
+  Completer<void>? _arrived;
+
+  bool get holding => _held.isNotEmpty;
+
+  /// What has arrived since the last call.
+  Uint8List take() => _held.takeBytes();
+
+  /// Completes once more has arrived, or the part has settled.
+  Future<void> get more {
+    if (_held.isNotEmpty || settled) return Future<void>.value();
+    return (_arrived ??= Completer<void>()).future;
+  }
+
+  void _wake() {
+    final a = _arrived;
+    _arrived = null;
+    if (a != null && !a.isCompleted) a.complete();
+  }
+
+  void _settle() {
+    settled = true;
+    _wake();
+  }
   bool _killed = false;
   HttpClientRequest? _req;
   HttpClientResponse? _resp;
   StreamSubscription<List<int>>? _sub;
-  Completer<Uint8List>? _done;
+  Completer<int>? _done;
 
   /// The response has been read to its end, or failed: its connection is
   /// back with the pool (or gone) and must not be touched.
@@ -1069,29 +1155,41 @@ class _LanePart {
     }).whenComplete(() => _sub?.cancel()));
   }
 
+  /// The request has gone out and its answer is on the way.
+  bool _asked = false;
+
   void kill() {
     if (_killed) return;
     _killed = true;
     if (_resp != null) {
       _destroy();
-    } else {
+    } else if (!_asked) {
       _req?.abort();
     }
+    // Asked and not yet answered: NOT aborted. An abort here lets dart:io
+    // read the answer to its end to reuse the connection — a whole film,
+    // from a server that ignored the range (2026-10-08). The answer is
+    // destroyed when it arrives ([_get]).
     final d = _done;
     if (d != null && !d.isCompleted) d.completeError(_LaneRefused('stopped'));
   }
 
-  /// Cancel a response nobody will read — once. A second listen throws.
+  /// Close a response nobody will read — once. Its connection is destroyed,
+  /// not cancelled: a cancelled response is read to its end for the pool,
+  /// and a server that ignored the range has sent the whole film.
   bool _dropped = false;
   void _drop(HttpClientResponse r) {
     if (_dropped || _sub != null) return;
     _dropped = true;
-    try {
-      unawaited(r.listen(null).cancel());
-    } catch (_) {}
+    _ended = true;
+    unawaited(r.detachSocket().then((s) => s.destroy(), onError: (Object _) {
+      try {
+        unawaited(r.listen(null).cancel());
+      } catch (_) {}
+    }));
   }
 
-  Future<Uint8List> _get(
+  Future<int> _get(
       HttpClient client, Uri url, int total, Duration stall) async {
     final want = end - start;
     final req = await client.getUrl(url).timeout(stall);
@@ -1101,7 +1199,11 @@ class _LanePart {
       throw _LaneRefused('stopped');
     }
     req.headers.set(HttpHeaders.rangeHeader, 'bytes=$start-${end - 1}');
-    final resp = await req.close().timeout(stall);
+    _asked = true;
+    final resp = await req.close().timeout(stall, onTimeout: () {
+      req.abort();
+      throw _LaneRefused('part $start: no answer');
+    });
     _resp = resp;
     if (_killed) {
       _drop(resp);
@@ -1118,8 +1220,7 @@ class _LanePart {
       _drop(resp);
       throw _LaneRefused('asked for $start-${end - 1}/$total, got $cr');
     }
-    final out = BytesBuilder(copy: false);
-    final done = Completer<Uint8List>();
+    final done = Completer<int>();
     _done = done;
     Timer? quiet;
     void arm() {
@@ -1132,13 +1233,19 @@ class _LanePart {
 
     arm();
     _sub = resp.listen((chunk) {
-      out.add(chunk);
-      arm();
-      if (out.length > want) {
+      if (done.isCompleted) return;
+      // Never a byte past the part: what is held may already be on its way
+      // to the player.
+      if (_received + chunk.length > want) {
         quiet?.cancel();
         _destroy();
-        if (!done.isCompleted) done.completeError(_LaneRefused('part $start: too long'));
+        done.completeError(_LaneRefused('part $start: too long'));
+        return;
       }
+      _received += chunk.length;
+      _held.add(chunk);
+      arm();
+      _wake();
     }, onError: (Object e) {
       _ended = true;
       quiet?.cancel();
@@ -1147,10 +1254,10 @@ class _LanePart {
       _ended = true;
       quiet?.cancel();
       if (done.isCompleted) return;
-      if (out.length != want) {
-        done.completeError(_LaneRefused('part $start: ${out.length} of $want bytes'));
+      if (_received != want) {
+        done.completeError(_LaneRefused('part $start: $_received of $want bytes'));
       } else {
-        done.complete(out.takeBytes());
+        done.complete(want);
       }
     }, cancelOnError: true);
     return done.future;

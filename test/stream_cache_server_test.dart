@@ -35,6 +35,11 @@ class _Upstream {
   final Map<int, String> open = <int, String>{};
   /// The size of every range asked for, in the order the requests arrived.
   final List<int> sizes = <int>[];
+  /// The pause between two 256 KB pieces of one response: a slow line.
+  Duration pace = const Duration(milliseconds: 2);
+  /// Answers every request with the whole film, as a server that does not
+  /// do ranges would.
+  bool ignoreRange = false;
   int _seq = 0;
 
   String url(String token) => 'http://127.0.0.1:${server.port}/v/$token';
@@ -63,7 +68,7 @@ class _Upstream {
     try {
       var start = 0, end = body.length - 1;
       final h = req.headers.value(HttpHeaders.rangeHeader);
-      if (h != null) {
+      if (h != null && !ignoreRange) {
         final spec = h.substring(6).split('-');
         start = int.parse(spec[0]);
         if (spec[1].isNotEmpty) end = min(int.parse(spec[1]), body.length - 1);
@@ -83,7 +88,7 @@ class _Upstream {
         await res.flush().timeout(const Duration(seconds: 2));
         sent += min(256 * 1024, end + 1 - at);
         if (at + 256 * 1024 <= end) {
-          await Future<void>.delayed(const Duration(milliseconds: 2));
+          await Future<void>.delayed(pace);
         }
       }
       // Counted as done once the last byte is written, not once the close
@@ -155,6 +160,8 @@ void main() {
     up.refused = 0;
     up.ports.clear();
     up.sizes.clear();
+    up.pace = const Duration(milliseconds: 2);
+    up.ignoreRange = false;
     up.valid
       ..clear()
       ..add('t1');
@@ -192,8 +199,8 @@ void main() {
     // The two-byte length check aside, the stretch opens on its three
     // smallest parts — what stands between Play and the picture — and every
     // part after is no smaller than the one before, up to full size.
-    // (The 64 KB is the length check, which also reads where the index is.)
-    final parts = up.sizes.where((s) => s != 64 * 1024).toList();
+    // (The 8 KB is the length check, which also reads where the index is.)
+    final parts = up.sizes.where((s) => s != 8 * 1024).toList();
     expect(parts.take(3).toSet(), {128 * k, 256 * k, 384 * k},
         reason: 'first requests: $parts');
     expect(parts.where((s) => s < 2 * mb).length, greaterThanOrEqualTo(15),
@@ -243,7 +250,7 @@ void main() {
           cacheId: 'film-index', upstream: up.url('t1'), refresh: () async => null);
       final got = await _get(local!, take: 6 * mb);
       expect(got, Uint8List.sublistView(up.body, 0, 6 * mb));
-      final parts = up.sizes.where((s) => s != 64 * 1024).toList();
+      final parts = up.sizes.where((s) => s != 8 * 1024).toList();
       // 3 MB of index + 32 bytes + 1 MB of film, over three lanes: three
       // equal parts of about 1.4 MB in the first round, not 128/256/384 KB.
       final first = parts.take(3).toList();
@@ -253,6 +260,46 @@ void main() {
     } finally {
       up.body.setRange(0, 40, saved);
       StreamCacheServer.instance.release('film-index');
+    }
+  });
+
+  test('on a slow line the index reaches the player as it arrives, not once a part is whole',
+      () async {
+    // The bug this guards (device lab run 37776589997): the index of a long
+    // film went out in equal parts, each handed on once whole. On a 4 Mbit
+    // line the first part took twenty seconds; mpv hangs up on a connection
+    // silent for ten, asked again, and the film never opened.
+    final saved = Uint8List.fromList(up.body.sublist(0, 40));
+    final v = ByteData.sublistView(up.body);
+    v.setUint32(0, 32);
+    up.body.setRange(4, 8, 'ftyp'.codeUnits);
+    v.setUint32(32, 3 * mb);
+    up.body.setRange(36, 40, 'moov'.codeUnits);
+    // About 1.4 MB a part on three lanes: six pieces, a second and a half.
+    up.pace = const Duration(milliseconds: 300);
+    final c = HttpClient();
+    try {
+      final local = await StreamCacheServer.instance.localUrlFor(
+          cacheId: 'film-trickle', upstream: up.url('t1'), refresh: () async => null);
+      final clock = Stopwatch()..start();
+      final resp = await (await c.getUrl(Uri.parse(local!))).close();
+      final out = BytesBuilder(copy: false);
+      int? firstAt;
+      await for (final chunk in resp) {
+        out.add(chunk);
+        if (firstAt == null && out.length >= 256 * 1024) firstAt = clock.elapsedMilliseconds;
+        if (out.length >= 4 * mb) break;
+      }
+      final whole = clock.elapsedMilliseconds;
+      final got = out.takeBytes();
+      expect(Uint8List.sublistView(got, 0, 4 * mb), Uint8List.sublistView(up.body, 0, 4 * mb));
+      expect(firstAt, lessThan(900),
+          reason: 'the first 256 KB took $firstAt ms (4 MB in $whole ms): '
+              'held back until the whole first part was in');
+    } finally {
+      c.close(force: true);
+      up.body.setRange(0, 40, saved);
+      StreamCacheServer.instance.release('film-trickle');
     }
   });
 
@@ -292,6 +339,69 @@ void main() {
     expect(up.sent, lessThan(12 * mb),
         reason: '${(up.sent / mb).toStringAsFixed(1)} MB fetched for a player that took 2 MB');
     StreamCacheServer.instance.release('film-gone');
+  });
+
+  test('a server that ignores the range is not read to the end', () async {
+    // A 200 with the whole film where a 206 was asked for: the length check
+    // used to drain it, and a refused lane's cancel read it out for the pool
+    // — the film's full size each, for nothing.
+    up.ignoreRange = true;
+    up.sent = 0;
+    final local = await StreamCacheServer.instance.localUrlFor(
+        cacheId: 'film-norange', upstream: up.url('t1'), refresh: () async => null);
+    try {
+      await _get(local!, take: mb).timeout(const Duration(seconds: 10));
+    } catch (_) {
+      // Whatever the player sees, the point is what was fetched.
+    }
+    await Future<void>.delayed(const Duration(seconds: 2));
+    expect(up.sent, lessThan(12 * mb),
+        reason: '${(up.sent / mb).toStringAsFixed(1)} MB read of a server that sent the whole film');
+    up.ignoreRange = false;
+    StreamCacheServer.instance.release('film-norange');
+  });
+
+  test('a server that ignores the range never has its first bytes passed off as the middle',
+      () async {
+    // One connection (the path a short gap between two held runs takes):
+    // a 200 used to be taken as the bytes asked for, wherever they were.
+    StreamCacheServer.lanes = 1;
+    up.ignoreRange = true;
+    final local = await StreamCacheServer.instance.localUrlFor(
+        cacheId: 'film-norange-mid', upstream: up.url('t1'), refresh: () async => null);
+    const from = 5 * mb + 17;
+    Uint8List got;
+    try {
+      got = await _get(local!, from: from, take: 2 * mb).timeout(const Duration(seconds: 10));
+    } catch (_) {
+      got = Uint8List(0);
+    }
+    expect(got, Uint8List.sublistView(up.body, from, from + got.length),
+        reason: 'bytes from the start of the film served as bytes from $from');
+    up.ignoreRange = false;
+    StreamCacheServer.instance.release('film-norange-mid');
+  });
+
+  test('a range with an end gets exactly that many bytes', () async {
+    final local = await StreamCacheServer.instance.localUrlFor(
+        cacheId: 'film-bounded', upstream: up.url('t1'), refresh: () async => null);
+    final c = HttpClient();
+    try {
+      for (final (a, b) in [(1000, 5000), (7 * mb + 3, 9 * mb), (0, 3 * mb)]) {
+        final r = await c.getUrl(Uri.parse(local!));
+        r.headers.set(HttpHeaders.rangeHeader, 'bytes=$a-$b');
+        final resp = await r.close();
+        expect(resp.statusCode, 206);
+        final out = BytesBuilder(copy: false);
+        await for (final chunk in resp) {
+          out.add(chunk);
+        }
+        expect(out.takeBytes(), Uint8List.sublistView(up.body, a, b + 1), reason: 'bytes=$a-$b');
+      }
+    } finally {
+      c.close(force: true);
+      StreamCacheServer.instance.release('film-bounded');
+    }
   });
 
   test('a link that expires mid-film is renewed and the film carries on', () async {
