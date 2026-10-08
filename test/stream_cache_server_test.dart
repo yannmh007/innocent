@@ -172,23 +172,24 @@ void main() {
 
   test('a stretch starts on small parts and grows to full size', () async {
     const k = 1024;
-    expect(StreamCacheServer.rampedPartBytes(0, 6), 256 * k);
-    expect(StreamCacheServer.rampedPartBytes(5, 6), 256 * k);
-    expect(StreamCacheServer.rampedPartBytes(6, 6), 512 * k);
-    expect(StreamCacheServer.rampedPartBytes(12, 6), mb);
-    expect(StreamCacheServer.rampedPartBytes(18, 6), 2 * mb);
-    expect(StreamCacheServer.rampedPartBytes(500, 6), 2 * mb);
-    expect(StreamCacheServer.rampedPartBytes(3, 1), 2 * mb);
+    expect(StreamCacheServer.rampedPartBytes(0), 128 * k);
+    expect(StreamCacheServer.rampedPartBytes(1), 256 * k);
+    expect(StreamCacheServer.rampedPartBytes(5), 768 * k);
+    expect(StreamCacheServer.rampedPartBytes(15), 2 * mb);
+    expect(StreamCacheServer.rampedPartBytes(500), 2 * mb);
 
     final local = await StreamCacheServer.instance.localUrlFor(
         cacheId: 'film-ramp', upstream: up.url('t1'), refresh: () async => null);
     final got = await _get(local!);
     expect(got, up.body);
-    // The two-byte length check aside, the first round is one small part
-    // per lane: that round is what stands between Play and the picture.
+    // The two-byte length check aside, the stretch opens on its three
+    // smallest parts — what stands between Play and the picture — and every
+    // part after is no smaller than the one before, up to full size.
     final parts = up.sizes.where((s) => s > 2).toList();
-    expect(parts.take(3), everyElement(256 * k),
-        reason: 'first round of requests: $parts');
+    expect(parts.take(3).toSet(), {128 * k, 256 * k, 384 * k},
+        reason: 'first requests: $parts');
+    expect(parts.where((s) => s < 2 * mb).length, greaterThanOrEqualTo(15),
+        reason: '$parts');
     expect(parts, contains(2 * mb));
     StreamCacheServer.instance.release('film-ramp');
   });

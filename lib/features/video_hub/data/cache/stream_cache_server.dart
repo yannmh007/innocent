@@ -90,7 +90,8 @@ class StreamCacheServer {
   ///
   /// Downloads already fetched three parts at once ([RangedFetch]) — the
   /// stream, which is what people watch, did not. Now it does: each stretch
-  /// of film is asked for as 2 MB parts on [lanes] connections at once and
+  /// of film is asked for as parts of up to 2 MB ([rampedPartBytes]) on
+  /// [lanes] connections at once and
   /// handed to the player in order, so a loss on one connection leaves the
   /// others running. The same thing Telegram's loader and every download
   /// manager do, and the reason a DASH/HLS player's short segments recover
@@ -128,21 +129,25 @@ class StreamCacheServer {
   /// loop reopens from the last byte the player received.
   static const Duration _laneStall = Duration(seconds: 15);
 
-  /// THE PARTS OF A STRETCH START SMALL AND GROW: the first round of [lanes]
-  /// parts is 256 KB each, the next 512 KB, then 1 MB, then 2 MB from there.
+  /// THE PARTS OF A STRETCH START SMALL AND GROW BY 128 KB EACH — 128 KB,
+  /// 256 KB, 384 KB … — until they are 2 MB, the sixteenth part on.
   ///
   /// A part reaches the player only once it is whole, and the lanes share the
-  /// line evenly. Six lanes opening on 512 KB and then 2 MB parts gave the
-  /// second part a sixth of the line, so the player waited for 2.5 MB at a
-  /// sixth of the speed before it had a picture: 12.6 s of black screen in
-  /// the device lab (run 37743949143, 150 ms RTT, 1 % loss) where one lane
-  /// took 2.2 s. Small parts in the first round finish together, so the
-  /// first 1.5 MB arrives at the speed of the whole line; doubling each
-  /// round gets back to 2 MB parts within a few seconds of film.
-  static int rampedPartBytes(int index, int lanes) {
-    final round = index ~/ max(1, lanes);
-    return min(RangedFetch.defaultPartBytes, (256 * 1024) << min(round, 4));
-  }
+  /// line. Six lanes opening on 512 KB and then 2 MB parts gave the second
+  /// part a sixth of the line, so the player waited for 2.5 MB at a sixth of
+  /// the speed before it had a picture: 12.6 s of black screen in the device
+  /// lab (run 37743949143, 150 ms RTT, 1 % loss) where one lane took 2.2 s.
+  ///
+  /// Small parts first is the cure; GROWING ONE PART AT A TIME rather than a
+  /// round at a time is what keeps it cured. Parts of a round that are all
+  /// one size finish together, so the film arrives in lumps a round apart —
+  /// rounds of 256 KB, then 512 KB (run 37747387105) started in 2 s but ran
+  /// dry once 3 s later. Each part a little bigger than the one before
+  /// finishes a little after it, so the film arrives a part at a time, in
+  /// order, at the speed of the whole line. Modelled against both in
+  /// eleven line/film pairings, this one was never the worse.
+  static int rampedPartBytes(int index) =>
+      min(RangedFetch.defaultPartBytes, 128 * 1024 * (index + 1));
 
   bool get running => _server != null;
 
@@ -759,7 +764,7 @@ class StreamCacheServer {
         while (next < end &&
             parts.length < window &&
             parts.where((p) => !p.settled).length < lanes) {
-          final size = rampedPartBytes(opened++, lanes);
+          final size = rampedPartBytes(opened++);
           final partEnd = min(next + size, end);
           final part = _LanePart(src.io, url, next, partEnd, total, _laneStall);
           began();
