@@ -14,8 +14,8 @@
 # 1080p and 720p rungs, then played over and over without re-encoding to
 # at least two and a half hours. Lab only: nothing here is published.
 #
-# Writes DIR/long_1080.mp4, DIR/long_720.mp4 and DIR/long_1080frag.mp4 (the
-# 1080p film as fragmented MP4, to compare), and to REPORT: what was
+# Writes DIR/long_1080.mp4, DIR/long_720.mp4, and the same two as
+# fragmented MP4 to compare (long_1080frag.mp4, long_720frag.mp4); to REPORT: what was
 # fetched, how fast it encoded (times real time — the ladder's cost for a
 # film), how big each file and its index are, and how long ten cover frames
 # took over HTTP (tool/frames.py's own grab, as the transcode runner does).
@@ -101,14 +101,15 @@ rm -f "$DIR"/bbb_*.mp4 "$DIR"/sintel_*.mp4 "$DIR"/tos_*.mp4
 # of index instead of megabytes. Whether that starts sooner over a long round
 # trip — it costs the player more requests to open and to seek — is what the
 # *frag profiles measure.
-if [ -f "$DIR/long_1080.mp4" ]; then
-  ffmpeg -nostdin -y -hide_banner -loglevel error -i "$DIR/long_1080.mp4" -c copy \
-    -movflags +frag_keyframe+empty_moov+default_base_moof+global_sidx "$DIR/long_1080frag.mp4" \
-    || say "fragmented remux FAILED"
-fi
+for h in 1080 720; do
+  [ -f "$DIR/long_$h.mp4" ] || continue
+  ffmpeg -nostdin -y -hide_banner -loglevel error -i "$DIR/long_$h.mp4" -c copy \
+    -movflags +frag_keyframe+empty_moov+default_base_moof+global_sidx "$DIR/long_${h}frag.mp4" \
+    || say "fragmented remux of ${h}p FAILED"
+done
 
 # What the player has to read before anything else: the top-level boxes.
-for h in 1080 720 1080frag; do
+for h in 1080 720 1080frag 720frag; do
   f="$DIR/long_$h.mp4"
   [ -f "$f" ] || continue
   dur=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$f" | cut -d. -f1)
