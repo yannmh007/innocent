@@ -182,6 +182,38 @@ case " $FLOWS " in *" streamab_"*)
   fi ;;
 esac
 
+# THE LONG FILM (flows streamlong_PROFILE_LANES): two and a half hours of open
+# films at the ladder's 1080p and 720p rungs, made before the emulator booted
+# (tool/netlab/make_long_film.sh, into LONG_FILM_DIR). Each flow puts the line
+# of one Myanmar profile in front of it — config.env PROFILE_<name>: the rung
+# to play, one-way delay (both ways, so the round trip is twice it), loss on
+# the film's packets and a rate cap — plays from a fresh install with N lanes,
+# then jumps to the middle of the film (`lab_seek`) and plays on. The trail's
+# first frame, rebuffer and stretch lines say how each went.
+LONG_PORT=47125
+shape_long() {
+  sudo tc qdisc del dev lo root 2>/dev/null || true
+  sudo tc qdisc add dev lo root handle 1: prio bands 5
+  # shellcheck disable=SC2086
+  sudo tc qdisc add dev lo parent 1:4 handle 40: netem delay "$1" loss "$2" rate "$3" limit 10000
+  sudo tc qdisc add dev lo parent 1:5 handle 50: netem delay "$1" limit 10000
+  sudo tc filter add dev lo parent 1:0 protocol ip prio 1 u32 match ip sport "$LONG_PORT" 0xffff flowid 1:4
+  sudo tc filter add dev lo parent 1:0 protocol ip prio 2 u32 match ip dport "$LONG_PORT" 0xffff flowid 1:5
+}
+case " $FLOWS " in *" streamlong_"*)
+  LONG_DIR=${LONG_FILM_DIR:-/mnt/lab_films}
+  if [ -f "$LONG_DIR/long_1080.mp4" ] && command -v ffprobe >/dev/null 2>&1; then
+    LONG_DUR=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$LONG_DIR/long_1080.mp4" | cut -d. -f1)
+    python3 tool/netlab/range_server.py "$LONG_DIR" "$LONG_PORT" &
+    LONG_SERVER=$!
+    sudo ip link set dev lo mtu 1500 >/dev/null 2>&1 || true
+    log "long film: $((LONG_DUR / 60)) min in $LONG_DIR, served on $LONG_PORT"
+  else
+    log "long film: none was made — streamlong flows skipped"
+    FLOWS=$(for f in $FLOWS; do case "$f" in streamlong_*) ;; *) echo -n "$f " ;; esac; done)
+  fi ;;
+esac
+
 export PATH="$HOME/.maestro/bin:$PATH"
 for flow in $FLOWS; do
   log "flow $flow"
@@ -213,6 +245,34 @@ for flow in $FLOWS; do
     adb exec-out screencap -p > "$OUT/shots/7${n}_streamab_${n}_30s.png"
     sleep "${STREAM_SECONDS:-60}"
     adb exec-out screencap -p > "$OUT/shots/7${n}_streamab_${n}_end.png"
+    adb shell log -p i -t flutter "LAB phase $flow end" >/dev/null 2>&1 || true
+    log "flow $flow done"
+    adb shell am force-stop "$PKG"
+    continue
+    ;;
+  esac
+  case "$flow" in streamlong_*)
+    rest="${flow#streamlong_}"
+    n="${rest##*_}"
+    prof="${rest%_*}"
+    var="PROFILE_$prof"
+    read -r rung delay loss rate <<< "${!var:-}"
+    if [ -z "${rate:-}" ]; then log "flow $flow: no $var in config.env — skipped"; continue; fi
+    shape_long "$delay" "$loss" "$rate"
+    log "long film: $prof — ${rung}p, round trip 2x$delay, loss $loss, rate $rate; lanes=$n"
+    adb shell am force-stop "$PKG"
+    adb shell pm clear "$PKG" >/dev/null 2>&1 || true
+    d="/sdcard/Android/data/$PKG/files"
+    adb shell mkdir -p "$d" >/dev/null 2>&1
+    adb shell "echo $n > $d/lab_lanes"
+    adb shell "echo http://10.0.2.2:${LONG_PORT}/long_${rung}.mp4 > $d/lab_stream_url"
+    adb shell "echo ${LONG_SEEK_AFTER:-45}:$((LONG_DUR / 2)) > $d/lab_seek"
+    adb shell log -p i -t flutter "LAB long $prof rung=${rung}p rtt=2x$delay loss=$loss rate=$rate lanes=$n" >/dev/null 2>&1 || true
+    adb shell am start -W -n "$PKG/.MainActivity" >/dev/null 2>&1
+    sleep $(( ${LONG_SEEK_AFTER:-45} + 2 ))
+    adb exec-out screencap -p > "$OUT/shots/8_${flow}_before_seek.png"
+    sleep "${LONG_AFTER_SEEK:-45}"
+    adb exec-out screencap -p > "$OUT/shots/8_${flow}_end.png"
     adb shell log -p i -t flutter "LAB phase $flow end" >/dev/null 2>&1 || true
     log "flow $flow done"
     adb shell am force-stop "$PKG"
@@ -329,6 +389,10 @@ for flow in $FLOWS; do
 done
 adb shell dumpsys cpuinfo 2>/dev/null | head -40 > "$OUT/cpuinfo.txt" || true
 
+if [ -n "${LONG_SERVER:-}" ]; then
+  kill "$LONG_SERVER" 2>/dev/null || true
+  sudo tc qdisc del dev lo root 2>/dev/null || true
+fi
 if [ -n "${RANGE_SERVER:-}" ]; then
   kill "$RANGE_SERVER" 2>/dev/null || true
   sudo tc qdisc del dev lo root 2>/dev/null || true

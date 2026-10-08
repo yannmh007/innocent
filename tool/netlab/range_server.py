@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """One file over HTTP with Range support — the stream Worker in miniature.
 
-    range_server.py FILE PORT
+    range_server.py FILE|DIR PORT
 
-Serves FILE at /film.mp4 on 127.0.0.1:PORT, answering `Range` with 206 and a
+Serves FILE at /film.mp4 — or each file in DIR at /<its name> — on
+127.0.0.1:PORT, answering `Range` with 206 and a
 Content-Range exactly as the Worker does, and a plain GET with 200. The device
 lab puts `tc netem` in front of PORT and plays the film from the emulator at
-10.0.2.2:PORT. Not for anything but the lab: no auth, one file, threads.
+10.0.2.2:PORT. Not for anything but the lab: no auth, threads.
 """
 import http.server
 import os
@@ -21,13 +22,24 @@ class H(http.server.BaseHTTPRequestHandler):
     def log_message(self, *a):
         pass
 
+    def _file(self):
+        name = self.path.split('?')[0].lstrip('/')
+        if os.path.isdir(self.path_file):
+            # A plain name only: nothing above the directory.
+            if not re.match(r'^[A-Za-z0-9._-]+$', name):
+                return None
+            p = os.path.join(self.path_file, name)
+            return p if os.path.isfile(p) else None
+        return self.path_file if name == 'film.mp4' else None
+
     def _serve(self, head_only=False):
-        if self.path.split('?')[0] != '/film.mp4':
+        path = self._file()
+        if path is None:
             self.send_response(404)
             self.send_header('Content-Length', '0')
             self.end_headers()
             return
-        size = os.path.getsize(self.path_file)
+        size = os.path.getsize(path)
         start, end, code = 0, size - 1, 200
         m = re.match(r'bytes=(\d*)-(\d*)$', self.headers.get('Range', ''))
         if m and (m.group(1) or m.group(2)):
@@ -54,7 +66,7 @@ class H(http.server.BaseHTTPRequestHandler):
         if head_only:
             return
         try:
-            with open(self.path_file, 'rb') as fh:
+            with open(path, 'rb') as fh:
                 fh.seek(start)
                 left = end - start + 1
                 while left > 0:

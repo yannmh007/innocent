@@ -11,6 +11,7 @@ import 'core/services/thumbnail/thumbnail_cache.dart';
 import 'features/network/data/net_repository.dart';
 import 'features/local_browser/data/library_local_datasource.dart';
 
+import 'core/di/core_providers.dart';
 import 'core/di/preferences_provider.dart';
 import 'core/localization/app_strings.dart';
 import 'core/localization/locale_provider.dart';
@@ -94,6 +95,13 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
       },
     ));
     WidgetsBinding.instance.ensureVisualUpdate();
+    final seek = await LabStream.seekPlan();
+    if (seek == null) return;
+    Timer(seek.$1, () {
+      if (!mounted) return;
+      PlaybackLog.add('LAB stream: seek to ${seek.$2.inSeconds} s');
+      unawaited(ref.read(videoPlayerServiceProvider).seek(seek.$2));
+    });
   }
 
   /// DEVICE LAB ONLY — Test Lab's playback measurement (device-cloud.yml,

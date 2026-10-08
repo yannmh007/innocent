@@ -23,15 +23,36 @@ import 'playback_log.dart';
 class LabStream {
   LabStream._();
 
+  static Future<String?> _read(String name) async {
+    final dir = await getExternalStorageDirectory();
+    if (dir == null) return null;
+    final f = File('${dir.path}/$name');
+    if (!await f.exists()) return null;
+    return (await f.readAsString()).trim();
+  }
+
+  /// When to jump and where to: `lab_seek` holds "AFTER:TO" in seconds — the
+  /// lab's seek into the middle of a long film, timed by the trail's
+  /// rebuffer lines. Null when the lab asked for none.
+  static Future<(Duration after, Duration to)?> seekPlan() async {
+    if (!const bool.fromEnvironment('INNOCENT_LAB')) return null;
+    try {
+      final parts = (await _read('lab_seek'))?.split(':');
+      if (parts == null || parts.length != 2) return null;
+      final after = int.tryParse(parts[0]), to = int.tryParse(parts[1]);
+      if (after == null || to == null) return null;
+      return (Duration(seconds: after), Duration(seconds: to));
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// The loopback address to play, or null when the lab named no film.
   static Future<String?> localUrl() async {
     if (!const bool.fromEnvironment('INNOCENT_LAB')) return null;
     try {
-      final dir = await getExternalStorageDirectory();
-      if (dir == null) return null;
-      final f = File('${dir.path}/lab_stream_url');
-      if (!await f.exists()) return null;
-      final upstream = (await f.readAsString()).trim();
+      final upstream = await _read('lab_stream_url');
+      if (upstream == null) return null;
       if (upstream.isEmpty) return null;
       final local = await StreamCacheServer.instance.localUrlFor(
         cacheId: 'lab-film',
