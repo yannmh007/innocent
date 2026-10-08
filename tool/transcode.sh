@@ -187,30 +187,33 @@ for i in "${!LADDER_H[@]}"; do
   echo "::group::Encode ${h}p at ${k}k"
   # -crf 23 with a maxrate cap: quality-driven where the content is easy,
   # hard-limited where it is not. `-g` two seconds keeps seeking responsive
-  # and divides the six-second fragments below exactly.
+  # and sets the length of the fragments below.
   #
   # FRAGMENTED MP4 (CMAF), NOT FASTSTART. A faststart file's index lists
   # every frame of the film, and the player reads all of it before the first
   # picture: 6.4 MB for a film of 2 h 40 min. On the device lab's Myanmar
-  # lines (run 37793555174) that was 12 s to start on 4G, 21 s on a busy
-  # line and 23 s at 4 Mbit; the same film fragmented started in 3.5 to
-  # 4.1 s on all three. A fragmented file carries a 1 KB `moov`, then one
-  # small `sidx` per track (a few KB an hour), then the film as fragments,
-  # each with its own small index — so the start no longer grows with the
-  # running time.
+  # lines that was 9 to 19 s to start, and 34 s at 4 Mbit (run 37803280178).
+  # A fragmented file carries a 1 KB `moov`, then one small `sidx` per track
+  # (about 50 KB an hour), then the film as fragments, each with its own
+  # small index — so the start no longer grows with the running time.
   #
-  #   frag_keyframe + min_frag_duration 6 s
-  #       a fragment every six seconds, always cut at a keyframe. Two-second
-  #       fragments cost a seek four requests to find its frame; six cost
-  #       two, as faststart does (measured with ffmpeg, 2026-10-08).
+  #   frag_keyframe
+  #       a fragment per keyframe, every two seconds. A seek reads from the
+  #       start of the fragment that holds its frame, so six-second
+  #       fragments made it fetch up to four seconds of film it then threw
+  #       away: 3.3 to 4.1 s per seek where two-second ones took 0.5
+  #       (runs 37803280178, 37784535879).
   #   empty_moov, default_base_moof, global_sidx, cmaf
   #       the layout CMAF and the DASH on-demand profile describe: one file
   #       per rung, its index at the front. An HLS or DASH manifest can point
-  #       into these same files by byte range, should the player ever switch
-  #       rungs mid-film — no re-encode, no re-upload.
+  #       into these same files by byte range — three fragments to a
+  #       six-second segment — should the player ever switch rungs
+  #       mid-film: no re-encode, no re-upload.
   #   skip_trailer
   #       no `mfra` at the end: CMAF does not use it, and ffmpeg's demuxer
-  #       otherwise opens the film with a jump to its last bytes.
+  #       otherwise opens the film with a jump to its last bytes and back —
+  #       without it a fragmented film started in 1.5 to 1.9 s on every
+  #       lab line, against 3.4 to 4.1 s with it.
   gop="$(python3 -c "print(max(24, round(float('$FPS')*2)))")"
   ffmpeg -nostdin -y -hide_banner -loglevel warning -stats -i "$src" \
     -vf "${TONEMAP}scale=-2:${h}:flags=bicubic,format=yuv420p" \
@@ -219,7 +222,6 @@ for i in "${!LADDER_H[@]}"; do
     -g "$gop" -keyint_min "$gop" -sc_threshold 0 \
     -profile:v high -pix_fmt yuv420p \
     -c:a aac -b:a 128k -ac 2 -ar 48000 \
-    -min_frag_duration 6000000 \
     -movflags +frag_keyframe+empty_moov+default_base_moof+global_sidx+cmaf+skip_trailer \
     "$out"
   echo "::endgroup::"

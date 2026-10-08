@@ -97,13 +97,12 @@ done
 rm -f "$DIR"/bbb_*.mp4 "$DIR"/sintel_*.mp4 "$DIR"/tos_*.mp4
 
 # The same films as FRAGMENTED MP4, exactly as tool/transcode.sh now writes
-# the ladder (CMAF: six-second fragments cut at keyframes, a global sidx, no
-# trailer), so the front of the file holds a few kilobytes of index instead
+# the ladder (CMAF: a fragment per two-second keyframe interval, a global
+# sidx, no trailer), so the front of the file holds a few kilobytes of index instead
 # of megabytes. The *frag profiles play these beside their faststart twins.
 for h in 1080 720; do
   [ -f "$DIR/long_$h.mp4" ] || continue
   ffmpeg -nostdin -y -hide_banner -loglevel error -i "$DIR/long_$h.mp4" -c copy \
-    -min_frag_duration 6000000 \
     -movflags +frag_keyframe+empty_moov+default_base_moof+global_sidx+cmaf+skip_trailer \
     "$DIR/long_${h}frag.mp4" \
     || say "fragmented remux of ${h}p FAILED"
