@@ -153,6 +153,35 @@ grep -E "TotalTime|WaitTime|Status" "$OUT/cold_start.txt" | tee -a "$OUT/steps.t
 sleep 10
 adb exec-out screencap -p > "$OUT/shots/00_cold_start.png"
 
+# THE STREAM A/B's FILM AND ITS LINE. A film the runner makes (about 6 Mbit/s
+# of 720p — a mid-quality catalogue film), served with Range from 127.0.0.1
+# and put behind netem on that one port: delay, loss and a rate cap, the way
+# bench/stream-bench.yml does for the proxy alone. The emulator reaches it at
+# 10.0.2.2. Only this server's packets are shaped; nothing else on the runner.
+STREAM_PORT=47124
+case " $FLOWS " in *" streamab_"*)
+  if command -v ffmpeg >/dev/null 2>&1; then
+    ffmpeg -loglevel error -y -f lavfi -i testsrc2=size=1280x720:rate=24 \
+      -f lavfi -i sine=frequency=330 -t 150 -c:v libx264 -preset veryfast \
+      -b:v 6000k -maxrate 6000k -bufsize 12000k -pix_fmt yuv420p -c:a aac -b:a 96k \
+      -movflags +faststart /tmp/stream_film.mp4
+    log "stream film: $(du -h /tmp/stream_film.mp4 | cut -f1)"
+    python3 tool/netlab/range_server.py /tmp/stream_film.mp4 "$STREAM_PORT" &
+    RANGE_SERVER=$!
+    sudo ip link set dev lo mtu 1500 >/dev/null 2>&1 || true
+    if [ -n "${STREAM_NETEM:-}" ]; then
+      sudo tc qdisc replace dev lo root handle 1: prio bands 5 2>/dev/null
+      # shellcheck disable=SC2086
+      sudo tc qdisc add dev lo parent 1:4 handle 40: netem $STREAM_NETEM limit 10000
+      sudo tc filter add dev lo parent 1:0 protocol ip prio 1 u32 match ip sport "$STREAM_PORT" 0xffff flowid 1:4
+      log "stream line: netem $STREAM_NETEM on port $STREAM_PORT"
+    fi
+  else
+    log "stream A/B: no ffmpeg — skipped"
+    FLOWS=$(for f in $FLOWS; do case "$f" in streamab_*) ;; *) echo -n "$f " ;; esac; done)
+  fi ;;
+esac
+
 export PATH="$HOME/.maestro/bin:$PATH"
 for flow in $FLOWS; do
   log "flow $flow"
@@ -166,20 +195,28 @@ for flow in $FLOWS; do
   # The perf flows sit still for a minute; read the threads in the middle of
   # it, while the Video tab idles or the film plays.
   case "$flow" in perf_*) ( sleep 40; { echo "== during $flow"; threads; } >> "$OUT/threads.txt" ) & ;; esac
-  # ONE FILM, TWO WAYS, ONE LINE: stream_lanes1 and stream_lanes3 play the
-  # same title through flows/stream_ab.yaml on a fresh install each (nothing
-  # of the film cached), with the proxy told how many connections to use
-  # through the lab-only lab_lanes file. The trail then reads "stream lanes=N"
-  # and its stretches and rebuffers for each.
-  file="$flow"
-  case "$flow" in stream_lanes*)
-    n="${flow#stream_lanes}"
+  # STREAM A/B — no Maestro: the app is told which film to open and how many
+  # connections the proxy may use (lab-only files, see LabStream), and the
+  # trail says how it went. `streamab_N` plays the lab film through the real
+  # stream proxy with N lanes, from a fresh install, on the shaped line.
+  case "$flow" in streamab_*)
+    n="${flow#streamab_}"
     adb shell am force-stop "$PKG"
     adb shell pm clear "$PKG" >/dev/null 2>&1 || true
-    adb shell mkdir -p "/sdcard/Android/data/$PKG/files" >/dev/null 2>&1
-    adb shell "echo $n > /sdcard/Android/data/$PKG/files/lab_lanes"
-    log "stream A/B: lanes=$n (fresh install state)"
-    file=stream_ab
+    d="/sdcard/Android/data/$PKG/files"
+    adb shell mkdir -p "$d" >/dev/null 2>&1
+    adb shell "echo $n > $d/lab_lanes"
+    adb shell "echo http://10.0.2.2:${STREAM_PORT}/film.mp4 > $d/lab_stream_url"
+    log "stream A/B: lanes=$n; files $(adb shell ls "$d" 2>&1 | tr '\r\n' '  ')"
+    adb shell am start -W -n "$PKG/.MainActivity" >/dev/null 2>&1
+    sleep 30
+    adb exec-out screencap -p > "$OUT/shots/7${n}_streamab_${n}_30s.png"
+    sleep "${STREAM_SECONDS:-60}"
+    adb exec-out screencap -p > "$OUT/shots/7${n}_streamab_${n}_end.png"
+    adb shell log -p i -t flutter "LAB phase $flow end" >/dev/null 2>&1 || true
+    log "flow $flow done"
+    adb shell am force-stop "$PKG"
+    continue
     ;;
   esac
   ( cd "$OUT/shots" && maestro test --test-output-dir "$OUT/maestro_out" "$OLDPWD/test_device/flows/$file.yaml" ) > "$OUT/maestro_$flow.txt" 2>&1
@@ -292,6 +329,11 @@ for flow in $FLOWS; do
 done
 adb shell dumpsys cpuinfo 2>/dev/null | head -40 > "$OUT/cpuinfo.txt" || true
 
+if [ -n "${RANGE_SERVER:-}" ]; then
+  kill "$RANGE_SERVER" 2>/dev/null || true
+  sudo tc qdisc del dev lo root 2>/dev/null || true
+  rm -f /tmp/stream_film.mp4
+fi
 if [ -n "$LOSS_DEV" ]; then
   sudo tc qdisc del dev "$LOSS_DEV" ingress 2>/dev/null || true
   sudo ip link del ifb0 2>/dev/null || true

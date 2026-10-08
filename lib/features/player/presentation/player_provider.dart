@@ -1819,6 +1819,7 @@ class PlayerController extends StateNotifier<PlayerState> {
       state = state.copyWith(isOpening: false, slowNetworkHintVisible: false);
     }
     if (started != null) {
+      PlaybackLog.add('first frame ${DateTime.now().difference(started).inMilliseconds} ms');
       // Reported, not logged. A number nobody collects is a number nobody
       // can act on, and "it feels slow" is not something you can tune
       // against — p50 and p95 time-to-first-frame is.

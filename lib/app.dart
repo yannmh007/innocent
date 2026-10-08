@@ -28,6 +28,7 @@ import 'features/updater/presentation/app_update_screen.dart';
 import 'features/player/presentation/floating_pip_overlay.dart';
 import 'features/player/presentation/player_provider.dart';
 import 'features/player/presentation/shortcut_item.dart';
+import 'core/services/diagnostics/lab_stream.dart';
 import 'core/services/diagnostics/playback_log.dart';
 
 class InnocentApp extends ConsumerStatefulWidget {
@@ -66,11 +67,33 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
     if (!_showOnboarding || const bool.fromEnvironment('INNOCENT_LAB')) {
       _startIntentListener();
     }
+    if (const bool.fromEnvironment('INNOCENT_LAB')) unawaited(_labStream());
     // Local Network: hand the saved servers to the native side, so a film
     // from a NAS resumed straight from History after a restart can open.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) ref.read(netServersProvider);
     });
+  }
+
+  /// DEVICE LAB ONLY — play the film the lab named through the stream proxy
+  /// (see [LabStream]). Nothing happens when it named none.
+  Future<void> _labStream() async {
+    final local = await LabStream.localUrl();
+    if (local == null || !mounted) return;
+    if (_showOnboarding) setState(() => _showOnboarding = false);
+    // The router's app is not up until the introduction is out of the way.
+    await Future<void>.delayed(const Duration(seconds: 3));
+    if (!mounted) return;
+    PlaybackLog.add('LAB stream: opening the player');
+    unawaited(ref.read(routerProvider).push(
+      Routes.player,
+      extra: <String, dynamic>{
+        'uri': local,
+        'title': 'Lab stream',
+        'ephemeral': true,
+      },
+    ));
+    WidgetsBinding.instance.ensureVisualUpdate();
   }
 
   /// DEVICE LAB ONLY — Test Lab's playback measurement (device-cloud.yml,
