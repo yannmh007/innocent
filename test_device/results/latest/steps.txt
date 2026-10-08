@@ -1,22 +1,33 @@
-[08:47:54] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
-[08:47:54] install
-[08:48:03] network: speed 6000:24000 kbit/s, delay 80:250 ms
-[08:48:03] network: 0.5% of incoming packets dropped on eth0
-[08:48:24] library: pushing 17 files
-[08:48:55] library: MediaStore lists 17 videos
-[08:48:55] cold start
+[10:08:56] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
+[10:08:56] install
+[10:09:17] network: speed full kbit/s, delay none ms
+[10:09:39] cold start
 Status: ok
-TotalTime: 2171
-WaitTime: 2177
-[08:49:19] stream film: 110M
-[08:49:19] stream line: netem delay 75ms loss 1% rate 32mbit on port 47124
-[08:49:19] flow streamab_1
-[08:49:21] stream A/B: lanes=1; files lab_lanes lab_stream_url 
-[08:50:52] flow streamab_1 done
-[08:50:53] flow streamab_3
-[08:50:54] stream A/B: lanes=3; files lab_lanes lab_stream_url 
-[08:52:26] flow streamab_3 done
-[08:52:26] flow streamab_6
-[08:52:27] stream A/B: lanes=6; files lab_lanes lab_stream_url 
-[08:54:00] flow streamab_6 done
-[08:54:04] done
+TotalTime: 3435
+WaitTime: 3440
+[10:09:53] long film: 108 min in /mnt/lab_films, served on 47125
+[10:09:53] flow streamlong_mm4g_1
+[10:09:53] long film: mm4g — 1080p, round trip 2x75ms, loss 0.5%, rate 32mbit; lanes=1
+[10:11:32] flow streamlong_mm4g_1 done
+[10:11:32] flow streamlong_mm4g_6
+[10:11:32] long film: mm4g — 1080p, round trip 2x75ms, loss 0.5%, rate 32mbit; lanes=6
+[10:13:10] flow streamlong_mm4g_6 done
+[10:13:10] flow streamlong_lossy_1
+[10:13:10] long film: lossy — 1080p, round trip 2x100ms, loss 1%, rate 32mbit; lanes=1
+[10:14:47] flow streamlong_lossy_1 done
+[10:14:47] flow streamlong_lossy_6
+[10:14:48] long film: lossy — 1080p, round trip 2x100ms, loss 1%, rate 32mbit; lanes=6
+[10:16:25] flow streamlong_lossy_6 done
+[10:16:25] flow streamlong_busy_1
+[10:16:26] long film: busy — 720p, round trip 2x125ms, loss 2%, rate 16mbit; lanes=1
+[10:18:03] flow streamlong_busy_1 done
+[10:18:03] flow streamlong_busy_6
+[10:18:03] long film: busy — 720p, round trip 2x125ms, loss 2%, rate 16mbit; lanes=6
+[10:19:40] flow streamlong_busy_6 done
+[10:19:40] flow streamlong_slow_1
+[10:19:40] long film: slow — 720p, round trip 2x150ms, loss 1%, rate 4mbit; lanes=1
+[10:21:19] flow streamlong_slow_1 done
+[10:21:19] flow streamlong_slow_6
+[10:21:19] long film: slow — 720p, round trip 2x150ms, loss 1%, rate 4mbit; lanes=6
+[10:22:57] flow streamlong_slow_6 done
+[10:23:03] done
