@@ -106,6 +106,30 @@ void main() {
       expect(v.moovEnd, end);
     });
 
+    test('a fragmented film (the ladder since 2026-10-08) is ready on its small index', () {
+      // tool/transcode.sh writes every rung as CMAF: a 1 KB moov with no
+      // frame tables, a sidx per track, then fragments, each a moof and its
+      // mdat. The walk stops at the moov — the frames' own indexes travel
+      // with the frames — so the film is watchable once a few seconds past
+      // that first kilobyte have arrived, and an mdat AFTER the moov is not
+      // mistaken for a film whose index is at the end.
+      final head = join(<Uint8List>[
+        box('ftyp', 28),
+        box('moov', 1200),
+        box('sidx', 19000),
+        box('sidx', 19000),
+        box('moof', 2300),
+        box('mdat', 600000),
+      ]);
+      const moovEnd = 36 + 1208;
+      final v = assessMp4Head(head,
+          onDisk: moovEnd + 4 * 1024 * 1024, total: 1700 * 1024 * 1024);
+      expect(v.state, ProgressiveState.ready);
+      expect(v.moovEnd, moovEnd);
+      final early = assessMp4Head(head, onDisk: 300000, total: 1700 * 1024 * 1024);
+      expect(early.state, ProgressiveState.waiting);
+    });
+
     test('a 64-bit box is skipped by its real size, not its 32-bit field', () {
       // Reading the size-1 marker as a size walks the cursor to byte 1 and
       // answers about whatever happens to be there.
