@@ -1,20 +1,22 @@
-[20:19:44] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
-[20:19:44] install
-[20:19:59] network: speed 6000:24000 kbit/s, delay 80:250 ms
-[20:20:00] network: 0.5% of incoming packets dropped on eth0
-[20:20:24] library: pushing 17 files
-[20:20:54] library: MediaStore lists 17 videos
-[20:20:54] cold start
+[07:46:48] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
+[07:46:48] install
+[07:47:04] network: speed 6000:24000 kbit/s, delay 80:250 ms
+[07:47:04] network: 0.5% of incoming packets dropped on eth0
+[07:47:27] library: pushing 17 files
+[07:47:56] library: MediaStore lists 17 videos
+[07:47:56] cold start
 Status: ok
-TotalTime: 3531
-WaitTime: 3547
-[20:21:08] flow stream_lanes1
-[20:21:09] stream A/B: lanes=1 (fresh install state)
-[20:22:57] flow stream_lanes1 exit 0
-[20:23:07] flow stream_lanes3
-[20:23:08] stream A/B: lanes=3 (fresh install state)
-[20:24:49] flow stream_lanes3 exit 0
-[20:25:01] flow stream_lanes6
-[20:25:02] stream A/B: lanes=6 (fresh install state)
-[20:26:37] flow stream_lanes6 exit 0
-[20:26:52] done
+TotalTime: 4779
+WaitTime: 4784
+[07:48:37] stream film: 110M
+[07:48:37] stream line: netem delay 75ms loss 1% rate 32mbit on port 47124
+[07:48:37] flow streamab_1
+[07:48:38] stream A/B: lanes=1; files lab_lanes lab_stream_url 
+[07:50:13] flow streamab_1 done
+[07:50:13] flow streamab_3
+[07:50:14] stream A/B: lanes=3; files lab_lanes lab_stream_url 
+[07:51:48] flow streamab_3 done
+[07:51:48] flow streamab_6
+[07:51:50] stream A/B: lanes=6; files lab_lanes lab_stream_url 
+[07:53:24] flow streamab_6 done
+[07:53:29] done
