@@ -334,6 +334,25 @@ for flow in $FLOWS; do
     continue
     ;;
   esac
+  # ANDROID/DATA THROUGH INNOCENT'S OWN ADB, END TO END. Wireless debugging's
+  # pairing code is drawn on screen and nowhere a script can read it, so the
+  # lab opens adbd's other door: TCP on 5555 (`adb tcpip`). The flow connects
+  # the app to 127.0.0.1:5555 by hand, Android asks "Allow USB debugging?" for
+  # the app's own key, and Maestro allows it. A clip planted where Telegram
+  # keeps its cache is then scanned, named and played. Last in FLOWS: adbd
+  # stays on TCP for the rest of the run.
+  case "$flow" in adb_data)
+    d=/sdcard/Android/data/org.telegram.messenger/cache
+    adb shell mkdir -p "$d" >/dev/null 2>&1
+    adb push "lib_media/Movies/Perf Test/aaa_play_720p.mp4" "$d/5_lab_clip.mp4" >/dev/null 2>&1
+    log "adb_data: planted: $(adb shell ls -l "$d" 2>&1 | grep lab_clip | tr -d '\r')"
+    adb tcpip 5555 >/dev/null 2>&1 || true
+    sleep 3
+    adb wait-for-device
+    log "adb_data: adbd TCP port $(adb shell getprop service.adb.tcp.port | tr -d '\r')"
+    adb shell am force-stop "$PKG"
+    ;;
+  esac
   ( cd "$OUT/shots" && maestro test --test-output-dir "$OUT/maestro_out" "$OLDPWD/test_device/flows/$file.yaml" ) > "$OUT/maestro_$flow.txt" 2>&1
   log "flow $flow exit $?"
   # STACKED DOUBLE TAP. Maestro needs most of a second per tap, longer than

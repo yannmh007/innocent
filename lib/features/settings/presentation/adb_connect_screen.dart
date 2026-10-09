@@ -678,7 +678,7 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
     );
   }
 
-  void _connect() {
+  Future<void> _connect() async {
     final hp = _split(_connectAddr.text);
     if (hp == null) {
       setState(() => _output =
@@ -686,11 +686,21 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
           'main Wireless debugging screen, e.g. 192.168.1.5:32961');
       return;
     }
-    _run(
+    await _run(
       () =>
           AdbService.instance.connectAndRun(hp[0] as String, hp[1] as int, 'id'),
       'Connecting to ${hp[0]}:${hp[1]} …',
     );
+    // Connected by hand is connected: the checklist ticks, and Android/data is
+    // scanned straight away, as after a code or a reconnect.
+    if (!mounted) return;
+    if (_output.contains('uid=') || _output.startsWith('OK')) {
+      setState(() {
+        _connected = true;
+        _pairedBefore = true;
+      });
+      unawaited(_autoScanAfterConnect());
+    }
   }
 
   // ---- Android/data ----

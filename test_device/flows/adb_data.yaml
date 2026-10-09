@@ -1,0 +1,105 @@
+# Android/data through Innocent's own ADB engine, end to end. run.sh has
+# planted a clip at Android/data/org.telegram.messenger/cache/5_lab_clip.mp4
+# and put adbd on TCP 5555; here the app connects to it by hand, Android asks
+# to allow the app's key, and once allowed the app scans Android/data by
+# itself, lists the clip, names its folder after the app ("Telegram ·
+# cache") and plays it.
+appId: com.innocent.media
+---
+- launchApp
+- waitForAnimationToEnd:
+    timeout: 15000
+- tapOn:
+    text: "Wait"
+    optional: true
+- tapOn:
+    text: "Skip"
+    optional: true
+- tapOn:
+    text: "Allow.*"
+    optional: true
+- tapOn:
+    text: "Allow.*"
+    optional: true
+- tapOn:
+    text: "(?s).*Tab 4 of 4.*"
+- waitForAnimationToEnd:
+    timeout: 5000
+- scrollUntilVisible:
+    element:
+      text: "(?s)Settings\\n.*"
+    direction: DOWN
+- tapOn: "(?s)Settings\\n.*"
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn: "List"
+- waitForAnimationToEnd:
+    timeout: 3000
+- scrollUntilVisible:
+    element:
+      text: "(?s).*ADB connection.*"
+    direction: DOWN
+- tapOn: "(?s).*ADB connection.*"
+- waitForAnimationToEnd:
+    timeout: 8000
+# By hand: the advanced IP:Port connect.
+- scrollUntilVisible:
+    element:
+      text: "(?s).*Advanced — manual IP:Port.*"
+    direction: DOWN
+- tapOn: "(?s).*Advanced — manual IP:Port.*"
+- scrollUntilVisible:
+    element:
+      text: "(?s).*Connect IP:Port.*"
+    direction: DOWN
+- tapOn: "(?s).*Connect IP:Port.*"
+- inputText: "127.0.0.1:5555"
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+      text: "(?s).*Connect & run id.*"
+    direction: DOWN
+- tapOn: "(?s).*Connect & run id.*"
+# Android asks whether to trust the app's key, as it does a computer's.
+- extendedWaitUntil:
+    visible: "(?s).*Allow USB debugging.*"
+    timeout: 20000
+- takeScreenshot: 98_adb_allow
+- tapOn:
+    text: "(?s)Always allow.*"
+    optional: true
+- tapOn: "Allow"
+# Connected: the app scans Android/data by itself.
+- extendedWaitUntil:
+    visible: "(?s).*Found 1 video.*"
+    timeout: 60000
+- takeScreenshot: 99_adb_found
+- scrollUntilVisible:
+    element:
+      text: "(?s).*5_lab_clip.*"
+    direction: DOWN
+- tapOn: "(?s).*5_lab_clip.*"
+# Copied out of Android/data, then played.
+- extendedWaitUntil:
+    notVisible: "(?s).*Preparing.*"
+    timeout: 60000
+- waitForAnimationToEnd:
+    timeout: 8000
+- takeScreenshot: 99_adb_playing
+# The Local tab, after a fresh start, lists the folder by its app's name.
+- launchApp
+- waitForAnimationToEnd:
+    timeout: 15000
+- tapOn:
+    text: "Wait"
+    optional: true
+- tapOn:
+    text: "(?s).*Tab 1 of 4.*"
+- waitForAnimationToEnd:
+    timeout: 5000
+- scrollUntilVisible:
+    element:
+      text: "(?s).*Telegram · cache.*"
+    direction: DOWN
+    timeout: 30000
+- takeScreenshot: 99_adb_local_folder

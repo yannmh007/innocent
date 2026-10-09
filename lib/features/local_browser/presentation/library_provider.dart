@@ -15,6 +15,7 @@ import '../domain/folder.dart';
 import '../../user_data/user_data_providers.dart';
 import '../domain/sort_options.dart';
 import '../domain/video.dart';
+import '../domain/app_data_names.dart';
 
 /// Datasource provider
 final libraryDataSourceProvider = Provider<LibraryLocalDataSource>((ref) {
@@ -1098,14 +1099,10 @@ bool _isHidden(String name, String fullPath) {
 /// are distinguishable in the Folders view. e.g.
 /// /storage/emulated/0/Android/data/com.iMe.android/cache -> "com.iMe.android · cache".
 String _adbFolderDisplayName(String path) {
-  // Show ONLY the folder that directly contains the videos (e.g. "videos",
-  // "Telegram Video"), not the long package path. The hidden origin is shown as
-  // a small label under the name in the folder tile, so the name stays short
-  // and clean. Fall back to the last non-empty segment if basename is empty.
-  final base = p.basename(path);
-  if (base.isNotEmpty) return base;
-  final parts = path.split('/').where((s) => s.isNotEmpty).toList();
-  return parts.isEmpty ? path : parts.last;
+  // The folder that directly contains the videos, never the long package
+  // path — and, where that folder is only "cache" or "files", whose it is:
+  // "Telegram · cache" (see [appDataFolderName]).
+  return appDataFolderName(path);
 }
 
 List<Folder> _sortFolders(List<Folder> folders, LibraryPreferences prefs) {
