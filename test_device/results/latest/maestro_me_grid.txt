@@ -1,0 +1,1 @@
+test_device/run.sh: line 330: file: unbound variable
