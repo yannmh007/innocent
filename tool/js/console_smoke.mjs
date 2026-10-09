@@ -1136,8 +1136,12 @@ try {
     const t0 = Date.now();
     await page.evaluate(() => __start(6, 'refused.jpg'));
     await settled();
-    check('upload: a bucket that refuses everything is reported, quickly (' + (Date.now() - t0) + ' ms)',
-      /CORS/.test(String(await page.evaluate(() => window.__err))) && Date.now() - t0 < 15000);
+    // The error goes into the label: a run that failed this once under load
+    // (2026-10-09) said only how long it took, not what it said instead.
+    const refusedErr = String(await page.evaluate(() => window.__err));
+    check('upload: a bucket that refuses everything is reported, quickly (' + (Date.now() - t0) +
+      ' ms: ' + refusedErr.slice(0, 80) + ')',
+      /CORS/.test(refusedErr) && Date.now() - t0 < 15000);
     state.r2.refuseAll = false;
 
     // F. "Finished" but short: nothing is saved.
