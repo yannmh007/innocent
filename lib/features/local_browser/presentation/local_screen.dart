@@ -177,7 +177,7 @@ class _LocalScreenState extends ConsumerState<LocalScreen> {
     switch (value) {
       case 'refresh':
         // Invalidate the library providers to force a re-scan of the
-        // device's media — and, when iADB is connected, re-scan Android/data
+        // device's media — and, when ADB is connected, re-scan Android/data
         // too so hidden app-cache videos refresh at the same time. MX Player's
         // "Media scan" does the device half; this adds the ADB half.
         if (context.mounted) {
@@ -1021,9 +1021,9 @@ class _LocalScreenState extends ConsumerState<LocalScreen> {
     }
   }
 
-  /// Shown after a refresh when iADB was expected but the connection had
-  /// dropped. Non-blocking: the existing app-data videos stay visible; this
-  /// just offers a one-tap way back to reconnect.
+  /// Shown after a refresh when the ADB connection that found the app-data
+  /// videos had dropped. Non-blocking: the existing app-data videos stay
+  /// visible; this just offers a one-tap way back to reconnect.
   void _showAdbReconnectHint() {
     if (!mounted) return;
     final messenger = ScaffoldMessenger.of(context);
@@ -1031,7 +1031,7 @@ class _LocalScreenState extends ConsumerState<LocalScreen> {
     messenger.showSnackBar(
       SnackBar(
         content: const Text(
-          'iADB is disconnected — app-data videos may be out of date. '
+          'ADB is disconnected — app-data videos may be out of date. '
           'Reconnect to refresh them.',
         ),
         duration: const Duration(seconds: 5),
@@ -1109,7 +1109,7 @@ class _LocalScreenState extends ConsumerState<LocalScreen> {
     context.push(location);
   }
 
-  /// True for folders whose contents can only be read over ADB/iADB.
+  /// True for folders whose contents can only be read over ADB.
   bool _isAdbBackedFolder(Folder folder) {
     final cover = folder.coverThumbnailPath ?? '';
     if (cover.startsWith('adb://')) return true;

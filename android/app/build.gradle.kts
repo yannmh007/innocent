@@ -147,13 +147,6 @@ android {
     compileSdk = 36
     ndkVersion = "27.0.12077973"
 
-    // v0.93 Backend 2: AGP 8+ disables AIDL compilation by default. Our
-    // IUserService.aidl (the interface Innocent exposes inside the iADB
-    // privileged process) must be generated, so turn the feature back on.
-    buildFeatures {
-        aidl = true
-    }
-
     // DEVICE LAB ONLY: a lab APK also answers Test Lab's game-loop launch
     // (src/lab/AndroidManifest.xml). A release build never sees that file.
     if (labAbi != null) {
@@ -385,15 +378,6 @@ flutter {
 // adds the dependency WITHOUT any code that uses it yet: if the release build
 // succeeds, FlutLab could fetch it from JitPack and it's compatible with our
 // Kotlin 2.1.0 / minSdk 24 setup, so the real cascade can be built on top.
-// v0.93 Backend 2: resolve the four local iADB .aar files. This flatDir is
-// declared in the APP module (not in the root `allprojects` block) on purpose:
-// a relative dir inside `allprojects` is resolved against EACH project's own
-// directory, which turned `app/libs` into `android/app/app/libs` and broke the
-// build. Declared here, "libs" is unambiguously android/app/libs.
-repositories {
-    flatDir { dirs("libs") }
-}
-
 dependencies {
     // The ONE API that can point a WebView at a proxy. There is no platform
     // equivalent — every other route is a reflection hack that stopped working
@@ -431,27 +415,6 @@ dependencies {
     }
     implementation("commons-net:commons-net:3.13.0")
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
-
-    // v0.93 Backend 2 (iADB app client). Four prebuilt AARs from the iAdb-api
-    // project (github.com/FileContainer/iAdb-api, a simplified Shizuku-API fork
-    // for Android 11+). They let Innocent bind to the SEPARATELY-INSTALLED iADB
-    // app as a Shizuku-style client: iADB runs the privileged server, and our
-    // UserService (running inside that server as shell uid 2000) opens files in
-    // Android/data that a normal app can't reach. Only used when the user picks
-    // the "iADB app" backend; the built-in libadb engine stays the default.
-    //
-    // These four AARs live in app/libs and are resolved via the flatDir repo
-    // declared above in this same module. In Kotlin DSL the reliable
-    // equivalent of Groovy's `implementation(name: "x", ext: "aar")` is the
-    // module-notation string ":<name>@aar" — the earlier `group = ""` form did
-    // not resolve in FlutLab's Gradle ("Could not find :aidl-release:").
-    // (Innocent is an APPLICATION module, so the "local .aar not supported when
-    // building an AAR" restriction — which is library-module only — never
-    // applies here.)
-    implementation(":aidl-release@aar")
-    implementation(":api-release@aar")
-    implementation(":provider-release@aar")
-    implementation(":shared-release@aar")
 
     // v0.99 Downloader engine. youtubedl-android bundles the yt-dlp binary plus
     // a Python 3.8 runtime; `ffmpeg` supplies the muxer that joins DASH

@@ -1754,16 +1754,7 @@ class MainActivity : AudioServiceFragmentActivity() {
                         runOnUiThread { result.success(status) }
                     }
                 }
-                // v0.89: which backend reads Android/data ("builtin" | "iadb").
-                "getBackend" -> {
-                    result.success(AdbManager.adbBackend(this@MainActivity))
-                }
-                "setBackend" -> {
-                    val backend = call.argument<String>("backend") ?: "builtin"
-                    AdbManager.setAdbBackend(this@MainActivity, backend)
-                    result.success(true)
-                }
-                // v0.89: iADB-style notification pairing (no split-screen). The
+                // v0.89: notification pairing (no split-screen). The
                 // foreground service discovers the pairing service in the
                 // background and posts a RemoteInput notification; the user
                 // types the code into the shade. Result comes back via the
@@ -1776,64 +1767,6 @@ class MainActivity : AudioServiceFragmentActivity() {
                 "stopPairingService" -> {
                     AdbPairingService.stop(this@MainActivity)
                     result.success(true)
-                }
-                // v0.93 Backend 2: iADB app client. status()/connected() make
-                // binder IPC calls (ping), so run them off the main thread to
-                // avoid any chance of an ANR if the iADB server is slow.
-                "iadbStatus" -> {
-                    thread(start = true, isDaemon = true, name = "iadb-status") {
-                        val s = IadbClient.status()
-                        runOnUiThread { result.success(s) }
-                    }
-                }
-                "iadbInstalledAndRunning" -> {
-                    thread(start = true, isDaemon = true, name = "iadb-inst") {
-                        val b = IadbClient.installedAndRunning()
-                        runOnUiThread { result.success(b) }
-                    }
-                }
-                "iadbConnected" -> {
-                    thread(start = true, isDaemon = true, name = "iadb-conn") {
-                        val b = IadbClient.connected()
-                        runOnUiThread { result.success(b) }
-                    }
-                }
-                "iadbConnect" -> {
-                    // Must run on the main thread (Iadb posts callbacks there);
-                    // MethodCallHandler is already on main.
-                    IadbClient.onStateChanged = {
-                        // Just signal "something changed"; the Dart side then
-                        // re-queries iadbConnected/iadbStatus on a worker thread.
-                        // (Avoids doing a binder ping on whatever thread this
-                        // callback happens to run on.)
-                        runOnUiThread {
-                            adbChannel?.invokeMethod("onIadbState", null)
-                        }
-                    }
-                    IadbClient.connect(this@MainActivity)
-                    result.success(true)
-                }
-                "iadbDisconnect" -> {
-                    IadbClient.disconnect()
-                    result.success(true)
-                }
-                "iadbOpenInStore" -> {
-                    AdbManager.openIadbInStore(this@MainActivity)
-                    result.success(true)
-                }
-                "iadbExec" -> {
-                    val cmd = call.argument<String>("command") ?: ""
-                    thread(start = true, isDaemon = true, name = "iadb-exec") {
-                        val out = IadbClient.exec(cmd)
-                        runOnUiThread { result.success(out) }
-                    }
-                }
-                "iadbPullForPlayback" -> {
-                    val path = call.argument<String>("path") ?: ""
-                    thread(start = true, isDaemon = true, name = "iadb-pull") {
-                        val out = IadbClient.pullToCache(this@MainActivity, path)
-                        runOnUiThread { result.success(out) }
-                    }
                 }
                 else -> result.notImplemented()
             }

@@ -372,7 +372,7 @@ String _folderSizeLabel(int b) {
 }
 
 /// True when a folder lives where normal galleries hide media — Android/data
-/// or Android/obb caches (surfaced over ADB/iADB) or dot-folders. Drives the
+/// or Android/obb caches (surfaced over ADB) or dot-folders. Drives the
 /// small "Hidden" label under the folder name.
 bool _isHiddenFolder(Folder folder) {
   final cover = folder.coverThumbnailPath ?? '';

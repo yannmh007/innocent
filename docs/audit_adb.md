@@ -24,6 +24,14 @@ evidence of anything.
 | **A11** | 1.64.11+324 | the state callback takes no parameter, and the single-slot setter is gone — one mechanism |
 | **A12** | 1.64.11+324 | `parseAdbDirLine` extracted from `listAdbDir`; 18 tests for it and `parseAdbScanLine` in `test/adb_parse_test.dart` |
 
+**1.64.59** — the iADB backend is gone: its four AARs, `IadbBridge`,
+`IadbClient`, `UserService` and `IUserService.aidl`, the exported
+`com.iadb.IadbProvider` (guarded by `INTERACT_ACROSS_USERS_FULL`), the
+`com.iadb.helper` package query and the backend selector. The embedded
+libadb-android engine is the only route to Android/data; Android 11+ no
+longer defaults to sending people to install another app. Findings below
+that name iADB describe code that no longer exists.
+
 Still open: the three device questions at the end. Every finding in this
 audit that survived checking has now been fixed, except the Kotlin half of
 **A12** — there is still no `android/app/src/test/`, so the Kotlin remains

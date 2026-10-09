@@ -1231,7 +1231,7 @@ class PrivateFolderService {
     // the vault work WITHOUT a live ADB connection afterwards, we first pull the
     // file's bytes out to a real local path, then vault THAT (copy + verify +
     // delete the temp). The result is a self-contained copy inside the app's
-    // private vault that plays whether or not iADB is connected.
+    // private vault that plays whether or not ADB is connected.
     if (videoUri.startsWith('adb://')) {
       return _importAdbToVault(
         videoUri: videoUri,
@@ -1347,7 +1347,7 @@ class PrivateFolderService {
       // the item still appears, and surface the failure to the caller's
       // ok/failed tally by throwing.
       throw Exception('Could not pull Android/data file over ADB — '
-          'connect iADB and try again.');
+          'connect ADB and try again.');
     }
 
     final tmp = File(pulled);

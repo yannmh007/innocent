@@ -128,7 +128,7 @@ class FolderGridTile extends ConsumerWidget {
                   ),
                 ),
               // Mark hidden folders (dot-folders + Android/data|obb caches
-              // surfaced over ADB/iADB).
+              // surfaced over ADB).
               if (_gridFolderHidden(folder))
                 const Positioned(
                   bottom: 2,
@@ -173,7 +173,7 @@ class FolderGridTile extends ConsumerWidget {
 }
 
 /// True when a folder lives where normal galleries hide media — Android/data
-/// or Android/obb caches (surfaced over ADB/iADB) or dot-folders. Mirrors the
+/// or Android/obb caches (surfaced over ADB) or dot-folders. Mirrors the
 /// list view's rule so both stay consistent.
 bool _gridFolderHidden(Folder folder) {
   final cover = folder.coverThumbnailPath ?? '';

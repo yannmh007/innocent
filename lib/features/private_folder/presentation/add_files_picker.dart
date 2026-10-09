@@ -203,8 +203,8 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
   final List<Directory> _dirStack = [];
 
   // v0.94: "Show hidden" in the Files browser. When on, dot-folders/files show,
-  // and tapping into Android/data/obb routes to the ADB screen if iADB isn't
-  // connected (those folders are only readable through iADB).
+  // and tapping into Android/data/obb routes to the ADB screen if ADB isn't
+  // connected (those folders are only readable through ADB).
   bool _showHidden = false;
 
   // v0.94: memoised directory listing. `_listKey` identifies the
@@ -310,7 +310,7 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
         // Folder lists come from app-lifetime FutureProviders now, so
         // there's nothing to kick off — the second visit is instant.
         _refreshMediaPermission();
-        // Surface the "Android/data" bucket if iADB is connected, so app-data
+        // Surface the "Android/data" bucket if ADB is connected, so app-data
         // images/audio can be browsed too (MediaStore never indexes them).
         _refreshAdbMediaConnected();
         break;
@@ -323,7 +323,7 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
     }
   }
 
-  /// Update whether the Android/data media bucket should show (iADB connected).
+  /// Update whether the Android/data media bucket should show (ADB connected).
   Future<void> _refreshAdbMediaConnected() async {
     final connected = await AdbRequiredDialog.isConnected();
     if (!mounted) return;
@@ -803,10 +803,10 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
     }
     // Turning ON: dot-folders show immediately from the filesystem. The
     // Android/data + Android/obb caches, though, are only readable through
-    // iADB — so if the user isn't connected, offer to open the ADB screen
+    // ADB — so if the user isn't connected, offer to open the ADB screen
     // (where they connect once), then come back with hidden on.
     setState(() => _showHidden = true);
-    final connected = await AdbService.instance.iadbConnected();
+    final connected = await AdbRequiredDialog.isConnected();
     if (!mounted || connected) return;
     final go = await showDialog<bool>(
       context: context,
@@ -1246,7 +1246,7 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
         }
         return ListView.builder(
           padding: EdgeInsets.zero,
-          // +1 row for the "Android/data" bucket when iADB is connected.
+          // +1 row for the "Android/data" bucket when ADB is connected.
           itemCount: folders.length + (_adbMediaConnected ? 1 : 0),
           itemBuilder: (_, i) {
             if (_adbMediaConnected && i == 0) {

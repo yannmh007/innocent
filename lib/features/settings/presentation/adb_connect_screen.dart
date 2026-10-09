@@ -33,8 +33,6 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen> {
   String _output = '';
   bool _busy = false;
 
-  /// Disposer from [AdbService.addIadbStateListener], called in dispose().
-  void Function()? _iadbStateOff;
   bool _pairedBefore = false;
   bool _showManual = false;
   List<String> _found = [];
@@ -47,13 +45,6 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen> {
   int _lastBootAt = 0;
   // null = unknown/checking, true = a shell round-trip works, false = not usable.
   bool? _connected;
-  // v0.89: 'builtin' (embedded engine) or 'iadb' (bind to the iADB app — wired
-  // in a later version). Loaded from native on open.
-  String _backend = 'builtin';
-  // v0.93: iADB-app backend state.
-  bool _iadbConnected = false;
-  bool _iadbInstalled = false;
-  String _iadbStatus = '';
   // v0.89: whether the notification pairing service is currently running.
   bool _pairingServiceOn = false;
 
@@ -96,13 +87,11 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen> {
     super.initState();
     // v0.89: receive results from the notification pairing service.
     AdbService.instance.setPairResultListener(_onPairServiceResult);
-    // v0.93: receive iADB connect/disconnect events.
-    _iadbStateOff = AdbService.instance.addIadbStateListener(_onIadbState);
     _loadAndAutoConnect();
   }
 
-  /// Result of a pairing attempt made from the notification shade (built-in
-  /// backend, iADB-style). Runs on the platform channel callback.
+  /// Result of a pairing attempt made from the notification shade. Runs on
+  /// the platform channel callback.
   void _onPairServiceResult(String result) {
     if (!mounted) return;
     final ok = result.startsWith('OK');
@@ -125,13 +114,6 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen> {
     // Everything below is wrapped so a failure anywhere still releases _busy —
     // otherwise the whole screen stays disabled and looks frozen.
     try {
-      final backend = await AdbService.instance.getBackend();
-      if (mounted) setState(() => _backend = backend);
-      if (backend == 'iadb') {
-        // iADB manages its own connection; skip the built-in autoconnect.
-        await _refreshIadbStatus();
-        return;
-      }
       final st = await AdbService.instance.autoEnableStatus();
       if (mounted) {
         setState(() {
@@ -160,6 +142,7 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen> {
             : "Not connected yet. Tap Connect (you may need to re-open "
                 "Wireless debugging first).";
       });
+      if (ok) unawaited(_autoScanAfterConnect());
     } catch (e) {
       if (mounted) setState(() => _output = 'ERROR: $e');
     } finally {
@@ -170,8 +153,6 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen> {
   @override
   void dispose() {
     AdbService.instance.setPairResultListener(null);
-    _iadbStateOff?.call();
-    _iadbStateOff = null;
     // Don't leave the pairing notification lingering if the user leaves.
     if (_pairingServiceOn) AdbService.instance.stopPairingService();
     _code.dispose();
@@ -215,63 +196,7 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen> {
     return [host, port];
   }
 
-  // ---- v0.89: backend + notification pairing ----
-
-  Future<void> _setBackend(String backend) async {
-    await AdbService.instance.setBackend(backend);
-    if (!mounted) return;
-    setState(() => _backend = backend);
-    if (backend == 'iadb') {
-      _refreshIadbStatus();
-    }
-  }
-
-  // ---- v0.93: iADB-app backend ----
-
-  void _onIadbState() {
-    if (!mounted) return;
-    // Native signalled a state change; read the real state on a worker thread.
-    _refreshIadbStatus();
-  }
-
-  Future<void> _refreshIadbStatus() async {
-    final status = await AdbService.instance.iadbStatus();
-    final connected = await AdbService.instance.iadbConnected();
-    final installed = await AdbService.instance.iadbInstalledAndRunning();
-    if (!mounted) return;
-    setState(() {
-      _iadbStatus = status;
-      _iadbConnected = connected;
-      _iadbInstalled = installed;
-    });
-  }
-
-  Future<void> _openIadbInStore() async {
-    await AdbService.instance.iadbOpenInStore();
-  }
-
-  Future<void> _connectIadb() async {
-    setState(() {
-      _busy = true;
-      _iadbStatus = 'Connecting to iADB…';
-    });
-    try {
-      await AdbService.instance.iadbConnect();
-      // The permission dialog / bind completes asynchronously; give it a beat,
-      // then refresh. The state listener also updates us when it lands.
-      await Future.delayed(const Duration(milliseconds: 800));
-      await _refreshIadbStatus();
-      // If we're now connected, immediately scan Android/data so the videos
-      // appear in Local without the user having to tap "Scan" — the auto-scan
-      // coordinator also handles this, but triggering it here makes it instant
-      // and reliable right after the tap that connected.
-      if (_iadbConnected) {
-        unawaited(_autoScanAfterConnect());
-      }
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
-  }
+  // ---- notification pairing ----
 
   /// Scan Android/data right after connecting and refresh the Local library.
   /// Runs in the background (no busy spinner) so the screen stays responsive;
@@ -292,17 +217,7 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen> {
     }
   }
 
-  Future<void> _disconnectIadb() async {
-    setState(() => _busy = true);
-    try {
-      await AdbService.instance.iadbDisconnect();
-      await _refreshIadbStatus();
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
-  }
-
-  /// Start the iADB-style notification pairing flow. A background service posts
+  /// Start the notification pairing flow. A background service posts
   /// a reply notification; the user opens the system pairing dialog, reads the
   /// code, and types it into the shade — no split-screen. The result comes back
   /// via [_onPairServiceResult].
@@ -515,6 +430,9 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen> {
         _connected = ok;
         _output = connectResult;
       });
+      // Connected: scan Android/data now, so the videos are in Local by the
+      // time the user goes back — no separate tap on Scan.
+      if (ok) unawaited(_autoScanAfterConnect());
     } catch (e) {
       if (mounted) setState(() => _output = 'ERROR: $e');
     } finally {
@@ -715,52 +633,7 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // ---------- backend selector ----------
-          _sectionTitle('How Innocent reads Android/data'),
-          Card(
-            margin: EdgeInsets.zero,
-            child: Column(
-              children: [
-                RadioListTile<String>(
-                  value: 'iadb',
-                  groupValue: _backend,
-                  onChanged: _busy
-                      ? null
-                      : (v) {
-                          if (v != null) _setBackend(v);
-                        },
-                  title: const Text('Use the iADB app (recommended)'),
-                  subtitle: const Text(
-                    'Connects through the iADB app, like EX File Manager. Its '
-                    'always-on server means you pair once and it stays '
-                    'connected — even after Wi-Fi changes.',
-                  ),
-                ),
-                const Divider(height: 1),
-                RadioListTile<String>(
-                  value: 'builtin',
-                  groupValue: _backend,
-                  onChanged: _busy
-                      ? null
-                      : (v) {
-                          if (v != null) _setBackend(v);
-                        },
-                  title: const Text('Built-in (no extra app)'),
-                  subtitle: const Text(
-                    'Innocent pairs and connects on its own — no other app '
-                    'needed. May need re-pairing after a reboot or Wi-Fi change.',
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // ---------- iADB backend UI (only) ----------
-          if (_backend == 'iadb') ..._iadbSection(),
-
-          // ---------- built-in backend UI (only) ----------
-          if (_backend == 'builtin') ..._builtinSection(),
+          ..._builtinSection(),
 
           const SizedBox(height: 24),
           const Divider(),
@@ -798,99 +671,9 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen> {
     );
   }
 
-  /// The iADB-app backend UI: a single premium status card + connect button,
-  /// plus an install prompt when iADB isn't present. No built-in/LADB clutter.
-  List<Widget> _iadbSection() {
-    final installed = _iadbInstalled;
-    return [
-      Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: (_iadbConnected ? Colors.green : Colors.orange)
-              .withOpacity(0.12),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  _iadbConnected ? Icons.check_circle : Icons.link_off,
-                  color: _iadbConnected ? Colors.green : Colors.orange,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    _iadbConnected
-                        ? 'Connected to iADB'
-                        : (installed
-                            ? 'iADB found — not connected'
-                            : 'iADB app not installed'),
-                    style: const TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _iadbStatus.isNotEmpty
-                  ? _iadbStatus
-                  : (installed
-                      ? 'Tap Connect and allow access when iADB asks.'
-                      : 'Install the iADB app, open it once and start its '
-                          'server, then come back and tap Connect.'),
-              style: const TextStyle(fontSize: 13),
-            ),
-            const SizedBox(height: 14),
-            if (!installed)
-              FilledButton.icon(
-                onPressed: _busy ? null : _openIadbInStore,
-                icon: const Icon(Icons.shop),
-                label: const Text('Get iADB on Play Store'),
-              )
-            else
-              Row(
-                children: [
-                  FilledButton.icon(
-                    onPressed: _busy ? null : _connectIadb,
-                    icon: const Icon(Icons.link),
-                    label: Text(_iadbConnected ? 'Reconnect' : 'Connect'),
-                  ),
-                  const SizedBox(width: 8),
-                  if (_iadbConnected)
-                    TextButton(
-                      onPressed: _busy ? null : _disconnectIadb,
-                      child: const Text('Disconnect'),
-                    ),
-                ],
-              ),
-          ],
-        ),
-      ),
-      if (_busy)
-        const Padding(
-          padding: EdgeInsets.only(top: 12),
-          child: Row(
-            children: [
-              SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-              SizedBox(width: 12),
-              Text('Working…'),
-            ],
-          ),
-        ),
-    ];
-  }
-
-  /// The built-in (libadb) backend UI — all the pairing/connect/reboot controls.
-  /// Shown only when the built-in backend is selected, so it never clutters the
-  /// iADB experience.
+  /// The pairing / connect / after-reboot controls of Innocent's own ADB
+  /// engine — the only way in since 1.64.59 (the separately installed iADB
+  /// app is no longer used).
   List<Widget> _builtinSection() {
     return [
       if (_pairedBefore)
@@ -929,7 +712,7 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen> {
         label: const Text('Open Wireless debugging'),
       ),
       const SizedBox(height: 12),
-      // iADB-style "pair from the notification" — no split-screen.
+      // Pair from the notification shade — no split-screen.
       Container(
         width: double.infinity,
         padding: const EdgeInsets.all(12),

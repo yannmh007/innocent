@@ -673,16 +673,16 @@ List<Video> _adbVideos(Ref ref) => ref.watch(adbVideosProvider).maybeWhen(
     );
 
 /// Outcome of a library refresh, so the caller can tell the user what happened
-/// (especially when the iADB connection dropped mid-refresh).
+/// (especially when the ADB connection dropped mid-refresh).
 enum LibraryRefreshResult {
-  /// Device media refreshed; iADB wasn't the backend or wasn't connected, so no
+  /// Device media refreshed; ADB was never set up or is not connected, so no
   /// app-data scan was attempted. Nothing to tell the user.
   deviceOnly,
 
-  /// iADB was connected and the Android/data scan completed.
+  /// ADB was connected and the Android/data scan completed.
   adbScanned,
 
-  /// iADB was supposed to be the source but the connection was down or dropped
+  /// The user had app-data videos, but the ADB connection was down or dropped
   /// during the scan. Existing app-data videos are kept; the caller should
   /// gently prompt the user to reconnect.
   adbDisconnected,
@@ -690,14 +690,14 @@ enum LibraryRefreshResult {
 
 /// Full library refresh used by pull-to-refresh and the ⋮ "Refresh" action.
 ///
-/// Re-scans the device's own media (folders + videos) AND, when iADB is
-/// connected, re-scans Android/data so hidden app-cache videos refresh at the
-/// same time — the user shouldn't have to open the ADB screen to update them.
-/// Safe to call anywhere: the ADB scan is skipped unless the iADB backend is
-/// actually connected, and any failure is swallowed so a refresh never throws.
+/// Re-scans the device's own media (folders + videos) AND, when the app's ADB
+/// connection is up, re-scans Android/data so hidden app-cache videos refresh
+/// at the same time — the user shouldn't have to open the ADB screen to update
+/// them. Safe to call anywhere: the ADB scan runs only for someone who has
+/// connected before and is connected now, and a failure never throws.
 ///
-/// If the iADB connection drops during the scan, the previously-scanned
-/// app-data videos are DELIBERATELY kept (not wiped) and the result reports
+/// If the connection is gone, the previously-scanned app-data videos are
+/// DELIBERATELY kept (not wiped) and the result reports
 /// [LibraryRefreshResult.adbDisconnected] so the caller can prompt a reconnect.
 Future<LibraryRefreshResult> refreshLibraryWithAdb(WidgetRef ref) async {
   // Kick off the device media refresh (always) — a real scan, see
@@ -708,44 +708,37 @@ Future<LibraryRefreshResult> refreshLibraryWithAdb(WidgetRef ref) async {
   ref.invalidate(videosInFolderProvider);
 
   var result = LibraryRefreshResult.deviceOnly;
-  // If iADB is the backend, re-scan Android/data and refresh the adb videos.
   try {
-    final backend = await AdbService.instance.getBackend();
-    if (backend == 'iadb') {
-      // Whether the user already had app-data videos showing. Only if they did
-      // is a "connection lost" nudge meaningful — otherwise they simply haven't
-      // connected yet and shouldn't be nagged on every pull-to-refresh.
-      final hadAdbVideos = ref.read(adbVideosProvider).maybeWhen(
-            data: (v) => v.isNotEmpty,
-            orElse: () => false,
-          );
-      final connectedBefore = await AdbService.instance.iadbConnected();
-      if (connectedBefore) {
+    // Whether the user already had app-data videos showing. Only if they did
+    // is a "connection lost" nudge meaningful — otherwise they simply haven't
+    // connected yet and shouldn't be nagged on every pull-to-refresh.
+    final hadAdbVideos = ref.read(adbVideosProvider).maybeWhen(
+          data: (v) => v.isNotEmpty,
+          orElse: () => false,
+        );
+    final everConnected =
+        (await AdbService.instance.lastConnect()).isNotEmpty;
+    if (everConnected) {
+      // Three seconds, reconnect included: a phone with wireless debugging
+      // off must not hold the refresh spinner for the engine's full twelve.
+      final connected =
+          await AdbService.instance.isConnected(timeoutMs: 3000);
+      if (connected) {
         try {
           final paths = await AdbService.instance.scanAndroidDataVideos();
           if (paths.isNotEmpty) ref.invalidate(adbVideosProvider);
           result = LibraryRefreshResult.adbScanned;
         } catch (e) {
-          // The scan failed — most commonly because iADB dropped mid-scan.
+          // The scan failed — most commonly the connection dropping mid-scan.
           // KEEP the existing app-data videos (invalidating here would blank
           // them). Report a drop only if the user actually had videos to lose.
           if (kDebugMode) debugPrint('refreshLibraryWithAdb scan: $e');
-          final stillConnected =
-              await AdbService.instance.iadbConnected().catchError((_) => false);
-          if (stillConnected) {
-            result = LibraryRefreshResult.adbScanned;
-          } else {
-            result = hadAdbVideos
-                ? LibraryRefreshResult.adbDisconnected
-                : LibraryRefreshResult.deviceOnly;
-          }
+          result = hadAdbVideos
+              ? LibraryRefreshResult.adbDisconnected
+              : LibraryRefreshResult.deviceOnly;
         }
-      } else {
-        // iADB backend selected but not connected. Only nudge if they had
-        // app-data videos before (i.e. the connection was lost, not never made).
-        result = hadAdbVideos
-            ? LibraryRefreshResult.adbDisconnected
-            : LibraryRefreshResult.deviceOnly;
+      } else if (hadAdbVideos) {
+        result = LibraryRefreshResult.adbDisconnected;
       }
     }
   } catch (e) {
@@ -760,68 +753,28 @@ Future<LibraryRefreshResult> refreshLibraryWithAdb(WidgetRef ref) async {
   return result;
 }
 
-/// Auto-scans Android/data for videos the moment iADB connects, so they show
-/// up in Local without the user having to open the ADB screen and tap "Scan"
-/// first. The manual Scan button stays (for a deliberate re-scan); this just
-/// makes the common case automatic.
+/// Scans Android/data once when the app starts, if its ADB connection is
+/// already up — so app-data videos are current without anyone opening the
+/// ADB screen. A connection made later on that screen runs its own scan.
 ///
-/// Kept alive for the whole app session by a watch in the shell, so a connect
-/// that happens while the user is anywhere in the app still triggers a scan.
-/// It listens to the native iADB state signal, debounces to the first
-/// connected transition, runs the (backend-agnostic) scan on a worker, and
-/// invalidates [adbVideosProvider] so Local refreshes.
+/// Kept alive for the whole app session by a watch in the shell. Skipped for
+/// anyone who has never connected (nothing to wake), and bounded to three
+/// seconds of probing for the rest.
 final adbAutoScanProvider = Provider<void>((ref) {
-  var scanning = false;
-  var lastConnected = false;
-
-  Future<void> maybeScan() async {
-    // Only the iADB backend auto-scans; the built-in backend's connection is
-    // transient and the user drives it from the ADB screen.
-    String backend;
+  Future<void> scanIfConnected() async {
     try {
-      backend = await AdbService.instance.getBackend();
-    } catch (_) {
-      return;
-    }
-    if (backend != 'iadb') return;
-
-    bool connected;
-    try {
-      connected = await AdbService.instance.iadbConnected();
-    } catch (_) {
-      connected = false;
-    }
-    // Fire only on the transition into "connected" (not on every signal), and
-    // never re-enter while a scan is in flight.
-    if (!connected) {
-      lastConnected = false;
-      return;
-    }
-    if (lastConnected || scanning) return;
-    lastConnected = true;
-    scanning = true;
-    try {
+      if ((await AdbService.instance.lastConnect()).isEmpty) return;
+      if (!await AdbService.instance.isConnected(timeoutMs: 3000)) return;
       final paths = await AdbService.instance.scanAndroidDataVideos();
-      // Refresh Local so the freshly-scanned videos appear. Only bother if the
-      // provider is still alive and something was found (an empty scan on a
-      // connect with no app-data videos shouldn't wipe a prior good result).
-      if (paths.isNotEmpty) {
-        ref.invalidate(adbVideosProvider);
-      }
+      // Refresh Local so the freshly-scanned videos appear. Only when
+      // something was found: an empty scan must not wipe a prior good result.
+      if (paths.isNotEmpty) ref.invalidate(adbVideosProvider);
     } catch (e) {
       if (kDebugMode) debugPrint('adbAutoScan failed: $e');
-    } finally {
-      scanning = false;
     }
   }
 
-  final dispose =
-      AdbService.instance.addIadbStateListener(() => maybeScan());
-  ref.onDispose(dispose);
-  // Also run once now: if iADB is already connected when this provider first
-  // comes alive (e.g. app relaunched while iADB stayed connected), scan
-  // without waiting for a state-change signal that won't come.
-  maybeScan();
+  scanIfConnected();
 });
 
 /// SAF-granted videos (Android/data etc.) as Video objects, opt-in like the

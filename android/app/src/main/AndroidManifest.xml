@@ -1,17 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!--
-      v0.93 Backend 2: the four iADB client libraries declare minSdk 30
-      (Android 11), but Innocent supports minSdk 24 so it stays installable on
-      older phones (they use the built-in ADB backend). overrideLibrary tells
-      the manifest merger to allow the higher-minSdk libraries. This is SAFE
-      because every com.iadb.* reference is isolated in IadbBridge and only
-      reached after a Build.VERSION.SDK_INT >= 30 check (see IadbClient), so the
-      iADB code is never loaded on older devices.
-    -->
-    <uses-sdk tools:overrideLibrary="com.iadb.aidl,com.iadb.api,com.iadb.provider,com.iadb.shared" />
-
     <!-- Network -->
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Local Network (SMB/FTP/SFTP) and Transfer talk to this Wi-Fi's own
@@ -270,10 +259,6 @@
             android:exported="false"
             android:foregroundServiceType="mediaPlayback" />
 
-        <!-- v0.93 Backend 2: lets the installed iADB app hand its privileged
-             server binder to Innocent (Shizuku-style). Only meaningful when the
-             user picks the "iADB app" backend; harmless otherwise. Authorities
-             and permission are fixed by the iAdb-api contract. -->
         <!--
           v1.48: hands a received file to whichever app owns it — the package
           installer for an APK, a reader for a PDF. Android 7+ refuses a
@@ -290,15 +275,6 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/innocent_file_paths" />
         </provider>
-
-        <provider
-            android:name="com.iadb.IadbProvider"
-            android:authorities="${applicationId}.iadb"
-            android:directBootAware="true"
-            android:enabled="true"
-            android:exported="true"
-            android:multiprocess="false"
-            android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
 
         <!-- v0.99.7: in-app sign-in. A plain Android WebView, no plugin, whose
              only job is to let the user log into a site so the downloader can
@@ -364,7 +340,7 @@
             android:exported="false"
             android:foregroundServiceType="dataSync" />
 
-        <!-- v0.89: iADB-style ADB pairing helper. Keeps mDNS pairing discovery
+        <!-- v0.89: the in-app ADB pairing helper. Keeps mDNS pairing discovery
              alive in the background and shows a reply notification so the user
              can type the 6-digit code from the shade with NO split-screen. -->
         <service
@@ -454,10 +430,5 @@
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
         </intent>
-        <!-- v0.93 Backend 2: Android 11+ package visibility. Without this,
-             Innocent can't see or bind to the installed iADB app (its provider
-             / server binder), so the iADB backend would silently fail to
-             connect. -->
-        <package android:name="com.iadb.helper" />
     </queries>
 </manifest>

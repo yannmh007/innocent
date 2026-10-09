@@ -250,7 +250,7 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
                   SnackBar(
                     content: Text(
                       '$pullFailed Android/data file(s) skipped — connect '
-                      'iADB and try again.',
+                      'ADB and try again.',
                     ),
                     behavior: SnackBarBehavior.floating,
                   ),

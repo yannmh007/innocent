@@ -1,9 +1,7 @@
 package com.innocent.media
 
 import android.content.Context
-import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import io.github.muntashirakon.adb.AbsAdbConnectionManager
@@ -413,56 +411,6 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
                 else "OK \u2014 connected.\n\n\$ $command\n$out"
             }
 
-        // ---- ADB backend selection (v0.89 / Backend selector) ----
-        // Innocent can read Android/data two ways:
-        //   "builtin" — the embedded libadb-android engine (no other app needed;
-        //               pairs via mDNS or the notification service).
-        //   "iadb"    — bind to the separately-installed iADB app as a client
-        //               (Shizuku-style, persistent, "pair once"). DEFAULT on
-        //               Android 11+ (v0.94): it's the smoother experience and
-        //               the one the user should land on first.
-        // DEFAULT LOGIC: if the user has never chosen, prefer "iadb" on API >= 30
-        // (where it can work) and "builtin" below. Once the user picks, that
-        // choice is honoured forever. The value is a plain string so new
-        // backends can be added without a migration.
-        fun adbBackend(context: Context): String {
-            val prefs = context.getSharedPreferences("adb_state", Context.MODE_PRIVATE)
-            val saved = prefs.getString("adb_backend", null)
-            if (saved == "builtin" || saved == "iadb") return saved
-            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) "iadb"
-            else "builtin"
-        }
-
-        fun setAdbBackend(context: Context, backend: String) {
-            val v = if (backend == "iadb") "iadb" else "builtin"
-            context.getSharedPreferences("adb_state", Context.MODE_PRIVATE)
-                .edit().putString("adb_backend", v).apply()
-        }
-
-        /**
-         * Open the iADB app's Play Store page (falls back to the web URL if the
-         * Play Store app isn't present). Used by the ADB screen when iADB isn't
-         * installed, so the user can get it in one tap.
-         */
-        fun openIadbInStore(context: Context) {
-            val pkg = "com.iadb.helper"
-            try {
-                val market = Intent(
-                    Intent.ACTION_VIEW,
-                    Uri.parse("market://details?id=$pkg"),
-                ).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
-                context.startActivity(market)
-            } catch (_: Throwable) {
-                try {
-                    val web = Intent(
-                        Intent.ACTION_VIEW,
-                        Uri.parse("https://play.google.com/store/apps/details?id=$pkg"),
-                    ).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
-                    context.startActivity(web)
-                } catch (_: Throwable) {
-                }
-            }
-        }
 
         /** Remember the host:port that last connected, to auto-fill/reconnect. */
         private fun saveLastConnect(context: Context, host: String, port: Int) {

@@ -154,10 +154,9 @@ class _ShellScreenState extends ConsumerState<ShellScreen>
   @override
   Widget build(BuildContext context) {
     final currentIndex = ref.watch(shellTabIndexProvider);
-    // Keep the iADB auto-scan coordinator alive for the whole session: when
-    // iADB connects (from anywhere), Android/data videos are scanned and shown
-    // in Local automatically, no ADB-screen visit needed. The shell is always
-    // mounted, so this watch never lets the coordinator drop.
+    // Scan Android/data once at start when the app's ADB connection is
+    // already up, so app-data videos are current with no ADB-screen visit.
+    // The shell is always mounted, so this watch never lets it drop.
     ref.watch(adbAutoScanProvider);
     // New, changed and removed videos reach the library as they happen.
     ref.watch(libraryWatcherProvider);
