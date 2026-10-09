@@ -40,6 +40,8 @@ class _Upstream {
   int piece = 256 * 1024;
   /// The local port of the connection each request came in on, in order.
   final List<int> requestPorts = <int>[];
+  /// Every range asked for, `(first, last)` inclusive, in arrival order.
+  final List<(int, int)> ranges = <(int, int)>[];
   /// Answers every request with the whole film, as a server that does not
   /// do ranges would.
   bool ignoreRange = false;
@@ -80,6 +82,7 @@ class _Upstream {
         res.headers.set(HttpHeaders.contentRangeHeader, 'bytes $start-$end/${body.length}');
       }
       sizes.add(end - start + 1);
+      ranges.add((start, end));
       res.headers.contentLength = end - start + 1;
       // Paced a little, so lanes genuinely overlap rather than finishing in
       // the instant each is opened.
@@ -167,6 +170,7 @@ void main() {
     up.pace = const Duration(milliseconds: 2);
     up.piece = 256 * 1024;
     up.requestPorts.clear();
+    up.ranges.clear();
     up.ignoreRange = false;
     up.valid
       ..clear()
@@ -471,6 +475,79 @@ void main() {
     expect(later, contains(first),
         reason: 'the finished part\'s connection ($first) was not reused: $later');
     StreamCacheServer.instance.release('film-warm');
+  });
+
+  test('after a seek the parts come in rounds of equal size, growing to full size', () {
+    const k = 1024;
+    StreamCacheServer.lanes = 6;
+    // A round is one part per lane, all the same size, so they finish
+    // together at the speed of the whole line.
+    for (var i = 0; i < 6; i++) {
+      expect(StreamCacheServer.seekPartBytes(i), 64 * k, reason: 'part $i');
+    }
+    expect(StreamCacheServer.seekPartBytes(6), 80 * k);
+    expect(StreamCacheServer.seekPartBytes(11), 80 * k);
+    expect(StreamCacheServer.seekPartBytes(12), 112 * k);
+    var last = 0;
+    for (var i = 0; i < 200; i++) {
+      final b = StreamCacheServer.seekPartBytes(i);
+      expect(b, greaterThanOrEqualTo(last), reason: 'part $i');
+      expect(b % (16 * k), 0, reason: 'part $i');
+      last = b;
+    }
+    expect(last, 2 * mb);
+    // On a faster line the first round starts bigger.
+    expect(StreamCacheServer.seekPartBytes(0, first: 512 * k), 512 * k);
+  });
+
+  test('a fragmented film\'s seek and its jump back ask for no byte twice', () async {
+    // The player seeks into a fragment, reads its header, opens a request
+    // for the fragment before (for its sound) and only then closes the
+    // first — and reads on from there straight through the bytes it left.
+    StreamCacheServer.lanes = 6;
+    up.piece = 16 * 1024;
+    up.pace = const Duration(milliseconds: 40);
+    const x = 33 * mb, gap = 180 * 1024, y = x - gap;
+    final saved = {for (final at in [x, y]) at: Uint8List.fromList(up.body.sublist(at, at + 8))};
+    for (final at in [x, y]) {
+      up.body.setRange(at + 4, at + 8, 'moof'.codeUnits);
+    }
+    try {
+      final local = await StreamCacheServer.instance.localUrlFor(
+          cacheId: 'film-frag', upstream: up.url('t1'), refresh: () async => null);
+      await Future<void>.delayed(const Duration(milliseconds: 300)); // the length check
+      up.ranges.clear();
+      final first = HttpClient();
+      Future<Uint8List> back;
+      try {
+        final r = await first.getUrl(Uri.parse(local!));
+        r.headers.set(HttpHeaders.rangeHeader, 'bytes=$x-');
+        final resp = await r.close();
+        var got = 0;
+        await for (final chunk in resp) {
+          got += chunk.length;
+          if (got >= 16 * 1024) break;
+        }
+        // A fragment header where the stretch began: every lane at once.
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+        expect(up.ranges.where((r) => r.$1 >= x).length, 6,
+            reason: 'lanes opened on the fragment header: ${up.ranges}');
+        back = _get(local, from: y, take: gap + 600 * 1024);
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+      } finally {
+        first.close(force: true);
+      }
+      final got = await back.timeout(const Duration(seconds: 20));
+      expect(got, Uint8List.sublistView(up.body, y, y + gap + 600 * 1024));
+      final asked = up.ranges.toList()..sort((a, b) => a.$1.compareTo(b.$1));
+      for (var i = 1; i < asked.length; i++) {
+        expect(asked[i].$1, greaterThan(asked[i - 1].$2),
+            reason: 'asked for twice: $asked');
+      }
+    } finally {
+      saved.forEach((at, b) => up.body.setRange(at, at + 8, b));
+      StreamCacheServer.instance.release('film-frag');
+    }
   });
 
   test('a link that expires mid-film is renewed and the film carries on', () async {
