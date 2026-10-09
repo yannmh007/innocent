@@ -1,5 +1,9 @@
 import 'package:flutter/services.dart';
 
+import 'adb_setup_state.dart';
+
+export 'adb_setup_state.dart';
+
 /// Parse a scan line from [AdbService.scanAndroidDataVideos]. Lines are either
 /// "<bytes>|<path>" (size-aware scan) or a bare "<path>" (older-device
 /// fallback). Returns the path and a size (0 when unknown). Deliberately
@@ -228,6 +232,27 @@ class AdbService {
       final r = await _channel.invokeMethod<String>('openDevOptions');
       return r ?? 'failed';
     } catch (e) {
+      return 'failed';
+    }
+  }
+
+  /// Where the phone stands on the way to a connection (see [AdbSetupState]).
+  Future<AdbSetupState> setupState() async {
+    try {
+      final r = await _channel.invokeMethod<Map<Object?, Object?>>('adbSetupState');
+      return AdbSetupState.fromMap(r);
+    } catch (_) {
+      return const AdbSetupState();
+    }
+  }
+
+  /// Innocent's notification settings: the pairing code is typed into a
+  /// notification, so with notifications off there is nowhere to type it.
+  Future<String> openNotificationSettings() async {
+    try {
+      final r = await _channel.invokeMethod<String>('openNotificationSettings');
+      return r ?? 'failed';
+    } catch (_) {
       return 'failed';
     }
   }

@@ -1,7 +1,8 @@
 # ADB is the app's own engine only (1.64.59): the separately installed iADB
 # app is no longer used. The embedded engine still builds its key and
 # certificate (libadb-android, BouncyCastle, the hidden-API exemption), and
-# the ADB screen offers no backend choice — no "iADB" anywhere on it.
+# the ADB screen offers no backend choice — no "iADB" anywhere on it — and
+# opens on a checklist of the setup steps, read live from Settings.
 appId: com.innocent.media
 ---
 - launchApp
@@ -56,6 +57,11 @@ appId: com.innocent.media
 - waitForAnimationToEnd:
     timeout: 8000
 - takeScreenshot: 96_adb_screen
+# The live setup checklist: what Settings says is done, ticked as it changes.
+- assertVisible: "(?s).*Setup — where you are.*"
+- assertVisible: "(?s).*Developer options on.*"
+- assertVisible: "(?s).*Wireless debugging on.*"
+- assertVisible: "(?s).*Connected.*"
 - assertNotVisible: "(?s).*iADB.*"
 - assertNotVisible: "(?s).*How Innocent reads Android/data.*"
 - scrollUntilVisible:

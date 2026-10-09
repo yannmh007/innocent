@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/di/core_providers.dart';
+import '../../../core/localization/app_strings.dart';
 import '../../../core/router/routes.dart';
 import '../../../core/services/adb/adb_service.dart';
 import '../../../core/services/adb/wireless_adb_risk.dart';
@@ -27,7 +28,8 @@ class AdbConnectScreen extends ConsumerStatefulWidget {
   ConsumerState<AdbConnectScreen> createState() => _AdbConnectScreenState();
 }
 
-class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen> {
+class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
+    with WidgetsBindingObserver {
   final TextEditingController _code = TextEditingController();
   final TextEditingController _pairAddr = TextEditingController();
   final TextEditingController _connectAddr = TextEditingController();
@@ -55,6 +57,12 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen> {
   /// its security patch level, for the warning's own words.
   bool _exposed = false;
   String _patch = '';
+
+  /// What Settings says is done so far (the checklist at the top), read on
+  /// resume and every [_setupEvery] while the screen is open.
+  AdbSetupState? _setup;
+  Timer? _setupTimer;
+  static const Duration _setupEvery = Duration(seconds: 2);
 
   /// Turn raw engine output into something a non-technical user can act on.
   /// Normal users should never see "IOException: Stream closed".
@@ -95,8 +103,32 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen> {
     super.initState();
     // v0.89: receive results from the notification pairing service.
     AdbService.instance.setPairResultListener(_onPairServiceResult);
+    WidgetsBinding.instance.addObserver(this);
     _loadAndAutoConnect();
     _checkExposure();
+    _refreshSetup();
+    _setupTimer = Timer.periodic(_setupEvery, (_) => _refreshSetup());
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Back from Settings: tick what was just done at once, not two seconds on.
+    if (state == AppLifecycleState.resumed) _refreshSetup();
+  }
+
+  Future<void> _refreshSetup() async {
+    final st = await AdbService.instance.setupState();
+    if (!mounted) return;
+    final was = _setup;
+    if (was != null &&
+        was.devOptions == st.devOptions &&
+        was.wirelessDebugging == st.wirelessDebugging &&
+        was.wifi == st.wifi &&
+        was.notifications == st.notifications &&
+        was.secureSettings == st.secureSettings) {
+      return;
+    }
+    setState(() => _setup = st);
   }
 
   Future<void> _checkExposure() async {
@@ -268,6 +300,8 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen> {
 
   @override
   void dispose() {
+    _setupTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
     AdbService.instance.setPairResultListener(null);
     // Don't leave the pairing notification lingering if the user leaves.
     if (_pairingServiceOn) AdbService.instance.stopPairingService();
@@ -687,6 +721,118 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen> {
     }
   }
 
+  // ---- Setup checklist ----
+
+  /// Every step from Developer options to a live connection, ticked as it is
+  /// done; the first one still to do is marked and carries the button that
+  /// does it. Brand tips only on the phones they are about.
+  Widget _setupChecklist() {
+    final st = _setup;
+    if (st == null) return const SizedBox.shrink();
+    final s = AppStrings.of(context);
+    if (!st.supported) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 16),
+        child: Text(s.adbNotSupported,
+            style: const TextStyle(color: Colors.orange)),
+      );
+    }
+    final paired = _pairedBefore;
+    final connected = _connected == true;
+    final next = st.next(paired: paired, connected: connected);
+
+    Widget row(AdbSetupStep step, String label, bool done,
+        {String? action, VoidCallback? onAction}) {
+      final current = next == step;
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 3),
+        child: Row(
+          children: [
+            Icon(
+              done
+                  ? Icons.check_circle
+                  : current
+                      ? Icons.arrow_circle_right
+                      : Icons.radio_button_unchecked,
+              size: 20,
+              color: done
+                  ? Colors.green
+                  : current
+                      ? Colors.lightBlueAccent
+                      : Colors.white38,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: current ? FontWeight.w600 : FontWeight.normal,
+                  color: done || current ? null : Colors.white60,
+                ),
+              ),
+            ),
+            if (current && action != null && onAction != null)
+              TextButton(
+                onPressed: _busy ? null : onAction,
+                child: Text(action),
+              ),
+          ],
+        ),
+      );
+    }
+
+    final tip = switch (st.brand) {
+      AdbBrand.xiaomi => s.adbTipXiaomi,
+      AdbBrand.oppo => s.adbTipOppo,
+      AdbBrand.transsion => s.adbTipTranssion,
+      _ => null,
+    };
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.fromLTRB(12, 10, 4, 10),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(s.adbStepsTitle,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+          const SizedBox(height: 6),
+          row(AdbSetupStep.devOptions, s.adbStepDevOptions, st.devOptions,
+              action: s.adbStepHow, onAction: _openWirelessDebugging),
+          row(AdbSetupStep.wifi, s.adbStepWifi, st.wifi),
+          if (!st.wifi)
+            Padding(
+              padding: const EdgeInsets.only(left: 30, right: 8, bottom: 4),
+              child: Text(s.adbWifiNeeded,
+                  style: const TextStyle(fontSize: 12, color: Colors.white60)),
+            ),
+          row(AdbSetupStep.wirelessDebugging, s.adbStepWireless,
+              st.wirelessDebugging,
+              action: s.adbStepOpen, onAction: _openWirelessDebugging),
+          row(AdbSetupStep.notifications, s.adbStepNotifications,
+              st.notifications,
+              action: s.adbStepOpen,
+              onAction: AdbService.instance.openNotificationSettings),
+          row(AdbSetupStep.pair, s.adbStepPaired, paired),
+          row(AdbSetupStep.connect, s.adbStepConnected, connected),
+          if (tip != null) ...[
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: Text(tip,
+                  style: const TextStyle(fontSize: 12, color: Colors.white70)),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   // ---- UI helpers ----
 
   Widget _sectionTitle(String text) => Padding(
@@ -750,6 +896,7 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen> {
         padding: const EdgeInsets.all(16),
         children: [
           if (_exposed) _exposureWarning(),
+          _setupChecklist(),
           ..._builtinSection(),
 
           const SizedBox(height: 24),
@@ -811,15 +958,13 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen> {
       _sectionTitle('Easy setup — just one code'),
       const Text(
         'First time only:\n'
-        '1. Developer options → turn on Wireless debugging.\n'
-        '2. Open this app and Settings side by side (split-screen or '
-        'pop-up window) — Android needs the pairing dialog to stay '
-        'visible.\n'
-        '3. In Settings tap "Pair device with pairing code" — it shows a '
-        '6-digit code.\n'
-        '4. Type that code below and tap "Pair". No IP address needed.\n\n'
-        'After pairing, tap "Connect" (next time this screen reconnects on '
-        'its own).',
+        '1. Work down the checklist above until Wireless debugging is on.\n'
+        '2. Tap "Pair from notification" below, then in Settings tap '
+        '"Pair device with pairing code" — it shows a 6-digit code.\n'
+        '3. Pull down the notification shade and type that code into the '
+        'Innocent notification. No split-screen, no IP address.\n\n'
+        'It connects as soon as it is paired, and next time this screen '
+        'reconnects on its own.',
         style: TextStyle(fontSize: 13),
       ),
       const SizedBox(height: 12),

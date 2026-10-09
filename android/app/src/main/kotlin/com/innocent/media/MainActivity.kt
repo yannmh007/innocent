@@ -1666,9 +1666,27 @@ class MainActivity : AudioServiceFragmentActivity() {
                     if (!enabled) {
                         result.success("dev_options_off")
                     } else {
-                        val opened = tryStartWirelessDebugging() || startDevOptions()
+                        val opened = tryStartWirelessDebugging() ||
+                            startDevOptionsAtWirelessDebugging() || startDevOptions()
                         result.success(if (opened) "opened" else "failed")
                     }
+                }
+                "adbSetupState" -> {
+                    result.success(adbSetupState())
+                }
+                "openNotificationSettings" -> {
+                    val i = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                        .putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+                    result.success(
+                        if (startActivitySafely(i) ||
+                            startActivitySafely(
+                                Intent(
+                                    Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                    android.net.Uri.parse("package:$packageName"),
+                                ),
+                            )
+                        ) "opened" else "failed",
+                    )
                 }
                 "openAboutPhone" -> {
                     result.success(
@@ -2109,6 +2127,59 @@ class MainActivity : AudioServiceFragmentActivity() {
 
     private fun startDevOptions(): Boolean =
         startActivitySafely(Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS))
+
+    /**
+     * Developer options, scrolled to Wireless debugging and the row
+     * highlighted — Settings' own search-result extra, which is how Shizuku
+     * lands people there. A Settings that does not know the key simply opens
+     * Developer options at the top.
+     */
+    private fun startDevOptionsAtWirelessDebugging(): Boolean =
+        startActivitySafely(
+            Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS)
+                .putExtra(":settings:fragment_args_key", "toggle_adb_wireless"),
+        )
+
+    /**
+     * What the ADB setup still needs, read fresh each time the ADB screen asks
+     * (it asks on resume and every couple of seconds while open), so its
+     * checklist ticks as the person works through Settings.
+     */
+    private fun adbSetupState(): Map<String, Any> {
+        fun global(name: String): Int = try {
+            Settings.Global.getInt(contentResolver, name, 0)
+        } catch (_: Throwable) {
+            0
+        }
+        // Any Wi-Fi network, not only the default one: a Wi-Fi without
+        // internet stays connected while mobile data carries the traffic, and
+        // wireless debugging works on it.
+        val wifi = try {
+            val cm = getSystemService(android.net.ConnectivityManager::class.java)
+            @Suppress("DEPRECATION")
+            cm?.allNetworks?.any { n ->
+                cm.getNetworkCapabilities(n)?.hasTransport(
+                    android.net.NetworkCapabilities.TRANSPORT_WIFI,
+                ) == true
+            } == true
+        } catch (_: Throwable) {
+            false
+        }
+        val notifications = try {
+            androidx.core.app.NotificationManagerCompat.from(this).areNotificationsEnabled()
+        } catch (_: Throwable) {
+            true
+        }
+        return mapOf(
+            "devOptions" to (global(Settings.Global.DEVELOPMENT_SETTINGS_ENABLED) == 1),
+            "wirelessDebugging" to (global("adb_wifi_enabled") == 1),
+            "wifi" to wifi,
+            "notifications" to notifications,
+            "secureSettings" to AdbManager.hasSecureSettings(this),
+            "manufacturer" to Build.MANUFACTURER.orEmpty().lowercase(),
+            "sdk" to Build.VERSION.SDK_INT,
+        )
+    }
 
     /**
      * Best-effort jump straight to the Wireless debugging screen. There is no
