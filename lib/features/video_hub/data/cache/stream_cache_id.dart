@@ -39,14 +39,14 @@ String streamCacheId({
 /// one way. Online that is fine: the rung is chosen before anything is cached.
 /// OFFLINE THERE IS NOBODY TO ASK WHICH RUNG WAS PLAYED, so the only way to
 /// find what is on disk is to compute every id it could have been and look for
-/// those. Seven hashes is nothing; the alternative was writing the title id
+/// those. Eight hashes is nothing; the alternative was writing the title id
 /// into the cache directory, which is the property this scheme exists to keep.
 ///
 /// `LADDER_H` in `tool/transcode.sh` is the original, and
 /// `tool/security_invariants.py` rule 12 fails the build if the two disagree.
 /// Out of step, the cost is small and self-healing: a rung missing from here
 /// simply cannot be found offline, and nothing plays that should not.
-const List<int> kStreamCacheRungs = <int>[0, 360, 480, 720, 1080, 1440, 2160];
+const List<int> kStreamCacheRungs = <int>[0, 240, 360, 480, 720, 1080, 1440, 2160];
 
 /// Every id the given title and asset could have been cached under.
 ///

@@ -258,7 +258,7 @@ void main() {
       // Seven, because `tool/transcode.sh` writes six rungs and 0 is the
       // master. A rung missing from this list is a film that cannot be found
       // offline at all.
-      expect(kStreamCacheRungs, <int>[0, 360, 480, 720, 1080, 1440, 2160]);
+      expect(kStreamCacheRungs, <int>[0, 240, 360, 480, 720, 1080, 1440, 2160]);
       final ids = streamCacheCandidates(titleId: 't1');
       expect(ids.length, kStreamCacheRungs.length);
       // No duplicates: two rungs hashing to one id would mean one entry could

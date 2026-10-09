@@ -1736,6 +1736,7 @@ class AppStrings {
   String get vhSaverHow1 => _s('vhSaverHow1');
   String get vhSaverHow2 => _s('vhSaverHow2');
   String get vhSaverHow3 => _s('vhSaverHow3');
+  String get vhSaverHow4 => _s('vhSaverHow4');
   String get vhLibraryDataSaverHint => _s('vhLibraryDataSaverHint');
   String get vhBookmark => _s('vhBookmark');
   String get vhBookmarked => _s('vhBookmarked');
@@ -2364,6 +2365,7 @@ class AppStrings {
     'vhSaverHow1': 'Albums show a soft blurred preview. Nothing is downloaded to draw it.',
     'vhSaverHow2': 'Each photo and clip shows its size. Tap only the ones you want.',
     'vhSaverHow3': 'What you open stays on the phone and never costs data twice.',
+    'vhSaverHow4': 'Films on Auto quality stream at up to 480p.',
     'vhLibraryDataSaverHint': 'Albums load only what you tap',
     'vhBookmark': 'Save',
     'vhBookmarked': 'Saved',
@@ -3938,6 +3940,7 @@ class AppStrings {
     'vhSaverHow1': 'Album တွေကို ဝေဝေဝါးဝါး preview လေးပဲ ပြပါမယ်။ အဲ့ဒါပြဖို့ ဘာမှ download မလုပ်ပါ။',
     'vhSaverHow2': 'ပုံနဲ့ ဗီဒီယိုတိုင်းမှာ size ပြထားပါတယ်။ လိုချင်တာကိုပဲ နှိပ်ပါ။',
     'vhSaverHow3': 'ဖွင့်ပြီးသားဟာ ဖုန်းထဲ ကျန်နေလို့ ဒုတိယအကြိမ် ဒေတာ မကုန်တော့ပါ။',
+    'vhSaverHow4': 'Auto quality နဲ့ ကြည့်တဲ့ ရုပ်ရှင်တွေကို 480p အထိပဲ stream လုပ်ပါတယ်။',
     'vhLibraryDataSaverHint': 'Album မှာ နှိပ်တာကိုပဲ ဖွင့်ပါမယ်',
     'vhBookmark': 'သိမ်းမယ်',
     'vhBookmarked': 'သိမ်းပြီး',
@@ -5501,6 +5504,7 @@ class AppStrings {
     'vhSaverHow1': 'อัลบั้มแสดงภาพเบลอ ไม่มีการดาวน์โหลดเพื่อแสดงภาพนี้',
     'vhSaverHow2': 'รูปและคลิปแต่ละรายการแสดงขนาด แตะเฉพาะที่ต้องการ',
     'vhSaverHow3': 'สิ่งที่เปิดแล้วเก็บไว้ในเครื่อง ไม่เสียเน็ตซ้ำ',
+    'vhSaverHow4': 'หนังที่ตั้งคุณภาพเป็นอัตโนมัติจะสตรีมไม่เกิน 480p',
     'vhLibraryDataSaverHint': 'อัลบั้มโหลดเฉพาะที่แตะ',
     'vhBookmark': 'บันทึก',
     'vhBookmarked': 'บันทึกแล้ว',

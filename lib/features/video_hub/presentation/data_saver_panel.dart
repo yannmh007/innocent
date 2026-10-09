@@ -131,6 +131,7 @@ class DataSaverPanel extends ConsumerWidget {
           _HowStep(n: 1, icon: Icons.blur_on_rounded, text: s.vhSaverHow1),
           _HowStep(n: 2, icon: Icons.touch_app_rounded, text: s.vhSaverHow2),
           _HowStep(n: 3, icon: Icons.offline_pin_rounded, text: s.vhSaverHow3),
+          _HowStep(n: 4, icon: Icons.movie_outlined, text: s.vhSaverHow4),
         ],
       ],
     );

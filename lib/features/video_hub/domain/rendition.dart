@@ -65,6 +65,12 @@ const double kBandwidthHeadroom = 0.6;
 /// phone screen, and the first measurement arrives seconds later anyway.
 const int kDefaultHeight = 720;
 
+/// The tallest rung Auto picks while the data saver is on — YouTube's Data
+/// saver tops out at 480p, and Netflix's "Save data" is SD. A viewer who
+/// picks a height in the Quality menu still gets that height: the saver is a
+/// ceiling on Auto, not on a choice somebody made by hand.
+const int kDataSaverMaxHeight = 480;
+
 /// Choose the rung to play.
 ///
 /// [measuredKbps] is what the link last delivered, or null when nothing has
@@ -79,11 +85,18 @@ Rendition? pickRendition(
   List<Rendition> ladder, {
   int? measuredKbps,
   int? ceilingKbps,
+  int? maxHeight,
 }) {
   if (ladder.isEmpty) return null;
 
   // Cheapest first, so "the last one that fits" is also the best one.
-  final sorted = [...ladder]..sort((a, b) => a.kbps.compareTo(b.kbps));
+  var sorted = [...ladder]..sort((a, b) => a.kbps.compareTo(b.kbps));
+  if (maxHeight != null) {
+    // The data saver's ceiling. Every rung taller than it: the smallest is
+    // the nearest thing to what was asked.
+    final under = sorted.where((r) => r.height <= maxHeight).toList();
+    sorted = under.isEmpty ? <Rendition>[sorted.first] : under;
+  }
 
   Iterable<Rendition> allowed = sorted;
   if (ceilingKbps != null) {
@@ -147,11 +160,14 @@ Rendition? chooseRendition(
   String choice, {
   int? measuredKbps,
   int? ceilingKbps,
+  int? maxHeight,
 }) {
   final c = QualityChoice.normalise(choice);
   if (c == QualityChoice.auto) {
     return pickRendition(ladder,
-        measuredKbps: measuredKbps, ceilingKbps: ceilingKbps);
+        measuredKbps: measuredKbps,
+        ceilingKbps: ceilingKbps,
+        maxHeight: maxHeight);
   }
   if (c == QualityChoice.original || ladder.isEmpty) return null;
   final want = int.parse(c);

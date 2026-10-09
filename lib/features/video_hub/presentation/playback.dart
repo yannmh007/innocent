@@ -25,6 +25,7 @@ import '../domain/video_content.dart';
 import 'video_hub_provider.dart';
 import 'widgets/paywall_sheet.dart';
 import 'account_provider.dart';
+import 'album_saver.dart';
 import 'watch_points_provider.dart';
 import '../../player/presentation/up_next.dart';
 
@@ -207,17 +208,29 @@ Future<void> playMedia(
     // the rule above; a fixed height is that rung or the nearest below it;
     // Original is the file as it was uploaded.
     final preferred = await QualityPreference.read();
+    // THE DATA SAVER CAPS AUTO AT 480p — the saver the viewer already turned
+    // on for albums, on the connections they chose for it. YouTube's Data
+    // saver tops out at 480p; Netflix's Save Data is SD. A height picked by
+    // hand in the Quality menu is still that height.
+    bool saving;
+    try {
+      saving = await ref.read(albumSaverProvider.future);
+    } catch (_) {
+      saving = false;
+    }
+    final saverCap = saving ? kDataSaverMaxHeight : null;
     if (!context.mounted) return;
     final chosen = chooseRendition(
       grant.renditions,
       preferred,
       measuredKbps: ThroughputMemory.current,
+      maxHeight: saverCap,
     );
     final rung =
         chosen == null ? 'original' : '${chosen.height}p ${chosen.kbps} kbps';
     final measured = ThroughputMemory.current?.toString() ?? '-';
     PlaybackLog.add('play rung $rung (choice $preferred, '
-        'measured $measured kbps)');
+        'measured $measured kbps${saving ? ', data saver' : ''})');
     final playUrl = chosen?.url ?? grant.url!;
     final menuOptions = qualityMenuFor(
       grant.renditions,
@@ -298,7 +311,7 @@ Future<void> playMedia(
       final standing = StreamRenewal.quality.value?.selected ?? preferred;
       final again = quality != null
           ? chooseRendition(fresh.renditions, quality,
-              measuredKbps: ThroughputMemory.current)
+              measuredKbps: ThroughputMemory.current, maxHeight: saverCap)
           : belowKbps != null
               ? pickRendition(
                   fresh.renditions,
@@ -308,9 +321,11 @@ Future<void> playMedia(
                   // renewal at all, it is a downgrade, and handing back the
                   // same rung would repeat the stall that asked for it.
                   ceilingKbps: belowKbps,
+                  maxHeight: saverCap,
                 )
               : chooseRendition(fresh.renditions, standing,
-                  measuredKbps: ThroughputMemory.current);
+                  measuredKbps: ThroughputMemory.current,
+                  maxHeight: saverCap);
       if (quality != null) {
         await QualityPreference.write(quality);
       }

@@ -133,8 +133,14 @@ esac
 # 360p exists because it is the rung that works on a bad connection in a bus,
 # and a viewer who can watch at all will stay. 2160p exists because a viewer
 # on wifi paid for a 4K phone.
-LADDER_H=(360 480 720 1080 1440 2160)
-LADDER_K=(600 1000 2000 3800 7000 12000)
+#
+# 240p (since 1.64.60) is the rung for the line that cannot hold 360p: about
+# 300 kbps of picture and 64 kbps of sound, so it fits a link that measures
+# 0.6 Mbps with the app's 60 % headroom — the outskirts, a crowded tower, a
+# shared SIM router at night. YouTube keeps 144p and 240p for the same
+# reason. It is cheap: a few per cent of the encode time and of the storage.
+LADDER_H=(240 360 480 720 1080 1440 2160)
+LADDER_K=(300 600 1000 2000 3800 7000 12000)
 
 # A long film's top rung costs hours of CPU for an audience that mostly
 # cannot receive it. Above forty minutes the ladder stops at 1080p — the
@@ -215,13 +221,19 @@ for i in "${!LADDER_H[@]}"; do
   #       without it a fragmented film started in 1.5 to 1.9 s on every
   #       lab line, against 3.4 to 4.1 s with it.
   gop="$(python3 -c "print(max(24, round(float('$FPS')*2)))")"
+  # THE SOUND SCALES WITH THE PICTURE. 128 kbps of stereo AAC is a third of a
+  # 240p rung's whole budget; speech and music stay clear at 64 kbps there
+  # and 96 kbps at 360p, and every kilobit saved goes back to the picture.
+  ab=128k
+  [ "$h" -le 360 ] && ab=96k
+  [ "$h" -le 240 ] && ab=64k
   ffmpeg -nostdin -y -hide_banner -loglevel warning -stats -i "$src" \
     -vf "${TONEMAP}scale=-2:${h}:flags=bicubic,format=yuv420p" \
     -c:v libx264 -preset veryfast -crf 23 \
     -maxrate "${k}k" -bufsize "$(( k * 2 ))k" \
     -g "$gop" -keyint_min "$gop" -sc_threshold 0 \
     -profile:v high -pix_fmt yuv420p \
-    -c:a aac -b:a 128k -ac 2 -ar 48000 \
+    -c:a aac -b:a "$ab" -ac 2 -ar 48000 \
     -movflags +frag_keyframe+empty_moov+default_base_moof+global_sidx+cmaf+skip_trailer \
     "$out"
   echo "::endgroup::"
