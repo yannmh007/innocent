@@ -9,6 +9,7 @@ import '../../../core/di/core_providers.dart';
 import '../../../core/localization/app_strings.dart';
 import '../../../core/router/routes.dart';
 import '../../../core/services/adb/adb_service.dart';
+import '../../../core/services/adb/adb_setup_state.dart';
 import '../../../core/services/adb/wireless_adb_risk.dart';
 import '../../local_browser/presentation/library_provider.dart';
 
