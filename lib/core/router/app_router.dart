@@ -9,6 +9,7 @@ import '../../features/private_folder/presentation/private_folder_screen.dart';
 import '../../features/shell/shell_screen.dart';
 import '../../features/video_hub/presentation/gate/age_gate_screen.dart';
 import '../../features/video_hub/presentation/video_hub_screen.dart';
+import '../services/diagnostics/playback_log.dart';
 import 'routes.dart';
 
 /// The root navigator (renders ABOVE the shell). Full-screen routes pin to
@@ -66,6 +67,15 @@ final routerProvider = Provider<GoRouter>((ref) {
     navigatorKey: rootNavigatorKey,
     observers: [_edgeToEdgeOnPop],
     initialLocation: Routes.local,
+    // THE APP ALWAYS STARTS AT HOME, whatever the launch intent carried.
+    // Flutter (3.27 on) hands an Android intent's data to the router as the
+    // first location unless told otherwise, so "Open with Innocent" on a
+    // file manager's content:// address — and every Firebase Test Lab
+    // game-loop launch — started on "Route not found". Videos opened from
+    // outside arrive through MainActivity's own channel instead; the
+    // manifest also turns Flutter's deep linking off (flutter_deeplinking_
+    // enabled), and this keeps a later build that loses that line safe.
+    overridePlatformDefaultLocation: true,
     debugLogDiagnostics: true,
     routes: [
       // Shell route — holds bottom navigation
@@ -186,11 +196,18 @@ final routerProvider = Provider<GoRouter>((ref) {
         },
       ),
     ],
-    errorBuilder: (context, state) => Scaffold(
-      body: Center(
-        child: Text('Route not found: ${state.uri}'),
-      ),
-    ),
+    // AN UNKNOWN LOCATION GOES HOME, never to a page of its own. The old
+    // "Route not found" page was a dead end with no way back, and worse: a
+    // router showing it ignores every later push (go_router keeps the error
+    // on the stack and builds only the error page), so a film opened after
+    // it — the player pushed by the app itself — never appeared. Every
+    // Firebase Test Lab game loop launches with such an address, and in
+    // runs 37198355783 to 37967931084 no phone drew a film (under one frame
+    // a second) after the player was pushed or the title granted.
+    onException: (context, state, router) {
+      PlaybackLog.add('route: no screen for ${state.uri.path} — going home');
+      router.go(Routes.local);
+    },
   );
 });
 

@@ -188,6 +188,17 @@
             <meta-data
               android:name="io.flutter.embedding.android.NormalTheme"
               android:resource="@style/NormalTheme" />
+            <!-- Flutter's own deep linking OFF. On by default since Flutter
+                 3.27: it hands the launch intent's data (a file manager's
+                 content:// address, a browser's https link, Test Lab's game
+                 loop) to the router as a screen to open, and the router has
+                 no such screen. Every intent below is handled by
+                 MainActivity's channel instead (handleVideoIntent and
+                 friends); the router also starts at home regardless
+                 (lib/core/router/app_router.dart). -->
+            <meta-data
+              android:name="flutter_deeplinking_enabled"
+              android:value="false" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
