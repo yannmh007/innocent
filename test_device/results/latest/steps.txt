@@ -1,46 +1,26 @@
-[09:20:19] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
-[09:20:19] install
-[09:20:38] network: speed full kbit/s, delay none ms
-[09:20:59] cold start
+[10:08:00] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
+[10:08:00] install
+[10:08:14] network: speed full kbit/s, delay none ms
+[10:08:41] cold start
 Status: ok
-TotalTime: 3414
-WaitTime: 3418
-[09:21:13] long film: 162 min in /mnt/lab_films, served on 47125
-[09:21:13] flow adb_own
-[09:22:27] flow adb_own exit 0
-[09:22:40] flow me_grid
-[09:24:14] flow me_grid exit 0
-[09:24:25] flow newvideo
-[09:25:00] flow newvideo: Video tab open (maestro exit 0)
-[09:25:06] newvideo: a new folder with one video appeared after 5 s
-[09:25:12] newvideo: a second video in that folder showed after 6 s
-[09:25:12] flow newvideo done
-[09:25:12] flow streamlong_mm4g_6
-[09:25:12] long film: mm4g — 1080, round trip 2x75ms, loss 0.5%, rate 32mbit, queue 10000 packets; lanes=6
-[09:27:03] flow streamlong_mm4g_6 done
-[09:27:03] flow streamlong_mm4gfrag_6
-[09:27:03] long film: mm4gfrag — 1080frag, round trip 2x75ms, loss 0.5%, rate 32mbit, queue 10000 packets; lanes=6
-[09:28:56] flow streamlong_mm4gfrag_6 done
-[09:28:56] flow streamlong_lossy_6
-[09:28:57] long film: lossy — 1080, round trip 2x100ms, loss 1%, rate 32mbit, queue 10000 packets; lanes=6
-[09:30:49] flow streamlong_lossy_6 done
-[09:30:49] flow streamlong_lossyfrag_6
-[09:30:49] long film: lossyfrag — 1080frag, round trip 2x100ms, loss 1%, rate 32mbit, queue 10000 packets; lanes=6
-[09:32:41] flow streamlong_lossyfrag_6 done
-[09:32:41] flow streamlong_busy_6
-[09:32:41] long film: busy — 720, round trip 2x125ms, loss 2%, rate 16mbit, queue 10000 packets; lanes=6
-[09:34:33] flow streamlong_busy_6 done
-[09:34:33] flow streamlong_busyfrag_6
-[09:34:33] long film: busyfrag — 720frag, round trip 2x125ms, loss 2%, rate 16mbit, queue 10000 packets; lanes=6
-[09:36:24] flow streamlong_busyfrag_6 done
-[09:36:24] flow streamlong_slow_6
-[09:36:25] long film: slow — 720, round trip 2x150ms, loss 1%, rate 4mbit, queue 10000 packets; lanes=6
-[09:38:17] flow streamlong_slow_6 done
-[09:38:17] flow streamlong_slowfrag_6
-[09:38:17] long film: slowfrag — 720frag, round trip 2x150ms, loss 1%, rate 4mbit, queue 10000 packets; lanes=6
-[09:40:09] flow streamlong_slowfrag_6 done
-[09:40:09] flow adb_data
-[09:40:10] adb_data: planted: 
-[09:40:13] adb_data: adbd TCP port 5555
-[09:40:46] flow adb_data exit 1
-[09:41:00] done
+TotalTime: 4116
+WaitTime: 4163
+[10:08:56] long film: 162 min in /mnt/lab_films, served on 47125
+[10:08:56] flow adb_own
+[10:10:10] flow adb_own exit 0
+[10:10:20] flow me_grid
+[10:11:54] flow me_grid exit 0
+[10:12:04] flow newvideo
+[10:12:38] flow newvideo: Video tab open (maestro exit 0)
+[10:12:44] newvideo: a new folder with one video appeared after 5 s
+[10:12:50] newvideo: a second video in that folder showed after 5 s
+[10:12:50] flow newvideo done
+[10:12:50] flow streamlong_mm4gfrag_6
+[10:12:51] long film: mm4gfrag — 1080frag, round trip 2x75ms, loss 0.5%, rate 32mbit, queue 10000 packets; lanes=6
+[10:14:42] flow streamlong_mm4gfrag_6 done
+[10:14:42] flow adb_data
+[10:14:47] adb_data: planted: /tmp/lab_adb_clip.mp4: 1 file pushed, 0 skipped. 345.9 MB/s (9159529 bytes in 0.025s) — -rw-r--r-- 1 shell ext_data_rw 9159529 2026-10-09 10:14 5_lab_clip.mp4
+[10:14:47] adb_data: ro.adb.secure=0
+[10:14:50] adb_data: adbd TCP port 5555
+[10:16:30] flow adb_data exit 1
+[10:16:45] done

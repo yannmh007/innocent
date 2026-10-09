@@ -6,10 +6,7 @@ Tap on (Optional) "Wait"... WARNED
 
 
  Warning: Element not found: Text matching regex: Wait
-Tap on (Optional) "Skip"... WARNED
-
-
- Warning: Element not found: Text matching regex: Skip
+Tap on (Optional) "Skip"... COMPLETED
 Tap on (Optional) "Allow.*"... WARNED
 
 
@@ -18,17 +15,35 @@ Tap on (Optional) "Allow.*"... WARNED
 
 
  Warning: Element not found: Text matching regex: Allow.*
-Tap on "(?s).*Tab 4 of 4.*"... FAILED
+Tap on "(?s).*Tab 4 of 4.*"... COMPLETED
+Wait for animation to end within 5000 ms... COMPLETED
+Scrolling DOWN until "(?s)Settings\n.*" is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Tap on "(?s)Settings\n.*"... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Tap on "List"... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Scrolling DOWN until "(?s).*ADB connection.*" is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Tap on "(?s).*ADB connection.*"... COMPLETED
+Wait for animation to end within 8000 ms... COMPLETED
+Scrolling DOWN until "(?s).*Advanced — manual IP:Port.*" is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Tap on "(?s).*Advanced — manual IP:Port.*"... COMPLETED
+Scrolling DOWN until "(?s).*Connect IP:Port.*" is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Tap on "(?s).*Connect IP:Port.*"... COMPLETED
+Input text 127.0.0.1:5555... COMPLETED
+Hide Keyboard... COMPLETED
+Scrolling DOWN until "(?s).*Connect & run id.*" is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Tap on "(?s).*Connect & run id.*"... COMPLETED
+Assert that "(?s).*(Allow USB debugging|Found [1-9][0-9]* video).*" is visible... FAILED
 
-Element not found: Text matching regex: (?s).*Tab 4 of 4.*
+Assertion is false: "(?s).*(Allow USB debugging|Found [1-9][0-9]* video).*" is visible
 
-Element with Text matching regex: (?s).*Tab 4 of 4.* not found. Check the UI hierarchy in debug artifacts to verify if the element exists.
+Assertion '"(?s).*(Allow USB debugging|Found [1-9][0-9]* video).*" is visible' failed. Check the UI hierarchy in debug artifacts to verify the element state and properties.
 
 Possible causes:
 - Element selector may be incorrect - check if there are similar elements with slightly different names/properties.
-- Element may be temporarily unavailable due to loading state.
-- This could be a real regression that needs to be addressed.
+- Element may be temporarily unavailable due to loading state
+- This could be a real regression that needs to be addressed
 
 ==== Debug output (logs & screenshots) ====
 
-/home/runner/work/innocent/innocent/out/maestro_out/2026-10-09_094014
+/home/runner/work/innocent/innocent/out/maestro_out/2026-10-09_101451
