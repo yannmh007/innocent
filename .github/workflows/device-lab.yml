@@ -224,19 +224,29 @@ jobs:
       # ladder's 1080p and 720p settings and joined to two and a half hours,
       # before the emulator takes the CPU — so the encoding time is also the
       # ladder's cost for a feature film (tool/netlab/make_long_film.sh).
-      - name: Make the long lab film (open films)
+      # FFMPEG FOR EVERY FLOW THAT MAKES A FILM, not only the long one: the
+      # newvideo flow encodes the clip it copies onto the phone, and with
+      # ffmpeg installed only for streamlong it skipped itself in any run
+      # without a long film (run 37877954034).
+      - name: Install ffmpeg (flows that make a film)
         run: |
           source test_device/config.env
-          case " $FLOWS " in *" streamlong_"*) ;; *) echo "no long film this run"; exit 0 ;; esac
+          case " $FLOWS " in *" streamlong_"*|*" streamab_"*|*" newvideo "*) ;; *) echo "no film made this run"; exit 0 ;; esac
           url=https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-n7.1-latest-linux64-gpl-7.1.tar.xz
           if curl -fsSL --retry 3 -o /tmp/ffmpeg.tar.xz "$url" \
              && mkdir -p /tmp/ffmpeg && tar -xJf /tmp/ffmpeg.tar.xz -C /tmp/ffmpeg --strip-components=1 \
              && /tmp/ffmpeg/bin/ffmpeg -version >/dev/null 2>&1; then
-            export PATH=/tmp/ffmpeg/bin:$PATH
             echo "/tmp/ffmpeg/bin" >> "$GITHUB_PATH"
+            /tmp/ffmpeg/bin/ffmpeg -version | head -1
           else
             sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg >/dev/null
+            ffmpeg -version | head -1
           fi
+
+      - name: Make the long lab film (open films)
+        run: |
+          source test_device/config.env
+          case " $FLOWS " in *" streamlong_"*) ;; *) echo "no long film this run"; exit 0 ;; esac
           ffmpeg -version | head -1
           d=/mnt/lab_films
           sudo mkdir -p "$d" && sudo chown "$USER" "$d" || d="$RUNNER_TEMP/lab_films"

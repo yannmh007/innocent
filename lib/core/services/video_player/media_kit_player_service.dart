@@ -1765,6 +1765,19 @@ class MediaKitPlayerService implements VideoPlayerService {
       //     objects are already in the bucket and cannot be retro-fixed, so
       //     the client has to stay fast for them too.
       await _setMpvProperty('stream-lavf-o', _networkStreamOptions);
+      // ── A FRAGMENTED FILM READS A LITTLE BACKWARDS, EVERY FRAGMENT ─────
+      //
+      // libavformat's MP4 demuxer reads a fragment's video run, then reaches
+      // forward for the audio of the same seconds, then steps back about a
+      // hundred kilobytes for the next video. mpv's stream buffer is 128 KB,
+      // so each of those steps fell outside it and became a NEW HTTP
+      // REQUEST: sixteen in sixteen seconds of a fragmented film, every one
+      // of them tearing down the proxy's lanes and opening fresh ones — 77
+      // upstream connections where faststart took 23 (measured 2026-10-09,
+      // mpv over the real proxy). A megabyte holds a whole fragment's step:
+      // six requests and 26 connections. Faststart is unaffected; it reads
+      // forward.
+      await _setMpvProperty('stream-buffer-size', '${1024 * 1024}');
     } else {
       await _setMpvProperty('cache', 'auto');
       await _setMpvProperty('demuxer-max-bytes', '${32 * 1024 * 1024}');
@@ -1796,6 +1809,8 @@ class MediaKitPlayerService implements VideoPlayerService {
       // one libmpv will accept.
       await _setMpvProperty('demuxer-lavf-probesize', '5000000');
       await _setMpvProperty('demuxer-lavf-analyzeduration', '5');
+      // libmpv's default: a file on the phone reads backwards for free.
+      await _setMpvProperty('stream-buffer-size', '${128 * 1024}');
     }
   }
 

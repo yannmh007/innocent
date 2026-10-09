@@ -217,6 +217,10 @@ esac
 export PATH="$HOME/.maestro/bin:$PATH"
 for flow in $FLOWS; do
   log "flow $flow"
+  # The Maestro file a flow runs: its own name, unless a case below says
+  # otherwise. Unset, `set -u` stopped every plain flow before Maestro ran
+  # (run 37877954034: adb_own and me_grid "exit 1" in a second).
+  file=$flow
   adb shell log -p i -t flutter "LAB phase $flow start" >/dev/null 2>&1 || true
   # The layout flows measure one orientation each; the player follows the
   # device by default, so turn the device.

@@ -35,8 +35,11 @@ class _Upstream {
   final Map<int, String> open = <int, String>{};
   /// The size of every range asked for, in the order the requests arrived.
   final List<int> sizes = <int>[];
-  /// The pause between two 256 KB pieces of one response: a slow line.
+  /// The pause between two [piece]-sized writes of one response: a slow line.
   Duration pace = const Duration(milliseconds: 2);
+  int piece = 256 * 1024;
+  /// The local port of the connection each request came in on, in order.
+  final List<int> requestPorts = <int>[];
   /// Answers every request with the whole film, as a server that does not
   /// do ranges would.
   bool ignoreRange = false;
@@ -60,6 +63,7 @@ class _Upstream {
     }
     requests++;
     ports.add(req.connectionInfo!.remotePort);
+    requestPorts.add(req.connectionInfo!.remotePort);
     inFlight++;
     maxInFlight = max(maxInFlight, inFlight);
     var counted = true;
@@ -79,15 +83,15 @@ class _Upstream {
       res.headers.contentLength = end - start + 1;
       // Paced a little, so lanes genuinely overlap rather than finishing in
       // the instant each is opened.
-      for (var at = start; at <= end; at += 256 * 1024) {
-        res.add(Uint8List.sublistView(body, at, min(at + 256 * 1024, end + 1)));
+      for (var at = start; at <= end; at += piece) {
+        res.add(Uint8List.sublistView(body, at, min(at + piece, end + 1)));
         // A flush that does not finish is a client that has gone: dart:io
         // waits on a destroyed connection forever, and "still open" would
         // then measure this server, not the proxy. The proxy reads every
         // part as fast as it arrives, so two seconds is never a slow reader.
         await res.flush().timeout(const Duration(seconds: 2));
-        sent += min(256 * 1024, end + 1 - at);
-        if (at + 256 * 1024 <= end) {
+        sent += min(piece, end + 1 - at);
+        if (at + piece <= end) {
           await Future<void>.delayed(pace);
         }
       }
@@ -161,6 +165,8 @@ void main() {
     up.ports.clear();
     up.sizes.clear();
     up.pace = const Duration(milliseconds: 2);
+    up.piece = 256 * 1024;
+    up.requestPorts.clear();
     up.ignoreRange = false;
     up.valid
       ..clear()
@@ -402,6 +408,69 @@ void main() {
       c.close(force: true);
       StreamCacheServer.instance.release('film-bounded');
     }
+  });
+
+  test('a read abandoned at once costs one connection, not one per lane', () async {
+    // A seek into a fragmented film reads a fragment header and jumps. Six
+    // lanes opened at once were six connections torn down per jump, each a
+    // new handshake for the next request; the other lanes now wait for the
+    // first part to show the player is reading on.
+    StreamCacheServer.lanes = 6;
+    up.piece = 16 * 1024;
+    up.pace = const Duration(milliseconds: 80); // 128 KB takes ~0.6 s
+    final local = await StreamCacheServer.instance.localUrlFor(
+        cacheId: 'film-jump', upstream: up.url('t1'), refresh: () async => null);
+    await Future<void>.delayed(const Duration(milliseconds: 300)); // the length check
+    up.sizes.clear();
+    final c = HttpClient();
+    try {
+      final r = await c.getUrl(Uri.parse(local!));
+      r.headers.set(HttpHeaders.rangeHeader, 'bytes=${17 * mb}-');
+      final resp = await r.close();
+      var got = 0;
+      await for (final chunk in resp) {
+        got += chunk.length;
+        if (got >= 16 * 1024) break; // the header read; the player jumps
+      }
+    } finally {
+      c.close(force: true);
+    }
+    await Future<void>.delayed(const Duration(milliseconds: 600));
+    expect(up.sizes.length, 1,
+        reason: 'ranges asked for a read abandoned after 16 KB: ${up.sizes}');
+    StreamCacheServer.instance.release('film-jump');
+  });
+
+  test('a part nearly through when the player hangs up is let finish, and its '
+      'connection carries the next request', () async {
+    StreamCacheServer.lanes = 2;
+    up.piece = 32 * 1024;
+    up.pace = const Duration(milliseconds: 60);
+    final local = await StreamCacheServer.instance.localUrlFor(
+        cacheId: 'film-warm', upstream: up.url('t1'), refresh: () async => null);
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    up.requestPorts.clear();
+    // Read 64 KB of the first 128 KB part, then hang up: 64 KB to come.
+    final c = HttpClient();
+    try {
+      final r = await c.getUrl(Uri.parse(local!));
+      r.headers.set(HttpHeaders.rangeHeader, 'bytes=${21 * mb}-');
+      final resp = await r.close();
+      var got = 0;
+      await for (final chunk in resp) {
+        got += chunk.length;
+        if (got >= 64 * 1024) break;
+      }
+    } finally {
+      c.close(force: true);
+    }
+    final first = up.requestPorts.first;
+    await Future<void>.delayed(const Duration(milliseconds: 800)); // it finishes
+    await _get(local, from: 30 * mb, take: 64 * 1024).timeout(const Duration(seconds: 10));
+    final later = up.requestPorts.skip(1).toList();
+    expect(later, contains(first),
+        reason: 'the finished part\'s connection ($first) was not reused: $later');
+    StreamCacheServer.instance.release('film-warm');
   });
 
   test('a link that expires mid-film is renewed and the film carries on', () async {

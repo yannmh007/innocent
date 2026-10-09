@@ -129,6 +129,16 @@ class StreamCacheServer {
   /// loop reopens from the last byte the player received.
   static const Duration _laneStall = Duration(seconds: 15);
 
+  /// How long a stretch's first part streams to the player alone before the
+  /// other lanes open (see [_lanesFetch]). Longer than a demuxer takes to
+  /// read a fragment header and jump; short against a second of film.
+  static const Duration _fanOutAfter = Duration(milliseconds: 250);
+
+  /// A part this close to done is let finish when the player hangs up, to
+  /// keep its connection (see [_LanePart.kill]). Six of them is at most
+  /// 1.5 MB of a viewer's data per seek, against a handshake saved for each.
+  static const int _finishOnHangUpBelow = 256 * 1024;
+
   /// THE PARTS OF A STRETCH START SMALL AND GROW BY 128 KB EACH — 128 KB,
   /// 256 KB, 384 KB … — until they are 2 MB, the sixteenth part on.
   ///
@@ -895,11 +905,23 @@ class StreamCacheServer {
       if (plan.isNotEmpty) opened = 8;
       var planned = 0;
 
+      // ONE LANE UNTIL THE PLAYER HAS SHOWN IT WILL READ ON. A seek into a
+      // fragmented film reads a fragment's header and jumps — two or three
+      // times per seek — and every jump destroyed all six lanes in flight:
+      // 97 new connections for one short session where faststart took 23,
+      // each a handshake (two round trips over TLS) before a byte. The
+      // other lanes open once the first part is through, or [_fanOutAfter]
+      // after its first byte if the player is still there. The index plan
+      // fans out at once: that read is never abandoned.
+      var fanned = plan.isNotEmpty || lanes <= 1;
+      Timer? fanTimer;
+      late final void Function() fanOut;
+
       void topUp() {
         if (stopped || failed || gone()) return;
         while (next < end &&
             parts.length < window &&
-            parts.where((p) => !p.settled).length < lanes) {
+            parts.where((p) => !p.settled).length < (fanned ? lanes : 1)) {
           final size =
               planned < plan.length ? plan[planned++] : rampedPartBytes(opened++);
           final partEnd = min(next + size, end);
@@ -907,6 +929,7 @@ class StreamCacheServer {
           began();
           part.done.then((n) {
             ended(n);
+            fanned = true;
             topUp();
           }, onError: (_) {
             ended(0);
@@ -916,6 +939,13 @@ class StreamCacheServer {
           next = partEnd;
         }
       }
+
+      fanOut = () {
+        if (fanned) return;
+        fanned = true;
+        fanTimer?.cancel();
+        topUp();
+      };
 
       var yielded = false;
       try {
@@ -932,6 +962,9 @@ class StreamCacheServer {
           // a film that never opened (device lab run 37776589997).
           while (true) {
             if (p.holding) {
+              if (!fanned && fanTimer == null) {
+                fanTimer = Timer(_fanOutAfter, fanOut);
+              }
               yielded = true;
               yield p.take();
               continue;
@@ -956,8 +989,13 @@ class StreamCacheServer {
         if (parts.isEmpty) return;
       } finally {
         stopped = true;
+        fanTimer?.cancel();
+        // The player hung up (a seek) — let the parts nearly through finish
+        // so their connections stay warm for its next request. A failure
+        // destroys everything: those connections are not to be trusted.
+        final finishBelow = failed ? 0 : _finishOnHangUpBelow;
         for (final p in parts) {
-          p.kill();
+          p.kill(finishBelow: finishBelow);
         }
         measuring = false;
         if (inFlight > 0) activeMs += clock.elapsedMilliseconds - activeFrom;
@@ -1158,11 +1196,30 @@ class _LanePart {
   /// The request has gone out and its answer is on the way.
   bool _asked = false;
 
-  void kill() {
+  /// Stopped, but let finish so its connection goes back to the pool warm:
+  /// what still arrives is read and dropped (see [kill]).
+  bool _released = false;
+  int _finishBelow = 0;
+
+  /// Stop this part. [finishBelow]: a part with no more than this many bytes
+  /// still to come is let finish instead, read and dropped, so its
+  /// connection returns to the pool rather than being destroyed. A seek
+  /// costs the next request a fresh connection otherwise — a TCP and TLS
+  /// handshake, two round trips before its first byte — and a fragmented
+  /// film's seek is two requests in a row (the fragment, then the one
+  /// before it for the audio).
+  void kill({int finishBelow = 0}) {
     if (_killed) return;
     _killed = true;
-    if (_resp != null) {
-      _destroy();
+    _finishBelow = finishBelow;
+    final resp = _resp;
+    if (resp != null) {
+      if (!_ended && finishBelow > 0 && end - start - _received <= finishBelow) {
+        _released = true;
+        _held.clear();
+      } else {
+        _destroy();
+      }
     } else if (!_asked) {
       _req?.abort();
     }
@@ -1206,7 +1263,19 @@ class _LanePart {
     });
     _resp = resp;
     if (_killed) {
-      _drop(resp);
+      // Stopped while the answer was on its way. A small one is read to its
+      // end — bounded by its own length, the range just asked for — so the
+      // connection is kept; anything else is destroyed.
+      if (_finishBelow > 0 &&
+          want <= _finishBelow &&
+          resp.statusCode == 206 &&
+          resp.contentLength == want) {
+        _released = true;
+        _sub = resp.listen((_) {}, onDone: () => _ended = true,
+            onError: (Object _) => _ended = true, cancelOnError: true);
+      } else {
+        _drop(resp);
+      }
       throw _LaneRefused('stopped');
     }
     final code = resp.statusCode;
@@ -1233,6 +1302,16 @@ class _LanePart {
 
     arm();
     _sub = resp.listen((chunk) {
+      // Released by [kill]: read on to the end for the pool, keep nothing.
+      if (_released) {
+        _received += chunk.length;
+        arm();
+        if (_received > want) {
+          quiet?.cancel();
+          _destroy();
+        }
+        return;
+      }
       if (done.isCompleted) return;
       // Never a byte past the part: what is held may already be on its way
       // to the player.
