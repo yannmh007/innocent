@@ -1,1 +1,95 @@
-test_device/run.sh: line 330: file: unbound variable
+Running on test
+ > Flow me_grid
+Launch app "com.innocent.media"... COMPLETED
+Wait for animation to end within 15000 ms... COMPLETED
+Tap on (Optional) "Wait"... WARNED
+
+
+ Warning: Element not found: Text matching regex: Wait
+Tap on (Optional) "Skip"... WARNED
+
+
+ Warning: Element not found: Text matching regex: Skip
+Tap on (Optional) "Allow.*"... WARNED
+
+
+ Warning: Element not found: Text matching regex: Allow.*
+Tap on (Optional) "Allow.*"... WARNED
+
+
+ Warning: Element not found: Text matching regex: Allow.*
+Tap on "(?s).*Tab 4 of 4.*"... COMPLETED
+Wait for animation to end within 5000 ms... COMPLETED
+Take screenshot 80_me_grid... COMPLETED
+Assert that "Cloud Drive" is not visible... COMPLETED
+Assert that "(?s).*Movies.*" is visible... COMPLETED
+Assert that "(?s).*Recycle bin.*" is visible... COMPLETED
+Tap on "(?s).*Movies.*"... COMPLETED
+Wait for animation to end within 10000 ms... COMPLETED
+Take screenshot 81_me_movies... COMPLETED
+Assert that "(?s).*Tab 4 of 4.*" is not visible... COMPLETED
+Press back... COMPLETED
+Wait for animation to end within 4000 ms... COMPLETED
+Assert that "(?s).*Recycle bin.*" is visible... COMPLETED
+Tap on "(?s).*Media Manager.*"... COMPLETED
+Wait for animation to end within 6000 ms... COMPLETED
+Take screenshot 82_me_media_manager... COMPLETED
+Press back... COMPLETED
+Tap on "(?s).*Network Stream.*"... COMPLETED
+Wait for animation to end within 4000 ms... COMPLETED
+Take screenshot 83_me_network_stream... COMPLETED
+Press back... COMPLETED
+Tap on "(?s).*Video Playlists.*"... COMPLETED
+Wait for animation to end within 4000 ms... COMPLETED
+Take screenshot 84_me_playlists... COMPLETED
+Press back... COMPLETED
+Tap on "(?s).*Recycle bin.*"... COMPLETED
+Wait for animation to end within 4000 ms... COMPLETED
+Take screenshot 85_me_recycle... COMPLETED
+Press back... COMPLETED
+Tap on "(?s).*Downloads.*"... COMPLETED
+Wait for animation to end within 6000 ms... COMPLETED
+Take screenshot 86_me_downloads... COMPLETED
+Press back... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Scrolling DOWN until "(?s).*Backup & Restore.*" is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Tap on "(?s).*Backup & Restore.*"... COMPLETED
+Wait for animation to end within 4000 ms... COMPLETED
+Take screenshot 87_backup... COMPLETED
+Scrolling DOWN until "(?s).*Cloud Drive.*" is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Tap on "(?s).*Cloud Drive.*"... COMPLETED
+Wait for animation to end within 4000 ms... COMPLETED
+Take screenshot 88_cloud_drive... COMPLETED
+Press back... COMPLETED
+Press back... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Assert that "(?s).*Recycle bin.*" is visible... COMPLETED
+Scrolling DOWN until "(?s).*Watch later.*" is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Tap on "(?s).*History.*"... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Take screenshot 89_me_history... COMPLETED
+Press back... COMPLETED
+Tap on "(?s).*Watch later.*"... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Press back... COMPLETED
+Tap on "(?s).*Insights.*"... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Tap on "(?s).*Library statistics.*"... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Take screenshot 90_me_statistics... COMPLETED
+Press back... COMPLETED
+Press back... COMPLETED
+Tap on "(?s)Settings\n.*"... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Take screenshot 91_settings... COMPLETED
+Tap on "(?s).*App Theme.*"... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Take screenshot 92_app_theme... COMPLETED
+Press back... COMPLETED
+Tap on "(?s).*Pop-up Play.*"... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Take screenshot 93_popup_play... COMPLETED
+Press back... COMPLETED
+Press back... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Assert that "(?s).*About.*" is visible... COMPLETED

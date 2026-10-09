@@ -1,1 +1,38 @@
-test_device/run.sh: line 330: file: unbound variable
+Running on test
+ > Flow adb_own
+Launch app "com.innocent.media"... COMPLETED
+Wait for animation to end within 15000 ms... COMPLETED
+Tap on (Optional) "Wait"... WARNED
+
+
+ Warning: Element not found: Text matching regex: Wait
+Tap on (Optional) "Skip"... COMPLETED
+Tap on (Optional) "Allow.*"... WARNED
+
+
+ Warning: Element not found: Text matching regex: Allow.*
+Tap on (Optional) "Allow.*"... WARNED
+
+
+ Warning: Element not found: Text matching regex: Allow.*
+Tap on "(?s).*Tab 4 of 4.*"... COMPLETED
+Wait for animation to end within 5000 ms... COMPLETED
+Scrolling DOWN until "(?s)Settings\n.*" is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Tap on "(?s)Settings\n.*"... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Scrolling DOWN until "(?s).*ADB engine self-test.*" is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... FAILED
+
+No visible element found: "(?s).*ADB engine self-test.*"
+
+Could not find a visible element matching selector: "(?s).*ADB engine self-test.*"
+Tip: Try adjusting the following settings to improve detection:
+- `timeout`: current = 20000ms → Increase if you need more time to find the element
+- `speed`: current = 40 (0-100 scale) → Increase for faster scrolling if element is far away
+- `waitToSettleTimeoutMs`: current = Not defined → Set this value (e.g., 500ms) if your UI updates frequently between scrolls
+- `visibilityPercentage`: current = 100% → Lower this value if you want to detect partially visible elements
+- `centerElement`: current = false → Enable if you want the element to be centered after finding it
+
+
+==== Debug output (logs & screenshots) ====
+
+/home/runner/work/innocent/innocent/out/maestro_out/2026-10-09_042845
