@@ -1,42 +1,23 @@
-[16:18:46] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
-[16:18:46] install
-[16:19:06] network: speed full kbit/s, delay none ms
-[16:19:28] cold start
+[18:05:38] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
+[18:05:38] install
+[18:05:48] network: speed full kbit/s, delay none ms
+[18:06:08] cold start
 Status: ok
-TotalTime: 4894
-WaitTime: 4898
-[16:19:44] long film: 162 min in /mnt/lab_films, served on 47125
-[16:19:44] flow adb_own
-[16:21:15] flow adb_own exit 0
-[16:21:27] flow me_grid
-[16:23:06] flow me_grid exit 0
-[16:23:19] flow newvideo
-[16:24:00] flow newvideo: Video tab open (maestro exit 0)
-[16:24:06] newvideo: a new folder with one video appeared after 5 s
-[16:24:12] newvideo: a second video in that folder showed after 5 s
-[16:24:13] flow newvideo done
-[16:24:13] flow streamlong_mm4g_6
-[16:24:13] long film: mm4g — 1080, round trip 2x75ms, loss 0.5%, rate 32mbit, queue 10000 packets; lanes=6
-[16:26:06] flow streamlong_mm4g_6 done
-[16:26:07] flow streamlong_mm4gfrag_6
-[16:26:07] long film: mm4gfrag — 1080frag, round trip 2x75ms, loss 0.5%, rate 32mbit, queue 10000 packets; lanes=6
-[16:28:00] flow streamlong_mm4gfrag_6 done
-[16:28:01] flow streamlong_lossy_6
-[16:28:01] long film: lossy — 1080, round trip 2x100ms, loss 1%, rate 32mbit, queue 10000 packets; lanes=6
-[16:29:55] flow streamlong_lossy_6 done
-[16:29:55] flow streamlong_lossyfrag_6
-[16:29:56] long film: lossyfrag — 1080frag, round trip 2x100ms, loss 1%, rate 32mbit, queue 10000 packets; lanes=6
-[16:31:50] flow streamlong_lossyfrag_6 done
-[16:31:50] flow streamlong_busy_6
-[16:31:51] long film: busy — 720, round trip 2x125ms, loss 2%, rate 16mbit, queue 10000 packets; lanes=6
-[16:33:44] flow streamlong_busy_6 done
-[16:33:44] flow streamlong_busyfrag_6
-[16:33:45] long film: busyfrag — 720frag, round trip 2x125ms, loss 2%, rate 16mbit, queue 10000 packets; lanes=6
-[16:35:39] flow streamlong_busyfrag_6 done
-[16:35:40] flow streamlong_slow_6
-[16:35:40] long film: slow — 720, round trip 2x150ms, loss 1%, rate 4mbit, queue 10000 packets; lanes=6
-[16:37:34] flow streamlong_slow_6 done
-[16:37:34] flow streamlong_slowfrag_6
-[16:37:35] long film: slowfrag — 720frag, round trip 2x150ms, loss 1%, rate 4mbit, queue 10000 packets; lanes=6
-[16:39:28] flow streamlong_slowfrag_6 done
-[16:39:34] done
+TotalTime: 3637
+WaitTime: 3650
+[18:06:23] long film: 162 min in /mnt/lab_films, served on 47125
+[18:06:23] flow climb
+[18:06:23] climb: the test film on a 700:700 kbit/s line for 100 s
+[18:08:07] climb: line back to full for 210 s
+[18:11:38] flow climb done
+[18:11:38] flow adb_own
+[18:12:31] flow adb_own exit 0
+[18:12:39] flow me_grid
+[18:13:57] flow me_grid exit 0
+[18:14:05] flow streamlong_mm4gfrag_6
+[18:14:05] long film: mm4gfrag — 1080frag, round trip 2x75ms, loss 0.5%, rate 32mbit, queue 10000 packets; lanes=6
+[18:15:55] flow streamlong_mm4gfrag_6 done
+[18:15:55] flow streamlong_slowfrag_6
+[18:15:55] long film: slowfrag — 720frag, round trip 2x150ms, loss 1%, rate 4mbit, queue 10000 packets; lanes=6
+[18:17:45] flow streamlong_slowfrag_6 done
+[18:17:49] done

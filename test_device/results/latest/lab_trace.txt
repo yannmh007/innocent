@@ -1,428 +1,144 @@
 LAB device kind=DeviceKind.phone sw=411.0
-LAB cpu app 28% · 0.2fps · pool-thread 14% | 1.raster 11% | RenderThread 1%
+LAB cpu app 16% · 0.2fps · pool-thread 8% | 1.raster 5% | RenderThread 1%
+LAB phase climb start
+LAB device kind=DeviceKind.phone sw=411.0
+LAB    0.0 LAB title: opening Sintel
+LAB    2.9 play server granted in 2873 ms, 3 rungs
+LAB    2.9 play rung 720p 1684 kbps (choice auto, measured - kbps)
+LAB    3.1 stream lanes=6
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=24.0 bar=24.0
+LAB cpu app 28% · 10.0fps · 1.raster 13% | pool-thread 10% | .innocent.media 3%
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=24.0
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=24.0
+LAB    4.2 hwdec -> auto
+LAB    4.2 stream index 0.0 MB at 0.0 MB
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=24.0
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=24.0
+LAB    4.4 open scheme=http len=106 hwdec=auto start=0s autoplay=true
+LAB    4.5 wakelock playing=false bg=false priv=false pos=0ms
+LAB    4.5 first frame 1163 ms
+LAB    4.8 wakelock playing=true bg=false priv=false pos=0ms
+LAB    4.8 open ok
+LAB    4.8 rebuffer start
+LAB    5.4 fg stream: watching
+LAB    7.6 rebuffer end 2735 ms
+LAB   12.5 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
+LAB cpu app 26% · 8.7fps · .innocent.media 12% | 1.raster 7% | DartWorker 4% | dart:io EventHa 1%
+LAB cpu app 5% · 0.0fps · .innocent.media 3%
+LAB cpu app 5% · 0.0fps · .innocent.media 3%
+LAB   75.3 fg stream: watching
+LAB cpu app 1% · 0.0fps · -
+LAB climb: line back to full
+LAB  147.3 stream stretch 32.0 MB in 140017 ms lanes=6
+LAB cpu app 9% · 0.0fps · .innocent.media 6% | DartWorker 2% | dart:io EventHa 1%
+LAB cpu app 5% · 0.0fps · .innocent.media 3% | DartWorker 1%
+LAB cpu app 5% · 0.0fps · .innocent.media 3% | DartWorker 1%
+LAB cpu app 5% · 0.0fps · .innocent.media 3% | DartWorker 1%
+LAB cpu app 6% · 0.0fps · .innocent.media 4% | dart:io EventHa 1%
+LAB cpu app 1% · 0.0fps · -
+LAB  279.3 stream stretch 32.0 MB in 132007 ms lanes=6
+LAB cpu app 9% · 0.0fps · .innocent.media 6% | DartWorker 2% | dart:io EventHa 1%
+LAB cpu app 5% · 0.0fps · .innocent.media 3% | DartWorker 1%
+LAB phase climb end
 LAB phase adb_own start
 LAB device kind=DeviceKind.phone sw=411.0
-LAB cpu app 14% · 0.3fps · 1.raster 11% | RenderThread 3% | .innocent.media 1%
-LAB cpu app 7% · 1.6fps · .innocent.media 3% | 1.raster 3%
-LAB cpu app 4% · 0.1fps · .innocent.media 3%
-LAB cpu app 4% · 0.9fps · .innocent.media 2% | 1.raster 2%
-LAB cpu app 13% · 2.2fps · 1.raster 10% | .innocent.media 2%
-LAB cpu app 11% · 3.4fps · 1.raster 6% | .innocent.media 4%
-LAB cpu app 5% · 1.6fps · 1.raster 3% | .innocent.media 1%
+LAB cpu app 9% · 0.4fps · 1.raster 6% | .innocent.media 1%
+LAB cpu app 4% · 1.3fps · 1.raster 3% | .innocent.media 1%
+LAB cpu app 10% · 2.5fps · 1.raster 7% | .innocent.media 2%
+LAB cpu app 6% · 1.3fps · 1.raster 4% | .innocent.media 2%
+LAB cpu app 11% · 4.9fps · .innocent.media 6% | 1.raster 5%
 LAB phase me_grid start
 LAB cpu app 1% · 0.6fps · -
-LAB cpu app 1% · 0.1fps · -
 LAB device kind=DeviceKind.phone sw=411.0
-LAB cpu app 10% · 0.9fps · 1.raster 5% | .innocent.media 2% | RenderThread 2%
-LAB cpu app 12% · 0.4fps · 1.raster 10% | .innocent.media 1%
-LAB cpu app 12% · 1.5fps · 1.raster 10% | .innocent.media 2%
-LAB cpu app 8% · 1.4fps · 1.raster 6% | .innocent.media 1%
-LAB cpu app 13% · 0.9fps · .innocent.media 4% | NetworkService 3% | 1.raster 3% | ThreadPoolForeg 2% | Chrome_IOThread 1%
-LAB cpu app 6% · 1.2fps · 1.raster 5% | .innocent.media 1%
-LAB cpu app 7% · 1.5fps · 1.raster 5% | .innocent.media 2%
-LAB cpu app 5% · 0.9fps · 1.raster 3% | .innocent.media 2%
-LAB cpu app 2% · 0.5fps · 1.raster 1%
-LAB phase newvideo start
-LAB cpu app 1% · 0.6fps · -
-LAB cpu app 1% · 0.1fps · -
-LAB device kind=DeviceKind.phone sw=411.0
-LAB cpu app 15% · 1.3fps · 1.raster 9% | RenderThread 3% | .innocent.media 3%
-LAB cpu app 5% · 0.9fps · 1.raster 4%
-LAB newvideo first=5s second=5s
-LAB phase newvideo end
-LAB phase streamlong_mm4g_6 start
-LAB long mm4g file=1080 rtt=2x75ms loss=0.5% rate=32mbit queue=10000 lanes=6
-LAB device kind=DeviceKind.phone sw=411.0
-LAB    0.0 stream lanes=6
-LAB    0.2 LAB stream: proxy ready
-LAB    0.8 stream index 6.3 MB at 0.0 MB
-LAB    3.3 LAB stream: opening the player
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=24.0 bar=24.0
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=24.0 bar=24.0
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=24.0 bar=24.0
-LAB    4.0 hwdec -> auto
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=24.0
-LAB    4.2 open scheme=http len=82 hwdec=auto start=0s autoplay=true
-LAB    4.2 wakelock playing=false bg=false priv=false pos=0ms
-LAB    4.2 first frame 742 ms
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=24.0
-LAB    4.4 wakelock playing=true bg=false priv=false pos=0ms
-LAB    4.4 open ok
-LAB    4.4 rebuffer start
-LAB    5.1 fg stream: watching
-LAB    7.6 stall #1 unknown {reason: unknown}
-LAB cpu app 58% · 7.9fps · 1.raster 33% | pool-thread 14% | .innocent.media 5% | RenderThread 4%
-LAB   11.8 rebuffer end 7371 ms
-LAB   12.5 video h264 1920x? hwdec=mediacodec-copy(?) vo=null surf=producer fps=? drop=?/? thr=1
-LAB cpu app 35% · 5.2fps · .innocent.media 16% | 1.raster 10% | dart:io EventHa 5% | DartWorker 3%
-LAB cpu app 6% · 0.0fps · .innocent.media 4% | dart:io EventHa 1%
-LAB   48.7 LAB stream: seek to 4866 s
-LAB   48.7 rebuffer start
-LAB   48.9 rebuffer end 174 ms
-LAB cpu app 25% · 0.0fps · .innocent.media 16% | dart:io EventHa 6% | DartWorker 1%
-LAB   64.2 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
-LAB cpu app 8% · 0.0fps · .innocent.media 5% | dart:io EventHa 2%
-LAB   68.7 LAB stream: seek to 2433 s
-LAB   68.7 rebuffer start
-LAB   69.3 rebuffer end 548 ms
-LAB cpu app 28% · 0.8fps · .innocent.media 17% | dart:io EventHa 6% | DartWorker 2% | 1.raster 1% | mpv/audiotrack 1%
-LAB cpu app 23% · 0.0fps · .innocent.media 15% | dart:io EventHa 5% | DartWorker 1%
-LAB   88.7 LAB stream: seek to 7299 s
-LAB   88.7 rebuffer start
-LAB   89.3 rebuffer end 511 ms
-LAB   89.3 rebuffer start
-LAB   92.4 stall #2 unknown {reason: unknown, cache_s: 3, have_kbps: 4601}
-LAB   93.8 rebuffer end 4523 ms
-LAB cpu app 31% · 6.3fps · 1.raster 17% | .innocent.media 9% | dart:io EventHa 2% | DartWorker 2%
-LAB phase streamlong_mm4g_6 end
-LAB cpu app 21% · 0.0fps · .innocent.media 14% | dart:io EventHa 4% | DartWorker 2%
+LAB cpu app 9% · 0.9fps · 1.raster 5% | .innocent.media 2% | RenderThread 1%
+LAB cpu app 9% · 1.1fps · 1.raster 8% | .innocent.media 1%
+LAB cpu app 5% · 1.6fps · 1.raster 4% | .innocent.media 1%
+LAB cpu app 9% · 1.2fps · 1.raster 3% | .innocent.media 2% | NetworkService 2%
+LAB cpu app 4% · 1.2fps · 1.raster 3%
+LAB cpu app 4% · 1.5fps · 1.raster 3%
+LAB cpu app 3% · 1.4fps · 1.raster 3%
 LAB phase streamlong_mm4gfrag_6 start
 LAB long mm4gfrag file=1080frag rtt=2x75ms loss=0.5% rate=32mbit queue=10000 lanes=6
 LAB device kind=DeviceKind.phone sw=411.0
 LAB    0.0 stream lanes=6
 LAB    0.0 LAB stream: proxy ready
-LAB    2.0 stream index 0.0 MB at 0.0 MB
-LAB    3.1 LAB stream: opening the player
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=24.0 bar=24.0
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=24.0 bar=24.0
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=24.0
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=24.0
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=24.0
-LAB    4.4 hwdec -> auto
-LAB    4.4 open scheme=http len=82 hwdec=auto start=0s autoplay=true
-LAB    4.4 wakelock playing=false bg=false priv=false pos=0ms
-LAB    4.4 first frame 1242 ms
-LAB    4.6 wakelock playing=true bg=false priv=false pos=0ms
-LAB    4.6 open ok
-LAB    4.6 rebuffer start
-LAB    5.0 fg stream: watching
-LAB    6.5 rebuffer end 1869 ms
-LAB cpu app 57% · 5.6fps · 1.raster 24% | pool-thread 14% | .innocent.media 9% | RenderThread 4% | DartWorker 2% | dart:io EventHa 2%
-LAB   12.4 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
-LAB cpu app 27% · 0.0fps · .innocent.media 18% | dart:io EventHa 7% | DartWorker 2%
-LAB   48.9 LAB stream: seek to 4866 s
-LAB   49.0 rebuffer start
-LAB   52.2 rebuffer end 3278 ms
-LAB   52.3 stall #1 unknown {reason: unknown, cache_s: 4, have_kbps: 1930}
-LAB cpu app 31% · 4.0fps · .innocent.media 14% | 1.raster 10% | dart:io EventHa 5% | DartWorker 1%
-LAB   64.4 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
-LAB   68.9 LAB stream: seek to 2433 s
-LAB   69.0 rebuffer start
-LAB cpu app 13% · 0.0fps · .innocent.media 7% | dart:io EventHa 2% | 1.raster 2%
-LAB   70.1 rebuffer end 1112 ms
-LAB   71.0 rebuffer start
-LAB   74.1 stall #2 unknown {reason: unknown, cache_s: 6, have_kbps: 4340, need_kbps: 128}
-LAB   75.3 rebuffer end 4229 ms
-LAB cpu app 35% · 7.0fps · 1.raster 16% | .innocent.media 13% | dart:io EventHa 4% | DartWorker 2%
-LAB   88.9 LAB stream: seek to 7299 s
-LAB   89.0 rebuffer start
-LAB cpu app 22% · 0.0fps · .innocent.media 14% | dart:io EventHa 4% | 1.raster 2%
-LAB   90.2 rebuffer end 1260 ms
-LAB   91.8 rebuffer start
-LAB   94.9 stall #3 unknown {reason: unknown, cache_s: 6, have_kbps: 6949, need_kbps: 128}
-LAB   95.4 rebuffer end 3600 ms
-LAB cpu app 30% · 6.2fps · 1.raster 14% | .innocent.media 10% | dart:io EventHa 3% | DartWorker 1%
-LAB phase streamlong_mm4gfrag_6 end
-LAB phase streamlong_lossy_6 start
-LAB long lossy file=1080 rtt=2x100ms loss=1% rate=32mbit queue=10000 lanes=6
-LAB device kind=DeviceKind.phone sw=411.0
-LAB    0.0 stream lanes=6
-LAB    0.1 LAB stream: proxy ready
-LAB    0.8 stream index 6.3 MB at 0.0 MB
-LAB    3.1 LAB stream: opening the player
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=24.0 bar=24.0
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=24.0
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=24.0
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=24.0
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=24.0
-LAB    4.3 hwdec -> auto
-LAB    4.4 open scheme=http len=82 hwdec=auto start=0s autoplay=true
-LAB    4.4 wakelock playing=false bg=false priv=false pos=0ms
-LAB    4.4 first frame 1090 ms
-LAB    4.6 open ok
-LAB    4.6 wakelock playing=true bg=false priv=false pos=0ms
-LAB    4.6 rebuffer start
-LAB    5.3 fg stream: watching
-LAB cpu app 65% · 4.5fps · 1.raster 38% | pool-thread 17% | .innocent.media 5% | RenderThread 4%
-LAB    7.7 stall #1 unknown {reason: unknown}
-LAB   12.6 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
-LAB cpu app 46% · 11.9fps · 1.raster 37% | .innocent.media 6% | DartWorker 1%
-LAB   20.0 rebuffer end 15328 ms
-LAB cpu app 25% · 4.2fps · 1.raster 10% | .innocent.media 9% | dart:io EventHa 2% | mpv/audiotrack 1%
-LAB cpu app 11% · 0.0fps · .innocent.media 7% | dart:io EventHa 2%
-LAB cpu app 7% · 0.0fps · .innocent.media 5% | dart:io EventHa 1%
-LAB   48.1 LAB stream: seek to 4866 s
-LAB   48.1 rebuffer start
-LAB   48.4 rebuffer end 230 ms
-LAB cpu app 12% · 0.0fps · .innocent.media 8% | dart:io EventHa 2%
-LAB   64.5 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
-LAB cpu app 13% · 0.0fps · .innocent.media 9% | dart:io EventHa 3% | DartWorker 1%
-LAB   68.1 LAB stream: seek to 2433 s
-LAB   68.1 rebuffer start
-LAB   68.1 stream stretch 12.0 MB in 19996 ms lanes=6
-LAB   69.0 rebuffer end 895 ms
-LAB   69.4 rebuffer start
-LAB   72.2 rebuffer end 2790 ms
-LAB cpu app 22% · 4.6fps · 1.raster 10% | .innocent.media 8% | dart:io EventHa 2%
-LAB cpu app 12% · 0.0fps · .innocent.media 8% | dart:io EventHa 2%
-LAB   88.1 LAB stream: seek to 7299 s
-LAB   88.1 rebuffer start
-LAB   88.2 stream stretch 14.1 MB in 20051 ms lanes=6
-LAB   91.1 stall #2 unknown {reason: unknown, cache_s: 3, have_kbps: 4836}
-LAB   92.9 rebuffer end 4799 ms
-LAB cpu app 27% · 5.6fps · 1.raster 15% | .innocent.media 8% | dart:io EventHa 2%
-LAB cpu app 15% · 0.0fps · .innocent.media 10% | dart:io EventHa 3%
-LAB phase streamlong_lossy_6 end
-LAB phase streamlong_lossyfrag_6 start
-LAB long lossyfrag file=1080frag rtt=2x100ms loss=1% rate=32mbit queue=10000 lanes=6
-LAB device kind=DeviceKind.phone sw=411.0
-LAB    0.0 stream lanes=6
-LAB    0.0 LAB stream: proxy ready
-LAB    0.8 stream index 0.0 MB at 0.0 MB
+LAB    1.1 stream index 0.0 MB at 0.0 MB
 LAB    3.0 LAB stream: opening the player
 LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=24.0 bar=24.0
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=24.0
-LAB    3.6 lifecycle inactive mounted=true
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=24.0
-LAB    3.8 hwdec -> auto
-LAB    4.3 open scheme=http len=82 hwdec=auto start=0s autoplay=true
-LAB    4.4 wakelock playing=false bg=false priv=false pos=0ms
-LAB    4.4 first frame 1271 ms
-LAB    5.2 open ok
-LAB    5.2 wakelock playing=true bg=false priv=false pos=0ms
-LAB    5.2 rebuffer start
-LAB    5.8 fg stream: watching
-LAB    7.9 rebuffer end 2688 ms
-LAB cpu app 52% · 5.6fps · 1.raster 27% | pool-thread 10% | .innocent.media 8% | RenderThread 4% | DartWorker 1%
-LAB   12.4 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
-LAB cpu app 18% · 0.6fps · .innocent.media 12% | dart:io EventHa 4%
-LAB cpu app 13% · 0.0fps · .innocent.media 9% | dart:io EventHa 3%
-LAB cpu app 10% · 0.0fps · .innocent.media 7% | dart:io EventHa 2%
-LAB   48.5 LAB stream: seek to 4866 s
-LAB   48.5 rebuffer start
-LAB   49.0 rebuffer end 484 ms
-LAB cpu app 6% · 0.0fps · .innocent.media 3% | 1.raster 1%
-LAB cpu app 15% · 0.7fps · .innocent.media 10% | dart:io EventHa 3%
-LAB   64.4 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
-LAB   68.5 LAB stream: seek to 2433 s
-LAB   68.5 rebuffer start
-LAB   68.5 stream stretch 13.0 MB in 20002 ms lanes=6
-LAB cpu app 16% · 0.0fps · .innocent.media 8% | 1.raster 4% | dart:io EventHa 2%
-LAB   70.9 rebuffer end 2433 ms
-LAB   71.9 rebuffer start
-LAB   74.9 stall #1 unknown {reason: unknown, cache_s: 4, have_kbps: 2816, need_kbps: 128}
-LAB   76.7 rebuffer end 4825 ms
-LAB cpu app 33% · 9.0fps · 1.raster 22% | .innocent.media 7% | dart:io EventHa 2%
-LAB   88.5 LAB stream: seek to 7299 s
-LAB   88.5 rebuffer start
-LAB cpu app 16% · 0.0fps · .innocent.media 8% | 1.raster 3% | dart:io EventHa 2%
-LAB   91.1 rebuffer end 2617 ms
-LAB   98.6 rebuffer start
-LAB cpu app 19% · 3.2fps · .innocent.media 8% | 1.raster 7% | dart:io EventHa 2%
-LAB  100.1 rebuffer end 1426 ms
-LAB cpu app 14% · 1.9fps · .innocent.media 8% | dart:io EventHa 3% | 1.raster 1%
-LAB phase streamlong_lossyfrag_6 end
-LAB phase streamlong_busy_6 start
-LAB long busy file=720 rtt=2x125ms loss=2% rate=16mbit queue=10000 lanes=6
-LAB device kind=DeviceKind.phone sw=411.0
-LAB    0.0 stream lanes=6
-LAB    0.2 LAB stream: proxy ready
-LAB    1.5 stream index 6.4 MB at 0.0 MB
-LAB    3.3 LAB stream: opening the player
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=24.0 bar=24.0
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=24.0 bar=24.0
 LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=24.0 bar=24.0
 LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=24.0
-LAB    4.9 hwdec -> auto
+LAB    3.6 hwdec -> auto
+LAB    3.6 open scheme=http len=82 hwdec=auto start=0s autoplay=true
+LAB    3.6 wakelock playing=false bg=false priv=false pos=0ms
+LAB    3.6 first frame 479 ms
 LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=24.0
-LAB    5.1 open scheme=http len=82 hwdec=auto start=0s autoplay=true
-LAB    5.2 wakelock playing=false bg=false priv=false pos=0ms
-LAB    5.2 first frame 1687 ms
-LAB    5.4 wakelock playing=true bg=false priv=false pos=0ms
-LAB    5.4 open ok
-LAB    5.4 rebuffer start
-LAB    6.0 fg stream: watching
-LAB cpu app 59% · 5.6fps · 1.raster 32% | pool-thread 13% | RenderThread 6% | .innocent.media 5% | DartWorker 1%
-LAB    8.5 stall #1 unknown {reason: unknown}
-LAB   13.2 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
-LAB cpu app 47% · 12.4fps · 1.raster 39% | .innocent.media 6%
-LAB   26.1 rebuffer end 20768 ms
-LAB cpu app 40% · 10.6fps · 1.raster 32% | .innocent.media 6% | DartWorker 1%
-LAB cpu app 10% · 0.0fps · .innocent.media 6% | dart:io EventHa 2%
-LAB cpu app 8% · 0.0fps · .innocent.media 5% | dart:io EventHa 1%
-LAB   48.3 LAB stream: seek to 4866 s
-LAB   48.3 rebuffer start
-LAB   48.3 stream stretch 12.6 MB in 42663 ms lanes=6
-LAB   48.9 rebuffer end 591 ms
-LAB cpu app 11% · 0.8fps · .innocent.media 6% | dart:io EventHa 2% | 1.raster 1%
-LAB   65.2 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
-LAB cpu app 8% · 0.0fps · .innocent.media 5% | dart:io EventHa 1%
-LAB   68.3 LAB stream: seek to 2433 s
-LAB   68.3 rebuffer start
-LAB   69.4 rebuffer end 1092 ms
-LAB   69.8 rebuffer start
-LAB   72.6 rebuffer end 2801 ms
-LAB cpu app 20% · 4.8fps · 1.raster 12% | .innocent.media 6% | dart:io EventHa 1%
-LAB cpu app 8% · 0.0fps · .innocent.media 5% | dart:io EventHa 1%
-LAB   88.3 LAB stream: seek to 7299 s
-LAB   88.3 rebuffer start
-LAB   88.5 stream stretch 7.8 MB in 20133 ms lanes=6
-LAB   89.3 rebuffer end 979 ms
-LAB   89.7 rebuffer start
-LAB   92.7 stall #2 unknown {reason: unknown, cache_s: 5, have_kbps: 2375, need_kbps: 128}
-LAB   94.3 rebuffer end 4578 ms
-LAB cpu app 26% · 6.9fps · 1.raster 18% | .innocent.media 6% | dart:io EventHa 1%
-LAB cpu app 9% · 0.0fps · .innocent.media 6% | dart:io EventHa 2%
-LAB phase streamlong_busy_6 end
-LAB phase streamlong_busyfrag_6 start
-LAB long busyfrag file=720frag rtt=2x125ms loss=2% rate=16mbit queue=10000 lanes=6
-LAB device kind=DeviceKind.phone sw=411.0
-LAB    0.0 stream lanes=6
-LAB    0.3 LAB stream: proxy ready
-LAB    1.1 stream index 0.0 MB at 0.0 MB
-LAB    3.3 LAB stream: opening the player
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=24.0 bar=24.0
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=24.0 bar=24.0
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=24.0 bar=24.0
+LAB    3.6 open ok
+LAB    3.6 wakelock playing=true bg=false priv=false pos=0ms
+LAB    3.6 rebuffer start
 LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=24.0
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=24.0
-LAB    4.8 hwdec -> auto
-LAB    4.9 open scheme=http len=82 hwdec=auto start=0s autoplay=true
-LAB    4.9 wakelock playing=false bg=false priv=false pos=0ms
-LAB    4.9 first frame 1326 ms
-LAB    5.1 open ok
-LAB    5.1 wakelock playing=true bg=false priv=false pos=0ms
-LAB    5.1 rebuffer start
-LAB    5.6 fg stream: watching
-LAB    6.8 rebuffer end 1669 ms
-LAB cpu app 57% · 5.4fps · 1.raster 32% | pool-thread 13% | .innocent.media 5% | RenderThread 4% | HeapTaskDaemon 1%
-LAB   12.9 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
-LAB cpu app 14% · 2.4fps · .innocent.media 8% | 1.raster 2% | dart:io EventHa 2% | DartWorker 1%
-LAB cpu app 8% · 0.0fps · .innocent.media 6% | dart:io EventHa 1%
-LAB cpu app 7% · 0.0fps · .innocent.media 5% | dart:io EventHa 1%
-LAB cpu app 7% · 0.0fps · .innocent.media 5% | dart:io EventHa 1%
-LAB   48.4 LAB stream: seek to 4866 s
-LAB   48.4 rebuffer start
-LAB   49.3 rebuffer end 915 ms
-LAB cpu app 13% · 1.2fps · .innocent.media 6% | 1.raster 4% | dart:io EventHa 2%
-LAB   64.9 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
-LAB cpu app 8% · 0.0fps · .innocent.media 5% | dart:io EventHa 1%
-LAB   68.4 LAB stream: seek to 2433 s
-LAB   68.4 rebuffer start
-LAB   68.4 stream stretch 7.6 MB in 19997 ms lanes=6
-LAB   70.8 rebuffer end 2357 ms
-LAB cpu app 19% · 3.0fps · 1.raster 9% | .innocent.media 7% | dart:io EventHa 2%
-LAB cpu app 8% · 0.0fps · .innocent.media 5% | dart:io EventHa 1%
-LAB   88.4 LAB stream: seek to 7299 s
-LAB   88.4 rebuffer start
-LAB   91.4 stall #1 network {reason: network, cache_s: 0, have_kbps: 2964}
-LAB   91.6 stream stretch 10.4 MB in 23147 ms lanes=6
-LAB   94.1 rebuffer end 5659 ms
-LAB cpu app 32% · 7.1fps · 1.raster 23% | .innocent.media 7% | dart:io EventHa 1%
-LAB cpu app 10% · 0.0fps · .innocent.media 6% | dart:io EventHa 2%
-LAB phase streamlong_busyfrag_6 end
-LAB phase streamlong_slow_6 start
-LAB long slow file=720 rtt=2x150ms loss=1% rate=4mbit queue=10000 lanes=6
-LAB device kind=DeviceKind.phone sw=411.0
-LAB    0.0 stream lanes=6
-LAB    0.5 LAB stream: proxy ready
-LAB    1.5 stream index 6.4 MB at 0.0 MB
-LAB    3.5 LAB stream: opening the player
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=24.0 bar=24.0
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=24.0 bar=24.0
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=24.0
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=24.0
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=24.0
-LAB    4.5 hwdec -> auto
-LAB    4.5 open scheme=http len=82 hwdec=auto start=0s autoplay=true
-LAB    4.5 wakelock playing=false bg=false priv=false pos=0ms
-LAB    4.5 first frame 793 ms
-LAB    4.6 open ok
-LAB    4.6 wakelock playing=true bg=false priv=false pos=0ms
-LAB    4.6 rebuffer start
-LAB    5.1 fg stream: watching
-LAB    7.7 stall #1 unknown {reason: unknown}
-LAB cpu app 57% · 7.2fps · 1.raster 31% | pool-thread 14% | .innocent.media 5% | RenderThread 5%
-LAB   12.6 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
-LAB cpu app 40% · 11.4fps · 1.raster 32% | .innocent.media 6%
-LAB cpu app 44% · 11.7fps · 1.raster 33% | .innocent.media 7%
-LAB   29.6 rebuffer end 25010 ms
-LAB cpu app 13% · 3.6fps · .innocent.media 6% | 1.raster 5% | dart:io EventHa 1%
-LAB cpu app 8% · 0.0fps · .innocent.media 5% | dart:io EventHa 1%
-LAB   48.6 LAB stream: seek to 4866 s
-LAB   48.6 rebuffer start
-LAB   48.6 stream stretch 14.2 MB in 43855 ms lanes=6
-LAB   49.9 rebuffer end 1270 ms
-LAB cpu app 12% · 1.7fps · .innocent.media 6% | 1.raster 4% | dart:io EventHa 1%
-LAB   64.6 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
-LAB cpu app 8% · 0.0fps · .innocent.media 5% | dart:io EventHa 1%
-LAB   68.6 LAB stream: seek to 2433 s
-LAB   68.6 rebuffer start
-LAB   68.6 stream stretch 7.5 MB in 20001 ms lanes=6
-LAB   71.8 stall #2 network {reason: network, cache_s: 0, have_kbps: 1236}
-LAB   71.9 rebuffer end 3337 ms
-LAB   72.4 rebuffer start
-LAB   75.4 stall #3 unknown {reason: unknown, cache_s: 2, have_kbps: 1240, need_kbps: 130}
-LAB   75.9 rebuffer end 3555 ms
-LAB cpu app 35% · 8.6fps · 1.raster 27% | .innocent.media 5% | mpv/audiotrack 2%
-LAB cpu app 10% · 0.0fps · .innocent.media 7% | dart:io EventHa 1%
-LAB   88.6 LAB stream: seek to 7299 s
-LAB   88.6 rebuffer start
-LAB   91.1 rebuffer end 2528 ms
-LAB   91.4 rebuffer start
-LAB   94.4 stall #4 unknown {reason: unknown, cache_s: 1, have_kbps: 280, need_kbps: 128}
-LAB   94.8 rebuffer end 3444 ms
-LAB cpu app 30% · 7.4fps · 1.raster 23% | .innocent.media 5%
-LAB cpu app 8% · 0.0fps · .innocent.media 6% | dart:io EventHa 1%
-LAB phase streamlong_slow_6 end
+LAB    4.0 fg stream: watching
+LAB    5.0 rebuffer end 1360 ms
+LAB cpu app 39% · 8.6fps · 1.raster 15% | .innocent.media 10% | pool-thread 7% | dart:io EventHa 3% | RenderThread 2%
+LAB   11.6 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
+LAB cpu app 12% · 0.0fps · .innocent.media 7% | dart:io EventHa 4%
+LAB   48.0 LAB stream: seek to 4866 s
+LAB   48.0 rebuffer start
+LAB   48.4 rebuffer end 325 ms
+LAB cpu app 16% · 0.0fps · .innocent.media 10% | dart:io EventHa 5%
+LAB   63.6 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
+LAB   68.0 LAB stream: seek to 2433 s
+LAB   68.0 rebuffer start
+LAB   69.9 rebuffer end 1847 ms
+LAB cpu app 12% · 2.2fps · 1.raster 7% | .innocent.media 3% | dart:io EventHa 1%
+LAB cpu app 20% · 1.0fps · .innocent.media 12% | dart:io EventHa 5% | DartWorker 1% | 1.raster 1%
+LAB   88.0 LAB stream: seek to 7299 s
+LAB   88.0 rebuffer start
+LAB   89.2 rebuffer end 1159 ms
+LAB cpu app 18% · 2.0fps · .innocent.media 9% | dart:io EventHa 4% | 1.raster 4%
+LAB cpu app 16% · 0.0fps · .innocent.media 10% | dart:io EventHa 5% | DartWorker 1%
+LAB phase streamlong_mm4gfrag_6 end
 LAB phase streamlong_slowfrag_6 start
 LAB long slowfrag file=720frag rtt=2x150ms loss=1% rate=4mbit queue=10000 lanes=6
 LAB device kind=DeviceKind.phone sw=411.0
 LAB    0.0 stream lanes=6
 LAB    0.0 LAB stream: proxy ready
-LAB    1.3 stream index 0.0 MB at 0.0 MB
+LAB    1.0 stream index 0.0 MB at 0.0 MB
 LAB    3.0 LAB stream: opening the player
 LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=24.0 bar=24.0
 LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=24.0 bar=24.0
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=24.0 bar=24.0
+LAB    3.7 hwdec -> auto
 LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=24.0
+LAB    3.8 open scheme=http len=82 hwdec=auto start=0s autoplay=true
+LAB    3.8 wakelock playing=false bg=false priv=false pos=0ms
+LAB    3.8 first frame 633 ms
 LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=24.0
-LAB    4.0 hwdec -> auto
-LAB    4.0 open scheme=http len=82 hwdec=auto start=0s autoplay=true
-LAB    4.0 wakelock playing=false bg=false priv=false pos=0ms
-LAB    4.0 first frame 760 ms
-LAB    4.1 open ok
-LAB    4.1 wakelock playing=true bg=false priv=false pos=0ms
-LAB    4.1 rebuffer start
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=24.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=24.0
-LAB    4.5 fg stream: watching
-LAB    6.0 rebuffer end 1897 ms
-LAB cpu app 53% · 5.6fps · 1.raster 33% | pool-thread 9% | .innocent.media 5% | RenderThread 4%
-LAB   12.0 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
-LAB   14.0 rebuffer start
-LAB   14.3 rebuffer end 306 ms
-LAB cpu app 9% · 1.6fps · .innocent.media 5% | dart:io EventHa 2% | 1.raster 1%
-LAB cpu app 8% · 0.0fps · .innocent.media 5% | dart:io EventHa 2%
-LAB cpu app 8% · 0.0fps · .innocent.media 5% | dart:io EventHa 1%
-LAB cpu app 8% · 0.0fps · .innocent.media 5% | dart:io EventHa 2%
-LAB   48.8 LAB stream: seek to 4866 s
-LAB   48.8 rebuffer start
-LAB   50.2 rebuffer end 1333 ms
-LAB cpu app 15% · 1.8fps · 1.raster 6% | .innocent.media 6% | dart:io EventHa 2%
-LAB   64.0 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
-LAB cpu app 9% · 0.0fps · .innocent.media 6% | dart:io EventHa 2%
-LAB   68.8 LAB stream: seek to 2433 s
-LAB   68.8 rebuffer start
-LAB   68.8 stream stretch 7.4 MB in 19996 ms lanes=6
-LAB   71.9 stall #1 network {reason: network, cache_s: 0, have_kbps: 2891}
-LAB   72.1 rebuffer end 3265 ms
-LAB   75.0 rebuffer start
-LAB   76.3 rebuffer end 1286 ms
-LAB cpu app 27% · 5.7fps · 1.raster 20% | .innocent.media 5% | dart:io EventHa 1%
-LAB cpu app 9% · 0.1fps · .innocent.media 6% | dart:io EventHa 2%
-LAB   88.8 LAB stream: seek to 7299 s
-LAB   88.8 rebuffer start
-LAB   91.9 stall #2 network {reason: network, cache_s: 0, have_kbps: 2359}
-LAB   93.5 rebuffer end 4673 ms
-LAB cpu app 28% · 5.8fps · 1.raster 20% | .innocent.media 5% | dart:io EventHa 1%
-LAB cpu app 8% · 0.0fps · .innocent.media 6% | dart:io EventHa 2%
+LAB    3.9 wakelock playing=true bg=false priv=false pos=0ms
+LAB    3.9 open ok
+LAB    3.9 rebuffer start
+LAB    4.3 fg stream: watching
+LAB    5.9 rebuffer end 2032 ms
+LAB cpu app 38% · 11.2fps · 1.raster 24% | pool-thread 6% | .innocent.media 4% | RenderThread 2%
+LAB   11.8 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
+LAB cpu app 6% · 0.0fps · .innocent.media 4% | dart:io EventHa 2%
+LAB cpu app 5% · 0.0fps · .innocent.media 3% | dart:io EventHa 1%
+LAB   48.2 LAB stream: seek to 4866 s
+LAB   48.2 rebuffer start
+LAB cpu app 7% · 0.0fps · .innocent.media 3% | 1.raster 2% | dart:io EventHa 1%
+LAB   49.6 rebuffer end 1465 ms
+LAB cpu app 10% · 2.6fps · 1.raster 4% | .innocent.media 3% | dart:io EventHa 1%
+LAB   63.8 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
+LAB   68.2 LAB stream: seek to 2433 s
+LAB   68.2 rebuffer start
+LAB   68.2 stream stretch 6.8 MB in 19996 ms lanes=6
+LAB cpu app 6% · 0.0fps · .innocent.media 3% | 1.raster 1% | dart:io EventHa 1%
+LAB   71.2 stall #1 network {reason: network, cache_s: 0, have_kbps: 1423}
+LAB   71.8 rebuffer end 3657 ms
+LAB cpu app 21% · 6.3fps · 1.raster 16% | .innocent.media 4% | dart:io EventHa 1%
+LAB   88.2 LAB stream: seek to 7299 s
+LAB   88.2 rebuffer start
+LAB cpu app 7% · 0.0fps · .innocent.media 3% | 1.raster 2% | dart:io EventHa 1%
+LAB   91.2 stall #2 network {reason: network, cache_s: 0, have_kbps: 3589}
+LAB   91.9 rebuffer end 3764 ms
+LAB cpu app 20% · 6.5fps · 1.raster 15% | .innocent.media 3% | dart:io EventHa 1%
 LAB phase streamlong_slowfrag_6 end
