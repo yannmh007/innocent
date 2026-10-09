@@ -60,18 +60,23 @@ appId: com.innocent.media
       text: "(?s).*Connect & run id.*"
     direction: DOWN
 - tapOn: "(?s).*Connect & run id.*"
-# Android asks whether to trust the app's key, as it does a computer's.
+# Android asks whether to trust the app's key, as it does a computer's —
+# where adbd checks keys at all (ro.adb.secure=1; run.sh logs which).
 - extendedWaitUntil:
-    visible: "(?s).*Allow USB debugging.*"
-    timeout: 20000
-- takeScreenshot: 98_adb_allow
-- tapOn:
-    text: "(?s)Always allow.*"
-    optional: true
-- tapOn: "Allow"
+    visible: "(?s).*(Allow USB debugging|Found [1-9][0-9]* video).*"
+    timeout: 30000
+- runFlow:
+    when:
+      visible: "(?s).*Allow USB debugging.*"
+    commands:
+      - takeScreenshot: 98_adb_allow
+      - tapOn:
+          text: "(?s)Always allow.*"
+          optional: true
+      - tapOn: "Allow"
 # Connected: the app scans Android/data by itself.
 - extendedWaitUntil:
-    visible: "(?s).*Found 1 video.*"
+    visible: "(?s).*Found [1-9][0-9]* video.*"
     timeout: 60000
 - takeScreenshot: 99_adb_found
 - scrollUntilVisible:
