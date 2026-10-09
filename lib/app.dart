@@ -171,14 +171,23 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
       // app closes after four minutes, which ends the test.
       if (const bool.fromEnvironment('INNOCENT_LAB') &&
           req.uri == 'innocent-lab://title') {
-        const id = String.fromEnvironment('INNOCENT_LAB_TITLE');
-        if (id.isEmpty) {
-          PlaybackLog.add('LAB title: none compiled in');
-          return;
-        }
         PlaybackLog.add('LAB script: catalogue title');
-        unawaited(_labTitle(id));
-        Timer(const Duration(seconds: 240), () => exit(0));
+        // Compiled in for Test Lab; the device lab names it in
+        // lab_stream_url instead, to take this same path on the emulator.
+        const built = String.fromEnvironment('INNOCENT_LAB_TITLE');
+        unawaited(() async {
+          final id = built.isNotEmpty
+              ? built
+              : await LabStream.titleId(file: 'lab_loop_title');
+          if (id == null || id.isEmpty) {
+            PlaybackLog.add('LAB title: none named');
+            return;
+          }
+          await _labTitle(id);
+        }());
+        if (built.isNotEmpty) {
+          Timer(const Duration(seconds: 240), () => exit(0));
+        }
         return;
       }
       // Wait for the router/widget tree to be ready before pushing.

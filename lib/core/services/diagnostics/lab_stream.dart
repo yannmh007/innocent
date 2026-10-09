@@ -59,10 +59,14 @@ class LabStream {
   /// `lab_stream_url` — or null. Played through `playMedia`: the real
   /// request-playback, the real Worker and R2, the rung Auto picks, the
   /// climb and the step down. Free titles only (the lab has no account).
-  static Future<String?> titleId() async {
+  ///
+  /// [file] is `lab_loop_title` for the game-loop path (scenario 3) when the
+  /// device lab reproduces a Test Lab launch on the emulator — a different
+  /// file, so the launch-time path does not also start the same film.
+  static Future<String?> titleId({String file = 'lab_stream_url'}) async {
     if (!const bool.fromEnvironment('INNOCENT_LAB')) return null;
     try {
-      final raw = await _read('lab_stream_url');
+      final raw = await _read(file);
       if (raw == null || !raw.startsWith('title:')) return null;
       final id = raw.substring('title:'.length).trim();
       return id.isEmpty ? null : id;

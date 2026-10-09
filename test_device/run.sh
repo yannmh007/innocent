@@ -332,6 +332,29 @@ for flow in $FLOWS; do
     continue
     ;;
   esac
+  # TEST LAB'S LAUNCH, ON THE EMULATOR. Test Lab starts a lab APK with the
+  # game-loop intent (scenario 3 = a catalogue title) and on two real phones
+  # the film never reached the screen (run 37967931084) while the launch-time
+  # path above plays it. Same intent here, the title from lab_loop_title.
+  case "$flow" in titleloop)
+    if [ -z "${CLIMB_TITLE:-}" ]; then log "flow titleloop: no CLIMB_TITLE — skipped"; continue; fi
+    adb shell am force-stop "$PKG"
+    adb shell pm clear "$PKG" >/dev/null 2>&1 || true
+    d="/sdcard/Android/data/$PKG/files"
+    adb shell mkdir -p "$d" >/dev/null 2>&1
+    adb shell "echo title:$CLIMB_TITLE > $d/lab_loop_title"
+    adb shell am start -W -a com.google.intent.action.TEST_LOOP -t application/javascript \
+      --ei scenario 3 -n "$PKG/.MainActivity" >/dev/null 2>&1
+    sleep 75
+    adb exec-out screencap -p > "$OUT/shots/9_titleloop.png"
+    log "titleloop: $(grep -c 'opening the player' "$OUT/logcat_raw.txt" 2>/dev/null) player open(s), $(grep -c 'first frame' "$OUT/logcat_raw.txt" 2>/dev/null) first frame(s) so far in the run"
+    adb shell log -p i -t flutter "LAB phase $flow end" >/dev/null 2>&1 || true
+    adb shell am force-stop "$PKG"
+    adb shell rm -f "$d/lab_loop_title" >/dev/null 2>&1 || true
+    log "flow $flow done"
+    continue
+    ;;
+  esac
   case "$flow" in streamlong_*)
     rest="${flow#streamlong_}"
     n="${rest##*_}"

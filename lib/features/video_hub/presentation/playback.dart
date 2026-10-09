@@ -298,6 +298,7 @@ Future<void> playMedia(
       },
     );
     final openUrl = localUrl ?? playUrl;
+    PlaybackLog.add('play through ${localUrl == null ? 'the remote address' : 'the local proxy'}');
 
     // The renewal picks again rather than reusing this rung. A film longer
     // than a signature's life is renewed mid-playback, and by then the
@@ -436,7 +437,13 @@ Future<void> playMedia(
                 playing: chosen == null ? 'Original' : '${chosen.height}p',
               ));
     // What plays when this ends: the album's next video (Up next).
-    if (!context.mounted) return;
+    if (!context.mounted) {
+      // Said in the trail: a film the server granted and the proxy started,
+      // that never reached the screen, was otherwise silence (Test Lab, run
+      // 37967931084 — two phones stopped exactly here).
+      PlaybackLog.add('play: the screen went away before the player opened');
+      return;
+    }
     UpNext.register(
         openUrl,
         _nextInAlbum(context, ref,
@@ -444,6 +451,7 @@ Future<void> playMedia(
             source: source,
             shownTitle:
                 titleOverride ?? content.displayTitle(s.locale.languageCode)));
+    PlaybackLog.add('play: opening the player');
     context.push(
       Routes.player,
       extra: <String, dynamic>{
