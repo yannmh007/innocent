@@ -31,21 +31,29 @@ class LabStream {
     return (await f.readAsString()).trim();
   }
 
-  /// When to jump and where to: `lab_seek` holds "AFTER:TO" in seconds — the
-  /// lab's seek into the middle of a long film, timed by the trail's
-  /// rebuffer lines. Null when the lab asked for none.
-  static Future<(Duration after, Duration to)?> seekPlan() async {
-    if (!const bool.fromEnvironment('INNOCENT_LAB')) return null;
+  /// When to jump and where to: `lab_seek` holds "AFTER:TO" in seconds, or
+  /// several separated by commas ("45:4866,60:2000,75:7300") — the lab's
+  /// seeks into a long film, each timed by the trail's rebuffer lines. One
+  /// seek a line was one sample of a noisy thing; three are a pattern.
+  /// Empty when the lab asked for none.
+  static Future<List<(Duration after, Duration to)>> seekPlan() async {
+    if (!const bool.fromEnvironment('INNOCENT_LAB')) return const [];
     try {
-      final parts = (await _read('lab_seek'))?.split(':');
-      if (parts == null || parts.length != 2) return null;
-      final after = int.tryParse(parts[0]), to = int.tryParse(parts[1]);
-      if (after == null || to == null) return null;
-      return (Duration(seconds: after), Duration(seconds: to));
+      final raw = await _read('lab_seek');
+      if (raw == null || raw.isEmpty) return const [];
+      return parseSeekPlan(raw);
     } catch (_) {
-      return null;
+      return const [];
     }
   }
+
+  /// "AFTER:TO[,AFTER:TO…]" in seconds; malformed entries are skipped.
+  static List<(Duration after, Duration to)> parseSeekPlan(String raw) => [
+        for (final item in raw.split(','))
+          if (item.trim().split(':') case [final a, final b]
+              when int.tryParse(a) != null && int.tryParse(b) != null)
+            (Duration(seconds: int.parse(a)), Duration(seconds: int.parse(b))),
+      ];
 
   /// The loopback address to play, or null when the lab named no film.
   static Future<String?> localUrl() async {

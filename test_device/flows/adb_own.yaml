@@ -30,6 +30,10 @@ appId: com.innocent.media
 - tapOn: "(?s)Settings\\n.*"
 - waitForAnimationToEnd:
     timeout: 3000
+# The ADB tiles live under Settings → List.
+- tapOn: "List"
+- waitForAnimationToEnd:
+    timeout: 3000
 # The engine self-test: key + certificate built on this device.
 - scrollUntilVisible:
     element:

@@ -318,7 +318,10 @@ for flow in $FLOWS; do
     adb shell mkdir -p "$d" >/dev/null 2>&1
     adb shell "echo $n > $d/lab_lanes"
     adb shell "echo http://10.0.2.2:${LONG_PORT}/long_${rung}.mp4 > $d/lab_stream_url"
-    adb shell "echo ${LONG_SEEK_AFTER:-45}:$((LONG_DUR / 2)) > $d/lab_seek"
+    # Three seeks, twenty seconds apart: the middle, a quarter in, three
+    # quarters in. One seek a line was one sample of a noisy thing.
+    a=${LONG_SEEK_AFTER:-45}
+    adb shell "echo $a:$((LONG_DUR / 2)),$((a + 20)):$((LONG_DUR / 4)),$((a + 40)):$((LONG_DUR * 3 / 4)) > $d/lab_seek"
     adb shell log -p i -t flutter "LAB long $prof file=$rung rtt=2x$delay loss=$loss rate=$rate queue=${queue:-10000} lanes=$n" >/dev/null 2>&1 || true
     adb shell am start -W -n "$PKG/.MainActivity" >/dev/null 2>&1
     sleep $(( ${LONG_SEEK_AFTER:-45} + 2 ))
