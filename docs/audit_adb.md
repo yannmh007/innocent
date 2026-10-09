@@ -891,3 +891,23 @@ and it was right then for the same reason: four recurrences is not bad luck.
 
 * 13 Sep 2026 — first version. 12 findings, 11 withdrawn, 3 questions for a
   real device.
+* 9 Oct 2026 — 1.64.59, after a review of how Shizuku, App Manager and LADB
+  set up and use their own ADB connections:
+  * mDNS answers are kept only when they resolve to one of this phone's own
+    addresses, and pairing goes over 127.0.0.1 first (Shizuku's rule). On a
+    shared Wi-Fi the first answer used to be taken, which could be another
+    phone's pairing dialog or adbd.
+  * The ADB screen opens on a live checklist (Developer options, Wi-Fi,
+    Wireless debugging, notifications, paired, connected) read from Settings
+    on resume and every two seconds; "Open Wireless debugging" lands on that
+    row; brand tips for Xiaomi/HyperOS, OPPO/ColorOS and TECNO/Infinix/itel.
+  * Android/data folders are named after their app ("Telegram · cache").
+  * Android/data videos stream through the loopback proxy instead of being
+    copied whole first; the copy remains the fallback, also mid-film. The
+    proxy caches file lengths for a minute and answers 416 past the end.
+    Thumbnails are read through the same stream, only while connected.
+  * Resume points and history are keyed on adb:// / sealed:// rather than the
+    per-process loopback address.
+  * The device lab now exercises the engine end to end (flow `adb_data`):
+    adbd on TCP 5555, the app's key allowed at Android's prompt, a planted
+    clip scanned, played and listed.
