@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:device_info_plus/device_info_plus.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/di/core_providers.dart';
 import '../../../core/router/routes.dart';
 import '../../../core/services/adb/adb_service.dart';
+import '../../../core/services/adb/wireless_adb_risk.dart';
 import '../../local_browser/presentation/library_provider.dart';
 
 /// Experimental ADB pairing/connect screen.
@@ -48,6 +50,12 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen> {
   // v0.89: whether the notification pairing service is currently running.
   bool _pairingServiceOn = false;
 
+  /// CVE-2026-0073: this phone's wireless debugging may let a device on the
+  /// same Wi-Fi in without pairing (see [wirelessAdbPossiblyExposed]), and
+  /// its security patch level, for the warning's own words.
+  bool _exposed = false;
+  String _patch = '';
+
   /// Turn raw engine output into something a non-technical user can act on.
   /// Normal users should never see "IOException: Stream closed".
   String _friendly(String raw) {
@@ -88,6 +96,72 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen> {
     // v0.89: receive results from the notification pairing service.
     AdbService.instance.setPairResultListener(_onPairServiceResult);
     _loadAndAutoConnect();
+    _checkExposure();
+  }
+
+  Future<void> _checkExposure() async {
+    try {
+      final a = await DeviceInfoPlugin().androidInfo;
+      final patch = a.version.securityPatch ?? '';
+      final exposed = wirelessAdbPossiblyExposed(
+          sdkInt: a.version.sdkInt, securityPatch: patch);
+      if (!mounted) return;
+      setState(() {
+        _exposed = exposed;
+        _patch = patch;
+      });
+    } catch (_) {
+      // No device info: no warning rather than a wrong one.
+    }
+  }
+
+  /// Shown at the top of the screen on a phone [_exposed] to CVE-2026-0073.
+  Widget _exposureWarning() {
+    final when = _patch.isEmpty ? 'unknown' : _patch;
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.orange.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.orange.withValues(alpha: 0.5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.gpp_maybe_outlined, color: Colors.orange, size: 20),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Update your phone before leaving Wireless debugging on',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'This phone\u2019s security update is from $when. Android 14 '
+            'to 16 need the May 2026 update (or a newer Google Play system '
+            'update) to close a Wireless debugging flaw (CVE-2026-0073): '
+            'without it, a device on the same Wi-Fi can get in without '
+            'pairing. Until you update, turn Wireless debugging off when '
+            'you are not using it, and leave auto-reconnect after reboot '
+            'off.',
+            style: const TextStyle(fontSize: 12.5, height: 1.4),
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: _busy ? null : _openWirelessDebugging,
+            icon: const Icon(Icons.settings, size: 18),
+            label: const Text('Open Wireless debugging'),
+          ),
+        ],
+      ),
+    );
   }
 
   /// Result of a pairing attempt made from the notification shade. Runs on
@@ -633,6 +707,7 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          if (_exposed) _exposureWarning(),
           ..._builtinSection(),
 
           const SizedBox(height: 24),
@@ -819,6 +894,15 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen> {
               style: const TextStyle(fontSize: 12),
             ),
             const SizedBox(height: 8),
+            if (_exposed)
+              const Padding(
+                padding: EdgeInsets.only(bottom: 8),
+                child: Text(
+                  'Not advised on this phone until it has the May 2026 '
+                  'security update — see the warning at the top.',
+                  style: TextStyle(fontSize: 12, color: Colors.orange),
+                ),
+              ),
             if (_autoEnableGranted)
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
