@@ -9,7 +9,6 @@ import 'package:flutter/services.dart' show MethodChannel;
 import 'picker_media_source.dart';
 
 import '../../local_browser/presentation/library_provider.dart';
-import '../../../core/localization/app_strings.dart';
 /// App-lifetime caches for the Add-Files picker (v0.52).
 ///
 /// The picker used to hold its folder/app lists in local StatefulWidget

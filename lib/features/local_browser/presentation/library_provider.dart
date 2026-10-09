@@ -9,7 +9,6 @@ import '../../../core/services/cache/library_cache.dart';
 import '../../../core/services/cache/scan_gate.dart';
 import '../../../core/services/thumbnail/thumbnail_cache.dart';
 import '../../../core/services/adb/adb_service.dart';
-import '../../private_folder/data/private_folder_providers.dart';
 import '../../../core/services/saf/saf_service.dart';
 import '../data/library_local_datasource.dart';
 import '../domain/folder.dart';

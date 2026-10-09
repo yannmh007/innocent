@@ -11,7 +11,6 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../adb/adb_service.dart';
 
-import '../../../core/localization/app_strings.dart';
 /// Private folder service — guards a list of videos behind a PIN and,
 /// when possible, moves the underlying files into an app-private vault.
 /// PIN is hashed with SHA-256 (per-install random salt) before storage.

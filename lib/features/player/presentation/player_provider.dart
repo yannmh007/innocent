@@ -1326,7 +1326,6 @@ class PlayerController extends StateNotifier<PlayerState> {
   Timer? _volumePersistTimer;
   DateTime _lastSeekAt = DateTime.fromMillisecondsSinceEpoch(0);
   int? _lastSeekTargetMs;
-  Rect? _speedSliderBounds;
   // Long-press speed control (MX-style relative drag): the finger position
   // where the long-press begins is the anchor and maps to the current speed;
   // speed changes only as the finger is dragged from that anchor, never

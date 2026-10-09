@@ -419,28 +419,6 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
     });
   }
 
-  // ---- Primary: one-code (mDNS auto-discover) ----
-
-  void _pairMdns() {
-    final code = _code.text.trim();
-    if (code.length < 6) {
-      setState(() => _output = 'Enter the 6-digit pairing code first.');
-      return;
-    }
-    _run(
-      () => AdbService.instance.pairMdns(code),
-      'Pairing…\nKeep the "Pair device with pairing code" dialog visible '
-          '(split-screen / pop-up window).',
-    );
-  }
-
-  void _connectMdns() {
-    _run(
-      () => AdbService.instance.autoConnectAndRun('id'),
-      'Connecting automatically…',
-    );
-  }
-
   /// One-tap: grant WRITE_SECURE_SETTINGS over ADB so the app can re-enable
   /// wireless debugging by itself after a reboot (no PC, no root).
   Future<void> _setupAutoEnable() async {

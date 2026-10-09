@@ -11,7 +11,6 @@ import '../../features/video_hub/presentation/gate/age_gate_screen.dart';
 import '../../features/video_hub/presentation/video_hub_screen.dart';
 import 'routes.dart';
 
-import '../../core/localization/app_strings.dart';
 /// The root navigator (renders ABOVE the shell). Full-screen routes pin to
 /// this key so they always cover the shell's bottom nav bar, no matter
 /// which tab context the push came from. Without this, GoRouter's push

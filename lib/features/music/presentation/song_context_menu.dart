@@ -6,7 +6,6 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../domain/song.dart';
-import 'music_player_screen.dart';
 import 'music_providers.dart';
 
 import '../../../core/localization/app_strings.dart';

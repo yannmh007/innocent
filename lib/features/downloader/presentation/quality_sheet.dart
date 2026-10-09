@@ -840,7 +840,7 @@ class _QualitySheetState extends ConsumerState<QualitySheet> {
                     color: AppColors.warning, fontSize: 11),
               ),
             )
-          else if (sel != null && !sel.isCombined && sel.hasVideo)
+          else if (!sel.isCombined && sel.hasVideo)
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: Text(

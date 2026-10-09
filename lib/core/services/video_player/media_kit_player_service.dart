@@ -861,7 +861,7 @@ class MediaKitPlayerService implements VideoPlayerService {
     // and the trail is copied out to be shared.
     PlaybackLog.add(
       'open scheme=${_schemeOf(uri)} len=${uri.length} '
-      'hwdec=${_currentHwdec ?? "-"} start=${startAt?.inSeconds ?? 0}s '
+      'hwdec=$_currentHwdec start=${startAt?.inSeconds ?? 0}s '
       'autoplay=$autoplay',
     );
     // Release a binding held for a DIFFERENT stream before claiming, so

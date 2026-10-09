@@ -5,8 +5,6 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/localization/app_strings.dart';
 import '../../../../core/router/routes.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/ui/app_snackbar.dart';
-import '../../../user_data/user_data_providers.dart';
 import '../../domain/video.dart';
 import '../library_provider.dart';
 import 'bulk_actions.dart';

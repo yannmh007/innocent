@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -13,7 +12,6 @@ import '../../../core/di/core_providers.dart';
 import '../../user_data/user_data_providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../local_browser/domain/folder.dart';
-import '../../local_browser/domain/video.dart';
 import '../../local_browser/presentation/hidden_badge.dart';
 import '../../local_browser/presentation/library_provider.dart';
 import '../data/picker_media_source.dart';
@@ -24,7 +22,6 @@ import '../../settings/presentation/adb_connect_screen.dart';
 import 'package:photo_manager/photo_manager.dart';
 import 'picker_sort_dialog.dart';
 import 'vault_progress.dart';
-import '../../../core/di/core_providers.dart';
 
 import '../../../core/localization/app_strings.dart';
 import '../../../core/ui/tv_focus.dart';
@@ -193,12 +190,6 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
   // but File entries are hidden — the "folders show, files don't" bug).
   bool? _fullStorage;
 
-  // Monotonic token: bumped whenever the visible category/level changes.
-  // Async loaders capture it and drop their result if it's stale, so a
-  // scan that finishes after the user has navigated away can never call
-  // setState on content that's no longer shown (the old blank-screen bug).
-  int _loadToken = 0;
-
   // Files (directory browser). Empty stack = storage-roots level.
   final List<Directory> _dirStack = [];
 
@@ -207,11 +198,6 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
   // connected (those folders are only readable through ADB).
   bool _showHidden = false;
 
-  // v0.94: memoised directory listing. `_listKey` identifies the
-  // (directory, sort, direction, hidden) combination the cached future belongs
-  // to, so build() can reuse it instead of restarting the read every rebuild.
-  String _listKey = '';
-  Future<List<_DirEntry>>? _listFuture;
   // Per-path listing cache (keyed by the same path|sort|dir|hidden key). ADB
   // listings are slower than dart:io, so caching each visited directory means
   // navigating back UP a deep Android/data tree is instant instead of
@@ -290,7 +276,6 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
     HapticFeedback.selectionClick();
     _revealActiveChip();
     setState(() {
-      _loadToken++;
       _cat = c;
       _vFolder = null;
       _mFolder = null;
@@ -481,7 +466,6 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
 
   void _popLevel() {
     setState(() {
-      _loadToken++;
       // Same reason as [_openDir]: the list about to be shown is not the one
       // `_rendered` still holds.
       _rendered = const <PickedFile>[];
@@ -1258,7 +1242,6 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
                     color: AppColors.accentBlue),
                 onTap: () {
                   setState(() {
-                    _loadToken++;
                     _mFolder = null;
                     // Reuse the cached scan for this type if we already ran it
                     // this session; only the first entry pays the ADB `find`.
@@ -1280,7 +1263,6 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
                   : _MediaFolderCover(folder: f),
               onTap: () {
                 setState(() {
-                  _loadToken++;
                   _mFolder = f;
                   _adbMediaFiles = null;
                 });
@@ -1513,13 +1495,9 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
     // common case when navigating back up a tree.
     final hit = _listCache[key];
     if (hit != null) {
-      _listKey = key;
-      _listFuture = hit;
       return hit;
     }
-    _listKey = key;
     final f = _listDir(dir);
-    _listFuture = f;
     // Bound the cache so a very deep browse can't grow it without limit; drop
     // the oldest entry when over budget (insertion order is preserved by Map).
     if (_listCache.length >= 24) {
@@ -1531,8 +1509,6 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
 
   /// Forget the cached listing so the next build re-reads the directory.
   void _invalidateListing() {
-    _listKey = '';
-    _listFuture = null;
     _listCache.clear();
   }
 

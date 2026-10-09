@@ -3396,7 +3396,6 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                 onSpeedChanged: (speed) {
                   controller.setSpeed(speed);
                 },
-                onBoundsUpdate: controller.setSpeedSliderBounds,
               ),
             ),
 

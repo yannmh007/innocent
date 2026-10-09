@@ -710,8 +710,8 @@ class OfflineDownloader {
       // call is also what renews the WakeLock's safety cap.
       if (force || now.difference(lastNoticeAt) >= const Duration(seconds: 2)) {
         lastNoticeAt = now;
-        final pct = total != null && total! > 0
-            ? ((received / total!) * 100).clamp(0, 100).round()
+        final pct = total != null && total > 0
+            ? ((received / total) * 100).clamp(0, 100).round()
             : -1;
         // THE SPEED GOES IN THE SHADE TOO. This notification is what somebody
         // who put the phone down looks at, and it is the only place they can
@@ -763,7 +763,7 @@ class OfflineDownloader {
         // times, on a download that is sitting finished on the disk. Costing
         // somebody their film to a rename that did not happen is the kind of
         // thing nobody would ever find.
-        if (total != null && received >= total! && received > 0) {
+        if (total != null && received >= total && received > 0) {
           serviceUp = false;
           return _finish(
             content: content,
@@ -966,7 +966,7 @@ class OfflineDownloader {
         if (confirmSize != null && !askedSize && received == 0) {
           askedSize = true;
           if (total != null) {
-            final ok = await confirmSize(total!, await _freeBytes(dir.path));
+            final ok = await confirmSize(total, await _freeBytes(dir.path));
             if (!ok) {
               try {
                 await response.stream.drain<void>();
@@ -987,7 +987,7 @@ class OfflineDownloader {
         if (total != null &&
             !hasRoomFor(
               freeBytes: await _freeBytes(dir.path),
-              totalBytes: total!,
+              totalBytes: total,
               alreadyOnDisk: received,
             )) {
           try {
@@ -1195,7 +1195,7 @@ class OfflineDownloader {
         // throwing is indistinguishable from a finished one except by this
         // check, and "downloaded" is a promise the app makes offline, where it
         // cannot go back and look.
-        if (!broke && total != null && received >= total!) {
+        if (!broke && total != null && received >= total) {
           serviceUp = false;
           return _finish(
             content: content,
