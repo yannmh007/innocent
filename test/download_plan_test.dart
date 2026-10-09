@@ -1,5 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:innocent/features/video_hub/data/api/download_plan.dart';
+import 'package:innocent/features/video_hub/data/api/offline_library.dart';
+import 'package:innocent/features/video_hub/domain/rendition.dart';
 
 void main() {
   group('retryDelay', () {
@@ -157,6 +159,83 @@ void main() {
 
     test('a film of unknown size is not refused on arithmetic it cannot do', () {
       expect(hasRoomFor(freeBytes: 10 * g, totalBytes: 0), isTrue);
+    });
+  });
+
+  group('download quality', () {
+    // Sintel's real ladder: 360p 68 MB, 480p 101 MB, 720p 187 MB; the
+    // original is 1.1 GB.
+    const ladder = <Rendition>[
+      Rendition(height: 480, kbps: 912, url: 'u480', bytes: 101272345),
+      Rendition(height: 360, kbps: 612, url: 'u360', bytes: 67918610),
+      Rendition(height: 720, kbps: 1684, url: 'u720', bytes: 186974000),
+    ];
+
+    test('the original is what a download is unless a height was chosen', () {
+      expect(downloadSource(originalUrl: 'orig', ladder: ladder, quality: 'original'),
+          (url: 'orig', height: null));
+      // An unanswered ("ask") or unreadable choice is never a smaller copy.
+      expect(downloadSource(originalUrl: 'orig', ladder: ladder, quality: 'ask'),
+          (url: 'orig', height: null));
+      expect(downloadSource(originalUrl: 'orig', ladder: ladder, quality: 'nonsense'),
+          (url: 'orig', height: null));
+    });
+
+    test('a height is that rung, or the nearest below it — never heavier', () {
+      expect(downloadSource(originalUrl: 'orig', ladder: ladder, quality: '720'),
+          (url: 'u720', height: 720));
+      expect(downloadSource(originalUrl: 'orig', ladder: ladder, quality: '1080'),
+          (url: 'u720', height: 720));
+      expect(downloadSource(originalUrl: 'orig', ladder: ladder, quality: '480'),
+          (url: 'u480', height: 480));
+      // Below every rung: the smallest, the closest to what was asked.
+      expect(downloadSource(originalUrl: 'orig', ladder: ladder, quality: '240'),
+          (url: 'u360', height: 360));
+    });
+
+    test('no ladder means the original whatever was chosen', () {
+      expect(downloadSource(originalUrl: 'orig', ladder: const [], quality: '480'),
+          (url: 'orig', height: null));
+    });
+
+    test('every renewal of one download lands on the same copy', () {
+      final reordered = ladder.reversed.toList();
+      for (final q in <String>['720', '480', '360', 'original']) {
+        expect(downloadSource(originalUrl: 'o', ladder: ladder, quality: q),
+            downloadSource(originalUrl: 'o', ladder: reordered, quality: q));
+      }
+    });
+
+    test('the sheet lists every rung best first, then the original', () {
+      final options = downloadOptions(ladder, originalBytes: 1127595385);
+      expect(options.map((o) => o.id).toList(), <String>['720', '480', '360', 'original']);
+      expect(options.first.bytes, 186974000);
+      expect(options.last.bytes, 1127595385);
+      expect(downloadOptions(const []), isEmpty);
+    });
+
+    test('normalise and forDownload', () {
+      expect(DownloadQuality.normalise(null), 'ask');
+      expect(DownloadQuality.normalise('720'), '720');
+      expect(DownloadQuality.normalise('-3'), 'ask');
+      expect(DownloadQuality.forDownload('ask'), 'original');
+      expect(DownloadQuality.forDownload('480'), '480');
+    });
+
+    test('a pending download remembers its copy; old rows are the original', () {
+      final row = PendingDownload(
+          titleId: 't', title: 'Sintel', startedAt: DateTime(2026, 10, 9), quality: '480');
+      expect(PendingDownload.fromJson(row.toJson())!.quality, '480');
+      final old = Map<String, dynamic>.from(row.toJson())..remove('quality');
+      expect(PendingDownload.fromJson(old)!.quality, 'original');
+    });
+
+    test('a finished download says which copy it is; old rows are the original', () {
+      final item = OfflineItem(
+          titleId: 't', title: 'Sintel', path: '/x.mp4', bytes: 1,
+          addedAt: DateTime(2026, 10, 9), height: 720);
+      expect(OfflineItem.fromJson(item.toJson())!.height, 720);
+      expect(OfflineItem.fromJson(item.toJson()..remove('height'))!.height, isNull);
     });
   });
 }

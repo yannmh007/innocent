@@ -137,19 +137,14 @@ class DownloadNotices {
 /// THE ONE THING THIS MUST NOT DO
 /// ═══════════════════════════════════════════════════════════════════════
 ///
-/// It must not download a rung. The transcode ladder exists so that STREAMING
-/// can be matched to a connection second by second — a viewer on a weak link
-/// gets a smaller copy rather than a film that stops. A download is the
-/// opposite situation: the whole point of waiting is to end up with the film
-/// as it was uploaded, and a viewer who waited two hours for a 480p copy of a
-/// 4K master has been robbed of the only thing the wait was buying.
-///
-/// So this uses `grant.url`, which the playback endpoint signs from the
-/// ORIGINAL object key, and never touches `grant.renditions`. That is not an
-/// accident of the code that can be tidied away later: the ladder and the
-/// original are two different answers to two different questions, and this
-/// class is on the side that wants the original. (`tool/check.py` has a
-/// structural check that says so, so a later refactor cannot quietly swap it.)
+/// It must not hand a viewer a smaller copy than the one they chose. The
+/// ORIGINAL is the default — `grant.url`, which the playback endpoint signs
+/// from the original object key — and a streaming rung is fetched only when
+/// the viewer picked one in the quality sheet (Netflix's Standard/Higher,
+/// YouTube's resolutions) to save data and storage. Which copy is decided by
+/// [downloadSource] in download_plan.dart and nowhere else, the same way on
+/// every renewal, so a two-hour download stays one file. (A structural check
+/// in `tool/security_invariants.py` holds both halves of that.)
 ///
 /// ═══════════════════════════════════════════════════════════════════════
 /// THE PROBLEM THIS EXISTS TO SOLVE
@@ -359,9 +354,11 @@ class OfflineDownloader {
     void Function(OfflineProgress)? onProgress,
     DownloadNotices notices = DownloadNotices.english,
     Future<bool> Function(int totalBytes, int freeBytes)? confirmSize,
+    String quality = DownloadQuality.original,
   }) async {
     final key = offlineKeyFor(content.id, assetId: assetId);
     if (_streams.containsKey(key)) return null;
+    final want = DownloadQuality.forDownload(quality);
 
     final controller = StreamController<OfflineProgress>.broadcast();
     _streams[key] = controller;
@@ -394,6 +391,8 @@ class OfflineDownloader {
       premium: content.accessTier == AccessTier.premium,
       // Starting or resuming clears the pause: it is being asked for again.
       pausedByUser: false,
+      // So a resume tomorrow, by hand or by itself, fetches the SAME copy.
+      quality: want,
     ));
 
     // Queued behind any transfer already registered. Said out loud, because a
@@ -423,6 +422,7 @@ class OfflineDownloader {
           notices: notices,
           confirmSize: confirmSize,
           emit: emit,
+          quality: want,
         );
         completer.complete(item);
       } catch (e) {
@@ -631,9 +631,14 @@ class OfflineDownloader {
     required DownloadNotices notices,
     required Future<bool> Function(int totalBytes, int freeBytes)? confirmSize,
     required void Function(OfflineProgress) emit,
+    required String quality,
   }) async {
     final key = offlineKeyFor(content.id, assetId: assetId);
     final dir = await _library.directory();
+    // The rung this download is fetching, or null for the original. Until a
+    // grant says which rung it really is, the height that was asked for — a
+    // download found finished on disk never asks.
+    int? height = int.tryParse(quality);
     // Named by the TITLE ID, not by the title. A name is operator-entered
     // text that can contain anything a path cannot, and two titles can share
     // one; an id is a uuid and is unique by construction.
@@ -777,6 +782,7 @@ class OfflineDownloader {
             label: label,
             notices: notices,
             emit: emit,
+            height: height,
           );
         }
 
@@ -863,7 +869,15 @@ class OfflineDownloader {
           ));
           return null;
         }
-        final url = grant.url;
+        // THE COPY THE VIEWER CHOSE — the original unless they asked for a
+        // smaller one, and the same one on every renewal. See [downloadSource].
+        final copy = downloadSource(
+          originalUrl: grant.url,
+          ladder: grant.renditions,
+          quality: quality,
+        );
+        final url = copy.url;
+        height = copy.height;
         if (url == null || url.isEmpty) {
           failures++;
           continue;
@@ -1209,6 +1223,7 @@ class OfflineDownloader {
             label: label,
             notices: notices,
             emit: emit,
+            height: height,
           );
         }
         if (!broke && total == null && received > 0) {
@@ -1229,6 +1244,7 @@ class OfflineDownloader {
             label: label,
             notices: notices,
             emit: emit,
+            height: height,
           );
         }
         // A full disk has already reported itself, and no amount of waiting
@@ -1314,6 +1330,7 @@ class OfflineDownloader {
     required String label,
     required DownloadNotices notices,
     required void Function(OfflineProgress) emit,
+    int? height,
   }) async {
     // THE TRAILER, AND THEN NOTHING ELSE IS WRITTEN. Until it is there the file
     // is ciphertext that nothing can identify as ciphertext, which is exactly
@@ -1370,6 +1387,7 @@ class OfflineDownloader {
       // longer than the object it came from and cannot be handed to the player
       // as a path.
       sealed: sealer != null,
+      height: height,
     );
     await _library.put(item);
     await _library.dropPending(key);
@@ -1441,6 +1459,11 @@ class OfflineDownloader {
 
   /// Free bytes on the volume holding [dir], or -1 when the platform did not
   /// answer. Same channel the player's disk cache uses.
+  /// Free space where downloads are kept, or -1 when the platform did not
+  /// say — for the quality sheet, which shows it beside the sizes.
+  Future<int> freeSpace() async =>
+      _freeBytes((await _library.directory()).path);
+
   Future<int> _freeBytes(String dir) async {
     try {
       final v = await const MethodChannel('mx_clone/media_scan')

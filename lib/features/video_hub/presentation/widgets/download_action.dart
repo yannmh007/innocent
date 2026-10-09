@@ -13,6 +13,7 @@ import '../../domain/video_content.dart';
 import '../account_provider.dart';
 import '../video_hub_provider.dart';
 import '../video_hub_theme.dart';
+import 'download_quality_sheet.dart';
 
 /// Download / downloading / downloaded, in one control.
 ///
@@ -90,6 +91,19 @@ class _DownloadActionState extends ConsumerState<DownloadAction> {
     final deviceId = await DeviceIdentity.get();
     if (!mounted) return;
 
+    // WHICH COPY — the original, or a smaller one the viewer picks with the
+    // sizes in front of them. Asked before any byte moves; a remembered
+    // answer is used without asking. See [chooseDownloadQuality].
+    final choice = await chooseDownloadQuality(
+      context,
+      repo: ref.read(contentRepositoryProvider),
+      content: content,
+      source: content.source,
+      deviceId: deviceId,
+      freeSpace: downloader.freeSpace,
+    );
+    if (choice == null || !mounted) return;
+
     // NO `watch` HERE ANY MORE. Asking for the stream before `download` is
     // called asks for a stream that does not exist yet — `download` is what
     // creates it — so the answer was always null and the download this button
@@ -117,8 +131,12 @@ class _DownloadActionState extends ConsumerState<DownloadAction> {
       // of the body, so this question costs a viewer on a metered connection
       // nothing at all to answer — and "this is 1.8 GB" is the sentence that
       // decides whether they wanted to do this on mobile data today.
-      confirmSize: (totalBytes, freeBytes) =>
-          _confirmSize(totalBytes, freeBytes),
+      // NOT ASKED TWICE: the quality sheet already put every size, the free
+      // space and the mobile-data warning in front of the viewer.
+      confirmSize: choice.asked
+          ? null
+          : (totalBytes, freeBytes) => _confirmSize(totalBytes, freeBytes),
+      quality: choice.quality,
       onProgress: (p) {
         if (p.error != null) failure = p.error;
         if (!mounted) return;

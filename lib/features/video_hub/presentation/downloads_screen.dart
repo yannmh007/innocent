@@ -18,6 +18,8 @@ import 'data_saver_panel.dart';
 import 'widgets/hub_states.dart';
 import 'widgets/poster_image.dart';
 import 'widgets/vh_insets.dart';
+import 'widgets/download_quality_sheet.dart';
+import '../data/api/download_plan.dart';
 import '../domain/byte_size.dart';
 import '../domain/video_content.dart';
 import 'video_hub_theme.dart';
@@ -298,7 +300,13 @@ class _Row extends ConsumerWidget {
           children: <Widget>[
             const Icon(Icons.offline_pin_rounded, size: 13, color: Color(0xFF2EBD6B)),
             const SizedBox(width: 4),
-            Text(formatBytes(item.bytes), style: VH.meta.copyWith(fontSize: 12)),
+            // The copy it is, beside its size, so "1.1 GB" and "187 MB" for
+            // two films explain themselves. Nothing for the original.
+            Text(
+                item.height == null
+                    ? formatBytes(item.bytes)
+                    : '${item.height}p · ${formatBytes(item.bytes)}',
+                style: VH.meta.copyWith(fontSize: 12)),
           ],
         ),
       ],
@@ -502,6 +510,8 @@ class _PendingRowState extends ConsumerState<_PendingRow> {
               waiting: s.vhDownloadWaitingSignal,
               ready: s.vhDownloadReadyOffline,
             ),
+            // The copy chosen when it started — resuming never changes it.
+            quality: item.quality,
             onProgress: (p) {
               if (p.error != null) failure = p.error;
               if (mounted) setState(() => _live = p);
@@ -854,6 +864,88 @@ class _BatteryRowState extends State<_BatteryRow> with WidgetsBindingObserver {
   }
 }
 
+/// "Download quality": ask each time (the default), or a remembered copy —
+/// the setting the quality sheet's "Remember my choice" writes, and the only
+/// place it can be taken back.
+class _DownloadQualityRow extends StatefulWidget {
+  const _DownloadQualityRow();
+
+  @override
+  State<_DownloadQualityRow> createState() => _DownloadQualityRowState();
+}
+
+class _DownloadQualityRowState extends State<_DownloadQualityRow> {
+  String _value = DownloadQuality.ask;
+
+  static const List<String> _choices = <String>[
+    DownloadQuality.ask,
+    DownloadQuality.original,
+    '1080',
+    '720',
+    '480',
+    '360',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    DownloadQualityPreference.read().then((v) {
+      if (mounted) setState(() => _value = v);
+    });
+  }
+
+  String _label(AppStrings s, String v) => v == DownloadQuality.ask
+      ? s.vhDlQualityAsk
+      : v == DownloadQuality.original
+          ? s.vhDlQualityOriginal
+          : '${v}p';
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppStrings.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(VH.s3, VH.s2, VH.s2, VH.s2),
+      child: Row(
+        children: <Widget>[
+          const Icon(Icons.high_quality_outlined,
+              size: 20, color: VH.textSecondary),
+          const SizedBox(width: VH.s3),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(s.vhDlQualityTitle,
+                    style: VH.label.copyWith(fontSize: 13.5)),
+                const SizedBox(height: 1),
+                Text(s.vhDlQualityHint,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: VH.meta.copyWith(fontSize: 11, height: 1.3)),
+              ],
+            ),
+          ),
+          const SizedBox(width: VH.s2),
+          DropdownButton<String>(
+            value: _choices.contains(_value) ? _value : DownloadQuality.ask,
+            dropdownColor: VH.surface2,
+            underline: const SizedBox.shrink(),
+            style: VH.meta.copyWith(fontSize: 12.5, color: VH.textPrimary),
+            items: <DropdownMenuItem<String>>[
+              for (final v in _choices)
+                DropdownMenuItem<String>(value: v, child: Text(_label(s, v))),
+            ],
+            onChanged: (v) {
+              if (v == null) return;
+              setState(() => _value = v);
+              DownloadQualityPreference.write(v);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _WifiOnlyRow extends ConsumerWidget {
   const _WifiOnlyRow();
 
@@ -1155,6 +1247,8 @@ class _SettingsGroup extends ConsumerWidget {
       child: Column(
         children: <Widget>[
           const _WifiOnlyRow(),
+          const Divider(height: 1, thickness: 1, color: VH.hairline, indent: 48),
+          const _DownloadQualityRow(),
           const Divider(height: 1, thickness: 1, color: VH.hairline, indent: 48),
           InkWell(
             onTap: () => Navigator.of(context).push(

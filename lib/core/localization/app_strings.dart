@@ -1780,6 +1780,13 @@ class AppStrings {
       .replaceFirst('{size}', '$size')
       .replaceFirst('{free}', '$free');
   String get vhDownloadStart => _s('vhDownloadStart');
+  String get vhDlQualityTitle => _s('vhDlQualityTitle');
+  String get vhDlQualityOriginal => _s('vhDlQualityOriginal');
+  String get vhDlQualityRemember => _s('vhDlQualityRemember');
+  String vhDlQualityFree(Object free) =>
+      _s('vhDlQualityFree').replaceFirst('{free}', '$free');
+  String get vhDlQualityHint => _s('vhDlQualityHint');
+  String get vhDlQualityAsk => _s('vhDlQualityAsk');
   String get vhDownloadStorageLine => _s('vhDownloadStorageLine');
 
   /// "11 min left", built from unit words rather than from a format string, so
@@ -2036,6 +2043,12 @@ class AppStrings {
         'This one is {size}, downloaded at full quality. You have {free} free '
         'on this phone. Carry on?',
     'vhDownloadStart': 'Download',
+    'vhDlQualityTitle': 'Download quality',
+    'vhDlQualityOriginal': 'Original (best)',
+    'vhDlQualityRemember': 'Remember my choice',
+    'vhDlQualityFree': '{free} free on this phone',
+    'vhDlQualityHint': 'Smaller copies save data and storage; the original looks best.',
+    'vhDlQualityAsk': 'Ask each time',
     'vhDownloadStorageLine': 'On this phone',
     'vhDownloadLeftSoon': 'less than a minute left',
     'vhDownloadLeftMinutes': '{m} min left',
@@ -3605,6 +3618,12 @@ class AppStrings {
         'ဒီဇာတ်ကားက {size} ရှိပါတယ် — quality အပြည့်နဲ့ ဒေါင်းမှာပါ။ '
         'ဖုန်းထဲ {free} လွတ်ပါတယ်။ ဆက်လုပ်မလား?',
     'vhDownloadStart': 'ဒေါင်းလုဒ်',
+    'vhDlQualityTitle': 'ဒေါင်းလုဒ် အရည်အသွေး',
+    'vhDlQualityOriginal': 'မူရင်း (အကောင်းဆုံး)',
+    'vhDlQualityRemember': 'ဒီရွေးချယ်မှုကို မှတ်ထားမယ်',
+    'vhDlQualityFree': 'ဖုန်းထဲမှာ {free} လွတ်ပါသေးတယ်',
+    'vhDlQualityHint': 'အရွယ်သေးတဲ့ ဖိုင်က ဒေတာနဲ့ နေရာ သက်သာပါတယ်။ မူရင်းက ရုပ်ထွက် အကောင်းဆုံးပါ။',
+    'vhDlQualityAsk': 'အမြဲ မေးပါ',
     'vhDownloadStorageLine': 'ဖုန်းထဲမှာ',
     'vhDownloadLeftSoon': '၁ မိနစ်အောက် ကျန်',
     'vhDownloadLeftMinutes': '{m} မိနစ် ကျန်',
@@ -5162,6 +5181,12 @@ class AppStrings {
         'เรื่องนี้ขนาด {size} ดาวน์โหลดแบบคุณภาพเต็ม '
         'เครื่องนี้เหลือพื้นที่ {free} ดำเนินการต่อหรือไม่',
     'vhDownloadStart': 'ดาวน์โหลด',
+    'vhDlQualityTitle': 'คุณภาพการดาวน์โหลด',
+    'vhDlQualityOriginal': 'ต้นฉบับ (ดีที่สุด)',
+    'vhDlQualityRemember': 'จำตัวเลือกนี้',
+    'vhDlQualityFree': 'พื้นที่ว่างในเครื่อง {free}',
+    'vhDlQualityHint': 'ไฟล์ที่เล็กกว่าช่วยประหยัดเน็ตและพื้นที่ ส่วนต้นฉบับภาพสวยที่สุด',
+    'vhDlQualityAsk': 'ถามทุกครั้ง',
     'vhDownloadStorageLine': 'ในเครื่องนี้',
     'vhDownloadLeftSoon': 'เหลือไม่ถึงหนึ่งนาที',
     'vhDownloadLeftMinutes': 'เหลือ {m} นาที',
