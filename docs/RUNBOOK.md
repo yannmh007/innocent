@@ -453,6 +453,21 @@ mistyped filename produces a title that looks perfect in the catalogue and
 dies on Play. The health view catches missing rows; only opening the app
 catches a wrong name.
 
+### The test title: Sintel
+
+Put in on 2026-10-09 so Movies had something to play while the catalogue was
+empty: the Blender Foundation's open film *Sintel* (CC-BY 3.0, © Blender
+Foundation | durian.blender.org; the synopsis credits it), free tier, folder
+`open-film-sintel/` in both buckets. The files went up through a one-off
+runner job and a function that signed those two keys only; the function
+(`seed-open-film`) now answers 410. To take it down: Console → the title →
+Unpublish, or
+
+```sql
+update public.titles set published = false, status = 'draft'
+ where slug = 'open-film-sintel';
+```
+
 ### Changing the card image
 
 ```sql
