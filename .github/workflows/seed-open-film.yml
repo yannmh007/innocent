@@ -1,0 +1,88 @@
+# ONE-OFF: put the owner's test title's files in R2 — the Blender
+# Foundation's open film "Sintel" (CC-BY 3.0, © Blender Foundation |
+# durian.blender.org) and a poster cut from it — so Movies has something to
+# play while the catalogue is empty. The title row itself is written in SQL
+# afterwards, as the console would.
+#
+# NO BUCKET CREDENTIALS HERE. The `seed-open-film` function signs exactly two
+# fixed keys (open-film-sintel/sintel.mp4 and …/poster.jpg) for an hour, and
+# only for the runner secret. Neither signature is printed. Remove this file
+# and retire the function once the title exists.
+name: Seed open film
+
+on:
+  push:
+    branches: [ claude/extract-github-release-oteqr5 ]
+    paths: [ '.github/workflows/seed-open-film.yml' ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: ffmpeg (static build, apt as the fallback)
+        run: |
+          set -u
+          url=https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-n7.1-latest-linux64-gpl-7.1.tar.xz
+          if curl -fsSL --retry 3 -o /tmp/ffmpeg.tar.xz "$url" \
+             && mkdir -p /tmp/ffmpeg && tar -xJf /tmp/ffmpeg.tar.xz -C /tmp/ffmpeg --strip-components=1 \
+             && /tmp/ffmpeg/bin/ffmpeg -version >/dev/null 2>&1; then
+            echo "/tmp/ffmpeg/bin" >> "$GITHUB_PATH"
+          else
+            sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+          fi
+
+      - name: Fetch Sintel
+        run: |
+          set -euo pipefail
+          for u in \
+            https://download.blender.org/durian/movies/sintel-1280-surround.mp4 \
+            https://download.blender.org/durian/movies/sintel-2048-surround.mp4 \
+            https://download.blender.org/durian/movies/Sintel.2010.1080p.mkv; do
+            echo "trying $u"
+            if curl -fL --retry 3 --connect-timeout 20 -o /tmp/src "$u"; then
+              echo "fetched $u ($(stat -c%s /tmp/src) bytes)"; break
+            fi
+            rm -f /tmp/src
+          done
+          [ -s /tmp/src ] || { echo "::error::no source answered"; exit 1; }
+
+      - name: Make the film and the poster
+        run: |
+          set -euo pipefail
+          # The picture as it is (H.264); the sound as stereo AAC, which every
+          # phone plays. The ladder is made from this by the Transcode runner.
+          ffmpeg -nostdin -y -hide_banner -loglevel warning -i /tmp/src \
+            -map 0:v:0 -map 0:a:0 -c:v copy -c:a aac -b:a 160k -ac 2 \
+            -metadata title="Sintel (Blender Foundation, CC-BY 3.0)" \
+            -movflags +faststart /tmp/sintel.mp4
+          # A 2:3 poster from a frame in the film's first act.
+          ffmpeg -nostdin -y -hide_banner -loglevel warning -ss 290 -i /tmp/sintel.mp4 \
+            -frames:v 1 -vf "crop=ih*2/3:ih,scale=720:1080:flags=lanczos" -q:v 3 /tmp/poster.jpg
+          ffprobe -v error -select_streams v:0 -show_entries stream=codec_name,width,height \
+            -show_entries format=duration,size -of default=nw=1 /tmp/sintel.mp4 | tee /tmp/facts.txt
+          echo "poster bytes=$(stat -c%s /tmp/poster.jpg)" | tee -a /tmp/facts.txt
+
+      - name: Put both in R2
+        env:
+          SB_URL: ${{ secrets.SUPABASE_URL }}
+          RUNNER_SECRET: ${{ secrets.INGEST_SECRET }}
+        run: |
+          set -euo pipefail
+          code=$(curl -sS -o /tmp/sign.json -w '%{http_code}' -X POST \
+            "$SB_URL/functions/v1/seed-open-film" \
+            -H "Authorization: Bearer $RUNNER_SECRET" -H 'Content-Type: application/json' -d '{}')
+          [ "$code" = 200 ] || { echo "::error::signature refused (HTTP $code)"; exit 1; }
+          # NEVER PRINTED: presigned PUTs, and this log is public.
+          v=$(python3 -c "import json;print(json.load(open('/tmp/sign.json'))['video_put'])")
+          p=$(python3 -c "import json;print(json.load(open('/tmp/sign.json'))['poster_put'])")
+          curl --fail-with-body -sS -o /dev/null -X PUT -T /tmp/sintel.mp4 -H 'Content-Type: video/mp4' "$v"
+          echo "film uploaded: $(python3 -c "import json;print(json.load(open('/tmp/sign.json'))['video_key'])")"
+          curl --fail-with-body -sS -o /dev/null -X PUT -T /tmp/poster.jpg -H 'Content-Type: image/jpeg' "$p"
+          echo "poster uploaded: $(python3 -c "import json;print(json.load(open('/tmp/sign.json'))['poster_key'])")"
+          rm -f /tmp/sign.json
+          cat /tmp/facts.txt
