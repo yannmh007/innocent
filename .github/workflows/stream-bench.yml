@@ -1,0 +1,93 @@
+# The stream proxy over lines shaped like a phone's, measured.
+#
+# WHY. "4 MB/s on the meter, and the film still buffers" cannot be seen on a
+# fast desk connection, and the device lab's emulator shaping caps speed and
+# adds delay but drops nothing — and loss is what holds a single TCP
+# connection back on a mobile line. `tc netem` on this runner's loopback adds
+# all three: a round trip, a loss rate and a rate cap. The real proxy
+# (StreamCacheServer) then plays a film from a local Range server through
+# that line, once on one connection (as every build up to 1.64.58 did) and
+# once on three (as it does now), and says how fast, how long the black
+# screen lasted and how often playback ran dry.
+#
+# Runs on a push to a branch that changes the bench, the proxy or this file,
+# and by hand.
+name: Stream bench
+
+on:
+  push:
+    branches-ignore: [ main ]
+    paths:
+      - 'test_bench/stream_bench.dart'
+      - 'lib/features/video_hub/data/cache/stream_cache_server.dart'
+      - 'lib/features/video_hub/data/api/ranged_fetch.dart'
+      - '.github/workflows/stream-bench.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bench:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.32.8
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+
+      - name: netem available
+        run: |
+          sudo modprobe sch_netem 2>/dev/null || {
+            sudo apt-get update -qq && sudo apt-get install -y -qq "linux-modules-extra-$(uname -r)" && sudo modprobe sch_netem; }
+          tc -V
+          # A phone's packets are 1500 bytes; loopback's are 64 KB, and one
+          # lost 64 KB packet is forty real ones. Real-sized packets, or the
+          # loss figures below mean nothing.
+          sudo ip link set dev lo mtu 1500
+
+      # ONLY THE INTERNET HOP IS SHAPED. The bench's Range server listens on
+      # port 47123; a prio qdisc sends its outgoing packets (the film) through
+      # netem with delay, loss and the rate cap, and packets to it (requests,
+      # ACKs) through delay alone. The proxy-to-player hop — inside the phone
+      # in real life — stays a plain loopback. The first version shaped the
+      # whole interface, the player's own connection included, and measured
+      # that instead of the network.
+      #
+      # Each profile: one-way delay (round trip is twice), loss on the film's
+      # packets, rate cap.
+      #   desk         no shaping — the software's own ceiling
+      #   mm_4g        150 ms round trip, 0.5 % loss, 32 Mbit/s (4 MB/s, the meter)
+      #   mm_4g_lossy  200 ms round trip, 1 % loss, 32 Mbit/s
+      #   mm_busy      250 ms round trip, 2 % loss, 16 Mbit/s (an evening cell)
+      - name: Bench
+        run: |
+          set -u
+          PORT=47123
+          run() {
+            name="$1"; delay="$2"; loss="$3"; rate="$4"
+            sudo tc qdisc del dev lo root 2>/dev/null || true
+            if [ "$delay" != "-" ]; then
+              sudo tc qdisc add dev lo root handle 1: prio bands 5
+              sudo tc qdisc add dev lo parent 1:4 handle 40: netem delay "$delay" loss "$loss" rate "$rate" limit 10000
+              sudo tc qdisc add dev lo parent 1:5 handle 50: netem delay "$delay" limit 10000
+              sudo tc filter add dev lo parent 1:0 protocol ip prio 1 u32 match ip sport $PORT 0xffff flowid 1:4
+              sudo tc filter add dev lo parent 1:0 protocol ip prio 2 u32 match ip dport $PORT 0xffff flowid 1:5
+            fi
+            echo "== $name: delay $delay loss $loss rate $rate"
+            BENCH_MB=24 BENCH_KBPS=6000 BENCH_PORT=$PORT BENCH_LANES=1,3,6 BENCH_OUT="/tmp/$name.txt" \
+              flutter test test_bench/stream_bench.dart 2>&1 | grep -E 'lanes=|Error|FAIL' || true
+            sudo tc qdisc del dev lo root 2>/dev/null || true
+            { echo "### $name (delay $delay, loss $loss, rate $rate)"; echo '```'; cat "/tmp/$name.txt" 2>/dev/null || echo "no result"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          }
+          run desk - - -
+          run mm_4g 75ms 0.5% 32mbit
+          run mm_4g_lossy 100ms 1% 32mbit
+          run mm_busy 125ms 2% 16mbit

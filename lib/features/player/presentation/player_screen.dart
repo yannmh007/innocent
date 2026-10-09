@@ -1657,7 +1657,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
         if (pulled.startsWith('ERROR')) {
           if (!context.mounted) return;
           _showSnack(context,
-              'Connect iADB to send this Android/data video.');
+              'Connect ADB to send this Android/data video.');
           return;
         }
         path = pulled;

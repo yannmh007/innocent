@@ -17,13 +17,13 @@ import java.util.concurrent.atomic.AtomicReference
 import kotlin.concurrent.thread
 
 /**
- * iADB-style "pair from the notification shade" service (v0.90 / Backend 1).
+ * "Pair from the notification shade" service (v0.90) for Innocent's own ADB.
  *
  * The pain this removes: Android only advertises the `_adb-tls-pairing._tcp`
  * mDNS service (and shows the 6-digit code) while the "Pair device with pairing
  * code" dialog is open, so an in-app pairing flow normally forces the user into
  * split-screen / pop-up so BOTH the dialog and the app are visible at once.
- * iADB avoids that by not needing the app in the foreground at all.
+ * Pairing from a notification avoids that: the app need not be on screen.
  *
  * Design (hardened after v0.89 where the notification never appeared):
  *  - The notification is posted IMMEDIATELY on start, with the RemoteInput reply
@@ -104,12 +104,15 @@ class AdbPairingService : Service() {
                     applicationContext,
                     AdbMdns.SERVICE_TYPE_TLS_PAIRING,
                 ) { host, port ->
-                    if (host != null && port > 0) {
+                    // Only this phone's own pairing service (see
+                    // AdbManager.isThisPhone): another phone's open dialog on
+                    // the same Wi-Fi must not read as "found".
+                    if (host != null && port > 0 && AdbManager.isThisPhone(host)) {
                         val was = lastPairingPort.getAndSet(port)
                         lastPairingHost.set(host.hostAddress)
                         // First time we see it, nudge the notification so the
-                        // user knows the dialog was detected (iADB shows
-                        // "Pairing service found").
+                        // user knows the dialog was detected ("Pairing
+                        // service found").
                         if (was <= 0 && !pairing) {
                             try {
                                 update(STATUS_FOUND)

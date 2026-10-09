@@ -75,6 +75,23 @@ class ScanGate {
     }
   }
 
+  /// Whether MediaStore has moved since [key] was last scanned: true with no
+  /// record, or when the stamps cannot be read (Android 10 and older) — the
+  /// caller then scans, which is the safe answer. One IPC.
+  static Future<bool> changedSince(String key) async {
+    try {
+      final sp = await SharedPreferences.getInstance();
+      final saved = sp.getString('$_prefix$key');
+      if (saved == null) return true;
+      final now = await readStamp();
+      if (now == null || now.isEmpty) return true;
+      final hash = saved.indexOf('#');
+      return hash <= 0 || saved.substring(hash + 1) != now;
+    } catch (_) {
+      return true;
+    }
+  }
+
   /// The stamp to save after a scan — read it BEFORE the scan starts.
   static Future<String?> before() async {
     try {

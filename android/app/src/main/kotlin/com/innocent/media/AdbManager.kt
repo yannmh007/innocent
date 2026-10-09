@@ -1,9 +1,7 @@
 package com.innocent.media
 
 import android.content.Context
-import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import io.github.muntashirakon.adb.AbsAdbConnectionManager
@@ -413,56 +411,6 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
                 else "OK \u2014 connected.\n\n\$ $command\n$out"
             }
 
-        // ---- ADB backend selection (v0.89 / Backend selector) ----
-        // Innocent can read Android/data two ways:
-        //   "builtin" — the embedded libadb-android engine (no other app needed;
-        //               pairs via mDNS or the notification service).
-        //   "iadb"    — bind to the separately-installed iADB app as a client
-        //               (Shizuku-style, persistent, "pair once"). DEFAULT on
-        //               Android 11+ (v0.94): it's the smoother experience and
-        //               the one the user should land on first.
-        // DEFAULT LOGIC: if the user has never chosen, prefer "iadb" on API >= 30
-        // (where it can work) and "builtin" below. Once the user picks, that
-        // choice is honoured forever. The value is a plain string so new
-        // backends can be added without a migration.
-        fun adbBackend(context: Context): String {
-            val prefs = context.getSharedPreferences("adb_state", Context.MODE_PRIVATE)
-            val saved = prefs.getString("adb_backend", null)
-            if (saved == "builtin" || saved == "iadb") return saved
-            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) "iadb"
-            else "builtin"
-        }
-
-        fun setAdbBackend(context: Context, backend: String) {
-            val v = if (backend == "iadb") "iadb" else "builtin"
-            context.getSharedPreferences("adb_state", Context.MODE_PRIVATE)
-                .edit().putString("adb_backend", v).apply()
-        }
-
-        /**
-         * Open the iADB app's Play Store page (falls back to the web URL if the
-         * Play Store app isn't present). Used by the ADB screen when iADB isn't
-         * installed, so the user can get it in one tap.
-         */
-        fun openIadbInStore(context: Context) {
-            val pkg = "com.iadb.helper"
-            try {
-                val market = Intent(
-                    Intent.ACTION_VIEW,
-                    Uri.parse("market://details?id=$pkg"),
-                ).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
-                context.startActivity(market)
-            } catch (_: Throwable) {
-                try {
-                    val web = Intent(
-                        Intent.ACTION_VIEW,
-                        Uri.parse("https://play.google.com/store/apps/details?id=$pkg"),
-                    ).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
-                    context.startActivity(web)
-                } catch (_: Throwable) {
-                }
-            }
-        }
 
         /** Remember the host:port that last connected, to auto-fill/reconnect. */
         private fun saveLastConnect(context: Context, host: String, port: Int) {
@@ -959,6 +907,23 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
         }
 
         /**
+         * Turn wireless debugging OFF (needs WRITE_SECURE_SETTINGS). USB
+         * debugging (`adb_enabled`) is left alone — only the network door is
+         * closed. For a phone exposed to CVE-2026-0073 (see the ADB screen),
+         * whose wireless debugging lets a device on the same Wi-Fi in without
+         * pairing until the May 2026 update. Returns true if the write went
+         * through.
+         */
+        fun disableWirelessDebugging(context: Context): Boolean {
+            if (!hasSecureSettings(context)) return false
+            return try {
+                Settings.Global.putInt(context.contentResolver, ADB_WIFI_ENABLED, 0)
+            } catch (e: Throwable) {
+                false
+            }
+        }
+
+        /**
          * M3: copy a file that only the ADB shell can read (inside Android/data)
          * out to a location the app CAN read (/sdcard/Movies/.Innocent_cache,
          * reachable via MANAGE_EXTERNAL_STORAGE), then return that local path so
@@ -1241,6 +1206,30 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
         }
 
         /** [pairWithMdns] with the lock and the waiter bookkeeping already done. */
+        /**
+         * Whether an address mDNS resolved is THIS phone's own.
+         *
+         * Every phone on the Wi-Fi with its pairing dialog open — or with
+         * wireless debugging on — advertises the same service type, and the
+         * first answer used to be taken: at a café, at work, or with a second
+         * phone at home, the code went to someone else's pairing service (and
+         * failed as "re-check the code"), or the connect tried another
+         * phone's adbd. Shizuku keeps only services on one of the device's own
+         * interface addresses; so does this.
+         */
+        fun isThisPhone(host: java.net.InetAddress?): Boolean {
+            if (host == null) return false
+            if (host.isLoopbackAddress) return true
+            return try {
+                val nets = java.net.NetworkInterface.getNetworkInterfaces() ?: return false
+                nets.asSequence().any { ni ->
+                    ni.inetAddresses.asSequence().any { it == host }
+                }
+            } catch (_: Throwable) {
+                false
+            }
+        }
+
         private fun pairLocked(
             context: Context,
             code: String,
@@ -1252,7 +1241,7 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
                 val portRef = AtomicInteger(-1)
                 val latch = CountDownLatch(1)
                 mdns = AdbMdns(context, AdbMdns.SERVICE_TYPE_TLS_PAIRING) { host, port ->
-                    if (host != null && port > 0) {
+                    if (host != null && port > 0 && isThisPhone(host)) {
                         hostRef.set(host.hostAddress)
                         portRef.set(port)
                         latch.countDown()
@@ -1267,7 +1256,16 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
                 }
                 val host = hostRef.get() ?: return "ERROR: pairing host not resolved"
                 val port = portRef.get()
-                val ok = getInstance(context).pair(host, port, code)
+                // Over loopback, as Shizuku does: the service is this phone's
+                // own, and loopback does not depend on the Wi-Fi address (or a
+                // VPN) staying put mid-pairing. The advertised address only if
+                // loopback is refused.
+                val mgr = getInstance(context)
+                val ok = try {
+                    mgr.pair("127.0.0.1", port, code)
+                } catch (e: java.net.ConnectException) {
+                    mgr.pair(host, port, code)
+                }
                 if (ok) "OK \u2014 paired via mDNS ($host:$port)"
                 else "ERROR: pairing returned false (re-check the code)"
             } catch (e: Throwable) {
@@ -1391,7 +1389,7 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
                 val portRef = AtomicInteger(-1)
                 val latch = CountDownLatch(1)
                 mdns = AdbMdns(context, AdbMdns.SERVICE_TYPE_TLS_CONNECT) { host, port ->
-                    if (host != null && port > 0) {
+                    if (host != null && port > 0 && isThisPhone(host)) {
                         hostRef.set(host.hostAddress)
                         portRef.set(port)
                         latch.countDown()

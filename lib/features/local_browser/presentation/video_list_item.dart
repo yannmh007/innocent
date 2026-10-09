@@ -413,6 +413,13 @@ class _ThumbnailState extends State<_Thumbnail> {
         // else fall through to the path-based decoder as a second attempt.
       } catch (_) {/* fall through */}
     }
+    // Android/data over ADB: no file this app can open, but a frame the
+    // native side reads through the ADB stream.
+    if (widget.videoPath.startsWith('adb://')) {
+      final bytes = await ThumbnailCache.instance.get(widget.videoPath);
+      if (bytes != null && !_disposed && mounted) setState(() => _bytes = bytes);
+      return;
+    }
     if (!widget.videoPath.startsWith('/') &&
         !widget.videoPath.startsWith('file://')) {
       return;

@@ -128,7 +128,7 @@ class FolderGridTile extends ConsumerWidget {
                   ),
                 ),
               // Mark hidden folders (dot-folders + Android/data|obb caches
-              // surfaced over ADB/iADB).
+              // surfaced over ADB).
               if (_gridFolderHidden(folder))
                 const Positioned(
                   bottom: 2,
@@ -173,7 +173,7 @@ class FolderGridTile extends ConsumerWidget {
 }
 
 /// True when a folder lives where normal galleries hide media — Android/data
-/// or Android/obb caches (surfaced over ADB/iADB) or dot-folders. Mirrors the
+/// or Android/obb caches (surfaced over ADB) or dot-folders. Mirrors the
 /// list view's rule so both stay consistent.
 bool _gridFolderHidden(Folder folder) {
   final cover = folder.coverThumbnailPath ?? '';
@@ -242,6 +242,7 @@ class VideoGridTile extends ConsumerWidget {
       }
     }
     if (video.uri.startsWith('/')) return video.uri;
+    if (video.uri.startsWith('adb://')) return video.uri;
     return null;
   }
 
@@ -480,7 +481,7 @@ class _VideoGridThumbState extends State<_VideoGridThumb> {
       } catch (_) {/* fall through */}
     }
     try {
-      if (!await File(widget.path).exists()) {
+      if (!widget.path.startsWith('adb://') && !await File(widget.path).exists()) {
         return;
       }
       final bytes = await ThumbnailCache.instance.get(widget.path);

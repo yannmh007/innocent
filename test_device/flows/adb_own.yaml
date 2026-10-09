@@ -1,0 +1,71 @@
+# ADB is the app's own engine only (1.64.59): the separately installed iADB
+# app is no longer used. The embedded engine still builds its key and
+# certificate (libadb-android, BouncyCastle, the hidden-API exemption), and
+# the ADB screen offers no backend choice — no "iADB" anywhere on it — and
+# opens on a checklist of the setup steps, read live from Settings.
+appId: com.innocent.media
+---
+- launchApp
+- waitForAnimationToEnd:
+    timeout: 15000
+- tapOn:
+    text: "Wait"
+    optional: true
+- tapOn:
+    text: "Skip"
+    optional: true
+- tapOn:
+    text: "Allow.*"
+    optional: true
+- tapOn:
+    text: "Allow.*"
+    optional: true
+- tapOn:
+    text: "(?s).*Tab 4 of 4.*"
+- waitForAnimationToEnd:
+    timeout: 5000
+- scrollUntilVisible:
+    element:
+      text: "(?s)Settings\\n.*"
+    direction: DOWN
+- tapOn: "(?s)Settings\\n.*"
+- waitForAnimationToEnd:
+    timeout: 3000
+# The ADB tiles live under Settings → List.
+- tapOn: "List"
+- waitForAnimationToEnd:
+    timeout: 3000
+# The engine self-test: key + certificate built on this device.
+- scrollUntilVisible:
+    element:
+      text: "(?s).*ADB engine self-test.*"
+    direction: DOWN
+- tapOn: "(?s).*ADB engine self-test.*"
+- extendedWaitUntil:
+    visible: "(?s).*ADB engine ready.*"
+    timeout: 20000
+- takeScreenshot: 95_adb_selftest
+- tapOn: "OK"
+- waitForAnimationToEnd:
+    timeout: 3000
+# The connection screen: pairing and connect, no backend selector.
+- scrollUntilVisible:
+    element:
+      text: "(?s).*ADB connection.*"
+    direction: DOWN
+- tapOn: "(?s).*ADB connection.*"
+- waitForAnimationToEnd:
+    timeout: 8000
+- takeScreenshot: 96_adb_screen
+# The live setup checklist: what Settings says is done, ticked as it changes.
+- assertVisible: "(?s).*Setup — where you are.*"
+- assertVisible: "(?s).*Developer options on.*"
+- assertVisible: "(?s).*Wireless debugging on.*"
+- assertVisible: "(?s).*Connected.*"
+- assertNotVisible: "(?s).*iADB.*"
+- assertNotVisible: "(?s).*How Innocent reads Android/data.*"
+- scrollUntilVisible:
+    element:
+      text: "(?s).*Scan Android/data for videos.*"
+    direction: DOWN
+- takeScreenshot: 97_adb_screen_scan

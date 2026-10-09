@@ -20,6 +20,28 @@ log "network: speed $NET_SPEED kbit/s, delay $NET_DELAY ms"
 adb emu network speed "$NET_SPEED" || true
 adb emu network delay "$NET_DELAY" || true
 
+# LOSS, WHICH THE EMULATOR'S OWN SHAPING CANNOT ADD. Speed and delay alone
+# leave a single TCP connection unhurt; on a real mobile line it is loss that
+# holds one connection to a fraction of the meter. The emulator's traffic
+# leaves through this host (QEMU re-originates each connection here), so
+# dropping a share of the packets ARRIVING on the host's interface is loss on
+# the very connections the app opened. Removed again at the end of the run.
+LOSS_DEV=""
+if [ -n "${NET_LOSS:-}" ]; then
+  LOSS_DEV=$(ip route | awk '/^default/ {print $5; exit}')
+  if sudo modprobe ifb 2>/dev/null && sudo ip link add ifb0 type ifb 2>/dev/null; then
+    sudo ip link set ifb0 up
+    sudo tc qdisc add dev "$LOSS_DEV" handle ffff: ingress
+    sudo tc filter add dev "$LOSS_DEV" parent ffff: protocol ip u32 match u32 0 0 \
+      action mirred egress redirect dev ifb0
+    sudo tc qdisc add dev ifb0 root netem loss "$NET_LOSS"
+    log "network: $NET_LOSS of incoming packets dropped on $LOSS_DEV"
+  else
+    log "network: could not add loss (no ifb) — speed and delay only"
+    LOSS_DEV=""
+  fi
+fi
+
 # Bytes received by the whole device, every two seconds, alongside the app's
 # CPU and memory — the ground truth to hold the app's own speed figure to.
 sampler() {
@@ -131,9 +153,74 @@ grep -E "TotalTime|WaitTime|Status" "$OUT/cold_start.txt" | tee -a "$OUT/steps.t
 sleep 10
 adb exec-out screencap -p > "$OUT/shots/00_cold_start.png"
 
+# THE STREAM A/B's FILM AND ITS LINE. A film the runner makes (about 6 Mbit/s
+# of 720p — a mid-quality catalogue film), served with Range from 127.0.0.1
+# and put behind netem on that one port: delay, loss and a rate cap, the way
+# bench/stream-bench.yml does for the proxy alone. The emulator reaches it at
+# 10.0.2.2. Only this server's packets are shaped; nothing else on the runner.
+STREAM_PORT=47124
+case " $FLOWS " in *" streamab_"*)
+  if command -v ffmpeg >/dev/null 2>&1; then
+    ffmpeg -loglevel error -y -f lavfi -i testsrc2=size=1280x720:rate=24 \
+      -f lavfi -i sine=frequency=330 -t 150 -c:v libx264 -preset veryfast \
+      -b:v 6000k -maxrate 6000k -bufsize 12000k -pix_fmt yuv420p -c:a aac -b:a 96k \
+      -movflags +faststart /tmp/stream_film.mp4
+    log "stream film: $(du -h /tmp/stream_film.mp4 | cut -f1)"
+    python3 tool/netlab/range_server.py /tmp/stream_film.mp4 "$STREAM_PORT" &
+    RANGE_SERVER=$!
+    sudo ip link set dev lo mtu 1500 >/dev/null 2>&1 || true
+    if [ -n "${STREAM_NETEM:-}" ]; then
+      sudo tc qdisc replace dev lo root handle 1: prio bands 5 2>/dev/null
+      # shellcheck disable=SC2086
+      sudo tc qdisc add dev lo parent 1:4 handle 40: netem $STREAM_NETEM limit 10000
+      sudo tc filter add dev lo parent 1:0 protocol ip prio 1 u32 match ip sport "$STREAM_PORT" 0xffff flowid 1:4
+      log "stream line: netem $STREAM_NETEM on port $STREAM_PORT"
+    fi
+  else
+    log "stream A/B: no ffmpeg — skipped"
+    FLOWS=$(for f in $FLOWS; do case "$f" in streamab_*) ;; *) echo -n "$f " ;; esac; done)
+  fi ;;
+esac
+
+# THE LONG FILM (flows streamlong_PROFILE_LANES): two and a half hours of open
+# films at the ladder's 1080p and 720p rungs, made before the emulator booted
+# (tool/netlab/make_long_film.sh, into LONG_FILM_DIR). Each flow puts the line
+# of one Myanmar profile in front of it — config.env PROFILE_<name>: the rung
+# to play, one-way delay (both ways, so the round trip is twice it), loss on
+# the film's packets and a rate cap — plays from a fresh install with N lanes,
+# then jumps to the middle of the film (`lab_seek`) and plays on. The trail's
+# first frame, rebuffer and stretch lines say how each went.
+LONG_PORT=47125
+shape_long() { # delay loss rate [queue, packets]
+  sudo tc qdisc del dev lo root 2>/dev/null || true
+  sudo tc qdisc add dev lo root handle 1: prio bands 5
+  # shellcheck disable=SC2086
+  sudo tc qdisc add dev lo parent 1:4 handle 40: netem delay "$1" loss "$2" rate "$3" limit "${4:-10000}"
+  sudo tc qdisc add dev lo parent 1:5 handle 50: netem delay "$1" limit 10000
+  sudo tc filter add dev lo parent 1:0 protocol ip prio 1 u32 match ip sport "$LONG_PORT" 0xffff flowid 1:4
+  sudo tc filter add dev lo parent 1:0 protocol ip prio 2 u32 match ip dport "$LONG_PORT" 0xffff flowid 1:5
+}
+case " $FLOWS " in *" streamlong_"*)
+  LONG_DIR=${LONG_FILM_DIR:-/mnt/lab_films}
+  if [ -f "$LONG_DIR/long_1080.mp4" ] && command -v ffprobe >/dev/null 2>&1; then
+    LONG_DUR=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$LONG_DIR/long_1080.mp4" | cut -d. -f1)
+    python3 tool/netlab/range_server.py "$LONG_DIR" "$LONG_PORT" &
+    LONG_SERVER=$!
+    sudo ip link set dev lo mtu 1500 >/dev/null 2>&1 || true
+    log "long film: $((LONG_DUR / 60)) min in $LONG_DIR, served on $LONG_PORT"
+  else
+    log "long film: none was made — streamlong flows skipped"
+    FLOWS=$(for f in $FLOWS; do case "$f" in streamlong_*) ;; *) echo -n "$f " ;; esac; done)
+  fi ;;
+esac
+
 export PATH="$HOME/.maestro/bin:$PATH"
 for flow in $FLOWS; do
   log "flow $flow"
+  # The Maestro file a flow runs: its own name, unless a case below says
+  # otherwise. Unset, `set -u` stopped every plain flow before Maestro ran
+  # (run 37877954034: adb_own and me_grid "exit 1" in a second).
+  file=$flow
   adb shell log -p i -t flutter "LAB phase $flow start" >/dev/null 2>&1 || true
   # The layout flows measure one orientation each; the player follows the
   # device by default, so turn the device.
@@ -144,7 +231,113 @@ for flow in $FLOWS; do
   # The perf flows sit still for a minute; read the threads in the middle of
   # it, while the Video tab idles or the film plays.
   case "$flow" in perf_*) ( sleep 40; { echo "== during $flow"; threads; } >> "$OUT/threads.txt" ) & ;; esac
-  ( cd "$OUT/shots" && maestro test --test-output-dir "$OUT/maestro_out" "$OLDPWD/test_device/flows/$flow.yaml" ) > "$OUT/maestro_$flow.txt" 2>&1
+  # STREAM A/B — no Maestro: the app is told which film to open and how many
+  # connections the proxy may use (lab-only files, see LabStream), and the
+  # trail says how it went. `streamab_N` plays the lab film through the real
+  # stream proxy with N lanes, from a fresh install, on the shaped line.
+  case "$flow" in streamab_*)
+    n="${flow#streamab_}"
+    adb shell am force-stop "$PKG"
+    adb shell pm clear "$PKG" >/dev/null 2>&1 || true
+    d="/sdcard/Android/data/$PKG/files"
+    adb shell mkdir -p "$d" >/dev/null 2>&1
+    adb shell "echo $n > $d/lab_lanes"
+    adb shell "echo http://10.0.2.2:${STREAM_PORT}/film.mp4 > $d/lab_stream_url"
+    log "stream A/B: lanes=$n; files $(adb shell ls "$d" 2>&1 | tr '\r\n' '  ')"
+    adb shell am start -W -n "$PKG/.MainActivity" >/dev/null 2>&1
+    sleep 30
+    adb exec-out screencap -p > "$OUT/shots/7${n}_streamab_${n}_30s.png"
+    sleep "${STREAM_SECONDS:-60}"
+    adb exec-out screencap -p > "$OUT/shots/7${n}_streamab_${n}_end.png"
+    adb shell log -p i -t flutter "LAB phase $flow end" >/dev/null 2>&1 || true
+    log "flow $flow done"
+    adb shell am force-stop "$PKG"
+    adb shell rm -f "$d/lab_stream_url" "$d/lab_lanes" >/dev/null 2>&1 || true
+    continue
+    ;;
+  esac
+  # NEW VIDEO — does a video copied onto the phone appear in the open Video
+  # tab by itself, and how fast? MX Player shows it within seconds. The tab is
+  # opened (flows/new_video_open.yaml), a clip is pushed into a folder that
+  # does not exist yet, then a second into the same folder, and the screen's
+  # accessibility tree is read every second for the folder tile's label
+  # ("Folder: LabNew, N videos"). Nothing touches the screen meanwhile.
+  case "$flow" in newvideo)
+    ( cd "$OUT/shots" && maestro test --test-output-dir "$OUT/maestro_out" "$OLDPWD/test_device/flows/new_video_open.yaml" ) > "$OUT/maestro_$flow.txt" 2>&1
+    log "flow $flow: Video tab open (maestro exit $?)"
+    if ! command -v ffmpeg >/dev/null 2>&1; then log "newvideo: no ffmpeg — skipped"; continue; fi
+    ffmpeg -loglevel error -y -f lavfi -i testsrc2=size=640x360:rate=24 -t 6 \
+      -c:v libx264 -preset veryfast -pix_fmt yuv420p /tmp/lab_new.mp4
+    wait_for() { # $1 = label text, $2 = seconds allowed
+      local t0 n=0
+      t0=$(date +%s)
+      while [ $n -lt "$2" ]; do
+        adb shell uiautomator dump /sdcard/ui_nv.xml >/dev/null 2>&1
+        if adb exec-out cat /sdcard/ui_nv.xml 2>/dev/null | grep -q "$1"; then
+          echo $(( $(date +%s) - t0 )); return 0
+        fi
+        sleep 1; n=$((n + 1))
+      done
+      echo "never"; return 1
+    }
+    push_new() { # $1 = file name in Movies/LabNew
+      adb shell mkdir -p /sdcard/Movies/LabNew
+      adb push /tmp/lab_new.mp4 "/sdcard/Movies/LabNew/$1" >/dev/null 2>&1
+      adb shell am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE \
+        -d "file:///sdcard/Movies/LabNew/$1" >/dev/null 2>&1 || true
+    }
+    push_new lab_new_1.mp4
+    s1=$(wait_for "Folder: LabNew, 1 video" 45)
+    log "newvideo: a new folder with one video appeared after ${s1} s"
+    adb exec-out screencap -p > "$OUT/shots/91_newvideo_first.png"
+    push_new lab_new_2.mp4
+    s2=$(wait_for "Folder: LabNew, 2 videos" 45)
+    log "newvideo: a second video in that folder showed after ${s2} s"
+    adb exec-out screencap -p > "$OUT/shots/92_newvideo_second.png"
+    adb shell log -p i -t flutter "LAB newvideo first=${s1}s second=${s2}s" >/dev/null 2>&1 || true
+    adb shell rm -rf /sdcard/Movies/LabNew >/dev/null 2>&1 || true
+    rm -f /tmp/lab_new.mp4
+    adb shell log -p i -t flutter "LAB phase $flow end" >/dev/null 2>&1 || true
+    log "flow $flow done"
+    continue
+    ;;
+  esac
+  case "$flow" in streamlong_*)
+    rest="${flow#streamlong_}"
+    n="${rest##*_}"
+    prof="${rest%_*}"
+    var="PROFILE_$prof"
+    queue=""
+    read -r rung delay loss rate queue <<< "${!var:-}"
+    if [ -z "${rate:-}" ]; then log "flow $flow: no $var in config.env — skipped"; continue; fi
+    if [ ! -f "$LONG_DIR/long_${rung}.mp4" ]; then log "flow $flow: no long_${rung}.mp4 — skipped"; continue; fi
+    shape_long "$delay" "$loss" "$rate" "${queue:-10000}"
+    log "long film: $prof — $rung, round trip 2x$delay, loss $loss, rate $rate, queue ${queue:-10000} packets; lanes=$n"
+    adb shell am force-stop "$PKG"
+    adb shell pm clear "$PKG" >/dev/null 2>&1 || true
+    d="/sdcard/Android/data/$PKG/files"
+    adb shell mkdir -p "$d" >/dev/null 2>&1
+    adb shell "echo $n > $d/lab_lanes"
+    adb shell "echo http://10.0.2.2:${LONG_PORT}/long_${rung}.mp4 > $d/lab_stream_url"
+    # Three seeks, twenty seconds apart: the middle, a quarter in, three
+    # quarters in. One seek a line was one sample of a noisy thing.
+    a=${LONG_SEEK_AFTER:-45}
+    adb shell "echo $a:$((LONG_DUR / 2)),$((a + 20)):$((LONG_DUR / 4)),$((a + 40)):$((LONG_DUR * 3 / 4)) > $d/lab_seek"
+    adb shell log -p i -t flutter "LAB long $prof file=$rung rtt=2x$delay loss=$loss rate=$rate queue=${queue:-10000} lanes=$n" >/dev/null 2>&1 || true
+    adb shell am start -W -n "$PKG/.MainActivity" >/dev/null 2>&1
+    sleep $(( ${LONG_SEEK_AFTER:-45} + 2 ))
+    adb exec-out screencap -p > "$OUT/shots/8_${flow}_before_seek.png"
+    sleep "${LONG_AFTER_SEEK:-45}"
+    adb exec-out screencap -p > "$OUT/shots/8_${flow}_end.png"
+    adb shell log -p i -t flutter "LAB phase $flow end" >/dev/null 2>&1 || true
+    log "flow $flow done"
+    adb shell am force-stop "$PKG"
+    # Left behind, the lab files open the film over whatever runs next.
+    adb shell rm -f "$d/lab_stream_url" "$d/lab_lanes" "$d/lab_seek" >/dev/null 2>&1 || true
+    continue
+    ;;
+  esac
+  ( cd "$OUT/shots" && maestro test --test-output-dir "$OUT/maestro_out" "$OLDPWD/test_device/flows/$file.yaml" ) > "$OUT/maestro_$flow.txt" 2>&1
   log "flow $flow exit $?"
   # STACKED DOUBLE TAP. Maestro needs most of a second per tap, longer than
   # the 0.6 s a run of taps stays open, so it can only ever make a plain
@@ -254,6 +447,19 @@ for flow in $FLOWS; do
 done
 adb shell dumpsys cpuinfo 2>/dev/null | head -40 > "$OUT/cpuinfo.txt" || true
 
+if [ -n "${LONG_SERVER:-}" ]; then
+  kill "$LONG_SERVER" 2>/dev/null || true
+  sudo tc qdisc del dev lo root 2>/dev/null || true
+fi
+if [ -n "${RANGE_SERVER:-}" ]; then
+  kill "$RANGE_SERVER" 2>/dev/null || true
+  sudo tc qdisc del dev lo root 2>/dev/null || true
+  rm -f /tmp/stream_film.mp4
+fi
+if [ -n "$LOSS_DEV" ]; then
+  sudo tc qdisc del dev "$LOSS_DEV" ingress 2>/dev/null || true
+  sudo ip link del ifb0 2>/dev/null || true
+fi
 kill $SAMPLER $LOGCAT 2>/dev/null
 adb shell dumpsys meminfo "$PKG" > "$OUT/meminfo.txt" 2>&1
 adb shell dumpsys gfxinfo "$PKG" > "$OUT/gfxinfo.txt" 2>&1

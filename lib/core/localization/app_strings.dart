@@ -1680,6 +1680,20 @@ class AppStrings {
   String get folders => _s('folders');
   String get setPinFirst => _s('setPinFirst');
   String get connectAdbToSend => _s('connectAdbToSend');
+  String get adbStepsTitle => _s('adbStepsTitle');
+  String get adbStepDevOptions => _s('adbStepDevOptions');
+  String get adbStepWifi => _s('adbStepWifi');
+  String get adbStepWireless => _s('adbStepWireless');
+  String get adbStepNotifications => _s('adbStepNotifications');
+  String get adbStepPaired => _s('adbStepPaired');
+  String get adbStepConnected => _s('adbStepConnected');
+  String get adbStepOpen => _s('adbStepOpen');
+  String get adbStepHow => _s('adbStepHow');
+  String get adbWifiNeeded => _s('adbWifiNeeded');
+  String get adbTipXiaomi => _s('adbTipXiaomi');
+  String get adbTipOppo => _s('adbTipOppo');
+  String get adbTipTranssion => _s('adbTipTranssion');
+  String get adbNotSupported => _s('adbNotSupported');
   String get destinationIfExists => _s('destinationIfExists');
   String get destinationKeepBoth => _s('destinationKeepBoth');
   String get destinationSkip => _s('destinationSkip');
@@ -1940,7 +1954,21 @@ class AppStrings {
     'videos': 'Videos',
     'folders': 'Folders',
     'setPinFirst': 'Set up a Private Folder PIN first (Me → Private Folder)',
-    'connectAdbToSend': 'Connect iADB to send Android/data videos',
+    'connectAdbToSend': 'Connect ADB to send Android/data videos',
+    'adbStepsTitle': 'Setup — where you are',
+    'adbStepDevOptions': 'Developer options on',
+    'adbStepWifi': 'On Wi-Fi (no internet needed)',
+    'adbStepWireless': 'Wireless debugging on',
+    'adbStepNotifications': 'Notifications allowed — the code is typed into one',
+    'adbStepPaired': 'Paired',
+    'adbStepConnected': 'Connected',
+    'adbStepOpen': 'Open',
+    'adbStepHow': 'How',
+    'adbWifiNeeded': 'Wireless debugging only works on a Wi-Fi network. Any Wi-Fi will do — it doesn\'t need internet.',
+    'adbTipXiaomi': 'Xiaomi, Redmi and POCO: for “Stay connected after a reboot”, also turn on “USB debugging (Security settings)” in Developer options — it asks for a SIM card and a Mi account. If the notification has no reply box, pull it down to expand it.',
+    'adbTipOppo': 'OPPO, realme and OnePlus: if pairing works but connecting stalls, turn Wireless debugging off and on again, then tap Connect.',
+    'adbTipTranssion': 'TECNO, Infinix and itel: let Innocent run in the background (battery settings or Phone Master), or the pairing notification can be closed before you type the code.',
+    'adbNotSupported': 'Wireless debugging needs Android 11 or newer.',
     'destinationIfExists': 'If a file with the same name is already there',
     'destinationKeepBoth': 'Keep both',
     'destinationSkip': 'Skip',
@@ -3496,7 +3524,21 @@ class AppStrings {
     'videos': 'ဗီဒီယို',
     'folders': 'ဖိုလ်ဒါ',
     'setPinFirst': 'Private Folder PIN ကို အရင်သတ်မှတ်ပါ (Me → Private Folder)',
-    'connectAdbToSend': 'Android/data ဗီဒီယိုများ ပို့ရန် iADB ချိတ်ဆက်ပါ',
+    'connectAdbToSend': 'Android/data ဗီဒီယိုများ ပို့ရန် ADB ချိတ်ဆက်ပါ',
+    'adbStepsTitle': 'ပြင်ဆင်မှု အခြေအနေ',
+    'adbStepDevOptions': 'Developer options ဖွင့်ပြီး',
+    'adbStepWifi': 'Wi-Fi ချိတ်ထားပြီး (internet မလိုပါ)',
+    'adbStepWireless': 'Wireless debugging ဖွင့်ပြီး',
+    'adbStepNotifications': 'Notification ခွင့်ပြုပြီး — code ကို notification ထဲမှာ ရိုက်ထည့်ရပါမယ်',
+    'adbStepPaired': 'Pair လုပ်ပြီး',
+    'adbStepConnected': 'ချိတ်ဆက်ပြီး',
+    'adbStepOpen': 'ဖွင့်ရန်',
+    'adbStepHow': 'လုပ်နည်း',
+    'adbWifiNeeded': 'Wireless debugging က Wi-Fi network ပေါ်မှာပဲ အလုပ်လုပ်ပါတယ်။ ဘယ် Wi-Fi မဆို ရပါတယ် — internet မလိုပါ။',
+    'adbTipXiaomi': 'Xiaomi၊ Redmi၊ POCO: “Stay connected after a reboot” အတွက် Developer options ထဲက “USB debugging (Security settings)” ကိုပါ ဖွင့်ပါ — SIM ကတ်နဲ့ Mi account လိုပါတယ်။ Notification မှာ reply box မပေါ်ရင် notification ကို အောက်ကို ဆွဲချပြီး ချဲ့ကြည့်ပါ။',
+    'adbTipOppo': 'OPPO၊ realme၊ OnePlus: pair ရပြီး ချိတ်ရာမှာ ရပ်နေရင် Wireless debugging ကို ပိတ်ပြီး ပြန်ဖွင့်ကာ Connect ကို နှိပ်ပါ။',
+    'adbTipTranssion': 'TECNO၊ Infinix၊ itel: Innocent ကို background မှာ run ခွင့်ပေးပါ (battery settings သို့မဟုတ် Phone Master)။ မပေးရင် code မရိုက်ခင် pairing notification ပိတ်သွားနိုင်ပါတယ်။',
+    'adbNotSupported': 'Wireless debugging အတွက် Android 11 နဲ့ အထက် လိုပါတယ်။',
     'destinationIfExists': 'အမည်တူဖိုင် ရှိနှင့်ပြီးဖြစ်ပါက',
     'destinationKeepBoth': 'နှစ်ခုလုံး ထားရန်',
     'destinationSkip': 'ကျော်ရန်',
@@ -5040,7 +5082,21 @@ class AppStrings {
     'videos': 'วิดีโอ',
     'folders': 'โฟลเดอร์',
     'setPinFirst': 'ตั้ง PIN ของ Private Folder ก่อน (Me → Private Folder)',
-    'connectAdbToSend': 'เชื่อมต่อ iADB เพื่อส่งวิดีโอ Android/data',
+    'connectAdbToSend': 'เชื่อมต่อ ADB เพื่อส่งวิดีโอ Android/data',
+    'adbStepsTitle': 'สถานะการตั้งค่า',
+    'adbStepDevOptions': 'เปิดตัวเลือกสำหรับนักพัฒนาแล้ว',
+    'adbStepWifi': 'เชื่อมต่อ Wi-Fi แล้ว (ไม่ต้องมีอินเทอร์เน็ต)',
+    'adbStepWireless': 'เปิดการแก้ไขข้อบกพร่องผ่าน Wi-Fi แล้ว',
+    'adbStepNotifications': 'อนุญาตการแจ้งเตือนแล้ว — พิมพ์รหัสในการแจ้งเตือน',
+    'adbStepPaired': 'จับคู่แล้ว',
+    'adbStepConnected': 'เชื่อมต่อแล้ว',
+    'adbStepOpen': 'เปิด',
+    'adbStepHow': 'วิธีทำ',
+    'adbWifiNeeded': 'การแก้ไขข้อบกพร่องผ่าน Wi-Fi ใช้ได้เฉพาะบนเครือข่าย Wi-Fi เท่านั้น Wi-Fi ใดก็ได้ ไม่จำเป็นต้องมีอินเทอร์เน็ต',
+    'adbTipXiaomi': 'Xiaomi, Redmi และ POCO: สำหรับ “Stay connected after a reboot” ให้เปิด “USB debugging (Security settings)” ในตัวเลือกสำหรับนักพัฒนาด้วย — ต้องใช้ซิมการ์ดและบัญชี Mi หากการแจ้งเตือนไม่มีช่องตอบกลับ ให้ดึงลงเพื่อขยาย',
+    'adbTipOppo': 'OPPO, realme และ OnePlus: หากจับคู่ได้แต่เชื่อมต่อค้าง ให้ปิดแล้วเปิดการแก้ไขข้อบกพร่องผ่าน Wi-Fi อีกครั้ง แล้วแตะ Connect',
+    'adbTipTranssion': 'TECNO, Infinix และ itel: อนุญาตให้ Innocent ทำงานเบื้องหลัง (การตั้งค่าแบตเตอรี่หรือ Phone Master) มิฉะนั้นการแจ้งเตือนการจับคู่อาจถูกปิดก่อนที่คุณจะพิมพ์รหัส',
+    'adbNotSupported': 'การแก้ไขข้อบกพร่องผ่าน Wi-Fi ต้องใช้ Android 11 ขึ้นไป',
     'destinationIfExists': 'หากมีไฟล์ชื่อเดียวกันอยู่แล้ว',
     'destinationKeepBoth': 'เก็บทั้งคู่',
     'destinationSkip': 'ข้าม',

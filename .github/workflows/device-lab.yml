@@ -110,7 +110,8 @@ jobs:
   run:
     needs: build
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    # Two hours: the long film (below) is about half an hour of encoding.
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
 
@@ -218,6 +219,42 @@ jobs:
           (cd tool/netlab && gradle test --no-daemon) 2>&1 \
             | grep -E "PASSED|FAILED|SKIPPED|tests completed|BUILD|Exception|expected" \
             | tee out/netlab_jvm.txt | tail -60 || true
+
+      # THE LONG FILM for the streamlong flows: open films, encoded with the
+      # ladder's 1080p and 720p settings and joined to two and a half hours,
+      # before the emulator takes the CPU — so the encoding time is also the
+      # ladder's cost for a feature film (tool/netlab/make_long_film.sh).
+      # FFMPEG FOR EVERY FLOW THAT MAKES A FILM, not only the long one: the
+      # newvideo flow encodes the clip it copies onto the phone, and with
+      # ffmpeg installed only for streamlong it skipped itself in any run
+      # without a long film (run 37877954034).
+      - name: Install ffmpeg (flows that make a film)
+        run: |
+          source test_device/config.env
+          case " $FLOWS " in *" streamlong_"*|*" streamab_"*|*" newvideo "*) ;; *) echo "no film made this run"; exit 0 ;; esac
+          url=https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-n7.1-latest-linux64-gpl-7.1.tar.xz
+          if curl -fsSL --retry 3 -o /tmp/ffmpeg.tar.xz "$url" \
+             && mkdir -p /tmp/ffmpeg && tar -xJf /tmp/ffmpeg.tar.xz -C /tmp/ffmpeg --strip-components=1 \
+             && /tmp/ffmpeg/bin/ffmpeg -version >/dev/null 2>&1; then
+            echo "/tmp/ffmpeg/bin" >> "$GITHUB_PATH"
+            /tmp/ffmpeg/bin/ffmpeg -version | head -1
+          else
+            sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg >/dev/null
+            ffmpeg -version | head -1
+          fi
+
+      - name: Make the long lab film (open films)
+        run: |
+          source test_device/config.env
+          case " $FLOWS " in *" streamlong_"*) ;; *) echo "no long film this run"; exit 0 ;; esac
+          ffmpeg -version | head -1
+          d=/mnt/lab_films
+          sudo mkdir -p "$d" && sudo chown "$USER" "$d" || d="$RUNNER_TEMP/lab_films"
+          echo "LONG_FILM_DIR=$d" >> "$GITHUB_ENV"
+          df -h / "$d"
+          mkdir -p out
+          bash tool/netlab/make_long_film.sh "$d" out/long_film.txt
+          { echo '### Long lab film'; echo '```'; cat out/long_film.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Install Maestro
         run: |

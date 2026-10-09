@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:photo_manager/photo_manager.dart';
 import 'package:path/path.dart' as p;
 
@@ -30,6 +31,31 @@ import '../domain/video.dart';
 ///   Total folder size is also 0 in the fresh scan; the cache may carry
 ///   sizes computed by an earlier slow pass.
 class LibraryLocalDataSource {
+  static const MethodChannel _scanChannel = MethodChannel('mx_clone/media_scan');
+
+  /// MediaStore id → when the phone first saw the file (DATE_ADDED, seconds).
+  ///
+  /// photo_manager's create time is DATE_TAKEN whenever the file carries
+  /// one — the date written INSIDE the file. A film downloaded today that was
+  /// made last year read as a year old: no NEW tag, nowhere near the top of
+  /// Recently added. MX Player dates a file by its arrival. One query for the
+  /// whole library (MediaChangeWatcher.datesAdded); empty off Android or on
+  /// any failure, and then the old date is used.
+  Future<Map<String, int>> _datesAdded() async {
+    if (kIsWeb || !Platform.isAndroid) return const {};
+    try {
+      final m = await _scanChannel.invokeMethod<Map<Object?, Object?>>('datesAdded');
+      if (m == null) return const {};
+      final out = <String, int>{};
+      m.forEach((k, v) {
+        if (k is String && v is int) out[k] = v;
+      });
+      return out;
+    } catch (_) {
+      return const {};
+    }
+  }
+
   /// Internal helper — fetch all video folder buckets once.
   Future<List<AssetPathEntity>> _fetchFolderBuckets() async {
     // Audit fix (real user report on Flutlab web preview): photo_manager
@@ -70,10 +96,21 @@ class LibraryLocalDataSource {
     return paths;
   }
 
+  /// When [asset] arrived on the phone: DATE_ADDED from [added] when known,
+  /// otherwise photo_manager's create time (see [_datesAdded]).
+  static DateTime _arrived(AssetEntity asset, Map<String, int> added) {
+    final sec = added[asset.id];
+    if (sec != null && sec > 0) {
+      return DateTime.fromMillisecondsSinceEpoch(sec * 1000);
+    }
+    return asset.createDateTime;
+  }
+
   /// Convert a single asset to our [Video] model. Calls `asset.file` once
   /// to resolve the absolute path. Skips `file.length()` for speed — the
   /// caller decides whether to compute size lazily.
-  Future<Video?> _toVideo(AssetEntity asset, String folderPath) async {
+  Future<Video?> _toVideo(AssetEntity asset, String folderPath,
+      [Map<String, int> added = const {}]) async {
     try {
       // Guard against a single corrupt/inaccessible file hanging the whole
       // scan: if `asset.file` doesn't resolve within a few seconds, skip
@@ -105,7 +142,7 @@ class LibraryLocalDataSource {
         width: asset.width,
         height: asset.height,
         mimeType: asset.mimeType,
-        dateAdded: asset.createDateTime,
+        dateAdded: _arrived(asset, added),
         dateModified: asset.modifiedDateTime,
       );
     } catch (_) {
@@ -188,16 +225,30 @@ class LibraryLocalDataSource {
   /// Returns the videos inside the given folder. Looks up the matching
   /// bucket and pages its asset list, avoiding any work for other folders.
   Future<List<Video>> getVideosInFolder(String folderPath) async {
+    final addedF = _datesAdded();
     final buckets = await _fetchFolderBuckets();
     if (buckets.isEmpty) return [];
 
-    // Find the bucket matching this folder path. Try by name first
-    // (cheapest), then fall back to resolving the bucket's first asset's
-    // dirname (matches what getFolders does).
+    // Find the bucket that IS this folder. Buckets with the folder's name are
+    // tried first (cheapest), but each is confirmed by its first file's
+    // directory: two folders can share a name — Download/Telegram and
+    // Telegram, Movies on the phone and on the SD card — and taking the first
+    // by name alone listed the other folder's videos under this one.
     final folderName = p.basename(folderPath);
+    Future<bool> isHere(AssetPathEntity bucket) async {
+      try {
+        final first = await bucket.getAssetListRange(start: 0, end: 1);
+        if (first.isEmpty) return false;
+        final f = await first.first.file;
+        return f != null && p.dirname(f.path) == folderPath;
+      } catch (_) {
+        return false;
+      }
+    }
+
     AssetPathEntity? target;
     for (final bucket in buckets) {
-      if (bucket.name == folderName) {
+      if (bucket.name == folderName && await isHere(bucket)) {
         target = bucket;
         break;
       }
@@ -205,16 +256,11 @@ class LibraryLocalDataSource {
     // Fall back: scan each bucket's first-asset folder to match exactly.
     if (target == null) {
       for (final bucket in buckets) {
-        try {
-          final first =
-              await bucket.getAssetListRange(start: 0, end: 1);
-          if (first.isEmpty) continue;
-          final f = await first.first.file;
-          if (f != null && p.dirname(f.path) == folderPath) {
-            target = bucket;
-            break;
-          }
-        } catch (e) { if (kDebugMode) debugPrint('library_local_datasource.best-effort: $e'); }
+        if (bucket.name == folderName) continue; // already checked
+        if (await isHere(bucket)) {
+          target = bucket;
+          break;
+        }
       }
     }
     if (target == null) return [];
@@ -222,6 +268,7 @@ class LibraryLocalDataSource {
     final count = await target.assetCountAsync;
     if (count == 0) return [];
     final assets = await target.getAssetListRange(start: 0, end: count);
+    final added = await addedF;
 
     // Batched-parallel resolution (same reasoning as getAllVideos): avoids
     // a serial `asset.file` per video that stalls large folders.
@@ -231,7 +278,7 @@ class LibraryLocalDataSource {
       final slice =
           assets.sublist(i, (i + batchSize).clamp(0, assets.length));
       final vids =
-          await Future.wait(slice.map((a) => _toVideo(a, folderPath)));
+          await Future.wait(slice.map((a) => _toVideo(a, folderPath, added)));
       for (final v in vids) {
         if (v != null) result.add(v);
       }
@@ -252,8 +299,10 @@ class LibraryLocalDataSource {
   /// `_resolveFolderPath` pass that did an extra `await asset.file` per
   /// video.
   Future<List<Video>> getAllVideos() async {
+    final addedF = _datesAdded();
     final buckets = await _fetchFolderBuckets();
     if (buckets.isEmpty) return [];
+    final added = await addedF;
 
     // Process buckets in parallel. Within each bucket, resolve the per-asset
     // files in bounded-concurrency batches: `asset.file` is the slow call
@@ -285,7 +334,7 @@ class LibraryLocalDataSource {
           final slice = assets.sublist(
               i, (i + batchSize).clamp(0, assets.length));
           final vids = await Future.wait(
-              slice.map((a) => _toVideo(a, resolvedPath)));
+              slice.map((a) => _toVideo(a, resolvedPath, added)));
           for (final v in vids) {
             if (v != null) out.add(v);
           }

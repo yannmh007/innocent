@@ -502,6 +502,9 @@ class MainActivity : AudioServiceFragmentActivity() {
             flutterEngine.dartExecutor.binaryMessenger,
             MEDIA_SCAN_CHANNEL
         )
+        // The library hears about new, changed and removed videos as they
+        // happen (lib/features/local_browser/data/library_watcher.dart).
+        MediaChangeWatcher.register(flutterEngine.dartExecutor.binaryMessenger, applicationContext)
         mediaScanChannel?.setMethodCallHandler { call, result ->
             when (call.method) {
                 "scan" -> {
@@ -597,6 +600,15 @@ class MainActivity : AudioServiceFragmentActivity() {
                 // permission flags make revoking access count as a change.
                 // Null below Android 11, where there is no generation and
                 // the caller simply scans as it always has.
+                // id -> DATE_ADDED for every video, off the main thread: the
+                // NEW tag and Recently added measure when a file ARRIVED.
+                "datesAdded" -> {
+                    val ctx = applicationContext
+                    Thread {
+                        val m = try { MediaChangeWatcher.datesAdded(ctx) } catch (_: Throwable) { emptyMap() }
+                        runOnUiThread { result.success(m) }
+                    }.start()
+                }
                 "generation" -> {
                     var stamp: String? = null
                     if (Build.VERSION.SDK_INT >= 30) {
@@ -1654,9 +1666,27 @@ class MainActivity : AudioServiceFragmentActivity() {
                     if (!enabled) {
                         result.success("dev_options_off")
                     } else {
-                        val opened = tryStartWirelessDebugging() || startDevOptions()
+                        val opened = tryStartWirelessDebugging() ||
+                            startDevOptionsAtWirelessDebugging() || startDevOptions()
                         result.success(if (opened) "opened" else "failed")
                     }
+                }
+                "adbSetupState" -> {
+                    result.success(adbSetupState())
+                }
+                "openNotificationSettings" -> {
+                    val i = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                        .putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+                    result.success(
+                        if (startActivitySafely(i) ||
+                            startActivitySafely(
+                                Intent(
+                                    Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                    android.net.Uri.parse("package:$packageName"),
+                                ),
+                            )
+                        ) "opened" else "failed",
+                    )
                 }
                 "openAboutPhone" -> {
                     result.success(
@@ -1707,6 +1737,9 @@ class MainActivity : AudioServiceFragmentActivity() {
                     result.success(map)
                 }
                 // audit_adb.md A9: the exit the feature never had.
+                "disableWirelessDebugging" -> {
+                    result.success(AdbManager.disableWirelessDebugging(this@MainActivity))
+                }
                 "revokeSecureSettings" -> {
                     thread(start = true, isDaemon = true, name = "adb-revoke") {
                         val status = AdbManager.revokeSecureSettings(this@MainActivity)
@@ -1742,16 +1775,7 @@ class MainActivity : AudioServiceFragmentActivity() {
                         runOnUiThread { result.success(status) }
                     }
                 }
-                // v0.89: which backend reads Android/data ("builtin" | "iadb").
-                "getBackend" -> {
-                    result.success(AdbManager.adbBackend(this@MainActivity))
-                }
-                "setBackend" -> {
-                    val backend = call.argument<String>("backend") ?: "builtin"
-                    AdbManager.setAdbBackend(this@MainActivity, backend)
-                    result.success(true)
-                }
-                // v0.89: iADB-style notification pairing (no split-screen). The
+                // v0.89: notification pairing (no split-screen). The
                 // foreground service discovers the pairing service in the
                 // background and posts a RemoteInput notification; the user
                 // types the code into the shade. Result comes back via the
@@ -1764,64 +1788,6 @@ class MainActivity : AudioServiceFragmentActivity() {
                 "stopPairingService" -> {
                     AdbPairingService.stop(this@MainActivity)
                     result.success(true)
-                }
-                // v0.93 Backend 2: iADB app client. status()/connected() make
-                // binder IPC calls (ping), so run them off the main thread to
-                // avoid any chance of an ANR if the iADB server is slow.
-                "iadbStatus" -> {
-                    thread(start = true, isDaemon = true, name = "iadb-status") {
-                        val s = IadbClient.status()
-                        runOnUiThread { result.success(s) }
-                    }
-                }
-                "iadbInstalledAndRunning" -> {
-                    thread(start = true, isDaemon = true, name = "iadb-inst") {
-                        val b = IadbClient.installedAndRunning()
-                        runOnUiThread { result.success(b) }
-                    }
-                }
-                "iadbConnected" -> {
-                    thread(start = true, isDaemon = true, name = "iadb-conn") {
-                        val b = IadbClient.connected()
-                        runOnUiThread { result.success(b) }
-                    }
-                }
-                "iadbConnect" -> {
-                    // Must run on the main thread (Iadb posts callbacks there);
-                    // MethodCallHandler is already on main.
-                    IadbClient.onStateChanged = {
-                        // Just signal "something changed"; the Dart side then
-                        // re-queries iadbConnected/iadbStatus on a worker thread.
-                        // (Avoids doing a binder ping on whatever thread this
-                        // callback happens to run on.)
-                        runOnUiThread {
-                            adbChannel?.invokeMethod("onIadbState", null)
-                        }
-                    }
-                    IadbClient.connect(this@MainActivity)
-                    result.success(true)
-                }
-                "iadbDisconnect" -> {
-                    IadbClient.disconnect()
-                    result.success(true)
-                }
-                "iadbOpenInStore" -> {
-                    AdbManager.openIadbInStore(this@MainActivity)
-                    result.success(true)
-                }
-                "iadbExec" -> {
-                    val cmd = call.argument<String>("command") ?: ""
-                    thread(start = true, isDaemon = true, name = "iadb-exec") {
-                        val out = IadbClient.exec(cmd)
-                        runOnUiThread { result.success(out) }
-                    }
-                }
-                "iadbPullForPlayback" -> {
-                    val path = call.argument<String>("path") ?: ""
-                    thread(start = true, isDaemon = true, name = "iadb-pull") {
-                        val out = IadbClient.pullToCache(this@MainActivity, path)
-                        runOnUiThread { result.success(out) }
-                    }
                 }
                 else -> result.notImplemented()
             }
@@ -2161,6 +2127,59 @@ class MainActivity : AudioServiceFragmentActivity() {
 
     private fun startDevOptions(): Boolean =
         startActivitySafely(Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS))
+
+    /**
+     * Developer options, scrolled to Wireless debugging and the row
+     * highlighted — Settings' own search-result extra, which is how Shizuku
+     * lands people there. A Settings that does not know the key simply opens
+     * Developer options at the top.
+     */
+    private fun startDevOptionsAtWirelessDebugging(): Boolean =
+        startActivitySafely(
+            Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS)
+                .putExtra(":settings:fragment_args_key", "toggle_adb_wireless"),
+        )
+
+    /**
+     * What the ADB setup still needs, read fresh each time the ADB screen asks
+     * (it asks on resume and every couple of seconds while open), so its
+     * checklist ticks as the person works through Settings.
+     */
+    private fun adbSetupState(): Map<String, Any> {
+        fun global(name: String): Int = try {
+            Settings.Global.getInt(contentResolver, name, 0)
+        } catch (_: Throwable) {
+            0
+        }
+        // Any Wi-Fi network, not only the default one: a Wi-Fi without
+        // internet stays connected while mobile data carries the traffic, and
+        // wireless debugging works on it.
+        val wifi = try {
+            val cm = getSystemService(android.net.ConnectivityManager::class.java)
+            @Suppress("DEPRECATION")
+            cm?.allNetworks?.any { n ->
+                cm.getNetworkCapabilities(n)?.hasTransport(
+                    android.net.NetworkCapabilities.TRANSPORT_WIFI,
+                ) == true
+            } == true
+        } catch (_: Throwable) {
+            false
+        }
+        val notifications = try {
+            androidx.core.app.NotificationManagerCompat.from(this).areNotificationsEnabled()
+        } catch (_: Throwable) {
+            true
+        }
+        return mapOf(
+            "devOptions" to (global(Settings.Global.DEVELOPMENT_SETTINGS_ENABLED) == 1),
+            "wirelessDebugging" to (global("adb_wifi_enabled") == 1),
+            "wifi" to wifi,
+            "notifications" to notifications,
+            "secureSettings" to AdbManager.hasSecureSettings(this),
+            "manufacturer" to Build.MANUFACTURER.orEmpty().lowercase(),
+            "sdk" to Build.VERSION.SDK_INT,
+        )
+    }
 
     /**
      * Best-effort jump straight to the Wireless debugging screen. There is no
@@ -2549,7 +2568,18 @@ class MainActivity : AudioServiceFragmentActivity() {
             } else {
                 videoPath
             }
-            retriever.setDataSource(cleanPath)
+            if (videoPath.startsWith("adb://")) {
+                // Android/data over ADB: through the loopback proxy, which
+                // hands the retriever only the ranges it reads — the index
+                // and one frame, not the film. Not while disconnected: a
+                // thumbnail is no reason to start reconnecting.
+                if (!AdbManager.getInstance(this).isConnected) return null
+                val url = AdbManager.streamUrl(this, videoPath.removePrefix("adb://"))
+                if (url.startsWith("ERROR")) return null
+                retriever.setDataSource(url, HashMap<String, String>())
+            } else {
+                retriever.setDataSource(cleanPath)
+            }
             val timeUs = (timeMs.coerceAtLeast(0)).toLong() * 1000L
 
             // OPTION_CLOSEST_SYNC = fast, good enough for thumbnails.

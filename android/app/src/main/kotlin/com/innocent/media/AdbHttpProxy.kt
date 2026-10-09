@@ -299,7 +299,7 @@ object AdbHttpProxy {
                 writeStatus(out, 404, "Not Found")
                 return
             }
-            val size = AdbManager.fileSize(context, srcPath)
+            val size = sizeOf(context, srcPath)
             if (size <= 0L) {
                 writeStatus(out, 404, "Not Found")
                 return
@@ -322,7 +322,25 @@ object AdbHttpProxy {
                 }
                 if (start < 0L) start = 0L
                 if (end > size - 1) end = size - 1
+                // A start past the end is unsatisfiable, and says so. It used
+                // to be answered with the whole file under a 206 — bytes from
+                // 0 handed to a reader that had asked for a later offset.
+                if (start >= size) {
+                    try {
+                        out.write(
+                            ("HTTP/1.1 416 Range Not Satisfiable\r\n" +
+                                "Content-Range: bytes */$size\r\n" +
+                                "Content-Length: 0\r\nConnection: close\r\n\r\n")
+                                .toByteArray(Charsets.US_ASCII),
+                        )
+                        out.flush()
+                    } catch (_: Throwable) {
+                    }
+                    return
+                }
+                // A range that ends before it starts is no range: the file.
                 if (start > end) {
+                    partial = false
                     start = 0L
                     end = size - 1
                 }
@@ -350,6 +368,24 @@ object AdbHttpProxy {
             } catch (_: Throwable) {
             }
         }
+    }
+
+    /**
+     * The file's length, remembered for a minute. Every request asked adbd for
+     * it again — a shell round trip before the first byte of each of the
+     * dozens of ranges a seek-heavy film is read in. A minute, not forever:
+     * a file another app is still writing (a Telegram download) grows.
+     */
+    private val sizes = java.util.concurrent.ConcurrentHashMap<String, Pair<Long, Long>>()
+
+    private fun sizeOf(context: Context, path: String): Long {
+        val now = android.os.SystemClock.elapsedRealtime()
+        sizes[path]?.let { (size, at) ->
+            if (size > 0L && now - at < 60_000L) return size
+        }
+        val size = AdbManager.fileSize(context, path)
+        if (size > 0L) sizes[path] = size to now
+        return size
     }
 
     private fun writeStatus(out: OutputStream, code: Int, msg: String) {

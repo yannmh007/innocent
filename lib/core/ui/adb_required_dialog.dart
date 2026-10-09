@@ -7,8 +7,8 @@ import '../../features/settings/presentation/adb_connect_screen.dart';
 /// The one place Innocent asks the user to connect ADB before showing content
 /// that lives in Android/data or Android/obb.
 ///
-/// Those folders are readable only through an ADB connection — for most people
-/// that means the iADB app, whose always-on server keeps the link alive. Rather
+/// Those folders are readable only through an ADB connection — Innocent's own,
+/// over wireless debugging, set up once on the ADB screen. Rather
 /// than each screen inventing its own wording (and its own dead end when the
 /// connection has dropped), every entry point routes through here so the
 /// explanation, the tone and the one-tap path to the ADB screen are identical
@@ -25,13 +25,13 @@ class AdbRequiredDialog {
     BuildContext context, {
     String what = 'this folder',
   }) async {
-    // Ask the backend what it can tell us, so the copy matches reality: is the
-    // iADB app even installed, or just not connected right now?
+    // So the copy matches reality: has ADB been set up on this phone before
+    // (then it has only dropped), or never?
     var installed = false;
     try {
-      installed = await AdbService.instance.iadbInstalledAndRunning();
+      installed = (await AdbService.instance.lastConnect()).isNotEmpty;
     } catch (_) {
-      // Treat any failure as "not installed" — the dialog still works.
+      // Treat any failure as "never set up" — the dialog still works.
     }
     if (!context.mounted) return false;
 
@@ -74,12 +74,12 @@ class AdbRequiredDialog {
             const SizedBox(height: 10),
             Text(
               installed
-                  ? 'The connection to iADB has dropped, so $what can\u2019t be '
+                  ? 'The ADB connection has dropped, so $what can\u2019t be '
                       'read right now. Reconnecting takes one tap and usually '
                       'holds from then on.'
                   : 'Android keeps app-data folders private, so $what can only '
-                      'be opened through an ADB connection. The iADB app '
-                      'handles that once and then stays connected.',
+                      'be opened through an ADB connection. Innocent sets that '
+                      'up itself over wireless debugging — no other app needed.',
               textAlign: TextAlign.center,
               style: const TextStyle(
                 color: AppColors.white70,
@@ -131,14 +131,10 @@ class AdbRequiredDialog {
     return context.mounted;
   }
 
-  /// True when Innocent can currently read Android/data — i.e. the selected
-  /// backend has a live connection. Never throws.
+  /// True when Innocent can currently read Android/data — its ADB connection
+  /// is live. Never throws.
   static Future<bool> isConnected() async {
     try {
-      final backend = await AdbService.instance.getBackend();
-      if (backend == 'iadb') {
-        return await AdbService.instance.iadbConnected();
-      }
       return await AdbService.instance.isConnected();
     } catch (_) {
       return false;

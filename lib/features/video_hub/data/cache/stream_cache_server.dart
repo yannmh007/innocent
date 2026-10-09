@@ -1,11 +1,16 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:math';
+import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 
+import 'package:path_provider/path_provider.dart';
+
+import '../../../../core/services/diagnostics/playback_log.dart';
 import '../../../../core/services/network/foreground_stream.dart';
 import '../../../../core/services/network/throughput_memory.dart';
+import '../api/ranged_fetch.dart';
 import 'stream_cache_store.dart';
 
 /// Gives the player a local address for a remote film, and keeps what passes
@@ -72,6 +77,212 @@ class StreamCacheServer {
 
   static const int _upstreamTries = 3;
 
+  /// ═══════════════════════════════════════════════════════════════════════
+  /// SEVERAL CONNECTIONS, NOT ONE — WHY "4 MB/s AND STILL BUFFERING" HAPPENED
+  /// ═══════════════════════════════════════════════════════════════════════
+  ///
+  /// A speed test opens several connections and adds them up. This proxy
+  /// opened ONE, and on a mobile line one TCP connection is held to a
+  /// fraction of the line by its loss and round trip: throughput falls as
+  /// RTT × √loss rises, and at 150 ms and 1 % loss a single connection
+  /// uses roughly a seventh of the bandwidth. The meter said 4 MB/s; the
+  /// film received a few hundred KB/s of it, and the spinner was the result.
+  ///
+  /// Downloads already fetched three parts at once ([RangedFetch]) — the
+  /// stream, which is what people watch, did not. Now it does: each stretch
+  /// of film is asked for as parts of up to 2 MB ([rampedPartBytes]) on
+  /// [lanes] connections at once and
+  /// handed to the player in order, so a loss on one connection leaves the
+  /// others running. The same thing Telegram's loader and every download
+  /// manager do, and the reason a DASH/HLS player's short segments recover
+  /// from loss better than one long response.
+  ///
+  /// AND THE CONNECTIONS ARE KEPT. Every 8 MB used to open a new HttpClient
+  /// and close it: a TCP handshake, a TLS negotiation and slow start from
+  /// nothing, every few seconds of a film. One pooled client per film now
+  /// carries every request of the session.
+  ///
+  /// SIX, MEASURED (test_bench/stream_bench.dart under `tc netem`, run
+  /// 37518953988, a 6 Mbps film):
+  ///
+  ///   150 ms RTT, 0.5 % loss   1 lane 0.25 MB/s, 60 s stalled
+  ///                            3 lanes 0.87 MB/s, 5.7 s
+  ///                            6 lanes 1.78 MB/s, none
+  ///   250 ms RTT, 2 % loss     1 lane 0.07 MB/s, 285 s · 3 lanes 77 s · 6 lanes 18 s
+  ///
+  /// On a clean line every count is the same speed, so six costs nothing
+  /// there. The price is memory — at most twelve 2 MB parts held while an
+  /// earlier one finishes — and requests: one per 2 MB through the Worker,
+  /// five hundred for a gigabyte, far inside its allowance.
+  ///
+  /// Settable for the bench and the lab (`lanes = 1` is the old single
+  /// connection).
+  @visibleForTesting
+  static int lanes = 6;
+
+  /// How much one parallel stretch covers before the loop comes round again
+  /// (to check the cache, renew a link, record the speed).
+  @visibleForTesting
+  static int span = 32 * 1024 * 1024;
+
+  /// How much each round of a seek's parts grows on the one before
+  /// ([seekPartBytes]). Settable for the bench.
+  @visibleForTesting
+  static double seekGrowth = 1.25;
+
+  /// A STRETCH THAT STARTS PART WAY THROUGH THE FILM — a seek, or the gap
+  /// after a run already held — IS FETCHED IN ROUNDS OF EQUAL PARTS: one
+  /// part per lane, 64 KB each, then every round a quarter bigger than the
+  /// one before, up to 2 MB.
+  ///
+  /// The player wants the first few hundred kilobytes after a seek — the
+  /// keyframe and a second of sound; a fragmented film, two fragments (the
+  /// one it seeks into and, for its sound, the one before). On a long lossy
+  /// line each connection is held to a fraction of the line, and what
+  /// reaches the player in order arrives at the speed of the part at the
+  /// head. The ramp below grows ONE PART at a time — 128 KB, then 256, 384 …
+  /// — so after a seek the second part was twice the first and took twice
+  /// as long, the third three times: on a 4 Mbit line at 300 ms and 1 % loss
+  /// a fragmented film's seek waited ten seconds, a faststart one four
+  /// (device lab run 37885968378, and the same line modelled locally). Six
+  /// equal parts finish together, at the speed of the whole line: with the
+  /// parts a jump leaves behind kept ([_Source.keepSpare]), the same seeks
+  /// took 3.3 to 4.3 s and 1.9 to 3.5 s, and on a 4G-like line the
+  /// fragmented film's went from 2.6 s to 0.9–1.5. A quarter, not a half,
+  /// per round: half again had the parts outgrow the line while the player
+  /// was still reading, and a seek waited 1.2 s for a read already under
+  /// way to finish; a quarter costs about a tenth more requests.
+  ///
+  /// The film's start keeps the ramp: its first stretch takes the index as
+  /// one round of its own ([_indexPlan]), and the ramp carries on from there.
+  ///
+  /// [first] is the first round's part: 64 KB, or what one connection of
+  /// this film has been carrying in half a second, up to 512 KB
+  /// ([_Source.seekFirstPart]) — on a fast line 64 KB is mostly round trip,
+  /// and twice the requests through the Worker for nothing.
+  static int seekPartBytes(int index, {int first = 64 * 1024}) {
+    final grown = first * pow(seekGrowth, index ~/ max(1, lanes));
+    return min(RangedFetch.defaultPartBytes, (grown.round() + 16383) & ~16383);
+  }
+
+  /// A lane silent this long is taken for dead and the stretch ends; the
+  /// loop reopens from the last byte the player received.
+  static const Duration _laneStall = Duration(seconds: 15);
+
+  /// How long a stretch's first part streams to the player alone before the
+  /// other lanes open (see [_lanesFetch]). Longer than a demuxer takes to
+  /// read a fragment header and jump; short against a second of film.
+  static const Duration _fanOutAfter = Duration(milliseconds: 250);
+
+  /// A part this close to done is kept when the player hangs up, its
+  /// connection with it (see [_LanePart.release]): taken over by the next
+  /// stretch if it reaches those bytes, finished for the pool if not. Six of
+  /// them is at most 1.5 MB of a viewer's data per seek, against a handshake
+  /// saved for each.
+  static const int _finishOnHangUpBelow = 256 * 1024;
+
+  /// How long a request waits for the one its player is leaving to end
+  /// (see [_serve]). A seek's old connection closes the moment the new one
+  /// answers; this is only the bound for one that does not.
+  static const Duration _supersedeWait = Duration(milliseconds: 300);
+
+  /// THE PARTS OF A STRETCH START SMALL AND GROW BY 128 KB EACH — 128 KB,
+  /// 256 KB, 384 KB … — until they are 2 MB, the sixteenth part on.
+  ///
+  /// A part reaches the player only once it is whole, and the lanes share the
+  /// line. Six lanes opening on 512 KB and then 2 MB parts gave the second
+  /// part a sixth of the line, so the player waited for 2.5 MB at a sixth of
+  /// the speed before it had a picture: 12.6 s of black screen in the device
+  /// lab (run 37743949143, 150 ms RTT, 1 % loss) where one lane took 2.2 s.
+  ///
+  /// Small parts first is the cure; GROWING ONE PART AT A TIME rather than a
+  /// round at a time is what keeps it cured. Parts of a round that are all
+  /// one size finish together, so the film arrives in lumps a round apart —
+  /// rounds of 256 KB, then 512 KB (run 37747387105) started in 2 s but ran
+  /// dry once 3 s later. Each part a little bigger than the one before
+  /// finishes a little after it, so the film arrives a part at a time, in
+  /// order, at the speed of the whole line. Modelled against both in
+  /// eleven line/film pairings, this one was never the worse.
+  static int rampedPartBytes(int index) =>
+      min(RangedFetch.defaultPartBytes, 128 * 1024 * (index + 1));
+
+  /// How far ahead of the index a stretch may start and still be taken as
+  /// the index's (a stretch from 0 starts at `ftyp`, 32 bytes ahead of it).
+  static const int _headBytes = 64 * 1024;
+
+  /// The length check's read: the film's first box headers, which say where
+  /// its index is, in one round trip — 8 KB fits a fresh connection's first
+  /// flight, where 64 KB took three more round trips at 250 ms each.
+  static const int _probeBytes = 8 * 1024;
+
+  /// WHERE THE FILM'S INDEX IS, from its first bytes: `(start, end)` of the
+  /// `moov` box, or null.
+  ///
+  /// The index of an MP4 grows with its running time — 4.2 MB for 108
+  /// minutes (device lab run 37757920331), about 6 MB for a two-and-a-half
+  /// hour film — and the player reads all of it before the first picture.
+  /// Fetched like any other stretch, on parts that start small and grow, the
+  /// last of it arrived seconds after the first: 8.8 s to a picture on a good
+  /// 4G line where a short film took 1.4 s. Knowing where it is lets the
+  /// first stretch take it whole, on every lane at once ([_indexPlan]).
+  ///
+  /// The top-level boxes are walked from the start: `ftyp`, `free`, then
+  /// either `moov` (a faststart file — the index is right here) or `mdat`,
+  /// whose size says where the box after it, the index, begins (a file
+  /// written straight out, index last; it runs to the end of the file).
+  @visibleForTesting
+  static (int, int)? indexRange(Uint8List head, int total) {
+    var at = 0;
+    for (var i = 0; i < 8 && at + 8 <= head.length; i++) {
+      final view = ByteData.sublistView(head);
+      var size = view.getUint32(at);
+      final kind = String.fromCharCodes(head.sublist(at + 4, at + 8));
+      if (size == 1) {
+        if (at + 16 > head.length) return null;
+        size = view.getUint64(at + 8);
+      } else if (size == 0) {
+        size = total - at; // to the end of the file
+      }
+      if (size < 8) return null;
+      if (kind == 'moov') return (at, min(total, at + size));
+      if (kind == 'mdat') {
+        final after = at + size;
+        if (after >= total) return null; // no index after it
+        return (after, total);
+      }
+      at += size;
+    }
+    return null;
+  }
+
+  /// Whether [head] begins with a `moof` box: the header of one fragment of
+  /// a fragmented film.
+  static bool _isMoof(List<int> head) =>
+      head.length >= 8 &&
+      head[4] == 0x6d && // m
+      head[5] == 0x6f && // o
+      head[6] == 0x6f && // o
+      head[7] == 0x66; // f
+
+  /// Whether a stretch from [pos] begins in the index — or in the few bytes
+  /// before it (a stretch from 0 starts at `ftyp`, 32 bytes ahead of it).
+  static bool _startsInIndex((int, int)? index, int pos) =>
+      index != null && pos >= index.$1 - _headBytes && pos < index.$2;
+
+  /// The first parts of a stretch that starts in [index]: the rest of the
+  /// index (and, for one at the front, 1 MB of film after it) split evenly
+  /// over the lanes, in 64 KB multiples. Empty when the stretch does not
+  /// start in it, or there is too little left to be worth it.
+  static List<int> _indexPlan((int, int)? index, int start, int end) {
+    if (index == null || !_startsInIndex(index, start)) return const [];
+    final front = index.$1 < 1024 * 1024;
+    final upto = min(end, index.$2 + (front ? 1024 * 1024 : 0));
+    final len = upto - start;
+    if (len < 512 * 1024) return const [];
+    final each = ((len / max(1, lanes)).ceil() + 65535) & ~65535;
+    return [for (var at = start; at < upto; at += each) min(each, upto - at)];
+  }
+
   bool get running => _server != null;
 
   Future<void> _ensureStarted() async {
@@ -102,13 +313,21 @@ class StreamCacheServer {
     try {
       await StreamCacheStore.instance.load();
       await _ensureStarted();
+      await _labLanes();
       final port = _server?.port;
       final token = _token;
       if (port == null || token == null) return null;
 
       await StreamCacheStore.instance
           .entryFor(cacheId, total: total, label: label);
-      _sources[cacheId] = _Source(upstream: upstream, refresh: refresh);
+      // The film's previous registration, if any, gives up its connections.
+      _sources[cacheId]?.close();
+      final src = _sources[cacheId] = _Source(upstream: upstream, refresh: refresh);
+      // THE LENGTH CHECK STARTS NOW, while the player is still being built,
+      // rather than when its first request arrives: it was 1 to 2.3 s of
+      // every start in the device lab (run 37776589997), all of it before the
+      // first lane opened. Its connection then carries the first lane.
+      src.probing = _probeTotal(src);
       // THE BUDGET IS NOT ENFORCED HERE, and that is deliberate. This runs on
       // the path to the first frame — the path this project has spent weeks
       // taking delays out of — and enforcing the budget can mean deleting
@@ -124,6 +343,23 @@ class StreamCacheServer {
       if (kDebugMode) debugPrint('StreamCacheServer.localUrlFor: $e');
       return null;
     }
+  }
+
+  /// THE DEVICE LAB'S A/B SWITCH, AND ONLY THERE. A lab build reads the lane
+  /// count from `lab_lanes` in the app's external files directory, which the
+  /// lab writes with adb between two plays of the same film over the same
+  /// shaped line — one connection, then three. A release build never looks.
+  static Future<void> _labLanes() async {
+    if (!const bool.fromEnvironment('INNOCENT_LAB')) return;
+    try {
+      final dir = await getExternalStorageDirectory();
+      final f = File('${dir?.path}/lab_lanes');
+      if (dir != null && await f.exists()) {
+        final n = int.tryParse((await f.readAsString()).trim());
+        if (n != null) lanes = n.clamp(1, 8);
+      }
+      PlaybackLog.add('stream lanes=$lanes');
+    } catch (_) {}
   }
 
   /// A local address for a film that is served ENTIRELY from what is on disk.
@@ -147,6 +383,7 @@ class StreamCacheServer {
       // NO `entryFor` CALL, deliberately: the entry must already exist, and
       // creating one here would mint an empty directory for a film this phone
       // does not have and then serve a 502 out of it.
+      _sources[cacheId]?.close();
       _sources[cacheId] = _Source(
         upstream: '',
         refresh: () async => null,
@@ -166,7 +403,7 @@ class StreamCacheServer {
 
   /// Stop serving a film, so a stale signed URL and its refresh closure do
   /// not outlive the screen that made them.
-  void release(String cacheId) => _sources.remove(cacheId);
+  void release(String cacheId) => _sources.remove(cacheId)?.close();
 
   /// Forget every film but these.
   ///
@@ -176,7 +413,11 @@ class StreamCacheServer {
   /// after the screen is gone. Registering is the only moment at which it is
   /// certain which ones still matter.
   void releaseAllExcept(Set<String> keep) {
-    _sources.removeWhere((id, _) => !keep.contains(id));
+    _sources.removeWhere((id, src) {
+      if (keep.contains(id)) return false;
+      src.close();
+      return true;
+    });
   }
 
   Future<void> _handle(HttpRequest req) async {
@@ -234,7 +475,12 @@ class StreamCacheServer {
         return;
       }
     } else if (entry.total <= 0 || !src.checkedTotal) {
-      final probed = await _probeTotal(src);
+      // The one started when the film was registered, if it is still to be
+      // had; failing that, or if it failed, once more now.
+      final early = src.probing;
+      src.probing = null;
+      var probed = early == null ? 0 : await early;
+      if (probed <= 0) probed = await _probeTotal(src);
       if (probed <= 0 && entry.total <= 0) {
         res.statusCode = HttpStatus.badGateway;
         await res.close();
@@ -294,14 +540,49 @@ class StreamCacheServer {
     }
 
     var pos = start;
+    // THE BODY GOES STRAIGHT ONTO THE SOCKET, because that is the only place
+    // the player hanging up can be seen.
+    //
+    // Measured (2026-10-08): once a client has gone, dart:io's HttpResponse
+    // goes on accepting writes — a hundred megabytes of them, every flush
+    // completing — and its `done` never completes. The player seeks, closes
+    // its connection and opens another, and this loop carried on fetching the
+    // rest of the film for nobody: in the device lab the abandoned 32 MB
+    // stretch finished a minute after the seek, on the same line as the one
+    // the viewer was waiting for. A detached socket says at once — its input
+    // ends — and a write to it fails.
+    res.headers.set(HttpHeaders.connectionHeader, 'close');
+    final Socket out;
     try {
+      out = await res.detachSocket(writeHeaders: true);
+    } catch (_) {
+      return;
+    }
+    final gone = _Gone();
+    out.listen((_) {}, onDone: gone.hangUp, onError: (Object _) => gone.hangUp(),
+        cancelOnError: true);
+    // A player that seeks opens its next request BEFORE it closes the last
+    // (ffmpeg keeps the old connection until the new one answers), so the
+    // stretch it is leaving is still running when this one starts. Wait —
+    // briefly — for it to end and put away the parts it is keeping, or this
+    // stretch asks again for the very bytes it is about to be handed.
+    final leaving = [for (final g in src.serving) if (!g.isOver) g];
+    src.serving.add(gone);
+    var complete = false;
+    try {
+      if (leaving.isNotEmpty) {
+        await Future.any<void>([
+          Future.wait([for (final g in leaving) g.over]),
+          Future<void>.delayed(_supersedeWait),
+        ]);
+      }
       while (pos <= endInclusive) {
         final before = pos;
 
         // ── from disk, for as far as this run reaches ──────────────────
         final part = entry.partAt(pos);
         if (part != null) {
-          pos = await _fromDisk(res, part, pos, endInclusive);
+          pos = await _fromDisk(out, part, pos, endInclusive);
           if (pos == before) break;
           continue;
         }
@@ -313,17 +594,30 @@ class StreamCacheServer {
         // honest signal: the player reads it as a dropped connection, which is
         // what it is, and its own retry path handles it.
         if (src.offline) break;
-        pos = await _fromUpstream(res, store, entry, src, pos, endInclusive);
+        if (gone.value) break;
+        pos = await _fromUpstream(out, store, entry, src, pos, endInclusive, gone);
         // No progress means upstream gave nothing and will keep giving
         // nothing. The response is already committed, so the honest end is
         // to stop writing: the player sees a short read, treats it as a
         // dropped connection, and its retry path is exactly for that.
         if (pos == before) break;
       }
+      complete = pos > endInclusive && !gone.value;
     } finally {
-      try {
-        await res.close();
-      } catch (_) {}
+      src.serving.remove(gone);
+      gone.finish();
+      if (complete) {
+        try {
+          await out.flush();
+          await out.close();
+        } catch (_) {
+          out.destroy();
+        }
+      } else {
+        // Short: the player sees the connection end where the bytes did,
+        // reads it as a dropped connection, and reconnects from there.
+        out.destroy();
+      }
     }
   }
 
@@ -338,7 +632,7 @@ class StreamCacheServer {
   /// `addStream` propagates back-pressure: the socket pauses the file stream,
   /// and the read slows to the speed the player consumes. Nothing is held.
   Future<int> _fromDisk(
-      HttpResponse res, CachePart part, int pos, int endInclusive) async {
+      IOSink res, CachePart part, int pos, int endInclusive) async {
     final from = pos - part.start;
     final toExclusive = min(part.end - 1, endInclusive) - part.start + 1;
     if (toExclusive <= from) return pos;
@@ -354,17 +648,49 @@ class StreamCacheServer {
     }
   }
 
-  Future<int> _fromUpstream(HttpResponse res, StreamCacheStore store,
-      CacheEntry entry, _Source src, int pos, int endInclusive) async {
+  Future<int> _fromUpstream(IOSink res, StreamCacheStore store,
+      CacheEntry entry, _Source src, int pos, int endInclusive,
+      [_Gone? gone]) async {
     // Read ahead past what was asked, but never past a run already held:
     // those bytes are here, and fetching them again would waste the
     // viewer's data to write a duplicate.
-    final until = min(entry.nextPartStart(pos, entry.total), entry.total);
-    final fetchEnd = min(min(pos + _chunk, until) - 1, entry.total - 1);
-    if (fetchEnd < pos) return pos;
+    //
+    // And never past what the player asked for: the response's length is
+    // already promised, and a byte beyond it is a byte of the next answer.
+    final until = min(min(entry.nextPartStart(pos, entry.total), entry.total),
+        endInclusive + 1);
 
-    final upstream = await _openUpstream(src, pos, fetchEnd);
-    if (upstream == null) return pos;
+    // ── several connections at once, in order (see [lanes]) ─────────────
+    //
+    // For a long stretch, the index, and any gap part way through the film
+    // of more than a part: a seek into a fragmented film leaves runs a
+    // fragment apart, and the gap between two of them is exactly what the
+    // player waits for next. As one request it went out on a client of its
+    // own — a fresh handshake, at one connection's speed — where the lanes
+    // reuse the film's warm connections and the parts a jump left behind.
+    final Stream<List<int>> upstream;
+    final stretchEnd = min(until, pos + span); // exclusive
+    var parallel = false;
+    final idx = src.index;
+    final inIndex = _startsInIndex(idx, pos) && stretchEnd - pos >= 512 * 1024;
+    if (lanes > 1 &&
+        (inIndex ||
+            (pos > 0 && stretchEnd - pos >= 64 * 1024) ||
+            RangedFetch.worthSplitting(stretchEnd - pos,
+                partBytes: RangedFetch.defaultPartBytes))) {
+      parallel = true;
+      upstream = _lanesFetch(src, pos, stretchEnd, entry.total,
+          gone: () => gone?.value ?? false,
+          hungUp: gone?.hungUp,
+          measured: (bytes, ms) =>
+              _recordThroughput(bytes, Duration(milliseconds: ms)));
+    } else {
+      final fetchEnd = min(min(pos + _chunk, until) - 1, entry.total - 1);
+      if (fetchEnd < pos) return pos;
+      final single = await _openUpstream(src, pos, fetchEnd);
+      if (single == null) return pos;
+      upstream = single;
+    }
 
     CacheWriter? writer;
     if (await store.hasRoom(protecting: entry.id)) {
@@ -376,15 +702,49 @@ class StreamCacheServer {
     // to resume from what actually went out, not from what was asked for.
     var sent = 0;
     final startedAt = DateTime.now();
+    // WRITTEN AND FLUSHED A PIECE AT A TIME, NOT `addStream`. A player that
+    // hangs up (a seek, Back) does not stop `addStream` from pulling: it kept
+    // draining the stretch into a dead socket, and the lanes kept fetching a
+    // film nobody was watching. A flush fails once the socket is gone, and
+    // that is where this stops — cancelling the stretch, which stops its
+    // lanes. It is also the back-pressure: nothing is read from upstream
+    // faster than the player takes it, past the lanes' own small window.
+    final pieces = StreamIterator<List<int>>(
+        _tee(upstream, writer, (n) => sent += n));
     try {
-      await res.addStream(_tee(upstream, writer, (n) => sent += n));
-      _recordThroughput(sent, DateTime.now().difference(startedAt));
+      var written = 0;
+      while (await pieces.moveNext()) {
+        res.add(pieces.current);
+        written += pieces.current.length;
+        await res.flush();
+      }
+      sent = min(sent, written);
+      final took = DateTime.now().difference(startedAt);
+      // A parallel stretch measures its own lanes (see [_lanesFetch]); this
+      // figure includes the time the player was not reading.
+      if (!parallel) _recordThroughput(sent, took);
+      if (sent >= 1024 * 1024) {
+        // Includes any time the player was not reading (its buffer full),
+        // so a floor on the line's speed, not a measurement of it.
+        PlaybackLog.add('stream stretch ${(sent / 1048576).toStringAsFixed(1)} MB '
+            'in ${took.inMilliseconds} ms lanes=$lanes');
+      }
       return pos + sent;
     } catch (e) {
+      // `_tee` swallows upstream failures, so an error HERE is the player's
+      // side: the response could not be written, it has hung up. The loop
+      // must not open another stretch for nobody — that is exactly how a
+      // seek used to leave a lane open on the server.
+      gone?.value = true;
       if (kDebugMode) debugPrint('StreamCacheServer._fromUpstream: $e');
       return pos + sent;
     } finally {
+      await pieces.cancel();
       if (writer != null) await store.touch(entry);
+      // A stretch that stopped short — the player seeked away, or a lane
+      // failed — has already destroyed the connections of its unfinished
+      // parts ([_LanePart.kill]). The pool itself is left alone: the
+      // stretch the player opened after its seek is using it right now.
     }
   }
 
@@ -407,31 +767,41 @@ class StreamCacheServer {
     var sinceFlush = 0;
     var w = writer;
     try {
-      await for (final chunk in src) {
-        // The viewer is watching this, from the network, now: background
-        // downloads hold back until it stops — see ForegroundStream.
-        ForegroundStream.touch();
-        if (w != null) {
-          try {
-            await w.write(chunk);
-            sinceFlush += chunk.length;
-            if (sinceFlush >= _flushEvery) {
-              await w.flush();
-              sinceFlush = 0;
+      // AN UPSTREAM THAT FAILS PART WAY ENDS THIS STRETCH, NOT THE PLAYER'S
+      // CONNECTION. Handed to `addStream`, an error closes the response the
+      // player is reading — mpv sees a reset and reconnects, which is a
+      // visible stall. Ending the stretch quietly instead lets [_serve]'s
+      // loop carry on from the last byte sent, on the same response: a fresh
+      // link, a fresh lane, and the player never knows.
+      try {
+        await for (final chunk in src) {
+          // The viewer is watching this, from the network, now: background
+          // downloads hold back until it stops — see ForegroundStream.
+          ForegroundStream.touch();
+          if (w != null) {
+            try {
+              await w.write(chunk);
+              sinceFlush += chunk.length;
+              if (sinceFlush >= _flushEvery) {
+                await w.flush();
+                sinceFlush = 0;
+              }
+            } catch (e) {
+              // A DISK THAT WILL NOT TAKE THE BYTES IS NOT A REASON TO STOP
+              // THE FILM. Full, read-only, removed, whatever it is: give up on
+              // keeping this one and keep playing. The rest of the film simply
+              // is not cached, which is the state everything was in yesterday.
+              if (kDebugMode) debugPrint('StreamCacheServer: cache write: $e');
+              final dead = w;
+              w = null;
+              await dead.close();
             }
-          } catch (e) {
-            // A DISK THAT WILL NOT TAKE THE BYTES IS NOT A REASON TO STOP
-            // THE FILM. Full, read-only, removed, whatever it is: give up on
-            // keeping this one and keep playing. The rest of the film simply
-            // is not cached, which is the state everything was in yesterday.
-            if (kDebugMode) debugPrint('StreamCacheServer: cache write: $e');
-            final dead = w;
-            w = null;
-            await dead.close();
           }
+          counted(chunk.length);
+          yield chunk;
         }
-        counted(chunk.length);
-        yield chunk;
+      } catch (e) {
+        if (kDebugMode) debugPrint('StreamCacheServer: upstream ended: $e');
       }
     } finally {
       await w?.close();
@@ -460,18 +830,35 @@ class StreamCacheServer {
 
   Future<int> _probeTotal(_Source src) async {
     for (var attempt = 0; attempt < 2; attempt++) {
-      final client = HttpClient()
-        ..connectionTimeout = const Duration(seconds: 15);
+      HttpClientResponse? resp;
       try {
-        final r = await client.getUrl(Uri.parse(src.upstream));
-        r.headers.set(HttpHeaders.rangeHeader, 'bytes=0-1');
-        final resp = await r.close();
-        final cr = resp.headers.value(HttpHeaders.contentRangeHeader);
-        final code = resp.statusCode;
-        final len = resp.contentLength;
-        await resp.drain<void>();
+        // On the film's own pool: the connection stays open for the lanes,
+        // which then start without a handshake.
+        final r = await src.io.getUrl(Uri.parse(src.upstream)).timeout(_laneStall);
+        r.headers.set(HttpHeaders.rangeHeader, 'bytes=0-${_probeBytes - 1}');
+        final got = resp = await r.close().timeout(_laneStall);
+        final cr = got.headers.value(HttpHeaders.contentRangeHeader);
+        final code = got.statusCode;
+        final len = got.contentLength;
+        if (code != 206) {
+          // NEVER READ A BODY NOBODY ASKED FOR. A server that ignores the
+          // range answers 200 with the whole film, and draining that to
+          // reuse the connection would download it.
+          resp = null;
+          unawaited(got.detachSocket().then((s) => s.destroy(), onError: (Object _) {}));
+        }
         if (code == 206 && cr != null && cr.contains('/')) {
-          return int.tryParse(cr.split('/').last.trim()) ?? 0;
+          final head = await got
+              .fold<BytesBuilder>(BytesBuilder(copy: false), (b, c) => b..add(c))
+              .timeout(_laneStall);
+          resp = null;
+          final total = int.tryParse(cr.split('/').last.trim()) ?? 0;
+          src.index = indexRange(head.takeBytes(), total);
+          if (src.index != null) {
+            PlaybackLog.add('stream index ${((src.index!.$2 - src.index!.$1) / 1048576).toStringAsFixed(1)} MB '
+                'at ${(src.index!.$1 / 1048576).toStringAsFixed(1)} MB');
+          }
+          return total;
         }
         if (code == 200 && len > 0) return len;
         if (code == 403 || code == 404 || code == 410) {
@@ -479,10 +866,13 @@ class StreamCacheServer {
         }
         return 0;
       } catch (e) {
+        // Timed out part way: that connection is not going back to the pool.
+        final stuck = resp;
+        if (stuck != null) {
+          unawaited(stuck.detachSocket().then((s) => s.destroy(), onError: (Object _) {}));
+        }
         if (kDebugMode) debugPrint('StreamCacheServer._probeTotal: $e');
         return 0;
-      } finally {
-        client.close(force: true);
       }
     }
     return 0;
@@ -502,23 +892,28 @@ class StreamCacheServer {
         final r = await client.getUrl(Uri.parse(src.upstream));
         r.headers.set(HttpHeaders.rangeHeader, 'bytes=$start-$endInclusive');
         final resp = await r.close();
-        if (resp.statusCode == 206 || resp.statusCode == 200) {
+        final code = resp.statusCode;
+        final cr = resp.headers.value(HttpHeaders.contentRangeHeader) ?? '';
+        // THE BYTES MUST BE THE ONES ASKED FOR. A 206 says where it starts;
+        // a 200 is a server that ignored the range and sent the film from
+        // its first byte — right only for a stretch that starts there, and
+        // only up to its end.
+        if ((code == 206 && cr.startsWith('bytes $start-')) ||
+            (code == 200 && start == 0)) {
           handedOver = true;
           // The client is closed when the body ends, not here, or the film
           // would be cut off mid-chunk.
-          return _closing(resp, client);
+          return _closing(resp, client, endInclusive - start + 1);
         }
-        await resp.drain<void>();
+        // Not read: the client is destroyed below, body and all.
         // 403, 404 and 410 are what an expired token looks like from here.
         // One refresh, then try again; a second failure is a real refusal
         // and belongs to the player.
-        if (resp.statusCode == 403 ||
-            resp.statusCode == 404 ||
-            resp.statusCode == 410) {
+        if (code == 403 || code == 404 || code == 410) {
           if (!await _refresh(src)) return null;
           continue;
         }
-        if (resp.statusCode >= 500) continue;
+        if (code >= 500) continue;
         return null;
       } catch (e) {
         if (kDebugMode) debugPrint('StreamCacheServer._openUpstream: $e');
@@ -529,9 +924,224 @@ class StreamCacheServer {
     return null;
   }
 
-  Stream<List<int>> _closing(HttpClientResponse resp, HttpClient client) async* {
+  /// THE STRETCH, AS [lanes] RANGE REQUESTS AT ONCE, HANDED ON IN ORDER.
+  ///
+  /// The same shape as [RangedFetch.ordered], which downloads use, but on
+  /// dart:io directly — and the reason is the teardown. A seek abandons the
+  /// parts still in flight, and through package:http an aborted part whose
+  /// response had just arrived is never read and never cancelled: its socket
+  /// stays in the pool, the server holds it open mid-write, and enough seeks
+  /// starve the pool (test/stream_cache_server_test.dart caught one still
+  /// open thirty seconds after a seek). Here every part keeps its own
+  /// response, and stopping cancels it, which is what closes the socket.
+  ///
+  /// An expired link on the FIRST part is renewed and the stretch starts
+  /// again, as a single request's would; later, a refused part ends the
+  /// stretch and the serve loop renews on its next pass.
+  ///
+  /// [measured] gets the line's speed the way ExoPlayer's bandwidth meter
+  /// takes it: bytes over the time at least one lane was actually
+  /// transferring. Time the player spent not reading — its buffer full, the
+  /// window of parts full — is not on the clock, so Auto does not read a
+  /// fast line as a slow one and pick a rung below what it can carry.
+  Stream<List<int>> _lanesFetch(_Source src, int start, int end, int total,
+      {required bool Function() gone,
+      Future<void>? hungUp,
+      void Function(int bytes, int ms)? measured}) async* {
+    final window = lanes * 2;
+
+    for (var attempt = 0; attempt < 2; attempt++) {
+      // Per attempt: parts killed by the last one still settle afterwards,
+      // and must not move this attempt's clock.
+      var inFlight = 0, bytesDone = 0, activeMs = 0, activeFrom = 0;
+      var measuring = true;
+      final clock = Stopwatch()..start();
+      void began() {
+        if (inFlight++ == 0) activeFrom = clock.elapsedMilliseconds;
+      }
+
+      void ended(int bytes) {
+        if (!measuring) return;
+        bytesDone += bytes;
+        if (--inFlight == 0) activeMs += clock.elapsedMilliseconds - activeFrom;
+      }
+
+      final url = Uri.parse(src.upstream);
+      final parts = <_LanePart>[];
+      var next = start;
+      var opened = 0;
+      var failed = false;
+      var stopped = false;
+      // A stretch that starts in the film's index takes the index — and, at
+      // the front of the film, the first second or so after it — as one
+      // round of equal parts, one per lane: nothing plays until all of it
+      // is here, so it should all arrive at once, at the speed of the whole
+      // line. Then the ramp carries on from 1 MB parts.
+      final plan = _indexPlan(src.index, start, end);
+      if (plan.isNotEmpty) opened = 8;
+      // Part way through the film: rounds of equal parts ([seekPartBytes]).
+      final rounds = plan.isEmpty && start > 0;
+      final firstPart = src.seekFirstPart;
+      var planned = 0;
+
+      // ONE LANE UNTIL THE PLAYER HAS SHOWN IT WILL READ ON. A seek into a
+      // fragmented film reads a fragment's header and jumps — two or three
+      // times per seek — and every jump destroyed all six lanes in flight:
+      // 97 new connections for one short session where faststart took 23,
+      // each a handshake (two round trips over TLS) before a byte. The
+      // other lanes open once the first part is through, or [_fanOutAfter]
+      // after its first byte if the player is still there. The index plan
+      // fans out at once: that read is never abandoned.
+      var fanned = plan.isNotEmpty || lanes <= 1;
+      Timer? fanTimer;
+      late final void Function() fanOut;
+
+      void topUp() {
+        if (stopped || failed || gone()) return;
+        while (next < end &&
+            parts.length < window &&
+            parts.where((p) => !p.settled).length < (fanned ? lanes : 1)) {
+          // A part the last stretch gave up is taken over where it covers
+          // this byte — the bytes a jump left behind ([_Source.spare]).
+          final kept = src.takeSpare(next, end);
+          if (kept != null) {
+            kept.done.then((_) {
+              fanned = true;
+              topUp();
+            }, onError: (_) => failed = true);
+            parts.add(kept);
+            next = min(kept.end, end);
+            continue;
+          }
+          final size = planned < plan.length
+              ? plan[planned++]
+              : rounds
+                  ? seekPartBytes(opened++, first: firstPart)
+                  : rampedPartBytes(opened++);
+          // …and a new part stops where a kept one starts.
+          final partEnd = src.spareStartIn(next, min(next + size, end));
+          final part = _LanePart(src.io, url, next, partEnd, total, _laneStall);
+          began();
+          part.done.then((n) {
+            ended(n);
+            src.noteLaneSpeed(part.bytesPerSecond);
+            fanned = true;
+            topUp();
+          }, onError: (_) {
+            ended(0);
+            failed = true;
+          });
+          parts.add(part);
+          next = partEnd;
+        }
+      }
+
+      fanOut = () {
+        if (fanned) return;
+        fanned = true;
+        fanTimer?.cancel();
+        topUp();
+      };
+
+      var yielded = false;
+      try {
+        // Parts the last stretch kept that this one will never reach are
+        // given up now, before they take the line from it: after a seek to
+        // the other end of the film they were the last few hundred
+        // kilobytes of where it had been.
+        src.pruneSpare(start);
+        // And parts kept just ahead of this stretch mean the player has
+        // jumped back a little — a fragmented film's seek, going back for
+        // the fragment before — and will read on into them: every lane now.
+        if (src.spareAhead(start)) fanned = true;
+        topUp();
+        stretch:
+        while (parts.isNotEmpty) {
+          final p = parts.first;
+          // THE FIRST PART GOES TO THE PLAYER AS IT ARRIVES, the parts behind
+          // it once it is through. Held until whole, the index of a long
+          // film — 6.4 MB over six lanes, the first part 1.25 MB of it at a
+          // sixth of a 4 Mbit line — gave the player nothing for twenty
+          // seconds; mpv gives up on a connection silent for ten
+          // (`network-timeout`), asked again, and the stretch started over:
+          // a film that never opened (device lab run 37776589997).
+          while (true) {
+            if (p.holding) {
+              if (!fanned && fanTimer == null) {
+                fanTimer = Timer(_fanOutAfter, fanOut);
+              }
+              final bytes = p.take();
+              if (bytes.isEmpty) continue;
+              // A fragment's header where the stretch starts: the player has
+              // sought into a fragmented film, and whether it jumps back
+              // for the fragment before or not, it reads straight through
+              // this one next — fetch it on every lane now. The parts it
+              // leaves behind are kept for the stretch after the jump.
+              if (!yielded && !fanned && _isMoof(bytes)) fanOut();
+              yielded = true;
+              yield bytes;
+              continue;
+            }
+            if (p.settled || p.through) break;
+            // The player hanging up ends the wait at once, and the stretch
+            // with it: its parts are released below, not finished for nobody.
+            await Future.any<void>([p.more, if (hungUp != null) hungUp]);
+            if (gone()) return;
+          }
+          // A kept part taken over for less than all of it is through once
+          // the bytes this stretch wanted are; the rest of it is not waited
+          // for.
+          if (!p.through) {
+            try {
+              await p.done;
+            } on _LaneRefused catch (e) {
+              if (!yielded && attempt == 0 && e.expired && await _refresh(src)) {
+                break stretch; // a fresh link: start the stretch again
+              }
+              rethrow;
+            }
+          }
+          parts.removeAt(0);
+          topUp();
+        }
+        if (parts.isEmpty) return;
+      } finally {
+        stopped = true;
+        fanTimer?.cancel();
+        // The player hung up (a seek). Parts already here, and parts nearly
+        // through, are KEPT — bytes, connection and all — for the stretch it
+        // opens next ([_Source.spare]): a fragmented film's seek reads one
+        // fragment's header, jumps back to the fragment before for its
+        // sound, and then reads straight on through the bytes it just left.
+        // The rest are destroyed. A failure destroys everything: those
+        // connections are not to be trusted.
+        for (final p in parts) {
+          if (failed || !p.release(_finishOnHangUpBelow)) {
+            p.kill();
+          } else {
+            src.keepSpare(p);
+          }
+        }
+        measuring = false;
+        if (inFlight > 0) activeMs += clock.elapsedMilliseconds - activeFrom;
+        if (measured != null && bytesDone > 0) measured(bytesDone, activeMs);
+      }
+    }
+  }
+
+  /// [resp]'s body up to [want] bytes, then its connection closed.
+  Stream<List<int>> _closing(
+      HttpClientResponse resp, HttpClient client, int want) async* {
+    var left = want;
     try {
-      yield* resp;
+      await for (final chunk in resp) {
+        if (chunk.length >= left) {
+          yield chunk.length == left ? chunk : chunk.sublist(0, left);
+          return;
+        }
+        left -= chunk.length;
+        yield chunk;
+      }
     } finally {
       client.close(force: true);
     }
@@ -561,12 +1171,162 @@ class StreamCacheServer {
   }
 }
 
+/// Whether the player has hung up on one request.
+class _Gone {
+  bool value = false;
+  final Completer<void> _hung = Completer<void>();
+  final Completer<void> _over = Completer<void>();
+
+  /// Completes when the player hangs up.
+  Future<void> get hungUp => _hung.future;
+
+  /// Completes once the answer is over and its stretch has put away what it
+  /// kept.
+  Future<void> get over => _over.future;
+  bool get isOver => _over.isCompleted;
+
+  void hangUp() {
+    value = true;
+    if (!_hung.isCompleted) _hung.complete();
+  }
+
+  void finish() {
+    if (!_over.isCompleted) _over.complete();
+  }
+}
+
 class _Source {
   _Source({required this.upstream, required this.refresh, this.offline = false});
 
   String upstream;
   final Future<String?> Function() refresh;
   Future<bool>? refreshing;
+
+  /// The length check started when the film was registered, until a request
+  /// takes it.
+  Future<int>? probing;
+
+  /// One pool of connections for the whole of this film's session — kept
+  /// alive between requests, so a stretch costs no new handshake. Room for
+  /// two stretches' lanes: the parts a seek leaves behind finish on theirs
+  /// while the stretch after it opens its own.
+  HttpClient? _io;
+  HttpClient get io => _io ??= HttpClient()
+    ..connectionTimeout = const Duration(seconds: 15)
+    ..idleTimeout = const Duration(seconds: 30)
+    ..maxConnectionsPerHost = StreamCacheServer.lanes * 2 + 1;
+
+  /// The player's requests for this film that are still being answered.
+  final List<_Gone> serving = [];
+
+  /// What one connection of this film carries, bytes a second: a moving
+  /// average over the parts that arrived whole. 0 until one has.
+  double _laneSpeed = 0;
+
+  void noteLaneSpeed(int bytesPerSecond) {
+    if (bytesPerSecond <= 0) return;
+    _laneSpeed = _laneSpeed == 0
+        ? bytesPerSecond.toDouble()
+        : _laneSpeed * 0.7 + bytesPerSecond * 0.3;
+  }
+
+  /// The first round's part after a seek ([StreamCacheServer.seekPartBytes]):
+  /// half a second of one connection, 64 KB to 512 KB.
+  int get seekFirstPart {
+    final half = (_laneSpeed / 2).round().clamp(64 * 1024, 512 * 1024);
+    return (half + 16383) & ~16383;
+  }
+
+  /// PARTS A STRETCH GAVE UP, KEPT FOR THE NEXT ONE.
+  ///
+  /// A fragmented film's seek is a jump and a jump back: the player reads
+  /// the header of the fragment it seeks into, goes back to the fragment
+  /// before for its sound, and then reads straight on into the bytes it has
+  /// just left. Those bytes were in flight on six lanes; destroyed, they
+  /// were asked for again a moment later, behind the parts that had replaced
+  /// them (and a part let finish to keep its connection warm threw its
+  /// bytes away). Kept, the next stretch takes them over where it reaches
+  /// them ([takeSpare]). A few, briefly: [_spareParts] at most, 8 MB
+  /// between them, for [_spareFor].
+  final List<(_LanePart, DateTime)> _spare = [];
+  static const Duration _spareFor = Duration(seconds: 20);
+  static int get _spareParts => StreamCacheServer.lanes * 2;
+  static const int _spareBytes = 8 * 1024 * 1024;
+
+  void keepSpare(_LanePart p) {
+    _spare.add((p, DateTime.now()));
+    _expireSpare();
+  }
+
+  void _expireSpare() {
+    final now = DateTime.now();
+    int kept() => _spare.fold(0, (n, e) => n + e.$1.end - e.$1.from);
+    while (_spare.isNotEmpty &&
+        (_spare.length > _spareParts ||
+            now.difference(_spare.first.$2) > _spareFor ||
+            kept() > _spareBytes)) {
+      _spare.removeAt(0).$1.discard();
+    }
+    _spare.removeWhere((e) {
+      if (!e.$1.usable) e.$1.discard();
+      return !e.$1.usable;
+    });
+  }
+
+  /// A kept part that has [at] still to give, taken over for a stretch that
+  /// ends at [end]; null when none does.
+  _LanePart? takeSpare(int at, int end) {
+    _expireSpare();
+    for (var i = 0; i < _spare.length; i++) {
+      final p = _spare[i].$1;
+      if (p.from <= at && at < p.end) {
+        _spare.removeAt(i);
+        return p..adopt(at, end);
+      }
+    }
+    return null;
+  }
+
+  /// Give up the kept parts a stretch from [at] will not reach: anything
+  /// outside the next [_spareReach] bytes. Destroyed, unless what is left of
+  /// one comes in a third of a second at this film's speed — on a slow line
+  /// a kept part's last 256 KB held the line for seconds after a seek to the
+  /// other end of the film, against a handshake saved.
+  void pruneSpare(int at) {
+    final soon = max(32 * 1024, (_laneSpeed * 0.3).round());
+    _spare.removeWhere((e) {
+      final p = e.$1;
+      if (p.end > at && p.from < at + _spareReach) return false;
+      p.discard(finishBelow: soon);
+      return true;
+    });
+  }
+
+  static const int _spareReach = 4 * 1024 * 1024;
+
+  /// Whether a kept part starts in the 2 MB after [at].
+  bool spareAhead(int at) => _spare.any(
+      (e) => e.$1.from > at && e.$1.from <= at + 2 * 1024 * 1024);
+
+  /// Where a part from [from] should stop so as not to fetch what a kept
+  /// part already holds: the first kept part starting after [from], or [to].
+  int spareStartIn(int from, int to) {
+    var cut = to;
+    for (final e in _spare) {
+      final at = e.$1.from;
+      if (at > from && at < cut && e.$1.usable) cut = at;
+    }
+    return cut;
+  }
+
+  void close() {
+    for (final e in _spare) {
+      e.$1.discard();
+    }
+    _spare.clear();
+    _io?.close(force: true);
+    _io = null;
+  }
 
   /// THIS FILM IS SERVED FROM DISK AND NOWHERE ELSE.
   ///
@@ -580,8 +1340,331 @@ class _Source {
   /// have started.
   final bool offline;
 
+  /// Where the film's index (`moov`) lies, `(start, end)` — at the front of
+  /// a faststart file, at the end of one written straight out. Read from the
+  /// first 64 KB by [StreamCacheServer.indexRange]; null when not an MP4 or
+  /// not found.
+  (int, int)? index;
+
   /// Whether this film's length has been confirmed against the server since
   /// the app started. One check per film per session: enough to catch a
   /// replaced file, cheap enough not to think about.
   bool checkedTotal = false;
+}
+
+/// A part refused by the server. [expired] is the 403 / 404 / 410 a stale
+/// signed link answers with.
+class _LaneRefused implements Exception {
+  _LaneRefused(this.message, {this.expired = false});
+  final String message;
+  final bool expired;
+  @override
+  String toString() => '_LaneRefused: $message';
+}
+
+/// One part of a stretch on its own pooled connection. What arrives is held
+/// in memory until the player reaches it — at once for the first part in
+/// line, which hands its bytes on as they come ([take]). [kill] really
+/// closes it: an unread response is cancelled (which drops the socket), a
+/// request not yet answered aborted.
+class _LanePart {
+  _LanePart(HttpClient client, Uri url, this.start, this.end, int total,
+      Duration stall) {
+    done = _get(client, url, total, stall);
+    // Held until its turn; an error before then must not count as unhandled.
+    done.then((_) {
+      _ok = true;
+      _settle();
+    }, onError: (_) {
+      _failed = true;
+      _settle();
+    });
+  }
+
+  final int start;
+  final int end; // exclusive
+
+  /// The part's length once all of it has arrived; fails if it did not.
+  late final Future<int> done;
+
+  /// Arrived, failed or stopped: nothing more will come.
+  bool settled = false;
+
+  /// Arrived whole, or failed.
+  bool _ok = false, _failed = false;
+
+  /// From its answer's headers to its last byte.
+  final Stopwatch _clock = Stopwatch();
+
+  /// How fast this part's own connection carried it, in bytes a second, once
+  /// it has arrived whole; 0 for a part too small to say.
+  int get bytesPerSecond {
+    final ms = _clock.elapsedMilliseconds;
+    if (!_ok || end - start < 32 * 1024 || ms < 50) return 0;
+    return (end - start) * 1000 ~/ ms;
+  }
+
+  /// What has arrived and not yet been taken, in order, from [from].
+  final BytesBuilder _held = BytesBuilder(copy: false);
+  int _received = 0;
+  Completer<void>? _arrived;
+
+  /// Where the bytes not yet taken begin.
+  late int _heldFrom = start;
+  int get from => _heldFrom;
+
+  /// What the stretch reading this part wants of it: [start] to [end], or
+  /// less of it for a kept part taken over part way ([adopt]).
+  late int _want = start;
+  late int _limit = end;
+
+  bool get holding => _held.isNotEmpty && _heldFrom < _limit;
+
+  /// Everything the reading stretch wants of this part has been taken.
+  bool get through => _heldFrom >= _limit;
+
+  /// What has arrived since the last call, of what is wanted.
+  Uint8List take() {
+    var b = _held.takeBytes();
+    final at = _heldFrom;
+    _heldFrom += b.length;
+    final skip = min(b.length, max(0, _want - at));
+    final keep = min(b.length, max(0, _limit - at));
+    if (skip > 0 || keep < b.length) {
+      b = keep <= skip ? Uint8List(0) : Uint8List.sublistView(b, skip, keep);
+    }
+    return b;
+  }
+
+  /// Still worth keeping for another stretch: not failed, not stopped, and
+  /// with bytes to give.
+  bool get usable => !_failed && !_killed && !_dropped && _heldFrom < end;
+
+  /// Taken over by a stretch that wants it from [at] and ends at [stop].
+  void adopt(int at, int stop) {
+    _want = at;
+    _limit = min(stop, end);
+  }
+
+  /// Given up by its stretch: whether it is worth keeping for the next one
+  /// ([_Source.keepSpare]) — whole and waiting, or with no more than
+  /// [finishBelow] still to come. A part not yet sent for is not kept: it
+  /// would take a connection ahead of what the next stretch needs first.
+  bool release(int finishBelow) {
+    if (!usable) return false;
+    if (_ok) return true;
+    if (_resp != null) return !_ended && end - start - _received <= finishBelow;
+    return _asked && end - start <= finishBelow;
+  }
+
+  /// Not wanted after all: nothing more is kept. Its connection is let
+  /// finish for the pool when no more than [finishBelow] is still to come —
+  /// by default all of a kept part, which is never more than its last
+  /// 256 KB; otherwise it is destroyed, and the line is the next stretch's
+  /// at once.
+  void discard({int finishBelow = StreamCacheServer._finishOnHangUpBelow}) {
+    _held.clear();
+    if (settled || _killed) return;
+    final resp = _resp;
+    if (resp != null && !_ended && end - start - _received <= finishBelow) {
+      // Read on to the end and dropped ([_get]'s listener).
+      _released = true;
+      return;
+    }
+    kill(finishBelow: finishBelow);
+  }
+
+  /// Completes once more has arrived, or the part has settled.
+  Future<void> get more {
+    if (_held.isNotEmpty || settled) return Future<void>.value();
+    return (_arrived ??= Completer<void>()).future;
+  }
+
+  void _wake() {
+    final a = _arrived;
+    _arrived = null;
+    if (a != null && !a.isCompleted) a.complete();
+  }
+
+  void _settle() {
+    settled = true;
+    _wake();
+  }
+  bool _killed = false;
+  HttpClientRequest? _req;
+  HttpClientResponse? _resp;
+  StreamSubscription<List<int>>? _sub;
+  Completer<int>? _done;
+
+  /// The response has been read to its end, or failed: its connection is
+  /// back with the pool (or gone) and must not be touched.
+  bool _ended = false;
+
+  /// THE CONNECTION IS DESTROYED, NOT LET GO. Cancelling a dart:io response
+  /// — or aborting its request — does not close it: the client goes on
+  /// reading the rest of the part in the background so the connection can be
+  /// reused, up to 2 MB a lane of the viewer's data after every seek
+  /// (measured, 2026-10-08). Detached, it is ours to close, and the server
+  /// sees it go at once.
+  void _destroy() {
+    final resp = _resp;
+    if (resp == null || _ended) return;
+    _ended = true;
+    // The subscription is cancelled once the socket is ours, not before:
+    // cancelled first, the client starts draining the rest of the part.
+    unawaited(resp.detachSocket().then((s) => s.destroy(), onError: (Object _) {
+      _drop(resp);
+    }).whenComplete(() => _sub?.cancel()));
+  }
+
+  /// The request has gone out and its answer is on the way.
+  bool _asked = false;
+
+  /// Stopped, but let finish so its connection goes back to the pool warm:
+  /// what still arrives is read and dropped (see [kill]).
+  bool _released = false;
+  int _finishBelow = 0;
+
+  /// Stop this part. [finishBelow]: a part with no more than this many bytes
+  /// still to come is let finish instead, read and dropped, so its
+  /// connection returns to the pool rather than being destroyed. A seek
+  /// costs the next request a fresh connection otherwise — a TCP and TLS
+  /// handshake, two round trips before its first byte — and a fragmented
+  /// film's seek is two requests in a row (the fragment, then the one
+  /// before it for the audio).
+  void kill({int finishBelow = 0}) {
+    if (_killed) return;
+    _killed = true;
+    _finishBelow = finishBelow;
+    final resp = _resp;
+    if (resp != null) {
+      if (!_ended && finishBelow > 0 && end - start - _received <= finishBelow) {
+        _released = true;
+        _held.clear();
+      } else {
+        _destroy();
+      }
+    } else if (!_asked) {
+      _req?.abort();
+    }
+    // Asked and not yet answered: NOT aborted. An abort here lets dart:io
+    // read the answer to its end to reuse the connection — a whole film,
+    // from a server that ignored the range (2026-10-08). The answer is
+    // destroyed when it arrives ([_get]).
+    final d = _done;
+    if (d != null && !d.isCompleted) d.completeError(_LaneRefused('stopped'));
+  }
+
+  /// Close a response nobody will read — once. Its connection is destroyed,
+  /// not cancelled: a cancelled response is read to its end for the pool,
+  /// and a server that ignored the range has sent the whole film.
+  bool _dropped = false;
+  void _drop(HttpClientResponse r) {
+    if (_dropped || _sub != null) return;
+    _dropped = true;
+    _ended = true;
+    unawaited(r.detachSocket().then((s) => s.destroy(), onError: (Object _) {
+      try {
+        unawaited(r.listen(null).cancel());
+      } catch (_) {}
+    }));
+  }
+
+  Future<int> _get(
+      HttpClient client, Uri url, int total, Duration stall) async {
+    final want = end - start;
+    final req = await client.getUrl(url).timeout(stall);
+    _req = req;
+    if (_killed) {
+      req.abort();
+      throw _LaneRefused('stopped');
+    }
+    req.headers.set(HttpHeaders.rangeHeader, 'bytes=$start-${end - 1}');
+    _asked = true;
+    final resp = await req.close().timeout(stall, onTimeout: () {
+      req.abort();
+      throw _LaneRefused('part $start: no answer');
+    });
+    _resp = resp;
+    if (_killed) {
+      // Stopped while the answer was on its way. A small one is read to its
+      // end — bounded by its own length, the range just asked for — so the
+      // connection is kept; anything else is destroyed.
+      if (_finishBelow > 0 &&
+          want <= _finishBelow &&
+          resp.statusCode == 206 &&
+          resp.contentLength == want) {
+        _released = true;
+        _sub = resp.listen((_) {}, onDone: () => _ended = true,
+            onError: (Object _) => _ended = true, cancelOnError: true);
+      } else {
+        _drop(resp);
+      }
+      throw _LaneRefused('stopped');
+    }
+    final code = resp.statusCode;
+    if (code != 206) {
+      _drop(resp);
+      throw _LaneRefused('HTTP $code for a range',
+          expired: code == 403 || code == 404 || code == 410);
+    }
+    final cr = resp.headers.value(HttpHeaders.contentRangeHeader) ?? '';
+    if (!cr.startsWith('bytes $start-${end - 1}/$total')) {
+      _drop(resp);
+      throw _LaneRefused('asked for $start-${end - 1}/$total, got $cr');
+    }
+    final done = Completer<int>();
+    _done = done;
+    _clock.start();
+    Timer? quiet;
+    void arm() {
+      quiet?.cancel();
+      quiet = Timer(stall, () {
+        _destroy();
+        if (!done.isCompleted) done.completeError(_LaneRefused('part $start went quiet'));
+      });
+    }
+
+    arm();
+    _sub = resp.listen((chunk) {
+      // Released by [kill]: read on to the end for the pool, keep nothing.
+      if (_released) {
+        _received += chunk.length;
+        arm();
+        if (_received > want) {
+          quiet?.cancel();
+          _destroy();
+        }
+        return;
+      }
+      if (done.isCompleted) return;
+      // Never a byte past the part: what is held may already be on its way
+      // to the player.
+      if (_received + chunk.length > want) {
+        quiet?.cancel();
+        _destroy();
+        done.completeError(_LaneRefused('part $start: too long'));
+        return;
+      }
+      _received += chunk.length;
+      _held.add(chunk);
+      arm();
+      _wake();
+    }, onError: (Object e) {
+      _ended = true;
+      quiet?.cancel();
+      if (!done.isCompleted) done.completeError(e);
+    }, onDone: () {
+      _ended = true;
+      quiet?.cancel();
+      if (done.isCompleted) return;
+      if (_received != want) {
+        done.completeError(_LaneRefused('part $start: $_received of $want bytes'));
+      } else {
+        _clock.stop();
+        done.complete(want);
+      }
+    }, cancelOnError: true);
+    return done.future;
+  }
 }

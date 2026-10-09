@@ -101,6 +101,10 @@ class PlayerController extends StateNotifier<PlayerState> {
   /// buffering — soft "slow connection" hint, supersedes by the
   /// 10 s hard "stalled" error if buffering doesn't recover.
   Timer? _bufferSlowTimer;
+
+  /// When the current mid-film refill began — for the trail, which is how the
+  /// device lab counts stalls and their length.
+  DateTime? _rebufferSince;
   /// Debounce timer for the buffering SPINNER. A brief buffer refill
   /// after a seek/skip should not flash a loading circle, so the spinner
   /// only appears if buffering is still active after this delay.
@@ -834,6 +838,16 @@ class PlayerController extends StateNotifier<PlayerState> {
     }));
     _subs.add(svc.bufferingStream.listen((b) {
       if (!mounted) return;
+      // A refill after the first frame is a stall the viewer saw; one line
+      // each way, so a trail says how many and how long.
+      if (b && _firstFrameSeen && _rebufferSince == null) {
+        _rebufferSince = DateTime.now();
+        PlaybackLog.add('rebuffer start');
+      } else if (!b && _rebufferSince != null) {
+        PlaybackLog.add('rebuffer end '
+            '${DateTime.now().difference(_rebufferSince!).inMilliseconds} ms');
+        _rebufferSince = null;
+      }
       // Buffering going FALSE is the first-frame signal: libmpv only stops
       // reporting a starved demuxer once it has enough to render, so this is
       // the moment the black screen ends.
@@ -1024,6 +1038,20 @@ class PlayerController extends StateNotifier<PlayerState> {
                 : PlayerNotice.switchedToSoftware,
           );
         }();
+        return;
+      }
+      // AN ANDROID/DATA VIDEO PLAYING FROM THE ADB CONNECTION FAILED: the
+      // connection dropped, or the device would not stream it. The copy is
+      // the reliable way and always was — fall back to it, once, from where
+      // the film had got to, instead of showing an error.
+      final adbSrc = _adbStreamSrc;
+      if (adbSrc != null && uri != null && uri == _currentUri &&
+          !_adbCopyOnly.contains(adbSrc)) {
+        _adbCopyOnly.add(adbSrc);
+        final at = svcAtError.position;
+        final title = _currentVideoTitle;
+        PlaybackLog.add('adb: stream failed ($e) -> copy from ${at.inSeconds} s');
+        unawaited(openVideo('adb://$adbSrc', title: title, startAt: at));
         return;
       }
       if (!isNetwork) {
@@ -1327,6 +1355,15 @@ class PlayerController extends StateNotifier<PlayerState> {
   /// those controls did nothing at all on Android/data videos — silently, with
   /// no error. Keeping the original URI alongside restores them.
   String? _libraryUri;
+
+  /// The Android/data path of an `adb://` video that is playing STRAIGHT FROM
+  /// THE ADB CONNECTION (a range at a time, through the app's loopback
+  /// proxy) rather than from a copy; null otherwise. See [_doOpenVideo].
+  String? _adbStreamSrc;
+
+  /// Android/data paths whose stream failed this session: they are copied
+  /// out and played from the copy, as every one was before streaming.
+  final Set<String> _adbCopyOnly = <String>{};
 
   /// True while the user is dragging the seek bar.
   ///
@@ -1805,6 +1842,7 @@ class PlayerController extends StateNotifier<PlayerState> {
       state = state.copyWith(isOpening: false, slowNetworkHintVisible: false);
     }
     if (started != null) {
+      PlaybackLog.add('first frame ${DateTime.now().difference(started).inMilliseconds} ms');
       // Reported, not logged. A number nobody collects is a number nobody
       // can act on, and "it feels slow" is not something you can tune
       // against — p50 and p95 time-to-first-frame is.

@@ -1,5 +1,9 @@
 import 'package:flutter/services.dart';
 
+import 'adb_setup_state.dart';
+
+export 'adb_setup_state.dart';
+
 /// Parse a scan line from [AdbService.scanAndroidDataVideos]. Lines are either
 /// "<bytes>|<path>" (size-aware scan) or a bare "<path>" (older-device
 /// fallback). Returns the path and a size (0 when unknown). Deliberately
@@ -98,7 +102,7 @@ class AdbService {
   }
 
   /// Install the single method-call handler (idempotent) that dispatches all
-  /// native→Dart callbacks on this channel: pairing results and iADB state.
+  /// native→Dart callbacks on this channel: pairing results.
   void _ensureHandler() {
     if (_handlerInstalled) return;
     _handlerInstalled = true;
@@ -111,74 +115,12 @@ class AdbService {
               : '';
           _pairResultListener?.call(res);
           break;
-        case 'onIadbState':
-          // Native just signals "state changed"; re-query happens in each
-          // listener (which calls the threaded iadbConnected/iadbStatus).
-          // Copied before iterating: a listener is allowed to dispose itself.
-          for (final l in List<void Function()>.of(_iadbStateListeners)) {
-            l();
-          }
-          break;
       }
       return null;
     });
   }
 
-  /// What native last told us the backend is. `null` means "never
-  /// successfully asked", which is NOT the same as 'builtin'.
-  ///
-  /// Conflating those two was audit_adb.md A10. Native's default when the user
-  /// has never chosen is `iadb` on Android 11+ and `builtin` below; Dart's
-  /// fallback on a channel failure was a flat `builtin`. They diverge only
-  /// when the channel throws — and at that moment [pullForPlayback] took the
-  /// built-in socket path on a device actually configured for the iADB
-  /// process, so the failure read as "not connected" instead of as a routing
-  /// mistake.
-  ///
-  /// Caching it also fixes the smaller half of A10: [shellRouted] asked native
-  /// on EVERY shell command, a full platform round trip each time, including
-  /// both attempts of the scan's fallback.
-  String? _backendCache;
-
-  /// Ask native once and remember the answer. `null` when the channel will not
-  /// answer, so a caller that must not guess can tell that it does not know.
-  Future<String?> backendOrNull() async {
-    final cached = _backendCache;
-    if (cached != null) return cached;
-    try {
-      final r = await _channel.invokeMethod<String>('getBackend');
-      if (r == 'builtin' || r == 'iadb') {
-        _backendCache = r;
-        return r;
-      }
-      return null;
-    } catch (_) {
-      return null;
-    }
-  }
-
-  /// Which backend reads Android/data: 'builtin' (embedded libadb engine) or
-  /// 'iadb' (bind to the installed iADB app).
-  ///
-  /// FOR DISPLAY. Falls back to 'builtin' when native will not answer, because
-  /// a radio button has to show something and a wrong one there is cosmetic.
-  /// Anything that ROUTES must use [backendOrNull] and refuse to guess.
-  Future<String> getBackend() async => await backendOrNull() ?? 'builtin';
-
-  /// Persist the chosen backend ('builtin' | 'iadb').
-  Future<void> setBackend(String backend) async {
-    final v = backend == 'iadb' ? 'iadb' : 'builtin';
-    try {
-      await _channel.invokeMethod<bool>('setBackend', {'backend': v});
-      _backendCache = v;
-    } catch (_) {
-      // The write may or may not have landed. Forget what we thought rather
-      // than keep a value we are no longer sure of.
-      _backendCache = null;
-    }
-  }
-
-  /// Start the iADB-style pairing notification service: it discovers the pairing
+  /// Start the pairing notification service: it discovers the pairing
   /// service in the background and posts a "Enter pairing code" reply
   /// notification, so the user can type the 6-digit code from the shade with no
   /// split-screen. Results arrive via [setPairResultListener].
@@ -193,92 +135,6 @@ class AdbService {
     try {
       await _channel.invokeMethod<bool>('stopPairingService');
     } catch (_) {}
-  }
-
-  // ---- v0.93 Backend 2: iADB app client ----
-
-  /// Human-readable status of the iADB-app connection. Never throws.
-  Future<String> iadbStatus() async {
-    try {
-      return await _channel.invokeMethod<String>('iadbStatus') ?? '';
-    } catch (_) {
-      return '';
-    }
-  }
-
-  /// True on Android 11+ with the iADB app installed and its server running.
-  Future<bool> iadbInstalledAndRunning() async {
-    try {
-      return await _channel.invokeMethod<bool>('iadbInstalledAndRunning') ??
-          false;
-    } catch (_) {
-      return false;
-    }
-  }
-
-  /// True when our UserService binder is live inside the iADB server.
-  Future<bool> iadbConnected() async {
-    try {
-      return await _channel.invokeMethod<bool>('iadbConnected') ?? false;
-    } catch (_) {
-      return false;
-    }
-  }
-
-  /// Begin the iADB connect flow (may show iADB's permission dialog). State
-  /// changes arrive via [addIadbStateListener].
-  Future<void> iadbConnect() async {
-    try {
-      await _channel.invokeMethod<bool>('iadbConnect');
-    } catch (_) {}
-  }
-
-  /// Tear down the iADB binding.
-  Future<void> iadbDisconnect() async {
-    try {
-      await _channel.invokeMethod<bool>('iadbDisconnect');
-    } catch (_) {}
-  }
-
-  /// Run a shell command through the iADB privileged process. "" on failure.
-  Future<String> iadbExec(String command) async {
-    try {
-      return await _channel
-              .invokeMethod<String>('iadbExec', {'command': command}) ??
-          '';
-    } catch (_) {
-      return '';
-    }
-  }
-
-  /// Open the iADB app's Play Store page (native intent; falls back to web).
-  Future<void> iadbOpenInStore() async {
-    try {
-      await _channel.invokeMethod<bool>('iadbOpenInStore');
-    } catch (_) {}
-  }
-
-  /// Everyone watching the iADB connection: the ADB screen, and the global
-  /// coordinator that auto-scans on connect.
-  final List<void Function()> _iadbStateListeners = [];
-
-  /// Register a listener for "the iADB connection state changed". Returns a
-  /// disposer — call it from `dispose()`.
-  ///
-  /// NO PARAMETER, deliberately (audit_adb.md A11). The signature used to be
-  /// `void Function(bool connected)` and the value passed was always `true`,
-  /// including on a DISCONNECT: native only signals that something changed and
-  /// every listener re-queries the real state on a worker thread. A parameter
-  /// that always lies is worse than no parameter, because the next listener
-  /// written against that signature would believe it.
-  ///
-  /// ONE MECHANISM, also deliberately. There used to be a single-slot setter
-  /// beside this list, so a second screen calling the setter silently stopped
-  /// the first from receiving anything.
-  void Function() addIadbStateListener(void Function() listener) {
-    _iadbStateListeners.add(listener);
-    _ensureHandler();
-    return () => _iadbStateListeners.remove(listener);
   }
 
   /// Build or load the ADB client key + certificate natively and return a
@@ -336,10 +192,15 @@ class AdbService {
   /// Quick liveness probe: runs `true` over the connection. Returns true only if
   /// a shell round-trip actually succeeds (so it reflects a *usable* connection,
   /// not just an optimistic flag). Used to show an honest "Connected ✓" state.
-  Future<bool> isConnected() async {
+  ///
+  /// [timeoutMs] bounds the round trip, reconnect included: the library's
+  /// refresh asks with a short one, so a phone with wireless debugging off
+  /// costs a pull-to-refresh three seconds, not twelve.
+  Future<bool> isConnected({int timeoutMs = 12000}) async {
     try {
       final r = await _channel.invokeMethod<String>('shell', {
         'command': 'echo ok',
+        'timeoutMs': timeoutMs,
       });
       return r != null && r.contains('ok') && !r.startsWith('ERROR');
     } catch (e) {
@@ -371,6 +232,27 @@ class AdbService {
       final r = await _channel.invokeMethod<String>('openDevOptions');
       return r ?? 'failed';
     } catch (e) {
+      return 'failed';
+    }
+  }
+
+  /// Where the phone stands on the way to a connection (see [AdbSetupState]).
+  Future<AdbSetupState> setupState() async {
+    try {
+      final r = await _channel.invokeMethod<Map<Object?, Object?>>('adbSetupState');
+      return AdbSetupState.fromMap(r);
+    } catch (_) {
+      return const AdbSetupState();
+    }
+  }
+
+  /// Innocent's notification settings: the pairing code is typed into a
+  /// notification, so with notifications off there is nowhere to type it.
+  Future<String> openNotificationSettings() async {
+    try {
+      final r = await _channel.invokeMethod<String>('openNotificationSettings');
+      return r ?? 'failed';
+    } catch (_) {
       return 'failed';
     }
   }
@@ -470,20 +352,6 @@ class AdbService {
   /// readable cache via ADB, and return the local path to play. Returns an
   /// "ERROR: …" string on failure.
   Future<String> pullForPlayback(String srcPath) async {
-    // Route by the selected backend: the iADB app copies the file out of
-    // Android/data through its privileged process; the built-in engine pulls it
-    // over the ADB socket. Both return a local file path (or "ERROR:").
-    final backend = await getBackend();
-    if (backend == 'iadb') {
-      try {
-        final r = await _channel.invokeMethod<String>('iadbPullForPlayback', {
-          'path': srcPath,
-        });
-        return r ?? 'ERROR: no response';
-      } catch (e) {
-        return 'ERROR: channel error: $e';
-      }
-    }
     try {
       final r = await _channel.invokeMethod<String>('pullForPlayback', {
         'src': srcPath,
@@ -515,29 +383,12 @@ class AdbService {
   /// Returns absolute paths, one per line. Persists the result (as "size|path"
   /// lines when sizes are available) so the Local library can show them — with
   /// real file sizes — without re-scanning.
-  /// Run a shell command through whichever backend the user selected: the
-  /// built-in libadb socket, or the iADB privileged process. Keeps the scan and
-  /// any other shell-based feature backend-agnostic. Returns the same shape as
-  /// [shell] (an "ERROR:" prefix on failure) so callers don't change.
-  Future<String> shellRouted(String command, {int timeoutMs = 12000}) async {
-    // backendOrNull, not getBackend: routing must not guess (audit_adb.md
-    // A10). Sending the command down the wrong backend produces a "not
-    // connected" that is nothing of the sort and costs an hour to diagnose.
-    final backend = await backendOrNull();
-    if (backend == null) {
-      return 'ERROR: couldn\'t tell which ADB backend to use — the app\'s '
-          'platform channel is not answering. Reopen the app and try again.';
-    }
-    if (backend == 'iadb') {
-      final out = await iadbExec(command);
-      if (out.isEmpty) {
-        return 'ERROR: iADB returned nothing — is iADB connected? '
-            '(Open ADB connection and tap Connect.)';
-      }
-      return out;
-    }
-    return shell(command, timeoutMs: timeoutMs);
-  }
+  /// Run a shell command for a feature built on ADB (the scan, the file
+  /// list). The app's own ADB engine is the only one since 1.64.59 — the
+  /// separately installed iADB app is no longer used — so this is [shell];
+  /// it stays a name of its own so the callers say what they mean.
+  Future<String> shellRouted(String command, {int timeoutMs = 12000}) =>
+      shell(command, timeoutMs: timeoutMs);
 
   // Single-flight: if a scan is already running (e.g. auto-scan-on-connect and
   // a pull-to-refresh fired together), every caller shares the one in-flight
@@ -667,6 +518,18 @@ class AdbService {
       return r ?? 'No response';
     } catch (e) {
       return 'ERROR: channel error: $e';
+    }
+  }
+
+  /// Switch Wireless debugging off directly — possible once Innocent holds
+  /// WRITE_SECURE_SETTINGS (the auto-reconnect set-up). False when it does
+  /// not, or the write failed; the caller then sends the user to Settings.
+  Future<bool> disableWirelessDebugging() async {
+    try {
+      return await _channel.invokeMethod<bool>('disableWirelessDebugging') ??
+          false;
+    } catch (_) {
+      return false;
     }
   }
 
