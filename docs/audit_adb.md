@@ -908,9 +908,6 @@ and it was right then for the same reason: four recurrences is not bad luck.
     Thumbnails are read through the same stream, only while connected.
   * Resume points and history are keyed on adb:// / sealed:// rather than the
     per-process loopback address.
-  * The device lab now exercises the engine end to end (flow `adb_data`):
-    adbd on TCP 5555, the app's key allowed at Android's prompt, a planted
-    clip scanned, played and listed.
   * `adb_state` (the last port adbd answered on, and the paths the
     Android/data scan found in other apps' folders) is left out of cloud
     backup and device transfer, beside the key it already excluded (A4).

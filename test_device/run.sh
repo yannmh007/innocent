@@ -337,46 +337,6 @@ for flow in $FLOWS; do
     continue
     ;;
   esac
-  # ANDROID/DATA THROUGH INNOCENT'S OWN ADB, END TO END. Wireless debugging's
-  # pairing code is drawn on screen and nowhere a script can read it, so the
-  # lab opens adbd's other door: TCP on 5555 (`adb tcpip`). The flow connects
-  # the app to 127.0.0.1:5555 by hand, Android asks "Allow USB debugging?" for
-  # the app's own key, and Maestro allows it. A clip planted where Telegram
-  # keeps its cache is then scanned, named and played. Last in FLOWS: adbd
-  # stays on TCP for the rest of the run.
-  case "$flow" in adb_data)
-    # A fresh app: a new key of its own, so Android asks about it, and none
-    # of the long-film phases' lab files (their lab_stream_url opened the film
-    # at launch, over the tab bar: run 37907429395).
-    adb shell am force-stop "$PKG"
-    adb shell pm clear "$PKG" >/dev/null 2>&1 || true
-    adb shell pm grant "$PKG" android.permission.READ_MEDIA_VIDEO >/dev/null 2>&1 || true
-    # The library's film is only there when LIBRARY > 0; otherwise make a clip.
-    clip="lib_media/Movies/Perf Test/aaa_play_720p.mp4"
-    if [ ! -f "$clip" ] && command -v ffmpeg >/dev/null 2>&1; then
-      clip=/tmp/lab_adb_clip.mp4
-      ffmpeg -loglevel error -y -f lavfi -i testsrc2=size=1280x720:rate=24 \
-        -f lavfi -i sine=frequency=330 -t 30 -c:v libx264 -preset veryfast \
-        -pix_fmt yuv420p -c:a aac -b:a 64k -movflags +faststart "$clip"
-    fi
-    d=/sdcard/Android/data/org.telegram.messenger/cache
-    adb shell mkdir -p "$d" >/dev/null 2>&1
-    pushed=$(adb push "$clip" "$d/5_lab_clip.mp4" 2>&1 | tail -1 | tr -d '\r')
-    log "adb_data: planted: $pushed — $(adb shell ls -l "$d" 2>&1 | grep lab_clip | tr -d '\r')"
-    log "adb_data: ro.adb.secure=$(adb shell getprop ro.adb.secure | tr -d '\r')"
-    # adbd's restart ends the run's logcat stream: stop it, and start a new
-    # one from this moment once adbd is back.
-    kill $LOGCAT 2>/dev/null || true
-    since=$(adb shell date +'%m-%d %H:%M:%S.000' | tr -d '\r')
-    adb tcpip 5555 >/dev/null 2>&1 || true
-    sleep 3
-    adb wait-for-device
-    adb logcat -v time -T "$since" >> "$OUT/logcat_raw.txt" 2>&1 &
-    LOGCAT=$!
-    log "adb_data: adbd TCP port $(adb shell getprop service.adb.tcp.port | tr -d '\r')"
-    adb shell am force-stop "$PKG"
-    ;;
-  esac
   ( cd "$OUT/shots" && maestro test --test-output-dir "$OUT/maestro_out" "$OLDPWD/test_device/flows/$file.yaml" ) > "$OUT/maestro_$flow.txt" 2>&1
   log "flow $flow exit $?"
   # STACKED DOUBLE TAP. Maestro needs most of a second per tap, longer than
