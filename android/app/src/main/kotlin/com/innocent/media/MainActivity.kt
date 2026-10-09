@@ -2568,7 +2568,18 @@ class MainActivity : AudioServiceFragmentActivity() {
             } else {
                 videoPath
             }
-            retriever.setDataSource(cleanPath)
+            if (videoPath.startsWith("adb://")) {
+                // Android/data over ADB: through the loopback proxy, which
+                // hands the retriever only the ranges it reads — the index
+                // and one frame, not the film. Not while disconnected: a
+                // thumbnail is no reason to start reconnecting.
+                if (!AdbManager.getInstance(this).isConnected) return null
+                val url = AdbManager.streamUrl(this, videoPath.removePrefix("adb://"))
+                if (url.startsWith("ERROR")) return null
+                retriever.setDataSource(url, HashMap<String, String>())
+            } else {
+                retriever.setDataSource(cleanPath)
+            }
             val timeUs = (timeMs.coerceAtLeast(0)).toLong() * 1000L
 
             // OPTION_CLOSEST_SYNC = fast, good enough for thumbnails.

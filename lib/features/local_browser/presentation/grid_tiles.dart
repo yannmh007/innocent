@@ -242,6 +242,7 @@ class VideoGridTile extends ConsumerWidget {
       }
     }
     if (video.uri.startsWith('/')) return video.uri;
+    if (video.uri.startsWith('adb://')) return video.uri;
     return null;
   }
 
@@ -480,7 +481,7 @@ class _VideoGridThumbState extends State<_VideoGridThumb> {
       } catch (_) {/* fall through */}
     }
     try {
-      if (!await File(widget.path).exists()) {
+      if (!widget.path.startsWith('adb://') && !await File(widget.path).exists()) {
         return;
       }
       final bytes = await ThumbnailCache.instance.get(widget.path);

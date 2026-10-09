@@ -80,6 +80,7 @@ extension PlayerPlayback on PlayerController {
     // use); on-demand HTTP streaming was tried but is fragile per-request over
     // ADB and gave media_kit no way to fall back when a stream stalled, so
     // playback could fail outright. Reliability first.
+    _adbStreamSrc = null;
     if (uri.startsWith('adb://')) {
       final src = uri.substring('adb://'.length);
       // Give immediate, honest feedback: a copy can take a few seconds (longer
@@ -92,6 +93,28 @@ extension PlayerPlayback on PlayerController {
           loadingMessage: 'Loading video over ADB…\nLarger files take a moment.',
         );
       }
+      // STREAMED FIRST, COPIED IF THAT FAILS. A copy had to finish before the
+      // first frame — minutes for a film-length Telegram download, and the
+      // phone's free space twice over. Streamed, it starts at once: the
+      // loopback proxy reads each range the player asks for straight from
+      // Android/data. The copy stays the fallback: a device that cannot
+      // stream gets it here, and a stream that fails part way is copied and
+      // resumed from where it was (the error listener in PlayerController).
+      if (!_adbCopyOnly.contains(src)) {
+        final streamed = await AdbService.instance.streamUrl(src);
+        if (!mounted) return;
+        if (!streamed.startsWith('ERROR')) {
+          PlaybackLog.add('adb: streaming');
+          _adbStreamSrc = src;
+          state = state.copyWith(loadingMessage: null);
+          uri = streamed;
+        } else {
+          PlaybackLog.add('adb: no stream ($streamed) -> copy');
+        }
+      }
+    }
+    if (uri.startsWith('adb://')) {
+      final src = uri.substring('adb://'.length);
       final local = await AdbService.instance.pullForPlayback(src);
       if (local.startsWith('ERROR:')) {
         if (mounted) {
@@ -441,11 +464,16 @@ extension PlayerPlayback on PlayerController {
     // Check for resume position before opening. A position handed in by the
     // caller wins, for this one file, and resumes without asking: the
     // caller has already asked ("Resume 12:34" / "Start over").
-    final explicit = _explicitStartUri == uri ? _explicitStartAt : null;
+    //
+    // BOTH BY THE URI THE FILE WAS OPENED AS, not the one libmpv is handed:
+    // for adb:// and sealed:// that is a loopback address whose port and
+    // token are minted once per process, so a resume point keyed on it was
+    // a new key every launch — the film started from 0:00 the next day.
+    final explicit = _explicitStartUri == originalUri ? _explicitStartAt : null;
     _explicitStartAt = null;
     _explicitStartUri = null;
     final savedPos = explicit ??
-        await _ref.read(resumeStorageProvider).getPosition(uri);
+        await _ref.read(resumeStorageProvider).getPosition(originalUri);
 
     // Decide UP-FRONT whether this file must open PAUSED. When the resume
     // mode is 'ask' and there's a real saved position, a Resume / Start over

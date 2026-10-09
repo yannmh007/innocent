@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/services/cache/library_cache.dart';
 import '../../../core/services/cache/scan_gate.dart';
+import '../../../core/services/thumbnail/thumbnail_cache.dart';
 import '../../../core/services/adb/adb_service.dart';
 import '../../private_folder/data/private_folder_providers.dart';
 import '../../../core/services/saf/saf_service.dart';
@@ -631,6 +632,9 @@ final safGrantedTreesProvider = FutureProvider<List<String>>((ref) async {
 /// the opt-in, so they do NOT depend on the "Show hidden" toggle (they carry a
 /// Hidden badge instead).
 final adbVideosProvider = FutureProvider<List<Video>>((ref) async {
+  // Read again after every scan, i.e. with the connection up: thumbnails that
+  // failed while it was down may be made now.
+  ThumbnailCache.instance.retryAdb();
   try {
     final lines = await AdbService.instance.savedScannedVideos();
     final out = <Video>[];

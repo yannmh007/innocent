@@ -47,6 +47,15 @@ class ThumbnailCache {
   /// for an answer that does not change. Remembered until [invalidate] or
   /// [clear], or the next launch.
   final Set<String> _failed = <String>{};
+
+  /// The same, for Android/data videos read over ADB (`adb://`), kept apart:
+  /// their thumbnail fails while the connection is down, not because the file
+  /// is bad, and is tried again once it is back ([retryAdb]).
+  final Set<String> _failedAdb = <String>{};
+
+  /// ADB is connected again (a scan just finished): Android/data thumbnails
+  /// that failed while it was not may be made now.
+  void retryAdb() => _failedAdb.clear();
   static const int _maxMemoryEntries = 100;
   Directory? _cacheDir;
 
@@ -141,6 +150,9 @@ class ThumbnailCache {
       final bytes = await getByAsset(assetId);
       if (bytes != null) return bytes;
     }
+    // Android/data over ADB: the native side reads just the frames it needs
+    // through the ADB stream (see generateThumbnail in MainActivity).
+    if (uri.startsWith('adb://')) return get(uri);
     final String path;
     if (uri.startsWith('file://')) {
       path = Uri.parse(uri).toFilePath();
@@ -163,7 +175,7 @@ class ThumbnailCache {
       return _memoryCache[key];
     }
 
-    if (_failed.contains(key)) return null;
+    if (_failed.contains(key) || _failedAdb.contains(key)) return null;
 
     // Coalesce concurrent requests for same key
     if (_inflight.containsKey(key)) {
@@ -176,6 +188,8 @@ class ThumbnailCache {
       final result = await future;
       if (result != null) {
         _addToMemory(key, result);
+      } else if (videoPath.startsWith('adb://')) {
+        _failedAdb.add(key);
       } else {
         _failed.add(key);
       }

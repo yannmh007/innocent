@@ -631,30 +631,13 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
     }
   }
 
-  /// Tap a found video: copy it out of Android/data via ADB (the app can't read
-  /// that folder directly), then play the readable local copy.
-  Future<void> _playAdbVideo(String path) async {
+  /// Tap a found video: the player opens it as `adb://`, which streams it
+  /// straight from Android/data over the connection and copies it out only
+  /// if streaming fails — the same path a tap in Local takes.
+  void _playAdbVideo(String path) {
     final name = path.split('/').last;
-    setState(() {
-      _busy = true;
-      _output = 'Preparing "$name"…\nCopying out of Android/data (larger files '
-          'take a moment).';
-    });
-    String local;
-    try {
-      local = await AdbService.instance.pullForPlayback(path);
-    } catch (e) {
-      local = 'ERROR: $e';
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
-    if (!mounted) return;
-    if (local.startsWith('ERROR:')) {
-      setState(() => _output = 'Could not open "$name".\n$local');
-      return;
-    }
     setState(() => _output = 'Playing "$name".');
-    context.push(Routes.player, extra: {'uri': local, 'title': name});
+    context.push(Routes.player, extra: {'uri': 'adb://$path', 'title': name});
   }
 
   // ---- Fallback: manual IP:Port ----

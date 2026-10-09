@@ -2,8 +2,8 @@
 # planted a clip at Android/data/org.telegram.messenger/cache/5_lab_clip.mp4
 # and put adbd on TCP 5555; here the app connects to it by hand, Android asks
 # to allow the app's key, and once allowed the app scans Android/data by
-# itself, lists the clip, names its folder after the app ("Telegram ·
-# cache") and plays it.
+# itself, lists the clip, plays it straight from Android/data, and names its
+# folder after the app ("Telegram · cache") in Local, thumbnail and all.
 appId: com.innocent.media
 ---
 - launchApp
@@ -79,12 +79,14 @@ appId: com.innocent.media
       text: "(?s).*5_lab_clip.*"
     direction: DOWN
 - tapOn: "(?s).*5_lab_clip.*"
-# Copied out of Android/data, then played.
-- extendedWaitUntil:
-    notVisible: "(?s).*Preparing.*"
-    timeout: 60000
+# Played straight from Android/data over the connection (the trail says
+# "adb: streaming"), not copied out first.
 - waitForAnimationToEnd:
     timeout: 8000
+- extendedWaitUntil:
+    notVisible: "(?s).*Loading video over ADB.*"
+    timeout: 30000
+- assertNotVisible: "(?s).*Could not load this video over ADB.*"
 - takeScreenshot: 99_adb_playing
 # The Local tab, after a fresh start, lists the folder by its app's name.
 - launchApp

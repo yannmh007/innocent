@@ -1040,6 +1040,20 @@ class PlayerController extends StateNotifier<PlayerState> {
         }();
         return;
       }
+      // AN ANDROID/DATA VIDEO PLAYING FROM THE ADB CONNECTION FAILED: the
+      // connection dropped, or the device would not stream it. The copy is
+      // the reliable way and always was — fall back to it, once, from where
+      // the film had got to, instead of showing an error.
+      final adbSrc = _adbStreamSrc;
+      if (adbSrc != null && uri != null && uri == _currentUri &&
+          !_adbCopyOnly.contains(adbSrc)) {
+        _adbCopyOnly.add(adbSrc);
+        final at = svcAtError.position;
+        final title = _currentVideoTitle;
+        PlaybackLog.add('adb: stream failed ($e) -> copy from ${at.inSeconds} s');
+        unawaited(openVideo('adb://$adbSrc', title: title, startAt: at));
+        return;
+      }
       if (!isNetwork) {
         state = state.copyWith(errorMessage: e);
         return;
@@ -1341,6 +1355,15 @@ class PlayerController extends StateNotifier<PlayerState> {
   /// those controls did nothing at all on Android/data videos — silently, with
   /// no error. Keeping the original URI alongside restores them.
   String? _libraryUri;
+
+  /// The Android/data path of an `adb://` video that is playing STRAIGHT FROM
+  /// THE ADB CONNECTION (a range at a time, through the app's loopback
+  /// proxy) rather than from a copy; null otherwise. See [_doOpenVideo].
+  String? _adbStreamSrc;
+
+  /// Android/data paths whose stream failed this session: they are copied
+  /// out and played from the copy, as every one was before streaming.
+  final Set<String> _adbCopyOnly = <String>{};
 
   /// True while the user is dragging the seek bar.
   ///

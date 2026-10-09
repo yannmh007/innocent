@@ -180,7 +180,11 @@ extension PlayerNavigation on PlayerController {
     // could null out _currentUri between the guard and the writes,
     // crashing on `_currentUri!`. Capturing also eliminates the
     // unnecessary force-unwraps.
-    final uri = _currentUri;
+    //
+    // The film's stable identity, not the address libmpv plays: for adb://
+    // and sealed:// that address is a loopback URL minted per process, and
+    // resume points and history written under it were never found again.
+    final uri = _libraryUri ?? _currentUri;
     if (uri == null) return;
     // Privacy mode: when the user has incognito watching turned on,
     // do not touch resume storage or history at all. Existing entries
