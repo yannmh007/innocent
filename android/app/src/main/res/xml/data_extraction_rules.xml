@@ -27,6 +27,10 @@
         <exclude domain="file" path="intruder_shots" />
         <exclude domain="file" path="adb_key.pk8" />
         <exclude domain="file" path="adb_cert.der" />
+        <!-- adb_state: the port this phone's adbd answered on and the path of
+             every video the Android/data scan found in other apps' folders.
+             See backup_rules.xml. -->
+        <exclude domain="sharedpref" path="adb_state.xml" />
         <!-- Premium video this phone has played. Excluded from BOTH channels:
              cloud backup would put the catalogue in a Drive account, and the
              new-phone transfer would clone it onto a handset that has not
@@ -64,6 +68,10 @@
         <exclude domain="file" path="intruder_shots" />
         <exclude domain="file" path="adb_key.pk8" />
         <exclude domain="file" path="adb_cert.der" />
+        <!-- adb_state: the port this phone's adbd answered on and the path of
+             every video the Android/data scan found in other apps' folders.
+             See backup_rules.xml. -->
+        <exclude domain="sharedpref" path="adb_state.xml" />
         <!-- Premium video this phone has played. Excluded from BOTH channels:
              cloud backup would put the catalogue in a Drive account, and the
              new-phone transfer would clone it onto a handset that has not
