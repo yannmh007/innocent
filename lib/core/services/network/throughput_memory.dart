@@ -103,6 +103,15 @@ class ThroughputMemory {
     }
   }
 
+  /// DEVICE LAB ONLY: start a run from a known estimate (`lab_throughput`),
+  /// so a film opens on a small copy and the climb can be watched. Nothing
+  /// happens in a release build.
+  static void labSeed(int kbps) {
+    if (!const bool.fromEnvironment('INNOCENT_LAB')) return;
+    _cached = kbps;
+    _loaded = true;
+  }
+
   /// For tests, which must not inherit a value from another test.
   @visibleForTesting
   static void resetForTest({int? value}) {

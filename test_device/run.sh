@@ -304,9 +304,9 @@ for flow in $FLOWS; do
   esac
   # AUTO CLIMBS BACK UP — a catalogue title (the free test film) played the
   # way a viewer's tap plays it: the real request-playback, Worker and R2,
-  # the rung Auto picks, the proxy. The emulator's whole line is held poor at
-  # first and then given back; the trail should read a step down on the poor
-  # line and then "stepped up a rung" once it is full again.
+  # the rung Auto picks, the proxy. It opens on a small copy (a low starting
+  # estimate) and the trail should read "measured … kbps" and then "stepped
+  # up a rung" once the line has shown it can carry more.
   case "$flow" in climb)
     if [ -z "${CLIMB_TITLE:-}" ]; then log "flow climb: no CLIMB_TITLE in config.env — skipped"; continue; fi
     adb shell am force-stop "$PKG"
@@ -314,20 +314,20 @@ for flow in $FLOWS; do
     d="/sdcard/Android/data/$PKG/files"
     adb shell mkdir -p "$d" >/dev/null 2>&1
     adb shell "echo title:$CLIMB_TITLE > $d/lab_stream_url"
-    adb emu network speed "${CLIMB_SLOW:-700:700}" >/dev/null 2>&1 || true
-    log "climb: the test film on a ${CLIMB_SLOW:-700:700} kbit/s line for ${CLIMB_SLOW_S:-100} s"
+    # A starting estimate below the 480p rung, so the film opens small and
+    # the climb can be watched on the runner's real line (the emulator's
+    # `network speed` cap did not hold in run 37967426588).
+    adb shell "echo ${CLIMB_SEED_KBPS:-500} > $d/lab_throughput"
+    log "climb: the test film, link estimate seeded at ${CLIMB_SEED_KBPS:-500} kbps, for ${CLIMB_S:-240} s"
     adb shell am start -W -n "$PKG/.MainActivity" >/dev/null 2>&1
-    sleep "${CLIMB_SLOW_S:-100}"
-    adb exec-out screencap -p > "$OUT/shots/9_climb_slow.png"
-    adb emu network speed full >/dev/null 2>&1 || true
-    adb shell log -p i -t flutter "LAB climb: line back to full" >/dev/null 2>&1 || true
-    log "climb: line back to full for ${CLIMB_FULL_S:-210} s"
-    sleep "${CLIMB_FULL_S:-210}"
-    adb exec-out screencap -p > "$OUT/shots/9_climb_full.png"
+    sleep $(( ${CLIMB_S:-240} / 2 ))
+    adb exec-out screencap -p > "$OUT/shots/9_climb_mid.png"
+    sleep $(( ${CLIMB_S:-240} / 2 ))
+    adb exec-out screencap -p > "$OUT/shots/9_climb_end.png"
+    log "climb: $(grep -c 'stepped up a rung' "$OUT/logcat_raw.txt" 2>/dev/null) step(s) up, $(grep -c 'stepped down a rung' "$OUT/logcat_raw.txt" 2>/dev/null) down"
     adb shell log -p i -t flutter "LAB phase $flow end" >/dev/null 2>&1 || true
     adb shell am force-stop "$PKG"
-    adb shell rm -f "$d/lab_stream_url" >/dev/null 2>&1 || true
-    adb emu network speed "${NET_SPEED:-full}" >/dev/null 2>&1 || true
+    adb shell rm -f "$d/lab_stream_url" "$d/lab_throughput" >/dev/null 2>&1 || true
     log "flow $flow done"
     continue
     ;;

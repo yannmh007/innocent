@@ -825,6 +825,9 @@ class StreamCacheServer {
     final ms = took.inMilliseconds;
     if (ms < 400) return;
     final kbps = (bytes * 8) ~/ ms;
+    // In the trail: what Auto's next choice — a climb, a step down, the next
+    // film's first copy — will be made from.
+    PlaybackLog.add('measured $kbps kbps');
     unawaited(ThroughputMemory.observe(kbps));
   }
 

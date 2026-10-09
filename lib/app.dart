@@ -31,6 +31,7 @@ import 'features/player/presentation/player_provider.dart';
 import 'features/player/presentation/shortcut_item.dart';
 import 'core/services/diagnostics/lab_stream.dart';
 import 'core/services/diagnostics/playback_log.dart';
+import 'core/services/network/throughput_memory.dart';
 import 'features/video_hub/presentation/playback.dart';
 import 'features/video_hub/presentation/video_hub_provider.dart';
 
@@ -115,6 +116,12 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
     await Future<void>.delayed(const Duration(seconds: 3));
     if (!mounted) return;
     try {
+      final seed = await LabStream.seedKbps();
+      if (seed != null) {
+        await ThroughputMemory.read();
+        ThroughputMemory.labSeed(seed);
+        PlaybackLog.add('LAB title: link estimate seeded at $seed kbps');
+      }
       final content = await ref.read(contentRepositoryProvider).getById(id);
       final ctx =
           ref.read(routerProvider).routerDelegate.navigatorKey.currentContext;

@@ -71,6 +71,16 @@ class LabStream {
     }
   }
 
+  /// The link estimate to start from (`lab_throughput`, kbit/s), or null.
+  static Future<int?> seedKbps() async {
+    if (!const bool.fromEnvironment('INNOCENT_LAB')) return null;
+    try {
+      return int.tryParse((await _read('lab_throughput')) ?? '');
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// The loopback address to play, or null when the lab named no film.
   static Future<String?> localUrl() async {
     if (!const bool.fromEnvironment('INNOCENT_LAB')) return null;
