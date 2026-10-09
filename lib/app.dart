@@ -159,6 +159,21 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
     EngineReadiness.instance.start();
     _intentService.start();
     _intentSub = _intentService.videoRequests.listen((req) {
+      // DEVICE LAB, scenario 3: the catalogue title compiled into this lab
+      // APK, played through playMedia on a real phone's real connection; the
+      // app closes after four minutes, which ends the test.
+      if (const bool.fromEnvironment('INNOCENT_LAB') &&
+          req.uri == 'innocent-lab://title') {
+        const id = String.fromEnvironment('INNOCENT_LAB_TITLE');
+        if (id.isEmpty) {
+          PlaybackLog.add('LAB title: none compiled in');
+          return;
+        }
+        PlaybackLog.add('LAB script: catalogue title');
+        unawaited(_labTitle(id));
+        Timer(const Duration(seconds: 240), () => exit(0));
+        return;
+      }
       // Wait for the router/widget tree to be ready before pushing.
       // DEVICE LAB: Test Lab installs fresh, so the introduction is up, and
       // it is not on the router — a push would land behind it, unseen. Step

@@ -76,22 +76,22 @@ jobs:
       # logcat, and answers Test Lab's game-loop launch by playing the film
       # pushed below (src/lab/AndroidManifest.xml, lib/app.dart).
       - uses: actions/setup-java@v4
-        if: steps.mode.outputs.mode == 'playback' && steps.mode.outputs.fetch == ''
+        if: (steps.mode.outputs.mode == 'playback' || steps.mode.outputs.mode == 'stream') && steps.mode.outputs.fetch == ''
         with:
           distribution: temurin
           java-version: '17'
       - uses: subosito/flutter-action@v2
-        if: steps.mode.outputs.mode == 'playback' && steps.mode.outputs.fetch == ''
+        if: (steps.mode.outputs.mode == 'playback' || steps.mode.outputs.mode == 'stream') && steps.mode.outputs.fetch == ''
         with:
           flutter-version: 3.32.8
           channel: stable
           cache: true
       - uses: android-actions/setup-android@v3
-        if: steps.mode.outputs.mode == 'playback' && steps.mode.outputs.fetch == ''
+        if: (steps.mode.outputs.mode == 'playback' || steps.mode.outputs.mode == 'stream') && steps.mode.outputs.fetch == ''
         with:
           packages: ''
       - name: Build the arm64 lab APK and the film
-        if: steps.mode.outputs.mode == 'playback' && steps.mode.outputs.fetch == ''
+        if: (steps.mode.outputs.mode == 'playback' || steps.mode.outputs.mode == 'stream') && steps.mode.outputs.fetch == ''
         env:
           INNOCENT_LAB_ABI: arm64-v8a
         run: |
@@ -100,9 +100,14 @@ jobs:
           sdkmanager "platforms;android-36" "build-tools;35.0.0" "build-tools;36.0.0" "ndk;27.0.12077973"
           echo "org.gradle.jvmargs=-Xmx6144M -XX:MaxMetaspaceSize=1024m -Dfile.encoding=UTF-8" >> android/gradle.properties
           flutter pub get
-          flutter build apk --release --target-platform android-arm64 --dart-define=INNOCENT_LAB=true
+          source test_device/cloud.env
+          # MODE=stream: the catalogue title the phones play, compiled in.
+          flutter build apk --release --target-platform android-arm64 \
+            --dart-define=INNOCENT_LAB=true \
+            --dart-define=INNOCENT_LAB_TITLE="${STREAM_TITLE:-}"
           cp build/app/outputs/flutter-apk/app-release.apk app.apk
           echo "TAG=lab-${GITHUB_SHA::7}" >> "$GITHUB_ENV"
+          [ "${MODE:-robo}" = stream ] && { ls -la app.apk; exit 0; }
           # The film: 720p H.264 at a film's bitrate, long enough for the
           # three phases of the script (about 165 s).
           sudo apt-get install -y -qq ffmpeg >/dev/null
@@ -113,7 +118,7 @@ jobs:
           ls -la app.apk play.mp4
 
       - name: Fetch the released APK
-        if: steps.mode.outputs.mode != 'playback' && steps.mode.outputs.fetch == '' && steps.ready.outputs.ok == 'true'
+        if: steps.mode.outputs.mode != 'playback' && steps.mode.outputs.mode != 'stream' && steps.mode.outputs.fetch == '' && steps.ready.outputs.ok == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -161,6 +166,18 @@ jobs:
             echo "storage/browser/${BUCKET}/${dir}/" >> out/run.txt
             echo '{}' > out/matrix.json
             rc=0
+          elif [ "${MODE:-robo}" = stream ]; then
+            # A catalogue title through the real API, Worker and R2, on each
+            # phone's own connection (scenario 3; the app closes after four
+            # minutes). Startup, rung, climbs and stalls are in the trail.
+            gcloud firebase test android run \
+              --type game-loop \
+              --app app.apk \
+              "${device_args[@]}" \
+              --scenario-numbers 3 \
+              --timeout 360s \
+              --results-dir "$dir" \
+              --format=json > out/matrix.json 2> out/run.txt && rc=0 || rc=$?
           elif [ "${MODE:-robo}" = playback ]; then
             # Left alone for the whole run: no crawler, just the film.
             gcloud firebase test android run \

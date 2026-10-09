@@ -2708,7 +2708,14 @@ class MainActivity : AudioServiceFragmentActivity() {
                 "LAB scenario ${intent.getIntExtra("scenario", 0)} " +
                     "surfaceProducer=${com.alexmercerind.media_kit_video.VideoOutput.labForceSurfaceProducer}"
             )
-            Uri.fromFile(java.io.File("/sdcard/Download/innocent_lab_play.mp4"))
+            // Scenario 3 = a catalogue title through the real API, Worker and
+            // R2 (the title is compiled into the lab APK); Dart opens it the
+            // way a viewer's tap does. Any other scenario plays the pushed film.
+            if (intent.getIntExtra("scenario", 0) == 3) {
+                Uri.parse("innocent-lab://title")
+            } else {
+                Uri.fromFile(java.io.File("/sdcard/Download/innocent_lab_play.mp4"))
+            }
         } else {
             intent.data ?: return
         }
