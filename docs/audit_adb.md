@@ -32,6 +32,27 @@ libadb-android engine is the only route to Android/data; Android 11+ no
 longer defaults to sending people to install another app. Findings below
 that name iADB describe code that no longer exists.
 
+**1.64.59, CVE-2026-0073** — May 2026's bulletin fixed a logic error in
+adbd's TLS certificate check that lets a device on the same network skip
+wireless debugging's mutual authentication and reach a shell (Android 14
+to 16; fixed at patch level 2026-05-01 or by the Google Play system update
+carrying the adb module). Innocent turns wireless debugging back on after
+every reboot, so on an unpatched phone it holds that door open. The ADB
+screen now reads `Build.VERSION.SECURITY_PATCH`, warns on Android 14-16
+before 2026-05-01 (`wireless_adb_risk.dart`, tested), marks auto-reconnect
+as not advised, and — when Innocent holds WRITE_SECURE_SETTINGS — offers
+one tap that turns wireless debugging off and auto-reconnect with it (USB
+debugging untouched). A warning, not a block: an older patch level may
+already run the fixed adbd from Google Play.
+
+**Kadb, considered and deferred (2026-10-09).** A maintained Kotlin ADB
+client (AOSP-aligned identity, TLS, mDNS), but built with Kotlin 2.4 and
+AGP 9.4 against this app's Kotlin 2.1 / AGP 8.7, and itself carrying
+BouncyCastle 1.86 (jdk18on, where the app shares jdk15to18 1.81 with its
+SMB/SFTP stack) plus coroutines and Okio: no smaller, and a toolchain
+upgrade of the whole Android build to adopt. Revisit with the next
+Flutter / Kotlin / AGP upgrade, not before it.
+
 Still open: the three device questions at the end. Every finding in this
 audit that survived checking has now been fixed, except the Kotlin half of
 **A12** — there is still no `android/app/src/test/`, so the Kotlin remains

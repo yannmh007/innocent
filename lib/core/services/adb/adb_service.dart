@@ -496,6 +496,18 @@ class AdbService {
     }
   }
 
+  /// Switch Wireless debugging off directly — possible once Innocent holds
+  /// WRITE_SECURE_SETTINGS (the auto-reconnect set-up). False when it does
+  /// not, or the write failed; the caller then sends the user to Settings.
+  Future<bool> disableWirelessDebugging() async {
+    try {
+      return await _channel.invokeMethod<bool>('disableWirelessDebugging') ??
+          false;
+    } catch (_) {
+      return false;
+    }
+  }
+
   /// Turn the auto-enable-after-reboot behaviour on or off.
   Future<void> setAutoEnable(bool on) async {
     try {

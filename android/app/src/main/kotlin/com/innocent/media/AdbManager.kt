@@ -907,6 +907,23 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
         }
 
         /**
+         * Turn wireless debugging OFF (needs WRITE_SECURE_SETTINGS). USB
+         * debugging (`adb_enabled`) is left alone — only the network door is
+         * closed. For a phone exposed to CVE-2026-0073 (see the ADB screen),
+         * whose wireless debugging lets a device on the same Wi-Fi in without
+         * pairing until the May 2026 update. Returns true if the write went
+         * through.
+         */
+        fun disableWirelessDebugging(context: Context): Boolean {
+            if (!hasSecureSettings(context)) return false
+            return try {
+                Settings.Global.putInt(context.contentResolver, ADB_WIFI_ENABLED, 0)
+            } catch (e: Throwable) {
+                false
+            }
+        }
+
+        /**
          * M3: copy a file that only the ADB shell can read (inside Android/data)
          * out to a location the app CAN read (/sdcard/Movies/.Innocent_cache,
          * reachable via MANAGE_EXTERNAL_STORAGE), then return that local path so

@@ -1719,6 +1719,9 @@ class MainActivity : AudioServiceFragmentActivity() {
                     result.success(map)
                 }
                 // audit_adb.md A9: the exit the feature never had.
+                "disableWirelessDebugging" -> {
+                    result.success(AdbManager.disableWirelessDebugging(this@MainActivity))
+                }
                 "revokeSecureSettings" -> {
                     thread(start = true, isDaemon = true, name = "adb-revoke") {
                         val status = AdbManager.revokeSecureSettings(this@MainActivity)

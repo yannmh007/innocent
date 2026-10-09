@@ -154,14 +154,56 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen> {
             style: const TextStyle(fontSize: 12.5, height: 1.4),
           ),
           const SizedBox(height: 8),
-          OutlinedButton.icon(
-            onPressed: _busy ? null : _openWirelessDebugging,
-            icon: const Icon(Icons.settings, size: 18),
-            label: const Text('Open Wireless debugging'),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              // With WRITE_SECURE_SETTINGS (auto-reconnect set up), one tap
+              // closes it — and keeps it closed across a reboot.
+              if (_autoEnableGranted)
+                FilledButton.tonalIcon(
+                  onPressed: _busy ? null : _turnOffWirelessDebugging,
+                  icon: const Icon(Icons.wifi_off, size: 18),
+                  label: const Text('Turn it off now'),
+                ),
+              OutlinedButton.icon(
+                onPressed: _busy ? null : _openWirelessDebugging,
+                icon: const Icon(Icons.settings, size: 18),
+                label: const Text('Open Wireless debugging'),
+              ),
+            ],
           ),
         ],
       ),
     );
+  }
+
+  /// Close the network door on an exposed phone: Wireless debugging off,
+  /// and auto-reconnect off so a reboot does not open it again.
+  Future<void> _turnOffWirelessDebugging() async {
+    setState(() => _busy = true);
+    try {
+      final ok = await AdbService.instance.disableWirelessDebugging();
+      if (ok && _autoEnableOn) {
+        await AdbService.instance.setAutoEnable(false);
+      }
+      if (!mounted) return;
+      setState(() {
+        if (ok) {
+          _connected = false;
+          _autoEnableOn = false;
+          _output = 'Wireless debugging is off, and auto-reconnect after '
+              'reboot is off. Turn it on again from Wireless debugging when '
+              'you next need Android/data — after updating the phone, '
+              'ideally.';
+        } else {
+          _output = 'Could not switch it off from here. Open Wireless '
+              'debugging and turn it off there.';
+        }
+      });
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   /// Result of a pairing attempt made from the notification shade. Runs on
