@@ -1,0 +1,30 @@
+Running on test
+ > Flow new_video_open
+Launch app "com.innocent.media"... COMPLETED
+Wait for animation to end within 10000 ms... COMPLETED
+Tap on (Optional) "Skip"... WARNED
+
+
+ Warning: Element not found: Text matching regex: Skip
+Wait for animation to end within 5000 ms... COMPLETED
+Tap on (Optional) "Allow.*"... WARNED
+
+
+ Warning: Element not found: Text matching regex: Allow.*
+Tap on (Optional) "Allow.*"... WARNED
+
+
+ Warning: Element not found: Text matching regex: Allow.*
+Tap on (Optional) "Skip"... WARNED
+
+
+ Warning: Element not found: Text matching regex: Skip
+Tap on (Optional) "Video"... WARNED
+
+
+ Warning: Element not found: Text matching regex: Video
+Assert that (Optional) "__nothing_has_this_text__" is visible... WARNED
+
+
+ Warning: Assertion is false: "__nothing_has_this_text__" is visible
+Take screenshot 90_newvideo_before... COMPLETED

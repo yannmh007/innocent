@@ -1,0 +1,42 @@
+Running on test
+ > Flow adb_own
+Launch app "com.innocent.media"... COMPLETED
+Wait for animation to end within 15000 ms... COMPLETED
+Tap on (Optional) "Wait"... WARNED
+
+
+ Warning: Element not found: Text matching regex: Wait
+Tap on (Optional) "Skip"... COMPLETED
+Tap on (Optional) "Allow.*"... WARNED
+
+
+ Warning: Element not found: Text matching regex: Allow.*
+Tap on (Optional) "Allow.*"... WARNED
+
+
+ Warning: Element not found: Text matching regex: Allow.*
+Tap on "(?s).*Tab 4 of 4.*"... COMPLETED
+Wait for animation to end within 5000 ms... COMPLETED
+Scrolling DOWN until "(?s)Settings\n.*" is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Tap on "(?s)Settings\n.*"... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Tap on "List"... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Scrolling DOWN until "(?s).*ADB engine self-test.*" is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Tap on "(?s).*ADB engine self-test.*"... COMPLETED
+Assert that "(?s).*ADB engine ready.*" is visible... COMPLETED
+Take screenshot 95_adb_selftest... COMPLETED
+Tap on "OK"... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Scrolling DOWN until "(?s).*ADB connection.*" is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Tap on "(?s).*ADB connection.*"... COMPLETED
+Wait for animation to end within 8000 ms... COMPLETED
+Take screenshot 96_adb_screen... COMPLETED
+Assert that "(?s).*Setup — where you are.*" is visible... COMPLETED
+Assert that "(?s).*Developer options on.*" is visible... COMPLETED
+Assert that "(?s).*Wireless debugging on.*" is visible... COMPLETED
+Assert that "(?s).*Connected.*" is visible... COMPLETED
+Assert that "(?s).*iADB.*" is not visible... COMPLETED
+Assert that "(?s).*How Innocent reads Android/data.*" is not visible... COMPLETED
+Scrolling DOWN until "(?s).*Scan Android/data for videos.*" is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Take screenshot 97_adb_screen_scan... COMPLETED
