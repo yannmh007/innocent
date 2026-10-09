@@ -20,7 +20,6 @@ SH-01L         DOCOMO    AQUOS sense2 SH-01L          28
 SO-41A         docomo    Xperia 10 II                 31
 TB370FU        Lenovo    Lenovo Tab P12               35
 TECNO-BF6      TECNO     TECNO POP 7                  31
-TECNO-BF7      TECNO     TECNO                        31
 TECNO-BG6      TECNO     SPARK Go 2024                33
 TECNO-KI5k     TECNO     TECNO SPARK 10C              31
 XQ-DC54        Sony      Xperia 10 V                  34
