@@ -55,13 +55,29 @@ class LabStream {
             (Duration(seconds: int.parse(a)), Duration(seconds: int.parse(b))),
       ];
 
+  /// A CATALOGUE TITLE to play the way a viewer would — `title:<uuid>` in
+  /// `lab_stream_url` — or null. Played through `playMedia`: the real
+  /// request-playback, the real Worker and R2, the rung Auto picks, the
+  /// climb and the step down. Free titles only (the lab has no account).
+  static Future<String?> titleId() async {
+    if (!const bool.fromEnvironment('INNOCENT_LAB')) return null;
+    try {
+      final raw = await _read('lab_stream_url');
+      if (raw == null || !raw.startsWith('title:')) return null;
+      final id = raw.substring('title:'.length).trim();
+      return id.isEmpty ? null : id;
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// The loopback address to play, or null when the lab named no film.
   static Future<String?> localUrl() async {
     if (!const bool.fromEnvironment('INNOCENT_LAB')) return null;
     try {
       final upstream = await _read('lab_stream_url');
       if (upstream == null) return null;
-      if (upstream.isEmpty) return null;
+      if (upstream.isEmpty || upstream.startsWith('title:')) return null;
       final local = await StreamCacheServer.instance.localUrlFor(
         cacheId: 'lab-film',
         upstream: upstream,

@@ -31,6 +31,8 @@ import 'features/player/presentation/player_provider.dart';
 import 'features/player/presentation/shortcut_item.dart';
 import 'core/services/diagnostics/lab_stream.dart';
 import 'core/services/diagnostics/playback_log.dart';
+import 'features/video_hub/presentation/playback.dart';
+import 'features/video_hub/presentation/video_hub_provider.dart';
 
 class InnocentApp extends ConsumerStatefulWidget {
   final bool showOnboarding;
@@ -79,6 +81,8 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
   /// DEVICE LAB ONLY — play the film the lab named through the stream proxy
   /// (see [LabStream]). Nothing happens when it named none.
   Future<void> _labStream() async {
+    final titleId = await LabStream.titleId();
+    if (titleId != null) return _labTitle(titleId);
     final local = await LabStream.localUrl();
     if (local == null || !mounted) return;
     if (_showOnboarding) setState(() => _showOnboarding = false);
@@ -101,6 +105,28 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
         PlaybackLog.add('LAB stream: seek to ${seek.$2.inSeconds} s');
         unawaited(ref.read(videoPlayerServiceProvider).seek(seek.$2));
       });
+    }
+  }
+
+  /// DEVICE LAB ONLY — a catalogue title, played exactly as a viewer's tap
+  /// plays it (see [LabStream.titleId]).
+  Future<void> _labTitle(String id) async {
+    if (_showOnboarding) setState(() => _showOnboarding = false);
+    await Future<void>.delayed(const Duration(seconds: 3));
+    if (!mounted) return;
+    try {
+      final content = await ref.read(contentRepositoryProvider).getById(id);
+      final ctx =
+          ref.read(routerProvider).routerDelegate.navigatorKey.currentContext;
+      if (content == null || ctx == null || !ctx.mounted) {
+        PlaybackLog.add('LAB title: ${content == null ? 'not found' : 'no screen'}');
+        return;
+      }
+      PlaybackLog.add('LAB title: opening ${content.title}');
+      await playMedia(ctx, ref, content: content, source: content.source,
+          fromStart: true);
+    } catch (e) {
+      PlaybackLog.add('LAB title failed: $e');
     }
   }
 

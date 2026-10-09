@@ -302,6 +302,36 @@ for flow in $FLOWS; do
     continue
     ;;
   esac
+  # AUTO CLIMBS BACK UP — a catalogue title (the free test film) played the
+  # way a viewer's tap plays it: the real request-playback, Worker and R2,
+  # the rung Auto picks, the proxy. The emulator's whole line is held poor at
+  # first and then given back; the trail should read a step down on the poor
+  # line and then "stepped up a rung" once it is full again.
+  case "$flow" in climb)
+    if [ -z "${CLIMB_TITLE:-}" ]; then log "flow climb: no CLIMB_TITLE in config.env — skipped"; continue; fi
+    adb shell am force-stop "$PKG"
+    adb shell pm clear "$PKG" >/dev/null 2>&1 || true
+    d="/sdcard/Android/data/$PKG/files"
+    adb shell mkdir -p "$d" >/dev/null 2>&1
+    adb shell "echo title:$CLIMB_TITLE > $d/lab_stream_url"
+    adb emu network speed "${CLIMB_SLOW:-700:700}" >/dev/null 2>&1 || true
+    log "climb: the test film on a ${CLIMB_SLOW:-700:700} kbit/s line for ${CLIMB_SLOW_S:-100} s"
+    adb shell am start -W -n "$PKG/.MainActivity" >/dev/null 2>&1
+    sleep "${CLIMB_SLOW_S:-100}"
+    adb exec-out screencap -p > "$OUT/shots/9_climb_slow.png"
+    adb emu network speed full >/dev/null 2>&1 || true
+    adb shell log -p i -t flutter "LAB climb: line back to full" >/dev/null 2>&1 || true
+    log "climb: line back to full for ${CLIMB_FULL_S:-210} s"
+    sleep "${CLIMB_FULL_S:-210}"
+    adb exec-out screencap -p > "$OUT/shots/9_climb_full.png"
+    adb shell log -p i -t flutter "LAB phase $flow end" >/dev/null 2>&1 || true
+    adb shell am force-stop "$PKG"
+    adb shell rm -f "$d/lab_stream_url" >/dev/null 2>&1 || true
+    adb emu network speed "${NET_SPEED:-full}" >/dev/null 2>&1 || true
+    log "flow $flow done"
+    continue
+    ;;
+  esac
   case "$flow" in streamlong_*)
     rest="${flow#streamlong_}"
     n="${rest##*_}"

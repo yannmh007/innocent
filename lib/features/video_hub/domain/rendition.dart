@@ -65,6 +65,14 @@ const double kBandwidthHeadroom = 0.6;
 /// phone screen, and the first measurement arrives seconds later anyway.
 const int kDefaultHeight = 720;
 
+/// The rung to open with on MOBILE DATA when nothing has been measured.
+///
+/// 480p, the way Netflix starts low and climbs: on a phone's own data the
+/// cost of guessing high is a stall in the first minute of the first film,
+/// and since 1.64.60 Auto climbs back up within a minute or two once the
+/// connection has shown it can carry more. On Wi-Fi the guess stays 720p.
+const int kMeteredStartHeight = 480;
+
 /// The tallest rung Auto picks while the data saver is on — YouTube's Data
 /// saver tops out at 480p, and Netflix's "Save data" is SD. A viewer who
 /// picks a height in the Quality menu still gets that height: the saver is a
@@ -86,6 +94,7 @@ Rendition? pickRendition(
   int? measuredKbps,
   int? ceilingKbps,
   int? maxHeight,
+  int defaultHeight = kDefaultHeight,
 }) {
   if (ladder.isEmpty) return null;
 
@@ -112,7 +121,7 @@ Rendition? pickRendition(
     // No measurement: the rung nearest the default height, biased downwards.
     Rendition best = allowed.first;
     for (final r in allowed) {
-      if (r.height <= kDefaultHeight) best = r;
+      if (r.height <= defaultHeight) best = r;
     }
     return best;
   }
@@ -161,13 +170,15 @@ Rendition? chooseRendition(
   int? measuredKbps,
   int? ceilingKbps,
   int? maxHeight,
+  int defaultHeight = kDefaultHeight,
 }) {
   final c = QualityChoice.normalise(choice);
   if (c == QualityChoice.auto) {
     return pickRendition(ladder,
         measuredKbps: measuredKbps,
         ceilingKbps: ceilingKbps,
-        maxHeight: maxHeight);
+        maxHeight: maxHeight,
+        defaultHeight: defaultHeight);
   }
   if (c == QualityChoice.original || ladder.isEmpty) return null;
   final want = int.parse(c);

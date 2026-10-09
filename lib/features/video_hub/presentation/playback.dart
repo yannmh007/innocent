@@ -219,13 +219,22 @@ Future<void> playMedia(
       saving = false;
     }
     final saverCap = saving ? kDataSaverMaxHeight : null;
+    // NOTHING MEASURED YET: start lower on mobile data (480p) than on Wi-Fi
+    // (720p). Auto climbs once the connection shows it can carry more.
+    final startHeight = (await ConnectionInfo.read()).metered
+        ? kMeteredStartHeight
+        : kDefaultHeight;
     if (!context.mounted) return;
     final chosen = chooseRendition(
       grant.renditions,
       preferred,
       measuredKbps: ThroughputMemory.current,
       maxHeight: saverCap,
+      defaultHeight: startHeight,
     );
+    // The rung playing NOW — the start, then whatever a step down, a menu
+    // choice or a climb moved it to. Null while the original plays.
+    int? playingHeight = chosen?.height;
     final rung =
         chosen == null ? 'original' : '${chosen.height}p ${chosen.kbps} kbps';
     final measured = ThroughputMemory.current?.toString() ?? '-';
@@ -295,7 +304,8 @@ Future<void> playMedia(
     // player has measured the connection for real — so the second half of a
     // long film can be a better or a smaller copy than the first, decided on
     // evidence the first choice did not have.
-    StreamRenewal.register(openUrl, ({int? belowKbps, String? quality}) async {
+    StreamRenewal.register(openUrl,
+        ({int? belowKbps, String? quality, bool climb = false}) async {
       final fresh = await ref.read(contentRepositoryProvider).requestPlayback(
             content: content,
             source: source,
@@ -309,23 +319,39 @@ Future<void> playMedia(
       //     standing choice again, so a pinned 1080p is still 1080p after
       //     the renewal and not whatever Auto would have picked.
       final standing = StreamRenewal.quality.value?.selected ?? preferred;
-      final again = quality != null
-          ? chooseRendition(fresh.renditions, quality,
-              measuredKbps: ThroughputMemory.current, maxHeight: saverCap)
-          : belowKbps != null
-              ? pickRendition(
-                  fresh.renditions,
-                  measuredKbps: ThroughputMemory.current,
-                  // Set only when the player has MEASURED the current copy
-                  // as too heavy for this connection. Then this is not a
-                  // renewal at all, it is a downgrade, and handing back the
-                  // same rung would repeat the stall that asked for it.
-                  ceilingKbps: belowKbps,
-                  maxHeight: saverCap,
-                )
-              : chooseRendition(fresh.renditions, standing,
-                  measuredKbps: ThroughputMemory.current,
-                  maxHeight: saverCap);
+      final Rendition? again;
+      if (climb) {
+        // A CLIMB: only a copy BETTER than the one playing, and only one the
+        // connection measures able to carry. Nothing better is nothing to
+        // reopen — never the same copy and a second of black for nothing.
+        final now = playingHeight;
+        final better = now == null
+            ? null
+            : pickRendition(fresh.renditions,
+                measuredKbps: ThroughputMemory.current, maxHeight: saverCap);
+        if (now == null || better == null || better.height <= now) {
+          return null;
+        }
+        again = better;
+      } else {
+        again = quality != null
+            ? chooseRendition(fresh.renditions, quality,
+                measuredKbps: ThroughputMemory.current, maxHeight: saverCap)
+            : belowKbps != null
+                ? pickRendition(
+                    fresh.renditions,
+                    measuredKbps: ThroughputMemory.current,
+                    // Set only when the player has MEASURED the current copy
+                    // as too heavy for this connection. Then this is not a
+                    // renewal at all, it is a downgrade, and handing back the
+                    // same rung would repeat the stall that asked for it.
+                    ceilingKbps: belowKbps,
+                    maxHeight: saverCap,
+                  )
+                : chooseRendition(fresh.renditions, standing,
+                    measuredKbps: ThroughputMemory.current,
+                    maxHeight: saverCap);
+      }
       if (quality != null) {
         await QualityPreference.write(quality);
       }
@@ -335,6 +361,7 @@ Future<void> playMedia(
       if (belowKbps != null && again == null) return null;
       final freshUrl = again?.url ?? fresh.url;
       if (freshUrl == null) return null;
+      playingHeight = again?.height;
 
       // A DOWNGRADE IS A DIFFERENT FILE, so it is a different cache entry.
       // Pointing the existing entry at a smaller encode would write two
@@ -386,6 +413,16 @@ Future<void> playMedia(
       markPlaying(nextLocal ?? freshUrl);
       return nextLocal ?? freshUrl;
     },
+        // WHETHER AUTO COULD STEP UP NOW — answered here, on the phone, from
+        // the ladder this grant listed and what the connection measures, so
+        // the player's few-second check costs nothing until it is a yes.
+        canClimb: () {
+          final now = playingHeight;
+          if (now == null) return false;
+          final better = pickRendition(grant.renditions,
+              measuredKbps: ThroughputMemory.current, maxHeight: saverCap);
+          return better != null && better.height > now;
+        },
         // NO MENU FOR A FILM WITH ONE COPY: nothing to choose between.
         menu: menuOptions.isEmpty
             ? null
