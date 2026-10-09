@@ -104,7 +104,10 @@ class AdbPairingService : Service() {
                     applicationContext,
                     AdbMdns.SERVICE_TYPE_TLS_PAIRING,
                 ) { host, port ->
-                    if (host != null && port > 0) {
+                    // Only this phone's own pairing service (see
+                    // AdbManager.isThisPhone): another phone's open dialog on
+                    // the same Wi-Fi must not read as "found".
+                    if (host != null && port > 0 && AdbManager.isThisPhone(host)) {
                         val was = lastPairingPort.getAndSet(port)
                         lastPairingHost.set(host.hostAddress)
                         // First time we see it, nudge the notification so the

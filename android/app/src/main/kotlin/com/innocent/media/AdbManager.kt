@@ -1206,6 +1206,30 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
         }
 
         /** [pairWithMdns] with the lock and the waiter bookkeeping already done. */
+        /**
+         * Whether an address mDNS resolved is THIS phone's own.
+         *
+         * Every phone on the Wi-Fi with its pairing dialog open — or with
+         * wireless debugging on — advertises the same service type, and the
+         * first answer used to be taken: at a café, at work, or with a second
+         * phone at home, the code went to someone else's pairing service (and
+         * failed as "re-check the code"), or the connect tried another
+         * phone's adbd. Shizuku keeps only services on one of the device's own
+         * interface addresses; so does this.
+         */
+        fun isThisPhone(host: java.net.InetAddress?): Boolean {
+            if (host == null) return false
+            if (host.isLoopbackAddress) return true
+            return try {
+                val nets = java.net.NetworkInterface.getNetworkInterfaces() ?: return false
+                nets.asSequence().any { ni ->
+                    ni.inetAddresses.asSequence().any { it == host }
+                }
+            } catch (_: Throwable) {
+                false
+            }
+        }
+
         private fun pairLocked(
             context: Context,
             code: String,
@@ -1217,7 +1241,7 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
                 val portRef = AtomicInteger(-1)
                 val latch = CountDownLatch(1)
                 mdns = AdbMdns(context, AdbMdns.SERVICE_TYPE_TLS_PAIRING) { host, port ->
-                    if (host != null && port > 0) {
+                    if (host != null && port > 0 && isThisPhone(host)) {
                         hostRef.set(host.hostAddress)
                         portRef.set(port)
                         latch.countDown()
@@ -1232,7 +1256,16 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
                 }
                 val host = hostRef.get() ?: return "ERROR: pairing host not resolved"
                 val port = portRef.get()
-                val ok = getInstance(context).pair(host, port, code)
+                // Over loopback, as Shizuku does: the service is this phone's
+                // own, and loopback does not depend on the Wi-Fi address (or a
+                // VPN) staying put mid-pairing. The advertised address only if
+                // loopback is refused.
+                val mgr = getInstance(context)
+                val ok = try {
+                    mgr.pair("127.0.0.1", port, code)
+                } catch (e: java.net.ConnectException) {
+                    mgr.pair(host, port, code)
+                }
                 if (ok) "OK \u2014 paired via mDNS ($host:$port)"
                 else "ERROR: pairing returned false (re-check the code)"
             } catch (e: Throwable) {
@@ -1356,7 +1389,7 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
                 val portRef = AtomicInteger(-1)
                 val latch = CountDownLatch(1)
                 mdns = AdbMdns(context, AdbMdns.SERVICE_TYPE_TLS_CONNECT) { host, port ->
-                    if (host != null && port > 0) {
+                    if (host != null && port > 0 && isThisPhone(host)) {
                         hostRef.set(host.hostAddress)
                         portRef.set(port)
                         latch.countDown()
