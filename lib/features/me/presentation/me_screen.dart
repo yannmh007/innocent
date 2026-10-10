@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/localization/app_strings.dart';
+import '../../../core/services/adb/adb_service.dart';
 import '../../../core/services/preferences/player_settings_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../about/about_screen.dart';
@@ -173,13 +174,19 @@ class MeScreen extends StatelessWidget {
                   // connection (experimental)".
                   const Divider(
                       height: 1, indent: 64, color: AppColors.darkDivider),
-                  _MeRow(
-                    icon: Icons.snippet_folder_rounded,
-                    tint: const Color(0xFF2AABEE),
-                    filled: true,
-                    label: s.hfTitle,
-                    hint: s.hfHint,
-                    onTap: () => _open(context, const AndroidDataScreen()),
+                  // Connected, it says so — and that the videos are in the
+                  // Video tab as well, which is where people look for them.
+                  ValueListenableBuilder<bool?>(
+                    valueListenable: AdbService.instance.live,
+                    builder: (context, live, _) => _MeRow(
+                      icon: Icons.snippet_folder_rounded,
+                      tint: const Color(0xFF2AABEE),
+                      filled: true,
+                      label: s.hfTitle,
+                      hint: live == true ? s.hfLive : s.hfHint,
+                      hintColor: live == true ? AppColors.success : null,
+                      onTap: () => _open(context, const AndroidDataScreen()),
+                    ),
                   ),
                 ],
               ),
@@ -472,6 +479,7 @@ class _MeRow extends StatelessWidget {
     required this.label,
     required this.onTap,
     this.hint,
+    this.hintColor,
     this.filled = false,
   });
 
@@ -479,6 +487,10 @@ class _MeRow extends StatelessWidget {
   final Color tint;
   final String label;
   final String? hint;
+
+  /// The hint's colour when it reports a state (connected) rather than
+  /// describing the row.
+  final Color? hintColor;
   final VoidCallback onTap;
 
   /// A solid tile with a white glyph (Status Saver, MX's green square)
@@ -523,7 +535,7 @@ class _MeRow extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: AppColors.white50,
+                        color: hintColor ?? AppColors.white50,
                         fontSize: 12.5,
                         height: mm ? 1.5 : 1.3,
                       ),

@@ -729,8 +729,10 @@ Future<LibraryRefreshResult> refreshLibraryWithAdb(WidgetRef ref) async {
           await AdbService.instance.isConnected(timeoutMs: 3000);
       if (connected) {
         try {
-          final paths = await AdbService.instance.scanAndroidDataVideos();
-          if (paths.isNotEmpty) ref.invalidate(adbVideosProvider);
+          await AdbService.instance.scanAndroidDataVideos();
+          // What the scan saved, an empty result included (the files were
+          // deleted), is what the Video tab shows.
+          ref.invalidate(adbVideosProvider);
           result = LibraryRefreshResult.adbScanned;
         } catch (e) {
           // The scan failed — most commonly the connection dropping mid-scan.
@@ -756,30 +758,6 @@ Future<LibraryRefreshResult> refreshLibraryWithAdb(WidgetRef ref) async {
   } catch (_) {}
   return result;
 }
-
-/// Scans Android/data once when the app starts, if its ADB connection is
-/// already up — so app-data videos are current without anyone opening the
-/// ADB screen. A connection made later on that screen runs its own scan.
-///
-/// Kept alive for the whole app session by a watch in the shell. Skipped for
-/// anyone who has never connected (nothing to wake), and bounded to three
-/// seconds of probing for the rest.
-final adbAutoScanProvider = Provider<void>((ref) {
-  Future<void> scanIfConnected() async {
-    try {
-      if ((await AdbService.instance.lastConnect()).isEmpty) return;
-      if (!await AdbService.instance.isConnected(timeoutMs: 3000)) return;
-      final paths = await AdbService.instance.scanAndroidDataVideos();
-      // Refresh Local so the freshly-scanned videos appear. Only when
-      // something was found: an empty scan must not wipe a prior good result.
-      if (paths.isNotEmpty) ref.invalidate(adbVideosProvider);
-    } catch (e) {
-      if (kDebugMode) debugPrint('adbAutoScan failed: $e');
-    }
-  }
-
-  scanIfConnected();
-});
 
 /// SAF-granted videos (Android/data etc.) as Video objects, opt-in like the
 /// filesystem walk. Each carries its playable content:// URI plus a derived

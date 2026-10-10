@@ -49,6 +49,7 @@ class FolderListItem extends ConsumerWidget {
         ? folder.totalSizeBytes
         : (folderSizes[folder.path] ?? 0);
     final sizeLabel = _folderSizeLabel(sizeBytes);
+    final hidden = _isHiddenFolder(folder);
     // A plain folder, as MX draws them; a glyph only where it tells the
     // folders apart at a glance (Camera, Screen recordings, Download…), never
     // the generic one.
@@ -132,6 +133,16 @@ class FolderListItem extends ConsumerWidget {
                   // glance. MX draws folders the same way.
                   child: silhouette,
                 ),
+                // Another app's folder (Android/data, over ADB) or a dot
+                // folder: marked on the icon too, so two folders called
+                // "Telegram Video" — the phone's and Telegram's own — tell
+                // apart at a glance.
+                if (hidden && !selected)
+                  const Positioned(
+                    right: 4,
+                    bottom: 4,
+                    child: HiddenCornerBadge(),
+                  ),
                 // MX marks a selected folder ON its icon — a pale disc with
                 // a tick in the middle — and leaves the row where it was.
                 if (selected) const Positioned.fill(child: FolderTick()),
@@ -183,13 +194,15 @@ class FolderListItem extends ConsumerWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  if (_isHiddenFolder(folder)) ...[
-                    const SizedBox(height: 3),
-                    const HiddenBadge(),
-                  ],
                   const SizedBox(height: 2),
                   Row(
                     children: [
+                      // On the count's line, not a line of its own: the row
+                      // keeps MX's 72 dp pitch.
+                      if (hidden) ...[
+                        const HiddenBadge(),
+                        const SizedBox(width: 6),
+                      ],
                       Text(
                         // English keeps its singular; Burmese and Thai
                         // have no plural form, so their one string serves.

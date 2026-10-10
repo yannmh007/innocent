@@ -12,11 +12,15 @@ import '../../../core/di/core_providers.dart';
 import '../../user_data/user_data_providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../local_browser/domain/folder.dart';
+import '../../local_browser/domain/app_data_names.dart';
+import '../../local_browser/presentation/android_data_sync.dart';
+import '../../local_browser/presentation/folder_list_item.dart' show VideoCover;
 import '../../local_browser/presentation/hidden_badge.dart';
 import '../../local_browser/presentation/library_provider.dart';
 import '../data/picker_media_source.dart';
 import '../data/picker_providers.dart';
 import '../../../core/services/adb/adb_service.dart';
+import '../../../core/services/thumbnail/thumbnail_cache.dart';
 import '../../../core/ui/adb_required_dialog.dart';
 import '../../../core/ui/adb_lost_card.dart';
 import '../../settings/presentation/adb_connect_screen.dart';
@@ -92,10 +96,18 @@ class _DirEntry {
   final String? adbSrcPath;
 }
 
-/// True when a picked path is one normal galleries hide — a dot-file or a
+/// True when a picked path is one normal galleries hide — inside an app's
+/// own folder (Android/data or Android/obb, read over ADB), a dot-file, or a
 /// folder on the path whose name starts with a dot. Shown with a small badge
 /// so the user knows they're pulling from a hidden location.
+///
+/// Android/data used to be missing here: its photos and songs in the
+/// pickers looked like any other file.
 bool _pickHidden(String path, String name) {
+  if (path.startsWith('adb://')) return true;
+  if (path.contains('/Android/data/') || path.contains('/Android/obb/')) {
+    return true;
+  }
   if (name.startsWith('.')) return true;
   for (final seg in path.split('/')) {
     if (seg.length > 1 && seg.startsWith('.')) return true;
@@ -172,6 +184,12 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
   // "Android/data" bucket, this holds the ADB-scanned files of the current
   // media type. Null = showing the normal MediaStore folder list.
   Future<List<PickedFile>>? _adbMediaFiles;
+
+  /// Inside the Android/data bucket: the folder opened (its path), or null
+  /// for the list of folders. Telegram alone keeps thousands of small
+  /// previews in its cache; one flat list of every photo in every app was
+  /// unusable.
+  String? _adbMediaDir;
   bool _adbMediaConnected = false;
   // Session cache of the ADB media scan per type, keyed by PickerAssetType.
   // The scan is a shell `find` over ADB (slow), so re-entering the Android/data
@@ -224,7 +242,30 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
 
   // ── selection helpers ─────────────────────────────────────────────
   @override
+  void initState() {
+    super.initState();
+    // A connection made while the picker is open (the lost card, the ADB
+    // screen) brings the Android/data buckets in without leaving it.
+    AdbService.instance.live.addListener(_onAdbLive);
+    if (AdbService.instance.live.value == true) _adbMediaConnected = true;
+    // Android/data's videos in the Videos category are the last scan's: make
+    // sure there has been a recent one — skipped when one ran lately, and
+    // only in a pause, so browsing Android/data here is not held up by it.
+    ref.read(androidDataSyncProvider).soon();
+  }
+
+  void _onAdbLive() {
+    if (!mounted) return;
+    final up = AdbService.instance.live.value == true;
+    // Only ever switched ON from here: a single failed command must not pull
+    // the bucket out from under someone browsing it. The category switch
+    // re-checks properly.
+    if (up && !_adbMediaConnected) setState(() => _adbMediaConnected = true);
+  }
+
+  @override
   void dispose() {
+    AdbService.instance.live.removeListener(_onAdbLive);
     _catScroll.dispose();
     super.dispose();
   }
@@ -281,6 +322,7 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
       _vFolder = null;
       _mFolder = null;
       _adbMediaFiles = null;
+      _adbMediaDir = null;
       _dirStack.clear();
       // A query typed against Videos means nothing in Apps, and leaving it set
       // makes the new category look empty for a reason nothing on screen
@@ -476,6 +518,11 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
           break;
         case _Cat.images:
         case _Cat.audio:
+          // Out of the Android/data bucket too. It used to have no way back
+          // at all short of switching category: the breadcrumb did not know
+          // it was there.
+          _adbMediaDir = null;
+          _adbMediaFiles = null;
           _mFolder = null;
           break;
         case _Cat.files:
@@ -485,6 +532,51 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
           break;
       }
     });
+  }
+
+  /// Whether a level is open that the system back gesture should close
+  /// before it closes the picker — and the selection with it.
+  bool get _canGoUp {
+    if (_searching) return true;
+    switch (_cat) {
+      case _Cat.videos:
+        return _vFolder != null;
+      case _Cat.images:
+      case _Cat.audio:
+        return _mFolder != null || _adbMediaFiles != null;
+      case _Cat.files:
+        return _dirStack.isNotEmpty;
+      case _Cat.apps:
+        return false;
+    }
+  }
+
+  /// Back: out of search, then one level up (the Files browser one folder
+  /// at a time), and only then out of the picker.
+  void _goUp() {
+    if (_searching) {
+      setState(() {
+        _searching = false;
+        _query = '';
+      });
+      return;
+    }
+    if (_cat == _Cat.files && _dirStack.length > 1) {
+      setState(() {
+        _dirStack.removeLast();
+        _rendered = const <PickedFile>[];
+      });
+      return;
+    }
+    // A folder inside the Android/data bucket → the bucket's folders.
+    if ((_cat == _Cat.images || _cat == _Cat.audio) && _adbMediaDir != null) {
+      setState(() {
+        _adbMediaDir = null;
+        _rendered = const <PickedFile>[];
+      });
+      return;
+    }
+    _popLevel();
   }
 
   // ── data sources ──────────────────────────────────────────────────
@@ -682,6 +774,18 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
   // ── build ─────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
+    // The system back used to close the whole picker from three folders
+    // deep, selection and all. It now walks back up first.
+    return PopScope(
+      canPop: !_canGoUp,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _goUp();
+      },
+      child: _scaffold(context),
+    );
+  }
+
+  Widget _scaffold(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.darkBackground,
       appBar: AppBar(
@@ -793,23 +897,20 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
     setState(() => _showHidden = true);
     final connected = await AdbRequiredDialog.isConnected();
     if (!mounted || connected) return;
+    final s = AppStrings.of(context);
     final go = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Connect to see app-data folders'),
-        content: const Text(
-          'Hidden dot-folders are now shown. To also browse locked '
-          'Android/data and Android/obb caches (Telegram, etc.), Innocent '
-          'needs to connect through ADB. Open the ADB screen now?',
-        ),
+        title: Text(s.hfConnectTitle),
+        content: Text(s.hfConnectBody),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Not now'),
+            child: Text(s.hfNotNow),
           ),
           FilledButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Open ADB'),
+            child: Text(s.hfOpenAdb),
           ),
         ],
       ),
@@ -927,13 +1028,13 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
       case _Cat.videos:
         return _vFolder == null ? _videoFolderList() : _videoFileList();
       case _Cat.images:
-        if (_adbMediaFiles != null) return _adbMediaFileList(showThumb: false);
+        if (_adbMediaFiles != null) return _adbMediaFileList(images: true);
         return _mFolder == null
             ? _mediaFolderList(
                 ref.watch(pickerImageFoldersProvider), PickerAssetType.image)
             : _mediaFileList(showThumb: true);
       case _Cat.audio:
-        if (_adbMediaFiles != null) return _adbMediaFileList(showThumb: false);
+        if (_adbMediaFiles != null) return _adbMediaFileList(images: false);
         return _mFolder == null
             ? _mediaFolderList(
                 ref.watch(pickerAudioFoldersProvider), PickerAssetType.audio)
@@ -1095,7 +1196,10 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
         break;
       case _Cat.images:
       case _Cat.audio:
-        current = _mFolder?.name;
+        final adbDir = _adbMediaDir;
+        current = _adbMediaFiles == null
+            ? _mFolder?.name
+            : (adbDir != null ? appDataFolderName(adbDir) : s.hfInApps);
         break;
       case _Cat.files:
         current = _dirStack.isEmpty ? null : p.basename(_dirStack.last.path);
@@ -1168,16 +1272,35 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
   }
 
   Widget _videoFolderTile(Folder f) {
+    final cover = f.coverThumbnailPath ?? '';
+    // An Android/data folder (Telegram's videos and the like, found by the
+    // scan over ADB): its cover is an adb:// video, a frame of which only
+    // the ADB stream can give — the plain file read showed an empty box.
+    final fromAdb = cover.startsWith('adb://') ||
+        f.path.contains('/Android/data/') ||
+        f.path.contains('/Android/obb/');
     return _folderRow(
       name: f.name,
-      subtitle: '${f.videoCount} videos',
-      thumb: (f.coverThumbnailPath?.isNotEmpty ?? false)
-          ? Image.file(File(f.coverThumbnailPath!),
-              fit: BoxFit.cover,
+      subtitle: AppStrings.of(context).vhAlbumVideos(f.videoCount),
+      hidden: fromAdb,
+      thumb: cover.startsWith('adb://')
+          ? SizedBox(
               width: _kFolderThumb,
               height: _kFolderThumb,
-              errorBuilder: (_, __, ___) => const SizedBox.shrink())
-          : null,
+              child: VideoCover(
+                videoUri: cover,
+                radius: 0,
+                placeholder: const Icon(Icons.snippet_folder_rounded,
+                    color: AppColors.accentBlue),
+              ),
+            )
+          : cover.isNotEmpty
+              ? Image.file(File(cover),
+                  fit: BoxFit.cover,
+                  width: _kFolderThumb,
+                  height: _kFolderThumb,
+                  errorBuilder: (_, __, ___) => const SizedBox.shrink())
+              : null,
       onTap: () => setState(() => _vFolder = f),
     );
   }
@@ -1236,14 +1359,18 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
           itemBuilder: (_, i) {
             if (_adbMediaConnected && i == 0) {
               // Special bucket: app-data media of this type, read over ADB.
+              final s = AppStrings.of(context);
               return _folderRow(
-                name: 'Android/data',
-                subtitle: 'App-data ${isAudio ? 'audio' : 'images'} (ADB)',
-                thumb: const Icon(Icons.folder_special_outlined,
+                name: s.hfInApps,
+                subtitle: isAudio ? s.hfBucketAudio : s.hfBucketPhotos,
+                hidden: true,
+                thumb: const Icon(Icons.snippet_folder_rounded,
                     color: AppColors.accentBlue),
                 onTap: () {
                   setState(() {
                     _mFolder = null;
+                    _adbMediaDir = null;
+                    _rendered = const <PickedFile>[];
                     // Reuse the cached scan for this type if we already ran it
                     // this session; only the first entry pays the ADB `find`.
                     _adbMediaFiles =
@@ -1293,21 +1420,82 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
     ];
   }
 
-  /// File list for the Android/data media bucket (Images/Audio over ADB).
-  /// Thumbnails aren't shown — the files are remote adb:// paths, so an icon
-  /// stands in until they're pulled on commit.
-  Widget _adbMediaFileList({required bool showThumb}) {
+  /// The Android/data bucket (Images/Audio over ADB): first its folders —
+  /// "Telegram · Telegram Images", "Telegram · cache" — then, inside one,
+  /// its files with pictures read over ADB.
+  ///
+  /// It was one flat list of every file of the type in every app, with no
+  /// pictures: Telegram's cache alone keeps thousands of small previews, so
+  /// the photos anybody wanted were lost among them.
+  Widget _adbMediaFileList({required bool images}) {
     return FutureBuilder<List<PickedFile>>(
       future: _adbMediaFiles,
       builder: (_, snap) {
         if (snap.connectionState != ConnectionState.done) {
           return const Center(child: CircularProgressIndicator());
         }
-        final items = snap.data ?? const <PickedFile>[];
-        if (items.isEmpty) {
+        final all = snap.data ?? const <PickedFile>[];
+        if (all.isEmpty) {
           return _centerMsg(AppStrings.of(context).noItemsHere);
         }
-        return _selectableList(_sortFiles(items), imageThumbs: false);
+        final dir = _adbMediaDir;
+        if (dir == null) return _adbMediaFolders(all, images: images);
+        final here = <PickedFile>[
+          for (final f in all)
+            if (_adbParent(f.path) == dir) f,
+        ];
+        return _selectableList(here, imageThumbs: images);
+      },
+    );
+  }
+
+  /// The folder an `adb://<path>` file is in.
+  static String _adbParent(String uri) {
+    final path = uri.startsWith('adb://') ? uri.substring(6) : uri;
+    return p.dirname(path);
+  }
+
+  Widget _adbMediaFolders(List<PickedFile> all, {required bool images}) {
+    final groups = <String, List<PickedFile>>{};
+    for (final f in all) {
+      groups.putIfAbsent(_adbParent(f.path), () => <PickedFile>[]).add(f);
+    }
+    // The fullest first: that is where an app keeps what it downloaded.
+    final dirs = groups.keys.toList()
+      ..sort((a, b) {
+        final byCount = groups[b]!.length.compareTo(groups[a]!.length);
+        return byCount != 0
+            ? byCount
+            : appDataFolderName(a)
+                .toLowerCase()
+                .compareTo(appDataFolderName(b).toLowerCase());
+      });
+    final s = AppStrings.of(context);
+    return ListView.builder(
+      padding: EdgeInsets.zero,
+      itemCount: dirs.length,
+      itemBuilder: (_, i) {
+        final dir = dirs[i];
+        final files = groups[dir]!;
+        return _folderRow(
+          name: appDataFolderName(dir),
+          subtitle: s.itemsCount(files.length),
+          hidden: true,
+          thumb: images
+              ? SizedBox(
+                  width: _kFolderThumb,
+                  height: _kFolderThumb,
+                  child: _AdbThumb(files.first.path,
+                      placeholder: const Icon(Icons.image_outlined,
+                          color: AppColors.white40)),
+                )
+              : const Icon(Icons.library_music_outlined,
+                  color: AppColors.white40),
+          onTap: () => setState(() {
+            _adbMediaDir = dir;
+            _rendered = const <PickedFile>[];
+          }),
+        );
       },
     );
   }
@@ -1470,11 +1658,20 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
             // _listDir — no disk I/O happens while scrolling.
             final e = entries[i];
             if (e.isDir) {
+              // Android/data, Android/obb and everything inside them: other
+              // apps' own folders, marked like the rest of the app marks
+              // them.
+              final appData = e.adbSrcPath != null ||
+                  _isAppDataRoot(e.path) ||
+                  _isUnderAndroidData(e.path);
               return _folderRow(
                 name: e.name,
                 subtitle: '',
                 dense: true,
-                thumb: const Icon(Icons.folder, color: AppColors.white40),
+                hidden: appData,
+                thumb: Icon(
+                    appData ? Icons.snippet_folder_rounded : Icons.folder,
+                    color: appData ? AppColors.accentBlue : AppColors.white40),
                 onTap: () => _openDir(e.path),
               );
             }
@@ -1535,6 +1732,10 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
       _rendered = const <PickedFile>[];
     });
   }
+
+  /// Android/data or Android/obb itself.
+  bool _isAppDataRoot(String path) =>
+      path.endsWith('/Android/data') || path.endsWith('/Android/obb');
 
   /// True for paths inside Android/data or Android/obb (any volume), whose
   /// contents can only be read over ADB.
@@ -1802,7 +2003,9 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
     required VoidCallback onTap,
     Widget? thumb,
     bool dense = false,
+    bool hidden = false,
   }) {
+    final showBadge = hidden || name.startsWith('.');
     return InkWell(
       onTap: onTap,
       child: SizedBox(
@@ -1831,11 +2034,11 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                           color: Colors.white, fontSize: 15)),
-                  if (name.startsWith('.') || subtitle.isNotEmpty) ...[
+                  if (showBadge || subtitle.isNotEmpty) ...[
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        if (name.startsWith('.')) ...[
+                        if (showBadge) ...[
                           const HiddenBadge(),
                           const SizedBox(width: 6),
                         ],
@@ -1947,6 +2150,7 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
         if (i >= sorted.length) return footer!;
         final item = sorted[i];
         Widget leading;
+        final fromAdb = item.path.startsWith('adb://');
         if (videoThumbs != null) {
           final t = videoThumbs[item.path];
           leading = ClipRRect(
@@ -1955,12 +2159,29 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
               width: _kFileThumbW,
               height: _kFileThumbH,
               color: AppColors.specSurface,
-              child: (t != null && t.isNotEmpty)
-                  ? Image.file(File(t),
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) =>
-                          const SizedBox.shrink())
-                  : const SizedBox.shrink(),
+              // Android/data: no file this app can open; a frame read over
+              // ADB instead of the blank box it used to be.
+              child: fromAdb
+                  ? _AdbThumb(item.path,
+                      placeholder: const Icon(Icons.movie_outlined,
+                          color: AppColors.white40, size: 22))
+                  : (t != null && t.isNotEmpty)
+                      ? Image.file(File(t),
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) =>
+                              const SizedBox.shrink())
+                      : const SizedBox.shrink(),
+            ),
+          );
+        } else if (imageThumbs && fromAdb) {
+          leading = ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: SizedBox(
+              width: 46,
+              height: 46,
+              child: _AdbThumb(item.path,
+                  placeholder: const Icon(Icons.image_outlined,
+                      color: AppColors.white40)),
             ),
           );
         } else if (imageThumbs) {
@@ -2070,7 +2291,14 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
               fit: StackFit.expand,
               children: [
                 Container(color: AppColors.specSurface),
-                if (thumbPath != null && thumbPath.isNotEmpty)
+                if (item.path.startsWith('adb://'))
+                  _AdbThumb(item.path,
+                      placeholder: Icon(
+                          videoThumbs != null
+                              ? Icons.movie_outlined
+                              : Icons.image_outlined,
+                          color: AppColors.white40))
+                else if (thumbPath != null && thumbPath.isNotEmpty)
                   Image.file(File(thumbPath),
                       fit: BoxFit.cover,
                       cacheWidth: 240,
@@ -2337,4 +2565,45 @@ class _MediaFolderCoverState extends State<_MediaFolderCover> {
 /// An Android/data folder that could not be read: the ADB connection is down.
 class _AdbLost implements Exception {
   const _AdbLost();
+}
+
+/// A picture of an Android/data file, read over ADB: a frame of a video, a
+/// scaled-down photo. The picker cannot open those files itself, so their
+/// rows used to show an empty box.
+class _AdbThumb extends StatefulWidget {
+  const _AdbThumb(this.uri, {required this.placeholder});
+
+  /// `adb://<path>`.
+  final String uri;
+  final Widget placeholder;
+
+  @override
+  State<_AdbThumb> createState() => _AdbThumbState();
+}
+
+class _AdbThumbState extends State<_AdbThumb> {
+  late Future<Uint8List?> _bytes = ThumbnailCache.instance.get(widget.uri);
+
+  @override
+  void didUpdateWidget(_AdbThumb old) {
+    super.didUpdateWidget(old);
+    if (old.uri != widget.uri) {
+      _bytes = ThumbnailCache.instance.get(widget.uri);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<Uint8List?>(
+      future: _bytes,
+      builder: (_, snap) {
+        final b = snap.data;
+        if (b == null) return Center(child: widget.placeholder);
+        return Image.memory(b,
+            fit: BoxFit.cover,
+            gaplessPlayback: true,
+            errorBuilder: (_, __, ___) => Center(child: widget.placeholder));
+      },
+    );
+  }
 }

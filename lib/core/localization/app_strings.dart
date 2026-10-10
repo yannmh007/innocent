@@ -1235,7 +1235,10 @@ class AppStrings {
   String get catAudio => _s('catAudio');
   String get catFiles => _s('catFiles');
   String get catApps => _s('catApps');
-  String itemsCount(Object n) => _s('itemsCount').replaceFirst('{n}', '$n');
+  // English alone has a singular: "1 items" read wrong in the pickers.
+  String itemsCount(Object n) => n == 1 && locale.languageCode == 'en'
+      ? '1 item'
+      : _s('itemsCount').replaceFirst('{n}', '$n');
   String filesCount(Object n) => _s('filesCount').replaceFirst('{n}', '$n');
   String appsCount(Object n) => _s('appsCount').replaceFirst('{n}', '$n');
   String get noItemsHere => _s('noItemsHere');
@@ -1711,6 +1714,16 @@ class AppStrings {
   String get hfPullFailed => _s('hfPullFailed');
   String hfFileOf(int i, int n) =>
       _s('hfFileOf').replaceAll('{i}', '$i').replaceAll('{n}', '$n');
+  String get hiddenBadge => _s('hiddenBadge');
+  String get hfInApps => _s('hfInApps');
+  String get hfBucketPhotos => _s('hfBucketPhotos');
+  String get hfBucketAudio => _s('hfBucketAudio');
+  String hfSkipped(int n) => _s('hfSkipped').replaceAll('{n}', '$n');
+  String get hfConnectTitle => _s('hfConnectTitle');
+  String get hfConnectBody => _s('hfConnectBody');
+  String get hfOpenAdb => _s('hfOpenAdb');
+  String get hfNotNow => _s('hfNotNow');
+  String get hfLive => _s('hfLive');
   String get adbScreenTitle => _s('adbScreenTitle');
   String get adbHeroConnected => _s('adbHeroConnected');
   String get adbHeroConnectedSub => _s('adbHeroConnectedSub');
@@ -2051,6 +2064,16 @@ class AppStrings {
     'hfSend': 'Send with Transfer',
     'hfFetching': 'Getting it from Android/data…',
     'hfFileOf': '{i} of {n}',
+    'hiddenBadge': 'Hidden',
+    'hfInApps': 'Inside apps (Android/data)',
+    'hfBucketPhotos': 'Telegram’s and other apps’ photos',
+    'hfBucketAudio': 'Telegram’s and other apps’ audio',
+    'hfSkipped': '{n} file(s) from Android/data were skipped — connect ADB and try again.',
+    'hfConnectTitle': 'Connect to see inside apps',
+    'hfConnectBody': 'Hidden dot-folders are showing now. Telegram’s and other apps’ folders (Android/data) open through Innocent’s ADB connection — set it up once?',
+    'hfOpenAdb': 'Set up ADB',
+    'hfNotNow': 'Not now',
+    'hfLive': 'Connected — shown in the Video tab too',
     'hfNoApp': 'No app on this phone opens this kind of file. Share it instead?',
     'hfPullFailed': 'Could not get it from Android/data — is ADB still connected?',
     'adbScreenTitle': 'Android/data access',
@@ -3687,6 +3710,16 @@ class AppStrings {
     'hfSend': 'Transfer နဲ့ ပို့မယ်',
     'hfFetching': 'Android/data ကနေ ယူနေပါတယ်…',
     'hfFileOf': '{n} ခုထဲက {i}',
+    'hiddenBadge': 'ဝှက်ထား',
+    'hfInApps': 'App တွေထဲက (Android/data)',
+    'hfBucketPhotos': 'Telegram စတဲ့ app တွေက ဓာတ်ပုံ',
+    'hfBucketAudio': 'Telegram စတဲ့ app တွေက အသံဖိုင်',
+    'hfSkipped': 'Android/data ထဲက ဖိုင် {n} ခု ယူမရလို့ ချန်ခဲ့ပါတယ် — ADB ပြန်ချိတ်ပြီး ထပ်စမ်းပါ။',
+    'hfConnectTitle': 'App တွေထဲက ဖိုင်တွေ ကြည့်ဖို့ ချိတ်ပါ',
+    'hfConnectBody': 'အစက် (.) နဲ့စတဲ့ ဝှက်ဖိုလ်ဒါတွေ အခု ပြနေပါပြီ။ Telegram နဲ့ အခြား app တွေရဲ့ ဖိုလ်ဒါ (Android/data) တွေကိုတော့ Innocent ရဲ့ ADB ချိတ်ဆက်မှုနဲ့ ဖွင့်ရပါတယ် — တစ်ကြိမ် ချိတ်မလား?',
+    'hfOpenAdb': 'ADB ချိတ်မယ်',
+    'hfNotNow': 'နောက်မှ',
+    'hfLive': 'ချိတ်ထားပြီ — Video tab မှာ ပြပါတယ်',
     'hfNoApp': 'ဒီဖုန်းမှာ ဒီဖိုင်အမျိုးအစားကို ဖွင့်နိုင်တဲ့ app မရှိပါ။ Share လုပ်မလား?',
     'hfPullFailed': 'Android/data ကနေ ယူလို့ မရပါ — ADB ချိတ်ထားသေးလား?',
     'adbScreenTitle': 'Android/data ဝင်ကြည့်ခြင်း',
@@ -5311,6 +5344,16 @@ class AppStrings {
     'hfSend': 'ส่งด้วย Transfer',
     'hfFetching': 'กำลังดึงจาก Android/data…',
     'hfFileOf': '{i} จาก {n}',
+    'hiddenBadge': 'ซ่อน',
+    'hfInApps': 'ในแอป (Android/data)',
+    'hfBucketPhotos': 'รูปของ Telegram และแอปอื่น',
+    'hfBucketAudio': 'เสียงของ Telegram และแอปอื่น',
+    'hfSkipped': 'ข้ามไฟล์จาก Android/data {n} ไฟล์ — เชื่อมต่อ ADB แล้วลองอีกครั้ง',
+    'hfConnectTitle': 'เชื่อมต่อเพื่อดูไฟล์ในแอป',
+    'hfConnectBody': 'ตอนนี้แสดงโฟลเดอร์ที่ซ่อน (ขึ้นต้นด้วยจุด) แล้ว โฟลเดอร์ของ Telegram และแอปอื่น (Android/data) เปิดผ่านการเชื่อมต่อ ADB ของ Innocent — ตั้งค่าครั้งเดียวไหม',
+    'hfOpenAdb': 'ตั้งค่า ADB',
+    'hfNotNow': 'ไว้ทีหลัง',
+    'hfLive': 'เชื่อมต่อแล้ว — แสดงในแท็บวิดีโอด้วย',
     'hfNoApp': 'ไม่มีแอปในโทรศัพท์นี้ที่เปิดไฟล์ประเภทนี้ได้ แชร์แทนไหม',
     'hfPullFailed': 'ดึงจาก Android/data ไม่ได้ — ยังเชื่อมต่อ ADB อยู่ไหม',
     'adbScreenTitle': 'เข้าถึง Android/data',

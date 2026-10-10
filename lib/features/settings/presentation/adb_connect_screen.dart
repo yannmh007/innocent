@@ -12,7 +12,7 @@ import '../../../core/services/adb/adb_service.dart';
 import '../../../core/services/adb/adb_setup_state.dart';
 import '../../../core/services/adb/wireless_adb_risk.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../local_browser/presentation/library_provider.dart';
+import '../../local_browser/presentation/android_data_sync.dart';
 
 /// Android/data access: pairing with, and connecting to, this phone's own
 /// Wireless debugging.
@@ -355,19 +355,15 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
   /// Runs in the background (no busy spinner) so the screen stays responsive;
   /// failures are swallowed — the manual Scan button remains as a fallback.
   Future<void> _autoScanAfterConnect() async {
-    try {
-      final paths = await AdbService.instance.scanAndroidDataVideos();
-      if (!mounted) return;
-      if (paths.isNotEmpty) {
-        ref.invalidate(adbVideosProvider);
-        setState(() {
-          _found = paths;
-          _output = 'Found ${paths.length} video(s) — added to Local.';
-        });
-      }
-    } catch (_) {
-      // Silent: the user can still tap "Scan Android/data for videos".
-    }
+    // The same scan the connection itself sets off (see AndroidDataSync):
+    // asking here shares it rather than running a second one.
+    final paths =
+        await ref.read(androidDataSyncProvider).sync(connected: true);
+    if (!mounted || paths == null || paths.isEmpty) return;
+    setState(() {
+      _found = paths;
+      _output = 'Found ${paths.length} video(s) — added to Local.';
+    });
   }
 
   /// Start the notification pairing flow. A background service posts
@@ -677,11 +673,12 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
           '(this can take a while on a full device)';
     });
     try {
-      final paths = await AdbService.instance.scanAndroidDataVideos();
+      // Through the sync, so the Video tab is refreshed with what it finds.
+      final paths = await ref
+          .read(androidDataSyncProvider)
+          .sync(connected: true, force: true);
       if (!mounted) return;
-      // Refresh the Local library so the newly-scanned Android/data videos
-      // show up there immediately (they're decoupled from "Show hidden").
-      ref.invalidate(adbVideosProvider);
+      if (paths == null) throw Exception('scan failed — is ADB connected?');
       setState(() {
         _found = paths;
         _output = paths.isEmpty

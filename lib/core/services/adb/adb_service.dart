@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 import 'adb_setup_state.dart';
@@ -86,6 +87,53 @@ class AdbService {
   static final AdbService instance = AdbService._();
 
   static const MethodChannel _channel = MethodChannel('mx_clone/adb');
+
+  /// Whether the connection was working the last time anything used it:
+  /// null until something has, then true after any command that went through
+  /// and false after one that could not reach the phone.
+  ///
+  /// The Video tab listens for it turning true. A connection made anywhere —
+  /// the Hidden files browser, a picker opening Android/data, the ADB screen,
+  /// Wireless debugging switched back on while the "connection lost" card
+  /// waits — is then followed by a scan, so Android/data's videos show up in
+  /// the Video tab without anybody asking for it.
+  final ValueNotifier<bool?> live = ValueNotifier<bool?>(null);
+
+  /// A connect-and-run reached the phone when its command ran (`id` prints
+  /// `uid=`). Anything else says nothing either way: those calls answer
+  /// with prose on failure, not a marker.
+  void _sawConnect(String? out) {
+    if (out != null && (out.contains('uid=') || out.startsWith('OK'))) {
+      live.value = true;
+    }
+  }
+
+  int _shellsRunning = 0;
+  DateTime _lastShellEnd = DateTime.fromMillisecondsSinceEpoch(0);
+
+  /// How long the connection has carried no command (zero while one runs).
+  ///
+  /// The engine runs one command at a time, a long Android/data scan
+  /// included: a scan started while somebody browses Hidden files makes
+  /// their next folder wait for it. Background scans wait for a pause.
+  Duration get idleFor => _shellsRunning > 0
+      ? Duration.zero
+      : DateTime.now().difference(_lastShellEnd);
+
+  Future<T> _counted<T>(Future<T> Function() body) async {
+    _shellsRunning++;
+    try {
+      return await body();
+    } finally {
+      _shellsRunning--;
+      _lastShellEnd = DateTime.now();
+    }
+  }
+
+  void _saw(String out) {
+    final failed = out.startsWith('ERROR') || out.startsWith('Channel error');
+    live.value = !failed;
+  }
 
   /// Set once by [setPairResultListener] so the native pairing-service result
   /// broadcast (`onPairResult`) reaches the ADB screen.
@@ -188,6 +236,7 @@ class AdbService {
         'port': port,
         'command': command,
       });
+      _sawConnect(r);
       return r ?? 'No response from ADB engine';
     } catch (e) {
       return 'Channel error: $e';
@@ -214,12 +263,15 @@ class AdbService {
   /// costs a pull-to-refresh three seconds, not twelve.
   Future<bool> isConnected({int timeoutMs = 12000}) async {
     try {
-      final r = await _channel.invokeMethod<String>('shell', {
-        'command': 'echo ok',
-        'timeoutMs': timeoutMs,
-      });
-      return r != null && r.contains('ok') && !r.startsWith('ERROR');
+      final r = await _counted(() => _channel.invokeMethod<String>('shell', {
+            'command': 'echo ok',
+            'timeoutMs': timeoutMs,
+          }));
+      final ok = r != null && r.contains('ok') && !r.startsWith('ERROR');
+      live.value = ok;
+      return ok;
     } catch (e) {
+      live.value = false;
       return false;
     }
   }
@@ -230,12 +282,15 @@ class AdbService {
   /// suits quick commands, the scan passes a longer budget.
   Future<String> shell(String command, {int timeoutMs = 12000}) async {
     try {
-      final r = await _channel.invokeMethod<String>('shell', {
-        'command': command,
-        'timeoutMs': timeoutMs,
-      });
-      return r ?? '';
+      final r = await _counted(() => _channel.invokeMethod<String>('shell', {
+            'command': command,
+            'timeoutMs': timeoutMs,
+          }));
+      final out = r ?? '';
+      _saw(out);
+      return out;
     } catch (e) {
+      live.value = false;
       return 'Channel error: $e';
     }
   }
@@ -617,6 +672,7 @@ class AdbService {
       final r = await _channel.invokeMethod<String>('autoConnectAndRun', {
         'command': command,
       });
+      _sawConnect(r);
       return r ?? 'No response from ADB engine';
     } catch (e) {
       return 'Channel error: $e';
@@ -631,6 +687,7 @@ class AdbService {
       final r = await _channel.invokeMethod<String>('reconnectAndRun', {
         'command': command,
       });
+      _sawConnect(r);
       return r ?? 'No response from ADB engine';
     } catch (e) {
       return 'Channel error: $e';
