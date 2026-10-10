@@ -18,10 +18,13 @@ import '../theme/app_colors.dart';
 /// opens by itself ([onBack]) — turning Wireless debugging on from the quick
 /// settings tile is all the viewer has to do.
 class AdbLostCard extends StatefulWidget {
-  const AdbLostCard({super.key, required this.onBack});
+  const AdbLostCard({super.key, required this.onBack, this.firstTime = false});
 
   /// Called once the connection is live again: re-read the folder.
   final VoidCallback onBack;
+
+  /// ADB was never set up on this phone: "set up once", not "it dropped".
+  final bool firstTime;
 
   @override
   State<AdbLostCard> createState() => _AdbLostCardState();
@@ -93,7 +96,7 @@ class _AdbLostCardState extends State<AdbLostCard> {
             ),
             const SizedBox(height: 16),
             Text(
-              s.adbLostTitle,
+              widget.firstTime ? s.adbHeroNew : s.adbLostTitle,
               textAlign: TextAlign.center,
               style: const TextStyle(
                 color: Colors.white,
@@ -104,7 +107,7 @@ class _AdbLostCardState extends State<AdbLostCard> {
             ),
             const SizedBox(height: 8),
             Text(
-              s.adbLostBody,
+              widget.firstTime ? s.adbHeroNewSub : s.adbLostBody,
               textAlign: TextAlign.center,
               style: const TextStyle(
                   color: AppColors.white70, fontSize: 13.5, height: 1.55),

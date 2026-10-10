@@ -80,6 +80,8 @@ class MainActivity : AudioServiceFragmentActivity() {
 
     companion object {
         private const val PIP_CHANNEL = "mx_clone/pip"
+        /** The largest Android/data photo read whole for a thumbnail. */
+        private const val ADB_IMAGE_THUMB_MAX = 25L * 1024 * 1024
         // v1.61: read-only crash / environment reporting. See Diagnostics.kt.
         private const val DIAGNOSTICS_CHANNEL = "mx_clone/diagnostics"
         // PiP window custom controls (play/pause). The action clicks come
@@ -2592,6 +2594,49 @@ class MainActivity : AudioServiceFragmentActivity() {
      * Native thumbnail generator (replaces deprecated video_thumbnail plugin).
      * Uses MediaMetadataRetriever + JPEG compression.
      */
+    private fun isImageName(path: String): Boolean {
+        val ext = path.substringAfterLast('.', "").lowercase()
+        return ext in setOf("jpg", "jpeg", "png", "gif", "webp", "bmp", "heic", "heif")
+    }
+
+    /**
+     * A thumbnail of a photo inside Android/data: its bytes read over ADB
+     * (never more than [ADB_IMAGE_THUMB_MAX] — a 40 MB "photo" is not worth
+     * reading for a 256 px tile), decoded with a sample size near [maxWidth].
+     */
+    private fun adbImageThumbnail(srcPath: String, maxWidth: Int, quality: Int): ByteArray? {
+        return try {
+            val size = AdbManager.fileSize(this, srcPath)
+            if (size <= 0L || size > ADB_IMAGE_THUMB_MAX) return null
+            val buf = ByteArrayOutputStream(size.toInt())
+            val got = AdbManager.streamRange(this, srcPath, 0L, size, buf)
+            if (got < size) return null
+            val bytes = buf.toByteArray()
+            val bounds = android.graphics.BitmapFactory.Options().apply {
+                inJustDecodeBounds = true
+            }
+            android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
+            if (bounds.outWidth <= 0) return null
+            var sample = 1
+            while (bounds.outWidth / (sample * 2) >= maxWidth.coerceAtLeast(1)) sample *= 2
+            val opts = android.graphics.BitmapFactory.Options().apply { inSampleSize = sample }
+            var bmp = android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size, opts)
+                ?: return null
+            if (bmp.width > maxWidth && maxWidth > 0) {
+                val h = (maxWidth * bmp.height.toFloat() / bmp.width).toInt().coerceAtLeast(1)
+                val scaled = Bitmap.createScaledBitmap(bmp, maxWidth, h, true)
+                if (scaled !== bmp) bmp.recycle()
+                bmp = scaled
+            }
+            val out = ByteArrayOutputStream()
+            bmp.compress(Bitmap.CompressFormat.JPEG, quality.coerceIn(1, 100), out)
+            bmp.recycle()
+            out.toByteArray()
+        } catch (_: Throwable) {
+            null
+        }
+    }
+
     private fun generateThumbnail(
         videoPath: String,
         maxWidth: Int,
@@ -2605,6 +2650,13 @@ class MainActivity : AudioServiceFragmentActivity() {
                 android.net.Uri.parse(videoPath).path ?: videoPath
             } else {
                 videoPath
+            }
+            if (videoPath.startsWith("adb://") && isImageName(videoPath)) {
+                // A PHOTO inside Android/data (the Hidden files browser): its
+                // bytes over ADB — photos are small, and capped below — then
+                // decoded at a size near the thumbnail's, not in full.
+                if (!AdbManager.getInstance(this).isConnected) return null
+                return adbImageThumbnail(videoPath.removePrefix("adb://"), maxWidth, quality)
             }
             if (videoPath.startsWith("adb://")) {
                 // Android/data over ADB: through the loopback proxy, which

@@ -1694,6 +1694,23 @@ class AppStrings {
   String get adbTipOppo => _s('adbTipOppo');
   String get adbTipTranssion => _s('adbTipTranssion');
   String get adbNotSupported => _s('adbNotSupported');
+  String get hfTitle => _s('hfTitle');
+  String get hfHint => _s('hfHint');
+  String get hfSettingsSub => _s('hfSettingsSub');
+  String get hfApps => _s('hfApps');
+  String get hfQuick => _s('hfQuick');
+  String get hfAll => _s('hfAll');
+  String get hfVideos => _s('hfVideos');
+  String get hfPhotos => _s('hfPhotos');
+  String get hfAudio => _s('hfAudio');
+  String get hfDocs => _s('hfDocs');
+  String get hfEmpty => _s('hfEmpty');
+  String get hfSend => _s('hfSend');
+  String get hfFetching => _s('hfFetching');
+  String get hfNoApp => _s('hfNoApp');
+  String get hfPullFailed => _s('hfPullFailed');
+  String hfFileOf(int i, int n) =>
+      _s('hfFileOf').replaceAll('{i}', '$i').replaceAll('{n}', '$n');
   String get adbScreenTitle => _s('adbScreenTitle');
   String get adbHeroConnected => _s('adbHeroConnected');
   String get adbHeroConnectedSub => _s('adbHeroConnectedSub');
@@ -2020,6 +2037,22 @@ class AppStrings {
     'adbTipOppo': 'OPPO, realme and OnePlus: if pairing works but connecting stalls, turn Wireless debugging off and on again, then tap Connect.',
     'adbTipTranssion': 'TECNO, Infinix and itel: let Innocent run in the background (battery settings or Phone Master), or the pairing notification can be closed before you type the code.',
     'adbNotSupported': 'Wireless debugging needs Android 11 or newer.',
+    'hfTitle': 'Hidden files',
+    'hfHint': 'Telegram and other apps’ files',
+    'hfSettingsSub': 'Pair once over Wireless debugging, then open Telegram’s and other apps’ files.',
+    'hfApps': 'Apps',
+    'hfQuick': 'Telegram downloads',
+    'hfAll': 'All',
+    'hfVideos': 'Videos',
+    'hfPhotos': 'Photos',
+    'hfAudio': 'Audio',
+    'hfDocs': 'Documents',
+    'hfEmpty': 'Nothing here',
+    'hfSend': 'Send with Transfer',
+    'hfFetching': 'Getting it from Android/data…',
+    'hfFileOf': '{i} of {n}',
+    'hfNoApp': 'No app on this phone opens this kind of file. Share it instead?',
+    'hfPullFailed': 'Could not get it from Android/data — is ADB still connected?',
     'adbScreenTitle': 'Android/data access',
     'adbHeroConnected': 'Connected',
     'adbHeroConnectedSub': 'Android/data is open to Innocent. Copies keep going in the background, and pick up where they stopped if the connection drops.',
@@ -3640,6 +3673,22 @@ class AppStrings {
     'adbTipOppo': 'OPPO၊ realme၊ OnePlus: pair ရပြီး ချိတ်ရာမှာ ရပ်နေရင် Wireless debugging ကို ပိတ်ပြီး ပြန်ဖွင့်ကာ Connect ကို နှိပ်ပါ။',
     'adbTipTranssion': 'TECNO၊ Infinix၊ itel: Innocent ကို background မှာ run ခွင့်ပေးပါ (battery settings သို့မဟုတ် Phone Master)။ မပေးရင် code မရိုက်ခင် pairing notification ပိတ်သွားနိုင်ပါတယ်။',
     'adbNotSupported': 'Wireless debugging အတွက် Android 11 နဲ့ အထက် လိုပါတယ်။',
+    'hfTitle': 'ဝှက်ထားသော ဖိုင်များ',
+    'hfHint': 'Telegram နဲ့ အခြား app ဖိုင်များ',
+    'hfSettingsSub': 'Wireless debugging နဲ့ တစ်ကြိမ် pair လုပ်ပြီး Telegram နဲ့ အခြား app တွေရဲ့ ဖိုင်တွေကို ဖွင့်ကြည့်ပါ။',
+    'hfApps': 'App များ',
+    'hfQuick': 'Telegram download များ',
+    'hfAll': 'အားလုံး',
+    'hfVideos': 'ဗီဒီယို',
+    'hfPhotos': 'ဓာတ်ပုံ',
+    'hfAudio': 'အသံ',
+    'hfDocs': 'Document',
+    'hfEmpty': 'ဒီမှာ ဘာမှ မရှိပါ',
+    'hfSend': 'Transfer နဲ့ ပို့မယ်',
+    'hfFetching': 'Android/data ကနေ ယူနေပါတယ်…',
+    'hfFileOf': '{n} ခုထဲက {i}',
+    'hfNoApp': 'ဒီဖုန်းမှာ ဒီဖိုင်အမျိုးအစားကို ဖွင့်နိုင်တဲ့ app မရှိပါ။ Share လုပ်မလား?',
+    'hfPullFailed': 'Android/data ကနေ ယူလို့ မရပါ — ADB ချိတ်ထားသေးလား?',
     'adbScreenTitle': 'Android/data ဝင်ကြည့်ခြင်း',
     'adbHeroConnected': 'ချိတ်ဆက်ထားပါပြီ',
     'adbHeroConnectedSub': 'Innocent က Android/data ကို ဖွင့်ကြည့်နိုင်ပါပြီ။ ဖိုင်ကူးတာတွေ background မှာ ဆက်လုပ်ပြီး connection ပြုတ်သွားရင် ရပ်သွားတဲ့နေရာကနေ ပြန်ဆက်ပါတယ်။',
@@ -5248,6 +5297,22 @@ class AppStrings {
     'adbTipOppo': 'OPPO, realme และ OnePlus: หากจับคู่ได้แต่เชื่อมต่อค้าง ให้ปิดแล้วเปิดการแก้ไขข้อบกพร่องผ่าน Wi-Fi อีกครั้ง แล้วแตะ Connect',
     'adbTipTranssion': 'TECNO, Infinix และ itel: อนุญาตให้ Innocent ทำงานเบื้องหลัง (การตั้งค่าแบตเตอรี่หรือ Phone Master) มิฉะนั้นการแจ้งเตือนการจับคู่อาจถูกปิดก่อนที่คุณจะพิมพ์รหัส',
     'adbNotSupported': 'การแก้ไขข้อบกพร่องผ่าน Wi-Fi ต้องใช้ Android 11 ขึ้นไป',
+    'hfTitle': 'ไฟล์ที่ซ่อนอยู่',
+    'hfHint': 'ไฟล์ของ Telegram และแอปอื่น',
+    'hfSettingsSub': 'จับคู่ครั้งเดียวผ่านการแก้ไขข้อบกพร่องผ่าน Wi-Fi แล้วเปิดไฟล์ของ Telegram และแอปอื่น',
+    'hfApps': 'แอป',
+    'hfQuick': 'ดาวน์โหลดของ Telegram',
+    'hfAll': 'ทั้งหมด',
+    'hfVideos': 'วิดีโอ',
+    'hfPhotos': 'รูปภาพ',
+    'hfAudio': 'เสียง',
+    'hfDocs': 'เอกสาร',
+    'hfEmpty': 'ไม่มีอะไรที่นี่',
+    'hfSend': 'ส่งด้วย Transfer',
+    'hfFetching': 'กำลังดึงจาก Android/data…',
+    'hfFileOf': '{i} จาก {n}',
+    'hfNoApp': 'ไม่มีแอปในโทรศัพท์นี้ที่เปิดไฟล์ประเภทนี้ได้ แชร์แทนไหม',
+    'hfPullFailed': 'ดึงจาก Android/data ไม่ได้ — ยังเชื่อมต่อ ADB อยู่ไหม',
     'adbScreenTitle': 'เข้าถึง Android/data',
     'adbHeroConnected': 'เชื่อมต่อแล้ว',
     'adbHeroConnectedSub': 'Innocent เปิด Android/data ได้แล้ว การคัดลอกทำงานต่อในเบื้องหลัง และทำต่อจากจุดที่หยุดหากการเชื่อมต่อหลุด',

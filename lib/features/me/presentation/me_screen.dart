@@ -6,6 +6,7 @@ import '../../../core/localization/app_strings.dart';
 import '../../../core/services/preferences/player_settings_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../about/about_screen.dart';
+import '../../android_data/presentation/android_data_screen.dart';
 import '../../downloader/presentation/downloader_home_screen.dart';
 import '../../network_stream/presentation/network_stream_screen.dart';
 import '../../../core/router/routes.dart';
@@ -29,7 +30,7 @@ import '../../../core/theme/tab_title.dart';
 /// Phase 19: Me tab — full MX Player parity.
 ///
 /// Top: 9-icon grid (3x3) inside a rounded card.
-/// Then: Status Saver row.
+/// Then: Status Saver and Hidden files (Android/data).
 /// Then: Your library (History, Favourites, Watch later, Insights).
 /// Then: Settings / Backup & Restore, and Help / About.
 class MeScreen extends StatelessWidget {
@@ -156,12 +157,31 @@ class MeScreen extends StatelessWidget {
             // Nothing was removed: App theme and Custom pop-up play are in
             // Settings, Statistics is inside Insights, Legal inside About.
             _Card(
-              child: _MeRow(
-                icon: Icons.download_rounded,
-                tint: const Color(0xFF25D366),
-                filled: true,
-                label: s.statusSaver,
-                onTap: () => _open(context, const StatusSaverScreen()),
+              child: Column(
+                children: [
+                  _MeRow(
+                    icon: Icons.download_rounded,
+                    tint: const Color(0xFF25D366),
+                    filled: true,
+                    label: s.statusSaver,
+                    onTap: () => _open(context, const StatusSaverScreen()),
+                  ),
+                  // Other apps' files, beside WhatsApp's statuses: Telegram's
+                  // downloads and every app's private folder, read over
+                  // Innocent's own ADB connection. It used to be reachable
+                  // only from the bottom of Settings → List, as "ADB
+                  // connection (experimental)".
+                  const Divider(
+                      height: 1, indent: 64, color: AppColors.darkDivider),
+                  _MeRow(
+                    icon: Icons.snippet_folder_rounded,
+                    tint: const Color(0xFF2AABEE),
+                    filled: true,
+                    label: s.hfTitle,
+                    hint: s.hfHint,
+                    onTap: () => _open(context, const AndroidDataScreen()),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 12),
