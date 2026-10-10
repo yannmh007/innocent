@@ -1251,26 +1251,6 @@ class _DownloaderHomeScreenState extends ConsumerState<DownloaderHomeScreen>
     }
   }
 
-  Future<void> _pickCookies({bool thenRetry = false}) async {
-    final AppStrings s = AppStrings.of(context);
-    final CookiesPathNotifier cookies = ref.read(cookiesPathProvider.notifier);
-    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
-    try {
-      final FilePickerResult? picked = await FilePicker.platform.pickFiles();
-      final String? path = picked?.files.single.path;
-      if (path == null) return;
-      await cookies.set(path);
-      if (!mounted) return;
-      if (thenRetry && _failedUrl != null) {
-        final String retry = _failedUrl!;
-        _handledLinks.remove(retry);
-        await _handleLink(retry);
-      }
-    } catch (_) {
-      messenger.showSnackBar(SnackBar(content: Text(s.downloaderDirFailed)));
-    }
-  }
-
   // -------------------------------------------------------------- sites
 
   /// Picks up whatever the in-app browser has saved so far.

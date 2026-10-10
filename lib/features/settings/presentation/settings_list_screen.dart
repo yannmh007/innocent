@@ -333,9 +333,8 @@ class SettingsListScreen extends ConsumerWidget {
           ),
           // Phase 64 / M1b-B: opens the pairing + connect screen.
           SettingsNavTile(
-            title: 'ADB connection (experimental)',
-            subtitle: 'Pair & connect over wireless debugging — the path to '
-                'reading videos inside Android/data.',
+            title: AppStrings.of(context).adbScreenTitle,
+            subtitle: AppStrings.of(context).hfSettingsSub,
             onTap: () {
               Navigator.of(context).push(
                 MaterialPageRoute<void>(

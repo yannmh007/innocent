@@ -15,6 +15,7 @@ import '../../../core/services/file_transfer/received_history.dart';
 import '../../../core/services/file_transfer/transfer_discovery.dart';
 import '../../../core/services/file_transfer/turbo_link_service.dart';
 import '../../../core/services/adb/adb_service.dart';
+import '../../../core/ui/adb_progress_dialog.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../private_folder/presentation/add_files_picker.dart';
 import 'folder_send_picker.dart';
@@ -208,18 +209,37 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
               // the rest of the batch still sends.
               final shared = <SharedFile>[];
               var pullFailed = 0;
+              final fromAdb =
+                  picked.where((f) => f.path.startsWith('adb://')).toList();
+              // Fetched behind a dialog that says how far each has got: a
+              // film out of Telegram's folder is a minute of copying that
+              // used to happen behind a screen that looked frozen.
+              final pulledPaths = <String, String>{};
+              if (fromAdb.isNotEmpty && context.mounted) {
+                await withAdbProgress<void>(context, (progress) async {
+                  for (var i = 0; i < fromAdb.length; i++) {
+                    final f = fromAdb[i];
+                    progress.file(f.name, i, fromAdb.length);
+                    String pulled;
+                    try {
+                      pulled = await AdbService.instance.pullForPlayback(
+                          f.path.substring('adb://'.length),
+                          onProgress: progress.bytes);
+                    } catch (e) {
+                      pulled = 'ERROR: $e';
+                    }
+                    if (!pulled.startsWith('ERROR')) {
+                      pulledPaths[f.path] = pulled;
+                    }
+                  }
+                });
+              }
               for (final f in picked) {
                 var path = f.path;
                 var size = f.sizeBytes;
                 if (path.startsWith('adb://')) {
-                  final src = path.substring('adb://'.length);
-                  String pulled;
-                  try {
-                    pulled = await AdbService.instance.pullForPlayback(src);
-                  } catch (e) {
-                    pulled = 'ERROR: $e';
-                  }
-                  if (pulled.startsWith('ERROR')) {
+                  final pulled = pulledPaths[path];
+                  if (pulled == null) {
                     pullFailed++;
                     continue;
                   }
@@ -248,10 +268,8 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
               if (pullFailed > 0 && mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(
-                      '$pullFailed Android/data file(s) skipped — connect '
-                      'ADB and try again.',
-                    ),
+                    content:
+                        Text(AppStrings.of(context).hfSkipped(pullFailed)),
                     behavior: SnackBarBehavior.floating,
                   ),
                 );

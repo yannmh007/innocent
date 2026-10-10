@@ -313,7 +313,7 @@ function sameSecret(given: string, expected: string): boolean {
 // The rungs a ladder can have. Kept in step with tool/transcode.sh, which
 // decides which of them a given source actually gets — this list only has to
 // be a superset, because a presigned URL that is never used costs nothing.
-const RUNGS = [360, 480, 720, 1080, 1440, 2160];
+const RUNGS = [240, 360, 480, 720, 1080, 1440, 2160];
 
 // Where a rung goes: beside the master, with the height in the name.
 //   test006/video/20260924-1000202588-c05d6781.mp4

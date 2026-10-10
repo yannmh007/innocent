@@ -122,6 +122,8 @@ class OfflineAutoResume {
           assetId: row.assetId,
           deviceId: deviceId,
           notices: notices,
+          // The copy the viewer chose when it started.
+          quality: row.quality,
           // NO SIZE QUESTION ON A RESUME. It was asked and answered when the
           // download started; asking again would be the app forgetting what it
           // was told, every time the phone was unlocked.

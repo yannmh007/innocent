@@ -121,9 +121,20 @@ class StreamCacheServer {
   static int lanes = 6;
 
   /// How much one parallel stretch covers before the loop comes round again
-  /// (to check the cache, renew a link, record the speed).
+  /// (to check the cache, renew a link).
   @visibleForTesting
   static int span = 32 * 1024 * 1024;
+
+  /// What one measurement of the line needs behind it: a megabyte, over at
+  /// least two seconds of the lanes actually transferring. Less is mostly
+  /// round trips and parts still on their way, and says little about the
+  /// speed ([_recordThroughput]).
+  static const int _sampleBytes = 1024 * 1024;
+  static const int _sampleMs = 2000;
+
+  /// Measurements taken since the app started. For the tests.
+  @visibleForTesting
+  static int measurements = 0;
 
   /// How much each round of a seek's parts grows on the one before
   /// ([seekPartBytes]). Settable for the bench.
@@ -825,6 +836,10 @@ class StreamCacheServer {
     final ms = took.inMilliseconds;
     if (ms < 400) return;
     final kbps = (bytes * 8) ~/ ms;
+    measurements++;
+    // In the trail: what Auto's next choice — a climb, a step down, the next
+    // film's first copy — will be made from.
+    PlaybackLog.add('measured $kbps kbps');
     unawaited(ThroughputMemory.observe(kbps));
   }
 
@@ -960,10 +975,30 @@ class StreamCacheServer {
         if (inFlight++ == 0) activeFrom = clock.elapsedMilliseconds;
       }
 
+      // REPORTED AS IT IS EARNED, NOT ONLY WHEN THE STRETCH ENDS. A stretch
+      // runs to [span] (32 MB), and a player reading a 360p film at its own
+      // pace takes seven minutes to get through one: Auto heard nothing for
+      // all of that, so it could never climb (device lab run 37972782851 —
+      // Sintel at 360p for 240 s on a fast line, not one measurement). Like
+      // ExoPlayer's meter, a sample as the transfers come in: whenever a
+      // part ends with [_sampleBytes] and [_sampleMs] of the lanes'
+      // transferring time on the clock since the last. Not at the moments
+      // the lanes fall idle — while a buffer fills they overlap for many
+      // seconds without one.
       void ended(int bytes) {
         if (!measuring) return;
         bytesDone += bytes;
-        if (--inFlight == 0) activeMs += clock.elapsedMilliseconds - activeFrom;
+        final now = clock.elapsedMilliseconds;
+        if (--inFlight == 0) activeMs += now - activeFrom;
+        final active = activeMs + (inFlight > 0 ? now - activeFrom : 0);
+        if (measured != null &&
+            bytesDone >= _sampleBytes &&
+            active >= _sampleMs) {
+          measured(bytesDone, active);
+          bytesDone = 0;
+          activeMs = 0;
+          if (inFlight > 0) activeFrom = now;
+        }
       }
 
       final url = Uri.parse(src.upstream);

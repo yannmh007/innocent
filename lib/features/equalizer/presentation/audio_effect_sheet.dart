@@ -84,9 +84,7 @@ class _AudioEffectSheetState extends ConsumerState<AudioEffectSheet>
   List<String> _presets = const [];
   int? _activePreset; // null = "Custom"
 
-  bool _bassBoostEnabled = false;
   int _bassBoostStrength = 0; // 0..1000
-  bool _virtualizerEnabled = false;
   int _virtualizerStrength = 0; // 0..1000
   int _reverbPreset = 0; // 0..6
 
@@ -163,9 +161,7 @@ class _AudioEffectSheetState extends ConsumerState<AudioEffectSheet>
       _presets = presets;
       _enabled = masterEnabled;
       _bassBoostStrength = bass;
-      _bassBoostEnabled = bass > 0;
       _virtualizerStrength = virt;
-      _virtualizerEnabled = virt > 0;
       _reverbPreset = reverb;
       _activePreset = _eq.activePresetIndex;
       _activeEffect = _eq.activeEffect;
@@ -230,7 +226,6 @@ class _AudioEffectSheetState extends ConsumerState<AudioEffectSheet>
     final s = strength.clamp(0, 1000);
     setState(() {
       _bassBoostStrength = s;
-      _bassBoostEnabled = s > 0;
     });
     await _eq.setBassBoostEnabled(s > 0);
     await _eq.setBassBoostStrength(s);
@@ -240,7 +235,6 @@ class _AudioEffectSheetState extends ConsumerState<AudioEffectSheet>
     final s = strength.clamp(0, 1000);
     setState(() {
       _virtualizerStrength = s;
-      _virtualizerEnabled = s > 0;
     });
     await _eq.setVirtualizerEnabled(s > 0);
     await _eq.setVirtualizerStrength(s);
@@ -263,9 +257,7 @@ class _AudioEffectSheetState extends ConsumerState<AudioEffectSheet>
       _activeEffect = name;
       _bandLevels = levels;
       _bassBoostStrength = preset.bass;
-      _bassBoostEnabled = preset.bass > 0;
       _virtualizerStrength = preset.virt;
-      _virtualizerEnabled = preset.virt > 0;
       _activePreset = null; // not a native EQ preset → Custom
     });
     if (name != 'Original' && !_enabled) {

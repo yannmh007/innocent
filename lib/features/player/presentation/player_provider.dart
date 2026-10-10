@@ -45,6 +45,7 @@ import '../../../core/services/subtitles/subtitle_formats.dart';
 // LocalFilmServer for why decryption wears the shape of an HTTP server.
 import '../../video_hub/data/api/offline_crypto.dart';
 import '../../video_hub/data/cache/local_film_server.dart';
+import '../domain/climb_rule.dart';
 
 part 'player_state.dart';
 part 'player_controller_playback.dart';
@@ -119,6 +120,9 @@ class PlayerController extends StateNotifier<PlayerState> {
   /// 13 MB/s link.
   bool _firstFrameSeen = false;
 
+  /// When this copy's first picture came, for [ClimbRule.isStall].
+  DateTime? _firstFrameAt;
+
   /// When the current file was handed to libmpv. Used only to measure the
   /// black screen, never to decide anything.
   DateTime? _openStartedAt;
@@ -168,6 +172,15 @@ class PlayerController extends StateNotifier<PlayerState> {
   int _downgrades = 0;
   static const int _maxDowngrades = 2;
   bool _downgradeInFlight = false;
+
+  // ─── AUTO CLIMBS BACK UP — see [ClimbRule] and [_climbTick] ────────────
+  Timer? _climbTimer;
+  DateTime? _climbFilmAt;
+  DateTime? _lastSwitchAt;
+  DateTime? _lastStallAt;
+  DateTime? _lastClimbTry;
+  int _climbs = 0;
+  bool _climbInFlight = false;
 
   Duration? _seekStartPosition;
   bool _wasLongPressActive = false;
@@ -894,6 +907,12 @@ class PlayerController extends StateNotifier<PlayerState> {
         final uri = _currentUri;
         if (uri != null && _isNetworkUri(uri)) {
           final opening = !_firstFrameSeen;
+          final shown = _firstFrameAt;
+          if (!opening &&
+              shown != null &&
+              ClimbRule.isStall(DateTime.now().difference(shown))) {
+            _lastStallAt = DateTime.now();
+          }
           // Tier 1 — soft caption. While opening it is a statement of fact
           // ("still opening"); mid-playback it is a diagnosis ("slow
           // connection"), and the screen picks the wording off `isOpening`.
@@ -1326,7 +1345,6 @@ class PlayerController extends StateNotifier<PlayerState> {
   Timer? _volumePersistTimer;
   DateTime _lastSeekAt = DateTime.fromMillisecondsSinceEpoch(0);
   int? _lastSeekTargetMs;
-  Rect? _speedSliderBounds;
   // Long-press speed control (MX-style relative drag): the finger position
   // where the long-press begins is the anchor and maps to the current speed;
   // speed changes only as the finger is dragged from that anchor, never
@@ -1714,6 +1732,75 @@ class PlayerController extends StateNotifier<PlayerState> {
     }
   }
 
+  /// Start looking for a chance to climb, for a film that streams. Safe to
+  /// call again: one timer, and the film's clock starts once.
+  void _startClimbWatch() {
+    final uri = _currentUri;
+    if (uri == null || !_isNetworkUri(uri)) return;
+    _climbFilmAt ??= DateTime.now();
+    _climbTimer?.cancel();
+    _climbTimer =
+        Timer.periodic(ClimbRule.tick, (_) => unawaited(_climbTick()));
+  }
+
+  void _stopClimbWatch() {
+    _climbTimer?.cancel();
+    _climbTimer = null;
+  }
+
+  /// One look at whether Auto should step back UP a rung.
+  ///
+  /// IN ORDER OF COST. The phone's own check first ([StreamRenewal.
+  /// climbAvailable] — the ladder against what the connection measures,
+  /// no I/O); then libmpv's buffer; only then a request to the server for a
+  /// better copy. A yes reopens the film at the same moment on that copy —
+  /// the same move as a step down, in the other direction. Never throws: a
+  /// failed climb leaves the copy that was playing, playing.
+  Future<void> _climbTick() async {
+    if (!mounted || _climbInFlight || _downgradeInFlight) return;
+    if (_networkRetryInFlight || _reopenInFlight) return;
+    if (!state.isPlaying || state.isBuffering) return;
+    final uri = _currentUri;
+    final filmAt = _climbFilmAt;
+    if (uri == null || filmAt == null) return;
+    if (!StreamRenewal.climbAvailable(uri)) return;
+    final svc = _ref.read(videoPlayerServiceProvider);
+    if (svc is! MediaKitPlayerService) return;
+    _climbInFlight = true;
+    try {
+      final reading = await svc.readStallNumbers();
+      final now = DateTime.now();
+      Duration? ago(DateTime? t) => t == null ? null : now.difference(t);
+      if (!ClimbRule.allows(
+        sinceOpen: now.difference(filmAt),
+        sinceSwitch: ago(_lastSwitchAt),
+        sinceStall: ago(_lastStallAt),
+        sinceTry: ago(_lastClimbTry),
+        bufferedSeconds: reading.cacheSeconds,
+        climbs: _climbs,
+      )) {
+        return;
+      }
+      _lastClimbTry = now;
+      final fresh = await StreamRenewal.renew(uri, climb: true);
+      if (fresh == null || fresh == uri) return;
+      if (!mounted || _currentUri != uri) return;
+      final at = svc.position > Duration.zero ? svc.position : state.position;
+      _climbs++;
+      _lastSwitchAt = DateTime.now();
+      _currentUri = fresh;
+      PlaybackLog.add('stepped up a rung (#$_climbs) at ${at.inSeconds}s '
+          '(${reading.cacheSeconds?.toStringAsFixed(0) ?? '-'} s buffered)');
+      await _applyStreamProfileFor(fresh);
+      await svc.open(fresh, startAt: at);
+      await svc.play();
+    } catch (e) {
+      PlaybackLog.add('step up failed: $e');
+    } finally {
+      _climbInFlight = false;
+    }
+  }
+
   /// Reopen the film one rung smaller, at the same moment.
   ///
   /// WHY A REOPEN AND NOT A SEAMLESS SWITCH. HLS exists so a player can
@@ -1756,6 +1843,7 @@ class PlayerController extends StateNotifier<PlayerState> {
       // twice.
       final at = svc.position > Duration.zero ? svc.position : state.position;
       _downgrades++;
+      _lastSwitchAt = DateTime.now();
       _currentUri = fresh;
       PlaybackLog.add('stepped down a rung (#$_downgrades) at ${at.inSeconds}s');
       // The smaller copy may be served from a different KIND of address than
@@ -1805,6 +1893,7 @@ class PlayerController extends StateNotifier<PlayerState> {
       // A deliberate switch is not a stall: the automatic step-down count
       // starts again from here.
       _downgrades = 0;
+      _lastSwitchAt = DateTime.now();
       PlaybackLog.add('quality -> $id at ${at.inSeconds}s');
       await _applyStreamProfileFor(fresh);
       // A paused film stays paused on the new copy: the viewer was choosing,
@@ -1836,6 +1925,7 @@ class PlayerController extends StateNotifier<PlayerState> {
   void _markFirstFrame() {
     if (_firstFrameSeen) return;
     _firstFrameSeen = true;
+    _firstFrameAt = DateTime.now();
     final started = _openStartedAt;
     _openStartedAt = null;
     if (mounted && state.isOpening) {
@@ -1852,6 +1942,7 @@ class PlayerController extends StateNotifier<PlayerState> {
     // an answer before there is a picture. Until the first frame there is no
     // decoder to be behind and no track list to be missing from.
     _startDecodeWatch();
+    _startClimbWatch();
     _armNoAudioCheck();
     _logPipelineSoon();
   }
@@ -1912,6 +2003,7 @@ class PlayerController extends StateNotifier<PlayerState> {
     _bufferStallTimer?.cancel();
     _bufferSlowTimer?.cancel();
     _bufferSpinnerTimer?.cancel();
+    _climbTimer?.cancel();
     _brightnessPersistTimer?.cancel();
     _volumePersistTimer?.cancel();
     _bgPauseTimer?.cancel();

@@ -25,6 +25,7 @@ import '../domain/video_content.dart';
 import 'video_hub_provider.dart';
 import 'widgets/paywall_sheet.dart';
 import 'account_provider.dart';
+import 'album_saver.dart';
 import 'watch_points_provider.dart';
 import '../../player/presentation/up_next.dart';
 
@@ -207,17 +208,38 @@ Future<void> playMedia(
     // the rule above; a fixed height is that rung or the nearest below it;
     // Original is the file as it was uploaded.
     final preferred = await QualityPreference.read();
+    // THE DATA SAVER CAPS AUTO AT 480p — the saver the viewer already turned
+    // on for albums, on the connections they chose for it. YouTube's Data
+    // saver tops out at 480p; Netflix's Save Data is SD. A height picked by
+    // hand in the Quality menu is still that height.
+    bool saving;
+    try {
+      saving = await ref.read(albumSaverProvider.future);
+    } catch (_) {
+      saving = false;
+    }
+    final saverCap = saving ? kDataSaverMaxHeight : null;
+    // NOTHING MEASURED YET: start lower on mobile data (480p) than on Wi-Fi
+    // (720p). Auto climbs once the connection shows it can carry more.
+    final startHeight = (await ConnectionInfo.read()).metered
+        ? kMeteredStartHeight
+        : kDefaultHeight;
     if (!context.mounted) return;
     final chosen = chooseRendition(
       grant.renditions,
       preferred,
       measuredKbps: ThroughputMemory.current,
+      maxHeight: saverCap,
+      defaultHeight: startHeight,
     );
+    // The rung playing NOW — the start, then whatever a step down, a menu
+    // choice or a climb moved it to. Null while the original plays.
+    int? playingHeight = chosen?.height;
     final rung =
         chosen == null ? 'original' : '${chosen.height}p ${chosen.kbps} kbps';
     final measured = ThroughputMemory.current?.toString() ?? '-';
     PlaybackLog.add('play rung $rung (choice $preferred, '
-        'measured $measured kbps)');
+        'measured $measured kbps${saving ? ', data saver' : ''})');
     final playUrl = chosen?.url ?? grant.url!;
     final menuOptions = qualityMenuFor(
       grant.renditions,
@@ -276,13 +298,15 @@ Future<void> playMedia(
       },
     );
     final openUrl = localUrl ?? playUrl;
+    PlaybackLog.add('play through ${localUrl == null ? 'the remote address' : 'the local proxy'}');
 
     // The renewal picks again rather than reusing this rung. A film longer
     // than a signature's life is renewed mid-playback, and by then the
     // player has measured the connection for real — so the second half of a
     // long film can be a better or a smaller copy than the first, decided on
     // evidence the first choice did not have.
-    StreamRenewal.register(openUrl, ({int? belowKbps, String? quality}) async {
+    StreamRenewal.register(openUrl,
+        ({int? belowKbps, String? quality, bool climb = false}) async {
       final fresh = await ref.read(contentRepositoryProvider).requestPlayback(
             content: content,
             source: source,
@@ -296,21 +320,39 @@ Future<void> playMedia(
       //     standing choice again, so a pinned 1080p is still 1080p after
       //     the renewal and not whatever Auto would have picked.
       final standing = StreamRenewal.quality.value?.selected ?? preferred;
-      final again = quality != null
-          ? chooseRendition(fresh.renditions, quality,
-              measuredKbps: ThroughputMemory.current)
-          : belowKbps != null
-              ? pickRendition(
-                  fresh.renditions,
-                  measuredKbps: ThroughputMemory.current,
-                  // Set only when the player has MEASURED the current copy
-                  // as too heavy for this connection. Then this is not a
-                  // renewal at all, it is a downgrade, and handing back the
-                  // same rung would repeat the stall that asked for it.
-                  ceilingKbps: belowKbps,
-                )
-              : chooseRendition(fresh.renditions, standing,
-                  measuredKbps: ThroughputMemory.current);
+      final Rendition? again;
+      if (climb) {
+        // A CLIMB: only a copy BETTER than the one playing, and only one the
+        // connection measures able to carry. Nothing better is nothing to
+        // reopen — never the same copy and a second of black for nothing.
+        final now = playingHeight;
+        final better = now == null
+            ? null
+            : pickRendition(fresh.renditions,
+                measuredKbps: ThroughputMemory.current, maxHeight: saverCap);
+        if (now == null || better == null || better.height <= now) {
+          return null;
+        }
+        again = better;
+      } else {
+        again = quality != null
+            ? chooseRendition(fresh.renditions, quality,
+                measuredKbps: ThroughputMemory.current, maxHeight: saverCap)
+            : belowKbps != null
+                ? pickRendition(
+                    fresh.renditions,
+                    measuredKbps: ThroughputMemory.current,
+                    // Set only when the player has MEASURED the current copy
+                    // as too heavy for this connection. Then this is not a
+                    // renewal at all, it is a downgrade, and handing back the
+                    // same rung would repeat the stall that asked for it.
+                    ceilingKbps: belowKbps,
+                    maxHeight: saverCap,
+                  )
+                : chooseRendition(fresh.renditions, standing,
+                    measuredKbps: ThroughputMemory.current,
+                    maxHeight: saverCap);
+      }
       if (quality != null) {
         await QualityPreference.write(quality);
       }
@@ -320,6 +362,7 @@ Future<void> playMedia(
       if (belowKbps != null && again == null) return null;
       final freshUrl = again?.url ?? fresh.url;
       if (freshUrl == null) return null;
+      playingHeight = again?.height;
 
       // A DOWNGRADE IS A DIFFERENT FILE, so it is a different cache entry.
       // Pointing the existing entry at a smaller encode would write two
@@ -371,6 +414,16 @@ Future<void> playMedia(
       markPlaying(nextLocal ?? freshUrl);
       return nextLocal ?? freshUrl;
     },
+        // WHETHER AUTO COULD STEP UP NOW — answered here, on the phone, from
+        // the ladder this grant listed and what the connection measures, so
+        // the player's few-second check costs nothing until it is a yes.
+        canClimb: () {
+          final now = playingHeight;
+          if (now == null) return false;
+          final better = pickRendition(grant.renditions,
+              measuredKbps: ThroughputMemory.current, maxHeight: saverCap);
+          return better != null && better.height > now;
+        },
         // NO MENU FOR A FILM WITH ONE COPY: nothing to choose between.
         menu: menuOptions.isEmpty
             ? null
@@ -384,7 +437,13 @@ Future<void> playMedia(
                 playing: chosen == null ? 'Original' : '${chosen.height}p',
               ));
     // What plays when this ends: the album's next video (Up next).
-    if (!context.mounted) return;
+    if (!context.mounted) {
+      // Said in the trail: a film the server granted and the proxy started,
+      // that never reached the screen, was otherwise silence (Test Lab, run
+      // 37967931084 — two phones stopped exactly here).
+      PlaybackLog.add('play: the screen went away before the player opened');
+      return;
+    }
     UpNext.register(
         openUrl,
         _nextInAlbum(context, ref,
@@ -392,6 +451,7 @@ Future<void> playMedia(
             source: source,
             shownTitle:
                 titleOverride ?? content.displayTitle(s.locale.languageCode)));
+    PlaybackLog.add('play: opening the player');
     context.push(
       Routes.player,
       extra: <String, dynamic>{

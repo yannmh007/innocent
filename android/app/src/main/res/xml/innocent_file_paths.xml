@@ -16,4 +16,9 @@
     <external-files-path name="innocent_private" path="Innocent_Received/" />
     <!-- Temp pulls (Android/data files staged for sharing). -->
     <cache-path name="innocent_cache" path="." />
+    <!-- Where those pulls actually land when external storage is up
+         (AdbManager.pullForPlayback: externalCacheDir/adb_pull). Without it
+         an Android/data document could not be handed to the app that opens
+         it: FileProvider refused the path. -->
+    <external-cache-path name="innocent_adb_pull" path="adb_pull/" />
 </paths>

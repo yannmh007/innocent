@@ -40,9 +40,7 @@ class _EqualizerScreenState extends ConsumerState<EqualizerScreen>
   // Phase 45 (audit): Bass Boost / Virtualizer / Reverb state matching
   // MX Player V3's audio effects panel. Each effect is an independent
   // Android AudioFx instance that can be toggled and tuned.
-  bool _bassBoostEnabled = false;
   int _bassBoostStrength = 0; // 0..1000
-  bool _virtualizerEnabled = false;
   int _virtualizerStrength = 0; // 0..1000
   int _reverbPreset = 0; // 0..6 (None .. Plate)
 
@@ -133,9 +131,7 @@ class _EqualizerScreenState extends ConsumerState<EqualizerScreen>
       _presets = presets;
       _enabled = masterEnabled;
       _bassBoostStrength = bass;
-      _bassBoostEnabled = bass > 0;
       _virtualizerStrength = virt;
-      _virtualizerEnabled = virt > 0;
       _reverbPreset = reverb;
       _activePreset = _eq.activePresetIndex;
       _selectedProfile = effect.isEmpty ? null : effect;
@@ -495,7 +491,6 @@ class _EqualizerScreenState extends ConsumerState<EqualizerScreen>
             onChanged: (v) async {
               setState(() {
                 _bassBoostStrength = v;
-                _bassBoostEnabled = v > 0;
               });
               await _eq.setBassBoostEnabled(v > 0);
               await _eq.setBassBoostStrength(v);
@@ -508,7 +503,6 @@ class _EqualizerScreenState extends ConsumerState<EqualizerScreen>
             onChanged: (v) async {
               setState(() {
                 _virtualizerStrength = v;
-                _virtualizerEnabled = v > 0;
               });
               await _eq.setVirtualizerEnabled(v > 0);
               await _eq.setVirtualizerStrength(v);

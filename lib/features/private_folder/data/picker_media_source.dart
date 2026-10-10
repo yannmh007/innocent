@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:photo_manager/photo_manager.dart';
 import 'package:path/path.dart' as p;
-import '../../../core/localization/app_strings.dart';
 /// Fast media enumeration for the Add-Files picker (v0.50.2).
 ///
 /// The first cut of the picker walked the filesystem with `dart:io`

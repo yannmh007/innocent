@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 import 'adb_setup_state.dart';
@@ -87,10 +88,62 @@ class AdbService {
 
   static const MethodChannel _channel = MethodChannel('mx_clone/adb');
 
+  /// Whether the connection was working the last time anything used it:
+  /// null until something has, then true after any command that went through
+  /// and false after one that could not reach the phone.
+  ///
+  /// The Video tab listens for it turning true. A connection made anywhere —
+  /// the Hidden files browser, a picker opening Android/data, the ADB screen,
+  /// Wireless debugging switched back on while the "connection lost" card
+  /// waits — is then followed by a scan, so Android/data's videos show up in
+  /// the Video tab without anybody asking for it.
+  final ValueNotifier<bool?> live = ValueNotifier<bool?>(null);
+
+  /// A connect-and-run reached the phone when its command ran (`id` prints
+  /// `uid=`). Anything else says nothing either way: those calls answer
+  /// with prose on failure, not a marker.
+  void _sawConnect(String? out) {
+    if (out != null && (out.contains('uid=') || out.startsWith('OK'))) {
+      live.value = true;
+    }
+  }
+
+  int _shellsRunning = 0;
+  DateTime _lastShellEnd = DateTime.fromMillisecondsSinceEpoch(0);
+
+  /// How long the connection has carried no command (zero while one runs).
+  ///
+  /// The engine runs one command at a time, a long Android/data scan
+  /// included: a scan started while somebody browses Hidden files makes
+  /// their next folder wait for it. Background scans wait for a pause.
+  Duration get idleFor => _shellsRunning > 0
+      ? Duration.zero
+      : DateTime.now().difference(_lastShellEnd);
+
+  Future<T> _counted<T>(Future<T> Function() body) async {
+    _shellsRunning++;
+    try {
+      return await body();
+    } finally {
+      _shellsRunning--;
+      _lastShellEnd = DateTime.now();
+    }
+  }
+
+  void _saw(String out) {
+    final failed = out.startsWith('ERROR') || out.startsWith('Channel error');
+    live.value = !failed;
+  }
+
   /// Set once by [setPairResultListener] so the native pairing-service result
   /// broadcast (`onPairResult`) reaches the ADB screen.
   void Function(String result)? _pairResultListener;
   bool _handlerInstalled = false;
+
+  /// Progress of copies out of Android/data, by source path
+  /// (`onPullProgress`): bytes so far, and the file's size (-1 unknown).
+  final Map<String, void Function(int done, int total)> _pullListeners =
+      <String, void Function(int done, int total)>{};
 
   /// Register a callback for results from the notification pairing service.
   /// The ADB screen calls this in initState and clears it in dispose. Installs
@@ -114,6 +167,17 @@ class AdbService {
               ? args['result'] as String
               : '';
           _pairResultListener?.call(res);
+          break;
+        case 'onPullProgress':
+          final args = call.arguments;
+          if (args is Map && args['src'] is String) {
+            final done = args['done'];
+            final total = args['total'];
+            _pullListeners[args['src'] as String]?.call(
+              done is int ? done : 0,
+              total is int ? total : -1,
+            );
+          }
           break;
       }
       return null;
@@ -172,6 +236,7 @@ class AdbService {
         'port': port,
         'command': command,
       });
+      _sawConnect(r);
       return r ?? 'No response from ADB engine';
     } catch (e) {
       return 'Channel error: $e';
@@ -198,12 +263,15 @@ class AdbService {
   /// costs a pull-to-refresh three seconds, not twelve.
   Future<bool> isConnected({int timeoutMs = 12000}) async {
     try {
-      final r = await _channel.invokeMethod<String>('shell', {
-        'command': 'echo ok',
-        'timeoutMs': timeoutMs,
-      });
-      return r != null && r.contains('ok') && !r.startsWith('ERROR');
+      final r = await _counted(() => _channel.invokeMethod<String>('shell', {
+            'command': 'echo ok',
+            'timeoutMs': timeoutMs,
+          }));
+      final ok = r != null && r.contains('ok') && !r.startsWith('ERROR');
+      live.value = ok;
+      return ok;
     } catch (e) {
+      live.value = false;
       return false;
     }
   }
@@ -214,12 +282,15 @@ class AdbService {
   /// suits quick commands, the scan passes a longer budget.
   Future<String> shell(String command, {int timeoutMs = 12000}) async {
     try {
-      final r = await _channel.invokeMethod<String>('shell', {
-        'command': command,
-        'timeoutMs': timeoutMs,
-      });
-      return r ?? '';
+      final r = await _counted(() => _channel.invokeMethod<String>('shell', {
+            'command': command,
+            'timeoutMs': timeoutMs,
+          }));
+      final out = r ?? '';
+      _saw(out);
+      return out;
     } catch (e) {
+      live.value = false;
       return 'Channel error: $e';
     }
   }
@@ -318,7 +389,14 @@ class AdbService {
   /// Output line format: "<type>|<size>|<path>" where type is 'd' or 'f'.
   /// Path is last so spaces in names are preserved. Sorted folders-first then
   /// by name (case-insensitive).
-  Future<List<AdbFileEntry>> listAdbDir(String dirPath) async {
+  Future<List<AdbFileEntry>> listAdbDir(String dirPath) async =>
+      await listAdbDirOrNull(dirPath) ?? const <AdbFileEntry>[];
+
+  /// [listAdbDir], but null when the folder could not be READ — no
+  /// connection, a dropped one — as opposed to read and empty. A browser
+  /// must not show the first as the second: "no files" for a dropped
+  /// connection reads as "the files are gone".
+  Future<List<AdbFileEntry>?> listAdbDirOrNull(String dirPath) async {
     // Escape single quotes in the path for the shell (' → '\'').
     final safe = dirPath.replaceAll("'", "'\\''");
     // -maxdepth/-mindepth 1 = immediate children only. printf via stat gives a
@@ -331,10 +409,10 @@ class AdbService {
     try {
       out = await shellRouted(cmd, timeoutMs: 30000);
     } catch (e) {
-      return const [];
+      return null;
     }
     if (out.startsWith('ERROR:') || out.startsWith('Channel error')) {
-      return const [];
+      return null;
     }
     final entries = <AdbFileEntry>[];
     for (final raw in out.split('\n')) {
@@ -351,7 +429,17 @@ class AdbService {
   /// M3: copy a file the app can't read directly (inside Android/data) out to a
   /// readable cache via ADB, and return the local path to play. Returns an
   /// "ERROR: …" string on failure.
-  Future<String> pullForPlayback(String srcPath) async {
+  ///
+  /// The copy RESUMES: a connection that drops part way is re-established and
+  /// the copy carries on from the bytes it already has, and a copy that
+  /// still fails keeps them for the next call. It runs under a foreground
+  /// service, so leaving the app or the screen going off does not stop it.
+  Future<String> pullForPlayback(String srcPath,
+      {void Function(int done, int total)? onProgress}) async {
+    if (onProgress != null) {
+      _ensureHandler();
+      _pullListeners[srcPath] = onProgress;
+    }
     try {
       final r = await _channel.invokeMethod<String>('pullForPlayback', {
         'src': srcPath,
@@ -359,6 +447,32 @@ class AdbService {
       return r ?? 'ERROR: no response';
     } catch (e) {
       return 'ERROR: channel error: $e';
+    } finally {
+      if (onProgress != null) _pullListeners.remove(srcPath);
+    }
+  }
+
+  /// Copy an Android/data file straight into the private vault at
+  /// [destPath] — no copy in the cache first, so it needs the file's size
+  /// free, not twice it. Resumes like [pullForPlayback]. Null on success,
+  /// or why it failed.
+  Future<String?> pullToVault(String srcPath, String destPath,
+      {void Function(int done, int total)? onProgress}) async {
+    if (onProgress != null) {
+      _ensureHandler();
+      _pullListeners[srcPath] = onProgress;
+    }
+    try {
+      final r = await _channel.invokeMethod<String>('pullToVault', {
+        'src': srcPath,
+        'dest': destPath,
+      });
+      if (r == null) return 'no response';
+      return r == 'OK' ? null : r;
+    } catch (e) {
+      return 'channel error: $e';
+    } finally {
+      if (onProgress != null) _pullListeners.remove(srcPath);
     }
   }
 
@@ -558,6 +672,7 @@ class AdbService {
       final r = await _channel.invokeMethod<String>('autoConnectAndRun', {
         'command': command,
       });
+      _sawConnect(r);
       return r ?? 'No response from ADB engine';
     } catch (e) {
       return 'Channel error: $e';
@@ -572,6 +687,7 @@ class AdbService {
       final r = await _channel.invokeMethod<String>('reconnectAndRun', {
         'command': command,
       });
+      _sawConnect(r);
       return r ?? 'No response from ADB engine';
     } catch (e) {
       return 'Channel error: $e';

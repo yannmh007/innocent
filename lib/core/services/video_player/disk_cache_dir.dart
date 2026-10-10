@@ -64,8 +64,6 @@ class DiskCacheDir {
   /// scrubbing is allowed to cost somebody their photo storage.
   static const int floorBytes = 2 * 1024 * 1024 * 1024;
 
-  static String? _dir;
-
   /// The directory to hand libmpv, or null when the disk cache must not be
   /// used — no space, or no writable temporary directory at all.
   ///
@@ -76,7 +74,6 @@ class DiskCacheDir {
       final base = await getTemporaryDirectory();
       final dir = Directory(p.join(base.path, 'stream_cache'));
       if (!await dir.exists()) await dir.create(recursive: true);
-      _dir = dir.path;
 
       final free = await _freeBytes(dir.path);
       // A failed measurement is NOT permission. `-1` means the platform did

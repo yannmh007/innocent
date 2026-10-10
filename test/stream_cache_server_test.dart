@@ -194,6 +194,36 @@ void main() {
     StreamCacheServer.instance.release('film-a');
   });
 
+  test('a player reading at its own pace has the line measured before its '
+      'stretch ends', () async {
+    // Device lab run 37972782851: Sintel at 360p for four minutes on a fast
+    // line, and not one measurement — the lanes reported only when their
+    // 32 MB stretch ended, which at a 360p film's pace is seven minutes, so
+    // Auto never learnt it could climb.
+    up.pace = const Duration(milliseconds: 150);
+    final before = StreamCacheServer.measurements;
+    final c = HttpClient();
+    try {
+      final local = await StreamCacheServer.instance.localUrlFor(
+          cacheId: 'film-paced', upstream: up.url('t1'), refresh: () async => null);
+      final resp = await (await c.getUrl(Uri.parse(local!))).close();
+      final it = StreamIterator<List<int>>(resp);
+      var got = 0;
+      while (got < 3 * mb && await it.moveNext()) {
+        got += it.current.length;
+      }
+      // The player's buffer is full and it stops reading; the lanes fill
+      // their window and fall idle, the stretch still open.
+      await Future<void>.delayed(const Duration(seconds: 4));
+      expect(StreamCacheServer.measurements, greaterThan(before),
+          reason: 'no measurement while the stretch was open');
+      await it.cancel();
+    } finally {
+      c.close(force: true);
+      StreamCacheServer.instance.release('film-paced');
+    }
+  });
+
   test('a stretch starts on small parts and grows to full size', () async {
     const k = 1024;
     expect(StreamCacheServer.rampedPartBytes(0), 128 * k);

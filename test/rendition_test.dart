@@ -155,4 +155,29 @@ void main() {
       expect(m.where((o) => o.id == '720').length, 1);
     });
   });
+
+  group('data saver — Auto capped at 480p', () {
+    final ladder = [r(240, 360), r(360, 700), r(480, 1000), r(720, 2000), r(1080, 3800)];
+
+    test('a fast line still gets no more than 480p while saving', () {
+      expect(pickRendition(ladder, measuredKbps: 50000, maxHeight: kDataSaverMaxHeight)!.height, 480);
+      expect(chooseRendition(ladder, 'auto', measuredKbps: 50000, maxHeight: 480)!.height, 480);
+    });
+
+    test('a slow line is still matched to what it carries', () {
+      expect(pickRendition(ladder, measuredKbps: 700, maxHeight: 480)!.height, 240);
+    });
+
+    test('a height picked by hand is not capped', () {
+      expect(chooseRendition(ladder, '720', measuredKbps: 50000, maxHeight: 480)!.height, 720);
+    });
+
+    test('a ladder that starts above the cap gives its smallest rung', () {
+      expect(pickRendition([r(720, 2000), r(1080, 3800)], measuredKbps: 50000, maxHeight: 480)!.height, 720);
+    });
+
+    test('the 240p rung serves a 0.6 Mbps line that 360p would stall on', () {
+      expect(pickRendition(ladder, measuredKbps: 600)!.height, 240);
+    });
+  });
 }

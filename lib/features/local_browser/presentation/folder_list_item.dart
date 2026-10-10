@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -50,6 +49,7 @@ class FolderListItem extends ConsumerWidget {
         ? folder.totalSizeBytes
         : (folderSizes[folder.path] ?? 0);
     final sizeLabel = _folderSizeLabel(sizeBytes);
+    final hidden = _isHiddenFolder(folder);
     // A plain folder, as MX draws them; a glyph only where it tells the
     // folders apart at a glance (Camera, Screen recordings, Download…), never
     // the generic one.
@@ -133,6 +133,16 @@ class FolderListItem extends ConsumerWidget {
                   // glance. MX draws folders the same way.
                   child: silhouette,
                 ),
+                // Another app's folder (Android/data, over ADB) or a dot
+                // folder: marked on the icon too, so two folders called
+                // "Telegram Video" — the phone's and Telegram's own — tell
+                // apart at a glance.
+                if (hidden && !selected)
+                  const Positioned(
+                    right: 4,
+                    bottom: 4,
+                    child: HiddenCornerBadge(),
+                  ),
                 // MX marks a selected folder ON its icon — a pale disc with
                 // a tick in the middle — and leaves the row where it was.
                 if (selected) const Positioned.fill(child: FolderTick()),
@@ -184,13 +194,15 @@ class FolderListItem extends ConsumerWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  if (_isHiddenFolder(folder)) ...[
-                    const SizedBox(height: 3),
-                    const HiddenBadge(),
-                  ],
                   const SizedBox(height: 2),
                   Row(
                     children: [
+                      // On the count's line, not a line of its own: the row
+                      // keeps MX's 72 dp pitch.
+                      if (hidden) ...[
+                        const HiddenBadge(),
+                        const SizedBox(width: 6),
+                      ],
                       Text(
                         // English keeps its singular; Burmese and Thai
                         // have no plural form, so their one string serves.
@@ -235,126 +247,6 @@ class FolderListItem extends ConsumerWidget {
     ),
     ),
     ),
-    );
-  }
-
-  /// Phase 45 (audit): folder properties dialog shown via long-press.
-  /// Shows path, video count, total size, and last modified. MX Player
-  /// V3 has the same dialog and users do consult it surprisingly often
-  /// — e.g., "where exactly is this folder?" or "how big is it?".
-  Future<void> _showFolderProperties(
-      BuildContext context, WidgetRef ref) async {
-    // Compute properties on demand, off the build thread.
-    String sizeStr = 'Calculating...';
-    String modifiedStr = '—';
-    try {
-      final dir = Directory(folder.path);
-      if (await dir.exists()) {
-        // File size — sum up videos in the folder (cheap because the
-        // folder model already knows count; we re-read sizes lazily).
-        var totalBytes = 0;
-        try {
-          await for (final ent in dir.list(recursive: false)) {
-            if (ent is File) {
-              try {
-                totalBytes += await ent.length();
-              } catch (e) { if (kDebugMode) debugPrint('folder_list_item.best-effort: $e'); }
-            }
-          }
-        } catch (e) { if (kDebugMode) debugPrint('folder_list_item.best-effort: $e'); }
-        sizeStr = _humanSize(totalBytes);
-        try {
-          final stat = await dir.stat();
-          modifiedStr = _fmtDate(stat.modified);
-        } catch (e) { if (kDebugMode) debugPrint('folder_list_item.best-effort: $e'); }
-      }
-    } catch (e) { if (kDebugMode) debugPrint('folder_list_item.best-effort: $e'); }
-
-    if (!context.mounted) return;
-    await showDialog<void>(
-      context: context,
-      builder: (dctx) => AlertDialog(
-        backgroundColor: AppColors.darkSurface,
-        title: Text(
-          folder.name,
-          style: const TextStyle(color: Colors.white, fontSize: 16),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _PropRow(label: 'Videos', value: '${folder.videoCount}'),
-            _PropRow(label: 'Size', value: sizeStr),
-            _PropRow(label: 'Modified', value: modifiedStr),
-            const SizedBox(height: 6),
-            Text(AppStrings.of(context).path,
-              style: const TextStyle(color: Colors.white54, fontSize: 11),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              folder.path,
-              style: const TextStyle(color: Colors.white70, fontSize: 12),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dctx).pop(),
-            child: Text(AppStrings.of(context).close,
-              style: const TextStyle(color: AppColors.accentBlue),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _humanSize(int bytes) {
-    if (bytes < 1024) return '$bytes B';
-    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
-    if (bytes < 1024 * 1024 * 1024) {
-      return '${(bytes / 1024 / 1024).toStringAsFixed(1)} MB';
-    }
-    return '${(bytes / 1024 / 1024 / 1024).toStringAsFixed(2)} GB';
-  }
-
-  String _fmtDate(DateTime dt) {
-    final y = dt.year.toString().padLeft(4, '0');
-    final m = dt.month.toString().padLeft(2, '0');
-    final d = dt.day.toString().padLeft(2, '0');
-    final h = dt.hour.toString().padLeft(2, '0');
-    final min = dt.minute.toString().padLeft(2, '0');
-    return '$y-$m-$d $h:$min';
-  }
-}
-
-/// Property row inside the folder properties dialog (Phase 45 audit).
-class _PropRow extends StatelessWidget {
-  final String label;
-  final String value;
-  const _PropRow({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 80,
-            child: Text(
-              label,
-              style: const TextStyle(color: Colors.white54, fontSize: 12),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(color: Colors.white, fontSize: 13),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

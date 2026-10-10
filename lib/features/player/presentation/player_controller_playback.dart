@@ -213,6 +213,14 @@ extension PlayerPlayback on PlayerController {
     _stallsReported = 0;
     _downgrades = 0;
     _downgradeInFlight = false;
+    // The climb rule's clocks and count are per film too.
+    _stopClimbWatch();
+    _climbFilmAt = null;
+    _lastSwitchAt = null;
+    _lastStallAt = null;
+    _lastClimbTry = null;
+    _climbs = 0;
+    _climbInFlight = false;
     // The decode watch and the silent-file check both describe ONE playback.
     // Left running across an open they would measure the new file against the
     // old one's counters and spend its one full-probe reopen before it had

@@ -447,13 +447,6 @@ extension PlayerGestures on PlayerController {
     state = state.copyWith(speedSliderVisible: false);
   }
 
-  /// Phase 15: Speed slider geometry - set by SpeedSlider widget when rendered.
-  /// Used so that long-press drag maps to absolute touch position over the slider.
-  /// (_speedSliderBounds is declared on the PlayerController class.)
-  void setSpeedSliderBounds(Rect bounds) {
-    _speedSliderBounds = bounds;
-  }
-
   /// PDF page 9: While long-press active, drag finger left/right to pick speed
   /// without releasing.
   /// MX Player behaviour: the point where the long-press begins is the anchor

@@ -453,6 +453,21 @@ mistyped filename produces a title that looks perfect in the catalogue and
 dies on Play. The health view catches missing rows; only opening the app
 catches a wrong name.
 
+### The test title: Sintel
+
+Put in on 2026-10-09 so Movies had something to play while the catalogue was
+empty: the Blender Foundation's open film *Sintel* (CC-BY 3.0, © Blender
+Foundation | durian.blender.org; the synopsis credits it), free tier, folder
+`open-film-sintel/` in both buckets. The files went up through a one-off
+runner job and a function that signed those two keys only; the function
+(`seed-open-film`) now answers 410. To take it down: Console → the title →
+Unpublish, or
+
+```sql
+update public.titles set published = false, status = 'draft'
+ where slug = 'open-film-sintel';
+```
+
 ### Changing the card image
 
 ```sql
@@ -513,6 +528,22 @@ The Build workflow does everything except the last step, which is yours: the
 > its APK, and the run says so in its summary instead of uploading. **Getting a
 > different binary to users needs a version bump**, which is one line in
 > `pubspec.yaml`.
+
+**Two APKs per release (from 1.64.60).** The Build workflow also builds
+`innocent-<name>-<code>-arm32.apk` for phones whose Android is 32-bit (Galaxy
+A10/A02, many Android Go phones, older itel/TECNO/Infinix), and its summary
+prints a second `update` for the `apk_url_arm32`, `apk_sha256_arm32` and
+`apk_bytes_arm32` columns (migration 044). Run both in the same edit. The app
+offers each phone only the file it can install; a 32-bit phone with no 32-bit
+file — or one whose file name carries another build's number — is told there
+is nothing to download, never handed the arm64 APK. If the 32-bit build failed
+(it is allowed to; the arm64 APK is the release), set the three columns to
+null. The CDN signature for the `-arm32` name needs the ingest function
+redeployed from a commit that has it (`docs/edge/ingest.ts`, the `release` op).
+
+For a first install on such a phone, share the `-arm32` link. Settings →
+About phone → Android version does not say it; a phone that answers "App not
+installed" to the normal APK is one.
 
 **To check a release is sound, at any time, without downloading it:** open
 `https://api.github.com/repos/yannmh007/innocent/releases/tags/v<name>-<code>`

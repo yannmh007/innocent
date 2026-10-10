@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:isolate';
+import 'dart:typed_data';
 
 /// ---------------------------------------------------------------------------
 /// The byte-moving half of the receiver, deliberately free of Flutter.
@@ -270,7 +271,7 @@ class TransferEngine {
       }
     }
     if (_cancelled) throw const TransferCancelled();
-    throw lastError ?? Exception('Download failed');
+    throw lastError;
   }
 
   static Future<int> _sizeOf(File f) async {

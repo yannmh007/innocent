@@ -7,7 +7,7 @@ import '../../core/ui/device_profile.dart';
 import '../../core/localization/app_strings.dart';
 import '../../core/router/routes.dart';
 import '../../core/theme/app_colors.dart';
-import '../local_browser/presentation/library_provider.dart';
+import '../local_browser/presentation/android_data_sync.dart';
 import '../local_browser/presentation/library_watcher.dart';
 import '../video_hub/data/api/offline_auto_resume.dart';
 import '../video_hub/data/api/offline_downloader.dart';
@@ -154,10 +154,10 @@ class _ShellScreenState extends ConsumerState<ShellScreen>
   @override
   Widget build(BuildContext context) {
     final currentIndex = ref.watch(shellTabIndexProvider);
-    // Scan Android/data once at start when the app's ADB connection is
-    // already up, so app-data videos are current with no ADB-screen visit.
+    // Android/data's videos join the Video tab whenever ADB comes up —
+    // at start, on any connection made anywhere, on a return to the app.
     // The shell is always mounted, so this watch never lets it drop.
-    ref.watch(adbAutoScanProvider);
+    ref.watch(androidDataSyncProvider);
     // New, changed and removed videos reach the library as they happen.
     ref.watch(libraryWatcherProvider);
 

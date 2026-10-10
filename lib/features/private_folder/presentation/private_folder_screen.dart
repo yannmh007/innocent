@@ -855,64 +855,6 @@ class _PrivateFolderScreenState extends ConsumerState<PrivateFolderScreen>
     );
   }
 
-  // (legacy top category strip — retained but unused; the nav-style bar
-  //  above replaced it.)
-  Widget _categoryBar() {
-    final s = AppStrings.of(context);
-    final items = <(_VaultCat, IconData, String)>[
-      (_VaultCat.all, Icons.apps, s.catAll),
-      (_VaultCat.video, Icons.movie_outlined, s.catVideos),
-      (_VaultCat.image, Icons.image_outlined, s.catImages),
-      (_VaultCat.audio, Icons.music_note_outlined, s.catAudio),
-      (_VaultCat.file, Icons.insert_drive_file_outlined, s.catFiles),
-    ];
-    return Container(
-      height: 46,
-      color: AppColors.darkBackground,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        itemCount: items.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
-        itemBuilder: (_, i) {
-          final (cat, icon, label) = items[i];
-          final active = _cat == cat;
-          return RemoteTappable(
-            onTap: () => setState(() => _cat = cat),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: active
-                    ? AppColors.accentBlue.withOpacity(0.16)
-                    : Colors.white.withOpacity(0.04),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                    color: active ? AppColors.accentBlue : Colors.white12),
-              ),
-              child: Row(
-                children: [
-                  Icon(icon,
-                      size: 16,
-                      color:
-                          active ? AppColors.accentBlue : AppColors.white55),
-                  const SizedBox(width: 6),
-                  Text(label,
-                      style: TextStyle(
-                        color: active ? Colors.white : AppColors.white70,
-                        fontSize: 13.5,
-                        fontWeight:
-                            active ? FontWeight.w600 : FontWeight.w400,
-                      )),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
   /// The entries visible right now: filtered by open folder, category and
   /// search query, then sorted per the shared LibraryPreferences.
   List<PrivateEntry> _visibleEntries() {

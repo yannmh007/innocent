@@ -31,6 +31,12 @@ void main() {
     expect(appDataFolderName('$root/com.viber.voip/files/a1b2c3'), 'Viber · a1b2c3');
   });
 
+  test('a dot folder gets the app too', () {
+    expect(appDataFolderName('$root/com.viber.voip/files/.temp'), 'Viber · .temp');
+    expect(appDataFolderName('$root/org.telegram.messenger/files/.thumbs'),
+        'Telegram · .thumbs');
+  });
+
   test('the package directory itself is just the app', () {
     expect(appDataFolderName('$root/org.telegram.messenger'), 'Telegram');
   });

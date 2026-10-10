@@ -16,7 +16,13 @@ import 'package:flutter/foundation.dart';
 /// [quality] is the viewer's own choice from the player's Quality menu — an
 /// id from [QualityMenu.options] — and asks for exactly that copy. It wins
 /// over [belowKbps]; the two are never sent together.
-typedef StreamRenewer = Future<String?> Function({int? belowKbps, String? quality});
+///
+/// [climb] asks for a BETTER copy than the one playing, because the
+/// connection has measured good enough for it — Auto stepping back up after
+/// a dip, the way every adaptive player does. It answers null when nothing
+/// better fits, so the player never reopens onto the same copy.
+typedef StreamRenewer = Future<String?> Function(
+    {int? belowKbps, String? quality, bool climb});
 
 /// One line of the player's Quality menu.
 ///
@@ -112,6 +118,7 @@ class StreamRenewal {
   static String? _uri;
   static StreamRenewer? _renewer;
   static DateTime? _at;
+  static bool Function()? _canClimb;
 
   /// How long a registration stays valid.
   ///
@@ -126,11 +133,30 @@ class StreamRenewal {
   /// Exactly one registration exists at a time: the app has one video player,
   /// and a second registration means a second video was opened, at which point
   /// the first is no longer anything's business.
-  static void register(String uri, StreamRenewer renewer, {QualityMenu? menu}) {
+  ///
+  /// [canClimb] answers, on the phone and without asking the server, whether
+  /// a better copy than the one playing would fit what the connection is
+  /// measuring now. The player asks it every few seconds; only a yes costs a
+  /// request.
+  static void register(String uri, StreamRenewer renewer,
+      {QualityMenu? menu, bool Function()? canClimb}) {
     _uri = uri;
     _renewer = renewer;
     _at = DateTime.now();
+    _canClimb = canClimb;
     quality.value = menu;
+  }
+
+  /// True when Auto could step up to a better copy right now — see
+  /// [register]. False for a pinned choice, an unregistered stream, or no
+  /// ladder; never throws.
+  static bool climbAvailable(String uri) {
+    if (qualityPinned || !canRenew(uri)) return false;
+    try {
+      return _canClimb?.call() ?? false;
+    } catch (_) {
+      return false;
+    }
   }
 
   /// The Quality menu for what is playing, or null when there is nothing to
@@ -148,6 +174,7 @@ class StreamRenewal {
     _uri = null;
     _renewer = null;
     _at = null;
+    _canClimb = null;
     quality.value = null;
   }
 
@@ -166,12 +193,14 @@ class StreamRenewal {
   /// [belowKbps] asks for a copy cheaper than that bitrate, for the case
   /// where the current one is not dead but is too heavy for the connection.
   /// Omitted, this is the original behaviour: the best copy available.
-  static Future<String?> renew(String uri, {int? belowKbps, String? quality}) async {
+  static Future<String?> renew(String uri,
+      {int? belowKbps, String? quality, bool climb = false}) async {
     if (!canRenew(uri)) return null;
     final renewer = _renewer;
     if (renewer == null) return null;
     try {
-      final fresh = await renewer(belowKbps: belowKbps, quality: quality);
+      final fresh =
+          await renewer(belowKbps: belowKbps, quality: quality, climb: climb);
       if (fresh == null || fresh.isEmpty) return null;
       // The registration now describes the NEW url, or a second failure would
       // look up a key that no longer matches.

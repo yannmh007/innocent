@@ -941,23 +941,26 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
          * demand and prunes to stay under a size cap. Returns the local path, or
          * an "ERROR: …" string.
          */
-        fun pullForPlayback(context: Context, srcPath: String): String {
+        fun pullForPlayback(
+            context: Context,
+            srcPath: String,
+            onProgress: ((Long, Long) -> Unit)? = null,
+        ): String {
             return try {
                 val baseDir = context.externalCacheDir ?: context.cacheDir
                 val cacheDir = File(baseDir, "adb_pull")
                 if (!cacheDir.exists()) cacheDir.mkdirs()
                 pruneCache(cacheDir, 2L * 1024 * 1024 * 1024)
+                // The full path's hash in the name: two apps' "video.mp4" are
+                // two files, and a resumed copy must never continue one with
+                // the other's bytes.
                 val name = srcPath.substringAfterLast('/')
                     .replace(Regex("[^A-Za-z0-9._-]"), "_")
-                    .ifEmpty { "video_${System.currentTimeMillis()}" }
-                val dest = File(cacheDir, name)
-
-                // Expected size, so we can tell a COMPLETE copy from one cut short
-                // by a dropped connection (the old code kept truncated files,
-                // which media_kit then rejected as "unrecognised format").
-                val expected = fileSize(context, srcPath) // -1 if unknown
+                    .ifEmpty { "video" }
+                val dest = File(cacheDir, "${Integer.toHexString(srcPath.hashCode())}_$name")
 
                 // Re-use a previous copy only if it's verifiably whole.
+                val expected = fileSize(context, srcPath) // -1 if unknown
                 if (dest.exists() && dest.length() > 0L &&
                     (expected <= 0L || dest.length() == expected)
                 ) {
@@ -965,119 +968,259 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
                     return dest.absolutePath
                 }
                 if (dest.exists()) dest.delete()
-
-                // audit_adb.md A1. This used to be `srcPath.replace("\"", "")`,
-                // which strips only the double quote. Inside `cat "..."` the
-                // metacharacters that still act are `"`, `$` and a backtick,
-                // so `$(...)` and `` `...` `` both survived and both executed
-                // — as the shell, uid 2000, which on a phone that has set up
-                // auto-enable also holds WRITE_SECURE_SETTINGS.
-                //
-                // The path is not typed by anyone. It is a filename found by
-                // the `find` over /storage/emulated/0/Android/{data,obb},
-                // directories whose contents OTHER APPS write and fully name.
-                // Six call sites reach this method.
-                //
-                // sanitizePath strips all three and was already used, sixty
-                // lines below, on the LESS dangerous `stat`/`dd` paths.
-                val safeSrc = sanitizePath(srcPath)
-                var lastErr = "unknown"
-                for (attempt in 0..1) {
-                    val mgr = getInstance(context)
-                    if (!mgr.isConnected &&
-                        !reconnectFromSaved(context, mgr) &&
-                        !scanLocalPort(context, mgr)
-                    ) {
-                        lastErr = "not connected"
-                        continue
-                    }
-                    val tmp = File(cacheDir, "$name.part")
-                    if (tmp.exists()) tmp.delete()
-                    var copied = 0L
-                    // Stall watchdog: if no bytes arrive for 30s the connection is
-                    // wedged — tear it down so the read unwinds instead of hanging
-                    // "Preparing…" forever.
-                    val lastRead = AtomicReference(System.currentTimeMillis())
-                    val done = java.util.concurrent.atomic.AtomicBoolean(false)
-                    val watchdog = Thread {
-                        while (!done.get()) {
-                            try {
-                                Thread.sleep(5000)
-                            } catch (_: InterruptedException) {
-                                break
-                            }
-                            if (!done.get() &&
-                                System.currentTimeMillis() - lastRead.get() > 30000
-                            ) {
-                                try {
-                                    getInstance(context).disconnect()
-                                } catch (_: Throwable) {
-                                }
-                                break
-                            }
-                        }
-                    }
-                    watchdog.isDaemon = true
-                    watchdog.start()
-                    try {
-                        val stream = mgr.openStream("exec:cat \"$safeSrc\"")
-                        try {
-                            stream.openInputStream().use { input ->
-                                FileOutputStream(tmp).use { output ->
-                                    val buf = ByteArray(256 * 1024)
-                                    while (true) {
-                                        val n = input.read(buf)
-                                        if (n < 0) break
-                                        output.write(buf, 0, n)
-                                        copied += n
-                                        lastRead.set(System.currentTimeMillis())
-                                    }
-                                    output.flush()
-                                }
-                            }
-                        } finally {
-                            try {
-                                stream.close()
-                            } catch (_: Throwable) {
-                            }
-                        }
-                    } catch (e: Throwable) {
-                        lastErr = "${e.javaClass.simpleName}: ${e.message}"
-                        tmp.delete()
-                        try {
-                            getInstance(context).disconnect()
-                        } catch (_: Throwable) {
-                        }
-                        continue
-                    } finally {
-                        done.set(true)
-                        watchdog.interrupt()
-                    }
-                    // Only accept a copy we can prove is whole.
-                    if (copied <= 0L) {
-                        tmp.delete()
-                        lastErr = "copied 0 bytes (file unreadable or dropped)"
-                        continue
-                    }
-                    if (expected > 0L && copied < expected) {
-                        tmp.delete()
-                        lastErr = "incomplete copy ($copied/$expected) \u2014 connection dropped"
-                        try {
-                            getInstance(context).disconnect()
-                        } catch (_: Throwable) {
-                        }
-                        continue
-                    }
-                    if (!tmp.renameTo(dest)) {
-                        tmp.copyTo(dest, overwrite = true)
-                        tmp.delete()
-                    }
-                    return dest.absolutePath
-                }
-                "ERROR: $lastErr"
+                val err = pullTo(context, srcPath, dest, onProgress)
+                if (err == null) dest.absolutePath else "ERROR: $err"
             } catch (e: Throwable) {
                 "ERROR: ${e.javaClass.simpleName}: ${e.message}"
             }
+        }
+
+        /**
+         * Copy [srcPath] into the vault's own folder ([destPath]), straight
+         * from Android/data: no copy in the cache first, so a 2 GB film needs
+         * 2 GB free, not 4. Only a path inside the app's private vault is
+         * accepted. Returns null on success, or why it failed.
+         */
+        fun pullToVault(
+            context: Context,
+            srcPath: String,
+            destPath: String,
+            onProgress: ((Long, Long) -> Unit)? = null,
+        ): String? {
+            return try {
+                val vault = File(context.filesDir, "private_vault").canonicalFile
+                val dest = File(destPath).canonicalFile
+                if (dest.parentFile != vault) return "destination is not the vault"
+                // The vault's names are random per import, so the part a
+                // dropped copy leaves is named after the SOURCE: the next
+                // import of the same file finds it and carries on. Parts
+                // nobody came back for are cleared after a week.
+                val week = 7L * 24 * 60 * 60 * 1000
+                vault.listFiles()?.forEach { f ->
+                    if (f.name.startsWith(".adb_") &&
+                        System.currentTimeMillis() - f.lastModified() > week
+                    ) f.delete()
+                }
+                val part = File(vault, ".adb_${Integer.toHexString(srcPath.hashCode())}")
+                pullTo(context, srcPath, dest, onProgress, partBase = part)
+            } catch (e: Throwable) {
+                "${e.javaClass.simpleName}: ${e.message}"
+            }
+        }
+
+        /** A copy that has to give up after this many tries that moved nothing. */
+        private const val PULL_IDLE_TRIES = 4
+
+        /** …and after this many tries in all, however far each one got. */
+        private const val PULL_MAX_TRIES = 12
+
+        private const val PULL_BLOCK = 1048576L
+
+        /** `size mtime` of [safePath] over ADB, or null when it can't be read. */
+        private fun statIdentity(context: Context, safePath: String): String? {
+            val out = runShell(context, "stat -c '%s %Y' \"$safePath\" 2>/dev/null").trim()
+            val parts = out.split(' ')
+            if (parts.size != 2 || parts[0].toLongOrNull() == null) return null
+            return out
+        }
+
+        /**
+         * THE COPY ITSELF, AND IT RESUMES. A wireless-debugging connection
+         * drops for ordinary reasons — the Wi-Fi roams, the phone sleeps, the
+         * system closes an idle session — and the copy used to throw away
+         * everything it had and start again from byte zero, twice at most. A
+         * 2 GB film cut at 90 % was simply lost. Now the `.part` beside [dest]
+         * is kept: the next try (here, or the next time the viewer asks)
+         * carries on from where it stopped, with a block-aligned `dd` seek
+         * and `tail` for the rest of the block — the same pipeline the
+         * streaming proxy reads ranges with.
+         *
+         * A part is only continued while the source is the SAME file: its
+         * size and modification time are written beside it, and a file that
+         * changed (still being downloaded by its own app, replaced) starts
+         * again rather than splicing two versions into one broken film.
+         *
+         * Tries come with growing pauses (1, 2, 4, 8 s) while a lost connection
+         * is re-established; any try that moves bytes resets the count, so a
+         * long copy over a shaky link keeps going as long as it gets anywhere.
+         *
+         * Returns null on success, or why it failed — with the `.part` kept.
+         */
+        private fun pullTo(
+            context: Context,
+            srcPath: String,
+            dest: File,
+            onProgress: ((Long, Long) -> Unit)?,
+            partBase: File = dest,
+        ): String? {
+            val safeSrc = sanitizePath(srcPath)
+            val dir = dest.parentFile ?: return "no destination folder"
+            if (!dir.exists()) dir.mkdirs()
+            val tmp = File(partBase.path + ".part")
+            val stamp = File(partBase.path + ".part.src")
+            // The source's `size mtime`, learnt on the first try that has a
+            // connection (a copy can start while it is down).
+            var identity: String? = null
+            var expected = -1L
+            var partChecked = false
+
+            var lastErr = "unknown"
+            var idle = 0
+            var tries = 0
+            var lastReport = 0L
+            while (idle < PULL_IDLE_TRIES && tries < PULL_MAX_TRIES) {
+                if (tries > 0) {
+                    try {
+                        Thread.sleep(1000L shl minOf(idle, 3))
+                    } catch (_: InterruptedException) {
+                        return "cancelled"
+                    }
+                }
+                tries++
+                val mgr = getInstance(context)
+                if (!mgr.isConnected &&
+                    !reconnectFromSaved(context, mgr) &&
+                    !scanLocalPort(context, mgr)
+                ) {
+                    lastErr = "not connected — is Wireless debugging still on?"
+                    idle++
+                    continue
+                }
+                if (identity == null) {
+                    identity = statIdentity(context, safeSrc)
+                    expected = identity?.substringBefore(' ')?.toLongOrNull() ?: -1L
+                }
+                if (!partChecked) {
+                    partChecked = true
+                    // Resume only a part of THIS version of the file, and only
+                    // when its size is known — without it, "whole" cannot be
+                    // told from "cut short".
+                    val mark = "$srcPath\n$identity"
+                    if (tmp.exists()) {
+                        val same = identity != null && stamp.exists() &&
+                            (try { stamp.readText() } catch (_: Throwable) { "" }) == mark
+                        if (!same || expected <= 0L || tmp.length() > expected) tmp.delete()
+                    }
+                    if (identity != null) {
+                        try { stamp.writeText(mark) } catch (_: Throwable) {}
+                    }
+                }
+                // An unknown size cannot be resumed: start over each time.
+                if (expected <= 0L && tmp.exists()) tmp.delete()
+                val from = if (tmp.exists()) tmp.length() else 0L
+                if (expected > 0L && from >= expected) break
+                val cmd = if (from == 0L) {
+                    "exec:cat \"$safeSrc\""
+                } else {
+                    val skip = from / PULL_BLOCK
+                    val inner = (from % PULL_BLOCK) + 1 // tail -c +N is 1-indexed
+                    "exec:dd if=\"$safeSrc\" bs=$PULL_BLOCK skip=$skip 2>/dev/null " +
+                        "| tail -c +$inner"
+                }
+                // Stall watchdog: no bytes for 30 s and the connection is
+                // wedged — tear it down so the read unwinds instead of
+                // hanging, and the next try reconnects.
+                val lastRead = AtomicReference(System.currentTimeMillis())
+                val done = java.util.concurrent.atomic.AtomicBoolean(false)
+                val watchdog = Thread {
+                    while (!done.get()) {
+                        try {
+                            Thread.sleep(5000)
+                        } catch (_: InterruptedException) {
+                            break
+                        }
+                        if (!done.get() &&
+                            System.currentTimeMillis() - lastRead.get() > 30000
+                        ) {
+                            try {
+                                getInstance(context).disconnect()
+                            } catch (_: Throwable) {
+                            }
+                            break
+                        }
+                    }
+                }
+                watchdog.isDaemon = true
+                watchdog.start()
+                var written = from
+                // A try that read to the end without an error. With no size
+                // to check against, that is the only sign the copy is whole.
+                var clean = false
+                try {
+                    val stream = mgr.openStream(cmd)
+                    try {
+                        stream.openInputStream().use { input ->
+                            FileOutputStream(tmp, true).use { output ->
+                                val buf = ByteArray(256 * 1024)
+                                while (true) {
+                                    val n = input.read(buf)
+                                    if (n < 0) break
+                                    // Never past the end of the file as it
+                                    // was measured: a source still growing
+                                    // is caught below, not written past.
+                                    val keep = if (expected > 0L) {
+                                        minOf(n.toLong(), expected - written).toInt()
+                                    } else n
+                                    if (keep > 0) output.write(buf, 0, keep)
+                                    written += keep
+                                    lastRead.set(System.currentTimeMillis())
+                                    val now = System.currentTimeMillis()
+                                    if (onProgress != null && now - lastReport >= 400L) {
+                                        lastReport = now
+                                        onProgress(written, expected)
+                                    }
+                                    if (expected > 0L && written >= expected) break
+                                }
+                                output.flush()
+                            }
+                        }
+                        clean = true
+                    } finally {
+                        try {
+                            stream.close()
+                        } catch (_: Throwable) {
+                        }
+                    }
+                } catch (e: Throwable) {
+                    lastErr = "connection dropped (${e.javaClass.simpleName})"
+                    try {
+                        getInstance(context).disconnect()
+                    } catch (_: Throwable) {
+                    }
+                } finally {
+                    done.set(true)
+                    watchdog.interrupt()
+                }
+                val now = if (tmp.exists()) tmp.length() else 0L
+                if (now > from) idle = 0 else idle++
+                if (expected > 0L && now >= expected) break
+                if (expected <= 0L && now > 0L && clean) break
+                if (expected > 0L) {
+                    lastErr = "connection dropped at ${now * 100 / expected} %"
+                }
+            }
+
+            val got = if (tmp.exists()) tmp.length() else 0L
+            if (got <= 0L) return "copied 0 bytes ($lastErr)"
+            if (expected > 0L && got != expected) {
+                // KEPT: the next try carries on from here.
+                return "incomplete copy ($got/$expected) — $lastErr"
+            }
+            // The source must still be the file this copy began on.
+            if (identity != null && statIdentity(context, safeSrc) != identity) {
+                tmp.delete()
+                stamp.delete()
+                return "the file changed while it was being copied " +
+                    "(is its app still downloading it?)"
+            }
+            onProgress?.invoke(got, if (expected > 0L) expected else got)
+            if (dest.exists()) dest.delete()
+            if (!tmp.renameTo(dest)) {
+                tmp.copyTo(dest, overwrite = true)
+                tmp.delete()
+            }
+            stamp.delete()
+            return null
         }
 
         // ---- On-demand streaming (instant playback, no full pre-copy) ----

@@ -139,7 +139,8 @@ if [ "${LOOP:-0}" = 1 ] && [ -f "lib_media/Movies/Perf Test/aaa_play_720p.mp4" ]
   adb shell am force-stop "$PKG"
   adb shell pm clear "$PKG" >/dev/null 2>&1 || true
   adb shell pm grant "$PKG" android.permission.READ_MEDIA_VIDEO >/dev/null 2>&1 || true
-  adb shell am start -a com.google.intent.action.TEST_LOOP -t application/javascript -n "$PKG/.MainActivity" >/dev/null 2>&1
+  adb shell am start -a com.google.intent.action.TEST_LOOP -t application/javascript \
+    -d "file:///sdcard/Download/lab_loop.js" -n "$PKG/.MainActivity" >/dev/null 2>&1
   sleep 25
   adb exec-out screencap -p > "$OUT/shots/50_loop_25s.png"
   sleep 150
@@ -298,6 +299,108 @@ for flow in $FLOWS; do
     adb shell rm -rf /sdcard/Movies/LabNew >/dev/null 2>&1 || true
     rm -f /tmp/lab_new.mp4
     adb shell log -p i -t flutter "LAB phase $flow end" >/dev/null 2>&1 || true
+    log "flow $flow done"
+    continue
+    ;;
+  esac
+  # AUTO CLIMBS BACK UP — a catalogue title (the free test film) played the
+  # way a viewer's tap plays it: the real request-playback, Worker and R2,
+  # the rung Auto picks, the proxy. It opens on a small copy (a low starting
+  # estimate) and the trail should read "measured … kbps" and then "stepped
+  # up a rung" once the line has shown it can carry more.
+  case "$flow" in climb)
+    if [ -z "${CLIMB_TITLE:-}" ]; then log "flow climb: no CLIMB_TITLE in config.env — skipped"; continue; fi
+    adb shell am force-stop "$PKG"
+    adb shell pm clear "$PKG" >/dev/null 2>&1 || true
+    d="/sdcard/Android/data/$PKG/files"
+    adb shell mkdir -p "$d" >/dev/null 2>&1
+    adb shell "echo title:$CLIMB_TITLE > $d/lab_stream_url"
+    # A starting estimate below the 480p rung, so the film opens small and
+    # the climb can be watched on the runner's real line (the emulator's
+    # `network speed` cap did not hold in run 37967426588).
+    adb shell "echo ${CLIMB_SEED_KBPS:-500} > $d/lab_throughput"
+    log "climb: the test film, link estimate seeded at ${CLIMB_SEED_KBPS:-500} kbps, for ${CLIMB_S:-240} s"
+    adb shell am start -W -n "$PKG/.MainActivity" >/dev/null 2>&1
+    sleep $(( ${CLIMB_S:-240} / 2 ))
+    adb exec-out screencap -p > "$OUT/shots/9_climb_mid.png"
+    sleep $(( ${CLIMB_S:-240} / 2 ))
+    adb exec-out screencap -p > "$OUT/shots/9_climb_end.png"
+    log "climb: $(grep -c 'stepped up a rung' "$OUT/logcat_raw.txt" 2>/dev/null) step(s) up, $(grep -c 'stepped down a rung' "$OUT/logcat_raw.txt" 2>/dev/null) down"
+    adb shell log -p i -t flutter "LAB phase $flow end" >/dev/null 2>&1 || true
+    adb shell am force-stop "$PKG"
+    adb shell rm -f "$d/lab_stream_url" "$d/lab_throughput" >/dev/null 2>&1 || true
+    log "flow $flow done"
+    continue
+    ;;
+  esac
+  # TEST LAB'S LAUNCH, ON THE EMULATOR. Test Lab starts a lab APK with the
+  # game-loop intent (scenario 3 = a catalogue title) and on two real phones
+  # the film never reached the screen (run 37967931084) while the launch-time
+  # path above plays it. Same intent here, the title from lab_loop_title.
+  # "OPEN WITH INNOCENT", cold and warm: a film handed over by another app
+  # (a file manager, the gallery) — an intent with an address, which is what
+  # Flutter's deep linking turned into "Route not found" before 1.64.60.
+  # Cold: the app is not running (the lab film's name, so the lab build
+  # steps past the introduction). Warm: the app is up and another film is
+  # handed over. Each must reach a first frame.
+  case "$flow" in openwith)
+    film="lib_media/Movies/Perf Test/aaa_play_720p.mp4"
+    # The media set is not on every run (run 38018583863 skipped this flow
+    # for want of it): make a film, as the newvideo flow does.
+    if [ ! -f "$film" ] && command -v ffmpeg >/dev/null 2>&1; then
+      film=/tmp/lab_open.mp4
+      ffmpeg -loglevel error -y -f lavfi -i testsrc2=size=1280x720:rate=24 \
+        -f lavfi -i sine=frequency=330 -t 90 -c:v libx264 -preset veryfast \
+        -pix_fmt yuv420p -c:a aac -b:a 96k -movflags +faststart "$film"
+    fi
+    if [ ! -f "$film" ]; then log "flow openwith: no film — skipped"; continue; fi
+    adb push "$film" /sdcard/Download/innocent_lab_play.mp4 >/dev/null 2>&1
+    adb push "$film" /sdcard/Download/lab_open_2.mp4 >/dev/null 2>&1
+    adb shell am force-stop "$PKG"
+    adb shell pm clear "$PKG" >/dev/null 2>&1 || true
+    adb shell pm grant "$PKG" android.permission.READ_MEDIA_VIDEO >/dev/null 2>&1 || true
+    frames() { local n; n=$(grep -c 'first frame' "$OUT/logcat_raw.txt" 2>/dev/null); echo "${n:-0}"; }
+    f0=$(frames)
+    adb shell am start -W -a android.intent.action.VIEW -t video/mp4 \
+      -d "file:///sdcard/Download/innocent_lab_play.mp4" -n "$PKG/.MainActivity" >/dev/null 2>&1
+    sleep 30
+    adb exec-out screencap -p > "$OUT/shots/9_openwith_cold.png"
+    f1=$(frames)
+    adb shell input keyevent 4
+    sleep 4
+    adb shell am start -W -a android.intent.action.VIEW -t video/mp4 \
+      -d "file:///sdcard/Download/lab_open_2.mp4" -n "$PKG/.MainActivity" >/dev/null 2>&1
+    sleep 20
+    adb exec-out screencap -p > "$OUT/shots/9_openwith_warm.png"
+    f2=$(frames)
+    log "openwith: cold start $((f1 - f0)) first frame(s), warm $((f2 - f1)); $(grep -c 'route: no screen' "$OUT/logcat_raw.txt" 2>/dev/null) unknown route(s)"
+    adb shell log -p i -t flutter "LAB phase $flow end" >/dev/null 2>&1 || true
+    adb shell am force-stop "$PKG"
+    adb shell rm -f /sdcard/Download/innocent_lab_play.mp4 /sdcard/Download/lab_open_2.mp4 >/dev/null 2>&1 || true
+    rm -f /tmp/lab_open.mp4
+    log "flow $flow done"
+    continue
+    ;;
+  esac
+  case "$flow" in titleloop)
+    if [ -z "${CLIMB_TITLE:-}" ]; then log "flow titleloop: no CLIMB_TITLE — skipped"; continue; fi
+    adb shell am force-stop "$PKG"
+    adb shell pm clear "$PKG" >/dev/null 2>&1 || true
+    d="/sdcard/Android/data/$PKG/files"
+    adb shell mkdir -p "$d" >/dev/null 2>&1
+    adb shell "echo title:$CLIMB_TITLE > $d/lab_loop_title"
+    # WITH DATA, as Test Lab launches: its game loop carries a content://
+    # address, and that address is what put the router on "Route not
+    # found" there (run 37967931084). Launched without one, this flow
+    # passed while every real phone failed.
+    adb shell am start -W -a com.google.intent.action.TEST_LOOP -t application/javascript \
+      -d "file:///sdcard/Download/lab_loop.js" --ei scenario 3 -n "$PKG/.MainActivity" >/dev/null 2>&1
+    sleep 75
+    adb exec-out screencap -p > "$OUT/shots/9_titleloop.png"
+    log "titleloop: $(grep -c 'opening the player' "$OUT/logcat_raw.txt" 2>/dev/null) player open(s), $(grep -c 'first frame' "$OUT/logcat_raw.txt" 2>/dev/null) first frame(s) so far in the run"
+    adb shell log -p i -t flutter "LAB phase $flow end" >/dev/null 2>&1 || true
+    adb shell am force-stop "$PKG"
+    adb shell rm -f "$d/lab_loop_title" >/dev/null 2>&1 || true
     log "flow $flow done"
     continue
     ;;

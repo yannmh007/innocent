@@ -12,8 +12,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
     <application>
-        <!-- Two loops: 1 = SurfaceTexture video output, 2 = SurfaceProducer. -->
-        <meta-data android:name="com.google.test.loops" android:value="2" />
+        <!-- Three loops: 1 = SurfaceTexture video output, 2 = SurfaceProducer
+             (both play the pushed film), 3 = a catalogue title through the
+             real API (MODE=stream). -->
+        <meta-data android:name="com.google.test.loops" android:value="3" />
         <activity android:name=".MainActivity" tools:node="merge">
             <intent-filter>
                 <action android:name="com.google.intent.action.TEST_LOOP" />

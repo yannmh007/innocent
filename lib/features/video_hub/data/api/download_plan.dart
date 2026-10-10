@@ -11,6 +11,8 @@
 /// says "downloaded" and plays as garbage. That is worth a file with tests.
 library;
 
+import '../../domain/rendition.dart';
+
 /// How long to wait before trying again after a failure.
 ///
 /// ─── THE BUG ────────────────────────────────────────────────────────────
@@ -112,4 +114,93 @@ bool hasRoomFor({
   final remaining = totalBytes - alreadyOnDisk;
   if (remaining <= 0) return true;
   return freeBytes >= remaining + kDownloadHeadroomBytes;
+}
+
+/// WHICH COPY A DOWNLOAD FETCHES — the viewer's standing answer.
+///
+/// ─── WHY THIS IS A CHOICE NOW ───────────────────────────────────────────
+///
+/// A download used to be the original and nothing else, on the reasoning that
+/// somebody who waits an hour wants the film as it was uploaded. For some of
+/// them that is true. For the viewer on a 3 GB data bundle and a 32 GB phone
+/// it is the opposite: Sintel's original is 1.1 GB and its 720p copy 187 MB,
+/// the same story at a size they can afford. Netflix asks (Standard or
+/// Higher), YouTube asks (by resolution, with sizes, "remember my settings").
+/// So does this — and the ORIGINAL stays the default for anyone who never
+/// answers, so nothing changes for a viewer who does not look.
+///
+/// `ask` shows the choice each time; `original` or a height ('720') is
+/// remembered and used without asking.
+class DownloadQuality {
+  DownloadQuality._();
+
+  static const String ask = 'ask';
+  static const String original = 'original';
+
+  /// Anything this version cannot read is [ask]: a stored value from a later
+  /// version must never silently become a smaller download.
+  static String normalise(String? raw) {
+    if (raw == null || raw.isEmpty) return ask;
+    if (raw == ask || raw == original) return raw;
+    final h = int.tryParse(raw);
+    return h != null && h > 0 ? '$h' : ask;
+  }
+
+  /// What one download actually asks for: never [ask] — a download in
+  /// progress has already been answered, and an unanswered one is the
+  /// original.
+  static String forDownload(String? raw) {
+    final q = normalise(raw);
+    return q == ask ? original : q;
+  }
+}
+
+/// The address a download fetches for [quality], and the height it is.
+///
+/// [originalUrl] is the grant's own URL, signed from the ORIGINAL object;
+/// [ladder] its streaming copies. A height means that rung or the nearest one
+/// BELOW it (somebody who chose 480p to save data is never handed 720p); a
+/// film with no ladder is the original whatever was chosen, because there is
+/// nothing smaller to give. `height` is null for the original.
+///
+/// DETERMINISTIC FOR A GIVEN LADDER, which is what makes a resume safe: every
+/// renewal of a two-hour download asks again and must land on the SAME file,
+/// or the part on disk and the bytes appended to it belong to two encodes.
+/// (The length check in [planResume] is the second line of defence.)
+({String? url, int? height}) downloadSource({
+  required String? originalUrl,
+  required List<Rendition> ladder,
+  required String quality,
+}) {
+  final q = DownloadQuality.forDownload(quality);
+  if (q == DownloadQuality.original || ladder.isEmpty) {
+    return (url: originalUrl, height: null);
+  }
+  final r = chooseRendition(ladder, q);
+  if (r == null) return (url: originalUrl, height: null);
+  return (url: r.url, height: r.height);
+}
+
+/// One line of the "which quality" sheet.
+typedef DownloadOption = ({String id, int? height, int? bytes});
+
+/// The lines of the sheet, best first: every rung once (by height, the
+/// smaller file when two share a height), then the original. EMPTY when there
+/// is no ladder — one copy is no choice, and the sheet is not shown.
+List<DownloadOption> downloadOptions(List<Rendition> ladder,
+    {int? originalBytes}) {
+  if (ladder.isEmpty) return const <DownloadOption>[];
+  final byHeight = <int, Rendition>{};
+  for (final r in ladder) {
+    final had = byHeight[r.height];
+    if (had == null || (r.bytes ?? 1 << 62) < (had.bytes ?? 1 << 62)) {
+      byHeight[r.height] = r;
+    }
+  }
+  final heights = byHeight.keys.toList()..sort((a, b) => b.compareTo(a));
+  return <DownloadOption>[
+    for (final h in heights)
+      (id: '$h', height: h, bytes: byHeight[h]!.bytes),
+    (id: DownloadQuality.original, height: null, bytes: originalBytes),
+  ];
 }

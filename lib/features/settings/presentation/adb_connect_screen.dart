@@ -11,9 +11,11 @@ import '../../../core/router/routes.dart';
 import '../../../core/services/adb/adb_service.dart';
 import '../../../core/services/adb/adb_setup_state.dart';
 import '../../../core/services/adb/wireless_adb_risk.dart';
-import '../../local_browser/presentation/library_provider.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../local_browser/presentation/android_data_sync.dart';
 
-/// Experimental ADB pairing/connect screen.
+/// Android/data access: pairing with, and connecting to, this phone's own
+/// Wireless debugging.
 ///
 /// Primary flow (easy): the user enters ONLY the 6-digit pairing code; the app
 /// discovers the pairing and connect ports itself over mDNS. This works when
@@ -353,19 +355,15 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
   /// Runs in the background (no busy spinner) so the screen stays responsive;
   /// failures are swallowed — the manual Scan button remains as a fallback.
   Future<void> _autoScanAfterConnect() async {
-    try {
-      final paths = await AdbService.instance.scanAndroidDataVideos();
-      if (!mounted) return;
-      if (paths.isNotEmpty) {
-        ref.invalidate(adbVideosProvider);
-        setState(() {
-          _found = paths;
-          _output = 'Found ${paths.length} video(s) — added to Local.';
-        });
-      }
-    } catch (_) {
-      // Silent: the user can still tap "Scan Android/data for videos".
-    }
+    // The same scan the connection itself sets off (see AndroidDataSync):
+    // asking here shares it rather than running a second one.
+    final paths =
+        await ref.read(androidDataSyncProvider).sync(connected: true);
+    if (!mounted || paths == null || paths.isEmpty) return;
+    setState(() {
+      _found = paths;
+      _output = 'Found ${paths.length} video(s) — added to Local.';
+    });
   }
 
   /// Start the notification pairing flow. A background service posts
@@ -417,28 +415,6 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
       _pairingServiceOn = false;
       _output = 'Notification pairing stopped.';
     });
-  }
-
-  // ---- Primary: one-code (mDNS auto-discover) ----
-
-  void _pairMdns() {
-    final code = _code.text.trim();
-    if (code.length < 6) {
-      setState(() => _output = 'Enter the 6-digit pairing code first.');
-      return;
-    }
-    _run(
-      () => AdbService.instance.pairMdns(code),
-      'Pairing…\nKeep the "Pair device with pairing code" dialog visible '
-          '(split-screen / pop-up window).',
-    );
-  }
-
-  void _connectMdns() {
-    _run(
-      () => AdbService.instance.autoConnectAndRun('id'),
-      'Connecting automatically…',
-    );
   }
 
   /// One-tap: grant WRITE_SECURE_SETTINGS over ADB so the app can re-enable
@@ -537,9 +513,9 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
   /// The label adapts: with a fresh 6-digit code we pair first; otherwise we
   /// just (re)connect. One button so users don't have to know the order.
   String _primaryLabel() {
+    final s = AppStrings.of(context);
     final hasCode = _code.text.trim().length >= 6;
-    if (hasCode) return _pairedBefore ? 'Re-pair & connect' : 'Pair & connect';
-    return 'Connect';
+    return hasCode ? s.adbPairConnect : s.adbConnect;
   }
 
   /// One tap does the right thing: if a 6-digit code is present, pair first,
@@ -697,11 +673,12 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
           '(this can take a while on a full device)';
     });
     try {
-      final paths = await AdbService.instance.scanAndroidDataVideos();
+      // Through the sync, so the Video tab is refreshed with what it finds.
+      final paths = await ref
+          .read(androidDataSyncProvider)
+          .sync(connected: true, force: true);
       if (!mounted) return;
-      // Refresh the Local library so the newly-scanned Android/data videos
-      // show up there immediately (they're decoupled from "Show hidden").
-      ref.invalidate(adbVideosProvider);
+      if (paths == null) throw Exception('scan failed — is ADB connected?');
       setState(() {
         _found = paths;
         _output = paths.isEmpty
@@ -715,7 +692,179 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
     }
   }
 
-  // ---- Setup checklist ----
+  // ---- Layout ----
+  //
+  // ONE ANSWER FIRST, THEN THE ONE THING TO DO. The screen used to open on a
+  // checklist, three walls of instructions, an IP:port form and a raw
+  // command-output box, all at once. A viewer who came here because a folder
+  // would not open needs two things: is it connected, and what do I tap. So
+  // the hero card says the state in one line and carries the action for it;
+  // the setup steps and the pairing card appear only while they are needed;
+  // how to stay connected and how to switch ADB on and off are short cards
+  // below; everything technical is under Advanced.
+
+  /// Which state the hero card speaks for.
+  _AdbHero get _hero {
+    if (_connected == true) return _AdbHero.connected;
+    if (_connected == null && _busy) return _AdbHero.checking;
+    if (_pairedBefore) return _AdbHero.off;
+    return _AdbHero.fresh;
+  }
+
+  Widget _card({required Widget child, EdgeInsetsGeometry? padding}) =>
+      Container(
+        width: double.infinity,
+        margin: const EdgeInsets.only(bottom: 14),
+        padding: padding ?? const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.045),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+        ),
+        child: child,
+      );
+
+  Widget _heroCard() {
+    final s = AppStrings.of(context);
+    final hero = _hero;
+    final (Color color, IconData icon, String title, String sub) =
+        switch (hero) {
+      _AdbHero.connected => (
+          AppColors.success,
+          Icons.verified_rounded,
+          s.adbHeroConnected,
+          s.adbHeroConnectedSub,
+        ),
+      _AdbHero.checking => (
+          AppColors.accentBlue,
+          Icons.sync_rounded,
+          s.adbHeroChecking,
+          '',
+        ),
+      _AdbHero.off => (
+          AppColors.warning,
+          Icons.link_off_rounded,
+          s.adbHeroOff,
+          s.adbHeroOffSub,
+        ),
+      _AdbHero.fresh => (
+          AppColors.accentBlue,
+          Icons.folder_special_rounded,
+          s.adbHeroNew,
+          s.adbHeroNewSub,
+        ),
+    };
+    // The engine's own words only while something is happening, or when it
+    // failed for a reason the card above does not already say. The full
+    // text is always under Advanced → Details.
+    final friendly = _output.isEmpty ? '' : _friendly(_output);
+    final note = _busy ||
+            (_output.startsWith('ERROR') && !friendly.startsWith('Not connected'))
+        ? friendly
+        : '';
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: <Color>[
+            color.withValues(alpha: 0.24),
+            color.withValues(alpha: 0.06),
+          ],
+        ),
+        border: Border.all(color: color.withValues(alpha: 0.35)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: color.withValues(alpha: 0.2),
+                ),
+                child: hero == _AdbHero.checking
+                    ? Padding(
+                        padding: const EdgeInsets.all(15),
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2.2, color: color),
+                      )
+                    : Icon(icon, color: color, size: 28),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 19,
+                    fontWeight: FontWeight.w700,
+                    height: 1.3,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (sub.isNotEmpty) ...<Widget>[
+            const SizedBox(height: 12),
+            Text(sub,
+                style: const TextStyle(
+                    color: AppColors.white70, fontSize: 13.5, height: 1.55)),
+          ],
+          const SizedBox(height: 14),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: <Widget>[
+              if (hero == _AdbHero.connected)
+                FilledButton.icon(
+                  onPressed: _busy ? null : _scanAndroidData,
+                  icon: const Icon(Icons.video_library_rounded, size: 18),
+                  label: Text(s.adbFindVideos),
+                ),
+              if (hero == _AdbHero.off)
+                FilledButton.icon(
+                  onPressed: _busy ? null : _loadAndAutoConnect,
+                  icon: const Icon(Icons.refresh_rounded, size: 18),
+                  label: Text(s.adbReconnect),
+                ),
+              if (hero != _AdbHero.checking)
+                (hero == _AdbHero.fresh
+                    ? FilledButton.icon(
+                        onPressed: _busy ? null : _openWirelessDebugging,
+                        icon: const Icon(Icons.wifi_tethering_rounded, size: 18),
+                        label: Text(s.adbOpenWireless),
+                      )
+                    : OutlinedButton.icon(
+                        onPressed: _busy ? null : _openWirelessDebugging,
+                        icon: const Icon(Icons.wifi_tethering_rounded, size: 18),
+                        label: Text(s.adbOpenWireless),
+                      )),
+            ],
+          ),
+          if (note.isNotEmpty && hero != _AdbHero.connected) ...<Widget>[
+            const SizedBox(height: 12),
+            Text(
+              note,
+              maxLines: 4,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                  color: AppColors.white55, fontSize: 12, height: 1.45),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // ---- Setup steps ----
 
   /// Every step from Developer options to a live connection, ticked as it is
   /// done; the first one still to do is marked and carries the button that
@@ -725,52 +874,157 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
     if (st == null) return const SizedBox.shrink();
     final s = AppStrings.of(context);
     if (!st.supported) {
-      return Padding(
-        padding: const EdgeInsets.only(bottom: 16),
+      return _card(
         child: Text(s.adbNotSupported,
-            style: const TextStyle(color: Colors.orange)),
+            style: const TextStyle(color: AppColors.warning)),
       );
     }
     final paired = _pairedBefore;
     final connected = _connected == true;
     final next = st.next(paired: paired, connected: connected);
 
-    Widget row(AdbSetupStep step, String label, bool done,
-        {String? action, VoidCallback? onAction}) {
-      final current = next == step;
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 3),
+    final steps = <({
+      AdbSetupStep step,
+      String label,
+      bool done,
+      String? action,
+      VoidCallback? onAction,
+    })>[
+      (
+        step: AdbSetupStep.devOptions,
+        label: s.adbStepDevOptions,
+        done: st.devOptions,
+        action: s.adbStepHow,
+        onAction: _openWirelessDebugging,
+      ),
+      (
+        step: AdbSetupStep.wifi,
+        label: s.adbStepWifi,
+        done: st.wifi,
+        action: null,
+        onAction: null,
+      ),
+      (
+        step: AdbSetupStep.wirelessDebugging,
+        label: s.adbStepWireless,
+        done: st.wirelessDebugging,
+        action: s.adbStepOpen,
+        onAction: _openWirelessDebugging,
+      ),
+      (
+        step: AdbSetupStep.notifications,
+        label: s.adbStepNotifications,
+        done: st.notifications,
+        action: s.adbStepOpen,
+        onAction: AdbService.instance.openNotificationSettings,
+      ),
+      (
+        step: AdbSetupStep.pair,
+        label: s.adbStepPaired,
+        done: paired,
+        action: null,
+        onAction: null,
+      ),
+      (
+        step: AdbSetupStep.connect,
+        label: s.adbStepConnected,
+        done: connected,
+        action: null,
+        onAction: null,
+      ),
+    ];
+
+    Widget row(int i) {
+      final e = steps[i];
+      final current = next == e.step;
+      final last = i == steps.length - 1;
+      final dotColor = e.done
+          ? AppColors.success
+          : current
+              ? AppColors.accentBlue
+              : Colors.white24;
+      return IntrinsicHeight(
         child: Row(
-          children: [
-            Icon(
-              done
-                  ? Icons.check_circle
-                  : current
-                      ? Icons.arrow_circle_right
-                      : Icons.radio_button_unchecked,
-              size: 20,
-              color: done
-                  ? Colors.green
-                  : current
-                      ? Colors.lightBlueAccent
-                      : Colors.white38,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            SizedBox(
+              width: 28,
+              child: Column(
+                children: <Widget>[
+                  Container(
+                    width: 26,
+                    height: 26,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: e.done || current
+                          ? dotColor.withValues(alpha: e.done ? 0.9 : 1)
+                          : Colors.transparent,
+                      border: Border.all(color: dotColor, width: 1.5),
+                    ),
+                    child: e.done
+                        ? const Icon(Icons.check_rounded,
+                            size: 16, color: Colors.white)
+                        : Text('${i + 1}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: current ? Colors.white : Colors.white54,
+                            )),
+                  ),
+                  if (!last)
+                    Expanded(
+                      child: Container(
+                        width: 2,
+                        margin: const EdgeInsets.symmetric(vertical: 3),
+                        color: e.done
+                            ? AppColors.success.withValues(alpha: 0.5)
+                            : Colors.white12,
+                      ),
+                    ),
+                ],
+              ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 12),
             Expanded(
-              child: Text(
-                label,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: current ? FontWeight.w600 : FontWeight.normal,
-                  color: done || current ? null : Colors.white60,
+              child: Padding(
+                padding: EdgeInsets.only(top: 3, bottom: last ? 0 : 14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      e.label,
+                      style: TextStyle(
+                        fontSize: 13.5,
+                        height: 1.4,
+                        fontWeight:
+                            current ? FontWeight.w700 : FontWeight.w500,
+                        color: e.done || current
+                            ? Colors.white
+                            : Colors.white60,
+                      ),
+                    ),
+                    if (e.step == AdbSetupStep.wifi && !st.wifi) ...<Widget>[
+                      const SizedBox(height: 4),
+                      Text(s.adbWifiNeeded,
+                          style: const TextStyle(
+                              fontSize: 12, color: Colors.white60, height: 1.4)),
+                    ],
+                    if (current && e.action != null && e.onAction != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 6),
+                        child: FilledButton.tonal(
+                          onPressed: _busy ? null : e.onAction,
+                          style: FilledButton.styleFrom(
+                            visualDensity: VisualDensity.compact,
+                          ),
+                          child: Text(e.action!),
+                        ),
+                      ),
+                  ],
                 ),
               ),
             ),
-            if (current && action != null && onAction != null)
-              TextButton(
-                onPressed: _busy ? null : onAction,
-                child: Text(action),
-              ),
           ],
         ),
       );
@@ -782,45 +1036,276 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
       AdbBrand.transsion => s.adbTipTranssion,
       _ => null,
     };
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.fromLTRB(12, 10, 4, 10),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(8),
-      ),
+    return _card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+        children: <Widget>[
           Text(s.adbStepsTitle,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-          const SizedBox(height: 6),
-          row(AdbSetupStep.devOptions, s.adbStepDevOptions, st.devOptions,
-              action: s.adbStepHow, onAction: _openWirelessDebugging),
-          row(AdbSetupStep.wifi, s.adbStepWifi, st.wifi),
-          if (!st.wifi)
-            Padding(
-              padding: const EdgeInsets.only(left: 30, right: 8, bottom: 4),
-              child: Text(s.adbWifiNeeded,
-                  style: const TextStyle(fontSize: 12, color: Colors.white60)),
+              style: const TextStyle(
+                  fontWeight: FontWeight.w700, fontSize: 15.5)),
+          const SizedBox(height: 14),
+          for (var i = 0; i < steps.length; i++) row(i),
+          if (tip != null) ...<Widget>[
+            const SizedBox(height: 12),
+            _tipLine(Icons.tips_and_updates_outlined, tip),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _tipLine(IconData icon, String text) => Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Padding(
+            padding: const EdgeInsets.only(top: 1),
+            child: Icon(icon, size: 18, color: AppColors.accentBlueLight),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(text,
+                style: const TextStyle(
+                    fontSize: 12.5, color: AppColors.white70, height: 1.5)),
+          ),
+        ],
+      );
+
+  // ---- Pairing ----
+
+  Widget _pairCard() {
+    final s = AppStrings.of(context);
+    return _card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              const Icon(Icons.qr_code_2_rounded,
+                  color: AppColors.accentBlueLight, size: 22),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(s.adbPairTitle,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w700, fontSize: 15.5)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(s.adbPairNotifSub,
+              style: const TextStyle(
+                  fontSize: 13, color: AppColors.white70, height: 1.5)),
+          const SizedBox(height: 12),
+          if (!_pairingServiceOn)
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: _busy ? null : _startNotificationPairing,
+                icon: const Icon(Icons.notifications_active_rounded, size: 18),
+                label: Text(s.adbPairNotif),
+              ),
+            )
+          else
+            Container(
+              padding: const EdgeInsets.fromLTRB(12, 6, 4, 6),
+              decoration: BoxDecoration(
+                color: AppColors.accentBlue.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: <Widget>[
+                  const SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(strokeWidth: 1.6),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(s.adbPairWaiting,
+                        style: const TextStyle(fontSize: 12.5)),
+                  ),
+                  TextButton(
+                    onPressed: _busy ? null : _stopNotificationPairing,
+                    child: Text(s.cancel),
+                  ),
+                ],
+              ),
             ),
-          row(AdbSetupStep.wirelessDebugging, s.adbStepWireless,
-              st.wirelessDebugging,
-              action: s.adbStepOpen, onAction: _openWirelessDebugging),
-          row(AdbSetupStep.notifications, s.adbStepNotifications,
-              st.notifications,
-              action: s.adbStepOpen,
-              onAction: AdbService.instance.openNotificationSettings),
-          row(AdbSetupStep.pair, s.adbStepPaired, paired),
-          row(AdbSetupStep.connect, s.adbStepConnected, connected),
-          if (tip != null) ...[
+          const SizedBox(height: 14),
+          Text(s.adbPairInApp,
+              style: const TextStyle(fontSize: 12, color: Colors.white54)),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _code,
+            keyboardType: TextInputType.number,
+            maxLength: 6,
+            onChanged: (_) => setState(() {}),
+            style: const TextStyle(fontSize: 18, letterSpacing: 6),
+            decoration: InputDecoration(
+              labelText: s.adbPairCodeLabel,
+              hintText: '• • • • • •',
+              counterText: '',
+              isDense: true,
+              border:
+                  OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.tonal(
+              onPressed: _busy ? null : _pairAndConnect,
+              child: Text(_primaryLabel()),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---- Staying connected, and switching ADB on and off ----
+
+  Widget _stayCard() {
+    final s = AppStrings.of(context);
+    return _card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(s.adbStayTitle,
+              style:
+                  const TextStyle(fontWeight: FontWeight.w700, fontSize: 15.5)),
+          const SizedBox(height: 12),
+          _tipLine(Icons.wifi_rounded, s.adbStayWifi),
+          const SizedBox(height: 10),
+          _tipLine(Icons.cloud_sync_rounded, s.adbStayBackground),
+          const SizedBox(height: 10),
+          _tipLine(Icons.toggle_on_rounded, s.adbStayTile),
+          const SizedBox(height: 10),
+          _tipLine(Icons.battery_charging_full_rounded, s.adbStayBattery),
+        ],
+      ),
+    );
+  }
+
+  Widget _guideCard() {
+    final s = AppStrings.of(context);
+    Widget step(int n, String text) => Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Container(
+                width: 22,
+                height: 22,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.accentBlue.withValues(alpha: 0.18),
+                ),
+                child: Text('$n',
+                    style: const TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.accentBlueLight)),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(text,
+                    style: const TextStyle(
+                        fontSize: 13, color: AppColors.white70, height: 1.5)),
+              ),
+            ],
+          ),
+        );
+    Widget heading(String text) => Padding(
+          padding: const EdgeInsets.only(top: 4, bottom: 10),
+          child: Text(text,
+              style: const TextStyle(
+                  fontSize: 13.5, fontWeight: FontWeight.w700)),
+        );
+    final brands = s.adbGuideWhere.split('\n');
+    return _card(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          leading: const Icon(Icons.power_settings_new_rounded,
+              color: AppColors.accentBlueLight),
+          title: Text(s.adbGuideTitle,
+              style: const TextStyle(
+                  fontWeight: FontWeight.w700, fontSize: 15.5)),
+          childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+          expandedCrossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            heading(s.adbGuideOnTitle),
+            step(1, s.adbGuideOn1),
+            step(2, s.adbGuideOn2),
+            step(3, s.adbGuideOn3),
+            heading(s.adbGuideOffTitle),
+            step(1, s.adbGuideOff1),
+            step(2, s.adbGuideOff2),
+            const SizedBox(height: 4),
+            _tipLine(Icons.shield_outlined, s.adbGuideSafety),
+            heading(s.adbGuideWhereTitle),
+            for (final line in brands)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text.rich(
+                  TextSpan(
+                    children: <InlineSpan>[
+                      TextSpan(
+                        text: line.split(' — ').first,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w700, color: Colors.white),
+                      ),
+                      if (line.contains(' — '))
+                        TextSpan(
+                            text:
+                                ' — ${line.substring(line.indexOf(' — ') + 3)}'),
+                    ],
+                  ),
+                  style: const TextStyle(
+                      fontSize: 12.5, color: AppColors.white70, height: 1.5),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ---- Android/data ----
+
+  Widget _androidDataCard() {
+    final s = AppStrings.of(context);
+    return _card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(s.adbAndroidDataTitle,
+              style:
+                  const TextStyle(fontWeight: FontWeight.w700, fontSize: 15.5)),
+          const SizedBox(height: 8),
+          Text(s.adbAndroidDataSub,
+              style: const TextStyle(
+                  fontSize: 13, color: AppColors.white70, height: 1.5)),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: _busy || _connected != true ? null : _scanAndroidData,
+            icon: const Icon(Icons.search_rounded, size: 18),
+            label: Text(s.adbFindVideos),
+          ),
+          if (_found.isNotEmpty) ...<Widget>[
+            const SizedBox(height: 12),
+            Text(s.adbFound(_found.length),
+                style: const TextStyle(fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: Text(tip,
-                  style: const TextStyle(fontSize: 12, color: Colors.white70)),
-            ),
+            ..._found.take(200).map(_videoTile),
+            if (_found.length > 200)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text('… +${_found.length - 200}',
+                    style: const TextStyle(color: Colors.white54)),
+              ),
           ],
         ],
       ),
@@ -842,9 +1327,9 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
       padding: const EdgeInsets.only(bottom: 6),
       child: Material(
         color: Colors.white10,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
         child: InkWell(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(12),
           onTap: _busy ? null : () => _playAdbVideo(path),
           child: Padding(
             padding:
@@ -884,164 +1369,53 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
 
   @override
   Widget build(BuildContext context) {
+    final s = AppStrings.of(context);
+    final needsSetup = _connected != true;
     return Scaffold(
-      appBar: AppBar(title: const Text('ADB connection (experimental)')),
+      appBar: AppBar(title: Text(s.adbScreenTitle)),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
         children: [
           if (_exposed) _exposureWarning(),
-          _setupChecklist(),
-          ..._builtinSection(),
-
-          const SizedBox(height: 24),
-          const Divider(),
-          const SizedBox(height: 8),
-
-          // ---------- Android/data access (shared) ----------
-          _sectionTitle('Android/data access'),
-          const Text(
-            'Once connected, scan for videos inside Android/data and '
-            'Android/obb (Telegram and other app caches) — folders the app '
-            "itself can't read, but ADB can.",
-            style: TextStyle(fontSize: 13),
-          ),
-          const SizedBox(height: 10),
-          FilledButton.icon(
-            onPressed: _busy ? null : _scanAndroidData,
-            icon: const Icon(Icons.search),
-            label: const Text('Scan Android/data for videos'),
-          ),
-          if (_found.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Text('${_found.length} video(s) found:',
-                style: const TextStyle(fontWeight: FontWeight.w600)),
-            const SizedBox(height: 8),
-            ..._found.take(200).map(_videoTile),
-            if (_found.length > 200)
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Text('… and ${_found.length - 200} more',
-                    style: const TextStyle(color: Colors.white54)),
+          _heroCard(),
+          if (needsSetup) _setupChecklist(),
+          if (needsSetup) _pairCard(),
+          _stayCard(),
+          _guideCard(),
+          _androidDataCard(),
+          _card(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+            child: Theme(
+              data:
+                  Theme.of(context).copyWith(dividerColor: Colors.transparent),
+              child: ExpansionTile(
+                leading: const Icon(Icons.tune_rounded,
+                    color: AppColors.white55),
+                title: Text(s.adbAdvanced,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w700, fontSize: 15.5)),
+                childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 14),
+                expandedCrossAxisAlignment: CrossAxisAlignment.start,
+                children: _advancedSection(),
               ),
-          ],
+            ),
+          ),
         ],
       ),
     );
   }
 
-  /// The pairing / connect / after-reboot controls of Innocent's own ADB
-  /// engine — the only way in since 1.64.59 (the separately installed iADB
-  /// app is no longer used).
-  List<Widget> _builtinSection() {
+  /// The controls a viewer rarely needs: restoring after a reboot, the
+  /// manual IP:port fallback, and the engine's own words.
+  List<Widget> _advancedSection() {
+    final s = AppStrings.of(context);
     return [
-      if (_pairedBefore)
-        Container(
-          width: double.infinity,
-          margin: const EdgeInsets.only(bottom: 16),
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.green.withOpacity(0.15),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: const Text(
-            '✓ This device was paired before — reconnecting automatically. '
-            'You only need to pair again after a reboot (Wireless debugging '
-            'turns itself off then).',
-          ),
-        ),
-      _sectionTitle('Easy setup — just one code'),
-      const Text(
-        'First time only:\n'
-        '1. Work down the checklist above until Wireless debugging is on.\n'
-        '2. Tap "Pair from notification" below, then in Settings tap '
-        '"Pair device with pairing code" — it shows a 6-digit code.\n'
-        '3. Pull down the notification shade and type that code into the '
-        'Innocent notification. No split-screen, no IP address.\n\n'
-        'It connects as soon as it is paired, and next time this screen '
-        'reconnects on its own.',
-        style: TextStyle(fontSize: 13),
-      ),
-      const SizedBox(height: 12),
-      OutlinedButton.icon(
-        onPressed: _busy ? null : _openWirelessDebugging,
-        icon: const Icon(Icons.settings),
-        label: const Text('Open Wireless debugging'),
-      ),
-      const SizedBox(height: 12),
-      // Pair from the notification shade — no split-screen.
       Container(
         width: double.infinity,
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.teal.withOpacity(0.12),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Easiest: pair from the notification',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 4),
-            const Text(
-              'No split-screen. Start this, open the pairing dialog, then '
-              'type the 6-digit code into the notification and send.',
-              style: TextStyle(fontSize: 12),
-            ),
-            const SizedBox(height: 8),
-            if (!_pairingServiceOn)
-              FilledButton.tonalIcon(
-                onPressed: _busy ? null : _startNotificationPairing,
-                icon: const Icon(Icons.notifications_active),
-                label: const Text('Pair from notification'),
-              )
-            else
-              Row(
-                children: [
-                  const Expanded(
-                    child: Text(
-                      'Waiting for the code in the notification…',
-                      style:
-                          TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: _busy ? null : _stopNotificationPairing,
-                    child: const Text('Cancel'),
-                  ),
-                ],
-              ),
-          ],
-        ),
-      ),
-      const SizedBox(height: 12),
-      const Text(
-        'Or pair with the code in-app (needs the pairing dialog visible):',
-        style: TextStyle(fontSize: 12, color: Colors.white54),
-      ),
-      const SizedBox(height: 8),
-      TextField(
-        controller: _code,
-        keyboardType: TextInputType.number,
-        decoration: const InputDecoration(
-          labelText: 'Pairing code (6 digits)',
-          hintText: 'e.g. 860163',
-          border: OutlineInputBorder(),
-        ),
-      ),
-      const SizedBox(height: 10),
-      FilledButton(
-        onPressed: _busy ? null : _pairAndConnect,
-        child: Text(_primaryLabel()),
-      ),
-      const SizedBox(height: 16),
-      Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.blue.withOpacity(0.10),
-          borderRadius: BorderRadius.circular(8),
+          color: Colors.blue.withValues(alpha: 0.10),
+          borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1074,6 +1448,11 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
                       'no PC, no root.',
               style: const TextStyle(fontSize: 12),
             ),
+            const SizedBox(height: 6),
+            Text(
+              s.adbGuideSafety,
+              style: const TextStyle(fontSize: 12, color: Colors.white60),
+            ),
             const SizedBox(height: 8),
             if (_exposed)
               const Padding(
@@ -1094,7 +1473,7 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
               )
             else
               FilledButton.tonalIcon(
-                onPressed: _busy ? null : _setupAutoEnable,
+                onPressed: _busy || _connected != true ? null : _setupAutoEnable,
                 icon: const Icon(Icons.bolt),
                 label: const Text('Set up auto-reconnect'),
               ),
@@ -1125,12 +1504,12 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
             // silently and for ever was the finding.
             if (_autoEnableGranted) ...<Widget>[
               const Divider(height: 24),
-              Row(
+              const Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  const Icon(Icons.shield_outlined, size: 16),
-                  const SizedBox(width: 8),
-                  const Expanded(
+                  Icon(Icons.shield_outlined, size: 16),
+                  SizedBox(width: 8),
+                  Expanded(
                     child: Text(
                       'Innocent holds WRITE_SECURE_SETTINGS. That is what '
                       'lets it switch Wireless debugging back on by itself. '
@@ -1153,36 +1532,15 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
           ],
         ),
       ),
-      const SizedBox(height: 24),
-      // ---------- Status (built-in only) ----------
-      _sectionTitle('Status'),
-      if (_connected != null)
-        Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: Row(
-            children: [
-              Icon(
-                _connected! ? Icons.check_circle : Icons.cancel,
-                size: 18,
-                color: _connected! ? Colors.green : Colors.redAccent,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                _connected! ? 'Connected' : 'Not connected',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: _connected! ? Colors.green : Colors.redAccent,
-                ),
-              ),
-            ],
-          ),
-        ),
+      const SizedBox(height: 16),
+      // ---------- Details: the engine's own words ----------
+      _sectionTitle(s.adbDetails),
       Container(
         width: double.infinity,
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: Colors.black26,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
           children: [
@@ -1197,21 +1555,21 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
               ),
             Expanded(
               child: SelectableText(
-                _output.isEmpty ? '(no output yet)' : _friendly(_output),
+                _output.isEmpty ? '—' : _friendly(_output),
+                style: const TextStyle(fontSize: 12),
               ),
             ),
           ],
         ),
       ),
-      const SizedBox(height: 24),
-      const Divider(),
-      // ---------- Advanced: manual IP:Port (built-in only) ----------
+      const SizedBox(height: 8),
+      // ---------- Manual IP:Port ----------
       TextButton.icon(
         onPressed: () => setState(() => _showManual = !_showManual),
         icon: Icon(_showManual ? Icons.expand_less : Icons.expand_more),
         label: Text(_showManual
-            ? 'Hide advanced (manual IP:Port)'
-            : 'Advanced — manual IP:Port (if the code alone fails)'),
+            ? 'Hide manual IP:Port'
+            : 'Manual IP:Port (if the code alone fails)'),
       ),
       if (_showManual) ...[
         const SizedBox(height: 8),
@@ -1262,3 +1620,6 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
     ];
   }
 }
+
+/// The states the hero card has words for.
+enum _AdbHero { checking, connected, off, fresh }

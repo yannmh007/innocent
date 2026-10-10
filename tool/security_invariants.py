@@ -141,31 +141,47 @@ for r, d, f in os.walk(os.path.join(ROOT, 'lib')):
                     'lib/core/utils/media_address.dart.'
                     % (os.path.relpath(path, ROOT), field, rule))
 
-# --- 7. a download is the original, never a rung ---------------------------
-# The transcode ladder exists so STREAMING can be matched to a connection
-# second by second: a viewer on a weak link gets a smaller copy instead of a
-# film that stops. A download is the opposite situation. The whole reason
-# somebody waits an hour or two on Myanmar mobile data is to end up with the
-# film as it was uploaded, and a download that quietly handed back a 480p rung
-# would have spent that wait on the one thing it was not for.
-#
-# `grant.url` is signed from the original object key; `grant.renditions` are
-# the ladder. The offline downloader may read the first and must never read the
-# second. This is a rule about which of two right answers belongs on which
-# side, so it cannot be caught by review of the diff that breaks it — the line
-# would look perfectly sensible.
+# --- 7. a download is the original unless the viewer chose a smaller copy --
+# Downloads used to be the original and nothing else. Since 1.64.60 the viewer
+# may choose a streaming rung instead (Netflix's Standard/Higher, YouTube's
+# resolutions) — the same film at a size a data bundle and a small phone can
+# afford. Two things must stay true, and neither is visible in a diff that
+# breaks it:
+#   * THE DEFAULT IS THE ORIGINAL. Somebody who never opens the quality sheet
+#     gets exactly what they got before: `grant.url`, signed from the original
+#     object key. `download()`'s own default is DownloadQuality.original.
+#   * THE LADDER IS REACHED IN ONE PLACE. `downloadSource` in download_plan.dart
+#     decides, deterministically, so every renewal of a two-hour download lands
+#     on the same file. The downloader may mention `renditions` only to hand
+#     the ladder to it.
 OFFLINE = os.path.join(FEATURE, 'data/api/offline_downloader.dart')
+PLAN = os.path.join(FEATURE, 'data/api/download_plan.dart')
 if os.path.isfile(OFFLINE):
     body = strip(open(OFFLINE, encoding='utf-8').read())
-    if 'renditions' in body:
+    uses = re.findall(r'[\w.]*renditions', body)
+    if any(u != 'grant.renditions' for u in uses) or body.count('renditions') != 1 \
+            or 'ladder: grant.renditions' not in body:
         fails.append(
-            'DOWNLOAD DOWNGRADED: offline_downloader.dart mentions renditions. '
-            'A download must fetch grant.url, which is the ORIGINAL object - '
-            'the ladder is for streaming only.')
+            'DOWNLOAD SOURCE BYPASSED: offline_downloader.dart must reach the '
+            'ladder only as `ladder: grant.renditions` handed to downloadSource '
+            '(download_plan.dart), which keeps the original the default and a '
+            'resume on the same file.')
     if 'grant.url' not in body:
         fails.append(
             'DOWNLOAD SOURCE UNCLEAR: offline_downloader.dart no longer reads '
-            'grant.url. The original object is what a download is for.')
+            'grant.url. The original object is what a download is by default.')
+    if 'String quality = DownloadQuality.original' not in body:
+        fails.append(
+            'DOWNLOAD DEFAULT CHANGED: download() must default to '
+            'DownloadQuality.original — a viewer who never chose gets the '
+            'original, as before.')
+if os.path.isfile(PLAN):
+    plan = strip(open(PLAN, encoding='utf-8').read())
+    if not re.search(r'q == DownloadQuality\.original \|\| ladder\.isEmpty\)\s*\{\s*'
+                     r'return \(url: originalUrl', plan):
+        fails.append(
+            'DOWNLOAD DEFAULT CHANGED: downloadSource must answer the original '
+            'URL for the original choice (and for a film with no ladder).')
 
 # --- 9. nothing deletes a file another thread is still writing --------------
 #

@@ -3,9 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/localization/app_strings.dart';
+import '../../../core/services/adb/adb_service.dart';
 import '../../../core/services/preferences/player_settings_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../about/about_screen.dart';
+import '../../android_data/presentation/android_data_screen.dart';
 import '../../downloader/presentation/downloader_home_screen.dart';
 import '../../network_stream/presentation/network_stream_screen.dart';
 import '../../../core/router/routes.dart';
@@ -29,7 +31,7 @@ import '../../../core/theme/tab_title.dart';
 /// Phase 19: Me tab — full MX Player parity.
 ///
 /// Top: 9-icon grid (3x3) inside a rounded card.
-/// Then: Status Saver row.
+/// Then: Status Saver and Hidden files (Android/data).
 /// Then: Your library (History, Favourites, Watch later, Insights).
 /// Then: Settings / Backup & Restore, and Help / About.
 class MeScreen extends StatelessWidget {
@@ -156,12 +158,37 @@ class MeScreen extends StatelessWidget {
             // Nothing was removed: App theme and Custom pop-up play are in
             // Settings, Statistics is inside Insights, Legal inside About.
             _Card(
-              child: _MeRow(
-                icon: Icons.download_rounded,
-                tint: const Color(0xFF25D366),
-                filled: true,
-                label: s.statusSaver,
-                onTap: () => _open(context, const StatusSaverScreen()),
+              child: Column(
+                children: [
+                  _MeRow(
+                    icon: Icons.download_rounded,
+                    tint: const Color(0xFF25D366),
+                    filled: true,
+                    label: s.statusSaver,
+                    onTap: () => _open(context, const StatusSaverScreen()),
+                  ),
+                  // Other apps' files, beside WhatsApp's statuses: Telegram's
+                  // downloads and every app's private folder, read over
+                  // Innocent's own ADB connection. It used to be reachable
+                  // only from the bottom of Settings → List, as "ADB
+                  // connection (experimental)".
+                  const Divider(
+                      height: 1, indent: 64, color: AppColors.darkDivider),
+                  // Connected, it says so — and that the videos are in the
+                  // Video tab as well, which is where people look for them.
+                  ValueListenableBuilder<bool?>(
+                    valueListenable: AdbService.instance.live,
+                    builder: (context, live, _) => _MeRow(
+                      icon: Icons.snippet_folder_rounded,
+                      tint: const Color(0xFF2AABEE),
+                      filled: true,
+                      label: s.hfTitle,
+                      hint: live == true ? s.hfLive : s.hfHint,
+                      hintColor: live == true ? AppColors.success : null,
+                      onTap: () => _open(context, const AndroidDataScreen()),
+                    ),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 12),
@@ -452,6 +479,7 @@ class _MeRow extends StatelessWidget {
     required this.label,
     required this.onTap,
     this.hint,
+    this.hintColor,
     this.filled = false,
   });
 
@@ -459,6 +487,10 @@ class _MeRow extends StatelessWidget {
   final Color tint;
   final String label;
   final String? hint;
+
+  /// The hint's colour when it reports a state (connected) rather than
+  /// describing the row.
+  final Color? hintColor;
   final VoidCallback onTap;
 
   /// A solid tile with a white glyph (Status Saver, MX's green square)
@@ -503,7 +535,7 @@ class _MeRow extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: AppColors.white50,
+                        color: hintColor ?? AppColors.white50,
                         fontSize: 12.5,
                         height: mm ? 1.5 : 1.3,
                       ),

@@ -2,7 +2,6 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
-import '../../core/localization/app_strings.dart';
 /// The Innocent brand mark, drawn entirely in code — no image asset.
 ///
 /// v0.49.3 — redrawn 1:1 from the reference artwork (Innocent.png,
@@ -124,8 +123,7 @@ class _LogoGeometry {
   static const double barB = 0.2213; // top bar bottom
   static const double botT = 0.7851; // bottom bar top
 
-  // The two 45°-in-pixels diagonals: u = c − k · v, with k = H / W.
-  static const double k = 1.936;
+  // The two 45°-in-pixels diagonals: u = c − k · v, with k = H / W = 1.936.
   static const double redTopU = 0.9506; // red diagonal at v = 0
   static const double darkTopV = 0.0202; // dark diagonal at u = 1
   static const double redTipV = 0.3760; // red wedge tip on stem-left

@@ -45,7 +45,11 @@ concurrency:
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    # Two hours, not one. Run 38036234614 spent 15 minutes building, then
+    # waited on Test Lab past the hour (its phones queue when Google's racks
+    # are busy) and was cut off before it could collect anything — the
+    # phones went on to run without anyone to read the results.
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
 
@@ -76,22 +80,22 @@ jobs:
       # logcat, and answers Test Lab's game-loop launch by playing the film
       # pushed below (src/lab/AndroidManifest.xml, lib/app.dart).
       - uses: actions/setup-java@v4
-        if: steps.mode.outputs.mode == 'playback' && steps.mode.outputs.fetch == ''
+        if: (steps.mode.outputs.mode == 'playback' || steps.mode.outputs.mode == 'stream') && steps.mode.outputs.fetch == ''
         with:
           distribution: temurin
           java-version: '17'
       - uses: subosito/flutter-action@v2
-        if: steps.mode.outputs.mode == 'playback' && steps.mode.outputs.fetch == ''
+        if: (steps.mode.outputs.mode == 'playback' || steps.mode.outputs.mode == 'stream') && steps.mode.outputs.fetch == ''
         with:
           flutter-version: 3.32.8
           channel: stable
           cache: true
       - uses: android-actions/setup-android@v3
-        if: steps.mode.outputs.mode == 'playback' && steps.mode.outputs.fetch == ''
+        if: (steps.mode.outputs.mode == 'playback' || steps.mode.outputs.mode == 'stream') && steps.mode.outputs.fetch == ''
         with:
           packages: ''
       - name: Build the arm64 lab APK and the film
-        if: steps.mode.outputs.mode == 'playback' && steps.mode.outputs.fetch == ''
+        if: (steps.mode.outputs.mode == 'playback' || steps.mode.outputs.mode == 'stream') && steps.mode.outputs.fetch == ''
         env:
           INNOCENT_LAB_ABI: arm64-v8a
         run: |
@@ -100,9 +104,24 @@ jobs:
           sdkmanager "platforms;android-36" "build-tools;35.0.0" "build-tools;36.0.0" "ndk;27.0.12077973"
           echo "org.gradle.jvmargs=-Xmx6144M -XX:MaxMetaspaceSize=1024m -Dfile.encoding=UTF-8" >> android/gradle.properties
           flutter pub get
-          flutter build apk --release --target-platform android-arm64 --dart-define=INNOCENT_LAB=true
+          source test_device/cloud.env
+          # MODE=stream: the catalogue title the phones play, compiled in.
+          flutter build apk --release --target-platform android-arm64 \
+            --dart-define=INNOCENT_LAB=true \
+            --dart-define=INNOCENT_LAB_TITLE="${STREAM_TITLE:-}"
           cp build/app/outputs/flutter-apk/app-release.apk app.apk
+          # DEVICES32: phones that run 32-bit Android take the armeabi-v7a
+          # build — the release's second APK (build.yml) — in a matrix of
+          # their own; the arm64 APK cannot even be installed there.
+          if [ -n "${DEVICES32:-}" ]; then
+            INNOCENT_LAB_ABI=armeabi-v7a flutter build apk --release --target-platform android-arm \
+              --dart-define=INNOCENT_LAB=true \
+              --dart-define=INNOCENT_LAB_TITLE="${STREAM_TITLE:-}"
+            cp build/app/outputs/flutter-apk/app-release.apk app32.apk
+            ls -la app32.apk
+          fi
           echo "TAG=lab-${GITHUB_SHA::7}" >> "$GITHUB_ENV"
+          [ "${MODE:-robo}" = stream ] && { ls -la app.apk; exit 0; }
           # The film: 720p H.264 at a film's bitrate, long enough for the
           # three phases of the script (about 165 s).
           sudo apt-get install -y -qq ffmpeg >/dev/null
@@ -113,7 +132,7 @@ jobs:
           ls -la app.apk play.mp4
 
       - name: Fetch the released APK
-        if: steps.mode.outputs.mode != 'playback' && steps.mode.outputs.fetch == '' && steps.ready.outputs.ok == 'true'
+        if: steps.mode.outputs.mode != 'playback' && steps.mode.outputs.mode != 'stream' && steps.mode.outputs.fetch == '' && steps.ready.outputs.ok == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -151,6 +170,11 @@ jobs:
             m=${d%%,*}; v=${d##*,}
             device_args+=(--device "model=$m,version=$v,locale=$LOCALE,orientation=portrait")
           done
+          device32_args=()
+          for d in ${DEVICES32:-}; do
+            m=${d%%,*}; v=${d##*,}
+            device32_args+=(--device "model=$m,version=$v,locale=$LOCALE,orientation=portrait")
+          done
           dir="innocent/${GITHUB_RUN_ID}"
           if [ -n "${FETCH_RUN:-}" ]; then
             # Only collect what an earlier run left in Test Lab's bucket
@@ -161,6 +185,39 @@ jobs:
             echo "storage/browser/${BUCKET}/${dir}/" >> out/run.txt
             echo '{}' > out/matrix.json
             rc=0
+          elif [ "${MODE:-robo}" = stream ]; then
+            # A catalogue title through the real API, Worker and R2, on each
+            # phone's own connection (scenario 3; the app closes after four
+            # minutes). Startup, rung, climbs and stalls are in the trail.
+            # The 32-bit phones at the same time, on the 32-bit build.
+            if [ -f app32.apk ]; then
+              gcloud firebase test android run \
+                --type game-loop \
+                --app app32.apk \
+                "${device32_args[@]}" \
+                --scenario-numbers 3 \
+                --timeout 360s \
+                --results-dir "$dir-arm32" \
+                --format=json > out/matrix32.json 2> out/run32.txt &
+              pid32=$!
+            fi
+            if [ "${#device_args[@]}" -gt 0 ]; then
+              gcloud firebase test android run \
+                --type game-loop \
+                --app app.apk \
+                "${device_args[@]}" \
+                --scenario-numbers 3 \
+                --timeout 360s \
+                --results-dir "$dir" \
+                --format=json > out/matrix.json 2> out/run.txt && rc=0 || rc=$?
+            else
+              rc=0
+            fi
+            if [ -n "${pid32:-}" ]; then
+              wait "$pid32" && rc32=0 || rc32=$?
+              echo "32-bit matrix exit $rc32" >> out/run32.txt
+              cat out/run32.txt >> out/run.txt
+            fi
           elif [ "${MODE:-robo}" = playback ]; then
             # Left alone for the whole run: no crawler, just the film.
             gcloud firebase test android run \
@@ -194,6 +251,9 @@ jobs:
           if [ -n "$bucket" ]; then
             mkdir -p out/raw
             gcloud storage cp -r "gs://$bucket/$dir/*" out/raw/ >/dev/null 2>&1 || true
+            # The 32-bit phones' matrix, when there was one. Its phones are
+            # other models, so their folders sit beside the others'.
+            gcloud storage cp -r "gs://$bucket/$dir-arm32/*" out/raw/ >/dev/null 2>&1 || true
             find out/raw -maxdepth 2 | head -20
           fi
 

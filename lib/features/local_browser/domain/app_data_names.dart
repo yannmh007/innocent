@@ -37,7 +37,11 @@ String appDataFolderName(String path) {
   if (pkg == null) return base;
   final label = appLabelForPackage(pkg);
   if (base == pkg) return label;
-  if (_generic.contains(base.toLowerCase()) || !RegExp(r'[A-Za-z]{3}').hasMatch(base)) {
+  // A dot folder (".temp", ".cache") says no more about whose it is than
+  // its plain name would; it read as a bare ".temp" in the pickers.
+  if (base.startsWith('.') ||
+      _generic.contains(base.toLowerCase()) ||
+      !RegExp(r'[A-Za-z]{3}').hasMatch(base)) {
     return '$label · $base';
   }
   return base;

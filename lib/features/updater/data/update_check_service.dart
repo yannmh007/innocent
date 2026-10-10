@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:http/http.dart' as http;
 
 import '../../video_hub/data/api/backend_config.dart';
@@ -18,10 +19,14 @@ import '../domain/app_release.dart';
 ///
 /// See `docs/updater_plan.md` §2.
 class UpdateCheckService {
-  const UpdateCheckService({this.httpClient});
+  const UpdateCheckService({this.httpClient, this.abis});
 
   /// Injectable for tests. Null means a client is created per call and closed.
   final http.Client? httpClient;
+
+  /// What the phone can run, best first. Injectable for tests; null reads
+  /// the phone ([phoneAbis]).
+  final Future<List<String>> Function()? abis;
 
   /// The columns the app reads. MUST match `docs/migrations/012_app_releases.sql`.
   ///
@@ -43,7 +48,9 @@ class UpdateCheckService {
       'notes_en,notes_mm,released_at,'
       // 038 — remote player switches. Added to the database before the build
       // that reads it shipped, so no install ever asked for a missing column.
-      'player_flags';
+      'player_flags,'
+      // 044 — the 32-bit APK. Same rule: in the database before 1.64.60.
+      'apk_url_arm32,apk_sha256_arm32,apk_bytes_arm32';
 
   /// The newest published release, or null when the table holds no row.
   ///
@@ -91,7 +98,8 @@ class UpdateCheckService {
       final first = decoded.first;
       if (first is! Map) return null;
 
-      return AppRelease.fromJson(Map<String, dynamic>.from(first));
+      return AppRelease.fromJson(Map<String, dynamic>.from(first),
+          abis: await (abis ?? phoneAbis)());
     } on TimeoutException {
       throw const UpdateCheckFailure.network();
     } on SocketException {
@@ -111,6 +119,27 @@ class UpdateCheckService {
 /// Not an [Exception] subclass by accident: the screen catches this and shows
 /// one honest line. It carries no server text, because none of it would mean
 /// anything to the person reading it.
+/// The ABIs this phone runs, best first (`Build.SUPPORTED_ABIS`).
+///
+/// Never throws. When the phone cannot be asked — a background isolate
+/// without plugins, a test — the answer comes from the running Dart VM
+/// instead: an app running as 32-bit ARM is on a phone that took the 32-bit
+/// APK, and that is the file it must keep getting.
+Future<List<String>> phoneAbis() async {
+  if (!Platform.isAndroid) return const <String>[];
+  try {
+    final info = await DeviceInfoPlugin().androidInfo;
+    final listed = info.supportedAbis.whereType<String>().toList();
+    if (listed.isNotEmpty) return listed;
+  } catch (_) {
+    // Below.
+  }
+  final vm = Platform.version;
+  if (vm.contains('android_arm64')) return const <String>['arm64-v8a'];
+  if (vm.contains('android_arm')) return const <String>['armeabi-v7a'];
+  return const <String>[];
+}
+
 class UpdateCheckFailure implements Exception {
   const UpdateCheckFailure.notConfigured()
       : kind = UpdateFailureKind.notConfigured,

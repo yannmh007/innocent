@@ -53,6 +53,21 @@ SMB/SFTP stack) plus coroutines and Okio: no smaller, and a toolchain
 upgrade of the whole Android build to adopt. Revisit with the next
 Flutter / Kotlin / AGP upgrade, not before it.
 
+**1.64.60 (2026-10-10) — staying connected while working.** A copy out of
+Android/data resumes after a dropped connection instead of starting again
+from byte zero (it used to try twice and throw the part away): the part is
+kept beside its destination, continued with the same `dd`/`tail` range
+pipeline the streaming proxy uses, and only while the source's size and
+mtime are unchanged. Every copy runs under `AdbWorkService` — a dataSync
+foreground service holding a partial wake lock and a low-latency Wi-Fi lock —
+so Home or screen-off does not end it, with progress in its notification and
+on screen. Vault imports go straight into the vault (one copy, not two). An
+Android/data folder that cannot be read shows a reconnect card that watches
+for the connection, not "no files". The ADB screen was rebuilt around one
+status card and localized. Not done, on purpose: no helper process that
+outlives the ADB session, and nothing new that turns Wireless debugging on
+by itself.
+
 Still open: the three device questions at the end. Every finding in this
 audit that survived checking has now been fixed, except the Kotlin half of
 **A12** — there is still no `android/app/src/test/`, so the Kotlin remains

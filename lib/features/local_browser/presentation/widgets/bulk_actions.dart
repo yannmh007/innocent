@@ -18,6 +18,7 @@ import '../../../../core/services/preferences/player_settings_service.dart';
 import '../../../../core/services/thumbnail/thumbnail_cache.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/ui/mx_dialog.dart';
+import '../../../../core/ui/adb_progress_dialog.dart';
 import '../../../../core/ui/app_snackbar.dart';
 import '../../../private_folder/data/private_folder_providers.dart';
 import '../../../shell/shell_screen.dart';
@@ -58,6 +59,39 @@ class BulkActions {
     }
     if (uri.startsWith('/')) return uri;
     return null;
+  }
+
+  /// The local path of each of [videos], in order — `adb://` ones fetched
+  /// out of Android/data first, behind a progress dialog (null where that
+  /// failed). Anything else is [pathOf].
+  ///
+  /// An Android/data file has no path another app or the LAN server can
+  /// read, so sharing or sending one means copying it to this app's cache
+  /// first. That copy used to happen with nothing on screen — or, for
+  /// Share, not at all: `pathOf` has no answer for `adb://`, and the share
+  /// action said the files were "system-managed" and did nothing.
+  static Future<List<String?>> localPaths(
+      BuildContext context, List<Video> videos) async {
+    final adb = videos.where((v) => v.uri.startsWith('adb://')).length;
+    if (adb == 0 || !context.mounted) {
+      return <String?>[for (final v in videos) pathOf(v.uri)];
+    }
+    return withAdbProgress<List<String?>>(context, (prog) async {
+      final out = <String?>[];
+      var i = 0;
+      for (final v in videos) {
+        if (!v.uri.startsWith('adb://')) {
+          out.add(pathOf(v.uri));
+          continue;
+        }
+        final src = v.uri.substring('adb://'.length);
+        prog.file(v.title.isNotEmpty ? v.title : p.basename(src), i++, adb);
+        final r = await AdbService.instance
+            .pullForPlayback(src, onProgress: prog.bytes);
+        out.add(r.startsWith('ERROR') ? null : r);
+      }
+      return out;
+    });
   }
 
   // ── Move / Copy ────────────────────────────────────────────────────────
@@ -147,8 +181,10 @@ class BulkActions {
     ref.invalidate(foldersProvider);
     ref.invalidate(allVideosProvider);
 
-    final parts = <String>['${move ? s.selectionMoved : s.selectionCopied} '
-        '${result.succeeded}'];
+    final parts = <String>[
+      '${move ? s.selectionMoved : s.selectionCopied} '
+          '${result.succeeded}'
+    ];
     if (result.skipped > 0) parts.add('${result.skipped} skipped');
     if (result.hasFailures) parts.add('${result.failures.length} failed');
     final msg = parts.join(' · ');
@@ -224,28 +260,42 @@ class BulkActions {
     final historyNotifier = ref.read(historyProvider.notifier);
     final resume = ref.read(resumeStorageProvider);
     var done = 0;
-    for (final v in videos) {
-      try {
-        await svc.importToVault(videoUri: v.uri, videoTitle: v.title);
-        // Erase the public trail. A vaulted video whose history entry survives
-        // still shows in Continue Watching, by name, on a screen anyone can
-        // see — which defeats the point of vaulting it.
+    // Android/data files are copied in over ADB, which takes as long as the
+    // file is big: say so, and how far it has got.
+    final anyAdb = videos.any((v) => v.uri.startsWith('adb://'));
+    Future<void> importAll(AdbProgress? prog) async {
+      for (var i = 0; i < videos.length; i++) {
+        final v = videos[i];
+        prog?.file(v.title, i, videos.length);
         try {
-          await historyNotifier.deleteEntry(v.uri);
-          await resume.clearPosition(v.uri);
-          final last = await resume.getLastPlaying();
-          if (last?.uri == v.uri) await resume.clearLastPlaying();
-          // …and every other list that would still name it. Favourites,
-          // playlists, Watch Later and bookmarks all sit one tap from the Me
-          // tab and print the title in plain text.
-          await MediaIdentityMigrator.purgePublicTraces(ref, v.uri);
+          await svc.importToVault(
+              videoUri: v.uri, videoTitle: v.title, onProgress: prog?.bytes);
+          // Erase the public trail. A vaulted video whose history entry survives
+          // still shows in Continue Watching, by name, on a screen anyone can
+          // see — which defeats the point of vaulting it.
+          try {
+            await historyNotifier.deleteEntry(v.uri);
+            await resume.clearPosition(v.uri);
+            final last = await resume.getLastPlaying();
+            if (last?.uri == v.uri) await resume.clearLastPlaying();
+            // …and every other list that would still name it. Favourites,
+            // playlists, Watch Later and bookmarks all sit one tap from the Me
+            // tab and print the title in plain text.
+            await MediaIdentityMigrator.purgePublicTraces(ref, v.uri);
+          } catch (e) {
+            if (kDebugMode) debugPrint('bulk_actions.lock-trail: $e');
+          }
+          done++;
         } catch (e) {
-          if (kDebugMode) debugPrint('bulk_actions.lock-trail: $e');
+          if (kDebugMode) debugPrint('bulk_actions.lock: $e');
         }
-        done++;
-      } catch (e) {
-        if (kDebugMode) debugPrint('bulk_actions.lock: $e');
       }
+    }
+
+    if (anyAdb && context.mounted) {
+      await withAdbProgress<void>(context, importAll);
+    } else {
+      await importAll(null);
     }
     ref.invalidate(allVideosProvider);
     ref.invalidate(foldersProvider);
@@ -270,20 +320,14 @@ class BulkActions {
     final files = <SharedFile>[];
     var needsAdb = false;
 
-    for (final v in videos) {
-      String? path;
-      if (v.uri.startsWith('adb://')) {
-        final pulled =
-            await AdbService.instance.pullForPlayback(v.uri.substring(6));
-        if (pulled.startsWith('ERROR')) {
-          needsAdb = true;
-          continue;
-        }
-        path = pulled;
-      } else {
-        path = pathOf(v.uri);
+    final paths = await localPaths(context, videos);
+    for (var i = 0; i < videos.length; i++) {
+      final v = videos[i];
+      final path = paths[i];
+      if (path == null) {
+        if (v.uri.startsWith('adb://')) needsAdb = true;
+        continue;
       }
-      if (path == null) continue;
       var size = v.sizeBytes;
       if (size <= 0) {
         try {
@@ -326,14 +370,14 @@ class BulkActions {
     var hidden = 0;
     for (final v in videos) {
       await bin.add(
-            RecycleBinEntry(
-              videoUri: v.uri,
-              videoTitle: v.title,
-              folderPath: v.folderPath,
-              deletedAt: DateTime.now(),
-              sizeBytes: v.sizeBytes,
-            ),
-          );
+        RecycleBinEntry(
+          videoUri: v.uri,
+          videoTitle: v.title,
+          folderPath: v.folderPath,
+          deletedAt: DateTime.now(),
+          sizeBytes: v.sizeBytes,
+        ),
+      );
       hidden++;
     }
     // NO `ref.invalidate(allVideosProvider)` HERE.
@@ -385,12 +429,15 @@ class BulkActions {
     final files = <XFile>[];
     // Bounded. Handing a share sheet several hundred files is how it stops
     // responding, and nobody means to share four hundred videos at once.
-    for (final v in videos.take(50)) {
-      final path = pathOf(v.uri);
+    final some = videos.take(50).toList();
+    final paths = await localPaths(context, some);
+    for (final path in paths) {
       if (path != null) files.add(XFile(path));
     }
     if (files.isEmpty) {
-      AppSnackbar.global(s.selectionNoFiles);
+      AppSnackbar.global(some.any((v) => v.uri.startsWith('adb://'))
+          ? s.connectAdbToSend
+          : s.selectionNoFiles);
       return false;
     }
     try {
@@ -437,10 +484,10 @@ class BulkActions {
         content: SizedBox(
           width: double.maxFinite,
           child: MxDialog.rows(<(String, String)>[
-          (s.videos, '${videos.length}'),
-          (s.folders, '${folders.length}'),
-          (s.size, MxDialog.sizeWithBytes(bytes)),
-          (s.duration, _hms(duration)),
+            (s.videos, '${videos.length}'),
+            (s.folders, '${folders.length}'),
+            (s.size, MxDialog.sizeWithBytes(bytes)),
+            (s.duration, _hms(duration)),
           ]),
         ),
         actions: <Widget>[

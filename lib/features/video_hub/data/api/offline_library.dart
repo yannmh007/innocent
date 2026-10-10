@@ -94,6 +94,11 @@ class OfflineItem {
   /// sealed anything yet.
   final bool sealed;
 
+  /// The streaming copy this file is (720, 480 …), or null for the ORIGINAL —
+  /// what the viewer chose in the quality sheet, shown on the Downloads list
+  /// so "1.1 GB" and "187 MB" for the same film explain themselves.
+  final int? height;
+
   const OfflineItem({
     required this.titleId,
     required this.title,
@@ -109,6 +114,7 @@ class OfflineItem {
     this.assetId,
     this.premium = true,
     this.sealed = false,
+    this.height,
   }) : key = key ?? titleId;
 
   bool get isPhoto => kind == 'photo';
@@ -135,6 +141,7 @@ class OfflineItem {
         assetId: assetId,
         premium: premium,
         sealed: sealed,
+        height: height,
       );
 
   Map<String, dynamic> toJson() => <String, dynamic>{
@@ -152,6 +159,7 @@ class OfflineItem {
         if (assetId != null) 'assetId': assetId,
         'premium': premium,
         'sealed': sealed,
+        if (height != null) 'height': height,
       };
 
   static OfflineItem? fromJson(Map<String, dynamic> m) {
@@ -179,6 +187,8 @@ class OfflineItem {
       // [premium] for why the unknown case is the protected one.
       premium: m['premium'] as bool? ?? true,
       sealed: m['sealed'] as bool? ?? false,
+      // Absent: written before downloads had a choice, so the original.
+      height: (m['height'] as num?)?.toInt(),
     );
   }
 }
@@ -232,6 +242,10 @@ class PendingDownload {
   /// honestly — "interrupted" and "paused" look identical on disk.
   final bool pausedByUser;
 
+  /// The copy this download fetches — [DownloadQuality]: 'original' or a
+  /// height. Kept so a resume, by hand or by itself, asks for the same file.
+  final String quality;
+
   const PendingDownload({
     required this.titleId,
     required this.title,
@@ -242,6 +256,7 @@ class PendingDownload {
     this.assetId,
     this.premium = true,
     this.pausedByUser = false,
+    this.quality = 'original',
   }) : key = key ?? titleId;
 
   Map<String, dynamic> toJson() => <String, dynamic>{
@@ -254,6 +269,7 @@ class PendingDownload {
         'startedAt': startedAt.toUtc().toIso8601String(),
         'premium': premium,
         'pausedByUser': pausedByUser,
+        'quality': quality,
       };
 
   static PendingDownload? fromJson(Map<String, dynamic> m) {
@@ -274,6 +290,8 @@ class PendingDownload {
       // is eligible to carry on. That is the right default: those rows were all
       // left behind by an interruption, because there was no way to pause one.
       pausedByUser: m['pausedByUser'] as bool? ?? false,
+      // Absent: started before downloads had a choice, which was the original.
+      quality: m['quality'] as String? ?? 'original',
     );
   }
 }
@@ -698,6 +716,8 @@ class OfflineLibrary {
           assetId: row.assetId,
           premium: row.premium,
           pausedByUser: true,
+          // The copy it was fetching, or the resume would fetch another one.
+          quality: row.quality,
         ));
       } else {
         next.add(row);

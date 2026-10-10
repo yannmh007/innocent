@@ -31,6 +31,9 @@ import 'features/player/presentation/player_provider.dart';
 import 'features/player/presentation/shortcut_item.dart';
 import 'core/services/diagnostics/lab_stream.dart';
 import 'core/services/diagnostics/playback_log.dart';
+import 'core/services/network/throughput_memory.dart';
+import 'features/video_hub/presentation/playback.dart';
+import 'features/video_hub/presentation/video_hub_provider.dart';
 
 class InnocentApp extends ConsumerStatefulWidget {
   final bool showOnboarding;
@@ -79,6 +82,8 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
   /// DEVICE LAB ONLY — play the film the lab named through the stream proxy
   /// (see [LabStream]). Nothing happens when it named none.
   Future<void> _labStream() async {
+    final titleId = await LabStream.titleId();
+    if (titleId != null) return _labTitle(titleId);
     final local = await LabStream.localUrl();
     if (local == null || !mounted) return;
     if (_showOnboarding) setState(() => _showOnboarding = false);
@@ -101,6 +106,34 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
         PlaybackLog.add('LAB stream: seek to ${seek.$2.inSeconds} s');
         unawaited(ref.read(videoPlayerServiceProvider).seek(seek.$2));
       });
+    }
+  }
+
+  /// DEVICE LAB ONLY — a catalogue title, played exactly as a viewer's tap
+  /// plays it (see [LabStream.titleId]).
+  Future<void> _labTitle(String id) async {
+    if (_showOnboarding) setState(() => _showOnboarding = false);
+    await Future<void>.delayed(const Duration(seconds: 3));
+    if (!mounted) return;
+    try {
+      final seed = await LabStream.seedKbps();
+      if (seed != null) {
+        await ThroughputMemory.read();
+        ThroughputMemory.labSeed(seed);
+        PlaybackLog.add('LAB title: link estimate seeded at $seed kbps');
+      }
+      final content = await ref.read(contentRepositoryProvider).getById(id);
+      final ctx =
+          ref.read(routerProvider).routerDelegate.navigatorKey.currentContext;
+      if (content == null || ctx == null || !ctx.mounted) {
+        PlaybackLog.add('LAB title: ${content == null ? 'not found' : 'no screen'}');
+        return;
+      }
+      PlaybackLog.add('LAB title: opening ${content.title}');
+      await playMedia(ctx, ref, content: content, source: content.source,
+          fromStart: true);
+    } catch (e) {
+      PlaybackLog.add('LAB title failed: $e');
     }
   }
 
@@ -133,6 +166,30 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
     EngineReadiness.instance.start();
     _intentService.start();
     _intentSub = _intentService.videoRequests.listen((req) {
+      // DEVICE LAB, scenario 3: the catalogue title compiled into this lab
+      // APK, played through playMedia on a real phone's real connection; the
+      // app closes after four minutes, which ends the test.
+      if (const bool.fromEnvironment('INNOCENT_LAB') &&
+          req.uri == 'innocent-lab://title') {
+        PlaybackLog.add('LAB script: catalogue title');
+        // Compiled in for Test Lab; the device lab names it in
+        // lab_stream_url instead, to take this same path on the emulator.
+        const built = String.fromEnvironment('INNOCENT_LAB_TITLE');
+        unawaited(() async {
+          final id = built.isNotEmpty
+              ? built
+              : await LabStream.titleId(file: 'lab_loop_title');
+          if (id == null || id.isEmpty) {
+            PlaybackLog.add('LAB title: none named');
+            return;
+          }
+          await _labTitle(id);
+        }());
+        if (built.isNotEmpty) {
+          Timer(const Duration(seconds: 240), () => exit(0));
+        }
+        return;
+      }
       // Wait for the router/widget tree to be ready before pushing.
       // DEVICE LAB: Test Lab installs fresh, so the introduction is up, and
       // it is not on the router — a push would land behind it, unseen. Step

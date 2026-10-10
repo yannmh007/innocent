@@ -1235,7 +1235,10 @@ class AppStrings {
   String get catAudio => _s('catAudio');
   String get catFiles => _s('catFiles');
   String get catApps => _s('catApps');
-  String itemsCount(Object n) => _s('itemsCount').replaceFirst('{n}', '$n');
+  // English alone has a singular: "1 items" read wrong in the pickers.
+  String itemsCount(Object n) => n == 1 && locale.languageCode == 'en'
+      ? '1 item'
+      : _s('itemsCount').replaceFirst('{n}', '$n');
   String filesCount(Object n) => _s('filesCount').replaceFirst('{n}', '$n');
   String appsCount(Object n) => _s('appsCount').replaceFirst('{n}', '$n');
   String get noItemsHere => _s('noItemsHere');
@@ -1694,6 +1697,76 @@ class AppStrings {
   String get adbTipOppo => _s('adbTipOppo');
   String get adbTipTranssion => _s('adbTipTranssion');
   String get adbNotSupported => _s('adbNotSupported');
+  String get hfTitle => _s('hfTitle');
+  String get hfHint => _s('hfHint');
+  String get hfSettingsSub => _s('hfSettingsSub');
+  String get hfApps => _s('hfApps');
+  String get hfQuick => _s('hfQuick');
+  String get hfAll => _s('hfAll');
+  String get hfVideos => _s('hfVideos');
+  String get hfPhotos => _s('hfPhotos');
+  String get hfAudio => _s('hfAudio');
+  String get hfDocs => _s('hfDocs');
+  String get hfEmpty => _s('hfEmpty');
+  String get hfSend => _s('hfSend');
+  String get hfFetching => _s('hfFetching');
+  String get hfNoApp => _s('hfNoApp');
+  String get hfPullFailed => _s('hfPullFailed');
+  String hfFileOf(int i, int n) =>
+      _s('hfFileOf').replaceAll('{i}', '$i').replaceAll('{n}', '$n');
+  String get hiddenBadge => _s('hiddenBadge');
+  String get hfInApps => _s('hfInApps');
+  String get hfBucketPhotos => _s('hfBucketPhotos');
+  String get hfBucketAudio => _s('hfBucketAudio');
+  String hfSkipped(int n) => _s('hfSkipped').replaceAll('{n}', '$n');
+  String get hfConnectTitle => _s('hfConnectTitle');
+  String get hfConnectBody => _s('hfConnectBody');
+  String get hfOpenAdb => _s('hfOpenAdb');
+  String get hfNotNow => _s('hfNotNow');
+  String get hfLive => _s('hfLive');
+  String get adbScreenTitle => _s('adbScreenTitle');
+  String get adbHeroConnected => _s('adbHeroConnected');
+  String get adbHeroConnectedSub => _s('adbHeroConnectedSub');
+  String get adbHeroOff => _s('adbHeroOff');
+  String get adbHeroOffSub => _s('adbHeroOffSub');
+  String get adbHeroNew => _s('adbHeroNew');
+  String get adbHeroNewSub => _s('adbHeroNewSub');
+  String get adbHeroChecking => _s('adbHeroChecking');
+  String get adbReconnect => _s('adbReconnect');
+  String get adbOpenWireless => _s('adbOpenWireless');
+  String get adbFindVideos => _s('adbFindVideos');
+  String get adbPairTitle => _s('adbPairTitle');
+  String get adbPairNotif => _s('adbPairNotif');
+  String get adbPairNotifSub => _s('adbPairNotifSub');
+  String get adbPairWaiting => _s('adbPairWaiting');
+  String get adbPairInApp => _s('adbPairInApp');
+  String get adbPairCodeLabel => _s('adbPairCodeLabel');
+  String get adbPairConnect => _s('adbPairConnect');
+  String get adbConnect => _s('adbConnect');
+  String get adbStayTitle => _s('adbStayTitle');
+  String get adbStayWifi => _s('adbStayWifi');
+  String get adbStayBackground => _s('adbStayBackground');
+  String get adbStayTile => _s('adbStayTile');
+  String get adbStayBattery => _s('adbStayBattery');
+  String get adbGuideTitle => _s('adbGuideTitle');
+  String get adbGuideOnTitle => _s('adbGuideOnTitle');
+  String get adbGuideOn1 => _s('adbGuideOn1');
+  String get adbGuideOn2 => _s('adbGuideOn2');
+  String get adbGuideOn3 => _s('adbGuideOn3');
+  String get adbGuideOffTitle => _s('adbGuideOffTitle');
+  String get adbGuideOff1 => _s('adbGuideOff1');
+  String get adbGuideOff2 => _s('adbGuideOff2');
+  String get adbGuideSafety => _s('adbGuideSafety');
+  String get adbGuideWhereTitle => _s('adbGuideWhereTitle');
+  String get adbGuideWhere => _s('adbGuideWhere');
+  String get adbAdvanced => _s('adbAdvanced');
+  String get adbDetails => _s('adbDetails');
+  String get adbAndroidDataTitle => _s('adbAndroidDataTitle');
+  String get adbAndroidDataSub => _s('adbAndroidDataSub');
+  String get adbLostTitle => _s('adbLostTitle');
+  String get adbLostBody => _s('adbLostBody');
+  String get adbLostAction => _s('adbLostAction');
+  String adbFound(int n) => _s('adbFound').replaceAll('{n}', '$n');
   String get destinationIfExists => _s('destinationIfExists');
   String get destinationKeepBoth => _s('destinationKeepBoth');
   String get destinationSkip => _s('destinationSkip');
@@ -1736,6 +1809,7 @@ class AppStrings {
   String get vhSaverHow1 => _s('vhSaverHow1');
   String get vhSaverHow2 => _s('vhSaverHow2');
   String get vhSaverHow3 => _s('vhSaverHow3');
+  String get vhSaverHow4 => _s('vhSaverHow4');
   String get vhLibraryDataSaverHint => _s('vhLibraryDataSaverHint');
   String get vhBookmark => _s('vhBookmark');
   String get vhBookmarked => _s('vhBookmarked');
@@ -1780,6 +1854,13 @@ class AppStrings {
       .replaceFirst('{size}', '$size')
       .replaceFirst('{free}', '$free');
   String get vhDownloadStart => _s('vhDownloadStart');
+  String get vhDlQualityTitle => _s('vhDlQualityTitle');
+  String get vhDlQualityOriginal => _s('vhDlQualityOriginal');
+  String get vhDlQualityRemember => _s('vhDlQualityRemember');
+  String vhDlQualityFree(Object free) =>
+      _s('vhDlQualityFree').replaceFirst('{free}', '$free');
+  String get vhDlQualityHint => _s('vhDlQualityHint');
+  String get vhDlQualityAsk => _s('vhDlQualityAsk');
   String get vhDownloadStorageLine => _s('vhDownloadStorageLine');
 
   /// "11 min left", built from unit words rather than from a format string, so
@@ -1969,6 +2050,75 @@ class AppStrings {
     'adbTipOppo': 'OPPO, realme and OnePlus: if pairing works but connecting stalls, turn Wireless debugging off and on again, then tap Connect.',
     'adbTipTranssion': 'TECNO, Infinix and itel: let Innocent run in the background (battery settings or Phone Master), or the pairing notification can be closed before you type the code.',
     'adbNotSupported': 'Wireless debugging needs Android 11 or newer.',
+    'hfTitle': 'Hidden files',
+    'hfHint': 'Telegram and other apps’ files',
+    'hfSettingsSub': 'Pair once over Wireless debugging, then open Telegram’s and other apps’ files.',
+    'hfApps': 'Apps',
+    'hfQuick': 'Telegram downloads',
+    'hfAll': 'All',
+    'hfVideos': 'Videos',
+    'hfPhotos': 'Photos',
+    'hfAudio': 'Audio',
+    'hfDocs': 'Documents',
+    'hfEmpty': 'Nothing here',
+    'hfSend': 'Send with Transfer',
+    'hfFetching': 'Getting it from Android/data…',
+    'hfFileOf': '{i} of {n}',
+    'hiddenBadge': 'Hidden',
+    'hfInApps': 'Inside apps (Android/data)',
+    'hfBucketPhotos': 'Telegram’s and other apps’ photos',
+    'hfBucketAudio': 'Telegram’s and other apps’ audio',
+    'hfSkipped': '{n} file(s) from Android/data were skipped — connect ADB and try again.',
+    'hfConnectTitle': 'Connect to see inside apps',
+    'hfConnectBody': 'Hidden dot-folders are showing now. Telegram’s and other apps’ folders (Android/data) open through Innocent’s ADB connection — set it up once?',
+    'hfOpenAdb': 'Set up ADB',
+    'hfNotNow': 'Not now',
+    'hfLive': 'Connected — shown in the Video tab too',
+    'hfNoApp': 'No app on this phone opens this kind of file. Share it instead?',
+    'hfPullFailed': 'Could not get it from Android/data — is ADB still connected?',
+    'adbScreenTitle': 'Android/data access',
+    'adbHeroConnected': 'Connected',
+    'adbHeroConnectedSub': 'Android/data is open to Innocent. Copies keep going in the background, and pick up where they stopped if the connection drops.',
+    'adbHeroOff': 'Not connected right now',
+    'adbHeroOffSub': 'Wireless debugging usually turns itself off after a restart or when the phone changes Wi-Fi. Turn it on again and tap Reconnect — no new code needed.',
+    'adbHeroNew': 'Set up once — about a minute',
+    'adbHeroNewSub': 'Innocent connects to this phone\'s own Wireless debugging to open Android/data — no computer, no root.',
+    'adbHeroChecking': 'Checking the connection…',
+    'adbReconnect': 'Reconnect',
+    'adbOpenWireless': 'Open Wireless debugging',
+    'adbFindVideos': 'Find videos in Android/data',
+    'adbPairTitle': 'Pair this phone (first time only)',
+    'adbPairNotif': 'Pair from the notification',
+    'adbPairNotifSub': 'Tap this, then in Wireless debugging tap “Pair device with pairing code” and type the 6 digits into Innocent’s notification. No split screen.',
+    'adbPairWaiting': 'Waiting for the code in the notification…',
+    'adbPairInApp': 'Or type the code here (keep the pairing dialog visible):',
+    'adbPairCodeLabel': 'Pairing code (6 digits)',
+    'adbPairConnect': 'Pair & connect',
+    'adbConnect': 'Connect',
+    'adbStayTitle': 'Staying connected',
+    'adbStayWifi': 'Stay on the same Wi-Fi. Wireless debugging belongs to the network it was turned on for — changing Wi-Fi turns it off.',
+    'adbStayBackground': 'Copies run in the background with a notification, and resume from where they stopped if the connection drops.',
+    'adbStayTile': 'One-tap switch: Developer options → “Quick settings developer tiles” → Wireless debugging. It then sits in your quick settings panel.',
+    'adbStayBattery': 'Some phones close it to save battery. On Xiaomi, OPPO, realme, vivo, TECNO and Infinix, set Innocent’s battery use to “Unrestricted” / “No restrictions”.',
+    'adbGuideTitle': 'How to turn ADB on and off',
+    'adbGuideOnTitle': 'Turn on',
+    'adbGuideOn1': 'Settings → About phone → tap “Build number” 7 times (enter your screen lock if asked). “Developer options” appears.',
+    'adbGuideOn2': 'Developer options → “Wireless debugging” → On, and allow it on this Wi-Fi.',
+    'adbGuideOn3': 'First time only: “Pair device with pairing code”, then type the 6 digits into Innocent’s notification.',
+    'adbGuideOffTitle': 'Turn off when you are done',
+    'adbGuideOff1': 'Developer options → “Wireless debugging” → Off (or the quick settings tile). Innocent keeps its pairing: next time just turn it on and tap Reconnect.',
+    'adbGuideOff2': 'To hide Developer options again, switch off its main switch at the top. Some phones reset other developer settings when you do.',
+    'adbGuideSafety': 'Wireless debugging lets a paired device control this phone. Pair only on Wi-Fi you trust, and turn it off when you finish.',
+    'adbGuideWhereTitle': 'Where to find them on your phone',
+    'adbGuideWhere': 'Samsung — Build number: About phone → Software information. Developer options: at the bottom of Settings.\nXiaomi / Redmi / POCO — tap “OS version” (or “MIUI version”) in About phone. Developer options: Additional settings.\nOPPO / realme / OnePlus — About device → Version → Build number. Developer options: System settings / Additional settings.\nvivo / iQOO — About phone → Software version. Developer options: System management.\nTECNO / Infinix / itel, Pixel and most others — About phone → Build number. Developer options: System.',
+    'adbAdvanced': 'Advanced',
+    'adbDetails': 'Details',
+    'adbAndroidDataTitle': 'Videos in Android/data',
+    'adbAndroidDataSub': 'Telegram and other apps keep their videos in Android/data and Android/obb. Once connected, Innocent finds them and adds them to Local.',
+    'adbFound': '{n} videos found',
+    'adbLostTitle': 'Android/data needs the ADB connection',
+    'adbLostBody': 'The connection dropped — usually Wireless debugging turned off. Turn it on again; this folder opens by itself as soon as the connection is back.',
+    'adbLostAction': 'ADB settings',
     'destinationIfExists': 'If a file with the same name is already there',
     'destinationKeepBoth': 'Keep both',
     'destinationSkip': 'Skip',
@@ -2036,6 +2186,12 @@ class AppStrings {
         'This one is {size}, downloaded at full quality. You have {free} free '
         'on this phone. Carry on?',
     'vhDownloadStart': 'Download',
+    'vhDlQualityTitle': 'Download quality',
+    'vhDlQualityOriginal': 'Original (best)',
+    'vhDlQualityRemember': 'Remember my choice',
+    'vhDlQualityFree': '{free} free on this phone',
+    'vhDlQualityHint': 'Smaller copies save data and storage; the original looks best.',
+    'vhDlQualityAsk': 'Ask each time',
     'vhDownloadStorageLine': 'On this phone',
     'vhDownloadLeftSoon': 'less than a minute left',
     'vhDownloadLeftMinutes': '{m} min left',
@@ -2351,6 +2507,7 @@ class AppStrings {
     'vhSaverHow1': 'Albums show a soft blurred preview. Nothing is downloaded to draw it.',
     'vhSaverHow2': 'Each photo and clip shows its size. Tap only the ones you want.',
     'vhSaverHow3': 'What you open stays on the phone and never costs data twice.',
+    'vhSaverHow4': 'Films on Auto quality stream at up to 480p.',
     'vhLibraryDataSaverHint': 'Albums load only what you tap',
     'vhBookmark': 'Save',
     'vhBookmarked': 'Saved',
@@ -3539,6 +3696,75 @@ class AppStrings {
     'adbTipOppo': 'OPPO၊ realme၊ OnePlus: pair ရပြီး ချိတ်ရာမှာ ရပ်နေရင် Wireless debugging ကို ပိတ်ပြီး ပြန်ဖွင့်ကာ Connect ကို နှိပ်ပါ။',
     'adbTipTranssion': 'TECNO၊ Infinix၊ itel: Innocent ကို background မှာ run ခွင့်ပေးပါ (battery settings သို့မဟုတ် Phone Master)။ မပေးရင် code မရိုက်ခင် pairing notification ပိတ်သွားနိုင်ပါတယ်။',
     'adbNotSupported': 'Wireless debugging အတွက် Android 11 နဲ့ အထက် လိုပါတယ်။',
+    'hfTitle': 'ဝှက်ထားသော ဖိုင်များ',
+    'hfHint': 'Telegram နဲ့ အခြား app ဖိုင်များ',
+    'hfSettingsSub': 'Wireless debugging နဲ့ တစ်ကြိမ် pair လုပ်ပြီး Telegram နဲ့ အခြား app တွေရဲ့ ဖိုင်တွေကို ဖွင့်ကြည့်ပါ။',
+    'hfApps': 'App များ',
+    'hfQuick': 'Telegram download များ',
+    'hfAll': 'အားလုံး',
+    'hfVideos': 'ဗီဒီယို',
+    'hfPhotos': 'ဓာတ်ပုံ',
+    'hfAudio': 'အသံ',
+    'hfDocs': 'Document',
+    'hfEmpty': 'ဒီမှာ ဘာမှ မရှိပါ',
+    'hfSend': 'Transfer နဲ့ ပို့မယ်',
+    'hfFetching': 'Android/data ကနေ ယူနေပါတယ်…',
+    'hfFileOf': '{n} ခုထဲက {i}',
+    'hiddenBadge': 'ဝှက်ထား',
+    'hfInApps': 'App တွေထဲက (Android/data)',
+    'hfBucketPhotos': 'Telegram စတဲ့ app တွေက ဓာတ်ပုံ',
+    'hfBucketAudio': 'Telegram စတဲ့ app တွေက အသံဖိုင်',
+    'hfSkipped': 'Android/data ထဲက ဖိုင် {n} ခု ယူမရလို့ ချန်ခဲ့ပါတယ် — ADB ပြန်ချိတ်ပြီး ထပ်စမ်းပါ။',
+    'hfConnectTitle': 'App တွေထဲက ဖိုင်တွေ ကြည့်ဖို့ ချိတ်ပါ',
+    'hfConnectBody': 'အစက် (.) နဲ့စတဲ့ ဝှက်ဖိုလ်ဒါတွေ အခု ပြနေပါပြီ။ Telegram နဲ့ အခြား app တွေရဲ့ ဖိုလ်ဒါ (Android/data) တွေကိုတော့ Innocent ရဲ့ ADB ချိတ်ဆက်မှုနဲ့ ဖွင့်ရပါတယ် — တစ်ကြိမ် ချိတ်မလား?',
+    'hfOpenAdb': 'ADB ချိတ်မယ်',
+    'hfNotNow': 'နောက်မှ',
+    'hfLive': 'ချိတ်ထားပြီ — Video tab မှာ ပြပါတယ်',
+    'hfNoApp': 'ဒီဖုန်းမှာ ဒီဖိုင်အမျိုးအစားကို ဖွင့်နိုင်တဲ့ app မရှိပါ။ Share လုပ်မလား?',
+    'hfPullFailed': 'Android/data ကနေ ယူလို့ မရပါ — ADB ချိတ်ထားသေးလား?',
+    'adbScreenTitle': 'Android/data ဝင်ကြည့်ခြင်း',
+    'adbHeroConnected': 'ချိတ်ဆက်ထားပါပြီ',
+    'adbHeroConnectedSub': 'Innocent က Android/data ကို ဖွင့်ကြည့်နိုင်ပါပြီ။ ဖိုင်ကူးတာတွေ background မှာ ဆက်လုပ်ပြီး connection ပြုတ်သွားရင် ရပ်သွားတဲ့နေရာကနေ ပြန်ဆက်ပါတယ်။',
+    'adbHeroOff': 'ယခု ချိတ်ဆက်မထားပါ',
+    'adbHeroOffSub': 'ဖုန်းပြန်ဖွင့်တဲ့အခါ ဒါမှမဟုတ် Wi-Fi ပြောင်းတဲ့အခါ Wireless debugging က အလိုလို ပိတ်သွားတတ်ပါတယ်။ ပြန်ဖွင့်ပြီး Reconnect ကို နှိပ်ပါ — code အသစ် မလိုပါ။',
+    'adbHeroNew': 'တစ်ကြိမ်ပဲ ပြင်ဆင်ရပါတယ် — ၁ မိနစ်ခန့်',
+    'adbHeroNewSub': 'Android/data ကို ဖွင့်ဖို့ Innocent က ဒီဖုန်းရဲ့ ကိုယ်ပိုင် Wireless debugging ကို ချိတ်ပါတယ် — ကွန်ပျူတာ မလို၊ root မလိုပါ။',
+    'adbHeroChecking': 'ချိတ်ဆက်မှုကို စစ်နေပါတယ်…',
+    'adbReconnect': 'ပြန်ချိတ်မယ်',
+    'adbOpenWireless': 'Wireless debugging ကို ဖွင့်မယ်',
+    'adbFindVideos': 'Android/data ထဲက ဗီဒီယိုတွေ ရှာမယ်',
+    'adbPairTitle': 'ဒီဖုန်းကို pair လုပ်ပါ (ပထမအကြိမ်သာ)',
+    'adbPairNotif': 'Notification ကနေ pair လုပ်မယ်',
+    'adbPairNotifSub': 'ဒါကို နှိပ်ပြီး Wireless debugging ထဲမှာ “Pair device with pairing code” ကို နှိပ်ပါ။ ပေါ်လာတဲ့ ဂဏန်း ၆ လုံးကို Innocent notification ထဲ ရိုက်ထည့်ပါ။ Split screen မလိုပါ။',
+    'adbPairWaiting': 'Notification ထဲမှာ code ရိုက်တာကို စောင့်နေပါတယ်…',
+    'adbPairInApp': 'ဒါမှမဟုတ် code ကို ဒီမှာ ရိုက်ပါ (pairing dialog ကို မြင်နေအောင် ထားပါ):',
+    'adbPairCodeLabel': 'Pairing code (ဂဏန်း ၆ လုံး)',
+    'adbPairConnect': 'Pair လုပ်ပြီး ချိတ်မယ်',
+    'adbConnect': 'ချိတ်မယ်',
+    'adbStayTitle': 'ချိတ်ဆက်မှု မပြုတ်အောင်',
+    'adbStayWifi': 'Wi-Fi တစ်ခုတည်းပေါ်မှာပဲ နေပါ။ Wireless debugging က ဖွင့်ခဲ့တဲ့ Wi-Fi နဲ့ပဲ ဆိုင်ပါတယ် — Wi-Fi ပြောင်းရင် ပိတ်သွားပါတယ်။',
+    'adbStayBackground': 'ဖိုင်ကူးတာတွေက notification နဲ့အတူ background မှာ run ပြီး connection ပြုတ်ရင် ရပ်တဲ့နေရာကနေ ပြန်ဆက်ပါတယ်။',
+    'adbStayTile': 'တစ်ချက်နှိပ်ရုံ switch: Developer options → “Quick settings developer tiles” → Wireless debugging ကို ဖွင့်ပါ။ ပြီးရင် quick settings panel ထဲမှာ ပေါ်နေပါမယ်။',
+    'adbStayBattery': 'ဖုန်းတချို့က battery ချွေတာဖို့ ပိတ်ပစ်တတ်ပါတယ်။ Xiaomi၊ OPPO၊ realme၊ vivo၊ TECNO၊ Infinix တွေမှာ Innocent ရဲ့ battery usage ကို “Unrestricted” / “No restrictions” လုပ်ထားပါ။',
+    'adbGuideTitle': 'ADB ကို ဘယ်လို ဖွင့်/ပိတ်ရမလဲ',
+    'adbGuideOnTitle': 'ဖွင့်နည်း',
+    'adbGuideOn1': 'Settings → About phone → “Build number” ကို ၇ ချက် ဆက်တိုက်နှိပ်ပါ (screen lock တောင်းရင် ထည့်ပါ)။ “Developer options” ပေါ်လာပါမယ်။',
+    'adbGuideOn2': 'Developer options → “Wireless debugging” → On လုပ်ပြီး ဒီ Wi-Fi ပေါ်မှာ ခွင့်ပြုပါ။',
+    'adbGuideOn3': 'ပထမအကြိမ်သာ: “Pair device with pairing code” ကို နှိပ်ပြီး ဂဏန်း ၆ လုံးကို Innocent notification ထဲ ရိုက်ပါ။',
+    'adbGuideOffTitle': 'သုံးပြီးရင် ပိတ်နည်း',
+    'adbGuideOff1': 'Developer options → “Wireless debugging” → Off (ဒါမှမဟုတ် quick settings tile)။ Pairing က မပျက်ပါဘူး — နောက်တစ်ခါ ပြန်ဖွင့်ပြီး Reconnect ကို နှိပ်ရုံပါပဲ။',
+    'adbGuideOff2': 'Developer options ကို ပြန်ဖျောက်ချင်ရင် အပေါ်ဆုံးက main switch ကို ပိတ်ပါ။ ဖုန်းတချို့မှာ အခြား developer settings တွေပါ reset ဖြစ်သွားတတ်ပါတယ်။',
+    'adbGuideSafety': 'Wireless debugging က pair လုပ်ထားတဲ့ device ကို ဒီဖုန်းကို ထိန်းချုပ်ခွင့်ပေးပါတယ်။ ယုံကြည်ရတဲ့ Wi-Fi ပေါ်မှာပဲ pair လုပ်ပြီး သုံးပြီးရင် ပိတ်ထားပါ။',
+    'adbGuideWhereTitle': 'သင့်ဖုန်းမှာ ဘယ်နေရာမှာ ရှိလဲ',
+    'adbGuideWhere': 'Samsung — Build number: About phone → Software information။ Developer options: Settings အောက်ဆုံးမှာ။\nXiaomi / Redmi / POCO — About phone ထဲက “OS version” (ဒါမှမဟုတ် “MIUI version”) ကို နှိပ်ပါ။ Developer options: Additional settings ထဲမှာ။\nOPPO / realme / OnePlus — About device → Version → Build number။ Developer options: System settings / Additional settings ထဲမှာ။\nvivo / iQOO — About phone → Software version။ Developer options: System management ထဲမှာ။\nTECNO / Infinix / itel၊ Pixel နဲ့ အခြားဖုန်းအများစု — About phone → Build number။ Developer options: System ထဲမှာ။',
+    'adbAdvanced': 'အဆင့်မြင့်',
+    'adbDetails': 'အသေးစိတ်',
+    'adbAndroidDataTitle': 'Android/data ထဲက ဗီဒီယိုများ',
+    'adbAndroidDataSub': 'Telegram နဲ့ အခြား app တွေက ဗီဒီယိုတွေကို Android/data နဲ့ Android/obb ထဲမှာ သိမ်းပါတယ်။ ချိတ်ပြီးတာနဲ့ Innocent က ရှာပြီး Local ထဲ ထည့်ပေးပါတယ်။',
+    'adbFound': 'ဗီဒီယို {n} ခု တွေ့ပါတယ်',
+    'adbLostTitle': 'Android/data ကို ကြည့်ဖို့ ADB ချိတ်ဆက်မှု လိုပါတယ်',
+    'adbLostBody': 'ချိတ်ဆက်မှု ပြုတ်သွားပါတယ် — များသောအားဖြင့် Wireless debugging ပိတ်သွားလို့ပါ။ ပြန်ဖွင့်လိုက်ပါ၊ ချိတ်ဆက်မှု ပြန်ရတာနဲ့ ဒီ folder က အလိုလို ပွင့်လာပါမယ်။',
+    'adbLostAction': 'ADB settings',
     'destinationIfExists': 'အမည်တူဖိုင် ရှိနှင့်ပြီးဖြစ်ပါက',
     'destinationKeepBoth': 'နှစ်ခုလုံး ထားရန်',
     'destinationSkip': 'ကျော်ရန်',
@@ -3605,6 +3831,12 @@ class AppStrings {
         'ဒီဇာတ်ကားက {size} ရှိပါတယ် — quality အပြည့်နဲ့ ဒေါင်းမှာပါ။ '
         'ဖုန်းထဲ {free} လွတ်ပါတယ်။ ဆက်လုပ်မလား?',
     'vhDownloadStart': 'ဒေါင်းလုဒ်',
+    'vhDlQualityTitle': 'ဒေါင်းလုဒ် အရည်အသွေး',
+    'vhDlQualityOriginal': 'မူရင်း (အကောင်းဆုံး)',
+    'vhDlQualityRemember': 'ဒီရွေးချယ်မှုကို မှတ်ထားမယ်',
+    'vhDlQualityFree': 'ဖုန်းထဲမှာ {free} လွတ်ပါသေးတယ်',
+    'vhDlQualityHint': 'အရွယ်သေးတဲ့ ဖိုင်က ဒေတာနဲ့ နေရာ သက်သာပါတယ်။ မူရင်းက ရုပ်ထွက် အကောင်းဆုံးပါ။',
+    'vhDlQualityAsk': 'အမြဲ မေးပါ',
     'vhDownloadStorageLine': 'ဖုန်းထဲမှာ',
     'vhDownloadLeftSoon': '၁ မိနစ်အောက် ကျန်',
     'vhDownloadLeftMinutes': '{m} မိနစ် ကျန်',
@@ -3919,6 +4151,7 @@ class AppStrings {
     'vhSaverHow1': 'Album တွေကို ဝေဝေဝါးဝါး preview လေးပဲ ပြပါမယ်။ အဲ့ဒါပြဖို့ ဘာမှ download မလုပ်ပါ။',
     'vhSaverHow2': 'ပုံနဲ့ ဗီဒီယိုတိုင်းမှာ size ပြထားပါတယ်။ လိုချင်တာကိုပဲ နှိပ်ပါ။',
     'vhSaverHow3': 'ဖွင့်ပြီးသားဟာ ဖုန်းထဲ ကျန်နေလို့ ဒုတိယအကြိမ် ဒေတာ မကုန်တော့ပါ။',
+    'vhSaverHow4': 'Auto quality နဲ့ ကြည့်တဲ့ ရုပ်ရှင်တွေကို 480p အထိပဲ stream လုပ်ပါတယ်။',
     'vhLibraryDataSaverHint': 'Album မှာ နှိပ်တာကိုပဲ ဖွင့်ပါမယ်',
     'vhBookmark': 'သိမ်းမယ်',
     'vhBookmarked': 'သိမ်းပြီး',
@@ -5097,6 +5330,75 @@ class AppStrings {
     'adbTipOppo': 'OPPO, realme และ OnePlus: หากจับคู่ได้แต่เชื่อมต่อค้าง ให้ปิดแล้วเปิดการแก้ไขข้อบกพร่องผ่าน Wi-Fi อีกครั้ง แล้วแตะ Connect',
     'adbTipTranssion': 'TECNO, Infinix และ itel: อนุญาตให้ Innocent ทำงานเบื้องหลัง (การตั้งค่าแบตเตอรี่หรือ Phone Master) มิฉะนั้นการแจ้งเตือนการจับคู่อาจถูกปิดก่อนที่คุณจะพิมพ์รหัส',
     'adbNotSupported': 'การแก้ไขข้อบกพร่องผ่าน Wi-Fi ต้องใช้ Android 11 ขึ้นไป',
+    'hfTitle': 'ไฟล์ที่ซ่อนอยู่',
+    'hfHint': 'ไฟล์ของ Telegram และแอปอื่น',
+    'hfSettingsSub': 'จับคู่ครั้งเดียวผ่านการแก้ไขข้อบกพร่องผ่าน Wi-Fi แล้วเปิดไฟล์ของ Telegram และแอปอื่น',
+    'hfApps': 'แอป',
+    'hfQuick': 'ดาวน์โหลดของ Telegram',
+    'hfAll': 'ทั้งหมด',
+    'hfVideos': 'วิดีโอ',
+    'hfPhotos': 'รูปภาพ',
+    'hfAudio': 'เสียง',
+    'hfDocs': 'เอกสาร',
+    'hfEmpty': 'ไม่มีอะไรที่นี่',
+    'hfSend': 'ส่งด้วย Transfer',
+    'hfFetching': 'กำลังดึงจาก Android/data…',
+    'hfFileOf': '{i} จาก {n}',
+    'hiddenBadge': 'ซ่อน',
+    'hfInApps': 'ในแอป (Android/data)',
+    'hfBucketPhotos': 'รูปของ Telegram และแอปอื่น',
+    'hfBucketAudio': 'เสียงของ Telegram และแอปอื่น',
+    'hfSkipped': 'ข้ามไฟล์จาก Android/data {n} ไฟล์ — เชื่อมต่อ ADB แล้วลองอีกครั้ง',
+    'hfConnectTitle': 'เชื่อมต่อเพื่อดูไฟล์ในแอป',
+    'hfConnectBody': 'ตอนนี้แสดงโฟลเดอร์ที่ซ่อน (ขึ้นต้นด้วยจุด) แล้ว โฟลเดอร์ของ Telegram และแอปอื่น (Android/data) เปิดผ่านการเชื่อมต่อ ADB ของ Innocent — ตั้งค่าครั้งเดียวไหม',
+    'hfOpenAdb': 'ตั้งค่า ADB',
+    'hfNotNow': 'ไว้ทีหลัง',
+    'hfLive': 'เชื่อมต่อแล้ว — แสดงในแท็บวิดีโอด้วย',
+    'hfNoApp': 'ไม่มีแอปในโทรศัพท์นี้ที่เปิดไฟล์ประเภทนี้ได้ แชร์แทนไหม',
+    'hfPullFailed': 'ดึงจาก Android/data ไม่ได้ — ยังเชื่อมต่อ ADB อยู่ไหม',
+    'adbScreenTitle': 'เข้าถึง Android/data',
+    'adbHeroConnected': 'เชื่อมต่อแล้ว',
+    'adbHeroConnectedSub': 'Innocent เปิด Android/data ได้แล้ว การคัดลอกทำงานต่อในเบื้องหลัง และทำต่อจากจุดที่หยุดหากการเชื่อมต่อหลุด',
+    'adbHeroOff': 'ยังไม่ได้เชื่อมต่อ',
+    'adbHeroOffSub': 'การแก้ไขข้อบกพร่องผ่าน Wi-Fi มักปิดเองหลังรีสตาร์ทหรือเมื่อเปลี่ยน Wi-Fi เปิดอีกครั้งแล้วแตะเชื่อมต่อใหม่ ไม่ต้องใช้รหัสใหม่',
+    'adbHeroNew': 'ตั้งค่าครั้งเดียว ประมาณหนึ่งนาที',
+    'adbHeroNewSub': 'Innocent เชื่อมต่อกับการแก้ไขข้อบกพร่องผ่าน Wi-Fi ของโทรศัพท์เครื่องนี้เพื่อเปิด Android/data ไม่ต้องใช้คอมพิวเตอร์หรือรูท',
+    'adbHeroChecking': 'กำลังตรวจสอบการเชื่อมต่อ…',
+    'adbReconnect': 'เชื่อมต่อใหม่',
+    'adbOpenWireless': 'เปิดการแก้ไขข้อบกพร่องผ่าน Wi-Fi',
+    'adbFindVideos': 'ค้นหาวิดีโอใน Android/data',
+    'adbPairTitle': 'จับคู่โทรศัพท์นี้ (ครั้งแรกเท่านั้น)',
+    'adbPairNotif': 'จับคู่จากการแจ้งเตือน',
+    'adbPairNotifSub': 'แตะที่นี่ จากนั้นในการแก้ไขข้อบกพร่องผ่าน Wi-Fi แตะ “จับคู่อุปกรณ์ด้วยรหัส” แล้วพิมพ์ตัวเลข 6 หลักในการแจ้งเตือนของ Innocent ไม่ต้องแยกหน้าจอ',
+    'adbPairWaiting': 'กำลังรอรหัสในการแจ้งเตือน…',
+    'adbPairInApp': 'หรือพิมพ์รหัสที่นี่ (ให้หน้าต่างจับคู่ยังแสดงอยู่):',
+    'adbPairCodeLabel': 'รหัสจับคู่ (6 หลัก)',
+    'adbPairConnect': 'จับคู่และเชื่อมต่อ',
+    'adbConnect': 'เชื่อมต่อ',
+    'adbStayTitle': 'การเชื่อมต่อให้ต่อเนื่อง',
+    'adbStayWifi': 'อยู่บน Wi-Fi เดิม การแก้ไขข้อบกพร่องผ่าน Wi-Fi ผูกกับเครือข่ายที่เปิดไว้ การเปลี่ยน Wi-Fi จะปิดมัน',
+    'adbStayBackground': 'การคัดลอกทำงานในเบื้องหลังพร้อมการแจ้งเตือน และทำต่อจากจุดที่หยุดหากการเชื่อมต่อหลุด',
+    'adbStayTile': 'สวิตช์แตะครั้งเดียว: ตัวเลือกสำหรับนักพัฒนา → “ไทล์การตั้งค่าด่วนสำหรับนักพัฒนา” → การแก้ไขข้อบกพร่องผ่าน Wi-Fi แล้วจะอยู่ในแผงการตั้งค่าด่วน',
+    'adbStayBattery': 'โทรศัพท์บางรุ่นปิดเพื่อประหยัดแบตเตอรี่ บน Xiaomi, OPPO, realme, vivo, TECNO และ Infinix ให้ตั้งการใช้แบตเตอรี่ของ Innocent เป็น “ไม่จำกัด”',
+    'adbGuideTitle': 'วิธีเปิดและปิด ADB',
+    'adbGuideOnTitle': 'เปิด',
+    'adbGuideOn1': 'การตั้งค่า → เกี่ยวกับโทรศัพท์ → แตะ “หมายเลขบิลด์” 7 ครั้ง (ใส่รหัสล็อกหน้าจอถ้าถูกถาม) “ตัวเลือกสำหรับนักพัฒนา” จะปรากฏ',
+    'adbGuideOn2': 'ตัวเลือกสำหรับนักพัฒนา → “การแก้ไขข้อบกพร่องผ่าน Wi-Fi” → เปิด และอนุญาตบน Wi-Fi นี้',
+    'adbGuideOn3': 'ครั้งแรกเท่านั้น: “จับคู่อุปกรณ์ด้วยรหัส” แล้วพิมพ์ตัวเลข 6 หลักในการแจ้งเตือนของ Innocent',
+    'adbGuideOffTitle': 'ปิดเมื่อใช้งานเสร็จ',
+    'adbGuideOff1': 'ตัวเลือกสำหรับนักพัฒนา → “การแก้ไขข้อบกพร่องผ่าน Wi-Fi” → ปิด (หรือไทล์การตั้งค่าด่วน) Innocent ยังจำการจับคู่ไว้ ครั้งหน้าแค่เปิดแล้วแตะเชื่อมต่อใหม่',
+    'adbGuideOff2': 'หากต้องการซ่อนตัวเลือกสำหรับนักพัฒนา ให้ปิดสวิตช์หลักด้านบน โทรศัพท์บางรุ่นจะรีเซ็ตการตั้งค่านักพัฒนาอื่นด้วย',
+    'adbGuideSafety': 'การแก้ไขข้อบกพร่องผ่าน Wi-Fi ให้อุปกรณ์ที่จับคู่ควบคุมโทรศัพท์นี้ได้ จับคู่เฉพาะบน Wi-Fi ที่ไว้ใจได้ และปิดเมื่อใช้งานเสร็จ',
+    'adbGuideWhereTitle': 'หาได้ที่ไหนในโทรศัพท์ของคุณ',
+    'adbGuideWhere': 'Samsung — หมายเลขบิลด์: เกี่ยวกับโทรศัพท์ → ข้อมูลซอฟต์แวร์ ตัวเลือกสำหรับนักพัฒนา: ด้านล่างสุดของการตั้งค่า\nXiaomi / Redmi / POCO — แตะ “เวอร์ชัน OS” (หรือ “เวอร์ชัน MIUI”) ในเกี่ยวกับโทรศัพท์ ตัวเลือกสำหรับนักพัฒนา: การตั้งค่าเพิ่มเติม\nOPPO / realme / OnePlus — เกี่ยวกับอุปกรณ์ → เวอร์ชัน → หมายเลขบิลด์ ตัวเลือกสำหรับนักพัฒนา: การตั้งค่าระบบ / การตั้งค่าเพิ่มเติม\nvivo / iQOO — เกี่ยวกับโทรศัพท์ → เวอร์ชันซอฟต์แวร์ ตัวเลือกสำหรับนักพัฒนา: การจัดการระบบ\nTECNO / Infinix / itel, Pixel และรุ่นอื่นส่วนใหญ่ — เกี่ยวกับโทรศัพท์ → หมายเลขบิลด์ ตัวเลือกสำหรับนักพัฒนา: ระบบ',
+    'adbAdvanced': 'ขั้นสูง',
+    'adbDetails': 'รายละเอียด',
+    'adbAndroidDataTitle': 'วิดีโอใน Android/data',
+    'adbAndroidDataSub': 'Telegram และแอปอื่นเก็บวิดีโอไว้ใน Android/data และ Android/obb เมื่อเชื่อมต่อแล้ว Innocent จะค้นหาและเพิ่มลงใน Local',
+    'adbFound': 'พบวิดีโอ {n} รายการ',
+    'adbLostTitle': 'Android/data ต้องใช้การเชื่อมต่อ ADB',
+    'adbLostBody': 'การเชื่อมต่อหลุด ส่วนใหญ่เพราะการแก้ไขข้อบกพร่องผ่าน Wi-Fi ปิดลง เปิดอีกครั้ง โฟลเดอร์นี้จะเปิดเองทันทีที่เชื่อมต่อได้',
+    'adbLostAction': 'การตั้งค่า ADB',
     'destinationIfExists': 'หากมีไฟล์ชื่อเดียวกันอยู่แล้ว',
     'destinationKeepBoth': 'เก็บทั้งคู่',
     'destinationSkip': 'ข้าม',
@@ -5162,6 +5464,12 @@ class AppStrings {
         'เรื่องนี้ขนาด {size} ดาวน์โหลดแบบคุณภาพเต็ม '
         'เครื่องนี้เหลือพื้นที่ {free} ดำเนินการต่อหรือไม่',
     'vhDownloadStart': 'ดาวน์โหลด',
+    'vhDlQualityTitle': 'คุณภาพการดาวน์โหลด',
+    'vhDlQualityOriginal': 'ต้นฉบับ (ดีที่สุด)',
+    'vhDlQualityRemember': 'จำตัวเลือกนี้',
+    'vhDlQualityFree': 'พื้นที่ว่างในเครื่อง {free}',
+    'vhDlQualityHint': 'ไฟล์ที่เล็กกว่าช่วยประหยัดเน็ตและพื้นที่ ส่วนต้นฉบับภาพสวยที่สุด',
+    'vhDlQualityAsk': 'ถามทุกครั้ง',
     'vhDownloadStorageLine': 'ในเครื่องนี้',
     'vhDownloadLeftSoon': 'เหลือไม่ถึงหนึ่งนาที',
     'vhDownloadLeftMinutes': 'เหลือ {m} นาที',
@@ -5476,6 +5784,7 @@ class AppStrings {
     'vhSaverHow1': 'อัลบั้มแสดงภาพเบลอ ไม่มีการดาวน์โหลดเพื่อแสดงภาพนี้',
     'vhSaverHow2': 'รูปและคลิปแต่ละรายการแสดงขนาด แตะเฉพาะที่ต้องการ',
     'vhSaverHow3': 'สิ่งที่เปิดแล้วเก็บไว้ในเครื่อง ไม่เสียเน็ตซ้ำ',
+    'vhSaverHow4': 'หนังที่ตั้งคุณภาพเป็นอัตโนมัติจะสตรีมไม่เกิน 480p',
     'vhLibraryDataSaverHint': 'อัลบั้มโหลดเฉพาะที่แตะ',
     'vhBookmark': 'บันทึก',
     'vhBookmarked': 'บันทึกแล้ว',
