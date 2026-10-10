@@ -45,7 +45,11 @@ concurrency:
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    # Two hours, not one. Run 38036234614 spent 15 minutes building, then
+    # waited on Test Lab past the hour (its phones queue when Google's racks
+    # are busy) and was cut off before it could collect anything — the
+    # phones went on to run without anyone to read the results.
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
 
