@@ -41,6 +41,10 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
   bool _busy = false;
 
   bool _pairedBefore = false;
+
+  /// Already paired, and asked to pair again anyway: the pairing card,
+  /// which is folded away once a phone is paired, is open.
+  bool _pairAgain = false;
   bool _showManual = false;
   List<String> _found = [];
   bool _autoEnableGranted = false;
@@ -292,6 +296,35 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
             ? 'Connected \u2014 the device is reachable.'
             : "Not connected yet. Tap Connect (you may need to re-open "
                 "Wireless debugging first).";
+      });
+      if (ok) unawaited(_autoScanAfterConnect());
+    } catch (e) {
+      if (mounted) setState(() => _output = 'ERROR: $e');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  /// The Reconnect button: the remembered port, and when Wireless debugging
+  /// has moved to a new one (it does every time it is switched on), the new
+  /// port, found on the phone itself. No code: the phone is paired already.
+  ///
+  /// It used to try only the remembered port, so after a restart or a Wi-Fi
+  /// change it failed every time — and people paired again, which did not
+  /// help and took longer.
+  Future<void> _reconnect() async {
+    final s = AppStrings.of(context);
+    setState(() {
+      _busy = true;
+      _output = s.adbReconnecting;
+    });
+    try {
+      final r = await AdbService.instance.autoConnectAndRun('id');
+      if (!mounted) return;
+      final ok = r.contains('uid=') || r.startsWith('OK');
+      setState(() {
+        _connected = ok;
+        _output = ok ? '' : r;
       });
       if (ok) unawaited(_autoScanAfterConnect());
     } catch (e) {
@@ -831,7 +864,7 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
                 ),
               if (hero == _AdbHero.off)
                 FilledButton.icon(
-                  onPressed: _busy ? null : _loadAndAutoConnect,
+                  onPressed: _busy ? null : _reconnect,
                   icon: const Icon(Icons.refresh_rounded, size: 18),
                   label: Text(s.adbReconnect),
                 ),
@@ -1074,6 +1107,31 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
 
   Widget _pairCard() {
     final s = AppStrings.of(context);
+    // PAIRED ALREADY: pairing is once per phone, and doing it again is not a
+    // fix for a connection that dropped — Reconnect is. The card folds to one
+    // line that says so, with the way to pair again for the rare phone that
+    // forgot (after "Revoke debugging authorisations", or a reset).
+    if (_pairedBefore && !_pairAgain && !_pairingServiceOn) {
+      return _card(
+        padding: const EdgeInsets.fromLTRB(16, 10, 8, 10),
+        child: Row(
+          children: <Widget>[
+            const Icon(Icons.verified_user_rounded,
+                color: AppColors.success, size: 20),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(s.adbPairedAlready,
+                  style: const TextStyle(
+                      fontSize: 13, color: AppColors.white70, height: 1.45)),
+            ),
+            TextButton(
+              onPressed: _busy ? null : () => setState(() => _pairAgain = true),
+              child: Text(s.adbPairAgain),
+            ),
+          ],
+        ),
+      );
+    }
     return _card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
