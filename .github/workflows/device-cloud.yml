@@ -106,6 +106,16 @@ jobs:
             --dart-define=INNOCENT_LAB=true \
             --dart-define=INNOCENT_LAB_TITLE="${STREAM_TITLE:-}"
           cp build/app/outputs/flutter-apk/app-release.apk app.apk
+          # DEVICES32: phones that run 32-bit Android take the armeabi-v7a
+          # build — the release's second APK (build.yml) — in a matrix of
+          # their own; the arm64 APK cannot even be installed there.
+          if [ -n "${DEVICES32:-}" ]; then
+            INNOCENT_LAB_ABI=armeabi-v7a flutter build apk --release --target-platform android-arm \
+              --dart-define=INNOCENT_LAB=true \
+              --dart-define=INNOCENT_LAB_TITLE="${STREAM_TITLE:-}"
+            cp build/app/outputs/flutter-apk/app-release.apk app32.apk
+            ls -la app32.apk
+          fi
           echo "TAG=lab-${GITHUB_SHA::7}" >> "$GITHUB_ENV"
           [ "${MODE:-robo}" = stream ] && { ls -la app.apk; exit 0; }
           # The film: 720p H.264 at a film's bitrate, long enough for the
@@ -156,6 +166,11 @@ jobs:
             m=${d%%,*}; v=${d##*,}
             device_args+=(--device "model=$m,version=$v,locale=$LOCALE,orientation=portrait")
           done
+          device32_args=()
+          for d in ${DEVICES32:-}; do
+            m=${d%%,*}; v=${d##*,}
+            device32_args+=(--device "model=$m,version=$v,locale=$LOCALE,orientation=portrait")
+          done
           dir="innocent/${GITHUB_RUN_ID}"
           if [ -n "${FETCH_RUN:-}" ]; then
             # Only collect what an earlier run left in Test Lab's bucket
@@ -170,14 +185,35 @@ jobs:
             # A catalogue title through the real API, Worker and R2, on each
             # phone's own connection (scenario 3; the app closes after four
             # minutes). Startup, rung, climbs and stalls are in the trail.
-            gcloud firebase test android run \
-              --type game-loop \
-              --app app.apk \
-              "${device_args[@]}" \
-              --scenario-numbers 3 \
-              --timeout 360s \
-              --results-dir "$dir" \
-              --format=json > out/matrix.json 2> out/run.txt && rc=0 || rc=$?
+            # The 32-bit phones at the same time, on the 32-bit build.
+            if [ -f app32.apk ]; then
+              gcloud firebase test android run \
+                --type game-loop \
+                --app app32.apk \
+                "${device32_args[@]}" \
+                --scenario-numbers 3 \
+                --timeout 360s \
+                --results-dir "$dir-arm32" \
+                --format=json > out/matrix32.json 2> out/run32.txt &
+              pid32=$!
+            fi
+            if [ "${#device_args[@]}" -gt 0 ]; then
+              gcloud firebase test android run \
+                --type game-loop \
+                --app app.apk \
+                "${device_args[@]}" \
+                --scenario-numbers 3 \
+                --timeout 360s \
+                --results-dir "$dir" \
+                --format=json > out/matrix.json 2> out/run.txt && rc=0 || rc=$?
+            else
+              rc=0
+            fi
+            if [ -n "${pid32:-}" ]; then
+              wait "$pid32" && rc32=0 || rc32=$?
+              echo "32-bit matrix exit $rc32" >> out/run32.txt
+              cat out/run32.txt >> out/run.txt
+            fi
           elif [ "${MODE:-robo}" = playback ]; then
             # Left alone for the whole run: no crawler, just the film.
             gcloud firebase test android run \
@@ -211,6 +247,9 @@ jobs:
           if [ -n "$bucket" ]; then
             mkdir -p out/raw
             gcloud storage cp -r "gs://$bucket/$dir/*" out/raw/ >/dev/null 2>&1 || true
+            # The 32-bit phones' matrix, when there was one. Its phones are
+            # other models, so their folders sit beside the others'.
+            gcloud storage cp -r "gs://$bucket/$dir-arm32/*" out/raw/ >/dev/null 2>&1 || true
             find out/raw -maxdepth 2 | head -20
           fi
 

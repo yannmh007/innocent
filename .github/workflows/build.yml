@@ -55,7 +55,8 @@ jobs:
   build:
     name: Analyze and build release APK
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    # 75, not 60: the 32-bit APK below is a second release build.
+    timeout-minutes: 75
 
     # `contents: write` is needed by the release step at the end, and is the
     # ONLY elevated permission this workflow has. Declared explicitly rather
@@ -370,6 +371,109 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       # ═══════════════════════════════════════════════════════════════════
+      # THE SAME RELEASE FOR PHONES THAT RUN 32-BIT ANDROID
+      # ═══════════════════════════════════════════════════════════════════
+      #
+      # The APK above carries arm64-v8a code only, and a phone whose Android
+      # is 32-bit cannot install it at all — the Galaxy A10 and A02, many
+      # Android Go phones, older itel, TECNO and Infinix, all common in
+      # Myanmar. Firebase Test Lab refused one outright ("Incompatible
+      # Architecture", run 37967931084). So the same tree is built again for
+      # armeabi-v7a, signed with the same key: `<name>-arm32.apk`, described
+      # by app_releases' `*_arm32` columns (docs/migrations/044). The app
+      # picks the file its phone can run.
+      #
+      # A SEPARATE BUILD, NOT A TWO-ABI APK: build.gradle.kts explains why a
+      # packaging peak for two ABIs at once was more than a build could hold.
+      #
+      # CONTINUE-ON-ERROR. The arm64 APK is the release; a failure here costs
+      # the 32-bit phones this version, never everyone theirs. Every step
+      # after this one checks for the file before touching it.
+      - name: Build the 32-bit APK
+        id: arm32
+        continue-on-error: true
+        env:
+          INNOCENT_STORE_FILE: innocent.jks
+          INNOCENT_STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          INNOCENT_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          INNOCENT_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          INNOCENT_ABI: armeabi-v7a
+          VNAME: ${{ steps.facts.outputs.vname }}
+          VCODE: ${{ steps.facts.outputs.vcode }}
+        run: |
+          set -euo pipefail
+          flutter build apk --release --target-platform android-arm \
+            --obfuscate --split-debug-info=build/symbols-arm32
+          APK=build/app/outputs/flutter-apk/app-release.apk
+
+          # The same key check as the arm64 APK's, for the same reason.
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -1)
+          EXPECTED=e3e1effa993ced6745a33f75c97742a3b8badd79d54927d2515538594c85cdb1
+          ACTUAL=$("$APKSIGNER" verify --print-certs "$APK" \
+                   | grep -i 'SHA-256 digest' | head -1 | awk '{print $NF}' | tr 'A-Z' 'a-z')
+          if [ "$ACTUAL" != "$EXPECTED" ]; then
+            echo "::error::WRONG SIGNING KEY on the 32-bit APK. Not distributed."
+            exit 1
+          fi
+
+          # 32-bit code and nothing else: an APK that slipped back to arm64
+          # would install on no phone it is meant for.
+          LIBS=$(unzip -l "$APK" | awk '{print $4}' | grep '^lib/' || true)
+          if ! printf '%s\n' "$LIBS" | grep -q '^lib/armeabi-v7a/libflutter.so$' \
+             || printf '%s\n' "$LIBS" | grep -qv '^lib/armeabi-v7a/'; then
+            echo "::error::the 32-bit APK's native code is not armeabi-v7a only:"
+            printf '%s\n' "$LIBS" | cut -d/ -f2 | sort | uniq -c
+            exit 1
+          fi
+
+          # And every native library the arm64 APK has: a plugin that ships
+          # only 64-bit code would install here and crash on first use.
+          ARM64="innocent-${VNAME}-${VCODE}.apk"
+          missing=$(comm -23 \
+            <(unzip -l "$ARM64" | awk '{print $4}' | grep '^lib/arm64-v8a/' | xargs -n1 basename | sort -u) \
+            <(printf '%s\n' "$LIBS" | xargs -n1 basename | sort -u))
+          if [ -n "$missing" ]; then
+            echo "::error::the 32-bit APK lacks native libraries the arm64 one has:"
+            echo "$missing"
+            exit 1
+          fi
+
+          NAME32="innocent-${VNAME}-${VCODE}-arm32.apk"
+          cp "$APK" "$NAME32"
+          SHA32=$(sha256sum "$NAME32" | cut -d' ' -f1)
+          BYTES32=$(stat -c%s "$NAME32")
+          MB32=$(( (BYTES32 + 500000) / 1000000 ))
+          echo "name=$NAME32" >> "$GITHUB_OUTPUT"
+          echo "sha=$SHA32" >> "$GITHUB_OUTPUT"
+          echo "bytes=$BYTES32" >> "$GITHUB_OUTPUT"
+          echo "mb=$MB32" >> "$GITHUB_OUTPUT"
+          {
+            echo ""
+            echo "## 32-bit APK (armeabi-v7a)"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| File | \`${NAME32}\` |"
+            echo "| Size | ${MB32} MB (${BYTES32} bytes) |"
+            echo "| SHA-256 | \`${SHA32}\` |"
+            echo "| Signature | verified against the Innocent key |"
+            echo ""
+            echo "Once it is on the CDN (below), in the same edit as the row above:"
+            echo ""
+            echo '```sql'
+            echo "update public.app_releases"
+            echo "   set apk_url_arm32    = 'https://pub-18c62521649645be87d4d36225021e15.r2.dev/apk/${NAME32}',"
+            echo "       apk_sha256_arm32 = '${SHA32}',"
+            echo "       apk_bytes_arm32  = ${BYTES32}"
+            echo " where id = 1;"
+            echo '```'
+            echo ""
+            echo "> If this file is NOT published, set all three to null in"
+            echo "> that edit: a 32-bit phone must never be sent the previous"
+            echo "> version's file as this one."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # ═══════════════════════════════════════════════════════════════════
       # AND TO THE CDN, WHICH IS WHERE PEOPLE ACTUALLY DOWNLOAD IT FROM
       # ═══════════════════════════════════════════════════════════════════
       #
@@ -394,6 +498,8 @@ jobs:
           SB_URL: ${{ secrets.SUPABASE_URL }}
           RUNNER_SECRET: ${{ secrets.INGEST_SECRET }}
           NAME: ${{ steps.facts.outputs.name }}
+          # Empty when the 32-bit build failed: that file is then skipped.
+          NAME32: ${{ steps.arm32.outputs.name }}
         run: |
           set -euo pipefail
           if [ -z "${SB_URL:-}" ] || [ -z "${RUNNER_SECRET:-}" ]; then
@@ -401,44 +507,51 @@ jobs:
                  "is on the Release only. app_releases must point at GitHub."
             exit 0
           fi
-          code=$(curl -sS -o /tmp/sign.json -w '%{http_code}' \
-            -X POST "$SB_URL/functions/v1/ingest" \
-            -H "Authorization: Bearer $RUNNER_SECRET" \
-            -H 'Content-Type: application/json' \
-            -d "{\"op\":\"release\",\"name\":\"${NAME}\"}")
-          if [ "$code" != "200" ]; then
-            echo "::warning::could not get a CDN signature (HTTP $code). The" \
-                 "APK is on the Release only."
-            exit 0
+          put_on_cdn() {
+            local file="$1"
+            code=$(curl -sS -o /tmp/sign.json -w '%{http_code}' \
+              -X POST "$SB_URL/functions/v1/ingest" \
+              -H "Authorization: Bearer $RUNNER_SECRET" \
+              -H 'Content-Type: application/json' \
+              -d "{\"op\":\"release\",\"name\":\"${file}\"}")
+            if [ "$code" != "200" ]; then
+              echo "::warning::could not get a CDN signature for $file (HTTP" \
+                   "$code). It is on the Release only."
+              return 0
+            fi
+            # NEVER PRINTED. It is a presigned PUT and this log is public.
+            PUT=$(python3 -c "import json;print(json.load(open('/tmp/sign.json'))['put_url'])")
+            PUB=$(python3 -c "import json;print(json.load(open('/tmp/sign.json'))['public_url'])")
+            # A PUBLISHED APK NEVER CHANGES. Any push to main that is not under
+            # docs/ rebuilds the same version name; uploading that would replace
+            # the file people are downloading with one whose hash no longer
+            # matches app_releases.apk_sha256, and every update would fail its
+            # check. A PUT is all or nothing, so a file that is there is whole.
+            have=$(curl -sS -o /dev/null -I -w '%{http_code}' "$PUB" || true)
+            if [ "$have" = "200" ]; then
+              echo "::notice::$PUB is already on the CDN - left as it is." \
+                   "Bump the version in pubspec.yaml to publish a new build."
+              return 0
+            fi
+            curl --fail-with-body -sS -X PUT -T "$file" \
+              -H 'Content-Type: application/vnd.android.package-archive' "$PUT"
+            echo "on the CDN: $PUB"
+            {
+              echo ""
+              echo "## On the CDN: \`$file\`"
+              echo ""
+              echo "    $PUB"
+              echo ""
+              echo "**Use this as the URL, not the GitHub link.** A release"
+              echo "asset redirects to Azure blob storage, which does not"
+              echo "reliably carry ninety megabytes to Myanmar; this is the"
+              echo "same Cloudflare edge that already serves every poster."
+            } >> "$GITHUB_STEP_SUMMARY"
+          }
+          put_on_cdn "$NAME"
+          if [ -n "${NAME32:-}" ] && [ -f "$NAME32" ]; then
+            put_on_cdn "$NAME32"
           fi
-          # NEVER PRINTED. It is a presigned PUT and this log is public.
-          PUT=$(python3 -c "import json;print(json.load(open('/tmp/sign.json'))['put_url'])")
-          PUB=$(python3 -c "import json;print(json.load(open('/tmp/sign.json'))['public_url'])")
-          # A PUBLISHED APK NEVER CHANGES. Any push to main that is not under
-          # docs/ rebuilds the same version name; uploading that would replace
-          # the file people are downloading with one whose hash no longer
-          # matches app_releases.apk_sha256, and every update would fail its
-          # check. A PUT is all or nothing, so a file that is there is whole.
-          have=$(curl -sS -o /dev/null -I -w '%{http_code}' "$PUB" || true)
-          if [ "$have" = "200" ]; then
-            echo "::notice::$PUB is already on the CDN - left as it is." \
-                 "Bump the version in pubspec.yaml to publish a new build."
-            exit 0
-          fi
-          curl --fail-with-body -sS -X PUT -T "$NAME" \
-            -H 'Content-Type: application/vnd.android.package-archive' "$PUT"
-          echo "on the CDN: $PUB"
-          {
-            echo ""
-            echo "## The APK is also on the CDN"
-            echo ""
-            echo "    $PUB"
-            echo ""
-            echo "**Use this as \`apk_url\`, not the GitHub link.** A release"
-            echo "asset redirects to Azure blob storage, which does not"
-            echo "reliably carry ninety megabytes to Myanmar; this is the"
-            echo "same Cloudflare edge that already serves every poster."
-          } >> "$GITHUB_STEP_SUMMARY"
 
       # The symbols that turn an obfuscated stack trace back into names
       # (`flutter symbolize`). Readable by whoever holds them, so — the repo
@@ -459,6 +572,13 @@ jobs:
           tar -czf - -C build symbols | openssl enc -aes-256-cbc -pbkdf2 -salt \
             -pass env:LAB_RESULTS_KEY -out "$OUT"
           ls -l "$OUT"
+          # The 32-bit APK's own: its obfuscation map is not the arm64 one's.
+          NAME32="${{ steps.arm32.outputs.name }}"
+          if [ -n "$NAME32" ] && [ -d build/symbols-arm32 ]; then
+            tar -czf - -C build symbols-arm32 | openssl enc -aes-256-cbc -pbkdf2 -salt \
+              -pass env:LAB_RESULTS_KEY -out "$NAME32.symbols.tar.gz.enc"
+            ls -l "$NAME32.symbols.tar.gz.enc"
+          fi
 
       - name: Publish the APK as a Release asset
         # WHY A RELEASE AND NOT AN ARTIFACT (18 Sep 2026)
@@ -511,6 +631,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: v${{ steps.facts.outputs.vname }}-${{ steps.facts.outputs.vcode }}
           NAME: ${{ steps.facts.outputs.name }}
+          NAME32: ${{ steps.arm32.outputs.name }}
         run: |
           set -euo pipefail
 
@@ -543,6 +664,14 @@ jobs:
           \`\`\`
           sha256sum ${NAME}
           \`\`\`"
+          if [ -n "${NAME32:-}" ] && [ -f "$NAME32" ]; then
+            NOTES="$NOTES
+
+          **Phones that run 32-bit Android** (Galaxy A10, many Android Go
+          phones): \`${NAME32}\`, ${{ steps.arm32.outputs.mb }} MB, SHA-256
+          \`${{ steps.arm32.outputs.sha }}\`. The app picks the right one by
+          itself when it updates."
+          fi
 
           # Does the tag already exist, and at which commit?
           #
@@ -667,6 +796,16 @@ jobs:
           gh release upload "$TAG" "$NAME" --clobber
           if [ -f "$NAME.symbols.tar.gz.enc" ]; then
             gh release upload "$TAG" "$NAME.symbols.tar.gz.enc" --clobber
+          fi
+          # The 32-bit APK of the same build, when it was built. Only on this
+          # path — a version published by an earlier build returned above
+          # with its files untouched, and a 32-bit file added to it now would
+          # come from a different tree than its tag names.
+          if [ -n "${NAME32:-}" ] && [ -f "$NAME32" ]; then
+            gh release upload "$TAG" "$NAME32" --clobber
+            if [ -f "$NAME32.symbols.tar.gz.enc" ]; then
+              gh release upload "$TAG" "$NAME32.symbols.tar.gz.enc" --clobber
+            fi
           fi
 
           echo "published: $(gh release view "$TAG" --json url --jq .url)"

@@ -1409,13 +1409,14 @@ Deno.serve(async (req: Request) => {
   // THE NAME IS A PATTERN, NOT A STRING THE CALLER CHOOSES. Anything holding
   // the runner secret could otherwise write anywhere in a bucket the whole
   // app reads, including over a poster. `innocent-<x>.<y>.<z>-<code>.apk`
-  // and nothing else, under `apk/`.
+  // and its 32-bit twin `…-<code>-arm32.apk` (docs/migrations/044), and
+  // nothing else, under `apk/`.
   if (op === 'release') {
     const given = (req.headers.get('Authorization') ?? '').replace(/^Bearer /i, '');
     if (!sameSecret(given, RUNNER_SECRET)) return json({ error: 'no' }, 403, req);
 
     const name = String(body.name ?? '');
-    if (!/^innocent-\d+\.\d+\.\d+-\d+\.apk$/.test(name)) {
+    if (!/^innocent-\d+\.\d+\.\d+-\d+(-arm32)?\.apk$/.test(name)) {
       return json({ error: 'bad_name' }, 400, req);
     }
     const key = `apk/${name}`;

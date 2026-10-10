@@ -76,16 +76,38 @@ class AppRelease {
   ///
   /// Returns null rather than throwing on a malformed row: a broken manifest
   /// must read as "no update", never as a crash on a settings screen.
-  static AppRelease? fromJson(Map<String, dynamic> json) {
+  ///
+  /// [abis] is what the phone can run, best first (`Build.SUPPORTED_ABIS`).
+  /// It decides WHICH APK the release offers: the arm64 one, or — on a phone
+  /// whose Android is 32-bit — the armeabi-v7a one (migration 044). See
+  /// [phoneRuns32BitOnly]. Empty means "not known", which keeps the arm64 APK,
+  /// as every build before 1.64.60 did.
+  static AppRelease? fromJson(Map<String, dynamic> json,
+      {List<String> abis = const <String>[]}) {
     final name = json['version_name'];
     final code = json['version_code'];
     if (name is! String || name.isEmpty) return null;
     if (code is! int) return null;
 
-    final bytes = json['apk_bytes'];
     final released = json['released_at'];
-    final url = json['apk_url'];
-    final sha = json['apk_sha256'];
+    // THE FILE THIS PHONE CAN INSTALL, and only that one. A 32-bit phone is
+    // never offered the arm64 APK: the installer would refuse it after the
+    // whole download ("App not installed"). With no 32-bit file published —
+    // or one left over from an earlier version — it has nothing to download,
+    // which is the truth for that phone.
+    final arm32 = phoneRuns32BitOnly(abis);
+    final Object? bytes, url, sha;
+    if (arm32) {
+      final u = json['apk_url_arm32'];
+      final fresh = u is String && !_namesOtherBuild(u, code);
+      url = fresh ? u : null;
+      sha = fresh ? json['apk_sha256_arm32'] : null;
+      bytes = fresh ? json['apk_bytes_arm32'] : null;
+    } else {
+      url = json['apk_url'];
+      sha = json['apk_sha256'];
+      bytes = json['apk_bytes'];
+    }
     // `is int` and nothing else. A string '319', a double, a null or a missing
     // key all become null, which reads as "no minimum set" — the safe answer.
     // Coercing here (int.tryParse on a string, say) would be a way for a typo
@@ -108,6 +130,21 @@ class AppRelease {
       releasedAt: released is String ? DateTime.tryParse(released) : null,
       playerFlags: parsePlayerFlags(json['player_flags']),
     );
+  }
+
+  /// Whether a phone with these ABIs can run 32-bit ARM code and NOT 64-bit:
+  /// the phones the armeabi-v7a APK exists for. A phone listing arm64-v8a
+  /// takes the arm64 APK even if it also lists armeabi-v7a (nearly all do);
+  /// an unknown list, or one with neither, keeps the arm64 APK.
+  static bool phoneRuns32BitOnly(List<String> abis) =>
+      !abis.contains('arm64-v8a') && abis.contains('armeabi-v7a');
+
+  /// A 32-bit URL whose file name carries another build's number — the
+  /// column left at the last release while the row moved on. Installed, it
+  /// would be the old version again, offered for ever.
+  static bool _namesOtherBuild(String url, int code) {
+    final m = RegExp(r'-(\d+)-arm32\.apk$').firstMatch(url.trim());
+    return m != null && int.parse(m.group(1)!) != code;
   }
 
   /// Words of `player_flags`: lower-case `[a-z0-9_]` only, at most 16, so a

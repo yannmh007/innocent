@@ -123,6 +123,18 @@ logger.lifecycle(
 // release. Unset, nothing below changes by a byte.
 val labAbi: String? = System.getenv("INNOCENT_LAB_ABI")?.takeIf { it.isNotBlank() }
 
+// THE SECOND RELEASE APK (.github/workflows/build.yml): INNOCENT_ABI=armeabi-v7a
+// builds the same release, signed with the same key, for phones that run
+// 32-bit Android (docs/migrations/044_app_releases_arm32.sql). Only these two
+// values are accepted: anything else fails the build here rather than
+// shipping an APK nobody can install. Unset, the APK is arm64-v8a, as always.
+val releaseAbi: String = (System.getenv("INNOCENT_ABI")?.takeIf { it.isNotBlank() } ?: "arm64-v8a")
+    .also {
+        require(it == "arm64-v8a" || it == "armeabi-v7a") {
+            "INNOCENT_ABI must be arm64-v8a or armeabi-v7a, not '$it'"
+        }
+    }
+
 if (releaseKeystoreFile == null) {
     logger.warn("*****************************************************************")
     logger.warn("* Innocent: NO RELEASE KEYSTORE FOUND.                          *")
@@ -226,12 +238,12 @@ android {
         // .so packaging peak for two ABIs was over the line, so we're back to
         // a single ABI.
         //
-        // Compatibility: arm64-v8a covers virtually every phone from ~2019+.
-        // 32-bit-only budget devices (a few older itel / Tecno / Infinix
-        // models) won't be able to install this arm64 APK — if that matters,
-        // build a separate armeabi-v7a APK on its own so its packaging peak
-        // doesn't stack on top of arm64:
-        //   flutter build apk --release --target-platform android-arm
+        // Compatibility: arm64-v8a covers most phones from ~2019 on, but not
+        // phones whose ANDROID is 32-bit (Galaxy A10, many Android Go phones,
+        // older itel / TECNO / Infinix — Test Lab's "Incompatible
+        // Architecture"). They get a separate armeabi-v7a APK, built on its
+        // own so its packaging peak doesn't stack on top of arm64:
+        //   INNOCENT_ABI=armeabi-v7a flutter build apk --release --target-platform android-arm
         // x86 / x86_64 (emulator-only) stay excluded.
         ndk {
             // CLEAR FIRST. `+=` only ever ADDS: with Flutter's Gradle plugin
@@ -241,7 +253,7 @@ android {
             // The build log is the proof — merged_native_libs held arm64-v8a,
             // armeabi-v7a, x86 AND x86_64.
             abiFilters.clear()
-            abiFilters.add(labAbi ?: "arm64-v8a")
+            abiFilters.add(labAbi ?: releaseAbi)
         }
     }
 
