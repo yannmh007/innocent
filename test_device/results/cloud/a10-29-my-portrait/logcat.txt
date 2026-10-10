@@ -1,0 +1,618 @@
+10-10 01:23:17.358 12123 12123 D DIAGMON_SDK[605024]: CRASH_LOG_PATH : /data/user/0/com.samsung.android.lool/exception/diagmon.log
+10-10 01:23:19.983 12175 12175 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-10 01:23:19.988 12175 12175 I AndroidRuntime: Using default boot image
+10-10 01:23:19.989 12175 12175 I AndroidRuntime: Leaving lock profiling enabled
+10-10 01:23:19.989 12175 12175 D AndroidRuntime: addProductProperty
+10-10 01:23:19.992 12175 12175 D AndroidRuntime: addProductProperty: pBrand1 != NULL
+10-10 01:23:19.992 12175 12175 D AndroidRuntime: addProductProperty: start
+10-10 01:23:19.992 12175 12175 D AndroidRuntime: propertySet: couldn't set property (it is from app)
+10-10 01:23:20.195 12175 12175 D AndroidRuntime: Calling main entry com.android.commands.am.Am
+10-10 01:23:20.778  4123 10750 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.droidguard.DroidGuardService in 1000ms
+10-10 01:23:20.826 12175 12175 D AndroidRuntime: Shutting down VM
+10-10 01:23:21.124 12214 12214 D DIAGMON_SDK[605029][tu52hac8ar] : CRASH_LOG_PATH : /data/user/0/com.samsung.android.app.telephonyui/exception/diagmon.log
+10-10 01:23:21.182  4123 10487 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.play.integrity.api.service.IntegrityApiPersistentService in 1000ms
+10-10 01:23:21.182  4123 10487 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.remotegestures.api.RemoteGesturesService in 11000ms
+10-10 01:23:21.183  4123 10487 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.thunderbird.EmergencyPersistentService in 20999ms
+10-10 01:23:21.183  4123 10487 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.nearby.sharing.ReceiveSurfaceService in 30999ms
+10-10 01:23:21.185  4123 10487 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/com.google.android.location.fused.FusedLocationService in 40999ms
+10-10 01:23:21.185  4123 10487 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.gcm.nts.SchedulerService in 50998ms
+10-10 01:23:21.185  4123 10487 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/com.google.android.location.network.NetworkLocationService in 60998ms
+10-10 01:23:21.186  4123 10487 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/com.google.android.location.internal.server.HardwareArProviderService in 70997ms
+10-10 01:23:21.187  4123 10487 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.location.geocode.GeocodeService in 80997ms
+10-10 01:23:21.188  4123 10487 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.location.persistent.LocationPersistentService in 90996ms
+10-10 01:23:21.188  4123 10487 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.chimera.PersistentBoundBrokerService in 100996ms
+10-10 01:23:21.189  4123 10487 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.personalsafety.service.PersonalSafetyService in 110996ms
+10-10 01:23:21.189  4123 10487 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.nearby.presence.service.LifeCycleService in 120995ms
+10-10 01:23:21.189  4123 10487 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/com.google.android.location.internal.server.GoogleLocationService in 130995ms
+10-10 01:23:21.190  4123 10487 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.chimera.GmsIntentOperationService in 140995ms
+10-10 01:23:21.190  4123 10487 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.nearby.sharing.SendSurfaceService in 150994ms
+10-10 01:23:21.191  4123 10487 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.chimera.PersistentIntentOperationService in 160993ms
+10-10 01:23:21.191  4123 10487 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/com.google.android.location.internal.GoogleLocationManagerService in 170993ms
+10-10 01:23:21.191  4123 10487 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.personalsafety.service.SndDetectionService in 180993ms
+10-10 01:23:21.192  4123 10487 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/com.google.android.contextmanager.service.ContextManagerService in 190993ms
+10-10 01:23:21.192  4123 10487 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.fido.authenticator.service.AuthenticatorService in 200992ms
+10-10 01:23:21.192  4123 10487 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.games.chimera.GamesAsyncServiceProxy in 210992ms
+10-10 01:23:21.193  4123 10487 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.gcm.GcmService in 210991ms
+10-10 01:23:21.193  4123 10487 W ActivityManager: Scheduling restart of crashed service com.google.android.gms/.presencemanager.service.PresenceManagerPresenceReportService in 220991ms
+10-10 01:23:23.792 12449 12681 D DIAGMON_SDK[605030][cfk7symzua] : CRASH_LOG_PATH : /data/user/0/com.samsung.android.calendar/exception/diagmon.log
+10-10 01:23:24.005 12399 12499 V DynamiteModule: Dynamite loader version >= 2, using loadModule2NoCrashUtils
+10-10 01:23:24.056 12399 12500 V DynamiteModule: Dynamite loader version >= 2, using loadModule2NoCrashUtils
+10-10 01:23:26.604  4123 11113 W ActivityManager: Scheduling restart of crashed service android/com.android.server.DrmEventService in 0ms
+10-10 01:23:26.636  4123  9811 W ActivityManager: Scheduling restart of crashed service com.sec.spp.push/.PushClientService in 1000ms
+10-10 01:23:32.060  4123  4140 W system_server: Long monitor contention with owner PackageManager (4182) at com.android.server.pm.PackageManagerService$ScanResult com.android.server.pm.PackageManagerService.scanPackageNewLI(android.content.pm.PackageParser$Package, int, int, long, android.os.UserHandle)(PackageManagerService.java:12903) waiters=2 in int com.android.server.pm.PackageManagerService.checkUidPermission(java.lang.String, int) for 410ms
+10-10 01:23:32.061  4123  4139 W system_server: Long monitor contention with owner PackageManager (4182) at com.android.server.pm.PackageManagerService$ScanResult com.android.server.pm.PackageManagerService.scanPackageNewLI(android.content.pm.PackageParser$Package, int, int, long, android.os.UserHandle)(PackageManagerService.java:12903) waiters=1 in android.content.pm.ApplicationInfo com.android.server.pm.PackageManagerService.getApplicationInfoInternal(java.lang.String, int, int, int) for 410ms
+10-10 01:23:34.252 13351 13351 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-10 01:23:34.261 13351 13351 I AndroidRuntime: Using default boot image
+10-10 01:23:34.262 13351 13351 I AndroidRuntime: Leaving lock profiling enabled
+10-10 01:23:34.265 13351 13351 D AndroidRuntime: addProductProperty
+10-10 01:23:34.274 13351 13351 D AndroidRuntime: addProductProperty: pBrand1 != NULL
+10-10 01:23:34.274 13351 13351 D AndroidRuntime: addProductProperty: start
+10-10 01:23:34.274 13351 13351 D AndroidRuntime: propertySet: couldn't set property (it is from app)
+10-10 01:23:34.618  4123  4140 W ActivityManager: Scheduling restart of crashed service com.samsung.android.fmm/.application.FmmService in 1000ms
+10-10 01:23:34.619  4123  4140 W ActivityManager: Scheduling restart of crashed service com.samsung.android.fmm/.application.UserpppService in 10999ms
+10-10 01:23:34.840 13351 13351 D AndroidRuntime: Calling main entry com.android.commands.am.Am
+10-10 01:23:35.104  4123 11052 W ActivityManager: Scheduling restart of crashed service com.samsung.storyservice/.StoryService in 20515ms
+10-10 01:23:35.298 13351 13351 D AndroidRuntime: Shutting down VM
+10-10 01:23:36.408 13619 13619 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-10 01:23:36.414 13619 13619 I AndroidRuntime: Using default boot image
+10-10 01:23:36.414 13619 13619 I AndroidRuntime: Leaving lock profiling enabled
+10-10 01:23:36.415 13619 13619 D AndroidRuntime: addProductProperty
+10-10 01:23:36.418 13619 13619 D AndroidRuntime: addProductProperty: pBrand1 != NULL
+10-10 01:23:36.418 13619 13619 D AndroidRuntime: addProductProperty: start
+10-10 01:23:36.418 13619 13619 D AndroidRuntime: propertySet: couldn't set property (it is from app)
+10-10 01:23:36.625 13619 13619 D AndroidRuntime: Calling main entry com.android.commands.am.Am
+10-10 01:23:36.690 13652 13652 D DIAGMON_SDK[605025]: CRASH_LOG_PATH : /data/user_de/0/com.samsung.accessibility/exception/diagmon.log
+10-10 01:23:38.149 13632 13632 I Finsky:background: [2] [BGP] Initializing crash detector...
+10-10 01:23:38.205 12475 13936 I serviceentitlement: (REDACTED) [CredManRegistrationManager] [%s] start to register
+10-10 01:23:38.732 12475 13936 I serviceentitlement: (REDACTED) [CredManRegistrationManager] [%s] Data length [%d] to register
+10-10 01:23:38.845 12475 13936 I serviceentitlement: (REDACTED) [CredManRegistrationManager] [%s] register #2
+10-10 01:23:38.875 12475 13936 I serviceentitlement: (REDACTED) [CredManRegistrationManager] [%s] register credential
+10-10 01:23:39.315 14003 14157 D DIAGMON_SDK[605026]: CRASH_LOG_PATH : /data/user/0/com.sec.android.app.myfiles/exception/diagmon.log
+10-10 01:23:41.437 14175 14350 D DIAGMON_SDK[605030][cfk7symzua] : CRASH_LOG_PATH : /data/user/0/com.samsung.android.calendar/exception/diagmon.log
+10-10 01:23:43.991 14436 14542 D DIAGMON_SDK[605030][ca56b1nldz] : CRASH_LOG_PATH : /data/user_de/0/com.samsung.android.incallui/exception/diagmon.log
+10-10 01:23:45.385 14664 14664 D FirebaseApp: com.google.firebase.crash.FirebaseCrash is not linked. Skipping initialization.
+10-10 01:23:48.888 14836 14836 D DIAGMON_SDK[605025]: CRASH_LOG_PATH : /data/user/0/com.samsung.android.scloud/exception/diagmon.log
+10-10 01:23:50.427 12694 12758 E Finsky  : 	at anrb.f(PG:4)
+10-10 01:23:50.427 12694 12758 E Finsky  : 	at anrc.call(PG:3)
+10-10 01:23:51.698 15073 15141 D DIAGMON_SDK[605026]: CRASH_LOG_PATH : /data/user/0/com.sec.android.app.myfiles/exception/diagmon.log
+10-10 01:23:52.833  4123  4153 W BroadcastQueue: Skipping deliver [background] BroadcastRecord{adc405f u0 android.accounts.action.VISIBLE_ACCOUNTS_CHANGED} to ReceiverList{2ed90d5 14240 com.android.providers.calendar/10096/u0 remote:812518c}: process gone or crashing
+10-10 01:23:52.994 15229 15268 V DynamiteModule: Dynamite loader version >= 2, using loadModule2NoCrashUtils
+10-10 01:23:53.073 15229 15269 V DynamiteModule: Dynamite loader version >= 2, using loadModule2NoCrashUtils
+10-10 01:23:53.173 15150 15220 D FirebaseApp: com.google.firebase.crash.FirebaseCrash is not linked. Skipping initialization.
+10-10 01:23:54.629 13619 13619 D AndroidRuntime: Shutting down VM
+10-10 01:23:54.661 13619 15398 I AndroidRuntime: NOTE: attach of thread 'Binder:13619_3' failed
+10-10 01:23:55.228 15403 15403 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-10 01:23:55.235 15403 15403 I AndroidRuntime: Using default boot image
+10-10 01:23:55.235 15403 15403 I AndroidRuntime: Leaving lock profiling enabled
+10-10 01:23:55.236 15403 15403 D AndroidRuntime: addProductProperty
+10-10 01:23:55.241 15403 15403 D AndroidRuntime: addProductProperty: pBrand1 != NULL
+10-10 01:23:55.241 15403 15403 D AndroidRuntime: addProductProperty: start
+10-10 01:23:55.241 15403 15403 D AndroidRuntime: propertySet: couldn't set property (it is from app)
+10-10 01:23:55.351 12475 12475 W serviceentitlement: [CredManRegistrationManager] [serviceentitlement][com.google.android.gms.serviceentitlement] Failed to register credentials [CONTEXT service_id=359 ]
+10-10 01:23:55.598 15403 15403 D AndroidRuntime: Calling main entry com.android.commands.content.Content
+10-10 01:23:55.633 15403 15403 D AndroidRuntime: Shutting down VM
+10-10 01:23:56.387 15523 15523 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-10 01:23:56.392 15523 15523 I AndroidRuntime: Using default boot image
+10-10 01:23:56.392 15523 15523 I AndroidRuntime: Leaving lock profiling enabled
+10-10 01:23:56.393 15523 15523 D AndroidRuntime: addProductProperty
+10-10 01:23:56.396 15523 15523 D AndroidRuntime: addProductProperty: pBrand1 != NULL
+10-10 01:23:56.396 15523 15523 D AndroidRuntime: addProductProperty: start
+10-10 01:23:56.396 15523 15523 D AndroidRuntime: propertySet: couldn't set property (it is from app)
+10-10 01:23:56.595 15523 15523 D AndroidRuntime: Calling main entry com.android.commands.content.Content
+10-10 01:23:56.625 15523 15523 D AndroidRuntime: Shutting down VM
+10-10 01:23:58.932  4123  9985 W ActivityManager: Scheduling restart of crashed service com.samsung.storyservice/.StoryService in 82060ms
+10-10 01:23:59.652 15859 15905 V DynamiteModule: Dynamite loader version >= 2, using loadModule2NoCrashUtils
+10-10 01:23:59.664 15859 15906 V DynamiteModule: Dynamite loader version >= 2, using loadModule2NoCrashUtils
+10-10 01:24:01.166 15913 15913 D DIAGMON_SDK[605024]: CRASH_LOG_PATH : /data/user/0/com.samsung.android.lool/exception/diagmon.log
+10-10 01:24:02.646 16073 16073 D DIAGMON_SDK[605024]: CRASH_LOG_PATH : /data/user/0/com.samsung.android.lool/exception/diagmon.log
+10-10 01:24:10.386  4123  4268 D PersonaServiceHelper: Installer null, Is allowed to install pkg com.innocent.media ? false
+10-10 01:24:10.638  4123  4182 D PackageManager: EAS IT Policy com.innocent.media isPackageSignedByPlatform = false
+10-10 01:24:10.641  4123  4182 D PackageManager: EAS IT Policy com.innocent.media isPackageSignedByPlatform = false
+10-10 01:24:10.715  4123  4182 W System.err: java.lang.IllegalArgumentException: Unknown package: com.innocent.media
+10-10 01:24:11.391  4123  4182 D PackageManager: EAS IT Policy com.innocent.media isPackageSignedByPlatform = false
+10-10 01:24:11.391  4123  4182 D PackageManager: EAS IT Policy destCodeFile /data/app/com.innocent.media-dFklf-GIzPkY2pHh-8gt2w==
+10-10 01:24:11.514  4123  4182 I PackageManager: Un-granting permission android.permission.REQUEST_INSTALL_PACKAGES from package com.innocent.media (protectionLevel=66 flags=0x3808be44)
+10-10 01:24:11.514  4123  4182 I PackageManager: Un-granting permission android.permission.WRITE_SECURE_SETTINGS from package com.innocent.media (protectionLevel=50 flags=0x3808be44)
+10-10 01:24:11.673  4123  4182 I PackageManager.DexOptimizer: Running dexopt (dexoptNeeded=1) on: /data/app/com.innocent.media-dFklf-GIzPkY2pHh-8gt2w==/base.apk pkg=com.innocent.media isa=arm dexoptFlags=boot_complete,profile_guided,public,enable_hidden_api_checks targetFilter=speed-profile oatDir=/data/app/com.innocent.media-dFklf-GIzPkY2pHh-8gt2w==/oat classLoaderContext=PCL[] dexMetadataPath=null
+10-10 01:24:11.681  3722  6254 V installd: DexInv: --- BEGIN '/data/app/com.innocent.media-dFklf-GIzPkY2pHh-8gt2w==/base.apk' ---
+10-10 01:24:11.851 16555 16555 I dex2oat : /apex/com.android.runtime/bin/dex2oat --input-vdex-fd=-1 --output-vdex-fd=10 --resolve-startup-const-strings=true --max-image-block-size=524288 --compiler-filter=speed-profile -j6 --classpath-dir=/data/app/com.innocent.media-dFklf-GIzPkY2pHh-8gt2w== --class-loader-context=PCL[] --generate-mini-debug-info --compact-dex-level=none --compilation-reason=install
+10-10 01:24:17.309 16761 16761 D DIAGMON_SDK[605025]: CRASH_LOG_PATH : /data/user/0/com.samsung.android.scloud/exception/diagmon.log
+10-10 01:24:18.502 16856 16856 D DIAGMON_SDK[605024]: CRASH_LOG_PATH : /data/user/0/com.samsung.android.lool/exception/diagmon.log
+10-10 01:24:18.844 16836 16836 D FirebaseApp: com.google.firebase.crash.FirebaseCrash is not linked. Skipping initialization.
+10-10 01:24:20.461 16961 16961 D FirebaseApp: com.google.firebase.crash.FirebaseCrash is not linked. Skipping initialization.
+10-10 01:24:21.040 16555 16555 I ApkToolkit: Use APK V2 signature. APK: /data/app/com.innocent.media-dFklf-GIzPkY2pHh-8gt2w==/base.apk
+10-10 01:24:21.180  3722  6254 V installd: DexInv: --- END '/data/app/com.innocent.media-dFklf-GIzPkY2pHh-8gt2w==/base.apk' (success) ---
+10-10 01:24:21.192  4123  4182 I PackageManager.DexOptimizer: do mInstaller.syncDexopt : com.innocent.media
+10-10 01:24:21.220  4123  4182 I PackageManager: Un-granting permission android.permission.REQUEST_INSTALL_PACKAGES from package com.innocent.media (protectionLevel=66 flags=0x3808be44)
+10-10 01:24:21.220  4123  4182 I PackageManager: Un-granting permission android.permission.WRITE_SECURE_SETTINGS from package com.innocent.media (protectionLevel=50 flags=0x3808be44)
+10-10 01:24:21.243  4123  4153 I StorageManagerService: Not remounting, uid not active: 10216. Package: com.innocent.media. Op: 87. Mode: 2
+10-10 01:24:21.244  4123  4182 D StorageManagerService: onExternalStoragePolicyChanged : uid=10216, packageName=com.innocent.media
+10-10 01:24:21.311  4123  4182 D StorageManagerService: onExternalStoragePolicyChanged : uid=10216, packageName=com.innocent.media
+10-10 01:24:21.691  9691  9691 D FaceWidgetMetadataParser: updatePackage() com.innocent.media true
+10-10 01:24:21.693  9691  9691 D FaceWidgetMetadataParser: removePackage() key = com.innocent.media
+10-10 01:24:21.707  9838  9907 D PackageInfoManager_FLP: action : ACTION_PACKAGE_ADDED, packageName = com.innocent.media
+10-10 01:24:21.722  9838  9907 V PermissionManager_FLP: handled onPackageAdded for com.innocent.media(WHILE_USING)
+10-10 01:24:21.734 10988 10988 I GsaVoiceInteractionSrv: O received Intent { act=android.intent.action.PACKAGE_ADDED dat=package:com.innocent.media flg=0x4000010 (has extras) }
+10-10 01:24:21.748  9874 11106 D PluginInstanceManager: queryPkg com.innocent.media com.sec.android.app.launcher.action.HOMESCREEN_PLUGIN_EXPANDABLE_APPS_GRID
+10-10 01:24:21.755 20034 20034 D BeaconManager[10.0.41.0]: BeaconService.PackageReceiver - action:android.intent.action.PACKAGE_ADDED, package:com.innocent.media
+10-10 01:24:21.757  9874 11106 D PluginInstanceManager: queryPkg com.innocent.media com.sec.android.app.launcher.action.HOMESCREEN_PLUGIN_EXPANDABLE_HOME_GRID
+10-10 01:24:21.761  9874 11106 D PluginInstanceManager: queryPkg com.innocent.media com.sec.android.app.launcher.action.HOMESCREEN_PLUGIN_GESTURE_VI_TUNNER
+10-10 01:24:21.763  9874 11106 D PluginInstanceManager: queryPkg com.innocent.media com.sec.android.app.launcher.action.HOMESCREEN_PLUGIN_HOME_BLUR_SETTING
+10-10 01:24:21.765  9874 11106 D PluginInstanceManager: queryPkg com.innocent.media com.sec.android.app.launcher.action.PLUGIN_FOLDER_LAYOUT
+10-10 01:24:21.770  9874 11106 D PluginInstanceManager: queryPkg com.innocent.media com.sec.android.app.launcher.action.HOMESCREEN_PLUGIN_FOLDER_FLEXIBLE_GRID
+10-10 01:24:21.791  9874 11106 D PluginInstanceManager: queryPkg com.innocent.media com.sec.android.app.launcher.action.PLUGIN_BACKUP_LAYOUT
+10-10 01:24:21.795  9874 11106 D PluginInstanceManager: queryPkg com.innocent.media com.sec.android.app.launcher.action.HOMESCREEN_PLUGIN_EXTENSION_FEATURE
+10-10 01:24:21.801  9874 11106 D PluginInstanceManager: queryPkg com.innocent.media com.sec.android.app.launcher.action.HOMESCREEN_PLUGIN_ICON_SETTING
+10-10 01:24:21.808  9874 11106 D PluginInstanceManager: queryPkg com.innocent.media com.sec.android.app.launcher.action.<token>
+10-10 01:24:21.813  9874 11106 D PluginInstanceManager: queryPkg com.innocent.media com.sec.android.app.launcher.action.HOMESCREEN_PLUGIN_APPS_PAGE_LOOPING
+10-10 01:24:21.830 10331 10331 I VVM.VvmPkgInstalledRcvr: onReceive() : action android.intent.action.PACKAGE_ADDED packageName :com.innocent.media
+10-10 01:24:21.993 10331 10331 D ImsResolver: maybeAddedImsService, packageName: com.innocent.media
+10-10 01:24:22.224  4123  4123 E SDAgentPackageStateReceiver: Not going to handle 'com.innocent.media'!
+10-10 01:24:22.258  4123  4123 D ApplicationPolicy: packageInstalledForExternalStorage com.innocent.media
+10-10 01:24:22.260  4123  4123 D ApplicationPolicy: checkExternalStoragePkg - uid - 1000, key - PackageNameExternalStorageWhiteList, packageName- com.innocent.media
+10-10 01:24:22.260  4123  4123 D ApplicationPolicy: checkExternalStoragePkg - uid - 1000, key - PackageNameExternalStorageBlackList, packageName- com.innocent.media
+10-10 01:24:22.261  4123  4123 D ApplicationPolicy: checkExternalStoragePkg - uid - 10084, key - PackageNameExternalStorageWhiteList, packageName- com.innocent.media
+10-10 01:24:22.261  4123  4123 D ApplicationPolicy: checkExternalStoragePkg - uid - 10084, key - PackageNameExternalStorageBlackList, packageName- com.innocent.media
+10-10 01:24:22.262  4123  4123 D ApplicationPolicy: checkExternalStoragePkg - uid - 10206, key - PackageNameExternalStorageWhiteList, packageName- com.innocent.media
+10-10 01:24:22.262  4123  4123 D ApplicationPolicy: checkExternalStoragePkg - uid - 10206, key - PackageNameExternalStorageBlackList, packageName- com.innocent.media
+10-10 01:24:22.268  4123  4123 D GameManagerService: identifyGamePackage. com.innocent.media, mCurrentUserId: 0, callerUserId: 0
+10-10 01:24:22.268  4123  4123 D GamePkgDataHelper: getGamePkgData(). com.innocent.media
+10-10 01:24:22.358 12475 17105 W GCM     : Unexpected forwarded intent: Intent { act=android.intent.action.PACKAGE_ADDED dat=package:com.innocent.media flg=0x4000010 pkg=com.google.android.gms cmp=com.google.android.gms/.chimera.PersistentIntentOperationService (has extras) }
+10-10 01:24:22.364 12475 17104 W NetworkScheduler: Unexpected forwarded intent: Intent { act=android.intent.action.PACKAGE_ADDED dat=package:com.innocent.media flg=0x4000010 pkg=com.google.android.gms cmp=com.google.android.gms/.chimera.PersistentIntentOperationService (has extras) }
+10-10 01:24:22.734  4123  4123 I PersonaManagerService::Proxy: newPackage is com.innocent.media
+10-10 01:24:22.735  4123  9605 D GameManagerService: identifyGamePackage. com.innocent.media, mCurrentUserId: 0, callerUserId: 0
+10-10 01:24:22.735  4123  9605 D GamePkgDataHelper: getGamePkgData(). com.innocent.media
+10-10 01:24:22.755  4123  4123 D RCPManagerService: App Installed with packageNAme = com.innocent.media
+10-10 01:24:22.953  4123  4161 V MARsPolicyManager: onPackageStatusChange packageName = com.innocent.media, uid = 10216
+10-10 01:24:23.345  4123  4139 W ActivityManager: Scheduling restart of crashed service com.osp.app.signin/com.samsung.android.samsungaccount.mobileservice.commonservice.CommonService in 1000ms
+10-10 01:24:23.440 16073 16279 D SmProvider: inserted  : com.innocent.media / 10216 rowId=31
+10-10 01:24:23.746  4123  4162 D MARsDBManager: doInsertPkg com.innocent.media uri = content://com.samsung.android.sm/ForcedAppStandby/31
+10-10 01:24:23.760  4123  4123 D KnoxMUMContainerPolicy: packageInstalledForSBAExternalStorage com.innocent.media
+10-10 01:24:24.284 17304 17304 D DIAGMON_SDK[605024]: CRASH_LOG_PATH : /data/user/0/com.samsung.android.lool/exception/diagmon.log
+10-10 01:24:26.288  4123  4152 I GameManagerService: PkgInstallationReceiver, onPackageAdded : com.innocent.media uid : 10216 userHandle : UserHandle{0} userID : 0
+10-10 01:24:26.291  4123  9647 D GameManagerService:GosNotifyThread: notifyPackageChangedToGos(), before send intent to GOS. type:2, changeType: 0, packageName:com.innocent.media
+10-10 01:24:26.303  4123  4152 D MetaDataCollector: onReceive: done pkgName=com.innocent.media
+10-10 01:24:26.318  9874  9874 D RecommendedItemsProvider: onPackageAdded: com.innocent.media / UserHandle{0}
+10-10 01:24:26.317  9874 11106 D PackageUpdatedTask: mAllAppsList.addPackage com.innocent.media
+10-10 01:24:26.389  9874 11106 D AppIconSolution: getThemeIconWithBG called with public API, pkg = com.innocent.media
+10-10 01:24:26.400  9874 11106 D LauncherActivityInfo: packageName: com.innocent.media, useThemeIcon: false, height: 126, width: 126, density: 480
+10-10 01:24:26.569  9874 11106 D PackageUpdatedTask: added, appInfo : AppInfo(id=75 type=APP hidden=0 container=-102 screen=-1 rank=0 user=UserHandle{0} title=Innocent componentName=ComponentInfo{com.innocent.media/com.innocent.media.MainActivity} screenType=0)
+10-10 01:24:26.585  9874 11106 D AppsModelWriter: addItems(start)> 0, 75, 0, -102, -1, 0, UserHandle{0}, 0, Innocent, -1, -1
+10-10 01:24:26.590  9874 11106 D AppsModelWriter: normalizeVisibleItems(visibleItems)> 0, 75, 0, -102, 0, 15, UserHandle{0}, 0, Innocent, -1, -1
+10-10 01:24:26.605  9874 11106 D AppsModelWriter: addItems(end) : addItem> 0, 75, 0, -102, 0, 15, UserHandle{0}, 0, Innocent, -1, -1
+10-10 01:24:26.641  9874 11106 D GameLauncherManagerImp: com.innocent.media does not contain game list
+10-10 01:24:26.679  9874 11106 D AppsModelWriter: normalizeVisibleItems(visibleItems)> 0, 75, 0, -102, 0, 15, UserHandle{0}, 0, Innocent, -1, -1
+10-10 01:24:27.047 17625 17725 I GOS:MainIntentService: onHandleIntent(). changeType(INSTALLED), packageName(com.innocent.media), UserHandle(0), Installed(true)
+10-10 01:24:27.053 17625 17725 D GOS:SystemEventReactor: onPackageInstallStarted(). packageName: com.innocent.media
+10-10 01:24:27.071 17625 17725 D GOS:SystemEventReactor: addPkgDataFromServer(), packageName : com.innocent.media
+10-10 01:24:27.349 17625 17725 D GOS:CategoryInfoDbHelper: getCategoryInfo() pc == null: com.innocent.media
+10-10 01:24:27.349 17625 17725 D GOS:NetworkConnector: getSingleCategoryResponse(), packageName : com.innocent.media
+10-10 01:24:27.741 17625 17725 D GOS:NetworkConnector: doDirectly(), Response isSuccessful, responseCode: 200, URL: PRD/v4/packages/com.innocent.media, response: {"pkg_name":"com.innocent.media", "pkg_type":"unknown"}
+10-10 01:24:27.744 17625 17725 I GOS:NetworkConnector: getSingleCategoryResponse(), request: PRD/v4/packages/com.innocent.media, v4PkgResponse: {"pkg_name":"com.innocent.media", "pkg_type":"unknown"}
+10-10 01:24:27.750 17625 17725 D GOS:DataUpdater: mergePackageAndNotify(), com.innocent.media
+10-10 01:24:27.780 17625 17725 I GOS:SystemEventReactor: addPkgDataFromServer(), A package was added : com.innocent.media as unknown
+10-10 01:24:27.799 17625 17725 D GOS:SystemEventReactor: onPackageInstalled(). packageName: com.innocent.media
+10-10 01:24:27.824 17625 17725 D GOS:EventSubscriptionDbHelper: getSubscriberApps(com.innocent.media)
+10-10 01:24:28.356 17759 17759 D DIAGMON_SDK[605025]: CRASH_LOG_PATH : /data/user/0/com.samsung.android.scloud/exception/diagmon.log
+10-10 01:24:29.789 17967 17967 D DIAGMON_SDK[605024]: CRASH_LOG_PATH : /data/user/0/com.samsung.android.lool/exception/diagmon.log
+10-10 01:24:30.243 17945 17945 D FirebaseApp: com.google.firebase.crash.FirebaseCrash is not linked. Skipping initialization.
+10-10 01:24:30.356 18002 18059 V DynamiteModule: Dynamite loader version >= 2, using loadModule2NoCrashUtils
+10-10 01:24:30.358 18002 18058 V DynamiteModule: Dynamite loader version >= 2, using loadModule2NoCrashUtils
+10-10 01:24:31.009  4123  4182 I PackageManager: Un-granting permission android.permission.REQUEST_INSTALL_PACKAGES from package com.innocent.media (protectionLevel=66 flags=0x3808be44)
+10-10 01:24:31.692 18118 18118 D FirebaseApp: com.google.firebase.crash.FirebaseCrash is not linked. Skipping initialization.
+10-10 01:24:34.865 18190 18190 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-10 01:24:34.880 18190 18190 I AndroidRuntime: Using default boot image
+10-10 01:24:34.880 18190 18190 I AndroidRuntime: Leaving lock profiling enabled
+10-10 01:24:34.894 18190 18190 D AndroidRuntime: addProductProperty
+10-10 01:24:34.907 18190 18190 D AndroidRuntime: addProductProperty: pBrand1 != NULL
+10-10 01:24:34.907 18190 18190 D AndroidRuntime: addProductProperty: start
+10-10 01:24:34.907 18190 18190 D AndroidRuntime: propertySet: couldn't set property (it is from app)
+10-10 01:24:35.576 18190 18190 D AndroidRuntime: Calling main entry com.android.commands.am.Am
+10-10 01:24:35.986  9874 11106 D AppsModelWriter: normalizeVisibleItems(visibleItems)> 0, 75, 0, -102, 0, 15, UserHandle{0}, 0, Innocent, -1, -1
+10-10 01:24:36.012  9874 11106 D GameLauncherManagerImp: com.innocent.media does not contain game list
+10-10 01:24:36.032  9874 11106 D AppsModelWriter: normalizeVisibleItems(visibleItems)> 0, 75, 0, -102, 0, 15, UserHandle{0}, 0, Innocent, -1, -1
+10-10 01:24:36.252 18333 18354 I TestLoopActivity: Starting scenario ၃ in com.innocent.media
+10-10 01:24:36.302  4123  9716 I ActivityTaskManager: START u0 {act=com.google.intent.action.TEST_LOOP dat=content://com.google.testing.platform.android.driver.testloop.companion/files/game_loop_results/results_scenario_3.json typ=application/javascript flg=0x2 pkg=com.innocent.media cmp=com.innocent.media/.MainActivity (has extras)} from uid 10217
+10-10 01:24:36.339  3657  4319 I SurfaceFlinger: createSurf start. lock debugging [AppWindowToken{c5f47c0 token=Token{eac3543 ActivityRecord{2b82af2 u0 com.innocent.media/.MainActivity t10}}}]
+10-10 01:24:36.339  3657  4319 I SurfaceFlinger: id=166 createSurf (0x0),-1 flag=80004, AppWindowToken{c5f47c0 token=Token{eac3543 ActivityRecord{2b82af2 u0 com.innocent.media/.MainActivity t10}}}#0
+10-10 01:24:36.354  4123  4148 D PhoneWindow: forceLight changed to true [Splash Screen com.innocent.media] from com.android.internal.policy.PhoneWindow.updateForceLightNavigationBar:4238 com.android.internal.policy.DecorView.updateColorViews:1494 com.android.internal.policy.PhoneWindow.dispatchWindowAttributesChanged:3216 android.view.Window.setFlags:1148 com.android.internal.policy.PhoneWindow.generateLayout:2444 
+10-10 01:24:36.358  3657  4319 I SurfaceFlinger: createSurf start. lock debugging [6e59231 Splash Screen com.innocent.media]
+10-10 01:24:36.358  3657  4319 I SurfaceFlinger: id=167 createSurf (0x0),-1 flag=80004, 6e59231 Splash Screen com.innocent.media#0
+10-10 01:24:36.368  4123  4148 V WindowManager: Relayout Window{6e59231 u0 Splash Screen com.innocent.media}: viewVisibility=0 req=720x1520
+10-10 01:24:36.372  3657  4319 I SurfaceFlinger: createSurf start. lock debugging [Splash Screen com.innocent.media]
+10-10 01:24:36.373  3657  4319 I SurfaceFlinger: id=168 createSurf (720x1520),1 flag=404, Splash Screen com.innocent.media#0
+10-10 01:24:36.374  4123  4148 D WindowManager: makeSurface duration=3 name=Splash Screen com.innocent.media
+10-10 01:24:36.387  4123  4148 D WindowManager: finishDrawingWindow: Window{6e59231 u0 Splash Screen com.innocent.media} mDrawState=DRAW_PENDING
+10-10 01:24:36.390  4123  4148 V WindowManager: performShow on Window{6e59231 u0 Splash Screen com.innocent.media}: mDrawState=READY_TO_SHOW readyForDisplay=false starting=true during animation: policyVis=true parentHidden=false tok.hiddenRequested=true tok.hidden=true animating=false tok animating=false Callers=com.android.server.wm.WindowState.performShowLocked:4660 com.android.server.wm.WindowStateAnimator.commitFinishDrawingLocked:380 com.android.server.wm.DisplayContent.lambda$new$8$DisplayContent:948 com.android.server.wm.-$$Lambda$DisplayContent$qxt4izS31fb0LF2uo_OF9DMa7gc.accept:4 
+10-10 01:24:36.429  4123 11112 V WindowManager: performShow on Window{6e59231 u0 Splash Screen com.innocent.media}: mDrawState=READY_TO_SHOW readyForDisplay=false starting=true during animation: policyVis=true parentHidden=false tok.hiddenRequested=false tok.hidden=true animating=true tok animating=true Callers=com.android.server.wm.WindowState.performShowLocked:4660 com.android.server.wm.WindowStateAnimator.commitFinishDrawingLocked:380 com.android.server.wm.DisplayContent.lambda$new$8$DisplayContent:948 com.android.server.wm.-$$Lambda$DisplayContent$qxt4izS31fb0LF2uo_OF9DMa7gc.accept:4 
+10-10 01:24:36.437  4123  4147 I ApplicationPolicy: isApplicationExternalStorageWhitelisted:com.innocent.media user:0
+10-10 01:24:36.437  4123  4147 D ActivityManager: package  com.innocent.media, user - 0 is SDcard whitelisted
+10-10 01:24:36.437  4123  4147 I ApplicationPolicy: isApplicationExternalStorageBlacklisted:com.innocent.media user:0
+10-10 01:24:36.437  4123  4147 I ApplicationPolicy: isApplicationExternalStorageBlacklisted:com.innocent.media user:0
+10-10 01:24:36.474  4123 11112 V WindowManager: performShow on Window{6e59231 u0 Splash Screen com.innocent.media}: mDrawState=READY_TO_SHOW readyForDisplay=false starting=true during animation: policyVis=true parentHidden=false tok.hiddenRequested=false tok.hidden=true animating=true tok animating=true Callers=com.android.server.wm.WindowState.performShowLocked:4660 com.android.server.wm.WindowStateAnimator.commitFinishDrawingLocked:380 com.android.server.wm.DisplayContent.lambda$new$8$DisplayContent:948 com.android.server.wm.-$$Lambda$DisplayContent$qxt4izS31fb0LF2uo_OF9DMa7gc.accept:4 
+10-10 01:24:36.480  4123  4154 I ActivityManager: Start proc 18405:com.innocent.media/u0a216 for activity {com.innocent.media/com.innocent.media.MainActivity}
+10-10 01:24:36.521 18405 18405 E .innocent.medi: Not starting debugger since process cannot load the jdwp agent.
+10-10 01:24:36.546  4123 11112 I ActivityManager: DSS OFF for com.innocent.media
+10-10 01:24:36.557  4123  4148 V WindowManager: performShow on Window{6e59231 u0 Splash Screen com.innocent.media}: mDrawState=READY_TO_SHOW readyForDisplay=false starting=true during animation: policyVis=true parentHidden=false tok.hiddenRequested=false tok.hidden=true animating=true tok animating=true Callers=com.android.server.wm.WindowState.performShowLocked:4660 com.android.server.wm.WindowStateAnimator.commitFinishDrawingLocked:380 com.android.server.wm.DisplayContent.lambda$new$8$DisplayContent:948 com.android.server.wm.-$$Lambda$DisplayContent$qxt4izS31fb0LF2uo_OF9DMa7gc.accept:4 
+10-10 01:24:36.560  4123  4148 V WindowManager: performShow on Window{6e59231 u0 Splash Screen com.innocent.media}: mDrawState=READY_TO_SHOW readyForDisplay=false starting=true during animation: policyVis=true parentHidden=false tok.hiddenRequested=false tok.hidden=true animating=true tok animating=true Callers=com.android.server.wm.WindowState.performShowLocked:4660 com.android.server.wm.WindowStateAnimator.commitFinishDrawingLocked:380 com.android.server.wm.DisplayContent.lambda$new$8$DisplayContent:948 com.android.server.wm.-$$Lambda$DisplayContent$qxt4izS31fb0LF2uo_OF9DMa7gc.accept:4 
+10-10 01:24:36.565  4123  9605 W WifiTransportLayerUtils: getApplicationCategory - IOException com.innocent.media
+10-10 01:24:36.572  4123 11112 V WindowManager: performShow on Window{6e59231 u0 Splash Screen com.innocent.media}: mDrawState=READY_TO_SHOW readyForDisplay=false starting=true during animation: policyVis=true parentHidden=false tok.hiddenRequested=false tok.hidden=true animating=true tok animating=true Callers=com.android.server.wm.WindowState.performShowLocked:4660 com.android.server.wm.WindowStateAnimator.commitFinishDrawingLocked:380 com.android.server.wm.DisplayContent.lambda$new$8$DisplayContent:948 com.android.server.wm.-$$Lambda$DisplayContent$qxt4izS31fb0LF2uo_OF9DMa7gc.accept:4 
+10-10 01:24:36.577  4123 11112 D GamePkgDataHelper: notifyAppCreate(), pkgName: com.innocent.media, sendRet: true
+10-10 01:24:36.577  4123  9646 D GamePkgDataHelper: getGamePkgData(). com.innocent.media
+10-10 01:24:36.577  4123  9646 D GameManagerService: handleMessage(), MSG_APP_CREATE. ignore. pkgName: com.innocent.media
+10-10 01:24:36.581  4123 11112 D MARsPolicyManager: onPackageResumedFG pkgName = com.innocent.media, userId = 0
+10-10 01:24:36.589  4123  4148 V WindowManager: performShow on Window{6e59231 u0 Splash Screen com.innocent.media}: mDrawState=READY_TO_SHOW readyForDisplay=false starting=true during animation: policyVis=true parentHidden=false tok.hiddenRequested=false tok.hidden=true animating=true tok animating=true Callers=com.android.server.wm.WindowState.performShowLocked:4660 com.android.server.wm.WindowStateAnimator.commitFinishDrawingLocked:380 com.android.server.wm.DisplayContent.lambda$new$8$DisplayContent:948 com.android.server.wm.-$$Lambda$DisplayContent$qxt4izS31fb0LF2uo_OF9DMa7gc.accept:4 
+10-10 01:24:36.613  4123  4147 D GameManagerService: noteResumeComponent(), resumeComponent: com.innocent.media
+10-10 01:24:36.613  4123  4147 D GamePkgDataHelper: getSosPolicy(). com.innocent.media
+10-10 01:24:36.618  4123  4147 D GameManagerService: identifyGamePackage. com.innocent.media, mCurrentUserId: 0, callerUserId: 0
+10-10 01:24:36.618  4123  4147 D GamePkgDataHelper: getGamePkgData(). com.innocent.media
+10-10 01:24:36.621  4123  4145 D WindowManager: setSystemUiVisibility: displayId=0, vis=0x8018, fullVis=0x0, dockVis=0x0, win=Window{6e59231 u0 Splash Screen com.innocent.media}
+10-10 01:24:36.621  4123  9646 D GameManagerService: handleForegroundChange(). pkgName: com.innocent.media, clsName: com.innocent.media.MainActivity,FgActivityName:com.innocent.media/.MainActivity,userID:0
+10-10 01:24:36.621  4123  9646 D GameManagerService:   handleForegroundChange(). set mFgApp: com.innocent.media
+10-10 01:24:36.622  4123  9646 D GameManagerService: notifyResumePause(). pkg: com.innocent.media, type: 4, isMinimized: false, isTunableApp: false
+10-10 01:24:36.623  4123 10603 D GamePkgDataHelper: getSosPolicy(). com.innocent.media
+10-10 01:24:36.628  9838  9907 V PermissionManager_FLP: onOpChanged, op=0 / packageName=com.innocent.media
+10-10 01:24:36.630  3657  3657 I SurfaceFlinger:      DEVICE | 0xf1949280 | 0002 | RGBA_8888 |   0.0    0.0  720.0 1520.0 |    0    0  720 1520 | Splash Screen com.innocent.media#0
+10-10 01:24:36.651  4123  4145 D CodecSolution: isMaxAspectPackageEx: com.innocent.media : false(0)
+10-10 01:24:36.768  4123  9753 D MdnieScenarioControlService:  packageName : com.innocent.media    className : com.innocent.media.MainActivity
+10-10 01:24:37.043 18405 18405 D vulkan  : searching for layers in '/data/app/com.innocent.media-dFklf-GIzPkY2pHh-8gt2w==/lib/arm'
+10-10 01:24:37.043 18405 18405 D vulkan  : searching for layers in '/data/app/com.innocent.media-dFklf-GIzPkY2pHh-8gt2w==/base.apk!/lib/armeabi-v7a'
+10-10 01:24:37.049  4123 11112 D GameManagerService: identifyForegroundApp. com.innocent.media, mCurrentUserId: 0, callerUserId: 0
+10-10 01:24:37.049  4123 11112 D GamePkgDataHelper: getGamePkgData(). com.innocent.media
+10-10 01:24:37.246 18405 18405 I flutter : [IMPORTANT:flutter/shell/platform/android/android_context_vk_impeller.cc(61)] Using the Impeller rendering backend (Vulkan).
+10-10 01:24:38.490  3657  3657 I SurfaceFlinger:      DEVICE | 0xf1949280 | 0002 | RGBA_8888 |   0.0    0.0  720.0 1520.0 |    0    0  720 1520 | Splash Screen com.innocent.media#0
+10-10 01:24:38.597 18405 18405 I innocent: LAB scenario 3 surfaceProducer=null
+10-10 01:24:38.779  3657  3704 I SurfaceFlinger: createSurf start. lock debugging [ac19879 com.innocent.media/com.innocent.media.MainActivity]
+10-10 01:24:38.780  3657  3704 I SurfaceFlinger: id=174 createSurf (0x0),-1 flag=80004, ac19879 com.innocent.media/com.innocent.media.MainActivity#0
+10-10 01:24:38.939 18405 18405 D SurfaceView: onWindowVisibilityChanged(0) true io.flutter.embedding.android.FlutterSurfaceView{632e800 V.E...... ......I. 0,0-0,0} of ViewRootImpl@238ad7a[MainActivity]
+10-10 01:24:38.985  4123 10396 V WindowManager: Relayout Window{ac19879 u0 com.innocent.media/com.innocent.media.MainActivity}: viewVisibility=0 req=720x1520
+10-10 01:24:38.989  4123 10396 W WindowManager: preserveSurfaceLocked: failed, no surface, w=Window{ac19879 u0 com.innocent.media/com.innocent.media.MainActivity}
+10-10 01:24:38.995  3657  3704 I SurfaceFlinger: createSurf start. lock debugging [com.innocent.media/com.innocent.media.MainActivity$_18405]
+10-10 01:24:38.995  3657  3704 I SurfaceFlinger: id=175 createSurf (720x1520),1 flag=4, com.innocent.media/com.innocent.media.MainActivity$_18405#0
+10-10 01:24:38.997  4123 10396 D WindowManager: makeSurface duration=3 name=com.innocent.media/com.innocent.media.MainActivity$_18405
+10-10 01:24:39.003  4123 10396 V WindowManager: Changing focus from null to Window{ac19879 u0 com.innocent.media/com.innocent.media.MainActivity} displayId=0 Callers=com.android.server.wm.RootWindowContainer.updateFocusedWindowLocked:203 com.android.server.wm.WindowManagerService.updateFocusedWindowLocked:6107 com.android.server.wm.WindowManagerService.relayoutWindow:2554 com.android.server.wm.Session.relayout:202 android.view.IWindowSession$Stub.onTransact:708 com.android.server.wm.Session.onTransact:142 
+10-10 01:24:39.004  4123  4145 D WindowManager: setSystemUiVisibility: displayId=0, vis=0x8518, fullVis=0x0, dockVis=0x0, win=Window{ac19879 u0 com.innocent.media/com.innocent.media.MainActivity}
+10-10 01:24:39.018  3657  3704 I SurfaceFlinger: createSurf start. lock debugging [Bounds for - com.innocent.media/com.innocent.media.MainActivity@0]
+10-10 01:24:39.032  3657  3704 I SurfaceFlinger: id=176 createSurf (0x0),2 flag=4, Bounds for - com.innocent.media/com.innocent.media.MainActivity@0#0
+10-10 01:24:39.033  3657  3704 I SurfaceFlinger: createSurf start. lock debugging [SurfaceView - com.innocent.media/com.innocent.media.MainActivity@632e800@0]
+10-10 01:24:39.034  3657  3704 I SurfaceFlinger: id=177 createSurf (720x1436),4 flag=404, SurfaceView - com.innocent.media/com.innocent.media.MainActivity@632e800@0#0
+10-10 01:24:39.034  3657  3704 I SurfaceFlinger: createSurf start. lock debugging [Background for -SurfaceView - com.innocent.media/com.innocent.media.MainActivity@632e800@0]
+10-10 01:24:39.035  3657  3704 I SurfaceFlinger: id=178 createSurf (0x0),-1 flag=20404, Background for -SurfaceView - com.innocent.media/com.innocent.media.MainActivity@632e800@0#0
+10-10 01:24:39.036 18405 18405 D SurfaceView: surfaceCreated 1 #8 io.flutter.embedding.android.FlutterSurfaceView{632e800 V.E...... ......ID 0,0-720,1436}
+10-10 01:24:39.139 18405 18405 D SurfaceView: surfaceChanged (720,1436) 1 #8 io.flutter.embedding.android.FlutterSurfaceView{632e800 V.E...... ......ID 0,0-720,1436}
+10-10 01:24:39.307  4123 10750 V WindowManager: Relayout Window{ac19879 u0 com.innocent.media/com.innocent.media.MainActivity}: viewVisibility=0 req=720x1520
+10-10 01:24:39.342 18405 18405 V InputMethodManager: Starting input: tba=com.innocent.media ic=null mNaviBarColor -855310 mIsGetNaviBarColorSuccess true , NavVisible : true , NavTrans : false
+10-10 01:24:39.406  4123  4139 D MediaSessionService: Created session for com.innocent.media with tag media-session
+10-10 01:24:39.425 18405 18405 I System.out: flutterEngine warmed up
+10-10 01:24:39.452 18405 18405 V InputMethodManager: Starting input: tba=com.innocent.media ic=null mNaviBarColor -855310 mIsGetNaviBarColorSuccess true , NavVisible : true , NavTrans : false
+10-10 01:24:39.520 18405 18405 I flutter : LAB device kind=DeviceKind.phone sw=411.0
+10-10 01:24:39.524 18405 18405 D PhoneWindow: forceLight changed to false [com.innocent.media/com.innocent.media.MainActivity] from com.android.internal.policy.PhoneWindow.updateForceLightNavigationBar:4244 com.android.internal.policy.PhoneWindow.setNavigationBarColor:4066 io.flutter.plugin.platform.PlatformPlugin.setSystemChromeSystemUIOverlayStyle:488 io.flutter.plugin.platform.PlatformPlugin.access$700:36 io.flutter.plugin.platform.PlatformPlugin$1.setSystemUiOverlayStyle:123 
+10-10 01:24:39.528  4123 10396 V WindowManager: Relayout Window{ac19879 u0 com.innocent.media/com.innocent.media.MainActivity}: viewVisibility=0 req=720x1520
+10-10 01:24:39.530  4123  4145 D WindowManager: setSystemUiVisibility: displayId=0, vis=0x8718, fullVis=0x0, dockVis=0x0, win=Window{ac19879 u0 com.innocent.media/com.innocent.media.MainActivity}
+10-10 01:24:39.536 18405 18405 D SurfaceView: surfaceChanged (720,1520) 1 #5 io.flutter.embedding.android.FlutterSurfaceView{632e800 V.E...... ......ID 0,0-720,1520}
+10-10 01:24:39.539  4123 10750 D ActivityTaskManager: setRequestedOrientation(1) from com.innocent.media
+10-10 01:24:39.724 18405 18405 I flutter : LAB    0.0 LAB script: catalogue title
+10-10 01:24:39.735  4123  9717 V WindowManager: Relayout Window{ac19879 u0 com.innocent.media/com.innocent.media.MainActivity}: viewVisibility=0 req=720x1520
+10-10 01:24:40.020  4123 11438 D WindowManager: finishDrawingWindow: Window{ac19879 u0 com.innocent.media/com.innocent.media.MainActivity} mDrawState=DRAW_PENDING
+10-10 01:24:40.054  4123  4148 I WindowManager: Reparenting to leash, surface=Surface(name=6e59231 Splash Screen com.innocent.media)/@0xcd6982
+10-10 01:24:40.055  3657  4319 I SurfaceFlinger: createSurf start. lock debugging [Surface(name=6e59231 Splash Screen com.innocent.media)/@0xcd6982 - animation-leash]
+10-10 01:24:40.057  3657  4319 I SurfaceFlinger: id=179 createSurf (0x0),-1 flag=80004, Surface(name=6e59231 Splash Screen com.innocent.media)/@0xcd6982 - animation-leash#0
+10-10 01:24:40.057  4123  4148 D WindowManager: makeSurface duration=2 leash=Surface(name=Surface(name=6e59231 Splash Screen com.innocent.media)/@0xcd6982 - animation-leash)/@0xa27b893
+10-10 01:24:40.073  4123  4148 I WindowManager: Reparenting to original parent: Surface(name=AppWindowToken{c5f47c0 token=Token{eac3543 ActivityRecord{2b82af2 u0 com.innocent.media/.MainActivity t10}}})/@0xa7de9fc, destroyLeash=true, surface=Surface(name=6e59231 Splash Screen com.innocent.media)/@0xcd6982
+10-10 01:24:40.075  4123  4148 E WindowManager: win=Window{6e59231 u0 Splash Screen com.innocent.media EXITING} destroySurfaces: appStopped=false win.mWindowRemovalAllowed=true win.mRemoveOnExit=true win.mViewVisibility=0 caller=com.android.server.wm.AppWindowToken.destroySurfaces:1200 com.android.server.wm.AppWindowToken.destroySurfaces:1181 com.android.server.wm.WindowState.onExitAnimationDone:5030 com.android.server.wm.WindowStateAnimator.onAnimationFinished:287 com.android.server.wm.WindowState.onAnimationFinished:5471 com.android.server.wm.-$$Lambda$yVRF8YoeNdTa8GR1wDStVsHu8xM.run:2 com.android.server.wm.SurfaceAnimator.lambda$getFinishedCallback$0$SurfaceAnimator:100 
+10-10 01:24:40.076  4123  4148 I WindowManager: Destroying surface Surface(name=Splash Screen com.innocent.media)/@0x9cf9885 called by com.android.server.wm.WindowStateAnimator.destroySurface:1734 com.android.server.wm.WindowStateAnimator.destroySurfaceLocked:693 com.android.server.wm.WindowState.destroySurfaceUnchecked:3482 com.android.server.wm.WindowState.destroySurface:3456 com.android.server.wm.AppWindowToken.destroySurfaces:1200 com.android.server.wm.AppWindowToken.destroySurfaces:1181 com.android.server.wm.WindowState.onExitAnimationDone:5030 com.android.server.wm.WindowStateAnimator.onAnimationFinished:287 
+10-10 01:24:40.077  3657  4319 I Layer   : id=168 removeFromCurrentState Splash Screen com.innocent.media#0 (59)
+10-10 01:24:40.084  3657  3657 I SurfaceFlinger:      CLIENT | 0xf194b6c0 | 0002 | RGBA_8888 |   0.0    0.0  720.0 1520.0 |    0    0  720 1520 | SurfaceView - com.innocent.media/com.innocent.media.MainActivity@632e800@0#0
+10-10 01:24:40.084  3657  3657 I SurfaceFlinger:      CLIENT | 0xf194b940 | 0000 | RGBA_8888 |   0.0    0.0  720.0 1520.0 |    0    0  720 1520 | com.innocent.media/com.innocent.media.MainActivity$_18405#0
+10-10 01:24:40.086  4123  4145 D WindowManager: setSystemUiVisibility: displayId=0, vis=0x8708, fullVis=0x0, dockVis=0x0, win=Window{ac19879 u0 com.innocent.media/com.innocent.media.MainActivity}
+10-10 01:24:40.088  3657  4319 I Layer   : id=167 removeFromCurrentState 6e59231 Splash Screen com.innocent.media#0 (59)
+10-10 01:24:40.089  3657  4319 I Layer   : id=179 removeFromCurrentState Surface(name=6e59231 Splash Screen com.innocent.media)/@0xcd6982 - animation-leash#0 (59)
+10-10 01:24:40.094  3657  3704 I SurfaceFlinger: id=167 Removed 6e59231 Splash Screen com.innocent.media#0 (59)
+10-10 01:24:40.094  3657  4319 I SurfaceFlinger: id=168 Removed Splash Screen com.innocent.media#0 (59)
+10-10 01:24:40.095  3657 10632 I SurfaceFlinger: id=179 Removed Surface(name=6e59231 Splash Screen com.innocent.media)/@0xcd6982 - animation-leash#0 (59)
+10-10 01:24:40.104  3657  3657 I Layer   : id=168[1] Destroyed Splash Screen com.innocent.media#0
+10-10 01:24:40.104  3657  3657 I Layer   : id=179[1] Destroyed Surface(name=6e59231 Splash Screen com.innocent.media)/@0xcd6982 - animation-leash#0
+10-10 01:24:40.104  3657  3657 I Layer   : id=167[1] Destroyed 6e59231 Splash Screen com.innocent.media#0
+10-10 01:24:40.139  4123  4152 I ActivityTaskManager: Displayed com.innocent.media/.MainActivity: +3s729ms
+10-10 01:24:40.173  4123 10750 W DevicePolicyManager: Package com.innocent.media (uid=၁၀၂၁၆, pid=၁၈၄၀၅) cannot access Device IDs
+10-10 01:24:40.174  4123 10750 W TelephonyPermissions: reportAccessDeniedToReadIdentifiers:com.innocent.media:getSerial:isPreinstalled=false:isPrivApp=false
+10-10 01:24:40.218  4123 10750 V WindowManager: Relayout Window{ac19879 u0 com.innocent.media/com.innocent.media.MainActivity}: viewVisibility=0 req=720x1520
+10-10 01:24:40.502  4123  4145 D CodecSolution: isMaxAspectPackageEx: com.innocent.media : false(0)
+10-10 01:24:40.634  4123  9753 D MdnieScenarioControlService:  packageName : com.innocent.media    className : com.innocent.media.MainActivity
+10-10 01:24:40.760 18405 18425 I .innocent.medi: Background concurrent copying GC freed 82812(2529KB) AllocSpace objects, 2(104KB) LOS objects, 49% free, 4104KB/8209KB, paused 6.607ms total 369.554ms
+10-10 01:24:40.812  3723  3723 I keystore: del (USRPKEY_com.innocent.media.FlutterSecureStoragePluginKey), (10216), (0)
+10-10 01:24:40.824  3723  3723 I keystore: del (USRSKEY_com.innocent.media.FlutterSecureStoragePluginKey), (10216), (0)
+10-10 01:24:40.826  3723  3723 I keystore: del (USRCERT_com.innocent.media.FlutterSecureStoragePluginKey), (10216), (0)
+10-10 01:24:40.829  3723  3723 I keystore: del (CACERT_com.innocent.media.FlutterSecureStoragePluginKey), (10216), (0)
+10-10 01:24:40.832  3723  3723 I keystore: del (USRCSR_com.innocent.media.FlutterSecureStoragePluginKey), (10216), (0)
+10-10 01:24:41.194  4123 11052 W DevicePolicyManager: Package com.innocent.media (uid=၁၀၂၁၆, pid=၁၈၄၀၅) cannot access Device IDs
+10-10 01:24:41.195  4123 11052 W TelephonyPermissions: reportAccessDeniedToReadIdentifiers:com.innocent.media:getSerial:isPreinstalled=false:isPrivApp=false
+10-10 01:24:41.537 12475 13936 I serviceentitlement: (REDACTED) [CredManRegistrationManager] [%s] start to register
+10-10 01:24:41.670 18405 18436 I .innocent.medi: Waiting for a blocking GC ProfileSaver
+10-10 01:24:41.684 18405 18425 I .innocent.medi: Background concurrent copying GC freed 18260(4024KB) AllocSpace objects, 8(416KB) LOS objects, 49% free, 3882KB/7765KB, paused 2.157ms total 123.135ms
+10-10 01:24:41.689 18405 18436 I .innocent.medi: WaitForGcToComplete blocked ProfileSaver on ClassLinker for 18.959ms
+10-10 01:24:43.967 18405 18975 D ProfileInstaller: Installing profile for com.innocent.media
+10-10 01:24:45.504  4123 11517 W ActivityManager: Scheduling restart of crashed service com.android.chrome/org.chromium.content.app.PrivilegedProcessService0 in 1000ms
+10-10 01:24:45.578  6176  6249 W cr_ChildProcessConn: onServiceDisconnected (crash or killed by oom): pid=6305 bindings:W S state:3 counts:0,0,1,1,
+10-10 01:24:45.734  6176  6285 W chromium: [WARNING:gpu_process_host.cc(1204)] The GPU process has crashed 1 time(s)
+10-10 01:24:49.249 18405 18405 I flutter : LAB cpu app 98% · 2.9fps · pool-thread 80% | .innocent.media 6% | Jit thread pool 6% | HeapTaskDaemon 3% | 1.raster 1%
+10-10 01:24:49.588 18405 18425 I .innocent.medi: Background concurrent copying GC freed 38352(3052KB) AllocSpace objects, 14(484KB) LOS objects, 49% free, 4186KB/8373KB, paused 209us total 172.182ms
+10-10 01:24:49.820  4123  9716 D SettingsProvider: isChangeAllowed() : name = dropbox:data_app_crash
+10-10 01:24:49.861  4123 11519 D SettingsProvider: isChangeAllowed() : name = dropbox:data_app_anr
+10-10 01:24:49.976 18405 18794 W .innocent.medi: Long monitor contention with owner pool-7-thread-1 (18696) at int libcore.io.Linux.readBytes(java.io.FileDescriptor, java.lang.Object, int, int)(Linux.java:-2) waiters=0 in boolean com.innocent.media.DownloadEngine.initBlocking(android.content.Context) for 10.165s
+10-10 01:24:50.359  3723 18837 I keystore: writing blob user_0/10216_USRPKEY_com+^innocent+^media+^FlutterSecureStoragePluginKey
+10-10 01:24:50.366  3723 18837 I keystore: writing blob user_0/.10216_chr_USRPKEY_com+^innocent+^media+^FlutterSecureStoragePluginKey
+10-10 01:24:50.378  3723  3723 I keystore: reading blob user_0/10216_USRPKEY_com+^innocent+^media+^FlutterSecureStoragePluginKey
+10-10 01:24:50.378  3723  3723 I keystore: reading blob user_0/.10216_chr_USRPKEY_com+^innocent+^media+^FlutterSecureStoragePluginKey
+10-10 01:24:50.381  3723  3723 I keystore: reading blob user_0/10216_USRPKEY_com+^innocent+^media+^FlutterSecureStoragePluginKey
+10-10 01:24:50.382  3723  3723 I keystore: reading blob user_0/.10216_chr_USRPKEY_com+^innocent+^media+^FlutterSecureStoragePluginKey
+10-10 01:24:50.458 12475 13936 I serviceentitlement: (REDACTED) [CredManRegistrationManager] [%s] Data length [%d] to register
+10-10 01:24:50.471  3723  3723 I keystore: writing blob user_0/10216_USRCERT_com+^innocent+^media+^FlutterSecureStoragePluginKey
+10-10 01:24:50.481  4123 11438 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:24:50.514 19139 19139 I GOS:GameServiceReceiver:  PkgInstallStarted for com.innocent.media UserID : 0
+10-10 01:24:50.518 12475 13936 I serviceentitlement: (REDACTED) [CredManRegistrationManager] [%s] register #2
+10-10 01:24:50.535  4123 11438 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:24:50.539  3723  3723 I keystore: reading blob user_0/10216_USRCERT_com+^innocent+^media+^FlutterSecureStoragePluginKey
+10-10 01:24:50.552  3723  3723 I keystore: reading blob user_0/10216_USRPKEY_com+^innocent+^media+^FlutterSecureStoragePluginKey
+10-10 01:24:50.552  3723  3723 I keystore: reading blob user_0/.10216_chr_USRPKEY_com+^innocent+^media+^FlutterSecureStoragePluginKey
+10-10 01:24:50.556  3723  3723 I keystore: reading blob user_0/10216_USRPKEY_com+^innocent+^media+^FlutterSecureStoragePluginKey
+10-10 01:24:50.557  3723  3723 I keystore: reading blob user_0/.10216_chr_USRPKEY_com+^innocent+^media+^FlutterSecureStoragePluginKey
+10-10 01:24:50.563 12475 13936 I serviceentitlement: (REDACTED) [CredManRegistrationManager] [%s] register credential
+10-10 01:24:50.624  4123 11418 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:24:50.835  4123 11052 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:24:50.888  4123 11052 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:24:50.906  4123  4140 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:24:50.919  4123  4140 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:24:50.988  4123  4140 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:24:51.003  4123  4140 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:24:51.026  4123 11418 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:24:51.056  4123  9716 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:24:51.248 19139 19265 I GOS:MainIntentService: onHandleIntent(). changeType(INSTALL_STARTED), packageName(com.innocent.media), UserHandle(0), Installed(true)
+10-10 01:24:51.248 19139 19265 D GOS:SystemEventReactor: onPackageInstallStarted(). packageName: com.innocent.media
+10-10 01:24:51.253  4123 11418 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:24:51.654  4123  9716 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:24:51.681  4123  9716 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:24:51.716  4123  9811 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:24:51.740  4123  9814 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:24:52.045  4123  9811 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:24:52.068  4123  9811 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:24:52.110  4123  9811 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:24:52.134 18405 18425 I .innocent.medi: Background concurrent copying GC freed 65701(2873KB) AllocSpace objects, 15(848KB) LOS objects, 49% free, 4597KB/9194KB, paused 243us total 103.683ms
+10-10 01:24:52.148  4123  9973 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:24:52.371 12475 12475 I serviceentitlement: (REDACTED) [CredManRegistrationManager] [%s][%s] Success to register credentials
+10-10 01:24:52.553  4123 10604 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:24:52.572  4123 11112 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:24:52.617  4123 11112 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:24:52.652  4123  9717 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:24:52.785 19359 19416 D DIAGMON_SDK[605026]: CRASH_LOG_PATH : /data/user/0/com.sec.android.app.myfiles/exception/diagmon.log
+10-10 01:24:52.950  4123  9973 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:24:52.969  4123  9973 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:24:52.990  4123  9973 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:24:53.025  4123  9716 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:24:54.150  9874 11106 D AppsModelWriter: normalizeVisibleItems(visibleItems)> 0, 75, 0, -102, 0, 15, UserHandle{0}, 0, Innocent, -1, -1
+10-10 01:24:54.259  4123 10604 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:24:54.276  4123 11112 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:24:54.288  4123  9717 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:24:54.303  4123  9717 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:24:54.493  4123  9716 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:24:54.507  4123 10604 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:24:54.519  4123 10604 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:24:54.536  4123 10604 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:24:55.015 18405 18405 I flutter : LAB   15.3 LAB title: opening Sintel
+10-10 01:24:55.040  4123 10604 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:24:55.076  4123 10604 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:24:55.093  4123 10604 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:24:55.112  4123 11112 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:24:55.327  4123  9973 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:24:55.359  4123  9973 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:24:55.374  4123 11112 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:24:55.392  4123 10604 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:24:56.637 19513 19513 D FirebaseApp: com.google.firebase.crash.FirebaseCrash is not linked. Skipping initialization.
+10-10 01:24:57.490 19857 19857 D FirebaseApp: com.google.firebase.crash.FirebaseCrash is not linked. Skipping initialization.
+10-10 01:24:58.274 18405 18405 I flutter : LAB   18.5 play server granted in 3251 ms, 3 rungs
+10-10 01:24:58.285 18405 18405 I flutter : LAB   18.6 play rung 720p 1684 kbps (choice auto, measured - kbps)
+10-10 01:24:58.303 18405 18405 I flutter : LAB   18.6 stream lanes=6
+10-10 01:24:58.332 18405 18405 I flutter : LAB   18.6 play through the local proxy
+10-10 01:24:58.335 18405 18405 I flutter : LAB   18.6 play: opening the player
+10-10 01:24:58.580  4123  9716 I MediaFocusControl: requestAudioFocus() from uid/pid 10216/18405 clientId=android.media.AudioManager@4523143com.innocent.media.MainActivity$$ExternalSyntheticLambda97@ed393c0 callingPack=com.innocent.media req=1 flags=0x0 sdk=35
+10-10 01:24:58.603 18405 18405 I flutter : LAB insets stable l=0.0 t=30.85714340209961 r=0.0 b=48.0 padding l=0.0 t=30.857142857142858 r=0.0 b=48.0 bar=48.0
+10-10 01:24:58.623  4123  9716 D ActivityTaskManager: setRequestedOrientation(2) from com.innocent.media
+10-10 01:24:58.779 18405 18405 I flutter : {id: 0, surfaceProducer: true}
+10-10 01:24:58.806  4123 11519 V WindowManager: Relayout Window{ac19879 u0 com.innocent.media/com.innocent.media.MainActivity}: viewVisibility=0 req=720x1520
+10-10 01:24:58.809  4123  4145 D WindowManager: setSystemUiVisibility: displayId=0, vis=0x970e, fullVis=0x0, dockVis=0x0, win=Window{ac19879 u0 com.innocent.media/com.innocent.media.MainActivity}
+10-10 01:24:58.891  3657  3657 I SurfaceFlinger:      DEVICE | 0xf194b6c0 | 0002 | RGBA_8888 |   0.0    0.0  720.0 1520.0 |    0    0  720 1520 | SurfaceView - com.innocent.media/com.innocent.media.MainActivity@632e800@0#0
+10-10 01:24:58.891  3657  3657 I SurfaceFlinger:      DEVICE | 0xf194b940 | 0000 | RGBA_8888 |   0.0    0.0  720.0 1520.0 |    0    0  720 1520 | com.innocent.media/com.innocent.media.MainActivity$_18405#0
+10-10 01:24:59.013 18405 18405 I flutter : LAB insets stable l=0.0 t=30.85714340209961 r=0.0 b=48.0 padding l=0.0 t=0.0 r=0.0 b=0.0 bar=48.0
+10-10 01:24:59.033 18405 18405 I flutter : LAB   19.3 stream index 0.0 MB at 0.0 MB
+10-10 01:24:59.070 18405 18405 I flutter : LAB   19.3 hwdec -> auto
+10-10 01:24:59.106  4123 11052 W BroadcastQueue: Background execution not allowed: receiving Intent { act=android.intent.action.PACKAGE_ADDED dat=package:com.innocent.media flg=0x4000010 (has extras) } to com.google.android.packageinstaller/com.android.packageinstaller.PackageInstalledReceiver
+10-10 01:24:59.126 18405 18405 I flutter : LAB   19.4 open scheme=http len=106 hwdec=auto start=0s autoplay=true
+10-10 01:24:59.127  4123  4153 W BroadcastQueue: Background execution not allowed: receiving Intent { act=android.intent.action.PACKAGE_ADDED dat=package:com.innocent.media flg=0x4000010 (has extras) } to com.android.vending/com.google.android.finsky.packagemonitor.impl.PackageMonitorReceiverImpl$RegisteredReceiver
+10-10 01:24:59.143 18405 18405 I flutter : LAB   19.4 wakelock playing=false bg=false priv=false pos=0ms
+10-10 01:24:59.144 18405 18405 I flutter : LAB   19.4 first frame 651 ms
+10-10 01:24:59.151  4123  4153 W BroadcastQueue: Background execution not allowed: receiving Intent { act=android.intent.action.PACKAGE_ADDED dat=package:com.innocent.media flg=0x4000010 (has extras) } to com.android.vending/com.google.android.finsky.packagemonitor.backgroundimpl.BackgroundPackageMonitorReceiverImpl$RegisteredReceiver
+10-10 01:24:59.152  4123  4153 W BroadcastQueue: Background execution not allowed: receiving Intent { act=android.intent.action.PACKAGE_ADDED dat=package:com.innocent.media flg=0x4000010 (has extras) } to com.facebook.appmanager/com.facebook.oxygen.common.packages.event.manifest.ManifestPackageEventReceiver
+10-10 01:24:59.154  4123  4153 W BroadcastQueue: Background execution not allowed: receiving Intent { act=android.intent.action.PACKAGE_ADDED dat=package:com.innocent.media flg=0x4000010 (has extras) } to com.google.android.gms/.gass.chimera.PackageChangeBroadcastReceiver
+10-10 01:24:59.169  4123 11052 V WindowManager: Relayout Window{ac19879 u0 com.innocent.media/com.innocent.media.MainActivity}: viewVisibility=0 req=720x1520
+10-10 01:24:59.193  4123  4153 W BroadcastQueue: Background execution not allowed: receiving Intent { act=android.intent.action.PACKAGE_ADDED dat=package:com.innocent.media flg=0x4000010 (has extras) } to com.google.android.gms/.chimera.GmsIntentOperationService$PersistentTrustedReceiver
+10-10 01:24:59.202  4123  4153 W BroadcastQueue: Background execution not allowed: receiving Intent { act=android.intent.action.PACKAGE_ADDED dat=package:com.innocent.media flg=0x4000010 (has extras) } to com.google.android.googlequicksearchbox/com.google.android.apps.gsa.googlequicksearchbox.GelStubAppWatcher
+10-10 01:24:59.206 18405 18405 I flutter : LAB cpu app 27% · 0.1fps · estorage.worker 8% | pool-thread 7% | .innocent.media 6% | Jit thread pool 1% | HeapTaskDaemon 1%
+10-10 01:24:59.221  4123  4153 W BroadcastQueue: Background execution not allowed: receiving Intent { act=android.intent.action.PACKAGE_ADDED dat=package:com.innocent.media flg=0x4000010 (has extras) } to com.samsung.android.app.soundpicker/.HunReceiver
+10-10 01:24:59.245 18405 18405 I flutter : media_kit: wakelock: _count = 1
+10-10 01:24:59.245 18405 18405 I flutter : LAB   19.5 wakelock playing=true bg=false priv=false pos=0ms
+10-10 01:24:59.245 18405 18405 I flutter : LAB   19.5 open ok
+10-10 01:24:59.246 18405 18405 I flutter : LAB   19.5 rebuffer start
+10-10 01:24:59.252 18405 18405 I flutter : {wid: 0}
+10-10 01:24:59.255  4123 11052 V WindowManager: Relayout Window{ac19879 u0 com.innocent.media/com.innocent.media.MainActivity}: viewVisibility=0 req=720x1520
+10-10 01:24:59.306 18405 18405 I flutter : LAB insets stable l=0.0 t=30.85714340209961 r=0.0 b=48.0 padding l=0.0 t=0.0 r=0.0 b=0.0 bar=48.0
+10-10 01:24:59.589 18405 18405 I flutter : LAB   19.9 fg stream: watching
+10-10 01:24:59.728  4123 11519 W BroadcastQueue: Background execution not allowed: receiving Intent { act=android.intent.action.PACKAGE_ADDED dat=package:com.innocent.media flg=0x4000010 (has extras) } to com.samsung.android.sm.devicesecurity/.PackageReceiver
+10-10 01:24:59.735  4123  4153 W BroadcastQueue: Background execution not allowed: receiving Intent { act=android.intent.action.PACKAGE_ADDED dat=package:com.innocent.media flg=0x4000010 (has extras) } to com.sec.android.app.samsungapps/.receiver.PackageAddedReceiver
+10-10 01:24:59.740  4123  4153 W BroadcastQueue: Background execution not allowed: receiving Intent { act=android.intent.action.PACKAGE_ADDED dat=package:com.innocent.media flg=0x4000010 (has extras) } to com.sec.android.app.soundalive/.SAControlPanelReceiver
+10-10 01:25:00.331  4123 11439 W BroadcastQueue: Background execution not allowed: receiving Intent { act=android.intent.action.PACKAGE_ADDED dat=package:com.innocent.media flg=0x4000010 (has extras) } to com.sec.imsservice/com.sec.internal.ims.imsservice.ImsIntentReceiver
+10-10 01:25:00.869 18405 18405 I flutter : LAB   21.1 rebuffer end 1623 ms
+10-10 01:25:01.119 18405 18405 I flutter : VideoOutput.WaitUntilFirstFrameRenderedNotify
+10-10 01:25:01.119 18405 18405 I flutter : {handle: 3618967856}
+10-10 01:25:01.119 18405 18405 I flutter : 3618967856
+10-10 01:25:01.194  4123  4123 D MediaSessionService: Media button session is changed to com.innocent.media/media-session (userId=0)
+10-10 01:25:01.348  4123  9649 I CodecSolution: pid(18405) pkg(com.innocent.media)
+10-10 01:25:01.359  4123 10395 D CodecSolution: topName : com.innocent.media
+10-10 01:25:01.359  4123 10395 I CodecSolution: Top : com.innocent.media
+10-10 01:25:01.377  4123 10395 D SCPMHelper: getPackageInfo(com.innocent.media)
+10-10 01:25:01.576 18405 20262 I chatty  : uid=10216(com.innocent.media) CodecLooper identical 6 lines
+10-10 01:25:03.483 20227 20227 D FirebaseApp: com.google.firebase.crash.FirebaseCrash is not linked. Skipping initialization.
+10-10 01:25:03.696 18405 18405 I flutter : LAB   24.0 measured 25022 kbps
+10-10 01:25:05.925 18405 18405 I flutter : LAB   26.2 measured 20404 kbps
+10-10 01:25:07.168 18405 18405 I flutter : LAB   27.4 video h264 1690x720 hwdec=mediacodec(?) vo=gpu surf=producer fps=24.0 drop=0/0 thr=4
+10-10 01:25:07.389 20553 20553 D FirebaseApp: com.google.firebase.crash.FirebaseCrash is not linked. Skipping initialization.
+10-10 01:25:09.220 20633 20633 D FirebaseApp: com.google.firebase.crash.FirebaseCrash is not linked. Skipping initialization.
+10-10 01:25:09.250 18405 18405 I flutter : LAB cpu app 137% · 26.0fps · .innocent.media 51% | DartWorker 33% | Thread 18% | dart:io EventHa 10% | 1.raster 7% | mali-cmar-backe 5%
+10-10 01:25:09.864 18405 18425 I .innocent.medi: NativeAlloc concurrent copying GC freed 120439(4249KB) AllocSpace objects, 19(1056KB) LOS objects, 49% free, 3537KB/7074KB, paused 284us total 138.358ms
+10-10 01:25:10.278 18405 18405 I flutter : LAB   30.6 measured 31363 kbps
+10-10 01:25:11.827 20755 20755 D FilterIntentReceiver: pkgName : com.innocent.media
+10-10 01:25:14.840 20871 20913 D DIAGMON_SDK[605026]: CRASH_LOG_PATH : /data/user/0/com.sec.android.app.myfiles/exception/diagmon.log
+10-10 01:25:17.275 21014 21050 V DynamiteModule: Dynamite loader version >= 2, using loadModule2NoCrashUtils
+10-10 01:25:17.287 21014 21051 V DynamiteModule: Dynamite loader version >= 2, using loadModule2NoCrashUtils
+10-10 01:25:19.240 18405 18405 I flutter : LAB cpu app 81% · 22.4fps · .innocent.media 20% | Thread 19% | DartWorker 13% | 1.raster 7% | mali-cmar-backe 6% | CodecLooper 3%
+10-10 01:25:21.826 18405 18405 I flutter : LAB   42.1 measured 16668 kbps
+10-10 01:25:22.532 21301 21301 D DIAGMON_SDK[605024]: CRASH_LOG_PATH : /data/user/0/com.samsung.android.lool/exception/diagmon.log
+10-10 01:25:28.373  4123 11440 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:25:28.399  4123 10395 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:25:28.423  4123 10395 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:25:28.459  4123 10396 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:25:28.872  4123 10395 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:25:28.881  4123 10395 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:25:28.898  4123 11417 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:25:28.911  4123 11417 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:25:29.214  4123 11417 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:25:29.246 18405 18405 I flutter : LAB cpu app 72% · 25.0fps · Thread 20% | .innocent.media 15% | 1.raster 7% | DartWorker 7% | mali-cmar-backe 6% | CodecLooper 3%
+10-10 01:25:29.255  4123 10396 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:25:29.279  4123 10396 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:25:29.300  4123 11104 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:25:29.791  4123 11104 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:25:29.819  4123 11104 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:25:29.833  4123 11104 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:25:29.846  4123 11104 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:25:30.193  4123 10396 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:25:30.213  4123 10395 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:25:30.241  4123 11417 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:25:30.264  4123 11440 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:25:30.745  4123 10395 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:25:30.766  4123 11440 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:25:30.795  4123 11440 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:25:30.823  4123 10396 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:25:31.374 21649 21649 I Finsky:background: [2] [BGP] Initializing crash detector...
+10-10 01:25:35.202  4123 10395 W ActivityManager: Scheduling restart of crashed service com.samsung.storyservice/.StoryService in 328240ms
+10-10 01:25:35.293 21718 21718 D FirebaseApp: com.google.firebase.crash.FirebaseCrash is not linked. Skipping initialization.
+10-10 01:25:35.748 18405 18405 I flutter : LAB   56.0 measured 20273 kbps
+10-10 01:25:39.250 18405 18405 I flutter : LAB cpu app 66% · 24.8fps · Thread 20% | .innocent.media 13% | 1.raster 7% | mali-cmar-backe 6% | CodecLooper 3% | MediaCodec_loop 3%
+10-10 01:25:39.431 22115 22115 D DIAGMON_SDK[605024]: CRASH_LOG_PATH : /data/user/0/com.samsung.android.lool/exception/diagmon.log
+10-10 01:25:43.462 22314 22356 V DynamiteModule: Dynamite loader version >= 2, using loadModule2NoCrashUtils
+10-10 01:25:43.475 22314 22355 V DynamiteModule: Dynamite loader version >= 2, using loadModule2NoCrashUtils
+10-10 01:25:44.719 22389 22389 D DIAGMON_SDK[605024]: CRASH_LOG_PATH : /data/user/0/com.samsung.android.lool/exception/diagmon.log
+10-10 01:25:49.245 18405 18405 I flutter : LAB cpu app 56% · 22.5fps · Thread 20% | .innocent.media 9% | 1.raster 7% | mali-cmar-backe 6% | CodecLooper 3% | MediaCodec_loop 3%
+10-10 01:25:51.381 22682 22682 I Finsky:background: [2] [BGP] Initializing crash detector...
+10-10 01:25:58.459  4123 11086 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:25:58.494  4123 11114 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:25:58.509  4123 11114 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:25:58.528  4123 11114 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:25:58.789  4123 11086 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:25:58.813  4123 11112 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:25:58.828  4123 11112 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:25:58.842  4123 11112 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:25:58.991 18405 18425 I .innocent.medi: Background concurrent copying GC freed 88363(2859KB) AllocSpace objects, 8(416KB) LOS objects, 49% free, 3799KB/7598KB, paused 294us total 107.969ms
+10-10 01:25:59.162 18405 18405 I flutter : LAB   79.4 video h264 1690x720 hwdec=mediacodec(?) vo=gpu surf=producer fps=24.0 drop=0/0 thr=4
+10-10 01:25:59.220 18405 18405 I flutter : LAB cpu app 60% · 24.9fps · Thread 21% | .innocent.media 10% | 1.raster 8% | mali-cmar-backe 6% | CodecLooper 3% | MediaCodec_loop 3%
+10-10 01:26:09.244 18405 18405 I flutter : LAB cpu app 56% · 22.5fps · Thread 21% | .innocent.media 8% | 1.raster 7% | mali-cmar-backe 6% | CodecLooper 3% | MediaCodec_loop 3%
+10-10 01:26:11.741 18405 18405 I flutter : LAB   92.0 fg stream: watching
+10-10 01:26:19.201 18405 18405 I flutter : LAB cpu app 51% · 25.0fps · Thread 18% | .innocent.media 8% | 1.raster 7% | mali-cmar-backe 6% | CodecLooper 3% | MediaCodec_loop 3%
+10-10 01:26:29.240 18405 18405 I flutter : LAB cpu app 55% · 25.0fps · Thread 20% | .innocent.media 9% | 1.raster 7% | mali-cmar-backe 6% | CodecLooper 3% | MediaCodec_loop 3%
+10-10 01:26:39.240 18405 18405 I flutter : LAB cpu app 55% · 22.5fps · Thread 20% | .innocent.media 9% | 1.raster 7% | mali-cmar-backe 6% | CodecLooper 3% | MediaCodec_loop 3%
+10-10 01:26:49.242 18405 18405 I flutter : LAB cpu app 57% · 24.9fps · Thread 20% | .innocent.media 9% | 1.raster 8% | mali-cmar-backe 6% | CodecLooper 3% | MediaCodec_loop 3%
+10-10 01:26:58.443  4123 10603 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:26:58.463  4123 10603 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:26:58.477  4123 11434 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:26:58.487  4123 11434 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:26:58.665  4123 11434 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:26:58.687  4123 11434 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:26:58.702  4123 10603 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:26:58.719  4123 10603 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:26:59.236 18405 18405 I flutter : LAB cpu app 57% · 22.5fps · Thread 21% | .innocent.media 9% | 1.raster 7% | mali-cmar-backe 6% | CodecLooper 3% | MediaCodec_loop 3%
+10-10 01:27:07.210 18405 18405 I flutter : LAB  147.5 stream stretch 32.0 MB in 125592 ms lanes=6
+10-10 01:27:09.207 18405 18405 I flutter : LAB cpu app 71% · 24.8fps · .innocent.media 19% | Thread 19% | 1.raster 7% | DartWorker 6% | mali-cmar-backe 6% | CodecLooper 3%
+10-10 01:27:09.463 18405 18405 I flutter : LAB  149.7 measured 18354 kbps
+10-10 01:27:19.252 18405 18405 I flutter : LAB cpu app 73% · 24.9fps · Thread 19% | .innocent.media 18% | DartWorker 10% | 1.raster 7% | mali-cmar-backe 6% | CodecLooper 3%
+10-10 01:27:19.760 18405 18405 I flutter : LAB  160.0 measured 21845 kbps
+10-10 01:27:29.244 18405 18405 I flutter : LAB cpu app 76% · 22.5fps · Thread 22% | .innocent.media 17% | DartWorker 9% | 1.raster 7% | mali-cmar-backe 6% | CodecLooper 3%
+10-10 01:27:35.557 18405 18405 I flutter : LAB  175.8 measured 24724 kbps
+10-10 01:27:39.241 18405 18405 I flutter : LAB cpu app 71% · 25.0fps · Thread 21% | .innocent.media 14% | 1.raster 7% | DartWorker 7% | mali-cmar-backe 6% | CodecLooper 3%
+10-10 01:27:49.242 18405 18405 I flutter : LAB cpu app 75% · 24.9fps · Thread 21% | .innocent.media 17% | 1.raster 8% | DartWorker 7% | mali-cmar-backe 6% | CodecLooper 3%
+10-10 01:27:51.728 18405 18405 I flutter : LAB  192.0 measured 22012 kbps
+10-10 01:27:58.424  4123 11418 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:27:58.431  4123 11418 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:27:58.438  4123 11418 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:27:58.449  4123 11418 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:27:58.593  4123 11418 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:27:58.606  4123 11418 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:27:58.619  4123 11418 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:27:58.634  4123 11418 I ClientCertificateManager Service: in isCCMPolicyEnabledForPackage. packageName is com.innocent.media
+10-10 01:27:59.243 18405 18405 I flutter : LAB cpu app 71% · 22.5fps · Thread 22% | .innocent.media 14% | 1.raster 8% | mali-cmar-backe 6% | DartWorker 4% | CodecLooper 3%
+10-10 01:28:04.020 18405 18405 I flutter : LAB  204.3 measured 23802 kbps
+10-10 01:28:09.235 18405 18405 I flutter : LAB cpu app 66% · 25.0fps · Thread 21% | .innocent.media 16% | 1.raster 8% | mali-cmar-backe 6% | CodecLooper 3% | MediaCodec_loop 3%
+10-10 01:28:19.235 18405 18405 I flutter : LAB cpu app 64% · 22.5fps · Thread 22% | .innocent.media 14% | 1.raster 8% | mali-cmar-backe 6% | CodecLooper 3% | MediaCodec_loop 3%
+10-10 01:28:23.154 18405 18405 I flutter : LAB  223.4 fg stream: watching
+10-10 01:28:25.698 24359 24359 D DIAGMON_SDK[605029][tu52hac8ar] : CRASH_LOG_PATH : /data/user/0/com.samsung.android.app.telephonyui/exception/diagmon.log
+10-10 01:28:29.248 18405 18405 I flutter : LAB cpu app 61% · 25.0fps · Thread 22% | .innocent.media 9% | 1.raster 8% | mali-cmar-backe 6% | CodecLooper 3% | MediaCodec_loop 3%
+10-10 01:28:39.235 18405 18405 I flutter : LAB cpu app 58% · 25.0fps · Thread 21% | .innocent.media 9% | 1.raster 8% | mali-cmar-backe 6% | CodecLooper 3% | MediaCodec_loop 3%
+10-10 01:28:39.835  4123  4315 W InputDispatcher: channel 'ac19879 com.innocent.media/com.innocent.media.MainActivity (server)' ~ Consumer closed input channel or an error occurred.  events=0x9, fd=579
+10-10 01:28:39.836  4123  4315 E InputDispatcher: channel 'ac19879 com.innocent.media/com.innocent.media.MainActivity (server)' ~ Channel is unrecoverably broken and will be disposed!
+10-10 01:28:39.844  3657  3699 I SurfaceFlinger: id=176 Removed Bounds for - com.innocent.media/com.innocent.media.MainActivity@0#0 (55)
+10-10 01:28:39.844  3657  4319 I SurfaceFlinger: id=178 Removed Background for -SurfaceView - com.innocent.media/com.innocent.media.MainActivity@632e800@0#0 (55)
+10-10 01:28:39.845  3657  3699 I SurfaceFlinger: id=177 Removed SurfaceView - com.innocent.media/com.innocent.media.MainActivity@632e800@0#0 (55)
+10-10 01:28:39.852  4123  9526 I WindowManager: WIN DEATH: Window{ac19879 u0 com.innocent.media/com.innocent.media.MainActivity}
+10-10 01:28:39.854  4123 10603 I ActivityManager: Process com.innocent.media (pid 18405) has died: fore TOP (174,451)
+10-10 01:28:39.855  4123  9716 E InputDispatcher: Window handle Window{ac19879 u0 com.innocent.media/com.innocent.media.MainActivity} has no registered input channel
+10-10 01:28:39.856  4123 11439 D MediaSessionService: Destroying com.innocent.media/media-session (userId=0)
+10-10 01:28:39.860  4123  9526 W InputDispatcher: Attempted to unregister already unregistered input channel 'ac19879 com.innocent.media/com.innocent.media.MainActivity (server)'
+10-10 01:28:39.889  4123  4123 V MediaSessionRecord: Removing dead callback in pushSessionDestroyed, this=com.innocent.media/media-session (userId=0), callback package=com.innocent.media, exception=android.os.DeadObjectException
+10-10 01:28:39.889  4123  9526 I WindowManager: Destroying surface Surface(name=com.innocent.media/com.innocent.media.MainActivity$_18405)/@0xea47ab2 called by com.android.server.wm.WindowStateAnimator.destroySurface:1734 com.android.server.wm.WindowStateAnimator.destroySurfaceLocked:693 com.android.server.wm.WindowState.removeImmediately:2282 com.android.server.wm.WindowState.removeIfPossible:2418 com.android.server.wm.WindowState.access$300:260 com.android.server.wm.WindowState$DeathRecipient.binderDied:2986 android.os.BinderProxy.sendDeathNotice:688 <bottom of call stack> 
+10-10 01:28:39.894  3657  3704 I Layer   : id=176 removeFromCurrentState Bounds for - com.innocent.media/com.innocent.media.MainActivity@0#0 (55)
+10-10 01:28:39.894  3657  3704 I Layer   : id=177 removeFromCurrentState SurfaceView - com.innocent.media/com.innocent.media.MainActivity@632e800@0#0 (55)
+10-10 01:28:39.894  3657  3704 I Layer   : id=178 removeFromCurrentState Background for -SurfaceView - com.innocent.media/com.innocent.media.MainActivity@632e800@0#0 (55)
+10-10 01:28:39.894  3657  3704 I Layer   : id=175 removeFromCurrentState com.innocent.media/com.innocent.media.MainActivity$_18405#0 (55)
+10-10 01:28:39.896  3657  3704 I SurfaceFlinger: id=175 Removed com.innocent.media/com.innocent.media.MainActivity$_18405#0 (55)
+10-10 01:28:39.905  3657  3657 I Layer   : id=175[1] Destroyed com.innocent.media/com.innocent.media.MainActivity$_18405#0
+10-10 01:28:39.906  3657  3657 I Layer   : id=176[1] Destroyed Bounds for - com.innocent.media/com.innocent.media.MainActivity@0#0
+10-10 01:28:39.906  3657  3657 I Layer   : id=177[1] Destroyed SurfaceView - com.innocent.media/com.innocent.media.MainActivity@632e800@0#0
+10-10 01:28:39.906  3657  3657 I Layer   : id=178[1] Destroyed Background for -SurfaceView - com.innocent.media/com.innocent.media.MainActivity@632e800@0#0
+10-10 01:28:39.952  3657  3704 I Layer   : id=174 removeFromCurrentState ac19879 com.innocent.media/com.innocent.media.MainActivity#0 (51)
+10-10 01:28:39.966  3657  3704 I SurfaceFlinger: id=174 Removed ac19879 com.innocent.media/com.innocent.media.MainActivity#0 (51)
+10-10 01:28:39.966  3657  3657 I Layer   : id=174[1] Destroyed ac19879 com.innocent.media/com.innocent.media.MainActivity#0
+10-10 01:28:39.979  4123  9526 V WindowManager: Changing focus from Window{ac19879 u0 com.innocent.media/com.innocent.media.MainActivity} to null displayId=0 Callers=com.android.server.wm.RootWindowContainer.updateFocusedWindowLocked:203 com.android.server.wm.WindowManagerService.updateFocusedWindowLocked:6107 com.android.server.wm.WindowState.removeIfPossible:2427 com.android.server.wm.WindowState.access$300:260 com.android.server.wm.WindowState$DeathRecipient.binderDied:2986 android.os.BinderProxy.sendDeathNotice:688 
+10-10 01:28:40.011  4123 10603 W ActivityTaskManager: Force removing ActivityRecord{2b82af2 u0 com.innocent.media/.MainActivity t10}: app died, no saved state
+10-10 01:28:40.117  3657  3704 I Layer   : id=166 removeFromCurrentState AppWindowToken{c5f47c0 token=Token{eac3543 ActivityRecord{2b82af2 u0 com.innocent.media/.MainActivity t10}}}#0 (50)
+10-10 01:28:40.127  4123  4147 E WindowManager: RemoteException occurs on reporting focusChanged, w=Window{ac19879 u0 com.innocent.media/com.innocent.media.MainActivity}
+10-10 01:28:40.130  3657  3704 I SurfaceFlinger: id=166 Removed AppWindowToken{c5f47c0 token=Token{eac3543 ActivityRecord{2b82af2 u0 com.innocent.media/.MainActivity t10}}}#0 (50)
+10-10 01:28:40.133  3657  3657 I Layer   : id=166[1] Destroyed AppWindowToken{c5f47c0 token=Token{eac3543 ActivityRecord{2b82af2 u0 com.innocent.media/.MainActivity t10}}}#0
+10-10 01:28:40.465 18190 18190 D AndroidRuntime: Shutting down VM
+10-10 01:28:40.769  9874  9874 D Launcher.AppsPagedView: addItems => id: 75, rank: 15, screenId: 0, cellX: 3, cellY: 3, container: -102, dirty: false, title: Innocent, isFolder: false, user: UserHandle{0}, disabled: false, screenType: 0
+10-10 01:28:52.359 24731 24731 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-10 01:28:52.383 24731 24731 I AndroidRuntime: Using default boot image
+10-10 01:28:52.383 24731 24731 I AndroidRuntime: Leaving lock profiling enabled
+10-10 01:28:52.385 24731 24731 D AndroidRuntime: addProductProperty
+10-10 01:28:52.394 24731 24731 D AndroidRuntime: addProductProperty: pBrand1 != NULL
+10-10 01:28:52.394 24731 24731 D AndroidRuntime: addProductProperty: start
+10-10 01:28:52.394 24731 24731 D AndroidRuntime: propertySet: couldn't set property (it is from app)
+10-10 01:28:52.922 24731 24731 D AndroidRuntime: Calling main entry com.android.commands.am.Am
+10-10 01:28:53.188 24731 24731 D AndroidRuntime: Shutting down VM
+10-10 01:28:53.616 24767 24767 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-10 01:28:53.621 24767 24767 I AndroidRuntime: Using default boot image
+10-10 01:28:53.621 24767 24767 I AndroidRuntime: Leaving lock profiling enabled
+10-10 01:28:53.621 24767 24767 D AndroidRuntime: addProductProperty
+10-10 01:28:53.624 24767 24767 D AndroidRuntime: addProductProperty: pBrand1 != NULL
+10-10 01:28:53.624 24767 24767 D AndroidRuntime: addProductProperty: start
+10-10 01:28:53.624 24767 24767 D AndroidRuntime: propertySet: couldn't set property (it is from app)
+10-10 01:28:53.785 24767 24767 D AndroidRuntime: Calling main entry com.android.commands.am.Am
+10-10 01:28:55.179 24767 24767 D AndroidRuntime: Shutting down VM
+10-10 01:28:59.375 24998 25151 D DIAGMON_SDK[605030][cfk7symzua] : CRASH_LOG_PATH : /data/user/0/com.samsung.android.calendar/exception/diagmon.log
+10-10 01:28:59.524 25122 25122 D DIAGMON_SDK[605025]: CRASH_LOG_PATH : /data/user/0/com.samsung.android.scloud/exception/diagmon.log
