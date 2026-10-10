@@ -1,21 +1,22 @@
-[03:24:29] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
-[03:24:29] install
-[03:24:47] network: speed full kbit/s, delay none ms
-[03:25:09] cold start
+[04:07:20] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
+[04:07:20] install
+[04:07:36] network: speed full kbit/s, delay none ms
+[04:07:58] cold start
 Status: ok
-TotalTime: 3773
-WaitTime: 3805
-[03:25:24] long film: 162 min in /mnt/lab_films, served on 47125
-[03:25:24] flow openwith
-[03:25:24] flow openwith: no film — skipped
-[03:25:24] flow titleloop
-[03:26:46] titleloop: 1 player open(s), 1 first frame(s) so far in the run
-[03:26:46] flow titleloop done
-[03:26:46] flow climb
-[03:26:48] climb: the test film, link estimate seeded at 500 kbps, for 240 s
-[03:30:53] climb: 1 step(s) up, 0 down
-[03:30:53] flow climb done
-[03:30:53] flow streamlong_slowfrag_6
-[03:30:54] long film: slowfrag — 720frag, round trip 2x150ms, loss 1%, rate 4mbit, queue 10000 packets; lanes=6
-[03:32:46] flow streamlong_slowfrag_6 done
-[03:32:51] done
+TotalTime: 3581
+WaitTime: 3604
+[04:08:13] long film: 162 min in /mnt/lab_films, served on 47125
+[04:08:13] flow openwith
+[04:09:29] openwith: cold start 1 first frame(s), warm 1; 0 unknown route(s)
+[04:09:30] flow openwith done
+[04:09:30] flow titleloop
+[04:10:49] titleloop: 1 player open(s), 3 first frame(s) so far in the run
+[04:10:50] flow titleloop done
+[04:10:50] flow climb
+[04:10:51] climb: the test film, link estimate seeded at 500 kbps, for 240 s
+[04:14:55] climb: 1 step(s) up, 0 down
+[04:14:55] flow climb done
+[04:14:55] flow streamlong_slowfrag_6
+[04:14:55] long film: slowfrag — 720frag, round trip 2x150ms, loss 1%, rate 4mbit, queue 10000 packets; lanes=6
+[04:16:47] flow streamlong_slowfrag_6 done
+[04:16:51] done
