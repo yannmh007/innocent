@@ -1694,6 +1694,49 @@ class AppStrings {
   String get adbTipOppo => _s('adbTipOppo');
   String get adbTipTranssion => _s('adbTipTranssion');
   String get adbNotSupported => _s('adbNotSupported');
+  String get adbScreenTitle => _s('adbScreenTitle');
+  String get adbHeroConnected => _s('adbHeroConnected');
+  String get adbHeroConnectedSub => _s('adbHeroConnectedSub');
+  String get adbHeroOff => _s('adbHeroOff');
+  String get adbHeroOffSub => _s('adbHeroOffSub');
+  String get adbHeroNew => _s('adbHeroNew');
+  String get adbHeroNewSub => _s('adbHeroNewSub');
+  String get adbHeroChecking => _s('adbHeroChecking');
+  String get adbReconnect => _s('adbReconnect');
+  String get adbOpenWireless => _s('adbOpenWireless');
+  String get adbFindVideos => _s('adbFindVideos');
+  String get adbPairTitle => _s('adbPairTitle');
+  String get adbPairNotif => _s('adbPairNotif');
+  String get adbPairNotifSub => _s('adbPairNotifSub');
+  String get adbPairWaiting => _s('adbPairWaiting');
+  String get adbPairInApp => _s('adbPairInApp');
+  String get adbPairCodeLabel => _s('adbPairCodeLabel');
+  String get adbPairConnect => _s('adbPairConnect');
+  String get adbConnect => _s('adbConnect');
+  String get adbStayTitle => _s('adbStayTitle');
+  String get adbStayWifi => _s('adbStayWifi');
+  String get adbStayBackground => _s('adbStayBackground');
+  String get adbStayTile => _s('adbStayTile');
+  String get adbStayBattery => _s('adbStayBattery');
+  String get adbGuideTitle => _s('adbGuideTitle');
+  String get adbGuideOnTitle => _s('adbGuideOnTitle');
+  String get adbGuideOn1 => _s('adbGuideOn1');
+  String get adbGuideOn2 => _s('adbGuideOn2');
+  String get adbGuideOn3 => _s('adbGuideOn3');
+  String get adbGuideOffTitle => _s('adbGuideOffTitle');
+  String get adbGuideOff1 => _s('adbGuideOff1');
+  String get adbGuideOff2 => _s('adbGuideOff2');
+  String get adbGuideSafety => _s('adbGuideSafety');
+  String get adbGuideWhereTitle => _s('adbGuideWhereTitle');
+  String get adbGuideWhere => _s('adbGuideWhere');
+  String get adbAdvanced => _s('adbAdvanced');
+  String get adbDetails => _s('adbDetails');
+  String get adbAndroidDataTitle => _s('adbAndroidDataTitle');
+  String get adbAndroidDataSub => _s('adbAndroidDataSub');
+  String get adbLostTitle => _s('adbLostTitle');
+  String get adbLostBody => _s('adbLostBody');
+  String get adbLostAction => _s('adbLostAction');
+  String adbFound(int n) => _s('adbFound').replaceAll('{n}', '$n');
   String get destinationIfExists => _s('destinationIfExists');
   String get destinationKeepBoth => _s('destinationKeepBoth');
   String get destinationSkip => _s('destinationSkip');
@@ -1977,6 +2020,49 @@ class AppStrings {
     'adbTipOppo': 'OPPO, realme and OnePlus: if pairing works but connecting stalls, turn Wireless debugging off and on again, then tap Connect.',
     'adbTipTranssion': 'TECNO, Infinix and itel: let Innocent run in the background (battery settings or Phone Master), or the pairing notification can be closed before you type the code.',
     'adbNotSupported': 'Wireless debugging needs Android 11 or newer.',
+    'adbScreenTitle': 'Android/data access',
+    'adbHeroConnected': 'Connected',
+    'adbHeroConnectedSub': 'Android/data is open to Innocent. Copies keep going in the background, and pick up where they stopped if the connection drops.',
+    'adbHeroOff': 'Not connected right now',
+    'adbHeroOffSub': 'Wireless debugging usually turns itself off after a restart or when the phone changes Wi-Fi. Turn it on again and tap Reconnect — no new code needed.',
+    'adbHeroNew': 'Set up once — about a minute',
+    'adbHeroNewSub': 'Innocent connects to this phone\'s own Wireless debugging to open Android/data — no computer, no root.',
+    'adbHeroChecking': 'Checking the connection…',
+    'adbReconnect': 'Reconnect',
+    'adbOpenWireless': 'Open Wireless debugging',
+    'adbFindVideos': 'Find videos in Android/data',
+    'adbPairTitle': 'Pair this phone (first time only)',
+    'adbPairNotif': 'Pair from the notification',
+    'adbPairNotifSub': 'Tap this, then in Wireless debugging tap “Pair device with pairing code” and type the 6 digits into Innocent’s notification. No split screen.',
+    'adbPairWaiting': 'Waiting for the code in the notification…',
+    'adbPairInApp': 'Or type the code here (keep the pairing dialog visible):',
+    'adbPairCodeLabel': 'Pairing code (6 digits)',
+    'adbPairConnect': 'Pair & connect',
+    'adbConnect': 'Connect',
+    'adbStayTitle': 'Staying connected',
+    'adbStayWifi': 'Stay on the same Wi-Fi. Wireless debugging belongs to the network it was turned on for — changing Wi-Fi turns it off.',
+    'adbStayBackground': 'Copies run in the background with a notification, and resume from where they stopped if the connection drops.',
+    'adbStayTile': 'One-tap switch: Developer options → “Quick settings developer tiles” → Wireless debugging. It then sits in your quick settings panel.',
+    'adbStayBattery': 'Some phones close it to save battery. On Xiaomi, OPPO, realme, vivo, TECNO and Infinix, set Innocent’s battery use to “Unrestricted” / “No restrictions”.',
+    'adbGuideTitle': 'How to turn ADB on and off',
+    'adbGuideOnTitle': 'Turn on',
+    'adbGuideOn1': 'Settings → About phone → tap “Build number” 7 times (enter your screen lock if asked). “Developer options” appears.',
+    'adbGuideOn2': 'Developer options → “Wireless debugging” → On, and allow it on this Wi-Fi.',
+    'adbGuideOn3': 'First time only: “Pair device with pairing code”, then type the 6 digits into Innocent’s notification.',
+    'adbGuideOffTitle': 'Turn off when you are done',
+    'adbGuideOff1': 'Developer options → “Wireless debugging” → Off (or the quick settings tile). Innocent keeps its pairing: next time just turn it on and tap Reconnect.',
+    'adbGuideOff2': 'To hide Developer options again, switch off its main switch at the top. Some phones reset other developer settings when you do.',
+    'adbGuideSafety': 'Wireless debugging lets a paired device control this phone. Pair only on Wi-Fi you trust, and turn it off when you finish.',
+    'adbGuideWhereTitle': 'Where to find them on your phone',
+    'adbGuideWhere': 'Samsung — Build number: About phone → Software information. Developer options: at the bottom of Settings.\nXiaomi / Redmi / POCO — tap “OS version” (or “MIUI version”) in About phone. Developer options: Additional settings.\nOPPO / realme / OnePlus — About device → Version → Build number. Developer options: System settings / Additional settings.\nvivo / iQOO — About phone → Software version. Developer options: System management.\nTECNO / Infinix / itel, Pixel and most others — About phone → Build number. Developer options: System.',
+    'adbAdvanced': 'Advanced',
+    'adbDetails': 'Details',
+    'adbAndroidDataTitle': 'Videos in Android/data',
+    'adbAndroidDataSub': 'Telegram and other apps keep their videos in Android/data and Android/obb. Once connected, Innocent finds them and adds them to Local.',
+    'adbFound': '{n} videos found',
+    'adbLostTitle': 'Android/data needs the ADB connection',
+    'adbLostBody': 'The connection dropped — usually Wireless debugging turned off. Turn it on again; this folder opens by itself as soon as the connection is back.',
+    'adbLostAction': 'ADB settings',
     'destinationIfExists': 'If a file with the same name is already there',
     'destinationKeepBoth': 'Keep both',
     'destinationSkip': 'Skip',
@@ -3554,6 +3640,49 @@ class AppStrings {
     'adbTipOppo': 'OPPO၊ realme၊ OnePlus: pair ရပြီး ချိတ်ရာမှာ ရပ်နေရင် Wireless debugging ကို ပိတ်ပြီး ပြန်ဖွင့်ကာ Connect ကို နှိပ်ပါ။',
     'adbTipTranssion': 'TECNO၊ Infinix၊ itel: Innocent ကို background မှာ run ခွင့်ပေးပါ (battery settings သို့မဟုတ် Phone Master)။ မပေးရင် code မရိုက်ခင် pairing notification ပိတ်သွားနိုင်ပါတယ်။',
     'adbNotSupported': 'Wireless debugging အတွက် Android 11 နဲ့ အထက် လိုပါတယ်။',
+    'adbScreenTitle': 'Android/data ဝင်ကြည့်ခြင်း',
+    'adbHeroConnected': 'ချိတ်ဆက်ထားပါပြီ',
+    'adbHeroConnectedSub': 'Innocent က Android/data ကို ဖွင့်ကြည့်နိုင်ပါပြီ။ ဖိုင်ကူးတာတွေ background မှာ ဆက်လုပ်ပြီး connection ပြုတ်သွားရင် ရပ်သွားတဲ့နေရာကနေ ပြန်ဆက်ပါတယ်။',
+    'adbHeroOff': 'ယခု ချိတ်ဆက်မထားပါ',
+    'adbHeroOffSub': 'ဖုန်းပြန်ဖွင့်တဲ့အခါ ဒါမှမဟုတ် Wi-Fi ပြောင်းတဲ့အခါ Wireless debugging က အလိုလို ပိတ်သွားတတ်ပါတယ်။ ပြန်ဖွင့်ပြီး Reconnect ကို နှိပ်ပါ — code အသစ် မလိုပါ။',
+    'adbHeroNew': 'တစ်ကြိမ်ပဲ ပြင်ဆင်ရပါတယ် — ၁ မိနစ်ခန့်',
+    'adbHeroNewSub': 'Android/data ကို ဖွင့်ဖို့ Innocent က ဒီဖုန်းရဲ့ ကိုယ်ပိုင် Wireless debugging ကို ချိတ်ပါတယ် — ကွန်ပျူတာ မလို၊ root မလိုပါ။',
+    'adbHeroChecking': 'ချိတ်ဆက်မှုကို စစ်နေပါတယ်…',
+    'adbReconnect': 'ပြန်ချိတ်မယ်',
+    'adbOpenWireless': 'Wireless debugging ကို ဖွင့်မယ်',
+    'adbFindVideos': 'Android/data ထဲက ဗီဒီယိုတွေ ရှာမယ်',
+    'adbPairTitle': 'ဒီဖုန်းကို pair လုပ်ပါ (ပထမအကြိမ်သာ)',
+    'adbPairNotif': 'Notification ကနေ pair လုပ်မယ်',
+    'adbPairNotifSub': 'ဒါကို နှိပ်ပြီး Wireless debugging ထဲမှာ “Pair device with pairing code” ကို နှိပ်ပါ။ ပေါ်လာတဲ့ ဂဏန်း ၆ လုံးကို Innocent notification ထဲ ရိုက်ထည့်ပါ။ Split screen မလိုပါ။',
+    'adbPairWaiting': 'Notification ထဲမှာ code ရိုက်တာကို စောင့်နေပါတယ်…',
+    'adbPairInApp': 'ဒါမှမဟုတ် code ကို ဒီမှာ ရိုက်ပါ (pairing dialog ကို မြင်နေအောင် ထားပါ):',
+    'adbPairCodeLabel': 'Pairing code (ဂဏန်း ၆ လုံး)',
+    'adbPairConnect': 'Pair လုပ်ပြီး ချိတ်မယ်',
+    'adbConnect': 'ချိတ်မယ်',
+    'adbStayTitle': 'ချိတ်ဆက်မှု မပြုတ်အောင်',
+    'adbStayWifi': 'Wi-Fi တစ်ခုတည်းပေါ်မှာပဲ နေပါ။ Wireless debugging က ဖွင့်ခဲ့တဲ့ Wi-Fi နဲ့ပဲ ဆိုင်ပါတယ် — Wi-Fi ပြောင်းရင် ပိတ်သွားပါတယ်။',
+    'adbStayBackground': 'ဖိုင်ကူးတာတွေက notification နဲ့အတူ background မှာ run ပြီး connection ပြုတ်ရင် ရပ်တဲ့နေရာကနေ ပြန်ဆက်ပါတယ်။',
+    'adbStayTile': 'တစ်ချက်နှိပ်ရုံ switch: Developer options → “Quick settings developer tiles” → Wireless debugging ကို ဖွင့်ပါ။ ပြီးရင် quick settings panel ထဲမှာ ပေါ်နေပါမယ်။',
+    'adbStayBattery': 'ဖုန်းတချို့က battery ချွေတာဖို့ ပိတ်ပစ်တတ်ပါတယ်။ Xiaomi၊ OPPO၊ realme၊ vivo၊ TECNO၊ Infinix တွေမှာ Innocent ရဲ့ battery usage ကို “Unrestricted” / “No restrictions” လုပ်ထားပါ။',
+    'adbGuideTitle': 'ADB ကို ဘယ်လို ဖွင့်/ပိတ်ရမလဲ',
+    'adbGuideOnTitle': 'ဖွင့်နည်း',
+    'adbGuideOn1': 'Settings → About phone → “Build number” ကို ၇ ချက် ဆက်တိုက်နှိပ်ပါ (screen lock တောင်းရင် ထည့်ပါ)။ “Developer options” ပေါ်လာပါမယ်။',
+    'adbGuideOn2': 'Developer options → “Wireless debugging” → On လုပ်ပြီး ဒီ Wi-Fi ပေါ်မှာ ခွင့်ပြုပါ။',
+    'adbGuideOn3': 'ပထမအကြိမ်သာ: “Pair device with pairing code” ကို နှိပ်ပြီး ဂဏန်း ၆ လုံးကို Innocent notification ထဲ ရိုက်ပါ။',
+    'adbGuideOffTitle': 'သုံးပြီးရင် ပိတ်နည်း',
+    'adbGuideOff1': 'Developer options → “Wireless debugging” → Off (ဒါမှမဟုတ် quick settings tile)။ Pairing က မပျက်ပါဘူး — နောက်တစ်ခါ ပြန်ဖွင့်ပြီး Reconnect ကို နှိပ်ရုံပါပဲ။',
+    'adbGuideOff2': 'Developer options ကို ပြန်ဖျောက်ချင်ရင် အပေါ်ဆုံးက main switch ကို ပိတ်ပါ။ ဖုန်းတချို့မှာ အခြား developer settings တွေပါ reset ဖြစ်သွားတတ်ပါတယ်။',
+    'adbGuideSafety': 'Wireless debugging က pair လုပ်ထားတဲ့ device ကို ဒီဖုန်းကို ထိန်းချုပ်ခွင့်ပေးပါတယ်။ ယုံကြည်ရတဲ့ Wi-Fi ပေါ်မှာပဲ pair လုပ်ပြီး သုံးပြီးရင် ပိတ်ထားပါ။',
+    'adbGuideWhereTitle': 'သင့်ဖုန်းမှာ ဘယ်နေရာမှာ ရှိလဲ',
+    'adbGuideWhere': 'Samsung — Build number: About phone → Software information။ Developer options: Settings အောက်ဆုံးမှာ။\nXiaomi / Redmi / POCO — About phone ထဲက “OS version” (ဒါမှမဟုတ် “MIUI version”) ကို နှိပ်ပါ။ Developer options: Additional settings ထဲမှာ။\nOPPO / realme / OnePlus — About device → Version → Build number။ Developer options: System settings / Additional settings ထဲမှာ။\nvivo / iQOO — About phone → Software version။ Developer options: System management ထဲမှာ။\nTECNO / Infinix / itel၊ Pixel နဲ့ အခြားဖုန်းအများစု — About phone → Build number။ Developer options: System ထဲမှာ။',
+    'adbAdvanced': 'အဆင့်မြင့်',
+    'adbDetails': 'အသေးစိတ်',
+    'adbAndroidDataTitle': 'Android/data ထဲက ဗီဒီယိုများ',
+    'adbAndroidDataSub': 'Telegram နဲ့ အခြား app တွေက ဗီဒီယိုတွေကို Android/data နဲ့ Android/obb ထဲမှာ သိမ်းပါတယ်။ ချိတ်ပြီးတာနဲ့ Innocent က ရှာပြီး Local ထဲ ထည့်ပေးပါတယ်။',
+    'adbFound': 'ဗီဒီယို {n} ခု တွေ့ပါတယ်',
+    'adbLostTitle': 'Android/data ကို ကြည့်ဖို့ ADB ချိတ်ဆက်မှု လိုပါတယ်',
+    'adbLostBody': 'ချိတ်ဆက်မှု ပြုတ်သွားပါတယ် — များသောအားဖြင့် Wireless debugging ပိတ်သွားလို့ပါ။ ပြန်ဖွင့်လိုက်ပါ၊ ချိတ်ဆက်မှု ပြန်ရတာနဲ့ ဒီ folder က အလိုလို ပွင့်လာပါမယ်။',
+    'adbLostAction': 'ADB settings',
     'destinationIfExists': 'အမည်တူဖိုင် ရှိနှင့်ပြီးဖြစ်ပါက',
     'destinationKeepBoth': 'နှစ်ခုလုံး ထားရန်',
     'destinationSkip': 'ကျော်ရန်',
@@ -5119,6 +5248,49 @@ class AppStrings {
     'adbTipOppo': 'OPPO, realme และ OnePlus: หากจับคู่ได้แต่เชื่อมต่อค้าง ให้ปิดแล้วเปิดการแก้ไขข้อบกพร่องผ่าน Wi-Fi อีกครั้ง แล้วแตะ Connect',
     'adbTipTranssion': 'TECNO, Infinix และ itel: อนุญาตให้ Innocent ทำงานเบื้องหลัง (การตั้งค่าแบตเตอรี่หรือ Phone Master) มิฉะนั้นการแจ้งเตือนการจับคู่อาจถูกปิดก่อนที่คุณจะพิมพ์รหัส',
     'adbNotSupported': 'การแก้ไขข้อบกพร่องผ่าน Wi-Fi ต้องใช้ Android 11 ขึ้นไป',
+    'adbScreenTitle': 'เข้าถึง Android/data',
+    'adbHeroConnected': 'เชื่อมต่อแล้ว',
+    'adbHeroConnectedSub': 'Innocent เปิด Android/data ได้แล้ว การคัดลอกทำงานต่อในเบื้องหลัง และทำต่อจากจุดที่หยุดหากการเชื่อมต่อหลุด',
+    'adbHeroOff': 'ยังไม่ได้เชื่อมต่อ',
+    'adbHeroOffSub': 'การแก้ไขข้อบกพร่องผ่าน Wi-Fi มักปิดเองหลังรีสตาร์ทหรือเมื่อเปลี่ยน Wi-Fi เปิดอีกครั้งแล้วแตะเชื่อมต่อใหม่ ไม่ต้องใช้รหัสใหม่',
+    'adbHeroNew': 'ตั้งค่าครั้งเดียว ประมาณหนึ่งนาที',
+    'adbHeroNewSub': 'Innocent เชื่อมต่อกับการแก้ไขข้อบกพร่องผ่าน Wi-Fi ของโทรศัพท์เครื่องนี้เพื่อเปิด Android/data ไม่ต้องใช้คอมพิวเตอร์หรือรูท',
+    'adbHeroChecking': 'กำลังตรวจสอบการเชื่อมต่อ…',
+    'adbReconnect': 'เชื่อมต่อใหม่',
+    'adbOpenWireless': 'เปิดการแก้ไขข้อบกพร่องผ่าน Wi-Fi',
+    'adbFindVideos': 'ค้นหาวิดีโอใน Android/data',
+    'adbPairTitle': 'จับคู่โทรศัพท์นี้ (ครั้งแรกเท่านั้น)',
+    'adbPairNotif': 'จับคู่จากการแจ้งเตือน',
+    'adbPairNotifSub': 'แตะที่นี่ จากนั้นในการแก้ไขข้อบกพร่องผ่าน Wi-Fi แตะ “จับคู่อุปกรณ์ด้วยรหัส” แล้วพิมพ์ตัวเลข 6 หลักในการแจ้งเตือนของ Innocent ไม่ต้องแยกหน้าจอ',
+    'adbPairWaiting': 'กำลังรอรหัสในการแจ้งเตือน…',
+    'adbPairInApp': 'หรือพิมพ์รหัสที่นี่ (ให้หน้าต่างจับคู่ยังแสดงอยู่):',
+    'adbPairCodeLabel': 'รหัสจับคู่ (6 หลัก)',
+    'adbPairConnect': 'จับคู่และเชื่อมต่อ',
+    'adbConnect': 'เชื่อมต่อ',
+    'adbStayTitle': 'การเชื่อมต่อให้ต่อเนื่อง',
+    'adbStayWifi': 'อยู่บน Wi-Fi เดิม การแก้ไขข้อบกพร่องผ่าน Wi-Fi ผูกกับเครือข่ายที่เปิดไว้ การเปลี่ยน Wi-Fi จะปิดมัน',
+    'adbStayBackground': 'การคัดลอกทำงานในเบื้องหลังพร้อมการแจ้งเตือน และทำต่อจากจุดที่หยุดหากการเชื่อมต่อหลุด',
+    'adbStayTile': 'สวิตช์แตะครั้งเดียว: ตัวเลือกสำหรับนักพัฒนา → “ไทล์การตั้งค่าด่วนสำหรับนักพัฒนา” → การแก้ไขข้อบกพร่องผ่าน Wi-Fi แล้วจะอยู่ในแผงการตั้งค่าด่วน',
+    'adbStayBattery': 'โทรศัพท์บางรุ่นปิดเพื่อประหยัดแบตเตอรี่ บน Xiaomi, OPPO, realme, vivo, TECNO และ Infinix ให้ตั้งการใช้แบตเตอรี่ของ Innocent เป็น “ไม่จำกัด”',
+    'adbGuideTitle': 'วิธีเปิดและปิด ADB',
+    'adbGuideOnTitle': 'เปิด',
+    'adbGuideOn1': 'การตั้งค่า → เกี่ยวกับโทรศัพท์ → แตะ “หมายเลขบิลด์” 7 ครั้ง (ใส่รหัสล็อกหน้าจอถ้าถูกถาม) “ตัวเลือกสำหรับนักพัฒนา” จะปรากฏ',
+    'adbGuideOn2': 'ตัวเลือกสำหรับนักพัฒนา → “การแก้ไขข้อบกพร่องผ่าน Wi-Fi” → เปิด และอนุญาตบน Wi-Fi นี้',
+    'adbGuideOn3': 'ครั้งแรกเท่านั้น: “จับคู่อุปกรณ์ด้วยรหัส” แล้วพิมพ์ตัวเลข 6 หลักในการแจ้งเตือนของ Innocent',
+    'adbGuideOffTitle': 'ปิดเมื่อใช้งานเสร็จ',
+    'adbGuideOff1': 'ตัวเลือกสำหรับนักพัฒนา → “การแก้ไขข้อบกพร่องผ่าน Wi-Fi” → ปิด (หรือไทล์การตั้งค่าด่วน) Innocent ยังจำการจับคู่ไว้ ครั้งหน้าแค่เปิดแล้วแตะเชื่อมต่อใหม่',
+    'adbGuideOff2': 'หากต้องการซ่อนตัวเลือกสำหรับนักพัฒนา ให้ปิดสวิตช์หลักด้านบน โทรศัพท์บางรุ่นจะรีเซ็ตการตั้งค่านักพัฒนาอื่นด้วย',
+    'adbGuideSafety': 'การแก้ไขข้อบกพร่องผ่าน Wi-Fi ให้อุปกรณ์ที่จับคู่ควบคุมโทรศัพท์นี้ได้ จับคู่เฉพาะบน Wi-Fi ที่ไว้ใจได้ และปิดเมื่อใช้งานเสร็จ',
+    'adbGuideWhereTitle': 'หาได้ที่ไหนในโทรศัพท์ของคุณ',
+    'adbGuideWhere': 'Samsung — หมายเลขบิลด์: เกี่ยวกับโทรศัพท์ → ข้อมูลซอฟต์แวร์ ตัวเลือกสำหรับนักพัฒนา: ด้านล่างสุดของการตั้งค่า\nXiaomi / Redmi / POCO — แตะ “เวอร์ชัน OS” (หรือ “เวอร์ชัน MIUI”) ในเกี่ยวกับโทรศัพท์ ตัวเลือกสำหรับนักพัฒนา: การตั้งค่าเพิ่มเติม\nOPPO / realme / OnePlus — เกี่ยวกับอุปกรณ์ → เวอร์ชัน → หมายเลขบิลด์ ตัวเลือกสำหรับนักพัฒนา: การตั้งค่าระบบ / การตั้งค่าเพิ่มเติม\nvivo / iQOO — เกี่ยวกับโทรศัพท์ → เวอร์ชันซอฟต์แวร์ ตัวเลือกสำหรับนักพัฒนา: การจัดการระบบ\nTECNO / Infinix / itel, Pixel และรุ่นอื่นส่วนใหญ่ — เกี่ยวกับโทรศัพท์ → หมายเลขบิลด์ ตัวเลือกสำหรับนักพัฒนา: ระบบ',
+    'adbAdvanced': 'ขั้นสูง',
+    'adbDetails': 'รายละเอียด',
+    'adbAndroidDataTitle': 'วิดีโอใน Android/data',
+    'adbAndroidDataSub': 'Telegram และแอปอื่นเก็บวิดีโอไว้ใน Android/data และ Android/obb เมื่อเชื่อมต่อแล้ว Innocent จะค้นหาและเพิ่มลงใน Local',
+    'adbFound': 'พบวิดีโอ {n} รายการ',
+    'adbLostTitle': 'Android/data ต้องใช้การเชื่อมต่อ ADB',
+    'adbLostBody': 'การเชื่อมต่อหลุด ส่วนใหญ่เพราะการแก้ไขข้อบกพร่องผ่าน Wi-Fi ปิดลง เปิดอีกครั้ง โฟลเดอร์นี้จะเปิดเองทันทีที่เชื่อมต่อได้',
+    'adbLostAction': 'การตั้งค่า ADB',
     'destinationIfExists': 'หากมีไฟล์ชื่อเดียวกันอยู่แล้ว',
     'destinationKeepBoth': 'เก็บทั้งคู่',
     'destinationSkip': 'ข้าม',

@@ -18,6 +18,7 @@ import '../data/picker_media_source.dart';
 import '../data/picker_providers.dart';
 import '../../../core/services/adb/adb_service.dart';
 import '../../../core/ui/adb_required_dialog.dart';
+import '../../../core/ui/adb_lost_card.dart';
 import '../../settings/presentation/adb_connect_screen.dart';
 import 'package:photo_manager/photo_manager.dart';
 import 'picker_sort_dialog.dart';
@@ -1444,6 +1445,16 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
         if (snap.connectionState != ConnectionState.done) {
           return const Center(child: CircularProgressIndicator());
         }
+        if (snap.error is _AdbLost) {
+          // Not "no files": the connection is down. The card watches for it
+          // to come back and re-reads the folder by itself.
+          return AdbLostCard(
+            onBack: () {
+              if (!mounted) return;
+              setState(_invalidateListing);
+            },
+          );
+        }
         if (snap.hasError) {
           return _centerMsg(AppStrings.of(context).noItemsHere);
         }
@@ -1566,33 +1577,36 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
   Future<List<_DirEntry>> _listDir(Directory dir) async {
     // Android/data and Android/obb aren't readable via dart:io — list them over
     // ADB instead (real file-manager access to every app's cache), so the Files
-    // browser can browse and pick ANY file type there, not just videos. Only
-    // attempt this when connected; otherwise fall through to the (empty) dart:io
-    // read and the browser shows its connect hint.
+    // browser can browse and pick ANY file type there, not just videos. A
+    // folder that cannot be read throws [_AdbLost], and the browser shows the
+    // reconnect card instead of an empty folder.
     if (_isUnderAndroidData(dir.path)) {
-      final connected = await AdbRequiredDialog.isConnected();
-      if (connected) {
-        final adb = await AdbService.instance.listAdbDir(dir.path);
-        final out = [
-          for (final e in adb)
-            _DirEntry(
-              path: e.path,
-              name: e.name,
-              isDir: e.isDir,
-              sizeBytes: e.sizeBytes,
-              dateMs: 0,
-              adbSrcPath: e.path,
-            ),
-        ];
-        // listAdbDir already sorts folders-first by name; honour the picker's
-        // sort for files only when the user picked size/date (name is default).
-        if (_view.sort != PickerSort.name || _view.dir != PickerDir.asc) {
-          _applyEntrySort(out);
-        }
-        return out;
+      var adb = await AdbService.instance.listAdbDirOrNull(dir.path);
+      // A dropped connection is re-established by the engine on the next
+      // command (saved port, then discovery): one more try before the folder
+      // is called unreadable.
+      if (adb == null) {
+        await Future<void>.delayed(const Duration(milliseconds: 1200));
+        adb = await AdbService.instance.listAdbDirOrNull(dir.path);
       }
-      // Not connected → empty; the browser's Android/data hint covers this.
-      return const [];
+      if (adb == null) throw const _AdbLost();
+      final out = [
+        for (final e in adb)
+          _DirEntry(
+            path: e.path,
+            name: e.name,
+            isDir: e.isDir,
+            sizeBytes: e.sizeBytes,
+            dateMs: 0,
+            adbSrcPath: e.path,
+          ),
+      ];
+      // listAdbDir already sorts folders-first by name; honour the picker's
+      // sort for files only when the user picked size/date (name is default).
+      if (_view.sort != PickerSort.name || _view.dir != PickerDir.asc) {
+        _applyEntrySort(out);
+      }
+      return out;
     }
     final dirs = <_DirEntry>[];
     final rawFiles = <File>[];
@@ -2318,4 +2332,9 @@ class _MediaFolderCoverState extends State<_MediaFolderCover> {
           const Icon(Icons.image_outlined, color: AppColors.white40),
     );
   }
+}
+
+/// An Android/data folder that could not be read: the ADB connection is down.
+class _AdbLost implements Exception {
+  const _AdbLost();
 }

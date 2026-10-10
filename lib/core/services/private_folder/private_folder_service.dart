@@ -1320,6 +1320,46 @@ class PrivateFolderService {
     return entry;
   }
 
+  /// The older two-step import: pull into the cache, copy into the vault,
+  /// verify, delete the cache copy. Kept for a vault directory the native
+  /// side does not recognise.
+  Future<void> _importAdbViaCache(
+    String src,
+    String destPath, {
+    void Function(int copied, int total)? onProgress,
+    bool Function()? isCancelled,
+  }) async {
+    final pulled = await AdbService.instance.pullForPlayback(src);
+    if (pulled.startsWith('ERROR')) {
+      throw Exception('Could not pull Android/data file over ADB — '
+          'connect ADB and try again.');
+    }
+    final tmp = File(pulled);
+    if (!await tmp.exists()) {
+      throw Exception('Pulled file missing — vault import aborted.');
+    }
+    final srcLen = await tmp.length();
+    await _copyWithProgress(tmp, destPath, srcLen,
+        onProgress: onProgress, isCancelled: isCancelled);
+    final dest = File(destPath);
+    final destLen = await dest.length();
+    final srcSig = await _fileSignature(tmp, srcLen);
+    final destSig = await _fileSignature(dest, destLen);
+    try {
+      await tmp.delete();
+    } catch (e) {
+      if (kDebugMode) debugPrint('private_folder_service.best-effort: $e');
+    }
+    if (destLen != srcLen || srcLen == 0 || srcSig != destSig) {
+      try {
+        await dest.delete();
+      } catch (e) {
+        if (kDebugMode) debugPrint('private_folder_service.best-effort: $e');
+      }
+      throw Exception('Vault copy verification failed (integrity).');
+    }
+  }
+
   /// Vault an Android/data file reached over ADB (adb:// uri). Pulls the bytes
   /// to a local temp path first (needs a live ADB connection at THIS moment),
   /// then copies + verifies into the vault and deletes the temp. Afterwards the
@@ -1335,58 +1375,33 @@ class PrivateFolderService {
     bool Function()? isCancelled,
   }) async {
     final src = videoUri.substring('adb://'.length);
-    String pulled;
-    try {
-      pulled = await AdbService.instance.pullForPlayback(src);
-    } catch (e) {
-      pulled = 'ERROR: $e';
-    }
-    if (pulled.startsWith('ERROR')) {
-      // Couldn't pull (no connection / read failure) — record a soft entry so
-      // the item still appears, and surface the failure to the caller's
-      // ok/failed tally by throwing.
-      throw Exception('Could not pull Android/data file over ADB — '
-          'connect ADB and try again.');
-    }
-
-    final tmp = File(pulled);
-    if (!await tmp.exists()) {
-      throw Exception('Pulled file missing — vault import aborted.');
-    }
-    final srcLen = await tmp.length();
     final dir = await _vaultDir();
-    // Prefer the real extension from the source path; fall back to the pulled
-    // temp's extension.
-    final ext =
-        p.extension(src).isNotEmpty ? p.extension(src) : p.extension(pulled);
+    final ext = p.extension(src).isNotEmpty ? p.extension(src) : '.mp4';
     final destPath = p.join(dir.path, '${_randomVaultName(24)}$ext');
 
-    // Copy the pulled bytes into the vault, then verify (length + head/tail
-    // fingerprint) exactly like the on-device path.
-    await _copyWithProgress(tmp, destPath, srcLen,
-        onProgress: onProgress, isCancelled: isCancelled);
-    final dest = File(destPath);
-    final destLen = await dest.length();
-    final srcSig = await _fileSignature(tmp, srcLen);
-    final destSig = await _fileSignature(dest, destLen);
-    if (destLen != srcLen || srcLen == 0 || srcSig != destSig) {
-      try {
-        await dest.delete();
-      } catch (e) {
-        if (kDebugMode) debugPrint('private_folder_service.best-effort: $e');
+    // STRAIGHT INTO THE VAULT. This used to copy the file into the cache
+    // first and then into the vault — twice the free space (a 2 GB film
+    // needed 4 GB), twice the time, and no progress at all while the first
+    // copy ran over ADB. The native copy also resumes after a dropped
+    // connection, and checks the source did not change while it ran.
+    final direct = await AdbService.instance.pullToVault(src, destPath,
+        onProgress: onProgress == null
+            ? null
+            : (done, total) => onProgress(done, total > 0 ? total : done));
+    if (direct != null) {
+      if (!direct.startsWith('destination is not the vault') &&
+          !direct.startsWith('channel error')) {
+        throw Exception('Could not copy the Android/data file over ADB '
+            '($direct). What arrived is kept — try again and it carries on.');
       }
-      // Clean up the temp too before aborting.
-      try {
-        await tmp.delete();
-      } catch (_) {}
-      throw Exception('Vault copy verification failed (integrity).');
+      // A vault this side does not recognise, or an older engine: the
+      // two-step copy, as before.
+      await _importAdbViaCache(src, destPath,
+          onProgress: onProgress, isCancelled: isCancelled);
     }
-
-    // Remove the pulled temp — the vault now holds the only local copy.
-    try {
-      await tmp.delete();
-    } catch (e) {
-      if (kDebugMode) debugPrint('private_folder_service.best-effort: $e');
+    final dest = File(destPath);
+    if (!await dest.exists() || await dest.length() == 0) {
+      throw Exception('Vault copy missing after the copy — import aborted.');
     }
 
     final entry = PrivateEntry(

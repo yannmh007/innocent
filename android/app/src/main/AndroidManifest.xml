@@ -351,6 +351,13 @@
             android:exported="false"
             android:foregroundServiceType="dataSync" />
 
+        <!-- A copy out of Android/data over the phone's own wireless
+             debugging, kept alive (and its Wi-Fi awake) while it runs. -->
+        <service
+            android:name=".AdbWorkService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
         <!-- v0.89: the in-app ADB pairing helper. Keeps mDNS pairing discovery
              alive in the background and shows a reply notification so the user
              can type the 6-digit code from the shade with NO split-screen. -->

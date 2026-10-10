@@ -92,6 +92,11 @@ class AdbService {
   void Function(String result)? _pairResultListener;
   bool _handlerInstalled = false;
 
+  /// Progress of copies out of Android/data, by source path
+  /// (`onPullProgress`): bytes so far, and the file's size (-1 unknown).
+  final Map<String, void Function(int done, int total)> _pullListeners =
+      <String, void Function(int done, int total)>{};
+
   /// Register a callback for results from the notification pairing service.
   /// The ADB screen calls this in initState and clears it in dispose. Installs
   /// the method-call handler lazily so we don't intercept anything until a
@@ -114,6 +119,17 @@ class AdbService {
               ? args['result'] as String
               : '';
           _pairResultListener?.call(res);
+          break;
+        case 'onPullProgress':
+          final args = call.arguments;
+          if (args is Map && args['src'] is String) {
+            final done = args['done'];
+            final total = args['total'];
+            _pullListeners[args['src'] as String]?.call(
+              done is int ? done : 0,
+              total is int ? total : -1,
+            );
+          }
           break;
       }
       return null;
@@ -318,7 +334,14 @@ class AdbService {
   /// Output line format: "<type>|<size>|<path>" where type is 'd' or 'f'.
   /// Path is last so spaces in names are preserved. Sorted folders-first then
   /// by name (case-insensitive).
-  Future<List<AdbFileEntry>> listAdbDir(String dirPath) async {
+  Future<List<AdbFileEntry>> listAdbDir(String dirPath) async =>
+      await listAdbDirOrNull(dirPath) ?? const <AdbFileEntry>[];
+
+  /// [listAdbDir], but null when the folder could not be READ — no
+  /// connection, a dropped one — as opposed to read and empty. A browser
+  /// must not show the first as the second: "no files" for a dropped
+  /// connection reads as "the files are gone".
+  Future<List<AdbFileEntry>?> listAdbDirOrNull(String dirPath) async {
     // Escape single quotes in the path for the shell (' → '\'').
     final safe = dirPath.replaceAll("'", "'\\''");
     // -maxdepth/-mindepth 1 = immediate children only. printf via stat gives a
@@ -331,10 +354,10 @@ class AdbService {
     try {
       out = await shellRouted(cmd, timeoutMs: 30000);
     } catch (e) {
-      return const [];
+      return null;
     }
     if (out.startsWith('ERROR:') || out.startsWith('Channel error')) {
-      return const [];
+      return null;
     }
     final entries = <AdbFileEntry>[];
     for (final raw in out.split('\n')) {
@@ -351,7 +374,17 @@ class AdbService {
   /// M3: copy a file the app can't read directly (inside Android/data) out to a
   /// readable cache via ADB, and return the local path to play. Returns an
   /// "ERROR: …" string on failure.
-  Future<String> pullForPlayback(String srcPath) async {
+  ///
+  /// The copy RESUMES: a connection that drops part way is re-established and
+  /// the copy carries on from the bytes it already has, and a copy that
+  /// still fails keeps them for the next call. It runs under a foreground
+  /// service, so leaving the app or the screen going off does not stop it.
+  Future<String> pullForPlayback(String srcPath,
+      {void Function(int done, int total)? onProgress}) async {
+    if (onProgress != null) {
+      _ensureHandler();
+      _pullListeners[srcPath] = onProgress;
+    }
     try {
       final r = await _channel.invokeMethod<String>('pullForPlayback', {
         'src': srcPath,
@@ -359,6 +392,32 @@ class AdbService {
       return r ?? 'ERROR: no response';
     } catch (e) {
       return 'ERROR: channel error: $e';
+    } finally {
+      if (onProgress != null) _pullListeners.remove(srcPath);
+    }
+  }
+
+  /// Copy an Android/data file straight into the private vault at
+  /// [destPath] — no copy in the cache first, so it needs the file's size
+  /// free, not twice it. Resumes like [pullForPlayback]. Null on success,
+  /// or why it failed.
+  Future<String?> pullToVault(String srcPath, String destPath,
+      {void Function(int done, int total)? onProgress}) async {
+    if (onProgress != null) {
+      _ensureHandler();
+      _pullListeners[srcPath] = onProgress;
+    }
+    try {
+      final r = await _channel.invokeMethod<String>('pullToVault', {
+        'src': srcPath,
+        'dest': destPath,
+      });
+      if (r == null) return 'no response';
+      return r == 'OK' ? null : r;
+    } catch (e) {
+      return 'channel error: $e';
+    } finally {
+      if (onProgress != null) _pullListeners.remove(srcPath);
     }
   }
 

@@ -260,6 +260,20 @@ class MainActivity : AudioServiceFragmentActivity() {
     // can reach the ADB channel (the pairing service broadcasts its result back
     // and we forward it to Flutter as `onPairResult`).
     private var adbChannel: MethodChannel? = null
+
+    /**
+     * A copy out of Android/data, as far as it has got: to the screen that
+     * asked (`onPullProgress`) and to the notification that keeps it alive.
+     */
+    private fun reportPull(src: String, done: Long, total: Long) {
+        AdbWorkService.progress(this, src, done, total)
+        runOnUiThread {
+            adbChannel?.invokeMethod(
+                "onPullProgress",
+                mapOf("src" to src, "done" to done, "total" to total),
+            )
+        }
+    }
     private var adbPairResultReceiver: BroadcastReceiver? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -1700,8 +1714,32 @@ class MainActivity : AudioServiceFragmentActivity() {
                 "pullForPlayback" -> {
                     val src = call.argument<String>("src") ?: ""
                     thread(start = true, isDaemon = true, name = "adb-pull") {
-                        val out = AdbManager.pullForPlayback(this@MainActivity, src)
+                        // Kept alive while it copies (AdbWorkService): the
+                        // viewer can leave the app, the screen can go off.
+                        AdbWorkService.begin(this@MainActivity, src)
+                        val out = try {
+                            AdbManager.pullForPlayback(this@MainActivity, src) { done, total ->
+                                reportPull(src, done, total)
+                            }
+                        } finally {
+                            AdbWorkService.end(this@MainActivity, src)
+                        }
                         runOnUiThread { result.success(out) }
+                    }
+                }
+                "pullToVault" -> {
+                    val src = call.argument<String>("src") ?: ""
+                    val dest = call.argument<String>("dest") ?: ""
+                    thread(start = true, isDaemon = true, name = "adb-pull-vault") {
+                        AdbWorkService.begin(this@MainActivity, src)
+                        val err = try {
+                            AdbManager.pullToVault(this@MainActivity, src, dest) { done, total ->
+                                reportPull(src, done, total)
+                            }
+                        } finally {
+                            AdbWorkService.end(this@MainActivity, src)
+                        }
+                        runOnUiThread { result.success(err ?: "OK") }
                     }
                 }
                 "streamUrl" -> {
