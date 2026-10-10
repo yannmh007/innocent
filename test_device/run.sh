@@ -345,6 +345,14 @@ for flow in $FLOWS; do
   # handed over. Each must reach a first frame.
   case "$flow" in openwith)
     film="lib_media/Movies/Perf Test/aaa_play_720p.mp4"
+    # The media set is not on every run (run 38018583863 skipped this flow
+    # for want of it): make a film, as the newvideo flow does.
+    if [ ! -f "$film" ] && command -v ffmpeg >/dev/null 2>&1; then
+      film=/tmp/lab_open.mp4
+      ffmpeg -loglevel error -y -f lavfi -i testsrc2=size=1280x720:rate=24 \
+        -f lavfi -i sine=frequency=330 -t 90 -c:v libx264 -preset veryfast \
+        -pix_fmt yuv420p -c:a aac -b:a 96k -movflags +faststart "$film"
+    fi
     if [ ! -f "$film" ]; then log "flow openwith: no film — skipped"; continue; fi
     adb push "$film" /sdcard/Download/innocent_lab_play.mp4 >/dev/null 2>&1
     adb push "$film" /sdcard/Download/lab_open_2.mp4 >/dev/null 2>&1
@@ -369,6 +377,7 @@ for flow in $FLOWS; do
     adb shell log -p i -t flutter "LAB phase $flow end" >/dev/null 2>&1 || true
     adb shell am force-stop "$PKG"
     adb shell rm -f /sdcard/Download/innocent_lab_play.mp4 /sdcard/Download/lab_open_2.mp4 >/dev/null 2>&1 || true
+    rm -f /tmp/lab_open.mp4
     log "flow $flow done"
     continue
     ;;

@@ -53,6 +53,15 @@ void main() {
     expect(allows(climbs: 2), isTrue);
   });
 
+  test('a copy filling its buffer just after its first picture is not a stall', () {
+    // Device lab run 38018583863: counted as one, it put the first climb
+    // at 94 s on a line carrying four times the next rung.
+    expect(ClimbRule.isStall(const Duration(milliseconds: 200)), isFalse);
+    expect(ClimbRule.isStall(const Duration(seconds: 4)), isFalse);
+    expect(ClimbRule.isStall(const Duration(seconds: 5)), isTrue);
+    expect(ClimbRule.isStall(const Duration(minutes: 3)), isTrue);
+  });
+
   group('the first copy, nothing measured', () {
     final ladder = <Rendition>[
       const Rendition(height: 360, kbps: 612, url: 'a'),

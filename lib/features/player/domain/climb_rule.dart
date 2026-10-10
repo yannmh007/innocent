@@ -40,6 +40,18 @@ class ClimbRule {
   /// A minute between asks of the server, yes or no.
   static const Duration betweenTries = Duration(seconds: 60);
 
+  /// A wait this soon after a copy's first picture is that copy FILLING
+  /// ITS BUFFER, not the line failing: libmpv shows the first frame and
+  /// then holds for its cache to reach `cache-pause-wait`. Counted as a
+  /// stall, it held every first climb back a minute and a half (device lab
+  /// run 38018583863: Sintel's step from 360p to 720p came at 94 s, on a
+  /// line measured at 4 to 22 Mbit/s from the twelfth second).
+  static const Duration startFill = Duration(seconds: 5);
+
+  /// Whether a wait for the buffer, [sinceFirstFrame] after this copy's
+  /// first picture, counts as a stall for [afterStall].
+  static bool isStall(Duration sinceFirstFrame) => sinceFirstFrame >= startFill;
+
   /// Seconds of film that must be buffered ahead: a reopen spends them.
   static const double minBufferedSeconds = 15;
 

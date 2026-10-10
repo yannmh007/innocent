@@ -120,6 +120,9 @@ class PlayerController extends StateNotifier<PlayerState> {
   /// 13 MB/s link.
   bool _firstFrameSeen = false;
 
+  /// When this copy's first picture came, for [ClimbRule.isStall].
+  DateTime? _firstFrameAt;
+
   /// When the current file was handed to libmpv. Used only to measure the
   /// black screen, never to decide anything.
   DateTime? _openStartedAt;
@@ -904,7 +907,12 @@ class PlayerController extends StateNotifier<PlayerState> {
         final uri = _currentUri;
         if (uri != null && _isNetworkUri(uri)) {
           final opening = !_firstFrameSeen;
-          if (!opening) _lastStallAt = DateTime.now();
+          final shown = _firstFrameAt;
+          if (!opening &&
+              shown != null &&
+              ClimbRule.isStall(DateTime.now().difference(shown))) {
+            _lastStallAt = DateTime.now();
+          }
           // Tier 1 — soft caption. While opening it is a statement of fact
           // ("still opening"); mid-playback it is a diagnosis ("slow
           // connection"), and the screen picks the wording off `isOpening`.
@@ -1917,6 +1925,7 @@ class PlayerController extends StateNotifier<PlayerState> {
   void _markFirstFrame() {
     if (_firstFrameSeen) return;
     _firstFrameSeen = true;
+    _firstFrameAt = DateTime.now();
     final started = _openStartedAt;
     _openStartedAt = null;
     if (mounted && state.isOpening) {
