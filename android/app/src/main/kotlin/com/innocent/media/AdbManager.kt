@@ -352,7 +352,7 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
                         val err = if (attempt == 0) {
                             firstConnect(mgr)
                         } else {
-                            if (reconnectFromSaved(context, mgr)) null else lastErr
+                            if (reconnectFromSaved(context, mgr, heal = true)) null else lastErr
                         }
                         if (!mgr.isConnected) return errorString(err)
                     }
@@ -404,7 +404,7 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
         fun reconnectAndRun(context: Context, command: String): String =
             interactive {
                 val out = execRead(context, "shell:$command") { mgr ->
-                    if (reconnectFromSaved(context, mgr)) null
+                    if (reconnectFromSaved(context, mgr, heal = true)) null
                     else "couldn't reach the device over the saved port or mDNS"
                 }
                 if (out.startsWith("ERROR")) out
@@ -454,7 +454,7 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
             try {
                 return execRead(context, "shell:$command", deadlineMs) { mgr ->
                     when {
-                        reconnectFromSaved(context, mgr) -> null
+                        reconnectFromSaved(context, mgr, heal = true) -> null
                         !isScan ->
                             "not connected \u2014 open the ADB screen and " +
                                 "connect first."
@@ -470,7 +470,7 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
                         // nothing; a Connect button that ignores them costs
                         // them their trust in the screen.
                         shouldYield() -> busy
-                        scanLocalPort(context, mgr) -> null
+                        !sweptWithin(2000L) && scanLocalPort(context, mgr) -> null
                         shouldYield() -> busy
                         else -> mdnsConnect(context, 12000L)
                     }
@@ -482,7 +482,11 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
 
 
         /** Reconnect: try the saved host:port (loopback first), then mDNS. */
-        private fun reconnectFromSaved(context: Context, mgr: AbsAdbConnectionManager): Boolean {
+        private fun reconnectFromSaved(
+            context: Context,
+            mgr: AbsAdbConnectionManager,
+            heal: Boolean = false,
+        ): Boolean {
             // LIGHT reconnect: try only the remembered port, bounded so it can't
             // wedge. This runs automatically when the ADB screen opens and when
             // an in-session op needs the socket back, so it MUST be quick and
@@ -507,11 +511,13 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
             }
             if (mgr.isConnected) return true
             val last = lastConnect(context)
+            var stalePort: Int? = null
             if (last.isNotEmpty()) {
                 val idx = last.lastIndexOf(':')
                 if (idx > 0) {
                     val h = last.substring(0, idx)
                     val p = last.substring(idx + 1).toIntOrNull()
+                    stalePort = p
                     if (p != null) {
                         for (host in candidateHosts(h)) {
                             when (tryConnectBounded(mgr, host, p, 2500L)) {
@@ -526,7 +532,97 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
                     }
                 }
             }
-            return mgr.isConnected
+            if (mgr.isConnected) return true
+            // Never connected: nothing to heal (an unpaired key is refused).
+            // And only for callers holding [opLock]: the sweep connects and
+            // disconnects the shared manager over and over, which the
+            // lock-free stream and copy paths must never race (A6b).
+            if (last.isEmpty() || !heal) return false
+            return healMovedPort(context, mgr, stalePort)
+        }
+
+        /**
+         * THE PORT MOVED. Wireless debugging listens on a NEW port every time
+         * it is switched on — after a restart, a Wi-Fi change, the quick
+         * settings tile — so the remembered port is stale exactly when someone
+         * has just turned it back on.
+         *
+         * This used to stop at the remembered port. "Turn it on again and tap
+         * Reconnect — no new code needed" could therefore never work: Reconnect
+         * and the "connection lost" card both tried only the old port, failed,
+         * and the only way out was the full Connect, or pairing again, which
+         * is what people did (10 Oct: an S23 Ultra, already paired, its new
+         * port 37609, re-pairing because Reconnect kept failing).
+         *
+         * Now, when Settings says Wireless debugging is ON, the new port is
+         * looked for: adbd's own `service.adb.tls.port` property first, where
+         * this phone lets an app read it (instant), then the loopback sweep —
+         * at most once every [HEAL_EVERY_MS], and it stands down for any tap
+         * that is waiting (A7). With Wireless debugging off nothing is
+         * scanned: there is nothing to find, and the light path stays light.
+         */
+        private fun healMovedPort(
+            context: Context,
+            mgr: AbsAdbConnectionManager,
+            stalePort: Int?,
+        ): Boolean {
+            if (Build.VERSION.SDK_INT < 30 || !wirelessDebuggingOn(context)) return false
+            val announced = tlsPortFromProperty()
+            if (announced != null && announced != stalePort) {
+                when (tryConnectBounded(mgr, "127.0.0.1", announced, 2500L)) {
+                    ConnectTry.CONNECTED -> {
+                        saveLastConnect(context, "127.0.0.1", announced)
+                        return true
+                    }
+                    ConnectTry.ABANDONED -> return false
+                    ConnectTry.FAILED -> Unit
+                }
+            }
+            val now = android.os.SystemClock.elapsedRealtime()
+            if (now - lastHealSweepAt < HEAL_EVERY_MS) return false
+            lastHealSweepAt = now
+            return scanLocalPort(context, mgr)
+        }
+
+        /** No more than one loopback sweep this often from the light path. */
+        private const val HEAL_EVERY_MS = 15_000L
+
+        @Volatile
+        private var lastHealSweepAt = 0L
+
+        /** Whether the heal's sweep ran in the last [ms]. */
+        private fun sweptWithin(ms: Long): Boolean =
+            android.os.SystemClock.elapsedRealtime() - lastHealSweepAt < ms
+
+        /** Wireless debugging's switch, as Settings has it. */
+        private fun wirelessDebuggingOn(context: Context): Boolean = try {
+            Settings.Global.getInt(context.contentResolver, "adb_wifi_enabled", 0) == 1
+        } catch (_: Throwable) {
+            false
+        }
+
+        /**
+         * The port Wireless debugging listens on, from adbd's
+         * `service.adb.tls.port` property; null where the phone does not let an
+         * app read it, or it is not set (the sweep finds the port then).
+         */
+        private fun tlsPortFromProperty(): Int? {
+            if (Build.VERSION.SDK_INT < 30) return null
+            return try {
+                val p = ProcessBuilder("getprop", "service.adb.tls.port")
+                    .redirectErrorStream(true)
+                    .start()
+                if (!p.waitFor(1500L, TimeUnit.MILLISECONDS)) {
+                    p.destroy()
+                    return null
+                }
+                p.inputStream.bufferedReader().use { it.readText() }
+                    .trim()
+                    .toIntOrNull()
+                    ?.takeIf { it in 1..65535 }
+            } catch (_: Throwable) {
+                null
+            }
         }
 
         /**
@@ -1473,8 +1569,10 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
                 // mDNS. This is the full/deep connect used for the explicit
                 // Connect button, right after pairing, and the after-reboot
                 // receiver — none of which block interactive pairing.
-                if (reconnectFromSaved(context, mgr)) null
-                else if (scanLocalPort(context, mgr)) null
+                // (The heal inside reconnectFromSaved may have swept just now;
+                // a second sweep straight after would find the same nothing.)
+                if (reconnectFromSaved(context, mgr, heal = true)) null
+                else if (!sweptWithin(2000L) && scanLocalPort(context, mgr)) null
                 else mdnsConnect(context, timeoutMs)
             }
             if (out.startsWith("ERROR")) out

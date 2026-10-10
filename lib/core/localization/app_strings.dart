@@ -1733,6 +1733,9 @@ class AppStrings {
   String get adbHeroNewSub => _s('adbHeroNewSub');
   String get adbHeroChecking => _s('adbHeroChecking');
   String get adbReconnect => _s('adbReconnect');
+  String get adbReconnecting => _s('adbReconnecting');
+  String get adbPairedAlready => _s('adbPairedAlready');
+  String get adbPairAgain => _s('adbPairAgain');
   String get adbOpenWireless => _s('adbOpenWireless');
   String get adbFindVideos => _s('adbFindVideos');
   String get adbPairTitle => _s('adbPairTitle');
@@ -2085,6 +2088,9 @@ class AppStrings {
     'adbHeroNewSub': 'Innocent connects to this phone\'s own Wireless debugging to open Android/data — no computer, no root.',
     'adbHeroChecking': 'Checking the connection…',
     'adbReconnect': 'Reconnect',
+    'adbReconnecting': 'Reconnecting — finding Wireless debugging’s new port…',
+    'adbPairedAlready': 'This phone is paired — no new code needed. If it dropped, turn Wireless debugging on and tap Reconnect.',
+    'adbPairAgain': 'Pair again',
     'adbOpenWireless': 'Open Wireless debugging',
     'adbFindVideos': 'Find videos in Android/data',
     'adbPairTitle': 'Pair this phone (first time only)',
@@ -3726,11 +3732,14 @@ class AppStrings {
     'adbHeroConnected': 'ချိတ်ဆက်ထားပါပြီ',
     'adbHeroConnectedSub': 'Innocent က Android/data ကို ဖွင့်ကြည့်နိုင်ပါပြီ။ ဖိုင်ကူးတာတွေ background မှာ ဆက်လုပ်ပြီး connection ပြုတ်သွားရင် ရပ်သွားတဲ့နေရာကနေ ပြန်ဆက်ပါတယ်။',
     'adbHeroOff': 'ယခု ချိတ်ဆက်မထားပါ',
-    'adbHeroOffSub': 'ဖုန်းပြန်ဖွင့်တဲ့အခါ ဒါမှမဟုတ် Wi-Fi ပြောင်းတဲ့အခါ Wireless debugging က အလိုလို ပိတ်သွားတတ်ပါတယ်။ ပြန်ဖွင့်ပြီး Reconnect ကို နှိပ်ပါ — code အသစ် မလိုပါ။',
+    'adbHeroOffSub': 'ဖုန်းပြန်ဖွင့်တဲ့အခါ ဒါမှမဟုတ် Wi-Fi ပြောင်းတဲ့အခါ Wireless debugging က အလိုလို ပိတ်သွားတတ်ပါတယ်။ ပြန်ဖွင့်ပြီး ပြန်ချိတ်မယ် ကို နှိပ်ပါ — code အသစ် မလိုပါ။',
     'adbHeroNew': 'တစ်ကြိမ်ပဲ ပြင်ဆင်ရပါတယ် — ၁ မိနစ်ခန့်',
     'adbHeroNewSub': 'Android/data ကို ဖွင့်ဖို့ Innocent က ဒီဖုန်းရဲ့ ကိုယ်ပိုင် Wireless debugging ကို ချိတ်ပါတယ် — ကွန်ပျူတာ မလို၊ root မလိုပါ။',
     'adbHeroChecking': 'ချိတ်ဆက်မှုကို စစ်နေပါတယ်…',
     'adbReconnect': 'ပြန်ချိတ်မယ်',
+    'adbReconnecting': 'ပြန်ချိတ်နေတယ် — Wireless debugging ရဲ့ port အသစ်ကို ရှာနေပါတယ်…',
+    'adbPairedAlready': 'ဒီဖုန်းကို pair ပြီးသားပါ — code အသစ် မလိုပါ။ ပြုတ်သွားရင် Wireless debugging ကိုဖွင့်ပြီး ပြန်ချိတ်မယ် ကိုနှိပ်ပါ။',
+    'adbPairAgain': 'ထပ် pair မယ်',
     'adbOpenWireless': 'Wireless debugging ကို ဖွင့်မယ်',
     'adbFindVideos': 'Android/data ထဲက ဗီဒီယိုတွေ ရှာမယ်',
     'adbPairTitle': 'ဒီဖုန်းကို pair လုပ်ပါ (ပထမအကြိမ်သာ)',
@@ -5365,6 +5374,9 @@ class AppStrings {
     'adbHeroNewSub': 'Innocent เชื่อมต่อกับการแก้ไขข้อบกพร่องผ่าน Wi-Fi ของโทรศัพท์เครื่องนี้เพื่อเปิด Android/data ไม่ต้องใช้คอมพิวเตอร์หรือรูท',
     'adbHeroChecking': 'กำลังตรวจสอบการเชื่อมต่อ…',
     'adbReconnect': 'เชื่อมต่อใหม่',
+    'adbReconnecting': 'กำลังเชื่อมต่อใหม่ — กำลังหาพอร์ตใหม่ของการแก้ไขข้อบกพร่องไร้สาย…',
+    'adbPairedAlready': 'จับคู่โทรศัพท์นี้แล้ว — ไม่ต้องใช้รหัสใหม่ ถ้าหลุด ให้เปิดการแก้ไขข้อบกพร่องไร้สายแล้วแตะเชื่อมต่อใหม่',
+    'adbPairAgain': 'จับคู่อีกครั้ง',
     'adbOpenWireless': 'เปิดการแก้ไขข้อบกพร่องผ่าน Wi-Fi',
     'adbFindVideos': 'ค้นหาวิดีโอใน Android/data',
     'adbPairTitle': 'จับคู่โทรศัพท์นี้ (ครั้งแรกเท่านั้น)',
