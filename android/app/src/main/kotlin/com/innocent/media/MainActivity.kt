@@ -1807,6 +1807,22 @@ class MainActivity : AudioServiceFragmentActivity() {
                         runOnUiThread { result.success(status) }
                     }
                 }
+                // The ADB engine's step-by-step log, for "Copy report" and
+                // "Send report" on the ADB screen.
+                "adbLog" -> {
+                    AdbLog.attach(this)
+                    result.success(AdbLog.text())
+                }
+                "adbLogClear" -> {
+                    AdbLog.attach(this)
+                    AdbLog.clear()
+                    result.success(true)
+                }
+                "adbLogNote" -> {
+                    AdbLog.attach(this)
+                    AdbLog.add(call.argument<String>("text") ?: "")
+                    result.success(true)
+                }
                 "reconnectAndRun" -> {
                     val command = call.argument<String>("command") ?: "id"
                     thread(start = true, isDaemon = true, name = "adb-reconn") {

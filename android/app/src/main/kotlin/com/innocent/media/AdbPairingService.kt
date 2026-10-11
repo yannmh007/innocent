@@ -152,6 +152,8 @@ class AdbPairingService : Service() {
         }
         pairing = true
         update(STATUS_PAIRING)
+        AdbLog.attach(applicationContext)
+        AdbLog.add("== Pair from the notification (code typed, ${code.length} digits)")
         thread(start = true, isDaemon = true, name = "adb-pair-do") {
             val result = try {
                 // TIER 1: pair AND immediately connect + save the port, while WD
@@ -164,6 +166,7 @@ class AdbPairingService : Service() {
                 "ERROR: ${e.javaClass.simpleName}: ${e.message}"
             }
             val ok = result.startsWith("OK")
+            AdbLog.add("pair from notification: ${if (ok) "done" else result.take(160)}")
             broadcastResult(applicationContext, result)
             pairing = false
             if (ok) {

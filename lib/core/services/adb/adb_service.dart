@@ -243,6 +243,30 @@ class AdbService {
     }
   }
 
+  /// The ADB engine's step-by-step log (see AdbLog.kt): every connect,
+  /// reconnect, sweep and pairing attempt and why it failed. Empty when it
+  /// cannot be read.
+  Future<String> engineLog() async {
+    try {
+      return await _channel.invokeMethod<String>('adbLog') ?? '';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  Future<void> clearEngineLog() async {
+    try {
+      await _channel.invokeMethod<bool>('adbLogClear');
+    } catch (_) {}
+  }
+
+  /// A line from the app's side into the same log (what the screen showed).
+  Future<void> noteInEngineLog(String text) async {
+    try {
+      await _channel.invokeMethod<bool>('adbLogNote', {'text': text});
+    } catch (_) {}
+  }
+
   /// The last host:port that successfully connected (empty if never), so the
   /// UI can pre-fill it and reconnect without retyping.
   Future<String> lastConnect() async {

@@ -62,7 +62,7 @@ class DiagnosticsReport {
   static final RegExp _storagePath = RegExp(r'/(?:storage|sdcard|data/user|data/data)/\S+');
 
   /// Everything shaped like something private, replaced by what it was.
-  @visibleForTesting
+  /// Also used by the ADB screen's copied report.
   static String redact(String text) => text
       .replaceAll(_url, '<link>')
       .replaceAll(_email, '<email>')
@@ -76,6 +76,7 @@ class DiagnosticsReport {
     required String session,
     required String previous,
     String cpu = '',
+    String adb = '',
   }) {
     final parts = <String>[
       '== this session (breadcrumbs)',
@@ -90,6 +91,12 @@ class DiagnosticsReport {
       if (previous.trim().isNotEmpty) ...<String>[
         '== previous session (it may have ended in a crash)',
         previous.trim(),
+      ],
+      // Last, because a long trail keeps its newest end: the ADB report is
+      // what was asked for when it is there.
+      if (adb.trim().isNotEmpty) ...<String>[
+        '== adb (connection report)',
+        adb.trim(),
       ],
     ];
     final all = redact(parts.join('\n'));
@@ -115,7 +122,7 @@ class DiagnosticsReport {
   }
 
   /// Sends a report and returns its code. Throws when it could not be sent.
-  static Future<String> send(ApiClient api, {String? note}) async {
+  static Future<String> send(ApiClient api, {String? note, String adb = ''}) async {
     final code = newCode();
     final conn = await ConnectionInfo.read(fresh: true);
     final trimmedNote = note?.trim();
@@ -133,6 +140,7 @@ class DiagnosticsReport {
           session: CrashBreadcrumbs.currentSession,
           previous: CrashBreadcrumbs.previousSession,
           cpu: CpuProbe.text,
+          adb: adb,
         ),
       },
       // Signed in: the row names the account (RLS allows only the caller).
