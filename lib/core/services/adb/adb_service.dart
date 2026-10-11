@@ -86,6 +86,11 @@ class AdbService {
   AdbService._();
   static final AdbService instance = AdbService._();
 
+  /// The engine's answer when adbd itself refused this app's key: the phone
+  /// has to be paired again, and no reconnect, port or address will help.
+  static bool needsPairing(String result) =>
+      result.contains('PAIRING_REQUIRED');
+
   static const MethodChannel _channel = MethodChannel('mx_clone/adb');
 
   /// Whether the connection was working the last time anything used it:
@@ -99,10 +104,26 @@ class AdbService {
   /// the Video tab without anybody asking for it.
   final ValueNotifier<bool?> live = ValueNotifier<bool?>(null);
 
+  /// The phone refused this app's key the last time anything tried to
+  /// connect ([needsPairing]); cleared by the next command that works. The
+  /// "connection lost" card and the ADB screen read it, so the person is
+  /// told to pair again instead of waiting for a reconnect that cannot come.
+  final ValueNotifier<bool> pairingNeeded = ValueNotifier<bool>(false);
+
+  void _notePairing(String? out) {
+    if (out == null) return;
+    if (needsPairing(out)) {
+      pairingNeeded.value = true;
+    } else if (!out.startsWith('ERROR') && !out.startsWith('Channel error')) {
+      pairingNeeded.value = false;
+    }
+  }
+
   /// A connect-and-run reached the phone when its command ran (`id` prints
   /// `uid=`). Anything else says nothing either way: those calls answer
   /// with prose on failure, not a marker.
   void _sawConnect(String? out) {
+    _notePairing(out);
     if (out != null && (out.contains('uid=') || out.startsWith('OK'))) {
       live.value = true;
     }
@@ -131,6 +152,7 @@ class AdbService {
   }
 
   void _saw(String out) {
+    _notePairing(out);
     final failed = out.startsWith('ERROR') || out.startsWith('Channel error');
     live.value = !failed;
   }
@@ -292,6 +314,7 @@ class AdbService {
             'timeoutMs': timeoutMs,
           }));
       final ok = r != null && r.contains('ok') && !r.startsWith('ERROR');
+      _notePairing(r);
       live.value = ok;
       return ok;
     } catch (e) {

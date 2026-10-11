@@ -63,6 +63,9 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
     init {
         // Tell the library which adbd protocol version to speak.
         setApi(Build.VERSION.SDK_INT)
+        // Its wait for a handshake defaults to forever, held under its lock
+        // (see tryConnectBounded); the bounded attempts set their own budget.
+        setTimeout(8000L, TimeUnit.MILLISECONDS)
 
         val dir = context.filesDir
         val keyFile = File(dir, "adb_key.pk8")
@@ -265,6 +268,7 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
                     mgr.connect(h, port)
                 } catch (e: Throwable) {
                     AdbLog.add("connect (typed address): port $port via ${hostKind(h)} — ${AdbLog.why(e)}")
+                    noteConnectError(e)
                     errors.append("$h:$port ${e.javaClass.simpleName}: ${e.message}. ")
                     continue
                 }
@@ -309,16 +313,23 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
             worker.name = "adb-op"
             worker.start()
             if (!latch.await(ms, TimeUnit.MILLISECONDS)) {
-                // Tear the socket down so the stuck read unwinds.
+                // INTERRUPT FIRST, THEN DISCONNECT. The ADB library holds its
+                // manager lock while openStream() waits for adbd's OKAY, with
+                // no time limit, and disconnect() needs that same lock. So
+                // disconnecting first queued this thread behind the very
+                // worker it was meant to free — and with it every isConnected()
+                // check in the app, playback and copies included. The waits a
+                // worker is stuck in (the OKAY, the next output) are
+                // Object.wait()s, which an interrupt ends, releasing the lock.
+                worker.interrupt()
+                latch.await(1, TimeUnit.SECONDS)
+                // Then tear the socket down: a command that did not answer in
+                // time means the connection is not one to keep.
                 try {
                     getInstance(context).disconnect()
                 } catch (_: Throwable) {
                 }
                 if (!latch.await(2, TimeUnit.SECONDS)) {
-                    // The teardown did not unwind it. Interrupt: no help
-                    // against a plain blocking socket read, but it does free a
-                    // worker parked in await(), sleep() or an interruptible
-                    // channel, and it costs nothing to try.
                     worker.interrupt()
                     if (!latch.await(1, TimeUnit.SECONDS)) {
                         // Genuinely stuck, and a Java thread cannot be killed.
@@ -353,12 +364,17 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
                     val mgr = getInstance(context)
                     if (!mgr.isConnected) {
                         AdbLog.add("op $kind: not connected, reconnecting (attempt $attempt)")
+                        if (attempt == 0) pairingRefusedAt = 0L
                         val err = if (attempt == 0) {
                             firstConnect(mgr)
                         } else {
                             if (reconnectFromSaved(context, mgr, heal = true)) null else lastErr
                         }
                         if (!mgr.isConnected) {
+                            if (pairingRefused()) {
+                                AdbLog.add("op $kind: gave up — adbd refused the key: pairing needed")
+                                return PAIRING_REQUIRED
+                            }
                             AdbLog.add("op $kind: gave up — ${err ?: "no connection"}")
                             return errorString(err)
                         }
@@ -368,11 +384,7 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
                     // the socket as dead and reconnect. The scan passes a longer
                     // budget (a find over a full device is legitimately slow).
                     val text = runWithDeadline(context, deadlineMs) {
-                        val stream = mgr.openStream(service)
-                        val body = stream.openInputStream().bufferedReader()
-                            .use { r -> r.readText() }
-                        stream.close()
-                        body
+                        runToMarker(mgr, service)
                     }
                     // A round-trip just worked, so we're genuinely connected —
                     // keep the socket warm so it doesn't go idle between actions.
@@ -481,8 +493,10 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
                         // gives up and asks to be retried costs the user
                         // nothing; a Connect button that ignores them costs
                         // them their trust in the screen.
+                        pairingRefused() -> PAIRING_REQUIRED
                         shouldYield() -> busy
                         !sweptWithin(2000L) && scanLocalPort(context, mgr) -> null
+                        pairingRefused() -> PAIRING_REQUIRED
                         shouldYield() -> busy
                         else -> mdnsConnect(context, 12000L)
                     }
@@ -604,6 +618,9 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
                         AdbLog.add("heal: port $announced failed — ${lastConnectError ?: "?"}")
                 }
             }
+            // adbd was found and refused the key, on the saved port or the
+            // announced one: a sweep would find it again and be refused again.
+            if (pairingRefused()) return false
             val now = android.os.SystemClock.elapsedRealtime()
             if (now - lastHealSweepAt < HEAL_EVERY_MS) {
                 AdbLog.add("heal: sweep skipped (one ran under 15 s ago)")
@@ -616,6 +633,33 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
         /** Why the last [tryConnectBounded] failed, for the log. */
         @Volatile
         private var lastConnectError: String? = null
+
+        /**
+         * Set when adbd itself answered and refused this app's key during the
+         * current operation ([execRead] clears it as each one starts).
+         *
+         * That answer settles it: the phone no longer accepts the pairing, and
+         * no port or address will connect until it is paired again. On a real
+         * S23 Ultra every Connect went on sweeping the other ports and then
+         * waited 20 s for mDNS, only to end in a message about ports and
+         * typing an address — when the one thing to do was to pair again.
+         */
+        @Volatile
+        private var pairingRefusedAt = 0L
+
+        /** The answer for "adbd refused the key": the screen opens pairing on it. */
+        const val PAIRING_REQUIRED =
+            "ERROR: PAIRING_REQUIRED \u2014 this phone no longer accepts Innocent's " +
+                "pairing. Pair once more: Wireless debugging \u2192 Pair device with " +
+                "pairing code."
+
+        private fun pairingRefused(): Boolean = pairingRefusedAt != 0L
+
+        private fun noteConnectError(e: Throwable) {
+            if (e is io.github.muntashirakon.adb.AdbPairingRequiredException) {
+                pairingRefusedAt = android.os.SystemClock.elapsedRealtime()
+            }
+        }
 
         /** An address as the log may show it: whose it is, not the number. */
         private fun hostKind(host: String): String = when {
@@ -708,15 +752,33 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
         private fun isConnectionLive(context: Context): Boolean {
             return try {
                 runWithDeadline(context, 3000L) {
-                    val mgr = getInstance(context)
-                    val s = mgr.openStream("shell:true")
-                    s.openInputStream().use { it.readBytes() }
-                    s.close()
-                    ""
+                    runToMarker(getInstance(context), "shell:true")
                 }
                 true
             } catch (_: Throwable) {
                 false
+            }
+        }
+
+        /**
+         * Run a `shell:` [service] and return what it printed, read up to an
+         * end marker sent after the command — never to the end of the stream,
+         * which the ADB library cannot report cleanly ([AdbRead] says why:
+         * reading to the end is what made healthy connections look dead).
+         * Throws when the stream closes before the marker: the answer is cut
+         * short, and a short answer must not pass for a whole one.
+         */
+        private fun runToMarker(mgr: AbsAdbConnectionManager, service: String): String {
+            val command = service.removePrefix("shell:")
+            val marker = AdbRead.newMarker()
+            val stream = mgr.openStream("shell:" + AdbRead.wrap(command, marker))
+            try {
+                return AdbRead.untilMarker(stream.openInputStream(), marker).output
+            } finally {
+                try {
+                    stream.close()
+                } catch (_: Throwable) {
+                }
             }
         }
 
@@ -759,12 +821,23 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
                         AdbLog.add("sweep: port $port — connect never returned, stopping")
                         return false
                     }
-                    ConnectTry.FAILED ->
+                    ConnectTry.FAILED -> {
                         AdbLog.add("sweep: port $port — ${lastConnectError ?: "not adb"}")
+                        // That was adbd, and it refused the key: no other port
+                        // will take it either.
+                        if (pairingRefused()) return false
+                    }
                 }
             }
             return false
         }
+
+        /**
+         * A range read that gets no byte for this long is given up on: the
+         * file was shorter than asked, or the connection is gone. Without it
+         * that read waited forever, and so did the player behind it.
+         */
+        private const val STREAM_STALL_MS = 20000L
 
         private const val SWEEP_FIRST_PORT = 32768
         private const val SWEEP_LAST_PORT = 61000
@@ -866,6 +939,14 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
             lastConnectError = null
             val w = Thread {
                 try {
+                    // The library's own wait for the handshake, which it does
+                    // HOLDING its manager lock, defaults to forever. A port
+                    // that accepts TCP but never speaks ADB (another app's
+                    // server, found by the sweep) then kept that lock until the
+                    // other side gave up — 30 s on a real S23 Ultra — and every
+                    // isConnected() in the app waited with it. Bounded now to
+                    // the same budget as this attempt.
+                    mgr.setTimeout(ms, TimeUnit.MILLISECONDS)
                     mgr.connect(host, port)
                     if (mgr.isConnected) ok.set(true)
                     else lastConnectError = "handshake finished but not connected"
@@ -873,6 +954,7 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
                     // The reason a connect failed used to be dropped here,
                     // which is why "it doesn't connect" had nothing behind it.
                     lastConnectError = AdbLog.why(e)
+                    noteConnectError(e)
                 } finally {
                     latch.countDown()
                 }
@@ -880,15 +962,17 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
             w.isDaemon = true
             w.name = "adb-connect-$port"
             w.start()
-            if (!latch.await(ms, TimeUnit.MILLISECONDS)) {
+            if (!latch.await(ms + 500L, TimeUnit.MILLISECONDS)) {
                 lastConnectError = "no answer in $ms ms"
-                // Tear the socket down; that is what normally unwinds a
-                // handshake blocked on a read.
+                // Interrupt first: the handshake wait is an Object.wait() held
+                // under the manager lock that disconnect() needs (see above).
+                w.interrupt()
+                latch.await(1, TimeUnit.SECONDS)
                 try {
                     mgr.disconnect()
                 } catch (_: Throwable) {
                 }
-                if (latch.await(3, TimeUnit.SECONDS)) return ConnectTry.FAILED
+                if (latch.await(2, TimeUnit.SECONDS)) return ConnectTry.FAILED
                 w.interrupt()
                 if (latch.await(1, TimeUnit.SECONDS)) return ConnectTry.FAILED
                 val n = abandonedWorkers.incrementAndGet()
@@ -899,7 +983,16 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
                 )
                 return ConnectTry.ABANDONED
             }
-            return if (ok.get()) ConnectTry.CONNECTED else ConnectTry.FAILED
+            if (ok.get()) return ConnectTry.CONNECTED
+            // A handshake that timed out inside the library leaves its socket
+            // and reader thread open behind a "not connected" manager; the
+            // next connect would replace it without closing it. (Not if some
+            // other path has connected meanwhile: that one is kept.)
+            try {
+                if (!mgr.isConnected) mgr.disconnect()
+            } catch (_: Throwable) {
+            }
+            return ConnectTry.FAILED
         }
 
         // ---- Auto-enable-after-reboot (no PC, no root) ----
@@ -1056,10 +1149,7 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
                                 // dead this times out and drops it. We never do
                                 // an expensive reconnect while holding the lock.
                                 runWithDeadline(app, 8000L) {
-                                    val s = mgr.openStream("shell:true")
-                                    s.openInputStream().use { it.readBytes() }
-                                    s.close()
-                                    ""
+                                    runToMarker(mgr, "shell:true")
                                 }
                                 mgr.isConnected
                             }
@@ -1457,25 +1547,20 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
                 val cmd = "exec:dd if=\"$safe\" bs=$block skip=$skip 2>/dev/null " +
                     "| tail -c +$inner | head -c $len"
                 val stream = mgr.openStream(cmd)
-                var written = 0L
                 try {
-                    stream.openInputStream().use { input ->
-                        val buf = ByteArray(256 * 1024)
-                        while (true) {
-                            val n = input.read(buf)
-                            if (n < 0) break
-                            out.write(buf, 0, n)
-                            written += n
-                        }
-                        out.flush()
-                    }
+                    // Exactly [len] bytes and stop: reading on to the end of
+                    // the stream is the read the ADB library may never finish
+                    // (it threw "Stream closed." or hung after the last byte —
+                    // the 4-byte probe failing is why Android/data videos fell
+                    // back to a full copy). A short count is a failure to every
+                    // caller, as -1 was.
+                    AdbRead.copyExactly(stream.openInputStream(), len, out, STREAM_STALL_MS)
                 } finally {
                     try {
                         stream.close()
                     } catch (_: Throwable) {
                     }
                 }
-                written
             } catch (e: Throwable) {
                 -1L
             }
@@ -1681,7 +1766,9 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
                 // (The heal inside reconnectFromSaved may have swept just now;
                 // a second sweep straight after would find the same nothing.)
                 if (reconnectFromSaved(context, mgr, heal = true)) null
+                else if (pairingRefused()) PAIRING_REQUIRED
                 else if (!sweptWithin(2000L) && scanLocalPort(context, mgr)) null
+                else if (pairingRefused()) PAIRING_REQUIRED
                 else mdnsConnect(context, timeoutMs)
             }
             if (out.startsWith("ERROR")) out
@@ -1763,6 +1850,10 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
                         mgr.connect(h, port)
                     } catch (e: Throwable) {
                         AdbLog.add("mdns: connect port $port via ${hostKind(h)} — ${AdbLog.why(e)}")
+                        noteConnectError(e)
+                        // adbd answered and refused the key: the other
+                        // address would get the same answer.
+                        if (pairingRefused()) break
                         continue
                     }
                     if (mgr.isConnected) {

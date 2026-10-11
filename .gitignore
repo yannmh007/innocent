@@ -58,7 +58,8 @@ lib/l10n/app_localizations_*.dart
 ios/Flutter/
 ios/Runner/GeneratedPluginRegistrant.*
 android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
-android/app/src/main/java/
+# Only the generated part: real Java sources live beside it (AdbRead.java).
+android/app/src/main/java/io/flutter/
 
 # Editors
 .idea/

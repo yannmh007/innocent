@@ -1743,6 +1743,8 @@ class AppStrings {
   String get adbReconnecting => _s('adbReconnecting');
   String get adbPairedAlready => _s('adbPairedAlready');
   String get adbPairAgain => _s('adbPairAgain');
+  String get adbPairingRefused => _s('adbPairingRefused');
+  String get adbHeroPairAgain => _s('adbHeroPairAgain');
   String get adbOpenWireless => _s('adbOpenWireless');
   String get adbFindVideos => _s('adbFindVideos');
   String get adbPairTitle => _s('adbPairTitle');
@@ -2105,6 +2107,8 @@ class AppStrings {
     'adbReconnecting': 'Reconnecting — finding Wireless debugging’s new port…',
     'adbPairedAlready': 'This phone is paired — no new code needed. If it dropped, turn Wireless debugging on and tap Reconnect.',
     'adbPairAgain': 'Pair again',
+    'adbHeroPairAgain': 'Pair this phone again',
+    'adbPairingRefused': 'This phone no longer accepts Innocent’s pairing, so no port will connect. Pair once more — it takes a minute. Android forgets a pairing that has not been used for 7 days; turning on “Disable adb authorization timeout” in Developer options (if your phone has it) stops that.',
     'adbOpenWireless': 'Open Wireless debugging',
     'adbFindVideos': 'Find videos in Android/data',
     'adbPairTitle': 'Pair this phone (first time only)',
@@ -3761,6 +3765,8 @@ class AppStrings {
     'adbReconnecting': 'ပြန်ချိတ်နေတယ် — Wireless debugging ရဲ့ port အသစ်ကို ရှာနေပါတယ်…',
     'adbPairedAlready': 'ဒီဖုန်းကို pair ပြီးသားပါ — code အသစ် မလိုပါ။ ပြုတ်သွားရင် Wireless debugging ကိုဖွင့်ပြီး ပြန်ချိတ်မယ် ကိုနှိပ်ပါ။',
     'adbPairAgain': 'ထပ် pair မယ်',
+    'adbHeroPairAgain': 'ဒီဖုန်းကို ထပ် pair လုပ်ပါ',
+    'adbPairingRefused': 'ဒီဖုန်းက Innocent ရဲ့ pair ထားတာကို လက်မခံတော့ပါဘူး — ဒါကြောင့် ဘယ် port နဲ့မှ ချိတ်လို့မရပါ။ ထပ် pair လုပ်ပါ (တစ်မိနစ်လောက်ပဲ ကြာပါတယ်)။ ၇ ရက်ကြာ မသုံးရင် Android က pair ထားတာကို မေ့သွားတတ်ပါတယ်။ Developer options ထဲမှာ “Disable adb authorization timeout” ရှိရင် ဖွင့်ထားပါ — မမေ့တော့ပါဘူး။',
     'adbOpenWireless': 'Wireless debugging ကို ဖွင့်မယ်',
     'adbFindVideos': 'Android/data ထဲက ဗီဒီယိုတွေ ရှာမယ်',
     'adbPairTitle': 'ဒီဖုန်းကို pair လုပ်ပါ (ပထမအကြိမ်သာ)',
@@ -5405,6 +5411,8 @@ class AppStrings {
     'adbReconnecting': 'กำลังเชื่อมต่อใหม่ — กำลังหาพอร์ตใหม่ของการแก้ไขข้อบกพร่องไร้สาย…',
     'adbPairedAlready': 'จับคู่โทรศัพท์นี้แล้ว — ไม่ต้องใช้รหัสใหม่ ถ้าหลุด ให้เปิดการแก้ไขข้อบกพร่องไร้สายแล้วแตะเชื่อมต่อใหม่',
     'adbPairAgain': 'จับคู่อีกครั้ง',
+    'adbHeroPairAgain': 'จับคู่โทรศัพท์นี้อีกครั้ง',
+    'adbPairingRefused': 'โทรศัพท์นี้ไม่ยอมรับการจับคู่ของ Innocent แล้ว จึงเชื่อมต่อไม่ได้ทุกพอร์ต จับคู่อีกครั้ง ใช้เวลาไม่ถึงนาที Android จะลืมการจับคู่ที่ไม่ได้ใช้ 7 วัน เปิด “ปิดใช้การหมดเวลาการให้สิทธิ์ adb” ในตัวเลือกสำหรับนักพัฒนา (ถ้ามี) เพื่อไม่ให้ลืม',
     'adbOpenWireless': 'เปิดการแก้ไขข้อบกพร่องผ่าน Wi-Fi',
     'adbFindVideos': 'ค้นหาวิดีโอใน Android/data',
     'adbPairTitle': 'จับคู่โทรศัพท์นี้ (ครั้งแรกเท่านั้น)',

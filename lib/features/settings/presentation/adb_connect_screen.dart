@@ -93,6 +93,9 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
       // Keep the real message (scan progress, playback, etc.) as-is.
       return raw.startsWith('OK') ? 'Connected — the device is reachable.' : raw;
     }
+    // adbd refused the key: say that, not "check the port" — the pairing
+    // card below is open for it.
+    if (AdbService.needsPairing(raw)) return AppStrings.of(context).adbPairingRefused;
     final low = raw.toLowerCase();
     if (low.contains('stream closed') ||
         low.contains('not connected') ||
@@ -114,6 +117,8 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
     super.initState();
     // v0.89: receive results from the notification pairing service.
     AdbService.instance.setPairResultListener(_onPairServiceResult);
+    AdbService.instance.pairingNeeded.addListener(_onPairingNeeded);
+    if (AdbService.instance.pairingNeeded.value) _pairAgain = true;
     WidgetsBinding.instance.addObserver(this);
     _loadAndAutoConnect();
     _checkExposure();
@@ -249,6 +254,16 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
     }
   }
 
+  /// The phone refused this app's key (anywhere — a reconnect here, the
+  /// Hidden files card): unfold the pairing card, since pairing again is the
+  /// only thing that will connect.
+  void _onPairingNeeded() {
+    if (!mounted) return;
+    setState(() {
+      if (AdbService.instance.pairingNeeded.value) _pairAgain = true;
+    });
+  }
+
   /// Result of a pairing attempt made from the notification shade. Runs on
   /// the platform channel callback.
   void _onPairServiceResult(String result) {
@@ -298,8 +313,10 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
         _connected = ok;
         _output = ok
             ? 'Connected \u2014 the device is reachable.'
-            : "Not connected yet. Tap Connect (you may need to re-open "
-                "Wireless debugging first).";
+            : AdbService.needsPairing(r)
+                ? r
+                : "Not connected yet. Tap Connect (you may need to re-open "
+                    "Wireless debugging first).";
       });
       if (ok) unawaited(_autoScanAfterConnect());
     } catch (e) {
@@ -466,6 +483,7 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
     _setupTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     AdbService.instance.setPairResultListener(null);
+    AdbService.instance.pairingNeeded.removeListener(_onPairingNeeded);
     // Don't leave the pairing notification lingering if the user leaves.
     if (_pairingServiceOn) AdbService.instance.stopPairingService();
     _code.dispose();
@@ -867,6 +885,8 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
   _AdbHero get _hero {
     if (_connected == true) return _AdbHero.connected;
     if (_connected == null && _busy) return _AdbHero.checking;
+    // The phone refused the key: "turn it on and Reconnect" cannot work.
+    if (AdbService.instance.pairingNeeded.value) return _AdbHero.pairAgain;
     if (_pairedBefore) return _AdbHero.off;
     return _AdbHero.fresh;
   }
@@ -900,6 +920,12 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
           Icons.sync_rounded,
           s.adbHeroChecking,
           '',
+        ),
+      _AdbHero.pairAgain => (
+          AppColors.warning,
+          Icons.lock_reset_rounded,
+          s.adbHeroPairAgain,
+          s.adbPairingRefused,
         ),
       _AdbHero.off => (
           AppColors.warning,
@@ -989,6 +1015,14 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
                   icon: const Icon(Icons.video_library_rounded, size: 18),
                   label: Text(s.adbFindVideos),
                 ),
+              if (hero == _AdbHero.pairAgain)
+                FilledButton.icon(
+                  onPressed: _busy || _pairingServiceOn
+                      ? null
+                      : _startNotificationPairing,
+                  icon: const Icon(Icons.notifications_active_rounded, size: 18),
+                  label: Text(s.adbPairNotif),
+                ),
               if (hero == _AdbHero.off)
                 FilledButton.icon(
                   onPressed: _busy ? null : _reconnect,
@@ -1009,7 +1043,10 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
                       )),
             ],
           ),
-          if (note.isNotEmpty && hero != _AdbHero.connected) ...<Widget>[
+          // (The refusal is already the card's own text.)
+          if (note.isNotEmpty &&
+              hero != _AdbHero.connected &&
+              note != s.adbPairingRefused) ...<Widget>[
             const SizedBox(height: 12),
             Text(
               note,
@@ -1021,7 +1058,7 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
           ],
           // Not connecting: the way to tell why, from where the problem is
           // seen rather than three folds down under Advanced.
-          if (hero == _AdbHero.off) ...<Widget>[
+          if (hero == _AdbHero.off || hero == _AdbHero.pairAgain) ...<Widget>[
             const SizedBox(height: 6),
             _reportButtons(compact: true),
           ],
@@ -1045,7 +1082,8 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
             style: const TextStyle(color: AppColors.warning)),
       );
     }
-    final paired = _pairedBefore;
+    // Paired once is not paired now when the phone has refused the key.
+    final paired = _pairedBefore && !AdbService.instance.pairingNeeded.value;
     final connected = _connected == true;
     final next = st.next(paired: paired, connected: connected);
 
@@ -1244,7 +1282,9 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
     // fix for a connection that dropped — Reconnect is. The card folds to one
     // line that says so, with the way to pair again for the rare phone that
     // forgot (after "Revoke debugging authorisations", or a reset).
-    if (_pairedBefore && !_pairAgain && !_pairingServiceOn) {
+    if (_pairedBefore &&
+        (!_pairAgain || _connected == true) &&
+        !_pairingServiceOn) {
       return _card(
         padding: const EdgeInsets.fromLTRB(16, 10, 8, 10),
         child: Row(
@@ -1815,4 +1855,4 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
 }
 
 /// The states the hero card has words for.
-enum _AdbHero { checking, connected, off, fresh }
+enum _AdbHero { checking, connected, pairAgain, off, fresh }
