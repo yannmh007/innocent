@@ -2,9 +2,11 @@ import 'dart:async';
 import 'package:device_info_plus/device_info_plus.dart';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/app_version.dart';
 import '../../../core/di/core_providers.dart';
 import '../../../core/localization/app_strings.dart';
 import '../../../core/router/routes.dart';
@@ -13,6 +15,8 @@ import '../../../core/services/adb/adb_setup_state.dart';
 import '../../../core/services/adb/wireless_adb_risk.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../local_browser/presentation/android_data_sync.dart';
+import '../../video_hub/data/diagnostics_report.dart';
+import '../../video_hub/presentation/account_provider.dart';
 
 /// Android/data access: pairing with, and connecting to, this phone's own
 /// Wireless debugging.
@@ -303,6 +307,129 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+
+  // ---- Report ----
+  //
+  // "IT DOESN'T CONNECT" NEEDS THE PHONE'S OWN ACCOUNT OF WHY. The engine
+  // keeps a step-by-step log (AdbLog.kt): which port it tried, what Settings
+  // said, what the sweep found, why each handshake failed. The report is
+  // that log with the phone's state on top, copied for a chat or sent to the
+  // operator with a code to quote. Links, storage paths and tokens are cut
+  // out (DiagnosticsReport.redact); the log never holds file names.
+
+  Future<String> _report() async {
+    final st = _setup;
+    final b = StringBuffer()
+      ..writeln('Innocent ADB report')
+      ..writeln('app ${AppVersion.name} (${AppVersion.build})');
+    try {
+      final a = await DeviceInfoPlugin().androidInfo;
+      b.writeln('phone ${a.manufacturer} ${a.model}, Android '
+          '${a.version.release} (sdk ${a.version.sdkInt})');
+    } catch (_) {}
+    if (st != null) {
+      b.writeln('settings: developer options ${st.devOptions ? 'on' : 'off'}, '
+          'Wi-Fi ${st.wifi ? 'yes' : 'no'}, wireless debugging '
+          '${st.wirelessDebugging ? 'on' : 'off'}, notifications '
+          '${st.notifications ? 'allowed' : 'blocked'}');
+    }
+    b
+      ..writeln('screen: connected=${_connected ?? 'checking'}, '
+          'paired before=$_pairedBefore, pairing notification='
+          '$_pairingServiceOn, busy=$_busy')
+      ..writeln('last answer: ${_output.isEmpty ? '-' : _output}')
+      ..writeln('== engine log (oldest first)')
+      ..writeln(await AdbService.instance.engineLog());
+    return DiagnosticsReport.redact(b.toString());
+  }
+
+  Future<void> _copyReport() async {
+    final s = AppStrings.of(context);
+    final text = await _report();
+    await Clipboard.setData(ClipboardData(text: text));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(s.adbReportCopied),
+      behavior: SnackBarBehavior.floating,
+    ));
+  }
+
+  Future<void> _sendReport() async {
+    final s = AppStrings.of(context);
+    final api = ref.read(apiClientProvider);
+    String? code;
+    try {
+      code = await DiagnosticsReport.send(api,
+          note: 'ADB report', adb: await _report());
+    } catch (_) {
+      code = null;
+    }
+    if (!mounted) return;
+    final sent = code;
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.darkSurface,
+        title: Text(sent == null ? s.adbReportFailed : s.adbReportSent),
+        content: sent == null
+            ? null
+            : SelectableText(sent,
+                style: const TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 3)),
+        actions: <Widget>[
+          if (sent != null)
+            TextButton(
+              onPressed: () =>
+                  Clipboard.setData(ClipboardData(text: sent)),
+              child: Text(s.adbReportCopyCode),
+            ),
+          if (sent == null)
+            TextButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                unawaited(_copyReport());
+              },
+              child: Text(s.adbCopyReport),
+            ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(s.close),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _reportButtons({bool compact = false}) {
+    final s = AppStrings.of(context);
+    return Wrap(
+      spacing: 8,
+      runSpacing: 4,
+      children: <Widget>[
+        TextButton.icon(
+          onPressed: _copyReport,
+          icon: const Icon(Icons.copy_all_rounded, size: 18),
+          label: Text(s.adbCopyReport),
+        ),
+        TextButton.icon(
+          onPressed: _sendReport,
+          icon: const Icon(Icons.send_rounded, size: 18),
+          label: Text(s.adbSendReport),
+        ),
+        if (!compact)
+          TextButton.icon(
+            onPressed: () async {
+              await AdbService.instance.clearEngineLog();
+              if (mounted) setState(() {});
+            },
+            icon: const Icon(Icons.delete_sweep_rounded, size: 18),
+            label: Text(s.adbClearLog),
+          ),
+      ],
+    );
   }
 
   /// The Reconnect button: the remembered port, and when Wireless debugging
@@ -891,6 +1018,12 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
               style: const TextStyle(
                   color: AppColors.white55, fontSize: 12, height: 1.45),
             ),
+          ],
+          // Not connecting: the way to tell why, from where the problem is
+          // seen rather than three folds down under Advanced.
+          if (hero == _AdbHero.off) ...<Widget>[
+            const SizedBox(height: 6),
+            _reportButtons(compact: true),
           ],
         ],
       ),
@@ -1620,6 +1753,8 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
           ],
         ),
       ),
+      const SizedBox(height: 8),
+      _reportButtons(),
       const SizedBox(height: 8),
       // ---------- Manual IP:Port ----------
       TextButton.icon(

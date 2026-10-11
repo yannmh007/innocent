@@ -111,6 +111,7 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
         private var INSTANCE: AdbManager? = null
 
         fun getInstance(context: Context): AdbManager {
+            AdbLog.attach(context)
             return INSTANCE ?: synchronized(this) {
                 INSTANCE ?: AdbManager(context.applicationContext).also { INSTANCE = it }
             }
@@ -263,6 +264,7 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
                     // below is the real truth.
                     mgr.connect(h, port)
                 } catch (e: Throwable) {
+                    AdbLog.add("connect (typed address): port $port via ${hostKind(h)} — ${AdbLog.why(e)}")
                     errors.append("$h:$port ${e.javaClass.simpleName}: ${e.message}. ")
                     continue
                 }
@@ -345,16 +347,22 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
             firstConnect: (AbsAdbConnectionManager) -> String?,
         ): String = synchronized(opLock) {
             var lastErr = "unknown"
+            val kind = AdbLog.kindOf(service)
             for (attempt in 0..1) {
                 try {
                     val mgr = getInstance(context)
                     if (!mgr.isConnected) {
+                        AdbLog.add("op $kind: not connected, reconnecting (attempt $attempt)")
                         val err = if (attempt == 0) {
                             firstConnect(mgr)
                         } else {
                             if (reconnectFromSaved(context, mgr, heal = true)) null else lastErr
                         }
-                        if (!mgr.isConnected) return errorString(err)
+                        if (!mgr.isConnected) {
+                            AdbLog.add("op $kind: gave up — ${err ?: "no connection"}")
+                            return errorString(err)
+                        }
+                        AdbLog.add("op $kind: reconnected")
                     }
                     // Bounded: most round-trips must answer in ~12s or we treat
                     // the socket as dead and reconnect. The scan passes a longer
@@ -369,9 +377,11 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
                     // A round-trip just worked, so we're genuinely connected —
                     // keep the socket warm so it doesn't go idle between actions.
                     startKeepAlive(context)
+                    if (kind != "probe" && kind != "list folder") AdbLog.add("op $kind: ok")
                     return text
                 } catch (e: Throwable) {
                     lastErr = "${e.javaClass.simpleName}: ${e.message}"
+                    AdbLog.add("op $kind: failed (attempt $attempt) — ${AdbLog.why(e)}")
                     // Stale/stuck connection — drop it so the next attempt
                     // reconnects from scratch.
                     try {
@@ -389,6 +399,7 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
             port: Int,
             command: String,
         ): String = interactive {
+            AdbLog.add("== Connect (typed port $port) — ${netSnapshot(context)}")
             val out = execRead(context, "shell:$command") { mgr ->
                 connectHostPort(context, mgr, host, port)
             }
@@ -403,6 +414,7 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
          */
         fun reconnectAndRun(context: Context, command: String): String =
             interactive {
+                AdbLog.add("== Reconnect (screen opened) — ${netSnapshot(context)}")
                 val out = execRead(context, "shell:$command") { mgr ->
                     if (reconnectFromSaved(context, mgr, heal = true)) null
                     else "couldn't reach the device over the saved port or mDNS"
@@ -504,6 +516,7 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
             // PROVE it with a tiny bounded round-trip; if the probe fails, drop
             // the dead socket and fall through to a real reconnect below.
             if (mgr.isConnected && !isConnectionLive(context)) {
+                AdbLog.add("reconnect: socket said connected but did not answer — dropped")
                 try {
                     mgr.disconnect()
                 } catch (_: Throwable) {
@@ -521,7 +534,10 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
                     if (p != null) {
                         for (host in candidateHosts(h)) {
                             when (tryConnectBounded(mgr, host, p, 2500L)) {
-                                ConnectTry.CONNECTED -> return true
+                                ConnectTry.CONNECTED -> {
+                                    AdbLog.add("reconnect: saved port $p via ${hostKind(host)} — connected")
+                                    return true
+                                }
                                 // A worker is still inside connect() on the
                                 // shared manager. Trying the next host would
                                 // race it, which is the bug A6b describes.
@@ -533,6 +549,10 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
                 }
             }
             if (mgr.isConnected) return true
+            AdbLog.add(
+                if (last.isEmpty()) "reconnect: no saved port (never connected)"
+                else "reconnect: saved port ${stalePort ?: "?"} failed — ${lastConnectError ?: "?"}",
+            )
             // Never connected: nothing to heal (an unpaired key is refused).
             // And only for callers holding [opLock]: the sweep connects and
             // disconnects the shared manager over and over, which the
@@ -566,22 +586,46 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
             mgr: AbsAdbConnectionManager,
             stalePort: Int?,
         ): Boolean {
-            if (Build.VERSION.SDK_INT < 30 || !wirelessDebuggingOn(context)) return false
+            if (Build.VERSION.SDK_INT < 30 || !wirelessDebuggingOn(context)) {
+                AdbLog.add("heal: Wireless debugging is OFF in Settings — nothing to look for")
+                return false
+            }
             val announced = tlsPortFromProperty()
+            AdbLog.add("heal: Wireless debugging ON; adbd's port property: ${announced ?: "not readable"}")
             if (announced != null && announced != stalePort) {
                 when (tryConnectBounded(mgr, "127.0.0.1", announced, 2500L)) {
                     ConnectTry.CONNECTED -> {
+                        AdbLog.add("heal: port $announced — connected")
                         saveLastConnect(context, "127.0.0.1", announced)
                         return true
                     }
                     ConnectTry.ABANDONED -> return false
-                    ConnectTry.FAILED -> Unit
+                    ConnectTry.FAILED ->
+                        AdbLog.add("heal: port $announced failed — ${lastConnectError ?: "?"}")
                 }
             }
             val now = android.os.SystemClock.elapsedRealtime()
-            if (now - lastHealSweepAt < HEAL_EVERY_MS) return false
+            if (now - lastHealSweepAt < HEAL_EVERY_MS) {
+                AdbLog.add("heal: sweep skipped (one ran under 15 s ago)")
+                return false
+            }
             lastHealSweepAt = now
             return scanLocalPort(context, mgr)
+        }
+
+        /** Why the last [tryConnectBounded] failed, for the log. */
+        @Volatile
+        private var lastConnectError: String? = null
+
+        /** An address as the log may show it: whose it is, not the number. */
+        private fun hostKind(host: String): String = when {
+            host == "127.0.0.1" || host == "localhost" -> "loopback"
+            else -> try {
+                if (isThisPhone(java.net.InetAddress.getByName(host))) "this phone's Wi-Fi address"
+                else "another address"
+            } catch (_: Throwable) {
+                "an address"
+            }
         }
 
         /** No more than one loopback sweep this often from the light path. */
@@ -593,6 +637,36 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
         /** Whether the heal's sweep ran in the last [ms]. */
         private fun sweptWithin(ms: Long): Boolean =
             android.os.SystemClock.elapsedRealtime() - lastHealSweepAt < ms
+
+        /**
+         * The phone's state as the log records it at each attempt: what
+         * Settings says about Developer options and Wireless debugging, and
+         * whether Wi-Fi and a VPN are up. No names, no addresses.
+         */
+        fun netSnapshot(context: Context): String {
+            fun global(name: String): Int = try {
+                Settings.Global.getInt(context.contentResolver, name, 0)
+            } catch (_: Throwable) {
+                -1
+            }
+            var wifi = false
+            var vpn = false
+            try {
+                val cm = context.getSystemService(android.net.ConnectivityManager::class.java)
+                @Suppress("DEPRECATION")
+                for (n in cm?.allNetworks ?: emptyArray()) {
+                    val caps = cm?.getNetworkCapabilities(n) ?: continue
+                    if (caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_WIFI)) wifi = true
+                    if (caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_VPN)) vpn = true
+                }
+            } catch (_: Throwable) {
+            }
+            val saved = lastConnect(context).substringAfterLast(':', "none")
+            return "devopts=${global(Settings.Global.DEVELOPMENT_SETTINGS_ENABLED)} " +
+                "wd=${global("adb_wifi_enabled")} wifi=$wifi vpn=$vpn " +
+                "savedPort=$saved connected=${INSTANCE?.isConnected ?: false} " +
+                "sdk=${Build.VERSION.SDK_INT} ${Build.MANUFACTURER}/${Build.MODEL}"
+        }
 
         /** Wireless debugging's switch, as Settings has it. */
         private fun wirelessDebuggingOn(context: Context): Boolean = try {
@@ -655,24 +729,38 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
          * adbd. Reliable where NsdManager/mDNS silently finds nothing.
          */
         private fun scanLocalPort(context: Context, mgr: AbsAdbConnectionManager): Boolean {
+            val started = android.os.SystemClock.elapsedRealtime()
             val open = findOpenLocalPorts()
+            AdbLog.add(
+                "sweep: ${open.size} open loopback port(s) in " +
+                    "${android.os.SystemClock.elapsedRealtime() - started} ms" +
+                    (if (open.isEmpty()) "" else ": " + open.take(12).joinToString(",")),
+            )
             for (port in open) {
                 // A tap on Connect is worth more than finishing a sweep that
                 // has already tried the likelier ports (audit_adb.md A7).
-                if (shouldYield()) return false
+                if (shouldYield()) {
+                    AdbLog.add("sweep: stood down for a tap that is waiting")
+                    return false
+                }
                 try {
                     mgr.disconnect()
                 } catch (_: Throwable) {
                 }
                 when (tryConnectBounded(mgr, "127.0.0.1", port, 3500L)) {
                     ConnectTry.CONNECTED -> {
+                        AdbLog.add("sweep: port $port — connected")
                         saveLastConnect(context, "127.0.0.1", port)
                         return true
                     }
                     // Stop: the next iteration would call disconnect() and
                     // connect() on a manager another thread is still inside.
-                    ConnectTry.ABANDONED -> return false
-                    ConnectTry.FAILED -> Unit
+                    ConnectTry.ABANDONED -> {
+                        AdbLog.add("sweep: port $port — connect never returned, stopping")
+                        return false
+                    }
+                    ConnectTry.FAILED ->
+                        AdbLog.add("sweep: port $port — ${lastConnectError ?: "not adb"}")
                 }
             }
             return false
@@ -775,11 +863,16 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
         ): ConnectTry {
             val ok = java.util.concurrent.atomic.AtomicBoolean(false)
             val latch = CountDownLatch(1)
+            lastConnectError = null
             val w = Thread {
                 try {
                     mgr.connect(host, port)
                     if (mgr.isConnected) ok.set(true)
-                } catch (_: Throwable) {
+                    else lastConnectError = "handshake finished but not connected"
+                } catch (e: Throwable) {
+                    // The reason a connect failed used to be dropped here,
+                    // which is why "it doesn't connect" had nothing behind it.
+                    lastConnectError = AdbLog.why(e)
                 } finally {
                     latch.countDown()
                 }
@@ -788,6 +881,7 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
             w.name = "adb-connect-$port"
             w.start()
             if (!latch.await(ms, TimeUnit.MILLISECONDS)) {
+                lastConnectError = "no answer in $ms ms"
                 // Tear the socket down; that is what normally unwinds a
                 // handshake blocked on a read.
                 try {
@@ -973,9 +1067,13 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
                         // Connection is gone — stop pinging so we don't keep
                         // taking the lock (which would stall the user's own
                         // pair/connect). A later successful connect restarts us.
-                        if (!stillUp) break
-                    } catch (_: Throwable) {
+                        if (!stillUp) {
+                            AdbLog.add("keep-alive: connection gone")
+                            break
+                        }
+                    } catch (e: Throwable) {
                         // Ping failed → socket dead. Stop; next connect restarts.
+                        AdbLog.add("keep-alive: ping failed — ${AdbLog.why(e)}")
                         break
                     }
                 }
@@ -1479,8 +1577,14 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
                 val hostRef = AtomicReference<String?>(null)
                 val portRef = AtomicInteger(-1)
                 val latch = CountDownLatch(1)
+                AdbLog.add("pair: looking for the pairing service (${timeoutMs / 1000} s) — ${netSnapshot(context)}")
                 mdns = AdbMdns(context, AdbMdns.SERVICE_TYPE_TLS_PAIRING) { host, port ->
-                    if (host != null && port > 0 && isThisPhone(host)) {
+                    val mine = host != null && isThisPhone(host)
+                    AdbLog.add(
+                        "pair: answer port $port from " +
+                            (if (host == null) "no address" else if (mine) "this phone" else "another device (ignored)"),
+                    )
+                    if (host != null && port > 0 && mine) {
                         hostRef.set(host.hostAddress)
                         portRef.set(port)
                         latch.countDown()
@@ -1489,6 +1593,7 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
                 mdns.start()
                 val found = latch.await(timeoutMs, TimeUnit.MILLISECONDS)
                 if (!found) {
+                    AdbLog.add("pair: no pairing service from this phone — was the code dialog open?")
                     return "ERROR: couldn't find the pairing service over mDNS. " +
                         "Keep the \"Pair device with pairing code\" dialog open, " +
                         "or use Advanced (manual)."
@@ -1503,11 +1608,14 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
                 val ok = try {
                     mgr.pair("127.0.0.1", port, code)
                 } catch (e: java.net.ConnectException) {
+                    AdbLog.add("pair: loopback refused, trying this phone's Wi-Fi address")
                     mgr.pair(host, port, code)
                 }
+                AdbLog.add(if (ok) "pair: paired on port $port" else "pair: refused (wrong or old code)")
                 if (ok) "OK \u2014 paired via mDNS ($host:$port)"
                 else "ERROR: pairing returned false (re-check the code)"
             } catch (e: Throwable) {
+                AdbLog.add("pair: failed — ${AdbLog.why(e)}")
                 "ERROR: ${e.javaClass.simpleName}: ${e.message}"
             } finally {
                 try {
@@ -1564,6 +1672,7 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
             command: String,
             timeoutMs: Long,
         ): String = interactive {
+            AdbLog.add("== Connect (full) — ${netSnapshot(context)}")
             val out = execRead(context, "shell:$command") { mgr ->
                 // Fast path first (saved port), then the localhost sweep, then
                 // mDNS. This is the full/deep connect used for the explicit
@@ -1629,8 +1738,14 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
                 val hostRef = AtomicReference<String?>(null)
                 val portRef = AtomicInteger(-1)
                 val latch = CountDownLatch(1)
+                AdbLog.add("mdns: looking for the connect service (${timeoutMs / 1000} s)")
                 mdns = AdbMdns(context, AdbMdns.SERVICE_TYPE_TLS_CONNECT) { host, port ->
-                    if (host != null && port > 0 && isThisPhone(host)) {
+                    val mine = host != null && isThisPhone(host)
+                    AdbLog.add(
+                        "mdns: answer port $port from " +
+                            (if (host == null) "no address" else if (mine) "this phone" else "another device (ignored)"),
+                    )
+                    if (host != null && port > 0 && mine) {
                         hostRef.set(host.hostAddress)
                         portRef.set(port)
                         latch.countDown()
@@ -1638,6 +1753,7 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
                 }
                 mdns.start()
                 if (!latch.await(timeoutMs, TimeUnit.MILLISECONDS)) {
+                    AdbLog.add("mdns: nothing from this phone in ${timeoutMs / 1000} s")
                     return "service not found"
                 }
                 val host = hostRef.get() ?: return "host not resolved"
@@ -1646,9 +1762,11 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
                     try {
                         mgr.connect(h, port)
                     } catch (e: Throwable) {
+                        AdbLog.add("mdns: connect port $port via ${hostKind(h)} — ${AdbLog.why(e)}")
                         continue
                     }
                     if (mgr.isConnected) {
+                        AdbLog.add("mdns: port $port via ${hostKind(h)} — connected")
                         saveLastConnect(context, h, port)
                         return null
                     }

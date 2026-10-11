@@ -1733,6 +1733,13 @@ class AppStrings {
   String get adbHeroNewSub => _s('adbHeroNewSub');
   String get adbHeroChecking => _s('adbHeroChecking');
   String get adbReconnect => _s('adbReconnect');
+  String get adbCopyReport => _s('adbCopyReport');
+  String get adbSendReport => _s('adbSendReport');
+  String get adbClearLog => _s('adbClearLog');
+  String get adbReportCopied => _s('adbReportCopied');
+  String get adbReportSent => _s('adbReportSent');
+  String get adbReportFailed => _s('adbReportFailed');
+  String get adbReportCopyCode => _s('adbReportCopyCode');
   String get adbReconnecting => _s('adbReconnecting');
   String get adbPairedAlready => _s('adbPairedAlready');
   String get adbPairAgain => _s('adbPairAgain');
@@ -2088,6 +2095,13 @@ class AppStrings {
     'adbHeroNewSub': 'Innocent connects to this phone\'s own Wireless debugging to open Android/data — no computer, no root.',
     'adbHeroChecking': 'Checking the connection…',
     'adbReconnect': 'Reconnect',
+    'adbCopyReport': 'Copy report',
+    'adbSendReport': 'Send report',
+    'adbClearLog': 'Clear log',
+    'adbReportCopied': 'Report copied — paste it into the chat',
+    'adbReportSent': 'Report sent. Quote this code:',
+    'adbReportFailed': 'Could not send — copy the report instead',
+    'adbReportCopyCode': 'Copy code',
     'adbReconnecting': 'Reconnecting — finding Wireless debugging’s new port…',
     'adbPairedAlready': 'This phone is paired — no new code needed. If it dropped, turn Wireless debugging on and tap Reconnect.',
     'adbPairAgain': 'Pair again',
@@ -3737,6 +3751,13 @@ class AppStrings {
     'adbHeroNewSub': 'Android/data ကို ဖွင့်ဖို့ Innocent က ဒီဖုန်းရဲ့ ကိုယ်ပိုင် Wireless debugging ကို ချိတ်ပါတယ် — ကွန်ပျူတာ မလို၊ root မလိုပါ။',
     'adbHeroChecking': 'ချိတ်ဆက်မှုကို စစ်နေပါတယ်…',
     'adbReconnect': 'ပြန်ချိတ်မယ်',
+    'adbCopyReport': 'Report ကူးမယ်',
+    'adbSendReport': 'Report ပို့မယ်',
+    'adbClearLog': 'Log ရှင်းမယ်',
+    'adbReportCopied': 'Report ကူးပြီးပါပြီ — chat ထဲမှာ paste လုပ်ပါ',
+    'adbReportSent': 'Report ပို့ပြီးပါပြီ။ ဒီ code ကို ပြောပြပါ:',
+    'adbReportFailed': 'ပို့လို့ မရပါ — Report ကို ကူးပြီး ပို့ပါ',
+    'adbReportCopyCode': 'Code ကူးမယ်',
     'adbReconnecting': 'ပြန်ချိတ်နေတယ် — Wireless debugging ရဲ့ port အသစ်ကို ရှာနေပါတယ်…',
     'adbPairedAlready': 'ဒီဖုန်းကို pair ပြီးသားပါ — code အသစ် မလိုပါ။ ပြုတ်သွားရင် Wireless debugging ကိုဖွင့်ပြီး ပြန်ချိတ်မယ် ကိုနှိပ်ပါ။',
     'adbPairAgain': 'ထပ် pair မယ်',
@@ -5374,6 +5395,13 @@ class AppStrings {
     'adbHeroNewSub': 'Innocent เชื่อมต่อกับการแก้ไขข้อบกพร่องผ่าน Wi-Fi ของโทรศัพท์เครื่องนี้เพื่อเปิด Android/data ไม่ต้องใช้คอมพิวเตอร์หรือรูท',
     'adbHeroChecking': 'กำลังตรวจสอบการเชื่อมต่อ…',
     'adbReconnect': 'เชื่อมต่อใหม่',
+    'adbCopyReport': 'คัดลอกรายงาน',
+    'adbSendReport': 'ส่งรายงาน',
+    'adbClearLog': 'ล้างบันทึก',
+    'adbReportCopied': 'คัดลอกรายงานแล้ว — วางในแชท',
+    'adbReportSent': 'ส่งรายงานแล้ว แจ้งรหัสนี้:',
+    'adbReportFailed': 'ส่งไม่ได้ — คัดลอกรายงานแทน',
+    'adbReportCopyCode': 'คัดลอกรหัส',
     'adbReconnecting': 'กำลังเชื่อมต่อใหม่ — กำลังหาพอร์ตใหม่ของการแก้ไขข้อบกพร่องไร้สาย…',
     'adbPairedAlready': 'จับคู่โทรศัพท์นี้แล้ว — ไม่ต้องใช้รหัสใหม่ ถ้าหลุด ให้เปิดการแก้ไขข้อบกพร่องไร้สายแล้วแตะเชื่อมต่อใหม่',
     'adbPairAgain': 'จับคู่อีกครั้ง',
