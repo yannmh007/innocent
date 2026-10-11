@@ -370,23 +370,19 @@ class AdbService {
   /// Returns an empty list on any failure (never throws).
   Future<List<AdbFileEntry>> scanAndroidDataByExt(List<String> exts) async {
     if (exts.isEmpty) return const [];
-    final nameTests = exts.map((e) => "-iname '*.$e'").join(' -o ');
-    const roots =
-        '/storage/emulated/0/Android/data /storage/emulated/0/Android/obb';
-    final cmd =
-        "find $roots -type f \\( $nameTests \\) -exec stat -c '%s|%n' {} + "
-        '2>/dev/null';
-    String out;
+    List<String> lines;
     try {
-      out = await shellRouted(cmd, timeoutMs: 45000);
+      // Same chunked scan as the Video tab: short commands a wireless-debugging
+      // connection won't drop. Any failure here is just an empty picker tab.
+      lines = await scanAndroidDataChunked(
+        shell: (c) => shellRouted(c, timeoutMs: 20000),
+        exts: exts,
+      );
     } catch (_) {
       return const [];
     }
-    if (out.startsWith('ERROR:') || out.startsWith('Channel error')) {
-      return const [];
-    }
     final entries = <AdbFileEntry>[];
-    for (final raw in out.split('\n')) {
+    for (final raw in lines) {
       final line = raw.trim();
       if (line.isEmpty) continue;
       final parsed = parseAdbScanLine(line);
@@ -528,6 +524,121 @@ class AdbService {
   Future<String> shellRouted(String command, {int timeoutMs = 12000}) =>
       shell(command, timeoutMs: timeoutMs);
 
+  static bool _shellFailed(String out) =>
+      out.startsWith('ERROR:') || out.startsWith('Channel error');
+
+  static List<String> _nonEmptyLines(String out) => out
+      .split('\n')
+      .map((l) => l.trim())
+      .where((l) => l.isNotEmpty)
+      .toList();
+
+  /// Wrap a path for the shell: single-quoted, with embedded quotes escaped.
+  static String _shQuote(String s) => "'${s.replaceAll("'", "'\\''")}'";
+
+  /// SCAN ANDROID/DATA A HANDFUL OF APP DIRECTORIES AT A TIME, NOT ONE `find`
+  /// ACROSS THE WHOLE TREE.
+  ///
+  /// A real phone (Samsung SM-S918B, Android 16) connected over Wireless
+  /// debugging dropped the single whole-tree scan every time —
+  /// `IOException: Stream closed.` about 1.7 s in — while short commands on the
+  /// very same connection (the `id` probe, a folder listing) answered fine,
+  /// even across fresh reconnects. A 45-second stream over a wireless-debugging
+  /// TLS socket is the fragile unit, so "connected but Android/data comes back
+  /// empty" was the result.
+  ///
+  /// So the scan is broken into short commands: first one that lists the app
+  /// directories under Android/data and Android/obb, then a `find … -exec stat`
+  /// over [chunk] of those directories at a time. Each finishes in about a
+  /// second — as reliable as the probe that already works — and a chunk that
+  /// still fails costs only its slice, not the whole scan. [shell] runs a
+  /// command and returns its output (or an "ERROR:" / "Channel error" string).
+  ///
+  /// Returns the raw scan lines ("<bytes>|<path>", or a bare path from the
+  /// older-toybox fallback). Throws only when nothing could be scanned at all
+  /// (the directory listing failed AND the whole-tree fallback failed, or every
+  /// single chunk failed on a phone that did have app directories) — so a
+  /// caller can tell "nothing is there" (empty list) from "couldn't look"
+  /// (throws), and never wipes the Video tab to empty on a dropped connection.
+  @visibleForTesting
+  static Future<List<String>> scanAndroidDataChunked({
+    required Future<String> Function(String command) shell,
+    required List<String> exts,
+    int chunk = 24,
+  }) async {
+    if (exts.isEmpty) return <String>[];
+    final nameTests = exts.map((e) => "-iname '*.$e'").join(' -o ');
+    const roots =
+        '/storage/emulated/0/Android/data /storage/emulated/0/Android/obb';
+
+    // One short command to list the app directories under both roots.
+    final dirsOut =
+        await shell('find $roots -maxdepth 1 -mindepth 1 -type d 2>/dev/null');
+    if (_shellFailed(dirsOut)) {
+      // Couldn't even list the directories — fall back to the single
+      // whole-tree find so this is never worse than the old behaviour. It
+      // throws if that fails too.
+      return _scanRootsSingle(shell, roots, nameTests);
+    }
+    final dirs =
+        _nonEmptyLines(dirsOut).where((l) => l.startsWith('/')).toList();
+    if (dirs.isEmpty) return <String>[]; // connected; nothing to scan
+
+    final lines = <String>[];
+    var chunks = 0;
+    var failed = 0;
+    for (var i = 0; i < dirs.length; i += chunk) {
+      final end = i + chunk < dirs.length ? i + chunk : dirs.length;
+      final quoted = dirs.sublist(i, end).map(_shQuote).join(' ');
+      chunks++;
+      // The engine already reconnects and retries once inside a single call,
+      // so one try per chunk per form is enough.
+      final statOut = await shell(
+        "find $quoted -type f \\( $nameTests \\) -exec stat -c '%s|%n' {} + "
+        '2>/dev/null',
+      );
+      if (_shellFailed(statOut)) {
+        failed++;
+        continue;
+      }
+      var got = _nonEmptyLines(statOut);
+      if (got.isNotEmpty && !got.any((l) => l.contains('/'))) {
+        // stat form unusable on this toybox — bare paths for this slice.
+        final plain =
+            await shell("find $quoted -type f \\( $nameTests \\) 2>/dev/null");
+        if (!_shellFailed(plain)) got = _nonEmptyLines(plain);
+      }
+      lines.addAll(got);
+    }
+    // Every slice failed on a phone that did have app dirs → the connection
+    // went down mid-scan. Say so rather than reporting "nothing there".
+    if (chunks > 0 && failed == chunks) {
+      throw Exception('ERROR: scan failed — connection lost mid-scan');
+    }
+    return lines;
+  }
+
+  /// The old single whole-tree scan, kept as the fallback for when the app
+  /// directories can't be listed. Throws on failure.
+  static Future<List<String>> _scanRootsSingle(
+    Future<String> Function(String command) shell,
+    String roots,
+    String nameTests,
+  ) async {
+    var out = await shell(
+      "find $roots -type f \\( $nameTests \\) -exec stat -c '%s|%n' {} + "
+      '2>/dev/null',
+    );
+    if (_shellFailed(out)) throw Exception(out);
+    var lines = _nonEmptyLines(out);
+    if (!lines.any((l) => l.contains('/'))) {
+      out = await shell("find $roots -type f \\( $nameTests \\) 2>/dev/null");
+      if (_shellFailed(out)) throw Exception(out);
+      lines = _nonEmptyLines(out);
+    }
+    return lines;
+  }
+
   // Single-flight: if a scan is already running (e.g. auto-scan-on-connect and
   // a pull-to-refresh fired together), every caller shares the one in-flight
   // scan instead of each spawning a duplicate `find` over Android/data.
@@ -547,40 +658,14 @@ class AdbService {
     const exts = [
       'mp4', 'mkv', 'webm', 'avi', 'mov', 'm4v', '3gp', 'ts', 'flv', 'wmv',
     ];
-    final nameTests = exts.map((e) => "-iname '*.$e'").join(' -o ');
-    const roots =
-        '/storage/emulated/0/Android/data /storage/emulated/0/Android/obb';
-    // Size-aware scan: one "<bytes>|<path>" line per file. `-exec … {} +`
-    // batches the stat calls; toybox on Android 11+ supports both -exec…+ and
-    // `stat -c`. If a device's toybox doesn't, we fall back to bare paths below
-    // so the scan can never come back empty because of the size flag.
-    final statCmd =
-        "find $roots -type f \\( $nameTests \\) -exec stat -c '%s|%n' {} + "
-        "2>/dev/null";
-    var out = await shellRouted(statCmd, timeoutMs: 45000);
-    if (out.startsWith('ERROR:') || out.startsWith('Channel error')) {
-      throw Exception(out);
-    }
-    var lines = out
-        .split('\n')
-        .map((l) => l.trim())
-        .where((l) => l.isNotEmpty)
-        .toList();
-    // Fallback: if the size-aware form yielded nothing usable, re-run the plain
-    // path-only scan (the proven command) so we still find videos.
-    final usable = lines.any((l) => l.contains('/'));
-    if (!usable) {
-      final plain = 'find $roots -type f \\( $nameTests \\) 2>/dev/null';
-      out = await shellRouted(plain, timeoutMs: 45000);
-      if (out.startsWith('ERROR:') || out.startsWith('Channel error')) {
-        throw Exception(out);
-      }
-      lines = out
-          .split('\n')
-          .map((l) => l.trim())
-          .where((l) => l.isNotEmpty)
-          .toList();
-    }
+    // A handful of app directories per short command, not one long `find` over
+    // the whole tree that a wireless-debugging connection drops. Throws when
+    // the connection was down the whole time, so the Video tab keeps what it
+    // already showed instead of being wiped to empty.
+    final lines = await scanAndroidDataChunked(
+      shell: (c) => shellRouted(c, timeoutMs: 20000),
+      exts: exts,
+    );
     await _saveScanned(lines);
     // Callers (the ADB screen list) want clean paths; sizes live in the
     // persisted lines, read back by the Local provider.
