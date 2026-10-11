@@ -1315,7 +1315,7 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
                   color: AppColors.accentBlueLight, size: 22),
               const SizedBox(width: 10),
               Expanded(
-                child: Text(s.adbPairTitle,
+                child: Text(_pairedBefore ? s.adbHeroPairAgain : s.adbPairTitle,
                     style: const TextStyle(
                         fontWeight: FontWeight.w700, fontSize: 15.5)),
               ),

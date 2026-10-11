@@ -442,6 +442,10 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
                 .edit().putString("last_connect", "$host:$port").apply()
         }
 
+        /** The port of [lastConnect], or null. */
+        private fun savedPort(context: Context): Int? =
+            lastConnect(context).substringAfterLast(':', "").toIntOrNull()
+
         /** The last host:port that connected (empty if never). */
         fun lastConnect(context: Context): String =
             context.getSharedPreferences("adb_state", Context.MODE_PRIVATE)
@@ -1765,7 +1769,21 @@ class AdbManager private constructor(context: Context) : AbsAdbConnectionManager
                 // receiver — none of which block interactive pairing.
                 // (The heal inside reconnectFromSaved may have swept just now;
                 // a second sweep straight after would find the same nothing.)
-                if (reconnectFromSaved(context, mgr, heal = true)) null
+                if (reconnectFromSaved(context, mgr)) null
+                else if (pairingRefused()) PAIRING_REQUIRED
+                // mDNS FIRST, BRIEFLY. Where Android's mDNS works it answers in
+                // a fraction of a second (140 ms on the S23 Ultra whose log
+                // this is), while the port sweep takes 4–8 s and then tries
+                // every open port in turn. A short window here, the sweep if it
+                // finds nothing, and the long mDNS window last, as before.
+                else if (Build.VERSION.SDK_INT >= 30 && wirelessDebuggingOn(context) &&
+                    mdnsConnectOnce(context, mgr, 3000L) == null && mgr.isConnected
+                ) null
+                else if (pairingRefused()) PAIRING_REQUIRED
+                // The saved port was just tried; look for where it moved.
+                else if (lastConnect(context).isNotEmpty() &&
+                    healMovedPort(context, mgr, savedPort(context))
+                ) null
                 else if (pairingRefused()) PAIRING_REQUIRED
                 else if (!sweptWithin(2000L) && scanLocalPort(context, mgr)) null
                 else if (pairingRefused()) PAIRING_REQUIRED
