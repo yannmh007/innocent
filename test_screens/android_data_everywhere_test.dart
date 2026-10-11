@@ -62,6 +62,15 @@ void _fakeAdb() {
       case 'shell':
         final cmd = (call.arguments as Map)['command'] as String;
         if (cmd.startsWith('echo ok')) return 'ok';
+        // The chunked scan lists the app directories first, then scans a
+        // handful at a time: answer the directory listing with the two apps
+        // whose images we fake below.
+        if (cmd.contains('-maxdepth 1 -mindepth 1 -type d')) {
+          return <String>[
+            '$kAndroidDataRoot/org.telegram.messenger',
+            '$kAndroidDataRoot/com.viber.voip',
+          ].join('\n');
+        }
         if (cmd.contains("-iname '*.jpg'")) return _images.join('\n');
         return '';
       default:

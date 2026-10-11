@@ -35,24 +35,42 @@ class _AdbLostCardState extends State<AdbLostCard> {
   /// one short shell round trip, bounded at three seconds.
   static const Duration _every = Duration(seconds: 4);
 
+  /// While the phone refuses the key, asking every four seconds only makes
+  /// the engine sweep for a port that will refuse again; it asks this often
+  /// instead, in case the person pairs from the notification meanwhile.
+  static const Duration _everWhileRefused = Duration(seconds: 20);
+
   Timer? _timer;
   bool _checking = false;
   bool _done = false;
+  DateTime _lastCheck = DateTime.fromMillisecondsSinceEpoch(0);
 
   @override
   void initState() {
     super.initState();
     _timer = Timer.periodic(_every, (_) => _check());
+    AdbService.instance.pairingNeeded.addListener(_onPairing);
   }
 
   @override
   void dispose() {
     _timer?.cancel();
+    AdbService.instance.pairingNeeded.removeListener(_onPairing);
     super.dispose();
   }
 
-  Future<void> _check() async {
+  void _onPairing() {
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _check({bool now = false}) async {
     if (_checking || _done) return;
+    if (!now &&
+        AdbService.instance.pairingNeeded.value &&
+        DateTime.now().difference(_lastCheck) < _everWhileRefused) {
+      return;
+    }
+    _lastCheck = DateTime.now();
     _checking = true;
     try {
       final ok = await AdbService.instance.isConnected(timeoutMs: 3000);
@@ -72,12 +90,15 @@ class _AdbLostCardState extends State<AdbLostCard> {
     await Navigator.of(context, rootNavigator: true).push(
       MaterialPageRoute<void>(builder: (_) => const AdbConnectScreen()),
     );
-    if (mounted) unawaited(_check());
+    if (mounted) unawaited(_check(now: true));
   }
 
   @override
   Widget build(BuildContext context) {
     final s = AppStrings.of(context);
+    // The phone refused the key: no reconnect will come, so say "pair again".
+    final refused =
+        !widget.firstTime && AdbService.instance.pairingNeeded.value;
     return Center(
       child: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
@@ -107,7 +128,11 @@ class _AdbLostCardState extends State<AdbLostCard> {
             ),
             const SizedBox(height: 8),
             Text(
-              widget.firstTime ? s.adbHeroNewSub : s.adbLostBody,
+              widget.firstTime
+                  ? s.adbHeroNewSub
+                  : refused
+                      ? s.adbPairingRefused
+                      : s.adbLostBody,
               textAlign: TextAlign.center,
               style: const TextStyle(
                   color: AppColors.white70, fontSize: 13.5, height: 1.55),
@@ -131,7 +156,7 @@ class _AdbLostCardState extends State<AdbLostCard> {
             FilledButton.icon(
               onPressed: _openSettings,
               icon: const Icon(Icons.settings_ethernet_rounded, size: 18),
-              label: Text(s.adbLostAction),
+              label: Text(refused ? s.adbPairAgain : s.adbLostAction),
             ),
           ],
         ),

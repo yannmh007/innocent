@@ -216,6 +216,17 @@ jobs:
       - name: Test
         run: flutter test
 
+      # The app's ADB reading code (AdbRead.java) against the ADB library's
+      # own source, over a real socket, with a fake adbd: tool/adblab/README.md.
+      # The library never ends a stream cleanly, and reading output to the end
+      # is what made a real phone's scans fail and its working connection look
+      # dead. Seconds of work, and the one place that would notice the reader
+      # going back to the old way.
+      - name: ADB reader lab
+        env:
+          ADBLAB_ONLY_NEW: '1'
+        run: tool/adblab/run.sh 60
+
       - name: Restore the signing key
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
