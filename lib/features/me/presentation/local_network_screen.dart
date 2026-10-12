@@ -10,6 +10,7 @@ import '../../network/presentation/net_browser_screen.dart';
 import '../../network/presentation/net_widgets.dart';
 import '../../network/presentation/server_form.dart';
 import '../../../core/theme/tab_title.dart';
+import '../../../core/ui/safe_popup_menu.dart';
 
 /// Me → Local Network: MX Player's "Networks" — SMB, FTP, FTPS and SFTP
 /// servers on this Wi-Fi, browsed and played like files on the phone.
@@ -223,7 +224,7 @@ class _ServerTile extends StatelessWidget {
                       ],
                     ]),
               ),
-              PopupMenuButton<int>(
+              SafePopupMenuButton<int>(
                 key: ValueKey('net-menu-${server.title}'),
                 icon:
                     const Icon(Icons.more_vert_rounded, color: Colors.white70),

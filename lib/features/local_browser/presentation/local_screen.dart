@@ -38,6 +38,7 @@ import 'widgets/folder_selection_app_bar.dart';
 import 'widgets/video_option_menu.dart';
 import '../../../core/utils/async_value_extensions.dart';
 import '../../../core/theme/tab_title.dart';
+import '../../../core/ui/safe_popup_menu.dart';
 
 /// Local tab — shows folders/videos with view mode, sort, search
 class LocalScreen extends ConsumerStatefulWidget {
@@ -570,7 +571,7 @@ class _LocalScreenState extends ConsumerState<LocalScreen> {
                 // Phase 45 (audit): MX Player V3 has a 3-dot overflow menu
                 // with Refresh, Settings, Help submenu, Quit. We replicate
                 // it exactly (verified against decompiled menu/list.xml).
-                PopupMenuButton<String>(
+                SafePopupMenuButton<String>(
                   icon: const Icon(Icons.more_vert),
                   tooltip: 'More',
                   color: AppColors.darkSurface,

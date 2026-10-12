@@ -35,6 +35,7 @@ import 'playlist_sheet.dart';
 import 'preflight_gate.dart';
 import 'quality_sheet.dart';
 import '../../../core/theme/tab_title.dart';
+import '../../../core/ui/safe_popup_menu.dart';
 
 /// Home of the downloader.
 ///
@@ -2535,7 +2536,7 @@ class _DownloaderHomeScreenState extends ConsumerState<DownloaderHomeScreen>
         style: const TextStyle(color: AppColors.white40, fontSize: 11),
       ),
       onTap: () => _playSaved(s, r),
-      trailing: PopupMenuButton<String>(
+      trailing: SafePopupMenuButton<String>(
         tooltip: s.downloaderMoreOptions,
         icon: const Icon(Icons.more_vert, size: 18, color: AppColors.white40),
         color: AppColors.specSheetBg,
@@ -3068,7 +3069,7 @@ class _DownloaderHomeScreenState extends ConsumerState<DownloaderHomeScreen>
             // page is this from, and did I pick the right video? Reopening
             // the page is how somebody checks without cancelling first, and
             // it costs nothing to offer: the address is already in the spec.
-            PopupMenuButton<String>(
+            SafePopupMenuButton<String>(
               tooltip: s.downloaderMoreOptions,
               icon: const Icon(Icons.more_vert,
                   size: 18, color: AppColors.white40),

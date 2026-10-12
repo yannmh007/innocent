@@ -10,6 +10,7 @@ import '../library_provider.dart';
 import 'bulk_actions.dart';
 import '../selection_provider.dart';
 import '../../../../core/theme/tab_title.dart';
+import '../../../../core/ui/safe_popup_menu.dart';
 
 /// Top bar shown while videos are selected.
 ///
@@ -105,7 +106,7 @@ class SelectionAppBar extends ConsumerWidget implements PreferredSizeWidget {
             await BulkActions.properties(context, ref, videos: videos);
           },
         ),
-        PopupMenuButton<String>(
+        SafePopupMenuButton<String>(
           icon: const Icon(Icons.more_vert),
           color: AppColors.darkSurface,
           onSelected: (v) async {

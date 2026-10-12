@@ -32,6 +32,7 @@ import '../../local_browser/domain/sort_options.dart';
 import '../../../core/localization/app_strings.dart';
 import '../../../core/ui/tv_focus.dart';
 import '../../../core/theme/tab_title.dart';
+import '../../../core/ui/safe_popup_menu.dart';
 
 part 'private_folder_pin_widgets.dart';
 
@@ -650,7 +651,7 @@ class _PrivateFolderScreenState extends ConsumerState<PrivateFolderScreen>
                             privateFolderPreferencesProvider),
                   ),
                   // 4) Overflow — New folder · Refresh · Lock · Change PIN.
-                  PopupMenuButton<String>(
+                  SafePopupMenuButton<String>(
                     icon: const Icon(Icons.more_vert),
                     tooltip: AppStrings.of(context).moreOptions,
                     color: AppColors.darkSurface,

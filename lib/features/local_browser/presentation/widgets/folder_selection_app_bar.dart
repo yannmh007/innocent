@@ -14,6 +14,7 @@ import '../library_provider.dart';
 import 'bulk_actions.dart';
 import '../selection_provider.dart';
 import '../../../../core/theme/tab_title.dart';
+import '../../../../core/ui/safe_popup_menu.dart';
 
 /// Contextual app bar shown when one or more FOLDERS are selected in the
 /// Local tab (long-press to enter). Mirrors MX Player's folder multi-select:
@@ -75,7 +76,7 @@ class FolderSelectionAppBar extends ConsumerWidget
             await BulkActions.properties(context, ref, videos: videos);
           },
         ),
-        PopupMenuButton<String>(
+        SafePopupMenuButton<String>(
           icon: const Icon(Icons.more_vert),
           color: AppColors.darkSurface,
           onSelected: (v) async {

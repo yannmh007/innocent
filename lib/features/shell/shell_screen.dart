@@ -16,6 +16,7 @@ import '../me/presentation/me_screen.dart';
 import '../updater/presentation/update_prompt.dart';
 import '../music/presentation/music_screen.dart';
 import '../transfer/presentation/transfer_screen.dart';
+import 'shell_popup_guard.dart';
 
 /// Provider for current selected tab index
 final shellTabIndexProvider = StateProvider<int>((ref) => 0);
@@ -200,39 +201,45 @@ class _ShellScreenState extends ConsumerState<ShellScreen>
       return backToFirstTab(Scaffold(
         body: Row(
           children: [
-            ColoredBox(
-              color: AppColors.specNavBar,
-              child: SafeArea(
-                right: false,
-                child: NavigationRail(
-                  selectedIndex: currentIndex,
-                  onDestinationSelected: select,
-                  backgroundColor: AppColors.specNavBar,
-                  labelType: NavigationRailLabelType.all,
-                  groupAlignment: -0.85,
-                  minWidth: 80,
-                  indicatorColor: AppColors.specPrimary.withValues(alpha: 0.18),
-                  selectedIconTheme: const IconThemeData(
-                      color: AppColors.specPrimary, size: 24),
-                  unselectedIconTheme: const IconThemeData(
-                      color: AppColors.specNavInactive, size: 24),
-                  selectedLabelTextStyle: Theme.of(context)
-                      .textTheme
-                      .labelMedium
-                      ?.copyWith(color: AppColors.specPrimary, fontSize: 12),
-                  unselectedLabelTextStyle: Theme.of(context)
-                      .textTheme
-                      .labelMedium
-                      ?.copyWith(
-                          color: AppColors.specNavInactive, fontSize: 12),
-                  destinations: [
-                    for (int i = 0; i < _shellTabs.length; i++)
-                      NavigationRailDestination(
-                        icon: Icon(_shellTabs[i].icon),
-                        selectedIcon: Icon(_shellTabs[i].activeIcon),
-                        label: Text(_navLabel(context, i)),
-                      ),
-                  ],
+            // While a menu or sheet is open over the tab, the rail closes it
+            // rather than switching tabs under it (shell_popup_guard.dart).
+            PopupAwareBar(
+              tabIndex: currentIndex,
+              child: ColoredBox(
+                color: AppColors.specNavBar,
+                child: SafeArea(
+                  right: false,
+                  child: NavigationRail(
+                    selectedIndex: currentIndex,
+                    onDestinationSelected: select,
+                    backgroundColor: AppColors.specNavBar,
+                    labelType: NavigationRailLabelType.all,
+                    groupAlignment: -0.85,
+                    minWidth: 80,
+                    indicatorColor:
+                        AppColors.specPrimary.withValues(alpha: 0.18),
+                    selectedIconTheme: const IconThemeData(
+                        color: AppColors.specPrimary, size: 24),
+                    unselectedIconTheme: const IconThemeData(
+                        color: AppColors.specNavInactive, size: 24),
+                    selectedLabelTextStyle: Theme.of(context)
+                        .textTheme
+                        .labelMedium
+                        ?.copyWith(color: AppColors.specPrimary, fontSize: 12),
+                    unselectedLabelTextStyle: Theme.of(context)
+                        .textTheme
+                        .labelMedium
+                        ?.copyWith(
+                            color: AppColors.specNavInactive, fontSize: 12),
+                    destinations: [
+                      for (int i = 0; i < _shellTabs.length; i++)
+                        NavigationRailDestination(
+                          icon: Icon(_shellTabs[i].icon),
+                          selectedIcon: Icon(_shellTabs[i].activeIcon),
+                          label: Text(_navLabel(context, i)),
+                        ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -252,31 +259,38 @@ class _ShellScreenState extends ConsumerState<ShellScreen>
 
     return backToFirstTab(Scaffold(
       body: widget.child,
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: currentIndex,
-        backgroundColor: AppColors.specNavBar,
-        elevation: 0,
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: AppColors.specPrimary,
-        unselectedItemColor: AppColors.specNavInactive,
-        // MX PLAYER'S NAV, measured from its screenshots (2026-10-04, 411 dp
-        // phone): a 24 dp icon and an 11 sp label, the same size selected or
-        // not. The 28 / 13 this used to be — set "to read taller" — was a
-        // third larger than MX's and made the bar the heaviest thing on the
-        // screen.
-        iconSize: 24,
-        selectedFontSize: 11,
-        unselectedFontSize: 11,
-        showUnselectedLabels: true,
-        onTap: select,
-        items: [
-          for (int i = 0; i < _shellTabs.length; i++)
-            BottomNavigationBarItem(
-              icon: Icon(_shellTabs[i].icon),
-              activeIcon: Icon(_shellTabs[i].activeIcon),
-              label: _navLabel(context, i),
-            ),
-        ],
+      // While a menu or sheet is open over the tab, a tap on the bar closes
+      // it instead of switching tabs under it: switching disposed the tab —
+      // and the open menu's button — and crashed the menu ("Something
+      // didn't load" on Me). shell_popup_guard.dart.
+      bottomNavigationBar: PopupAwareBar(
+        tabIndex: currentIndex,
+        child: BottomNavigationBar(
+          currentIndex: currentIndex,
+          backgroundColor: AppColors.specNavBar,
+          elevation: 0,
+          type: BottomNavigationBarType.fixed,
+          selectedItemColor: AppColors.specPrimary,
+          unselectedItemColor: AppColors.specNavInactive,
+          // MX PLAYER'S NAV, measured from its screenshots (2026-10-04, 411 dp
+          // phone): a 24 dp icon and an 11 sp label, the same size selected or
+          // not. The 28 / 13 this used to be — set "to read taller" — was a
+          // third larger than MX's and made the bar the heaviest thing on the
+          // screen.
+          iconSize: 24,
+          selectedFontSize: 11,
+          unselectedFontSize: 11,
+          showUnselectedLabels: true,
+          onTap: select,
+          items: [
+            for (int i = 0; i < _shellTabs.length; i++)
+              BottomNavigationBarItem(
+                icon: Icon(_shellTabs[i].icon),
+                activeIcon: Icon(_shellTabs[i].activeIcon),
+                label: _navLabel(context, i),
+              ),
+          ],
+        ),
       ),
     ));
   }

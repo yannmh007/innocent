@@ -24,6 +24,7 @@ import '../domain/byte_size.dart';
 import '../domain/video_content.dart';
 import 'video_hub_theme.dart';
 import '../../../core/theme/tab_title.dart';
+import '../../../core/ui/safe_popup_menu.dart';
 
 /// What is kept on this device.
 ///
@@ -1200,7 +1201,7 @@ class _RowMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return PopupMenuButton<int>(
+    return SafePopupMenuButton<int>(
       tooltip: '',
       icon: const Icon(Icons.more_vert_rounded, color: VH.textTertiary, size: 20),
       color: VH.surface2,

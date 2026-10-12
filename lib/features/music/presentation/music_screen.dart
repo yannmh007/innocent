@@ -15,6 +15,7 @@ import 'song_context_menu.dart';
 import '../../../core/utils/async_value_extensions.dart';
 import '../../../core/ui/tablet_constrained_width.dart';
 import '../../../core/theme/tab_title.dart';
+import '../../../core/ui/safe_popup_menu.dart';
 
 /// Music tab — Tracks / Playlists / Albums / Artists / Folders
 /// Matches MX Player UI (PDF page 5)
@@ -82,7 +83,7 @@ class _MusicScreenState extends ConsumerState<MusicScreen>
               icon: const Icon(Icons.search),
               onPressed: () => setState(() => _searching = true),
             ),
-            PopupMenuButton<String>(
+            SafePopupMenuButton<String>(
               icon: const Icon(Icons.more_vert),
               color: AppColors.darkSurface,
               onSelected: (v) {

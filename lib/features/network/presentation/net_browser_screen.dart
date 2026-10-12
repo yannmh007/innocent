@@ -13,6 +13,7 @@ import '../data/net_server.dart';
 import 'net_errors.dart';
 import 'net_widgets.dart';
 import '../../../core/theme/tab_title.dart';
+import '../../../core/ui/safe_popup_menu.dart';
 
 enum _Sort { name, date, size }
 
@@ -263,7 +264,7 @@ class _NetBrowserScreenState extends ConsumerState<NetBrowserScreen> {
                   color: _mediaOnly ? NetColors.action : Colors.white),
               onPressed: () => setState(() => _mediaOnly = !_mediaOnly),
             ),
-            PopupMenuButton<_Sort>(
+            SafePopupMenuButton<_Sort>(
               icon: const Icon(Icons.sort_rounded, color: Colors.white),
               color: NetColors.dialog,
               initialValue: _sort,
