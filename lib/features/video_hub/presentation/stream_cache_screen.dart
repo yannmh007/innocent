@@ -217,6 +217,7 @@ class _StreamCacheScreenState extends State<StreamCacheScreen> {
                             fontSize: 12),
                       ),
                       trailing: IconButton(
+                        tooltip: AppStrings.of(context).remove,
                         icon: const Icon(Icons.close,
                             size: 18, color: AppColors.darkOnSurfaceMuted),
                         onPressed: () async {

@@ -52,6 +52,7 @@ class _BookmarksScreenState extends ConsumerState<BookmarksScreen> {
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
+          tooltip: MaterialLocalizations.of(context).backButtonTooltip,
           icon: const Icon(Icons.arrow_back, color: VH.textPrimary),
           onPressed: () => Navigator.of(context).maybePop(),
         ),
@@ -187,7 +188,11 @@ class _SavedCard extends ConsumerWidget {
       child: Stack(
         children: <Widget>[
           Positioned.fill(
-            child: AnimatedScale(
+            // While editing, a tap on the card removes it: TalkBack says
+            // so ("double tap to Remove") instead of promising to open it.
+            child: Semantics(
+              onTapHint: editing ? AppStrings.of(context).remove : null,
+              child: AnimatedScale(
               duration: VH.fast,
               scale: editing ? 0.94 : 1,
               child: PosterCard(
@@ -199,11 +204,15 @@ class _SavedCard extends ConsumerWidget {
                         builder: (_) => ContentDetailScreen(content: content))),
               ),
             ),
+            ),
           ),
           Positioned(
             top: 0,
             right: 0,
-            child: AnimatedScale(
+            // The badge only shows what a tap on the card does while
+            // editing; for TalkBack the card is the one control.
+            child: ExcludeSemantics(
+              child: AnimatedScale(
               duration: VH.fast,
               scale: editing ? 1 : 0,
               child: Material(
@@ -220,6 +229,7 @@ class _SavedCard extends ConsumerWidget {
                   ),
                 ),
               ),
+            ),
             ),
           ),
         ],

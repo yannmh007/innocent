@@ -161,6 +161,7 @@ class _ContentDetailScreenState extends ConsumerState<ContentDetailScreen> {
             pinned: true,
             expandedHeight: 260,
             leading: IconButton(
+              tooltip: MaterialLocalizations.of(context).backButtonTooltip,
               icon: const Icon(Icons.arrow_back, color: Colors.white),
               onPressed: () => Navigator.of(context).maybePop(),
             ),

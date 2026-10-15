@@ -22,9 +22,13 @@ class DecoderDialog extends StatelessWidget {
       children: [
         // Dim backdrop
         Positioned.fill(
-          child: GestureDetector(
+          // Read as Android reads a dialog's backdrop: "Dismiss".
+          child: Semantics(
+            label: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+            child: GestureDetector(
             onTap: onDismiss,
             child: Container(color: Colors.black54),
+          ),
           ),
         ),
         // Dialog card

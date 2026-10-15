@@ -68,6 +68,16 @@ class AppStrings {
   String _s(String key) =>
       (_byLocale[locale.languageCode] ?? _en)[key] ?? _en[key] ?? key;
 
+  /// A counted string, '{n}' filled in: the `${key}One` form for exactly
+  /// one where the language has one ("1 file", not "1 file(s)"), the plain
+  /// form otherwise. Burmese and Thai do not inflect, so only English carries
+  /// the One forms; a language without one falls back to its plain form.
+  String _count(String key, int n) {
+    final table = _byLocale[locale.languageCode] ?? _en;
+    final one = n == 1 ? table['${key}One'] : null;
+    return (one ?? _s(key)).replaceAll('{n}', '$n');
+  }
+
   // ── Typed accessors ────────────────────────────────────────────────
   // Bottom navigation
   String get tabLocal => _s('tabLocal');
@@ -701,7 +711,7 @@ class AppStrings {
   String get shareScanHint => _s('shareScanHint');
   String get urlCopied => _s('urlCopied');
   String get stopSharing => _s('stopSharing');
-  String trSharingNow(int n) => _s('trSharingNow').replaceFirst('{n}', '$n');
+  String trSharingNow(int n) => _count('trSharingNow', n);
   String get trSharingComputer => _s('trSharingComputer');
   String get trViaWifi => _s('trViaWifi');
   String get trReceivingNow => _s('trReceivingNow');
@@ -722,8 +732,7 @@ class AppStrings {
   String get trPcStep2 => _s('trPcStep2');
   String get trPcStep3 => _s('trPcStep3');
   String trPcConnected(int n) => _s('trPcConnected').replaceFirst('{n}', '$n');
-  String trPcSharingFiles(int n) =>
-      _s('trPcSharingFiles').replaceFirst('{n}', '$n');
+  String trPcSharingFiles(int n) => _count('trPcSharingFiles', n);
   String get trPcStart => _s('trPcStart');
   String get trScanTitle => _s('trScanTitle');
   String get trScanBody => _s('trScanBody');
@@ -1350,8 +1359,8 @@ class AppStrings {
 
   String get vaultFileMissing => _s('vaultFileMissing');
 
-  String someFilesFailed(Object n) => _s('someFilesFailed').replaceFirst('{n}', '$n');
-  String filesAddedOk(Object n) => _s('filesAddedOk').replaceFirst('{n}', '$n');
+  String someFilesFailed(int n) => _count('someFilesFailed', n);
+  String filesAddedOk(int n) => _count('filesAddedOk', n);
 
   String get forgotPin => _s('forgotPin');
   String get recoverVault => _s('recoverVault');
@@ -1698,6 +1707,14 @@ class AppStrings {
   String get adbTipTranssion => _s('adbTipTranssion');
   String get adbNotSupported => _s('adbNotSupported');
   String get hfTitle => _s('hfTitle');
+  String get playerSurface => _s('playerSurface');
+  String get playerSurfaceHint => _s('playerSurfaceHint');
+  String get themeAdaptive => _s('themeAdaptive');
+  String get themeLight => _s('themeLight');
+  String get themeDark => _s('themeDark');
+  String get themeUsing => _s('themeUsing');
+  String get themeComingSoon => _s('themeComingSoon');
+  String get themeNew => _s('themeNew');
   String get fvTitle => _s('fvTitle');
   String get fvAppSection => _s('fvAppSection');
   String get fvAppSectionHint => _s('fvAppSectionHint');
@@ -1711,9 +1728,9 @@ class AppStrings {
   String get fvHideAll => _s('fvHideAll');
   String get fvShowAll => _s('fvShowAll');
   String get fvEmpty => _s('fvEmpty');
-  String fvHiddenSnack(Object n) => _s('fvHiddenSnack').replaceFirst('{n}', '$n');
-  String fvFooter(Object n) => _s('fvFooter').replaceFirst('{n}', '$n');
-  String fvVideos(Object n) => _s('fvVideos').replaceFirst('{n}', '$n');
+  String fvHiddenSnack(int n) => _count('fvHiddenSnack', n);
+  String fvFooter(int n) => _count('fvFooter', n);
+  String fvVideos(int n) => _count('fvVideos', n);
   String get fvUndo => _s('fvUndo');
   String get fvManage => _s('fvManage');
   String get hfNeedTitle => _s('hfNeedTitle');
@@ -1749,7 +1766,7 @@ class AppStrings {
   String get hfInApps => _s('hfInApps');
   String get hfBucketPhotos => _s('hfBucketPhotos');
   String get hfBucketAudio => _s('hfBucketAudio');
-  String hfSkipped(int n) => _s('hfSkipped').replaceAll('{n}', '$n');
+  String hfSkipped(int n) => _count('hfSkipped', n);
   String get hfConnectTitle => _s('hfConnectTitle');
   String get hfConnectBody => _s('hfConnectBody');
   String get hfOpenAdb => _s('hfOpenAdb');
@@ -1940,7 +1957,8 @@ class AppStrings {
   };
 
   static const Map<String, String> _en = <String, String>{
-    'trSharingNow': 'Sharing {n} file(s) — tap to see',
+    'trSharingNow': 'Sharing {n} files — tap to see',
+    'trSharingNowOne': 'Sharing {n} file — tap to see',
     'trSharingComputer': 'Sharing with a computer — tap to see',
     'trViaWifi': 'Over your Wi-Fi',
     'trReceivingNow': 'Receiving — tap to see',
@@ -1961,7 +1979,8 @@ class AppStrings {
     'trPcStep2': 'Open this address in its browser',
     'trPcStep3': 'Download files, or drop files on the page to send them here',
     'trPcConnected': '{n} connected',
-    'trPcSharingFiles': 'Sharing {n} file(s) from this phone',
+    'trPcSharingFiles': 'Sharing {n} files from this phone',
+    'trPcSharingFilesOne': 'Sharing {n} file from this phone',
     'trPcStart': 'Start',
     'trScanTitle': 'Scan the sender\'s QR code',
     'trScanBody': 'On the other phone, tap Send — a QR code appears. Scan it and the two phones connect directly.',
@@ -2094,6 +2113,16 @@ class AppStrings {
     'adbTipTranssion': 'TECNO, Infinix and itel: let Innocent run in the background (battery settings or Phone Master), or the pairing notification can be closed before you type the code.',
     'adbNotSupported': 'Wireless debugging needs Android 11 or newer.',
     'hfTitle': 'Hidden files',
+    'playerSurface': 'Video',
+    'playerSurfaceHint': 'show or hide the controls',
+    'themeAdaptive': 'Adaptive',
+    'themeLight': 'Light Theme',
+    'themeDark': 'Dark Theme',
+    'themeUsing': 'Using',
+    'themeComingSoon': 'Coming soon',
+    'themeNew': 'NEW',
+    'fvHiddenSnackOne': '{n} folder hidden from the Video tab',
+    'fvFooterOne': '{n} hidden folder',
     'fvTitle': 'Show / hide folders',
     'fvAppSection': 'App folders (Android/data)',
     'fvAppSectionHint': 'Found through ADB. Hide the ones you do not want in the Video tab — nothing is moved or deleted.',
@@ -2107,9 +2136,10 @@ class AppStrings {
     'fvHideAll': 'Hide all',
     'fvShowAll': 'Show all',
     'fvEmpty': 'No folder is hidden. In the Video tab, long-press a folder and tap Hide.',
-    'fvHiddenSnack': '{n} folder(s) hidden from the Video tab',
-    'fvFooter': '{n} hidden folder(s)',
+    'fvHiddenSnack': '{n} folders hidden from the Video tab',
+    'fvFooter': '{n} hidden folders',
     'fvVideos': '{n} videos',
+    'fvVideosOne': '{n} video',
     'fvUndo': 'Undo',
     'fvManage': 'Manage',
     'hfNeedTitle': 'Hidden files need ADB',
@@ -2142,7 +2172,8 @@ class AppStrings {
     'hfInApps': 'Inside apps (Android/data)',
     'hfBucketPhotos': 'Telegram’s and other apps’ photos',
     'hfBucketAudio': 'Telegram’s and other apps’ audio',
-    'hfSkipped': '{n} file(s) from Android/data were skipped — connect ADB and try again.',
+    'hfSkipped': '{n} files from Android/data were skipped — connect ADB and try again.',
+    'hfSkippedOne': '{n} file from Android/data was skipped — connect ADB and try again.',
     'hfConnectTitle': 'Connect to see inside apps',
     'hfConnectBody': 'Hidden dot-folders are showing now. Telegram’s and other apps’ folders (Android/data) open through Innocent’s ADB connection — set it up once?',
     'hfOpenAdb': 'Set up ADB',
@@ -3302,8 +3333,10 @@ class AppStrings {
     'deleteFolderAndFilesSub': 'Everything inside is permanently erased',
     'folderDeleted': 'Folder deleted',
     'vaultFileMissing': 'File not found — it may have been removed',
-    'someFilesFailed': '{n} file(s) couldn\'t be added',
-    'filesAddedOk': '{n} file(s) added',
+    'someFilesFailed': '{n} files couldn\'t be added',
+    'someFilesFailedOne': '{n} file couldn\'t be added',
+    'filesAddedOk': '{n} files added',
+    'filesAddedOkOne': '{n} file added',
     'forgotPin': 'Forgot PIN?',
     'recoverVault': 'Recover vault access',
     'chooseRecoveryMethod': 'How would you like to recover?',
@@ -3783,6 +3816,14 @@ class AppStrings {
     'adbTipTranssion': 'TECNO၊ Infinix၊ itel: Innocent ကို background မှာ run ခွင့်ပေးပါ (battery settings သို့မဟုတ် Phone Master)။ မပေးရင် code မရိုက်ခင် pairing notification ပိတ်သွားနိုင်ပါတယ်။',
     'adbNotSupported': 'Wireless debugging အတွက် Android 11 နဲ့ အထက် လိုပါတယ်။',
     'hfTitle': 'ဝှက်ထားသော ဖိုင်များ',
+    'playerSurface': 'ဗီဒီယို',
+    'playerSurfaceHint': 'ခလုတ်တွေ ပြ / ဖျောက်',
+    'themeAdaptive': 'အလိုက်သင့်',
+    'themeLight': 'အလင်း Theme',
+    'themeDark': 'အမှောင် Theme',
+    'themeUsing': 'သုံးနေသည်',
+    'themeComingSoon': 'မကြာမီ',
+    'themeNew': 'အသစ်',
     'fvTitle': 'Folder ပြ / ဖျောက်',
     'fvAppSection': 'App folder များ (Android/data)',
     'fvAppSectionHint': 'ADB နဲ့ ရှာတွေ့ထားတာတွေပါ။ Video tab မှာ မမြင်ချင်တာကို ဖျောက်ထားနိုင်ပါတယ် — ဘာမှ မရွှေ့၊ မဖျက်ပါဘူး။',
@@ -5460,6 +5501,14 @@ class AppStrings {
     'adbTipTranssion': 'TECNO, Infinix และ itel: อนุญาตให้ Innocent ทำงานเบื้องหลัง (การตั้งค่าแบตเตอรี่หรือ Phone Master) มิฉะนั้นการแจ้งเตือนการจับคู่อาจถูกปิดก่อนที่คุณจะพิมพ์รหัส',
     'adbNotSupported': 'การแก้ไขข้อบกพร่องผ่าน Wi-Fi ต้องใช้ Android 11 ขึ้นไป',
     'hfTitle': 'ไฟล์ที่ซ่อนอยู่',
+    'playerSurface': 'วิดีโอ',
+    'playerSurfaceHint': 'แสดงหรือซ่อนปุ่มควบคุม',
+    'themeAdaptive': 'ปรับอัตโนมัติ',
+    'themeLight': 'ธีมสว่าง',
+    'themeDark': 'ธีมมืด',
+    'themeUsing': 'ใช้อยู่',
+    'themeComingSoon': 'เร็ว ๆ นี้',
+    'themeNew': 'ใหม่',
     'fvTitle': 'แสดง / ซ่อนโฟลเดอร์',
     'fvAppSection': 'โฟลเดอร์ของแอป (Android/data)',
     'fvAppSectionHint': 'พบผ่าน ADB ซ่อนโฟลเดอร์ที่ไม่ต้องการให้อยู่ในแท็บวิดีโอได้ ไม่มีอะไรถูกย้ายหรือลบ',

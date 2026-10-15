@@ -155,8 +155,12 @@ for n,ks in maps.items():
     if d: add('APPSTRINGS duplicate keys in _%s: %s'%(n,d))
 if all(maps[n] is not None for n in maps):
     en=set(maps['en'])
+    # A `<key>One` entry is English's singular ("1 file") for a counted
+    # string; Burmese and Thai do not inflect, so they carry the plain key
+    # only and _count falls back to it. Such a key is not a missing one.
+    singular = {k for k in en if k.endswith('One') and k[:-3] in en}
     for n in ('my','th'):
-        miss = en - set(maps[n])
+        miss = en - set(maps[n]) - singular
         extra = set(maps[n]) - en
         if miss: add('APPSTRINGS _%s missing: %s'%(n,sorted(miss)[:8]))
         if extra: add('APPSTRINGS _%s orphan: %s'%(n,sorted(extra)[:8]))

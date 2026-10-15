@@ -341,6 +341,7 @@ class _ServerFormDialogState extends ConsumerState<ServerFormDialog> {
                   key: 'net-pass',
                   obscure: !_showPass,
                   suffix: IconButton(
+                    tooltip: s.netShowPassword,
                     visualDensity: VisualDensity.compact,
                     icon: Icon(
                         _showPass
@@ -615,7 +616,9 @@ class _ServerFormDialogState extends ConsumerState<ServerFormDialog> {
       {required String key}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
-      child: InkWell(
+      // One control for TalkBack: the box and its words, one tap.
+      child: MergeSemantics(
+        child: InkWell(
         key: ValueKey(key),
         onTap: () => on(!v),
         child: Row(children: <Widget>[
@@ -636,6 +639,7 @@ class _ServerFormDialogState extends ConsumerState<ServerFormDialog> {
               child: Text(label,
                   style: const TextStyle(color: Colors.white, fontSize: 14))),
         ]),
+        ),
       ),
     );
   }
@@ -645,7 +649,8 @@ class _ServerFormDialogState extends ConsumerState<ServerFormDialog> {
       spacing: 6,
       children: <Widget>[
         for (final (label, v) in opts)
-          InkWell(
+          MergeSemantics(
+            child: InkWell(
             onTap: () => on(v),
             child: Row(mainAxisSize: MainAxisSize.min, children: <Widget>[
               Radio<bool>(
@@ -660,6 +665,7 @@ class _ServerFormDialogState extends ConsumerState<ServerFormDialog> {
                   style: const TextStyle(color: Colors.white, fontSize: 14)),
               const SizedBox(width: 6),
             ]),
+          ),
           ),
       ],
     );

@@ -214,6 +214,8 @@ class _AntiTheftScreenState extends ConsumerState<AntiTheftScreen> {
                     activeColor: AppColors.accentBlue,
                     onChanged: (v) => _toggleIntruder(v),
                   ),
+                  // The whole card flips it, as a settings row does.
+                  onTap: () => _toggleIntruder(!_intruderOn),
                 ),
                 const SizedBox(height: 26),
 
@@ -266,7 +268,10 @@ class _AntiTheftScreenState extends ConsumerState<AntiTheftScreen> {
       ),
       child: Column(
         children: [
-          InkWell(
+          // One control for TalkBack: the card, named by its title, with
+          // the switch's state when it has one.
+          MergeSemantics(
+            child: InkWell(
             onTap: onTap,
             borderRadius: BorderRadius.circular(14),
             child: Padding(
@@ -299,6 +304,7 @@ class _AntiTheftScreenState extends ConsumerState<AntiTheftScreen> {
                 ],
               ),
             ),
+          ),
           ),
           if (footer != null)
             Padding(
@@ -479,6 +485,7 @@ class _AntiTheftScreenState extends ConsumerState<AntiTheftScreen> {
               top: 4,
               right: 4,
               child: IconButton(
+                tooltip: MaterialLocalizations.of(dCtx).closeButtonTooltip,
                 icon: const Icon(Icons.close, color: Colors.white),
                 onPressed: () => Navigator.pop(dCtx),
               ),

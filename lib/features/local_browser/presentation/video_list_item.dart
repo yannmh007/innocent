@@ -333,7 +333,7 @@ class VideoListItem extends ConsumerWidget {
               ),
               if (onMoreTap != null && !selectionActive)
                 IconButton(
-                  tooltip: 'More options',
+                  tooltip: AppStrings.of(context).moreOptions,
                   icon: const Icon(
                     Icons.more_vert,
                     color: AppColors.darkOnSurfaceMuted,

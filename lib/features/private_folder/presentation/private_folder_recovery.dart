@@ -355,6 +355,7 @@ class _RecoveryKeyDialog extends StatelessWidget {
                   ),
                 ),
                 IconButton(
+                  tooltip: MaterialLocalizations.of(context).copyButtonLabel,
                   icon: const Icon(Icons.copy,
                       color: AppColors.accentBlue, size: 20),
                   onPressed: () {
@@ -499,6 +500,7 @@ class _RecoveryFlowScreenState extends ConsumerState<RecoveryFlowScreen> {
           leading: canLeave
               ? null
               : IconButton(
+                  tooltip: MaterialLocalizations.of(context).backButtonTooltip,
                   icon: const Icon(Icons.arrow_back, color: Colors.white),
                   onPressed: () => setState(() {
                     _error = null;

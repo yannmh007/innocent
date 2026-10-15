@@ -167,10 +167,14 @@ class MoreMenuPanel extends StatelessWidget {
       children: [
         // Dismiss scrim
         Positioned.fill(
-          child: GestureDetector(
+          // Read as Android reads a dialog's backdrop: "Dismiss".
+          child: Semantics(
+            label: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+            child: GestureDetector(
             onTap: onDismiss,
             behavior: HitTestBehavior.opaque,
             child: Container(color: Colors.black38),
+          ),
           ),
         ),
         // Portrait → bottom-sheet; landscape → right-side panel.
@@ -215,7 +219,9 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    // One control for TalkBack: the switch, named by the text beside it.
+    return MergeSemantics(
+      child: Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -242,6 +248,7 @@ class _SectionHeader extends StatelessWidget {
             ),
           ),
         ],
+      ),
       ),
     );
   }
@@ -333,7 +340,8 @@ class _ShortcutCheckRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return RemoteTappable(
+    return MergeSemantics(
+      child: RemoteTappable(
       onTap: () => onChanged(!value),
       child: Row(
         children: [
@@ -364,6 +372,7 @@ class _ShortcutCheckRow extends StatelessWidget {
           ),
         ],
       ),
+    ),
     );
   }
 }

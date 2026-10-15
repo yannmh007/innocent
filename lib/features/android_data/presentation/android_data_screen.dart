@@ -344,6 +344,7 @@ class _AndroidDataScreenState extends ConsumerState<AndroidDataScreen> {
             appBar: AppBar(
               leading: _selecting
                   ? IconButton(
+                      tooltip: s.clearSelection,
                       icon: const Icon(Icons.close_rounded),
                       onPressed: () => setState(_selected.clear),
                     )

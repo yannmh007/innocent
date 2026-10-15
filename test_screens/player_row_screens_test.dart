@@ -25,6 +25,7 @@ Widget _row({required bool expanded, bool loopOn = true}) => Builder(
               height: 56,
               child: Row(children: <Widget>[
                 IconButton(
+                    tooltip: 'Back',
                     onPressed: () {},
                     icon: const Icon(Icons.arrow_back, color: Colors.white)),
                 // As the player's top bar: the title takes what is left.

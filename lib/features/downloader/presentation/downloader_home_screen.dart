@@ -3918,6 +3918,7 @@ class _FavouritePickerSheet extends ConsumerWidget {
                 ),
                 const Spacer(),
                 IconButton(
+                  tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
                   icon: const Icon(Icons.close_rounded,
                       color: AppColors.white50),
                   onPressed: () => Navigator.of(context).pop(),

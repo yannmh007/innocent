@@ -227,6 +227,7 @@ class _StatusSaverScreenState extends State<StatusSaverScreen>
               top: 4,
               right: 4,
               child: IconButton(
+                tooltip: MaterialLocalizations.of(ctx).closeButtonTooltip,
                 icon: const Icon(Icons.close, color: Colors.white),
                 onPressed: () => Navigator.of(ctx).pop(),
               ),
@@ -325,6 +326,9 @@ class _StatusSaverScreenState extends State<StatusSaverScreen>
       borderRadius: BorderRadius.circular(10),
       child: RemoteTappable(
         onTap: () => isVideo ? _playVideo(file) : _previewImage(file),
+        semanticLabel: file.uri.pathSegments.isEmpty
+            ? null
+            : file.uri.pathSegments.last,
         child: Stack(
           fit: StackFit.expand,
           children: [

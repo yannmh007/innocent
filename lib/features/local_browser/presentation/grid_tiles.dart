@@ -427,6 +427,7 @@ class VideoGridTile extends ConsumerWidget {
                 if (onMoreTap != null)
                   RemoteTappable(
                     onTap: onMoreTap,
+                    semanticLabel: AppStrings.of(context).moreOptions,
                     child: const Padding(
                       padding: EdgeInsets.only(left: 4, top: 1),
                       child: Icon(

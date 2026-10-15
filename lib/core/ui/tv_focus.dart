@@ -130,23 +130,43 @@ class RemoteTappable extends StatelessWidget {
     required this.onTap,
     required this.child,
     this.onLongPress,
+    this.semanticLabel,
+    this.selected,
   });
 
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
   final Widget child;
 
+  /// The target's name for TalkBack and Voice Access when [child] shows no
+  /// text of its own — an icon, a picture, a swatch. A GestureDetector
+  /// says nothing about itself, so without it such a target was read as an
+  /// unnamed control (screens harness, SCREEN_A11Y=1).
+  final String? semanticLabel;
+
+  /// Whether the target is the chosen one of a set (read as "selected").
+  final bool? selected;
+
   @override
   Widget build(BuildContext context) {
+    Widget target = GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      onLongPress: onLongPress,
+      child: child,
+    );
+    if (semanticLabel != null || selected != null) {
+      target = Semantics(
+        button: true,
+        label: semanticLabel,
+        selected: selected,
+        child: target,
+      );
+    }
     return RemoteFocusable(
       onActivate: onTap,
       onMenu: onLongPress,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: onTap,
-        onLongPress: onLongPress,
-        child: child,
-      ),
+      child: target,
     );
   }
 }

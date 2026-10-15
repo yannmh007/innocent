@@ -124,6 +124,7 @@ class _VideoSearchScreenState extends ConsumerState<VideoSearchScreen> {
         elevation: 0,
         titleSpacing: 0,
         leading: IconButton(
+          tooltip: MaterialLocalizations.of(context).backButtonTooltip,
           icon: const Icon(Icons.arrow_back, color: VH.textPrimary),
           onPressed: () => Navigator.of(context).maybePop(),
         ),
@@ -148,6 +149,7 @@ class _VideoSearchScreenState extends ConsumerState<VideoSearchScreen> {
         actions: <Widget>[
           if (_controller.text.isNotEmpty)
             IconButton(
+              tooltip: AppStrings.of(context).clear,
               icon: const Icon(Icons.close_rounded,
                   color: VH.textSecondary),
               onPressed: _clear,

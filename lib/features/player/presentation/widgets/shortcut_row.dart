@@ -153,6 +153,9 @@ class _ShortcutButton extends StatelessWidget {
 
     return RemoteTappable(
       onTap: onTap,
+      // Collapsed, the row shows icons only: the label is the shortcut's
+      // name for TalkBack (expanded, its visible label says it).
+      semanticLabel: showLabel ? null : item.labelIn(AppStrings.of(context)),
       child: SizedBox(
         width: _slot,
         child: Column(
@@ -345,6 +348,9 @@ class _ExpandButton extends StatelessWidget {
     // in portrait — it is a way on, not one of the shortcuts.
     return RemoteTappable(
       onTap: onTap,
+      semanticLabel: expanded
+          ? MaterialLocalizations.of(context).expandedIconTapHint
+          : MaterialLocalizations.of(context).collapsedIconTapHint,
       child: SizedBox(
         width: _slot,
         child: Column(

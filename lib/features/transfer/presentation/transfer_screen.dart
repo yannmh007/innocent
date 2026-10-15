@@ -1401,6 +1401,7 @@ class _RunningPane extends StatelessWidget {
                 ),
               ),
               IconButton(
+                tooltip: MaterialLocalizations.of(context).copyButtonLabel,
                 icon: const Icon(Icons.copy_outlined, size: 16),
                 color: AppColors.white55,
                 visualDensity: VisualDensity.compact,
@@ -1697,6 +1698,7 @@ class _ReceivePaneState extends ConsumerState<_ReceivePane> {
                         fontSize: 14.5)),
               ),
               IconButton(
+                tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
                 icon: const Icon(Icons.close, size: 18),
                 color: AppColors.white55,
                 onPressed: () {
@@ -2407,6 +2409,7 @@ class _ReceivePaneState extends ConsumerState<_ReceivePane> {
           style: const TextStyle(color: AppColors.white70, fontSize: 12));
     }
     return IconButton(
+      tooltip: AppStrings.of(context).download,
       icon: Icon(Icons.download,
           color: batchRunning ? AppColors.white30 : AppColors.accentBlue),
       onPressed: batchRunning ? null : () => notifier.downloadOne(f),

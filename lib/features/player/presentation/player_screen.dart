@@ -2877,7 +2877,12 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
           // === LAYER 3: Gestures ===
           if (!blockGestures)
             Positioned.fill(
-              child: GestureOverlay(
+              // The picture itself, for TalkBack: "Video, double tap to show
+              // or hide the controls" — it was a nameless full-screen node.
+              child: Semantics(
+                label: AppStrings.of(context).playerSurface,
+                onTapHint: AppStrings.of(context).playerSurfaceHint,
+                child: GestureOverlay(
                 onTap: controller.toggleControls,
                 onDoubleTapRewind: controller.onDoubleTapRewind,
                 onDoubleTapForward: controller.onDoubleTapForward,
@@ -2933,6 +2938,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                 longPressSpeedEnabled: ref
                     .watch(playerSettingsProvider)
                     .get(PlayerSetting.ctlLongPressSpeed),
+              ),
               ),
             ),
 

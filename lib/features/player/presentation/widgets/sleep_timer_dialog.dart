@@ -127,9 +127,13 @@ class _SleepTimerDialogState extends State<SleepTimerDialog> {
         // Light scrim — keeps the video visible behind the dialog while a
         // tap anywhere outside the controls dismisses it.
         Positioned.fill(
-          child: GestureDetector(
+          // Read as Android reads a dialog's backdrop: "Dismiss".
+          child: Semantics(
+            label: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+            child: GestureDetector(
             onTap: widget.onDismiss,
             child: Container(color: AppColors.black25),
+          ),
           ),
         ),
         SafeArea(
@@ -282,6 +286,7 @@ class _SleepTimerDialogState extends State<SleepTimerDialog> {
   Widget _closeButton() {
     return RemoteTappable(
       onTap: widget.onDismiss,
+      semanticLabel: MaterialLocalizations.of(context).closeButtonTooltip,
       child: Container(
         width: 32,
         height: 32,
@@ -353,7 +358,12 @@ class _SleepTimerDialogState extends State<SleepTimerDialog> {
   }
 
   Widget _checkboxRow() {
-    return Row(
+    // The whole line toggles, not only the 18 dp box, and it is one
+    // control for TalkBack, named by its words.
+    return MergeSemantics(
+      child: RemoteTappable(
+      onTap: () => setState(() => _playToEnd = !_playToEnd),
+      child: Row(
       children: [
         SizedBox(
           width: 18,
@@ -378,6 +388,8 @@ class _SleepTimerDialogState extends State<SleepTimerDialog> {
           ),
         ),
       ],
+      ),
+      ),
     );
   }
 

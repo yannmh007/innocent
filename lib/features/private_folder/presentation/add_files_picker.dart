@@ -2067,7 +2067,9 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
   /// Generic selectable file row (icon/thumb + name + size + checkbox).
   Widget _fileRow(PickedFile item, {Widget? leading, String? subtitle}) {
     final checked = _picked.containsKey(item.path);
-    return InkWell(
+    return MergeSemantics(
+      // One control for TalkBack: the row's name and its tick.
+      child: InkWell(
       onTap: () => _toggle(item, !checked),
       child: SizedBox(
         height: 64,
@@ -2119,7 +2121,7 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
           ],
         ),
       ),
-    );
+    ));
   }
 
   /// The videos list keeps its 16:9 thumbnails; other media reuse the
@@ -2202,7 +2204,9 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
               color: AppColors.white55, size: 26);
         }
         final checked = _picked.containsKey(item.path);
-        return InkWell(
+        return MergeSemantics(
+          // One control for TalkBack: the row's name and its tick.
+          child: InkWell(
           onTap: () => _toggle(item, !checked),
           child: SizedBox(
             height: videoThumbs != null ? 66 : 60,
@@ -2251,7 +2255,7 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
               ],
             ),
           ),
-        );
+        ));
       },
     );
   }
@@ -2286,6 +2290,8 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
             videoThumbs != null ? videoThumbs[item.path] : item.path;
         return RemoteTappable(
           onTap: () => _toggle(item, !checked),
+          semanticLabel: item.name,
+          selected: checked,
           child: ClipRRect(
             borderRadius: BorderRadius.circular(8),
             child: Stack(

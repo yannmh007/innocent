@@ -59,6 +59,9 @@ CHECKS = [
     ('stock_popup_menu.py', ROOT,
      'a stock PopupMenuButton — its menu crashes when the button goes away '
      'while it is open; "Something didn\'t load" on the Me tab, 11 Oct 2026'),
+    ('nameless_icon_button.py', ROOT,
+     'an IconButton with no tooltip — a button TalkBack, Voice Access and '
+     'the labs cannot name; 34 of them on 15 Oct 2026'),
     ('raw_bottom_sheet.py', ROOT,
      'a raw showModalBottomSheet — Flutter never pads a sheet\'s bottom, so '
      'its last row sat under the phone\'s navigation bar, Oct 2026'),
