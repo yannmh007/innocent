@@ -138,7 +138,7 @@ class ArtistDetailScreen extends ConsumerWidget {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                '$songCount Song${songCount == 1 ? '' : 's'}',
+                                AppStrings.of(context).songsCount(songCount),
                                 style: const TextStyle(
                                   color: AppColors.white60,
                                   fontSize: 13,

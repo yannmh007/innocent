@@ -134,7 +134,7 @@ class PlaylistDetailScreen extends ConsumerWidget {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                '${playlist.songUris.length} Song${playlist.songUris.length == 1 ? '' : 's'}',
+                                AppStrings.of(context).songsCount(playlist.songUris.length),
                                 style: const TextStyle(
                                   color: AppColors.white60,
                                   fontSize: 13,

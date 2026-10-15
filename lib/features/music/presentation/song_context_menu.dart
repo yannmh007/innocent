@@ -255,7 +255,7 @@ class _SongContextSheet extends StatelessWidget {
                 title: Text(p.name,
                     style: const TextStyle(
                         color: Colors.white, fontSize: 14)),
-                subtitle: Text('${p.songUris.length} songs',
+                subtitle: Text(AppStrings.of(context).songsCount(p.songUris.length),
                     style:
                         const TextStyle(color: Colors.white54, fontSize: 11)),
                 onTap: () {

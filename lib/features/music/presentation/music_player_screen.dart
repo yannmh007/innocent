@@ -179,7 +179,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
             for (final mins in [15, 30, 45, 60, 90])
               ListTile(
                 dense: true,
-                title: Text('$mins minutes',
+                title: Text(AppStrings.of(context).minutesCount(mins),
                     style: const TextStyle(color: Colors.white)),
                 onTap: () {
                   Navigator.pop(dctx);

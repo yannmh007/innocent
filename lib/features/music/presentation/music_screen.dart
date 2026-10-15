@@ -252,7 +252,7 @@ class _TracksTabState extends ConsumerState<_TracksTab> {
       children: [
         // Search bar + Shuffle All + Sort
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.fromLTRB(16, 2, 4, 2),
           child: Row(
             children: [
               Expanded(
@@ -353,14 +353,13 @@ class _TracksTabState extends ConsumerState<_TracksTab> {
               const SizedBox(width: 8),
               // Phase 45 (audit): Sort icon was just visual. Wire it
               // to the music sort sheet so it actually works.
-              InkWell(
-                borderRadius: BorderRadius.circular(8),
-                onTap: () => _showMusicSortSheet(context, ref),
-                child: const Padding(
-                  padding: EdgeInsets.all(4),
-                  child: Icon(Icons.sort,
-                      color: AppColors.white70, size: 22),
-                ),
+              // A named 48 dp button (it was a nameless 30 dp InkWell); the
+              // row's padding gave up the 18 dp it needs.
+              IconButton(
+                tooltip: AppStrings.of(context).sortBy,
+                onPressed: () => _showMusicSortSheet(context, ref),
+                icon: const Icon(Icons.sort,
+                    color: AppColors.white70, size: 22),
               ),
             ],
           ),
@@ -509,12 +508,22 @@ class _TrackTile extends StatelessWidget {
 }
 
 // ─── PLAYLISTS TAB ───
-class _PlaylistsTab extends ConsumerWidget {
+class _PlaylistsTab extends ConsumerStatefulWidget {
   const _PlaylistsTab();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final playlists = ref.watch(musicPlaylistProvider);
+  ConsumerState<_PlaylistsTab> createState() => _PlaylistsTabState();
+}
+
+class _PlaylistsTabState extends ConsumerState<_PlaylistsTab> {
+  String _query = '';
+
+  @override
+  Widget build(BuildContext context) {
+    final playlists = ref
+        .watch(musicPlaylistProvider)
+        .where((p) => _nameMatches(p.name, _query))
+        .toList();
     return Column(
       children: [
         // Search Playlists + New Playlist
@@ -523,27 +532,9 @@ class _PlaylistsTab extends ConsumerWidget {
           child: Row(
             children: [
               Expanded(
-                child: Container(
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: AppColors.darkSurface,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    children: [
-                      const SizedBox(width: 10),
-                      const Icon(Icons.search,
-                          size: 18,
-                          color: AppColors.white50),
-                      const SizedBox(width: 8),
-                      Text(AppStrings.of(context).searchPlaylists,
-                        style: const TextStyle(
-                          color: AppColors.white50,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ],
-                  ),
+                child: _MusicSearchField(
+                  hint: AppStrings.of(context).searchPlaylists,
+                  onChanged: (v) => setState(() => _query = v.trim()),
                 ),
               ),
               const SizedBox(width: 8),
@@ -579,7 +570,9 @@ class _PlaylistsTab extends ConsumerWidget {
         ),
         // Real playlists
         Expanded(
-          child: ListView.builder(
+          child: playlists.isEmpty && _query.isNotEmpty
+              ? const _NoMatch()
+              : ListView.builder(
             padding: const EdgeInsets.only(bottom: 80),
             itemCount: playlists.length,
             itemBuilder: (_, i) {
@@ -605,7 +598,7 @@ class _PlaylistsTab extends ConsumerWidget {
                         : const Color(0xFFE3F2FD),
                 title: p.name,
                 subtitle:
-                    '${p.songUris.length} Song${p.songUris.length == 1 ? '' : 's'}',
+                    AppStrings.of(context).songsCount(p.songUris.length),
               );
             },
           ),
@@ -727,37 +720,27 @@ class _PlaylistTile extends StatelessWidget {
 }
 
 // ─── ALBUMS TAB ───
-class _AlbumsTab extends ConsumerWidget {
+class _AlbumsTab extends ConsumerStatefulWidget {
   const _AlbumsTab();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_AlbumsTab> createState() => _AlbumsTabState();
+}
+
+class _AlbumsTabState extends ConsumerState<_AlbumsTab> {
+  String _query = '';
+
+  @override
+  Widget build(BuildContext context) {
     final albumsAsync = ref.watch(musicAlbumsProvider);
     return Column(
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Container(
-            height: 36,
-            decoration: BoxDecoration(
-              color: AppColors.darkSurface,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              children: [
-                const SizedBox(width: 10),
-                const Icon(Icons.search,
-                    size: 18, color: AppColors.white50),
-                const SizedBox(width: 8),
-                Text(AppStrings.of(context).searchAlbums,
-                  style: const TextStyle(
-                    color: AppColors.white50,
-                    fontSize: 13,
-                  ),
+          child: _MusicSearchField(
+                  hint: AppStrings.of(context).searchAlbums,
+                  onChanged: (v) => setState(() => _query = v.trim()),
                 ),
-              ],
-            ),
-          ),
         ),
         Expanded(
           child: albumsAsync.whenOrFallback(
@@ -779,11 +762,15 @@ class _AlbumsTab extends ConsumerWidget {
                 Color(0xFF2C3E50),
                 Color(0xFFE6C9A8),
               ];
+              final shown = albums
+                  .where((a) => _nameMatches(a.name, _query))
+                  .toList();
+              if (shown.isEmpty) return const _NoMatch();
               return ListView.builder(
                 padding: const EdgeInsets.only(bottom: 80),
-                itemCount: albums.length,
+                itemCount: shown.length,
                 itemBuilder: (_, i) {
-                  final a = albums[i];
+                  final a = shown[i];
                   final color = palette[a.name.hashCode.abs() % palette.length];
                   return _AlbumTile(
                     data: _AlbumData(a.name, a.songCount, color),
@@ -851,7 +838,7 @@ class _AlbumTile extends ConsumerWidget {
                           const TextStyle(color: Colors.white, fontSize: 14)),
                   const SizedBox(height: 2),
                   Text(
-                    '${data.songCount} Song${data.songCount == 1 ? '' : 's'}',
+                    AppStrings.of(context).songsCount(data.songCount),
                     style: const TextStyle(
                         color: Colors.white54, fontSize: 11),
                   ),
@@ -887,37 +874,27 @@ class _AlbumTile extends ConsumerWidget {
 }
 
 // ─── ARTISTS TAB ───
-class _ArtistsTab extends ConsumerWidget {
+class _ArtistsTab extends ConsumerStatefulWidget {
   const _ArtistsTab();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_ArtistsTab> createState() => _ArtistsTabState();
+}
+
+class _ArtistsTabState extends ConsumerState<_ArtistsTab> {
+  String _query = '';
+
+  @override
+  Widget build(BuildContext context) {
     final artistsAsync = ref.watch(musicArtistsProvider);
     return Column(
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Container(
-            height: 36,
-            decoration: BoxDecoration(
-              color: AppColors.darkSurface,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              children: [
-                const SizedBox(width: 10),
-                const Icon(Icons.search,
-                    size: 18, color: AppColors.white50),
-                const SizedBox(width: 8),
-                Text(AppStrings.of(context).searchArtists,
-                  style: const TextStyle(
-                    color: AppColors.white50,
-                    fontSize: 13,
-                  ),
+          child: _MusicSearchField(
+                  hint: AppStrings.of(context).searchArtists,
+                  onChanged: (v) => setState(() => _query = v.trim()),
                 ),
-              ],
-            ),
-          ),
         ),
         Expanded(
           child: artistsAsync.when(
@@ -929,12 +906,16 @@ class _ArtistsTab extends ConsumerWidget {
                           const TextStyle(color: Colors.white54, fontSize: 14)),
                 );
               }
+              final shown = artists
+                  .where((a) => _nameMatches(a.name, _query))
+                  .toList();
+              if (shown.isEmpty) return const _NoMatch();
               return ListView.builder(
                 padding: const EdgeInsets.only(bottom: 80),
-                itemCount: artists.length,
+                itemCount: shown.length,
                 itemBuilder: (_, i) => _ArtistTile(
-                  name: artists[i].name,
-                  songCount: artists[i].songCount,
+                  name: shown[i].name,
+                  songCount: shown[i].songCount,
                 ),
               );
             },
@@ -1003,7 +984,7 @@ class _ArtistTile extends ConsumerWidget {
                   const SizedBox(height: 2),
                   // Phase 30: Use real songCount, not hardcoded "1 Song"
                   Text(
-                    '$songCount Song${songCount == 1 ? '' : 's'}',
+                    AppStrings.of(context).songsCount(songCount),
                     style: const TextStyle(
                         color: Colors.white54, fontSize: 11),
                   ),
@@ -1039,51 +1020,39 @@ class _ArtistTile extends ConsumerWidget {
 }
 
 // ─── FOLDERS TAB ───
-class _FoldersTab extends ConsumerWidget {
+class _FoldersTab extends ConsumerStatefulWidget {
   const _FoldersTab();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_FoldersTab> createState() => _FoldersTabState();
+}
+
+class _FoldersTabState extends ConsumerState<_FoldersTab> {
+  String _query = '';
+
+  @override
+  Widget build(BuildContext context) {
     final foldersAsync = ref.watch(musicFoldersProvider);
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.fromLTRB(16, 2, 4, 2),
           child: Row(
             children: [
               Expanded(
-                child: Container(
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: AppColors.darkSurface,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    children: [
-                      const SizedBox(width: 10),
-                      const Icon(Icons.search,
-                          size: 18,
-                          color: AppColors.white50),
-                      const SizedBox(width: 8),
-                      Text(AppStrings.of(context).searchFolders,
-                        style: const TextStyle(
-                          color: AppColors.white50,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ],
-                  ),
+                child: _MusicSearchField(
+                  hint: AppStrings.of(context).searchFolders,
+                  onChanged: (v) => setState(() => _query = v.trim()),
                 ),
               ),
               const SizedBox(width: 8),
-              InkWell(
-                borderRadius: BorderRadius.circular(8),
-                onTap: () => _showMusicSortSheet(context, ref),
-                child: const Padding(
-                  padding: EdgeInsets.all(4),
-                  child: Icon(Icons.sort,
-                      color: AppColors.white70, size: 22),
-                ),
+              // A named 48 dp button (it was a nameless 30 dp InkWell); the
+              // row's padding gave up the 18 dp it needs.
+              IconButton(
+                tooltip: AppStrings.of(context).sortBy,
+                onPressed: () => _showMusicSortSheet(context, ref),
+                icon: const Icon(Icons.sort,
+                    color: AppColors.white70, size: 22),
               ),
             ],
           ),
@@ -1098,14 +1067,18 @@ class _FoldersTab extends ConsumerWidget {
                           const TextStyle(color: Colors.white54, fontSize: 14)),
                 );
               }
+              final shown = folders
+                  .where((f) => _nameMatches(f.name, _query))
+                  .toList();
+              if (shown.isEmpty) return const _NoMatch();
               return ListView.builder(
                 padding: const EdgeInsets.only(bottom: 80),
-                itemCount: folders.length,
+                itemCount: shown.length,
                 itemBuilder: (_, i) => _MusicFolderTile(
                   data: _FolderData(
-                    folders[i].name,
-                    folders[i].songCount,
-                    folders[i].path,
+                    shown[i].name,
+                    shown[i].songCount,
+                    shown[i].path,
                   ),
                 ),
               );
@@ -1172,7 +1145,7 @@ class _MusicFolderTile extends ConsumerWidget {
                           const TextStyle(color: Colors.white, fontSize: 14)),
                   const SizedBox(height: 2),
                   Text(
-                    '${data.songCount} Song${data.songCount == 1 ? '' : 's'}',
+                    AppStrings.of(context).songsCount(data.songCount),
                     style: const TextStyle(
                         color: Colors.white54, fontSize: 11),
                   ),
@@ -1415,4 +1388,69 @@ Future<void> _showMusicSortSheet(BuildContext context, WidgetRef ref) async {
       });
     },
   );
+}
+
+/// Whether [name] holds what was typed, ignoring case.
+bool _nameMatches(String name, String query) =>
+    query.isEmpty || name.toLowerCase().contains(query.toLowerCase());
+
+/// The search box at the top of the Albums, Artists, Playlists and Folders
+/// tabs. It used to be a picture of one — the words "Search…" in a grey box
+/// that did nothing when tapped; now it filters the tab by name as you type,
+/// as the Songs tab's always did.
+class _MusicSearchField extends StatelessWidget {
+  const _MusicSearchField({required this.hint, required this.onChanged});
+  final String hint;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 36,
+      decoration: BoxDecoration(
+        color: AppColors.darkSurface,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          const SizedBox(width: 10),
+          const Icon(Icons.search, size: 18, color: AppColors.white50),
+          const SizedBox(width: 8),
+          Expanded(
+            child: TextField(
+              onChanged: onChanged,
+              textInputAction: TextInputAction.search,
+              style: const TextStyle(color: Colors.white, fontSize: 13),
+              decoration: InputDecoration(
+                isDense: true,
+                border: InputBorder.none,
+                hintText: hint,
+                hintStyle: const TextStyle(
+                  color: AppColors.white50,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// What a tab shows when nothing in it matches the search.
+class _NoMatch extends StatelessWidget {
+  const _NoMatch();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Text(AppStrings.of(context).searchNoMatches,
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: Colors.white54, fontSize: 14)),
+      ),
+    );
+  }
 }

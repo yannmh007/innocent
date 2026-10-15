@@ -1949,6 +1949,9 @@ class AppStrings {
   String get vhLibraryDownloadsHint => _s('vhLibraryDownloadsHint');
   String get vhLibrarySoon => _s('vhLibrarySoon');
 
+  String songsCount(int n) => _count('songsCount', n);
+  String minutesCount(int n) => _count('minutesCount', n);
+
   static const Map<String, Map<String, String>> _byLocale =
       <String, Map<String, String>>{
     'en': _en,
@@ -3659,6 +3662,10 @@ class AppStrings {
     'updateRequiredBody':
         'This version of Innocent can no longer be used. Install the update '
             'below to carry on.',
+    'songsCount': '{n} songs',
+    'songsCountOne': '{n} song',
+    'minutesCount': '{n} minutes',
+    'minutesCountOne': '{n} minute',
   };
 
   static const Map<String, String> _my = <String, String>{
@@ -5344,6 +5351,8 @@ class AppStrings {
     'updateRequiredBody':
         'ဤဗားရှင်းကို ဆက်လက်အသုံးပြု၍ မရတော့ပါ။ ဆက်လက်အသုံးပြုရန် '
             'အောက်ပါ အပ်ဒိတ်ကို ထည့်သွင်းပါ။',
+    'songsCount': 'သီချင်း {n} ပုဒ်',
+    'minutesCount': '{n} မိနစ်',
   };
 
   static const Map<String, String> _th = <String, String>{
@@ -7021,6 +7030,8 @@ class AppStrings {
     'updateRequired': 'ต้องอัปเดต',
     'updateRequiredBody':
         'เวอร์ชันนี้ใช้งานต่อไม่ได้แล้ว ติดตั้งอัปเดตด้านล่างเพื่อใช้งานต่อ',
+    'songsCount': '{n} เพลง',
+    'minutesCount': '{n} นาที',
   };
 }
 
