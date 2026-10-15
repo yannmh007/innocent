@@ -1,0 +1,52 @@
+Running on test
+ > Flow ui_fixes
+Launch app "com.innocent.media"... COMPLETED
+Wait for animation to end within 15000 ms... COMPLETED
+Tap on (Optional) "Wait"... WARNED
+
+
+ Warning: Element not found: Text matching regex: Wait
+Tap on (Optional) "Skip"... COMPLETED
+Tap on (Optional) "Allow.*"... WARNED
+
+
+ Warning: Element not found: Text matching regex: Allow.*
+Tap on (Optional) "Allow.*"... WARNED
+
+
+ Warning: Element not found: Text matching regex: Allow.*
+Tap on (Optional) "Skip"... WARNED
+
+
+ Warning: Element not found: Text matching regex: Skip
+Tap on (Optional) "(?s).*Tab 1 of 4.*"... COMPLETED
+Wait for animation to end within 8000 ms... COMPLETED
+Take screenshot u00_video_tab... COMPLETED
+Assert that "(?s).*Tab 1 of 4.*" is visible... COMPLETED
+Long press on "(?s).*Folder: Movies,.*"... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Assert that "(?s).*1 / .*" is visible... COMPLETED
+Take screenshot u01_folder_selected... COMPLETED
+Press back... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Assert that "(?s).*1 / .*" is not visible... COMPLETED
+Assert that "(?s).*Tab 1 of 4.*" is visible... COMPLETED
+Take screenshot u02_selection_cleared_by_back... COMPLETED
+Tap on id: video-tab-more... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Assert that "Refresh" is visible... COMPLETED
+Take screenshot u03_menu_open... COMPLETED
+Tap on "(?s).*Tab 4 of 4.*"... FAILED
+
+Element not found: Text matching regex: (?s).*Tab 4 of 4.*
+
+Element with Text matching regex: (?s).*Tab 4 of 4.* not found. Check the UI hierarchy in debug artifacts to verify if the element exists.
+
+Possible causes:
+- Element selector may be incorrect - check if there are similar elements with slightly different names/properties.
+- Element may be temporarily unavailable due to loading state.
+- This could be a real regression that needs to be addressed.
+
+==== Debug output (logs & screenshots) ====
+
+/home/runner/work/innocent/innocent/out/maestro_out/2026-10-15_093858

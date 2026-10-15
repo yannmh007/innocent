@@ -1,22 +1,16 @@
-[04:07:20] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
-[04:07:20] install
-[04:07:36] network: speed full kbit/s, delay none ms
-[04:07:58] cold start
+[09:37:24] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
+[09:37:24] install
+[09:37:41] network: speed full kbit/s, delay none ms
+[09:38:07] overlays: [x] com.android.internal.display.cutout.emulation.hole [x] com.android.internal.systemui.navbar.threebutton 
+[09:38:07] nav bar: navigationBars frame=[0,2274][1080,2400] navigationBars frame=[0,2274][1080,2400] 
+[09:38:07] library: pushing 23 files
+[09:38:40] library: MediaStore lists 23 videos
+[09:38:40] cold start
 Status: ok
-TotalTime: 3581
-WaitTime: 3604
-[04:08:13] long film: 162 min in /mnt/lab_films, served on 47125
-[04:08:13] flow openwith
-[04:09:29] openwith: cold start 1 first frame(s), warm 1; 0 unknown route(s)
-[04:09:30] flow openwith done
-[04:09:30] flow titleloop
-[04:10:49] titleloop: 1 player open(s), 3 first frame(s) so far in the run
-[04:10:50] flow titleloop done
-[04:10:50] flow climb
-[04:10:51] climb: the test film, link estimate seeded at 500 kbps, for 240 s
-[04:14:55] climb: 1 step(s) up, 0 down
-[04:14:55] flow climb done
-[04:14:55] flow streamlong_slowfrag_6
-[04:14:55] long film: slowfrag — 720frag, round trip 2x150ms, loss 1%, rate 4mbit, queue 10000 packets; lanes=6
-[04:16:47] flow streamlong_slowfrag_6 done
-[04:16:51] done
+TotalTime: 5015
+WaitTime: 5162
+[09:38:56] flow ui_fixes
+[09:40:09] flow ui_fixes exit 1
+[09:40:20] flow me_grid
+[09:42:06] flow me_grid exit 1
+[09:42:22] done
