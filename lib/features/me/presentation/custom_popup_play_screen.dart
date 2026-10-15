@@ -5,6 +5,7 @@ import '../../../core/services/preferences/player_settings_service.dart';
 import '../../../core/theme/app_colors.dart';
 
 import '../../../core/localization/app_strings.dart';
+import '../../../core/ui/nav_bar_space.dart';
 /// Custom Pop-up Play Controls matching MX Player (UI PDF page 13).
 /// 2 radio options: Previous/Next (Default) and Fast Forward/Rewind.
 ///
@@ -24,7 +25,7 @@ class CustomPopupPlayScreen extends ConsumerWidget {
       backgroundColor: AppColors.darkBackground,
       appBar: AppBar(title: Text(AppStrings.of(context).popupPlay)),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16).plusNavBar(context),
         children: [
           Text(AppStrings.of(context).popupPlayControls,
             style: const TextStyle(

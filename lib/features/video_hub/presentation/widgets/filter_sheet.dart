@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import '../../../../core/localization/app_strings.dart';
 import '../../domain/content_filters.dart';
 import '../video_hub_theme.dart';
+import '../../../../core/ui/app_sheet.dart';
 
 /// The filter panel, presented as a bottom sheet.
 ///
@@ -47,7 +48,7 @@ class FilterSheet extends StatefulWidget {
     required ContentFilters initial,
     required Future<int> Function(ContentFilters) countFor,
   }) {
-    return showModalBottomSheet<ContentFilters>(
+    return showAppModalBottomSheet<ContentFilters>(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,

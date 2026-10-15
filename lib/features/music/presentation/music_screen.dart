@@ -15,6 +15,9 @@ import 'song_context_menu.dart';
 import '../../../core/utils/async_value_extensions.dart';
 import '../../../core/ui/tablet_constrained_width.dart';
 import '../../../core/theme/tab_title.dart';
+import '../../../core/ui/safe_popup_menu.dart';
+import '../../shell/shell_back.dart';
+import '../../../core/ui/app_sheet.dart';
 
 /// Music tab — Tracks / Playlists / Albums / Artists / Folders
 /// Matches MX Player UI (PDF page 5)
@@ -26,7 +29,10 @@ class MusicScreen extends ConsumerStatefulWidget {
 }
 
 class _MusicScreenState extends ConsumerState<MusicScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, TabBack<MusicScreen> {
+  @override
+  int get tabIndex => 1;
+
   late final TabController _tabController;
   bool _searching = false;
   final _searchController = TextEditingController();
@@ -48,6 +54,13 @@ class _MusicScreenState extends ConsumerState<MusicScreen>
 
   @override
   Widget build(BuildContext context) {
+    // Back closes the search first (the shell does it: shell_back.dart).
+    tabBack(_searching
+        ? () => setState(() {
+              _searching = false;
+              _searchController.clear();
+            })
+        : null);
     final s = AppStrings.of(context);
     return Scaffold(
       backgroundColor: AppColors.darkBackground,
@@ -82,7 +95,7 @@ class _MusicScreenState extends ConsumerState<MusicScreen>
               icon: const Icon(Icons.search),
               onPressed: () => setState(() => _searching = true),
             ),
-            PopupMenuButton<String>(
+            SafePopupMenuButton<String>(
               icon: const Icon(Icons.more_vert),
               color: AppColors.darkSurface,
               onSelected: (v) {
@@ -1320,7 +1333,7 @@ Future<void> _playCollectionFromFuture(
 /// Descending toggle. Tapping a row selects that field and dismisses;
 /// tapping the same field flips direction.
 Future<void> _showMusicSortSheet(BuildContext context, WidgetRef ref) async {
-  await showModalBottomSheet<void>(
+  await showAppModalBottomSheet<void>(
     context: context,
     backgroundColor: AppColors.darkSurface,
     shape: const RoundedRectangleBorder(

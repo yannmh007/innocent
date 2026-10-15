@@ -5,6 +5,7 @@ import '../../../../core/services/video_player/models/subtitle_track_info.dart';
 import '../../../../core/theme/app_colors.dart';
 
 import '../../../../core/localization/app_strings.dart';
+import '../../../../core/ui/app_sheet.dart';
 /// Bottom sheet for selecting audio or subtitle tracks
 class TrackSelectionSheet<T> extends StatelessWidget {
   final String title;
@@ -128,7 +129,7 @@ class TrackSelectionSheet<T> extends StatelessWidget {
     required AudioTrackInfo? current,
     required ValueChanged<AudioTrackInfo?> onSelect,
   }) {
-    return showModalBottomSheet<void>(
+    return showAppModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (_) => TrackSelectionSheet<AudioTrackInfo>(
@@ -152,7 +153,7 @@ class TrackSelectionSheet<T> extends StatelessWidget {
     required ValueChanged<SubtitleTrackInfo?> onSelect,
     required VoidCallback onLoadExternal,
   }) {
-    return showModalBottomSheet<void>(
+    return showAppModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (_) => TrackSelectionSheet<SubtitleTrackInfo>(

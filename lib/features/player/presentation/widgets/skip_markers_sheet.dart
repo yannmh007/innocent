@@ -6,12 +6,13 @@ import '../../../../core/ui/app_snackbar.dart';
 import '../player_provider.dart';
 
 import '../../../../core/localization/app_strings.dart';
+import '../../../../core/ui/app_sheet.dart';
 /// Bottom sheet for managing skip intro/outro markers (Phase 14).
 class SkipMarkersSheet extends ConsumerWidget {
   const SkipMarkersSheet({super.key});
 
   static Future<void> show(BuildContext context) {
-    return showModalBottomSheet<void>(
+    return showAppModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (_) => const SkipMarkersSheet(),

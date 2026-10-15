@@ -7,6 +7,7 @@ import '../../../core/theme/app_colors.dart';
 
 import '../../../core/localization/app_strings.dart';
 import '../../../core/ui/tv_focus.dart';
+import '../../../core/ui/nav_bar_space.dart';
 /// App Theme picker matching MX Player (UI PDF page 13).
 /// 3 special themes (Adaptive, Light, Dark) + Classic Themes color grid.
 ///
@@ -66,7 +67,7 @@ class AppThemeScreen extends ConsumerWidget {
       backgroundColor: AppColors.darkBackground,
       appBar: AppBar(title: Text(AppStrings.of(context).appTheme)),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16).plusNavBar(context),
         children: [
           // Internet banner
           Container(

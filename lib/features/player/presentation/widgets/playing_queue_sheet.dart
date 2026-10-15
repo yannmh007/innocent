@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 
 import '../../../../core/localization/app_strings.dart';
+import '../../../../core/ui/app_sheet.dart';
 /// Playing Queue sheet — shows current video queue in player
 class PlayingQueueSheet extends StatelessWidget {
   final String currentTitle;
@@ -18,7 +19,7 @@ class PlayingQueueSheet extends StatelessWidget {
 
   static Future<void> show(BuildContext context,
       {String currentTitle = '', List<String> queue = const []}) {
-    return showModalBottomSheet(
+    return showAppModalBottomSheet(
       context: context,
       backgroundColor: AppColors.darkSurface,
       shape: const RoundedRectangleBorder(

@@ -6,6 +6,7 @@ import '../../data/api/api_exception.dart';
 import '../../data/cache/catalogue_cache.dart';
 import 'poster_metrics.dart';
 import '../video_hub_theme.dart';
+import '../../../../core/ui/nav_bar_space.dart';
 
 /// A poster-shaped skeleton grid shown while the catalogue loads.
 ///
@@ -53,7 +54,7 @@ class _PosterSkeletonGridState extends State<PosterSkeletonGrid>
   @override
   Widget build(BuildContext context) {
     return GridView.builder(
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 24),
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 24).plusNavBar(context),
       physics: const NeverScrollableScrollPhysics(),
       shrinkWrap: true,
       itemCount: widget.count,

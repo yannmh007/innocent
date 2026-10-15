@@ -16,6 +16,7 @@ import '../../user_data/user_data_providers.dart';
 import '../domain/sort_options.dart';
 import '../domain/video.dart';
 import '../domain/app_data_names.dart';
+import 'folder_visibility.dart';
 
 /// Datasource provider
 final libraryDataSourceProvider = Provider<LibraryLocalDataSource>((ref) {
@@ -671,10 +672,25 @@ Set<String> _nomediaBlocked(Ref ref) =>
           orElse: () => const <String>{},
         );
 
-List<Video> _adbVideos(Ref ref) => ref.watch(adbVideosProvider).maybeWhen(
-      data: (v) => v,
-      orElse: () => const <Video>[],
-    );
+/// Android/data's videos as the Video tab shows them: none while ADB is
+/// down when the person asked for that (Show / hide folders), otherwise
+/// every one the last scan found. Hidden FOLDERS are taken out later, with
+/// everyone else's ([_hiddenFolders]).
+List<Video> _adbVideos(Ref ref) {
+  final all = ref.watch(adbVideosProvider).maybeWhen(
+        data: (v) => v,
+        orElse: () => const <Video>[],
+      );
+  if (all.isEmpty) return all;
+  final onlyLive = ref.watch(folderVisibilityProvider
+      .select((v) => v.appFoldersOnlyWhileConnected));
+  if (onlyLive && ref.watch(adbLiveProvider) != true) return const <Video>[];
+  return all;
+}
+
+/// Folders the person hid from the Video tab (folder_visibility.dart).
+Set<String> _hiddenFolders(Ref ref) =>
+    ref.watch(folderVisibilityProvider.select((v) => v.hidden));
 
 /// Outcome of a library refresh, so the caller can tell the user what happened
 /// (especially when the ADB connection dropped mid-refresh).
@@ -903,6 +919,13 @@ final filteredAllVideosProvider = Provider<AsyncValue<List<Video>>>((ref) {
               v.uri.startsWith('adb://') || !nomedia.contains(v.folderPath))
           .toList();
     }
+    // Hidden folders: their videos are not in the Files view either, nor
+    // found by a search.
+    final hiddenFolders = _hiddenFolders(ref);
+    if (hiddenFolders.isNotEmpty) {
+      filtered =
+          filtered.where((v) => !hiddenFolders.contains(v.folderPath)).toList();
+    }
     // Recycle Bin. Applied LAST of the exclusions and before the search, so a
     // binned video cannot come back through a query that happens to match it.
     final recycled = _recycledUris(ref);
@@ -987,6 +1010,12 @@ final filteredFoldersProvider = Provider<AsyncValue<List<Folder>>>((ref) {
           .where((f) =>
               f.path.startsWith('adb://') || !nomedia.contains(f.path))
           .toList();
+    }
+
+    // Folders the person hid (select → Hide).
+    final hiddenFolders = _hiddenFolders(ref);
+    if (hiddenFolders.isNotEmpty) {
+      base = base.where((f) => !hiddenFolders.contains(f.path)).toList();
     }
 
     var filtered = base;
@@ -1399,4 +1428,84 @@ class SearchHistoryNotifier extends StateNotifier<List<String>> {
 final searchHistoryProvider =
     StateNotifierProvider<SearchHistoryNotifier, List<String>>((ref) {
   return SearchHistoryNotifier();
+});
+
+/// One folder on the Show / hide folders screen.
+class FolderChoice {
+  const FolderChoice({
+    required this.path,
+    required this.name,
+    required this.videoCount,
+    required this.appFolder,
+  });
+
+  final String path;
+  final String name;
+  final int videoCount;
+
+  /// Inside Android/data (or obb): listed only by an ADB scan.
+  final bool appFolder;
+}
+
+/// Every folder the Show / hide folders screen offers: each Android/data
+/// folder the last ADB scan found (shown or hidden), and every other folder
+/// the person has hidden. Folders that are simply shown need no row — they
+/// are in the Video tab, where they can be hidden.
+final folderChoicesProvider = Provider<List<FolderChoice>>((ref) {
+  final adb = ref.watch(adbVideosProvider).maybeWhen(
+        data: (v) => v,
+        orElse: () => const <Video>[],
+      );
+  final hidden = ref.watch(folderVisibilityProvider.select((v) => v.hidden));
+  final counts = <String, int>{};
+  for (final v in adb) {
+    counts[v.folderPath] = (counts[v.folderPath] ?? 0) + 1;
+  }
+  final out = <FolderChoice>[
+    for (final e in counts.entries)
+      FolderChoice(
+        path: e.key,
+        name: _adbFolderDisplayName(e.key),
+        videoCount: e.value,
+        appFolder: true,
+      ),
+  ];
+  final folders = ref.watch(foldersProvider).maybeWhen(
+        data: (f) => f,
+        orElse: () => const <Folder>[],
+      );
+  final byPath = <String, Folder>{for (final f in folders) f.path: f};
+  for (final path in hidden) {
+    if (counts.containsKey(path)) continue;
+    final f = byPath[path];
+    final app =
+        path.contains('/Android/data/') || path.contains('/Android/obb/');
+    out.add(FolderChoice(
+      path: path,
+      name: f?.name ?? (app ? _adbFolderDisplayName(path) : p.basename(path)),
+      videoCount: f?.videoCount ?? 0,
+      appFolder: app,
+    ));
+  }
+  out.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+  return out;
+});
+
+/// EVERY VIDEO A SELECTION CAN NAME: the device library and Android/data's.
+///
+/// The selection bars looked selected videos up in [allVideosProvider]
+/// alone, which never holds Android/data's (they join the lists later, in
+/// [filteredAllVideosProvider]). So a Telegram video selected in the Video
+/// tab resolved to nothing: Send to Transfer, Properties, Lock — all did
+/// nothing, and a selected Android/data FOLDER said "no files".
+final selectableVideosProvider = Provider<List<Video>>((ref) {
+  final all = ref.watch(allVideosProvider).valueOrNull ?? const <Video>[];
+  final adb = ref.watch(adbVideosProvider).valueOrNull ?? const <Video>[];
+  if (adb.isEmpty) return all;
+  final have = <String>{for (final v in all) v.uri};
+  return <Video>[
+    ...all,
+    for (final v in adb)
+      if (!have.contains(v.uri)) v,
+  ];
 });

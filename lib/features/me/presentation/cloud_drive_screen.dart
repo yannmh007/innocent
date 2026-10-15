@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 
 import '../../../core/localization/app_strings.dart';
+import '../../../core/ui/nav_bar_space.dart';
 /// Cloud Drive screen — MX Player parity.
 /// Lists supported cloud providers; user taps to connect.
 class CloudDriveScreen extends StatefulWidget {
@@ -98,7 +99,7 @@ class _CloudDriveScreenState extends State<CloudDriveScreen> {
           ),
           Expanded(
             child: ListView.separated(
-              padding: EdgeInsets.zero,
+              padding: EdgeInsets.only(bottom: navBarSpace(context)),
               itemCount: _providers.length,
               separatorBuilder: (_, __) => const Divider(
                   color: AppColors.white06, height: 1),

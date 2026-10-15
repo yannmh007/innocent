@@ -6,6 +6,7 @@ import '../../data/age_consent_store.dart';
 import '../account_provider.dart';
 import '../video_hub_theme.dart';
 import '../widgets/vh_insets.dart';
+import '../../../../core/ui/nav_bar_space.dart';
 
 /// The door.
 ///
@@ -183,7 +184,7 @@ class _AskView extends StatelessWidget {
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(
-                    VH.gutter, VH.s6, VH.gutter, VH.s4),
+                    VH.gutter, VH.s6, VH.gutter, VH.s4).plusNavBar(context),
                 children: <Widget>[
                   Center(
                     child: Container(

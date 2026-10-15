@@ -8,6 +8,7 @@ import '../../../../core/ui/app_snackbar.dart';
 import '../player_provider.dart';
 
 import '../../../../core/localization/app_strings.dart';
+import '../../../../core/ui/app_sheet.dart';
 /// Phase 40: Video Cut/Trim editor (MX Player parity, Function PDF page 5).
 ///
 /// Lets the user mark a start (A) and end (B) point on the video timeline.
@@ -36,7 +37,7 @@ class CutSheet extends ConsumerStatefulWidget {
     // leave playback paused rather than resuming into a screen the user has
     // already left. See the longer note there.
     if (!context.mounted) return;
-    await showModalBottomSheet<void>(
+    await showAppModalBottomSheet<void>(
       context: context,
       backgroundColor: AppColors.darkSurface,
       isScrollControlled: true,

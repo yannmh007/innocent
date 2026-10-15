@@ -8,6 +8,7 @@ import 'music_providers.dart';
 import 'song_context_menu.dart';
 
 import '../../../core/localization/app_strings.dart';
+import '../../../core/ui/nav_bar_space.dart';
 /// Phase 34: Playlist detail screen.
 /// Shows playlist header + Play All pill + song list.
 /// Used for My Favourites, Recently Played, and user-created playlists.
@@ -249,7 +250,8 @@ class PlaylistDetailScreen extends ConsumerWidget {
                     );
                   }
                   return ListView.builder(
-                    padding: const EdgeInsets.only(bottom: 80),
+                    padding: const EdgeInsets.only(bottom: 80)
+                        .plusNavBar(context),
                     itemCount: songs.length,
                     itemBuilder: (_, i) {
                       final s = songs[i];

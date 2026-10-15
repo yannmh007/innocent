@@ -6,9 +6,11 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/ui/app_snackbar.dart';
 import '../../../user_data/user_data_providers.dart';
 import '../../domain/video.dart';
+import '../folder_visibility_screen.dart';
 import '../library_provider.dart';
 import '../selection_provider.dart';
 import 'bulk_actions.dart';
+import '../../../../core/ui/app_sheet.dart';
 
 /// The bottom bar for FOLDER multi-select.
 ///
@@ -42,7 +44,7 @@ class _FolderSelectionActionBarState
   List<Video> _videos() {
     final selected = ref.read(folderSelectionProvider);
     if (selected.isEmpty) return const <Video>[];
-    final all = ref.read(allVideosProvider).valueOrNull ?? const <Video>[];
+    final all = ref.read(selectableVideosProvider);
     return all.where((v) => selected.contains(v.folderPath)).toList();
   }
 
@@ -60,8 +62,11 @@ class _FolderSelectionActionBarState
     setState(() => _busy = false);
   }
 
+  // THE FOLDERS ON SCREEN, not the device's: "select all" used to take
+  // every MediaStore folder — ones hidden or left out by .nomedia, which a
+  // Move would then move unseen — and none of Android/data's.
   void _toggleSelectAll() {
-    final folders = ref.read(foldersProvider).valueOrNull ?? const [];
+    final folders = ref.read(filteredFoldersProvider).valueOrNull ?? const [];
     final paths = <String>[for (final f in folders) f.path];
     final selected = ref.read(folderSelectionProvider);
     final notifier = ref.read(folderSelectionProvider.notifier);
@@ -72,6 +77,13 @@ class _FolderSelectionActionBarState
     }
   }
 
+  Future<void> _hideFolders() async {
+    final selected = Set<String>.of(ref.read(folderSelectionProvider));
+    if (selected.isEmpty) return;
+    ref.read(folderSelectionProvider.notifier).clear();
+    await hideFolders(ref, AppStrings.of(context), selected);
+  }
+
   Future<void> _addToPlaylist() async {
     final s = AppStrings.of(context);
     final playlists = ref.read(playlistsProvider);
@@ -79,7 +91,7 @@ class _FolderSelectionActionBarState
       AppSnackbar.global(s.noPlaylistsHint);
       return;
     }
-    final picked = await showModalBottomSheet<String>(
+    final picked = await showAppModalBottomSheet<String>(
       context: context,
       backgroundColor: AppColors.darkSurface,
       builder: (sheet) => SafeArea(
@@ -131,7 +143,7 @@ class _FolderSelectionActionBarState
     final selected = ref.watch(folderSelectionProvider);
     if (selected.isEmpty) return const SizedBox.shrink();
 
-    final folders = ref.watch(foldersProvider).valueOrNull ?? const [];
+    final folders = ref.watch(filteredFoldersProvider).valueOrNull ?? const [];
     final allSelected = folders.isNotEmpty &&
         <String>{for (final f in folders) f.path}
             .difference(selected)
@@ -181,11 +193,14 @@ class _FolderSelectionActionBarState
                 onTap: () => _run(
                     (v) => BulkActions.properties(context, ref, videos: v)),
               ),
+              // The FOLDER leaves the Video tab (it comes back from Show /
+              // hide folders, or Undo); it used to send each video to the
+              // Recycle Bin, which an Android/data folder could not do.
               _action(
                 icon: Icons.visibility_off_outlined,
                 tooltip: s.hide,
-                onTap: () =>
-                    _run((v) => BulkActions.hide(context, ref, videos: v)),
+                onTap: _hideFolders,
+                id: 'folder-selection-hide',
               ),
             ],
           ),
@@ -198,13 +213,18 @@ class _FolderSelectionActionBarState
     required IconData icon,
     required String tooltip,
     required VoidCallback onTap,
+    String? id,
   }) {
+    final button = IconButton(
+      icon: Icon(icon, color: _busy ? Colors.white24 : Colors.white),
+      tooltip: tooltip,
+      onPressed: _busy ? null : onTap,
+    );
     return Expanded(
-      child: IconButton(
-        icon: Icon(icon, color: _busy ? Colors.white24 : Colors.white),
-        tooltip: tooltip,
-        onPressed: _busy ? null : onTap,
-      ),
+      // A stable id for the device lab (Android resource-id).
+      child: id == null
+          ? button
+          : Semantics(container: true, identifier: id, child: button),
     );
   }
 }

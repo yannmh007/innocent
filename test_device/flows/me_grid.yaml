@@ -131,4 +131,9 @@ appId: com.innocent.media
 - back
 - waitForAnimationToEnd:
     timeout: 3000
+# Below Help since Hidden files joined the list: scroll to it.
+- scrollUntilVisible:
+    element:
+      text: "(?s).*About.*"
+    direction: DOWN
 - assertVisible: "(?s).*About.*"

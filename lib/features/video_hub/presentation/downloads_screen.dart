@@ -24,6 +24,7 @@ import '../domain/byte_size.dart';
 import '../domain/video_content.dart';
 import 'video_hub_theme.dart';
 import '../../../core/theme/tab_title.dart';
+import '../../../core/ui/safe_popup_menu.dart';
 
 /// What is kept on this device.
 ///
@@ -925,20 +926,40 @@ class _DownloadQualityRowState extends State<_DownloadQualityRow> {
             ),
           ),
           const SizedBox(width: VH.s2),
-          DropdownButton<String>(
-            value: _choices.contains(_value) ? _value : DownloadQuality.ask,
-            dropdownColor: VH.surface2,
-            underline: const SizedBox.shrink(),
-            style: VH.meta.copyWith(fontSize: 12.5, color: VH.textPrimary),
-            items: <DropdownMenuItem<String>>[
-              for (final v in _choices)
-                DropdownMenuItem<String>(value: v, child: Text(_label(s, v))),
-            ],
-            onChanged: (v) {
-              if (v == null) return;
-              setState(() => _value = v);
-              DownloadQualityPreference.write(v);
-            },
+          // A ceiling on the choice's width. Left to size itself, the button
+          // took the width of its widest choice — in Burmese "မူရင်း
+          // (အကောင်းဆုံး)" — and pushed the row 8 px past the edge of a small
+          // phone (screens harness, downloads_small_my).
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 148),
+            child: DropdownButton<String>(
+              isExpanded: true,
+              value: _choices.contains(_value) ? _value : DownloadQuality.ask,
+              dropdownColor: VH.surface2,
+              underline: const SizedBox.shrink(),
+              style: VH.meta.copyWith(fontSize: 12.5, color: VH.textPrimary),
+              selectedItemBuilder: (_) => <Widget>[
+                for (final v in _choices)
+                  Align(
+                    alignment: AlignmentDirectional.centerEnd,
+                    child: Text(_label(s, v),
+                        maxLines: 1, overflow: TextOverflow.ellipsis),
+                  ),
+              ],
+              items: <DropdownMenuItem<String>>[
+                for (final v in _choices)
+                  DropdownMenuItem<String>(
+                    value: v,
+                    child: Text(_label(s, v),
+                        maxLines: 2, overflow: TextOverflow.ellipsis),
+                  ),
+              ],
+              onChanged: (v) {
+                if (v == null) return;
+                setState(() => _value = v);
+                DownloadQualityPreference.write(v);
+              },
+            ),
           ),
         ],
       ),
@@ -1200,7 +1221,7 @@ class _RowMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return PopupMenuButton<int>(
+    return SafePopupMenuButton<int>(
       tooltip: '',
       icon: const Icon(Icons.more_vert_rounded, color: VH.textTertiary, size: 20),
       color: VH.surface2,

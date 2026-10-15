@@ -38,6 +38,10 @@ import 'widgets/folder_selection_app_bar.dart';
 import 'widgets/video_option_menu.dart';
 import '../../../core/utils/async_value_extensions.dart';
 import '../../../core/theme/tab_title.dart';
+import '../../../core/ui/safe_popup_menu.dart';
+import '../../shell/shell_back.dart';
+import 'folder_visibility_screen.dart';
+import 'folder_visibility.dart';
 
 /// Local tab — shows folders/videos with view mode, sort, search
 class LocalScreen extends ConsumerStatefulWidget {
@@ -47,7 +51,11 @@ class LocalScreen extends ConsumerStatefulWidget {
   ConsumerState<LocalScreen> createState() => _LocalScreenState();
 }
 
-class _LocalScreenState extends ConsumerState<LocalScreen> {
+class _LocalScreenState extends ConsumerState<LocalScreen>
+    with TabBack<LocalScreen> {
+  @override
+  int get tabIndex => 0;
+
   bool _permissionChecked = false;
   bool _hasPermission = false;
   bool _permanentlyDenied = false;
@@ -203,6 +211,15 @@ class _LocalScreenState extends ConsumerState<LocalScreen> {
           Navigator.of(context, rootNavigator: true).push(
             MaterialPageRoute(
               builder: (_) => const SettingsScreen(),
+            ),
+          );
+        }
+        break;
+      case 'folders':
+        if (context.mounted) {
+          await Navigator.of(context, rootNavigator: true).push(
+            MaterialPageRoute<void>(
+              builder: (_) => const FolderVisibilityScreen(),
             ),
           );
         }
@@ -505,23 +522,18 @@ class _LocalScreenState extends ConsumerState<LocalScreen> {
     final videoSelActive = ref.watch(selectionProvider).isNotEmpty;
     final selectionActive = folderSelActive || videoSelActive;
 
-    return PopScope(
-      // When a selection is active, the back gesture should exit selection
-      // mode rather than leaving the Local tab (matches MX Player and every
-      // premium gallery). Only when nothing is selected does back behave
-      // normally.
-      canPop: !selectionActive,
-      onPopInvoked: (didPop) {
-        if (!didPop) {
-          if (folderSelActive) {
+    // Back: a selection first, then the search, then the shell's rule.
+    // The shell does it — a PopScope here is never asked (shell_back.dart).
+    tabBack(selectionActive
+        ? () {
             ref.read(folderSelectionProvider.notifier).clear();
-          }
-          if (videoSelActive) {
             ref.read(selectionProvider.notifier).clear();
           }
-        }
-      },
-      child: Scaffold(
+        : _searchActive
+            ? () => setState(() => _searchActive = false)
+            : null);
+
+    return Scaffold(
       backgroundColor: AppColors.specScaffold,
       appBar: ref.watch(folderSelectionProvider).isNotEmpty
           ? const FolderSelectionAppBar()
@@ -570,53 +582,71 @@ class _LocalScreenState extends ConsumerState<LocalScreen> {
                 // Phase 45 (audit): MX Player V3 has a 3-dot overflow menu
                 // with Refresh, Settings, Help submenu, Quit. We replicate
                 // it exactly (verified against decompiled menu/list.xml).
-                PopupMenuButton<String>(
-                  icon: const Icon(Icons.more_vert),
-                  tooltip: 'More',
-                  color: AppColors.darkSurface,
-                  onSelected: (v) => _onAppBarMenu(context, v),
-                  itemBuilder: (_) => [
-                    PopupMenuItem(
-                      value: 'refresh',
-                      child: Row(children: [
-                        const Icon(Icons.refresh,
-                            size: 20, color: Colors.white70),
-                        const SizedBox(width: 12),
-                        Text(AppStrings.of(context).refresh,
-                            style: const TextStyle(color: Colors.white)),
-                      ]),
-                    ),
-                    PopupMenuItem(
-                      value: 'settings',
-                      child: Row(children: [
-                        const Icon(Icons.settings_outlined,
-                            size: 20, color: Colors.white70),
-                        const SizedBox(width: 12),
-                        Text(AppStrings.of(context).settingsTitle,
-                            style: const TextStyle(color: Colors.white)),
-                      ]),
-                    ),
-                    PopupMenuItem(
-                      value: 'help',
-                      child: Row(children: [
-                        const Icon(Icons.help_outline,
-                            size: 20, color: Colors.white70),
-                        const SizedBox(width: 12),
-                        Text(AppStrings.of(context).help,
-                            style: const TextStyle(color: Colors.white)),
-                      ]),
-                    ),
-                    PopupMenuItem(
-                      value: 'about',
-                      child: Row(children: [
-                        const Icon(Icons.info_outline,
-                            size: 20, color: Colors.white70),
-                        const SizedBox(width: 12),
-                        Text(AppStrings.of(context).about,
-                            style: const TextStyle(color: Colors.white)),
-                      ]),
-                    ),
-                  ],
+                // A stable id for the device lab (Android resource-id): a tooltip
+                // reaches Android as tooltip text only, which automation cannot find.
+                Semantics(
+                  container: true,
+                  identifier: 'video-tab-more',
+                  child: SafePopupMenuButton<String>(
+                    icon: const Icon(Icons.more_vert),
+                    tooltip: 'More',
+                    color: AppColors.darkSurface,
+                    onSelected: (v) => _onAppBarMenu(context, v),
+                    itemBuilder: (_) => [
+                      PopupMenuItem(
+                        value: 'refresh',
+                        child: Row(children: [
+                          const Icon(Icons.refresh,
+                              size: 20, color: Colors.white70),
+                          const SizedBox(width: 12),
+                          Text(AppStrings.of(context).refresh,
+                              style: const TextStyle(color: Colors.white)),
+                        ]),
+                      ),
+                      PopupMenuItem(
+                        value: 'settings',
+                        child: Row(children: [
+                          const Icon(Icons.settings_outlined,
+                              size: 20, color: Colors.white70),
+                          const SizedBox(width: 12),
+                          Text(AppStrings.of(context).settingsTitle,
+                              style: const TextStyle(color: Colors.white)),
+                        ]),
+                      ),
+                      // Where a hidden folder comes back from (MX: Settings →
+                      // List → Folders), one tap from the folders themselves.
+                      PopupMenuItem(
+                        value: 'folders',
+                        child: Row(children: [
+                          const Icon(Icons.visibility_outlined,
+                              size: 20, color: Colors.white70),
+                          const SizedBox(width: 12),
+                          Text(AppStrings.of(context).fvTitle,
+                              style: const TextStyle(color: Colors.white)),
+                        ]),
+                      ),
+                      PopupMenuItem(
+                        value: 'help',
+                        child: Row(children: [
+                          const Icon(Icons.help_outline,
+                              size: 20, color: Colors.white70),
+                          const SizedBox(width: 12),
+                          Text(AppStrings.of(context).help,
+                              style: const TextStyle(color: Colors.white)),
+                        ]),
+                      ),
+                      PopupMenuItem(
+                        value: 'about',
+                        child: Row(children: [
+                          const Icon(Icons.info_outline,
+                              size: 20, color: Colors.white70),
+                          const SizedBox(width: 12),
+                          Text(AppStrings.of(context).about,
+                              style: const TextStyle(color: Colors.white)),
+                        ]),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -673,7 +703,6 @@ class _LocalScreenState extends ConsumerState<LocalScreen> {
                 onLongPress: _toggleContinueWatching,
               ),
             ),
-    ),
     );
   }
 
@@ -936,6 +965,10 @@ class _LocalScreenState extends ConsumerState<LocalScreen> {
                       itemCount: folders.length,
                       itemBuilder: (context, i) => _buildFolderItem(folders[i]),
                     ),
+                  // Folders taken out of this list say so, under it, with
+                  // the way back — a hidden folder is never just gone.
+                  if (ref.watch(searchQueryProvider).isEmpty)
+                    const SliverToBoxAdapter(child: _HiddenFoldersLine()),
                 ],
               ),
             ),
@@ -1254,6 +1287,41 @@ class _HelpItem extends StatelessWidget {
             const SizedBox(width: 16),
             Text(label, style: const TextStyle(color: Colors.white)),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+
+/// "3 hidden folders ›" under the folder list, while any folder is out of
+/// it — hidden by the person, or an Android/data folder waiting for ADB —
+/// opening Show / hide folders. Nothing at all when none is.
+class _HiddenFoldersLine extends ConsumerWidget {
+  const _HiddenFoldersLine();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final choices = ref.watch(folderChoicesProvider);
+    final vis = ref.watch(folderVisibilityProvider);
+    final live = ref.watch(adbLiveProvider) == true;
+    final away = vis.appFoldersOnlyWhileConnected && !live;
+    final count = choices
+        .where((c) => vis.isHidden(c.path) || (away && c.appFolder))
+        .length;
+    if (count == 0) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 6, 16, 12),
+      child: Center(
+        child: TextButton.icon(
+          style: TextButton.styleFrom(foregroundColor: AppColors.white55),
+          onPressed: () => Navigator.of(context, rootNavigator: true).push(
+            MaterialPageRoute<void>(
+              builder: (_) => const FolderVisibilityScreen(),
+            ),
+          ),
+          icon: const Icon(Icons.visibility_off_outlined, size: 18),
+          label: Text(AppStrings.of(context).fvFooter(count)),
         ),
       ),
     );

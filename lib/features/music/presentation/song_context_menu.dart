@@ -9,12 +9,13 @@ import '../domain/song.dart';
 import 'music_providers.dart';
 
 import '../../../core/localization/app_strings.dart';
+import '../../../core/ui/app_sheet.dart';
 /// Phase 36: Song context menu shown when ⋮ tapped on a song row.
 /// Matches MX Player Music's song context sheet (Play Next, Play Later,
 /// Add To Playlist, Favourite, Set as Ringtone, Share, Properties, Delete).
 class SongContextMenu {
   static void show(BuildContext context, WidgetRef ref, Song song) {
-    showModalBottomSheet<void>(
+    showAppModalBottomSheet<void>(
       context: context,
       backgroundColor: AppColors.darkSurface,
       shape: const RoundedRectangleBorder(
@@ -371,7 +372,7 @@ class DetailHeaderActions {
     VoidCallback? onAddToPlaylist,
     VoidCallback? onRename,
   }) {
-    showModalBottomSheet<void>(
+    showAppModalBottomSheet<void>(
       context: context,
       backgroundColor: AppColors.darkSurface,
       shape: const RoundedRectangleBorder(

@@ -8,6 +8,7 @@ import '../../../core/services/secure_screen/secure_screen_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../data/private_folder_providers.dart';
 import '../../../core/theme/tab_title.dart';
+import '../../../core/ui/nav_bar_space.dart';
 
 /// Stable IDs for the built-in security questions. We store the ID (not the
 /// display text) so the question renders in the user's current language and
@@ -96,7 +97,7 @@ class _RecoverySetupScreenState extends ConsumerState<RecoverySetupScreen> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : ListView(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(20).plusNavBar(context),
               children: [
                 Text(s.recoverySetupPrompt,
                     style: const TextStyle(

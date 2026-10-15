@@ -9,6 +9,7 @@ import '../data/update_check_service.dart';
 import '../domain/app_release.dart';
 import '../domain/update_prompt_decision.dart';
 import 'update_action_panel.dart';
+import '../../../core/ui/nav_bar_space.dart';
 
 /// The one screen in Innocent a user cannot leave. Step 7 of
 /// `docs/updater_plan.md`, §2's "emergency brake".
@@ -150,7 +151,8 @@ class _BlockingUpdateScreenState extends ConsumerState<BlockingUpdateScreen>
         body: SafeArea(
           child: TabletConstrainedWidth(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20, 40, 20, 28),
+              padding: const EdgeInsets.fromLTRB(20, 40, 20, 28)
+                  .plusNavBar(context),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

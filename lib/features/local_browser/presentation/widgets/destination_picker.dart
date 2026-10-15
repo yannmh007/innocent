@@ -7,6 +7,7 @@ import '../../../../core/services/file_ops/file_ops_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../domain/folder.dart';
 import '../library_provider.dart';
+import '../../../../core/ui/app_sheet.dart';
 
 /// What the user chose in [DestinationPicker].
 @immutable
@@ -50,7 +51,7 @@ class DestinationPicker extends ConsumerStatefulWidget {
     required String title,
     Set<String> excludePaths = const <String>{},
   }) {
-    return showModalBottomSheet<DestinationChoice>(
+    return showAppModalBottomSheet<DestinationChoice>(
       context: context,
       backgroundColor: AppColors.darkSurface,
       isScrollControlled: true,

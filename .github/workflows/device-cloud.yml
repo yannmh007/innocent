@@ -80,22 +80,22 @@ jobs:
       # logcat, and answers Test Lab's game-loop launch by playing the film
       # pushed below (src/lab/AndroidManifest.xml, lib/app.dart).
       - uses: actions/setup-java@v4
-        if: (steps.mode.outputs.mode == 'playback' || steps.mode.outputs.mode == 'stream') && steps.mode.outputs.fetch == ''
+        if: (steps.mode.outputs.mode == 'playback' || steps.mode.outputs.mode == 'stream' || steps.mode.outputs.mode == 'crawl') && steps.mode.outputs.fetch == ''
         with:
           distribution: temurin
           java-version: '17'
       - uses: subosito/flutter-action@v2
-        if: (steps.mode.outputs.mode == 'playback' || steps.mode.outputs.mode == 'stream') && steps.mode.outputs.fetch == ''
+        if: (steps.mode.outputs.mode == 'playback' || steps.mode.outputs.mode == 'stream' || steps.mode.outputs.mode == 'crawl') && steps.mode.outputs.fetch == ''
         with:
           flutter-version: 3.32.8
           channel: stable
           cache: true
       - uses: android-actions/setup-android@v3
-        if: (steps.mode.outputs.mode == 'playback' || steps.mode.outputs.mode == 'stream') && steps.mode.outputs.fetch == ''
+        if: (steps.mode.outputs.mode == 'playback' || steps.mode.outputs.mode == 'stream' || steps.mode.outputs.mode == 'crawl') && steps.mode.outputs.fetch == ''
         with:
           packages: ''
       - name: Build the arm64 lab APK and the film
-        if: (steps.mode.outputs.mode == 'playback' || steps.mode.outputs.mode == 'stream') && steps.mode.outputs.fetch == ''
+        if: (steps.mode.outputs.mode == 'playback' || steps.mode.outputs.mode == 'stream' || steps.mode.outputs.mode == 'crawl') && steps.mode.outputs.fetch == ''
         env:
           INNOCENT_LAB_ABI: arm64-v8a
         run: |
@@ -122,6 +122,7 @@ jobs:
           fi
           echo "TAG=lab-${GITHUB_SHA::7}" >> "$GITHUB_ENV"
           [ "${MODE:-robo}" = stream ] && { ls -la app.apk; exit 0; }
+          [ "${MODE:-robo}" = crawl ] && { ls -la app.apk; exit 0; }
           # The film: 720p H.264 at a film's bitrate, long enough for the
           # three phases of the script (about 165 s).
           sudo apt-get install -y -qq ffmpeg >/dev/null
@@ -132,7 +133,7 @@ jobs:
           ls -la app.apk play.mp4
 
       - name: Fetch the released APK
-        if: steps.mode.outputs.mode != 'playback' && steps.mode.outputs.mode != 'stream' && steps.mode.outputs.fetch == '' && steps.ready.outputs.ok == 'true'
+        if: steps.mode.outputs.mode != 'playback' && steps.mode.outputs.mode != 'stream' && steps.mode.outputs.mode != 'crawl' && steps.mode.outputs.fetch == '' && steps.ready.outputs.ok == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -234,7 +235,7 @@ jobs:
               --type robo \
               --app app.apk \
               "${device_args[@]}" \
-              --robo-script test_device/robo/movies.json \
+              --robo-script "${ROBO_SCRIPT:-test_device/robo/movies.json}" \
               --timeout "${TIMEOUT}s" \
               --results-dir "$dir" \
               --format=json > out/matrix.json 2> out/run.txt && rc=0 || rc=$?

@@ -18,12 +18,16 @@ class FavouritesNotifier extends StateNotifier<Set<String>> {
   }
 
   Future<void> _load() async {
-    state = await _service.loadFavourites();
+    final next = await _service.loadFavourites();
+    // A notifier disposed while it waited (its container went away) must
+    // not be written to: StateNotifier throws.
+    if (mounted) state = next;
   }
 
   Future<bool> toggle(String videoUri) async {
     final added = await _service.toggleFavourite(videoUri);
-    state = await _service.loadFavourites();
+    final next = await _service.loadFavourites();
+    if (mounted) state = next;
     return added;
   }
 
@@ -44,18 +48,21 @@ class PlaylistsNotifier extends StateNotifier<List<Playlist>> {
   }
 
   Future<void> _load() async {
-    state = await _service.loadPlaylists();
+    final next = await _service.loadPlaylists();
+    if (mounted) state = next;
   }
 
   Future<Playlist> create(String name) async {
     final p = await _service.createPlaylist(name);
-    state = await _service.loadPlaylists();
+    final next = await _service.loadPlaylists();
+    if (mounted) state = next;
     return p;
   }
 
   Future<void> delete(String id) async {
     await _service.deletePlaylist(id);
-    state = await _service.loadPlaylists();
+    final next = await _service.loadPlaylists();
+    if (mounted) state = next;
   }
 
   /// Phase 29: Rename a playlist
@@ -72,12 +79,14 @@ class PlaylistsNotifier extends StateNotifier<List<Playlist>> {
 
   Future<void> addVideo(String playlistId, String videoUri) async {
     await _service.addToPlaylist(playlistId, videoUri);
-    state = await _service.loadPlaylists();
+    final next = await _service.loadPlaylists();
+    if (mounted) state = next;
   }
 
   Future<void> removeVideo(String playlistId, String videoUri) async {
     await _service.removeFromPlaylist(playlistId, videoUri);
-    state = await _service.loadPlaylists();
+    final next = await _service.loadPlaylists();
+    if (mounted) state = next;
   }
 
   /// Phase 14: Reorder videos in a playlist
@@ -117,7 +126,8 @@ class BookmarksNotifier extends StateNotifier<List<Bookmark>> {
   }
 
   Future<void> _load() async {
-    state = await _service.loadBookmarks();
+    final next = await _service.loadBookmarks();
+    if (mounted) state = next;
   }
 
   Future<Bookmark> add({
@@ -132,13 +142,15 @@ class BookmarksNotifier extends StateNotifier<List<Bookmark>> {
       position: position,
       label: label,
     );
-    state = await _service.loadBookmarks();
+    final next = await _service.loadBookmarks();
+    if (mounted) state = next;
     return b;
   }
 
   Future<void> delete(String bookmarkId) async {
     await _service.deleteBookmark(bookmarkId);
-    state = await _service.loadBookmarks();
+    final next = await _service.loadBookmarks();
+    if (mounted) state = next;
   }
 
   /// Bookmarks filtered for a single video
@@ -161,7 +173,8 @@ class HistoryNotifier extends StateNotifier<List<HistoryEntry>> {
   }
 
   Future<void> _load() async {
-    state = await _service.loadHistory();
+    final next = await _service.loadHistory();
+    if (mounted) state = next;
   }
 
   Future<void> record({
@@ -178,7 +191,8 @@ class HistoryNotifier extends StateNotifier<List<HistoryEntry>> {
       duration: duration,
       countAsNewPlay: countAsNewPlay,
     );
-    state = await _service.loadHistory();
+    final next = await _service.loadHistory();
+    if (mounted) state = next;
   }
 
   Future<void> clear() async {
@@ -188,7 +202,8 @@ class HistoryNotifier extends StateNotifier<List<HistoryEntry>> {
 
   Future<void> deleteEntry(String videoUri) async {
     await _service.deleteHistoryEntry(videoUri);
-    state = await _service.loadHistory();
+    final next = await _service.loadHistory();
+    if (mounted) state = next;
   }
 }
 
@@ -301,17 +316,20 @@ class RecycleBinNotifier extends StateNotifier<List<RecycleBinEntry>> {
   }
 
   Future<void> _load() async {
-    state = await _service.loadRecycleBin();
+    final next = await _service.loadRecycleBin();
+    if (mounted) state = next;
   }
 
   Future<void> add(RecycleBinEntry entry) async {
     await _service.addToRecycleBin(entry);
-    state = await _service.loadRecycleBin();
+    final next = await _service.loadRecycleBin();
+    if (mounted) state = next;
   }
 
   Future<void> restore(String videoUri) async {
     await _service.restoreFromRecycleBin(videoUri);
-    state = await _service.loadRecycleBin();
+    final next = await _service.loadRecycleBin();
+    if (mounted) state = next;
   }
 
   Future<void> empty() async {
@@ -334,18 +352,21 @@ class WatchLaterNotifier extends StateNotifier<List<String>> {
   }
 
   Future<void> _load() async {
-    state = await _service.loadWatchLater();
+    final next = await _service.loadWatchLater();
+    if (mounted) state = next;
   }
 
   Future<bool> add(String videoUri) async {
     final added = await _service.addToWatchLater(videoUri);
-    state = await _service.loadWatchLater();
+    final next = await _service.loadWatchLater();
+    if (mounted) state = next;
     return added;
   }
 
   Future<void> remove(String videoUri) async {
     await _service.removeFromWatchLater(videoUri);
-    state = await _service.loadWatchLater();
+    final next = await _service.loadWatchLater();
+    if (mounted) state = next;
   }
 
   bool contains(String videoUri) => state.contains(videoUri);

@@ -35,6 +35,9 @@ import 'playlist_sheet.dart';
 import 'preflight_gate.dart';
 import 'quality_sheet.dart';
 import '../../../core/theme/tab_title.dart';
+import '../../../core/ui/safe_popup_menu.dart';
+import '../../../core/ui/app_sheet.dart';
+import '../../../core/ui/nav_bar_space.dart';
 
 /// Home of the downloader.
 ///
@@ -1293,7 +1296,7 @@ class _DownloaderHomeScreenState extends ConsumerState<DownloaderHomeScreen>
   Future<void> _siteIconMenu(DownloadSite site) async {
     final AppStrings s = AppStrings.of(context);
     final bool hasIcon = _iconFor(site) != null;
-    final String? action = await showModalBottomSheet<String>(
+    final String? action = await showAppModalBottomSheet<String>(
       context: context,
       backgroundColor: AppColors.specSheetBg,
       shape: const RoundedRectangleBorder(
@@ -1481,7 +1484,7 @@ class _DownloaderHomeScreenState extends ConsumerState<DownloaderHomeScreen>
     }
   }
 
-  Future<void> _openSettings() => showModalBottomSheet<void>(
+  Future<void> _openSettings() => showAppModalBottomSheet<void>(
         context: context,
         backgroundColor: AppColors.specSheetBg,
         isScrollControlled: true,
@@ -1492,7 +1495,7 @@ class _DownloaderHomeScreenState extends ConsumerState<DownloaderHomeScreen>
         builder: (BuildContext ctx) => const _SettingsSheet(),
       );
 
-  Future<void> _pickFavourites() => showModalBottomSheet<void>(
+  Future<void> _pickFavourites() => showAppModalBottomSheet<void>(
         context: context,
         backgroundColor: AppColors.specSheetBg,
         isScrollControlled: true,
@@ -1727,7 +1730,7 @@ class _DownloaderHomeScreenState extends ConsumerState<DownloaderHomeScreen>
       return _emptyDownloads(s);
     }
     return ListView(
-      padding: const EdgeInsets.only(top: 2, bottom: 32),
+      padding: const EdgeInsets.only(top: 2, bottom: 32).plusNavBar(context),
       children: <Widget>[
         const _RemoteNotice(),
         const _EngineBanner(),
@@ -1781,7 +1784,7 @@ class _DownloaderHomeScreenState extends ConsumerState<DownloaderHomeScreen>
     bool showRestricted,
   ) {
     return ListView(
-      padding: const EdgeInsets.only(top: 2, bottom: 32),
+      padding: const EdgeInsets.only(top: 2, bottom: 32).plusNavBar(context),
       children: <Widget>[
         _sectionHeader(
           s.downloaderFavourite,
@@ -2450,7 +2453,7 @@ class _DownloaderHomeScreenState extends ConsumerState<DownloaderHomeScreen>
   /// the one that keeps the old options. Watched through a Consumer so
   /// deleting inside the sheet updates the sheet.
   Future<void> _showAllHistory(AppStrings s) async {
-    await showModalBottomSheet<void>(
+    await showAppModalBottomSheet<void>(
       context: context,
       backgroundColor: AppColors.specSheetBg,
       isScrollControlled: true,
@@ -2535,7 +2538,7 @@ class _DownloaderHomeScreenState extends ConsumerState<DownloaderHomeScreen>
         style: const TextStyle(color: AppColors.white40, fontSize: 11),
       ),
       onTap: () => _playSaved(s, r),
-      trailing: PopupMenuButton<String>(
+      trailing: SafePopupMenuButton<String>(
         tooltip: s.downloaderMoreOptions,
         icon: const Icon(Icons.more_vert, size: 18, color: AppColors.white40),
         color: AppColors.specSheetBg,
@@ -3068,7 +3071,7 @@ class _DownloaderHomeScreenState extends ConsumerState<DownloaderHomeScreen>
             // page is this from, and did I pick the right video? Reopening
             // the page is how somebody checks without cancelling first, and
             // it costs nothing to offer: the address is already in the spec.
-            PopupMenuButton<String>(
+            SafePopupMenuButton<String>(
               tooltip: s.downloaderMoreOptions,
               icon: const Icon(Icons.more_vert,
                   size: 18, color: AppColors.white40),
@@ -3332,7 +3335,7 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet> {
     List<T> options,
     String Function(T) label,
   ) =>
-      showModalBottomSheet<T>(
+      showAppModalBottomSheet<T>(
         context: context,
         backgroundColor: AppColors.specSheetBg,
         shape: const RoundedRectangleBorder(
@@ -3455,7 +3458,7 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet> {
       SignInTargets.instagram,
       SignInTargets.facebook,
     ];
-    final SignInTarget? picked = await showModalBottomSheet<SignInTarget>(
+    final SignInTarget? picked = await showAppModalBottomSheet<SignInTarget>(
       context: context,
       backgroundColor: AppColors.specSheetBg,
       shape: const RoundedRectangleBorder(

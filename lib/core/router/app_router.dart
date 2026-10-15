@@ -11,6 +11,7 @@ import '../../features/video_hub/presentation/gate/age_gate_screen.dart';
 import '../../features/video_hub/presentation/video_hub_screen.dart';
 import '../services/diagnostics/playback_log.dart';
 import 'routes.dart';
+import '../../features/shell/shell_popup_guard.dart';
 
 /// The root navigator (renders ABOVE the shell). Full-screen routes pin to
 /// this key so they always cover the shell's bottom nav bar, no matter
@@ -81,6 +82,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Shell route — holds bottom navigation
       ShellRoute(
         navigatorKey: _shellNavigatorKey,
+        // Sees menus and sheets opened over a tab, so the bottom bar can
+        // close them instead of switching tabs underneath (the "Something
+        // didn't load" crash on Me). features/shell/shell_popup_guard.dart.
+        observers: [shellPopupGuard],
         builder: (context, state, child) => ShellScreen(child: child),
         routes: [
           GoRoute(

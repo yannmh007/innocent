@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../../../core/services/diagnostics/crash_diagnostics.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/ui/tablet_constrained_width.dart';
+import '../../../core/ui/nav_bar_space.dart';
 
 /// v1.61 — Settings → Diagnostics.
 ///
@@ -84,7 +85,8 @@ class _SettingsDiagnosticsScreenState extends State<SettingsDiagnosticsScreen> {
         child: _loading
             ? const Center(child: CircularProgressIndicator())
             : ListView(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 96)
+                    .plusNavBar(context),
                 children: [
                   const Card(
                     margin: EdgeInsets.only(bottom: 16),

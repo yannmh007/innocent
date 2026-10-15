@@ -11,6 +11,7 @@ import 'equalizer_screen.dart' show equalizerServiceProvider;
 
 import '../../../core/localization/app_strings.dart';
 import '../../../core/ui/tv_focus.dart';
+import '../../../core/ui/safe_popup_menu.dart';
 
 // ── MX Player-sampled palette (v0.49.2 visual parity pass). Values were
 // measured from reference screenshots at density 3.0, so this sheet
@@ -612,7 +613,7 @@ class _AudioEffectSheetState extends ConsumerState<AudioEffectSheet>
   Widget _reverbRow() {
     final presets = _eq.getReverbPresets();
     final name = presets[_reverbPreset];
-    return PopupMenuButton<int>(
+    return SafePopupMenuButton<int>(
       initialValue: _reverbPreset,
       color: AppColors.darkSurface,
       position: PopupMenuPosition.under,

@@ -16,6 +16,7 @@ import 'favourites_screen.dart';
 import '../../../core/ui/safe_thumbnail.dart';
 
 import '../../../core/localization/app_strings.dart';
+import '../../../core/ui/safe_popup_menu.dart';
 /// Video Playlists screen matching MX Player (UI PDF page 9)
 /// "Create New Playlist" button at top + Favourites entry + user playlists
 class PlaylistsScreen extends ConsumerWidget {
@@ -275,7 +276,7 @@ class PlaylistsScreen extends ConsumerWidget {
                             color: AppColors.darkOnSurfaceMuted,
                             fontSize: 12),
                       ),
-                      trailing: PopupMenuButton<String>(
+                      trailing: SafePopupMenuButton<String>(
                         icon: const Icon(Icons.more_vert,
                             color: AppColors.darkOnSurfaceMuted, size: 20),
                         color: AppColors.darkSurface,

@@ -3,12 +3,13 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 
 import '../../../../core/localization/app_strings.dart';
+import '../../../../core/ui/app_sheet.dart';
 /// Display Settings sheet — brightness, contrast, saturation, hue sliders
 class DisplaySettingsSheet extends StatefulWidget {
   const DisplaySettingsSheet({super.key});
 
   static Future<void> show(BuildContext context) {
-    return showModalBottomSheet(
+    return showAppModalBottomSheet(
       context: context,
       backgroundColor: AppColors.darkSurface,
       shape: const RoundedRectangleBorder(

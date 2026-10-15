@@ -28,6 +28,7 @@ import '../../../../core/localization/app_strings.dart';
 import '../../../../core/services/thumbnail/thumbnail_cache.dart';
 import 'media_identity_migrator.dart';
 import '../../../../core/services/subtitles/subtitle_formats.dart';
+import '../../../../core/ui/app_sheet.dart';
 class _OptionItem {
   final IconData icon;
   final String label;
@@ -64,7 +65,7 @@ class VideoOptionMenu extends ConsumerWidget {
   });
 
   static Future<void> show(BuildContext context, Video video) {
-    return showModalBottomSheet<void>(
+    return showAppModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
       // MX leaves the list behind it readable — the sheet's own frosted
@@ -107,7 +108,7 @@ class VideoOptionMenu extends ConsumerWidget {
   Future<void> _addToPlaylist(BuildContext sheetContext, WidgetRef ref) async {
     // Open the picker ON TOP of this menu (sheet context still valid),
     // then dismiss this menu once the picker returns.
-    final result = await showModalBottomSheet<String>(
+    final result = await showAppModalBottomSheet<String>(
       context: sheetContext,
       backgroundColor: AppColors.darkSurface,
       builder: (_) => _PlaylistPickerSheet(video: video),
@@ -371,7 +372,7 @@ class VideoOptionMenu extends ConsumerWidget {
     final folders = await svc.loadFolders();
     if (!sheetContext.mounted) return _kChooseCancelled;
     final s = AppStrings.of(sheetContext);
-    return showModalBottomSheet<String?>(
+    return showAppModalBottomSheet<String?>(
       context: sheetContext,
       backgroundColor: AppColors.darkSurface,
       shape: const RoundedRectangleBorder(

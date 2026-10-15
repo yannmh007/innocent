@@ -6,13 +6,14 @@ import '../../../../core/localization/app_strings.dart';
 import '../../data/diagnostics_report.dart';
 import '../account_provider.dart';
 import '../video_hub_theme.dart';
+import '../../../../core/ui/app_sheet.dart';
 
 /// "Report a problem": say what will be sent, take an optional line, send it,
 /// and hand back a code to quote. See [DiagnosticsReport].
 class ReportProblemSheet extends ConsumerStatefulWidget {
   const ReportProblemSheet({super.key});
 
-  static Future<void> show(BuildContext context) => showModalBottomSheet<void>(
+  static Future<void> show(BuildContext context) => showAppModalBottomSheet<void>(
         context: context,
         isScrollControlled: true,
         backgroundColor: VH.surface1,

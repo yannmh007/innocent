@@ -10,6 +10,7 @@ import '../../data/local_account_repository.dart';
 import '../../domain/account_repository.dart';
 import '../account_provider.dart';
 import '../video_hub_theme.dart';
+import '../../../../core/ui/app_sheet.dart';
 
 /// Phone sign-in, as a bottom sheet.
 ///
@@ -27,7 +28,7 @@ class SignInSheet extends ConsumerStatefulWidget {
   const SignInSheet({super.key});
 
   static Future<bool> show(BuildContext context) async {
-    final ok = await showModalBottomSheet<bool>(
+    final ok = await showAppModalBottomSheet<bool>(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,

@@ -10,6 +10,8 @@ import '../../../core/theme/app_colors.dart';
 
 import '../../../core/localization/app_strings.dart';
 import '../../../core/ui/tv_focus.dart';
+import '../../../core/ui/safe_popup_menu.dart';
+import '../../../core/ui/nav_bar_space.dart';
 final equalizerServiceProvider = Provider<EqualizerService>((ref) {
   // Reuse the process-wide instance so the UI, the startup audio-session
   // hook, and the playback-start reapply all share one session id + state.
@@ -328,7 +330,7 @@ class _EqualizerScreenState extends ConsumerState<EqualizerScreen>
 
   Widget _buildProfilesTab() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16).plusNavBar(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -390,7 +392,7 @@ class _EqualizerScreenState extends ConsumerState<EqualizerScreen>
 
   Widget _buildEqualizerTab() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 28).plusNavBar(context),
       child: Opacity(
         opacity: _enabled ? 1.0 : 0.45,
         child: AbsorbPointer(
@@ -596,7 +598,7 @@ class _EqualizerScreenState extends ConsumerState<EqualizerScreen>
   Widget _reverbRow() {
     final presets = _eq.getReverbPresets();
     final name = presets[_reverbPreset];
-    return PopupMenuButton<int>(
+    return SafePopupMenuButton<int>(
       initialValue: _reverbPreset,
       color: AppColors.darkSurface,
       position: PopupMenuPosition.under,

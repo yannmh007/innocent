@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/localization/app_strings.dart';
 import '../../domain/content_filters.dart';
 import '../video_hub_theme.dart';
+import '../../../../core/ui/app_sheet.dart';
 
 /// Sort options, presented as a bottom sheet.
 ///
@@ -22,7 +23,7 @@ class SortSheet {
     required ContentSort current,
   }) {
     final s = AppStrings.of(context);
-    return showModalBottomSheet<ContentSort>(
+    return showAppModalBottomSheet<ContentSort>(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) {

@@ -10,6 +10,7 @@ import '../../domain/video.dart';
 import '../library_provider.dart';
 import 'bulk_actions.dart';
 import '../selection_provider.dart';
+import '../../../../core/ui/app_sheet.dart';
 
 /// The bar that slides up from the bottom while videos are selected.
 ///
@@ -50,7 +51,7 @@ class _SelectionActionBarState extends ConsumerState<SelectionActionBar> {
   /// The selected videos, resolved once.
   List<Video> _selected() {
     final selection = ref.read(selectionProvider);
-    final all = ref.read(allVideosProvider).valueOrNull ?? const <Video>[];
+    final all = ref.read(selectableVideosProvider);
     return all.where((v) => selection.contains(v.uri)).toList();
   }
 
@@ -80,7 +81,7 @@ class _SelectionActionBarState extends ConsumerState<SelectionActionBar> {
       AppSnackbar.global(s.noPlaylistsHint);
       return;
     }
-    final picked = await showModalBottomSheet<String>(
+    final picked = await showAppModalBottomSheet<String>(
       context: context,
       backgroundColor: AppColors.darkSurface,
       builder: (sheet) => SafeArea(
@@ -163,10 +164,7 @@ class _SelectionActionBarState extends ConsumerState<SelectionActionBar> {
     if (confirm != true || !mounted) return;
 
     final selection = ref.read(selectionProvider);
-    final all = ref.read(allVideosProvider).maybeWhen(
-          data: (list) => list,
-          orElse: () => const [],
-        );
+    final all = ref.read(selectableVideosProvider);
     var moved = 0;
     // Captured outside the loop: `ref` belongs to this widget, and a long
     // selection gives the user time to leave mid-loop.

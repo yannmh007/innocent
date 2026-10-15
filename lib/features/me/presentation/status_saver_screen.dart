@@ -13,6 +13,7 @@ import '../../../core/ui/app_snackbar.dart';
 
 import '../../../core/localization/app_strings.dart';
 import '../../../core/ui/tv_focus.dart';
+import '../../../core/ui/nav_bar_space.dart';
 /// Status Saver — lets the user view and keep WhatsApp / WA Business
 /// statuses (images & videos) before they disappear.
 ///
@@ -306,7 +307,7 @@ class _StatusSaverScreenState extends State<StatusSaverScreen>
     return RefreshIndicator(
       onRefresh: _load,
       child: GridView.builder(
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(8).plusNavBar(context),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 3,
           mainAxisSpacing: 8,
