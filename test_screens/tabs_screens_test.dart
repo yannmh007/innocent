@@ -60,6 +60,21 @@ void main() {
         await t.pump(const Duration(milliseconds: 400));
       });
   screens('me', () => const ShellScreen(child: MeScreen()), scrolls: 2);
+  // Transfer as its own page (from Me, the shortcuts, a video's menu): no
+  // tab bar under it, so its pinned buttons must clear the phone's own bar.
+  screens('transfer_page', () => const TransferScreen(), scrolls: 1);
+  screens('transfer_page_receive', () => const TransferScreen(),
+      act: (t) async {
+        await t.tap(find.byKey(const ValueKey('transfer-receive')));
+        await t.pump();
+        await t.pump(const Duration(milliseconds: 400));
+      });
+  screens('transfer_page_computer', () => const TransferScreen(),
+      act: (t) async {
+        await t.tap(find.byKey(const ValueKey('transfer-computer')));
+        await t.pump();
+        await t.pump(const Duration(milliseconds: 400));
+      });
 }
 
 /// The files list with a video's long-press sheet open over it.

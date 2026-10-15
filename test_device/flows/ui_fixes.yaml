@@ -84,13 +84,36 @@ appId: com.innocent.media
 - extendedWaitUntil:
     visible: "Hidden files need ADB"
     timeout: 10000
-- assertVisible: "Connect ADB"
+# "Set up ADB" on a phone that never connected, "Connect ADB" after.
+- assertVisible: "(Connect|Set up) ADB"
 - assertVisible: "Check again"
 - takeScreenshot: u06_hidden_files_needs_adb
 - tapOn: "Check again"
 - waitForAnimationToEnd:
     timeout: 6000
 - assertVisible: "Hidden files need ADB"
+- back
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# ── Transfer as its own page: its pinned Send button above the bar ──────
+# (Test Lab, realme C53, 15 Oct: "Send (1 · 89.7 MB)" sat under the bar.)
+- scrollUntilVisible:
+    element:
+      text: "(?s).*File Transfer.*"
+    direction: UP
+- tapOn: "(?s).*File Transfer.*"
+- waitForAnimationToEnd:
+    timeout: 4000
+- scrollUntilVisible:
+    element:
+      text: "(?s).*Send the Innocent app.*"
+    direction: DOWN
+- tapOn: "(?s).*Send the Innocent app.*"
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: u06b_transfer_send_pane
+- back
 - back
 - waitForAnimationToEnd:
     timeout: 3000

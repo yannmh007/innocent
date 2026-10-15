@@ -419,7 +419,7 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
     // Back inside the tab goes home first (nothing running is stopped). The
     // shell answers Back — see [transferBackProvider] — because a PopScope of
     // our own would fire alongside the shell's, which jumps to the first tab.
-    return Scaffold(
+    final page = Scaffold(
       backgroundColor: AppColors.darkBackground,
       appBar: AppBar(
         title: Text(title,
@@ -448,7 +448,17 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
           ),
         ],
       ),
-      body: switch (_view) {
+      // ABOVE THE NAVIGATION BAR. This screen is the Transfer tab, where the
+      // shell's bar already stands under it — and also its own page, opened
+      // from Me, the Video tab's shortcuts and a video's menu, where nothing
+      // did: the Send button pinned to the bottom sat under Back · Home ·
+      // Recents (Test Lab, a realme C53 with three-button navigation). In
+      // the tab the inset is zero and this changes nothing.
+      body: SafeArea(
+        top: false,
+        left: false,
+        right: false,
+        child: switch (_view) {
         _View.home => TransferHome(
             onSend: _send,
             onReceive: () => _go(_View.receive),
@@ -480,7 +490,21 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
                 onSendApp: _addOwnApk,
                 onSendFolder: _pickFolder,
               ),
+        },
+      ),
+    );
+    // Opened as its own page (from Me, the shortcuts, a video's menu), there
+    // is no shell to ask: system Back left the whole page from Send or
+    // Receive, while the arrow in the corner went home. Now both go home
+    // first, as in the tab.
+    final ownPage = !(ModalRoute.of(context)?.isFirst ?? true);
+    if (!ownPage) return page;
+    return PopScope(
+      canPop: _view == _View.home,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _go(_View.home);
       },
+      child: page,
     );
   }
 
