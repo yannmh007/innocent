@@ -50,17 +50,55 @@ Take screenshot u05_me... COMPLETED
 Scrolling DOWN until "(?s).*Hidden files.*" is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
 Tap on "(?s).*Hidden files.*"... COMPLETED
 Assert that "Hidden files need ADB" is visible... COMPLETED
-Assert that "Connect ADB" is visible... FAILED
-
-Assertion is false: "Connect ADB" is visible
-
-Assertion '"Connect ADB" is visible' failed. Check the UI hierarchy in debug artifacts to verify the element state and properties.
-
-Possible causes:
-- Element selector may be incorrect - check if there are similar elements with slightly different names/properties.
-- Element may be temporarily unavailable due to loading state
-- This could be a real regression that needs to be addressed
-
-==== Debug output (logs & screenshots) ====
-
-/home/runner/work/innocent/innocent/out/maestro_out/2026-10-15_094924
+Assert that "(Connect|Set up) ADB" is visible... COMPLETED
+Assert that "Check again" is visible... COMPLETED
+Take screenshot u06_hidden_files_needs_adb... COMPLETED
+Tap on "Check again"... COMPLETED
+Wait for animation to end within 6000 ms... COMPLETED
+Assert that "Hidden files need ADB" is visible... COMPLETED
+Press back... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Scrolling UP until "(?s).*File Transfer.*" is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Tap on "(?s).*File Transfer.*"... COMPLETED
+Wait for animation to end within 4000 ms... COMPLETED
+Scrolling DOWN until "(?s).*Send the Innocent app.*" is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Tap on "(?s).*Send the Innocent app.*"... COMPLETED
+Wait for animation to end within 5000 ms... COMPLETED
+Take screenshot u06b_transfer_send_pane... COMPLETED
+Press back... COMPLETED
+Press back... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Scrolling UP until "(?s)Settings\n.*" is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Tap on "(?s)Settings\n.*"... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Scrolling DOWN until "(?s).*App update.*" is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Tap on "(?s).*App update.*"... COMPLETED
+Wait for animation to end within 8000 ms... COMPLETED
+Scroll vertically... COMPLETED
+Scroll vertically... COMPLETED
+Wait for animation to end within 2000 ms... COMPLETED
+Take screenshot u07_app_update_end... COMPLETED
+Press back... COMPLETED
+Press back... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Tap on "(?s).*Tab 1 of 4.*"... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Long press on "(?s).*Folder: Download,.*"... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Tap on id: folder-selection-hide... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Take screenshot u08_folder_hidden... COMPLETED
+Assert that "(?s).*Folder: Download,.*" is not visible... COMPLETED
+Scrolling DOWN until "(?s).*hidden folder.*" is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Take screenshot u09_hidden_line... COMPLETED
+Tap on "(?s).*hidden folder.*"... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Assert that "Show / hide folders" is visible... COMPLETED
+Take screenshot u10_show_hide_folders... COMPLETED
+Tap on "Show"... COMPLETED
+Wait for animation to end within 2000 ms... COMPLETED
+Press back... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Scrolling UP until "(?s).*Folder: Download,.*" is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Assert that "(?s).*hidden folder.*" is not visible... COMPLETED
+Take screenshot u11_folder_back... COMPLETED
