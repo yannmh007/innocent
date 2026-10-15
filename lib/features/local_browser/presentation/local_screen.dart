@@ -39,6 +39,7 @@ import 'widgets/video_option_menu.dart';
 import '../../../core/utils/async_value_extensions.dart';
 import '../../../core/theme/tab_title.dart';
 import '../../../core/ui/safe_popup_menu.dart';
+import '../../shell/shell_back.dart';
 
 /// Local tab — shows folders/videos with view mode, sort, search
 class LocalScreen extends ConsumerStatefulWidget {
@@ -48,7 +49,11 @@ class LocalScreen extends ConsumerStatefulWidget {
   ConsumerState<LocalScreen> createState() => _LocalScreenState();
 }
 
-class _LocalScreenState extends ConsumerState<LocalScreen> {
+class _LocalScreenState extends ConsumerState<LocalScreen>
+    with TabBack<LocalScreen> {
+  @override
+  int get tabIndex => 0;
+
   bool _permissionChecked = false;
   bool _hasPermission = false;
   bool _permanentlyDenied = false;
@@ -506,23 +511,18 @@ class _LocalScreenState extends ConsumerState<LocalScreen> {
     final videoSelActive = ref.watch(selectionProvider).isNotEmpty;
     final selectionActive = folderSelActive || videoSelActive;
 
-    return PopScope(
-      // When a selection is active, the back gesture should exit selection
-      // mode rather than leaving the Local tab (matches MX Player and every
-      // premium gallery). Only when nothing is selected does back behave
-      // normally.
-      canPop: !selectionActive,
-      onPopInvoked: (didPop) {
-        if (!didPop) {
-          if (folderSelActive) {
+    // Back: a selection first, then the search, then the shell's rule.
+    // The shell does it — a PopScope here is never asked (shell_back.dart).
+    tabBack(selectionActive
+        ? () {
             ref.read(folderSelectionProvider.notifier).clear();
-          }
-          if (videoSelActive) {
             ref.read(selectionProvider.notifier).clear();
           }
-        }
-      },
-      child: Scaffold(
+        : _searchActive
+            ? () => setState(() => _searchActive = false)
+            : null);
+
+    return Scaffold(
       backgroundColor: AppColors.specScaffold,
       appBar: ref.watch(folderSelectionProvider).isNotEmpty
           ? const FolderSelectionAppBar()
@@ -674,7 +674,6 @@ class _LocalScreenState extends ConsumerState<LocalScreen> {
                 onLongPress: _toggleContinueWatching,
               ),
             ),
-    ),
     );
   }
 

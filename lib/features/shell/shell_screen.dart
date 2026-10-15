@@ -17,6 +17,7 @@ import '../updater/presentation/update_prompt.dart';
 import '../music/presentation/music_screen.dart';
 import '../transfer/presentation/transfer_screen.dart';
 import 'shell_popup_guard.dart';
+import 'shell_back.dart';
 
 /// Provider for current selected tab index
 final shellTabIndexProvider = StateProvider<int>((ref) => 0);
@@ -179,20 +180,17 @@ class _ShellScreenState extends ConsumerState<ShellScreen>
     // app. It used to leave from every tab — on a TV remote, one press too
     // many from Music and the app was gone. A screen opened inside a tab
     // still closes first: this only answers when nothing above it can pop.
-    // A tab with pages of its own (Transfer's Send / Receive / Share with)
-    // gets Back first: it goes to that tab's home, then to the first tab.
-    final innerBack =
-        currentIndex == _transferTab ? ref.watch(transferBackProvider) : null;
-    Widget backToFirstTab(Widget shell) => PopScope(
-          canPop: currentIndex == 0 && innerBack == null,
-          onPopInvokedWithResult: (didPop, _) {
-            if (didPop) return;
-            if (innerBack != null) {
-              innerBack();
-            } else {
-              select(0);
-            }
-          },
+    // A tab with something of its own to undo gets Back first: Transfer's
+    // pages go home; the Video tab closes a selection, then a search; Music
+    // closes its search (shell_back.dart — a tab's own PopScope is never
+    // asked). Then the first tab, then out of the app.
+    final innerBack = currentIndex == _transferTab
+        ? ref.watch(transferBackProvider)
+        : ref.watch(tabBackProvider(currentIndex));
+    Widget backToFirstTab(Widget shell) => ShellBackScope(
+          onFirstTab: currentIndex == 0,
+          undo: innerBack,
+          toFirstTab: () => select(0),
           child: shell,
         );
 

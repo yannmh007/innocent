@@ -16,6 +16,7 @@ import '../../../core/utils/async_value_extensions.dart';
 import '../../../core/ui/tablet_constrained_width.dart';
 import '../../../core/theme/tab_title.dart';
 import '../../../core/ui/safe_popup_menu.dart';
+import '../../shell/shell_back.dart';
 
 /// Music tab — Tracks / Playlists / Albums / Artists / Folders
 /// Matches MX Player UI (PDF page 5)
@@ -27,7 +28,10 @@ class MusicScreen extends ConsumerStatefulWidget {
 }
 
 class _MusicScreenState extends ConsumerState<MusicScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, TabBack<MusicScreen> {
+  @override
+  int get tabIndex => 1;
+
   late final TabController _tabController;
   bool _searching = false;
   final _searchController = TextEditingController();
@@ -49,6 +53,13 @@ class _MusicScreenState extends ConsumerState<MusicScreen>
 
   @override
   Widget build(BuildContext context) {
+    // Back closes the search first (the shell does it: shell_back.dart).
+    tabBack(_searching
+        ? () => setState(() {
+              _searching = false;
+              _searchController.clear();
+            })
+        : null);
     final s = AppStrings.of(context);
     return Scaffold(
       backgroundColor: AppColors.darkBackground,
