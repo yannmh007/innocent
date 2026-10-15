@@ -55,7 +55,12 @@ appId: com.innocent.media
     timeout: 3000
 - assertVisible: "Refresh"
 - takeScreenshot: u03_menu_open
-- tapOn: "(?s).*Tab 4 of 4.*"
+# The menu's barrier covers the whole screen, the tab bar too (run
+# 38712225367: with the menu open the bar is not in the hierarchy at all),
+# so the tap goes where Me is drawn: the bar sits just above the 48 dp
+# three-button bar, which starts at 2274 of 2400 px.
+- tapOn:
+    point: "87%,92%"
 - waitForAnimationToEnd:
     timeout: 3000
 # The tap closed the menu and did not switch tabs underneath it.
