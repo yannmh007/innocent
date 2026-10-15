@@ -9,6 +9,8 @@ import '../domain/song.dart';
 import 'music_providers.dart';
 
 import '../../../core/localization/app_strings.dart';
+import '../../../core/ui/share_media.dart';
+import '../../../core/ui/app_snackbar.dart';
 import '../../../core/ui/app_sheet.dart';
 /// Phase 36: Song context menu shown when ⋮ tapped on a song row.
 /// Matches MX Player Music's song context sheet (Play Next, Play Later,
@@ -79,25 +81,25 @@ class _SongContextSheet extends StatelessWidget {
           const Divider(color: Colors.white12, height: 1),
           _MenuItem(
             icon: Icons.queue_music,
-            label: 'Play Next',
+            label: AppStrings.of(context).mcPlayNext,
             onTap: () {
               ref.read(musicPlayingProvider.notifier).playNext(song);
               Navigator.pop(context);
-              _toast(context, 'Playing next: "${song.title}"');
+              _toast(context, AppStrings.current.mcPlayingNext(song.title));
             },
           ),
           _MenuItem(
             icon: Icons.playlist_play,
-            label: 'Play Later',
+            label: AppStrings.of(context).mcPlayLater,
             onTap: () {
               ref.read(musicPlayingProvider.notifier).playLater(song);
               Navigator.pop(context);
-              _toast(context, 'Added to queue');
+              _toast(context, AppStrings.current.mcQueued);
             },
           ),
           _MenuItem(
             icon: Icons.playlist_add,
-            label: 'Add To Playlist',
+            label: AppStrings.of(context).addToPlaylist,
             onTap: () {
               Navigator.pop(context);
               _showAddToPlaylistDialog(context, ref, song);
@@ -116,7 +118,7 @@ class _SongContextSheet extends StatelessWidget {
               final isFav = favs.songUris.contains(song.uri);
               return _MenuItem(
                 icon: isFav ? Icons.favorite : Icons.favorite_border,
-                label: isFav ? 'Remove from Favourites' : 'Favourite',
+                label: isFav ? AppStrings.of(context).vomRemoveFav : AppStrings.of(context).favourite,
                 iconColor: isFav ? Colors.redAccent : null,
                 onTap: () {
                   innerRef
@@ -124,44 +126,27 @@ class _SongContextSheet extends StatelessWidget {
                       .toggleFavourite(song.uri);
                   Navigator.pop(context);
                   _toast(context,
-                      !isFav ? 'Added to favourites' : 'Removed from favourites');
+                      !isFav ? AppStrings.current.mcFavAdded : AppStrings.current.mcFavRemoved);
                 },
               );
             },
           ),
           _MenuItem(
-            icon: Icons.phone_in_talk_outlined,
-            label: 'Set as Ringtone',
-            onTap: () {
-              Navigator.pop(context);
-              _toast(context, 'Set as ringtone (requires system permission)');
-            },
-          ),
-          _MenuItem(
             icon: Icons.share_outlined,
-            label: 'Share',
+            label: AppStrings.of(context).share,
             onTap: () async {
               Navigator.pop(context);
               try {
-                await Share.share(song.uri, subject: song.title);
+                await shareMedia(song.uri, subject: song.title);
               } catch (e) { if (kDebugMode) debugPrint('song_context_menu.best-effort: $e'); }
             },
           ),
           _MenuItem(
             icon: Icons.info_outline,
-            label: 'Properties',
+            label: AppStrings.of(context).properties,
             onTap: () {
               Navigator.pop(context);
               _showProperties(context, song);
-            },
-          ),
-          _MenuItem(
-            icon: Icons.delete_outline,
-            label: 'Delete',
-            iconColor: const Color(0xFFEF5350),
-            onTap: () {
-              Navigator.pop(context);
-              _toast(context, 'Delete requires Android MediaStore permission');
             },
           ),
           const SizedBox(height: 8),
@@ -170,10 +155,10 @@ class _SongContextSheet extends StatelessWidget {
     );
   }
 
+  /// Raised after the sheet has closed itself, when its context is gone —
+  /// so through the root messenger, which needs none.
   static void _toast(BuildContext context, String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg), duration: const Duration(milliseconds: 1200)),
-    );
+    AppSnackbar.global(msg, duration: const Duration(milliseconds: 1200));
   }
 
   static void _showProperties(BuildContext context, Song song) {
@@ -187,12 +172,12 @@ class _SongContextSheet extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _PropRow('Title', song.title),
-            _PropRow('Artist', song.displayArtist),
-            _PropRow('Album', song.album.isEmpty ? 'Unknown' : song.album),
-            _PropRow('Duration', _formatDuration(song.duration)),
-            _PropRow('Size', song.formattedSize),
-            _PropRow('Path', song.folderPath, maxLines: 2),
+            _PropRow(AppStrings.of(context).mcTitle, song.title),
+            _PropRow(AppStrings.of(context).mcArtist, song.displayArtist),
+            _PropRow(AppStrings.of(context).mcAlbum, song.album.isEmpty ? AppStrings.of(context).mcUnknown : song.album),
+            _PropRow(AppStrings.of(context).mcDuration, _formatDuration(song.duration)),
+            _PropRow(AppStrings.of(context).propSize, song.formattedSize),
+            _PropRow(AppStrings.of(context).mcPath, song.folderPath, maxLines: 2),
           ],
         ),
         actions: [
@@ -205,7 +190,7 @@ class _SongContextSheet extends StatelessWidget {
             onPressed: () {
               Clipboard.setData(ClipboardData(text: song.uri));
               Navigator.pop(context);
-              _toast(context, 'Path copied');
+              _toast(context, AppStrings.current.mcPathCopied);
             },
             child: Text(AppStrings.of(context).copyPath.toUpperCase(),
                 style: const TextStyle(color: AppColors.primaryBlue)),
@@ -252,7 +237,7 @@ class _SongContextSheet extends StatelessWidget {
                   color: Colors.white70,
                   size: 20,
                 ),
-                title: Text(p.name,
+                title: Text(p.displayName(AppStrings.of(context)),
                     style: const TextStyle(
                         color: Colors.white, fontSize: 14)),
                 subtitle: Text(AppStrings.of(context).songsCount(p.songUris.length),
@@ -263,7 +248,7 @@ class _SongContextSheet extends StatelessWidget {
                       .read(musicPlaylistProvider.notifier)
                       .addSongToPlaylist(p.id, song.uri);
                   Navigator.pop(dCtx);
-                  _toast(context, 'Added to ${p.name}');
+                  _toast(context, AppStrings.current.vomAddedTo(p.displayName(AppStrings.current)));
                 },
               );
             },
@@ -349,14 +334,27 @@ class _PropRow extends StatelessWidget {
 
 /// Header overflow menu for detail screens (Album / Artist / Playlist / Folder)
 class DetailHeaderActions {
-  /// Share entire collection (artist/album/folder/playlist)
-  static void share(BuildContext context, String collectionName) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(AppStrings.of(context).sharingName(collectionName)),
-        duration: const Duration(milliseconds: 1200),
-      ),
-    );
+  /// Share the songs of an album, folder or playlist — the files. This used
+  /// to show "Sharing <name>" and share nothing at all.
+  static Future<void> share(
+      BuildContext context, String collectionName, List<Song> songs) async {
+    final s = AppStrings.of(context);
+    // Bounded, as the Video tab's bulk Share is: a share sheet handed
+    // hundreds of files stops answering.
+    final files = <XFile>[
+      for (final song in songs.take(50))
+        if (localPathOf(song.uri) case final path?) XFile(path),
+    ];
+    if (files.isEmpty) {
+      AppSnackbar.global(s.noSongsFound);
+      return;
+    }
+    try {
+      await Share.shareXFiles(files, subject: collectionName);
+    } catch (e) {
+      if (kDebugMode) debugPrint('DetailHeaderActions.share: $e');
+      AppSnackbar.globalError(s.shareFailed);
+    }
   }
 
   /// Overflow menu for detail screens. Phase 39: callers may pass real
@@ -385,7 +383,7 @@ class DetailHeaderActions {
             children: [
               _MenuItem(
                 icon: Icons.queue_music,
-                label: 'Play All',
+                label: AppStrings.of(context).mcPlayAll,
                 onTap: () {
                   Navigator.pop(ctx);
                   if (onPlayAll != null) {
@@ -401,7 +399,7 @@ class DetailHeaderActions {
               ),
               _MenuItem(
                 icon: Icons.shuffle,
-                label: 'Shuffle Play',
+                label: AppStrings.of(context).mcShufflePlay,
                 onTap: () {
                   Navigator.pop(ctx);
                   if (onShuffle != null) {
@@ -415,35 +413,24 @@ class DetailHeaderActions {
                   }
                 },
               ),
-              _MenuItem(
-                icon: Icons.playlist_add,
-                label: 'Add To Playlist',
-                onTap: () {
-                  Navigator.pop(ctx);
-                  onAddToPlaylist?.call();
-                },
-              ),
+              if (onAddToPlaylist != null)
+                _MenuItem(
+                  icon: Icons.playlist_add,
+                  label: AppStrings.of(context).addToPlaylist,
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    onAddToPlaylist();
+                  },
+                ),
               if (isPlaylist)
                 _MenuItem(
                   icon: Icons.drive_file_rename_outline,
-                  label: 'Rename',
+                  label: AppStrings.of(context).rename,
                   onTap: () {
                     Navigator.pop(ctx);
                     onRename?.call();
                   },
                 ),
-              _MenuItem(
-                icon: Icons.info_outline,
-                label: 'Properties',
-                onTap: () {
-                  Navigator.pop(ctx);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                        content: Text(AppStrings.of(context).propertiesForName(collectionName)),
-                        duration: const Duration(milliseconds: 1000)),
-                  );
-                },
-              ),
               const SizedBox(height: 8),
             ],
           ),

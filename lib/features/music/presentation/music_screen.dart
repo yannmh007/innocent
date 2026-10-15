@@ -15,7 +15,6 @@ import 'song_context_menu.dart';
 import '../../../core/utils/async_value_extensions.dart';
 import '../../../core/ui/tablet_constrained_width.dart';
 import '../../../core/theme/tab_title.dart';
-import '../../../core/ui/safe_popup_menu.dart';
 import '../../shell/shell_back.dart';
 import '../../../core/ui/app_sheet.dart';
 
@@ -82,7 +81,7 @@ class _MusicScreenState extends ConsumerState<MusicScreen>
         actions: [
           if (_searching)
             IconButton(
-              tooltip: 'Close',
+              tooltip: AppStrings.of(context).close,
               icon: const Icon(Icons.close),
               onPressed: () => setState(() {
                 _searching = false;
@@ -91,77 +90,13 @@ class _MusicScreenState extends ConsumerState<MusicScreen>
             )
           else ...[
             IconButton(
-              tooltip: 'Search',
+              tooltip: AppStrings.of(context).search,
               icon: const Icon(Icons.search),
               onPressed: () => setState(() => _searching = true),
             ),
-            SafePopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert),
-              color: AppColors.darkSurface,
-              onSelected: (v) {
-                switch (v) {
-                  case 'home':
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(s.addedToHomeScreen)),
-                    );
-                    break;
-                  case 'widget':
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(s.widgetAdded)),
-                    );
-                    break;
-                  case 'resume':
-                    showDialog(
-                      context: context,
-                      builder: (_) => AlertDialog(
-                        backgroundColor: AppColors.darkSurface,
-                        title: Text(s.resumePlaySettings,
-                            style: const TextStyle(color: Colors.white)),
-                        content: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            RadioListTile<int>(
-                              value: 0,
-                              groupValue: 0,
-                              title: Text(s.alwaysResume,
-                                  style: const TextStyle(
-                                      color: Colors.white, fontSize: 14)),
-                              activeColor: AppColors.primaryBlue,
-                              onChanged: (_) => Navigator.pop(context),
-                            ),
-                            RadioListTile<int>(
-                              value: 1,
-                              groupValue: 0,
-                              title: Text(s.askEveryTime,
-                                  style: const TextStyle(
-                                      color: Colors.white, fontSize: 14)),
-                              activeColor: AppColors.primaryBlue,
-                              onChanged: (_) => Navigator.pop(context),
-                            ),
-                            RadioListTile<int>(
-                              value: 2,
-                              groupValue: 0,
-                              title: Text(s.startFromBeginning,
-                                  style: const TextStyle(
-                                      color: Colors.white, fontSize: 14)),
-                              activeColor: AppColors.primaryBlue,
-                              onChanged: (_) => Navigator.pop(context),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                    break;
-                }
-              },
-              itemBuilder: (_) => [
-                PopupMenuItem(
-                    value: 'home', child: Text(s.addToHomeScreen)),
-                PopupMenuItem(value: 'widget', child: Text(s.addWidget)),
-                PopupMenuItem(
-                    value: 'resume', child: Text(s.resumePlaySettings)),
-              ],
-            ),
+            // There was a ⋮ menu here: "Add to home screen" and "Add
+            // widget" said "added" and added nothing, and "Resume play
+            // settings" was three radio buttons wired to nothing.
           ],
         ],
         bottom: TabBar(
@@ -495,7 +430,7 @@ class _TrackTile extends StatelessWidget {
               ),
             ),
             IconButton(
-              tooltip: 'More options',
+              tooltip: AppStrings.of(context).moreOptions,
               icon: const Icon(Icons.more_vert,
                   color: Colors.white54, size: 20),
               onPressed: onMore,
@@ -522,7 +457,8 @@ class _PlaylistsTabState extends ConsumerState<_PlaylistsTab> {
   Widget build(BuildContext context) {
     final playlists = ref
         .watch(musicPlaylistProvider)
-        .where((p) => _nameMatches(p.name, _query))
+        .where((p) =>
+            _nameMatches(p.displayName(AppStrings.of(context)), _query))
         .toList();
     return Column(
       children: [
@@ -596,7 +532,7 @@ class _PlaylistsTabState extends ConsumerState<_PlaylistsTab> {
                     : isRecent
                         ? const Color(0xFFFFF3E0)
                         : const Color(0xFFE3F2FD),
-                title: p.name,
+                title: p.displayName(AppStrings.of(context)),
                 subtitle:
                     AppStrings.of(context).songsCount(p.songUris.length),
               );
@@ -833,7 +769,11 @@ class _AlbumTile extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(data.name,
+                  Text(
+                      // The scan files songs without an album under 'Unknown'.
+                      data.name == 'Unknown'
+                          ? AppStrings.of(context).mcUnknown
+                          : data.name,
                       style:
                           const TextStyle(color: Colors.white, fontSize: 14)),
                   const SizedBox(height: 2),
@@ -846,7 +786,7 @@ class _AlbumTile extends ConsumerWidget {
               ),
             ),
             IconButton(
-              tooltip: 'More options',
+              tooltip: AppStrings.of(context).moreOptions,
               icon: const Icon(Icons.more_vert,
                   color: Colors.white54, size: 20),
                 onPressed: () => DetailHeaderActions.showOverflow(
@@ -978,7 +918,8 @@ class _ArtistTile extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(name,
+                  Text(
+                      name == 'Unknown' ? AppStrings.of(context).mcUnknown : name,
                       style:
                           const TextStyle(color: Colors.white, fontSize: 14)),
                   const SizedBox(height: 2),
@@ -992,7 +933,7 @@ class _ArtistTile extends ConsumerWidget {
               ),
             ),
             IconButton(
-              tooltip: 'More options',
+              tooltip: AppStrings.of(context).moreOptions,
               icon: const Icon(Icons.more_vert,
                   color: Colors.white54, size: 20),
                 onPressed: () => DetailHeaderActions.showOverflow(
@@ -1153,7 +1094,7 @@ class _MusicFolderTile extends ConsumerWidget {
               ),
             ),
             IconButton(
-              tooltip: 'More options',
+              tooltip: AppStrings.of(context).moreOptions,
               icon: const Icon(Icons.more_vert,
                   color: Colors.white54, size: 20),
                 onPressed: () => DetailHeaderActions.showOverflow(
@@ -1247,7 +1188,7 @@ class _MiniPlayerBar extends ConsumerWidget {
               ),
             ),
             IconButton(
-              tooltip: 'Pause',
+              tooltip: AppStrings.of(context).plPause,
               icon: Icon(
                 playing.isPlaying
                     ? Icons.pause_circle_outline
@@ -1260,7 +1201,7 @@ class _MiniPlayerBar extends ConsumerWidget {
               },
             ),
             IconButton(
-              tooltip: 'Show queue',
+              tooltip: AppStrings.of(context).mpShowQueue,
               icon: const Icon(Icons.playlist_play,
                   color: Colors.white, size: 26),
               onPressed: () => MusicQueueSheet.show(context),
@@ -1356,7 +1297,7 @@ Future<void> _showMusicSortSheet(BuildContext context, WidgetRef ref) async {
                       children: [
                         Expanded(
                           child: Text(
-                            opt.label,
+                            opt.labelIn(AppStrings.of(context)),
                             style: TextStyle(
                               color: selected
                                   ? AppColors.accentBlue

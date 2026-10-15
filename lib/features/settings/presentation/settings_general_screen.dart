@@ -23,8 +23,8 @@ import '../../../core/localization/app_strings.dart';
 /// Settings > General — full MX Player parity (UI PDF page 18).
 /// Sections: default, Edit, User data.
 ///
-/// Phase 41: toggles persist via [playerSettingsProvider]; AppStrings.of(context).sgClearHistory
-/// and AppStrings.of(context).sgClearThumbs now do real work via user-data providers /
+/// Phase 41: toggles persist via [playerSettingsProvider]; "Clear history"
+/// and "Clear thumbnail cache" now do real work via user-data providers /
 /// thumbnail cache.
 class SettingsGeneralScreen extends ConsumerWidget {
   const SettingsGeneralScreen({super.key});

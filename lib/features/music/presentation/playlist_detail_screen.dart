@@ -59,21 +59,22 @@ class PlaylistDetailScreen extends ConsumerWidget {
                   Row(
                     children: [
                       IconButton(
-                        tooltip: 'Back',
+                        tooltip: MaterialLocalizations.of(context).backButtonTooltip,
                         icon: const Icon(Icons.arrow_back,
                             color: Colors.white, size: 24),
                         onPressed: () => Navigator.pop(context),
                       ),
                       const Spacer(),
                       IconButton(
-                        tooltip: 'Share',
+                        tooltip: AppStrings.of(context).share,
                         icon: const Icon(Icons.share_outlined,
                             color: Colors.white70, size: 22),
                         onPressed: () =>
-                            DetailHeaderActions.share(context, playlist.name),
+                            DetailHeaderActions.share(context, playlist.name,
+                                _resolvePlaylistSongs(ref, playlist)),
                       ),
                       IconButton(
-                        tooltip: 'More options',
+                        tooltip: AppStrings.of(context).moreOptions,
                         icon: const Icon(Icons.more_vert,
                             color: Colors.white70, size: 22),
                         onPressed: () => DetailHeaderActions.showOverflow(
@@ -125,7 +126,7 @@ class PlaylistDetailScreen extends ConsumerWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                playlist.name,
+                                playlist.displayName(AppStrings.of(context)),
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 18,
@@ -239,10 +240,10 @@ class PlaylistDetailScreen extends ConsumerWidget {
                     return Center(
                       child: Text(
                         playlist.id == 'favs'
-                            ? 'No favourites yet.\nTap ♥ on any song to add it here.'
+                            ? AppStrings.of(context).mpNoFavs
                             : playlist.id == 'recent'
-                                ? 'No recently played songs yet'
-                                : 'This playlist is empty',
+                                ? AppStrings.of(context).mpNoRecent
+                                : AppStrings.of(context).mpEmptyPlaylist,
                         textAlign: TextAlign.center,
                         style: const TextStyle(
                             color: Colors.white54, fontSize: 13),
@@ -310,7 +311,7 @@ class PlaylistDetailScreen extends ConsumerWidget {
                                 ),
                               ),
                               IconButton(
-                                tooltip: 'More options',
+                                tooltip: AppStrings.of(context).moreOptions,
                                 icon: const Icon(Icons.more_vert,
                                     color: Colors.white54, size: 20),
                                 onPressed: () =>

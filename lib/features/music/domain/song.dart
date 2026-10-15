@@ -1,3 +1,5 @@
+import '../../../core/localization/app_strings.dart';
+
 /// Phase 32: Music domain models for real device audio.
 /// Audit fix (album art + ID3): Song now carries optional album-art
 /// bytes extracted lazily via MusicLocalDataSource.loadAlbumArt.
@@ -72,7 +74,7 @@ class Song {
       final folder = parts.last.trim();
       if (folder.isNotEmpty) return folder;
     }
-    return 'Unknown artist';
+    return AppStrings.current.mpUnknownArtist;
   }
 }
 

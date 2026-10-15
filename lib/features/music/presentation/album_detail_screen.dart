@@ -46,21 +46,22 @@ class AlbumDetailScreen extends ConsumerWidget {
                   Row(
                     children: [
                       IconButton(
-                        tooltip: 'Back',
+                        tooltip: MaterialLocalizations.of(context).backButtonTooltip,
                         icon: const Icon(Icons.arrow_back,
                             color: Colors.white, size: 24),
                         onPressed: () => Navigator.pop(context),
                       ),
                       const Spacer(),
                       IconButton(
-                        tooltip: 'Share',
+                        tooltip: AppStrings.of(context).share,
                         icon: const Icon(Icons.share_outlined,
                             color: Colors.white70, size: 22),
                         onPressed: () =>
-                            DetailHeaderActions.share(context, name),
+                            DetailHeaderActions.share(
+                                context, name, songsAsync.value ?? const []),
                       ),
                       IconButton(
-                        tooltip: 'More options',
+                        tooltip: AppStrings.of(context).moreOptions,
                         icon: const Icon(Icons.more_vert,
                             color: Colors.white70, size: 22),
                         onPressed: () => DetailHeaderActions.showOverflow(
@@ -277,7 +278,7 @@ class AlbumDetailScreen extends ConsumerWidget {
                                 ),
                               ),
                               IconButton(
-                                tooltip: 'More options',
+                                tooltip: AppStrings.of(context).moreOptions,
                                 icon: const Icon(Icons.more_vert,
                                     color: Colors.white54, size: 20),
                                 onPressed: () =>

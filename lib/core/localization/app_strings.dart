@@ -34,6 +34,13 @@ class AppStrings {
   /// Locale-independent fallback used when no delegate is in scope.
   static final AppStrings _fallback = AppStrings(const Locale('en'));
 
+  /// The strings of the language on screen now, for the few places that
+  /// speak after their widget is gone: a toast raised once a sheet has
+  /// closed itself (AppSnackbar.global) has no context left to ask. Set
+  /// each time the delegate loads a locale; English until the first load.
+  static AppStrings get current => _current ?? _fallback;
+  static AppStrings? _current;
+
   /// Locales the app can display. Add a map below + a new [Locale] here to
   /// grow the list.
   static const List<Locale> supportedLocales = <Locale>[
@@ -2220,6 +2227,128 @@ class AppStrings {
   String get sdvResetAll => _s('sdvResetAll');
   String get sdvResetAllSub => _s('sdvResetAllSub');
 
+  String get plScreenshotFailed => _s('plScreenshotFailed');
+  String plSaved(Object v) => _s('plSaved').replaceFirst('{v}', '$v');
+  String plScreenshotError(Object v) => _s('plScreenshotError').replaceFirst('{v}', '$v');
+  String plLoaded(Object v) => _s('plLoaded').replaceFirst('{v}', '$v');
+  String plSubtitlePickError(Object v) => _s('plSubtitlePickError').replaceFirst('{v}', '$v');
+  String get plOwnPageOnly => _s('plOwnPageOnly');
+  String get plNoPlaylists => _s('plNoPlaylists');
+  String get plAdbToSend => _s('plAdbToSend');
+  String plTransferFailed(Object v) => _s('plTransferFailed').replaceFirst('{v}', '$v');
+  String get plUnmuted => _s('plUnmuted');
+  String get plMuted => _s('plMuted');
+  String get plShuffleOn => _s('plShuffleOn');
+  String get plShuffleOff => _s('plShuffleOff');
+  String get plMirrorOn => _s('plMirrorOn');
+  String get plMirrorOff => _s('plMirrorOff');
+  String get plFlipOn => _s('plFlipOn');
+  String get plFlipOff => _s('plFlipOff');
+  String get plNightOn => _s('plNightOn');
+  String get plNightOff => _s('plNightOff');
+  String get plBgOn => _s('plBgOn');
+  String get plBgOff => _s('plBgOff');
+  String plSpeed(Object v) => _s('plSpeed').replaceFirst('{v}', '$v');
+  String get plAPoint => _s('plAPoint');
+  String get plAbOn => _s('plAbOn');
+  String get plAbCleared => _s('plAbCleared');
+  String get plNoAudioTracks => _s('plNoAudioTracks');
+  String plAudio(Object v) => _s('plAudio').replaceFirst('{v}', '$v');
+  String plSubtitle(Object v) => _s('plSubtitle').replaceFirst('{v}', '$v');
+  String plAspect(Object v) => _s('plAspect').replaceFirst('{v}', '$v');
+  String plSearchSubs(Object v) => _s('plSearchSubs').replaceFirst('{v}', '$v');
+  String plDecoder(Object v) => _s('plDecoder').replaceFirst('{v}', '$v');
+  String get plDecoderDefault => _s('plDecoderDefault');
+  String plPositionOf(Object a, Object b) => _s('plPositionOf').replaceFirst('{a}', '$a').replaceFirst('{b}', '$b');
+  String get plAuto => _s('plAuto');
+  String get plPrevVideo => _s('plPrevVideo');
+  String get plPrevFrame => _s('plPrevFrame');
+  String get plPause => _s('plPause');
+  String get plNextFrame => _s('plNextFrame');
+  String get plNextVideo => _s('plNextVideo');
+
+  String get vomWatchLaterAdded => _s('vomWatchLaterAdded');
+  String get vomWatchLaterAlready => _s('vomWatchLaterAlready');
+  String get vomFavAdded => _s('vomFavAdded');
+  String get vomFavRemoved => _s('vomFavRemoved');
+  String vomPasteSubLink(Object v) => _s('vomPasteSubLink').replaceFirst('{v}', '$v');
+  String vomSubSaved(Object v) => _s('vomSubSaved').replaceFirst('{v}', '$v');
+  String vomBinBody(Object v) => _s('vomBinBody').replaceFirst('{v}', '$v');
+  String get vomMovedToBin => _s('vomMovedToBin');
+  String get vomNoLocalFile => _s('vomNoLocalFile');
+  String get vomConvertBusy => _s('vomConvertBusy');
+  String get vomSavedMusic => _s('vomSavedMusic');
+  String get vomConvertFailed => _s('vomConvertFailed');
+  String get vomPinFirst => _s('vomPinFirst');
+  String vomLockFailed(Object v) => _s('vomLockFailed').replaceFirst('{v}', '$v');
+  String get vomCantRename => _s('vomCantRename');
+  String get vomBadName => _s('vomBadName');
+  String get vomNameTaken => _s('vomNameTaken');
+  String vomRenameFailed(Object v) => _s('vomRenameFailed').replaceFirst('{v}', '$v');
+  String get vomCantDelete => _s('vomCantDelete');
+  String get vomEditingOff => _s('vomEditingOff');
+  String vomDeleteBody(Object v) => _s('vomDeleteBody').replaceFirst('{v}', '$v');
+  String vomDeleteFailed(Object v) => _s('vomDeleteFailed').replaceFirst('{v}', '$v');
+  String get vomRemoveFav => _s('vomRemoveFav');
+  String get vomConvertAudio => _s('vomConvertAudio');
+  String get vomAddWatchLater => _s('vomAddWatchLater');
+  String get vomMoveToBin => _s('vomMoveToBin');
+  String vomAddedTo(Object v) => _s('vomAddedTo').replaceFirst('{v}', '$v');
+  String vomBytes(Object v) => _s('vomBytes').replaceFirst('{v}', '$v');
+  String get vomNewName => _s('vomNewName');
+  String get vomConverting => _s('vomConverting');
+  String get vomPreparing => _s('vomPreparing');
+
+  String get mcPlayNext => _s('mcPlayNext');
+  String mcPlayingNext(Object v) => _s('mcPlayingNext').replaceFirst('{v}', '$v');
+  String get mcPlayLater => _s('mcPlayLater');
+  String get mcQueued => _s('mcQueued');
+  String get mcFavAdded => _s('mcFavAdded');
+  String get mcFavRemoved => _s('mcFavRemoved');
+  String get mcTitle => _s('mcTitle');
+  String get mcArtist => _s('mcArtist');
+  String get mcAlbum => _s('mcAlbum');
+  String get mcUnknown => _s('mcUnknown');
+  String get mcDuration => _s('mcDuration');
+  String get mcPath => _s('mcPath');
+  String get mcPathCopied => _s('mcPathCopied');
+  String get mcPlayAll => _s('mcPlayAll');
+  String get mcShufflePlay => _s('mcShufflePlay');
+
+  String get mpRepeatAll => _s('mpRepeatAll');
+  String get mpRepeatOne => _s('mpRepeatOne');
+  String get mpRepeatOff => _s('mpRepeatOff');
+  String get mpUnknownTrack => _s('mpUnknownTrack');
+  String get mpUnknownArtist => _s('mpUnknownArtist');
+  String get mpCollapse => _s('mpCollapse');
+  String get mpEqualizer => _s('mpEqualizer');
+  String get mpAb => _s('mpAb');
+  String get mpSpeed => _s('mpSpeed');
+  String get mpShuffle => _s('mpShuffle');
+  String get mpPrevious => _s('mpPrevious');
+  String get mpNext => _s('mpNext');
+  String get mpRepeat => _s('mpRepeat');
+  String get mpLyricsError => _s('mpLyricsError');
+  String get mpNoLyrics => _s('mpNoLyrics');
+
+  String get mcDateAdded => _s('mcDateAdded');
+  String get mpFavourites => _s('mpFavourites');
+  String get mpRecent => _s('mpRecent');
+  String get mpShowQueue => _s('mpShowQueue');
+  String get mpNoFavs => _s('mpNoFavs');
+  String get mpNoRecent => _s('mpNoRecent');
+  String get mpEmptyPlaylist => _s('mpEmptyPlaylist');
+
+
+
+
+
+
+
+
+
+
+
   static const Map<String, Map<String, String>> _byLocale =
       <String, Map<String, String>>{
     'en': _en,
@@ -4195,6 +4324,113 @@ class AppStrings {
     'sdvNoHwSub': 'Force software decoding. For debugging only.',
     'sdvResetAll': 'Reset all settings',
     'sdvResetAllSub': 'Put every setting back to its default.',
+    'plScreenshotFailed': 'Could not take the screenshot',
+    'plSaved': 'Saved: {v}',
+    'plScreenshotError': 'Screenshot error: {v}',
+    'plLoaded': 'Loaded: {v}',
+    'plSubtitlePickError': 'Could not open the subtitle: {v}',
+    'plOwnPageOnly': 'This title can only be opened from its own page.',
+    'plNoPlaylists': 'No playlists yet. Make one under Me → Video Playlists.',
+    'plAdbToSend': 'Connect ADB to send this Android/data video.',
+    'plTransferFailed': 'Could not add to Transfer: {v}',
+    'plUnmuted': 'Sound on',
+    'plMuted': 'Muted',
+    'plShuffleOn': 'Shuffle on',
+    'plShuffleOff': 'Shuffle off',
+    'plMirrorOn': 'Mirror on',
+    'plMirrorOff': 'Mirror off',
+    'plFlipOn': 'Vertical flip on',
+    'plFlipOff': 'Vertical flip off',
+    'plNightOn': 'Night mode on',
+    'plNightOff': 'Night mode off',
+    'plBgOn': 'Background play on',
+    'plBgOff': 'Background play off',
+    'plSpeed': 'Speed {v}',
+    'plAPoint': 'A point set',
+    'plAbOn': 'A-B loop on',
+    'plAbCleared': 'A-B loop cleared',
+    'plNoAudioTracks': 'No audio tracks',
+    'plAudio': 'Audio: {v}',
+    'plSubtitle': 'Subtitle: {v}',
+    'plAspect': 'Aspect: {v}',
+    'plSearchSubs': 'Search subtitles for {v}',
+    'plDecoder': 'Decoder: {v}',
+    'plDecoderDefault': 'Default',
+    'plPositionOf': 'Playback position {a} of {b}',
+    'plAuto': 'Auto',
+    'plPrevVideo': 'Previous video',
+    'plPrevFrame': 'Previous frame',
+    'plPause': 'Pause',
+    'plNextFrame': 'Next frame',
+    'plNextVideo': 'Next video (hold for loop options)',
+    'vomWatchLaterAdded': '⏰ Added to Watch later',
+    'vomWatchLaterAlready': 'Already in Watch later',
+    'vomFavAdded': '★ Added to favourites',
+    'vomFavRemoved': '☆ Removed from favourites',
+    'vomPasteSubLink': 'Paste a direct link to a .srt / .ass / .vtt / .ssa / .sub file for "{v}".',
+    'vomSubSaved': 'Subtitle saved. Open the video again to use it.\n{v}',
+    'vomBinBody': 'This hides "{v}" from your library. You can bring it back from the Recycle Bin.',
+    'vomMovedToBin': 'Moved to the Recycle Bin',
+    'vomNoLocalFile': 'This has no file on the phone to convert.',
+    'vomConvertBusy': 'Another conversion is already running.',
+    'vomSavedMusic': 'Saved to Innocent/Music',
+    'vomConvertFailed': 'Conversion failed.',
+    'vomPinFirst': 'Set a Private Folder PIN first (Me → Private Folder).',
+    'vomLockFailed': 'Could not lock it: {v}',
+    'vomCantRename': 'This video cannot be renamed (the system manages it).',
+    'vomBadName': 'A name cannot contain / or \\',
+    'vomNameTaken': 'A file with that name already exists',
+    'vomRenameFailed': 'Could not rename: {v}',
+    'vomCantDelete': 'This video cannot be deleted (the system manages it).',
+    'vomEditingOff': 'Editing is off: Settings → General → Allow editing',
+    'vomDeleteBody': 'Delete "{v}" for good?\n\nThis cannot be undone.',
+    'vomDeleteFailed': 'Could not delete: {v}',
+    'vomRemoveFav': 'Remove from favourites',
+    'vomConvertAudio': 'Convert to audio',
+    'vomAddWatchLater': 'Add to Watch later',
+    'vomMoveToBin': 'Move to the Recycle Bin',
+    'vomAddedTo': 'Added to "{v}"',
+    'vomBytes': '{v} bytes',
+    'vomNewName': 'New name',
+    'vomConverting': 'Converting to audio',
+    'vomPreparing': 'Preparing…',
+    'mcPlayNext': 'Play next',
+    'mcPlayingNext': 'Playing next: "{v}"',
+    'mcPlayLater': 'Play later',
+    'mcQueued': 'Added to the queue',
+    'mcFavAdded': 'Added to favourites',
+    'mcFavRemoved': 'Removed from favourites',
+    'mcTitle': 'Title',
+    'mcArtist': 'Artist',
+    'mcAlbum': 'Album',
+    'mcUnknown': 'Unknown',
+    'mcDuration': 'Duration',
+    'mcPath': 'Path',
+    'mcPathCopied': 'Path copied',
+    'mcPlayAll': 'Play all',
+    'mcShufflePlay': 'Shuffle play',
+    'mpRepeatAll': 'Repeat all',
+    'mpRepeatOne': 'Repeat one',
+    'mpRepeatOff': 'Repeat off',
+    'mpUnknownTrack': 'Unknown track',
+    'mpUnknownArtist': 'Unknown artist',
+    'mpCollapse': 'Collapse',
+    'mpEqualizer': 'Equalizer',
+    'mpAb': 'A-B repeat',
+    'mpSpeed': 'Speed',
+    'mpShuffle': 'Shuffle',
+    'mpPrevious': 'Previous',
+    'mpNext': 'Next',
+    'mpRepeat': 'Repeat',
+    'mpLyricsError': 'The lyrics file could not be read.',
+    'mpNoLyrics': 'No lyrics found.\n\nTo add them, put an .lrc file with the same name next to the song — song.mp3 → song.lrc — with lines like [00:12.34]Lyric text.',
+    'mcDateAdded': 'Date added',
+    'mpFavourites': 'My favourites',
+    'mpRecent': 'Recently played',
+    'mpShowQueue': 'Show queue',
+    'mpNoFavs': 'No favourites yet.\nTap ♥ on any song to add it here.',
+    'mpNoRecent': 'No recently played songs yet',
+    'mpEmptyPlaylist': 'This playlist is empty',
   };
 
   static const Map<String, String> _my = <String, String>{
@@ -6138,6 +6374,113 @@ class AppStrings {
     'sdvNoHwSub': 'Software decoder နဲ့သာ ဖွင့်ပါ။ Debug လုပ်ဖို့သာ။',
     'sdvResetAll': 'Settings အားလုံး ပြန်စ',
     'sdvResetAllSub': 'Settings အားလုံးကို မူလအတိုင်း ပြန်ထားပါ။',
+    'plScreenshotFailed': 'Screenshot မရိုက်နိုင်ပါ',
+    'plSaved': 'သိမ်းပြီး: {v}',
+    'plScreenshotError': 'Screenshot မရပါ: {v}',
+    'plLoaded': 'ထည့်ပြီး: {v}',
+    'plSubtitlePickError': 'စာတန်းဖိုင် မဖွင့်နိုင်ပါ: {v}',
+    'plOwnPageOnly': 'ဒီဇာတ်ကားကို သူ့စာမျက်နှာကနေသာ ဖွင့်နိုင်ပါတယ်။',
+    'plNoPlaylists': 'Playlist မရှိသေးပါ။ ကျွန်ုပ် → ဗီဒီယို ဖွင့်စာရင်း မှာ ဖန်တီးပါ။',
+    'plAdbToSend': 'ဒီ Android/data ဗီဒီယိုကို ပို့ဖို့ ADB ချိတ်ပါ။',
+    'plTransferFailed': 'Transfer ထဲ မထည့်နိုင်ပါ: {v}',
+    'plUnmuted': 'အသံ ပြန်ဖွင့်ပြီး',
+    'plMuted': 'အသံ ပိတ်ထား',
+    'plShuffleOn': 'ရောမွှေ ဖွင့်',
+    'plShuffleOff': 'ရောမွှေ ပိတ်',
+    'plMirrorOn': 'မှန်ပုံ ဖွင့်',
+    'plMirrorOff': 'မှန်ပုံ ပိတ်',
+    'plFlipOn': 'အပေါ်အောက် လှန် ဖွင့်',
+    'plFlipOff': 'အပေါ်အောက် လှန် ပိတ်',
+    'plNightOn': 'ညမုဒ် ဖွင့်',
+    'plNightOff': 'ညမုဒ် ပိတ်',
+    'plBgOn': 'နောက်ကွယ်မှာ ဆက်ဖွင့်မယ်',
+    'plBgOff': 'နောက်ကွယ်မှာ မဖွင့်တော့ပါ',
+    'plSpeed': 'အမြန်နှုန်း {v}',
+    'plAPoint': 'A နေရာ မှတ်ပြီး',
+    'plAbOn': 'A-B ထပ်ဖွင့် စပြီ',
+    'plAbCleared': 'A-B ထပ်ဖွင့် ဖယ်ပြီး',
+    'plNoAudioTracks': 'အသံ track မရှိပါ',
+    'plAudio': 'အသံ: {v}',
+    'plSubtitle': 'စာတန်း: {v}',
+    'plAspect': 'အချိုး: {v}',
+    'plSearchSubs': '{v} အတွက် စာတန်း ရှာ',
+    'plDecoder': 'Decoder: {v}',
+    'plDecoderDefault': 'မူလ',
+    'plPositionOf': 'ဖွင့်နေတဲ့ နေရာ {a} / {b}',
+    'plAuto': 'အလိုအလျောက်',
+    'plPrevVideo': 'ရှေ့ ဗီဒီယို',
+    'plPrevFrame': 'ရှေ့ frame',
+    'plPause': 'ခဏရပ်',
+    'plNextFrame': 'နောက် frame',
+    'plNextVideo': 'နောက် ဗီဒီယို (ထပ်ဖွင့် ရွေးဖို့ ဖိထားပါ)',
+    'vomWatchLaterAdded': '⏰ နောက်မှ ကြည့်မယ် ထဲ ထည့်ပြီး',
+    'vomWatchLaterAlready': 'နောက်မှ ကြည့်မယ် ထဲမှာ ရှိပြီးသားပါ',
+    'vomFavAdded': '★ အကြိုက်ဆုံးထဲ ထည့်ပြီး',
+    'vomFavRemoved': '☆ အကြိုက်ဆုံးထဲက ဖယ်ပြီး',
+    'vomPasteSubLink': '"{v}" အတွက် .srt / .ass / .vtt / .ssa / .sub ဖိုင်ရဲ့ link ကို ထည့်ပါ။',
+    'vomSubSaved': 'စာတန်း သိမ်းပြီးပါပြီ။ သုံးဖို့ ဗီဒီယိုကို ပြန်ဖွင့်ပါ။\n{v}',
+    'vomBinBody': '"{v}" ကို library ကနေ ဖျောက်ထားပါမယ်။ Recycle Bin ကနေ ပြန်ယူနိုင်ပါတယ်။',
+    'vomMovedToBin': 'Recycle Bin ထဲ ရွှေ့ပြီး',
+    'vomNoLocalFile': 'ဒီဟာမှာ ပြောင်းစရာ ဖုန်းထဲက ဖိုင် မရှိပါ။',
+    'vomConvertBusy': 'တခြား ပြောင်းနေတာ တစ်ခု ရှိနေပါတယ်။',
+    'vomSavedMusic': 'Innocent/Music ထဲ သိမ်းပြီး',
+    'vomConvertFailed': 'ပြောင်းလို့ မရပါ။',
+    'vomPinFirst': 'Private Folder PIN ကို အရင် သတ်မှတ်ပါ (ကျွန်ုပ် → Private Folder)။',
+    'vomLockFailed': 'Lock မလုပ်နိုင်ပါ: {v}',
+    'vomCantRename': 'ဒီဗီဒီယိုကို နာမည်ပြောင်းလို့ မရပါ (system က စီမံထားတာပါ)။',
+    'vomBadName': 'နာမည်မှာ / ဒါမှမဟုတ် \\ မပါရပါ',
+    'vomNameTaken': 'ဒီနာမည်နဲ့ ဖိုင် ရှိပြီးသားပါ',
+    'vomRenameFailed': 'နာမည် မပြောင်းနိုင်ပါ: {v}',
+    'vomCantDelete': 'ဒီဗီဒီယိုကို ဖျက်လို့ မရပါ (system က စီမံထားတာပါ)။',
+    'vomEditingOff': 'ပြင်ခွင့် ပိတ်ထားပါတယ်: Settings → အထွေထွေ → ပြင်ခွင့် ပေး',
+    'vomDeleteBody': '"{v}" ကို အပြီးဖျက်မလား?\n\nပြန်ယူလို့ မရပါ။',
+    'vomDeleteFailed': 'မဖျက်နိုင်ပါ: {v}',
+    'vomRemoveFav': 'အကြိုက်ဆုံးထဲက ဖယ်',
+    'vomConvertAudio': 'အသံဖိုင် ပြောင်း',
+    'vomAddWatchLater': 'နောက်မှ ကြည့်မယ် ထဲ ထည့်',
+    'vomMoveToBin': 'Recycle Bin ထဲ ရွှေ့',
+    'vomAddedTo': '"{v}" ထဲ ထည့်ပြီး',
+    'vomBytes': '{v} ဘိုက်',
+    'vomNewName': 'နာမည်အသစ်',
+    'vomConverting': 'အသံဖိုင် ပြောင်းနေသည်',
+    'vomPreparing': 'ပြင်ဆင်နေသည်…',
+    'mcPlayNext': 'နောက်တစ်ပုဒ် ဖွင့်',
+    'mcPlayingNext': 'နောက်တစ်ပုဒ်: "{v}"',
+    'mcPlayLater': 'နောက်မှ ဖွင့်',
+    'mcQueued': 'Queue ထဲ ထည့်ပြီး',
+    'mcFavAdded': 'အကြိုက်ဆုံးထဲ ထည့်ပြီး',
+    'mcFavRemoved': 'အကြိုက်ဆုံးထဲက ဖယ်ပြီး',
+    'mcTitle': 'ခေါင်းစဉ်',
+    'mcArtist': 'အဆိုတော်',
+    'mcAlbum': 'အယ်လ်ဘမ်',
+    'mcUnknown': 'မသိ',
+    'mcDuration': 'ကြာချိန်',
+    'mcPath': 'လမ်းကြောင်း',
+    'mcPathCopied': 'လမ်းကြောင်း ကူးပြီး',
+    'mcPlayAll': 'အားလုံး ဖွင့်',
+    'mcShufflePlay': 'ရောမွှေ ဖွင့်',
+    'mpRepeatAll': 'အားလုံး ထပ်ဖွင့်',
+    'mpRepeatOne': 'တစ်ပုဒ် ထပ်ဖွင့်',
+    'mpRepeatOff': 'ထပ်မဖွင့်',
+    'mpUnknownTrack': 'အမည်မသိ သီချင်း',
+    'mpUnknownArtist': 'အမည်မသိ အဆိုတော်',
+    'mpCollapse': 'ချုံ့',
+    'mpEqualizer': 'Equalizer',
+    'mpAb': 'A-B ထပ်ဖွင့်',
+    'mpSpeed': 'အမြန်နှုန်း',
+    'mpShuffle': 'ရောမွှေ',
+    'mpPrevious': 'ရှေ့သီချင်း',
+    'mpNext': 'နောက်သီချင်း',
+    'mpRepeat': 'ထပ်ဖွင့်',
+    'mpLyricsError': 'Lyrics ဖိုင်ကို ဖတ်လို့ မရပါ။',
+    'mpNoLyrics': 'Lyrics မတွေ့ပါ။\n\nထည့်ချင်ရင် သီချင်းဖိုင်ဘေးမှာ နာမည်တူ .lrc ဖိုင် ထားပါ — song.mp3 → song.lrc — ထဲမှာ [00:12.34]စာသား ပုံစံ စာကြောင်းတွေ ပါရပါမယ်။',
+    'mcDateAdded': 'ထည့်ခဲ့တဲ့ ရက်',
+    'mpFavourites': 'ကျွန်ုပ်ရဲ့ အကြိုက်ဆုံး',
+    'mpRecent': 'မကြာသေးခင်က ဖွင့်ခဲ့တာ',
+    'mpShowQueue': 'Queue ပြ',
+    'mpNoFavs': 'အကြိုက်ဆုံး မရှိသေးပါ။\nသီချင်းတစ်ပုဒ်မှာ ♥ ကို နှိပ်ပြီး ဒီမှာ ထည့်ပါ။',
+    'mpNoRecent': 'မကြာသေးခင်က ဖွင့်ခဲ့တဲ့ သီချင်း မရှိသေးပါ',
+    'mpEmptyPlaylist': 'ဒီ playlist ထဲမှာ ဘာမှ မရှိသေးပါ',
   };
 
   static const Map<String, String> _th = <String, String>{
@@ -8073,6 +8416,113 @@ class AppStrings {
     'sdvNoHwSub': 'บังคับถอดรหัสด้วยซอฟต์แวร์ ใช้เพื่อดีบักเท่านั้น',
     'sdvResetAll': 'รีเซ็ตการตั้งค่าทั้งหมด',
     'sdvResetAllSub': 'คืนค่าการตั้งค่าทั้งหมดเป็นค่าเริ่มต้น',
+    'plScreenshotFailed': 'จับภาพหน้าจอไม่สำเร็จ',
+    'plSaved': 'บันทึกแล้ว: {v}',
+    'plScreenshotError': 'จับภาพหน้าจอผิดพลาด: {v}',
+    'plLoaded': 'โหลดแล้ว: {v}',
+    'plSubtitlePickError': 'เปิดคำบรรยายไม่ได้: {v}',
+    'plOwnPageOnly': 'เปิดเรื่องนี้ได้จากหน้าของเรื่องเท่านั้น',
+    'plNoPlaylists': 'ยังไม่มีเพลย์ลิสต์ สร้างได้ที่ ฉัน → เพลย์ลิสต์วิดีโอ',
+    'plAdbToSend': 'เชื่อมต่อ ADB เพื่อส่งวิดีโอ Android/data นี้',
+    'plTransferFailed': 'เพิ่มไปยังการโอนไม่ได้: {v}',
+    'plUnmuted': 'เปิดเสียงแล้ว',
+    'plMuted': 'ปิดเสียงแล้ว',
+    'plShuffleOn': 'เปิดสุ่ม',
+    'plShuffleOff': 'ปิดสุ่ม',
+    'plMirrorOn': 'เปิดโหมดกระจก',
+    'plMirrorOff': 'ปิดโหมดกระจก',
+    'plFlipOn': 'เปิดพลิกแนวตั้ง',
+    'plFlipOff': 'ปิดพลิกแนวตั้ง',
+    'plNightOn': 'เปิดโหมดกลางคืน',
+    'plNightOff': 'ปิดโหมดกลางคืน',
+    'plBgOn': 'เปิดเล่นเบื้องหลัง',
+    'plBgOff': 'ปิดเล่นเบื้องหลัง',
+    'plSpeed': 'ความเร็ว {v}',
+    'plAPoint': 'ตั้งจุด A แล้ว',
+    'plAbOn': 'วนซ้ำ A-B แล้ว',
+    'plAbCleared': 'ล้างการวนซ้ำ A-B แล้ว',
+    'plNoAudioTracks': 'ไม่มีแทร็กเสียง',
+    'plAudio': 'เสียง: {v}',
+    'plSubtitle': 'คำบรรยาย: {v}',
+    'plAspect': 'อัตราส่วน: {v}',
+    'plSearchSubs': 'ค้นหาคำบรรยายสำหรับ {v}',
+    'plDecoder': 'ตัวถอดรหัส: {v}',
+    'plDecoderDefault': 'ค่าเริ่มต้น',
+    'plPositionOf': 'ตำแหน่ง {a} จาก {b}',
+    'plAuto': 'อัตโนมัติ',
+    'plPrevVideo': 'วิดีโอก่อนหน้า',
+    'plPrevFrame': 'เฟรมก่อนหน้า',
+    'plPause': 'หยุดชั่วคราว',
+    'plNextFrame': 'เฟรมถัดไป',
+    'plNextVideo': 'วิดีโอถัดไป (กดค้างเพื่อเลือกการวนซ้ำ)',
+    'vomWatchLaterAdded': '⏰ เพิ่มในดูภายหลังแล้ว',
+    'vomWatchLaterAlready': 'อยู่ในดูภายหลังแล้ว',
+    'vomFavAdded': '★ เพิ่มในรายการโปรดแล้ว',
+    'vomFavRemoved': '☆ นำออกจากรายการโปรดแล้ว',
+    'vomPasteSubLink': 'วางลิงก์ตรงไปยังไฟล์ .srt / .ass / .vtt / .ssa / .sub สำหรับ "{v}"',
+    'vomSubSaved': 'บันทึกคำบรรยายแล้ว เปิดวิดีโออีกครั้งเพื่อใช้\n{v}',
+    'vomBinBody': 'จะซ่อน "{v}" จากคลัง กู้คืนได้จากถังรีไซเคิล',
+    'vomMovedToBin': 'ย้ายไปถังรีไซเคิลแล้ว',
+    'vomNoLocalFile': 'ไม่มีไฟล์ในเครื่องให้แปลง',
+    'vomConvertBusy': 'มีการแปลงอื่นกำลังทำงานอยู่',
+    'vomSavedMusic': 'บันทึกไปที่ Innocent/Music แล้ว',
+    'vomConvertFailed': 'แปลงไม่สำเร็จ',
+    'vomPinFirst': 'ตั้ง PIN ของโฟลเดอร์ส่วนตัวก่อน (ฉัน → โฟลเดอร์ส่วนตัว)',
+    'vomLockFailed': 'ล็อกไม่สำเร็จ: {v}',
+    'vomCantRename': 'เปลี่ยนชื่อวิดีโอนี้ไม่ได้ (ระบบจัดการอยู่)',
+    'vomBadName': 'ชื่อต้องไม่มี / หรือ \\',
+    'vomNameTaken': 'มีไฟล์ชื่อนี้อยู่แล้ว',
+    'vomRenameFailed': 'เปลี่ยนชื่อไม่สำเร็จ: {v}',
+    'vomCantDelete': 'ลบวิดีโอนี้ไม่ได้ (ระบบจัดการอยู่)',
+    'vomEditingOff': 'การแก้ไขปิดอยู่: การตั้งค่า → ทั่วไป → อนุญาตให้แก้ไข',
+    'vomDeleteBody': 'ลบ "{v}" ถาวรหรือไม่\n\nย้อนกลับไม่ได้',
+    'vomDeleteFailed': 'ลบไม่สำเร็จ: {v}',
+    'vomRemoveFav': 'นำออกจากรายการโปรด',
+    'vomConvertAudio': 'แปลงเป็นเสียง',
+    'vomAddWatchLater': 'เพิ่มในดูภายหลัง',
+    'vomMoveToBin': 'ย้ายไปถังรีไซเคิล',
+    'vomAddedTo': 'เพิ่มใน "{v}" แล้ว',
+    'vomBytes': '{v} ไบต์',
+    'vomNewName': 'ชื่อใหม่',
+    'vomConverting': 'กำลังแปลงเป็นเสียง',
+    'vomPreparing': 'กำลังเตรียม…',
+    'mcPlayNext': 'เล่นถัดไป',
+    'mcPlayingNext': 'เล่นถัดไป: "{v}"',
+    'mcPlayLater': 'เล่นภายหลัง',
+    'mcQueued': 'เพิ่มในคิวแล้ว',
+    'mcFavAdded': 'เพิ่มในรายการโปรดแล้ว',
+    'mcFavRemoved': 'นำออกจากรายการโปรดแล้ว',
+    'mcTitle': 'ชื่อ',
+    'mcArtist': 'ศิลปิน',
+    'mcAlbum': 'อัลบั้ม',
+    'mcUnknown': 'ไม่ทราบ',
+    'mcDuration': 'ความยาว',
+    'mcPath': 'ตำแหน่ง',
+    'mcPathCopied': 'คัดลอกตำแหน่งแล้ว',
+    'mcPlayAll': 'เล่นทั้งหมด',
+    'mcShufflePlay': 'เล่นแบบสุ่ม',
+    'mpRepeatAll': 'เล่นซ้ำทั้งหมด',
+    'mpRepeatOne': 'เล่นซ้ำเพลงเดียว',
+    'mpRepeatOff': 'ปิดเล่นซ้ำ',
+    'mpUnknownTrack': 'เพลงที่ไม่ทราบชื่อ',
+    'mpUnknownArtist': 'ศิลปินที่ไม่ทราบชื่อ',
+    'mpCollapse': 'ย่อ',
+    'mpEqualizer': 'อีควอไลเซอร์',
+    'mpAb': 'เล่นซ้ำ A-B',
+    'mpSpeed': 'ความเร็ว',
+    'mpShuffle': 'สุ่ม',
+    'mpPrevious': 'ก่อนหน้า',
+    'mpNext': 'ถัดไป',
+    'mpRepeat': 'เล่นซ้ำ',
+    'mpLyricsError': 'อ่านไฟล์เนื้อเพลงไม่ได้',
+    'mpNoLyrics': 'ไม่พบเนื้อเพลง\n\nหากต้องการเพิ่ม ให้วางไฟล์ .lrc ชื่อเดียวกันไว้ข้างเพลง — song.mp3 → song.lrc — โดยมีบรรทัดเช่น [00:12.34]เนื้อเพลง',
+    'mcDateAdded': 'วันที่เพิ่ม',
+    'mpFavourites': 'รายการโปรดของฉัน',
+    'mpRecent': 'เล่นล่าสุด',
+    'mpShowQueue': 'แสดงคิว',
+    'mpNoFavs': 'ยังไม่มีรายการโปรด\nแตะ ♥ ที่เพลงใดก็ได้เพื่อเพิ่มที่นี่',
+    'mpNoRecent': 'ยังไม่มีเพลงที่เล่นล่าสุด',
+    'mpEmptyPlaylist': 'เพลย์ลิสต์นี้ว่างเปล่า',
   };
 }
 
@@ -8093,7 +8543,7 @@ class _AppStringsDelegate extends LocalizationsDelegate<AppStrings> {
   Future<AppStrings> load(Locale locale) =>
       // Strings are in-memory, so resolve synchronously — no first-frame
       // flash of the fallback locale.
-      SynchronousFuture<AppStrings>(AppStrings(locale));
+      SynchronousFuture<AppStrings>(AppStrings._current = AppStrings(locale));
 
   @override
   bool shouldReload(_AppStringsDelegate old) => false;

@@ -183,7 +183,7 @@ class SettingsAudioScreen extends ConsumerWidget {
               },
             );
           }),
-          // Note: AppStrings.of(context).saPassthrough already exposed earlier in
+          // Note: "Prefer audio passthrough" already exposed earlier in
           // this screen as a wired toggle bound to
           // PlayerSetting.preferAudioPassthrough — duplicate visible-
           // only tile removed here.

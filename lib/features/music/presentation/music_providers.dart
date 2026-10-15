@@ -16,6 +16,7 @@ import '../../../core/services/video_player/media_kit_player_service.dart';
 import '../../../core/services/cache/music_cache.dart';
 import '../../../core/services/audio_focus/audio_focus_service.dart';
 import '../../../core/services/haptic/haptic_service.dart';
+import '../../../core/localization/app_strings.dart';
 import '../../../core/services/music_background/music_audio_handler.dart';
 
 /// Phase 32: Music data providers backed by real device audio scan.
@@ -194,6 +195,18 @@ enum MusicSortBy {
 
   final String label;
   const MusicSortBy(this.label);
+
+  /// What the sort sheet shows, in the app's language. [label] stays the
+  /// English name for logs and old callers.
+  String labelIn(AppStrings s) => switch (this) {
+        MusicSortBy.title => s.mcTitle,
+        MusicSortBy.album => s.mcAlbum,
+        MusicSortBy.artist => s.mcArtist,
+        MusicSortBy.dateAdded => s.mcDateAdded,
+        MusicSortBy.duration => s.mcDuration,
+        MusicSortBy.size => s.propSize,
+        MusicSortBy.path => s.mcPath,
+      };
 }
 
 /// Phase 45 (audit): current music sort selection. Defaults to Title +
@@ -267,6 +280,8 @@ final filteredSongsProvider = Provider<AsyncValue<List<Song>>>((ref) {
 /// Persisted to SharedPreferences as JSON.
 class MusicPlaylist {
   final String id; // 'favs', 'recent', or user-generated uuid
+  /// As stored. The two built-ins keep their English names on disk; show
+  /// [displayName] instead.
   final String name;
   final List<String> songUris;
   final bool builtIn;
@@ -277,6 +292,14 @@ class MusicPlaylist {
     required this.songUris,
     this.builtIn = false,
   });
+
+  /// The name to show: the built-in Favourites and Recently played in the
+  /// app's language, anything the user named as they named it.
+  String displayName(AppStrings s) => switch (id) {
+        'favs' => s.mpFavourites,
+        'recent' => s.mpRecent,
+        _ => name,
+      };
 
   Map<String, dynamic> toJson() => {
         'id': id,

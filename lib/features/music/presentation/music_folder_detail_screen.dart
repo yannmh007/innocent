@@ -34,12 +34,13 @@ class MusicFolderDetailScreen extends ConsumerWidget {
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           IconButton(
-            tooltip: 'Share',
+            tooltip: AppStrings.of(context).share,
             icon: const Icon(Icons.share_outlined, size: 22),
-            onPressed: () => DetailHeaderActions.share(context, name),
+            onPressed: () => DetailHeaderActions.share(
+                context, name, songsAsync.value ?? const []),
           ),
           IconButton(
-            tooltip: 'More options',
+            tooltip: AppStrings.of(context).moreOptions,
             icon: const Icon(Icons.more_vert, size: 22),
             onPressed: () => DetailHeaderActions.showOverflow(
               context,
@@ -180,7 +181,7 @@ class MusicFolderDetailScreen extends ConsumerWidget {
                               ),
                             ),
                             IconButton(
-                              tooltip: 'More options',
+                              tooltip: AppStrings.of(context).moreOptions,
                               icon: const Icon(Icons.more_vert,
                                   color: Colors.white54, size: 20),
                               onPressed: () =>
