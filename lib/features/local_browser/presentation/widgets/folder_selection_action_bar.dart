@@ -9,6 +9,7 @@ import '../../domain/video.dart';
 import '../library_provider.dart';
 import '../selection_provider.dart';
 import 'bulk_actions.dart';
+import '../../../../core/ui/app_sheet.dart';
 
 /// The bottom bar for FOLDER multi-select.
 ///
@@ -79,7 +80,7 @@ class _FolderSelectionActionBarState
       AppSnackbar.global(s.noPlaylistsHint);
       return;
     }
-    final picked = await showModalBottomSheet<String>(
+    final picked = await showAppModalBottomSheet<String>(
       context: context,
       backgroundColor: AppColors.darkSurface,
       builder: (sheet) => SafeArea(

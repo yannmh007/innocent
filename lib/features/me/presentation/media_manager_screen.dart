@@ -18,6 +18,8 @@ import '../../user_data/user_data_providers.dart';
 import '../../video_hub/domain/byte_size.dart';
 
 import '../../../core/localization/app_strings.dart';
+import '../../../core/ui/app_sheet.dart';
+import '../../../core/ui/nav_bar_space.dart';
 /// What Android says about this phone's storage — see "storageSummary" in
 /// MainActivity. Every size is in bytes; -1 means "not known" (no permission
 /// for that kind of media, or the read failed), and the screen says so
@@ -114,7 +116,7 @@ class MediaManagerScreen extends ConsumerWidget {
       body: TabletConstrainedWidth(
         maxWidth: 840,
         child: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16).plusNavBar(context),
         children: [
           // ─── STORAGE CARD ───
           _StorageCard(summary: summary.valueOrNull, loading: summary.isLoading),
@@ -302,7 +304,7 @@ class MediaManagerScreen extends ConsumerWidget {
     // of times a second while dragging — enough to lock the app up.
     final listFuture = _buildList(ref, kind);
     final s = AppStrings.of(context);
-    showModalBottomSheet<void>(
+    showAppModalBottomSheet<void>(
       context: context,
       backgroundColor: AppColors.darkSurface,
       isScrollControlled: true,

@@ -8,6 +8,7 @@ import '../account/premium_request_screen.dart';
 import '../account/sign_in_sheet.dart';
 import '../account_provider.dart';
 import '../video_hub_theme.dart';
+import '../../../../core/ui/app_sheet.dart';
 
 /// The upgrade prompt.
 ///
@@ -46,7 +47,7 @@ class PaywallSheet extends ConsumerWidget {
     VideoContent? content,
     int lockedCount = 0,
   }) async {
-    final result = await showModalBottomSheet<bool>(
+    final result = await showAppModalBottomSheet<bool>(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,

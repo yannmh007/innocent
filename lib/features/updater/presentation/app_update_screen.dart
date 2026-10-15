@@ -12,6 +12,7 @@ import '../data/update_download_controller.dart';
 import '../data/update_notification_service.dart';
 import '../domain/app_release.dart';
 import 'update_action_panel.dart';
+import '../../../core/ui/nav_bar_space.dart';
 
 /// Settings → App update. Step 2 of `docs/updater_plan.md`, and the frame the
 /// rest of the updater hangs in.
@@ -38,7 +39,11 @@ import 'update_action_panel.dart';
 /// when they suspect the app is stale — including after dismissing a prompt,
 /// which is the whole reason it exists.
 class AppUpdateScreen extends ConsumerStatefulWidget {
-  const AppUpdateScreen({super.key});
+  const AppUpdateScreen({super.key, this.fetchForTest});
+
+  /// Stands in for the network check (test_screens draws the screen with a
+  /// real release and long notes).
+  final Future<AppRelease?> Function()? fetchForTest;
 
   @override
   ConsumerState<AppUpdateScreen> createState() => _AppUpdateScreenState();
@@ -73,7 +78,10 @@ class _AppUpdateScreenState extends ConsumerState<AppUpdateScreen> {
     AppRelease? release;
     UpdateCheckFailure? failure;
     try {
-      release = await const UpdateCheckService().fetchLatest();
+      final fetch = widget.fetchForTest;
+      release = fetch != null
+          ? await fetch()
+          : await const UpdateCheckService().fetchLatest();
     } on UpdateCheckFailure catch (e) {
       failure = e;
     } catch (_) {
@@ -113,7 +121,8 @@ class _AppUpdateScreenState extends ConsumerState<AppUpdateScreen> {
       appBar: AppBar(title: Text(s.settingsAppUpdate)),
       body: TabletConstrainedWidth(
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 32)
+              .plusNavBar(context),
           children: [
             _statusCard(s),
             const SizedBox(height: 16),

@@ -59,6 +59,9 @@ CHECKS = [
     ('stock_popup_menu.py', ROOT,
      'a stock PopupMenuButton — its menu crashes when the button goes away '
      'while it is open; "Something didn\'t load" on the Me tab, 11 Oct 2026'),
+    ('raw_bottom_sheet.py', ROOT,
+     'a raw showModalBottomSheet — Flutter never pads a sheet\'s bottom, so '
+     'its last row sat under the phone\'s navigation bar, Oct 2026'),
     ('dead_settings.py', ROOT,
      'a setting the app stores and never reads — the single most repeated '
      'bug class in this project, ten instances recorded in the tree\'s own '

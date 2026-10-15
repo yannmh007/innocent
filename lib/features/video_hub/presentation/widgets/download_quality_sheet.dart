@@ -9,6 +9,7 @@ import '../../domain/byte_size.dart';
 import '../../domain/content_repository.dart';
 import '../../domain/video_content.dart';
 import '../video_hub_theme.dart';
+import '../../../../core/ui/app_sheet.dart';
 
 /// The viewer's standing answer to "which copy should a download fetch".
 ///
@@ -69,7 +70,7 @@ Future<({String quality, bool asked})?> chooseDownloadQuality(
   final kind = await ConnectionInfo.read();
   if (!context.mounted) return null;
 
-  final picked = await showModalBottomSheet<({String id, bool remember})>(
+  final picked = await showAppModalBottomSheet<({String id, bool remember})>(
     context: context,
     backgroundColor: VH.surface1,
     isScrollControlled: true,

@@ -13,6 +13,8 @@ import '../../../core/services/secure_screen/secure_screen_service.dart';
 import 'vault_pin_flow.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/tab_title.dart';
+import '../../../core/ui/app_sheet.dart';
+import '../../../core/ui/nav_bar_space.dart';
 
 /// The provider is defined in private_folder_screen.dart; re-declared as an
 /// extern reference would be circular, so callers pass the service in.
@@ -72,7 +74,7 @@ class _AntiTheftScreenState extends ConsumerState<AntiTheftScreen> {
 
   Future<void> _pickAutoLock() async {
     final s = AppStrings.of(context);
-    final chosen = await showModalBottomSheet<int>(
+    final chosen = await showAppModalBottomSheet<int>(
       context: context,
       backgroundColor: AppColors.darkSurface,
       shape: const RoundedRectangleBorder(
@@ -137,7 +139,8 @@ class _AntiTheftScreenState extends ConsumerState<AntiTheftScreen> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : ListView(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 32)
+                  .plusNavBar(context),
               children: [
                 Text(s.antiTheftDesc,
                     style: const TextStyle(

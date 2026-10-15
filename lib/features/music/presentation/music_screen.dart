@@ -17,6 +17,7 @@ import '../../../core/ui/tablet_constrained_width.dart';
 import '../../../core/theme/tab_title.dart';
 import '../../../core/ui/safe_popup_menu.dart';
 import '../../shell/shell_back.dart';
+import '../../../core/ui/app_sheet.dart';
 
 /// Music tab — Tracks / Playlists / Albums / Artists / Folders
 /// Matches MX Player UI (PDF page 5)
@@ -1332,7 +1333,7 @@ Future<void> _playCollectionFromFuture(
 /// Descending toggle. Tapping a row selects that field and dismisses;
 /// tapping the same field flips direction.
 Future<void> _showMusicSortSheet(BuildContext context, WidgetRef ref) async {
-  await showModalBottomSheet<void>(
+  await showAppModalBottomSheet<void>(
     context: context,
     backgroundColor: AppColors.darkSurface,
     shape: const RoundedRectangleBorder(

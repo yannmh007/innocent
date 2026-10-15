@@ -16,6 +16,7 @@ import 'storage_access.dart';
 import '../domain/media_probe.dart';
 import 'downloader_providers.dart';
 import 'preflight_gate.dart';
+import '../../../core/ui/app_sheet.dart';
 
 /// Quality picker for a probed link.
 ///
@@ -28,7 +29,7 @@ class QualitySheet extends ConsumerStatefulWidget {
   final MediaProbe probe;
 
   static Future<void> show(BuildContext context, MediaProbe probe) {
-    return showModalBottomSheet<void>(
+    return showAppModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,

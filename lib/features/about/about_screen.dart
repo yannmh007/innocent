@@ -13,6 +13,8 @@ import '../updater/data/update_check_service.dart';
 import '../updater/domain/app_release.dart';
 import '../updater/presentation/app_update_screen.dart';
 import '../../core/theme/tab_title.dart';
+import '../../core/ui/app_sheet.dart';
+import '../../core/ui/nav_bar_space.dart';
 
 /// Me → About.
 ///
@@ -99,7 +101,7 @@ class _AboutScreenState extends State<AboutScreen> {
 
   void _showWhatsNew(String notes) {
     final s = AppStrings.of(context);
-    showModalBottomSheet<void>(
+    showAppModalBottomSheet<void>(
       context: context,
       backgroundColor: _About.sheet,
       showDragHandle: true,
@@ -145,7 +147,7 @@ class _AboutScreenState extends State<AboutScreen> {
       body: TabletConstrainedWidth(
         maxWidth: 640,
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 32).plusNavBar(context),
           children: <Widget>[
             _Hero(onCopy: _copyVersion),
             const SizedBox(height: 28),

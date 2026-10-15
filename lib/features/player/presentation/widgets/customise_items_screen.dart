@@ -6,6 +6,7 @@ import '../player_provider.dart';
 import '../shortcut_item.dart';
 
 import '../../../../core/localization/app_strings.dart';
+import '../../../../core/ui/nav_bar_space.dart';
 /// Customise Items screen — toggle which shortcuts appear in shortcut row
 class CustomiseItemsScreen extends ConsumerWidget {
   const CustomiseItemsScreen({super.key});
@@ -48,7 +49,7 @@ class CustomiseItemsScreen extends ConsumerWidget {
       body: GridView.count(
         crossAxisCount: 2,
         childAspectRatio: 4,
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(8).plusNavBar(context),
         children: allItems.map((item) {
           final isChecked = visible.contains(item);
           return CheckboxListTile(

@@ -7,6 +7,7 @@ import '../../../user_data/user_data_providers.dart';
 import '../player_provider.dart';
 
 import '../../../../core/localization/app_strings.dart';
+import '../../../../core/ui/app_sheet.dart';
 /// Bottom sheet listing bookmarks for the current video with tap-to-seek
 class BookmarksSheet extends ConsumerWidget {
   final String videoUri;
@@ -43,7 +44,7 @@ class BookmarksSheet extends ConsumerWidget {
     // surprises. A paused player is recoverable with one tap; unexpected
     // sound coming out of a phone is not.
     if (!context.mounted) return;
-    await showModalBottomSheet<void>(
+    await showAppModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (_) => BookmarksSheet(videoUri: videoUri, onSeek: onSeek),

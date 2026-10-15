@@ -6,6 +6,7 @@ import '../../features/settings/presentation/adb_connect_screen.dart';
 import '../localization/app_strings.dart';
 import '../services/adb/adb_service.dart';
 import '../theme/app_colors.dart';
+import 'nav_bar_space.dart';
 
 /// What a folder inside Android/data shows while the ADB connection is down,
 /// in place of its files.
@@ -101,7 +102,8 @@ class _AdbLostCardState extends State<AdbLostCard> {
         !widget.firstTime && AdbService.instance.pairingNeeded.value;
     return Center(
       child: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
+        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24)
+            .plusNavBar(context),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[

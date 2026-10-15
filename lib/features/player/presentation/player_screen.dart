@@ -101,6 +101,7 @@ import 'gestures/subtitle_band.dart';
 import 'subtitles/player_subtitles.dart';
 import 'video_geometry.dart';
 import 'widgets/gesture_hud.dart';
+import '../../../core/ui/app_sheet.dart';
 
 class PlayerScreen extends ConsumerStatefulWidget {
   final String videoUri;
@@ -1555,7 +1556,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
       _showSnack(context, 'No playlists yet. Create one from Me → Video Playlists');
       return;
     }
-    final picked = await showModalBottomSheet<String>(
+    final picked = await showAppModalBottomSheet<String>(
       context: context,
       backgroundColor: AppColors.darkSurface,
       // Named, not `_`: the tile below pops THIS sheet to return the chosen
@@ -2031,7 +2032,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     final menu = StreamRenewal.quality.value;
     if (menu == null || menu.options.isEmpty) return;
     final s = AppStrings.of(context);
-    final picked = await showModalBottomSheet<String>(
+    final picked = await showAppModalBottomSheet<String>(
       context: context,
       backgroundColor: AppColors.darkSurface,
       showDragHandle: true,

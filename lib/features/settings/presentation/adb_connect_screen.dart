@@ -17,6 +17,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../local_browser/presentation/android_data_sync.dart';
 import '../../video_hub/data/diagnostics_report.dart';
 import '../../video_hub/presentation/account_provider.dart';
+import '../../../core/ui/nav_bar_space.dart';
 
 /// Android/data access: pairing with, and connecting to, this phone's own
 /// Wireless debugging.
@@ -1605,7 +1606,7 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
     return Scaffold(
       appBar: AppBar(title: Text(s.adbScreenTitle)),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 32).plusNavBar(context),
         children: [
           if (_exposed) _exposureWarning(),
           _heroCard(),

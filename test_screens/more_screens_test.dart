@@ -30,6 +30,7 @@ import 'package:innocent/features/video_hub/presentation/video_search_screen.dar
 
 import 'fakes.dart';
 import 'harness.dart';
+import 'package:innocent/features/updater/domain/app_release.dart';
 
 void main() {
   setUpAll(loadScreenFonts);
@@ -77,4 +78,19 @@ void main() {
   screens('private_folder', () => const PrivateFolderScreen());
   screens('downloader', () => const DownloaderHomeScreen(), phones: one);
   screens('update', () => const AppUpdateScreen(), phones: one);
+  // A release with long notes (1.64.63's were 11 lines): the Download and
+  // Check buttons are at the end of the list, which must scroll clear of the
+  // system navigation bar.
+  screens('update_long_notes', () => AppUpdateScreen(
+        fetchForTest: () async => AppRelease(
+          versionName: '9.9.9',
+          versionCode: 999999,
+          apkUrl: 'https://example.invalid/innocent.apk',
+          apkSha256: 'a' * 64,
+          apkBytes: 92949129,
+          notesEn: List.generate(12, (i) => '- ADB: a long line of release notes number ${i + 1}, long enough to wrap onto a second line on a small phone.').join('\n'),
+          notesMm: List.generate(12, (i) => '- ADB: ချိတ်ဆက်မှု အကြောင်း ရှည်ရှည်လျားလျား ရေးထားတဲ့ စာကြောင်း ${i + 1} ဖြစ်ပါတယ်၊ ဖုန်းသေးရင် နှစ်ကြောင်းဖြစ်သွားပါတယ်။').join('\n'),
+          releasedAt: DateTime(2026, 10, 11),
+        ),
+      ), phones: one, scrolls: 2);
 }

@@ -5,6 +5,7 @@ import '../../../core/theme/app_colors.dart';
 import 'music_providers.dart';
 
 import '../../../core/localization/app_strings.dart';
+import '../../../core/ui/app_sheet.dart';
 /// Phase 39: Playing Queue bottom sheet — shows the real playback queue from
 /// [musicPlayingProvider]. Tapping a row jumps to that track. The currently
 /// playing row is highlighted with the equalizer-bars icon (MX parity).
@@ -12,7 +13,7 @@ class MusicQueueSheet extends ConsumerWidget {
   const MusicQueueSheet({super.key});
 
   static Future<void> show(BuildContext context) {
-    return showModalBottomSheet<void>(
+    return showAppModalBottomSheet<void>(
       context: context,
       backgroundColor: AppColors.darkSurface,
       isScrollControlled: true,

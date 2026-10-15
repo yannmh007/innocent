@@ -27,6 +27,7 @@ import 'widgets/hub_states.dart';
 import 'widgets/paged_poster_grid.dart';
 import 'widgets/sticky_bar.dart';
 import 'widgets/vh_insets.dart';
+import '../../../core/ui/app_sheet.dart';
 
 /// The Video Hub: Innocent's remote-content surface.
 ///
@@ -528,7 +529,7 @@ class _VideoHubScreenState extends ConsumerState<VideoHubScreen>
   /// of the row (Netflix's "Remove from row"), with an Undo.
   Future<void> _continueActions(BuildContext context, VideoContent item) async {
     final s = AppStrings.of(context);
-    final choice = await showModalBottomSheet<String>(
+    final choice = await showAppModalBottomSheet<String>(
       context: context,
       backgroundColor: VH.surface1,
       builder: (sheet) => SafeArea(

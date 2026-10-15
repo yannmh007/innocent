@@ -33,6 +33,8 @@ import '../../../core/localization/app_strings.dart';
 import '../../../core/ui/tv_focus.dart';
 import '../../../core/theme/tab_title.dart';
 import '../../../core/ui/safe_popup_menu.dart';
+import '../../../core/ui/app_sheet.dart';
+import '../../../core/ui/nav_bar_space.dart';
 
 part 'private_folder_pin_widgets.dart';
 
@@ -998,7 +1000,7 @@ class _PrivateFolderScreenState extends ConsumerState<PrivateFolderScreen>
 
   Widget _listBody(List<PrivateEntry> entries, bool showFolders) {
     return ListView(
-      padding: const EdgeInsets.only(bottom: 90),
+      padding: const EdgeInsets.only(bottom: 90).plusNavBar(context),
       children: [
         if (showFolders && _folders.isNotEmpty) ...[
           for (final f in _folders) _folderTile(f),
@@ -1012,7 +1014,7 @@ class _PrivateFolderScreenState extends ConsumerState<PrivateFolderScreen>
   Widget _gridBody(List<PrivateEntry> entries, bool showFolders) {
     return GridView.count(
       crossAxisCount: 3,
-      padding: const EdgeInsets.fromLTRB(8, 8, 8, 90),
+      padding: const EdgeInsets.fromLTRB(8, 8, 8, 90).plusNavBar(context),
       mainAxisSpacing: 8,
       crossAxisSpacing: 8,
       children: [
@@ -1247,7 +1249,7 @@ class _PrivateFolderScreenState extends ConsumerState<PrivateFolderScreen>
 
   Future<void> _folderMenu(PrivateFolderMeta f) async {
     final s = AppStrings.of(context);
-    final action = await showModalBottomSheet<String>(
+    final action = await showAppModalBottomSheet<String>(
       context: context,
       backgroundColor: AppColors.darkSurface,
       shape: const RoundedRectangleBorder(
@@ -1466,7 +1468,7 @@ class _PrivateFolderScreenState extends ConsumerState<PrivateFolderScreen>
 
   Future<void> _entryMenu(PrivateEntry e) async {
     final s = AppStrings.of(context);
-    final action = await showModalBottomSheet<String>(
+    final action = await showAppModalBottomSheet<String>(
       context: context,
       backgroundColor: AppColors.darkSurface,
       shape: const RoundedRectangleBorder(
@@ -1721,7 +1723,7 @@ class _PrivateFolderScreenState extends ConsumerState<PrivateFolderScreen>
 
   Future<String?> _chooseFolderForBatch() async {
     final s = AppStrings.of(context);
-    final chosen = await showModalBottomSheet<String?>(
+    final chosen = await showAppModalBottomSheet<String?>(
       context: context,
       backgroundColor: AppColors.darkSurface,
       shape: const RoundedRectangleBorder(
@@ -1862,7 +1864,7 @@ class _PrivateFolderScreenState extends ConsumerState<PrivateFolderScreen>
 
   Future<void> _moveEntryDialog(PrivateEntry e) async {
     final s = AppStrings.of(context);
-    final target = await showModalBottomSheet<String>(
+    final target = await showAppModalBottomSheet<String>(
       context: context,
       backgroundColor: AppColors.darkSurface,
       shape: const RoundedRectangleBorder(
@@ -2084,7 +2086,7 @@ class _PrivateFolderScreenState extends ConsumerState<PrivateFolderScreen>
   }
 
   void _showOtherFileSheet(PrivateEntry e) {
-    showModalBottomSheet(
+    showAppModalBottomSheet(
       context: context,
       backgroundColor: AppColors.darkSurface,
       shape: const RoundedRectangleBorder(

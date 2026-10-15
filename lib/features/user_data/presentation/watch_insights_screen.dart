@@ -8,6 +8,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/localization/app_strings.dart';
 import '../../../core/theme/tab_title.dart';
 import '../../me/presentation/statistics_screen.dart';
+import '../../../core/ui/nav_bar_space.dart';
 /// Personal watch-history dashboard. Reads entirely from on-device
 /// history; nothing leaves the device. Surface cards from highest
 /// emotional weight (total time + streak) to most analytical
@@ -44,7 +45,8 @@ class WatchInsightsScreen extends ConsumerWidget {
       body: insights.videosWatched == 0
           ? const _EmptyState()
           : ListView(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 32)
+                  .plusNavBar(context),
               children: [
                 _HeroCard(insights: insights),
                 const SizedBox(height: 12),

@@ -21,6 +21,7 @@ import '../../local_browser/presentation/widgets/bulk_actions.dart';
 import '../../video_hub/domain/byte_size.dart';
 import '../domain/file_kind.dart';
 import 'adb_image_viewer.dart';
+import '../../../core/ui/nav_bar_space.dart';
 
 /// HIDDEN FILES — every app's private folder (Android/data), read over
 /// Innocent's own ADB connection, as a file browser.
@@ -385,7 +386,8 @@ class _AndroidDataScreenState extends ConsumerState<AndroidDataScreen> {
               itemCount: visible.length,
               itemBuilder: (_, i) => _row(visible[i], entries),
             ),
-          const SliverToBoxAdapter(child: SizedBox(height: 24)),
+          SliverToBoxAdapter(
+              child: SizedBox(height: 24 + navBarSpace(context))),
         ],
       ),
     );
@@ -449,7 +451,7 @@ class _AndroidDataScreenState extends ConsumerState<AndroidDataScreen> {
     return RefreshIndicator(
       onRefresh: () async => _reload(),
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24).plusNavBar(context),
         children: <Widget>[
           if (_telegram.isNotEmpty) ...<Widget>[
             _sectionLabel(s.hfQuick),

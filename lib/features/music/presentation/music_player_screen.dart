@@ -14,6 +14,7 @@ import 'music_queue_sheet.dart';
 
 import '../../../core/localization/app_strings.dart';
 import '../../../core/ui/tv_focus.dart';
+import '../../../core/ui/app_sheet.dart';
 /// Full-screen Music Player matching MX Player (UI PDF page 5 right)
 /// Vinyl record + controls + Lyrics/Playing Queue tabs
 class MusicPlayerScreen extends ConsumerStatefulWidget {
@@ -69,7 +70,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
   /// sidecar .lrc file from same folder as audio. Synced lines
   /// auto-scroll + highlight as song plays.
   void _showLyricsSheet(Song song) {
-    showModalBottomSheet<void>(
+    showAppModalBottomSheet<void>(
       context: context,
       backgroundColor: AppColors.darkSurface,
       isScrollControlled: true,
@@ -105,7 +106,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
 
   void _showSpeedPicker(double current) {
     const speeds = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0];
-    showModalBottomSheet<void>(
+    showAppModalBottomSheet<void>(
       context: context,
       backgroundColor: AppColors.darkSurface,
       shape: const RoundedRectangleBorder(
@@ -596,7 +597,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                     icon: const Icon(Icons.more_vert,
                         color: AppColors.white70, size: 24),
                     onPressed: () {
-                      showModalBottomSheet(
+                      showAppModalBottomSheet(
                         context: context,
                         backgroundColor: AppColors.darkSurface,
                         shape: const RoundedRectangleBorder(

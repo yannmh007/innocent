@@ -172,6 +172,10 @@ Future<void> shoot(
   _fakePlugins(prefs);
   tester.view.physicalSize = phone.size * phone.ratio;
   tester.view.devicePixelRatio = phone.ratio;
+  // SCREEN_NAVBAR=1: the three-button navigation bar (48 dp) instead of the
+  // gesture handle, and every screen checked for buttons left under it.
+  final navCheck = Platform.environment['SCREEN_NAVBAR'] == '1';
+  if (navCheck && phone.bottom > 0) phone = Phone(phone.name, phone.size, ratio: phone.ratio, top: phone.top, bottom: 48);
   tester.view.padding = FakeViewPadding(top: phone.top * phone.ratio, bottom: phone.bottom * phone.ratio);
   tester.view.viewPadding = FakeViewPadding(top: phone.top * phone.ratio, bottom: phone.bottom * phone.ratio);
   addTearDown(tester.view.reset);
@@ -229,6 +233,27 @@ Future<void> shoot(
         localizationsDelegates: AppStrings.localizationsDelegates,
         supportedLocales: AppStrings.supportedLocales,
         home: child,
+        // Check mode draws the system bar over the bottom, as the phone does.
+        builder: navCheck && phone.bottom > 0
+            ? (context, app) => Stack(children: [
+                  app!,
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    height: phone.bottom,
+                    child: const IgnorePointer(
+                      child: ColoredBox(
+                        color: Color(0xCC000000),
+                        child: Center(
+                          child: Text('◁        ○        □',
+                              style: TextStyle(color: Colors.white70, fontSize: 18)),
+                        ),
+                      ),
+                    ),
+                  ),
+                ])
+            : null,
       ),
     ),
   ));
@@ -257,6 +282,10 @@ Future<void> shoot(
     }
     await expectLater(find.byKey(key), matchesGoldenFile('out/${tag}_$i.png'));
   }
+  if (navCheck) {
+    await _toEnd(tester);
+    _checkUnderNavBar(tester, tagFor, phone);
+  }
   // Take the tree down and let one-shot timers (debounces, retries) run out,
   // so the binding finds nothing pending; then hand error reporting back.
   await tester.pumpWidget(const SizedBox());
@@ -269,6 +298,68 @@ Future<void> shoot(
   if (ex != null) {
     // ignore: avoid_print
     print('SCREEN $tag: $ex');
+  }
+}
+
+/// Scroll every vertical scrollable on screen to its end.
+Future<void> _toEnd(WidgetTester tester) async {
+  for (final e in find.byType(Scrollable).evaluate().toList()) {
+    final state = (e as StatefulElement).state as ScrollableState;
+    final pos = state.position;
+    if (pos.axis != Axis.vertical || !pos.hasContentDimensions) continue;
+    pos.jumpTo(pos.maxScrollExtent);
+  }
+  for (var j = 0; j < 5; j++) {
+    await tester.pump(const Duration(milliseconds: 100));
+  }
+}
+
+/// A BUTTON UNDER THE SYSTEM NAVIGATION BAR. The app draws edge to edge
+/// (Android 15 insists, and main.dart asks for it), so Back / Home /
+/// Recents sit on top of the bottom [Phone.bottom] dp of every screen. A
+/// list with a padding of its own does not keep clear of them — only a
+/// list with none adds the system insets by itself — so its last button
+/// stopped under the bar, however far it was scrolled (App update, 11 Oct
+/// 2026). This scrolls each screen's main list to its end and reports any
+/// tappable reaching into that strip, as a PROBLEM line.
+void _checkUnderNavBar(WidgetTester tester, String tag, Phone phone) {
+  if (phone.bottom <= 0) return;
+  final limit = phone.size.height - phone.bottom;
+  final seen = <String>{};
+  void report(Element e, String kind) {
+    final box = e.renderObject;
+    if (box is! RenderBox || !box.hasSize || !box.attached) return;
+    final r = box.localToGlobal(Offset.zero) & box.size;
+    if (r.height <= 0 || r.width <= 0) return;
+    // Off screen (below it, or scrolled away) is not "under the bar".
+    if (r.top >= phone.size.height || r.bottom <= 0) return;
+    // Any part under the bar: a button half covered is still the bug.
+    if (r.bottom <= limit + 1) return;
+    // The app's own bottom bar is drawn above the system one, so it is fine.
+    var inBar = false;
+    e.visitAncestorElements((a) {
+      final w = a.widget;
+      if (w is BottomNavigationBar || w is NavigationBar || w is BottomAppBar) {
+        inBar = true;
+        return false;
+      }
+      return true;
+    });
+    if (inBar) return;
+    final where = '${kind} at y=${r.top.toStringAsFixed(0)}-${r.bottom.toStringAsFixed(0)} (bar from ${limit.toStringAsFixed(0)})';
+    if (!seen.add(where)) return;
+    final line = 'PROBLEM $tag: under the navigation bar: $where';
+    problems.add(line);
+    // ignore: avoid_print
+    print(line);
+  }
+
+  for (final e in find.byWidgetPredicate((w) =>
+      (w is ButtonStyleButton && w.onPressed != null) ||
+      (w is IconButton && w.onPressed != null) ||
+      (w is FloatingActionButton && w.onPressed != null) ||
+      (w is ListTile && w.onTap != null)).evaluate()) {
+    report(e, e.widget.runtimeType.toString());
   }
 }
 

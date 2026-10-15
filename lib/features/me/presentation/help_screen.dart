@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 
 import '../../../core/localization/app_strings.dart';
+import '../../../core/ui/nav_bar_space.dart';
 /// Help screen — FAQ items and support contact
 class HelpScreen extends StatelessWidget {
   const HelpScreen({super.key});
@@ -48,7 +49,7 @@ class HelpScreen extends StatelessWidget {
       backgroundColor: AppColors.darkBackground,
       appBar: AppBar(title: Text(AppStrings.of(context).help)),
       body: ListView.builder(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16).plusNavBar(context),
         itemCount: _faqItems.length,
         itemBuilder: (_, i) {
           final (question, answer) = _faqItems[i];

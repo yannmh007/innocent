@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../player_provider.dart';
+import '../../../../core/ui/app_sheet.dart';
 
 /// Bottom sheet shown on long-press of the Next button.
 /// MX Player parity: Loop One / Loop All / Shuffle with check marks.
@@ -11,7 +12,7 @@ class LoopMenuSheet extends ConsumerWidget {
   const LoopMenuSheet({super.key});
 
   static Future<void> show(BuildContext context) {
-    return showModalBottomSheet<void>(
+    return showAppModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
       barrierColor: Colors.black54,

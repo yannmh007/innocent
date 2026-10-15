@@ -8,6 +8,7 @@ import '../data/probe_parser.dart';
 import '../domain/quality_preset.dart';
 import 'downloader_providers.dart';
 import 'preflight_gate.dart';
+import '../../../core/ui/app_sheet.dart';
 
 /// Picks videos out of a collection and one quality for all of them.
 ///
@@ -22,7 +23,7 @@ class PlaylistSheet extends ConsumerStatefulWidget {
   final PlaylistProbe playlist;
 
   static Future<void> show(BuildContext context, PlaylistProbe playlist) {
-    return showModalBottomSheet<void>(
+    return showAppModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,

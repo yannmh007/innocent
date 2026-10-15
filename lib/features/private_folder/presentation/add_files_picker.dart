@@ -30,6 +30,7 @@ import 'vault_progress.dart';
 
 import '../../../core/localization/app_strings.dart';
 import '../../../core/ui/tv_focus.dart';
+import '../../../core/ui/nav_bar_space.dart';
 
 // === Add Files flow spec (innocent_add_files_flow_spec, v0.50) ===
 // One full-screen route. A category strip (Videos · Images · Audio ·
@@ -1263,7 +1264,7 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
           return _centerMsg(AppStrings.of(context).noFolders);
         }
         return ListView.builder(
-          padding: EdgeInsets.zero,
+          padding: EdgeInsets.only(bottom: navBarSpace(context)),
           itemCount: folders.length,
           itemBuilder: (_, i) => _videoFolderTile(folders[i]),
         );
@@ -1353,7 +1354,7 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
           return _centerMsg(AppStrings.of(context).noItemsHere);
         }
         return ListView.builder(
-          padding: EdgeInsets.zero,
+          padding: EdgeInsets.only(bottom: navBarSpace(context)),
           // +1 row for the "Android/data" bucket when ADB is connected.
           itemCount: folders.length + (_adbMediaConnected ? 1 : 0),
           itemBuilder: (_, i) {
@@ -1472,7 +1473,7 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
       });
     final s = AppStrings.of(context);
     return ListView.builder(
-      padding: EdgeInsets.zero,
+      padding: EdgeInsets.only(bottom: navBarSpace(context)),
       itemCount: dirs.length,
       itemBuilder: (_, i) {
         final dir = dirs[i];
@@ -1603,7 +1604,7 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
             return const Center(child: CircularProgressIndicator());
           }
           return ListView(
-            padding: EdgeInsets.zero,
+            padding: EdgeInsets.only(bottom: navBarSpace(context)),
             children: [
               for (final r in roots)
                 _folderRow(
@@ -1651,7 +1652,7 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
           return _centerMsg(AppStrings.of(context).noFilesInFolder);
         }
         return ListView.builder(
-          padding: EdgeInsets.zero,
+          padding: EdgeInsets.only(bottom: navBarSpace(context)),
           itemCount: entries.length,
           itemBuilder: (_, i) {
             // Every value used here was computed once, off the UI thread, in
@@ -1912,7 +1913,7 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
       data: (apps) {
         if (apps.isEmpty) return _centerMsg(s.noItemsHere);
         return ListView.builder(
-          padding: EdgeInsets.zero,
+          padding: EdgeInsets.only(bottom: navBarSpace(context)),
           itemCount: apps.length,
           itemBuilder: (_, i) {
             final a = apps[i];
@@ -2143,7 +2144,7 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
       return _selectableGrid(sorted, videoThumbs: videoThumbs, footer: footer);
     }
     return ListView.builder(
-      padding: EdgeInsets.zero,
+      padding: EdgeInsets.only(bottom: navBarSpace(context)),
       // One extra slot for the paging footer when there is one.
       itemCount: sorted.length + (footer != null ? 1 : 0),
       itemBuilder: (_, i) {
@@ -2270,7 +2271,7 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
       );
     }
     return GridView.builder(
-      padding: const EdgeInsets.all(8),
+      padding: const EdgeInsets.all(8).plusNavBar(context),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 3,
         mainAxisSpacing: 8,

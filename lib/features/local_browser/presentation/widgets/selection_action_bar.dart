@@ -10,6 +10,7 @@ import '../../domain/video.dart';
 import '../library_provider.dart';
 import 'bulk_actions.dart';
 import '../selection_provider.dart';
+import '../../../../core/ui/app_sheet.dart';
 
 /// The bar that slides up from the bottom while videos are selected.
 ///
@@ -80,7 +81,7 @@ class _SelectionActionBarState extends ConsumerState<SelectionActionBar> {
       AppSnackbar.global(s.noPlaylistsHint);
       return;
     }
-    final picked = await showModalBottomSheet<String>(
+    final picked = await showAppModalBottomSheet<String>(
       context: context,
       backgroundColor: AppColors.darkSurface,
       builder: (sheet) => SafeArea(

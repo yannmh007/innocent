@@ -8,6 +8,8 @@ import '../../../core/services/file_transfer/file_receiver_service.dart';
 import '../../../core/services/file_transfer/file_transfer_service.dart';
 import '../../../core/services/file_transfer/received_history.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/ui/app_sheet.dart';
+import '../../../core/ui/nav_bar_space.dart';
 
 /// The Transfer tab's front door, the way MX Player draws its own: two big
 /// buttons — SEND and RECEIVE — and under them a few plain rows. Everything
@@ -513,7 +515,7 @@ class TransferOptionsSheet extends ConsumerWidget {
 
   static Future<void> show(BuildContext context,
       {required VoidCallback onHelp}) {
-    return showModalBottomSheet<void>(
+    return showAppModalBottomSheet<void>(
       context: context,
       backgroundColor: AppColors.darkSurface,
       showDragHandle: true,
@@ -650,7 +652,8 @@ class TransferHistoryScreen extends ConsumerWidget {
               ),
             )
           : ListView.separated(
-              padding: const EdgeInsets.fromLTRB(12, 4, 12, 24),
+              padding: const EdgeInsets.fromLTRB(12, 4, 12, 24)
+                  .plusNavBar(context),
               itemCount: items.length,
               separatorBuilder: (_, __) => const SizedBox(height: 6),
               itemBuilder: (context, i) {

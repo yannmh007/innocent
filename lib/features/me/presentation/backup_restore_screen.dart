@@ -9,6 +9,7 @@ import '../../user_data/user_data_providers.dart';
 import 'cloud_drive_screen.dart';
 
 import '../../../core/localization/app_strings.dart';
+import '../../../core/ui/nav_bar_space.dart';
 /// Backup & Restore screen — export/import app settings and playlists.
 ///
 /// Phase 41: merged the two prior backup screens. The presentation comes
@@ -145,7 +146,7 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
       backgroundColor: AppColors.darkBackground,
       appBar: AppBar(title: Text(AppStrings.of(context).backupRestore)),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16).plusNavBar(context),
         children: [
           // Info card
           Container(

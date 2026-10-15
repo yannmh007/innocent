@@ -5,11 +5,12 @@ import '../../../core/localization/app_strings.dart';
 import '../data/net_repository.dart';
 import '../data/net_server.dart';
 import 'net_widgets.dart';
+import '../../../core/ui/app_sheet.dart';
 
 /// MX's Scan: the servers of [protocol] on this Wi-Fi, by name where they
 /// say one (NetBIOS, mDNS). Tapping one fills the form.
 Future<ScanHit?> showScanSheet(BuildContext context, NetProtocol protocol) {
-  return showModalBottomSheet<ScanHit>(
+  return showAppModalBottomSheet<ScanHit>(
     context: context,
     backgroundColor: NetColors.dialog,
     isScrollControlled: true,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/ui/app_sheet.dart';
 
 /// v1.63 — adjust subtitles WITHOUT leaving the video.
 ///
@@ -52,7 +53,7 @@ class SubtitleTunePanel extends StatefulWidget {
     required ValueChanged<double> onScaleChanged,
     required ValueChanged<int> onVerticalPosChanged,
   }) {
-    return showModalBottomSheet<void>(
+    return showAppModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
       // The video must stay visible and playing behind it: this panel exists
