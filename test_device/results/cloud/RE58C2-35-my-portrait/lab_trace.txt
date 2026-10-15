@@ -1,0 +1,62 @@
+LAB device kind=DeviceKind.phone sw=360.0
+LAB cpu app 63% · 2.3fps · pool-thread 43% | .innocent.media 8% | io.worker. 4% | Jit thread pool 2% | 1.raster 2% | mali-compiler 1%
+LAB cpu app 13% · 3.8fps · .innocent.media 9% | 1.raster 2% | Jit thread pool 1%
+LAB cpu app 7% · 1.8fps · .innocent.media 5%
+LAB cpu app 10% · 2.5fps · .innocent.media 7%
+LAB cpu app 9% · 3.2fps · .innocent.media 6% | 1.raster 2%
+LAB cpu app 17% · 15.1fps · .innocent.media 10% | 1.raster 4% | mali-cmar-backe 1% | binder 1%
+LAB cpu app 15% · 10.7fps · .innocent.media 7% | 1.raster 4% | binder 1%
+LAB cpu app 33% · 36.7fps · 1.raster 15% | .innocent.media 9% | binder 4% | mali-cmar-backe 3% | Jit thread pool 1%
+LAB cpu app 10% · 6.6fps · .innocent.media 5% | 1.raster 3%
+LAB cpu app 16% · 15.5fps · 1.raster 7% | .innocent.media 6% | binder 2% | mali-cmar-backe 2%
+LAB cpu app 6% · 1.3fps · .innocent.media 4%
+LAB cpu app 11% · 1.0fps · .innocent.media 9%
+LAB cpu app 8% · 3.4fps · .innocent.media 4% | 1.raster 2%
+LAB cpu app 39% · 25.2fps · .innocent.media 18% | 1.raster 15% | binder 3% | mali-cmar-backe 2%
+LAB cpu app 43% · 23.2fps · .innocent.media 22% | 1.raster 14% | mali-cmar-backe 3% | binder 2%
+LAB cpu app 8% · 2.9fps · .innocent.media 5% | 1.raster 2%
+LAB cpu app 19% · 14.8fps · .innocent.media 11% | 1.raster 5% | binder 2% | mali-cmar-backe 1%
+LAB cpu app 7% · 1.5fps · .innocent.media 5%
+LAB cpu app 6% · 1.6fps · .innocent.media 4%
+LAB cpu app 5% · 1.1fps · .innocent.media 3%
+LAB cpu app 43% · 0.8fps · .innocent.media 16% | NetworkService 10% | ThreadPoolForeg 7% | Chrome_IOThread 5% | Chrome_InProcGp 2% | Jit thread pool 1%
+LAB cpu app 22% · 17.1fps · .innocent.media 12% | 1.raster 5% | mali-cmar-backe 2%
+LAB cpu app 9% · 3.1fps · .innocent.media 6% | 1.raster 1%
+LAB cpu app 6% · 2.4fps · .innocent.media 4%
+LAB cpu app 8% · 2.3fps · .innocent.media 5% | DartWorker 1%
+LAB cpu app 9% · 2.9fps · .innocent.media 5% | 1.raster 2%
+LAB cpu app 71% · 36.8fps · 1.raster 33% | .innocent.media 31% | mali-cmar-backe 4% | binder 3% | DartWorker 1%
+LAB cpu app 96% · 60.2fps · 1.raster 43% | .innocent.media 42% | mali-cmar-backe 5% | binder 4% | DartWorker 2%
+LAB cpu app 91% · 60.6fps · .innocent.media 44% | 1.raster 36% | mali-cmar-backe 5% | binder 3% | DartWorker 2%
+LAB cpu app 90% · 60.6fps · .innocent.media 43% | 1.raster 36% | mali-cmar-backe 5% | binder 3% | DartWorker 2%
+LAB cpu app 73% · 44.4fps · .innocent.media 33% | 1.raster 30% | binder 4% | mali-cmar-backe 4% | DartWorker 2%
+LAB cpu app 102% · 61.0fps · .innocent.media 46% | 1.raster 44% | mali-cmar-backe 5% | binder 4%
+LAB cpu app 49% · 34.4fps · .innocent.media 22% | 1.raster 21% | binder 3% | mali-cmar-backe 3%
+LAB cpu app 78% · 47.1fps · .innocent.media 38% | 1.raster 29% | binder 4% | mali-cmar-backe 4% | DartWorker 1%
+LAB cpu app 84% · 60.0fps · .innocent.media 41% | 1.raster 31% | binder 5% | mali-cmar-backe 4% | DartWorker 2%
+LAB cpu app 5% · 1.1fps · .innocent.media 4%
+LAB cpu app 5% · 1.2fps · .innocent.media 3%
+LAB cpu app 6% · 1.6fps · .innocent.media 4%
+LAB cpu app 7% · 3.0fps · .innocent.media 4% | 1.raster 1%
+LAB cpu app 11% · 2.8fps · .innocent.media 9% | 1.raster 1%
+LAB cpu app 5% · 1.2fps · .innocent.media 4%
+LAB cpu app 8% · 2.1fps · .innocent.media 6%
+LAB cpu app 14% · 4.1fps · .innocent.media 8% | 1.raster 3% | mali-cmar-backe 1%
+LAB cpu app 10% · 4.2fps · .innocent.media 8%
+LAB cpu app 11% · 0.9fps · .innocent.media 9%
+LAB cpu app 5% · 1.6fps · .innocent.media 4%
+LAB cpu app 4% · 0.9fps · .innocent.media 3%
+LAB cpu app 5% · 1.3fps · .innocent.media 3%
+LAB cpu app 5% · 1.3fps · .innocent.media 3%
+LAB cpu app 4% · 1.2fps · .innocent.media 3%
+LAB cpu app 6% · 1.2fps · .innocent.media 4%
+LAB cpu app 6% · 1.9fps · .innocent.media 4%
+LAB cpu app 5% · 1.4fps · .innocent.media 3%
+LAB cpu app 5% · 1.5fps · .innocent.media 4%
+LAB cpu app 6% · 1.2fps · .innocent.media 4%
+LAB cpu app 5% · 1.5fps · .innocent.media 4%
+LAB cpu app 5% · 1.3fps · .innocent.media 3%
+LAB cpu app 5% · 1.1fps · .innocent.media 3%
+LAB cpu app 21% · 15.1fps · .innocent.media 12% | 1.raster 5% | mali-cmar-backe 1% | binder 1%
+LAB cpu app 1% · 0.2fps · -
+LAB cpu app 2% · 0.2fps · -
