@@ -91,24 +91,11 @@ enum StringSetting {
   /// from per-stream decTryHw / decTryHwPlus toggles.
   omxDecoderMode(default_: 'auto'),
 
-  /// Phase 45 (audit refined, build 64): pipe-separated list of
-  /// storage roots to scan. Default = 'Internal storage' only. Stored
-  /// as `Internal storage|SD Card|USB Storage` etc.
-  scanFolders(default_: 'Internal storage'),
-
   /// Phase 45 (audit refined, build 64): pipe-separated list of file
   /// extensions to include in library scan. Each entry includes the
   /// leading dot (e.g. `.mp4|.mkv|.avi`). Empty = use the built-in
   /// default set defined in the UI.
   scanExtensions(default_: '.mp4|.mkv|.avi|.mov|.webm'),
-
-  /// Phase 45 (audit refined, build 64): pipe-separated list of video
-  /// codecs allowed for HW+ decoder.
-  hwPlusVideoCodecs(default_: 'H.264/AVC|H.265/HEVC'),
-
-  /// Phase 45 (audit refined, build 64): pipe-separated list of audio
-  /// codecs allowed for HW+ decoder.
-  hwPlusAudioCodecs(default_: 'AAC|MP3'),
 
   /// Which shortcut icons the player's quick row shows, as a pipe-separated
   /// list of `ShortcutItem` names.
@@ -172,10 +159,6 @@ enum IntSetting {
   /// non-zero, libmpv's `audio-delay` property is set on every play.
   audioDelay(default_: 0, min: -2000, max: 2000),
 
-  /// `bluetooth_audio_delay`: separate delay applied only when audio is
-  /// routed through Bluetooth. Many BT codecs introduce 150-300ms latency.
-  bluetoothAudioDelay(default_: 0, min: -2000, max: 2000),
-
   /// `subtitle_default_sync`: global subtitle delay in milliseconds.
   /// libmpv `sub-delay` property.
   subtitleDefaultSync(default_: 0, min: -10000, max: 10000),
@@ -183,10 +166,6 @@ enum IntSetting {
   /// `new_tagged_period`: number of days a video stays "NEW" in the
   /// folder grid after being added. Default 7 (matches MX Player).
   newTaggedPeriod(default_: 7, min: 0, max: 90),
-
-  /// `video_zoom_delay`: ms before a long-press-and-drag pinch zoom
-  /// activates. 0 = immediate.
-  videoZoomDelay(default_: 0, min: 0, max: 2000),
 
   /// Phase 45 (audit refined, build 63):
   /// `calibrate_hw_play_position`: HW decoder subtitle sync offset in

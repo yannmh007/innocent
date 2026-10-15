@@ -39,14 +39,14 @@ class PlayerNavigationScreen extends ConsumerWidget {
       appBar: AppBar(title: Text(AppStrings.of(context).navigationTitle)),
       body: ListView(
         children: [
-          const SettingsSectionHeader('Seek Bar'),
+          SettingsSectionHeader(AppStrings.of(context).pnSeekBar),
           _toggle(ref,
-              title: 'Show seek bar',
-              subtitle: 'Display the seek bar at the bottom of the player.',
+              title: AppStrings.of(context).pnShowSeekBar,
+              subtitle: AppStrings.of(context).pnShowSeekBarSub,
               setting: PlayerSetting.navShowSeekBar),
           _toggle(ref,
-              title: 'Seek bar preview',
-              subtitle: 'Show thumbnail preview while dragging the seek bar.',
+              title: AppStrings.of(context).pnSeekPreview,
+              subtitle: AppStrings.of(context).pnSeekPreviewSub,
               setting: PlayerSetting.navSeekBarPreview),
           // Audit fix (standard high-quality): wire seek interval to
           // the existing `doubleTapSeekSeconds` preference. The
@@ -56,37 +56,34 @@ class PlayerNavigationScreen extends ConsumerWidget {
             final current = ref
                 .watch(preferencesProvider)
                 .doubleTapSeekSeconds;
-            final label = '$current seconds';
+            final s = AppStrings.of(context);
+            final label = s.secondsCount(current);
+            const choices = <int>[5, 10, 15, 30, 60];
+            final options = [for (final n in choices) s.secondsCount(n)];
             return SettingsNavTile(
-              title: 'Seek interval',
-              subtitle:
-                  'Default seek for double-tap and on-screen forward/back. Currently: $label',
+              title: s.pnSeekInterval,
+              subtitle: s.pnSeekIntervalSub(label),
               onTap: () async {
                 final picked = await showSettingsListDialog(
                   context: context,
-                  title: 'Seek Interval',
-                  options: const [
-                    '5 seconds',
-                    '10 seconds',
-                    '15 seconds',
-                    '30 seconds',
-                    '60 seconds',
-                  ],
+                  title: s.pnSeekInterval,
+                  options: options,
                   currentValue: label,
                 );
                 if (picked == null) return;
-                final n = int.tryParse(picked.split(' ').first);
-                if (n == null) return;
+                final i = options.indexOf(picked);
+                if (i < 0) return;
+                final n = choices[i];
                 await ref
                     .read(preferencesProvider.notifier)
                     .setDoubleTapSeek(n);
               },
             );
           }),
-          const SettingsSectionHeader('Buttons'),
+          SettingsSectionHeader(AppStrings.of(context).pnButtons),
           _toggle(ref,
-              title: 'Show previous/next buttons',
-              subtitle: 'Display previous and next buttons on the player.',
+              title: AppStrings.of(context).pnShowPrevNext,
+              subtitle: AppStrings.of(context).pnShowPrevNextSub,
               setting: PlayerSetting.navShowPrevNext),
           // Audit fix (standard high-quality): wire forward/back
           // button behaviour to StringSetting.forwardBackButtonAction.
@@ -97,11 +94,11 @@ class PlayerNavigationScreen extends ConsumerWidget {
           //   seek60   → seek ±60 s
           // player_provider reads this and routes onNext / onPrevious.
           Builder(builder: (ctx) {
-            const optMap = <String, String>{
-              'Next / Previous video': 'nextPrev',
-              'Seek ±10 seconds': 'seek10',
-              'Seek ±30 seconds': 'seek30',
-              'Seek ±60 seconds': 'seek60',
+            final optMap = <String, String>{
+              AppStrings.of(context).pnNextPrev: 'nextPrev',
+              AppStrings.of(context).pnSeekPm(10): 'seek10',
+              AppStrings.of(context).pnSeekPm(30): 'seek30',
+              AppStrings.of(context).pnSeekPm(60): 'seek60',
             };
             final cur = ref
                 .watch(extraSettingsProvider)
@@ -109,15 +106,15 @@ class PlayerNavigationScreen extends ConsumerWidget {
             final curLabel = optMap.entries
                 .firstWhere((e) => e.value == cur,
                     orElse: () =>
-                        const MapEntry('Next / Previous video', 'nextPrev'))
+                        MapEntry(AppStrings.of(context).pnNextPrev, 'nextPrev'))
                 .key;
             return SettingsNavTile(
-              title: 'Forward / Backward buttons',
-              subtitle: 'What the on-screen ◀▶ buttons do. Currently: $curLabel',
+              title: AppStrings.of(context).pnFwdBack,
+              subtitle: AppStrings.of(context).pnFwdBackSub(curLabel),
               onTap: () async {
                 final picked = await showSettingsListDialog(
                   context: context,
-                  title: 'Forward / Backward Action',
+                  title: AppStrings.of(context).pnFwdBack,
                   options: optMap.keys.toList(),
                   currentValue: curLabel,
                 );

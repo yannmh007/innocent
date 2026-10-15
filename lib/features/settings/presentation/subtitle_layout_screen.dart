@@ -38,7 +38,7 @@ class SubtitleLayoutScreen extends ConsumerWidget {
       appBar: AppBar(title: Text(AppStrings.of(context).subtitleLayoutTitle)),
       body: ListView(
         children: [
-          const SettingsSectionHeader('Position'),
+          SettingsSectionHeader(AppStrings.of(context).slyPosition),
           // Audit fix (standard high-quality): wire to libmpv
           // `sub-pos` via `IntSetting.subtitleVerticalPos`. 0 = top,
           // 100 = bottom. Live-apply path picks up the change on
@@ -49,12 +49,12 @@ class SubtitleLayoutScreen extends ConsumerWidget {
                 .watch(extraSettingsProvider)
                 .getInt(IntSetting.subtitleVerticalPos);
             return SettingsNavTile(
-              title: 'Vertical position',
-              subtitle: 'Distance from the top, as a percentage. Currently: $cur%',
+              title: AppStrings.of(context).slyVertical,
+              subtitle: AppStrings.of(context).slyVerticalSub('$cur%'),
               onTap: () async {
                 final picked = await showSettingsSliderDialog(
                   context: context,
-                  title: 'Vertical Position',
+                  title: AppStrings.of(context).slyVertical,
                   currentValue: cur.toDouble(),
                   min: 0,
                   max: 100,
@@ -72,25 +72,25 @@ class SubtitleLayoutScreen extends ConsumerWidget {
           // IntSetting.subtitleHorizontalAlign. 0=left, 1=center,
           // 2=right. Applied live + on-open.
           Builder(builder: (ctx) {
-            const optMap = <String, int>{
-              'Left': 0,
-              'Center': 1,
-              'Right': 2,
+            final optMap = <String, int>{
+              AppStrings.of(context).slyLeft: 0,
+              AppStrings.of(context).slyCenter: 1,
+              AppStrings.of(context).slyRight: 2,
             };
             final cur = ref
                 .watch(extraSettingsProvider)
                 .getInt(IntSetting.subtitleHorizontalAlign);
             final curLabel = optMap.entries
                 .firstWhere((e) => e.value == cur,
-                    orElse: () => const MapEntry('Center', 1))
+                    orElse: () => MapEntry(AppStrings.of(context).slyCenter, 1))
                 .key;
             return SettingsNavTile(
-              title: 'Horizontal alignment',
-              subtitle: 'Currently: $curLabel',
+              title: AppStrings.of(context).slyHorizontal,
+              subtitle: AppStrings.of(context).slyCurrently(curLabel),
               onTap: () async {
                 final picked = await showSettingsListDialog(
                   context: context,
-                  title: 'Horizontal Alignment',
+                  title: AppStrings.of(context).slyHorizontal,
                   options: optMap.keys.toList(),
                   currentValue: curLabel,
                 );
@@ -103,18 +103,18 @@ class SubtitleLayoutScreen extends ConsumerWidget {
               },
             );
           }),
-          const SettingsSectionHeader('Spacing'),
+          SettingsSectionHeader(AppStrings.of(context).slySpacing),
           Builder(builder: (ctx) {
             final cur = ref
                 .watch(extraSettingsProvider)
                 .getInt(IntSetting.subtitleMarginX);
             return SettingsNavTile(
-              title: 'Left/Right padding',
-              subtitle: 'Pixels of horizontal margin. Currently: ${cur}px',
+              title: AppStrings.of(context).slyPadX,
+              subtitle: AppStrings.of(context).slyPadXSub('${cur}px'),
               onTap: () async {
                 final picked = await showSettingsSliderDialog(
                   context: context,
-                  title: 'Left/Right Padding',
+                  title: AppStrings.of(context).slyPadX,
                   currentValue: cur.toDouble(),
                   min: 0,
                   max: 200,
@@ -132,12 +132,12 @@ class SubtitleLayoutScreen extends ConsumerWidget {
                 .watch(extraSettingsProvider)
                 .getInt(IntSetting.subtitleMarginY);
             return SettingsNavTile(
-              title: 'Bottom margin',
-              subtitle: 'Pixels of bottom margin. Currently: ${cur}px',
+              title: AppStrings.of(context).slyPadY,
+              subtitle: AppStrings.of(context).slyPadYSub('${cur}px'),
               onTap: () async {
                 final picked = await showSettingsSliderDialog(
                   context: context,
-                  title: 'Bottom Margin',
+                  title: AppStrings.of(context).slyPadY,
                   currentValue: cur.toDouble(),
                   min: 0,
                   max: 200,
@@ -150,18 +150,18 @@ class SubtitleLayoutScreen extends ConsumerWidget {
               },
             );
           }),
-          const SettingsSectionHeader('Background'),
+          SettingsSectionHeader(AppStrings.of(context).slyBackground),
           _toggle(ref,
-              title: 'Show background',
+              title: AppStrings.of(context).slyShowBg,
               subtitle:
-                  'Display semi-transparent background behind subtitle text.',
+                  AppStrings.of(context).slyShowBgSub,
               setting: PlayerSetting.subLayoutShowBackground),
           Builder(builder: (ctx) {
-            const colorMap = <String, String>{
-              'Black (50% opacity)': '#80000000',
-              'Black (75% opacity)': '#BF000000',
-              'Dark gray': '#80303030',
-              'None': '',
+            final colorMap = <String, String>{
+              AppStrings.of(context).slyBlack50: '#80000000',
+              AppStrings.of(context).slyBlack75: '#BF000000',
+              AppStrings.of(context).slyDarkGray: '#80303030',
+              AppStrings.of(context).slyNone: '',
             };
             final cur = ref
                 .watch(extraSettingsProvider)
@@ -169,15 +169,15 @@ class SubtitleLayoutScreen extends ConsumerWidget {
             final curLabel = colorMap.entries
                 .firstWhere((e) => e.value == cur,
                     orElse: () =>
-                        const MapEntry('Black (50% opacity)', '#80000000'))
+                        MapEntry(AppStrings.of(context).slyBlack50, '#80000000'))
                 .key;
             return SettingsNavTile(
-              title: 'Background color',
-              subtitle: 'Active only when "Show background" is on. Currently: $curLabel',
+              title: AppStrings.of(context).slyBgColor,
+              subtitle: AppStrings.of(context).slyBgColorSub(curLabel),
               onTap: () async {
                 final picked = await showSettingsListDialog(
                   context: context,
-                  title: 'Background Color',
+                  title: AppStrings.of(context).slyBgColor,
                   options: colorMap.keys.toList(),
                   currentValue: curLabel,
                 );

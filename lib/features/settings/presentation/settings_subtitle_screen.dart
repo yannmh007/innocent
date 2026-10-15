@@ -46,16 +46,16 @@ class SettingsSubtitleScreen extends ConsumerWidget {
                 .watch(extraSettingsProvider)
                 .getStr(StringSetting.subtitleFolder);
             return SettingsNavTile(
-              title: 'Subtitle Folder',
+              title: AppStrings.of(context).ssFolder,
               subtitle: folder.isEmpty
-                  ? 'Only the same folder as the video'
+                  ? AppStrings.of(context).ssFolderSame
                   : folder,
               onTap: () async {
                 final picked = await showSettingsTextDialog(
                   context: context,
-                  title: 'Subtitle Folder',
+                  title: AppStrings.of(context).ssFolder,
                   currentValue: folder,
-                  hintText: 'e.g. /storage/emulated/0/Subtitles',
+                  hintText: AppStrings.of(context).ssFolderHint,
                 );
                 if (picked != null) {
                   await ref
@@ -68,8 +68,8 @@ class SettingsSubtitleScreen extends ConsumerWidget {
           // Phase 45 (audit): Character encoding. Maps display labels to
           // libmpv `sub-codepage` values. Empty string = auto-detect.
           Builder(builder: (ctx) {
-            const charsetMap = <String, String>{
-              'Auto detect': '',
+            final charsetMap = <String, String>{
+              AppStrings.of(context).ssAutoDetect: '',
               'UTF-8': 'UTF-8',
               'UTF-16': 'UTF-16',
               'ASCII': 'ASCII',
@@ -86,17 +86,17 @@ class SettingsSubtitleScreen extends ConsumerWidget {
             final currentLabel = charsetMap.entries
                 .firstWhere(
                   (e) => e.value == current,
-                  orElse: () => const MapEntry('Auto detect', ''),
+                  orElse: () => MapEntry(AppStrings.of(context).ssAutoDetect, ''),
                 )
                 .key;
             return SettingsNavTile(
-              title: 'Character encoding',
+              title: AppStrings.of(context).ssEncoding,
               subtitle:
-                  'Select character encoding of your subtitle file. Currently: $currentLabel',
+                  AppStrings.of(context).ssEncodingSub(currentLabel),
               onTap: () async {
                 final picked = await showSettingsListDialog(
                   context: context,
-                  title: 'Character Encoding',
+                  title: AppStrings.of(context).ssEncoding,
                   options: charsetMap.keys.toList(),
                   currentValue: currentLabel,
                 );
@@ -109,15 +109,15 @@ class SettingsSubtitleScreen extends ConsumerWidget {
           }),
           // Phase 45 (audit): Preferred subtitle language (ISO 639 code).
           Builder(builder: (ctx) {
-            const langMap = <String, String>{
-              'None': '',
-              'English': 'eng',
-              'Myanmar': 'mya',
-              'Japanese': 'jpn',
-              'Korean': 'kor',
-              'Chinese': 'chi',
-              'Thai': 'tha',
-              'Vietnamese': 'vie',
+            final langMap = <String, String>{
+              AppStrings.of(context).langNone: '',
+              AppStrings.of(context).langEnglish: 'eng',
+              AppStrings.of(context).langMyanmar: 'mya',
+              AppStrings.of(context).langJapanese: 'jpn',
+              AppStrings.of(context).langKorean: 'kor',
+              AppStrings.of(context).langChinese: 'chi',
+              AppStrings.of(context).langThai: 'tha',
+              AppStrings.of(context).langVietnamese: 'vie',
             };
             final current = ref
                 .watch(extraSettingsProvider)
@@ -125,17 +125,17 @@ class SettingsSubtitleScreen extends ConsumerWidget {
             final currentLabel = langMap.entries
                 .firstWhere(
                   (e) => e.value == current,
-                  orElse: () => const MapEntry('None', ''),
+                  orElse: () => MapEntry(AppStrings.of(context).langNone, ''),
                 )
                 .key;
             return SettingsNavTile(
-              title: 'Preferred subtitle language',
+              title: AppStrings.of(context).ssLanguage,
               subtitle:
-                  'Language of the subtitle track you want to use. Currently: $currentLabel',
+                  AppStrings.of(context).ssLanguageSub(currentLabel),
               onTap: () async {
                 final picked = await showSettingsListDialog(
                   context: context,
-                  title: 'Preferred Subtitle Language',
+                  title: AppStrings.of(context).ssLanguage,
                   options: langMap.keys.toList(),
                   currentValue: currentLabel,
                 );
@@ -152,13 +152,13 @@ class SettingsSubtitleScreen extends ConsumerWidget {
                 .watch(extraSettingsProvider)
                 .getInt(IntSetting.subtitleDefaultSync);
             return SettingsNavTile(
-              title: 'Default sync',
+              title: AppStrings.of(context).ssSync,
               subtitle:
-                  'Default time adjustment for subtitle synchronization. Currently: ${ms >= 0 ? "+" : ""}${ms}ms',
+                  AppStrings.of(context).ssSyncSub('${ms >= 0 ? "+" : ""}${ms}ms'),
               onTap: () async {
                 final picked = await showSettingsSliderDialog(
                   context: context,
-                  title: 'Default Sync',
+                  title: AppStrings.of(context).ssSync,
                   currentValue: ms / 1000.0,
                   min: -10.0,
                   max: 10.0,
@@ -183,13 +183,13 @@ class SettingsSubtitleScreen extends ConsumerWidget {
                 .watch(extraSettingsProvider)
                 .getInt(IntSetting.calibrateHwPlayPosition);
             return SettingsNavTile(
-              title: 'Sync for HW decoder',
+              title: AppStrings.of(context).ssHwSync,
               subtitle:
-                  'Compensate for HW decoder presentation latency. Currently ${hwSec >= 0 ? "+" : ""}${hwSec}s',
+                  AppStrings.of(context).ssHwSyncSub('${hwSec >= 0 ? "+" : ""}${hwSec}s'),
               onTap: () async {
                 final picked = await showSettingsSliderDialog(
                   context: context,
-                  title: 'Sync for HW Decoder',
+                  title: AppStrings.of(context).ssHwSync,
                   currentValue: hwSec.toDouble(),
                   min: -10,
                   max: 10,
@@ -206,75 +206,29 @@ class SettingsSubtitleScreen extends ConsumerWidget {
               },
             );
           }),
-          // Phase 45 (audit refined, build 63): MX Player V3 has
-          // `subtitle_show_hw` (force subtitle visibility during HW
-          // decode — some chipsets need this) and `subtitle_hw_accel`
-          // (use the GPU for subtitle compositing).
-          _toggle(ref,
-              title: 'Show subtitle during HW decode',
-              subtitle:
-                  'Force subtitles to render even with HW decoder. Helps on some Mediatek/Allwinner chipsets that drop subtitle frames during HW decode.',
-              setting: PlayerSetting.subtitleShowHw),
-          _toggle(ref,
-              title: 'Hardware-accelerated subtitle rendering',
-              subtitle:
-                  'Use the GPU to composite subtitle bitmaps. Reduces CPU load. Turn off if subtitles flicker.',
-              setting: PlayerSetting.subtitleHwAccel),
-          const SettingsSectionHeader('Appearance'),
+          SettingsSectionHeader(AppStrings.of(context).ssAppearance),
           SettingsNavTile(
-            title: 'Text',
+            title: AppStrings.of(context).ssText,
             subtitle:
-                'Subtitle text settings: font, size, color, border, etc.',
+                AppStrings.of(context).ssTextSub,
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const SubtitleTextScreen()),
             ),
           ),
           SettingsNavTile(
-            title: 'Layout',
+            title: AppStrings.of(context).ssLayout,
             subtitle:
-                'Subtitle layout settings: alignment, padding, background color.',
+                AppStrings.of(context).ssLayoutSub,
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const SubtitleLayoutScreen()),
             ),
           ),
-          // Phase 45 (audit): Font Folder for custom .ttf/.otf subtitle
-          // fonts. MX Player's `typeface_dir` setting.
-          Builder(builder: (ctx) {
-            final folder = ref
-                .watch(extraSettingsProvider)
-                .getStr(StringSetting.typefaceDir);
-            return SettingsNavTile(
-              title: 'Font Folder',
-              subtitle: folder.isEmpty
-                  ? 'Use system fonts'
-                  : folder,
-              onTap: () async {
-                final picked = await showSettingsTextDialog(
-                  context: context,
-                  title: 'Font Folder',
-                  subtitle: 'Folder containing .ttf/.otf files. Leave blank to use system fonts.',
-                  currentValue: folder,
-                  hintText: 'e.g. /storage/emulated/0/Fonts',
-                );
-                if (picked != null) {
-                  await ref
-                      .read(extraSettingsProvider.notifier)
-                      .setStr(StringSetting.typefaceDir, picked.trim());
-                }
-              },
-            );
-          }),
-          const SettingsSectionHeader('Text processing'),
+          SettingsSectionHeader(AppStrings.of(context).ssProcessing),
           _toggle(ref,
-              title: 'Italic effect',
+              title: AppStrings.of(context).ssItalic,
               subtitle:
-                  "Sentences that start with '/' (forward slash) will be displayed in italics.",
+                  AppStrings.of(context).ssItalicSub,
               setting: PlayerSetting.subtitleItalicEffect),
-          _toggle(ref,
-              title: 'Force LTR direction',
-              subtitle:
-                  'Force LTR (Left to Right) direction for RTL (Right to Left) subtitles.',
-              setting: PlayerSetting.subtitleForceLtr),
           const SizedBox(height: 24),
         ],
       ),

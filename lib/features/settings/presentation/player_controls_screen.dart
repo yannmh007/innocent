@@ -80,7 +80,7 @@ class PlayerControlsScreen extends ConsumerWidget {
               title: s.gtTap,
               subtitle: s.gtTapSub,
               setting: PlayerSetting.ctlTapToggle),
-          const SettingsSectionHeader('Lock'),
+          SettingsSectionHeader(AppStrings.of(context).pcLock),
           // Audit fix (standard high-quality): wire lock mode to
           // StringSetting.lockMode. Three behaviours:
           //   all      → hide controls + ignore gestures (default)
@@ -90,10 +90,10 @@ class PlayerControlsScreen extends ConsumerWidget {
           //              (most restrictive)
           // Player_provider reads lockMode when applying lock state.
           Builder(builder: (ctx) {
-            const optMap = <String, String>{
-              'Lock all (default)': 'all',
-              'Lock rotation only': 'rotation',
-              'Lock touch only': 'touch',
+            final optMap = <String, String>{
+              AppStrings.of(context).pcLockAll: 'all',
+              AppStrings.of(context).pcLockRotation: 'rotation',
+              AppStrings.of(context).pcLockTouch: 'touch',
             };
             final cur = ref
                 .watch(extraSettingsProvider)
@@ -101,15 +101,15 @@ class PlayerControlsScreen extends ConsumerWidget {
             final curLabel = optMap.entries
                 .firstWhere((e) => e.value == cur,
                     orElse: () =>
-                        const MapEntry('Lock all (default)', 'all'))
+                        MapEntry(AppStrings.of(context).pcLockAll, 'all'))
                 .key;
             return SettingsNavTile(
-              title: 'Lock mode',
-              subtitle: 'What "Lock" does on the player. Currently: $curLabel',
+              title: AppStrings.of(context).pcLockMode,
+              subtitle: AppStrings.of(context).pcLockModeSub(curLabel),
               onTap: () async {
                 final picked = await showSettingsListDialog(
                   context: context,
-                  title: 'Lock Mode',
+                  title: AppStrings.of(context).pcLockMode,
                   options: optMap.keys.toList(),
                   currentValue: curLabel,
                 );
@@ -123,8 +123,8 @@ class PlayerControlsScreen extends ConsumerWidget {
             );
           }),
           _toggle(ref,
-              title: 'Lock screen on rotation',
-              subtitle: 'Automatically lock screen when device rotates.',
+              title: AppStrings.of(context).pcLockOnRotation,
+              subtitle: AppStrings.of(context).pcLockOnRotationSub,
               setting: PlayerSetting.ctlLockOnRotation),
           const SizedBox(height: 24),
         ],

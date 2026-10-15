@@ -624,14 +624,11 @@ class AppStrings {
   String get resetSettingsTitle => _s('resetSettingsTitle');
   String get resetSettingsBody => _s('resetSettingsBody');
   String get settingsResetDone => _s('settingsResetDone');
-  String get clearFontCacheTitle => _s('clearFontCacheTitle');
-  String get fontCacheCleared => _s('fontCacheCleared');
   String get languageRestartNote => _s('languageRestartNote');
   String get exportFailed => _s('exportFailed');
   String get importFailed => _s('importFailed');
   String get noExportFile => _s('noExportFile');
   String get moreLanguagesOnWay => _s('moreLanguagesOnWay');
-  String get colorFormat => _s('colorFormat');
   String get screenTitle => _s('screenTitle');
   String get navigationTitle => _s('navigationTitle');
   String get controlsTitle => _s('controlsTitle');
@@ -639,7 +636,6 @@ class AppStrings {
   String get subtitleTextTitle => _s('subtitleTextTitle');
   String get subtitleLayoutTitle => _s('subtitleLayoutTitle');
   String get soonBadge => _s('soonBadge');
-  String get debugLogsExported => _s('debugLogsExported');
   String get findYourVideos => _s('findYourVideos');
   String get scanningVideos => _s('scanningVideos');
   String get errorLoadingFoldersPrefix => _s('errorLoadingFoldersPrefix');
@@ -1050,8 +1046,6 @@ class AppStrings {
   String get personalPlayerApp => _s('personalPlayerApp');
   String get storageManagement => _s('storageManagement');
   String get storageUsage => _s('storageUsage');
-  String get classicThemes => _s('classicThemes');
-  String get noInternetThemes => _s('noInternetThemes');
   String get themeApplied => _s('themeApplied');
   String get openSourceLicenses => _s('openSourceLicenses');
   String get personalProject => _s('personalProject');
@@ -1168,22 +1162,6 @@ class AppStrings {
   String get alignCenter => _s('alignCenter');
   String get alignRight => _s('alignRight');
   String get subImproveStrokeDesc => _s('subImproveStrokeDesc');
-  String get subVerticalPos => _s('subVerticalPos');
-  String get subVerticalPosTitle => _s('subVerticalPosTitle');
-  String get subVerticalPosDesc => _s('subVerticalPosDesc');
-  String get subHorizontalAlign => _s('subHorizontalAlign');
-  String get subHorizontalAlignTitle => _s('subHorizontalAlignTitle');
-  String get subSidePadding => _s('subSidePadding');
-  String get subSidePaddingTitle => _s('subSidePaddingTitle');
-  String get subSidePaddingDesc => _s('subSidePaddingDesc');
-  String get subBottomMargin => _s('subBottomMargin');
-  String get subBottomMarginTitle => _s('subBottomMarginTitle');
-  String get subBottomMarginDesc => _s('subBottomMarginDesc');
-  String get subShowBackground => _s('subShowBackground');
-  String get subBgBlack50 => _s('subBgBlack50');
-  String get subBgBlack75 => _s('subBgBlack75');
-  String get subBgDarkGray => _s('subBgDarkGray');
-  String get subBgColorActiveWhen => _s('subBgColorActiveWhen');
   String get currently => _s('currently');
   String get shortcuts => _s('shortcuts');
   String get unknownTab => _s('unknownTab');
@@ -1952,6 +1930,296 @@ class AppStrings {
   String songsCount(int n) => _count('songsCount', n);
   String minutesCount(int n) => _count('minutesCount', n);
 
+  String get psTitleBar => _s('psTitleBar');
+  String get psShowTitle => _s('psShowTitle');
+  String get psShowTitleSub => _s('psShowTitleSub');
+  String get psShowClock => _s('psShowClock');
+  String get psShowClockSub => _s('psShowClockSub');
+  String get psShowSourceUrl => _s('psShowSourceUrl');
+  String get psShowSourceUrlSub => _s('psShowSourceUrlSub');
+  String get psLayout => _s('psLayout');
+  String get psToolbarPosition => _s('psToolbarPosition');
+  String psToolbarPositionSub(Object v) => _s('psToolbarPositionSub').replaceFirst('{v}', '$v');
+  String get psToolbarTop => _s('psToolbarTop');
+  String get psToolbarBottom => _s('psToolbarBottom');
+
+  String get pssOrientation => _s('pssOrientation');
+  String get pssFollowSystem => _s('pssFollowSystem');
+  String get pssLandscape => _s('pssLandscape');
+  String get pssLandscapeReverse => _s('pssLandscapeReverse');
+  String get pssPortrait => _s('pssPortrait');
+  String get pssDefaultOrientation => _s('pssDefaultOrientation');
+  String pssDefaultOrientationSub(Object v) => _s('pssDefaultOrientationSub').replaceFirst('{v}', '$v');
+  String get pssAutoRotation => _s('pssAutoRotation');
+  String get pssAutoRotationSub => _s('pssAutoRotationSub');
+  String get pssDisplay => _s('pssDisplay');
+  String get pssFullScreen => _s('pssFullScreen');
+  String get pssFullScreenSub => _s('pssFullScreenSub');
+  String get pssKeepOn => _s('pssKeepOn');
+  String get pssKeepOnSub => _s('pssKeepOnSub');
+  String get pssBrightness => _s('pssBrightness');
+  String get pssAutoBrightness => _s('pssAutoBrightness');
+  String get pssAutoBrightnessSub => _s('pssAutoBrightnessSub');
+  String get pssDefaultBrightness => _s('pssDefaultBrightness');
+  String pssDefaultBrightnessSub(Object v) => _s('pssDefaultBrightnessSub').replaceFirst('{v}', '$v');
+
+  String get pcLock => _s('pcLock');
+  String get pcLockAll => _s('pcLockAll');
+  String get pcLockRotation => _s('pcLockRotation');
+  String get pcLockTouch => _s('pcLockTouch');
+  String get pcLockMode => _s('pcLockMode');
+  String pcLockModeSub(Object v) => _s('pcLockModeSub').replaceFirst('{v}', '$v');
+  String get pcLockOnRotation => _s('pcLockOnRotation');
+  String get pcLockOnRotationSub => _s('pcLockOnRotationSub');
+
+  String secondsCount(int n) => _count('secondsCount', n);
+  String get pnSeekBar => _s('pnSeekBar');
+  String get pnShowSeekBar => _s('pnShowSeekBar');
+  String get pnShowSeekBarSub => _s('pnShowSeekBarSub');
+  String get pnSeekPreview => _s('pnSeekPreview');
+  String get pnSeekPreviewSub => _s('pnSeekPreviewSub');
+  String get pnSeekInterval => _s('pnSeekInterval');
+  String pnSeekIntervalSub(Object v) => _s('pnSeekIntervalSub').replaceFirst('{v}', '$v');
+  String get pnButtons => _s('pnButtons');
+  String get pnShowPrevNext => _s('pnShowPrevNext');
+  String get pnShowPrevNextSub => _s('pnShowPrevNextSub');
+  String get pnNextPrev => _s('pnNextPrev');
+  String pnSeekPm(Object v) => _s('pnSeekPm').replaceFirst('{v}', '$v');
+  String get pnFwdBack => _s('pnFwdBack');
+  String pnFwdBackSub(Object v) => _s('pnFwdBackSub').replaceFirst('{v}', '$v');
+
+  String get spInterface => _s('spInterface');
+  String get spScreenSub => _s('spScreenSub');
+  String get spControlsSub => _s('spControlsSub');
+  String get spNavigationSub => _s('spNavigationSub');
+  String get spDoubleBack => _s('spDoubleBack');
+  String get spDoubleBackSub => _s('spDoubleBackSub');
+  String get spQuickZoom => _s('spQuickZoom');
+  String get spQuickZoomSub => _s('spQuickZoomSub');
+  String get spPinControls => _s('spPinControls');
+  String get spPinControlsSub => _s('spPinControlsSub');
+  String get spHideDelay => _s('spHideDelay');
+  String spHideDelaySub(Object v) => _s('spHideDelaySub').replaceFirst('{v}', '$v');
+  String get spPlayback => _s('spPlayback');
+  String get spResume => _s('spResume');
+  String get spResumeAsk => _s('spResumeAsk');
+  String get spResumeAlways => _s('spResumeAlways');
+  String get spResumeNever => _s('spResumeNever');
+  String spResumeSub(Object v) => _s('spResumeSub').replaceFirst('{v}', '$v');
+  String get spResumeFirst => _s('spResumeFirst');
+  String get spResumeFirstSub => _s('spResumeFirstSub');
+  String get spDefaultSpeed => _s('spDefaultSpeed');
+  String get spRemember => _s('spRemember');
+  String get spRememberSub => _s('spRememberSub');
+  String get spBackToList => _s('spBackToList');
+  String get spBackToListSub => _s('spBackToListSub');
+  String get spPreviewSeek => _s('spPreviewSeek');
+  String get spPreviewSeekSub => _s('spPreviewSeekSub');
+  String get spPreviewSeekNet => _s('spPreviewSeekNet');
+  String get spPreviewSeekNetSub => _s('spPreviewSeekNetSub');
+  String get spFastSeek => _s('spFastSeek');
+  String get spFastSeekSub => _s('spFastSeekSub');
+  String get spPlayAlone => _s('spPlayAlone');
+  String get spPlayAloneSub => _s('spPlayAloneSub');
+  String get spMediaButtons => _s('spMediaButtons');
+  String get spMediaButtonsSub => _s('spMediaButtonsSub');
+  String get spNextPrevFf => _s('spNextPrevFf');
+  String get spNextPrevFfSub => _s('spNextPrevFfSub');
+  String get spTogglePlay => _s('spTogglePlay');
+  String get spTogglePlaySub => _s('spTogglePlaySub');
+  String get spSmartPrev => _s('spSmartPrev');
+  String get spSmartPrevSub => _s('spSmartPrevSub');
+  String get spSuppressError => _s('spSuppressError');
+  String get spSuppressErrorSub => _s('spSuppressErrorSub');
+  String get spCustomPip => _s('spCustomPip');
+  String get spCustomPipSub => _s('spCustomPipSub');
+  String get spBackground => _s('spBackground');
+  String get spBgMode => _s('spBgMode');
+  String spBgModeSub(Object v) => _s('spBgModeSub').replaceFirst('{v}', '$v');
+  String get spBgPip => _s('spBgPip');
+  String get spBgPlay => _s('spBgPlay');
+  String get spBgStop => _s('spBgStop');
+  String get spBgAudio => _s('spBgAudio');
+  String get spBgAudioSub => _s('spBgAudioSub');
+  String get spMisc => _s('spMisc');
+  String get spLimitResize => _s('spLimitResize');
+  String get spLimitResizeSub => _s('spLimitResizeSub');
+  String get spLoadingCircle => _s('spLoadingCircle');
+
+  String daysCount(int n) => _count('daysCount', n);
+  String get slAppearance => _s('slAppearance');
+  String get slFloating => _s('slFloating');
+  String get slFloatingSub => _s('slFloatingSub');
+  String get slNewPeriod => _s('slNewPeriod');
+  String slNewPeriodSub(Object v) => _s('slNewPeriodSub').replaceFirst('{v}', '$v');
+  String get slScan => _s('slScan');
+  String get slExtensions => _s('slExtensions');
+  String slExtensionsOn(int n) => _count('slExtensionsOn', n);
+  String get slNomedia => _s('slNomedia');
+  String get slNomediaSub => _s('slNomediaSub');
+  String get slShowHidden => _s('slShowHidden');
+  String get slShowHiddenSub => _s('slShowHiddenSub');
+  String get slSafTitle => _s('slSafTitle');
+  String slSafGranted(Object v) => _s('slSafGranted').replaceFirst('{v}', '$v');
+  String get slSafBlocked => _s('slSafBlocked');
+  String get slSafGrant => _s('slSafGrant');
+  String slSafNotNeeded(Object v) => _s('slSafNotNeeded').replaceFirst('{v}', '$v');
+  String get slSafGeneric => _s('slSafGeneric');
+  String get slSafNone => _s('slSafNone');
+  String slSafEmpty(Object v) => _s('slSafEmpty').replaceFirst('{v}', '$v');
+  String slSafFound(Object v, int n) => _count('slSafFound', n).replaceFirst('{v}', '$v');
+  String get slSafClear => _s('slSafClear');
+  String slSafClearSub(int n) => _count('slSafClearSub', n);
+  String get slSafCleared => _s('slSafCleared');
+
+  String get langNone => _s('langNone');
+  String get langEnglish => _s('langEnglish');
+  String get langJapanese => _s('langJapanese');
+  String get langKorean => _s('langKorean');
+  String get langChinese => _s('langChinese');
+  String get langMyanmar => _s('langMyanmar');
+  String get langThai => _s('langThai');
+  String get langHindi => _s('langHindi');
+  String get langVietnamese => _s('langVietnamese');
+  String get saAuto => _s('saAuto');
+  String get saSpeaker => _s('saSpeaker');
+  String get saHeadphones => _s('saHeadphones');
+  String get saBluetooth => _s('saBluetooth');
+  String get saOutput => _s('saOutput');
+  String get saBoost => _s('saBoost');
+  String get saBoostSub => _s('saBoostSub');
+  String get saLoudness => _s('saLoudness');
+  String get saLoudnessSub => _s('saLoudnessSub');
+  String get saSystemVolume => _s('saSystemVolume');
+  String get saSystemVolumeSub => _s('saSystemVolumeSub');
+  String get saPauseHeadset => _s('saPauseHeadset');
+  String get saPauseHeadsetSub => _s('saPauseHeadsetSub');
+  String get saFadeStart => _s('saFadeStart');
+  String get saFadeSeek => _s('saFadeSeek');
+  String get saEffects => _s('saEffects');
+  String get saEffectsSub => _s('saEffectsSub');
+  String get saPassthrough => _s('saPassthrough');
+  String get saPassthroughSub => _s('saPassthroughSub');
+  String get saLanguage => _s('saLanguage');
+  String saLanguageSub(Object v) => _s('saLanguageSub').replaceFirst('{v}', '$v');
+  String get saDelay => _s('saDelay');
+  String saDelaySub(Object v) => _s('saDelaySub').replaceFirst('{v}', '$v');
+
+  String get ssFolder => _s('ssFolder');
+  String get ssFolderSame => _s('ssFolderSame');
+  String get ssFolderHint => _s('ssFolderHint');
+  String get ssAutoDetect => _s('ssAutoDetect');
+  String get ssEncoding => _s('ssEncoding');
+  String ssEncodingSub(Object v) => _s('ssEncodingSub').replaceFirst('{v}', '$v');
+  String get ssLanguage => _s('ssLanguage');
+  String ssLanguageSub(Object v) => _s('ssLanguageSub').replaceFirst('{v}', '$v');
+  String get ssSync => _s('ssSync');
+  String ssSyncSub(Object v) => _s('ssSyncSub').replaceFirst('{v}', '$v');
+  String get ssHwSync => _s('ssHwSync');
+  String ssHwSyncSub(Object v) => _s('ssHwSyncSub').replaceFirst('{v}', '$v');
+  String get ssAppearance => _s('ssAppearance');
+  String get ssText => _s('ssText');
+  String get ssTextSub => _s('ssTextSub');
+  String get ssLayout => _s('ssLayout');
+  String get ssLayoutSub => _s('ssLayoutSub');
+  String get ssProcessing => _s('ssProcessing');
+  String get ssItalic => _s('ssItalic');
+  String get ssItalicSub => _s('ssItalicSub');
+
+  String get slyPosition => _s('slyPosition');
+  String get slyVertical => _s('slyVertical');
+  String slyVerticalSub(Object v) => _s('slyVerticalSub').replaceFirst('{v}', '$v');
+  String get slyLeft => _s('slyLeft');
+  String get slyCenter => _s('slyCenter');
+  String get slyRight => _s('slyRight');
+  String get slyHorizontal => _s('slyHorizontal');
+  String slyCurrently(Object v) => _s('slyCurrently').replaceFirst('{v}', '$v');
+  String get slySpacing => _s('slySpacing');
+  String get slyPadX => _s('slyPadX');
+  String slyPadXSub(Object v) => _s('slyPadXSub').replaceFirst('{v}', '$v');
+  String get slyPadY => _s('slyPadY');
+  String slyPadYSub(Object v) => _s('slyPadYSub').replaceFirst('{v}', '$v');
+  String get slyBackground => _s('slyBackground');
+  String get slyShowBg => _s('slyShowBg');
+  String get slyShowBgSub => _s('slyShowBgSub');
+  String get slyBlack50 => _s('slyBlack50');
+  String get slyBlack75 => _s('slyBlack75');
+  String get slyDarkGray => _s('slyDarkGray');
+  String get slyNone => _s('slyNone');
+  String get slyBgColor => _s('slyBgColor');
+  String slyBgColorSub(Object v) => _s('slyBgColorSub').replaceFirst('{v}', '$v');
+
+  String get sdHw => _s('sdHw');
+  String get sdAutoDefault => _s('sdAutoDefault');
+  String get sdNeverHw => _s('sdNeverHw');
+  String get sdLocalOnly => _s('sdLocalOnly');
+  String get sdAlwaysHw => _s('sdAlwaysHw');
+  String get sdStrategy => _s('sdStrategy');
+  String get sdHwPlusLocal => _s('sdHwPlusLocal');
+  String get sdHwPlusLocalSub => _s('sdHwPlusLocalSub');
+  String get sdHwPlusNet => _s('sdHwPlusNet');
+  String get sdHwPlusNetSub => _s('sdHwPlusNetSub');
+  String get sdTryHw => _s('sdTryHw');
+  String get sdTryHwSub => _s('sdTryHwSub');
+  String get sdTryHwPlus => _s('sdTryHwPlus');
+  String get sdTryHwPlusSub => _s('sdTryHwPlusSub');
+  String get sdSw => _s('sdSw');
+  String get sdSwLocal => _s('sdSwLocal');
+  String get sdSwLocalSub => _s('sdSwLocalSub');
+  String get sdSwNet => _s('sdSwNet');
+  String get sdSwNetSub => _s('sdSwNetSub');
+  String get sdAutoRecommended => _s('sdAutoRecommended');
+  String get sdCores => _s('sdCores');
+  String sdCoresSub(Object v) => _s('sdCoresSub').replaceFirst('{v}', '$v');
+  String get sdSpeedup => _s('sdSpeedup');
+  String get sdSpeedupSub => _s('sdSpeedupSub');
+  String get sdGeneral => _s('sdGeneral');
+  String get sdEfficient => _s('sdEfficient');
+  String get sdEfficientSub => _s('sdEfficientSub');
+  String get sdDeinterlace => _s('sdDeinterlace');
+  String get sdDeinterlaceSub => _s('sdDeinterlaceSub');
+
+  String get sgUserAgent => _s('sgUserAgent');
+  String get sgUserAgentDefault => _s('sgUserAgentDefault');
+  String get sgUserAgentSub => _s('sgUserAgentSub');
+  String get sgUserAgentHint => _s('sgUserAgentHint');
+  String get sgQuit => _s('sgQuit');
+  String get sgQuitSub => _s('sgQuitSub');
+  String get sgPrivacy => _s('sgPrivacy');
+  String get sgPrivacySub => _s('sgPrivacySub');
+  String get sgFullAccess => _s('sgFullAccess');
+  String get sgFullAccessSub => _s('sgFullAccessSub');
+  String get sgEdit => _s('sgEdit');
+  String get sgAllowEdit => _s('sgAllowEdit');
+  String get sgAllowEditSub => _s('sgAllowEditSub');
+  String get sgDeleteSubs => _s('sgDeleteSubs');
+  String get sgUserData => _s('sgUserData');
+  String get sgClearHistory => _s('sgClearHistory');
+  String get sgClearHistorySub => _s('sgClearHistorySub');
+  String get sgClearThumbs => _s('sgClearThumbs');
+  String get sgClearThumbsSub => _s('sgClearThumbsSub');
+  String get sgCacheThumbs => _s('sgCacheThumbs');
+  String get sgBackup => _s('sgBackup');
+  String get sgReset => _s('sgReset');
+  String get sgResetSub => _s('sgResetSub');
+  String get sgExport => _s('sgExport');
+  String get sgExportSub => _s('sgExportSub');
+  String get sgImport => _s('sgImport');
+  String get sgImportSub => _s('sgImportSub');
+
+  String get sdvDebug => _s('sdvDebug');
+  String get sdvBuffer => _s('sdvBuffer');
+  String get sdvBufferSub => _s('sdvBufferSub');
+  String get sdvDecoder => _s('sdvDecoder');
+  String get sdvDecoderSub => _s('sdvDecoderSub');
+  String get sdvFps => _s('sdvFps');
+  String get sdvFpsSub => _s('sdvFpsSub');
+  String get sdvExperimental => _s('sdvExperimental');
+  String get sdvNoHw => _s('sdvNoHw');
+  String get sdvNoHwSub => _s('sdvNoHwSub');
+  String get sdvResetAll => _s('sdvResetAll');
+  String get sdvResetAllSub => _s('sdvResetAllSub');
+
   static const Map<String, Map<String, String>> _byLocale =
       <String, Map<String, String>>{
     'en': _en,
@@ -2047,22 +2315,6 @@ class AppStrings {
     'subBottomMargins': 'Bottom margins',
     'subBottomMarginsTitle': 'Bottom Margins',
     'subImproveStroke': 'Improve stroke rendering',
-    'subVerticalPos': 'Vertical position',
-    'subVerticalPosTitle': 'Vertical Position',
-    'subVerticalPosDesc': 'Distance from the top, as a percentage.',
-    'subHorizontalAlign': 'Horizontal alignment',
-    'subHorizontalAlignTitle': 'Horizontal Alignment',
-    'subSidePadding': 'Left/Right padding',
-    'subSidePaddingTitle': 'Left/Right Padding',
-    'subSidePaddingDesc': 'Pixels of horizontal margin.',
-    'subBottomMargin': 'Bottom margin',
-    'subBottomMarginTitle': 'Bottom Margin',
-    'subBottomMarginDesc': 'Pixels of bottom margin.',
-    'subShowBackground': 'Show background',
-    'subBgBlack50': 'Black (50% opacity)',
-    'subBgBlack75': 'Black (75% opacity)',
-    'subBgDarkGray': 'Dark gray',
-    'subBgColorActiveWhen': 'Active only when "Show background" is on.',
     'currently': 'Currently',
 
     // --- Video Hub: age gate / library ---
@@ -2754,8 +3006,6 @@ class AppStrings {
     'resetSettingsTitle': 'Reset settings?',
     'resetSettingsBody': 'This will restore all settings to their default values.',
     'settingsResetDone': 'Settings reset to defaults',
-    'clearFontCacheTitle': 'Clear Font Cache?',
-    'fontCacheCleared': 'Font cache cleared',
     'languageRestartNote': 'Language will change on next app restart',
     'exportedTo': 'Exported to {path}',
     'exportFailed': 'Export failed',
@@ -2763,7 +3013,6 @@ class AppStrings {
     'importedFrom': 'Imported settings from {path}',
     'noExportFile': 'No exported settings file found. Use Export first.',
     'moreLanguagesOnWay': 'More languages are on the way.',
-    'colorFormat': 'Color Format',
     'screenTitle': 'Screen',
     'navigationTitle': 'Navigation',
     'controlsTitle': 'Controls',
@@ -2771,7 +3020,6 @@ class AppStrings {
     'subtitleTextTitle': 'Subtitle Text',
     'subtitleLayoutTitle': 'Subtitle Layout',
     'soonBadge': 'SOON',
-    'debugLogsExported': 'Debug logs exported',
     'findYourVideos': 'Find your videos',
     'scanningVideos': 'Scanning videos…',
     'errorLoadingFoldersPrefix': 'Error loading folders',
@@ -3160,8 +3408,6 @@ class AppStrings {
     'personalPlayerApp': 'Personal video player app.',
     'storageManagement': 'Storage management',
     'storageUsage': 'Storage Usage',
-    'classicThemes': 'Classic Themes',
-    'noInternetThemes': 'No internet connection. Tap to connect for fresh themes.',
     'themeApplied': 'Theme applied',
     'openSourceLicenses': 'Open source licenses',
     'personalProject': 'A personal Flutter project for learning and private use.',
@@ -3666,6 +3912,289 @@ class AppStrings {
     'songsCountOne': '{n} song',
     'minutesCount': '{n} minutes',
     'minutesCountOne': '{n} minute',
+    'psTitleBar': 'Title Bar',
+    'psShowTitle': 'Show title',
+    'psShowTitleSub': 'Display video title on the player screen.',
+    'psShowClock': 'Show system clock',
+    'psShowClockSub': 'Display current time on the player screen.',
+    'psShowSourceUrl': 'Show source URL',
+    'psShowSourceUrlSub': 'Display source URL/path for network play.',
+    'psLayout': 'Layout',
+    'psToolbarPosition': 'Toolbar position',
+    'psToolbarPositionSub': 'Where the title bar sits on the player. Currently: {v}',
+    'psToolbarTop': 'Top (default)',
+    'psToolbarBottom': 'Bottom (within thumb reach)',
+    'pssOrientation': 'Orientation',
+    'pssFollowSystem': 'Follow system',
+    'pssLandscape': 'Landscape',
+    'pssLandscapeReverse': 'Landscape (reverse)',
+    'pssPortrait': 'Portrait',
+    'pssDefaultOrientation': 'Default orientation',
+    'pssDefaultOrientationSub': 'Pin the player\'s orientation. "Follow system" goes by Auto rotation below. Currently: {v}',
+    'pssAutoRotation': 'Auto rotation',
+    'pssAutoRotationSub': 'Rotate the screen as you turn the phone.',
+    'pssDisplay': 'Display',
+    'pssFullScreen': 'Full screen',
+    'pssFullScreenSub': 'Hide the status bar and navigation bar during playback.',
+    'pssKeepOn': 'Keep screen on',
+    'pssKeepOnSub': 'Keep the screen from turning off during playback.',
+    'pssBrightness': 'Brightness',
+    'pssAutoBrightness': 'Auto brightness',
+    'pssAutoBrightnessSub': 'Use the phone\'s own brightness.',
+    'pssDefaultBrightness': 'Default brightness',
+    'pssDefaultBrightnessSub': 'Brightness for a new video (each video remembers its own). Currently: {v}',
+    'pcLock': 'Lock',
+    'pcLockAll': 'Lock all (default)',
+    'pcLockRotation': 'Lock rotation only',
+    'pcLockTouch': 'Lock touch only',
+    'pcLockMode': 'Lock mode',
+    'pcLockModeSub': 'What Lock does on the player. Currently: {v}',
+    'pcLockOnRotation': 'Lock screen on rotation',
+    'pcLockOnRotationSub': 'Lock the screen when the phone rotates.',
+    'secondsCount': '{n} seconds',
+    'secondsCountOne': '{n} second',
+    'pnSeekBar': 'Seek Bar',
+    'pnShowSeekBar': 'Show seek bar',
+    'pnShowSeekBarSub': 'Display the seek bar at the bottom of the player.',
+    'pnSeekPreview': 'Seek bar preview',
+    'pnSeekPreviewSub': 'Show a thumbnail while dragging the seek bar.',
+    'pnSeekInterval': 'Seek interval',
+    'pnSeekIntervalSub': 'How far a double tap and the on-screen forward/back buttons jump. Currently: {v}',
+    'pnButtons': 'Buttons',
+    'pnShowPrevNext': 'Show previous/next buttons',
+    'pnShowPrevNextSub': 'Display previous and next buttons on the player.',
+    'pnNextPrev': 'Next / Previous video',
+    'pnSeekPm': 'Seek ±{v} seconds',
+    'pnFwdBack': 'Forward / Backward buttons',
+    'pnFwdBackSub': 'What the on-screen ◀▶ buttons do. Currently: {v}',
+    'spInterface': 'Interface',
+    'spScreenSub': 'Orientation, full screen, brightness and more',
+    'spControlsSub': 'Touch, gestures, lock mode and more',
+    'spNavigationSub': 'Seeking, forward/back buttons and more',
+    'spDoubleBack': 'Double-tap the back button',
+    'spDoubleBackSub': 'Press Back twice to close the player.',
+    'spQuickZoom': 'Quick zoom',
+    'spQuickZoomSub': 'Skip the zoom steps between 100% and fit to screen (150%, 200%…).',
+    'spPinControls': 'Pin controls (always visible)',
+    'spPinControlsSub': 'The player controls never hide by themselves. Off by default.',
+    'spHideDelay': 'Controls auto-hide delay',
+    'spHideDelaySub': 'How long the controls stay after the last touch. Currently: {v}',
+    'spPlayback': 'Playback',
+    'spResume': 'Resume',
+    'spResumeAsk': 'Ask every time',
+    'spResumeAlways': 'Always (Resume)',
+    'spResumeNever': 'Never (Start over)',
+    'spResumeSub': 'Whether to carry on from where you stopped. Currently: {v}',
+    'spResumeFirst': 'Resume only the first file',
+    'spResumeFirstSub': 'Only the first file carries on; the next ones start from the beginning.',
+    'spDefaultSpeed': 'Default playback speed',
+    'spRemember': 'Remember selections',
+    'spRememberSub': 'Remember each file\'s audio track, subtitle track and decoder.',
+    'spBackToList': 'Back to list',
+    'spBackToListSub': 'Return to the list when playback ends.',
+    'spPreviewSeek': 'Preview while seeking',
+    'spPreviewSeekSub': 'Show a picture of where you are moving to.',
+    'spPreviewSeekNet': 'Preview while seeking (network)',
+    'spPreviewSeekNetSub': 'Show the preview for network videos too.',
+    'spFastSeek': 'Fast seeking',
+    'spFastSeekSub': 'Jump to the nearest key frame instead of the exact point (HW+ and SW decoders).',
+    'spPlayAlone': 'Play alone',
+    'spPlayAloneSub': 'Pause other players while this one plays, and pause here when another starts or a call comes in.',
+    'spMediaButtons': 'Media buttons',
+    'spMediaButtonsSub': 'Answer the media buttons of a headset, Bluetooth and the like.',
+    'spNextPrevFf': 'Next/Prev → Fast forward/Rewind',
+    'spNextPrevFfSub': 'Use the Next and Previous media buttons to fast-forward and rewind.',
+    'spTogglePlay': 'Toggle playback with play button',
+    'spTogglePlaySub': 'Play pauses as well as plays. Only for phones whose play button misbehaves.',
+    'spSmartPrev': 'Smart previous button',
+    'spSmartPrevSub': 'Previous goes back to the start of this video, or to the previous one when you are near the start.',
+    'spSuppressError': 'Suppress error message',
+    'spSuppressErrorSub': 'When a video will not load, go on to the next one without an error message.',
+    'spCustomPip': 'Use the custom pop-up player',
+    'spCustomPipSub': 'A pop-up you can move and resize, instead of Android\'s picture-in-picture.',
+    'spBackground': 'Background Play',
+    'spBgMode': 'Background / PiP',
+    'spBgModeSub': 'What the player does when you switch to another app. Currently: {v}',
+    'spBgPip': 'Picture-in-picture',
+    'spBgPlay': 'Play in background',
+    'spBgStop': 'Stop',
+    'spBgAudio': 'Background play (audio)',
+    'spBgAudioSub': 'Keep audio files playing in the background.',
+    'spMisc': 'Miscellaneous',
+    'spLimitResize': 'Limit video resizing',
+    'spLimitResizeSub': 'Do not enlarge a video past its own size (HW decoder only).',
+    'spLoadingCircle': 'Loading circle animation',
+    'daysCount': '{n} days',
+    'daysCountOne': '{n} day',
+    'slAppearance': 'Appearance',
+    'slFloating': 'Floating button',
+    'slFloatingSub': 'A button in the bottom-right corner that plays what you played last.',
+    'slNewPeriod': 'Period tagged as "NEW"',
+    'slNewPeriodSub': '"NEW" shows on a file added within this period. Currently: {v}',
+    'slScan': 'Scan',
+    'slExtensions': 'File extensions',
+    'slExtensionsOn': '{n} extensions on',
+    'slExtensionsOnOne': '{n} extension on',
+    'slNomedia': 'Recognize .nomedia',
+    'slNomediaSub': 'Leave out a folder\'s files when it, or a folder above it, holds a ".nomedia" file.',
+    'slShowHidden': 'Show hidden files and folders',
+    'slShowHiddenSub': 'Show folders and files whose names start with "." (dot).',
+    'slSafTitle': 'Grant access to restricted folders',
+    'slSafGranted': 'Granted: {v}. Tap to add another folder.',
+    'slSafBlocked': 'Android 13 and later keep Android/data closed here; Innocent opens it through ADB instead (below).',
+    'slSafGrant': 'Grant Android/data (Telegram\'s downloads, say) to see its videos in the Video tab, and turn on "Show hidden files and folders". A reinstall clears the grant.',
+    'slSafNotNeeded': 'Not needed on Android {v}: hidden folders are read directly. Just turn on "Show hidden files and folders".',
+    'slSafGeneric': 'See the videos inside Android/data and other restricted folders. Also turn on "Show hidden files and folders".',
+    'slSafNone': 'No folder was granted (cancelled, or blocked by Android).',
+    'slSafEmpty': 'Granted "{v}", but there are no videos in it. Android 13 and later usually block Android/data itself; use ADB for it.',
+    'slSafFound': 'Granted "{v}": {n} videos found.',
+    'slSafFoundOne': 'Granted "{v}": {n} video found.',
+    'slSafClear': 'Clear granted folders',
+    'slSafClearSub': 'Revoke all {n} granted folders.',
+    'slSafClearSubOne': 'Revoke the granted folder.',
+    'slSafCleared': 'Granted folders cleared',
+    'langNone': 'None',
+    'langEnglish': 'English',
+    'langJapanese': 'Japanese',
+    'langKorean': 'Korean',
+    'langChinese': 'Chinese',
+    'langMyanmar': 'Myanmar',
+    'langThai': 'Thai',
+    'langHindi': 'Hindi',
+    'langVietnamese': 'Vietnamese',
+    'saAuto': 'Auto (follow system)',
+    'saSpeaker': 'Speaker',
+    'saHeadphones': 'Headphones',
+    'saBluetooth': 'Bluetooth',
+    'saOutput': 'Audio output',
+    'saBoost': 'Volume boost',
+    'saBoostSub': 'Boost the volume up to 200% with the HW+ or SW decoder.',
+    'saLoudness': 'Loudness normalization',
+    'saLoudnessSub': 'Evens out loud and quiet scenes so you need not keep changing the volume.',
+    'saSystemVolume': 'System volume',
+    'saSystemVolumeSub': 'Keep the volume in step with the phone\'s media volume.',
+    'saPauseHeadset': 'Pause when the headset disconnects',
+    'saPauseHeadsetSub': 'Pause when a wired or Bluetooth headset disconnects.',
+    'saFadeStart': 'Fade on start',
+    'saFadeSeek': 'Fade on seek',
+    'saEffects': 'Audio effects',
+    'saEffectsSub': 'Turn on the equalizer, bass boost, virtualizer and reverb.',
+    'saPassthrough': 'Prefer audio passthrough',
+    'saPassthroughSub': 'Send Dolby/DTS untouched to an AV receiver. Turn off if the phone speaker sounds distorted.',
+    'saLanguage': 'Preferred audio language',
+    'saLanguageSub': 'The language of the audio track to pick first. Currently: {v}',
+    'saDelay': 'Audio delay',
+    'saDelaySub': 'Move the sound earlier or later against the picture. Currently: {v}',
+    'ssFolder': 'Subtitle folder',
+    'ssFolderSame': 'Only the video\'s own folder',
+    'ssFolderHint': 'e.g. /storage/emulated/0/Subtitles',
+    'ssAutoDetect': 'Auto detect',
+    'ssEncoding': 'Character encoding',
+    'ssEncodingSub': 'The character encoding of your subtitle files. Currently: {v}',
+    'ssLanguage': 'Preferred subtitle language',
+    'ssLanguageSub': 'The language of the subtitle track to pick first. Currently: {v}',
+    'ssSync': 'Default sync',
+    'ssSyncSub': 'How much earlier or later subtitles show by default. Currently: {v}',
+    'ssHwSync': 'Sync for HW decoder',
+    'ssHwSyncSub': 'Make up for the HW decoder\'s display lag. Currently: {v}',
+    'ssAppearance': 'Appearance',
+    'ssText': 'Text',
+    'ssTextSub': 'Font, size, colour, border and more',
+    'ssLayout': 'Layout',
+    'ssLayoutSub': 'Alignment, padding and background',
+    'ssProcessing': 'Text processing',
+    'ssItalic': 'Italic effect',
+    'ssItalicSub': 'A line that starts with "/" shows in italics.',
+    'slyPosition': 'Position',
+    'slyVertical': 'Vertical position',
+    'slyVerticalSub': 'Distance from the top, as a percentage. Currently: {v}',
+    'slyLeft': 'Left',
+    'slyCenter': 'Center',
+    'slyRight': 'Right',
+    'slyHorizontal': 'Horizontal alignment',
+    'slyCurrently': 'Currently: {v}',
+    'slySpacing': 'Spacing',
+    'slyPadX': 'Left/right padding',
+    'slyPadXSub': 'Side margin, in pixels. Currently: {v}',
+    'slyPadY': 'Bottom margin',
+    'slyPadYSub': 'Bottom margin, in pixels. Currently: {v}',
+    'slyBackground': 'Background',
+    'slyShowBg': 'Show background',
+    'slyShowBgSub': 'A see-through background behind the subtitle text.',
+    'slyBlack50': 'Black (50% opacity)',
+    'slyBlack75': 'Black (75% opacity)',
+    'slyDarkGray': 'Dark gray',
+    'slyNone': 'None',
+    'slyBgColor': 'Background color',
+    'slyBgColorSub': 'Only when "Show background" is on. Currently: {v}',
+    'sdHw': 'Hardware decoder',
+    'sdAutoDefault': 'Auto (default)',
+    'sdNeverHw': 'Never use HW decoder',
+    'sdLocalOnly': 'Local files only',
+    'sdAlwaysHw': 'Always try HW first',
+    'sdStrategy': 'HW decoder strategy',
+    'sdHwPlusLocal': 'HW+ decoder (local)',
+    'sdHwPlusLocalSub': 'Make HW+ the default hardware decoder for files on the phone.',
+    'sdHwPlusNet': 'HW+ decoder (network)',
+    'sdHwPlusNetSub': 'Make HW+ the default hardware decoder for network play.',
+    'sdTryHw': 'Try HW decoder',
+    'sdTryHwSub': 'Try the HW decoder when HW+ fails.',
+    'sdTryHwPlus': 'Try HW+ decoder',
+    'sdTryHwPlusSub': 'Try the HW+ decoder when HW fails.',
+    'sdSw': 'Software decoder',
+    'sdSwLocal': 'SW decoder (local)',
+    'sdSwLocalSub': 'Play files on the phone with the SW decoder.',
+    'sdSwNet': 'SW decoder (network)',
+    'sdSwNetSub': 'Play network sources (HTTP, FTP, RTSP and more) with the SW decoder.',
+    'sdAutoRecommended': 'Auto (recommended)',
+    'sdCores': 'CPU core limit',
+    'sdCoresSub': 'How many CPU cores the SW decoder may use. Currently: {v}',
+    'sdSpeedup': 'Use speedup tricks',
+    'sdSpeedupSub': 'Let the SW decoder take shortcuts when it cannot keep up. The picture stays at full quality until frames are really being dropped.',
+    'sdGeneral': 'General',
+    'sdEfficient': 'Efficient video output',
+    'sdEfficientSub': 'Draws video straight to the screen with less battery and heat (Android 10+). Turn off if the picture is black or flickers. Applies the next time the app starts.',
+    'sdDeinterlace': 'Deinterlace',
+    'sdDeinterlaceSub': 'Deinterlace by default (SW decoder only).',
+    'sgUserAgent': 'HTTP user agent',
+    'sgUserAgentDefault': 'Default',
+    'sgUserAgentSub': 'Leave blank for the default.',
+    'sgUserAgentHint': 'Custom user agent',
+    'sgQuit': 'Quit button',
+    'sgQuitSub': 'A Quit button on the Me tab that closes the app completely, unlike Back or Home.',
+    'sgPrivacy': 'Privacy mode (incognito watch)',
+    'sgPrivacySub': 'Nothing you watch is recorded while this is on: history, resume points and recently added stay paused. What is there already stays, and nothing leaves the phone.',
+    'sgFullAccess': 'Full library access',
+    'sgFullAccessSub': 'Optional. Lets the library look in folders beyond Movies, DCIM and Downloads; opens Android\'s All files access.',
+    'sgEdit': 'Edit',
+    'sgAllowEdit': 'Allow editing',
+    'sgAllowEditSub': 'Show the menu that deletes and renames files and folders.',
+    'sgDeleteSubs': 'Delete subtitle files together',
+    'sgUserData': 'User data',
+    'sgClearHistory': 'Clear history',
+    'sgClearHistorySub': 'Clear every activity record, playback and search history included.',
+    'sgClearThumbs': 'Clear thumbnail cache',
+    'sgClearThumbsSub': 'Delete the saved thumbnails; they are made again when a list opens.',
+    'sgCacheThumbs': 'Cache thumbnail',
+    'sgBackup': 'Backup',
+    'sgReset': 'Reset settings',
+    'sgResetSub': 'Put every setting back to its default. History and playlists stay.',
+    'sgExport': 'Export',
+    'sgExportSub': 'Save the settings to a JSON file.',
+    'sgImport': 'Import from file',
+    'sgImportSub': 'Restore the settings from a JSON file.',
+    'sdvDebug': 'Debug',
+    'sdvBuffer': 'Show buffer info',
+    'sdvBufferSub': 'Show the buffer during playback.',
+    'sdvDecoder': 'Show decoder info',
+    'sdvDecoderSub': 'Show which decoder is playing.',
+    'sdvFps': 'Show FPS',
+    'sdvFpsSub': 'Show frames per second on screen.',
+    'sdvExperimental': 'Experimental',
+    'sdvNoHw': 'Disable HW acceleration',
+    'sdvNoHwSub': 'Force software decoding. For debugging only.',
+    'sdvResetAll': 'Reset all settings',
+    'sdvResetAllSub': 'Put every setting back to its default.',
   };
 
   static const Map<String, String> _my = <String, String>{
@@ -3754,22 +4283,6 @@ class AppStrings {
     'subBottomMargins': 'အောက်ခြေ အကွာအဝေး',
     'subBottomMarginsTitle': 'အောက်ခြေ အကွာအဝေး',
     'subImproveStroke': 'အနားသတ် ဖော်ပြမှု တိုးတက်စေရန်',
-    'subVerticalPos': 'ဒေါင်လိုက် တည်နေရာ',
-    'subVerticalPosTitle': 'ဒေါင်လိုက် တည်နေရာ',
-    'subVerticalPosDesc': 'အပေါ်ဘက်မှ အကွာအဝေး၊ ရာခိုင်နှုန်းအဖြစ်။',
-    'subHorizontalAlign': 'အလျားလိုက် နေရာချထားမှု',
-    'subHorizontalAlignTitle': 'အလျားလိုက် နေရာချထားမှု',
-    'subSidePadding': 'ဘယ်/ညာ အကွာအဝေး',
-    'subSidePaddingTitle': 'ဘယ်/ညာ အကွာအဝေး',
-    'subSidePaddingDesc': 'အလျားလိုက် အကွာအဝေး၊ pixel အားဖြင့်။',
-    'subBottomMargin': 'အောက်ခြေ အကွာအဝေး',
-    'subBottomMarginTitle': 'အောက်ခြေ အကွာအဝေး',
-    'subBottomMarginDesc': 'အောက်ခြေ အကွာအဝေး၊ pixel အားဖြင့်။',
-    'subShowBackground': 'နောက်ခံ ပြရန်',
-    'subBgBlack50': 'အနက် (၅၀% အလင်းပိတ်)',
-    'subBgBlack75': 'အနက် (၇၅% အလင်းပိတ်)',
-    'subBgDarkGray': 'မီးခိုးရင့်',
-    'subBgColorActiveWhen': '"နောက်ခံ ပြရန်" ဖွင့်ထားမှသာ အလုပ်လုပ်ပါသည်။',
     'currently': 'လက်ရှိ',
 
     // --- Video Hub: age gate / library ---
@@ -4455,8 +4968,6 @@ class AppStrings {
     'resetSettingsTitle': 'Settings ပြန်လည်သတ်မှတ်မလား?',
     'resetSettingsBody': 'Settings အားလုံး မူလအတိုင်း ပြန်ဖြစ်သွားပါမယ်။',
     'settingsResetDone': 'Settings မူလအတိုင်း ပြန်သတ်မှတ်ပြီးပါပြီ',
-    'clearFontCacheTitle': 'Font Cache ရှင်းမလား?',
-    'fontCacheCleared': 'Font cache ရှင်းပြီးပါပြီ',
     'languageRestartNote': 'App ပြန်ဖွင့်တဲ့အခါ ဘာသာစကား ပြောင်းပါမယ်',
     'exportedTo': '{path} သို့ ထုတ်ယူပြီးပါပြီ',
     'exportFailed': 'ထုတ်ယူ၍မရပါ',
@@ -4464,7 +4975,6 @@ class AppStrings {
     'importedFrom': '{path} မှ settings ထည့်သွင်းပြီးပါပြီ',
     'noExportFile': 'ထုတ်ယူထားတဲ့ settings ဖိုင် မတွေ့ပါ။ Export ကို အရင်သုံးပါ။',
     'moreLanguagesOnWay': 'နောက်ထပ် ဘာသာစကားများ ထပ်ထည့်ပေးသွားပါမယ်။',
-    'colorFormat': 'အရောင် Format',
     'screenTitle': 'မျက်နှာပြင်',
     'navigationTitle': 'လမ်းညွှန်မှု',
     'controlsTitle': 'ထိန်းချုပ်မှုများ',
@@ -4472,7 +4982,6 @@ class AppStrings {
     'subtitleTextTitle': 'စာတန်းထိုး စာသား',
     'subtitleLayoutTitle': 'စာတန်းထိုး နေရာချထားမှု',
     'soonBadge': 'မကြာမီ',
-    'debugLogsExported': 'Debug log များ ထုတ်ယူပြီးပါပြီ',
     'findYourVideos': 'သင့်ဗီဒီယိုများကို ရှာပါ',
     'scanningVideos': 'ဗီဒီယိုများ ရှာဖွေနေသည်…',
     'errorLoadingFoldersPrefix': 'Folder များ ဖတ်၍မရပါ',
@@ -4861,8 +5370,6 @@ class AppStrings {
     'personalPlayerApp': 'ကိုယ်ပိုင်သုံး ဗီဒီယို player app။',
     'storageManagement': 'သိုလှောင်မှု စီမံခန့်ခွဲရေး',
     'storageUsage': 'သိုလှောင်မှု အသုံးပြုမှု',
-    'classicThemes': 'Classic Theme များ',
-    'noInternetThemes': 'အင်တာနက် မရှိပါ။ Theme အသစ်တွေအတွက် နှိပ်ပြီး ချိတ်ပါ။',
     'themeApplied': 'Theme သုံးပြီးပါပြီ',
     'openSourceLicenses': 'Open source လိုင်စင်များ',
     'personalProject': 'သင်ယူရေးနဲ့ ကိုယ်ပိုင်သုံးအတွက် Flutter project တစ်ခုပါ။',
@@ -5353,6 +5860,284 @@ class AppStrings {
             'အောက်ပါ အပ်ဒိတ်ကို ထည့်သွင်းပါ။',
     'songsCount': 'သီချင်း {n} ပုဒ်',
     'minutesCount': '{n} မိနစ်',
+    'psTitleBar': 'ခေါင်းစဉ်ဘား',
+    'psShowTitle': 'ခေါင်းစဉ် ပြမယ်',
+    'psShowTitleSub': 'Player မျက်နှာပြင်မှာ ဗီဒီယို ခေါင်းစဉ်ကို ပြပါ။',
+    'psShowClock': 'နာရီ ပြမယ်',
+    'psShowClockSub': 'Player မျက်နှာပြင်မှာ လက်ရှိ အချိန်ကို ပြပါ။',
+    'psShowSourceUrl': 'Source URL ပြမယ်',
+    'psShowSourceUrlSub': 'Network ကနေ ဖွင့်တဲ့အခါ URL / လမ်းကြောင်းကို ပြပါ။',
+    'psLayout': 'အပြင်အဆင်',
+    'psToolbarPosition': 'Toolbar နေရာ',
+    'psToolbarPositionSub': 'Player ပေါ်မှာ ခေါင်းစဉ်ဘား ထားမယ့် နေရာ။ လက်ရှိ: {v}',
+    'psToolbarTop': 'အပေါ် (မူလ)',
+    'psToolbarBottom': 'အောက် (လက်မနဲ့ လှမ်းမီ)',
+    'pssOrientation': 'မျက်နှာပြင် အလှည့်',
+    'pssFollowSystem': 'ဖုန်းဆက်တင်အတိုင်း',
+    'pssLandscape': 'အလျားလိုက်',
+    'pssLandscapeReverse': 'အလျားလိုက် (ပြောင်းပြန်)',
+    'pssPortrait': 'ဒေါင်လိုက်',
+    'pssDefaultOrientation': 'မူလ အလှည့်',
+    'pssDefaultOrientationSub': 'Player ကို ဘယ်လို လှည့်ထားမလဲ။ "ဖုန်းဆက်တင်အတိုင်း" ဆိုရင် အောက်က အလိုအလျောက် လှည့် အတိုင်း သွားပါမယ်။ လက်ရှိ: {v}',
+    'pssAutoRotation': 'အလိုအလျောက် လှည့်',
+    'pssAutoRotationSub': 'ဖုန်းကို လှည့်တဲ့အတိုင်း မျက်နှာပြင်ကို လှည့်ပါ။',
+    'pssDisplay': 'ပြသမှု',
+    'pssFullScreen': 'မျက်နှာပြင် အပြည့်',
+    'pssFullScreenSub': 'ဖွင့်နေချိန်မှာ status bar နဲ့ navigation bar ကို ဖျောက်ထားပါ။',
+    'pssKeepOn': 'မျက်နှာပြင် မပိတ်စေနဲ့',
+    'pssKeepOnSub': 'ဖွင့်နေချိန်မှာ မျက်နှာပြင် အလိုလို မပိတ်သွားအောင် ထားပါ။',
+    'pssBrightness': 'အလင်း',
+    'pssAutoBrightness': 'အလင်း အလိုအလျောက်',
+    'pssAutoBrightnessSub': 'ဖုန်းရဲ့ အလင်း ဆက်တင်ကို သုံးပါ။',
+    'pssDefaultBrightness': 'မူလ အလင်း',
+    'pssDefaultBrightnessSub': 'ဗီဒီယို အသစ်အတွက် အလင်း (ဗီဒီယိုတစ်ခုချင်းက ကိုယ့်အလင်းကို မှတ်ထားပါတယ်)။ လက်ရှိ: {v}',
+    'pcLock': 'သော့ခတ်',
+    'pcLockAll': 'အားလုံး သော့ခတ် (မူလ)',
+    'pcLockRotation': 'လှည့်တာကိုသာ သော့ခတ်',
+    'pcLockTouch': 'ထိတာကိုသာ သော့ခတ်',
+    'pcLockMode': 'သော့ခတ် ပုံစံ',
+    'pcLockModeSub': 'Player ပေါ်က "သော့ခတ်" က ဘာလုပ်မလဲ။ လက်ရှိ: {v}',
+    'pcLockOnRotation': 'လှည့်ရင် သော့ခတ်မယ်',
+    'pcLockOnRotationSub': 'ဖုန်းကို လှည့်လိုက်ရင် မျက်နှာပြင်ကို အလိုအလျောက် သော့ခတ်ပါ။',
+    'secondsCount': '{n} စက္ကန့်',
+    'pnSeekBar': 'အချိန်ဘား',
+    'pnShowSeekBar': 'အချိန်ဘား ပြမယ်',
+    'pnShowSeekBarSub': 'Player အောက်ခြေမှာ အချိန်ဘား ပြပါ။',
+    'pnSeekPreview': 'ဆွဲနေစဉ် ပုံ ကြိုပြ',
+    'pnSeekPreviewSub': 'အချိန်ဘားကို ဆွဲနေစဉ် ပုံသေးလေး ကြိုပြပါ။',
+    'pnSeekInterval': 'ရှေ့/နောက် ခုန်မယ့် အချိန်',
+    'pnSeekIntervalSub': 'နှစ်ချက်နှိပ်ရင်နဲ့ ရှေ့/နောက် ခလုတ်တွေက ခုန်မယ့် အချိန်။ လက်ရှိ: {v}',
+    'pnButtons': 'ခလုတ်များ',
+    'pnShowPrevNext': 'ရှေ့/နောက် ဗီဒီယို ခလုတ် ပြမယ်',
+    'pnShowPrevNextSub': 'Player ပေါ်မှာ ရှေ့ဗီဒီယို / နောက်ဗီဒီယို ခလုတ် ပြပါ။',
+    'pnNextPrev': 'နောက် / ရှေ့ ဗီဒီယို',
+    'pnSeekPm': '±{v} စက္ကန့် ခုန်',
+    'pnFwdBack': 'ရှေ့ / နောက် ခလုတ်',
+    'pnFwdBackSub': 'မျက်နှာပြင်ပေါ်က ◀▶ ခလုတ်တွေ ဘာလုပ်မလဲ။ လက်ရှိ: {v}',
+    'spInterface': 'အသွင်အပြင်',
+    'spScreenSub': 'အလှည့်၊ မျက်နှာပြင် အပြည့်၊ အလင်း စသည်',
+    'spControlsSub': 'ထိခြင်း၊ gesture၊ သော့ခတ် ပုံစံ စသည်',
+    'spNavigationSub': 'ရှေ့/နောက် ခုန်ခြင်း၊ ရှေ့/နောက် ခလုတ် စသည်',
+    'spDoubleBack': 'Back ကို နှစ်ချက် နှိပ်မှ ထွက်',
+    'spDoubleBackSub': 'Player ကနေ ထွက်ဖို့ Back ကို နှစ်ချက် နှိပ်ရပါမယ်။',
+    'spQuickZoom': 'အမြန် zoom',
+    'spQuickZoomSub': '100% နဲ့ မျက်နှာပြင်အပြည့် ကြားက zoom အဆင့်တွေ (150%, 200%…) ကို ကျော်ပါ။',
+    'spPinControls': 'ခလုတ်တွေ အမြဲ ပြထား',
+    'spPinControlsSub': 'Player ခလုတ်တွေ အလိုလို မပျောက်တော့ပါ။ မူလက ပိတ်ထားပါတယ်။',
+    'spHideDelay': 'ခလုတ်တွေ ပျောက်မယ့် အချိန်',
+    'spHideDelaySub': 'နောက်ဆုံး ထိပြီးနောက် ခလုတ်တွေ ပြနေမယ့် အချိန်။ လက်ရှိ: {v}',
+    'spPlayback': 'ဖွင့်ခြင်း',
+    'spResume': 'ဆက်ဖွင့်ခြင်း',
+    'spResumeAsk': 'အမြဲ မေးမယ်',
+    'spResumeAlways': 'အမြဲ ရပ်ခဲ့တဲ့နေရာက ဆက်ဖွင့်',
+    'spResumeNever': 'အမြဲ အစကနေ ဖွင့်',
+    'spResumeSub': 'ရပ်ခဲ့တဲ့နေရာက ဆက်ဖွင့်မလား။ လက်ရှိ: {v}',
+    'spResumeFirst': 'ပထမ ဖိုင်ကိုသာ ဆက်ဖွင့်',
+    'spResumeFirstSub': 'ပထမ ဖိုင်မှာသာ ဆက်ဖွင့်ပါမယ်၊ နောက်ဖိုင်တွေက အစကနေ စပါမယ်။',
+    'spDefaultSpeed': 'မူလ အမြန်နှုန်း',
+    'spRemember': 'ရွေးထားတာတွေ မှတ်ထား',
+    'spRememberSub': 'ဖိုင်တစ်ခုချင်းအတွက် ရွေးထားတဲ့ အသံ track၊ စာတန်း track နဲ့ decoder ကို မှတ်ထားပါ။',
+    'spBackToList': 'စာရင်းကို ပြန်သွား',
+    'spBackToListSub': 'ဖွင့်ပြီးသွားရင် စာရင်းကို ပြန်သွားပါ။',
+    'spPreviewSeek': 'ရွှေ့နေစဉ် ပုံ ကြိုပြ',
+    'spPreviewSeekSub': 'ရွှေ့နေတဲ့ နေရာရဲ့ ပုံကို ကြိုပြပါ။',
+    'spPreviewSeekNet': 'ရွှေ့နေစဉ် ပုံ ကြိုပြ (network)',
+    'spPreviewSeekNetSub': 'Network ကနေ ဖွင့်တဲ့ ဗီဒီယိုမှာလည်း ပုံ ကြိုပြပါ။',
+    'spFastSeek': 'အမြန် ရွှေ့',
+    'spFastSeekSub': 'အတိအကျ နေရာအစား အနီးဆုံး key frame ကို ခုန်ပါ (HW+ နဲ့ SW decoder)။',
+    'spPlayAlone': 'တစ်ခုတည်း ဖွင့်',
+    'spPlayAloneSub': 'ဒီမှာ ဖွင့်နေချိန် တခြား player တွေကို ရပ်ပြီး တခြားတစ်ခု စဖွင့်ရင် ဒါမှမဟုတ် ဖုန်းဝင်လာရင် ဒီမှာလည်း ရပ်ပါမယ်။',
+    'spMediaButtons': 'Media ခလုတ်များ',
+    'spMediaButtonsSub': 'နားကြပ်၊ Bluetooth စတာတွေရဲ့ media ခလုတ်တွေကို လက်ခံပါ။',
+    'spNextPrevFf': 'Next/Prev → ရှေ့ရစ်/နောက်ရစ်',
+    'spNextPrevFfSub': 'Next/Prev media ခလုတ်တွေကို ရှေ့ရစ် / နောက်ရစ် အဖြစ် သုံးပါ။',
+    'spTogglePlay': 'Play ခလုတ်နဲ့ ဖွင့်/ရပ်',
+    'spTogglePlaySub': 'Play ခလုတ်က ဖွင့်တာရော ရပ်တာပါ လုပ်ပါမယ်။ Play ခလုတ် ပြဿနာရှိတဲ့ ဖုန်းတွေအတွက်သာ။',
+    'spSmartPrev': 'Previous ခလုတ် (စမတ်)',
+    'spSmartPrevSub': 'Previous ကို နှိပ်ရင် ဒီဗီဒီယိုရဲ့ အစကို ပြန်သွားပါမယ်၊ အစနားမှာ ရှိနေရင် ရှေ့ဗီဒီယိုကို ဖွင့်ပါမယ်။',
+    'spSuppressError': 'Error စာ မပြနဲ့',
+    'spSuppressErrorSub': 'ဗီဒီယို မဖွင့်နိုင်ရင် error စာ မပြဘဲ နောက်ဗီဒီယိုကို ဆက်ဖွင့်ပါ။',
+    'spCustomPip': 'ကိုယ်ပိုင် pop-up player သုံးမယ်',
+    'spCustomPipSub': 'Android ရဲ့ picture-in-picture အစား ရွှေ့လို့၊ အရွယ်ပြောင်းလို့ရတဲ့ pop-up ကို သုံးပါ။',
+    'spBackground': 'နောက်ကွယ်မှာ ဖွင့်ခြင်း',
+    'spBgMode': 'နောက်ကွယ် / PiP',
+    'spBgModeSub': 'တခြား app ကို ပြောင်းသွားရင် player က ဘာလုပ်မလဲ။ လက်ရှိ: {v}',
+    'spBgPip': 'Picture-in-picture (ဝင်းဒိုးသေး)',
+    'spBgPlay': 'နောက်ကွယ်မှာ ဆက်ဖွင့်',
+    'spBgStop': 'ရပ်မယ်',
+    'spBgAudio': 'နောက်ကွယ်မှာ ဖွင့် (အသံ)',
+    'spBgAudioSub': 'အသံဖိုင်တွေကို နောက်ကွယ်မှာ ဆက်ဖွင့်ပါ။',
+    'spMisc': 'အထွေထွေ',
+    'spLimitResize': 'ဗီဒီယို ချဲ့တာ ကန့်သတ်',
+    'spLimitResizeSub': 'ဗီဒီယိုကို ကိုယ့်အရွယ်ထက် မချဲ့ပါနဲ့ (HW decoder မှာသာ)။',
+    'spLoadingCircle': 'Loading စက်ဝိုင်း animation',
+    'daysCount': '{n} ရက်',
+    'slAppearance': 'အသွင်အပြင်',
+    'slFloating': 'Floating ခလုတ်',
+    'slFloatingSub': 'နောက်ဆုံး ဖွင့်ခဲ့တာကို ပြန်ဖွင့်ဖို့ မျက်နှာပြင် ညာဘက်အောက်ထောင့်မှာ ခလုတ်တစ်ခု ထားပါ။',
+    'slNewPeriod': '"NEW" ပြမယ့် ကာလ',
+    'slNewPeriodSub': 'ဒီကာလအတွင်း ထည့်ထားတဲ့ ဖိုင်ပေါ်မှာ "NEW" ပြပါမယ်။ လက်ရှိ: {v}',
+    'slScan': 'ရှာဖွေခြင်း',
+    'slExtensions': 'ဖိုင် အမျိုးအစားများ',
+    'slExtensionsOn': '{n} မျိုး ဖွင့်ထား',
+    'slNomedia': '.nomedia ကို လိုက်နာ',
+    'slNomediaSub': 'Folder (သို့) သူ့အပေါ်က folder ထဲမှာ ".nomedia" ဖိုင် ရှိရင် အဲဒီက ဖိုင်တွေကို မပြပါနဲ့။',
+    'slShowHidden': 'ဝှက်ထားတဲ့ ဖိုင်နဲ့ folder တွေ ပြ',
+    'slShowHiddenSub': '"." (အစက်) နဲ့ စတဲ့ ဖိုင်နဲ့ folder တွေကို ပြပါ။',
+    'slSafTitle': 'ကန့်သတ်ထားတဲ့ folder တွေကို ခွင့်ပြုချက် ပေးမယ်',
+    'slSafGranted': 'ခွင့်ပြုထားပြီး: {v}။ နောက်ထပ် folder ထည့်ဖို့ နှိပ်ပါ။',
+    'slSafBlocked': 'Android 13 နဲ့ အထက်မှာ Android/data ကို ဒီကနေ ဖွင့်ခွင့် မပေးပါ။ အောက်က ADB နဲ့ ဖွင့်ပါ။',
+    'slSafGrant': 'Android/data (ဥပမာ Telegram ဒေါင်းလုဒ်) ကို ခွင့်ပြုရင် အဲဒီက ဗီဒီယိုတွေ Video tab မှာ ပေါ်ပါမယ်။ "ဝှက်ထားတဲ့ ဖိုင်နဲ့ folder တွေ ပြ" ကိုလည်း ဖွင့်ပါ။ App ကို ပြန်သွင်းရင် ခွင့်ပြုချက် ပျက်ပါမယ်။',
+    'slSafNotNeeded': 'Android {v} မှာ မလိုပါ — ဝှက်ထားတဲ့ folder တွေကို တိုက်ရိုက် ဖတ်နိုင်ပါတယ်။ "ဝှက်ထားတဲ့ ဖိုင်နဲ့ folder တွေ ပြ" ကိုသာ ဖွင့်ပါ။',
+    'slSafGeneric': 'Android/data နဲ့ တခြား ကန့်သတ်ထားတဲ့ folder တွေထဲက ဗီဒီယိုတွေကို ကြည့်ပါ။ "ဝှက်ထားတဲ့ ဖိုင်နဲ့ folder တွေ ပြ" ကိုလည်း ဖွင့်ပါ။',
+    'slSafNone': 'Folder ခွင့်ပြုချက် မရပါ (ပယ်ဖျက်လိုက်တာ ဒါမှမဟုတ် Android က ပိတ်ထားတာ)။',
+    'slSafEmpty': '"{v}" ကို ခွင့်ပြုပြီးပါပြီ၊ ဒါပေမဲ့ ဗီဒီယို မတွေ့ပါ။ Android 13 နဲ့ အထက်မှာ Android/data ကို များသောအားဖြင့် ပိတ်ထားလို့ ADB ကို သုံးပါ။',
+    'slSafFound': '"{v}" ကို ခွင့်ပြုပြီး — ဗီဒီယို {n} ခု တွေ့ပါတယ်။',
+    'slSafClear': 'ခွင့်ပြုထားတဲ့ folder တွေ ဖယ်မယ်',
+    'slSafClearSub': 'ခွင့်ပြုထားတဲ့ folder {n} ခုလုံးကို ပြန်ရုပ်သိမ်းပါ။',
+    'slSafCleared': 'ခွင့်ပြုထားတဲ့ folder တွေ ဖယ်ပြီးပါပြီ',
+    'langNone': 'မရွေးထား',
+    'langEnglish': 'အင်္ဂလိပ်',
+    'langJapanese': 'ဂျပန်',
+    'langKorean': 'ကိုရီးယား',
+    'langChinese': 'တရုတ်',
+    'langMyanmar': 'မြန်မာ',
+    'langThai': 'ထိုင်း',
+    'langHindi': 'ဟိန္ဒီ',
+    'langVietnamese': 'ဗီယက်နမ်',
+    'saAuto': 'အလိုအလျောက် (ဖုန်းအတိုင်း)',
+    'saSpeaker': 'စပီကာ',
+    'saHeadphones': 'နားကြပ်',
+    'saBluetooth': 'Bluetooth',
+    'saOutput': 'အသံ ထွက်ပေါက်',
+    'saBoost': 'အသံ မြှင့်',
+    'saBoostSub': 'HW+ ဒါမှမဟုတ် SW decoder သုံးရင် အသံကို 200% အထိ မြှင့်နိုင်ပါတယ်။',
+    'saLoudness': 'အသံ ညီအောင် လုပ်',
+    'saLoudnessSub': 'အသံကျယ်တဲ့ အခန်းနဲ့ တိုးတဲ့ အခန်းတွေကို ညီအောင် လုပ်ပေးလို့ အသံကို ခဏခဏ ပြင်စရာ မလိုပါ။',
+    'saSystemVolume': 'ဖုန်းရဲ့ အသံ',
+    'saSystemVolumeSub': 'အသံကို ဖုန်းရဲ့ media အသံနဲ့ တစ်ပြေးညီ ထားပါ။',
+    'saPauseHeadset': 'နားကြပ် ပြုတ်ရင် ရပ်',
+    'saPauseHeadsetSub': 'ကြိုး / Bluetooth နားကြပ် ပြုတ်သွားရင် ဖွင့်နေတာကို ရပ်ပါ။',
+    'saFadeStart': 'စဖွင့်ရင် အသံ ဖြည်းဖြည်း ကျယ်',
+    'saFadeSeek': 'ရွှေ့ရင် အသံ ဖြည်းဖြည်း ကျယ်',
+    'saEffects': 'အသံ effect များ',
+    'saEffectsSub': 'Equalizer၊ Bass boost၊ Virtualizer နဲ့ Reverb ကို ဖွင့်ပါ။',
+    'saPassthrough': 'Audio passthrough ကို ဦးစားပေး',
+    'saPassthroughSub': 'Dolby/DTS အသံကို AV receiver ဆီ မပြောင်းဘဲ ပို့ပါ။ ဖုန်းစပီကာမှာ အသံ ပုံပျက်ရင် ပိတ်ပါ။',
+    'saLanguage': 'အသံ ဘာသာစကား ဦးစားပေး',
+    'saLanguageSub': 'ဦးစားပေး ဖွင့်မယ့် အသံ track ရဲ့ ဘာသာ။ လက်ရှိ: {v}',
+    'saDelay': 'အသံ နောက်ကျချိန်',
+    'saDelaySub': 'ပုံနဲ့ ကိုက်အောင် အသံကို စော / နောက်ကျ ရွှေ့ပါ။ လက်ရှိ: {v}',
+    'ssFolder': 'စာတန်း folder',
+    'ssFolderSame': 'ဗီဒီယိုရှိတဲ့ folder ထဲကသာ',
+    'ssFolderHint': 'ဥပမာ /storage/emulated/0/Subtitles',
+    'ssAutoDetect': 'အလိုအလျောက် ရှာ',
+    'ssEncoding': 'စာလုံး encoding',
+    'ssEncodingSub': 'စာတန်းဖိုင်ရဲ့ စာလုံး encoding။ လက်ရှိ: {v}',
+    'ssLanguage': 'စာတန်း ဘာသာစကား ဦးစားပေး',
+    'ssLanguageSub': 'ဦးစားပေး ပြမယ့် စာတန်း track ရဲ့ ဘာသာ။ လက်ရှိ: {v}',
+    'ssSync': 'မူလ ချိန်ညှိ',
+    'ssSyncSub': 'စာတန်းတွေကို မူလအားဖြင့် ဘယ်လောက် စော / နောက်ကျ ပြမလဲ။ လက်ရှိ: {v}',
+    'ssHwSync': 'HW decoder အတွက် ချိန်ညှိ',
+    'ssHwSyncSub': 'HW decoder ရဲ့ ပြသမှု နောက်ကျတာကို ညှိပါ။ လက်ရှိ: {v}',
+    'ssAppearance': 'အသွင်အပြင်',
+    'ssText': 'စာသား',
+    'ssTextSub': 'ဖောင့်၊ အရွယ်၊ အရောင်၊ ဘောင် စသည်',
+    'ssLayout': 'အပြင်အဆင်',
+    'ssLayoutSub': 'နေရာချထားမှု၊ အကွာအဝေး၊ နောက်ခံ',
+    'ssProcessing': 'စာသား ပြုပြင်ခြင်း',
+    'ssItalic': 'စာလုံးစောင်း',
+    'ssItalicSub': '"/" နဲ့ စတဲ့ စာကြောင်းကို စာလုံးစောင်းနဲ့ ပြပါ။',
+    'slyPosition': 'နေရာ',
+    'slyVertical': 'အပေါ်အောက် နေရာ',
+    'slyVerticalSub': 'အပေါ်ကနေ အကွာအဝေး (ရာခိုင်နှုန်း)။ လက်ရှိ: {v}',
+    'slyLeft': 'ဘယ်',
+    'slyCenter': 'အလယ်',
+    'slyRight': 'ညာ',
+    'slyHorizontal': 'ဘယ်ညာ နေရာ',
+    'slyCurrently': 'လက်ရှိ: {v}',
+    'slySpacing': 'အကွာအဝေး',
+    'slyPadX': 'ဘယ်/ညာ အကွာ',
+    'slyPadXSub': 'ဘေးဘက် အကွာ (pixel)။ လက်ရှိ: {v}',
+    'slyPadY': 'အောက်ခြေ အကွာ',
+    'slyPadYSub': 'အောက်ခြေ အကွာ (pixel)။ လက်ရှိ: {v}',
+    'slyBackground': 'နောက်ခံ',
+    'slyShowBg': 'နောက်ခံ ပြ',
+    'slyShowBgSub': 'စာတန်းနောက်မှာ ဖောက်ထွင်းမြင်ရတဲ့ နောက်ခံ ထားပါ။',
+    'slyBlack50': 'အနက် (50%)',
+    'slyBlack75': 'အနက် (75%)',
+    'slyDarkGray': 'မီးခိုးရင့်',
+    'slyNone': 'မထား',
+    'slyBgColor': 'နောက်ခံ အရောင်',
+    'slyBgColorSub': '"နောက်ခံ ပြ" ဖွင့်ထားမှသာ။ လက်ရှိ: {v}',
+    'sdHw': 'Hardware (HW) decoder',
+    'sdAutoDefault': 'အလိုအလျောက် (မူလ)',
+    'sdNeverHw': 'HW decoder ဘယ်တော့မှ မသုံး',
+    'sdLocalOnly': 'ဖုန်းထဲက ဖိုင်တွေမှာသာ',
+    'sdAlwaysHw': 'HW ကို အမြဲ အရင် စမ်း',
+    'sdStrategy': 'HW decoder သုံးပုံ',
+    'sdHwPlusLocal': 'HW+ decoder (ဖုန်းထဲက ဖိုင်)',
+    'sdHwPlusLocalSub': 'ဖုန်းထဲက ဖိုင်တွေအတွက် HW+ ကို မူလ hardware decoder အဖြစ် သုံးပါ။',
+    'sdHwPlusNet': 'HW+ decoder (network)',
+    'sdHwPlusNetSub': 'Network ကနေ ဖွင့်တဲ့အခါ HW+ ကို မူလ hardware decoder အဖြစ် သုံးပါ။',
+    'sdTryHw': 'HW decoder စမ်းကြည့်',
+    'sdTryHwSub': 'HW+ မရရင် HW decoder ကို စမ်းပါ။',
+    'sdTryHwPlus': 'HW+ decoder စမ်းကြည့်',
+    'sdTryHwPlusSub': 'HW မရရင် HW+ decoder ကို စမ်းပါ။',
+    'sdSw': 'Software (SW) decoder',
+    'sdSwLocal': 'SW decoder (ဖုန်းထဲက ဖိုင်)',
+    'sdSwLocalSub': 'ဖုန်းထဲက ဖိုင်တွေကို SW decoder နဲ့ ဖွင့်ပါ။',
+    'sdSwNet': 'SW decoder (network)',
+    'sdSwNetSub': 'HTTP၊ FTP၊ RTSP စတဲ့ network ကနေ ဖွင့်တာကို SW decoder နဲ့ ဖွင့်ပါ။',
+    'sdAutoRecommended': 'အလိုအလျောက် (အကြံပြု)',
+    'sdCores': 'CPU core အများဆုံး',
+    'sdCoresSub': 'SW decoder သုံးခွင့်ရှိတဲ့ CPU core အရေအတွက်။ လက်ရှိ: {v}',
+    'sdSpeedup': 'အမြန် နည်းလမ်းတွေ သုံး',
+    'sdSpeedupSub': 'SW decoder မမီတော့တဲ့အခါ ဖြတ်လမ်း သုံးခွင့်ပေးပါ။ frame တွေ တကယ် ကျမှသာ ပုံ အရည်အသွေး လျော့ပါမယ်။',
+    'sdGeneral': 'အထွေထွေ',
+    'sdEfficient': 'ဘက်ထရီ သက်သာတဲ့ ဗီဒီယို ထုတ်ပြမှု',
+    'sdEfficientSub': 'ဗီဒီယိုကို မျက်နှာပြင်ပေါ် တိုက်ရိုက် ဆွဲလို့ ဘက်ထရီ သက်သာပြီး မပူပါ (Android 10+)။ ပုံ မည်းနေရင် ဒါမှမဟုတ် တဖျပ်ဖျပ် ဖြစ်ရင် ပိတ်ပါ။ App ကို နောက်တစ်ခါ ဖွင့်မှ သက်ရောက်ပါမယ်။',
+    'sdDeinterlace': 'Deinterlace',
+    'sdDeinterlaceSub': 'မူလအားဖြင့် deinterlace လုပ်ပါ (SW decoder မှာသာ)။',
+    'sgUserAgent': 'HTTP User-Agent',
+    'sgUserAgentDefault': 'မူလ',
+    'sgUserAgentSub': 'မူလအတိုင်း သုံးဖို့ ဗလာ ထားပါ။',
+    'sgUserAgentHint': 'ကိုယ်ပိုင် User-Agent',
+    'sgQuit': 'ထွက်မယ် ခလုတ်',
+    'sgQuitSub': 'Me tab မှာ app ကို လုံးဝ ပိတ်တဲ့ ထွက်မယ် ခလုတ် ထားပါ (Back / Home နဲ့ မတူပါ)။',
+    'sgPrivacy': 'Privacy mode (မှတ်တမ်း မထား)',
+    'sgPrivacySub': 'ဖွင့်ထားချိန်မှာ ကြည့်တာတွေကို မမှတ်ပါ — မှတ်တမ်း၊ ဆက်ကြည့်မယ့်နေရာ၊ အသစ်ထည့်ထားတာတွေ ခဏ ရပ်ထားပါမယ်။ ရှိပြီးသားတွေ မပျက်ပါ၊ ဘာမှ ဖုန်းအပြင် မထွက်ပါ။',
+    'sgFullAccess': 'Library အပြည့် ဝင်ခွင့်',
+    'sgFullAccessSub': 'မဖြစ်မနေ မဟုတ်ပါ။ Movies၊ DCIM၊ Downloads အပြင်က folder တွေကိုပါ ရှာနိုင်အောင်ပါ — Android ရဲ့ All files access ကို ဖွင့်ပေးပါမယ်။',
+    'sgEdit': 'ပြင်ဆင်ခြင်း',
+    'sgAllowEdit': 'ပြင်ခွင့် ပေး',
+    'sgAllowEditSub': 'ဖိုင်နဲ့ folder တွေကို ဖျက်တာ၊ နာမည်ပြောင်းတာ လုပ်နိုင်တဲ့ menu ကို ပြပါ။',
+    'sgDeleteSubs': 'စာတန်းဖိုင်တွေကိုပါ တစ်ခါတည်း ဖျက်',
+    'sgUserData': 'အသုံးပြုသူ data',
+    'sgClearHistory': 'မှတ်တမ်း ဖျက်',
+    'sgClearHistorySub': 'ဖွင့်ခဲ့တာ၊ ရှာခဲ့တာ အပါအဝင် မှတ်တမ်းအားလုံးကို ဖျက်ပါ။',
+    'sgClearThumbs': 'ပုံသေး cache ဖျက်',
+    'sgClearThumbsSub': 'သိမ်းထားတဲ့ ပုံသေးတွေကို ဖျက်ပါ။ စာရင်းကို ပြန်ဖွင့်ရင် ပြန်ထုတ်ပါမယ်။',
+    'sgCacheThumbs': 'ပုံသေးတွေ သိမ်းထား',
+    'sgBackup': 'အရန်သိမ်းခြင်း',
+    'sgReset': 'Settings ပြန်စ',
+    'sgResetSub': 'Settings အားလုံးကို မူလအတိုင်း ပြန်ထားပါ။ မှတ်တမ်းနဲ့ playlist တွေ မပျက်ပါ။',
+    'sgExport': 'ထုတ်ယူ',
+    'sgExportSub': 'Settings တွေကို JSON ဖိုင်အဖြစ် သိမ်းပါ။',
+    'sgImport': 'ဖိုင်ကနေ ပြန်သွင်း',
+    'sgImportSub': 'JSON ဖိုင်ကနေ settings တွေ ပြန်ထည့်ပါ။',
+    'sdvDebug': 'Debug',
+    'sdvBuffer': 'Buffer အချက်အလက် ပြ',
+    'sdvBufferSub': 'ဖွင့်နေစဉ် buffer အခြေအနေကို ပြပါ။',
+    'sdvDecoder': 'Decoder အချက်အလက် ပြ',
+    'sdvDecoderSub': 'ဘယ် decoder နဲ့ ဖွင့်နေလဲ ပြပါ။',
+    'sdvFps': 'FPS ပြ',
+    'sdvFpsSub': 'တစ်စက္ကန့်မှာ frame ဘယ်နှခု ပြလဲ မျက်နှာပြင်ပေါ် ပြပါ။',
+    'sdvExperimental': 'စမ်းသပ်ဆဲ',
+    'sdvNoHw': 'HW acceleration ပိတ်',
+    'sdvNoHwSub': 'Software decoder နဲ့သာ ဖွင့်ပါ။ Debug လုပ်ဖို့သာ။',
+    'sdvResetAll': 'Settings အားလုံး ပြန်စ',
+    'sdvResetAllSub': 'Settings အားလုံးကို မူလအတိုင်း ပြန်ထားပါ။',
   };
 
   static const Map<String, String> _th = <String, String>{
@@ -5441,22 +6226,6 @@ class AppStrings {
     'subBottomMargins': 'ระยะขอบล่าง',
     'subBottomMarginsTitle': 'ระยะขอบล่าง',
     'subImproveStroke': 'ปรับปรุงการวาดเส้นขอบ',
-    'subVerticalPos': 'ตำแหน่งแนวตั้ง',
-    'subVerticalPosTitle': 'ตำแหน่งแนวตั้ง',
-    'subVerticalPosDesc': 'ระยะห่างจากด้านบน เป็นเปอร์เซ็นต์',
-    'subHorizontalAlign': 'การจัดวางแนวนอน',
-    'subHorizontalAlignTitle': 'การจัดวางแนวนอน',
-    'subSidePadding': 'ระยะขอบซ้าย/ขวา',
-    'subSidePaddingTitle': 'ระยะขอบซ้าย/ขวา',
-    'subSidePaddingDesc': 'ระยะขอบแนวนอน หน่วยพิกเซล',
-    'subBottomMargin': 'ระยะขอบล่าง',
-    'subBottomMarginTitle': 'ระยะขอบล่าง',
-    'subBottomMarginDesc': 'ระยะขอบล่าง หน่วยพิกเซล',
-    'subShowBackground': 'แสดงพื้นหลัง',
-    'subBgBlack50': 'ดำ (ทึบ 50%)',
-    'subBgBlack75': 'ดำ (ทึบ 75%)',
-    'subBgDarkGray': 'เทาเข้ม',
-    'subBgColorActiveWhen': 'ใช้ได้เฉพาะเมื่อเปิด "แสดงพื้นหลัง" เท่านั้น',
     'currently': 'ปัจจุบัน',
 
     // --- Video Hub: age gate / library ---
@@ -6141,8 +6910,6 @@ class AppStrings {
     'resetSettingsTitle': 'รีเซ็ตการตั้งค่า?',
     'resetSettingsBody': 'การตั้งค่าทั้งหมดจะกลับเป็นค่าเริ่มต้น',
     'settingsResetDone': 'รีเซ็ตการตั้งค่าเป็นค่าเริ่มต้นแล้ว',
-    'clearFontCacheTitle': 'ล้างแคชฟอนต์?',
-    'fontCacheCleared': 'ล้างแคชฟอนต์แล้ว',
     'languageRestartNote': 'ภาษาจะเปลี่ยนเมื่อเปิดแอปใหม่',
     'exportedTo': 'ส่งออกไปที่ {path} แล้ว',
     'exportFailed': 'ส่งออกไม่สำเร็จ',
@@ -6150,7 +6917,6 @@ class AppStrings {
     'importedFrom': 'นำเข้าการตั้งค่าจาก {path} แล้ว',
     'noExportFile': 'ไม่พบไฟล์ตั้งค่าที่ส่งออก กรุณาส่งออกก่อน',
     'moreLanguagesOnWay': 'ภาษาอื่น ๆ กำลังจะตามมา',
-    'colorFormat': 'รูปแบบสี',
     'screenTitle': 'หน้าจอ',
     'navigationTitle': 'การนำทาง',
     'controlsTitle': 'การควบคุม',
@@ -6158,7 +6924,6 @@ class AppStrings {
     'subtitleTextTitle': 'ข้อความซับไตเติล',
     'subtitleLayoutTitle': 'เลย์เอาต์ซับไตเติล',
     'soonBadge': 'เร็ว ๆ นี้',
-    'debugLogsExported': 'ส่งออกบันทึกดีบักแล้ว',
     'findYourVideos': 'ค้นหาวิดีโอของคุณ',
     'scanningVideos': 'กำลังสแกนวิดีโอ…',
     'errorLoadingFoldersPrefix': 'โหลดโฟลเดอร์ไม่สำเร็จ',
@@ -6547,8 +7312,6 @@ class AppStrings {
     'personalPlayerApp': 'แอปเครื่องเล่นวิดีโอส่วนตัว',
     'storageManagement': 'จัดการพื้นที่จัดเก็บ',
     'storageUsage': 'การใช้พื้นที่',
-    'classicThemes': 'ธีมคลาสสิก',
-    'noInternetThemes': 'ไม่มีอินเทอร์เน็ต แตะเพื่อเชื่อมต่อรับธีมใหม่',
     'themeApplied': 'ใช้ธีมแล้ว',
     'openSourceLicenses': 'ใบอนุญาตโอเพนซอร์ส',
     'personalProject': 'โปรเจกต์ Flutter ส่วนตัวเพื่อการเรียนรู้',
@@ -7032,6 +7795,284 @@ class AppStrings {
         'เวอร์ชันนี้ใช้งานต่อไม่ได้แล้ว ติดตั้งอัปเดตด้านล่างเพื่อใช้งานต่อ',
     'songsCount': '{n} เพลง',
     'minutesCount': '{n} นาที',
+    'psTitleBar': 'แถบชื่อเรื่อง',
+    'psShowTitle': 'แสดงชื่อเรื่อง',
+    'psShowTitleSub': 'แสดงชื่อวิดีโอบนหน้าจอเล่น',
+    'psShowClock': 'แสดงนาฬิกา',
+    'psShowClockSub': 'แสดงเวลาปัจจุบันบนหน้าจอเล่น',
+    'psShowSourceUrl': 'แสดง URL ต้นทาง',
+    'psShowSourceUrlSub': 'แสดง URL/เส้นทางเมื่อเล่นจากเครือข่าย',
+    'psLayout': 'เลย์เอาต์',
+    'psToolbarPosition': 'ตำแหน่งแถบเครื่องมือ',
+    'psToolbarPositionSub': 'ตำแหน่งของแถบชื่อเรื่องบนหน้าจอเล่น ปัจจุบัน: {v}',
+    'psToolbarTop': 'ด้านบน (ค่าเริ่มต้น)',
+    'psToolbarBottom': 'ด้านล่าง (นิ้วโป้งเอื้อมถึง)',
+    'pssOrientation': 'การวางแนว',
+    'pssFollowSystem': 'ตามระบบ',
+    'pssLandscape': 'แนวนอน',
+    'pssLandscapeReverse': 'แนวนอน (กลับด้าน)',
+    'pssPortrait': 'แนวตั้ง',
+    'pssDefaultOrientation': 'การวางแนวเริ่มต้น',
+    'pssDefaultOrientationSub': 'ล็อกการวางแนวของหน้าจอเล่น "ตามระบบ" จะเป็นไปตามการหมุนอัตโนมัติด้านล่าง ปัจจุบัน: {v}',
+    'pssAutoRotation': 'หมุนอัตโนมัติ',
+    'pssAutoRotationSub': 'หมุนหน้าจอตามการหมุนโทรศัพท์',
+    'pssDisplay': 'การแสดงผล',
+    'pssFullScreen': 'เต็มหน้าจอ',
+    'pssFullScreenSub': 'ซ่อนแถบสถานะและแถบนำทางระหว่างเล่น',
+    'pssKeepOn': 'เปิดหน้าจอค้างไว้',
+    'pssKeepOnSub': 'ไม่ให้หน้าจอดับระหว่างเล่น',
+    'pssBrightness': 'ความสว่าง',
+    'pssAutoBrightness': 'ความสว่างอัตโนมัติ',
+    'pssAutoBrightnessSub': 'ใช้ความสว่างของระบบ',
+    'pssDefaultBrightness': 'ความสว่างเริ่มต้น',
+    'pssDefaultBrightnessSub': 'ความสว่างสำหรับวิดีโอใหม่ (แต่ละวิดีโอจำค่าของตัวเอง) ปัจจุบัน: {v}',
+    'pcLock': 'ล็อก',
+    'pcLockAll': 'ล็อกทั้งหมด (ค่าเริ่มต้น)',
+    'pcLockRotation': 'ล็อกการหมุนเท่านั้น',
+    'pcLockTouch': 'ล็อกการแตะเท่านั้น',
+    'pcLockMode': 'โหมดล็อก',
+    'pcLockModeSub': 'สิ่งที่ปุ่มล็อกทำบนหน้าจอเล่น ปัจจุบัน: {v}',
+    'pcLockOnRotation': 'ล็อกหน้าจอเมื่อหมุน',
+    'pcLockOnRotationSub': 'ล็อกหน้าจออัตโนมัติเมื่อหมุนโทรศัพท์',
+    'secondsCount': '{n} วินาที',
+    'pnSeekBar': 'แถบเวลา',
+    'pnShowSeekBar': 'แสดงแถบเวลา',
+    'pnShowSeekBarSub': 'แสดงแถบเวลาที่ด้านล่างของหน้าจอเล่น',
+    'pnSeekPreview': 'ภาพตัวอย่างบนแถบเวลา',
+    'pnSeekPreviewSub': 'แสดงภาพตัวอย่างขณะลากแถบเวลา',
+    'pnSeekInterval': 'ระยะการข้าม',
+    'pnSeekIntervalSub': 'ระยะที่การแตะสองครั้งและปุ่มเดินหน้า/ถอยหลังจะข้าม ปัจจุบัน: {v}',
+    'pnButtons': 'ปุ่ม',
+    'pnShowPrevNext': 'แสดงปุ่มก่อนหน้า/ถัดไป',
+    'pnShowPrevNextSub': 'แสดงปุ่มก่อนหน้าและถัดไปบนหน้าจอเล่น',
+    'pnNextPrev': 'วิดีโอถัดไป / ก่อนหน้า',
+    'pnSeekPm': 'ข้าม ±{v} วินาที',
+    'pnFwdBack': 'ปุ่มเดินหน้า / ถอยหลัง',
+    'pnFwdBackSub': 'สิ่งที่ปุ่ม ◀▶ บนหน้าจอทำ ปัจจุบัน: {v}',
+    'spInterface': 'อินเทอร์เฟซ',
+    'spScreenSub': 'การวางแนว เต็มหน้าจอ ความสว่าง และอื่นๆ',
+    'spControlsSub': 'การแตะ ท่าทาง โหมดล็อก และอื่นๆ',
+    'spNavigationSub': 'การข้าม ปุ่มเดินหน้า/ถอยหลัง และอื่นๆ',
+    'spDoubleBack': 'กดย้อนกลับสองครั้ง',
+    'spDoubleBackSub': 'กดย้อนกลับสองครั้งเพื่อปิดหน้าจอเล่น',
+    'spQuickZoom': 'ซูมด่วน',
+    'spQuickZoomSub': 'ข้ามขั้นซูมระหว่าง 100% กับพอดีหน้าจอ (150%, 200%…)',
+    'spPinControls': 'แสดงปุ่มควบคุมตลอด',
+    'spPinControlsSub': 'ปุ่มควบคุมจะไม่ซ่อนเอง ปิดไว้เป็นค่าเริ่มต้น',
+    'spHideDelay': 'เวลาก่อนซ่อนปุ่มควบคุม',
+    'spHideDelaySub': 'ระยะเวลาที่ปุ่มควบคุมยังแสดงหลังแตะครั้งสุดท้าย ปัจจุบัน: {v}',
+    'spPlayback': 'การเล่น',
+    'spResume': 'เล่นต่อ',
+    'spResumeAsk': 'ถามทุกครั้ง',
+    'spResumeAlways': 'เสมอ (เล่นต่อ)',
+    'spResumeNever': 'ไม่เลย (เริ่มใหม่)',
+    'spResumeSub': 'เลือกว่าจะเล่นต่อจากจุดที่หยุดไว้หรือไม่ ปัจจุบัน: {v}',
+    'spResumeFirst': 'เล่นต่อเฉพาะไฟล์แรก',
+    'spResumeFirstSub': 'เล่นต่อเฉพาะไฟล์แรก ไฟล์ถัดไปจะเริ่มจากต้น',
+    'spDefaultSpeed': 'ความเร็วการเล่นเริ่มต้น',
+    'spRemember': 'จำตัวเลือก',
+    'spRememberSub': 'จำแทร็กเสียง แทร็กคำบรรยาย และตัวถอดรหัสของแต่ละไฟล์',
+    'spBackToList': 'กลับไปที่รายการ',
+    'spBackToListSub': 'กลับไปที่รายการเมื่อเล่นจบ',
+    'spPreviewSeek': 'แสดงภาพตัวอย่างขณะเลื่อน',
+    'spPreviewSeekSub': 'แสดงภาพของตำแหน่งที่กำลังเลื่อนไป',
+    'spPreviewSeekNet': 'แสดงภาพตัวอย่างขณะเลื่อน (เครือข่าย)',
+    'spPreviewSeekNetSub': 'แสดงภาพตัวอย่างสำหรับวิดีโอจากเครือข่ายด้วย',
+    'spFastSeek': 'เลื่อนแบบเร็ว',
+    'spFastSeekSub': 'ข้ามไปยังคีย์เฟรมที่ใกล้ที่สุดแทนจุดที่แน่นอน (ตัวถอดรหัส HW+ และ SW)',
+    'spPlayAlone': 'เล่นเพียงแอปเดียว',
+    'spPlayAloneSub': 'หยุดเครื่องเล่นอื่นขณะเล่น และหยุดที่นี่เมื่อแอปอื่นเริ่มเล่นหรือมีสายเรียกเข้า',
+    'spMediaButtons': 'ปุ่มสื่อ',
+    'spMediaButtonsSub': 'ตอบสนองปุ่มควบคุมสื่อจากหูฟัง บลูทูธ ฯลฯ',
+    'spNextPrevFf': 'ถัดไป/ก่อนหน้า → กรอไปข้างหน้า/ย้อนกลับ',
+    'spNextPrevFfSub': 'ใช้ปุ่มถัดไป/ก่อนหน้าเพื่อกรอไปข้างหน้าและย้อนกลับ',
+    'spTogglePlay': 'สลับเล่น/หยุดด้วยปุ่มเล่น',
+    'spTogglePlaySub': 'ปุ่มเล่นจะสลับเล่น/หยุด ใช้เฉพาะอุปกรณ์ที่ปุ่มเล่นมีปัญหา',
+    'spSmartPrev': 'ปุ่มก่อนหน้าอัจฉริยะ',
+    'spSmartPrevSub': 'ปุ่มก่อนหน้าจะกลับไปต้นวิดีโอนี้ หรือไปวิดีโอก่อนหน้าหากอยู่ใกล้จุดเริ่มต้น',
+    'spSuppressError': 'ไม่แสดงข้อความผิดพลาด',
+    'spSuppressErrorSub': 'หากวิดีโอโหลดไม่ได้ ให้ไปวิดีโอถัดไปโดยไม่แสดงข้อความผิดพลาด',
+    'spCustomPip': 'ใช้เครื่องเล่นป๊อปอัปแบบกำหนดเอง',
+    'spCustomPipSub': 'ป๊อปอัปที่ย้ายและปรับขนาดได้ แทนภาพซ้อนภาพของ Android',
+    'spBackground': 'เล่นเบื้องหลัง',
+    'spBgMode': 'เบื้องหลัง / ภาพซ้อนภาพ',
+    'spBgModeSub': 'สิ่งที่หน้าจอเล่นทำเมื่อสลับไปแอปอื่น ปัจจุบัน: {v}',
+    'spBgPip': 'ภาพซ้อนภาพ',
+    'spBgPlay': 'เล่นต่อในเบื้องหลัง',
+    'spBgStop': 'หยุด',
+    'spBgAudio': 'เล่นเบื้องหลัง (เสียง)',
+    'spBgAudioSub': 'เล่นไฟล์เสียงต่อในเบื้องหลัง',
+    'spMisc': 'อื่นๆ',
+    'spLimitResize': 'จำกัดการขยายวิดีโอ',
+    'spLimitResizeSub': 'ไม่ขยายวิดีโอเกินขนาดจริง (เฉพาะตัวถอดรหัส HW)',
+    'spLoadingCircle': 'ภาพเคลื่อนไหววงกลมขณะโหลด',
+    'daysCount': '{n} วัน',
+    'slAppearance': 'ลักษณะ',
+    'slFloating': 'ปุ่มลอย',
+    'slFloatingSub': 'ปุ่มที่มุมขวาล่างสำหรับเล่นสิ่งที่เล่นล่าสุด',
+    'slNewPeriod': 'ระยะเวลาที่แสดงป้าย "ใหม่"',
+    'slNewPeriodSub': 'ไฟล์ที่เพิ่มในช่วงนี้จะแสดงป้าย "ใหม่" ปัจจุบัน: {v}',
+    'slScan': 'การสแกน',
+    'slExtensions': 'นามสกุลไฟล์',
+    'slExtensionsOn': 'เปิด {n} นามสกุล',
+    'slNomedia': 'รู้จัก .nomedia',
+    'slNomediaSub': 'ไม่แสดงไฟล์ในโฟลเดอร์ที่มีไฟล์ ".nomedia" (หรือโฟลเดอร์ด้านบนมี)',
+    'slShowHidden': 'แสดงไฟล์และโฟลเดอร์ที่ซ่อน',
+    'slShowHiddenSub': 'แสดงไฟล์และโฟลเดอร์ที่ชื่อขึ้นต้นด้วย "." (จุด)',
+    'slSafTitle': 'ให้สิทธิ์เข้าถึงโฟลเดอร์ที่ถูกจำกัด',
+    'slSafGranted': 'ให้สิทธิ์แล้ว: {v} แตะเพื่อเพิ่มโฟลเดอร์อื่น',
+    'slSafBlocked': 'Android 13 ขึ้นไปไม่ให้เปิด Android/data จากที่นี่ Innocent เปิดผ่าน ADB ด้านล่างแทน',
+    'slSafGrant': 'ให้สิทธิ์ Android/data (เช่น ไฟล์ดาวน์โหลดของ Telegram) เพื่อดูวิดีโอในแท็บวิดีโอ และเปิด "แสดงไฟล์และโฟลเดอร์ที่ซ่อน" การติดตั้งใหม่จะล้างสิทธิ์',
+    'slSafNotNeeded': 'ไม่จำเป็นบน Android {v} อ่านโฟลเดอร์ที่ซ่อนได้โดยตรง แค่เปิด "แสดงไฟล์และโฟลเดอร์ที่ซ่อน"',
+    'slSafGeneric': 'ดูวิดีโอใน Android/data และโฟลเดอร์ที่ถูกจำกัดอื่นๆ เปิด "แสดงไฟล์และโฟลเดอร์ที่ซ่อน" ด้วย',
+    'slSafNone': 'ไม่ได้ให้สิทธิ์โฟลเดอร์ (ยกเลิก หรือ Android บล็อก)',
+    'slSafEmpty': 'ให้สิทธิ์ "{v}" แล้ว แต่ไม่พบวิดีโอ Android 13 ขึ้นไปมักบล็อก Android/data ให้ใช้ ADB แทน',
+    'slSafFound': 'ให้สิทธิ์ "{v}" แล้ว — พบวิดีโอ {n} รายการ',
+    'slSafClear': 'ล้างโฟลเดอร์ที่ให้สิทธิ์',
+    'slSafClearSub': 'เพิกถอนโฟลเดอร์ที่ให้สิทธิ์ทั้ง {n} รายการ',
+    'slSafCleared': 'ล้างโฟลเดอร์ที่ให้สิทธิ์แล้ว',
+    'langNone': 'ไม่มี',
+    'langEnglish': 'อังกฤษ',
+    'langJapanese': 'ญี่ปุ่น',
+    'langKorean': 'เกาหลี',
+    'langChinese': 'จีน',
+    'langMyanmar': 'พม่า',
+    'langThai': 'ไทย',
+    'langHindi': 'ฮินดี',
+    'langVietnamese': 'เวียดนาม',
+    'saAuto': 'อัตโนมัติ (ตามระบบ)',
+    'saSpeaker': 'ลำโพง',
+    'saHeadphones': 'หูฟัง',
+    'saBluetooth': 'บลูทูธ',
+    'saOutput': 'อุปกรณ์เสียงออก',
+    'saBoost': 'เพิ่มระดับเสียง',
+    'saBoostSub': 'เพิ่มเสียงได้ถึง 200% เมื่อใช้ตัวถอดรหัส HW+ หรือ SW',
+    'saLoudness': 'ปรับความดังให้สม่ำเสมอ',
+    'saLoudnessSub': 'ปรับฉากที่ดังและเบาให้สม่ำเสมอ จะได้ไม่ต้องปรับเสียงบ่อย',
+    'saSystemVolume': 'ระดับเสียงของระบบ',
+    'saSystemVolumeSub': 'ให้ระดับเสียงตรงกับระดับเสียงสื่อของโทรศัพท์',
+    'saPauseHeadset': 'หยุดเมื่อถอดหูฟัง',
+    'saPauseHeadsetSub': 'หยุดเล่นเมื่อหูฟังแบบสายหรือบลูทูธหลุด',
+    'saFadeStart': 'เฟดเสียงเมื่อเริ่ม',
+    'saFadeSeek': 'เฟดเสียงเมื่อเลื่อน',
+    'saEffects': 'เอฟเฟกต์เสียง',
+    'saEffectsSub': 'เปิดอีควอไลเซอร์ เบสบูสต์ เวอร์ชวลไลเซอร์ และรีเวิร์บ',
+    'saPassthrough': 'ใช้การส่งผ่านเสียงก่อน',
+    'saPassthroughSub': 'ส่ง Dolby/DTS ไปยังเครื่องรับ AV โดยไม่แปลง ปิดหากลำโพงโทรศัพท์มีเสียงผิดเพี้ยน',
+    'saLanguage': 'ภาษาเสียงที่ต้องการ',
+    'saLanguageSub': 'ภาษาของแทร็กเสียงที่เลือกก่อน ปัจจุบัน: {v}',
+    'saDelay': 'หน่วงเสียง',
+    'saDelaySub': 'เลื่อนเสียงให้เร็วหรือช้ากว่าภาพ ปัจจุบัน: {v}',
+    'ssFolder': 'โฟลเดอร์คำบรรยาย',
+    'ssFolderSame': 'เฉพาะโฟลเดอร์เดียวกับวิดีโอ',
+    'ssFolderHint': 'เช่น /storage/emulated/0/Subtitles',
+    'ssAutoDetect': 'ตรวจหาอัตโนมัติ',
+    'ssEncoding': 'การเข้ารหัสอักขระ',
+    'ssEncodingSub': 'การเข้ารหัสอักขระของไฟล์คำบรรยาย ปัจจุบัน: {v}',
+    'ssLanguage': 'ภาษาคำบรรยายที่ต้องการ',
+    'ssLanguageSub': 'ภาษาของแทร็กคำบรรยายที่เลือกก่อน ปัจจุบัน: {v}',
+    'ssSync': 'การซิงค์เริ่มต้น',
+    'ssSyncSub': 'คำบรรยายแสดงเร็วหรือช้ากว่าเดิมเท่าใดโดยค่าเริ่มต้น ปัจจุบัน: {v}',
+    'ssHwSync': 'การซิงค์สำหรับตัวถอดรหัส HW',
+    'ssHwSyncSub': 'ชดเชยความหน่วงการแสดงผลของตัวถอดรหัส HW ปัจจุบัน: {v}',
+    'ssAppearance': 'ลักษณะ',
+    'ssText': 'ข้อความ',
+    'ssTextSub': 'ฟอนต์ ขนาด สี ขอบ และอื่นๆ',
+    'ssLayout': 'เลย์เอาต์',
+    'ssLayoutSub': 'การจัดวาง ระยะขอบ และพื้นหลัง',
+    'ssProcessing': 'การประมวลผลข้อความ',
+    'ssItalic': 'ตัวเอียง',
+    'ssItalicSub': 'บรรทัดที่ขึ้นต้นด้วย "/" จะแสดงเป็นตัวเอียง',
+    'slyPosition': 'ตำแหน่ง',
+    'slyVertical': 'ตำแหน่งแนวตั้ง',
+    'slyVerticalSub': 'ระยะจากด้านบน (เปอร์เซ็นต์) ปัจจุบัน: {v}',
+    'slyLeft': 'ซ้าย',
+    'slyCenter': 'กลาง',
+    'slyRight': 'ขวา',
+    'slyHorizontal': 'การจัดแนวนอน',
+    'slyCurrently': 'ปัจจุบัน: {v}',
+    'slySpacing': 'ระยะห่าง',
+    'slyPadX': 'ระยะขอบซ้าย/ขวา',
+    'slyPadXSub': 'ระยะขอบด้านข้าง (พิกเซล) ปัจจุบัน: {v}',
+    'slyPadY': 'ระยะขอบล่าง',
+    'slyPadYSub': 'ระยะขอบล่าง (พิกเซล) ปัจจุบัน: {v}',
+    'slyBackground': 'พื้นหลัง',
+    'slyShowBg': 'แสดงพื้นหลัง',
+    'slyShowBgSub': 'พื้นหลังโปร่งแสงหลังข้อความคำบรรยาย',
+    'slyBlack50': 'ดำ (50%)',
+    'slyBlack75': 'ดำ (75%)',
+    'slyDarkGray': 'เทาเข้ม',
+    'slyNone': 'ไม่มี',
+    'slyBgColor': 'สีพื้นหลัง',
+    'slyBgColorSub': 'มีผลเฉพาะเมื่อเปิด "แสดงพื้นหลัง" ปัจจุบัน: {v}',
+    'sdHw': 'ตัวถอดรหัสฮาร์ดแวร์',
+    'sdAutoDefault': 'อัตโนมัติ (ค่าเริ่มต้น)',
+    'sdNeverHw': 'ไม่ใช้ตัวถอดรหัส HW',
+    'sdLocalOnly': 'เฉพาะไฟล์ในเครื่อง',
+    'sdAlwaysHw': 'ลอง HW ก่อนเสมอ',
+    'sdStrategy': 'วิธีใช้ตัวถอดรหัส HW',
+    'sdHwPlusLocal': 'ตัวถอดรหัส HW+ (ไฟล์ในเครื่อง)',
+    'sdHwPlusLocalSub': 'ใช้ HW+ เป็นตัวถอดรหัสฮาร์ดแวร์เริ่มต้นสำหรับไฟล์ในเครื่อง',
+    'sdHwPlusNet': 'ตัวถอดรหัส HW+ (เครือข่าย)',
+    'sdHwPlusNetSub': 'ใช้ HW+ เป็นตัวถอดรหัสฮาร์ดแวร์เริ่มต้นเมื่อเล่นจากเครือข่าย',
+    'sdTryHw': 'ลองตัวถอดรหัส HW',
+    'sdTryHwSub': 'ลอง HW หาก HW+ ใช้ไม่ได้',
+    'sdTryHwPlus': 'ลองตัวถอดรหัส HW+',
+    'sdTryHwPlusSub': 'ลอง HW+ หาก HW ใช้ไม่ได้',
+    'sdSw': 'ตัวถอดรหัสซอฟต์แวร์',
+    'sdSwLocal': 'ตัวถอดรหัส SW (ไฟล์ในเครื่อง)',
+    'sdSwLocalSub': 'เล่นไฟล์ในเครื่องด้วยตัวถอดรหัส SW',
+    'sdSwNet': 'ตัวถอดรหัส SW (เครือข่าย)',
+    'sdSwNetSub': 'เล่นจากเครือข่าย (HTTP, FTP, RTSP ฯลฯ) ด้วยตัวถอดรหัส SW',
+    'sdAutoRecommended': 'อัตโนมัติ (แนะนำ)',
+    'sdCores': 'จำนวนคอร์ CPU สูงสุด',
+    'sdCoresSub': 'จำนวนคอร์ CPU ที่ตัวถอดรหัส SW ใช้ได้ ปัจจุบัน: {v}',
+    'sdSpeedup': 'ใช้เทคนิคเร่งความเร็ว',
+    'sdSpeedupSub': 'ให้ตัวถอดรหัส SW ใช้ทางลัดเมื่อทำงานไม่ทัน ภาพยังคมชัดเต็มที่จนกว่าจะเริ่มทิ้งเฟรมจริง',
+    'sdGeneral': 'ทั่วไป',
+    'sdEfficient': 'การแสดงผลวิดีโอแบบประหยัด',
+    'sdEfficientSub': 'วาดวิดีโอลงหน้าจอโดยตรง ประหยัดแบตเตอรี่และร้อนน้อยลง (Android 10+) ปิดหากภาพดำหรือกะพริบ มีผลเมื่อเปิดแอปครั้งถัดไป',
+    'sdDeinterlace': 'ดีอินเทอร์เลซ',
+    'sdDeinterlaceSub': 'ดีอินเทอร์เลซเป็นค่าเริ่มต้น (เฉพาะตัวถอดรหัส SW)',
+    'sgUserAgent': 'HTTP User-Agent',
+    'sgUserAgentDefault': 'ค่าเริ่มต้น',
+    'sgUserAgentSub': 'เว้นว่างไว้เพื่อใช้ค่าเริ่มต้น',
+    'sgUserAgentHint': 'User-Agent ที่กำหนดเอง',
+    'sgQuit': 'ปุ่มออก',
+    'sgQuitSub': 'ปุ่มออกในแท็บฉันที่ปิดแอปทั้งหมด ไม่เหมือนปุ่มย้อนกลับหรือหน้าแรก',
+    'sgPrivacy': 'โหมดส่วนตัว (ไม่บันทึกการดู)',
+    'sgPrivacySub': 'ไม่บันทึกสิ่งที่ดูขณะเปิดโหมดนี้ ประวัติ จุดเล่นต่อ และรายการเพิ่มล่าสุดจะหยุดไว้ รายการเดิมยังอยู่ และไม่มีข้อมูลใดออกจากเครื่อง',
+    'sgFullAccess': 'เข้าถึงคลังทั้งหมด',
+    'sgFullAccessSub': 'ไม่บังคับ ให้คลังค้นหาในโฟลเดอร์นอก Movies, DCIM และ Downloads ได้ จะเปิดการเข้าถึงไฟล์ทั้งหมดของ Android',
+    'sgEdit': 'แก้ไข',
+    'sgAllowEdit': 'อนุญาตให้แก้ไข',
+    'sgAllowEditSub': 'แสดงเมนูสำหรับลบและเปลี่ยนชื่อไฟล์และโฟลเดอร์',
+    'sgDeleteSubs': 'ลบไฟล์คำบรรยายไปด้วย',
+    'sgUserData': 'ข้อมูลผู้ใช้',
+    'sgClearHistory': 'ล้างประวัติ',
+    'sgClearHistorySub': 'ล้างประวัติทั้งหมด รวมถึงประวัติการเล่นและการค้นหา',
+    'sgClearThumbs': 'ล้างแคชภาพตัวอย่าง',
+    'sgClearThumbsSub': 'ลบภาพตัวอย่างที่เก็บไว้ จะสร้างใหม่เมื่อเปิดรายการ',
+    'sgCacheThumbs': 'เก็บแคชภาพตัวอย่าง',
+    'sgBackup': 'สำรองข้อมูล',
+    'sgReset': 'รีเซ็ตการตั้งค่า',
+    'sgResetSub': 'คืนค่าการตั้งค่าทั้งหมดเป็นค่าเริ่มต้น ประวัติและเพลย์ลิสต์ยังอยู่',
+    'sgExport': 'ส่งออก',
+    'sgExportSub': 'บันทึกการตั้งค่าเป็นไฟล์ JSON',
+    'sgImport': 'นำเข้าจากไฟล์',
+    'sgImportSub': 'คืนค่าการตั้งค่าจากไฟล์ JSON',
+    'sdvDebug': 'ดีบัก',
+    'sdvBuffer': 'แสดงข้อมูลบัฟเฟอร์',
+    'sdvBufferSub': 'แสดงสถานะบัฟเฟอร์ระหว่างเล่น',
+    'sdvDecoder': 'แสดงข้อมูลตัวถอดรหัส',
+    'sdvDecoderSub': 'แสดงตัวถอดรหัสที่กำลังใช้',
+    'sdvFps': 'แสดง FPS',
+    'sdvFpsSub': 'แสดงจำนวนเฟรมต่อวินาทีบนหน้าจอ',
+    'sdvExperimental': 'ทดลอง',
+    'sdvNoHw': 'ปิดการเร่งด้วยฮาร์ดแวร์',
+    'sdvNoHwSub': 'บังคับถอดรหัสด้วยซอฟต์แวร์ ใช้เพื่อดีบักเท่านั้น',
+    'sdvResetAll': 'รีเซ็ตการตั้งค่าทั้งหมด',
+    'sdvResetAllSub': 'คืนค่าการตั้งค่าทั้งหมดเป็นค่าเริ่มต้น',
   };
 }
 

@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/services/preferences/player_settings_service.dart';
 import '../../../core/services/preferences/extra_settings_service.dart';
 import '../../../core/services/saf/saf_service.dart';
-import '../../../core/services/adb/adb_service.dart';
 import 'adb_connect_screen.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/ui/tablet_constrained_width.dart';
@@ -48,24 +47,11 @@ class SettingsListScreen extends ConsumerWidget {
       body: TabletConstrainedWidth(
         child: ListView(
           children: [
-          const SettingsSectionHeader('Appearance'),
+          SettingsSectionHeader(AppStrings.of(context).slAppearance),
           _toggle(ref,
-              title: 'Last media in each folder',
-              subtitle: 'Mark last played media in each folder.',
-              setting: PlayerSetting.listLastMediaInFolder),
-          _toggle(ref,
-              title: 'Scroll down to last media',
-              subtitle: 'Auto-scroll to position of the last played media.',
-              setting: PlayerSetting.listScrollToLastMedia),
-          _toggle(ref,
-              title: 'Select thumbnail',
+              title: AppStrings.of(context).slFloating,
               subtitle:
-                  'Switch to selection mode by touching the thumbnail or icon.',
-              setting: PlayerSetting.listSelectThumbnail),
-          _toggle(ref,
-              title: 'Floating button',
-              subtitle:
-                  'Place a floating button on the bottom right corner of the screen to start last played media.',
+                  AppStrings.of(context).slFloatingSub,
               setting: PlayerSetting.listFloatingButton),
           // Phase 45 (audit): MX Player's `new_tagged_period` is an
           // editable INT (days, default 7), not a boolean. We expose it
@@ -75,19 +61,20 @@ class SettingsListScreen extends ConsumerWidget {
                 .watch(extraSettingsProvider)
                 .getInt(IntSetting.newTaggedPeriod);
             return SettingsNavTile(
-              title: 'Period tagged as "NEW"',
+              title: AppStrings.of(context).slNewPeriod,
               subtitle:
-                  '"NEW" tag will be displayed if the file was modified within this period. Currently: $days day${days == 1 ? "" : "s"}',
+                  AppStrings.of(context).slNewPeriodSub(days == 0 ? AppStrings.of(context).off : AppStrings.of(context).daysCount(days)),
               onTap: () async {
                 final picked = await showSettingsSliderDialog(
                   context: context,
-                  title: 'Days for "NEW" Tag',
+                  title: AppStrings.of(context).slNewPeriod,
                   currentValue: days.toDouble(),
                   min: 0,
                   max: 90,
                   divisions: 90,
-                  valueLabel: (v) =>
-                      v.round() == 0 ? 'Disabled' : '${v.round()} days',
+                  valueLabel: (v) => v.round() == 0
+                      ? AppStrings.of(context).off
+                      : AppStrings.of(context).daysCount(v.round()),
                 );
                 if (picked != null) {
                   await ref
@@ -97,42 +84,7 @@ class SettingsListScreen extends ConsumerWidget {
               },
             );
           }),
-          const SettingsSectionHeader('Scan'),
-          // Phase 45 (audit refined, build 64): wire Folders multi-select
-          // to a SharedPreferences-backed string list (CSV in
-          // StringSetting.scanFolders). Default = Internal storage only.
-          Builder(builder: (ctx) {
-            final raw = ref
-                .watch(extraSettingsProvider)
-                .getStr(StringSetting.scanFolders);
-            final selected = raw.isEmpty
-                ? <String>['Internal storage']
-                : raw.split('|');
-            return SettingsNavTile(
-              title: 'Folders',
-              subtitle: selected.length == 1
-                  ? selected.first
-                  : '${selected.length} folders selected',
-              onTap: () async {
-                final picked = await showSettingsMultiSelectDialog(
-                  context: context,
-                  title: 'Folders',
-                  options: const [
-                    'Internal storage',
-                    'SD Card',
-                    'USB Storage'
-                  ],
-                  selectedValues: selected,
-                );
-                if (picked != null) {
-                  await ref
-                      .read(extraSettingsProvider.notifier)
-                      .setStr(StringSetting.scanFolders,
-                          picked.join('|'));
-                }
-              },
-            );
-          }),
+          SettingsSectionHeader(AppStrings.of(context).slScan),
           // Phase 45 (audit refined, build 64): wire File extensions
           // multi-select. Stored as pipe-separated CSV in
           // StringSetting.scanExtensions.
@@ -146,12 +98,12 @@ class SettingsListScreen extends ConsumerWidget {
             final selected =
                 raw.isEmpty ? defaults : raw.split('|');
             return SettingsNavTile(
-              title: 'File extensions',
-              subtitle: '${selected.length} extensions enabled',
+              title: AppStrings.of(context).slExtensions,
+              subtitle: AppStrings.of(context).slExtensionsOn(selected.length),
               onTap: () async {
                 final picked = await showSettingsMultiSelectDialog(
                   context: context,
-                  title: 'File Extensions',
+                  title: AppStrings.of(context).slExtensions,
                   options: const [
                     '.mp4',
                     '.mkv',
@@ -185,18 +137,18 @@ class SettingsListScreen extends ConsumerWidget {
             final libPrefs = ref.watch(libraryPreferencesProvider);
             return Column(children: [
               SettingsToggleTile(
-                title: 'Recognize .nomedia',
+                title: AppStrings.of(context).slNomedia,
                 subtitle:
-                    'Exclude any media file from a video list if a ".nomedia" file exists in that folder or a parent folder.',
+                    AppStrings.of(context).slNomediaSub,
                 value: libPrefs.recognizeNomedia,
                 onChanged: (v) => ref
                     .read(libraryPreferencesProvider.notifier)
                     .setAdvanced(recognizeNomedia: v),
               ),
               SettingsToggleTile(
-                title: 'Show hidden files and folders',
+                title: AppStrings.of(context).slShowHidden,
                 subtitle:
-                    'Show hidden folders and files starting with "." (dot).',
+                    AppStrings.of(context).slShowHiddenSub,
                 value: libPrefs.showHidden,
                 onChanged: (v) => ref
                     .read(libraryPreferencesProvider.notifier)
@@ -208,6 +160,7 @@ class SettingsListScreen extends ConsumerWidget {
           // meaningful with "Show hidden files" on — that's when the granted
           // videos are folded into Local.
           Consumer(builder: (context, ref, _) {
+            final s = AppStrings.of(context);
             final api = _androidApiLevel();
             final trees = ref.watch(safGrantedTreesProvider).maybeWhen(
                   data: (t) => t,
@@ -216,32 +169,18 @@ class SettingsListScreen extends ConsumerWidget {
             final count = trees.length;
             final String subtitle;
             if (count > 0) {
-              subtitle =
-                  'Granted: ${trees.map(_prettyTree).join(", ")}. Tap to add '
-                  'another folder.';
+              subtitle = s.slSafGranted(trees.map(_prettyTree).join(', '));
             } else if (api >= 33) {
-              subtitle =
-                  'Android $api restricts Android/data — the system may block '
-                  'selecting it. Grant it here; if it returns 0 videos, only '
-                  'Shizuku or root can reach it. Also turn on "Show hidden '
-                  'files".';
+              subtitle = s.slSafBlocked;
             } else if (api >= 30) {
-              subtitle =
-                  'Grant Android/data (e.g. Telegram cache) to reveal its '
-                  'videos in Local. Also turn on "Show hidden files". '
-                  'Grants belong to the installed app, so a reinstall clears '
-                  'them and they have to be given again.';
+              subtitle = s.slSafGrant;
             } else if (api > 0) {
-              subtitle =
-                  'Not required on Android $api — hidden folders are read '
-                  'directly. Just turn on "Show hidden files".';
+              subtitle = s.slSafNotNeeded(api);
             } else {
-              subtitle =
-                  'Reveal videos inside Android/data and other restricted '
-                  'folders. Also turn on "Show hidden files".';
+              subtitle = s.slSafGeneric;
             }
             return SettingsNavTile(
-              title: 'Grant access to restricted folders',
+              title: s.slSafTitle,
               subtitle: subtitle,
               onTap: () async {
                 final messenger = ScaffoldMessenger.of(context);
@@ -251,11 +190,9 @@ class SettingsListScreen extends ConsumerWidget {
                 if (granted == null) {
                   messenger
                     ..hideCurrentSnackBar()
-                    ..showSnackBar(const SnackBar(
-                      content: Text(
-                          'No folder was granted (cancelled or blocked by '
-                          'Android).'),
-                      duration: Duration(seconds: 3),
+                    ..showSnackBar(SnackBar(
+                      content: Text(s.slSafNone),
+                      duration: const Duration(seconds: 3),
                       behavior: SnackBarBehavior.floating,
                     ));
                   return;
@@ -267,12 +204,8 @@ class SettingsListScreen extends ConsumerWidget {
                   ..hideCurrentSnackBar()
                   ..showSnackBar(SnackBar(
                     content: Text(vids.isEmpty
-                        ? 'Granted "${_prettyTree(granted)}", but found 0 '
-                            'videos inside. On Android 13+ the system usually '
-                            'blocks Android/data itself — Shizuku or root is '
-                            'needed there.'
-                        : 'Granted "${_prettyTree(granted)}" — found '
-                            '${vids.length} video${vids.length == 1 ? "" : "s"}.'),
+                        ? s.slSafEmpty(_prettyTree(granted))
+                        : s.slSafFound(_prettyTree(granted), vids.length)),
                     duration: const Duration(seconds: 5),
                     behavior: SnackBarBehavior.floating,
                   ));
@@ -280,15 +213,15 @@ class SettingsListScreen extends ConsumerWidget {
             );
           }),
           Consumer(builder: (context, ref, _) {
+            final s = AppStrings.of(context);
             final count = ref.watch(safGrantedTreesProvider).maybeWhen(
                   data: (t) => t.length,
                   orElse: () => 0,
                 );
             if (count == 0) return const SizedBox.shrink();
             return SettingsNavTile(
-              title: 'Clear granted folders',
-              subtitle: 'Revoke all $count granted folder'
-                  '${count == 1 ? "" : "s"}.',
+              title: s.slSafClear,
+              subtitle: s.slSafClearSub(count),
               onTap: () async {
                 final messenger = ScaffoldMessenger.of(context);
                 await SafService.instance.releaseAll();
@@ -296,41 +229,14 @@ class SettingsListScreen extends ConsumerWidget {
                 ref.invalidate(safVideosProvider);
                 messenger
                   ..hideCurrentSnackBar()
-                  ..showSnackBar(const SnackBar(
-                    content: Text('Granted folders cleared'),
-                    duration: Duration(seconds: 2),
+                  ..showSnackBar(SnackBar(
+                    content: Text(s.slSafCleared),
+                    duration: const Duration(seconds: 2),
                     behavior: SnackBarBehavior.floating,
                   ));
               },
             );
           }),
-          // Phase 64 / M1a: ADB engine self-test. Builds/loads the client key
-          // + certificate natively and reports whether the libadb-android
-          // foundation works on this device — before any pairing is wired.
-          SettingsNavTile(
-            title: 'ADB engine self-test (experimental)',
-            subtitle: 'Check the embedded ADB engine builds its key & '
-                'certificate on this device. Groundwork for Android/data '
-                'access — no connection yet.',
-            onTap: () async {
-              final ctx = context;
-              final status = await AdbService.instance.init();
-              if (!ctx.mounted) return;
-              showDialog<void>(
-                context: ctx,
-                builder: (dialogCtx) => AlertDialog(
-                  title: const Text('ADB engine self-test'),
-                  content: Text(status),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.of(dialogCtx).pop(),
-                      child: const Text('OK'),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
           // Phase 64 / M1b-B: opens the pairing + connect screen.
           SettingsNavTile(
             title: AppStrings.of(context).adbScreenTitle,

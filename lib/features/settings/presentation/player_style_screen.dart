@@ -38,28 +38,20 @@ class PlayerStyleScreen extends ConsumerWidget {
       appBar: AppBar(title: Text(AppStrings.of(context).styleTitle)),
       body: ListView(
         children: [
-          const SettingsSectionHeader('Title Bar'),
+          SettingsSectionHeader(AppStrings.of(context).psTitleBar),
           _toggle(ref,
-              title: 'Show title',
-              subtitle: 'Display video title on the player screen.',
+              title: AppStrings.of(context).psShowTitle,
+              subtitle: AppStrings.of(context).psShowTitleSub,
               setting: PlayerSetting.styleShowTitle),
           _toggle(ref,
-              title: 'Show system clock',
-              subtitle: 'Display current time on the player screen.',
+              title: AppStrings.of(context).psShowClock,
+              subtitle: AppStrings.of(context).psShowClockSub,
               setting: PlayerSetting.styleShowClock),
           _toggle(ref,
-              title: 'Show battery level',
-              subtitle: 'Display battery percentage on the player screen.',
-              setting: PlayerSetting.styleShowBattery),
-          _toggle(ref,
-              title: 'Show source URL',
-              subtitle: 'Display source URL/path for network play.',
+              title: AppStrings.of(context).psShowSourceUrl,
+              subtitle: AppStrings.of(context).psShowSourceUrlSub,
               setting: PlayerSetting.styleShowSourceUrl),
-          const SettingsSectionHeader('Layout'),
-          _toggle(ref,
-              title: 'Compact mode',
-              subtitle: 'Use compact player controls layout.',
-              setting: PlayerSetting.styleCompactMode),
+          SettingsSectionHeader(AppStrings.of(context).psLayout),
           // Audit fix (standard high-quality): wire toolbar position
           // to StringSetting.toolbarPosition. player_screen reads
           // the value and places the top bar at the top of the
@@ -67,31 +59,30 @@ class PlayerStyleScreen extends ConsumerWidget {
           // controls ('bottom') — useful for one-handed phone-grip
           // ergonomics where back/title need to be in thumb reach.
           Builder(builder: (ctx) {
-            const optMap = <String, String>{
-              'Top (default)': 'top',
-              'Bottom (within thumb reach)': 'bottom',
+            final s = AppStrings.of(context);
+            final labels = <String, String>{
+              'top': s.psToolbarTop,
+              'bottom': s.psToolbarBottom,
             };
             final cur = ref
                 .watch(extraSettingsProvider)
                 .getStr(StringSetting.toolbarPosition);
-            final curLabel = optMap.entries
-                .firstWhere((e) => e.value == cur,
-                    orElse: () =>
-                        const MapEntry('Top (default)', 'top'))
-                .key;
+            final curLabel = labels[cur] ?? labels['top']!;
             return SettingsNavTile(
-              title: 'Toolbar position',
-              subtitle:
-                  'Where the title bar sits on the player. Currently: $curLabel',
+              title: s.psToolbarPosition,
+              subtitle: s.psToolbarPositionSub(curLabel),
               onTap: () async {
                 final picked = await showSettingsListDialog(
                   context: context,
-                  title: 'Toolbar Position',
-                  options: optMap.keys.toList(),
+                  title: s.psToolbarPosition,
+                  options: labels.values.toList(),
                   currentValue: curLabel,
                 );
                 if (picked == null) return;
-                final v = optMap[picked];
+                final v = labels.entries
+                    .where((e) => e.value == picked)
+                    .map((e) => e.key)
+                    .firstOrNull;
                 if (v == null) return;
                 await ref
                     .read(extraSettingsProvider.notifier)

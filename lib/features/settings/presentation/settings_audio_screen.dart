@@ -36,19 +36,15 @@ class SettingsAudioScreen extends ConsumerWidget {
       appBar: AppBar(title: Text(AppStrings.of(context).settingsAudio)),
       body: ListView(
         children: [
-          _toggle(ref,
-              title: 'Audio player',
-              subtitle: 'Use as audio player.',
-              setting: PlayerSetting.audioAsPlayer),
           // Phase 45 (audit refined, build 63): wire Audio output to
           // StringSetting.audioDevice (was visible-only list dialog).
           // Persisted so subsequent plays respect the user's choice.
           Builder(builder: (ctx) {
-            const optMap = <String, String>{
-              'Auto (follow system)': 'auto',
-              'Speaker': 'speaker',
-              'Headphones': 'headphone',
-              'Bluetooth': 'bluetooth',
+            final optMap = <String, String>{
+              AppStrings.of(context).saAuto: 'auto',
+              AppStrings.of(context).saSpeaker: 'speaker',
+              AppStrings.of(context).saHeadphones: 'headphone',
+              AppStrings.of(context).saBluetooth: 'bluetooth',
             };
             final cur = ref
                 .watch(extraSettingsProvider)
@@ -56,15 +52,15 @@ class SettingsAudioScreen extends ConsumerWidget {
             final curLabel = optMap.entries
                 .firstWhere((e) => e.value == cur,
                     orElse: () =>
-                        const MapEntry('Auto (follow system)', 'auto'))
+                        MapEntry(AppStrings.of(context).saAuto, 'auto'))
                 .key;
             return SettingsNavTile(
-              title: 'Audio output',
+              title: AppStrings.of(context).saOutput,
               subtitle: curLabel,
               onTap: () async {
                 final picked = await showSettingsListDialog(
                   context: context,
-                  title: 'Audio Output',
+                  title: AppStrings.of(context).saOutput,
                   options: optMap.keys.toList(),
                   currentValue: curLabel,
                 );
@@ -78,64 +74,59 @@ class SettingsAudioScreen extends ConsumerWidget {
             );
           }),
           _toggle(ref,
-              title: 'Volume boost',
+              title: AppStrings.of(context).saBoost,
               subtitle:
-                  'Audio volume can be boosted up to 200% if you use HW+ or SW decoder.',
+                  AppStrings.of(context).saBoostSub,
               setting: PlayerSetting.audioVolumeBoost),
           // Audit fix (Phase 4 #15): loudness normalization toggle.
           _toggle(ref,
-              title: 'Loudness normalization',
+              title: AppStrings.of(context).saLoudness,
               subtitle:
-                  'Even out loud and quiet scenes/songs so you don\'t need to ride the volume — similar to Spotify\'s loudness normalization. Best-effort, depends on libmpv codec support.',
+                  AppStrings.of(context).saLoudnessSub,
               setting: PlayerSetting.loudnessNormalization),
           _toggle(ref,
-              title: 'System volume',
+              title: AppStrings.of(context).saSystemVolume,
               subtitle:
-                  'Synchronize sound volume with the system media volume.',
+                  AppStrings.of(context).saSystemVolumeSub,
               setting: PlayerSetting.audioSystemVolume),
           _toggle(ref,
-              title: 'System volume panel',
+              title: AppStrings.of(context).saPauseHeadset,
               subtitle:
-                  'Show system volume panel while changing volume with the headset plugged in.',
-              setting: PlayerSetting.audioSystemVolumePanel),
-          _toggle(ref,
-              title: 'Pause on headset disconnected',
-              subtitle:
-                  'Pause playback when wired/Bluetooth headset disconnected from the device.',
+                  AppStrings.of(context).saPauseHeadsetSub,
               setting: PlayerSetting.audioPauseOnHeadsetDisconnect),
           _toggle(ref,
-              title: 'Fade on start',
+              title: AppStrings.of(context).saFadeStart,
               setting: PlayerSetting.audioFadeOnStart),
           _toggle(ref,
-              title: 'Fade on seek',
+              title: AppStrings.of(context).saFadeSeek,
               setting: PlayerSetting.audioFadeOnSeek),
           // Phase 45 (audit refined, build 63): MX Player V3
           // `audio_effects_enabled` master toggle + Dolby/DTS
           // passthrough toggle.
           _toggle(ref,
-              title: 'Audio effects',
+              title: AppStrings.of(context).saEffects,
               subtitle:
-                  'Enable the Equalizer + Bass Boost + Virtualizer + Reverb pipeline.',
+                  AppStrings.of(context).saEffectsSub,
               setting: PlayerSetting.audioEffectsEnabled),
           _toggle(ref,
-              title: 'Prefer audio passthrough',
+              title: AppStrings.of(context).saPassthrough,
               subtitle:
-                  'Pass Dolby/DTS bitstream untouched to an AV receiver. Disable if you hear distortion through phone speakers.',
+                  AppStrings.of(context).saPassthroughSub,
               setting: PlayerSetting.preferAudioPassthrough),
           // Phase 45 (audit): MX Player V3 `audio_language` is an ISO code
           // ('' = no preference). We map common languages to their ISO 639
           // codes for the picker UI but persist as the raw code so libmpv
           // can use them directly.
           Builder(builder: (ctx) {
-            const langMap = <String, String>{
-              'None': '',
-              'English': 'eng',
-              'Japanese': 'jpn',
-              'Korean': 'kor',
-              'Chinese': 'chi',
-              'Myanmar': 'mya',
-              'Thai': 'tha',
-              'Hindi': 'hin',
+            final langMap = <String, String>{
+              AppStrings.of(context).langNone: '',
+              AppStrings.of(context).langEnglish: 'eng',
+              AppStrings.of(context).langJapanese: 'jpn',
+              AppStrings.of(context).langKorean: 'kor',
+              AppStrings.of(context).langChinese: 'chi',
+              AppStrings.of(context).langMyanmar: 'mya',
+              AppStrings.of(context).langThai: 'tha',
+              AppStrings.of(context).langHindi: 'hin',
             };
             final current = ref
                 .watch(extraSettingsProvider)
@@ -143,17 +134,17 @@ class SettingsAudioScreen extends ConsumerWidget {
             final currentLabel = langMap.entries
                 .firstWhere(
                   (e) => e.value == current,
-                  orElse: () => const MapEntry('None', ''),
+                  orElse: () => MapEntry(AppStrings.of(context).langNone, ''),
                 )
                 .key;
             return SettingsNavTile(
-              title: 'Preferred audio language',
+              title: AppStrings.of(context).saLanguage,
               subtitle:
-                  'Language of the audio track you want to use. Currently: $currentLabel',
+                  AppStrings.of(context).saLanguageSub(currentLabel),
               onTap: () async {
                 final picked = await showSettingsListDialog(
                   context: context,
-                  title: 'Preferred Audio Language',
+                  title: AppStrings.of(context).saLanguage,
                   options: langMap.keys.toList(),
                   currentValue: currentLabel,
                 );
@@ -170,13 +161,13 @@ class SettingsAudioScreen extends ConsumerWidget {
                 .watch(extraSettingsProvider)
                 .getInt(IntSetting.audioDelay);
             return SettingsNavTile(
-              title: 'Audio delay',
+              title: AppStrings.of(context).saDelay,
               subtitle:
-                  'Adjust audio delay (ms). Currently: ${ms >= 0 ? "+" : ""}${ms}ms',
+                  AppStrings.of(context).saDelaySub('${ms >= 0 ? "+" : ""}${ms}ms'),
               onTap: () async {
                 final picked = await showSettingsSliderDialog(
                   context: context,
-                  title: 'Audio Delay',
+                  title: AppStrings.of(context).saDelay,
                   currentValue: ms / 1000.0,
                   min: -2.0,
                   max: 2.0,
@@ -192,35 +183,7 @@ class SettingsAudioScreen extends ConsumerWidget {
               },
             );
           }),
-          Builder(builder: (ctx) {
-            final ms = ref
-                .watch(extraSettingsProvider)
-                .getInt(IntSetting.bluetoothAudioDelay);
-            return SettingsNavTile(
-              title: 'Bluetooth audio delay',
-              subtitle:
-                  'Extra delay applied when audio routes through Bluetooth. Currently: ${ms >= 0 ? "+" : ""}${ms}ms',
-              onTap: () async {
-                final picked = await showSettingsSliderDialog(
-                  context: context,
-                  title: 'Bluetooth Audio Delay',
-                  currentValue: ms / 1000.0,
-                  min: -2.0,
-                  max: 2.0,
-                  divisions: 40,
-                  valueLabel: (v) =>
-                      '${v >= 0 ? "+" : ""}${(v * 1000).round()}ms',
-                );
-                if (picked != null) {
-                  await ref
-                      .read(extraSettingsProvider.notifier)
-                      .setInt(IntSetting.bluetoothAudioDelay,
-                          (picked * 1000).round());
-                }
-              },
-            );
-          }),
-          // Note: "Prefer audio passthrough" already exposed earlier in
+          // Note: AppStrings.of(context).saPassthrough already exposed earlier in
           // this screen as a wired toggle bound to
           // PlayerSetting.preferAudioPassthrough — duplicate visible-
           // only tile removed here.

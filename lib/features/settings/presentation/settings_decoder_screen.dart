@@ -38,33 +38,33 @@ class SettingsDecoderScreen extends ConsumerWidget {
       appBar: AppBar(title: Text(AppStrings.of(context).settingsDecoder)),
       body: ListView(
         children: [
-          const SettingsSectionHeader('Hardware decoder'),
+          SettingsSectionHeader(AppStrings.of(context).sdHw),
           // Phase 45 (audit refined, build 63): MX Player V3's
           // `omxdecoder.2` selector — 4-mode HW decoder strategy.
           // Different from per-stream decHwLocal/decHwNetwork toggles
           // (which are added below). This is the OVERALL "when to
           // attempt HW decode" policy.
           Builder(builder: (ctx) {
-            const optMap = <String, String>{
-              'Auto (default)': 'auto',
-              'Never use HW decoder': 'never',
-              'Local files only': 'localOnly',
-              'Always try HW first': 'everywhere',
+            final optMap = <String, String>{
+              AppStrings.of(context).sdAutoDefault: 'auto',
+              AppStrings.of(context).sdNeverHw: 'never',
+              AppStrings.of(context).sdLocalOnly: 'localOnly',
+              AppStrings.of(context).sdAlwaysHw: 'everywhere',
             };
             final cur = ref
                 .watch(extraSettingsProvider)
                 .getStr(StringSetting.omxDecoderMode);
             final curLabel = optMap.entries
                 .firstWhere((e) => e.value == cur,
-                    orElse: () => const MapEntry('Auto (default)', 'auto'))
+                    orElse: () => MapEntry(AppStrings.of(context).sdAutoDefault, 'auto'))
                 .key;
             return SettingsNavTile(
-              title: 'HW decoder strategy',
+              title: AppStrings.of(context).sdStrategy,
               subtitle: curLabel,
               onTap: () async {
                 final picked = await showSettingsListDialog(
                   context: context,
-                  title: 'HW Decoder Strategy',
+                  title: AppStrings.of(context).sdStrategy,
                   options: optMap.keys.toList(),
                   currentValue: curLabel,
                 );
@@ -78,176 +78,41 @@ class SettingsDecoderScreen extends ConsumerWidget {
             );
           }),
           _toggle(ref,
-              title: 'HW+ decoder (local)',
+              title: AppStrings.of(context).sdHwPlusLocal,
               subtitle:
-                  'Set HW+ decoder as the default hardware decoder for local files.',
+                  AppStrings.of(context).sdHwPlusLocalSub,
               setting: PlayerSetting.decHwLocal),
           _toggle(ref,
-              title: 'HW+ decoder (network)',
+              title: AppStrings.of(context).sdHwPlusNet,
               subtitle:
-                  'Set HW+ decoder as the default hardware decoder for network play.',
+                  AppStrings.of(context).sdHwPlusNetSub,
               setting: PlayerSetting.decHwNetwork),
           _toggle(ref,
-              title: 'Try HW decoder',
-              subtitle: 'Try HW decoder if HW+ decoder fails.',
+              title: AppStrings.of(context).sdTryHw,
+              subtitle: AppStrings.of(context).sdTryHwSub,
               setting: PlayerSetting.decTryHw),
           _toggle(ref,
-              title: 'Try HW+ decoder',
-              subtitle: 'Try HW+ decoder if HW decoder fails.',
+              title: AppStrings.of(context).sdTryHwPlus,
+              subtitle: AppStrings.of(context).sdTryHwPlusSub,
               setting: PlayerSetting.decTryHwPlus),
-          // Phase 45 (audit refined, build 64): wire HW+ video codecs
-          // to StringSetting.hwPlusVideoCodecs (pipe-separated list).
-          Builder(builder: (ctx) {
-            const allOpts = [
-              'H.264/AVC',
-              'H.265/HEVC',
-              'MPEG-4',
-              'VP8',
-              'VP9',
-              'AV1',
-              'MPEG-2'
-            ];
-            const defaults = ['H.264/AVC', 'H.265/HEVC'];
-            final raw = ref
-                .watch(extraSettingsProvider)
-                .getStr(StringSetting.hwPlusVideoCodecs);
-            final selected =
-                raw.isEmpty ? defaults : raw.split('|');
-            return SettingsNavTile(
-              title: 'HW+ video codecs',
-              subtitle: '${selected.length} codecs enabled',
-              onTap: () async {
-                final picked = await showSettingsMultiSelectDialog(
-                  context: context,
-                  title: 'HW+ Video Codecs',
-                  options: allOpts,
-                  selectedValues: selected,
-                );
-                if (picked != null) {
-                  await ref
-                      .read(extraSettingsProvider.notifier)
-                      .setStr(StringSetting.hwPlusVideoCodecs,
-                          picked.join('|'));
-                }
-              },
-            );
-          }),
-          // Phase 45 (audit refined, build 64): wire HW+ audio codecs.
-          Builder(builder: (ctx) {
-            const allOpts = [
-              'AAC',
-              'MP3',
-              'AC3',
-              'DTS',
-              'FLAC',
-              'Vorbis',
-              'Opus',
-              'PCM'
-            ];
-            const defaults = ['AAC', 'MP3'];
-            final raw = ref
-                .watch(extraSettingsProvider)
-                .getStr(StringSetting.hwPlusAudioCodecs);
-            final selected =
-                raw.isEmpty ? defaults : raw.split('|');
-            return SettingsNavTile(
-              title: 'HW+ audio codecs',
-              subtitle: '${selected.length} codecs enabled',
-              onTap: () async {
-                final picked = await showSettingsMultiSelectDialog(
-                  context: context,
-                  title: 'HW+ Audio Codecs',
-                  options: allOpts,
-                  selectedValues: selected,
-                );
-                if (picked != null) {
-                  await ref
-                      .read(extraSettingsProvider.notifier)
-                      .setStr(StringSetting.hwPlusAudioCodecs,
-                          picked.join('|'));
-                }
-              },
-            );
-          }),
+          SettingsSectionHeader(AppStrings.of(context).sdSw),
           _toggle(ref,
-              title: 'HW+ audio on SW video',
-              subtitle:
-                  'Use HW+ audio decoder if SW audio decoder fails in SW decoding mode.',
-              setting: PlayerSetting.decHwAudioOnSwVideo),
-          _toggle(ref,
-              title: 'Correct aspect ratio',
-              subtitle:
-                  'Correct aspect ratio of HW decoded videos. Use this option if HW decoder ignores aspect ratio.',
-              setting: PlayerSetting.decCorrectAspect),
-          // Phase 45 (audit refined, build 64): wire Calibrate playback
-          // position to IntSetting.calibrateHwPlayPosition. Already
-          // applied in openVideo() as the HW decoder subtitle sync
-          // offset; the slider also adjusts perceived playback position.
-          Builder(builder: (ctx) {
-            final sec = ref
-                .watch(extraSettingsProvider)
-                .getInt(IntSetting.calibrateHwPlayPosition);
-            return SettingsNavTile(
-              title: 'Calibrate playback position',
-              subtitle:
-                  'Currently ${sec >= 0 ? "+" : ""}${sec}s. Adjust if HW decoder reports incorrect position.',
-              onTap: () async {
-                final picked = await showSettingsSliderDialog(
-                  context: context,
-                  title: 'Calibrate Playback Position',
-                  currentValue: sec.toDouble(),
-                  min: -10,
-                  max: 10,
-                  divisions: 20,
-                  valueLabel: (v) =>
-                      '${v >= 0 ? "+" : ""}${v.round()}s',
-                );
-                if (picked != null) {
-                  await ref
-                      .read(extraSettingsProvider.notifier)
-                      .setInt(IntSetting.calibrateHwPlayPosition,
-                          picked.round());
-                }
-              },
-            );
-          }),
-          _toggle(ref,
-              title: 'HW audio track selectable',
-              subtitle:
-                  'Turn it off only if HW decoder crashes immediately after changing audio track or playing videos using an unsupported audio codec. If this option is turned off, custom audio codecs will not be used automatically with HW decoder.',
-              setting: PlayerSetting.decHwAudioTrackSelectable),
-          const SettingsSectionHeader('Software decoder'),
-          _toggle(ref,
-              title: 'SW decoder (local)',
-              subtitle: 'Use SW decoder for local files stored on the device.',
+              title: AppStrings.of(context).sdSwLocal,
+              subtitle: AppStrings.of(context).sdSwLocalSub,
               setting: PlayerSetting.decSwLocal),
           _toggle(ref,
-              title: 'SW decoder (network)',
+              title: AppStrings.of(context).sdSwNet,
               subtitle:
-                  'Use SW decoder for network play from remote sources via HTTP, FTP, RTSP, MMS and more.',
+                  AppStrings.of(context).sdSwNetSub,
               setting: PlayerSetting.decSwNetwork),
-          _toggle(ref,
-              title: 'SW audio',
-              subtitle: 'Use SW audio decoder instead of HW audio decoder.',
-              setting: PlayerSetting.decSwAudio),
-          _toggle(ref,
-              title: 'SW audio (local)',
-              subtitle:
-                  'Use SW audio decoder for playing local files stored on the device.',
-              setting: PlayerSetting.decSwAudioLocal),
-          _toggle(ref,
-              title: 'SW audio (network)',
-              subtitle:
-                  'Use SW audio decoder for playing remote network sources.',
-              setting: PlayerSetting.decSwAudioNetwork),
           // Audit fix (standard high-quality): wire CPU Core Limit
           // to `IntSetting.videoDecoderThreads` which the player
           // service feeds into libmpv's `vd-lavc-threads` on open.
           // 0 = libmpv auto. Useful on thermally constrained
           // devices to prevent decoder thrashing the CPU.
           Builder(builder: (ctx) {
-            const optMap = <String, int>{
-              'Auto (recommended)': 0,
+            final optMap = <String, int>{
+              AppStrings.of(context).sdAutoRecommended: 0,
               '1': 1,
               '2': 2,
               '4': 4,
@@ -260,15 +125,15 @@ class SettingsDecoderScreen extends ConsumerWidget {
             final curLabel = optMap.entries
                 .firstWhere((e) => e.value == cur,
                     orElse: () =>
-                        const MapEntry('Auto (recommended)', 0))
+                        MapEntry(AppStrings.of(context).sdAutoRecommended, 0))
                 .key;
             return SettingsNavTile(
-              title: 'CPU Core Limit',
-              subtitle: 'Max CPU threads for SW video decoding (libmpv vd-lavc-threads). Currently: $curLabel',
+              title: AppStrings.of(context).sdCores,
+              subtitle: AppStrings.of(context).sdCoresSub(curLabel),
               onTap: () async {
                 final picked = await showSettingsListDialog(
                   context: context,
-                  title: 'CPU Core Limit',
+                  title: AppStrings.of(context).sdCores,
                   options: optMap.keys.toList(),
                   currentValue: curLabel,
                 );
@@ -281,67 +146,20 @@ class SettingsDecoderScreen extends ConsumerWidget {
               },
             );
           }),
-          // Audit fix (standard high-quality): Color format on
-          // libmpv-backed players is auto-selected — there's no
-          // user-controllable knob equivalent to MX Player's V3
-          // legacy "RGB 565 / RGB 8888 / YUV" picker. Rather than
-          // pretend, surface an informational dialog explaining
-          // why the choice doesn't apply.
-          SettingsNavTile(
-            title: 'Color format',
-            subtitle:
-                'Auto-selected by libmpv based on GPU + display. Tap for details.',
-            onTap: () => showDialog<void>(
-              context: context,
-              builder: (dctx) => AlertDialog(
-                backgroundColor: AppColors.darkSurface,
-                title: Text(AppStrings.of(context).colorFormat,
-                  style: const TextStyle(color: Colors.white),
-                ),
-                content: const Text(
-                  'On this player, the video output format (RGB 565 / 8888 / YUV) '
-                  "is selected automatically by libmpv to match your GPU and "
-                  "display's preferred mode. Manual override is not exposed "
-                  'and rarely useful — modern GPUs handle YUV natively and '
-                  'misconfiguration can cause green-screen artefacts.\n\n'
-                  'If you suspect a colour issue, try switching the decoder '
-                  '(HW / HW+ / SW) on the player screen first.',
-                  style: TextStyle(color: Colors.white70, fontSize: 13),
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.of(dctx).pop(),
-                    child: Text(AppStrings.of(context).ok,
-                        style: const TextStyle(color: AppColors.accentBlue)),
-                  ),
-                ],
-              ),
-            ),
-          ),
           _toggle(ref,
-              title: 'Use speedup tricks',
-              subtitle:
-                  'Allow the software decoder to take shortcuts when it '
-                  'cannot keep up. The picture stays at full quality until '
-                  'frames are actually being dropped.',
+              title: AppStrings.of(context).sdSpeedup,
+              subtitle: AppStrings.of(context).sdSpeedupSub,
               setting: PlayerSetting.decSpeedupTricks),
-          const SettingsSectionHeader('General'),
+          SettingsSectionHeader(AppStrings.of(context).sdGeneral),
           _toggle(ref,
-              title: 'Efficient video output',
-              subtitle:
-                  'Draws video straight to the screen with less battery and '
-                  'heat (Android 10+). Turn off if the picture is black or '
-                  'flickers. Applies the next time the app starts.',
+              title: AppStrings.of(context).sdEfficient,
+              subtitle: AppStrings.of(context).sdEfficientSub,
               setting: PlayerSetting.decEfficientOutput),
           _toggle(ref,
-              title: 'Deinterlace',
+              title: AppStrings.of(context).sdDeinterlace,
               subtitle:
-                  'Deinterlace by default. Currently deinterlacing works only with SW decoder.',
+                  AppStrings.of(context).sdDeinterlaceSub,
               setting: PlayerSetting.decDeinterlace),
-          _toggle(ref,
-              title: 'Custom codec',
-              subtitle: 'Use ARMv8 NEON type custom codec.',
-              setting: PlayerSetting.decCustomCodec),
           const SizedBox(height: 24),
         ],
       ),

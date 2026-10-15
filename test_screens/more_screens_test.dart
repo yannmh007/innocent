@@ -20,6 +20,10 @@ import 'package:innocent/features/settings/presentation/settings_subtitle_screen
 import 'package:innocent/features/settings/presentation/player_controls_screen.dart';
 import 'package:innocent/features/settings/presentation/player_style_screen.dart';
 import 'package:innocent/features/settings/presentation/subtitle_text_screen.dart';
+import 'package:innocent/features/settings/presentation/subtitle_layout_screen.dart';
+import 'package:innocent/features/settings/presentation/player_navigation_screen.dart';
+import 'package:innocent/features/settings/presentation/player_screen_settings_screen.dart';
+import 'package:innocent/features/settings/presentation/settings_development_screen.dart';
 import 'package:innocent/features/updater/presentation/app_update_screen.dart';
 import 'package:innocent/features/video_hub/data/demo_content_datasource.dart';
 import 'package:innocent/features/video_hub/data/demo_content_repository.dart';
@@ -60,6 +64,10 @@ void main() {
   screens('player_controls', () => const PlayerControlsScreen(), phones: one, scrolls: 1);
   screens('player_style', () => const PlayerStyleScreen(), phones: one, scrolls: 1);
   screens('subtitle_text', () => const SubtitleTextScreen(), phones: one, scrolls: 1);
+  screens('subtitle_layout', () => const SubtitleLayoutScreen(), phones: one, scrolls: 1);
+  screens('player_navigation', () => const PlayerNavigationScreen(), phones: one);
+  screens('player_screen_settings', () => const PlayerScreenSettingsScreen(), phones: one, scrolls: 1);
+  screens('settings_development', () => const SettingsDevelopmentScreen(), phones: one);
 
   screens('about', () => const AboutScreen(), phones: one, scrolls: 1);
   screens('help', () => const HelpScreen(), phones: one, scrolls: 1);

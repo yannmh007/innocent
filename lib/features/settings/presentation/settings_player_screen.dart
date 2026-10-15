@@ -50,46 +50,46 @@ class SettingsPlayerScreen extends ConsumerWidget {
       appBar: AppBar(title: Text(AppStrings.of(context).settingsPlayer)),
       body: ListView(
         children: [
-          const SettingsSectionHeader('Interface'),
+          SettingsSectionHeader(AppStrings.of(context).spInterface),
           SettingsNavTile(
-            title: 'Style',
+            title: AppStrings.of(context).styleTitle,
             onTap: () => _openSub(context, const PlayerStyleScreen()),
           ),
           SettingsNavTile(
-            title: 'Screen',
+            title: AppStrings.of(context).screenTitle,
             subtitle:
-                'Screen settings: Orientation, Full Screen, Brightness, etc.',
+                AppStrings.of(context).spScreenSub,
             onTap: () =>
                 _openSub(context, const PlayerScreenSettingsScreen()),
           ),
           SettingsNavTile(
-            title: 'Controls',
+            title: AppStrings.of(context).controlsTitle,
             subtitle:
-                'Input controls: Touch actions, gestures, lock mode, etc.',
+                AppStrings.of(context).spControlsSub,
             onTap: () => _openSub(context, const PlayerControlsScreen()),
           ),
           SettingsNavTile(
-            title: 'Navigation',
+            title: AppStrings.of(context).navigationTitle,
             subtitle:
-                'Navigation settings: seeking settings, forward/backward buttons, etc.',
+                AppStrings.of(context).spNavigationSub,
             onTap: () => _openSub(context, const PlayerNavigationScreen()),
           ),
           _toggle(ref,
-              title: 'Double-tap the back button',
-              subtitle: 'Press the back button twice to close playback screen.',
+              title: AppStrings.of(context).spDoubleBack,
+              subtitle: AppStrings.of(context).spDoubleBackSub,
               setting: PlayerSetting.doubleTapBack),
           _toggle(ref,
-              title: 'Quick zoom',
+              title: AppStrings.of(context).spQuickZoom,
               subtitle:
-                  "Skip zoom steps between 100% and 'fit to screen' (150%, 200%, etc).",
+                  AppStrings.of(context).spQuickZoomSub,
               setting: PlayerSetting.quickZoom),
           // Audit fix (A4): pin the player controls so they never
           // auto-hide. Useful for tutorial recordings or anyone who
           // wants the timestamp permanently in view.
           _toggle(ref,
-              title: 'Pin controls (always visible)',
+              title: AppStrings.of(context).spPinControls,
               subtitle:
-                  'When on, the player controls never auto-hide. Useful while presenting or for sustained at-a-glance time-checking. Off by default.',
+                  AppStrings.of(context).spPinControlsSub,
               setting: PlayerSetting.alwaysShowControls),
           // Audit fix (A2): user-tunable auto-hide delay. Hidden when
           // [alwaysShowControls] is on since the value is irrelevant
@@ -103,13 +103,13 @@ class SettingsPlayerScreen extends ConsumerWidget {
                 .watch(extraSettingsProvider)
                 .getInt(IntSetting.controlsHideDelay);
             return SettingsNavTile(
-              title: 'Controls auto-hide delay',
+              title: AppStrings.of(context).spHideDelay,
               subtitle:
-                  'How long the playback controls stay visible after the last touch. Currently: ${current}s. Range 2-15s.',
+                  AppStrings.of(context).spHideDelaySub(AppStrings.of(context).secondsCount(current)),
               onTap: () async {
                 final picked = await showSettingsListDialog(
                   context: context,
-                  title: 'Auto-hide delay',
+                  title: AppStrings.of(context).spHideDelay,
                   options: const ['2', '3', '4', '5', '6', '8', '10', '15'],
                   currentValue: current.toString(),
                 );
@@ -122,40 +122,35 @@ class SettingsPlayerScreen extends ConsumerWidget {
               },
             );
           }),
-          const SettingsSectionHeader('Playback'),
+          SettingsSectionHeader(AppStrings.of(context).spPlayback),
           Builder(builder: (ctx) {
-            // Phase 45 (audit): MX Player V3 `resume_last` setting has
-            // 3 values: 'ask' (default), 'resume', 'startover'. We
-            // surface those exactly with MX Player's wording.
+            // MX's `resume_last`: 'ask' (default), 'resume', 'startover'.
+            final s = AppStrings.of(context);
+            final labels = <String, String>{
+              'ask': s.spResumeAsk,
+              'resume': s.spResumeAlways,
+              'startover': s.spResumeNever,
+            };
             final current = ref
                 .watch(extraSettingsProvider)
                 .getStr(StringSetting.resumeLast);
-            final label = current == 'resume'
-                ? 'Always (Resume)'
-                : current == 'startover'
-                    ? 'Never (Start over)'
-                    : 'Ask every time';
+            final label = labels[current] ?? labels['ask']!;
             return SettingsNavTile(
-              title: 'Resume',
-              subtitle:
-                  'Select whether to resume from the point where you stopped. Currently: $label',
+              title: s.spResume,
+              subtitle: s.spResumeSub(label),
               onTap: () async {
                 final picked = await showSettingsListDialog(
                   context: context,
-                  title: 'Resume',
-                  options: const [
-                    'Ask every time',
-                    'Always (Resume)',
-                    'Never (Start over)',
-                  ],
+                  title: s.spResume,
+                  options: labels.values.toList(),
                   currentValue: label,
                 );
                 if (picked == null) return;
-                final next = picked == 'Always (Resume)'
-                    ? 'resume'
-                    : picked == 'Never (Start over)'
-                        ? 'startover'
-                        : 'ask';
+                final next = labels.entries
+                    .where((e) => e.value == picked)
+                    .map((e) => e.key)
+                    .firstOrNull;
+                if (next == null) return;
                 await ref
                     .read(extraSettingsProvider.notifier)
                     .setStr(StringSetting.resumeLast, next);
@@ -163,9 +158,9 @@ class SettingsPlayerScreen extends ConsumerWidget {
             );
           }),
           _toggle(ref,
-              title: 'Resume only the first file',
+              title: AppStrings.of(context).spResumeFirst,
               subtitle:
-                  'Apply resume setting only on the first file. Next files will start from the beginning.',
+                  AppStrings.of(context).spResumeFirstSub,
               setting: PlayerSetting.resumeOnlyFirst),
           Builder(builder: (ctx) {
             // Phase 45 (audit): MX Player V3 stores default playback
@@ -175,12 +170,12 @@ class SettingsPlayerScreen extends ConsumerWidget {
                 .watch(extraSettingsProvider)
                 .getInt(IntSetting.defaultPlaybackSpeed);
             return SettingsNavTile(
-              title: 'Default playback speed',
+              title: AppStrings.of(context).spDefaultSpeed,
               subtitle: '${(pct / 100).toStringAsFixed(2)}x',
               onTap: () async {
                 final picked = await showSettingsSliderDialog(
                   context: context,
-                  title: 'Default Playback Speed',
+                  title: AppStrings.of(context).spDefaultSpeed,
                   currentValue: pct / 100.0,
                   min: 0.25,
                   max: 4.0,
@@ -197,108 +192,95 @@ class SettingsPlayerScreen extends ConsumerWidget {
             );
           }),
           _toggle(ref,
-              title: 'Remember selections',
+              title: AppStrings.of(context).spRemember,
               subtitle:
-                  'Remember selections for each files such as choice of audio track, subtitle track, decoder.',
+                  AppStrings.of(context).spRememberSub,
               setting: PlayerSetting.rememberSelections),
           _toggle(ref,
-              title: 'Back to list',
-              subtitle: 'Return to the list after playback is completed.',
+              title: AppStrings.of(context).spBackToList,
+              subtitle: AppStrings.of(context).spBackToListSub,
               setting: PlayerSetting.backToList),
           _toggle(ref,
-              title: 'Preview while seeking',
+              title: AppStrings.of(context).spPreviewSeek,
               subtitle:
-                  'Display preview image while changing playback position.',
+                  AppStrings.of(context).spPreviewSeekSub,
               setting: PlayerSetting.previewSeek),
           _toggle(ref,
-              title: 'Preview while seeking (network)',
-              subtitle: 'Display preview image for network play.',
+              title: AppStrings.of(context).spPreviewSeekNet,
+              subtitle: AppStrings.of(context).spPreviewSeekNetSub,
               setting: PlayerSetting.previewSeekNetwork),
           _toggle(ref,
-              title: 'Fast seeking',
+              title: AppStrings.of(context).spFastSeek,
               subtitle:
-                  'Seek to nearest key-frame position instead of exact position. This setting applies to HW+ and SW decoder.',
+                  AppStrings.of(context).spFastSeekSub,
               setting: PlayerSetting.fastSeeking),
           _toggle(ref,
-              title: 'Play alone',
+              title: AppStrings.of(context).spPlayAlone,
               subtitle:
-                  'Stop other players while playing back videos or audios. It also makes MX Player stop if other players begin to play or you make a phone call.',
+                  AppStrings.of(context).spPlayAloneSub,
               setting: PlayerSetting.playAlone),
           _toggle(ref,
-              title: 'Media buttons',
+              title: AppStrings.of(context).spMediaButtons,
               subtitle:
-                  'Respond to media control buttons from headset, Bluetooth, etc.',
+                  AppStrings.of(context).spMediaButtonsSub,
               setting: PlayerSetting.mediaButtons),
-          // Phase 45 (audit refined, build 63): MX Player V3's
-          // `honour_headset_hook_multi_press`. Wired as a boolean
-          // toggle (was visible-only list dialog).
-          _toggle(ref,
-              title: 'Double/Triple press → Next/Prev',
-              subtitle:
-                  'Treat double/triple presses on the headphone button as Next/Previous track.',
-              setting: PlayerSetting.honourHeadsetMultiPress),
           // Phase 45 (audit refined, build 64): wire Next/Prev → FF/Rew
           // to PlayerSetting.customPopupFastForward (already exists
           // for the custom pop-up; we reuse it for the global media
           // button mapping policy — same semantic).
           _toggle(ref,
-              title: 'Next/Prev \u2192 FF/Rew',
+              title: AppStrings.of(context).spNextPrevFf,
               subtitle:
-                  'Treat Next/Prev media buttons as Fast Forward / Rewind.',
+                  AppStrings.of(context).spNextPrevFfSub,
               setting: PlayerSetting.customPopupFastForward),
           _toggle(ref,
-              title: 'Toggle playback with play button',
+              title: AppStrings.of(context).spTogglePlay,
               subtitle:
-                  "Toggle playback in response to 'play' media button. This option is useful only for devices having trouble with the play button.",
+                  AppStrings.of(context).spTogglePlaySub,
               setting: PlayerSetting.togglePlayback),
           _toggle(ref,
-              title: 'Smart Previous Button',
+              title: AppStrings.of(context).spSmartPrev,
               subtitle:
-                  "If you select 'previous' button, it will resume again from the beginning or open the previous file depending upon the current playback position.",
+                  AppStrings.of(context).spSmartPrevSub,
               setting: PlayerSetting.smartPrevious),
           _toggle(ref,
-              title: 'Suppress error message',
+              title: AppStrings.of(context).spSuppressError,
               subtitle:
-                  'Skip to next video without displaying error message if video loading fails.',
+                  AppStrings.of(context).spSuppressErrorSub,
               setting: PlayerSetting.suppressError),
           _toggle(ref,
-              title: 'Use custom Picture-in-Picture popup',
-              subtitle: 'Use custom Picture-in-Picture resizable popup.',
+              title: AppStrings.of(context).spCustomPip,
+              subtitle: AppStrings.of(context).spCustomPipSub,
               setting: PlayerSetting.useCustomPip),
-          const SettingsSectionHeader('Background Play'),
-          // Phase 45 (audit): MX Player V3 `sticky_video` is a 3-choice
-          // setting: 'stop', 'background', 'pip' (default). Replaces our
-          // earlier boolean Background/PIP toggle.
+          SettingsSectionHeader(AppStrings.of(context).spBackground),
           Builder(builder: (ctx) {
+            // MX's `sticky_video`: 'stop', 'background', 'pip' (default).
+            final s = AppStrings.of(context);
+            final labels = <String, String>{
+              'pip': s.spBgPip,
+              'background': s.spBgPlay,
+              'stop': s.spBgStop,
+            };
             final current = ref
                 .watch(extraSettingsProvider)
                 .getStr(StringSetting.stickyVideo);
-            final label = current == 'stop'
-                ? 'Stop'
-                : current == 'background'
-                    ? 'Play in background'
-                    : 'Picture-in-Picture';
+            final label = labels[current] ?? labels['pip']!;
             return SettingsNavTile(
-              title: 'Background/PIP mode',
-              subtitle:
-                  'Player behavior when switching to another app. Currently: $label',
+              title: s.spBgMode,
+              subtitle: s.spBgModeSub(label),
               onTap: () async {
                 final picked = await showSettingsListDialog(
                   context: context,
-                  title: 'Background / PiP',
-                  options: const [
-                    'Picture-in-Picture',
-                    'Play in background',
-                    'Stop',
-                  ],
+                  title: s.spBgMode,
+                  options: labels.values.toList(),
                   currentValue: label,
                 );
                 if (picked == null) return;
-                final next = picked == 'Stop'
-                    ? 'stop'
-                    : picked == 'Play in background'
-                        ? 'background'
-                        : 'pip';
+                final next = labels.entries
+                    .where((e) => e.value == picked)
+                    .map((e) => e.key)
+                    .firstOrNull;
+                if (next == null) return;
                 await ref
                     .read(extraSettingsProvider.notifier)
                     .setStr(StringSetting.stickyVideo, next);
@@ -306,71 +288,18 @@ class SettingsPlayerScreen extends ConsumerWidget {
             );
           }),
           _toggle(ref,
-              title: 'Background play (audio)',
-              subtitle: 'Use Background play for audio playback.',
+              title: AppStrings.of(context).spBgAudio,
+              subtitle: AppStrings.of(context).spBgAudioSub,
               setting: PlayerSetting.bgPlayAudio),
+          SettingsSectionHeader(AppStrings.of(context).spMisc),
           _toggle(ref,
-              title: 'Album art',
-              subtitle: 'Display cover art on the lock screen.',
-              setting: PlayerSetting.albumArt),
-          _toggle(ref,
-              title: 'Smooth switch',
+              title: AppStrings.of(context).spLimitResize,
               subtitle:
-                  'Fade in and out audio when switching to and return back from background play.',
-              setting: PlayerSetting.smoothSwitch),
-          const SettingsSectionHeader('Miscellaneous'),
-          // Phase 45 (audit): MX Player `video_zoom_delay` is in
-          // milliseconds (0..2000). We surface it as a 0..2 second
-          // slider for friendlier UX and convert to int ms when saving.
-          Builder(builder: (ctx) {
-            final ms = ref
-                .watch(extraSettingsProvider)
-                .getInt(IntSetting.videoZoomDelay);
-            return SettingsNavTile(
-              title: 'Video resizing delay',
-              subtitle:
-                  'Delay before HW resize kicks in. Higher = fewer flickers. Currently: ${ms}ms',
-              onTap: () async {
-                final picked = await showSettingsSliderDialog(
-                  context: context,
-                  title: 'Video Resizing Delay',
-                  currentValue: ms / 1000.0,
-                  min: 0.0,
-                  max: 2.0,
-                  divisions: 20,
-                  valueLabel: (v) => '${(v * 1000).round()}ms',
-                );
-                if (picked != null) {
-                  await ref
-                      .read(extraSettingsProvider.notifier)
-                      .setInt(IntSetting.videoZoomDelay,
-                          (picked * 1000).round());
-                }
-              },
-            );
-          }),
-          _toggle(ref,
-              title: 'Limit Video Resizing',
-              subtitle:
-                  'Do not increase video size if it exceeds its display size. (HW decoder only)',
+                  AppStrings.of(context).spLimitResizeSub,
               setting: PlayerSetting.limitResize),
           _toggle(ref,
-              title: 'Turn off button backlight',
-              subtitle:
-                  "Turn off main buttons' back-light during playback. (If back-light keeps turning on in spite of this option, uncheck this option and reboot device if necessary).",
-              setting: PlayerSetting.turnOffBacklight),
-          _toggle(ref,
-              title: 'Loading circle animation',
+              title: AppStrings.of(context).spLoadingCircle,
               setting: PlayerSetting.loadingCircle),
-          _toggle(ref,
-              title: 'Software navigation buttons',
-              subtitle:
-                  'This device has software navigation buttons. (back, home, menu, etc.) Check this option if buttons are not hidden automatically.',
-              setting: PlayerSetting.softwareNavButtons),
-          _toggle(ref,
-              title: 'Android 4.0 compatible mode',
-              subtitle: 'Use this mode if you have problem with screen layout.',
-              setting: PlayerSetting.android40Mode),
           const SizedBox(height: 24),
         ],
       ),
