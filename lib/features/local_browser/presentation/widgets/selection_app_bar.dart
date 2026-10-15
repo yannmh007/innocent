@@ -44,7 +44,7 @@ class SelectionAppBar extends ConsumerWidget implements PreferredSizeWidget {
   /// The selected videos, resolved once.
   List<Video> _selected(WidgetRef ref) {
     final selection = ref.read(selectionProvider);
-    final all = ref.read(allVideosProvider).valueOrNull ?? const <Video>[];
+    final all = ref.read(selectableVideosProvider);
     return all.where((v) => selection.contains(v.uri)).toList();
   }
 

@@ -10,6 +10,7 @@ import '../../../../core/router/routes.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../private_folder/data/private_folder_providers.dart';
 import '../../domain/video.dart';
+import '../folder_visibility_screen.dart';
 import '../library_provider.dart';
 import 'bulk_actions.dart';
 import '../selection_provider.dart';
@@ -28,7 +29,7 @@ class FolderSelectionAppBar extends ConsumerWidget
 
   /// All videos that live inside the currently-selected folders.
   List<Video> _videosInSelection(WidgetRef ref, Set<String> folderPaths) {
-    final all = ref.read(allVideosProvider).valueOrNull ?? const <Video>[];
+    final all = ref.read(selectableVideosProvider);
     return all.where((v) => folderPaths.contains(v.folderPath)).toList();
   }
 
@@ -39,7 +40,7 @@ class FolderSelectionAppBar extends ConsumerWidget
     final s = AppStrings.of(context);
     final selected = ref.watch(folderSelectionProvider);
     final count = selected.length;
-    final total = ref.watch(foldersProvider).valueOrNull?.length ?? 0;
+    final total = ref.watch(filteredFoldersProvider).valueOrNull?.length ?? 0;
 
     return AppBar(
       // MX: the bar is the page's own black, not a grey slab.
@@ -83,9 +84,13 @@ class FolderSelectionAppBar extends ConsumerWidget
             if (v == 'lock') return _lockInPrivate(context, ref, selected);
             if (v == 'share') return _share(context, ref, selected);
             if (v == 'delete') return _delete(context, ref, selected);
+            if (v == 'hide') {
+              ref.read(folderSelectionProvider.notifier).clear();
+              return hideFolders(ref, s, selected);
+            }
             if (v == 'all') {
               final folders =
-                  ref.read(foldersProvider).valueOrNull ?? const [];
+                  ref.read(filteredFoldersProvider).valueOrNull ?? const [];
               ref
                   .read(folderSelectionProvider.notifier)
                   .selectAll(folders.map((f) => f.path).toList());
@@ -101,9 +106,6 @@ class FolderSelectionAppBar extends ConsumerWidget
               case 'transfer':
                 handled = await BulkActions.sendToTransfer(context, ref,
                     videos: videos);
-              case 'hide':
-                handled =
-                    await BulkActions.hide(context, ref, videos: videos);
               case 'rebuild':
                 handled = await BulkActions.rebuildThumbnails(context, ref,
                     videos: videos);

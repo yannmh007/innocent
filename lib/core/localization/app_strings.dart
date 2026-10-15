@@ -1698,6 +1698,37 @@ class AppStrings {
   String get adbTipTranssion => _s('adbTipTranssion');
   String get adbNotSupported => _s('adbNotSupported');
   String get hfTitle => _s('hfTitle');
+  String get fvTitle => _s('fvTitle');
+  String get fvAppSection => _s('fvAppSection');
+  String get fvAppSectionHint => _s('fvAppSectionHint');
+  String get fvOnlyLive => _s('fvOnlyLive');
+  String get fvOnlyLiveSub => _s('fvOnlyLiveSub');
+  String get fvOtherSection => _s('fvOtherSection');
+  String get fvShow => _s('fvShow');
+  String get fvShown => _s('fvShown');
+  String get fvHidden => _s('fvHidden');
+  String get fvAwayNoAdb => _s('fvAwayNoAdb');
+  String get fvHideAll => _s('fvHideAll');
+  String get fvShowAll => _s('fvShowAll');
+  String get fvEmpty => _s('fvEmpty');
+  String fvHiddenSnack(Object n) => _s('fvHiddenSnack').replaceFirst('{n}', '$n');
+  String fvFooter(Object n) => _s('fvFooter').replaceFirst('{n}', '$n');
+  String fvVideos(Object n) => _s('fvVideos').replaceFirst('{n}', '$n');
+  String get fvUndo => _s('fvUndo');
+  String get fvManage => _s('fvManage');
+  String get hfNeedTitle => _s('hfNeedTitle');
+  String get hfNeedBody => _s('hfNeedBody');
+  String get hfConnect => _s('hfConnect');
+  String get hfLoading => _s('hfLoading');
+  String get hfSetUp => _s('hfSetUp');
+  String get hfCheckAgain => _s('hfCheckAgain');
+  String get hfNotConnected => _s('hfNotConnected');
+  String get hfPairingNeeded => _s('hfPairingNeeded');
+  String get hfWirelessDebugging => _s('hfWirelessDebugging');
+  String get hfOn => _s('hfOn');
+  String get hfOff => _s('hfOff');
+  String get hfTurnOn => _s('hfTurnOn');
+  String get hfWatching => _s('hfWatching');
   String get hfHint => _s('hfHint');
   String get hfSettingsSub => _s('hfSettingsSub');
   String get hfApps => _s('hfApps');
@@ -2063,6 +2094,37 @@ class AppStrings {
     'adbTipTranssion': 'TECNO, Infinix and itel: let Innocent run in the background (battery settings or Phone Master), or the pairing notification can be closed before you type the code.',
     'adbNotSupported': 'Wireless debugging needs Android 11 or newer.',
     'hfTitle': 'Hidden files',
+    'fvTitle': 'Show / hide folders',
+    'fvAppSection': 'App folders (Android/data)',
+    'fvAppSectionHint': 'Found through ADB. Hide the ones you do not want in the Video tab — nothing is moved or deleted.',
+    'fvOnlyLive': 'Show only while ADB is connected',
+    'fvOnlyLiveSub': 'While ADB is off these folders leave the Video tab, and they come back as soon as it reconnects.',
+    'fvOtherSection': 'Other hidden folders',
+    'fvShow': 'Show',
+    'fvShown': 'Shown',
+    'fvHidden': 'Hidden',
+    'fvAwayNoAdb': 'Away until ADB connects',
+    'fvHideAll': 'Hide all',
+    'fvShowAll': 'Show all',
+    'fvEmpty': 'No folder is hidden. In the Video tab, long-press a folder and tap Hide.',
+    'fvHiddenSnack': '{n} folder(s) hidden from the Video tab',
+    'fvFooter': '{n} hidden folder(s)',
+    'fvVideos': '{n} videos',
+    'fvUndo': 'Undo',
+    'fvManage': 'Manage',
+    'hfNeedTitle': 'Hidden files need ADB',
+    'hfNeedBody': 'Android keeps each app’s own folder (Android/data) — Telegram’s downloads among them — closed to other apps. Innocent opens it through this phone’s own Wireless debugging (ADB). Your files show here as soon as ADB is connected.',
+    'hfConnect': 'Connect ADB',
+    'hfLoading': 'Reading the folder…',
+    'hfSetUp': 'Set up ADB',
+    'hfCheckAgain': 'Check again',
+    'hfNotConnected': 'ADB not connected',
+    'hfPairingNeeded': 'Pairing needed',
+    'hfWirelessDebugging': 'Wireless debugging',
+    'hfOn': 'On',
+    'hfOff': 'Off',
+    'hfTurnOn': 'Turn on',
+    'hfWatching': 'Opens by itself as soon as ADB connects',
     'hfHint': 'Telegram and other apps’ files',
     'hfSettingsSub': 'Pair once over Wireless debugging, then open Telegram’s and other apps’ files.',
     'hfApps': 'Apps',
@@ -3721,6 +3783,37 @@ class AppStrings {
     'adbTipTranssion': 'TECNO၊ Infinix၊ itel: Innocent ကို background မှာ run ခွင့်ပေးပါ (battery settings သို့မဟုတ် Phone Master)။ မပေးရင် code မရိုက်ခင် pairing notification ပိတ်သွားနိုင်ပါတယ်။',
     'adbNotSupported': 'Wireless debugging အတွက် Android 11 နဲ့ အထက် လိုပါတယ်။',
     'hfTitle': 'ဝှက်ထားသော ဖိုင်များ',
+    'fvTitle': 'Folder ပြ / ဖျောက်',
+    'fvAppSection': 'App folder များ (Android/data)',
+    'fvAppSectionHint': 'ADB နဲ့ ရှာတွေ့ထားတာတွေပါ။ Video tab မှာ မမြင်ချင်တာကို ဖျောက်ထားနိုင်ပါတယ် — ဘာမှ မရွှေ့၊ မဖျက်ပါဘူး။',
+    'fvOnlyLive': 'ADB ချိတ်ထားချိန်မှာပဲ ပြမယ်',
+    'fvOnlyLiveSub': 'ADB ပြုတ်နေချိန်မှာ ဒီ folder တွေ Video tab ကနေ ပျောက်နေပြီး ပြန်ချိတ်မိတာနဲ့ ပြန်ပေါ်လာပါမယ်။',
+    'fvOtherSection': 'ဖျောက်ထားသော တခြား folder များ',
+    'fvShow': 'ပြမယ်',
+    'fvShown': 'ပြထားသည်',
+    'fvHidden': 'ဖျောက်ထားသည်',
+    'fvAwayNoAdb': 'ADB ချိတ်မိမှ ပြန်ပေါ်မည်',
+    'fvHideAll': 'အားလုံး ဖျောက်မယ်',
+    'fvShowAll': 'အားလုံး ပြမယ်',
+    'fvEmpty': 'ဖျောက်ထားတဲ့ folder မရှိပါ။ Video tab မှာ folder ကို ဖိထားပြီး “ဖျောက်မယ်” ကို နှိပ်ပါ။',
+    'fvHiddenSnack': 'folder {n} ခု Video tab မှာ ဖျောက်ထားပြီးပါပြီ',
+    'fvFooter': 'ဖျောက်ထားသော folder {n} ခု',
+    'fvVideos': 'ဗီဒီယို {n} ခု',
+    'fvUndo': 'ပြန်ပြမယ်',
+    'fvManage': 'စီမံမယ်',
+    'hfNeedTitle': 'ဝှက်ထားသော ဖိုင်တွေ ကြည့်ဖို့ ADB ချိတ်ရပါမယ်',
+    'hfNeedBody': 'App တစ်ခုချင်းစီရဲ့ ကိုယ်ပိုင် folder (Android/data — Telegram ဒေါင်းလုဒ်တွေ အပါအဝင်) ကို Android က တခြား app တွေ မဖွင့်နိုင်အောင် ပိတ်ထားပါတယ်။ Innocent က ဒီဖုန်းရဲ့ ကိုယ်ပိုင် Wireless debugging (ADB) နဲ့ ဖွင့်ပေးပါတယ်။ ADB ချိတ်မိတာနဲ့ ဖိုင်တွေ ဒီမှာ ပေါ်လာပါမယ်။',
+    'hfConnect': 'ADB ချိတ်မယ်',
+    'hfLoading': 'Folder ကို ဖတ်နေပါတယ်…',
+    'hfSetUp': 'ADB ပြင်ဆင်မယ်',
+    'hfCheckAgain': 'ပြန်စစ်မယ်',
+    'hfNotConnected': 'ADB မချိတ်ရသေးပါ',
+    'hfPairingNeeded': 'ထပ် pair လုပ်ဖို့ လိုပါတယ်',
+    'hfWirelessDebugging': 'Wireless debugging',
+    'hfOn': 'ဖွင့်ထား',
+    'hfOff': 'ပိတ်ထား',
+    'hfTurnOn': 'ဖွင့်မယ်',
+    'hfWatching': 'ADB ချိတ်မိတာနဲ့ အလိုလို ပွင့်လာပါမယ်',
     'hfHint': 'Telegram နဲ့ အခြား app ဖိုင်များ',
     'hfSettingsSub': 'Wireless debugging နဲ့ တစ်ကြိမ် pair လုပ်ပြီး Telegram နဲ့ အခြား app တွေရဲ့ ဖိုင်တွေကို ဖွင့်ကြည့်ပါ။',
     'hfApps': 'App များ',
@@ -5367,6 +5460,37 @@ class AppStrings {
     'adbTipTranssion': 'TECNO, Infinix และ itel: อนุญาตให้ Innocent ทำงานเบื้องหลัง (การตั้งค่าแบตเตอรี่หรือ Phone Master) มิฉะนั้นการแจ้งเตือนการจับคู่อาจถูกปิดก่อนที่คุณจะพิมพ์รหัส',
     'adbNotSupported': 'การแก้ไขข้อบกพร่องผ่าน Wi-Fi ต้องใช้ Android 11 ขึ้นไป',
     'hfTitle': 'ไฟล์ที่ซ่อนอยู่',
+    'fvTitle': 'แสดง / ซ่อนโฟลเดอร์',
+    'fvAppSection': 'โฟลเดอร์ของแอป (Android/data)',
+    'fvAppSectionHint': 'พบผ่าน ADB ซ่อนโฟลเดอร์ที่ไม่ต้องการให้อยู่ในแท็บวิดีโอได้ ไม่มีอะไรถูกย้ายหรือลบ',
+    'fvOnlyLive': 'แสดงเฉพาะเมื่อเชื่อมต่อ ADB',
+    'fvOnlyLiveSub': 'ขณะ ADB ปิด โฟลเดอร์เหล่านี้จะไม่อยู่ในแท็บวิดีโอ และจะกลับมาทันทีที่เชื่อมต่ออีกครั้ง',
+    'fvOtherSection': 'โฟลเดอร์อื่นที่ซ่อนไว้',
+    'fvShow': 'แสดง',
+    'fvShown': 'แสดงอยู่',
+    'fvHidden': 'ซ่อนอยู่',
+    'fvAwayNoAdb': 'ซ่อนจนกว่าจะเชื่อมต่อ ADB',
+    'fvHideAll': 'ซ่อนทั้งหมด',
+    'fvShowAll': 'แสดงทั้งหมด',
+    'fvEmpty': 'ยังไม่มีโฟลเดอร์ที่ซ่อน ในแท็บวิดีโอ กดค้างที่โฟลเดอร์แล้วแตะ ซ่อน',
+    'fvHiddenSnack': 'ซ่อน {n} โฟลเดอร์จากแท็บวิดีโอแล้ว',
+    'fvFooter': 'โฟลเดอร์ที่ซ่อน {n} รายการ',
+    'fvVideos': '{n} วิดีโอ',
+    'fvUndo': 'เลิกทำ',
+    'fvManage': 'จัดการ',
+    'hfNeedTitle': 'ไฟล์ที่ซ่อนอยู่ต้องใช้ ADB',
+    'hfNeedBody': 'Android ปิดโฟลเดอร์ส่วนตัวของแต่ละแอป (Android/data รวมถึงไฟล์ดาวน์โหลดของ Telegram) ไม่ให้แอปอื่นเปิด Innocent เปิดผ่านการแก้ไขข้อบกพร่องผ่าน Wi-Fi (ADB) ของโทรศัพท์เครื่องนี้เอง ไฟล์จะแสดงที่นี่ทันทีที่เชื่อมต่อ ADB',
+    'hfConnect': 'เชื่อมต่อ ADB',
+    'hfLoading': 'กำลังอ่านโฟลเดอร์…',
+    'hfSetUp': 'ตั้งค่า ADB',
+    'hfCheckAgain': 'ตรวจสอบอีกครั้ง',
+    'hfNotConnected': 'ยังไม่ได้เชื่อมต่อ ADB',
+    'hfPairingNeeded': 'ต้องจับคู่ใหม่',
+    'hfWirelessDebugging': 'การแก้ไขข้อบกพร่องผ่าน Wi-Fi',
+    'hfOn': 'เปิด',
+    'hfOff': 'ปิด',
+    'hfTurnOn': 'เปิด',
+    'hfWatching': 'จะเปิดเองทันทีที่เชื่อมต่อ ADB',
     'hfHint': 'ไฟล์ของ Telegram และแอปอื่น',
     'hfSettingsSub': 'จับคู่ครั้งเดียวผ่านการแก้ไขข้อบกพร่องผ่าน Wi-Fi แล้วเปิดไฟล์ของ Telegram และแอปอื่น',
     'hfApps': 'แอป',

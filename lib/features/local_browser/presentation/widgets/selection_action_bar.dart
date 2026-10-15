@@ -51,7 +51,7 @@ class _SelectionActionBarState extends ConsumerState<SelectionActionBar> {
   /// The selected videos, resolved once.
   List<Video> _selected() {
     final selection = ref.read(selectionProvider);
-    final all = ref.read(allVideosProvider).valueOrNull ?? const <Video>[];
+    final all = ref.read(selectableVideosProvider);
     return all.where((v) => selection.contains(v.uri)).toList();
   }
 
@@ -164,10 +164,7 @@ class _SelectionActionBarState extends ConsumerState<SelectionActionBar> {
     if (confirm != true || !mounted) return;
 
     final selection = ref.read(selectionProvider);
-    final all = ref.read(allVideosProvider).maybeWhen(
-          data: (list) => list,
-          orElse: () => const [],
-        );
+    final all = ref.read(selectableVideosProvider);
     var moved = 0;
     // Captured outside the loop: `ref` belongs to this widget, and a long
     // selection gives the user time to leave mid-loop.

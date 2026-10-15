@@ -14,6 +14,7 @@ import '../library_provider.dart';
 import '../../../../core/utils/async_value_extensions.dart';
 
 import '../../../../core/localization/app_strings.dart';
+import '../folder_visibility.dart';
 /// Horizontal carousel of recently-added videos (last 7 days).
 class RecentlyAddedSection extends ConsumerWidget {
   const RecentlyAddedSection({super.key});
@@ -31,6 +32,10 @@ class RecentlyAddedSection extends ConsumerWidget {
         ref.watch(preferencesProvider.select((p) => p.showThumbnails));
     final allVideos = ref.watch(allVideosProvider);
     final playedUris = ref.watch(playedUrisProvider);
+    // A folder hidden from the Video tab keeps its new videos out of this
+    // row too, or hiding it would hide nothing.
+    final hiddenFolders =
+        ref.watch(folderVisibilityProvider.select((v) => v.hidden));
     // Same window the NEW tag uses, so this row and the badges agree instead
     // of one being hard-coded to seven days while the other follows Settings.
     final windowDays = ref
@@ -58,6 +63,7 @@ class RecentlyAddedSection extends ConsumerWidget {
               // reach a folder the library scans: they can be adult
               // material, and this row is the first thing on screen.
               if (isAppPrivateMedia(v.uri)) return false;
+              if (hiddenFolders.contains(v.folderPath)) return false;
               final d = v.freshestDate;
               return d != null && d.isAfter(cutoff);
             })

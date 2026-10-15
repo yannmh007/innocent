@@ -22,6 +22,7 @@ import '../../video_hub/domain/byte_size.dart';
 import '../domain/file_kind.dart';
 import 'adb_image_viewer.dart';
 import '../../../core/ui/nav_bar_space.dart';
+import '../../local_browser/presentation/folder_visibility_screen.dart';
 
 /// HIDDEN FILES — every app's private folder (Android/data), read over
 /// Innocent's own ADB connection, as a file browser.
@@ -55,6 +56,9 @@ class _Lost implements Exception {
 
 enum _Filter { all, video, image, audio, document }
 
+/// Where the ADB connection stands, as far as this screen knows.
+enum _Link { checking, up, down }
+
 class _AndroidDataScreenState extends ConsumerState<AndroidDataScreen> {
   final List<String> _stack = <String>[kAndroidDataRoot];
   final Map<String, Future<List<AdbFileEntry>>> _listings =
@@ -68,6 +72,13 @@ class _AndroidDataScreenState extends ConsumerState<AndroidDataScreen> {
   /// ADB has never connected on this phone: the card says "set up once".
   bool _neverSetUp = false;
 
+  /// ASK BEFORE LISTING. A listing without a connection waits for the
+  /// engine to reconnect — up to thirty seconds, then once more — and this
+  /// screen used to show that wait as a bare spinner. Now a short probe goes
+  /// first: up, and the folder is listed; down, and the "Hidden files need
+  /// ADB" card says why and how, at once.
+  _Link _link = _Link.checking;
+
   String get _here => _stack.last;
   bool get _atRoot => _stack.length == 1;
   bool get _selecting => _selected.isNotEmpty;
@@ -77,10 +88,41 @@ class _AndroidDataScreenState extends ConsumerState<AndroidDataScreen> {
     super.initState();
     final start = widget.startAt;
     if (start != null && start != kAndroidDataRoot) _stack.add(start);
-    unawaited(_findTelegram());
     unawaited(AdbService.instance.lastConnect().then((last) {
       if (mounted && last.isEmpty) setState(() => _neverSetUp = true);
     }));
+    // Known to work a moment ago: straight to the files. Known to have
+    // failed: straight to the card, which keeps checking by itself.
+    // Unknown: a probe of a few seconds, said in words, not a spinner.
+    switch (AdbService.instance.live.value) {
+      case true:
+        _link = _Link.up;
+        unawaited(_findTelegram());
+      case false:
+        _link = _Link.down;
+      case null:
+        unawaited(_probe());
+    }
+  }
+
+  Future<void> _probe() async {
+    final ok = await AdbService.instance.isConnected(timeoutMs: 4000);
+    if (!mounted) return;
+    setState(() {
+      _link = ok ? _Link.up : _Link.down;
+      _listings.clear();
+    });
+    if (ok) unawaited(_findTelegram());
+  }
+
+  /// The card saw the connection come back.
+  void _connected() {
+    if (!mounted) return;
+    setState(() {
+      _link = _Link.up;
+      _listings.clear();
+    });
+    unawaited(_findTelegram());
   }
 
   Future<List<AdbFileEntry>> _list(String path) =>
@@ -262,9 +304,32 @@ class _AndroidDataScreenState extends ConsumerState<AndroidDataScreen> {
 
   // ---- layout ----
 
+  Widget _foldersAction(AppStrings s) => IconButton(
+        tooltip: s.fvTitle,
+        icon: const Icon(Icons.visibility_outlined),
+        onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(
+          builder: (_) => const FolderVisibilityScreen(),
+        )),
+      );
+
   @override
   Widget build(BuildContext context) {
     final s = AppStrings.of(context);
+    if (_link != _Link.up) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(_atRoot ? s.hfTitle : appDataFolderName(_here)),
+          actions: <Widget>[_foldersAction(s)],
+        ),
+        body: _link == _Link.checking
+            ? _Checking(text: s.adbHeroChecking)
+            : AdbLostCard(
+                hiddenFiles: true,
+                firstTime: _neverSetUp,
+                onBack: _connected,
+              ),
+      );
+    }
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
@@ -325,6 +390,7 @@ class _AndroidDataScreenState extends ConsumerState<AndroidDataScreen> {
                       ),
                     ]
                   : <Widget>[
+                      _foldersAction(s),
                       IconButton(
                         tooltip: s.refresh,
                         icon: const Icon(Icons.refresh_rounded),
@@ -350,7 +416,7 @@ class _AndroidDataScreenState extends ConsumerState<AndroidDataScreen> {
       );
     }
     if (snap.connectionState != ConnectionState.done) {
-      return const Center(child: CircularProgressIndicator());
+      return _Checking(text: s.hfLoading);
     }
     if (_atRoot) return _apps(s, entries);
     final hasFiles = entries.any((e) => !e.isDir);
@@ -775,6 +841,34 @@ class _ThumbState extends State<_Thumb> {
           ),
         );
       },
+    );
+  }
+}
+
+
+/// A wait that says what it is waiting for.
+class _Checking extends StatelessWidget {
+  const _Checking({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          const SizedBox(
+            width: 28,
+            height: 28,
+            child: CircularProgressIndicator(strokeWidth: 2.4),
+          ),
+          const SizedBox(height: 14),
+          Text(text,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: AppColors.white70, fontSize: 13.5)),
+        ],
+      ),
     );
   }
 }

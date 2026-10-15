@@ -55,6 +55,23 @@ class AppSnackbar {
     );
   }
 
+  /// Context-free toast with one action — an Undo, mostly. Shown longer
+  /// than [global], long enough to reach the button.
+  static void globalAction(String message, String action, VoidCallback onTap,
+      {Duration duration = const Duration(seconds: 5)}) {
+    final messenger = messengerKey.currentState;
+    if (messenger == null) return;
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: duration,
+        behavior: SnackBarBehavior.floating,
+        action: SnackBarAction(label: action, onPressed: onTap),
+      ),
+    );
+  }
+
   /// Context-free error toast.
   static void globalError(String message) {
     final messenger = messengerKey.currentState;

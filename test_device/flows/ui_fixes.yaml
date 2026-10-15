@@ -1,0 +1,152 @@
+# 1.64.64's fixes, on a phone with three-button navigation (run with
+# PHONE_LIKE_OWNER=1 and a LIBRARY, see config.env):
+#  - Back with search open closes the search, not the app;
+#  - Back with a folder selected clears the selection, not the app;
+#  - a ⋮ menu open on the Video tab, then Me tapped in the bar: the menu
+#    closes and nothing breaks (11 Oct: "Something didn't load" on Me);
+#  - Hidden files without ADB: the "needs ADB" card at once, no spinner;
+#  - App update's buttons end above the navigation bar;
+#  - a folder hidden from the Video tab, and shown again.
+appId: com.innocent.media
+---
+- launchApp
+- waitForAnimationToEnd:
+    timeout: 15000
+- tapOn:
+    text: "Wait"
+    optional: true
+- tapOn:
+    text: "Skip"
+    optional: true
+- tapOn:
+    text: "Allow.*"
+    optional: true
+- tapOn:
+    text: "Allow.*"
+    optional: true
+- tapOn:
+    text: "Skip"
+    optional: true
+- tapOn:
+    text: "(?s).*Tab 1 of 4.*"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 8000
+- takeScreenshot: u00_video_tab
+- assertVisible: "(?s).*Tab 1 of 4.*"
+
+# ── Back with a folder selected ─────────────────────────────────────────
+- longPressOn: "(?s).*Folder: Movies,.*"
+- waitForAnimationToEnd:
+    timeout: 3000
+- assertVisible: "(?s).*1 / .*"
+- takeScreenshot: u01_folder_selected
+- back
+- waitForAnimationToEnd:
+    timeout: 3000
+- assertNotVisible: "(?s).*1 / .*"
+- assertVisible: "(?s).*Tab 1 of 4.*"
+- takeScreenshot: u02_selection_cleared_by_back
+
+# ── A menu open, then Me in the bar ────────────────────────────────────
+- tapOn:
+    id: "video-tab-more"
+- waitForAnimationToEnd:
+    timeout: 3000
+- assertVisible: "Refresh"
+- takeScreenshot: u03_menu_open
+- tapOn: "(?s).*Tab 4 of 4.*"
+- waitForAnimationToEnd:
+    timeout: 3000
+# The tap closed the menu and did not switch tabs underneath it.
+- assertNotVisible: "Refresh"
+- assertNotVisible: "(?s).*didn't load.*"
+- takeScreenshot: u04_bar_tap_closed_menu
+- tapOn: "(?s).*Tab 4 of 4.*"
+- waitForAnimationToEnd:
+    timeout: 4000
+- assertVisible: "(?s).*Recycle bin.*"
+- assertNotVisible: "(?s).*didn't load.*"
+- assertNotVisible: "(?s).*hit a snag.*"
+- takeScreenshot: u05_me
+
+# ── Hidden files with no ADB ───────────────────────────────────────────
+- scrollUntilVisible:
+    element:
+      text: "(?s).*Hidden files.*"
+    direction: DOWN
+- tapOn: "(?s).*Hidden files.*"
+- extendedWaitUntil:
+    visible: "Hidden files need ADB"
+    timeout: 10000
+- assertVisible: "Connect ADB"
+- assertVisible: "Check again"
+- takeScreenshot: u06_hidden_files_needs_adb
+- tapOn: "Check again"
+- waitForAnimationToEnd:
+    timeout: 6000
+- assertVisible: "Hidden files need ADB"
+- back
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# ── App update: the end of the page above the navigation bar ──────────
+- scrollUntilVisible:
+    element:
+      text: "(?s)Settings\\n.*"
+    direction: UP
+- tapOn: "(?s)Settings\\n.*"
+- waitForAnimationToEnd:
+    timeout: 3000
+- scrollUntilVisible:
+    element:
+      text: "(?s).*App update.*"
+    direction: DOWN
+- tapOn: "(?s).*App update.*"
+- waitForAnimationToEnd:
+    timeout: 8000
+- scroll
+- scroll
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: u07_app_update_end
+- back
+- back
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# ── Hide a folder, then show it again ──────────────────────────────────
+- tapOn: "(?s).*Tab 1 of 4.*"
+- waitForAnimationToEnd:
+    timeout: 3000
+- longPressOn: "(?s).*Folder: Download,.*"
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn:
+    id: "folder-selection-hide"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: u08_folder_hidden
+- assertNotVisible: "(?s).*Folder: Download,.*"
+- scrollUntilVisible:
+    element:
+      text: "(?s).*hidden folder.*"
+    direction: DOWN
+- takeScreenshot: u09_hidden_line
+- tapOn: "(?s).*hidden folder.*"
+- waitForAnimationToEnd:
+    timeout: 3000
+- assertVisible: "Show / hide folders"
+- takeScreenshot: u10_show_hide_folders
+- tapOn: "Show"
+- waitForAnimationToEnd:
+    timeout: 2000
+- back
+- waitForAnimationToEnd:
+    timeout: 3000
+- scrollUntilVisible:
+    element:
+      text: "(?s).*Folder: Download,.*"
+    direction: UP
+- assertNotVisible: "(?s).*hidden folder.*"
+- takeScreenshot: u11_folder_back
