@@ -40,7 +40,7 @@ class WatchLaterScreen extends ConsumerWidget {
           if (queue.isNotEmpty)
             IconButton(
               icon: const Icon(Icons.clear_all),
-              tooltip: 'Clear all',
+              tooltip: AppStrings.of(context).hsClearAll,
               onPressed: () async {
                 final confirm = await showDialog<bool>(
                   context: context,
@@ -293,7 +293,7 @@ class _WLTileState extends State<_WLTile> {
         overflow: TextOverflow.ellipsis,
       ),
       trailing: IconButton(
-        tooltip: 'Close',
+        tooltip: AppStrings.of(context).close,
         icon: const Icon(
           Icons.close,
           color: AppColors.darkOnSurfaceMuted,

@@ -96,22 +96,22 @@ class _SortViewDialogState extends ConsumerState<SortViewDialog> {
     final asc = d == SortDirection.oldestFirst;
     switch (_draft.sortBy) {
       case SortBy.title:
-        return asc ? 'A to Z' : 'Z to A';
+        return asc ? AppStrings.of(context).svAz : AppStrings.of(context).svZa;
       case SortBy.date:
       case SortBy.playedTime:
-        return asc ? 'Oldest' : 'Newest';
+        return asc ? AppStrings.of(context).svOldest : AppStrings.of(context).svNewest;
       case SortBy.length:
-        return asc ? 'Shortest' : 'Longest';
+        return asc ? AppStrings.of(context).svShortest : AppStrings.of(context).svLongest;
       case SortBy.size:
-        return asc ? 'Smallest' : 'Largest';
+        return asc ? AppStrings.of(context).svSmallest : AppStrings.of(context).svLargest;
       case SortBy.resolution:
-        return asc ? 'Lowest' : 'Highest';
+        return asc ? AppStrings.of(context).svLowest : AppStrings.of(context).svHighest;
       case SortBy.frameRate:
-        return asc ? 'Lowest' : 'Highest';
+        return asc ? AppStrings.of(context).svLowest : AppStrings.of(context).svHighest;
       case SortBy.status:
       case SortBy.path:
       case SortBy.type:
-        return asc ? 'Ascending' : 'Descending';
+        return asc ? AppStrings.of(context).svAscending : AppStrings.of(context).svDescending;
     }
   }
 
@@ -164,15 +164,15 @@ class _SortViewDialogState extends ConsumerState<SortViewDialog> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // View Mode (left) + Layout (right) headers in same row
-                    const Row(
+                    Row(
                       children: [
                         Expanded(
                           flex: 3,
-                          child: _SectionLabel('View Mode'),
+                          child: _SectionLabel(AppStrings.of(context).svViewMode),
                         ),
                         Expanded(
                           flex: 2,
-                          child: _SectionLabel('Layout'),
+                          child: _SectionLabel(AppStrings.of(context).svLayout),
                         ),
                       ],
                     ),
@@ -189,7 +189,7 @@ class _SortViewDialogState extends ConsumerState<SortViewDialog> {
                                 Expanded(
                                   child: _GridChip(
                                     icon: _viewIcon(v),
-                                    label: v.label,
+                                    label: v.labelIn(AppStrings.of(context)),
                                     selected: _draft.viewMode == v,
                                     onTap: () => setState(() =>
                                         _draft = _draft.copyWith(viewMode: v)),
@@ -216,7 +216,7 @@ class _SortViewDialogState extends ConsumerState<SortViewDialog> {
                                     icon: l == LayoutMode.list
                                         ? Icons.view_list
                                         : Icons.grid_view,
-                                    label: l.label,
+                                    label: l.labelIn(AppStrings.of(context)),
                                     selected: _draft.layout == l,
                                     onTap: () => setState(() =>
                                         _draft = _draft.copyWith(layout: l)),
@@ -231,7 +231,7 @@ class _SortViewDialogState extends ConsumerState<SortViewDialog> {
                     const SizedBox(height: 20),
 
                     // Sort section header
-                    const _SectionLabel('Sort'),
+                    _SectionLabel(AppStrings.of(context).svSort),
                     const SizedBox(height: 12),
 
                     // Sort 5-column grid (Title/Date/PlayedTime/Status/Length on row 1)
@@ -246,7 +246,7 @@ class _SortViewDialogState extends ConsumerState<SortViewDialog> {
                         for (final s in SortBy.values)
                           _GridChip(
                             icon: _sortIcon(s),
-                            label: s.label,
+                            label: s.labelIn(AppStrings.of(context)),
                             selected: _draft.sortBy == s,
                             onTap: () => _selectSortBy(s),
                           ),
@@ -317,7 +317,7 @@ class _SortViewDialogState extends ConsumerState<SortViewDialog> {
 
                     // ─── FIELDS expandable: real 3-col checkbox grid ───
                     _Expandable(
-                      title: 'Fields',
+                      title: AppStrings.of(context).svFields,
                       expanded: _fieldsExpanded,
                       onToggle: () => setState(
                           () => _fieldsExpanded = !_fieldsExpanded),
@@ -332,55 +332,55 @@ class _SortViewDialogState extends ConsumerState<SortViewDialog> {
                           childAspectRatio: 3.5,
                           children: [
                             _FieldCheck(
-                              label: 'Thumbnail',
+                              label: AppStrings.of(context).svThumbnail,
                               value: _draft.showThumbnail,
                               onChanged: (v) => setState(() =>
                                   _draft = _draft.copyWith(showThumbnail: v)),
                             ),
                             _FieldCheck(
-                              label: 'Length',
+                              label: AppStrings.of(context).svLength,
                               value: _draft.showLength,
                               onChanged: (v) => setState(() =>
                                   _draft = _draft.copyWith(showLength: v)),
                             ),
                             _FieldCheck(
-                              label: 'File extension',
+                              label: AppStrings.of(context).svExtension,
                               value: _draft.showFileExt,
                               onChanged: (v) => setState(() =>
                                   _draft = _draft.copyWith(showFileExt: v)),
                             ),
                             _FieldCheck(
-                              label: 'Played time',
+                              label: AppStrings.of(context).svPlayedTime,
                               value: _draft.showPlayedTime,
                               onChanged: (v) => setState(() =>
                                   _draft = _draft.copyWith(showPlayedTime: v)),
                             ),
                             _FieldCheck(
-                              label: 'Resolution',
+                              label: AppStrings.of(context).svResolution,
                               value: _draft.showResolution,
                               onChanged: (v) => setState(() =>
                                   _draft = _draft.copyWith(showResolution: v)),
                             ),
                             _FieldCheck(
-                              label: 'Frame rate',
+                              label: AppStrings.of(context).svFrameRate,
                               value: _draft.showFrameRate,
                               onChanged: (v) => setState(() =>
                                   _draft = _draft.copyWith(showFrameRate: v)),
                             ),
                             _FieldCheck(
-                              label: 'Path',
+                              label: AppStrings.of(context).svPath,
                               value: _draft.showPath,
                               onChanged: (v) => setState(() =>
                                   _draft = _draft.copyWith(showPath: v)),
                             ),
                             _FieldCheck(
-                              label: 'Size',
+                              label: AppStrings.of(context).svSize,
                               value: _draft.showSize,
                               onChanged: (v) => setState(() =>
                                   _draft = _draft.copyWith(showSize: v)),
                             ),
                             _FieldCheck(
-                              label: 'Date',
+                              label: AppStrings.of(context).svDate,
                               value: _draft.showDate,
                               onChanged: (v) => setState(() =>
                                   _draft = _draft.copyWith(showDate: v)),
@@ -393,7 +393,7 @@ class _SortViewDialogState extends ConsumerState<SortViewDialog> {
 
                     // ─── ADVANCED expandable: real 3 switches ───
                     _Expandable(
-                      title: 'Advanced',
+                      title: AppStrings.of(context).svAdvanced,
                       expanded: _advancedExpanded,
                       onToggle: () => setState(
                           () => _advancedExpanded = !_advancedExpanded),
@@ -402,19 +402,19 @@ class _SortViewDialogState extends ConsumerState<SortViewDialog> {
                         child: Column(
                           children: [
                             _AdvSwitch(
-                              label: 'Display length over thumbnail',
+                              label: AppStrings.of(context).svLengthOnThumb,
                               value: _draft.displayLengthOverThumb,
                               onChanged: (v) => setState(() => _draft =
                                   _draft.copyWith(displayLengthOverThumb: v)),
                             ),
                             _AdvSwitch(
-                              label: 'Show hidden files and folders',
+                              label: AppStrings.of(context).slShowHidden,
                               value: _draft.showHidden,
                               onChanged: (v) => setState(() =>
                                   _draft = _draft.copyWith(showHidden: v)),
                             ),
                             _AdvSwitch(
-                              label: 'Recognize .nomedia',
+                              label: AppStrings.of(context).slNomedia,
                               value: _draft.recognizeNomedia,
                               onChanged: (v) => setState(() => _draft =
                                   _draft.copyWith(recognizeNomedia: v)),
@@ -712,4 +712,36 @@ class _Expandable extends StatelessWidget {
       ],
     );
   }
+}
+
+/// The sheet's names for each choice, in the app's language. The enums'
+/// own `label`s stay English (logs, tests).
+extension SortByLabel on SortBy {
+  String labelIn(AppStrings s) => switch (this) {
+        SortBy.title => s.svTitle,
+        SortBy.date => s.svDate,
+        SortBy.playedTime => s.svPlayedTime,
+        SortBy.status => s.svStatus,
+        SortBy.length => s.svLength,
+        SortBy.size => s.svSize,
+        SortBy.resolution => s.svResolution,
+        SortBy.path => s.svPath,
+        SortBy.frameRate => s.svFrameRate,
+        SortBy.type => s.svType,
+      };
+}
+
+extension ViewModeLabel on ViewMode {
+  String labelIn(AppStrings s) => switch (this) {
+        ViewMode.allFolders => s.svAllFolders,
+        ViewMode.files => s.svFiles,
+        ViewMode.folders => s.svFolders,
+      };
+}
+
+extension LayoutModeLabel on LayoutMode {
+  String labelIn(AppStrings s) => switch (this) {
+        LayoutMode.list => s.svList,
+        LayoutMode.grid => s.svGrid,
+      };
 }

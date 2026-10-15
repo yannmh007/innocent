@@ -91,46 +91,46 @@ class StatisticsScreen extends ConsumerWidget {
                   _StatItem(
                     icon: Icons.movie_outlined,
                     value: totalVideos.toString(),
-                    label: 'Videos',
+                    label: AppStrings.of(context).wiVideos,
                   ),
                   _StatItem(
                     icon: Icons.folder_outlined,
                     value: folders.length.toString(),
-                    label: 'Folders',
+                    label: AppStrings.of(context).stFolders,
                   ),
                   _StatItem(
                     icon: Icons.storage_outlined,
                     value: _fmtSize(totalBytes),
-                    label: 'Total size',
+                    label: AppStrings.of(context).stTotalSize,
                   ),
                   _StatItem(
                     icon: Icons.timer_outlined,
                     value: _fmtDuration(totalDuration),
-                    label: 'Total length',
+                    label: AppStrings.of(context).stTotalLength,
                   ),
                 ]),
                 const SizedBox(height: 16),
-                const _SectionHeader('YOUR ACTIVITY'),
+                _SectionHeader(AppStrings.of(context).stActivity),
                 _StatGrid(items: [
                   _StatItem(
                     icon: Icons.history,
                     value: history.length.toString(),
-                    label: 'Watched',
+                    label: AppStrings.of(context).stWatched,
                   ),
                   _StatItem(
                     icon: Icons.access_time,
                     value: _fmtDuration(watchTime),
-                    label: 'Watch time',
+                    label: AppStrings.of(context).stWatchTime,
                   ),
                   _StatItem(
                     icon: Icons.favorite_outline,
                     value: favourites.length.toString(),
-                    label: 'Favourites',
+                    label: AppStrings.of(context).favourites,
                   ),
                 ]),
                 if (topFolders.isNotEmpty) ...[
                   const SizedBox(height: 16),
-                  const _SectionHeader('TOP FOLDERS'),
+                  _SectionHeader(AppStrings.of(context).stTopFolders),
                   ...topFolders.map(
                     (f) => ListTile(
                       leading: const Icon(Icons.folder,
@@ -163,7 +163,7 @@ class StatisticsScreen extends ConsumerWidget {
                 ],
                 if (top5Watched.isNotEmpty) ...[
                   const SizedBox(height: 16),
-                  const _SectionHeader('MOST WATCHED'),
+                  _SectionHeader(AppStrings.of(context).stMostWatched),
                   ...top5Watched.map(
                     (e) => ListTile(
                       leading: const Icon(Icons.replay,
@@ -175,7 +175,7 @@ class StatisticsScreen extends ConsumerWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                       subtitle: Text(
-                        '${e.watchCount} ${e.watchCount == 1 ? "play" : "plays"} • ${(e.progress * 100).toInt()}% completed',
+                        AppStrings.of(context).stPlaysDone(e.watchCount, (e.progress * 100).toInt()),
                         style: const TextStyle(
                           color: AppColors.darkOnSurfaceMuted,
                           fontSize: 11,

@@ -193,7 +193,7 @@ class _FavTileState extends State<_FavTile> {
         overflow: TextOverflow.ellipsis,
       ),
       trailing: IconButton(
-        tooltip: 'Close',
+        tooltip: AppStrings.of(context).close,
         icon: const Icon(
           Icons.close,
           color: AppColors.darkOnSurfaceMuted,

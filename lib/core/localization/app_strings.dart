@@ -2349,6 +2349,142 @@ class AppStrings {
 
 
 
+  String get svTitle => _s('svTitle');
+  String get svDate => _s('svDate');
+  String get svPlayedTime => _s('svPlayedTime');
+  String get svStatus => _s('svStatus');
+  String get svLength => _s('svLength');
+  String get svSize => _s('svSize');
+  String get svResolution => _s('svResolution');
+  String get svPath => _s('svPath');
+  String get svFrameRate => _s('svFrameRate');
+  String get svType => _s('svType');
+  String get svAllFolders => _s('svAllFolders');
+  String get svFiles => _s('svFiles');
+  String get svFolders => _s('svFolders');
+  String get svList => _s('svList');
+  String get svGrid => _s('svGrid');
+
+  String get svViewMode => _s('svViewMode');
+  String get svLayout => _s('svLayout');
+  String get svAz => _s('svAz');
+  String get svZa => _s('svZa');
+  String get svOldest => _s('svOldest');
+  String get svNewest => _s('svNewest');
+  String get svShortest => _s('svShortest');
+  String get svLongest => _s('svLongest');
+  String get svSmallest => _s('svSmallest');
+  String get svLargest => _s('svLargest');
+  String get svLowest => _s('svLowest');
+  String get svHighest => _s('svHighest');
+  String get svAscending => _s('svAscending');
+  String get svDescending => _s('svDescending');
+  String get svSort => _s('svSort');
+  String get svFields => _s('svFields');
+  String get svThumbnail => _s('svThumbnail');
+  String get svExtension => _s('svExtension');
+  String get svAdvanced => _s('svAdvanced');
+  String get svLengthOnThumb => _s('svLengthOnThumb');
+
+  String lsViewMode(Object v) => _s('lsViewMode').replaceFirst('{v}', '$v');
+  String get lsSortView => _s('lsSortView');
+  String lsNoFolderMatch(Object v) => _s('lsNoFolderMatch').replaceFirst('{v}', '$v');
+  String get lsAdbStale => _s('lsAdbStale');
+  String get lsReconnect => _s('lsReconnect');
+
+  String get fdBackAll => _s('fdBackAll');
+  String fdNoVideoMatch(Object v) => _s('fdNoVideoMatch').replaceFirst('{v}', '$v');
+  String get fdEmpty => _s('fdEmpty');
+
+  String get sabHint => _s('sabHint');
+  String get sabClear => _s('sabClear');
+
+  String get hlpQ1 => _s('hlpQ1');
+  String get hlpA1 => _s('hlpA1');
+  String get hlpQ2 => _s('hlpQ2');
+  String get hlpA2 => _s('hlpA2');
+  String get hlpQ3 => _s('hlpQ3');
+  String get hlpA3 => _s('hlpA3');
+  String get hlpQ4 => _s('hlpQ4');
+  String get hlpA4 => _s('hlpA4');
+  String get hlpQ5 => _s('hlpQ5');
+  String get hlpA5 => _s('hlpA5');
+  String get hlpQ6 => _s('hlpQ6');
+  String get hlpA6 => _s('hlpA6');
+  String get hlpQ7 => _s('hlpQ7');
+  String get hlpA7 => _s('hlpA7');
+  String get hlpQ8 => _s('hlpQ8');
+  String get hlpA8 => _s('hlpA8');
+
+  String get hsToday => _s('hsToday');
+  String get hsYesterday => _s('hsYesterday');
+  String get hsThisWeek => _s('hsThisWeek');
+  String get hsEarlier => _s('hsEarlier');
+  String get hsClearAll => _s('hsClearAll');
+
+
+
+
+
+
+
+  String get wiEmpty => _s('wiEmpty');
+  String get wiMin => _s('wiMin');
+  String get wiVideos => _s('wiVideos');
+  String get wiActiveDays => _s('wiActiveDays');
+  String get wiStreakStart => _s('wiStreakStart');
+  String get wiStreakToday => _s('wiStreakToday');
+  String wiStreakDays(Object v) => _s('wiStreakDays').replaceFirst('{v}', '$v');
+  String get wiNoStreak => _s('wiNoStreak');
+  String wiStreak(Object v) => _s('wiStreak').replaceFirst('{v}', '$v');
+  String wiWatches(int n) => _count('wiWatches', n);
+  String wiPlays(int n) => _count('wiPlays', n);
+  String get wiFinisher => _s('wiFinisher');
+  String get wiSolid => _s('wiSolid');
+  String get wiHalf => _s('wiHalf');
+  String get wiLocal => _s('wiLocal');
+
+  String get stFolders => _s('stFolders');
+  String get stTotalSize => _s('stTotalSize');
+  String get stTotalLength => _s('stTotalLength');
+  String get stActivity => _s('stActivity');
+  String get stWatched => _s('stWatched');
+  String get stWatchTime => _s('stWatchTime');
+  String get stTopFolders => _s('stTopFolders');
+  String get stMostWatched => _s('stMostWatched');
+  String stPlaysDone(int n, int p) => _count('stPlaysDone', n).replaceFirst('{p}', '$p');
+
+  String plsClearBody(int n) => _count('plsClearBody', n);
+  String get plsEmpty => _s('plsEmpty');
+  String plsHowToAdd(Object v) => _s('plsHowToAdd').replaceFirst('{v}', '$v');
+
+  String get rbInfo => _s('rbInfo');
+  String get rbKept => _s('rbKept');
+  String get rbClearBody => _s('rbClearBody');
+  String get rbBanner => _s('rbBanner');
+  String get rbRestore => _s('rbRestore');
+
+  String agoDays(int n) => _count('agoDays', n);
+  String agoHours(int n) => _count('agoHours', n);
+  String agoMinutes(int n) => _count('agoMinutes', n);
+  String get agoJustNow => _s('agoJustNow');
+
+  String ssvSavedTo(Object v) => _s('ssvSavedTo').replaceFirst('{v}', '$v');
+  String get ssvNotWritable => _s('ssvNotWritable');
+  String get ssvNoVideos => _s('ssvNoVideos');
+  String get ssvNoImages => _s('ssvNoImages');
+  String get ssvHowTo => _s('ssvHowTo');
+
+  String get cdDrive => _s('cdDrive');
+  String get cdDropbox => _s('cdDropbox');
+  String get cdOneDrive => _s('cdOneDrive');
+  String get cdICloud => _s('cdICloud');
+  String get cdYandex => _s('cdYandex');
+  String get cdMega => _s('cdMega');
+  String get cdPcloud => _s('cdPcloud');
+
+  String get cppFfRew => _s('cppFfRew');
+
   static const Map<String, Map<String, String>> _byLocale =
       <String, Map<String, String>>{
     'en': _en,
@@ -4431,6 +4567,125 @@ class AppStrings {
     'mpNoFavs': 'No favourites yet.\nTap ♥ on any song to add it here.',
     'mpNoRecent': 'No recently played songs yet',
     'mpEmptyPlaylist': 'This playlist is empty',
+    'svTitle': 'Title',
+    'svDate': 'Date',
+    'svPlayedTime': 'Played time',
+    'svStatus': 'Status',
+    'svLength': 'Length',
+    'svSize': 'Size',
+    'svResolution': 'Resolution',
+    'svPath': 'Path',
+    'svFrameRate': 'Frame rate',
+    'svType': 'Type',
+    'svAllFolders': 'All folders',
+    'svFiles': 'Files',
+    'svFolders': 'Folders',
+    'svList': 'List',
+    'svGrid': 'Grid',
+    'svViewMode': 'View mode',
+    'svLayout': 'Layout',
+    'svAz': 'A to Z',
+    'svZa': 'Z to A',
+    'svOldest': 'Oldest',
+    'svNewest': 'Newest',
+    'svShortest': 'Shortest',
+    'svLongest': 'Longest',
+    'svSmallest': 'Smallest',
+    'svLargest': 'Largest',
+    'svLowest': 'Lowest',
+    'svHighest': 'Highest',
+    'svAscending': 'Ascending',
+    'svDescending': 'Descending',
+    'svSort': 'Sort',
+    'svFields': 'Fields',
+    'svThumbnail': 'Thumbnail',
+    'svExtension': 'File extension',
+    'svAdvanced': 'Advanced',
+    'svLengthOnThumb': 'Show length over the thumbnail',
+    'lsViewMode': 'View mode: {v}',
+    'lsSortView': 'Sort & view',
+    'lsNoFolderMatch': 'No folders match "{v}"',
+    'lsAdbStale': 'ADB is disconnected, so the app-data videos may be out of date. Reconnect to refresh them.',
+    'lsReconnect': 'Reconnect',
+    'fdBackAll': 'Back to all folders',
+    'fdNoVideoMatch': 'No videos match "{v}"',
+    'fdEmpty': 'No videos in this folder',
+    'sabHint': 'Search media files',
+    'sabClear': 'Clear',
+    'hlpQ1': 'How do I play a video?',
+    'hlpA1': 'Open the Video tab, go into a folder and tap a video.',
+    'hlpQ2': 'How do I change the decoder?',
+    'hlpA2': 'While a video plays, tap the HW/SW badge at the top right, or go to Settings → Decoder.',
+    'hlpQ3': 'How do I add subtitles?',
+    'hlpA3': 'While a video plays, tap the subtitle button in the row of shortcuts and pick a subtitle file from the phone.',
+    'hlpQ4': 'How do I lock a video in the Private Folder?',
+    'hlpA4': 'Long-press a video, or tap its ⋮, and choose "Lock in Private Folder". You set a PIN the first time.',
+    'hlpQ5': 'How do I keep listening in the background?',
+    'hlpA5': 'Tap the headphones in the player\'s shortcuts, or choose it under Settings → Player → Background play. The sound goes on when you switch apps.',
+    'hlpQ6': 'How do I change the playback speed?',
+    'hlpA6': 'While a video plays, tap Speed in the row of shortcuts.',
+    'hlpQ7': 'How do I send files to another phone?',
+    'hlpA7': 'Open the Transfer tab. Tap Send to share files, or Receive to get them from another phone.',
+    'hlpQ8': 'How do the gestures work?',
+    'hlpA8': 'Swipe up or down on the left for brightness, on the right for volume, and left or right to seek.',
+    'hsToday': 'Today',
+    'hsYesterday': 'Yesterday',
+    'hsThisWeek': 'This week',
+    'hsEarlier': 'Earlier',
+    'hsClearAll': 'Clear all',
+    'wiEmpty': 'Watch a few videos and come back: your weekly recap will show here.',
+    'wiMin': 'min',
+    'wiVideos': 'Videos',
+    'wiActiveDays': 'Active days',
+    'wiStreakStart': 'Start a new streak today!',
+    'wiStreakToday': 'You watched today: keep it going.',
+    'wiStreakDays': '{v} days in a row: nice rhythm.',
+    'wiNoStreak': 'No streak yet',
+    'wiStreak': '{v}-day streak',
+    'wiWatches': '{n} watches',
+    'wiWatchesOne': '{n} watch',
+    'wiPlays': '{n} plays',
+    'wiPlaysOne': '{n} play',
+    'wiFinisher': 'You are a finisher.',
+    'wiSolid': 'Solid follow-through.',
+    'wiHalf': 'Plenty of films half-watched.',
+    'wiLocal': 'These numbers are worked out on your phone. Nothing is uploaded.',
+    'stFolders': 'Folders',
+    'stTotalSize': 'Total size',
+    'stTotalLength': 'Total length',
+    'stActivity': 'YOUR ACTIVITY',
+    'stWatched': 'Watched',
+    'stWatchTime': 'Watch time',
+    'stTopFolders': 'TOP FOLDERS',
+    'stMostWatched': 'MOST WATCHED',
+    'stPlaysDone': '{n} plays • {p}% done',
+    'stPlaysDoneOne': '{n} play • {p}% done',
+    'plsClearBody': 'This takes {n} videos out of the playlist. The files on your phone stay.',
+    'plsClearBodyOne': 'This takes 1 video out of the playlist. The file on your phone stays.',
+    'plsEmpty': 'Make one above, or tap ⋮ on any video to add it to a playlist.',
+    'plsHowToAdd': 'Tap ⋮ on a video and choose "Add to playlist" → "{v}"',
+    'rbInfo': 'Info',
+    'rbKept': 'Items stay in the Recycle Bin for up to 30 days, then go by themselves.',
+    'rbClearBody': 'Every entry goes from this list for good. The video files themselves stay on your phone.',
+    'rbBanner': 'Files stay in the Recycle Bin for up to 30 days before they are deleted from your phone.',
+    'rbRestore': 'Restore',
+    'agoDays': '{n}d ago',
+    'agoHours': '{n}h ago',
+    'agoMinutes': '{n}m ago',
+    'agoJustNow': 'Just now',
+    'ssvSavedTo': 'Saved to {v}',
+    'ssvNotWritable': 'Could not save: the storage cannot be written to',
+    'ssvNoVideos': 'No status videos found',
+    'ssvNoImages': 'No status images found',
+    'ssvHowTo': 'Open a status in WhatsApp first, then come back and refresh.',
+    'cdDrive': 'Stream from Drive without downloading',
+    'cdDropbox': 'Connect your Dropbox account',
+    'cdOneDrive': 'Microsoft cloud storage',
+    'cdICloud': 'Apple iCloud (web link only)',
+    'cdYandex': 'Yandex cloud storage',
+    'cdMega': 'Encrypted cloud storage',
+    'cdPcloud': 'European cloud storage',
+    'cppFfRew': 'Fast forward / Rewind',
   };
 
   static const Map<String, String> _my = <String, String>{
@@ -6481,6 +6736,121 @@ class AppStrings {
     'mpNoFavs': 'အကြိုက်ဆုံး မရှိသေးပါ။\nသီချင်းတစ်ပုဒ်မှာ ♥ ကို နှိပ်ပြီး ဒီမှာ ထည့်ပါ။',
     'mpNoRecent': 'မကြာသေးခင်က ဖွင့်ခဲ့တဲ့ သီချင်း မရှိသေးပါ',
     'mpEmptyPlaylist': 'ဒီ playlist ထဲမှာ ဘာမှ မရှိသေးပါ',
+    'svTitle': 'ခေါင်းစဉ်',
+    'svDate': 'ရက်စွဲ',
+    'svPlayedTime': 'ဖွင့်ခဲ့ချိန်',
+    'svStatus': 'အခြေအနေ',
+    'svLength': 'ကြာချိန်',
+    'svSize': 'အရွယ်အစား',
+    'svResolution': 'Resolution',
+    'svPath': 'လမ်းကြောင်း',
+    'svFrameRate': 'Frame rate',
+    'svType': 'အမျိုးအစား',
+    'svAllFolders': 'Folder အားလုံး',
+    'svFiles': 'ဖိုင်များ',
+    'svFolders': 'Folder များ',
+    'svList': 'စာရင်း',
+    'svGrid': 'ဇယားကွက်',
+    'svViewMode': 'ပြပုံ',
+    'svLayout': 'အပြင်အဆင်',
+    'svAz': 'က မှ အ',
+    'svZa': 'အ မှ က',
+    'svOldest': 'အဟောင်းဆုံး',
+    'svNewest': 'အသစ်ဆုံး',
+    'svShortest': 'အတိုဆုံး',
+    'svLongest': 'အရှည်ဆုံး',
+    'svSmallest': 'အသေးဆုံး',
+    'svLargest': 'အကြီးဆုံး',
+    'svLowest': 'အနိမ့်ဆုံး',
+    'svHighest': 'အမြင့်ဆုံး',
+    'svAscending': 'ငယ်စဉ်ကြီးလိုက်',
+    'svDescending': 'ကြီးစဉ်ငယ်လိုက်',
+    'svSort': 'စီမယ်',
+    'svFields': 'ပြမယ့် အချက်များ',
+    'svThumbnail': 'ပုံသေး',
+    'svExtension': 'ဖိုင် အမျိုးအစား',
+    'svAdvanced': 'အဆင့်မြင့်',
+    'svLengthOnThumb': 'ပုံသေးပေါ်မှာ ကြာချိန် ပြ',
+    'lsViewMode': 'ပြပုံ: {v}',
+    'lsSortView': 'စီပုံ နဲ့ ပြပုံ',
+    'lsNoFolderMatch': '"{v}" နဲ့ ကိုက်တဲ့ folder မရှိပါ',
+    'lsAdbStale': 'ADB ပြုတ်နေလို့ app-data ဗီဒီယိုတွေ နောက်ဆုံးအခြေအနေ မဟုတ်နိုင်ပါ။ ပြန်ချိတ်ပြီး refresh လုပ်ပါ။',
+    'lsReconnect': 'ပြန်ချိတ်မယ်',
+    'fdBackAll': 'Folder အားလုံးကို ပြန်သွား',
+    'fdNoVideoMatch': '"{v}" နဲ့ ကိုက်တဲ့ ဗီဒီယို မရှိပါ',
+    'fdEmpty': 'ဒီ folder ထဲမှာ ဗီဒီယို မရှိပါ',
+    'sabHint': 'Media ဖိုင် ရှာမယ်',
+    'sabClear': 'ရှင်းမယ်',
+    'hlpQ1': 'ဗီဒီယို ဘယ်လို ဖွင့်ရမလဲ?',
+    'hlpA1': 'Video tab ကို ဖွင့်၊ folder ထဲ ဝင်ပြီး ဗီဒီယိုကို နှိပ်ပါ။',
+    'hlpQ2': 'Decoder ဘယ်လို ပြောင်းရမလဲ?',
+    'hlpA2': 'ဗီဒီယို ဖွင့်နေစဉ် ညာဘက်အပေါ်က HW/SW ကို နှိပ်ပါ၊ ဒါမှမဟုတ် Settings → Decoder ကို သွားပါ။',
+    'hlpQ3': 'စာတန်း ဘယ်လို ထည့်ရမလဲ?',
+    'hlpA3': 'ဗီဒီယို ဖွင့်နေစဉ် shortcut တန်းက စာတန်း ခလုတ်ကို နှိပ်ပြီး ဖုန်းထဲက စာတန်းဖိုင်ကို ရွေးပါ။',
+    'hlpQ4': 'ဗီဒီယိုကို Private Folder ထဲ ဘယ်လို lock ရမလဲ?',
+    'hlpA4': 'ဗီဒီယိုကို ဖိထားပါ (သို့) ⋮ ကို နှိပ်ပြီး "Lock in Private Folder" ကို ရွေးပါ။ ပထမဆုံးအကြိမ်မှာ PIN သတ်မှတ်ရပါမယ်။',
+    'hlpQ5': 'နောက်ကွယ်မှာ ဘယ်လို ဆက်နားထောင်ရမလဲ?',
+    'hlpA5': 'Player ရဲ့ shortcut ထဲက နားကြပ် ပုံကို နှိပ်ပါ (သို့) Settings → Player → နောက်ကွယ်မှာ ဖွင့်ခြင်း ကို ရွေးပါ။ တခြား app ကို ပြောင်းလည်း အသံ ဆက်ထွက်ပါမယ်။',
+    'hlpQ6': 'အမြန်နှုန်း ဘယ်လို ပြောင်းရမလဲ?',
+    'hlpA6': 'ဗီဒီယို ဖွင့်နေစဉ် shortcut တန်းက အမြန်နှုန်း ကို နှိပ်ပါ။',
+    'hlpQ7': 'တခြားဖုန်းကို ဖိုင် ဘယ်လို ပို့ရမလဲ?',
+    'hlpA7': 'Transfer tab ကို ဖွင့်ပါ။ ပို့ဖို့ Send ကို၊ တခြားဖုန်းက လက်ခံဖို့ Receive ကို နှိပ်ပါ။',
+    'hlpQ8': 'Gesture တွေ ဘယ်လို သုံးရမလဲ?',
+    'hlpA8': 'ဘယ်ဘက်မှာ အပေါ်/အောက် ပွတ်ရင် အလင်း၊ ညာဘက်မှာ ပွတ်ရင် အသံ၊ ဘယ်/ညာ ပွတ်ရင် ရှေ့/နောက် ရွှေ့ပါတယ်။',
+    'hsToday': 'ဒီနေ့',
+    'hsYesterday': 'မနေ့က',
+    'hsThisWeek': 'ဒီအပတ်',
+    'hsEarlier': 'အရင်က',
+    'hsClearAll': 'အားလုံး ဖျက်',
+    'wiEmpty': 'ဗီဒီယို အနည်းငယ် ကြည့်ပြီး ပြန်လာပါ — အပတ်စဉ် အနှစ်ချုပ် ဒီမှာ ပေါ်ပါမယ်။',
+    'wiMin': 'မိနစ်',
+    'wiVideos': 'ဗီဒီယို',
+    'wiActiveDays': 'ကြည့်ခဲ့တဲ့ ရက်',
+    'wiStreakStart': 'ဒီနေ့ စပြီး ဆက်တိုက် ကြည့်လိုက်ပါ!',
+    'wiStreakToday': 'ဒီနေ့ ကြည့်ပြီးပါပြီ — ဆက်ထားပါ။',
+    'wiStreakDays': 'ရက် {v} ရက် ဆက်တိုက် — ကောင်းပါတယ်။',
+    'wiNoStreak': 'ဆက်တိုက် မကြည့်ရသေးပါ',
+    'wiStreak': 'ရက် {v} ရက် ဆက်တိုက်',
+    'wiWatches': '{n} ကြိမ် ကြည့်',
+    'wiPlays': '{n} ကြိမ် ဖွင့်',
+    'wiFinisher': 'အဆုံးထိ ကြည့်တတ်သူပါ။',
+    'wiSolid': 'အတော်လေး အဆုံးထိ ကြည့်ပါတယ်။',
+    'wiHalf': 'တစ်ဝက်တစ်ပျက် ကြည့်ထားတာ များပါတယ်။',
+    'wiLocal': 'ဒီကိန်းဂဏန်းတွေကို ဖုန်းထဲမှာပဲ တွက်ပါတယ်။ ဘာမှ upload မလုပ်ပါ။',
+    'stFolders': 'Folder များ',
+    'stTotalSize': 'စုစုပေါင်း အရွယ်',
+    'stTotalLength': 'စုစုပေါင်း ကြာချိန်',
+    'stActivity': 'သင့် လှုပ်ရှားမှု',
+    'stWatched': 'ကြည့်ပြီး',
+    'stWatchTime': 'ကြည့်ချိန်',
+    'stTopFolders': 'အများဆုံး Folder များ',
+    'stMostWatched': 'အကြည့်အများဆုံး',
+    'stPlaysDone': '{n} ကြိမ် ဖွင့် • {p}% ပြီး',
+    'plsClearBody': 'Playlist ထဲက ဗီဒီယို {n} ခုကို ဖယ်ပါမယ်။ ဖုန်းထဲက ဖိုင်တွေ မပျက်ပါ။',
+    'plsEmpty': 'အပေါ်မှာ ဖန်တီးပါ၊ ဒါမှမဟုတ် ဗီဒီယိုတစ်ခုရဲ့ ⋮ ကို နှိပ်ပြီး playlist ထဲ ထည့်ပါ။',
+    'plsHowToAdd': 'ဗီဒီယိုရဲ့ ⋮ ကို နှိပ်ပြီး "Add to playlist" → "{v}" ကို ရွေးပါ',
+    'rbInfo': 'အချက်အလက်',
+    'rbKept': 'Recycle Bin ထဲက အရာတွေကို ရက် 30 အထိ ထားပြီး အလိုအလျောက် ဖယ်ပါမယ်။',
+    'rbClearBody': 'ဒီစာရင်းထဲက အရာအားလုံး အပြီး ပျက်ပါမယ်။ ဗီဒီယို ဖိုင်တွေကတော့ ဖုန်းထဲမှာ ရှိနေပါမယ်။',
+    'rbBanner': 'ဖိုင်တွေကို ဖုန်းထဲက အပြီးမဖျက်ခင် Recycle Bin ထဲမှာ ရက် 30 အထိ ထားပါတယ်။',
+    'rbRestore': 'ပြန်ယူ',
+    'agoDays': '{n} ရက်က',
+    'agoHours': '{n} နာရီက',
+    'agoMinutes': '{n} မိနစ်က',
+    'agoJustNow': 'အခုလေးတင်',
+    'ssvSavedTo': '{v} ထဲ သိမ်းပြီး',
+    'ssvNotWritable': 'မသိမ်းနိုင်ပါ — storage ထဲ ရေးလို့ မရပါ',
+    'ssvNoVideos': 'Status ဗီဒီယို မတွေ့ပါ',
+    'ssvNoImages': 'Status ပုံ မတွေ့ပါ',
+    'ssvHowTo': 'WhatsApp မှာ status ကို အရင် ဖွင့်ကြည့်ပြီး ဒီကို ပြန်လာကာ refresh လုပ်ပါ။',
+    'cdDrive': 'မဒေါင်းဘဲ Drive ကနေ တိုက်ရိုက် ကြည့်',
+    'cdDropbox': 'Dropbox account ကို ချိတ်',
+    'cdOneDrive': 'Microsoft cloud storage',
+    'cdICloud': 'Apple iCloud (web link သာ)',
+    'cdYandex': 'Yandex cloud storage',
+    'cdMega': 'Encrypt လုပ်ထားတဲ့ cloud storage',
+    'cdPcloud': 'ဥရောပ cloud storage',
+    'cppFfRew': 'ရှေ့ရစ် / နောက်ရစ်',
   };
 
   static const Map<String, String> _th = <String, String>{
@@ -8523,6 +8893,121 @@ class AppStrings {
     'mpNoFavs': 'ยังไม่มีรายการโปรด\nแตะ ♥ ที่เพลงใดก็ได้เพื่อเพิ่มที่นี่',
     'mpNoRecent': 'ยังไม่มีเพลงที่เล่นล่าสุด',
     'mpEmptyPlaylist': 'เพลย์ลิสต์นี้ว่างเปล่า',
+    'svTitle': 'ชื่อ',
+    'svDate': 'วันที่',
+    'svPlayedTime': 'เวลาที่เล่น',
+    'svStatus': 'สถานะ',
+    'svLength': 'ความยาว',
+    'svSize': 'ขนาด',
+    'svResolution': 'ความละเอียด',
+    'svPath': 'ตำแหน่ง',
+    'svFrameRate': 'อัตราเฟรม',
+    'svType': 'ประเภท',
+    'svAllFolders': 'ทุกโฟลเดอร์',
+    'svFiles': 'ไฟล์',
+    'svFolders': 'โฟลเดอร์',
+    'svList': 'รายการ',
+    'svGrid': 'ตาราง',
+    'svViewMode': 'มุมมอง',
+    'svLayout': 'เลย์เอาต์',
+    'svAz': 'ก ถึง ฮ',
+    'svZa': 'ฮ ถึง ก',
+    'svOldest': 'เก่าสุด',
+    'svNewest': 'ใหม่สุด',
+    'svShortest': 'สั้นสุด',
+    'svLongest': 'ยาวสุด',
+    'svSmallest': 'เล็กสุด',
+    'svLargest': 'ใหญ่สุด',
+    'svLowest': 'ต่ำสุด',
+    'svHighest': 'สูงสุด',
+    'svAscending': 'น้อยไปมาก',
+    'svDescending': 'มากไปน้อย',
+    'svSort': 'เรียง',
+    'svFields': 'ข้อมูลที่แสดง',
+    'svThumbnail': 'ภาพตัวอย่าง',
+    'svExtension': 'นามสกุลไฟล์',
+    'svAdvanced': 'ขั้นสูง',
+    'svLengthOnThumb': 'แสดงความยาวบนภาพตัวอย่าง',
+    'lsViewMode': 'มุมมอง: {v}',
+    'lsSortView': 'เรียงและมุมมอง',
+    'lsNoFolderMatch': 'ไม่มีโฟลเดอร์ที่ตรงกับ "{v}"',
+    'lsAdbStale': 'ADB หลุดอยู่ วิดีโอข้อมูลแอปอาจไม่เป็นปัจจุบัน เชื่อมต่อใหม่เพื่อรีเฟรช',
+    'lsReconnect': 'เชื่อมต่อใหม่',
+    'fdBackAll': 'กลับไปทุกโฟลเดอร์',
+    'fdNoVideoMatch': 'ไม่มีวิดีโอที่ตรงกับ "{v}"',
+    'fdEmpty': 'ไม่มีวิดีโอในโฟลเดอร์นี้',
+    'sabHint': 'ค้นหาไฟล์สื่อ',
+    'sabClear': 'ล้าง',
+    'hlpQ1': 'เล่นวิดีโออย่างไร',
+    'hlpA1': 'เปิดแท็บวิดีโอ เข้าโฟลเดอร์ แล้วแตะวิดีโอ',
+    'hlpQ2': 'เปลี่ยนตัวถอดรหัสอย่างไร',
+    'hlpA2': 'ระหว่างเล่น แตะป้าย HW/SW ที่มุมขวาบน หรือไปที่ การตั้งค่า → ตัวถอดรหัส',
+    'hlpQ3': 'เพิ่มคำบรรยายอย่างไร',
+    'hlpA3': 'ระหว่างเล่น แตะปุ่มคำบรรยายในแถวทางลัด แล้วเลือกไฟล์คำบรรยายจากเครื่อง',
+    'hlpQ4': 'ล็อกวิดีโอในโฟลเดอร์ส่วนตัวอย่างไร',
+    'hlpA4': 'กดค้างที่วิดีโอ หรือแตะ ⋮ แล้วเลือก "ล็อกในโฟลเดอร์ส่วนตัว" ครั้งแรกจะต้องตั้ง PIN',
+    'hlpQ5': 'ฟังต่อในเบื้องหลังอย่างไร',
+    'hlpA5': 'แตะรูปหูฟังในทางลัดของเครื่องเล่น หรือเลือกที่ การตั้งค่า → เครื่องเล่น → เล่นเบื้องหลัง เสียงจะเล่นต่อเมื่อสลับแอป',
+    'hlpQ6': 'เปลี่ยนความเร็วการเล่นอย่างไร',
+    'hlpA6': 'ระหว่างเล่น แตะ ความเร็ว ในแถวทางลัด',
+    'hlpQ7': 'ส่งไฟล์ไปยังโทรศัพท์อื่นอย่างไร',
+    'hlpA7': 'เปิดแท็บโอนไฟล์ แตะ ส่ง เพื่อแชร์ไฟล์ หรือ รับ เพื่อรับจากโทรศัพท์อื่น',
+    'hlpQ8': 'ใช้ท่าทางอย่างไร',
+    'hlpA8': 'ปัดขึ้นลงด้านซ้ายเพื่อปรับความสว่าง ด้านขวาเพื่อปรับเสียง และปัดซ้ายขวาเพื่อเลื่อน',
+    'hsToday': 'วันนี้',
+    'hsYesterday': 'เมื่อวาน',
+    'hsThisWeek': 'สัปดาห์นี้',
+    'hsEarlier': 'ก่อนหน้านี้',
+    'hsClearAll': 'ล้างทั้งหมด',
+    'wiEmpty': 'ดูวิดีโอสักสองสามเรื่องแล้วกลับมา สรุปรายสัปดาห์จะแสดงที่นี่',
+    'wiMin': 'นาที',
+    'wiVideos': 'วิดีโอ',
+    'wiActiveDays': 'วันที่ดู',
+    'wiStreakStart': 'เริ่มดูต่อเนื่องวันนี้เลย!',
+    'wiStreakToday': 'วันนี้ดูแล้ว ดูต่อไปนะ',
+    'wiStreakDays': 'ต่อเนื่อง {v} วัน เยี่ยมมาก',
+    'wiNoStreak': 'ยังไม่มีการดูต่อเนื่อง',
+    'wiStreak': 'ต่อเนื่อง {v} วัน',
+    'wiWatches': 'ดู {n} ครั้ง',
+    'wiPlays': 'เล่น {n} ครั้ง',
+    'wiFinisher': 'คุณดูจนจบเสมอ',
+    'wiSolid': 'ดูจนจบได้ดี',
+    'wiHalf': 'มีหลายเรื่องที่ดูไม่จบ',
+    'wiLocal': 'ตัวเลขเหล่านี้คำนวณในเครื่องทั้งหมด ไม่มีการอัปโหลด',
+    'stFolders': 'โฟลเดอร์',
+    'stTotalSize': 'ขนาดรวม',
+    'stTotalLength': 'ความยาวรวม',
+    'stActivity': 'กิจกรรมของคุณ',
+    'stWatched': 'ดูแล้ว',
+    'stWatchTime': 'เวลาดู',
+    'stTopFolders': 'โฟลเดอร์ยอดนิยม',
+    'stMostWatched': 'ดูมากที่สุด',
+    'stPlaysDone': 'เล่น {n} ครั้ง • ดูแล้ว {p}%',
+    'plsClearBody': 'จะนำวิดีโอ {n} รายการออกจากเพลย์ลิสต์ ไฟล์ในเครื่องยังอยู่',
+    'plsEmpty': 'สร้างด้านบน หรือแตะ ⋮ ที่วิดีโอใดก็ได้เพื่อเพิ่มลงเพลย์ลิสต์',
+    'plsHowToAdd': 'แตะ ⋮ ที่วิดีโอ แล้วเลือก "เพิ่มลงเพลย์ลิสต์" → "{v}"',
+    'rbInfo': 'ข้อมูล',
+    'rbKept': 'รายการในถังรีไซเคิลจะเก็บไว้สูงสุด 30 วัน แล้วลบออกอัตโนมัติ',
+    'rbClearBody': 'รายการทั้งหมดจะถูกลบออกจากรายการนี้ถาวร ไฟล์วิดีโอยังอยู่ในเครื่อง',
+    'rbBanner': 'ไฟล์จะอยู่ในถังรีไซเคิลสูงสุด 30 วันก่อนถูกลบจากเครื่อง',
+    'rbRestore': 'กู้คืน',
+    'agoDays': '{n} วันที่แล้ว',
+    'agoHours': '{n} ชม. ที่แล้ว',
+    'agoMinutes': '{n} นาทีที่แล้ว',
+    'agoJustNow': 'เมื่อสักครู่',
+    'ssvSavedTo': 'บันทึกไปที่ {v} แล้ว',
+    'ssvNotWritable': 'บันทึกไม่ได้: เขียนลงที่เก็บข้อมูลไม่ได้',
+    'ssvNoVideos': 'ไม่พบวิดีโอสถานะ',
+    'ssvNoImages': 'ไม่พบรูปภาพสถานะ',
+    'ssvHowTo': 'เปิดสถานะใน WhatsApp ก่อน แล้วกลับมารีเฟรช',
+    'cdDrive': 'สตรีมจากไดรฟ์โดยไม่ต้องดาวน์โหลด',
+    'cdDropbox': 'เชื่อมต่อบัญชี Dropbox',
+    'cdOneDrive': 'พื้นที่เก็บข้อมูลคลาวด์ของ Microsoft',
+    'cdICloud': 'Apple iCloud (เฉพาะลิงก์เว็บ)',
+    'cdYandex': 'พื้นที่เก็บข้อมูลคลาวด์ของ Yandex',
+    'cdMega': 'พื้นที่เก็บข้อมูลคลาวด์แบบเข้ารหัส',
+    'cdPcloud': 'พื้นที่เก็บข้อมูลคลาวด์ในยุโรป',
+    'cppFfRew': 'กรอไปข้างหน้า / ย้อนกลับ',
   };
 }
 

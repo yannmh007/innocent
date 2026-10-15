@@ -41,6 +41,8 @@ import '../../../core/theme/tab_title.dart';
 import '../../../core/ui/safe_popup_menu.dart';
 import '../../shell/shell_back.dart';
 import 'folder_visibility_screen.dart';
+import '../../updater/presentation/app_update_screen.dart';
+import '../../settings/presentation/settings_diagnostics_screen.dart';
 import 'folder_visibility.dart';
 
 /// Local tab — shows folders/videos with view mode, sort, search
@@ -253,9 +255,11 @@ class _LocalScreenState extends ConsumerState<LocalScreen>
           _HelpItem(
             icon: Icons.fiber_new_outlined,
             label: AppStrings.of(context).whatsNew,
+            // This build's notes, from the release it came from. It was a
+            // hard-coded list from "Build 60" in developer shorthand.
             onTap: () {
               Navigator.of(dctx).pop();
-              _showWhatsNewDialog(context);
+              _openUpdateScreen(context);
             },
           ),
           _HelpItem(
@@ -277,28 +281,22 @@ class _LocalScreenState extends ConsumerState<LocalScreen>
           _HelpItem(
             icon: Icons.new_releases_outlined,
             label: AppStrings.of(context).versionCheck,
+            // A real check. It used to say "you have the latest version"
+            // without asking anything.
             onTap: () {
               Navigator.of(dctx).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(AppStrings.of(context)
-                      .latestVersion(AppVersion.full)),
-                  duration: const Duration(seconds: 2),
-                ),
-              );
+              _openUpdateScreen(context);
             },
           ),
           _HelpItem(
             icon: Icons.bug_report_outlined,
             label: AppStrings.of(context).sendBugReport,
+            // The diagnostics report, ready to copy and send. The hint it
+            // showed told users to "use the thumbs-down in chat".
             onTap: () {
               Navigator.of(dctx).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(AppStrings.of(context).bugReportHint),
-                  duration: const Duration(seconds: 3),
-                ),
-              );
+              Navigator.of(context).push(MaterialPageRoute<void>(
+                  builder: (_) => const SettingsDiagnosticsScreen()));
             },
           ),
           _HelpItem(
@@ -314,50 +312,9 @@ class _LocalScreenState extends ConsumerState<LocalScreen>
     );
   }
 
-  /// Phase 45 (audit refined): What's new dialog — release notes for
-  /// the current build.
-  Future<void> _showWhatsNewDialog(BuildContext context) async {
-    await showDialog<void>(
-      context: context,
-      builder: (dctx) => AlertDialog(
-        backgroundColor: AppColors.darkSurface,
-        title: const Text("What's new",
-            style: TextStyle(color: Colors.white)),
-        content: const SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Build 60 — Phase 45 audit refinements',
-                style: TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.w600),
-              ),
-              SizedBox(height: 12),
-              Text(
-                '• Help submenu (What\'s new / Features / FAQ / Version / Bug report / Privacy)\n'
-                '• Audio effects: Bass Boost / Virtualizer / Reverb (7 presets)\n'
-                '• Resume "Use by default" checkbox\n'
-                '• DecoderType 4-mode (Default / HW / HW+ / SW)\n'
-                '• Music sort system (Title/Album/Artist/Date/Duration/Size/Path)\n'
-                '• "Properties" dialog with File name + Format fields\n'
-                '• 15 advanced preferences wired (audio delay, sub charset, etc.)\n'
-                '• Brightness reset on player close\n'
-                '• Folder scroll position preserved',
-                style: TextStyle(color: Colors.white70, fontSize: 13),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dctx).pop(),
-            child: Text(AppStrings.of(context).close,
-                style: const TextStyle(color: AppColors.accentBlue)),
-          ),
-        ],
-      ),
-    );
+  void _openUpdateScreen(BuildContext context) {
+    Navigator.of(context).push(
+        MaterialPageRoute<void>(builder: (_) => const AppUpdateScreen()));
   }
 
   Future<void> _showFeaturesDialog(BuildContext context) async {
@@ -562,12 +519,12 @@ class _LocalScreenState extends ConsumerState<LocalScreen>
               actions: [
                 IconButton(
                   icon: Icon(_viewModeIcon(prefs.viewMode)),
-                  tooltip: 'View mode: ${prefs.viewMode.label}',
+                  tooltip: AppStrings.of(context).lsViewMode(prefs.viewMode.labelIn(AppStrings.of(context))),
                   onPressed: notifier.cycleViewMode,
                 ),
                 IconButton(
                   icon: const Icon(Icons.search),
-                  tooltip: 'Search',
+                  tooltip: AppStrings.of(context).search,
                   onPressed: () => setState(() {
                     _searchActive = true;
                     _showContinueWatching = false;
@@ -576,7 +533,7 @@ class _LocalScreenState extends ConsumerState<LocalScreen>
                 IconButton(
                   // Phase 16: MX Player uses a layout-grid icon, not tune
                   icon: const Icon(Icons.dashboard_outlined),
-                  tooltip: 'Sort & view',
+                  tooltip: AppStrings.of(context).lsSortView,
                   onPressed: _showSortSheet,
                 ),
                 // Phase 45 (audit): MX Player V3 has a 3-dot overflow menu
@@ -589,7 +546,7 @@ class _LocalScreenState extends ConsumerState<LocalScreen>
                   identifier: 'video-tab-more',
                   child: SafePopupMenuButton<String>(
                     icon: const Icon(Icons.more_vert),
-                    tooltip: 'More',
+                    tooltip: AppStrings.of(context).moreOptions,
                     color: AppColors.darkSurface,
                     onSelected: (v) => _onAppBarMenu(context, v),
                     itemBuilder: (_) => [
@@ -877,7 +834,7 @@ class _LocalScreenState extends ConsumerState<LocalScreen>
         if (folders.isEmpty) {
           final query = ref.read(searchQueryProvider);
           return _emptyLibrary(query.isNotEmpty
-              ? 'No folders match "$query"'
+              ? AppStrings.of(context).lsNoFolderMatch(query)
               : AppStrings.of(context).noVideosFound);
         }
         return RefreshIndicator(
@@ -1063,14 +1020,11 @@ class _LocalScreenState extends ConsumerState<LocalScreen>
     messenger.hideCurrentSnackBar();
     messenger.showSnackBar(
       SnackBar(
-        content: const Text(
-          'ADB is disconnected — app-data videos may be out of date. '
-          'Reconnect to refresh them.',
-        ),
+        content: Text(AppStrings.of(context).lsAdbStale),
         duration: const Duration(seconds: 5),
         behavior: SnackBarBehavior.floating,
         action: SnackBarAction(
-          label: 'Reconnect',
+          label: AppStrings.of(context).lsReconnect,
           onPressed: () {
             if (mounted) {
               Navigator.of(context, rootNavigator: true).push(

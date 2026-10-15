@@ -17,41 +17,40 @@ import '../../../core/localization/app_strings.dart';
 class HistoryScreen extends ConsumerWidget {
   const HistoryScreen({super.key});
 
-  String _fmtAgo(DateTime dt) {
+  static String _fmtAgo(AppStrings s, DateTime dt) {
     final diff = DateTime.now().difference(dt);
-    if (diff.inDays > 7) return '${diff.inDays}d ago';
-    if (diff.inDays > 0) return '${diff.inDays}d ago';
-    if (diff.inHours > 0) return '${diff.inHours}h ago';
-    if (diff.inMinutes > 0) return '${diff.inMinutes}m ago';
-    return 'Just now';
+    if (diff.inDays > 0) return s.agoDays(diff.inDays);
+    if (diff.inHours > 0) return s.agoHours(diff.inHours);
+    if (diff.inMinutes > 0) return s.agoMinutes(diff.inMinutes);
+    return s.agoJustNow;
   }
 
   /// Group history entries by relative date for section headers.
   /// Returns ordered list of (header, [entries]) groups.
   List<MapEntry<String, List<HistoryEntry>>> _groupByDate(
-      List<HistoryEntry> entries) {
+      AppStrings s, List<HistoryEntry> entries) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final yesterday = today.subtract(const Duration(days: 1));
     final weekStart = today.subtract(const Duration(days: 7));
 
     final groups = <String, List<HistoryEntry>>{
-      'Today': [],
-      'Yesterday': [],
-      'This week': [],
-      'Earlier': [],
+      s.hsToday: [],
+      s.hsYesterday: [],
+      s.hsThisWeek: [],
+      s.hsEarlier: [],
     };
     for (final e in entries) {
       final d = DateTime(
           e.lastWatched.year, e.lastWatched.month, e.lastWatched.day);
       if (d.isAtSameMomentAs(today)) {
-        groups['Today']!.add(e);
+        groups[s.hsToday]!.add(e);
       } else if (d.isAtSameMomentAs(yesterday)) {
-        groups['Yesterday']!.add(e);
+        groups[s.hsYesterday]!.add(e);
       } else if (d.isAfter(weekStart)) {
-        groups['This week']!.add(e);
+        groups[s.hsThisWeek]!.add(e);
       } else {
-        groups['Earlier']!.add(e);
+        groups[s.hsEarlier]!.add(e);
       }
     }
     return groups.entries.where((g) => g.value.isNotEmpty).toList();
@@ -68,7 +67,7 @@ class HistoryScreen extends ConsumerWidget {
           if (history.isNotEmpty)
             IconButton(
               icon: const Icon(Icons.delete_sweep_outlined),
-              tooltip: 'Clear all',
+              tooltip: AppStrings.of(context).hsClearAll,
               onPressed: () async {
                 final confirm = await showDialog<bool>(
                   context: context,
@@ -125,7 +124,7 @@ class HistoryScreen extends ConsumerWidget {
 
   Widget _buildGroupedList(
       BuildContext context, WidgetRef ref, List<HistoryEntry> history) {
-    final groups = _groupByDate(history);
+    final groups = _groupByDate(AppStrings.of(context), history);
     final children = <Widget>[];
     for (final group in groups) {
       children.add(_SectionHeader(label: group.key));
@@ -163,7 +162,7 @@ class HistoryScreen extends ConsumerWidget {
               onDelete: () => ref
                   .read(historyProvider.notifier)
                   .deleteEntry(entry.videoUri),
-              fmtAgo: _fmtAgo,
+              fmtAgo: (dt) => _fmtAgo(AppStrings.of(context), dt),
             ),
           ),
         );
@@ -311,7 +310,7 @@ class _HistoryTileState extends State<_HistoryTile> {
         ],
       ),
       trailing: IconButton(
-        tooltip: 'Close',
+        tooltip: AppStrings.of(context).close,
         icon: const Icon(
           Icons.close,
           color: AppColors.darkOnSurfaceMuted,

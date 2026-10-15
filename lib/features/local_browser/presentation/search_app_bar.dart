@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
 import 'library_provider.dart';
+import '../../../core/localization/app_strings.dart';
 
 /// Search bar overlay AppBar — replaces normal AppBar when active
 class SearchAppBar extends ConsumerStatefulWidget
@@ -62,7 +63,7 @@ class _SearchAppBarState extends ConsumerState<SearchAppBar> {
     return AppBar(
       backgroundColor: AppColors.darkBackground,
       leading: IconButton(
-        tooltip: 'Close',
+        tooltip: AppStrings.of(context).close,
         icon: const Icon(Icons.close),
         onPressed: () {
           ref.read(searchQueryProvider.notifier).state = '';
@@ -74,8 +75,8 @@ class _SearchAppBarState extends ConsumerState<SearchAppBar> {
         focusNode: _focusNode,
         autofocus: true,
         style: const TextStyle(color: Colors.white, fontSize: 16),
-        decoration: const InputDecoration(
-          hintText: 'Search media files',
+        decoration: InputDecoration(
+          hintText: AppStrings.of(context).sabHint,
           hintStyle: TextStyle(color: Colors.white38),
           border: InputBorder.none,
           icon: Icon(Icons.search, color: Colors.white54, size: 20),
@@ -93,7 +94,7 @@ class _SearchAppBarState extends ConsumerState<SearchAppBar> {
       actions: [
         if (_controller.text.isNotEmpty)
           IconButton(
-            tooltip: 'Clear',
+            tooltip: AppStrings.of(context).sabClear,
             icon: const Icon(Icons.clear),
             onPressed: () {
               _controller.clear();

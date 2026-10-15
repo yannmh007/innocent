@@ -44,7 +44,7 @@ class CustomPopupPlayScreen extends ConsumerWidget {
           const SizedBox(height: 4),
           _radioOption(
             ref,
-            'Fast Forward/Rewind',
+            AppStrings.of(context).cppFfRew,
             'ff_rew',
             selectedControl,
           ),
