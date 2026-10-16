@@ -190,33 +190,48 @@ class _TracksTabState extends ConsumerState<_TracksTab> {
           padding: const EdgeInsets.fromLTRB(16, 2, 4, 2),
           child: Row(
             children: [
-              // The field IS the box: the icon and the box's edges used to
-              // sit outside a 28 dp text field, so a tap on them did nothing.
+              // The box is drawn 36 dp tall, as MX draws it; the text field
+              // over it takes the row's whole 48 dp, its icon and edges too
+              // (they sat outside a 28 dp field, and a tap there did nothing).
               Expanded(
-                child: TextField(
-                  // Phase 34: Real search input
-                  onChanged: (v) {
-                    ref.read(musicSearchProvider.notifier).state = v;
-                  },
-                  style: const TextStyle(color: Colors.white, fontSize: 13),
-                  decoration: InputDecoration(
-                    isDense: true,
-                    filled: true,
-                    fillColor: AppColors.darkSurface,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 11),
-                    prefixIcon: const Icon(Icons.search,
-                        size: 18, color: AppColors.white50),
-                    prefixIconConstraints:
-                        const BoxConstraints(minWidth: 38, minHeight: 36),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide.none,
-                    ),
-                    hintText: AppStrings.of(context).searchSongs,
-                    hintStyle: const TextStyle(
-                      color: AppColors.white50,
-                      fontSize: 13,
-                    ),
+                child: SizedBox(
+                  height: 48,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: <Widget>[
+                      Container(
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: AppColors.darkSurface,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      Positioned.fill(
+                        child: TextField(
+                          // Phase 34: Real search input
+                          onChanged: (v) {
+                            ref.read(musicSearchProvider.notifier).state = v;
+                          },
+                          textAlignVertical: TextAlignVertical.center,
+                          style: const TextStyle(
+                              color: Colors.white, fontSize: 13),
+                          decoration: InputDecoration(
+                            isDense: true,
+                            contentPadding: EdgeInsets.zero,
+                            prefixIcon: const Icon(Icons.search,
+                                size: 18, color: AppColors.white50),
+                            prefixIconConstraints: const BoxConstraints(
+                                minWidth: 38, minHeight: 36),
+                            border: InputBorder.none,
+                            hintText: AppStrings.of(context).searchSongs,
+                            hintStyle: const TextStyle(
+                              color: AppColors.white50,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),

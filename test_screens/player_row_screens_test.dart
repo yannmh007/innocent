@@ -78,6 +78,15 @@ void main() {
             onSelect: (_, __) {},
             onDismiss: () {}),
       ), phones: [large]);
+  // Landscape on a small phone: the keypad, the "play to the end" line and
+  // the buttons share 360 dp, the tightest the dialog gets.
+  screens('player_sleep_land', () => Scaffold(
+        backgroundColor: Colors.black,
+        body: SleepTimerDialog(
+            currentRemaining: const Duration(minutes: 44),
+            onSelect: (_, __) {},
+            onDismiss: () {}),
+      ), phones: [const Phone('land', Size(740, 360), top: 0, bottom: 0)]);
 }
 
 Widget _more() {

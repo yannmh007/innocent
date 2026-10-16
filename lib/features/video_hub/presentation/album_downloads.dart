@@ -420,24 +420,52 @@ class AlbumDownloadButton extends ConsumerWidget {
               ),
               ),
             // FLEXIBLE, so a narrow header (a 360px phone, a Burmese label)
-            // ellipsises the label instead of overflowing the row.
+            // never overflows the row. And where the whole label does not
+            // fit, the icon alone, named by its tooltip: an ellipsis left
+            // "အား…" ("all…"), the one word that does not say what it does.
             Flexible(
-              child: TextButton.icon(
-              key: const ValueKey('album-dl-start'),
-              // Tighter than the default 12 dp sides: the header is narrow.
-              style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 8)),
-              onPressed: () => downloadAlbumMissing(context, ref,
-                  content: content, status: status),
-              icon: const Icon(Icons.download_outlined,
-                  size: 18, color: VH.textSecondary),
-              label: Text(
-                status.hasNew ? s.vhAlbumDownloadNew : s.vhAlbumDownloadAll,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: VH.meta.copyWith(fontSize: 12.5),
-              ),
-            ),
+              child: LayoutBuilder(builder: (context, box) {
+                final label =
+                    status.hasNew ? s.vhAlbumDownloadNew : s.vhAlbumDownloadAll;
+                final style = DefaultTextStyle.of(context)
+                    .style
+                    .merge(VH.meta.copyWith(fontSize: 12.5));
+                final text = TextPainter(
+                  text: TextSpan(text: label, style: style),
+                  maxLines: 1,
+                  textDirection: Directionality.of(context),
+                  textScaler: MediaQuery.textScalerOf(context),
+                )..layout();
+                // Icon 18, its gap 8, the button's sides 2 x 8.
+                final fits = text.width + 18 + 8 + 16 <= box.maxWidth;
+                text.dispose();
+                void start() => downloadAlbumMissing(context, ref,
+                    content: content, status: status);
+                if (!fits) {
+                  return IconButton(
+                    key: const ValueKey('album-dl-start'),
+                    tooltip: label,
+                    onPressed: start,
+                    icon: const Icon(Icons.download_outlined,
+                        size: 20, color: VH.textSecondary),
+                  );
+                }
+                return TextButton.icon(
+                  key: const ValueKey('album-dl-start'),
+                  // Tighter than the default 12 dp sides: the header is narrow.
+                  style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 8)),
+                  onPressed: start,
+                  icon: const Icon(Icons.download_outlined,
+                      size: 18, color: VH.textSecondary),
+                  label: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: VH.meta.copyWith(fontSize: 12.5),
+                  ),
+                );
+              }),
             ),
           ],
         );

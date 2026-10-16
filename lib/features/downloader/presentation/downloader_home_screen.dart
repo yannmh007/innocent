@@ -1893,8 +1893,13 @@ class _DownloaderHomeScreenState extends ConsumerState<DownloaderHomeScreen>
           children: <Widget>[
             const Icon(Icons.link_rounded, size: 19, color: AppColors.white40),
             const SizedBox(width: 10),
+            // The field fills the bar's 48 dp (it was a 28 dp line inside
+            // it): a tap anywhere on the bar's text area lands.
             Expanded(
-              child: TextField(
+              child: SizedBox(
+                height: 48,
+                child: TextField(
+                textAlignVertical: TextAlignVertical.center,
                 controller: _linkController,
                 focusNode: _linkFocus,
                 keyboardType: TextInputType.url,
@@ -1911,6 +1916,7 @@ class _DownloaderHomeScreenState extends ConsumerState<DownloaderHomeScreen>
                       const TextStyle(color: AppColors.white40, fontSize: 13.5),
                 ),
                 onSubmitted: _handleLink,
+              ),
               ),
             ),
             if (hasText)

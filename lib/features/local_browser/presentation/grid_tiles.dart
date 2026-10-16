@@ -440,16 +440,17 @@ class VideoGridTile extends ConsumerWidget {
           ],
         ),
       ),
-        // The kebab's target: 48 x 40 dp from just under the thumbnail, over
-        // the title's end and the space below it, not the 22 x 19 dp of the
-        // icon itself, the smallest target in the app (SCREEN_A11Y=1). It
-        // starts below the thumbnail, so the duration badge still plays.
+        // The kebab's target: 48 x 48 dp from the thumbnail's bottom edge,
+        // over the title's end and the space below it, not the 22 x 19 dp of
+        // the icon itself, the smallest target in the app (SCREEN_A11Y=1).
+        // It starts under the duration badge (4 dp off the thumbnail's
+        // bottom), so the badge still plays.
         if (onMoreTap != null)
           Positioned(
-            top: box.maxWidth * 9 / 16 + 4,
+            top: box.maxWidth * 9 / 16 - 4,
             right: 0,
             width: 48,
-            height: 40,
+            height: 48,
             child: RemoteTappable(
               onTap: onMoreTap,
               semanticLabel: AppStrings.of(context).moreOptions,

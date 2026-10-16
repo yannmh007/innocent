@@ -163,14 +163,15 @@ class MediaManagerScreen extends ConsumerWidget {
             ],
           ),
 
-          const SizedBox(height: 24),
+          const SizedBox(height: 12),
 
           // ─── HAVEN'T PLAYED ───
+          // 48 dp tall (it was 32): the space around it moved into it.
           InkWell(
             onTap: () => _showVideoSheet(context, ref, _Sheet.unplayed),
             borderRadius: BorderRadius.circular(6),
             child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
+              padding: const EdgeInsets.symmetric(vertical: 12),
               child: Row(
                 children: [
                   Expanded(
@@ -192,7 +193,7 @@ class MediaManagerScreen extends ConsumerWidget {
               ),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 4),
           unplayed.when(
             loading: () => const Padding(
               padding: EdgeInsets.all(24),

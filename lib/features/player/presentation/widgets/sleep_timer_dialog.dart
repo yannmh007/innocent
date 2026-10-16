@@ -226,10 +226,20 @@ class _SleepTimerDialogState extends State<SleepTimerDialog> {
             ),
           ),
           const SizedBox(height: 8),
+          // The "play to the end" line sits on the left, level with the
+          // buttons: under the keypad it pushed STOP and START 34 dp off a
+          // 360 dp-tall phone (screens harness, player_sleep_land).
           Expanded(
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Spacer(),
+                Expanded(
+                  child: Align(
+                    alignment: Alignment.bottomLeft,
+                    child: _checkboxRow(),
+                  ),
+                ),
+                const SizedBox(width: 16),
                 SizedBox(
                   width: panelW,
                   child: Column(
@@ -240,11 +250,9 @@ class _SleepTimerDialogState extends State<SleepTimerDialog> {
                         height: 1,
                         thickness: 1,
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
                       Center(child: _keypad()),
                       const Spacer(),
-                      _checkboxRow(),
-                      const SizedBox(height: 2),
                       _actionsRow(),
                     ],
                   ),
@@ -264,9 +272,15 @@ class _SleepTimerDialogState extends State<SleepTimerDialog> {
     final h = d.inHours.toString();
     final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
     return GestureDetector(
-      // Long-press the duration to clear the entry back to 0h 00m.
+      // Long-press the duration to clear the entry back to 0h 00m. 48 dp
+      // tall, the row it sits in, not the 44 of its digits.
+      behavior: HitTestBehavior.opaque,
       onLongPress: _digits.isEmpty ? null : _clear,
-      child: Text.rich(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 48),
+        child: Center(
+        widthFactor: 1,
+        child: Text.rich(
         TextSpan(
           style: const TextStyle(
             color: Colors.white,
@@ -281,6 +295,8 @@ class _SleepTimerDialogState extends State<SleepTimerDialog> {
             const TextSpan(text: 'm', style: TextStyle(fontSize: _kTimeSuffix)),
           ],
         ),
+      ),
+      ),
       ),
     );
   }
@@ -381,11 +397,12 @@ class _SleepTimerDialogState extends State<SleepTimerDialog> {
   Widget _checkboxRow() {
     // The whole line toggles, not only the 18 dp box, and it is one
     // control for TalkBack, named by its words.
+    // 48 dp tall: the 12 dp above it moved into it (it was a 35 dp line).
     return MergeSemantics(
       child: RemoteTappable(
       onTap: () => setState(() => _playToEnd = !_playToEnd),
-      child: Padding(
-      padding: const EdgeInsets.only(top: 12, bottom: 2),
+      child: ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 48),
       child: Row(
       children: [
         SizedBox(
