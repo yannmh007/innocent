@@ -94,7 +94,7 @@ appId: com.innocent.media
     text: "Export"
 - extendedWaitUntil:
     visible: ".*Cut saved.*"
-    timeout: 30000
+    timeout: 120000
 - takeScreenshot: c04_cut_saved
 - assertNotVisible: ".*FFmpeg.*"
 # Back to the Video tab by starting again: three Backs went one too far

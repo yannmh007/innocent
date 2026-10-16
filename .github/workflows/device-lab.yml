@@ -198,6 +198,17 @@ jobs:
             -metadata:s:s:0 language=eng -disposition:s:0 default \
             -movflags +faststart \
             "lib_media/Movies/Perf Test/aaa_play_720p.mp4"
+          # The exact cut (flows/cut_exact.yaml): H.264 Baseline with a key
+          # frame every 2 s, which the emulator's software encoder can match,
+          # so Media3's smart cut can stitch its re-encoded start to the
+          # copied rest. (The High-profile film above it cannot: that one
+          # proves the lossless fallback.)
+          mkdir -p lib_media/Movies/"Cut Test"
+          ffmpeg -loglevel error -f lavfi -i testsrc2=size=1280x720:rate=24 \
+            -f lavfi -i sine=frequency=550 -t 60 -c:v libx264 -preset veryfast \
+            -profile:v baseline -level 3.1 -g 48 -keyint_min 48 -sc_threshold 0 \
+            -crf 28 -pix_fmt yuv420p -c:a aac -b:a 96k -movflags +faststart \
+            "lib_media/Movies/Cut Test/cut_main.mp4"
           # The transfer speed test (flows/transfer_speed.yaml): one big file.
           if [ "${BIGFILE_MB:-0}" -gt 0 ]; then
             mkdir -p lib_media/Movies/Speed

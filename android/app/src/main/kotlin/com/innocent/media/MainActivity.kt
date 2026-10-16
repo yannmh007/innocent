@@ -551,20 +551,46 @@ class MainActivity : AudioServiceFragmentActivity() {
                                 )
                             }
                         }
-                        PreciseTrimmer.trim(applicationContext, src, dst, startMs, endMs) { precise ->
-                            if (precise.error == null) {
-                                reply(null, precise.silent, precise.exact)
-                            } else {
-                                android.util.Log.w(
-                                    "Innocent", "Cut: Media3 refused (${precise.error}); lossless copy"
-                                )
-                                Thread {
-                                    VideoTrimmer.discard(dst)
-                                    val o = VideoTrimmer.trim(src, dst, startMs * 1000L, endMs * 1000L)
-                                    reply(o.error, o.silent, false)
-                                }.start()
-                            }
+                        val startUs = startMs * 1000L
+                        val endUs = endMs * 1000L
+                        val lossless = { exact: Boolean ->
+                            Thread {
+                                VideoTrimmer.discard(dst)
+                                val o = VideoTrimmer.trim(src, dst, startUs, endUs)
+                                reply(o.error, o.silent, exact && o.error == null)
+                            }.start()
                         }
+                        Thread {
+                            val probe = PreciseTrimmer.probe(src, startUs)
+                            if (!probe.smartCut(startUs)) {
+                                // Not an MP4 Media3 can stitch, or A is a key
+                                // frame already: the lossless cut, exact then.
+                                android.util.Log.i(
+                                    "Innocent",
+                                    "Cut: lossless (mp4=${probe.mp4} video=${probe.videoMime} " +
+                                        "key=${probe.nextKeyUs} start=$startUs)"
+                                )
+                                lossless(probe.keyFrameAt(startUs))
+                            } else {
+                                val deadline = PreciseTrimmer.deadlineMs(probe, startUs, endUs)
+                                runOnUiThread {
+                                    PreciseTrimmer.trim(
+                                        applicationContext, src, dst, startMs, endMs,
+                                        probe.hasAudio, deadline
+                                    ) { precise ->
+                                        if (precise.error == null) {
+                                            reply(null, precise.silent, precise.exact)
+                                        } else {
+                                            android.util.Log.w(
+                                                "Innocent",
+                                                "Cut: smart cut failed (${precise.error}); lossless"
+                                            )
+                                            lossless(false)
+                                        }
+                                    }
+                                }
+                            }
+                        }.start()
                     }
                 }
                 "scan" -> {

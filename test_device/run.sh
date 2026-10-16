@@ -463,22 +463,23 @@ for flow in $FLOWS; do
   # THE CUT, MEASURED: the file the flow made, its length and tracks, and
   # how PreciseTrimmer made it ("optimization=1" is the smart cut, exact to
   # the frame; "video=2" alone is a copy from the key frame before A).
-  case "$flow" in cut)
-    f=$(adb shell "ls /sdcard/Innocent/Cuts/ 2>/dev/null" | tr -d '\r' | head -1)
-    if [ -n "$f" ]; then
+  # The first frame's time says whether it starts at A: 0 for a smart cut;
+  # a lossless cut from the key frame before A starts at 0 too, but is
+  # longer than B - A by the gap, so the duration is the tell.
+  case "$flow" in cut|cut_exact)
+    adb shell "ls /sdcard/Innocent/Cuts/ 2>/dev/null" | tr -d '\r' | while read -r f; do
+      [ -n "$f" ] || continue
       rm -f /tmp/lab_cut.mp4
       adb pull "/sdcard/Innocent/Cuts/$f" /tmp/lab_cut.mp4 >/dev/null 2>&1 || true
       if command -v ffprobe >/dev/null 2>&1 && [ -f /tmp/lab_cut.mp4 ]; then
         d=$(ffprobe -v error -show_entries format=duration -of csv=p=0 /tmp/lab_cut.mp4)
-        st=$(ffprobe -v error -show_entries stream=codec_type,codec_name -of csv=p=0 /tmp/lab_cut.mp4 | tr '\n' ' ')
+        st=$(ffprobe -v error -show_entries stream=codec_type,codec_name,profile -of csv=p=0 /tmp/lab_cut.mp4 | tr '\n' ' ')
         log "cut file: $f duration=${d}s streams: $st"
       else
         log "cut file: $f (not measured)"
       fi
-    else
-      log "cut file: none in /sdcard/Innocent/Cuts"
-    fi
-    adb logcat -d -s Innocent:I Innocent:W 2>/dev/null | grep "Cut:" | tail -3 | tr -d '\r' | while read -r l; do log "trimmer: ${l#*: }"; done
+    done
+    adb logcat -d -s Innocent:I Innocent:W 2>/dev/null | grep "Cut:" | tail -4 | tr -d '\r' | while read -r l; do log "trimmer: ${l#*: }"; done
     ;;
   esac
   # MX'S SCREEN BUTTON, pressed from here: Maestro spends seconds per tap
