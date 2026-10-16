@@ -2,7 +2,10 @@ Running on test
  > Flow cut
 Launch app "com.innocent.media"... COMPLETED
 Wait for animation to end within 10000 ms... COMPLETED
-Tap on (Optional) "Skip"... COMPLETED
+Tap on (Optional) "Skip"... WARNED
+
+
+ Warning: Element not found: Text matching regex: Skip
 Wait for animation to end within 5000 ms... COMPLETED
 Tap on (Optional) "Allow.*"... WARNED
 
@@ -32,29 +35,17 @@ Retry 3 times...
 Retry 3 times... COMPLETED
 Wait for animation to end within 3000 ms... COMPLETED
 Take screenshot c01_more_menu... COMPLETED
-Tap on "Cut"... COMPLETED
-Wait for animation to end within 3000 ms... COMPLETED
-Take screenshot c02_cut_sheet... COMPLETED
-Assert that ".*key frame.*" is visible... COMPLETED
-Tap on "Set", Index: 0... COMPLETED
-Wait for animation to end within 2000 ms... COMPLETED
-Tap on id: cut-scrubber... COMPLETED
-Wait for animation to end within 3000 ms... COMPLETED
-Tap on "Set"... COMPLETED
-Wait for animation to end within 2000 ms... COMPLETED
-Take screenshot c03_points_set... COMPLETED
-Tap on "Export"... COMPLETED
-Assert that ".*Cut saved.*" is visible... FAILED
+Tap on "Cut"... FAILED
 
-Assertion is false: ".*Cut saved.*" is visible
+Element not found: Text matching regex: Cut
 
-Assertion '".*Cut saved.*" is visible' failed. Check the UI hierarchy in debug artifacts to verify the element state and properties.
+Element with Text matching regex: Cut not found. Check the UI hierarchy in debug artifacts to verify if the element exists.
 
 Possible causes:
 - Element selector may be incorrect - check if there are similar elements with slightly different names/properties.
-- Element may be temporarily unavailable due to loading state
-- This could be a real regression that needs to be addressed
+- Element may be temporarily unavailable due to loading state.
+- This could be a real regression that needs to be addressed.
 
 ==== Debug output (logs & screenshots) ====
 
-/home/runner/work/innocent/innocent/out/maestro_out/2026-10-16_030135
+/home/runner/work/innocent/innocent/out/maestro_out/2026-10-16_033224
