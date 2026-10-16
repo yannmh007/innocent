@@ -26,19 +26,22 @@ class VideoCutResult {
 }
 
 /// The player's Cut: the stretch between two points of a video on this phone,
-/// into a new MP4 in `Innocent/Cuts`. Exact to the frame where the video
-/// allows it: only A to the next key frame is re-encoded, the rest copied
-/// (PreciseTrimmer.kt); otherwise copied losslessly from the key frame before
-/// A (VideoTrimmer.kt).
+/// into a new MP4 in `Innocent/Cuts`. By default copied losslessly, from the
+/// key frame at or before A (VideoTrimmer.kt); with "Exact start", from A
+/// itself (PreciseTrimmer.kt).
 class VideoCutService {
   VideoCutService._();
 
   static const MethodChannel _channel = MethodChannel('mx_clone/media_scan');
 
+  /// [exact]: start exactly at A (Media3: a smart cut where it can stitch,
+  /// otherwise the clip re-encoded; [progress] and [cancel] while it runs).
+  /// Without it, the lossless copy from the key frame at or before A.
   static Future<VideoCutResult> cut({
     required String sourcePath,
     required Duration start,
     required Duration end,
+    bool exact = false,
   }) async {
     if (end <= start) return const VideoCutResult.fail('empty range');
     if (!await File(sourcePath).exists()) {
@@ -57,6 +60,7 @@ class VideoCutService {
         'dst': out,
         'startMs': start.inMilliseconds,
         'endMs': end.inMilliseconds,
+        'exact': exact,
       });
       final err = reply?['error'] as String?;
       if (reply == null) return const VideoCutResult.fail('no reply');
@@ -68,6 +72,35 @@ class VideoCutService {
       return VideoCutResult.fail(e.message ?? e.code);
     } on MissingPluginException {
       return const VideoCutResult.fail('not available on this device');
+    }
+  }
+
+  /// How far an exact cut is, 0-100, or null when unknown.
+  static Future<int?> progress() async {
+    try {
+      final p = await _channel.invokeMethod<int>('trimProgress');
+      return p == null || p < 0 ? null : p;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Stops an exact cut; [cut] then reports `cancelled` and saves nothing.
+  static Future<void> cancel() async {
+    try {
+      await _channel.invokeMethod<void>('trimCancel');
+    } catch (_) {/* nothing running */}
+  }
+
+  /// Where the default (lossless) cut from [at] starts: the key frame at or
+  /// before it. Null when the file cannot be read.
+  static Future<Duration?> keyFrameBefore(String path, Duration at) async {
+    try {
+      final ms = await _channel.invokeMethod<int>(
+          'keyFrameBefore', <String, Object>{'src': path, 'atMs': at.inMilliseconds});
+      return ms == null || ms < 0 ? null : Duration(milliseconds: ms);
+    } catch (_) {
+      return null;
     }
   }
 

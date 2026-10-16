@@ -2571,6 +2571,12 @@ class AppStrings {
   String get cutHint => _s('cutHint');
   String cutSavedKeyFrame(Object v) =>
       _s('cutSavedKeyFrame').replaceFirst('{v}', '$v');
+  String get cutExact => _s('cutExact');
+  String get cutExactSub => _s('cutExactSub');
+  String cutKeyStartAt(Object v) =>
+      _s('cutKeyStartAt').replaceFirst('{v}', '$v');
+  String cutProgress(int n) => _s('cutProgress').replaceFirst('{n}', '$n');
+  String get cutCancelled => _s('cutCancelled');
 
   String get obFindTitle => _s('obFindTitle');
   String get obFindBody => _s('obFindBody');
@@ -4899,10 +4905,15 @@ class AppStrings {
     'cutLocalOnly': 'Only a video saved on this phone can be cut.',
     'cutWorking': 'Cutting…',
     'cutSaved': 'Cut saved: {v}',
+    'cutCancelled': 'Cut cancelled. Nothing was saved.',
+    'cutProgress': 'Cutting… {n}%',
+    'cutKeyStartAt': 'Starts at {v}, the key frame before A',
+    'cutExactSub': 'Starts exactly at A. The start is re-encoded (for most downloaded videos, the whole clip), so it takes longer.',
+    'cutExact': 'Exact start',
     'cutSavedSilent': 'Cut saved without sound: {v}. This video\'s audio cannot go into an MP4 without re-encoding.',
     'cutFailed': 'Could not cut this video ({v}).',
-    'cutHint': 'The cut starts exactly at A. Only the moment from A to the next key frame is re-encoded; the rest is copied as it is.',
-    'cutSavedKeyFrame': 'Cut saved: {v}. This video could only be cut from the key frame just before A, so it starts a moment early.',
+    'cutHint': 'The clip is copied as it is: at once and without loss, from the key frame at or before A. Exact start, below, begins at A itself.',
+    'cutSavedKeyFrame': 'Cut saved: {v}. An exact start was not possible for this video, so it starts at the key frame just before A.',
     'obFindTitle': 'Find your videos',
     'obFindBody': 'Innocent finds the videos on your phone and sorts them by folder. Everything stays on your phone; nothing is uploaded.',
     'obGestureTitle': 'Gesture controls',
@@ -7185,10 +7196,15 @@ class AppStrings {
     'cutLocalOnly': 'ဖုန်းထဲမှာ သိမ်းထားတဲ့ ဗီဒီယိုကိုသာ ဖြတ်လို့ ရပါတယ်။',
     'cutWorking': 'ဖြတ်နေပါတယ်…',
     'cutSaved': 'ဖြတ်ပြီး သိမ်းပြီးပါပြီ: {v}',
+    'cutCancelled': 'ဖြတ်တာ ရပ်လိုက်ပါပြီ။ ဘာမှ မသိမ်းထားပါ။',
+    'cutProgress': 'ဖြတ်နေပါတယ်… {n}%',
+    'cutKeyStartAt': '{v} ကနေ စပါမယ် (A မတိုင်ခင် key frame)',
+    'cutExactSub': 'A ကနေ တိတိကျကျ စပါတယ်။ အစပိုင်းကို ပြန် encode လုပ်ရလို့ (ဒေါင်းထားတဲ့ ဗီဒီယို အများစုမှာ အကုန်လုံး) ပိုကြာပါတယ်။',
+    'cutExact': 'A ကနေ တိတိကျကျ စမယ်',
     'cutSavedSilent': 'အသံမပါဘဲ သိမ်းပြီးပါပြီ: {v}။ ဒီဗီဒီယိုရဲ့ အသံပုံစံကို ပြန်မပြောင်းဘဲ MP4 ထဲ ထည့်လို့မရပါ။',
     'cutFailed': 'ဒီဗီဒီယိုကို မဖြတ်နိုင်ပါ ({v})။',
-    'cutHint': 'A ကနေ တိတိကျကျ စဖြတ်ပါတယ်။ A ကနေ နောက် key frame အထိ ခဏလေးကိုပဲ ပြန် encode လုပ်ပြီး ကျန်တာကို မူရင်းအတိုင်း ကူးပါတယ်။',
-    'cutSavedKeyFrame': 'ဖြတ်ပြီး သိမ်းပြီးပါပြီ: {v}။ ဒီဗီဒီယိုကို A မတိုင်ခင် key frame ကနေပဲ ဖြတ်လို့ရလို့ နည်းနည်း စောပြီး စပါတယ်။',
+    'cutHint': 'မူရင်းအတိုင်း ကူးပါတယ် — ချက်ချင်းပြီးပြီး အရည်အသွေး မကျပါ၊ A မှာ ဒါမှမဟုတ် A မတိုင်ခင် key frame ကနေ စပါတယ်။ A ကနေ တိတိကျကျ စချင်ရင် အောက်က ခလုတ်ကို ဖွင့်ပါ။',
+    'cutSavedKeyFrame': 'ဖြတ်ပြီး သိမ်းပြီးပါပြီ: {v}။ ဒီဗီဒီယိုကို A ကနေ တိတိကျကျ ဖြတ်လို့မရလို့ A မတိုင်ခင် key frame ကနေ စပါတယ်။',
     'obFindTitle': 'ဗီဒီယိုတွေကို ရှာပါ',
     'obFindBody': 'Innocent က ဖုန်းထဲက ဗီဒီယိုတွေကို ရှာပြီး folder အလိုက် စီပေးပါတယ်။ အားလုံး ဖုန်းထဲမှာပဲ ရှိပြီး ဘာမှ upload မလုပ်ပါ။',
     'obGestureTitle': 'Gesture နဲ့ ထိန်းချုပ်',
@@ -9461,10 +9477,15 @@ class AppStrings {
     'cutLocalOnly': 'ตัดได้เฉพาะวิดีโอที่บันทึกในโทรศัพท์นี้',
     'cutWorking': 'กำลังตัด…',
     'cutSaved': 'บันทึกคลิปที่ตัดแล้ว: {v}',
+    'cutCancelled': 'ยกเลิกการตัดแล้ว ไม่ได้บันทึกอะไร',
+    'cutProgress': 'กำลังตัด… {n}%',
+    'cutKeyStartAt': 'เริ่มที่ {v} (คีย์เฟรมก่อน A)',
+    'cutExactSub': 'เริ่มตรง A พอดี โดยเข้ารหัสช่วงต้นใหม่ (วิดีโอที่ดาวน์โหลดมาส่วนใหญ่ต้องทำทั้งคลิป) จึงใช้เวลานานกว่า',
+    'cutExact': 'เริ่มตรง A พอดี',
     'cutSavedSilent': 'บันทึกโดยไม่มีเสียง: {v} เสียงของวิดีโอนี้ใส่ใน MP4 ไม่ได้หากไม่เข้ารหัสใหม่',
     'cutFailed': 'ตัดวิดีโอนี้ไม่ได้ ({v})',
-    'cutHint': 'คลิปเริ่มตรงที่ A พอดี เข้ารหัสใหม่เฉพาะช่วงสั้นๆ จาก A ถึงคีย์เฟรมถัดไป ส่วนที่เหลือคัดลอกตามต้นฉบับ',
-    'cutSavedKeyFrame': 'บันทึกคลิปที่ตัดแล้ว: {v} วิดีโอนี้ตัดได้จากคีย์เฟรมก่อน A เท่านั้น จึงเริ่มเร็วกว่าเล็กน้อย',
+    'cutHint': 'คลิปจะคัดลอกตามต้นฉบับ: เสร็จทันทีและไม่เสียคุณภาพ เริ่มจากคีย์เฟรมที่ A หรือก่อน A หากต้องการเริ่มตรง A พอดี ให้เปิดตัวเลือกด้านล่าง',
+    'cutSavedKeyFrame': 'บันทึกคลิปที่ตัดแล้ว: {v} วิดีโอนี้เริ่มตรง A พอดีไม่ได้ จึงเริ่มที่คีย์เฟรมก่อน A',
     'obFindTitle': 'ค้นหาวิดีโอของคุณ',
     'obFindBody': 'Innocent ค้นหาวิดีโอในโทรศัพท์และจัดตามโฟลเดอร์ ทุกอย่างอยู่ในเครื่อง ไม่มีการอัปโหลด',
     'obGestureTitle': 'ควบคุมด้วยท่าทาง',

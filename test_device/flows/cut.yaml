@@ -77,6 +77,11 @@ appId: com.innocent.media
     index: 0
 - waitForAnimationToEnd:
     timeout: 2000
+# … and the sheet says where the lossless cut will really start: this
+# film's key frames are about ten seconds apart.
+- extendedWaitUntil:
+    visible: "(?s).*the key frame before A.*"
+    timeout: 5000
 # … then the playhead to the middle of the film, and B there.
 - tapOn:
     id: "cut-scrubber"

@@ -1,7 +1,8 @@
-# The exact cut (1.64.65): the same as cut.yaml, on a film whose encoding
-# the emulator's encoder can match (Baseline, a key frame every 2 s), so
-# Media3's smart cut applies and the clip starts exactly at A. The message
-# must be the plain "Cut saved", not the key-frame one.
+# The exact cut (1.64.65): the same as cut.yaml with Exact start on, on a
+# Baseline film with a key frame every 2 s. On the emulator Media3 cannot
+# stitch its smart cut (format mismatch, run 38870594057) and re-encodes the
+# clip: exact all the same. The message must be the plain "Cut saved", not
+# the key-frame one, and the sheet shows the progress while it works.
 #
 # (cut.yaml's notes:) The player's Cut used to say an FFmpeg add-on was needed
 # and cut nothing. On the lab film: play a few seconds, More → Cut, set A,
@@ -95,8 +96,20 @@ appId: com.innocent.media
     timeout: 2000
 - takeScreenshot: e03_points_set
 - assertVisible: "(?s).*Clip: .*"
+# Exact start: the clip begins at A, re-encoded, with its progress here.
+- scrollUntilVisible:
+    element:
+      text: "(?s).*Exact start.*"
+    direction: DOWN
+    optional: true
+- tapOn: "(?s).*Exact start.*"
 - tapOn:
     text: "Export"
+- extendedWaitUntil:
+    visible: "(?s).*Cutting.*"
+    timeout: 10000
+    optional: true
+- takeScreenshot: e03b_progress
 - extendedWaitUntil:
     visible: ".*Cut saved.*"
     timeout: 330000

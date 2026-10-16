@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,9 +17,11 @@ import '../../../../core/ui/app_sheet.dart';
 /// Phase 40: Video Cut/Trim editor (MX Player parity, Function PDF page 5).
 ///
 /// Lets the user mark a start (A) and end (B) point on the video timeline;
-/// "Export" copies that stretch into Innocent/Cuts without re-encoding
-/// (VideoCutService). It used to say an FFmpeg add-on was needed and cut
-/// nothing.
+/// "Export" copies that stretch into Innocent/Cuts (VideoCutService): at
+/// once and without re-encoding, from the key frame at or before A (the
+/// sheet says where that is), or with "Exact start" from A itself, which has
+/// to re-encode and shows its progress here, with Cancel. It used to say an
+/// FFmpeg add-on was needed and cut nothing.
 ///
 /// The A/B points are kept in widget-local state (not shared with the player
 /// A-B repeat feature) so that opening Cut doesn't disturb playback.
@@ -65,6 +69,46 @@ class CutSheet extends ConsumerStatefulWidget {
 class _CutSheetState extends ConsumerState<CutSheet> {
   Duration? _startPoint;
   Duration? _endPoint;
+
+  /// "Exact start", remembered while the app runs.
+  static bool _lastExact = false;
+  bool _exact = _lastExact;
+
+  /// Where the default cut from A really starts: the key frame at or before
+  /// it. Null until read, or when it is A itself.
+  Duration? _keyStart;
+
+  /// An exact cut is running in this sheet; [_progress] is its percent.
+  bool _exporting = false;
+  int? _progress;
+  Timer? _poll;
+
+  @override
+  void dispose() {
+    _poll?.cancel();
+    // Closed while an exact cut runs: it carries on, and says so; its
+    // result replaces this.
+    if (_exporting) {
+      AppSnackbar.global(AppStrings.current.cutWorking,
+          duration: const Duration(minutes: 30));
+    }
+    super.dispose();
+  }
+
+  String? _localPath() {
+    final uri = ref.read(playerControllerProvider.notifier).currentUri;
+    return uri == null ? null : localPathOf(uri);
+  }
+
+  /// Reads where the lossless cut from [a] would start.
+  Future<void> _readKeyStart(Duration a) async {
+    final path = _localPath();
+    if (path == null) return;
+    final k = await VideoCutService.keyFrameBefore(path, a);
+    if (!mounted || _startPoint != a) return;
+    setState(() => _keyStart =
+        k != null && a - k > const Duration(milliseconds: 40) ? k : null);
+  }
 
   /// Where the scrubber's thumb is while a finger drags it; null otherwise.
   double? _scrubMs;
@@ -122,9 +166,11 @@ class _CutSheetState extends ConsumerState<CutSheet> {
     final pos = _enginePosition();
     setState(() {
       _startPoint = pos;
+      _keyStart = null;
       // If end is now before start, clear it.
       if (_endPoint != null && _endPoint! <= pos) _endPoint = null;
     });
+    _readKeyStart(pos);
   }
 
   /// Where the video actually is, to the millisecond.
@@ -163,6 +209,7 @@ class _CutSheetState extends ConsumerState<CutSheet> {
     setState(() {
       _startPoint = null;
       _endPoint = null;
+      _keyStart = null;
     });
   }
 
@@ -182,40 +229,68 @@ class _CutSheetState extends ConsumerState<CutSheet> {
     }
     final s = AppStrings.of(context);
     final controller = ref.read(playerControllerProvider.notifier);
-    final uri = controller.currentUri;
-    final path = uri == null ? null : localPathOf(uri);
+    final path = _localPath();
     final start = _startPoint!;
     final end = _endPoint!;
-    // Close the sheet; the rest is reported through the root messenger,
-    // which needs no context from the popped route.
-    Navigator.pop(context);
-    if (controller.isPrivate) {
-      AppSnackbar.global(s.cutPrivate);
-      return;
-    }
-    if (path == null) {
-      AppSnackbar.global(s.cutLocalOnly);
-      return;
-    }
-    // Up until the result replaces it: a cut that has to re-encode more than
-    // its first moment can take longer than any fixed time.
-    AppSnackbar.global(s.cutWorking, duration: const Duration(minutes: 30));
-    final result =
-        await VideoCutService.cut(sourcePath: path, start: start, end: end);
-    final saved = result.path;
-    if (saved != null) {
-      final name = p.basename(saved);
+    final exact = _exact;
+    if (controller.isPrivate || path == null) {
+      Navigator.pop(context);
       AppSnackbar.global(
-          result.silent
-              ? s.cutSavedSilent(name)
-              : result.exact
-                  ? s.cutSaved(name)
-                  : s.cutSavedKeyFrame(name),
-          duration:
-              Duration(seconds: result.silent || !result.exact ? 7 : 4));
-    } else {
-      AppSnackbar.globalError(s.cutFailed(result.error ?? '?'));
+          controller.isPrivate ? s.cutPrivate : s.cutLocalOnly);
+      return;
     }
+    if (!exact) {
+      // A moment: close the sheet; the rest is reported through the root
+      // messenger, which needs no context from the popped route.
+      Navigator.pop(context);
+      AppSnackbar.global(s.cutWorking, duration: const Duration(minutes: 5));
+      _report(s, await VideoCutService.cut(
+          sourcePath: path, start: start, end: end));
+      return;
+    }
+    // Exact: it can take as long as the clip, so it runs here, with its
+    // progress and Cancel.
+    setState(() {
+      _exporting = true;
+      _progress = null;
+    });
+    _poll = Timer.periodic(const Duration(milliseconds: 500), (_) async {
+      final p = await VideoCutService.progress();
+      if (mounted && _exporting && p != null) setState(() => _progress = p);
+    });
+    final result = await VideoCutService.cut(
+        sourcePath: path, start: start, end: end, exact: true);
+    _poll?.cancel();
+    _poll = null;
+    if (result.error == 'cancelled') {
+      AppSnackbar.global(s.cutCancelled);
+      if (mounted) setState(() => _exporting = false);
+      return;
+    }
+    if (mounted) {
+      _exporting = false;
+      Navigator.pop(context);
+    }
+    _report(s, result, askedExact: true);
+  }
+
+  void _report(AppStrings s, VideoCutResult result, {bool askedExact = false}) {
+    final saved = result.path;
+    if (saved == null) {
+      AppSnackbar.globalError(s.cutFailed(result.error ?? '?'));
+      return;
+    }
+    final name = p.basename(saved);
+    // The key-frame note only where an exact start was asked for and not
+    // possible: without it the sheet already said where the cut starts.
+    final fellBack = askedExact && !result.exact;
+    AppSnackbar.global(
+        result.silent
+            ? s.cutSavedSilent(name)
+            : fellBack
+                ? s.cutSavedKeyFrame(name)
+                : s.cutSaved(name),
+        duration: Duration(seconds: result.silent || fellBack ? 7 : 4));
   }
 
   @override
@@ -232,8 +307,11 @@ class _CutSheetState extends ConsumerState<CutSheet> {
         ? _endPoint! - _startPoint!
         : null;
 
+    // Scrolls when the screen is short: in landscape the sheet has about
+    // 360 dp, less than it needs.
     return SafeArea(
       top: false,
+      child: SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
         child: Column(
@@ -287,6 +365,16 @@ class _CutSheetState extends ConsumerState<CutSheet> {
               onSet: _setStart,
               onSeek: _startPoint != null ? () => _seekTo(_startPoint!) : null,
             ),
+            // Where the lossless cut will really start, before it is made.
+            if (!_exact && _keyStart != null)
+              Padding(
+                padding: const EdgeInsets.only(left: 80, top: 6),
+                child: Text(
+                  AppStrings.of(context).cutKeyStartAt(_fmt(_keyStart!)),
+                  style:
+                      const TextStyle(color: AppColors.white60, fontSize: 11.5),
+                ),
+              ),
             const SizedBox(height: 12),
             _PointRow(
               label: AppStrings.of(context).pwEndB,
@@ -295,7 +383,22 @@ class _CutSheetState extends ConsumerState<CutSheet> {
               onSet: _setEnd,
               onSeek: _endPoint != null ? () => _seekTo(_endPoint!) : null,
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 8),
+            SwitchListTile(
+              key: const ValueKey('cut-exact'),
+              contentPadding: EdgeInsets.zero,
+              value: _exact,
+              activeColor: AppColors.accentBlue,
+              onChanged: _exporting
+                  ? null
+                  : (v) => setState(() => _exact = _lastExact = v),
+              title: Text(AppStrings.of(context).cutExact,
+                  style: const TextStyle(color: Colors.white, fontSize: 14)),
+              subtitle: Text(AppStrings.of(context).cutExactSub,
+                  style:
+                      const TextStyle(color: AppColors.white60, fontSize: 11.5)),
+            ),
+            const SizedBox(height: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
@@ -347,6 +450,14 @@ class _CutSheetState extends ConsumerState<CutSheet> {
             ),
             ),
             const SizedBox(height: 8),
+            if (_exporting)
+              _ExactProgress(
+                progress: _progress,
+                label: AppStrings.of(context).cutProgress(_progress ?? 0),
+                cancel: AppStrings.of(context).cancel,
+                onCancel: VideoCutService.cancel,
+              )
+            else
             Row(
               children: [
                 Expanded(
@@ -381,6 +492,53 @@ class _CutSheetState extends ConsumerState<CutSheet> {
           ],
         ),
       ),
+      ),
+    );
+  }
+}
+
+/// An exact cut at work: how far it is, and Cancel.
+class _ExactProgress extends StatelessWidget {
+  final int? progress;
+  final String label;
+  final String cancel;
+  final VoidCallback onCancel;
+
+  const _ExactProgress({
+    required this.progress,
+    required this.label,
+    required this.cancel,
+    required this.onCancel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: LinearProgressIndicator(
+            value: progress == null ? null : progress! / 100,
+            minHeight: 6,
+            color: AppColors.accentBlue,
+            backgroundColor: Colors.white12,
+          ),
+        ),
+        Row(
+          children: <Widget>[
+            Expanded(
+              child: Text(label,
+                  style: const TextStyle(color: Colors.white70, fontSize: 13)),
+            ),
+            TextButton(
+              key: const ValueKey('cut-cancel'),
+              onPressed: onCancel,
+              child: Text(cancel),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }
