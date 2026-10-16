@@ -2485,6 +2485,30 @@ class AppStrings {
 
   String get cppFfRew => _s('cppFfRew');
 
+  String get aeOriginal => _s('aeOriginal');
+  String get aeClarity => _s('aeClarity');
+  String get aeBassBoost => _s('aeBassBoost');
+  String get aeTrebleBoost => _s('aeTrebleBoost');
+  String get aeMovie => _s('aeMovie');
+  String get aeMusic => _s('aeMusic');
+  String get aeCustom => _s('aeCustom');
+  String get aeVirtualizer => _s('aeVirtualizer');
+  String get aeAudioEffect => _s('aeAudioEffect');
+  String get aeSoundProfiles => _s('aeSoundProfiles');
+  String get aeUnsupported => _s('aeUnsupported');
+
+
+
+
+
+  String get pvWouldNotStart => _s('pvWouldNotStart');
+  String get pvStalled => _s('pvStalled');
+  String get pvOffline => _s('pvOffline');
+  String get pvLinkExpired => _s('pvLinkExpired');
+  String get pvAdbLoading => _s('pvAdbLoading');
+  String get pvAdbFailed => _s('pvAdbFailed');
+  String get pvDownloadGone => _s('pvDownloadGone');
+
   static const Map<String, Map<String, String>> _byLocale =
       <String, Map<String, String>>{
     'en': _en,
@@ -4686,6 +4710,24 @@ class AppStrings {
     'cdMega': 'Encrypted cloud storage',
     'cdPcloud': 'European cloud storage',
     'cppFfRew': 'Fast forward / Rewind',
+    'aeOriginal': 'Original',
+    'aeClarity': 'Clarity',
+    'aeBassBoost': 'Bass boost',
+    'aeTrebleBoost': 'Treble boost',
+    'aeMovie': 'Movie',
+    'aeMusic': 'Music',
+    'aeCustom': 'Custom',
+    'aeVirtualizer': 'Virtualizer',
+    'aeAudioEffect': 'Audio effect',
+    'aeSoundProfiles': 'Sound profiles',
+    'aeUnsupported': 'This phone does not support audio effects, or nothing is playing right now.',
+    'pvWouldNotStart': 'This video would not start. Tap Retry; if it keeps failing, the file may be unavailable.',
+    'pvStalled': 'Playback stalled: the network is too slow to keep up. Tap Retry or check your connection.',
+    'pvOffline': 'No internet connection. Reconnect and tap Retry.',
+    'pvLinkExpired': 'This stream link has expired. Open the title again to keep watching.',
+    'pvAdbLoading': 'Loading the video over ADB…\nLarger files take a moment.',
+    'pvAdbFailed': 'Could not load this video over ADB. Check that the phone is still connected on the ADB screen, then try again.',
+    'pvDownloadGone': 'This download can no longer be opened on this phone. Delete it from Downloads and download it again.',
   };
 
   static const Map<String, String> _my = <String, String>{
@@ -6851,6 +6893,24 @@ class AppStrings {
     'cdMega': 'Encrypt လုပ်ထားတဲ့ cloud storage',
     'cdPcloud': 'ဥရောပ cloud storage',
     'cppFfRew': 'ရှေ့ရစ် / နောက်ရစ်',
+    'aeOriginal': 'မူလ',
+    'aeClarity': 'ကြည်လင်',
+    'aeBassBoost': 'Bass မြှင့်',
+    'aeTrebleBoost': 'Treble မြှင့်',
+    'aeMovie': 'ရုပ်ရှင်',
+    'aeMusic': 'သီချင်း',
+    'aeCustom': 'စိတ်ကြိုက်',
+    'aeVirtualizer': 'Virtualizer',
+    'aeAudioEffect': 'အသံ effect',
+    'aeSoundProfiles': 'အသံ ပုံစံများ',
+    'aeUnsupported': 'ဒီဖုန်းက အသံ effect ကို မပံ့ပိုးပါ၊ ဒါမှမဟုတ် အခု ဘာမှ ဖွင့်မနေပါ။',
+    'pvWouldNotStart': 'ဒီဗီဒီယို မစနိုင်ပါ။ Retry ကို နှိပ်ပါ — ဆက်မရရင် ဖိုင်က မရနိုင်တော့တာ ဖြစ်နိုင်ပါတယ်။',
+    'pvStalled': 'ဖွင့်တာ ရပ်သွားပါတယ် — အင်တာနက် နှေးလွန်းလို့ပါ။ Retry ကို နှိပ်ပါ (သို့) connection ကို စစ်ပါ။',
+    'pvOffline': 'အင်တာနက် မရှိပါ။ ပြန်ချိတ်ပြီး Retry ကို နှိပ်ပါ။',
+    'pvLinkExpired': 'ဒီ stream link သက်တမ်း ကုန်သွားပါပြီ။ ဆက်ကြည့်ဖို့ ဇာတ်ကားကို ပြန်ဖွင့်ပါ။',
+    'pvAdbLoading': 'ADB ကနေ ဗီဒီယို ဖွင့်နေပါတယ်…\nဖိုင်ကြီးရင် ခဏ ကြာပါမယ်။',
+    'pvAdbFailed': 'ADB ကနေ ဒီဗီဒီယိုကို မဖွင့်နိုင်ပါ။ ADB screen မှာ ချိတ်ထားဆဲ ဟုတ်မဟုတ် စစ်ပြီး ပြန်ကြိုးစားပါ။',
+    'pvDownloadGone': 'ဒီဒေါင်းလုဒ်ကို ဒီဖုန်းမှာ မဖွင့်နိုင်တော့ပါ။ Downloads ကနေ ဖျက်ပြီး ပြန်ဒေါင်းပါ။',
   };
 
   static const Map<String, String> _th = <String, String>{
@@ -9008,6 +9068,24 @@ class AppStrings {
     'cdMega': 'พื้นที่เก็บข้อมูลคลาวด์แบบเข้ารหัส',
     'cdPcloud': 'พื้นที่เก็บข้อมูลคลาวด์ในยุโรป',
     'cppFfRew': 'กรอไปข้างหน้า / ย้อนกลับ',
+    'aeOriginal': 'ต้นฉบับ',
+    'aeClarity': 'คมชัด',
+    'aeBassBoost': 'เพิ่มเบส',
+    'aeTrebleBoost': 'เพิ่มเสียงแหลม',
+    'aeMovie': 'ภาพยนตร์',
+    'aeMusic': 'เพลง',
+    'aeCustom': 'กำหนดเอง',
+    'aeVirtualizer': 'เวอร์ชวลไลเซอร์',
+    'aeAudioEffect': 'เอฟเฟกต์เสียง',
+    'aeSoundProfiles': 'โปรไฟล์เสียง',
+    'aeUnsupported': 'โทรศัพท์นี้ไม่รองรับเอฟเฟกต์เสียง หรือยังไม่มีอะไรกำลังเล่น',
+    'pvWouldNotStart': 'วิดีโอนี้เริ่มเล่นไม่ได้ แตะลองใหม่ หากยังไม่ได้ ไฟล์อาจใช้งานไม่ได้',
+    'pvStalled': 'การเล่นหยุดชะงัก เครือข่ายช้าเกินไป แตะลองใหม่หรือตรวจสอบการเชื่อมต่อ',
+    'pvOffline': 'ไม่มีการเชื่อมต่ออินเทอร์เน็ต เชื่อมต่อใหม่แล้วแตะลองใหม่',
+    'pvLinkExpired': 'ลิงก์สตรีมนี้หมดอายุแล้ว เปิดเรื่องนี้อีกครั้งเพื่อดูต่อ',
+    'pvAdbLoading': 'กำลังโหลดวิดีโอผ่าน ADB…\nไฟล์ใหญ่อาจใช้เวลาสักครู่',
+    'pvAdbFailed': 'โหลดวิดีโอนี้ผ่าน ADB ไม่ได้ ตรวจสอบว่ายังเชื่อมต่ออยู่ในหน้าจอ ADB แล้วลองอีกครั้ง',
+    'pvDownloadGone': 'ไม่สามารถเปิดไฟล์ดาวน์โหลดนี้ในโทรศัพท์นี้ได้แล้ว ลบออกจากดาวน์โหลดแล้วดาวน์โหลดใหม่',
   };
 }
 

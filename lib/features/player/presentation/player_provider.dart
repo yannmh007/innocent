@@ -45,6 +45,7 @@ import '../../../core/services/subtitles/subtitle_formats.dart';
 // LocalFilmServer for why decryption wears the shape of an HTTP server.
 import '../../video_hub/data/api/offline_crypto.dart';
 import '../../video_hub/data/cache/local_film_server.dart';
+import '../../../core/localization/app_strings.dart';
 import '../domain/climb_rule.dart';
 
 part 'player_state.dart';
@@ -942,10 +943,8 @@ class PlayerController extends StateNotifier<PlayerState> {
               state = state.copyWith(
                 slowNetworkHintVisible: false,
                 errorMessage: opening
-                    ? 'This video would not start. Tap Retry — if it keeps '
-                        'failing, the file may be unavailable.'
-                    : 'Playback stalled — the network is too slow to keep '
-                        'up. Tap Retry or check your connection.',
+                    ? AppStrings.current.pvWouldNotStart
+                    : AppStrings.current.pvStalled,
               );
             },
           );
@@ -1087,8 +1086,7 @@ class PlayerController extends StateNotifier<PlayerState> {
         if (!mounted) return;
         if (!online) {
           state = state.copyWith(
-              errorMessage:
-                  'No internet connection. Reconnect and tap Retry.');
+              errorMessage: AppStrings.current.pvOffline);
           // Skip the auto-retry — it would just fail again.
           return;
         }
@@ -1131,14 +1129,10 @@ class PlayerController extends StateNotifier<PlayerState> {
                 return;
               }
               if (fresh == null) {
-                // Matches the other messages emitted from this file: plain
-                // English, set on state and rendered by the error card. The
-                // provider has no BuildContext, and inventing one to reach
-                // AppStrings here would be a bigger change than the message
-                // is worth.
+                // The provider has no BuildContext; AppStrings.current is the
+                // language on screen.
                 state = state.copyWith(
-                    errorMessage: 'This stream link has expired. '
-                        'Open the title again to keep watching.');
+                    errorMessage: AppStrings.current.pvLinkExpired);
                 _networkRetryInFlight = false;
                 return;
               }

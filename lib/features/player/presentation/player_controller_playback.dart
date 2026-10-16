@@ -90,7 +90,7 @@ extension PlayerPlayback on PlayerController {
         state = state.copyWith(
           isBuffering: true,
           errorMessage: null,
-          loadingMessage: 'Loading video over ADB…\nLarger files take a moment.',
+          loadingMessage: AppStrings.current.pvAdbLoading,
         );
       }
       // STREAMED FIRST, COPIED IF THAT FAILS. A copy had to finish before the
@@ -124,8 +124,7 @@ extension PlayerPlayback on PlayerController {
             // and the screen read as "still trying" when it had given up.
             isBuffering: false,
             loadingMessage: null,
-            errorMessage: 'Could not load this video over ADB. Make sure the '
-                'device is still connected on the ADB screen, then try again.',
+            errorMessage: AppStrings.current.pvAdbFailed,
           );
         }
         return;
@@ -160,8 +159,7 @@ extension PlayerPlayback on PlayerController {
             // this film; "could not play" would send them to check their
             // signal for a file that is simply no longer readable. The only
             // honest instruction is to download it again.
-            errorMessage: 'This download can no longer be opened on this '
-                'phone. Delete it from Downloads and download it again.',
+            errorMessage: AppStrings.current.pvDownloadGone,
           );
         }
         return;
