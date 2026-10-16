@@ -2,7 +2,10 @@ Running on test
  > Flow cut_exact
 Launch app "com.innocent.media"... COMPLETED
 Wait for animation to end within 10000 ms... COMPLETED
-Tap on (Optional) "Skip"... COMPLETED
+Tap on (Optional) "Skip"... WARNED
+
+
+ Warning: Element not found: Text matching regex: Skip
 Wait for animation to end within 5000 ms... COMPLETED
 Tap on (Optional) "Allow.*"... WARNED
 
@@ -49,7 +52,11 @@ Tap on "Set", Index: 1... COMPLETED
 Wait for animation to end within 2000 ms... COMPLETED
 Take screenshot e03_points_set... COMPLETED
 Assert that "(?s).*Clip: .*" is visible... COMPLETED
+Scrolling DOWN until "(?s).*Exact start.*" is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Tap on "(?s).*Exact start.*"... COMPLETED
 Tap on "Export"... COMPLETED
+Assert that (Optional) "(?s).*Cutting.*" is visible... COMPLETED
+Take screenshot e03b_progress... COMPLETED
 Assert that ".*Cut saved.*" is visible... COMPLETED
 Take screenshot e04_cut_saved... COMPLETED
 Assert that ".*FFmpeg.*" is not visible... COMPLETED
