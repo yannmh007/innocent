@@ -1185,7 +1185,6 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
                         child: FilledButton.tonal(
                           onPressed: _busy ? null : e.onAction,
                           style: FilledButton.styleFrom(
-                            visualDensity: VisualDensity.compact,
                           ),
                           child: Text(e.action!),
                         ),

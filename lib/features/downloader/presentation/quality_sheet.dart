@@ -640,7 +640,6 @@ class _QualitySheetState extends ConsumerState<QualitySheet> {
               onPressed: _downloadPhotos,
               style: FilledButton.styleFrom(
                 backgroundColor: AppColors.primaryBlue,
-                visualDensity: VisualDensity.compact,
                 padding: const EdgeInsets.symmetric(horizontal: 14),
               ),
               child: Text(s.downloaderSaveAll),

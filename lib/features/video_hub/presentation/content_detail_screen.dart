@@ -688,7 +688,6 @@ class _ResumeLine extends StatelessWidget {
           label: Text(s.vhStartOver),
           style: TextButton.styleFrom(
             foregroundColor: VH.textSecondary,
-            visualDensity: VisualDensity.compact,
           ),
         ),
       ],

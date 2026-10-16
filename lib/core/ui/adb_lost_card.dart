@@ -340,7 +340,6 @@ class _StatusPanel extends StatelessWidget {
                   : TextButton(
                       onPressed: onTurnOn,
                       style: TextButton.styleFrom(
-                        visualDensity: VisualDensity.compact,
                         padding: const EdgeInsets.symmetric(horizontal: 10),
                       ),
                       child: Text(s.hfTurnOn),

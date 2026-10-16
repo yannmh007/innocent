@@ -227,9 +227,9 @@ class _HeroButton extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(VH.rControl),
       child: Container(
-        // At least 44 dp; taller when the system font is (a fixed height
-        // cut the label at 200 %).
-        constraints: const BoxConstraints(minHeight: 44),
+        // At least 48 dp, Android's target size (44 is Apple's); taller when
+        // the system font is (a fixed height cut the label at 200 %).
+        constraints: const BoxConstraints(minHeight: 48),
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         alignment: Alignment.center,
         decoration: BoxDecoration(

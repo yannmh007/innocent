@@ -141,7 +141,8 @@ class VH {
   );
 
   // ---- control heights ----------------------------------------------------
-  static const double barHeight = 46;
+  // 48: the whole height of the category bar is each pill's tap target.
+  static const double barHeight = 48;
   static const double toolbarHeight = 44;
   static const double chipHeight = 32;
   static const double controlHeight = 34;

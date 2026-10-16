@@ -598,7 +598,17 @@ class _SearchField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    // The field is drawn 38 dp tall; its target is 48 (SCREEN_A11Y=1). The
+    // ripple stays out of the semantics, or its tap splits the node in two.
+    return Semantics(
+      button: true,
+      label: hint,
+      child: GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: ExcludeSemantics(child: InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(VH.rControl),
       child: Container(
@@ -626,6 +636,9 @@ class _SearchField extends StatelessWidget {
             ),
           ],
         ),
+      ),
+      )),
+      ),
       ),
     );
   }
@@ -656,8 +669,8 @@ class _AccountButton extends ConsumerWidget {
         onTap: onTap,
         customBorder: const CircleBorder(),
         child: SizedBox(
-          width: 44,
-          height: 44,
+          width: 48,
+          height: 48,
           child: Center(
             child: Container(
               width: 32,

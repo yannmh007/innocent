@@ -369,7 +369,6 @@ class DataSaverBanner extends ConsumerWidget {
             onPressed: onTurnOff,
             style: TextButton.styleFrom(
               foregroundColor: _green,
-              visualDensity: VisualDensity.compact,
               padding: const EdgeInsets.symmetric(horizontal: VH.s2),
             ),
             child: Text(s.vhSaverTurnOff,

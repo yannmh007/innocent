@@ -316,7 +316,6 @@ class _TextAction extends StatelessWidget {
       style: TextButton.styleFrom(
         minimumSize: const Size(0, 40),
         padding: const EdgeInsets.symmetric(horizontal: VH.s3),
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       ),
       child: Text(label, style: VH.label.copyWith(color: VH.textSecondary)),
     );

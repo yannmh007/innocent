@@ -44,15 +44,24 @@ appId: com.innocent.media
     optional: true
 - takeScreenshot: c00_playing
 # Controls up, then More (an icon button, named by its tooltip since
-# 1.64.65). The controls hide after a few seconds, so try again if the tap
-# on More came too late.
+# 1.64.65). The controls hide after a few seconds, and a tap on More while
+# they fade lands on the video instead (run 38844539119), so try again until
+# the menu is really open. A tap on the video only when the controls are
+# down: when they are up it would hide them.
 - retry:
-    maxRetries: 3
+    maxRetries: 4
     commands:
-      - tapOn:
-          point: "50%,30%"
+      - runFlow:
+          when:
+            notVisible: "More"
+          commands:
+            - tapOn:
+                point: "50%,30%"
       - tapOn:
           text: "More"
+      - waitForAnimationToEnd:
+          timeout: 2000
+      - assertVisible: "Cut"
 - waitForAnimationToEnd:
     timeout: 3000
 - takeScreenshot: c01_more_menu

@@ -193,9 +193,7 @@ class _AntiTheftScreenState extends ConsumerState<AntiTheftScreen> {
                           onPressed: _removeDecoy,
                           style: TextButton.styleFrom(
                               padding: EdgeInsets.zero,
-                              minimumSize: const Size(0, 32),
-                              tapTargetSize:
-                                  MaterialTapTargetSize.shrinkWrap),
+                              minimumSize: const Size(0, 32)),
                           child: Text(s.removeDecoyPin,
                               style: const TextStyle(
                                   color: AppColors.error, fontSize: 12.5)),
@@ -233,8 +231,7 @@ class _AntiTheftScreenState extends ConsumerState<AntiTheftScreen> {
                         onPressed: _clearLog,
                         style: TextButton.styleFrom(
                             padding: EdgeInsets.zero,
-                            minimumSize: const Size(0, 32),
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                            minimumSize: const Size(0, 32)),
                         child: Text(s.clearLog,
                             style: const TextStyle(
                                 color: AppColors.error, fontSize: 12.5)),

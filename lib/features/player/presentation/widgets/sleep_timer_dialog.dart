@@ -336,12 +336,21 @@ class _SleepTimerDialogState extends State<SleepTimerDialog> {
     );
   }
 
+  // The whole 80 x 53 cell takes the tap; the 36 dp circle is only drawn
+  // (it was the target alone, SCREEN_A11Y=1). The circle's ripple stays out
+  // of the semantics, or its tap splits the key's node in two.
   Widget _keyCell(String digit) {
-    return SizedBox(
+    return Semantics(
+      button: true,
+      label: digit,
+      child: GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => _tapDigit(digit),
+      child: SizedBox(
       width: _kKeyColPitch,
       height: _kKeyRowPitch,
       child: Center(
-        child: Material(
+        child: ExcludeSemantics(child: Material(
           color: AppColors.specSleepKeyFill,
           shape: const CircleBorder(),
           clipBehavior: Clip.antiAlias,
@@ -362,7 +371,9 @@ class _SleepTimerDialogState extends State<SleepTimerDialog> {
               ),
             ),
           ),
-        ),
+        )),
+      ),
+      ),
       ),
     );
   }

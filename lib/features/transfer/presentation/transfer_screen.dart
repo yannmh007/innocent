@@ -1404,7 +1404,6 @@ class _RunningPane extends StatelessWidget {
                 tooltip: MaterialLocalizations.of(context).copyButtonLabel,
                 icon: const Icon(Icons.copy_outlined, size: 16),
                 color: AppColors.white55,
-                visualDensity: VisualDensity.compact,
                 onPressed: () {
                   Clipboard.setData(ClipboardData(text: value));
                   ScaffoldMessenger.of(context)

@@ -1914,7 +1914,6 @@ class _DownloaderHomeScreenState extends ConsumerState<DownloaderHomeScreen>
             if (hasText)
               IconButton(
                 tooltip: s.downloaderClearBar,
-                visualDensity: VisualDensity.compact,
                 icon: const Icon(Icons.close_rounded,
                     size: 17, color: AppColors.white40),
                 onPressed: () {
@@ -1925,7 +1924,6 @@ class _DownloaderHomeScreenState extends ConsumerState<DownloaderHomeScreen>
             hasText
                 ? IconButton(
                     tooltip: s.downloaderDownload,
-                    visualDensity: VisualDensity.compact,
                     icon: const Icon(Icons.arrow_forward_rounded,
                         size: 19, color: AppColors.primaryBlue),
                     onPressed: () {
@@ -1935,7 +1933,6 @@ class _DownloaderHomeScreenState extends ConsumerState<DownloaderHomeScreen>
                   )
                 : IconButton(
                     tooltip: s.downloaderPaste,
-                    visualDensity: VisualDensity.compact,
                     icon: const Icon(Icons.content_paste_rounded,
                         size: 18, color: AppColors.primaryBlue),
                     onPressed: () async {
@@ -2010,7 +2007,6 @@ class _DownloaderHomeScreenState extends ConsumerState<DownloaderHomeScreen>
                   ),
                   IconButton(
                     tooltip: s.downloaderDismiss,
-                    visualDensity: VisualDensity.compact,
                     icon: const Icon(Icons.close_rounded,
                         size: 16, color: AppColors.white40),
                     onPressed: () => setState(() {
@@ -2368,7 +2364,6 @@ class _DownloaderHomeScreenState extends ConsumerState<DownloaderHomeScreen>
                 onPressed: onAction,
                 style: TextButton.styleFrom(
                   foregroundColor: AppColors.primaryBlue,
-                  visualDensity: VisualDensity.compact,
                   padding: const EdgeInsets.symmetric(horizontal: 10),
                 ),
                 child: Text(actionLabel,
@@ -3018,7 +3013,6 @@ class _DownloaderHomeScreenState extends ConsumerState<DownloaderHomeScreen>
             if (playable)
               IconButton(
                 tooltip: s.downloaderPlay,
-                visualDensity: VisualDensity.compact,
                 icon: const Icon(Icons.play_circle_outline_rounded,
                     color: AppColors.primaryBlue),
                 onPressed: () => context.push(
@@ -3034,7 +3028,6 @@ class _DownloaderHomeScreenState extends ConsumerState<DownloaderHomeScreen>
             if (task.isRunning && !task.isPhotoSet)
               IconButton(
                 tooltip: s.downloaderPause,
-                visualDensity: VisualDensity.compact,
                 icon: const Icon(Icons.pause_rounded,
                     size: 20, color: AppColors.white60),
                 onPressed: () =>
@@ -3043,7 +3036,6 @@ class _DownloaderHomeScreenState extends ConsumerState<DownloaderHomeScreen>
             else if (task.canResume)
               IconButton(
                 tooltip: s.downloaderResume,
-                visualDensity: VisualDensity.compact,
                 icon: const Icon(Icons.play_arrow_rounded,
                     size: 22, color: AppColors.primaryBlue),
                 onPressed: () =>
@@ -3053,7 +3045,6 @@ class _DownloaderHomeScreenState extends ConsumerState<DownloaderHomeScreen>
               tooltip: (task.isRunning || task.isPaused)
                   ? s.cancel
                   : s.downloaderDismiss,
-              visualDensity: VisualDensity.compact,
               icon: Icon(
                 (task.isRunning || task.isPaused)
                     ? Icons.close_rounded

@@ -1093,7 +1093,10 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
           controller: _catScroll,
           scrollDirection: Axis.horizontal,
           physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+          // No vertical padding: each chip's target is the strip's whole
+          // height, the chip drawn 7 dp in (_catChip). It was the 37 dp chip
+          // alone (SCREEN_A11Y=1).
+          padding: const EdgeInsets.symmetric(horizontal: 12),
           itemCount: items.length,
           separatorBuilder: (_, __) => const SizedBox(width: 8),
           itemBuilder: (_, i) {
@@ -1111,7 +1114,9 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
     return RemoteTappable(
       key: _catKeys[cat],
       onTap: () => _switchCat(cat),
-      child: AnimatedContainer(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 7),
+        child: AnimatedContainer(
         duration: const Duration(milliseconds: 220),
         curve: Curves.easeOutCubic,
         padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -1183,6 +1188,7 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
             ],
           ],
         ),
+      ),
       ),
     );
   }

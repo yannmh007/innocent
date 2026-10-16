@@ -342,7 +342,6 @@ class _ServerFormDialogState extends ConsumerState<ServerFormDialog> {
                   obscure: !_showPass,
                   suffix: IconButton(
                     tooltip: s.netShowPassword,
-                    visualDensity: VisualDensity.compact,
                     icon: Icon(
                         _showPass
                             ? Icons.visibility_off_rounded
@@ -439,7 +438,6 @@ class _ServerFormDialogState extends ConsumerState<ServerFormDialog> {
                       borderRadius: BorderRadius.circular(3)),
                   padding: const EdgeInsets.symmetric(horizontal: 14),
                   minimumSize: const Size(0, 36),
-                  visualDensity: VisualDensity.compact,
                 ),
                 child: Text(s.netScan,
                     style: const TextStyle(

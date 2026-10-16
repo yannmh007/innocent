@@ -211,7 +211,6 @@ class _ResumeDialogState extends State<ResumeDialog> {
                 style: TextButton.styleFrom(
                   padding: const EdgeInsets.symmetric(horizontal: 8),
                   minimumSize: const Size(0, 32),
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
                 child: Text(AppStrings.of(context).startOver.toUpperCase(),
                   style: const TextStyle(

@@ -400,9 +400,15 @@ class AlbumSaverToggle extends ConsumerWidget {
           key: const ValueKey('album-saver-toggle'),
           borderRadius: BorderRadius.circular(999),
           onTap: () => setAlbumSaver(ref, !on),
-          child: Padding(
-            // The pill is small; the tap target around it is not.
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 2),
+          // The pill is small; the tap target around it is not: 48 dp, as
+          // Android asks (it was 52 x 37, SCREEN_A11Y=1).
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+            child: Center(
+            widthFactor: 1,
+            heightFactor: 1,
+            child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 2),
             child: AnimatedContainer(
               duration: VH.fast,
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -421,6 +427,8 @@ class AlbumSaverToggle extends ConsumerWidget {
                   Flexible(child: label),
                 ],
               ),
+            ),
+            ),
             ),
           ),
         ),
