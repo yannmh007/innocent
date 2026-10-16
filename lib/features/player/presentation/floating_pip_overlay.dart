@@ -388,7 +388,9 @@ class _PipBodyState extends ConsumerState<_PipBody> {
                                   ? Icons.pause
                                   : Icons.play_arrow,
                               size: 32,
-                              tooltip: 'Play/Pause',
+                              tooltip: playerState.isPlaying
+                                  ? AppStrings.of(context).plPause
+                                  : AppStrings.of(context).play,
                               onTap: () => ref
                                   .read(playerControllerProvider.notifier)
                                   .playOrPause(),

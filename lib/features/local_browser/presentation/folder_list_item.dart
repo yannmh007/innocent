@@ -94,7 +94,8 @@ class FolderListItem extends ConsumerWidget {
     // the repaint surface so a cover-thumb update doesn't redraw
     // neighbouring folder tiles.
     return Semantics(
-      label: 'Folder: ${folder.name}, ${folder.videoCount} videos',
+      label: AppStrings.of(context)
+          .folderRowLabel(folder.name, folder.videoCount),
       button: true,
       selected: selected,
       child: RepaintBoundary(
@@ -204,14 +205,7 @@ class FolderListItem extends ConsumerWidget {
                         const SizedBox(width: 6),
                       ],
                       Text(
-                        // English keeps its singular; Burmese and Thai
-                        // have no plural form, so their one string serves.
-                        folder.videoCount == 1 &&
-                                Localizations.localeOf(context).languageCode ==
-                                    'en'
-                            ? '1 video'
-                            : AppStrings.of(context)
-                                .vhAlbumVideos(folder.videoCount),
+                        AppStrings.of(context).vhAlbumVideos(folder.videoCount),
                         style: const TextStyle(
                           color: AppColors.specTextSecondary,
                           fontSize: 12,

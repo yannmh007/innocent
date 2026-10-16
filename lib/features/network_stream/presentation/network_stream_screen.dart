@@ -130,7 +130,7 @@ class _NetworkStreamScreenState extends ConsumerState<NetworkStreamScreen> {
                   prefixIcon: const Icon(Icons.link, color: Colors.white54),
                   suffixIcon: _urlController.text.isNotEmpty
                       ? IconButton(
-                          tooltip: 'Clear',
+                          tooltip: AppStrings.of(context).clear,
                           icon:
                               const Icon(Icons.clear, color: Colors.white54),
                           onPressed: () {

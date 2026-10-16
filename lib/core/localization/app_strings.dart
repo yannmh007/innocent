@@ -1048,8 +1048,6 @@ class AppStrings {
   String get openingRecentlyPlayed => _s('openingRecentlyPlayed');
   String get storagePermissionNeeded => _s('storagePermissionNeeded');
   String get statusPermissionHint => _s('statusPermissionHint');
-  String get openingPrivacyPolicy => _s('openingPrivacyPolicy');
-  String get openingTerms => _s('openingTerms');
   String get personalPlayerApp => _s('personalPlayerApp');
   String get storageManagement => _s('storageManagement');
   String get storageUsage => _s('storageUsage');
@@ -1716,6 +1714,9 @@ class AppStrings {
   String fvHiddenSnack(int n) => _count('fvHiddenSnack', n);
   String fvFooter(int n) => _count('fvFooter', n);
   String fvVideos(int n) => _count('fvVideos', n);
+  String folderRowLabel(String name, int n) => _s('folderRowLabel')
+      .replaceFirst('{name}', name)
+      .replaceFirst('{videos}', vhAlbumVideos(n));
   String get fvUndo => _s('fvUndo');
   String get fvManage => _s('fvManage');
   String get hfNeedTitle => _s('hfNeedTitle');
@@ -2813,6 +2814,7 @@ class AppStrings {
     'fvHiddenSnack': '{n} folders hidden from the Video tab',
     'fvFooter': '{n} hidden folders',
     'fvVideos': '{n} videos',
+    'folderRowLabel': 'Folder: {name}, {videos}',
     'fvVideosOne': '{n} video',
     'fvUndo': 'Undo',
     'fvManage': 'Manage',
@@ -3822,8 +3824,6 @@ class AppStrings {
     'gtHeadsetSub': 'Play or pause.',
     'storagePermissionNeeded': 'Storage permission needed',
     'statusPermissionHint': 'Allow media access so we can read WhatsApp statuses.',
-    'openingPrivacyPolicy': 'Opening Privacy Policy...',
-    'openingTerms': 'Opening Terms of Service...',
     'personalPlayerApp': 'Personal video player app.',
     'storageManagement': 'Storage management',
     'storageUsage': 'Storage Usage',
@@ -5125,6 +5125,7 @@ class AppStrings {
     'fvHiddenSnack': 'folder {n} ခု Video tab မှာ ဖျောက်ထားပြီးပါပြီ',
     'fvFooter': 'ဖျောက်ထားသော folder {n} ခု',
     'fvVideos': 'ဗီဒီယို {n} ခု',
+    'folderRowLabel': 'ဖိုင်တွဲ: {name}၊ {videos}',
     'fvUndo': 'ပြန်ပြမယ်',
     'fvManage': 'စီမံမယ်',
     'hfNeedTitle': 'ဝှက်ထားသော ဖိုင်တွေ ကြည့်ဖို့ ADB ချိတ်ရပါမယ်',
@@ -6130,8 +6131,6 @@ class AppStrings {
     'gtHeadsetSub': 'ရပ်/ဖွင့်။',
     'storagePermissionNeeded': 'သိုလှောင်မှုခွင့်ပြုချက် လိုအပ်ပါတယ်',
     'statusPermissionHint': 'WhatsApp status တွေဖတ်နိုင်ဖို့ media ဝင်ရောက်ခွင့် ပေးပါ။',
-    'openingPrivacyPolicy': 'Privacy Policy ဖွင့်နေသည်...',
-    'openingTerms': 'Terms of Service ဖွင့်နေသည်...',
     'personalPlayerApp': 'ကိုယ်ပိုင်သုံး ဗီဒီယို player app။',
     'storageManagement': 'သိုလှောင်မှု စီမံခန့်ခွဲရေး',
     'storageUsage': 'သိုလှောင်မှု အသုံးပြုမှု',
@@ -7408,6 +7407,7 @@ class AppStrings {
     'fvHiddenSnack': 'ซ่อน {n} โฟลเดอร์จากแท็บวิดีโอแล้ว',
     'fvFooter': 'โฟลเดอร์ที่ซ่อน {n} รายการ',
     'fvVideos': '{n} วิดีโอ',
+    'folderRowLabel': 'โฟลเดอร์: {name}, {videos}',
     'fvUndo': 'เลิกทำ',
     'fvManage': 'จัดการ',
     'hfNeedTitle': 'ไฟล์ที่ซ่อนอยู่ต้องใช้ ADB',
@@ -8412,8 +8412,6 @@ class AppStrings {
     'gtHeadsetSub': 'เล่นหรือหยุด',
     'storagePermissionNeeded': 'ต้องการสิทธิ์พื้นที่จัดเก็บ',
     'statusPermissionHint': 'อนุญาตการเข้าถึงสื่อเพื่ออ่านสถานะ WhatsApp',
-    'openingPrivacyPolicy': 'กำลังเปิดนโยบายความเป็นส่วนตัว...',
-    'openingTerms': 'กำลังเปิดข้อกำหนดการใช้งาน...',
     'personalPlayerApp': 'แอปเครื่องเล่นวิดีโอส่วนตัว',
     'storageManagement': 'จัดการพื้นที่จัดเก็บ',
     'storageUsage': 'การใช้พื้นที่',

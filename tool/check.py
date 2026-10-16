@@ -69,6 +69,10 @@ CHECKS = [
      'a setting the app stores and never reads — the single most repeated '
      'bug class in this project, ten instances recorded in the tree\'s own '
      'comments before anyone counted'),
+    ('ui_literals.py', ROOT,
+     'English typed straight into a widget — Text(\'Close\'), tooltip: '
+     '\'More\' — English on every phone; some four hundred across Settings, '
+     'the player, Music and Help, Oct 2026'),
     ('console_css.py', None,
      'two unrelated rules sharing one class name in the operator console — '
      '`.bar` meant both the toolbar and an upload progress track, so the '
