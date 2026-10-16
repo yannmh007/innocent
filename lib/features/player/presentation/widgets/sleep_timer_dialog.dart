@@ -182,9 +182,11 @@ class _SleepTimerDialogState extends State<SleepTimerDialog> {
               ),
               const SizedBox(height: 14),
               Center(child: _keypad()),
-              const SizedBox(height: 18),
+              // The row carries 12 dp of the gaps around it as its own
+              // padding: the same layout, with a 45 dp tall target instead
+              // of the 21 dp line of text.
+              const SizedBox(height: 6),
               _checkboxRow(),
-              const SizedBox(height: 2),
               _actionsRow(),
             ],
           ),
@@ -284,17 +286,25 @@ class _SleepTimerDialogState extends State<SleepTimerDialog> {
   }
 
   Widget _closeButton() {
+    // The 32 dp circle MX draws, inside a 44 dp target (8 of it outside the
+    // circle's own space on the right, where the dialog has room).
     return RemoteTappable(
       onTap: widget.onDismiss,
       semanticLabel: MaterialLocalizations.of(context).closeButtonTooltip,
-      child: Container(
-        width: 32,
-        height: 32,
-        decoration: const BoxDecoration(
-          color: AppColors.specSleepClose,
-          shape: BoxShape.circle,
+      child: SizedBox(
+        width: 44,
+        height: 44,
+        child: Center(
+          child: Container(
+            width: 32,
+            height: 32,
+            decoration: const BoxDecoration(
+              color: AppColors.specSleepClose,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.close, color: Colors.white, size: 20),
+          ),
         ),
-        child: const Icon(Icons.close, color: Colors.white, size: 20),
       ),
     );
   }
@@ -363,6 +373,8 @@ class _SleepTimerDialogState extends State<SleepTimerDialog> {
     return MergeSemantics(
       child: RemoteTappable(
       onTap: () => setState(() => _playToEnd = !_playToEnd),
+      child: Padding(
+      padding: const EdgeInsets.only(top: 12, bottom: 2),
       child: Row(
       children: [
         SizedBox(
@@ -388,6 +400,7 @@ class _SleepTimerDialogState extends State<SleepTimerDialog> {
           ),
         ),
       ],
+      ),
       ),
       ),
     );
