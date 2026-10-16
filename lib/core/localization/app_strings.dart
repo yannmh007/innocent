@@ -2567,6 +2567,37 @@ class AppStrings {
   String cutFailed(Object v) => _s('cutFailed').replaceFirst('{v}', '$v');
   String get cutHint => _s('cutHint');
 
+  String get obFindTitle => _s('obFindTitle');
+  String get obFindBody => _s('obFindBody');
+  String get obGestureTitle => _s('obGestureTitle');
+  String get obGestureBody => _s('obGestureBody');
+  String get obYoursTitle => _s('obYoursTitle');
+  String get obYoursBody => _s('obYoursBody');
+  String get obStart => _s('obStart');
+  String get obNext => _s('obNext');
+
+  String arReconnectTo(Object v) => _s('arReconnectTo').replaceFirst('{v}', '$v');
+  String get arLocked => _s('arLocked');
+  String arDropped(Object v) => _s('arDropped').replaceFirst('{v}', '$v');
+  String arPrivate(Object v) => _s('arPrivate').replaceFirst('{v}', '$v');
+  String get arNotNow => _s('arNotNow');
+  String get arSetUp => _s('arSetUp');
+
+  String get trCopyUrl => _s('trCopyUrl');
+  String get trResumeUnfinished => _s('trResumeUnfinished');
+
+  String get ppFingerprint => _s('ppFingerprint');
+  String get ppClear => _s('ppClear');
+  String get ppConfirm => _s('ppConfirm');
+  String get ppBackspace => _s('ppBackspace');
+
+
+
+  String get afpTitle => _s('afpTitle');
+  String get afpInternal => _s('afpInternal');
+
+  String vliVideo(Object v) => _s('vliVideo').replaceFirst('{v}', '$v');
+
   static const Map<String, Map<String, String>> _byLocale =
       <String, Map<String, String>>{
     'en': _en,
@@ -4825,6 +4856,29 @@ class AppStrings {
     'cutSaved': 'Cut saved: {v}',
     'cutFailed': 'Could not cut this video ({v}).',
     'cutHint': 'The cut starts on the nearest key frame before A, so it may begin a moment early. Nothing is re-encoded.',
+    'obFindTitle': 'Find your videos',
+    'obFindBody': 'Innocent finds the videos on your phone and sorts them by folder. Everything stays on your phone; nothing is uploaded.',
+    'obGestureTitle': 'Gesture controls',
+    'obGestureBody': 'Swipe up or down on the left for brightness, on the right for volume, and sideways to seek. Long-press to change speed; pinch to zoom.',
+    'obYoursTitle': 'Make it yours',
+    'obYoursBody': 'Favourite videos, make playlists, save bookmarks and carry on where you left off. It is all in the Me tab.',
+    'obStart': 'Get started',
+    'obNext': 'Next',
+    'arReconnectTo': 'Reconnect to view {v}',
+    'arLocked': 'Locked folder',
+    'arDropped': 'The ADB connection has dropped, so {v} cannot be read right now. Reconnecting takes one tap and usually holds from then on.',
+    'arPrivate': 'Android keeps app-data folders private, so {v} can only be opened through an ADB connection. Innocent sets that up itself over wireless debugging; no other app is needed.',
+    'arNotNow': 'Not now',
+    'arSetUp': 'Set up',
+    'trCopyUrl': 'Copy link',
+    'trResumeUnfinished': 'Resume unfinished transfer',
+    'ppFingerprint': 'Unlock with fingerprint',
+    'ppClear': 'Clear',
+    'ppConfirm': 'Confirm',
+    'ppBackspace': 'Delete a digit',
+    'afpTitle': 'Choose files to add',
+    'afpInternal': 'Internal storage',
+    'vliVideo': 'Video: {v}',
   };
 
   static const Map<String, String> _my = <String, String>{
@@ -7047,6 +7101,29 @@ class AppStrings {
     'cutSaved': 'ဖြတ်ပြီး သိမ်းပြီးပါပြီ: {v}',
     'cutFailed': 'ဒီဗီဒီယိုကို မဖြတ်နိုင်ပါ ({v})။',
     'cutHint': 'ဖြတ်တာက A မတိုင်ခင် အနီးဆုံး key frame ကနေ စလို့ နည်းနည်း စောနိုင်ပါတယ်။ အရည်အသွေး မကျပါ။',
+    'obFindTitle': 'ဗီဒီယိုတွေကို ရှာပါ',
+    'obFindBody': 'Innocent က ဖုန်းထဲက ဗီဒီယိုတွေကို ရှာပြီး folder အလိုက် စီပေးပါတယ်။ အားလုံး ဖုန်းထဲမှာပဲ ရှိပြီး ဘာမှ upload မလုပ်ပါ။',
+    'obGestureTitle': 'Gesture နဲ့ ထိန်းချုပ်',
+    'obGestureBody': 'ဘယ်ဘက်မှာ အပေါ်/အောက် ပွတ်ရင် အလင်း၊ ညာဘက်မှာ ပွတ်ရင် အသံ၊ ဘေးတိုက် ပွတ်ရင် ရှေ့/နောက် ရွှေ့ပါတယ်။ အမြန်နှုန်း ပြောင်းဖို့ ဖိထားပါ၊ zoom ဖို့ လက်နှစ်ချောင်းနဲ့ ချဲ့ပါ။',
+    'obYoursTitle': 'ကိုယ်ပိုင် ဖြစ်အောင်',
+    'obYoursBody': 'ဗီဒီယိုတွေကို အကြိုက်ဆုံး ထားပါ၊ playlist လုပ်ပါ၊ bookmark သိမ်းပါ၊ ရပ်ခဲ့တဲ့နေရာက ဆက်ကြည့်ပါ။ အားလုံး ကျွန်ုပ် tab ထဲမှာ ရှိပါတယ်။',
+    'obStart': 'စတင်မယ်',
+    'obNext': 'ရှေ့ဆက်',
+    'arReconnectTo': '{v} ကို ကြည့်ဖို့ ပြန်ချိတ်ပါ',
+    'arLocked': 'ပိတ်ထားတဲ့ folder',
+    'arDropped': 'ADB ချိတ်ဆက်မှု ပြုတ်သွားလို့ {v} ကို အခု ဖတ်လို့ မရပါ။ တစ်ချက် နှိပ်ရုံနဲ့ ပြန်ချိတ်နိုင်ပြီး အများအားဖြင့် ဆက်ချိတ်ထားပါတယ်။',
+    'arPrivate': 'Android က app-data folder တွေကို ပိတ်ထားလို့ {v} ကို ADB ချိတ်ဆက်မှုနဲ့သာ ဖွင့်လို့ ရပါတယ်။ Innocent က wireless debugging နဲ့ ကိုယ်တိုင် ချိတ်ပေးလို့ တခြား app မလိုပါ။',
+    'arNotNow': 'အခု မလုပ်သေး',
+    'arSetUp': 'ပြင်ဆင်မယ်',
+    'trCopyUrl': 'Link ကူး',
+    'trResumeUnfinished': 'မပြီးသေးတဲ့ လွှဲပြောင်းမှုကို ဆက်လုပ်',
+    'ppFingerprint': 'လက်ဗွေနဲ့ ဖွင့်',
+    'ppClear': 'ရှင်း',
+    'ppConfirm': 'အတည်ပြု',
+    'ppBackspace': 'ဂဏန်း တစ်လုံး ဖျက်',
+    'afpTitle': 'ထည့်မယ့် ဖိုင်တွေ ရွေးပါ',
+    'afpInternal': 'ဖုန်း storage',
+    'vliVideo': 'ဗီဒီယို: {v}',
   };
 
   static const Map<String, String> _th = <String, String>{
@@ -9261,6 +9338,29 @@ class AppStrings {
     'cutSaved': 'บันทึกคลิปที่ตัดแล้ว: {v}',
     'cutFailed': 'ตัดวิดีโอนี้ไม่ได้ ({v})',
     'cutHint': 'คลิปจะเริ่มที่คีย์เฟรมก่อน A จึงอาจเริ่มเร็วกว่าเล็กน้อย ไม่มีการเข้ารหัสใหม่',
+    'obFindTitle': 'ค้นหาวิดีโอของคุณ',
+    'obFindBody': 'Innocent ค้นหาวิดีโอในโทรศัพท์และจัดตามโฟลเดอร์ ทุกอย่างอยู่ในเครื่อง ไม่มีการอัปโหลด',
+    'obGestureTitle': 'ควบคุมด้วยท่าทาง',
+    'obGestureBody': 'ปัดขึ้นลงด้านซ้ายเพื่อปรับความสว่าง ด้านขวาเพื่อปรับเสียง ปัดด้านข้างเพื่อเลื่อน กดค้างเพื่อเปลี่ยนความเร็ว จีบนิ้วเพื่อซูม',
+    'obYoursTitle': 'ทำให้เป็นของคุณ',
+    'obYoursBody': 'ตั้งวิดีโอโปรด สร้างเพลย์ลิสต์ บันทึกบุ๊กมาร์ก และดูต่อจากที่ค้างไว้ ทั้งหมดอยู่ในแท็บฉัน',
+    'obStart': 'เริ่มต้นใช้งาน',
+    'obNext': 'ถัดไป',
+    'arReconnectTo': 'เชื่อมต่อใหม่เพื่อดู {v}',
+    'arLocked': 'โฟลเดอร์ที่ถูกล็อก',
+    'arDropped': 'การเชื่อมต่อ ADB หลุด จึงอ่าน {v} ไม่ได้ในตอนนี้ เชื่อมต่อใหม่ได้ด้วยการแตะครั้งเดียวและมักคงอยู่ต่อไป',
+    'arPrivate': 'Android เก็บโฟลเดอร์ข้อมูลแอปเป็นส่วนตัว จึงเปิด {v} ได้ผ่านการเชื่อมต่อ ADB เท่านั้น Innocent ตั้งค่าเองผ่านการแก้ไขข้อบกพร่องแบบไร้สาย ไม่ต้องใช้แอปอื่น',
+    'arNotNow': 'ไม่ใช่ตอนนี้',
+    'arSetUp': 'ตั้งค่า',
+    'trCopyUrl': 'คัดลอกลิงก์',
+    'trResumeUnfinished': 'ทำการโอนที่ค้างอยู่ต่อ',
+    'ppFingerprint': 'ปลดล็อกด้วยลายนิ้วมือ',
+    'ppClear': 'ล้าง',
+    'ppConfirm': 'ยืนยัน',
+    'ppBackspace': 'ลบตัวเลข',
+    'afpTitle': 'เลือกไฟล์ที่จะเพิ่ม',
+    'afpInternal': 'ที่เก็บข้อมูลภายใน',
+    'vliVideo': 'วิดีโอ: {v}',
   };
 }
 

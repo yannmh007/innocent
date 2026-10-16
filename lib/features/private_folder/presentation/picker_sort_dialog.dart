@@ -91,11 +91,11 @@ class _PickerSortDialogState extends State<PickerSortDialog> {
     final asc = d == PickerDir.asc;
     switch (_draft.sort) {
       case PickerSort.name:
-        return asc ? 'A to Z' : 'Z to A';
+        return asc ? AppStrings.of(context).svAz : AppStrings.of(context).svZa;
       case PickerSort.date:
-        return asc ? 'Oldest' : 'Newest';
+        return asc ? AppStrings.of(context).svOldest : AppStrings.of(context).svNewest;
       case PickerSort.size:
-        return asc ? 'Smallest' : 'Largest';
+        return asc ? AppStrings.of(context).svSmallest : AppStrings.of(context).svLargest;
     }
   }
 

@@ -243,7 +243,12 @@ class _SortViewDialogState extends ConsumerState<SortViewDialog> {
                       mainAxisSpacing: 14,
                       crossAxisSpacing: 4,
                       children: [
-                        for (final s in SortBy.values)
+                        // No Frame rate: it is not in the media index, so the
+                        // "sort" was by date under another name. (The Fields
+                        // list lost Frame rate and Played time for the same
+                        // reason: one printed "—fps", the other nothing.)
+                        for (final s in SortBy.values
+                            .where((v) => v != SortBy.frameRate))
                           _GridChip(
                             icon: _sortIcon(s),
                             label: s.labelIn(AppStrings.of(context)),
@@ -350,22 +355,10 @@ class _SortViewDialogState extends ConsumerState<SortViewDialog> {
                                   _draft = _draft.copyWith(showFileExt: v)),
                             ),
                             _FieldCheck(
-                              label: AppStrings.of(context).svPlayedTime,
-                              value: _draft.showPlayedTime,
-                              onChanged: (v) => setState(() =>
-                                  _draft = _draft.copyWith(showPlayedTime: v)),
-                            ),
-                            _FieldCheck(
                               label: AppStrings.of(context).svResolution,
                               value: _draft.showResolution,
                               onChanged: (v) => setState(() =>
                                   _draft = _draft.copyWith(showResolution: v)),
-                            ),
-                            _FieldCheck(
-                              label: AppStrings.of(context).svFrameRate,
-                              value: _draft.showFrameRate,
-                              onChanged: (v) => setState(() =>
-                                  _draft = _draft.copyWith(showFrameRate: v)),
                             ),
                             _FieldCheck(
                               label: AppStrings.of(context).svPath,

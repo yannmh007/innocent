@@ -144,7 +144,7 @@ class AddFilesPicker extends ConsumerStatefulWidget {
   final Future<void> Function(List<PickedFile> picked)? onCommit;
 
   /// App-bar title. Defaults to the Private Folder wording.
-  final String title;
+  final String? title;
 
   /// When importing to the vault (default path), the organiser folder the
   /// new entries should land in. null = vault root. Ignored when
@@ -161,7 +161,7 @@ class AddFilesPicker extends ConsumerStatefulWidget {
     super.key,
     this.service,
     this.onCommit,
-    this.title = 'Select Files To Add',
+    this.title,
     this.targetFolderId,
     this.commitLabel,
     this.commitIcon = Icons.lock_outline,
@@ -825,7 +825,7 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
                 ),
                 onChanged: (v) => setState(() => _query = v),
               )
-            : Text(widget.title,
+            : Text(widget.title ?? AppStrings.of(context).afpTitle,
                 style: const TextStyle(
                     color: Colors.white,
                     fontSize: 18,
@@ -1609,7 +1609,7 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
               for (final r in roots)
                 _folderRow(
                   name: p.basename(r.path) == '0'
-                      ? 'Internal storage'
+                      ? AppStrings.of(context).afpInternal
                       : p.basename(r.path),
                   subtitle: r.path,
                   thumb: const Icon(Icons.sd_storage_outlined,

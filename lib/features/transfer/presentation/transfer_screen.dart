@@ -858,7 +858,7 @@ class _PreparePane extends StatelessWidget {
                               icon: const Icon(Icons.close, size: 18),
                               color: AppColors.white50,
                               onPressed: () => onRemove(f.id),
-                              tooltip: 'Remove',
+                              tooltip: AppStrings.of(context).remove,
                             ),
                           ],
                         ),
@@ -1059,7 +1059,7 @@ class _RunningPane extends StatelessWidget {
                 IconButton(
                   icon: const Icon(Icons.copy_outlined, size: 18),
                   color: AppColors.white70,
-                  tooltip: 'Copy URL',
+                  tooltip: AppStrings.of(context).trCopyUrl,
                   onPressed: () {
                     Clipboard.setData(ClipboardData(text: shareUrl));
                     ScaffoldMessenger.of(context)
@@ -2105,13 +2105,13 @@ class _ReceivePaneState extends ConsumerState<_ReceivePane> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
               Icon(Icons.history, color: AppColors.accentBlue, size: 20),
               SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Resume unfinished transfer',
+                  AppStrings.of(context).trResumeUnfinished,
                   style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w700,

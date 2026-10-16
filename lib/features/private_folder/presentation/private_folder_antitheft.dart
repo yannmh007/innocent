@@ -560,19 +560,10 @@ class _AntiTheftScreenState extends ConsumerState<AntiTheftScreen> {
     }
   }
 
-  // ── Date formatting (no intl dependency) ──
-  static const _months = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-  ];
-
+  // ── Date formatting: the phone's own, in the app's language ──
   String _formatDate(DateTime d) =>
-      '${_months[d.month - 1]} ${d.day}, ${d.year}';
+      MaterialLocalizations.of(context).formatMediumDate(d);
 
-  String _formatTime(DateTime d) {
-    final h = d.hour % 12 == 0 ? 12 : d.hour % 12;
-    final m = d.minute.toString().padLeft(2, '0');
-    final ap = d.hour < 12 ? 'AM' : 'PM';
-    return '$h:$m $ap';
-  }
+  String _formatTime(DateTime d) => MaterialLocalizations.of(context)
+      .formatTimeOfDay(TimeOfDay.fromDateTime(d));
 }

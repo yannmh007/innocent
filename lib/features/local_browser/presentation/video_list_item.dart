@@ -3,7 +3,6 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 
 import '../../../core/di/preferences_provider.dart';
 import '../../player/presentation/floating_pip_provider.dart';
@@ -51,6 +50,7 @@ class VideoListItem extends ConsumerWidget {
   /// Mirrors MX Player's behaviour: when more than one field is toggled
   /// on, the values are joined by " · ".
   List<String> _buildMetaLines(
+    BuildContext context,
     LibraryPreferences libPrefs,
     Duration effectiveDuration,
   ) {
@@ -59,19 +59,11 @@ class VideoListItem extends ConsumerWidget {
       parts.add(video.formattedSize);
     }
     if (libPrefs.showDate && video.dateAdded != null) {
-      parts.add(DateFormat('MMM d').format(video.dateAdded!));
+      parts.add(MaterialLocalizations.of(context)
+          .formatShortMonthDay(video.dateAdded!));
     }
     if (libPrefs.showResolution && video.height > 0) {
       parts.add(video.resolutionLabel);
-    }
-    if (libPrefs.showFrameRate) {
-      // Frame rate isn't reliably exposed by MediaStore; show placeholder
-      // value only when explicitly toggled. (Real impl would query metadata.)
-      parts.add('—fps');
-    }
-    if (libPrefs.showPlayedTime) {
-      // Same — exposed via resume storage in real impl; placeholder here.
-      // We intentionally don't add anything noisy.
     }
     // Length is shown either over-thumb or inline depending on
     // displayLengthOverThumb preference; we handle it separately.
@@ -96,7 +88,7 @@ class VideoListItem extends ConsumerWidget {
         ? video.duration
         : (ref.watch(videoDurationCacheProvider).durationFor(video.uri) ??
             Duration.zero);
-    final metaParts = _buildMetaLines(libPrefs, effectiveDuration);
+    final metaParts = _buildMetaLines(context, libPrefs, effectiveDuration);
 
     // Title with optional file extension stripped
     final displayTitle = libPrefs.showFileExt
@@ -111,7 +103,7 @@ class VideoListItem extends ConsumerWidget {
         ref.watch(preferencesProvider.select((p) => p.showThumbnails));
 
     return Semantics(
-      label: 'Video: $displayTitle',
+      label: AppStrings.of(context).vliVideo(displayTitle),
       button: true,
       child: RepaintBoundary(
       child: InkWell(
