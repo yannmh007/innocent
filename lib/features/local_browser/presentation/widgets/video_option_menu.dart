@@ -122,6 +122,7 @@ class VideoOptionMenu extends ConsumerWidget {
     // The video itself, as the bulk Share sends it — not its path, which
     // means nothing to the app it goes to. An Android/data video is fetched
     // out first.
+    if (!hostContext.mounted) return;
     await BulkActions.share(hostContext, ref, videos: <Video>[video]);
   }
 
@@ -1240,7 +1241,7 @@ class _VideoInfoDialogState extends ConsumerState<VideoInfoDialog> {
     // The phone's own way of writing a date and a time, in the app's
     // language ("Oct 5, 2026 at 3:07 PM" was English whatever the setting).
     final l = MaterialLocalizations.of(context);
-    return '${l.formatMediumDate(dt)}  '
+    return '${l.formatShortDate(dt)}  '
         '${l.formatTimeOfDay(TimeOfDay.fromDateTime(dt))}';
   }
 

@@ -562,7 +562,7 @@ class _AntiTheftScreenState extends ConsumerState<AntiTheftScreen> {
 
   // ── Date formatting: the phone's own, in the app's language ──
   String _formatDate(DateTime d) =>
-      MaterialLocalizations.of(context).formatMediumDate(d);
+      MaterialLocalizations.of(context).formatShortDate(d);
 
   String _formatTime(DateTime d) => MaterialLocalizations.of(context)
       .formatTimeOfDay(TimeOfDay.fromDateTime(d));
