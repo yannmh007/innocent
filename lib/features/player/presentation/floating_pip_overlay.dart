@@ -9,6 +9,7 @@ import '../../../core/router/app_router.dart';
 import '../../../core/router/routes.dart';
 import 'floating_pip_provider.dart';
 import 'player_provider.dart';
+import '../../../core/localization/app_strings.dart';
 
 /// Phase 15: In-app floating PiP overlay.
 /// Replaces system PiP. Shown over the shell as a Stack overlay.
@@ -355,13 +356,13 @@ class _PipBodyState extends ConsumerState<_PipBody> {
                             children: [
                               _ControlBtn(
                                 icon: Icons.fullscreen,
-                                tooltip: 'Open fullscreen',
+                                tooltip: AppStrings.of(context).pwOpenFull,
                                 onTap: () => _expandToFull(context, pip),
                               ),
                               const Spacer(),
                               _ControlBtn(
                                 icon: Icons.close,
-                                tooltip: 'Close',
+                                tooltip: AppStrings.of(context).close,
                                 onTap: () =>
                                     ref.read(floatingPipProvider.notifier).close(),
                               ),
@@ -376,7 +377,7 @@ class _PipBodyState extends ConsumerState<_PipBody> {
                             _ControlBtn(
                               icon: Icons.skip_previous,
                               size: 28,
-                              tooltip: 'Previous',
+                              tooltip: AppStrings.of(context).mpPrevious,
                               onTap: () => ref
                                   .read(playerControllerProvider.notifier)
                                   .playPreviousInFolder(),
@@ -387,7 +388,9 @@ class _PipBodyState extends ConsumerState<_PipBody> {
                                   ? Icons.pause
                                   : Icons.play_arrow,
                               size: 32,
-                              tooltip: 'Play/Pause',
+                              tooltip: playerState.isPlaying
+                                  ? AppStrings.of(context).plPause
+                                  : AppStrings.of(context).play,
                               onTap: () => ref
                                   .read(playerControllerProvider.notifier)
                                   .playOrPause(),
@@ -396,7 +399,7 @@ class _PipBodyState extends ConsumerState<_PipBody> {
                             _ControlBtn(
                               icon: Icons.skip_next,
                               size: 28,
-                              tooltip: 'Next',
+                              tooltip: AppStrings.of(context).mpNext,
                               onTap: () => ref
                                   .read(playerControllerProvider.notifier)
                                   .playNextInFolder(),

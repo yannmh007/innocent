@@ -276,7 +276,8 @@ class VideoGridTile extends ConsumerWidget {
           ? () => ref.read(selectionProvider.notifier).toggle(video.uri)
           : onTap,
       onLongPress: onLongPress,
-      child: Container(
+      child: LayoutBuilder(builder: (context, box) => Stack(children: <Widget>[
+        Container(
         decoration: BoxDecoration(
           color: isSelected
               ? AppColors.accentBlue12
@@ -423,17 +424,15 @@ class VideoGridTile extends ConsumerWidget {
                 ),
                 // innocent_videos_grid_spec: per-item overflow kebab,
                 // right edge, at the title baseline. Wired to the same
-                // VideoOptionMenu the list view uses.
+                // VideoOptionMenu the list view uses. Drawn here; tapped
+                // through the larger target below.
                 if (onMoreTap != null)
-                  RemoteTappable(
-                    onTap: onMoreTap,
-                    child: const Padding(
-                      padding: EdgeInsets.only(left: 4, top: 1),
-                      child: Icon(
-                        Icons.more_vert,
-                        size: 18,
-                        color: AppColors.specTextSecondary,
-                      ),
+                  const Padding(
+                    padding: EdgeInsets.only(left: 4, top: 1),
+                    child: Icon(
+                      Icons.more_vert,
+                      size: 18,
+                      color: AppColors.specTextSecondary,
                     ),
                   ),
               ],
@@ -441,6 +440,24 @@ class VideoGridTile extends ConsumerWidget {
           ],
         ),
       ),
+        // The kebab's target: 48 x 48 dp from the thumbnail's bottom edge,
+        // over the title's end and the space below it, not the 22 x 19 dp of
+        // the icon itself, the smallest target in the app (SCREEN_A11Y=1).
+        // It starts under the duration badge (4 dp off the thumbnail's
+        // bottom), so the badge still plays.
+        if (onMoreTap != null)
+          Positioned(
+            top: box.maxWidth * 9 / 16 - 4,
+            right: 0,
+            width: 48,
+            height: 48,
+            child: RemoteTappable(
+              onTap: onMoreTap,
+              semanticLabel: AppStrings.of(context).moreOptions,
+              child: const SizedBox.expand(),
+            ),
+          ),
+      ])),
     );
   }
 }

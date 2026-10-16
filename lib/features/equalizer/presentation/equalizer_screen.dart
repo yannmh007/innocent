@@ -9,6 +9,7 @@ import '../../../core/services/preferences/player_settings_service.dart';
 import '../../../core/theme/app_colors.dart';
 
 import '../../../core/localization/app_strings.dart';
+import 'audio_effect_sheet.dart' show effectLabel;
 import '../../../core/ui/tv_focus.dart';
 import '../../../core/ui/safe_popup_menu.dart';
 import '../../../core/ui/nav_bar_space.dart';
@@ -264,9 +265,9 @@ class _EqualizerScreenState extends ConsumerState<EqualizerScreen>
                 indicatorColor: AppColors.accentBlue,
                 labelColor: AppColors.accentBlue,
                 unselectedLabelColor: Colors.white70,
-                tabs: const [
-                  Tab(text: 'Sound Profiles'),
-                  Tab(text: 'Equalizer'),
+                tabs: [
+                  Tab(text: AppStrings.of(context).aeSoundProfiles),
+                  Tab(text: AppStrings.of(context).equalizerTitle),
                 ],
               )
             : null,
@@ -314,8 +315,8 @@ class _EqualizerScreenState extends ConsumerState<EqualizerScreen>
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Your device or OS does not support audio effects, or no audio is currently playing.',
+            Text(
+              AppStrings.of(context).aeUnsupported,
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: AppColors.darkOnSurfaceMuted,
@@ -357,7 +358,7 @@ class _EqualizerScreenState extends ConsumerState<EqualizerScreen>
                 ],
               ),
             ),
-          _sectionLabel('SOUND PROFILES'),
+          _sectionLabel(AppStrings.of(context).aeSoundProfiles.toUpperCase()),
           const SizedBox(height: 12),
           GridView.count(
             shrinkWrap: true,
@@ -408,7 +409,7 @@ class _EqualizerScreenState extends ConsumerState<EqualizerScreen>
                 _presetChips(),
                 const SizedBox(height: 22),
               ],
-              _sectionLabel('AUDIO EFFECTS'),
+              _sectionLabel(AppStrings.of(context).aeAudioEffect.toUpperCase()),
               const SizedBox(height: 16),
               _dialsRow(),
               const SizedBox(height: 14),
@@ -487,7 +488,7 @@ class _EqualizerScreenState extends ConsumerState<EqualizerScreen>
       child: Row(
         children: [
           _dial(
-            label: 'Bass Boost',
+            label: AppStrings.of(context).aeBassBoost,
             strength: _bassBoostStrength,
             size: dialSize,
             onChanged: (v) async {
@@ -499,7 +500,7 @@ class _EqualizerScreenState extends ConsumerState<EqualizerScreen>
             },
           ),
           _dial(
-            label: 'Virtualizer',
+            label: AppStrings.of(context).aeVirtualizer,
             strength: _virtualizerStrength,
             size: dialSize,
             onChanged: (v) async {
@@ -768,7 +769,7 @@ class _ProfileCard extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4),
               child: Text(
-                profile.name,
+                effectLabel(AppStrings.of(context), profile.name),
                 textAlign: TextAlign.center,
                 maxLines: 2,
                 style: TextStyle(

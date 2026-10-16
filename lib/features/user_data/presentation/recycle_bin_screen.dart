@@ -26,7 +26,7 @@ class RecycleBinScreen extends ConsumerWidget {
         title: Text(AppStrings.of(context).recycleBin),
         actions: [
           IconButton(
-            tooltip: 'Info',
+            tooltip: AppStrings.of(context).rbInfo,
             icon: const Icon(Icons.info_outline),
             onPressed: () {
               showDialog(
@@ -35,8 +35,8 @@ class RecycleBinScreen extends ConsumerWidget {
                   backgroundColor: AppColors.darkSurface,
                   title: Text(AppStrings.of(context).recycleBin,
                       style: const TextStyle(color: Colors.white)),
-                  content: const Text(
-                    'Items in the recycle bin will be kept for up to 30 days before being automatically removed.',
+                  content: Text(
+                    AppStrings.of(context).rbKept,
                     style: TextStyle(color: Colors.white70, height: 1.5),
                   ),
                   actions: [
@@ -61,8 +61,8 @@ class RecycleBinScreen extends ConsumerWidget {
                     backgroundColor: AppColors.darkSurface,
                     title: Text(AppStrings.of(context).emptyBinTitle,
                         style: const TextStyle(color: Colors.white)),
-                    content: const Text(
-                      'All entries will be permanently removed from this list. The actual video files are NOT deleted from your device.',
+                    content: Text(
+                      AppStrings.of(context).rbClearBody,
                       style: TextStyle(color: Colors.white70),
                     ),
                     actions: [
@@ -99,7 +99,7 @@ class RecycleBinScreen extends ConsumerWidget {
               color: const Color(0xFF3A2E1A),
               borderRadius: BorderRadius.circular(6),
             ),
-            child: const Row(
+            child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Icon(Icons.error_outline,
@@ -107,7 +107,7 @@ class RecycleBinScreen extends ConsumerWidget {
                 SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'Files will be stored in the Recycle Bin for up to 30 days before being permanently deleted from your device.',
+                    AppStrings.of(context).rbBanner,
                     style: TextStyle(
                       color: Color(0xFFFFB74D),
                       fontSize: 12,
@@ -321,7 +321,7 @@ class RecycleBinScreen extends ConsumerWidget {
                               color: AppColors.accentBlue,
                               size: 20,
                             ),
-                            tooltip: 'Restore',
+                            tooltip: AppStrings.of(context).rbRestore,
                             onPressed: () => ref
                                 .read(recycleBinProvider.notifier)
                                 .restore(entry.videoUri),

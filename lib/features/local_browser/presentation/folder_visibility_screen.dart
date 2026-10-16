@@ -264,7 +264,6 @@ class _FolderRow extends StatelessWidget {
                 ? FilledButton.tonalIcon(
                     onPressed: onShow,
                     style: FilledButton.styleFrom(
-                      visualDensity: VisualDensity.compact,
                       backgroundColor:
                           AppColors.primaryBlue.withValues(alpha: 0.22),
                       foregroundColor: AppColors.accentBlueLight,
@@ -275,7 +274,6 @@ class _FolderRow extends StatelessWidget {
                 : OutlinedButton.icon(
                     onPressed: onHide,
                     style: OutlinedButton.styleFrom(
-                      visualDensity: VisualDensity.compact,
                       foregroundColor: AppColors.white70,
                       side: const BorderSide(color: Color(0x33FFFFFF)),
                     ),

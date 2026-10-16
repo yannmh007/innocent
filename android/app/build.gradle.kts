@@ -426,6 +426,14 @@ dependencies {
         exclude(group = "org.bouncycastle")
     }
     implementation("commons-net:commons-net:3.13.0")
+    // The player's Cut, exact to the frame (PreciseTrimmer): Media3
+    // Transformer re-encodes only A to the next key frame and copies the rest.
+    // AndroidX, from the Android media team. 1.9.2 is the last line built for
+    // compileSdk 35 / Kotlin 2.0, which this build's AGP 8.7 and Kotlin 2.1
+    // take as they are (1.10 wants 36, 1.11 wants 37 and Kotlin 2.2).
+    implementation("androidx.media3:media3-transformer:1.9.2")
+    implementation("androidx.media3:media3-common:1.9.2")
+    implementation("androidx.annotation:annotation-experimental:1.4.1")
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
 
     // v0.99 Downloader engine. youtubedl-android bundles the yt-dlp binary plus

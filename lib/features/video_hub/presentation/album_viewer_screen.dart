@@ -197,7 +197,12 @@ class _AlbumViewerScreenState extends ConsumerState<AlbumViewerScreen>
           child: ColoredBox(color: Colors.black.withValues(alpha: fade)),
         ),
         Positioned.fill(
-          child: GestureDetector(
+          // "3 / 12, double tap to show or hide the controls" — it was a
+          // nameless full-screen node for TalkBack.
+          child: Semantics(
+            label: '${_index + 1} / ${_items.length}',
+            onTapHint: AppStrings.of(context).playerSurfaceHint,
+            child: GestureDetector(
             behavior: HitTestBehavior.translucent,
             onTap: () => setState(() => _chrome = !_chrome),
             onVerticalDragUpdate: _onDragUpdate,
@@ -227,6 +232,7 @@ class _AlbumViewerScreenState extends ConsumerState<AlbumViewerScreen>
                     ),
             ),
           ),
+          ),
         ),
         // Top bar: close, "3 of 10", save this one.
         Positioned(
@@ -251,6 +257,7 @@ class _AlbumViewerScreenState extends ConsumerState<AlbumViewerScreen>
                   height: 56,
                   child: Row(children: <Widget>[
                     IconButton(
+                      tooltip: MaterialLocalizations.of(context).backButtonTooltip,
                       icon: const Icon(Icons.arrow_back_rounded,
                           color: VH.textPrimary),
                       onPressed: () => Navigator.of(context).maybePop(),
@@ -326,7 +333,11 @@ class _AlbumViewerScreenState extends ConsumerState<AlbumViewerScreen>
       itemBuilder: (context, i) {
         final item = _items[i];
         final current = i == _index;
-        return GestureDetector(
+        return Semantics(
+          button: true,
+          selected: current,
+          label: '${i + 1} / ${_items.length}',
+          child: GestureDetector(
           onTap: () => _controller.jumpToPage(i),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 160),
@@ -353,6 +364,7 @@ class _AlbumViewerScreenState extends ConsumerState<AlbumViewerScreen>
                   : BlurPreview(hash: item.preview),
             ),
           ),
+        ),
         );
       },
     );
@@ -558,6 +570,7 @@ class _VideoPage extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
               IconButton(
+                tooltip: AppStrings.of(context).play,
                 iconSize: 64,
                 icon: const Icon(Icons.play_circle_fill, color: VH.textPrimary),
                 onPressed: onPlay,

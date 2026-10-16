@@ -91,8 +91,8 @@ class _EmptyState extends StatelessWidget {
                   color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 6),
-            const Text(
-              'Watch a few videos and come back — your weekly recap will appear here.',
+            Text(
+              AppStrings.of(context).wiEmpty,
               textAlign: TextAlign.center,
               style: TextStyle(
                   color: AppColors.white60, fontSize: 13),
@@ -167,8 +167,8 @@ class _HeroCard extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                const TextSpan(
-                  text: ' min',
+                TextSpan(
+                  text: ' ${AppStrings.of(context).wiMin}',
                   style: TextStyle(
                     color: AppColors.white60,
                     fontSize: 18,
@@ -182,14 +182,14 @@ class _HeroCard extends StatelessWidget {
             children: [
               Expanded(
                 child: _Stat(
-                  label: 'Videos',
+                  label: AppStrings.of(context).wiVideos,
                   value: '${insights.videosWatched}',
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: _Stat(
-                  label: 'Active days',
+                  label: AppStrings.of(context).wiActiveDays,
                   value: '${insights.activeDays}',
                 ),
               ),
@@ -240,10 +240,10 @@ class _StreakCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = insights.currentStreakDays;
     final msg = s == 0
-        ? 'Start a new streak today!'
+        ? AppStrings.of(context).wiStreakStart
         : s == 1
-            ? "You've watched today — keep it going."
-            : "$s days in a row — nice rhythm.";
+            ? AppStrings.of(context).wiStreakToday
+            : AppStrings.of(context).wiStreakDays(s);
     return _Card(
       child: Row(
         children: [
@@ -267,7 +267,7 @@ class _StreakCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  s == 0 ? 'No streak yet' : '$s-day streak',
+                  s == 0 ? AppStrings.of(context).wiNoStreak : AppStrings.of(context).wiStreak(s),
                   style: const TextStyle(
                       color: Colors.white,
                       fontSize: 15,
@@ -401,7 +401,7 @@ class _MostRewatchedCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 Text(
-                  '${e.watchCount} ${e.watchCount == 1 ? "watch" : "watches"}',
+                  AppStrings.of(context).wiWatches(e.watchCount),
                   style: const TextStyle(
                       color: AppColors.white50, fontSize: 12),
                 ),
@@ -454,7 +454,7 @@ class _FolderCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 Text(
-                  '${insights.mostWatchedFolderCount} ${insights.mostWatchedFolderCount == 1 ? "play" : "plays"}',
+                  AppStrings.of(context).wiPlays(insights.mostWatchedFolderCount),
                   style: const TextStyle(
                       color: AppColors.white50, fontSize: 12),
                 ),
@@ -476,10 +476,10 @@ class _CompletionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final pct = insights.averageCompletionPercent;
     final message = pct >= 75
-        ? "You're a finisher."
+        ? AppStrings.of(context).wiFinisher
         : pct >= 40
-            ? "Solid follow-through."
-            : "Plenty of films half-watched.";
+            ? AppStrings.of(context).wiSolid
+            : AppStrings.of(context).wiHalf;
     return _Card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -535,7 +535,7 @@ class _PrivacyFootnote extends StatelessWidget {
   const _PrivacyFootnote();
   @override
   Widget build(BuildContext context) {
-    return const Row(
+    return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Icon(Icons.lock_outline,
@@ -543,7 +543,7 @@ class _PrivacyFootnote extends StatelessWidget {
         SizedBox(width: 6),
         Expanded(
           child: Text(
-            'These numbers are computed entirely on your device. Nothing is uploaded.',
+            AppStrings.of(context).wiLocal,
             style: TextStyle(
                 color: AppColors.white40,
                 fontSize: 11,

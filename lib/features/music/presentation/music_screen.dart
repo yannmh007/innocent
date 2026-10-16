@@ -15,7 +15,6 @@ import 'song_context_menu.dart';
 import '../../../core/utils/async_value_extensions.dart';
 import '../../../core/ui/tablet_constrained_width.dart';
 import '../../../core/theme/tab_title.dart';
-import '../../../core/ui/safe_popup_menu.dart';
 import '../../shell/shell_back.dart';
 import '../../../core/ui/app_sheet.dart';
 
@@ -82,7 +81,7 @@ class _MusicScreenState extends ConsumerState<MusicScreen>
         actions: [
           if (_searching)
             IconButton(
-              tooltip: 'Close',
+              tooltip: AppStrings.of(context).close,
               icon: const Icon(Icons.close),
               onPressed: () => setState(() {
                 _searching = false;
@@ -91,77 +90,13 @@ class _MusicScreenState extends ConsumerState<MusicScreen>
             )
           else ...[
             IconButton(
-              tooltip: 'Search',
+              tooltip: AppStrings.of(context).search,
               icon: const Icon(Icons.search),
               onPressed: () => setState(() => _searching = true),
             ),
-            SafePopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert),
-              color: AppColors.darkSurface,
-              onSelected: (v) {
-                switch (v) {
-                  case 'home':
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(s.addedToHomeScreen)),
-                    );
-                    break;
-                  case 'widget':
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(s.widgetAdded)),
-                    );
-                    break;
-                  case 'resume':
-                    showDialog(
-                      context: context,
-                      builder: (_) => AlertDialog(
-                        backgroundColor: AppColors.darkSurface,
-                        title: Text(s.resumePlaySettings,
-                            style: const TextStyle(color: Colors.white)),
-                        content: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            RadioListTile<int>(
-                              value: 0,
-                              groupValue: 0,
-                              title: Text(s.alwaysResume,
-                                  style: const TextStyle(
-                                      color: Colors.white, fontSize: 14)),
-                              activeColor: AppColors.primaryBlue,
-                              onChanged: (_) => Navigator.pop(context),
-                            ),
-                            RadioListTile<int>(
-                              value: 1,
-                              groupValue: 0,
-                              title: Text(s.askEveryTime,
-                                  style: const TextStyle(
-                                      color: Colors.white, fontSize: 14)),
-                              activeColor: AppColors.primaryBlue,
-                              onChanged: (_) => Navigator.pop(context),
-                            ),
-                            RadioListTile<int>(
-                              value: 2,
-                              groupValue: 0,
-                              title: Text(s.startFromBeginning,
-                                  style: const TextStyle(
-                                      color: Colors.white, fontSize: 14)),
-                              activeColor: AppColors.primaryBlue,
-                              onChanged: (_) => Navigator.pop(context),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                    break;
-                }
-              },
-              itemBuilder: (_) => [
-                PopupMenuItem(
-                    value: 'home', child: Text(s.addToHomeScreen)),
-                PopupMenuItem(value: 'widget', child: Text(s.addWidget)),
-                PopupMenuItem(
-                    value: 'resume', child: Text(s.resumePlaySettings)),
-              ],
-            ),
+            // There was a ⋮ menu here: "Add to home screen" and "Add
+            // widget" said "added" and added nothing, and "Resume play
+            // settings" was three radio buttons wired to nothing.
           ],
         ],
         bottom: TabBar(
@@ -252,35 +187,41 @@ class _TracksTabState extends ConsumerState<_TracksTab> {
       children: [
         // Search bar + Shuffle All + Sort
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.fromLTRB(16, 2, 4, 2),
           child: Row(
             children: [
+              // The box is drawn 36 dp tall, as MX draws it; the text field
+              // over it takes the row's whole 48 dp, its icon and edges too
+              // (they sat outside a 28 dp field, and a tap there did nothing).
               Expanded(
-                child: Container(
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: AppColors.darkSurface,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    children: [
-                      const SizedBox(width: 10),
-                      const Icon(Icons.search,
-                          size: 18,
-                          color: AppColors.white50),
-                      const SizedBox(width: 8),
-                      Expanded(
+                child: SizedBox(
+                  height: 48,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: <Widget>[
+                      Container(
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: AppColors.darkSurface,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      Positioned.fill(
                         child: TextField(
                           // Phase 34: Real search input
                           onChanged: (v) {
-                            ref
-                                .read(musicSearchProvider.notifier)
-                                .state = v;
+                            ref.read(musicSearchProvider.notifier).state = v;
                           },
+                          textAlignVertical: TextAlignVertical.center,
                           style: const TextStyle(
                               color: Colors.white, fontSize: 13),
                           decoration: InputDecoration(
                             isDense: true,
+                            contentPadding: EdgeInsets.zero,
+                            prefixIcon: const Icon(Icons.search,
+                                size: 18, color: AppColors.white50),
+                            prefixIconConstraints: const BoxConstraints(
+                                minWidth: 38, minHeight: 36),
                             border: InputBorder.none,
                             hintText: AppStrings.of(context).searchSongs,
                             hintStyle: const TextStyle(
@@ -299,9 +240,8 @@ class _TracksTabState extends ConsumerState<_TracksTab> {
               // half): a long label in a large font cuts short rather than
               // pushing the sort button off the screen.
               Flexible(
-                child: InkWell(
-                borderRadius: BorderRadius.circular(8),
-                onTap: () {
+                child: Builder(builder: (context) {
+                void shuffle() {
                   final list = songsAsync.value ?? const [];
                   if (list.isEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -320,7 +260,21 @@ class _TracksTabState extends ConsumerState<_TracksTab> {
                         .push(MaterialPageRoute(
                     builder: (_) => const MusicPlayerScreen(),
                   ));
-                },
+                }
+                // The row's 48 dp is the target; the 36 dp chip is drawn in
+                // it. Its ripple stays out of the semantics, or the second
+                // tap splits the button in two (SCREEN_A11Y=1).
+                return Semantics(
+                button: true,
+                label: AppStrings.of(context).shuffleAll,
+                child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: shuffle,
+                child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: ExcludeSemantics(child: InkWell(
+                borderRadius: BorderRadius.circular(8),
+                onTap: shuffle,
                 child: Container(
                   height: 36,
                   padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -348,19 +302,22 @@ class _TracksTabState extends ConsumerState<_TracksTab> {
                     ],
                   ),
                 ),
-              ),
+                )),
+                ),
+                ),
+                );
+              }),
               ),
               const SizedBox(width: 8),
               // Phase 45 (audit): Sort icon was just visual. Wire it
               // to the music sort sheet so it actually works.
-              InkWell(
-                borderRadius: BorderRadius.circular(8),
-                onTap: () => _showMusicSortSheet(context, ref),
-                child: const Padding(
-                  padding: EdgeInsets.all(4),
-                  child: Icon(Icons.sort,
-                      color: AppColors.white70, size: 22),
-                ),
+              // A named 48 dp button (it was a nameless 30 dp InkWell); the
+              // row's padding gave up the 18 dp it needs.
+              IconButton(
+                tooltip: AppStrings.of(context).sortBy,
+                onPressed: () => _showMusicSortSheet(context, ref),
+                icon: const Icon(Icons.sort,
+                    color: AppColors.white70, size: 22),
               ),
             ],
           ),
@@ -496,7 +453,7 @@ class _TrackTile extends StatelessWidget {
               ),
             ),
             IconButton(
-              tooltip: 'More options',
+              tooltip: AppStrings.of(context).moreOptions,
               icon: const Icon(Icons.more_vert,
                   color: Colors.white54, size: 20),
               onPressed: onMore,
@@ -509,12 +466,23 @@ class _TrackTile extends StatelessWidget {
 }
 
 // ─── PLAYLISTS TAB ───
-class _PlaylistsTab extends ConsumerWidget {
+class _PlaylistsTab extends ConsumerStatefulWidget {
   const _PlaylistsTab();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final playlists = ref.watch(musicPlaylistProvider);
+  ConsumerState<_PlaylistsTab> createState() => _PlaylistsTabState();
+}
+
+class _PlaylistsTabState extends ConsumerState<_PlaylistsTab> {
+  String _query = '';
+
+  @override
+  Widget build(BuildContext context) {
+    final playlists = ref
+        .watch(musicPlaylistProvider)
+        .where((p) =>
+            _nameMatches(p.displayName(AppStrings.of(context)), _query))
+        .toList();
     return Column(
       children: [
         // Search Playlists + New Playlist
@@ -523,27 +491,9 @@ class _PlaylistsTab extends ConsumerWidget {
           child: Row(
             children: [
               Expanded(
-                child: Container(
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: AppColors.darkSurface,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    children: [
-                      const SizedBox(width: 10),
-                      const Icon(Icons.search,
-                          size: 18,
-                          color: AppColors.white50),
-                      const SizedBox(width: 8),
-                      Text(AppStrings.of(context).searchPlaylists,
-                        style: const TextStyle(
-                          color: AppColors.white50,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ],
-                  ),
+                child: _MusicSearchField(
+                  hint: AppStrings.of(context).searchPlaylists,
+                  onChanged: (v) => setState(() => _query = v.trim()),
                 ),
               ),
               const SizedBox(width: 8),
@@ -579,7 +529,9 @@ class _PlaylistsTab extends ConsumerWidget {
         ),
         // Real playlists
         Expanded(
-          child: ListView.builder(
+          child: playlists.isEmpty && _query.isNotEmpty
+              ? const _NoMatch()
+              : ListView.builder(
             padding: const EdgeInsets.only(bottom: 80),
             itemCount: playlists.length,
             itemBuilder: (_, i) {
@@ -603,9 +555,9 @@ class _PlaylistsTab extends ConsumerWidget {
                     : isRecent
                         ? const Color(0xFFFFF3E0)
                         : const Color(0xFFE3F2FD),
-                title: p.name,
+                title: p.displayName(AppStrings.of(context)),
                 subtitle:
-                    '${p.songUris.length} Song${p.songUris.length == 1 ? '' : 's'}',
+                    AppStrings.of(context).songsCount(p.songUris.length),
               );
             },
           ),
@@ -727,37 +679,27 @@ class _PlaylistTile extends StatelessWidget {
 }
 
 // ─── ALBUMS TAB ───
-class _AlbumsTab extends ConsumerWidget {
+class _AlbumsTab extends ConsumerStatefulWidget {
   const _AlbumsTab();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_AlbumsTab> createState() => _AlbumsTabState();
+}
+
+class _AlbumsTabState extends ConsumerState<_AlbumsTab> {
+  String _query = '';
+
+  @override
+  Widget build(BuildContext context) {
     final albumsAsync = ref.watch(musicAlbumsProvider);
     return Column(
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Container(
-            height: 36,
-            decoration: BoxDecoration(
-              color: AppColors.darkSurface,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              children: [
-                const SizedBox(width: 10),
-                const Icon(Icons.search,
-                    size: 18, color: AppColors.white50),
-                const SizedBox(width: 8),
-                Text(AppStrings.of(context).searchAlbums,
-                  style: const TextStyle(
-                    color: AppColors.white50,
-                    fontSize: 13,
-                  ),
+          child: _MusicSearchField(
+                  hint: AppStrings.of(context).searchAlbums,
+                  onChanged: (v) => setState(() => _query = v.trim()),
                 ),
-              ],
-            ),
-          ),
         ),
         Expanded(
           child: albumsAsync.whenOrFallback(
@@ -779,11 +721,15 @@ class _AlbumsTab extends ConsumerWidget {
                 Color(0xFF2C3E50),
                 Color(0xFFE6C9A8),
               ];
+              final shown = albums
+                  .where((a) => _nameMatches(a.name, _query))
+                  .toList();
+              if (shown.isEmpty) return const _NoMatch();
               return ListView.builder(
                 padding: const EdgeInsets.only(bottom: 80),
-                itemCount: albums.length,
+                itemCount: shown.length,
                 itemBuilder: (_, i) {
-                  final a = albums[i];
+                  final a = shown[i];
                   final color = palette[a.name.hashCode.abs() % palette.length];
                   return _AlbumTile(
                     data: _AlbumData(a.name, a.songCount, color),
@@ -846,12 +792,16 @@ class _AlbumTile extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(data.name,
+                  Text(
+                      // The scan files songs without an album under 'Unknown'.
+                      data.name == 'Unknown'
+                          ? AppStrings.of(context).mcUnknown
+                          : data.name,
                       style:
                           const TextStyle(color: Colors.white, fontSize: 14)),
                   const SizedBox(height: 2),
                   Text(
-                    '${data.songCount} Song${data.songCount == 1 ? '' : 's'}',
+                    AppStrings.of(context).songsCount(data.songCount),
                     style: const TextStyle(
                         color: Colors.white54, fontSize: 11),
                   ),
@@ -859,7 +809,7 @@ class _AlbumTile extends ConsumerWidget {
               ),
             ),
             IconButton(
-              tooltip: 'More options',
+              tooltip: AppStrings.of(context).moreOptions,
               icon: const Icon(Icons.more_vert,
                   color: Colors.white54, size: 20),
                 onPressed: () => DetailHeaderActions.showOverflow(
@@ -887,37 +837,27 @@ class _AlbumTile extends ConsumerWidget {
 }
 
 // ─── ARTISTS TAB ───
-class _ArtistsTab extends ConsumerWidget {
+class _ArtistsTab extends ConsumerStatefulWidget {
   const _ArtistsTab();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_ArtistsTab> createState() => _ArtistsTabState();
+}
+
+class _ArtistsTabState extends ConsumerState<_ArtistsTab> {
+  String _query = '';
+
+  @override
+  Widget build(BuildContext context) {
     final artistsAsync = ref.watch(musicArtistsProvider);
     return Column(
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Container(
-            height: 36,
-            decoration: BoxDecoration(
-              color: AppColors.darkSurface,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              children: [
-                const SizedBox(width: 10),
-                const Icon(Icons.search,
-                    size: 18, color: AppColors.white50),
-                const SizedBox(width: 8),
-                Text(AppStrings.of(context).searchArtists,
-                  style: const TextStyle(
-                    color: AppColors.white50,
-                    fontSize: 13,
-                  ),
+          child: _MusicSearchField(
+                  hint: AppStrings.of(context).searchArtists,
+                  onChanged: (v) => setState(() => _query = v.trim()),
                 ),
-              ],
-            ),
-          ),
         ),
         Expanded(
           child: artistsAsync.when(
@@ -929,12 +869,16 @@ class _ArtistsTab extends ConsumerWidget {
                           const TextStyle(color: Colors.white54, fontSize: 14)),
                 );
               }
+              final shown = artists
+                  .where((a) => _nameMatches(a.name, _query))
+                  .toList();
+              if (shown.isEmpty) return const _NoMatch();
               return ListView.builder(
                 padding: const EdgeInsets.only(bottom: 80),
-                itemCount: artists.length,
+                itemCount: shown.length,
                 itemBuilder: (_, i) => _ArtistTile(
-                  name: artists[i].name,
-                  songCount: artists[i].songCount,
+                  name: shown[i].name,
+                  songCount: shown[i].songCount,
                 ),
               );
             },
@@ -997,13 +941,14 @@ class _ArtistTile extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(name,
+                  Text(
+                      name == 'Unknown' ? AppStrings.of(context).mcUnknown : name,
                       style:
                           const TextStyle(color: Colors.white, fontSize: 14)),
                   const SizedBox(height: 2),
                   // Phase 30: Use real songCount, not hardcoded "1 Song"
                   Text(
-                    '$songCount Song${songCount == 1 ? '' : 's'}',
+                    AppStrings.of(context).songsCount(songCount),
                     style: const TextStyle(
                         color: Colors.white54, fontSize: 11),
                   ),
@@ -1011,7 +956,7 @@ class _ArtistTile extends ConsumerWidget {
               ),
             ),
             IconButton(
-              tooltip: 'More options',
+              tooltip: AppStrings.of(context).moreOptions,
               icon: const Icon(Icons.more_vert,
                   color: Colors.white54, size: 20),
                 onPressed: () => DetailHeaderActions.showOverflow(
@@ -1039,51 +984,39 @@ class _ArtistTile extends ConsumerWidget {
 }
 
 // ─── FOLDERS TAB ───
-class _FoldersTab extends ConsumerWidget {
+class _FoldersTab extends ConsumerStatefulWidget {
   const _FoldersTab();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_FoldersTab> createState() => _FoldersTabState();
+}
+
+class _FoldersTabState extends ConsumerState<_FoldersTab> {
+  String _query = '';
+
+  @override
+  Widget build(BuildContext context) {
     final foldersAsync = ref.watch(musicFoldersProvider);
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.fromLTRB(16, 2, 4, 2),
           child: Row(
             children: [
               Expanded(
-                child: Container(
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: AppColors.darkSurface,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    children: [
-                      const SizedBox(width: 10),
-                      const Icon(Icons.search,
-                          size: 18,
-                          color: AppColors.white50),
-                      const SizedBox(width: 8),
-                      Text(AppStrings.of(context).searchFolders,
-                        style: const TextStyle(
-                          color: AppColors.white50,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ],
-                  ),
+                child: _MusicSearchField(
+                  hint: AppStrings.of(context).searchFolders,
+                  onChanged: (v) => setState(() => _query = v.trim()),
                 ),
               ),
               const SizedBox(width: 8),
-              InkWell(
-                borderRadius: BorderRadius.circular(8),
-                onTap: () => _showMusicSortSheet(context, ref),
-                child: const Padding(
-                  padding: EdgeInsets.all(4),
-                  child: Icon(Icons.sort,
-                      color: AppColors.white70, size: 22),
-                ),
+              // A named 48 dp button (it was a nameless 30 dp InkWell); the
+              // row's padding gave up the 18 dp it needs.
+              IconButton(
+                tooltip: AppStrings.of(context).sortBy,
+                onPressed: () => _showMusicSortSheet(context, ref),
+                icon: const Icon(Icons.sort,
+                    color: AppColors.white70, size: 22),
               ),
             ],
           ),
@@ -1098,14 +1031,18 @@ class _FoldersTab extends ConsumerWidget {
                           const TextStyle(color: Colors.white54, fontSize: 14)),
                 );
               }
+              final shown = folders
+                  .where((f) => _nameMatches(f.name, _query))
+                  .toList();
+              if (shown.isEmpty) return const _NoMatch();
               return ListView.builder(
                 padding: const EdgeInsets.only(bottom: 80),
-                itemCount: folders.length,
+                itemCount: shown.length,
                 itemBuilder: (_, i) => _MusicFolderTile(
                   data: _FolderData(
-                    folders[i].name,
-                    folders[i].songCount,
-                    folders[i].path,
+                    shown[i].name,
+                    shown[i].songCount,
+                    shown[i].path,
                   ),
                 ),
               );
@@ -1172,7 +1109,7 @@ class _MusicFolderTile extends ConsumerWidget {
                           const TextStyle(color: Colors.white, fontSize: 14)),
                   const SizedBox(height: 2),
                   Text(
-                    '${data.songCount} Song${data.songCount == 1 ? '' : 's'}',
+                    AppStrings.of(context).songsCount(data.songCount),
                     style: const TextStyle(
                         color: Colors.white54, fontSize: 11),
                   ),
@@ -1180,7 +1117,7 @@ class _MusicFolderTile extends ConsumerWidget {
               ),
             ),
             IconButton(
-              tooltip: 'More options',
+              tooltip: AppStrings.of(context).moreOptions,
               icon: const Icon(Icons.more_vert,
                   color: Colors.white54, size: 20),
                 onPressed: () => DetailHeaderActions.showOverflow(
@@ -1274,7 +1211,7 @@ class _MiniPlayerBar extends ConsumerWidget {
               ),
             ),
             IconButton(
-              tooltip: 'Pause',
+              tooltip: AppStrings.of(context).plPause,
               icon: Icon(
                 playing.isPlaying
                     ? Icons.pause_circle_outline
@@ -1287,7 +1224,7 @@ class _MiniPlayerBar extends ConsumerWidget {
               },
             ),
             IconButton(
-              tooltip: 'Show queue',
+              tooltip: AppStrings.of(context).mpShowQueue,
               icon: const Icon(Icons.playlist_play,
                   color: Colors.white, size: 26),
               onPressed: () => MusicQueueSheet.show(context),
@@ -1383,7 +1320,7 @@ Future<void> _showMusicSortSheet(BuildContext context, WidgetRef ref) async {
                       children: [
                         Expanded(
                           child: Text(
-                            opt.label,
+                            opt.labelIn(AppStrings.of(context)),
                             style: TextStyle(
                               color: selected
                                   ? AppColors.accentBlue
@@ -1415,4 +1352,69 @@ Future<void> _showMusicSortSheet(BuildContext context, WidgetRef ref) async {
       });
     },
   );
+}
+
+/// Whether [name] holds what was typed, ignoring case.
+bool _nameMatches(String name, String query) =>
+    query.isEmpty || name.toLowerCase().contains(query.toLowerCase());
+
+/// The search box at the top of the Albums, Artists, Playlists and Folders
+/// tabs. It used to be a picture of one — the words "Search…" in a grey box
+/// that did nothing when tapped; now it filters the tab by name as you type,
+/// as the Songs tab's always did.
+class _MusicSearchField extends StatelessWidget {
+  const _MusicSearchField({required this.hint, required this.onChanged});
+  final String hint;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 36,
+      decoration: BoxDecoration(
+        color: AppColors.darkSurface,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          const SizedBox(width: 10),
+          const Icon(Icons.search, size: 18, color: AppColors.white50),
+          const SizedBox(width: 8),
+          Expanded(
+            child: TextField(
+              onChanged: onChanged,
+              textInputAction: TextInputAction.search,
+              style: const TextStyle(color: Colors.white, fontSize: 13),
+              decoration: InputDecoration(
+                isDense: true,
+                border: InputBorder.none,
+                hintText: hint,
+                hintStyle: const TextStyle(
+                  color: AppColors.white50,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// What a tab shows when nothing in it matches the search.
+class _NoMatch extends StatelessWidget {
+  const _NoMatch();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Text(AppStrings.of(context).searchNoMatches,
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: Colors.white54, fontSize: 14)),
+      ),
+    );
+  }
 }

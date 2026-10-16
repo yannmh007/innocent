@@ -219,6 +219,12 @@ Future<void> shoot(
     print(line);
   };
 
+  // SCREEN_A11Y=1: the accessibility guidelines Android's own scanner
+  // applies, on every screen — 48 dp tap targets, a name on everything
+  // tappable, text contrast — each failure a PROBLEM line.
+  final a11yCheck = Platform.environment['SCREEN_A11Y'] == '1';
+  final semantics = a11yCheck ? tester.ensureSemantics() : null;
+
   final key = GlobalKey();
   await tester.pumpWidget(ProviderScope(
     overrides: [...baseOverrides(), ...overrides],
@@ -269,6 +275,7 @@ Future<void> shoot(
   }
   final tag = '${name}_${phone.name}_${locale.languageCode}';
   await expectLater(find.byKey(key), matchesGoldenFile('out/$tag.png'));
+  if (a11yCheck) await _checkA11y(tester, tagFor);
   // Further down the page: one screen's height at a time, so nothing below
   // the fold goes unseen.
   for (var i = 1; i <= scrolls; i++) {
@@ -290,6 +297,7 @@ Future<void> shoot(
   // so the binding finds nothing pending; then hand error reporting back.
   await tester.pumpWidget(const SizedBox());
   await tester.pump(const Duration(minutes: 10));
+  semantics?.dispose();
   FlutterError.onError = binding;
   debugDisableShadows = true; // the binding checks it is back before tearDown
   // Overflow stripes are drawn into the picture, and also reported here, so
@@ -298,6 +306,37 @@ Future<void> shoot(
   if (ex != null) {
     // ignore: avoid_print
     print('SCREEN $tag: $ex');
+  }
+}
+
+/// THE ACCESSIBILITY GUIDELINES, AS ANDROID'S SCANNER APPLIES THEM.
+///
+/// Flutter ships the same three checks Google's Accessibility Scanner runs
+/// on a phone: a tap target of at least 48 × 48 dp, a name (label or
+/// tooltip) on everything that can be tapped, and text contrast of 4.5:1
+/// (3:1 for large text). Each failure is printed as a PROBLEM line naming
+/// the screen, so one run over the harness is an audit of every screen.
+Future<void> _checkA11y(WidgetTester tester, String tag) async {
+  for (final (name, guideline) in <(String, AccessibilityGuideline)>[
+    ('tap target', androidTapTargetGuideline),
+    ('no name', labeledTapTargetGuideline),
+    ('contrast', textContrastGuideline),
+  ]) {
+    final Evaluation result;
+    try {
+      result = await guideline.evaluate(tester);
+    } catch (e) {
+      // ignore: avoid_print
+      print('noise $tag: a11y $name could not be measured: $e');
+      continue;
+    }
+    if (result.passed) continue;
+    for (final line in result.reason!.split('\n').where((l) => l.trim().isNotEmpty)) {
+      final msg = 'PROBLEM $tag: a11y $name: ${line.trim()}';
+      problems.add(msg);
+      // ignore: avoid_print
+      print(msg);
+    }
   }
 }
 
@@ -346,7 +385,7 @@ void _checkUnderNavBar(WidgetTester tester, String tag, Phone phone) {
       return true;
     });
     if (inBar) return;
-    final where = '${kind} at y=${r.top.toStringAsFixed(0)}-${r.bottom.toStringAsFixed(0)} (bar from ${limit.toStringAsFixed(0)})';
+    final where = '$kind at y=${r.top.toStringAsFixed(0)}-${r.bottom.toStringAsFixed(0)} (bar from ${limit.toStringAsFixed(0)})';
     if (!seen.add(where)) return;
     final line = 'PROBLEM $tag: under the navigation bar: $where';
     problems.add(line);

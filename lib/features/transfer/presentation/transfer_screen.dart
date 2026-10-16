@@ -523,7 +523,7 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
           maxLength: 28,
           style: const TextStyle(color: Colors.white),
           decoration: const InputDecoration(
-            counterStyle: TextStyle(color: AppColors.white30),
+            counterStyle: TextStyle(color: AppColors.white55),
             enabledBorder: OutlineInputBorder(
                 borderSide: BorderSide(color: AppColors.white20)),
             focusedBorder: OutlineInputBorder(
@@ -858,7 +858,7 @@ class _PreparePane extends StatelessWidget {
                               icon: const Icon(Icons.close, size: 18),
                               color: AppColors.white50,
                               onPressed: () => onRemove(f.id),
-                              tooltip: 'Remove',
+                              tooltip: AppStrings.of(context).remove,
                             ),
                           ],
                         ),
@@ -1059,7 +1059,7 @@ class _RunningPane extends StatelessWidget {
                 IconButton(
                   icon: const Icon(Icons.copy_outlined, size: 18),
                   color: AppColors.white70,
-                  tooltip: 'Copy URL',
+                  tooltip: AppStrings.of(context).trCopyUrl,
                   onPressed: () {
                     Clipboard.setData(ClipboardData(text: shareUrl));
                     ScaffoldMessenger.of(context)
@@ -1401,9 +1401,9 @@ class _RunningPane extends StatelessWidget {
                 ),
               ),
               IconButton(
+                tooltip: MaterialLocalizations.of(context).copyButtonLabel,
                 icon: const Icon(Icons.copy_outlined, size: 16),
                 color: AppColors.white55,
-                visualDensity: VisualDensity.compact,
                 onPressed: () {
                   Clipboard.setData(ClipboardData(text: value));
                   ScaffoldMessenger.of(context)
@@ -1697,6 +1697,7 @@ class _ReceivePaneState extends ConsumerState<_ReceivePane> {
                         fontSize: 14.5)),
               ),
               IconButton(
+                tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
                 icon: const Icon(Icons.close, size: 18),
                 color: AppColors.white55,
                 onPressed: () {
@@ -2057,7 +2058,7 @@ class _ReceivePaneState extends ConsumerState<_ReceivePane> {
             style: const TextStyle(color: Colors.white),
             decoration: const InputDecoration(
               hintText: 'http://192.168.0.12:8765/abc123\u2026',
-              hintStyle: TextStyle(color: AppColors.white30),
+              hintStyle: TextStyle(color: AppColors.white55),
               prefixIcon: Icon(Icons.link, color: AppColors.white55),
               enabledBorder: OutlineInputBorder(
                   borderSide: BorderSide(color: AppColors.white20)),
@@ -2103,13 +2104,13 @@ class _ReceivePaneState extends ConsumerState<_ReceivePane> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
               Icon(Icons.history, color: AppColors.accentBlue, size: 20),
               SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Resume unfinished transfer',
+                  AppStrings.of(context).trResumeUnfinished,
                   style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w700,
@@ -2407,6 +2408,7 @@ class _ReceivePaneState extends ConsumerState<_ReceivePane> {
           style: const TextStyle(color: AppColors.white70, fontSize: 12));
     }
     return IconButton(
+      tooltip: AppStrings.of(context).download,
       icon: Icon(Icons.download,
           color: batchRunning ? AppColors.white30 : AppColors.accentBlue),
       onPressed: batchRunning ? null : () => notifier.downloadOne(f),

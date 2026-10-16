@@ -120,7 +120,7 @@ class _NetworkStreamScreenState extends ConsumerState<NetworkStreamScreen> {
                 onSubmitted: _play,
                 decoration: InputDecoration(
                   hintText: 'https://example.com/stream.m3u8',
-                  hintStyle: const TextStyle(color: Colors.white38),
+                  hintStyle: const TextStyle(color: Colors.white54),
                   filled: true,
                   fillColor: AppColors.darkSurfaceVariant,
                   border: OutlineInputBorder(
@@ -130,7 +130,7 @@ class _NetworkStreamScreenState extends ConsumerState<NetworkStreamScreen> {
                   prefixIcon: const Icon(Icons.link, color: Colors.white54),
                   suffixIcon: _urlController.text.isNotEmpty
                       ? IconButton(
-                          tooltip: 'Clear',
+                          tooltip: AppStrings.of(context).clear,
                           icon:
                               const Icon(Icons.clear, color: Colors.white54),
                           onPressed: () {

@@ -29,9 +29,13 @@ import 'features/music/data/music_audio_service.dart';
 import 'features/music/presentation/music_providers.dart';
 import 'features/onboarding/onboarding_screen.dart';
 import 'features/updater/data/update_download_service.dart';
+import 'core/ui/tooltip_label_binding.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  // The app's binding: Flutter's own, with every tooltip-named button given
+  // its name on Android too (tooltip_label_binding.dart). First of all, so
+  // nothing creates the plain one before it.
+  InnocentBinding.ensureInitialized();
 
   // v1.61 — FIRST, before anything that can fail.
   //

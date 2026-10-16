@@ -38,18 +38,18 @@ class PlayerScreenSettingsScreen extends ConsumerWidget {
       appBar: AppBar(title: Text(AppStrings.of(context).screenTitle)),
       body: ListView(
         children: [
-          const SettingsSectionHeader('Orientation'),
+          SettingsSectionHeader(AppStrings.of(context).pssOrientation),
           // Audit fix (standard high-quality): wire default orientation
           // to StringSetting.defaultPlayerOrientation. 'system' lets
           // the existing `screenAutoRotation` toggle and device
           // rotation-lock take over (no override). Specific modes
           // pin the player regardless of device lock.
           Builder(builder: (ctx) {
-            const optMap = <String, String>{
-              'Follow system': 'system',
-              'Landscape': 'landscape',
-              'Landscape (reverse)': 'landscapeReverse',
-              'Portrait': 'portrait',
+            final optMap = <String, String>{
+              AppStrings.of(context).pssFollowSystem: 'system',
+              AppStrings.of(context).pssLandscape: 'landscape',
+              AppStrings.of(context).pssLandscapeReverse: 'landscapeReverse',
+              AppStrings.of(context).pssPortrait: 'portrait',
             };
             final cur = ref
                 .watch(extraSettingsProvider)
@@ -57,16 +57,16 @@ class PlayerScreenSettingsScreen extends ConsumerWidget {
             final curLabel = optMap.entries
                 .firstWhere((e) => e.value == cur,
                     orElse: () =>
-                        const MapEntry('Follow system', 'system'))
+                        MapEntry(AppStrings.of(context).pssFollowSystem, 'system'))
                 .key;
             return SettingsNavTile(
-              title: 'Default orientation',
+              title: AppStrings.of(context).pssDefaultOrientation,
               subtitle:
-                  'Pin player orientation. "Follow system" respects Auto rotation toggle below. Currently: $curLabel',
+                  AppStrings.of(context).pssDefaultOrientationSub(curLabel),
               onTap: () async {
                 final picked = await showSettingsListDialog(
                   context: context,
-                  title: 'Default Orientation',
+                  title: AppStrings.of(context).pssDefaultOrientation,
                   options: optMap.keys.toList(),
                   currentValue: curLabel,
                 );
@@ -80,24 +80,24 @@ class PlayerScreenSettingsScreen extends ConsumerWidget {
             );
           }),
           _toggle(ref,
-              title: 'Auto rotation',
+              title: AppStrings.of(context).pssAutoRotation,
               subtitle:
-                  'Automatically rotate screen based on device orientation.',
+                  AppStrings.of(context).pssAutoRotationSub,
               setting: PlayerSetting.screenAutoRotation),
-          const SettingsSectionHeader('Display'),
+          SettingsSectionHeader(AppStrings.of(context).pssDisplay),
           _toggle(ref,
-              title: 'Full screen',
+              title: AppStrings.of(context).pssFullScreen,
               subtitle:
-                  'Hide system status bar and navigation bar during playback.',
+                  AppStrings.of(context).pssFullScreenSub,
               setting: PlayerSetting.screenFullScreen),
           _toggle(ref,
-              title: 'Keep screen on',
-              subtitle: 'Prevent screen from turning off during playback.',
+              title: AppStrings.of(context).pssKeepOn,
+              subtitle: AppStrings.of(context).pssKeepOnSub,
               setting: PlayerSetting.screenKeepOn),
-          const SettingsSectionHeader('Brightness'),
+          SettingsSectionHeader(AppStrings.of(context).pssBrightness),
           _toggle(ref,
-              title: 'Auto brightness',
-              subtitle: 'Use system brightness setting.',
+              title: AppStrings.of(context).pssAutoBrightness,
+              subtitle: AppStrings.of(context).pssAutoBrightnessSub,
               setting: PlayerSetting.screenAutoBrightness),
           // Audit fix (standard high-quality): wire Default brightness
           // to `IntSetting.defaultBrightnessPct`. Value -1 = "follow
@@ -108,21 +108,21 @@ class PlayerScreenSettingsScreen extends ConsumerWidget {
             final cur = ref
                 .watch(extraSettingsProvider)
                 .getInt(IntSetting.defaultBrightnessPct);
-            final label = cur < 0 ? 'Follow system' : '$cur%';
+            final label = cur < 0 ? AppStrings.of(context).pssFollowSystem : '$cur%';
             return SettingsNavTile(
-              title: 'Default brightness',
-              subtitle: 'Default brightness for new videos (overridden per-video). Currently: $label',
+              title: AppStrings.of(context).pssDefaultBrightness,
+              subtitle: AppStrings.of(context).pssDefaultBrightnessSub(label),
               onTap: () async {
                 // -1 represents 'follow system'; slider is 0..100.
                 final picked = await showSettingsSliderDialog(
                   context: context,
-                  title: 'Default Brightness (-1% = follow system)',
+                  title: AppStrings.of(context).pssDefaultBrightness,
                   currentValue: cur < 0 ? -1.0 : cur.toDouble(),
                   min: -1,
                   max: 100,
                   divisions: 101,
                   valueLabel: (v) =>
-                      v < 0 ? 'Follow system' : '${v.round()}%',
+                      v < 0 ? AppStrings.of(context).pssFollowSystem : '${v.round()}%',
                 );
                 if (picked == null) return;
                 await ref.read(extraSettingsProvider.notifier).setInt(
@@ -130,15 +130,6 @@ class PlayerScreenSettingsScreen extends ConsumerWidget {
               },
             );
           }),
-          const SettingsSectionHeader('Notch / Cutout'),
-          _toggle(ref,
-              title: 'Dim notch area',
-              subtitle: 'Dim the notch area to reduce visual distraction.',
-              setting: PlayerSetting.screenDimNotch),
-          _toggle(ref,
-              title: 'Use cutout area',
-              subtitle: 'Extend video to the display cutout area.',
-              setting: PlayerSetting.screenUseCutout),
           const SizedBox(height: 24),
         ],
       ),

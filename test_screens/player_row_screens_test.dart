@@ -25,6 +25,7 @@ Widget _row({required bool expanded, bool loopOn = true}) => Builder(
               height: 56,
               child: Row(children: <Widget>[
                 IconButton(
+                    tooltip: 'Back',
                     onPressed: () {},
                     icon: const Icon(Icons.arrow_back, color: Colors.white)),
                 // As the player's top bar: the title takes what is left.
@@ -77,6 +78,15 @@ void main() {
             onSelect: (_, __) {},
             onDismiss: () {}),
       ), phones: [large]);
+  // Landscape on a small phone: the keypad, the "play to the end" line and
+  // the buttons share 360 dp, the tightest the dialog gets.
+  screens('player_sleep_land', () => Scaffold(
+        backgroundColor: Colors.black,
+        body: SleepTimerDialog(
+            currentRemaining: const Duration(minutes: 44),
+            onSelect: (_, __) {},
+            onDismiss: () {}),
+      ), phones: [const Phone('land', Size(740, 360), top: 0, bottom: 0)]);
 }
 
 Widget _more() {

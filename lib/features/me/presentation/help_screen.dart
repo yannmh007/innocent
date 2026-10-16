@@ -8,51 +8,28 @@ import '../../../core/ui/nav_bar_space.dart';
 class HelpScreen extends StatelessWidget {
   const HelpScreen({super.key});
 
-  static const _faqItems = [
-    (
-      'How to play a video?',
-      'Open the Local tab, browse to a folder, and tap any video to start playback.'
-    ),
-    (
-      'How to change the decoder?',
-      'During playback, tap the decoder badge (HW/SW) at the top right of the player screen, or go to Settings > Decoder.'
-    ),
-    (
-      'How to add subtitles?',
-      'During playback, tap the subtitle icon in the top shortcut row. You can load subtitle files from your device storage.'
-    ),
-    (
-      'How to lock files in Private Folder?',
-      'Long press a video or tap the 3-dot menu > "Lock in Private Folder". Set a PIN on first use.'
-    ),
-    (
-      'How to use Background Play?',
-      'Enable it in Settings > Player > Background Play. When you switch apps, audio will continue playing.'
-    ),
-    (
-      'How to adjust playback speed?',
-      'During playback, tap the "1X" badge at the top left, or use the speed slider by swiping the shortcut row.'
-    ),
-    (
-      'How to transfer files?',
-      'Go to the Transfer tab. Tap SEND to share files, or RECEIVE to get files from another device.'
-    ),
-    (
-      'How to use gestures?',
-      'Swipe up/down on the left side to adjust brightness. Swipe up/down on the right side to adjust volume. Swipe left/right to seek.'
-    ),
-  ];
 
   @override
   Widget build(BuildContext context) {
+    final s = AppStrings.of(context);
+    final faqItems = <(String, String)>[
+      (s.hlpQ1, s.hlpA1),
+      (s.hlpQ2, s.hlpA2),
+      (s.hlpQ3, s.hlpA3),
+      (s.hlpQ4, s.hlpA4),
+      (s.hlpQ5, s.hlpA5),
+      (s.hlpQ6, s.hlpA6),
+      (s.hlpQ7, s.hlpA7),
+      (s.hlpQ8, s.hlpA8),
+    ];
     return Scaffold(
       backgroundColor: AppColors.darkBackground,
       appBar: AppBar(title: Text(AppStrings.of(context).help)),
       body: ListView.builder(
         padding: const EdgeInsets.all(16).plusNavBar(context),
-        itemCount: _faqItems.length,
+        itemCount: faqItems.length,
         itemBuilder: (_, i) {
-          final (question, answer) = _faqItems[i];
+          final (question, answer) = faqItems[i];
           return ExpansionTile(
             tilePadding: const EdgeInsets.symmetric(horizontal: 4),
             iconColor: AppColors.primaryBlue,

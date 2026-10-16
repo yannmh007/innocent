@@ -92,7 +92,7 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
             raw.toLowerCase().contains('playing') ||
             raw.toLowerCase().contains('preparing'))) {
       // Keep the real message (scan progress, playback, etc.) as-is.
-      return raw.startsWith('OK') ? 'Connected — the device is reachable.' : raw;
+      return raw.startsWith('OK') ? AppStrings.of(context).acReachable : raw;
     }
     // adbd refused the key: say that, not "check the port" — the pairing
     // card below is open for it.
@@ -104,11 +104,10 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
         low.contains('connect failed') ||
         low.contains('timed out') ||
         low.contains('timeout')) {
-      return "Not connected. Tap Connect — if that doesn't work, open Wireless "
-          "debugging (button above) and make sure it's still on, then try again.";
+      return AppStrings.of(context).acNotConnHelp;
     }
     if (raw.startsWith('OK') || low.contains('uid=')) {
-      return 'Connected — the device is reachable.';
+      return AppStrings.of(context).acReachable;
     }
     return raw;
   }
@@ -179,27 +178,21 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.gpp_maybe_outlined, color: Colors.orange, size: 20),
-              SizedBox(width: 8),
+              const Icon(Icons.gpp_maybe_outlined, color: Colors.orange, size: 20),
+              const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Update your phone before leaving Wireless debugging on',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                  AppStrings.of(context).acUpdateTitle,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 6),
           Text(
-            'This phone\u2019s security update is from $when. Android 14 '
-            'to 16 need the May 2026 update (or a newer Google Play system '
-            'update) to close a Wireless debugging flaw (CVE-2026-0073): '
-            'without it, a device on the same Wi-Fi can get in without '
-            'pairing. Until you update, turn Wireless debugging off when '
-            'you are not using it, and leave auto-reconnect after reboot '
-            'off.',
+            AppStrings.of(context).acUpdateBody(when),
             style: const TextStyle(fontSize: 12.5, height: 1.4),
           ),
           const SizedBox(height: 8),
@@ -213,12 +206,12 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
                 FilledButton.tonalIcon(
                   onPressed: _busy ? null : _turnOffWirelessDebugging,
                   icon: const Icon(Icons.wifi_off, size: 18),
-                  label: const Text('Turn it off now'),
+                  label: Text(AppStrings.of(context).acTurnOffNow),
                 ),
               OutlinedButton.icon(
                 onPressed: _busy ? null : _openWirelessDebugging,
                 icon: const Icon(Icons.settings, size: 18),
-                label: const Text('Open Wireless debugging'),
+                label: Text(AppStrings.of(context).acOpenWd),
               ),
             ],
           ),
@@ -241,13 +234,9 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
         if (ok) {
           _connected = false;
           _autoEnableOn = false;
-          _output = 'Wireless debugging is off, and auto-reconnect after '
-              'reboot is off. Turn it on again from Wireless debugging when '
-              'you next need Android/data — after updating the phone, '
-              'ideally.';
+          _output = AppStrings.of(context).acTurnedOff;
         } else {
-          _output = 'Could not switch it off from here. Open Wireless '
-              'debugging and turn it off there.';
+          _output = AppStrings.of(context).acCouldNotOff;
         }
       });
     } finally {
@@ -303,7 +292,7 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
       setState(() {
         _pairedBefore = true;
         _connectAddr.text = last;
-        _output = 'Reconnecting…';
+        _output = AppStrings.of(context).acReconnecting;
       });
       // Saved port first, then mDNS if it's stale (handles a changed port
       // after a reboot); also self-heals a stale "connected" socket.
@@ -313,11 +302,10 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
       setState(() {
         _connected = ok;
         _output = ok
-            ? 'Connected \u2014 the device is reachable.'
+            ? AppStrings.of(context).acReachable
             : AdbService.needsPairing(r)
                 ? r
-                : "Not connected yet. Tap Connect (you may need to re-open "
-                    "Wireless debugging first).";
+                : AppStrings.of(context).acNotConnYet;
       });
       if (ok) unawaited(_autoScanAfterConnect());
     } catch (e) {
@@ -541,7 +529,7 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
     if (!mounted || paths == null || paths.isEmpty) return;
     setState(() {
       _found = paths;
-      _output = 'Found ${paths.length} video(s) — added to Local.';
+      _output = AppStrings.of(context).acFoundAdded(paths.length);
     });
   }
 
@@ -562,11 +550,8 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
       if (!mounted) return;
       setState(() {
         _output = permanently
-            ? 'Notifications are turned off for Innocent, so the pairing '
-                'notification can\u2019t appear. Open Settings \u2192 Apps \u2192 '
-                'Innocent \u2192 Notifications and turn them on, then try again.'
-            : 'Please allow notifications so the pairing code notification can '
-                'appear, then tap "Pair from notification" again.';
+            ? AppStrings.of(context).acNotifOff
+            : AppStrings.of(context).acNotifAsk;
       });
       if (permanently) {
         await perm.openSystemSettings();
@@ -578,12 +563,7 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
     if (!mounted) return;
     setState(() {
       _pairingServiceOn = true;
-      _output = 'Ready to pair from the notification.\n\n'
-          '1. Tap "Open Wireless debugging" below.\n'
-          '2. Tap "Pair device with pairing code" — a 6-digit code appears.\n'
-          '3. Pull down the notification shade, tap "Reply" on the '
-          '"Enter the pairing code here" notification, type the code, and send.\n\n'
-          'No split-screen needed — this screen keeps working in the background.';
+      _output = AppStrings.of(context).acNotifReady;
     });
   }
 
@@ -592,7 +572,7 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
     if (!mounted) return;
     setState(() {
       _pairingServiceOn = false;
-      _output = 'Notification pairing stopped.';
+      _output = AppStrings.of(context).acNotifStopped;
     });
   }
 
@@ -705,9 +685,8 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
     setState(() {
       _busy = true;
       _output = code.length >= 6
-          ? 'Pairing…\nKeep the "Pair device with pairing code" dialog visible '
-              '(split-screen / pop-up window).'
-          : 'Connecting…';
+          ? AppStrings.of(context).acPairing
+          : AppStrings.of(context).acConnecting;
     });
 
     try {
@@ -755,35 +734,25 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
       showDialog<void>(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: const Text('Turn on Developer options first'),
-          content: const Text(
-            'Wireless debugging lives inside Developer options, which is '
-            'hidden by default.\n\n'
-            'To unlock it:\n'
-            '1. Open About phone.\n'
-            '2. Find "Build number" (sometimes under "Software information").\n'
-            '3. Tap it 7 times until it says "You are now a developer".\n\n'
-            'Then come back and tap "Open Wireless debugging" again.',
-          ),
+          title: Text(AppStrings.of(context).acDevOffTitle),
+          content: Text(AppStrings.of(context).acDevOffBody),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Close'),
+              child: Text(AppStrings.of(context).close),
             ),
             FilledButton(
               onPressed: () {
                 Navigator.pop(ctx);
                 AdbService.instance.openAboutPhone();
               },
-              child: const Text('Open About phone'),
+              child: Text(AppStrings.of(context).acOpenAbout),
             ),
           ],
         ),
       );
     } else if (r == 'failed') {
-      setState(() => _output =
-          "Couldn't open settings automatically. Open Settings → Developer "
-          'options → Wireless debugging manually.');
+      setState(() => _output = AppStrings.of(context).acOpenFailed);
     }
   }
 
@@ -792,7 +761,7 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
   /// if streaming fails — the same path a tap in Local takes.
   void _playAdbVideo(String path) {
     final name = path.split('/').last;
-    setState(() => _output = 'Playing "$name".');
+    setState(() => _output = AppStrings.of(context).acPlaying(name));
     context.push(Routes.player, extra: {'uri': 'adb://$path', 'title': name});
   }
 
@@ -802,13 +771,11 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
     final hp = _split(_pairAddr.text);
     final code = _code.text.trim();
     if (hp == null) {
-      setState(() => _output =
-          'Enter the pairing address as IP:Port — copy it exactly from the '
-          '"Pair device with pairing code" dialog, e.g. 192.168.1.5:42749');
+      setState(() => _output = AppStrings.of(context).acPairAddrHelp);
       return;
     }
     if (code.length < 6) {
-      setState(() => _output = 'Enter the 6-digit pairing code.');
+      setState(() => _output = AppStrings.of(context).acCodeHelp);
       return;
     }
     _run(
@@ -820,9 +787,7 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
   Future<void> _connect() async {
     final hp = _split(_connectAddr.text);
     if (hp == null) {
-      setState(() => _output =
-          'Enter the connect address as IP:Port — copy it exactly from the '
-          'main Wireless debugging screen, e.g. 192.168.1.5:32961');
+      setState(() => _output = AppStrings.of(context).acConnAddrHelp);
       return;
     }
     await _run(
@@ -848,8 +813,7 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
     setState(() {
       _busy = true;
       _found = [];
-      _output = 'Scanning Android/data and Android/obb for videos…\n'
-          '(this can take a while on a full device)';
+      _output = AppStrings.of(context).acScanning;
     });
     try {
       // Through the sync, so the Video tab is refreshed with what it finds.
@@ -861,8 +825,8 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
       setState(() {
         _found = paths;
         _output = paths.isEmpty
-            ? 'No videos found in Android/data or Android/obb.'
-            : 'Found ${paths.length} video(s).';
+            ? AppStrings.of(context).acNoneFound
+            : AppStrings.of(context).acFound(paths.length);
       });
     } catch (e) {
       if (mounted) setState(() => _output = '$e');
@@ -946,7 +910,7 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
     // text is always under Advanced → Details.
     final friendly = _output.isEmpty ? '' : _friendly(_output);
     final note = _busy ||
-            (_output.startsWith('ERROR') && !friendly.startsWith('Not connected'))
+            (_output.startsWith('ERROR') && friendly != s.acNotConnHelp)
         ? friendly
         : '';
     return Container(
@@ -1221,7 +1185,6 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
                         child: FilledButton.tonal(
                           onPressed: _busy ? null : e.onAction,
                           style: FilledButton.styleFrom(
-                            visualDensity: VisualDensity.compact,
                           ),
                           child: Text(e.action!),
                         ),
@@ -1802,53 +1765,52 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
         onPressed: () => setState(() => _showManual = !_showManual),
         icon: Icon(_showManual ? Icons.expand_less : Icons.expand_more),
         label: Text(_showManual
-            ? 'Hide manual IP:Port'
-            : 'Manual IP:Port (if the code alone fails)'),
+            ? AppStrings.of(context).acManualHide
+            : AppStrings.of(context).acManualShow),
       ),
       if (_showManual) ...[
         const SizedBox(height: 8),
-        const Text(
-          'Use this if "Pair" with only the code fails — usually because '
-          'the network blocks mDNS (e.g. a VPN forcing a 169.254.x.x '
-          'address). Copy the IP:Port exactly as shown on screen.',
-          style: TextStyle(fontSize: 12),
+        Text(
+          AppStrings.of(context).acManualHint,
+          style: const TextStyle(fontSize: 12),
         ),
         const SizedBox(height: 12),
-        const Text('Pair (one time)',
-            style: TextStyle(fontWeight: FontWeight.bold)),
+        Text(AppStrings.of(context).acPairOnce,
+            style: const TextStyle(fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
         TextField(
           controller: _pairAddr,
           keyboardType: TextInputType.url,
           autocorrect: false,
-          decoration: const InputDecoration(
-            labelText: 'Pairing IP:Port (from the pairing dialog)',
-            hintText: 'e.g. 192.168.1.5:42749',
+          decoration: InputDecoration(
+            labelText: AppStrings.of(context).acPairAddrLabel,
+            hintText: AppStrings.of(context).acEg('192.168.1.5:42749'),
             border: OutlineInputBorder(),
           ),
         ),
         const SizedBox(height: 8),
         FilledButton(
           onPressed: _busy ? null : _pair,
-          child: const Text('Pair (manual)'),
+          child: Text(AppStrings.of(context).acPairManual),
         ),
         const SizedBox(height: 20),
-        const Text('Connect', style: TextStyle(fontWeight: FontWeight.bold)),
+        Text(AppStrings.of(context).acConnect,
+            style: const TextStyle(fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
         TextField(
           controller: _connectAddr,
           keyboardType: TextInputType.url,
           autocorrect: false,
-          decoration: const InputDecoration(
-            labelText: 'Connect IP:Port (from Wireless debugging screen)',
-            hintText: 'e.g. 192.168.1.5:32961',
+          decoration: InputDecoration(
+            labelText: AppStrings.of(context).acConnAddrLabel,
+            hintText: AppStrings.of(context).acEg('192.168.1.5:32961'),
             border: OutlineInputBorder(),
           ),
         ),
         const SizedBox(height: 8),
         FilledButton(
           onPressed: _busy ? null : _connect,
-          child: const Text('Connect & run id (manual)'),
+          child: Text(AppStrings.of(context).acConnectManual),
         ),
       ],
     ];

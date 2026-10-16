@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
+import 'transient_prompt.dart';
 
 /// Centralized snackbar helper for consistent durations + styling across the app.
 ///
@@ -61,8 +62,10 @@ class AppSnackbar {
       {Duration duration = const Duration(seconds: 5)}) {
     final messenger = messengerKey.currentState;
     if (messenger == null) return;
-    messenger.hideCurrentSnackBar();
-    messenger.showSnackBar(
+    // Transient: under TalkBack an action never times out, so it closes when
+    // the user moves on instead (transient_prompt.dart).
+    TransientPrompt.show(
+      messenger,
       SnackBar(
         content: Text(message),
         duration: duration,

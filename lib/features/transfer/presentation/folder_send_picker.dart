@@ -231,6 +231,7 @@ class _FolderSendPickerState extends ConsumerState<FolderSendPicker> {
             style: const TextStyle(color: Colors.white),
           ),
           leading: IconButton(
+            tooltip: MaterialLocalizations.of(context).backButtonTooltip,
             icon: const Icon(Icons.arrow_back),
             onPressed: () async {
               // `context.mounted`, not `mounted`: `context` here is `build`'s

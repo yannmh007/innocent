@@ -32,32 +32,32 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final _pageController = PageController();
   int _currentPage = 0;
 
-  static const _pages = <_OnboardingPage>[
-    _OnboardingPage(
-      icon: Icons.folder_special_outlined,
-      title: 'Find your videos',
-      body:
-          'Innocent scans your device and organizes videos by folder. All data stays on your phone — nothing is uploaded.',
-      color: Color(0xFF2196F3),
-    ),
-    _OnboardingPage(
-      icon: Icons.touch_app_outlined,
-      title: 'Gesture controls',
-      body:
-          'Swipe up/down on left for brightness, right for volume. Swipe horizontally to seek. Long-press to change speed. Pinch to zoom.',
-      color: Color(0xFFE91E63),
-    ),
-    _OnboardingPage(
-      icon: Icons.person_outline,
-      title: 'Make it yours',
-      body:
-          'Favourite videos, build playlists, save bookmarks, and continue watching from where you left off. Find it all in the Me tab.',
-      color: Color(0xFF4CAF50),
-    ),
-  ];
+  /// The three pages, in the app's language (the phone's, on a first run).
+  List<_OnboardingPage> _pages(AppStrings s) => <_OnboardingPage>[
+        _OnboardingPage(
+          icon: Icons.folder_special_outlined,
+          title: s.obFindTitle,
+          body: s.obFindBody,
+          color: const Color(0xFF2196F3),
+        ),
+        _OnboardingPage(
+          icon: Icons.touch_app_outlined,
+          title: s.obGestureTitle,
+          body: s.obGestureBody,
+          color: const Color(0xFFE91E63),
+        ),
+        _OnboardingPage(
+          icon: Icons.person_outline,
+          title: s.obYoursTitle,
+          body: s.obYoursBody,
+          color: const Color(0xFF4CAF50),
+        ),
+      ];
+
+  static const int _pageCount = 3;
 
   void _next() {
-    if (_currentPage < _pages.length - 1) {
+    if (_currentPage < _pageCount - 1) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.ease,
@@ -103,15 +103,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               child: PageView.builder(
                 controller: _pageController,
                 onPageChanged: (i) => setState(() => _currentPage = i),
-                itemCount: _pages.length,
-                itemBuilder: (_, i) => _PageView(page: _pages[i]),
+                itemCount: _pageCount,
+                itemBuilder: (_, i) =>
+                    _PageView(page: _pages(AppStrings.of(context))[i]),
               ),
             ),
             // Page indicator
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: List.generate(
-                _pages.length,
+                _pageCount,
                 (i) => AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   margin: const EdgeInsets.symmetric(horizontal: 4),
@@ -143,9 +144,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     ),
                   ),
                   child: Text(
-                    _currentPage == _pages.length - 1
-                        ? 'Get started'
-                        : 'Next',
+                    _currentPage == _pageCount - 1
+                        ? AppStrings.of(context).obStart
+                        : AppStrings.of(context).obNext,
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,

@@ -506,6 +506,7 @@ class _PrivateFolderScreenState extends ConsumerState<PrivateFolderScreen>
               scrolledUnderElevation: 0,
               surfaceTintColor: Colors.transparent,
               leading: IconButton(
+                tooltip: AppStrings.of(context).clearSelection,
                 icon: const Icon(Icons.close),
                 onPressed: _exitSelection,
               ),
@@ -544,6 +545,7 @@ class _PrivateFolderScreenState extends ConsumerState<PrivateFolderScreen>
               scrolledUnderElevation: 0,
               surfaceTintColor: Colors.transparent,
               leading: IconButton(
+                tooltip: MaterialLocalizations.of(context).backButtonTooltip,
                 icon: const Icon(Icons.arrow_back),
                 onPressed: () => setState(() {
                   _searching = false;
@@ -565,6 +567,7 @@ class _PrivateFolderScreenState extends ConsumerState<PrivateFolderScreen>
               actions: [
                 if (_query.isNotEmpty)
                   IconButton(
+                    tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
                     icon: const Icon(Icons.close),
                     onPressed: () => setState(() {
                       _query = '';
@@ -582,6 +585,7 @@ class _PrivateFolderScreenState extends ConsumerState<PrivateFolderScreen>
               // default back button leaves the Private Folder screen.
               leading: (_unlocked && _openFolderId != null)
                   ? IconButton(
+                      tooltip: MaterialLocalizations.of(context).backButtonTooltip,
                       icon: const Icon(Icons.arrow_back),
                       onPressed: () => setState(() => _openFolderId = null),
                     )
@@ -1038,6 +1042,7 @@ class _PrivateFolderScreenState extends ConsumerState<PrivateFolderScreen>
         style: const TextStyle(color: AppColors.white55, fontSize: 12),
       ),
       trailing: IconButton(
+        tooltip: AppStrings.of(context).moreOptions,
         icon: const Icon(Icons.more_vert,
             color: AppColors.darkOnSurfaceMuted, size: 20),
         onPressed: () => _folderMenu(f),
@@ -1050,6 +1055,7 @@ class _PrivateFolderScreenState extends ConsumerState<PrivateFolderScreen>
     return RemoteTappable(
       onTap: () => setState(() => _openFolderId = f.id),
       onLongPress: () => _folderMenu(f),
+      semanticLabel: f.name,
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white.withOpacity(0.04),
@@ -1115,6 +1121,7 @@ class _PrivateFolderScreenState extends ConsumerState<PrivateFolderScreen>
       trailing: _selectionMode
           ? null
           : IconButton(
+              tooltip: AppStrings.of(context).moreOptions,
               icon: const Icon(Icons.more_vert,
                   color: AppColors.darkOnSurfaceMuted, size: 20),
               onPressed: () => _entryMenu(e),
@@ -1134,6 +1141,8 @@ class _PrivateFolderScreenState extends ConsumerState<PrivateFolderScreen>
           _selectionMode ? _toggleSelected(e) : _openEntry(e, kind),
       onLongPress: () =>
           _selectionMode ? null : _enterSelection(e),
+      semanticLabel: e.videoTitle,
+      selected: _selectionMode ? selected : null,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(8),
         child: Stack(

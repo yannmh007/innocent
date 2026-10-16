@@ -205,9 +205,9 @@ class _StatusSaverScreenState extends State<StatusSaverScreen>
 
     if (!mounted) return;
     if (savedLocation != null) {
-      AppSnackbar.global('Saved to $savedLocation');
+      AppSnackbar.global(AppStrings.current.ssvSavedTo(savedLocation));
     } else {
-      AppSnackbar.globalError('Could not save — storage not writable');
+      AppSnackbar.globalError(AppStrings.current.ssvNotWritable);
     }
   }
 
@@ -227,6 +227,7 @@ class _StatusSaverScreenState extends State<StatusSaverScreen>
               top: 4,
               right: 4,
               child: IconButton(
+                tooltip: MaterialLocalizations.of(ctx).closeButtonTooltip,
                 icon: const Icon(Icons.close, color: Colors.white),
                 onPressed: () => Navigator.of(ctx).pop(),
               ),
@@ -266,7 +267,7 @@ class _StatusSaverScreenState extends State<StatusSaverScreen>
         title: Text(AppStrings.of(context).statusSaver),
         actions: [
           IconButton(
-            tooltip: 'Refresh',
+            tooltip: AppStrings.of(context).refresh,
             icon: const Icon(Icons.refresh, size: 22),
             onPressed: _loading ? null : _load,
           ),
@@ -300,8 +301,8 @@ class _StatusSaverScreenState extends State<StatusSaverScreen>
     if (files.isEmpty) {
       return _emptyState(
         isVideo ? Icons.videocam_outlined : Icons.image_outlined,
-        isVideo ? 'No status videos found' : 'No status images found',
-        'Open a status on WhatsApp first, then come back and refresh.',
+        isVideo ? AppStrings.of(context).ssvNoVideos : AppStrings.of(context).ssvNoImages,
+        AppStrings.of(context).ssvHowTo,
       );
     }
     return RefreshIndicator(
@@ -325,6 +326,9 @@ class _StatusSaverScreenState extends State<StatusSaverScreen>
       borderRadius: BorderRadius.circular(10),
       child: RemoteTappable(
         onTap: () => isVideo ? _playVideo(file) : _previewImage(file),
+        semanticLabel: file.uri.pathSegments.isEmpty
+            ? null
+            : file.uri.pathSegments.last,
         child: Stack(
           fit: StackFit.expand,
           children: [

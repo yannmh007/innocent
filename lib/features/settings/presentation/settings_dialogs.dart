@@ -103,11 +103,11 @@ Future<double?> showSettingsSliderDialog({
                 children: [
                   Text(
                     valueLabel?.call(min) ?? min.toStringAsFixed(1),
-                    style: const TextStyle(color: Colors.white38, fontSize: 11),
+                    style: const TextStyle(color: Colors.white54, fontSize: 11),
                   ),
                   Text(
                     valueLabel?.call(max) ?? max.toStringAsFixed(1),
-                    style: const TextStyle(color: Colors.white38, fontSize: 11),
+                    style: const TextStyle(color: Colors.white54, fontSize: 11),
                   ),
                 ],
               ),
@@ -157,7 +157,7 @@ Future<String?> showSettingsTextDialog({
             style: const TextStyle(color: Colors.white),
             decoration: InputDecoration(
               hintText: hintText,
-              hintStyle: const TextStyle(color: Colors.white30),
+              hintStyle: const TextStyle(color: Colors.white54),
               filled: true,
               fillColor: AppColors.white06,
               border: OutlineInputBorder(

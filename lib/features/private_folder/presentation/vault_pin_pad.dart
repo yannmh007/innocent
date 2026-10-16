@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/ui/tv_focus.dart';
+import '../../../core/localization/app_strings.dart';
 
 /// The Private Folder's PIN surface: a dot indicator over a purpose-built
 /// numeric keypad.
@@ -620,13 +621,13 @@ class VaultPinPadState extends State<VaultPinPad>
                   icon: Icons.fingerprint,
                   size: keySize,
                   onTap: widget.busy ? null : widget.onBiometric,
-                  semantics: 'Unlock with fingerprint',
+                  semantics: AppStrings.of(context).ppFingerprint,
                 )
               : _action(
                   icon: Icons.close,
                   size: keySize,
                   onTap: _entry.isEmpty ? null : _clearAll,
-                  semantics: 'Clear',
+                  semantics: AppStrings.of(context).ppClear,
                 )),
           gap(_digit('0', keySize)),
           // Bottom-right: backspace until the entry is long enough to submit,
@@ -640,7 +641,7 @@ class VaultPinPadState extends State<VaultPinPad>
                   onTap: _submit,
                   filled: true,
                   busy: widget.busy,
-                  semantics: 'Confirm',
+                  semantics: AppStrings.of(context).ppConfirm,
                 )
               : _action(
                   icon: Icons.backspace_outlined,
@@ -651,7 +652,7 @@ class VaultPinPadState extends State<VaultPinPad>
                   // occupying the bottom-left there is no dedicated clear.
                   onLongPress: _entry.isEmpty ? null : _clearAll,
                   busy: widget.busy,
-                  semantics: 'Backspace',
+                  semantics: AppStrings.of(context).ppBackspace,
                 )),
         ]),
       ],

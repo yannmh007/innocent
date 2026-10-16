@@ -35,7 +35,7 @@ Future<void> showAudioEffectSheet(BuildContext context, {int initialTab = 1}) {
   return showGeneralDialog(
     context: context,
     barrierDismissible: true,
-    barrierLabel: 'Audio Effect',
+    barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
     barrierColor: Colors.black.withOpacity(0.18),
     transitionDuration: const Duration(milliseconds: 240),
     pageBuilder: (ctx, _, __) {
@@ -373,8 +373,8 @@ class _AudioEffectSheetState extends ConsumerState<AudioEffectSheet>
       height: 52,
       child: Row(
         children: [
-          _tabItem('Audio Effect', 0),
-          _tabItem('Equalizer', 1),
+          _tabItem(AppStrings.of(context).aeAudioEffect, 0),
+          _tabItem(AppStrings.of(context).equalizerTitle, 1),
         ],
       ),
     );
@@ -485,7 +485,7 @@ class _AudioEffectSheetState extends ConsumerState<AudioEffectSheet>
                 fontSize: 16.5,
                 fontWeight: FontWeight.w600)),
         const Spacer(),
-        Text(_enabled ? 'On' : 'Off',
+        Text(_enabled ? AppStrings.of(context).hfOn : AppStrings.of(context).off,
             style: const TextStyle(color: AppColors.white55, fontSize: 14)),
         const SizedBox(width: 6),
         Transform.scale(
@@ -524,7 +524,7 @@ class _AudioEffectSheetState extends ConsumerState<AudioEffectSheet>
             },
             child: Center(
               child: Text(
-                p.label,
+                p.index == null ? AppStrings.of(context).aeCustom : p.label,
                 style: TextStyle(
                   color: active ? _mxActive : AppColors.white50,
                   fontSize: 15,
@@ -756,7 +756,7 @@ class _AudioEffectSheetState extends ConsumerState<AudioEffectSheet>
                   color: active ? Colors.white : AppColors.white70, size: 22),
               const SizedBox(height: 6),
               Text(
-                name,
+                effectLabel(AppStrings.of(context), name),
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: active ? Colors.white : AppColors.white70,
@@ -782,13 +782,13 @@ class _AudioEffectSheetState extends ConsumerState<AudioEffectSheet>
       child: Row(
         children: [
           _dial(
-            label: 'Bass Boost',
+            label: AppStrings.of(context).aeBassBoost,
             strength: _bassBoostStrength,
             size: dialSize,
             onChanged: _setBassBoost,
           ),
           _dial(
-            label: 'Virtualizer',
+            label: AppStrings.of(context).aeVirtualizer,
             strength: _virtualizerStrength,
             size: dialSize,
             onChanged: _setVirtualizer,
@@ -991,3 +991,15 @@ class _DialPainter extends CustomPainter {
   bool shouldRepaint(_DialPainter o) =>
       o.t != t || o.fill != fill || o.track != track || o.accent != accent;
 }
+
+/// A built-in preset's name in the app's language. The presets are keyed by
+/// their English names (stored as the active effect); this is only for show.
+String effectLabel(AppStrings s, String name) => switch (name) {
+      'Original' => s.aeOriginal,
+      'Clarity' => s.aeClarity,
+      'Bass Boost' => s.aeBassBoost,
+      'Treble Boost' => s.aeTrebleBoost,
+      'Movie' => s.aeMovie,
+      'Music' => s.aeMusic,
+      _ => name,
+    };

@@ -5,7 +5,6 @@ import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
-import 'package:share_plus/share_plus.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/ui/mx_dialog.dart';
@@ -28,6 +27,7 @@ import '../../../../core/localization/app_strings.dart';
 import '../../../../core/services/thumbnail/thumbnail_cache.dart';
 import 'media_identity_migrator.dart';
 import '../../../../core/services/subtitles/subtitle_formats.dart';
+import 'bulk_actions.dart';
 import '../../../../core/ui/app_sheet.dart';
 class _OptionItem {
   final IconData icon;
@@ -93,7 +93,7 @@ class VideoOptionMenu extends ConsumerWidget {
     // already succeeded — the user should be told either way.
     if (sheetContext.mounted) _dismiss(sheetContext);
     AppSnackbar.global(
-        added ? '⏰ Added to Watch Later' : 'Already in Watch Later');
+        added ? AppStrings.current.vomWatchLaterAdded : AppStrings.current.vomWatchLaterAlready);
   }
 
   Future<void> _toggleFavourite(BuildContext sheetContext, WidgetRef ref) async {
@@ -102,7 +102,7 @@ class VideoOptionMenu extends ConsumerWidget {
     // As in `_addToWatchLater`: guard the dismiss, not the snackbar.
     if (sheetContext.mounted) _dismiss(sheetContext);
     AppSnackbar.global(
-        added ? '★ Added to favourites' : '☆ Removed from favourites');
+        added ? AppStrings.current.vomFavAdded : AppStrings.current.vomFavRemoved);
   }
 
   Future<void> _addToPlaylist(BuildContext sheetContext, WidgetRef ref) async {
@@ -117,13 +117,13 @@ class VideoOptionMenu extends ConsumerWidget {
     if (result != null) AppSnackbar.global(result);
   }
 
-  Future<void> _share(BuildContext sheetContext) async {
+  Future<void> _share(BuildContext sheetContext, WidgetRef ref) async {
     _dismiss(sheetContext);
-    try {
-      await Share.share(video.uri, subject: video.title);
-    } catch (e) {
-      AppSnackbar.globalError('Share failed: $e');
-    }
+    // The video itself, as the bulk Share sends it — not its path, which
+    // means nothing to the app it goes to. An Android/data video is fetched
+    // out first.
+    if (!hostContext.mounted) return;
+    await BulkActions.share(hostContext, ref, videos: <Video>[video]);
   }
 
   /// Phase 45 (audit): Search Subtitle online. MX Player V3 lets users
@@ -159,8 +159,7 @@ class VideoOptionMenu extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Paste a direct link to a .srt / .ass / .vtt / .ssa / .sub file '
-              'for "${video.title}".',
+              AppStrings.current.vomPasteSubLink(video.title),
               style: const TextStyle(color: Colors.white70, fontSize: 13),
             ),
             const SizedBox(height: 12),
@@ -172,7 +171,7 @@ class VideoOptionMenu extends ConsumerWidget {
               style: const TextStyle(color: Colors.white),
               decoration: const InputDecoration(
                 hintText: 'https://example.com/subtitle.srt',
-                hintStyle: TextStyle(color: Colors.white38, fontSize: 13),
+                hintStyle: TextStyle(color: Colors.white54, fontSize: 13),
                 enabledBorder: UnderlineInputBorder(
                   borderSide: BorderSide(color: Colors.white24),
                 ),
@@ -239,7 +238,7 @@ class VideoOptionMenu extends ConsumerWidget {
         ..hideCurrentSnackBar()
         ..showSnackBar(SnackBar(
           content: Text(
-              'Subtitle saved. Reopen the video to use it.\n${p.basename(path)}'),
+              AppStrings.current.vomSubSaved(p.basename(path))),
           duration: const Duration(seconds: 4),
           behavior: SnackBarBehavior.floating,
         ));
@@ -264,7 +263,7 @@ class VideoOptionMenu extends ConsumerWidget {
         title: Text(AppStrings.of(sheetContext).moveToBinTitle,
             style: const TextStyle(color: Colors.white)),
         content: Text(
-          'This will hide "${video.title}" from your library. You can restore it from Recycle Bin later.',
+          AppStrings.current.vomBinBody(video.title),
           style: const TextStyle(color: Colors.white70),
         ),
         actions: [
@@ -295,7 +294,7 @@ class VideoOptionMenu extends ConsumerWidget {
           ),
         );
     if (sheetContext.mounted) _dismiss(sheetContext);
-    AppSnackbar.global('Moved to Recycle Bin');
+    AppSnackbar.global(AppStrings.current.vomMovedToBin);
   }
 
   Future<void> _showInfo(BuildContext sheetContext) async {
@@ -315,12 +314,12 @@ class VideoOptionMenu extends ConsumerWidget {
     // Close the options sheet first — the progress dialog stands alone.
     _dismiss(sheetContext);
     if (path == null || !path.startsWith('/')) {
-      AppSnackbar.global('This source has no local file to convert.');
+      AppSnackbar.global(AppStrings.current.vomNoLocalFile);
       return;
     }
     final svc = ref.read(audioExtractionServiceProvider);
     if (svc.isBusy) {
-      AppSnackbar.global('Another conversion is already running.');
+      AppSnackbar.global(AppStrings.current.vomConvertBusy);
       return;
     }
 
@@ -351,9 +350,9 @@ class VideoOptionMenu extends ConsumerWidget {
     }
 
     if (result.success) {
-      AppSnackbar.global('Saved to Innocent/Music');
+      AppSnackbar.global(AppStrings.current.vomSavedMusic);
     } else {
-      AppSnackbar.global(result.error ?? 'Conversion failed.');
+      AppSnackbar.global(result.error ?? AppStrings.current.vomConvertFailed);
     }
   }
 
@@ -499,7 +498,7 @@ class VideoOptionMenu extends ConsumerWidget {
     if (!hasPin) {
       if (sheetContext.mounted) _dismiss(sheetContext);
       AppSnackbar.global(
-          'Set up Private Folder PIN first (Me → Private Folder)');
+          AppStrings.current.vomPinFirst);
       return;
     }
     // v0.51 requirement: verify identity BEFORE locking, so a passer-by
@@ -568,7 +567,7 @@ class VideoOptionMenu extends ConsumerWidget {
       }
     } catch (e) {
       if (sheetContext.mounted) _dismiss(sheetContext);
-      AppSnackbar.globalError('Lock failed: $e');
+      AppSnackbar.globalError(AppStrings.current.vomLockFailed(e));
     }
   }
 
@@ -587,7 +586,7 @@ class VideoOptionMenu extends ConsumerWidget {
     final filePath = _resolveFilePath(video.uri);
     if (filePath == null) {
       if (sheetContext.mounted) _dismiss(sheetContext);
-      AppSnackbar.global("Can't rename this video (system-managed file)");
+      AppSnackbar.global(AppStrings.current.vomCantRename);
       return;
     }
     final originalName = p.basenameWithoutExtension(filePath);
@@ -610,14 +609,14 @@ class VideoOptionMenu extends ConsumerWidget {
 
     if (trimmed.contains('/') || trimmed.contains('\\')) {
       if (sheetContext.mounted) _dismiss(sheetContext);
-      AppSnackbar.global('Name cannot contain / or \\');
+      AppSnackbar.global(AppStrings.current.vomBadName);
       return;
     }
 
     final newPath = p.join(dir, '$trimmed$ext');
     if (await File(newPath).exists()) {
       if (sheetContext.mounted) _dismiss(sheetContext);
-      AppSnackbar.global('A file with that name already exists');
+      AppSnackbar.global(AppStrings.current.vomNameTaken);
       return;
     }
     try {
@@ -638,7 +637,7 @@ class VideoOptionMenu extends ConsumerWidget {
       AppSnackbar.global(msgRenamed);
     } catch (e) {
       if (sheetContext.mounted) _dismiss(sheetContext);
-      AppSnackbar.globalError('Rename failed: $e');
+      AppSnackbar.globalError(AppStrings.current.vomRenameFailed(e));
     }
   }
 
@@ -658,7 +657,7 @@ class VideoOptionMenu extends ConsumerWidget {
     final filePath = _resolveFilePath(video.uri);
     if (filePath == null) {
       if (sheetContext.mounted) _dismiss(sheetContext);
-      AppSnackbar.global("Can't delete this video (system-managed file)");
+      AppSnackbar.global(AppStrings.current.vomCantDelete);
       return;
     }
 
@@ -671,7 +670,7 @@ class VideoOptionMenu extends ConsumerWidget {
         .get(PlayerSetting.generalAllowEditing)) {
       if (sheetContext.mounted) _dismiss(sheetContext);
       AppSnackbar.global(
-          'Editing is turned off in Settings → General → Allow editing');
+          AppStrings.current.vomEditingOff);
       return;
     }
     final confirmed = await showDialog<bool>(
@@ -681,7 +680,7 @@ class VideoOptionMenu extends ConsumerWidget {
         title: Text(AppStrings.of(sheetContext).deleteVideoTitle,
             style: const TextStyle(color: Colors.white)),
         content: Text(
-          'Permanently delete "${video.title}"?\n\nThis cannot be undone.',
+          AppStrings.current.vomDeleteBody(video.title),
           style: const TextStyle(color: Colors.white70),
         ),
         actions: [
@@ -721,7 +720,7 @@ class VideoOptionMenu extends ConsumerWidget {
       AppSnackbar.global(msgDeleted);
     } catch (e) {
       if (sheetContext.mounted) _dismiss(sheetContext);
-      AppSnackbar.globalError('Delete failed: $e');
+      AppSnackbar.globalError(AppStrings.current.vomDeleteFailed(e));
     }
   }
 
@@ -779,12 +778,12 @@ class VideoOptionMenu extends ConsumerWidget {
       // dragging the sheet up.
       _OptionItem(
         isFav ? Icons.favorite : Icons.favorite_outline,
-        isFav ? 'Remove from favourites' : 'Favourite',
+        isFav ? AppStrings.of(context).vomRemoveFav : AppStrings.of(context).favourite,
         () => _toggleFavourite(context, ref),
       ),
       _OptionItem(
         Icons.import_export,
-        'File Transfer',
+        AppStrings.of(context).fileTransfer,
         () {
           _dismiss(context);
           // v0.50 fix: this action used to just OPEN the Transfer tab —
@@ -810,54 +809,54 @@ class VideoOptionMenu extends ConsumerWidget {
       ),
       _OptionItem(
         Icons.lock_outline,
-        'Lock in Private Folder',
+        AppStrings.of(context).lockInPrivateFolder,
         () => _lockInPrivateFolder(context, ref),
       ),
       _OptionItem(
         Icons.info_outline,
-        'Properties',
+        AppStrings.of(context).properties,
         () => _showInfo(context),
       ),
       _OptionItem(
         Icons.share,
-        'Share',
-        () => _share(context),
+        AppStrings.of(context).share,
+        () => _share(context, ref),
       ),
       _OptionItem(
         Icons.audiotrack,
-        'Convert to Audio',
+        AppStrings.of(context).vomConvertAudio,
         () => _convertToAudio(context, ref),
       ),
       _OptionItem(
         Icons.drive_file_rename_outline,
-        'Rename',
+        AppStrings.of(context).rename,
         () => _rename(context, ref),
       ),
       // ── Everything below the fold: reached by dragging the sheet up. ──
       _OptionItem(
         Icons.playlist_add,
-        'Add To Playlist',
+        AppStrings.of(context).addToPlaylist,
         () => _addToPlaylist(context, ref),
       ),
       _OptionItem(
         Icons.watch_later_outlined,
-        'Add to Watch Later',
+        AppStrings.of(context).vomAddWatchLater,
         () => _addToWatchLater(context, ref),
       ),
       _OptionItem(
         Icons.subtitles_outlined,
-        'Add Subtitle from URL',
+        AppStrings.of(context).addSubtitleFromUrl,
         () => _searchSubtitle(context, ref),
       ),
       _OptionItem(
         Icons.delete_sweep_outlined,
-        'Move to Recycle Bin',
+        AppStrings.of(context).vomMoveToBin,
         () => _moveToRecycleBin(context, ref),
         isDestructive: true,
       ),
       _OptionItem(
         Icons.delete_forever,
-        'Delete',
+        AppStrings.of(context).delete,
         () => _deletePermanent(context, ref),
         isDestructive: true,
       ),
@@ -1027,9 +1026,9 @@ class _PlaylistPickerSheetState extends ConsumerState<_PlaylistPickerSheet> {
           controller: controller,
           autofocus: true,
           style: const TextStyle(color: Colors.white),
-          decoration: const InputDecoration(
-            hintText: 'Playlist name',
-            hintStyle: TextStyle(color: Colors.white38),
+          decoration: InputDecoration(
+            hintText: AppStrings.of(context).playlistName,
+            hintStyle: TextStyle(color: Colors.white54),
           ),
         ),
         actions: [
@@ -1052,7 +1051,7 @@ class _PlaylistPickerSheetState extends ConsumerState<_PlaylistPickerSheet> {
         .read(playlistsProvider.notifier)
         .addVideo(playlist.id, widget.video.uri);
     if (!mounted) return;
-    Navigator.of(context).pop('Added to "$name"');
+    Navigator.of(context).pop(AppStrings.of(context).vomAddedTo(name));
   }
 
   @override
@@ -1114,7 +1113,7 @@ class _PlaylistPickerSheetState extends ConsumerState<_PlaylistPickerSheet> {
                 // nothing about the identifier actually being used here — so
                 // check the one that is.
                 if (!context.mounted) return;
-                Navigator.of(context).pop('Added to "${pl.name}"');
+                Navigator.of(context).pop(AppStrings.of(context).vomAddedTo(pl.name));
               },
             ),
           ),
@@ -1227,7 +1226,7 @@ class _VideoInfoDialogState extends ConsumerState<VideoInfoDialog> {
   String _fmtSizeExact(int bytes) {
     final grouped = bytes.toString().replaceAllMapped(
         RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (m) => '${m[1]},');
-    return '${_fmtSize(bytes)} ($grouped bytes)';
+    return '${_fmtSize(bytes)} (${AppStrings.of(context).vomBytes(grouped)})';
   }
 
   String _fmtDuration(Duration d) {
@@ -1237,17 +1236,13 @@ class _VideoInfoDialogState extends ConsumerState<VideoInfoDialog> {
     return h > 0 ? '$h:$m:$s' : '$m:$s';
   }
 
-  static const _months = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-  ];
-
   String _fmtDateTime(DateTime? dt) {
     if (dt == null) return '—';
-    final h12 = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
-    final mm = dt.minute.toString().padLeft(2, '0');
-    final ap = dt.hour < 12 ? 'AM' : 'PM';
-    return '${_months[dt.month - 1]} ${dt.day}, ${dt.year} at $h12:$mm $ap';
+    // The phone's own way of writing a date and a time, in the app's
+    // language ("Oct 5, 2026 at 3:07 PM" was English whatever the setting).
+    final l = MaterialLocalizations.of(context);
+    return '${l.formatShortDate(dt)}  '
+        '${l.formatTimeOfDay(TimeOfDay.fromDateTime(dt))}';
   }
 
   /// Estimated overall bit rate from size + duration (kbps). MX Player
@@ -1456,8 +1451,8 @@ class _RenameDialogState extends State<_RenameDialog> {
         autofocus: true,
         style: const TextStyle(color: Colors.white),
         decoration: InputDecoration(
-          hintText: 'New name',
-          hintStyle: const TextStyle(color: Colors.white38),
+          hintText: AppStrings.of(context).vomNewName,
+          hintStyle: const TextStyle(color: Colors.white54),
           filled: true,
           fillColor: AppColors.darkSurfaceVariant,
           border: OutlineInputBorder(
@@ -1519,14 +1514,14 @@ class _AudioConvertProgressDialog extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Row(
+              Row(
                 children: [
                   Icon(Icons.audiotrack,
                       color: AppColors.accentBlue, size: 22),
                   SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'Converting to Audio',
+                      AppStrings.of(context).vomConverting,
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 17,
@@ -1564,7 +1559,7 @@ class _AudioConvertProgressDialog extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        pct == null ? 'Preparing…' : '$pct%',
+                        pct == null ? AppStrings.of(context).vomPreparing : '$pct%',
                         style: const TextStyle(
                             color: AppColors.darkOnSurfaceMuted, fontSize: 12),
                       ),

@@ -151,6 +151,7 @@ class _VaultPinFlowScreenState extends State<VaultPinFlowScreen> {
             scrolledUnderElevation: 0,
             surfaceTintColor: Colors.transparent,
             leading: IconButton(
+              tooltip: MaterialLocalizations.of(context).backButtonTooltip,
               icon: const Icon(Icons.arrow_back, color: Colors.white),
               onPressed: () {
                 if (!_stepBack()) Navigator.of(context).pop(false);

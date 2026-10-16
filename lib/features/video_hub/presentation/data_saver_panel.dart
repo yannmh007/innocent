@@ -59,7 +59,9 @@ class DataSaverPanel extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              Row(
+              // One control for TalkBack: the switch, named by its title.
+              MergeSemantics(
+                child: Row(
                 children: <Widget>[
                   _Badge(on: on),
                   const SizedBox(width: VH.s3),
@@ -84,6 +86,7 @@ class DataSaverPanel extends ConsumerWidget {
                         notifier.setValue(PlayerSetting.albumDataSaver, v),
                   ),
                 ],
+              ),
               ),
               AnimatedSize(
                 duration: VH.normal,
@@ -319,6 +322,7 @@ class DataSaverScreen extends StatelessWidget {
         elevation: 0,
         title: Text(s.vhDataSaver, style: kAppBarTitleStyle.copyWith(color: VH.textPrimary)),
         leading: IconButton(
+          tooltip: MaterialLocalizations.of(context).backButtonTooltip,
           icon: const Icon(Icons.arrow_back, color: VH.textPrimary),
           onPressed: () => Navigator.of(context).maybePop(),
         ),
@@ -365,7 +369,6 @@ class DataSaverBanner extends ConsumerWidget {
             onPressed: onTurnOff,
             style: TextButton.styleFrom(
               foregroundColor: _green,
-              visualDensity: VisualDensity.compact,
               padding: const EdgeInsets.symmetric(horizontal: VH.s2),
             ),
             child: Text(s.vhSaverTurnOff,

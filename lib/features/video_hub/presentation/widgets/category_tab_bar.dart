@@ -80,10 +80,9 @@ class _CategoryTabBarState extends State<CategoryTabBar> {
       height: CategoryTabBar.height,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(
-          horizontal: VH.gutter,
-          vertical: VH.s2,
-        ),
+        // No vertical padding here: each pill takes the bar's whole height
+        // as its target and draws itself in the middle (_CategoryPill).
+        padding: const EdgeInsets.symmetric(horizontal: VH.gutter),
         itemCount: widget.categories.length,
         separatorBuilder: (_, __) => const SizedBox(width: VH.s2),
         itemBuilder: (context, index) {
@@ -166,11 +165,22 @@ class _CategoryPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final Color fg = selected ? VH.textInverse : VH.textSecondary;
 
+    // THE TARGET IS THE BAR'S HEIGHT, the pill is drawn 9 dp in from top
+    // and bottom: a 30 dp pill was the tap target, under the 48 dp every
+    // Android guideline asks for (SCREEN_A11Y=1). A tap beside the pill,
+    // above or below it, now lands too. The pill's own ripple stays out of
+    // the semantics: two taps on one node split it, and the 30 dp half was
+    // what TalkBack and the scanner then saw.
     return Semantics(
       button: true,
       selected: selected,
       label: label,
-      child: InkWell(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 9),
+        child: ExcludeSemantics(child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(VH.rPill),
         child: AnimatedContainer(
@@ -206,6 +216,8 @@ class _CategoryPill extends StatelessWidget {
             ],
           ),
         ),
+      ),
+      )),
       ),
     );
   }

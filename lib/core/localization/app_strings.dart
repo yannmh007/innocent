@@ -34,6 +34,13 @@ class AppStrings {
   /// Locale-independent fallback used when no delegate is in scope.
   static final AppStrings _fallback = AppStrings(const Locale('en'));
 
+  /// The strings of the language on screen now, for the few places that
+  /// speak after their widget is gone: a toast raised once a sheet has
+  /// closed itself (AppSnackbar.global) has no context left to ask. Set
+  /// each time the delegate loads a locale; English until the first load.
+  static AppStrings get current => _current ?? _fallback;
+  static AppStrings? _current;
+
   /// Locales the app can display. Add a map below + a new [Locale] here to
   /// grow the list.
   static const List<Locale> supportedLocales = <Locale>[
@@ -67,6 +74,16 @@ class AppStrings {
 
   String _s(String key) =>
       (_byLocale[locale.languageCode] ?? _en)[key] ?? _en[key] ?? key;
+
+  /// A counted string, '{n}' filled in: the `${key}One` form for exactly
+  /// one where the language has one ("1 file", not "1 file(s)"), the plain
+  /// form otherwise. Burmese and Thai do not inflect, so only English carries
+  /// the One forms; a language without one falls back to its plain form.
+  String _count(String key, int n) {
+    final table = _byLocale[locale.languageCode] ?? _en;
+    final one = n == 1 ? table['${key}One'] : null;
+    return (one ?? _s(key)).replaceAll('{n}', '$n');
+  }
 
   // ── Typed accessors ────────────────────────────────────────────────
   // Bottom navigation
@@ -614,14 +631,11 @@ class AppStrings {
   String get resetSettingsTitle => _s('resetSettingsTitle');
   String get resetSettingsBody => _s('resetSettingsBody');
   String get settingsResetDone => _s('settingsResetDone');
-  String get clearFontCacheTitle => _s('clearFontCacheTitle');
-  String get fontCacheCleared => _s('fontCacheCleared');
   String get languageRestartNote => _s('languageRestartNote');
   String get exportFailed => _s('exportFailed');
   String get importFailed => _s('importFailed');
   String get noExportFile => _s('noExportFile');
   String get moreLanguagesOnWay => _s('moreLanguagesOnWay');
-  String get colorFormat => _s('colorFormat');
   String get screenTitle => _s('screenTitle');
   String get navigationTitle => _s('navigationTitle');
   String get controlsTitle => _s('controlsTitle');
@@ -629,7 +643,6 @@ class AppStrings {
   String get subtitleTextTitle => _s('subtitleTextTitle');
   String get subtitleLayoutTitle => _s('subtitleLayoutTitle');
   String get soonBadge => _s('soonBadge');
-  String get debugLogsExported => _s('debugLogsExported');
   String get findYourVideos => _s('findYourVideos');
   String get scanningVideos => _s('scanningVideos');
   String get errorLoadingFoldersPrefix => _s('errorLoadingFoldersPrefix');
@@ -701,7 +714,7 @@ class AppStrings {
   String get shareScanHint => _s('shareScanHint');
   String get urlCopied => _s('urlCopied');
   String get stopSharing => _s('stopSharing');
-  String trSharingNow(int n) => _s('trSharingNow').replaceFirst('{n}', '$n');
+  String trSharingNow(int n) => _count('trSharingNow', n);
   String get trSharingComputer => _s('trSharingComputer');
   String get trViaWifi => _s('trViaWifi');
   String get trReceivingNow => _s('trReceivingNow');
@@ -722,8 +735,7 @@ class AppStrings {
   String get trPcStep2 => _s('trPcStep2');
   String get trPcStep3 => _s('trPcStep3');
   String trPcConnected(int n) => _s('trPcConnected').replaceFirst('{n}', '$n');
-  String trPcSharingFiles(int n) =>
-      _s('trPcSharingFiles').replaceFirst('{n}', '$n');
+  String trPcSharingFiles(int n) => _count('trPcSharingFiles', n);
   String get trPcStart => _s('trPcStart');
   String get trScanTitle => _s('trScanTitle');
   String get trScanBody => _s('trScanBody');
@@ -1036,13 +1048,9 @@ class AppStrings {
   String get openingRecentlyPlayed => _s('openingRecentlyPlayed');
   String get storagePermissionNeeded => _s('storagePermissionNeeded');
   String get statusPermissionHint => _s('statusPermissionHint');
-  String get openingPrivacyPolicy => _s('openingPrivacyPolicy');
-  String get openingTerms => _s('openingTerms');
   String get personalPlayerApp => _s('personalPlayerApp');
   String get storageManagement => _s('storageManagement');
   String get storageUsage => _s('storageUsage');
-  String get classicThemes => _s('classicThemes');
-  String get noInternetThemes => _s('noInternetThemes');
   String get themeApplied => _s('themeApplied');
   String get openSourceLicenses => _s('openSourceLicenses');
   String get personalProject => _s('personalProject');
@@ -1159,22 +1167,6 @@ class AppStrings {
   String get alignCenter => _s('alignCenter');
   String get alignRight => _s('alignRight');
   String get subImproveStrokeDesc => _s('subImproveStrokeDesc');
-  String get subVerticalPos => _s('subVerticalPos');
-  String get subVerticalPosTitle => _s('subVerticalPosTitle');
-  String get subVerticalPosDesc => _s('subVerticalPosDesc');
-  String get subHorizontalAlign => _s('subHorizontalAlign');
-  String get subHorizontalAlignTitle => _s('subHorizontalAlignTitle');
-  String get subSidePadding => _s('subSidePadding');
-  String get subSidePaddingTitle => _s('subSidePaddingTitle');
-  String get subSidePaddingDesc => _s('subSidePaddingDesc');
-  String get subBottomMargin => _s('subBottomMargin');
-  String get subBottomMarginTitle => _s('subBottomMarginTitle');
-  String get subBottomMarginDesc => _s('subBottomMarginDesc');
-  String get subShowBackground => _s('subShowBackground');
-  String get subBgBlack50 => _s('subBgBlack50');
-  String get subBgBlack75 => _s('subBgBlack75');
-  String get subBgDarkGray => _s('subBgDarkGray');
-  String get subBgColorActiveWhen => _s('subBgColorActiveWhen');
   String get currently => _s('currently');
   String get shortcuts => _s('shortcuts');
   String get unknownTab => _s('unknownTab');
@@ -1350,8 +1342,8 @@ class AppStrings {
 
   String get vaultFileMissing => _s('vaultFileMissing');
 
-  String someFilesFailed(Object n) => _s('someFilesFailed').replaceFirst('{n}', '$n');
-  String filesAddedOk(Object n) => _s('filesAddedOk').replaceFirst('{n}', '$n');
+  String someFilesFailed(int n) => _count('someFilesFailed', n);
+  String filesAddedOk(int n) => _count('filesAddedOk', n);
 
   String get forgotPin => _s('forgotPin');
   String get recoverVault => _s('recoverVault');
@@ -1698,6 +1690,14 @@ class AppStrings {
   String get adbTipTranssion => _s('adbTipTranssion');
   String get adbNotSupported => _s('adbNotSupported');
   String get hfTitle => _s('hfTitle');
+  String get playerSurface => _s('playerSurface');
+  String get playerSurfaceHint => _s('playerSurfaceHint');
+  String get themeAdaptive => _s('themeAdaptive');
+  String get themeLight => _s('themeLight');
+  String get themeDark => _s('themeDark');
+  String get themeUsing => _s('themeUsing');
+  String get themeComingSoon => _s('themeComingSoon');
+  String get themeNew => _s('themeNew');
   String get fvTitle => _s('fvTitle');
   String get fvAppSection => _s('fvAppSection');
   String get fvAppSectionHint => _s('fvAppSectionHint');
@@ -1711,9 +1711,12 @@ class AppStrings {
   String get fvHideAll => _s('fvHideAll');
   String get fvShowAll => _s('fvShowAll');
   String get fvEmpty => _s('fvEmpty');
-  String fvHiddenSnack(Object n) => _s('fvHiddenSnack').replaceFirst('{n}', '$n');
-  String fvFooter(Object n) => _s('fvFooter').replaceFirst('{n}', '$n');
-  String fvVideos(Object n) => _s('fvVideos').replaceFirst('{n}', '$n');
+  String fvHiddenSnack(int n) => _count('fvHiddenSnack', n);
+  String fvFooter(int n) => _count('fvFooter', n);
+  String fvVideos(int n) => _count('fvVideos', n);
+  String folderRowLabel(String name, int n) => _s('folderRowLabel')
+      .replaceFirst('{name}', name)
+      .replaceFirst('{videos}', vhAlbumVideos(n));
   String get fvUndo => _s('fvUndo');
   String get fvManage => _s('fvManage');
   String get hfNeedTitle => _s('hfNeedTitle');
@@ -1749,7 +1752,7 @@ class AppStrings {
   String get hfInApps => _s('hfInApps');
   String get hfBucketPhotos => _s('hfBucketPhotos');
   String get hfBucketAudio => _s('hfBucketAudio');
-  String hfSkipped(int n) => _s('hfSkipped').replaceAll('{n}', '$n');
+  String hfSkipped(int n) => _count('hfSkipped', n);
   String get hfConnectTitle => _s('hfConnectTitle');
   String get hfConnectBody => _s('hfConnectBody');
   String get hfOpenAdb => _s('hfOpenAdb');
@@ -1932,6 +1935,721 @@ class AppStrings {
   String get vhLibraryDownloadsHint => _s('vhLibraryDownloadsHint');
   String get vhLibrarySoon => _s('vhLibrarySoon');
 
+  String songsCount(int n) => _count('songsCount', n);
+  String minutesCount(int n) => _count('minutesCount', n);
+
+  String get psTitleBar => _s('psTitleBar');
+  String get psShowTitle => _s('psShowTitle');
+  String get psShowTitleSub => _s('psShowTitleSub');
+  String get psShowClock => _s('psShowClock');
+  String get psShowClockSub => _s('psShowClockSub');
+  String get psShowSourceUrl => _s('psShowSourceUrl');
+  String get psShowSourceUrlSub => _s('psShowSourceUrlSub');
+  String get psLayout => _s('psLayout');
+  String get psToolbarPosition => _s('psToolbarPosition');
+  String psToolbarPositionSub(Object v) => _s('psToolbarPositionSub').replaceFirst('{v}', '$v');
+  String get psToolbarTop => _s('psToolbarTop');
+  String get psToolbarBottom => _s('psToolbarBottom');
+
+  String get pssOrientation => _s('pssOrientation');
+  String get pssFollowSystem => _s('pssFollowSystem');
+  String get pssLandscape => _s('pssLandscape');
+  String get pssLandscapeReverse => _s('pssLandscapeReverse');
+  String get pssPortrait => _s('pssPortrait');
+  String get pssDefaultOrientation => _s('pssDefaultOrientation');
+  String pssDefaultOrientationSub(Object v) => _s('pssDefaultOrientationSub').replaceFirst('{v}', '$v');
+  String get pssAutoRotation => _s('pssAutoRotation');
+  String get pssAutoRotationSub => _s('pssAutoRotationSub');
+  String get pssDisplay => _s('pssDisplay');
+  String get pssFullScreen => _s('pssFullScreen');
+  String get pssFullScreenSub => _s('pssFullScreenSub');
+  String get pssKeepOn => _s('pssKeepOn');
+  String get pssKeepOnSub => _s('pssKeepOnSub');
+  String get pssBrightness => _s('pssBrightness');
+  String get pssAutoBrightness => _s('pssAutoBrightness');
+  String get pssAutoBrightnessSub => _s('pssAutoBrightnessSub');
+  String get pssDefaultBrightness => _s('pssDefaultBrightness');
+  String pssDefaultBrightnessSub(Object v) => _s('pssDefaultBrightnessSub').replaceFirst('{v}', '$v');
+
+  String get pcLock => _s('pcLock');
+  String get pcLockAll => _s('pcLockAll');
+  String get pcLockRotation => _s('pcLockRotation');
+  String get pcLockTouch => _s('pcLockTouch');
+  String get pcLockMode => _s('pcLockMode');
+  String pcLockModeSub(Object v) => _s('pcLockModeSub').replaceFirst('{v}', '$v');
+  String get pcLockOnRotation => _s('pcLockOnRotation');
+  String get pcLockOnRotationSub => _s('pcLockOnRotationSub');
+
+  String secondsCount(int n) => _count('secondsCount', n);
+  String get pnSeekBar => _s('pnSeekBar');
+  String get pnShowSeekBar => _s('pnShowSeekBar');
+  String get pnShowSeekBarSub => _s('pnShowSeekBarSub');
+  String get pnSeekPreview => _s('pnSeekPreview');
+  String get pnSeekPreviewSub => _s('pnSeekPreviewSub');
+  String get pnSeekInterval => _s('pnSeekInterval');
+  String pnSeekIntervalSub(Object v) => _s('pnSeekIntervalSub').replaceFirst('{v}', '$v');
+  String get pnButtons => _s('pnButtons');
+  String get pnShowPrevNext => _s('pnShowPrevNext');
+  String get pnShowPrevNextSub => _s('pnShowPrevNextSub');
+  String get pnNextPrev => _s('pnNextPrev');
+  String pnSeekPm(Object v) => _s('pnSeekPm').replaceFirst('{v}', '$v');
+  String get pnFwdBack => _s('pnFwdBack');
+  String pnFwdBackSub(Object v) => _s('pnFwdBackSub').replaceFirst('{v}', '$v');
+
+  String get spInterface => _s('spInterface');
+  String get spScreenSub => _s('spScreenSub');
+  String get spControlsSub => _s('spControlsSub');
+  String get spNavigationSub => _s('spNavigationSub');
+  String get spDoubleBack => _s('spDoubleBack');
+  String get spDoubleBackSub => _s('spDoubleBackSub');
+  String get spQuickZoom => _s('spQuickZoom');
+  String get spQuickZoomSub => _s('spQuickZoomSub');
+  String get spPinControls => _s('spPinControls');
+  String get spPinControlsSub => _s('spPinControlsSub');
+  String get spHideDelay => _s('spHideDelay');
+  String spHideDelaySub(Object v) => _s('spHideDelaySub').replaceFirst('{v}', '$v');
+  String get spPlayback => _s('spPlayback');
+  String get spResume => _s('spResume');
+  String get spResumeAsk => _s('spResumeAsk');
+  String get spResumeAlways => _s('spResumeAlways');
+  String get spResumeNever => _s('spResumeNever');
+  String spResumeSub(Object v) => _s('spResumeSub').replaceFirst('{v}', '$v');
+  String get spResumeFirst => _s('spResumeFirst');
+  String get spResumeFirstSub => _s('spResumeFirstSub');
+  String get spDefaultSpeed => _s('spDefaultSpeed');
+  String get spRemember => _s('spRemember');
+  String get spRememberSub => _s('spRememberSub');
+  String get spBackToList => _s('spBackToList');
+  String get spBackToListSub => _s('spBackToListSub');
+  String get spPreviewSeek => _s('spPreviewSeek');
+  String get spPreviewSeekSub => _s('spPreviewSeekSub');
+  String get spPreviewSeekNet => _s('spPreviewSeekNet');
+  String get spPreviewSeekNetSub => _s('spPreviewSeekNetSub');
+  String get spFastSeek => _s('spFastSeek');
+  String get spFastSeekSub => _s('spFastSeekSub');
+  String get spPlayAlone => _s('spPlayAlone');
+  String get spPlayAloneSub => _s('spPlayAloneSub');
+  String get spMediaButtons => _s('spMediaButtons');
+  String get spMediaButtonsSub => _s('spMediaButtonsSub');
+  String get spNextPrevFf => _s('spNextPrevFf');
+  String get spNextPrevFfSub => _s('spNextPrevFfSub');
+  String get spTogglePlay => _s('spTogglePlay');
+  String get spTogglePlaySub => _s('spTogglePlaySub');
+  String get spSmartPrev => _s('spSmartPrev');
+  String get spSmartPrevSub => _s('spSmartPrevSub');
+  String get spSuppressError => _s('spSuppressError');
+  String get spSuppressErrorSub => _s('spSuppressErrorSub');
+  String get spCustomPip => _s('spCustomPip');
+  String get spCustomPipSub => _s('spCustomPipSub');
+  String get spBackground => _s('spBackground');
+  String get spBgMode => _s('spBgMode');
+  String spBgModeSub(Object v) => _s('spBgModeSub').replaceFirst('{v}', '$v');
+  String get spBgPip => _s('spBgPip');
+  String get spBgPlay => _s('spBgPlay');
+  String get spBgStop => _s('spBgStop');
+  String get spBgAudio => _s('spBgAudio');
+  String get spBgAudioSub => _s('spBgAudioSub');
+  String get spMisc => _s('spMisc');
+  String get spLimitResize => _s('spLimitResize');
+  String get spLimitResizeSub => _s('spLimitResizeSub');
+  String get spLoadingCircle => _s('spLoadingCircle');
+
+  String daysCount(int n) => _count('daysCount', n);
+  String get slAppearance => _s('slAppearance');
+  String get slFloating => _s('slFloating');
+  String get slFloatingSub => _s('slFloatingSub');
+  String get slNewPeriod => _s('slNewPeriod');
+  String slNewPeriodSub(Object v) => _s('slNewPeriodSub').replaceFirst('{v}', '$v');
+  String get slScan => _s('slScan');
+  String get slExtensions => _s('slExtensions');
+  String slExtensionsOn(int n) => _count('slExtensionsOn', n);
+  String get slNomedia => _s('slNomedia');
+  String get slNomediaSub => _s('slNomediaSub');
+  String get slShowHidden => _s('slShowHidden');
+  String get slShowHiddenSub => _s('slShowHiddenSub');
+  String get slSafTitle => _s('slSafTitle');
+  String slSafGranted(Object v) => _s('slSafGranted').replaceFirst('{v}', '$v');
+  String get slSafBlocked => _s('slSafBlocked');
+  String get slSafGrant => _s('slSafGrant');
+  String slSafNotNeeded(Object v) => _s('slSafNotNeeded').replaceFirst('{v}', '$v');
+  String get slSafGeneric => _s('slSafGeneric');
+  String get slSafNone => _s('slSafNone');
+  String slSafEmpty(Object v) => _s('slSafEmpty').replaceFirst('{v}', '$v');
+  String slSafFound(Object v, int n) => _count('slSafFound', n).replaceFirst('{v}', '$v');
+  String get slSafClear => _s('slSafClear');
+  String slSafClearSub(int n) => _count('slSafClearSub', n);
+  String get slSafCleared => _s('slSafCleared');
+
+  String get langNone => _s('langNone');
+  String get langEnglish => _s('langEnglish');
+  String get langJapanese => _s('langJapanese');
+  String get langKorean => _s('langKorean');
+  String get langChinese => _s('langChinese');
+  String get langMyanmar => _s('langMyanmar');
+  String get langThai => _s('langThai');
+  String get langHindi => _s('langHindi');
+  String get langVietnamese => _s('langVietnamese');
+  String get saAuto => _s('saAuto');
+  String get saSpeaker => _s('saSpeaker');
+  String get saHeadphones => _s('saHeadphones');
+  String get saBluetooth => _s('saBluetooth');
+  String get saOutput => _s('saOutput');
+  String get saBoost => _s('saBoost');
+  String get saBoostSub => _s('saBoostSub');
+  String get saLoudness => _s('saLoudness');
+  String get saLoudnessSub => _s('saLoudnessSub');
+  String get saSystemVolume => _s('saSystemVolume');
+  String get saSystemVolumeSub => _s('saSystemVolumeSub');
+  String get saPauseHeadset => _s('saPauseHeadset');
+  String get saPauseHeadsetSub => _s('saPauseHeadsetSub');
+  String get saFadeStart => _s('saFadeStart');
+  String get saFadeSeek => _s('saFadeSeek');
+  String get saEffects => _s('saEffects');
+  String get saEffectsSub => _s('saEffectsSub');
+  String get saPassthrough => _s('saPassthrough');
+  String get saPassthroughSub => _s('saPassthroughSub');
+  String get saLanguage => _s('saLanguage');
+  String saLanguageSub(Object v) => _s('saLanguageSub').replaceFirst('{v}', '$v');
+  String get saDelay => _s('saDelay');
+  String saDelaySub(Object v) => _s('saDelaySub').replaceFirst('{v}', '$v');
+
+  String get ssFolder => _s('ssFolder');
+  String get ssFolderSame => _s('ssFolderSame');
+  String get ssFolderHint => _s('ssFolderHint');
+  String get ssAutoDetect => _s('ssAutoDetect');
+  String get ssEncoding => _s('ssEncoding');
+  String ssEncodingSub(Object v) => _s('ssEncodingSub').replaceFirst('{v}', '$v');
+  String get ssLanguage => _s('ssLanguage');
+  String ssLanguageSub(Object v) => _s('ssLanguageSub').replaceFirst('{v}', '$v');
+  String get ssSync => _s('ssSync');
+  String ssSyncSub(Object v) => _s('ssSyncSub').replaceFirst('{v}', '$v');
+  String get ssHwSync => _s('ssHwSync');
+  String ssHwSyncSub(Object v) => _s('ssHwSyncSub').replaceFirst('{v}', '$v');
+  String get ssAppearance => _s('ssAppearance');
+  String get ssText => _s('ssText');
+  String get ssTextSub => _s('ssTextSub');
+  String get ssLayout => _s('ssLayout');
+  String get ssLayoutSub => _s('ssLayoutSub');
+  String get ssProcessing => _s('ssProcessing');
+  String get ssItalic => _s('ssItalic');
+  String get ssItalicSub => _s('ssItalicSub');
+
+  String get slyPosition => _s('slyPosition');
+  String get slyVertical => _s('slyVertical');
+  String slyVerticalSub(Object v) => _s('slyVerticalSub').replaceFirst('{v}', '$v');
+  String get slyLeft => _s('slyLeft');
+  String get slyCenter => _s('slyCenter');
+  String get slyRight => _s('slyRight');
+  String get slyHorizontal => _s('slyHorizontal');
+  String slyCurrently(Object v) => _s('slyCurrently').replaceFirst('{v}', '$v');
+  String get slySpacing => _s('slySpacing');
+  String get slyPadX => _s('slyPadX');
+  String slyPadXSub(Object v) => _s('slyPadXSub').replaceFirst('{v}', '$v');
+  String get slyPadY => _s('slyPadY');
+  String slyPadYSub(Object v) => _s('slyPadYSub').replaceFirst('{v}', '$v');
+  String get slyBackground => _s('slyBackground');
+  String get slyShowBg => _s('slyShowBg');
+  String get slyShowBgSub => _s('slyShowBgSub');
+  String get slyBlack50 => _s('slyBlack50');
+  String get slyBlack75 => _s('slyBlack75');
+  String get slyDarkGray => _s('slyDarkGray');
+  String get slyNone => _s('slyNone');
+  String get slyBgColor => _s('slyBgColor');
+  String slyBgColorSub(Object v) => _s('slyBgColorSub').replaceFirst('{v}', '$v');
+
+  String get sdHw => _s('sdHw');
+  String get sdAutoDefault => _s('sdAutoDefault');
+  String get sdNeverHw => _s('sdNeverHw');
+  String get sdLocalOnly => _s('sdLocalOnly');
+  String get sdAlwaysHw => _s('sdAlwaysHw');
+  String get sdStrategy => _s('sdStrategy');
+  String get sdHwPlusLocal => _s('sdHwPlusLocal');
+  String get sdHwPlusLocalSub => _s('sdHwPlusLocalSub');
+  String get sdHwPlusNet => _s('sdHwPlusNet');
+  String get sdHwPlusNetSub => _s('sdHwPlusNetSub');
+  String get sdTryHw => _s('sdTryHw');
+  String get sdTryHwSub => _s('sdTryHwSub');
+  String get sdTryHwPlus => _s('sdTryHwPlus');
+  String get sdTryHwPlusSub => _s('sdTryHwPlusSub');
+  String get sdSw => _s('sdSw');
+  String get sdSwLocal => _s('sdSwLocal');
+  String get sdSwLocalSub => _s('sdSwLocalSub');
+  String get sdSwNet => _s('sdSwNet');
+  String get sdSwNetSub => _s('sdSwNetSub');
+  String get sdAutoRecommended => _s('sdAutoRecommended');
+  String get sdCores => _s('sdCores');
+  String sdCoresSub(Object v) => _s('sdCoresSub').replaceFirst('{v}', '$v');
+  String get sdSpeedup => _s('sdSpeedup');
+  String get sdSpeedupSub => _s('sdSpeedupSub');
+  String get sdGeneral => _s('sdGeneral');
+  String get sdEfficient => _s('sdEfficient');
+  String get sdEfficientSub => _s('sdEfficientSub');
+  String get sdDeinterlace => _s('sdDeinterlace');
+  String get sdDeinterlaceSub => _s('sdDeinterlaceSub');
+
+  String get sgUserAgent => _s('sgUserAgent');
+  String get sgUserAgentDefault => _s('sgUserAgentDefault');
+  String get sgUserAgentSub => _s('sgUserAgentSub');
+  String get sgUserAgentHint => _s('sgUserAgentHint');
+  String get sgQuit => _s('sgQuit');
+  String get sgQuitSub => _s('sgQuitSub');
+  String get sgPrivacy => _s('sgPrivacy');
+  String get sgPrivacySub => _s('sgPrivacySub');
+  String get sgFullAccess => _s('sgFullAccess');
+  String get sgFullAccessSub => _s('sgFullAccessSub');
+  String get sgEdit => _s('sgEdit');
+  String get sgAllowEdit => _s('sgAllowEdit');
+  String get sgAllowEditSub => _s('sgAllowEditSub');
+  String get sgDeleteSubs => _s('sgDeleteSubs');
+  String get sgUserData => _s('sgUserData');
+  String get sgClearHistory => _s('sgClearHistory');
+  String get sgClearHistorySub => _s('sgClearHistorySub');
+  String get sgClearThumbs => _s('sgClearThumbs');
+  String get sgClearThumbsSub => _s('sgClearThumbsSub');
+  String get sgCacheThumbs => _s('sgCacheThumbs');
+  String get sgBackup => _s('sgBackup');
+  String get sgReset => _s('sgReset');
+  String get sgResetSub => _s('sgResetSub');
+  String get sgExport => _s('sgExport');
+  String get sgExportSub => _s('sgExportSub');
+  String get sgImport => _s('sgImport');
+  String get sgImportSub => _s('sgImportSub');
+
+  String get sdvDebug => _s('sdvDebug');
+  String get sdvBuffer => _s('sdvBuffer');
+  String get sdvBufferSub => _s('sdvBufferSub');
+  String get sdvDecoder => _s('sdvDecoder');
+  String get sdvDecoderSub => _s('sdvDecoderSub');
+  String get sdvFps => _s('sdvFps');
+  String get sdvFpsSub => _s('sdvFpsSub');
+  String get sdvExperimental => _s('sdvExperimental');
+  String get sdvNoHw => _s('sdvNoHw');
+  String get sdvNoHwSub => _s('sdvNoHwSub');
+  String get sdvResetAll => _s('sdvResetAll');
+  String get sdvResetAllSub => _s('sdvResetAllSub');
+
+  String get plScreenshotFailed => _s('plScreenshotFailed');
+  String plSaved(Object v) => _s('plSaved').replaceFirst('{v}', '$v');
+  String plScreenshotError(Object v) => _s('plScreenshotError').replaceFirst('{v}', '$v');
+  String plLoaded(Object v) => _s('plLoaded').replaceFirst('{v}', '$v');
+  String plSubtitlePickError(Object v) => _s('plSubtitlePickError').replaceFirst('{v}', '$v');
+  String get plOwnPageOnly => _s('plOwnPageOnly');
+  String get plNoPlaylists => _s('plNoPlaylists');
+  String get plAdbToSend => _s('plAdbToSend');
+  String plTransferFailed(Object v) => _s('plTransferFailed').replaceFirst('{v}', '$v');
+  String get plUnmuted => _s('plUnmuted');
+  String get plMuted => _s('plMuted');
+  String get plShuffleOn => _s('plShuffleOn');
+  String get plShuffleOff => _s('plShuffleOff');
+  String get plMirrorOn => _s('plMirrorOn');
+  String get plMirrorOff => _s('plMirrorOff');
+  String get plFlipOn => _s('plFlipOn');
+  String get plFlipOff => _s('plFlipOff');
+  String get plNightOn => _s('plNightOn');
+  String get plNightOff => _s('plNightOff');
+  String get plBgOn => _s('plBgOn');
+  String get plBgOff => _s('plBgOff');
+  String plSpeed(Object v) => _s('plSpeed').replaceFirst('{v}', '$v');
+  String get plAPoint => _s('plAPoint');
+  String get plAbOn => _s('plAbOn');
+  String get plAbCleared => _s('plAbCleared');
+  String get plNoAudioTracks => _s('plNoAudioTracks');
+  String plAudio(Object v) => _s('plAudio').replaceFirst('{v}', '$v');
+  String plSubtitle(Object v) => _s('plSubtitle').replaceFirst('{v}', '$v');
+  String plAspect(Object v) => _s('plAspect').replaceFirst('{v}', '$v');
+  String plSearchSubs(Object v) => _s('plSearchSubs').replaceFirst('{v}', '$v');
+  String plDecoder(Object v) => _s('plDecoder').replaceFirst('{v}', '$v');
+  String get plDecoderDefault => _s('plDecoderDefault');
+  String plPositionOf(Object a, Object b) => _s('plPositionOf').replaceFirst('{a}', '$a').replaceFirst('{b}', '$b');
+  String get plAuto => _s('plAuto');
+  String get plPrevVideo => _s('plPrevVideo');
+  String get plPrevFrame => _s('plPrevFrame');
+  String get plPause => _s('plPause');
+  String get plNextFrame => _s('plNextFrame');
+  String get plNextVideo => _s('plNextVideo');
+
+  String get vomWatchLaterAdded => _s('vomWatchLaterAdded');
+  String get vomWatchLaterAlready => _s('vomWatchLaterAlready');
+  String get vomFavAdded => _s('vomFavAdded');
+  String get vomFavRemoved => _s('vomFavRemoved');
+  String vomPasteSubLink(Object v) => _s('vomPasteSubLink').replaceFirst('{v}', '$v');
+  String vomSubSaved(Object v) => _s('vomSubSaved').replaceFirst('{v}', '$v');
+  String vomBinBody(Object v) => _s('vomBinBody').replaceFirst('{v}', '$v');
+  String get vomMovedToBin => _s('vomMovedToBin');
+  String get vomNoLocalFile => _s('vomNoLocalFile');
+  String get vomConvertBusy => _s('vomConvertBusy');
+  String get vomSavedMusic => _s('vomSavedMusic');
+  String get vomConvertFailed => _s('vomConvertFailed');
+  String get vomPinFirst => _s('vomPinFirst');
+  String vomLockFailed(Object v) => _s('vomLockFailed').replaceFirst('{v}', '$v');
+  String get vomCantRename => _s('vomCantRename');
+  String get vomBadName => _s('vomBadName');
+  String get vomNameTaken => _s('vomNameTaken');
+  String vomRenameFailed(Object v) => _s('vomRenameFailed').replaceFirst('{v}', '$v');
+  String get vomCantDelete => _s('vomCantDelete');
+  String get vomEditingOff => _s('vomEditingOff');
+  String vomDeleteBody(Object v) => _s('vomDeleteBody').replaceFirst('{v}', '$v');
+  String vomDeleteFailed(Object v) => _s('vomDeleteFailed').replaceFirst('{v}', '$v');
+  String get vomRemoveFav => _s('vomRemoveFav');
+  String get vomConvertAudio => _s('vomConvertAudio');
+  String get vomAddWatchLater => _s('vomAddWatchLater');
+  String get vomMoveToBin => _s('vomMoveToBin');
+  String vomAddedTo(Object v) => _s('vomAddedTo').replaceFirst('{v}', '$v');
+  String vomBytes(Object v) => _s('vomBytes').replaceFirst('{v}', '$v');
+  String get vomNewName => _s('vomNewName');
+  String get vomConverting => _s('vomConverting');
+  String get vomPreparing => _s('vomPreparing');
+
+  String get mcPlayNext => _s('mcPlayNext');
+  String mcPlayingNext(Object v) => _s('mcPlayingNext').replaceFirst('{v}', '$v');
+  String get mcPlayLater => _s('mcPlayLater');
+  String get mcQueued => _s('mcQueued');
+  String get mcFavAdded => _s('mcFavAdded');
+  String get mcFavRemoved => _s('mcFavRemoved');
+  String get mcTitle => _s('mcTitle');
+  String get mcArtist => _s('mcArtist');
+  String get mcAlbum => _s('mcAlbum');
+  String get mcUnknown => _s('mcUnknown');
+  String get mcDuration => _s('mcDuration');
+  String get mcPath => _s('mcPath');
+  String get mcPathCopied => _s('mcPathCopied');
+  String get mcPlayAll => _s('mcPlayAll');
+  String get mcShufflePlay => _s('mcShufflePlay');
+
+  String get mpRepeatAll => _s('mpRepeatAll');
+  String get mpRepeatOne => _s('mpRepeatOne');
+  String get mpRepeatOff => _s('mpRepeatOff');
+  String get mpUnknownTrack => _s('mpUnknownTrack');
+  String get mpUnknownArtist => _s('mpUnknownArtist');
+  String get mpCollapse => _s('mpCollapse');
+  String get mpEqualizer => _s('mpEqualizer');
+  String get mpAb => _s('mpAb');
+  String get mpSpeed => _s('mpSpeed');
+  String get mpShuffle => _s('mpShuffle');
+  String get mpPrevious => _s('mpPrevious');
+  String get mpNext => _s('mpNext');
+  String get mpRepeat => _s('mpRepeat');
+  String get mpLyricsError => _s('mpLyricsError');
+  String get mpNoLyrics => _s('mpNoLyrics');
+
+  String get mcDateAdded => _s('mcDateAdded');
+  String get mpFavourites => _s('mpFavourites');
+  String get mpRecent => _s('mpRecent');
+  String get mpShowQueue => _s('mpShowQueue');
+  String get mpNoFavs => _s('mpNoFavs');
+  String get mpNoRecent => _s('mpNoRecent');
+  String get mpEmptyPlaylist => _s('mpEmptyPlaylist');
+
+
+
+
+
+
+
+
+
+
+
+  String get svTitle => _s('svTitle');
+  String get svDate => _s('svDate');
+  String get svPlayedTime => _s('svPlayedTime');
+  String get svStatus => _s('svStatus');
+  String get svLength => _s('svLength');
+  String get svSize => _s('svSize');
+  String get svResolution => _s('svResolution');
+  String get svPath => _s('svPath');
+  String get svFrameRate => _s('svFrameRate');
+  String get svType => _s('svType');
+  String get svAllFolders => _s('svAllFolders');
+  String get svFiles => _s('svFiles');
+  String get svFolders => _s('svFolders');
+  String get svList => _s('svList');
+  String get svGrid => _s('svGrid');
+
+  String get svViewMode => _s('svViewMode');
+  String get svLayout => _s('svLayout');
+  String get svAz => _s('svAz');
+  String get svZa => _s('svZa');
+  String get svOldest => _s('svOldest');
+  String get svNewest => _s('svNewest');
+  String get svShortest => _s('svShortest');
+  String get svLongest => _s('svLongest');
+  String get svSmallest => _s('svSmallest');
+  String get svLargest => _s('svLargest');
+  String get svLowest => _s('svLowest');
+  String get svHighest => _s('svHighest');
+  String get svAscending => _s('svAscending');
+  String get svDescending => _s('svDescending');
+  String get svSort => _s('svSort');
+  String get svFields => _s('svFields');
+  String get svThumbnail => _s('svThumbnail');
+  String get svExtension => _s('svExtension');
+  String get svAdvanced => _s('svAdvanced');
+  String get svLengthOnThumb => _s('svLengthOnThumb');
+
+  String lsViewMode(Object v) => _s('lsViewMode').replaceFirst('{v}', '$v');
+  String get lsSortView => _s('lsSortView');
+  String lsNoFolderMatch(Object v) => _s('lsNoFolderMatch').replaceFirst('{v}', '$v');
+  String get lsAdbStale => _s('lsAdbStale');
+  String get lsReconnect => _s('lsReconnect');
+
+  String get fdBackAll => _s('fdBackAll');
+  String fdNoVideoMatch(Object v) => _s('fdNoVideoMatch').replaceFirst('{v}', '$v');
+  String get fdEmpty => _s('fdEmpty');
+
+  String get sabHint => _s('sabHint');
+  String get sabClear => _s('sabClear');
+
+  String get hlpQ1 => _s('hlpQ1');
+  String get hlpA1 => _s('hlpA1');
+  String get hlpQ2 => _s('hlpQ2');
+  String get hlpA2 => _s('hlpA2');
+  String get hlpQ3 => _s('hlpQ3');
+  String get hlpA3 => _s('hlpA3');
+  String get hlpQ4 => _s('hlpQ4');
+  String get hlpA4 => _s('hlpA4');
+  String get hlpQ5 => _s('hlpQ5');
+  String get hlpA5 => _s('hlpA5');
+  String get hlpQ6 => _s('hlpQ6');
+  String get hlpA6 => _s('hlpA6');
+  String get hlpQ7 => _s('hlpQ7');
+  String get hlpA7 => _s('hlpA7');
+  String get hlpQ8 => _s('hlpQ8');
+  String get hlpA8 => _s('hlpA8');
+
+  String get hsToday => _s('hsToday');
+  String get hsYesterday => _s('hsYesterday');
+  String get hsThisWeek => _s('hsThisWeek');
+  String get hsEarlier => _s('hsEarlier');
+  String get hsClearAll => _s('hsClearAll');
+
+
+
+
+
+
+
+  String get wiEmpty => _s('wiEmpty');
+  String get wiMin => _s('wiMin');
+  String get wiVideos => _s('wiVideos');
+  String get wiActiveDays => _s('wiActiveDays');
+  String get wiStreakStart => _s('wiStreakStart');
+  String get wiStreakToday => _s('wiStreakToday');
+  String wiStreakDays(Object v) => _s('wiStreakDays').replaceFirst('{v}', '$v');
+  String get wiNoStreak => _s('wiNoStreak');
+  String wiStreak(Object v) => _s('wiStreak').replaceFirst('{v}', '$v');
+  String wiWatches(int n) => _count('wiWatches', n);
+  String wiPlays(int n) => _count('wiPlays', n);
+  String get wiFinisher => _s('wiFinisher');
+  String get wiSolid => _s('wiSolid');
+  String get wiHalf => _s('wiHalf');
+  String get wiLocal => _s('wiLocal');
+
+  String get stFolders => _s('stFolders');
+  String get stTotalSize => _s('stTotalSize');
+  String get stTotalLength => _s('stTotalLength');
+  String get stActivity => _s('stActivity');
+  String get stWatched => _s('stWatched');
+  String get stWatchTime => _s('stWatchTime');
+  String get stTopFolders => _s('stTopFolders');
+  String get stMostWatched => _s('stMostWatched');
+  String stPlaysDone(int n, int p) => _count('stPlaysDone', n).replaceFirst('{p}', '$p');
+
+  String plsClearBody(int n) => _count('plsClearBody', n);
+  String get plsEmpty => _s('plsEmpty');
+  String plsHowToAdd(Object v) => _s('plsHowToAdd').replaceFirst('{v}', '$v');
+
+  String get rbInfo => _s('rbInfo');
+  String get rbKept => _s('rbKept');
+  String get rbClearBody => _s('rbClearBody');
+  String get rbBanner => _s('rbBanner');
+  String get rbRestore => _s('rbRestore');
+
+  String agoDays(int n) => _count('agoDays', n);
+  String agoHours(int n) => _count('agoHours', n);
+  String agoMinutes(int n) => _count('agoMinutes', n);
+  String get agoJustNow => _s('agoJustNow');
+
+  String ssvSavedTo(Object v) => _s('ssvSavedTo').replaceFirst('{v}', '$v');
+  String get ssvNotWritable => _s('ssvNotWritable');
+  String get ssvNoVideos => _s('ssvNoVideos');
+  String get ssvNoImages => _s('ssvNoImages');
+  String get ssvHowTo => _s('ssvHowTo');
+
+  String get cdDrive => _s('cdDrive');
+  String get cdDropbox => _s('cdDropbox');
+  String get cdOneDrive => _s('cdOneDrive');
+  String get cdICloud => _s('cdICloud');
+  String get cdYandex => _s('cdYandex');
+  String get cdMega => _s('cdMega');
+  String get cdPcloud => _s('cdPcloud');
+
+  String get cppFfRew => _s('cppFfRew');
+
+  String get aeOriginal => _s('aeOriginal');
+  String get aeClarity => _s('aeClarity');
+  String get aeBassBoost => _s('aeBassBoost');
+  String get aeTrebleBoost => _s('aeTrebleBoost');
+  String get aeMovie => _s('aeMovie');
+  String get aeMusic => _s('aeMusic');
+  String get aeCustom => _s('aeCustom');
+  String get aeVirtualizer => _s('aeVirtualizer');
+  String get aeAudioEffect => _s('aeAudioEffect');
+  String get aeSoundProfiles => _s('aeSoundProfiles');
+  String get aeUnsupported => _s('aeUnsupported');
+
+
+
+
+
+  String get pvWouldNotStart => _s('pvWouldNotStart');
+  String get pvStalled => _s('pvStalled');
+  String get pvOffline => _s('pvOffline');
+  String get pvLinkExpired => _s('pvLinkExpired');
+  String get pvAdbLoading => _s('pvAdbLoading');
+  String get pvAdbFailed => _s('pvAdbFailed');
+  String get pvDownloadGone => _s('pvDownloadGone');
+
+  String get pwNotSet => _s('pwNotSet');
+
+  String get pwMarkersHint => _s('pwMarkersHint');
+  String get pwIntroEnds => _s('pwIntroEnds');
+  String pwIntroSet(Object v) => _s('pwIntroSet').replaceFirst('{v}', '$v');
+  String get pwOutroStarts => _s('pwOutroStarts');
+  String pwOutroSet(Object v) => _s('pwOutroSet').replaceFirst('{v}', '$v');
+  String get pwUpdate => _s('pwUpdate');
+  String get pwSet => _s('pwSet');
+
+  String pwDecrease(Object v) => _s('pwDecrease').replaceFirst('{v}', '$v');
+  String pwIncrease(Object v) => _s('pwIncrease').replaceFirst('{v}', '$v');
+  String get pwTuneHint => _s('pwTuneHint');
+  String get pwTiming => _s('pwTiming');
+  String get pwPosition => _s('pwPosition');
+
+  String get pwOpenFile => _s('pwOpenFile');
+  String get pwSubTrack => _s('pwSubTrack');
+  String get pwTextStyle => _s('pwTextStyle');
+  String get pwPosLayout => _s('pwPosLayout');
+
+  String get pwStartA => _s('pwStartA');
+  String get pwEndB => _s('pwEndB');
+
+  String get pwBrightness => _s('pwBrightness');
+  String get pwContrast => _s('pwContrast');
+  String get pwSaturation => _s('pwSaturation');
+  String get pwHue => _s('pwHue');
+
+
+
+  String get pwLoopOne => _s('pwLoopOne');
+  String get pwLoopAll => _s('pwLoopAll');
+
+  String get pwBadNumber => _s('pwBadNumber');
+  String get pwSpeedRange => _s('pwSpeedRange');
+
+  String get pwNoBookmarks => _s('pwNoBookmarks');
+
+
+
+
+
+  String get pwCurrentVideo => _s('pwCurrentVideo');
+
+  String get pwOpenFull => _s('pwOpenFull');
+
+  String get pwHwDecoder => _s('pwHwDecoder');
+  String get pwHwPlusDecoder => _s('pwHwPlusDecoder');
+  String get pwSwDecoder => _s('pwSwDecoder');
+
+  String get cutPrivate => _s('cutPrivate');
+  String get cutLocalOnly => _s('cutLocalOnly');
+  String get cutWorking => _s('cutWorking');
+  String cutSaved(Object v) => _s('cutSaved').replaceFirst('{v}', '$v');
+  String cutSavedSilent(Object v) =>
+      _s('cutSavedSilent').replaceFirst('{v}', '$v');
+  String cutFailed(Object v) => _s('cutFailed').replaceFirst('{v}', '$v');
+  String get cutHint => _s('cutHint');
+  String cutSavedKeyFrame(Object v) =>
+      _s('cutSavedKeyFrame').replaceFirst('{v}', '$v');
+  String get cutExact => _s('cutExact');
+  String get cutExactSub => _s('cutExactSub');
+  String cutKeyStartAt(Object v) =>
+      _s('cutKeyStartAt').replaceFirst('{v}', '$v');
+  String cutProgress(int n) => _s('cutProgress').replaceFirst('{n}', '$n');
+  String get cutCancelled => _s('cutCancelled');
+
+  String get obFindTitle => _s('obFindTitle');
+  String get obFindBody => _s('obFindBody');
+  String get obGestureTitle => _s('obGestureTitle');
+  String get obGestureBody => _s('obGestureBody');
+  String get obYoursTitle => _s('obYoursTitle');
+  String get obYoursBody => _s('obYoursBody');
+  String get obStart => _s('obStart');
+  String get obNext => _s('obNext');
+
+  String arReconnectTo(Object v) => _s('arReconnectTo').replaceFirst('{v}', '$v');
+  String get arLocked => _s('arLocked');
+  String arDropped(Object v) => _s('arDropped').replaceFirst('{v}', '$v');
+  String arPrivate(Object v) => _s('arPrivate').replaceFirst('{v}', '$v');
+  String get arNotNow => _s('arNotNow');
+  String get arSetUp => _s('arSetUp');
+
+  String get trCopyUrl => _s('trCopyUrl');
+  String get trResumeUnfinished => _s('trResumeUnfinished');
+
+  String get ppFingerprint => _s('ppFingerprint');
+  String get ppClear => _s('ppClear');
+  String get ppConfirm => _s('ppConfirm');
+  String get ppBackspace => _s('ppBackspace');
+
+
+
+  String get afpTitle => _s('afpTitle');
+  String get afpInternal => _s('afpInternal');
+
+  String vliVideo(Object v) => _s('vliVideo').replaceFirst('{v}', '$v');
+
+  String get acReachable => _s('acReachable');
+  String get acNotConnHelp => _s('acNotConnHelp');
+  String get acNotConnYet => _s('acNotConnYet');
+  String get acUpdateTitle => _s('acUpdateTitle');
+  String acUpdateBody(Object v) => _s('acUpdateBody').replaceFirst('{v}', '$v');
+  String get acTurnOffNow => _s('acTurnOffNow');
+  String get acOpenWd => _s('acOpenWd');
+  String get acTurnedOff => _s('acTurnedOff');
+  String get acCouldNotOff => _s('acCouldNotOff');
+  String get acReconnecting => _s('acReconnecting');
+  String acFoundAdded(int n) => _count('acFoundAdded', n);
+  String get acNotifOff => _s('acNotifOff');
+  String get acNotifAsk => _s('acNotifAsk');
+  String get acNotifReady => _s('acNotifReady');
+  String get acNotifStopped => _s('acNotifStopped');
+  String get acPairing => _s('acPairing');
+  String get acConnecting => _s('acConnecting');
+  String get acDevOffTitle => _s('acDevOffTitle');
+  String get acDevOffBody => _s('acDevOffBody');
+  String get acOpenAbout => _s('acOpenAbout');
+  String get acOpenFailed => _s('acOpenFailed');
+  String acPlaying(Object v) => _s('acPlaying').replaceFirst('{v}', '$v');
+  String get acPairAddrHelp => _s('acPairAddrHelp');
+  String get acCodeHelp => _s('acCodeHelp');
+  String get acConnAddrHelp => _s('acConnAddrHelp');
+  String get acScanning => _s('acScanning');
+  String get acNoneFound => _s('acNoneFound');
+  String acFound(int n) => _count('acFound', n);
+  String get acManualHide => _s('acManualHide');
+  String get acManualShow => _s('acManualShow');
+  String get acManualHint => _s('acManualHint');
+  String get acPairOnce => _s('acPairOnce');
+  String get acPairAddrLabel => _s('acPairAddrLabel');
+  String acEg(Object v) => _s('acEg').replaceFirst('{v}', '$v');
+  String get acPairManual => _s('acPairManual');
+  String get acConnect => _s('acConnect');
+  String get acConnAddrLabel => _s('acConnAddrLabel');
+  String get acConnectManual => _s('acConnectManual');
+
+
+
   static const Map<String, Map<String, String>> _byLocale =
       <String, Map<String, String>>{
     'en': _en,
@@ -1940,7 +2658,8 @@ class AppStrings {
   };
 
   static const Map<String, String> _en = <String, String>{
-    'trSharingNow': 'Sharing {n} file(s) — tap to see',
+    'trSharingNow': 'Sharing {n} files — tap to see',
+    'trSharingNowOne': 'Sharing {n} file — tap to see',
     'trSharingComputer': 'Sharing with a computer — tap to see',
     'trViaWifi': 'Over your Wi-Fi',
     'trReceivingNow': 'Receiving — tap to see',
@@ -1961,7 +2680,8 @@ class AppStrings {
     'trPcStep2': 'Open this address in its browser',
     'trPcStep3': 'Download files, or drop files on the page to send them here',
     'trPcConnected': '{n} connected',
-    'trPcSharingFiles': 'Sharing {n} file(s) from this phone',
+    'trPcSharingFiles': 'Sharing {n} files from this phone',
+    'trPcSharingFilesOne': 'Sharing {n} file from this phone',
     'trPcStart': 'Start',
     'trScanTitle': 'Scan the sender\'s QR code',
     'trScanBody': 'On the other phone, tap Send — a QR code appears. Scan it and the two phones connect directly.',
@@ -2025,22 +2745,6 @@ class AppStrings {
     'subBottomMargins': 'Bottom margins',
     'subBottomMarginsTitle': 'Bottom Margins',
     'subImproveStroke': 'Improve stroke rendering',
-    'subVerticalPos': 'Vertical position',
-    'subVerticalPosTitle': 'Vertical Position',
-    'subVerticalPosDesc': 'Distance from the top, as a percentage.',
-    'subHorizontalAlign': 'Horizontal alignment',
-    'subHorizontalAlignTitle': 'Horizontal Alignment',
-    'subSidePadding': 'Left/Right padding',
-    'subSidePaddingTitle': 'Left/Right Padding',
-    'subSidePaddingDesc': 'Pixels of horizontal margin.',
-    'subBottomMargin': 'Bottom margin',
-    'subBottomMarginTitle': 'Bottom Margin',
-    'subBottomMarginDesc': 'Pixels of bottom margin.',
-    'subShowBackground': 'Show background',
-    'subBgBlack50': 'Black (50% opacity)',
-    'subBgBlack75': 'Black (75% opacity)',
-    'subBgDarkGray': 'Dark gray',
-    'subBgColorActiveWhen': 'Active only when "Show background" is on.',
     'currently': 'Currently',
 
     // --- Video Hub: age gate / library ---
@@ -2094,6 +2798,16 @@ class AppStrings {
     'adbTipTranssion': 'TECNO, Infinix and itel: let Innocent run in the background (battery settings or Phone Master), or the pairing notification can be closed before you type the code.',
     'adbNotSupported': 'Wireless debugging needs Android 11 or newer.',
     'hfTitle': 'Hidden files',
+    'playerSurface': 'Video',
+    'playerSurfaceHint': 'show or hide the controls',
+    'themeAdaptive': 'Adaptive',
+    'themeLight': 'Light Theme',
+    'themeDark': 'Dark Theme',
+    'themeUsing': 'Using',
+    'themeComingSoon': 'Coming soon',
+    'themeNew': 'NEW',
+    'fvHiddenSnackOne': '{n} folder hidden from the Video tab',
+    'fvFooterOne': '{n} hidden folder',
     'fvTitle': 'Show / hide folders',
     'fvAppSection': 'App folders (Android/data)',
     'fvAppSectionHint': 'Found through ADB. Hide the ones you do not want in the Video tab — nothing is moved or deleted.',
@@ -2107,9 +2821,11 @@ class AppStrings {
     'fvHideAll': 'Hide all',
     'fvShowAll': 'Show all',
     'fvEmpty': 'No folder is hidden. In the Video tab, long-press a folder and tap Hide.',
-    'fvHiddenSnack': '{n} folder(s) hidden from the Video tab',
-    'fvFooter': '{n} hidden folder(s)',
+    'fvHiddenSnack': '{n} folders hidden from the Video tab',
+    'fvFooter': '{n} hidden folders',
     'fvVideos': '{n} videos',
+    'folderRowLabel': 'Folder: {name}, {videos}',
+    'fvVideosOne': '{n} video',
     'fvUndo': 'Undo',
     'fvManage': 'Manage',
     'hfNeedTitle': 'Hidden files need ADB',
@@ -2142,7 +2858,8 @@ class AppStrings {
     'hfInApps': 'Inside apps (Android/data)',
     'hfBucketPhotos': 'Telegram’s and other apps’ photos',
     'hfBucketAudio': 'Telegram’s and other apps’ audio',
-    'hfSkipped': '{n} file(s) from Android/data were skipped — connect ADB and try again.',
+    'hfSkipped': '{n} files from Android/data were skipped — connect ADB and try again.',
+    'hfSkippedOne': '{n} file from Android/data was skipped — connect ADB and try again.',
     'hfConnectTitle': 'Connect to see inside apps',
     'hfConnectBody': 'Hidden dot-folders are showing now. Telegram’s and other apps’ folders (Android/data) open through Innocent’s ADB connection — set it up once?',
     'hfOpenAdb': 'Set up ADB',
@@ -2720,8 +3437,6 @@ class AppStrings {
     'resetSettingsTitle': 'Reset settings?',
     'resetSettingsBody': 'This will restore all settings to their default values.',
     'settingsResetDone': 'Settings reset to defaults',
-    'clearFontCacheTitle': 'Clear Font Cache?',
-    'fontCacheCleared': 'Font cache cleared',
     'languageRestartNote': 'Language will change on next app restart',
     'exportedTo': 'Exported to {path}',
     'exportFailed': 'Export failed',
@@ -2729,7 +3444,6 @@ class AppStrings {
     'importedFrom': 'Imported settings from {path}',
     'noExportFile': 'No exported settings file found. Use Export first.',
     'moreLanguagesOnWay': 'More languages are on the way.',
-    'colorFormat': 'Color Format',
     'screenTitle': 'Screen',
     'navigationTitle': 'Navigation',
     'controlsTitle': 'Controls',
@@ -2737,7 +3451,6 @@ class AppStrings {
     'subtitleTextTitle': 'Subtitle Text',
     'subtitleLayoutTitle': 'Subtitle Layout',
     'soonBadge': 'SOON',
-    'debugLogsExported': 'Debug logs exported',
     'findYourVideos': 'Find your videos',
     'scanningVideos': 'Scanning videos…',
     'errorLoadingFoldersPrefix': 'Error loading folders',
@@ -3121,13 +3834,9 @@ class AppStrings {
     'gtHeadsetSub': 'Play or pause.',
     'storagePermissionNeeded': 'Storage permission needed',
     'statusPermissionHint': 'Allow media access so we can read WhatsApp statuses.',
-    'openingPrivacyPolicy': 'Opening Privacy Policy...',
-    'openingTerms': 'Opening Terms of Service...',
     'personalPlayerApp': 'Personal video player app.',
     'storageManagement': 'Storage management',
     'storageUsage': 'Storage Usage',
-    'classicThemes': 'Classic Themes',
-    'noInternetThemes': 'No internet connection. Tap to connect for fresh themes.',
     'themeApplied': 'Theme applied',
     'openSourceLicenses': 'Open source licenses',
     'personalProject': 'A personal Flutter project for learning and private use.',
@@ -3302,8 +4011,10 @@ class AppStrings {
     'deleteFolderAndFilesSub': 'Everything inside is permanently erased',
     'folderDeleted': 'Folder deleted',
     'vaultFileMissing': 'File not found — it may have been removed',
-    'someFilesFailed': '{n} file(s) couldn\'t be added',
-    'filesAddedOk': '{n} file(s) added',
+    'someFilesFailed': '{n} files couldn\'t be added',
+    'someFilesFailedOne': '{n} file couldn\'t be added',
+    'filesAddedOk': '{n} files added',
+    'filesAddedOkOne': '{n} file added',
     'forgotPin': 'Forgot PIN?',
     'recoverVault': 'Recover vault access',
     'chooseRecoveryMethod': 'How would you like to recover?',
@@ -3626,6 +4337,646 @@ class AppStrings {
     'updateRequiredBody':
         'This version of Innocent can no longer be used. Install the update '
             'below to carry on.',
+    'songsCount': '{n} songs',
+    'songsCountOne': '{n} song',
+    'minutesCount': '{n} minutes',
+    'minutesCountOne': '{n} minute',
+    'psTitleBar': 'Title Bar',
+    'psShowTitle': 'Show title',
+    'psShowTitleSub': 'Display video title on the player screen.',
+    'psShowClock': 'Show system clock',
+    'psShowClockSub': 'Display current time on the player screen.',
+    'psShowSourceUrl': 'Show source URL',
+    'psShowSourceUrlSub': 'Display source URL/path for network play.',
+    'psLayout': 'Layout',
+    'psToolbarPosition': 'Toolbar position',
+    'psToolbarPositionSub': 'Where the title bar sits on the player. Currently: {v}',
+    'psToolbarTop': 'Top (default)',
+    'psToolbarBottom': 'Bottom (within thumb reach)',
+    'pssOrientation': 'Orientation',
+    'pssFollowSystem': 'Follow system',
+    'pssLandscape': 'Landscape',
+    'pssLandscapeReverse': 'Landscape (reverse)',
+    'pssPortrait': 'Portrait',
+    'pssDefaultOrientation': 'Default orientation',
+    'pssDefaultOrientationSub': 'Pin the player\'s orientation. "Follow system" goes by Auto rotation below. Currently: {v}',
+    'pssAutoRotation': 'Auto rotation',
+    'pssAutoRotationSub': 'Rotate the screen as you turn the phone.',
+    'pssDisplay': 'Display',
+    'pssFullScreen': 'Full screen',
+    'pssFullScreenSub': 'Hide the status bar and navigation bar during playback.',
+    'pssKeepOn': 'Keep screen on',
+    'pssKeepOnSub': 'Keep the screen from turning off during playback.',
+    'pssBrightness': 'Brightness',
+    'pssAutoBrightness': 'Auto brightness',
+    'pssAutoBrightnessSub': 'Use the phone\'s own brightness.',
+    'pssDefaultBrightness': 'Default brightness',
+    'pssDefaultBrightnessSub': 'Brightness for a new video (each video remembers its own). Currently: {v}',
+    'pcLock': 'Lock',
+    'pcLockAll': 'Lock all (default)',
+    'pcLockRotation': 'Lock rotation only',
+    'pcLockTouch': 'Lock touch only',
+    'pcLockMode': 'Lock mode',
+    'pcLockModeSub': 'What Lock does on the player. Currently: {v}',
+    'pcLockOnRotation': 'Lock screen on rotation',
+    'pcLockOnRotationSub': 'Lock the screen when the phone rotates.',
+    'secondsCount': '{n} seconds',
+    'secondsCountOne': '{n} second',
+    'pnSeekBar': 'Seek Bar',
+    'pnShowSeekBar': 'Show seek bar',
+    'pnShowSeekBarSub': 'Display the seek bar at the bottom of the player.',
+    'pnSeekPreview': 'Seek bar preview',
+    'pnSeekPreviewSub': 'Show a thumbnail while dragging the seek bar.',
+    'pnSeekInterval': 'Seek interval',
+    'pnSeekIntervalSub': 'How far a double tap and the on-screen forward/back buttons jump. Currently: {v}',
+    'pnButtons': 'Buttons',
+    'pnShowPrevNext': 'Show previous/next buttons',
+    'pnShowPrevNextSub': 'Display previous and next buttons on the player.',
+    'pnNextPrev': 'Next / Previous video',
+    'pnSeekPm': 'Seek ±{v} seconds',
+    'pnFwdBack': 'Forward / Backward buttons',
+    'pnFwdBackSub': 'What the on-screen ◀▶ buttons do. Currently: {v}',
+    'spInterface': 'Interface',
+    'spScreenSub': 'Orientation, full screen, brightness and more',
+    'spControlsSub': 'Touch, gestures, lock mode and more',
+    'spNavigationSub': 'Seeking, forward/back buttons and more',
+    'spDoubleBack': 'Double-tap the back button',
+    'spDoubleBackSub': 'Press Back twice to close the player.',
+    'spQuickZoom': 'Quick zoom',
+    'spQuickZoomSub': 'Skip the zoom steps between 100% and fit to screen (150%, 200%…).',
+    'spPinControls': 'Pin controls (always visible)',
+    'spPinControlsSub': 'The player controls never hide by themselves. Off by default.',
+    'spHideDelay': 'Controls auto-hide delay',
+    'spHideDelaySub': 'How long the controls stay after the last touch. Currently: {v}',
+    'spPlayback': 'Playback',
+    'spResume': 'Resume',
+    'spResumeAsk': 'Ask every time',
+    'spResumeAlways': 'Always (Resume)',
+    'spResumeNever': 'Never (Start over)',
+    'spResumeSub': 'Whether to carry on from where you stopped. Currently: {v}',
+    'spResumeFirst': 'Resume only the first file',
+    'spResumeFirstSub': 'Only the first file carries on; the next ones start from the beginning.',
+    'spDefaultSpeed': 'Default playback speed',
+    'spRemember': 'Remember selections',
+    'spRememberSub': 'Remember each file\'s audio track, subtitle track and decoder.',
+    'spBackToList': 'Back to list',
+    'spBackToListSub': 'Return to the list when playback ends.',
+    'spPreviewSeek': 'Preview while seeking',
+    'spPreviewSeekSub': 'Show a picture of where you are moving to.',
+    'spPreviewSeekNet': 'Preview while seeking (network)',
+    'spPreviewSeekNetSub': 'Show the preview for network videos too.',
+    'spFastSeek': 'Fast seeking',
+    'spFastSeekSub': 'Jump to the nearest key frame instead of the exact point (HW+ and SW decoders).',
+    'spPlayAlone': 'Play alone',
+    'spPlayAloneSub': 'Pause other players while this one plays, and pause here when another starts or a call comes in.',
+    'spMediaButtons': 'Media buttons',
+    'spMediaButtonsSub': 'Answer the media buttons of a headset, Bluetooth and the like.',
+    'spNextPrevFf': 'Next/Prev → Fast forward/Rewind',
+    'spNextPrevFfSub': 'Use the Next and Previous media buttons to fast-forward and rewind.',
+    'spTogglePlay': 'Toggle playback with play button',
+    'spTogglePlaySub': 'Play pauses as well as plays. Only for phones whose play button misbehaves.',
+    'spSmartPrev': 'Smart previous button',
+    'spSmartPrevSub': 'Previous goes back to the start of this video, or to the previous one when you are near the start.',
+    'spSuppressError': 'Suppress error message',
+    'spSuppressErrorSub': 'When a video will not load, go on to the next one without an error message.',
+    'spCustomPip': 'Use the custom pop-up player',
+    'spCustomPipSub': 'A pop-up you can move and resize, instead of Android\'s picture-in-picture.',
+    'spBackground': 'Background Play',
+    'spBgMode': 'Background / PiP',
+    'spBgModeSub': 'What the player does when you switch to another app. Currently: {v}',
+    'spBgPip': 'Picture-in-picture',
+    'spBgPlay': 'Play in background',
+    'spBgStop': 'Stop',
+    'spBgAudio': 'Background play (audio)',
+    'spBgAudioSub': 'Keep audio files playing in the background.',
+    'spMisc': 'Miscellaneous',
+    'spLimitResize': 'Limit video resizing',
+    'spLimitResizeSub': 'Do not enlarge a video past its own size (HW decoder only).',
+    'spLoadingCircle': 'Loading circle animation',
+    'daysCount': '{n} days',
+    'daysCountOne': '{n} day',
+    'slAppearance': 'Appearance',
+    'slFloating': 'Floating button',
+    'slFloatingSub': 'A button in the bottom-right corner that plays what you played last.',
+    'slNewPeriod': 'Period tagged as "NEW"',
+    'slNewPeriodSub': '"NEW" shows on a file added within this period. Currently: {v}',
+    'slScan': 'Scan',
+    'slExtensions': 'File extensions',
+    'slExtensionsOn': '{n} extensions on',
+    'slExtensionsOnOne': '{n} extension on',
+    'slNomedia': 'Recognize .nomedia',
+    'slNomediaSub': 'Leave out a folder\'s files when it, or a folder above it, holds a ".nomedia" file.',
+    'slShowHidden': 'Show hidden files and folders',
+    'slShowHiddenSub': 'Show folders and files whose names start with "." (dot).',
+    'slSafTitle': 'Grant access to restricted folders',
+    'slSafGranted': 'Granted: {v}. Tap to add another folder.',
+    'slSafBlocked': 'Android 13 and later keep Android/data closed here; Innocent opens it through ADB instead (below).',
+    'slSafGrant': 'Grant Android/data (Telegram\'s downloads, say) to see its videos in the Video tab, and turn on "Show hidden files and folders". A reinstall clears the grant.',
+    'slSafNotNeeded': 'Not needed on Android {v}: hidden folders are read directly. Just turn on "Show hidden files and folders".',
+    'slSafGeneric': 'See the videos inside Android/data and other restricted folders. Also turn on "Show hidden files and folders".',
+    'slSafNone': 'No folder was granted (cancelled, or blocked by Android).',
+    'slSafEmpty': 'Granted "{v}", but there are no videos in it. Android 13 and later usually block Android/data itself; use ADB for it.',
+    'slSafFound': 'Granted "{v}": {n} videos found.',
+    'slSafFoundOne': 'Granted "{v}": {n} video found.',
+    'slSafClear': 'Clear granted folders',
+    'slSafClearSub': 'Revoke all {n} granted folders.',
+    'slSafClearSubOne': 'Revoke the granted folder.',
+    'slSafCleared': 'Granted folders cleared',
+    'langNone': 'None',
+    'langEnglish': 'English',
+    'langJapanese': 'Japanese',
+    'langKorean': 'Korean',
+    'langChinese': 'Chinese',
+    'langMyanmar': 'Myanmar',
+    'langThai': 'Thai',
+    'langHindi': 'Hindi',
+    'langVietnamese': 'Vietnamese',
+    'saAuto': 'Auto (follow system)',
+    'saSpeaker': 'Speaker',
+    'saHeadphones': 'Headphones',
+    'saBluetooth': 'Bluetooth',
+    'saOutput': 'Audio output',
+    'saBoost': 'Volume boost',
+    'saBoostSub': 'Boost the volume up to 200% with the HW+ or SW decoder.',
+    'saLoudness': 'Loudness normalization',
+    'saLoudnessSub': 'Evens out loud and quiet scenes so you need not keep changing the volume.',
+    'saSystemVolume': 'System volume',
+    'saSystemVolumeSub': 'Keep the volume in step with the phone\'s media volume.',
+    'saPauseHeadset': 'Pause when the headset disconnects',
+    'saPauseHeadsetSub': 'Pause when a wired or Bluetooth headset disconnects.',
+    'saFadeStart': 'Fade on start',
+    'saFadeSeek': 'Fade on seek',
+    'saEffects': 'Audio effects',
+    'saEffectsSub': 'Turn on the equalizer, bass boost, virtualizer and reverb.',
+    'saPassthrough': 'Prefer audio passthrough',
+    'saPassthroughSub': 'Send Dolby/DTS untouched to an AV receiver. Turn off if the phone speaker sounds distorted.',
+    'saLanguage': 'Preferred audio language',
+    'saLanguageSub': 'The language of the audio track to pick first. Currently: {v}',
+    'saDelay': 'Audio delay',
+    'saDelaySub': 'Move the sound earlier or later against the picture. Currently: {v}',
+    'ssFolder': 'Subtitle folder',
+    'ssFolderSame': 'Only the video\'s own folder',
+    'ssFolderHint': 'e.g. /storage/emulated/0/Subtitles',
+    'ssAutoDetect': 'Auto detect',
+    'ssEncoding': 'Character encoding',
+    'ssEncodingSub': 'The character encoding of your subtitle files. Currently: {v}',
+    'ssLanguage': 'Preferred subtitle language',
+    'ssLanguageSub': 'The language of the subtitle track to pick first. Currently: {v}',
+    'ssSync': 'Default sync',
+    'ssSyncSub': 'How much earlier or later subtitles show by default. Currently: {v}',
+    'ssHwSync': 'Sync for HW decoder',
+    'ssHwSyncSub': 'Make up for the HW decoder\'s display lag. Currently: {v}',
+    'ssAppearance': 'Appearance',
+    'ssText': 'Text',
+    'ssTextSub': 'Font, size, colour, border and more',
+    'ssLayout': 'Layout',
+    'ssLayoutSub': 'Alignment, padding and background',
+    'ssProcessing': 'Text processing',
+    'ssItalic': 'Italic effect',
+    'ssItalicSub': 'A line that starts with "/" shows in italics.',
+    'slyPosition': 'Position',
+    'slyVertical': 'Vertical position',
+    'slyVerticalSub': 'Distance from the top, as a percentage. Currently: {v}',
+    'slyLeft': 'Left',
+    'slyCenter': 'Center',
+    'slyRight': 'Right',
+    'slyHorizontal': 'Horizontal alignment',
+    'slyCurrently': 'Currently: {v}',
+    'slySpacing': 'Spacing',
+    'slyPadX': 'Left/right padding',
+    'slyPadXSub': 'Side margin, in pixels. Currently: {v}',
+    'slyPadY': 'Bottom margin',
+    'slyPadYSub': 'Bottom margin, in pixels. Currently: {v}',
+    'slyBackground': 'Background',
+    'slyShowBg': 'Show background',
+    'slyShowBgSub': 'A see-through background behind the subtitle text.',
+    'slyBlack50': 'Black (50% opacity)',
+    'slyBlack75': 'Black (75% opacity)',
+    'slyDarkGray': 'Dark gray',
+    'slyNone': 'None',
+    'slyBgColor': 'Background color',
+    'slyBgColorSub': 'Only when "Show background" is on. Currently: {v}',
+    'sdHw': 'Hardware decoder',
+    'sdAutoDefault': 'Auto (default)',
+    'sdNeverHw': 'Never use HW decoder',
+    'sdLocalOnly': 'Local files only',
+    'sdAlwaysHw': 'Always try HW first',
+    'sdStrategy': 'HW decoder strategy',
+    'sdHwPlusLocal': 'HW+ decoder (local)',
+    'sdHwPlusLocalSub': 'Make HW+ the default hardware decoder for files on the phone.',
+    'sdHwPlusNet': 'HW+ decoder (network)',
+    'sdHwPlusNetSub': 'Make HW+ the default hardware decoder for network play.',
+    'sdTryHw': 'Try HW decoder',
+    'sdTryHwSub': 'Try the HW decoder when HW+ fails.',
+    'sdTryHwPlus': 'Try HW+ decoder',
+    'sdTryHwPlusSub': 'Try the HW+ decoder when HW fails.',
+    'sdSw': 'Software decoder',
+    'sdSwLocal': 'SW decoder (local)',
+    'sdSwLocalSub': 'Play files on the phone with the SW decoder.',
+    'sdSwNet': 'SW decoder (network)',
+    'sdSwNetSub': 'Play network sources (HTTP, FTP, RTSP and more) with the SW decoder.',
+    'sdAutoRecommended': 'Auto (recommended)',
+    'sdCores': 'CPU core limit',
+    'sdCoresSub': 'How many CPU cores the SW decoder may use. Currently: {v}',
+    'sdSpeedup': 'Use speedup tricks',
+    'sdSpeedupSub': 'Let the SW decoder take shortcuts when it cannot keep up. The picture stays at full quality until frames are really being dropped.',
+    'sdGeneral': 'General',
+    'sdEfficient': 'Efficient video output',
+    'sdEfficientSub': 'Draws video straight to the screen with less battery and heat (Android 10+). Turn off if the picture is black or flickers. Applies the next time the app starts.',
+    'sdDeinterlace': 'Deinterlace',
+    'sdDeinterlaceSub': 'Deinterlace by default (SW decoder only).',
+    'sgUserAgent': 'HTTP user agent',
+    'sgUserAgentDefault': 'Default',
+    'sgUserAgentSub': 'Leave blank for the default.',
+    'sgUserAgentHint': 'Custom user agent',
+    'sgQuit': 'Quit button',
+    'sgQuitSub': 'A Quit button on the Me tab that closes the app completely, unlike Back or Home.',
+    'sgPrivacy': 'Privacy mode (incognito watch)',
+    'sgPrivacySub': 'Nothing you watch is recorded while this is on: history, resume points and recently added stay paused. What is there already stays, and nothing leaves the phone.',
+    'sgFullAccess': 'Full library access',
+    'sgFullAccessSub': 'Optional. Lets the library look in folders beyond Movies, DCIM and Downloads; opens Android\'s All files access.',
+    'sgEdit': 'Edit',
+    'sgAllowEdit': 'Allow editing',
+    'sgAllowEditSub': 'Show the menu that deletes and renames files and folders.',
+    'sgDeleteSubs': 'Delete subtitle files together',
+    'sgUserData': 'User data',
+    'sgClearHistory': 'Clear history',
+    'sgClearHistorySub': 'Clear every activity record, playback and search history included.',
+    'sgClearThumbs': 'Clear thumbnail cache',
+    'sgClearThumbsSub': 'Delete the saved thumbnails; they are made again when a list opens.',
+    'sgCacheThumbs': 'Cache thumbnail',
+    'sgBackup': 'Backup',
+    'sgReset': 'Reset settings',
+    'sgResetSub': 'Put every setting back to its default. History and playlists stay.',
+    'sgExport': 'Export',
+    'sgExportSub': 'Save the settings to a JSON file.',
+    'sgImport': 'Import from file',
+    'sgImportSub': 'Restore the settings from a JSON file.',
+    'sdvDebug': 'Debug',
+    'sdvBuffer': 'Show buffer info',
+    'sdvBufferSub': 'Show the buffer during playback.',
+    'sdvDecoder': 'Show decoder info',
+    'sdvDecoderSub': 'Show which decoder is playing.',
+    'sdvFps': 'Show FPS',
+    'sdvFpsSub': 'Show frames per second on screen.',
+    'sdvExperimental': 'Experimental',
+    'sdvNoHw': 'Disable HW acceleration',
+    'sdvNoHwSub': 'Force software decoding. For debugging only.',
+    'sdvResetAll': 'Reset all settings',
+    'sdvResetAllSub': 'Put every setting back to its default.',
+    'plScreenshotFailed': 'Could not take the screenshot',
+    'plSaved': 'Saved: {v}',
+    'plScreenshotError': 'Screenshot error: {v}',
+    'plLoaded': 'Loaded: {v}',
+    'plSubtitlePickError': 'Could not open the subtitle: {v}',
+    'plOwnPageOnly': 'This title can only be opened from its own page.',
+    'plNoPlaylists': 'No playlists yet. Make one under Me → Video Playlists.',
+    'plAdbToSend': 'Connect ADB to send this Android/data video.',
+    'plTransferFailed': 'Could not add to Transfer: {v}',
+    'plUnmuted': 'Sound on',
+    'plMuted': 'Muted',
+    'plShuffleOn': 'Shuffle on',
+    'plShuffleOff': 'Shuffle off',
+    'plMirrorOn': 'Mirror on',
+    'plMirrorOff': 'Mirror off',
+    'plFlipOn': 'Vertical flip on',
+    'plFlipOff': 'Vertical flip off',
+    'plNightOn': 'Night mode on',
+    'plNightOff': 'Night mode off',
+    'plBgOn': 'Background play on',
+    'plBgOff': 'Background play off',
+    'plSpeed': 'Speed {v}',
+    'plAPoint': 'A point set',
+    'plAbOn': 'A-B loop on',
+    'plAbCleared': 'A-B loop cleared',
+    'plNoAudioTracks': 'No audio tracks',
+    'plAudio': 'Audio: {v}',
+    'plSubtitle': 'Subtitle: {v}',
+    'plAspect': 'Aspect: {v}',
+    'plSearchSubs': 'Search subtitles for {v}',
+    'plDecoder': 'Decoder: {v}',
+    'plDecoderDefault': 'Default',
+    'plPositionOf': 'Playback position {a} of {b}',
+    'plAuto': 'Auto',
+    'plPrevVideo': 'Previous video',
+    'plPrevFrame': 'Previous frame',
+    'plPause': 'Pause',
+    'plNextFrame': 'Next frame',
+    'plNextVideo': 'Next video (hold for loop options)',
+    'vomWatchLaterAdded': '⏰ Added to Watch later',
+    'vomWatchLaterAlready': 'Already in Watch later',
+    'vomFavAdded': '★ Added to favourites',
+    'vomFavRemoved': '☆ Removed from favourites',
+    'vomPasteSubLink': 'Paste a direct link to a .srt / .ass / .vtt / .ssa / .sub file for "{v}".',
+    'vomSubSaved': 'Subtitle saved. Open the video again to use it.\n{v}',
+    'vomBinBody': 'This hides "{v}" from your library. You can bring it back from the Recycle Bin.',
+    'vomMovedToBin': 'Moved to the Recycle Bin',
+    'vomNoLocalFile': 'This has no file on the phone to convert.',
+    'vomConvertBusy': 'Another conversion is already running.',
+    'vomSavedMusic': 'Saved to Innocent/Music',
+    'vomConvertFailed': 'Conversion failed.',
+    'vomPinFirst': 'Set a Private Folder PIN first (Me → Private Folder).',
+    'vomLockFailed': 'Could not lock it: {v}',
+    'vomCantRename': 'This video cannot be renamed (the system manages it).',
+    'vomBadName': 'A name cannot contain / or \\',
+    'vomNameTaken': 'A file with that name already exists',
+    'vomRenameFailed': 'Could not rename: {v}',
+    'vomCantDelete': 'This video cannot be deleted (the system manages it).',
+    'vomEditingOff': 'Editing is off: Settings → General → Allow editing',
+    'vomDeleteBody': 'Delete "{v}" for good?\n\nThis cannot be undone.',
+    'vomDeleteFailed': 'Could not delete: {v}',
+    'vomRemoveFav': 'Remove from favourites',
+    'vomConvertAudio': 'Convert to audio',
+    'vomAddWatchLater': 'Add to Watch later',
+    'vomMoveToBin': 'Move to the Recycle Bin',
+    'vomAddedTo': 'Added to "{v}"',
+    'vomBytes': '{v} bytes',
+    'vomNewName': 'New name',
+    'vomConverting': 'Converting to audio',
+    'vomPreparing': 'Preparing…',
+    'mcPlayNext': 'Play next',
+    'mcPlayingNext': 'Playing next: "{v}"',
+    'mcPlayLater': 'Play later',
+    'mcQueued': 'Added to the queue',
+    'mcFavAdded': 'Added to favourites',
+    'mcFavRemoved': 'Removed from favourites',
+    'mcTitle': 'Title',
+    'mcArtist': 'Artist',
+    'mcAlbum': 'Album',
+    'mcUnknown': 'Unknown',
+    'mcDuration': 'Duration',
+    'mcPath': 'Path',
+    'mcPathCopied': 'Path copied',
+    'mcPlayAll': 'Play all',
+    'mcShufflePlay': 'Shuffle play',
+    'mpRepeatAll': 'Repeat all',
+    'mpRepeatOne': 'Repeat one',
+    'mpRepeatOff': 'Repeat off',
+    'mpUnknownTrack': 'Unknown track',
+    'mpUnknownArtist': 'Unknown artist',
+    'mpCollapse': 'Collapse',
+    'mpEqualizer': 'Equalizer',
+    'mpAb': 'A-B repeat',
+    'mpSpeed': 'Speed',
+    'mpShuffle': 'Shuffle',
+    'mpPrevious': 'Previous',
+    'mpNext': 'Next',
+    'mpRepeat': 'Repeat',
+    'mpLyricsError': 'The lyrics file could not be read.',
+    'mpNoLyrics': 'No lyrics found.\n\nTo add them, put an .lrc file with the same name next to the song — song.mp3 → song.lrc — with lines like [00:12.34]Lyric text.',
+    'mcDateAdded': 'Date added',
+    'mpFavourites': 'My favourites',
+    'mpRecent': 'Recently played',
+    'mpShowQueue': 'Show queue',
+    'mpNoFavs': 'No favourites yet.\nTap ♥ on any song to add it here.',
+    'mpNoRecent': 'No recently played songs yet',
+    'mpEmptyPlaylist': 'This playlist is empty',
+    'svTitle': 'Title',
+    'svDate': 'Date',
+    'svPlayedTime': 'Played time',
+    'svStatus': 'Status',
+    'svLength': 'Length',
+    'svSize': 'Size',
+    'svResolution': 'Resolution',
+    'svPath': 'Path',
+    'svFrameRate': 'Frame rate',
+    'svType': 'Type',
+    'svAllFolders': 'All folders',
+    'svFiles': 'Files',
+    'svFolders': 'Folders',
+    'svList': 'List',
+    'svGrid': 'Grid',
+    'svViewMode': 'View mode',
+    'svLayout': 'Layout',
+    'svAz': 'A to Z',
+    'svZa': 'Z to A',
+    'svOldest': 'Oldest',
+    'svNewest': 'Newest',
+    'svShortest': 'Shortest',
+    'svLongest': 'Longest',
+    'svSmallest': 'Smallest',
+    'svLargest': 'Largest',
+    'svLowest': 'Lowest',
+    'svHighest': 'Highest',
+    'svAscending': 'Ascending',
+    'svDescending': 'Descending',
+    'svSort': 'Sort',
+    'svFields': 'Fields',
+    'svThumbnail': 'Thumbnail',
+    'svExtension': 'File extension',
+    'svAdvanced': 'Advanced',
+    'svLengthOnThumb': 'Show length over the thumbnail',
+    'lsViewMode': 'View mode: {v}',
+    'lsSortView': 'Sort & view',
+    'lsNoFolderMatch': 'No folders match "{v}"',
+    'lsAdbStale': 'ADB is disconnected, so the app-data videos may be out of date. Reconnect to refresh them.',
+    'lsReconnect': 'Reconnect',
+    'fdBackAll': 'Back to all folders',
+    'fdNoVideoMatch': 'No videos match "{v}"',
+    'fdEmpty': 'No videos in this folder',
+    'sabHint': 'Search media files',
+    'sabClear': 'Clear',
+    'hlpQ1': 'How do I play a video?',
+    'hlpA1': 'Open the Video tab, go into a folder and tap a video.',
+    'hlpQ2': 'How do I change the decoder?',
+    'hlpA2': 'While a video plays, tap the HW/SW badge at the top right, or go to Settings → Decoder.',
+    'hlpQ3': 'How do I add subtitles?',
+    'hlpA3': 'While a video plays, tap the subtitle button in the row of shortcuts and pick a subtitle file from the phone.',
+    'hlpQ4': 'How do I lock a video in the Private Folder?',
+    'hlpA4': 'Long-press a video, or tap its ⋮, and choose "Lock in Private Folder". You set a PIN the first time.',
+    'hlpQ5': 'How do I keep listening in the background?',
+    'hlpA5': 'Tap the headphones in the player\'s shortcuts, or choose it under Settings → Player → Background play. The sound goes on when you switch apps.',
+    'hlpQ6': 'How do I change the playback speed?',
+    'hlpA6': 'While a video plays, tap Speed in the row of shortcuts.',
+    'hlpQ7': 'How do I send files to another phone?',
+    'hlpA7': 'Open the Transfer tab. Tap Send to share files, or Receive to get them from another phone.',
+    'hlpQ8': 'How do the gestures work?',
+    'hlpA8': 'Swipe up or down on the left for brightness, on the right for volume, and left or right to seek.',
+    'hsToday': 'Today',
+    'hsYesterday': 'Yesterday',
+    'hsThisWeek': 'This week',
+    'hsEarlier': 'Earlier',
+    'hsClearAll': 'Clear all',
+    'wiEmpty': 'Watch a few videos and come back: your weekly recap will show here.',
+    'wiMin': 'min',
+    'wiVideos': 'Videos',
+    'wiActiveDays': 'Active days',
+    'wiStreakStart': 'Start a new streak today!',
+    'wiStreakToday': 'You watched today: keep it going.',
+    'wiStreakDays': '{v} days in a row: nice rhythm.',
+    'wiNoStreak': 'No streak yet',
+    'wiStreak': '{v}-day streak',
+    'wiWatches': '{n} watches',
+    'wiWatchesOne': '{n} watch',
+    'wiPlays': '{n} plays',
+    'wiPlaysOne': '{n} play',
+    'wiFinisher': 'You are a finisher.',
+    'wiSolid': 'Solid follow-through.',
+    'wiHalf': 'Plenty of films half-watched.',
+    'wiLocal': 'These numbers are worked out on your phone. Nothing is uploaded.',
+    'stFolders': 'Folders',
+    'stTotalSize': 'Total size',
+    'stTotalLength': 'Total length',
+    'stActivity': 'YOUR ACTIVITY',
+    'stWatched': 'Watched',
+    'stWatchTime': 'Watch time',
+    'stTopFolders': 'TOP FOLDERS',
+    'stMostWatched': 'MOST WATCHED',
+    'stPlaysDone': '{n} plays • {p}% done',
+    'stPlaysDoneOne': '{n} play • {p}% done',
+    'plsClearBody': 'This takes {n} videos out of the playlist. The files on your phone stay.',
+    'plsClearBodyOne': 'This takes 1 video out of the playlist. The file on your phone stays.',
+    'plsEmpty': 'Make one above, or tap ⋮ on any video to add it to a playlist.',
+    'plsHowToAdd': 'Tap ⋮ on a video and choose "Add to playlist" → "{v}"',
+    'rbInfo': 'Info',
+    'rbKept': 'Items stay in the Recycle Bin for up to 30 days, then go by themselves.',
+    'rbClearBody': 'Every entry goes from this list for good. The video files themselves stay on your phone.',
+    'rbBanner': 'Files stay in the Recycle Bin for up to 30 days before they are deleted from your phone.',
+    'rbRestore': 'Restore',
+    'agoDays': '{n}d ago',
+    'agoHours': '{n}h ago',
+    'agoMinutes': '{n}m ago',
+    'agoJustNow': 'Just now',
+    'ssvSavedTo': 'Saved to {v}',
+    'ssvNotWritable': 'Could not save: the storage cannot be written to',
+    'ssvNoVideos': 'No status videos found',
+    'ssvNoImages': 'No status images found',
+    'ssvHowTo': 'Open a status in WhatsApp first, then come back and refresh.',
+    'cdDrive': 'Stream from Drive without downloading',
+    'cdDropbox': 'Connect your Dropbox account',
+    'cdOneDrive': 'Microsoft cloud storage',
+    'cdICloud': 'Apple iCloud (web link only)',
+    'cdYandex': 'Yandex cloud storage',
+    'cdMega': 'Encrypted cloud storage',
+    'cdPcloud': 'European cloud storage',
+    'cppFfRew': 'Fast forward / Rewind',
+    'aeOriginal': 'Original',
+    'aeClarity': 'Clarity',
+    'aeBassBoost': 'Bass boost',
+    'aeTrebleBoost': 'Treble boost',
+    'aeMovie': 'Movie',
+    'aeMusic': 'Music',
+    'aeCustom': 'Custom',
+    'aeVirtualizer': 'Virtualizer',
+    'aeAudioEffect': 'Audio effect',
+    'aeSoundProfiles': 'Sound profiles',
+    'aeUnsupported': 'This phone does not support audio effects, or nothing is playing right now.',
+    'pvWouldNotStart': 'This video would not start. Tap Retry; if it keeps failing, the file may be unavailable.',
+    'pvStalled': 'Playback stalled: the network is too slow to keep up. Tap Retry or check your connection.',
+    'pvOffline': 'No internet connection. Reconnect and tap Retry.',
+    'pvLinkExpired': 'This stream link has expired. Open the title again to keep watching.',
+    'pvAdbLoading': 'Loading the video over ADB…\nLarger files take a moment.',
+    'pvAdbFailed': 'Could not load this video over ADB. Check that the phone is still connected on the ADB screen, then try again.',
+    'pvDownloadGone': 'This download can no longer be opened on this phone. Delete it from Downloads and download it again.',
+    'pwNotSet': 'Not set',
+    'pwMarkersHint': 'Set a marker at the current position; it is skipped automatically next time.',
+    'pwIntroEnds': 'Intro ends at',
+    'pwIntroSet': 'Intro marker set at {v}',
+    'pwOutroStarts': 'Outro starts at',
+    'pwOutroSet': 'Outro marker set at {v}',
+    'pwUpdate': 'Update',
+    'pwSet': 'Set',
+    'pwDecrease': 'Decrease {v}',
+    'pwIncrease': 'Increase {v}',
+    'pwTuneHint': 'Drag anywhere on this panel: sideways for timing, up and down for position. Tap a value to reset it.',
+    'pwTiming': 'Timing',
+    'pwPosition': 'Position',
+    'pwOpenFile': 'Open file',
+    'pwSubTrack': 'Subtitle track',
+    'pwTextStyle': 'Text style',
+    'pwPosLayout': 'Position & layout',
+    'pwStartA': 'Start (A)',
+    'pwEndB': 'End (B)',
+    'pwBrightness': 'Brightness',
+    'pwContrast': 'Contrast',
+    'pwSaturation': 'Saturation',
+    'pwHue': 'Hue',
+    'pwLoopOne': 'Loop one',
+    'pwLoopAll': 'Loop all',
+    'pwBadNumber': 'Not a number',
+    'pwSpeedRange': 'Speed must be 0.25 – 4.0',
+    'pwNoBookmarks': 'No bookmarks for this video.\nTap ⋮ → Bookmark while it plays.',
+    'pwCurrentVideo': 'Current video',
+    'pwOpenFull': 'Open full screen',
+    'pwHwDecoder': 'HW decoder',
+    'pwHwPlusDecoder': 'HW+ decoder',
+    'pwSwDecoder': 'SW decoder',
+    'cutPrivate': 'Private Folder videos cannot be cut.',
+    'cutLocalOnly': 'Only a video saved on this phone can be cut.',
+    'cutWorking': 'Cutting…',
+    'cutSaved': 'Cut saved: {v}',
+    'cutCancelled': 'Cut cancelled. Nothing was saved.',
+    'cutProgress': 'Cutting… {n}%',
+    'cutKeyStartAt': 'Starts at {v}, the key frame before A',
+    'cutExactSub': 'Starts exactly at A. The start is re-encoded (for most downloaded videos, the whole clip), so it takes longer.',
+    'cutExact': 'Exact start',
+    'cutSavedSilent': 'Cut saved without sound: {v}. This video\'s audio cannot go into an MP4 without re-encoding.',
+    'cutFailed': 'Could not cut this video ({v}).',
+    'cutHint': 'The clip is copied as it is: at once and without loss, from the key frame at or before A. Exact start, below, begins at A itself.',
+    'cutSavedKeyFrame': 'Cut saved: {v}. An exact start was not possible for this video, so it starts at the key frame just before A.',
+    'obFindTitle': 'Find your videos',
+    'obFindBody': 'Innocent finds the videos on your phone and sorts them by folder. Everything stays on your phone; nothing is uploaded.',
+    'obGestureTitle': 'Gesture controls',
+    'obGestureBody': 'Swipe up or down on the left for brightness, on the right for volume, and sideways to seek. Long-press to change speed; pinch to zoom.',
+    'obYoursTitle': 'Make it yours',
+    'obYoursBody': 'Favourite videos, make playlists, save bookmarks and carry on where you left off. It is all in the Me tab.',
+    'obStart': 'Get started',
+    'obNext': 'Next',
+    'arReconnectTo': 'Reconnect to view {v}',
+    'arLocked': 'Locked folder',
+    'arDropped': 'The ADB connection has dropped, so {v} cannot be read right now. Reconnecting takes one tap and usually holds from then on.',
+    'arPrivate': 'Android keeps app-data folders private, so {v} can only be opened through an ADB connection. Innocent sets that up itself over wireless debugging; no other app is needed.',
+    'arNotNow': 'Not now',
+    'arSetUp': 'Set up',
+    'trCopyUrl': 'Copy link',
+    'trResumeUnfinished': 'Resume unfinished transfer',
+    'ppFingerprint': 'Unlock with fingerprint',
+    'ppClear': 'Clear',
+    'ppConfirm': 'Confirm',
+    'ppBackspace': 'Delete a digit',
+    'afpTitle': 'Choose files to add',
+    'afpInternal': 'Internal storage',
+    'vliVideo': 'Video: {v}',
+    'acReachable': 'Connected: the phone is reachable.',
+    'acNotConnHelp': 'Not connected. Tap Connect; if that does not work, open Wireless debugging (button above), check it is still on, then try again.',
+    'acNotConnYet': 'Not connected yet. Tap Connect (you may need to open Wireless debugging again first).',
+    'acUpdateTitle': 'Update your phone before leaving Wireless debugging on',
+    'acUpdateBody': 'This phone’s security update is from {v}. Android 14 to 16 need the May 2026 update (or a newer Google Play system update) to close a Wireless debugging flaw (CVE-2026-0073): without it, a device on the same Wi-Fi can get in without pairing. Until you update, turn Wireless debugging off when you are not using it, and leave auto-reconnect after reboot off.',
+    'acTurnOffNow': 'Turn it off now',
+    'acOpenWd': 'Open Wireless debugging',
+    'acTurnedOff': 'Wireless debugging is off, and so is auto-reconnect after reboot. Turn it on again from Wireless debugging when you next need Android/data, ideally after updating the phone.',
+    'acCouldNotOff': 'Could not switch it off from here. Open Wireless debugging and turn it off there.',
+    'acReconnecting': 'Reconnecting…',
+    'acFoundAdded': 'Found {n} videos; they are in the Video tab.',
+    'acFoundAddedOne': 'Found 1 video; it is in the Video tab.',
+    'acNotifOff': 'Notifications are off for Innocent, so the pairing notification cannot appear. Open Settings → Apps → Innocent → Notifications, turn them on, then try again.',
+    'acNotifAsk': 'Please allow notifications so the pairing-code notification can appear, then tap "Pair from notification" again.',
+    'acNotifReady': 'Ready to pair from the notification.\n\n1. Tap "Open Wireless debugging" below.\n2. Tap "Pair device with pairing code"; a 6-digit code appears.\n3. Pull down the notification shade, tap "Reply" on the "Enter the pairing code here" notification, type the code and send.\n\nNo split screen needed: this screen keeps working in the background.',
+    'acNotifStopped': 'Notification pairing stopped.',
+    'acPairing': 'Pairing…\nKeep the "Pair device with pairing code" dialog visible (split screen or pop-up window).',
+    'acConnecting': 'Connecting…',
+    'acDevOffTitle': 'Turn on Developer options first',
+    'acDevOffBody': 'Wireless debugging is inside Developer options, which is hidden at first.\n\nTo unlock it:\n1. Open About phone.\n2. Find "Build number" (sometimes under "Software information").\n3. Tap it 7 times until it says "You are now a developer".\n\nThen come back and tap "Open Wireless debugging" again.',
+    'acOpenAbout': 'Open About phone',
+    'acOpenFailed': 'Could not open settings by itself. Open Settings → Developer options → Wireless debugging yourself.',
+    'acPlaying': 'Playing "{v}".',
+    'acPairAddrHelp': 'Enter the pairing address as IP:Port, copied exactly from the "Pair device with pairing code" dialog, e.g. 192.168.1.5:42749',
+    'acCodeHelp': 'Enter the 6-digit pairing code.',
+    'acConnAddrHelp': 'Enter the connect address as IP:Port, copied exactly from the main Wireless debugging screen, e.g. 192.168.1.5:32961',
+    'acScanning': 'Looking for videos in Android/data and Android/obb…\n(this can take a while on a full phone)',
+    'acNoneFound': 'No videos in Android/data or Android/obb.',
+    'acFound': 'Found {n} videos.',
+    'acFoundOne': 'Found 1 video.',
+    'acManualHide': 'Hide manual IP:Port',
+    'acManualShow': 'Manual IP:Port (if the code alone fails)',
+    'acManualHint': 'Use this if "Pair" with only the code fails, usually because the network blocks mDNS (a VPN forcing a 169.254.x.x address, say). Copy the IP:Port exactly as shown on screen.',
+    'acPairOnce': 'Pair (one time)',
+    'acPairAddrLabel': 'Pairing IP:Port (from the pairing dialog)',
+    'acEg': 'e.g. {v}',
+    'acPairManual': 'Pair (manual)',
+    'acConnect': 'Connect',
+    'acConnAddrLabel': 'Connect IP:Port (from the Wireless debugging screen)',
+    'acConnectManual': 'Connect (manual)',
   };
 
   static const Map<String, String> _my = <String, String>{
@@ -3637,7 +4988,7 @@ class AppStrings {
     'trResumeReceiving': 'Download တစ်ဝက်တစ်ပျက် ရပ်သွားသည် — ဆက်ရန် နှိပ်ပါ',
     'trShareWith': 'မျှဝေရန်',
     'trPc': 'PC',
-    'trTablet': 'Tablet',
+    'trTablet': 'တက်ဘလက်',
     'trSendAppShort': 'သူငယ်ချင်းဆီ app ကို ပို့ပါ — အင်တာနက် မလို',
     'trTurboOnShort': 'ဖွင့်ထား — ဖုန်းချင်း တိုက်ရိုက်၊ router မလို။ အမြန်ဆုံး။',
     'trTurboOffShort': 'ပိတ်ထား — Wi-Fi router ကနေ ပို့ပါမယ်',
@@ -3714,22 +5065,6 @@ class AppStrings {
     'subBottomMargins': 'အောက်ခြေ အကွာအဝေး',
     'subBottomMarginsTitle': 'အောက်ခြေ အကွာအဝေး',
     'subImproveStroke': 'အနားသတ် ဖော်ပြမှု တိုးတက်စေရန်',
-    'subVerticalPos': 'ဒေါင်လိုက် တည်နေရာ',
-    'subVerticalPosTitle': 'ဒေါင်လိုက် တည်နေရာ',
-    'subVerticalPosDesc': 'အပေါ်ဘက်မှ အကွာအဝေး၊ ရာခိုင်နှုန်းအဖြစ်။',
-    'subHorizontalAlign': 'အလျားလိုက် နေရာချထားမှု',
-    'subHorizontalAlignTitle': 'အလျားလိုက် နေရာချထားမှု',
-    'subSidePadding': 'ဘယ်/ညာ အကွာအဝေး',
-    'subSidePaddingTitle': 'ဘယ်/ညာ အကွာအဝေး',
-    'subSidePaddingDesc': 'အလျားလိုက် အကွာအဝေး၊ pixel အားဖြင့်။',
-    'subBottomMargin': 'အောက်ခြေ အကွာအဝေး',
-    'subBottomMarginTitle': 'အောက်ခြေ အကွာအဝေး',
-    'subBottomMarginDesc': 'အောက်ခြေ အကွာအဝေး၊ pixel အားဖြင့်။',
-    'subShowBackground': 'နောက်ခံ ပြရန်',
-    'subBgBlack50': 'အနက် (၅၀% အလင်းပိတ်)',
-    'subBgBlack75': 'အနက် (၇၅% အလင်းပိတ်)',
-    'subBgDarkGray': 'မီးခိုးရင့်',
-    'subBgColorActiveWhen': '"နောက်ခံ ပြရန်" ဖွင့်ထားမှသာ အလုပ်လုပ်ပါသည်။',
     'currently': 'လက်ရှိ',
 
     // --- Video Hub: age gate / library ---
@@ -3783,6 +5118,14 @@ class AppStrings {
     'adbTipTranssion': 'TECNO၊ Infinix၊ itel: Innocent ကို background မှာ run ခွင့်ပေးပါ (battery settings သို့မဟုတ် Phone Master)။ မပေးရင် code မရိုက်ခင် pairing notification ပိတ်သွားနိုင်ပါတယ်။',
     'adbNotSupported': 'Wireless debugging အတွက် Android 11 နဲ့ အထက် လိုပါတယ်။',
     'hfTitle': 'ဝှက်ထားသော ဖိုင်များ',
+    'playerSurface': 'ဗီဒီယို',
+    'playerSurfaceHint': 'ခလုတ်တွေ ပြ / ဖျောက်',
+    'themeAdaptive': 'အလိုက်သင့်',
+    'themeLight': 'အလင်း Theme',
+    'themeDark': 'အမှောင် Theme',
+    'themeUsing': 'သုံးနေသည်',
+    'themeComingSoon': 'မကြာမီ',
+    'themeNew': 'အသစ်',
     'fvTitle': 'Folder ပြ / ဖျောက်',
     'fvAppSection': 'App folder များ (Android/data)',
     'fvAppSectionHint': 'ADB နဲ့ ရှာတွေ့ထားတာတွေပါ။ Video tab မှာ မမြင်ချင်တာကို ဖျောက်ထားနိုင်ပါတယ် — ဘာမှ မရွှေ့၊ မဖျက်ပါဘူး။',
@@ -3799,6 +5142,7 @@ class AppStrings {
     'fvHiddenSnack': 'folder {n} ခု Video tab မှာ ဖျောက်ထားပြီးပါပြီ',
     'fvFooter': 'ဖျောက်ထားသော folder {n} ခု',
     'fvVideos': 'ဗီဒီယို {n} ခု',
+    'folderRowLabel': 'ဖိုင်တွဲ: {name}၊ {videos}',
     'fvUndo': 'ပြန်ပြမယ်',
     'fvManage': 'စီမံမယ်',
     'hfNeedTitle': 'ဝှက်ထားသော ဖိုင်တွေ ကြည့်ဖို့ ADB ချိတ်ရပါမယ်',
@@ -3893,7 +5237,7 @@ class AppStrings {
     'adbFound': 'ဗီဒီယို {n} ခု တွေ့ပါတယ်',
     'adbLostTitle': 'Android/data ကို ကြည့်ဖို့ ADB ချိတ်ဆက်မှု လိုပါတယ်',
     'adbLostBody': 'ချိတ်ဆက်မှု ပြုတ်သွားပါတယ် — များသောအားဖြင့် Wireless debugging ပိတ်သွားလို့ပါ။ ပြန်ဖွင့်လိုက်ပါ၊ ချိတ်ဆက်မှု ပြန်ရတာနဲ့ ဒီ folder က အလိုလို ပွင့်လာပါမယ်။',
-    'adbLostAction': 'ADB settings',
+    'adbLostAction': 'ADB ဆက်တင်',
     'destinationIfExists': 'အမည်တူဖိုင် ရှိနှင့်ပြီးဖြစ်ပါက',
     'destinationKeepBoth': 'နှစ်ခုလုံး ထားရန်',
     'destinationSkip': 'ကျော်ရန်',
@@ -4223,7 +5567,7 @@ class AppStrings {
     'vhAlbumDownloadAll': 'အားလုံး ဒေါင်းမည်',
     'vhAlbumDownloaded': 'ဒေါင်းပြီး',
     'vhAlbumDownloadNew': 'ဒေါင်းမည်',
-    'vhAlbumPlusVideos': '+{n} Video',
+    'vhAlbumPlusVideos': '+ဗီဒီယို {n}',
     'vhAlbumPlusPhotos': '+{n} ပုံ',
     'vhAlbumProgress': '{done} / {total}',
     'vhCountOf': '{n} ခုမှ {i}',
@@ -4407,8 +5751,6 @@ class AppStrings {
     'resetSettingsTitle': 'Settings ပြန်လည်သတ်မှတ်မလား?',
     'resetSettingsBody': 'Settings အားလုံး မူလအတိုင်း ပြန်ဖြစ်သွားပါမယ်။',
     'settingsResetDone': 'Settings မူလအတိုင်း ပြန်သတ်မှတ်ပြီးပါပြီ',
-    'clearFontCacheTitle': 'Font Cache ရှင်းမလား?',
-    'fontCacheCleared': 'Font cache ရှင်းပြီးပါပြီ',
     'languageRestartNote': 'App ပြန်ဖွင့်တဲ့အခါ ဘာသာစကား ပြောင်းပါမယ်',
     'exportedTo': '{path} သို့ ထုတ်ယူပြီးပါပြီ',
     'exportFailed': 'ထုတ်ယူ၍မရပါ',
@@ -4416,7 +5758,6 @@ class AppStrings {
     'importedFrom': '{path} မှ settings ထည့်သွင်းပြီးပါပြီ',
     'noExportFile': 'ထုတ်ယူထားတဲ့ settings ဖိုင် မတွေ့ပါ။ Export ကို အရင်သုံးပါ။',
     'moreLanguagesOnWay': 'နောက်ထပ် ဘာသာစကားများ ထပ်ထည့်ပေးသွားပါမယ်။',
-    'colorFormat': 'အရောင် Format',
     'screenTitle': 'မျက်နှာပြင်',
     'navigationTitle': 'လမ်းညွှန်မှု',
     'controlsTitle': 'ထိန်းချုပ်မှုများ',
@@ -4424,7 +5765,6 @@ class AppStrings {
     'subtitleTextTitle': 'စာတန်းထိုး စာသား',
     'subtitleLayoutTitle': 'စာတန်းထိုး နေရာချထားမှု',
     'soonBadge': 'မကြာမီ',
-    'debugLogsExported': 'Debug log များ ထုတ်ယူပြီးပါပြီ',
     'findYourVideos': 'သင့်ဗီဒီယိုများကို ရှာပါ',
     'scanningVideos': 'ဗီဒီယိုများ ရှာဖွေနေသည်…',
     'errorLoadingFoldersPrefix': 'Folder များ ဖတ်၍မရပါ',
@@ -4592,7 +5932,7 @@ class AppStrings {
     'scanSenderQr': 'ပို့သူ QR ကို scan ဖတ်ပါ',
     'scanQrHint': 'ပို့တဲ့ဖုန်းပေါ်က QR code ကို ကင်မရာနဲ့ ချိန်ပါ',
     'playbackSpeed': 'ဖွင့်နှုန်း',
-    'sleepTimer': 'Sleep Timer',
+    'sleepTimer': 'အိပ်ချိန်မှတ်',
     'stopsIn': '{t} အကြာတွင် ရပ်ပါမယ်',
     'sleepTimerSetMin': 'Sleep timer သတ်မှတ်ပြီး: {n} မိနစ်',
     'sleepTimerOff': 'Sleep timer ပိတ်ပြီး',
@@ -4674,7 +6014,7 @@ class AppStrings {
     'netGotIt': 'နားလည်ပြီ',
     'netNewServer': '{p} Server အသစ်',
     'netEditServer': '{p} Server ပြင်ရန်',
-    'netScan': 'Scan',
+    'netScan': 'ရှာမည်',
     'netServer': 'Server',
     'netServerIp': 'Server IP',
     'netServerName': 'အမည်',
@@ -4684,14 +6024,14 @@ class AppStrings {
     'netFolder': 'Folder',
     'netFolderHint': 'စဖွင့်မည့် folder (မထည့်လည်းရ)',
     'netPort': 'Port',
-    'netUsername': 'Username',
-    'netPassword': 'Password',
+    'netUsername': 'အသုံးပြုသူအမည်',
+    'netPassword': 'စကားဝှက်',
     'netAnonymous': 'အကောင့်မပါဘဲ ချိတ်မည်',
-    'netMode': 'Mode',
+    'netMode': 'မုဒ်',
     'netActive': 'Active',
     'netPassive': 'Passive',
     'netEncoding': 'Encoding',
-    'netSecurityMode': 'Security Mode',
+    'netSecurityMode': 'လုံခြုံရေး မုဒ်',
     'netImplicit': 'Implicit',
     'netExplicit': 'Explicit',
     'netUseKey': 'Private Key ဖြင့် ဝင်မည်',
@@ -4738,9 +6078,9 @@ class AppStrings {
     'netMediaOnly': 'Media သာ',
     'netNotPlayable': 'ဒီဖိုင်ကို ဒီမှာ ဖွင့်လို့ မရပါ။',
     'netItems': '{n} ခု',
-    'netAnonymousTag': 'Anonymous',
+    'netAnonymousTag': 'အမည်မဖော်',
     'netShares': 'Share များ',
-    'netShowPassword': 'Password ပြမည်',
+    'netShowPassword': 'စကားဝှက် ပြမည်',
     'aboutCloudDrive': 'Cloud Drive အကြောင်း',
     'cloudDriveBody': 'သင့် cloud account တွေထဲက ဗီဒီယိုနဲ့ သီချင်းတွေကို ဒေါင်းလုဒ်မလုပ်ဘဲ တိုက်ရိုက် ဖွင့်နိုင်ပါမယ်။ အောက်က provider တစ်ခုကို ချိတ်ပြီး Innocent ထဲကနေ ဖိုင်တွေ ကြည့်နိုင်ပါတယ်။',
     'connectCloudCaps': 'သင့် CLOUD STORAGE ကို ချိတ်ဆက်ပါ',
@@ -4808,13 +6148,9 @@ class AppStrings {
     'gtHeadsetSub': 'ရပ်/ဖွင့်။',
     'storagePermissionNeeded': 'သိုလှောင်မှုခွင့်ပြုချက် လိုအပ်ပါတယ်',
     'statusPermissionHint': 'WhatsApp status တွေဖတ်နိုင်ဖို့ media ဝင်ရောက်ခွင့် ပေးပါ။',
-    'openingPrivacyPolicy': 'Privacy Policy ဖွင့်နေသည်...',
-    'openingTerms': 'Terms of Service ဖွင့်နေသည်...',
     'personalPlayerApp': 'ကိုယ်ပိုင်သုံး ဗီဒီယို player app။',
     'storageManagement': 'သိုလှောင်မှု စီမံခန့်ခွဲရေး',
     'storageUsage': 'သိုလှောင်မှု အသုံးပြုမှု',
-    'classicThemes': 'Classic Theme များ',
-    'noInternetThemes': 'အင်တာနက် မရှိပါ။ Theme အသစ်တွေအတွက် နှိပ်ပြီး ချိတ်ပါ။',
     'themeApplied': 'Theme သုံးပြီးပါပြီ',
     'openSourceLicenses': 'Open source လိုင်စင်များ',
     'personalProject': 'သင်ယူရေးနဲ့ ကိုယ်ပိုင်သုံးအတွက် Flutter project တစ်ခုပါ။',
@@ -5303,6 +6639,633 @@ class AppStrings {
     'updateRequiredBody':
         'ဤဗားရှင်းကို ဆက်လက်အသုံးပြု၍ မရတော့ပါ။ ဆက်လက်အသုံးပြုရန် '
             'အောက်ပါ အပ်ဒိတ်ကို ထည့်သွင်းပါ။',
+    'songsCount': 'သီချင်း {n} ပုဒ်',
+    'minutesCount': '{n} မိနစ်',
+    'psTitleBar': 'ခေါင်းစဉ်ဘား',
+    'psShowTitle': 'ခေါင်းစဉ် ပြမယ်',
+    'psShowTitleSub': 'Player မျက်နှာပြင်မှာ ဗီဒီယို ခေါင်းစဉ်ကို ပြပါ။',
+    'psShowClock': 'နာရီ ပြမယ်',
+    'psShowClockSub': 'Player မျက်နှာပြင်မှာ လက်ရှိ အချိန်ကို ပြပါ။',
+    'psShowSourceUrl': 'Source URL ပြမယ်',
+    'psShowSourceUrlSub': 'Network ကနေ ဖွင့်တဲ့အခါ URL / လမ်းကြောင်းကို ပြပါ။',
+    'psLayout': 'အပြင်အဆင်',
+    'psToolbarPosition': 'Toolbar နေရာ',
+    'psToolbarPositionSub': 'Player ပေါ်မှာ ခေါင်းစဉ်ဘား ထားမယ့် နေရာ။ လက်ရှိ: {v}',
+    'psToolbarTop': 'အပေါ် (မူလ)',
+    'psToolbarBottom': 'အောက် (လက်မနဲ့ လှမ်းမီ)',
+    'pssOrientation': 'မျက်နှာပြင် အလှည့်',
+    'pssFollowSystem': 'ဖုန်းဆက်တင်အတိုင်း',
+    'pssLandscape': 'အလျားလိုက်',
+    'pssLandscapeReverse': 'အလျားလိုက် (ပြောင်းပြန်)',
+    'pssPortrait': 'ဒေါင်လိုက်',
+    'pssDefaultOrientation': 'မူလ အလှည့်',
+    'pssDefaultOrientationSub': 'Player ကို ဘယ်လို လှည့်ထားမလဲ။ "ဖုန်းဆက်တင်အတိုင်း" ဆိုရင် အောက်က အလိုအလျောက် လှည့် အတိုင်း သွားပါမယ်။ လက်ရှိ: {v}',
+    'pssAutoRotation': 'အလိုအလျောက် လှည့်',
+    'pssAutoRotationSub': 'ဖုန်းကို လှည့်တဲ့အတိုင်း မျက်နှာပြင်ကို လှည့်ပါ။',
+    'pssDisplay': 'ပြသမှု',
+    'pssFullScreen': 'မျက်နှာပြင် အပြည့်',
+    'pssFullScreenSub': 'ဖွင့်နေချိန်မှာ status bar နဲ့ navigation bar ကို ဖျောက်ထားပါ။',
+    'pssKeepOn': 'မျက်နှာပြင် မပိတ်စေနဲ့',
+    'pssKeepOnSub': 'ဖွင့်နေချိန်မှာ မျက်နှာပြင် အလိုလို မပိတ်သွားအောင် ထားပါ။',
+    'pssBrightness': 'အလင်း',
+    'pssAutoBrightness': 'အလင်း အလိုအလျောက်',
+    'pssAutoBrightnessSub': 'ဖုန်းရဲ့ အလင်း ဆက်တင်ကို သုံးပါ။',
+    'pssDefaultBrightness': 'မူလ အလင်း',
+    'pssDefaultBrightnessSub': 'ဗီဒီယို အသစ်အတွက် အလင်း (ဗီဒီယိုတစ်ခုချင်းက ကိုယ့်အလင်းကို မှတ်ထားပါတယ်)။ လက်ရှိ: {v}',
+    'pcLock': 'သော့ခတ်',
+    'pcLockAll': 'အားလုံး သော့ခတ် (မူလ)',
+    'pcLockRotation': 'လှည့်တာကိုသာ သော့ခတ်',
+    'pcLockTouch': 'ထိတာကိုသာ သော့ခတ်',
+    'pcLockMode': 'သော့ခတ် ပုံစံ',
+    'pcLockModeSub': 'Player ပေါ်က "သော့ခတ်" က ဘာလုပ်မလဲ။ လက်ရှိ: {v}',
+    'pcLockOnRotation': 'လှည့်ရင် သော့ခတ်မယ်',
+    'pcLockOnRotationSub': 'ဖုန်းကို လှည့်လိုက်ရင် မျက်နှာပြင်ကို အလိုအလျောက် သော့ခတ်ပါ။',
+    'secondsCount': '{n} စက္ကန့်',
+    'pnSeekBar': 'အချိန်ဘား',
+    'pnShowSeekBar': 'အချိန်ဘား ပြမယ်',
+    'pnShowSeekBarSub': 'Player အောက်ခြေမှာ အချိန်ဘား ပြပါ။',
+    'pnSeekPreview': 'ဆွဲနေစဉ် ပုံ ကြိုပြ',
+    'pnSeekPreviewSub': 'အချိန်ဘားကို ဆွဲနေစဉ် ပုံသေးလေး ကြိုပြပါ။',
+    'pnSeekInterval': 'ရှေ့/နောက် ခုန်မယ့် အချိန်',
+    'pnSeekIntervalSub': 'နှစ်ချက်နှိပ်ရင်နဲ့ ရှေ့/နောက် ခလုတ်တွေက ခုန်မယ့် အချိန်။ လက်ရှိ: {v}',
+    'pnButtons': 'ခလုတ်များ',
+    'pnShowPrevNext': 'ရှေ့/နောက် ဗီဒီယို ခလုတ် ပြမယ်',
+    'pnShowPrevNextSub': 'Player ပေါ်မှာ ရှေ့ဗီဒီယို / နောက်ဗီဒီယို ခလုတ် ပြပါ။',
+    'pnNextPrev': 'နောက် / ရှေ့ ဗီဒီယို',
+    'pnSeekPm': '±{v} စက္ကန့် ခုန်',
+    'pnFwdBack': 'ရှေ့ / နောက် ခလုတ်',
+    'pnFwdBackSub': 'မျက်နှာပြင်ပေါ်က ◀▶ ခလုတ်တွေ ဘာလုပ်မလဲ။ လက်ရှိ: {v}',
+    'spInterface': 'အသွင်အပြင်',
+    'spScreenSub': 'အလှည့်၊ မျက်နှာပြင် အပြည့်၊ အလင်း စသည်',
+    'spControlsSub': 'ထိခြင်း၊ gesture၊ သော့ခတ် ပုံစံ စသည်',
+    'spNavigationSub': 'ရှေ့/နောက် ခုန်ခြင်း၊ ရှေ့/နောက် ခလုတ် စသည်',
+    'spDoubleBack': 'Back ကို နှစ်ချက် နှိပ်မှ ထွက်',
+    'spDoubleBackSub': 'Player ကနေ ထွက်ဖို့ Back ကို နှစ်ချက် နှိပ်ရပါမယ်။',
+    'spQuickZoom': 'အမြန် zoom',
+    'spQuickZoomSub': '100% နဲ့ မျက်နှာပြင်အပြည့် ကြားက zoom အဆင့်တွေ (150%, 200%…) ကို ကျော်ပါ။',
+    'spPinControls': 'ခလုတ်တွေ အမြဲ ပြထား',
+    'spPinControlsSub': 'Player ခလုတ်တွေ အလိုလို မပျောက်တော့ပါ။ မူလက ပိတ်ထားပါတယ်။',
+    'spHideDelay': 'ခလုတ်တွေ ပျောက်မယ့် အချိန်',
+    'spHideDelaySub': 'နောက်ဆုံး ထိပြီးနောက် ခလုတ်တွေ ပြနေမယ့် အချိန်။ လက်ရှိ: {v}',
+    'spPlayback': 'ဖွင့်ခြင်း',
+    'spResume': 'ဆက်ဖွင့်ခြင်း',
+    'spResumeAsk': 'အမြဲ မေးမယ်',
+    'spResumeAlways': 'အမြဲ ရပ်ခဲ့တဲ့နေရာက ဆက်ဖွင့်',
+    'spResumeNever': 'အမြဲ အစကနေ ဖွင့်',
+    'spResumeSub': 'ရပ်ခဲ့တဲ့နေရာက ဆက်ဖွင့်မလား။ လက်ရှိ: {v}',
+    'spResumeFirst': 'ပထမ ဖိုင်ကိုသာ ဆက်ဖွင့်',
+    'spResumeFirstSub': 'ပထမ ဖိုင်မှာသာ ဆက်ဖွင့်ပါမယ်၊ နောက်ဖိုင်တွေက အစကနေ စပါမယ်။',
+    'spDefaultSpeed': 'မူလ အမြန်နှုန်း',
+    'spRemember': 'ရွေးထားတာတွေ မှတ်ထား',
+    'spRememberSub': 'ဖိုင်တစ်ခုချင်းအတွက် ရွေးထားတဲ့ အသံ track၊ စာတန်း track နဲ့ decoder ကို မှတ်ထားပါ။',
+    'spBackToList': 'စာရင်းကို ပြန်သွား',
+    'spBackToListSub': 'ဖွင့်ပြီးသွားရင် စာရင်းကို ပြန်သွားပါ။',
+    'spPreviewSeek': 'ရွှေ့နေစဉ် ပုံ ကြိုပြ',
+    'spPreviewSeekSub': 'ရွှေ့နေတဲ့ နေရာရဲ့ ပုံကို ကြိုပြပါ။',
+    'spPreviewSeekNet': 'ရွှေ့နေစဉ် ပုံ ကြိုပြ (network)',
+    'spPreviewSeekNetSub': 'Network ကနေ ဖွင့်တဲ့ ဗီဒီယိုမှာလည်း ပုံ ကြိုပြပါ။',
+    'spFastSeek': 'အမြန် ရွှေ့',
+    'spFastSeekSub': 'အတိအကျ နေရာအစား အနီးဆုံး key frame ကို ခုန်ပါ (HW+ နဲ့ SW decoder)။',
+    'spPlayAlone': 'တစ်ခုတည်း ဖွင့်',
+    'spPlayAloneSub': 'ဒီမှာ ဖွင့်နေချိန် တခြား player တွေကို ရပ်ပြီး တခြားတစ်ခု စဖွင့်ရင် ဒါမှမဟုတ် ဖုန်းဝင်လာရင် ဒီမှာလည်း ရပ်ပါမယ်။',
+    'spMediaButtons': 'Media ခလုတ်များ',
+    'spMediaButtonsSub': 'နားကြပ်၊ Bluetooth စတာတွေရဲ့ media ခလုတ်တွေကို လက်ခံပါ။',
+    'spNextPrevFf': 'Next/Prev → ရှေ့ရစ်/နောက်ရစ်',
+    'spNextPrevFfSub': 'Next/Prev media ခလုတ်တွေကို ရှေ့ရစ် / နောက်ရစ် အဖြစ် သုံးပါ။',
+    'spTogglePlay': 'Play ခလုတ်နဲ့ ဖွင့်/ရပ်',
+    'spTogglePlaySub': 'Play ခလုတ်က ဖွင့်တာရော ရပ်တာပါ လုပ်ပါမယ်။ Play ခလုတ် ပြဿနာရှိတဲ့ ဖုန်းတွေအတွက်သာ။',
+    'spSmartPrev': 'Previous ခလုတ် (စမတ်)',
+    'spSmartPrevSub': 'Previous ကို နှိပ်ရင် ဒီဗီဒီယိုရဲ့ အစကို ပြန်သွားပါမယ်၊ အစနားမှာ ရှိနေရင် ရှေ့ဗီဒီယိုကို ဖွင့်ပါမယ်။',
+    'spSuppressError': 'Error စာ မပြနဲ့',
+    'spSuppressErrorSub': 'ဗီဒီယို မဖွင့်နိုင်ရင် error စာ မပြဘဲ နောက်ဗီဒီယိုကို ဆက်ဖွင့်ပါ။',
+    'spCustomPip': 'ကိုယ်ပိုင် pop-up player သုံးမယ်',
+    'spCustomPipSub': 'Android ရဲ့ picture-in-picture အစား ရွှေ့လို့၊ အရွယ်ပြောင်းလို့ရတဲ့ pop-up ကို သုံးပါ။',
+    'spBackground': 'နောက်ကွယ်မှာ ဖွင့်ခြင်း',
+    'spBgMode': 'နောက်ကွယ် / PiP',
+    'spBgModeSub': 'တခြား app ကို ပြောင်းသွားရင် player က ဘာလုပ်မလဲ။ လက်ရှိ: {v}',
+    'spBgPip': 'Picture-in-picture (ဝင်းဒိုးသေး)',
+    'spBgPlay': 'နောက်ကွယ်မှာ ဆက်ဖွင့်',
+    'spBgStop': 'ရပ်မယ်',
+    'spBgAudio': 'နောက်ကွယ်မှာ ဖွင့် (အသံ)',
+    'spBgAudioSub': 'အသံဖိုင်တွေကို နောက်ကွယ်မှာ ဆက်ဖွင့်ပါ။',
+    'spMisc': 'အထွေထွေ',
+    'spLimitResize': 'ဗီဒီယို ချဲ့တာ ကန့်သတ်',
+    'spLimitResizeSub': 'ဗီဒီယိုကို ကိုယ့်အရွယ်ထက် မချဲ့ပါနဲ့ (HW decoder မှာသာ)။',
+    'spLoadingCircle': 'Loading စက်ဝိုင်း animation',
+    'daysCount': '{n} ရက်',
+    'slAppearance': 'အသွင်အပြင်',
+    'slFloating': 'Floating ခလုတ်',
+    'slFloatingSub': 'နောက်ဆုံး ဖွင့်ခဲ့တာကို ပြန်ဖွင့်ဖို့ မျက်နှာပြင် ညာဘက်အောက်ထောင့်မှာ ခလုတ်တစ်ခု ထားပါ။',
+    'slNewPeriod': '"NEW" ပြမယ့် ကာလ',
+    'slNewPeriodSub': 'ဒီကာလအတွင်း ထည့်ထားတဲ့ ဖိုင်ပေါ်မှာ "NEW" ပြပါမယ်။ လက်ရှိ: {v}',
+    'slScan': 'ရှာဖွေခြင်း',
+    'slExtensions': 'ဖိုင် အမျိုးအစားများ',
+    'slExtensionsOn': '{n} မျိုး ဖွင့်ထား',
+    'slNomedia': '.nomedia ကို လိုက်နာ',
+    'slNomediaSub': 'Folder (သို့) သူ့အပေါ်က folder ထဲမှာ ".nomedia" ဖိုင် ရှိရင် အဲဒီက ဖိုင်တွေကို မပြပါနဲ့။',
+    'slShowHidden': 'ဝှက်ထားတဲ့ ဖိုင်နဲ့ folder တွေ ပြ',
+    'slShowHiddenSub': '"." (အစက်) နဲ့ စတဲ့ ဖိုင်နဲ့ folder တွေကို ပြပါ။',
+    'slSafTitle': 'ကန့်သတ်ထားတဲ့ folder တွေကို ခွင့်ပြုချက် ပေးမယ်',
+    'slSafGranted': 'ခွင့်ပြုထားပြီး: {v}။ နောက်ထပ် folder ထည့်ဖို့ နှိပ်ပါ။',
+    'slSafBlocked': 'Android 13 နဲ့ အထက်မှာ Android/data ကို ဒီကနေ ဖွင့်ခွင့် မပေးပါ။ အောက်က ADB နဲ့ ဖွင့်ပါ။',
+    'slSafGrant': 'Android/data (ဥပမာ Telegram ဒေါင်းလုဒ်) ကို ခွင့်ပြုရင် အဲဒီက ဗီဒီယိုတွေ Video tab မှာ ပေါ်ပါမယ်။ "ဝှက်ထားတဲ့ ဖိုင်နဲ့ folder တွေ ပြ" ကိုလည်း ဖွင့်ပါ။ App ကို ပြန်သွင်းရင် ခွင့်ပြုချက် ပျက်ပါမယ်။',
+    'slSafNotNeeded': 'Android {v} မှာ မလိုပါ — ဝှက်ထားတဲ့ folder တွေကို တိုက်ရိုက် ဖတ်နိုင်ပါတယ်။ "ဝှက်ထားတဲ့ ဖိုင်နဲ့ folder တွေ ပြ" ကိုသာ ဖွင့်ပါ။',
+    'slSafGeneric': 'Android/data နဲ့ တခြား ကန့်သတ်ထားတဲ့ folder တွေထဲက ဗီဒီယိုတွေကို ကြည့်ပါ။ "ဝှက်ထားတဲ့ ဖိုင်နဲ့ folder တွေ ပြ" ကိုလည်း ဖွင့်ပါ။',
+    'slSafNone': 'Folder ခွင့်ပြုချက် မရပါ (ပယ်ဖျက်လိုက်တာ ဒါမှမဟုတ် Android က ပိတ်ထားတာ)။',
+    'slSafEmpty': '"{v}" ကို ခွင့်ပြုပြီးပါပြီ၊ ဒါပေမဲ့ ဗီဒီယို မတွေ့ပါ။ Android 13 နဲ့ အထက်မှာ Android/data ကို များသောအားဖြင့် ပိတ်ထားလို့ ADB ကို သုံးပါ။',
+    'slSafFound': '"{v}" ကို ခွင့်ပြုပြီး — ဗီဒီယို {n} ခု တွေ့ပါတယ်။',
+    'slSafClear': 'ခွင့်ပြုထားတဲ့ folder တွေ ဖယ်မယ်',
+    'slSafClearSub': 'ခွင့်ပြုထားတဲ့ folder {n} ခုလုံးကို ပြန်ရုပ်သိမ်းပါ။',
+    'slSafCleared': 'ခွင့်ပြုထားတဲ့ folder တွေ ဖယ်ပြီးပါပြီ',
+    'langNone': 'မရွေးထား',
+    'langEnglish': 'အင်္ဂလိပ်',
+    'langJapanese': 'ဂျပန်',
+    'langKorean': 'ကိုရီးယား',
+    'langChinese': 'တရုတ်',
+    'langMyanmar': 'မြန်မာ',
+    'langThai': 'ထိုင်း',
+    'langHindi': 'ဟိန္ဒီ',
+    'langVietnamese': 'ဗီယက်နမ်',
+    'saAuto': 'အလိုအလျောက် (ဖုန်းအတိုင်း)',
+    'saSpeaker': 'စပီကာ',
+    'saHeadphones': 'နားကြပ်',
+    'saBluetooth': 'Bluetooth',
+    'saOutput': 'အသံ ထွက်ပေါက်',
+    'saBoost': 'အသံ မြှင့်',
+    'saBoostSub': 'HW+ ဒါမှမဟုတ် SW decoder သုံးရင် အသံကို 200% အထိ မြှင့်နိုင်ပါတယ်။',
+    'saLoudness': 'အသံ ညီအောင် လုပ်',
+    'saLoudnessSub': 'အသံကျယ်တဲ့ အခန်းနဲ့ တိုးတဲ့ အခန်းတွေကို ညီအောင် လုပ်ပေးလို့ အသံကို ခဏခဏ ပြင်စရာ မလိုပါ။',
+    'saSystemVolume': 'ဖုန်းရဲ့ အသံ',
+    'saSystemVolumeSub': 'အသံကို ဖုန်းရဲ့ media အသံနဲ့ တစ်ပြေးညီ ထားပါ။',
+    'saPauseHeadset': 'နားကြပ် ပြုတ်ရင် ရပ်',
+    'saPauseHeadsetSub': 'ကြိုး / Bluetooth နားကြပ် ပြုတ်သွားရင် ဖွင့်နေတာကို ရပ်ပါ။',
+    'saFadeStart': 'စဖွင့်ရင် အသံ ဖြည်းဖြည်း ကျယ်',
+    'saFadeSeek': 'ရွှေ့ရင် အသံ ဖြည်းဖြည်း ကျယ်',
+    'saEffects': 'အသံ effect များ',
+    'saEffectsSub': 'Equalizer၊ Bass boost၊ Virtualizer နဲ့ Reverb ကို ဖွင့်ပါ။',
+    'saPassthrough': 'Audio passthrough ကို ဦးစားပေး',
+    'saPassthroughSub': 'Dolby/DTS အသံကို AV receiver ဆီ မပြောင်းဘဲ ပို့ပါ။ ဖုန်းစပီကာမှာ အသံ ပုံပျက်ရင် ပိတ်ပါ။',
+    'saLanguage': 'အသံ ဘာသာစကား ဦးစားပေး',
+    'saLanguageSub': 'ဦးစားပေး ဖွင့်မယ့် အသံ track ရဲ့ ဘာသာ။ လက်ရှိ: {v}',
+    'saDelay': 'အသံ နောက်ကျချိန်',
+    'saDelaySub': 'ပုံနဲ့ ကိုက်အောင် အသံကို စော / နောက်ကျ ရွှေ့ပါ။ လက်ရှိ: {v}',
+    'ssFolder': 'စာတန်း folder',
+    'ssFolderSame': 'ဗီဒီယိုရှိတဲ့ folder ထဲကသာ',
+    'ssFolderHint': 'ဥပမာ /storage/emulated/0/Subtitles',
+    'ssAutoDetect': 'အလိုအလျောက် ရှာ',
+    'ssEncoding': 'စာလုံး encoding',
+    'ssEncodingSub': 'စာတန်းဖိုင်ရဲ့ စာလုံး encoding။ လက်ရှိ: {v}',
+    'ssLanguage': 'စာတန်း ဘာသာစကား ဦးစားပေး',
+    'ssLanguageSub': 'ဦးစားပေး ပြမယ့် စာတန်း track ရဲ့ ဘာသာ။ လက်ရှိ: {v}',
+    'ssSync': 'မူလ ချိန်ညှိ',
+    'ssSyncSub': 'စာတန်းတွေကို မူလအားဖြင့် ဘယ်လောက် စော / နောက်ကျ ပြမလဲ။ လက်ရှိ: {v}',
+    'ssHwSync': 'HW decoder အတွက် ချိန်ညှိ',
+    'ssHwSyncSub': 'HW decoder ရဲ့ ပြသမှု နောက်ကျတာကို ညှိပါ။ လက်ရှိ: {v}',
+    'ssAppearance': 'အသွင်အပြင်',
+    'ssText': 'စာသား',
+    'ssTextSub': 'ဖောင့်၊ အရွယ်၊ အရောင်၊ ဘောင် စသည်',
+    'ssLayout': 'အပြင်အဆင်',
+    'ssLayoutSub': 'နေရာချထားမှု၊ အကွာအဝေး၊ နောက်ခံ',
+    'ssProcessing': 'စာသား ပြုပြင်ခြင်း',
+    'ssItalic': 'စာလုံးစောင်း',
+    'ssItalicSub': '"/" နဲ့ စတဲ့ စာကြောင်းကို စာလုံးစောင်းနဲ့ ပြပါ။',
+    'slyPosition': 'နေရာ',
+    'slyVertical': 'အပေါ်အောက် နေရာ',
+    'slyVerticalSub': 'အပေါ်ကနေ အကွာအဝေး (ရာခိုင်နှုန်း)။ လက်ရှိ: {v}',
+    'slyLeft': 'ဘယ်',
+    'slyCenter': 'အလယ်',
+    'slyRight': 'ညာ',
+    'slyHorizontal': 'ဘယ်ညာ နေရာ',
+    'slyCurrently': 'လက်ရှိ: {v}',
+    'slySpacing': 'အကွာအဝေး',
+    'slyPadX': 'ဘယ်/ညာ အကွာ',
+    'slyPadXSub': 'ဘေးဘက် အကွာ (pixel)။ လက်ရှိ: {v}',
+    'slyPadY': 'အောက်ခြေ အကွာ',
+    'slyPadYSub': 'အောက်ခြေ အကွာ (pixel)။ လက်ရှိ: {v}',
+    'slyBackground': 'နောက်ခံ',
+    'slyShowBg': 'နောက်ခံ ပြ',
+    'slyShowBgSub': 'စာတန်းနောက်မှာ ဖောက်ထွင်းမြင်ရတဲ့ နောက်ခံ ထားပါ။',
+    'slyBlack50': 'အနက် (50%)',
+    'slyBlack75': 'အနက် (75%)',
+    'slyDarkGray': 'မီးခိုးရင့်',
+    'slyNone': 'မထား',
+    'slyBgColor': 'နောက်ခံ အရောင်',
+    'slyBgColorSub': '"နောက်ခံ ပြ" ဖွင့်ထားမှသာ။ လက်ရှိ: {v}',
+    'sdHw': 'Hardware (HW) decoder',
+    'sdAutoDefault': 'အလိုအလျောက် (မူလ)',
+    'sdNeverHw': 'HW decoder ဘယ်တော့မှ မသုံး',
+    'sdLocalOnly': 'ဖုန်းထဲက ဖိုင်တွေမှာသာ',
+    'sdAlwaysHw': 'HW ကို အမြဲ အရင် စမ်း',
+    'sdStrategy': 'HW decoder သုံးပုံ',
+    'sdHwPlusLocal': 'HW+ decoder (ဖုန်းထဲက ဖိုင်)',
+    'sdHwPlusLocalSub': 'ဖုန်းထဲက ဖိုင်တွေအတွက် HW+ ကို မူလ hardware decoder အဖြစ် သုံးပါ။',
+    'sdHwPlusNet': 'HW+ decoder (ကွန်ရက်)',
+    'sdHwPlusNetSub': 'Network ကနေ ဖွင့်တဲ့အခါ HW+ ကို မူလ hardware decoder အဖြစ် သုံးပါ။',
+    'sdTryHw': 'HW decoder စမ်းကြည့်',
+    'sdTryHwSub': 'HW+ မရရင် HW decoder ကို စမ်းပါ။',
+    'sdTryHwPlus': 'HW+ decoder စမ်းကြည့်',
+    'sdTryHwPlusSub': 'HW မရရင် HW+ decoder ကို စမ်းပါ။',
+    'sdSw': 'Software (SW) decoder',
+    'sdSwLocal': 'SW decoder (ဖုန်းထဲက ဖိုင်)',
+    'sdSwLocalSub': 'ဖုန်းထဲက ဖိုင်တွေကို SW decoder နဲ့ ဖွင့်ပါ။',
+    'sdSwNet': 'SW decoder (ကွန်ရက်)',
+    'sdSwNetSub': 'HTTP၊ FTP၊ RTSP စတဲ့ network ကနေ ဖွင့်တာကို SW decoder နဲ့ ဖွင့်ပါ။',
+    'sdAutoRecommended': 'အလိုအလျောက် (အကြံပြု)',
+    'sdCores': 'CPU core အများဆုံး',
+    'sdCoresSub': 'SW decoder သုံးခွင့်ရှိတဲ့ CPU core အရေအတွက်။ လက်ရှိ: {v}',
+    'sdSpeedup': 'အမြန် နည်းလမ်းတွေ သုံး',
+    'sdSpeedupSub': 'SW decoder မမီတော့တဲ့အခါ ဖြတ်လမ်း သုံးခွင့်ပေးပါ။ frame တွေ တကယ် ကျမှသာ ပုံ အရည်အသွေး လျော့ပါမယ်။',
+    'sdGeneral': 'အထွေထွေ',
+    'sdEfficient': 'ဘက်ထရီ သက်သာတဲ့ ဗီဒီယို ထုတ်ပြမှု',
+    'sdEfficientSub': 'ဗီဒီယိုကို မျက်နှာပြင်ပေါ် တိုက်ရိုက် ဆွဲလို့ ဘက်ထရီ သက်သာပြီး မပူပါ (Android 10+)။ ပုံ မည်းနေရင် ဒါမှမဟုတ် တဖျပ်ဖျပ် ဖြစ်ရင် ပိတ်ပါ။ App ကို နောက်တစ်ခါ ဖွင့်မှ သက်ရောက်ပါမယ်။',
+    'sdDeinterlace': 'Deinterlace',
+    'sdDeinterlaceSub': 'မူလအားဖြင့် deinterlace လုပ်ပါ (SW decoder မှာသာ)။',
+    'sgUserAgent': 'HTTP User-Agent',
+    'sgUserAgentDefault': 'မူလ',
+    'sgUserAgentSub': 'မူလအတိုင်း သုံးဖို့ ဗလာ ထားပါ။',
+    'sgUserAgentHint': 'ကိုယ်ပိုင် User-Agent',
+    'sgQuit': 'ထွက်မယ် ခလုတ်',
+    'sgQuitSub': 'Me tab မှာ app ကို လုံးဝ ပိတ်တဲ့ ထွက်မယ် ခလုတ် ထားပါ (Back / Home နဲ့ မတူပါ)။',
+    'sgPrivacy': 'Privacy mode (မှတ်တမ်း မထား)',
+    'sgPrivacySub': 'ဖွင့်ထားချိန်မှာ ကြည့်တာတွေကို မမှတ်ပါ — မှတ်တမ်း၊ ဆက်ကြည့်မယ့်နေရာ၊ အသစ်ထည့်ထားတာတွေ ခဏ ရပ်ထားပါမယ်။ ရှိပြီးသားတွေ မပျက်ပါ၊ ဘာမှ ဖုန်းအပြင် မထွက်ပါ။',
+    'sgFullAccess': 'Library အပြည့် ဝင်ခွင့်',
+    'sgFullAccessSub': 'မဖြစ်မနေ မဟုတ်ပါ။ Movies၊ DCIM၊ Downloads အပြင်က folder တွေကိုပါ ရှာနိုင်အောင်ပါ — Android ရဲ့ All files access ကို ဖွင့်ပေးပါမယ်။',
+    'sgEdit': 'ပြင်ဆင်ခြင်း',
+    'sgAllowEdit': 'ပြင်ခွင့် ပေး',
+    'sgAllowEditSub': 'ဖိုင်နဲ့ folder တွေကို ဖျက်တာ၊ နာမည်ပြောင်းတာ လုပ်နိုင်တဲ့ menu ကို ပြပါ။',
+    'sgDeleteSubs': 'စာတန်းဖိုင်တွေကိုပါ တစ်ခါတည်း ဖျက်',
+    'sgUserData': 'အသုံးပြုသူ data',
+    'sgClearHistory': 'မှတ်တမ်း ဖျက်',
+    'sgClearHistorySub': 'ဖွင့်ခဲ့တာ၊ ရှာခဲ့တာ အပါအဝင် မှတ်တမ်းအားလုံးကို ဖျက်ပါ။',
+    'sgClearThumbs': 'ပုံသေး cache ဖျက်',
+    'sgClearThumbsSub': 'သိမ်းထားတဲ့ ပုံသေးတွေကို ဖျက်ပါ။ စာရင်းကို ပြန်ဖွင့်ရင် ပြန်ထုတ်ပါမယ်။',
+    'sgCacheThumbs': 'ပုံသေးတွေ သိမ်းထား',
+    'sgBackup': 'အရန်သိမ်းခြင်း',
+    'sgReset': 'Settings ပြန်စ',
+    'sgResetSub': 'Settings အားလုံးကို မူလအတိုင်း ပြန်ထားပါ။ မှတ်တမ်းနဲ့ playlist တွေ မပျက်ပါ။',
+    'sgExport': 'ထုတ်ယူ',
+    'sgExportSub': 'Settings တွေကို JSON ဖိုင်အဖြစ် သိမ်းပါ။',
+    'sgImport': 'ဖိုင်ကနေ ပြန်သွင်း',
+    'sgImportSub': 'JSON ဖိုင်ကနေ settings တွေ ပြန်ထည့်ပါ။',
+    'sdvDebug': 'Debug',
+    'sdvBuffer': 'Buffer အချက်အလက် ပြ',
+    'sdvBufferSub': 'ဖွင့်နေစဉ် buffer အခြေအနေကို ပြပါ။',
+    'sdvDecoder': 'Decoder အချက်အလက် ပြ',
+    'sdvDecoderSub': 'ဘယ် decoder နဲ့ ဖွင့်နေလဲ ပြပါ။',
+    'sdvFps': 'FPS ပြ',
+    'sdvFpsSub': 'တစ်စက္ကန့်မှာ frame ဘယ်နှခု ပြလဲ မျက်နှာပြင်ပေါ် ပြပါ။',
+    'sdvExperimental': 'စမ်းသပ်ဆဲ',
+    'sdvNoHw': 'HW acceleration ပိတ်',
+    'sdvNoHwSub': 'Software decoder နဲ့သာ ဖွင့်ပါ။ Debug လုပ်ဖို့သာ။',
+    'sdvResetAll': 'Settings အားလုံး ပြန်စ',
+    'sdvResetAllSub': 'Settings အားလုံးကို မူလအတိုင်း ပြန်ထားပါ။',
+    'plScreenshotFailed': 'Screenshot မရိုက်နိုင်ပါ',
+    'plSaved': 'သိမ်းပြီး: {v}',
+    'plScreenshotError': 'Screenshot မရပါ: {v}',
+    'plLoaded': 'ထည့်ပြီး: {v}',
+    'plSubtitlePickError': 'စာတန်းဖိုင် မဖွင့်နိုင်ပါ: {v}',
+    'plOwnPageOnly': 'ဒီဇာတ်ကားကို သူ့စာမျက်နှာကနေသာ ဖွင့်နိုင်ပါတယ်။',
+    'plNoPlaylists': 'Playlist မရှိသေးပါ။ ကျွန်ုပ် → ဗီဒီယို ဖွင့်စာရင်း မှာ ဖန်တီးပါ။',
+    'plAdbToSend': 'ဒီ Android/data ဗီဒီယိုကို ပို့ဖို့ ADB ချိတ်ပါ။',
+    'plTransferFailed': 'Transfer ထဲ မထည့်နိုင်ပါ: {v}',
+    'plUnmuted': 'အသံ ပြန်ဖွင့်ပြီး',
+    'plMuted': 'အသံ ပိတ်ထား',
+    'plShuffleOn': 'ရောမွှေ ဖွင့်',
+    'plShuffleOff': 'ရောမွှေ ပိတ်',
+    'plMirrorOn': 'မှန်ပုံ ဖွင့်',
+    'plMirrorOff': 'မှန်ပုံ ပိတ်',
+    'plFlipOn': 'အပေါ်အောက် လှန် ဖွင့်',
+    'plFlipOff': 'အပေါ်အောက် လှန် ပိတ်',
+    'plNightOn': 'ညမုဒ် ဖွင့်',
+    'plNightOff': 'ညမုဒ် ပိတ်',
+    'plBgOn': 'နောက်ကွယ်မှာ ဆက်ဖွင့်မယ်',
+    'plBgOff': 'နောက်ကွယ်မှာ မဖွင့်တော့ပါ',
+    'plSpeed': 'အမြန်နှုန်း {v}',
+    'plAPoint': 'A နေရာ မှတ်ပြီး',
+    'plAbOn': 'A-B ထပ်ဖွင့် စပြီ',
+    'plAbCleared': 'A-B ထပ်ဖွင့် ဖယ်ပြီး',
+    'plNoAudioTracks': 'အသံ track မရှိပါ',
+    'plAudio': 'အသံ: {v}',
+    'plSubtitle': 'စာတန်း: {v}',
+    'plAspect': 'အချိုး: {v}',
+    'plSearchSubs': '{v} အတွက် စာတန်း ရှာ',
+    'plDecoder': 'Decoder: {v}',
+    'plDecoderDefault': 'မူလ',
+    'plPositionOf': 'ဖွင့်နေတဲ့ နေရာ {a} / {b}',
+    'plAuto': 'အလိုအလျောက်',
+    'plPrevVideo': 'ရှေ့ ဗီဒီယို',
+    'plPrevFrame': 'ရှေ့ frame',
+    'plPause': 'ခဏရပ်',
+    'plNextFrame': 'နောက် frame',
+    'plNextVideo': 'နောက် ဗီဒီယို (ထပ်ဖွင့် ရွေးဖို့ ဖိထားပါ)',
+    'vomWatchLaterAdded': '⏰ နောက်မှ ကြည့်မယ် ထဲ ထည့်ပြီး',
+    'vomWatchLaterAlready': 'နောက်မှ ကြည့်မယ် ထဲမှာ ရှိပြီးသားပါ',
+    'vomFavAdded': '★ အကြိုက်ဆုံးထဲ ထည့်ပြီး',
+    'vomFavRemoved': '☆ အကြိုက်ဆုံးထဲက ဖယ်ပြီး',
+    'vomPasteSubLink': '"{v}" အတွက် .srt / .ass / .vtt / .ssa / .sub ဖိုင်ရဲ့ link ကို ထည့်ပါ။',
+    'vomSubSaved': 'စာတန်း သိမ်းပြီးပါပြီ။ သုံးဖို့ ဗီဒီယိုကို ပြန်ဖွင့်ပါ။\n{v}',
+    'vomBinBody': '"{v}" ကို library ကနေ ဖျောက်ထားပါမယ်။ Recycle Bin ကနေ ပြန်ယူနိုင်ပါတယ်။',
+    'vomMovedToBin': 'Recycle Bin ထဲ ရွှေ့ပြီး',
+    'vomNoLocalFile': 'ဒီဟာမှာ ပြောင်းစရာ ဖုန်းထဲက ဖိုင် မရှိပါ။',
+    'vomConvertBusy': 'တခြား ပြောင်းနေတာ တစ်ခု ရှိနေပါတယ်။',
+    'vomSavedMusic': 'Innocent/Music ထဲ သိမ်းပြီး',
+    'vomConvertFailed': 'ပြောင်းလို့ မရပါ။',
+    'vomPinFirst': 'Private Folder PIN ကို အရင် သတ်မှတ်ပါ (ကျွန်ုပ် → Private Folder)။',
+    'vomLockFailed': 'Lock မလုပ်နိုင်ပါ: {v}',
+    'vomCantRename': 'ဒီဗီဒီယိုကို နာမည်ပြောင်းလို့ မရပါ (system က စီမံထားတာပါ)။',
+    'vomBadName': 'နာမည်မှာ / ဒါမှမဟုတ် \\ မပါရပါ',
+    'vomNameTaken': 'ဒီနာမည်နဲ့ ဖိုင် ရှိပြီးသားပါ',
+    'vomRenameFailed': 'နာမည် မပြောင်းနိုင်ပါ: {v}',
+    'vomCantDelete': 'ဒီဗီဒီယိုကို ဖျက်လို့ မရပါ (system က စီမံထားတာပါ)။',
+    'vomEditingOff': 'ပြင်ခွင့် ပိတ်ထားပါတယ်: Settings → အထွေထွေ → ပြင်ခွင့် ပေး',
+    'vomDeleteBody': '"{v}" ကို အပြီးဖျက်မလား?\n\nပြန်ယူလို့ မရပါ။',
+    'vomDeleteFailed': 'မဖျက်နိုင်ပါ: {v}',
+    'vomRemoveFav': 'အကြိုက်ဆုံးထဲက ဖယ်',
+    'vomConvertAudio': 'အသံဖိုင် ပြောင်း',
+    'vomAddWatchLater': 'နောက်မှ ကြည့်မယ် ထဲ ထည့်',
+    'vomMoveToBin': 'Recycle Bin ထဲ ရွှေ့',
+    'vomAddedTo': '"{v}" ထဲ ထည့်ပြီး',
+    'vomBytes': '{v} ဘိုက်',
+    'vomNewName': 'နာမည်အသစ်',
+    'vomConverting': 'အသံဖိုင် ပြောင်းနေသည်',
+    'vomPreparing': 'ပြင်ဆင်နေသည်…',
+    'mcPlayNext': 'နောက်တစ်ပုဒ် ဖွင့်',
+    'mcPlayingNext': 'နောက်တစ်ပုဒ်: "{v}"',
+    'mcPlayLater': 'နောက်မှ ဖွင့်',
+    'mcQueued': 'Queue ထဲ ထည့်ပြီး',
+    'mcFavAdded': 'အကြိုက်ဆုံးထဲ ထည့်ပြီး',
+    'mcFavRemoved': 'အကြိုက်ဆုံးထဲက ဖယ်ပြီး',
+    'mcTitle': 'ခေါင်းစဉ်',
+    'mcArtist': 'အဆိုတော်',
+    'mcAlbum': 'အယ်လ်ဘမ်',
+    'mcUnknown': 'မသိ',
+    'mcDuration': 'ကြာချိန်',
+    'mcPath': 'လမ်းကြောင်း',
+    'mcPathCopied': 'လမ်းကြောင်း ကူးပြီး',
+    'mcPlayAll': 'အားလုံး ဖွင့်',
+    'mcShufflePlay': 'ရောမွှေ ဖွင့်',
+    'mpRepeatAll': 'အားလုံး ထပ်ဖွင့်',
+    'mpRepeatOne': 'တစ်ပုဒ် ထပ်ဖွင့်',
+    'mpRepeatOff': 'ထပ်မဖွင့်',
+    'mpUnknownTrack': 'အမည်မသိ သီချင်း',
+    'mpUnknownArtist': 'အမည်မသိ အဆိုတော်',
+    'mpCollapse': 'ချုံ့',
+    'mpEqualizer': 'Equalizer',
+    'mpAb': 'A-B ထပ်ဖွင့်',
+    'mpSpeed': 'အမြန်နှုန်း',
+    'mpShuffle': 'ရောမွှေ',
+    'mpPrevious': 'ရှေ့သီချင်း',
+    'mpNext': 'နောက်သီချင်း',
+    'mpRepeat': 'ထပ်ဖွင့်',
+    'mpLyricsError': 'Lyrics ဖိုင်ကို ဖတ်လို့ မရပါ။',
+    'mpNoLyrics': 'Lyrics မတွေ့ပါ။\n\nထည့်ချင်ရင် သီချင်းဖိုင်ဘေးမှာ နာမည်တူ .lrc ဖိုင် ထားပါ — song.mp3 → song.lrc — ထဲမှာ [00:12.34]စာသား ပုံစံ စာကြောင်းတွေ ပါရပါမယ်။',
+    'mcDateAdded': 'ထည့်ခဲ့တဲ့ ရက်',
+    'mpFavourites': 'ကျွန်ုပ်ရဲ့ အကြိုက်ဆုံး',
+    'mpRecent': 'မကြာသေးခင်က ဖွင့်ခဲ့တာ',
+    'mpShowQueue': 'Queue ပြ',
+    'mpNoFavs': 'အကြိုက်ဆုံး မရှိသေးပါ။\nသီချင်းတစ်ပုဒ်မှာ ♥ ကို နှိပ်ပြီး ဒီမှာ ထည့်ပါ။',
+    'mpNoRecent': 'မကြာသေးခင်က ဖွင့်ခဲ့တဲ့ သီချင်း မရှိသေးပါ',
+    'mpEmptyPlaylist': 'ဒီ playlist ထဲမှာ ဘာမှ မရှိသေးပါ',
+    'svTitle': 'ခေါင်းစဉ်',
+    'svDate': 'ရက်စွဲ',
+    'svPlayedTime': 'ဖွင့်ခဲ့ချိန်',
+    'svStatus': 'အခြေအနေ',
+    'svLength': 'ကြာချိန်',
+    'svSize': 'အရွယ်အစား',
+    'svResolution': 'Resolution',
+    'svPath': 'လမ်းကြောင်း',
+    'svFrameRate': 'Frame rate',
+    'svType': 'အမျိုးအစား',
+    'svAllFolders': 'Folder အားလုံး',
+    'svFiles': 'ဖိုင်များ',
+    'svFolders': 'Folder များ',
+    'svList': 'စာရင်း',
+    'svGrid': 'ဇယားကွက်',
+    'svViewMode': 'ပြပုံ',
+    'svLayout': 'အပြင်အဆင်',
+    'svAz': 'က မှ အ',
+    'svZa': 'အ မှ က',
+    'svOldest': 'အဟောင်းဆုံး',
+    'svNewest': 'အသစ်ဆုံး',
+    'svShortest': 'အတိုဆုံး',
+    'svLongest': 'အရှည်ဆုံး',
+    'svSmallest': 'အသေးဆုံး',
+    'svLargest': 'အကြီးဆုံး',
+    'svLowest': 'အနိမ့်ဆုံး',
+    'svHighest': 'အမြင့်ဆုံး',
+    'svAscending': 'ငယ်စဉ်ကြီးလိုက်',
+    'svDescending': 'ကြီးစဉ်ငယ်လိုက်',
+    'svSort': 'စီမယ်',
+    'svFields': 'ပြမယ့် အချက်များ',
+    'svThumbnail': 'ပုံသေး',
+    'svExtension': 'ဖိုင် အမျိုးအစား',
+    'svAdvanced': 'အဆင့်မြင့်',
+    'svLengthOnThumb': 'ပုံသေးပေါ်မှာ ကြာချိန် ပြ',
+    'lsViewMode': 'ပြပုံ: {v}',
+    'lsSortView': 'စီပုံ နဲ့ ပြပုံ',
+    'lsNoFolderMatch': '"{v}" နဲ့ ကိုက်တဲ့ folder မရှိပါ',
+    'lsAdbStale': 'ADB ပြုတ်နေလို့ app-data ဗီဒီယိုတွေ နောက်ဆုံးအခြေအနေ မဟုတ်နိုင်ပါ။ ပြန်ချိတ်ပြီး refresh လုပ်ပါ။',
+    'lsReconnect': 'ပြန်ချိတ်မယ်',
+    'fdBackAll': 'Folder အားလုံးကို ပြန်သွား',
+    'fdNoVideoMatch': '"{v}" နဲ့ ကိုက်တဲ့ ဗီဒီယို မရှိပါ',
+    'fdEmpty': 'ဒီ folder ထဲမှာ ဗီဒီယို မရှိပါ',
+    'sabHint': 'Media ဖိုင် ရှာမယ်',
+    'sabClear': 'ရှင်းမယ်',
+    'hlpQ1': 'ဗီဒီယို ဘယ်လို ဖွင့်ရမလဲ?',
+    'hlpA1': 'Video tab ကို ဖွင့်၊ folder ထဲ ဝင်ပြီး ဗီဒီယိုကို နှိပ်ပါ။',
+    'hlpQ2': 'Decoder ဘယ်လို ပြောင်းရမလဲ?',
+    'hlpA2': 'ဗီဒီယို ဖွင့်နေစဉ် ညာဘက်အပေါ်က HW/SW ကို နှိပ်ပါ၊ ဒါမှမဟုတ် Settings → Decoder ကို သွားပါ။',
+    'hlpQ3': 'စာတန်း ဘယ်လို ထည့်ရမလဲ?',
+    'hlpA3': 'ဗီဒီယို ဖွင့်နေစဉ် shortcut တန်းက စာတန်း ခလုတ်ကို နှိပ်ပြီး ဖုန်းထဲက စာတန်းဖိုင်ကို ရွေးပါ။',
+    'hlpQ4': 'ဗီဒီယိုကို Private Folder ထဲ ဘယ်လို lock ရမလဲ?',
+    'hlpA4': 'ဗီဒီယိုကို ဖိထားပါ (သို့) ⋮ ကို နှိပ်ပြီး "Lock in Private Folder" ကို ရွေးပါ။ ပထမဆုံးအကြိမ်မှာ PIN သတ်မှတ်ရပါမယ်။',
+    'hlpQ5': 'နောက်ကွယ်မှာ ဘယ်လို ဆက်နားထောင်ရမလဲ?',
+    'hlpA5': 'Player ရဲ့ shortcut ထဲက နားကြပ် ပုံကို နှိပ်ပါ (သို့) Settings → Player → နောက်ကွယ်မှာ ဖွင့်ခြင်း ကို ရွေးပါ။ တခြား app ကို ပြောင်းလည်း အသံ ဆက်ထွက်ပါမယ်။',
+    'hlpQ6': 'အမြန်နှုန်း ဘယ်လို ပြောင်းရမလဲ?',
+    'hlpA6': 'ဗီဒီယို ဖွင့်နေစဉ် shortcut တန်းက အမြန်နှုန်း ကို နှိပ်ပါ။',
+    'hlpQ7': 'တခြားဖုန်းကို ဖိုင် ဘယ်လို ပို့ရမလဲ?',
+    'hlpA7': 'Transfer tab ကို ဖွင့်ပါ။ ပို့ဖို့ Send ကို၊ တခြားဖုန်းက လက်ခံဖို့ Receive ကို နှိပ်ပါ။',
+    'hlpQ8': 'Gesture တွေ ဘယ်လို သုံးရမလဲ?',
+    'hlpA8': 'ဘယ်ဘက်မှာ အပေါ်/အောက် ပွတ်ရင် အလင်း၊ ညာဘက်မှာ ပွတ်ရင် အသံ၊ ဘယ်/ညာ ပွတ်ရင် ရှေ့/နောက် ရွှေ့ပါတယ်။',
+    'hsToday': 'ဒီနေ့',
+    'hsYesterday': 'မနေ့က',
+    'hsThisWeek': 'ဒီအပတ်',
+    'hsEarlier': 'အရင်က',
+    'hsClearAll': 'အားလုံး ဖျက်',
+    'wiEmpty': 'ဗီဒီယို အနည်းငယ် ကြည့်ပြီး ပြန်လာပါ — အပတ်စဉ် အနှစ်ချုပ် ဒီမှာ ပေါ်ပါမယ်။',
+    'wiMin': 'မိနစ်',
+    'wiVideos': 'ဗီဒီယို',
+    'wiActiveDays': 'ကြည့်ခဲ့တဲ့ ရက်',
+    'wiStreakStart': 'ဒီနေ့ စပြီး ဆက်တိုက် ကြည့်လိုက်ပါ!',
+    'wiStreakToday': 'ဒီနေ့ ကြည့်ပြီးပါပြီ — ဆက်ထားပါ။',
+    'wiStreakDays': 'ရက် {v} ရက် ဆက်တိုက် — ကောင်းပါတယ်။',
+    'wiNoStreak': 'ဆက်တိုက် မကြည့်ရသေးပါ',
+    'wiStreak': 'ရက် {v} ရက် ဆက်တိုက်',
+    'wiWatches': '{n} ကြိမ် ကြည့်',
+    'wiPlays': '{n} ကြိမ် ဖွင့်',
+    'wiFinisher': 'အဆုံးထိ ကြည့်တတ်သူပါ။',
+    'wiSolid': 'အတော်လေး အဆုံးထိ ကြည့်ပါတယ်။',
+    'wiHalf': 'တစ်ဝက်တစ်ပျက် ကြည့်ထားတာ များပါတယ်။',
+    'wiLocal': 'ဒီကိန်းဂဏန်းတွေကို ဖုန်းထဲမှာပဲ တွက်ပါတယ်။ ဘာမှ upload မလုပ်ပါ။',
+    'stFolders': 'Folder များ',
+    'stTotalSize': 'စုစုပေါင်း အရွယ်',
+    'stTotalLength': 'စုစုပေါင်း ကြာချိန်',
+    'stActivity': 'သင့် လှုပ်ရှားမှု',
+    'stWatched': 'ကြည့်ပြီး',
+    'stWatchTime': 'ကြည့်ချိန်',
+    'stTopFolders': 'အများဆုံး Folder များ',
+    'stMostWatched': 'အကြည့်အများဆုံး',
+    'stPlaysDone': '{n} ကြိမ် ဖွင့် • {p}% ပြီး',
+    'plsClearBody': 'Playlist ထဲက ဗီဒီယို {n} ခုကို ဖယ်ပါမယ်။ ဖုန်းထဲက ဖိုင်တွေ မပျက်ပါ။',
+    'plsEmpty': 'အပေါ်မှာ ဖန်တီးပါ၊ ဒါမှမဟုတ် ဗီဒီယိုတစ်ခုရဲ့ ⋮ ကို နှိပ်ပြီး playlist ထဲ ထည့်ပါ။',
+    'plsHowToAdd': 'ဗီဒီယိုရဲ့ ⋮ ကို နှိပ်ပြီး "Add to playlist" → "{v}" ကို ရွေးပါ',
+    'rbInfo': 'အချက်အလက်',
+    'rbKept': 'Recycle Bin ထဲက အရာတွေကို ရက် 30 အထိ ထားပြီး အလိုအလျောက် ဖယ်ပါမယ်။',
+    'rbClearBody': 'ဒီစာရင်းထဲက အရာအားလုံး အပြီး ပျက်ပါမယ်။ ဗီဒီယို ဖိုင်တွေကတော့ ဖုန်းထဲမှာ ရှိနေပါမယ်။',
+    'rbBanner': 'ဖိုင်တွေကို ဖုန်းထဲက အပြီးမဖျက်ခင် Recycle Bin ထဲမှာ ရက် 30 အထိ ထားပါတယ်။',
+    'rbRestore': 'ပြန်ယူ',
+    'agoDays': '{n} ရက်က',
+    'agoHours': '{n} နာရီက',
+    'agoMinutes': '{n} မိနစ်က',
+    'agoJustNow': 'အခုလေးတင်',
+    'ssvSavedTo': '{v} ထဲ သိမ်းပြီး',
+    'ssvNotWritable': 'မသိမ်းနိုင်ပါ — storage ထဲ ရေးလို့ မရပါ',
+    'ssvNoVideos': 'Status ဗီဒီယို မတွေ့ပါ',
+    'ssvNoImages': 'Status ပုံ မတွေ့ပါ',
+    'ssvHowTo': 'WhatsApp မှာ status ကို အရင် ဖွင့်ကြည့်ပြီး ဒီကို ပြန်လာကာ refresh လုပ်ပါ။',
+    'cdDrive': 'မဒေါင်းဘဲ Drive ကနေ တိုက်ရိုက် ကြည့်',
+    'cdDropbox': 'Dropbox account ကို ချိတ်',
+    'cdOneDrive': 'Microsoft ၏ cloud သိုလှောင်ခန်း',
+    'cdICloud': 'Apple iCloud (web link သာ)',
+    'cdYandex': 'Yandex ၏ cloud သိုလှောင်ခန်း',
+    'cdMega': 'Encrypt လုပ်ထားတဲ့ cloud storage',
+    'cdPcloud': 'ဥရောပ cloud storage',
+    'cppFfRew': 'ရှေ့ရစ် / နောက်ရစ်',
+    'aeOriginal': 'မူလ',
+    'aeClarity': 'ကြည်လင်',
+    'aeBassBoost': 'Bass မြှင့်',
+    'aeTrebleBoost': 'Treble မြှင့်',
+    'aeMovie': 'ရုပ်ရှင်',
+    'aeMusic': 'သီချင်း',
+    'aeCustom': 'စိတ်ကြိုက်',
+    'aeVirtualizer': 'Virtualizer',
+    'aeAudioEffect': 'အသံ effect',
+    'aeSoundProfiles': 'အသံ ပုံစံများ',
+    'aeUnsupported': 'ဒီဖုန်းက အသံ effect ကို မပံ့ပိုးပါ၊ ဒါမှမဟုတ် အခု ဘာမှ ဖွင့်မနေပါ။',
+    'pvWouldNotStart': 'ဒီဗီဒီယို မစနိုင်ပါ။ Retry ကို နှိပ်ပါ — ဆက်မရရင် ဖိုင်က မရနိုင်တော့တာ ဖြစ်နိုင်ပါတယ်။',
+    'pvStalled': 'ဖွင့်တာ ရပ်သွားပါတယ် — အင်တာနက် နှေးလွန်းလို့ပါ။ Retry ကို နှိပ်ပါ (သို့) connection ကို စစ်ပါ။',
+    'pvOffline': 'အင်တာနက် မရှိပါ။ ပြန်ချိတ်ပြီး Retry ကို နှိပ်ပါ။',
+    'pvLinkExpired': 'ဒီ stream link သက်တမ်း ကုန်သွားပါပြီ။ ဆက်ကြည့်ဖို့ ဇာတ်ကားကို ပြန်ဖွင့်ပါ။',
+    'pvAdbLoading': 'ADB ကနေ ဗီဒီယို ဖွင့်နေပါတယ်…\nဖိုင်ကြီးရင် ခဏ ကြာပါမယ်။',
+    'pvAdbFailed': 'ADB ကနေ ဒီဗီဒီယိုကို မဖွင့်နိုင်ပါ။ ADB screen မှာ ချိတ်ထားဆဲ ဟုတ်မဟုတ် စစ်ပြီး ပြန်ကြိုးစားပါ။',
+    'pvDownloadGone': 'ဒီဒေါင်းလုဒ်ကို ဒီဖုန်းမှာ မဖွင့်နိုင်တော့ပါ။ Downloads ကနေ ဖျက်ပြီး ပြန်ဒေါင်းပါ။',
+    'pwNotSet': 'မသတ်မှတ်ရသေး',
+    'pwMarkersHint': 'လက်ရှိ နေရာမှာ marker သတ်မှတ်ပါ — နောက်တစ်ခါ ဖွင့်ရင် အလိုလို ကျော်ပါမယ်။',
+    'pwIntroEnds': 'Intro ပြီးမယ့် နေရာ',
+    'pwIntroSet': 'Intro marker ကို {v} မှာ သတ်မှတ်ပြီး',
+    'pwOutroStarts': 'Outro စမယ့် နေရာ',
+    'pwOutroSet': 'Outro marker ကို {v} မှာ သတ်မှတ်ပြီး',
+    'pwUpdate': 'ပြင်မယ်',
+    'pwSet': 'သတ်မှတ်',
+    'pwDecrease': '{v} လျှော့',
+    'pwIncrease': '{v} တိုး',
+    'pwTuneHint': 'ဒီ panel ပေါ် ဘယ်နေရာမဆို ဆွဲပါ — ဘေးတိုက်ဆွဲရင် အချိန်၊ အပေါ်အောက်ဆွဲရင် နေရာ။ တန်ဖိုးကို နှိပ်ရင် ပြန်စပါမယ်။',
+    'pwTiming': 'အချိန်',
+    'pwPosition': 'နေရာ',
+    'pwOpenFile': 'ဖိုင် ဖွင့်',
+    'pwSubTrack': 'စာတန်း track',
+    'pwTextStyle': 'စာသား ပုံစံ',
+    'pwPosLayout': 'နေရာ နဲ့ အပြင်အဆင်',
+    'pwStartA': 'အစ (A)',
+    'pwEndB': 'အဆုံး (B)',
+    'pwBrightness': 'အလင်း',
+    'pwContrast': 'Contrast',
+    'pwSaturation': 'အရောင် အားကောင်းမှု',
+    'pwHue': 'အရောင် အသွေး',
+    'pwLoopOne': 'တစ်ခု ထပ်ဖွင့်',
+    'pwLoopAll': 'အားလုံး ထပ်ဖွင့်',
+    'pwBadNumber': 'ဂဏန်း မဟုတ်ပါ',
+    'pwSpeedRange': 'အမြန်နှုန်း 0.25 – 4.0 ဖြစ်ရပါမယ်',
+    'pwNoBookmarks': 'ဒီဗီဒီယိုမှာ bookmark မရှိပါ။\nဖွင့်နေစဉ် ⋮ → Bookmark ကို နှိပ်ပါ။',
+    'pwCurrentVideo': 'လက်ရှိ ဗီဒီယို',
+    'pwOpenFull': 'မျက်နှာပြင်အပြည့် ဖွင့်',
+    'pwHwDecoder': 'HW decoder',
+    'pwHwPlusDecoder': 'HW+ decoder',
+    'pwSwDecoder': 'SW decoder',
+    'cutPrivate': 'Private Folder ဗီဒီယိုတွေကို ဖြတ်လို့ မရပါ။',
+    'cutLocalOnly': 'ဖုန်းထဲမှာ သိမ်းထားတဲ့ ဗီဒီယိုကိုသာ ဖြတ်လို့ ရပါတယ်။',
+    'cutWorking': 'ဖြတ်နေပါတယ်…',
+    'cutSaved': 'ဖြတ်ပြီး သိမ်းပြီးပါပြီ: {v}',
+    'cutCancelled': 'ဖြတ်တာ ရပ်လိုက်ပါပြီ။ ဘာမှ မသိမ်းထားပါ။',
+    'cutProgress': 'ဖြတ်နေပါတယ်… {n}%',
+    'cutKeyStartAt': '{v} ကနေ စပါမယ် (A မတိုင်ခင် key frame)',
+    'cutExactSub': 'A ကနေ တိတိကျကျ စပါတယ်။ အစပိုင်းကို ပြန် encode လုပ်ရလို့ (ဒေါင်းထားတဲ့ ဗီဒီယို အများစုမှာ အကုန်လုံး) ပိုကြာပါတယ်။',
+    'cutExact': 'A ကနေ တိတိကျကျ စမယ်',
+    'cutSavedSilent': 'အသံမပါဘဲ သိမ်းပြီးပါပြီ: {v}။ ဒီဗီဒီယိုရဲ့ အသံပုံစံကို ပြန်မပြောင်းဘဲ MP4 ထဲ ထည့်လို့မရပါ။',
+    'cutFailed': 'ဒီဗီဒီယိုကို မဖြတ်နိုင်ပါ ({v})။',
+    'cutHint': 'မူရင်းအတိုင်း ကူးပါတယ် — ချက်ချင်းပြီးပြီး အရည်အသွေး မကျပါ၊ A မှာ ဒါမှမဟုတ် A မတိုင်ခင် key frame ကနေ စပါတယ်။ A ကနေ တိတိကျကျ စချင်ရင် အောက်က ခလုတ်ကို ဖွင့်ပါ။',
+    'cutSavedKeyFrame': 'ဖြတ်ပြီး သိမ်းပြီးပါပြီ: {v}။ ဒီဗီဒီယိုကို A ကနေ တိတိကျကျ ဖြတ်လို့မရလို့ A မတိုင်ခင် key frame ကနေ စပါတယ်။',
+    'obFindTitle': 'ဗီဒီယိုတွေကို ရှာပါ',
+    'obFindBody': 'Innocent က ဖုန်းထဲက ဗီဒီယိုတွေကို ရှာပြီး folder အလိုက် စီပေးပါတယ်။ အားလုံး ဖုန်းထဲမှာပဲ ရှိပြီး ဘာမှ upload မလုပ်ပါ။',
+    'obGestureTitle': 'Gesture နဲ့ ထိန်းချုပ်',
+    'obGestureBody': 'ဘယ်ဘက်မှာ အပေါ်/အောက် ပွတ်ရင် အလင်း၊ ညာဘက်မှာ ပွတ်ရင် အသံ၊ ဘေးတိုက် ပွတ်ရင် ရှေ့/နောက် ရွှေ့ပါတယ်။ အမြန်နှုန်း ပြောင်းဖို့ ဖိထားပါ၊ zoom ဖို့ လက်နှစ်ချောင်းနဲ့ ချဲ့ပါ။',
+    'obYoursTitle': 'ကိုယ်ပိုင် ဖြစ်အောင်',
+    'obYoursBody': 'ဗီဒီယိုတွေကို အကြိုက်ဆုံး ထားပါ၊ playlist လုပ်ပါ၊ bookmark သိမ်းပါ၊ ရပ်ခဲ့တဲ့နေရာက ဆက်ကြည့်ပါ။ အားလုံး ကျွန်ုပ် tab ထဲမှာ ရှိပါတယ်။',
+    'obStart': 'စတင်မယ်',
+    'obNext': 'ရှေ့ဆက်',
+    'arReconnectTo': '{v} ကို ကြည့်ဖို့ ပြန်ချိတ်ပါ',
+    'arLocked': 'ပိတ်ထားတဲ့ folder',
+    'arDropped': 'ADB ချိတ်ဆက်မှု ပြုတ်သွားလို့ {v} ကို အခု ဖတ်လို့ မရပါ။ တစ်ချက် နှိပ်ရုံနဲ့ ပြန်ချိတ်နိုင်ပြီး အများအားဖြင့် ဆက်ချိတ်ထားပါတယ်။',
+    'arPrivate': 'Android က app-data folder တွေကို ပိတ်ထားလို့ {v} ကို ADB ချိတ်ဆက်မှုနဲ့သာ ဖွင့်လို့ ရပါတယ်။ Innocent က wireless debugging နဲ့ ကိုယ်တိုင် ချိတ်ပေးလို့ တခြား app မလိုပါ။',
+    'arNotNow': 'အခု မလုပ်သေး',
+    'arSetUp': 'ပြင်ဆင်မယ်',
+    'trCopyUrl': 'Link ကူး',
+    'trResumeUnfinished': 'မပြီးသေးတဲ့ လွှဲပြောင်းမှုကို ဆက်လုပ်',
+    'ppFingerprint': 'လက်ဗွေနဲ့ ဖွင့်',
+    'ppClear': 'ရှင်း',
+    'ppConfirm': 'အတည်ပြု',
+    'ppBackspace': 'ဂဏန်း တစ်လုံး ဖျက်',
+    'afpTitle': 'ထည့်မယ့် ဖိုင်တွေ ရွေးပါ',
+    'afpInternal': 'ဖုန်း storage',
+    'vliVideo': 'ဗီဒီယို: {v}',
+    'acReachable': 'ချိတ်မိပါပြီ — ဖုန်းကို ချိတ်ဆက်နိုင်ပါတယ်။',
+    'acNotConnHelp': 'မချိတ်မိပါ။ Connect ကို နှိပ်ပါ — မရရင် အပေါ်က ခလုတ်နဲ့ Wireless debugging ကို ဖွင့်ပြီး ဖွင့်ထားဆဲ ဟုတ်မဟုတ် စစ်ကာ ပြန်ကြိုးစားပါ။',
+    'acNotConnYet': 'မချိတ်မိသေးပါ။ Connect ကို နှိပ်ပါ (Wireless debugging ကို အရင် ပြန်ဖွင့်ဖို့ လိုနိုင်ပါတယ်)။',
+    'acUpdateTitle': 'Wireless debugging ကို ဖွင့်မထားခင် ဖုန်းကို update လုပ်ပါ',
+    'acUpdateBody': 'ဒီဖုန်းရဲ့ security update က {v} ကပါ။ Android 14 ကနေ 16 အထိ Wireless debugging အားနည်းချက် (CVE-2026-0073) ကို ပိတ်ဖို့ May 2026 update (သို့) ပိုသစ်တဲ့ Google Play system update လိုပါတယ် — မရှိရင် Wi-Fi တစ်ခုတည်းပေါ်က တခြား device တစ်ခုက pair မလုပ်ဘဲ ဝင်နိုင်ပါတယ်။ Update မလုပ်ခင်အထိ မသုံးတဲ့အခါ Wireless debugging ကို ပိတ်ထားပြီး reboot ပြီးနောက် အလိုလို ပြန်ချိတ်တာကိုလည်း ပိတ်ထားပါ။',
+    'acTurnOffNow': 'အခုပဲ ပိတ်မယ်',
+    'acOpenWd': 'Wireless debugging ဖွင့်မယ်',
+    'acTurnedOff': 'Wireless debugging ပိတ်ပြီးပါပြီ၊ reboot ပြီးနောက် အလိုလို ပြန်ချိတ်တာလည်း ပိတ်ပြီးပါပြီ။ နောက်တစ်ခါ Android/data လိုတဲ့အခါ (ဖုန်း update လုပ်ပြီးမှ ဖြစ်ရင် ပိုကောင်း) Wireless debugging ကနေ ပြန်ဖွင့်ပါ။',
+    'acCouldNotOff': 'ဒီကနေ ပိတ်လို့ မရပါ။ Wireless debugging ကို ဖွင့်ပြီး အဲဒီမှာ ပိတ်ပါ။',
+    'acReconnecting': 'ပြန်ချိတ်နေပါတယ်…',
+    'acFoundAdded': 'ဗီဒီယို {n} ခု တွေ့ပါတယ် — Video tab ထဲ ထည့်ပြီးပါပြီ။',
+    'acNotifOff': 'Innocent အတွက် notification ပိတ်ထားလို့ pairing notification မပေါ်နိုင်ပါ။ Settings → Apps → Innocent → Notifications ကို ဖွင့်ပြီး ပြန်ကြိုးစားပါ။',
+    'acNotifAsk': 'Pairing code notification ပေါ်နိုင်အောင် notification ခွင့်ပြုပါ၊ ပြီးရင် "Pair from notification" ကို ပြန်နှိပ်ပါ။',
+    'acNotifReady': 'Notification ကနေ pair လုပ်ဖို့ အသင့်ပါ။\n\n1. အောက်က "Wireless debugging ဖွင့်မယ်" ကို နှိပ်ပါ။\n2. "Pair device with pairing code" ကို နှိပ်ပါ — ဂဏန်း 6 လုံး ပေါ်လာပါမယ်။\n3. Notification ကို အောက်ဆွဲပြီး "Enter the pairing code here" notification ရဲ့ "Reply" ကို နှိပ်၊ code ကို ရိုက်ပြီး ပို့ပါ။\n\nScreen ခွဲစရာ မလိုပါ — ဒီ screen က နောက်ကွယ်မှာ ဆက်အလုပ်လုပ်ပါတယ်။',
+    'acNotifStopped': 'Notification pairing ရပ်လိုက်ပါပြီ။',
+    'acPairing': 'Pair လုပ်နေပါတယ်…\n"Pair device with pairing code" dialog ကို မြင်နေအောင် ထားပါ (screen ခွဲ / pop-up window)။',
+    'acConnecting': 'ချိတ်နေပါတယ်…',
+    'acDevOffTitle': 'Developer options ကို အရင် ဖွင့်ပါ',
+    'acDevOffBody': 'Wireless debugging က Developer options ထဲမှာ ရှိပြီး မူလက ဖျောက်ထားပါတယ်။\n\nဖွင့်ဖို့:\n1. About phone ကို ဖွင့်ပါ။\n2. "Build number" ကို ရှာပါ (တခါတလေ "Software information" အောက်မှာ)။\n3. "You are now a developer" ပေါ်လာတဲ့အထိ ၇ ချက် နှိပ်ပါ။\n\nပြီးရင် ပြန်လာပြီး "Wireless debugging ဖွင့်မယ်" ကို ပြန်နှိပ်ပါ။',
+    'acOpenAbout': 'About phone ဖွင့်မယ်',
+    'acOpenFailed': 'Settings ကို အလိုလို မဖွင့်နိုင်ပါ။ Settings → Developer options → Wireless debugging ကို ကိုယ်တိုင် ဖွင့်ပါ။',
+    'acPlaying': '"{v}" ကို ဖွင့်နေပါတယ်။',
+    'acPairAddrHelp': 'Pairing address ကို IP:Port ပုံစံ ထည့်ပါ — "Pair device with pairing code" dialog ထဲကအတိုင်း ကူးပါ၊ ဥပမာ 192.168.1.5:42749',
+    'acCodeHelp': 'ဂဏန်း 6 လုံး pairing code ကို ထည့်ပါ။',
+    'acConnAddrHelp': 'Connect address ကို IP:Port ပုံစံ ထည့်ပါ — Wireless debugging ပင်မ screen ထဲကအတိုင်း ကူးပါ၊ ဥပမာ 192.168.1.5:32961',
+    'acScanning': 'Android/data နဲ့ Android/obb ထဲမှာ ဗီဒီယို ရှာနေပါတယ်…\n(ဖိုင်များတဲ့ ဖုန်းမှာ ကြာနိုင်ပါတယ်)',
+    'acNoneFound': 'Android/data (သို့) Android/obb ထဲမှာ ဗီဒီယို မရှိပါ။',
+    'acFound': 'ဗီဒီယို {n} ခု တွေ့ပါတယ်။',
+    'acManualHide': 'Manual IP:Port ဖျောက်',
+    'acManualShow': 'Manual IP:Port (code တစ်ခုတည်းနဲ့ မရရင်)',
+    'acManualHint': 'Code တစ်ခုတည်းနဲ့ "Pair" မရရင် ဒါကို သုံးပါ — များသောအားဖြင့် network က mDNS ကို ပိတ်ထားလို့ပါ (ဥပမာ 169.254.x.x address ပေးတဲ့ VPN)။ Screen ပေါ်က IP:Port ကို အတိအကျ ကူးပါ။',
+    'acPairOnce': 'Pair (တစ်ကြိမ်သာ)',
+    'acPairAddrLabel': 'Pairing IP:Port (pairing dialog ထဲက)',
+    'acEg': 'ဥပမာ {v}',
+    'acPairManual': 'Pair (ကိုယ်တိုင်)',
+    'acConnect': 'ချိတ်မယ်',
+    'acConnAddrLabel': 'Connect IP:Port (Wireless debugging screen ထဲက)',
+    'acConnectManual': 'ချိတ်မယ် (manual)',
   };
 
   static const Map<String, String> _th = <String, String>{
@@ -5391,22 +7354,6 @@ class AppStrings {
     'subBottomMargins': 'ระยะขอบล่าง',
     'subBottomMarginsTitle': 'ระยะขอบล่าง',
     'subImproveStroke': 'ปรับปรุงการวาดเส้นขอบ',
-    'subVerticalPos': 'ตำแหน่งแนวตั้ง',
-    'subVerticalPosTitle': 'ตำแหน่งแนวตั้ง',
-    'subVerticalPosDesc': 'ระยะห่างจากด้านบน เป็นเปอร์เซ็นต์',
-    'subHorizontalAlign': 'การจัดวางแนวนอน',
-    'subHorizontalAlignTitle': 'การจัดวางแนวนอน',
-    'subSidePadding': 'ระยะขอบซ้าย/ขวา',
-    'subSidePaddingTitle': 'ระยะขอบซ้าย/ขวา',
-    'subSidePaddingDesc': 'ระยะขอบแนวนอน หน่วยพิกเซล',
-    'subBottomMargin': 'ระยะขอบล่าง',
-    'subBottomMarginTitle': 'ระยะขอบล่าง',
-    'subBottomMarginDesc': 'ระยะขอบล่าง หน่วยพิกเซล',
-    'subShowBackground': 'แสดงพื้นหลัง',
-    'subBgBlack50': 'ดำ (ทึบ 50%)',
-    'subBgBlack75': 'ดำ (ทึบ 75%)',
-    'subBgDarkGray': 'เทาเข้ม',
-    'subBgColorActiveWhen': 'ใช้ได้เฉพาะเมื่อเปิด "แสดงพื้นหลัง" เท่านั้น',
     'currently': 'ปัจจุบัน',
 
     // --- Video Hub: age gate / library ---
@@ -5460,6 +7407,14 @@ class AppStrings {
     'adbTipTranssion': 'TECNO, Infinix และ itel: อนุญาตให้ Innocent ทำงานเบื้องหลัง (การตั้งค่าแบตเตอรี่หรือ Phone Master) มิฉะนั้นการแจ้งเตือนการจับคู่อาจถูกปิดก่อนที่คุณจะพิมพ์รหัส',
     'adbNotSupported': 'การแก้ไขข้อบกพร่องผ่าน Wi-Fi ต้องใช้ Android 11 ขึ้นไป',
     'hfTitle': 'ไฟล์ที่ซ่อนอยู่',
+    'playerSurface': 'วิดีโอ',
+    'playerSurfaceHint': 'แสดงหรือซ่อนปุ่มควบคุม',
+    'themeAdaptive': 'ปรับอัตโนมัติ',
+    'themeLight': 'ธีมสว่าง',
+    'themeDark': 'ธีมมืด',
+    'themeUsing': 'ใช้อยู่',
+    'themeComingSoon': 'เร็ว ๆ นี้',
+    'themeNew': 'ใหม่',
     'fvTitle': 'แสดง / ซ่อนโฟลเดอร์',
     'fvAppSection': 'โฟลเดอร์ของแอป (Android/data)',
     'fvAppSectionHint': 'พบผ่าน ADB ซ่อนโฟลเดอร์ที่ไม่ต้องการให้อยู่ในแท็บวิดีโอได้ ไม่มีอะไรถูกย้ายหรือลบ',
@@ -5476,6 +7431,7 @@ class AppStrings {
     'fvHiddenSnack': 'ซ่อน {n} โฟลเดอร์จากแท็บวิดีโอแล้ว',
     'fvFooter': 'โฟลเดอร์ที่ซ่อน {n} รายการ',
     'fvVideos': '{n} วิดีโอ',
+    'folderRowLabel': 'โฟลเดอร์: {name}, {videos}',
     'fvUndo': 'เลิกทำ',
     'fvManage': 'จัดการ',
     'hfNeedTitle': 'ไฟล์ที่ซ่อนอยู่ต้องใช้ ADB',
@@ -6083,8 +8039,6 @@ class AppStrings {
     'resetSettingsTitle': 'รีเซ็ตการตั้งค่า?',
     'resetSettingsBody': 'การตั้งค่าทั้งหมดจะกลับเป็นค่าเริ่มต้น',
     'settingsResetDone': 'รีเซ็ตการตั้งค่าเป็นค่าเริ่มต้นแล้ว',
-    'clearFontCacheTitle': 'ล้างแคชฟอนต์?',
-    'fontCacheCleared': 'ล้างแคชฟอนต์แล้ว',
     'languageRestartNote': 'ภาษาจะเปลี่ยนเมื่อเปิดแอปใหม่',
     'exportedTo': 'ส่งออกไปที่ {path} แล้ว',
     'exportFailed': 'ส่งออกไม่สำเร็จ',
@@ -6092,7 +8046,6 @@ class AppStrings {
     'importedFrom': 'นำเข้าการตั้งค่าจาก {path} แล้ว',
     'noExportFile': 'ไม่พบไฟล์ตั้งค่าที่ส่งออก กรุณาส่งออกก่อน',
     'moreLanguagesOnWay': 'ภาษาอื่น ๆ กำลังจะตามมา',
-    'colorFormat': 'รูปแบบสี',
     'screenTitle': 'หน้าจอ',
     'navigationTitle': 'การนำทาง',
     'controlsTitle': 'การควบคุม',
@@ -6100,7 +8053,6 @@ class AppStrings {
     'subtitleTextTitle': 'ข้อความซับไตเติล',
     'subtitleLayoutTitle': 'เลย์เอาต์ซับไตเติล',
     'soonBadge': 'เร็ว ๆ นี้',
-    'debugLogsExported': 'ส่งออกบันทึกดีบักแล้ว',
     'findYourVideos': 'ค้นหาวิดีโอของคุณ',
     'scanningVideos': 'กำลังสแกนวิดีโอ…',
     'errorLoadingFoldersPrefix': 'โหลดโฟลเดอร์ไม่สำเร็จ',
@@ -6484,13 +8436,9 @@ class AppStrings {
     'gtHeadsetSub': 'เล่นหรือหยุด',
     'storagePermissionNeeded': 'ต้องการสิทธิ์พื้นที่จัดเก็บ',
     'statusPermissionHint': 'อนุญาตการเข้าถึงสื่อเพื่ออ่านสถานะ WhatsApp',
-    'openingPrivacyPolicy': 'กำลังเปิดนโยบายความเป็นส่วนตัว...',
-    'openingTerms': 'กำลังเปิดข้อกำหนดการใช้งาน...',
     'personalPlayerApp': 'แอปเครื่องเล่นวิดีโอส่วนตัว',
     'storageManagement': 'จัดการพื้นที่จัดเก็บ',
     'storageUsage': 'การใช้พื้นที่',
-    'classicThemes': 'ธีมคลาสสิก',
-    'noInternetThemes': 'ไม่มีอินเทอร์เน็ต แตะเพื่อเชื่อมต่อรับธีมใหม่',
     'themeApplied': 'ใช้ธีมแล้ว',
     'openSourceLicenses': 'ใบอนุญาตโอเพนซอร์ส',
     'personalProject': 'โปรเจกต์ Flutter ส่วนตัวเพื่อการเรียนรู้',
@@ -6972,6 +8920,633 @@ class AppStrings {
     'updateRequired': 'ต้องอัปเดต',
     'updateRequiredBody':
         'เวอร์ชันนี้ใช้งานต่อไม่ได้แล้ว ติดตั้งอัปเดตด้านล่างเพื่อใช้งานต่อ',
+    'songsCount': '{n} เพลง',
+    'minutesCount': '{n} นาที',
+    'psTitleBar': 'แถบชื่อเรื่อง',
+    'psShowTitle': 'แสดงชื่อเรื่อง',
+    'psShowTitleSub': 'แสดงชื่อวิดีโอบนหน้าจอเล่น',
+    'psShowClock': 'แสดงนาฬิกา',
+    'psShowClockSub': 'แสดงเวลาปัจจุบันบนหน้าจอเล่น',
+    'psShowSourceUrl': 'แสดง URL ต้นทาง',
+    'psShowSourceUrlSub': 'แสดง URL/เส้นทางเมื่อเล่นจากเครือข่าย',
+    'psLayout': 'เลย์เอาต์',
+    'psToolbarPosition': 'ตำแหน่งแถบเครื่องมือ',
+    'psToolbarPositionSub': 'ตำแหน่งของแถบชื่อเรื่องบนหน้าจอเล่น ปัจจุบัน: {v}',
+    'psToolbarTop': 'ด้านบน (ค่าเริ่มต้น)',
+    'psToolbarBottom': 'ด้านล่าง (นิ้วโป้งเอื้อมถึง)',
+    'pssOrientation': 'การวางแนว',
+    'pssFollowSystem': 'ตามระบบ',
+    'pssLandscape': 'แนวนอน',
+    'pssLandscapeReverse': 'แนวนอน (กลับด้าน)',
+    'pssPortrait': 'แนวตั้ง',
+    'pssDefaultOrientation': 'การวางแนวเริ่มต้น',
+    'pssDefaultOrientationSub': 'ล็อกการวางแนวของหน้าจอเล่น "ตามระบบ" จะเป็นไปตามการหมุนอัตโนมัติด้านล่าง ปัจจุบัน: {v}',
+    'pssAutoRotation': 'หมุนอัตโนมัติ',
+    'pssAutoRotationSub': 'หมุนหน้าจอตามการหมุนโทรศัพท์',
+    'pssDisplay': 'การแสดงผล',
+    'pssFullScreen': 'เต็มหน้าจอ',
+    'pssFullScreenSub': 'ซ่อนแถบสถานะและแถบนำทางระหว่างเล่น',
+    'pssKeepOn': 'เปิดหน้าจอค้างไว้',
+    'pssKeepOnSub': 'ไม่ให้หน้าจอดับระหว่างเล่น',
+    'pssBrightness': 'ความสว่าง',
+    'pssAutoBrightness': 'ความสว่างอัตโนมัติ',
+    'pssAutoBrightnessSub': 'ใช้ความสว่างของระบบ',
+    'pssDefaultBrightness': 'ความสว่างเริ่มต้น',
+    'pssDefaultBrightnessSub': 'ความสว่างสำหรับวิดีโอใหม่ (แต่ละวิดีโอจำค่าของตัวเอง) ปัจจุบัน: {v}',
+    'pcLock': 'ล็อก',
+    'pcLockAll': 'ล็อกทั้งหมด (ค่าเริ่มต้น)',
+    'pcLockRotation': 'ล็อกการหมุนเท่านั้น',
+    'pcLockTouch': 'ล็อกการแตะเท่านั้น',
+    'pcLockMode': 'โหมดล็อก',
+    'pcLockModeSub': 'สิ่งที่ปุ่มล็อกทำบนหน้าจอเล่น ปัจจุบัน: {v}',
+    'pcLockOnRotation': 'ล็อกหน้าจอเมื่อหมุน',
+    'pcLockOnRotationSub': 'ล็อกหน้าจออัตโนมัติเมื่อหมุนโทรศัพท์',
+    'secondsCount': '{n} วินาที',
+    'pnSeekBar': 'แถบเวลา',
+    'pnShowSeekBar': 'แสดงแถบเวลา',
+    'pnShowSeekBarSub': 'แสดงแถบเวลาที่ด้านล่างของหน้าจอเล่น',
+    'pnSeekPreview': 'ภาพตัวอย่างบนแถบเวลา',
+    'pnSeekPreviewSub': 'แสดงภาพตัวอย่างขณะลากแถบเวลา',
+    'pnSeekInterval': 'ระยะการข้าม',
+    'pnSeekIntervalSub': 'ระยะที่การแตะสองครั้งและปุ่มเดินหน้า/ถอยหลังจะข้าม ปัจจุบัน: {v}',
+    'pnButtons': 'ปุ่ม',
+    'pnShowPrevNext': 'แสดงปุ่มก่อนหน้า/ถัดไป',
+    'pnShowPrevNextSub': 'แสดงปุ่มก่อนหน้าและถัดไปบนหน้าจอเล่น',
+    'pnNextPrev': 'วิดีโอถัดไป / ก่อนหน้า',
+    'pnSeekPm': 'ข้าม ±{v} วินาที',
+    'pnFwdBack': 'ปุ่มเดินหน้า / ถอยหลัง',
+    'pnFwdBackSub': 'สิ่งที่ปุ่ม ◀▶ บนหน้าจอทำ ปัจจุบัน: {v}',
+    'spInterface': 'อินเทอร์เฟซ',
+    'spScreenSub': 'การวางแนว เต็มหน้าจอ ความสว่าง และอื่นๆ',
+    'spControlsSub': 'การแตะ ท่าทาง โหมดล็อก และอื่นๆ',
+    'spNavigationSub': 'การข้าม ปุ่มเดินหน้า/ถอยหลัง และอื่นๆ',
+    'spDoubleBack': 'กดย้อนกลับสองครั้ง',
+    'spDoubleBackSub': 'กดย้อนกลับสองครั้งเพื่อปิดหน้าจอเล่น',
+    'spQuickZoom': 'ซูมด่วน',
+    'spQuickZoomSub': 'ข้ามขั้นซูมระหว่าง 100% กับพอดีหน้าจอ (150%, 200%…)',
+    'spPinControls': 'แสดงปุ่มควบคุมตลอด',
+    'spPinControlsSub': 'ปุ่มควบคุมจะไม่ซ่อนเอง ปิดไว้เป็นค่าเริ่มต้น',
+    'spHideDelay': 'เวลาก่อนซ่อนปุ่มควบคุม',
+    'spHideDelaySub': 'ระยะเวลาที่ปุ่มควบคุมยังแสดงหลังแตะครั้งสุดท้าย ปัจจุบัน: {v}',
+    'spPlayback': 'การเล่น',
+    'spResume': 'เล่นต่อ',
+    'spResumeAsk': 'ถามทุกครั้ง',
+    'spResumeAlways': 'เสมอ (เล่นต่อ)',
+    'spResumeNever': 'ไม่เลย (เริ่มใหม่)',
+    'spResumeSub': 'เลือกว่าจะเล่นต่อจากจุดที่หยุดไว้หรือไม่ ปัจจุบัน: {v}',
+    'spResumeFirst': 'เล่นต่อเฉพาะไฟล์แรก',
+    'spResumeFirstSub': 'เล่นต่อเฉพาะไฟล์แรก ไฟล์ถัดไปจะเริ่มจากต้น',
+    'spDefaultSpeed': 'ความเร็วการเล่นเริ่มต้น',
+    'spRemember': 'จำตัวเลือก',
+    'spRememberSub': 'จำแทร็กเสียง แทร็กคำบรรยาย และตัวถอดรหัสของแต่ละไฟล์',
+    'spBackToList': 'กลับไปที่รายการ',
+    'spBackToListSub': 'กลับไปที่รายการเมื่อเล่นจบ',
+    'spPreviewSeek': 'แสดงภาพตัวอย่างขณะเลื่อน',
+    'spPreviewSeekSub': 'แสดงภาพของตำแหน่งที่กำลังเลื่อนไป',
+    'spPreviewSeekNet': 'แสดงภาพตัวอย่างขณะเลื่อน (เครือข่าย)',
+    'spPreviewSeekNetSub': 'แสดงภาพตัวอย่างสำหรับวิดีโอจากเครือข่ายด้วย',
+    'spFastSeek': 'เลื่อนแบบเร็ว',
+    'spFastSeekSub': 'ข้ามไปยังคีย์เฟรมที่ใกล้ที่สุดแทนจุดที่แน่นอน (ตัวถอดรหัส HW+ และ SW)',
+    'spPlayAlone': 'เล่นเพียงแอปเดียว',
+    'spPlayAloneSub': 'หยุดเครื่องเล่นอื่นขณะเล่น และหยุดที่นี่เมื่อแอปอื่นเริ่มเล่นหรือมีสายเรียกเข้า',
+    'spMediaButtons': 'ปุ่มสื่อ',
+    'spMediaButtonsSub': 'ตอบสนองปุ่มควบคุมสื่อจากหูฟัง บลูทูธ ฯลฯ',
+    'spNextPrevFf': 'ถัดไป/ก่อนหน้า → กรอไปข้างหน้า/ย้อนกลับ',
+    'spNextPrevFfSub': 'ใช้ปุ่มถัดไป/ก่อนหน้าเพื่อกรอไปข้างหน้าและย้อนกลับ',
+    'spTogglePlay': 'สลับเล่น/หยุดด้วยปุ่มเล่น',
+    'spTogglePlaySub': 'ปุ่มเล่นจะสลับเล่น/หยุด ใช้เฉพาะอุปกรณ์ที่ปุ่มเล่นมีปัญหา',
+    'spSmartPrev': 'ปุ่มก่อนหน้าอัจฉริยะ',
+    'spSmartPrevSub': 'ปุ่มก่อนหน้าจะกลับไปต้นวิดีโอนี้ หรือไปวิดีโอก่อนหน้าหากอยู่ใกล้จุดเริ่มต้น',
+    'spSuppressError': 'ไม่แสดงข้อความผิดพลาด',
+    'spSuppressErrorSub': 'หากวิดีโอโหลดไม่ได้ ให้ไปวิดีโอถัดไปโดยไม่แสดงข้อความผิดพลาด',
+    'spCustomPip': 'ใช้เครื่องเล่นป๊อปอัปแบบกำหนดเอง',
+    'spCustomPipSub': 'ป๊อปอัปที่ย้ายและปรับขนาดได้ แทนภาพซ้อนภาพของ Android',
+    'spBackground': 'เล่นเบื้องหลัง',
+    'spBgMode': 'เบื้องหลัง / ภาพซ้อนภาพ',
+    'spBgModeSub': 'สิ่งที่หน้าจอเล่นทำเมื่อสลับไปแอปอื่น ปัจจุบัน: {v}',
+    'spBgPip': 'ภาพซ้อนภาพ',
+    'spBgPlay': 'เล่นต่อในเบื้องหลัง',
+    'spBgStop': 'หยุด',
+    'spBgAudio': 'เล่นเบื้องหลัง (เสียง)',
+    'spBgAudioSub': 'เล่นไฟล์เสียงต่อในเบื้องหลัง',
+    'spMisc': 'อื่นๆ',
+    'spLimitResize': 'จำกัดการขยายวิดีโอ',
+    'spLimitResizeSub': 'ไม่ขยายวิดีโอเกินขนาดจริง (เฉพาะตัวถอดรหัส HW)',
+    'spLoadingCircle': 'ภาพเคลื่อนไหววงกลมขณะโหลด',
+    'daysCount': '{n} วัน',
+    'slAppearance': 'ลักษณะ',
+    'slFloating': 'ปุ่มลอย',
+    'slFloatingSub': 'ปุ่มที่มุมขวาล่างสำหรับเล่นสิ่งที่เล่นล่าสุด',
+    'slNewPeriod': 'ระยะเวลาที่แสดงป้าย "ใหม่"',
+    'slNewPeriodSub': 'ไฟล์ที่เพิ่มในช่วงนี้จะแสดงป้าย "ใหม่" ปัจจุบัน: {v}',
+    'slScan': 'การสแกน',
+    'slExtensions': 'นามสกุลไฟล์',
+    'slExtensionsOn': 'เปิด {n} นามสกุล',
+    'slNomedia': 'รู้จัก .nomedia',
+    'slNomediaSub': 'ไม่แสดงไฟล์ในโฟลเดอร์ที่มีไฟล์ ".nomedia" (หรือโฟลเดอร์ด้านบนมี)',
+    'slShowHidden': 'แสดงไฟล์และโฟลเดอร์ที่ซ่อน',
+    'slShowHiddenSub': 'แสดงไฟล์และโฟลเดอร์ที่ชื่อขึ้นต้นด้วย "." (จุด)',
+    'slSafTitle': 'ให้สิทธิ์เข้าถึงโฟลเดอร์ที่ถูกจำกัด',
+    'slSafGranted': 'ให้สิทธิ์แล้ว: {v} แตะเพื่อเพิ่มโฟลเดอร์อื่น',
+    'slSafBlocked': 'Android 13 ขึ้นไปไม่ให้เปิด Android/data จากที่นี่ Innocent เปิดผ่าน ADB ด้านล่างแทน',
+    'slSafGrant': 'ให้สิทธิ์ Android/data (เช่น ไฟล์ดาวน์โหลดของ Telegram) เพื่อดูวิดีโอในแท็บวิดีโอ และเปิด "แสดงไฟล์และโฟลเดอร์ที่ซ่อน" การติดตั้งใหม่จะล้างสิทธิ์',
+    'slSafNotNeeded': 'ไม่จำเป็นบน Android {v} อ่านโฟลเดอร์ที่ซ่อนได้โดยตรง แค่เปิด "แสดงไฟล์และโฟลเดอร์ที่ซ่อน"',
+    'slSafGeneric': 'ดูวิดีโอใน Android/data และโฟลเดอร์ที่ถูกจำกัดอื่นๆ เปิด "แสดงไฟล์และโฟลเดอร์ที่ซ่อน" ด้วย',
+    'slSafNone': 'ไม่ได้ให้สิทธิ์โฟลเดอร์ (ยกเลิก หรือ Android บล็อก)',
+    'slSafEmpty': 'ให้สิทธิ์ "{v}" แล้ว แต่ไม่พบวิดีโอ Android 13 ขึ้นไปมักบล็อก Android/data ให้ใช้ ADB แทน',
+    'slSafFound': 'ให้สิทธิ์ "{v}" แล้ว — พบวิดีโอ {n} รายการ',
+    'slSafClear': 'ล้างโฟลเดอร์ที่ให้สิทธิ์',
+    'slSafClearSub': 'เพิกถอนโฟลเดอร์ที่ให้สิทธิ์ทั้ง {n} รายการ',
+    'slSafCleared': 'ล้างโฟลเดอร์ที่ให้สิทธิ์แล้ว',
+    'langNone': 'ไม่มี',
+    'langEnglish': 'อังกฤษ',
+    'langJapanese': 'ญี่ปุ่น',
+    'langKorean': 'เกาหลี',
+    'langChinese': 'จีน',
+    'langMyanmar': 'พม่า',
+    'langThai': 'ไทย',
+    'langHindi': 'ฮินดี',
+    'langVietnamese': 'เวียดนาม',
+    'saAuto': 'อัตโนมัติ (ตามระบบ)',
+    'saSpeaker': 'ลำโพง',
+    'saHeadphones': 'หูฟัง',
+    'saBluetooth': 'บลูทูธ',
+    'saOutput': 'อุปกรณ์เสียงออก',
+    'saBoost': 'เพิ่มระดับเสียง',
+    'saBoostSub': 'เพิ่มเสียงได้ถึง 200% เมื่อใช้ตัวถอดรหัส HW+ หรือ SW',
+    'saLoudness': 'ปรับความดังให้สม่ำเสมอ',
+    'saLoudnessSub': 'ปรับฉากที่ดังและเบาให้สม่ำเสมอ จะได้ไม่ต้องปรับเสียงบ่อย',
+    'saSystemVolume': 'ระดับเสียงของระบบ',
+    'saSystemVolumeSub': 'ให้ระดับเสียงตรงกับระดับเสียงสื่อของโทรศัพท์',
+    'saPauseHeadset': 'หยุดเมื่อถอดหูฟัง',
+    'saPauseHeadsetSub': 'หยุดเล่นเมื่อหูฟังแบบสายหรือบลูทูธหลุด',
+    'saFadeStart': 'เฟดเสียงเมื่อเริ่ม',
+    'saFadeSeek': 'เฟดเสียงเมื่อเลื่อน',
+    'saEffects': 'เอฟเฟกต์เสียง',
+    'saEffectsSub': 'เปิดอีควอไลเซอร์ เบสบูสต์ เวอร์ชวลไลเซอร์ และรีเวิร์บ',
+    'saPassthrough': 'ใช้การส่งผ่านเสียงก่อน',
+    'saPassthroughSub': 'ส่ง Dolby/DTS ไปยังเครื่องรับ AV โดยไม่แปลง ปิดหากลำโพงโทรศัพท์มีเสียงผิดเพี้ยน',
+    'saLanguage': 'ภาษาเสียงที่ต้องการ',
+    'saLanguageSub': 'ภาษาของแทร็กเสียงที่เลือกก่อน ปัจจุบัน: {v}',
+    'saDelay': 'หน่วงเสียง',
+    'saDelaySub': 'เลื่อนเสียงให้เร็วหรือช้ากว่าภาพ ปัจจุบัน: {v}',
+    'ssFolder': 'โฟลเดอร์คำบรรยาย',
+    'ssFolderSame': 'เฉพาะโฟลเดอร์เดียวกับวิดีโอ',
+    'ssFolderHint': 'เช่น /storage/emulated/0/Subtitles',
+    'ssAutoDetect': 'ตรวจหาอัตโนมัติ',
+    'ssEncoding': 'การเข้ารหัสอักขระ',
+    'ssEncodingSub': 'การเข้ารหัสอักขระของไฟล์คำบรรยาย ปัจจุบัน: {v}',
+    'ssLanguage': 'ภาษาคำบรรยายที่ต้องการ',
+    'ssLanguageSub': 'ภาษาของแทร็กคำบรรยายที่เลือกก่อน ปัจจุบัน: {v}',
+    'ssSync': 'การซิงค์เริ่มต้น',
+    'ssSyncSub': 'คำบรรยายแสดงเร็วหรือช้ากว่าเดิมเท่าใดโดยค่าเริ่มต้น ปัจจุบัน: {v}',
+    'ssHwSync': 'การซิงค์สำหรับตัวถอดรหัส HW',
+    'ssHwSyncSub': 'ชดเชยความหน่วงการแสดงผลของตัวถอดรหัส HW ปัจจุบัน: {v}',
+    'ssAppearance': 'ลักษณะ',
+    'ssText': 'ข้อความ',
+    'ssTextSub': 'ฟอนต์ ขนาด สี ขอบ และอื่นๆ',
+    'ssLayout': 'เลย์เอาต์',
+    'ssLayoutSub': 'การจัดวาง ระยะขอบ และพื้นหลัง',
+    'ssProcessing': 'การประมวลผลข้อความ',
+    'ssItalic': 'ตัวเอียง',
+    'ssItalicSub': 'บรรทัดที่ขึ้นต้นด้วย "/" จะแสดงเป็นตัวเอียง',
+    'slyPosition': 'ตำแหน่ง',
+    'slyVertical': 'ตำแหน่งแนวตั้ง',
+    'slyVerticalSub': 'ระยะจากด้านบน (เปอร์เซ็นต์) ปัจจุบัน: {v}',
+    'slyLeft': 'ซ้าย',
+    'slyCenter': 'กลาง',
+    'slyRight': 'ขวา',
+    'slyHorizontal': 'การจัดแนวนอน',
+    'slyCurrently': 'ปัจจุบัน: {v}',
+    'slySpacing': 'ระยะห่าง',
+    'slyPadX': 'ระยะขอบซ้าย/ขวา',
+    'slyPadXSub': 'ระยะขอบด้านข้าง (พิกเซล) ปัจจุบัน: {v}',
+    'slyPadY': 'ระยะขอบล่าง',
+    'slyPadYSub': 'ระยะขอบล่าง (พิกเซล) ปัจจุบัน: {v}',
+    'slyBackground': 'พื้นหลัง',
+    'slyShowBg': 'แสดงพื้นหลัง',
+    'slyShowBgSub': 'พื้นหลังโปร่งแสงหลังข้อความคำบรรยาย',
+    'slyBlack50': 'ดำ (50%)',
+    'slyBlack75': 'ดำ (75%)',
+    'slyDarkGray': 'เทาเข้ม',
+    'slyNone': 'ไม่มี',
+    'slyBgColor': 'สีพื้นหลัง',
+    'slyBgColorSub': 'มีผลเฉพาะเมื่อเปิด "แสดงพื้นหลัง" ปัจจุบัน: {v}',
+    'sdHw': 'ตัวถอดรหัสฮาร์ดแวร์',
+    'sdAutoDefault': 'อัตโนมัติ (ค่าเริ่มต้น)',
+    'sdNeverHw': 'ไม่ใช้ตัวถอดรหัส HW',
+    'sdLocalOnly': 'เฉพาะไฟล์ในเครื่อง',
+    'sdAlwaysHw': 'ลอง HW ก่อนเสมอ',
+    'sdStrategy': 'วิธีใช้ตัวถอดรหัส HW',
+    'sdHwPlusLocal': 'ตัวถอดรหัส HW+ (ไฟล์ในเครื่อง)',
+    'sdHwPlusLocalSub': 'ใช้ HW+ เป็นตัวถอดรหัสฮาร์ดแวร์เริ่มต้นสำหรับไฟล์ในเครื่อง',
+    'sdHwPlusNet': 'ตัวถอดรหัส HW+ (เครือข่าย)',
+    'sdHwPlusNetSub': 'ใช้ HW+ เป็นตัวถอดรหัสฮาร์ดแวร์เริ่มต้นเมื่อเล่นจากเครือข่าย',
+    'sdTryHw': 'ลองตัวถอดรหัส HW',
+    'sdTryHwSub': 'ลอง HW หาก HW+ ใช้ไม่ได้',
+    'sdTryHwPlus': 'ลองตัวถอดรหัส HW+',
+    'sdTryHwPlusSub': 'ลอง HW+ หาก HW ใช้ไม่ได้',
+    'sdSw': 'ตัวถอดรหัสซอฟต์แวร์',
+    'sdSwLocal': 'ตัวถอดรหัส SW (ไฟล์ในเครื่อง)',
+    'sdSwLocalSub': 'เล่นไฟล์ในเครื่องด้วยตัวถอดรหัส SW',
+    'sdSwNet': 'ตัวถอดรหัส SW (เครือข่าย)',
+    'sdSwNetSub': 'เล่นจากเครือข่าย (HTTP, FTP, RTSP ฯลฯ) ด้วยตัวถอดรหัส SW',
+    'sdAutoRecommended': 'อัตโนมัติ (แนะนำ)',
+    'sdCores': 'จำนวนคอร์ CPU สูงสุด',
+    'sdCoresSub': 'จำนวนคอร์ CPU ที่ตัวถอดรหัส SW ใช้ได้ ปัจจุบัน: {v}',
+    'sdSpeedup': 'ใช้เทคนิคเร่งความเร็ว',
+    'sdSpeedupSub': 'ให้ตัวถอดรหัส SW ใช้ทางลัดเมื่อทำงานไม่ทัน ภาพยังคมชัดเต็มที่จนกว่าจะเริ่มทิ้งเฟรมจริง',
+    'sdGeneral': 'ทั่วไป',
+    'sdEfficient': 'การแสดงผลวิดีโอแบบประหยัด',
+    'sdEfficientSub': 'วาดวิดีโอลงหน้าจอโดยตรง ประหยัดแบตเตอรี่และร้อนน้อยลง (Android 10+) ปิดหากภาพดำหรือกะพริบ มีผลเมื่อเปิดแอปครั้งถัดไป',
+    'sdDeinterlace': 'ดีอินเทอร์เลซ',
+    'sdDeinterlaceSub': 'ดีอินเทอร์เลซเป็นค่าเริ่มต้น (เฉพาะตัวถอดรหัส SW)',
+    'sgUserAgent': 'HTTP User-Agent',
+    'sgUserAgentDefault': 'ค่าเริ่มต้น',
+    'sgUserAgentSub': 'เว้นว่างไว้เพื่อใช้ค่าเริ่มต้น',
+    'sgUserAgentHint': 'User-Agent ที่กำหนดเอง',
+    'sgQuit': 'ปุ่มออก',
+    'sgQuitSub': 'ปุ่มออกในแท็บฉันที่ปิดแอปทั้งหมด ไม่เหมือนปุ่มย้อนกลับหรือหน้าแรก',
+    'sgPrivacy': 'โหมดส่วนตัว (ไม่บันทึกการดู)',
+    'sgPrivacySub': 'ไม่บันทึกสิ่งที่ดูขณะเปิดโหมดนี้ ประวัติ จุดเล่นต่อ และรายการเพิ่มล่าสุดจะหยุดไว้ รายการเดิมยังอยู่ และไม่มีข้อมูลใดออกจากเครื่อง',
+    'sgFullAccess': 'เข้าถึงคลังทั้งหมด',
+    'sgFullAccessSub': 'ไม่บังคับ ให้คลังค้นหาในโฟลเดอร์นอก Movies, DCIM และ Downloads ได้ จะเปิดการเข้าถึงไฟล์ทั้งหมดของ Android',
+    'sgEdit': 'แก้ไข',
+    'sgAllowEdit': 'อนุญาตให้แก้ไข',
+    'sgAllowEditSub': 'แสดงเมนูสำหรับลบและเปลี่ยนชื่อไฟล์และโฟลเดอร์',
+    'sgDeleteSubs': 'ลบไฟล์คำบรรยายไปด้วย',
+    'sgUserData': 'ข้อมูลผู้ใช้',
+    'sgClearHistory': 'ล้างประวัติ',
+    'sgClearHistorySub': 'ล้างประวัติทั้งหมด รวมถึงประวัติการเล่นและการค้นหา',
+    'sgClearThumbs': 'ล้างแคชภาพตัวอย่าง',
+    'sgClearThumbsSub': 'ลบภาพตัวอย่างที่เก็บไว้ จะสร้างใหม่เมื่อเปิดรายการ',
+    'sgCacheThumbs': 'เก็บแคชภาพตัวอย่าง',
+    'sgBackup': 'สำรองข้อมูล',
+    'sgReset': 'รีเซ็ตการตั้งค่า',
+    'sgResetSub': 'คืนค่าการตั้งค่าทั้งหมดเป็นค่าเริ่มต้น ประวัติและเพลย์ลิสต์ยังอยู่',
+    'sgExport': 'ส่งออก',
+    'sgExportSub': 'บันทึกการตั้งค่าเป็นไฟล์ JSON',
+    'sgImport': 'นำเข้าจากไฟล์',
+    'sgImportSub': 'คืนค่าการตั้งค่าจากไฟล์ JSON',
+    'sdvDebug': 'ดีบัก',
+    'sdvBuffer': 'แสดงข้อมูลบัฟเฟอร์',
+    'sdvBufferSub': 'แสดงสถานะบัฟเฟอร์ระหว่างเล่น',
+    'sdvDecoder': 'แสดงข้อมูลตัวถอดรหัส',
+    'sdvDecoderSub': 'แสดงตัวถอดรหัสที่กำลังใช้',
+    'sdvFps': 'แสดง FPS',
+    'sdvFpsSub': 'แสดงจำนวนเฟรมต่อวินาทีบนหน้าจอ',
+    'sdvExperimental': 'ทดลอง',
+    'sdvNoHw': 'ปิดการเร่งด้วยฮาร์ดแวร์',
+    'sdvNoHwSub': 'บังคับถอดรหัสด้วยซอฟต์แวร์ ใช้เพื่อดีบักเท่านั้น',
+    'sdvResetAll': 'รีเซ็ตการตั้งค่าทั้งหมด',
+    'sdvResetAllSub': 'คืนค่าการตั้งค่าทั้งหมดเป็นค่าเริ่มต้น',
+    'plScreenshotFailed': 'จับภาพหน้าจอไม่สำเร็จ',
+    'plSaved': 'บันทึกแล้ว: {v}',
+    'plScreenshotError': 'จับภาพหน้าจอผิดพลาด: {v}',
+    'plLoaded': 'โหลดแล้ว: {v}',
+    'plSubtitlePickError': 'เปิดคำบรรยายไม่ได้: {v}',
+    'plOwnPageOnly': 'เปิดเรื่องนี้ได้จากหน้าของเรื่องเท่านั้น',
+    'plNoPlaylists': 'ยังไม่มีเพลย์ลิสต์ สร้างได้ที่ ฉัน → เพลย์ลิสต์วิดีโอ',
+    'plAdbToSend': 'เชื่อมต่อ ADB เพื่อส่งวิดีโอ Android/data นี้',
+    'plTransferFailed': 'เพิ่มไปยังการโอนไม่ได้: {v}',
+    'plUnmuted': 'เปิดเสียงแล้ว',
+    'plMuted': 'ปิดเสียงแล้ว',
+    'plShuffleOn': 'เปิดสุ่ม',
+    'plShuffleOff': 'ปิดสุ่ม',
+    'plMirrorOn': 'เปิดโหมดกระจก',
+    'plMirrorOff': 'ปิดโหมดกระจก',
+    'plFlipOn': 'เปิดพลิกแนวตั้ง',
+    'plFlipOff': 'ปิดพลิกแนวตั้ง',
+    'plNightOn': 'เปิดโหมดกลางคืน',
+    'plNightOff': 'ปิดโหมดกลางคืน',
+    'plBgOn': 'เปิดเล่นเบื้องหลัง',
+    'plBgOff': 'ปิดเล่นเบื้องหลัง',
+    'plSpeed': 'ความเร็ว {v}',
+    'plAPoint': 'ตั้งจุด A แล้ว',
+    'plAbOn': 'วนซ้ำ A-B แล้ว',
+    'plAbCleared': 'ล้างการวนซ้ำ A-B แล้ว',
+    'plNoAudioTracks': 'ไม่มีแทร็กเสียง',
+    'plAudio': 'เสียง: {v}',
+    'plSubtitle': 'คำบรรยาย: {v}',
+    'plAspect': 'อัตราส่วน: {v}',
+    'plSearchSubs': 'ค้นหาคำบรรยายสำหรับ {v}',
+    'plDecoder': 'ตัวถอดรหัส: {v}',
+    'plDecoderDefault': 'ค่าเริ่มต้น',
+    'plPositionOf': 'ตำแหน่ง {a} จาก {b}',
+    'plAuto': 'อัตโนมัติ',
+    'plPrevVideo': 'วิดีโอก่อนหน้า',
+    'plPrevFrame': 'เฟรมก่อนหน้า',
+    'plPause': 'หยุดชั่วคราว',
+    'plNextFrame': 'เฟรมถัดไป',
+    'plNextVideo': 'วิดีโอถัดไป (กดค้างเพื่อเลือกการวนซ้ำ)',
+    'vomWatchLaterAdded': '⏰ เพิ่มในดูภายหลังแล้ว',
+    'vomWatchLaterAlready': 'อยู่ในดูภายหลังแล้ว',
+    'vomFavAdded': '★ เพิ่มในรายการโปรดแล้ว',
+    'vomFavRemoved': '☆ นำออกจากรายการโปรดแล้ว',
+    'vomPasteSubLink': 'วางลิงก์ตรงไปยังไฟล์ .srt / .ass / .vtt / .ssa / .sub สำหรับ "{v}"',
+    'vomSubSaved': 'บันทึกคำบรรยายแล้ว เปิดวิดีโออีกครั้งเพื่อใช้\n{v}',
+    'vomBinBody': 'จะซ่อน "{v}" จากคลัง กู้คืนได้จากถังรีไซเคิล',
+    'vomMovedToBin': 'ย้ายไปถังรีไซเคิลแล้ว',
+    'vomNoLocalFile': 'ไม่มีไฟล์ในเครื่องให้แปลง',
+    'vomConvertBusy': 'มีการแปลงอื่นกำลังทำงานอยู่',
+    'vomSavedMusic': 'บันทึกไปที่ Innocent/Music แล้ว',
+    'vomConvertFailed': 'แปลงไม่สำเร็จ',
+    'vomPinFirst': 'ตั้ง PIN ของโฟลเดอร์ส่วนตัวก่อน (ฉัน → โฟลเดอร์ส่วนตัว)',
+    'vomLockFailed': 'ล็อกไม่สำเร็จ: {v}',
+    'vomCantRename': 'เปลี่ยนชื่อวิดีโอนี้ไม่ได้ (ระบบจัดการอยู่)',
+    'vomBadName': 'ชื่อต้องไม่มี / หรือ \\',
+    'vomNameTaken': 'มีไฟล์ชื่อนี้อยู่แล้ว',
+    'vomRenameFailed': 'เปลี่ยนชื่อไม่สำเร็จ: {v}',
+    'vomCantDelete': 'ลบวิดีโอนี้ไม่ได้ (ระบบจัดการอยู่)',
+    'vomEditingOff': 'การแก้ไขปิดอยู่: การตั้งค่า → ทั่วไป → อนุญาตให้แก้ไข',
+    'vomDeleteBody': 'ลบ "{v}" ถาวรหรือไม่\n\nย้อนกลับไม่ได้',
+    'vomDeleteFailed': 'ลบไม่สำเร็จ: {v}',
+    'vomRemoveFav': 'นำออกจากรายการโปรด',
+    'vomConvertAudio': 'แปลงเป็นเสียง',
+    'vomAddWatchLater': 'เพิ่มในดูภายหลัง',
+    'vomMoveToBin': 'ย้ายไปถังรีไซเคิล',
+    'vomAddedTo': 'เพิ่มใน "{v}" แล้ว',
+    'vomBytes': '{v} ไบต์',
+    'vomNewName': 'ชื่อใหม่',
+    'vomConverting': 'กำลังแปลงเป็นเสียง',
+    'vomPreparing': 'กำลังเตรียม…',
+    'mcPlayNext': 'เล่นถัดไป',
+    'mcPlayingNext': 'เล่นถัดไป: "{v}"',
+    'mcPlayLater': 'เล่นภายหลัง',
+    'mcQueued': 'เพิ่มในคิวแล้ว',
+    'mcFavAdded': 'เพิ่มในรายการโปรดแล้ว',
+    'mcFavRemoved': 'นำออกจากรายการโปรดแล้ว',
+    'mcTitle': 'ชื่อ',
+    'mcArtist': 'ศิลปิน',
+    'mcAlbum': 'อัลบั้ม',
+    'mcUnknown': 'ไม่ทราบ',
+    'mcDuration': 'ความยาว',
+    'mcPath': 'ตำแหน่ง',
+    'mcPathCopied': 'คัดลอกตำแหน่งแล้ว',
+    'mcPlayAll': 'เล่นทั้งหมด',
+    'mcShufflePlay': 'เล่นแบบสุ่ม',
+    'mpRepeatAll': 'เล่นซ้ำทั้งหมด',
+    'mpRepeatOne': 'เล่นซ้ำเพลงเดียว',
+    'mpRepeatOff': 'ปิดเล่นซ้ำ',
+    'mpUnknownTrack': 'เพลงที่ไม่ทราบชื่อ',
+    'mpUnknownArtist': 'ศิลปินที่ไม่ทราบชื่อ',
+    'mpCollapse': 'ย่อ',
+    'mpEqualizer': 'อีควอไลเซอร์',
+    'mpAb': 'เล่นซ้ำ A-B',
+    'mpSpeed': 'ความเร็ว',
+    'mpShuffle': 'สุ่ม',
+    'mpPrevious': 'ก่อนหน้า',
+    'mpNext': 'ถัดไป',
+    'mpRepeat': 'เล่นซ้ำ',
+    'mpLyricsError': 'อ่านไฟล์เนื้อเพลงไม่ได้',
+    'mpNoLyrics': 'ไม่พบเนื้อเพลง\n\nหากต้องการเพิ่ม ให้วางไฟล์ .lrc ชื่อเดียวกันไว้ข้างเพลง — song.mp3 → song.lrc — โดยมีบรรทัดเช่น [00:12.34]เนื้อเพลง',
+    'mcDateAdded': 'วันที่เพิ่ม',
+    'mpFavourites': 'รายการโปรดของฉัน',
+    'mpRecent': 'เล่นล่าสุด',
+    'mpShowQueue': 'แสดงคิว',
+    'mpNoFavs': 'ยังไม่มีรายการโปรด\nแตะ ♥ ที่เพลงใดก็ได้เพื่อเพิ่มที่นี่',
+    'mpNoRecent': 'ยังไม่มีเพลงที่เล่นล่าสุด',
+    'mpEmptyPlaylist': 'เพลย์ลิสต์นี้ว่างเปล่า',
+    'svTitle': 'ชื่อ',
+    'svDate': 'วันที่',
+    'svPlayedTime': 'เวลาที่เล่น',
+    'svStatus': 'สถานะ',
+    'svLength': 'ความยาว',
+    'svSize': 'ขนาด',
+    'svResolution': 'ความละเอียด',
+    'svPath': 'ตำแหน่ง',
+    'svFrameRate': 'อัตราเฟรม',
+    'svType': 'ประเภท',
+    'svAllFolders': 'ทุกโฟลเดอร์',
+    'svFiles': 'ไฟล์',
+    'svFolders': 'โฟลเดอร์',
+    'svList': 'รายการ',
+    'svGrid': 'ตาราง',
+    'svViewMode': 'มุมมอง',
+    'svLayout': 'เลย์เอาต์',
+    'svAz': 'ก ถึง ฮ',
+    'svZa': 'ฮ ถึง ก',
+    'svOldest': 'เก่าสุด',
+    'svNewest': 'ใหม่สุด',
+    'svShortest': 'สั้นสุด',
+    'svLongest': 'ยาวสุด',
+    'svSmallest': 'เล็กสุด',
+    'svLargest': 'ใหญ่สุด',
+    'svLowest': 'ต่ำสุด',
+    'svHighest': 'สูงสุด',
+    'svAscending': 'น้อยไปมาก',
+    'svDescending': 'มากไปน้อย',
+    'svSort': 'เรียง',
+    'svFields': 'ข้อมูลที่แสดง',
+    'svThumbnail': 'ภาพตัวอย่าง',
+    'svExtension': 'นามสกุลไฟล์',
+    'svAdvanced': 'ขั้นสูง',
+    'svLengthOnThumb': 'แสดงความยาวบนภาพตัวอย่าง',
+    'lsViewMode': 'มุมมอง: {v}',
+    'lsSortView': 'เรียงและมุมมอง',
+    'lsNoFolderMatch': 'ไม่มีโฟลเดอร์ที่ตรงกับ "{v}"',
+    'lsAdbStale': 'ADB หลุดอยู่ วิดีโอข้อมูลแอปอาจไม่เป็นปัจจุบัน เชื่อมต่อใหม่เพื่อรีเฟรช',
+    'lsReconnect': 'เชื่อมต่อใหม่',
+    'fdBackAll': 'กลับไปทุกโฟลเดอร์',
+    'fdNoVideoMatch': 'ไม่มีวิดีโอที่ตรงกับ "{v}"',
+    'fdEmpty': 'ไม่มีวิดีโอในโฟลเดอร์นี้',
+    'sabHint': 'ค้นหาไฟล์สื่อ',
+    'sabClear': 'ล้าง',
+    'hlpQ1': 'เล่นวิดีโออย่างไร',
+    'hlpA1': 'เปิดแท็บวิดีโอ เข้าโฟลเดอร์ แล้วแตะวิดีโอ',
+    'hlpQ2': 'เปลี่ยนตัวถอดรหัสอย่างไร',
+    'hlpA2': 'ระหว่างเล่น แตะป้าย HW/SW ที่มุมขวาบน หรือไปที่ การตั้งค่า → ตัวถอดรหัส',
+    'hlpQ3': 'เพิ่มคำบรรยายอย่างไร',
+    'hlpA3': 'ระหว่างเล่น แตะปุ่มคำบรรยายในแถวทางลัด แล้วเลือกไฟล์คำบรรยายจากเครื่อง',
+    'hlpQ4': 'ล็อกวิดีโอในโฟลเดอร์ส่วนตัวอย่างไร',
+    'hlpA4': 'กดค้างที่วิดีโอ หรือแตะ ⋮ แล้วเลือก "ล็อกในโฟลเดอร์ส่วนตัว" ครั้งแรกจะต้องตั้ง PIN',
+    'hlpQ5': 'ฟังต่อในเบื้องหลังอย่างไร',
+    'hlpA5': 'แตะรูปหูฟังในทางลัดของเครื่องเล่น หรือเลือกที่ การตั้งค่า → เครื่องเล่น → เล่นเบื้องหลัง เสียงจะเล่นต่อเมื่อสลับแอป',
+    'hlpQ6': 'เปลี่ยนความเร็วการเล่นอย่างไร',
+    'hlpA6': 'ระหว่างเล่น แตะ ความเร็ว ในแถวทางลัด',
+    'hlpQ7': 'ส่งไฟล์ไปยังโทรศัพท์อื่นอย่างไร',
+    'hlpA7': 'เปิดแท็บโอนไฟล์ แตะ ส่ง เพื่อแชร์ไฟล์ หรือ รับ เพื่อรับจากโทรศัพท์อื่น',
+    'hlpQ8': 'ใช้ท่าทางอย่างไร',
+    'hlpA8': 'ปัดขึ้นลงด้านซ้ายเพื่อปรับความสว่าง ด้านขวาเพื่อปรับเสียง และปัดซ้ายขวาเพื่อเลื่อน',
+    'hsToday': 'วันนี้',
+    'hsYesterday': 'เมื่อวาน',
+    'hsThisWeek': 'สัปดาห์นี้',
+    'hsEarlier': 'ก่อนหน้านี้',
+    'hsClearAll': 'ล้างทั้งหมด',
+    'wiEmpty': 'ดูวิดีโอสักสองสามเรื่องแล้วกลับมา สรุปรายสัปดาห์จะแสดงที่นี่',
+    'wiMin': 'นาที',
+    'wiVideos': 'วิดีโอ',
+    'wiActiveDays': 'วันที่ดู',
+    'wiStreakStart': 'เริ่มดูต่อเนื่องวันนี้เลย!',
+    'wiStreakToday': 'วันนี้ดูแล้ว ดูต่อไปนะ',
+    'wiStreakDays': 'ต่อเนื่อง {v} วัน เยี่ยมมาก',
+    'wiNoStreak': 'ยังไม่มีการดูต่อเนื่อง',
+    'wiStreak': 'ต่อเนื่อง {v} วัน',
+    'wiWatches': 'ดู {n} ครั้ง',
+    'wiPlays': 'เล่น {n} ครั้ง',
+    'wiFinisher': 'คุณดูจนจบเสมอ',
+    'wiSolid': 'ดูจนจบได้ดี',
+    'wiHalf': 'มีหลายเรื่องที่ดูไม่จบ',
+    'wiLocal': 'ตัวเลขเหล่านี้คำนวณในเครื่องทั้งหมด ไม่มีการอัปโหลด',
+    'stFolders': 'โฟลเดอร์',
+    'stTotalSize': 'ขนาดรวม',
+    'stTotalLength': 'ความยาวรวม',
+    'stActivity': 'กิจกรรมของคุณ',
+    'stWatched': 'ดูแล้ว',
+    'stWatchTime': 'เวลาดู',
+    'stTopFolders': 'โฟลเดอร์ยอดนิยม',
+    'stMostWatched': 'ดูมากที่สุด',
+    'stPlaysDone': 'เล่น {n} ครั้ง • ดูแล้ว {p}%',
+    'plsClearBody': 'จะนำวิดีโอ {n} รายการออกจากเพลย์ลิสต์ ไฟล์ในเครื่องยังอยู่',
+    'plsEmpty': 'สร้างด้านบน หรือแตะ ⋮ ที่วิดีโอใดก็ได้เพื่อเพิ่มลงเพลย์ลิสต์',
+    'plsHowToAdd': 'แตะ ⋮ ที่วิดีโอ แล้วเลือก "เพิ่มลงเพลย์ลิสต์" → "{v}"',
+    'rbInfo': 'ข้อมูล',
+    'rbKept': 'รายการในถังรีไซเคิลจะเก็บไว้สูงสุด 30 วัน แล้วลบออกอัตโนมัติ',
+    'rbClearBody': 'รายการทั้งหมดจะถูกลบออกจากรายการนี้ถาวร ไฟล์วิดีโอยังอยู่ในเครื่อง',
+    'rbBanner': 'ไฟล์จะอยู่ในถังรีไซเคิลสูงสุด 30 วันก่อนถูกลบจากเครื่อง',
+    'rbRestore': 'กู้คืน',
+    'agoDays': '{n} วันที่แล้ว',
+    'agoHours': '{n} ชม. ที่แล้ว',
+    'agoMinutes': '{n} นาทีที่แล้ว',
+    'agoJustNow': 'เมื่อสักครู่',
+    'ssvSavedTo': 'บันทึกไปที่ {v} แล้ว',
+    'ssvNotWritable': 'บันทึกไม่ได้: เขียนลงที่เก็บข้อมูลไม่ได้',
+    'ssvNoVideos': 'ไม่พบวิดีโอสถานะ',
+    'ssvNoImages': 'ไม่พบรูปภาพสถานะ',
+    'ssvHowTo': 'เปิดสถานะใน WhatsApp ก่อน แล้วกลับมารีเฟรช',
+    'cdDrive': 'สตรีมจากไดรฟ์โดยไม่ต้องดาวน์โหลด',
+    'cdDropbox': 'เชื่อมต่อบัญชี Dropbox',
+    'cdOneDrive': 'พื้นที่เก็บข้อมูลคลาวด์ของ Microsoft',
+    'cdICloud': 'Apple iCloud (เฉพาะลิงก์เว็บ)',
+    'cdYandex': 'พื้นที่เก็บข้อมูลคลาวด์ของ Yandex',
+    'cdMega': 'พื้นที่เก็บข้อมูลคลาวด์แบบเข้ารหัส',
+    'cdPcloud': 'พื้นที่เก็บข้อมูลคลาวด์ในยุโรป',
+    'cppFfRew': 'กรอไปข้างหน้า / ย้อนกลับ',
+    'aeOriginal': 'ต้นฉบับ',
+    'aeClarity': 'คมชัด',
+    'aeBassBoost': 'เพิ่มเบส',
+    'aeTrebleBoost': 'เพิ่มเสียงแหลม',
+    'aeMovie': 'ภาพยนตร์',
+    'aeMusic': 'เพลง',
+    'aeCustom': 'กำหนดเอง',
+    'aeVirtualizer': 'เวอร์ชวลไลเซอร์',
+    'aeAudioEffect': 'เอฟเฟกต์เสียง',
+    'aeSoundProfiles': 'โปรไฟล์เสียง',
+    'aeUnsupported': 'โทรศัพท์นี้ไม่รองรับเอฟเฟกต์เสียง หรือยังไม่มีอะไรกำลังเล่น',
+    'pvWouldNotStart': 'วิดีโอนี้เริ่มเล่นไม่ได้ แตะลองใหม่ หากยังไม่ได้ ไฟล์อาจใช้งานไม่ได้',
+    'pvStalled': 'การเล่นหยุดชะงัก เครือข่ายช้าเกินไป แตะลองใหม่หรือตรวจสอบการเชื่อมต่อ',
+    'pvOffline': 'ไม่มีการเชื่อมต่ออินเทอร์เน็ต เชื่อมต่อใหม่แล้วแตะลองใหม่',
+    'pvLinkExpired': 'ลิงก์สตรีมนี้หมดอายุแล้ว เปิดเรื่องนี้อีกครั้งเพื่อดูต่อ',
+    'pvAdbLoading': 'กำลังโหลดวิดีโอผ่าน ADB…\nไฟล์ใหญ่อาจใช้เวลาสักครู่',
+    'pvAdbFailed': 'โหลดวิดีโอนี้ผ่าน ADB ไม่ได้ ตรวจสอบว่ายังเชื่อมต่ออยู่ในหน้าจอ ADB แล้วลองอีกครั้ง',
+    'pvDownloadGone': 'ไม่สามารถเปิดไฟล์ดาวน์โหลดนี้ในโทรศัพท์นี้ได้แล้ว ลบออกจากดาวน์โหลดแล้วดาวน์โหลดใหม่',
+    'pwNotSet': 'ยังไม่ได้ตั้ง',
+    'pwMarkersHint': 'ตั้งเครื่องหมายที่ตำแหน่งปัจจุบัน ครั้งหน้าจะข้ามให้อัตโนมัติ',
+    'pwIntroEnds': 'อินโทรจบที่',
+    'pwIntroSet': 'ตั้งเครื่องหมายอินโทรที่ {v} แล้ว',
+    'pwOutroStarts': 'เอาท์โทรเริ่มที่',
+    'pwOutroSet': 'ตั้งเครื่องหมายเอาท์โทรที่ {v} แล้ว',
+    'pwUpdate': 'อัปเดต',
+    'pwSet': 'ตั้ง',
+    'pwDecrease': 'ลด{v}',
+    'pwIncrease': 'เพิ่ม{v}',
+    'pwTuneHint': 'ลากที่ใดก็ได้บนแผงนี้ ลากด้านข้างเพื่อปรับเวลา ลากขึ้นลงเพื่อปรับตำแหน่ง แตะค่าเพื่อรีเซ็ต',
+    'pwTiming': 'เวลา',
+    'pwPosition': 'ตำแหน่ง',
+    'pwOpenFile': 'เปิดไฟล์',
+    'pwSubTrack': 'แทร็กคำบรรยาย',
+    'pwTextStyle': 'รูปแบบข้อความ',
+    'pwPosLayout': 'ตำแหน่งและเลย์เอาต์',
+    'pwStartA': 'เริ่ม (A)',
+    'pwEndB': 'จบ (B)',
+    'pwBrightness': 'ความสว่าง',
+    'pwContrast': 'คอนทราสต์',
+    'pwSaturation': 'ความอิ่มสี',
+    'pwHue': 'โทนสี',
+    'pwLoopOne': 'วนซ้ำเรื่องเดียว',
+    'pwLoopAll': 'วนซ้ำทั้งหมด',
+    'pwBadNumber': 'ไม่ใช่ตัวเลข',
+    'pwSpeedRange': 'ความเร็วต้องอยู่ระหว่าง 0.25 – 4.0',
+    'pwNoBookmarks': 'ยังไม่มีบุ๊กมาร์กสำหรับวิดีโอนี้\nแตะ ⋮ → บุ๊กมาร์ก ระหว่างเล่น',
+    'pwCurrentVideo': 'วิดีโอปัจจุบัน',
+    'pwOpenFull': 'เปิดเต็มหน้าจอ',
+    'pwHwDecoder': 'ตัวถอดรหัส HW',
+    'pwHwPlusDecoder': 'ตัวถอดรหัส HW+',
+    'pwSwDecoder': 'ตัวถอดรหัส SW',
+    'cutPrivate': 'ตัดวิดีโอในโฟลเดอร์ส่วนตัวไม่ได้',
+    'cutLocalOnly': 'ตัดได้เฉพาะวิดีโอที่บันทึกในโทรศัพท์นี้',
+    'cutWorking': 'กำลังตัด…',
+    'cutSaved': 'บันทึกคลิปที่ตัดแล้ว: {v}',
+    'cutCancelled': 'ยกเลิกการตัดแล้ว ไม่ได้บันทึกอะไร',
+    'cutProgress': 'กำลังตัด… {n}%',
+    'cutKeyStartAt': 'เริ่มที่ {v} (คีย์เฟรมก่อน A)',
+    'cutExactSub': 'เริ่มตรง A พอดี โดยเข้ารหัสช่วงต้นใหม่ (วิดีโอที่ดาวน์โหลดมาส่วนใหญ่ต้องทำทั้งคลิป) จึงใช้เวลานานกว่า',
+    'cutExact': 'เริ่มตรง A พอดี',
+    'cutSavedSilent': 'บันทึกโดยไม่มีเสียง: {v} เสียงของวิดีโอนี้ใส่ใน MP4 ไม่ได้หากไม่เข้ารหัสใหม่',
+    'cutFailed': 'ตัดวิดีโอนี้ไม่ได้ ({v})',
+    'cutHint': 'คลิปจะคัดลอกตามต้นฉบับ: เสร็จทันทีและไม่เสียคุณภาพ เริ่มจากคีย์เฟรมที่ A หรือก่อน A หากต้องการเริ่มตรง A พอดี ให้เปิดตัวเลือกด้านล่าง',
+    'cutSavedKeyFrame': 'บันทึกคลิปที่ตัดแล้ว: {v} วิดีโอนี้เริ่มตรง A พอดีไม่ได้ จึงเริ่มที่คีย์เฟรมก่อน A',
+    'obFindTitle': 'ค้นหาวิดีโอของคุณ',
+    'obFindBody': 'Innocent ค้นหาวิดีโอในโทรศัพท์และจัดตามโฟลเดอร์ ทุกอย่างอยู่ในเครื่อง ไม่มีการอัปโหลด',
+    'obGestureTitle': 'ควบคุมด้วยท่าทาง',
+    'obGestureBody': 'ปัดขึ้นลงด้านซ้ายเพื่อปรับความสว่าง ด้านขวาเพื่อปรับเสียง ปัดด้านข้างเพื่อเลื่อน กดค้างเพื่อเปลี่ยนความเร็ว จีบนิ้วเพื่อซูม',
+    'obYoursTitle': 'ทำให้เป็นของคุณ',
+    'obYoursBody': 'ตั้งวิดีโอโปรด สร้างเพลย์ลิสต์ บันทึกบุ๊กมาร์ก และดูต่อจากที่ค้างไว้ ทั้งหมดอยู่ในแท็บฉัน',
+    'obStart': 'เริ่มต้นใช้งาน',
+    'obNext': 'ถัดไป',
+    'arReconnectTo': 'เชื่อมต่อใหม่เพื่อดู {v}',
+    'arLocked': 'โฟลเดอร์ที่ถูกล็อก',
+    'arDropped': 'การเชื่อมต่อ ADB หลุด จึงอ่าน {v} ไม่ได้ในตอนนี้ เชื่อมต่อใหม่ได้ด้วยการแตะครั้งเดียวและมักคงอยู่ต่อไป',
+    'arPrivate': 'Android เก็บโฟลเดอร์ข้อมูลแอปเป็นส่วนตัว จึงเปิด {v} ได้ผ่านการเชื่อมต่อ ADB เท่านั้น Innocent ตั้งค่าเองผ่านการแก้ไขข้อบกพร่องแบบไร้สาย ไม่ต้องใช้แอปอื่น',
+    'arNotNow': 'ไม่ใช่ตอนนี้',
+    'arSetUp': 'ตั้งค่า',
+    'trCopyUrl': 'คัดลอกลิงก์',
+    'trResumeUnfinished': 'ทำการโอนที่ค้างอยู่ต่อ',
+    'ppFingerprint': 'ปลดล็อกด้วยลายนิ้วมือ',
+    'ppClear': 'ล้าง',
+    'ppConfirm': 'ยืนยัน',
+    'ppBackspace': 'ลบตัวเลข',
+    'afpTitle': 'เลือกไฟล์ที่จะเพิ่ม',
+    'afpInternal': 'ที่เก็บข้อมูลภายใน',
+    'vliVideo': 'วิดีโอ: {v}',
+    'acReachable': 'เชื่อมต่อแล้ว เข้าถึงโทรศัพท์ได้',
+    'acNotConnHelp': 'ยังไม่ได้เชื่อมต่อ แตะเชื่อมต่อ หากไม่ได้ ให้เปิดการแก้ไขข้อบกพร่องผ่าน Wi-Fi (ปุ่มด้านบน) ตรวจว่ายังเปิดอยู่ แล้วลองอีกครั้ง',
+    'acNotConnYet': 'ยังไม่ได้เชื่อมต่อ แตะเชื่อมต่อ (อาจต้องเปิดการแก้ไขข้อบกพร่องผ่าน Wi-Fi อีกครั้งก่อน)',
+    'acUpdateTitle': 'อัปเดตโทรศัพท์ก่อนเปิดการแก้ไขข้อบกพร่องผ่าน Wi-Fi ทิ้งไว้',
+    'acUpdateBody': 'แพตช์ความปลอดภัยของโทรศัพท์นี้มาจาก {v} Android 14 ถึง 16 ต้องมีอัปเดตเดือนพฤษภาคม 2026 (หรืออัปเดตระบบ Google Play ที่ใหม่กว่า) เพื่อปิดช่องโหว่การแก้ไขข้อบกพร่องผ่าน Wi-Fi (CVE-2026-0073) หากไม่มี อุปกรณ์ใน Wi-Fi เดียวกันอาจเข้ามาได้โดยไม่ต้องจับคู่ จนกว่าจะอัปเดต ให้ปิดการแก้ไขข้อบกพร่องผ่าน Wi-Fi เมื่อไม่ใช้ และปิดการเชื่อมต่อใหม่อัตโนมัติหลังรีบูต',
+    'acTurnOffNow': 'ปิดตอนนี้',
+    'acOpenWd': 'เปิดการแก้ไขข้อบกพร่องผ่าน Wi-Fi',
+    'acTurnedOff': 'ปิดการแก้ไขข้อบกพร่องผ่าน Wi-Fi และการเชื่อมต่อใหม่อัตโนมัติหลังรีบูตแล้ว เปิดอีกครั้งเมื่อต้องการ Android/data ครั้งหน้า (ควรอัปเดตโทรศัพท์ก่อน)',
+    'acCouldNotOff': 'ปิดจากที่นี่ไม่ได้ เปิดการแก้ไขข้อบกพร่องผ่าน Wi-Fi แล้วปิดที่นั่น',
+    'acReconnecting': 'กำลังเชื่อมต่อใหม่…',
+    'acFoundAdded': 'พบวิดีโอ {n} รายการ อยู่ในแท็บวิดีโอแล้ว',
+    'acNotifOff': 'การแจ้งเตือนของ Innocent ปิดอยู่ การแจ้งเตือนการจับคู่จึงแสดงไม่ได้ เปิดที่ การตั้งค่า → แอป → Innocent → การแจ้งเตือน แล้วลองอีกครั้ง',
+    'acNotifAsk': 'โปรดอนุญาตการแจ้งเตือนเพื่อให้การแจ้งเตือนรหัสจับคู่แสดงได้ แล้วแตะ "จับคู่จากการแจ้งเตือน" อีกครั้ง',
+    'acNotifReady': 'พร้อมจับคู่จากการแจ้งเตือน\n\n1. แตะ "เปิดการแก้ไขข้อบกพร่องผ่าน Wi-Fi" ด้านล่าง\n2. แตะ "จับคู่อุปกรณ์ด้วยรหัสการจับคู่" จะมีรหัส 6 หลักขึ้นมา\n3. ดึงแถบการแจ้งเตือนลง แตะ "ตอบกลับ" ที่การแจ้งเตือน "ใส่รหัสการจับคู่ที่นี่" พิมพ์รหัสแล้วส่ง\n\nไม่ต้องแยกหน้าจอ หน้าจอนี้ทำงานต่อในเบื้องหลัง',
+    'acNotifStopped': 'หยุดการจับคู่จากการแจ้งเตือนแล้ว',
+    'acPairing': 'กำลังจับคู่…\nให้หน้าต่าง "จับคู่อุปกรณ์ด้วยรหัสการจับคู่" แสดงไว้ (แยกหน้าจอหรือหน้าต่างป๊อปอัป)',
+    'acConnecting': 'กำลังเชื่อมต่อ…',
+    'acDevOffTitle': 'เปิดตัวเลือกสำหรับนักพัฒนาก่อน',
+    'acDevOffBody': 'การแก้ไขข้อบกพร่องผ่าน Wi-Fi อยู่ในตัวเลือกสำหรับนักพัฒนา ซึ่งซ่อนอยู่ตั้งแต่แรก\n\nวิธีปลดล็อก:\n1. เปิด เกี่ยวกับโทรศัพท์\n2. หา "หมายเลขบิลด์" (บางครั้งอยู่ใต้ "ข้อมูลซอฟต์แวร์")\n3. แตะ 7 ครั้งจนขึ้นว่า "คุณเป็นนักพัฒนาแล้ว"\n\nจากนั้นกลับมาแตะ "เปิดการแก้ไขข้อบกพร่องผ่าน Wi-Fi" อีกครั้ง',
+    'acOpenAbout': 'เปิด เกี่ยวกับโทรศัพท์',
+    'acOpenFailed': 'เปิดการตั้งค่าเองไม่ได้ เปิด การตั้งค่า → ตัวเลือกสำหรับนักพัฒนา → การแก้ไขข้อบกพร่องผ่าน Wi-Fi ด้วยตนเอง',
+    'acPlaying': 'กำลังเล่น "{v}"',
+    'acPairAddrHelp': 'ใส่ที่อยู่การจับคู่เป็น IP:Port ให้ตรงกับหน้าต่าง "จับคู่อุปกรณ์ด้วยรหัสการจับคู่" เช่น 192.168.1.5:42749',
+    'acCodeHelp': 'ใส่รหัสจับคู่ 6 หลัก',
+    'acConnAddrHelp': 'ใส่ที่อยู่การเชื่อมต่อเป็น IP:Port ให้ตรงกับหน้าจอหลักของการแก้ไขข้อบกพร่องผ่าน Wi-Fi เช่น 192.168.1.5:32961',
+    'acScanning': 'กำลังค้นหาวิดีโอใน Android/data และ Android/obb…\n(อาจใช้เวลาสักพักในเครื่องที่มีไฟล์มาก)',
+    'acNoneFound': 'ไม่มีวิดีโอใน Android/data หรือ Android/obb',
+    'acFound': 'พบวิดีโอ {n} รายการ',
+    'acManualHide': 'ซ่อน IP:Port แบบกำหนดเอง',
+    'acManualShow': 'IP:Port แบบกำหนดเอง (หากใช้รหัสอย่างเดียวไม่ได้)',
+    'acManualHint': 'ใช้วิธีนี้หาก "จับคู่" ด้วยรหัสอย่างเดียวไม่ได้ มักเพราะเครือข่ายบล็อก mDNS (เช่น VPN ที่ให้ที่อยู่ 169.254.x.x) คัดลอก IP:Port ให้ตรงตามที่แสดงบนหน้าจอ',
+    'acPairOnce': 'จับคู่ (ครั้งเดียว)',
+    'acPairAddrLabel': 'IP:Port การจับคู่ (จากหน้าต่างการจับคู่)',
+    'acEg': 'เช่น {v}',
+    'acPairManual': 'จับคู่ (กำหนดเอง)',
+    'acConnect': 'เชื่อมต่อ',
+    'acConnAddrLabel': 'IP:Port การเชื่อมต่อ (จากหน้าจอการแก้ไขข้อบกพร่องผ่าน Wi-Fi)',
+    'acConnectManual': 'เชื่อมต่อ (กำหนดเอง)',
   };
 }
 
@@ -6992,7 +9567,7 @@ class _AppStringsDelegate extends LocalizationsDelegate<AppStrings> {
   Future<AppStrings> load(Locale locale) =>
       // Strings are in-memory, so resolve synchronously — no first-frame
       // flash of the fallback locale.
-      SynchronousFuture<AppStrings>(AppStrings(locale));
+      SynchronousFuture<AppStrings>(AppStrings._current = AppStrings(locale));
 
   @override
   bool shouldReload(_AppStringsDelegate old) => false;

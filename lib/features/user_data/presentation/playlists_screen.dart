@@ -34,9 +34,9 @@ class PlaylistsScreen extends ConsumerWidget {
           controller: controller,
           autofocus: true,
           style: const TextStyle(color: Colors.white),
-          decoration: const InputDecoration(
-            hintText: 'Playlist name',
-            hintStyle: TextStyle(color: Colors.white38),
+          decoration: InputDecoration(
+            hintText: AppStrings.of(context).playlistName,
+            hintStyle: TextStyle(color: Colors.white54),
           ),
         ),
         actions: [
@@ -80,9 +80,9 @@ class PlaylistsScreen extends ConsumerWidget {
           controller: controller,
           autofocus: true,
           style: const TextStyle(color: Colors.white),
-          decoration: const InputDecoration(
-            hintText: 'New name',
-            hintStyle: TextStyle(color: Colors.white38),
+          decoration: InputDecoration(
+            hintText: AppStrings.of(context).vomNewName,
+            hintStyle: TextStyle(color: Colors.white54),
           ),
         ),
         actions: [
@@ -222,7 +222,7 @@ class PlaylistsScreen extends ConsumerWidget {
                       title: Text(AppStrings.of(context).deleteNameTitle(pl.name),
                           style: const TextStyle(color: Colors.white)),
                       content: Text(
-                        'This will remove ${pl.videoUris.length} video reference(s) from the playlist. Files on your device are NOT deleted.',
+                        AppStrings.of(context).plsClearBody(pl.videoUris.length),
                         style: const TextStyle(color: Colors.white70),
                       ),
                       actions: [
@@ -375,8 +375,8 @@ class PlaylistsScreen extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: 6),
-                  const Text(
-                    'Create one above, or tap ⋮ on any video to add it to a playlist.',
+                  Text(
+                    AppStrings.of(context).plsEmpty,
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: AppColors.white40,
@@ -423,7 +423,7 @@ class PlaylistDetailScreen extends ConsumerWidget {
           if (current.videoUris.isNotEmpty)
             IconButton(
               icon: const Icon(Icons.play_arrow),
-              tooltip: 'Play all',
+              tooltip: AppStrings.of(context).mcPlayAll,
               onPressed: () {
                 final first = current.videoUris.first;
                 context.push(
@@ -456,7 +456,7 @@ class PlaylistDetailScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'Tap ⋮ on a video and choose "Add to Playlist" → "${current.name}"',
+                      AppStrings.of(context).plsHowToAdd(current.name),
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         color: AppColors.white55,
@@ -606,7 +606,7 @@ class _PlaylistItemTileState extends State<_PlaylistItemTile> {
         ),
       ),
       trailing: IconButton(
-        tooltip: 'Close',
+        tooltip: AppStrings.of(context).close,
         icon: const Icon(
           Icons.close,
           color: AppColors.darkOnSurfaceMuted,

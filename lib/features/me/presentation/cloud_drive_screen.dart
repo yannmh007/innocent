@@ -16,21 +16,21 @@ class CloudDriveScreen extends StatefulWidget {
 class _CloudDriveScreenState extends State<CloudDriveScreen> {
   final Set<String> _connected = <String>{};
 
-  static const _providers = <_Provider>[
+  List<_Provider> get _providers => <_Provider>[
     _Provider('Google Drive', Icons.cloud, Color(0xFF4285F4),
-        'Stream from Drive without downloading'),
+        AppStrings.of(context).cdDrive),
     _Provider('Dropbox', Icons.cloud_queue, Color(0xFF0061FF),
-        'Connect your Dropbox account'),
+        AppStrings.of(context).cdDropbox),
     _Provider('OneDrive', Icons.cloud_outlined, Color(0xFF0078D4),
-        'Microsoft cloud storage'),
+        AppStrings.of(context).cdOneDrive),
     _Provider('iCloud Drive', Icons.cloud_circle, Color(0xFF747577),
-        'Apple iCloud (web-link only)'),
+        AppStrings.of(context).cdICloud),
     _Provider('Yandex Disk', Icons.cloud_done, Color(0xFFFF0000),
-        'Yandex cloud storage'),
+        AppStrings.of(context).cdYandex),
     _Provider('MEGA', Icons.cloud_sync, Color(0xFFD9272E),
-        'Encrypted cloud storage'),
+        AppStrings.of(context).cdMega),
     _Provider('pCloud', Icons.cloud_upload, Color(0xFF17BED0),
-        'European cloud storage'),
+        AppStrings.of(context).cdPcloud),
   ];
 
   void _toggle(_Provider p) {
@@ -56,7 +56,7 @@ class _CloudDriveScreenState extends State<CloudDriveScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.help_outline, size: 22),
-            tooltip: 'About cloud drive',
+            tooltip: AppStrings.of(context).aboutCloudDrive,
             onPressed: () {
               showDialog<void>(
                 context: context,

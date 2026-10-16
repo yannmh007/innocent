@@ -52,47 +52,33 @@ enum PlayerSetting {
   // setting was connected — a notification and a wake lock nobody asked for.
   // MX Player's equivalent is off by default too.
   bgPlayAudio(default_: false),
-  albumArt(default_: true),
-  smoothSwitch(default_: true),
   // ─── Settings → Player → Miscellaneous ───
   // Left false — the app has never limited zoom, so off preserves that, and
   // the switch now genuinely caps it for people who keep overshooting.
   limitResize(default_: false),
-  turnOffBacklight(default_: false),
   loadingCircle(default_: true),
-  softwareNavButtons(default_: true),
-  android40Mode(default_: false),
   smartPrevious(default_: false),
   // Flipped when connected: the play button has always toggled. `false` would
   // have turned it into a play-only button that cannot pause.
   togglePlayback(default_: true),
 
   // ─── Settings → List (Phase 41) ───
-  listLastMediaInFolder(default_: true),
-  listScrollToLastMedia(default_: false),
-  listSelectThumbnail(default_: false),
   listFloatingButton(default_: true),
   // Note: `listPeriodTaggedNew` (boolean) was superseded by
   // IntSetting.newTaggedPeriod (days count) which exposes the same
   // information with finer control. Removed as dead code.
-  listRecognizeNomedia(default_: true),
-  listShowHiddenFiles(default_: false),
 
   // ─── Settings → Audio (Phase 41) ───
-  audioAsPlayer(default_: false),
   audioVolumeBoost(default_: true),
   audioSystemVolume(default_: true),
-  audioSystemVolumePanel(default_: true),
   audioPauseOnHeadsetDisconnect(default_: true),
   audioFadeOnStart(default_: true),
   audioFadeOnSeek(default_: true),
 
   // ─── Settings → Subtitle (Phase 41) ───
   subtitleItalicEffect(default_: false),
-  subtitleForceLtr(default_: true),
 
   // ─── Settings → General (Phase 41) ───
-  generalPlayMediaLinks(default_: true),
   generalQuitButton(default_: false),
   generalAllowEditing(default_: true),
   generalDeleteSubtitleFiles(default_: true),
@@ -125,15 +111,11 @@ enum PlayerSetting {
   screenFullScreen(default_: true),
   screenKeepOn(default_: true),
   screenAutoBrightness(default_: false),
-  screenDimNotch(default_: false),
-  screenUseCutout(default_: true),
 
   // ─── Settings → Player → Style (Phase 41) ───
   styleShowTitle(default_: true),
   styleShowClock(default_: true),
-  styleShowBattery(default_: true),
   styleShowSourceUrl(default_: false),
-  styleCompactMode(default_: false),
 
   // ─── Settings → Decoder (Phase 41) ───
   // Both flipped to true when they were finally connected. They had never
@@ -154,14 +136,8 @@ enum PlayerSetting {
   // path every build before 1.64.54 used, kept as the way back for a phone
   // that draws the new one wrong.
   decEfficientOutput(default_: true),
-  decHwAudioOnSwVideo(default_: true),
-  decCorrectAspect(default_: true),
-  decHwAudioTrackSelectable(default_: true),
   decSwLocal(default_: false),
   decSwNetwork(default_: false),
-  decSwAudio(default_: false),
-  decSwAudioLocal(default_: false),
-  decSwAudioNetwork(default_: false),
   // Flipped the other way: the engine baseline has always set vd-lavc-fast,
   // so the behaviour every user has had is speedups ON. Connecting the switch
   // with its old `false` default would have quietly REMOVED them and made
@@ -201,7 +177,6 @@ enum PlayerSetting {
   // counts as mobile data either way.
   albumDataSaverOnWifi(default_: true),
   decDeinterlace(default_: false),
-  decCustomCodec(default_: false),
 
   // ─── Settings → Subtitle sub-screens (Phase 41) ───
   subLayoutShowBackground(default_: false),
@@ -211,7 +186,6 @@ enum PlayerSetting {
   devShowBufferInfo(default_: false),
   devShowDecoderInfo(default_: false),
   devShowFps(default_: false),
-  devEnableDebugLog(default_: false),
   devDisableHwAccel(default_: false),
 
   // ─── Me → Custom Pop-up Play (Phase 41) ───
@@ -230,26 +204,6 @@ enum PlayerSetting {
   /// decoding to PCM. Required when using an external surround setup.
   /// MX Player default is TRUE.
   preferAudioPassthrough(default_: true),
-
-  /// `subtitle_show_hw` (frag_subtitle.xml). When ON, allows subtitles
-  /// to render even when the hardware decoder is active. Some devices
-  /// have buggy HW decoders that drop subtitle frames, so the default
-  /// is FALSE (use SW decoder for subtitles).
-  subtitleShowHw(default_: false),
-
-  /// `subtitle_hw_accel` (frag_subtitle.xml + frag_general.xml).
-  /// Hardware acceleration for subtitle rendering (separate from
-  /// [subtitleShowHw]). Default TRUE.
-  subtitleHwAccel(default_: true),
-
-  /// `honour_headset_hook_multi_press` (frag_player.xml). When ON,
-  /// double/triple presses on the headphone button trigger
-  /// next/previous. Default TRUE.
-  honourHeadsetMultiPress(default_: true),
-
-  /// `tv_mode` (frag_general.xml). Switches the UI to TV-friendly mode
-  /// (larger fonts, D-pad navigation focus rings). Default FALSE.
-  tvMode(default_: false),
 
   /// Original feature (not in MX Player): when ON, the app stops
   /// writing to history, resume positions, recently-added, and any

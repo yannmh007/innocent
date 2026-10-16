@@ -43,7 +43,7 @@ class SettingsLanguageScreen extends ConsumerWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
             child: Text(AppStrings.of(context).moreLanguagesOnWay,
-              style: const TextStyle(color: Colors.white38, fontSize: 12),
+              style: const TextStyle(color: Colors.white54, fontSize: 12),
             ),
           ),
         ],

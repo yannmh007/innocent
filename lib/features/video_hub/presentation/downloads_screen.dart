@@ -52,6 +52,7 @@ class DownloadsScreen extends ConsumerWidget {
         elevation: 0,
         title: Text(s.vhLibraryDownloads, style: kAppBarTitleStyle.copyWith(color: VH.textPrimary)),
         leading: IconButton(
+          tooltip: MaterialLocalizations.of(context).backButtonTooltip,
           icon: const Icon(Icons.arrow_back, color: VH.textPrimary),
           onPressed: () => Navigator.of(context).maybePop(),
         ),
@@ -976,7 +977,9 @@ class _WifiOnlyRow extends ConsumerWidget {
     final on = ref.watch(playerSettingsProvider).get(
           PlayerSetting.downloadWifiOnly,
         );
-    return Padding(
+    // One control for TalkBack: the switch, named by its title and hint.
+    return MergeSemantics(
+      child: Padding(
       padding: const EdgeInsets.fromLTRB(VH.s3, VH.s2, VH.s2, VH.s2),
       child: Row(
         children: <Widget>[
@@ -1008,6 +1011,7 @@ class _WifiOnlyRow extends ConsumerWidget {
                 .setValue(PlayerSetting.downloadWifiOnly, v),
           ),
         ],
+      ),
       ),
     );
   }
@@ -1222,7 +1226,9 @@ class _RowMenu extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SafePopupMenuButton<int>(
-      tooltip: '',
+      // Named, so TalkBack and Voice Access read "More" — an empty tooltip
+      // left the row's one menu button without a name.
+      tooltip: AppStrings.of(context).moreOptions,
       icon: const Icon(Icons.more_vert_rounded, color: VH.textTertiary, size: 20),
       color: VH.surface2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(VH.rControl)),

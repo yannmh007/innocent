@@ -144,7 +144,7 @@ class AddFilesPicker extends ConsumerStatefulWidget {
   final Future<void> Function(List<PickedFile> picked)? onCommit;
 
   /// App-bar title. Defaults to the Private Folder wording.
-  final String title;
+  final String? title;
 
   /// When importing to the vault (default path), the organiser folder the
   /// new entries should land in. null = vault root. Ignored when
@@ -161,7 +161,7 @@ class AddFilesPicker extends ConsumerStatefulWidget {
     super.key,
     this.service,
     this.onCommit,
-    this.title = 'Select Files To Add',
+    this.title,
     this.targetFolderId,
     this.commitLabel,
     this.commitIcon = Icons.lock_outline,
@@ -825,7 +825,7 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
                 ),
                 onChanged: (v) => setState(() => _query = v),
               )
-            : Text(widget.title,
+            : Text(widget.title ?? AppStrings.of(context).afpTitle,
                 style: const TextStyle(
                     color: Colors.white,
                     fontSize: 18,
@@ -1093,7 +1093,10 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
           controller: _catScroll,
           scrollDirection: Axis.horizontal,
           physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+          // No vertical padding: each chip's target is the strip's whole
+          // height, the chip drawn 7 dp in (_catChip). It was the 37 dp chip
+          // alone (SCREEN_A11Y=1).
+          padding: const EdgeInsets.symmetric(horizontal: 12),
           itemCount: items.length,
           separatorBuilder: (_, __) => const SizedBox(width: 8),
           itemBuilder: (_, i) {
@@ -1111,7 +1114,9 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
     return RemoteTappable(
       key: _catKeys[cat],
       onTap: () => _switchCat(cat),
-      child: AnimatedContainer(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 7),
+        child: AnimatedContainer(
         duration: const Duration(milliseconds: 220),
         curve: Curves.easeOutCubic,
         padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -1184,6 +1189,7 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
           ],
         ),
       ),
+      ),
     );
   }
 
@@ -1212,14 +1218,19 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
     return Container(
       width: double.infinity,
       color: AppColors.specAddBarBg,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      // The bar's height is the "Storage" link's target (48 dp); it was the
+      // 20 dp line of text alone (SCREEN_A11Y=1).
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
           InkWell(
             onTap: current != null ? _popLevel : null,
-            child: Text(s.storageRoot,
-                style: const TextStyle(
-                    color: AppColors.white70, fontSize: 14)),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              child: Text(s.storageRoot,
+                  style: const TextStyle(
+                      color: AppColors.white70, fontSize: 14)),
+            ),
           ),
           if (_cat == _Cat.files && _dirStack.length > 1) ...[
             const Padding(
@@ -1609,7 +1620,7 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
               for (final r in roots)
                 _folderRow(
                   name: p.basename(r.path) == '0'
-                      ? 'Internal storage'
+                      ? AppStrings.of(context).afpInternal
                       : p.basename(r.path),
                   subtitle: r.path,
                   thumb: const Icon(Icons.sd_storage_outlined,
@@ -2067,7 +2078,9 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
   /// Generic selectable file row (icon/thumb + name + size + checkbox).
   Widget _fileRow(PickedFile item, {Widget? leading, String? subtitle}) {
     final checked = _picked.containsKey(item.path);
-    return InkWell(
+    return MergeSemantics(
+      // One control for TalkBack: the row's name and its tick.
+      child: InkWell(
       onTap: () => _toggle(item, !checked),
       child: SizedBox(
         height: 64,
@@ -2119,7 +2132,7 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
           ],
         ),
       ),
-    );
+    ));
   }
 
   /// The videos list keeps its 16:9 thumbnails; other media reuse the
@@ -2202,7 +2215,9 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
               color: AppColors.white55, size: 26);
         }
         final checked = _picked.containsKey(item.path);
-        return InkWell(
+        return MergeSemantics(
+          // One control for TalkBack: the row's name and its tick.
+          child: InkWell(
           onTap: () => _toggle(item, !checked),
           child: SizedBox(
             height: videoThumbs != null ? 66 : 60,
@@ -2251,7 +2266,7 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
               ],
             ),
           ),
-        );
+        ));
       },
     );
   }
@@ -2286,6 +2301,8 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
             videoThumbs != null ? videoThumbs[item.path] : item.path;
         return RemoteTappable(
           onTap: () => _toggle(item, !checked),
+          semanticLabel: item.name,
+          selected: checked,
           child: ClipRRect(
             borderRadius: BorderRadius.circular(8),
             child: Stack(

@@ -344,6 +344,7 @@ class _AndroidDataScreenState extends ConsumerState<AndroidDataScreen> {
             appBar: AppBar(
               leading: _selecting
                   ? IconButton(
+                      tooltip: s.clearSelection,
                       icon: const Icon(Icons.close_rounded),
                       onPressed: () => setState(_selected.clear),
                     )
@@ -487,7 +488,9 @@ class _AndroidDataScreenState extends ConsumerState<AndroidDataScreen> {
       height: 52,
       child: ListView(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+        // 2 dp, not 8: a chip's 48 dp tap target needs the row's height,
+        // and 8 squeezed it to 36 (SCREEN_A11Y=1). The chip still draws 32.
+        padding: const EdgeInsets.fromLTRB(12, 2, 12, 2),
         children: <Widget>[
           for (final f in _Filter.values)
             Padding(

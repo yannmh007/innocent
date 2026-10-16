@@ -1,0 +1,160 @@
+# The exact cut (1.64.65): the same as cut.yaml with Exact start on, on a
+# Baseline film with a key frame every 2 s. On the emulator Media3 cannot
+# stitch its smart cut (format mismatch, run 38870594057) and re-encodes the
+# clip: exact all the same. The message must be the plain "Cut saved", not
+# the key-frame one, and the sheet shows the progress while it works.
+#
+# (cut.yaml's notes:) The player's Cut used to say an FFmpeg add-on was needed
+# and cut nothing. On the lab film: play a few seconds, More → Cut, set A,
+# move the playhead with the sheet's scrubber (tapping its middle puts it at
+# half the film), set B, Export — "Cut saved" — and the Video tab then
+# lists Innocent/Cuts with the new file.
+appId: com.innocent.media
+---
+- launchApp:
+    stopApp: true
+- waitForAnimationToEnd:
+    timeout: 10000
+- tapOn:
+    text: "Skip"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- tapOn:
+    text: "Allow.*"
+    optional: true
+- tapOn:
+    text: "Allow.*"
+    optional: true
+- tapOn:
+    text: "Skip"
+    optional: true
+- extendedWaitUntil:
+    visible: ".*Cut Test.*"
+    timeout: 20000
+    optional: true
+- scrollUntilVisible:
+    element:
+      text: ".*Cut Test.*"
+    direction: DOWN
+    optional: true
+- tapOn:
+    text: ".*Cut Test.*"
+- waitForAnimationToEnd:
+    timeout: 5000
+- tapOn:
+    text: ".*cut_main.*"
+- extendedWaitUntil:
+    visible: "__nothing_has_this_text__"
+    timeout: 8000
+    optional: true
+- takeScreenshot: e00_playing
+# Controls up, then More (an icon button, named by its tooltip since
+# 1.64.65). The controls hide after a few seconds, and a tap on More while
+# they fade lands on the video instead (run 38844539119), so try again until
+# the menu is really open. A tap on the video only when the controls are
+# down: when they are up it would hide them.
+- retry:
+    maxRetries: 4
+    commands:
+      - runFlow:
+          when:
+            notVisible: "More"
+          commands:
+            - tapOn:
+                point: "50%,30%"
+      - tapOn:
+          text: "More"
+      - waitForAnimationToEnd:
+          timeout: 2000
+      - assertVisible: "Cut"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: e01_more_menu
+- tapOn:
+    text: "Cut"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: e02_cut_sheet
+- assertVisible: ".*key frame.*"
+# A at the paused position (a few seconds in) …
+- tapOn:
+    text: "Set"
+    index: 0
+- waitForAnimationToEnd:
+    timeout: 2000
+# … then the playhead to the middle of the film, and B there.
+- tapOn:
+    id: "cut-scrubber"
+- waitForAnimationToEnd:
+    timeout: 3000
+- assertNotVisible: "(?s).*Current: 00:1.*"
+- tapOn:
+    text: "Set"
+    index: 1
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: e03_points_set
+- assertVisible: "(?s).*Clip: .*"
+# Exact start: the clip begins at A, re-encoded, with its progress here.
+- scrollUntilVisible:
+    element:
+      text: "(?s).*Exact start.*"
+    direction: DOWN
+    optional: true
+- tapOn: "(?s).*Exact start.*"
+- tapOn:
+    text: "Export"
+- extendedWaitUntil:
+    visible: "(?s).*Cutting.*"
+    timeout: 10000
+    optional: true
+- takeScreenshot: e03b_progress
+- extendedWaitUntil:
+    visible: ".*Cut saved.*"
+    timeout: 330000
+- takeScreenshot: e04_cut_saved
+- assertNotVisible: ".*FFmpeg.*"
+- assertNotVisible: ".*key frame just before.*"
+# Back to the Video tab by starting again: three Backs went one too far
+# (player, folder, Video tab, out of the app; run 38847228498).
+- launchApp:
+    stopApp: true
+- waitForAnimationToEnd:
+    timeout: 8000
+- tapOn:
+    text: ".*Tab 1 of 4.*"
+    optional: true
+- swipe:
+    direction: DOWN
+- waitForAnimationToEnd:
+    timeout: 6000
+- scrollUntilVisible:
+    element:
+      text: ".*Cuts.*"
+    direction: DOWN
+    timeout: 20000
+- takeScreenshot: e05_cuts_folder
+- tapOn:
+    text: ".*Cuts.*"
+- waitForAnimationToEnd:
+    timeout: 4000
+- assertVisible: ".*cut_main \\(cut\\).*"
+- takeScreenshot: e06_cut_file
+# And it plays: the new file opens in the player and runs.
+- tapOn:
+    text: ".*cut_main \\(cut\\).*"
+- extendedWaitUntil:
+    visible: "__nothing_has_this_text__"
+    timeout: 6000
+    optional: true
+- takeScreenshot: e07_cut_plays
+# The controls hide after a few seconds (and the emulator's screenshots
+# never show the video itself), so bring them back to read the title.
+- runFlow:
+    when:
+      notVisible: ".*cut_main \\(cut\\).*"
+    commands:
+      - tapOn:
+          point: "50%,30%"
+- assertVisible: ".*cut_main \\(cut\\).*"

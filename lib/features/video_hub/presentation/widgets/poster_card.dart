@@ -177,14 +177,21 @@ class PosterCard extends StatelessWidget {
             // so every tap on a card was completely silent. Feedback on touch
             // is most of what separates an app that feels responsive from one
             // that feels like it missed the tap.
+            //
+            // Out of the semantics tree: for TalkBack this was a second,
+            // nameless button over the artwork, beside the card that carries
+            // the title. The card below is the one node, named by its text,
+            // with the same tap and long-press.
             Positioned.fill(
-              child: Material(
-                type: MaterialType.transparency,
-                child: InkWell(
-                  onTap: onTap,
-                  onLongPress: onLongPress,
-                  splashColor: Colors.white.withOpacity(0.10),
-                  highlightColor: Colors.white.withOpacity(0.05),
+              child: ExcludeSemantics(
+                child: Material(
+                  type: MaterialType.transparency,
+                  child: InkWell(
+                    onTap: onTap,
+                    onLongPress: onLongPress,
+                    splashColor: Colors.white.withOpacity(0.10),
+                    highlightColor: Colors.white.withOpacity(0.05),
+                  ),
                 ),
               ),
             ),
@@ -228,6 +235,7 @@ class PosterCard extends StatelessWidget {
 
     final tappable = InkWell(
       onTap: onTap,
+      onLongPress: onLongPress,
       borderRadius: BorderRadius.circular(VH.rCard),
       child: body,
     );

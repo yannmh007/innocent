@@ -144,16 +144,16 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen> {
                 // the confusing snackbar; just pop straight to the folder list.
                 IconButton(
                   icon: const Icon(Icons.folder_copy_outlined),
-                  tooltip: 'Back to All folders',
+                  tooltip: AppStrings.of(context).fdBackAll,
                   onPressed: () => Navigator.of(context).pop(),
                 ),
                 IconButton(
-                  tooltip: 'Search',
+                  tooltip: AppStrings.of(context).search,
                   icon: const Icon(Icons.search),
                   onPressed: () => setState(() => _searchActive = true),
                 ),
                 IconButton(
-                  tooltip: 'Layout',
+                  tooltip: AppStrings.of(context).svLayout,
                   // Phase 16: Layout-grid icon (MX Player parity)
                   icon: const Icon(Icons.dashboard_outlined),
                   onPressed: _showSortSheet,
@@ -167,8 +167,8 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen> {
             return Center(
               child: Text(
                 query.isNotEmpty
-                    ? 'No videos match "$query"'
-                    : 'No videos in this folder',
+                    ? AppStrings.of(context).fdNoVideoMatch(query)
+                    : AppStrings.of(context).fdEmpty,
                 style: const TextStyle(color: AppColors.darkOnSurfaceMuted),
               ),
             );

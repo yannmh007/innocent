@@ -22,9 +22,13 @@ class DecoderDialog extends StatelessWidget {
       children: [
         // Dim backdrop
         Positioned.fill(
-          child: GestureDetector(
+          // Read as Android reads a dialog's backdrop: "Dismiss".
+          child: Semantics(
+            label: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+            child: GestureDetector(
             onTap: onDismiss,
             child: Container(color: Colors.black54),
+          ),
           ),
         ),
         // Dialog card
@@ -79,16 +83,16 @@ class _DecoderOption extends StatelessWidget {
     required this.onTap,
   });
 
-  String get _label {
+  String _label(AppStrings s) {
     switch (type) {
       case DecoderType.defaultMode:
-        return 'Default';
+        return s.plDecoderDefault;
       case DecoderType.hw:
-        return 'HW decoder';
+        return s.pwHwDecoder;
       case DecoderType.hwPlus:
-        return 'HW+ decoder';
+        return s.pwHwPlusDecoder;
       case DecoderType.sw:
-        return 'SW decoder';
+        return s.pwSwDecoder;
     }
   }
 
@@ -111,7 +115,7 @@ class _DecoderOption extends StatelessWidget {
             ),
             const SizedBox(width: 26),
             Text(
-              _label,
+              _label(AppStrings.of(context)),
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 17,

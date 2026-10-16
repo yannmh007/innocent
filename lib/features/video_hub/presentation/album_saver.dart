@@ -185,7 +185,13 @@ class AlbumSaverGate extends ConsumerWidget {
                         color: Colors.white),
               );
               if (!item.isVideo) {
-                if (!large) return Center(child: download);
+                // On a grid tile the whole tile is the button (below); the
+                // circle only shows it.
+                if (!large) {
+                  return Center(
+                      child: ExcludeSemantics(
+                          child: IgnorePointer(child: download)));
+                }
                 // The full-screen page: the button with its cost under it,
                 // in words, because this is where the decision is made.
                 return Center(
@@ -204,10 +210,74 @@ class AlbumSaverGate extends ConsumerWidget {
               }
               // A clip: play in the middle, download tucked against it —
               // the layout of the screenshot this was asked for from.
+              //
+              // THE TARGETS, NOT THE CIRCLES. On a grid tile the circles are
+              // 40 and 22 dp, under the 48 dp Android asks for. The whole
+              // tile already plays (below), so the play circle is drawn and
+              // left to it; the arrow's 22 dp circle sits in a 48 dp target
+              // of its own, its ripple out of the semantics. Drawn exactly
+              // where they were. The full-screen viewer's 64 dp circles keep
+              // their own taps.
+              final cluster = big * 1.35;
+              if (!large) {
+                const target = 48.0;
+                final dl = item.isVideo ? big * 0.55 : big;
+                // The arrow's centre, from the cluster's top-left corner.
+                final dlCentre = cluster - dl / 2;
+                // Room for the whole target around the cluster, centred.
+                final room = (dlCentre + target / 2) * 2 - cluster;
+                final offset = (room - cluster) / 2;
+                return Center(
+                  child: SizedBox(
+                    width: room,
+                    height: room,
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: <Widget>[
+                        Positioned(
+                          left: offset,
+                          top: offset,
+                          child: ExcludeSemantics(
+                            child: IgnorePointer(
+                              child: _Circle(
+                                key: ValueKey('saver-play-${item.id}'),
+                                size: big,
+                                tooltip: s.vhPlay,
+                                onTap: onPlay,
+                                child: Icon(Icons.play_arrow_rounded,
+                                    size: big * 0.6, color: Colors.white),
+                              ),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          left: offset + dlCentre - target / 2,
+                          top: offset + dlCentre - target / 2,
+                          width: target,
+                          height: target,
+                          child: Semantics(
+                            button: true,
+                            label: running ? s.vhDownloadPause : s.vhSaveOffline,
+                            child: GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: running
+                                  ? () => downloader.cancel(key)
+                                  : () => downloadAlbumItem(context, ref,
+                                      content: content, item: item),
+                              child: Center(
+                                  child: ExcludeSemantics(child: download)),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
               return Center(
                 child: SizedBox(
-                  width: big * 1.35,
-                  height: big * 1.35,
+                  width: cluster,
+                  height: cluster,
                   child: Stack(
                     children: <Widget>[
                       Align(
@@ -289,18 +359,23 @@ class AlbumSaverGate extends ConsumerWidget {
     // Opaque, and inside the parent's InkWell: while frosted this wins the
     // tap; once the item is held this widget is gone and the parent's tap
     // (open the viewer) is what a tap does.
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: item.isVideo
-          ? onPlay
-          : () {
-              if (downloader.isRunning(key)) {
-                downloader.cancel(key);
-              } else {
-                downloadAlbumItem(context, ref, content: content, item: item);
-              }
-            },
-      child: frosted,
+    return Semantics(
+      button: true,
+      // The tile is the button, so it carries the name its circle showed.
+      label: item.isVideo ? s.vhPlay : s.vhSaveOffline,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: item.isVideo
+            ? onPlay
+            : () {
+                if (downloader.isRunning(key)) {
+                  downloader.cancel(key);
+                } else {
+                  downloadAlbumItem(context, ref, content: content, item: item);
+                }
+              },
+        child: frosted,
+      ),
     );
   }
 }
@@ -400,9 +475,15 @@ class AlbumSaverToggle extends ConsumerWidget {
           key: const ValueKey('album-saver-toggle'),
           borderRadius: BorderRadius.circular(999),
           onTap: () => setAlbumSaver(ref, !on),
-          child: Padding(
-            // The pill is small; the tap target around it is not.
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 2),
+          // The pill is small; the tap target around it is not: 48 dp, as
+          // Android asks (it was 52 x 37, SCREEN_A11Y=1).
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+            child: Center(
+            widthFactor: 1,
+            heightFactor: 1,
+            child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 2),
             child: AnimatedContainer(
               duration: VH.fast,
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -421,6 +502,8 @@ class AlbumSaverToggle extends ConsumerWidget {
                   Flexible(child: label),
                 ],
               ),
+            ),
+            ),
             ),
           ),
         ),

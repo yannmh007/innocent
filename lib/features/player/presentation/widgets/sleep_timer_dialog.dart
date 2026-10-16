@@ -127,9 +127,13 @@ class _SleepTimerDialogState extends State<SleepTimerDialog> {
         // Light scrim — keeps the video visible behind the dialog while a
         // tap anywhere outside the controls dismisses it.
         Positioned.fill(
-          child: GestureDetector(
+          // Read as Android reads a dialog's backdrop: "Dismiss".
+          child: Semantics(
+            label: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+            child: GestureDetector(
             onTap: widget.onDismiss,
             child: Container(color: AppColors.black25),
+          ),
           ),
         ),
         SafeArea(
@@ -178,9 +182,11 @@ class _SleepTimerDialogState extends State<SleepTimerDialog> {
               ),
               const SizedBox(height: 14),
               Center(child: _keypad()),
-              const SizedBox(height: 18),
+              // The row carries 12 dp of the gaps around it as its own
+              // padding: the same layout, with a 45 dp tall target instead
+              // of the 21 dp line of text.
+              const SizedBox(height: 6),
               _checkboxRow(),
-              const SizedBox(height: 2),
               _actionsRow(),
             ],
           ),
@@ -220,10 +226,20 @@ class _SleepTimerDialogState extends State<SleepTimerDialog> {
             ),
           ),
           const SizedBox(height: 8),
+          // The "play to the end" line sits on the left, level with the
+          // buttons: under the keypad it pushed STOP and START 34 dp off a
+          // 360 dp-tall phone (screens harness, player_sleep_land).
           Expanded(
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Spacer(),
+                Expanded(
+                  child: Align(
+                    alignment: Alignment.bottomLeft,
+                    child: _checkboxRow(),
+                  ),
+                ),
+                const SizedBox(width: 16),
                 SizedBox(
                   width: panelW,
                   child: Column(
@@ -234,11 +250,9 @@ class _SleepTimerDialogState extends State<SleepTimerDialog> {
                         height: 1,
                         thickness: 1,
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
                       Center(child: _keypad()),
                       const Spacer(),
-                      _checkboxRow(),
-                      const SizedBox(height: 2),
                       _actionsRow(),
                     ],
                   ),
@@ -258,9 +272,15 @@ class _SleepTimerDialogState extends State<SleepTimerDialog> {
     final h = d.inHours.toString();
     final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
     return GestureDetector(
-      // Long-press the duration to clear the entry back to 0h 00m.
+      // Long-press the duration to clear the entry back to 0h 00m. 48 dp
+      // tall, the row it sits in, not the 44 of its digits.
+      behavior: HitTestBehavior.opaque,
       onLongPress: _digits.isEmpty ? null : _clear,
-      child: Text.rich(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 48),
+        child: Center(
+        widthFactor: 1,
+        child: Text.rich(
         TextSpan(
           style: const TextStyle(
             color: Colors.white,
@@ -276,20 +296,31 @@ class _SleepTimerDialogState extends State<SleepTimerDialog> {
           ],
         ),
       ),
+      ),
+      ),
     );
   }
 
   Widget _closeButton() {
+    // The 32 dp circle MX draws, inside a 48 dp target (8 of it outside the
+    // circle's own space on the right, where the dialog has room).
     return RemoteTappable(
       onTap: widget.onDismiss,
-      child: Container(
-        width: 32,
-        height: 32,
-        decoration: const BoxDecoration(
-          color: AppColors.specSleepClose,
-          shape: BoxShape.circle,
+      semanticLabel: MaterialLocalizations.of(context).closeButtonTooltip,
+      child: SizedBox(
+        width: 48,
+        height: 48,
+        child: Center(
+          child: Container(
+            width: 32,
+            height: 32,
+            decoration: const BoxDecoration(
+              color: AppColors.specSleepClose,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.close, color: Colors.white, size: 20),
+          ),
         ),
-        child: const Icon(Icons.close, color: Colors.white, size: 20),
       ),
     );
   }
@@ -321,12 +352,21 @@ class _SleepTimerDialogState extends State<SleepTimerDialog> {
     );
   }
 
+  // The whole 80 x 53 cell takes the tap; the 36 dp circle is only drawn
+  // (it was the target alone, SCREEN_A11Y=1). The circle's ripple stays out
+  // of the semantics, or its tap splits the key's node in two.
   Widget _keyCell(String digit) {
-    return SizedBox(
+    return Semantics(
+      button: true,
+      label: digit,
+      child: GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => _tapDigit(digit),
+      child: SizedBox(
       width: _kKeyColPitch,
       height: _kKeyRowPitch,
       child: Center(
-        child: Material(
+        child: ExcludeSemantics(child: Material(
           color: AppColors.specSleepKeyFill,
           shape: const CircleBorder(),
           clipBehavior: Clip.antiAlias,
@@ -347,13 +387,23 @@ class _SleepTimerDialogState extends State<SleepTimerDialog> {
               ),
             ),
           ),
-        ),
+        )),
+      ),
+      ),
       ),
     );
   }
 
   Widget _checkboxRow() {
-    return Row(
+    // The whole line toggles, not only the 18 dp box, and it is one
+    // control for TalkBack, named by its words.
+    // 48 dp tall: the 12 dp above it moved into it (it was a 35 dp line).
+    return MergeSemantics(
+      child: RemoteTappable(
+      onTap: () => setState(() => _playToEnd = !_playToEnd),
+      child: ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 48),
+      child: Row(
       children: [
         SizedBox(
           width: 18,
@@ -378,6 +428,9 @@ class _SleepTimerDialogState extends State<SleepTimerDialog> {
           ),
         ),
       ],
+      ),
+      ),
+      ),
     );
   }
 

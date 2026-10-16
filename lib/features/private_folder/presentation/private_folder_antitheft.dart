@@ -193,9 +193,7 @@ class _AntiTheftScreenState extends ConsumerState<AntiTheftScreen> {
                           onPressed: _removeDecoy,
                           style: TextButton.styleFrom(
                               padding: EdgeInsets.zero,
-                              minimumSize: const Size(0, 32),
-                              tapTargetSize:
-                                  MaterialTapTargetSize.shrinkWrap),
+                              minimumSize: const Size(0, 32)),
                           child: Text(s.removeDecoyPin,
                               style: const TextStyle(
                                   color: AppColors.error, fontSize: 12.5)),
@@ -214,6 +212,8 @@ class _AntiTheftScreenState extends ConsumerState<AntiTheftScreen> {
                     activeColor: AppColors.accentBlue,
                     onChanged: (v) => _toggleIntruder(v),
                   ),
+                  // The whole card flips it, as a settings row does.
+                  onTap: () => _toggleIntruder(!_intruderOn),
                 ),
                 const SizedBox(height: 26),
 
@@ -231,8 +231,7 @@ class _AntiTheftScreenState extends ConsumerState<AntiTheftScreen> {
                         onPressed: _clearLog,
                         style: TextButton.styleFrom(
                             padding: EdgeInsets.zero,
-                            minimumSize: const Size(0, 32),
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                            minimumSize: const Size(0, 32)),
                         child: Text(s.clearLog,
                             style: const TextStyle(
                                 color: AppColors.error, fontSize: 12.5)),
@@ -266,7 +265,10 @@ class _AntiTheftScreenState extends ConsumerState<AntiTheftScreen> {
       ),
       child: Column(
         children: [
-          InkWell(
+          // One control for TalkBack: the card, named by its title, with
+          // the switch's state when it has one.
+          MergeSemantics(
+            child: InkWell(
             onTap: onTap,
             borderRadius: BorderRadius.circular(14),
             child: Padding(
@@ -299,6 +301,7 @@ class _AntiTheftScreenState extends ConsumerState<AntiTheftScreen> {
                 ],
               ),
             ),
+          ),
           ),
           if (footer != null)
             Padding(
@@ -479,6 +482,7 @@ class _AntiTheftScreenState extends ConsumerState<AntiTheftScreen> {
               top: 4,
               right: 4,
               child: IconButton(
+                tooltip: MaterialLocalizations.of(dCtx).closeButtonTooltip,
                 icon: const Icon(Icons.close, color: Colors.white),
                 onPressed: () => Navigator.pop(dCtx),
               ),
@@ -553,19 +557,10 @@ class _AntiTheftScreenState extends ConsumerState<AntiTheftScreen> {
     }
   }
 
-  // ── Date formatting (no intl dependency) ──
-  static const _months = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-  ];
-
+  // ── Date formatting: the phone's own, in the app's language ──
   String _formatDate(DateTime d) =>
-      '${_months[d.month - 1]} ${d.day}, ${d.year}';
+      MaterialLocalizations.of(context).formatShortDate(d);
 
-  String _formatTime(DateTime d) {
-    final h = d.hour % 12 == 0 ? 12 : d.hour % 12;
-    final m = d.minute.toString().padLeft(2, '0');
-    final ap = d.hour < 12 ? 'AM' : 'PM';
-    return '$h:$m $ap';
-  }
+  String _formatTime(DateTime d) => MaterialLocalizations.of(context)
+      .formatTimeOfDay(TimeOfDay.fromDateTime(d));
 }

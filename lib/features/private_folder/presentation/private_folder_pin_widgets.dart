@@ -17,6 +17,7 @@ class _VaultImageViewer extends StatelessWidget {
         backgroundColor: Colors.black,
         elevation: 0,
         leading: IconButton(
+          tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
           icon: const Icon(Icons.close, color: Colors.white),
           onPressed: () => Navigator.of(context).pop(),
         ),
@@ -149,7 +150,9 @@ class _BiometricOptIn extends ConsumerWidget {
     final s = AppStrings.of(context);
     final enabled =
         ref.watch(playerSettingsProvider).get(PlayerSetting.privateFolderBiometric);
-    return Padding(
+    // One control for TalkBack: the switch, named by the text beside it.
+    return MergeSemantics(
+      child: Padding(
       padding: const EdgeInsets.fromLTRB(28, 10, 28, 0),
       child: Row(
         children: [
@@ -204,6 +207,7 @@ class _BiometricOptIn extends ConsumerWidget {
             ),
           ),
         ],
+      ),
       ),
     );
   }

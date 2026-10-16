@@ -101,6 +101,7 @@ class _DestinationPickerState extends ConsumerState<DestinationPicker> {
                     ),
                   ),
                   IconButton(
+                    tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
                     icon: const Icon(Icons.close, color: Colors.white70),
                     onPressed: () => Navigator.of(context).pop(),
                   ),

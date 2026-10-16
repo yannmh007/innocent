@@ -98,6 +98,14 @@ enum AspectRatioOverride {
 
   const AspectRatioOverride(this.label, this.value);
 
+  /// [label] for the ratios (numbers read the same everywhere), the app's
+  /// own words for Default and Custom.
+  String labelIn(AppStrings s) => switch (this) {
+        AspectRatioOverride.defaultAuto => s.plDecoderDefault,
+        AspectRatioOverride.custom => s.zmCustom,
+        _ => label,
+      };
+
   /// Map a stored string (from ExtraSettings) back to enum.
   static AspectRatioOverride fromString(String? s) {
     if (s == null || s.isEmpty) return AspectRatioOverride.defaultAuto;

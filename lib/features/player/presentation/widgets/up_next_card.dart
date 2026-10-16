@@ -101,7 +101,6 @@ class _UpNextCardState extends State<UpNextCard>
                     tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
                     icon: const Icon(Icons.close_rounded,
                         color: Colors.white70, size: 20),
-                    visualDensity: VisualDensity.compact,
                     onPressed: widget.onClose,
                   ),
                 ],
@@ -159,7 +158,7 @@ class _UpNextCardState extends State<UpNextCard>
                               onTap: _play,
                               child: Padding(
                                 padding:
-                                    const EdgeInsets.symmetric(vertical: 10),
+                                    const EdgeInsets.symmetric(vertical: 13),
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: <Widget>[

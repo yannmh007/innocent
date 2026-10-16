@@ -38,6 +38,7 @@ import '../../../core/theme/tab_title.dart';
 import '../../../core/ui/safe_popup_menu.dart';
 import '../../../core/ui/app_sheet.dart';
 import '../../../core/ui/nav_bar_space.dart';
+import '../../../core/ui/transient_prompt.dart';
 
 /// Home of the downloader.
 ///
@@ -151,7 +152,8 @@ class _DownloaderHomeScreenState extends ConsumerState<DownloaderHomeScreen>
     final DownloadRecord? had =
         ref.read(downloadHistoryProvider.notifier).alreadyHave(sourceUrl);
     if (had == null || !mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
+    TransientPrompt.show(
+      ScaffoldMessenger.of(context),
       SnackBar(
         content: Text(s.downloaderAlreadyHave),
         duration: const Duration(seconds: 6),
@@ -1062,7 +1064,7 @@ class _DownloaderHomeScreenState extends ConsumerState<DownloaderHomeScreen>
         await DownloaderEngineService.instance.deviceStatus(dir);
     if (device.notificationsEnabled || !mounted) return;
     final AppStrings s = AppStrings.of(context);
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+    TransientPrompt.show(ScaffoldMessenger.of(context), SnackBar(
       duration: const Duration(seconds: 8),
       content: Text(s.downloaderNotifsBlocked),
       action: SnackBarAction(
@@ -1891,8 +1893,13 @@ class _DownloaderHomeScreenState extends ConsumerState<DownloaderHomeScreen>
           children: <Widget>[
             const Icon(Icons.link_rounded, size: 19, color: AppColors.white40),
             const SizedBox(width: 10),
+            // The field fills the bar's 48 dp (it was a 28 dp line inside
+            // it): a tap anywhere on the bar's text area lands.
             Expanded(
-              child: TextField(
+              child: SizedBox(
+                height: 48,
+                child: TextField(
+                textAlignVertical: TextAlignVertical.center,
                 controller: _linkController,
                 focusNode: _linkFocus,
                 keyboardType: TextInputType.url,
@@ -1910,11 +1917,11 @@ class _DownloaderHomeScreenState extends ConsumerState<DownloaderHomeScreen>
                 ),
                 onSubmitted: _handleLink,
               ),
+              ),
             ),
             if (hasText)
               IconButton(
                 tooltip: s.downloaderClearBar,
-                visualDensity: VisualDensity.compact,
                 icon: const Icon(Icons.close_rounded,
                     size: 17, color: AppColors.white40),
                 onPressed: () {
@@ -1925,7 +1932,6 @@ class _DownloaderHomeScreenState extends ConsumerState<DownloaderHomeScreen>
             hasText
                 ? IconButton(
                     tooltip: s.downloaderDownload,
-                    visualDensity: VisualDensity.compact,
                     icon: const Icon(Icons.arrow_forward_rounded,
                         size: 19, color: AppColors.primaryBlue),
                     onPressed: () {
@@ -1935,7 +1941,6 @@ class _DownloaderHomeScreenState extends ConsumerState<DownloaderHomeScreen>
                   )
                 : IconButton(
                     tooltip: s.downloaderPaste,
-                    visualDensity: VisualDensity.compact,
                     icon: const Icon(Icons.content_paste_rounded,
                         size: 18, color: AppColors.primaryBlue),
                     onPressed: () async {
@@ -1958,12 +1963,14 @@ class _DownloaderHomeScreenState extends ConsumerState<DownloaderHomeScreen>
         padding: const EdgeInsets.fromLTRB(18, 8, 18, 0),
         child: Row(
           children: <Widget>[
-            const Icon(Icons.public_rounded, size: 12, color: AppColors.white30),
+            const Icon(Icons.public_rounded, size: 12, color: AppColors.white50),
             const SizedBox(width: 6),
             Expanded(
               child: Text(
                 s.downloaderSupportedSites,
-                style: const TextStyle(color: AppColors.white30, fontSize: 11),
+                // white60, not 30: 2.4:1 on the page was below what anyone
+                // reads easily outdoors (WCAG asks 4.5:1).
+                style: const TextStyle(color: AppColors.white60, fontSize: 11),
               ),
             ),
           ],
@@ -2010,7 +2017,6 @@ class _DownloaderHomeScreenState extends ConsumerState<DownloaderHomeScreen>
                   ),
                   IconButton(
                     tooltip: s.downloaderDismiss,
-                    visualDensity: VisualDensity.compact,
                     icon: const Icon(Icons.close_rounded,
                         size: 16, color: AppColors.white40),
                     onPressed: () => setState(() {
@@ -2368,7 +2374,6 @@ class _DownloaderHomeScreenState extends ConsumerState<DownloaderHomeScreen>
                 onPressed: onAction,
                 style: TextButton.styleFrom(
                   foregroundColor: AppColors.primaryBlue,
-                  visualDensity: VisualDensity.compact,
                   padding: const EdgeInsets.symmetric(horizontal: 10),
                 ),
                 child: Text(actionLabel,
@@ -3018,7 +3023,6 @@ class _DownloaderHomeScreenState extends ConsumerState<DownloaderHomeScreen>
             if (playable)
               IconButton(
                 tooltip: s.downloaderPlay,
-                visualDensity: VisualDensity.compact,
                 icon: const Icon(Icons.play_circle_outline_rounded,
                     color: AppColors.primaryBlue),
                 onPressed: () => context.push(
@@ -3034,7 +3038,6 @@ class _DownloaderHomeScreenState extends ConsumerState<DownloaderHomeScreen>
             if (task.isRunning && !task.isPhotoSet)
               IconButton(
                 tooltip: s.downloaderPause,
-                visualDensity: VisualDensity.compact,
                 icon: const Icon(Icons.pause_rounded,
                     size: 20, color: AppColors.white60),
                 onPressed: () =>
@@ -3043,7 +3046,6 @@ class _DownloaderHomeScreenState extends ConsumerState<DownloaderHomeScreen>
             else if (task.canResume)
               IconButton(
                 tooltip: s.downloaderResume,
-                visualDensity: VisualDensity.compact,
                 icon: const Icon(Icons.play_arrow_rounded,
                     size: 22, color: AppColors.primaryBlue),
                 onPressed: () =>
@@ -3053,7 +3055,6 @@ class _DownloaderHomeScreenState extends ConsumerState<DownloaderHomeScreen>
               tooltip: (task.isRunning || task.isPaused)
                   ? s.cancel
                   : s.downloaderDismiss,
-              visualDensity: VisualDensity.compact,
               icon: Icon(
                 (task.isRunning || task.isPaused)
                     ? Icons.close_rounded
@@ -3918,6 +3919,7 @@ class _FavouritePickerSheet extends ConsumerWidget {
                 ),
                 const Spacer(),
                 IconButton(
+                  tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
                   icon: const Icon(Icons.close_rounded,
                       color: AppColors.white50),
                   onPressed: () => Navigator.of(context).pop(),

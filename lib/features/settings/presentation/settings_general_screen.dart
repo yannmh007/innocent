@@ -381,11 +381,6 @@ class SettingsGeneralScreen extends ConsumerWidget {
           // default" whatever the app was actually set to, and the live one
           // below. A screenshot of the Burmese app showed both — one of them
           // wrong — so only the live one is left.
-          _toggle(ref,
-              title: 'Play media links',
-              subtitle:
-                  'Play HTTP/HTTPS media links. This option can interfere with file downloading.',
-              setting: PlayerSetting.generalPlayMediaLinks),
           // Phase 45 (audit refined, build 63): MX Player V3 `user_locale`
           // App language.
           //
@@ -432,17 +427,17 @@ class SettingsGeneralScreen extends ConsumerWidget {
                 .watch(extraSettingsProvider)
                 .getStr(StringSetting.httpUserAgent);
             return SettingsNavTile(
-              title: 'Http User-Agent',
+              title: AppStrings.of(context).sgUserAgent,
               subtitle: ua.isEmpty
-                  ? 'Default (libmpv built-in)'
+                  ? AppStrings.of(context).sgUserAgentDefault
                   : ua,
               onTap: () async {
                 final picked = await showSettingsTextDialog(
                   context: context,
-                  title: 'Http User-Agent',
-                  subtitle: 'Leave blank to use default value.',
+                  title: AppStrings.of(context).sgUserAgent,
+                  subtitle: AppStrings.of(context).sgUserAgentSub,
                   currentValue: ua,
-                  hintText: 'Custom User-Agent string',
+                  hintText: AppStrings.of(context).sgUserAgentHint,
                 );
                 if (picked != null) {
                   await ref
@@ -453,26 +448,18 @@ class SettingsGeneralScreen extends ConsumerWidget {
             );
           }),
           _toggle(ref,
-              title: 'Quit Button',
+              title: AppStrings.of(context).sgQuit,
               subtitle:
-                  "Display Quit button on the Me page (mobile devices) / menu (TV mode). This will terminate the app completely unlike 'back' or 'home' button.",
+                  AppStrings.of(context).sgQuitSub,
               setting: PlayerSetting.generalQuitButton),
-          // Phase 45 (audit refined, build 63): MX Player V3's `tv_mode`
-          // — Android TV / leanback UI mode. Larger fonts, focus rings,
-          // and D-pad navigation. Off by default for phones.
-          _toggle(ref,
-              title: 'TV mode',
-              subtitle:
-                  'Switch to a TV-friendly UI with larger fonts and D-pad focus rings. Recommended for Android TV and TV-stick devices.',
-              setting: PlayerSetting.tvMode),
           // Original feature: privacy mode. Stops the app from writing
           // to history / resume / recently-added for as long as the
           // toggle is on. Existing history is untouched; turning it
           // off resumes normal tracking.
           _toggle(ref,
-              title: 'Privacy mode (incognito watch)',
+              title: AppStrings.of(context).sgPrivacy,
               subtitle:
-                  "Don't record what you watch while this is on. History, resume positions, and recently-added stay paused. Existing entries are kept. Nothing leaves the device either way.",
+                  AppStrings.of(context).sgPrivacySub,
               setting: PlayerSetting.privacyMode),
           // Audit: optional all-files access. The default scoped
           // storage covers most libraries (Movies/DCIM/Downloads).
@@ -480,25 +467,25 @@ class SettingsGeneralScreen extends ConsumerWidget {
           // want the library to scan beyond the standard roots. Tap
           // → opens the system "All files access" Settings screen.
           SettingsNavTile(
-            title: 'Full library access',
+            title: AppStrings.of(context).sgFullAccess,
             subtitle:
-                'Optional. Lets the library scan folders outside Movies/DCIM/Downloads. Opens Android Settings → All files access. Off by default.',
+                AppStrings.of(context).sgFullAccessSub,
             onTap: () => _requestFullStorageAccess(context, ref),
           ),
-          const SettingsSectionHeader('Edit'),
+          SettingsSectionHeader(AppStrings.of(context).sgEdit),
           _toggle(ref,
-              title: 'Allow editing',
+              title: AppStrings.of(context).sgAllowEdit,
               subtitle:
-                  'Enable edit menu which allows you to delete or rename files and folders.',
+                  AppStrings.of(context).sgAllowEditSub,
               setting: PlayerSetting.generalAllowEditing),
           _toggle(ref,
-              title: 'Delete subtitle files together',
+              title: AppStrings.of(context).sgDeleteSubs,
               setting: PlayerSetting.generalDeleteSubtitleFiles),
-          const SettingsSectionHeader('User data'),
+          SettingsSectionHeader(AppStrings.of(context).sgUserData),
           SettingsNavTile(
-            title: 'Clear history',
+            title: AppStrings.of(context).sgClearHistory,
             subtitle:
-                'Clear all user activity records, including playback and search history.',
+                AppStrings.of(context).sgClearHistorySub,
             onTap: () => _confirmAndClearHistory(context, ref),
           ),
           // The streaming cache gets its own screen rather than a "clear"
@@ -513,55 +500,23 @@ class SettingsGeneralScreen extends ConsumerWidget {
                 builder: (_) => const StreamCacheScreen())),
           ),
           SettingsNavTile(
-            title: 'Clear thumbnail cache',
+            title: AppStrings.of(context).sgClearThumbs,
             subtitle:
-                'Clear thumbnails cached on the sdcard. Thumbnails will be generated again when media list is opened.',
+                AppStrings.of(context).sgClearThumbsSub,
             onTap: () => _confirmAndClearThumbnails(context, ref),
           ),
           _toggle(ref,
-              title: 'Cache thumbnail',
+              title: AppStrings.of(context).sgCacheThumbs,
               setting: PlayerSetting.generalCacheThumbnail),
-          SettingsNavTile(
-            title: 'Clear font cache',
-            subtitle:
-                'Clear font cache for SubStation Alpha subtitle in case of corruption.',
-            onTap: () {
-              showDialog(
-                context: context,
-                builder: (dctx) => AlertDialog(
-                  backgroundColor: AppColors.darkSurface,
-                  title: Text(AppStrings.of(context).clearFontCacheTitle,
-                      style: const TextStyle(color: Colors.white)),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(dctx),
-                      child: Text(AppStrings.of(context).cancel),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.pop(dctx);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                              content: Text(AppStrings.of(context).fontCacheCleared)),
-                        );
-                      },
-                      child: Text(AppStrings.of(context).clear,
-                          style: const TextStyle(color: Colors.redAccent)),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
           // Phase 45 (audit): MX Player V3 has Reset Settings + Export +
           // Import in this section. Reset clears all preferences and
           // restores defaults; Export/Import would persist to JSON
           // (not yet implemented, surfaced as "coming soon" message).
-          const SettingsSectionHeader('Backup'),
+          SettingsSectionHeader(AppStrings.of(context).sgBackup),
           SettingsNavTile(
-            title: 'Reset settings',
+            title: AppStrings.of(context).sgReset,
             subtitle:
-                'Restore all settings to their default values. Does not delete history or playlists.',
+                AppStrings.of(context).sgResetSub,
             onTap: () => _confirmAndResetSettings(context, ref),
           ),
           // Phase 45 (audit refined, build 64): actual Export/Import
@@ -570,13 +525,13 @@ class SettingsGeneralScreen extends ConsumerWidget {
           // disk. Import reverses the process and re-applies values
           // through the providers so the UI updates immediately.
           SettingsNavTile(
-            title: 'Export',
-            subtitle: 'Export preferences to a JSON file.',
+            title: AppStrings.of(context).sgExport,
+            subtitle: AppStrings.of(context).sgExportSub,
             onTap: () => _exportSettings(context, ref),
           ),
           SettingsNavTile(
-            title: 'Import from file',
-            subtitle: 'Restore preferences from a JSON file.',
+            title: AppStrings.of(context).sgImport,
+            subtitle: AppStrings.of(context).sgImportSub,
             onTap: () => _importSettings(context, ref),
           ),
           const SizedBox(height: 24),

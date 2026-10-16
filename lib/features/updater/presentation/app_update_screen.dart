@@ -193,10 +193,17 @@ class _AppUpdateScreenState extends ConsumerState<AppUpdateScreen> {
     }
 
     if (!release.isNewerThan(AppVersion.build)) {
+      // Up to date with the newest release: its notes are what this build
+      // brought, which is what Help → What's new opens this screen for.
+      final same = release.versionCode == AppVersion.build;
+      final notes = same
+          ? release.notesFor(Localizations.localeOf(context).languageCode)
+          : null;
       return _card(
         icon: Icons.check_circle_outline,
         colour: Colors.greenAccent,
         title: s.updateUpToDate,
+        body: notes == null || notes.trim().isEmpty ? null : notes,
       );
     }
 

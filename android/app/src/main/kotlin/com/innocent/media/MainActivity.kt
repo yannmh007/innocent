@@ -523,6 +523,91 @@ class MainActivity : AudioServiceFragmentActivity() {
         MediaChangeWatcher.register(flutterEngine.dartExecutor.binaryMessenger, applicationContext)
         mediaScanChannel?.setMethodCallHandler { call, result ->
             when (call.method) {
+                // The player's Cut: [startMs, endMs] of a local video into a
+                // new MP4, then scanned so the Video tab lists it. By default
+                // the lossless copy from the key frame at or before A
+                // (VideoTrimmer, a moment); with "exact", the clip starts at A
+                // (PreciseTrimmer: Media3's smart cut where it can stitch,
+                // otherwise the clip re-encoded), with trimProgress and
+                // trimCancel. Replies {error, silent, exact}.
+                "trim" -> {
+                    val src = call.argument<String>("src")
+                    val dst = call.argument<String>("dst")
+                    val startMs = call.argument<Number>("startMs")?.toLong() ?: 0L
+                    val endMs = call.argument<Number>("endMs")?.toLong() ?: 0L
+                    val wantExact = call.argument<Boolean>("exact") == true
+                    if (src == null || dst == null) {
+                        result.success(mapOf("error" to "bad arguments"))
+                    } else {
+                        val reply = { error: String?, silent: Boolean, exact: Boolean ->
+                            if (error != null) {
+                                VideoTrimmer.discard(dst)
+                            } else {
+                                MediaScannerConnection.scanFile(
+                                    applicationContext, arrayOf(dst), null, null
+                                )
+                            }
+                            runOnUiThread {
+                                result.success(
+                                    mapOf("error" to error, "silent" to silent, "exact" to exact)
+                                )
+                            }
+                        }
+                        val startUs = startMs * 1000L
+                        val endUs = endMs * 1000L
+                        Thread {
+                            val probe = PreciseTrimmer.probe(src, startUs)
+                            val lossless = {
+                                VideoTrimmer.discard(dst)
+                                val o = VideoTrimmer.trim(src, dst, startUs, endUs)
+                                reply(o.error, o.silent, probe.keyFrameAt(startUs) && o.error == null)
+                            }
+                            // A key frame at A: the lossless copy is exact already.
+                            if (!wantExact || probe.keyFrameAt(startUs) || probe.videoMime == null) {
+                                lossless()
+                            } else {
+                                runOnUiThread {
+                                    PreciseTrimmer.trim(
+                                        applicationContext, src, dst, startMs, endMs, probe.hasAudio
+                                    ) { precise ->
+                                        when (precise.error) {
+                                            null -> reply(null, precise.silent, precise.exact)
+                                            // Asked to stop: nothing is saved.
+                                            "cancelled", "busy" -> reply(precise.error, false, false)
+                                            else -> {
+                                                android.util.Log.w(
+                                                    "Innocent",
+                                                    "Cut: exact cut failed (${precise.error}); lossless"
+                                                )
+                                                Thread { lossless() }.start()
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }.start()
+                    }
+                }
+                "trimProgress" -> result.success(PreciseTrimmer.progress())
+                "trimCancel" -> {
+                    PreciseTrimmer.cancel()
+                    result.success(null)
+                }
+                // Where the default cut of [src] from A starts: the key frame
+                // at or before A, in ms (-1 when it cannot be read).
+                "keyFrameBefore" -> {
+                    val src = call.argument<String>("src")
+                    val atMs = call.argument<Number>("atMs")?.toLong() ?: 0L
+                    if (src == null) {
+                        result.success(-1)
+                    } else {
+                        Thread {
+                            val p = PreciseTrimmer.probe(src, atMs * 1000L)
+                            val ms = if (p.keyBeforeUs >= 0) p.keyBeforeUs / 1000L else -1L
+                            runOnUiThread { result.success(ms) }
+                        }.start()
+                    }
+                }
                 "scan" -> {
                     val paths = call.argument<List<String>>("paths")
                     if (paths != null && paths.isNotEmpty()) {

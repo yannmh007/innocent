@@ -101,6 +101,7 @@ import 'gestures/subtitle_band.dart';
 import 'subtitles/player_subtitles.dart';
 import 'video_geometry.dart';
 import 'widgets/gesture_hud.dart';
+import '../../../core/ui/share_media.dart';
 import '../../../core/ui/app_sheet.dart';
 
 class PlayerScreen extends ConsumerStatefulWidget {
@@ -255,14 +256,14 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
           DeviceOrientation.portraitUp,
           DeviceOrientation.portraitDown,
         ]);
-        if (announce) _showOverlay('Portrait');
+        if (announce) _showOverlay(AppStrings.of(context).pssPortrait);
         break;
       case 2:
         _setOrientations(const [
           DeviceOrientation.landscapeLeft,
           DeviceOrientation.landscapeRight,
         ]);
-        if (announce) _showOverlay('Landscape');
+        if (announce) _showOverlay(AppStrings.of(context).pssLandscape);
         break;
       default:
         // Hand control back to the device. This is the state the old button
@@ -273,7 +274,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
           DeviceOrientation.landscapeLeft,
           DeviceOrientation.landscapeRight,
         ]);
-        if (announce) _showOverlay('Auto rotate');
+        if (announce) _showOverlay(AppStrings.of(context).pssAutoRotation);
     }
   }
 
@@ -1286,7 +1287,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
       final boundary = _videoBoundaryKey.currentContext?.findRenderObject()
           as RenderRepaintBoundary?;
       if (boundary == null) {
-        _showSnack(context, 'Screenshot failed: no boundary');
+        _showSnack(context, AppStrings.of(context).plScreenshotFailed);
         return;
       }
       final image = await boundary.toImage(pixelRatio: 2.0);
@@ -1297,7 +1298,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
         // error paths. The screenshot has failed either way; the only question
         // is whether there is still a Scaffold to say so in.
         if (context.mounted) {
-          _showSnack(context, 'Screenshot failed: encoding error');
+          _showSnack(context, AppStrings.of(context).plScreenshotFailed);
         }
         return;
       }
@@ -1310,10 +1311,10 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
       await file.writeAsBytes(bytes);
 
       if (!context.mounted) return;
-      _showOverlay('Saved: ${p.basename(file.path)}');
+      _showOverlay(AppStrings.of(context).plSaved(p.basename(file.path)));
     } catch (e) {
       if (!context.mounted) return;
-      _showSnack(context, 'Screenshot error: $e');
+      _showSnack(context, AppStrings.of(context).plScreenshotError(e));
     }
   }
 
@@ -1477,10 +1478,10 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
       await controller.loadExternalSubtitle(path);
 
       if (!context.mounted) return;
-      _showSnack(context, 'Loaded: ${p.basename(path)}');
+      _showSnack(context, AppStrings.of(context).plLoaded(p.basename(path)));
     } catch (e) {
       if (!context.mounted) return;
-      _showSnack(context, 'Subtitle pick error: $e');
+      _showSnack(context, AppStrings.of(context).plSubtitlePickError(e));
     }
   }
 
@@ -1524,7 +1525,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     // audit closed the resume and history paths and MISSED these four, which
     // is the same bug wearing four more hats.
     if (widget.ephemeral) {
-      _showSnack(context, 'This title can only be opened from its own page.');
+      _showSnack(context, AppStrings.of(context).plOwnPageOnly);
       return;
     }
     // Audit: haptic on a binary toggle gives the user immediate
@@ -1548,12 +1549,12 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     // audit closed the resume and history paths and MISSED these four, which
     // is the same bug wearing four more hats.
     if (widget.ephemeral) {
-      _showSnack(context, 'This title can only be opened from its own page.');
+      _showSnack(context, AppStrings.of(context).plOwnPageOnly);
       return;
     }
     final playlists = ref.read(playlistsProvider);
     if (playlists.isEmpty) {
-      _showSnack(context, 'No playlists yet. Create one from Me → Video Playlists');
+      _showSnack(context, AppStrings.of(context).plNoPlaylists);
       return;
     }
     final picked = await showAppModalBottomSheet<String>(
@@ -1620,14 +1621,14 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     // audit closed the resume and history paths and MISSED these four, which
     // is the same bug wearing four more hats.
     if (widget.ephemeral) {
-      _showSnack(context, 'This title can only be opened from its own page.');
+      _showSnack(context, AppStrings.of(context).plOwnPageOnly);
       return;
     }
     try {
-      await Share.share(widget.videoUri, subject: widget.title);
+      await shareMedia(widget.videoUri, subject: widget.title);
     } catch (e) {
       if (!context.mounted) return;
-      _showSnack(context, 'Share failed: $e');
+      _showSnack(context, '${AppStrings.of(context).shareFailed}: $e');
     }
   }
 
@@ -1643,7 +1644,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     // audit closed the resume and history paths and MISSED these four, which
     // is the same bug wearing four more hats.
     if (widget.ephemeral) {
-      _showSnack(context, 'This title can only be opened from its own page.');
+      _showSnack(context, AppStrings.of(context).plOwnPageOnly);
       return;
     }
     try {
@@ -1658,7 +1659,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
         if (pulled.startsWith('ERROR')) {
           if (!context.mounted) return;
           _showSnack(context,
-              'Connect ADB to send this Android/data video.');
+              AppStrings.of(context).plAdbToSend);
           return;
         }
         path = pulled;
@@ -1683,7 +1684,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
       context.go(Routes.transfer);
     } catch (e) {
       if (!context.mounted) return;
-      _showSnack(context, 'Could not add to Transfer: $e');
+      _showSnack(context, AppStrings.of(context).plTransferFailed(e));
     }
   }
 
@@ -1806,7 +1807,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
         {
           final wasMuted = ref.read(playerControllerProvider).isMuted;
           controller.toggleMute();
-          _showOverlay(wasMuted ? 'Unmuted' : 'Muted');
+          _showOverlay(wasMuted ? AppStrings.of(context).plUnmuted : AppStrings.of(context).plMuted);
         }
         break;
       case ShortcutItem.loop:
@@ -1823,10 +1824,10 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                   : LoopMode.off;
           controller.setLoopMode(next);
           final label = next == LoopMode.off
-              ? 'Loop off'
+              ? AppStrings.of(context).loopOff
               : next == LoopMode.one
-                  ? 'Loop one'
-                  : 'Loop all';
+                  ? AppStrings.of(context).loopOne
+                  : AppStrings.of(context).loopAll;
           _showOverlay(label);
         }
         break;
@@ -1835,7 +1836,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
         // Phase 45: toast feedback.
         {
           final on = ref.read(playerControllerProvider).isShuffleEnabled;
-          _showOverlay(on ? 'Shuffle on' : 'Shuffle off');
+          _showOverlay(on ? AppStrings.of(context).plShuffleOn : AppStrings.of(context).plShuffleOff);
         }
         break;
       case ShortcutItem.mirrorMode:
@@ -1843,7 +1844,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
         // Phase 45: toast feedback.
         {
           final on = ref.read(playerControllerProvider).isMirrorMode;
-          _showOverlay(on ? 'Mirror mode on' : 'Mirror mode off');
+          _showOverlay(on ? AppStrings.of(context).plMirrorOn : AppStrings.of(context).plMirrorOff);
         }
         break;
       case ShortcutItem.verticalFlip:
@@ -1851,7 +1852,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
         // Phase 45: toast feedback.
         {
           final on = ref.read(playerControllerProvider).isVerticalFlip;
-          _showOverlay(on ? 'Vertical flip on' : 'Vertical flip off');
+          _showOverlay(on ? AppStrings.of(context).plFlipOn : AppStrings.of(context).plFlipOff);
         }
         break;
       case ShortcutItem.nightMode:
@@ -1859,7 +1860,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
         // Phase 45: toast feedback.
         {
           final on = ref.read(playerControllerProvider).isNightMode;
-          _showOverlay(on ? 'Night mode on' : 'Night mode off');
+          _showOverlay(on ? AppStrings.of(context).plNightOn : AppStrings.of(context).plNightOff);
         }
         break;
       case ShortcutItem.backgroundPlay:
@@ -1871,7 +1872,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
         controller.toggleBackgroundPlay();
         {
           final on = ref.read(playerControllerProvider).isBackgroundPlay;
-          _showOverlay(on ? 'Background play on' : 'Background play off');
+          _showOverlay(on ? AppStrings.of(context).plBgOn : AppStrings.of(context).plBgOff);
         }
         break;
       case ShortcutItem.playbackSpeed:
@@ -1886,7 +1887,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
               cycle.indexWhere((s) => (s - current).abs() < 0.01);
           final next = cycle[(idx + 1) % cycle.length];
           controller.setSpeed(next);
-          _showOverlay('Speed ${next.toStringAsFixed(2)}x');
+          _showOverlay(AppStrings.of(context).plSpeed('${next.toStringAsFixed(2)}x'));
         }
         break;
       case ShortcutItem.screenRotation:
@@ -1927,11 +1928,11 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
         controller.cycleABRepeat();
         final st = ref.read(playerControllerProvider);
         if (st.abPointA != null && st.abPointB == null) {
-          _showOverlay('A point set');
+          _showOverlay(AppStrings.of(context).plAPoint);
         } else if (st.abPointA != null && st.abPointB != null) {
-          _showOverlay('A-B loop active');
+          _showOverlay(AppStrings.of(context).plAbOn);
         } else {
-          _showOverlay('A-B repeat cleared');
+          _showOverlay(AppStrings.of(context).plAbCleared);
         }
         break;
     }
@@ -2142,7 +2143,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     final state = ref.read(playerControllerProvider);
     final controller = ref.read(playerControllerProvider.notifier);
     if (state.audioTracks.isEmpty) {
-      _showSnack(context, 'No audio tracks available');
+      _showSnack(context, AppStrings.of(context).plNoAudioTracks);
       return;
     }
     TrackSelectionSheet.showAudio(
@@ -2157,7 +2158,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
       onSelect: (track) async {
         await controller.selectAudioTrack(track);
         if (track != null && context.mounted) {
-          AppSnackbar.show(context, 'Audio: ${track.displayName}');
+          AppSnackbar.show(context, AppStrings.of(context).plAudio(track.displayName));
         }
       },
     );
@@ -2171,7 +2172,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
       tracks: state.subtitleTracks,
       current: state.currentSubtitleTrack,
       // Phase 45 (audit): same feedback toast as the audio picker, plus
-      // an explicit "Subtitle off" message when the user picks no
+      // an explicit AppStrings.of(context).subtitleOff message when the user picks no
       // subtitle (otherwise nothing changes visibly).
       onSelect: (track) async {
         await controller.selectSubtitleTrack(track);
@@ -2179,8 +2180,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
           AppSnackbar.show(
             context,
             track == null
-                ? 'Subtitle off'
-                : 'Subtitle: ${track.displayName}',
+                ? AppStrings.of(context).subtitleOff
+                : AppStrings.of(context).plSubtitle(track.displayName),
           );
         }
       },
@@ -2222,7 +2223,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  r.label,
+                  r.labelIn(AppStrings.of(context)),
                   style: TextStyle(
                     color: isSelected
                         ? AppColors.accentBlue
@@ -2241,7 +2242,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     if (picked != null && context.mounted) {
       await controller.setExplicitAspectRatio(picked);
       if (context.mounted) {
-        AppSnackbar.show(context, 'Aspect: ${picked.label}');
+        AppSnackbar.show(context, AppStrings.of(context).plAspect(picked.labelIn(AppStrings.of(context))));
       }
     }
   }
@@ -2877,7 +2878,12 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
           // === LAYER 3: Gestures ===
           if (!blockGestures)
             Positioned.fill(
-              child: GestureOverlay(
+              // The picture itself, for TalkBack: "Video, double tap to show
+              // or hide the controls" — it was a nameless full-screen node.
+              child: Semantics(
+                label: AppStrings.of(context).playerSurface,
+                onTapHint: AppStrings.of(context).playerSurfaceHint,
+                child: GestureOverlay(
                 onTap: controller.toggleControls,
                 onDoubleTapRewind: controller.onDoubleTapRewind,
                 onDoubleTapForward: controller.onDoubleTapForward,
@@ -2934,6 +2940,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                     .watch(playerSettingsProvider)
                     .get(PlayerSetting.ctlLongPressSpeed),
               ),
+              ),
             ),
 
           // === LAYER 4: Top bar ===
@@ -2957,7 +2964,9 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                 child: _TopBar(
                 insets: _controlsInsets(context),
                 title: widget.title,
-                decoderLabel: state.decoder.label,
+                decoderLabel: state.decoder == DecoderType.defaultMode
+                    ? AppStrings.of(context).plDecoderDefault
+                    : state.decoder.label,
                 sleepTimerRemaining: state.sleepTimer.remaining,
                 // Phase 41: respect "Double-tap the back button" (Settings →
                 // Player → Interface). When enabled, the first press shows
@@ -3262,7 +3271,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                     'https://www.opensubtitles.org/en/search/sublanguageid-all/moviename-$fileName';
                 Share.share(
                   url,
-                  subject: 'Search subtitles for ${widget.title}',
+                  subject: AppStrings.of(context).plSearchSubs(widget.title),
                 );
               },
               onDismiss: controller.closePanel,
@@ -3280,12 +3289,12 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
               onSelect: (type) {
                 controller.selectDecoder(type);
                 final label = type == DecoderType.defaultMode
-                    ? 'Decoder: Default'
+                    ? AppStrings.of(context).plDecoder(AppStrings.of(context).plDecoderDefault)
                     : type == DecoderType.hwPlus
-                        ? 'Decoder: HW+'
+                        ? AppStrings.of(context).plDecoder('HW+')
                         : type == DecoderType.hw
-                            ? 'Decoder: HW'
-                            : 'Decoder: SW';
+                            ? AppStrings.of(context).plDecoder('HW')
+                            : AppStrings.of(context).plDecoder('SW');
                 AppSnackbar.show(context, label);
               },
               onDismiss: controller.closeDecoderDialog,
@@ -3758,7 +3767,7 @@ class _TopBar extends StatelessWidget {
         child: Row(
           children: [
             IconButton(
-              tooltip: 'Back',
+              tooltip: MaterialLocalizations.of(context).backButtonTooltip,
               icon: const Icon(Icons.arrow_back, color: Colors.white),
               onPressed: onBack,
             ),
@@ -3872,13 +3881,13 @@ class _TopBar extends StatelessWidget {
             if (isLandscape) ...[
               _IconWithDot(
                 icon: Icons.music_note,
-                tooltip: 'Audio track',
+                tooltip: AppStrings.of(context).audioTrack,
                 showDot: hasMultipleAudioTracks,
                 onPressed: onAudio,
               ),
               _IconWithDot(
                 icon: Icons.subtitles_outlined,
-                tooltip: 'Subtitle',
+                tooltip: AppStrings.of(context).subtitle,
                 showDot: hasMultipleSubtitleTracks,
                 onPressed: onSubtitle,
               ),
@@ -3910,7 +3919,7 @@ class _TopBar extends StatelessWidget {
                     ),
                     icon: const Icon(Icons.high_quality_outlined, size: 18),
                     label: Text(
-                      chosen ?? 'Auto',
+                      chosen ?? AppStrings.of(context).plAuto,
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 12.5,
@@ -3939,7 +3948,7 @@ class _TopBar extends StatelessWidget {
             IconButton(
               icon: const Icon(Icons.more_vert, color: Colors.white),
               onPressed: onMore,
-              tooltip: 'More',
+              tooltip: AppStrings.of(context).moreOptions,
             ),
           ],
         ),
@@ -4342,9 +4351,9 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
                                   milliseconds:
                                       (widget.duration.inMilliseconds * v)
                                           .round());
-                              return 'Playback position '
-                                  '${widget.formatDuration(pos)} '
-                                  'of ${widget.formatDuration(widget.duration)}';
+                              return AppStrings.of(context).plPositionOf(
+                                  widget.formatDuration(pos),
+                                  widget.formatDuration(widget.duration));
                             }
                           : null,
                     ),
@@ -4402,7 +4411,7 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
                             color: Colors.white),
                         iconSize: 32,
                         onPressed: widget.onPrevious,
-                        tooltip: 'Previous video',
+                        tooltip: AppStrings.of(context).plPrevVideo,
                       ),
                       SizedBox(width: transportSpacing),
                     ],
@@ -4413,14 +4422,14 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
                         icon: const Icon(Icons.first_page, color: Colors.white),
                         iconSize: 26,
                         onPressed: () => widget.onFrameStep(false),
-                        tooltip: 'Previous frame',
+                        tooltip: AppStrings.of(context).plPrevFrame,
                       ),
                       const SizedBox(width: 4),
                     ],
                     // Phase 16: Plain play/pause icons (NO white filled circle).
                     IconButton(
                       focusNode: widget.playFocus,
-                      tooltip: widget.isPlaying ? 'Pause' : 'Play',
+                      tooltip: widget.isPlaying ? AppStrings.of(context).plPause : AppStrings.of(context).play,
                       icon: Icon(
                         widget.isPlaying ? Icons.pause : Icons.play_arrow,
                         color: Colors.white,
@@ -4437,7 +4446,7 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
                         icon: const Icon(Icons.last_page, color: Colors.white),
                         iconSize: 26,
                         onPressed: () => widget.onFrameStep(true),
-                        tooltip: 'Next frame',
+                        tooltip: AppStrings.of(context).plNextFrame,
                       ),
                     ],
                     if (widget.showPrevNext) ...[
@@ -4449,7 +4458,7 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
                               const Icon(Icons.skip_next, color: Colors.white),
                           iconSize: 32,
                           onPressed: widget.onNext,
-                          tooltip: 'Next (long-press for Loop menu)',
+                          tooltip: AppStrings.of(context).plNextVideo,
                         ),
                       ),
                     ],
@@ -4461,7 +4470,7 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
                   child: IconButton(
                     icon: const Icon(Icons.lock_open, color: Colors.white),
                     onPressed: widget.onLock,
-                    tooltip: 'Lock controls',
+                    tooltip: AppStrings.of(context).lockControls,
                   ),
                 ),
                 // Aspect ratio + fill-screen — far right.
@@ -4504,7 +4513,7 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
                           Icons.picture_in_picture_alt_outlined,
                           color: Colors.white,
                         ),
-                        tooltip: 'Picture-in-Picture',
+                        tooltip: AppStrings.of(context).spBgPip,
                         onPressed: widget.onEnterPip,
                       ),
                     ],

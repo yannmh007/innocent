@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../services/adb/adb_service.dart';
 import '../theme/app_colors.dart';
 import '../../features/settings/presentation/adb_connect_screen.dart';
+import '../localization/app_strings.dart';
 
 /// The one place Innocent asks the user to connect ADB before showing content
 /// that lives in Android/data or Android/obb.
@@ -62,7 +63,7 @@ class AdbRequiredDialog {
             ),
             const SizedBox(height: 18),
             Text(
-              installed ? 'Reconnect to view $what' : 'Locked folder',
+              installed ? AppStrings.of(context).arReconnectTo(what) : AppStrings.of(context).arLocked,
               textAlign: TextAlign.center,
               style: const TextStyle(
                 color: Colors.white,
@@ -74,12 +75,8 @@ class AdbRequiredDialog {
             const SizedBox(height: 10),
             Text(
               installed
-                  ? 'The ADB connection has dropped, so $what can\u2019t be '
-                      'read right now. Reconnecting takes one tap and usually '
-                      'holds from then on.'
-                  : 'Android keeps app-data folders private, so $what can only '
-                      'be opened through an ADB connection. Innocent sets that '
-                      'up itself over wireless debugging — no other app needed.',
+                  ? AppStrings.of(context).arDropped(what)
+                  : AppStrings.of(context).arPrivate(what),
               textAlign: TextAlign.center,
               style: const TextStyle(
                 color: AppColors.white70,
@@ -100,7 +97,7 @@ class AdbRequiredDialog {
                     padding: const EdgeInsets.symmetric(vertical: 13),
                     foregroundColor: AppColors.white55,
                   ),
-                  child: const Text('Not now'),
+                  child: Text(AppStrings.of(context).arNotNow),
                 ),
               ),
               const SizedBox(width: 10),
@@ -113,7 +110,7 @@ class AdbRequiredDialog {
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
-                  child: Text(installed ? 'Reconnect' : 'Set up'),
+                  child: Text(installed ? AppStrings.of(context).lsReconnect : AppStrings.of(context).arSetUp),
                 ),
               ),
             ],

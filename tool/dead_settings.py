@@ -85,82 +85,11 @@ DELIBERATE = {
 # NOWHERE — not even by a settings screen. They are pure dead code and are the
 # cheapest five minutes on this list.
 KNOWN_OPEN = {
-    # From docs/audit_library_music_settings.md L1 — StringSetting/IntSetting.
-    'scanFolders':
-        'settings_list_screen.dart. Its sibling scanExtensions IS wired, '
-        'through setExtensionFilter; the walk still visits every volume.',
-    'bluetoothAudioDelay':
-        'settings_audio_screen.dart. audioDelay is applied at '
-        'player_controller_playback.dart; the Bluetooth variant is not.',
-    'videoZoomDelay':
-        'settings_player_screen.dart. Reaches libmpv decoder config; '
-        'removing the control may be the better fix.',
-    'hwPlusVideoCodecs':
-        'settings_decoder_screen.dart. The screen is wired to the setting; '
-        'the decoder is not wired to either.',
-    'hwPlusAudioCodecs':
-        'settings_decoder_screen.dart. Same.',
-    # PlayerSetting — found by this check, missed by the audit.
-    'listRecognizeNomedia':
-        'not referenced anywhere at all — pure dead code',
-    'listShowHiddenFiles':
-        'not referenced anywhere at all — pure dead code',
-    'screenDimNotch':
-        'player_screen_settings_screen.dart',
-    'screenUseCutout':
-        'player_screen_settings_screen.dart',
-    'styleCompactMode':
-        'player_style_screen.dart',
-    'styleShowBattery':
-        'player_style_screen.dart',
-    'audioAsPlayer':
-        'settings_audio_screen.dart',
-    'audioSystemVolumePanel':
-        'settings_audio_screen.dart',
-    'decCorrectAspect':
-        'settings_decoder_screen.dart',
-    'decCustomCodec':
-        'settings_decoder_screen.dart',
-    'decHwAudioOnSwVideo':
-        'settings_decoder_screen.dart',
-    'decHwAudioTrackSelectable':
-        'settings_decoder_screen.dart',
-    'decSwAudio':
-        'settings_decoder_screen.dart',
-    'decSwAudioLocal':
-        'settings_decoder_screen.dart',
-    'decSwAudioNetwork':
-        'settings_decoder_screen.dart',
-    'devEnableDebugLog':
-        'settings_development_screen.dart',
-    'generalPlayMediaLinks':
-        'settings_general_screen.dart',
-    'tvMode':
-        'settings_general_screen.dart',
-    'listLastMediaInFolder':
-        'settings_list_screen.dart',
-    'listScrollToLastMedia':
-        'settings_list_screen.dart',
-    'listSelectThumbnail':
-        'settings_list_screen.dart',
-    'albumArt':
-        'settings_player_screen.dart',
-    'android40Mode':
-        'settings_player_screen.dart',
-    'honourHeadsetMultiPress':
-        'settings_player_screen.dart',
-    'smoothSwitch':
-        'settings_player_screen.dart',
-    'softwareNavButtons':
-        'settings_player_screen.dart',
-    'turnOffBacklight':
-        'settings_player_screen.dart',
-    'subtitleForceLtr':
-        'settings_subtitle_screen.dart',
-    'subtitleHwAccel':
-        'settings_subtitle_screen.dart',
-    'subtitleShowHw':
-        'settings_subtitle_screen.dart',
+    # Empty since 1.64.65. The last 35 were settled in one pass: every
+    # control whose value nothing read was taken off its screen and its
+    # enum value deleted (a picture of a switch is worse than no switch),
+    # and the "Font folder" row, which wrote the font key itself, went too.
+    # Keep it empty: a new entry here is a switch that lies.
 }
 
 VALUE = re.compile(r'^\s{2}([a-zA-Z][A-Za-z0-9]*)\s*\(', re.M)

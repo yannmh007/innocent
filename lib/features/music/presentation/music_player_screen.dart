@@ -3,7 +3,6 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:share_plus/share_plus.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../equalizer/presentation/equalizer_screen.dart';
@@ -14,6 +13,7 @@ import 'music_queue_sheet.dart';
 
 import '../../../core/localization/app_strings.dart';
 import '../../../core/ui/tv_focus.dart';
+import '../../../core/ui/share_media.dart';
 import '../../../core/ui/app_sheet.dart';
 /// Full-screen Music Player matching MX Player (UI PDF page 5 right)
 /// Vinyl record + controls + Lyrics/Playing Queue tabs
@@ -179,7 +179,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
             for (final mins in [15, 30, 45, 60, 90])
               ListTile(
                 dense: true,
-                title: Text('$mins minutes',
+                title: Text(AppStrings.of(context).minutesCount(mins),
                     style: const TextStyle(color: Colors.white)),
                 onTap: () {
                   Navigator.pop(dctx);
@@ -219,7 +219,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
   Future<void> _shareSong(Song? song) async {
     if (song == null) return;
     try {
-      await Share.share(song.uri, subject: song.title);
+      await shareMedia(song.uri, subject: song.title);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -231,12 +231,12 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
   void _showSongInfo(Song? song) {
     if (song == null) return;
     final rows = <(String, String)>[
-      ('Title', song.title),
-      ('Artist', song.artist.isEmpty ? 'Unknown' : song.artist),
-      ('Album', song.album.isEmpty ? 'Unknown' : song.album),
-      ('Duration', _formatDuration(song.duration)),
-      ('Size', song.formattedSize),
-      ('Path', song.folderPath),
+      (AppStrings.of(context).mcTitle, song.title),
+      (AppStrings.of(context).mcArtist, song.artist.isEmpty ? AppStrings.of(context).mcUnknown : song.artist),
+      (AppStrings.of(context).mcAlbum, song.album.isEmpty ? AppStrings.of(context).mcUnknown : song.album),
+      (AppStrings.of(context).mcDuration, _formatDuration(song.duration)),
+      (AppStrings.of(context).propSize, song.formattedSize),
+      (AppStrings.of(context).mcPath, song.folderPath),
     ];
     showDialog<void>(
       context: context,
@@ -333,11 +333,11 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
   String _repeatLabelFor(MusicRepeatMode mode) {
     switch (mode) {
       case MusicRepeatMode.all:
-        return 'Repeat all';
+        return AppStrings.of(context).mpRepeatAll;
       case MusicRepeatMode.one:
-        return 'Repeat one';
+        return AppStrings.of(context).mpRepeatOne;
       case MusicRepeatMode.off:
-        return 'Repeat off';
+        return AppStrings.of(context).mpRepeatOff;
     }
   }
 
@@ -386,9 +386,9 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
 
     final playing = ref.watch(musicPlayingProvider);
     final song = playing.song;
-    final title = song?.title ?? 'Unknown Track';
-    final artist = song?.displayArtist ?? 'Unknown artist';
-    final duration = song?.duration ?? const Duration(minutes: 4, seconds: 13);
+    final title = song?.title ?? AppStrings.of(context).mpUnknownTrack;
+    final artist = song?.displayArtist ?? AppStrings.of(context).mpUnknownArtist;
+    final duration = song?.duration ?? Duration.zero;
     final isPlaying = playing.isPlaying;
     final progress = duration.inSeconds == 0
         ? 0.0
@@ -415,7 +415,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
               child: Row(
                 children: [
                   IconButton(
-                    tooltip: 'Collapse',
+                    tooltip: AppStrings.of(context).mpCollapse,
                     icon: const Icon(Icons.keyboard_arrow_down,
                         color: Colors.white, size: 28),
                     onPressed: () => Navigator.of(context).pop(),
@@ -447,7 +447,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                     ),
                   ),
                   IconButton(
-                    tooltip: 'Share',
+                    tooltip: AppStrings.of(context).share,
                     icon: const Icon(Icons.share_outlined,
                         color: Colors.white, size: 22),
                     onPressed: () {
@@ -534,7 +534,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                     icon: const Icon(Icons.equalizer,
                         color: AppColors.white70, size: 24),
                     onPressed: _showEqualizer,
-                    tooltip: 'Equalizer',
+                    tooltip: AppStrings.of(context).mpEqualizer,
                   ),
                   IconButton(
                     icon: Icon(Icons.swap_horiz,
@@ -558,7 +558,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                         ),
                       );
                     },
-                    tooltip: 'A-B Repeat',
+                    tooltip: AppStrings.of(context).mpAb,
                   ),
                   IconButton(
                     icon: Icon(Icons.speed,
@@ -567,7 +567,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                             : AppColors.white70,
                         size: 24),
                     onPressed: () => _showSpeedPicker(playing.playbackSpeed),
-                    tooltip: 'Speed',
+                    tooltip: AppStrings.of(context).mpSpeed,
                   ),
                   IconButton(
                     icon: Icon(
@@ -591,7 +591,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                         ),
                       );
                     },
-                    tooltip: 'Favourite',
+                    tooltip: AppStrings.of(context).favourite,
                   ),
                   IconButton(
                     icon: const Icon(Icons.more_vert,
@@ -643,7 +643,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                         ),
                       );
                     },
-                    tooltip: 'More',
+                    tooltip: AppStrings.of(context).moreOptions,
                   ),
                 ],
               ),
@@ -688,9 +688,10 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                           final s = d.inSeconds.remainder(60)
                               .toString()
                               .padLeft(2, '0');
-                          return '$m min $s sec';
+                          return '$m:$s';
                         }
-                        return 'Position ${fmt(pos)} of ${fmt(duration)}';
+                        return AppStrings.of(context)
+                            .plPositionOf(fmt(pos), fmt(duration));
                       },
                     ),
                   ),
@@ -729,7 +730,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   IconButton(
-                    tooltip: 'Shuffle',
+                    tooltip: AppStrings.of(context).mpShuffle,
                     icon: Icon(
                       Icons.shuffle,
                       color: playing.isShuffled
@@ -744,14 +745,14 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                       final on = ref.read(musicPlayingProvider).isShuffled;
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text(on ? 'Shuffle on' : 'Shuffle off'),
+                          content: Text(on ? AppStrings.of(context).plShuffleOn : AppStrings.of(context).plShuffleOff),
                           duration: const Duration(seconds: 1),
                         ),
                       );
                     },
                   ),
                   IconButton(
-                    tooltip: 'Previous',
+                    tooltip: AppStrings.of(context).mpPrevious,
                     icon: const Icon(Icons.skip_previous,
                         color: Colors.white, size: 36),
                     onPressed: () {
@@ -767,7 +768,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                       // tooltip. Add explicit Semantics so TalkBack
                       // announces the action AND its current state.
                       button: true,
-                      label: isPlaying ? 'Pause' : 'Play',
+                      label: isPlaying ? AppStrings.of(context).plPause : AppStrings.of(context).play,
                       child: Container(
                         width: 64,
                         height: 64,
@@ -785,7 +786,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                     ),
                   ),
                   IconButton(
-                    tooltip: 'Next',
+                    tooltip: AppStrings.of(context).mpNext,
                     icon: const Icon(Icons.skip_next,
                         color: Colors.white, size: 36),
                     onPressed: () {
@@ -794,7 +795,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                   ),
                   // Loop button with "1" badge in repeat-one mode (MX parity)
                   IconButton(
-                    tooltip: 'Repeat',
+                    tooltip: AppStrings.of(context).mpRepeat,
                     icon: Stack(
                       clipBehavior: Clip.none,
                       children: [
@@ -993,7 +994,7 @@ class _LyricsSheetState extends ConsumerState<_LyricsSheet> {
                   IconButton(
                     icon: const Icon(Icons.close,
                         color: Colors.white70, size: 22),
-                    tooltip: 'Close',
+                    tooltip: AppStrings.of(context).close,
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ],
@@ -1004,16 +1005,10 @@ class _LyricsSheetState extends ConsumerState<_LyricsSheet> {
                   loading: () => const Center(
                       child: CircularProgressIndicator()),
                   error: (_, __) =>
-                      _emptyState('Error reading lyrics file.'),
+                      _emptyState(AppStrings.of(context).mpLyricsError),
                   data: (lines) {
                     if (lines == null || lines.isEmpty) {
-                      return _emptyState(
-                        'No lyrics found.\n\n'
-                        'To add lyrics, place an .lrc file next to '
-                        'your audio with the same filename — e.g. '
-                        'song.mp3 → song.lrc. The file should contain '
-                        'lines like [00:12.34]Lyric text.',
-                      );
+                      return _emptyState(AppStrings.of(context).mpNoLyrics);
                     }
                     int activeIdx = -1;
                     for (int i = 0; i < lines.length; i++) {

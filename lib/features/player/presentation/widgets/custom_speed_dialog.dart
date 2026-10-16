@@ -49,11 +49,11 @@ class _CustomSpeedDialogState extends State<CustomSpeedDialog> {
     final text = _controller.text.trim();
     final value = double.tryParse(text);
     if (value == null) {
-      setState(() => _error = 'Invalid number');
+      setState(() => _error = AppStrings.of(context).pwBadNumber);
       return;
     }
     if (value < 0.25 || value > 4.0) {
-      setState(() => _error = 'Speed must be 0.25 - 4.0');
+      setState(() => _error = AppStrings.of(context).pwSpeedRange);
       return;
     }
     widget.onSpeedSet(value);
@@ -105,7 +105,7 @@ class _CustomSpeedDialogState extends State<CustomSpeedDialog> {
                 fontSize: 20,
               ),
               hintText: '1.00',
-              hintStyle: const TextStyle(color: Colors.white24),
+              hintStyle: const TextStyle(color: Colors.white54),
               filled: true,
               fillColor: AppColors.darkSurfaceVariant,
               border: OutlineInputBorder(
