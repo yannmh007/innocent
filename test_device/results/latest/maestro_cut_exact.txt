@@ -2,10 +2,7 @@ Running on test
  > Flow cut_exact
 Launch app "com.innocent.media"... COMPLETED
 Wait for animation to end within 10000 ms... COMPLETED
-Tap on (Optional) "Skip"... WARNED
-
-
- Warning: Element not found: Text matching regex: Skip
+Tap on (Optional) "Skip"... COMPLETED
 Wait for animation to end within 5000 ms... COMPLETED
 Tap on (Optional) "Allow.*"... WARNED
 
@@ -56,17 +53,25 @@ Tap on "Export"... COMPLETED
 Assert that ".*Cut saved.*" is visible... COMPLETED
 Take screenshot e04_cut_saved... COMPLETED
 Assert that ".*FFmpeg.*" is not visible... COMPLETED
-Assert that ".*key frame just before.*" is not visible... FAILED
+Assert that ".*key frame just before.*" is not visible... COMPLETED
+Launch app "com.innocent.media"... COMPLETED
+Wait for animation to end within 8000 ms... COMPLETED
+Tap on (Optional) ".*Tab 1 of 4.*"... COMPLETED
+Swiping in DOWN direction in 400 ms... COMPLETED
+Wait for animation to end within 6000 ms... COMPLETED
+Scrolling DOWN until ".*Cuts.*" is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Take screenshot e05_cuts_folder... COMPLETED
+Tap on ".*Cuts.*"... COMPLETED
+Wait for animation to end within 4000 ms... COMPLETED
+Assert that ".*cut_main \(cut\).*" is visible... COMPLETED
+Take screenshot e06_cut_file... COMPLETED
+Tap on ".*cut_main \(cut\).*"... COMPLETED
+Assert that (Optional) "__nothing_has_this_text__" is visible... WARNED
 
-Assertion is false: ".*key frame just before.*" is not visible
 
-Assertion '".*key frame just before.*" is not visible' failed. Check the UI hierarchy in debug artifacts to verify the element state and properties.
-
-Possible causes:
-- Element selector may be incorrect - check if there are similar elements with slightly different names/properties.
-- Element may be temporarily unavailable due to loading state
-- This could be a real regression that needs to be addressed
-
-==== Debug output (logs & screenshots) ====
-
-/home/runner/work/innocent/innocent/out/maestro_out/2026-10-16_075452
+ Warning: Assertion is false: "__nothing_has_this_text__" is visible
+Take screenshot e07_cut_plays... COMPLETED
+Run flow when ".*cut_main \(cut\).*" is not visible...
+  Tap on point (50%,30%)... COMPLETED
+Run flow when ".*cut_main \(cut\).*" is not visible... COMPLETED
+Assert that ".*cut_main \(cut\).*" is visible... COMPLETED
