@@ -440,8 +440,15 @@ for flow in $FLOWS; do
     continue
     ;;
   esac
+  # The exact cut on the emulator: everything there runs in software, so
+  # the smart cut gets five minutes rather than a phone's budget, and the
+  # log says what Media3 itself made of it (cut_exact.yaml).
+  if [ "$flow" = cut_exact ]; then
+    adb shell "echo 300000 > /sdcard/Android/data/$PKG/files/lab_cut_deadline_ms" >/dev/null 2>&1 || true
+  fi
   ( cd "$OUT/shots" && maestro test --test-output-dir "$OUT/maestro_out" "$OLDPWD/test_device/flows/$file.yaml" ) > "$OUT/maestro_$flow.txt" 2>&1
   log "flow $flow exit $?"
+  adb shell rm -f "/sdcard/Android/data/$PKG/files/lab_cut_deadline_ms" >/dev/null 2>&1 || true
   # STACKED DOUBLE TAP. Maestro needs most of a second per tap, longer than
   # the 0.6 s a run of taps stays open, so it can only ever make a plain
   # double tap. Four taps from one adb shell come a few hundred ms apart,

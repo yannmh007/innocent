@@ -99,7 +99,7 @@ appId: com.innocent.media
     text: "Export"
 - extendedWaitUntil:
     visible: ".*Cut saved.*"
-    timeout: 120000
+    timeout: 330000
 - takeScreenshot: e04_cut_saved
 - assertNotVisible: ".*FFmpeg.*"
 - assertNotVisible: ".*key frame just before.*"

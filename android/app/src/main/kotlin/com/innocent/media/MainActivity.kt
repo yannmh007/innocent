@@ -572,7 +572,18 @@ class MainActivity : AudioServiceFragmentActivity() {
                                 )
                                 lossless(probe.keyFrameAt(startUs))
                             } else {
-                                val deadline = PreciseTrimmer.deadlineMs(probe, startUs, endUs)
+                                // The device lab's emulator does all video in software,
+                                // GPU included, far slower than a phone: there a file
+                                // `lab_cut_deadline_ms` lifts the deadline so the smart
+                                // cut's own verdict can be read. No phone has it.
+                                val labDeadline = try {
+                                    File(getExternalFilesDir(null), "lab_cut_deadline_ms")
+                                        .takeIf { it.exists() }?.readText()?.trim()?.toLongOrNull()
+                                } catch (_: Exception) {
+                                    null
+                                }
+                                val deadline =
+                                    labDeadline ?: PreciseTrimmer.deadlineMs(probe, startUs, endUs)
                                 runOnUiThread {
                                     PreciseTrimmer.trim(
                                         applicationContext, src, dst, startMs, endMs,
