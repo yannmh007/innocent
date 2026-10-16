@@ -53,27 +53,17 @@ Wait for animation to end within 2000 ms... COMPLETED
 Take screenshot c03_points_set... COMPLETED
 Assert that "(?s).*Clip: .*" is visible... COMPLETED
 Tap on "Export"... COMPLETED
-Assert that ".*Cut saved.*" is visible... COMPLETED
-Take screenshot c04_cut_saved... COMPLETED
-Assert that ".*FFmpeg.*" is not visible... COMPLETED
-Launch app "com.innocent.media"... COMPLETED
-Wait for animation to end within 8000 ms... COMPLETED
-Tap on (Optional) ".*Tab 1 of 4.*"... COMPLETED
-Swiping in DOWN direction in 400 ms... COMPLETED
-Wait for animation to end within 6000 ms... COMPLETED
-Scrolling DOWN until ".*Cuts.*" is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
-Take screenshot c05_cuts_folder... COMPLETED
-Tap on ".*Cuts.*"... COMPLETED
-Wait for animation to end within 4000 ms... COMPLETED
-Assert that ".*aaa_play_720p \(cut\).*" is visible... COMPLETED
-Take screenshot c06_cut_file... COMPLETED
-Tap on ".*aaa_play_720p \(cut\).*"... COMPLETED
-Assert that (Optional) "__nothing_has_this_text__" is visible... WARNED
+Assert that ".*Cut saved.*" is visible... FAILED
 
+Assertion is false: ".*Cut saved.*" is visible
 
- Warning: Assertion is false: "__nothing_has_this_text__" is visible
-Take screenshot c07_cut_plays... COMPLETED
-Run flow when ".*aaa_play_720p \(cut\).*" is not visible...
-  Tap on point (50%,30%)... COMPLETED
-Run flow when ".*aaa_play_720p \(cut\).*" is not visible... COMPLETED
-Assert that ".*aaa_play_720p \(cut\).*" is visible... COMPLETED
+Assertion '".*Cut saved.*" is visible' failed. Check the UI hierarchy in debug artifacts to verify the element state and properties.
+
+Possible causes:
+- Element selector may be incorrect - check if there are similar elements with slightly different names/properties.
+- Element may be temporarily unavailable due to loading state
+- This could be a real regression that needs to be addressed
+
+==== Debug output (logs & screenshots) ====
+
+/home/runner/work/innocent/innocent/out/maestro_out/2026-10-16_055404
