@@ -130,4 +130,12 @@ appId: com.innocent.media
     timeout: 6000
     optional: true
 - takeScreenshot: c07_cut_plays
+# The controls hide after a few seconds (and the emulator's screenshots
+# never show the video itself), so bring them back to read the title.
+- runFlow:
+    when:
+      notVisible: ".*aaa_play_720p \\(cut\\).*"
+    commands:
+      - tapOn:
+          point: "50%,30%"
 - assertVisible: ".*aaa_play_720p \\(cut\\).*"
