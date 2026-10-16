@@ -286,14 +286,14 @@ class _SleepTimerDialogState extends State<SleepTimerDialog> {
   }
 
   Widget _closeButton() {
-    // The 32 dp circle MX draws, inside a 44 dp target (8 of it outside the
+    // The 32 dp circle MX draws, inside a 48 dp target (8 of it outside the
     // circle's own space on the right, where the dialog has room).
     return RemoteTappable(
       onTap: widget.onDismiss,
       semanticLabel: MaterialLocalizations.of(context).closeButtonTooltip,
       child: SizedBox(
-        width: 44,
-        height: 44,
+        width: 48,
+        height: 48,
         child: Center(
           child: Container(
             width: 32,
