@@ -73,11 +73,14 @@ appId: com.innocent.media
     id: "cut-scrubber"
 - waitForAnimationToEnd:
     timeout: 3000
+- assertNotVisible: "(?s).*Current: 00:1.*"
 - tapOn:
     text: "Set"
+    index: 1
 - waitForAnimationToEnd:
     timeout: 2000
 - takeScreenshot: c03_points_set
+- assertVisible: "(?s).*Clip: .*"
 - tapOn:
     text: "Export"
 - extendedWaitUntil:

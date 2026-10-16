@@ -68,6 +68,12 @@ class _CutSheetState extends ConsumerState<CutSheet> {
 
   /// Where the scrubber's thumb is while a finger drags it; null otherwise.
   double? _scrubMs;
+
+  /// Where the scrubber was let go, until the engine's position gets there.
+  /// A seek takes a moment: without this the thumb jumped back to the old
+  /// spot and a quick Set took the old position.
+  Duration? _seekTarget;
+  DateTime _seekTargetAt = DateTime.fromMillisecondsSinceEpoch(0);
   DateTime _lastScrubSeek = DateTime.fromMillisecondsSinceEpoch(0);
 
   /// Move the paused video while dragging, a few times a second — enough to
@@ -83,8 +89,26 @@ class _CutSheetState extends ConsumerState<CutSheet> {
   }
 
   void _scrubEnd(double ms) {
-    _seekTo(Duration(milliseconds: ms.round()));
-    setState(() => _scrubMs = null);
+    final target = Duration(milliseconds: ms.round());
+    _seekTo(target);
+    setState(() {
+      _scrubMs = null;
+      _seekTarget = target;
+      _seekTargetAt = DateTime.now();
+    });
+  }
+
+  /// [_seekTarget] while the engine has not reached it (and for at most two
+  /// seconds, so a seek that lands elsewhere cannot hold it forever).
+  Duration? _pendingSeek(Duration live) {
+    final t = _seekTarget;
+    if (t == null) return null;
+    if ((live - t).abs() < const Duration(milliseconds: 600) ||
+        DateTime.now().difference(_seekTargetAt) > const Duration(seconds: 2)) {
+      _seekTarget = null;
+      return null;
+    }
+    return t;
   }
 
   String _fmt(Duration d) {
@@ -105,10 +129,11 @@ class _CutSheetState extends ConsumerState<CutSheet> {
 
   /// Where the video actually is, to the millisecond.
   Duration _enginePosition() {
-    final live = ref.read(videoPlayerServiceProvider).position;
-    return live > Duration.zero
-        ? live
+    final engine = ref.read(videoPlayerServiceProvider).position;
+    final live = engine > Duration.zero
+        ? engine
         : ref.read(playerControllerProvider).position;
+    return _pendingSeek(live) ?? live;
   }
 
   void _setEnd() {
@@ -192,8 +217,8 @@ class _CutSheetState extends ConsumerState<CutSheet> {
     // something in the player itself is displaying it — this sheet is a modal
     // route on top, which the controller cannot see. Watching the scoped
     // position stream rebuilds just this sheet, and only while it is open.
-    final position =
-        ref.watch(videoPositionProvider).value ?? state.position;
+    final live = ref.watch(videoPositionProvider).value ?? state.position;
+    final position = _pendingSeek(live) ?? live;
     final clipDuration = (_startPoint != null && _endPoint != null)
         ? _endPoint! - _startPoint!
         : null;
@@ -291,7 +316,9 @@ class _CutSheetState extends ConsumerState<CutSheet> {
             // The playhead, here: the video is paused under this sheet and
             // the player's own seek bar is behind it, so without this there
             // was no way to move from A to a later B.
+            // container: its own node, or the id lands on the whole sheet.
             Semantics(
+              container: true,
               identifier: 'cut-scrubber',
               child: Slider(
               value: (_scrubMs ??
