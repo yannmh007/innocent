@@ -523,6 +523,30 @@ class MainActivity : AudioServiceFragmentActivity() {
         MediaChangeWatcher.register(flutterEngine.dartExecutor.binaryMessenger, applicationContext)
         mediaScanChannel?.setMethodCallHandler { call, result ->
             when (call.method) {
+                // The player's Cut (VideoTrimmer): copy [startMs, endMs] of a
+                // local video into a new MP4 without re-encoding, then scan
+                // it so the Video tab lists it. Replies null, or the reason.
+                "trim" -> {
+                    val src = call.argument<String>("src")
+                    val dst = call.argument<String>("dst")
+                    val startUs = (call.argument<Number>("startMs")?.toLong() ?: 0L) * 1000L
+                    val endUs = (call.argument<Number>("endMs")?.toLong() ?: 0L) * 1000L
+                    if (src == null || dst == null) {
+                        result.success("bad arguments")
+                    } else {
+                        Thread {
+                            val err = VideoTrimmer.trim(src, dst, startUs, endUs)
+                            if (err != null) {
+                                VideoTrimmer.discard(dst)
+                            } else {
+                                MediaScannerConnection.scanFile(
+                                    applicationContext, arrayOf(dst), null, null
+                                )
+                            }
+                            runOnUiThread { result.success(err) }
+                        }.start()
+                    }
+                }
                 "scan" -> {
                     val paths = call.argument<List<String>>("paths")
                     if (paths != null && paths.isNotEmpty()) {

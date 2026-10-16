@@ -128,7 +128,7 @@ class PlayingQueueSheet extends StatelessWidget {
             leading: const Icon(Icons.equalizer,
                 color: AppColors.primaryBlue, size: 20),
             title: Text(
-              currentTitle.isEmpty ? 'Current video' : currentTitle,
+              currentTitle.isEmpty ? AppStrings.current.pwCurrentVideo : currentTitle,
               style: const TextStyle(color: AppColors.primaryBlue, fontSize: 14),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,

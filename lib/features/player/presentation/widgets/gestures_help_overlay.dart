@@ -98,7 +98,7 @@ class GesturesHelpOverlay extends StatelessWidget {
                         ),
                       ),
                       IconButton(
-                        tooltip: 'Close',
+                        tooltip: AppStrings.of(context).close,
                         icon: const Icon(Icons.close, color: Colors.white),
                         onPressed: () => Navigator.of(context).pop(),
                       ),

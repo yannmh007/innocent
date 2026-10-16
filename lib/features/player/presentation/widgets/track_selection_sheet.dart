@@ -71,7 +71,7 @@ class TrackSelectionSheet<T> extends StatelessWidget {
                 children: [
                   if (allowNone)
                     _TrackTile(
-                      label: 'None',
+                      label: AppStrings.of(context).langNone,
                       isSelected: currentTrack == null,
                       onTap: () => onSelect(null),
                     ),
@@ -133,7 +133,7 @@ class TrackSelectionSheet<T> extends StatelessWidget {
       context: context,
       backgroundColor: Colors.transparent,
       builder: (_) => TrackSelectionSheet<AudioTrackInfo>(
-        title: 'Audio track',
+        title: AppStrings.of(context).audioTrack,
         tracks: tracks,
         currentTrack: current,
         labelFor: (t) => t.displayName,
@@ -157,7 +157,7 @@ class TrackSelectionSheet<T> extends StatelessWidget {
       context: context,
       backgroundColor: Colors.transparent,
       builder: (_) => TrackSelectionSheet<SubtitleTrackInfo>(
-        title: 'Subtitle track',
+        title: AppStrings.of(context).pwSubTrack,
         tracks: tracks,
         currentTrack: current,
         labelFor: (t) => t.displayName,

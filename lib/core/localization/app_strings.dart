@@ -2509,6 +2509,64 @@ class AppStrings {
   String get pvAdbFailed => _s('pvAdbFailed');
   String get pvDownloadGone => _s('pvDownloadGone');
 
+  String get pwNotSet => _s('pwNotSet');
+
+  String get pwMarkersHint => _s('pwMarkersHint');
+  String get pwIntroEnds => _s('pwIntroEnds');
+  String pwIntroSet(Object v) => _s('pwIntroSet').replaceFirst('{v}', '$v');
+  String get pwOutroStarts => _s('pwOutroStarts');
+  String pwOutroSet(Object v) => _s('pwOutroSet').replaceFirst('{v}', '$v');
+  String get pwUpdate => _s('pwUpdate');
+  String get pwSet => _s('pwSet');
+
+  String pwDecrease(Object v) => _s('pwDecrease').replaceFirst('{v}', '$v');
+  String pwIncrease(Object v) => _s('pwIncrease').replaceFirst('{v}', '$v');
+  String get pwTuneHint => _s('pwTuneHint');
+  String get pwTiming => _s('pwTiming');
+  String get pwPosition => _s('pwPosition');
+
+  String get pwOpenFile => _s('pwOpenFile');
+  String get pwSubTrack => _s('pwSubTrack');
+  String get pwTextStyle => _s('pwTextStyle');
+  String get pwPosLayout => _s('pwPosLayout');
+
+  String get pwStartA => _s('pwStartA');
+  String get pwEndB => _s('pwEndB');
+
+  String get pwBrightness => _s('pwBrightness');
+  String get pwContrast => _s('pwContrast');
+  String get pwSaturation => _s('pwSaturation');
+  String get pwHue => _s('pwHue');
+
+
+
+  String get pwLoopOne => _s('pwLoopOne');
+  String get pwLoopAll => _s('pwLoopAll');
+
+  String get pwBadNumber => _s('pwBadNumber');
+  String get pwSpeedRange => _s('pwSpeedRange');
+
+  String get pwNoBookmarks => _s('pwNoBookmarks');
+
+
+
+
+
+  String get pwCurrentVideo => _s('pwCurrentVideo');
+
+  String get pwOpenFull => _s('pwOpenFull');
+
+  String get pwHwDecoder => _s('pwHwDecoder');
+  String get pwHwPlusDecoder => _s('pwHwPlusDecoder');
+  String get pwSwDecoder => _s('pwSwDecoder');
+
+  String get cutPrivate => _s('cutPrivate');
+  String get cutLocalOnly => _s('cutLocalOnly');
+  String get cutWorking => _s('cutWorking');
+  String cutSaved(Object v) => _s('cutSaved').replaceFirst('{v}', '$v');
+  String cutFailed(Object v) => _s('cutFailed').replaceFirst('{v}', '$v');
+  String get cutHint => _s('cutHint');
+
   static const Map<String, Map<String, String>> _byLocale =
       <String, Map<String, String>>{
     'en': _en,
@@ -4728,6 +4786,45 @@ class AppStrings {
     'pvAdbLoading': 'Loading the video over ADB…\nLarger files take a moment.',
     'pvAdbFailed': 'Could not load this video over ADB. Check that the phone is still connected on the ADB screen, then try again.',
     'pvDownloadGone': 'This download can no longer be opened on this phone. Delete it from Downloads and download it again.',
+    'pwNotSet': 'Not set',
+    'pwMarkersHint': 'Set a marker at the current position; it is skipped automatically next time.',
+    'pwIntroEnds': 'Intro ends at',
+    'pwIntroSet': 'Intro marker set at {v}',
+    'pwOutroStarts': 'Outro starts at',
+    'pwOutroSet': 'Outro marker set at {v}',
+    'pwUpdate': 'Update',
+    'pwSet': 'Set',
+    'pwDecrease': 'Decrease {v}',
+    'pwIncrease': 'Increase {v}',
+    'pwTuneHint': 'Drag anywhere on this panel: sideways for timing, up and down for position. Tap a value to reset it.',
+    'pwTiming': 'Timing',
+    'pwPosition': 'Position',
+    'pwOpenFile': 'Open file',
+    'pwSubTrack': 'Subtitle track',
+    'pwTextStyle': 'Text style',
+    'pwPosLayout': 'Position & layout',
+    'pwStartA': 'Start (A)',
+    'pwEndB': 'End (B)',
+    'pwBrightness': 'Brightness',
+    'pwContrast': 'Contrast',
+    'pwSaturation': 'Saturation',
+    'pwHue': 'Hue',
+    'pwLoopOne': 'Loop one',
+    'pwLoopAll': 'Loop all',
+    'pwBadNumber': 'Not a number',
+    'pwSpeedRange': 'Speed must be 0.25 – 4.0',
+    'pwNoBookmarks': 'No bookmarks for this video.\nTap ⋮ → Bookmark while it plays.',
+    'pwCurrentVideo': 'Current video',
+    'pwOpenFull': 'Open full screen',
+    'pwHwDecoder': 'HW decoder',
+    'pwHwPlusDecoder': 'HW+ decoder',
+    'pwSwDecoder': 'SW decoder',
+    'cutPrivate': 'Private Folder videos cannot be cut.',
+    'cutLocalOnly': 'Only a video saved on this phone can be cut.',
+    'cutWorking': 'Cutting…',
+    'cutSaved': 'Cut saved: {v}',
+    'cutFailed': 'Could not cut this video ({v}).',
+    'cutHint': 'The cut starts on the nearest key frame before A, so it may begin a moment early. Nothing is re-encoded.',
   };
 
   static const Map<String, String> _my = <String, String>{
@@ -6911,6 +7008,45 @@ class AppStrings {
     'pvAdbLoading': 'ADB ကနေ ဗီဒီယို ဖွင့်နေပါတယ်…\nဖိုင်ကြီးရင် ခဏ ကြာပါမယ်။',
     'pvAdbFailed': 'ADB ကနေ ဒီဗီဒီယိုကို မဖွင့်နိုင်ပါ။ ADB screen မှာ ချိတ်ထားဆဲ ဟုတ်မဟုတ် စစ်ပြီး ပြန်ကြိုးစားပါ။',
     'pvDownloadGone': 'ဒီဒေါင်းလုဒ်ကို ဒီဖုန်းမှာ မဖွင့်နိုင်တော့ပါ။ Downloads ကနေ ဖျက်ပြီး ပြန်ဒေါင်းပါ။',
+    'pwNotSet': 'မသတ်မှတ်ရသေး',
+    'pwMarkersHint': 'လက်ရှိ နေရာမှာ marker သတ်မှတ်ပါ — နောက်တစ်ခါ ဖွင့်ရင် အလိုလို ကျော်ပါမယ်။',
+    'pwIntroEnds': 'Intro ပြီးမယ့် နေရာ',
+    'pwIntroSet': 'Intro marker ကို {v} မှာ သတ်မှတ်ပြီး',
+    'pwOutroStarts': 'Outro စမယ့် နေရာ',
+    'pwOutroSet': 'Outro marker ကို {v} မှာ သတ်မှတ်ပြီး',
+    'pwUpdate': 'ပြင်မယ်',
+    'pwSet': 'သတ်မှတ်',
+    'pwDecrease': '{v} လျှော့',
+    'pwIncrease': '{v} တိုး',
+    'pwTuneHint': 'ဒီ panel ပေါ် ဘယ်နေရာမဆို ဆွဲပါ — ဘေးတိုက်ဆွဲရင် အချိန်၊ အပေါ်အောက်ဆွဲရင် နေရာ။ တန်ဖိုးကို နှိပ်ရင် ပြန်စပါမယ်။',
+    'pwTiming': 'အချိန်',
+    'pwPosition': 'နေရာ',
+    'pwOpenFile': 'ဖိုင် ဖွင့်',
+    'pwSubTrack': 'စာတန်း track',
+    'pwTextStyle': 'စာသား ပုံစံ',
+    'pwPosLayout': 'နေရာ နဲ့ အပြင်အဆင်',
+    'pwStartA': 'အစ (A)',
+    'pwEndB': 'အဆုံး (B)',
+    'pwBrightness': 'အလင်း',
+    'pwContrast': 'Contrast',
+    'pwSaturation': 'အရောင် အားကောင်းမှု',
+    'pwHue': 'အရောင် အသွေး',
+    'pwLoopOne': 'တစ်ခု ထပ်ဖွင့်',
+    'pwLoopAll': 'အားလုံး ထပ်ဖွင့်',
+    'pwBadNumber': 'ဂဏန်း မဟုတ်ပါ',
+    'pwSpeedRange': 'အမြန်နှုန်း 0.25 – 4.0 ဖြစ်ရပါမယ်',
+    'pwNoBookmarks': 'ဒီဗီဒီယိုမှာ bookmark မရှိပါ။\nဖွင့်နေစဉ် ⋮ → Bookmark ကို နှိပ်ပါ။',
+    'pwCurrentVideo': 'လက်ရှိ ဗီဒီယို',
+    'pwOpenFull': 'မျက်နှာပြင်အပြည့် ဖွင့်',
+    'pwHwDecoder': 'HW decoder',
+    'pwHwPlusDecoder': 'HW+ decoder',
+    'pwSwDecoder': 'SW decoder',
+    'cutPrivate': 'Private Folder ဗီဒီယိုတွေကို ဖြတ်လို့ မရပါ။',
+    'cutLocalOnly': 'ဖုန်းထဲမှာ သိမ်းထားတဲ့ ဗီဒီယိုကိုသာ ဖြတ်လို့ ရပါတယ်။',
+    'cutWorking': 'ဖြတ်နေပါတယ်…',
+    'cutSaved': 'ဖြတ်ပြီး သိမ်းပြီးပါပြီ: {v}',
+    'cutFailed': 'ဒီဗီဒီယိုကို မဖြတ်နိုင်ပါ ({v})။',
+    'cutHint': 'ဖြတ်တာက A မတိုင်ခင် အနီးဆုံး key frame ကနေ စလို့ နည်းနည်း စောနိုင်ပါတယ်။ အရည်အသွေး မကျပါ။',
   };
 
   static const Map<String, String> _th = <String, String>{
@@ -9086,6 +9222,45 @@ class AppStrings {
     'pvAdbLoading': 'กำลังโหลดวิดีโอผ่าน ADB…\nไฟล์ใหญ่อาจใช้เวลาสักครู่',
     'pvAdbFailed': 'โหลดวิดีโอนี้ผ่าน ADB ไม่ได้ ตรวจสอบว่ายังเชื่อมต่ออยู่ในหน้าจอ ADB แล้วลองอีกครั้ง',
     'pvDownloadGone': 'ไม่สามารถเปิดไฟล์ดาวน์โหลดนี้ในโทรศัพท์นี้ได้แล้ว ลบออกจากดาวน์โหลดแล้วดาวน์โหลดใหม่',
+    'pwNotSet': 'ยังไม่ได้ตั้ง',
+    'pwMarkersHint': 'ตั้งเครื่องหมายที่ตำแหน่งปัจจุบัน ครั้งหน้าจะข้ามให้อัตโนมัติ',
+    'pwIntroEnds': 'อินโทรจบที่',
+    'pwIntroSet': 'ตั้งเครื่องหมายอินโทรที่ {v} แล้ว',
+    'pwOutroStarts': 'เอาท์โทรเริ่มที่',
+    'pwOutroSet': 'ตั้งเครื่องหมายเอาท์โทรที่ {v} แล้ว',
+    'pwUpdate': 'อัปเดต',
+    'pwSet': 'ตั้ง',
+    'pwDecrease': 'ลด{v}',
+    'pwIncrease': 'เพิ่ม{v}',
+    'pwTuneHint': 'ลากที่ใดก็ได้บนแผงนี้ ลากด้านข้างเพื่อปรับเวลา ลากขึ้นลงเพื่อปรับตำแหน่ง แตะค่าเพื่อรีเซ็ต',
+    'pwTiming': 'เวลา',
+    'pwPosition': 'ตำแหน่ง',
+    'pwOpenFile': 'เปิดไฟล์',
+    'pwSubTrack': 'แทร็กคำบรรยาย',
+    'pwTextStyle': 'รูปแบบข้อความ',
+    'pwPosLayout': 'ตำแหน่งและเลย์เอาต์',
+    'pwStartA': 'เริ่ม (A)',
+    'pwEndB': 'จบ (B)',
+    'pwBrightness': 'ความสว่าง',
+    'pwContrast': 'คอนทราสต์',
+    'pwSaturation': 'ความอิ่มสี',
+    'pwHue': 'โทนสี',
+    'pwLoopOne': 'วนซ้ำเรื่องเดียว',
+    'pwLoopAll': 'วนซ้ำทั้งหมด',
+    'pwBadNumber': 'ไม่ใช่ตัวเลข',
+    'pwSpeedRange': 'ความเร็วต้องอยู่ระหว่าง 0.25 – 4.0',
+    'pwNoBookmarks': 'ยังไม่มีบุ๊กมาร์กสำหรับวิดีโอนี้\nแตะ ⋮ → บุ๊กมาร์ก ระหว่างเล่น',
+    'pwCurrentVideo': 'วิดีโอปัจจุบัน',
+    'pwOpenFull': 'เปิดเต็มหน้าจอ',
+    'pwHwDecoder': 'ตัวถอดรหัส HW',
+    'pwHwPlusDecoder': 'ตัวถอดรหัส HW+',
+    'pwSwDecoder': 'ตัวถอดรหัส SW',
+    'cutPrivate': 'ตัดวิดีโอในโฟลเดอร์ส่วนตัวไม่ได้',
+    'cutLocalOnly': 'ตัดได้เฉพาะวิดีโอที่บันทึกในโทรศัพท์นี้',
+    'cutWorking': 'กำลังตัด…',
+    'cutSaved': 'บันทึกคลิปที่ตัดแล้ว: {v}',
+    'cutFailed': 'ตัดวิดีโอนี้ไม่ได้ ({v})',
+    'cutHint': 'คลิปจะเริ่มที่คีย์เฟรมก่อน A จึงอาจเริ่มเร็วกว่าเล็กน้อย ไม่มีการเข้ารหัสใหม่',
   };
 }
 

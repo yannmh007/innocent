@@ -2223,7 +2223,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  r.label,
+                  r.labelIn(AppStrings.of(context)),
                   style: TextStyle(
                     color: isSelected
                         ? AppColors.accentBlue
@@ -2242,7 +2242,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     if (picked != null && context.mounted) {
       await controller.setExplicitAspectRatio(picked);
       if (context.mounted) {
-        AppSnackbar.show(context, AppStrings.of(context).plAspect(picked.label));
+        AppSnackbar.show(context, AppStrings.of(context).plAspect(picked.labelIn(AppStrings.of(context))));
       }
     }
   }
@@ -2964,7 +2964,9 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                 child: _TopBar(
                 insets: _controlsInsets(context),
                 title: widget.title,
-                decoderLabel: state.decoder.label,
+                decoderLabel: state.decoder == DecoderType.defaultMode
+                    ? AppStrings.of(context).plDecoderDefault
+                    : state.decoder.label,
                 sleepTimerRemaining: state.sleepTimer.remaining,
                 // Phase 41: respect "Double-tap the back button" (Settings →
                 // Player → Interface). When enabled, the first press shows

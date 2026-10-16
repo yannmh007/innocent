@@ -8,13 +8,16 @@ import '../../../../core/ui/app_snackbar.dart';
 import '../player_provider.dart';
 
 import '../../../../core/localization/app_strings.dart';
+import 'package:path/path.dart' as p;
+import '../../../../core/services/video_cut/video_cut_service.dart';
+import '../../../../core/ui/share_media.dart';
 import '../../../../core/ui/app_sheet.dart';
 /// Phase 40: Video Cut/Trim editor (MX Player parity, Function PDF page 5).
 ///
-/// Lets the user mark a start (A) and end (B) point on the video timeline.
-/// Actual file export requires an FFmpeg/MediaMuxer dependency that is not
-/// yet bundled with the clone — when the user taps "Export", a clear message
-/// is shown instead of silently failing.
+/// Lets the user mark a start (A) and end (B) point on the video timeline;
+/// "Export" copies that stretch into Innocent/Cuts without re-encoding
+/// (VideoCutService). It used to say an FFmpeg add-on was needed and cut
+/// nothing.
 ///
 /// The A/B points are kept in widget-local state (not shared with the player
 /// A-B repeat feature) so that opening Cut doesn't disturb playback.
@@ -62,6 +65,27 @@ class CutSheet extends ConsumerStatefulWidget {
 class _CutSheetState extends ConsumerState<CutSheet> {
   Duration? _startPoint;
   Duration? _endPoint;
+
+  /// Where the scrubber's thumb is while a finger drags it; null otherwise.
+  double? _scrubMs;
+  DateTime _lastScrubSeek = DateTime.fromMillisecondsSinceEpoch(0);
+
+  /// Move the paused video while dragging, a few times a second — enough to
+  /// see the frame under the thumb without flooding the engine with seeks.
+  void _scrub(double ms) {
+    setState(() => _scrubMs = ms);
+    final now = DateTime.now();
+    if (now.difference(_lastScrubSeek) < const Duration(milliseconds: 150)) {
+      return;
+    }
+    _lastScrubSeek = now;
+    _seekTo(Duration(milliseconds: ms.round()));
+  }
+
+  void _scrubEnd(double ms) {
+    _seekTo(Duration(milliseconds: ms.round()));
+    setState(() => _scrubMs = null);
+  }
 
   String _fmt(Duration d) {
     final h = d.inHours;
@@ -121,7 +145,7 @@ class _CutSheetState extends ConsumerState<CutSheet> {
     ref.read(playerControllerProvider.notifier).seek(target);
   }
 
-  void _export() {
+  Future<void> _export() async {
     if (_startPoint == null || _endPoint == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -131,13 +155,33 @@ class _CutSheetState extends ConsumerState<CutSheet> {
       );
       return;
     }
+    final s = AppStrings.of(context);
+    final controller = ref.read(playerControllerProvider.notifier);
+    final uri = controller.currentUri;
+    final path = uri == null ? null : localPathOf(uri);
+    final start = _startPoint!;
+    final end = _endPoint!;
+    // Close the sheet; the rest is reported through the root messenger,
+    // which needs no context from the popped route.
     Navigator.pop(context);
-    // Phase 41: route via the global messenger because `context` belongs to
-    // the bottom-sheet route that was just popped.
-    AppSnackbar.global(
-      'Cut requires an FFmpeg add-on (not bundled). Trim points are saved for reference.',
-      duration: const Duration(seconds: 3),
-    );
+    if (controller.isPrivate) {
+      AppSnackbar.global(s.cutPrivate);
+      return;
+    }
+    if (path == null) {
+      AppSnackbar.global(s.cutLocalOnly);
+      return;
+    }
+    AppSnackbar.global(s.cutWorking, duration: const Duration(seconds: 30));
+    final result =
+        await VideoCutService.cut(sourcePath: path, start: start, end: end);
+    final saved = result.path;
+    if (saved != null) {
+      AppSnackbar.global(s.cutSaved(p.basename(saved)),
+          duration: const Duration(seconds: 4));
+    } else {
+      AppSnackbar.globalError(s.cutFailed(result.error ?? '?'));
+    }
   }
 
   @override
@@ -194,9 +238,16 @@ class _CutSheetState extends ConsumerState<CutSheet> {
                 fontSize: 12,
               ),
             ),
+            const SizedBox(height: 4),
+            Text(AppStrings.of(context).cutHint,
+              style: const TextStyle(
+                color: AppColors.white50,
+                fontSize: 11.5,
+              ),
+            ),
             const SizedBox(height: 20),
             _PointRow(
-              label: 'Start (A)',
+              label: AppStrings.of(context).pwStartA,
               value: _startPoint,
               fmt: _fmt,
               onSet: _setStart,
@@ -204,7 +255,7 @@ class _CutSheetState extends ConsumerState<CutSheet> {
             ),
             const SizedBox(height: 12),
             _PointRow(
-              label: 'End (B)',
+              label: AppStrings.of(context).pwEndB,
               value: _endPoint,
               fmt: _fmt,
               onSet: _setEnd,
@@ -237,7 +288,29 @@ class _CutSheetState extends ConsumerState<CutSheet> {
                 ],
               ),
             ),
-            const SizedBox(height: 20),
+            // The playhead, here: the video is paused under this sheet and
+            // the player's own seek bar is behind it, so without this there
+            // was no way to move from A to a later B.
+            Semantics(
+              identifier: 'cut-scrubber',
+              child: Slider(
+              value: (_scrubMs ??
+                      position.inMilliseconds
+                          .clamp(0, duration.inMilliseconds)
+                          .toDouble())
+                  .clamp(0, duration.inMilliseconds.toDouble()),
+              max: duration.inMilliseconds > 0
+                  ? duration.inMilliseconds.toDouble()
+                  : 1,
+              activeColor: AppColors.accentBlue,
+              inactiveColor: Colors.white24,
+              semanticFormatterCallback: (v) =>
+                  _fmt(Duration(milliseconds: v.round())),
+              onChanged: duration > Duration.zero ? _scrub : null,
+              onChangeEnd: duration > Duration.zero ? _scrubEnd : null,
+            ),
+            ),
+            const SizedBox(height: 8),
             Row(
               children: [
                 Expanded(
@@ -331,7 +404,7 @@ class _PointRow extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    value != null ? fmt(value!) : 'Not set',
+                    value != null ? fmt(value!) : AppStrings.of(context).pwNotSet,
                     style: TextStyle(
                       color: value != null ? Colors.white : Colors.white54,
                       fontSize: 13,

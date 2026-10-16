@@ -20,7 +20,7 @@ class SkipMarkersSheet extends ConsumerWidget {
   }
 
   String _fmt(int? ms) {
-    if (ms == null) return 'Not set';
+    if (ms == null) return AppStrings.current.pwNotSet;
     final d = Duration(milliseconds: ms);
     final h = d.inHours;
     final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
@@ -72,8 +72,8 @@ class SkipMarkersSheet extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: 8),
-              const Text(
-                'Set markers at current playback position. Will auto-skip on next play.',
+              Text(
+                AppStrings.of(context).pwMarkersHint,
                 style: TextStyle(
                   color: AppColors.darkOnSurfaceMuted,
                   fontSize: 12,
@@ -81,7 +81,7 @@ class SkipMarkersSheet extends ConsumerWidget {
               ),
               const SizedBox(height: 20),
               _MarkerRow(
-                label: 'Intro ends at',
+                label: AppStrings.of(context).pwIntroEnds,
                 value: _fmt(state.introEndMs),
                 isSet: state.introEndMs != null,
                 onSet: () async {
@@ -95,13 +95,13 @@ class SkipMarkersSheet extends ConsumerWidget {
                   // Phase 41: route via the root messenger so the toast
                   // doesn't depend on the popped sheet's context.
                   AppSnackbar.global(
-                    'Intro marker set at ${_fmt(markerMs)}',
+                    AppStrings.current.pwIntroSet(_fmt(markerMs)),
                   );
                 },
               ),
               const SizedBox(height: 12),
               _MarkerRow(
-                label: 'Outro starts at',
+                label: AppStrings.of(context).pwOutroStarts,
                 value: _fmt(state.outroStartMs),
                 isSet: state.outroStartMs != null,
                 onSet: () async {
@@ -111,7 +111,7 @@ class SkipMarkersSheet extends ConsumerWidget {
                   if (context.mounted) Navigator.of(context).pop();
                   // Phase 41: root messenger to survive the pop.
                   AppSnackbar.global(
-                    'Outro marker set at ${_fmt(markerMs)}',
+                    AppStrings.current.pwOutroSet(_fmt(markerMs)),
                   );
                 },
               ),
@@ -192,7 +192,7 @@ class _MarkerRow extends StatelessWidget {
               padding: const EdgeInsets.symmetric(
                   horizontal: 14, vertical: 8),
             ),
-            child: Text(isSet ? 'Update' : 'Set'),
+            child: Text(isSet ? AppStrings.of(context).pwUpdate : AppStrings.of(context).pwSet),
           ),
         ],
       ),

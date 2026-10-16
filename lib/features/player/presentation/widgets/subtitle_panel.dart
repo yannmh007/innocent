@@ -77,12 +77,12 @@ class SubtitlePanel extends StatelessWidget {
                   const SizedBox(height: 8),
                   _SubtitleOption(
                     icon: Icons.folder_open_outlined,
-                    label: 'Open file',
+                    label: AppStrings.of(context).pwOpenFile,
                     onTap: onOpen,
                   ),
                   _SubtitleOption(
                     icon: Icons.subtitles_outlined,
-                    label: 'Subtitle track',
+                    label: AppStrings.of(context).pwSubTrack,
                     onTap: onSettings,
                   ),
                   // UX-3 (audit): in-player access to the (already
@@ -90,12 +90,12 @@ class SubtitlePanel extends StatelessWidget {
                   // reachable only via global Settings.
                   _SubtitleOption(
                     icon: Icons.text_fields,
-                    label: 'Text style',
+                    label: AppStrings.of(context).pwTextStyle,
                     onTap: onTextStyle,
                   ),
                   _SubtitleOption(
                     icon: Icons.format_align_center,
-                    label: 'Position & layout',
+                    label: AppStrings.of(context).pwPosLayout,
                     onTap: onLayout,
                   ),
                 ],

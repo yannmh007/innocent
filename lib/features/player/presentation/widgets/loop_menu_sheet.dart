@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../player_provider.dart';
 import '../../../../core/ui/app_sheet.dart';
+import '../../../../core/localization/app_strings.dart';
 
 /// Bottom sheet shown on long-press of the Next button.
 /// MX Player parity: Loop One / Loop All / Shuffle with check marks.
@@ -50,7 +51,7 @@ class LoopMenuSheet extends ConsumerWidget {
             ),
             _CheckRow(
               icon: Icons.repeat_one,
-              label: 'Loop One',
+              label: AppStrings.of(context).pwLoopOne,
               checked: loopOneActive,
               onTap: () {
                 controller.setLoopMode(
@@ -61,7 +62,7 @@ class LoopMenuSheet extends ConsumerWidget {
             ),
             _CheckRow(
               icon: Icons.repeat,
-              label: 'Loop All',
+              label: AppStrings.of(context).pwLoopAll,
               checked: loopAllActive,
               onTap: () {
                 controller.setLoopMode(
@@ -72,7 +73,7 @@ class LoopMenuSheet extends ConsumerWidget {
             ),
             _CheckRow(
               icon: Icons.shuffle,
-              label: 'Shuffle',
+              label: AppStrings.of(context).mpShuffle,
               checked: shuffleActive,
               onTap: () {
                 controller.setShuffleEnabled(!shuffleActive);

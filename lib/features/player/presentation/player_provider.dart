@@ -203,6 +203,9 @@ class PlayerController extends StateNotifier<PlayerState> {
   double _volumeBeforeMute = 0.5;
   String? _currentUri;
 
+  /// What is playing, as it was opened (a path, a file:// URI or a link).
+  String? get currentUri => _currentUri;
+
   /// Privacy flag: true when the current video is a Private Folder item.
   /// While set, the player MUST NOT persist any trace of it to shared
   /// storage — no resume position, no "last playing" crash marker, no
@@ -210,6 +213,9 @@ class PlayerController extends StateNotifier<PlayerState> {
   /// public Local tab (Continue Watching / "Resume X?" prompt), which
   /// defeats the whole point of the vault.
   bool _isPrivate = false;
+
+  /// Whether what is playing is a Private Folder item.
+  bool get isPrivate => _isPrivate;
 
   /// True when the current URI is NOT A STABLE IDENTITY.
   ///

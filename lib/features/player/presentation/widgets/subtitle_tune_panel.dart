@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/ui/app_sheet.dart';
+import '../../../../core/localization/app_strings.dart';
 
 /// v1.63 — adjust subtitles WITHOUT leaving the video.
 ///
@@ -172,7 +173,7 @@ class _SubtitleTunePanelState extends State<SubtitleTunePanel> {
         IconButton(
           icon: const Icon(Icons.remove, color: Colors.white),
           onPressed: onMinus,
-          tooltip: 'Decrease $label',
+          tooltip: AppStrings.of(context).pwDecrease(label),
         ),
         Expanded(
           child: GestureDetector(
@@ -194,7 +195,7 @@ class _SubtitleTunePanelState extends State<SubtitleTunePanel> {
         IconButton(
           icon: const Icon(Icons.add, color: Colors.white),
           onPressed: onPlus,
-          tooltip: 'Increase $label',
+          tooltip: AppStrings.of(context).pwIncrease(label),
         ),
       ],
     );
@@ -230,16 +231,15 @@ class _SubtitleTunePanelState extends State<SubtitleTunePanel> {
                 ),
               ),
               const SizedBox(height: 10),
-              const Text(
-                'Drag anywhere on this panel — sideways for timing, '
-                'up and down for position. Tap a value to reset it.',
+              Text(
+                AppStrings.of(context).pwTuneHint,
                 textAlign: TextAlign.center,
                 style: TextStyle(color: Colors.white54, fontSize: 11.5),
               ),
               const SizedBox(height: 6),
               _row(
                 icon: Icons.schedule,
-                label: 'Timing',
+                label: AppStrings.of(context).pwTiming,
                 value: _fmtDelay(_delayMs),
                 onMinus: () => _setDelay(_delayMs - 100),
                 onPlus: () => _setDelay(_delayMs + 100),
@@ -247,7 +247,7 @@ class _SubtitleTunePanelState extends State<SubtitleTunePanel> {
               ),
               _row(
                 icon: Icons.format_size,
-                label: 'Size',
+                label: AppStrings.of(context).size,
                 value: '${(_scale * 100).round()}%',
                 onMinus: () => _setScale(_scale - 0.05),
                 onPlus: () => _setScale(_scale + 0.05),
@@ -255,7 +255,7 @@ class _SubtitleTunePanelState extends State<SubtitleTunePanel> {
               ),
               _row(
                 icon: Icons.swap_vert,
-                label: 'Position',
+                label: AppStrings.of(context).pwPosition,
                 value: '$_pos%',
                 onMinus: () => _setPos(_pos - 1),
                 onPlus: () => _setPos(_pos + 1),
@@ -269,7 +269,7 @@ class _SubtitleTunePanelState extends State<SubtitleTunePanel> {
                   style: TextButton.styleFrom(
                     foregroundColor: AppColors.primaryBlue,
                   ),
-                  child: const Text('Done'),
+                  child: Text(AppStrings.of(context).done),
                 ),
               ),
             ],

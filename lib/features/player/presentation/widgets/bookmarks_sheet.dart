@@ -109,10 +109,10 @@ class BookmarksSheet extends ConsumerWidget {
             ),
             const Divider(height: 12, color: Colors.white12),
             if (bookmarks.isEmpty)
-              const Padding(
+              Padding(
                 padding: EdgeInsets.all(24),
                 child: Text(
-                  'No bookmarks for this video.\nTap ⋮ → Bookmark while playing.',
+                  AppStrings.of(context).pwNoBookmarks,
                   textAlign: TextAlign.center,
                   style: TextStyle(color: Colors.white54, fontSize: 13),
                 ),
@@ -150,7 +150,7 @@ class BookmarksSheet extends ConsumerWidget {
                             )
                           : null,
                       trailing: IconButton(
-                        tooltip: 'Close',
+                        tooltip: AppStrings.of(context).close,
                         icon: const Icon(
                           Icons.close,
                           color: AppColors.darkOnSurfaceMuted,

@@ -193,7 +193,7 @@ class _ResumeDialogState extends State<ResumeDialog> {
               IconButton(
                 icon: const Icon(Icons.close, color: Colors.white),
                 onPressed: () => widget.onResume(useByDefault: false),
-                tooltip: 'Dismiss',
+                tooltip: AppStrings.of(context).dismiss,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
               ),
