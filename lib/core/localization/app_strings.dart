@@ -2598,6 +2598,47 @@ class AppStrings {
 
   String vliVideo(Object v) => _s('vliVideo').replaceFirst('{v}', '$v');
 
+  String get acReachable => _s('acReachable');
+  String get acNotConnHelp => _s('acNotConnHelp');
+  String get acNotConnYet => _s('acNotConnYet');
+  String get acUpdateTitle => _s('acUpdateTitle');
+  String acUpdateBody(Object v) => _s('acUpdateBody').replaceFirst('{v}', '$v');
+  String get acTurnOffNow => _s('acTurnOffNow');
+  String get acOpenWd => _s('acOpenWd');
+  String get acTurnedOff => _s('acTurnedOff');
+  String get acCouldNotOff => _s('acCouldNotOff');
+  String get acReconnecting => _s('acReconnecting');
+  String acFoundAdded(int n) => _count('acFoundAdded', n);
+  String get acNotifOff => _s('acNotifOff');
+  String get acNotifAsk => _s('acNotifAsk');
+  String get acNotifReady => _s('acNotifReady');
+  String get acNotifStopped => _s('acNotifStopped');
+  String get acPairing => _s('acPairing');
+  String get acConnecting => _s('acConnecting');
+  String get acDevOffTitle => _s('acDevOffTitle');
+  String get acDevOffBody => _s('acDevOffBody');
+  String get acOpenAbout => _s('acOpenAbout');
+  String get acOpenFailed => _s('acOpenFailed');
+  String acPlaying(Object v) => _s('acPlaying').replaceFirst('{v}', '$v');
+  String get acPairAddrHelp => _s('acPairAddrHelp');
+  String get acCodeHelp => _s('acCodeHelp');
+  String get acConnAddrHelp => _s('acConnAddrHelp');
+  String get acScanning => _s('acScanning');
+  String get acNoneFound => _s('acNoneFound');
+  String acFound(int n) => _count('acFound', n);
+  String get acManualHide => _s('acManualHide');
+  String get acManualShow => _s('acManualShow');
+  String get acManualHint => _s('acManualHint');
+  String get acPairOnce => _s('acPairOnce');
+  String get acPairAddrLabel => _s('acPairAddrLabel');
+  String acEg(Object v) => _s('acEg').replaceFirst('{v}', '$v');
+  String get acPairManual => _s('acPairManual');
+  String get acConnect => _s('acConnect');
+  String get acConnAddrLabel => _s('acConnAddrLabel');
+  String get acConnectManual => _s('acConnectManual');
+
+
+
   static const Map<String, Map<String, String>> _byLocale =
       <String, Map<String, String>>{
     'en': _en,
@@ -4879,6 +4920,46 @@ class AppStrings {
     'afpTitle': 'Choose files to add',
     'afpInternal': 'Internal storage',
     'vliVideo': 'Video: {v}',
+    'acReachable': 'Connected: the phone is reachable.',
+    'acNotConnHelp': 'Not connected. Tap Connect; if that does not work, open Wireless debugging (button above), check it is still on, then try again.',
+    'acNotConnYet': 'Not connected yet. Tap Connect (you may need to open Wireless debugging again first).',
+    'acUpdateTitle': 'Update your phone before leaving Wireless debugging on',
+    'acUpdateBody': 'This phone’s security update is from {v}. Android 14 to 16 need the May 2026 update (or a newer Google Play system update) to close a Wireless debugging flaw (CVE-2026-0073): without it, a device on the same Wi-Fi can get in without pairing. Until you update, turn Wireless debugging off when you are not using it, and leave auto-reconnect after reboot off.',
+    'acTurnOffNow': 'Turn it off now',
+    'acOpenWd': 'Open Wireless debugging',
+    'acTurnedOff': 'Wireless debugging is off, and so is auto-reconnect after reboot. Turn it on again from Wireless debugging when you next need Android/data, ideally after updating the phone.',
+    'acCouldNotOff': 'Could not switch it off from here. Open Wireless debugging and turn it off there.',
+    'acReconnecting': 'Reconnecting…',
+    'acFoundAdded': 'Found {n} videos; they are in the Video tab.',
+    'acFoundAddedOne': 'Found 1 video; it is in the Video tab.',
+    'acNotifOff': 'Notifications are off for Innocent, so the pairing notification cannot appear. Open Settings → Apps → Innocent → Notifications, turn them on, then try again.',
+    'acNotifAsk': 'Please allow notifications so the pairing-code notification can appear, then tap "Pair from notification" again.',
+    'acNotifReady': 'Ready to pair from the notification.\n\n1. Tap "Open Wireless debugging" below.\n2. Tap "Pair device with pairing code"; a 6-digit code appears.\n3. Pull down the notification shade, tap "Reply" on the "Enter the pairing code here" notification, type the code and send.\n\nNo split screen needed: this screen keeps working in the background.',
+    'acNotifStopped': 'Notification pairing stopped.',
+    'acPairing': 'Pairing…\nKeep the "Pair device with pairing code" dialog visible (split screen or pop-up window).',
+    'acConnecting': 'Connecting…',
+    'acDevOffTitle': 'Turn on Developer options first',
+    'acDevOffBody': 'Wireless debugging is inside Developer options, which is hidden at first.\n\nTo unlock it:\n1. Open About phone.\n2. Find "Build number" (sometimes under "Software information").\n3. Tap it 7 times until it says "You are now a developer".\n\nThen come back and tap "Open Wireless debugging" again.',
+    'acOpenAbout': 'Open About phone',
+    'acOpenFailed': 'Could not open settings by itself. Open Settings → Developer options → Wireless debugging yourself.',
+    'acPlaying': 'Playing "{v}".',
+    'acPairAddrHelp': 'Enter the pairing address as IP:Port, copied exactly from the "Pair device with pairing code" dialog, e.g. 192.168.1.5:42749',
+    'acCodeHelp': 'Enter the 6-digit pairing code.',
+    'acConnAddrHelp': 'Enter the connect address as IP:Port, copied exactly from the main Wireless debugging screen, e.g. 192.168.1.5:32961',
+    'acScanning': 'Looking for videos in Android/data and Android/obb…\n(this can take a while on a full phone)',
+    'acNoneFound': 'No videos in Android/data or Android/obb.',
+    'acFound': 'Found {n} videos.',
+    'acFoundOne': 'Found 1 video.',
+    'acManualHide': 'Hide manual IP:Port',
+    'acManualShow': 'Manual IP:Port (if the code alone fails)',
+    'acManualHint': 'Use this if "Pair" with only the code fails, usually because the network blocks mDNS (a VPN forcing a 169.254.x.x address, say). Copy the IP:Port exactly as shown on screen.',
+    'acPairOnce': 'Pair (one time)',
+    'acPairAddrLabel': 'Pairing IP:Port (from the pairing dialog)',
+    'acEg': 'e.g. {v}',
+    'acPairManual': 'Pair (manual)',
+    'acConnect': 'Connect',
+    'acConnAddrLabel': 'Connect IP:Port (from the Wireless debugging screen)',
+    'acConnectManual': 'Connect (manual)',
   };
 
   static const Map<String, String> _my = <String, String>{
@@ -7124,6 +7205,44 @@ class AppStrings {
     'afpTitle': 'ထည့်မယ့် ဖိုင်တွေ ရွေးပါ',
     'afpInternal': 'ဖုန်း storage',
     'vliVideo': 'ဗီဒီယို: {v}',
+    'acReachable': 'ချိတ်မိပါပြီ — ဖုန်းကို ချိတ်ဆက်နိုင်ပါတယ်။',
+    'acNotConnHelp': 'မချိတ်မိပါ။ Connect ကို နှိပ်ပါ — မရရင် အပေါ်က ခလုတ်နဲ့ Wireless debugging ကို ဖွင့်ပြီး ဖွင့်ထားဆဲ ဟုတ်မဟုတ် စစ်ကာ ပြန်ကြိုးစားပါ။',
+    'acNotConnYet': 'မချိတ်မိသေးပါ။ Connect ကို နှိပ်ပါ (Wireless debugging ကို အရင် ပြန်ဖွင့်ဖို့ လိုနိုင်ပါတယ်)။',
+    'acUpdateTitle': 'Wireless debugging ကို ဖွင့်မထားခင် ဖုန်းကို update လုပ်ပါ',
+    'acUpdateBody': 'ဒီဖုန်းရဲ့ security update က {v} ကပါ။ Android 14 ကနေ 16 အထိ Wireless debugging အားနည်းချက် (CVE-2026-0073) ကို ပိတ်ဖို့ May 2026 update (သို့) ပိုသစ်တဲ့ Google Play system update လိုပါတယ် — မရှိရင် Wi-Fi တစ်ခုတည်းပေါ်က တခြား device တစ်ခုက pair မလုပ်ဘဲ ဝင်နိုင်ပါတယ်။ Update မလုပ်ခင်အထိ မသုံးတဲ့အခါ Wireless debugging ကို ပိတ်ထားပြီး reboot ပြီးနောက် အလိုလို ပြန်ချိတ်တာကိုလည်း ပိတ်ထားပါ။',
+    'acTurnOffNow': 'အခုပဲ ပိတ်မယ်',
+    'acOpenWd': 'Wireless debugging ဖွင့်မယ်',
+    'acTurnedOff': 'Wireless debugging ပိတ်ပြီးပါပြီ၊ reboot ပြီးနောက် အလိုလို ပြန်ချိတ်တာလည်း ပိတ်ပြီးပါပြီ။ နောက်တစ်ခါ Android/data လိုတဲ့အခါ (ဖုန်း update လုပ်ပြီးမှ ဖြစ်ရင် ပိုကောင်း) Wireless debugging ကနေ ပြန်ဖွင့်ပါ။',
+    'acCouldNotOff': 'ဒီကနေ ပိတ်လို့ မရပါ။ Wireless debugging ကို ဖွင့်ပြီး အဲဒီမှာ ပိတ်ပါ။',
+    'acReconnecting': 'ပြန်ချိတ်နေပါတယ်…',
+    'acFoundAdded': 'ဗီဒီယို {n} ခု တွေ့ပါတယ် — Video tab ထဲ ထည့်ပြီးပါပြီ။',
+    'acNotifOff': 'Innocent အတွက် notification ပိတ်ထားလို့ pairing notification မပေါ်နိုင်ပါ။ Settings → Apps → Innocent → Notifications ကို ဖွင့်ပြီး ပြန်ကြိုးစားပါ။',
+    'acNotifAsk': 'Pairing code notification ပေါ်နိုင်အောင် notification ခွင့်ပြုပါ၊ ပြီးရင် "Pair from notification" ကို ပြန်နှိပ်ပါ။',
+    'acNotifReady': 'Notification ကနေ pair လုပ်ဖို့ အသင့်ပါ။\n\n1. အောက်က "Wireless debugging ဖွင့်မယ်" ကို နှိပ်ပါ။\n2. "Pair device with pairing code" ကို နှိပ်ပါ — ဂဏန်း 6 လုံး ပေါ်လာပါမယ်။\n3. Notification ကို အောက်ဆွဲပြီး "Enter the pairing code here" notification ရဲ့ "Reply" ကို နှိပ်၊ code ကို ရိုက်ပြီး ပို့ပါ။\n\nScreen ခွဲစရာ မလိုပါ — ဒီ screen က နောက်ကွယ်မှာ ဆက်အလုပ်လုပ်ပါတယ်။',
+    'acNotifStopped': 'Notification pairing ရပ်လိုက်ပါပြီ။',
+    'acPairing': 'Pair လုပ်နေပါတယ်…\n"Pair device with pairing code" dialog ကို မြင်နေအောင် ထားပါ (screen ခွဲ / pop-up window)။',
+    'acConnecting': 'ချိတ်နေပါတယ်…',
+    'acDevOffTitle': 'Developer options ကို အရင် ဖွင့်ပါ',
+    'acDevOffBody': 'Wireless debugging က Developer options ထဲမှာ ရှိပြီး မူလက ဖျောက်ထားပါတယ်။\n\nဖွင့်ဖို့:\n1. About phone ကို ဖွင့်ပါ။\n2. "Build number" ကို ရှာပါ (တခါတလေ "Software information" အောက်မှာ)။\n3. "You are now a developer" ပေါ်လာတဲ့အထိ ၇ ချက် နှိပ်ပါ။\n\nပြီးရင် ပြန်လာပြီး "Wireless debugging ဖွင့်မယ်" ကို ပြန်နှိပ်ပါ။',
+    'acOpenAbout': 'About phone ဖွင့်မယ်',
+    'acOpenFailed': 'Settings ကို အလိုလို မဖွင့်နိုင်ပါ။ Settings → Developer options → Wireless debugging ကို ကိုယ်တိုင် ဖွင့်ပါ။',
+    'acPlaying': '"{v}" ကို ဖွင့်နေပါတယ်။',
+    'acPairAddrHelp': 'Pairing address ကို IP:Port ပုံစံ ထည့်ပါ — "Pair device with pairing code" dialog ထဲကအတိုင်း ကူးပါ၊ ဥပမာ 192.168.1.5:42749',
+    'acCodeHelp': 'ဂဏန်း 6 လုံး pairing code ကို ထည့်ပါ။',
+    'acConnAddrHelp': 'Connect address ကို IP:Port ပုံစံ ထည့်ပါ — Wireless debugging ပင်မ screen ထဲကအတိုင်း ကူးပါ၊ ဥပမာ 192.168.1.5:32961',
+    'acScanning': 'Android/data နဲ့ Android/obb ထဲမှာ ဗီဒီယို ရှာနေပါတယ်…\n(ဖိုင်များတဲ့ ဖုန်းမှာ ကြာနိုင်ပါတယ်)',
+    'acNoneFound': 'Android/data (သို့) Android/obb ထဲမှာ ဗီဒီယို မရှိပါ။',
+    'acFound': 'ဗီဒီယို {n} ခု တွေ့ပါတယ်။',
+    'acManualHide': 'Manual IP:Port ဖျောက်',
+    'acManualShow': 'Manual IP:Port (code တစ်ခုတည်းနဲ့ မရရင်)',
+    'acManualHint': 'Code တစ်ခုတည်းနဲ့ "Pair" မရရင် ဒါကို သုံးပါ — များသောအားဖြင့် network က mDNS ကို ပိတ်ထားလို့ပါ (ဥပမာ 169.254.x.x address ပေးတဲ့ VPN)။ Screen ပေါ်က IP:Port ကို အတိအကျ ကူးပါ။',
+    'acPairOnce': 'Pair (တစ်ကြိမ်သာ)',
+    'acPairAddrLabel': 'Pairing IP:Port (pairing dialog ထဲက)',
+    'acEg': 'ဥပမာ {v}',
+    'acPairManual': 'Pair (manual)',
+    'acConnect': 'ချိတ်မယ်',
+    'acConnAddrLabel': 'Connect IP:Port (Wireless debugging screen ထဲက)',
+    'acConnectManual': 'ချိတ်မယ် (manual)',
   };
 
   static const Map<String, String> _th = <String, String>{
@@ -9361,6 +9480,44 @@ class AppStrings {
     'afpTitle': 'เลือกไฟล์ที่จะเพิ่ม',
     'afpInternal': 'ที่เก็บข้อมูลภายใน',
     'vliVideo': 'วิดีโอ: {v}',
+    'acReachable': 'เชื่อมต่อแล้ว เข้าถึงโทรศัพท์ได้',
+    'acNotConnHelp': 'ยังไม่ได้เชื่อมต่อ แตะเชื่อมต่อ หากไม่ได้ ให้เปิดการแก้ไขข้อบกพร่องผ่าน Wi-Fi (ปุ่มด้านบน) ตรวจว่ายังเปิดอยู่ แล้วลองอีกครั้ง',
+    'acNotConnYet': 'ยังไม่ได้เชื่อมต่อ แตะเชื่อมต่อ (อาจต้องเปิดการแก้ไขข้อบกพร่องผ่าน Wi-Fi อีกครั้งก่อน)',
+    'acUpdateTitle': 'อัปเดตโทรศัพท์ก่อนเปิดการแก้ไขข้อบกพร่องผ่าน Wi-Fi ทิ้งไว้',
+    'acUpdateBody': 'แพตช์ความปลอดภัยของโทรศัพท์นี้มาจาก {v} Android 14 ถึง 16 ต้องมีอัปเดตเดือนพฤษภาคม 2026 (หรืออัปเดตระบบ Google Play ที่ใหม่กว่า) เพื่อปิดช่องโหว่การแก้ไขข้อบกพร่องผ่าน Wi-Fi (CVE-2026-0073) หากไม่มี อุปกรณ์ใน Wi-Fi เดียวกันอาจเข้ามาได้โดยไม่ต้องจับคู่ จนกว่าจะอัปเดต ให้ปิดการแก้ไขข้อบกพร่องผ่าน Wi-Fi เมื่อไม่ใช้ และปิดการเชื่อมต่อใหม่อัตโนมัติหลังรีบูต',
+    'acTurnOffNow': 'ปิดตอนนี้',
+    'acOpenWd': 'เปิดการแก้ไขข้อบกพร่องผ่าน Wi-Fi',
+    'acTurnedOff': 'ปิดการแก้ไขข้อบกพร่องผ่าน Wi-Fi และการเชื่อมต่อใหม่อัตโนมัติหลังรีบูตแล้ว เปิดอีกครั้งเมื่อต้องการ Android/data ครั้งหน้า (ควรอัปเดตโทรศัพท์ก่อน)',
+    'acCouldNotOff': 'ปิดจากที่นี่ไม่ได้ เปิดการแก้ไขข้อบกพร่องผ่าน Wi-Fi แล้วปิดที่นั่น',
+    'acReconnecting': 'กำลังเชื่อมต่อใหม่…',
+    'acFoundAdded': 'พบวิดีโอ {n} รายการ อยู่ในแท็บวิดีโอแล้ว',
+    'acNotifOff': 'การแจ้งเตือนของ Innocent ปิดอยู่ การแจ้งเตือนการจับคู่จึงแสดงไม่ได้ เปิดที่ การตั้งค่า → แอป → Innocent → การแจ้งเตือน แล้วลองอีกครั้ง',
+    'acNotifAsk': 'โปรดอนุญาตการแจ้งเตือนเพื่อให้การแจ้งเตือนรหัสจับคู่แสดงได้ แล้วแตะ "จับคู่จากการแจ้งเตือน" อีกครั้ง',
+    'acNotifReady': 'พร้อมจับคู่จากการแจ้งเตือน\n\n1. แตะ "เปิดการแก้ไขข้อบกพร่องผ่าน Wi-Fi" ด้านล่าง\n2. แตะ "จับคู่อุปกรณ์ด้วยรหัสการจับคู่" จะมีรหัส 6 หลักขึ้นมา\n3. ดึงแถบการแจ้งเตือนลง แตะ "ตอบกลับ" ที่การแจ้งเตือน "ใส่รหัสการจับคู่ที่นี่" พิมพ์รหัสแล้วส่ง\n\nไม่ต้องแยกหน้าจอ หน้าจอนี้ทำงานต่อในเบื้องหลัง',
+    'acNotifStopped': 'หยุดการจับคู่จากการแจ้งเตือนแล้ว',
+    'acPairing': 'กำลังจับคู่…\nให้หน้าต่าง "จับคู่อุปกรณ์ด้วยรหัสการจับคู่" แสดงไว้ (แยกหน้าจอหรือหน้าต่างป๊อปอัป)',
+    'acConnecting': 'กำลังเชื่อมต่อ…',
+    'acDevOffTitle': 'เปิดตัวเลือกสำหรับนักพัฒนาก่อน',
+    'acDevOffBody': 'การแก้ไขข้อบกพร่องผ่าน Wi-Fi อยู่ในตัวเลือกสำหรับนักพัฒนา ซึ่งซ่อนอยู่ตั้งแต่แรก\n\nวิธีปลดล็อก:\n1. เปิด เกี่ยวกับโทรศัพท์\n2. หา "หมายเลขบิลด์" (บางครั้งอยู่ใต้ "ข้อมูลซอฟต์แวร์")\n3. แตะ 7 ครั้งจนขึ้นว่า "คุณเป็นนักพัฒนาแล้ว"\n\nจากนั้นกลับมาแตะ "เปิดการแก้ไขข้อบกพร่องผ่าน Wi-Fi" อีกครั้ง',
+    'acOpenAbout': 'เปิด เกี่ยวกับโทรศัพท์',
+    'acOpenFailed': 'เปิดการตั้งค่าเองไม่ได้ เปิด การตั้งค่า → ตัวเลือกสำหรับนักพัฒนา → การแก้ไขข้อบกพร่องผ่าน Wi-Fi ด้วยตนเอง',
+    'acPlaying': 'กำลังเล่น "{v}"',
+    'acPairAddrHelp': 'ใส่ที่อยู่การจับคู่เป็น IP:Port ให้ตรงกับหน้าต่าง "จับคู่อุปกรณ์ด้วยรหัสการจับคู่" เช่น 192.168.1.5:42749',
+    'acCodeHelp': 'ใส่รหัสจับคู่ 6 หลัก',
+    'acConnAddrHelp': 'ใส่ที่อยู่การเชื่อมต่อเป็น IP:Port ให้ตรงกับหน้าจอหลักของการแก้ไขข้อบกพร่องผ่าน Wi-Fi เช่น 192.168.1.5:32961',
+    'acScanning': 'กำลังค้นหาวิดีโอใน Android/data และ Android/obb…\n(อาจใช้เวลาสักพักในเครื่องที่มีไฟล์มาก)',
+    'acNoneFound': 'ไม่มีวิดีโอใน Android/data หรือ Android/obb',
+    'acFound': 'พบวิดีโอ {n} รายการ',
+    'acManualHide': 'ซ่อน IP:Port แบบกำหนดเอง',
+    'acManualShow': 'IP:Port แบบกำหนดเอง (หากใช้รหัสอย่างเดียวไม่ได้)',
+    'acManualHint': 'ใช้วิธีนี้หาก "จับคู่" ด้วยรหัสอย่างเดียวไม่ได้ มักเพราะเครือข่ายบล็อก mDNS (เช่น VPN ที่ให้ที่อยู่ 169.254.x.x) คัดลอก IP:Port ให้ตรงตามที่แสดงบนหน้าจอ',
+    'acPairOnce': 'จับคู่ (ครั้งเดียว)',
+    'acPairAddrLabel': 'IP:Port การจับคู่ (จากหน้าต่างการจับคู่)',
+    'acEg': 'เช่น {v}',
+    'acPairManual': 'จับคู่ (กำหนดเอง)',
+    'acConnect': 'เชื่อมต่อ',
+    'acConnAddrLabel': 'IP:Port การเชื่อมต่อ (จากหน้าจอการแก้ไขข้อบกพร่องผ่าน Wi-Fi)',
+    'acConnectManual': 'เชื่อมต่อ (กำหนดเอง)',
   };
 }
 
