@@ -97,15 +97,12 @@ appId: com.innocent.media
     timeout: 30000
 - takeScreenshot: c04_cut_saved
 - assertNotVisible: ".*FFmpeg.*"
-- back
+# Back to the Video tab by starting again: three Backs went one too far
+# (player, folder, Video tab, out of the app; run 38847228498).
+- launchApp:
+    stopApp: true
 - waitForAnimationToEnd:
-    timeout: 4000
-- back
-- waitForAnimationToEnd:
-    timeout: 4000
-- back
-- waitForAnimationToEnd:
-    timeout: 4000
+    timeout: 8000
 - tapOn:
     text: ".*Tab 1 of 4.*"
     optional: true
@@ -125,3 +122,12 @@ appId: com.innocent.media
     timeout: 4000
 - assertVisible: ".*aaa_play_720p \\(cut\\).*"
 - takeScreenshot: c06_cut_file
+# And it plays: the new file opens in the player and runs.
+- tapOn:
+    text: ".*aaa_play_720p \\(cut\\).*"
+- extendedWaitUntil:
+    visible: "__nothing_has_this_text__"
+    timeout: 6000
+    optional: true
+- takeScreenshot: c07_cut_plays
+- assertVisible: ".*aaa_play_720p \\(cut\\).*"
