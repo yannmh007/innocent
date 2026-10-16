@@ -28,6 +28,7 @@ import 'video_hub_theme.dart';
 import 'account_provider.dart';
 import 'watch_points_provider.dart';
 import '../data/watch_state_store.dart';
+import '../../../core/ui/transient_prompt.dart';
 
 /// One catalogue entry in full: artwork, facts, and the mixed photo/video
 /// album behind it.
@@ -420,9 +421,9 @@ class _BookmarkButton extends ConsumerWidget {
           onPressed: () {
             HapticFeedback.selectionClick();
             final now = ref.read(titleBookmarksProvider.notifier).toggle(content);
-            ScaffoldMessenger.of(context)
-              ..hideCurrentSnackBar()
-              ..showSnackBar(SnackBar(
+            TransientPrompt.show(
+              ScaffoldMessenger.of(context),
+              SnackBar(
                 behavior: SnackBarBehavior.floating,
                 duration: const Duration(seconds: 3),
                 content: Text(now ? s.vhBookmarkAdded : s.vhBookmarkRemoved),

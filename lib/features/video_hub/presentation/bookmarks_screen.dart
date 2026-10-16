@@ -15,6 +15,7 @@ import 'widgets/poster_card.dart';
 import 'widgets/poster_metrics.dart';
 import 'widgets/vh_insets.dart';
 import '../../../core/theme/tab_title.dart';
+import '../../../core/ui/transient_prompt.dart';
 
 /// The Bookmarks shelf: the titles the viewer saved, newest first.
 ///
@@ -164,9 +165,9 @@ class _SavedCard extends ConsumerWidget {
     HapticFeedback.selectionClick();
     final entry = ref.read(titleBookmarksProvider.notifier).remove(content.id);
     if (entry == null) return;
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(
+    TransientPrompt.show(
+      ScaffoldMessenger.of(context),
+      SnackBar(
         behavior: SnackBarBehavior.floating,
         content: Text(s.vhBookmarkRemoved),
         action: SnackBarAction(

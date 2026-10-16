@@ -14,6 +14,7 @@ import '../user_data_providers.dart';
 import '../../../core/ui/safe_thumbnail.dart';
 
 import '../../../core/localization/app_strings.dart';
+import '../../../core/ui/transient_prompt.dart';
 class FavouritesScreen extends ConsumerWidget {
   const FavouritesScreen({super.key});
 
@@ -69,13 +70,14 @@ class FavouritesScreen extends ConsumerWidget {
                   ),
                   onDismissed: (_) {
                     ref.read(favouritesProvider.notifier).toggle(uri);
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    TransientPrompt.show(
+                      ScaffoldMessenger.of(context),
                       SnackBar(
                         content: Text(AppStrings.of(context).unfavouritedName(name)),
                         behavior: SnackBarBehavior.floating,
                         duration: const Duration(seconds: 2),
                         action: SnackBarAction(
-                          label: 'UNDO',
+                          label: AppStrings.of(context).vhUndo,
                           textColor: AppColors.accentBlue,
                           onPressed: () => ref
                               .read(favouritesProvider.notifier)

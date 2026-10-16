@@ -12,6 +12,7 @@ import '../../features/video_hub/presentation/video_hub_screen.dart';
 import '../services/diagnostics/playback_log.dart';
 import 'routes.dart';
 import '../../features/shell/shell_popup_guard.dart';
+import '../ui/transient_prompt.dart';
 
 /// The root navigator (renders ABOVE the shell). Full-screen routes pin to
 /// this key so they always cover the shell's bottom nav bar, no matter
@@ -66,7 +67,8 @@ final _EdgeToEdgeOnPop _edgeToEdgeOnPop = _EdgeToEdgeOnPop();
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     navigatorKey: rootNavigatorKey,
-    observers: [_edgeToEdgeOnPop],
+    // The Resume prompt closes when another screen opens (transient_prompt).
+    observers: [_edgeToEdgeOnPop, TransientPromptObserver()],
     initialLocation: Routes.local,
     // THE APP ALWAYS STARTS AT HOME, whatever the launch intent carried.
     // Flutter (3.27 on) hands an Android intent's data to the router as the
@@ -85,7 +87,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         // Sees menus and sheets opened over a tab, so the bottom bar can
         // close them instead of switching tabs underneath (the "Something
         // didn't load" crash on Me). features/shell/shell_popup_guard.dart.
-        observers: [shellPopupGuard],
+        // A tab switch closes the Resume prompt too (transient_prompt.dart).
+        observers: [shellPopupGuard, TransientPromptObserver()],
         builder: (context, state, child) => ShellScreen(child: child),
         routes: [
           GoRoute(

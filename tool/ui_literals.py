@@ -10,7 +10,9 @@ and Help. They were moved into AppStrings; this check keeps new ones out.
 THE RULE. In lib/**/presentation/ and lib/core/ui/, a widget's visible or
 spoken text (Text(, tooltip:, label:, title:, subtitle:, hintText:,
 labelText:, semanticLabel:, message:) must not be a literal starting with a
-capital letter and a word. Use AppStrings.
+capital letter and another letter: 'Close', and 'UNDO' too (a Favourites
+snack bar's all-capitals Undo slipped past the first version). Use
+AppStrings.
 
 RATCHET. A few literals are left on purpose (Diagnostics is raw Android
 records in English; the ADB screen's auto-reconnect section; brand names).
@@ -27,10 +29,12 @@ import sys
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 PATTERN = re.compile(
     r"""(?:\bText\(\s*|\b(?:tooltip|label|title|subtitle|hintText|labelText|semanticLabel|message|semantics):\s*)"""
-    r"""(?:const\s+)?'([A-Z][a-z][^'\n]*)'""")
+    r"""(?:const\s+)?'([A-Z][A-Za-z][^'\n]*)'""")
 
 # Names every language writes the same way.
-BRANDS = {'Wi-Fi', 'Innocent', 'Google Drive', 'OneDrive', 'Dropbox'}
+# 'XXXX-XXXX-XXXX' is the recovery code's shape, not words.
+BRANDS = {'Wi-Fi', 'Innocent', 'INNOCENT', 'Google Drive', 'OneDrive', 'Dropbox',
+          'URL', 'XXXX-XXXX-XXXX'}
 
 # file (relative to lib/) -> literals allowed to stay. May only shrink.
 ALLOWED = {

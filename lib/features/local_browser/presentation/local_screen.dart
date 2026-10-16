@@ -39,6 +39,7 @@ import 'widgets/video_option_menu.dart';
 import '../../../core/utils/async_value_extensions.dart';
 import '../../../core/theme/tab_title.dart';
 import '../../../core/ui/safe_popup_menu.dart';
+import '../../../core/ui/transient_prompt.dart';
 import '../../shell/shell_back.dart';
 import 'folder_visibility_screen.dart';
 import '../../updater/presentation/app_update_screen.dart';
@@ -108,7 +109,10 @@ class _LocalScreenState extends ConsumerState<LocalScreen>
         await ref.read(resumeStorageProvider).clearLastPlaying();
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
+      // Transient: it closes itself when the user moves on to another
+      // screen, tab or a selection (it never times out under TalkBack).
+      TransientPrompt.show(
+        ScaffoldMessenger.of(context),
         SnackBar(
           duration: const Duration(seconds: 6),
           content: Text(
@@ -478,6 +482,9 @@ class _LocalScreenState extends ConsumerState<LocalScreen>
     final folderSelActive = ref.watch(folderSelectionProvider).isNotEmpty;
     final videoSelActive = ref.watch(selectionProvider).isNotEmpty;
     final selectionActive = folderSelActive || videoSelActive;
+    // A selection's bar comes up where the Resume prompt sits: the user has
+    // moved on, so the prompt goes (transient_prompt.dart).
+    if (selectionActive) TransientPrompt.close();
 
     // Back: a selection first, then the search, then the shell's rule.
     // The shell does it — a PopScope here is never asked (shell_back.dart).
@@ -1016,9 +1023,8 @@ class _LocalScreenState extends ConsumerState<LocalScreen>
   /// visible; this just offers a one-tap way back to reconnect.
   void _showAdbReconnectHint() {
     if (!mounted) return;
-    final messenger = ScaffoldMessenger.of(context);
-    messenger.hideCurrentSnackBar();
-    messenger.showSnackBar(
+    TransientPrompt.show(
+      ScaffoldMessenger.of(context),
       SnackBar(
         content: Text(AppStrings.of(context).lsAdbStale),
         duration: const Duration(seconds: 5),

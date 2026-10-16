@@ -28,6 +28,7 @@ import 'widgets/paged_poster_grid.dart';
 import 'widgets/sticky_bar.dart';
 import 'widgets/vh_insets.dart';
 import '../../../core/ui/app_sheet.dart';
+import '../../../core/ui/transient_prompt.dart';
 
 /// The Video Hub: Innocent's remote-content surface.
 ///
@@ -560,7 +561,7 @@ class _VideoHubScreenState extends ConsumerState<VideoHubScreen>
     } else if (choice == 'remove') {
       final before = ref.read(watchPointsProvider);
       ref.read(watchPointsProvider.notifier).hide(item.id);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      TransientPrompt.show(ScaffoldMessenger.of(context), SnackBar(
         content: Text(s.vhRemovedFromContinue),
         action: SnackBarAction(
           label: s.vhUndo,

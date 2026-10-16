@@ -38,6 +38,7 @@ import '../../../core/theme/tab_title.dart';
 import '../../../core/ui/safe_popup_menu.dart';
 import '../../../core/ui/app_sheet.dart';
 import '../../../core/ui/nav_bar_space.dart';
+import '../../../core/ui/transient_prompt.dart';
 
 /// Home of the downloader.
 ///
@@ -151,7 +152,8 @@ class _DownloaderHomeScreenState extends ConsumerState<DownloaderHomeScreen>
     final DownloadRecord? had =
         ref.read(downloadHistoryProvider.notifier).alreadyHave(sourceUrl);
     if (had == null || !mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
+    TransientPrompt.show(
+      ScaffoldMessenger.of(context),
       SnackBar(
         content: Text(s.downloaderAlreadyHave),
         duration: const Duration(seconds: 6),
@@ -1062,7 +1064,7 @@ class _DownloaderHomeScreenState extends ConsumerState<DownloaderHomeScreen>
         await DownloaderEngineService.instance.deviceStatus(dir);
     if (device.notificationsEnabled || !mounted) return;
     final AppStrings s = AppStrings.of(context);
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+    TransientPrompt.show(ScaffoldMessenger.of(context), SnackBar(
       duration: const Duration(seconds: 8),
       content: Text(s.downloaderNotifsBlocked),
       action: SnackBarAction(
