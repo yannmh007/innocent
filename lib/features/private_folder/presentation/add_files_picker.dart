@@ -1218,14 +1218,19 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
     return Container(
       width: double.infinity,
       color: AppColors.specAddBarBg,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      // The bar's height is the "Storage" link's target (48 dp); it was the
+      // 20 dp line of text alone (SCREEN_A11Y=1).
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
           InkWell(
             onTap: current != null ? _popLevel : null,
-            child: Text(s.storageRoot,
-                style: const TextStyle(
-                    color: AppColors.white70, fontSize: 14)),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              child: Text(s.storageRoot,
+                  style: const TextStyle(
+                      color: AppColors.white70, fontSize: 14)),
+            ),
           ),
           if (_cat == _Cat.files && _dirStack.length > 1) ...[
             const Padding(

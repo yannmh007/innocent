@@ -225,9 +225,8 @@ class _TracksTabState extends ConsumerState<_TracksTab> {
               // half): a long label in a large font cuts short rather than
               // pushing the sort button off the screen.
               Flexible(
-                child: InkWell(
-                borderRadius: BorderRadius.circular(8),
-                onTap: () {
+                child: Builder(builder: (context) {
+                void shuffle() {
                   final list = songsAsync.value ?? const [];
                   if (list.isEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -246,7 +245,21 @@ class _TracksTabState extends ConsumerState<_TracksTab> {
                         .push(MaterialPageRoute(
                     builder: (_) => const MusicPlayerScreen(),
                   ));
-                },
+                }
+                // The row's 48 dp is the target; the 36 dp chip is drawn in
+                // it. Its ripple stays out of the semantics, or the second
+                // tap splits the button in two (SCREEN_A11Y=1).
+                return Semantics(
+                button: true,
+                label: AppStrings.of(context).shuffleAll,
+                child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: shuffle,
+                child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: ExcludeSemantics(child: InkWell(
+                borderRadius: BorderRadius.circular(8),
+                onTap: shuffle,
                 child: Container(
                   height: 36,
                   padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -274,7 +287,11 @@ class _TracksTabState extends ConsumerState<_TracksTab> {
                     ],
                   ),
                 ),
-              ),
+                )),
+                ),
+                ),
+                );
+              }),
               ),
               const SizedBox(width: 8),
               // Phase 45 (audit): Sort icon was just visual. Wire it
