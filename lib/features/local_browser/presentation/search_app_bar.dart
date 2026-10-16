@@ -77,7 +77,7 @@ class _SearchAppBarState extends ConsumerState<SearchAppBar> {
         style: const TextStyle(color: Colors.white, fontSize: 16),
         decoration: InputDecoration(
           hintText: AppStrings.of(context).sabHint,
-          hintStyle: TextStyle(color: Colors.white38),
+          hintStyle: TextStyle(color: Colors.white54),
           border: InputBorder.none,
           icon: Icon(Icons.search, color: Colors.white54, size: 20),
         ),

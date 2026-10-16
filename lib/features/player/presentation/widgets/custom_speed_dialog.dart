@@ -105,7 +105,7 @@ class _CustomSpeedDialogState extends State<CustomSpeedDialog> {
                 fontSize: 20,
               ),
               hintText: '1.00',
-              hintStyle: const TextStyle(color: Colors.white24),
+              hintStyle: const TextStyle(color: Colors.white54),
               filled: true,
               fillColor: AppColors.darkSurfaceVariant,
               border: OutlineInputBorder(

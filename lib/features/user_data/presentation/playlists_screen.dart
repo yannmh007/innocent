@@ -36,7 +36,7 @@ class PlaylistsScreen extends ConsumerWidget {
           style: const TextStyle(color: Colors.white),
           decoration: InputDecoration(
             hintText: AppStrings.of(context).playlistName,
-            hintStyle: TextStyle(color: Colors.white38),
+            hintStyle: TextStyle(color: Colors.white54),
           ),
         ),
         actions: [
@@ -82,7 +82,7 @@ class PlaylistsScreen extends ConsumerWidget {
           style: const TextStyle(color: Colors.white),
           decoration: InputDecoration(
             hintText: AppStrings.of(context).vomNewName,
-            hintStyle: TextStyle(color: Colors.white38),
+            hintStyle: TextStyle(color: Colors.white54),
           ),
         ),
         actions: [

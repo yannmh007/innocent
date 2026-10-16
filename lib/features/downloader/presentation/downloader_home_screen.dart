@@ -1955,12 +1955,14 @@ class _DownloaderHomeScreenState extends ConsumerState<DownloaderHomeScreen>
         padding: const EdgeInsets.fromLTRB(18, 8, 18, 0),
         child: Row(
           children: <Widget>[
-            const Icon(Icons.public_rounded, size: 12, color: AppColors.white30),
+            const Icon(Icons.public_rounded, size: 12, color: AppColors.white50),
             const SizedBox(width: 6),
             Expanded(
               child: Text(
                 s.downloaderSupportedSites,
-                style: const TextStyle(color: AppColors.white30, fontSize: 11),
+                // white60, not 30: 2.4:1 on the page was below what anyone
+                // reads easily outdoors (WCAG asks 4.5:1).
+                style: const TextStyle(color: AppColors.white60, fontSize: 11),
               ),
             ),
           ],

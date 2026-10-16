@@ -171,7 +171,7 @@ class VideoOptionMenu extends ConsumerWidget {
               style: const TextStyle(color: Colors.white),
               decoration: const InputDecoration(
                 hintText: 'https://example.com/subtitle.srt',
-                hintStyle: TextStyle(color: Colors.white38, fontSize: 13),
+                hintStyle: TextStyle(color: Colors.white54, fontSize: 13),
                 enabledBorder: UnderlineInputBorder(
                   borderSide: BorderSide(color: Colors.white24),
                 ),
@@ -1028,7 +1028,7 @@ class _PlaylistPickerSheetState extends ConsumerState<_PlaylistPickerSheet> {
           style: const TextStyle(color: Colors.white),
           decoration: InputDecoration(
             hintText: AppStrings.of(context).playlistName,
-            hintStyle: TextStyle(color: Colors.white38),
+            hintStyle: TextStyle(color: Colors.white54),
           ),
         ),
         actions: [
@@ -1452,7 +1452,7 @@ class _RenameDialogState extends State<_RenameDialog> {
         style: const TextStyle(color: Colors.white),
         decoration: InputDecoration(
           hintText: AppStrings.of(context).vomNewName,
-          hintStyle: const TextStyle(color: Colors.white38),
+          hintStyle: const TextStyle(color: Colors.white54),
           filled: true,
           fillColor: AppColors.darkSurfaceVariant,
           border: OutlineInputBorder(

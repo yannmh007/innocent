@@ -523,7 +523,7 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
           maxLength: 28,
           style: const TextStyle(color: Colors.white),
           decoration: const InputDecoration(
-            counterStyle: TextStyle(color: AppColors.white30),
+            counterStyle: TextStyle(color: AppColors.white55),
             enabledBorder: OutlineInputBorder(
                 borderSide: BorderSide(color: AppColors.white20)),
             focusedBorder: OutlineInputBorder(
@@ -2058,7 +2058,7 @@ class _ReceivePaneState extends ConsumerState<_ReceivePane> {
             style: const TextStyle(color: Colors.white),
             decoration: const InputDecoration(
               hintText: 'http://192.168.0.12:8765/abc123\u2026',
-              hintStyle: TextStyle(color: AppColors.white30),
+              hintStyle: TextStyle(color: AppColors.white55),
               prefixIcon: Icon(Icons.link, color: AppColors.white55),
               enabledBorder: OutlineInputBorder(
                   borderSide: BorderSide(color: AppColors.white20)),

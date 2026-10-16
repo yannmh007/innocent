@@ -60,7 +60,10 @@ class VH {
   // ---- text luminance ramp ------------------------------------------------
   static const Color textPrimary = Color(0xFFFFFFFF);
   static const Color textSecondary = Color(0xFFA8AEB8);
-  static const Color textTertiary = Color(0xFF6C7480);
+  // 4.5:1 or better on the canvas, surface1 and surface2 (WCAG AA for body
+  // text). 0xFF6C7480 was 3.7:1 on surface1: the search field's hint and
+  // every meta line under it read as disabled (SCREEN_A11Y=1).
+  static const Color textTertiary = Color(0xFF828A96);
 
   /// Text drawn ON a light (selected) surface.
   static const Color textInverse = Color(0xFF07080A);
