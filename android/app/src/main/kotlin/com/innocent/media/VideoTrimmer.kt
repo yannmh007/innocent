@@ -18,14 +18,20 @@ import java.nio.ByteBuffer
  * does; the end is the last sample at or before the chosen end.
  *
  * Only tracks MP4 can hold are kept: a video track the muxer refuses fails
- * the cut (there would be nothing to watch), an audio or subtitle track it
- * refuses is left out.
+ * the cut (there would be nothing to watch), an audio track it refuses is
+ * left out — and when that leaves the cut with no sound at all, the result
+ * says so, rather than "saved" over a silent clip.
  */
 object VideoTrimmer {
 
-    /** Null on success, otherwise a short reason. [dst] is removed on failure. */
-    fun trim(src: String, dst: String, startUs: Long, endUs: Long): String? {
-        if (endUs <= startUs) return "empty range"
+    /** [error] is null on success; [silent]: the source had sound, the cut has none. */
+    class Outcome(val error: String?, val silent: Boolean = false)
+
+    private fun fail(reason: String) = Outcome(reason)
+
+    /** [dst] is removed by the caller on failure ([discard]). */
+    fun trim(src: String, dst: String, startUs: Long, endUs: Long): Outcome {
+        if (endUs <= startUs) return fail("empty range")
         val extractor = MediaExtractor()
         var muxer: MediaMuxer? = null
         var started = false
@@ -35,6 +41,8 @@ object VideoTrimmer {
             val tracks = HashMap<Int, Int>()
             var bufferSize = 1 shl 20
             var videoTrack = -1
+            var audioKept = 0
+            var audioDropped = 0
             for (i in 0 until extractor.trackCount) {
                 val format = extractor.getTrackFormat(i)
                 val mime = format.getString(MediaFormat.KEY_MIME) ?: continue
@@ -43,16 +51,18 @@ object VideoTrimmer {
                 val out = try {
                     muxer.addTrack(format)
                 } catch (e: Exception) {
-                    if (isVideo) return "unsupported video ($mime)"
+                    if (isVideo) return fail("unsupported video ($mime)")
+                    audioDropped++
                     continue
                 }
+                if (!isVideo) audioKept++
                 tracks[i] = out
                 if (isVideo && videoTrack < 0) videoTrack = i
                 if (format.containsKey(MediaFormat.KEY_MAX_INPUT_SIZE)) {
                     bufferSize = maxOf(bufferSize, format.getInteger(MediaFormat.KEY_MAX_INPUT_SIZE))
                 }
             }
-            if (videoTrack < 0) return "no video track"
+            if (videoTrack < 0) return fail("no video track")
             rotationOf(src)?.let { muxer.setOrientationHint(it) }
 
             // Where the cut really starts: the video key frame at or before
@@ -99,12 +109,12 @@ object VideoTrimmer {
                 written++
                 extractor.advance()
             }
-            if (written == 0) return "nothing in that range"
+            if (written == 0) return fail("nothing in that range")
             muxer.stop()
             started = false
-            return null
+            return Outcome(null, silent = audioKept == 0 && audioDropped > 0)
         } catch (e: Exception) {
-            return e.message ?: e.javaClass.simpleName
+            return fail(e.message ?: e.javaClass.simpleName)
         } finally {
             extractor.release()
             try {

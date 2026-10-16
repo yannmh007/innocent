@@ -2565,6 +2565,8 @@ class AppStrings {
   String get cutLocalOnly => _s('cutLocalOnly');
   String get cutWorking => _s('cutWorking');
   String cutSaved(Object v) => _s('cutSaved').replaceFirst('{v}', '$v');
+  String cutSavedSilent(Object v) =>
+      _s('cutSavedSilent').replaceFirst('{v}', '$v');
   String cutFailed(Object v) => _s('cutFailed').replaceFirst('{v}', '$v');
   String get cutHint => _s('cutHint');
 
@@ -4895,6 +4897,7 @@ class AppStrings {
     'cutLocalOnly': 'Only a video saved on this phone can be cut.',
     'cutWorking': 'Cutting…',
     'cutSaved': 'Cut saved: {v}',
+    'cutSavedSilent': 'Cut saved without sound: {v}. This video\'s audio cannot go into an MP4 without re-encoding.',
     'cutFailed': 'Could not cut this video ({v}).',
     'cutHint': 'The cut starts on the nearest key frame before A, so it may begin a moment early. Nothing is re-encoded.',
     'obFindTitle': 'Find your videos',
@@ -7179,6 +7182,7 @@ class AppStrings {
     'cutLocalOnly': 'ဖုန်းထဲမှာ သိမ်းထားတဲ့ ဗီဒီယိုကိုသာ ဖြတ်လို့ ရပါတယ်။',
     'cutWorking': 'ဖြတ်နေပါတယ်…',
     'cutSaved': 'ဖြတ်ပြီး သိမ်းပြီးပါပြီ: {v}',
+    'cutSavedSilent': 'အသံမပါဘဲ သိမ်းပြီးပါပြီ: {v}။ ဒီဗီဒီယိုရဲ့ အသံပုံစံကို ပြန်မပြောင်းဘဲ MP4 ထဲ ထည့်လို့မရပါ။',
     'cutFailed': 'ဒီဗီဒီယိုကို မဖြတ်နိုင်ပါ ({v})။',
     'cutHint': 'ဖြတ်တာက A မတိုင်ခင် အနီးဆုံး key frame ကနေ စလို့ နည်းနည်း စောနိုင်ပါတယ်။ အရည်အသွေး မကျပါ။',
     'obFindTitle': 'ဗီဒီယိုတွေကို ရှာပါ',
@@ -9453,6 +9457,7 @@ class AppStrings {
     'cutLocalOnly': 'ตัดได้เฉพาะวิดีโอที่บันทึกในโทรศัพท์นี้',
     'cutWorking': 'กำลังตัด…',
     'cutSaved': 'บันทึกคลิปที่ตัดแล้ว: {v}',
+    'cutSavedSilent': 'บันทึกโดยไม่มีเสียง: {v} เสียงของวิดีโอนี้ใส่ใน MP4 ไม่ได้หากไม่เข้ารหัสใหม่',
     'cutFailed': 'ตัดวิดีโอนี้ไม่ได้ ({v})',
     'cutHint': 'คลิปจะเริ่มที่คีย์เฟรมก่อน A จึงอาจเริ่มเร็วกว่าเล็กน้อย ไม่มีการเข้ารหัสใหม่',
     'obFindTitle': 'ค้นหาวิดีโอของคุณ',

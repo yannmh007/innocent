@@ -8,8 +8,15 @@ import 'package:path_provider/path_provider.dart';
 class VideoCutResult {
   final String? path;
   final String? error;
-  const VideoCutResult.ok(String this.path) : error = null;
-  const VideoCutResult.fail(String this.error) : path = null;
+
+  /// The source had sound and the cut has none: its audio is in a format
+  /// MP4 cannot carry, and nothing is re-encoded.
+  final bool silent;
+  const VideoCutResult.ok(String this.path, {this.silent = false})
+      : error = null;
+  const VideoCutResult.fail(String this.error)
+      : path = null,
+        silent = false;
 }
 
 /// The player's Cut: the stretch between two points of a video on this phone,
@@ -37,13 +44,18 @@ class VideoCutService {
       return VideoCutResult.fail('$e');
     }
     try {
-      final err = await _channel.invokeMethod<String>('trim', <String, Object>{
+      final reply =
+          await _channel.invokeMapMethod<String, Object?>('trim', <String, Object>{
         'src': sourcePath,
         'dst': out,
         'startMs': start.inMilliseconds,
         'endMs': end.inMilliseconds,
       });
-      return err == null ? VideoCutResult.ok(out) : VideoCutResult.fail(err);
+      final err = reply?['error'] as String?;
+      if (reply == null) return const VideoCutResult.fail('no reply');
+      return err == null
+          ? VideoCutResult.ok(out, silent: reply['silent'] == true)
+          : VideoCutResult.fail(err);
     } on PlatformException catch (e) {
       return VideoCutResult.fail(e.message ?? e.code);
     } on MissingPluginException {

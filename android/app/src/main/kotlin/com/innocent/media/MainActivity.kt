@@ -532,18 +532,19 @@ class MainActivity : AudioServiceFragmentActivity() {
                     val startUs = (call.argument<Number>("startMs")?.toLong() ?: 0L) * 1000L
                     val endUs = (call.argument<Number>("endMs")?.toLong() ?: 0L) * 1000L
                     if (src == null || dst == null) {
-                        result.success("bad arguments")
+                        result.success(mapOf("error" to "bad arguments"))
                     } else {
                         Thread {
-                            val err = VideoTrimmer.trim(src, dst, startUs, endUs)
-                            if (err != null) {
+                            val outcome = VideoTrimmer.trim(src, dst, startUs, endUs)
+                            if (outcome.error != null) {
                                 VideoTrimmer.discard(dst)
                             } else {
                                 MediaScannerConnection.scanFile(
                                     applicationContext, arrayOf(dst), null, null
                                 )
                             }
-                            runOnUiThread { result.success(err) }
+                            val reply = mapOf("error" to outcome.error, "silent" to outcome.silent)
+                            runOnUiThread { result.success(reply) }
                         }.start()
                     }
                 }

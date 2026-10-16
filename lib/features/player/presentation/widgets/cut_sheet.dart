@@ -202,8 +202,11 @@ class _CutSheetState extends ConsumerState<CutSheet> {
         await VideoCutService.cut(sourcePath: path, start: start, end: end);
     final saved = result.path;
     if (saved != null) {
-      AppSnackbar.global(s.cutSaved(p.basename(saved)),
-          duration: const Duration(seconds: 4));
+      AppSnackbar.global(
+          result.silent
+              ? s.cutSavedSilent(p.basename(saved))
+              : s.cutSaved(p.basename(saved)),
+          duration: Duration(seconds: result.silent ? 7 : 4));
     } else {
       AppSnackbar.globalError(s.cutFailed(result.error ?? '?'));
     }
