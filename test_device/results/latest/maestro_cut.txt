@@ -56,31 +56,34 @@ Tap on "Export"... COMPLETED
 Assert that ".*Cut saved.*" is visible... COMPLETED
 Take screenshot c04_cut_saved... COMPLETED
 Assert that ".*FFmpeg.*" is not visible... COMPLETED
-Press back... COMPLETED
-Wait for animation to end within 4000 ms... COMPLETED
-Press back... COMPLETED
-Wait for animation to end within 4000 ms... COMPLETED
-Press back... COMPLETED
-Wait for animation to end within 4000 ms... COMPLETED
-Tap on (Optional) ".*Tab 1 of 4.*"... WARNED
-
-
- Warning: Element not found: Text matching regex: .*Tab 1 of 4.*
+Launch app "com.innocent.media"... COMPLETED
+Wait for animation to end within 8000 ms... COMPLETED
+Tap on (Optional) ".*Tab 1 of 4.*"... COMPLETED
 Swiping in DOWN direction in 400 ms... COMPLETED
 Wait for animation to end within 6000 ms... COMPLETED
-Scrolling DOWN until ".*Cuts.*" is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... FAILED
+Scrolling DOWN until ".*Cuts.*" is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Take screenshot c05_cuts_folder... COMPLETED
+Tap on ".*Cuts.*"... COMPLETED
+Wait for animation to end within 4000 ms... COMPLETED
+Assert that ".*aaa_play_720p \(cut\).*" is visible... COMPLETED
+Take screenshot c06_cut_file... COMPLETED
+Tap on ".*aaa_play_720p \(cut\).*"... COMPLETED
+Assert that (Optional) "__nothing_has_this_text__" is visible... WARNED
 
-No visible element found: ".*Cuts.*"
 
-Could not find a visible element matching selector: ".*Cuts.*"
-Tip: Try adjusting the following settings to improve detection:
-- `timeout`: current = 20000ms → Increase if you need more time to find the element
-- `speed`: current = 40 (0-100 scale) → Increase for faster scrolling if element is far away
-- `waitToSettleTimeoutMs`: current = Not defined → Set this value (e.g., 500ms) if your UI updates frequently between scrolls
-- `visibilityPercentage`: current = 100% → Lower this value if you want to detect partially visible elements
-- `centerElement`: current = false → Enable if you want the element to be centered after finding it
+ Warning: Assertion is false: "__nothing_has_this_text__" is visible
+Take screenshot c07_cut_plays... COMPLETED
+Assert that ".*aaa_play_720p \(cut\).*" is visible... FAILED
 
+Assertion is false: ".*aaa_play_720p \(cut\).*" is visible
+
+Assertion '".*aaa_play_720p \(cut\).*" is visible' failed. Check the UI hierarchy in debug artifacts to verify the element state and properties.
+
+Possible causes:
+- Element selector may be incorrect - check if there are similar elements with slightly different names/properties.
+- Element may be temporarily unavailable due to loading state
+- This could be a real regression that needs to be addressed
 
 ==== Debug output (logs & screenshots) ====
 
-/home/runner/work/innocent/innocent/out/maestro_out/2026-10-16_041020
+/home/runner/work/innocent/innocent/out/maestro_out/2026-10-16_043227
