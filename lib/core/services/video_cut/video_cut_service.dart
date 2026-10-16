@@ -10,19 +10,26 @@ class VideoCutResult {
   final String? error;
 
   /// The source had sound and the cut has none: its audio is in a format
-  /// MP4 cannot carry, and nothing is re-encoded.
+  /// MP4 cannot carry.
   final bool silent;
-  const VideoCutResult.ok(String this.path, {this.silent = false})
+
+  /// The cut starts exactly at A. False when the video could only be copied
+  /// from the key frame before A.
+  final bool exact;
+  const VideoCutResult.ok(String this.path,
+      {this.silent = false, this.exact = true})
       : error = null;
   const VideoCutResult.fail(String this.error)
       : path = null,
-        silent = false;
+        silent = false,
+        exact = false;
 }
 
 /// The player's Cut: the stretch between two points of a video on this phone,
-/// copied into a new MP4 in `Innocent/Cuts` without re-encoding
-/// (VideoTrimmer.kt). It starts on the key frame at or before the chosen
-/// start, so it can begin a second or two early; nothing is lost in quality.
+/// into a new MP4 in `Innocent/Cuts`. Exact to the frame where the video
+/// allows it: only A to the next key frame is re-encoded, the rest copied
+/// (PreciseTrimmer.kt); otherwise copied losslessly from the key frame before
+/// A (VideoTrimmer.kt).
 class VideoCutService {
   VideoCutService._();
 
@@ -54,7 +61,8 @@ class VideoCutService {
       final err = reply?['error'] as String?;
       if (reply == null) return const VideoCutResult.fail('no reply');
       return err == null
-          ? VideoCutResult.ok(out, silent: reply['silent'] == true)
+          ? VideoCutResult.ok(out,
+              silent: reply['silent'] == true, exact: reply['exact'] != false)
           : VideoCutResult.fail(err);
     } on PlatformException catch (e) {
       return VideoCutResult.fail(e.message ?? e.code);

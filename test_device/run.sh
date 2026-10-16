@@ -460,6 +460,27 @@ for flow in $FLOWS; do
     log "stacked taps at $x,$y: 4 taps in $(( (t1 - t0) / 1000000 )) ms"
     ;;
   esac
+  # THE CUT, MEASURED: the file the flow made, its length and tracks, and
+  # how PreciseTrimmer made it ("optimization=1" is the smart cut, exact to
+  # the frame; "video=2" alone is a copy from the key frame before A).
+  case "$flow" in cut)
+    f=$(adb shell "ls /sdcard/Innocent/Cuts/ 2>/dev/null" | tr -d '\r' | head -1)
+    if [ -n "$f" ]; then
+      rm -f /tmp/lab_cut.mp4
+      adb pull "/sdcard/Innocent/Cuts/$f" /tmp/lab_cut.mp4 >/dev/null 2>&1 || true
+      if command -v ffprobe >/dev/null 2>&1 && [ -f /tmp/lab_cut.mp4 ]; then
+        d=$(ffprobe -v error -show_entries format=duration -of csv=p=0 /tmp/lab_cut.mp4)
+        st=$(ffprobe -v error -show_entries stream=codec_type,codec_name -of csv=p=0 /tmp/lab_cut.mp4 | tr '\n' ' ')
+        log "cut file: $f duration=${d}s streams: $st"
+      else
+        log "cut file: $f (not measured)"
+      fi
+    else
+      log "cut file: none in /sdcard/Innocent/Cuts"
+    fi
+    adb logcat -d -s Innocent:I Innocent:W 2>/dev/null | grep "Cut:" | tail -3 | tr -d '\r' | while read -r l; do log "trimmer: ${l#*: }"; done
+    ;;
+  esac
   # MX'S SCREEN BUTTON, pressed from here: Maestro spends seconds per tap
   # and the controls hide 4 s after the last touch. Show the controls, read
   # the button's bounds from Android's accessibility dump (the same node

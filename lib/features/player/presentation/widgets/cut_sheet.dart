@@ -197,16 +197,22 @@ class _CutSheetState extends ConsumerState<CutSheet> {
       AppSnackbar.global(s.cutLocalOnly);
       return;
     }
-    AppSnackbar.global(s.cutWorking, duration: const Duration(seconds: 30));
+    // Up until the result replaces it: a cut that has to re-encode more than
+    // its first moment can take longer than any fixed time.
+    AppSnackbar.global(s.cutWorking, duration: const Duration(minutes: 30));
     final result =
         await VideoCutService.cut(sourcePath: path, start: start, end: end);
     final saved = result.path;
     if (saved != null) {
+      final name = p.basename(saved);
       AppSnackbar.global(
           result.silent
-              ? s.cutSavedSilent(p.basename(saved))
-              : s.cutSaved(p.basename(saved)),
-          duration: Duration(seconds: result.silent ? 7 : 4));
+              ? s.cutSavedSilent(name)
+              : result.exact
+                  ? s.cutSaved(name)
+                  : s.cutSavedKeyFrame(name),
+          duration:
+              Duration(seconds: result.silent || !result.exact ? 7 : 4));
     } else {
       AppSnackbar.globalError(s.cutFailed(result.error ?? '?'));
     }

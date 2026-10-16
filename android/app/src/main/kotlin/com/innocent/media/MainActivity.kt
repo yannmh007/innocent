@@ -523,29 +523,48 @@ class MainActivity : AudioServiceFragmentActivity() {
         MediaChangeWatcher.register(flutterEngine.dartExecutor.binaryMessenger, applicationContext)
         mediaScanChannel?.setMethodCallHandler { call, result ->
             when (call.method) {
-                // The player's Cut (VideoTrimmer): copy [startMs, endMs] of a
-                // local video into a new MP4 without re-encoding, then scan
-                // it so the Video tab lists it. Replies null, or the reason.
+                // The player's Cut: [startMs, endMs] of a local video into a
+                // new MP4, then scanned so the Video tab lists it. Exact to
+                // the frame where it can be (PreciseTrimmer, a smart cut);
+                // where Media3 refuses the file, the lossless copy from the
+                // key frame before A (VideoTrimmer). Replies
+                // {error, silent, exact}.
                 "trim" -> {
                     val src = call.argument<String>("src")
                     val dst = call.argument<String>("dst")
-                    val startUs = (call.argument<Number>("startMs")?.toLong() ?: 0L) * 1000L
-                    val endUs = (call.argument<Number>("endMs")?.toLong() ?: 0L) * 1000L
+                    val startMs = call.argument<Number>("startMs")?.toLong() ?: 0L
+                    val endMs = call.argument<Number>("endMs")?.toLong() ?: 0L
                     if (src == null || dst == null) {
                         result.success(mapOf("error" to "bad arguments"))
                     } else {
-                        Thread {
-                            val outcome = VideoTrimmer.trim(src, dst, startUs, endUs)
-                            if (outcome.error != null) {
+                        val reply = { error: String?, silent: Boolean, exact: Boolean ->
+                            if (error != null) {
                                 VideoTrimmer.discard(dst)
                             } else {
                                 MediaScannerConnection.scanFile(
                                     applicationContext, arrayOf(dst), null, null
                                 )
                             }
-                            val reply = mapOf("error" to outcome.error, "silent" to outcome.silent)
-                            runOnUiThread { result.success(reply) }
-                        }.start()
+                            runOnUiThread {
+                                result.success(
+                                    mapOf("error" to error, "silent" to silent, "exact" to exact)
+                                )
+                            }
+                        }
+                        PreciseTrimmer.trim(applicationContext, src, dst, startMs, endMs) { precise ->
+                            if (precise.error == null) {
+                                reply(null, precise.silent, precise.exact)
+                            } else {
+                                android.util.Log.w(
+                                    "Innocent", "Cut: Media3 refused (${precise.error}); lossless copy"
+                                )
+                                Thread {
+                                    VideoTrimmer.discard(dst)
+                                    val o = VideoTrimmer.trim(src, dst, startMs * 1000L, endMs * 1000L)
+                                    reply(o.error, o.silent, false)
+                                }.start()
+                            }
+                        }
                     }
                 }
                 "scan" -> {
