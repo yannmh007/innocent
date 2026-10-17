@@ -1737,6 +1737,131 @@ Deno.serve(async (req: Request) => {
     return json(out, 200, req);
   }
 
+  // ── seed_sign ──────────────────────────────────────────────────────────
+  //
+  // A presigned PUT for a CC-BY open test film and its stills, so the owner
+  // can load a few real, freely-licensed movies (Big Buck Bunny, Elephants
+  // Dream, Tears of Steel …) to exercise streaming and download. The bytes
+  // move on a GitHub runner, as every other master does, so this only signs.
+  //
+  // WHY IT IS SAFE TO PRESIGN HERE. The same runner secret as `release`,
+  // and the key is RESTRICTED to `open-film-<slug>/…` under the right prefix
+  // for its kind — a video into `video/…` of the private bucket, a still into
+  // `photo/…` of the public one. It can write nowhere else, so it can neither
+  // overwrite a catalogue file nor a poster. The title row is made afterwards
+  // by the operator with the service key, never here.
+  if (op === 'seed_sign') {
+    const given = (req.headers.get('Authorization') ?? '').replace(/^Bearer /i, '');
+    if (!sameSecret(given, RUNNER_SECRET)) return json({ error: 'no' }, 403, req);
+
+    const slug = String(body.slug ?? '');
+    const name = String(body.name ?? '');
+    const kind = body.kind === 'photo' ? 'photo' : 'video';
+    // A slug and a file name that are plainly what they claim: lower-case,
+    // their own characters only, no slash and no dots that could climb out of
+    // the prefix. Anything else is refused rather than sanitised.
+    if (!/^open-film-[a-z0-9-]{1,48}$/.test(slug) ||
+        !/^[a-z0-9][a-z0-9._-]{0,80}$/.test(name) || name.includes('..')) {
+      return json({ error: 'bad_name' }, 400, req);
+    }
+    const bucket = kind === 'video' ? MEDIA_BUCKET : PUBLIC_BUCKET;
+    const key = `${kind}/${slug}/${name}`;
+    return json({
+      put_url: await presign('PUT', key, 3600, bucket),
+      bucket,
+      object_key: key,
+      public_url: kind === 'photo' ? `${PUBLIC_BASE}${key}` : null,
+    }, 200, req);
+  }
+
+  // ── seed_title ─────────────────────────────────────────────────────────
+  //
+  // Make the catalogue row for a seeded open film, once its master and stills
+  // are in R2 (seed_sign above). A DRAFT, access 'free', with the video queued
+  // for the ladder — the same shape a console upload produces. The operator
+  // publishes it from the console, or approves it in SQL. Idempotent by slug.
+  if (op === 'seed_title') {
+    const given = (req.headers.get('Authorization') ?? '').replace(/^Bearer /i, '');
+    if (!sameSecret(given, RUNNER_SECRET)) return json({ error: 'no' }, 403, req);
+
+    const slug = String(body.slug ?? '');
+    const title = String(body.title ?? '').trim();
+    const video = (body.video ?? {}) as Record<string, unknown>;
+    const photos = Array.isArray(body.photos)
+      ? (body.photos as Record<string, unknown>[]) : [];
+    if (!/^open-film-[a-z0-9-]{1,48}$/.test(slug) || !title ||
+        typeof video.object_key !== 'string') {
+      return json({ error: 'bad_request' }, 400, req);
+    }
+
+    // Already seeded: return the row rather than a second copy.
+    const existing = await rest(`titles?select=id&slug=eq.${slug}`);
+    if (existing.ok) {
+      const rows = await existing.json() as Array<{ id: string }>;
+      if (rows.length) return json({ id: rows[0].id, existing: true }, 200, req);
+    }
+
+    // Whoever owns the catalogue is the author of a seed. One owner exists.
+    const owners = await rest('admins?select=user_id&role=eq.owner&disabled=eq.false&limit=1');
+    const owner = owners.ok ? (await owners.json() as Array<{ user_id: string }>)[0]?.user_id : null;
+
+    const firstPhoto = photos[0]?.object_key as string | undefined;
+    const ins = await rest('titles', {
+      method: 'POST',
+      headers: { Prefer: 'return=representation' },
+      body: JSON.stringify({
+        title,
+        title_mm: typeof body.title_mm === 'string' ? body.title_mm : null,
+        synopsis: typeof body.synopsis === 'string' ? body.synopsis : null,
+        category: 'movies',
+        year: Number(body.year) || null,
+        genres: ['Open Movie'],
+        quality_label: typeof body.quality === 'string' ? body.quality : null,
+        slug,
+        // FREE, so the test films play without a subscription.
+        access_tier: 'free',
+        provider: 'r2',
+        locator: String(video.object_key),
+        poster_url: firstPhoto ? `${PUBLIC_BASE}${firstPhoto}` : null,
+        status: 'draft',
+        published: false,
+        created_by: owner,
+      }),
+    });
+    if (!ins.ok) {
+      return json({ error: 'title_insert', detail: (await ins.text()).slice(0, 200) }, 500, req);
+    }
+    const titleRow = (await ins.json() as Array<{ id: string }>)[0];
+    if (!titleRow) return json({ error: 'no_row' }, 500, req);
+
+    const assetRows: Array<Record<string, unknown>> = [{
+      title_id: titleRow.id, kind: 'video', bucket: MEDIA_BUCKET,
+      object_key: String(video.object_key), is_primary: true, is_free: true,
+      sort_order: 0, duration_s: Number(video.duration_s) || null,
+      width: Number(video.width) || null, height: Number(video.height) || null,
+      bytes: Number(video.bytes) || null,
+      mime: typeof video.mime === 'string' ? video.mime : 'video/mp4',
+      transcode_state: 'queued',
+    }];
+    photos.forEach((p, i) => {
+      if (typeof p.object_key !== 'string') return;
+      assetRows.push({
+        title_id: titleRow.id, kind: 'photo', bucket: PUBLIC_BUCKET,
+        object_key: p.object_key, is_primary: i === 0, is_free: true,
+        sort_order: i + 1, width: Number(p.width) || null,
+        height: Number(p.height) || null, bytes: Number(p.bytes) || null,
+        mime: typeof p.mime === 'string' ? p.mime : 'image/jpeg',
+      });
+    });
+    const ares = await rest('title_assets', {
+      method: 'POST', body: JSON.stringify(assetRows),
+    });
+    if (!ares.ok) {
+      return json({ error: 'asset_insert', detail: (await ares.text()).slice(0, 200) }, 500, req);
+    }
+    return json({ id: titleRow.id, assets: assetRows.length }, 200, req);
+  }
+
   // ── purge ────────────────────────────────────────────────────────────────
   //
   // EMPTY THE R2 BIN — what the Files page put there seven days ago (or a
