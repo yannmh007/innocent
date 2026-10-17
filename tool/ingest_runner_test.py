@@ -201,6 +201,23 @@ def ajob(n, forwarded=True, size=None):
     }
 
 
+def ojob(n, from_r2=True, size=None):
+    """An off-site copy job (migration 045): from R2 through a presigned GET,
+    or from the film's Telegram copy once R2 no longer has it."""
+    return {
+        'job_id': 'offsite-%d' % n, 'type': 'offsite',
+        'asset_id': '00000000-0000-4000-8000-%012d' % n,
+        'tg_chat_id': None if from_r2 else 1,
+        'tg_message_id': None if from_r2 else n,
+        'tg_unique_id': None if from_r2 else 'u%d' % n,
+        'bytes': size if size is not None else 5000 + n,
+        'file_name': 'film-%d.mp4' % n,
+        'get_url': 'https://r2.invalid/get/%d' % n if from_r2 else None,
+        'put_url': 'https://offsite.invalid/put/%d' % n,
+        'done_url': 'https://edge.invalid/ingest',
+    }
+
+
 def run(first, rest, env=None, start_flood=None, flood=None, error=None,
         media=None, gone=None, short=None, chat_error=None, r2_size=None):
     """One runner invocation in a scratch directory. Answers (rc, edge).
@@ -432,8 +449,9 @@ check('a short restore is not uploaded either', c.get('ok') is False and not W.p
 rc, edge = run(ajob(20), [ajob(21, forwarded=False)],
                media={20: ('u20', 5020)}, r2_size=5021)
 va = {c['job_id']: c for c in edge.ops('vault_done')}
-check('this runner asks for archive work when it claims',
-      all(c.get('can') == ['archive'] for c in edge.ops('claim')) and edge.ops('claim'))
+check('this runner asks for archive and off-site work when it claims',
+      all(c.get('can') == ['archive', 'offsite'] for c in edge.ops('claim'))
+      and edge.ops('claim'))
 check('a forwarded film is COPIED into the channel, not downloaded',
       W.copies == [(-100555, 1, 20)])
 check('and reported where it now is, with the same file',
@@ -469,6 +487,54 @@ check('a FLOOD_WAIT on an archive job defers it and ends the run',
 rc, edge = run(ajob(27), [], env={'TG_API_ID': None})
 check('missing credentials on an archive job are reported as one',
       any(c.get('type') == 'archive' and not c['ok'] for c in edge.ops('vault_done')))
+
+# ── THE OFF-SITE COPY (migration 045) ────────────────────────────────────
+#
+# A third company's private bucket. From R2 while R2 has the file, from the
+# Telegram copy once it does not; one presigned PUT; a short read never
+# uploaded; a wait never a failure.
+rc, edge = run(ojob(30), [ojob(31, from_r2=False)],
+               media={31: ('u31', 5031)}, r2_size=5030)
+vo = {c['job_id']: c for c in edge.ops('vault_done')}
+check('an off-site copy from R2 is PUT to the off-site URL it was given',
+      'https://offsite.invalid/put/30' in W.puts
+      and vo.get('offsite-30', {}).get('type') == 'offsite'
+      and vo['offsite-30'].get('ok') is True and vo['offsite-30'].get('bytes') == 5030)
+check('with the SHA-256 of what was read',
+      vo.get('offsite-30', {}).get('sha256') == __import__('hashlib').sha256(b'y' * 5030).hexdigest())
+check('a file R2 no longer has is read from its Telegram copy instead',
+      'https://offsite.invalid/put/31' in W.puts and vo.get('offsite-31', {}).get('ok') is True
+      and 'Telegram' in vo['offsite-31'].get('note', ''))
+check('the answer names its file, for a copy whose file was deleted meanwhile',
+      vo.get('offsite-30', {}).get('asset_id') == '00000000-0000-4000-8000-000000000030'
+      and vo['offsite-30'].get('file_name') == 'film-30.mp4')
+check('nothing is copied into the archive channel by an off-site job',
+      not W.copies and not W.sends)
+check('still one sign-in', W.started == 1)
+
+rc, edge = run(ojob(32), [], r2_size=100)
+c = (edge.ops('vault_done') or [{}])[0]
+check('a short read from R2 is not uploaded off-site',
+      c.get('ok') is False and 'fetched 100 of 5032' in c.get('note', '') and not W.puts)
+
+rc, edge = run(ojob(33, from_r2=False), [], media={33: ('u33', 5033)}, short={33: 4096})
+c = (edge.ops('vault_done') or [{}])[0]
+check('nor a short read from Telegram', c.get('ok') is False and not W.puts)
+
+rc, edge = run(ojob(34, from_r2=False), [], gone={34})
+c = (edge.ops('vault_done') or [{}])[0]
+check('a Telegram copy that is gone is said plainly, and nothing is PUT',
+      c.get('ok') is False and 'gone' in c.get('note', '') and not W.puts)
+
+rc, edge = run(ojob(35, from_r2=False), [ojob(36)], flood={35: 900},
+               media={35: ('u35', 5035)}, r2_size=5036)
+check('a FLOOD_WAIT on an off-site job defers it, typed, and ends the run',
+      [(c['job_id'], c.get('type')) for c in edge.ops('vault_defer')] == [('offsite-35', 'offsite')]
+      and not edge.ops('vault_done'))
+
+rc, edge = run(ojob(37), [], env={'TG_API_ID': None})
+check('missing credentials on an off-site job are reported as one',
+      any(c.get('type') == 'offsite' and not c['ok'] for c in edge.ops('vault_done')))
 
 # pyrogram 2.0.106 says "Peer id invalid" to every channel numbered past
 # 2**31 — the archive channel is -1004249568570. The widening must let that

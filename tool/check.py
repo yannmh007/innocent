@@ -176,6 +176,11 @@ def main() -> int:
          'caption typed on a phone — either one is a path, and a key the '
          'console would refuse is an upload that works and a file nothing '
          'can later find. And a round selfie video published as a master'),
+        ('offsite_test.mjs',
+         'the off-site copy: its signatures, its names, who chooses the key',
+         'every copy to the third company refused with a 403 that names '
+         'nothing — signed for R2\'s region, or R2\'s host — found on the '
+         'night the copy was needed, or a film stored under its title'),
         ('admin_gate_test.mjs',
          'the admin gate: roles, MFA, the audit line, four identical copies',
          'a viewer who can delete a title, a stolen session let in without '

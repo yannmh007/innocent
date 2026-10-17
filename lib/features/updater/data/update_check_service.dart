@@ -50,7 +50,9 @@ class UpdateCheckService {
       // that reads it shipped, so no install ever asked for a missing column.
       'player_flags,'
       // 044 — the 32-bit APK. Same rule: in the database before 1.64.60.
-      'apk_url_arm32,apk_sha256_arm32,apk_bytes_arm32';
+      'apk_url_arm32,apk_sha256_arm32,apk_bytes_arm32,'
+      // 045 — where else the same APK is. In the database before 1.64.66.
+      'apk_mirrors,apk_mirrors_arm32';
 
   /// The newest published release, or null when the table holds no row.
   ///

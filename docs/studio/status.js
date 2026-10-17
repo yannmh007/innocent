@@ -9,6 +9,9 @@
 //   * the daily database backups, with Back up now and Download (owner);
 //   * the archive channel: which, since when, whether the bot may still post
 //     there, how many films are in it — and how to connect one;
+//   * the off-site copy (migration 045): a third company's private bucket —
+//     how many files and backups are there, when it was last looked at, and
+//     how to set it up;
 //   * which project secrets are set. Yes or no; never a value.
 //
 // Classic script, functions only — like the others.
@@ -110,10 +113,12 @@ function ssDraw() {
     ssKpi('Archive channel', arch.chat_id ? (films.archived || 0) + ' of ' + (films.total || 0) : 'not connected',
       arch.chat_id ? 'films copied there' : 'films live in R2 and the bot chat only',
       arch.chat_id ? (d.archive_live && d.archive_live.ok === false ? 'bad' : '') : 'warn'),
+    ssOffsiteKpi(d.offsite),
   ]));
 
   host.append(ssTelegram(d));
   host.append(ssArchive(d));
+  host.append(ssOffsite(d));
   host.append(ssBackups(d));
   host.append(ssRunners(d));
   host.append(ssQueues(d));
@@ -217,6 +222,75 @@ function ssArchive(d) {
   }
   return ssSec('Archive channel', 'A private Telegram channel that keeps a copy of every film. ' +
     'It is what a film is restored from, and what lets R2 free a film\'s original.', body, extra);
+}
+
+/// Off-site: "4 of 4 files", or why not.
+function ssOffsiteKpi(o) {
+  if (!o) return ssKpi('Off-site copy', '—', 'migration 045 not applied', 'warn');
+  if (!o.on) return ssKpi('Off-site copy', 'not set up', 'a third copy, at another company', 'warn');
+  const all = Number(o.files || 0) - Number(o.too_big || 0);
+  const done = Number(o.copied || 0);
+  return ssKpi('Off-site copy', done + ' of ' + all,
+    o.missing ? o.missing + ' missing — being copied again' : 'files at ' + String(o.where || '').split('/')[0],
+    o.missing || (o.jobs && o.jobs.failed_7d) ? 'warn' : done >= all ? '' : 'warn');
+}
+
+function ssOffsite(d) {
+  const o = d.offsite;
+  const body = [];
+  if (!o) {
+    body.push(el('p', { className: 'hint warn' }, text('The database has no off-site tables yet: ' +
+      'apply docs/migrations/045_offsite_and_mirrors.sql.')));
+  } else if (!o.on) {
+    body.push(el('p', { className: 'hint' }, text('Every film is in R2 and in the archive channel — two ' +
+      'companies. When the storage policy frees a master from R2, Telegram is its only copy, and the ' +
+      'database backups are in R2 alone. A private bucket at a third company closes both, and nobody ' +
+      'outside can see it, so no report — true or false — can reach it.')));
+    body.push(el('ol', { className: 'ss-steps' }, [
+      el('li', {}, text('Make a Backblaze B2 account (the first 10 GB are free). Note its region, ' +
+        'for example eu-central-003.')),
+      el('li', {}, text('Create two buckets, lower case: a PRIVATE one (for example innocent-offsite) and a ' +
+        'PUBLIC one (for example innocent-apk) for the update\'s mirror.')),
+      el('li', {}, text('Application Keys → Add a New Application Key, access to both buckets, ' +
+        'Read and Write. Copy the keyID and the applicationKey — B2 shows the key once.')),
+      el('li', {}, text('Supabase → Edge Functions → Secrets: OFFSITE_ENDPOINT ' +
+        '(https://s3.<region>.backblazeb2.com), OFFSITE_KEY_ID, OFFSITE_SECRET, OFFSITE_BUCKET, ' +
+        'OFFSITE_PUBLIC_BUCKET.')),
+      el('li', {}, text('That is all: the next runner tick says "set up" here and copying starts, ' +
+        'one file at a time. RUNBOOK part 4b has the details and how to restore from it.')),
+    ]));
+  } else {
+    const all = Number(o.files || 0) - Number(o.too_big || 0);
+    const jobs = o.jobs || {};
+    const bk = o.backups || {};
+    body.push(el('div', { className: 'ss-facts' }, [
+      ssFact('Bucket', String(o.where || '—'), 'ok', 'Told by the ingest function on ' + ssMmt(o.seen_at) + '.'),
+      ssFact('Title files there', (o.copied || 0) + ' of ' + all + ' · ' + ssSize(o.bytes),
+        (o.copied || 0) >= all ? 'ok' : 'warn',
+        'Masters, photos and posters, under their ids — never their names.'),
+      ssFact('Missing when last looked', String(o.missing || 0), o.missing ? 'bad' : 'ok',
+        'Each copy is looked at weekly; one not found is copied again at once.'),
+      ssFact('Oldest look', o.oldest_check_at ? ssAgo(o.oldest_check_at) : '—',
+        ssMinutes(o.oldest_check_at) < 9 * 24 * 60 ? 'ok' : 'warn', ssMmt(o.oldest_check_at)),
+      ssFact('Database backups there', (bk.copied || 0) + ' of ' + (bk.live || 0),
+        (bk.copied || 0) >= (bk.live || 0) ? 'ok' : 'warn'),
+      ssFact('Copies waiting', (jobs.queued || 0) + ' queued · ' + (jobs.running || 0) + ' running' +
+        (jobs.failed_7d ? ' · ' + jobs.failed_7d + ' failed this week' : ''),
+        jobs.failed_7d ? 'warn' : 'ok', jobs.last_note || ''),
+      ssFact('Update mirror', o.mirror ? 'set — the app can update from it' : 'not set (no public bucket)',
+        o.mirror ? 'ok' : 'warn'),
+    ]));
+    if (o.too_big) {
+      body.push(el('p', { className: 'hint' }, text(o.too_big + ' file(s) are over 5 GB, more than one ' +
+        'upload can carry; they have no off-site copy.')));
+    }
+    if (o.deleting) {
+      body.push(el('p', { className: 'hint' }, text(o.deleting + ' copy(ies) of deleted files go a week ' +
+        'after their file left the catalogue — the same week the bin gives R2.')));
+    }
+  }
+  return ssSec('Off-site copy', 'A third copy of every file and every backup, in a private bucket at ' +
+    'another company. Played from nowhere; it is what is left when an account is lost.', body);
 }
 
 function ssBackups(d) {

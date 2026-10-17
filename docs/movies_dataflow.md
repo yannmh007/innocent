@@ -273,10 +273,16 @@ change is wrong.
 | R2 suspended (payment) | Playback stops; catalogue still browses | Backup payment method; masters survive in Telegram |
 | Cloudflare account lost | Playback stops | Re-package from Telegram to B2/Bunny; change the Worker's origin |
 | Supabase paused (7 days idle) | Everything stops | Cannot happen on a live app; will happen to staging |
-| **Telegram archive lost** | **Unrecoverable** | **A second copy. Nothing else covers this** |
+| **Telegram archive lost** | Re-copy from R2, or from the off-site bucket | The off-site copy (migration 045) |
+| Cloudflare account suspended (a report, true or false) | Playback and the CDN stop; masters, backups and the update APK are off-site | Restore R2 from the off-site bucket; the app updates from its mirrors |
 
-The last row is why the roadmap makes a second archive copy a launch gate. Every
-other failure above is a re-package, because the masters exist.
+The second-to-last row was "unrecoverable" until migration 045: every title
+file and every database backup now also goes to a PRIVATE bucket at a third
+company (Backblaze B2 — docs/RUNBOOK.md part 4b), looked at weekly, and the
+update APK to its public twin and the GitHub release (`apk_mirrors`). No single
+account lost — Cloudflare's, Telegram's or Backblaze's — loses a film. A
+report about what R2 serves cannot reach the off-site copy, because nothing is
+ever served from it; what to do about the report itself is part 4c.
 
 ---
 
