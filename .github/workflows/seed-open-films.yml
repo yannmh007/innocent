@@ -38,16 +38,17 @@ jobs:
           fi
           FN="$SB_URL/functions/v1/ingest"
 
-          # slug | title | year | url | fallback-url
-          # The first three are on Google's public gtv-videos bucket (fast,
-          # reliable). The rest are best-effort from blender.org; a film that
-          # does not download is skipped, not fatal.
+          # slug | title | year | comma-separated candidate URLs (first that
+          # downloads wins). Sources are download.blender.org (CC-BY, allows
+          # CI) and archive.org as a backup. A film that does not download
+          # from any candidate is skipped, not fatal. Google's gtv-videos
+          # bucket is NOT used: it answers 403 to GitHub runners.
           films=(
-            "open-film-big-buck-bunny|Big Buck Bunny|2008|https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4|https://download.blender.org/peach/bigbuckbunny_movies/BigBuckBunny_320x180.mp4"
-            "open-film-elephants-dream|Elephants Dream|2006|https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4|"
-            "open-film-tears-of-steel|Tears of Steel|2012|https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4|https://download.blender.org/demo/movies/ToS/tears_of_steel_720p.mov"
-            "open-film-caminandes-llamigos|Caminandes: Llamigos|2016|https://download.blender.org/demo/movies/Caminandes_Llamigos_1080p.mp4|"
-            "open-film-cosmos-laundromat|Cosmos Laundromat|2015|https://download.blender.org/demo/movies/CosmosLaundromat_1080p.mp4|"
+            "open-film-big-buck-bunny|Big Buck Bunny|2008|https://download.blender.org/peach/bigbuckbunny_movies/big_buck_bunny_720p_h264.mov,https://archive.org/download/BigBuckBunny_124/Content/big_buck_bunny_720p_surround.mp4,https://download.blender.org/peach/bigbuckbunny_movies/big_buck_bunny_480p_h264.mov"
+            "open-film-elephants-dream|Elephants Dream|2006|https://archive.org/download/ElephantsDream/ed_1024_512kb.mp4,https://download.blender.org/ED/ED_HD.avi,https://archive.org/download/elephants_dream/ed_hd.avi"
+            "open-film-tears-of-steel|Tears of Steel|2012|https://download.blender.org/demo/movies/ToS/tears_of_steel_720p.mov,https://archive.org/download/tears-of-steel_202102/Tears%20of%20Steel.mp4"
+            "open-film-caminandes-llamigos|Caminandes: Llamigos|2016|https://archive.org/download/Caminandes3Llamigos/Caminandes_%233_-_Llamigos_1080p.mp4,https://download.blender.org/demo/movies/Caminandes_3_Llamigos_1080p.mp4"
+            "open-film-cosmos-laundromat|Cosmos Laundromat|2015|https://archive.org/download/CosmosLaundromat/Cosmos%20Laundromat%20-%20First%20Cycle%20%281080p%29.mp4,https://download.blender.org/demo/movies/CosmosLaundromat_1080p.mp4"
           )
 
           # Presign a PUT for one open-film object and upload a local file to it.
@@ -72,18 +73,20 @@ jobs:
 
           made=0
           for line in "${films[@]}"; do
-            IFS='|' read -r slug title year url fb <<< "$line"
+            IFS='|' read -r slug title year urls <<< "$line"
             [ -z "$slug" ] && continue
             echo "=== $title ($slug) ==="
             rm -f /tmp/master.mp4 /tmp/still-*.jpg
-            if ! curl --fail-with-body -sSL --max-time 1800 -o /tmp/master.mp4 "$url"; then
-              echo "  primary source failed"
-              if [ -n "$fb" ] && curl --fail-with-body -sSL --max-time 1800 -o /tmp/master.mp4 "$fb"; then
-                echo "  fallback source used"
-              else
-                echo "  SKIP: no source"; continue
+            got=0
+            IFS=',' read -ra cands <<< "$urls"
+            for u in "${cands[@]}"; do
+              [ -z "$u" ] && continue
+              if curl --fail-with-body -sSL --max-time 1800 -o /tmp/master.mp4 "$u"; then
+                echo "  source ok: ${u%%\?*}"; got=1; break
               fi
-            fi
+              echo "  source failed: ${u%%\?*}"
+            done
+            if [ "$got" != 1 ]; then echo "  SKIP: no source downloaded"; continue; fi
             bytes=$(stat -c%s /tmp/master.mp4)
             # Probe the master.
             probe=$(ffprobe -v error -select_streams v:0 \
