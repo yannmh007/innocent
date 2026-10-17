@@ -1834,7 +1834,11 @@ Deno.serve(async (req: Request) => {
     const titleRow = (await ins.json() as Array<{ id: string }>)[0];
     if (!titleRow) return json({ error: 'no_row' }, 500, req);
 
-    const assetRows: Array<Record<string, unknown>> = [{
+    // The video and the photos go in SEPARATE inserts. PostgREST builds one
+    // INSERT from the first row's keys and rejects a bulk array whose rows do
+    // not all carry the same keys — a photo has no duration or transcode
+    // state, so a mixed array fails and the title is left with no assets.
+    const videoRow = {
       title_id: titleRow.id, kind: 'video', bucket: MEDIA_BUCKET,
       object_key: String(video.object_key), is_primary: true, is_free: true,
       sort_order: 0, duration_s: Number(video.duration_s) || null,
@@ -1842,24 +1846,27 @@ Deno.serve(async (req: Request) => {
       bytes: Number(video.bytes) || null,
       mime: typeof video.mime === 'string' ? video.mime : 'video/mp4',
       transcode_state: 'queued',
-    }];
-    photos.forEach((p, i) => {
-      if (typeof p.object_key !== 'string') return;
-      assetRows.push({
+    };
+    const vres = await rest('title_assets', { method: 'POST', body: JSON.stringify([videoRow]) });
+    if (!vres.ok) {
+      return json({ error: 'video_insert', detail: (await vres.text()).slice(0, 200) }, 500, req);
+    }
+    const photoRows = photos
+      .filter((p) => typeof p.object_key === 'string')
+      .map((p, i) => ({
         title_id: titleRow.id, kind: 'photo', bucket: PUBLIC_BUCKET,
-        object_key: p.object_key, is_primary: i === 0, is_free: true,
+        object_key: p.object_key as string, is_primary: i === 0, is_free: true,
         sort_order: i + 1, width: Number(p.width) || null,
         height: Number(p.height) || null, bytes: Number(p.bytes) || null,
         mime: typeof p.mime === 'string' ? p.mime : 'image/jpeg',
-      });
-    });
-    const ares = await rest('title_assets', {
-      method: 'POST', body: JSON.stringify(assetRows),
-    });
-    if (!ares.ok) {
-      return json({ error: 'asset_insert', detail: (await ares.text()).slice(0, 200) }, 500, req);
+      }));
+    if (photoRows.length) {
+      const pres = await rest('title_assets', { method: 'POST', body: JSON.stringify(photoRows) });
+      if (!pres.ok) {
+        return json({ error: 'photo_insert', detail: (await pres.text()).slice(0, 200) }, 500, req);
+      }
     }
-    return json({ id: titleRow.id, assets: assetRows.length }, 200, req);
+    return json({ id: titleRow.id, assets: 1 + photoRows.length }, 200, req);
   }
 
   // ── purge ────────────────────────────────────────────────────────────────
