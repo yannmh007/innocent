@@ -930,6 +930,13 @@ const SECRET_FACTS: Array<{ name: string; alt?: string; need: boolean; what: str
   { name: 'TELEGRAM_CHAT_IDS', need: true, what: 'who may forward films' },
   { name: 'STREAM_BASE', need: false, what: 'the streaming Worker' },
   { name: 'STREAM_TOKEN_SECRET', need: false, what: 'the streaming Worker\'s token key' },
+  // The off-site copy (migration 045): a third company's private bucket.
+  // Not needed for the app to run; needed for a film to survive an account.
+  { name: 'OFFSITE_ENDPOINT', need: false, what: 'off-site copy: the S3 endpoint (Backblaze B2)' },
+  { name: 'OFFSITE_KEY_ID', need: false, what: 'off-site copy: key id' },
+  { name: 'OFFSITE_SECRET', need: false, what: 'off-site copy: key' },
+  { name: 'OFFSITE_BUCKET', need: false, what: 'off-site copy: the private bucket' },
+  { name: 'OFFSITE_PUBLIC_BUCKET', need: false, what: 'off-site copy: the public bucket for the update APK' },
 ];
 
 function secretFacts(): Array<Record<string, unknown>> {
@@ -2656,13 +2663,17 @@ async function handleOp(
   // secrets are set. Yes or no for every secret; never a value.
   if (body.op === 'status') {
     const db = admin();
-    const [ops, me, hook] = await Promise.all([
+    const [ops, me, hook, off] = await Promise.all([
       db.rpc('ops_status'),
       bot('getMe'),
       bot('getWebhookInfo'),
+      // The off-site copy (045). Its own call, so a database without 045
+      // still draws the rest of the page.
+      db.rpc('offsite_status'),
     ]);
     if (ops.error) return json({ error: 'status_failed', detail: ops.error.message }, 500, req);
     const st = (ops.data ?? {}) as Record<string, unknown>;
+    if (!off.error) st.offsite = off.data;
     const h = (hook.result ?? {}) as Record<string, unknown>;
     const allowed = Array.isArray(h.allowed_updates) ? h.allowed_updates as string[] : [];
     const webhook = hook.ok

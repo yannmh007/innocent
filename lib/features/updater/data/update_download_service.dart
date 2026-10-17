@@ -104,6 +104,17 @@ class UpdateDownloadService {
   /// Long enough for a cell to hand over, short enough not to feel stalled.
   static const Duration _resumeDelay = Duration(seconds: 2);
 
+  /// The source that last delivered bytes of each build, in this process.
+  ///
+  /// A later call — the controller re-arming after "Waiting for the network"
+  /// — starts there, instead of waiting out a blocked primary all over again
+  /// before reaching the mirror that was working.
+  static final Map<int, String> _lastGood = <int, String>{};
+
+  /// For tests: each one starts with no memory of the last.
+  @visibleForTesting
+  static void forgetSources() => _lastGood.clear();
+
   /// Where the APK is written.
   ///
   /// The app cache directory, because it is the ONE root already exported by
@@ -218,7 +229,34 @@ class UpdateDownloadService {
     if (!release.canDownload) {
       throw const UpdateDownloadFailure.unsupported();
     }
-    final url = release.apkUrl!;
+    // ═══════════════════════════════════════════════════════════════════
+    // MORE THAN ONE PLACE HAS THIS FILE (migration 045)
+    // ═══════════════════════════════════════════════════════════════════
+    //
+    // The CDN first; then the off-site bucket and the GitHub release. All
+    // of them hold the same bytes — the build uploads one file to each and
+    // none of them is ever overwritten — so a partial fetched from one is
+    // finished from another with an ordinary Range request, and the hash at
+    // the end is the same check whichever answered.
+    //
+    // The next place is asked when this one gives an ANSWER that will not
+    // change (a 403 from a suspended account, a 404), serves a file of
+    // another size, or cannot be reached twice running. A link that drops
+    // while bytes are moving is still resumed where it is: that is a cell,
+    // not a block.
+    final sources = release.apkSources;
+    var at = sources.indexOf(_lastGood[release.versionCode] ?? '');
+    if (at < 0) at = 0;
+    // Each other source is asked at most once per call; the controller's
+    // auto-resume makes the next call.
+    var switches = 0;
+    bool nextSource() {
+      if (switches >= sources.length - 1) return false;
+      switches++;
+      at = (at + 1) % sources.length;
+      return true;
+    }
+
     final expectedSha = release.apkSha256!;
     final expectedBytes = release.apkBytes ?? 0;
 
@@ -260,6 +298,7 @@ class UpdateDownloadService {
       // when nothing was.
       var restarts = 0;
       while (true) {
+        final url = sources[at];
         final before = await _sizeOf(part);
         try {
           await _fetch(
@@ -269,16 +308,34 @@ class UpdateDownloadService {
             notificationTitle: notificationTitle,
             onProgress: onProgress,
           );
-        } on _RestartDownload {
-          // _fetch has already removed the unusable partial. Whatever it found
-          // (a 416, or a Content-Range naming a different object) means the
-          // bytes on disk cannot belong to the file being fetched.
+        } on _WrongFile {
+          // THIS URL SERVES ANOTHER FILE: a 416, a Content-Range or a length
+          // naming another size. That is a fact about the URL, not about the
+          // bytes on disk — every one of them arrived from a server that
+          // named the right size — so with somewhere else to ask, the
+          // partial is kept and finished there.
+          if (nextSource()) {
+            barren = 0;
+            continue;
+          }
+          // Nowhere else: the partial cannot be continued here, so start
+          // this file again from zero, once.
+          await _deleteQuietly(part);
           restarts++;
           if (restarts >= _maxAttempts) {
             throw const UpdateDownloadFailure.damaged();
           }
           continue;
         } catch (e) {
+          // AN ANSWER, NOT A HICCUP. A 403 or a 404 does not change by being
+          // asked again — but it is this place's answer, and the next place
+          // may have the file. Only the last one's answer reaches the screen.
+          if (e is UpdateDownloadFailure &&
+              e.kind == UpdateDownloadFailureKind.server &&
+              nextSource()) {
+            barren = 0;
+            continue;
+          }
           // THE CONNECTION WENT, NOT THE FILE. A dropped socket, a response
           // that ended early and an idle timeout are all the same thing here:
           // the bytes on disk are sound — every one of them arrived under a
@@ -310,12 +367,24 @@ class UpdateDownloadService {
               (e is UpdateDownloadFailure &&
                   e.kind == UpdateDownloadFailureKind.network);
           if (!dropped) rethrow;
+          final moved = await _sizeOf(part) > before;
+          if (moved) _lastGood[release.versionCode] = url;
+          // NOT GETTING THROUGH AT ALL, twice running: a blocked host, a
+          // name that does not resolve, a connection refused. That is the
+          // case the mirrors exist for, so it moves on here rather than
+          // spending the rest of the budget on the same wall.
+          if (!moved && barren + 1 >= _maxBarrenResumes && nextSource()) {
+            resumes++;
+            barren = 0;
+            continue;
+          }
           if (!await _canResume(part, before, resumes, barren)) rethrow;
           resumes++;
-          barren = await _sizeOf(part) > before ? 0 : barren + 1;
+          barren = moved ? 0 : barren + 1;
           await Future<void>.delayed(_resumeDelay);
           continue;
         }
+        _lastGood[release.versionCode] = url;
 
         // THE 100%-FAILURE GATE. A file that is complete but the wrong length
         // is the signature of two writers having appended to one `.part` —
@@ -325,6 +394,7 @@ class UpdateDownloadService {
         final actualBytes = await _sizeOf(part);
         if (expectedBytes > 0 && actualBytes != expectedBytes) {
           await _deleteQuietly(part);
+          if (nextSource()) continue;
           restarts++;
           if (restarts >= _maxAttempts) {
             throw const UpdateDownloadFailure.damaged();
@@ -473,8 +543,10 @@ class UpdateDownloadService {
 
   /// One resumable GET into [target], appending to whatever is already there.
   ///
-  /// Throws [_RestartDownload] — after removing the partial — when the bytes
-  /// on disk provably do not belong to the object the server is serving.
+  /// Throws [_WrongFile] — before writing anything, and leaving the partial
+  /// as it was — when the object at [url] is provably not the published file
+  /// the partial belongs to. The caller decides whether the partial goes on
+  /// elsewhere or is started again.
   Future<void> _fetch({
     required String url,
     required File target,
@@ -514,17 +586,26 @@ class UpdateDownloadService {
       if (resp.statusCode != HttpStatus.ok &&
           resp.statusCode != HttpStatus.partialContent) {
         await resp.drain<void>();
-        // 416: our partial is longer than the object now at this URL, so the
-        // APK was re-published under the same name. The partial is not
-        // resumable and never will be.
+        // 416: our partial is longer than the object now at this URL, so
+        // this URL holds some other file. The partial cannot go on HERE.
         if (resp.statusCode == HttpStatus.requestedRangeNotSatisfiable) {
-          await _deleteQuietly(target);
-          throw const _RestartDownload();
+          throw const _WrongFile();
         }
         throw UpdateDownloadFailure.server(resp.statusCode);
       }
 
       final serverResumed = resp.statusCode == HttpStatus.partialContent;
+
+      // A WHOLE FILE OF ANOTHER SIZE is refused before its first byte, not
+      // after ninety megabytes of it. A mirror holding last week's build, or
+      // a page that answers 200 with an error in its body, says so in its
+      // Content-Length; nothing has been written yet, so the partial stays.
+      if (!serverResumed &&
+          expectedTotal > 0 &&
+          resp.contentLength > 0 &&
+          resp.contentLength != expectedTotal) {
+        throw const _WrongFile();
+      }
 
       // VALIDATE CONTENT-RANGE BEFORE A SINGLE BYTE IS APPENDED. `Content-
       // Range: bytes 80000000-87999999/88000000` names the total size of the
@@ -537,9 +618,7 @@ class UpdateDownloadService {
           resp.headers.value(HttpHeaders.contentRangeHeader),
         );
         if (servedTotal != null && servedTotal != expectedTotal) {
-          await resp.drain<void>();
-          await _deleteQuietly(target);
-          throw const _RestartDownload();
+          throw const _WrongFile();
         }
       }
 
@@ -684,12 +763,15 @@ class UpdateDownloadService {
   }
 }
 
-/// Internal signal: the partial has been removed, fetch the whole file again.
+/// Internal signal: the URL just asked serves a file other than the one the
+/// release names (a 416, or a size that is not `apk_bytes`). Nothing was
+/// written; the partial is as it was.
 ///
-/// Never escapes [UpdateDownloadService.download] — the loop there either
-/// retries or converts it into a `damaged` failure the screen has words for.
-class _RestartDownload implements Exception {
-  const _RestartDownload();
+/// Never escapes [UpdateDownloadService.download] — the loop there asks the
+/// next source, starts again from zero, or converts it into a `damaged`
+/// failure the screen has words for.
+class _WrongFile implements Exception {
+  const _WrongFile();
 }
 
 /// Why a download could not be completed.

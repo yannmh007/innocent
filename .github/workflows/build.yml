@@ -504,6 +504,7 @@ jobs:
       # shape as the ingest runner, for the same reason — this repository is
       # public.
       - name: Also put the APK on the CDN
+        id: cdn
         if: github.ref == 'refs/heads/main'
         env:
           SB_URL: ${{ secrets.SUPABASE_URL }}
@@ -518,8 +519,45 @@ jobs:
                  "is on the Release only. app_releases must point at GitHub."
             exit 0
           fi
+          # THE MIRROR (migration 045): the same file in the off-site
+          # company's PUBLIC bucket, when the ingest function has one. It is
+          # listed in apk_mirrors only once it is SEEN serving this file at
+          # this size to anyone — a bucket left private, or a half upload,
+          # must not become a place the app goes looking.
+          head_code() { curl -sS -o /dev/null -I --max-time 30 -w '%{http_code}' "$1" || true; }
+          head_len() {
+            curl -sSI --max-time 30 "$1" 2>/dev/null | tr -d '\r' \
+              | awk 'tolower($1)=="content-length:"{print $2}' | tail -1
+          }
+          put_on_mirror() {
+            local file="$1" out="$2"
+            local mput mpub want
+            # NEVER PRINTED, like the CDN's: a presigned PUT, in a public log.
+            mput=$(python3 -c "import json;print(json.load(open('/tmp/sign.json')).get('mirror_put_url',''))")
+            mpub=$(python3 -c "import json;print(json.load(open('/tmp/sign.json')).get('mirror_public_url',''))")
+            if [ -z "$mput" ] || [ -z "$mpub" ]; then
+              echo "no off-site mirror bucket is set up - $file is on the CDN and the Release"
+              return 0
+            fi
+            want=$(stat -c%s "$file")
+            # A published APK never changes here either.
+            if [ "$(head_code "$mpub")" != "200" ]; then
+              if ! curl --fail-with-body -sS -X PUT -T "$file" \
+                   -H 'Content-Type: application/vnd.android.package-archive' "$mput"; then
+                echo "::warning::could not put $file on the off-site mirror"
+                return 0
+              fi
+            fi
+            if [ "$(head_code "$mpub")" = "200" ] && [ "$(head_len "$mpub")" = "$want" ]; then
+              echo "$out=$mpub" >> "$GITHUB_OUTPUT"
+              echo "on the mirror: $mpub"
+            else
+              echo "::warning::the off-site mirror does not serve $file to the public at" \
+                   "its size (is the bucket public?) - it is left out of apk_mirrors"
+            fi
+          }
           put_on_cdn() {
-            local file="$1"
+            local file="$1" out="$2"
             code=$(curl -sS -o /tmp/sign.json -w '%{http_code}' \
               -X POST "$SB_URL/functions/v1/ingest" \
               -H "Authorization: Bearer $RUNNER_SECRET" \
@@ -542,6 +580,7 @@ jobs:
             if [ "$have" = "200" ]; then
               echo "::notice::$PUB is already on the CDN - left as it is." \
                    "Bump the version in pubspec.yaml to publish a new build."
+              put_on_mirror "$file" "$out"
               return 0
             fi
             curl --fail-with-body -sS -X PUT -T "$file" \
@@ -558,10 +597,11 @@ jobs:
               echo "reliably carry ninety megabytes to Myanmar; this is the"
               echo "same Cloudflare edge that already serves every poster."
             } >> "$GITHUB_STEP_SUMMARY"
+            put_on_mirror "$file" "$out"
           }
-          put_on_cdn "$NAME"
+          put_on_cdn "$NAME" mirror
           if [ -n "${NAME32:-}" ] && [ -f "$NAME32" ]; then
-            put_on_cdn "$NAME32"
+            put_on_cdn "$NAME32" mirror32
           fi
 
       # The symbols that turn an obfuscated stack trace back into names
@@ -820,3 +860,49 @@ jobs:
           fi
 
           echo "published: $(gh release view "$TAG" --json url --jq .url)"
+
+      # ═══════════════════════════════════════════════════════════════════
+      # WHERE ELSE THE UPDATE IS (migration 045)
+      # ═══════════════════════════════════════════════════════════════════
+      #
+      # `app_releases.apk_mirrors`: the app asks these, in order, only when
+      # the CDN does not deliver — a block, an account suspended, a host that
+      # cannot be reached — and checks each against the same SHA-256. The
+      # off-site mirror first (checked above), then this Release. Printed as
+      # SQL for the same edit as the release's own `update`; a mirror that
+      # was not seen serving the file is not in it.
+      - name: The update's mirrors
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: v${{ steps.facts.outputs.vname }}-${{ steps.facts.outputs.vcode }}
+          NAME: ${{ steps.facts.outputs.name }}
+          NAME32: ${{ steps.arm32.outputs.name }}
+          M64: ${{ steps.cdn.outputs.mirror }}
+          M32: ${{ steps.cdn.outputs.mirror32 }}
+        run: |
+          set -euo pipefail
+          assets=$(gh release view "$TAG" --json assets --jq '.assets[].name' 2>/dev/null || true)
+          on_release() { [ -n "$1" ] && printf '%s\n' "$assets" | grep -Fxq "$1"; }
+          gh_url() { echo "https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/$1"; }
+          list64=""
+          list32=""
+          if [ -n "${M64:-}" ]; then list64="'${M64}'"; fi
+          if on_release "$NAME"; then list64="${list64:+$list64, }'$(gh_url "$NAME")'"; fi
+          if [ -n "${M32:-}" ]; then list32="'${M32}'"; fi
+          if on_release "${NAME32:-}"; then list32="${list32:+$list32, }'$(gh_url "$NAME32")'"; fi
+          echo "arm64 mirrors: ${list64:-none}"
+          echo "arm32 mirrors: ${list32:-none}"
+          {
+            echo ""
+            echo "## Where else the update is"
+            echo ""
+            echo "Run in the same edit as the release's \`update\`:"
+            echo ""
+            echo '```sql'
+            echo "update public.app_releases"
+            echo "   set apk_mirrors       = array[${list64}]::text[],"
+            echo "       apk_mirrors_arm32 = array[${list32}]::text[]"
+            echo " where id = 1;"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

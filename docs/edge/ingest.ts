@@ -163,16 +163,24 @@ function encodeKey(key: string): string {
   return key.split('/').map(rfc3986).join('/');
 }
 
-async function presign(
-  method: 'GET' | 'PUT' | 'DELETE', objectKey: string, seconds: number, bucket: string,
+/// An S3-compatible store and the key that signs for it. R2 is one; the
+/// off-site bucket (migration 045) is the other. Same signature, different
+/// host, region and key.
+interface S3Target { host: string; region: string; keyId: string; secret: string }
+
+/// A presigned URL for one object at [target], path-style
+/// (`https://host/bucket/key`), payload unsigned. [now] is for tests.
+async function presignAt(
+  target: S3Target, method: 'GET' | 'PUT' | 'DELETE' | 'HEAD', objectKey: string,
+  seconds: number, bucket: string, now: Date = new Date(),
 ): Promise<string> {
-  const host = `${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`;
-  const amzDate = new Date().toISOString().replace(/[:-]|\.\d{3}/g, '');
+  const host = target.host;
+  const amzDate = now.toISOString().replace(/[:-]|\.\d{3}/g, '');
   const dateStamp = amzDate.slice(0, 8);
-  const scope = `${dateStamp}/auto/s3/aws4_request`;
+  const scope = `${dateStamp}/${target.region}/s3/aws4_request`;
   const params: Record<string, string> = {
     'X-Amz-Algorithm': 'AWS4-HMAC-SHA256',
-    'X-Amz-Credential': `${R2_ACCESS_KEY_ID}/${scope}`,
+    'X-Amz-Credential': `${target.keyId}/${scope}`,
     'X-Amz-Date': amzDate,
     'X-Amz-Expires': String(seconds),
     'X-Amz-SignedHeaders': 'host',
@@ -187,12 +195,104 @@ async function presign(
   const stringToSign = [
     'AWS4-HMAC-SHA256', amzDate, scope, await sha256Hex(canonicalRequest),
   ].join('\n');
-  let key: Uint8Array = enc.encode(`AWS4${R2_SECRET_ACCESS_KEY}`);
-  for (const part of [dateStamp, 'auto', 's3', 'aws4_request']) {
+  let key: Uint8Array = enc.encode(`AWS4${target.secret}`);
+  for (const part of [dateStamp, target.region, 's3', 'aws4_request']) {
     key = await hmac(key, part);
   }
   return `https://${host}${canonicalPath}?${canonicalQuery}` +
     `&X-Amz-Signature=${hex(await hmac(key, stringToSign))}`;
+}
+
+async function presign(
+  method: 'GET' | 'PUT' | 'DELETE', objectKey: string, seconds: number, bucket: string,
+): Promise<string> {
+  return await presignAt({
+    host: `${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`, region: 'auto',
+    keyId: R2_ACCESS_KEY_ID, secret: R2_SECRET_ACCESS_KEY,
+  }, method, objectKey, seconds, bucket);
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// THE OFF-SITE COPY (migration 045)
+// ═══════════════════════════════════════════════════════════════════════
+//
+// A third place, at a third company: every title file and every database
+// backup, in a PRIVATE S3-compatible bucket nobody outside can see — so no
+// report, true or false, about what R2 serves can reach it, and an R2 or
+// Telegram account lost is a re-upload, not a loss. Backblaze B2 is the one
+// docs/RUNBOOK.md sets up; anything that speaks S3 works.
+//
+// THE SAME RULE AS R2: this function holds the key (Supabase secrets
+// OFFSITE_*) and hands the runner one presigned PUT per file. The runner
+// never holds it, and neither does anything in this public repository.
+//
+//   OFFSITE_ENDPOINT       https://s3.<region>.backblazeb2.com
+//   OFFSITE_KEY_ID         the application key's id
+//   OFFSITE_SECRET         the application key
+//   OFFSITE_BUCKET         the PRIVATE bucket: masters/, db/
+//   OFFSITE_PUBLIC_BUCKET  optional, PUBLIC: apk/ only — the update's mirror
+//   OFFSITE_REGION         optional; read from a Backblaze endpoint
+//   OFFSITE_PUBLIC_BASE    optional; default <endpoint>/<public bucket>/
+//
+// Unset, nothing here runs: the database is told "no bucket" on every tick
+// and queues nothing (offsite_on()).
+const OFFSITE_ENDPOINT = (Deno.env.get('OFFSITE_ENDPOINT') ?? '').trim().replace(/\/+$/, '');
+const OFFSITE_BUCKET = (Deno.env.get('OFFSITE_BUCKET') ?? '').trim();
+const OFFSITE_PUBLIC_BUCKET = (Deno.env.get('OFFSITE_PUBLIC_BUCKET') ?? '').trim();
+
+/// The region a Backblaze endpoint names: `s3.eu-central-003.backblazeb2.com`
+/// signs as `eu-central-003`. Empty for any other host — set OFFSITE_REGION.
+function regionOf(endpoint: string): string {
+  const m = /^https:\/\/s3\.([a-z0-9-]+)\.backblazeb2\.com$/i.exec(endpoint);
+  return m ? m[1].toLowerCase() : '';
+}
+
+/// The off-site store, or null when it is not (fully) set up. https only:
+/// a key signed for plain http would be readable on the way.
+function offsiteTarget(
+  endpoint: string, region: string, keyId: string, secret: string, bucket: string,
+): S3Target | null {
+  if (!/^https:\/\/[a-z0-9.-]+(:\d{1,5})?$/i.test(endpoint)) return null;
+  const r = region.trim() || regionOf(endpoint);
+  if (!r || !keyId || !secret || !/^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$/.test(bucket)) return null;
+  return { host: endpoint.replace(/^https:\/\//i, '').toLowerCase(), region: r, keyId, secret };
+}
+const OFFSITE = offsiteTarget(
+  OFFSITE_ENDPOINT, Deno.env.get('OFFSITE_REGION') ?? '',
+  Deno.env.get('OFFSITE_KEY_ID') ?? '', Deno.env.get('OFFSITE_SECRET') ?? '', OFFSITE_BUCKET);
+
+/// Where the public mirror bucket answers from, ending in `/`; '' when there
+/// is no mirror bucket.
+function offsitePublicBase(): string {
+  if (!OFFSITE || !/^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$/.test(OFFSITE_PUBLIC_BUCKET)) return '';
+  const set = (Deno.env.get('OFFSITE_PUBLIC_BASE') ?? '').trim();
+  if (/^https:\/\/[^\s?#]+$/.test(set)) return set.endsWith('/') ? set : set + '/';
+  return `https://${OFFSITE.host}/${OFFSITE_PUBLIC_BUCKET}/`;
+}
+
+/// The off-site key of a title file: its id, never its name — the bucket's
+/// listing says nothing about what the catalogue holds. The extension stays,
+/// so a file restored by hand opens as what it is.
+function offsiteKeyFor(assetId: string, objectKey: string): string {
+  const m = /\.([a-z0-9]{1,5})$/i.exec(objectKey);
+  return `masters/${assetId}${m ? '.' + m[1].toLowerCase() : ''}`;
+}
+
+/// What the off-site bucket holds at [key]: found and how big, not there, or
+/// null when it could not be asked (a network error, a 5xx) — which is
+/// "ask again later", never "missing".
+async function offsiteHead(key: string): Promise<{ found: boolean; bytes: number | null } | null> {
+  if (!OFFSITE) return null;
+  try {
+    const res = await fetch(await presignAt(OFFSITE, 'HEAD', key, 300, OFFSITE_BUCKET),
+      { method: 'HEAD' });
+    if (res.status === 404) return { found: false, bytes: null };
+    if (!res.ok) return null;
+    const n = Number(res.headers.get('content-length') ?? '');
+    return { found: true, bytes: Number.isFinite(n) && n >= 0 ? n : null };
+  } catch {
+    return null;
+  }
 }
 
 // --- talking to our own database ------------------------------------------
@@ -293,8 +393,20 @@ async function runBackup(
     p_key: key, p_bytes: gz.length, p_raw: raw.length, p_sha: sha, p_tables: counts,
     p_trigger: trigger, p_actor: actor, p_note: null,
   });
+  // AND OFF-SITE (migration 045), the same bytes, at once. A failure here is
+  // not the backup's: R2 has it, and the next tick's catch-up copies it.
+  let offsite: string | boolean = false;
+  if (OFFSITE) {
+    try {
+      await putBackupOffsite(Number(id), key, gz);
+      offsite = true;
+    } catch (e) {
+      offsite = 'error: ' + String(e).slice(0, 120);
+    }
+  }
   // RETENTION: fourteen days, and the first of each month for a year. The row
-  // is marked only once R2 has said the object is gone.
+  // is marked only once R2 — and the off-site bucket, for a backup copied
+  // there — have said the object is gone.
   let pruned = 0;
   try {
     const old = await rpc('backup_prune_list', {}) as Array<{ id: number; object_key: string }>;
@@ -302,15 +414,146 @@ async function runBackup(
       if (!String(b.object_key).startsWith(BACKUP_PREFIX)) continue;
       const del = await fetch(await presign('DELETE', b.object_key, 300, MEDIA_BUCKET),
         { method: 'DELETE' });
-      if (del.ok || del.status === 404) {
-        await rpc('backup_deleted', { p_id: b.id });
-        pruned++;
+      if (!del.ok && del.status !== 404) continue;
+      const away = await rpc('backup_offsite_key', { p_id: b.id });
+      if (typeof away === 'string' && away) {
+        // Without the key the copy cannot be deleted; the row stays live and
+        // is tried again once the secret is back.
+        if (!OFFSITE) continue;
+        const del2 = await fetch(await presignAt(OFFSITE, 'DELETE', away, 300, OFFSITE_BUCKET),
+          { method: 'DELETE' });
+        if (!del2.ok && del2.status !== 404) continue;
       }
+      await rpc('backup_deleted', { p_id: b.id });
+      pruned++;
     }
   } catch (e) {
     console.log('backup prune: ' + String(e).slice(0, 160));
   }
-  return { id, key, bytes: gz.length, raw: raw.length, tables: order.length, pruned };
+  return { id, key, bytes: gz.length, raw: raw.length, tables: order.length, pruned, offsite };
+}
+
+/// `_backup/db/2026/10/x.json.gz` in R2 is `db/2026/10/x.json.gz` off-site.
+function offsiteBackupKey(r2Key: string): string {
+  return 'db/' + r2Key.slice(BACKUP_PREFIX.length);
+}
+
+async function putBackupOffsite(id: number, r2Key: string, gz: Uint8Array): Promise<void> {
+  if (!OFFSITE) throw new Error('no off-site bucket');
+  const key = offsiteBackupKey(r2Key);
+  const put = await fetch(await presignAt(OFFSITE, 'PUT', key, 600, OFFSITE_BUCKET), {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/gzip' },
+    body: gz as BodyInit,
+  });
+  if (!put.ok) throw new Error(`off-site PUT ${put.status} ${(await put.text()).slice(0, 120)}`);
+  await rpc('backup_offsite_done', { p_id: id, p_key: key });
+}
+
+/// THE OFF-SITE HOUSEKEEPING, on the runner's tick: queue copies, look at old
+/// ones again, delete copies of files deleted a week ago, and copy any backup
+/// that is not off-site yet (the ones made before the bucket existed). Each
+/// part on its own, so one failing does not stop the others.
+async function offsiteHousekeeping(): Promise<Record<string, unknown>> {
+  const out: Record<string, unknown> = {};
+  if (!OFFSITE) return out;
+  try {
+    out.queued = await rpc('offsite_schedule', {});
+  } catch (e) {
+    out.queued = 'error: ' + String(e).slice(0, 120);
+  }
+  try {
+    const due = (await rpc('offsite_verify_due', { p_limit: 20 }) ?? []) as
+      Array<{ asset_id: string; object_key: string }>;
+    let ok = 0, missing = 0;
+    for (const c of due) {
+      const head = await offsiteHead(c.object_key);
+      if (!head) continue;   // could not ask: not a verdict
+      const r = await rpc('offsite_verified',
+        { p_asset: c.asset_id, p_found: head.found, p_bytes: head.bytes });
+      if (r === 'ok') ok++; else missing++;
+    }
+    out.checked = { ok, missing };
+  } catch (e) {
+    out.checked = 'error: ' + String(e).slice(0, 120);
+  }
+  try {
+    const gone = (await rpc('offsite_prune_due', { p_limit: 50 }) ?? []) as
+      Array<{ asset_id: string; object_key: string }>;
+    let deleted = 0;
+    for (const c of gone) {
+      const res = await fetch(await presignAt(OFFSITE, 'DELETE', c.object_key, 300, OFFSITE_BUCKET),
+        { method: 'DELETE' });
+      if (res.ok || res.status === 404) {
+        await rpc('offsite_pruned', { p_asset: c.asset_id });
+        deleted++;
+      }
+    }
+    out.deleted = deleted;
+  } catch (e) {
+    out.deleted = 'error: ' + String(e).slice(0, 120);
+  }
+  try {
+    const todo = (await rpc('backup_offsite_due', { p_limit: 3 }) ?? []) as
+      Array<{ id: number; object_key: string }>;
+    let copied = 0;
+    for (const b of todo) {
+      if (!String(b.object_key).startsWith(BACKUP_PREFIX)) continue;
+      const get = await fetch(await presign('GET', b.object_key, 300, MEDIA_BUCKET));
+      if (!get.ok) continue;
+      await putBackupOffsite(b.id, b.object_key, new Uint8Array(await get.arrayBuffer()));
+      copied++;
+    }
+    out.backups = copied;
+  } catch (e) {
+    out.backups = 'error: ' + String(e).slice(0, 120);
+  }
+  return out;
+}
+
+/// One off-site copy job for the runner, or null. The file is read from R2
+/// while R2 has it, else from its Telegram copy — the runner already does
+/// both for restores and archive copies — and written to ONE presigned PUT
+/// whose key this function chose.
+async function claimOffsite(): Promise<Record<string, unknown> | null> {
+  if (!OFFSITE) return null;
+  let rows: Array<Record<string, unknown>>;
+  try {
+    rows = await rpc('offsite_claim', {}) as Array<Record<string, unknown>>;
+  } catch (e) {
+    console.log('offsite_claim failed: ' + String(e).slice(0, 160));
+    return null;
+  }
+  if (!Array.isArray(rows) || !rows.length) return null;
+  const o = rows[0];
+  const key = String(o.object_key ?? '');
+  const bucket = String(o.bucket ?? '');
+  const fromR2 = o.master_state === 'r2' && (bucket === MEDIA_BUCKET || bucket === PUBLIC_BUCKET);
+  const fromTelegram = !fromR2 && o.chat_id !== null && o.chat_id !== undefined;
+  if (!key || (!fromR2 && !fromTelegram)) {
+    // Between queueing and now the file moved (a restore under way): later.
+    await rpc('offsite_finish', {
+      p_job: o.job_id, p_ok: false, p_note: 'no source to copy from just now',
+      p_key: null, p_bytes: null, p_sha: null,
+    });
+    return null;
+  }
+  return {
+    job_id: o.job_id,
+    type: 'offsite',
+    asset_id: o.asset_id,
+    bytes: o.bytes ?? null,
+    file_name: key.split('/').pop() ?? 'file',
+    get_url: fromR2 ? await presign('GET', key, 86400, bucket) : null,
+    tg_chat_id: fromTelegram ? o.chat_id : null,
+    tg_message_id: fromTelegram ? o.message_id ?? null : null,
+    tg_unique_id: fromTelegram ? o.unique_id ?? null : null,
+    // A day, as for every other runner transfer: a URL that expires halfway
+    // through a two-gigabyte PUT throws the whole transfer away.
+    put_url: await presignAt(OFFSITE, 'PUT', offsiteKeyFor(String(o.asset_id), key), 86400,
+      OFFSITE_BUCKET),
+    done_url: `${SUPABASE_URL}/functions/v1/ingest`,
+  };
 }
 
 /// What a runner may say about itself: which of its secrets are SET. Yes or no
@@ -1218,7 +1461,14 @@ Deno.serve(async (req: Request) => {
         console.log('vault_claim failed: ' + String(e).slice(0, 160));
         return json({}, 200, req);
       }
-      if (!Array.isArray(vault) || !vault.length) return json({}, 200, req);
+      if (!Array.isArray(vault) || !vault.length) {
+        // NOTHING FOR TELEGRAM EITHER: an off-site copy (045), to a runner
+        // that says it can make one — one that cannot would read the job as
+        // a forwarded film.
+        const canOffsite = Array.isArray(body.can) && (body.can as unknown[]).includes('offsite');
+        const off = canOffsite ? await claimOffsite() : null;
+        return json(off ?? {}, 200, req);
+      }
       const v = vault[0];
       const restore = v.kind === 'restore';
       if (v.kind === 'archive') {
@@ -1349,6 +1599,53 @@ Deno.serve(async (req: Request) => {
     if (!sameSecret(given, RUNNER_SECRET)) return json({ error: 'no' }, 403, req);
     const jobId = String(body.job_id ?? '');
     if (!jobId) return json({ error: 'no_job' }, 400, req);
+    if (body.type === 'offsite') {
+      // WHAT ARRIVED IS ASKED OF THE BUCKET, not taken from the runner: the
+      // key is worked out again here from the job's own file, and the size
+      // recorded is the one the bucket reports.
+      if (!/^[0-9a-f-]{36}$/i.test(jobId)) return json({ error: 'no_job' }, 400, req);
+      const res = await rest(
+        `offsite_jobs?select=asset_id,title_assets(object_key)&id=eq.${jobId}`);
+      const row = res.ok ? ((await res.json()) as Array<Record<string, unknown>>)[0] : undefined;
+      if (!row) {
+        // THE FILE WAS DELETED WHILE ITS COPY WAS BEING MADE: the job went
+        // with it. What was uploaded is recorded as a copy of nothing and
+        // goes in a week like any other — the database refuses this for a
+        // file that still exists.
+        const gone = String(body.asset_id ?? '');
+        if (res.ok && /^[0-9a-f-]{36}$/i.test(gone)) {
+          const result = await rpc('offsite_orphan', {
+            p_asset: gone, p_key: offsiteKeyFor(gone, String(body.file_name ?? '')),
+          });
+          return json({ ok: true, result }, 200, req);
+        }
+        return json({ error: 'no_job' }, 404, req);
+      }
+      const asset = String(row.asset_id ?? '');
+      const objectKey = String((row.title_assets as Record<string, unknown> | null)?.object_key ?? '');
+      const key = offsiteKeyFor(asset, objectKey);
+      let ok = body.ok === true;
+      let note = String(body.note ?? '').slice(0, 300);
+      let bytes: number | null = null;
+      if (ok) {
+        const head = await offsiteHead(key);
+        if (!head) {
+          ok = false;
+          note = 'the off-site bucket did not answer after the upload';
+        } else if (!head.found) {
+          ok = false;
+          note = 'not in the off-site bucket after the upload';
+        } else {
+          bytes = head.bytes;
+        }
+      }
+      const sha = String(body.sha256 ?? '');
+      const result = await rpc('offsite_finish', {
+        p_job: jobId, p_ok: ok, p_note: note || null, p_key: ok ? key : null,
+        p_bytes: bytes, p_sha: /^[0-9a-f]{64}$/.test(sha) ? sha : null,
+      });
+      return json({ ok: true, result }, 200, req);
+    }
     if (body.type === 'archive') {
       // Where the copy now is. The database checks it is the archive channel
       // and the film's own size before it becomes the copy a restore trusts.
@@ -1379,7 +1676,8 @@ Deno.serve(async (req: Request) => {
     const jobId = String(body.job_id ?? '');
     if (!jobId) return json({ error: 'no_job' }, 400, req);
     const seconds = Math.max(0, Math.floor(Number(body.seconds ?? 0)) || 0);
-    const result = await rpc('vault_defer', { p_job: jobId, p_seconds: seconds });
+    const result = await rpc(body.type === 'offsite' ? 'offsite_defer' : 'vault_defer',
+      { p_job: jobId, p_seconds: seconds });
     return json({ ok: true, result }, 200, req);
   }
 
@@ -1420,13 +1718,23 @@ Deno.serve(async (req: Request) => {
       return json({ error: 'bad_name' }, 400, req);
     }
     const key = `apk/${name}`;
-    return json({
+    const out: Record<string, unknown> = {
       // An hour. The upload is one PUT from a runner with a fast link, and a
       // signature that outlives the job it was minted for is a signature
       // somebody can find in a log and reuse.
       put_url: await presign('PUT', key, 3600, PUBLIC_BUCKET),
       public_url: `${PUBLIC_BASE}${key}`,
-    }, 200, req);
+    };
+    // AND THE MIRROR (migration 045): the same file in the off-site
+    // company's PUBLIC bucket, which `app_releases.apk_mirrors` names so an
+    // update still arrives when the CDN does not. Its own bucket, never the
+    // private one: nothing in it but APKs.
+    const mirrorBase = offsitePublicBase();
+    if (OFFSITE && mirrorBase) {
+      out.mirror_put_url = await presignAt(OFFSITE, 'PUT', key, 3600, OFFSITE_PUBLIC_BUCKET);
+      out.mirror_public_url = `${mirrorBase}${key}`;
+    }
+    return json(out, 200, req);
   }
 
   // ── purge ────────────────────────────────────────────────────────────────
@@ -1489,6 +1797,19 @@ Deno.serve(async (req: Request) => {
       }
     } catch (e) {
       house.noticed = 'error: ' + String(e).slice(0, 120);
+    }
+    // THE OFF-SITE COPY (migration 045). The database is told, every tick,
+    // where the bucket is — host and bucket name, never a key — or that there
+    // is none, which stops its queue within two days of a secret removed.
+    try {
+      const mirror = offsitePublicBase();
+      await rpc('offsite_config', {
+        p_where: OFFSITE ? `${OFFSITE.host}/${OFFSITE_BUCKET}` : null,
+        p_public: mirror || null,
+      });
+      if (OFFSITE) house.offsite = await offsiteHousekeeping();
+    } catch (e) {
+      house.offsite = 'error: ' + String(e).slice(0, 120);
     }
     // THE RUNNER WAS HERE, and which of its secrets it had — for the Status
     // page, which otherwise cannot know whether the schedule is running.

@@ -60,6 +60,13 @@ makes that the film's Telegram copy from then on. Only a run of THIS script
 asks for archive work (`can: ["archive"]`), so an older one is never given a
 job it would mistake for a forwarded film.
 
+AND A FOURTH, `offsite` (migration 045): copy a title file to the off-site
+bucket — a third company's private bucket, so no single account lost or
+suspended loses a film. Read through a presigned GET from R2, or from the
+Telegram copy when R2 no longer has the file; written through ONE presigned
+PUT. Asked for with `can: [..., "offsite"]`, answered through `vault_done`
+with `type: "offsite"`; the edge function then asks the bucket what arrived.
+
 WHAT THIS SCRIPT NEVER SEES: an R2 key. The destination is a presigned PUT
 scoped to one object, minted by the edge function and expiring the same day.
 """
@@ -491,12 +498,137 @@ def archive_one(app, job, flood_type):
             pass
 
 
+def offsite_report(job, ok, note='', size=None, sha256=None):
+    """Tell the edge function how an off-site copy went (migration 045).
+
+    The size here is only what this runner saw. The edge function asks the
+    off-site bucket itself what arrived, and that is the size recorded.
+    """
+    payload = {
+        'op': 'vault_done',
+        'type': 'offsite',
+        'token': os.environ['JOB_TOKEN'],
+        'job_id': job['job_id'],
+        # Which file, so a copy whose file was deleted meanwhile (the job
+        # went with it) is still found and deleted in its week.
+        'asset_id': job.get('asset_id'),
+        'file_name': job.get('file_name') or '',
+        'ok': bool(ok),
+        'note': str(note)[:300],
+    }
+    if size is not None:
+        payload['bytes'] = int(size)
+    if sha256:
+        payload['sha256'] = sha256
+    _post(job['done_url'], payload)
+    try:
+        with open(REPORTED, 'w') as fh:
+            fh.write(str(job['job_id']))
+    except OSError:
+        pass
+
+
+def offsite_defer(job, seconds):
+    """Give an off-site job back for Telegram's wait, without an attempt."""
+    _post(job['done_url'], {
+        'op': 'vault_defer',
+        'type': 'offsite',
+        'token': os.environ['JOB_TOKEN'],
+        'job_id': job['job_id'],
+        'seconds': int(seconds or 0),
+    })
+    try:
+        with open(REPORTED, 'w') as fh:
+            fh.write(str(job['job_id']))
+    except OSError:
+        pass
+
+
+def sha256_of(path):
+    """Lowercase hex SHA-256 of a file, read a megabyte at a time."""
+    import hashlib
+    digest = hashlib.sha256()
+    with open(path, 'rb') as fh:
+        while True:
+            chunk = fh.read(1024 * 1024)
+            if not chunk:
+                break
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def offsite_one(app, job, flood_type):
+    """Copy one title file to the off-site bucket (migration 045).
+
+    Read from R2 through one presigned GET while R2 has the file, or from its
+    Telegram copy once the storage policy has taken it out of R2 — the same
+    two reads an archive copy and a restore already make — and written with
+    ONE presigned PUT whose key the edge function chose. A short read is
+    never uploaded, exactly as for every other path here.
+    """
+    work = tempfile.mkdtemp(prefix='offsite-')
+    target = os.path.join(work, 'payload.bin')
+    try:
+        want = int(job.get('bytes') or 0)
+        url = job.get('get_url')
+        if url:
+            size = get_from_r2(url, target)
+            if want and size != want:
+                offsite_report(job, False, note='fetched %d of %d bytes from R2' % (size, want))
+                return
+            how = 'from R2'
+        else:
+            chat_id = job.get('tg_chat_id')
+            message_id = job.get('tg_message_id')
+            if not chat_id or not message_id:
+                offsite_report(job, False, note='no R2 address and no Telegram copy')
+                return
+            msg = app.get_messages(int(chat_id), int(message_id))
+            verdict, why = judge_copy(msg, job)
+            if verdict != 'ok':
+                offsite_report(job, False, note='cannot copy from Telegram: %s' % why)
+                return
+            got = app.download_media(msg, file_name=target)
+            if not got or not os.path.exists(target):
+                offsite_report(job, False, note='nothing was downloaded')
+                return
+            size = os.path.getsize(target)
+            short = short_download(msg, job, size)
+            if short:
+                offsite_report(job, False, note=short)
+                print('failed: ' + short)
+                return
+            how = 'from Telegram'
+        sha = sha256_of(target)
+        put = put_to_r2(target, job['put_url'])
+        print('off-site: %d bytes %s' % (put, how))
+        offsite_report(job, True, note='copied %s' % how, size=put, sha256=sha)
+    except flood_type as exc:
+        seconds = int(getattr(exc, 'value', 0) or 0)
+        print('Telegram asked for a %ds wait; deferring and ending the run'
+              % seconds)
+        offsite_defer(job, seconds)
+        raise _Stop()
+    except Exception as exc:                       # noqa: BLE001
+        offsite_report(job, False, note='failed: %s' % str(exc)[:200])
+        print('failed: %s' % exc)
+    finally:
+        try:
+            if os.path.exists(target):
+                os.unlink(target)
+            os.rmdir(work)
+        except OSError:
+            pass
+
+
 def handle(app, job, flood_type):
     """One job of whichever type the claim handed out."""
     if job.get('type') in ('verify', 'restore'):
         vault_one(app, job, flood_type)
     elif job.get('type') == 'archive':
         archive_one(app, job, flood_type)
+    elif job.get('type') == 'offsite':
+        offsite_one(app, job, flood_type)
     else:
         fetch_one(app, job, flood_type)
 
@@ -518,8 +650,9 @@ def claim_next():
     """
     code, body = _post(
         os.environ['SB_URL'].rstrip('/') + '/functions/v1/ingest',
-        # `can`: this runner knows what an archive job is. See the docstring.
-        {'op': 'claim', 'can': ['archive']},
+        # `can`: this runner knows what an archive job and an off-site copy
+        # are. See the docstring.
+        {'op': 'claim', 'can': ['archive', 'offsite']},
         bearer=os.environ['RUNNER_SECRET'],
     )
     if code != 200:
@@ -642,6 +775,8 @@ def fail(job, note):
         vault_report(job, False, note=note)
     elif job.get('type') == 'archive':
         archive_report(job, False, note=note)
+    elif job.get('type') == 'offsite':
+        offsite_report(job, False, note=note)
     else:
         report(job, False, note)
 
@@ -690,6 +825,8 @@ def main():
               % seconds)
         if job.get('type') in ('verify', 'restore', 'archive'):
             vault_defer(job, seconds)
+        elif job.get('type') == 'offsite':
+            offsite_defer(job, seconds)
         else:
             defer(job, seconds)
         return 0

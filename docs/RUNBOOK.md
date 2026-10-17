@@ -711,6 +711,113 @@ hitting the REST endpoint every few minutes removes the problem entirely.
 
 ---
 
+## PART 4b — THE OFF-SITE COPY (migration 045)
+
+**Why.** Every film is in R2 and in the archive channel: two companies. But
+when the storage policy frees a master from R2, Telegram is its only copy;
+the database backups are in R2 alone; and the update APK comes from R2 alone.
+One Cloudflare account suspended — over a real report or a false one — would
+stop playback, take the backups and stop app updates at once. So a THIRD
+place, at a third company, **private**: nobody outside can see it, so no
+report can reach it, and it is never played from.
+
+What goes there, by itself, once it is set up:
+
+| what | key in the bucket | when |
+|---|---|---|
+| every title file (masters, photos, posters) | `masters/<file id>.<ext>` — an id, never a name | one by one, by the runner |
+| every database backup | `db/<year>/<month>/<time>-daily.json.gz` | as it is made, and any older one still kept |
+| the update APK (public bucket) | `apk/innocent-<name>-<code>.apk` | by the Build workflow |
+
+Each copy is looked at again every week (its size, asked of the bucket); a
+copy found missing is made again. A copy whose file was deleted from the
+catalogue is deleted a week later — the bin's week — so deleting still
+deletes. Automatic freeing of masters waits for the off-site copy.
+
+### Set it up (once, ~10 minutes)
+
+1. **Backblaze B2** account (backblaze.com → B2 Cloud Storage). The first
+   10 GB are free; after that about $7 per TB a month. Note the region it
+   shows, e.g. `eu-central-003`.
+2. **Two buckets**, names in lower case:
+   - `innocent-offsite` (or any name) — **Private**. Everything but the APK.
+   - `innocent-apk` (or any name) — **Public**. The update APK only.
+   If B2 refuses a public bucket on a new account, skip it: the updater still
+   has the GitHub release as its second mirror.
+3. **Application Keys → Add a New Application Key**: access to both buckets
+   (or all), *Read and Write*. Copy `keyID` and `applicationKey` — the key is
+   shown once.
+4. **Supabase → Edge Functions → Secrets** (the same place as the R2 ones):
+
+   | secret | value |
+   |---|---|
+   | `OFFSITE_ENDPOINT` | `https://s3.<region>.backblazeb2.com`, e.g. `https://s3.eu-central-003.backblazeb2.com` |
+   | `OFFSITE_KEY_ID` | the keyID |
+   | `OFFSITE_SECRET` | the applicationKey |
+   | `OFFSITE_BUCKET` | the private bucket's name |
+   | `OFFSITE_PUBLIC_BUCKET` | the public bucket's name (optional) |
+
+   Not in GitHub, not in the repository, not in a chat. The ingest function
+   holds the key, exactly as it holds R2's, and hands the runner one signed
+   URL per file.
+5. **Done.** On the next runner tick the console's **Status → Off-site copy**
+   says where the bucket is, and copying starts. Another S3-compatible store
+   works the same way; set `OFFSITE_REGION` too.
+
+### Restore from it
+
+The copies are plain files: B2's web page (Browse Files) downloads any of
+them. To find which file is which:
+
+```sql
+select t.title, a.kind, a.object_key as r2_key, c.object_key as offsite_key, c.bytes
+  from public.offsite_copies c
+  join public.title_assets a on a.id = c.asset_id
+  join public.titles t on t.id = a.title_id
+ order by t.title;
+```
+
+- **R2 lost a file** (or the whole account): upload each `offsite_key` file
+  back at its `r2_key` (console → Files → upload, or any S3 tool against the
+  new bucket). The catalogue rows are unchanged, so the app plays again.
+- **The database is lost:** the newest `db/…json.gz` restores with
+  `tool/restore_backup.py`, as in PART 4.
+
+### The update's mirrors
+
+`app_releases.apk_mirrors` / `apk_mirrors_arm32` list where else the same APK
+is, best first: the public B2 bucket, then the GitHub release. The app asks
+them only when the CDN does not deliver (blocked, refused, unreachable), and
+checks every one against the same SHA-256. The Build workflow's summary
+prints the `update` with them filled in; a mirror it could not verify is left
+out of it.
+
+---
+
+## PART 4c — WHEN A FILE IS REPORTED
+
+A report — from Cloudflare, Backblaze, Telegram or a rights holder directly —
+names a file and a claim. Answer it; never route around it.
+
+1. **Look.** Which title, whose film, and on what basis is it in the
+   catalogue? A film you have no right to show is taken down: unpublish it in
+   the console, then delete it (or Archive it while you find out).
+2. **A false report** — your own film, a licensed one, an open one like
+   Sintel — is answered with a **counter-notice** through the same channel
+   the report came from, with the proof of the right. Archive the title
+   while it is open if the host asks; the archive channel and the off-site
+   copy keep it, and **Restore** brings it back when the claim is closed.
+3. **Keep the proof with the title**: the licence, the agreement, the
+   source. A counter-notice without it is a guess.
+4. **An upload by mistake** is the same as step 1, the same day. The
+   off-site copy of a deleted file goes a week later by itself.
+
+The off-site copy exists so that a mistake — yours or someone else's — costs
+a restore, not a catalogue. It is not a way to keep up a film that has been
+rightly taken down, and it is never served to anyone.
+
+---
+
 ## PART 5 — PREMIUM (after 010)
 
 ### Set the price - this is what the paywall shows

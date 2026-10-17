@@ -268,6 +268,11 @@ function ssFixture() {
       archive: { chat_id: null, title: null, connected_at: null, connected_by: null, note: null },
       films: { total: 12, with_copy: 5, archived: 0, console_only: 7, too_big: 0 },
       previews_missing: 0,
+      // As the server answers with no off-site bucket set up (045).
+      offsite: { on: false, where: null, mirror: false, seen_at: iso(6 * 60000), files: 4,
+        too_big: 0, copied: 0, bytes: 0, missing: 0, last_copied_at: null, oldest_check_at: null,
+        deleting: 0, jobs: { queued: 0, running: 0, failed_7d: 0, last_note: null },
+        backups: { live: 1, copied: 0 } },
       release: { version: '1.64.41', code: 354, at: iso(4 * DAY) },
       archive_live: null,
       bot: { username: 'innocent_bot' },
@@ -1434,7 +1439,10 @@ try {
     await page.waitForSelector('#ssBody .cr-kpi');
     await shot(page, 'status-owner');
     const txt = await page.textContent('#ssBody');
-    check('status: four numbers', (await page.$$('#ssBody .cr-kpi')).length === 4);
+    check('status: five numbers', (await page.$$('#ssBody .cr-kpi')).length === 5);
+    check('status: no off-site bucket says so, and how to set one up — by secret NAME only',
+      /Off-site copy\s*not set up/.test(txt) && /Backblaze B2/.test(txt) &&
+      /OFFSITE_ENDPOINT/.test(txt) && /OFFSITE_PUBLIC_BUCKET/.test(txt));
     check('status: the runner was seen, and its missing secret is named',
       /6 min ago/.test(txt) && /TELEGRAM_BOT_TOKEN\s*MISSING/.test(txt));
     check('status: a missing project secret is MISSING, an optional one is not',
@@ -1478,6 +1486,23 @@ try {
     await page.click('#ssBody button:has-text("Disconnect")');
     await page.waitForFunction(() => /disconnected/.test(document.querySelector('#msg')?.textContent || ''));
     check('status: disconnect asks first, then sends it', ss.calls.some((c) => c.op === 'archiveDisconnect'));
+
+    // the off-site copy, once set up (045)
+    Object.assign(ss.data.offsite, {
+      on: true, where: 's3.eu-central-003.backblazeb2.com/innocent-offsite', mirror: true,
+      copied: 3, bytes: 1.2e9, missing: 1, oldest_check_at: new Date().toISOString(),
+      jobs: { queued: 1, running: 0, failed_7d: 0, last_note: 'copied' },
+      backups: { live: 1, copied: 1 },
+    });
+    await page.click('#ssRefresh');
+    await page.waitForFunction(() => /Title files there/.test(document.querySelector('#ssBody')?.textContent || ''));
+    {
+      const t = await page.textContent('#ssBody');
+      check('status: the off-site copy counts its files, names its bucket, and flags a missing one',
+        /Title files there\s*3 of 4/.test(t) && /innocent-offsite/.test(t) &&
+        /Missing when last looked\s*1/.test(t) && /1 missing — being copied again/.test(t));
+      check('status: the update mirror is shown as set', /Update mirror\s*set/.test(t));
+    }
 
     check('status: no script errors', state.errors.length === 0);
     if (state.errors.length) console.log('     ' + state.errors.join('\n     '));

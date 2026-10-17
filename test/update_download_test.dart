@@ -124,6 +124,15 @@ class _ApkServer {
   /// When set, 206 responses claim this total instead of the real one.
   int? lieAboutTotal;
 
+  /// When set, requests from the [failFrom]th on are answered with this
+  /// status and no body — a suspended account's 403, a missing object's 404.
+  int? failStatus;
+  int failFrom = 1;
+
+  /// When set, every request is redirected here (302), as a GitHub release
+  /// download is to its storage host.
+  String? redirectTo;
+
   int get port => _server!.port;
   String get url => 'https://127.0.0.1:$port/innocent.apk';
 
@@ -141,6 +150,20 @@ class _ApkServer {
       requests++;
       final range = req.headers.value(HttpHeaders.rangeHeader);
       rangeHeaders.add(range);
+
+      final status = failStatus;
+      if (status != null && requests >= failFrom) {
+        req.response.statusCode = status;
+        await req.response.close();
+        return;
+      }
+      final to = redirectTo;
+      if (to != null) {
+        req.response.statusCode = HttpStatus.found;
+        req.response.headers.set(HttpHeaders.locationHeader, to);
+        await req.response.close();
+        return;
+      }
 
       var start = 0;
       if (range != null) {
@@ -215,6 +238,7 @@ void main() {
     // override restores the real HttpClient; the binding is still needed for
     // the MethodChannel mock below.
     HttpOverrides.global = null;
+    UpdateDownloadService.forgetSources();
 
     // The foreground service has no Android side in a test binding. Swallowing
     // the calls keeps the transport under test and the output readable.
@@ -398,6 +422,132 @@ void main() {
         await File('${dir.path}/innocent-321.apk.part').exists(),
         isFalse,
       );
+    });
+  });
+
+  // ═════════════════════════════════════════════════════════════════════
+  // THE SAME FILE IN MORE THAN ONE PLACE (migration 045)
+  // ═════════════════════════════════════════════════════════════════════
+  //
+  // The CDN can be blocked, or its account suspended over a report, and an
+  // update that has nowhere else to come from stops for every phone. These
+  // assert the update still arrives from a mirror — and that moving to one
+  // never costs a byte already on disk, never takes a file of the wrong
+  // size, and never splices two files together.
+  group('mirrors', () {
+    final extra = <_ApkServer>[];
+    tearDown(() async {
+      for (final s in extra) {
+        await s.stop();
+      }
+      extra.clear();
+    });
+
+    Future<_ApkServer> another(List<int> served) async {
+      final s = _ApkServer(served);
+      await s.start();
+      extra.add(s);
+      return s;
+    }
+
+    AppRelease withMirrors(List<String> mirrors) => AppRelease(
+          versionName: '1.64.8',
+          versionCode: 321,
+          apkUrl: server.url,
+          apkSha256: _hex(body),
+          apkBytes: body.length,
+          apkMirrors: mirrors,
+        );
+
+    test('a primary that answers 403 is passed over for the mirror', () async {
+      final mirror = await another(body);
+      server.failStatus = HttpStatus.forbidden;
+
+      final file = await download(withMirrors([mirror.url]));
+
+      expect(await file.readAsBytes(), body);
+      // Asked once — a 403 is an answer, not a hiccup — then the mirror.
+      expect(server.requests, 1);
+      expect(mirror.requests, 1);
+    });
+
+    test('a primary that cannot be reached at all is passed over', () async {
+      // A port nothing listens on: connection refused, as for a blocked host.
+      final gone = await another(body);
+      final deadUrl = gone.url;
+      await gone.stop();
+      final mirror = await another(body);
+      final release = AppRelease(
+        versionName: '1.64.8',
+        versionCode: 321,
+        apkUrl: deadUrl,
+        apkSha256: _hex(body),
+        apkBytes: body.length,
+        apkMirrors: [mirror.url],
+      );
+
+      final file = await download(release);
+
+      expect(await file.readAsBytes(), body);
+      expect(mirror.requests, 1);
+    });
+
+    test('a download cut off at the primary is FINISHED at the mirror, '
+        'not started again', () async {
+      final mirror = await another(body);
+      // The primary delivers 150000 bytes, then refuses everything — the
+      // account suspended in the middle of somebody's update.
+      server.truncateNextResponseAt = 150000;
+      server.failStatus = HttpStatus.forbidden;
+      server.failFrom = 2;
+
+      final file = await download(withMirrors([mirror.url]));
+
+      expect(await file.readAsBytes(), body);
+      // The mirror was asked only for what was missing.
+      expect(_rangeOffsets(mirror), [150000]);
+    });
+
+    test('a mirror serving a file of another size is refused before its body',
+        () async {
+      final stale = await another(List<int>.filled(body.length + 999, 3));
+      final good = await another(body);
+      server.failStatus = HttpStatus.notFound;
+
+      final file = await download(withMirrors([stale.url, good.url]));
+
+      expect(await file.readAsBytes(), body);
+      expect(stale.requests, 1);
+      expect(good.requests, 1);
+    });
+
+    test('a redirect (as GitHub answers) still carries the Range', () async {
+      final storage = await another(body);
+      final github = await another(body)..redirectTo = storage.url;
+      server.truncateNextResponseAt = 120000;
+      server.failStatus = HttpStatus.forbidden;
+      server.failFrom = 2;
+
+      final file = await download(withMirrors([github.url]));
+
+      expect(await file.readAsBytes(), body);
+      // The storage host behind the redirect was asked for the rest only.
+      expect(_rangeOffsets(storage), [120000]);
+    });
+
+    test('when every place refuses, the last answer is the one reported',
+        () async {
+      final mirror = await another(body)..failStatus = HttpStatus.notFound;
+      server.failStatus = HttpStatus.forbidden;
+
+      await expectLater(
+        download(withMirrors([mirror.url])),
+        throwsA(isA<UpdateDownloadFailure>()
+            .having((e) => e.kind, 'kind', UpdateDownloadFailureKind.server)
+            .having((e) => e.statusCode, 'status', HttpStatus.notFound)),
+      );
+      expect(server.requests, 1);
+      expect(mirror.requests, 1);
     });
   });
 

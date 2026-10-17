@@ -248,11 +248,12 @@ of it already exists.
 | PayPal declines once | Backup method covers it | none |
 | PayPal account closed | Add a new method within 30 days | none |
 | Cloudflare account lost | Re-package masters from Telegram to B2/Bunny; point the Worker elsewhere | days, not weeks |
-| Telegram archive lost | **Unrecoverable.** Keep a second copy | — |
+| Telegram archive lost | Re-copy from R2 or the off-site bucket (045) | none |
 
-The last row is the one to act on now. Telegram is the backstop for everything
-else, so it needs its own backstop: a second channel, a second account, or a
-cold copy on a drive. **The place with no fallback is the place to add one.**
+The last row was the one to act on, and migration 045 did: every title file
+and every backup also lives in a private bucket at a third company (Backblaze
+B2, first 10 GB free, then about $7/TB a month — docs/RUNBOOK.md part 4b).
+**The place with no fallback was the place to add one.**
 
 ---
 

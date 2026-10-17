@@ -85,7 +85,7 @@ jobs:
             -X POST "$SB_URL/functions/v1/ingest" \
             -H "Authorization: Bearer $RUNNER_SECRET" \
             -H 'Content-Type: application/json' \
-            -d '{"op":"claim","can":["archive"]}')
+            -d '{"op":"claim","can":["archive","offsite"]}')
           if [ "$code" != "200" ]; then
             echo "claim returned $code"; echo "job=none" >> "$GITHUB_OUTPUT"; exit 0
           fi
@@ -167,9 +167,9 @@ jobs:
           python3 - > /tmp/fail.json <<'PY'
           import json, os
           job = json.load(open('/tmp/ingest.json'))
-          # A Telegram check, restore or archive copy (migrations 029, 032)
-          # answers to its own op; an archive copy says so with `type`.
-          vault = job.get('type') in ('verify', 'restore', 'archive')
+          # A Telegram check, restore, archive or off-site copy (migrations
+          # 029, 032, 045) answers to its own op, and says which with `type`.
+          vault = job.get('type') in ('verify', 'restore', 'archive', 'offsite')
           print(json.dumps({
             'op': 'vault_done' if vault else 'done',
             'type': job.get('type'),

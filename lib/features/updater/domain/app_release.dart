@@ -23,6 +23,7 @@ class AppRelease {
     this.notesMm,
     this.releasedAt,
     this.playerFlags = const <String>{},
+    this.apkMirrors = const <String>[],
   });
 
   /// Shown to the user: '1.64.6'.
@@ -72,6 +73,21 @@ class AppRelease {
   /// Remote player switches (migration 038), e.g. `legacy_surface`.
   final Set<String> playerFlags;
 
+  /// The same APK somewhere else, best first (migration 045): the off-site
+  /// bucket, then the GitHub release. Asked only when [apkUrl] does not
+  /// deliver — a block, a suspended account, a link that cannot get through
+  /// — and checked against the same [apkSha256], so a mirror can be slower
+  /// but never a different file. Never contains [apkUrl] itself.
+  final List<String> apkMirrors;
+
+  /// Where the APK can be fetched, in the order to ask: [apkUrl], then
+  /// [apkMirrors]. Empty when there is nothing to download.
+  List<String> get apkSources {
+    final url = apkUrl;
+    if (url == null) return const <String>[];
+    return <String>[url, ...apkMirrors];
+  }
+
   /// Builds a release from one PostgREST row, or null if the row is unusable.
   ///
   /// Returns null rather than throwing on a malformed row: a broken manifest
@@ -96,18 +112,21 @@ class AppRelease {
     // or one left over from an earlier version — it has nothing to download,
     // which is the truth for that phone.
     final arm32 = phoneRuns32BitOnly(abis);
-    final Object? bytes, url, sha;
+    final Object? bytes, url, sha, mirrors;
     if (arm32) {
       final u = json['apk_url_arm32'];
       final fresh = u is String && !_namesOtherBuild(u, code);
       url = fresh ? u : null;
       sha = fresh ? json['apk_sha256_arm32'] : null;
       bytes = fresh ? json['apk_bytes_arm32'] : null;
+      mirrors = fresh ? json['apk_mirrors_arm32'] : null;
     } else {
       url = json['apk_url'];
       sha = json['apk_sha256'];
       bytes = json['apk_bytes'];
+      mirrors = json['apk_mirrors'];
     }
+    final primary = url is String && url.trim().isNotEmpty ? url.trim() : null;
     // `is int` and nothing else. A string '319', a double, a null or a missing
     // key all become null, which reads as "no minimum set" — the safe answer.
     // Coercing here (int.tryParse on a string, say) would be a way for a typo
@@ -118,7 +137,7 @@ class AppRelease {
     return AppRelease(
       versionName: name,
       versionCode: code,
-      apkUrl: url is String && url.trim().isNotEmpty ? url.trim() : null,
+      apkUrl: primary,
       apkSha256: sha is String && sha.trim().isNotEmpty
           ? sha.trim().toLowerCase()
           : null,
@@ -129,7 +148,38 @@ class AppRelease {
       notesMm: json['notes_mm'] is String ? json['notes_mm'] as String : null,
       releasedAt: released is String ? DateTime.tryParse(released) : null,
       playerFlags: parsePlayerFlags(json['player_flags']),
+      apkMirrors: primary == null
+          ? const <String>[]
+          : parseMirrors(mirrors, primary: primary, code: code),
     );
+  }
+
+  /// At most this many mirrors are asked. Each one that cannot deliver costs
+  /// a few attempts' worth of waiting before the next is tried.
+  static const int maxMirrors = 3;
+
+  /// `apk_mirrors` as the download may use it: https only, no repeat of
+  /// [primary], none naming another build's file, at most [maxMirrors].
+  ///
+  /// A MIRROR LEFT AT THE LAST RELEASE IS DROPPED, NOT TRIED. Its file is
+  /// last version's APK: the length or the hash would refuse it, but only
+  /// after it had cost the download — so a URL whose file name carries a
+  /// different build number than the row never gets that far.
+  static List<String> parseMirrors(Object? raw,
+      {required String primary, required int code}) {
+    if (raw is! List) return const <String>[];
+    final out = <String>[];
+    for (final m in raw) {
+      if (m is! String) continue;
+      final u = m.trim();
+      if (!u.startsWith('https://') || u == primary || out.contains(u)) {
+        continue;
+      }
+      if (_namesOtherBuild(u, code)) continue;
+      out.add(u);
+      if (out.length == maxMirrors) break;
+    }
+    return List<String>.unmodifiable(out);
   }
 
   /// Whether a phone with these ABIs can run 32-bit ARM code and NOT 64-bit:
@@ -139,11 +189,12 @@ class AppRelease {
   static bool phoneRuns32BitOnly(List<String> abis) =>
       !abis.contains('arm64-v8a') && abis.contains('armeabi-v7a');
 
-  /// A 32-bit URL whose file name carries another build's number — the
-  /// column left at the last release while the row moved on. Installed, it
-  /// would be the old version again, offered for ever.
+  /// A URL whose file name carries another build's number — the column left
+  /// at the last release while the row moved on. Installed, it would be the
+  /// old version again, offered for ever. `innocent-<name>-<code>.apk` and
+  /// `innocent-<name>-<code>-arm32.apk`; a name without a number says nothing.
   static bool _namesOtherBuild(String url, int code) {
-    final m = RegExp(r'-(\d+)-arm32\.apk$').firstMatch(url.trim());
+    final m = RegExp(r'-(\d+)(-arm32)?\.apk$').firstMatch(url.trim());
     return m != null && int.parse(m.group(1)!) != code;
   }
 
