@@ -1,0 +1,143 @@
+# Seed a few famous CC-BY Blender open movies into the catalogue, to exercise
+# streaming and download with real films. Run by hand (workflow_dispatch).
+#
+# EVERY FILM HERE IS CREATIVE COMMONS ATTRIBUTION (CC-BY): the Blender open
+# movies are made to be shared, so this is a legitimate test catalogue, not a
+# copy of anyone's rights. Each becomes one album: the master video and five
+# stills taken from the film itself.
+#
+# The bytes move on this runner, exactly as every other master does: the
+# runner downloads the film, asks the ingest function to presign a PUT for an
+# `open-film-<slug>/…` key (seed_sign, INGEST_SECRET), uploads, then asks it
+# to make the draft catalogue row (seed_title). The runner never holds a
+# bucket credential or the database key.
+name: Seed open films
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Install ffmpeg
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg jq
+
+      - name: Download, make stills, upload, and make the rows
+        env:
+          SB_URL: ${{ secrets.SUPABASE_URL }}
+          RUNNER_SECRET: ${{ secrets.INGEST_SECRET }}
+        run: |
+          set -uo pipefail
+          if [ -z "${SB_URL:-}" ] || [ -z "${RUNNER_SECRET:-}" ]; then
+            echo "::error::SUPABASE_URL or INGEST_SECRET not set"; exit 1
+          fi
+          FN="$SB_URL/functions/v1/ingest"
+
+          # slug | title | year | url | fallback-url
+          # The first three are on Google's public gtv-videos bucket (fast,
+          # reliable). The rest are best-effort from blender.org; a film that
+          # does not download is skipped, not fatal.
+          films=(
+            "open-film-big-buck-bunny|Big Buck Bunny|2008|https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4|https://download.blender.org/peach/bigbuckbunny_movies/BigBuckBunny_320x180.mp4"
+            "open-film-elephants-dream|Elephants Dream|2006|https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4|"
+            "open-film-tears-of-steel|Tears of Steel|2012|https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4|https://download.blender.org/demo/movies/ToS/tears_of_steel_720p.mov"
+            "open-film-caminandes-llamigos|Caminandes: Llamigos|2016|https://download.blender.org/demo/movies/Caminandes_Llamigos_1080p.mp4|"
+            "open-film-cosmos-laundromat|Cosmos Laundromat|2015|https://download.blender.org/demo/movies/CosmosLaundromat_1080p.mp4|"
+          )
+
+          # Presign a PUT for one open-film object and upload a local file to it.
+          put() {   # slug name kind file  -> echoes object_key
+            local slug="$1" name="$2" kind="$3" file="$4"
+            local sign code
+            code=$(curl -sS -o /tmp/sign.json -w '%{http_code}' -X POST "$FN" \
+              -H "Authorization: Bearer $RUNNER_SECRET" -H 'Content-Type: application/json' \
+              -d "{\"op\":\"seed_sign\",\"slug\":\"$slug\",\"name\":\"$name\",\"kind\":\"$kind\"}")
+            if [ "$code" != "200" ]; then echo "  sign $name: HTTP $code" >&2; return 1; fi
+            local url key
+            url=$(jq -r .put_url /tmp/sign.json); key=$(jq -r .object_key /tmp/sign.json)
+            local ct='application/octet-stream'
+            [ "$kind" = photo ] && ct='image/jpeg'
+            [ "$kind" = video ] && ct='video/mp4'
+            # NEVER printed: the presigned URL is a secret in a public log.
+            if ! curl --fail-with-body -sS -X PUT -T "$file" -H "Content-Type: $ct" "$url" >/dev/null; then
+              echo "  put $name: upload failed" >&2; return 1
+            fi
+            echo "$key"
+          }
+
+          made=0
+          for line in "${films[@]}"; do
+            IFS='|' read -r slug title year url fb <<< "$line"
+            [ -z "$slug" ] && continue
+            echo "=== $title ($slug) ==="
+            rm -f /tmp/master.mp4 /tmp/still-*.jpg
+            if ! curl --fail-with-body -sSL --max-time 1800 -o /tmp/master.mp4 "$url"; then
+              echo "  primary source failed"
+              if [ -n "$fb" ] && curl --fail-with-body -sSL --max-time 1800 -o /tmp/master.mp4 "$fb"; then
+                echo "  fallback source used"
+              else
+                echo "  SKIP: no source"; continue
+              fi
+            fi
+            bytes=$(stat -c%s /tmp/master.mp4)
+            # Probe the master.
+            probe=$(ffprobe -v error -select_streams v:0 \
+              -show_entries stream=width,height -show_entries format=duration \
+              -of json /tmp/master.mp4 2>/dev/null)
+            w=$(echo "$probe" | jq -r '.streams[0].width // 0')
+            h=$(echo "$probe" | jq -r '.streams[0].height // 0')
+            dur=$(echo "$probe" | jq -r '.format.duration // 0' | cut -d. -f1)
+            [ -z "$dur" ] && dur=0
+            echo "  ${w}x${h}, ${dur}s, $((bytes/1000000)) MB"
+            if [ "$bytes" -lt 100000 ] || [ "$w" = 0 ]; then echo "  SKIP: not a usable video"; continue; fi
+
+            # Five stills, evenly spaced away from the very start and end.
+            photos_json='[]'
+            i=0
+            for pct in 10 30 50 70 90; do
+              i=$((i+1))
+              t=$(( dur * pct / 100 ))
+              out="/tmp/still-$i.jpg"
+              ffmpeg -nostdin -y -ss "$t" -i /tmp/master.mp4 -frames:v 1 \
+                -vf "scale='min(1280,iw)':-2" -q:v 3 "$out" >/dev/null 2>&1
+              if [ ! -s "$out" ]; then echo "  still $i failed"; continue; fi
+              pk=$(put "$slug" "still-$i.jpg" photo "$out") || continue
+              pw=$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=p=0 "$out" 2>/dev/null)
+              pwid=$(echo "$pw" | cut -d, -f1); phei=$(echo "$pw" | cut -d, -f2)
+              pbytes=$(stat -c%s "$out")
+              photos_json=$(echo "$photos_json" | jq -c \
+                --arg k "$pk" --argjson w "${pwid:-0}" --argjson h "${phei:-0}" --argjson b "$pbytes" \
+                '. + [{object_key:$k,width:$w,height:$h,bytes:$b}]')
+            done
+
+            vk=$(put "$slug" "master.mp4" video /tmp/master.mp4) || { echo "  SKIP: video upload failed"; continue; }
+
+            payload=$(jq -nc \
+              --arg slug "$slug" --arg title "$title" --argjson year "${year:-0}" \
+              --arg syn "A Creative Commons (CC-BY) open movie by the Blender Foundation, used here to test streaming and download." \
+              --arg vk "$vk" --argjson vb "$bytes" --argjson vw "${w:-0}" --argjson vh "${h:-0}" --argjson vd "${dur:-0}" \
+              --argjson photos "$photos_json" \
+              '{op:"seed_title",slug:$slug,title:$title,year:$year,synopsis:$syn,
+                video:{object_key:$vk,bytes:$vb,width:$vw,height:$vh,duration_s:$vd,mime:"video/mp4"},
+                photos:$photos}')
+            code=$(curl -sS -o /tmp/seed.json -w '%{http_code}' -X POST "$FN" \
+              -H "Authorization: Bearer $RUNNER_SECRET" -H 'Content-Type: application/json' -d "$payload")
+            if [ "$code" = 200 ]; then
+              id=$(jq -r '.id' /tmp/seed.json)
+              echo "  title row: $id ($(jq -r '.assets // "existing"' /tmp/seed.json) assets)"
+              made=$((made+1))
+              {
+                echo "- **$title** ($year) — $((bytes/1000000)) MB, ${w}x${h}, $(echo "$photos_json" | jq 'length') stills"
+              } >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "  seed_title: HTTP $code $(cat /tmp/seed.json)"
+            fi
+          done
+
+          echo "=== seeded $made film(s) ==="
+          [ "$made" -gt 0 ]
