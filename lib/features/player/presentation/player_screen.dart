@@ -2088,12 +2088,25 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
       ),
     );
     if (picked == null || !mounted) return;
+    // The film plays on while the chosen copy's next seconds arrive (the
+    // warm switch), which can take a few seconds on a slow line: say so, or
+    // a second tap reads as "nothing happened".
+    final messenger = ScaffoldMessenger.of(this.context);
+    final strings = AppStrings.of(this.context);
+    if (picked != menu.selected) {
+      messenger.showSnackBar(SnackBar(
+        content: Text(strings.playerQualitySwitching),
+        duration: const Duration(seconds: 10),
+      ));
+    }
     final ok = await ref
         .read(playerControllerProvider.notifier)
         .switchQuality(picked);
-    if (!ok && mounted) {
-      ScaffoldMessenger.of(this.context).showSnackBar(
-        SnackBar(content: Text(AppStrings.of(this.context).playerQualityFailed)),
+    if (!mounted) return;
+    messenger.hideCurrentSnackBar();
+    if (!ok) {
+      messenger.showSnackBar(
+        SnackBar(content: Text(strings.playerQualityFailed)),
       );
     }
   }

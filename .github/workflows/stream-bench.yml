@@ -23,7 +23,12 @@ on:
       - 'lib/features/video_hub/data/api/ranged_fetch.dart'
       - 'lib/features/video_hub/presentation/playback.dart'
       - 'lib/features/video_hub/domain/warm_rule.dart'
+      - 'lib/features/video_hub/domain/cmaf_index.dart'
+      - 'lib/features/player/presentation/player_provider.dart'
+      - 'lib/features/player/domain/climb_rule.dart'
       - 'test/stream_cache_server_test.dart'
+      - 'test/cmaf_index_test.dart'
+      - 'test/support/cmaf.dart'
       - '.github/workflows/stream-bench.yml'
   workflow_dispatch:
 

@@ -11,8 +11,11 @@
 /// once 10 s are buffered (`DEFAULT_MIN_DURATION_FOR_QUALITY_INCREASE_MS`);
 /// Shaka waits 8 s between switches. Their switch is seamless — the next
 /// segment simply comes from another rung. Here a switch is a reopen of the
-/// film at the same moment (libmpv's HLS demuxer cannot change variant), a
-/// second of black, so a climb asks for more evidence first: 15 s buffered,
+/// film at the same moment (libmpv's HLS demuxer cannot change variant).
+/// Since 1.64.68 the better copy's next seconds are fetched first, while the
+/// old one plays on (the warm switch), so the reopen costs a blink rather
+/// than a second of frozen picture — but the fetch is a viewer's data, and a
+/// climb still asks for evidence first: 15 s buffered,
 /// a minute since the last switch, a minute and a half since the last stall,
 /// a minute between asks, and at most three climbs in a film. Whether a
 /// better copy FITS is not decided here: the playback code answers that from
@@ -58,6 +61,27 @@ class ClimbRule {
   /// Climbs in one film. With at most two automatic steps down, a link that
   /// swings cannot turn the film into a slide show of reopens.
   static const int maxClimbs = 3;
+
+  /// A CLIMB CALLED OFF IS A MEASUREMENT. The better copy was fetched from
+  /// the moment it would open at and did not arrive 1.25 times faster than
+  /// it plays: this line, now, cannot carry it. Asking again a minute later
+  /// would spend up to 8 MB of the viewer's data to learn the same thing, so
+  /// after one the next waits three minutes, and after two the film stays
+  /// where it is.
+  static const Duration afterAbandon = Duration(minutes: 3);
+  static const int maxAbandons = 2;
+
+  /// The margin the better copy's bytes must arrive by: the 1.25 a rung
+  /// needs to be watched without stalls, over its own bitrate.
+  static const double climbPace = 1.25;
+
+  /// Whether, after [abandons] climbs called off in this film, the last
+  /// [sinceAbandon] ago (null: none), another may be tried.
+  static bool abandonAllows({required int abandons, required Duration? sinceAbandon}) {
+    if (abandons >= maxAbandons) return false;
+    if (sinceAbandon != null && sinceAbandon < afterAbandon) return false;
+    return true;
+  }
 
   /// Whether the player may try a better copy now. Durations are "how long
   /// ago", null meaning "never in this film".

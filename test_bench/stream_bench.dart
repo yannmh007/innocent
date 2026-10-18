@@ -12,6 +12,8 @@ import 'package:path_provider_platform_interface/path_provider_platform_interfac
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../test/support/cmaf.dart';
+
 class _FakePaths extends PathProviderPlatform with MockPlatformInterfaceMixin {
   _FakePaths(this.root);
   final String root;
@@ -53,6 +55,14 @@ void main() {
 
     final r = Random(5);
     final body = Uint8List.fromList(List<int>.generate(mb << 20, (_) => r.nextInt(256)));
+    final film = body;
+    // The rung a switch opens on, in the ladder's layout (ftyp, moov, sidx,
+    // a fragment every 2 s): two minutes of a 720p rung, the usual climb.
+    final switchKbps = int.tryParse(env['BENCH_SWITCH_KBPS'] ?? '') ?? 2500;
+    final rung = FakeCmaf.build(
+      fragments: 60,
+      fragmentBytes: max(64 * 1024, switchKbps * 1000 ~/ 8 * 2),
+    );
     // The Worker's part: ranges, 206, Content-Range. Bound to the loopback
     // ADDRESS of the shaped interface, so every byte crosses the netem queue.
     // A FIXED PORT when the workflow names one, so `tc` can shape this
@@ -62,6 +72,7 @@ void main() {
         int.tryParse(env['BENCH_PORT'] ?? '') ?? 0);
     server.listen((req) async {
       final res = req.response;
+      final body = req.uri.path.endsWith('/rung.mp4') ? rung.bytes : film;
       var start = 0, end = body.length - 1;
       final h = req.headers.value(HttpHeaders.rangeHeader);
       if (h != null) {
@@ -125,6 +136,45 @@ void main() {
       // ignore: avoid_print
       print(line);
     }
+    // THE RUNG SWITCH (StreamCacheServer.warmSwitch): a climb or a menu
+    // choice reopens the film on another copy at the same moment. `cold` is
+    // the reopen as it was — index, then the fragment it seeks into, over
+    // the line; `warm` fetches the new copy's next ten seconds first (the
+    // old copy would be playing meanwhile) and then reopens. `picture` is
+    // the frozen picture: the reopen until the fragment it seeks into and
+    // the one after are held.
+    if (env['BENCH_SWITCH'] != '0') {
+      final lanes = laneCounts.last;
+      StreamCacheServer.lanes = lanes;
+      final rungUrl = 'http://127.0.0.1:${server.port}/rung.mp4';
+      const at = Duration(seconds: 61);
+      for (final warm in <bool>[false, true]) {
+        final id = 'bench-switch-${warm ? 'warm' : 'cold'}-${DateTime.now().microsecondsSinceEpoch}';
+        final local = await StreamCacheServer.instance
+            .localUrlFor(cacheId: id, upstream: rungUrl, refresh: () async => rungUrl);
+        var warmNote = '';
+        if (warm) {
+          final t = Stopwatch()..start();
+          final w = await StreamCacheServer.instance.warmSwitch(id, at,
+              limit: const Duration(seconds: 12), paceOver: 1.25);
+          warmNote = '  warm ${t.elapsedMilliseconds} ms'
+              '${w == null ? ' REFUSED' : w.complete ? ' (${w.kbps} kbps)' : ' NOT IN TIME (${w.kbps} kbps)'}';
+        }
+        final k = at.inSeconds ~/ 2; // the fragment holding 61 s: from 60 s
+        final from = rung.fragmentStarts[k];
+        final to = rung.fragmentStarts[k + 1] + rung.fragmentSizes[k + 1] - 1;
+        final t = Stopwatch()..start();
+        await _drain(local!, 0, rung.headEnd + 15);
+        await _drain(local, from, to);
+        final pictureMs = t.elapsedMilliseconds;
+        StreamCacheServer.instance.release(id);
+        final line = 'switch ${warm ? 'warm' : 'cold'} lanes=$lanes$warmNote  '
+            'picture $pictureMs ms  ($switchKbps kbps rung)';
+        lines.add(line);
+        // ignore: avoid_print
+        print(line);
+      }
+    }
     final out = env['BENCH_OUT'];
     if (out != null) File(out).writeAsStringSync('${lines.join('\n')}\n');
     await server.close(force: true);
@@ -134,6 +184,18 @@ void main() {
       await temp.delete(recursive: true);
     } catch (_) {}
   }, timeout: const Timeout(Duration(minutes: 20)));
+}
+
+/// Read bytes [a]..[b] of [url] to the end, as a player's closed range.
+Future<void> _drain(String url, int a, int b) async {
+  final c = HttpClient();
+  try {
+    final req = await c.getUrl(Uri.parse(url));
+    req.headers.set(HttpHeaders.rangeHeader, 'bytes=$a-$b');
+    await (await req.close()).drain<void>();
+  } finally {
+    c.close(force: true);
+  }
 }
 
 class _Result {

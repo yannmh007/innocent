@@ -11,6 +11,8 @@ import 'package:path_provider_platform_interface/path_provider_platform_interfac
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'support/cmaf.dart';
+
 class _FakePaths extends PathProviderPlatform with MockPlatformInterfaceMixin {
   _FakePaths(this.root);
   final String root;
@@ -719,5 +721,106 @@ void main() {
       StreamCacheServer.instance.release('film-busy');
       ForegroundStream.reset();
     }
+  });
+
+  // ─── WARM SWITCH ─────────────────────────────────────────────────────
+
+  group('warm switch', () {
+    // A minute of a 1 Mbit rung in the ladder's layout: 2 s fragments of
+    // 256 KB, a sidx at the front.
+    final film = FakeCmaf.build(fragments: 30, fragmentBytes: 256 * 1024);
+    late _Upstream rung;
+
+    setUpAll(() async {
+      rung = _Upstream(film.bytes);
+      await rung.start();
+    });
+    tearDownAll(() async => rung.server.close(force: true));
+    setUp(() {
+      rung.requests = 0;
+      rung.ranges.clear();
+      rung.pace = const Duration(milliseconds: 2);
+      rung.piece = 256 * 1024;
+    });
+
+    Future<String> register(String id) async => (await StreamCacheServer.instance
+        .localUrlFor(cacheId: id, upstream: rung.url('t1'), refresh: () async => null))!;
+
+    test('fetches the new copy from the moment it will open at, and the reopen '
+        'then reads nothing from the network', () async {
+      final local = await register('switch-a');
+      final w = await StreamCacheServer.instance
+          .warmSwitch('switch-a', const Duration(seconds: 25), limit: const Duration(seconds: 20));
+      expect(w, isNotNull);
+      expect(w!.complete, isTrue);
+      expect(w.film, greaterThanOrEqualTo(StreamCacheServer.switchLead));
+      // 25 s is in the fragment from 24 s: nothing earlier than its start was
+      // fetched past the index.
+      final first = film.fragmentStarts[12];
+      for (final (a, _) in rung.ranges) {
+        expect(a < 64 * 1024 || a >= first, isTrue, reason: '${rung.ranges}');
+      }
+      // The reopen, as libmpv makes it: the index, then the fragment it
+      // seeks into and on through the ten seconds.
+      rung.requests = 0;
+      final head = await _getRange(local, 0, film.headEnd + 15);
+      expect(head, Uint8List.sublistView(film.bytes, 0, film.headEnd + 16));
+      final last = film.fragmentStarts[17] + film.fragmentSizes[17] - 1;
+      final body = await _getRange(local, first, last);
+      expect(body, Uint8List.sublistView(film.bytes, first, last + 1));
+      expect(rung.requests, 0, reason: 'everything was on the phone: ${rung.ranges}');
+      StreamCacheServer.instance.release('switch-a');
+    });
+
+    test('a climb the line cannot carry is called off in time', () async {
+      await register('switch-b');
+      // About 0.6 Mbit a connection, three connections: well short of
+      // 1.25 x a 1 Mbit rung.
+      rung.piece = 8 * 1024;
+      rung.pace = const Duration(milliseconds: 100);
+      final clock = Stopwatch()..start();
+      final w = await StreamCacheServer.instance.warmSwitch(
+          'switch-b', const Duration(seconds: 25),
+          limit: const Duration(milliseconds: 1500), paceOver: 1.25);
+      expect(w, isNotNull);
+      expect(w!.complete, isFalse);
+      expect(clock.elapsed, lessThan(const Duration(seconds: 3)),
+          reason: 'the limit stops it, not the line');
+      // What did arrive is counted: the log says how fast the line was.
+      expect(w.filmBytes, greaterThan(0));
+      expect(w.kbps, inInclusiveRange(1, 1250));
+      StreamCacheServer.instance.release('switch-b');
+    });
+
+    test('on a line that can carry it, a climb is made', () async {
+      await register('switch-c');
+      final w = await StreamCacheServer.instance.warmSwitch(
+          'switch-c', const Duration(seconds: 5),
+          limit: const Duration(seconds: 20), paceOver: 1.25);
+      expect(w!.complete, isTrue);
+      expect(w.kbps, greaterThan(1250));
+      StreamCacheServer.instance.release('switch-c');
+    });
+
+    test('not the ladder\'s layout (an Original): no warm switch, the reopen '
+        'goes as it always did', () async {
+      final local = await StreamCacheServer.instance
+          .localUrlFor(cacheId: 'switch-d', upstream: up.url('t1'), refresh: () async => null);
+      expect(local, isNotNull);
+      up.ranges.clear();
+      final w = await StreamCacheServer.instance
+          .warmSwitch('switch-d', const Duration(seconds: 25), limit: const Duration(seconds: 5));
+      expect(w, isNull);
+      final far = up.ranges.map((r) => r.$2).reduce(max);
+      expect(far, lessThan(64 * 1024), reason: 'only the head was read: ${up.ranges}');
+      StreamCacheServer.instance.release('switch-d');
+    });
+
+    test('a copy that was never registered: nothing to warm', () async {
+      expect(
+          await StreamCacheServer.instance
+              .warmSwitch('nobody', Duration.zero, limit: const Duration(seconds: 1)),
+          isNull);
+    });
   });
 }

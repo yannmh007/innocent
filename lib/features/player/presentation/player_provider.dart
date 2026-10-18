@@ -1782,7 +1782,10 @@ class PlayerController extends StateNotifier<PlayerState> {
         return;
       }
       _lastClimbTry = now;
-      final fresh = await StreamRenewal.renew(uri, climb: true);
+      // Where the film is now: the better copy is fetched from here while
+      // this one plays on, and the climb is called off (null) if it cannot
+      // arrive in time — see the warm switch in playback.dart.
+      final fresh = await StreamRenewal.renew(uri, climb: true, at: svc.position);
       if (fresh == null || fresh == uri) return;
       if (!mounted || _currentUri != uri) return;
       final at = svc.position > Duration.zero ? svc.position : state.position;
@@ -1805,10 +1808,13 @@ class PlayerController extends StateNotifier<PlayerState> {
   ///
   /// WHY A REOPEN AND NOT A SEAMLESS SWITCH. HLS exists so a player can
   /// change rung mid-stream without interrupting anything, and libmpv cannot
-  /// do it: FFmpeg's HLS demuxer picks one variant when it opens and stays on
-  /// it. So the switch costs a second of black — against a film that
-  /// otherwise stops and starts for as long as anyone is willing to watch
-  /// it. That is not a close trade.
+  /// do it on this ladder: a variant switch in libmpv is a seek, and FFmpeg's
+  /// HLS demuxer produces no frames after a seek in fragmented-MP4 playlists
+  /// (ticket #7359; measured, docs/streaming_abr_research.md). So the switch
+  /// costs a moment of frozen picture — against a film that otherwise stops
+  /// and starts for as long as anyone is willing to watch it. That is not a
+  /// close trade. (A climb and a menu choice fetch the new copy first and
+  /// cost only a blink; a step down is made with the film already stopped.)
   ///
   /// [failingBitsPerSecond] is what the copy currently playing demands. It
   /// becomes the ceiling: the answer must be cheaper than the thing that just
@@ -1817,6 +1823,11 @@ class PlayerController extends StateNotifier<PlayerState> {
   /// so nothing happens.
   Future<void> _stepDownARung(int? failingBitsPerSecond) async {
     if (_downgradeInFlight || _networkRetryInFlight || _reopenInFlight) return;
+    // A climb fetching its better copy is the same renewal in the other
+    // direction: two at once would leave the ladder's bookkeeping on the copy
+    // neither reopened. It is over within twelve seconds, and a line that
+    // stalls meanwhile is a line it will call itself off on.
+    if (_climbInFlight) return;
     if (_downgrades >= _maxDowngrades) return;
     // THE VIEWER CHOSE THIS COPY. Somebody who picked 1080p or Original from
     // the Quality menu asked for it knowing their connection; stepping them
@@ -1876,10 +1887,15 @@ class PlayerController extends StateNotifier<PlayerState> {
   Future<bool> switchQuality(String id) async {
     final uri = _currentUri;
     if (uri == null || !StreamRenewal.canRenew(uri)) return false;
-    if (_downgradeInFlight || _networkRetryInFlight) return false;
+    if (_downgradeInFlight || _networkRetryInFlight || _climbInFlight) return false;
     _downgradeInFlight = true;
     try {
-      final fresh = await StreamRenewal.renew(uri, quality: id);
+      // From where the film is now: the chosen copy's next seconds are
+      // fetched while this one plays on (see the warm switch in
+      // playback.dart), so the change is a blink, not a frozen picture.
+      final now = _ref.read(videoPlayerServiceProvider);
+      final from = now.position > Duration.zero ? now.position : state.position;
+      final fresh = await StreamRenewal.renew(uri, quality: id, at: from);
       if (fresh == null) return false;
       if (!mounted || _currentUri != uri) return false;
       // The same copy (Auto landing on the rung already playing): nothing to
