@@ -786,6 +786,9 @@ void main() {
       expect(w!.complete, isFalse);
       expect(clock.elapsed, lessThan(const Duration(seconds: 3)),
           reason: 'the limit stops it, not the line');
+      // What did arrive is counted: the log says how fast the line was.
+      expect(w.filmBytes, greaterThan(0));
+      expect(w.kbps, inInclusiveRange(1, 1250));
       StreamCacheServer.instance.release('switch-b');
     });
 

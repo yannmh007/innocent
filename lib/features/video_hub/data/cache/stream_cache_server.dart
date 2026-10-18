@@ -547,20 +547,22 @@ class StreamCacheServer {
           client.close(force: true);
         });
     var stop = arm(limit);
-    Future<int> fetch(int from, int to, [BytesBuilder? into]) async {
+    // Counted as the bytes come, so a read the limit cuts short still says
+    // how much it got: that is the line's speed for this copy.
+    var arrived = 0;
+    Future<void> fetch(int from, int to, [BytesBuilder? into]) async {
+      arrived = 0;
       final req = await client.getUrl(local);
       req.headers.set(HttpHeaders.rangeHeader, 'bytes=$from-$to');
       final resp = await req.close();
       if (resp.statusCode != HttpStatus.partialContent) {
         await resp.drain<void>();
-        return 0;
+        return;
       }
-      var got = 0;
       await for (final chunk in resp) {
-        got += chunk.length;
+        arrived += chunk.length;
         into?.add(chunk);
       }
-      return got;
     }
 
     var headBytes = 0;
@@ -570,7 +572,8 @@ class StreamCacheServer {
       CmafIndex? idx;
       var want = 64 * 1024;
       for (var i = 0; i < 4; i++) {
-        headBytes += await fetch(head.length, want - 1, head);
+        await fetch(head.length, want - 1, head);
+        headBytes += arrived;
         final bytes = head.toBytes();
         idx = CmafIndex.parse(bytes);
         if (idx != null) break;
@@ -595,13 +598,13 @@ class StreamCacheServer {
       }
       stop = arm(left);
       final t = Stopwatch()..start();
-      var got = 0;
       try {
-        got = await fetch(from, to);
+        await fetch(from, to);
       } catch (_) {
         // The limit closed the connection mid-film: what came is kept, and
         // the answer is "not in time".
       }
+      final got = arrived;
       final result = WarmSwitch(
         complete: !timedOut && got >= to - from + 1,
         bytes: headBytes + got,
@@ -611,15 +614,16 @@ class StreamCacheServer {
         filmBytes: got,
       );
       PlaybackLog.add('warm switch: ${(result.bytes / 1048576).toStringAsFixed(1)} MB '
-          'for ${film.inSeconds} s of film in ${result.took.inMilliseconds} ms'
-          '${result.complete ? '' : ' — not in time'}');
+          'for ${film.inSeconds} s of film in ${result.took.inMilliseconds} ms '
+          '(${result.kbps} kbps)${result.complete ? '' : ' — not in time'}');
       return result;
     } catch (e) {
       if (kDebugMode) debugPrint('StreamCacheServer.warmSwitch: $e');
       // Out of time before the film's bytes were even asked for: that is an
       // answer too — this line could not carry it.
       return timedOut
-          ? WarmSwitch(complete: false, bytes: headBytes, took: clock.elapsed, film: Duration.zero)
+          ? WarmSwitch(
+              complete: false, bytes: headBytes + arrived, took: clock.elapsed, film: Duration.zero)
           : null;
     } finally {
       stop.cancel();
