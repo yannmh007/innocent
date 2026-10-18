@@ -40,3 +40,70 @@ jobs:
                 '| rungs:', len(d.get('renditions') or []), '| code:', d.get('code'))
           PY
           [ "$code" = "200" ]
+
+      # THE EDGE PATH, PROVED ON THE REAL WORKER. The same byte ranges are
+      # fetched through the stream Worker three ways: on the edge (block)
+      # path twice — cold, then warm — and once with `X-Edge-Bypass: 1`,
+      # which sends it down the direct R2 path the Worker has always had.
+      # The three must be identical, byte for byte; a mismatch fails the run.
+      # `X-Edge` says what the cache did (`blocks=1; HIT`). Only statuses,
+      # sizes, timings and that header are printed — never a URL: it carries
+      # a live token and this log is public.
+      - name: Edge path — byte-compare through the real Worker
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib, json, sys, time, urllib.request, urllib.error
+          d = json.load(open('/tmp/p.json'))
+          rungs = [r for r in (d.get('renditions') or []) if r.get('url')]
+          # The smallest copy keeps the check cheap; the original if none.
+          rungs.sort(key=lambda r: r.get('bytes') or 10**18)
+          url = rungs[0]['url'] if rungs else d.get('url')
+          if not url:
+              print('no playable url in the answer'); sys.exit(1)
+
+          def fetch(rng, bypass=False):
+              h = {'Range': rng}
+              if bypass:
+                  h['X-Edge-Bypass'] = '1'
+              t = time.time()
+              try:
+                  with urllib.request.urlopen(urllib.request.Request(url, headers=h), timeout=90) as r:
+                      body = r.read()
+                      return (r.status, r.headers.get('Content-Range'),
+                              r.headers.get('X-Edge') or 'direct', body,
+                              int((time.time() - t) * 1000))
+              except urllib.error.HTTPError as e:
+                  return (e.code, e.headers.get('Content-Range'), 'direct', b'',
+                          int((time.time() - t) * 1000))
+
+          st, cr, _, _, _ = fetch('bytes=0-8191', bypass=True)
+          if st != 206 or not cr or '/' not in cr:
+              print(f'probe through the direct path failed: HTTP {st}'); sys.exit(1)
+          total = int(cr.split('/')[-1])
+          B = 8 * 1024 * 1024
+          ranges = [('probe 8 KB', 0, 8191),
+                    ('2 MB part from the start', 0, 2 * 1024 * 1024 - 1)]
+          if total > B + 1024 * 1024:
+              ranges.append(('2 MB part across the 8 MB boundary', B - 1024 * 1024, B + 1024 * 1024 - 1))
+          ranges.append(('the last 100 KB', max(0, total - 100000), total - 1))
+          ranges.append(('end past EOF (clamped)', max(0, total - 500), total + 5000))
+          print(f'object: {total / 1048576:.1f} MB')
+          bad = used = hits = 0
+          for name, s, e in ranges:
+              rng = f'bytes={s}-{e}'
+              c = fetch(rng)            # edge, cold
+              w = fetch(rng)            # edge, warm
+              x = fetch(rng, bypass=True)  # direct
+              same = (c[3] == x[3] == w[3]) and c[0] == x[0] == w[0] == 206 and c[1] == x[1]
+              bad += not same
+              used += c[2] != 'direct'
+              hits += 'HIT' in w[2]
+              dig = hashlib.sha256(x[3]).hexdigest()[:10]
+              print(f"{'ok ' if same else 'BAD'} {name:<38} {len(x[3]):>8} B sha {dig} | "
+                    f"edge cold {c[4]:>5} ms [{c[2]}] warm {w[4]:>5} ms [{w[2]}] | direct {x[4]:>5} ms")
+          print(f'edge path used on {used} of {len(ranges)} ranges; warm HIT on {hits}')
+          if bad:
+              print(f'{bad} range(s) DIFFER between the edge and the direct path'); sys.exit(1)
+          print('every range identical on both paths')
+          PY

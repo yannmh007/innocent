@@ -34,26 +34,35 @@ bucket_name = "innocent-media"
 [cache]
 enabled = false
 
-# ── edge fan-out, the RIGHT shape this time, and OFF until switched on ────
+# ── edge fan-out: the cache in front of ONE entrypoint, not the Worker ────
 #
-# The block that whole-film caching above could never get right is now
-# solved differently: the Worker splits each film into fixed-size blocks and
-# caches each ONE under an address derived from the object key and the block
-# number — stable across every viewer and every token, and each block far
-# under the 512 MB cap. The second viewer of a film in a region is served
-# that region's cached blocks instead of a fresh pull from the bucket's home
-# (see serveFromBlocks in src/index.js). The client's Range is rebuilt from
-# the blocks, which is the fault the first attempt had.
+# The two facts above are solved by shape, not by a bigger plan. The gateway
+# (the default export) stays uncached: it runs on every request and opens the
+# token. It asks a second entrypoint, `Block`, for fixed-size BLOCKS of the
+# film at a path built from the object key and the block number — the same
+# path for every viewer and every token, and each block far under the 512 MB
+# ceiling. Workers Caching sits in front of `Block` only: it strips the
+# player's Range, keeps the whole block, and cuts every later range out of
+# it, from the data centre beside the viewer, with an upper tier behind that
+# and one bucket read for any number of lanes asking at once. See
+# serveFromBlocks / blockResponse in src/index.js.
 #
-# It is a plaintext VARIABLE, not a secret, set on the Worker — Settings →
-# Variables and Secrets → add a Text variable `EDGE_BLOCK_BYTES`:
+# Requires Wrangler 4.107.0+ (the per-entrypoint map), pinned in package.json.
+[exports.Block]
+type = "worker"
+
+  [exports.Block.cache]
+  enabled = true
+
+# The block size. Here, in [vars], and NOT in the dashboard: `wrangler deploy`
+# replaces a Worker's plaintext variables with the ones in this file, so a
+# value typed into the dashboard silently disappears on the next deploy.
+# Not a secret — it is a number.
 #
-#     EDGE_BLOCK_BYTES = 8388608      # 8 MB blocks; 8–16 MB is the useful range
-#
-# Unset (the default) the Worker behaves exactly as it does today. Set it,
-# redeploy, and watch the console's start-up times; clear it to turn it off.
-# It is deliberately NOT written here so a public repository does not decide
-# a cost-bearing setting for every deploy — the operator opts in per Worker.
+# TO TURN EDGE FAN-OUT OFF: delete this line and push. Every request then
+# takes the direct R2 path, exactly as before it existed.
+[vars]
+EDGE_BLOCK_BYTES = "8388608"
 
 # TOKEN_SECRET is NOT set here. It is a secret, it is shared with the
 # Supabase function that mints tokens, and a repository is a public place:
