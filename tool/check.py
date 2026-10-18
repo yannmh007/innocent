@@ -163,6 +163,14 @@ def main() -> int:
          'token is built — which fails at deploy time as a 404 on every '
          'video, for everyone, with a response that deliberately does not '
          'say why'),
+        ('edge_blocks_test.mjs',
+         'the Worker edge block cache: range reassembly and fan-out',
+         'a film served out of reassembled cache blocks that hands back the '
+         'wrong bytes — an off-by-one in a slice, a block boundary, a suffix '
+         'or open-ended range — which plays as noise for every viewer with '
+         'the feature on, with nothing in any log to say why, or a second '
+         'viewer who re-pulls the whole film from the bucket instead of the '
+         'edge, which is the fan-out silently not happening'),
         ('sigv4_test.mjs',
          'the R2 signatures and the multipart XML',
          'a request R2 refuses with a bare 403 that names no parameter, no '

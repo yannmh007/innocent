@@ -180,8 +180,188 @@ async function openToken(token, secret) {
   }
 }
 
+/// How big an edge-cache block is, in bytes — or 0 when edge block caching
+/// is OFF, which is the default and is today's behaviour exactly.
+///
+/// WHY THIS IS OPT-IN AND OFF BY DEFAULT. Reassembling a film out of cached
+/// blocks is the one change in this Worker that could hand every viewer a
+/// corrupt video at once, so it ships dark: with `EDGE_BLOCK_BYTES` unset the
+/// Worker reads straight from the R2 binding exactly as it always has. An
+/// operator turns it on by setting the variable (8 to 16 MB is the useful
+/// range), watches the start-up times the console already shows, and turns it
+/// off again by clearing it — no code change and no deploy either way.
+function blockSize(env) {
+  const n = Number(env.EDGE_BLOCK_BYTES);
+  if (!Number.isFinite(n) || n < 1024 * 1024) return 0; // under 1 MB is noise
+  // A single cached Response is held whole in memory while it is fetched and
+  // must stay well under Workers' 512 MB cacheable ceiling. 64 MB is far
+  // inside both; a block much larger than a read-ahead stretch buys nothing.
+  return Math.min(Math.floor(n), 64 * 1024 * 1024);
+}
+
+/// Answer a range by assembling fixed-size, edge-cached blocks — the piece
+/// that turns this Worker from a proxy into a CDN.
+///
+/// WHY BLOCKS, WHEN WHOLE-FILM CACHING COULD NOT WORK. Two facts killed the
+/// first attempt (see the file header): a cacheable response is capped at
+/// 512 MB, and a film's URL carries a fresh token on every play, so caching
+/// on the public path missed every time. A block fixes both. It is small —
+/// well under the cap — and its cache address is derived from the OBJECT KEY
+/// and the block number, so it is the SAME address for every viewer and every
+/// token. The second viewer of a film in a region is served that region's
+/// cached blocks instead of a fresh pull from the bucket's distant home, and
+/// the client's own `Range` is rebuilt from the blocks rather than being
+/// dropped. That is edge fan-out, which is the thing a CDN does and the one
+/// thing this Worker could not do before.
+///
+/// IMMUTABLE BY CONSTRUCTION, WHICH IS WHAT MAKES IT SAFE WITHOUT A VALIDATOR.
+/// Every upload gets a fresh key — a timestamp and a random suffix — so one
+/// key never names two different sets of bytes and a cached block can never go
+/// stale. No ETag revalidation, no cache-busting, nothing to get wrong.
+///
+/// Returns a Response, or null to mean "fall back to the direct R2 path", so
+/// anything unexpected here degrades to exactly the behaviour shipped today
+/// rather than failing a play.
+async function serveFromBlocks(request, env, ctx, key, block, cors) {
+  try {
+    const cache = caches.default;
+    // The object's length, from a tiny cached meta entry or one cheap HEAD.
+    // Immutable keys mean the meta never needs revalidating.
+    const metaReq = new Request(
+      `https://edge.block/meta/${encodeURIComponent(key)}`);
+    let size = -1;
+    let etag = '';
+    const metaHit = await cache.match(metaReq);
+    if (metaHit) {
+      const m = await metaHit.json();
+      size = m.size;
+      etag = m.etag || '';
+    } else {
+      const head = await env.MEDIA.head(key);
+      if (!head) return null; // no such object: let the direct path log it
+      size = head.size;
+      etag = head.httpEtag || '';
+      ctx.waitUntil(cache.put(metaReq, new Response(
+        JSON.stringify({ size, etag }),
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'public, max-age=86400',
+          },
+        })));
+    }
+    if (!(size > 0)) return null;
+
+    // Parse the client's Range the way a player means it: `bytes=a-b`,
+    // `bytes=a-` (open ended) or `bytes=-n` (the last n bytes). Anything else
+    // is handed back to the direct path, which R2 parses itself.
+    let start = 0;
+    let endIncl = size - 1;
+    let partial = false;
+    const rh = request.headers.get('Range');
+    if (rh) {
+      const m = /^bytes=(\d*)-(\d*)$/.exec(rh.trim());
+      if (!m || (m[1] === '' && m[2] === '')) return null;
+      if (m[1] === '') {
+        const n = Number(m[2]);
+        if (!(n > 0)) return null;
+        start = Math.max(0, size - n);
+        endIncl = size - 1;
+      } else {
+        start = Number(m[1]);
+        endIncl = m[2] === '' ? size - 1 : Number(m[2]);
+      }
+      partial = true;
+      if (!Number.isFinite(start) || !Number.isFinite(endIncl)) return null;
+      if (start < 0 || start >= size) {
+        return new Response(null, {
+          status: 416,
+          headers: { 'Content-Range': `bytes */${size}`,
+            'Cache-Control': 'no-store', ...cors },
+        });
+      }
+      if (endIncl >= size) endIncl = size - 1;
+      if (endIncl < start) endIncl = start;
+    }
+
+    const headers = new Headers(cors);
+    headers.set('Accept-Ranges', 'bytes');
+    headers.set('Content-Type', 'video/mp4');
+    headers.set('Cache-Control', `public, max-age=${EDGE_TTL_SECONDS}, immutable`);
+    if (etag) headers.set('ETag', etag);
+    headers.set('Content-Length', String(endIncl - start + 1));
+    if (partial) {
+      headers.set('Content-Range', `bytes ${start}-${endIncl}/${size}`);
+    }
+
+    const b0 = Math.floor(start / block);
+    const b1 = Math.floor(endIncl / block);
+    // One line per request, as the direct path logs: how the range was asked
+    // for and how many blocks it touched. No key and no token — the object is
+    // identified by its size, which tells two files apart and nobody anything
+    // about the bucket.
+    console.log(JSON.stringify({
+      ev: 'serve_edge', asked: rh || 'whole', size, blocks: b1 - b0 + 1,
+    }));
+
+    if (request.method === 'HEAD') {
+      return new Response(null, { status: partial ? 206 : 200, headers });
+    }
+
+    // Pull ONE BLOCK AT A TIME, in order, so even a request for the whole
+    // film never holds more than a single block in memory — the back-pressure
+    // that the first whole-object attempt did not have.
+    let i = b0;
+    const stream = new ReadableStream({
+      async pull(ctrl) {
+        if (i > b1) {
+          ctrl.close();
+          return;
+        }
+        const idx = i++;
+        const blockStart = idx * block;
+        const blockLen = Math.min(block, size - blockStart);
+        const bk = new Request(
+          `https://edge.block/o/${encodeURIComponent(key)}/${block}/${idx}`);
+        let bytes;
+        const hit = await cache.match(bk);
+        if (hit) {
+          bytes = new Uint8Array(await hit.arrayBuffer());
+        } else {
+          const obj = await env.MEDIA.get(key, {
+            range: { offset: blockStart, length: blockLen },
+          });
+          if (!obj) {
+            ctrl.error(new Error('block gone'));
+            return;
+          }
+          bytes = new Uint8Array(await obj.arrayBuffer());
+          // The WHOLE block is cached, never the slice: the next viewer's
+          // range is not this one's, and the block is the unit they share.
+          ctx.waitUntil(cache.put(bk, new Response(bytes, {
+            headers: {
+              'Content-Length': String(bytes.length),
+              'Cache-Control': `public, max-age=${EDGE_TTL_SECONDS}, immutable`,
+            },
+          })));
+        }
+        // The part of this block the client actually asked for.
+        const from = Math.max(start, blockStart) - blockStart;
+        const to = Math.min(endIncl, blockStart + bytes.length - 1) - blockStart + 1;
+        if (to > from) ctrl.enqueue(bytes.subarray(from, to));
+      },
+    });
+    return new Response(stream, { status: partial ? 206 : 200, headers });
+  } catch (e) {
+    console.log(JSON.stringify({
+      refusal: 'edge_block_error', detail: String(e).slice(0, 120),
+    }));
+    return null; // fall back to the direct path
+  }
+}
+
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
     // ANSWERED BEFORE THE SECRET IS CHECKED, and that order is the point.
@@ -249,6 +429,18 @@ export default {
       // with when something stops playing.
       console.log(JSON.stringify({ refusal: 'bad_token' }));
       return refuse();
+    }
+
+    // EDGE FAN-OUT, WHEN THE OPERATOR HAS TURNED IT ON. Off by default, in
+    // which case this is skipped and the direct path below runs exactly as it
+    // always has. Null means the block path declined (an unhandled range
+    // shape, a missing object, any error at all), so playback falls through
+    // to the direct path rather than failing. See [serveFromBlocks].
+    const block = blockSize(env);
+    if (block > 0) {
+      const edged = await serveFromBlocks(
+        request, env, ctx, claim.k, block, corsFor(request));
+      if (edged) return edged;
     }
 
     // THE CLIENT'S `Range` IS THE WHOLE JOB, and dropping it is what broke

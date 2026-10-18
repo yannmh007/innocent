@@ -195,6 +195,45 @@ escaping from `Media` — it must return the full `200` and let the platform
 slice — or the inner path not being stable, which would mean the token had
 leaked into it. Both are covered above.
 
+## Edge fan-out (optional, off by default)
+
+The section above explains why whole-film Workers Caching could not work: the
+512 MB cap and a fresh token on every play. There is now a second mechanism
+that works where that one did not, and it is **off until you turn it on.**
+
+The Worker can split each film into fixed-size **blocks** and cache each one
+separately, under an address built from the object key and the block number —
+the **same** address for every viewer and every token, and each block far
+inside the cacheable limit. The first viewer of a film in a region pulls its
+blocks from the bucket; everyone after them in that region is served the
+cached blocks beside them, and the player's byte `Range` is rebuilt from those
+blocks. That is the edge fan-out a CDN gives, which the direct path does not:
+without it, every viewer everywhere reads from R2's single home region.
+
+It is safe because the keys are **immutable** — every upload gets a fresh key,
+so a block can never go stale — and because it **falls back**: any range shape
+it does not handle, a missing object, or any error at all makes the Worker
+serve that request from the direct R2 path exactly as it does today. The
+reassembly is covered byte-for-byte by `tool/js/edge_blocks_test.mjs`.
+
+**To turn it on:** the deployed Worker → **Settings → Variables and Secrets**
+→ add a **Text** variable (not a secret):
+
+| Name | Value |
+|---|---|
+| `EDGE_BLOCK_BYTES` | `8388608` (8 MB; 8–16 MB is the useful range) |
+
+Redeploy from **Deployments**. Watch the console's **Signals** tab — the
+start-up times (time-to-first-frame p50/p95) should fall for films a region
+has seen before. The Worker also logs one `"ev":"serve_edge"` line per request
+with the block count, beside the existing `"ev":"serve"` lines. To turn it off,
+clear the variable and redeploy; playback returns to the direct path with no
+other change.
+
+Leaving it unset is a deliberate default: edge caching bears a (small) cost
+and a public repository should not decide that for every deploy, so the
+operator opts in per Worker.
+
 ## What this does and does not protect
 
 **Does.** The URL no longer names the account, the bucket, the folder scheme

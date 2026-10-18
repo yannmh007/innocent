@@ -34,6 +34,27 @@ bucket_name = "innocent-media"
 [cache]
 enabled = false
 
+# ── edge fan-out, the RIGHT shape this time, and OFF until switched on ────
+#
+# The block that whole-film caching above could never get right is now
+# solved differently: the Worker splits each film into fixed-size blocks and
+# caches each ONE under an address derived from the object key and the block
+# number — stable across every viewer and every token, and each block far
+# under the 512 MB cap. The second viewer of a film in a region is served
+# that region's cached blocks instead of a fresh pull from the bucket's home
+# (see serveFromBlocks in src/index.js). The client's Range is rebuilt from
+# the blocks, which is the fault the first attempt had.
+#
+# It is a plaintext VARIABLE, not a secret, set on the Worker — Settings →
+# Variables and Secrets → add a Text variable `EDGE_BLOCK_BYTES`:
+#
+#     EDGE_BLOCK_BYTES = 8388608      # 8 MB blocks; 8–16 MB is the useful range
+#
+# Unset (the default) the Worker behaves exactly as it does today. Set it,
+# redeploy, and watch the console's start-up times; clear it to turn it off.
+# It is deliberately NOT written here so a public repository does not decide
+# a cost-bearing setting for every deploy — the operator opts in per Worker.
+
 # TOKEN_SECRET is NOT set here. It is a secret, it is shared with the
 # Supabase function that mints tokens, and a repository is a public place:
 #
