@@ -50,10 +50,10 @@ const mod = await import('data:text/javascript,' + encodeURIComponent(
   // `serveFromBlocks` reads this module-level const from the top of the file.
   'const EDGE_TTL_SECONDS = 86400;\n' + worker.slice(from, to) +
   '\nexport { blockSize, closedRange, blockPlan, blockPath, contentRange,' +
-  ' blockResponse, serveFromBlocks, MAX_EDGE_BLOCKS };'));
+  ' blockResponse, serveFromBlocks, sliceStream, MAX_EDGE_BLOCKS };'));
 const {
   blockSize, closedRange, blockPlan, blockPath, contentRange,
-  blockResponse, serveFromBlocks, MAX_EDGE_BLOCKS,
+  blockResponse, serveFromBlocks, sliceStream, MAX_EDGE_BLOCKS,
 } = mod;
 
 // ── the wrangler config must actually switch the cache on for Block ──────
@@ -90,12 +90,27 @@ function makeMedia(bytes) {
   };
 }
 
-// ── Workers Caching in front of `Block`, as the docs describe it ─────────
-function makeEdge(env, { cacheOn = true, corrupt = false } = {}) {
+// ── Workers Caching in front of `Block` ───────────────────────────────────
+//
+// `slices: false` is what the live check found the real cache doing for a
+// call through ctx.exports (18 Oct 2026): it keeps the whole block and answers
+// the whole block, 200 with Cf-Cache-Status, whatever range was asked.
+// `slices: true` is what Cloudflare's docs describe for a request from
+// outside — a 206 cut from the block — kept in case the platform changes.
+function makeEdge(env, { cacheOn = true, corrupt = false, slices = false,
+                         badLength = false, badTotal = false } = {}) {
   const store = new Map();
   let runs = 0;
   const slice = (entry, rangeHeader) => {
     const len = entry.bytes.length;
+    if (!slices) {
+      const h = new Headers(entry.headers);
+      h.set('Cf-Cache-Status', entry.hit ? 'HIT' : 'MISS');
+      if (badLength) h.set('Content-Length', String(len - 1));
+      // One block disagreeing with the others about the film's length.
+      if (badTotal && entry.idx > 0) h.set('X-Total-Size', '12345');
+      return new Response(entry.bytes, { status: 200, headers: h });
+    }
     const m = /^bytes=(\d+)-(\d+)$/.exec(rangeHeader || '');
     if (!m) {
       return new Response(entry.bytes, { status: 200, headers: entry.headers });
@@ -129,7 +144,7 @@ function makeEdge(env, { cacheOn = true, corrupt = false } = {}) {
             const cc = res.headers.get('Cache-Control') || '';
             if (res.status !== 200 || !cc.includes('public')) return res;
             const entry = { bytes: new Uint8Array(await res.arrayBuffer()),
-              headers: new Headers(res.headers) };
+              headers: new Headers(res.headers), idx: Number(path.split('/')[3]) };
             store.set(path, entry);
             return slice({ ...entry, hit: false }, req.headers.get('Range'));
           },
@@ -179,6 +194,32 @@ check('blockPath keeps the key whole in one segment',
   blockPath('a/b c.mp4', 8, 3) === '/b/8/3/a%2Fb%20c.mp4');
 check('contentRange parses', JSON.stringify(contentRange('bytes 3-9/10')) === '[3,9,10]');
 
+// sliceStream: any chunking, any window, exactly those bytes, and the source
+// let go once they are through.
+{
+  const src = new Uint8Array(1000);
+  for (let i = 0; i < src.length; i++) src[i] = i & 0xff;
+  for (const chunk of [1, 7, 64, 333, 1000]) {
+    for (const [skip, take] of [[0, 1000], [0, 1], [999, 1], [10, 500], [333, 334], [640, 360]]) {
+      let pulled = 0;
+      const source = new ReadableStream({
+        pull(ctrl) {
+          if (pulled >= src.length) { ctrl.close(); return; }
+          ctrl.enqueue(src.slice(pulled, pulled + chunk));
+          pulled += chunk;
+        },
+      }, { highWaterMark: 0 });
+      const got = new Uint8Array(await new Response(source.pipeThrough(sliceStream(skip, take))).arrayBuffer());
+      const ok = got.length === take && got.every((v, i) => v === src[skip + i]);
+      check(`sliceStream chunk ${chunk} skip ${skip} take ${take}`, ok);
+      if (skip + take < 1000 - chunk) {
+        check(`  …and stops reading the source once through (${pulled} of 1000 read)`,
+          pulled <= skip + take + 2 * chunk);
+      }
+    }
+  }
+}
+
 // ── 2. the cached entrypoint ──────────────────────────────────────────────
 {
   const env = { MEDIA: makeMedia(film) };
@@ -213,9 +254,11 @@ const cases = [
   ['the very last byte', SIZE - 1, SIZE - 1],
   ['a single byte', 7, 7],
 ];
-for (const [label, s, e] of cases) {
+for (const slices of [false, true])
+for (const [name, s, e] of cases) {
+  const label = `${slices ? '[206 slices] ' : '[whole blocks] '}${name}`;
   const env = { MEDIA: makeMedia(film) };
-  const edge = makeEdge(env);
+  const edge = makeEdge(env, { slices });
   const res = await serveFromBlocks(get(`bytes=${s}-${e}`), env, edge.ctx, KEY, BLOCK, {});
   const end = Math.min(e, SIZE - 1);
   const ok = res instanceof Response && res.status === 206;
@@ -276,14 +319,25 @@ for (const [label, s, e] of cases) {
   const env = { MEDIA: makeMedia(film) };
   const edge = makeEdge(env, { cacheOn: false });
   const r = await serveFromBlocks(get('bytes=0-10'), env, edge.ctx, KEY, BLOCK, {});
-  check('declines when the cache is not doing the slicing (a 200 came back)', declined(r));
+  check('declines when no cache answered (a 200 with no Cf-Cache-Status)',
+    declined(r) && r.startsWith('not-206 200') && r.includes('cs=-'));
 }
 {
   // A slice that is not exactly the one asked for.
   const env = { MEDIA: makeMedia(film) };
-  const edge = makeEdge(env, { corrupt: true });
+  const edge = makeEdge(env, { corrupt: true, slices: true });
   const r = await serveFromBlocks(get('bytes=100-200'), env, edge.ctx, KEY, BLOCK, {});
   check('declines when a block answers the wrong Content-Range', declined(r));
+}
+{
+  const env = { MEDIA: makeMedia(film) };
+  const r = await serveFromBlocks(get('bytes=100-200'), env, makeEdge(env, { badLength: true }).ctx, KEY, BLOCK, {});
+  check('declines when a whole block is not the length it must be', declined(r) && r.startsWith('block-length'));
+}
+{
+  const env = { MEDIA: makeMedia(film) };
+  const r = await serveFromBlocks(get(`bytes=100-${BLOCK + 200}`), env, makeEdge(env, { badTotal: true }).ctx, KEY, BLOCK, {});
+  check('declines when one block names a different film length', declined(r) && r.startsWith('total'));
 }
 {
   // A missing object: Block says 404; the direct path will log no_object.

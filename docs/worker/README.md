@@ -202,11 +202,12 @@ The section above explains why whole-film Workers Caching could not work: the
 changing what is cached.
 
 The gateway (the default export, never cached) opens the token and asks a
-second entrypoint, `Block`, for fixed-size **blocks** of the film — 8 MB — at
+second entrypoint, `Block`, for fixed-size **blocks** of the film — 4 MB — at
 a path built from the object key and the block number. That path is the
 **same** for every viewer and every token. Workers Caching sits in front of
-`Block` only: it strips the range, keeps the whole block, and cuts every
-later range out of it. So:
+`Block` only and keeps each whole block; for a call through `ctx.exports` it
+answers the whole block (`200`, with `Cf-Cache-Status`) whatever range was
+asked, so the gateway cuts the player's range out of it, chunk by chunk. So:
 
 * the second viewer of a film in a region is served from the data centre
   beside them, not from the bucket's home region (APAC);
@@ -215,10 +216,13 @@ later range out of it. So:
 * six lanes asking for the same cold block at once cause **one** bucket read
   (request collapsing).
 
-The gateway never touches a byte: each block's slice is piped through
-natively, because a Free-plan Worker has 10 ms of CPU per request. And it
-never answers wrongly: every block's `Content-Range` must be exactly the
-slice asked for, or the request goes down the direct R2 path as before.
+The gateway never loops over bytes: a cached block is cut chunk by chunk
+(views, not copies), and reading stops once the last wanted byte is through —
+a Free-plan Worker has 10 ms of CPU per request. And it never answers wrongly:
+every block must carry the film's length, and a block the cache did not
+answer (no `Cf-Cache-Status`) or that is not the expected length sends the
+request down the direct R2 path as before. When it steps aside, the direct
+answer says why in `X-Edge: off; <reason>`.
 Open-ended, suffix and whole-file requests, conditionals and `HEAD` always
 take the direct path. `tool/js/edge_blocks_test.mjs` proves the reassembly
 byte for byte.

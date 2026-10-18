@@ -84,11 +84,11 @@ jobs:
           if st != 206 or not cr or '/' not in cr:
               print(f'probe through the direct path failed: HTTP {st}'); sys.exit(1)
           total = int(cr.split('/')[-1])
-          B = 8 * 1024 * 1024
+          B = 4 * 1024 * 1024
           ranges = [('probe 8 KB', 0, 8191),
                     ('2 MB part from the start', 0, 2 * 1024 * 1024 - 1)]
           if total > B + 1024 * 1024:
-              ranges.append(('2 MB part across the 8 MB boundary', B - 1024 * 1024, B + 1024 * 1024 - 1))
+              ranges.append(('2 MB part across a block boundary', B - 1024 * 1024, B + 1024 * 1024 - 1))
           ranges.append(('the last 100 KB', max(0, total - 100000), total - 1))
           ranges.append(('end past EOF (clamped)', max(0, total - 500), total + 5000))
           print(f'object: {total / 1048576:.1f} MB')
