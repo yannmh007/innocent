@@ -21,8 +21,14 @@ import 'package:flutter/foundation.dart';
 /// connection has measured good enough for it — Auto stepping back up after
 /// a dip, the way every adaptive player does. It answers null when nothing
 /// better fits, so the player never reopens onto the same copy.
+///
+/// [at] is where the film is now. With it, a change of copy fetches the new
+/// copy's next seconds from that moment BEFORE answering, while the old one
+/// plays on, so the reopen that follows finds them on the phone (the warm
+/// switch). A climb whose copy does not arrive in time answers null: the
+/// line cannot carry it, and the film stays as it is.
 typedef StreamRenewer = Future<String?> Function(
-    {int? belowKbps, String? quality, bool climb});
+    {int? belowKbps, String? quality, bool climb, Duration? at});
 
 /// One line of the player's Quality menu.
 ///
@@ -194,13 +200,13 @@ class StreamRenewal {
   /// where the current one is not dead but is too heavy for the connection.
   /// Omitted, this is the original behaviour: the best copy available.
   static Future<String?> renew(String uri,
-      {int? belowKbps, String? quality, bool climb = false}) async {
+      {int? belowKbps, String? quality, bool climb = false, Duration? at}) async {
     if (!canRenew(uri)) return null;
     final renewer = _renewer;
     if (renewer == null) return null;
     try {
-      final fresh =
-          await renewer(belowKbps: belowKbps, quality: quality, climb: climb);
+      final fresh = await renewer(
+          belowKbps: belowKbps, quality: quality, climb: climb, at: at);
       if (fresh == null || fresh.isEmpty) return null;
       // The registration now describes the NEW url, or a second failure would
       // look up a key that no longer matches.

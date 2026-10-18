@@ -62,6 +62,16 @@ void main() {
     expect(ClimbRule.isStall(const Duration(minutes: 3)), isTrue);
   });
 
+  test('a climb called off waits three minutes, and two end the climbing', () {
+    // Called off: the better copy did not arrive 1.25 x faster than it
+    // plays. Asking a minute later would spend the viewer's data to learn
+    // the same thing.
+    expect(ClimbRule.abandonAllows(abandons: 0, sinceAbandon: null), isTrue);
+    expect(ClimbRule.abandonAllows(abandons: 1, sinceAbandon: const Duration(seconds: 61)), isFalse);
+    expect(ClimbRule.abandonAllows(abandons: 1, sinceAbandon: const Duration(minutes: 3)), isTrue);
+    expect(ClimbRule.abandonAllows(abandons: 2, sinceAbandon: const Duration(hours: 1)), isFalse);
+  });
+
   group('the first copy, nothing measured', () {
     final ladder = <Rendition>[
       const Rendition(height: 360, kbps: 612, url: 'a'),

@@ -10,6 +10,7 @@ import 'package:path_provider/path_provider.dart';
 import '../../../../core/services/diagnostics/playback_log.dart';
 import '../../../../core/services/network/foreground_stream.dart';
 import '../../../../core/services/network/throughput_memory.dart';
+import '../../domain/cmaf_index.dart';
 import '../api/ranged_fetch.dart';
 import 'stream_cache_store.dart';
 
@@ -486,6 +487,143 @@ class StreamCacheServer {
       // Its signed link and refresh closure go with it — unless Play has
       // registered this film meanwhile, and then the source is the player's.
       if (mine != null && identical(_sources[cacheId], mine)) release(cacheId);
+    }
+  }
+
+  // ─── WARM SWITCH ─────────────────────────────────────────────────────
+  //
+  // A rung switch is a reopen: libmpv cannot change rung inside one stream
+  // (FFmpeg's HLS demuxer cannot seek in fragmented-MP4 playlists, ticket
+  // #7359, and a switch is a seek). Reopened cold, the new copy's first
+  // picture waits for its bytes to cross the line — measured, 1.8 s of
+  // frozen picture at 6 Mbit and 80 ms, 3 s at 3.5 Mbit. So the bytes cross
+  // FIRST, while the copy on screen plays on, and the reopen finds them on
+  // the phone: 0.1 to 0.2 s, the decoder's own time. YouTube does the same
+  // in spirit — the old quality keeps playing until the new one is ready.
+
+  /// How much of the new copy a switch holds before reopening on it.
+  static const Duration switchLead = Duration(seconds: 10);
+
+  /// The most a switch fetches past the index: ten seconds of a 6 Mbit rung.
+  static const int switchCapBytes = 8 * 1024 * 1024;
+
+  /// The longest index a switch will read to find its moment. 1 MB of `sidx`
+  /// is ten hours of film; anything longer is not the ladder's layout.
+  static const int _switchHeadCap = 1024 * 1024;
+
+  /// Fetch the copy [cacheId] — registered with [localUrlFor] a moment ago,
+  /// not yet playing — from the moment [at] for [lead] of film, so that
+  /// reopening on it there needs no network.
+  ///
+  /// [limit] bounds the whole of it. [paceOver] tightens that for a climb:
+  /// the film must arrive at least that many times faster than it plays
+  /// (1.25 — the margin a rung needs to be watched without stalls), or the
+  /// line cannot carry this copy and the switch is not worth making.
+  ///
+  /// Null when the copy is not the ladder's fragmented layout (an Original,
+  /// a faststart file) or anything else stops it before it starts: the
+  /// caller then reopens as it always did. Otherwise [WarmSwitch.complete]
+  /// says whether everything planned arrived inside the limit. Never throws.
+  ///
+  /// THROUGH THIS SERVER'S OWN ADDRESS, like [warmOpening]: the same lanes,
+  /// the same store, the same entry the reopen will read.
+  Future<WarmSwitch?> warmSwitch(
+    String cacheId,
+    Duration at, {
+    required Duration limit,
+    Duration lead = switchLead,
+    double? paceOver,
+  }) async {
+    final src = _sources[cacheId];
+    final port = _server?.port;
+    final token = _token;
+    if (src == null || src.offline || port == null || token == null) return null;
+    final local = Uri.parse('http://127.0.0.1:$port/c/$token/$cacheId');
+    final client = HttpClient()..connectionTimeout = const Duration(seconds: 15);
+    final clock = Stopwatch()..start();
+    var timedOut = false;
+    Timer arm(Duration d) => Timer(d, () {
+          timedOut = true;
+          client.close(force: true);
+        });
+    var stop = arm(limit);
+    Future<int> fetch(int from, int to, [BytesBuilder? into]) async {
+      final req = await client.getUrl(local);
+      req.headers.set(HttpHeaders.rangeHeader, 'bytes=$from-$to');
+      final resp = await req.close();
+      if (resp.statusCode != HttpStatus.partialContent) {
+        await resp.drain<void>();
+        return 0;
+      }
+      var got = 0;
+      await for (final chunk in resp) {
+        got += chunk.length;
+        into?.add(chunk);
+      }
+      return got;
+    }
+
+    var headBytes = 0;
+    try {
+      // The index: the first 64 KB, and on to wherever it says it ends.
+      final head = BytesBuilder(copy: false);
+      CmafIndex? idx;
+      var want = 64 * 1024;
+      for (var i = 0; i < 4; i++) {
+        headBytes += await fetch(head.length, want - 1, head);
+        final bytes = head.toBytes();
+        idx = CmafIndex.parse(bytes);
+        if (idx != null) break;
+        final need = CmafIndex.headBytes(bytes);
+        if (need == null || need <= bytes.length || need > _switchHeadCap) {
+          return null;
+        }
+        want = need;
+      }
+      if (idx == null) return null;
+      final plan = idx.rangeFor(at, lead, capBytes: switchCapBytes);
+      if (plan == null) return null;
+      final (from, to, film) = plan;
+      var left = limit - clock.elapsed;
+      if (paceOver != null && paceOver > 0) {
+        final paced = film * (1 / paceOver);
+        if (paced < left) left = paced;
+      }
+      stop.cancel();
+      if (left <= Duration.zero) {
+        return WarmSwitch(complete: false, bytes: headBytes, took: clock.elapsed, film: film);
+      }
+      stop = arm(left);
+      final t = Stopwatch()..start();
+      var got = 0;
+      try {
+        got = await fetch(from, to);
+      } catch (_) {
+        // The limit closed the connection mid-film: what came is kept, and
+        // the answer is "not in time".
+      }
+      final result = WarmSwitch(
+        complete: !timedOut && got >= to - from + 1,
+        bytes: headBytes + got,
+        took: clock.elapsed,
+        film: film,
+        filmTook: t.elapsed,
+        filmBytes: got,
+      );
+      PlaybackLog.add('warm switch: ${(result.bytes / 1048576).toStringAsFixed(1)} MB '
+          'for ${film.inSeconds} s of film in ${result.took.inMilliseconds} ms'
+          '${result.complete ? '' : ' — not in time'}');
+      return result;
+    } catch (e) {
+      if (kDebugMode) debugPrint('StreamCacheServer.warmSwitch: $e');
+      // Out of time before the film's bytes were even asked for: that is an
+      // answer too — this line could not carry it.
+      return timedOut
+          ? WarmSwitch(complete: false, bytes: headBytes, took: clock.elapsed, film: Duration.zero)
+          : null;
+    } finally {
+      stop.cancel();
+      client.close(force: true);
     }
   }
 
@@ -1515,6 +1653,39 @@ class _Source {
 
   /// Registered by [StreamCacheServer.warmOpening], not by a player.
   bool warmOnly = false;
+}
+
+/// How a [StreamCacheServer.warmSwitch] went.
+@immutable
+class WarmSwitch {
+  const WarmSwitch({
+    required this.complete,
+    required this.bytes,
+    required this.took,
+    required this.film,
+    this.filmTook = Duration.zero,
+    this.filmBytes = 0,
+  });
+
+  /// Everything planned arrived inside the limit.
+  final bool complete;
+
+  /// Bytes fetched in all, index included.
+  final int bytes;
+  final Duration took;
+
+  /// How much film the fetch was for.
+  final Duration film;
+
+  /// The film's bytes alone, and how long they took: the line's speed for
+  /// this copy, with the copy on screen playing alongside.
+  final Duration filmTook;
+  final int filmBytes;
+
+  /// Kilobits a second the film's bytes arrived at; 0 when none did.
+  int get kbps => filmTook.inMilliseconds <= 0
+      ? 0
+      : filmBytes * 8 ~/ filmTook.inMilliseconds;
 }
 
 /// What a warm-up learnt of a film, for the play that follows it.

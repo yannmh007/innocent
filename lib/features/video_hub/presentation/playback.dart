@@ -30,6 +30,7 @@ import 'widgets/paywall_sheet.dart';
 import 'account_provider.dart';
 import 'album_saver.dart';
 import 'watch_points_provider.dart';
+import '../../player/domain/climb_rule.dart';
 import '../../player/presentation/up_next.dart';
 
 /// Asks the repository for a playable URL and acts on the answer.
@@ -281,13 +282,22 @@ Future<void> playMedia(
     final openUrl = localUrl ?? playUrl;
     PlaybackLog.add('play through ${localUrl == null ? 'the remote address' : 'the local proxy'}');
 
+    // The copy on screen and its address: the start, then whatever a step
+    // down, a menu choice or a climb moved it to.
+    var playingId = cacheId;
+    var playingUrl = openUrl;
+    var playingViaProxy = localUrl != null;
+    // Climbs called off in this film (see [ClimbRule.abandonAllows]).
+    var abandons = 0;
+    DateTime? abandonedAt;
+
     // The renewal picks again rather than reusing this rung. A film longer
     // than a signature's life is renewed mid-playback, and by then the
     // player has measured the connection for real — so the second half of a
     // long film can be a better or a smaller copy than the first, decided on
     // evidence the first choice did not have.
     StreamRenewal.register(openUrl,
-        ({int? belowKbps, String? quality, bool climb = false}) async {
+        ({int? belowKbps, String? quality, bool climb = false, Duration? at}) async {
       final fresh = await ref.read(contentRepositoryProvider).requestPlayback(
             content: content,
             source: source,
@@ -343,7 +353,6 @@ Future<void> playMedia(
       if (belowKbps != null && again == null) return null;
       final freshUrl = again?.url ?? fresh.url;
       if (freshUrl == null) return null;
-      playingHeight = again?.height;
 
       // A DOWNGRADE IS A DIFFERENT FILE, so it is a different cache entry.
       // Pointing the existing entry at a smaller encode would write two
@@ -365,14 +374,24 @@ Future<void> playMedia(
         );
       }
 
-      if (nextId == cacheId) {
+      if (nextId == playingId) {
         // Same rung: the URL was only stale. Hand the proxy the new one and
-        // keep the player on the address it already has.
-        StreamCacheServer.instance.updateUpstream(cacheId, freshUrl);
-        markPlaying(openUrl);
-        return openUrl;
+        // keep the player on the address it already has. (The rung PLAYING,
+        // not the one the film opened on: after a step down, the copy it
+        // opened on is no longer registered.)
+        StreamCacheServer.instance.updateUpstream(playingId, freshUrl);
+        // Played straight from the network (the proxy would not start), the
+        // address itself is what expired.
+        if (!playingViaProxy) playingUrl = freshUrl;
+        playingHeight = again?.height;
+        markPlaying(playingUrl);
+        return playingUrl;
       }
-      StreamCacheServer.instance.releaseAllExcept(<String>{nextId});
+      // THE COPY ON SCREEN KEEPS ITS REGISTRATION until the player has left
+      // it: the warm switch below fetches the new copy while the old one
+      // plays on, and the old one's reads must still be answered. Released
+      // at the next change.
+      StreamCacheServer.instance.releaseAllExcept(<String>{nextId, playingId});
       final nextLocal = await StreamCacheServer.instance.localUrlFor(
         cacheId: nextId,
         upstream: freshUrl,
@@ -392,8 +411,44 @@ Future<void> playMedia(
           return again == null ? f2.url : null;
         },
       );
-      markPlaying(nextLocal ?? freshUrl);
-      return nextLocal ?? freshUrl;
+      // ─── THE WARM SWITCH ─────────────────────────────────────────
+      //
+      // Reopened cold, the new copy's first picture waits for its bytes to
+      // cross the line: 1.8 to 3 s of frozen picture on a 6 to 3.5 Mbit
+      // line. So for a climb and a menu choice — the two changes made while
+      // the film is PLAYING — its next ten seconds come first, from the
+      // moment it will open at, while the old copy plays on; the reopen then
+      // waits only for the decoder. (A step down is made because the film
+      // has stopped: nothing plays meanwhile, so there is nothing to win by
+      // fetching first.)
+      //
+      // A CLIMB MUST EARN IT. Its bytes must arrive 1.25 times faster than
+      // they play, or this line cannot carry the better copy and the film
+      // stays as it is — called off rather than reopened into a stall. A
+      // menu choice is the viewer's, made knowing their line: after at most
+      // eight seconds it opens whatever has arrived.
+      if (nextLocal != null && at != null && (climb || quality != null)) {
+        final w = await StreamCacheServer.instance.warmSwitch(
+          nextId,
+          at,
+          limit: Duration(seconds: climb ? 12 : 8),
+          paceOver: climb ? ClimbRule.climbPace : null,
+        );
+        if (climb && w != null && !w.complete) {
+          abandons++;
+          abandonedAt = DateTime.now();
+          StreamCacheServer.instance.release(nextId);
+          PlaybackLog.add('climb to ${again?.height}p called off: ${w.kbps} kbps '
+              'for a ${again?.kbps} kbps copy');
+          return null;
+        }
+      }
+      playingHeight = again?.height;
+      playingId = nextId;
+      playingUrl = nextLocal ?? freshUrl;
+      playingViaProxy = nextLocal != null;
+      markPlaying(playingUrl);
+      return playingUrl;
     },
         // WHETHER AUTO COULD STEP UP NOW — answered here, on the phone, from
         // the ladder this grant listed and what the connection measures, so
@@ -401,6 +456,13 @@ Future<void> playMedia(
         canClimb: () {
           final now = playingHeight;
           if (now == null) return false;
+          final since = abandonedAt;
+          if (!ClimbRule.abandonAllows(
+            abandons: abandons,
+            sinceAbandon: since == null ? null : DateTime.now().difference(since),
+          )) {
+            return false;
+          }
           final better = pickRendition(grant.renditions,
               measuredKbps: ThroughputMemory.current, maxHeight: saverCap);
           return better != null && better.height > now;
