@@ -57,12 +57,15 @@ type = "worker"
 # The block size. Here, in [vars], and NOT in the dashboard: `wrangler deploy`
 # replaces a Worker's plaintext variables with the ones in this file, so a
 # value typed into the dashboard silently disappears on the next deploy.
-# Not a secret — it is a number.
+# Not a secret — it is a number. 4 MB: the cache answers a whole block and
+# the gateway cuts the player's range out of it, so a smaller block means
+# less read and dropped per request; much smaller means more block calls
+# (each billed as a request) per 2 MB part.
 #
 # TO TURN EDGE FAN-OUT OFF: delete this line and push. Every request then
 # takes the direct R2 path, exactly as before it existed.
 [vars]
-EDGE_BLOCK_BYTES = "8388608"
+EDGE_BLOCK_BYTES = "4194304"
 
 # TOKEN_SECRET is NOT set here. It is a secret, it is shared with the
 # Supabase function that mints tokens, and a repository is a public place:

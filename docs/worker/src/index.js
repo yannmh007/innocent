@@ -59,9 +59,9 @@
 //
 // Not by caching the film — that cannot work, as above — but by caching it
 // in fixed-size BLOCKS behind a second entrypoint (`Block`), at a path built
-// from the object key, with the player's range passed on as a range within
-// each block. Workers Caching keeps each block and cuts every range out of
-// it; the second viewer in a region is served from beside them. The gateway
+// from the object key. Workers Caching keeps each whole block and the gateway
+// cuts the player's range out of it; the second viewer in a region is served
+// from beside them. The gateway
 // steps aside to the direct path whenever an answer is not exactly what it
 // asked for, so this can cost a few milliseconds and never a wrong byte.
 // See [serveFromBlocks], and `EDGE_BLOCK_BYTES` in wrangler.toml to turn it
@@ -258,9 +258,9 @@ function contentRange(v) {
 }
 
 /// One block, whole, as a cacheable `200` — what the cached entrypoint
-/// answers. It never reads `Range`: Workers Caching asks for the full body,
-/// keeps it, and cuts every range out of it itself (and a `206` from here
-/// would never be stored at all).
+/// answers. It never reads `Range`: Workers Caching keeps the whole block
+/// (a `206` from here would never be stored at all), and the gateway cuts the
+/// player's range out of what the cache hands back.
 async function blockResponse(env, request) {
   const nope = (status, extra = {}) => new Response(null, {
     status, headers: { 'Cache-Control': 'no-store', ...extra } });
@@ -311,9 +311,9 @@ async function blockResponse(env, request) {
 /// request misses every time. Here the gateway (this function, never cached)
 /// opens the token and asks the cached `Block` entrypoint for fixed-size
 /// blocks at a path built from the object key — the same path for every
-/// viewer — passing the player's `Range` on as a range WITHIN each block.
-/// Workers Caching then does the rest, and does it better than code here
-/// could: a hit is served from the data centre beside the viewer, a miss is
+/// viewer — and cuts the player's range out of what comes back. Workers
+/// Caching does the rest, and does it better than code here could: a hit is
+/// served from the data centre beside the viewer, a miss is
 /// tried against an upper tier before the bucket, and six lanes asking for
 /// the same cold block at once run the bucket read ONCE (request collapsing).
 ///
@@ -321,9 +321,9 @@ async function blockResponse(env, request) {
 /// a random suffix — so one key never names two sets of bytes and a cached
 /// block cannot go stale.
 ///
-/// NO BYTE IS TOUCHED HERE. Each block's slice is piped through natively,
-/// never read into JavaScript — a Free-plan Worker has 10 ms of CPU a
-/// request, and a loop over two megabytes would spend it.
+/// NO LOOP OVER BYTES. A slice the cache cut is piped through as it is; a
+/// whole block is cut chunk by chunk ([sliceStream]) — a Free-plan Worker has
+/// 10 ms of CPU a request, and a loop over two megabytes would spend it.
 ///
 /// NOTHING IS SAID TO THE PLAYER UNTIL EVERY BLOCK HAS PROVED ITSELF. All the
 /// blocks are asked for at once and each answer's `Content-Range` must be
@@ -388,7 +388,8 @@ async function serveFromBlocks(request, env, ctx, key, block, cors) {
     end = Math.min(end, total - 1);
 
     // Blocks wholly past the end (a range that ran over) were answered 416;
-    // they are dropped. Every one kept must be exactly its slice.
+    // they are dropped. Every one kept must be exactly its slice — or the
+    // whole block, from the cache, which is cut here (see below).
     const kept = [];
     const statuses = [];
     let sum = 0;
@@ -399,16 +400,40 @@ async function serveFromBlocks(request, env, ctx, key, block, cors) {
         try { r.body?.cancel().catch(() => {}); } catch {}
         continue;
       }
-      if (r.status !== 206) return giveUp(`not-206 ${said(r)}`);
-      const cr = contentRange(r.headers.get('Content-Range'));
       const blockLen = Math.min(block, total - p.idx * block);
       const wantTo = Math.min(p.to, blockLen - 1);
-      if (!cr || cr[0] !== p.from || cr[1] !== wantTo || cr[2] !== blockLen) {
-        return giveUp(`slice ${said(r)} want ${p.from}-${wantTo}/${blockLen}`);
+      const take = wantTo - p.from + 1;
+      const cs = r.headers.get('Cf-Cache-Status') || '';
+      if (Number(r.headers.get('X-Total-Size')) !== total) {
+        return giveUp(`total ${said(r)} want ${total}`);
       }
-      sum += wantTo - p.from + 1;
-      kept.push(r);
-      statuses.push(r.headers.get('Cf-Cache-Status') || '-');
+      if (r.status === 206) {
+        // The cache cut the range itself, as it does for a request from
+        // outside: it must be exactly the slice asked for.
+        const cr = contentRange(r.headers.get('Content-Range'));
+        if (!cr || cr[0] !== p.from || cr[1] !== wantTo || cr[2] !== blockLen) {
+          return giveUp(`slice ${said(r)} want ${p.from}-${wantTo}/${blockLen}`);
+        }
+        kept.push({ body: r.body, skip: 0, take, cut: false });
+      } else if (r.status === 200 && cs) {
+        // WHAT THE CACHE ACTUALLY DOES for a call through `ctx.exports`,
+        // seen on the first live check (18 Oct 2026): it keeps the whole
+        // block and answers the whole block, `200` with `Cf-Cache-Status`,
+        // whatever range was asked for — the slicing in Cloudflare's docs is
+        // for a request from outside. So the slice is cut here, chunk by
+        // chunk ([sliceStream]). A `200` WITHOUT a cache status is `Block`
+        // answering with no cache in front of it, and then there is nothing
+        // to gain over the direct path: it steps aside below.
+        const cl = r.headers.get('Content-Length');
+        if (cl !== null && Number(cl) !== blockLen) {
+          return giveUp(`block-length ${said(r)} want ${blockLen}`);
+        }
+        kept.push({ body: r.body, skip: p.from, take, cut: true });
+      } else {
+        return giveUp(`not-206 ${said(r)}`);
+      }
+      sum += take;
+      statuses.push(cs || '-');
     }
     const length = end - start + 1;
     if (kept.length === 0 || sum !== length) return giveUp('sum');
@@ -434,7 +459,10 @@ async function serveFromBlocks(request, env, ctx, key, block, cors) {
       ? new FixedLengthStream(length)
       : new TransformStream();
     (async () => {
-      for (const r of kept) await r.body.pipeTo(writable, { preventClose: true });
+      for (const k of kept) {
+        const part = k.cut ? k.body.pipeThrough(sliceStream(k.skip, k.take)) : k.body;
+        await part.pipeTo(writable, { preventClose: true });
+      }
       await writable.close();
     })().catch(async (e) => {
       for (const r of kept) {
@@ -449,6 +477,30 @@ async function serveFromBlocks(request, env, ctx, key, block, cors) {
     }));
     return giveUp(`error ${String(e).slice(0, 60)}`); // the direct path takes it
   }
+}
+
+/// Bytes [skip, skip + take) of a stream, as a stream.
+///
+/// CHUNK BY CHUNK, NEVER BYTE BY BYTE: a chunk wholly before the slice is
+/// dropped, one that straddles it is cut with `subarray` (a view, not a copy),
+/// and the rest pass untouched — a few comparisons per chunk, which is what a
+/// Free-plan Worker's 10 ms of CPU can afford. The moment the last wanted byte
+/// has passed the stream terminates, and the source is let go rather than read
+/// to the end of its block.
+function sliceStream(skip, take) {
+  let seen = 0;
+  const end = skip + take;
+  return new TransformStream({
+    transform(chunk, ctrl) {
+      const from = seen;
+      seen += chunk.byteLength;
+      if (seen <= skip) return;
+      const a = Math.max(0, skip - from);
+      const b = Math.min(chunk.byteLength, end - from);
+      if (b > a) ctrl.enqueue(a === 0 && b === chunk.byteLength ? chunk : chunk.subarray(a, b));
+      if (seen >= end) ctrl.terminate();
+    },
+  });
 }
 
 /// The cached half.
