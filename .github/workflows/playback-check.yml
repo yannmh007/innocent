@@ -63,7 +63,10 @@ jobs:
               print('no playable url in the answer'); sys.exit(1)
 
           def fetch(rng, bypass=False):
-              h = {'Range': rng}
+              # Cloudflare turns Python's default User-Agent away with a 403
+              # before the Worker ever runs (first run of this step); a named
+              # one, like the app's own, is let through.
+              h = {'Range': rng, 'User-Agent': 'innocent-playback-check/1'}
               if bypass:
                   h['X-Edge-Bypass'] = '1'
               t = time.time()

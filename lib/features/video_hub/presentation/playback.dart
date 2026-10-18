@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -17,10 +18,12 @@ import '../data/cache/offline_replay.dart';
 import '../data/cache/stream_cache_id.dart';
 import '../data/cache/stream_cache_server.dart';
 import '../domain/rendition.dart';
+import '../domain/warm_rule.dart';
 import '../../../core/services/network/connection_kind.dart';
 import '../../../core/services/network/throughput_memory.dart';
 import '../domain/access_policy.dart';
 import '../domain/capability.dart';
+import '../domain/content_repository.dart';
 import '../domain/video_content.dart';
 import 'video_hub_provider.dart';
 import 'widgets/paywall_sheet.dart';
@@ -202,36 +205,14 @@ Future<void> playMedia(
     // for everything uploaded before the transcoding pipeline, and for
     // anything small enough not to need a ladder, and empty means "play the
     // original", which is exactly what this line did before.
-    await ThroughputMemory.read();
-    // THE VIEWER'S OWN CHOICE, when they made one (the player's Quality
-    // menu, remembered across films the way YouTube remembers it). Auto is
-    // the rule above; a fixed height is that rung or the nearest below it;
-    // Original is the file as it was uploaded.
-    final preferred = await QualityPreference.read();
-    // THE DATA SAVER CAPS AUTO AT 480p — the saver the viewer already turned
-    // on for albums, on the connections they chose for it. YouTube's Data
-    // saver tops out at 480p; Netflix's Save Data is SD. A height picked by
-    // hand in the Quality menu is still that height.
-    bool saving;
-    try {
-      saving = await ref.read(albumSaverProvider.future);
-    } catch (_) {
-      saving = false;
-    }
-    final saverCap = saving ? kDataSaverMaxHeight : null;
-    // NOTHING MEASURED YET: start lower on mobile data (480p) than on Wi-Fi
-    // (720p). Auto climbs once the connection shows it can carry more.
-    final startHeight = (await ConnectionInfo.read()).metered
-        ? kMeteredStartHeight
-        : kDefaultHeight;
+    // Which copy: the viewer's standing choice, Auto's measurement, the data
+    // saver and the line — see [_chooseCopy], which the warm start shares.
+    final pick = await _chooseCopy(ref, grant);
     if (!context.mounted) return;
-    final chosen = chooseRendition(
-      grant.renditions,
-      preferred,
-      measuredKbps: ThroughputMemory.current,
-      maxHeight: saverCap,
-      defaultHeight: startHeight,
-    );
+    final chosen = pick.chosen;
+    final preferred = pick.preferred;
+    final saving = pick.saving;
+    final saverCap = pick.saverCap;
     // The rung playing NOW — the start, then whatever a step down, a menu
     // choice or a climb moved it to. Null while the original plays.
     int? playingHeight = chosen?.height;
@@ -815,12 +796,125 @@ void prefetchPlayback(
     try {
       if ((await ConnectionInfo.read()).isOffline) return null;
       final deviceId = await DeviceIdentity.get();
-      return await repo.requestPlayback(
+      final grant = await repo.requestPlayback(
           content: content, source: source, deviceId: deviceId);
+      // And while they are still looking, the film's first seconds: see
+      // [_warmOpening]. Not awaited — the grant is what Play waits for.
+      unawaited(_warmOpening(ref, repo,
+          content: content, source: source, grant: grant, deviceId: deviceId));
+      return grant;
     } catch (_) {
       return null;
     }
   }());
+}
+
+/// Which copy of a granted film this phone would open now, and what it was
+/// chosen from.
+class _CopyChoice {
+  const _CopyChoice(this.chosen, this.preferred, this.saving, this.saverCap);
+
+  /// Null means the original.
+  final Rendition? chosen;
+  final String preferred;
+  final bool saving;
+  final int? saverCap;
+}
+
+/// The choice of copy — ONE STATEMENT OF IT, used by Play and by the warm
+/// start. A warm-up that chose a different rung from the one Play then opens
+/// has warmed a file nobody will read, so the two cannot be two copies of the
+/// rule that are free to drift.
+Future<_CopyChoice> _chooseCopy(WidgetRef ref, PlaybackGrant grant) async {
+  await ThroughputMemory.read();
+  // THE VIEWER'S OWN CHOICE, when they made one (the player's Quality
+  // menu, remembered across films the way YouTube remembers it). Auto is
+  // the rule above; a fixed height is that rung or the nearest below it;
+  // Original is the file as it was uploaded.
+  final preferred = await QualityPreference.read();
+  // THE DATA SAVER CAPS AUTO AT 480p — the saver the viewer already turned
+  // on for albums, on the connections they chose for it. YouTube's Data
+  // saver tops out at 480p; Netflix's Save Data is SD. A height picked by
+  // hand in the Quality menu is still that height.
+  bool saving;
+  try {
+    saving = await ref.read(albumSaverProvider.future);
+  } catch (_) {
+    saving = false;
+  }
+  final saverCap = saving ? kDataSaverMaxHeight : null;
+  // NOTHING MEASURED YET: start lower on mobile data (480p) than on Wi-Fi
+  // (720p). Auto climbs once the connection shows it can carry more.
+  final startHeight = (await ConnectionInfo.read()).metered
+      ? kMeteredStartHeight
+      : kDefaultHeight;
+  final chosen = chooseRendition(
+    grant.renditions,
+    preferred,
+    measuredKbps: ThroughputMemory.current,
+    maxHeight: saverCap,
+    defaultHeight: startHeight,
+  );
+  return _CopyChoice(chosen, preferred, saving, saverCap);
+}
+
+/// THE WARM START. While the viewer looks at a film's page, its index and
+/// first seconds are fetched into the stream cache — the copy Play will
+/// choose, under the cache entry Play will read — so the tap opens from the
+/// phone. [warmAllowed] says when (never on mobile data, never with the data
+/// saver, never for a film already downloaded); the cache server says no on
+/// its own when a film is playing or this one was warmed already. Silent:
+/// a warm-up that cannot happen leaves Play exactly as it was.
+Future<void> _warmOpening(
+  WidgetRef ref,
+  ContentRepository repo, {
+  required VideoContent content,
+  required MediaRef source,
+  required PlaybackGrant grant,
+  required String deviceId,
+}) async {
+  try {
+    if (!grant.isGranted) return;
+    final kind = await ConnectionInfo.read();
+    final pick = await _chooseCopy(ref, grant);
+    final held = await heldCopyOf(ref, content: content, source: source);
+    if (!warmAllowed(
+      offline: kind.isOffline,
+      metered: kind.metered,
+      dataSaver: pick.saving,
+      heldOnPhone: held != null,
+    )) {
+      return;
+    }
+    final chosen = pick.chosen;
+    final url = chosen?.url ?? grant.url;
+    if (url == null || url.isEmpty) return;
+    await StreamCacheServer.instance.warmOpening(
+      cacheId: streamCacheId(
+        titleId: content.id,
+        assetId: assetIdOf(source),
+        height: chosen?.height ?? 0,
+      ),
+      upstream: url,
+      total: chosen?.bytes,
+      // A title, never an object key; Play puts the viewer's language on it.
+      label: content.displayTitle(null),
+      // An expired link mid-warm-up is renewed the way Play's would be: the
+      // same rung again, or nothing.
+      refresh: () async {
+        final fresh = await repo.requestPlayback(
+            content: content, source: source, deviceId: deviceId);
+        if (!fresh.isGranted) return null;
+        if (chosen == null) return fresh.url;
+        for (final r in fresh.renditions) {
+          if (r.height == chosen.height) return r.url;
+        }
+        return null;
+      },
+    );
+  } catch (_) {
+    // A page that went away, a cache that will not start: Play is unchanged.
+  }
 }
 
 /// The answer asked ahead for [source], if still fresh — once.
