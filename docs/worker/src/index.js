@@ -328,34 +328,40 @@ async function blockResponse(env, request) {
 /// NOTHING IS SAID TO THE PLAYER UNTIL EVERY BLOCK HAS PROVED ITSELF. All the
 /// blocks are asked for at once and each answer's `Content-Range` must be
 /// exactly the slice wanted. Anything else — caching not switched on (then
-/// `Block` answers a whole `200`), an odd answer, an error — returns null and
+/// `Block` answers a whole `200`), an odd answer, an error — returns the
+/// REASON, a few words and numbers, and
 /// the request goes down the direct path as if none of this existed. A bad
 /// block can cost a few milliseconds; it can never reach the screen.
 async function serveFromBlocks(request, env, ctx, key, block, cors) {
   let answers = [];
-  const giveUp = () => {
+  // What a block answered, for the reason a request stepped aside: its
+  // status, its Content-Range and what the cache said. Numbers only.
+  const said = (r) => r
+    ? `${r.status} cr=${r.headers.get('Content-Range') || '-'} cs=${r.headers.get('Cf-Cache-Status') || '-'}`
+    : '-';
+  const giveUp = (why) => {
     for (const r of answers) {
       try { r.body?.cancel().catch(() => {}); } catch {}
     }
-    return null;
+    return why;
   };
   try {
-    if (request.method !== 'GET') return null;
+    if (request.method !== 'GET') return 'method';
     // The live check compares the two paths byte for byte; this is how it
     // asks for the old one. Both still need the token.
-    if (request.headers.get('X-Edge-Bypass') === '1') return null;
+    if (request.headers.get('X-Edge-Bypass') === '1') return 'bypass';
     for (const h of ['If-Range', 'If-None-Match', 'If-Match',
                      'If-Modified-Since', 'If-Unmodified-Since']) {
-      if (request.headers.has(h)) return null;
+      if (request.headers.has(h)) return 'conditional';
     }
     const asked = closedRange(request.headers.get('Range'));
-    if (!asked) return null;
+    if (!asked) return 'not-closed';
     const [start] = asked;
     let [, end] = asked;
     const plan = blockPlan(start, end, block);
-    if (plan.length > MAX_EDGE_BLOCKS) return null;
+    if (plan.length > MAX_EDGE_BLOCKS) return 'too-many-blocks';
     const exp = ctx && ctx.exports && ctx.exports.Block;
-    if (!exp) return null;
+    if (!exp) return 'no-exports';
 
     answers = await Promise.all(plan.map((p) => exp.fetch(new Request(
       'https://block' + blockPath(key, block, p.idx),
@@ -371,9 +377,9 @@ async function serveFromBlocks(request, env, ctx, key, block, cors) {
       const head = await env.MEDIA.head(key).catch(() => null);
       total = head ? head.size : NaN;
     }
-    if (!Number.isSafeInteger(total) || total <= 0) return giveUp();
+    if (!Number.isSafeInteger(total) || total <= 0) return giveUp(`no-total ${said(answers[0])}`);
     if (start >= total) {
-      giveUp();
+      giveUp('');
       return new Response(null, {
         status: 416,
         headers: { 'Content-Range': `bytes */${total}`, 'Cache-Control': 'no-store', ...cors },
@@ -393,17 +399,19 @@ async function serveFromBlocks(request, env, ctx, key, block, cors) {
         try { r.body?.cancel().catch(() => {}); } catch {}
         continue;
       }
-      if (r.status !== 206) return giveUp();
+      if (r.status !== 206) return giveUp(`not-206 ${said(r)}`);
       const cr = contentRange(r.headers.get('Content-Range'));
       const blockLen = Math.min(block, total - p.idx * block);
       const wantTo = Math.min(p.to, blockLen - 1);
-      if (!cr || cr[0] !== p.from || cr[1] !== wantTo || cr[2] !== blockLen) return giveUp();
+      if (!cr || cr[0] !== p.from || cr[1] !== wantTo || cr[2] !== blockLen) {
+        return giveUp(`slice ${said(r)} want ${p.from}-${wantTo}/${blockLen}`);
+      }
       sum += wantTo - p.from + 1;
       kept.push(r);
       statuses.push(r.headers.get('Cf-Cache-Status') || '-');
     }
     const length = end - start + 1;
-    if (kept.length === 0 || sum !== length) return giveUp();
+    if (kept.length === 0 || sum !== length) return giveUp('sum');
 
     const headers = new Headers(cors);
     headers.set('Accept-Ranges', 'bytes');
@@ -439,7 +447,7 @@ async function serveFromBlocks(request, env, ctx, key, block, cors) {
     console.log(JSON.stringify({
       refusal: 'edge_block_error', detail: String(e).slice(0, 120),
     }));
-    return giveUp(); // the direct path takes it
+    return giveUp(`error ${String(e).slice(0, 60)}`); // the direct path takes it
   }
 }
 
@@ -531,11 +539,16 @@ export default {
     // always has. Null means the block path declined (an unhandled range
     // shape, a missing object, any error at all), so playback falls through
     // to the direct path rather than failing. See [serveFromBlocks].
+    // Why the edge path stepped aside, if it did — said in `X-Edge` on the
+    // direct answer below, so the live check can tell "not switched on" from
+    // "the cache answered something odd" without anyone reading a log.
+    let edgeOff = '';
     const block = blockSize(env);
     if (block > 0) {
       const edged = await serveFromBlocks(
         request, env, ctx, claim.k, block, corsFor(request));
-      if (edged) return edged;
+      if (edged instanceof Response) return edged;
+      edgeOff = edged || '';
     }
 
     // THE CLIENT'S `Range` IS THE WHOLE JOB, and dropping it is what broke
@@ -575,6 +588,7 @@ export default {
     object.writeHttpMetadata(headers);
     headers.set('ETag', object.httpEtag);
     headers.set('Accept-Ranges', 'bytes');
+    if (edgeOff) headers.set('X-Edge', `off; ${edgeOff}`);
     if (!headers.has('Content-Type')) headers.set('Content-Type', 'video/mp4');
     // Written on every response even though nothing between here and the
     // viewer will hold a film: it costs nothing, and the small objects that
@@ -608,6 +622,7 @@ export default {
       asked: request.headers.get('Range') || 'whole',
       size: object.size,
       got: object.range ?? null,
+      edge: edgeOff || undefined,
       ua: (request.headers.get('User-Agent') || '').slice(0, 40),
     }));
 
