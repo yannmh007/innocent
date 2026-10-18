@@ -6,6 +6,7 @@ import 'dart:math';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:innocent/core/services/network/foreground_stream.dart';
 import 'package:innocent/features/video_hub/data/cache/stream_cache_server.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
@@ -92,6 +93,34 @@ void main() {
           'first 512 KB ${res.firstMs} ms  start ${res.startMs} ms  stalls ${res.stalls} '
           '(${(res.stalledMs / 1000).toStringAsFixed(1)} s)  '
           'film ${(body.length * 8 / kbps / 1000).toStringAsFixed(0)} s at $kbps kbps';
+      lines.add(line);
+      // ignore: avoid_print
+      print(line);
+    }
+    // THE WARM START (StreamCacheServer.warmOpening): the viewer opens the
+    // film's page, the opening is fetched over this same shaped line while
+    // they read it, and only then do they press Play. `warm` is how long the
+    // fetch took in the background; `start` is the black screen after the
+    // tap, which is the number the warm-up exists to shrink.
+    if (env['BENCH_WARM'] != '0') {
+      final lanes = laneCounts.last;
+      StreamCacheServer.lanes = lanes;
+      // The rows above were a player streaming: what it last relayed still
+      // counts as watching for a few seconds, and a warm-up never takes a
+      // line a film is playing on.
+      ForegroundStream.reset();
+      final id = 'bench-warm-$lanes-${DateTime.now().microsecondsSinceEpoch}';
+      final t = Stopwatch()..start();
+      final warmed = await StreamCacheServer.instance
+          .warmOpening(cacheId: id, upstream: upstream, refresh: () async => upstream);
+      final warmMs = t.elapsedMilliseconds;
+      final local = await StreamCacheServer.instance
+          .localUrlFor(cacheId: id, upstream: upstream, refresh: () async => upstream);
+      final res = await _play(local!, body.length, kbps);
+      StreamCacheServer.instance.release(id);
+      final line = 'warmed lanes=$lanes  warm ${warmed ? '$warmMs ms' : 'REFUSED'}  '
+          'first 512 KB ${res.firstMs} ms  start ${res.startMs} ms  stalls ${res.stalls} '
+          '(${(res.stalledMs / 1000).toStringAsFixed(1)} s)';
       lines.add(line);
       // ignore: avoid_print
       print(line);

@@ -21,6 +21,9 @@ on:
       - 'test_bench/stream_bench.dart'
       - 'lib/features/video_hub/data/cache/stream_cache_server.dart'
       - 'lib/features/video_hub/data/api/ranged_fetch.dart'
+      - 'lib/features/video_hub/presentation/playback.dart'
+      - 'lib/features/video_hub/domain/warm_rule.dart'
+      - 'test/stream_cache_server_test.dart'
       - '.github/workflows/stream-bench.yml'
   workflow_dispatch:
 
@@ -42,6 +45,16 @@ jobs:
           cache: true
 
       - run: flutter pub get
+
+      # THE ANALYZER AND THE UNIT TESTS FIRST — the same two commands, with
+      # the same tolerance, that the release build runs on main. A branch
+      # that changes the proxy or the play path then hears about a type error
+      # or a broken test minutes after the push, not at release time, and the
+      # bench below never measures code that does not hold together.
+      - name: Analyze
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+      - name: Unit tests
+        run: flutter test
 
       - name: netem available
         run: |

@@ -329,16 +329,28 @@ class StreamCacheServer {
       final token = _token;
       if (port == null || token == null) return null;
 
-      await StreamCacheStore.instance
+      final entry = await StreamCacheStore.instance
           .entryFor(cacheId, total: total, label: label);
       // The film's previous registration, if any, gives up its connections.
       _sources[cacheId]?.close();
       final src = _sources[cacheId] = _Source(upstream: upstream, refresh: refresh);
-      // THE LENGTH CHECK STARTS NOW, while the player is still being built,
-      // rather than when its first request arrives: it was 1 to 2.3 s of
-      // every start in the device lab (run 37776589997), all of it before the
-      // first lane opened. Its connection then carries the first lane.
-      src.probing = _probeTotal(src);
+      // CONFIRMED A MOMENT AGO, BY A WARM-UP (see [warmOpening]): its length
+      // was read from the server and where its index is with it. Asking again
+      // would put one round trip — on a Myanmar line, the whole of a warmed
+      // start's network time — in front of a first frame whose bytes are
+      // already on the phone. Taken once, and only while fresh.
+      final known = _confirmed.remove(cacheId);
+      if (known != null && known.fresh && entry.total == known.total) {
+        src.checkedTotal = true;
+        src.index = known.index;
+      } else {
+        // THE LENGTH CHECK STARTS NOW, while the player is still being
+        // built, rather than when its first request arrives: it was 1 to
+        // 2.3 s of every start in the device lab (run 37776589997), all of
+        // it before the first lane opened. Its connection then carries the
+        // first lane.
+        src.probing = _probeTotal(src);
+      }
       // THE BUDGET IS NOT ENFORCED HERE, and that is deliberate. This runs on
       // the path to the first frame — the path this project has spent weeks
       // taking delays out of — and enforcing the budget can mean deleting
@@ -371,6 +383,118 @@ class StreamCacheServer {
       }
       PlaybackLog.add('stream lanes=$lanes');
     } catch (_) {}
+  }
+
+  // ─── WARM START ──────────────────────────────────────────────────────
+  //
+  // TikTok and YouTube start a video in a blink because its first seconds
+  // are already on the phone when the finger lands. This is that, for the
+  // film whose page the viewer is looking at: its index and first seconds
+  // are fetched into the cache while they read the synopsis, so Play opens
+  // from flash with no network round trip in front of the first frame.
+
+  /// How much film after the index a warm-up takes: a few seconds at a
+  /// streaming rung, which is what the player reads before its first frame.
+  static const int warmFilmBytes = 2 * 1024 * 1024;
+
+  /// The most one warm-up may fetch, index included. A long faststart
+  /// original's index alone can be 6 MB.
+  static const int warmCapBytes = 8 * 1024 * 1024;
+
+  /// How long a warm-up's length check stands in for the player's own.
+  static const Duration _confirmedFor = Duration(minutes: 10);
+
+  /// Films warmed, or tried, in this process: never twice.
+  final Set<String> _warmed = <String>{};
+  String? _warming;
+  final Map<String, _Confirmed> _confirmed = <String, _Confirmed>{};
+
+  /// Whether a player is reading a film through here, or was a moment ago
+  /// from the network ([ForegroundStream]). A warm-up never takes that line.
+  bool get servingAPlayer =>
+      ForegroundStream.active ||
+      _sources.entries.any((e) => e.key != _warming && e.value.serving.isNotEmpty);
+
+  /// Fetch the opening of a film into the cache before anyone presses Play.
+  ///
+  /// True when something was warmed. Never throws and never retries, and
+  /// steps aside at once when it should not be running at all: another
+  /// warm-up under way, this film warmed before (one at a time, once each),
+  /// the film already registered (the player has it, or is about to), or any
+  /// film being played (its line is not ours to take). Whether to warm at
+  /// all — an unmetered line, no data saver, not a film on disk — is the
+  /// caller's question (see `warmAllowed`).
+  ///
+  /// THE BYTES COME THROUGH THIS SERVER'S OWN ADDRESS, so they take exactly
+  /// the path a player's would — the same lanes, the same store, the same
+  /// rung's cache entry — and Play finds them as if it had read them itself.
+  /// What the warm-up learnt of the film's length and index is handed to
+  /// that play ([localUrlFor]), so it does not ask again.
+  Future<bool> warmOpening({
+    required String cacheId,
+    required String upstream,
+    required Future<String?> Function() refresh,
+    int? total,
+    String label = '',
+  }) async {
+    if (_warming != null || _warmed.contains(cacheId)) return false;
+    if (_sources.containsKey(cacheId) || servingAPlayer) return false;
+    _warming = cacheId;
+    _warmed.add(cacheId);
+    _Source? mine;
+    final client = HttpClient()..connectionTimeout = const Duration(seconds: 15);
+    try {
+      final local = await localUrlFor(
+          cacheId: cacheId, upstream: upstream, refresh: refresh, total: total, label: label);
+      mine = _sources[cacheId];
+      if (local == null || mine == null) return false;
+      mine.warmOnly = true;
+      final length = await (mine.probing ?? Future<int>.value(0));
+      if (length <= 0) return false;
+      final idx = mine.index;
+      final ranges = <(int, int)>[]; // inclusive
+      if (idx != null && idx.$1 < 1024 * 1024) {
+        // The index at the front — a faststart film's, or a fragmented one's
+        // 1 KB — and the seconds after it, as one read.
+        ranges.add((0, min(length, min(warmCapBytes, idx.$2 + warmFilmBytes)) - 1));
+      } else {
+        ranges.add((0, min(length, warmFilmBytes) - 1));
+        // The index at the end: the player reads the front, then jumps for it.
+        if (idx != null && idx.$2 - idx.$1 <= warmCapBytes - warmFilmBytes) {
+          ranges.add((idx.$1, idx.$2 - 1));
+        }
+      }
+      var got = 0;
+      for (final (from, to) in ranges) {
+        if (!identical(_sources[cacheId], mine)) break; // Play took over
+        final req = await client.getUrl(Uri.parse(local));
+        req.headers.set(HttpHeaders.rangeHeader, 'bytes=$from-$to');
+        final resp = await req.close();
+        await for (final chunk in resp) {
+          got += chunk.length;
+        }
+      }
+      _confirmed[cacheId] = _Confirmed(length, idx);
+      PlaybackLog.add('warm: ${(got / 1048576).toStringAsFixed(1)} MB of the opening held');
+      return got > 0;
+    } catch (e) {
+      if (kDebugMode) debugPrint('StreamCacheServer.warmOpening: $e');
+      return false;
+    } finally {
+      client.close(force: true);
+      _warming = null;
+      // Its signed link and refresh closure go with it — unless Play has
+      // registered this film meanwhile, and then the source is the player's.
+      if (mine != null && identical(_sources[cacheId], mine)) release(cacheId);
+    }
+  }
+
+  /// For tests: forget which films were warmed.
+  @visibleForTesting
+  void resetWarmForTest() {
+    _warmed.clear();
+    _confirmed.clear();
+    _warming = null;
   }
 
   /// A local address for a film that is served ENTIRELY from what is on disk.
@@ -721,7 +845,7 @@ class StreamCacheServer {
     // lanes. It is also the back-pressure: nothing is read from upstream
     // faster than the player takes it, past the lanes' own small window.
     final pieces = StreamIterator<List<int>>(
-        _tee(upstream, writer, (n) => sent += n));
+        _tee(upstream, writer, (n) => sent += n, foreground: !src.warmOnly));
     try {
       var written = 0;
       while (await pieces.moveNext()) {
@@ -773,8 +897,9 @@ class StreamCacheServer {
   Stream<List<int>> _tee(
     Stream<List<int>> src,
     CacheWriter? writer,
-    void Function(int) counted,
-  ) async* {
+    void Function(int) counted, {
+    bool foreground = true,
+  }) async* {
     var sinceFlush = 0;
     var w = writer;
     try {
@@ -787,8 +912,10 @@ class StreamCacheServer {
       try {
         await for (final chunk in src) {
           // The viewer is watching this, from the network, now: background
-          // downloads hold back until it stops — see ForegroundStream.
-          ForegroundStream.touch();
+          // downloads hold back until it stops — see ForegroundStream. Not
+          // for a warm-up: nobody is watching it yet, and a download slowed
+          // for a page somebody merely opened is a cost with no viewer.
+          if (foreground) ForegroundStream.touch();
           if (w != null) {
             try {
               await w.write(chunk);
@@ -1385,6 +1512,18 @@ class _Source {
   /// the app started. One check per film per session: enough to catch a
   /// replaced file, cheap enough not to think about.
   bool checkedTotal = false;
+
+  /// Registered by [StreamCacheServer.warmOpening], not by a player.
+  bool warmOnly = false;
+}
+
+/// What a warm-up learnt of a film, for the play that follows it.
+class _Confirmed {
+  _Confirmed(this.total, this.index) : at = DateTime.now();
+  final int total;
+  final (int, int)? index;
+  final DateTime at;
+  bool get fresh => DateTime.now().difference(at) < StreamCacheServer._confirmedFor;
 }
 
 /// A part refused by the server. [expired] is the 403 / 404 / 410 a stale

@@ -5,6 +5,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:innocent/core/services/network/foreground_stream.dart';
 import 'package:innocent/features/video_hub/data/cache/stream_cache_server.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
@@ -126,6 +127,23 @@ Future<Uint8List> _get(String url, {int? from, int? take}) async {
     }
     final all = out.takeBytes();
     return take != null && all.length > take ? Uint8List.sublistView(all, 0, take) : all;
+  } finally {
+    c.close(force: true);
+  }
+}
+
+/// Exactly bytes [a]..[b] (inclusive) of [url], as a player's closed range.
+Future<Uint8List> _getRange(String url, int a, int b) async {
+  final c = HttpClient();
+  try {
+    final r = await c.getUrl(Uri.parse(url));
+    r.headers.set(HttpHeaders.rangeHeader, 'bytes=$a-$b');
+    final resp = await r.close();
+    final out = BytesBuilder(copy: false);
+    await for (final chunk in resp) {
+      out.add(chunk);
+    }
+    return out.takeBytes();
   } finally {
     c.close(force: true);
   }
@@ -619,5 +637,87 @@ void main() {
     // final write went out: two, never the three the lanes reach.
     expect(up.maxInFlight, lessThanOrEqualTo(2));
     StreamCacheServer.instance.release('film-d');
+  });
+
+  // ─── WARM START ──────────────────────────────────────────────────────
+
+  Future<bool> warm(String id) => StreamCacheServer.instance.warmOpening(
+      cacheId: id, upstream: up.url('t1'), refresh: () async => null);
+
+  test('a warm-up fetches only the opening, and Play then starts from the '
+      'phone with no network round trip at all', () async {
+    ForegroundStream.reset();
+    StreamCacheServer.instance.resetWarmForTest();
+    expect(await warm('film-warm'), isTrue);
+    // No index in this film (random bytes): its front only, a couple of MB.
+    final far = up.ranges.map((r) => r.$2).reduce(max);
+    expect(far, lessThan(StreamCacheServer.warmFilmBytes), reason: '${up.ranges}');
+    expect(ForegroundStream.active, isFalse,
+        reason: 'a warm-up is nobody watching: downloads must not be slowed');
+
+    // Play, as playMedia does it.
+    up.requests = 0;
+    up.ranges.clear();
+    final local = await StreamCacheServer.instance.localUrlFor(
+        cacheId: 'film-warm', upstream: up.url('t1'), refresh: () async => null);
+    final got = await _getRange(local!, 0, mb - 1);
+    expect(got, Uint8List.sublistView(up.body, 0, mb));
+    expect(up.requests, 0,
+        reason: 'the opening is on the phone and the length was handed over '
+            'by the warm-up — not even the length check: ${up.ranges}');
+    // Past the warmed part, the network as usual.
+    final more = await _getRange(local, 3 * mb, 4 * mb - 1);
+    expect(more, Uint8List.sublistView(up.body, 3 * mb, 4 * mb));
+    expect(up.requests, greaterThan(0));
+    StreamCacheServer.instance.release('film-warm');
+  });
+
+  test('a film is warmed once, and one at a time', () async {
+    ForegroundStream.reset();
+    StreamCacheServer.instance.resetWarmForTest();
+    expect(await warm('film-w2'), isTrue);
+    expect(await warm('film-w2'), isFalse, reason: 'once each');
+    up.pace = const Duration(milliseconds: 40);
+    final first = warm('film-w3');
+    expect(await warm('film-w4'), isFalse, reason: 'one at a time');
+    expect(await first, isTrue);
+  });
+
+  test('a warm-up never takes a film from the player that opened it', () async {
+    ForegroundStream.reset();
+    StreamCacheServer.instance.resetWarmForTest();
+    up.pace = const Duration(milliseconds: 60);
+    final warming = warm('film-w5');
+    await Future<void>.delayed(const Duration(milliseconds: 80));
+    // Play, while the warm-up is still fetching.
+    final local = await StreamCacheServer.instance.localUrlFor(
+        cacheId: 'film-w5', upstream: up.url('t1'), refresh: () async => null);
+    await warming;
+    up.pace = const Duration(milliseconds: 2);
+    final got = await _getRange(local!, 0, 256 * 1024 - 1);
+    expect(got, Uint8List.sublistView(up.body, 0, 256 * 1024),
+        reason: 'the warm-up ending must not release the player\'s registration');
+    StreamCacheServer.instance.release('film-w5');
+  });
+
+  test('no warm-up while a film is playing — its line is not ours', () async {
+    ForegroundStream.reset();
+    StreamCacheServer.instance.resetWarmForTest();
+    up.pace = const Duration(milliseconds: 100);
+    final local = await StreamCacheServer.instance.localUrlFor(
+        cacheId: 'film-busy', upstream: up.url('t1'), refresh: () async => null);
+    final c = HttpClient();
+    try {
+      final req = await c.getUrl(Uri.parse(local!));
+      req.headers.set(HttpHeaders.rangeHeader, 'bytes=0-');
+      final it = StreamIterator<List<int>>(await req.close());
+      expect(await it.moveNext(), isTrue); // the player is reading
+      expect(await warm('film-w6'), isFalse);
+      await it.cancel();
+    } finally {
+      c.close(force: true);
+      StreamCacheServer.instance.release('film-busy');
+      ForegroundStream.reset();
+    }
   });
 }
