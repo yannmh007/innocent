@@ -100,7 +100,10 @@ jobs:
               x = fetch(rng, bypass=True)  # direct
               same = (c[3] == x[3] == w[3]) and c[0] == x[0] == w[0] == 206 and c[1] == x[1]
               bad += not same
-              used += c[2] != 'direct'
+              # `blocks=…` is the edge path; `off; <why>` is the direct path
+              # saying why the edge stepped aside; nothing at all is a Worker
+              # older than the edge path.
+              used += c[2].startswith('blocks=')
               hits += 'HIT' in w[2]
               dig = hashlib.sha256(x[3]).hexdigest()[:10]
               print(f"{'ok ' if same else 'BAD'} {name:<38} {len(x[3]):>8} B sha {dig} | "

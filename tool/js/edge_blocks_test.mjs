@@ -151,6 +151,8 @@ const get = (range, extra = {}, method = 'GET') => {
   return new Request('https://w/v/token', { method, headers: h });
 };
 const bodyOf = async (res) => new Uint8Array(await res.arrayBuffer());
+// A decline is the reason, a short string, which the direct path reports in X-Edge.
+const declined = (r) => typeof r === 'string' && r.length > 0;
 const same = (got, s, e) => {
   const want = film.subarray(s, e + 1);
   if (got.length !== want.length) return false;
@@ -216,7 +218,7 @@ for (const [label, s, e] of cases) {
   const edge = makeEdge(env);
   const res = await serveFromBlocks(get(`bytes=${s}-${e}`), env, edge.ctx, KEY, BLOCK, {});
   const end = Math.min(e, SIZE - 1);
-  const ok = !!res && res.status === 206;
+  const ok = res instanceof Response && res.status === 206;
   check(`${label}: 206`, ok);
   if (!ok) continue;
   check(`${label}: bytes match`, same(await bodyOf(res), s, end));
@@ -265,30 +267,30 @@ for (const [label, s, e] of cases) {
     [`more than ${MAX_EDGE_BLOCKS} blocks`, get(`bytes=0-${(MAX_EDGE_BLOCKS + 1) * BLOCK}`)],
   ];
   for (const [label, req] of declines) {
-    check(`declines: ${label}`, (await serveFromBlocks(req, env, edge.ctx, KEY, BLOCK, {})) === null);
+    check(`declines: ${label}`, declined(await serveFromBlocks(req, env, edge.ctx, KEY, BLOCK, {})));
   }
-  check('declines: no ctx.exports', (await serveFromBlocks(get('bytes=0-10'), env, {}, KEY, BLOCK, {})) === null);
+  check('declines: no ctx.exports', declined(await serveFromBlocks(get('bytes=0-10'), env, {}, KEY, BLOCK, {})));
 }
 {
   // Caching NOT switched on: Block answers a whole 200 to a ranged ask.
   const env = { MEDIA: makeMedia(film) };
   const edge = makeEdge(env, { cacheOn: false });
   const r = await serveFromBlocks(get('bytes=0-10'), env, edge.ctx, KEY, BLOCK, {});
-  check('declines when the cache is not doing the slicing (a 200 came back)', r === null);
+  check('declines when the cache is not doing the slicing (a 200 came back)', declined(r));
 }
 {
   // A slice that is not exactly the one asked for.
   const env = { MEDIA: makeMedia(film) };
   const edge = makeEdge(env, { corrupt: true });
   const r = await serveFromBlocks(get('bytes=100-200'), env, edge.ctx, KEY, BLOCK, {});
-  check('declines when a block answers the wrong Content-Range', r === null);
+  check('declines when a block answers the wrong Content-Range', declined(r));
 }
 {
   // A missing object: Block says 404; the direct path will log no_object.
   const env = { MEDIA: { async get() { return null; }, async head() { return null; } } };
   const edge = makeEdge(env);
   const r = await serveFromBlocks(get('bytes=0-10'), env, edge.ctx, KEY, BLOCK, {});
-  check('declines for a missing object', r === null);
+  check('declines for a missing object', declined(r));
 }
 
 // ── 6. a start past the end ───────────────────────────────────────────────
