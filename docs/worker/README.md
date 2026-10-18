@@ -195,6 +195,49 @@ escaping from `Media` — it must return the full `200` and let the platform
 slice — or the inner path not being stable, which would mean the token had
 leaked into it. Both are covered above.
 
+## Edge fan-out (on since 1.64.67)
+
+The section above explains why whole-film Workers Caching could not work: the
+512 MB cap and a fresh token on every play. Edge fan-out works anyway, by
+changing what is cached.
+
+The gateway (the default export, never cached) opens the token and asks a
+second entrypoint, `Block`, for fixed-size **blocks** of the film — 8 MB — at
+a path built from the object key and the block number. That path is the
+**same** for every viewer and every token. Workers Caching sits in front of
+`Block` only: it strips the range, keeps the whole block, and cuts every
+later range out of it. So:
+
+* the second viewer of a film in a region is served from the data centre
+  beside them, not from the bucket's home region (APAC);
+* a cold block is tried against Cloudflare's upper-tier cache before the
+  bucket;
+* six lanes asking for the same cold block at once cause **one** bucket read
+  (request collapsing).
+
+The gateway never touches a byte: each block's slice is piped through
+natively, because a Free-plan Worker has 10 ms of CPU per request. And it
+never answers wrongly: every block's `Content-Range` must be exactly the
+slice asked for, or the request goes down the direct R2 path as before.
+Open-ended, suffix and whole-file requests, conditionals and `HEAD` always
+take the direct path. `tool/js/edge_blocks_test.mjs` proves the reassembly
+byte for byte.
+
+**The switch is `EDGE_BLOCK_BYTES` in `wrangler.toml`, in `[vars]`.** Not the
+dashboard: `wrangler deploy` replaces a Worker's plaintext variables with the
+ones in the config, so a value typed into the dashboard disappears on the next
+deploy. To turn it off, delete the line and push.
+
+**Checking it works:** run the **Playback check** workflow. Through the real
+Worker it fetches the same ranges twice — once on the edge path, once with
+`X-Edge-Bypass: 1` (the direct path) — compares them byte for byte, and
+prints what the cache did (`X-Edge: blocks=1; HIT`). No URL is ever printed.
+
+**What it costs:** with Workers Caching on, Cloudflare bills each call to
+`Block` as a request, so a player's range costs two or three Worker requests
+instead of one. At today's traffic that is nothing; on the Free plan's
+100,000 requests a day it is the number to watch as the audience grows.
+
 ## What this does and does not protect
 
 **Does.** The URL no longer names the account, the bucket, the folder scheme
