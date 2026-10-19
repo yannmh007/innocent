@@ -219,6 +219,7 @@ extension PlayerPlayback on PlayerController {
     _lastClimbTry = null;
     _climbs = 0;
     _climbInFlight = false;
+    _reopenedAt = null;
     // The decode watch and the silent-file check both describe ONE playback.
     // Left running across an open they would measure the new file against the
     // old one's counters and spend its one full-probe reopen before it had

@@ -2093,15 +2093,20 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     // a second tap reads as "nothing happened".
     final messenger = ScaffoldMessenger.of(this.context);
     final strings = AppStrings.of(this.context);
+    final controller = ref.read(playerControllerProvider.notifier);
+    // A switch already under way: say so, rather than "could not switch".
+    if (controller.switchingQuality) {
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(SnackBar(content: Text(strings.playerQualitySwitching)));
+      return;
+    }
     if (picked != menu.selected) {
       messenger.showSnackBar(SnackBar(
         content: Text(strings.playerQualitySwitching),
         duration: const Duration(seconds: 10),
       ));
     }
-    final ok = await ref
-        .read(playerControllerProvider.notifier)
-        .switchQuality(picked);
+    final ok = await controller.switchQuality(picked);
     if (!mounted) return;
     messenger.hideCurrentSnackBar();
     if (!ok) {
@@ -4099,6 +4104,12 @@ class _BottomControls extends ConsumerStatefulWidget {
   ConsumerState<_BottomControls> createState() => _BottomControlsState();
 }
 
+/// Whether [uri] is played over a network: http(s) — the stream proxy's
+/// loopback address included — rtmp or rtsp.
+bool _isStream(String? uri) =>
+    uri != null &&
+    (uri.startsWith('http') || uri.startsWith('rtmp') || uri.startsWith('rtsp'));
+
 class _BottomControlsState extends ConsumerState<_BottomControls> {
   /// Local drag position — overrides widget.position while user is scrubbing.
   /// PDF page 10: real-time scrub preview.
@@ -4170,6 +4181,13 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
     // Phase 45: kick off a scrub preview load at the drag position.
     final seconds = (widget.duration.inSeconds * v).round();
     _loadPreview(seconds);
+    // A STREAM IS SCRUBBED BY ITS LABEL, AND SEEKED ONCE ON RELEASE, as
+    // YouTube and Netflix do. Every live step here is a jump the player must
+    // fetch over the network: sixteen a second on a drag, each opening a new
+    // read through the proxy and abandoning the last, so on a slow line the
+    // drag itself was what stalled the film. A local file keeps the live
+    // picture (MX Player's feel): its bytes are on the phone.
+    if (_isStream(widget.videoUri)) return;
     final now = DateTime.now();
     if (now.difference(_lastSeekAt) < _seekThrottle) return;
     _lastSeekAt = now;
