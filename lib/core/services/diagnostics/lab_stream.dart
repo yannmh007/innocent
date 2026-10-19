@@ -47,6 +47,19 @@ class LabStream {
     }
   }
 
+  /// Whether a jump to [want] LANDED THERE: [got], read a while after it,
+  /// is no more than [early] short of [want] (a start lands on the keyframe
+  /// before it, two seconds at most on the ladder) and no more than [late]
+  /// past it (the film plays on meanwhile). The failure it exists to catch
+  /// is a film that went back to 00:00, or stayed where it was.
+  static bool landed(
+    Duration want,
+    Duration got, {
+    Duration early = const Duration(seconds: 3),
+    Duration late = const Duration(seconds: 30),
+  }) =>
+      got >= want - early && got <= want + late;
+
   /// "AFTER:TO[,AFTER:TO…]" in seconds; malformed entries are skipped.
   static List<(Duration after, Duration to)> parseSeekPlan(String raw) => [
         for (final item in raw.split(','))

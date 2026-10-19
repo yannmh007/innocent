@@ -18,4 +18,17 @@ void main() {
     ]);
     expect(LabStream.parseSeekPlan(''), isEmpty);
   });
+
+  test('a jump landed: near where it was asked, never back at 00:00', () {
+    const want = Duration(seconds: 600);
+    expect(LabStream.landed(want, const Duration(seconds: 598)), isTrue,
+        reason: 'the keyframe before it');
+    expect(LabStream.landed(want, const Duration(seconds: 620)), isTrue,
+        reason: 'the film played on meanwhile');
+    expect(LabStream.landed(want, const Duration(seconds: 4)), isFalse,
+        reason: 'back at the start: the 1.64.68 bug');
+    expect(LabStream.landed(want, const Duration(seconds: 300)), isFalse,
+        reason: 'stayed where it was');
+    expect(LabStream.landed(want, const Duration(seconds: 700)), isFalse);
+  });
 }

@@ -31,6 +31,7 @@ import 'features/player/presentation/player_provider.dart';
 import 'features/player/presentation/shortcut_item.dart';
 import 'core/services/diagnostics/lab_stream.dart';
 import 'core/services/diagnostics/playback_log.dart';
+import 'core/services/video_player/stream_renewal.dart';
 import 'core/services/network/throughput_memory.dart';
 import 'features/video_hub/presentation/playback.dart';
 import 'features/video_hub/presentation/video_hub_provider.dart';
@@ -137,6 +138,107 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
     }
   }
 
+  /// DEVICE LAB ONLY — the jumps a viewer makes mid-stream, each checked for
+  /// where it LANDED: a seek, a change of quality, a skip, a swipe, a change
+  /// back to Auto. Every one writes `LAB check <what> PASS|FAIL want=… got=…`
+  /// (seconds), which device-cloud.yml keeps in lab_trace.txt. Written after
+  /// 1.64.68 reopened the film at 00:00 after a quality change and after a
+  /// slow seek — on every phone, and no run had looked at the position.
+  Future<void> _labJumpScript() async {
+    final svc = ref.read(videoPlayerServiceProvider);
+    final player = ref.read(playerControllerProvider.notifier);
+    var pass = 0, fail = 0;
+    Future<bool> until(bool Function() ok, Duration within) async {
+      final end = DateTime.now().add(within);
+      while (DateTime.now().isBefore(end)) {
+        if (!mounted) return false;
+        if (ok()) return true;
+        await Future<void>.delayed(const Duration(milliseconds: 250));
+      }
+      return ok();
+    }
+
+    void check(String what, Duration want, {Duration late = const Duration(seconds: 30)}) {
+      final got = svc.position;
+      final ok = LabStream.landed(want, got, late: late);
+      ok ? pass++ : fail++;
+      final playing = StreamRenewal.quality.value?.playing ?? '-';
+      PlaybackLog.add('LAB check $what ${ok ? 'PASS' : 'FAIL'} '
+          'want=${want.inSeconds} got=${got.inSeconds} rung=$playing');
+    }
+
+    String? otherRung() {
+      final menu = StreamRenewal.quality.value;
+      if (menu == null) return null;
+      for (final o in menu.options.reversed) {
+        if (o.id == 'auto' || o.id == 'original') continue;
+        if (o.label == menu.playing) continue;
+        return o.id;
+      }
+      return null;
+    }
+
+    try {
+      // Playing, past its start.
+      if (!await until(() => svc.position > const Duration(seconds: 5),
+          const Duration(seconds: 90))) {
+        PlaybackLog.add('LAB check: the film never started');
+        return;
+      }
+      final length = svc.duration;
+      Duration at(double share) => Duration(
+          milliseconds: (length.inMilliseconds * share).round());
+
+      // 1. The seek bar, released at 40 %.
+      var want = at(0.4);
+      await player.seek(want);
+      await until(() => svc.position >= want, const Duration(seconds: 30));
+      await Future<void>.delayed(const Duration(seconds: 6));
+      check('seek', want);
+
+      // 2. A change of quality, from the menu.
+      final rung = otherRung();
+      if (rung == null) {
+        PlaybackLog.add('LAB check quality SKIP (one copy)');
+      } else {
+        want = svc.position;
+        final ok = await player.switchQuality(rung);
+        await Future<void>.delayed(const Duration(seconds: 8));
+        // The film played on through the switch's fetch (up to 8 s).
+        check('quality->$rung${ok ? '' : ' (refused)'}', want,
+            late: const Duration(seconds: 40));
+      }
+
+      // 3. +30 s, as the skip button does.
+      want = svc.position + const Duration(seconds: 30);
+      await player.seekRelative(30);
+      await Future<void>.delayed(const Duration(seconds: 8));
+      check('skip+30', want);
+
+      // 4. A swipe across the picture, 2 minutes back.
+      final from = svc.position;
+      want = from - const Duration(minutes: 2);
+      player.onSeekStart();
+      for (var s = 10; s <= 120; s += 10) {
+        player.onSeekUpdate(-s);
+        await Future<void>.delayed(const Duration(milliseconds: 80));
+      }
+      await player.onSeekEnd();
+      await Future<void>.delayed(const Duration(seconds: 8));
+      check('swipe-120', want);
+
+      // 5. Back to Auto.
+      want = svc.position;
+      await player.switchQuality('auto');
+      await Future<void>.delayed(const Duration(seconds: 8));
+      check('quality->auto', want, late: const Duration(seconds: 40));
+    } catch (e) {
+      PlaybackLog.add('LAB check failed to run: $e');
+    } finally {
+      PlaybackLog.add('LAB check summary pass=$pass fail=$fail');
+    }
+  }
+
   /// DEVICE LAB ONLY — Test Lab's playback measurement (device-cloud.yml,
   /// MODE=playback). The same film is played three ways, about fifty
   /// seconds each, while CpuProbe and the pipeline line log to logcat:
@@ -184,6 +286,9 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
             return;
           }
           await _labTitle(id);
+          // Test Lab only (the title compiled in): the jumps a viewer
+          // makes, each checked for where it landed.
+          if (built.isNotEmpty) await _labJumpScript();
         }());
         if (built.isNotEmpty) {
           Timer(const Duration(seconds: 240), () => exit(0));
