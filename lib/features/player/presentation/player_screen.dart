@@ -4233,6 +4233,18 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
         : 0.0;
     // Use drag value while scrubbing, actual position otherwise
     final progress = _dragValue ?? actualProgress;
+    // HOW FAR THE STREAM HAS ARRIVED, as the lighter stretch past the thumb
+    // (YouTube's grey bar): a jump inside it is instant, one past it waits
+    // for the network, and a viewer can see which before they let go. Only
+    // for a stream — a file on the phone is all there.
+    double? bufferedProgress;
+    if (hasDuration && _isStream(widget.videoUri)) {
+      final ahead = ref.watch(videoBufferedProvider).value;
+      if (ahead != null && ahead > Duration.zero) {
+        bufferedProgress = (ahead.inMilliseconds / widget.duration.inMilliseconds)
+            .clamp(actualProgress.clamp(0.0, 1.0), 1.0);
+      }
+    }
     final displayPosition = _dragValue != null && hasDuration
         ? Duration(
             milliseconds:
@@ -4345,6 +4357,7 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
                     data: SliderTheme.of(context).copyWith(
                       activeTrackColor: AppColors.specPrimary,
                       inactiveTrackColor: AppColors.specSeekRail,
+                      secondaryActiveTrackColor: Colors.white38,
                       thumbColor: AppColors.specCheckbox,
                       trackHeight: 2.5,
                       thumbShape: const RoundSliderThumbShape(
@@ -4362,6 +4375,7 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
                     ),
                     child: Slider(
                       value: progress.clamp(0.0, 1.0),
+                      secondaryTrackValue: bufferedProgress,
                       onChangeStart: hasDuration
                           ? (v) {
                               widget.onScrubStart?.call();
