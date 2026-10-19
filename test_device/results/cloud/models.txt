@@ -74,6 +74,7 @@ b5qxeea        samsung   Galaxy Z Flip5               36
 b6q            samsung   Galaxy Z Flip6               34
 b6qksx         samsung   Galaxy Z Flip6               36
 b6qsqw         samsung   Galaxy Z Flip6               36
+b8q            samsung   Galaxy Z Flip8               37
 blazer         google    Pixel 10 Pro                 36
 bluejay        google    Pixel 6a                     32
 blueline       google    Pixel 3                      28
@@ -132,6 +133,7 @@ gts9fe         samsung   Galaxy Tab S9 FE 5G          34
 gts9wifi       samsung   Galaxy Tab S9                34
 guamna         motorola  moto g play (2021)           30
 guamp          motorola  moto g(9) play               30
+h8q            samsung   Galaxy Z Fold8               37
 houji          Xiaomi    Xiaomi 14                    35
 husky          google    Pixel 8 Pro                  34,35
 java           motorola  Motorola G20                 30

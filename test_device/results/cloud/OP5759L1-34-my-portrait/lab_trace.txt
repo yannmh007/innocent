@@ -1,351 +1,95 @@
+LAB scenario 3 surfaceProducer=null
 LAB device kind=DeviceKind.phone sw=360.0
-LAB cpu app 82% · 1.9fps · pool-thread 50% | io.worker. 21% | .innocent.media 6% | HeapTaskDaemon 1% | 1.raster 1%
-LAB cpu app 9% · 2.0fps · .innocent.media 5% | estorage.worker 1%
-LAB cpu app 24% · 12.8fps · .innocent.media 12% | 1.raster 6% | mali-cmar-backe 3% | binder 1%
-LAB cpu app 38% · 4.8fps · .innocent.media 12% | NetworkService 8% | ThreadPoolForeg 8% | Chrome_IOThread 5% | ThreadPoolSingl 1% | Chrome_InProcGp 1%
-LAB cpu app 7% · 0.9fps · .innocent.media 5%
-LAB cpu app 23% · 16.3fps · .innocent.media 12% | 1.raster 6% | mali-cmar-backe 3% | binder 1%
-LAB cpu app 24% · 19.7fps · .innocent.media 12% | 1.raster 5% | mali-cmar-backe 4% | binder 2%
-LAB cpu app 20% · 16.1fps · .innocent.media 10% | 1.raster 4% | mali-cmar-backe 3% | binder 2%
-LAB cpu app 23% · 15.9fps · .innocent.media 11% | 1.raster 5% | mali-cmar-backe 3% | binder 1%
-LAB cpu app 5% · 2.5fps · .innocent.media 3%
-LAB cpu app 7% · 1.6fps · .innocent.media 4%
-LAB cpu app 7% · 1.7fps · .innocent.media 4%
-LAB cpu app 77% · 41.1fps · .innocent.media 38% | 1.raster 28% | mali-cmar-backe 6% | binder 3% | DartWorker 2%
-LAB cpu app 105% · 57.5fps · .innocent.media 48% | 1.raster 43% | mali-cmar-backe 8% | binder 4% | DartWorker 1% | IplrVkResMgr 1%
-LAB cpu app 119% · 55.0fps · .innocent.media 58% | 1.raster 46% | mali-cmar-backe 8% | binder 4% | DartWorker 1% | IplrVkResMgr 1%
-LAB cpu app 37% · 20.6fps · .innocent.media 19% | 1.raster 12% | mali-cmar-backe 3% | binder 2%
-LAB cpu app 7% · 2.0fps · .innocent.media 5%
-LAB cpu app 36% · 12.6fps · .innocent.media 19% | 1.raster 10% | DartWorker 3% | mali-cmar-backe 2% | binder 2%
-LAB cpu app 89% · 53.3fps · .innocent.media 52% | 1.raster 23% | mali-cmar-backe 7% | binder 4% | DartWorker 1%
-LAB cpu app 88% · 53.5fps · .innocent.media 53% | 1.raster 21% | mali-cmar-backe 7% | binder 3% | DartWorker 2%
-LAB cpu app 91% · 53.8fps · .innocent.media 53% | 1.raster 22% | mali-cmar-backe 8% | binder 4% | DartWorker 2% | IplrVkResMgr 1%
-LAB cpu app 87% · 52.7fps · .innocent.media 52% | 1.raster 21% | mali-cmar-backe 7% | binder 4% | DartWorker 2% | IplrVkResMgr 1%
-LAB cpu app 91% · 49.4fps · .innocent.media 53% | 1.raster 22% | mali-cmar-backe 8% | binder 3% | DartWorker 2%
-LAB cpu app 81% · 39.5fps · .innocent.media 40% | 1.raster 28% | mali-cmar-backe 6% | binder 3% | DartWorker 2%
-LAB cpu app 76% · 43.1fps · 1.raster 31% | .innocent.media 31% | mali-cmar-backe 9% | binder 2% | DartWorker 2% | IplrVkFenceWait 1%
-LAB cpu app 22% · 11.2fps · .innocent.media 11% | 1.raster 7% | mali-cmar-backe 2% | binder 1%
-LAB cpu app 4% · 1.3fps · .innocent.media 3%
-LAB cpu app 4% · 1.0fps · .innocent.media 3%
-LAB cpu app 4% · 1.4fps · .innocent.media 3%
-LAB cpu app 5% · 1.5fps · .innocent.media 3%
-LAB cpu app 6% · 1.5fps · .innocent.media 4%
-LAB cpu app 8% · 2.7fps · .innocent.media 4% | 1.raster 1%
-LAB cpu app 5% · 1.6fps · .innocent.media 3%
-LAB cpu app 4% · 1.1fps · .innocent.media 3%
-LAB cpu app 9% · 1.1fps · .innocent.media 5% | DartWorker 2%
-LAB cpu app 1% · 0.1fps · -
-LAB cpu app 7% · 1.1fps · .innocent.media 4% | 1.raster 2%
-LAB cpu app 28% · 16.0fps · 1.raster 11% | .innocent.media 10% | mali-cmar-backe 2% | binder 1%
-LAB cpu app 37% · 20.9fps · 1.raster 13% | .innocent.media 13% | estorage.worker 4% | mali-cmar-backe 3% | binder 2% | HeapTaskDaemon 1%
-LAB cpu app 12% · 2.4fps · .innocent.media 7% | DartWorker 2% | 1.raster 1%
-LAB cpu app 14% · 1.7fps · .innocent.media 5% | estorage.worker 4% | 1.raster 1%
-LAB    0.0 dl pass x3 from 0/1075 MB http 200
-LAB cpu app 162% · 53.3fps · .innocent.media 67% | DartWorker 37% | 1.raster 33% | dart:io EventHa 9% | mali-cmar-backe 7% | HeapTaskDaemon 4%
-LAB cpu app 213% · 57.6fps · .innocent.media 90% | DartWorker 58% | 1.raster 29% | dart:io EventHa 13% | HeapTaskDaemon 12% | mali-cmar-backe 7%
-LAB cpu app 205% · 56.9fps · .innocent.media 90% | DartWorker 51% | 1.raster 28% | HeapTaskDaemon 13% | dart:io EventHa 12% | mali-cmar-backe 6%
-LAB   31.8 play asset granted in 0 ms (asked ahead), 4 rungs
-LAB   31.8 play rung 720p 1684 kbps (choice auto, measured - kbps)
-LAB   31.8 stream lanes=6
-LAB   31.9 play through the local proxy
-LAB   31.9 play: opening the player
+LAB    0.0 LAB script: catalogue title
+LAB    5.1 LAB title: opening Sintel
+LAB    8.0 play server granted in 2829 ms, 4 rungs
+LAB    8.0 play rung 720p 1684 kbps (choice auto, measured - kbps)
+LAB    8.0 stream lanes=6
+LAB    8.0 play through the local proxy
+LAB    8.0 play: opening the player
 LAB insets stable l=0.0 t=32.0 r=0.0 b=44.0 padding l=0.0 t=32.0 r=0.0 b=44.0 bar=44.0
 LAB insets stable l=0.0 t=32.0 r=0.0 b=44.0 padding l=0.0 t=32.0 r=0.0 b=0.0 bar=44.0
-LAB   32.2 hwdec -> auto
-LAB   32.3 open scheme=http len=106 hwdec=auto start=0s autoplay=true
-LAB   32.3 wakelock playing=false bg=false priv=false pos=0ms
-LAB   32.3 first frame 349 ms
-LAB   32.3 wakelock playing=true bg=false priv=false pos=0ms
-LAB   32.3 open ok
-LAB   32.3 rebuffer start
+LAB    8.3 stream index 0.0 MB at 0.0 MB
+LAB    8.3 hwdec -> auto
+LAB    8.4 open scheme=http len=106 hwdec=auto start=0s autoplay=true
+LAB    8.4 wakelock playing=false bg=false priv=false pos=0ms
+LAB    8.4 first frame 272 ms
+LAB    8.4 wakelock playing=true bg=false priv=false pos=0ms
+LAB    8.4 open ok
+LAB    8.4 rebuffer start
+LAB    8.5 fg stream: watching
 LAB insets stable l=0.0 t=32.0 r=0.0 b=44.0 padding l=0.0 t=32.0 r=0.0 b=0.0 bar=44.0
-LAB   33.3 stream index 0.0 MB at 0.0 MB
-LAB   33.9 fg stream: watching
-LAB   35.6 rebuffer end 3301 ms
-LAB cpu app 187% · 54.7fps · .innocent.media 81% | DartWorker 49% | 1.raster 24% | dart:io EventHa 10% | HeapTaskDaemon 10% | mali-cmar-backe 6%
-LAB   36.3 stall #1 network {reason: network, cache_s: 0, have_kbps: 0, dropped: 0, hwdec: mediacodec-copy, res: 1690x720}
-LAB   38.6 measured 23964 kbps
-LAB   40.3 video h264 1690x720 hwdec=mediacodec(?) vo=gpu surf=producer fps=24.0 drop=0/0 thr=4
-LAB   40.6 dl pass end +148 MB in 41 s (3.64 MB/s)
-LAB   40.9 measured 23351 kbps
-LAB gesture tap
-LAB   43.5 dl pass x1 (watching) from 148/1075 MB http 206
-LAB sem controls 1 after 500 ms: view Instance of 'Size' dpr 2.0
-LAB sem #0 0,0 720x1612 own=0,0 720x1612 
-LAB sem   #1 0,0 720x1612 own=0,0 360x806 T=[sx 2 sy 2 tx 0 ty 0] 
-LAB sem     #845 0,0 720x1612 own=0,0 360x806 
-LAB sem       #846 0,0 720x1612 own=0,0 360x806 
-LAB sem         #871 0,0 720x1612 own=0,0 360x806 tap
-LAB sem         #872 0,72 96x96 own=0,0 48x48 T=[sx 1 sy 1 tx 0 ty 36] tip="Back" tap
-LAB sem         #873 96,82 188x76 own=0,0 94x38 T=[sx 1 sy 1 tx 48 ty 41] label="Sintel (စမ်းသပ်ရန်)"
-LAB sem         #874 296,101 69x38 own=0,0 34x19 T=[sx 1 sy 1 tx 147.96 ty 50.50] label="02:47"
-LAB sem         #875 377,72 130x96 own=0,0 65x48 T=[sx 1 sy 1 tx 188.46 ty 36] label="Auto" tap
-LAB sem         #876 506,72 118x96 own=0,0 59x48 T=[sx 1 sy 1 tx 253.23 ty 36] label="Default" tap
-LAB sem         #877 624,72 96x96 own=0,0 48x48 T=[sx 1 sy 1 tx 312 ty 36] tip="More" tap
-LAB sem         #878 0,182 720x112 own=0,0 360x56 T=[sx 1 sy 1 tx 0 ty 91] 
-LAB sem           #885 0,182 720x112 own=0,0 360x56 
-LAB sem             #879 0,182 126x112 own=0,0 63x56 label="1X" tap
-LAB sem             #880 126,182 126x112 own=0,0 63x56 T=[sx 1 sy 1 tx 63 ty 0] tap
-LAB sem             #881 252,182 126x112 own=0,0 63x56 T=[sx 1 sy 1 tx 126 ty 0] tap
-LAB sem             #882 378,182 126x112 own=0,0 63x56 T=[sx 1 sy 1 tx 189 ty 0] tap
-LAB sem             #883 504,182 126x112 own=0,0 63x56 T=[sx 1 sy 1 tx 252 ty 0] tap
-LAB sem             #884 630,182 90x112 own=0,0 45x56 T=[sx 1 sy 1 tx 315 ty 0] tap
-LAB sem         #886 36,1381 112x38 own=0,0 56x19 T=[sx 1 sy 1 tx 18 ty 690.50] label="00:07"
-LAB sem         #887 148,1356 424x88 own=0,0 212x44 T=[sx 1 sy 1 tx 74 ty 678] 
-LAB sem         #888 572,1381 112x38 own=0,0 56x19 T=[sx 1 sy 1 tx 286 ty 690.50] label="-14:40"
-LAB sem         #889 190,1436 96x96 own=0,0 48x48 T=[sx 1 sy 1 tx 95 ty 718] tip="Previous video" tap
-LAB sem         #890 302,1436 96x96 own=0,0 48x48 T=[sx 1 sy 1 tx 151 ty 718] tip="Pause" tap
-LAB sem         #891 414,1436 96x96 own=0,0 48x48 T=[sx 1 sy 1 tx 207 ty 718] tip="Next (long-press for Loop menu)" tap
-LAB sem         #892 8,1436 96x96 own=0,0 48x48 T=[sx 1 sy 1 tx 4 ty 718] tip="Lock controls" tap
-LAB sem         #893 482,1436 96x96 own=0,0 48x48 T=[sx 1 sy 1 tx 241 ty 718] id=player-screen-mode label="မျက်နှာပြင်နဲ့ကိုက် (Fit)" tap
-LAB sem         #894 596,1436 96x96 own=0,0 48x48 T=[sx 1 sy 1 tx 298 ty 718] tip="Picture-in-Picture" tap
-LAB cpu app 167% · 22.9fps · .innocent.media 73% | DartWorker 36% | Thread 16% | 1.raster 10% | dart:io EventHa 6% | mali-cmar-backe 6%
-LAB   46.9 measured 47784 kbps
-LAB gesture tap
-LAB sem controls 2 after 500 ms: view Instance of 'Size' dpr 2.0
-LAB sem #0 0,0 720x1612 own=0,0 720x1612 
-LAB sem   #1 0,0 720x1612 own=0,0 360x806 T=[sx 2 sy 2 tx 0 ty 0] 
-LAB sem     #845 0,0 720x1612 own=0,0 360x806 
-LAB sem       #846 0,0 720x1612 own=0,0 360x806 
-LAB sem         #871 0,0 720x1612 own=0,0 360x806 tap
-LAB sem         #895 0,72 96x96 own=0,0 48x48 T=[sx 1 sy 1 tx 0 ty 36] tip="Back" tap
-LAB sem         #896 96,82 188x76 own=0,0 94x38 T=[sx 1 sy 1 tx 48 ty 41] label="Sintel (စမ်းသပ်ရန်)"
-LAB sem         #897 296,101 69x38 own=0,0 34x19 T=[sx 1 sy 1 tx 147.96 ty 50.50] label="02:48"
-LAB sem         #898 377,72 130x96 own=0,0 65x48 T=[sx 1 sy 1 tx 188.46 ty 36] label="Auto" tap
-LAB sem         #899 506,72 118x96 own=0,0 59x48 T=[sx 1 sy 1 tx 253.23 ty 36] label="Default" tap
-LAB sem         #900 624,72 96x96 own=0,0 48x48 T=[sx 1 sy 1 tx 312 ty 36] tip="More" tap
-LAB sem         #901 0,182 720x112 own=0,0 360x56 T=[sx 1 sy 1 tx 0 ty 91] 
-LAB sem           #908 0,182 720x112 own=0,0 360x56 
-LAB sem             #902 0,182 126x112 own=0,0 63x56 label="1X" tap
-LAB sem             #903 126,182 126x112 own=0,0 63x56 T=[sx 1 sy 1 tx 63 ty 0] tap
-LAB sem             #904 252,182 126x112 own=0,0 63x56 T=[sx 1 sy 1 tx 126 ty 0] tap
-LAB sem             #905 378,182 126x112 own=0,0 63x56 T=[sx 1 sy 1 tx 189 ty 0] tap
-LAB sem             #906 504,182 126x112 own=0,0 63x56 T=[sx 1 sy 1 tx 252 ty 0] tap
-LAB sem             #907 630,182 90x112 own=0,0 45x56 T=[sx 1 sy 1 tx 315 ty 0] tap
-LAB sem         #909 36,1381 112x38 own=0,0 56x19 T=[sx 1 sy 1 tx 18 ty 690.50] label="00:18"
-LAB sem         #910 148,1356 424x88 own=0,0 212x44 T=[sx 1 sy 1 tx 74 ty 678] 
-LAB sem         #911 572,1381 112x38 own=0,0 56x19 T=[sx 1 sy 1 tx 286 ty 690.50] label="-14:29"
-LAB sem         #912 190,1436 96x96 own=0,0 48x48 T=[sx 1 sy 1 tx 95 ty 718] tip="Previous video" tap
-LAB sem         #913 302,1436 96x96 own=0,0 48x48 T=[sx 1 sy 1 tx 151 ty 718] tip="Pause" tap
-LAB sem         #914 414,1436 96x96 own=0,0 48x48 T=[sx 1 sy 1 tx 207 ty 718] tip="Next (long-press for Loop menu)" tap
-LAB sem         #915 8,1436 96x96 own=0,0 48x48 T=[sx 1 sy 1 tx 4 ty 718] tip="Lock controls" tap
-LAB sem         #916 482,1436 96x96 own=0,0 48x48 T=[sx 1 sy 1 tx 241 ty 718] id=player-screen-mode label="မျက်နှာပြင်နဲ့ကိုက် (Fit)" tap
-LAB sem         #917 596,1436 96x96 own=0,0 48x48 T=[sx 1 sy 1 tx 298 ty 718] tip="Picture-in-Picture" tap
-LAB cpu app 166% · 25.6fps · .innocent.media 73% | DartWorker 41% | Thread 16% | 1.raster 10% | mali-cmar-backe 6% | MediaCodec_loop 6%
-LAB gesture long press
-LAB gesture long press end
-LAB   58.9 measured 14400 kbps
-LAB gesture tap
-LAB sem controls 3 after 500 ms: view Instance of 'Size' dpr 2.0
-LAB sem #0 0,0 720x1612 own=0,0 720x1612 
-LAB sem   #1 0,0 720x1612 own=0,0 360x806 T=[sx 2 sy 2 tx 0 ty 0] 
-LAB sem     #845 0,0 720x1612 own=0,0 360x806 
-LAB sem       #846 0,0 720x1612 own=0,0 360x806 
-LAB sem         #871 0,0 720x1612 own=0,0 360x806 tap
-LAB sem         #918 0,72 96x96 own=0,0 48x48 T=[sx 1 sy 1 tx 0 ty 36] tip="Back" tap
-LAB sem         #919 96,82 188x76 own=0,0 94x38 T=[sx 1 sy 1 tx 48 ty 41] label="Sintel (စမ်းသပ်ရန်)"
-LAB sem         #920 296,101 69x38 own=0,0 34x19 T=[sx 1 sy 1 tx 147.96 ty 50.50] label="02:48"
-LAB sem         #921 377,72 130x96 own=0,0 65x48 T=[sx 1 sy 1 tx 188.46 ty 36] label="Auto" tap
-LAB sem         #922 506,72 118x96 own=0,0 59x48 T=[sx 1 sy 1 tx 253.23 ty 36] label="Default" tap
-LAB sem         #923 624,72 96x96 own=0,0 48x48 T=[sx 1 sy 1 tx 312 ty 36] tip="More" tap
-LAB sem         #924 0,182 720x112 own=0,0 360x56 T=[sx 1 sy 1 tx 0 ty 91] 
-LAB sem           #931 0,182 720x112 own=0,0 360x56 
-LAB sem             #925 0,182 126x112 own=0,0 63x56 label="1X" tap
-LAB sem             #926 126,182 126x112 own=0,0 63x56 T=[sx 1 sy 1 tx 63 ty 0] tap
-LAB sem             #927 252,182 126x112 own=0,0 63x56 T=[sx 1 sy 1 tx 126 ty 0] tap
-LAB sem             #928 378,182 126x112 own=0,0 63x56 T=[sx 1 sy 1 tx 189 ty 0] tap
-LAB sem             #929 504,182 126x112 own=0,0 63x56 T=[sx 1 sy 1 tx 252 ty 0] tap
-LAB sem             #930 630,182 90x112 own=0,0 45x56 T=[sx 1 sy 1 tx 315 ty 0] tap
-LAB sem         #932 36,1381 112x38 own=0,0 56x19 T=[sx 1 sy 1 tx 18 ty 690.50] label="00:25"
-LAB sem         #933 148,1356 424x88 own=0,0 212x44 T=[sx 1 sy 1 tx 74 ty 678] 
-LAB sem         #934 572,1381 112x38 own=0,0 56x19 T=[sx 1 sy 1 tx 286 ty 690.50] label="-14:22"
-LAB sem         #935 190,1436 96x96 own=0,0 48x48 T=[sx 1 sy 1 tx 95 ty 718] tip="Previous video" tap
-LAB sem         #936 302,1436 96x96 own=0,0 48x48 T=[sx 1 sy 1 tx 151 ty 718] tip="Pause" tap
-LAB sem         #937 414,1436 96x96 own=0,0 48x48 T=[sx 1 sy 1 tx 207 ty 718] tip="Next (long-press for Loop menu)" tap
-LAB sem         #938 8,1436 96x96 own=0,0 48x48 T=[sx 1 sy 1 tx 4 ty 718] tip="Lock controls" tap
-LAB sem         #939 482,1436 96x96 own=0,0 48x48 T=[sx 1 sy 1 tx 241 ty 718] id=player-screen-mode label="မျက်နှာပြင်နဲ့ကိုက် (Fit)" tap
-LAB sem         #940 596,1436 96x96 own=0,0 48x48 T=[sx 1 sy 1 tx 298 ty 718] tip="Picture-in-Picture" tap
-LAB gesture tap
-LAB cpu app 167% · 25.8fps · .innocent.media 71% | DartWorker 46% | Thread 17% | 1.raster 10% | MediaCodec_loop 6% | mali-cmar-backe 6%
-LAB   66.6 wakelock playing=false bg=false priv=false pos=27000ms
-LAB   66.7 player teardown done keepPlaying=false
-LAB   71.9 dl pass end +7 MB in 28 s (0.25 MB/s)
-LAB   75.2 dl pass x3 from 155/1075 MB http 206
-LAB   75.3 dl pass end +0 MB in 0 s (0.00 MB/s) broke
-LAB cpu app 127% · 51.3fps · .innocent.media 61% | 1.raster 33% | DartWorker 18% | mali-cmar-backe 7% | binder 3% | estorage.worker 1%
-LAB   80.0 play asset granted in 68 ms (asked ahead), 4 rungs
-LAB   80.0 play rung 720p 1684 kbps (choice auto, measured 18699 kbps)
-LAB   80.0 stream lanes=6
-LAB   80.0 play through the local proxy
-LAB   80.0 play: opening the player
-LAB insets stable l=0.0 t=32.0 r=0.0 b=44.0 padding l=0.0 t=32.0 r=0.0 b=44.0 bar=44.0
-LAB insets stable l=0.0 t=32.0 r=0.0 b=44.0 padding l=0.0 t=32.0 r=0.0 b=0.0 bar=44.0
-LAB   80.1 open scheme=http len=106 hwdec=auto start=30s autoplay=true
-LAB   80.1 wakelock playing=false bg=false priv=false pos=0ms
-LAB   80.1 first frame 88 ms
-LAB   80.1 open ok
-LAB   80.1 wakelock playing=true bg=false priv=false pos=0ms
-LAB   80.1 rebuffer start
-LAB   80.3 stream index 0.0 MB at 0.0 MB
-LAB insets stable l=0.0 t=32.0 r=0.0 b=44.0 padding l=0.0 t=32.0 r=0.0 b=0.0 bar=44.0
-LAB   80.5 rebuffer end 447 ms
-LAB   81.3 fg stream: watching
-LAB   83.4 measured 7660 kbps
-LAB gesture tap
-LAB   85.4 measured 12343 kbps
-LAB sem controls 1 after 500 ms: view Instance of 'Size' dpr 2.0
-LAB sem #0 0,0 720x1612 own=0,0 720x1612 
-LAB sem   #1 0,0 720x1612 own=0,0 360x806 T=[sx 2 sy 2 tx 0 ty 0] 
-LAB sem     #972 0,0 720x1612 own=0,0 360x806 
-LAB sem       #973 0,0 720x1612 own=0,0 360x806 
-LAB sem         #974 0,0 720x1612 own=0,0 360x806 tap
-LAB sem         #998 0,72 96x96 own=0,0 48x48 T=[sx 1 sy 1 tx 0 ty 36] tip="Back" tap
-LAB sem         #999 96,82 188x76 own=0,0 94x38 T=[sx 1 sy 1 tx 48 ty 41] label="Sintel (စမ်းသပ်ရန်)"
-LAB sem         #1000 296,101 69x38 own=0,0 34x19 T=[sx 1 sy 1 tx 147.96 ty 50.50] label="02:48"
-LAB sem         #1001 377,72 130x96 own=0,0 65x48 T=[sx 1 sy 1 tx 188.46 ty 36] label="Auto" tap
-LAB sem         #1002 506,72 118x96 own=0,0 59x48 T=[sx 1 sy 1 tx 253.23 ty 36] label="Default" tap
-LAB sem         #1003 624,72 96x96 own=0,0 48x48 T=[sx 1 sy 1 tx 312 ty 36] tip="More" tap
-LAB sem         #1004 0,182 720x112 own=0,0 360x56 T=[sx 1 sy 1 tx 0 ty 91] 
-LAB sem           #1011 0,182 720x112 own=0,0 360x56 
-LAB sem             #1005 0,182 126x112 own=0,0 63x56 label="1X" tap
-LAB sem             #1006 126,182 126x112 own=0,0 63x56 T=[sx 1 sy 1 tx 63 ty 0] tap
-LAB sem             #1007 252,182 126x112 own=0,0 63x56 T=[sx 1 sy 1 tx 126 ty 0] tap
-LAB sem             #1008 378,182 126x112 own=0,0 63x56 T=[sx 1 sy 1 tx 189 ty 0] tap
-LAB sem             #1009 504,182 126x112 own=0,0 63x56 T=[sx 1 sy 1 tx 252 ty 0] tap
-LAB sem             #1010 630,182 90x112 own=0,0 45x56 T=[sx 1 sy 1 tx 315 ty 0] tap
-LAB sem         #1012 36,1381 112x38 own=0,0 56x19 T=[sx 1 sy 1 tx 18 ty 690.50] label="00:34"
-LAB sem         #1013 148,1356 424x88 own=0,0 212x44 T=[sx 1 sy 1 tx 74 ty 678] 
-LAB sem         #1014 572,1381 112x38 own=0,0 56x19 T=[sx 1 sy 1 tx 286 ty 690.50] label="-14:14"
-LAB sem         #1015 190,1436 96x96 own=0,0 48x48 T=[sx 1 sy 1 tx 95 ty 718] tip="Previous video" tap
-LAB sem         #1016 302,1436 96x96 own=0,0 48x48 T=[sx 1 sy 1 tx 151 ty 718] tip="Pause" tap
-LAB sem         #1017 414,1436 96x96 own=0,0 48x48 T=[sx 1 sy 1 tx 207 ty 718] tip="Next (long-press for Loop menu)" tap
-LAB sem         #1018 8,1436 96x96 own=0,0 48x48 T=[sx 1 sy 1 tx 4 ty 718] tip="Lock controls" tap
-LAB sem         #1019 482,1436 96x96 own=0,0 48x48 T=[sx 1 sy 1 tx 241 ty 718] id=player-screen-mode label="မျက်နှာပြင်နဲ့ကိုက် (Fit)" tap
-LAB sem         #1020 596,1436 96x96 own=0,0 48x48 T=[sx 1 sy 1 tx 298 ty 718] tip="Picture-in-Picture" tap
-LAB cpu app 84% · 14.0fps · .innocent.media 32% | DartWorker 13% | Thread 11% | 1.raster 6% | MediaCodec_loop 5% | mali-cmar-backe 3%
-LAB   88.1 video h264 1690x720 hwdec=mediacodec(?) vo=gpu surf=producer fps=24.0 drop=0/0 thr=4
-LAB gesture long press
-LAB gesture long press end
-LAB gesture tap
-LAB sem controls 2 after 500 ms: view Instance of 'Size' dpr 2.0
-LAB sem #0 0,0 720x1612 own=0,0 720x1612 
-LAB sem   #1 0,0 720x1612 own=0,0 360x806 T=[sx 2 sy 2 tx 0 ty 0] 
-LAB sem     #972 0,0 720x1612 own=0,0 360x806 
-LAB sem       #973 0,0 720x1612 own=0,0 360x806 
-LAB sem         #974 0,0 720x1612 own=0,0 360x806 tap
-LAB sem         #1021 0,72 96x96 own=0,0 48x48 T=[sx 1 sy 1 tx 0 ty 36] tip="Back" tap
-LAB sem         #1022 96,82 188x76 own=0,0 94x38 T=[sx 1 sy 1 tx 48 ty 41] label="Sintel (စမ်းသပ်ရန်)"
-LAB sem         #1023 296,101 69x38 own=0,0 34x19 T=[sx 1 sy 1 tx 147.96 ty 50.50] label="02:48"
-LAB sem         #1024 377,72 130x96 own=0,0 65x48 T=[sx 1 sy 1 tx 188.46 ty 36] label="Auto" tap
-LAB sem         #1025 506,72 118x96 own=0,0 59x48 T=[sx 1 sy 1 tx 253.23 ty 36] label="Default" tap
-LAB sem         #1026 624,72 96x96 own=0,0 48x48 T=[sx 1 sy 1 tx 312 ty 36] tip="More" tap
-LAB sem         #1027 0,182 720x112 own=0,0 360x56 T=[sx 1 sy 1 tx 0 ty 91] 
-LAB sem           #1034 0,182 720x112 own=0,0 360x56 
-LAB sem             #1028 0,182 126x112 own=0,0 63x56 label="1X" tap
-LAB sem             #1029 126,182 126x112 own=0,0 63x56 T=[sx 1 sy 1 tx 63 ty 0] tap
-LAB sem             #1030 252,182 126x112 own=0,0 63x56 T=[sx 1 sy 1 tx 126 ty 0] tap
-LAB sem             #1031 378,182 126x112 own=0,0 63x56 T=[sx 1 sy 1 tx 189 ty 0] tap
-LAB sem             #1032 504,182 126x112 own=0,0 63x56 T=[sx 1 sy 1 tx 252 ty 0] tap
-LAB sem             #1033 630,182 90x112 own=0,0 45x56 T=[sx 1 sy 1 tx 315 ty 0] tap
-LAB sem         #1035 36,1381 112x38 own=0,0 56x19 T=[sx 1 sy 1 tx 18 ty 690.50] label="00:41"
-LAB sem         #1036 148,1356 424x88 own=0,0 212x44 T=[sx 1 sy 1 tx 74 ty 678] 
-LAB sem         #1037 572,1381 112x38 own=0,0 56x19 T=[sx 1 sy 1 tx 286 ty 690.50] label="-14:06"
-LAB sem         #1038 190,1436 96x96 own=0,0 48x48 T=[sx 1 sy 1 tx 95 ty 718] tip="Previous video" tap
-LAB sem         #1039 302,1436 96x96 own=0,0 48x48 T=[sx 1 sy 1 tx 151 ty 718] tip="Pause" tap
-LAB sem         #1040 414,1436 96x96 own=0,0 48x48 T=[sx 1 sy 1 tx 207 ty 718] tip="Next (long-press for Loop menu)" tap
-LAB sem         #1041 8,1436 96x96 own=0,0 48x48 T=[sx 1 sy 1 tx 4 ty 718] tip="Lock controls" tap
-LAB sem         #1042 482,1436 96x96 own=0,0 48x48 T=[sx 1 sy 1 tx 241 ty 718] id=player-screen-mode label="မျက်နှာပြင်နဲ့ကိုက် (Fit)" tap
-LAB sem         #1043 596,1436 96x96 own=0,0 48x48 T=[sx 1 sy 1 tx 298 ty 718] tip="Picture-in-Picture" tap
-LAB cpu app 83% · 23.4fps · .innocent.media 23% | Thread 20% | 1.raster 12% | MediaCodec_loop 7% | mali-cmar-backe 7% | HwBinder:25529_ 4%
-LAB gesture tap
-LAB sem controls 3 after 500 ms: view Instance of 'Size' dpr 2.0
-LAB sem #0 0,0 720x1612 own=0,0 720x1612 
-LAB sem   #1 0,0 720x1612 own=0,0 360x806 T=[sx 2 sy 2 tx 0 ty 0] 
-LAB sem     #972 0,0 720x1612 own=0,0 360x806 
-LAB sem       #973 0,0 720x1612 own=0,0 360x806 
-LAB sem         #974 0,0 720x1612 own=0,0 360x806 tap
-LAB sem         #1044 0,72 96x96 own=0,0 48x48 T=[sx 1 sy 1 tx 0 ty 36] tip="Back" tap
-LAB sem         #1045 96,82 188x76 own=0,0 94x38 T=[sx 1 sy 1 tx 48 ty 41] label="Sintel (စမ်းသပ်ရန်)"
-LAB sem         #1046 296,101 69x38 own=0,0 34x19 T=[sx 1 sy 1 tx 147.96 ty 50.50] label="02:48"
-LAB sem         #1047 377,72 130x96 own=0,0 65x48 T=[sx 1 sy 1 tx 188.46 ty 36] label="Auto" tap
-LAB sem         #1048 506,72 118x96 own=0,0 59x48 T=[sx 1 sy 1 tx 253.23 ty 36] label="Default" tap
-LAB sem         #1049 624,72 96x96 own=0,0 48x48 T=[sx 1 sy 1 tx 312 ty 36] tip="More" tap
-LAB sem         #1050 0,182 720x112 own=0,0 360x56 T=[sx 1 sy 1 tx 0 ty 91] 
-LAB sem           #1057 0,182 720x112 own=0,0 360x56 
-LAB sem             #1051 0,182 126x112 own=0,0 63x56 label="1X" tap
-LAB sem             #1052 126,182 126x112 own=0,0 63x56 T=[sx 1 sy 1 tx 63 ty 0] tap
-LAB sem             #1053 252,182 126x112 own=0,0 63x56 T=[sx 1 sy 1 tx 126 ty 0] tap
-LAB sem             #1054 378,182 126x112 own=0,0 63x56 T=[sx 1 sy 1 tx 189 ty 0] tap
-LAB sem             #1055 504,182 126x112 own=0,0 63x56 T=[sx 1 sy 1 tx 252 ty 0] tap
-LAB sem             #1056 630,182 90x112 own=0,0 45x56 T=[sx 1 sy 1 tx 315 ty 0] tap
-LAB sem         #1058 36,1381 112x38 own=0,0 56x19 T=[sx 1 sy 1 tx 18 ty 690.50] label="00:45"
-LAB sem         #1059 148,1356 424x88 own=0,0 212x44 T=[sx 1 sy 1 tx 74 ty 678] 
-LAB sem         #1060 572,1381 112x38 own=0,0 56x19 T=[sx 1 sy 1 tx 286 ty 690.50] label="-14:02"
-LAB sem         #1061 190,1436 96x96 own=0,0 48x48 T=[sx 1 sy 1 tx 95 ty 718] tip="Previous video" tap
-LAB sem         #1062 302,1436 96x96 own=0,0 48x48 T=[sx 1 sy 1 tx 151 ty 718] tip="Pause" tap
-LAB sem         #1063 414,1436 96x96 own=0,0 48x48 T=[sx 1 sy 1 tx 207 ty 718] tip="Next (long-press for Loop menu)" tap
-LAB sem         #1064 8,1436 96x96 own=0,0 48x48 T=[sx 1 sy 1 tx 4 ty 718] tip="Lock controls" tap
-LAB sem         #1065 482,1436 96x96 own=0,0 48x48 T=[sx 1 sy 1 tx 241 ty 718] id=player-screen-mode label="မျက်နှာပြင်နဲ့ကိုက် (Fit)" tap
-LAB sem         #1066 596,1436 96x96 own=0,0 48x48 T=[sx 1 sy 1 tx 298 ty 718] tip="Picture-in-Picture" tap
-LAB   97.0 fg stream: watching
-LAB   98.1 measured 22502 kbps
-LAB  102.7 wakelock playing=false bg=false priv=false pos=48000ms
-LAB  102.8 player teardown done keepPlaying=false
-LAB cpu app 51% · 19.5fps · .innocent.media 22% | 1.raster 8% | Thread 6% | mali-cmar-backe 5% | HwBinder:25529_ 3% | DartWorker 2%
-LAB cpu app 9% · 1.5fps · .innocent.media 5% | 1.raster 1%
-LAB  118.0 play asset granted in 2972 ms, 4 rungs
-LAB  118.0 play rung 720p 1684 kbps (choice auto, measured 14875 kbps)
-LAB  118.0 stream lanes=6
-LAB  118.0 play through the local proxy
-LAB  118.0 play: opening the player
-LAB insets stable l=0.0 t=32.0 r=0.0 b=44.0 padding l=0.0 t=32.0 r=0.0 b=44.0 bar=44.0
-LAB insets stable l=0.0 t=32.0 r=0.0 b=44.0 padding l=0.0 t=32.0 r=0.0 b=44.0 bar=44.0
-LAB  118.2 open scheme=http len=106 hwdec=auto start=51s autoplay=true
-LAB  118.2 wakelock playing=false bg=false priv=false pos=0ms
-LAB  118.2 first frame 118 ms
-LAB  118.2 wakelock playing=true bg=false priv=false pos=0ms
-LAB  118.2 open ok
-LAB  118.2 rebuffer start
-LAB  118.4 stream index 0.0 MB at 0.0 MB
-LAB  118.5 rebuffer end 323 ms
-LAB insets stable l=0.0 t=32.0 r=0.0 b=44.0 padding l=0.0 t=32.0 r=0.0 b=0.0 bar=44.0
-LAB gesture tap
-LAB sem controls 1 after 500 ms: view Instance of 'Size' dpr 2.0
-LAB sem #0 0,0 720x1612 own=0,0 720x1612 
-LAB sem   #1 0,0 720x1612 own=0,0 360x806 T=[sx 2 sy 2 tx 0 ty 0] 
-LAB sem     #1076 0,0 720x1612 own=0,0 360x806 
-LAB sem       #1077 0,0 720x1612 own=0,0 360x806 
-LAB sem         #1127 0,0 720x1612 own=0,0 360x806 tap
-LAB sem         #1151 0,72 96x96 own=0,0 48x48 T=[sx 1 sy 1 tx 0 ty 36] tip="Back" tap
-LAB sem         #1152 96,82 188x76 own=0,0 94x38 T=[sx 1 sy 1 tx 48 ty 41] label="Sintel (စမ်းသပ်ရန်)"
-LAB sem         #1153 296,101 69x38 own=0,0 34x19 T=[sx 1 sy 1 tx 147.96 ty 50.50] label="02:49"
-LAB sem         #1154 377,72 130x96 own=0,0 65x48 T=[sx 1 sy 1 tx 188.46 ty 36] label="Auto" tap
-LAB sem         #1155 506,72 118x96 own=0,0 59x48 T=[sx 1 sy 1 tx 253.23 ty 36] label="Default" tap
-LAB sem         #1156 624,72 96x96 own=0,0 48x48 T=[sx 1 sy 1 tx 312 ty 36] tip="More" tap
-LAB sem         #1157 0,182 720x112 own=0,0 360x56 T=[sx 1 sy 1 tx 0 ty 91] 
-LAB sem           #1164 0,182 720x112 own=0,0 360x56 
-LAB sem             #1158 0,182 126x112 own=0,0 63x56 label="1X" tap
-LAB sem             #1159 126,182 126x112 own=0,0 63x56 T=[sx 1 sy 1 tx 63 ty 0] tap
-LAB sem             #1160 252,182 126x112 own=0,0 63x56 T=[sx 1 sy 1 tx 126 ty 0] tap
-LAB sem             #1161 378,182 126x112 own=0,0 63x56 T=[sx 1 sy 1 tx 189 ty 0] tap
-LAB sem             #1162 504,182 126x112 own=0,0 63x56 T=[sx 1 sy 1 tx 252 ty 0] tap
-LAB sem             #1163 630,182 90x112 own=0,0 45x56 T=[sx 1 sy 1 tx 315 ty 0] tap
-LAB sem         #1165 36,1381 112x38 own=0,0 56x19 T=[sx 1 sy 1 tx 18 ty 690.50] label="00:05"
-LAB sem         #1166 148,1356 424x88 own=0,0 212x44 T=[sx 1 sy 1 tx 74 ty 678] 
-LAB sem         #1167 572,1381 112x38 own=0,0 56x19 T=[sx 1 sy 1 tx 286 ty 690.50] label="-14:42"
-LAB sem         #1168 190,1436 96x96 own=0,0 48x48 T=[sx 1 sy 1 tx 95 ty 718] tip="Previous video" tap
-LAB sem         #1169 302,1436 96x96 own=0,0 48x48 T=[sx 1 sy 1 tx 151 ty 718] tip="Pause" tap
-LAB sem         #1170 414,1436 96x96 own=0,0 48x48 T=[sx 1 sy 1 tx 207 ty 718] tip="Next (long-press for Loop menu)" tap
-LAB sem         #1171 8,1436 96x96 own=0,0 48x48 T=[sx 1 sy 1 tx 4 ty 718] tip="Lock controls" tap
-LAB sem         #1172 482,1436 96x96 own=0,0 48x48 T=[sx 1 sy 1 tx 241 ty 718] id=player-screen-mode label="မျက်နှာပြင်နဲ့ကိုက် (Fit)" tap
-LAB sem         #1173 596,1436 96x96 own=0,0 48x48 T=[sx 1 sy 1 tx 298 ty 718] tip="Picture-in-Picture" tap
-LAB  126.2 video h264 1690x720 hwdec=mediacodec(?) vo=gpu surf=producer fps=24.0 drop=0/0 thr=4
-LAB cpu app 86% · 17.4fps · .innocent.media 26% | Thread 17% | 1.raster 8% | MediaCodec_loop 8% | DartWorker 7% | HwBinder:25529_ 6%
-LAB  130.1 wakelock playing=false bg=false priv=false pos=8000ms
-LAB  130.2 player teardown done keepPlaying=false
-LAB cpu app 31% · 10.8fps · .innocent.media 13% | 1.raster 5% | Thread 3% | mali-cmar-backe 3% | HwBinder:25529_ 2% | estorage.worker 2%
-LAB cpu app 6% · 0.4fps · .innocent.media 3%
-LAB cpu app 4% · 0.3fps · .innocent.media 2%
-LAB cpu app 23% · 17.8fps · .innocent.media 8% | 1.raster 8% | mali-cmar-backe 2% | estorage.worker 2% | binder 1%
-LAB cpu app 14% · 5.5fps · .innocent.media 6% | 1.raster 4%
-LAB cpu app 3% · 0.8fps · .innocent.media 2%
+LAB cpu app 100% · 5.2fps · pool-thread 53% | .innocent.media 18% | io.worker. 12% | DartWorker 4% | estorage.worker 3% | 1.raster 3%
+LAB    9.7 rebuffer end 1271 ms
+LAB   10.6 measured 10410 kbps
+LAB   13.0 measured 32078 kbps
+LAB   16.1 measured 50764 kbps
+LAB   16.2 jump fill start
+LAB   16.4 video h264 1690x720 hwdec=mediacodec(?) vo=gpu surf=producer fps=? drop=0/0 thr=4
+LAB   19.1 measured 14091 kbps
+LAB cpu app 167% · 30.2fps · .innocent.media 71% | DartWorker 31% | Thread 17% | MediaCodec_loop 11% | HwBinder:24016_ 9% | dart:io EventHa 7%
+LAB   21.5 measured 29370 kbps
+LAB   22.4 LAB check seek PASS want=355 got=355 rung=720p
+LAB   23.6 measured 23952 kbps
+LAB   24.1 measured 96999 kbps
+LAB   24.1 stream stretch 23.6 MB in 7492 ms lanes=6
+LAB   26.3 measured 20676 kbps
+LAB   29.3 measured 21989 kbps
+LAB cpu app 234% · 56.5fps · .innocent.media 84% | DartWorker 37% | MediaCodec_loop 24% | Thread 22% | HwBinder:24016_ 21% | 1.raster 12%
+LAB   30.4 LAB check quality->240 (refused) PASS want=355 got=355 rung=720p
+LAB   30.5 measured 33087 kbps
+LAB   30.5 stream stretch 18.4 MB in 6371 ms lanes=6
+LAB   33.9 measured 24540 kbps
+LAB   35.9 measured 47739 kbps
+LAB   35.9 stream stretch 17.3 MB in 4044 ms lanes=6
+LAB   37.9 measured 17763 kbps
+LAB   38.0 stream stretch 6.1 MB in 2091 ms lanes=6
+LAB   38.4 LAB check skip+30 PASS want=385 got=385 rung=720p
+LAB cpu app 178% · 58.5fps · .innocent.media 84% | DartWorker 35% | 1.raster 13% | mali-cmar-backe 8% | dart:io EventHa 8% | MediaCodec_loop 6%
+LAB   42.1 measured 25337 kbps
+LAB   44.3 measured 28012 kbps
+LAB   44.6 stream stretch 17.3 MB in 4505 ms lanes=6
+LAB   45.7 measured 20348 kbps
+LAB   45.7 stream stretch 2.3 MB in 934 ms lanes=6
+LAB   46.7 measured 16521 kbps
+LAB   47.4 LAB check swipe-120 PASS want=265 got=265 rung=720p
+LAB   48.0 jump fill end 31800 ms
+LAB cpu app 157% · 55.2fps · .innocent.media 82% | DartWorker 30% | 1.raster 12% | dart:io EventHa 9% | mali-cmar-backe 7% | mpv/demux 5%
+LAB   49.8 measured 30402 kbps
+LAB   49.9 stream stretch 9.3 MB in 2155 ms lanes=6
+LAB   55.4 LAB check quality->auto PASS want=265 got=272 rung=720p
+LAB   55.4 LAB check summary pass=5 fail=0
+LAB cpu app 69% · 24.6fps · Thread 23% | .innocent.media 10% | MediaCodec_loop 8% | mali-cmar-backe 7% | 1.raster 7% | HwBinder:24016_ 5%
+LAB   68.4 video h264 1690x720 hwdec=mediacodec(?) vo=gpu surf=producer fps=24.0 drop=0/0 thr=4
+LAB cpu app 67% · 22.2fps · Thread 23% | MediaCodec_loop 8% | .innocent.media 8% | mali-cmar-backe 7% | 1.raster 7% | HwBinder:24016_ 5%
+LAB   72.7 fg stream: watching
+LAB   73.3 measured 19152 kbps
+LAB   73.3 stream stretch 1.7 MB in 659 ms lanes=6
+LAB   75.0 measured 30898 kbps
+LAB   75.0 stream stretch 6.2 MB in 1700 ms lanes=6
+LAB cpu app 108% · 24.7fps · .innocent.media 36% | Thread 22% | DartWorker 13% | MediaCodec_loop 8% | mali-cmar-backe 7% | 1.raster 7%
+LAB   88.3 measured 36702 kbps
+LAB   88.3 stream stretch 6.1 MB in 13278 ms lanes=6
+LAB cpu app 83% · 24.6fps · Thread 24% | .innocent.media 18% | MediaCodec_loop 9% | mali-cmar-backe 7% | 1.raster 7% | HwBinder:24016_ 5%
+LAB   90.3 measured 31462 kbps
+LAB cpu app 81% · 22.2fps · Thread 23% | .innocent.media 18% | MediaCodec_loop 8% | mali-cmar-backe 7% | 1.raster 7% | HwBinder:24016_ 5%
+LAB  109.3 measured 30321 kbps
+LAB cpu app 79% · 24.7fps · Thread 23% | .innocent.media 16% | MediaCodec_loop 8% | mali-cmar-backe 7% | 1.raster 7% | HwBinder:24016_ 5%
+LAB cpu app 73% · 24.7fps · Thread 23% | .innocent.media 11% | MediaCodec_loop 8% | mali-cmar-backe 7% | 1.raster 7% | HwBinder:24016_ 5%
+LAB  126.3 fg stream: watching
+LAB cpu app 75% · 24.7fps · Thread 24% | .innocent.media 11% | MediaCodec_loop 8% | mali-cmar-backe 7% | 1.raster 7% | HwBinder:24016_ 5%
+LAB cpu app 74% · 22.3fps · Thread 25% | .innocent.media 12% | MediaCodec_loop 9% | mali-cmar-backe 7% | 1.raster 7% | HwBinder:24016_ 5%
+LAB  140.5 measured 33781 kbps
+LAB cpu app 86% · 24.6fps · Thread 23% | .innocent.media 18% | DartWorker 9% | MediaCodec_loop 8% | mali-cmar-backe 7% | 1.raster 7%
+LAB cpu app 71% · 24.8fps · Thread 24% | .innocent.media 10% | MediaCodec_loop 9% | mali-cmar-backe 7% | 1.raster 7% | HwBinder:24016_ 5%
+LAB  164.3 fg stream: watching
+LAB cpu app 70% · 22.2fps · Thread 25% | MediaCodec_loop 9% | .innocent.media 8% | mali-cmar-backe 7% | 1.raster 7% | HwBinder:24016_ 5%
+LAB cpu app 68% · 24.7fps · Thread 24% | MediaCodec_loop 9% | .innocent.media 7% | mali-cmar-backe 7% | 1.raster 7% | HwBinder:24016_ 5%
+LAB cpu app 69% · 24.7fps · Thread 24% | MediaCodec_loop 9% | .innocent.media 8% | mali-cmar-backe 8% | 1.raster 7% | HwBinder:24016_ 5%
+LAB cpu app 69% · 24.7fps · Thread 25% | MediaCodec_loop 9% | mali-cmar-backe 7% | .innocent.media 7% | 1.raster 7% | HwBinder:24016_ 5%
+LAB cpu app 69% · 22.2fps · Thread 24% | MediaCodec_loop 8% | .innocent.media 8% | mali-cmar-backe 7% | 1.raster 7% | HwBinder:24016_ 5%
+LAB cpu app 72% · 24.7fps · Thread 26% | MediaCodec_loop 9% | .innocent.media 8% | mali-cmar-backe 8% | 1.raster 7% | HwBinder:24016_ 5%
+LAB  228.3 measured 29711 kbps
+LAB  228.3 stream stretch 30.5 MB in 140036 ms lanes=6
+LAB cpu app 70% · 24.7fps · Thread 24% | MediaCodec_loop 9% | .innocent.media 8% | mali-cmar-backe 7% | 1.raster 7% | HwBinder:24016_ 5%
+LAB cpu app 68% · 22.3fps · Thread 25% | MediaCodec_loop 9% | .innocent.media 7% | 1.raster 7% | mali-cmar-backe 7% | HwBinder:24016_ 5%
