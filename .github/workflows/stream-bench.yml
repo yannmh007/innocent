@@ -25,6 +25,10 @@ on:
       - 'lib/features/video_hub/domain/warm_rule.dart'
       - 'lib/features/video_hub/domain/cmaf_index.dart'
       - 'lib/features/player/presentation/player_provider.dart'
+      - 'lib/features/player/presentation/player_controller_gestures.dart'
+      - 'lib/features/player/presentation/player_screen.dart'
+      - 'lib/core/services/video_player/media_kit_player_service.dart'
+      - 'test/media_kit_reopen_start_test.dart'
       - 'lib/features/player/domain/climb_rule.dart'
       - 'test/stream_cache_server_test.dart'
       - 'test/cmaf_index_test.dart'
@@ -58,6 +62,11 @@ jobs:
       # bench below never measures code that does not hold together.
       - name: Analyze
         run: flutter analyze --no-fatal-infos --no-fatal-warnings
+      # libmpv and ffmpeg for test/media_kit_reopen_start_test.dart: the real
+      # media_kit opening a real film twice, to hold a reopen to its start
+      # (1.64.68 began every reopen at 00:00). Skipped where they are absent.
+      - name: libmpv and ffmpeg
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq libmpv2 ffmpeg
       - name: Unit tests
         run: flutter test
 

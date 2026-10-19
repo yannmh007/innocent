@@ -142,6 +142,23 @@ class MediaKitPlayerService implements VideoPlayerService {
   Duration _duration = Duration.zero;
   bool _isPlaying = false;
 
+  /// Bumped by every [open]; a start check that finds it changed belongs to a
+  /// file nobody is watching any more.
+  int _openGen = 0;
+
+  /// When the viewer last asked for a jump ([seek], [seekRelative]). Not the
+  /// engine's own seeks (a reopen's start, a limit's step back): those are
+  /// not the viewer's.
+  DateTime? _lastUserSeekAt;
+
+  /// How long ago the viewer last jumped; null when they have not since the
+  /// file opened. A wait for the buffer straight after one is the jump's
+  /// cost, not the line failing — see the player's stall watchdog.
+  Duration? get sinceLastSeek {
+    final at = _lastUserSeekAt;
+    return at == null ? null : DateTime.now().difference(at);
+  }
+
   // Audit fix: track the cached-value subscriptions so dispose() can
   // cancel them. Without this every call to initialize() + dispose()
   // leaks three listener closures (a real concern when the user opens
@@ -887,13 +904,24 @@ class MediaKitPlayerService implements VideoPlayerService {
     // as part of LOADING the file, so the demuxer begins there — no race, and
     // no window where frame 0 is decoded and shown before the jump.
     //
-    // Written on every open, including the plain case, so a value set for one
-    // file can never leak into the next one.
+    // HANDED TO MEDIA_KIT AS [mk.Media.start], NOT ONLY WRITTEN HERE. Its
+    // open() stops the file that is playing first, and its `on_unload` hook
+    // then resets `start` to `none`; it writes [mk.Media.start] back in its
+    // `on_load` hook, for the new file. So a property written here survived
+    // only an open with nothing playing — the first one — and every REOPEN
+    // began at 00:00: a quality change, a step down, a climb, a reconnect,
+    // the full-probe retry. Reported from the field on 1.64.68 as "change
+    // the quality and five seconds later it starts again from the
+    // beginning" (the five seconds were the warm switch's fetch).
+    //
+    // Still written here on every open, so a value set for one file can
+    // never leak into the next one on a path media_kit leaves alone.
+    _openGen++;
+    _lastUserSeekAt = null;
+    final begin = (startAt != null && startAt > Duration.zero) ? startAt : null;
     await _setMpvProperty(
       'start',
-      (startAt != null && startAt > Duration.zero)
-          ? (startAt.inMilliseconds / 1000).toStringAsFixed(3)
-          : '0',
+      begin != null ? (begin.inMilliseconds / 1000).toStringAsFixed(3) : '0',
     );
     // v1.63 — the open is bracketed so a crash can be placed on one side of
     // it or the other. `open` returned but no `open ok` line means the
@@ -903,36 +931,59 @@ class MediaKitPlayerService implements VideoPlayerService {
     try {
       _armPlaybackLimit(uri);
       _errGate.reset();
-      await _player.open(mk.Media(uri, httpHeaders: headers), play: autoplay);
+      await _player.open(mediaFor(uri, headers: headers, begin: begin),
+          play: autoplay);
       PlaybackLog.add('open ok');
     } catch (e) {
       PlaybackLog.add('open FAILED: $e');
       rethrow;
     }
-    // Audit fix: tolerate initial-seek failure. Some poorly-muxed
-    // files open fine but throw on seek to a non-keyframe position.
-    // Industry behaviour (ExoPlayer's MediaSession bridge, VLC's
-    // resume) is to fall back to position 0 silently rather than
-    // present the file as unplayable. The user can scrub manually
-    // once playback starts.
-    if (startAt != null && startAt > Duration.zero) {
-      // Belt and braces. `start` above should already have landed us here,
-      // making this a no-op onto the same keyframe. It stays as a fallback for
-      // the case where the property write did not take, because silently
-      // resuming a two-hour film from the beginning is a far worse failure
-      // than one redundant keyframe seek.
-      //
-      // Keyframe seeking (hr-seek=no) so the first frame appears instantly
-      // rather than waiting for libmpv to decode forward to an exact
-      // timestamp nobody can perceive. Restored straight after.
-      await _setMpvProperty('hr-seek', 'no');
-      try {
-        await _player.seek(startAt);
-      } catch (_) {
-        // Not seekable this early — `start` is the primary mechanism anyway.
+    // CHECKED, NOT ASSUMED. `start` should have landed the file at [begin];
+    // once it is playing, look, and only if it began somewhere else jump
+    // there. The old belt-and-braces was a blind keyframe seek sent straight
+    // after open(): it raced the load (and was dropped exactly when it was
+    // needed), and when it did land it moved a correct start back to the
+    // keyframe before it — up to two seconds the viewer saw twice.
+    if (begin != null) unawaited(_confirmStart(begin, _openGen));
+  }
+
+  /// What [open] hands media_kit: the address, its headers, and where to
+  /// begin — as [mk.Media.start], the one place a start survives a reopen
+  /// (test/media_kit_reopen_start_test.dart holds media_kit to that).
+  @visibleForTesting
+  static mk.Media mediaFor(String uri,
+          {Map<String, String>? headers, Duration? begin}) =>
+      mk.Media(uri, httpHeaders: headers, start: begin);
+
+  /// Once the file opened with [begin] is playing, make sure it is there.
+  ///
+  /// Gives up on a newer open, on a viewer's own jump (theirs wins), and on
+  /// a file that never reports a length. Three seconds of slack: a start
+  /// lands on the keyframe before [begin], two seconds at most on the
+  /// streaming ladder.
+  Future<void> _confirmStart(Duration begin, int gen) async {
+    final until = DateTime.now().add(const Duration(seconds: 20));
+    DateTime? knownAt;
+    while (DateTime.now().isBefore(until)) {
+      await Future<void>.delayed(const Duration(milliseconds: 250));
+      if (gen != _openGen || _lastUserSeekAt != null) return;
+      if (_duration <= Duration.zero) continue;
+      knownAt ??= DateTime.now();
+      // A position, or a moment for one to arrive after the length did.
+      if (_position > Duration.zero ||
+          DateTime.now().difference(knownAt) > const Duration(seconds: 2)) {
+        break;
       }
-      await _setMpvProperty('hr-seek', _restingSeekMode);
     }
+    if (gen != _openGen || _lastUserSeekAt != null) return;
+    if (_duration <= Duration.zero || begin >= _duration) return;
+    final off = _position - begin;
+    if (off.abs() <= const Duration(seconds: 3)) return;
+    PlaybackLog.add('open began at ${_position.inSeconds}s, not '
+        '${begin.inSeconds}s - jumping there');
+    try {
+      await _player.seek(begin);
+    } catch (_) {}
   }
 
   @override
@@ -984,7 +1035,10 @@ class MediaKitPlayerService implements VideoPlayerService {
   Future<void> stop() => _player.stop();
 
   @override
-  Future<void> seek(Duration to) => _player.seek(_clampToPlayable(to));
+  Future<void> seek(Duration to) {
+    _lastUserSeekAt = DateTime.now();
+    return _player.seek(_clampToPlayable(to));
+  }
 
   /// See [VideoPlayerService.frameStep].
   ///
@@ -1028,6 +1082,7 @@ class MediaKitPlayerService implements VideoPlayerService {
     // used to live here and did not: every +10 s tapped in the first moment
     // of a file — before the demuxer had reported a length — landed on 00:00,
     // and on a stream with no length at all it landed there every time.
+    _lastUserSeekAt = DateTime.now();
     await _player.seek(_clampToPlayable(clampSeekTarget(
       current: _position,
       delta: delta,
