@@ -303,7 +303,10 @@ Future<void> playMedia(
             source: source,
             deviceId: deviceId,
           );
-      if (!fresh.isGranted) return null;
+      if (!fresh.isGranted) {
+        PlaybackLog.add('renewal refused by the server: ${fresh.denial?.name ?? '-'}');
+        return null;
+      }
       // WHAT TO OPEN, in order of who asked:
       //   * the viewer picked a line in the Quality menu  → exactly that;
       //   * the player measured a stall (belowKbps)        → one rung down;

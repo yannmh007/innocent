@@ -158,13 +158,26 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
       return ok();
     }
 
-    void check(String what, Duration want, {Duration late = const Duration(seconds: 30)}) {
-      final got = svc.position;
-      final ok = LabStream.landed(want, got, late: late);
+    // LANDED AND PLAYING. A position read once said PASS for a film stuck
+    // at the seek target, buffering for 45 s (run 39202304734): the check
+    // now waits for the picture to MOVE past where it landed, and reports
+    // how long that took after the jump — the number a viewer feels.
+    Future<void> check(String what, Duration want, DateTime jumped,
+        {Duration late = const Duration(seconds: 30)}) async {
+      final moved = await until(
+          () => svc.position > want + const Duration(milliseconds: 500),
+          const Duration(seconds: 30));
+      final ready = DateTime.now().difference(jumped).inMilliseconds;
+      final landedAt = svc.position;
+      await Future<void>.delayed(const Duration(seconds: 2));
+      final playing = svc.position - landedAt >= const Duration(seconds: 1);
+      final ok = moved && playing && LabStream.landed(want, landedAt, late: late);
       ok ? pass++ : fail++;
-      final playing = StreamRenewal.quality.value?.playing ?? '-';
+      final rung = StreamRenewal.quality.value?.playing ?? '-';
       PlaybackLog.add('LAB check $what ${ok ? 'PASS' : 'FAIL'} '
-          'want=${want.inSeconds} got=${got.inSeconds} rung=$playing');
+          'want=${want.inSeconds} got=${landedAt.inSeconds} '
+          'ready=${moved ? '$ready ms' : 'never'} '
+          'playing=${playing ? 'yes' : 'no'} rung=$rung');
     }
 
     String? otherRung() {
@@ -191,10 +204,9 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
 
       // 1. The seek bar, released at 40 %.
       var want = at(0.4);
+      var jumped = DateTime.now();
       await player.seek(want);
-      await until(() => svc.position >= want, const Duration(seconds: 30));
-      await Future<void>.delayed(const Duration(seconds: 6));
-      check('seek', want);
+      await check('seek', want, jumped);
 
       // 2. A change of quality, from the menu.
       final rung = otherRung();
@@ -202,18 +214,18 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
         PlaybackLog.add('LAB check quality SKIP (one copy)');
       } else {
         want = svc.position;
+        jumped = DateTime.now();
         final ok = await player.switchQuality(rung);
-        await Future<void>.delayed(const Duration(seconds: 8));
-        // The film played on through the switch's fetch (up to 8 s).
-        check('quality->$rung${ok ? '' : ' (refused)'}', want,
+        // The film plays on through the switch's fetch (up to 8 s).
+        await check('quality->$rung${ok ? '' : ' (refused)'}', want, jumped,
             late: const Duration(seconds: 40));
       }
 
       // 3. +30 s, as the skip button does.
       want = svc.position + const Duration(seconds: 30);
+      jumped = DateTime.now();
       await player.seekRelative(30);
-      await Future<void>.delayed(const Duration(seconds: 8));
-      check('skip+30', want);
+      await check('skip+30', want, jumped);
 
       // 4. A swipe across the picture, 2 minutes back.
       final from = svc.position;
@@ -223,15 +235,15 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
         player.onSeekUpdate(-s);
         await Future<void>.delayed(const Duration(milliseconds: 80));
       }
+      jumped = DateTime.now();
       await player.onSeekEnd();
-      await Future<void>.delayed(const Duration(seconds: 8));
-      check('swipe-120', want);
+      await check('swipe-120', want, jumped);
 
       // 5. Back to Auto.
       want = svc.position;
+      jumped = DateTime.now();
       await player.switchQuality('auto');
-      await Future<void>.delayed(const Duration(seconds: 8));
-      check('quality->auto', want, late: const Duration(seconds: 40));
+      await check('quality->auto', want, jumped, late: const Duration(seconds: 40));
     } catch (e) {
       PlaybackLog.add('LAB check failed to run: $e');
     } finally {

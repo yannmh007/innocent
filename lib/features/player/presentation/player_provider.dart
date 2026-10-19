@@ -1931,8 +1931,17 @@ class PlayerController extends StateNotifier<PlayerState> {
 
   Future<bool> switchQuality(String id) async {
     final uri = _currentUri;
-    if (uri == null || !StreamRenewal.canRenew(uri)) return false;
-    if (_downgradeInFlight || _networkRetryInFlight || _climbInFlight) return false;
+    // Every refusal says which, in the trail: "could not switch" with no
+    // reason was all a Test Lab run had to go on (run 39202304734).
+    if (uri == null || !StreamRenewal.canRenew(uri)) {
+      PlaybackLog.add('quality -> $id refused: this stream cannot be renewed');
+      return false;
+    }
+    if (_downgradeInFlight || _networkRetryInFlight || _climbInFlight) {
+      PlaybackLog.add('quality -> $id refused: a change is under way '
+          '(down=$_downgradeInFlight retry=$_networkRetryInFlight climb=$_climbInFlight)');
+      return false;
+    }
     _downgradeInFlight = true;
     try {
       // From where the film is now: the chosen copy's next seconds are
@@ -1941,7 +1950,10 @@ class PlayerController extends StateNotifier<PlayerState> {
       final now = _ref.read(videoPlayerServiceProvider);
       final from = now.position > Duration.zero ? now.position : state.position;
       final fresh = await StreamRenewal.renew(uri, quality: id, at: from);
-      if (fresh == null) return false;
+      if (fresh == null) {
+        PlaybackLog.add('quality -> $id refused: no copy was handed back');
+        return false;
+      }
       if (!mounted || _currentUri != uri) return false;
       // The same copy (Auto landing on the rung already playing): nothing to
       // reopen, and a second of black for nothing is the one thing a quality
