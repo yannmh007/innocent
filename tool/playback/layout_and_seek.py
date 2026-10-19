@@ -111,14 +111,16 @@ class Relay(http.server.BaseHTTPRequestHandler):
 
 
 def seek_test(name, cmd):
+    # ONE FRAME at the moment, nothing more, so what was read is what the
+    # seek cost — not a player's read-ahead.
     Relay.log = []
     t = time.time()
     p = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, timeout=300)
     took = time.time() - t
     total = sum(s for _, s in Relay.log)
-    firsts = ', '.join(f'{a / 1048576:.1f}MB' for a, _ in Relay.log[:6])
+    reads = ', '.join(f'{a / 1048576:.1f}+{n / 1048576:.1f}' for a, n in Relay.log[:10])
     print(f'  {name:<14} exit {p.returncode}  {len(Relay.log)} requests, '
-          f'{total / 1048576:.1f} MB read in {took:.1f} s  | starts: {firsts}')
+          f'{total / 1048576:.1f} MB read, first frame in {took:.1f} s  | MB at+read: {reads}')
 
 
 def main():
@@ -150,10 +152,12 @@ def main():
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     local = f'http://127.0.0.1:{srv.server_address[1]}/film.mp4'
     print(f"seek to {at} s of {secs} s in the {r.get('height')}p copy ({total / 1048576:.1f} MB):")
-    seek_test('ffmpeg system', ['ffmpeg', '-nostdin', '-v', 'error', '-ss', str(at), '-i', local, '-t', '2', '-f', 'null', '-'])
+    one = ['-nostdin', '-v', 'error', '-ss', str(at), '-i', local, '-map', '0:v:0', '-frames:v', '1', '-f', 'null', '-']
+    seek_test('ffmpeg system', ['ffmpeg'] + one)
     if ff60 and os.path.exists(ff60):
-        seek_test('ffmpeg 6.0', [ff60, '-nostdin', '-v', 'error', '-ss', str(at), '-i', local, '-t', '2', '-f', 'null', '-'])
-    seek_test('mpv --start', ['mpv', '--no-config', '--vo=null', '--ao=null', f'--start={at}', '--length=2', local])
+        seek_test('ffmpeg 6.0', [ff60] + one)
+    seek_test('mpv --start', ['mpv', '--no-config', '--vo=null', '--ao=null', f'--start={at}', '--frames=1',
+                              '--demuxer-max-bytes=4MiB', '--cache-secs=1', '--demuxer-readahead-secs=1', local])
     srv.shutdown()
 
 
