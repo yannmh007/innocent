@@ -24,6 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
+      - uses: actions/checkout@v4
       - name: Ask for a free title's playback
         env:
           SB_URL: ${{ secrets.SUPABASE_URL }}
