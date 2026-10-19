@@ -50,10 +50,12 @@ const mod = await import('data:text/javascript,' + encodeURIComponent(
   // `serveFromBlocks` reads this module-level const from the top of the file.
   'const EDGE_TTL_SECONDS = 86400;\n' + worker.slice(from, to) +
   '\nexport { blockSize, closedRange, blockPlan, blockPath, contentRange,' +
-  ' blockResponse, serveFromBlocks, sliceStream, MAX_EDGE_BLOCKS };'));
+  ' blockResponse, serveFromBlocks, sliceStream, MAX_EDGE_BLOCKS,' +
+  ' straySidx, renameStream, mendFront, HEAD_SCAN_BYTES, BLOCK_LAYOUT };'));
 const {
   blockSize, closedRange, blockPlan, blockPath, contentRange,
   blockResponse, serveFromBlocks, sliceStream, MAX_EDGE_BLOCKS,
+  straySidx, renameStream, mendFront, HEAD_SCAN_BYTES, BLOCK_LAYOUT,
 } = mod;
 
 // ── the wrangler config must actually switch the cache on for Block ──────
@@ -85,6 +87,7 @@ function makeMedia(bytes) {
         size: bytes.length,
         body: new Response(slice).body,
         range: { offset, length: slice.length },
+        async arrayBuffer() { return slice.slice().buffer; },
       };
     },
   };
@@ -144,7 +147,7 @@ function makeEdge(env, { cacheOn = true, corrupt = false, slices = false,
             const cc = res.headers.get('Cache-Control') || '';
             if (res.status !== 200 || !cc.includes('public')) return res;
             const entry = { bytes: new Uint8Array(await res.arrayBuffer()),
-              headers: new Headers(res.headers), idx: Number(path.split('/')[3]) };
+              headers: new Headers(res.headers), idx: Number(path.split('/')[4]) };
             store.set(path, entry);
             return slice({ ...entry, hit: false }, req.headers.get('Range'));
           },
@@ -190,8 +193,10 @@ check('blockPlan inside one block',
 check('blockPlan across a boundary',
   JSON.stringify(blockPlan(BLOCK - 2, BLOCK + 3, BLOCK)) ===
   JSON.stringify([{ idx: 0, from: BLOCK - 2, to: BLOCK - 1 }, { idx: 1, from: 0, to: 3 }]));
-check('blockPath keeps the key whole in one segment',
-  blockPath('a/b c.mp4', 8, 3) === '/b/8/3/a%2Fb%20c.mp4');
+check('blockPath keeps the key whole in one segment, under the layout version',
+  blockPath('a/b c.mp4', 8, 3) === `/b/${BLOCK_LAYOUT}/8/3/a%2Fb%20c.mp4`);
+check('the layout version moved on when the front block\'s bytes did',
+  BLOCK_LAYOUT >= 2);
 check('contentRange parses', JSON.stringify(contentRange('bytes 3-9/10')) === '[3,9,10]');
 
 // sliceStream: any chunking, any window, exactly those bytes, and the source
@@ -380,6 +385,108 @@ for (const [name, s, e] of cases) {
     r.headers.get('Access-Control-Allow-Origin') === 'https://yannmh007.github.io');
   check('Accept-Ranges: bytes', r.headers.get('Accept-Ranges') === 'bytes');
   await bodyOf(r);
+}
+
+// ── 8. a stray index at the film's front is neutralised ──────────────────
+//
+// A film whose source had chapters comes out of the ladder with a third
+// `sidx`, for the chapter track, covering one fragment. FFmpeg then reads
+// the whole film to seek (playback-check run 39205401856). The Worker
+// renames that box `free` on the way out: same size, nothing else moves.
+function cmafFilm({ stray = true, fragments = 20, fragmentBytes = 300 * 1024 } = {}) {
+  const parts = [];
+  const box = (kind, body) => {
+    const b = new Uint8Array(8 + body.length);
+    new DataView(b.buffer).setUint32(0, b.length);
+    for (let i = 0; i < 4; i++) b[4 + i] = kind.charCodeAt(i);
+    b.set(body, 8);
+    return b;
+  };
+  const sidx = (track, scale, firstOffset, refs) => {
+    const b = new Uint8Array(24 + refs.length * 12);
+    const v = new DataView(b.buffer);
+    v.setUint32(4, track); v.setUint32(8, scale);
+    v.setUint32(12, 0); v.setUint32(16, firstOffset);
+    v.setUint16(22, refs.length);
+    refs.forEach(([size, dur], i) => {
+      v.setUint32(24 + i * 12, size); v.setUint32(28 + i * 12, dur); v.setUint32(32 + i * 12, 0x90000000);
+    });
+    return box('sidx', b);
+  };
+  parts.push(box('ftyp', new TextEncoder().encode('iso6avc1cmfc')));
+  parts.push(box('moov', new Uint8Array(1200)));
+  const refs = Array.from({ length: fragments }, () => [fragmentBytes, 30720]);
+  // As ffmpeg writes them: each track's index points past the ones after it
+  // to the first fragment; the chapter track's covers that one fragment only.
+  const text = stray ? sidx(3, 1000, 0, [[fragmentBytes, 888000]]) : new Uint8Array(0);
+  const audio = sidx(2, 48000, text.length, refs);
+  parts.push(sidx(1, 15360, audio.length + text.length, refs));
+  parts.push(audio);
+  const strayAt = parts.reduce((n, p) => n + p.length, 0);
+  if (stray) parts.push(text);
+  for (let f = 0; f < fragments; f++) {
+    const body = new Uint8Array(fragmentBytes - 8);
+    for (let i = 0; i < body.length; i += 97) body[i] = (f * 31 + i) & 0xff;
+    // a moof header then an mdat, inside one fragment's bytes
+    const frag = box('moof', body);
+    new DataView(frag.buffer).setUint32(0, 200);
+    frag[200 + 4] = 0x6d; frag[201 + 4] = 0x64; frag[202 + 4] = 0x61; frag[203 + 4] = 0x74;
+    new DataView(frag.buffer).setUint32(200, fragmentBytes - 200);
+    parts.push(frag);
+  }
+  const out = new Uint8Array(parts.reduce((n, p) => n + p.length, 0));
+  let at = 0;
+  for (const p of parts) { out.set(p, at); at += p.length; }
+  return { bytes: out, strayAt: stray ? strayAt : -1 };
+}
+
+{
+  const { bytes, strayAt } = cmafFilm();
+  const clean = cmafFilm({ stray: false });
+  check('straySidx finds the chapter track\'s index',
+    JSON.stringify(straySidx(bytes.subarray(0, HEAD_SCAN_BYTES), bytes.length)) === JSON.stringify([strayAt]));
+  check('and leaves a film whose indexes reach its end alone',
+    straySidx(clean.bytes.subarray(0, HEAD_SCAN_BYTES), clean.bytes.length).length === 0);
+  check('and anything that is not a fragmented MP4', straySidx(film.subarray(0, 65536), film.length).length === 0);
+
+  const KEY2 = 'test-004/video/20261019-chapters-a1b2c3d4.mp4';
+  const env = { MEDIA: makeMedia(bytes) };
+  const edge = makeEdge(env);
+  const want = bytes.slice();
+  for (let i = 0; i < 4; i++) want[strayAt + 4 + i] = 'free'.charCodeAt(i);
+  const eq = (got, s, e) => got.length === e - s + 1 && got.every((x, i) => x === want[s + i]);
+  for (const [s, e] of [[0, 65535], [0, 8191], [strayAt + 6, strayAt + 6 + 100], [0, 2 * BLOCK + 99]]) {
+    const r = await serveFromBlocks(get(`bytes=${s}-${e}`), env, edge.ctx, KEY2, BLOCK, {});
+    check(`edge range ${s}-${e}: the stray index reads 'free', every other byte as stored`,
+      r instanceof Response && r.status === 206 && eq(await bodyOf(r), s, e));
+  }
+  const later = await serveFromBlocks(get(`bytes=${2 * BLOCK}-${3 * BLOCK}`), env, edge.ctx, KEY2, BLOCK, {});
+  check('a range past the front is the stored bytes exactly', eq(await bodyOf(later), 2 * BLOCK, 3 * BLOCK));
+  // A second viewer's front block comes from the edge store, mended.
+  const runs = edge.runs();
+  const again = await serveFromBlocks(get('bytes=0-65535'), env, edge.ctx, KEY2, BLOCK, {});
+  check('the mended front block is what the edge store keeps',
+    edge.runs() === runs && eq(await bodyOf(again), 0, 65535));
+  const sidxLeft = (buf) => straySidx(buf, bytes.length).length;
+  const front = await serveFromBlocks(get(`bytes=0-${HEAD_SCAN_BYTES - 1}`), env, edge.ctx, KEY2, BLOCK, {});
+  check('what goes out has no stray index left', sidxLeft(await bodyOf(front)) === 0);
+
+  // The direct path's helper: a body past the front is handed back as it was.
+  const body = new Response(new Uint8Array(10)).body;
+  check('mendFront leaves a range past the front untouched (no bucket read)',
+    (await mendFront(env, KEY2, HEAD_SCAN_BYTES + 1, 10, body)) === body);
+
+  // The four bytes split across chunks of every size.
+  for (const chunk of [1, 3, 5, 4096]) {
+    const src = new ReadableStream({
+      start(ctrl) {
+        for (let i = 0; i < 65536; i += chunk) ctrl.enqueue(bytes.slice(i, Math.min(65536, i + chunk)));
+        ctrl.close();
+      },
+    });
+    const out = await bodyOf(new Response(src.pipeThrough(renameStream(0, [strayAt]))));
+    check(`renameStream, ${chunk}-byte chunks`, eq(out, 0, 65535));
+  }
 }
 
 if (failures) {

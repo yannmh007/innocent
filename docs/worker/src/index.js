@@ -248,8 +248,13 @@ function blockPlan(start, end, block) {
 /// the whole point; never seen by a client, because only this Worker can call
 /// the entrypoint that answers it.
 function blockPath(key, block, idx) {
-  return `/b/${block}/${idx}/${encodeURIComponent(key)}`;
+  return `/b/${BLOCK_LAYOUT}/${block}/${idx}/${encodeURIComponent(key)}`;
 }
+
+/// Bumped whenever what a block HOLDS changes for the same object, so the
+/// edge store's old copies — cached for thirty days — are never asked for
+/// again. 2: the front block's stray index mended (see [mendFront]).
+const BLOCK_LAYOUT = 2;
 
 /// `bytes a-b/n` as `[a, b, n]`, or null.
 function contentRange(v) {
@@ -264,13 +269,13 @@ function contentRange(v) {
 async function blockResponse(env, request) {
   const nope = (status, extra = {}) => new Response(null, {
     status, headers: { 'Cache-Control': 'no-store', ...extra } });
-  const m = /^\/b\/(\d+)\/(\d+)\/([^/]+)$/.exec(new URL(request.url).pathname);
-  if (!m) return nope(404);
-  const block = Number(m[1]);
-  const idx = Number(m[2]);
+  const m = /^\/b\/(\d+)\/(\d+)\/(\d+)\/([^/]+)$/.exec(new URL(request.url).pathname);
+  if (!m || Number(m[1]) !== BLOCK_LAYOUT) return nope(404);
+  const block = Number(m[2]);
+  const idx = Number(m[3]);
   let key;
   try {
-    key = decodeURIComponent(m[3]);
+    key = decodeURIComponent(m[4]);
   } catch {
     return nope(404);
   }
@@ -291,7 +296,10 @@ async function blockResponse(env, request) {
   }
   if (!obj) return nope(404);
   if (offset >= obj.size) return nope(416, { 'X-Total-Size': String(obj.size) });
-  return new Response(obj.body, {
+  // Mended BEFORE it is cached: the stray index at the film's front (see
+  // [mendFront]) never reaches the edge store.
+  const body = await mendFront(env, key, offset, Math.min(block, obj.size - offset), obj.body);
+  return new Response(body, {
     status: 200,
     headers: {
       'Content-Type': 'video/mp4',
@@ -477,6 +485,124 @@ async function serveFromBlocks(request, env, ctx, key, block, cors) {
     }));
     return giveUp(`error ${String(e).slice(0, 60)}`); // the direct path takes it
   }
+}
+
+// ─── A STRAY INDEX, NEUTRALISED ──────────────────────────────────────────
+//
+// A film whose source carries CHAPTERS comes out of the ladder with a third
+// track: the MP4 muxer writes chapters as a QuickTime text track, and
+// `global_sidx` gives it a `sidx` of its own — one reference, covering one
+// fragment, nowhere near the end of the file. FFmpeg's MP4 demuxer then
+// cannot trust its fragment index, and EVERY SEEK READS THE FILM FROM THE
+// START until it reaches the moment asked for: 208 MB for a seek to 40 % of
+// Sintel's 720p copy, 25 s on a fast line (FFmpeg 6.0 and 6.1, mpv alike —
+// playback-check run 39205401856), minutes on a Myanmar one. That was "the
+// seek bar stops the film".
+//
+// Renaming that box's four-byte type from `sidx` to `free` — same size,
+// nothing moves — makes every demuxer skip it; the picture and sound's own
+// indexes reach the end of the file and seeks jump straight to their
+// fragment. The chapters themselves live in `moov` and are untouched. Done
+// here, on the way out, it mends every copy already in the bucket for every
+// version of the app, without rewriting a byte of R2. (tool/transcode.sh no
+// longer writes the track at all.)
+
+/// How much of a film's front is read to find its indexes: `ftyp`, `moov`
+/// and one `sidx` per track — about 70 KB an hour a track at two-second
+/// fragments, so half a megabyte covers a very long film.
+const HEAD_SCAN_BYTES = 512 * 1024;
+
+/// Where, in [head] (the first bytes of a film [size] long), each top-level
+/// `sidx` lies whose fragments do NOT reach the end of the file — the offset
+/// of the box itself. Walks `ftyp`, `moov`, `sidx`… up to the first
+/// fragment; anything that is not that layout answers none.
+function straySidx(head, size) {
+  const view = new DataView(head.buffer, head.byteOffset, head.byteLength);
+  const type = (at) => String.fromCharCode(head[at + 4], head[at + 5], head[at + 6], head[at + 7]);
+  const stray = [];
+  let at = 0;
+  for (let i = 0; i < 64 && at + 16 <= head.length; i++) {
+    let box = view.getUint32(at);
+    if (box === 1) box = Number(view.getBigUint64(at + 8));
+    if (box < 8) break;
+    const kind = type(at);
+    if (i === 0 && kind !== 'ftyp') break;
+    if (kind === 'moof' || kind === 'mdat') break;
+    if (kind === 'sidx' && at + box <= head.length) {
+      let p = at + 8;
+      const version = head[p];
+      p += 8; // version, flags, reference_ID
+      p += 4; // timescale
+      let first;
+      if (version === 0) { first = view.getUint32(p + 4); p += 8; }
+      else { first = Number(view.getBigUint64(p + 8)); p += 16; }
+      p += 2;
+      const count = view.getUint16(p);
+      p += 2;
+      if (p + count * 12 <= at + box) {
+        let end = at + box + first;
+        let nested = false;
+        for (let r = 0; r < count; r++, p += 12) {
+          const word = view.getUint32(p);
+          if (word >>> 31) nested = true;
+          end += word & 0x7fffffff;
+        }
+        if (!nested && end !== size) stray.push(at);
+      }
+    }
+    at += box;
+  }
+  return stray;
+}
+
+/// [straySidx] for one object, read once per isolate and remembered.
+const strayCache = new Map();
+function strayIndexes(env, key) {
+  let found = strayCache.get(key);
+  if (!found) {
+    found = (async () => {
+      const obj = await env.MEDIA.get(key, { range: { offset: 0, length: HEAD_SCAN_BYTES } });
+      if (!obj || !obj.body) return [];
+      return straySidx(new Uint8Array(await obj.arrayBuffer()), obj.size);
+    })().catch(() => []);
+    strayCache.set(key, found);
+    if (strayCache.size > 512) strayCache.delete(strayCache.keys().next().value);
+  }
+  return found;
+}
+
+/// A stream that begins at byte [start] of the film, with the type of each
+/// box at [boxes] (offsets) written `free`. A chunk is copied only when one
+/// of those four bytes falls in it; every other chunk passes untouched.
+function renameStream(start, boxes) {
+  const FREE = [0x66, 0x72, 0x65, 0x65];
+  let pos = start;
+  return new TransformStream({
+    transform(chunk, ctrl) {
+      const from = pos;
+      pos += chunk.byteLength;
+      let out = chunk;
+      for (const box of boxes) {
+        for (let i = 0; i < 4; i++) {
+          const at = box + 4 + i - from;
+          if (at < 0 || at >= chunk.byteLength) continue;
+          if (out === chunk) out = chunk.slice();
+          out[at] = FREE[i];
+        }
+      }
+      ctrl.enqueue(out);
+    },
+  });
+}
+
+/// [body] — bytes [offset, offset + length) of [key] — with any stray index
+/// in it neutralised. Untouched, and no bucket read, unless the range
+/// reaches into the film's front.
+async function mendFront(env, key, offset, length, body) {
+  if (!body || offset >= HEAD_SCAN_BYTES) return body;
+  const boxes = (await strayIndexes(env, key))
+    .filter((b) => b + 8 > offset && b + 4 < offset + length);
+  return boxes.length ? body.pipeThrough(renameStream(offset, boxes)) : body;
 }
 
 /// Bytes [skip, skip + take) of a stream, as a stream.
@@ -689,12 +815,14 @@ export default {
       const end = offset + length - 1;
       headers.set('Content-Range', `bytes ${offset}-${end}/${object.size}`);
       headers.set('Content-Length', String(length));
-      return new Response(request.method === 'HEAD' ? null : object.body,
+      return new Response(request.method === 'HEAD' ? null
+        : await mendFront(env, claim.k, offset, length, object.body),
         { status: 206, headers });
     }
 
     headers.set('Content-Length', String(object.size));
-    return new Response(request.method === 'HEAD' ? null : object.body,
+    return new Response(request.method === 'HEAD' ? null
+      : await mendFront(env, claim.k, 0, object.size, object.body),
       { status: 200, headers });
   },
 };

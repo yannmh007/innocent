@@ -242,6 +242,27 @@ prints what the cache did (`X-Edge: blocks=1; HIT`). No URL is ever printed.
 instead of one. At today's traffic that is nothing; on the Free plan's
 100,000 requests a day it is the number to watch as the audience grows.
 
+## A stray index, mended on the way out (since 1.64.69)
+
+A film whose source had chapters came out of the ladder with a third track —
+the MP4 muxer writes chapters as a text track — and `global_sidx` gave it a
+`sidx` covering one fragment. FFmpeg's demuxer then could not trust its
+fragment index and every seek read the film from the start: 208 MB for a
+seek to 40 % of Sintel's 720p copy, 25 s on a fast line (FFmpeg 6.0, 6.1 and
+mpv alike; Playback check run 39205401856). On a phone that was "the seek
+bar stops the film".
+
+The Worker now renames that box's type `sidx` → `free` in whatever it serves
+from a film's first 512 KB — four bytes, same length, nothing moves — on the
+direct path and in the front block before it is cached. Every copy already
+in the bucket is mended for every app version, without rewriting R2. Block
+paths carry a layout version (`/b/2/…`), so front blocks cached before the
+change are never asked for again. `tool/transcode.sh` no longer writes the
+track at all (one picture, one sound, no chapters), and `tool/cmaf_layout.py`
+refuses a rung whose indexes do not reach the end of the file.
+`tool/js/edge_blocks_test.mjs` proves the mending byte for byte; Playback
+check's last step shows a real copy's layout and what a seek in it reads.
+
 ## What this does and does not protect
 
 **Does.** The URL no longer names the account, the bucket, the folder scheme
