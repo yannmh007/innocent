@@ -22,14 +22,25 @@ import 'package:crypto/crypto.dart';
 /// length on every open and discards the entry when it differs, and two
 /// different videos with byte-identical lengths do not occur. This is
 /// written down because it is the one assumption this scheme rests on.
+///
+/// AND WHEN THE BYTES CHANGE WITHOUT THE LENGTH, the generation does
+/// ([kStreamCacheGeneration]): every film starts a fresh entry, and the old
+/// ones age out of the store's budget like anything else unwatched.
 String streamCacheId({
   required String titleId,
   String? assetId,
   int height = 0,
 }) {
-  final raw = '$titleId/${assetId ?? 'main'}/${height}p';
+  final raw = 'g$kStreamCacheGeneration/$titleId/${assetId ?? 'main'}/${height}p';
   return sha256.convert(utf8.encode(raw)).toString().substring(0, 32);
 }
+
+/// Bumped when what a film's cached bytes should BE changes while its length
+/// does not. 2 (1.64.69): the stream Worker now hands out a ladder copy with
+/// its chapter track's stray `sidx` renamed `free` — four bytes at the front,
+/// same length — so a front cached before it would keep every seek reading
+/// the whole film (see docs/worker/src/index.js, "A stray index").
+const int kStreamCacheGeneration = 2;
 
 /// The rung heights `tool/transcode.sh` produces, plus 0 for the original.
 ///

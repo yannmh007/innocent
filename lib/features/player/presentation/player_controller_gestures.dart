@@ -232,6 +232,15 @@ extension PlayerGestures on PlayerController {
       activeIndicator: GestureIndicator.seek(delta: delta, target: target),
     );
 
+    // A stream jumps once, when the finger lifts (onSeekEnd): every live
+    // step of a swipe is a fetch over the network, and a swipe made of them
+    // stalled the very film it was moving. A file on the phone keeps the
+    // live picture — a sealed download too: it plays through a loopback
+    // address, but its bytes are on the phone (`_libraryUri` is the
+    // `sealed://` one, as the seek bar's check is).
+    final uri = _libraryUri ?? _currentUri;
+    if (uri != null && _isNetworkUri(uri)) return;
+
     // Phase 15: Real-time seek with throttling so user sees the video update.
     // Skip if same target (within 200ms) or too soon after last seek.
     final now = DateTime.now();

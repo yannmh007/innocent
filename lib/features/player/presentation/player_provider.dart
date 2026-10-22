@@ -85,6 +85,21 @@ const Duration _openGiveUpAfter = Duration(seconds: 40);
 const Duration _stallHintAfter = Duration(seconds: 3);
 const Duration _stallGiveUpAfter = Duration(seconds: 20);
 
+/// A wait for the buffer that begins this soon after the viewer jumped is the
+/// JUMP'S cost — the bytes at the new moment are being fetched — not the line
+/// failing. Counted as a stall, it reopened the film one rung down after any
+/// seek that took more than three seconds on a slow line, and every such
+/// reopen began at 00:00 (see `MediaKitPlayerService.open`): "move the seek
+/// bar and it stops and comes back from the beginning". QoE measurement
+/// draws the same line (Mux, Conviva: rebuffering excludes seek buffering).
+const Duration _seekFillWindow = Duration(seconds: 2);
+
+/// And this soon after a REOPEN mid-film — a change of quality, a step down,
+/// a reconnect — the new copy filling its buffer is that copy starting, not
+/// a stall: counted as one, a copy the viewer had just chosen could be
+/// stepped straight back down before it had shown a second of film.
+const Duration _reopenFillWindow = Duration(seconds: 10);
+
 class PlayerController extends StateNotifier<PlayerState> {
   final Ref _ref;
   final List<StreamSubscription> _subs = [];
@@ -107,6 +122,16 @@ class PlayerController extends StateNotifier<PlayerState> {
   /// When the current mid-film refill began — for the trail, which is how the
   /// device lab counts stalls and their length.
   DateTime? _rebufferSince;
+
+  /// The wait for the buffer under way began straight after a seek or a
+  /// reopen (see [_seekFillWindow], [_reopenFillWindow]): shown, timed,
+  /// never taken for a failing line.
+  bool _fillAfterJump = false;
+
+  /// When the film was last reopened MID-FILM on purpose — a change of
+  /// quality, a step down, a climb, a reconnect, the full-probe retry — as
+  /// opposed to a film being opened. See [_reopenFillWindow].
+  DateTime? _reopenedAt;
   /// Debounce timer for the buffering SPINNER. A brief buffer refill
   /// after a seek/skip should not flash a loading circle, so the spinner
   /// only appears if buffering is still active after this delay.
@@ -862,11 +887,19 @@ class PlayerController extends StateNotifier<PlayerState> {
       // each way, so a trail says how many and how long.
       if (b && _firstFrameSeen && _rebufferSince == null) {
         _rebufferSince = DateTime.now();
-        PlaybackLog.add('rebuffer start');
+        final player = _ref.read(videoPlayerServiceProvider);
+        final seek =
+            player is MediaKitPlayerService ? player.sinceLastSeek : null;
+        final reopen = _reopenedAt;
+        _fillAfterJump = (seek != null && seek < _seekFillWindow) ||
+            (reopen != null &&
+                DateTime.now().difference(reopen) < _reopenFillWindow);
+        PlaybackLog.add(_fillAfterJump ? 'jump fill start' : 'rebuffer start');
       } else if (!b && _rebufferSince != null) {
-        PlaybackLog.add('rebuffer end '
+        PlaybackLog.add('${_fillAfterJump ? 'jump fill' : 'rebuffer'} end '
             '${DateTime.now().difference(_rebufferSince!).inMilliseconds} ms');
         _rebufferSince = null;
+        _fillAfterJump = false;
       }
       // Buffering going FALSE is the first-frame signal: libmpv only stops
       // reporting a starved demuxer once it has enough to render, so this is
@@ -916,6 +949,7 @@ class PlayerController extends StateNotifier<PlayerState> {
           final opening = !_firstFrameSeen;
           final shown = _firstFrameAt;
           if (!opening &&
+              !_fillAfterJump &&
               shown != null &&
               ClimbRule.isStall(DateTime.now().difference(shown))) {
             _lastStallAt = DateTime.now();
@@ -932,8 +966,10 @@ class PlayerController extends StateNotifier<PlayerState> {
               // A stall that has lasted this long is worth measuring. Not an
               // open — before the first frame there is no bitrate, no cache
               // duration and no decoder to be behind, so the numbers would be
-              // nulls dressed up as a diagnosis.
-              if (!opening) unawaited(_measureStall());
+              // nulls dressed up as a diagnosis. Nor a jump's fill: the
+              // bytes at the new moment are on their way, and stepping down
+              // a rung for that reopened the film somewhere else entirely.
+              if (!opening && !_fillAfterJump) unawaited(_measureStall());
             },
           );
           // Tier 2 — hard error + clear the soft hint. Giving up on an open
@@ -1152,6 +1188,7 @@ class PlayerController extends StateNotifier<PlayerState> {
                 return;
               }
             }
+            _reopenedAt = DateTime.now();
             await s.open(target, startAt: lastPos);
             await s.play();
             // Clear the error message — playback resumed.
@@ -1617,6 +1654,7 @@ class PlayerController extends StateNotifier<PlayerState> {
         slowNetworkHintVisible: false,
         clearStallCause: true,
       );
+      _reopenedAt = DateTime.now();
       await svc.open(uri, startAt: at);
       await svc.play();
     } catch (e) {
@@ -1795,6 +1833,7 @@ class PlayerController extends StateNotifier<PlayerState> {
       PlaybackLog.add('stepped up a rung (#$_climbs) at ${at.inSeconds}s '
           '(${reading.cacheSeconds?.toStringAsFixed(0) ?? '-'} s buffered)');
       await _applyStreamProfileFor(fresh);
+      _reopenedAt = DateTime.now();
       await svc.open(fresh, startAt: at);
       await svc.play();
     } catch (e) {
@@ -1860,6 +1899,7 @@ class PlayerController extends StateNotifier<PlayerState> {
       // The smaller copy may be served from a different KIND of address than
       // the one that was playing — see [_applyStreamProfileFor].
       await _applyStreamProfileFor(fresh);
+      _reopenedAt = DateTime.now();
       await svc.open(fresh, startAt: at);
       await svc.play();
       if (mounted && _currentUri == fresh) {
@@ -1884,10 +1924,24 @@ class PlayerController extends StateNotifier<PlayerState> {
   /// Answers false when nothing could be had — a refused renewal, or no
   /// stream that can be renewed — so the menu can say so; the copy that was
   /// playing carries on either way.
+  /// A change of copy is under way — a menu choice fetching its copy, a
+  /// step down, a climb. The menu says "switching" rather than letting a
+  /// second tap read as a failure.
+  bool get switchingQuality => _downgradeInFlight || _climbInFlight;
+
   Future<bool> switchQuality(String id) async {
     final uri = _currentUri;
-    if (uri == null || !StreamRenewal.canRenew(uri)) return false;
-    if (_downgradeInFlight || _networkRetryInFlight || _climbInFlight) return false;
+    // Every refusal says which, in the trail: "could not switch" with no
+    // reason was all a Test Lab run had to go on (run 39202304734).
+    if (uri == null || !StreamRenewal.canRenew(uri)) {
+      PlaybackLog.add('quality -> $id refused: this stream cannot be renewed');
+      return false;
+    }
+    if (_downgradeInFlight || _networkRetryInFlight || _climbInFlight) {
+      PlaybackLog.add('quality -> $id refused: a change is under way '
+          '(down=$_downgradeInFlight retry=$_networkRetryInFlight climb=$_climbInFlight)');
+      return false;
+    }
     _downgradeInFlight = true;
     try {
       // From where the film is now: the chosen copy's next seconds are
@@ -1896,7 +1950,10 @@ class PlayerController extends StateNotifier<PlayerState> {
       final now = _ref.read(videoPlayerServiceProvider);
       final from = now.position > Duration.zero ? now.position : state.position;
       final fresh = await StreamRenewal.renew(uri, quality: id, at: from);
-      if (fresh == null) return false;
+      if (fresh == null) {
+        PlaybackLog.add('quality -> $id refused: no copy was handed back');
+        return false;
+      }
       if (!mounted || _currentUri != uri) return false;
       // The same copy (Auto landing on the rung already playing): nothing to
       // reopen, and a second of black for nothing is the one thing a quality
@@ -1914,6 +1971,7 @@ class PlayerController extends StateNotifier<PlayerState> {
       await _applyStreamProfileFor(fresh);
       // A paused film stays paused on the new copy: the viewer was choosing,
       // not watching.
+      _reopenedAt = DateTime.now();
       await svc.open(fresh, startAt: at, autoplay: wasPlaying);
       if (wasPlaying) await svc.play();
       if (mounted && _currentUri == fresh) {

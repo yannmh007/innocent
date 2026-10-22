@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'dart:io';
 
+import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:innocent/features/video_hub/data/cache/stream_cache_id.dart';
 import 'package:innocent/features/video_hub/data/cache/stream_cache_store.dart';
@@ -87,6 +89,15 @@ void main() {
     test('a clip and its title do not share a name', () {
       expect(streamCacheId(titleId: 't1', height: 720),
           isNot(streamCacheId(titleId: 't1', assetId: 'a1', height: 720)));
+    });
+
+    test('a new generation is a new name: bytes cached before it are not reused', () {
+      // 1.64.69: the front of a ladder copy changed by four bytes, its length
+      // did not. The length check alone could not tell.
+      final id = streamCacheId(titleId: 't1', assetId: 'a1', height: 720);
+      final before = sha256.convert(utf8.encode('t1/a1/720p')).toString().substring(0, 32);
+      expect(kStreamCacheGeneration, greaterThanOrEqualTo(2));
+      expect(id, isNot(before));
     });
 
     test('the name carries no title id anyone could read off a disk', () {

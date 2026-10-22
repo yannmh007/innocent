@@ -10,6 +10,11 @@ name: Playback check
 
 on:
   workflow_dispatch:
+    inputs:
+      title:
+        description: 'A free title id to check (empty: the first free published one)'
+        required: false
+        default: ''
 
 permissions:
   contents: read
@@ -17,8 +22,9 @@ permissions:
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 20
     steps:
+      - uses: actions/checkout@v4
       - name: Ask for a free title's playback
         env:
           SB_URL: ${{ secrets.SUPABASE_URL }}
@@ -27,7 +33,8 @@ jobs:
           SB_KEY: sb_publishable_vTiAxBAhnZL_BqFcZD4m9A_Rb8Q8PHj
         run: |
           set -euo pipefail
-          id=$(curl -sS "$SB_URL/rest/v1/titles?select=id&access_tier=eq.free&published=eq.true&limit=1" \
+          id="${{ inputs.title }}"
+          [ -n "$id" ] || id=$(curl -sS "$SB_URL/rest/v1/titles?select=id&access_tier=eq.free&published=eq.true&limit=1" \
             -H "apikey: $SB_KEY" | python3 -c "import json,sys;r=json.load(sys.stdin);print(r[0]['id'] if r else '')")
           if [ -z "$id" ]; then echo "no free published title"; exit 1; fi
           code=$(curl -sS -o /tmp/p.json -w '%{http_code}' -X POST "$SB_URL/functions/v1/request-playback" \
@@ -113,3 +120,18 @@ jobs:
               print(f'{bad} range(s) DIFFER between the edge and the direct path'); sys.exit(1)
           print('every range identical on both paths')
           PY
+
+      # WHAT A SEEK READS. Every copy's top-level boxes, tracks and sidx (does
+      # each sidx's fragments add up to the end of the file? FFmpeg jumps
+      # straight to a fragment only when they do), then a seek to 40 % of the
+      # 720p copy through a relay that logs every range — with this runner's
+      # ffmpeg and mpv, and with FFmpeg 6.0, which the app's libmpv is built
+      # on. See tool/playback/layout_and_seek.py. Never a URL.
+      - name: Fragment layout and a seek, through the real Worker
+        run: |
+          set -uo pipefail
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg mpv >/dev/null
+          mkdir -p /tmp/ff60 && curl -sSfL -o /tmp/ff60/ff.gz \
+            https://github.com/eugeneware/ffmpeg-static/releases/download/b6.0/ffmpeg-linux-x64.gz \
+            && gunzip -f /tmp/ff60/ff.gz && chmod +x /tmp/ff60/ff || true
+          python3 tool/playback/layout_and_seek.py /tmp/p.json /tmp/ff60/ff

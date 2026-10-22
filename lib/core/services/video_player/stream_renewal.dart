@@ -115,9 +115,12 @@ class QualityMenu {
 /// player in the first place. The feature keeps every rule about entitlement;
 /// core keeps a five-line interface it can call when a stream dies.
 ///
-/// A renewal is a NEW request, so the server re-decides entitlement, expiry
-/// and the concurrency cap exactly as it did the first time. A viewer whose
-/// subscription lapsed mid-film gets a refusal, not an extension.
+/// A renewal of an expired link is a NEW request, so the server re-decides
+/// entitlement, expiry and the concurrency cap exactly as it did the first
+/// time. A viewer whose subscription lapsed mid-film gets a refusal, not an
+/// extension. (A choice between copies — the menu, a climb, a step down —
+/// picks from the grant already held while it is young, and its URLs expire
+/// when that grant's do: see `HeldGrant`.)
 class StreamRenewal {
   StreamRenewal._();
 

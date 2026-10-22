@@ -227,7 +227,15 @@ for i in "${!LADDER_H[@]}"; do
   ab=128k
   [ "$h" -le 360 ] && ab=96k
   [ "$h" -le 240 ] && ab=64k
+  # ONE PICTURE, ONE SOUND, NOTHING ELSE. Left to choose, ffmpeg also
+  # carried the source's CHAPTERS, which the MP4 muxer writes as a third,
+  # text track — with a `sidx` of its own that covers one fragment and stops.
+  # FFmpeg's demuxer then cannot trust the fragment index and every seek read
+  # the film from the start: 208 MB for a seek to 40 % of Sintel's 720p copy
+  # (playback-check run 39205401856). `0:V` is a picture that is not cover
+  # art; the player never used the chapters, subtitles or data streams.
   ffmpeg -nostdin -y -hide_banner -loglevel warning -stats -i "$src" \
+    -map 0:V:0 -map '0:a:0?' -map_chapters -1 -sn -dn \
     -vf "${TONEMAP}scale=-2:${h}:flags=bicubic,format=yuv420p" \
     -c:v libx264 -preset veryfast -crf 23 \
     -maxrate "${k}k" -bufsize "$(( k * 2 ))k" \
@@ -237,6 +245,8 @@ for i in "${!LADDER_H[@]}"; do
     -movflags +frag_keyframe+empty_moov+default_base_moof+global_sidx+cmaf+skip_trailer \
     "$out"
   echo "::endgroup::"
+  # Never upload a rung the players cannot seek in (see tool/cmaf_layout.py).
+  python3 "$(dirname "$0")/cmaf_layout.py" "$out"
 
   bytes="$(stat -c%s "$out")"
   real_k="$(python3 -c "print(max(1, round($bytes*8/max(1,$DUR_I)/1000)))")"
