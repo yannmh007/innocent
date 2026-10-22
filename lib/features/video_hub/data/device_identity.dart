@@ -73,6 +73,16 @@ class DeviceIdentity {
   /// everyone, means exactly one value is ever generated.
   static Future<String>? _inFlight;
 
+  /// The id if it has been read this run, else null — for a caller that must
+  /// not wait, such as a header on a request already being built. Every
+  /// grant is asked for with [get] first, so anything fetching a granted URL
+  /// finds it here.
+  static String? get current => _cached;
+
+  /// For tests: what [current] answers, without the secure store.
+  @visibleForTesting
+  static set debugCurrent(String? id) => _cached = id;
+
   /// Reads, or creates on first call.
   static Future<String> get() {
     final cached = _cached;

@@ -269,7 +269,8 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
       PlaybackLog.add('LAB proxy upstream ${StreamCacheServer.upstreamRequests} requests '
           '${mb.toStringAsFixed(1)} MB '
           '(${mb == 0 ? '-' : (StreamCacheServer.upstreamRequests / mb).toStringAsFixed(2)} a MB), '
-          'steps back ${StreamCacheServer.stepsSeen}, handed over ${StreamCacheServer.handedOver}');
+          'steps back ${StreamCacheServer.stepsSeen}, handed over ${StreamCacheServer.handedOver}, '
+          'bind ${StreamCacheServer.bindAnswers.isEmpty ? 'none' : StreamCacheServer.bindAnswers}');
     }
   }
 

@@ -785,6 +785,15 @@ class MediaKitPlayerService implements VideoPlayerService {
   static Map<String, String>? _headerValues;
   static DateTime? _headerAt;
 
+  /// Headers a URL always needs, whoever opens it — set once at start-up.
+  ///
+  /// For the stream Worker's granted URLs (`StreamDoor.headersFor`): they are
+  /// played through the app's own proxy, which sends the install id itself,
+  /// but when that proxy cannot start the player is handed the URL directly,
+  /// and a bound token then needs the id from mpv instead. A hook rather than
+  /// an import so this service does not depend on the Video Hub.
+  static Map<String, String> Function(String uri)? standingHeadersFor;
+
   /// LIVE headers: the arming above, once a playback has claimed it, bound to
   /// the exact URI that claimed it.
   ///
@@ -884,7 +893,11 @@ class MediaKitPlayerService implements VideoPlayerService {
     // Release a binding held for a DIFFERENT stream before claiming, so
     // headers never outlive the playback they were armed for.
     _releaseLiveHeadersUnless(uri);
-    final Map<String, String>? headers = _claimHeadersFor(uri);
+    final Map<String, String>? claimed = _claimHeadersFor(uri);
+    final standing = standingHeadersFor?.call(uri) ?? const <String, String>{};
+    final Map<String, String>? headers = standing.isEmpty
+        ? claimed
+        : <String, String>{...?claimed, ...standing};
     // Always reattach video before loading anything.
     //
     // Without this, a file opened while the player happened to be in

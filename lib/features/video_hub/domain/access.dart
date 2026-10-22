@@ -104,6 +104,15 @@ enum AccessDenial {
   /// not for [unavailable]. See `OfflineReplay`.
   offline,
 
+  /// Too many grants in a short time: the server's budget per install, per
+  /// account and per network (docs/migrations/046_playback_budget.sql).
+  ///
+  /// Its own value, because "unavailable" reads as "never" and this fills
+  /// again within the hour. And the phone may play what it already holds:
+  /// the budget is about pulling films from the server, and bytes already
+  /// on disk were authorised once and cost the server nothing.
+  rateLimited,
+
   /// No provider could serve this. Show the unavailable message.
   unavailable,
 }

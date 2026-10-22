@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import '../../domain/content_repository.dart';
 import '../../domain/video_content.dart';
 import 'download_plan.dart';
+import '../stream_door.dart';
 
 /// The copies a title can be downloaded as, with their sizes — what the
 /// quality sheet puts in front of the viewer before any byte moves.
@@ -44,6 +45,7 @@ Future<int?> _lengthOf(String? url) async {
   final client = http.Client();
   try {
     final req = http.Request('GET', Uri.parse(url))
+      ..headers.addAll(StreamDoor.headersFor(url))
       ..headers['Range'] = 'bytes=0-0';
     final res = await client.send(req).timeout(const Duration(seconds: 6));
     unawaited(res.stream.drain<void>().catchError((_) {}));

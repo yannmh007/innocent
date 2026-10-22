@@ -14,6 +14,7 @@ import 'core/ui/device_profile.dart';
 import 'core/app_version.dart';
 import 'core/services/video_player/disk_cache_dir.dart';
 import 'features/video_hub/data/cache/stream_cache_store.dart';
+import 'features/video_hub/data/stream_door.dart';
 import 'core/router/app_router.dart';
 import 'core/router/routes.dart';
 import 'core/services/diagnostics/crash_breadcrumbs.dart';
@@ -150,6 +151,9 @@ void main() async {
 
   // Initialize media_kit native libs
   MediaKit.ensureInitialized();
+  // A granted stream opened by the player directly (when the app's proxy
+  // cannot start) still carries this install's id. See StreamDoor.
+  MediaKitPlayerService.standingHeadersFor = StreamDoor.headersFor;
 
   // Wire the equalizer's audio-session id to the video player. The player
   // asks this hook (at each video's startup) for the shared session id and

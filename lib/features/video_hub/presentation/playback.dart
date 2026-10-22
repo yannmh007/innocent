@@ -595,6 +595,27 @@ Future<void> playMedia(
     return;
   }
 
+  // TOO MANY PLAYS IN A SHORT TIME. What is already on the phone may play —
+  // it costs the server nothing — and otherwise the sentence says to wait,
+  // not that the film is gone.
+  if (grant.denial == AccessDenial.rateLimited) {
+    final handled = await _playHeldBytes(
+      context,
+      ref,
+      content: content,
+      source: source,
+      titleOverride: titleOverride,
+    );
+    if (handled || !context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(s.vhRateLimited),
+        duration: const Duration(seconds: 4),
+      ),
+    );
+    return;
+  }
+
   // A device refusal gets its own message and a longer read. It is the only
   // refusal here the user can actually do something about, and the sentence
   // has to carry the instruction - there is no screen behind it yet.

@@ -12,6 +12,7 @@ import '../../../../core/services/network/foreground_stream.dart';
 import '../../../../core/services/network/throughput_memory.dart';
 import '../../domain/cmaf_index.dart';
 import '../api/ranged_fetch.dart';
+import '../stream_door.dart';
 import 'stream_cache_store.dart';
 
 /// Gives the player a local address for a remote film, and keeps what passes
@@ -172,9 +173,16 @@ class StreamCacheServer {
   /// this film has been carrying in half a second, up to 512 KB
   /// ([_Source.seekFirstPart]) — on a fast line 64 KB is mostly round trip,
   /// and twice the requests through the Worker for nothing.
+  /// The largest part the proxy asks the Worker for: 2 MB, as measured in
+  /// every bench and lab run behind the numbers above. Its own constant, not
+  /// the downloader's ([RangedFetch.defaultPartBytes], 4 MB since 1.64.70):
+  /// a download is one long read in order, a stream is read, jumped and
+  /// thrown away, and a part a seek abandons is data the viewer paid for.
+  static const int maxPartBytes = 2 * 1024 * 1024;
+
   static int seekPartBytes(int index, {int first = 64 * 1024}) {
     final grown = first * pow(seekGrowth, index ~/ max(1, lanes));
-    return min(RangedFetch.defaultPartBytes, (grown.round() + 16383) & ~16383);
+    return min(maxPartBytes, (grown.round() + 16383) & ~16383);
   }
 
   /// A STEP BACK IS NOT A SEEK. libavformat's MP4 demuxer reads a
@@ -200,6 +208,17 @@ class StreamCacheServer {
   /// Requests made upstream, and the bytes they brought, since the app
   /// started — what the Worker sees of this phone. For the lab's trail.
   static int upstreamRequests = 0, upstreamBytes = 0;
+
+  /// What the Worker said about this phone's bound tokens (`X-Bind`: ok,
+  /// missing, mismatch), counted per answer since the app started. For the
+  /// lab's trail: the Worker's own log is the operator's, and this is how a
+  /// test run on a real phone shows every fetch naming its install.
+  static final Map<String, int> bindAnswers = <String, int>{};
+
+  static void _noteBind(HttpClientResponse r) {
+    final v = r.headers.value('x-bind');
+    if (v != null) bindAnswers[v] = (bindAnswers[v] ?? 0) + 1;
+  }
 
   /// How long parts handed over wait for the request that is to take them.
   static const Duration _handOverFor = Duration(seconds: 3);
@@ -258,7 +277,7 @@ class StreamCacheServer {
   /// order, at the speed of the whole line. Modelled against both in
   /// eleven line/film pairings, this one was never the worse.
   static int rampedPartBytes(int index) =>
-      min(RangedFetch.defaultPartBytes, 128 * 1024 * (index + 1));
+      min(maxPartBytes, 128 * 1024 * (index + 1));
 
   /// How far ahead of the index a stretch may start and still be taken as
   /// the index's (a stretch from 0 starts at `ftyp`, 32 bytes ahead of it).
@@ -1006,7 +1025,7 @@ class StreamCacheServer {
         (inIndex ||
             (pos > 0 && stretchEnd - pos >= 64 * 1024) ||
             RangedFetch.worthSplitting(stretchEnd - pos,
-                partBytes: RangedFetch.defaultPartBytes))) {
+                partBytes: maxPartBytes))) {
       parallel = true;
       upstream = _lanesFetch(src, pos, stretchEnd, entry.total,
           gone: () => gone?.value ?? false,
@@ -1171,9 +1190,12 @@ class StreamCacheServer {
       try {
         // On the film's own pool: the connection stays open for the lanes,
         // which then start without a handshake.
-        final r = await src.io.getUrl(Uri.parse(src.upstream)).timeout(_laneStall);
+        final up = Uri.parse(src.upstream);
+        final r = await src.io.getUrl(up).timeout(_laneStall);
+        StreamDoor.apply(r, up);
         r.headers.set(HttpHeaders.rangeHeader, 'bytes=0-${_probeBytes - 1}');
         final got = resp = await r.close().timeout(_laneStall);
+        _noteBind(got);
         final cr = got.headers.value(HttpHeaders.contentRangeHeader);
         final code = got.statusCode;
         final len = got.contentLength;
@@ -1226,10 +1248,13 @@ class StreamCacheServer {
         ..connectionTimeout = const Duration(seconds: 15);
       var handedOver = false;
       try {
-        final r = await client.getUrl(Uri.parse(src.upstream));
+        final up = Uri.parse(src.upstream);
+        final r = await client.getUrl(up);
         upstreamRequests++;
+        StreamDoor.apply(r, up);
         r.headers.set(HttpHeaders.rangeHeader, 'bytes=$start-$endInclusive');
         final resp = await r.close();
+        _noteBind(resp);
         final code = resp.statusCode;
         final cr = resp.headers.value(HttpHeaders.contentRangeHeader) ?? '';
         // THE BYTES MUST BE THE ONES ASKED FOR. A 206 says where it starts;
@@ -2079,12 +2104,14 @@ class _LanePart {
       req.abort();
       throw _LaneRefused('stopped');
     }
+    StreamDoor.apply(req, url);
     req.headers.set(HttpHeaders.rangeHeader, 'bytes=$start-${end - 1}');
     _asked = true;
     final resp = await req.close().timeout(stall, onTimeout: () {
       req.abort();
       throw _LaneRefused('part $start: no answer');
     });
+    StreamCacheServer._noteBind(resp);
     _resp = resp;
     if (_killed) {
       // Stopped while the answer was on its way. A small one is read to its

@@ -7,6 +7,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:innocent/core/services/network/foreground_stream.dart';
 import 'package:innocent/features/video_hub/data/cache/stream_cache_server.dart';
+import 'package:innocent/features/video_hub/data/device_identity.dart';
+import 'package:innocent/features/video_hub/data/stream_door.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -48,6 +50,8 @@ class _Upstream {
   /// Answers every request with the whole film, as a server that does not
   /// do ranges would.
   bool ignoreRange = false;
+  /// The install id each request carried (`X-Innocent-Device`), in order.
+  final List<String?> devices = <String?>[];
   int _seq = 0;
 
   String url(String token) => 'http://127.0.0.1:${server.port}/v/$token';
@@ -67,6 +71,7 @@ class _Upstream {
       return;
     }
     requests++;
+    devices.add(req.headers.value('X-Innocent-Device'));
     ports.add(req.connectionInfo!.remotePort);
     requestPorts.add(req.connectionInfo!.remotePort);
     inFlight++;
@@ -212,6 +217,32 @@ void main() {
         reason: 'connections are kept and reused, not opened per request '
             '(${up.ports.length} connections for ${up.requests} requests)');
     StreamCacheServer.instance.release('film-a');
+  });
+
+  test('every request to the Worker carries the install id: probe, stretch, '
+      'lanes, a seek', () async {
+    // 1.64.70 asks for bound grants: the Worker plays a bound token only for
+    // a request that names the install it was granted to. One upstream path
+    // that forgot the header would play while the Worker only logs, and
+    // stop the day the check is enforced.
+    StreamDoor.allowPlainHttp = true;
+    DeviceIdentity.debugCurrent = 'install-test';
+    StreamDoor.learn(up.url('t1'));
+    up.devices.clear();
+    try {
+      final local = await StreamCacheServer.instance.localUrlFor(
+          cacheId: 'film-door', upstream: up.url('t1'), refresh: () async => null);
+      expect(await _getRange(local!, 0, 3 * mb - 1), hasLength(3 * mb));
+      expect(await _getRange(local, 20 * mb, 22 * mb - 1), hasLength(2 * mb));
+      expect(up.devices.length, greaterThan(3));
+      expect(up.devices.toSet(), <String?>{'install-test'},
+          reason: 'every upstream request names the install');
+      StreamCacheServer.instance.release('film-door');
+    } finally {
+      StreamDoor.allowPlainHttp = false;
+      StreamDoor.reset();
+      DeviceIdentity.debugCurrent = null;
+    }
   });
 
   test('a player reading at its own pace has the line measured before its '

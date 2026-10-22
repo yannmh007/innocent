@@ -3,6 +3,8 @@ import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 
+import '../stream_door.dart';
+
 /// One film fetched as several byte ranges at once, handed on IN ORDER.
 ///
 /// ═══════════════════════════════════════════════════════════════════════
@@ -50,14 +52,21 @@ class RangedFetch {
   /// The size of one part. Large enough that the round trip that starts each
   /// one is a small share of its time; small enough that a part held waiting
   /// for the one before it is not much memory.
-  static const int defaultPartBytes = 2 * 1024 * 1024;
+  ///
+  /// 4 MB SINCE 1.64.70, from 2. Each part is a request the stream Worker is
+  /// billed for, and the Free plan stops at 100,000 a day for everyone
+  /// (docs/security_streaming.md §5): a 1.5 GB film was ~750 of them, now
+  /// ~375. Not 8: a lane that drops loses the parts after it that were
+  /// finished but not yet released, and on a Myanmar mobile line that is the
+  /// viewer's data spent twice — at 4 MB, at most a dozen megabytes a drop;
+  /// three lanes hold ~12 MB in memory at worst.
+  static const int defaultPartBytes = 4 * 1024 * 1024;
 
   /// Connections at once, the head included. Three takes most of the gain;
   /// past that a phone's line is shared more finely for little more speed.
   ///
   /// Each part is its own request through the stream Worker, which checks the
-  /// link every time: a gigabyte is about five hundred of them, far inside
-  /// the Worker's allowance. And a link expires after ten minutes — a part
+  /// link every time: a gigabyte is about two hundred and fifty of them. And a link expires after ten minutes — a part
   /// asked for after that is refused, the pass ends, and the downloader
   /// renews it exactly as it does for a dropped connection.
   static const int defaultLanes = 3;
@@ -237,6 +246,7 @@ class _Part {
       if (!abort.isCompleted) abort.complete();
     }));
     final req = http.AbortableRequest('GET', url, abortTrigger: abort.future)
+      ..headers.addAll(StreamDoor.headersForUri(url))
       ..headers['Range'] = 'bytes=$start-${end - 1}';
     final http.StreamedResponse res;
     try {

@@ -529,7 +529,9 @@ class _PendingRowState extends ConsumerState<_PendingRow> {
             ? s.vhDownloadNoSpace
             : failure == 'gave_up'
                 ? s.vhDownloadGaveUp
-                : s.vhUnavailable),
+                : failure == 'denied:rateLimited'
+                    ? s.vhRateLimited
+                    : s.vhUnavailable),
       ));
     } finally {
       if (mounted) setState(() => _starting = false);
