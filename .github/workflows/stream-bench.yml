@@ -24,6 +24,8 @@ on:
       - 'lib/features/video_hub/presentation/playback.dart'
       - 'lib/features/video_hub/domain/warm_rule.dart'
       - 'lib/features/video_hub/domain/cmaf_index.dart'
+      - 'lib/features/video_hub/domain/held_grant.dart'
+      - 'test/held_grant_test.dart'
       - 'lib/features/player/presentation/player_provider.dart'
       - 'lib/features/player/presentation/player_controller_gestures.dart'
       - 'lib/features/player/presentation/player_screen.dart'

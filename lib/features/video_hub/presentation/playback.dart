@@ -17,6 +17,7 @@ import '../domain/access.dart';
 import '../data/cache/offline_replay.dart';
 import '../data/cache/stream_cache_id.dart';
 import '../data/cache/stream_cache_server.dart';
+import '../domain/held_grant.dart';
 import '../domain/rendition.dart';
 import '../domain/warm_rule.dart';
 import '../../../core/services/network/connection_kind.dart';
@@ -287,6 +288,10 @@ Future<void> playMedia(
     var playingId = cacheId;
     var playingUrl = openUrl;
     var playingViaProxy = localUrl != null;
+    // The copies a change of quality picks from (see [HeldGrant]): this
+    // grant, then whichever the server handed over last. One asked for
+    // ahead of the tap is taken as the oldest it can be.
+    var grantHeld = HeldGrant(grant, age: reused ? _aheadFresh : Duration.zero);
     // Climbs called off in this film (see [ClimbRule.abandonAllows]).
     var abandons = 0;
     DateTime? abandonedAt;
@@ -298,11 +303,24 @@ Future<void> playMedia(
     // evidence the first choice did not have.
     StreamRenewal.register(openUrl,
         ({int? belowKbps, String? quality, bool climb = false, Duration? at}) async {
-      final fresh = await ref.read(contentRepositoryProvider).requestPlayback(
-            content: content,
-            source: source,
-            deviceId: deviceId,
-          );
+      // A CHOICE BETWEEN COPIES picks from the grant already held while it
+      // is young (see [HeldGrant]): the menu's change no longer waits on
+      // the server, nor a step down on the line that is failing. A renewal
+      // of an expired link — none of the three — always asks.
+      final choosing = quality != null || climb || belowKbps != null;
+      final PlaybackGrant fresh;
+      if (choosing && grantHeld.reusable()) {
+        fresh = grantHeld.grant;
+        PlaybackLog.add('renewal: copies from the grant held '
+            '${grantHeld.age.inSeconds} s');
+      } else {
+        fresh = await ref.read(contentRepositoryProvider).requestPlayback(
+              content: content,
+              source: source,
+              deviceId: deviceId,
+            );
+        if (fresh.isGranted) grantHeld = HeldGrant(fresh);
+      }
       if (!fresh.isGranted) {
         PlaybackLog.add('renewal refused by the server: ${fresh.denial?.name ?? '-'}');
         return null;

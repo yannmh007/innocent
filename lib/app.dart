@@ -178,15 +178,20 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
           const Duration(seconds: 30));
       final ready = DateTime.now().difference(jumped).inMilliseconds;
       final landedAt = svc.position;
-      await Future<void>.delayed(const Duration(seconds: 2));
-      final playing = svc.position - landedAt >= const Duration(seconds: 1);
+      // A second of film played since, within six: a reopen has its
+      // decoders to start (1.8 s to the sound on a realme C53, run
+      // 39741227453), and one look two seconds on called that stuck.
+      final playing = await until(
+          () => svc.position - landedAt >= const Duration(seconds: 1),
+          const Duration(seconds: 6));
+      final resumed = DateTime.now().difference(jumped).inMilliseconds - 1000;
       final ok = moved && playing && LabStream.landed(want, landedAt, late: late);
       ok ? pass++ : fail++;
       final rung = StreamRenewal.quality.value?.playing ?? '-';
       PlaybackLog.add('LAB check $what ${ok ? 'PASS' : 'FAIL'} '
           'want=${want.inSeconds} got=${landedAt.inSeconds} '
           'ready=${moved ? '$ready ms' : 'never'} '
-          'playing=${playing ? 'yes' : 'no'} rung=$rung');
+          'playing=${playing ? 'yes, moving by $resumed ms' : 'no'} rung=$rung');
     }
 
     String? otherRung() {
