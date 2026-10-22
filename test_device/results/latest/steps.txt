@@ -1,19 +1,19 @@
-[08:45:44] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
-[08:45:44] install
-[08:46:05] network: speed full kbit/s, delay none ms
-[08:46:32] overlays: [x] com.android.internal.display.cutout.emulation.hole [x] com.android.internal.systemui.navbar.threebutton 
-[08:46:32] nav bar: navigationBars frame=[0,2274][1080,2400] navigationBars frame=[0,2274][1080,2400] 
-[08:46:32] library: pushing 24 files
-[08:47:02] library: MediaStore lists 24 videos
-[08:47:02] cold start
+[16:04:11] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
+[16:04:11] install
+[16:04:21] network: speed full kbit/s, delay none ms
+[16:04:47] overlays: [x] com.android.internal.display.cutout.emulation.hole [x] com.android.internal.systemui.navbar.threebutton 
+[16:04:47] nav bar: navigationBars frame=[0,2337][1080,2400] navigationBars frame=[0,2337][1080,2400] navigationBars frame=[0,2274][1080,2400] 
+[16:04:47] library: pushing 24 files
+[16:05:16] library: MediaStore lists 24 videos
+[16:05:16] cold start
 Status: ok
-TotalTime: 4232
-WaitTime: 4243
-[08:47:17] flow cut
-[08:51:32] flow cut exit 0
-[08:51:32] cut file: aaa_play_720p (cut).mp4 duration=69.190454s streams: h264,High,video aac,LC,audio 
-[08:51:43] flow cut_exact
-[08:53:43] flow cut_exact exit 0
-[08:53:44] cut file: aaa_play_720p (cut).mp4 duration=69.190454s streams: h264,High,video aac,LC,audio 
-[08:53:44] cut file: cut_main (cut).mp4 duration=14.772667s streams: aac,LC,audio h264,Constrained Baseline,video 
-[08:53:59] done
+TotalTime: 2151
+WaitTime: 2159
+[16:05:28] flow cut
+[16:07:00] flow cut exit 0
+[16:07:00] cut file: aaa_play_720p (cut).mp4 duration=79.607098s streams: h264,High,video aac,LC,audio 
+[16:07:09] flow cut_exact
+[16:08:47] flow cut_exact exit 0
+[16:08:47] cut file: aaa_play_720p (cut).mp4 duration=79.607098s streams: h264,High,video aac,LC,audio 
+[16:08:47] cut file: cut_main (cut).mp4 duration=13.925667s streams: aac,LC,audio h264,Constrained Baseline,video 
+[16:09:00] done
