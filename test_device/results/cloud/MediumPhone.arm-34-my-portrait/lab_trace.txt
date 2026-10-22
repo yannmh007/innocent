@@ -1,55 +1,55 @@
 LAB scenario 3 surfaceProducer=null
 LAB device kind=DeviceKind.phone sw=411.0
 LAB    0.0 LAB script: catalogue title
-LAB cpu app 11% · 1.5fps · pool-thread 6% | 1.raster 2% | .innocent.media 2%
-LAB   10.6 LAB title: opening Sintel
-LAB   18.4 play server granted in 7816 ms, 4 rungs
-LAB   18.4 play rung 720p 1684 kbps (choice auto, measured - kbps)
-LAB   18.4 stream lanes=6
-LAB   18.4 play through the local proxy
-LAB   18.4 play: opening the player
+LAB cpu app 13% · 1.6fps · pool-thread 6% | 1.raster 5% | .innocent.media 2%
+LAB   10.1 LAB title: opening Sintel
+LAB   12.8 play server granted in 2662 ms, 4 rungs
+LAB   12.8 play rung 720p 1684 kbps (choice auto, measured - kbps)
+LAB   12.8 stream lanes=6
+LAB   12.8 play through the local proxy
+LAB   12.8 play: opening the player
 LAB insets stable l=0.0 t=24.0 r=0.0 b=24.0 padding l=0.0 t=24.0 r=0.0 b=24.0 bar=24.0
-LAB insets stable l=0.0 t=24.0 r=0.0 b=24.0 padding l=0.0 t=24.0 r=0.0 b=24.0 bar=24.0
-LAB   18.7 hwdec -> auto
-LAB   18.8 open scheme=http len=106 hwdec=auto start=0s autoplay=true
-LAB   18.8 wakelock playing=false bg=false priv=false pos=0ms
-LAB   18.8 first frame 309 ms
-LAB   18.8 open ok
-LAB   18.8 wakelock playing=true bg=false priv=false pos=0ms
-LAB   18.8 rebuffer start
 LAB insets stable l=0.0 t=24.0 r=0.0 b=24.0 padding l=0.0 t=0.0 r=0.0 b=0.0 bar=24.0
-LAB   19.1 stream index 0.0 MB at 0.0 MB
-LAB   19.3 fg stream: watching
-LAB   19.7 rebuffer end 914 ms
-LAB cpu app 6% · 2.4fps · .innocent.media 2% | 1.raster 2%
-LAB   22.2 measured 5630 kbps
-LAB   25.5 measured 23838 kbps
-LAB   25.7 engine stuck on get pause
-LAB   26.8 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=?
-LAB   27.8 measured 44462 kbps
-LAB cpu app 64% · 1.4fps · .innocent.media 26% | Thread 14% | MediaCodec_loop 13% | DartWorker 8% | dart:io EventHa 3%
+LAB   13.0 hwdec -> auto
+LAB   13.0 open scheme=http len=106 hwdec=auto start=0s autoplay=true
+LAB   13.1 wakelock playing=false bg=false priv=false pos=0ms
+LAB   13.1 first frame 261 ms
+LAB   13.1 wakelock playing=true bg=false priv=false pos=0ms
+LAB   13.1 open ok
+LAB   13.1 rebuffer start
+LAB insets stable l=0.0 t=24.0 r=0.0 b=24.0 padding l=0.0 t=0.0 r=0.0 b=0.0 bar=24.0
+LAB   13.7 stream index 0.0 MB at 0.0 MB
+LAB   14.1 fg stream: watching
+LAB   14.6 rebuffer end 1452 ms
+LAB   16.8 measured 6220 kbps
+LAB cpu app 38% · 4.1fps · .innocent.media 13% | Thread 7% | MediaCodec_loop 7% | 1.raster 5% | DartWorker 4% | dart:io EventHa 1%
+LAB   19.9 measured 25085 kbps
+LAB   20.1 engine stuck on get pause
+LAB   21.1 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=?
+LAB   22.1 measured 53810 kbps
+LAB cpu app 30% · 0.1fps · Thread 11% | .innocent.media 9% | MediaCodec_loop 9%
+LAB cpu app 22% · 0.0fps · Thread 13% | MediaCodec_loop 10%
+LAB cpu app 22% · 0.0fps · Thread 12% | MediaCodec_loop 10%
+LAB cpu app 22% · 0.0fps · Thread 13% | MediaCodec_loop 10%
+LAB cpu app 22% · 0.0fps · Thread 12% | MediaCodec_loop 10%
+LAB   73.1 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=?
+LAB cpu app 22% · 0.0fps · Thread 13% | MediaCodec_loop 10%
+LAB cpu app 22% · 0.0fps · Thread 13% | MediaCodec_loop 10%
+LAB cpu app 22% · 0.0fps · Thread 13% | MediaCodec_loop 10%
+LAB  102.9 LAB check: the film never started
+LAB  102.9 LAB check summary pass=0 fail=0
+LAB  102.9 LAB proxy upstream 22 requests 7.9 MB (2.79 a MB), steps back 0, handed over 0, bind {ok: 23}
 LAB cpu app 23% · 0.0fps · Thread 13% | MediaCodec_loop 10%
 LAB cpu app 23% · 0.0fps · Thread 13% | MediaCodec_loop 10%
 LAB cpu app 23% · 0.0fps · Thread 13% | MediaCodec_loop 10%
-LAB cpu app 24% · 0.0fps · Thread 13% | MediaCodec_loop 11%
-LAB   78.8 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=?
 LAB cpu app 23% · 0.0fps · Thread 13% | MediaCodec_loop 10%
-LAB cpu app 25% · 0.0fps · Thread 13% | MediaCodec_loop 11%
-LAB cpu app 24% · 0.0fps · Thread 13% | MediaCodec_loop 11%
-LAB  108.5 LAB check: the film never started
-LAB  108.5 LAB check summary pass=0 fail=0
-LAB  108.5 LAB proxy upstream 22 requests 7.9 MB (2.79 a MB), steps back 0, handed over 0, bind {ok: 23}
-LAB cpu app 24% · 0.0fps · Thread 13% | MediaCodec_loop 11%
-LAB cpu app 25% · 0.0fps · Thread 13% | MediaCodec_loop 11%
-LAB cpu app 25% · 0.0fps · Thread 14% | MediaCodec_loop 11%
-LAB cpu app 25% · 0.0fps · Thread 13% | MediaCodec_loop 11%
-LAB cpu app 25% · 0.0fps · Thread 14% | MediaCodec_loop 11%
-LAB cpu app 25% · 0.0fps · Thread 14% | MediaCodec_loop 11%
-LAB cpu app 24% · 0.0fps · Thread 13% | MediaCodec_loop 11%
-LAB cpu app 24% · 0.0fps · Thread 13% | MediaCodec_loop 11%
-LAB cpu app 24% · 0.0fps · Thread 13% | MediaCodec_loop 11%
-LAB cpu app 25% · 0.0fps · Thread 14% | MediaCodec_loop 11%
-LAB cpu app 25% · 0.0fps · Thread 13% | MediaCodec_loop 11%
-LAB cpu app 25% · 0.0fps · Thread 14% | MediaCodec_loop 11%
-LAB cpu app 27% · 0.0fps · Thread 15% | MediaCodec_loop 12%
-LAB cpu app 24% · 0.0fps · Thread 13% | MediaCodec_loop 11%
+LAB cpu app 22% · 0.0fps · Thread 13% | MediaCodec_loop 10%
+LAB cpu app 23% · 0.0fps · Thread 13% | MediaCodec_loop 10%
+LAB cpu app 22% · 0.0fps · Thread 12% | MediaCodec_loop 10%
+LAB cpu app 23% · 0.0fps · Thread 13% | MediaCodec_loop 10%
+LAB cpu app 22% · 0.0fps · Thread 12% | MediaCodec_loop 10%
+LAB cpu app 23% · 0.0fps · Thread 13% | MediaCodec_loop 10%
+LAB cpu app 23% · 0.0fps · Thread 13% | MediaCodec_loop 10%
+LAB cpu app 22% · 0.0fps · Thread 13% | MediaCodec_loop 10%
+LAB cpu app 22% · 0.0fps · Thread 12% | MediaCodec_loop 10%
+LAB cpu app 23% · 0.0fps · Thread 13% | MediaCodec_loop 10%
