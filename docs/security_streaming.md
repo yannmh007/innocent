@@ -88,7 +88,7 @@ USD 100 a month (EZDRM, Widevine-only) or about €0.01 a licence (Redge,
 €0.50 minimum). Budget phones are L3 (software), so studios cap them at
 480–720p. Worth it when a licensor requires it; not before §5.
 
-## 5. The bill: Class B is not the meter that matters
+## 5. The bill: requests, not storage
 
 Prices: R2 storage $0.015/GB-month; Class B (GetObject, HeadObject)
 $0.36/million, **10 million free a month**; egress free. Workers Paid $5 a
@@ -96,25 +96,41 @@ month with 10 million requests, then $0.30/million; **the Free plan stops at
 100,000 requests a day**. With Workers Caching on, **cache hits and calls to
 another entrypoint (our `Block`) are billed as requests**.
 
-A 2-hour film at the 720p rung (1.7 Mbit/s) is ~1.5 GB. R2 is read only when
-an edge block (4 MB) is not cached: ≤ 375 Class B reads per copy per cache
-region per 30 days — the whole catalogue stays inside the free 10 million.
-Even with no cache at all, 300,000 viewings a month would be about $37.
+A 2-hour film at the 720p rung (1.7 Mbit/s) is ~1.5 GB. **Two meters run
+per phone request, and which one counts depends on the edge cache:**
 
-The Worker is where the money is, and it is driven by how many requests the
-phone makes:
+* With an edge cache in front of R2 (fan-out's `Block`, or the Cache API on
+  a domain), R2 is read only when a 4 MB block is not cached: ≤ 375 Class B
+  reads per copy per cache region per 30 days — the catalogue stays inside
+  the free 10 million.
+* Without one (fan-out off, as now), **every Worker request is also one R2
+  read**: Class B equals the Worker's request count.
 
-| | phone requests / MB | billed per viewing | 1,000 viewers/day | 10,000 viewers/day |
-|---|---|---|---|---|
-| 1.64.69 (shipped) | ~7.7 | ~29,000 | ~$260/month | ~$2,600/month |
-| 1.64.70 (hand-over, `docs/streaming_seek_research.md`), fan-out on | ~0.5–0.9 | ~3,400 | ~$33 | ~$305 |
-| **1.64.70, fan-out off (Phase 1, live)** | same | ~1,350 | ~$14 | ~$125 |
-| + domain, Cache API: the same count, with the edge copy back | same | ~1,350 | ~$14 | ~$125 |
+Per viewing (one film per viewer per day), Workers Paid plus R2:
 
-(One film per viewer per day; with fan-out on, billed = gateway + ~1.5
-block calls. Worker Paid prices; on the Free plan the ceiling is 100,000 a
-day: 1.64.69 runs out after **3–4 whole films a day**, 1.64.70 with fan-out
-off after ~75.)
+| | phone requests / MB | Worker requests | R2 Class B | 1,000 viewers/day | 10,000 viewers/day |
+|---|---|---|---|---|---|
+| 1.64.69 (shipped), fan-out on | ~7.7 | ~29,000 | ~0 (cached) | ~$260/month | ~$2,600/month |
+| 1.64.70, fan-out on | ~0.5–0.9 | ~3,400 | ~0 (cached) | ~$33 | ~$305 |
+| **1.64.70, fan-out off (Phase 1, live)** | same | ~1,350 | ~1,350 | ~$14 + ~$11 = **~$25** | ~$124 + ~$142 = **~$266** |
+| 1.64.70 + domain, Cache API | same | ~1,350 | ~0 (cached) | **~$14** | **~$124** |
+
+(Worker: $5 a month with 10 million, then $0.30/million. Class B: 10 million
+free, then $0.36/million. With fan-out on, Worker requests = gateway + ~1.5
+block calls.)
+
+**On the Free plan — today — all of this is $0**, and fan-out off is the
+right choice: the Worker cannot pass 100,000 requests a day (3 million a
+month), so Class B can never leave its free 10 million, and fan-out off
+carries ~75 whole films a day where fan-out on carried ~30 (1.64.69: 3–4).
+
+**On the day viewing outgrows the Free plan, buy the domain with Paid.**
+Fan-out off then starts paying R2 for every request, and the Cache API on
+a domain removes that line: about $11 a month saved at 1,000 viewers a
+day, about $140 at 10,000 — for a $10–11 domain a year. Storage, for
+comparison, is small: 100 films with their ladders (~6 GB each) is
+~$9 a month. So yes, the owner's worry is right: at scale the per-request
+meters outgrow storage. The answer is the cache, not fewer films.
 
 ## 6. The plan, and the rule it follows
 
@@ -182,8 +198,9 @@ Cloudflare's Free plan.
 2. **The Cache API instead of `Block`.** It does nothing on `workers.dev`;
    on a custom domain it gives back the edge copy shared between viewers
    that fan-out gave — the opening seconds of a popular film served from
-   beside the viewer — without fan-out's second billed call: still ~1
-   request per phone request (§5).
+   beside the viewer — without fan-out's second billed call: ~1 Worker
+   request per phone request and almost no R2 reads (§5). On Paid, this is
+   most of the bill at scale.
 3. **The public bucket off `r2.dev`**, which Cloudflare rate-limits and
    calls "not for production": posters and photos from the domain, cached at
    the edge (a cache hit costs no Class B read).
@@ -191,8 +208,9 @@ Cloudflare's Free plan.
    region can change behind it without an app release.
 
 **Buy it when any one of these is seen** (the Worker's Metrics page and Logs
-say all of them): Worker requests pass ~50,000 on any day (half the free
-allowance); a burst of `bad_token` or `rate_limited` lines from one source;
+say all of them): the move to Workers Paid (from then on every uncached
+request is also an R2 read, §5); Worker requests pass ~50,000 on any day
+(half the free allowance); a burst of `bad_token` or `rate_limited` lines from one source;
 the public photos slowing or refusing; or paying subscribers reach a number
 whose evening an error 1027 would ruin. Until then the domain costs more
 than it saves.
