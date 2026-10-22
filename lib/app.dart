@@ -146,7 +146,12 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
   /// slow seek — on every phone, and no run had looked at the position.
   Future<void> _labJumpScript() async {
     final svc = ref.read(videoPlayerServiceProvider);
-    final player = ref.read(playerControllerProvider.notifier);
+    // THE PLAYER SCREEN'S CONTROLLER, read at each step. It is autoDispose,
+    // and read once here — before the screen had mounted and watched it —
+    // it was a controller of its own with nothing open: every change of
+    // quality was refused as "cannot be renewed" and the swipe seeked live
+    // as for a file (run 39206916255, both phones).
+    PlayerController player() => ref.read(playerControllerProvider.notifier);
     var pass = 0, fail = 0;
     Future<bool> until(bool Function() ok, Duration within) async {
       final end = DateTime.now().add(within);
@@ -164,8 +169,12 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
     // how long that took after the jump — the number a viewer feels.
     Future<void> check(String what, Duration want, DateTime jumped,
         {Duration late = const Duration(seconds: 30)}) async {
+      // Near the target AND past it: right after a jump back the player
+      // still reports where it was, which is past the target too.
       final moved = await until(
-          () => svc.position > want + const Duration(milliseconds: 500),
+          () =>
+              svc.position > want + const Duration(milliseconds: 500) &&
+              LabStream.landed(want, svc.position, late: late),
           const Duration(seconds: 30));
       final ready = DateTime.now().difference(jumped).inMilliseconds;
       final landedAt = svc.position;
@@ -205,7 +214,7 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
       // 1. The seek bar, released at 40 %.
       var want = at(0.4);
       var jumped = DateTime.now();
-      await player.seek(want);
+      await player().seek(want);
       await check('seek', want, jumped);
 
       // 2. A change of quality, from the menu.
@@ -215,7 +224,7 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
       } else {
         want = svc.position;
         jumped = DateTime.now();
-        final ok = await player.switchQuality(rung);
+        final ok = await player().switchQuality(rung);
         // The film plays on through the switch's fetch (up to 8 s).
         await check('quality->$rung${ok ? '' : ' (refused)'}', want, jumped,
             late: const Duration(seconds: 40));
@@ -224,25 +233,25 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
       // 3. +30 s, as the skip button does.
       want = svc.position + const Duration(seconds: 30);
       jumped = DateTime.now();
-      await player.seekRelative(30);
+      await player().seekRelative(30);
       await check('skip+30', want, jumped);
 
       // 4. A swipe across the picture, 2 minutes back.
       final from = svc.position;
       want = from - const Duration(minutes: 2);
-      player.onSeekStart();
+      player().onSeekStart();
       for (var s = 10; s <= 120; s += 10) {
-        player.onSeekUpdate(-s);
+        player().onSeekUpdate(-s);
         await Future<void>.delayed(const Duration(milliseconds: 80));
       }
       jumped = DateTime.now();
-      await player.onSeekEnd();
+      await player().onSeekEnd();
       await check('swipe-120', want, jumped);
 
       // 5. Back to Auto.
       want = svc.position;
       jumped = DateTime.now();
-      await player.switchQuality('auto');
+      await player().switchQuality('auto');
       await check('quality->auto', want, jumped, late: const Duration(seconds: 40));
     } catch (e) {
       PlaybackLog.add('LAB check failed to run: $e');
