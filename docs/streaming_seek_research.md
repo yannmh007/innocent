@@ -81,7 +81,17 @@ profiles (150–250 ms round trip, 0.5–2 % loss).
 | 5.9 Mbit film, twenty seconds of play (12 Mbit/s line) | 3.37 requests/MB | **0.45** |
 | seek 40 % / skip +30 / back −120 / seek 75 %, picture | 1.1–2.2 s | 1.1–2.2 s (unchanged) |
 
-Under netem: see the `mpv seek` tables in the stream bench's run summary.
+Under `tc netem` in CI (stream bench run 39768106236), three runs of each
+line, four jumps a run — twelve seeks per row:
+
+| line | seek picture, median (mean) before | after | requests/MB before | after |
+|---|---|---|---|---|
+| 200 ms, 1 % loss, 32 Mbit/s | 2.37 s (2.78) | 2.49 s (2.44) | 5.10 | **0.50** |
+| 250 ms, 2 % loss, 16 Mbit/s | 4.48 s (4.29) | **3.42 s (3.77)** | 12.44 | **0.91** |
+
+One earlier single run had the 2 % line's +30 s skip at 15.8 s after the
+change; repeated, it was the line's randomness, not the change (the worst
+of twelve after it: 5.5 s; before: 6.2 s).
 
 ## Next
 

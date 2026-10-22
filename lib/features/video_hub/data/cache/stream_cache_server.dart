@@ -194,9 +194,12 @@ class StreamCacheServer {
   static bool handOver = true;
 
   /// Stretches handed over, and taken up, since the app started. For the
-  /// bench.
-  @visibleForTesting
+  /// bench and the lab's trail.
   static int handedOver = 0, carriedOn = 0, stepsSeen = 0;
+
+  /// Requests made upstream, and the bytes they brought, since the app
+  /// started — what the Worker sees of this phone. For the lab's trail.
+  static int upstreamRequests = 0, upstreamBytes = 0;
 
   /// How long parts handed over wait for the request that is to take them.
   static const Duration _handOverFor = Duration(seconds: 3);
@@ -1127,6 +1130,7 @@ class StreamCacheServer {
             }
           }
           counted(chunk.length);
+          upstreamBytes += chunk.length;
           yield chunk;
         }
       } catch (e) {
@@ -1223,6 +1227,7 @@ class StreamCacheServer {
       var handedOver = false;
       try {
         final r = await client.getUrl(Uri.parse(src.upstream));
+        upstreamRequests++;
         r.headers.set(HttpHeaders.rangeHeader, 'bytes=$start-$endInclusive');
         final resp = await r.close();
         final code = resp.statusCode;
@@ -1864,6 +1869,7 @@ class _LaneRefused implements Exception {
 class _LanePart {
   _LanePart(HttpClient client, Uri url, this.start, this.end, int total,
       Duration stall) {
+    StreamCacheServer.upstreamRequests++;
     done = _get(client, url, total, stall);
     // Held until its turn; an error before then must not count as unhandled.
     done.then((_) {
