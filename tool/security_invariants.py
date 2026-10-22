@@ -398,6 +398,10 @@ CRED_ALLOWED = {
     'f0e8bdb87c964420e857bd35b5d6ed310bd44f0170aba48dd91039c6036bdb41',
     # SHA-256 of the empty string, in the same test.
     'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+    # SHA-256 of Google's OSV-Scanner 2.2.2 linux binary, which
+    # .github/workflows/deps-scan.yml checks before running it. A checksum of
+    # a public file, published so it can be checked; not a key.
+    'c799274b682e0437c802d4714a136ad09b39c65547c460049ba5358d28afa576',
 }
 
 CRED_EXTS = ('.md', '.ts', '.js', '.mjs', '.html', '.yml', '.yaml', '.sh',

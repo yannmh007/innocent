@@ -595,18 +595,12 @@ Future<void> playMedia(
     return;
   }
 
-  // TOO MANY PLAYS IN A SHORT TIME. What is already on the phone may play —
-  // it costs the server nothing — and otherwise the sentence says to wait,
-  // not that the film is gone.
+  // TOO MANY PLAYS IN A SHORT TIME. The server answered, so this is a
+  // refusal like any other and the phone's held bytes are not offered — those
+  // are for "could not ask" alone (tool/security_invariants.py). The sentence
+  // says to wait, not that the film is gone: the budget fills again within
+  // the hour.
   if (grant.denial == AccessDenial.rateLimited) {
-    final handled = await _playHeldBytes(
-      context,
-      ref,
-      content: content,
-      source: source,
-      titleOverride: titleOverride,
-    );
-    if (handled || !context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(s.vhRateLimited),
