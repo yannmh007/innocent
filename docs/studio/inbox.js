@@ -361,7 +361,17 @@ function rqActions(r) {
     placeholder: 'A word to the payer (optional) — e.g. “Thank you!”' });
   const ok = el('button', { className: 'b p rq-approve', type: 'button' }, text('Approve'));
   const no = el('button', { className: 'b d', type: 'button' }, text('Reject…'));
+  // THE SCREENSHOT IS A CLAIM, NOT A PAYMENT. Any image model makes a
+  // convincing KPay or Wave receipt in seconds now; bKash and GCash warn
+  // their own merchants about exactly that. The only proof is the money in
+  // the owner's own account — so the check is said here, every time, beside
+  // the button that grants Premium.
+  const check = el('div', { className: 'hint rq-check' }, text(
+    'Before approving: open your KPay / Wave app and find this payment — the ' +
+    'amount, the time' + (r.reference ? ', transaction ' + r.reference : '') +
+    '. A screenshot alone proves nothing; it can be edited or made by AI.'));
   const row = el('div', { className: 'rq-acts' }, [
+    check,
     el('label', { className: 'rq-for' }, [text('Premium for'), days]), note, ok, no]);
 
   const busy = (b) => { ok.disabled = no.disabled = b; };
