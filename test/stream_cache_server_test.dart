@@ -177,8 +177,18 @@ void main() {
   });
 
   tearDownAll(() async {
+    // As setUp does between tests: the last test's lanes may still be writing
+    // parts (and their metadata) into the cache, and a recursive delete racing
+    // a write fails on whichever loses. Let the line go quiet first.
+    for (var i = 0; i < 100 && up.inFlight > 0; i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+    }
     await up.server.close(force: true);
-    await temp.delete(recursive: true);
+    try {
+      await temp.delete(recursive: true);
+    } on FileSystemException {
+      // A write finishing in the same instant. The folder is a temporary one.
+    }
   });
 
   setUp(() async {
@@ -648,8 +658,16 @@ void main() {
       up.piece = 64 * 1024;
       up.pace = const Duration(milliseconds: 8);
       final id = hand ? 'film-hand' : 'film-nohand';
-      final x = (hand ? 8 : 24) * mb;
+      final x = (hand ? 8 : 4) * mb;
       const read = 4 * mb, back = 200 * 1024;
+      // How much the step back reads. With the hand-over, 4 MB: it is
+      // carried on, and every part is measured. Without it, to the film's
+      // end — the lanes may hold up to twelve parts ahead of a paused reader
+      // (24 MB), so a short step back can be answered wholly from the phone
+      // on a fast machine and ask the line for nothing at all (CI run
+      // 39810148605). Reading to the end, the step back has to go past all
+      // of it, and the stretch it opens there is what this case measures.
+      int take = read;
       final handed0 = StreamCacheServer.handedOver;
       final carried0 = StreamCacheServer.carriedOn;
       try {
@@ -678,15 +696,16 @@ void main() {
           await reached.future;
           mark = up.sizes.length;
           from = x + got - back;
-          next = _get(local, from: from, take: read);
+          if (!hand) take = up.body.length - from;
+          next = _get(local, from: from, take: take);
           await Future<void>.delayed(const Duration(milliseconds: 50));
           unawaited(sub.cancel());
         } finally {
           first.close(force: true);
         }
-        final got = await next.timeout(const Duration(seconds: 20));
+        final got = await next.timeout(const Duration(seconds: 30));
         // Byte for byte: the phone's copy, then the parts carried on.
-        expect(got, Uint8List.sublistView(up.body, from, from + read));
+        expect(got, Uint8List.sublistView(up.body, from, from + take));
         final before = up.sizes.sublist(0, mark).last;
         final after = up.sizes.sublist(mark);
         if (hand) {
