@@ -17,9 +17,15 @@ local relay that logs every range: with the system ffmpeg, with mpv, and
 with the FFmpeg 6.0 binary if given (the app's libmpv is built on 6.0). How
 many bytes each read, and the first ranges, say whether it jumped.
 
+THE RELAY IS PACED, a phone's line (RELAY_KBPS, 8 Mbit/s) with a 64 KB send
+buffer. Unpaced it read the Worker at the runner's speed and counted what it
+pushed into loopback socket buffers — megabytes for each of mpv's short
+requests — and reported 72.9 MB for a seek that costs mpv about one 2 s
+fragment (docs/streaming_seek_research.md).
+
 Never prints a URL: each carries a live token and this log is public.
 """
-import http.server, json, os, struct, subprocess, sys, threading, time, urllib.request, urllib.error
+import http.server, json, os, socket, struct, subprocess, sys, threading, time, urllib.request, urllib.error
 
 UA = {'User-Agent': 'innocent-playback-check/1'}
 
@@ -101,10 +107,18 @@ class Relay(http.server.BaseHTTPRequestHandler):
         start = int(rng[6:].split('-')[0]) if rng and rng.startswith('bytes=') and rng[6:].split('-')[0] else 0
         sent = 0
         try:
+            self.connection.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 64 * 1024)
+        except OSError:
+            pass
+        rate = int(os.environ.get('RELAY_KBPS', '8000')) * 1000 // 8
+        began = time.time()
+        try:
             while True:
-                chunk = r.read(64 * 1024)
+                chunk = r.read(16 * 1024)
                 if not chunk: break
                 self.wfile.write(chunk); sent += len(chunk)
+                ahead = sent / rate - (time.time() - began)
+                if ahead > 0: time.sleep(ahead)
         except (BrokenPipeError, ConnectionResetError):
             pass
         Relay.log.append((start, sent))
@@ -151,12 +165,18 @@ def main():
     srv = http.server.ThreadingHTTPServer(('127.0.0.1', 0), Relay)
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     local = f'http://127.0.0.1:{srv.server_address[1]}/film.mp4'
-    print(f"seek to {at} s of {secs} s in the {r.get('height')}p copy ({total / 1048576:.1f} MB):")
+    print(f"seek to {at} s of {secs} s in the {r.get('height')}p copy ({total / 1048576:.1f} MB), "
+          f"relay paced at {os.environ.get('RELAY_KBPS', '8000')} kbit/s:")
     one = ['-nostdin', '-v', 'error', '-ss', str(at), '-i', local, '-map', '0:v:0', '-frames:v', '1', '-f', 'null', '-']
     seek_test('ffmpeg system', ['ffmpeg'] + one)
     if ff60 and os.path.exists(ff60):
         seek_test('ffmpeg 6.0', [ff60] + one)
+    # The app's stream options that bear on reading (MediaKitPlayerService.
+    # streamProfile), with the read-ahead held to a second so what is read
+    # is what the seek cost.
     seek_test('mpv --start', ['mpv', '--no-config', '--vo=null', '--ao=null', f'--start={at}', '--frames=1',
+                              '--stream-buffer-size=1MiB', '--hr-seek=absolute',
+                              '--stream-lavf-o=multiple_requests=1,seekable=1',
                               '--demuxer-max-bytes=4MiB', '--cache-secs=1', '--demuxer-readahead-secs=1', local])
     srv.shutdown()
 
