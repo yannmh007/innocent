@@ -67,17 +67,29 @@
 // See [serveFromBlocks], and `EDGE_BLOCK_BYTES` in wrangler.toml to turn it
 // off.
 //
-// Small objects — thumbnails, short clips — still carry `Cache-Control`, so
-// they cache wherever something is willing to hold them.
+// ─── AND, SINCE 2026-10-22, WHOSE PHONE IT IS ─────────────────────────────
+//
+// A token can name the install it was granted to ([bindCheck]), each request
+// is counted against a loose ceiling ([overLimit]), the log line carries the
+// account's hash, and nothing between here and the player may keep a byte
+// ([TO_PLAYER]). The first two only log until `BIND_MODE` / `LIMIT_MODE` say
+// "enforce". Edge fan-out is off again (`EDGE_BLOCK_BYTES = "0"`): every
+// `Block` call is billed as a request of its own (docs/security_streaming.md
+// §5).
 
 import { WorkerEntrypoint } from 'cloudflare:workers';
 
-/// How long anything that CAN be cached may be held.
+/// What a film's bytes tell anything between here and the player.
 ///
-/// The objects are immutable: every upload gets a fresh key with a timestamp
-/// and a random suffix, so one key never holds different bytes. `immutable`
-/// is a statement of fact here rather than an optimisation.
-const EDGE_TTL_SECONDS = 86400;
+/// NOTHING MAY KEEP THEM. They were `public, max-age=86400, immutable` until
+/// 2026-10-22, which was true of the bytes and wrong for the door: a shared
+/// cache that kept an answer to `/v/<token>` could go on handing the film to
+/// whoever presented that URL long after the token had expired, and the
+/// Worker — the only thing that checks expiry — would never be asked. The
+/// app's own proxy keeps what the phone needs; nothing else should.
+/// (The Block entrypoint's answers are cached on purpose, by Workers Caching,
+/// at a path no client can reach. That is a different door.)
+const TO_PLAYER = 'private, no-store';
 
 /// The one page allowed to read a response from here with JavaScript.
 ///
@@ -188,6 +200,69 @@ async function openToken(token, secret) {
     return claim;
   } catch {
     return null;
+  }
+}
+
+/// The first [chars] hex digits of SHA-256(text) — how request-playback and
+/// migration 046 name an install, so a log line here, a budget row and a
+/// token all say the same thing about the same phone.
+async function sha256Hex(text, chars) {
+  const d = new Uint8Array(await crypto.subtle.digest(
+    'SHA-256', new TextEncoder().encode(text)));
+  let s = '';
+  for (const b of d) s += b.toString(16).padStart(2, '0');
+  return s.slice(0, chars);
+}
+
+/// Whether the phone presenting a token is the one it was granted to.
+///
+/// A token minted with `b: 1` carries `d`, the install's hash, and the app
+/// that asked for it sends its install id in `X-Innocent-Device` on every
+/// fetch. A link copied off the phone then plays nowhere else for its ten
+/// minutes — not without the id too, and with it the copy is the account's
+/// own, by name, in the log.
+///
+///   'none'      not a bound token: an app before 1.64.70, a console preview
+///   'ok'        the header names the install the token was granted to
+///   'missing'   bound, and no header
+///   'mismatch'  bound, and another install's id
+///
+/// Hex compared as strings: `d` is already in the token the caller holds,
+/// so there is nothing for a timing difference to reveal.
+async function bindCheck(request, claim) {
+  if (claim.b !== 1 || typeof claim.d !== 'string' || !claim.d) return 'none';
+  const sent = request.headers.get('X-Innocent-Device');
+  if (!sent) return 'missing';
+  return (await sha256Hex(sent, 32)) === claim.d ? 'ok' : 'mismatch';
+}
+
+/// Whether this request is one too many, by the Workers Rate Limiting
+/// binding (`STREAM_LIMIT` in wrangler.toml; no binding, no limit).
+///
+/// Counted per install when the token names one, else per account, else per
+/// link (the token's IV, its first 16 characters). Never per address:
+/// Myanmar's mobile networks put a town behind one.
+///
+/// WHAT IT IS FOR, AND WHAT IT IS NOT. It stops one phone or one stolen link
+/// from reading the bucket in thousands of tiny ranges. It does NOT protect
+/// the daily request allowance: a refused request has already run this
+/// Worker, and it is counted all the same. Only a rule in front of the
+/// Worker can do that — Cloudflare's WAF, which needs a domain of our own
+/// (docs/security_streaming.md, phase 2). The binding is free; its counts are
+/// per data centre and a few seconds behind, which suits a loose ceiling and
+/// nothing finer. Any error reads as "not over": a limiter that fails must
+/// not take playback with it.
+async function overLimit(env, claim, token) {
+  const limiter = env.STREAM_LIMIT;
+  if (!limiter || typeof limiter.limit !== 'function') return false;
+  const key = claim.d ? 'd:' + claim.d
+    : claim.u ? 'u:' + claim.u
+    : 't:' + token.slice(0, 16);
+  try {
+    const { success } = await limiter.limit({ key });
+    return success === false;
+  } catch {
+    return false;
   }
 }
 
@@ -449,7 +524,7 @@ async function serveFromBlocks(request, env, ctx, key, block, cors) {
     const headers = new Headers(cors);
     headers.set('Accept-Ranges', 'bytes');
     headers.set('Content-Type', 'video/mp4');
-    headers.set('Cache-Control', `public, max-age=${EDGE_TTL_SECONDS}, immutable`);
+    headers.set('Cache-Control', TO_PLAYER);
     headers.set('Content-Range', `bytes ${start}-${end}/${total}`);
     // What the cache did for this request — read by the live check and the
     // console. Statuses only: nothing here names the film or the bucket.
@@ -712,6 +787,28 @@ export default {
       return refuse();
     }
 
+    // WHOSE PHONE, AND HOW HARD IT IS ASKING (2026-10-22). Both checks start
+    // in "log": they say what they WOULD refuse, in the log and in `X-Bind`,
+    // and refuse nothing until the phones in the field are seen to pass them.
+    // `BIND_MODE = "enforce"` / `LIMIT_MODE = "enforce"` in wrangler.toml
+    // turns each one on. See [bindCheck] and [overLimit].
+    const bind = await bindCheck(request, claim);
+    if (bind === 'missing' || bind === 'mismatch') {
+      console.log(JSON.stringify({
+        refusal: 'bind_' + bind, u: claim.u, mode: env.BIND_MODE || 'log' }));
+      if (env.BIND_MODE === 'enforce') return refuse();
+    }
+    if (await overLimit(env, claim, match[1])) {
+      console.log(JSON.stringify({
+        refusal: 'rate_limited', u: claim.u, mode: env.LIMIT_MODE || 'log' }));
+      if (env.LIMIT_MODE === 'enforce') {
+        return new Response('Too many requests', {
+          status: 429,
+          headers: { 'Retry-After': '10', 'Cache-Control': 'no-store' },
+        });
+      }
+    }
+
     // EDGE FAN-OUT, WHEN THE OPERATOR HAS TURNED IT ON. Off by default, in
     // which case this is skipped and the direct path below runs exactly as it
     // always has. Null means the block path declined (an unhandled range
@@ -725,7 +822,10 @@ export default {
     if (block > 0) {
       const edged = await serveFromBlocks(
         request, env, ctx, claim.k, block, corsFor(request));
-      if (edged instanceof Response) return edged;
+      if (edged instanceof Response) {
+        if (bind !== 'none') edged.headers.set('X-Bind', bind);
+        return edged;
+      }
       edgeOff = edged || '';
     }
 
@@ -767,13 +867,10 @@ export default {
     headers.set('ETag', object.httpEtag);
     headers.set('Accept-Ranges', 'bytes');
     if (edgeOff) headers.set('X-Edge', `off; ${edgeOff}`);
+    if (bind !== 'none') headers.set('X-Bind', bind);
     if (!headers.has('Content-Type')) headers.set('Content-Type', 'video/mp4');
-    // Written on every response even though nothing between here and the
-    // viewer will hold a film: it costs nothing, and the small objects that
-    // also pass through here — thumbnails, short clips — are cacheable
-    // wherever something is willing to hold them.
-    headers.set('Cache-Control',
-      `public, max-age=${EDGE_TTL_SECONDS}, immutable`);
+    // Over whatever the object's own metadata says. See [TO_PLAYER].
+    headers.set('Cache-Control', TO_PLAYER);
     // R2 sets none of these, but a future `writeHttpMetadata` change could,
     // and an object key must not travel back out in a header either.
     headers.delete('Content-Disposition');
@@ -795,12 +892,19 @@ export default {
     // fixes. The log says which. It carries no key and no token — the
     // object is identified by its size, which is enough to tell two files
     // apart in a trace and tells a reader nothing about the bucket.
+    //
+    // `u` is the account's hash from the token (16 hex digits of SHA-256 of
+    // its id; none for a free title watched signed out): enough to add up
+    // what one account pulled in a day, and to find which account that was
+    // from the database — not enough to read a name off the log.
     console.log(JSON.stringify({
       ev: 'serve',
       asked: request.headers.get('Range') || 'whole',
       size: object.size,
       got: object.range ?? null,
       edge: edgeOff || undefined,
+      u: claim.u,
+      bind: bind === 'none' ? undefined : bind,
       ua: (request.headers.get('User-Agent') || '').slice(0, 40),
     }));
 

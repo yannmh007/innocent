@@ -57,15 +57,42 @@ type = "worker"
 # The block size. Here, in [vars], and NOT in the dashboard: `wrangler deploy`
 # replaces a Worker's plaintext variables with the ones in this file, so a
 # value typed into the dashboard silently disappears on the next deploy.
-# Not a secret — it is a number. 4 MB: the cache answers a whole block and
-# the gateway cuts the player's range out of it, so a smaller block means
-# less read and dropped per request; much smaller means more block calls
-# (each billed as a request) per 2 MB part.
+# Not a secret — it is a number. "4194304" (4 MB) turns fan-out on: the cache
+# answers a whole block and the gateway cuts the player's range out of it.
 #
-# TO TURN EDGE FAN-OUT OFF: delete this line and push. Every request then
-# takes the direct R2 path, exactly as before it existed.
+# "0" — OFF, since 2026-10-22, and that is a decision about the bill. With
+# Workers Caching on, every `Block` call is billed as a request of its own,
+# hit or miss: a 2 MB part costs the gateway plus one or two blocks, about
+# 2.5 requests where the direct path costs one. On the Free plan's 100,000
+# requests a day that is the difference between ~30 and ~75 whole films a
+# day once 1.64.70's proxy is out (docs/security_streaming.md §5). What it
+# saved — R2 reads, Class B, 10 million free a month — was the cheap meter.
+# With a domain of our own, the Cache API does the same job without the
+# extra billed call (phase 2).
 [vars]
-EDGE_BLOCK_BYTES = "4194304"
+EDGE_BLOCK_BYTES = "0"
+
+# Whose phone a token was granted to, and a loose ceiling on requests (see
+# bindCheck and overLimit in src/index.js). "log" says what WOULD be refused,
+# in the log and in `X-Bind`, and refuses nothing. "enforce" refuses. Each is
+# switched to "enforce" only after the log shows the phones in the field
+# passing — bind once 1.64.70 sends its install id with every fetch.
+BIND_MODE = "log"
+LIMIT_MODE = "log"
+
+# The ceiling, per install (else per account, else per link), per data
+# centre: 600 requests in 10 seconds. Set for the phones already out there:
+# 1.64.69's proxy makes ~7.7 requests a megabyte, so a 50 Mbit/s Wi-Fi line
+# filling its buffer is ~460 in 10 s. 1.64.70's makes under one a megabyte;
+# once it is most of the field this can come down to ~200. The binding costs
+# nothing (Wrangler 4.36+; pinned at 4.107+ in package.json).
+[[ratelimits]]
+name = "STREAM_LIMIT"
+namespace_id = "1001"
+
+  [ratelimits.simple]
+  limit = 600
+  period = 10
 
 # TOKEN_SECRET is NOT set here. It is a secret, it is shared with the
 # Supabase function that mints tokens, and a repository is a public place:

@@ -271,12 +271,24 @@ extended: AES-GCM is authenticated, so a single changed bit fails to decrypt
 rather than decrypting to something else. Expiry is checked on every
 request, by the gateway, whose caching is off precisely so that it is.
 
-**Does not.** A token that is still valid is a link that works, exactly as a
-presigned URL was. Entitlement, the device binding and the concurrency cap
-are decided by `request-playback` when the token is minted, not here. This
-Worker is a door with a short-lived key, not a second opinion on who the
-viewer is — and a short-lived key handed to someone else opens the door for
-them until it expires.
+**Since 2026-10-22, whose phone.** A token can name the install it was
+granted to (`d`, with `b: 1`); the app sends its install id in
+`X-Innocent-Device`, and the Worker compares. A ceiling of 600 requests in
+10 s per install (else per account, else per link) uses the free Rate
+Limiting binding. Both start in **log mode** — `BIND_MODE` / `LIMIT_MODE` in
+`wrangler.toml` — writing `bind_missing`, `bind_mismatch` or `rate_limited`
+to the log and `X-Bind: ok|missing|mismatch` on the answer, and refusing
+nothing until the log shows the phones in the field passing; then each is
+set to `"enforce"`. Every log line carries `u`, the account's hash, and every
+answer says `Cache-Control: private, no-store`. See
+`docs/security_streaming.md` §6 and `tool/js/worker_gate_test.mjs`.
+
+**Does not.** A token that is still valid, presented with its install id,
+is a link that works. Entitlement, the two-device cap and the grant budget
+are decided by `request-playback` when the token is minted, not here. The
+rate limit cannot stop requests being COUNTED: on `workers.dev` nothing
+stands in front of the Worker, so a flood it refuses still uses the Free
+plan's daily allowance. That needs a WAF rule on a domain of our own.
 
 Rejections deliberately say nothing. "Expired", "bad signature" and "no such
 object" are three different facts, and answering with which one is which

@@ -1,8 +1,22 @@
 // ===========================================================================
-// request-playback — Supabase Edge Function — **v3, 2 Sep 2026**
-// Innocent Movies, phase 1.  For app v1.63.5+310.
+// request-playback — Supabase Edge Function — **v4, 22 Oct 2026**
+// Innocent Movies.  For app v1.63.5+310; binds tokens for v1.64.70+.
 //
-// v3 does two things:
+// v4 closes four doors (docs/security_streaming.md, phase 1):
+//   * NO PRESIGNED FALLBACK. If the Worker's two secrets are missing the
+//     function refuses; it no longer hands out an S3 URL naming the account,
+//     the bucket, the object key and the access key id.
+//   * A PREMIUM GRANT NEEDS THE INSTALL ID. Without one, the two-device check
+//     was skipped. Every app since 1.63.5 sends it.
+//   * A BUDGET ON GRANTS (migration 046): per install, per account and per
+//     network, by the hour, and distinct titles a day. Over it: 429
+//     `rate_limited`, with `retry_after`.
+//   * THE TOKEN NAMES WHO IT IS FOR: `u`, the account's hash, always (the
+//     Worker logs it); `d`, the install's hash, and `b: 1` when the app asks
+//     with `bind: true` — then the Worker checks the app's `X-Innocent-Device`
+//     header against it.
+//
+// v3 did two things:
 //   * plays a single ASSET (a clip, a trailer) as well as a title's main
 //     video, which is what makes the album's clips openable at all;
 //   * stops sending its diagnostics to the CLIENT. v2's `reason` and `detail`
@@ -11,9 +25,8 @@
 //     now written to the function log, where `supabase Logs` shows it and the
 //     user does not.
 //
-// The signing half below is untouched across all three versions, and was
-// verified against an independent implementation of the AWS spec on three
-// object keys including one with spaces and brackets.
+// (v1–v3's S3 signer, verified against an independent implementation of the
+// AWS spec, is gone with the fallback it served; see below.)
 //
 // THIS FILE IS THE MASTER COPY. The Supabase dashboard editor has no version
 // control and no rollback, so the copy running in production can be edited
@@ -22,7 +35,8 @@
 // HOW TO DEPLOY WITHOUT A TERMINAL
 //   Dashboard -> Edge Functions -> "Deploy a new function" -> "Via Editor"
 //   -> name it exactly `request-playback` -> paste this whole file -> Deploy.
-//   Then Edge Functions -> Secrets, and add the five R2_* values below.
+//   It needs STREAM_BASE and STREAM_TOKEN_SECRET (below) and the service key.
+//   The R2_* secrets are no longer read here; other functions still use them.
 //
 // WHAT THIS FUNCTION IS
 //   The security boundary of the whole product. Everything else - the tier
@@ -30,22 +44,12 @@
 //   DRAW. This decides what to HAND OVER, and it is the only thing that does.
 //
 //   The client sends no assertion about its own rights; there is no field for
-//   one. It sends a title id and gets back either a signed URL or a refusal
+//   one. It sends a title id and gets back either a sealed URL or a refusal
 //   with a reason. An attacker who patches the app gets a nicer-looking free
 //   account and no bytes.
 // ===========================================================================
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-
-// --- R2, from the function's secrets ---------------------------------------
-// Never hardcode these. The account id is the hex string in your Cloudflare
-// dashboard URL; the key pair comes from R2 -> Manage R2 API Tokens, scoped to
-// OBJECT READ ONLY for the private bucket. A read-only token cannot delete
-// your catalogue if it leaks, and it is the only capability this needs.
-const R2_ACCOUNT_ID = Deno.env.get('R2_ACCOUNT_ID')!;
-const R2_ACCESS_KEY_ID = Deno.env.get('R2_ACCESS_KEY_ID')!;
-const R2_SECRET_ACCESS_KEY = Deno.env.get('R2_SECRET_ACCESS_KEY')!;
-const R2_BUCKET = Deno.env.get('R2_BUCKET')!;
 
 // Ten minutes. Long enough to start a film on a slow connection, short enough
 // that a copied link is worthless by the time it is pasted anywhere. It does
@@ -53,62 +57,15 @@ const R2_BUCKET = Deno.env.get('R2_BUCKET')!;
 // StreamRenewal, which re-runs every check in this file.
 const EXPIRY_SECONDS = 600;
 
-// --- AWS SigV4 query signing, by hand --------------------------------------
-// Hand-written rather than pulling in an S3 SDK. Presigning is one hash chain
-// and about sixty lines; an SDK is megabytes of cold-start for the same
-// string, and cold starts are what an edge function is billed and judged on.
-const enc = new TextEncoder();
-
-// Uint8Array in and out, never a bare ArrayBuffer. The chain below feeds each
-// result straight back in as the next key, and a union type there is rejected
-// by `crypto.subtle.importKey` under strict checking - which the Supabase
-// dashboard editor and Deno both apply. One concrete type removes the whole
-// question.
-async function hmac(key: Uint8Array, msg: string): Promise<Uint8Array> {
-  // `as BufferSource` is a LIB-VERSION artifact, not a real conversion.
-  // TypeScript 5.7 made Uint8Array generic over its buffer, so a plain
-  // Uint8Array no longer satisfies BufferSource under `strict` even though it
-  // always has at runtime. Writing `Uint8Array<ArrayBuffer>` instead would fix
-  // it on 5.7+ and FAIL TO PARSE on anything older - and the TypeScript
-  // version inside the Supabase dashboard editor is not ours to pin. The cast
-  // is a no-op in every version.
-  const k = await crypto.subtle.importKey(
-    'raw', key as BufferSource, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'],
-  );
-  return new Uint8Array(await crypto.subtle.sign('HMAC', k, enc.encode(msg)));
-}
-
-function hex(buf: Uint8Array): string {
-  return Array.from(buf)
-    .map((b) => b.toString(16).padStart(2, '0')).join('');
-}
-
-async function sha256Hex(msg: string): Promise<string> {
-  return hex(new Uint8Array(await crypto.subtle.digest('SHA-256', enc.encode(msg))));
-}
-
-// STRICT RFC 3986, which `encodeURIComponent` is not.
+// --- the presigned S3 URL, and why it is gone (v4) ---------------------------
 //
-// SigV4 requires every character outside `A-Za-z0-9-_.~` to be percent-encoded,
-// and `encodeURIComponent` deliberately leaves `! ' ( ) *` alone. A key like
-// `v/2026/my title (HD).mp4` therefore signs one string and requests another,
-// and R2 answers SignatureDoesNotMatch - for that title only, while every
-// title with a plain name plays perfectly. Verified against an independent
-// implementation of the AWS spec: without this replace, the two signatures
-// differ for exactly such a key and agree for `v/first-test.mp4`.
-function rfc3986(component: string): string {
-  return encodeURIComponent(component).replace(
-    /[!'()*]/g,
-    (c) => '%' + c.charCodeAt(0).toString(16).toUpperCase(),
-  );
-}
-
-// Each path SEGMENT is encoded, but the slashes between them are not - an
-// object key of `v/abc.mp4` must stay `v/abc.mp4`, not become `v%2Fabc.mp4`,
-// or R2 looks for an object whose name contains a literal slash character.
-function encodeKey(key: string): string {
-  return key.split('/').map(rfc3986).join('/');
-}
+// v1–v3 signed an S3 URL for R2 by hand (SigV4) and fell back to it whenever
+// the Worker was not configured. That URL names the Cloudflare account, the
+// private bucket, the object key and the access key id — everything the
+// Worker exists to keep out of a client's hands — and a fallback meant one
+// missing secret would quietly hand all of it to every phone. Refusing is the
+// safe reading of a deployment mistake, as the Worker itself already does.
+// (studio.ts and probe-media.ts keep their own signer for the console.)
 
 // --- the Worker door -------------------------------------------------------
 //
@@ -118,9 +75,9 @@ function encodeKey(key: string): string {
 // `<account>.r2.cloudflarestorage.com` is R2's S3 API endpoint. It answers
 // from anywhere and it caches nothing: every byte of every play, for every
 // viewer, is fetched from the bucket's region, and two people watching the
-// same film ten minutes apart share nothing at all. The Worker is on
-// Cloudflare's edge with a read-through cache in front of it, so the second
-// viewer in a region is served from beside them.
+// same film ten minutes apart share nothing at all. The Worker answers from
+// Cloudflare's edge, beside the viewer, and reads the bucket over
+// Cloudflare's own network.
 //
 // And the presigned URL says far too much. It names the account, names the
 // private bucket, spells out the folder scheme and carries the access key id
@@ -128,11 +85,8 @@ function encodeKey(key: string): string {
 // dialog until v1.64.22, and in any screenshot a viewer passes on. A token
 // says none of it.
 //
-// FALLS BACK RATHER THAN FAILING. If either secret is missing this returns
-// null and the caller presigns as before, so a half-finished deployment
-// degrades to the old behaviour instead of breaking playback. That is also
-// what makes the switch a server-side change with no app release: the client
-// plays whichever URL it is handed.
+// FAILS CLOSED (v4). If either secret is missing this returns null and the
+// caller refuses. v1–v3 fell back to a presigned URL instead; see above.
 const STREAM_BASE = (Deno.env.get('STREAM_BASE') ?? '').replace(/\/+$/, '');
 const STREAM_TOKEN_SECRET = Deno.env.get('STREAM_TOKEN_SECRET') ?? '';
 
@@ -150,7 +104,16 @@ function b64urlFromBytes(b: Uint8Array): string {
 /// token is opaque, and because GCM is authenticated it also cannot be
 /// edited or its expiry extended — one changed bit fails to decrypt rather
 /// than decrypting to something else.
-async function workerUrl(objectKey: string): Promise<string | null> {
+///
+/// [who] goes into the token beside the key and the expiry (v4): `u`, the
+/// account's hash, for the Worker's log; `d`, the install's hash, and `b: 1`
+/// when the app asked for its token to be bound — the Worker then plays it
+/// only for a request carrying that install's id. The Worker ignores fields it
+/// does not know, so a token with them opens on a Worker without the check.
+async function workerUrl(
+  objectKey: string,
+  who: Record<string, string | number> = {},
+): Promise<string | null> {
   if (!STREAM_BASE || !STREAM_TOKEN_SECRET) return null;
   try {
     // SHA-256 OF THE SECRET, NOT THE SECRET'S BYTES. AES-GCM wants exactly
@@ -174,6 +137,7 @@ async function workerUrl(objectKey: string): Promise<string | null> {
     const claim = JSON.stringify({
       k: objectKey,
       e: Math.floor(Date.now() / 1000) + EXPIRY_SECONDS,
+      ...who,
     });
     const sealed = new Uint8Array(await crypto.subtle.encrypt(
       { name: 'AES-GCM', iv },
@@ -185,57 +149,39 @@ async function workerUrl(objectKey: string): Promise<string | null> {
     token.set(sealed, iv.length);
     return `${STREAM_BASE}/v/${b64urlFromBytes(token)}`;
   } catch (e) {
-    // A broken secret must not take playback down with it. The presigned
-    // path below still works, and the log says which one was used.
+    // The caller refuses; the log says why.
     logRefusal('stream_token_failed', String(e));
     return null;
   }
 }
 
-async function presign(objectKey: string): Promise<string> {
-  const host = `${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`;
+/// The first [chars] hex digits of SHA-256(text). An install is
+/// `sha256Hex(id, 32)` here, in the Worker and in migration 046 alike, so a
+/// token, a log line and a budget row name the same phone the same way.
+async function sha256Hex(text: string, chars: number): Promise<string> {
+  const d = new Uint8Array(
+    await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text)));
+  return Array.from(d).map((b) => b.toString(16).padStart(2, '0')).join('')
+    .slice(0, chars);
+}
+
+/// The caller's address, for the network budget only — it is hashed with a
+/// secret salt in the database and never stored.
+function callerIp(req: Request): string | null {
+  const h = req.headers;
+  const ip = h.get('cf-connecting-ip') ?? h.get('x-real-ip') ??
+    (h.get('x-forwarded-for') ?? '').split(',')[0].trim();
+  return ip ? ip.slice(0, 64) : null;
+}
+
+/// Seconds until a budget that ran out fills again: the next hour for an
+/// hourly one, the next day (UTC) for the titles.
+function retryAfter(which: string): number {
   const now = new Date();
-  const amzDate = now.toISOString().replace(/[:-]|\.\d{3}/g, '');
-  const dateStamp = amzDate.slice(0, 8);
-  const scope = `${dateStamp}/auto/s3/aws4_request`;
-
-  // Query parameters must be sorted by name; R2 is strict about it because
-  // the signature is computed over the sorted form.
-  const params: Record<string, string> = {
-    'X-Amz-Algorithm': 'AWS4-HMAC-SHA256',
-    'X-Amz-Credential': `${R2_ACCESS_KEY_ID}/${scope}`,
-    'X-Amz-Date': amzDate,
-    'X-Amz-Expires': String(EXPIRY_SECONDS),
-    'X-Amz-SignedHeaders': 'host',
-  };
-  const canonicalQuery = Object.keys(params).sort()
-    .map((k) => `${rfc3986(k)}=${rfc3986(params[k])}`)
-    .join('&');
-
-  const canonicalPath = `/${R2_BUCKET}/${encodeKey(objectKey)}`;
-  const canonicalRequest = [
-    'GET',
-    canonicalPath,
-    canonicalQuery,
-    `host:${host}\n`,
-    'host',
-    'UNSIGNED-PAYLOAD',
-  ].join('\n');
-
-  const stringToSign = [
-    'AWS4-HMAC-SHA256',
-    amzDate,
-    scope,
-    await sha256Hex(canonicalRequest),
-  ].join('\n');
-
-  let key: Uint8Array = enc.encode(`AWS4${R2_SECRET_ACCESS_KEY}`);
-  for (const part of [dateStamp, 'auto', 's3', 'aws4_request']) {
-    key = await hmac(key, part);
-  }
-  const signature = hex(await hmac(key, stringToSign));
-
-  return `https://${host}${canonicalPath}?${canonicalQuery}&X-Amz-Signature=${signature}`;
+  const next = which.endsWith('_daily_titles')
+    ? Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1)
+    : Math.floor(now.getTime() / 3600000 + 1) * 3600000;
+  return Math.max(1, Math.ceil((next - now.getTime()) / 1000));
 }
 
 // --- refusals ---------------------------------------------------------------
@@ -308,8 +254,7 @@ function logRefusal(reason: string, detail?: string) {
     detail,
     key_source: KEY_SOURCE,
     key_len: SERVICE_KEY.length,
-    r2_ready: !!R2_ACCOUNT_ID && !!R2_ACCESS_KEY_ID &&
-      !!R2_SECRET_ACCESS_KEY && !!R2_BUCKET,
+    stream_ready: !!STREAM_BASE && !!STREAM_TOKEN_SECRET,
   }));
 }
 
@@ -344,7 +289,9 @@ Deno.serve(async (req) => {
     user = null;
   }
 
-  let body: { title_id?: string; device_id?: string; asset_id?: string };
+  let body: {
+    title_id?: string; device_id?: string; asset_id?: string; bind?: boolean;
+  };
   try {
     body = await req.json();
   } catch {
@@ -461,8 +408,21 @@ Deno.serve(async (req) => {
     // Device binding. Two slots for premium, matching CapabilityMatrix -
     // but counted HERE, because a client-side count only knows about the
     // streams that are not the problem.
-    const deviceId = body.device_id;
-    if (deviceId) {
+    //
+    // REQUIRED SINCE v4. Until then a premium request without a device id
+    // simply skipped this count, which made the two-device limit a matter of
+    // leaving a field out. Every app since 1.63.5 sends it. And because one
+    // account can hold at most two installs, it is also the limit on how many
+    // phones can be watching premium at once (finding #5): no further count
+    // is needed.
+    const deviceId = typeof body.device_id === 'string' ? body.device_id : '';
+    if (!deviceId) {
+      // Not `wrong_device`: that tells a person their account is full, and
+      // no app of ours gets here. Whatever does is told nothing.
+      logRefusal('premium_without_device', titleId);
+      return json({ code: 'bad_request' }, 400);
+    }
+    {
       const { data: devices } = await admin
         .from('devices')
         .select('device_id')
@@ -482,11 +442,68 @@ Deno.serve(async (req) => {
     }
   }
 
-  // The Worker when it is configured, the S3 endpoint when it is not. Which
-  // one was used is worth knowing from a log without reading the URL back,
-  // because "is the edge cache actually on" is otherwise a question nobody
-  // can answer after the fact.
+  // ─── NOT CONFIGURED IS CLOSED (v4) ───────────────────────────────
   //
+  // No Worker secrets, no URL: see "the presigned S3 URL, and why it is
+  // gone". 503 rather than 404, so the log and the app both read it as the
+  // server's fault, not the title's.
+  if (!STREAM_BASE || !STREAM_TOKEN_SECRET) {
+    logRefusal('stream_not_configured', titleId);
+    return json({ code: 'unavailable' }, 503);
+  }
+
+  // ─── THE BUDGET (v4, migration 046) ──────────────────────────────
+  //
+  // Taken only for a grant that is about to be made: every refusal above
+  // has already said no without spending anything, and handed no bytes.
+  //
+  // OPEN IF THE BUDGET CANNOT BE READ. It is a ceiling for scripts, not the
+  // entitlement check — that has already passed — and a database hiccup that
+  // stopped every film in the country would be a worse failure than one
+  // unmetered grant. The log says when it happens.
+  const install = typeof body.device_id === 'string'
+    ? body.device_id.slice(0, 128) : '';
+  try {
+    const { data: over, error: budgetErr } = await admin.rpc(
+      'take_playback_budget', {
+        p_user: user?.id ?? null,
+        p_device: install || null,
+        p_ip: callerIp(req),
+        p_title: title.id,
+      });
+    if (budgetErr) {
+      logRefusal('budget_unavailable', budgetErr.message);
+    } else if (typeof over === 'string' && over) {
+      // Which budget, in the log only. The caller is told to wait, and how
+      // long — an app can say so; a script learns nothing it did not know.
+      logRefusal('budget', over);
+      const wait = retryAfter(over);
+      return new Response(
+        JSON.stringify({ code: 'rate_limited', retry_after: wait }), {
+          status: 429,
+          headers: { 'Content-Type': 'application/json', 'Retry-After': String(wait) },
+        });
+    }
+  } catch (e) {
+    logRefusal('budget_unavailable', String(e).slice(0, 160));
+  }
+
+  // ─── WHO THE TOKENS ARE FOR (v4) ─────────────────────────────────
+  //
+  // `u`: the account, as 16 hex digits of SHA-256 of its id, for the
+  // Worker's log — what one account pulled in a day can then be added up.
+  // `d`: the install, the same hash migration 046 keeps; the Worker counts
+  // its requests per install. `b: 1` only when the app asked (`bind: true`,
+  // 1.64.70+), because only that app sends `X-Innocent-Device` on every
+  // fetch — binding an older app's token would stop its film. Once no older
+  // app is supported, every premium token can be bound.
+  const who: Record<string, string | number> = {};
+  if (user) who.u = await sha256Hex(user.id, 16);
+  if (install) {
+    who.d = await sha256Hex(install, 32);
+    if (body.bind === true) who.b = 1;
+  }
+
   // Signed after the ladder is read, below: when the original is only in
   // Telegram there is nothing at its key to sign.
 
@@ -521,7 +538,8 @@ Deno.serve(async (req) => {
       for (const r of (rows ?? []) as Array<Record<string, unknown>>) {
         const key = String(r.object_key ?? '');
         if (!key) continue;
-        const rUrl = (await workerUrl(key)) ?? await presign(key);
+        const rUrl = await workerUrl(key, who);
+        if (!rUrl) continue;
         renditions.push({
           height: r.height, kbps: r.kbps, bytes: r.bytes ?? null, url: rUrl,
         });
@@ -534,14 +552,16 @@ Deno.serve(async (req) => {
     logRefusal('renditions_failed', String(e).slice(0, 160));
   }
 
-  const viaWorker = masterInR2 ? await workerUrl(objectKey) : null;
-  const masterUrl = masterInR2 ? (viaWorker ?? await presign(objectKey)) : null;
+  const masterUrl = masterInR2 ? await workerUrl(objectKey, who) : null;
   const url = primaryUrl(masterUrl, renditions);
   if (!url) {
     // Only in Telegram and no streaming copy to play: an archive that lost
-    // its ladder. The console shows it; a viewer gets "not found".
-    logRefusal('master_in_telegram', String(assetId ?? titleId));
-    return json({ code: 'not_found' }, 404);
+    // its ladder. The console shows it; a viewer gets "not found". (In R2
+    // and still no URL is a token that could not be sealed — logged above.)
+    logRefusal(masterInR2 ? 'no_url' : 'master_in_telegram',
+      String(assetId ?? titleId));
+    return json({ code: masterInR2 ? 'unavailable' : 'not_found' },
+      masterInR2 ? 503 : 404);
   }
 
   return json({
@@ -549,7 +569,7 @@ Deno.serve(async (req) => {
     expires_at: new Date(Date.now() + EXPIRY_SECONDS * 1000).toISOString(),
     // A label, not an address. The client ignores it; the function log does
     // not, and neither does anyone checking a deployment took effect.
-    via: masterUrl ? (viaWorker ? 'edge' : 's3') : 'rung',
+    via: masterUrl ? 'edge' : 'rung',
     // Cheapest first. Empty for anything not transcoded, which the client
     // reads as "there is one copy and this is it".
     renditions,

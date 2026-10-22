@@ -171,6 +171,12 @@ def main() -> int:
          'the feature on, with nothing in any log to say why, or a second '
          'viewer who re-pulls the whole film from the bucket instead of the '
          'edge, which is the fan-out silently not happening'),
+        ('worker_gate_test.mjs',
+         'the Worker\'s door: bound tokens, log versus enforce, the rate '
+         'limit, what a cache may keep',
+         'a check meant only to watch that refuses a paying phone\'s film '
+         'instead, an "enforce" that lets a copied link play anywhere, or a '
+         'film a shared cache goes on serving after its link expired'),
         ('sigv4_test.mjs',
          'the R2 signatures and the multipart XML',
          'a request R2 refuses with a bare 403 that names no parameter, no '

@@ -41,11 +41,54 @@ check('only in Telegram and no ladder: nothing', primaryUrl(null, []) === null);
 check('a rung with no URL is never chosen',
   primaryUrl(null, [{ kbps: 9000, url: '' }, { kbps: 100, url: 'small' }]) === 'small');
 
-// The original is signed only when it is in R2, and the refusal exists.
-check('the original is signed only when it is in R2',
-  /const viaWorker = masterInR2 \? await workerUrl\(objectKey\) : null;/.test(src) &&
-  /const masterUrl = masterInR2 \? \(viaWorker \?\? await presign\(objectKey\)\) : null;/.test(src));
-check('no URL at all is a refusal, logged', /if \(!url\) \{[\s\S]{0,300}logRefusal\('master_in_telegram'/.test(src));
+// The original is sealed only when it is in R2, and the refusal exists.
+check('the original is sealed only when it is in R2',
+  /const masterUrl = masterInR2 \? await workerUrl\(objectKey, who\) : null;/.test(src));
+check('no URL at all is a refusal, logged',
+  /if \(!url\) \{[\s\S]{0,400}logRefusal\(masterInR2 \? 'no_url' : 'master_in_telegram'/.test(src));
+
+// v4: FAILS CLOSED. No presigned S3 URL anywhere — it names the account, the
+// bucket, the key and the access key id — and no Worker secrets is a refusal.
+check('request-playback presigns nothing (v4)',
+  !/presign\(/.test(src) && !/X-Amz-/.test(src) && !/R2_SECRET_ACCESS_KEY/.test(src));
+check('no Worker secrets is a 503, before any URL is made',
+  /if \(!STREAM_BASE \|\| !STREAM_TOKEN_SECRET\) \{\s*logRefusal\('stream_not_configured'[\s\S]{0,80}503\)/.test(src) &&
+  src.indexOf("'stream_not_configured'") < src.indexOf('const masterUrl ='));
+check('a rung whose token cannot be sealed is left out, not presigned',
+  /const rUrl = await workerUrl\(key, who\);\s*if \(!rUrl\) continue;/.test(src));
+
+// v4: a premium grant needs the install id; without it the two-device count
+// was skipped.
+{
+  const prem = src.slice(src.indexOf("if (title.access_tier !== 'free' && !assetIsFree)"),
+    src.indexOf('NOT CONFIGURED IS CLOSED'));
+  check('premium without a device id is refused',
+    /if \(!deviceId\) \{[\s\S]{0,300}return json\(\{ code: 'bad_request' \}, 400\)/.test(prem));
+  check('and the device count is no longer optional',
+    !/if \(deviceId\) \{/.test(prem));
+}
+
+// v4: the budget is taken once, for a grant about to be made, after every
+// entitlement check; over it is 429 rate_limited with a wait; and a budget
+// that cannot be read does not stop playback.
+{
+  const at = src.indexOf("admin.rpc(\n      'take_playback_budget'");
+  check('the budget is taken through take_playback_budget', at > 0);
+  check('after the subscription and device checks',
+    at > src.indexOf("return json({ code: 'wrong_device' }, 409)") &&
+    at > src.indexOf("return json({ code: 'needs_premium' }, 403)"));
+  check('before any token is sealed', at < src.indexOf('const masterUrl ='));
+  check('with the title from the database, not the request',
+    /p_title: title\.id/.test(src));
+  check('over budget: 429 rate_limited, retry_after and Retry-After',
+    /code: 'rate_limited', retry_after: wait/.test(src) && /status: 429/.test(src) &&
+    /'Retry-After': String\(wait\)/.test(src));
+  check('a budget error is logged and playback goes on',
+    /if \(budgetErr\) \{\s*logRefusal\('budget_unavailable'/.test(src) &&
+    /catch \(e\) \{\s*logRefusal\('budget_unavailable'/.test(src));
+  check('a token is bound only when the app asked',
+    /if \(body\.bind === true\) who\.b = 1;/.test(src));
+}
 check('an asset played by id reads where its original is',
   /select\('id, object_key, is_free, title_id, kind, master_state'\)/.test(src));
 check('a title played by its locator reads it too',

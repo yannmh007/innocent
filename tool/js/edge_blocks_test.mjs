@@ -47,8 +47,9 @@ check('the Worker imports WorkerEntrypoint from cloudflare:workers',
 check('the default fetch takes ctx (ctx.exports lives there)',
   worker.includes('async fetch(request, env, ctx)'));
 const mod = await import('data:text/javascript,' + encodeURIComponent(
-  // `serveFromBlocks` reads this module-level const from the top of the file.
-  'const EDGE_TTL_SECONDS = 86400;\n' + worker.slice(from, to) +
+  // `serveFromBlocks` reads this module-level const from the top of the file;
+  // it is lifted from there, never restated.
+  /const TO_PLAYER = '[^']*';/.exec(worker)[0] + '\n' + worker.slice(from, to) +
   '\nexport { blockSize, closedRange, blockPlan, blockPath, contentRange,' +
   ' blockResponse, serveFromBlocks, sliceStream, MAX_EDGE_BLOCKS,' +
   ' straySidx, renameStream, mendFront, HEAD_SCAN_BYTES, BLOCK_LAYOUT };'));
