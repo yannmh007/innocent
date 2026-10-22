@@ -64,7 +64,9 @@ jobs:
       actions: write
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
 
       # ASK FIRST, INSTALL SECOND. The common case by far is "nothing to do" —
       # this ticks every five minutes whether or not anyone forwarded

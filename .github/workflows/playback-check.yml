@@ -24,16 +24,22 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
       - name: Ask for a free title's playback
         env:
           SB_URL: ${{ secrets.SUPABASE_URL }}
           # The publishable key. Not a secret — it ships in every APK and in
           # the console's own page.
           SB_KEY: sb_publishable_vTiAxBAhnZL_BqFcZD4m9A_Rb8Q8PHj
+          # Through the environment, never pasted into the script: a value
+          # typed into the dispatch form is then data, whatever it contains.
+          TITLE_INPUT: ${{ inputs.title }}
         run: |
           set -euo pipefail
-          id="${{ inputs.title }}"
+          id="$TITLE_INPUT"
+          case "$id" in ''|*[!0-9a-f-]*) [ -z "$id" ] || { echo "not a title id"; exit 1; } ;; esac
           [ -n "$id" ] || id=$(curl -sS "$SB_URL/rest/v1/titles?select=id&access_tier=eq.free&published=eq.true&limit=1" \
             -H "apikey: $SB_KEY" | python3 -c "import json,sys;r=json.load(sys.stdin);print(r[0]['id'] if r else '')")
           if [ -z "$id" ]; then echo "no free published title"; exit 1; fi

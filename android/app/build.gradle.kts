@@ -457,4 +457,18 @@ dependencies {
     implementation("io.github.junkfood02.youtubedl-android:library:0.18.1")
     implementation("io.github.junkfood02.youtubedl-android:ffmpeg:0.18.1")
     implementation("io.github.junkfood02.youtubedl-android:aria2c:0.18.1")
+
+    // 16 KB MEMORY PAGES (2026-10-22). Android 15+ phones may run with 16 KB
+    // pages, and a native library linked for 4 KB pages does not load there.
+    // mobile_scanner 5.2.3 (the QR scanner) brings ML Kit barcode-scanning
+    // 17.2.0 — libbarhopper_v3.so — and CameraX 1.3.3 —
+    // libimage_processing_util_jni.so — both linked for 4 KB: on such a phone
+    // the scanner would crash the moment it opened. These are the first
+    // versions of each linked for 16 KB, and Gradle resolves the whole app to
+    // the higher version. tool/apk_page_check.py fails the build if any arm64
+    // library is ever 4 KB again.
+    implementation("com.google.mlkit:barcode-scanning:17.3.0")
+    implementation("androidx.camera:camera-core:1.4.2")
+    implementation("androidx.camera:camera-camera2:1.4.2")
+    implementation("androidx.camera:camera-lifecycle:1.4.2")
 }
