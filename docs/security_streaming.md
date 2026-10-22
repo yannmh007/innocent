@@ -107,32 +107,118 @@ phone makes:
 | | phone requests / MB | billed per viewing | 1,000 viewers/day | 10,000 viewers/day |
 |---|---|---|---|---|
 | 1.64.69 (shipped) | ~7.7 | ~29,000 | ~$260/month | ~$2,600/month |
-| this branch (hand-over, `docs/streaming_seek_research.md`) | ~0.5–0.9 | ~3,400 | ~$33 | ~$305 |
-| + domain, Cache API instead of the `Block` entrypoint | same | ~1,350 | ~$14 | ~$125 |
+| 1.64.70 (hand-over, `docs/streaming_seek_research.md`), fan-out on | ~0.5–0.9 | ~3,400 | ~$33 | ~$305 |
+| **1.64.70, fan-out off (Phase 1, live)** | same | ~1,350 | ~$14 | ~$125 |
+| + domain, Cache API: the same count, with the edge copy back | same | ~1,350 | ~$14 | ~$125 |
 
-(One film per viewer per day; billed = gateway + ~1.5 block calls. On the
-Free plan, 1.64.69 runs out after **3–4 whole films a day**.)
+(One film per viewer per day; with fan-out on, billed = gateway + ~1.5
+block calls. Worker Paid prices; on the Free plan the ceiling is 100,000 a
+day: 1.64.69 runs out after **3–4 whole films a day**, 1.64.70 with fan-out
+off after ~75.)
 
-## 6. The plan
+## 6. The plan, and the rule it follows
 
-**Phase 1 — server and a small app change (days):** #1 fail closed; #3
-device required for premium; #2 tokens bound to user + device (old apps keep
-working: the claim says whether to check); #4 grant budget per user and per
-install, Worker limits per token and per IP; #5 two concurrent streams; #7
-cache headers; a hashed user id in the Worker's log line, and a daily
-bytes-per-user alert. Plus the hand-over release (1.64.70).
+**The owner's rule (2026-10-22): zero cost first.** Nothing here is bought
+until it pays for itself; when a purchase — a domain first — clearly does
+more good than it costs, it is bought. And the Worker's request bill is to
+stay small. Every choice below is weighed that way.
 
-**Phase 2 — owner and app (weeks):** a domain on Cloudflare for the Worker
-and the public bucket, r2.dev off, a WAF rate rule and Bot Fight Mode, the
-Cache API instead of `Block` (§5); #6 sealed premium cache; #9 watermark;
-Android Key Attestation (works outside Google Play) to bind premium to a
-hardware key.
+### Phase 1 — done on the server, 2026-10-22 (no cost)
 
-**Phase 3 — when licensed content needs it:** Widevine (§4).
+| # | What | Where | State |
+|---|---|---|---|
+| 1 | No presigned fallback: no Worker secrets is a 503, and nothing in `request-playback` can sign an S3 URL any more | request-playback v4 | live |
+| 3 | A premium grant needs the install id (without it the two-device count was skipped) | request-playback v4 | live |
+| 4 | Grant budget per install (300/h, 300 titles/day), per account (600/h, 500/day), per network (1,200/h, HMAC of the address); over it is `429 rate_limited` with `retry_after`; a budget that cannot be read lets playback go on and logs it | migration 046 + v4 | live |
+| 5 | Two streams at once: already true — a premium account holds at most two installs, and every premium grant now checks them | v4 | live |
+| 2 | Tokens name the account (`u`, 16 hex of SHA-256) and the install (`d`, 32 hex — the same hash the budget keeps); `b: 1` when the app asks with `bind: true`, and the Worker then compares `X-Innocent-Device` | v4 + Worker | **log mode** |
+| 4 | Worker ceiling per install / account / link: 600 requests in 10 s (Rate Limiting binding, free) | Worker | **log mode** |
+| 7 | `Cache-Control: private, no-store` on every `/v/…` answer | Worker | live |
+| — | Edge fan-out off (`EDGE_BLOCK_BYTES = "0"`): each `Block` call was a billed request | Worker | live |
+| — | The account's hash in every Worker log line: what one account pulled in a day can be added up from Workers Logs | Worker | live |
+
+"Log mode" refuses nothing: it writes `bind_missing` / `bind_mismatch` /
+`rate_limited` to the Worker log and says `X-Bind: ok|missing|mismatch` on
+the answer. It is switched to `"enforce"` in `wrangler.toml` only once the
+log shows the phones in the field passing:
+
+1. **App 1.64.70** sends `bind: true` and its install id in
+   `X-Innocent-Device` on every fetch of a granted URL (stream proxy, warm-up,
+   downloads), and shows a plain message for `rate_limited`. It also carries
+   the proxy hand-over (~8× fewer Worker requests).
+2. When the log shows `bind: ok` from 1.64.70 phones and no `bind_missing`
+   from them: `BIND_MODE = "enforce"`. Older apps are unaffected — their
+   tokens are not bound.
+3. When most phones run 1.64.70: lower the ceiling to ~200 in 10 s and
+   `LIMIT_MODE = "enforce"`.
+4. When `min_supported` passes 1.64.70: bind every premium token, asked or
+   not.
+
+**What Phase 1 cannot do, honestly.** On `workers.dev` nothing stands in
+front of the Worker, so a flood of junk requests — even ones it refuses in
+a microsecond — still counts against the Free plan's 100,000 a day, and when
+that runs out every viewer gets Cloudflare error 1027 until midnight UTC. The
+rate limit stops one phone or one copied link from reading the bucket in
+tiny pieces; it does not stop the counting. Only a rule in front of the
+Worker does, and that needs a domain (Phase 2).
+
+A daily bytes-per-account alert is not built: Workers Logs can be filtered
+by `u` in the dashboard today; an automatic alert needs Logpush (paid) or a
+small Analytics Engine write per request, which is worth doing with Phase 2.
+
+### Phase 2 — recorded for when a domain is bought
+
+**Cost:** a `.com` through Cloudflare Registrar is sold at cost, about
+**USD 10–11 a year** (no markup on renewal). Everything else below is on
+Cloudflare's Free plan.
+
+**What it buys, in order of worth:**
+
+1. **A rule in front of the Worker.** On a zone of our own the Free plan has
+   WAF custom rules and one rate-limiting rule, and Bot Fight Mode. Junk is
+   refused before the Worker runs, so it is not billed and cannot use up the
+   day's 100,000 for everyone. This is the one thing no code can do on
+   `workers.dev`.
+2. **The Cache API instead of `Block`.** It does nothing on `workers.dev`;
+   on a custom domain it gives back the edge copy shared between viewers
+   that fan-out gave — the opening seconds of a popular film served from
+   beside the viewer — without fan-out's second billed call: still ~1
+   request per phone request (§5).
+3. **The public bucket off `r2.dev`**, which Cloudflare rate-limits and
+   calls "not for production": posters and photos from the domain, cached at
+   the edge (a cache hit costs no Class B read).
+4. One address the app knows that can move: the Worker, a bucket or a
+   region can change behind it without an app release.
+
+**Buy it when any one of these is seen** (the Worker's Metrics page and Logs
+say all of them): Worker requests pass ~50,000 on any day (half the free
+allowance); a burst of `bad_token` or `rate_limited` lines from one source;
+the public photos slowing or refusing; or paying subscribers reach a number
+whose evening an error 1027 would ruin. Until then the domain costs more
+than it saves.
+
+**Then, in the app and console (no further cost):** #6 seal the premium
+stream cache with the downloads' Keystore cipher; #9 a faint moving account
+code on premium video, so a recording made on a rooted phone is traceable;
+Android Key Attestation (works outside Google Play) to tie premium to a
+hardware key; a daily bytes-per-account alert.
+
+**Workers Paid ($5/month, 10 million requests)** is the other lever: it
+raises the ceiling rather than lowering the count. After 1.64.70 the free
+allowance carries ~75 whole films a day; Paid is for when real viewing —
+not abuse — outgrows that.
+
+### Phase 3 — when licensed content needs it
+
+Widevine (§4): Media3/ExoPlayer, CENC-packaged CMAF (no re-encode), a licence
+service from ~USD 100 a month. Not before a licensor asks for it.
 
 ## Sources
 
 * Cloudflare: [R2 pricing](https://developers.cloudflare.com/r2/pricing/),
+  [WAF on the Free plan](https://developers.cloudflare.com/waf/) (custom
+  rules; one rate-limiting rule), Registrar at cost
+  ([.com price tracker](https://domainoffer.net/tld/com/cloudflare)),
   [Workers pricing](https://developers.cloudflare.com/workers/platform/pricing/),
   [Workers Cache](https://developers.cloudflare.com/workers/cache/) and
   [the Cache API (no effect on workers.dev)](https://developers.cloudflare.com/workers/runtime-apis/cache/),

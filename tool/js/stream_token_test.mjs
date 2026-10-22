@@ -33,19 +33,33 @@ const check = (label, ok) => {
 
 // ── the minting half, lifted out of the Deno function ────────────────────
 const edge = readFileSync(join(ROOT, 'docs/edge/request-playback.ts'), 'utf8');
-const mintSrc = edge.slice(
-  edge.indexOf('function b64urlFromBytes'),
-  edge.indexOf('async function presign('),
-);
+const mintFrom = edge.indexOf('function b64urlFromBytes');
+const mintTo = edge.indexOf('// --- refusals');
+check('request-playback has its minting before the refusals',
+  mintFrom > 0 && mintTo > mintFrom);
+const mintSrc = edge.slice(mintFrom, mintTo);
+// The function's secrets, bound for the test. `workerUrl` reads them as
+// module-level consts, as it does from Deno.env in the function.
+const TEST_BASE = 'https://s.example.workers.dev';
+const secretForMint = Buffer.from(webcrypto.getRandomValues(new Uint8Array(32)))
+  .toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 const mint = await import('data:text/javascript,' + encodeURIComponent(
+  `const STREAM_BASE = ${JSON.stringify(TEST_BASE)};\n` +
+  `const STREAM_TOKEN_SECRET = ${JSON.stringify(secretForMint)};\n` +
+  'const EXPIRY_SECONDS = 600;\nconst logRefusal = () => {};\n' +
   // Strip the TypeScript annotations the browser parser cannot take. The
   // bodies are plain JavaScript; only the signatures carry types.
   mintSrc
-    .replace(/: Uint8Array\b/g, '')
-    .replace(/: string\b/g, '')
+    .replace(/: Record<string, string \| number>/g, '')
     .replace(/: Promise<string \| null>/g, '')
+    .replace(/: Promise<string>/g, '')
+    .replace(/: Uint8Array\b/g, '')
+    .replace(/: string \| null\b/g, '')
+    .replace(/: string\b/g, '')
+    .replace(/: number\b/g, '')
+    .replace(/: Request\b/g, '')
     .replace(/ as BufferSource/g, '')
-    + '\nexport { b64urlFromBytes, workerUrl };'
+    + '\nexport { b64urlFromBytes, workerUrl, sha256Hex, callerIp, retryAfter };'
 ));
 
 // ── the opening half, lifted out of the Worker ───────────────────────────
@@ -55,7 +69,7 @@ const openSrc = worker.slice(
   worker.indexOf('/// The cached half.'),
 );
 const open = await import('data:text/javascript,' + encodeURIComponent(
-  openSrc + '\nexport { openToken, b64urlToBytes };'));
+  openSrc + '\nexport { openToken, b64urlToBytes, bindCheck, overLimit, sha256Hex };'));
 
 // ── the shared secret ────────────────────────────────────────────────────
 //
@@ -204,6 +218,94 @@ for (const odd of [
   check('and its expiry is the ten minutes asked for',
     pclaim !== null && Math.abs(pclaim.e - (Math.floor(Date.now() / 1000) + 600)) <= 2);
   check('the preview token is URL-safe too', /^[A-Za-z0-9_-]+$/.test(ptoken));
+}
+
+// 11. THE REAL MINTER, WITH WHO THE TOKEN IS FOR (v4). Everything above
+//     checks the format with a copy of the claim; this runs request-playback's
+//     own `workerUrl` and opens what it made with the Worker's own code.
+{
+  const u = await mint.workerUrl(KEY, { u: 'a1b2c3d4e5f60718', d: 'f'.repeat(32), b: 1 });
+  check('the real minter uses STREAM_BASE and /v/', u.startsWith(TEST_BASE + '/v/'));
+  const c = await open.openToken(u.split('/v/')[1], secretForMint);
+  check('the Worker reads the key from the real minter', c !== null && c.k === KEY);
+  check('and the expiry is ten minutes on',
+    c !== null && Math.abs(c.e - (Math.floor(Date.now() / 1000) + 600)) <= 2);
+  check('and who it is for: u, d and b come through',
+    c !== null && c.u === 'a1b2c3d4e5f60718' && c.d === 'f'.repeat(32) && c.b === 1);
+  const plain = await open.openToken(
+    (await mint.workerUrl(KEY)).split('/v/')[1], secretForMint);
+  check('a token minted with nobody named carries only k and e',
+    plain !== null && Object.keys(plain).sort().join() === 'e,k');
+  const decoded2 = Buffer.from(u.split('/v/')[1].replace(/-/g, '+').replace(/_/g, '/'),
+    'base64').toString('latin1');
+  check('the account and install hashes are not readable from the URL either',
+    !decoded2.includes('a1b2c3d4') && !decoded2.includes('ffffffff'));
+}
+
+// 12. ONE HASH FOR AN INSTALL, everywhere: request-playback, the Worker and
+//     migration 046 (`left(encode(digest(id, 'sha256'), 'hex'), 32)`).
+{
+  const { createHash } = await import('crypto');
+  const id = 'b3f1c2d4-5e6f-4a7b-8c9d-0e1f2a3b4c5d';
+  const want = createHash('sha256').update(id, 'utf8').digest('hex').slice(0, 32);
+  check('request-playback hashes an install as SHA-256 hex, 32 digits',
+    (await mint.sha256Hex(id, 32)) === want);
+  check('the Worker hashes it the same way', (await open.sha256Hex(id, 32)) === want);
+  const sql = readFileSync(join(ROOT, 'docs/migrations/046_playback_budget.sql'), 'utf8');
+  check('and migration 046 the same way',
+    sql.includes("left(encode(digest(p_device, 'sha256'), 'hex'), 32)"));
+}
+
+// 13. THE BIND CHECK. A bound token plays only for a request that carries
+//     the install it was granted to; an unbound one is not checked at all.
+{
+  const id = 'install-7f3e';
+  const d = await open.sha256Hex(id, 32);
+  const req = (h) => new Request('https://s.example/v/x', { headers: h });
+  check('bound, right install: ok',
+    (await open.bindCheck(req({ 'X-Innocent-Device': id }), { k: KEY, e: 1, d, b: 1 })) === 'ok');
+  check('bound, no header: missing',
+    (await open.bindCheck(req({}), { k: KEY, e: 1, d, b: 1 })) === 'missing');
+  check('bound, another install: mismatch',
+    (await open.bindCheck(req({ 'X-Innocent-Device': 'install-other' }), { k: KEY, e: 1, d, b: 1 })) === 'mismatch');
+  check('not bound (an older app): none, header or not',
+    (await open.bindCheck(req({}), { k: KEY, e: 1, d })) === 'none' &&
+    (await open.bindCheck(req({ 'X-Innocent-Device': 'x' }), { k: KEY, e: 1 })) === 'none');
+  check('b without d is not a bound token',
+    (await open.bindCheck(req({}), { k: KEY, e: 1, b: 1 })) === 'none');
+}
+
+// 14. THE RATE LIMIT: who is counted, and a limiter that fails is no limit.
+{
+  const seen = [];
+  const limiter = (ok) => ({ async limit({ key }) { seen.push(key); return { success: ok }; } });
+  const tok = 'AbCdEfGhIjKlMnOpQrStUvWxYz012345';
+  check('no binding, no limit', (await open.overLimit({}, { k: KEY }, tok)) === false);
+  check('under the limit is not over',
+    (await open.overLimit({ STREAM_LIMIT: limiter(true) }, { k: KEY, d: 'dd', u: 'uu' }, tok)) === false);
+  check('over the limit is over',
+    (await open.overLimit({ STREAM_LIMIT: limiter(false) }, { k: KEY, d: 'dd' }, tok)) === true);
+  await open.overLimit({ STREAM_LIMIT: limiter(true) }, { k: KEY, u: 'uu' }, tok);
+  await open.overLimit({ STREAM_LIMIT: limiter(true) }, { k: KEY }, tok);
+  check('counted per install, else per account, else per link',
+    seen.join() === 'd:dd,d:dd,u:uu,t:' + tok.slice(0, 16));
+  check('a limiter that throws reads as not over',
+    (await open.overLimit({ STREAM_LIMIT: { async limit() { throw new Error('x'); } } },
+      { k: KEY }, tok)) === false);
+}
+
+// 15. The caller's address and how long a full budget waits.
+{
+  const h = (o) => new Request('https://f.example/', { method: 'POST', headers: o });
+  check('the address: cf-connecting-ip first',
+    mint.callerIp(h({ 'cf-connecting-ip': '203.0.113.5', 'x-forwarded-for': '198.51.100.1' })) === '203.0.113.5');
+  check('else the first x-forwarded-for hop',
+    mint.callerIp(h({ 'x-forwarded-for': '198.51.100.1, 10.0.0.1' })) === '198.51.100.1');
+  check('and none at all is null', mint.callerIp(h({})) === null);
+  const hr = mint.retryAfter('install_hourly');
+  const day = mint.retryAfter('account_daily_titles');
+  check('an hourly budget fills again within the hour', hr >= 1 && hr <= 3600);
+  check('a daily one within the day', day >= 1 && day <= 86400);
 }
 
 if (failures) {
