@@ -86,7 +86,12 @@ void main() {
       expect(made.exitCode, 0, reason: '${made.stderr}');
     }
     final bytes = await File(film).readAsBytes();
-    final line = _Line(lineKbps * 1000 ~/ 8, Duration(milliseconds: rttMs));
+    // A LOSSY LINE WITHOUT netem: each connection held to what TCP gets
+    // through loss and a round trip (Mathis: MSS / RTT × 1.22 / √loss — at
+    // 250 ms and 2 % about 400 kbit/s), the line's cap shared above that.
+    final connKbps = int.tryParse(env['BENCH_CONN_KBPS'] ?? '') ?? 0;
+    final line = _Line(lineKbps * 1000 ~/ 8, Duration(milliseconds: rttMs),
+        connBytesPerSecond: connKbps * 1000 ~/ 8);
     final worker = await _Worker.start(bytes, line,
         port: int.tryParse(env['BENCH_PORT'] ?? '') ?? 0);
     final upstream = 'http://127.0.0.1:${worker.port}/film.mp4';
@@ -96,7 +101,7 @@ void main() {
     // mpv's stream buffer to N MiB, `key=value;…` any mpv option.
     final variants = (env['BENCH_VARIANTS'] ?? 'shipped,shipped+nohand+norounds').split(',');
     final out = <String>[
-      'line $lineKbps kbps, rtt $rttMs ms; film ${filmS}s at $filmKbps kbps '
+      'line $lineKbps kbps, rtt $rttMs ms, each connection $connKbps kbps; film ${filmS}s at $filmKbps kbps '
           '(${(bytes.length / 1048576).toStringAsFixed(1)} MB); lanes ${StreamCacheServer.lanes}',
     ];
     print(out.first);
@@ -266,9 +271,10 @@ String _mb(int b) => (b / 1048576).toStringAsFixed(2);
 
 /// One line for every connection together: a rate and a round trip.
 class _Line {
-  _Line(this.bytesPerSecond, this.rtt);
+  _Line(this.bytesPerSecond, this.rtt, {this.connBytesPerSecond = 0});
   final int bytesPerSecond;
   final Duration rtt;
+  final int connBytesPerSecond;
   var _next = DateTime.now();
 
   /// Wait for [n] bytes' turn on the line. A rate of 0 is no cap (the
@@ -358,10 +364,17 @@ class _Worker {
         '${range == null ? '' : 'Content-Range: bytes $a-$b/${_body.length}\r\n'}'
         '\r\n');
     var at = a;
+    final began = DateTime.now();
     try {
       while (at <= b && !closed()) {
         final n = min(16 * 1024, b - at + 1);
         await _line.take(n);
+        final c = _line.connBytesPerSecond;
+        if (c > 0) {
+          final due = began.add(Duration(microseconds: (at - a + n) * 1000000 ~/ c));
+          final wait = due.difference(DateTime.now());
+          if (wait > Duration.zero) await Future<void>.delayed(wait);
+        }
         sock.add(_body.sublist(at, at + n));
         await sock.flush();
         bytes += n;

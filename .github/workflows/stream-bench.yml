@@ -38,6 +38,20 @@ on:
       - 'test/support/cmaf.dart'
       - '.github/workflows/stream-bench.yml'
   workflow_dispatch:
+    inputs:
+      mpv_only:
+        description: 'Only the mpv seek bench (no unit tests, no proxy bench)'
+        type: boolean
+        default: false
+      mpv_profiles:
+        description: 'Lines for the mpv seek bench'
+        default: 'desk,mm_4g,mm_4g_lossy,mm_busy'
+      mpv_variants:
+        description: 'Variants (see test_bench/mpv_seek_bench.dart)'
+        default: 'shipped+nohand+norounds,shipped'
+      mpv_repeat:
+        description: 'Runs of each line'
+        default: '1'
 
 permissions:
   contents: read
@@ -64,6 +78,7 @@ jobs:
       # or a broken test minutes after the push, not at release time, and the
       # bench below never measures code that does not hold together.
       - name: Analyze
+        if: ${{ !inputs.mpv_only }}
         run: flutter analyze --no-fatal-infos --no-fatal-warnings
       # libmpv and ffmpeg for test/media_kit_reopen_start_test.dart: the real
       # media_kit opening a real film twice, to hold a reopen to its start
@@ -71,6 +86,7 @@ jobs:
       - name: libmpv and ffmpeg
         run: sudo apt-get update -qq && sudo apt-get install -y -qq libmpv2 mpv ffmpeg
       - name: Unit tests
+        if: ${{ !inputs.mpv_only }}
         run: flutter test
 
       - name: netem available
@@ -98,6 +114,7 @@ jobs:
       #   mm_4g_lossy  200 ms round trip, 1 % loss, 32 Mbit/s
       #   mm_busy      250 ms round trip, 2 % loss, 16 Mbit/s (an evening cell)
       - name: Bench
+        if: ${{ !inputs.mpv_only }}
         run: |
           set -u
           PORT=47123
@@ -130,6 +147,10 @@ jobs:
       # from the line. `before` is the proxy without the hand-over and the
       # post-seek growth; `after` is what ships.
       - name: mpv seek bench
+        env:
+          PROFILES: ${{ inputs.mpv_profiles || 'desk,mm_4g,mm_4g_lossy,mm_busy' }}
+          VARIANTS: ${{ inputs.mpv_variants || 'shipped+nohand+norounds,shipped' }}
+          REPEAT: ${{ inputs.mpv_repeat || '1' }}
         run: |
           set -u
           PORT=47123
@@ -149,16 +170,22 @@ jobs:
               sudo tc filter add dev lo parent 1:0 protocol ip prio 1 u32 match ip sport $PORT 0xffff flowid 1:4
               sudo tc filter add dev lo parent 1:0 protocol ip prio 2 u32 match ip dport $PORT 0xffff flowid 1:5
             fi
-            echo "== $name: delay $delay loss $loss rate $rate"
-            BENCH_FILM=/tmp/film.mp4 BENCH_FILM_S=600 BENCH_FILM_KBPS=1700 BENCH_LINE_KBPS=0 BENCH_RTT_MS=0 \
-              BENCH_PORT=$PORT BENCH_PATHS=proxy6 BENCH_VARIANTS=shipped+nohand+norounds,shipped \
-              BENCH_OUT="/tmp/mpv-$name.txt" \
-              flutter test test_bench/mpv_seek_bench.dart 2>&1 | grep -E '^proxy6|^line|Error|FAIL' || true
+            for i in $(seq 1 "$REPEAT"); do
+              echo "== $name #$i: delay $delay loss $loss rate $rate"
+              BENCH_FILM=/tmp/film.mp4 BENCH_FILM_S=600 BENCH_FILM_KBPS=1700 BENCH_LINE_KBPS=0 BENCH_RTT_MS=0 \
+                BENCH_PORT=$PORT BENCH_PATHS=proxy6 BENCH_VARIANTS="$VARIANTS" \
+                BENCH_OUT="/tmp/mpv-$name-$i.txt" \
+                flutter test test_bench/mpv_seek_bench.dart 2>&1 | grep -E '^proxy6|^line|Error|FAIL' || true
+              { echo "### mpv seek, $name #$i (delay $delay, loss $loss, rate $rate)"; echo '```'; \
+                cat "/tmp/mpv-$name-$i.txt" 2>/dev/null || echo "no result"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+            done
             sudo tc qdisc del dev lo root 2>/dev/null || true
-            { echo "### mpv seek, $name (delay $delay, loss $loss, rate $rate)"; echo '```'; \
-              sed 's/shipped+nohand+norounds/before/; s/proxy6 shipped /proxy6 after   /' "/tmp/mpv-$name.txt" 2>/dev/null || echo "no result"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
           }
-          run desk - - -
-          run mm_4g 75ms 0.5% 32mbit
-          run mm_4g_lossy 100ms 1% 32mbit
-          run mm_busy 125ms 2% 16mbit
+          for p in ${PROFILES//,/ }; do
+            case "$p" in
+              desk) run desk - - - ;;
+              mm_4g) run mm_4g 75ms 0.5% 32mbit ;;
+              mm_4g_lossy) run mm_4g_lossy 100ms 1% 32mbit ;;
+              mm_busy) run mm_busy 125ms 2% 16mbit ;;
+            esac
+          done
