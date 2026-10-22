@@ -121,6 +121,77 @@ jobs:
           print('every range identical on both paths')
           PY
 
+      # PHASE 1 (2026-10-22), PROVED ON THE REAL FUNCTION AND WORKER. A grant
+      # asked for with an install id and `bind: true` must come back bound:
+      # through the Worker, the right install says `X-Bind: ok`, none or
+      # another says `missing` / `mismatch` — and, while BIND_MODE is "log",
+      # every one of them still plays. The first answer (no install id) is
+      # not bound and says nothing. Every answer must say `private,
+      # no-store`, which is also how this step knows the new Worker is the
+      # one deployed. Statuses and headers only — never a URL.
+      - name: Phase 1 — bound tokens and what a cache may keep
+        env:
+          SB_URL: ${{ secrets.SUPABASE_URL }}
+          SB_KEY: sb_publishable_vTiAxBAhnZL_BqFcZD4m9A_Rb8Q8PHj
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os, sys, uuid, urllib.request, urllib.error
+          UA = 'innocent-playback-check/1'
+          first = json.load(open('/tmp/p.json'))
+          # The title the first step used, from the same query.
+          q = urllib.request.Request(
+            os.environ['SB_URL'] + '/rest/v1/titles?select=id&access_tier=eq.free&published=eq.true&limit=1',
+            headers={'apikey': os.environ['SB_KEY'], 'User-Agent': UA})
+          tid = json.load(urllib.request.urlopen(q, timeout=30))[0]['id']
+          dev = 'playback-check-' + uuid.uuid4().hex[:12]
+          req = urllib.request.Request(
+            os.environ['SB_URL'] + '/functions/v1/request-playback',
+            data=json.dumps({'title_id': tid, 'device_id': dev, 'bind': True}).encode(),
+            headers={'apikey': os.environ['SB_KEY'], 'Content-Type': 'application/json',
+                     'User-Agent': UA}, method='POST')
+          try:
+              with urllib.request.urlopen(req, timeout=60) as r:
+                  code, bound = r.status, json.loads(r.read())
+          except urllib.error.HTTPError as e:
+              code, bound = e.code, json.loads(e.read() or b'{}')
+          print(f'bound grant: HTTP {code} via={bound.get("via")} code={bound.get("code")}')
+          if code != 200:
+              sys.exit(1)
+
+          def smallest(d):
+              rs = sorted([r for r in d.get('renditions') or [] if r.get('url')],
+                          key=lambda r: r.get('bytes') or 10**18)
+              return rs[0]['url'] if rs else d.get('url')
+
+          def fetch(url, device=None):
+              h = {'Range': 'bytes=0-65535', 'User-Agent': UA}
+              if device:
+                  h['X-Innocent-Device'] = device
+              try:
+                  with urllib.request.urlopen(urllib.request.Request(url, headers=h), timeout=60) as r:
+                      return r.status, len(r.read()), r.headers.get('Cache-Control'), r.headers.get('X-Bind')
+              except urllib.error.HTTPError as e:
+                  return e.code, 0, e.headers.get('Cache-Control'), e.headers.get('X-Bind')
+
+          cases = [
+            ('unbound, no header', smallest(first), None, None),
+            ('bound, right install', smallest(bound), dev, 'ok'),
+            ('bound, no header', smallest(bound), None, 'missing'),
+            ('bound, another install', smallest(bound), 'someone-else', 'mismatch'),
+          ]
+          bad = 0
+          for name, url, device, want in cases:
+              st, n, cc, xb = fetch(url, device)
+              ok = st == 206 and n == 65536 and cc == 'private, no-store' and xb == want
+              bad += not ok
+              print(f"{'ok ' if ok else 'BAD'} {name:<24} HTTP {st} {n:>6} B | "
+                    f"Cache-Control: {cc} | X-Bind: {xb} (want {want})")
+          if bad:
+              print(f'{bad} case(s) wrong'); sys.exit(1)
+          print('bound tokens are checked, log mode refuses nothing, nothing may be kept')
+          PY
+
       # WHAT A SEEK READS. Every copy's top-level boxes, tracks and sidx (does
       # each sidx's fragments add up to the end of the file? FFmpeg jumps
       # straight to a fragment only when they do), then a seek to 40 % of the
