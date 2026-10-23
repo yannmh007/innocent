@@ -7,9 +7,15 @@
 # someone else found it. Free, open source, and nothing leaves the runner but
 # the package names and versions.
 #
-# WHEN. Every Monday, whenever the lock changes, and by hand. A finding fails
-# the run, so it shows as a red mark with the default e-mail, not a line in a
-# log nobody reads.
+# WHEN. Every Monday, whenever the dependencies change, and by hand. A
+# finding fails the run, so it shows as a red mark with the default e-mail,
+# not a line in a log nobody reads.
+#
+# WHAT IT READS: A FRESH LOCK. The committed pubspec.lock is not what ships —
+# every build runs `flutter pub get`, and the committed file had fallen so far
+# behind that it did not list google_sign_in at all (found 2026-10-23). So
+# this resolves the dependencies exactly as the Build workflow does, with the
+# same pinned Flutter, and scans what that produces.
 #
 # THE BINARY IS CHECKED, not trusted: a fixed release, and its SHA-256 is
 # compared before it runs — the same rule as the pinned actions.
@@ -20,7 +26,9 @@ on:
     - cron: '17 3 * * 1'
   push:
     paths:
+      - 'pubspec.yaml'
       - 'pubspec.lock'
+      - 'third_party/*/pubspec.yaml'
       - '.github/workflows/deps-scan.yml'
   workflow_dispatch:
 
@@ -30,11 +38,21 @@ permissions:
 jobs:
   osv:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
+
+      # The Build workflow's Flutter, for the same resolution.
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          flutter-version: 3.32.8
+          channel: stable
+          cache: true
+
+      - name: Resolve the dependencies the APK gets
+        run: flutter pub get
 
       - name: OSV-Scanner 2.2.2, checked
         run: |
