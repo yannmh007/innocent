@@ -66,6 +66,11 @@ jobs:
     permissions:
       contents: write
 
+    # What the release step uploaded in THIS run, for the `attest` job below:
+    # `<sha256>:<file>` pairs, or empty when nothing was uploaded.
+    outputs:
+      uploaded: ${{ steps.publish.outputs.uploaded }}
+
     steps:
       - name: Check out the repository
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -688,6 +693,7 @@ jobs:
         # matter which event started the run. Dispatch on a branch is then
         # exactly what it should be — a build, and nothing else.
         if: github.ref == 'refs/heads/main'
+        id: publish
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: v${{ steps.facts.outputs.vname }}-${{ steps.facts.outputs.vcode }}
@@ -855,6 +861,7 @@ jobs:
           # carries a complete asset returned above and never gets this far,
           # which is the point — see case (1).
           gh release upload "$TAG" "$NAME" --clobber
+          UPLOADED="$(sha256sum "$NAME" | cut -d' ' -f1):$NAME"
           if [ -f "$NAME.symbols.tar.gz.enc" ]; then
             gh release upload "$TAG" "$NAME.symbols.tar.gz.enc" --clobber
           fi
@@ -864,11 +871,13 @@ jobs:
           # come from a different tree than its tag names.
           if [ -n "${NAME32:-}" ] && [ -f "$NAME32" ]; then
             gh release upload "$TAG" "$NAME32" --clobber
+            UPLOADED="$UPLOADED $(sha256sum "$NAME32" | cut -d' ' -f1):$NAME32"
             if [ -f "$NAME32.symbols.tar.gz.enc" ]; then
               gh release upload "$TAG" "$NAME32.symbols.tar.gz.enc" --clobber
             fi
           fi
 
+          echo "uploaded=$UPLOADED" >> "$GITHUB_OUTPUT"
           echo "published: $(gh release view "$TAG" --json url --jq .url)"
 
       # ═══════════════════════════════════════════════════════════════════
@@ -916,3 +925,52 @@ jobs:
             echo " where id = 1;"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # WHERE THE APK CAME FROM, SIGNED (gap audit, Oct 2026)
+  # ═══════════════════════════════════════════════════════════════════════
+  #
+  # The SHA-256 in `app_releases` says a download is the file that was
+  # published. It cannot say who built that file: anyone who could write the
+  # table, or the CDN, could publish a different APK with a matching hash.
+  # A GitHub artifact attestation can. It is a SLSA provenance statement —
+  # this repository, this workflow, this commit, this run — signed through
+  # Sigstore with a certificate that only a run of this workflow can get,
+  # and logged in Sigstore's public transparency log. Free for a public
+  # repository. Anyone can check a file, from any mirror:
+  #
+  #     gh attestation verify innocent-X-Y.apk -R yannmh007/innocent
+  #
+  # A SEPARATE JOB, ON PURPOSE. Signing needs `id-token: write`. The build job
+  # runs Gradle and every pub package's build code next to the signing key;
+  # it should not also be able to mint this repository's identity token. This
+  # job checks nothing out and runs nothing but the attest action, pinned.
+  #
+  # BY DIGEST, NOT BY FILE. It attests exactly the files the release step
+  # uploaded in this run — their hashes, passed from the job above. A run
+  # that left an already-published version alone uploaded nothing, and
+  # attests nothing: the file on the Release is an earlier run's.
+  attest:
+    name: Sign where the APK came from
+    needs: build
+    if: github.ref == 'refs/heads/main' && needs.build.outputs.uploaded != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      id-token: write
+      attestations: write
+    steps:
+      - name: The files this run published
+        env:
+          UPLOADED: ${{ needs.build.outputs.uploaded }}
+        run: |
+          set -euo pipefail
+          # `<sha256>:<file>` pairs → the `sha256sum` format the action reads.
+          printf '%s\n' $UPLOADED | sed -E 's/^([0-9a-f]{64}):(.+)$/\1  \2/' > subjects.txt
+          grep -Evq '^[0-9a-f]{64}  innocent-[0-9.]+-[0-9]+(-arm32)?\.apk$' subjects.txt \
+            && { echo "::error::unexpected subject line"; cat subjects.txt; exit 1; }
+          cat subjects.txt
+
+      - uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-checksums: subjects.txt
