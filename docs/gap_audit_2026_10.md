@@ -38,6 +38,20 @@ play fall back to the bytes already on the phone. The project's own
 invariant (`tool/security_invariants.py`) refuses that: held bytes are for
 "the server could not be asked", never for "the server said no". Fixed.
 
+## Looked at and found sound
+
+* Every edge function that skips Supabase's own JWT check makes its own:
+  the console's functions ask `admin_resolve` for a role, the runners send a
+  shared secret, `ingest` checks Telegram's, `request-playback` derives the
+  caller and fails closed, and `seed-open-film` is retired (410).
+* Backups: the vault, the secure store, the ADB key, the device id, the
+  stream cache and downloads never go to Google Drive or a new phone
+  (`backup_rules.xml`, `data_extraction_rules.xml`).
+* Network: Innocent's own hosts are HTTPS-only; only the system's
+  certificate authorities are trusted, never one a user installed.
+* No accounts were created in the last 30 days that a bot could have made
+  in bulk (none at all).
+
 ## Looked at and left, on purpose
 
 * `title_media` runs with its owner's rights (advisor: ERROR). That *is* the
@@ -64,8 +78,13 @@ invariant (`tool/security_invariants.py`) refuses that: held bytes are for
 2. **The signing key.** An APK signed with any other key can never update an
    installed Innocent. Two offline copies of the keystore and its passwords,
    in two places, are the whole defence; this audit cannot see them.
-3. **GitHub settings (free):** turn on Dependabot alerts and secret-scanning
-   push protection (Settings → Code security).
+3. **GitHub settings (free):** turn on Dependabot alerts, secret-scanning
+   push protection and **private vulnerability reporting** (Settings → Code
+   security). The last is what the new `SECURITY.md` points finders at; it
+   is off today, and this session's GitHub access may not change settings.
+   AI-assisted scanners find bugs in public code faster every year; a
+   private channel decides whether the first you hear of one is a report or
+   an exploit.
 4. **A passkey on every console admin's Google account (free).** The console
    signs in with Google, then asks for a six-digit code (026). A code can be
    relayed: an AI-written copy of the console on a look-alike address asks
