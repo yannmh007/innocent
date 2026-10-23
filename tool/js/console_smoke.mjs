@@ -309,6 +309,11 @@ function ssOps(state, body) {
 
 const TYPES = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css' };
 
+// Everything the page's Content-Security-Policy refused, in every scenario
+// below. The policy (index.html) is meant to refuse nothing the console
+// itself does; one refusal here is a page feature the policy broke.
+const cspRefusals = [];
+
 /// One browser page, signed in as `role`, with a scripted backend.
 /// `opts.factors` — the account's authenticators; `opts.requireMfa` — what the
 /// server enforces; `opts.whoami` — override the whoami answer.
@@ -388,6 +393,7 @@ async function open(browser, role, opts = {}) {
   // several scenarios refuse on purpose, and that is not a script error.
   page.on('console', (m) => {
     if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) state.errors.push(m.text());
+    if (/Content Security Policy/.test(m.text())) cspRefusals.push(m.text());
   });
 
   await page.addInitScript(({ token, user }) => {
@@ -1638,6 +1644,70 @@ try {
     if (state.errors.length) console.log('     ' + state.errors.join('\n     '));
     await ctx.close();
   }
+
+  // ── not inside another page's frame (clickjacking) ──────────────────────
+  {
+    const ctx = await browser.newContext();
+    const page = await ctx.newPage();
+    await page.route(SITE + '/**', async (route) => {
+      const path = new URL(route.request().url()).pathname.replace(/^\//, '') || 'index.html';
+      try {
+        await route.fulfill({ status: 200, body: readFileSync(join(STUDIO, path)),
+          contentType: TYPES[extname(path)] || 'application/octet-stream' });
+      } catch { await route.fulfill({ status: 404, body: 'no' }); }
+    });
+    await page.route(SB + '/**', (route) => route.abort());
+    const framer = (sandbox) => `<!doctype html><iframe ${sandbox} src="${SITE}/index.html"></iframe>`;
+    await page.route('https://framer.test/**', (route) => route.fulfill({
+      status: 200, contentType: 'text/html',
+      body: framer(new URL(route.request().url()).pathname === '/boxed'
+        ? 'sandbox="allow-scripts allow-same-origin"' : ''),
+    }));
+
+    // A frame that may not move the window: the console stays hidden in it.
+    await page.goto('https://framer.test/boxed');
+    const f = await (await page.waitForSelector('iframe')).contentFrame();
+    await f.waitForLoadState('load');
+    check('framed, top navigation forbidden: the console stays hidden',
+      await f.evaluate(() => getComputedStyle(document.documentElement).display) === 'none');
+
+    // A plain frame. The console tries to take the whole window; Chromium
+    // refuses a frame that moves its top window without a tap, so it stays
+    // hidden here too. Either way nobody can click it through a frame.
+    await page.goto('https://framer.test/plain');
+    const g = await (await page.waitForSelector('iframe')).contentFrame();
+    await g.waitForLoadState('load').catch(() => {});
+    await page.waitForTimeout(500);
+    const tookOver = page.url() === SITE + '/index.html';
+    check('framed, plain: hidden, or the console took the whole window',
+      tookOver || await g.evaluate(() => getComputedStyle(document.documentElement).display) === 'none');
+
+    // The top window shows it, and the policy is really in force: a script
+    // put into the page as text does not run.
+    await page.goto(SITE + '/index.html');
+    check('top window: the console is shown',
+      await page.evaluate(() => getComputedStyle(document.documentElement).display) !== 'none');
+    check('content policy: a script injected as text does not run',
+      await page.evaluate(() => {
+        const s = document.createElement('script');
+        s.textContent = 'window.__injected = 1';
+        document.head.append(s);
+        return window.__injected === undefined;
+      }));
+    check('content policy: an onclick attribute does not run',
+      await page.evaluate(() => {
+        const b = document.createElement('button');
+        b.setAttribute('onclick', 'window.__clicked = 1');
+        document.body.append(b);
+        b.click();
+        return window.__clicked === undefined;
+      }));
+    await ctx.close();
+  }
+
+  check(`content policy: refused nothing the console does (${cspRefusals.length})`,
+    cspRefusals.length === 0);
+  if (cspRefusals.length) console.log('     ' + [...new Set(cspRefusals)].slice(0, 8).join('\n     '));
 } finally {
   await browser.close();
 }

@@ -1,7 +1,7 @@
 // Proof that the console's faststart rewrite does not corrupt a video.
 //
 // WHY THIS TEST EXISTS AND WHY IT IS NOT OPTIONAL. `faststart()` in
-// docs/studio/index.html reorders the top-level boxes of an MP4 and then
+// docs/studio/app.js reorders the top-level boxes of an MP4 and then
 // REWRITES THE CHUNK OFFSET TABLE so every sample still points at its own
 // bytes. Get the arithmetic wrong by one and the file still uploads, still
 // has the right length, still opens in the console — and plays as noise. The
@@ -33,15 +33,14 @@ import { dirname, join } from 'path';
 // Relative to this file, so the test runs from any working directory — CI
 // does not cd into the repo root before running checks.
 const PAGE = join(dirname(fileURLToPath(import.meta.url)),
-  '..', '..', 'docs', 'studio', 'index.html');
+  '..', '..', 'docs', 'studio', 'app.js');
 let failures = 0;
 const check = (label, ok) => {
   console.log((ok ? 'ok   ' : 'FAIL ') + label);
   if (!ok) failures++;
 };
-// Pull the two functions out of the console page.
-const html = readFileSync(PAGE,'utf8');
-const js = html.slice(html.indexOf('<script>')+8, html.lastIndexOf('</script>'));
+// Pull the two functions out of the console's script.
+const js = readFileSync(PAGE,'utf8');
 const start = js.indexOf('async function topLevelBoxes');
 const end = js.indexOf('// ── uploading');
 const src = js.slice(start, end);

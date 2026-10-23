@@ -365,7 +365,7 @@ const studio = await import('data:text/javascript,' + encodeURIComponent(
 // Two faults that are invisible in a screenshot of the case somebody thought
 // to look at, which is how both survived.
 {
-  const studioSrc = readFileSync(join(ROOT, 'docs/studio/index.html'), 'utf8');
+  const studioSrc = (readFileSync(join(ROOT, 'docs/studio/index.html'), 'utf8') + readFileSync(join(ROOT, 'docs/studio/app.js'), 'utf8'));
 
   // The panel was wired to its own Refresh button and to nothing else, so
   // opening the tab drew a heading and an explanation over an empty div. It
@@ -395,7 +395,7 @@ const studio = await import('data:text/javascript,' + encodeURIComponent(
 // which is the one thing this whole path exists to avoid. Each check below is
 // a way that could quietly come back.
 {
-  const studioSrc = readFileSync(join(ROOT, 'docs/studio/index.html'), 'utf8');
+  const studioSrc = (readFileSync(join(ROOT, 'docs/studio/index.html'), 'utf8') + readFileSync(join(ROOT, 'docs/studio/app.js'), 'utf8'));
   const studioTs = readFileSync(join(ROOT, 'docs/edge/studio.ts'), 'utf8');
 
   // studio.ts IS DELIBERATELY UNTOUCHED. Its `create` exists to take files off
@@ -529,7 +529,7 @@ const studio = await import('data:text/javascript,' + encodeURIComponent(
   check('the webhook wakes it after queueing, not before',
     ingestSrc.indexOf("rpc('enqueue_ingest'") < ingestSrc.indexOf('await kickRunner()'));
   check('the console can press it', /kick: 'uploader'/.test(ingestSrc)
-    && /op: 'kick'/.test(readFileSync(join(ROOT, 'docs/studio/index.html'), 'utf8')));
+    && /op: 'kick'/.test((readFileSync(join(ROOT, 'docs/studio/index.html'), 'utf8') + readFileSync(join(ROOT, 'docs/studio/app.js'), 'utf8'))));
 }
 
 if (failures) {
