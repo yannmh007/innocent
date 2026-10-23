@@ -150,15 +150,19 @@ class _AccountMarkState extends ConsumerState<AccountMark> {
                     softWrap: false,
                     textScaler: TextScaler.noScaling,
                     style: TextStyle(
-                      // White and black at the same faintness: on a bright
-                      // sky the shadow is what shows, on night the letters.
+                      // White letters with a dark edge: on night the letters
+                      // show, on a bright sky only the edge does — so the
+                      // edge is the stronger of the two, and sharp.
                       color: const Color(0x38FFFFFF),
+                      // Drawn above the Material in the player, never inside
+                      // it: no inherited underline either way.
+                      decoration: TextDecoration.none,
                       fontSize: size,
                       fontWeight: FontWeight.w600,
                       letterSpacing: size * 0.12,
                       fontFeatures: const <FontFeature>[FontFeature.tabularFigures()],
                       shadows: const <Shadow>[
-                        Shadow(color: Color(0x38000000), blurRadius: 2, offset: Offset(0.5, 0.5)),
+                        Shadow(color: Color(0x52000000), blurRadius: 1.2, offset: Offset(0.6, 0.6)),
                       ],
                     ),
                   ),
