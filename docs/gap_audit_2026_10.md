@@ -131,8 +131,19 @@ Sintel does not decode there.)
 ## Next app release (after 1.64.70)
 
 * **Delete my account**, in the app: Play policy for any app with accounts,
-  and Thailand's PDPA (the app ships Thai) gives a right to erasure. Watch
-  history, devices and bookmarks deleted; payment records kept, anonymised.
+  and Thailand's PDPA (the app ships Thai) gives a right to erasure. BUILT,
+  ships with the next release: Me → Account → Delete my account
+  (`delete_account_screen.dart`), the `delete-account` edge function and
+  `delete_my_data()` (migration 048). The sign-in, devices, bookmarks,
+  Premium, consents and problem reports are deleted; payment records and
+  watch history are kept with nothing left that names the person (the
+  receipt's screenshot, phone number and message go). It needs a sign-in
+  from the last ten minutes — a Google account chooses itself again on the
+  spot — so an unlocked phone or a copied session is not enough; an admin's
+  account is refused. Server rules: `delete_account_test.mjs`; the app's
+  side: `test/delete_account_test.dart`. In production the foreign key and
+  check of 048 are applied; the function waits for the owner's approval, and
+  the edge function is deployed with the release.
 * **A faint moving account code on premium video** (8 hex digits of the same
   hash the Worker logs as `u`), so a recording made where FLAG_SECURE is
   bypassed can be traced. Through the four premium player routes and
