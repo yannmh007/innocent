@@ -31,3 +31,27 @@ So media_kit's Dart bindings and helper are unchanged; the APK grows by about
 Gradle task, as upstream does.
 
 To go back: delete the `dependency_overrides` entry.
+
+## mobile_scanner
+
+A copy of `mobile_scanner` 5.2.3 from pub.dev (BSD-3-Clause, `LICENSE`
+kept), used through `dependency_overrides` in `pubspec.yaml`, without its
+`example/` and `test/` folders. Two changes, both marked `INNOCENT PATCH`:
+
+1. **`android/build.gradle`: CameraX 1.4.2 and ML Kit barcode-scanning
+   17.3.0** (were 1.3.3 and 17.2.0) — the first versions whose native
+   libraries load on a 16 KB-page phone (`tool/apk_page_check.py`).
+2. **`MobileScanner.kt`: the camera start-up error goes to the error
+   callback.** CameraX 1.3 finished starting even when it found no usable
+   camera; 1.4 fails, and 5.2.3 called `get()` on that result on the main
+   thread with nothing around it. Found by the device lab on 2026-10-23
+   (run 39894951775, an emulator with no camera): opening the QR scanner
+   crashed the whole app with `CameraUnavailableException`. A phone with its
+   camera disabled by a device policy, or a broken camera, would do the
+   same. The fix is upstream's own, from 7.4.2, line for line.
+
+Why not 7.4.2 itself: two releases of breaking API changes and CameraX 1.6,
+for a screen that needs neither. Move to it with the toolchain release.
+
+To go back: delete the `dependency_overrides` entry (and the scanner crashes
+on a phone with no camera again).

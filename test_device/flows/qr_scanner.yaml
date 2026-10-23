@@ -1,9 +1,10 @@
-# The QR scanner opens and stays open (2026-10-23). 1.64.70 raises the
-# scanner's CameraX (1.3.3 -> 1.4.2) and ML Kit (17.2.0 -> 17.3.0) under a
-# mobile_scanner built against the old ones — for 16 KB memory pages. A
-# changed method would crash the screen the moment the camera starts, so the
-# camera is started here: Transfer, Receive, the scan card, the permission,
-# then six seconds with the viewfinder up.
+# The QR scanner opens and stays open (2026-10-23). Run with
+# EMU_CAMERA=emulated. 1.64.70 raises the scanner's CameraX (1.3.3 -> 1.4.2)
+# and ML Kit (17.2.0 -> 17.3.0) under mobile_scanner 5.2.3 — for 16 KB memory
+# pages. A changed method would crash the screen the moment the camera
+# starts, so the camera is started here: Transfer, Receive, the scan card,
+# the permission, then six seconds with the viewfinder up. The phone with no
+# camera is flows/qr_no_camera.yaml.
 appId: com.innocent.media
 ---
 - launchApp
@@ -45,4 +46,5 @@ appId: com.innocent.media
 # Still here, six seconds into a running camera: nothing crashed.
 - assertVisible: "Scan sender QR"
 - assertVisible: "(?s).*Point the camera.*"
+- assertNotVisible: "(?s).*camera can't be opened.*"
 - back

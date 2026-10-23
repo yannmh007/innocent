@@ -140,6 +140,12 @@ jobs:
           # Which screen to emulate (config.env EMU_PROFILE): pixel_6 by
           # default, pixel_tablet / pixel_c / nexus_10 for large screens.
           echo "profile=${EMU_PROFILE:-pixel_6}" >> "$GITHUB_OUTPUT"
+          # The emulator's back camera (config.env EMU_CAMERA): none by
+          # default; `emulated` gives the QR scanner a moving test picture.
+          case "${EMU_CAMERA:-none}" in
+            none|emulated) echo "camera=${EMU_CAMERA:-none}" >> "$GITHUB_OUTPUT" ;;
+            *) echo "::error::EMU_CAMERA must be none or emulated"; exit 1 ;;
+          esac
           if [ "${APK_SOURCE:-lab}" = release ]; then
             tag="$APK_TAG"
             if [ "$tag" = latest ]; then
@@ -289,7 +295,7 @@ jobs:
           profile: ${{ steps.apk.outputs.profile }}
           ram-size: 4096M
           disk-size: 6G
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back ${{ steps.apk.outputs.camera }}
           disable-animations: true
           script: bash test_device/run.sh
 

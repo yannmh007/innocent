@@ -24,6 +24,39 @@ class _QrScanScreenState extends State<QrScanScreen> {
   // Guard so a QR that fires multiple detections only pops once.
   bool _handled = false;
 
+  // The camera could not be started (none usable, disabled by a policy,
+  // broken). The scanner reports it instead of crashing — see
+  // third_party/README.md — and the viewfinder and aiming hint go away,
+  // because there is nothing to aim.
+  bool _cameraFailed = false;
+
+  Widget _cameraError(BuildContext context) {
+    if (!_cameraFailed) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && !_cameraFailed) setState(() => _cameraFailed = true);
+      });
+    }
+    return ColoredBox(
+      color: Colors.black,
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.no_photography_outlined, color: Colors.white70, size: 48),
+              const SizedBox(height: 16),
+              Text(AppStrings.of(context).scanCameraUnavailable,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white, fontSize: 15, height: 1.4),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   void _onDetect(BarcodeCapture capture) {
     if (_handled) return;
     for (final barcode in capture.barcodes) {
@@ -49,10 +82,13 @@ class _QrScanScreenState extends State<QrScanScreen> {
       body: Stack(
         alignment: Alignment.center,
         children: [
-          MobileScanner(onDetect: _onDetect),
+          MobileScanner(
+            onDetect: _onDetect,
+            errorBuilder: (context, error, child) => _cameraError(context),
+          ),
 
           // Viewfinder square to guide aiming.
-          Container(
+          if (!_cameraFailed) Container(
             width: 240,
             height: 240,
             decoration: BoxDecoration(
@@ -62,7 +98,7 @@ class _QrScanScreenState extends State<QrScanScreen> {
           ),
 
           // Hint.
-          Positioned(
+          if (!_cameraFailed) Positioned(
             bottom: 64,
             left: 24,
             right: 24,

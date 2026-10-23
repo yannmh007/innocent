@@ -833,6 +833,7 @@ class AppStrings {
   String get filesAddedLive => _s('filesAddedLive');
   String get scanSenderQr => _s('scanSenderQr');
   String get scanQrHint => _s('scanQrHint');
+  String get scanCameraUnavailable => _s('scanCameraUnavailable');
   String get playbackSpeed => _s('playbackSpeed');
   String get sleepTimer => _s('sleepTimer');
   String get sleepTimerOff => _s('sleepTimerOff');
@@ -3621,6 +3622,7 @@ class AppStrings {
     'savedToPath': 'Saved to: {path}',
     'scanSenderQr': 'Scan sender QR',
     'scanQrHint': 'Point the camera at the QR code shown on the sending phone',
+    'scanCameraUnavailable': 'The camera can\'t be opened on this phone. Go back and type the address shown on the sending phone.',
     'playbackSpeed': 'Playback speed',
     'sleepTimer': 'Sleep Timer',
     'stopsIn': 'Stops in {t}',
@@ -5937,6 +5939,7 @@ class AppStrings {
     'savedToPath': '{path} တွင် သိမ်းပြီးပါပြီ',
     'scanSenderQr': 'ပို့သူ QR ကို scan ဖတ်ပါ',
     'scanQrHint': 'ပို့တဲ့ဖုန်းပေါ်က QR code ကို ကင်မရာနဲ့ ချိန်ပါ',
+    'scanCameraUnavailable': 'ဒီဖုန်းမှာ ကင်မရာ ဖွင့်လို့မရပါ။ နောက်ပြန်သွားပြီး ပို့တဲ့ဖုန်းပေါ်က လိပ်စာကို ရိုက်ထည့်ပါ။',
     'playbackSpeed': 'ဖွင့်နှုန်း',
     'sleepTimer': 'အိပ်ချိန်မှတ်',
     'stopsIn': '{t} အကြာတွင် ရပ်ပါမယ်',
@@ -8227,6 +8230,7 @@ class AppStrings {
     'savedToPath': 'บันทึกที่: {path}',
     'scanSenderQr': 'สแกน QR ของผู้ส่ง',
     'scanQrHint': 'เล็งกล้องไปที่ QR บนเครื่องผู้ส่ง',
+    'scanCameraUnavailable': 'เปิดกล้องบนเครื่องนี้ไม่ได้ ย้อนกลับแล้วพิมพ์ที่อยู่ที่แสดงบนเครื่องผู้ส่ง',
     'playbackSpeed': 'ความเร็วการเล่น',
     'sleepTimer': 'ตั้งเวลานอน',
     'stopsIn': 'จะหยุดใน {t}',

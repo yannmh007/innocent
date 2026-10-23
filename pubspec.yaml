@@ -143,6 +143,12 @@ dependency_overrides:
   # every surface change. See lib/core/services/video_player/video_surface_policy.dart.
   media_kit_video:
     path: third_party/media_kit_video
+  # 5.2.3 with two changes, both marked "INNOCENT PATCH": CameraX 1.4.2 and
+  # ML Kit 17.3.0 (16 KB pages), and the camera start-up error goes to the
+  # scanner's error callback instead of crashing the app — upstream's own fix
+  # from 7.4.2. See third_party/README.md.
+  mobile_scanner:
+    path: third_party/mobile_scanner
 
 dev_dependencies:
   flutter_test:
