@@ -94,7 +94,13 @@ invariant (`tool/security_invariants.py`) refuses that: held bytes are for
    → Passkeys; for the owner, also Google's free Advanced Protection.
    Supabase's own passkeys are still experimental and bind to the console's
    domain, so they wait for the domain (Phase 2).
-5. **Cloudflare connector:** authorising it lets the Worker's logs and
+5. **No other GitHub Pages site on this account.** Every Pages site of an
+   account is served from the same origin (`yannmh007.github.io`), and a
+   page on that origin can read the console's sign-in from storage. Today
+   only this repository is visible to the audit. Keep it that way, or give
+   the console its own address when the domain comes (Phase 2), which ends
+   the question.
+6. **Cloudflare connector:** authorising it lets the Worker's logs and
    request counts be read directly — needed to confirm `bind: ok` from the
    field before `BIND_MODE = "enforce"`.
 
