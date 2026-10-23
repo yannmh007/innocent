@@ -31,13 +31,25 @@ what was checked, what was fixed, and what is left, with the reason.
 | `offsite_max_bytes()` had a mutable `search_path` | low | fixed — migration 047 |
 | A payment's transaction number could be reused by another account unnoticed; only a byte-identical screenshot was caught. An AI-made or re-edited receipt has a new hash. | medium | `premium-request` flags a reused transaction number like a reused screenshot (owner told in red, console marks it); the console says, beside Approve, to find the payment in the KPay/Wave app first |
 | The console — the page that can delete the catalogue and name admins — had no Content-Security-Policy, and any other site could show it inside an invisible frame and line an admin's tap up with Approve or Delete (clickjacking). It renders no database text as HTML today; nothing stopped a future slip from becoming an admin takeover. | medium | the page's script moved to `app.js` and a policy allows only this site's own script files (no inline script, no handler attributes, no eval, no other host); the page starts hidden and `top.js` shows it only as the top window. `console_smoke.mjs` proves both: an injected script and an `onclick` do not run, a framed console stays hidden, and every scenario runs with zero refusals |
-| No standing check for published vulnerabilities in dependencies | medium | `.github/workflows/deps-scan.yml`: OSV-Scanner weekly and on every lock change, binary checksum-verified |
+| No standing check for published vulnerabilities in dependencies | medium | `.github/workflows/deps-scan.yml`: OSV-Scanner weekly and on every dependency change, binary checksum-verified. It resolves first, with the Build workflow's Flutter, and scans that: the committed `pubspec.lock` had fallen so far behind that it did not list google_sign_in. First run: 157 packages, no known vulnerability |
 | The SHA-256 in `app_releases` proves a download is the published file, not who built it: anyone able to write the table or a mirror could publish another APK with a matching hash | medium | every APK a release uploads gets a GitHub artifact attestation (SLSA provenance, signed through Sigstore, public log), in a separate job that holds no signing key and checks nothing out. Check any copy, from any mirror: `gh attestation verify innocent-X-Y.apk -R yannmh007/innocent` |
 
-**Caught before it shipped:** 1.64.70's first draft let a *rate-limited*
-play fall back to the bytes already on the phone. The project's own
-invariant (`tool/security_invariants.py`) refuses that: held bytes are for
-"the server could not be asked", never for "the server said no". Fixed.
+**Caught before it shipped, twice.**
+
+* The 16 KB fix itself broke something. CameraX 1.3 finished starting on a
+  phone where it found no usable camera; 1.4 fails, and mobile_scanner
+  5.2.3 rethrew that on the main thread: opening the QR scanner crashed the
+  whole app. The device lab found it (run 39894951775, an emulator with no
+  camera); a phone with its camera disabled by a policy, or broken, would
+  have done the same. Fixed with upstream's own patch from 7.4.2 in a copy
+  of 5.2.3 (`third_party/mobile_scanner`), and the screen now says, in
+  three languages, to go back and type the address. Proved: lab run
+  39897703492 — no crash, the message, Back to Receive.
+* 1.64.70's first draft let a *rate-limited*
+  play fall back to the bytes already on the phone. The project's own
+  invariant (`tool/security_invariants.py`) refuses that: held bytes are
+  for "the server could not be asked", never for "the server said no".
+  Fixed.
 
 ## Looked at and found sound
 
