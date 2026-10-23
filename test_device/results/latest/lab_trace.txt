@@ -1,35 +1,14 @@
 LAB device kind=DeviceKind.phone sw=411.0
-LAB cpu app 25% · 0.2fps · pool-thread 19% | 1.raster 4% | RenderThread 1%
-LAB phase titleloop start
-LAB scenario 3 surfaceProducer=null
+LAB cpu app 22% · 0.2fps · pool-thread 14% | 1.raster 6% | RenderThread 1% | .innocent.media 1%
+LAB phase qr_scanner start
 LAB device kind=DeviceKind.phone sw=411.0
-LAB    0.0 LAB script: catalogue title
-LAB    7.0 LAB title: opening Sintel
-LAB    9.8 play server granted in 2835 ms, 4 rungs
-LAB    9.8 play rung 720p 1684 kbps (choice auto, measured - kbps)
-LAB    9.8 stream lanes=6
-LAB cpu app 53% · 10.1fps · 1.raster 30% | pool-thread 18% | .innocent.media 3% | RenderThread 1%
-LAB    9.9 play through the local proxy
-LAB    9.9 play: opening the player
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
-LAB   11.1 hwdec -> auto
-LAB   11.1 open scheme=http len=106 hwdec=auto start=0s autoplay=true
-LAB   11.1 wakelock playing=false bg=false priv=false pos=0ms
-LAB   11.1 first frame 1079 ms
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
-LAB   11.3 stream index 0.0 MB at 0.0 MB
-LAB   11.5 wakelock playing=true bg=false priv=false pos=0ms
-LAB   11.5 open ok
-LAB   11.5 rebuffer start
-LAB   11.9 fg stream: watching
-LAB   12.8 rebuffer end 1253 ms
-LAB   14.4 measured 6214 kbps
-LAB   16.7 measured 34177 kbps
-LAB   19.1 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
-LAB cpu app 45% · 7.0fps · .innocent.media 24% | DartWorker 9% | 1.raster 7% | dart:io EventHa 3%
-LAB   54.3 fg stream: watching
-LAB   71.1 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
-LAB phase titleloop end
+LAB cpu app 14% · 0.3fps · 1.raster 10% | RenderThread 3% | .innocent.media 1%
+LAB cpu app 13% · 3.6fps · 1.raster 8% | .innocent.media 4%
+LAB cpu app 8% · 0.5fps · 1.raster 6% | .innocent.media 1%
+LAB cpu app 33% · 10.6fps · 1.raster 30% | .innocent.media 3%
+LAB cpu app 29% · 3.9fps · 1.raster 14% | pool-thread 13% | .innocent.media 1%
+LAB cpu app 44% · 9.9fps · pool-thread 21% | 1.raster 21%
+LAB cpu app 37% · 9.0fps · 1.raster 24% | pool-thread 9% | .innocent.media 2%
+LAB cpu app 20% · 10.9fps · 1.raster 18% | .innocent.media 2%
+LAB cpu app 29% · 11.2fps · 1.raster 26% | .innocent.media 2%
+LAB cpu app 29% · 13.1fps · 1.raster 26% | .innocent.media 2%
