@@ -1,4 +1,0 @@
-  Time since processes crashed:
-    Process com.innocent.media uid 10192: last crashed +36s432ms ago
-  First time processes crashed and counts:
-    Process com.innocent.media uid 10192: first crashed +36s432ms ago; crashes since then: 1
