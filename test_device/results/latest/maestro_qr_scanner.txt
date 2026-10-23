@@ -1,0 +1,39 @@
+Running on test
+ > Flow qr_scanner
+Launch app "com.innocent.media"... COMPLETED
+Wait for animation to end within 15000 ms... COMPLETED
+Tap on (Optional) "Wait"... WARNED
+
+
+ Warning: Element not found: Text matching regex: Wait
+Tap on (Optional) "Skip"... COMPLETED
+Tap on (Optional) "Allow.*"... WARNED
+
+
+ Warning: Element not found: Text matching regex: Allow.*
+Tap on "(?s).*Tab 3 of 4.*"... COMPLETED
+Wait for animation to end within 8000 ms... COMPLETED
+Tap on "RECEIVE"... COMPLETED
+Wait for animation to end within 5000 ms... COMPLETED
+Tap on "(?s).*Scan the sender.*"... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Tap on (Optional) "(?i)(While using the app|Only this time|Allow)"... WARNED
+
+
+ Warning: Element not found: Text matching regex: (?i)(While using the app|Only this time|Allow)
+Wait for animation to end within 3000 ms... COMPLETED
+Take screenshot 60_qr_scanner_open... COMPLETED
+Assert that "Scan sender QR" is visible... FAILED
+
+Assertion is false: "Scan sender QR" is visible
+
+Assertion '"Scan sender QR" is visible' failed. Check the UI hierarchy in debug artifacts to verify the element state and properties.
+
+Possible causes:
+- Element selector may be incorrect - check if there are similar elements with slightly different names/properties.
+- Element may be temporarily unavailable due to loading state
+- This could be a real regression that needs to be addressed
+
+==== Debug output (logs & screenshots) ====
+
+/home/runner/work/innocent/innocent/out/maestro_out/2026-10-23_034546
