@@ -1,0 +1,143 @@
+LAB scenario 3 surfaceProducer=null
+LAB device kind=DeviceKind.phone sw=360.0
+LAB    0.0 LAB script: catalogue title
+LAB    4.9 LAB title: opening Sintel
+LAB    8.5 play server granted in 3680 ms, 4 rungs
+LAB    8.6 play rung 720p 1684 kbps (choice auto, measured - kbps)
+LAB    8.6 stream lanes=6
+LAB    8.6 play through the local proxy
+LAB    8.6 play: opening the player
+LAB insets stable l=0.0 t=32.0 r=0.0 b=48.0 padding l=0.0 t=32.0 r=0.0 b=48.0 bar=48.0
+LAB insets stable l=0.0 t=32.0 r=0.0 b=48.0 padding l=0.0 t=32.0 r=0.0 b=48.0 bar=48.0
+LAB    8.9 hwdec -> auto
+LAB    9.0 open scheme=http len=106 hwdec=auto start=0s autoplay=true
+LAB    9.0 wakelock playing=false bg=false priv=false pos=0ms
+LAB    9.0 first frame 344 ms
+LAB    9.1 wakelock playing=true bg=false priv=false pos=0ms
+LAB    9.1 open ok
+LAB    9.1 rebuffer start
+LAB insets stable l=0.0 t=32.0 r=0.0 b=48.0 padding l=0.0 t=32.0 r=0.0 b=0.0 bar=48.0
+LAB cpu app 72% · 6.4fps · pool-thread 47% | .innocent.media 7% | io.worker. 4% | 1.raster 3% | estorage.worker 2% | DartWorker 1%
+LAB   10.7 stream index 0.0 MB at 0.0 MB
+LAB   11.0 fg stream: watching
+LAB   11.9 rebuffer end 2862 ms
+LAB   13.5 measured 2995 kbps
+LAB   17.0 video h264 1690x720 hwdec=mediacodec(?) vo=gpu surf=producer fps=24.0 drop=0/0 thr=4
+LAB   18.1 jump fill start
+LAB   18.6 stream stretch 1.5 MB in 7836 ms lanes=6
+LAB cpu app 61% · 30.1fps · .innocent.media 24% | 1.raster 9% | Thread 8% | DartWorker 6% | mali-cmar-backe 4% | MediaCodec_loop 2%
+LAB   22.9 jump fill end 4847 ms
+LAB   23.8 measured 1642 kbps
+LAB   24.8 LAB check seek PASS want=355 got=355 ready=5775 ms playing=yes, moving by 5779 ms rung=720p
+LAB   24.8 renewal: copies from the grant held 16 s
+LAB   24.8 stream lanes=6
+LAB   25.9 measured 4053 kbps
+LAB   28.1 stream index 0.0 MB at 0.0 MB
+LAB cpu app 62% · 38.9fps · .innocent.media 23% | Thread 9% | 1.raster 8% | DartWorker 6% | mali-cmar-backe 5% | MediaCodec_loop 4%
+LAB   30.0 measured 2515 kbps
+LAB   32.8 warm switch: 0.1 MB for 12 s of film in 8000 ms (277 kbps) — not in time
+LAB   32.8 quality -> 240 at 364s
+LAB   32.9 open scheme=http len=106 hwdec=auto start=364s autoplay=true
+LAB   33.0 wakelock playing=false bg=false priv=false pos=0ms
+LAB   33.0 measured 3442 kbps
+LAB   33.0 stream stretch 4.0 MB in 14458 ms lanes=6
+LAB   33.1 wakelock playing=true bg=false priv=false pos=0ms
+LAB   33.1 open ok
+LAB   33.1 jump fill start
+LAB   33.2 jump fill end 183 ms
+LAB   39.4 LAB check quality->240 FAIL want=356 got=364 ready=8490 ms playing=no rung=240p
+LAB cpu app 30% · 8.8fps · .innocent.media 16% | DartWorker 4% | Thread 2% | 1.raster 2% | mali-cmar-backe 2% | dart:io EventHa 2%
+LAB cpu app 4% · 0.2fps · .innocent.media 3%
+LAB   50.7 fg stream: watching
+LAB   69.0 video h264 564x240 hwdec=mediacodec(?) vo=gpu surf=producer fps=? drop=0/0 thr=4
+LAB cpu app 5% · 0.0fps · .innocent.media 3%
+LAB   75.6 LAB check skip+30 FAIL want=394 got=394 ready=never playing=no rung=240p
+LAB   78.9 fg stream: watching
+LAB cpu app 6% · 1.3fps · .innocent.media 3% | 1.raster 1%
+LAB cpu app 6% · 0.0fps · .innocent.media 3%
+LAB   89.7 rebuffer start
+LAB   92.7 stall #1 network {reason: network, cache_s: 1, have_kbps: 374, need_kbps: 65, dropped: 0, hwdec: mediacodec, res: 564x240}
+LAB   93.9 rebuffer end 4173 ms
+LAB   95.4 LAB check swipe-120 PASS want=274 got=275 ready=17835 ms playing=yes, moving by 17839 ms rung=240p
+LAB   95.4 renewal: copies from the grant held 86 s
+LAB   95.4 stream lanes=6
+LAB   99.1 measured 695 kbps
+LAB cpu app 46% · 36.5fps · .innocent.media 13% | 1.raster 9% | Thread 9% | mali-cmar-backe 4% | MediaCodec_loop 3% | binder 2%
+LAB  103.4 quality -> auto at 284s
+LAB  103.4 open scheme=http len=106 hwdec=auto start=284s autoplay=true
+LAB  103.5 wakelock playing=false bg=false priv=false pos=274958ms
+LAB  103.6 wakelock playing=true bg=false priv=false pos=274958ms
+LAB  103.6 open ok
+LAB  103.6 jump fill start
+LAB  103.7 measured 1871 kbps
+LAB  104.4 stream index 0.0 MB at 0.0 MB
+LAB  104.5 jump fill end 888 ms
+LAB  106.5 stream index 0.0 MB at 0.0 MB
+LAB cpu app 38% · 13.6fps · .innocent.media 19% | DartWorker 6% | 1.raster 3% | Thread 3% | mali-cmar-backe 2% | dart:io EventHa 2%
+LAB  110.6 LAB check quality->auto FAIL want=276 got=284 ready=9195 ms playing=no rung=720p
+LAB  110.6 LAB check summary pass=2 fail=3
+LAB  110.6 LAB proxy upstream 131 requests 8.9 MB (14.64 a MB), steps back 9, handed over 0, bind {ok: 115}
+LAB  113.1 measured 3441 kbps
+LAB  115.4 measured 4289 kbps
+LAB cpu app 70% · 19.5fps · .innocent.media 25% | Thread 14% | DartWorker 7% | 1.raster 6% | MediaCodec_loop 5% | mali-cmar-backe 4%
+LAB  119.8 measured 2364 kbps
+LAB  123.1 measured 2551 kbps
+LAB  126.2 rebuffer start
+LAB  129.2 stall #2 network {reason: network, cache_s: 1, have_kbps: 638, need_kbps: 1874, dropped: 0, hwdec: mediacodec, res: 1690x720}
+LAB  129.2 renewal: copies from the grant held 120 s
+LAB  129.2 stream lanes=6
+LAB  129.3 stepped down a rung (#1) at 299s
+LAB  129.3 open scheme=http len=106 hwdec=auto start=299s autoplay=true
+LAB  129.4 measured 1481 kbps
+LAB  129.5 wakelock playing=false bg=false priv=false pos=274958ms
+LAB  129.5 rebuffer end 3219 ms
+LAB  129.5 stream stretch 3.8 MB in 18931 ms lanes=6
+LAB  129.5 wakelock playing=true bg=false priv=false pos=274958ms
+LAB  129.5 open ok
+LAB  129.5 jump fill start
+LAB cpu app 51% · 34.0fps · .innocent.media 22% | 1.raster 9% | mali-cmar-backe 5% | Thread 4% | DartWorker 4% | HwBinder:25427_ 2%
+LAB  131.0 stream index 0.0 MB at 0.0 MB
+LAB  131.6 jump fill end 2139 ms
+LAB  135.5 jump fill start
+LAB cpu app 36% · 33.4fps · .innocent.media 15% | 1.raster 8% | DartWorker 3% | mali-cmar-backe 3% | binder 2% | Thread 2%
+LAB  142.2 jump fill end 6664 ms
+LAB  146.5 measured 1345 kbps
+LAB cpu app 60% · 31.3fps · .innocent.media 18% | Thread 13% | 1.raster 9% | mali-cmar-backe 5% | MediaCodec_loop 4% | DartWorker 4%
+LAB  158.6 measured 732 kbps
+LAB cpu app 56% · 24.9fps · Thread 17% | .innocent.media 11% | 1.raster 7% | mali-cmar-backe 6% | MediaCodec_loop 6% | HwBinder:25427_ 3%
+LAB  163.4 rebuffer start
+LAB  166.4 stall #3 unknown {reason: unknown, cache_s: 3, have_kbps: 37, need_kbps: 1038, dropped: 0, hwdec: mediacodec, res: 1126x480}
+LAB  169.5 rebuffer end 6049 ms
+LAB  169.5 measured 1038 kbps
+LAB cpu app 49% · 44.1fps · .innocent.media 16% | 1.raster 11% | Thread 6% | mali-cmar-backe 5% | DartWorker 3% | binder 2%
+LAB cpu app 64% · 25.2fps · .innocent.media 18% | Thread 16% | 1.raster 7% | MediaCodec_loop 5% | mali-cmar-backe 5% | DartWorker 5%
+LAB  183.1 measured 1383 kbps
+LAB  183.2 stream stretch 5.1 MB in 43312 ms lanes=6
+LAB  185.3 fg stream: watching
+LAB cpu app 66% · 22.4fps · .innocent.media 19% | Thread 16% | 1.raster 7% | mali-cmar-backe 5% | MediaCodec_loop 5% | DartWorker 5%
+LAB  194.0 rebuffer start
+LAB  195.7 measured 1306 kbps
+LAB  197.0 stall #4 network {reason: network, cache_s: 2, have_kbps: 120, need_kbps: 832, dropped: 0, hwdec: mediacodec, res: 1126x480}
+LAB  197.0 renewal: copies from the grant held 188 s
+LAB  197.0 stream lanes=6
+LAB  197.1 stepped down a rung (#2) at 345s
+LAB  197.1 open scheme=http len=106 hwdec=auto start=345s autoplay=true
+LAB  197.2 wakelock playing=false bg=false priv=false pos=274958ms
+LAB  197.2 rebuffer end 3206 ms
+LAB  197.2 wakelock playing=true bg=false priv=false pos=274958ms
+LAB  197.2 open ok
+LAB  197.2 jump fill start
+LAB  198.3 stream index 0.0 MB at 0.0 MB
+LAB  198.9 jump fill end 1660 ms
+LAB cpu app 56% · 36.9fps · .innocent.media 24% | DartWorker 9% | 1.raster 9% | mali-cmar-backe 4% | Thread 3% | dart:io EventHa 2%
+LAB  208.1 rebuffer start
+LAB cpu app 38% · 13.3fps · .innocent.media 13% | Thread 8% | 1.raster 5% | mali-cmar-backe 3% | DartWorker 3% | MediaCodec_loop 3%
+LAB  211.1 stall #5 network {reason: network, cache_s: 2, have_kbps: 603, need_kbps: 699, dropped: 0, hwdec: mediacodec, res: 844x360}
+LAB  211.2 rebuffer end 3152 ms
+LAB  213.5 measured 1224 kbps
+LAB  216.8 measured 2719 kbps
+LAB cpu app 64% · 32.8fps · .innocent.media 21% | Thread 13% | 1.raster 8% | DartWorker 5% | mali-cmar-backe 5% | MediaCodec_loop 4%
+LAB  223.9 measured 1738 kbps
+LAB  229.6 measured 2361 kbps
+LAB cpu app 69% · 22.5fps · .innocent.media 20% | Thread 16% | 1.raster 7% | DartWorker 6% | MediaCodec_loop 5% | mali-cmar-backe 5%
+LAB cpu app 69% · 24.8fps · .innocent.media 21% | Thread 16% | 1.raster 7% | DartWorker 5% | MediaCodec_loop 5% | mali-cmar-backe 5%
