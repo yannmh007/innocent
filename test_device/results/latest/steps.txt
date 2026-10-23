@@ -1,14 +1,15 @@
-[04:20:54] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
-[04:20:54] install
-[04:21:14] network: speed full kbit/s, delay none ms
-[04:21:40] overlays: [x] com.android.internal.display.cutout.emulation.hole [x] com.android.internal.systemui.navbar.threebutton 
-[04:21:40] nav bar: navigationBars frame=[0,2337][1080,2400] navigationBars frame=[0,2337][1080,2400] navigationBars frame=[0,2274][1080,2400] 
-[04:21:40] library: pushing 24 files
-[04:22:13] library: MediaStore lists 24 videos
-[04:22:13] cold start
+[08:07:12] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
+[08:07:12] install
+[08:07:28] network: speed 1000:2000 kbit/s, delay 40:60 ms
+[08:07:55] overlays: [x] com.android.internal.display.cutout.emulation.hole [x] com.android.internal.systemui.navbar.threebutton 
+[08:07:55] nav bar: navigationBars frame=[0,2337][1080,2400] navigationBars frame=[0,2337][1080,2400] navigationBars frame=[0,2274][1080,2400] 
+[08:07:55] library: pushing 24 files
+[08:08:28] library: MediaStore lists 24 videos
+[08:08:28] cold start
 Status: ok
-TotalTime: 4923
-WaitTime: 4933
-[04:22:29] flow qr_scanner
-[04:34:12] flow qr_scanner exit 0
-[04:34:50] done
+TotalTime: 3891
+WaitTime: 3899
+[08:08:42] flow titleloop
+[08:10:01] titleloop: 1 player open(s), 1 first frame(s) so far in the run
+[08:10:01] flow titleloop done
+[08:10:05] done
