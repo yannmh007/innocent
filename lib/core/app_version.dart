@@ -15,10 +15,10 @@ class AppVersion {
   static const String displayName = 'Innocent';
 
   /// Public-facing version (matches `version:` in pubspec.yaml without build).
-  static const String name = '1.64.69';
+  static const String name = '1.64.70';
 
   /// Build number (matches the `+NN` suffix in pubspec.yaml).
-  static const int build = 382;
+  static const int build = 383;
 
   /// Combined string, e.g. "0.45.0 (55)".
   static String get full => '$name ($build)';

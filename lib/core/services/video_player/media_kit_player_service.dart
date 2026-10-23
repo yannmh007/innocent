@@ -785,6 +785,15 @@ class MediaKitPlayerService implements VideoPlayerService {
   static Map<String, String>? _headerValues;
   static DateTime? _headerAt;
 
+  /// Headers a URL always needs, whoever opens it — set once at start-up.
+  ///
+  /// For the stream Worker's granted URLs (`StreamDoor.headersFor`): they are
+  /// played through the app's own proxy, which sends the install id itself,
+  /// but when that proxy cannot start the player is handed the URL directly,
+  /// and a bound token then needs the id from mpv instead. A hook rather than
+  /// an import so this service does not depend on the Video Hub.
+  static Map<String, String> Function(String uri)? standingHeadersFor;
+
   /// LIVE headers: the arming above, once a playback has claimed it, bound to
   /// the exact URI that claimed it.
   ///
@@ -884,7 +893,11 @@ class MediaKitPlayerService implements VideoPlayerService {
     // Release a binding held for a DIFFERENT stream before claiming, so
     // headers never outlive the playback they were armed for.
     _releaseLiveHeadersUnless(uri);
-    final Map<String, String>? headers = _claimHeadersFor(uri);
+    final Map<String, String>? claimed = _claimHeadersFor(uri);
+    final standing = standingHeadersFor?.call(uri) ?? const <String, String>{};
+    final Map<String, String>? headers = standing.isEmpty
+        ? claimed
+        : <String, String>{...?claimed, ...standing};
     // Always reattach video before loading anything.
     //
     // Without this, a file opened while the player happened to be in
@@ -1690,17 +1703,47 @@ class MediaKitPlayerService implements VideoPlayerService {
   /// track and no audio at all — see the note on the cap for why that is the
   /// one thing the cap can take away, and [PlayerController]'s recovery for
   /// what it does about it.
+  /// The libmpv properties [setStreamBufferProfile] writes for a film over
+  /// the network, each explained where it is written. In one place so that
+  /// test_bench/mpv_seek_bench.dart hands the real mpv exactly what ships.
+  /// The disk cache is not here: whether there is one depends on the phone.
+  @visibleForTesting
+  static Map<String, String> streamProfile({
+    bool viaLocalCache = true,
+    bool patientProbe = false,
+  }) =>
+      <String, String>{
+        'cache': 'yes',
+        'demuxer-max-bytes': '${96 * 1024 * 1024}',
+        'demuxer-max-back-bytes': '${32 * 1024 * 1024}',
+        'cache-secs': '30',
+        'demuxer-readahead-secs': '20',
+        'cache-pause-wait': '6',
+        'cache-pause-initial': 'no',
+        if (viaLocalCache) 'cache-on-disk': 'no',
+        'demuxer-lavf-probesize': patientProbe ? '5000000' : '${2 * 1024 * 1024}',
+        'demuxer-lavf-analyzeduration': patientProbe ? '5' : '2',
+        'stream-lavf-o': _networkStreamOptions,
+        'stream-buffer-size': '${1024 * 1024}',
+        // Written once by initialize(), for every file; stated here so the
+        // bench's mpv seeks the way the app's does.
+        'demuxer-seekable-cache': 'yes',
+        'network-timeout': '10',
+        'hr-seek': 'absolute',
+        'hr-seek-framedrop': 'yes',
+      };
+
   Future<void> setStreamBufferProfile({
     required bool network,
     bool viaLocalCache = false,
     bool patientProbe = false,
   }) async {
     if (network) {
-      await _setMpvProperty('cache', 'yes');
-      await _setMpvProperty('demuxer-max-bytes', '${96 * 1024 * 1024}');
-      await _setMpvProperty('demuxer-max-back-bytes', '${32 * 1024 * 1024}');
-      await _setMpvProperty('cache-secs', '30');
-      await _setMpvProperty('demuxer-readahead-secs', '20');
+      final p = streamProfile(patientProbe: patientProbe);
+      for (final k in const ['cache', 'demuxer-max-bytes', 'demuxer-max-back-bytes',
+          'cache-secs', 'demuxer-readahead-secs']) {
+        await _setMpvProperty(k, p[k]!);
+      }
       // ── THE STUTTER, WHICH IS A DIFFERENT PROBLEM AGAIN ─────────────────
       //
       // A viewer reported video that plays two seconds, stops, plays two
@@ -1724,8 +1767,8 @@ class MediaKitPlayerService implements VideoPlayerService {
       // It costs nothing at start-up: `cache-pause-initial` stays off, so
       // the FIRST frame is still drawn as soon as there is one. This only
       // governs recovery after a stall.
-      await _setMpvProperty('cache-pause-wait', '6');
-      await _setMpvProperty('cache-pause-initial', 'no');
+      await _setMpvProperty('cache-pause-wait', p['cache-pause-wait']!);
+      await _setMpvProperty('cache-pause-initial', p['cache-pause-initial']!);
       // ── SCRUBBING BACKWARDS SHOULD NOT COST A DOWNLOAD ─────────────────
       //
       // The back buffer above is thirty-two megabytes — perhaps two minutes
@@ -1798,13 +1841,9 @@ class MediaKitPlayerService implements VideoPlayerService {
       //     is [patientProbe]: if a file DOES open with a picture and no
       //     sound, the player reopens it once with the limits off rather than
       //     letting anyone watch a silent film.
-      if (patientProbe) {
-        await _setMpvProperty('demuxer-lavf-probesize', '5000000');
-        await _setMpvProperty('demuxer-lavf-analyzeduration', '5');
-      } else {
-        await _setMpvProperty('demuxer-lavf-probesize', '${2 * 1024 * 1024}');
-        await _setMpvProperty('demuxer-lavf-analyzeduration', '2');
-      }
+      await _setMpvProperty('demuxer-lavf-probesize', p['demuxer-lavf-probesize']!);
+      await _setMpvProperty(
+          'demuxer-lavf-analyzeduration', p['demuxer-lavf-analyzeduration']!);
       //  2. An MP4 whose moov atom sits at the END (anything not written
       //     "faststart") forces a read of the tail before playback can begin
       //     — the demuxer opens at byte zero, finds no moov, and jumps to
@@ -1819,7 +1858,7 @@ class MediaKitPlayerService implements VideoPlayerService {
       //     happening at all (see the console's faststart rewrite), but old
       //     objects are already in the bucket and cannot be retro-fixed, so
       //     the client has to stay fast for them too.
-      await _setMpvProperty('stream-lavf-o', _networkStreamOptions);
+      await _setMpvProperty('stream-lavf-o', p['stream-lavf-o']!);
       // ── A FRAGMENTED FILM READS A LITTLE BACKWARDS, EVERY FRAGMENT ─────
       //
       // libavformat's MP4 demuxer reads a fragment's video run, then reaches
@@ -1832,7 +1871,7 @@ class MediaKitPlayerService implements VideoPlayerService {
       // mpv over the real proxy). A megabyte holds a whole fragment's step:
       // six requests and 26 connections. Faststart is unaffected; it reads
       // forward.
-      await _setMpvProperty('stream-buffer-size', '${1024 * 1024}');
+      await _setMpvProperty('stream-buffer-size', p['stream-buffer-size']!);
     } else {
       await _setMpvProperty('cache', 'auto');
       await _setMpvProperty('demuxer-max-bytes', '${32 * 1024 * 1024}');

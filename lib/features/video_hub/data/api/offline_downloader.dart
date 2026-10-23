@@ -21,6 +21,7 @@ import 'download_plan.dart';
 import 'ranged_fetch.dart';
 import 'offline_crypto.dart';
 import 'offline_library.dart';
+import '../stream_door.dart';
 
 /// Where one download has got to.
 @immutable
@@ -885,7 +886,8 @@ class OfflineDownloader {
 
         final abort = Completer<void>();
         final request =
-            http.AbortableRequest('GET', Uri.parse(url), abortTrigger: abort.future);
+            http.AbortableRequest('GET', Uri.parse(url), abortTrigger: abort.future)
+              ..headers.addAll(StreamDoor.headersFor(url));
         if (received > 0) {
           // Resume. A server that ignores this answers 200 with the whole file,
           // which is handled below by starting the file over rather than

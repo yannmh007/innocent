@@ -1,0 +1,50 @@
+# The QR scanner opens and stays open (2026-10-23). Run with
+# EMU_CAMERA=emulated. 1.64.70 raises the scanner's CameraX (1.3.3 -> 1.4.2)
+# and ML Kit (17.2.0 -> 17.3.0) under mobile_scanner 5.2.3 — for 16 KB memory
+# pages. A changed method would crash the screen the moment the camera
+# starts, so the camera is started here: Transfer, Receive, the scan card,
+# the permission, then six seconds with the viewfinder up. The phone with no
+# camera is flows/qr_no_camera.yaml.
+appId: com.innocent.media
+---
+- launchApp
+- waitForAnimationToEnd:
+    timeout: 15000
+- tapOn:
+    text: "Wait"
+    optional: true
+- tapOn:
+    text: "Skip"
+    optional: true
+- tapOn:
+    text: "Allow.*"
+    optional: true
+- tapOn:
+    text: "(?s).*Tab 3 of 4.*"
+- waitForAnimationToEnd:
+    timeout: 8000
+- tapOn: "RECEIVE"
+- waitForAnimationToEnd:
+    timeout: 5000
+- tapOn:
+    text: "(?s).*Scan the sender.*"
+- waitForAnimationToEnd:
+    timeout: 3000
+# The camera permission, however this Android words it.
+- tapOn:
+    text: "(?i)(While using the app|Only this time|Allow)"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: 60_qr_scanner_open
+- assertVisible: "Scan sender QR"
+- extendedWaitUntil:
+    visible: "__nothing_has_this_text__"
+    timeout: 6000
+    optional: true
+- takeScreenshot: 61_qr_scanner_6s
+# Still here, six seconds into a running camera: nothing crashed.
+- assertVisible: "Scan sender QR"
+- assertVisible: "(?s).*Point the camera.*"
+- assertNotVisible: "(?s).*camera can't be opened.*"
+- back

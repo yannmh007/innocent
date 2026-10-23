@@ -595,6 +595,21 @@ Future<void> playMedia(
     return;
   }
 
+  // TOO MANY PLAYS IN A SHORT TIME. The server answered, so this is a
+  // refusal like any other and the phone's held bytes are not offered — those
+  // are for "could not ask" alone (tool/security_invariants.py). The sentence
+  // says to wait, not that the film is gone: the budget fills again within
+  // the hour.
+  if (grant.denial == AccessDenial.rateLimited) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(s.vhRateLimited),
+        duration: const Duration(seconds: 4),
+      ),
+    );
+    return;
+  }
+
   // A device refusal gets its own message and a longer read. It is the only
   // refusal here the user can actually do something about, and the sentence
   // has to carry the instruction - there is no screen behind it yet.

@@ -66,9 +66,10 @@ type = "worker"
 # 2.5 requests where the direct path costs one. On the Free plan's 100,000
 # requests a day that is the difference between ~30 and ~75 whole films a
 # day once 1.64.70's proxy is out (docs/security_streaming.md §5). What it
-# saved — R2 reads, Class B, 10 million free a month — was the cheap meter.
-# With a domain of our own, the Cache API does the same job without the
-# extra billed call (phase 2).
+# saved — R2 reads, Class B — is free while the Worker is on the Free plan:
+# 100,000 requests a day cannot pass Class B's 10 million a month. On Paid
+# at scale it is not: buy the domain then, and the Cache API does fan-out's
+# job without the extra billed call (phase 2).
 [vars]
 EDGE_BLOCK_BYTES = "0"
 

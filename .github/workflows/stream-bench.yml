@@ -19,6 +19,7 @@ on:
     branches-ignore: [ main ]
     paths:
       - 'test_bench/stream_bench.dart'
+      - 'test_bench/mpv_seek_bench.dart'
       - 'lib/features/video_hub/data/cache/stream_cache_server.dart'
       - 'lib/features/video_hub/data/api/ranged_fetch.dart'
       - 'lib/features/video_hub/presentation/playback.dart'
@@ -37,6 +38,20 @@ on:
       - 'test/support/cmaf.dart'
       - '.github/workflows/stream-bench.yml'
   workflow_dispatch:
+    inputs:
+      mpv_only:
+        description: 'Only the mpv seek bench (no unit tests, no proxy bench)'
+        type: boolean
+        default: false
+      mpv_profiles:
+        description: 'Lines for the mpv seek bench'
+        default: 'desk,mm_4g,mm_4g_lossy,mm_busy'
+      mpv_variants:
+        description: 'Variants (see test_bench/mpv_seek_bench.dart)'
+        default: 'shipped+nohand+norounds,shipped'
+      mpv_repeat:
+        description: 'Runs of each line'
+        default: '1'
 
 permissions:
   contents: read
@@ -44,12 +59,14 @@ permissions:
 jobs:
   bench:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
 
       - name: Set up Flutter
-        uses: subosito/flutter-action@v2
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
         with:
           flutter-version: 3.32.8
           channel: stable
@@ -63,13 +80,15 @@ jobs:
       # or a broken test minutes after the push, not at release time, and the
       # bench below never measures code that does not hold together.
       - name: Analyze
+        if: ${{ !inputs.mpv_only }}
         run: flutter analyze --no-fatal-infos --no-fatal-warnings
       # libmpv and ffmpeg for test/media_kit_reopen_start_test.dart: the real
       # media_kit opening a real film twice, to hold a reopen to its start
       # (1.64.68 began every reopen at 00:00). Skipped where they are absent.
       - name: libmpv and ffmpeg
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq libmpv2 ffmpeg
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq libmpv2 mpv ffmpeg
       - name: Unit tests
+        if: ${{ !inputs.mpv_only }}
         run: flutter test
 
       - name: netem available
@@ -97,6 +116,7 @@ jobs:
       #   mm_4g_lossy  200 ms round trip, 1 % loss, 32 Mbit/s
       #   mm_busy      250 ms round trip, 2 % loss, 16 Mbit/s (an evening cell)
       - name: Bench
+        if: ${{ !inputs.mpv_only }}
         run: |
           set -u
           PORT=47123
@@ -120,3 +140,54 @@ jobs:
           run mm_4g 75ms 0.5% 32mbit
           run mm_4g_lossy 100ms 1% 32mbit
           run mm_busy 125ms 2% 16mbit
+
+      # THE REAL PLAYER THROUGH THE REAL PROXY (test_bench/mpv_seek_bench.dart):
+      # mpv with the app's stream options reading a ladder-shaped film through
+      # StreamCacheServer, on the same shaped lines. Open, twenty seconds of
+      # play, then a seek, a skip, a jump back and a far seek — each with the
+      # time to the moving picture and the requests and megabytes it took
+      # from the line. `before` is the proxy without the hand-over and the
+      # post-seek growth; `after` is what ships.
+      - name: mpv seek bench
+        env:
+          PROFILES: ${{ inputs.mpv_profiles || 'desk,mm_4g,mm_4g_lossy,mm_busy' }}
+          VARIANTS: ${{ inputs.mpv_variants || 'shipped+nohand+norounds,shipped' }}
+          REPEAT: ${{ inputs.mpv_repeat || '1' }}
+        run: |
+          set -u
+          PORT=47123
+          ffmpeg -nostdin -v error -y -f lavfi -i testsrc2=size=640x360:rate=24 \
+            -f lavfi -i sine=frequency=440:sample_rate=48000 -t 600 -map 0:v:0 -map 1:a:0 \
+            -c:v libx264 -preset ultrafast -b:v 1572k -minrate 1572k -maxrate 1572k -bufsize 1700k \
+            -x264-params nal-hrd=cbr -g 48 -keyint_min 48 -sc_threshold 0 -pix_fmt yuv420p \
+            -c:a aac -b:a 128k -ac 2 -ar 48000 \
+            -movflags +frag_keyframe+empty_moov+default_base_moof+global_sidx+cmaf+skip_trailer /tmp/film.mp4
+          run() {
+            name="$1"; delay="$2"; loss="$3"; rate="$4"
+            sudo tc qdisc del dev lo root 2>/dev/null || true
+            if [ "$delay" != "-" ]; then
+              sudo tc qdisc add dev lo root handle 1: prio bands 5
+              sudo tc qdisc add dev lo parent 1:4 handle 40: netem delay "$delay" loss "$loss" rate "$rate" limit 10000
+              sudo tc qdisc add dev lo parent 1:5 handle 50: netem delay "$delay" limit 10000
+              sudo tc filter add dev lo parent 1:0 protocol ip prio 1 u32 match ip sport $PORT 0xffff flowid 1:4
+              sudo tc filter add dev lo parent 1:0 protocol ip prio 2 u32 match ip dport $PORT 0xffff flowid 1:5
+            fi
+            for i in $(seq 1 "$REPEAT"); do
+              echo "== $name #$i: delay $delay loss $loss rate $rate"
+              BENCH_FILM=/tmp/film.mp4 BENCH_FILM_S=600 BENCH_FILM_KBPS=1700 BENCH_LINE_KBPS=0 BENCH_RTT_MS=0 \
+                BENCH_PORT=$PORT BENCH_PATHS=proxy6 BENCH_VARIANTS="$VARIANTS" \
+                BENCH_OUT="/tmp/mpv-$name-$i.txt" \
+                flutter test test_bench/mpv_seek_bench.dart 2>&1 | grep -E '^proxy6|^line|Error|FAIL' || true
+              { echo "### mpv seek, $name #$i (delay $delay, loss $loss, rate $rate)"; echo '```'; \
+                cat "/tmp/mpv-$name-$i.txt" 2>/dev/null || echo "no result"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+            done
+            sudo tc qdisc del dev lo root 2>/dev/null || true
+          }
+          for p in ${PROFILES//,/ }; do
+            case "$p" in
+              desk) run desk - - - ;;
+              mm_4g) run mm_4g 75ms 0.5% 32mbit ;;
+              mm_4g_lossy) run mm_4g_lossy 100ms 1% 32mbit ;;
+              mm_busy) run mm_busy 125ms 2% 16mbit ;;
+            esac
+          done

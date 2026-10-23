@@ -66,7 +66,10 @@ project at all.
 poster, or no assets), start-up checks, streaming copies and the stream
 secret.
 
-The page is eight files: `index.html` (the pages), `shell.js` (menu, routes,
+The page is ten files: `index.html` (the pages and their styles), `app.js`
+(the page's own script — moved out of `index.html` so the page's
+Content-Security-Policy can refuse every inline script), `top.js` (shows the
+page only when no other page frames it), `shell.js` (menu, routes,
 dashboard, idle sign-out), `control.js` (2-step sign-in, Security, Admins,
 Activity), `review.js` (the review queue, the editor's review bar, the
 in-console preview) and `upload.js` (16 MB parts, waiting out a dropped

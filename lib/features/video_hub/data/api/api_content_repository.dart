@@ -11,6 +11,7 @@ import '../../domain/viewer.dart';
 import '../../domain/video_content.dart';
 import '../../../../core/services/network/connection_kind.dart';
 import '../cache/catalogue_cache.dart';
+import '../stream_door.dart';
 import 'api_client.dart';
 import 'api_exception.dart';
 
@@ -830,6 +831,10 @@ class ApiContentRepository implements ContentRepository {
           else if (source.locator.isNotEmpty)
             'media_key': source.locator,
           if (deviceId != null) 'device_id': deviceId,
+          // Seal this install into the token (1.64.70). The Worker then
+          // plays it only for a fetch carrying the same id — see
+          // StreamDoor, which every fetch of a granted URL goes through.
+          if (deviceId != null) 'bind': true,
         },
         timeout: null,
       );
@@ -852,6 +857,11 @@ class ApiContentRepository implements ContentRepository {
           final r = Rendition.fromJson(row);
           if (r != null) ladder.add(r);
         }
+      }
+      // Where these URLs point is where the install id may be sent.
+      StreamDoor.learn(url);
+      for (final r in ladder) {
+        StreamDoor.learn(r.url);
       }
       return PlaybackGrant.granted(
         url,
@@ -876,6 +886,12 @@ class ApiContentRepository implements ContentRepository {
       }
       if (e.statusCode == 409) {
         return const PlaybackGrant.denied(AccessDenial.wrongDevice);
+      }
+      // Too many grants in a short time (docs/migrations/046). Its own
+      // value: "unavailable" would send a person away for good, and the
+      // budget fills again within the hour.
+      if (e.code == 'rate_limited') {
+        return const PlaybackGrant.denied(AccessDenial.rateLimited);
       }
       // COULD NOT ASK, told apart from "was told no", and this is the only
       // place in the class that distinction is made about PLAYBACK.

@@ -12,6 +12,7 @@ import '../../../../core/services/network/foreground_stream.dart';
 import '../../../../core/services/network/throughput_memory.dart';
 import '../../domain/cmaf_index.dart';
 import '../api/ranged_fetch.dart';
+import '../stream_door.dart';
 import 'stream_cache_store.dart';
 
 /// Gives the player a local address for a remote film, and keeps what passes
@@ -172,10 +173,70 @@ class StreamCacheServer {
   /// this film has been carrying in half a second, up to 512 KB
   /// ([_Source.seekFirstPart]) — on a fast line 64 KB is mostly round trip,
   /// and twice the requests through the Worker for nothing.
+  /// The largest part the proxy asks the Worker for: 2 MB, as measured in
+  /// every bench and lab run behind the numbers above. Its own constant, not
+  /// the downloader's ([RangedFetch.defaultPartBytes], 4 MB since 1.64.70):
+  /// a download is one long read in order, a stream is read, jumped and
+  /// thrown away, and a part a seek abandons is data the viewer paid for.
+  static const int maxPartBytes = 2 * 1024 * 1024;
+
   static int seekPartBytes(int index, {int first = 64 * 1024}) {
     final grown = first * pow(seekGrowth, index ~/ max(1, lanes));
-    return min(RangedFetch.defaultPartBytes, (grown.round() + 16383) & ~16383);
+    return min(maxPartBytes, (grown.round() + 16383) & ~16383);
   }
+
+  /// A STEP BACK IS NOT A SEEK. libavformat's MP4 demuxer reads a
+  /// fragment's picture until it is a second ahead of its sound, reaches
+  /// forward for the sound, then steps back a few hundred kilobytes for the
+  /// rest of the picture (`mov_find_next_sample`, its one-second rule). mpv
+  /// meets each step with a new request — into bytes this proxy has just
+  /// given it — and the stretch on the line was stopped and started again
+  /// from 64 KB parts every time: 7.8 requests through the Worker for every
+  /// megabyte of a 1.7 Mbit film played straight through
+  /// (test_bench/mpv_seek_bench.dart, mpv 0.37 over this proxy). A request
+  /// that starts inside the run the stretch on the line has delivered is
+  /// the same reading going on, so the stretch is HANDED OVER: its parts in
+  /// flight, and the size its parts had grown to, go on with the request
+  /// that replaced it. Off for the bench's before-and-after.
+  @visibleForTesting
+  static bool handOver = true;
+
+  /// Stretches handed over, and taken up, since the app started. For the
+  /// bench and the lab's trail.
+  static int handedOver = 0, carriedOn = 0, stepsSeen = 0;
+
+  /// Requests made upstream, and the bytes they brought, since the app
+  /// started — what the Worker sees of this phone. For the lab's trail.
+  static int upstreamRequests = 0, upstreamBytes = 0;
+
+  /// What the Worker said about this phone's bound tokens (`X-Bind`: ok,
+  /// missing, mismatch), counted per answer since the app started. For the
+  /// lab's trail: the Worker's own log is the operator's, and this is how a
+  /// test run on a real phone shows every fetch naming its install.
+  static final Map<String, int> bindAnswers = <String, int>{};
+
+  static void _noteBind(HttpClientResponse r) {
+    final v = r.headers.value('x-bind');
+    if (v != null) bindAnswers[v] = (bindAnswers[v] ?? 0) + 1;
+  }
+
+  /// How long parts handed over wait for the request that is to take them.
+  static const Duration _handOverFor = Duration(seconds: 3);
+
+  /// AFTER A SEEK, SMALL PARTS ONLY UNTIL THE PICTURE. The rounds of equal
+  /// parts ([seekPartBytes]) are what bring a seek's first picture at the
+  /// speed of the whole line, but growing a quarter a round they took 93
+  /// requests and some 54 MB to reach 2 MB parts — the rest of every
+  /// stretch after every jump at three and a half requests a megabyte. Once
+  /// the stretch has handed the player this much (a fragment and its sound
+  /// at 6 Mbit/s), the parts grow as a stretch from the start's do, one
+  /// part at a time ([rampedPartBytes]). 0 keeps the rounds throughout.
+  @visibleForTesting
+  static int seekSettledBytes = 2 * 1024 * 1024;
+
+  /// The [rampedPartBytes] index whose part is at least [bytes].
+  static int _rampIndexFor(int bytes) =>
+      max(0, (bytes + 128 * 1024 - 1) ~/ (128 * 1024) - 1);
 
   /// A lane silent this long is taken for dead and the stretch ends; the
   /// loop reopens from the last byte the player received.
@@ -216,7 +277,7 @@ class StreamCacheServer {
   /// order, at the speed of the whole line. Modelled against both in
   /// eleven line/film pairings, this one was never the worse.
   static int rampedPartBytes(int index) =>
-      min(RangedFetch.defaultPartBytes, 128 * 1024 * (index + 1));
+      min(maxPartBytes, 128 * 1024 * (index + 1));
 
   /// How far ahead of the index a stretch may start and still be taken as
   /// the index's (a stretch from 0 starts at `ftyp`, 32 bytes ahead of it).
@@ -844,6 +905,12 @@ class StreamCacheServer {
     // briefly — for it to end and put away the parts it is keeping, or this
     // stretch asks again for the very bytes it is about to be handed.
     final leaving = [for (final g in src.serving) if (!g.isOver) g];
+    // Where this request starts, for the stretch it replaces to decide
+    // whether it is being handed over ([handOver]).
+    if (leaving.isNotEmpty) {
+      src.nextStart = start;
+      src.nextRunEnd = entry.partAt(start)?.end;
+    }
     src.serving.add(gone);
     var complete = false;
     try {
@@ -852,6 +919,10 @@ class StreamCacheServer {
           Future.wait([for (final g in leaving) g.over]),
           Future<void>.delayed(_supersedeWait),
         ]);
+        // Looked at by now, or not to be: a stretch that outlives the wait
+        // gives its parts up as it always did.
+        src.nextStart = null;
+        src.nextRunEnd = null;
       }
       while (pos <= endInclusive) {
         final before = pos;
@@ -954,7 +1025,7 @@ class StreamCacheServer {
         (inIndex ||
             (pos > 0 && stretchEnd - pos >= 64 * 1024) ||
             RangedFetch.worthSplitting(stretchEnd - pos,
-                partBytes: RangedFetch.defaultPartBytes))) {
+                partBytes: maxPartBytes))) {
       parallel = true;
       upstream = _lanesFetch(src, pos, stretchEnd, entry.total,
           gone: () => gone?.value ?? false,
@@ -1078,6 +1149,7 @@ class StreamCacheServer {
             }
           }
           counted(chunk.length);
+          upstreamBytes += chunk.length;
           yield chunk;
         }
       } catch (e) {
@@ -1118,9 +1190,12 @@ class StreamCacheServer {
       try {
         // On the film's own pool: the connection stays open for the lanes,
         // which then start without a handshake.
-        final r = await src.io.getUrl(Uri.parse(src.upstream)).timeout(_laneStall);
+        final up = Uri.parse(src.upstream);
+        final r = await src.io.getUrl(up).timeout(_laneStall);
+        StreamDoor.apply(r, up);
         r.headers.set(HttpHeaders.rangeHeader, 'bytes=0-${_probeBytes - 1}');
         final got = resp = await r.close().timeout(_laneStall);
+        _noteBind(got);
         final cr = got.headers.value(HttpHeaders.contentRangeHeader);
         final code = got.statusCode;
         final len = got.contentLength;
@@ -1173,9 +1248,13 @@ class StreamCacheServer {
         ..connectionTimeout = const Duration(seconds: 15);
       var handedOver = false;
       try {
-        final r = await client.getUrl(Uri.parse(src.upstream));
+        final up = Uri.parse(src.upstream);
+        final r = await client.getUrl(up);
+        upstreamRequests++;
+        StreamDoor.apply(r, up);
         r.headers.set(HttpHeaders.rangeHeader, 'bytes=$start-$endInclusive');
         final resp = await r.close();
+        _noteBind(resp);
         final code = resp.statusCode;
         final cr = resp.headers.value(HttpHeaders.contentRangeHeader) ?? '';
         // THE BYTES MUST BE THE ONES ASKED FOR. A 206 says where it starts;
@@ -1283,10 +1362,23 @@ class StreamCacheServer {
       // line. Then the ramp carries on from 1 MB parts.
       final plan = _indexPlan(src.index, start, end);
       if (plan.isNotEmpty) opened = 8;
-      // Part way through the film: rounds of equal parts ([seekPartBytes]).
-      final rounds = plan.isEmpty && start > 0;
+      // A stretch handed over: the parts in flight are the ones before it
+      // ([_Source.takeSpare] adopts them), and its own grow on from the
+      // size they had reached.
+      final carried = handOver ? src.takeRamp(start) : null;
+      if (carried != null) {
+        opened = carried;
+        carriedOn++;
+      }
+      // Part way through the film: rounds of equal parts ([seekPartBytes]),
+      // until the player has had [seekSettledBytes] of it.
+      var rounds = plan.isEmpty && start > 0 && carried == null;
       final firstPart = src.seekFirstPart;
       var planned = 0;
+      // Where this stretch has handed the player up to, and the size of the
+      // last part it asked for.
+      var yieldedTo = start;
+      var lastSize = 0;
 
       // ONE LANE UNTIL THE PLAYER HAS SHOWN IT WILL READ ON. A seek into a
       // fragmented film reads a fragment's header and jumps — two or three
@@ -1296,7 +1388,7 @@ class StreamCacheServer {
       // other lanes open once the first part is through, or [_fanOutAfter]
       // after its first byte if the player is still there. The index plan
       // fans out at once: that read is never abandoned.
-      var fanned = plan.isNotEmpty || lanes <= 1;
+      var fanned = plan.isNotEmpty || lanes <= 1 || carried != null;
       Timer? fanTimer;
       late final void Function() fanOut;
 
@@ -1309,19 +1401,31 @@ class StreamCacheServer {
           // this byte — the bytes a jump left behind ([_Source.spare]).
           final kept = src.takeSpare(next, end);
           if (kept != null) {
+            // A block, not `=> failed = true`: the handler's value becomes
+            // the future's, which is void, and a bool there is an uncaught
+            // error each time a kept part is let go (the mpv seek bench).
             kept.done.then((_) {
               fanned = true;
               topUp();
-            }, onError: (_) => failed = true);
+            }, onError: (Object _) {
+              failed = true;
+            });
             parts.add(kept);
             next = min(kept.end, end);
             continue;
+          }
+          if (rounds &&
+              seekSettledBytes > 0 &&
+              yieldedTo - start >= seekSettledBytes) {
+            rounds = false;
+            opened = _rampIndexFor(seekPartBytes(opened, first: firstPart));
           }
           final size = planned < plan.length
               ? plan[planned++]
               : rounds
                   ? seekPartBytes(opened++, first: firstPart)
                   : rampedPartBytes(opened++);
+          lastSize = size;
           // …and a new part stops where a kept one starts.
           final partEnd = src.spareStartIn(next, min(next + size, end));
           final part = _LanePart(src.io, url, next, partEnd, total, _laneStall);
@@ -1353,7 +1457,7 @@ class StreamCacheServer {
         // given up now, before they take the line from it: after a seek to
         // the other end of the film they were the last few hundred
         // kilobytes of where it had been.
-        src.pruneSpare(start);
+        src.pruneSpare(start, carrying: carried != null);
         // And parts kept just ahead of this stretch mean the player has
         // jumped back a little — a fragmented film's seek, going back for
         // the fragment before — and will read on into them: every lane now.
@@ -1383,6 +1487,7 @@ class StreamCacheServer {
               // leaves behind are kept for the stretch after the jump.
               if (!yielded && !fanned && _isMoof(bytes)) fanOut();
               yielded = true;
+              yieldedTo += bytes.length;
               yield bytes;
               continue;
             }
@@ -1419,11 +1524,35 @@ class StreamCacheServer {
         // sound, and then reads straight on through the bytes it just left.
         // The rest are destroyed. A failure destroys everything: those
         // connections are not to be trusted.
+        //
+        // UNLESS THE PLAYER STEPPED BACK into what this stretch has given it
+        // ([handOver]): then it will read on into every part still coming,
+        // and all of them are kept for the request that replaced this one,
+        // with the size they had grown to.
+        final step = src.nextStart;
+        final run = src.nextRunEnd;
+        src.nextStart = null;
+        src.nextRunEnd = null;
+        if (step != null) stepsSeen++;
+        // Inside what this stretch delivered, or further back in a run held
+        // on the phone that reaches into it: either way the request reads
+        // the phone's copy up to where this stretch is, and on from there.
+        final handing = handOver &&
+            !failed &&
+            yielded &&
+            step != null &&
+            step <= yieldedTo &&
+            (step >= start || (run != null && run >= start));
+        if (handing) {
+          handedOver++;
+          src.noteRamp(yieldedTo,
+              _rampIndexFor(max(lastSize, rampedPartBytes(opened))));
+        }
         for (final p in parts) {
-          if (failed || !p.release(_finishOnHangUpBelow)) {
+          if (failed || !(handing ? p.usable : p.release(_finishOnHangUpBelow))) {
             p.kill();
           } else {
-            src.keepSpare(p);
+            src.keepSpare(p, handedOver: handing);
           }
         }
         measuring = false;
@@ -1552,24 +1681,64 @@ class _Source {
   /// bytes away). Kept, the next stretch takes them over where it reaches
   /// them ([takeSpare]). A few, briefly: [_spareParts] at most, 8 MB
   /// between them, for [_spareFor].
-  final List<(_LanePart, DateTime)> _spare = [];
+  ///
+  /// Parts HANDED OVER ([StreamCacheServer.handOver]) are outside those
+  /// limits — they are the film the player reads next, all of it wanted —
+  /// and live for [StreamCacheServer._handOverFor] instead.
+  final List<(_LanePart, DateTime, bool)> _spare = [];
   static const Duration _spareFor = Duration(seconds: 20);
   static int get _spareParts => StreamCacheServer.lanes * 2;
   static const int _spareBytes = 8 * 1024 * 1024;
 
-  void keepSpare(_LanePart p) {
-    _spare.add((p, DateTime.now()));
+  /// Where the request that replaced the one being answered starts, until
+  /// the stretch it replaces has looked ([StreamCacheServer.handOver]).
+  int? nextStart;
+
+  /// Where the run held on the phone that [nextStart] is in ends, if it is.
+  int? nextRunEnd;
+
+  /// A stretch handed over: where it had reached, the [rampedPartBytes]
+  /// index its parts had grown to, and when.
+  (int, int, DateTime)? _ramp;
+
+  void noteRamp(int at, int index) => _ramp = (at, index, DateTime.now());
+
+  /// The part-size index to carry on from, for a stretch starting at [at]
+  /// where a stretch just handed over had reached; null otherwise.
+  int? takeRamp(int at) {
+    final r = _ramp;
+    _ramp = null;
+    if (r == null ||
+        DateTime.now().difference(r.$3) > StreamCacheServer._handOverFor ||
+        (at - r.$1).abs() > 256 * 1024) {
+      return null;
+    }
+    return r.$2;
+  }
+
+  void keepSpare(_LanePart p, {bool handedOver = false}) {
+    _spare.add((p, DateTime.now(), handedOver));
     _expireSpare();
   }
 
   void _expireSpare() {
     final now = DateTime.now();
-    int kept() => _spare.fold(0, (n, e) => n + e.$1.end - e.$1.from);
-    while (_spare.isNotEmpty &&
-        (_spare.length > _spareParts ||
-            now.difference(_spare.first.$2) > _spareFor ||
-            kept() > _spareBytes)) {
-      _spare.removeAt(0).$1.discard();
+    _spare.removeWhere((e) {
+      if (!e.$3 || now.difference(e.$2) <= StreamCacheServer._handOverFor) {
+        return false;
+      }
+      e.$1.discard();
+      return true;
+    });
+    final kept = [for (final e in _spare) if (!e.$3) e];
+    int bytes() => kept.fold(0, (n, e) => n + e.$1.end - e.$1.from);
+    while (kept.isNotEmpty &&
+        (kept.length > _spareParts ||
+            now.difference(kept.first.$2) > _spareFor ||
+            bytes() > _spareBytes)) {
+      final e = kept.removeAt(0);
+      _spare.remove(e);
+      e.$1.discard();
     }
     _spare.removeWhere((e) {
       if (!e.$1.usable) e.$1.discard();
@@ -1596,11 +1765,17 @@ class _Source {
   /// one comes in a third of a second at this film's speed — on a slow line
   /// a kept part's last 256 KB held the line for seconds after a seek to the
   /// other end of the film, against a handshake saved.
-  void pruneSpare(int at) {
+  ///
+  /// Parts handed over reach as far as their stretch did, for the stretch
+  /// [carrying] it on; for any other — the player jumped again before it
+  /// got there — they are spares like the rest.
+  void pruneSpare(int at, {bool carrying = false}) {
     final soon = max(32 * 1024, (_laneSpeed * 0.3).round());
     _spare.removeWhere((e) {
       final p = e.$1;
-      if (p.end > at && p.from < at + _spareReach) return false;
+      if (p.end > at && ((e.$3 && carrying) || p.from < at + _spareReach)) {
+        return false;
+      }
       p.discard(finishBelow: soon);
       return true;
     });
@@ -1719,6 +1894,7 @@ class _LaneRefused implements Exception {
 class _LanePart {
   _LanePart(HttpClient client, Uri url, this.start, this.end, int total,
       Duration stall) {
+    StreamCacheServer.upstreamRequests++;
     done = _get(client, url, total, stall);
     // Held until its turn; an error before then must not count as unhandled.
     done.then((_) {
@@ -1928,12 +2104,14 @@ class _LanePart {
       req.abort();
       throw _LaneRefused('stopped');
     }
+    StreamDoor.apply(req, url);
     req.headers.set(HttpHeaders.rangeHeader, 'bytes=$start-${end - 1}');
     _asked = true;
     final resp = await req.close().timeout(stall, onTimeout: () {
       req.abort();
       throw _LaneRefused('part $start: no answer');
     });
+    StreamCacheServer._noteBind(resp);
     _resp = resp;
     if (_killed) {
       // Stopped while the answer was on its way. A small one is read to its

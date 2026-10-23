@@ -337,7 +337,7 @@ void main() {
       }
     });
 
-    test('the four reasons stay distinct', () {
+    test('the five reasons stay distinct', () {
       // A guard, not a tautology: this fails the moment someone deletes a
       // value or aliases two of them, which is exactly how wrongDevice would
       // quietly become unavailable again.
@@ -349,11 +349,18 @@ void main() {
       // THIS value and refuses to for `unavailable` — which still covers a
       // refusal nobody recognised, a region block or a banned account. Merge
       // the two and the client starts overruling the server.
-      expect(AccessDenial.values.length, 4);
-      expect(AccessDenial.values.toSet().length, 4);
+      //
+      // FIVE SINCE `rateLimited` (1.64.70): the grant budget ran out. Not
+      // `unavailable`, which reads as "never" when it fills again within the
+      // hour, and not `offline`, which is "could not ask" when the server
+      // did answer.
+      expect(AccessDenial.values.length, 5);
+      expect(AccessDenial.values.toSet().length, 5);
       expect(AccessDenial.needsPremium == AccessDenial.wrongDevice, isFalse);
       expect(AccessDenial.wrongDevice == AccessDenial.unavailable, isFalse);
       expect(AccessDenial.offline == AccessDenial.unavailable, isFalse);
+      expect(AccessDenial.rateLimited == AccessDenial.unavailable, isFalse);
+      expect(AccessDenial.rateLimited == AccessDenial.offline, isFalse);
     });
 
     test('a granted URL is granted even when the device clock says expired',

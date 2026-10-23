@@ -33,6 +33,7 @@ import 'core/services/diagnostics/lab_stream.dart';
 import 'core/services/diagnostics/playback_log.dart';
 import 'core/services/video_player/stream_renewal.dart';
 import 'core/services/network/throughput_memory.dart';
+import 'features/video_hub/data/cache/stream_cache_server.dart';
 import 'features/video_hub/presentation/playback.dart';
 import 'features/video_hub/presentation/video_hub_provider.dart';
 
@@ -262,6 +263,14 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
       PlaybackLog.add('LAB check failed to run: $e');
     } finally {
       PlaybackLog.add('LAB check summary pass=$pass fail=$fail');
+      // What the Worker saw of this phone: requests per megabyte, and how
+      // often a step back was carried on rather than started again.
+      final mb = StreamCacheServer.upstreamBytes / 1048576;
+      PlaybackLog.add('LAB proxy upstream ${StreamCacheServer.upstreamRequests} requests '
+          '${mb.toStringAsFixed(1)} MB '
+          '(${mb == 0 ? '-' : (StreamCacheServer.upstreamRequests / mb).toStringAsFixed(2)} a MB), '
+          'steps back ${StreamCacheServer.stepsSeen}, handed over ${StreamCacheServer.handedOver}, '
+          'bind ${StreamCacheServer.bindAnswers.isEmpty ? 'none' : StreamCacheServer.bindAnswers}');
     }
   }
 

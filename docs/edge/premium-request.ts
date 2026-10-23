@@ -19,7 +19,8 @@
 //   5. the same screenshot already filed BY THIS ACCOUNT and still pending →
 //      that request is returned again (a retry after a timeout files nothing
 //      twice); filed by ANOTHER account → filed, marked duplicate_of, and the
-//      owner told in red;
+//      owner told in red; the same TRANSACTION NUMBER from another account,
+//      or one that already bought Premium → the same (5c);
 //   6. stored in the private `payment-proofs` bucket under the user's id;
 //   7. the row inserted (the owner trigger accepts the user id from the
 //      service role only);
@@ -385,6 +386,31 @@ Deno.serve(async (req) => {
     duplicateOf = other?.id ?? null;
   }
 
+  // 5c. the same TRANSACTION, another claim: filed, but flagged (2026-10-22).
+  //
+  // A screenshot can be redrawn — by hand, and now by any image model in
+  // seconds; bKash and GCash both warn their merchants about AI-made
+  // receipts — and a redrawn one has a hash nothing has seen. The number on
+  // it is what is hard to invent: a real one that already bought Premium,
+  // typed again by another account or for a second claim, is the same fraud
+  // as one screenshot twice. Compared without spaces, dashes or dots, the
+  // ways people type the same number differently.
+  let reusedRef = false;
+  const refKey = reference ? reference.replace(/[^0-9A-Za-z]/g, '').toUpperCase() : '';
+  if (!duplicateOf && refKey.length >= 6) {
+    const { data: same } = await admin.from('premium_requests')
+      .select('id, user_id, status, reference').not('reference', 'is', null)
+      .ilike('reference', '%' + refKey.split('').join('%') + '%')
+      .order('submitted_at').limit(50);
+    const hit = (same ?? []).find((r) =>
+      String(r.reference).replace(/[^0-9A-Za-z]/g, '').toUpperCase() === refKey &&
+      (r.user_id !== user.id || r.status === 'approved'));
+    if (hit) {
+      duplicateOf = String(hit.id);
+      reusedRef = true;
+    }
+  }
+
   // 6. stored
   const id = crypto.randomUUID();
   let proofPath: string | null = null;
@@ -422,7 +448,11 @@ Deno.serve(async (req) => {
   // 8. told
   const who = user.phone || user.email || user.id;
   const lines = [
-    duplicateOf ? '⚠️ THIS SCREENSHOT WAS ALREADY USED (request ' + duplicateOf.slice(0, 8) + ')' : null,
+    duplicateOf
+      ? (reusedRef ? '⚠️ THIS TRANSACTION NUMBER WAS ALREADY USED (request '
+                   : '⚠️ THIS SCREENSHOT WAS ALREADY USED (request ') +
+        duplicateOf.slice(0, 8) + ')'
+      : null,
     `💳 Premium request · ${planId}${priceShown ? ' · ' + priceShown : ''}`,
     `from ${who}`,
     senderPhone ? `paid from ${senderPhone}` : null,
