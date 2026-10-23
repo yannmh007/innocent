@@ -3,16 +3,25 @@ Have questions, feedback, or issues? Get support by visiting:
   https://firebase.google.com/support/
 
 Uploading [app.apk] to Firebase Test Lab...
-Raw results will be stored in your GCS bucket at [https://console.developers.google.com/storage/browser/test-lab-a83h77c3x52vk-yvsvq7a2052yz/innocent/39919163442/]
+Raw results will be stored in your GCS bucket at [https://console.developers.google.com/storage/browser/test-lab-a83h77c3x52vk-yvsvq7a2052yz/innocent/39922911645/]
 
-Test [matrix-1u4unjdwgwr10] has been created in the Google Cloud.
+Test [matrix-3ogrpue5v1grb] has been created in the Google Cloud.
 Creating individual test executions...
-.............................................................done.
-Firebase Test Lab will execute your game-loop test on 2 device(s). More devices may be added later if flaky test attempts are specified.
+.............................................................................................................................................done.
+Firebase Test Lab will execute your game-loop test on 1 device(s). More devices may be added later if flaky test attempts are specified.
 
-Test results will be streamed to [ https://console.firebase.google.com/project/innocent-lab/testlab/histories/bh.d8fc1d97699ac8b0/matrices/8550148454337645195 ].
-07:53:25 Test matrix status: Pending:2 07:53:37 Test matrix status: Pending:2 07:53:49 Test matrix status: Pending:2 07:54:01 Test matrix status: Pending:2 07:54:13 Test matrix status: Pending:2 07:54:25 Test matrix status: Pending:2 07:54:38 Test matrix status: Running:2 07:54:50 Test matrix status: Running:2 07:55:02 Test matrix status: Running:2 07:55:14 Test matrix status: Running:2 07:55:26 Test matrix status: Running:2 07:55:38 Test matrix status: Running:2 07:55:50 Test matrix status: Running:2 07:56:02 Test matrix status: Running:2 07:56:14 Test matrix status: Running:2 07:56:26 Test matrix status: Running:2 07:56:38 Test matrix status: Running:2 07:56:50 Test matrix status: Running:2 07:57:02 Test matrix status: Running:2 07:57:14 Test matrix status: Running:2 07:57:26 Test matrix status: Running:2 07:57:38 Test matrix status: Running:2 07:57:50 Test matrix status: Running:2 07:58:02 Test matrix status: Running:2 07:58:14 Test matrix status: Running:2 07:58:27 Test matrix status: Running:2 07:58:39 Test matrix status: Running:2 07:58:51 Test matrix status: Running:2 07:59:03 Test matrix status: Running:2 07:59:15 Test matrix status: Running:2 07:59:27 Test matrix status: Running:2 07:59:39 Test matrix status: Running:2 07:59:51 Test matrix status: Running:2 08:00:03 Test matrix status: Running:2 08:00:15 Test matrix status: Running:2 08:00:27 Test matrix status: Finished:2 
+Test results will be streamed to [ https://console.firebase.google.com/project/innocent-lab/testlab/histories/bh.d8fc1d97699ac8b0/matrices/5618310263364880791 ].
+08:26:01 Test is Pending
+08:27:02 Starting attempt 1.
+08:27:02 Test is Running
+08:32:30 Starting attempt 1.
+08:32:30 Test is Pending
+08:32:54 Test is Running
+08:33:06 Starting results processing. Attempt: 1
+08:33:06 Completed results processing. Time taken = 7 (secs)
+08:33:06 Test is Finished
+
 Game-loop testing complete.
 
-More details are available at [ https://console.firebase.google.com/project/innocent-lab/testlab/histories/bh.d8fc1d97699ac8b0/matrices/8550148454337645195 ].
+More details are available at [ https://console.firebase.google.com/project/innocent-lab/testlab/histories/bh.d8fc1d97699ac8b0/matrices/5618310263364880791 ].
 exit 0
