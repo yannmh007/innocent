@@ -147,7 +147,13 @@ Sintel does not decode there.)
 * **A faint moving account code on premium video** (8 hex digits of the same
   hash the Worker logs as `u`), so a recording made where FLAG_SECURE is
   bypassed can be traced. Through the four premium player routes and
-  picture-in-picture.
+  picture-in-picture. BUILT, ships with the next release: `AccountMark`
+  over the picture in the full player (every premium route sets
+  `secureScreen`, which also covers the phone's own picture-in-picture) and
+  in the floating window; on the picture, never on the bars or off a zoomed
+  screen; a new place every 20 s; no tap, no TalkBack. Finding the account
+  behind a code: `docs/security.md` §9. Guarded by security_invariants rule
+  14 and `test/account_mark_test.dart`.
 * **Sealed premium stream cache** with the downloads' Keystore cipher.
 * **Toolchain release, on its own:** Flutter 3.47 with the Gradle, AGP and
   Kotlin it needs, no feature changes in the same release, through the
