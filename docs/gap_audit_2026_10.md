@@ -130,6 +130,10 @@ what was checked, what was fixed, and what is left, with the reason.
   Kotlin it needs, no feature changes in the same release, through the
   same 1,070 tests, the device lab and Test Lab on both real phones before
   it ships. Kept apart so that anything it breaks is the toolchain's.
+* **Actions on Node 24.** checkout, setup-java and setup-android at their
+  pinned commits target Node 20, which GitHub now runs on Node 24 by force
+  and will drop. Move each to a release built for Node 24, pinned by SHA
+  the same way, with the toolchain release.
 * **Phone codes stay off** in Supabase until they are needed — the owner
   action already in `docs/security.md` §5, which also stops SMS pumping (bots
   requesting codes to premium-rate numbers, billed to the sender). Today no
