@@ -32,7 +32,7 @@ what was checked, what was fixed, and what is left, with the reason.
 | A payment's transaction number could be reused by another account unnoticed; only a byte-identical screenshot was caught. An AI-made or re-edited receipt has a new hash. | medium | `premium-request` flags a reused transaction number like a reused screenshot (owner told in red, console marks it); the console says, beside Approve, to find the payment in the KPay/Wave app first |
 | The console — the page that can delete the catalogue and name admins — had no Content-Security-Policy, and any other site could show it inside an invisible frame and line an admin's tap up with Approve or Delete (clickjacking). It renders no database text as HTML today; nothing stopped a future slip from becoming an admin takeover. | medium | the page's script moved to `app.js` and a policy allows only this site's own script files (no inline script, no handler attributes, no eval, no other host); the page starts hidden and `top.js` shows it only as the top window. `console_smoke.mjs` proves both: an injected script and an `onclick` do not run, a framed console stays hidden, and every scenario runs with zero refusals |
 | No standing check for published vulnerabilities in dependencies | medium | `.github/workflows/deps-scan.yml`: OSV-Scanner weekly and on every dependency change, binary checksum-verified. It resolves first, with the Build workflow's Flutter, and scans that: the committed `pubspec.lock` had fallen so far behind that it did not list google_sign_in. First run: 157 packages, no known vulnerability |
-| The SHA-256 in `app_releases` proves a download is the published file, not who built it: anyone able to write the table or a mirror could publish another APK with a matching hash | medium | every APK a release uploads gets a GitHub artifact attestation (SLSA provenance, signed through Sigstore, public log), in a separate job that holds no signing key and checks nothing out. Check any copy, from any mirror: `gh attestation verify innocent-X-Y.apk -R yannmh007/innocent` |
+| The SHA-256 in `app_releases` proves a download is the published file, not who built it: anyone able to write the table or a mirror could publish another APK with a matching hash | medium | every APK a release uploads gets a GitHub artifact attestation (SLSA provenance, signed through Sigstore, public log), in a separate job that holds no signing key and checks nothing out. Check any copy, from any mirror: `gh attestation verify innocent-X-Y.apk -R yannmh007/innocent`. **From 1.64.71:** 1.64.70's job got nothing to sign — GitHub drops a job output holding a secret's value, and the key alias is the word in every APK's name — so only digests and the version cross between the jobs now |
 
 **Caught before it shipped, twice.**
 
@@ -50,6 +50,18 @@ what was checked, what was fixed, and what is left, with the reason.
   invariant (`tool/security_invariants.py`) refuses that: held bytes are
   for "the server could not be asked", never for "the server said no".
   Fixed.
+
+## Released
+
+**1.64.70 (383), 23 October 2026** — main `7c7e78a`, release
+`v1.64.70-383`, `app_releases` updated. On real phones in Firebase Test
+Lab: the OPPO A38 five of five checks, `bind ok 150` (run 39919163442); the
+realme C53 five of five, `bind ok 186` (run 39922911645). The realme's first
+run failed three checks on a line of its own that ran at 1.6-4 Mbit/s and
+then nearly stopped — no throughput for 66 s — while the OPPO beside it ran
+at 5-38; the rerun, at 8-39 Mbit/s, passed. (The device lab cannot stand in
+for that: its emulator's network speed setting does not reach Wi-Fi, and
+Sintel does not decode there.)
 
 ## Looked at and found sound
 
