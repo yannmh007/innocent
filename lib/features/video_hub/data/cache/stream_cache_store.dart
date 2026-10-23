@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -8,6 +9,8 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../../core/services/diagnostics/playback_log.dart';
+import '../api/offline_crypto.dart';
 import 'range_set.dart';
 
 /// What the phone has kept of the videos it has played.
@@ -76,13 +79,32 @@ import 'range_set.dart';
 /// WHAT IT IS NOT
 /// ═══════════════════════════════════════════════════════════════════════
 ///
-/// NOT ENCRYPTED, and that is stated rather than hidden. App-private storage
-/// is unreadable by other apps and backup is closed off above, so the
-/// realistic remaining reader is the phone's own rooted owner — who can
-/// already screen-record. The downloaded-for-offline files this app has
-/// shipped for months are plaintext on the same disk; encrypting the cache
-/// while leaving those in the clear would be effort spent on the appearance
-/// of a guarantee rather than the guarantee.
+/// SEALED, WITH THE DOWNLOADS' CIPHER (OfflineCrypto). App-private storage
+/// keeps other apps out and backup is closed off above, but a rooted phone,
+/// or a phone handed to a repair shop, reads app storage like any folder —
+/// and a premium film half-watched last week was sitting there as a plain
+/// MP4, while the same film downloaded on purpose was sealed. Now a film's
+/// cache is sealed the same way: AES-CTR under a key that only this phone's
+/// Keystore can unwrap, so the bytes are worthless copied anywhere else.
+///
+///   * ONE IV PER FILM, written to `seal.iv` when its entry is made, before
+///     any run exists — so there is never a sealed run without the IV that
+///     opens it. CTR addresses by byte offset, so each run is ciphered at its
+///     own place in the film and a run can be read from any byte.
+///   * EACH RUN SAYS WHAT IT IS, by its name: `s<offset>.bin` is sealed,
+///     `p<offset>.bin` is plain. The name is the claim, as the length is, so
+///     no record can disagree with the file about how to read it.
+///   * PLAIN RUNS STILL PLAY. Everything cached before this, and anything
+///     cached on a phone whose Keystore refuses the cipher, is plain, and a
+///     viewer does not pay their data again for an update. A film entry made
+///     plain stays plain; one made sealed only ever writes sealed runs.
+///   * A SEALED RUN WHOSE IV IS GONE IS DELETED at load, never served: the
+///     bytes would reach the player as noise, which it cannot tell from a
+///     broken film.
+///   * A CIPHER THAT FAILS MID-FILM STOPS THE CACHING, not the film: a write
+///     whose seal fails is not written (the run ends where it was), and a
+///     read whose unseal fails ends the response short, which the player
+///     reconnects from like any dropped connection.
 ///
 /// NOT A DOWNLOAD. It holds what was played and nothing more. A viewer who
 /// wants a whole film offline uses the download button, which fetches the
@@ -179,19 +201,22 @@ class StreamCacheStore {
       // offsets and their lengths give the extents, so nothing here can
       // claim a byte that is not on disk — which is the whole reason for
       // this layout.
+      final iv = await _readIv(d);
       final parts = <CachePart>[];
       await for (final f in d.list()) {
         if (f is! File) continue;
         final name = p.basename(f.path);
-        if (!name.startsWith('p') || !name.endsWith('.bin')) continue;
+        final sealed = name.startsWith('s');
+        if (!(sealed || name.startsWith('p')) || !name.endsWith('.bin')) continue;
         final start = int.tryParse(name.substring(1, name.length - 4));
         if (start == null || start < 0) continue;
         final len = await f.length();
-        if (len <= 0) {
+        // A sealed run with no IV to open it would play as noise.
+        if (len <= 0 || (sealed && iv == null)) {
           await f.delete();
           continue;
         }
-        parts.add(CachePart(start: start, length: len, file: f));
+        parts.add(CachePart(start: start, length: len, file: f, sealed: sealed));
       }
       if (parts.isEmpty && total <= 0) {
         await d.delete(recursive: true);
@@ -199,7 +224,7 @@ class StreamCacheStore {
       }
       parts.sort((a, b) => a.start.compareTo(b.start));
       return CacheEntry(
-          id: id, total: total, label: label, usedAt: used, parts: parts);
+          id: id, total: total, label: label, usedAt: used, parts: parts, iv: iv);
     } catch (e) {
       if (kDebugMode) debugPrint('StreamCacheStore._readEntry: $e');
       // A directory this cannot read is a directory this cannot serve.
@@ -208,6 +233,16 @@ class StreamCacheStore {
       } catch (_) {}
       return null;
     }
+  }
+
+  /// Forgets what is in memory and reads the directory again, as a fresh
+  /// start of the app would.
+  @visibleForTesting
+  Future<void> reloadFromDisk() async {
+    _entries.clear();
+    _writing.clear();
+    _loaded = false;
+    await load();
   }
 
   int get budgetBytes => _budget;
@@ -315,7 +350,9 @@ class StreamCacheStore {
       label: label ?? '',
       usedAt: DateTime.now(),
       parts: <CachePart>[],
+      iv: await _newIv(dir),
     );
+    PlaybackLog.add('stream cache: a new film, ${e.iv != null ? 'sealed' : 'plain (no cipher on this phone)'}');
     _entries[id] = e;
     await _saveMeta(e);
     return e;
@@ -347,6 +384,7 @@ class StreamCacheStore {
             entry: e,
             part: part,
             handle: handle,
+            iv: part.sealed ? e.iv : null,
             onClose: () => _closed(e, part),
           );
         }
@@ -356,8 +394,9 @@ class StreamCacheStore {
       for (final part in e.parts) {
         if (part.start <= at && at < part.start + part.length) return null;
       }
-      final f = File(p.join(dir.path, 'p$at.bin'));
-      final part = CachePart(start: at, length: 0, file: f);
+      final sealed = e.iv != null;
+      final f = File(p.join(dir.path, '${sealed ? 's' : 'p'}$at.bin'));
+      final part = CachePart(start: at, length: 0, file: f, sealed: sealed);
       e.parts.add(part);
       e.parts.sort((a, b) => a.start.compareTo(b.start));
       // `writeOnly` truncates, which is right for a path that does not exist
@@ -369,6 +408,7 @@ class StreamCacheStore {
         entry: e,
         part: part,
         handle: handle,
+        iv: sealed ? e.iv : null,
         onClose: () => _closed(e, part),
       );
     } catch (err) {
@@ -389,6 +429,45 @@ class StreamCacheStore {
     // anyway, so a failure here costs nothing but an empty file until the
     // next start-up.
     unawaited(part.file.delete().then<void>((_) {}, onError: (Object _) {}));
+  }
+
+  static const String _ivName = 'seal.iv';
+
+  /// The IV a new film is sealed under, written to its directory before any
+  /// run exists; null — a plain entry — when this phone cannot seal, or the
+  /// IV could not be put on disk (a sealed run without it is unreadable).
+  Future<String?> _newIv(Directory dir) async {
+    try {
+      if (!await OfflineCrypto.available()) return null;
+      final iv = await OfflineCrypto.newIv();
+      if (iv == null || !_isIv(iv)) return null;
+      final tmp = File(p.join(dir.path, '$_ivName.tmp'));
+      await tmp.writeAsString(iv, flush: true);
+      await tmp.rename(p.join(dir.path, _ivName));
+      return iv;
+    } catch (err) {
+      if (kDebugMode) debugPrint('StreamCacheStore._newIv: $err');
+      return null;
+    }
+  }
+
+  Future<String?> _readIv(Directory dir) async {
+    try {
+      final f = File(p.join(dir.path, _ivName));
+      if (!await f.exists()) return null;
+      final iv = (await f.readAsString()).trim();
+      return _isIv(iv) ? iv : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static bool _isIv(String b64) {
+    try {
+      return base64Decode(b64).length == OfflineCrypto.block;
+    } catch (_) {
+      return false;
+    }
   }
 
   Future<void> touch(CacheEntry e) async {
@@ -495,9 +574,18 @@ class StreamCacheStore {
 
 /// One unbroken run of a film, as one file.
 class CachePart {
-  CachePart({required this.start, required this.length, required this.file});
+  CachePart({
+    required this.start,
+    required this.length,
+    required this.file,
+    this.sealed = false,
+  });
 
   final int start;
+
+  /// Ciphertext under the entry's IV (`s<offset>.bin`), or plain
+  /// (`p<offset>.bin`). Read through [CacheEntry.read], never off [file].
+  final bool sealed;
 
   /// Kept in step with the file by [CacheWriter] and nowhere else. It is a
   /// mirror of `file.lengthSync()`, never a claim that outruns it.
@@ -516,7 +604,12 @@ class CacheEntry {
     required this.label,
     required this.usedAt,
     required this.parts,
+    this.iv,
   });
+
+  /// The IV this film's sealed runs are ciphered under (base64), or null
+  /// for a plain entry.
+  final String? iv;
 
   /// Opaque and stable, minted by the server from the object key. The client
   /// never learns the key itself — that was the point of moving off signed
@@ -575,6 +668,57 @@ class CacheEntry {
     if (total <= 0) return 0;
     return (heldBytes / total).clamp(0.0, 1.0);
   }
+
+  /// The film's own bytes held in [part], from [from] up to [toExclusive]
+  /// (offsets within the run) — unsealed when the run is sealed.
+  ///
+  /// THE ONLY WAY A RUN IS READ. A sealed run read off its file is noise
+  /// that a player plays as a broken film, so nothing else opens one. An
+  /// unseal that fails ends the stream with an error, which every reader
+  /// already treats as a short read.
+  Stream<List<int>> read(CachePart part, int from, int toExclusive) {
+    final raw = part.file.openRead(from, toExclusive);
+    if (!part.sealed) return raw;
+    final key = iv;
+    if (key == null) {
+      return Stream<List<int>>.error(
+          const FileSystemException('a sealed run without its IV'));
+    }
+    return _unseal(raw, key, part.start + from);
+  }
+
+  static Stream<List<int>> _unseal(
+      Stream<List<int>> raw, String iv, int at) async* {
+    var pos = at;
+    await for (final chunk in raw) {
+      final plain = await OfflineCrypto.transform(
+          iv: iv,
+          offset: pos,
+          bytes: chunk is Uint8List ? chunk : Uint8List.fromList(chunk));
+      if (plain == null || plain.length != chunk.length) {
+        throw const FileSystemException('the cache could not be unsealed');
+      }
+      pos += chunk.length;
+      yield plain;
+    }
+  }
+
+  /// The first [length] bytes of [part], as [read] gives them; null when
+  /// they cannot be read.
+  Future<Uint8List?> readHead(CachePart part, int length) async {
+    if (length <= 0) return null;
+    try {
+      final out = BytesBuilder(copy: false);
+      await for (final chunk in read(part, 0, length)) {
+        out.add(chunk);
+      }
+      final bytes = out.takeBytes();
+      return bytes.isEmpty ? null : bytes;
+    } catch (e) {
+      if (kDebugMode) debugPrint('CacheEntry.readHead: $e');
+      return null;
+    }
+  }
 }
 
 /// An open append to one run.
@@ -584,19 +728,39 @@ class CacheWriter {
     required this.part,
     required this.handle,
     required this.onClose,
+    this.iv,
   });
 
   final CacheEntry entry;
   final CachePart part;
   final RandomAccessFile handle;
 
+  /// The entry's IV when [part] is sealed: every write is ciphered at its
+  /// own offset in the film first.
+  final String? iv;
+
   /// Releases the film's single-writer claim. Must run exactly once, which
   /// is why [close] guards against being called twice.
   final void Function() onClose;
   bool _closed = false;
 
+  /// Appends [bytes], sealed when the run is. A seal that fails writes
+  /// nothing and throws: the run ends where it was, and plain bytes never
+  /// land in a sealed run.
   Future<void> write(List<int> bytes) async {
-    await handle.writeFrom(bytes);
+    var out = bytes;
+    final key = iv;
+    if (key != null && bytes.isNotEmpty) {
+      final sealed = await OfflineCrypto.transform(
+          iv: key,
+          offset: part.end,
+          bytes: bytes is Uint8List ? bytes : Uint8List.fromList(bytes));
+      if (sealed == null || sealed.length != bytes.length) {
+        throw const FileSystemException('the cache could not be sealed');
+      }
+      out = sealed;
+    }
+    await handle.writeFrom(out);
     part.length += bytes.length;
   }
 

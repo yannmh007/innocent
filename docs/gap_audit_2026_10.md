@@ -155,6 +155,18 @@ Sintel does not decode there.)
   behind a code: `docs/security.md` §9. Guarded by security_invariants rule
   14 and `test/account_mark_test.dart`.
 * **Sealed premium stream cache** with the downloads' Keystore cipher.
+  BUILT, ships with the next release, for every film and not only premium
+  (one path, and the cost is a fraction of a millisecond a piece): a new
+  film's cache gets its own IV (`seal.iv`, on disk before any run), its runs
+  are `s<offset>.bin` ciphered at their own place in the film, and every
+  read goes through `CacheEntry.read`, which unseals. What was cached plain
+  before still plays and stays plain until it ages out (the stream cache
+  screen in Settings → General clears it at once). A sealed run whose IV is lost is deleted,
+  never served; a cipher that fails stops the caching, never the film.
+  Proof: every stream-cache server test runs again with the cipher on
+  (`test/stream_cache_sealed_test.dart`, 40 checks), security_invariants
+  rule 15 stops any other reader opening a run's file, and the lab trail
+  says `stream cache: a new film, sealed` and `stream from the phone … sealed`.
 * **Toolchain release, on its own:** Flutter 3.47 with the Gradle, AGP and
   Kotlin it needs, no feature changes in the same release, through the
   same 1,070 tests, the device lab and Test Lab on both real phones before

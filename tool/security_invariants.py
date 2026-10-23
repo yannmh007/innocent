@@ -889,6 +889,29 @@ if os.path.isdir(PLAYER):
                 'who sees a copy sees it.' % bad)
 
 
+# --- 15. a cached run is read only through its entry, which unseals it -------
+# Stream cache runs are sealed with the downloads' cipher (stream_cache_store.dart:
+# "SEALED, WITH THE DOWNLOADS' CIPHER"). A run read straight off its file is
+# ciphertext, which a player plays as a broken film without any error. So
+# outside the store nothing opens a run's file: CacheEntry.read and readHead are
+# the only readers.
+CACHE = os.path.join(FEATURE, 'data/cache')
+if os.path.isdir(CACHE):
+    for fn in sorted(os.listdir(CACHE)):
+        if not fn.endswith('.dart') or fn == 'stream_cache_store.dart':
+            continue
+        body = strip(open(os.path.join(CACHE, fn), encoding='utf-8').read())
+        for m in re.finditer(r'\b(?:part|head|run)\.file\.(openRead|open|readAsBytes|readAsBytesSync)\b', body):
+            fails.append(
+                'A CACHED RUN READ PAST ITS SEAL: data/cache/%s calls .file.%s on a '
+                'cache run. Read it through CacheEntry.read / readHead, which '
+                'unseal a sealed run; the file itself is ciphertext.' % (fn, m.group(1)))
+    store = strip(open(os.path.join(CACHE, 'stream_cache_store.dart'), encoding='utf-8').read())
+    if 'OfflineCrypto.transform' not in store or "'s' : 'p'" not in store:
+        fails.append(
+            'THE STREAM CACHE IS NOT SEALED: stream_cache_store.dart no longer '
+            'ciphers new runs (OfflineCrypto.transform, s<offset>.bin).')
+
 print('=== %d security invariant violation(s) ===' % len(fails))
 for f in fails:
     print(' -', f)

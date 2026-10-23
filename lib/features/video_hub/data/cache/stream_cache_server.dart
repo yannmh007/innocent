@@ -930,7 +930,7 @@ class StreamCacheServer {
         // ── from disk, for as far as this run reaches ──────────────────
         final part = entry.partAt(pos);
         if (part != null) {
-          pos = await _fromDisk(out, part, pos, endInclusive);
+          pos = await _fromDisk(out, entry, part, pos, endInclusive);
           if (pos == before) break;
           continue;
         }
@@ -979,14 +979,21 @@ class StreamCacheServer {
   ///
   /// `addStream` propagates back-pressure: the socket pauses the file stream,
   /// and the read slows to the speed the player consumes. Nothing is held.
-  Future<int> _fromDisk(
-      IOSink res, CachePart part, int pos, int endInclusive) async {
+  Future<int> _fromDisk(IOSink res, CacheEntry entry, CachePart part, int pos,
+      int endInclusive) async {
     final from = pos - part.start;
     final toExclusive = min(part.end - 1, endInclusive) - part.start + 1;
     if (toExclusive <= from) return pos;
     try {
-      await res.addStream(part.file.openRead(from, toExclusive));
-      return pos + (toExclusive - from);
+      // Through the entry, which unseals a sealed run (StreamCacheStore).
+      await res.addStream(entry.read(part, from, toExclusive));
+      final n = toExclusive - from;
+      if (n >= 1024 * 1024) {
+        // The lab's proof that a sealed run played back on a real phone.
+        PlaybackLog.add('stream from the phone ${(n / 1048576).toStringAsFixed(1)} MB '
+            '${part.sealed ? 'sealed' : 'plain'}');
+      }
+      return pos + n;
     } catch (e) {
       if (kDebugMode) debugPrint('StreamCacheServer._fromDisk: $e');
       // The client went away, or the run is shorter than its record claimed.
