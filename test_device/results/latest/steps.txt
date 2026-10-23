@@ -1,14 +1,14 @@
-[04:14:29] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
-[04:14:29] install
-[04:14:37] network: speed full kbit/s, delay none ms
-[04:15:04] overlays: [x] com.android.internal.display.cutout.emulation.hole [x] com.android.internal.systemui.navbar.threebutton 
-[04:15:04] nav bar: navigationBars frame=[0,2274][1080,2400] navigationBars frame=[0,2274][1080,2400] 
-[04:15:04] library: pushing 24 files
-[04:15:33] library: MediaStore lists 24 videos
-[04:15:33] cold start
+[04:20:54] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
+[04:20:54] install
+[04:21:14] network: speed full kbit/s, delay none ms
+[04:21:40] overlays: [x] com.android.internal.display.cutout.emulation.hole [x] com.android.internal.systemui.navbar.threebutton 
+[04:21:40] nav bar: navigationBars frame=[0,2337][1080,2400] navigationBars frame=[0,2337][1080,2400] navigationBars frame=[0,2274][1080,2400] 
+[04:21:40] library: pushing 24 files
+[04:22:13] library: MediaStore lists 24 videos
+[04:22:13] cold start
 Status: ok
-TotalTime: 2061
-WaitTime: 2081
-[04:15:45] flow qr_no_camera
-[04:16:43] flow qr_no_camera exit 0
-[04:17:09] done
+TotalTime: 4923
+WaitTime: 4933
+[04:22:29] flow qr_scanner
+[04:34:12] flow qr_scanner exit 0
+[04:34:50] done
