@@ -9,11 +9,12 @@ what was checked, what was fixed, and what is left, with the reason.
 
 | tool | open source / free | what it looked at |
 |---|---|---|
-| Supabase advisors (security, performance) | free | the production database |
+| Supabase advisors (security, performance) | free | the production database; re-run after 047: the search_path warning is gone, the rest are the ones left on purpose below |
 | [zizmor](https://docs.zizmor.sh) 1.31.1 | open source | every GitHub Actions workflow |
 | `tool/apk_page_check.py` (new) | ours | every arm64 library in the 1.64.69 APK |
 | [OSV-Scanner](https://github.com/google/osv-scanner) 2.2.2 | open source (Google) | `pubspec.lock`, in CI (the database is not reachable from the dev container) |
 | `tool/check.py`, `tool/security_invariants.py` | ours | the whole tree, before every push |
+| [actionlint](https://github.com/rhysd/actionlint) 1.7.12 | open source | every workflow (expressions, job outputs, permissions); clean |
 | research | — | Android platform changes, payment fraud, SMS fraud, device attestation |
 
 ## Fixed (no cost)
@@ -65,7 +66,15 @@ invariant (`tool/security_invariants.py`) refuses that: held bytes are for
    in two places, are the whole defence; this audit cannot see them.
 3. **GitHub settings (free):** turn on Dependabot alerts and secret-scanning
    push protection (Settings → Code security).
-4. **Cloudflare connector:** authorising it lets the Worker's logs and
+4. **A passkey on every console admin's Google account (free).** The console
+   signs in with Google, then asks for a six-digit code (026). A code can be
+   relayed: an AI-written copy of the console on a look-alike address asks
+   for it and passes it on within the same thirty seconds. A passkey cannot
+   be relayed — it only answers the real Google. Google Account → Security
+   → Passkeys; for the owner, also Google's free Advanced Protection.
+   Supabase's own passkeys are still experimental and bind to the console's
+   domain, so they wait for the domain (Phase 2).
+5. **Cloudflare connector:** authorising it lets the Worker's logs and
    request counts be read directly — needed to confirm `bind: ok` from the
    field before `BIND_MODE = "enforce"`.
 
@@ -79,6 +88,10 @@ invariant (`tool/security_invariants.py`) refuses that: held bytes are for
   bypassed can be traced. Through the four premium player routes and
   picture-in-picture.
 * **Sealed premium stream cache** with the downloads' Keystore cipher.
+* **Toolchain release, on its own:** Flutter 3.47 with the Gradle, AGP and
+  Kotlin it needs, no feature changes in the same release, through the
+  same 1,070 tests, the device lab and Test Lab on both real phones before
+  it ships. Kept apart so that anything it breaks is the toolchain's.
 * **Phone codes stay off** in Supabase until they are needed — the owner
   action already in `docs/security.md` §5, which also stops SMS pumping (bots
   requesting codes to premium-rate numbers, billed to the sender). Today no
@@ -102,9 +115,12 @@ Six directions in which the next years will push, and the stance for each:
    tools, a weekly vulnerability scan, and a signed statement of where each
    APK came from (artifact attestations) that anyone can check.
 5. **Platforms move.** 16 KB pages (guarded now), the yearly target-SDK step,
-   Flutter kept within two stable releases (CI pins 3.32.8), and Media3 as
-   the documented way out if libmpv's Flutter binding stalls
-   (`docs/streaming_abr_research.md`).
+   and Media3 as the documented way out if libmpv's Flutter binding stalls
+   (`docs/streaming_abr_research.md`). **Flutter is behind:** CI pins 3.32.8
+   on purpose (`build.yml` explains why), and stable is now 3.47 — five
+   lines, about fifteen months. Engine, Dart and plugin fixes since then do
+   not reach viewers. Raising it is a toolchain move (Gradle ≥ 8.14, AGP,
+   Kotlin together), so it is its own release, below.
 6. **One person runs this.** The runbook, off-site backups and the signing
    key are what let the project outlive a bad week. Its long-term footing is
    content it has the right to carry (`docs/security.md` §4): no amount of
@@ -123,6 +139,8 @@ Six directions in which the next years will push, and the stance for each:
   [TechAIWire](https://techaiwire.com/articles/android-developer-verification-enforcement-four-countries/).
 * AI-made receipts: [GCash warning](https://mynt.com.ph/news-draft/gcash-warns-public-on-emerging-ai-generated-fake-receipts-scams-urges-users-to-always-check-transactions-tab),
   [bKash sellers, arXiv 2602.12650](https://arxiv.org/pdf/2602.12650).
+* Passkeys: [Supabase (experimental)](https://supabase.com/docs/guides/auth/passkeys),
+  [FIDO Alliance](https://fidoalliance.org/passkeys/).
 * SMS pumping: [Ireland NCSC](https://ncsc.gov.ie/pdfs/2506120143_SMS_Pumping.pdf),
   [TechTarget](https://www.techtarget.com/cybersecurity/feature/SMS-pumping-attacks-and-how-to-mitigate-them).
 * Key attestation root change (for Phase 2 device binding):
