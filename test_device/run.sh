@@ -333,6 +333,36 @@ for flow in $FLOWS; do
     continue
     ;;
   esac
+  # THE VIEWER'S JUMPS ON THE TEST FILM — Test Lab's checks (lib/app.dart,
+  # _labJumpScript) on the emulator: a seek, a change of quality, a skip, a
+  # swipe and back to Auto, each with where it landed, how long the picture
+  # stood still ("frozen") and which engine played it. JUMPS_SPEED caps the
+  # emulator's link (an `emu network speed` name, or full) for a run that
+  # wants a slower line.
+  case "$flow" in jumps)
+    if [ -z "${CLIMB_TITLE:-}" ]; then log "flow jumps: no CLIMB_TITLE in config.env — skipped"; continue; fi
+    adb shell am force-stop "$PKG"
+    adb shell pm clear "$PKG" >/dev/null 2>&1 || true
+    d="/sdcard/Android/data/$PKG/files"
+    adb shell mkdir -p "$d" >/dev/null 2>&1
+    adb shell "echo title:$CLIMB_TITLE > $d/lab_stream_url"
+    adb shell "echo 1 > $d/lab_jumps"
+    log "jumps: the test film, the viewer's jumps, ${JUMPS_S:-200} s"
+    adb shell am start -W -n "$PKG/.MainActivity" >/dev/null 2>&1
+    sleep $(( ${JUMPS_S:-200} / 2 ))
+    adb exec-out screencap -p > "$OUT/shots/9_jumps_mid.png"
+    sleep $(( ${JUMPS_S:-200} / 2 ))
+    adb exec-out screencap -p > "$OUT/shots/9_jumps_end.png"
+    grep -o 'LAB check.*' "$OUT/logcat_raw.txt" 2>/dev/null | sed 's/^/  /' | tee -a "$OUT/jumps.txt" || true
+    grep -o 'exo [a-z].*\|hls: .*\|open ladder.*\|ladder on ExoPlayer.*' "$OUT/logcat_raw.txt" 2>/dev/null | head -40 \
+      | sed -E 's#https?://[^ "]+#<url>#g; s#[A-Za-z0-9_-]{40,}#<token>#g' >> "$OUT/jumps.txt" || true
+    adb shell log -p i -t flutter "LAB phase $flow end" >/dev/null 2>&1 || true
+    adb shell am force-stop "$PKG"
+    adb shell rm -f "$d/lab_stream_url" "$d/lab_jumps" >/dev/null 2>&1 || true
+    log "flow $flow done"
+    continue
+    ;;
+  esac
   # TEST LAB'S LAUNCH, ON THE EMULATOR. Test Lab starts a lab APK with the
   # game-loop intent (scenario 3 = a catalogue title) and on two real phones
   # the film never reached the screen (run 37967931084) while the launch-time
