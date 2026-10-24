@@ -1,115 +1,224 @@
 LAB scenario 3 surfaceProducer=null
 LAB device kind=DeviceKind.phone sw=360.0
 LAB    0.0 LAB script: catalogue title
-LAB    5.5 LAB title: opening Sintel
-LAB    8.9 play server granted in 3373 ms, 4 rungs
-LAB    8.9 play rung 720p 1684 kbps (choice auto, measured - kbps)
-LAB    8.9 stream lanes=6
-LAB    9.0 stream cache: a new film, sealed
-LAB    9.0 play through the local proxy
-LAB    9.0 play: opening the player
+LAB    5.8 LAB title: opening Sintel
+LAB    8.6 play server granted in 2774 ms, 4 rungs
+LAB    8.6 play rung 720p 1684 kbps (choice auto, measured - kbps)
+LAB    8.6 stream lanes=6
+LAB    8.7 stream cache: a new film, sealed
+LAB    8.7 stream lanes=6
+LAB    8.7 stream cache: a new film, sealed
+LAB    8.7 stream lanes=6
+LAB    8.7 stream cache: a new film, sealed
+LAB    8.7 stream lanes=6
+LAB    8.7 stream cache: a new film, sealed
+LAB    8.8 play through the ladder on ExoPlayer
+LAB    8.8 play: opening the player
 LAB insets stable l=0.0 t=32.0 r=0.0 b=44.0 padding l=0.0 t=32.0 r=0.0 b=44.0 bar=44.0
+LAB insets stable l=0.0 t=32.0 r=0.0 b=44.0 padding l=0.0 t=32.0 r=0.0 b=44.0 bar=44.0
+LAB    9.2 hwdec -> auto
+LAB    9.3 open ladder (exo) start=0s autoplay=true rung=auto first=720
+LAB    9.3 wakelock playing=false bg=false priv=false pos=0ms
+LAB    9.3 first frame 352 ms
+LAB    9.5 rebuffer start
+LAB    9.5 open ok
+LAB    9.6 stream index 0.0 MB at 0.0 MB
 LAB insets stable l=0.0 t=32.0 r=0.0 b=44.0 padding l=0.0 t=32.0 r=0.0 b=0.0 bar=44.0
-LAB    9.3 hwdec -> auto
-LAB    9.4 open scheme=http len=106 hwdec=auto start=0s autoplay=true
-LAB    9.4 wakelock playing=false bg=false priv=false pos=0ms
-LAB    9.4 first frame 237 ms
-LAB    9.4 wakelock playing=true bg=false priv=false pos=0ms
-LAB    9.4 open ok
-LAB    9.4 rebuffer start
-LAB cpu app 89% · 2.5fps · pool-thread 52% | io.worker. 18% | .innocent.media 8% | estorage.worker 3% | HeapTaskDaemon 2% | 1.raster 2%
-LAB insets stable l=0.0 t=32.0 r=0.0 b=44.0 padding l=0.0 t=32.0 r=0.0 b=0.0 bar=44.0
-LAB    9.8 stream index 0.0 MB at 0.0 MB
-LAB   10.1 fg stream: watching
-LAB   10.8 rebuffer end 1400 ms
-LAB   12.1 measured 7740 kbps
-LAB   12.5 stream from the phone 1.9 MB sealed
-LAB   14.6 measured 16335 kbps
-LAB   16.7 measured 35225 kbps
-LAB   17.4 video h264 1690x720 hwdec=mediacodec(?) vo=gpu surf=producer fps=24.0 drop=0/0 thr=4
-LAB   17.7 measured 29338 kbps
+LAB   10.0 fg stream: watching
+LAB   10.2 hls: 720p playlist, 444 segments
+LAB   10.5 exo tracks 720,480,360,240 selected=4 adaptive=true
+LAB   10.8 stream index 0.0 MB at 0.0 MB
+LAB   11.2 exo rung 720p 2000 kbps
+LAB   12.3 wakelock playing=true bg=false priv=false pos=0ms
+LAB   12.3 rebuffer end 2776 ms
+LAB   13.2 stream index 0.0 MB at 0.0 MB
+LAB   13.7 measured 9956 kbps
+LAB   13.8 hls: 360p playlist, 444 segments
+LAB   14.4 stream index 0.0 MB at 0.0 MB
+LAB   15.0 exo rung 360p 600 kbps
+LAB   16.3 measured 8397 kbps
+LAB   17.3 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=4
+LAB   17.5 measured 8608 kbps
+LAB   17.7 wakelock playing=false bg=false priv=false pos=1144ms
 LAB   17.7 jump fill start
-LAB   18.8 jump fill end 1098 ms
-LAB cpu app 152% · 25.6fps · .innocent.media 75% | DartWorker 32% | Thread 12% | dart:io EventHa 8% | 1.raster 5% | mali-cmar-backe 5%
-LAB   20.1 measured 16920 kbps
-LAB   20.4 LAB check seek PASS want=355 got=355 ready=1772 ms playing=yes, moving by 1781 ms rung=720p
-LAB   20.4 renewal: copies from the grant held 11 s
-LAB   20.5 stream lanes=6
-LAB   20.5 stream cache: a new film, sealed
-LAB   21.4 stream index 0.0 MB at 0.0 MB
-LAB   22.1 measured 36352 kbps
-LAB   23.9 warm switch: 0.5 MB for 12 s of film in 3381 ms (3189 kbps)
-LAB   23.9 quality -> 240 at 360s
-LAB   24.0 open scheme=http len=106 hwdec=auto start=360s autoplay=true
-LAB   24.2 measured 19464 kbps
-LAB   24.2 wakelock playing=false bg=false priv=false pos=0ms
-LAB   24.3 wakelock playing=true bg=false priv=false pos=0ms
-LAB   24.3 open ok
-LAB   24.3 jump fill start
-LAB   24.6 jump fill end 341 ms
-LAB   26.4 LAB check quality->240 PASS want=356 got=360 ready=4173 ms playing=yes, moving by 4939 ms rung=240p
-LAB   26.4 jump fill start
-LAB   26.6 jump fill end 216 ms
-LAB   27.1 measured 23282 kbps
-LAB   28.4 LAB check skip+30 PASS want=391 got=391 ready=1010 ms playing=yes, moving by 1031 ms rung=240p
-LAB   29.1 measured 32886 kbps
-LAB   29.4 jump fill start
-LAB cpu app 151% · 21.8fps · .innocent.media 77% | DartWorker 31% | Thread 10% | dart:io EventHa 10% | mali-cmar-backe 5% | 1.raster 5%
-LAB   30.2 jump fill end 742 ms
-LAB   31.0 measured 24143 kbps
-LAB   31.0 stream stretch 3.6 MB in 1262 ms lanes=6
-LAB   31.9 LAB check swipe-120 PASS want=272 got=273 ready=1512 ms playing=yes, moving by 1522 ms rung=240p
-LAB   31.9 renewal: copies from the grant held 22 s
-LAB   31.9 stream lanes=6
-LAB   32.6 stream index 0.0 MB at 0.0 MB
-LAB   33.2 measured 16338 kbps
-LAB   34.7 measured 5323 kbps
-LAB   35.3 measured 20481 kbps
-LAB   35.7 measured 13316 kbps
-LAB   35.7 stream stretch 2.9 MB in 3064 ms lanes=6
-LAB   35.7 warm switch: 3.0 MB for 12 s of film in 3762 ms (7966 kbps)
-LAB   35.7 quality -> auto at 278s
-LAB   35.8 open scheme=http len=106 hwdec=auto start=278s autoplay=true
-LAB   36.1 measured 24090 kbps
-LAB   36.1 wakelock playing=false bg=false priv=false pos=393916ms
-LAB   36.2 wakelock playing=true bg=false priv=false pos=393916ms
-LAB   36.2 open ok
-LAB   36.2 jump fill start
-LAB   36.3 stream from the phone 1.9 MB sealed
-LAB   36.4 jump fill end 203 ms
-LAB   39.2 LAB check quality->auto PASS want=274 got=278 ready=4510 ms playing=yes, moving by 6283 ms rung=720p
-LAB   39.2 LAB check summary pass=5 fail=0
-LAB   39.2 LAB proxy upstream 187 requests 73.6 MB (2.54 a MB), steps back 5, handed over 0, bind {ok: 190}
-LAB cpu app 142% · 18.6fps · .innocent.media 72% | DartWorker 30% | dart:io EventHa 9% | Thread 9% | mali-cmar-backe 4% | 1.raster 4%
-LAB   39.8 measured 20877 kbps
-LAB   41.8 measured 32478 kbps
-LAB   43.9 measured 58502 kbps
-LAB cpu app 99% · 24.8fps · .innocent.media 42% | Thread 20% | MediaCodec_loop 7% | mali-cmar-backe 6% | 1.raster 6% | dart:io EventHa 5%
-LAB   57.3 fg stream: watching
-LAB cpu app 66% · 22.1fps · Thread 23% | MediaCodec_loop 9% | .innocent.media 8% | mali-cmar-backe 7% | 1.raster 6% | HwBinder:9296 5%
-LAB   69.4 video h264 1690x720 hwdec=mediacodec(?) vo=gpu surf=producer fps=24.0 drop=0/0 thr=4
-LAB cpu app 71% · 24.7fps · Thread 24% | MediaCodec_loop 9% | .innocent.media 8% | mali-cmar-backe 8% | 1.raster 6% | HwBinder:9296 5%
-LAB cpu app 68% · 24.7fps · Thread 24% | MediaCodec_loop 9% | .innocent.media 8% | mali-cmar-backe 7% | 1.raster 6% | HwBinder:9296 5%
-LAB   85.3 stream stretch 32.0 MB in 48428 ms lanes=6
-LAB   87.6 measured 18070 kbps
-LAB cpu app 91% · 24.7fps · Thread 23% | .innocent.media 22% | DartWorker 9% | MediaCodec_loop 8% | mali-cmar-backe 7% | 1.raster 6%
-LAB cpu app 73% · 22.1fps · Thread 24% | .innocent.media 11% | MediaCodec_loop 9% | mali-cmar-backe 7% | 1.raster 6% | HwBinder:9296 5%
-LAB  103.3 fg stream: watching
-LAB cpu app 74% · 24.6fps · Thread 23% | .innocent.media 13% | MediaCodec_loop 9% | mali-cmar-backe 7% | 1.raster 6% | HwBinder:9296 5%
-LAB  110.4 measured 25767 kbps
-LAB cpu app 84% · 24.7fps · Thread 22% | .innocent.media 20% | MediaCodec_loop 8% | mali-cmar-backe 7% | 1.raster 6% | DartWorker 6%
-LAB  122.4 measured 31804 kbps
-LAB cpu app 81% · 22.3fps · Thread 24% | .innocent.media 16% | MediaCodec_loop 8% | mali-cmar-backe 7% | 1.raster 6% | HwBinder:9296 5%
-LAB  136.1 measured 33130 kbps
-LAB cpu app 88% · 24.6fps · Thread 22% | .innocent.media 21% | DartWorker 9% | MediaCodec_loop 8% | mali-cmar-backe 7% | 1.raster 6%
-LAB  145.3 fg stream: watching
-LAB cpu app 70% · 24.6fps · Thread 24% | .innocent.media 10% | MediaCodec_loop 9% | mali-cmar-backe 7% | 1.raster 6% | HwBinder:9296 5%
-LAB cpu app 68% · 24.6fps · Thread 24% | MediaCodec_loop 9% | .innocent.media 8% | mali-cmar-backe 7% | 1.raster 6% | HwBinder:9296 5%
-LAB cpu app 66% · 22.2fps · Thread 24% | MediaCodec_loop 9% | .innocent.media 7% | mali-cmar-backe 7% | 1.raster 6% | HwBinder:9296 5%
-LAB cpu app 70% · 24.6fps · Thread 25% | MediaCodec_loop 9% | .innocent.media 8% | mali-cmar-backe 7% | 1.raster 6% | HwBinder:9296 5%
-LAB cpu app 69% · 24.7fps · Thread 24% | MediaCodec_loop 9% | .innocent.media 8% | mali-cmar-backe 7% | 1.raster 6% | HwBinder:9296 5%
-LAB cpu app 68% · 22.3fps · Thread 24% | MediaCodec_loop 9% | .innocent.media 7% | mali-cmar-backe 7% | 1.raster 6% | HwBinder:9296 5%
-LAB cpu app 69% · 24.6fps · Thread 24% | MediaCodec_loop 9% | .innocent.media 8% | mali-cmar-backe 7% | 1.raster 6% | HwBinder:9296 5%
-LAB cpu app 68% · 24.7fps · Thread 24% | MediaCodec_loop 9% | .innocent.media 7% | mali-cmar-backe 7% | 1.raster 6% | HwBinder:9296 5%
-LAB cpu app 68% · 24.7fps · Thread 24% | MediaCodec_loop 9% | .innocent.media 8% | mali-cmar-backe 8% | 1.raster 6% | HwBinder:9296 5%
-LAB cpu app 68% · 22.2fps · Thread 24% | MediaCodec_loop 9% | .innocent.media 8% | mali-cmar-backe 7% | 1.raster 6% | HwBinder:9296 5%
+LAB   17.8 exo rung 720p 2000 kbps
+LAB cpu app 125% · 33.8fps · .innocent.media 59% | ExoPlayer:Playb 13% | DartWorker 12% | 1.raster 9% | MediaCodec_loop 7% | mali-cmar-backe 4%
+LAB   19.7 measured 17586 kbps
+LAB   20.0 wakelock playing=true bg=false priv=false pos=1144ms
+LAB   20.0 jump fill end 2332 ms
+LAB   20.9 measured 18137 kbps
+LAB   21.7 LAB check seek PASS want=355 got=355 ready=3020 ms playing=yes, moving by 3025 ms frozen=2201 ms engine=exo rung=720p
+LAB   21.7 exo steer quality target=240 made=1 rungs=[720, 480, 360, 240] picks=240
+LAB   21.7 quality -> 240 on the ladder (no reopen)
+LAB   21.9 measured 25040 kbps
+LAB   22.3 hls: 240p playlist, 444 segments
+LAB   23.2 LAB check quality->240 PASS want=356 got=357 ready=513 ms playing=yes, moving by 523 ms frozen=203 ms engine=exo rung=720p
+LAB   23.3 exo rung 240p 300 kbps
+LAB   23.5 LAB check shown 240p after 1777 ms
+LAB   23.5 wakelock playing=false bg=false priv=false pos=1144ms
+LAB   23.5 jump fill start
+LAB   23.8 wakelock playing=true bg=false priv=false pos=388471ms
+LAB   23.8 jump fill end 302 ms
+LAB   24.4 measured 9478 kbps
+LAB   25.8 LAB check skip+30 PASS want=388 got=389 ready=1269 ms playing=yes, moving by 1277 ms frozen=203 ms engine=exo rung=240p
+LAB   25.8 wakelock playing=false bg=false priv=false pos=380170ms
+LAB   25.8 exo tracks 720,480,360,240 selected=4 adaptive=true
+LAB   26.1 measured 10958 kbps
+LAB   26.8 wakelock playing=true bg=false priv=false pos=270170ms
+LAB   26.8 exo tracks 720,480,360,240 selected=4 adaptive=true
+LAB   26.8 wakelock playing=false bg=false priv=false pos=270170ms
+LAB   26.8 jump fill start
+LAB   27.4 wakelock playing=true bg=false priv=false pos=270170ms
+LAB   27.4 jump fill end 652 ms
+LAB   29.1 measured 9294 kbps
+LAB   29.3 LAB check swipe-120 PASS want=270 got=270 ready=1533 ms playing=yes, moving by 1542 ms frozen=802 ms engine=exo rung=240p
+LAB   29.3 exo steer quality target=auto made=3 rungs=[720, 480, 360, 240] picks=720
+LAB   29.3 quality -> auto on the ladder (no reopen)
+LAB cpu app 147% · 26.7fps · .innocent.media 73% | DartWorker 22% | ExoPlayer:Playb 13% | ExoPlayer:Loade 7% | 1.raster 7% | HwBinder:4370 6%
+LAB   30.4 measured 14611 kbps
+LAB   30.9 measured 26973 kbps
+LAB   31.1 LAB check quality->auto PASS want=271 got=272 ready=761 ms playing=yes, moving by 768 ms frozen=201 ms engine=exo rung=240p
+LAB   31.1 LAB check summary pass=5 fail=0
+LAB   31.1 LAB proxy upstream 18 requests 22.2 MB (0.81 a MB), steps back 0, handed over 0, bind {ok: 21}
+LAB   31.8 measured 28055 kbps
+LAB   32.8 measured 24279 kbps
+LAB   33.7 measured 25575 kbps
+LAB   34.7 measured 23237 kbps
+LAB   35.7 measured 26546 kbps
+LAB   36.5 measured 27324 kbps
+LAB   37.3 measured 33621 kbps
+LAB   38.2 measured 30727 kbps
+LAB   39.1 measured 26843 kbps
+LAB cpu app 135% · 22.2fps · .innocent.media 57% | DartWorker 15% | MediaCodec_loop 12% | ExoPlayer:Playb 12% | dart:io EventHa 7% | 1.raster 7%
+LAB   40.0 measured 29228 kbps
+LAB   40.8 measured 29694 kbps
+LAB   41.5 measured 37957 kbps
+LAB   42.4 measured 31655 kbps
+LAB   43.1 measured 33420 kbps
+LAB   44.9 measured 33026 kbps
+LAB   45.7 measured 32263 kbps
+LAB   46.6 measured 28630 kbps
+LAB   47.3 measured 37200 kbps
+LAB   48.1 measured 31184 kbps
+LAB   48.9 measured 32017 kbps
+LAB cpu app 136% · 24.7fps · .innocent.media 56% | DartWorker 16% | MediaCodec_loop 12% | ExoPlayer:Playb 12% | dart:io EventHa 7% | 1.raster 7%
+LAB   49.7 measured 28008 kbps
+LAB   50.6 measured 28976 kbps
+LAB   51.6 measured 22221 kbps
+LAB   52.7 measured 20815 kbps
+LAB   53.8 exo rung 720p 2000 kbps
+LAB   54.8 measured 20237 kbps
+LAB   56.0 measured 18176 kbps
+LAB   57.3 measured 16963 kbps
+LAB   58.4 measured 18662 kbps
+LAB cpu app 128% · 24.7fps · .innocent.media 54% | DartWorker 14% | MediaCodec_loop 13% | ExoPlayer:Playb 12% | 1.raster 8% | HwBinder:4370 7%
+LAB   59.7 measured 16861 kbps
+LAB   69.3 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=4
+LAB cpu app 76% · 24.6fps · MediaCodec_loop 18% | ExoPlayer:Playb 17% | HwBinder:4370 10% | 1.raster 10% | .innocent.media 7% | ExoPlayer:Media 5%
+LAB cpu app 74% · 22.3fps · MediaCodec_loop 18% | ExoPlayer:Playb 16% | 1.raster 10% | HwBinder:4370 10% | .innocent.media 6% | ExoPlayer:Media 4%
+LAB cpu app 73% · 24.6fps · MediaCodec_loop 17% | ExoPlayer:Playb 16% | 1.raster 10% | HwBinder:4370 9% | .innocent.media 6% | ExoPlayer:Media 4%
+LAB   89.9 fg stream: watching
+LAB   90.5 measured 28339 kbps
+LAB   91.3 measured 31775 kbps
+LAB   92.2 measured 27869 kbps
+LAB   92.9 measured 34663 kbps
+LAB   93.8 measured 27915 kbps
+LAB   94.9 measured 31775 kbps
+LAB   95.7 measured 30283 kbps
+LAB   96.4 measured 37449 kbps
+LAB   97.6 measured 19463 kbps
+LAB   98.3 measured 34735 kbps
+LAB   99.2 measured 25458 kbps
+LAB cpu app 142% · 24.6fps · .innocent.media 57% | DartWorker 16% | MediaCodec_loop 15% | ExoPlayer:Playb 13% | dart:io EventHa 9% | 1.raster 9%
+LAB  100.0 measured 32640 kbps
+LAB  100.8 measured 32768 kbps
+LAB  101.7 measured 29641 kbps
+LAB  102.5 measured 28149 kbps
+LAB  103.3 measured 32513 kbps
+LAB  104.1 measured 29694 kbps
+LAB  104.9 measured 28484 kbps
+LAB  105.8 measured 28777 kbps
+LAB  106.6 measured 31476 kbps
+LAB  107.5 measured 25890 kbps
+LAB  108.6 measured 28679 kbps
+LAB  109.3 measured 37117 kbps
+LAB cpu app 148% · 22.2fps · .innocent.media 59% | DartWorker 18% | MediaCodec_loop 15% | ExoPlayer:Playb 13% | dart:io EventHa 10% | 1.raster 8%
+LAB  110.2 measured 30283 kbps
+LAB  111.0 measured 33756 kbps
+LAB  111.9 measured 24636 kbps
+LAB  112.8 measured 29279 kbps
+LAB cpu app 92% · 24.7fps · .innocent.media 24% | MediaCodec_loop 17% | ExoPlayer:Playb 15% | HwBinder:4370 9% | 1.raster 9% | ExoPlayer:Media 4%
+LAB cpu app 75% · 24.7fps · MediaCodec_loop 19% | ExoPlayer:Playb 16% | HwBinder:4370 10% | 1.raster 10% | .innocent.media 6% | ExoPlayer:Media 4%
+LAB cpu app 72% · 24.6fps · MediaCodec_loop 18% | ExoPlayer:Playb 15% | HwBinder:4370 10% | 1.raster 10% | .innocent.media 6% | ExoPlayer:Media 4%
+LAB  144.0 fg stream: watching
+LAB  145.0 measured 17641 kbps
+LAB  145.7 measured 36393 kbps
+LAB  146.6 measured 25970 kbps
+LAB  147.4 measured 30448 kbps
+LAB  148.5 measured 21236 kbps
+LAB  149.3 measured 29279 kbps
+LAB cpu app 118% · 22.1fps · .innocent.media 37% | MediaCodec_loop 17% | ExoPlayer:Playb 14% | DartWorker 10% | HwBinder:4370 9% | 1.raster 9%
+LAB  150.3 measured 22641 kbps
+LAB  151.2 measured 27369 kbps
+LAB  152.0 measured 28728 kbps
+LAB  152.9 measured 27191 kbps
+LAB  153.9 measured 23045 kbps
+LAB  154.7 measured 30012 kbps
+LAB  155.7 measured 24105 kbps
+LAB  156.6 measured 24528 kbps
+LAB  157.4 measured 31775 kbps
+LAB  158.2 measured 31595 kbps
+LAB  158.9 measured 33354 kbps
+LAB cpu app 149% · 24.8fps · .innocent.media 61% | DartWorker 17% | MediaCodec_loop 15% | ExoPlayer:Playb 12% | dart:io EventHa 11% | 1.raster 9%
+LAB  159.8 measured 26886 kbps
+LAB  160.5 measured 33554 kbps
+LAB  161.4 measured 27235 kbps
+LAB  162.1 measured 36711 kbps
+LAB  163.0 measured 29959 kbps
+LAB  163.8 measured 30120 kbps
+LAB  164.6 measured 27730 kbps
+LAB  165.6 measured 21372 kbps
+LAB  166.4 measured 31300 kbps
+LAB  167.2 measured 28197 kbps
+LAB cpu app 133% · 24.7fps · .innocent.media 49% | MediaCodec_loop 16% | DartWorker 14% | ExoPlayer:Playb 13% | 1.raster 9% | HwBinder:4370 8%
+LAB cpu app 73% · 22.1fps · MediaCodec_loop 18% | ExoPlayer:Playb 15% | HwBinder:4370 10% | 1.raster 10% | .innocent.media 6% | ExoPlayer:Media 4%
+LAB cpu app 77% · 24.6fps · MediaCodec_loop 19% | ExoPlayer:Playb 15% | HwBinder:4370 10% | 1.raster 10% | .innocent.media 7% | ExoPlayer:Media 5%
+LAB  198.0 fg stream: watching
+LAB  198.8 measured 20560 kbps
+LAB cpu app 83% · 24.7fps · MediaCodec_loop 17% | .innocent.media 16% | ExoPlayer:Playb 14% | 1.raster 9% | HwBinder:4370 9% | ExoPlayer:Media 4%
+LAB  199.8 measured 20945 kbps
+LAB  200.6 measured 32768 kbps
+LAB  201.5 measured 25191 kbps
+LAB  202.5 measured 21873 kbps
+LAB  203.5 measured 24456 kbps
+LAB  204.6 measured 20893 kbps
+LAB  208.8 measured 4225 kbps
+LAB cpu app 132% · 24.7fps · .innocent.media 49% | MediaCodec_loop 16% | DartWorker 14% | ExoPlayer:Playb 13% | 1.raster 9% | HwBinder:4370 9%
+LAB  214.0 measured 3393 kbps
+LAB  214.8 measured 33026 kbps
+LAB  215.6 measured 33420 kbps
+LAB  216.4 measured 30066 kbps
+LAB  217.0 measured 39107 kbps
+LAB  217.9 measured 28581 kbps
+LAB  218.6 measured 32140 kbps
+LAB cpu app 131% · 22.3fps · .innocent.media 48% | MediaCodec_loop 16% | DartWorker 14% | ExoPlayer:Playb 13% | 1.raster 9% | HwBinder:4370 9%
+LAB  220.5 measured 26173 kbps
+LAB  221.3 measured 32961 kbps
+LAB  222.2 measured 28826 kbps
+LAB  222.8 measured 37786 kbps
+LAB  223.6 measured 31476 kbps
+LAB  224.6 measured 22489 kbps
+LAB  225.4 measured 29279 kbps
+LAB  226.2 measured 26379 kbps
+LAB  226.9 measured 38746 kbps
+LAB  227.7 measured 31775 kbps
+LAB  228.4 measured 38130 kbps
+LAB  229.1 measured 38479 kbps
+LAB cpu app 146% · 24.7fps · .innocent.media 60% | DartWorker 17% | MediaCodec_loop 15% | ExoPlayer:Playb 12% | dart:io EventHa 9% | 1.raster 8%
+LAB  230.0 measured 31011 kbps
+LAB  231.1 measured 24385 kbps
+LAB  232.0 measured 32201 kbps
+LAB  232.9 measured 23497 kbps
+LAB  233.9 measured 22429 kbps
+LAB  234.8 measured 27503 kbps
+LAB cpu app 111% · 24.7fps · .innocent.media 34% | MediaCodec_loop 17% | ExoPlayer:Playb 13% | HwBinder:4370 9% | 1.raster 9% | DartWorker 7%
