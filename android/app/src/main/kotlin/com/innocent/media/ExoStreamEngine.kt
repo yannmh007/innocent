@@ -1,6 +1,7 @@
 package com.innocent.media
 
 import android.content.Context
+import android.media.audiofx.LoudnessEnhancer
 import android.os.Handler
 import android.os.Looper
 import androidx.annotation.OptIn
@@ -33,6 +34,7 @@ import androidx.media3.exoplayer.source.chunk.MediaChunkIterator
 import androidx.media3.exoplayer.trackselection.AdaptiveTrackSelection
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.exoplayer.upstream.BandwidthMeter
+import androidx.media3.exoplayer.upstream.DefaultLoadErrorHandlingPolicy
 import com.google.common.collect.ImmutableList
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.EventChannel
@@ -98,10 +100,12 @@ class ExoStreamEngine private constructor(
             // viewer who stepped away is still listening to.
             override fun onSurfaceAvailable() {
                 player?.setVideoSurface(surface.surface)
+                emit(mapOf("id" to id, "e" to "surface", "on" to true))
             }
 
             override fun onSurfaceCleanup() {
                 player?.clearVideoSurface()
+                emit(mapOf("id" to id, "e" to "surface", "on" to false))
             }
         })
         // Every rung is a choice: the screen's size is no reason to hide a
@@ -146,7 +150,12 @@ class ExoStreamEngine private constructor(
                 HlsMediaSource.Factory(http)
                     // The master names every rung's codecs and size, so the
                     // player starts from it without reading a segment first.
-                    .setAllowChunklessPreparation(true))
+                    .setAllowChunklessPreparation(true)
+                    // A line that drops out for half a minute — a lift, a
+                    // dead spot — is waited for, a segment at a time, with
+                    // the buffer playing on; three tries (the default) and
+                    // the film stopped with an error.
+                    .setLoadErrorHandlingPolicy(DefaultLoadErrorHandlingPolicy(10)))
             .setSeekParameters(SeekParameters.EXACT)
             .setWakeMode(C.WAKE_MODE_NETWORK)
             .setHandleAudioBecomingNoisy(true)
@@ -232,6 +241,8 @@ class ExoStreamEngine private constructor(
             }
         })
         player = p
+        p.volume = gainWanted.coerceAtMost(1.0).toFloat()
+        if (gainWanted > 1.0) applyBoost(p)
         val item = MediaItem.Builder().setUri(url).setMimeType(MimeTypes.APPLICATION_M3U8).build()
         p.setMediaItem(item, startMs.coerceAtLeast(0))
         p.playWhenReady = autoplay
@@ -254,8 +265,14 @@ class ExoStreamEngine private constructor(
     fun play() { player?.play() }
     fun pause() { player?.pause() }
 
-    fun seek(ms: Long) {
+    /**
+     * [fast]: land on the keyframe nearest [ms] (at most a second off, two
+     * seconds apart on the ladder) — a far jump then needs one segment from
+     * its first byte and no decoding up to the frame. Near jumps are exact.
+     */
+    fun seek(ms: Long, fast: Boolean) {
         val p = player ?: return
+        p.setSeekParameters(if (fast) SeekParameters.CLOSEST_SYNC else SeekParameters.EXACT)
         p.seekTo(ms.coerceAtLeast(0))
         emit(mapOf("id" to id, "e" to "pos", "pos" to p.currentPosition,
             "buf" to p.bufferedPosition, "dur" to (if (p.duration == C.TIME_UNSET) 0L else p.duration)))
@@ -267,7 +284,45 @@ class ExoStreamEngine private constructor(
     }
 
     fun rate(r: Double) { player?.playbackParameters = PlaybackParameters(r.toFloat()) }
-    fun volume(v: Double) { player?.volume = v.toFloat().coerceIn(0f, 1f) }
+    fun volume(v: Double) = gain(v)
+
+    /**
+     * The viewer's volume, up to 4x: to 1.0 it is the player's volume,
+     * above it the sound is lifted with the platform's LoudnessEnhancer on
+     * the player's audio session, as libmpv's volume-max does for files.
+     */
+    fun gain(multiplier: Double) {
+        gainWanted = multiplier.coerceIn(0.0, 4.0)
+        val p = player ?: return
+        p.volume = gainWanted.coerceAtMost(1.0).toFloat()
+        applyBoost(p)
+    }
+
+    private var gainWanted = 1.0
+    private var enhancer: LoudnessEnhancer? = null
+    private var enhancerSession = 0
+
+    private fun applyBoost(p: ExoPlayer) {
+        try {
+            if (gainWanted <= 1.0) {
+                enhancer?.enabled = false
+                return
+            }
+            val session = p.audioSessionId
+            if (session == C.AUDIO_SESSION_ID_UNSET) return
+            if (enhancer == null || enhancerSession != session) {
+                enhancer?.release()
+                enhancer = LoudnessEnhancer(session)
+                enhancerSession = session
+            }
+            // Millibels: 20 * log10(gain) dB.
+            val mB = (2000.0 * Math.log10(gainWanted)).toInt()
+            enhancer?.setTargetGain(mB)
+            enhancer?.enabled = true
+        } catch (_: Throwable) {
+            // No enhancer on this phone: full volume is the most there is.
+        }
+    }
 
     /**
      * A rung by height, or Auto (null). Applied at once to what is loaded
@@ -299,6 +354,19 @@ class ExoStreamEngine private constructor(
             "heights" to heights, "picks" to picks))
     }
 
+    /** What the picture is doing: frames drawn and dropped so far. */
+    fun stats(): Map<String, Any?> {
+        val p = player ?: return emptyMap()
+        val c = p.videoDecoderCounters
+        c?.ensureUpdated()
+        return mapOf(
+            "rendered" to (c?.renderedOutputBufferCount ?: -1),
+            "dropped" to (c?.droppedBufferCount ?: -1),
+            "playing" to p.isPlaying,
+            "pos" to p.currentPosition,
+        )
+    }
+
     /** The data saver's ceiling for Auto, or none. */
     fun maxHeight(height: Int?) {
         steer.maxHeight = height
@@ -322,6 +390,12 @@ class ExoStreamEngine private constructor(
 
     fun release(keepSurface: Boolean = false) {
         main.removeCallbacks(ticker)
+        try {
+            enhancer?.release()
+        } catch (_: Throwable) {
+        }
+        enhancer = null
+        enhancerSession = 0
         player?.release()
         player = null
         lastRung = -1
@@ -551,6 +625,10 @@ class ExoStreamEngine private constructor(
                         result.success(false)
                         return@setMethodCallHandler
                     }
+                    if (call.method == "stats") {
+                        result.success(e.stats())
+                        return@setMethodCallHandler
+                    }
                     when (call.method) {
                         "open" -> e.open(
                             call.argument<String>("url") ?: "",
@@ -564,7 +642,10 @@ class ExoStreamEngine private constructor(
                         )
                         "play" -> e.play()
                         "pause" -> e.pause()
-                        "seek" -> e.seek((call.argument<Number>("ms"))?.toLong() ?: 0L)
+                        "seek" -> e.seek(
+                            (call.argument<Number>("ms"))?.toLong() ?: 0L,
+                            call.argument<Boolean>("fast") ?: false,
+                        )
                         "scrubbing" -> e.scrubbing(call.argument<Boolean>("on") ?: false)
                         "rate" -> e.rate((call.argument<Number>("rate"))?.toDouble() ?: 1.0)
                         "volume" -> e.volume((call.argument<Number>("volume"))?.toDouble() ?: 1.0)

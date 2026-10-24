@@ -131,9 +131,20 @@ any film with one rung. Also any phone the server sends back (see below).
 | 40079651806 | emulator | 4/5 | 0.17 s | stall on Auto (one reading) |
 | 40092901280 | emulator | 5/5 | 0.24 s | 1.9 s |
 
-## Next
+## Since 1.64.73
 
-- Seek preview: a thumbnail strip per film (one sprite per 10 s, made in
-  transcode), shown above the seek bar while dragging.
+- Far jumps (more than ten seconds) land on the nearest keyframe, at most
+  a second off: one segment from its first byte, no decoding up to the
+  frame. Near jumps (a double tap) stay exact.
+- A ladder's rungs share one pool of connections, kept a minute.
+- Seek-bar pictures: the smallest rung's init segment and the fragment for
+  that moment, decoded on the phone from memory (`PreviewFrames.kt`), about
+  75 KB the first time and nothing after; on the seek bar and above the
+  time during a swipe. Not written to disk, not written into the cache.
+- The volume boost above 100 % works on ExoPlayer (LoudnessEnhancer).
+- Ten retries for a segment instead of three: a half-minute drop-out is
+  waited for while the buffer plays.
+
+## Next
 - Play tap to grant: `request-playback` makes about 8 database round trips in
   sequence. One RPC would cut most of the 3.4–6.2 s.

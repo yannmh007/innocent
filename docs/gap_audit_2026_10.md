@@ -53,6 +53,22 @@ what was checked, what was fixed, and what is left, with the reason.
 
 ## Released
 
+**1.64.72 (385), 24 October 2026** — main `df540b6`, release
+`v1.64.72-385`, both APKs on the CDN and with a GitHub mirror, attested,
+`app_releases` updated. Catalogue films with a ladder now play on Media3
+ExoPlayer as HLS from the stream proxy, so a change of quality no longer
+reopens the film (docs/streaming_pro_plan.md). Also in it: migration 049,
+run by the owner and checked rolled back in production. A payment still
+pending when its account is deleted now leaves the queue as "account
+deleted", and approving one whose account is gone says so. On real phones
+before it shipped (Test Lab run 40094466469), the realme C53 and the OPPO
+A38 each passed five of five:
+- the picture stood still 0.2 s on a change of quality (1.64.71: 4.2-7.1 s);
+- first frame 163 and 352 ms;
+- `bind ok` 24 and 21;
+- 0.75 and 0.81 Worker requests a MB (2.5 and 11 before).
+Not better: the OPPO's first long seek, 3.0 s against 1.8 s.
+
 **1.64.71 (384), 24 October 2026** — main `5746e1e`, release
 `v1.64.71-384`, both APKs on the CDN and with a GitHub mirror, `app_releases`
 updated. Delete my account (migration 048 run by the owner, `delete_my_data`

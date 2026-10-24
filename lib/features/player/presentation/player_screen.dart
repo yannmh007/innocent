@@ -3663,9 +3663,13 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
       case IndicatorType.volume:
         return VolumeIndicator(value: indicator.value!);
       case IndicatorType.seek:
+        final svc = ref.read(videoPlayerServiceProvider);
         return SeekIndicator(
           delta: indicator.delta!,
           targetPosition: indicator.target!,
+          preview: svc is MediaKitPlayerService && svc.playingLadder
+              ? _LadderSwipePreview(service: svc, at: indicator.target!)
+              : null,
         );
       case IndicatorType.speed:
         final v = indicator.value!;
@@ -4176,6 +4180,15 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
     // per-surface one. Neither was read, so the bubble appeared for everyone
     // regardless of what Settings said.
     if (!widget.previewEnabled) return;
+    // A FILM ON THE LADDER ENGINE has its own pictures: the smallest rung's
+    // keyframe for that moment, about 75 KB the first time and nothing after
+    // (MediaKitPlayerService.ladderPreview) — light enough to be on without
+    // the network switch below, as YouTube's are.
+    final svc = ref.read(videoPlayerServiceProvider);
+    if (svc is MediaKitPlayerService && svc.playingLadder) {
+      _loadLadderPreview(svc, seconds);
+      return;
+    }
     // Network streams get their own switch, because pulling frames out of a
     // remote file costs bandwidth that the person watching over mobile data is
     // paying for. Off by default for that reason.
@@ -4206,6 +4219,23 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
       // corrupt frame) — log so we can diagnose missing preview
       // bubbles in debug builds.
       if (kDebugMode) debugPrint('Preview thumbnail fetch failed for $path @ ${bucket}ms: $e');
+    });
+  }
+
+  /// [_loadPreview] for the ladder engine ([_LadderPreviewLoader]).
+  _LadderPreviewLoader? _ladderPreviews;
+
+  @override
+  void dispose() {
+    _ladderPreviews?.dispose();
+    super.dispose();
+  }
+
+  void _loadLadderPreview(MediaKitPlayerService svc, int seconds) {
+    final loader = _ladderPreviews ??= _LadderPreviewLoader(svc);
+    loader.request(seconds, (bytes) {
+      if (!mounted || _dragValue == null) return;
+      setState(() => _previewBytes = bytes);
     });
   }
 
@@ -4688,4 +4718,103 @@ class SeekBandShape extends SliderComponentShape {
     required double textScaleFactor,
     required Size sizeWithOverflow,
   }) {}
+}
+
+/// Previews for a film on the ladder engine, at most one request in flight
+/// per [throttle], the newest winning — and the LAST position always asked
+/// for, a moment after the finger stops, so the picture is never one a
+/// step behind where the drag ended.
+class _LadderPreviewLoader {
+  _LadderPreviewLoader(this.service);
+
+  final MediaKitPlayerService service;
+  static const Duration throttle = Duration(milliseconds: 150);
+  int _seq = 0;
+  int _bucket = -1;
+  DateTime _last = DateTime.fromMillisecondsSinceEpoch(0);
+  Timer? _trailing;
+
+  /// A picture for [seconds], to [onPicture] if it is still the latest.
+  void request(int seconds, void Function(Uint8List bytes) onPicture) {
+    // One picture per two-second fragment: that is what the ladder holds.
+    final bucket = seconds ~/ 2;
+    if (bucket == _bucket) return;
+    _trailing?.cancel();
+    final wait = throttle - DateTime.now().difference(_last);
+    if (wait > Duration.zero) {
+      _trailing = Timer(wait, () => request(seconds, onPicture));
+      return;
+    }
+    _last = DateTime.now();
+    _bucket = bucket;
+    final seq = ++_seq;
+    service.ladderPreview(Duration(seconds: seconds)).then((bytes) {
+      if (bytes != null && seq == _seq) onPicture(bytes);
+    }, onError: (Object _) {});
+  }
+
+  void dispose() => _trailing?.cancel();
+}
+
+/// The picture at [at] above the time while a swipe moves through a film on
+/// the ladder engine; nothing until the first one arrives.
+class _LadderSwipePreview extends StatefulWidget {
+  const _LadderSwipePreview({required this.service, required this.at});
+
+  final MediaKitPlayerService service;
+  final Duration at;
+
+  @override
+  State<_LadderSwipePreview> createState() => _LadderSwipePreviewState();
+}
+
+class _LadderSwipePreviewState extends State<_LadderSwipePreview> {
+  late final _LadderPreviewLoader _loader = _LadderPreviewLoader(widget.service);
+  Uint8List? _bytes;
+
+  void _ask() => _loader.request(widget.at.inSeconds, (b) {
+        if (mounted) setState(() => _bytes = b);
+      });
+
+  @override
+  void initState() {
+    super.initState();
+    _ask();
+  }
+
+  @override
+  void didUpdateWidget(_LadderSwipePreview old) {
+    super.didUpdateWidget(old);
+    if (old.at != widget.at) _ask();
+  }
+
+  @override
+  void dispose() {
+    _loader.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final b = _bytes;
+    if (b == null) return const SizedBox.shrink();
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: Colors.white70, width: 1.5),
+        boxShadow: const [BoxShadow(color: Colors.black54, blurRadius: 8)],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(5),
+        child: Image.memory(
+          b,
+          width: 192,
+          height: 108,
+          fit: BoxFit.cover,
+          gaplessPlayback: true,
+          errorBuilder: (_, __, ___) => const SizedBox(width: 192, height: 108),
+        ),
+      ),
+    );
+  }
 }

@@ -4,6 +4,8 @@ import 'dart:typed_data';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:innocent/features/video_hub/data/cache/stream_cache_server.dart';
+import 'package:innocent/features/video_hub/domain/cmaf_index.dart';
+import 'package:innocent/features/video_hub/domain/hls_ladder.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -227,6 +229,44 @@ void main() {
     expect(code, 200);
     expect(_segments(String.fromCharCodes(pl)).length, 90);
     expect(worker.asked, isEmpty, reason: 'its index was already on the phone');
+  });
+
+  test("the seek bar's preview: the smallest rung's init and one fragment, read exactly",
+      () async {
+    final master = await register('film6');
+    expect((await _get(master)).$1, 200);
+    final head360 = CmafHead.parse(r360.bytes)!;
+    final idx360 = CmafIndex.parse(r360.bytes)!;
+    // A moment in the 31st fragment.
+    final at = Duration(milliseconds: idx360.timesMs[30] + 500);
+    worker.asked.clear();
+    final clip = await StreamCacheServer.instance.previewClip(at);
+    expect(clip, isNotNull);
+    expect(clip!.startMs, idx360.timesMs[30]);
+    final want = BytesBuilder()
+      ..add(r360.bytes.sublist(0, head360.initEnd))
+      ..add(r360.bytes.sublist(idx360.starts[30], idx360.starts[30] + idx360.sizes[30]));
+    expect(clip.film, want.toBytes(), reason: 'init + that fragment, byte for byte');
+    // From the smallest rung, and no read-ahead: its head once (the index
+    // and the init segment), then exactly the fragment.
+    var reads = worker.asked.where((a) => a.$3 - a.$2 + 1 > 8192).toList();
+    expect(reads.every((a) => a.$1 == 'a360'), isTrue, reason: '$reads');
+    expect(reads.map((a) => a.$3 - a.$2 + 1), contains(idx360.sizes[30]));
+    expect(reads.fold<int>(0, (n, a) => n + a.$3 - a.$2 + 1),
+        lessThanOrEqualTo(64 * 1024 + idx360.sizes[30]));
+    // The next picture: that fragment and nothing else.
+    worker.asked.clear();
+    final next = await StreamCacheServer.instance
+        .previewClip(Duration(milliseconds: idx360.timesMs[60] + 100));
+    expect(next?.startMs, idx360.timesMs[60]);
+    reads = worker.asked.where((a) => a.$3 - a.$2 + 1 > 8192).toList();
+    expect(reads.map((a) => a.$3 - a.$2 + 1).toList(), [idx360.sizes[60]]);
+    // A picture already held: nothing read at all.
+    worker.asked.clear();
+    final again = await StreamCacheServer.instance.previewClip(at, have: (_) => true);
+    expect(again?.film, isNull);
+    expect(again?.startMs, idx360.timesMs[30]);
+    expect(worker.asked, isEmpty);
   });
 
   test('a ladder released is gone', () async {

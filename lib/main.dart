@@ -157,6 +157,8 @@ void main() async {
   MediaKitPlayerService.standingHeadersFor = StreamDoor.headersFor;
   // The ladder engine weighs its rungs against the line the proxy measures.
   MediaKitPlayerService.networkKbps = StreamCacheServer.networkKbps;
+  // The seek bar's picture on the ladder engine.
+  MediaKitPlayerService.ladderClipAt = StreamCacheServer.instance.previewClip;
 
   // Wire the equalizer's audio-session id to the video player. The player
   // asks this hook (at each video's startup) for the shared session id and
