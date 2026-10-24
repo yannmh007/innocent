@@ -13,6 +13,7 @@ import 'app.dart';
 import 'core/ui/device_profile.dart';
 import 'core/app_version.dart';
 import 'core/services/video_player/disk_cache_dir.dart';
+import 'features/video_hub/data/cache/stream_cache_server.dart';
 import 'features/video_hub/data/cache/stream_cache_store.dart';
 import 'features/video_hub/data/stream_door.dart';
 import 'core/router/app_router.dart';
@@ -154,6 +155,8 @@ void main() async {
   // A granted stream opened by the player directly (when the app's proxy
   // cannot start) still carries this install's id. See StreamDoor.
   MediaKitPlayerService.standingHeadersFor = StreamDoor.headersFor;
+  // The ladder engine weighs its rungs against the line the proxy measures.
+  MediaKitPlayerService.networkKbps = StreamCacheServer.networkKbps;
 
   // Wire the equalizer's audio-session id to the video player. The player
   // asks this hook (at each video's startup) for the shared session id and

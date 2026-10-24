@@ -47,6 +47,17 @@ class LabStream {
     }
   }
 
+  /// Whether the lab asked for the viewer's jumps (`lab_jumps`) after the
+  /// title it named starts: Test Lab's checks, on the device lab's emulator.
+  static Future<bool> jumpsAsked() async {
+    if (!const bool.fromEnvironment('INNOCENT_LAB')) return false;
+    try {
+      return await _read('lab_jumps') != null;
+    } catch (_) {
+      return false;
+    }
+  }
+
   /// Whether a jump to [want] LANDED THERE: [got], read a while after it,
   /// is no more than [early] short of [want] (a start lands on the keyframe
   /// before it, two seconds at most on the ladder) and no more than [late]

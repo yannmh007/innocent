@@ -31,6 +31,7 @@ import 'features/player/presentation/player_provider.dart';
 import 'features/player/presentation/shortcut_item.dart';
 import 'core/services/diagnostics/lab_stream.dart';
 import 'core/services/diagnostics/playback_log.dart';
+import 'core/services/video_player/media_kit_player_service.dart';
 import 'core/services/video_player/stream_renewal.dart';
 import 'core/services/network/throughput_memory.dart';
 import 'features/video_hub/data/cache/stream_cache_server.dart';
@@ -85,7 +86,12 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
   /// (see [LabStream]). Nothing happens when it named none.
   Future<void> _labStream() async {
     final titleId = await LabStream.titleId();
-    if (titleId != null) return _labTitle(titleId);
+    if (titleId != null) {
+      await _labTitle(titleId);
+      // The device lab's own run of Test Lab's jumps (run.sh, flow jumps).
+      if (await LabStream.jumpsAsked()) await _labJumpScript();
+      return;
+    }
     final local = await LabStream.localUrl();
     if (local == null || !mounted) return;
     if (_showOnboarding) setState(() => _showOnboarding = false);
@@ -154,6 +160,34 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
     // as for a file (run 39206916255, both phones).
     PlayerController player() => ref.read(playerControllerProvider.notifier);
     var pass = 0, fail = 0;
+    // THE STOP A VIEWER SEES: the longest stretch, from just before a jump
+    // to the end of its check, in which the picture did not move while the
+    // film was meant to be playing. A quality change on the ladder engine
+    // should keep it at about the time between two position reports.
+    Duration? lastPos;
+    var stillSince = DateTime.now();
+    var frozen = Duration.zero;
+    Timer? sampler;
+    void watchFreeze() {
+      sampler?.cancel();
+      lastPos = svc.position;
+      stillSince = DateTime.now();
+      frozen = Duration.zero;
+      sampler = Timer.periodic(const Duration(milliseconds: 100), (_) {
+        final now = DateTime.now();
+        final p = svc.position;
+        if (p != lastPos) {
+          lastPos = p;
+          stillSince = now;
+        } else {
+          final d = now.difference(stillSince);
+          if (d > frozen) frozen = d;
+        }
+      });
+    }
+
+    String engine() =>
+        svc is MediaKitPlayerService && svc.playingLadder ? 'exo' : 'mpv';
     Future<bool> until(bool Function() ok, Duration within) async {
       final end = DateTime.now().add(within);
       while (DateTime.now().isBefore(end)) {
@@ -188,11 +222,22 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
       final resumed = DateTime.now().difference(jumped).inMilliseconds - 1000;
       final ok = moved && playing && LabStream.landed(want, landedAt, late: late);
       ok ? pass++ : fail++;
-      final rung = StreamRenewal.quality.value?.playing ?? '-';
+      sampler?.cancel();
+      final live = svc is MediaKitPlayerService ? svc.ladderRung : null;
+      final rung = live != null ? '${live}p' : StreamRenewal.quality.value?.playing ?? '-';
       PlaybackLog.add('LAB check $what ${ok ? 'PASS' : 'FAIL'} '
           'want=${want.inSeconds} got=${landedAt.inSeconds} '
           'ready=${moved ? '$ready ms' : 'never'} '
-          'playing=${playing ? 'yes, moving by $resumed ms' : 'no'} rung=$rung');
+          'playing=${playing ? 'yes, moving by $resumed ms' : 'no'} '
+          'frozen=${frozen.inMilliseconds} ms engine=${engine()} rung=$rung');
+    }
+
+    // How long a rung picked takes to be the one on screen (ladder engine).
+    Future<void> shown(String rung, DateTime asked) async {
+      final h = int.tryParse(rung);
+      if (h == null || svc is! MediaKitPlayerService || !svc.playingLadder) return;
+      final on = await until(() => svc.ladderRung == h, const Duration(seconds: 20));
+      PlaybackLog.add('LAB check shown ${h}p ${on ? 'after ${DateTime.now().difference(asked).inMilliseconds} ms' : 'never (on ${svc.ladderRung ?? '-'}p)'}');
     }
 
     String? otherRung() {
@@ -220,6 +265,7 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
       // 1. The seek bar, released at 40 %.
       var want = at(0.4);
       var jumped = DateTime.now();
+      watchFreeze();
       await player().seek(want);
       await check('seek', want, jumped);
 
@@ -230,21 +276,25 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
       } else {
         want = svc.position;
         jumped = DateTime.now();
+        watchFreeze();
         final ok = await player().switchQuality(rung);
         // The film plays on through the switch's fetch (up to 8 s).
         await check('quality->$rung${ok ? '' : ' (refused)'}', want, jumped,
             late: const Duration(seconds: 40));
+        await shown(rung, jumped);
       }
 
       // 3. +30 s, as the skip button does.
       want = svc.position + const Duration(seconds: 30);
       jumped = DateTime.now();
+      watchFreeze();
       await player().seekRelative(30);
       await check('skip+30', want, jumped);
 
       // 4. A swipe across the picture, 2 minutes back.
       final from = svc.position;
       want = from - const Duration(minutes: 2);
+      watchFreeze();
       player().onSeekStart();
       for (var s = 10; s <= 120; s += 10) {
         player().onSeekUpdate(-s);
@@ -257,11 +307,13 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
       // 5. Back to Auto.
       want = svc.position;
       jumped = DateTime.now();
+      watchFreeze();
       await player().switchQuality('auto');
       await check('quality->auto', want, jumped, late: const Duration(seconds: 40));
     } catch (e) {
       PlaybackLog.add('LAB check failed to run: $e');
     } finally {
+      sampler?.cancel();
       PlaybackLog.add('LAB check summary pass=$pass fail=$fail');
       // What the Worker saw of this phone: requests per megabyte, and how
       // often a step back was carried on rather than started again.

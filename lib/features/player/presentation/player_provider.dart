@@ -1714,6 +1714,14 @@ class PlayerController extends StateNotifier<PlayerState> {
       // better of the two and how it was caught.
       final svc = _ref.read(videoPlayerServiceProvider);
       if (svc is! MediaKitPlayerService) return;
+      // ON THE LADDER ENGINE THERE IS NOTHING TO DO HERE. ExoPlayer steps
+      // down a rung by itself, before its buffer runs dry, and libmpv's
+      // numbers would be those of an idle player. The trail keeps the rung.
+      if (svc.playingLadder) {
+        PlaybackLog.add('stall #$_stallsReported on the ladder '
+            '(${svc.ladderRung ?? '-'}p)');
+        return;
+      }
       final reading =
           await svc.readStallNumbers(previousDropped: _droppedAtLastStall);
       _droppedAtLastStall = await svc.readDroppedFrames();
@@ -1804,6 +1812,8 @@ class PlayerController extends StateNotifier<PlayerState> {
     if (!StreamRenewal.climbAvailable(uri)) return;
     final svc = _ref.read(videoPlayerServiceProvider);
     if (svc is! MediaKitPlayerService) return;
+    // ExoPlayer climbs by itself, at a segment boundary, with no reopen.
+    if (svc.playingLadder) return;
     _climbInFlight = true;
     try {
       final reading = await svc.readStallNumbers();
@@ -1873,6 +1883,8 @@ class PlayerController extends StateNotifier<PlayerState> {
     // down behind their back is exactly what they turned Auto off to avoid.
     // The buffering spinner is the honest answer, as on YouTube.
     if (StreamRenewal.qualityPinned) return;
+    final ladder = _ref.read(videoPlayerServiceProvider);
+    if (ladder is MediaKitPlayerService && ladder.playingLadder) return;
     final uri = _currentUri;
     if (uri == null || !StreamRenewal.canRenew(uri)) return;
     final need = failingBitsPerSecond;
