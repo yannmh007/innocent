@@ -494,8 +494,9 @@ class StreamCacheServer {
         _sources[r.cacheId]?.segmented = true;
         entries.add(_LadderRung(height: r.height, kbps: r.kbps, cacheId: r.cacheId, url: url));
       }
-      _ladders[ladderId] =
-          _Ladder(rungs: entries, aspect: aspect, frameRate: frameRate);
+      final start = rungs.where((r) => r.cacheId == startCacheId).firstOrNull ?? rungs.first;
+      _ladders[ladderId] = _Ladder(
+          rungs: entries, aspect: aspect, frameRate: frameRate, startHeight: start.height);
       return 'http://127.0.0.1:$port/h/$token/$ladderId/master.m3u8';
     } catch (e) {
       if (kDebugMode) debugPrint('StreamCacheServer.hlsUrlFor: $e');
@@ -564,6 +565,13 @@ class StreamCacheServer {
       final port = _server?.port;
       final token = _token;
       if (name == 'master.m3u8') {
+        // The picture's shape, when the catalogue did not say it: the start
+        // rung's head, read now — the player asks for it next anyway.
+        final startHeight = l.startHeight;
+        if (l.aspect == null && startHeight != null && l.rungs.every((r) => r.head?.width == null)) {
+          await _rungWithHead(l, startHeight)
+              .timeout(const Duration(seconds: 8), onTimeout: () => null);
+        }
         // Any rung already read gives the picture's shape to all of them.
         final read = l.rungs.where((r) => r.head?.width != null).firstOrNull;
         final aspect = read == null
@@ -2576,10 +2584,13 @@ class HlsRungSource {
 }
 
 class _Ladder {
-  _Ladder({required this.rungs, this.aspect, this.frameRate});
+  _Ladder({required this.rungs, this.aspect, this.frameRate, this.startHeight});
   final List<_LadderRung> rungs;
   final double? aspect;
   final double? frameRate;
+
+  /// The rung the player starts on, whose head is read first.
+  final int? startHeight;
 }
 
 class _LadderRung {

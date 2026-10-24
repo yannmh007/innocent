@@ -177,8 +177,12 @@ class HlsLadder {
 
   /// The master playlist: every rung, best first. [mediaUri] names a
   /// rung's media playlist; [aspect] (width / height, from any rung read)
-  /// gives each rung its RESOLUTION, which the player weighs against the
-  /// screen it is drawn on.
+  /// gives each rung its RESOLUTION.
+  ///
+  /// EVERY RUNG HAS A RESOLUTION, with 16:9 when nothing better is known:
+  /// the player tells rungs apart by their height, and a master without
+  /// one left every rung's height unknown — a pick of 240p then played the
+  /// best rung (device-lab run 40079651806).
   static String master(
     List<HlsRung> rungs, {
     required String Function(HlsRung rung) mediaUri,
@@ -204,10 +208,9 @@ class HlsLadder {
       ];
       // A rung's height is the picture's height (`scale=-2:<h>` in
       // tool/transcode.sh), portrait or not.
-      final w = r.head?.width ??
-          (aspect == null ? null : _even(r.height * aspect));
+      final w = r.head?.width ?? _even(r.height * (aspect ?? 16 / 9));
       final h = r.head?.height ?? r.height;
-      if (w != null) attrs.add('RESOLUTION=${w}x$h');
+      attrs.add('RESOLUTION=${w}x$h');
       if (frameRate != null && frameRate > 0) {
         attrs.add('FRAME-RATE=${frameRate.toStringAsFixed(3)}');
       }

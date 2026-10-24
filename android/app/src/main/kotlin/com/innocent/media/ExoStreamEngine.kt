@@ -113,12 +113,14 @@ class ExoStreamEngine private constructor(
     fun open(
         url: String, startMs: Long, autoplay: Boolean,
         target: Int?, maxHeight: Int?, bps: Long?, start: Int?,
+        rungs: Map<Int, Int>,
     ) {
         release(keepSurface = true)
         steer.target = target
         steer.maxHeight = maxHeight
         steer.start = start
-        if (bps != null && bps > 0) meter.estimate = bps
+        steer.heightByRate = rungs
+        if (bps != null && bps > 0) meter.seed(bps)
         val http = DefaultHttpDataSource.Factory()
             .setUserAgent("Innocent")
             .setConnectTimeoutMs(15_000)
@@ -182,7 +184,7 @@ class ExoStreamEngine private constructor(
                     if (g.type != C.TRACK_TYPE_VIDEO) continue
                     adaptive = adaptive || g.isAdaptiveSupported
                     for (i in 0 until g.length) {
-                        val h = g.getTrackFormat(i).height
+                        val h = steer.heightOf(g.getTrackFormat(i))
                         if (h > 0 && !heights.contains(h)) heights.add(h)
                         if (g.isTrackSelected(i)) selected++
                     }
@@ -289,8 +291,8 @@ class ExoStreamEngine private constructor(
         val heights = mutableListOf<Int>()
         var picks = -1
         if (sel != null) {
-            for (i in 0 until sel.length()) heights.add(sel.getFormat(i).height)
-            picks = sel.getFormat(sel.selectedIndex).height
+            for (i in 0 until sel.length()) heights.add(steer.heightOf(sel.getFormat(i)))
+            picks = steer.heightOf(sel.getFormat(sel.selectedIndex))
         }
         emit(mapOf("id" to id, "e" to "steer", "why" to why,
             "target" to steer.target, "made" to factory.made,
@@ -305,7 +307,7 @@ class ExoStreamEngine private constructor(
 
     /** The line's speed, from the proxy's reads of the Worker (bits a second). */
     fun bandwidth(bps: Long) {
-        if (bps > 0) meter.estimate = bps
+        if (bps > 0) meter.add(bps)
     }
 
     /** Makes the track selection look again now, not at the next chunk. */
@@ -339,6 +341,18 @@ class ExoStreamEngine private constructor(
          * is buffered and the player's own choice takes over.
          */
         @Volatile var start: Int? = null
+
+        /**
+         * Each rung's height by its average rate (the master's
+         * AVERAGE-BANDWIDTH, bits a second), for a master written before
+         * any rung's size was read: without it every rung's height is
+         * unknown, and a pick of 240p matched the first, best rung
+         * (device-lab run 40079651806).
+         */
+        @Volatile var heightByRate: Map<Int, Int> = emptyMap()
+
+        fun heightOf(f: Format): Int =
+            if (f.height > 0) f.height else heightByRate[f.averageBitrate] ?: Format.NO_VALUE
         /** Film kept in the old rung after a change: the next segment or so. */
         val keepUs = 2_000_000L
     }
@@ -350,7 +364,29 @@ class ExoStreamEngine private constructor(
      */
     @OptIn(UnstableApi::class)
     class ProxyMeter : BandwidthMeter {
+        // Two averages of the proxy's readings, a quick one and a slow one,
+        // and the lower of them (as Shaka Player does): a line that drops is
+        // believed at once, one that recovers only once it has held. The
+        // last reading alone kept 720p through a dip to 2.7 Mbit/s right
+        // after a seek, and the film stopped (run 40079651806).
+        private var fast = 0.0
+        private var slow = 0.0
         @Volatile var estimate: Long = 1_500_000L
+
+        /** A first value: what the line was last measured at. */
+        fun seed(bps: Long) {
+            fast = bps.toDouble()
+            slow = bps.toDouble()
+            estimate = bps
+        }
+
+        fun add(bps: Long) {
+            if (fast == 0.0) return seed(bps)
+            fast = 0.5 * bps + 0.5 * fast
+            slow = 0.2 * bps + 0.8 * slow
+            estimate = minOf(fast, slow).toLong()
+        }
+
         override fun getBitrateEstimate(): Long = estimate
         override fun getTransferListener(): TransferListener? = null
         override fun addEventListener(eventHandler: Handler, eventListener: BandwidthMeter.EventListener) {}
@@ -371,7 +407,7 @@ class ExoStreamEngine private constructor(
             adaptationCheckpoints: ImmutableList<AdaptiveTrackSelection.AdaptationCheckpoint>,
         ): AdaptiveTrackSelection {
             val s = SteeredSelection(group, tracks, type, bandwidthMeter, adaptationCheckpoints, steer)
-            if (type == C.TRACK_TYPE_VIDEO) {
+            if (group.type == C.TRACK_TYPE_VIDEO) {
                 made++
                 last = s
             }
@@ -412,7 +448,7 @@ class ExoStreamEngine private constructor(
             var smallest = 0
             var smallestH = Int.MAX_VALUE
             for (i in 0 until length()) {
-                val h = getFormat(i).height
+                val h = steer.heightOf(getFormat(i))
                 if (h == height) return i
                 if (h in (belowH + 1)..height) { below = i; belowH = h }
                 if (h < smallestH) { smallest = i; smallestH = h }
@@ -422,9 +458,9 @@ class ExoStreamEngine private constructor(
 
         private fun fits(f: Format): Boolean {
             val t = steer.target
-            if (t != null) return f.height == getFormat(indexFor(t)).height
+            if (t != null) return steer.heightOf(f) == steer.heightOf(getFormat(indexFor(t)))
             val cap = steer.maxHeight ?: return true
-            return f.height <= cap
+            return steer.heightOf(f) <= cap
         }
 
         private val steering: Boolean get() = steer.target != null || steer.maxHeight != null
@@ -435,7 +471,7 @@ class ExoStreamEngine private constructor(
             steer.start?.let { return indexFor(it) }
             val i = super.getSelectedIndex()
             val cap = steer.maxHeight ?: return i
-            return if (getFormat(i).height <= cap) i else indexFor(cap)
+            return if (steer.heightOf(getFormat(i)) <= cap) i else indexFor(cap)
         }
 
         override fun updateSelectedTrack(
@@ -474,6 +510,18 @@ class ExoStreamEngine private constructor(
     }
 
     companion object {
+        /** `[[height, averageBps], …]` as the channel carries it. */
+        private fun rungsArg(raw: List<Any?>?): Map<Int, Int> {
+            val out = mutableMapOf<Int, Int>()
+            for (pair in raw ?: emptyList()) {
+                val p = pair as? List<*> ?: continue
+                val h = (p.getOrNull(0) as? Number)?.toInt() ?: continue
+                val bps = (p.getOrNull(1) as? Number)?.toInt() ?: continue
+                out[bps] = h
+            }
+            return out
+        }
+
         private const val METHODS = "innocent/exo"
         private const val EVENTS = "innocent/exo/events"
         private val engines = mutableMapOf<Int, ExoStreamEngine>()
@@ -512,6 +560,7 @@ class ExoStreamEngine private constructor(
                             (call.argument<Number>("maxHeight"))?.toInt(),
                             (call.argument<Number>("bps"))?.toLong(),
                             (call.argument<Number>("start"))?.toInt(),
+                            rungsArg(call.argument<List<Any?>>("rungs")),
                         )
                         "play" -> e.play()
                         "pause" -> e.pause()

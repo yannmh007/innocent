@@ -113,6 +113,21 @@ void main() {
     expect(text, startsWith('#EXTM3U\n#EXT-X-VERSION:7\n#EXT-X-INDEPENDENT-SEGMENTS\n'));
   });
 
+  test('no rung read and no shape known: every rung still has a RESOLUTION', () {
+    // The player tells rungs apart by height; without one, a pick of 240p
+    // played the best rung (device-lab run 40079651806).
+    final text = HlsLadder.master(
+      const [
+        HlsRung(height: 720, kbps: 1500, url: 'a'),
+        HlsRung(height: 240, kbps: 300, url: 'b'),
+      ],
+      mediaUri: (r) => '${r.height}.m3u8',
+    );
+    expect(text, contains('RESOLUTION=1280x720'));
+    expect(text, contains('RESOLUTION=428x240'));
+    expect(text, contains('AVERAGE-BANDWIDTH=300000'));
+  });
+
   test('not a fragmented film: no head', () {
     final b = BytesBuilder();
     void box(String kind, int len) {

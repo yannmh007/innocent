@@ -147,14 +147,17 @@ class ExoEngine {
 
   /// [target] a rung by height (null: Auto), [maxHeight] the data saver's
   /// ceiling for Auto, [kbps] what the line was last measured at, [start]
-  /// Auto's first rung (the one warmed while the viewer looked at the film).
+  /// Auto's first rung (the one warmed while the viewer looked at the film),
+  /// [rungs] each rung's average rate by height — how the player tells the
+  /// rungs apart when the master could not yet say their sizes.
   Future<bool> open(String url,
       {Duration? startAt,
       bool autoplay = true,
       int? target,
       int? maxHeight,
       int? kbps,
-      int? start}) {
+      int? start,
+      Map<int, int> rungs = const <int, int>{}}) {
     position = startAt ?? Duration.zero;
     ended = false;
     rung = null;
@@ -166,6 +169,10 @@ class ExoEngine {
       'maxHeight': maxHeight,
       'bps': kbps == null ? null : kbps * 1000,
       'start': start,
+      // As the master writes AVERAGE-BANDWIDTH (HlsLadder.master).
+      'rungs': [
+        for (final e in rungs.entries) <int>[e.key, (e.value < 1 ? 1 : e.value) * 1000],
+      ],
     });
   }
 

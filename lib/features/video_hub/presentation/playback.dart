@@ -297,10 +297,12 @@ Future<void> playMedia(
       if (heights.length < 2) return null;
       ladderIds.clear();
       final rungs = <HlsRungSource>[];
+      final rates = <int, int>{};
       for (final h in heights) {
         final r = grant.renditions.firstWhere((x) => x.height == h);
         final id = streamCacheId(titleId: content.id, assetId: assetId, height: h);
         ladderIds.add(id);
+        rates[h] = r.kbps;
         rungs.add(HlsRungSource(
           height: h,
           kbps: r.kbps,
@@ -330,6 +332,7 @@ Future<void> playMedia(
         maxHeight: saverCap,
         kbps: ThroughputMemory.current,
         start: start.height,
+        rungs: rates,
         fallback: () async => StreamCacheServer.instance.ladderFallback(ladderId, start.height),
       );
       return url;

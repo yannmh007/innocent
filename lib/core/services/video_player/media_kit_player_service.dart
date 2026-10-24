@@ -175,11 +175,17 @@ class MediaKitPlayerService implements VideoPlayerService {
       int? maxHeight,
       int? kbps,
       int? start,
+      Map<int, int> rungs = const <int, int>{},
       Future<String?> Function()? fallback}) {
     _armedLadders
       ..clear()
       ..[uri] = _LadderArm(
-          target: target, maxHeight: maxHeight, kbps: kbps, start: start, fallback: fallback);
+          target: target,
+          maxHeight: maxHeight,
+          kbps: kbps,
+          start: start,
+          rungs: rungs,
+          fallback: fallback);
   }
 
   /// Ladders ExoPlayer could not start on this phone: opened on libmpv from
@@ -1108,7 +1114,8 @@ class MediaKitPlayerService implements VideoPlayerService {
         kbps: networkKbps?.value ?? armed?.kbps,
         // Only the film's first open starts on the warmed rung; a reopen
         // (a reconnect) is Auto's from the start.
-        start: startAt == null || startAt == Duration.zero ? armed?.start : null);
+        start: startAt == null || startAt == Duration.zero ? armed?.start : null,
+        rungs: armed?.rungs ?? const <int, int>{});
     if (!ok) {
       await _ladderFailed(uri, startAt: startAt, autoplay: autoplay);
       return;
@@ -2828,10 +2835,19 @@ int softwareDecodeThreads(int cores) {
 
 /// How a ladder should start ([MediaKitPlayerService.armLadder]).
 class _LadderArm {
-  const _LadderArm({this.target, this.maxHeight, this.kbps, this.start, this.fallback});
+  const _LadderArm(
+      {this.target,
+      this.maxHeight,
+      this.kbps,
+      this.start,
+      this.rungs = const <int, int>{},
+      this.fallback});
   final int? target;
   final int? maxHeight;
   final int? kbps;
   final int? start;
+
+  /// Each rung's average rate (kbps) by height, as the grant lists them.
+  final Map<int, int> rungs;
   final Future<String?> Function()? fallback;
 }
