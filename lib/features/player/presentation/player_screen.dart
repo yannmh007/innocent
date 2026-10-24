@@ -2034,6 +2034,10 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     final menu = StreamRenewal.quality.value;
     if (menu == null || menu.options.isEmpty) return;
     final s = AppStrings.of(context);
+    // On the ladder engine the rung on screen is ExoPlayer's, read live.
+    final svc = ref.read(videoPlayerServiceProvider);
+    final live = svc is MediaKitPlayerService ? svc.ladderRung : null;
+    final playing = live != null ? '${live}p' : menu.playing;
     final picked = await showAppModalBottomSheet<String>(
       context: context,
       backgroundColor: AppColors.darkSurface,
@@ -2067,8 +2071,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                   size: 20,
                 ),
                 title: Text(
-                  o.id == 'auto' && menu.playing != null
-                      ? '${o.label} (${menu.playing})'
+                  o.id == 'auto' && playing != null
+                      ? '${o.label} ($playing)'
                       : o.label,
                   style: const TextStyle(color: Colors.white, fontSize: 14.5),
                 ),

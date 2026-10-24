@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -204,8 +203,30 @@ void main() {
     for (final (size, at, u) in segs.take(20)) {
       expect((await _get(u, range: 'bytes=$at-${at + size - 1}')).$2, r720.bytes.sublist(at, at + size));
     }
-    expect(worker.asked.where((a) => a.$3 - a.$2 > 1), isEmpty,
+    // Only the length check — the front 8 KB, read once per registration —
+    // reaches the Worker; not one byte of the film.
+    expect(worker.asked.where((a) => a.$1 == 'a720' && a.$3 - a.$2 + 1 > 8192), isEmpty,
         reason: 'only the length check reaches the Worker');
+  });
+
+  test("the rungs either side are read ahead: a change of rung waits for no index", () async {
+    final master = await register('film5');
+    final (_, mbody) = await _get(master);
+    final text = String.fromCharCodes(mbody);
+    final url720 = RegExp(r'^http://.+/720\.m3u8$', multiLine: true).firstMatch(text)!.group(0)!;
+    final url360 = RegExp(r'^http://.+/360\.m3u8$', multiLine: true).firstMatch(text)!.group(0)!;
+    expect((await _get(url720)).$1, 200);
+    // The 360p head arrives on its own, behind the 720p playlist.
+    for (var i = 0; i < 50; i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      final last = worker.asked.lastOrNull;
+      if (last != null && last.$1 == 'a360' && last.$3 >= 64 * 1024 - 1) break;
+    }
+    worker.asked.clear();
+    final (code, pl) = await _get(url360);
+    expect(code, 200);
+    expect(_segments(String.fromCharCodes(pl)).length, 90);
+    expect(worker.asked, isEmpty, reason: 'its index was already on the phone');
   });
 
   test('a ladder released is gone', () async {

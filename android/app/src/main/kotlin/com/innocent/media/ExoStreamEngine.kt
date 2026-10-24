@@ -27,6 +27,7 @@ import androidx.media3.exoplayer.analytics.AnalyticsListener
 import androidx.media3.exoplayer.hls.HlsMediaSource
 import androidx.media3.exoplayer.source.chunk.Chunk
 import androidx.media3.exoplayer.source.chunk.MediaChunk
+import androidx.media3.exoplayer.source.chunk.MediaChunkIterator
 import androidx.media3.exoplayer.trackselection.AdaptiveTrackSelection
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.exoplayer.upstream.BandwidthMeter
@@ -106,10 +107,14 @@ class ExoStreamEngine private constructor(
             selector.buildUponParameters().clearViewportSizeConstraints().build())
     }
 
-    fun open(url: String, startMs: Long, autoplay: Boolean, target: Int?, maxHeight: Int?, bps: Long?) {
+    fun open(
+        url: String, startMs: Long, autoplay: Boolean,
+        target: Int?, maxHeight: Int?, bps: Long?, start: Int?,
+    ) {
         release(keepSurface = true)
         steer.target = target
         steer.maxHeight = maxHeight
+        steer.start = start
         if (bps != null && bps > 0) meter.estimate = bps
         val http = DefaultHttpDataSource.Factory()
             .setUserAgent("Innocent")
@@ -125,12 +130,18 @@ class ExoStreamEngine private constructor(
             // step back is played from memory.
             .setBufferDurationsMs(30_000, 60_000, 1_000, 2_000)
             .setBackBuffer(30_000, true)
+            // A minute of 240p and a minute of 1080p are both a minute.
+            .setPrioritizeTimeOverSizeThresholds(true)
             .build()
         val p = ExoPlayer.Builder(context)
             .setTrackSelector(selector)
             .setBandwidthMeter(meter)
             .setLoadControl(load)
-            .setMediaSourceFactory(HlsMediaSource.Factory(http))
+            .setMediaSourceFactory(
+                HlsMediaSource.Factory(http)
+                    // The master names every rung's codecs and size, so the
+                    // player starts from it without reading a segment first.
+                    .setAllowChunklessPreparation(true))
             .setSeekParameters(SeekParameters.EXACT)
             .setWakeMode(C.WAKE_MODE_NETWORK)
             .setHandleAudioBecomingNoisy(true)
@@ -280,6 +291,12 @@ class ExoStreamEngine private constructor(
     class Steer {
         @Volatile var target: Int? = null
         @Volatile var maxHeight: Int? = null
+        /**
+         * Auto's first rung: the one the app chose and warmed (its opening
+         * seconds may already be on the phone), until a little film of it
+         * is buffered and the player's own choice takes over.
+         */
+        @Volatile var start: Int? = null
         /** Film kept in the old rung after a change: the next segment or so. */
         val keepUs = 2_000_000L
     }
@@ -362,9 +379,23 @@ class ExoStreamEngine private constructor(
         override fun getSelectedIndex(): Int {
             val t = steer.target
             if (t != null) return indexFor(t)
+            steer.start?.let { return indexFor(it) }
             val i = super.getSelectedIndex()
             val cap = steer.maxHeight ?: return i
             return if (getFormat(i).height <= cap) i else indexFor(cap)
+        }
+
+        override fun updateSelectedTrack(
+            playbackPositionUs: Long,
+            bufferedDurationUs: Long,
+            availableDurationUs: Long,
+            queue: List<MediaChunk>,
+            mediaChunkIterators: Array<out MediaChunkIterator>,
+        ) {
+            super.updateSelectedTrack(
+                playbackPositionUs, bufferedDurationUs, availableDurationUs, queue, mediaChunkIterators)
+            // Two segments of the start rung in hand: Auto is the player's.
+            if (steer.start != null && queue.size >= 2) steer.start = null
         }
 
         override fun getSelectionReason(): Int =
@@ -427,6 +458,7 @@ class ExoStreamEngine private constructor(
                             (call.argument<Number>("target"))?.toInt(),
                             (call.argument<Number>("maxHeight"))?.toInt(),
                             (call.argument<Number>("bps"))?.toLong(),
+                            (call.argument<Number>("start"))?.toInt(),
                         )
                         "play" -> e.play()
                         "pause" -> e.pause()

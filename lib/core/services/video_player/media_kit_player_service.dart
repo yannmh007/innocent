@@ -13,6 +13,7 @@ import 'models/video_track_info.dart';
 import '../diagnostics/playback_log.dart';
 import 'disk_cache_dir.dart';
 import 'error_flood.dart';
+import 'exo_engine.dart';
 import 'incomplete_file.dart';
 import 'mpv_link.dart';
 import 'mpv_option_range.dart';
@@ -142,6 +143,80 @@ class MediaKitPlayerService implements VideoPlayerService {
   Duration _duration = Duration.zero;
   bool _isPlaying = false;
 
+  // ─── THE SECOND ENGINE: EXOPLAYER, FOR A CATALOGUE LADDER ───────────────
+  //
+  // A film with a streaming ladder is opened at its HLS master on the local
+  // proxy (StreamCacheServer.hlsUrlFor), and that one kind of address goes
+  // to Media3's ExoPlayer (ExoEngine), which changes rung with the picture
+  // still moving. Everything else stays on libmpv. Both live behind this one
+  // service — the streams below re-bind to whichever is playing ([_live]) —
+  // so the player screen, its gestures, PiP, the account code and the resume
+  // point see a single player whichever engine draws.
+  ExoEngine? _exo;
+  bool _exoActive = false;
+  final List<StreamSubscription<Object?>> _exoSubs = <StreamSubscription<Object?>>[];
+  VoidCallback? _kbpsListener;
+
+  /// The line's speed as the stream proxy measures it (kbps), for the
+  /// ladder engine's rung choice. Set once at start-up (main.dart), as
+  /// [standingHeadersFor] is: the proxy lives in a feature, this in core.
+  static ValueListenable<int?>? networkKbps;
+
+  static final Map<String, _LadderArm> _armedLadders = <String, _LadderArm>{};
+
+  /// How the ladder at [uri] should start: a rung the viewer pinned
+  /// ([target], null for Auto), the data saver's ceiling, what the line was
+  /// last measured at, and Auto's first rung ([start], the one warmed).
+  /// [fallback] is the start rung's own address, for libmpv, should
+  /// ExoPlayer fail before its first picture. Kept for every [open] of
+  /// exactly that address — a reconnect, a renewal — until the next film.
+  static void armLadder(String uri,
+      {int? target,
+      int? maxHeight,
+      int? kbps,
+      int? start,
+      Future<String?> Function()? fallback}) {
+    _armedLadders
+      ..clear()
+      ..[uri] = _LadderArm(
+          target: target, maxHeight: maxHeight, kbps: kbps, start: start, fallback: fallback);
+  }
+
+  /// Ladders ExoPlayer could not start on this phone: opened on libmpv from
+  /// then on, for the rest of the film.
+  static final Map<String, String> _ladderOnMpv = <String, String>{};
+
+  /// Which engine draws, for [buildVideoWidget]: the switch happens inside
+  /// [open], and the screen may not rebuild for it on its own.
+  final ValueNotifier<bool> _ladderView = ValueNotifier<bool>(false);
+
+  /// The ladder open now, and whether its first picture has been shown.
+  String? _ladderUri;
+  bool _ladderShown = false;
+  bool _ladderFallingBack = false;
+
+  /// A ladder is playing on ExoPlayer: it changes rung by itself, and a
+  /// change of quality is [setLadderQuality], never a reopen.
+  bool get playingLadder => _exoActive;
+
+  /// The rung on screen while a ladder plays, by height.
+  int? get ladderRung => _exoActive ? _exo?.rung : null;
+
+  /// A rung by height, or Auto (null) — the picture keeps moving.
+  Future<void> setLadderQuality(int? height) async {
+    if (_exoActive) await _exo?.quality(height);
+  }
+
+  /// The data saver's ceiling for Auto, or none.
+  Future<void> setLadderCap(int? height) async {
+    if (_exoActive) await _exo?.maxHeight(height);
+  }
+
+  /// A finger is on the seek bar: frames as fast as the decoder shows them.
+  Future<void> setScrubbing(bool on) async {
+    if (_exoActive) await _exo?.scrubbing(on);
+  }
+
   /// Bumped by every [open]; a start check that finds it changed belongs to a
   /// file nobody is watching any more.
   int _openGen = 0;
@@ -233,9 +308,17 @@ class MediaKitPlayerService implements VideoPlayerService {
     );
 
     // Wire cached values — assign to tracked fields so dispose can cancel.
-    _positionSub = _player.stream.position.listen((p) => _position = p);
-    _durationSub = _player.stream.duration.listen((d) => _duration = d);
-    _playingSub = _player.stream.playing.listen((p) => _isPlaying = p);
+    // While a ladder plays on ExoPlayer these are its numbers, not those of
+    // the idle libmpv (whose stop would otherwise write a zero over them).
+    _positionSub = _player.stream.position.listen((p) {
+      if (!_exoActive) _position = p;
+    });
+    _durationSub = _player.stream.duration.listen((d) {
+      if (!_exoActive) _duration = d;
+    });
+    _playingSub = _player.stream.playing.listen((p) {
+      if (!_exoActive) _isPlaying = p;
+    });
 
     // Phase 45: apply a sensible decoder + subtitle baseline so even
     // before [PlayerProvider] pushes user preferences the file plays
@@ -331,7 +414,8 @@ class MediaKitPlayerService implements VideoPlayerService {
   /// The player screen subscribes once per file; if the engine is rebuilt
   /// under it, a plain `_player.stream.x` would leave it listening to an
   /// instance nobody uses any more.
-  Stream<T> _live<T>(Stream<T> Function(mk.Player p) pick) {
+  Stream<T> _live<T>(Stream<T> Function(mk.Player p) pick,
+      {Stream<T> Function(ExoEngine e)? exo}) {
     // Closed with its last listener: onCancel drops both subscriptions, and
     // a broadcast controller with no listeners holds nothing.
     // ignore: close_sinks
@@ -340,7 +424,11 @@ class MediaKitPlayerService implements VideoPlayerService {
     StreamSubscription<int>? genSub;
     void attach() {
       sub?.cancel();
-      sub = pick(_player).listen(ctl.add, onError: ctl.addError);
+      final e = _exo;
+      // A stream the ladder engine has no answer for (tracks, volume) stays
+      // on libmpv's, which is idle and says nothing.
+      final source = _exoActive && e != null && exo != null ? exo(e) : pick(_player);
+      sub = source.listen(ctl.add, onError: ctl.addError);
     }
 
     ctl = StreamController<T>.broadcast(
@@ -662,20 +750,24 @@ class MediaKitPlayerService implements VideoPlayerService {
 
   // === Streams ===
   @override
-  Stream<Duration> get positionStream => _live((p) => p.stream.position);
+  Stream<Duration> get positionStream =>
+      _live((p) => p.stream.position, exo: (e) => e.positionStream);
 
   @override
-  Stream<Duration> get durationStream => _live((p) => p.stream.duration);
+  Stream<Duration> get durationStream =>
+      _live((p) => p.stream.duration, exo: (e) => e.durationStream);
 
   @override
-  Stream<bool> get playingStream => _live((p) => p.stream.playing);
+  Stream<bool> get playingStream =>
+      _live((p) => p.stream.playing, exo: (e) => e.playingStream);
 
   @override
-  Stream<bool> get bufferingStream => _live((p) => p.stream.buffering);
+  Stream<bool> get bufferingStream =>
+      _live((p) => p.stream.buffering, exo: (e) => e.bufferingStream);
 
   @override
   Stream<Duration> get bufferedStream =>
-      _live((p) => p.stream.buffer);
+      _live((p) => p.stream.buffer, exo: (e) => e.bufferedStream);
 
   @override
   Stream<List<AudioTrackInfo>> get audioTracksStream =>
@@ -713,7 +805,13 @@ class MediaKitPlayerService implements VideoPlayerService {
 
   @override
   Stream<String?> get errorStream =>
-      _live((p) => p.stream.error).map<String?>((e) {
+      _live<String>((p) => p.stream.error,
+              // An error before the first picture, with libmpv to fall
+              // back to, is handled here ([_ladderFailed]), not reported.
+              exo: (x) => x.errorStream
+                  .where((_) => _ladderShown || _armedLadders[_ladderUri]?.fallback == null)
+                  .map((m) => m ?? ''))
+          .map<String?>((e) {
         if (e.isEmpty) return null;
         // A FLOOD IS ONE EVENT, NOT A THOUSAND. This runs on the UI thread
         // for every error line libmpv logs; a decoder chewing through bad
@@ -754,7 +852,8 @@ class MediaKitPlayerService implements VideoPlayerService {
       });
 
   @override
-  Stream<bool> get completedStream => _live((p) => p.stream.completed);
+  Stream<bool> get completedStream =>
+      _live((p) => p.stream.completed, exo: (e) => e.completedStream);
 
   // === Sync getters ===
   @override
@@ -880,6 +979,11 @@ class MediaKitPlayerService implements VideoPlayerService {
 
   @override
   Future<void> open(String uri, {Duration? startAt, bool autoplay = true}) async {
+    if (ExoEngine.isLadder(uri)) {
+      await _openLadder(uri, startAt: startAt, autoplay: autoplay);
+      return;
+    }
+    if (_exoActive) await _leaveLadder();
     // v1.61 — the single most valuable breadcrumb there is. The process has
     // been dying during playback, and the scheme of what is being opened
     // (file / adb / content / http) is the first thing that separates the
@@ -960,6 +1064,126 @@ class MediaKitPlayerService implements VideoPlayerService {
     if (begin != null) unawaited(_confirmStart(begin, _openGen));
   }
 
+  /// A ladder's master playlist, on ExoPlayer (see [playingLadder]).
+  Future<void> _openLadder(String uri, {Duration? startAt, bool autoplay = true}) async {
+    // libmpv's start check for the file before this one has nothing to check.
+    _openGen++;
+    final onMpv = _ladderOnMpv[uri];
+    if (onMpv != null) {
+      if (_exoActive) await _leaveLadder();
+      await open(onMpv, startAt: startAt, autoplay: autoplay);
+      return;
+    }
+    final armed = _armedLadders[uri];
+    PlaybackLog.add('open ladder (exo) start=${startAt?.inSeconds ?? 0}s '
+        'autoplay=$autoplay rung=${armed?.target ?? 'auto'} first=${armed?.start ?? '-'}');
+    // libmpv lets go of the decoder and the sound first.
+    try {
+      await _player.stop();
+    } catch (_) {}
+    final e = _exo ??= await ExoEngine.create();
+    if (e == null) {
+      PlaybackLog.add('open ladder: no ExoPlayer on this build');
+      await _ladderFailed(uri, startAt: startAt, autoplay: autoplay);
+      return;
+    }
+    _ladderUri = uri;
+    _ladderShown = false;
+    if (!_exoActive) {
+      _exoActive = true;
+      _bindLadderEngine(e);
+    }
+    _position = startAt ?? Duration.zero;
+    // The viewer's volume and speed carry over from libmpv.
+    await e.volume((_volumePct / 100).clamp(0.0, 1.0));
+    try {
+      final rate = _player.state.rate;
+      if (rate > 0 && rate != 1.0) await e.rate(rate);
+    } catch (_) {}
+    final ok = await e.open(uri,
+        startAt: startAt,
+        autoplay: autoplay,
+        target: armed?.target,
+        maxHeight: armed?.maxHeight,
+        kbps: networkKbps?.value ?? armed?.kbps,
+        // Only the film's first open starts on the warmed rung; a reopen
+        // (a reconnect) is Auto's from the start.
+        start: startAt == null || startAt == Duration.zero ? armed?.start : null);
+    if (!ok) {
+      await _ladderFailed(uri, startAt: startAt, autoplay: autoplay);
+      return;
+    }
+    PlaybackLog.add('open ok');
+  }
+
+  /// ExoPlayer could not start this ladder: the start rung on libmpv, the
+  /// way every film played before it, and the same for the rest of the
+  /// film. With no rung to fall back to, the failure is the player's to
+  /// report.
+  Future<void> _ladderFailed(String uri, {Duration? startAt, bool autoplay = true}) async {
+    if (_ladderFallingBack) return;
+    final fallback = _armedLadders[uri]?.fallback;
+    if (fallback == null) throw StateError('ExoPlayer could not open the ladder');
+    _ladderFallingBack = true;
+    try {
+      final single = await fallback();
+      if (single == null) throw StateError('ExoPlayer could not open the ladder');
+      PlaybackLog.add('ladder on ExoPlayer failed: the start rung on libmpv');
+      _ladderOnMpv[uri] = single;
+      if (_exoActive) await _leaveLadder();
+      await open(single, startAt: startAt, autoplay: autoplay);
+    } finally {
+      _ladderFallingBack = false;
+    }
+  }
+
+  void _bindLadderEngine(ExoEngine e) {
+    for (final s in _exoSubs) {
+      unawaited(s.cancel());
+    }
+    _exoSubs
+      ..clear()
+      ..add(e.positionStream.listen((p) => _position = p))
+      ..add(e.durationStream.listen((d) => _duration = d))
+      ..add(e.playingStream.listen((p) => _isPlaying = p))
+      ..add(e.firstFrameStream.listen((_) => _ladderShown = true))
+      ..add(e.errorStream.listen((_) {
+        final uri = _ladderUri;
+        if (_ladderShown || uri == null) return;
+        // Before the first picture: libmpv takes over, at the same moment.
+        unawaited(_ladderFailed(uri, startAt: _position, autoplay: true)
+            .catchError((Object _) {}));
+      }));
+    final kbps = networkKbps;
+    if (kbps != null) {
+      void push() {
+        final v = kbps.value;
+        if (v != null && v > 0 && _exoActive) unawaited(e.bandwidth(v));
+      }
+
+      _kbpsListener = push;
+      kbps.addListener(push);
+    }
+    // Every live stream re-binds to the engine now playing.
+    if (!_engineGenCtl.isClosed) _engineGenCtl.add(_engineGen);
+    _ladderView.value = true;
+  }
+
+  Future<void> _leaveLadder() async {
+    _exoActive = false;
+    _ladderView.value = false;
+    _ladderUri = null;
+    final l = _kbpsListener;
+    if (l != null) networkKbps?.removeListener(l);
+    _kbpsListener = null;
+    for (final s in _exoSubs) {
+      await s.cancel();
+    }
+    _exoSubs.clear();
+    await _exo?.stop();
+    if (!_engineGenCtl.isClosed) _engineGenCtl.add(_engineGen);
+  }
+
   /// What [open] hands media_kit: the address, its headers, and where to
   /// begin — as [mk.Media.start], the one place a start survives a reopen
   /// (test/media_kit_reopen_start_test.dart holds media_kit to that).
@@ -1026,6 +1250,9 @@ class MediaKitPlayerService implements VideoPlayerService {
     _videoDetached = false;
     // Kill any in-flight volume ramp so it can't write to a dead player.
     _fadeGen++;
+    if (_exoActive) await _leaveLadder();
+    await _exo?.release();
+    _exo = null;
     await _player.dispose();
     _initialized = false;
     anyInitialized = false;
@@ -1036,21 +1263,50 @@ class MediaKitPlayerService implements VideoPlayerService {
 
   // === Playback control ===
   @override
-  Future<void> play() => _player.play();
+  Future<void> play() async {
+    if (_exoActive) {
+      await _exo?.play();
+      return;
+    }
+    await _player.play();
+  }
 
   @override
-  Future<void> pause() => _player.pause();
+  Future<void> pause() async {
+    if (_exoActive) {
+      await _exo?.pause();
+      return;
+    }
+    await _player.pause();
+  }
 
   @override
-  Future<void> playOrPause() => _player.playOrPause();
+  Future<void> playOrPause() async {
+    if (_exoActive) {
+      await (_isPlaying ? _exo?.pause() : _exo?.play());
+      return;
+    }
+    await _player.playOrPause();
+  }
 
   @override
-  Future<void> stop() => _player.stop();
+  Future<void> stop() async {
+    if (_exoActive) {
+      await _leaveLadder();
+      return;
+    }
+    await _player.stop();
+  }
 
   @override
-  Future<void> seek(Duration to) {
+  Future<void> seek(Duration to) async {
     _lastUserSeekAt = DateTime.now();
-    return _player.seek(_clampToPlayable(to));
+    if (_exoActive) {
+      _position = to;
+      await _exo?.seek(to);
+      return;
+    }
+    await _player.seek(_clampToPlayable(to));
   }
 
   /// See [VideoPlayerService.frameStep].
@@ -1096,11 +1352,17 @@ class MediaKitPlayerService implements VideoPlayerService {
     // of a file — before the demuxer had reported a length — landed on 00:00,
     // and on a stream with no length at all it landed there every time.
     _lastUserSeekAt = DateTime.now();
-    await _player.seek(_clampToPlayable(clampSeekTarget(
+    final target = clampSeekTarget(
       current: _position,
       delta: delta,
       duration: _duration,
-    )));
+    );
+    if (_exoActive) {
+      _position = target;
+      await _exo?.seek(target);
+      return;
+    }
+    await _player.seek(_clampToPlayable(target));
   }
 
   // === Audio ===
@@ -1125,6 +1387,7 @@ class MediaKitPlayerService implements VideoPlayerService {
   Future<void> setVolume(double volume) {
     _volumePct = volume.clamp(0.0, 1.0) * 100;
     _fadeGen++; // an explicit volume set wins over any running ramp
+    if (_exoActive) _exo?.volume(volume.clamp(0.0, 1.0));
     return _player.setVolume(_volumePct);
   }
 
@@ -1224,7 +1487,10 @@ class MediaKitPlayerService implements VideoPlayerService {
 
   // === Speed ===
   @override
-  Future<void> setRate(double rate) => _player.setRate(rate);
+  Future<void> setRate(double rate) async {
+    if (_exoActive) await _exo?.rate(rate);
+    await _player.setRate(rate);
+  }
 
   // === Subtitle ===
   @override
@@ -1294,8 +1560,12 @@ class MediaKitPlayerService implements VideoPlayerService {
   /// a buffering spinner). On release it calls [precise]=true to restore
   /// the 'absolute' baseline and then performs one exact seek to the
   /// final position. Cheap single-property writes; always non-throwing.
-  Future<void> setPreciseSeek(bool precise) => _setMpvProperty(
-      'hr-seek', precise ? _restingSeekMode : 'no');
+  Future<void> setPreciseSeek(bool precise) async {
+    // On the ladder engine a drag is ExoPlayer's scrubbing mode: frames as
+    // fast as the decoder shows them, no buffering spinner per step.
+    if (_exoActive) await _exo?.scrubbing(!precise);
+    await _setMpvProperty('hr-seek', precise ? _restingSeekMode : 'no');
+  }
 
   /// Update the subtitle border + shadow + color baseline. Each parameter
   /// is optional so the caller can change just one without disturbing
@@ -1380,6 +1650,7 @@ class MediaKitPlayerService implements VideoPlayerService {
 
   /// The video's own size in pixels, or null before it is known.
   Size? get videoSize {
+    if (_exoActive) return _exo?.size;
     try {
       final w = _player.state.width, h = _player.state.height;
       if (w == null || h == null || w <= 0 || h <= 0) return null;
@@ -2463,16 +2734,26 @@ class MediaKitPlayerService implements VideoPlayerService {
     if (!_initialized) {
       return const ColoredBox(color: Color(0xFF000000));
     }
-    return mkv.Video(
-      // A rebuilt engine is a new texture; a new key makes a new State.
-      key: ValueKey<int>(_engineGen),
-      controller: _videoController,
-      fit: fit,
-      controls: mkv.NoVideoControls,
-      // The player draws the subtitle itself, outside the zoom, in the
-      // user's style (SubtitleLook); media_kit's own would be a second copy.
-      subtitleViewConfiguration:
-          const mkv.SubtitleViewConfiguration(visible: false),
+    return ValueListenableBuilder<bool>(
+      valueListenable: _ladderView,
+      builder: (context, onLadder, _) {
+        final ladder = _exo;
+        if (onLadder && ladder != null) {
+          return ExoVideo(key: ValueKey<String>('exo-${ladder.id}'), engine: ladder, fit: fit);
+        }
+        return mkv.Video(
+          // A rebuilt engine is a new texture; a new key makes a new State.
+          key: ValueKey<int>(_engineGen),
+          controller: _videoController,
+          fit: fit,
+          controls: mkv.NoVideoControls,
+          // The player draws the subtitle itself, outside the zoom, in the
+          // user's style (SubtitleLook); media_kit's own would be a second
+          // copy.
+          subtitleViewConfiguration:
+              const mkv.SubtitleViewConfiguration(visible: false),
+        );
+      },
     );
   }
 
@@ -2543,4 +2824,14 @@ int softwareDecodeThreads(int cores) {
   final spare = cores - 2;
   if (spare < 1) return 1;
   return spare > 4 ? 4 : spare;
+}
+
+/// How a ladder should start ([MediaKitPlayerService.armLadder]).
+class _LadderArm {
+  const _LadderArm({this.target, this.maxHeight, this.kbps, this.start, this.fallback});
+  final int? target;
+  final int? maxHeight;
+  final int? kbps;
+  final int? start;
+  final Future<String?> Function()? fallback;
 }

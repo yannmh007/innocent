@@ -580,7 +580,16 @@ class StreamCacheServer {
         final r = h == null ? null : await _rungWithHead(l, h);
         if (r != null) {
           body = HlsLadder.media(r.hls);
-          if (body != null) PlaybackLog.add('hls: ${r.height}p playlist, ${r.index!.length} segments');
+          if (body != null) {
+            PlaybackLog.add('hls: ${r.height}p playlist, ${r.index!.length} segments');
+            // The rungs either side are where Auto goes next: their heads
+            // read now, a change of rung waits for no index.
+            final heights = [for (final x in l.rungs) x.height]..sort();
+            final i = heights.indexOf(r.height);
+            for (final n in [if (i > 0) heights[i - 1], if (i + 1 < heights.length) heights[i + 1]]) {
+              unawaited(_rungWithHead(l, n));
+            }
+          }
         }
       }
     }
@@ -923,7 +932,23 @@ class StreamCacheServer {
       src.close();
       return true;
     });
+    // A ladder with none of its rungs left is gone with them.
+    _ladders.removeWhere((_, l) => l.rungs.every((r) => !_sources.containsKey(r.cacheId)));
   }
+
+  /// The address of one rung of a ladder, for libmpv to play on its own —
+  /// the way back when ExoPlayer cannot start a ladder. Read as libmpv
+  /// reads, not segment by segment.
+  String? ladderFallback(String ladderId, int height) {
+    final r = _ladders[ladderId]?.rungs.where((x) => x.height == height).firstOrNull;
+    if (r == null) return null;
+    playAsFile(r.cacheId);
+    return r.url;
+  }
+
+  /// A rung registered for a ladder, now played as one file (by libmpv):
+  /// its reads are answered as a file's, not a segment's.
+  void playAsFile(String cacheId) => _sources[cacheId]?.segmented = false;
 
   Future<void> _handle(HttpRequest req) async {
     final res = req.response;
@@ -1306,9 +1331,13 @@ class StreamCacheServer {
   Future<int> _segmentFromUpstream(Socket out, StreamCacheStore store,
       CacheEntry entry, _Source src, int pos, int endInclusive, _Gone gone) async {
     final total = entry.total;
+    // The head (from byte 0: the index, the init segment) is read for
+    // itself; reading the film's opening on behind it would be two
+    // megabytes of a beginning a viewer resuming at minute forty never sees.
+    final ahead = pos == 0 ? 0 : segmentReadAhead;
     final aheadEnd = min(
         min(entry.nextPartStart(pos, total), total), // exclusive
-        max(endInclusive + 1, pos + segmentReadAhead));
+        max(endInclusive + 1, pos + ahead));
     if (aheadEnd <= pos) return pos;
     final up = await _openPooled(src, pos, aheadEnd - 1);
     if (up == null) return pos;

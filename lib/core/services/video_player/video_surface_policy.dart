@@ -16,11 +16,26 @@ import '../preferences/player_settings_service.dart';
 ///  * the server's `app_releases.player_flags` containing `legacy_surface`
 ///    (migration 038), cached here by the daily update check, so a phone
 ///    model that draws it wrong can be fixed for everyone without an APK.
+///
+/// The same flags hold the way back from ExoPlayer for catalogue ladders:
+/// `mpv_ladder` in `player_flags` plays every film on libmpv again, one rung
+/// at a time, as 1.64.71 did ([useLadderEngine]).
 class VideoSurfacePolicy {
   VideoSurfacePolicy._();
 
   static const String remoteFlagsKey = 'remote_player_flags_v1';
   static const String legacySurfaceFlag = 'legacy_surface';
+  static const String mpvLadderFlag = 'mpv_ladder';
+
+  /// Whether a catalogue film with a ladder plays on ExoPlayer, as HLS.
+  static Future<bool> useLadderEngine() async {
+    try {
+      final sp = await SharedPreferences.getInstance();
+      return !(sp.getStringList(remoteFlagsKey) ?? const <String>[]).contains(mpvLadderFlag);
+    } catch (_) {
+      return true;
+    }
+  }
 
   /// Whether the engine should ask for the efficient surface.
   static Future<bool> useEfficientSurface() async {

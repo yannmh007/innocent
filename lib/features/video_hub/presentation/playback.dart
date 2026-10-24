@@ -8,7 +8,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/localization/app_strings.dart';
 import '../../../core/router/routes.dart';
+import '../../../core/di/core_providers.dart';
 import '../../../core/services/diagnostics/playback_log.dart';
+import '../../../core/services/video_player/media_kit_player_service.dart';
+import '../../../core/services/video_player/video_surface_policy.dart';
 import '../../../core/services/video_player/stream_renewal.dart';
 import '../data/api/event_sender.dart';
 import '../data/api/offline_library.dart';
@@ -252,8 +255,94 @@ Future<void> playMedia(
       assetId: assetId,
       height: chosen?.height ?? 0,
     );
-    StreamCacheServer.instance.releaseAllExcept(<String>{cacheId});
-    final localUrl = await StreamCacheServer.instance.localUrlFor(
+
+    // ─── THE LADDER AS ONE STREAM ──────────────────────────────────────
+    //
+    // A film with more than one rung plays on ExoPlayer, as HLS over the
+    // rungs' own files (StreamCacheServer.hlsUrlFor): a change of quality —
+    // Auto's or the viewer's — happens at the next two-second boundary with
+    // the picture still moving, and Auto drops a rung before the buffer runs
+    // dry instead of after the film has stopped. The start is still the rung
+    // chosen above, so the opening the warm start fetched is the opening
+    // played. Original stays on libmpv (it is the uploaded file, not a rung),
+    // and so does every phone the server's `mpv_ladder` flag sends back.
+    // docs/streaming_pro_plan.md.
+    final ladderId = streamCacheId(titleId: content.id, assetId: assetId, height: -1);
+    final ladderIds = <String>{};
+    String? ladderUrl;
+    // One renewal for every rung whose link ran out at the same moment.
+    Future<PlaybackGrant>? renewing;
+    Future<PlaybackGrant> renewOnce() {
+      final now = renewing;
+      if (now != null) return now;
+      final f = ref.read(contentRepositoryProvider).requestPlayback(
+            content: content,
+            source: source,
+            deviceId: deviceId,
+          );
+      renewing = f;
+      unawaited(f.then<void>((_) {}, onError: (Object _) {}).whenComplete(() {
+        Timer(const Duration(seconds: 30), () {
+          if (identical(renewing, f)) renewing = null;
+        });
+      }));
+      return f;
+    }
+
+    final label = titleOverride ?? content.displayTitle(s.locale.languageCode);
+    Future<String?> registerLadder({int? target, Set<String> keep = const <String>{}}) async {
+      final start = chosen;
+      if (start == null) return null;
+      final heights = <int>{for (final r in grant.renditions) r.height};
+      if (heights.length < 2) return null;
+      ladderIds.clear();
+      final rungs = <HlsRungSource>[];
+      for (final h in heights) {
+        final r = grant.renditions.firstWhere((x) => x.height == h);
+        final id = streamCacheId(titleId: content.id, assetId: assetId, height: h);
+        ladderIds.add(id);
+        rungs.add(HlsRungSource(
+          height: h,
+          kbps: r.kbps,
+          cacheId: id,
+          upstream: r.url,
+          bytes: r.bytes,
+          refresh: () async {
+            final f = await renewOnce();
+            if (!f.isGranted) return null;
+            // The SAME rung: its cache entry is that rung's bytes.
+            return f.renditions.where((x) => x.height == h).firstOrNull?.url;
+          },
+        ));
+      }
+      StreamCacheServer.instance.releaseAllExcept(<String>{...ladderIds, ...keep});
+      final url = await StreamCacheServer.instance.hlsUrlFor(
+        ladderId: ladderId,
+        rungs: rungs,
+        label: label,
+        aspect: _aspect(content, source),
+        startCacheId: cacheId,
+      );
+      if (url == null) return null;
+      MediaKitPlayerService.armLadder(
+        url,
+        target: target,
+        maxHeight: saverCap,
+        kbps: ThroughputMemory.current,
+        start: start.height,
+        fallback: () async => StreamCacheServer.instance.ladderFallback(ladderId, start.height),
+      );
+      return url;
+    }
+
+    if (chosen != null && Platform.isAndroid && await VideoSurfacePolicy.useLadderEngine()) {
+      ladderUrl = await registerLadder(
+          target: preferred == QualityChoice.auto ? null : chosen.height);
+    }
+    String? localUrl = ladderUrl;
+    if (localUrl == null) {
+      StreamCacheServer.instance.releaseAllExcept(<String>{cacheId});
+      localUrl = await StreamCacheServer.instance.localUrlFor(
       cacheId: cacheId,
       upstream: playUrl,
       total: chosen?.bytes,
@@ -280,8 +369,9 @@ Future<void> playMedia(
         return chosen == null ? fresh.url : null;
       },
     );
+    }
     final openUrl = localUrl ?? playUrl;
-    PlaybackLog.add('play through ${localUrl == null ? 'the remote address' : 'the local proxy'}');
+    PlaybackLog.add('play through ${ladderUrl != null ? 'the ladder on ExoPlayer' : localUrl == null ? 'the remote address' : 'the local proxy'}');
 
     // The copy on screen and its address: the start, then whatever a step
     // down, a menu choice or a climb moved it to.
@@ -303,6 +393,70 @@ Future<void> playMedia(
     // evidence the first choice did not have.
     StreamRenewal.register(openUrl,
         ({int? belowKbps, String? quality, bool climb = false, Duration? at}) async {
+      // ON THE LADDER NOTHING IS REOPENED. Auto's steps are ExoPlayer's own,
+      // a rung the viewer picks is steered to with the picture moving, and
+      // each rung's link is renewed by the proxy when it runs out. Only
+      // Original leaves it — a different file, on libmpv.
+      final ladder = ladderUrl;
+      final svc = ref.read(videoPlayerServiceProvider);
+      final onLadder = ladder != null &&
+          playingUrl == ladder &&
+          svc is MediaKitPlayerService &&
+          svc.playingLadder;
+      if (onLadder) {
+        if (climb || belowKbps != null) return null;
+        if (quality == null) return ladder;
+        if (quality != QualityChoice.original) {
+          final pick = quality == QualityChoice.auto
+              ? null
+              : chooseRendition(grant.renditions, quality,
+                  measuredKbps: ThroughputMemory.current, maxHeight: saverCap);
+          await svc.setLadderQuality(pick?.height);
+          await QualityPreference.write(quality);
+          final menu = StreamRenewal.quality.value;
+          if (menu != null) {
+            StreamRenewal.quality.value = menu.copyWith(
+              selected: quality,
+              playing: pick != null
+                  ? '${pick.height}p'
+                  : svc.ladderRung != null
+                      ? '${svc.ladderRung}p'
+                      : menu.playing,
+            );
+          }
+          PlaybackLog.add('quality -> $quality on the ladder (no reopen)');
+          return ladder;
+        }
+      }
+      // BACK TO THE LADDER from Original: the rung picked, on ExoPlayer, at
+      // the same moment.
+      if (ladder != null &&
+          playingUrl != ladder &&
+          quality != null &&
+          quality != QualityChoice.original) {
+        final pick = quality == QualityChoice.auto
+            ? null
+            : chooseRendition(grant.renditions, quality,
+                measuredKbps: ThroughputMemory.current, maxHeight: saverCap);
+        // The copy on screen is answered until the player has left it.
+        final again = await registerLadder(target: pick?.height, keep: <String>{playingId});
+        if (again != null) {
+          await QualityPreference.write(quality);
+          playingUrl = again;
+          playingId = cacheId;
+          playingHeight = pick?.height ?? chosen?.height;
+          playingViaProxy = true;
+          final menu = StreamRenewal.quality.value;
+          if (menu != null) {
+            StreamRenewal.quality.value = menu.copyWith(
+              uri: again,
+              selected: quality,
+              playing: '${playingHeight ?? chosen?.height}p',
+            );
+          }
+          return again;
+        }
+      }
       // A CHOICE BETWEEN COPIES picks from the grant already held while it
       // is young (see [HeldGrant]): the menu's change no longer waits on
       // the server, nor a step down on the line that is failing. A renewal
@@ -412,7 +566,12 @@ Future<void> playMedia(
       // it: the warm switch below fetches the new copy while the old one
       // plays on, and the old one's reads must still be answered. Released
       // at the next change.
-      StreamCacheServer.instance.releaseAllExcept(<String>{nextId, playingId});
+      // Leaving the ladder, its rungs stay until the player has left them.
+      StreamCacheServer.instance.releaseAllExcept(<String>{
+        nextId,
+        playingId,
+        if (ladder != null && playingUrl == ladder) ...ladderIds,
+      });
       final nextLocal = await StreamCacheServer.instance.localUrlFor(
         cacheId: nextId,
         upstream: freshUrl,
@@ -432,6 +591,8 @@ Future<void> playMedia(
           return again == null ? f2.url : null;
         },
       );
+      // A rung of the ladder, now for libmpv: read as a file, not by segment.
+      StreamCacheServer.instance.playAsFile(nextId);
       // ─── THE WARM SWITCH ─────────────────────────────────────────
       //
       // Reopened cold, the new copy's first picture waits for its bytes to
@@ -1237,6 +1398,23 @@ Future<void> promptUpgrade(
 
 
 /// The master's short side, when the album knows it, for "Original · 4K".
+/// The picture's shape (width / height) as the catalogue lists it, for the
+/// ladder's master playlist; null when it does not say.
+double? _aspect(VideoContent content, MediaRef source) {
+  for (final item in content.items) {
+    final w = item.width, h = item.height;
+    if (item.source.provider == source.provider &&
+        item.source.locator == source.locator &&
+        w != null &&
+        h != null &&
+        w > 0 &&
+        h > 0) {
+      return w / h;
+    }
+  }
+  return null;
+}
+
 int? _originalHeight(VideoContent content, MediaRef source) {
   for (final item in content.items) {
     if (item.source.provider == source.provider &&

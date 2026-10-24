@@ -202,6 +202,8 @@ class HlsLadder {
         'AVERAGE-BANDWIDTH=$avg',
         'CODECS="$codecs"',
       ];
+      // A rung's height is the picture's height (`scale=-2:<h>` in
+      // tool/transcode.sh), portrait or not.
       final w = r.head?.width ??
           (aspect == null ? null : _even(r.height * aspect));
       final h = r.head?.height ?? r.height;
