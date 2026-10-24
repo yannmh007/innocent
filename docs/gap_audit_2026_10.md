@@ -53,6 +53,18 @@ what was checked, what was fixed, and what is left, with the reason.
 
 ## Released
 
+**1.64.71 (384), 24 October 2026** — main `5746e1e`, release
+`v1.64.71-384`, both APKs on the CDN and with a GitHub mirror, `app_releases`
+updated. Delete my account (migration 048 run by the owner, `delete_my_data`
+run dry in production — an unknown account touched nothing, an admin was
+refused — and the `delete-account` edge function deployed with JWT
+verification), the account code on paid films, and the sealed stream cache.
+The first release with artifact attestations: one SLSA provenance statement
+covers both APKs, `gh attestation verify innocent-1.64.71-384.apk -R
+yannmh007/innocent`. On real phones before it shipped: Test Lab run
+39972176423, the realme C53 and the OPPO A38 five of five each, both caches
+sealed by the phone's own Keystore, `bind ok` 124 and 190.
+
 **1.64.70 (383), 23 October 2026** — main `7c7e78a`, release
 `v1.64.70-383`, `app_releases` updated. On real phones in Firebase Test
 Lab: the OPPO A38 five of five checks, `bind ok 150` (run 39919163442); the
@@ -128,7 +140,11 @@ Sintel does not decode there.)
    request counts be read directly — needed to confirm `bind: ok` from the
    field before `BIND_MODE = "enforce"`.
 
-## Next app release (after 1.64.70)
+## Next app release (after 1.64.71)
+
+Shipped in 1.64.71 and kept below for the record: Delete my account, the
+account code on paid films, the sealed stream cache.
+
 
 * **Delete my account**, in the app: Play policy for any app with accounts,
   and Thailand's PDPA (the app ships Thai) gives a right to erasure. BUILT,
