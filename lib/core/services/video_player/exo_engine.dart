@@ -106,7 +106,21 @@ class ExoEngine {
         size = w > 0 && h > 0 ? Size(w, h) : null;
         _size.add(size);
       case 'first':
+        final clock = _seekClock;
+        if (clock != null) {
+          PlaybackLog.add('exo picture after seek ${clock.elapsedMilliseconds} ms');
+          _seekClock = null;
+        }
+        final back = _surfaceClock;
+        if (back != null) {
+          PlaybackLog.add('exo picture back ${back.elapsedMilliseconds} ms after its surface');
+          _surfaceClock = null;
+        }
         _first.add(null);
+      case 'surface':
+        final on = e['on'] == true;
+        PlaybackLog.add('exo surface ${on ? 'back' : 'gone'} at ${position.inSeconds}s');
+        _surfaceClock = on ? (Stopwatch()..start()) : null;
       case 'rung':
         final h = (e['h'] as num?)?.toInt();
         if (h != null && h > 0 && h != rung) {
@@ -178,10 +192,20 @@ class ExoEngine {
 
   Future<bool> play() => _call('play');
   Future<bool> pause() => _call('pause');
-  Future<bool> seek(Duration to) {
+  /// [fast]: the keyframe nearest [to] (at most a second off), for a far
+  /// jump; otherwise the exact frame.
+  Future<bool> seek(Duration to, {bool fast = false}) {
     position = to;
-    return _call('seek', <String, Object?>{'ms': to.inMilliseconds});
+    _seekClock = Stopwatch()..start();
+    return _call('seek', <String, Object?>{'ms': to.inMilliseconds, 'fast': fast});
   }
+
+  /// Since the last seek, until its first picture: in the trail.
+  Stopwatch? _seekClock;
+
+  /// Since the picture's surface came back (the app back in front), until
+  /// its first frame.
+  Stopwatch? _surfaceClock;
 
   Future<bool> scrubbing(bool on) => _call('scrubbing', <String, Object?>{'on': on});
   Future<bool> rate(double r) => _call('rate', <String, Object?>{'rate': r});
@@ -202,6 +226,24 @@ class ExoEngine {
     await _sub?.cancel();
     for (final c in [_position, _duration, _buffered, _playing, _buffering, _completed, _error, _size, _first]) {
       await c.close();
+    }
+  }
+
+  static const MethodChannel _preview = MethodChannel('innocent/preview');
+
+  /// The keyframe of [film] — an init segment and one fragment, as
+  /// StreamCacheServer.previewClip makes them — as a JPEG [maxWidth] wide,
+  /// or null. For the seek bar's preview.
+  static Future<Uint8List?> frame(Uint8List film, Duration at, {int maxWidth = 320}) async {
+    try {
+      return await _preview.invokeMethod<Uint8List>('frame', <String, Object?>{
+        'film': film,
+        'timeUs': at.inMicroseconds,
+        'maxWidth': maxWidth,
+      });
+    } catch (e) {
+      if (kDebugMode) debugPrint('ExoEngine.frame: $e');
+      return null;
     }
   }
 

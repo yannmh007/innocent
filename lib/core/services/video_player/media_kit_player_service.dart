@@ -162,6 +162,46 @@ class MediaKitPlayerService implements VideoPlayerService {
   /// [standingHeadersFor] is: the proxy lives in a feature, this in core.
   static ValueListenable<int?>? networkKbps;
 
+  /// The ladder's smallest rung at a moment, as a little MP4 to take a
+  /// picture from (StreamCacheServer.previewClip). Set in main.dart.
+  static Future<({Uint8List? film, int startMs})?> Function(Duration at,
+      {bool Function(int startMs)? have})? ladderClipAt;
+
+  /// Pictures already taken this film, by the fragment's start (ms).
+  final Map<int, Uint8List> _previews = <int, Uint8List>{};
+  String? _previewsFor;
+
+  /// THE SEEK BAR'S PICTURE while a ladder plays: the frame nearest [at],
+  /// from the smallest rung (about 75 KB the first time, nothing after).
+  /// Null off the ladder or when it cannot be had.
+  Future<Uint8List?> ladderPreview(Duration at) async {
+    if (!_exoActive) return null;
+    final clipAt = ladderClipAt;
+    if (clipAt == null) return null;
+    if (_previewsFor != _ladderUri) {
+      _previews.clear();
+      _previewsFor = _ladderUri;
+    }
+    final clock = Stopwatch()..start();
+    final clip = await clipAt(at, have: _previews.containsKey);
+    if (clip == null) return null;
+    final known = _previews[clip.startMs];
+    if (known != null) return known;
+    final film = clip.film;
+    if (film == null) return null;
+    final jpeg = await ExoEngine.frame(film, Duration(milliseconds: clip.startMs));
+    if (jpeg == null) {
+      PlaybackLog.add('preview at ${at.inSeconds}s: no picture');
+      return null;
+    }
+    // A drag across a long film is a few dozen pictures; keep the latest.
+    if (_previews.length >= 48) _previews.remove(_previews.keys.first);
+    _previews[clip.startMs] = jpeg;
+    PlaybackLog.add('preview at ${at.inSeconds}s: ${film.length ~/ 1024} KB, '
+        '${clock.elapsedMilliseconds} ms');
+    return jpeg;
+  }
+
   static final Map<String, _LadderArm> _armedLadders = <String, _LadderArm>{};
 
   /// How the ladder at [uri] should start: a rung the viewer pinned
@@ -1309,12 +1349,17 @@ class MediaKitPlayerService implements VideoPlayerService {
   Future<void> seek(Duration to) async {
     _lastUserSeekAt = DateTime.now();
     if (_exoActive) {
+      final far = (to - _position).abs() > _farSeek;
       _position = to;
-      await _exo?.seek(to);
+      await _exo?.seek(to, fast: far);
       return;
     }
     await _player.seek(_clampToPlayable(to));
   }
+
+  /// A jump longer than this lands on the nearest keyframe on the ladder
+  /// engine ([ExoEngine.seek]); a double tap's ten seconds stays exact.
+  static const Duration _farSeek = Duration(seconds: 10);
 
   /// See [VideoPlayerService.frameStep].
   ///
@@ -1365,8 +1410,9 @@ class MediaKitPlayerService implements VideoPlayerService {
       duration: _duration,
     );
     if (_exoActive) {
+      final far = (target - _position).abs() > _farSeek;
       _position = target;
-      await _exo?.seek(target);
+      await _exo?.seek(target, fast: far);
       return;
     }
     await _player.seek(_clampToPlayable(target));
@@ -2675,6 +2721,10 @@ class MediaKitPlayerService implements VideoPlayerService {
   /// again, so the picture returns at the right place by itself.
   @override
   Future<void> setBackgroundAudioMode(bool enabled) async {
+    // ExoPlayer lets go of its surface by itself when the window goes and
+    // takes the new one when it comes back (ExoStreamEngine); libmpv, idle
+    // meanwhile, is left alone.
+    if (_exoActive) return;
     if (!enabled) {
       await _reattachVideo(seekToResync: true);
       return;

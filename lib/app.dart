@@ -310,6 +310,19 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
       watchFreeze();
       await player().switchQuality('auto');
       await check('quality->auto', want, jumped, late: const Duration(seconds: 40));
+
+      // 6. The seek bar's preview pictures (ladder engine): one far from
+      // here, then the same again (held), then the one beside it.
+      if (svc is MediaKitPlayerService && svc.playingLadder) {
+        for (final (what, s) in [('far', 0.75), ('again', 0.75), ('next', 0.76)]) {
+          final t = Stopwatch()..start();
+          final jpeg = await svc.ladderPreview(at(s));
+          final ok = jpeg != null && jpeg.length > 1000 && jpeg[0] == 0xFF && jpeg[1] == 0xD8;
+          ok ? pass++ : fail++;
+          PlaybackLog.add('LAB check preview-$what ${ok ? 'PASS' : 'FAIL'} '
+              'at=${at(s).inSeconds} bytes=${jpeg?.length ?? 0} ms=${t.elapsedMilliseconds}');
+        }
+      }
     } catch (e) {
       PlaybackLog.add('LAB check failed to run: $e');
     } finally {

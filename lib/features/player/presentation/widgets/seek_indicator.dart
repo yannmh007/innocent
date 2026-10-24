@@ -7,14 +7,19 @@ import 'package:flutter/material.dart';
 /// - SMALL bracketed delta below it (16pt, white, in square brackets)
 /// - NO background box, NO icon, NO blue accent
 /// - Just text overlaid directly on the dimmed video
+///
+/// [preview], when given, sits above the time: the picture at the target,
+/// for a film on the ladder engine (YouTube shows one while a finger moves).
 class SeekIndicator extends StatelessWidget {
   final Duration delta;
   final Duration targetPosition;
+  final Widget? preview;
 
   const SeekIndicator({
     super.key,
     required this.delta,
     required this.targetPosition,
+    this.preview,
   });
 
   String _formatDuration(Duration d) {
@@ -41,6 +46,10 @@ class SeekIndicator extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (preview != null) ...[
+              preview!,
+              const SizedBox(height: 12),
+            ],
             // Target time — huge white text, no background
             Text(
               _formatDuration(targetPosition),

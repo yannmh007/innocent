@@ -98,10 +98,12 @@ class ExoStreamEngine private constructor(
             // viewer who stepped away is still listening to.
             override fun onSurfaceAvailable() {
                 player?.setVideoSurface(surface.surface)
+                emit(mapOf("id" to id, "e" to "surface", "on" to true))
             }
 
             override fun onSurfaceCleanup() {
                 player?.clearVideoSurface()
+                emit(mapOf("id" to id, "e" to "surface", "on" to false))
             }
         })
         // Every rung is a choice: the screen's size is no reason to hide a
@@ -254,8 +256,14 @@ class ExoStreamEngine private constructor(
     fun play() { player?.play() }
     fun pause() { player?.pause() }
 
-    fun seek(ms: Long) {
+    /**
+     * [fast]: land on the keyframe nearest [ms] (at most a second off, two
+     * seconds apart on the ladder) — a far jump then needs one segment from
+     * its first byte and no decoding up to the frame. Near jumps are exact.
+     */
+    fun seek(ms: Long, fast: Boolean) {
         val p = player ?: return
+        p.setSeekParameters(if (fast) SeekParameters.CLOSEST_SYNC else SeekParameters.EXACT)
         p.seekTo(ms.coerceAtLeast(0))
         emit(mapOf("id" to id, "e" to "pos", "pos" to p.currentPosition,
             "buf" to p.bufferedPosition, "dur" to (if (p.duration == C.TIME_UNSET) 0L else p.duration)))
@@ -564,7 +572,10 @@ class ExoStreamEngine private constructor(
                         )
                         "play" -> e.play()
                         "pause" -> e.pause()
-                        "seek" -> e.seek((call.argument<Number>("ms"))?.toLong() ?: 0L)
+                        "seek" -> e.seek(
+                            (call.argument<Number>("ms"))?.toLong() ?: 0L,
+                            call.argument<Boolean>("fast") ?: false,
+                        )
                         "scrubbing" -> e.scrubbing(call.argument<Boolean>("on") ?: false)
                         "rate" -> e.rate((call.argument<Number>("rate"))?.toDouble() ?: 1.0)
                         "volume" -> e.volume((call.argument<Number>("volume"))?.toDouble() ?: 1.0)

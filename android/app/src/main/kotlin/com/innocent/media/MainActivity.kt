@@ -282,6 +282,7 @@ class MainActivity : AudioServiceFragmentActivity() {
         super.configureFlutterEngine(flutterEngine)
         // Catalogue films with a ladder: ExoPlayer, as HLS (ExoStreamEngine).
         ExoStreamEngine.register(flutterEngine, applicationContext)
+        PreviewFrames.register(flutterEngine)
 
         // Me → Local Network: SMB / FTP / FTPS / SFTP (net/NetPlugin.kt).
         com.innocent.media.net.NetPlugin.register(
