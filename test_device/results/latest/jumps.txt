@@ -1,48 +1,54 @@
-  LAB check seek PASS want=355 got=355 ready=3626 ms playing=yes, moving by 3731 ms frozen=3164 ms engine=exo rung=360p
-  LAB check quality->240 PASS want=356 got=357 ready=694 ms playing=yes, moving by 841 ms frozen=214 ms engine=exo rung=360p
-  LAB check shown 240p after 2397 ms
-  LAB check skip+30 PASS want=389 got=390 ready=554 ms playing=yes, moving by 4589 ms frozen=4064 ms engine=exo rung=240p
-  LAB check swipe-120 PASS want=271 got=272 ready=538 ms playing=yes, moving by 1755 ms frozen=1414 ms engine=exo rung=240p
-  LAB check quality->auto PASS want=273 got=273 ready=621 ms playing=yes, moving by 699 ms frozen=204 ms engine=exo rung=240p
-  LAB check preview-far PASS at=666 bytes=6339 ms=1380
+  LAB check seek PASS want=355 got=356 ready=274 ms playing=yes, moving by 1387 ms frozen=721 ms engine=exo rung=360p
+  LAB check quality->240 PASS want=357 got=357 ready=684 ms playing=yes, moving by 881 ms frozen=259 ms engine=exo rung=360p
+  LAB check shown 240p after 2270 ms
+  LAB check skip+30 PASS want=389 got=390 ready=330 ms playing=yes, moving by 3343 ms frozen=2691 ms engine=exo rung=240p
+  LAB check swipe-120 PASS want=271 got=272 ready=662 ms playing=yes, moving by 1309 ms frozen=1033 ms engine=exo rung=240p
+  LAB check quality->auto PASS want=273 got=273 ready=522 ms playing=yes, moving by 884 ms frozen=216 ms engine=exo rung=240p
+  LAB check preview-far PASS at=666 bytes=6339 ms=1681
   LAB check preview-again PASS at=666 bytes=6339 ms=0
-  LAB check preview-next PASS at=674 bytes=4597 ms=773
-  LAB check back PASS frames=+51 moved=2192 ms at=340s left=336s
-  LAB check summary pass=9 fail=0
+  LAB check preview-next PASS at=674 bytes=4597 ms=1496
+  LAB check far-jump PASS want=666 got=666 ready=2445 ms playing=yes, moving by 2770 ms frozen=1501 ms engine=exo rung=480p
+  LAB check landing PASS held 793 ms, first frame
+  LAB check back PASS frames=+72 moved=2820 ms at=735s left=731s
+  LAB check summary pass=11 fail=0
 ladder on ExoPlayer
-open ladder (exo) start=0s autoplay=true rung=auto first=480
-hls jump: answer 494 ms, first byte 508 ms, segment 632 ms (65536 B)
-hls jump: answer 184 ms, first byte 187 ms, segment 265 ms (65536 B)
+open ladder (exo) start=0s autoplay=true rung=auto first=720
+hls jump: answer 587 ms, first byte 603 ms, segment 989 ms (65536 B)
 hls: 720p playlist, 444 segments
 exo tracks 720,480,360,240 selected=4 adaptive=true
-hls: 480p playlist, 444 segments
-exo rung 480p 1000 kbps
-hls jump: answer 211 ms, first byte 218 ms, segment 814 ms (65536 B)
+exo rung 720p 2000 kbps
+hls jump: answer 352 ms, first byte 681 ms, segment 1211 ms (65536 B)
+hls jump: answer 255 ms, first byte 284 ms, segment 530 ms (65536 B)
 hls: 360p playlist, 444 segments
 exo rung 360p 600 kbps
-hls jump: answer 219 ms, first byte 235 ms, segment 686 ms (65536 B)
-hls jump: answer 527 ms, first byte 743 ms, segment 1610 ms (158442 B)
-exo picture after seek 3061 ms
+hls jump: answer 234 ms, first byte 316 ms, segment 865 ms (65536 B)
+hls jump: answer 567 ms, first byte 699 ms, segment 1915 ms (160905 B)
+exo picture after seek 490 ms
+hls jump: answer 221 ms, first byte 256 ms, segment 945 ms (166749 B)
 exo rung=360p
 exo steer quality target=240 made=1 rungs=[720, 480, 360, 240] picks=240
 hls: 240p playlist, 444 segments
-hls jump: answer 334 ms, first byte 513 ms, segment 916 ms (75316 B)
+hls jump: answer 651 ms, first byte 819 ms, segment 1203 ms (75316 B)
 exo rung=360p
 exo rung 240p 300 kbps
-exo picture after seek 3542 ms
+exo picture after seek 2827 ms
 exo rung=240p
 exo tracks 720,480,360,240 selected=4 adaptive=true
 exo tracks 720,480,360,240 selected=4 adaptive=true
-exo picture after seek 869 ms
-hls jump: answer 246 ms, first byte 282 ms, segment 1106 ms (81497 B)
+exo picture after seek 838 ms
+hls jump: answer 190 ms, first byte 294 ms, segment 816 ms (81497 B)
 exo rung=240p
-exo steer quality target=auto made=3 rungs=[720, 480, 360, 240] picks=360
-hls jump: answer 306 ms, first byte 430 ms, segment 1011 ms (189173 B)
+exo steer quality target=auto made=3 rungs=[720, 480, 360, 240] picks=480
+hls: 480p playlist, 444 segments
 exo rung=240p
-exo rung 360p 600 kbps
-hls jump: answer 209 ms, first byte 689 ms, segment 1020 ms (260547 B)
-hls jump: answer 280 ms, first byte 515 ms, segment 1467 ms (469734 B)
+hls jump: answer 297 ms, first byte 589 ms, segment 1763 ms (333774 B)
 exo rung 480p 1000 kbps
+exo picture after seek 916 ms
+exo landing picture held 793 ms, first frame
+hls jump: answer 435 ms, first byte 535 ms, segment 1437 ms (260189 B)
+exo rung=480p
+hls jump: answer 486 ms, first byte 560 ms, segment 2059 ms (179781 B)
+exo rung 360p 600 kbps
 LAB away: home
 lifecycle hidden mounted=true
 lifecycle paused mounted=true
@@ -51,4 +57,5 @@ lifecycle detached mounted=true
 lifecycle resumed mounted=true
 lifecycle inactive mounted=true
 lifecycle resumed mounted=true
-exo rung 720p 2000 kbps
+hls jump: answer 410 ms, first byte 436 ms, segment 468 ms (50314 B)
+exo rung 480p 1000 kbps
