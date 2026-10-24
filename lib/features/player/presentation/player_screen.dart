@@ -100,6 +100,7 @@ import 'up_next.dart';
 import 'widgets/up_next_card.dart';
 import 'gestures/subtitle_band.dart';
 import 'subtitles/player_subtitles.dart';
+import 'ladder_preview_loader.dart';
 import 'video_geometry.dart';
 import 'widgets/gesture_hud.dart';
 import '../../../core/ui/share_media.dart';
@@ -4222,8 +4223,8 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
     });
   }
 
-  /// [_loadPreview] for the ladder engine ([_LadderPreviewLoader]).
-  _LadderPreviewLoader? _ladderPreviews;
+  /// [_loadPreview] for the ladder engine ([LadderPreviewLoader]).
+  LadderPreviewLoader? _ladderPreviews;
 
   @override
   void dispose() {
@@ -4232,7 +4233,7 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
   }
 
   void _loadLadderPreview(MediaKitPlayerService svc, int seconds) {
-    final loader = _ladderPreviews ??= _LadderPreviewLoader(svc);
+    final loader = _ladderPreviews ??= LadderPreviewLoader(svc.ladderPreview);
     loader.request(seconds, (bytes) {
       if (!mounted || _dragValue == null) return;
       setState(() => _previewBytes = bytes);
@@ -4720,42 +4721,6 @@ class SeekBandShape extends SliderComponentShape {
   }) {}
 }
 
-/// Previews for a film on the ladder engine, at most one request in flight
-/// per [throttle], the newest winning — and the LAST position always asked
-/// for, a moment after the finger stops, so the picture is never one a
-/// step behind where the drag ended.
-class _LadderPreviewLoader {
-  _LadderPreviewLoader(this.service);
-
-  final MediaKitPlayerService service;
-  static const Duration throttle = Duration(milliseconds: 150);
-  int _seq = 0;
-  int _bucket = -1;
-  DateTime _last = DateTime.fromMillisecondsSinceEpoch(0);
-  Timer? _trailing;
-
-  /// A picture for [seconds], to [onPicture] if it is still the latest.
-  void request(int seconds, void Function(Uint8List bytes) onPicture) {
-    // One picture per two-second fragment: that is what the ladder holds.
-    final bucket = seconds ~/ 2;
-    if (bucket == _bucket) return;
-    _trailing?.cancel();
-    final wait = throttle - DateTime.now().difference(_last);
-    if (wait > Duration.zero) {
-      _trailing = Timer(wait, () => request(seconds, onPicture));
-      return;
-    }
-    _last = DateTime.now();
-    _bucket = bucket;
-    final seq = ++_seq;
-    service.ladderPreview(Duration(seconds: seconds)).then((bytes) {
-      if (bytes != null && seq == _seq) onPicture(bytes);
-    }, onError: (Object _) {});
-  }
-
-  void dispose() => _trailing?.cancel();
-}
-
 /// The picture at [at] above the time while a swipe moves through a film on
 /// the ladder engine; nothing until the first one arrives.
 class _LadderSwipePreview extends StatefulWidget {
@@ -4769,7 +4734,7 @@ class _LadderSwipePreview extends StatefulWidget {
 }
 
 class _LadderSwipePreviewState extends State<_LadderSwipePreview> {
-  late final _LadderPreviewLoader _loader = _LadderPreviewLoader(widget.service);
+  late final LadderPreviewLoader _loader = LadderPreviewLoader(widget.service.ladderPreview);
   Uint8List? _bytes;
 
   void _ask() => _loader.request(widget.at.inSeconds, (b) {

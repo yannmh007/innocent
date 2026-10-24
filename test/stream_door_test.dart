@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:innocent/features/video_hub/data/api/api_client.dart';
 import 'package:innocent/features/video_hub/data/api/api_content_repository.dart';
+import 'package:innocent/features/video_hub/data/api/backend_config.dart';
 import 'package:innocent/features/video_hub/data/device_identity.dart';
 import 'package:innocent/features/video_hub/data/stream_door.dart';
 import 'package:innocent/features/video_hub/domain/access.dart';
@@ -128,6 +129,51 @@ void main() {
       final grant = await r.requestPlayback(
           content: content, source: content.source, deviceId: 'install-1');
       expect(grant.denial, AccessDenial.rateLimited);
+    });
+
+    test('asked to run beside the database', () async {
+      final regions = <String?>[];
+      final r = ApiContentRepository(ApiClient(
+        httpClient: MockClient((req) async {
+          regions.add(req.headers['x-region']);
+          return http.Response(jsonEncode(<String, dynamic>{'url': '$worker/v/m'}), 200);
+        }),
+      ));
+      final grant = await r.requestPlayback(
+          content: content, source: content.source, deviceId: 'install-1');
+      expect(grant.isGranted, isTrue);
+      expect(regions, <String?>[BackendConfig.functionRegion]);
+    });
+
+    test('that region down at the gateway: asked once more, unpinned', () async {
+      final regions = <String?>[];
+      final r = ApiContentRepository(ApiClient(
+        httpClient: MockClient((req) async {
+          regions.add(req.headers['x-region']);
+          if (req.headers['x-region'] != null) {
+            return http.Response('{"message":"region unavailable"}', 502);
+          }
+          return http.Response(jsonEncode(<String, dynamic>{'url': '$worker/v/m'}), 200);
+        }),
+      ));
+      final grant = await r.requestPlayback(
+          content: content, source: content.source, deviceId: 'install-1');
+      expect(grant.isGranted, isTrue);
+      expect(regions, <String?>[BackendConfig.functionRegion, null]);
+    });
+
+    test('the function\'s own 503 is not asked again', () async {
+      var asked = 0;
+      final r = ApiContentRepository(ApiClient(
+        httpClient: MockClient((req) async {
+          asked++;
+          return http.Response(jsonEncode(<String, dynamic>{'code': 'unavailable'}), 503);
+        }),
+      ));
+      final grant = await r.requestPlayback(
+          content: content, source: content.source, deviceId: 'install-1');
+      expect(grant.isGranted, isFalse);
+      expect(asked, 1);
     });
 
     test('a 429 that is not the budget is still "could not ask"', () async {

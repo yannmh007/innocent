@@ -145,6 +145,31 @@ any film with one rung. Also any phone the server sends back (see below).
 - Ten retries for a segment instead of three: a half-minute drop-out is
   waited for while the buffer plays.
 
+## After 1.64.73
+
+- Seek-bar pictures one at a time, the newest next
+  (`ladder_preview_loader.dart`). On both real phones (Test Lab run
+  40118247783) a swipe asked for seven, each queued behind the last, and the
+  final one came 1.3–1.5 s late. Now the moments in between are skipped:
+  the picture trails the finger by one fetch at most, and costs fewer
+  Worker requests.
+- The landing picture. A far jump draws the picture already taken for that
+  moment over the old frame until its own frame is drawn
+  (`ExoEngine.landing`), as YouTube holds its storyboard frame. It sits in
+  the texture's own box, so it takes the film's fit, zoom and crop. It
+  shows only if the frame takes longer than 120 ms, and never for longer
+  than 4 s. Nothing is fetched for it.
+- The grant runs beside the database. Edge logs, 24 October 2026:
+  `request-playback` took 0.3–0.7 s when it ran in Singapore
+  (ap-southeast-1, where the database is), and 2.2–3.5 s when it ran in
+  Virginia, Oregon or Seoul. One call from Singapore itself was sent to
+  Seoul. Its eight queries each crossed the distance. The app now asks
+  for the region (`x-region`, `BackendConfig.functionRegion`). A call
+  pinned to a region is not moved when that region is down, so a
+  gateway's 5xx is asked once more, unpinned.
+
 ## Next
-- Play tap to grant: `request-playback` makes about 8 database round trips in
-  sequence. One RPC would cut most of the 3.4–6.2 s.
+- Play tap to grant, beside the database: about 0.3–0.7 s. Most of what is
+  left is the phone's own round trip and the function's start. A single
+  RPC for the eight queries would save tens of milliseconds, not seconds;
+  not worth touching the security boundary for.
