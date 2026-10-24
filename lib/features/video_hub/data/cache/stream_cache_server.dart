@@ -11,6 +11,7 @@ import '../../../../core/services/diagnostics/playback_log.dart';
 import '../../../../core/services/network/foreground_stream.dart';
 import '../../../../core/services/network/throughput_memory.dart';
 import '../../domain/cmaf_index.dart';
+import '../../domain/hls_ladder.dart';
 import '../api/ranged_fetch.dart';
 import '../stream_door.dart';
 import 'stream_cache_store.dart';
@@ -382,6 +383,7 @@ class StreamCacheServer {
     required Future<String?> Function() refresh,
     int? total,
     String label = '',
+    bool probeNow = true,
   }) async {
     try {
       await StreamCacheStore.instance.load();
@@ -405,7 +407,7 @@ class StreamCacheServer {
       if (known != null && known.fresh && entry.total == known.total) {
         src.checkedTotal = true;
         src.index = known.index;
-      } else {
+      } else if (probeNow) {
         // THE LENGTH CHECK STARTS NOW, while the player is still being
         // built, rather than when its first request arrives: it was 1 to
         // 2.3 s of every start in the device lab (run 37776589997), all of
@@ -428,6 +430,171 @@ class StreamCacheServer {
       if (kDebugMode) debugPrint('StreamCacheServer.localUrlFor: $e');
       return null;
     }
+  }
+
+  // ─── THE LADDER AS HLS, FOR A PLAYER THAT SWITCHES RUNG ON ITS OWN ────
+  //
+  // ExoPlayer plays the ladder as one HLS stream (domain/hls_ladder.dart):
+  // a master playlist from here, a media playlist per rung, and segments
+  // that are byte ranges of each rung's file — read through the same /c/
+  // addresses, the same store and the same sealed cache as before. It
+  // changes rung at a segment boundary while the picture keeps moving, so
+  // nothing here reopens anything.
+
+  final Map<String, _Ladder> _ladders = <String, _Ladder>{};
+
+  /// How far past a segment the proxy reads, in the same request: the next
+  /// segments' bytes, which the player asks for a moment later and finds on
+  /// the phone. Two megabytes is one request a megabyte or two where one a
+  /// segment would be five a megabyte at 240p — the Worker's free daily
+  /// requests are what this spends — and it is all film the player reads
+  /// next unless it jumps.
+  static int segmentReadAhead = 2 * 1024 * 1024;
+
+  /// The line's speed as the last stretch from the Worker measured it, in
+  /// kbps: what the player's rung choice is fed (its own meter sees this
+  /// loopback, where a cached segment arrives at flash speed). Null until
+  /// one is measured.
+  static final ValueNotifier<int?> networkKbps = ValueNotifier<int?>(null);
+
+  /// Register a whole ladder and get the local address of its master
+  /// playlist. Each rung becomes a film of its own here (its /c/ address,
+  /// its cache entry, its own refresh), so a rung played as a file and the
+  /// same rung played as HLS share every byte already on the phone.
+  ///
+  /// Only the rung the player starts on is checked against the server at
+  /// once; the others when first read. Null when the proxy cannot start or
+  /// a rung cannot be registered: the caller then plays one rung as before.
+  Future<String?> hlsUrlFor({
+    required String ladderId,
+    required List<HlsRungSource> rungs,
+    String label = '',
+    double? aspect,
+    double? frameRate,
+    String? startCacheId,
+  }) async {
+    if (rungs.isEmpty) return null;
+    try {
+      await StreamCacheStore.instance.load();
+      await _ensureStarted();
+      final port = _server?.port;
+      final token = _token;
+      if (port == null || token == null) return null;
+      final entries = <_LadderRung>[];
+      for (final r in rungs) {
+        final url = await localUrlFor(
+          cacheId: r.cacheId,
+          upstream: r.upstream,
+          refresh: r.refresh,
+          total: r.bytes,
+          label: label,
+          probeNow: r.cacheId == (startCacheId ?? rungs.first.cacheId),
+        );
+        if (url == null) return null;
+        _sources[r.cacheId]?.segmented = true;
+        entries.add(_LadderRung(height: r.height, kbps: r.kbps, cacheId: r.cacheId, url: url));
+      }
+      _ladders[ladderId] =
+          _Ladder(rungs: entries, aspect: aspect, frameRate: frameRate);
+      return 'http://127.0.0.1:$port/h/$token/$ladderId/master.m3u8';
+    } catch (e) {
+      if (kDebugMode) debugPrint('StreamCacheServer.hlsUrlFor: $e');
+      return null;
+    }
+  }
+
+  /// Stop serving a ladder and all of its rungs.
+  void releaseLadder(String ladderId) {
+    final l = _ladders.remove(ladderId);
+    if (l == null) return;
+    for (final r in l.rungs) {
+      release(r.cacheId);
+    }
+  }
+
+  /// The rung's head — its fragment table and init segment — read once,
+  /// through its own address (so the bytes land in its cache entry, where
+  /// the first segments will be found).
+  Future<_LadderRung?> _rungWithHead(_Ladder l, int height) async {
+    final r = l.rungs.where((x) => x.height == height).firstOrNull;
+    if (r == null) return null;
+    if (r.index != null && r.head != null) return r;
+    final loading = r.loading ??= () async {
+      final client = HttpClient()..connectionTimeout = const Duration(seconds: 15);
+      try {
+        final head = BytesBuilder(copy: false);
+        var want = 64 * 1024;
+        for (var i = 0; i < 4; i++) {
+          final req = await client.getUrl(Uri.parse(r.url));
+          req.headers.set(HttpHeaders.rangeHeader, 'bytes=${head.length}-${want - 1}');
+          final resp = await req.close();
+          if (resp.statusCode != HttpStatus.partialContent) {
+            await resp.drain<void>();
+            return;
+          }
+          await for (final chunk in resp) {
+            head.add(chunk);
+          }
+          final bytes = head.toBytes();
+          final idx = CmafIndex.parse(bytes);
+          if (idx != null) {
+            r.index = idx;
+            r.head = CmafHead.parse(bytes);
+            return;
+          }
+          final need = CmafIndex.headBytes(bytes);
+          if (need == null || need <= bytes.length || need > _switchHeadCap) return;
+          want = need;
+        }
+      } catch (e) {
+        if (kDebugMode) debugPrint('StreamCacheServer._rungWithHead: $e');
+      } finally {
+        client.close(force: true);
+      }
+    }();
+    await loading;
+    if (r.index == null || r.head == null) r.loading = null; // asked again next time
+    return r;
+  }
+
+  Future<void> _servePlaylist(HttpResponse res, String ladderId, String name) async {
+    final l = _ladders[ladderId];
+    String? body;
+    if (l != null) {
+      final port = _server?.port;
+      final token = _token;
+      if (name == 'master.m3u8') {
+        // Any rung already read gives the picture's shape to all of them.
+        final read = l.rungs.where((r) => r.head?.width != null).firstOrNull;
+        final aspect = read == null
+            ? l.aspect
+            : read.head!.width! / max(1, read.head!.height ?? read.height);
+        body = HlsLadder.master(
+          [for (final r in l.rungs) r.hls],
+          mediaUri: (r) => 'http://127.0.0.1:$port/h/$token/$ladderId/${r.height}.m3u8',
+          aspect: aspect,
+          frameRate: l.frameRate,
+        );
+      } else if (name.endsWith('.m3u8')) {
+        final h = int.tryParse(name.substring(0, name.length - 5));
+        final r = h == null ? null : await _rungWithHead(l, h);
+        if (r != null) {
+          body = HlsLadder.media(r.hls);
+          if (body != null) PlaybackLog.add('hls: ${r.height}p playlist, ${r.index!.length} segments');
+        }
+      }
+    }
+    if (body == null) {
+      res.statusCode = HttpStatus.notFound;
+      await res.close();
+      return;
+    }
+    res.statusCode = HttpStatus.ok;
+    res.headers
+      ..set(HttpHeaders.contentTypeHeader, 'application/vnd.apple.mpegurl')
+      ..set(HttpHeaders.cacheControlHeader, 'no-store');
+    res.write(body);
+    await res.close();
   }
 
   /// THE DEVICE LAB'S A/B SWITCH, AND ONLY THERE. A lab build reads the lane
@@ -762,6 +929,10 @@ class StreamCacheServer {
     final res = req.response;
     try {
       final parts = req.uri.pathSegments;
+      if (parts.length == 4 && parts[0] == 'h' && parts[1] == _token) {
+        await _servePlaylist(res, parts[2], parts[3]);
+        return;
+      }
       if (parts.length != 3 || parts[0] != 'c' || parts[1] != _token) {
         res.statusCode = HttpStatus.forbidden;
         await res.close();
@@ -935,6 +1106,25 @@ class StreamCacheServer {
           continue;
         }
 
+        // ── a segment of the ladder as HLS: wait for, or read ahead ────
+        if (src.segmented) {
+          final f = src.fill;
+          if (f != null && !f.done && f.from <= pos && pos < f.to) {
+            // Its bytes are already on their way, read ahead with the
+            // segment before: wait for them rather than ask twice.
+            await f.until(() => entry.partAt(pos) != null, gone);
+            if (entry.partAt(pos) != null) continue;
+            if (gone.value) break;
+          } else if (f != null && !f.done) {
+            // A jump: what that read is bringing is not where the player is.
+            f.cancel();
+          }
+          if (src.offline || gone.value) break;
+          pos = await _segmentFromUpstream(out, store, entry, src, pos, endInclusive, gone);
+          if (pos == before) break;
+          continue;
+        }
+
         // ── from upstream, keeping what passes through ─────────────────
         //
         // Offline there is no upstream, and a gap is simply where the film
@@ -1101,6 +1291,130 @@ class StreamCacheServer {
       // parts ([_LanePart.kill]). The pool itself is left alone: the
       // stretch the player opened after its seek is using it right now.
     }
+  }
+
+  /// A segment of the ladder as HLS, and what follows it.
+  ///
+  /// ONE REQUEST, ON THE FILM'S POOLED CONNECTION: no lanes (a segment is a
+  /// few hundred KB, and lanes cut it into parts, each a request of its own
+  /// to the Worker) and no handshake (the pool keeps the connection).
+  /// The request reaches [segmentReadAhead] past the segment: the client
+  /// gets its range, and the read carries on into the cache, where the
+  /// player's next requests find it — or wait for it ([_Fill.until]).
+  /// Sealed like every write ([CacheWriter]). Returns where the client's
+  /// answer got to.
+  Future<int> _segmentFromUpstream(Socket out, StreamCacheStore store,
+      CacheEntry entry, _Source src, int pos, int endInclusive, _Gone gone) async {
+    final total = entry.total;
+    final aheadEnd = min(
+        min(entry.nextPartStart(pos, total), total), // exclusive
+        max(endInclusive + 1, pos + segmentReadAhead));
+    if (aheadEnd <= pos) return pos;
+    final up = await _openPooled(src, pos, aheadEnd - 1);
+    if (up == null) return pos;
+    CacheWriter? writer;
+    if (await store.hasRoom(protecting: entry.id)) {
+      writer = await store.openWriter(entry, pos);
+    }
+    final fill = src.fill = _Fill(pos, aheadEnd);
+    final clientEnd = min(endInclusive + 1, aheadEnd);
+    final answered = Completer<int>();
+    var at = pos;
+    var sent = pos;
+    final clock = Stopwatch()..start();
+    unawaited(() async {
+      try {
+        final pieces = StreamIterator<List<int>>(up);
+        fill.onCancel = () => unawaited(pieces.cancel());
+        while (!fill.cancelled && await pieces.moveNext()) {
+          final chunk = pieces.current;
+          ForegroundStream.touch();
+          final w = writer;
+          if (w != null) {
+            try {
+              await w.write(chunk);
+            } catch (e) {
+              // A disk that will not take it is not a reason to stop the film.
+              writer = null;
+              await w.close();
+            }
+          }
+          final from = at;
+          at += chunk.length;
+          upstreamBytes += chunk.length;
+          if (!answered.isCompleted && from < clientEnd) {
+            final take = min(at, clientEnd) - from;
+            try {
+              out.add(take == chunk.length ? chunk : chunk.sublist(0, take));
+              await out.flush();
+              sent = from + take;
+            } catch (_) {
+              // The player hung up — a seek, or Back. What it was reading is
+              // not wanted ahead of it either.
+              gone.hangUp();
+              answered.complete(sent);
+              break;
+            }
+            if (sent >= clientEnd) answered.complete(sent);
+          }
+          fill.ping();
+        }
+        await pieces.cancel();
+      } catch (e) {
+        if (kDebugMode) debugPrint('StreamCacheServer._segmentFromUpstream: $e');
+      } finally {
+        await writer?.close();
+        fill.finish();
+        final bytes = at - pos;
+        if (bytes >= 256 * 1024) _recordNetwork(bytes, clock.elapsed);
+        if (!answered.isCompleted) answered.complete(sent);
+        await store.touch(entry);
+      }
+    }());
+    return answered.future;
+  }
+
+  /// A range from the Worker on the film's pooled connection, renewed once
+  /// when the link has expired. The body, or null.
+  Future<Stream<List<int>>?> _openPooled(_Source src, int start, int endInclusive) async {
+    for (var attempt = 0; attempt < _upstreamTries; attempt++) {
+      try {
+        final up = Uri.parse(src.upstream);
+        final r = await src.io.getUrl(up);
+        upstreamRequests++;
+        StreamDoor.apply(r, up);
+        r.headers.set(HttpHeaders.rangeHeader, 'bytes=$start-$endInclusive');
+        final resp = await r.close();
+        _noteBind(resp);
+        final code = resp.statusCode;
+        final cr = resp.headers.value(HttpHeaders.contentRangeHeader) ?? '';
+        if ((code == 206 && cr.startsWith('bytes $start-')) || (code == 200 && start == 0)) {
+          return resp;
+        }
+        await resp.drain<void>().catchError((_) {});
+        if (code == 403 || code == 404 || code == 410) {
+          if (!await _refresh(src)) return null;
+          continue;
+        }
+        if (code >= 500) continue;
+        return null;
+      } catch (e) {
+        if (kDebugMode) debugPrint('StreamCacheServer._openPooled: $e');
+      }
+    }
+    return null;
+  }
+
+  /// A reading of the line from a read that crossed it, for Auto and for
+  /// the HLS player's rung choice ([networkKbps]). Smaller and shorter
+  /// reads than [_recordThroughput] takes, because a segment is small:
+  /// still never one so short it measures the handshake.
+  void _recordNetwork(int bytes, Duration took) {
+    final ms = took.inMilliseconds;
+    if (ms < 200) return;
+    final kbps = (bytes * 8) ~/ ms;
+    networkKbps.value = kbps;
+    _recordThroughput(bytes, took);
   }
 
   /// Write each chunk to the cache, then hand it on.
@@ -1639,6 +1953,13 @@ class _Source {
   _Source({required this.upstream, required this.refresh, this.offline = false});
 
   String upstream;
+
+  /// Read as segments of the ladder as HLS ([StreamCacheServer.hlsUrlFor]):
+  /// one pooled request each, reading ahead, never lanes.
+  bool segmented = false;
+
+  /// The read ahead in flight for this film, if any.
+  _Fill? fill;
   final Future<String?> Function() refresh;
   Future<bool>? refreshing;
 
@@ -1806,6 +2127,8 @@ class _Source {
   }
 
   void close() {
+    fill?.cancel();
+    fill = null;
     for (final e in _spare) {
       e.$1.discard();
     }
@@ -2200,5 +2523,92 @@ class _LanePart {
       }
     }, cancelOnError: true);
     return done.future;
+  }
+}
+
+/// One rung of a ladder registered as HLS.
+class HlsRungSource {
+  const HlsRungSource({
+    required this.height,
+    required this.kbps,
+    required this.cacheId,
+    required this.upstream,
+    required this.refresh,
+    this.bytes,
+  });
+
+  final int height;
+  final int kbps;
+  final String cacheId;
+  final String upstream;
+  final Future<String?> Function() refresh;
+  final int? bytes;
+}
+
+class _Ladder {
+  _Ladder({required this.rungs, this.aspect, this.frameRate});
+  final List<_LadderRung> rungs;
+  final double? aspect;
+  final double? frameRate;
+}
+
+class _LadderRung {
+  _LadderRung({required this.height, required this.kbps, required this.cacheId, required this.url});
+  final int height;
+  final int kbps;
+  final String cacheId;
+  final String url;
+  CmafIndex? index;
+  CmafHead? head;
+  Future<void>? loading;
+
+  HlsRung get hls => HlsRung(height: height, kbps: kbps, url: url, index: index, head: head);
+}
+
+/// A read ahead in flight: where it started, where it will stop, and a
+/// signal each time more of it is on the phone.
+class _Fill {
+  _Fill(this.from, this.to);
+  final int from;
+  final int to;
+  bool done = false;
+  bool cancelled = false;
+  void Function()? onCancel;
+  final StreamController<void> _more = StreamController<void>.broadcast();
+
+  void ping() {
+    if (!_more.isClosed) _more.add(null);
+  }
+
+  void finish() {
+    done = true;
+    ping();
+    unawaited(_more.close());
+  }
+
+  void cancel() {
+    if (cancelled) return;
+    cancelled = true;
+    onCancel?.call();
+  }
+
+  /// Until [ready] is true, the read has ended, the player has hung up, or
+  /// twenty seconds have gone by — a read stuck that long is a read to
+  /// replace, not to wait for.
+  Future<void> until(bool Function() ready, _Gone gone) async {
+    if (ready() || done) return;
+    final c = Completer<void>();
+    late final StreamSubscription<void> sub;
+    void check() {
+      if (!c.isCompleted && (ready() || done || gone.value)) c.complete();
+    }
+
+    sub = _more.stream.listen((_) => check(), onDone: () {
+      if (!c.isCompleted) c.complete();
+    });
+    unawaited(gone.hungUp.then((_) => check()));
+    check();
+    await c.future.timeout(const Duration(seconds: 20), onTimeout: () {});
+    await sub.cancel();
   }
 }
