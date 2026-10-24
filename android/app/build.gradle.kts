@@ -433,6 +433,11 @@ dependencies {
     // take as they are (1.10 wants 36, 1.11 wants 37 and Kotlin 2.2).
     implementation("androidx.media3:media3-transformer:1.9.2")
     implementation("androidx.media3:media3-common:1.9.2")
+    // Catalogue films with a ladder, played as HLS (ExoStreamEngine): the
+    // rung changes with the picture still moving. Same line as Transformer,
+    // so one Media3 in the APK.
+    implementation("androidx.media3:media3-exoplayer:1.9.2")
+    implementation("androidx.media3:media3-exoplayer-hls:1.9.2")
     implementation("androidx.annotation:annotation-experimental:1.4.1")
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
 
