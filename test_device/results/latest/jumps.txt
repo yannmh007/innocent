@@ -1,20 +1,31 @@
-  LAB check seek PASS want=355 got=355 ready=5227 ms playing=yes, moving by 5260 ms frozen=4439 ms engine=exo rung=720p
-  LAB check quality->240 PASS want=356 got=357 ready=883 ms playing=yes, moving by 922 ms frozen=206 ms engine=exo rung=720p
-  LAB check shown 240p never (on 720p)
-  LAB check skip+30 PASS want=408 got=409 ready=3868 ms playing=yes, moving by 5209 ms frozen=2990 ms engine=exo rung=720p
-  LAB check swipe-120 PASS want=290 got=291 ready=3594 ms playing=yes, moving by 4427 ms frozen=2515 ms engine=exo rung=720p
-  LAB check quality->auto PASS want=292 got=292 ready=538 ms playing=yes, moving by 840 ms frozen=207 ms engine=exo rung=720p
-  LAB check summary pass=5 fail=0
+  LAB check seek PASS want=355 got=356 ready=3657 ms playing=yes, moving by 4060 ms frozen=2828 ms engine=exo rung=240p
+  LAB check quality->240 PASS want=357 got=357 ready=335 ms playing=yes, moving by 461 ms frozen=166 ms engine=exo rung=240p
+  LAB check shown 240p after 1468 ms
+  LAB check skip+30 PASS want=388 got=389 ready=4752 ms playing=yes, moving by 7244 ms frozen=3802 ms engine=exo rung=720p
+  LAB check swipe-120 PASS want=270 got=271 ready=3859 ms playing=yes, moving by 5571 ms frozen=3162 ms engine=exo rung=720p
+  LAB check quality->auto FAIL want=272 got=273 ready=896 ms playing=no frozen=5513 ms engine=exo rung=720p
+  LAB check summary pass=4 fail=1
 ladder on ExoPlayer
 open ladder (exo) start=0s autoplay=true rung=auto first=720
 hls: 720p playlist, 444 segments
+exo tracks  selected=4 adaptive=true
 exo rung 720p 2000 kbps
 hls: 360p playlist, 444 segments
 exo rung 360p 600 kbps
+hls: 240p playlist, 444 segments
+exo rung 240p 300 kbps
+exo rung=240p
+exo steer quality target=240 made=0 rungs=[] picks=-1
+exo rung=240p
 exo rung 720p 2000 kbps
 exo rung=720p
+exo tracks  selected=4 adaptive=true
+exo tracks  selected=4 adaptive=true
 exo rung=720p
+exo steer quality target=auto made=0 rungs=[] picks=-1
 exo rung=720p
-exo rung=720p
-exo rung=720p
-exo dropped 10 frames
+hls: 480p playlist, 444 segments
+exo rung 480p 1000 kbps
+exo rung 360p 600 kbps
+exo rung 480p 1000 kbps
+exo dropped 15 frames
