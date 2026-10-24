@@ -1140,8 +1140,8 @@ class MediaKitPlayerService implements VideoPlayerService {
       _bindLadderEngine(e);
     }
     _position = startAt ?? Duration.zero;
-    // The viewer's volume and speed carry over from libmpv.
-    await e.volume((_volumePct / 100).clamp(0.0, 1.0));
+    // The viewer's volume (a boost above 100 % too) and speed carry over.
+    await e.volume((_volumePct / 100).clamp(0.0, 4.0));
     try {
       final rate = _player.state.rate;
       if (rate > 0 && rate != 1.0) await e.rate(rate);
@@ -2413,6 +2413,7 @@ class MediaKitPlayerService implements VideoPlayerService {
   Future<void> setAudioGain(double multiplier) async {
     _volumePct = multiplier.clamp(0.0, 4.0) * 100;
     _fadeGen++; // a gain change wins over any running fade
+    if (_exoActive) await _exo?.volume(multiplier.clamp(0.0, 4.0));
     final pct = _volumePct.toStringAsFixed(0);
     await _setMpvProperty('volume-max', '400');
     await _setMpvProperty('volume', pct);

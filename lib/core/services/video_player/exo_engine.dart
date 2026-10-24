@@ -209,6 +209,7 @@ class ExoEngine {
 
   Future<bool> scrubbing(bool on) => _call('scrubbing', <String, Object?>{'on': on});
   Future<bool> rate(double r) => _call('rate', <String, Object?>{'rate': r});
+  /// 0.0 to 4.0: above 1.0 the sound is lifted (LoudnessEnhancer).
   Future<bool> volume(double v) => _call('volume', <String, Object?>{'volume': v});
 
   /// A rung by height, or Auto (null): the picture keeps moving, and the
