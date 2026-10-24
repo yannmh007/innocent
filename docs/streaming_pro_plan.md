@@ -62,9 +62,17 @@ ExoPlayer ──HLS──▶ local proxy (127.0.0.1) ──bytes──▶ Worker
   - buffered film in a rung no longer wanted is dropped past the next two
     seconds, so a change shows in about two seconds rather than after a full
     buffer.
+- Rungs are told apart by height. Every rung in the master has a RESOLUTION
+  (the start rung's head is read before the master is written, else 16:9),
+  and the engine also knows each height by its AVERAGE-BANDWIDTH. Without
+  that, every height was unknown and a pick of 240p played the best rung
+  (device-lab run 40079651806).
 - Bandwidth comes from the proxy's own reads of the Worker
   (`StreamCacheServer.networkKbps`), not from loopback reads, which arrive at
-  flash speed when cached.
+  flash speed when cached. The engine keeps a quick and a slow average of
+  them and uses the lower: a drop counts at once, a recovery only once it
+  holds. The last reading alone kept 720p through a dip to 2.7 Mbit/s right
+  after a seek, and the film stopped for 5.5 s.
 - Buffer: start on 1 s of film, 2 s after a stall, up to 60 s ahead, and 30 s
   kept behind so a step back plays from memory. A finger on the seek bar
   turns on ExoPlayer's scrubbing mode.
@@ -115,6 +123,13 @@ any film with one rung. Also any phone the server sends back (see below).
 - The device lab and Test Lab play Sintel only. They measure the time to the
   first picture, the frozen time during a quality change (target 0 s), and
   seek times. A release goes out only after real phones pass.
+
+| Run | Where | Jumps | Frozen on a quality change | Rung picked shown |
+|---|---|---|---|---|
+| 39972176423 (1.64.71, libmpv) | OPPO | 5/5 | 4.2 s | after the reopen |
+| 40076455852 | emulator | 5/5 | 0.2 s | never (no RESOLUTION) |
+| 40079651806 | emulator | 4/5 | 0.17 s | stall on Auto (one reading) |
+| 40092901280 | emulator | 5/5 | 0.24 s | 1.9 s |
 
 ## Next
 
