@@ -167,6 +167,13 @@ Sintel does not decode there.)
   (`test/stream_cache_sealed_test.dart`, 40 checks), security_invariants
   rule 15 stops any other reader opening a run's file, and the lab trail
   says `stream cache: a new film, sealed` and `stream from the phone … sealed`.
+  ON REAL PHONES (Test Lab run 39972176423, 2026-10-23, realme C53 and
+  OPPO): both said `a new film, sealed` with the phone's own Keystore
+  cipher, both played sealed runs back from the phone after the jump back
+  (1.2-1.9 MB at a time), and both passed all five checks — seek, quality
+  change, +30 s, swipe back two minutes, back to Auto — with every Worker
+  fetch `bind ok` (124 and 190); no crash, no cipher failure in either
+  logcat.
 * **Toolchain release, on its own:** Flutter 3.47 with the Gradle, AGP and
   Kotlin it needs, no feature changes in the same release, through the
   same 1,070 tests, the device lab and Test Lab on both real phones before
