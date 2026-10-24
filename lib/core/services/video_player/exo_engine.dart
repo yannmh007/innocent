@@ -118,6 +118,13 @@ class ExoEngine {
           for (final h in (e['heights'] as List<Object?>? ?? const <Object?>[]))
             if (h is num) h.toInt(),
         ];
+        PlaybackLog.add('exo tracks ${heights.join(',')} selected=${e['selected']} '
+            'adaptive=${e['adaptive']}');
+      case 'steer':
+        PlaybackLog.add('exo steer ${e['why']} target=${e['target'] ?? 'auto'} '
+            'made=${e['made']} rungs=${e['heights']} picks=${e['picks']}');
+      case 'loaderr':
+        PlaybackLog.add('exo load error ${e['what']} type=${e['type']} ${e['err']}');
       case 'dropped':
         // In the trail only when it matters: a decoder falling behind.
         final n = (e['n'] as num?)?.toInt() ?? 0;

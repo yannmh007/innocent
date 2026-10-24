@@ -594,6 +594,7 @@ class StreamCacheServer {
       }
     }
     if (body == null) {
+      PlaybackLog.add('hls: $name not served (${l == null ? 'no ladder' : 'no index'})');
       res.statusCode = HttpStatus.notFound;
       await res.close();
       return;

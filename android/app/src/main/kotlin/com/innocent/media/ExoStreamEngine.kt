@@ -25,6 +25,8 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.SeekParameters
 import androidx.media3.exoplayer.analytics.AnalyticsListener
 import androidx.media3.exoplayer.hls.HlsMediaSource
+import androidx.media3.exoplayer.source.LoadEventInfo
+import androidx.media3.exoplayer.source.MediaLoadData
 import androidx.media3.exoplayer.source.chunk.Chunk
 import androidx.media3.exoplayer.source.chunk.MediaChunk
 import androidx.media3.exoplayer.source.chunk.MediaChunkIterator
@@ -70,7 +72,8 @@ class ExoStreamEngine private constructor(
     private val main = Handler(Looper.getMainLooper())
     private val steer = Steer()
     private val meter = ProxyMeter()
-    private val selector = DefaultTrackSelector(context, SteeredFactory(steer))
+    private val factory = SteeredFactory(steer)
+    private val selector = DefaultTrackSelector(context, factory)
     private var player: ExoPlayer? = null
     private var lastRung = -1
 
@@ -173,14 +176,19 @@ class ExoStreamEngine private constructor(
 
             override fun onTracksChanged(tracks: Tracks) {
                 val heights = mutableListOf<Int>()
+                var selected = 0
+                var adaptive = false
                 for (g in tracks.groups) {
                     if (g.type != C.TRACK_TYPE_VIDEO) continue
+                    adaptive = adaptive || g.isAdaptiveSupported
                     for (i in 0 until g.length) {
                         val h = g.getTrackFormat(i).height
                         if (h > 0 && !heights.contains(h)) heights.add(h)
+                        if (g.isTrackSelected(i)) selected++
                     }
                 }
-                emit(mapOf("id" to id, "e" to "tracks", "heights" to heights))
+                emit(mapOf("id" to id, "e" to "tracks", "heights" to heights,
+                    "selected" to selected, "adaptive" to adaptive))
             }
 
             override fun onPlayerError(error: PlaybackException) {
@@ -198,6 +206,21 @@ class ExoStreamEngine private constructor(
                 lastRung = format.height
                 emit(mapOf("id" to id, "e" to "rung", "h" to format.height,
                     "kbps" to (if (format.bitrate > 0) format.bitrate / 1000 else 0)))
+            }
+
+            override fun onLoadError(
+                eventTime: AnalyticsListener.EventTime,
+                loadEventInfo: LoadEventInfo,
+                mediaLoadData: MediaLoadData,
+                error: java.io.IOException,
+                wasCanceled: Boolean,
+            ) {
+                // The file asked for (a playlist's name or a rung's cache id;
+                // never the token, which is the path's middle) and why.
+                emit(mapOf("id" to id, "e" to "loaderr",
+                    "what" to (loadEventInfo.uri.lastPathSegment ?: "-"),
+                    "type" to mediaLoadData.dataType,
+                    "err" to error.javaClass.simpleName))
             }
 
             override fun onDroppedVideoFrames(
@@ -253,6 +276,25 @@ class ExoStreamEngine private constructor(
     fun quality(height: Int?) {
         steer.target = height
         nudge()
+        report("quality")
+    }
+
+    /**
+     * What the steering is acting on, in the trail: how many steered
+     * selections the player has made, the rungs the latest one holds, and
+     * the rung it picks now. A pick nobody acts on shows up here.
+     */
+    private fun report(why: String) {
+        val sel = factory.last
+        val heights = mutableListOf<Int>()
+        var picks = -1
+        if (sel != null) {
+            for (i in 0 until sel.length()) heights.add(sel.getFormat(i).height)
+            picks = sel.getFormat(sel.selectedIndex).height
+        }
+        emit(mapOf("id" to id, "e" to "steer", "why" to why,
+            "target" to steer.target, "made" to factory.made,
+            "heights" to heights, "picks" to picks))
     }
 
     /** The data saver's ceiling for Auto, or none. */
@@ -317,13 +359,24 @@ class ExoStreamEngine private constructor(
 
     @OptIn(UnstableApi::class)
     class SteeredFactory(private val steer: Steer) : AdaptiveTrackSelection.Factory() {
+        /** The selections made, and the latest, for [report]. */
+        @Volatile var made = 0
+        @Volatile var last: SteeredSelection? = null
+
         override fun createAdaptiveTrackSelection(
             group: TrackGroup,
             tracks: IntArray,
             type: Int,
             bandwidthMeter: BandwidthMeter,
             adaptationCheckpoints: ImmutableList<AdaptiveTrackSelection.AdaptationCheckpoint>,
-        ): AdaptiveTrackSelection = SteeredSelection(group, tracks, type, bandwidthMeter, adaptationCheckpoints, steer)
+        ): AdaptiveTrackSelection {
+            val s = SteeredSelection(group, tracks, type, bandwidthMeter, adaptationCheckpoints, steer)
+            if (type == C.TRACK_TYPE_VIDEO) {
+                made++
+                last = s
+            }
+            return s
+        }
     }
 
     /**
