@@ -349,19 +349,20 @@ for flow in $FLOWS; do
     adb shell "echo 1 > $d/lab_jumps"
     log "jumps: the test film, the viewer's jumps, ${JUMPS_S:-200} s"
     adb shell am start -W -n "$PKG/.MainActivity" >/dev/null 2>&1
-    # The checks are over by about 70 s. Then away to the home screen and
-    # back, as a viewer answering a message does: the trail must say the
-    # surface went and came back, and the picture after it.
-    sleep 80
+    # The checks are over by about 75 s. Then away to the home screen and
+    # back, as a viewer answering a message does: the app's own check
+    # ("LAB check back") counts the frames drawn after it.
+    sleep 100
     adb exec-out screencap -p > "$OUT/shots/9_jumps_mid.png"
     adb shell log -p i -t flutter "LAB away: home" >/dev/null 2>&1 || true
     adb shell input keyevent KEYCODE_HOME
     sleep 10
     adb shell log -p i -t flutter "LAB away: back" >/dev/null 2>&1 || true
-    adb shell am start -n "$PKG/.MainActivity" >/dev/null 2>&1
+    # As the launcher opens it (an `am start` delivers a new intent instead).
+    adb shell monkey -p "$PKG" -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1
     sleep 8
     adb exec-out screencap -p > "$OUT/shots/9_jumps_back.png"
-    sleep $(( ${JUMPS_S:-200} - 98 ))
+    sleep $(( ${JUMPS_S:-200} - 118 ))
     adb exec-out screencap -p > "$OUT/shots/9_jumps_end.png"
     grep -o 'LAB check.*' "$OUT/logcat_raw.txt" 2>/dev/null | sed 's/^/  /' | tee -a "$OUT/jumps.txt" || true
     grep -o 'exo [a-z].*\|hls[: ].*\|open ladder.*\|ladder on ExoPlayer.*\|LAB away.*\|lifecycle .*' "$OUT/logcat_raw.txt" 2>/dev/null | head -80 \

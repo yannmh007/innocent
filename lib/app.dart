@@ -323,6 +323,48 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
               'at=${at(s).inSeconds} bytes=${jpeg?.length ?? 0} ms=${t.elapsedMilliseconds}');
         }
       }
+      // 7. Away to the home screen and back (test_device/run.sh presses
+      // Home, then opens the app as the launcher does): the film picks up
+      // where it was and the picture is drawn again — frames counted by
+      // the engine itself, since a screenshot here is sealed.
+      if (svc is MediaKitPlayerService && svc.playingLadder) {
+        final away = Completer<void>();
+        final back = Completer<void>();
+        final watch = AppLifecycleListener(
+          onHide: () {
+            if (!away.isCompleted) away.complete();
+          },
+          onResume: () {
+            if (away.isCompleted && !back.isCompleted) back.complete();
+          },
+        );
+        try {
+          await away.future.timeout(const Duration(seconds: 90));
+          final left = svc.position;
+          await back.future.timeout(const Duration(seconds: 60));
+          PlaybackLog.add('LAB back at ${svc.position.inSeconds}s (left at ${left.inSeconds}s)');
+          await Future<void>.delayed(const Duration(seconds: 2));
+          // As a viewer would: play, if it was paused on the way out.
+          if (!svc.isPlaying) await player().play();
+          await Future<void>.delayed(const Duration(seconds: 1));
+          final a = await svc.ladderStats();
+          final from = svc.position;
+          await Future<void>.delayed(const Duration(seconds: 3));
+          final b = await svc.ladderStats();
+          final drawn = ((b['rendered'] as num?) ?? 0) - ((a['rendered'] as num?) ?? 0);
+          final moved = svc.position - from;
+          final ok = drawn >= 24 && moved >= const Duration(seconds: 2) &&
+              (svc.position - left).abs() < const Duration(seconds: 30);
+          ok ? pass++ : fail++;
+          PlaybackLog.add('LAB check back ${ok ? 'PASS' : 'FAIL'} frames=+$drawn '
+              'moved=${moved.inMilliseconds} ms at=${svc.position.inSeconds}s '
+              'left=${left.inSeconds}s');
+        } on TimeoutException {
+          PlaybackLog.add('LAB check back SKIP (no trip to the home screen)');
+        } finally {
+          watch.dispose();
+        }
+      }
     } catch (e) {
       PlaybackLog.add('LAB check failed to run: $e');
     } finally {

@@ -354,6 +354,19 @@ class ExoStreamEngine private constructor(
             "heights" to heights, "picks" to picks))
     }
 
+    /** What the picture is doing: frames drawn and dropped so far. */
+    fun stats(): Map<String, Any?> {
+        val p = player ?: return emptyMap()
+        val c = p.videoDecoderCounters
+        c?.ensureUpdated()
+        return mapOf(
+            "rendered" to (c?.renderedOutputBufferCount ?: -1),
+            "dropped" to (c?.droppedBufferCount ?: -1),
+            "playing" to p.isPlaying,
+            "pos" to p.currentPosition,
+        )
+    }
+
     /** The data saver's ceiling for Auto, or none. */
     fun maxHeight(height: Int?) {
         steer.maxHeight = height
@@ -610,6 +623,10 @@ class ExoStreamEngine private constructor(
                     val e = engines[id]
                     if (e == null) {
                         result.success(false)
+                        return@setMethodCallHandler
+                    }
+                    if (call.method == "stats") {
+                        result.success(e.stats())
                         return@setMethodCallHandler
                     }
                     when (call.method) {

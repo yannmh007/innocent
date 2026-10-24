@@ -248,6 +248,10 @@ class MediaKitPlayerService implements VideoPlayerService {
   /// The rung on screen while a ladder plays, by height.
   int? get ladderRung => _exoActive ? _exo?.rung : null;
 
+  /// The ladder engine's frame counts (device lab), or empty.
+  Future<Map<String, Object?>> ladderStats() async =>
+      _exoActive ? await (_exo?.stats() ?? Future.value(const <String, Object?>{})) : const {};
+
   /// A rung by height, or Auto (null) — the picture keeps moving.
   Future<void> setLadderQuality(int? height) async {
     if (_exoActive) await _exo?.quality(height);

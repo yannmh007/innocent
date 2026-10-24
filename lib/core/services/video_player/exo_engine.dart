@@ -222,6 +222,16 @@ class ExoEngine {
 
   Future<bool> stop() => _call('stop');
 
+  /// Frames drawn and dropped so far, whether it plays, where it is.
+  Future<Map<String, Object?>> stats() async {
+    try {
+      final r = await _m.invokeMapMethod<String, Object?>('stats', <String, Object?>{'id': id});
+      return r ?? const <String, Object?>{};
+    } catch (_) {
+      return const <String, Object?>{};
+    }
+  }
+
   Future<void> release() async {
     await _call('release');
     await _sub?.cancel();
