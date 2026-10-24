@@ -109,6 +109,18 @@ class LocalAccountRepository implements AccountRepository {
   }
 
   @override
+  Future<void> deleteAccount({required String expectUserId}) async {
+    // There is no server account to delete: forgetting the stub's user is
+    // the whole of it.
+    final sp = await SharedPreferences.getInstance();
+    final raw = sp.getString(_kUser);
+    if (raw != null && (jsonDecode(raw) as Map<String, dynamic>)['id'] != expectUserId) {
+      throw const AccountDeletionRefused('other_account');
+    }
+    await signOut();
+  }
+
+  @override
   Future<Entitlement> entitlement() async {
     final sp = await SharedPreferences.getInstance();
     final raw = sp.getString(_kEntitlement);

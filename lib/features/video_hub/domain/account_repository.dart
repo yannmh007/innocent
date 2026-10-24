@@ -96,6 +96,37 @@ abstract class AccountRepository {
     required int version,
     required DateTime acceptedAt,
   });
+
+  /// Deletes this account on the server, for good (docs/edge/delete-account.ts,
+  /// migration 048) — and only if it is [expectUserId], the account the
+  /// screen showed.
+  ///
+  /// The server insists on a sign-in from the last ten minutes, so the caller
+  /// signs in again just before ([signInWithGoogle]); an account other than
+  /// the expected one, picked at that prompt, is refused rather than deleted.
+  /// Payments are kept, with nothing in them that names the person; watch
+  /// history is kept as nobody's.
+  ///
+  /// Throws [AccountDeletionRefused] with the reason. On success this
+  /// phone's session is gone as well.
+  Future<void> deleteAccount({required String expectUserId});
+}
+
+/// The server did not delete the account, and why.
+///
+/// [reason] is one of: `sign_in_again` (the sign-in is too old, or the
+/// session is gone), `other_account` (a different account than the one the
+/// screen showed), `admin` (an admin account; the owner removes those, in
+/// the console), `offline` (the server could not be reached), `failed`
+/// (anything else — nothing that can be undone has happened that a retry
+/// cannot finish).
+class AccountDeletionRefused implements Exception {
+  const AccountDeletionRefused(this.reason);
+
+  final String reason;
+
+  @override
+  String toString() => 'AccountDeletionRefused($reason)';
 }
 
 /// The person dismissed a sign-in flow that had already opened.

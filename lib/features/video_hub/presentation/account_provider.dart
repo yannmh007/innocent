@@ -279,6 +279,29 @@ class AccountNotifier extends StateNotifier<AccountState> {
       installId: state.installId,
     );
   }
+
+  /// Deletes the signed-in account (AccountRepository.deleteAccount), then
+  /// clears this phone exactly as [signOut] does.
+  ///
+  /// A Google account signs in again first: the server wants proof from the
+  /// last ten minutes, and "the phone was unlocked" is not proof. If the
+  /// person picks a DIFFERENT account at that prompt, nothing is deleted —
+  /// the phone is now signed in to the one they picked, and this throws
+  /// `AccountDeletionRefused('other_account')`. Backing out of the prompt
+  /// throws [SignInCancelled].
+  Future<void> deleteAccount() async {
+    final me = state.user;
+    if (me == null) throw const AccountDeletionRefused('sign_in_again');
+    if (me.method == AuthMethod.google) {
+      final again = await _repo.signInWithGoogle();
+      if (again.id != me.id) {
+        await refresh();
+        throw const AccountDeletionRefused('other_account');
+      }
+    }
+    await _repo.deleteAccount(expectUserId: me.id);
+    await signOut();
+  }
 }
 
 final accountProvider =

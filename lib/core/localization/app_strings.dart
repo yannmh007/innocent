@@ -1564,6 +1564,20 @@ class AppStrings {
   String get vhSignInSendFailed => _s('vhSignInSendFailed');
   String get vhSignInNoConnection => _s('vhSignInNoConnection');
   String get vhSignOut => _s('vhSignOut');
+  String get vhDeleteAccount => _s('vhDeleteAccount');
+  String get vhDeleteAccountIntro => _s('vhDeleteAccountIntro');
+  String get vhDeleteAccountGone => _s('vhDeleteAccountGone');
+  String get vhDeleteAccountKept => _s('vhDeleteAccountKept');
+  String get vhDeleteAccountPremium => _s('vhDeleteAccountPremium');
+  String get vhDeleteAccountPhone => _s('vhDeleteAccountPhone');
+  String get vhDeleteAccountReauth => _s('vhDeleteAccountReauth');
+  String get vhDeleteAccountUnderstand => _s('vhDeleteAccountUnderstand');
+  String get vhDeleteAccountConfirm => _s('vhDeleteAccountConfirm');
+  String get vhDeleteAccountDone => _s('vhDeleteAccountDone');
+  String get vhDeleteAccountOther => _s('vhDeleteAccountOther');
+  String get vhDeleteAccountStale => _s('vhDeleteAccountStale');
+  String get vhDeleteAccountAdmin => _s('vhDeleteAccountAdmin');
+  String get vhDeleteAccountFailed => _s('vhDeleteAccountFailed');
   String get vhAccountTitle => _s('vhAccountTitle');
   String get vhAccountFreePlan => _s('vhAccountFreePlan');
   String get vhAccountRequests => _s('vhAccountRequests');
@@ -3021,6 +3035,20 @@ class AppStrings {
     'vhSignInBadPhone': 'Enter a valid phone number',
     'vhSignInBadCode': 'That code is not correct',
     'vhSignOut': 'Sign out',
+    'vhDeleteAccount': 'Delete account',
+    'vhDeleteAccountIntro': 'This deletes your Innocent account for good. It cannot be undone.',
+    'vhDeleteAccountGone': 'Deleted: your sign-in, your phones, the titles saved to your account, Premium, and the problem reports you sent.',
+    'vhDeleteAccountKept': 'Kept, with nothing that names you: payment records (plan, amount, transaction number, date), and what was watched, counted as nobody\'s.',
+    'vhDeleteAccountPremium': 'Any Premium time left ends with the account.',
+    'vhDeleteAccountPhone': 'Free films you downloaded stay on this phone. Premium downloads are removed.',
+    'vhDeleteAccountReauth': 'To be sure it is you, Google will ask you to choose your account once more.',
+    'vhDeleteAccountUnderstand': 'I understand this cannot be undone',
+    'vhDeleteAccountConfirm': 'Delete my account',
+    'vhDeleteAccountDone': 'Your account was deleted.',
+    'vhDeleteAccountOther': 'You chose a different account, so nothing was deleted.',
+    'vhDeleteAccountStale': 'Please sign out, sign in again, and delete within ten minutes.',
+    'vhDeleteAccountAdmin': 'This is an admin account. The owner removes it from the console.',
+    'vhDeleteAccountFailed': 'The account could not be deleted right now. Please try again.',
     'vhAccountTitle': 'Account',
     'vhAccountFreePlan': 'Free plan',
     'vhAccountRequests': 'Payment requests',
@@ -5339,6 +5367,20 @@ class AppStrings {
     'vhSignInBadPhone': 'ဖုန်းနံပါတ် မှန်ကန်စွာ ထည့်ပါ',
     'vhSignInBadCode': 'ကုဒ် မမှန်ပါ',
     'vhSignOut': 'ထွက်ရန်',
+    'vhDeleteAccount': 'Account ဖျက်မယ်',
+    'vhDeleteAccountIntro': 'ဒါက သင့် Innocent account ကို အပြီးတိုင် ဖျက်ပါတယ်။ ပြန်ယူလို့ မရပါ။',
+    'vhDeleteAccountGone': 'ဖျက်မယ့်အရာ — sign-in၊ သင့်ဖုန်းစာရင်း၊ account ထဲ သိမ်းထားတဲ့ ရုပ်ရှင်တွေ၊ Premium နဲ့ သင်ပို့ခဲ့တဲ့ ပြဿနာ report တွေ။',
+    'vhDeleteAccountKept': 'သင့်နာမည် မပါတော့ဘဲ ထားခဲ့မယ့်အရာ — ငွေပေးချေမှု မှတ်တမ်း (plan၊ ငွေပမာဏ၊ transaction နံပါတ်၊ ရက်စွဲ) နဲ့ ကြည့်ခဲ့တဲ့ စာရင်း (ဘယ်သူနဲ့မှ မချိတ်တော့ပါ)။',
+    'vhDeleteAccountPremium': 'ကျန်နေတဲ့ Premium ကာလလည်း account နဲ့အတူ ပြီးဆုံးပါမယ်။',
+    'vhDeleteAccountPhone': 'Download ဆွဲထားတဲ့ free ရုပ်ရှင်တွေ ဒီဖုန်းမှာ ကျန်ပါမယ်။ Premium download တွေကို ဖယ်ရှားပါမယ်။',
+    'vhDeleteAccountReauth': 'သင်ကိုယ်တိုင် ဖြစ်ကြောင်း သေချာစေဖို့ Google က account ကို တစ်ခါ ထပ်ရွေးခိုင်းပါမယ်။',
+    'vhDeleteAccountUnderstand': 'ပြန်ယူလို့ မရဘူးဆိုတာ နားလည်ပါတယ်',
+    'vhDeleteAccountConfirm': 'ကျွန်ုပ်၏ account ကို ဖျက်မယ်',
+    'vhDeleteAccountDone': 'သင့် account ကို ဖျက်ပြီးပါပြီ။',
+    'vhDeleteAccountOther': 'တခြား account ကို ရွေးလိုက်လို့ ဘာမှ မဖျက်ရပါ။',
+    'vhDeleteAccountStale': 'Sign out လုပ်ပြီး ပြန် sign in ဝင်ကာ ၁၀ မိနစ်အတွင်း ဖျက်ပါ။',
+    'vhDeleteAccountAdmin': 'ဒါက admin account ဖြစ်လို့ owner က console ကနေ ဖယ်ရှားပေးရပါမယ်။',
+    'vhDeleteAccountFailed': 'အခု account ကို ဖျက်လို့ မရသေးပါ။ ထပ်ကြိုးစားပါ။',
     'vhAccountTitle': 'အကောင့်',
     'vhAccountFreePlan': 'အခမဲ့ အစီအစဉ်',
     'vhAccountRequests': 'ငွေပေးချေမှု တောင်းဆိုချက်များ',
@@ -7630,6 +7672,20 @@ class AppStrings {
     'vhSignInBadPhone': 'กรอกเบอร์โทรให้ถูกต้อง',
     'vhSignInBadCode': 'รหัสไม่ถูกต้อง',
     'vhSignOut': 'ออกจากระบบ',
+    'vhDeleteAccount': 'ลบบัญชี',
+    'vhDeleteAccountIntro': 'การดำเนินการนี้จะลบบัญชี Innocent ของคุณอย่างถาวร และย้อนกลับไม่ได้',
+    'vhDeleteAccountGone': 'สิ่งที่จะถูกลบ: การลงชื่อเข้าใช้ โทรศัพท์ของคุณ รายการที่บันทึกในบัญชี Premium และรายงานปัญหาที่คุณส่ง',
+    'vhDeleteAccountKept': 'สิ่งที่เก็บไว้โดยไม่ระบุตัวคุณ: บันทึกการชำระเงิน (แพ็กเกจ จำนวนเงิน หมายเลขธุรกรรม วันที่) และสถิติการรับชมที่ไม่เป็นของใคร',
+    'vhDeleteAccountPremium': 'เวลา Premium ที่เหลือจะสิ้นสุดพร้อมบัญชี',
+    'vhDeleteAccountPhone': 'ภาพยนตร์ฟรีที่ดาวน์โหลดไว้จะยังอยู่ในเครื่องนี้ ส่วนไฟล์ดาวน์โหลด Premium จะถูกลบ',
+    'vhDeleteAccountReauth': 'เพื่อยืนยันว่าเป็นคุณ Google จะขอให้คุณเลือกบัญชีอีกครั้ง',
+    'vhDeleteAccountUnderstand': 'ฉันเข้าใจว่าย้อนกลับไม่ได้',
+    'vhDeleteAccountConfirm': 'ลบบัญชีของฉัน',
+    'vhDeleteAccountDone': 'ลบบัญชีของคุณแล้ว',
+    'vhDeleteAccountOther': 'คุณเลือกบัญชีอื่น จึงไม่มีการลบใดๆ',
+    'vhDeleteAccountStale': 'โปรดออกจากระบบ ลงชื่อเข้าใช้อีกครั้ง แล้วลบภายในสิบนาที',
+    'vhDeleteAccountAdmin': 'นี่คือบัญชีผู้ดูแล เจ้าของจะลบออกจากคอนโซล',
+    'vhDeleteAccountFailed': 'ยังลบบัญชีไม่ได้ในตอนนี้ โปรดลองอีกครั้ง',
     'vhAccountTitle': 'บัญชี',
     'vhAccountFreePlan': 'แผนฟรี',
     'vhAccountRequests': 'คำขอชำระเงิน',

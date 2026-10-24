@@ -9,6 +9,8 @@ import '../../../core/router/app_router.dart';
 import '../../../core/router/routes.dart';
 import 'floating_pip_provider.dart';
 import 'player_provider.dart';
+import 'video_geometry.dart';
+import 'widgets/account_mark.dart';
 import '../../../core/localization/app_strings.dart';
 
 /// Phase 15: In-app floating PiP overlay.
@@ -340,6 +342,19 @@ class _PipBodyState extends ConsumerState<_PipBody> {
               Positioned.fill(
                 child: svc.buildVideoWidget(fit: BoxFit.contain),
               ),
+              // A paid film carries its account's code here too, on the
+              // picture inside the little window (AccountMark).
+              if (pip.secure)
+                Positioned.fill(
+                  child: AccountMark(
+                    picture: pictureRect(
+                      Size(widget.width, widget.height),
+                      containSize(Size(widget.width, widget.height),
+                          ref.read(playerControllerProvider.notifier).displayVideoSize),
+                      Offset.zero,
+                    ),
+                  ),
+                ),
               // Controls overlay (semi-transparent)
               if (_showControls)
                 Positioned.fill(

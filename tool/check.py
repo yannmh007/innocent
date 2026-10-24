@@ -177,6 +177,12 @@ def main() -> int:
          'a check meant only to watch that refuses a paying phone\'s film '
          'instead, an "enforce" that lets a copied link play anywhere, or a '
          'film a shared cache goes on serving after its link expired'),
+        ('delete_account_test.mjs',
+         'deleting an account: who, how fresh, what is kept',
+         'an account erased by a session left open on a lent phone, the '
+         'wrong account erased after the person picked another one at the '
+         'sign-in prompt, or the payment records — the books and the reused '
+         'transaction number check — deleted with the person'),
         ('sigv4_test.mjs',
          'the R2 signatures and the multipart XML',
          'a request R2 refuses with a bare 403 that names no parameter, no '

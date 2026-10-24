@@ -32,7 +32,7 @@ what was checked, what was fixed, and what is left, with the reason.
 | A payment's transaction number could be reused by another account unnoticed; only a byte-identical screenshot was caught. An AI-made or re-edited receipt has a new hash. | medium | `premium-request` flags a reused transaction number like a reused screenshot (owner told in red, console marks it); the console says, beside Approve, to find the payment in the KPay/Wave app first |
 | The console — the page that can delete the catalogue and name admins — had no Content-Security-Policy, and any other site could show it inside an invisible frame and line an admin's tap up with Approve or Delete (clickjacking). It renders no database text as HTML today; nothing stopped a future slip from becoming an admin takeover. | medium | the page's script moved to `app.js` and a policy allows only this site's own script files (no inline script, no handler attributes, no eval, no other host); the page starts hidden and `top.js` shows it only as the top window. `console_smoke.mjs` proves both: an injected script and an `onclick` do not run, a framed console stays hidden, and every scenario runs with zero refusals |
 | No standing check for published vulnerabilities in dependencies | medium | `.github/workflows/deps-scan.yml`: OSV-Scanner weekly and on every dependency change, binary checksum-verified. It resolves first, with the Build workflow's Flutter, and scans that: the committed `pubspec.lock` had fallen so far behind that it did not list google_sign_in. First run: 157 packages, no known vulnerability |
-| The SHA-256 in `app_releases` proves a download is the published file, not who built it: anyone able to write the table or a mirror could publish another APK with a matching hash | medium | every APK a release uploads gets a GitHub artifact attestation (SLSA provenance, signed through Sigstore, public log), in a separate job that holds no signing key and checks nothing out. Check any copy, from any mirror: `gh attestation verify innocent-X-Y.apk -R yannmh007/innocent` |
+| The SHA-256 in `app_releases` proves a download is the published file, not who built it: anyone able to write the table or a mirror could publish another APK with a matching hash | medium | every APK a release uploads gets a GitHub artifact attestation (SLSA provenance, signed through Sigstore, public log), in a separate job that holds no signing key and checks nothing out. Check any copy, from any mirror: `gh attestation verify innocent-X-Y.apk -R yannmh007/innocent`. **From 1.64.71:** 1.64.70's job got nothing to sign — GitHub drops a job output holding a secret's value, and the key alias is the word in every APK's name — so only digests and the version cross between the jobs now |
 
 **Caught before it shipped, twice.**
 
@@ -50,6 +50,18 @@ what was checked, what was fixed, and what is left, with the reason.
   invariant (`tool/security_invariants.py`) refuses that: held bytes are
   for "the server could not be asked", never for "the server said no".
   Fixed.
+
+## Released
+
+**1.64.70 (383), 23 October 2026** — main `7c7e78a`, release
+`v1.64.70-383`, `app_releases` updated. On real phones in Firebase Test
+Lab: the OPPO A38 five of five checks, `bind ok 150` (run 39919163442); the
+realme C53 five of five, `bind ok 186` (run 39922911645). The realme's first
+run failed three checks on a line of its own that ran at 1.6-4 Mbit/s and
+then nearly stopped — no throughput for 66 s — while the OPPO beside it ran
+at 5-38; the rerun, at 8-39 Mbit/s, passed. (The device lab cannot stand in
+for that: its emulator's network speed setting does not reach Wi-Fi, and
+Sintel does not decode there.)
 
 ## Looked at and found sound
 
@@ -119,13 +131,49 @@ what was checked, what was fixed, and what is left, with the reason.
 ## Next app release (after 1.64.70)
 
 * **Delete my account**, in the app: Play policy for any app with accounts,
-  and Thailand's PDPA (the app ships Thai) gives a right to erasure. Watch
-  history, devices and bookmarks deleted; payment records kept, anonymised.
+  and Thailand's PDPA (the app ships Thai) gives a right to erasure. BUILT,
+  ships with the next release: Me → Account → Delete my account
+  (`delete_account_screen.dart`), the `delete-account` edge function and
+  `delete_my_data()` (migration 048). The sign-in, devices, bookmarks,
+  Premium, consents and problem reports are deleted; payment records and
+  watch history are kept with nothing left that names the person (the
+  receipt's screenshot, phone number and message go). It needs a sign-in
+  from the last ten minutes — a Google account chooses itself again on the
+  spot — so an unlocked phone or a copied session is not enough; an admin's
+  account is refused. Server rules: `delete_account_test.mjs`; the app's
+  side: `test/delete_account_test.dart`. In production the foreign key and
+  check of 048 are applied; the function waits for the owner's approval, and
+  the edge function is deployed with the release.
 * **A faint moving account code on premium video** (8 hex digits of the same
   hash the Worker logs as `u`), so a recording made where FLAG_SECURE is
   bypassed can be traced. Through the four premium player routes and
-  picture-in-picture.
+  picture-in-picture. BUILT, ships with the next release: `AccountMark`
+  over the picture in the full player (every premium route sets
+  `secureScreen`, which also covers the phone's own picture-in-picture) and
+  in the floating window; on the picture, never on the bars or off a zoomed
+  screen; a new place every 20 s; no tap, no TalkBack. Finding the account
+  behind a code: `docs/security.md` §9. Guarded by security_invariants rule
+  14 and `test/account_mark_test.dart`.
 * **Sealed premium stream cache** with the downloads' Keystore cipher.
+  BUILT, ships with the next release, for every film and not only premium
+  (one path, and the cost is a fraction of a millisecond a piece): a new
+  film's cache gets its own IV (`seal.iv`, on disk before any run), its runs
+  are `s<offset>.bin` ciphered at their own place in the film, and every
+  read goes through `CacheEntry.read`, which unseals. What was cached plain
+  before still plays and stays plain until it ages out (the stream cache
+  screen in Settings → General clears it at once). A sealed run whose IV is lost is deleted,
+  never served; a cipher that fails stops the caching, never the film.
+  Proof: every stream-cache server test runs again with the cipher on
+  (`test/stream_cache_sealed_test.dart`, 40 checks), security_invariants
+  rule 15 stops any other reader opening a run's file, and the lab trail
+  says `stream cache: a new film, sealed` and `stream from the phone … sealed`.
+  ON REAL PHONES (Test Lab run 39972176423, 2026-10-23, realme C53 and
+  OPPO): both said `a new film, sealed` with the phone's own Keystore
+  cipher, both played sealed runs back from the phone after the jump back
+  (1.2-1.9 MB at a time), and both passed all five checks — seek, quality
+  change, +30 s, swipe back two minutes, back to Auto — with every Worker
+  fetch `bind ok` (124 and 190); no crash, no cipher failure in either
+  logcat.
 * **Toolchain release, on its own:** Flutter 3.47 with the Gradle, AGP and
   Kotlin it needs, no feature changes in the same release, through the
   same 1,070 tests, the device lab and Test Lab on both real phones before

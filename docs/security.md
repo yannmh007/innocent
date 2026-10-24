@@ -172,6 +172,40 @@ prevents a clone. The options, strongest first:
 * **OWASP ASVS** for the console and edge functions (authentication, access
   control, logging).
 
+## 9. The code on a paid film
+
+FLAG_SECURE blacks out a screenshot or a recording of a paid film on a phone
+that honours it. A rooted phone, a capture card or a second phone held up to
+the screen does not, and a copy made that way would say nothing about where
+it came from. So every paid film carries, faintly, an 8-digit code over the
+picture (`lib/features/player/presentation/widgets/account_mark.dart`): in
+the full player and in the floating window, fading to a new place every 20
+seconds, never on the black bars. `tool/security_invariants.py` rule 14
+fails the build if either place stops drawing it.
+
+The code is the first 8 hex digits of SHA-256 of the account id: the same
+hash `request-playback` puts in the token as `u` and the Worker logs, so the
+code is also the start of `u` in Cloudflare's logs. It names nobody to
+anyone who sees it. **To find the account behind a code**, in the Supabase
+SQL Editor (replace `93101325` with the code):
+
+```sql
+select u.id, u.email, u.phone, u.created_at
+from auth.users u
+where left(encode(sha256(convert_to(u.id::text, 'UTF8')), 'hex'), 8) = '93101325';
+
+-- No account? A phone that was signed out shows its install's code instead.
+select d.user_id, d.label, d.last_seen
+from public.devices d
+where left(encode(sha256(convert_to(d.device_id, 'UTF8')), 'hex'), 8) = '93101325';
+```
+
+What it does not do: a visible mark can be painted out, frame by frame, by
+today's video inpainting tools — moving it makes that slower, not
+impossible. Invisible (forensic) watermarking, which survives that, needs a
+copy of the film per viewer or a per-session server mix (A/B segments), and
+belongs with the Phase 3 DRM decision.
+
 ## Sources
 
 * [Cloudflare R2 — public buckets](https://developers.cloudflare.com/r2/buckets/public-buckets/)

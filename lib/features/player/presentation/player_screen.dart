@@ -60,6 +60,7 @@ import 'aspect_ratio_mode.dart';
 import 'player_provider.dart';
 import 'player_stats_overlay.dart';
 import 'shortcut_item.dart';
+import 'widgets/account_mark.dart';
 import 'widgets/brightness_indicator.dart';
 import 'widgets/bookmarks_sheet.dart';
 import 'widgets/custom_speed_dialog.dart';
@@ -2496,6 +2497,33 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     });
   }
 
+  /// The account's code (AccountMark), on the part of the picture that is
+  /// on screen — the same rectangle the subtitles are placed in.
+  Widget _accountMarkLayer(PlayerState state) {
+    return LayoutBuilder(builder: (context, c) {
+      final view = Size(c.maxWidth, c.maxHeight);
+      final video = ref.read(playerControllerProvider.notifier).displayVideoSize;
+      final scale = screenModeScale(
+        mode: state.aspectRatioMode,
+        view: view,
+        video: video,
+        devicePixelRatio: MediaQuery.devicePixelRatioOf(context),
+        customScale: state.videoScale,
+      );
+      return AccountMark(
+        picture: pictureRect(
+          view,
+          pictureSize(
+              mode: state.aspectRatioMode,
+              view: view,
+              video: video,
+              scale: scale),
+          state.videoOffset,
+        ),
+      );
+    });
+  }
+
   Widget _wrapVideoTransforms(Widget child, PlayerState state) {
     Widget result = child;
     if (state.isMirrorMode || state.isVerticalFlip) {
@@ -2792,6 +2820,12 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
               svc.isInitialized &&
               svc is MediaKitPlayerService)
             Positioned.fill(child: _subtitleLayer(svc, state)),
+
+          // === LAYER 1c: The account's code, on a paid film only ===
+          // Over the picture, under every control. Not the vault: those are
+          // the viewer's own files.
+          if (widget.secureScreen && _videoDisplayEnabled && svc.isInitialized)
+            Positioned.fill(child: _accountMarkLayer(state)),
 
           // === LAYER 2: Buffering ===
           // Phase 41: gated by "Loading circle animation" (Settings →

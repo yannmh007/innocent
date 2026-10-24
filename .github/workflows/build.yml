@@ -67,9 +67,17 @@ jobs:
       contents: write
 
     # What the release step uploaded in THIS run, for the `attest` job below:
-    # `<sha256>:<file>` pairs, or empty when nothing was uploaded.
+    # the version and each APK's SHA-256, empty when nothing was uploaded.
+    #
+    # DIGESTS ONLY, NEVER A FILE NAME. GitHub drops a job output that holds
+    # any secret's value, and one of the signing secrets is the word in every
+    # APK's name: 1.64.70's `<sha>:<file>` pairs were dropped ("Skip output
+    # 'uploaded' since it may contain secret") and its attestation never ran.
+    # The attest job puts the names back together itself.
     outputs:
-      uploaded: ${{ steps.publish.outputs.uploaded }}
+      version: ${{ steps.publish.outputs.version }}
+      sha64: ${{ steps.publish.outputs.sha64 }}
+      sha32: ${{ steps.publish.outputs.sha32 }}
 
     steps:
       - name: Check out the repository
@@ -861,7 +869,8 @@ jobs:
           # carries a complete asset returned above and never gets this far,
           # which is the point — see case (1).
           gh release upload "$TAG" "$NAME" --clobber
-          UPLOADED="$(sha256sum "$NAME" | cut -d' ' -f1):$NAME"
+          SHA64=$(sha256sum "$NAME" | cut -d' ' -f1)
+          SHA32=""
           if [ -f "$NAME.symbols.tar.gz.enc" ]; then
             gh release upload "$TAG" "$NAME.symbols.tar.gz.enc" --clobber
           fi
@@ -871,13 +880,17 @@ jobs:
           # come from a different tree than its tag names.
           if [ -n "${NAME32:-}" ] && [ -f "$NAME32" ]; then
             gh release upload "$TAG" "$NAME32" --clobber
-            UPLOADED="$UPLOADED $(sha256sum "$NAME32" | cut -d' ' -f1):$NAME32"
+            SHA32=$(sha256sum "$NAME32" | cut -d' ' -f1)
             if [ -f "$NAME32.symbols.tar.gz.enc" ]; then
               gh release upload "$TAG" "$NAME32.symbols.tar.gz.enc" --clobber
             fi
           fi
 
-          echo "uploaded=$UPLOADED" >> "$GITHUB_OUTPUT"
+          {
+            echo "version=${TAG#v}"
+            echo "sha64=$SHA64"
+            echo "sha32=$SHA32"
+          } >> "$GITHUB_OUTPUT"
           echo "published: $(gh release view "$TAG" --json url --jq .url)"
 
       # ═══════════════════════════════════════════════════════════════════
@@ -949,11 +962,12 @@ jobs:
   # BY DIGEST, NOT BY FILE. It attests exactly the files the release step
   # uploaded in this run — their hashes, passed from the job above. A run
   # that left an already-published version alone uploaded nothing, and
-  # attests nothing: the file on the Release is an earlier run's.
+  # attests nothing: the file on the Release is an earlier run's. (First
+  # release that will carry one: 1.64.71 — see the build job's outputs.)
   attest:
     name: Sign where the APK came from
     needs: build
-    if: github.ref == 'refs/heads/main' && needs.build.outputs.uploaded != ''
+    if: github.ref == 'refs/heads/main' && needs.build.outputs.sha64 != ''
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -962,11 +976,17 @@ jobs:
     steps:
       - name: The files this run published
         env:
-          UPLOADED: ${{ needs.build.outputs.uploaded }}
+          VERSION: ${{ needs.build.outputs.version }}
+          SHA64: ${{ needs.build.outputs.sha64 }}
+          SHA32: ${{ needs.build.outputs.sha32 }}
         run: |
           set -euo pipefail
-          # `<sha256>:<file>` pairs → the `sha256sum` format the action reads.
-          printf '%s\n' $UPLOADED | sed -E 's/^([0-9a-f]{64}):(.+)$/\1  \2/' > subjects.txt
+          # The `sha256sum` format the action reads, with the names the
+          # release step gave the files (see the build job's outputs).
+          printf '%s  innocent-%s.apk\n' "$SHA64" "$VERSION" > subjects.txt
+          if [ -n "$SHA32" ]; then
+            printf '%s  innocent-%s-arm32.apk\n' "$SHA32" "$VERSION" >> subjects.txt
+          fi
           grep -Evq '^[0-9a-f]{64}  innocent-[0-9.]+-[0-9]+(-arm32)?\.apk$' subjects.txt \
             && { echo "::error::unexpected subject line"; cat subjects.txt; exit 1; }
           cat subjects.txt

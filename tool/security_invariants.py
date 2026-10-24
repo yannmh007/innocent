@@ -849,6 +849,69 @@ if os.path.isfile(PROBE):
             'turns the report into a list of the live catalogue.')
 
 
+# --- 14. a paid film carries its account's code, wherever it is drawn ---------
+# FLAG_SECURE stops a recording on a phone that honours it; the code on the
+# picture is what names the account behind a copy made where it is not
+# (player/presentation/widgets/account_mark.dart). Both places a paid film is
+# drawn must carry it, and only for a paid film: the full player when
+# `secureScreen` is set (every premium route in playback.dart sets it), and
+# the floating window when `pip.secure` is.
+PLAYER = os.path.join(ROOT, 'lib/features/player/presentation')
+if os.path.isdir(PLAYER):
+    def read_strip(name):
+        try:
+            return strip(open(os.path.join(PLAYER, name), encoding='utf-8').read())
+        except OSError:
+            return ''
+    screen = read_strip('player_screen.dart')
+    if not re.search(r'if \(widget\.secureScreen[^)]*\)\s*Positioned\.fill\(child: _accountMarkLayer', screen) \
+            or 'AccountMark(' not in screen:
+        fails.append(
+            'A PAID FILM WITHOUT ITS CODE: player_screen.dart no longer draws '
+            'AccountMark over the picture when secureScreen is set. A copy made '
+            'where FLAG_SECURE is not honoured would then name nobody.')
+    pip = read_strip('floating_pip_overlay.dart')
+    if not re.search(r'if \(pip\.secure\)\s*Positioned\.fill\(\s*child: AccountMark\(', pip):
+        fails.append(
+            'A PAID FILM WITHOUT ITS CODE: floating_pip_overlay.dart no longer '
+            'draws AccountMark in the little window when pip.secure is set.')
+    mark = read_strip('widgets/account_mark.dart')
+    if 'IgnorePointer(' not in mark or 'ExcludeSemantics(' not in mark:
+        fails.append(
+            'THE ACCOUNT CODE IS IN THE WAY: account_mark.dart must be under '
+            'IgnorePointer (no tap lands on it) and ExcludeSemantics (TalkBack '
+            'does not read eight hex digits every twenty seconds).')
+    for bad in ('.email', '.phone', 'displayName'):
+        if bad in mark:
+            fails.append(
+                'THE ACCOUNT CODE NAMES THE PERSON: account_mark.dart reads %s. '
+                'The code is a hash of the account id and nothing else; anyone '
+                'who sees a copy sees it.' % bad)
+
+
+# --- 15. a cached run is read only through its entry, which unseals it -------
+# Stream cache runs are sealed with the downloads' cipher (stream_cache_store.dart:
+# "SEALED, WITH THE DOWNLOADS' CIPHER"). A run read straight off its file is
+# ciphertext, which a player plays as a broken film without any error. So
+# outside the store nothing opens a run's file: CacheEntry.read and readHead are
+# the only readers.
+CACHE = os.path.join(FEATURE, 'data/cache')
+if os.path.isdir(CACHE):
+    for fn in sorted(os.listdir(CACHE)):
+        if not fn.endswith('.dart') or fn == 'stream_cache_store.dart':
+            continue
+        body = strip(open(os.path.join(CACHE, fn), encoding='utf-8').read())
+        for m in re.finditer(r'\b(?:part|head|run)\.file\.(openRead|open|readAsBytes|readAsBytesSync)\b', body):
+            fails.append(
+                'A CACHED RUN READ PAST ITS SEAL: data/cache/%s calls .file.%s on a '
+                'cache run. Read it through CacheEntry.read / readHead, which '
+                'unseal a sealed run; the file itself is ciphertext.' % (fn, m.group(1)))
+    store = strip(open(os.path.join(CACHE, 'stream_cache_store.dart'), encoding='utf-8').read())
+    if 'OfflineCrypto.transform' not in store or "'s' : 'p'" not in store:
+        fails.append(
+            'THE STREAM CACHE IS NOT SEALED: stream_cache_store.dart no longer '
+            'ciphers new runs (OfflineCrypto.transform, s<offset>.bin).')
+
 print('=== %d security invariant violation(s) ===' % len(fails))
 for f in fails:
     print(' -', f)

@@ -14,6 +14,7 @@ import '../data_saver_panel.dart';
 import '../video_hub_theme.dart';
 import '../widgets/vh_insets.dart';
 import '../downloads_screen.dart';
+import 'delete_account_screen.dart';
 import 'premium_request_screen.dart';
 import 'report_problem_sheet.dart';
 import 'sign_in_sheet.dart';
@@ -163,6 +164,20 @@ class AccountScreen extends ConsumerWidget {
                   await ref.read(accountProvider.notifier).signOut();
                   ref.invalidate(myPremiumRequestsProvider);
                 },
+              ),
+              // THE WAY OUT, last and quiet: it has to be there, and it must
+              // not be in anyone's way. What it deletes and keeps is on its
+              // own screen (DeleteAccountScreen).
+              TextButton(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const DeleteAccountScreen(),
+                  ),
+                ),
+                child: Text(
+                  s.vhDeleteAccount,
+                  style: VH.label.copyWith(color: const Color(0xFFFF8A80)),
+                ),
               ),
             ],
           ],

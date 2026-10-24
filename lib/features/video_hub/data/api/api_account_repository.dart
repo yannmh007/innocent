@@ -229,6 +229,33 @@ class ApiAccountRepository implements AccountRepository {
   }
 
   @override
+  Future<void> deleteAccount({required String expectUserId}) async {
+    try {
+      await _api.postJson(
+        '/functions/v1/delete-account',
+        body: <String, dynamic>{'confirm': 'delete', 'expect_user': expectUserId},
+      );
+    } on ApiException catch (e) {
+      if (e.kind == ApiErrorKind.network) {
+        throw const AccountDeletionRefused('offline');
+      }
+      if (e.kind == ApiErrorKind.unauthenticated) {
+        throw const AccountDeletionRefused('sign_in_again');
+      }
+      const known = <String>{'sign_in_again', 'other_account', 'admin'};
+      throw AccountDeletionRefused(known.contains(e.code) ? e.code! : 'failed');
+    }
+    // The account is gone: so is its session here, and Google's memory of
+    // which account this app last used.
+    await _session.clear();
+    try {
+      await GoogleSignIn.instance.signOut();
+    } catch (_) {
+      // Best effort: the account it would name no longer exists.
+    }
+  }
+
+  @override
   Future<void> signOut() async {
     try {
       await _api.postJson('/auth/v1/logout');

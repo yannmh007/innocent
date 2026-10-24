@@ -1,6 +1,4 @@
-import 'dart:io';
 import 'dart:math';
-import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 
@@ -125,7 +123,7 @@ class OfflineReplay {
       // can happen today.
       if (head == null) return const ReplayOffer.no(ReplayRefusal.nothingHeld);
 
-      final bytes = await _readHead(head.file, min(_headBytes, head.length));
+      final bytes = await entry.readHead(head, min(_headBytes, head.length));
       if (bytes == null) return const ReplayOffer.no(ReplayRefusal.cannotOpen);
 
       // `onDisk` is the CONTIGUOUS run from the start and not `heldBytes`.
@@ -160,23 +158,6 @@ class OfflineReplay {
     } catch (e) {
       if (kDebugMode) debugPrint('OfflineReplay.open: $e');
       return const ReplayOffer.no(ReplayRefusal.cannotOpen);
-    }
-  }
-
-  static Future<Uint8List?> _readHead(File file, int length) async {
-    if (length <= 0) return null;
-    RandomAccessFile? handle;
-    try {
-      handle = await file.open();
-      final out = await handle.read(length);
-      return out.isEmpty ? null : out;
-    } catch (e) {
-      if (kDebugMode) debugPrint('OfflineReplay._readHead: $e');
-      return null;
-    } finally {
-      try {
-        await handle?.close();
-      } catch (_) {}
     }
   }
 }
