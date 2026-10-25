@@ -2002,7 +2002,9 @@ class PlayerController extends StateNotifier<PlayerState> {
       if (fresh == uri) return true;
       final svc = _ref.read(videoPlayerServiceProvider);
       final at = svc.position > Duration.zero ? svc.position : state.position;
-      final wasPlaying = state.isPlaying;
+      // A film stalled mid-play is still playing for the viewer: it reopens
+      // playing.
+      final wasPlaying = state.isPlaying || _rebufferSince != null;
       _currentUri = fresh;
       // A deliberate switch is not a stall: the automatic step-down count
       // starts again from here.

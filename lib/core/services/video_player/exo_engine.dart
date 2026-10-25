@@ -152,7 +152,12 @@ class ExoEngine {
         _position.add(position);
         _buffered.add(buffered);
       case 'state':
-        final p = e['playing'] == true;
+        // PLAYING MEANS THE VIEWER HAS IT PLAYING, as libmpv says it: a film
+        // waiting for its bytes is still a playing film. ExoPlayer's own
+        // isPlaying is false while it buffers, and read as "paused" it made
+        // a change of quality during a stall reopen the film paused, and put
+        // the play button up under the spinner (device lab run 40190583932).
+        final p = e['ready'] == true && e['ended'] != true;
         final b = e['buffering'] == true;
         final end = e['ended'] == true;
         if (p != playing) _playing.add(playing = p);
