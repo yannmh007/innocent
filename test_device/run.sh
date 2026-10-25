@@ -340,19 +340,21 @@ for flow in $FLOWS; do
   # emulator's link (an `emu network speed` name, or full) for a run that
   # wants a slower line.
   case "$flow" in jumps)
-    if [ -z "${CLIMB_TITLE:-}" ]; then log "flow jumps: no CLIMB_TITLE in config.env — skipped"; continue; fi
+    # The film: JUMPS_TITLE when set (another open film), else the test film.
+    jt="${JUMPS_TITLE:-${CLIMB_TITLE:-}}"
+    if [ -z "$jt" ]; then log "flow jumps: no CLIMB_TITLE in config.env — skipped"; continue; fi
     adb shell am force-stop "$PKG"
     adb shell pm clear "$PKG" >/dev/null 2>&1 || true
     d="/sdcard/Android/data/$PKG/files"
     adb shell mkdir -p "$d" >/dev/null 2>&1
-    adb shell "echo title:$CLIMB_TITLE > $d/lab_stream_url"
+    adb shell "echo title:$jt > $d/lab_stream_url"
     adb shell "echo 1 > $d/lab_jumps"
-    log "jumps: the test film, the viewer's jumps, ${JUMPS_S:-200} s"
+    log "jumps: $jt, the viewer's jumps, ${JUMPS_S:-200} s, home after ${JUMPS_AWAY_AFTER:-100} s"
     adb shell am start -W -n "$PKG/.MainActivity" >/dev/null 2>&1
     # The checks are over by about 75 s. Then away to the home screen and
     # back, as a viewer answering a message does: the app's own check
     # ("LAB check back") counts the frames drawn after it.
-    sleep 100
+    sleep "${JUMPS_AWAY_AFTER:-100}"
     adb exec-out screencap -p > "$OUT/shots/9_jumps_mid.png"
     adb shell log -p i -t flutter "LAB away: home" >/dev/null 2>&1 || true
     adb shell input keyevent KEYCODE_HOME
@@ -362,10 +364,10 @@ for flow in $FLOWS; do
     adb shell monkey -p "$PKG" -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1
     sleep 8
     adb exec-out screencap -p > "$OUT/shots/9_jumps_back.png"
-    sleep $(( ${JUMPS_S:-200} - 118 ))
+    sleep $(( ${JUMPS_S:-200} - ${JUMPS_AWAY_AFTER:-100} - 18 ))
     adb exec-out screencap -p > "$OUT/shots/9_jumps_end.png"
     grep -o 'LAB check.*' "$OUT/logcat_raw.txt" 2>/dev/null | sed 's/^/  /' | tee -a "$OUT/jumps.txt" || true
-    grep -o 'exo [a-z].*\|hls[: ].*\|open ladder.*\|ladder on ExoPlayer.*\|LAB away.*\|lifecycle .*' "$OUT/logcat_raw.txt" 2>/dev/null | head -80 \
+    grep -o 'exo [a-z].*\|hls[: ].*\|open ladder.*\|ladder on ExoPlayer.*\|LAB away.*\|lifecycle .*\|quality .*\|renewal.*\|play through.*\|warm switch.*' "$OUT/logcat_raw.txt" 2>/dev/null | head -160 \
       | sed -E 's#https?://[^ "]+#<url>#g; s#[A-Za-z0-9_-]{40,}#<token>#g' >> "$OUT/jumps.txt" || true
     adb shell log -p i -t flutter "LAB phase $flow end" >/dev/null 2>&1 || true
     adb shell am force-stop "$PKG"
