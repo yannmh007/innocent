@@ -1962,7 +1962,7 @@ class PlayerController extends StateNotifier<PlayerState> {
       // another address must not cost the viewer the change.
       final svc = _ref.read(videoPlayerServiceProvider);
       final h = int.tryParse(id);
-      if (svc is MediaKitPlayerService && svc.playingLadder && (h != null || id == 'auto')) {
+      if (svc is MediaKitPlayerService && svc.playingRungs && (h != null || id == 'auto')) {
         await svc.setLadderQuality(h);
         final menu = StreamRenewal.quality.value;
         if (menu != null) {

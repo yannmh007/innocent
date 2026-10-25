@@ -232,7 +232,8 @@ class ExoEngine {
       int? maxHeight,
       int? kbps,
       int? start,
-      Map<int, int> rungs = const <int, int>{}}) {
+      Map<int, int> rungs = const <int, int>{},
+      bool progressive = false}) {
     position = startAt ?? Duration.zero;
     ended = false;
     rung = null;
@@ -250,6 +251,8 @@ class ExoEngine {
       'rungs': [
         for (final e in rungs.entries) <int>[e.key, (e.value < 1 ? 1 : e.value) * 1000],
       ],
+      // One MP4 file (a film's Original) rather than the ladder's HLS.
+      'progressive': progressive,
     });
   }
 
