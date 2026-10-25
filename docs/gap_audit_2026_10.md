@@ -77,6 +77,14 @@ Checked before it shipped:
 | Pictures fetched on the swipe | 3 (7 queued) | 2 (7 queued) |
 | First frame | 148 ms | 184 ms |
 
+Published with a mistake, found by the owner's phone: the row took the new
+version, links and notes, but `apk_sha256`/`apk_bytes` (and the arm32
+pair and its mirror) still described 1.64.73's file. The update said
+"Download was damaged. Try again." on every network. Corrected at 09:5x
+UTC from the release's own files, both hashed again here: 96,165,373
+bytes `8aaacc1a…`, arm32 88,125,957 bytes `f0023f11…`. Migration 050 makes
+the database refuse a new `version_code` without a new fingerprint.
+
 **1.64.73 (386), 24 October 2026** — main `cd2d9cd`, release
 `v1.64.73-386`, both APKs on the CDN and with a GitHub mirror, attested,
 `app_releases` updated. What changed:
