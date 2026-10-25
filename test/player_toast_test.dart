@@ -35,7 +35,7 @@ void main() {
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
     await tester.pump(const Duration(seconds: 10));
     expect(find.text('Switching to 480p…'), findsOneWidget);
-    c.show('Now playing 480p', kind: PlayerToastKind.success);
+    c.show('Quality: 480p', kind: PlayerToastKind.success);
     await tester.pumpAndSettle();
     expect(find.text('Switching to 480p…'), findsNothing);
     expect(find.byIcon(Icons.check_circle_rounded), findsOneWidget);

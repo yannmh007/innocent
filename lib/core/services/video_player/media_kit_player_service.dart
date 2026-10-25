@@ -266,6 +266,10 @@ class MediaKitPlayerService implements VideoPlayerService {
   /// The rung on screen while a ladder plays, by height.
   int? get ladderRung => _exoActive ? _exo?.rung : null;
 
+  /// [ladderRung] as it changes, for the top bar; null off the ladder.
+  static final ValueNotifier<int?> rungOnScreen = ValueNotifier<int?>(null);
+  VoidCallback? _rungListener;
+
   /// The ladder engine's frame counts (device lab), or empty.
   Future<Map<String, Object?>> ladderStats() async =>
       _exoActive ? await (_exo?.stats() ?? Future.value(const <String, Object?>{})) : const {};
@@ -1210,6 +1214,11 @@ class MediaKitPlayerService implements VideoPlayerService {
     for (final s in _exoSubs) {
       unawaited(s.cancel());
     }
+    _unbindRung();
+    void rung() => rungOnScreen.value = e.rungOnScreen.value;
+    e.rungOnScreen.addListener(rung);
+    _rungListener = () => e.rungOnScreen.removeListener(rung);
+    rungOnScreen.value = e.rungOnScreen.value;
     _exoSubs
       ..clear()
       ..add(e.positionStream.listen((p) => _position = p))
@@ -1238,8 +1247,15 @@ class MediaKitPlayerService implements VideoPlayerService {
     _ladderView.value = true;
   }
 
+  void _unbindRung() {
+    _rungListener?.call();
+    _rungListener = null;
+    rungOnScreen.value = null;
+  }
+
   Future<void> _leaveLadder() async {
     _exoActive = false;
+    _unbindRung();
     _ladderView.value = false;
     _ladderUri = null;
     final l = _kbpsListener;

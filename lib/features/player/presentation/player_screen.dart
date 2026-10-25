@@ -3965,13 +3965,33 @@ class _TopBar extends StatelessWidget {
                       minimumSize: const Size(40, 40),
                     ),
                     icon: const Icon(Icons.high_quality_outlined, size: 18),
-                    label: Text(
-                      chosen ?? AppStrings.of(context).plAuto,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    // On Auto, what Auto has chosen beside it — "Auto · 480p",
+                    // as YouTube's menu says it — live as the rung changes.
+                    label: ValueListenableBuilder<int?>(
+                      valueListenable: MediaKitPlayerService.rungOnScreen,
+                      builder: (context, live, _) {
+                        final now = menu.selected == 'auto'
+                            ? (live != null ? '${live}p' : menu.playing)
+                            : null;
+                        return Text.rich(
+                          TextSpan(children: [
+                            TextSpan(text: chosen ?? AppStrings.of(context).plAuto),
+                            if (now != null && now.isNotEmpty)
+                              TextSpan(
+                                text: ' · $now',
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                          ]),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        );
+                      },
                     ),
                   );
                 },

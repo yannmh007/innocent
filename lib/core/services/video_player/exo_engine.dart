@@ -42,6 +42,9 @@ class ExoEngine {
   /// The rung on screen, by height, as the player last reported it.
   int? rung;
 
+  /// [rung], for whoever draws it (the top bar's "Auto · 480p").
+  final ValueNotifier<int?> rungOnScreen = ValueNotifier<int?>(null);
+
   /// The heights the master offers, once the player has read it.
   List<int> heights = const <int>[];
 
@@ -181,6 +184,7 @@ class ExoEngine {
         final h = (e['h'] as num?)?.toInt();
         if (h != null && h > 0 && h != rung) {
           rung = h;
+          rungOnScreen.value = h;
           PlaybackLog.add('exo rung ${h}p ${(e['kbps'] as num?)?.toInt() ?? 0} kbps');
         }
       case 'tracks':
@@ -232,6 +236,7 @@ class ExoEngine {
     position = startAt ?? Duration.zero;
     ended = false;
     rung = null;
+    rungOnScreen.value = null;
     _letGo('a new film');
     return _call('open', <String, Object?>{
       'url': url,
