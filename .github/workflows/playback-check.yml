@@ -43,6 +43,7 @@ jobs:
           [ -n "$id" ] || id=$(curl -sS "$SB_URL/rest/v1/titles?select=id&access_tier=eq.free&published=eq.true&limit=1" \
             -H "apikey: $SB_KEY" | python3 -c "import json,sys;r=json.load(sys.stdin);print(r[0]['id'] if r else '')")
           if [ -z "$id" ]; then echo "no free published title"; exit 1; fi
+          echo "$id" > /tmp/title_id
           code=$(curl -sS -o /tmp/p.json -w '%{http_code}' -X POST "$SB_URL/functions/v1/request-playback" \
             -H "apikey: $SB_KEY" -H 'Content-Type: application/json' -d "{\"title_id\":\"$id\"}")
           echo "HTTP $code"
@@ -152,11 +153,8 @@ jobs:
           import json, os, sys, uuid, urllib.parse, urllib.request, urllib.error
           UA = 'innocent-playback-check/1'
           first = json.load(open('/tmp/p.json'))
-          # The title the first step used, from the same query.
-          q = urllib.request.Request(
-            os.environ['SB_URL'] + '/rest/v1/titles?select=id&access_tier=eq.free&published=eq.true&limit=1',
-            headers={'apikey': os.environ['SB_KEY'], 'User-Agent': UA})
-          tid = json.load(urllib.request.urlopen(q, timeout=30))[0]['id']
+          # The title the first step used — the one asked for, when one was.
+          tid = open('/tmp/title_id').read().strip()
           dev = 'playback-check-' + uuid.uuid4().hex[:12]
           req = urllib.request.Request(
             os.environ['SB_URL'] + '/functions/v1/request-playback',
