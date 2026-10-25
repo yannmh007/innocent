@@ -3032,7 +3032,9 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                 onBack: _handleBackRequest,
                 onAudio: () => _showAudioTracks(context),
                 onSubtitle: controller.openSubtitleMenu,
-                onDecoder: controller.openDecoderDialog,
+                onDecoder: svc is MediaKitPlayerService && svc.playingLadder
+                    ? null
+                    : controller.openDecoderDialog,
                 onMore: controller.openMoreMenu,
                 // Phase 45 (audit): PiP icon is in the TOP bar (MX V3 parity).
                 onQuality: () => _showQualitySheet(context),
@@ -3728,7 +3730,10 @@ class _TopBar extends StatelessWidget {
   final VoidCallback onBack;
   final VoidCallback onAudio;
   final VoidCallback onSubtitle;
-  final VoidCallback onDecoder;
+  /// Null when the decoder cannot be chosen: a film on the ladder plays on
+  /// ExoPlayer, which picks its own hardware decoder, and the choice only
+  /// ever reached libmpv — a button that did nothing.
+  final VoidCallback? onDecoder;
   final VoidCallback onMore;
 
   /// The Quality menu. Drawn only while [StreamRenewal.quality] has a menu
@@ -3996,22 +4001,23 @@ class _TopBar extends StatelessWidget {
                   );
                 },
               ),
-            TextButton(
-              onPressed: onDecoder,
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                minimumSize: const Size(40, 40),
-              ),
-              child: Text(
-                decoderLabel,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
+            if (onDecoder != null)
+              TextButton(
+                onPressed: onDecoder,
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  minimumSize: const Size(40, 40),
+                ),
+                child: Text(
+                  decoderLabel,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
-            ),
             IconButton(
               icon: const Icon(Icons.more_vert, color: Colors.white),
               onPressed: onMore,
