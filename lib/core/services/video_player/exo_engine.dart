@@ -45,6 +45,9 @@ class ExoEngine {
   /// [rung], for whoever draws it (the top bar's "Auto · 480p").
   final ValueNotifier<int?> rungOnScreen = ValueNotifier<int?>(null);
 
+  /// The bitrate of the copy on screen (kbps), as the file declares it.
+  int? rungKbps;
+
   /// The heights the master offers, once the player has read it.
   List<int> heights = const <int>[];
 
@@ -190,6 +193,7 @@ class ExoEngine {
         if (h != null && h > 0 && h != rung) {
           rung = h;
           rungOnScreen.value = h;
+          rungKbps = (e['kbps'] as num?)?.toInt();
           PlaybackLog.add('exo rung ${h}p ${(e['kbps'] as num?)?.toInt() ?? 0} kbps');
         }
       case 'tracks':

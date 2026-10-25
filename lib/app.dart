@@ -328,6 +328,22 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
           jumped = DateTime.now();
           watchFreeze();
           final took = await player().switchQuality(id);
+          // THE ORIGINAL ASKS THE LINE FOR ITS WHOLE BITRATE — about ten
+          // Mbit/s for Sintel. On a line slower than that no player plays it
+          // through, and a failure would say nothing about the app (the
+          // realme's line, 7.5 Mbit/s, run 40194697661). Said as a skip,
+          // with both numbers.
+          if (id == 'original' && took && svc is MediaKitPlayerService) {
+            await Future<void>.delayed(const Duration(seconds: 3));
+            final line = MediaKitPlayerService.networkKbps?.value;
+            final copy = svc.ladderRungKbps;
+            if (line != null && copy != null && line < copy) {
+              sampler?.cancel();
+              PlaybackLog.add('LAB check tour->original SKIP (line $line kbps, '
+                  'the copy $copy kbps) engine=${engine()}');
+              continue;
+            }
+          }
           await check('tour->$id${took ? '' : ' (refused)'}', want, jumped,
               late: const Duration(seconds: 40), refused: !took);
         }

@@ -290,6 +290,9 @@ class MediaKitPlayerService implements VideoPlayerService {
   /// The rung on screen while a ladder plays, by height.
   int? get ladderRung => _exoActive ? _exo?.rung : null;
 
+  /// The declared bitrate of [ladderRung]'s copy (kbps), for the lab.
+  int? get ladderRungKbps => _exoActive ? _exo?.rungKbps : null;
+
   /// [ladderRung] as it changes, for the top bar; null off the ladder.
   static final ValueNotifier<int?> rungOnScreen = ValueNotifier<int?>(null);
   VoidCallback? _rungListener;
