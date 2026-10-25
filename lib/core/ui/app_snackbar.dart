@@ -83,19 +83,24 @@ class AppSnackbar {
     messenger.showSnackBar(_errorSnackBar(message));
   }
 
+  /// On the theme's dark bar like every other message, marked by its icon:
+  /// a full red bar shouted over the screen for what is usually a retry.
   static SnackBar _errorSnackBar(String message) {
     return SnackBar(
       content: Row(
         children: [
-          const Icon(Icons.error_outline, color: Colors.white, size: 18),
+          const Icon(Icons.error_outline_rounded, color: errorMark, size: 18),
           const SizedBox(width: 12),
           Expanded(child: Text(message)),
         ],
       ),
-      backgroundColor: AppColors.error,
-      duration: const Duration(seconds: 3),
+      behavior: SnackBarBehavior.floating,
+      duration: const Duration(seconds: 4),
     );
   }
+
+  /// The error mark: [AppColors.error], lifted to read on the dark bar.
+  static const Color errorMark = Color(0xFFFF8A80);
 
   static void _show(BuildContext context, String message, Duration duration) {
     final messenger = ScaffoldMessenger.of(context);

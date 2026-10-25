@@ -450,6 +450,10 @@ class AppStrings {
   String get playerQualityAutoHint => _s('playerQualityAutoHint');
   String get playerQualityFailed => _s('playerQualityFailed');
   String get playerQualitySwitching => _s('playerQualitySwitching');
+  String playerQualitySwitchingTo(Object v) => _s('playerQualitySwitchingTo').replaceFirst('{v}', '$v');
+  String playerQualityNow(Object v) => _s('playerQualityNow').replaceFirst('{v}', '$v');
+  String playerQualityFailedTo(Object v) => _s('playerQualityFailedTo').replaceFirst('{v}', '$v');
+  String plBookmarkAddedAt(Object v) => _s('plBookmarkAddedAt').replaceFirst('{v}', '$v');
 
   // ─── ALBUM DOWNLOADS ─────────────────────────────────────────────────
   String get vhAlbumDownloadAll => _s('vhAlbumDownloadAll');
@@ -3283,6 +3287,10 @@ class AppStrings {
     'playerQualityAutoHint': 'Adjusts to your connection',
     'playerQualityFailed': 'Could not switch quality. Still playing the current copy.',
     'playerQualitySwitching': 'Switching quality — the film keeps playing meanwhile.',
+    'playerQualitySwitchingTo': 'Switching to {v}…',
+    'playerQualityNow': 'Now playing {v}',
+    'playerQualityFailedTo': "Couldn't switch to {v}. Still playing the current copy.",
+    'plBookmarkAddedAt': 'Bookmark added at {v}',
     'vhAlbumDownloadAll': 'Download all',
     'vhAlbumDownloaded': 'Downloaded',
     'vhAlbumDownloadNew': 'Download',
@@ -5614,6 +5622,10 @@ class AppStrings {
     'playerQualityAutoHint': 'အင်တာနက်လိုင်းအလိုက် အလိုအလျောက် ချိန်ပေးသည်',
     'playerQualityFailed': 'အရည်အသွေး မပြောင်းနိုင်ပါ။ လက်ရှိအတိုင်း ဆက်ပြနေပါသည်။',
     'playerQualitySwitching': 'အရည်အသွေး ပြောင်းနေပါသည် — ပြောင်းပြီးသည်အထိ ဆက်ပြနေပါမည်။',
+    'playerQualitySwitchingTo': '{v} သို့ ပြောင်းနေပါသည်…',
+    'playerQualityNow': '{v} ဖြင့် ပြနေပါပြီ',
+    'playerQualityFailedTo': '{v} သို့ မပြောင်းနိုင်ပါ။ လက်ရှိအတိုင်း ဆက်ပြနေပါသည်။',
+    'plBookmarkAddedAt': '{v} တွင် Bookmark မှတ်ပြီးပါပြီ',
     'vhAlbumDownloadAll': 'အားလုံး ဒေါင်းမည်',
     'vhAlbumDownloaded': 'ဒေါင်းပြီး',
     'vhAlbumDownloadNew': 'ဒေါင်းမည်',
@@ -7919,6 +7931,10 @@ class AppStrings {
     'playerQualityAutoHint': 'ปรับตามการเชื่อมต่อ',
     'playerQualityFailed': 'เปลี่ยนคุณภาพไม่ได้ ยังเล่นสำเนาเดิมอยู่',
     'playerQualitySwitching': 'กำลังเปลี่ยนคุณภาพ ระหว่างนี้วิดีโอยังเล่นต่อ',
+    'playerQualitySwitchingTo': 'กำลังเปลี่ยนเป็น {v}…',
+    'playerQualityNow': 'กำลังเล่น {v}',
+    'playerQualityFailedTo': 'เปลี่ยนเป็น {v} ไม่ได้ ยังเล่นสำเนาเดิมอยู่',
+    'plBookmarkAddedAt': 'เพิ่มบุ๊กมาร์กที่ {v} แล้ว',
     'vhAlbumDownloadAll': 'ดาวน์โหลดทั้งหมด',
     'vhAlbumDownloaded': 'ดาวน์โหลดแล้ว',
     'vhAlbumDownloadNew': 'ดาวน์โหลด',
