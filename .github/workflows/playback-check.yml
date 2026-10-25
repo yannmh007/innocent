@@ -135,6 +135,13 @@ jobs:
       # not bound and says nothing. Every answer must say `private,
       # no-store`, which is also how this step knows the new Worker is the
       # one deployed. Statuses and headers only — never a URL.
+      #
+      # ENFORCED SINCE 2026-10-25. The Worker's `/health` says which mode the
+      # bind check is in, and the cases are judged by it: in "enforce", no
+      # header and another install get the same bare 404 as any refusal,
+      # while the right install and an unbound (older app's) token still
+      # play. A Worker whose `/health` does not name a mode is older than
+      # this check, and fails it.
       - name: Phase 1 — bound tokens and what a cache may keep
         env:
           SB_URL: ${{ secrets.SUPABASE_URL }}
@@ -142,7 +149,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 - <<'PY'
-          import json, os, sys, uuid, urllib.request, urllib.error
+          import json, os, sys, uuid, urllib.parse, urllib.request, urllib.error
           UA = 'innocent-playback-check/1'
           first = json.load(open('/tmp/p.json'))
           # The title the first step used, from the same query.
@@ -180,6 +187,16 @@ jobs:
               except urllib.error.HTTPError as e:
                   return e.code, 0, e.headers.get('Cache-Control'), e.headers.get('X-Bind')
 
+          # The Worker's own word on its mode; its origin is the grant's.
+          parts = urllib.parse.urlsplit(smallest(bound))
+          hq = urllib.request.Request(f'{parts.scheme}://{parts.netloc}/health',
+                                      headers={'User-Agent': UA})
+          health = json.load(urllib.request.urlopen(hq, timeout=30))
+          mode = health.get('bind')
+          print(f"/health: bind={mode} limit={health.get('limit')}")
+          if mode not in ('log', 'enforce'):
+              print('the Worker does not say which mode the bind check is in'); sys.exit(1)
+
           cases = [
             ('unbound, no header', smallest(first), None, None),
             ('bound, right install', smallest(bound), dev, 'ok'),
@@ -189,13 +206,21 @@ jobs:
           bad = 0
           for name, url, device, want in cases:
               st, n, cc, xb = fetch(url, device)
-              ok = st == 206 and n == 65536 and cc == 'private, no-store' and xb == want
+              if mode == 'enforce' and want in ('missing', 'mismatch'):
+                  # Refused before a byte is read, saying nothing about why.
+                  ok = st == 404 and n == 0 and cc == 'no-store' and xb is None
+                  want = 'refused'
+              else:
+                  ok = st == 206 and n == 65536 and cc == 'private, no-store' and xb == want
               bad += not ok
               print(f"{'ok ' if ok else 'BAD'} {name:<24} HTTP {st} {n:>6} B | "
                     f"Cache-Control: {cc} | X-Bind: {xb} (want {want})")
           if bad:
               print(f'{bad} case(s) wrong'); sys.exit(1)
-          print('bound tokens are checked, log mode refuses nothing, nothing may be kept')
+          if mode == 'enforce':
+              print('bound tokens are enforced: the right install plays, any other is refused; nothing may be kept')
+          else:
+              print('bound tokens are checked, log mode refuses nothing, nothing may be kept')
           PY
 
       # WHAT A SEEK READS. Every copy's top-level boxes, tracks and sidx (does
