@@ -53,6 +53,34 @@ what was checked, what was fixed, and what is left, with the reason.
 
 ## Released
 
+**1.64.73 (386), 24 October 2026** — main `cd2d9cd`, release
+`v1.64.73-386`, both APKs on the CDN and with a GitHub mirror, attested,
+`app_releases` updated. What changed:
+- seek-bar pictures on the ladder, and the same picture above the time
+  during a swipe (`PreviewFrames.kt`, decoded from memory);
+- far jumps land on the nearest keyframe;
+- a ladder's rungs share one pool of connections;
+- the volume boost works on ExoPlayer;
+- ten retries for a segment, so a short drop-out is waited for.
+
+Checked before it shipped:
+- device lab, run 40116409244: nine of nine, including Home and back
+  (+51 frames in 3 s);
+- real phones, Test Lab run 40118247783: the realme C53 and the OPPO A38
+  each passed eight of eight. Home and back is not run there: a game loop
+  cannot press Home.
+
+| On the real phones | realme | OPPO |
+|---|---|---|
+| First long seek, picture still | 0.6 s | 1.1 s (1.64.72: 3.0 s) |
+| Quality change, picture still | 0.2 s | 0.2 s |
+| First seek-bar picture | 0.6 s | 0.46 s |
+| The same picture again | 0 ms | 0 ms |
+| First frame | 119 ms | 434 ms |
+
+Not good enough: during a fast swipe the pictures queued behind each other,
+the last one 1.3-1.5 s after it was asked for.
+
 **1.64.72 (385), 24 October 2026** — main `df540b6`, release
 `v1.64.72-385`, both APKs on the CDN and with a GitHub mirror, attested,
 `app_releases` updated. Catalogue films with a ladder now play on Media3

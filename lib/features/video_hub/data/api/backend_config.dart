@@ -63,6 +63,16 @@ class BackendConfig {
   static const String anonKey =
       String.fromEnvironment('VH_ANON_KEY', defaultValue: _anonKeyDefault);
 
+  /// WHERE THE DATABASE IS (the project's region), and so where
+  /// `request-playback` is asked to run, by the `x-region` header.
+  ///
+  /// Left to itself an edge function runs in the region nearest the caller,
+  /// and then makes its eight queries back across the world: 0.3-0.7 s run
+  /// in Singapore beside the database, 2.2-3.5 s run in Virginia, Oregon —
+  /// or Seoul, which is where one call from Singapore itself was sent (edge
+  /// logs, 24 Oct 2026). Change it with the project, if it ever moves.
+  static const String functionRegion = 'ap-southeast-1';
+
   /// True when a real backend is reachable.
   ///
   /// When false the app uses the bundled demo repositories, which grant

@@ -17,6 +17,13 @@ import '../diagnostics/playback_log.dart';
 class ExoEngine {
   ExoEngine._(this.id, this.textureId);
 
+  /// An engine with no player behind it, fed its events by [debugEvent].
+  @visibleForTesting
+  ExoEngine.forTest() : this._(0, 0);
+
+  @visibleForTesting
+  void debugEvent(Map<Object?, Object?> e) => _on(e);
+
   static const MethodChannel _m = MethodChannel('innocent/exo');
   static const EventChannel _ev = EventChannel('innocent/exo/events');
   static Stream<Map<Object?, Object?>>? _events;
@@ -37,6 +44,54 @@ class ExoEngine {
 
   /// The heights the master offers, once the player has read it.
   List<int> heights = const <int>[];
+
+  /// THE PICTURE WHERE A FAR JUMP LANDS, drawn over the old frame until the
+  /// new one is: the seek bar's picture of that moment, so a jump shows
+  /// where it went at once rather than a still of where it left (YouTube
+  /// holds its storyboard frame the same way). Null the rest of the time.
+  final ValueNotifier<Uint8List?> landing = ValueNotifier<Uint8List?>(null);
+  Timer? _landingUp;
+  Timer? _landingCap;
+  Stopwatch? _landingClock;
+
+  /// A jump answered from memory draws its frame in a few tens of ms:
+  /// holding the picture that briefly would only flash a softer copy.
+  static const Duration landingAfter = Duration(milliseconds: 120);
+
+  /// However long the jump takes, the picture goes by then: past it, the
+  /// spinner tells the truth better than a still.
+  static const Duration landingAtMost = Duration(seconds: 4);
+
+  /// How the last far jump's picture went, for the lab: "held N ms, first
+  /// frame", "not needed" (the jump drew its frame first), "no picture"
+  /// (none had been taken there), or null while it is up.
+  String? lastLanding;
+
+  void _hold(Uint8List picture) {
+    _landingUp = Timer(landingAfter, () {
+      _landingUp = null;
+      landing.value = picture;
+      _landingClock = Stopwatch()..start();
+    });
+    _landingCap = Timer(landingAtMost, () => _letGo('timed out'));
+  }
+
+  void _letGo(String why) {
+    final early = _landingUp != null;
+    _landingUp?.cancel();
+    _landingUp = null;
+    _landingCap?.cancel();
+    _landingCap = null;
+    final clock = _landingClock;
+    _landingClock = null;
+    if (landing.value == null) {
+      if (early) lastLanding = 'not needed';
+      return;
+    }
+    landing.value = null;
+    lastLanding = 'held ${clock?.elapsedMilliseconds ?? 0} ms, $why';
+    PlaybackLog.add('exo landing picture $lastLanding');
+  }
 
   final _position = StreamController<Duration>.broadcast();
   final _duration = StreamController<Duration>.broadcast();
@@ -116,6 +171,7 @@ class ExoEngine {
           PlaybackLog.add('exo picture back ${back.elapsedMilliseconds} ms after its surface');
           _surfaceClock = null;
         }
+        _letGo('first frame');
         _first.add(null);
       case 'surface':
         final on = e['on'] == true;
@@ -146,6 +202,7 @@ class ExoEngine {
       case 'error':
         final msg = '${e['code'] ?? 'error'}: ${e['msg'] ?? ''}';
         PlaybackLog.add('exo error $msg');
+        _letGo('error');
         _error.add(msg);
     }
   }
@@ -175,6 +232,7 @@ class ExoEngine {
     position = startAt ?? Duration.zero;
     ended = false;
     rung = null;
+    _letGo('a new film');
     return _call('open', <String, Object?>{
       'url': url,
       'startMs': startAt?.inMilliseconds ?? 0,
@@ -193,10 +251,18 @@ class ExoEngine {
   Future<bool> play() => _call('play');
   Future<bool> pause() => _call('pause');
   /// [fast]: the keyframe nearest [to] (at most a second off), for a far
-  /// jump; otherwise the exact frame.
-  Future<bool> seek(Duration to, {bool fast = false}) {
+  /// jump; otherwise the exact frame. [picture]: that moment's seek-bar
+  /// picture, shown until the jump draws its own ([landing]).
+  Future<bool> seek(Duration to, {bool fast = false, Uint8List? picture}) {
     position = to;
     _seekClock = Stopwatch()..start();
+    _letGo('another jump');
+    if (picture != null) {
+      lastLanding = null;
+      _hold(picture);
+    } else {
+      lastLanding = 'no picture';
+    }
     return _call('seek', <String, Object?>{'ms': to.inMilliseconds, 'fast': fast});
   }
 
@@ -220,7 +286,10 @@ class ExoEngine {
   /// The line's speed as the proxy measured it, for Auto's choices.
   Future<bool> bandwidth(int kbps) => _call('bandwidth', <String, Object?>{'bps': kbps * 1000});
 
-  Future<bool> stop() => _call('stop');
+  Future<bool> stop() {
+    _letGo('stopped');
+    return _call('stop');
+  }
 
   /// Frames drawn and dropped so far, whether it plays, where it is.
   Future<Map<String, Object?>> stats() async {
@@ -233,6 +302,7 @@ class ExoEngine {
   }
 
   Future<void> release() async {
+    _letGo('released');
     await _call('release');
     await _sub?.cancel();
     for (final c in [_position, _duration, _buffered, _playing, _buffering, _completed, _error, _size, _first]) {
@@ -291,7 +361,26 @@ class ExoVideo extends StatelessWidget {
             child: SizedBox(
               width: s.width,
               height: s.height,
-              child: Texture(textureId: engine.textureId),
+              // The landing picture inside the same box as the texture, so
+              // it takes the same fit, zoom and crop as the film.
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Texture(textureId: engine.textureId),
+                  ValueListenableBuilder<Uint8List?>(
+                    valueListenable: engine.landing,
+                    builder: (context, picture, _) => picture == null
+                        ? const SizedBox.shrink()
+                        : Image.memory(
+                            picture,
+                            fit: BoxFit.fill,
+                            gaplessPlayback: true,
+                            filterQuality: FilterQuality.medium,
+                            errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                          ),
+                  ),
+                ],
+              ),
             ),
           ),
         );

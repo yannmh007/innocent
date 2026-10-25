@@ -202,6 +202,24 @@ class MediaKitPlayerService implements VideoPlayerService {
     return jpeg;
   }
 
+  /// How the last jump's landing picture went (ExoEngine.lastLanding), for
+  /// the lab.
+  String? get ladderLanding => _exoActive ? _exo?.lastLanding : null;
+
+  /// The picture already taken nearest [to], within a fragment: what a far
+  /// jump shows while it lands ([ExoEngine.landing]). A drag or a swipe has
+  /// just fetched it for where the finger let go; nothing is fetched here.
+  Uint8List? _landingFor(Duration to) {
+    if (_previewsFor != _ladderUri) return null;
+    final ms = to.inMilliseconds;
+    int? best;
+    for (final k in _previews.keys) {
+      final d = (k - ms).abs();
+      if (d <= 2000 && (best == null || d < (best - ms).abs())) best = k;
+    }
+    return best == null ? null : _previews[best];
+  }
+
   static final Map<String, _LadderArm> _armedLadders = <String, _LadderArm>{};
 
   /// How the ladder at [uri] should start: a rung the viewer pinned
@@ -1355,7 +1373,7 @@ class MediaKitPlayerService implements VideoPlayerService {
     if (_exoActive) {
       final far = (to - _position).abs() > _farSeek;
       _position = to;
-      await _exo?.seek(to, fast: far);
+      await _exo?.seek(to, fast: far, picture: far ? _landingFor(to) : null);
       return;
     }
     await _player.seek(_clampToPlayable(to));
@@ -1416,7 +1434,7 @@ class MediaKitPlayerService implements VideoPlayerService {
     if (_exoActive) {
       final far = (target - _position).abs() > _farSeek;
       _position = target;
-      await _exo?.seek(target, fast: far);
+      await _exo?.seek(target, fast: far, picture: far ? _landingFor(target) : null);
       return;
     }
     await _player.seek(_clampToPlayable(target));

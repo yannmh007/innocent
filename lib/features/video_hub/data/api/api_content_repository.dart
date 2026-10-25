@@ -13,6 +13,7 @@ import '../../../../core/services/network/connection_kind.dart';
 import '../cache/catalogue_cache.dart';
 import '../stream_door.dart';
 import 'api_client.dart';
+import 'backend_config.dart';
 import 'api_exception.dart';
 
 /// [ContentRepository] over the backend described in
@@ -814,30 +815,26 @@ class ApiContentRepository implements ContentRepository {
     String? deviceId,
   }) async {
     try {
-      final body = await _api.postJson(
-        '/functions/v1/request-playback',
-        body: <String, dynamic>{
-          'title_id': content.id,
-          // A clip from the album carries provider 'asset' and the ASSET ID,
-          // set by _album() above. The server signs that asset's object key
-          // instead of the title's main video - which is what makes a
-          // behind-the-scenes clip or a trailer playable at all.
-          //
-          // Still only an ID. The client never knows or sends a media path;
-          // the server looks the key up and checks the asset really belongs to
-          // the title before signing anything, so a forged id buys nothing.
-          if (source.provider == 'asset' && source.locator.isNotEmpty)
-            'asset_id': source.locator
-          else if (source.locator.isNotEmpty)
-            'media_key': source.locator,
-          if (deviceId != null) 'device_id': deviceId,
-          // Seal this install into the token (1.64.70). The Worker then
-          // plays it only for a fetch carrying the same id — see
-          // StreamDoor, which every fetch of a granted URL goes through.
-          if (deviceId != null) 'bind': true,
-        },
-        timeout: null,
-      );
+      final body = await _askPlayback(<String, dynamic>{
+        'title_id': content.id,
+        // A clip from the album carries provider 'asset' and the ASSET ID,
+        // set by _album() above. The server signs that asset's object key
+        // instead of the title's main video - which is what makes a
+        // behind-the-scenes clip or a trailer playable at all.
+        //
+        // Still only an ID. The client never knows or sends a media path;
+        // the server looks the key up and checks the asset really belongs to
+        // the title before signing anything, so a forged id buys nothing.
+        if (source.provider == 'asset' && source.locator.isNotEmpty)
+          'asset_id': source.locator
+        else if (source.locator.isNotEmpty)
+          'media_key': source.locator,
+        if (deviceId != null) 'device_id': deviceId,
+        // Seal this install into the token (1.64.70). The Worker then
+        // plays it only for a fetch carrying the same id — see
+        // StreamDoor, which every fetch of a granted URL goes through.
+        if (deviceId != null) 'bind': true,
+      });
       if (body is! Map<String, dynamic>) {
         return const PlaybackGrant.denied(AccessDenial.unavailable);
       }
@@ -910,6 +907,32 @@ class ApiContentRepository implements ContentRepository {
       return const PlaybackGrant.denied(AccessDenial.unavailable);
     }
   }
+
+  /// request-playback, run beside the database ([BackendConfig.functionRegion]).
+  ///
+  /// A call pinned to a region is not moved when that region is down, so a
+  /// gateway's 5xx — one without a code of the function's own — is asked
+  /// once more, unpinned. Not a lost connection: that would only wait out
+  /// the same dead line twice. Not a refusal the function made: asked
+  /// again, it would say the same and spend the budget twice.
+  Future<dynamic> _askPlayback(Map<String, dynamic> body) async {
+    const path = '/functions/v1/request-playback';
+    try {
+      return await _api.postJson(path,
+          body: body,
+          extraHeaders: const <String, String>{'x-region': BackendConfig.functionRegion},
+          timeout: null);
+    } on ApiException catch (e) {
+      final status = e.statusCode ?? 0;
+      if (e.kind != ApiErrorKind.server || status < 500 || _playbackCodes.contains(e.code)) {
+        rethrow;
+      }
+      return _api.postJson(path, body: body, timeout: null);
+    }
+  }
+
+  /// What request-playback itself answers a 5xx with (docs/edge/request-playback.ts).
+  static const Set<String> _playbackCodes = <String>{'unavailable', 'not_found'};
 
   @override
   Future<void> recordView(String contentId, {ViewerTier? tier}) async {

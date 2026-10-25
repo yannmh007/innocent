@@ -323,6 +323,20 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
               'at=${at(s).inSeconds} bytes=${jpeg?.length ?? 0} ms=${t.elapsedMilliseconds}');
         }
       }
+      // 6b. A far jump to the moment just pictured, as a release on the
+      // seek bar after a drag: that picture covers the old frame until the
+      // jump draws its own — or is not needed, the frame being quicker.
+      if (svc is MediaKitPlayerService && svc.playingLadder) {
+        want = at(0.75);
+        jumped = DateTime.now();
+        watchFreeze();
+        await player().seek(want);
+        await check('far-jump', want, jumped);
+        final how = svc.ladderLanding;
+        final ok = how == 'not needed' || (how != null && how.endsWith('first frame'));
+        ok ? pass++ : fail++;
+        PlaybackLog.add('LAB check landing ${ok ? 'PASS' : 'FAIL'} ${how ?? 'still up'}');
+      }
       // 7. Away to the home screen and back (test_device/run.sh presses
       // Home, then opens the app as the launcher does): the film picks up
       // where it was and the picture is drawn again — frames counted by
