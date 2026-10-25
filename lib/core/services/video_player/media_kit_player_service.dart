@@ -222,6 +222,25 @@ class MediaKitPlayerService implements VideoPlayerService {
 
   static final Map<String, _LadderArm> _armedLadders = <String, _LadderArm>{};
 
+  /// Single files to play on ExoPlayer rather than libmpv: a film's Original
+  /// while its ladder plays there. Moving between engines for a change of
+  /// quality cost 5-6 s of still picture on both real phones (Test Lab run
+  /// 40188289751); within ExoPlayer it is one more media item.
+  static final Map<String, bool> _armedFiles = <String, bool>{};
+
+  /// Files ExoPlayer could not play, now on libmpv for the rest of the film.
+  static final Set<String> _filesOnMpv = <String>{};
+
+  /// Plays [uri] — one MP4 through the proxy — on ExoPlayer. Kept until the
+  /// next film's ladder is armed.
+  static void armExoFile(String uri) {
+    _armedFiles[uri] = true;
+  }
+
+  /// The ladder itself on screen (HLS on ExoPlayer), not a single file there
+  /// and not libmpv: only then can a rung be steered to.
+  bool get playingRungs => _exoActive && _ladderUri != null && ExoEngine.isLadder(_ladderUri!);
+
   /// How the ladder at [uri] should start: a rung the viewer pinned
   /// ([target], null for Auto), the data saver's ceiling, what the line was
   /// last measured at, and Auto's first rung ([start], the one warmed).
@@ -235,6 +254,11 @@ class MediaKitPlayerService implements VideoPlayerService {
       int? start,
       Map<int, int> rungs = const <int, int>{},
       Future<String?> Function()? fallback}) {
+    // A new film's ladder: the last film's files go with its ladder.
+    if (!_armedLadders.containsKey(uri)) {
+      _armedFiles.clear();
+      _filesOnMpv.clear();
+    }
     _armedLadders
       ..clear()
       ..[uri] = _LadderArm(
@@ -265,6 +289,10 @@ class MediaKitPlayerService implements VideoPlayerService {
 
   /// The rung on screen while a ladder plays, by height.
   int? get ladderRung => _exoActive ? _exo?.rung : null;
+
+  /// [ladderRung] as it changes, for the top bar; null off the ladder.
+  static final ValueNotifier<int?> rungOnScreen = ValueNotifier<int?>(null);
+  VoidCallback? _rungListener;
 
   /// The ladder engine's frame counts (device lab), or empty.
   Future<Map<String, Object?>> ladderStats() async =>
@@ -1051,6 +1079,10 @@ class MediaKitPlayerService implements VideoPlayerService {
       await _openLadder(uri, startAt: startAt, autoplay: autoplay);
       return;
     }
+    if (_armedFiles.containsKey(uri) && !_filesOnMpv.contains(uri)) {
+      await _openLadder(uri, startAt: startAt, autoplay: autoplay, progressive: true);
+      return;
+    }
     if (_exoActive) await _leaveLadder();
     // v1.61 — the single most valuable breadcrumb there is. The process has
     // been dying during playback, and the scheme of what is being opened
@@ -1133,7 +1165,8 @@ class MediaKitPlayerService implements VideoPlayerService {
   }
 
   /// A ladder's master playlist, on ExoPlayer (see [playingLadder]).
-  Future<void> _openLadder(String uri, {Duration? startAt, bool autoplay = true}) async {
+  Future<void> _openLadder(String uri,
+      {Duration? startAt, bool autoplay = true, bool progressive = false}) async {
     // libmpv's start check for the file before this one has nothing to check.
     _openGen++;
     final onMpv = _ladderOnMpv[uri];
@@ -1143,8 +1176,10 @@ class MediaKitPlayerService implements VideoPlayerService {
       return;
     }
     final armed = _armedLadders[uri];
-    PlaybackLog.add('open ladder (exo) start=${startAt?.inSeconds ?? 0}s '
-        'autoplay=$autoplay rung=${armed?.target ?? 'auto'} first=${armed?.start ?? '-'}');
+    PlaybackLog.add(progressive
+        ? 'open file (exo) start=${startAt?.inSeconds ?? 0}s autoplay=$autoplay'
+        : 'open ladder (exo) start=${startAt?.inSeconds ?? 0}s '
+            'autoplay=$autoplay rung=${armed?.target ?? 'auto'} first=${armed?.start ?? '-'}');
     // libmpv lets go of the decoder and the sound first.
     try {
       await _player.stop();
@@ -1177,7 +1212,8 @@ class MediaKitPlayerService implements VideoPlayerService {
         // Only the film's first open starts on the warmed rung; a reopen
         // (a reconnect) is Auto's from the start.
         start: startAt == null || startAt == Duration.zero ? armed?.start : null,
-        rungs: armed?.rungs ?? const <int, int>{});
+        rungs: armed?.rungs ?? const <int, int>{},
+        progressive: progressive);
     if (!ok) {
       await _ladderFailed(uri, startAt: startAt, autoplay: autoplay);
       return;
@@ -1191,6 +1227,20 @@ class MediaKitPlayerService implements VideoPlayerService {
   /// report.
   Future<void> _ladderFailed(String uri, {Duration? startAt, bool autoplay = true}) async {
     if (_ladderFallingBack) return;
+    // One file that ExoPlayer would not play: the same file on libmpv, as
+    // every Original played before.
+    if (_armedFiles.containsKey(uri)) {
+      _filesOnMpv.add(uri);
+      PlaybackLog.add('file on ExoPlayer failed: the same file on libmpv');
+      _ladderFallingBack = true;
+      try {
+        if (_exoActive) await _leaveLadder();
+        await open(uri, startAt: startAt, autoplay: autoplay);
+      } finally {
+        _ladderFallingBack = false;
+      }
+      return;
+    }
     final fallback = _armedLadders[uri]?.fallback;
     if (fallback == null) throw StateError('ExoPlayer could not open the ladder');
     _ladderFallingBack = true;
@@ -1210,6 +1260,11 @@ class MediaKitPlayerService implements VideoPlayerService {
     for (final s in _exoSubs) {
       unawaited(s.cancel());
     }
+    _unbindRung();
+    void rung() => rungOnScreen.value = e.rungOnScreen.value;
+    e.rungOnScreen.addListener(rung);
+    _rungListener = () => e.rungOnScreen.removeListener(rung);
+    rungOnScreen.value = e.rungOnScreen.value;
     _exoSubs
       ..clear()
       ..add(e.positionStream.listen((p) => _position = p))
@@ -1238,8 +1293,15 @@ class MediaKitPlayerService implements VideoPlayerService {
     _ladderView.value = true;
   }
 
+  void _unbindRung() {
+    _rungListener?.call();
+    _rungListener = null;
+    rungOnScreen.value = null;
+  }
+
   Future<void> _leaveLadder() async {
     _exoActive = false;
+    _unbindRung();
     _ladderView.value = false;
     _ladderUri = null;
     final l = _kbpsListener;

@@ -201,11 +201,16 @@ for (const [label, headers, want] of [
   check('no TOKEN_SECRET: closed', noSecret.status === 404);
 }
 
-// 7. What is deployed: fan-out off, both checks watching, the limiter bound.
+// 7. What is deployed: fan-out off, the bind check refusing (since
+// 2026-10-25, once the field's phones were seen to pass it), the rate limit
+// still watching, the limiter bound, and /health saying which.
 {
   const toml = readFileSync(join(ROOT, 'docs/worker/wrangler.toml'), 'utf8');
   check('edge fan-out is off (every Block call is billed)', /\nEDGE_BLOCK_BYTES = "0"\n/.test(toml));
-  check('the bind check starts in log mode', /\nBIND_MODE = "log"\n/.test(toml));
+  check('the bind check is enforced', /\nBIND_MODE = "enforce"\n/.test(toml));
+  const src = readFileSync(join(ROOT, 'docs/worker/src/index.js'), 'utf8');
+  check('/health says which mode each check is in',
+    /bind: env\.BIND_MODE === 'enforce'/.test(src) && /limit: env\.LIMIT_MODE === 'enforce'/.test(src));
   check('the rate limit starts in log mode', /\nLIMIT_MODE = "log"\n/.test(toml));
   check('the limiter is bound as STREAM_LIMIT, 10-second period',
     /\[\[ratelimits\]\]\s*\nname = "STREAM_LIMIT"\s*\nnamespace_id = "\d+"[\s\S]*?\[ratelimits\.simple\]\s*\n\s*limit = \d+\s*\n\s*period = 10\b/.test(toml));

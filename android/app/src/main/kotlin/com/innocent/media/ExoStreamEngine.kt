@@ -27,6 +27,8 @@ import androidx.media3.exoplayer.SeekParameters
 import androidx.media3.exoplayer.analytics.AnalyticsListener
 import androidx.media3.exoplayer.hls.HlsMediaSource
 import androidx.media3.exoplayer.source.LoadEventInfo
+import androidx.media3.exoplayer.source.MediaSource
+import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.exoplayer.source.MediaLoadData
 import androidx.media3.exoplayer.source.chunk.Chunk
 import androidx.media3.exoplayer.source.chunk.MediaChunk
@@ -117,7 +119,7 @@ class ExoStreamEngine private constructor(
     fun open(
         url: String, startMs: Long, autoplay: Boolean,
         target: Int?, maxHeight: Int?, bps: Long?, start: Int?,
-        rungs: Map<Int, Int>,
+        rungs: Map<Int, Int>, progressive: Boolean = false,
     ) {
         release(keepSurface = true)
         steer.target = target
@@ -146,16 +148,7 @@ class ExoStreamEngine private constructor(
             .setTrackSelector(selector)
             .setBandwidthMeter(meter)
             .setLoadControl(load)
-            .setMediaSourceFactory(
-                HlsMediaSource.Factory(http)
-                    // The master names every rung's codecs and size, so the
-                    // player starts from it without reading a segment first.
-                    .setAllowChunklessPreparation(true)
-                    // A line that drops out for half a minute — a lift, a
-                    // dead spot — is waited for, a segment at a time, with
-                    // the buffer playing on; three tries (the default) and
-                    // the film stopped with an error.
-                    .setLoadErrorHandlingPolicy(DefaultLoadErrorHandlingPolicy(10)))
+            .setMediaSourceFactory(sourcesFor(http, progressive))
             .setSeekParameters(SeekParameters.EXACT)
             .setWakeMode(C.WAKE_MODE_NETWORK)
             .setHandleAudioBecomingNoisy(true)
@@ -243,12 +236,36 @@ class ExoStreamEngine private constructor(
         player = p
         p.volume = gainWanted.coerceAtMost(1.0).toFloat()
         if (gainWanted > 1.0) applyBoost(p)
-        val item = MediaItem.Builder().setUri(url).setMimeType(MimeTypes.APPLICATION_M3U8).build()
+        // A single file (a film's Original, through the proxy) is read by
+        // byte range like any MP4; the ladder is HLS.
+        val item = if (progressive) {
+            MediaItem.Builder().setUri(url).setMimeType(MimeTypes.VIDEO_MP4).build()
+        } else {
+            MediaItem.Builder().setUri(url).setMimeType(MimeTypes.APPLICATION_M3U8).build()
+        }
         p.setMediaItem(item, startMs.coerceAtLeast(0))
         p.playWhenReady = autoplay
         p.prepare()
         main.removeCallbacks(ticker)
         main.post(ticker)
+    }
+
+    /**
+     * How the film is read: the ladder as HLS, or one file (an Original) as a
+     * progressive MP4. Either way a line that drops out for half a minute —
+     * a lift, a dead spot — is waited for with the buffer playing on: ten
+     * tries, where three (the default) stopped the film with an error.
+     */
+    private fun sourcesFor(http: DefaultHttpDataSource.Factory, progressive: Boolean): MediaSource.Factory {
+        val retry = DefaultLoadErrorHandlingPolicy(10)
+        if (progressive) {
+            return ProgressiveMediaSource.Factory(http).setLoadErrorHandlingPolicy(retry)
+        }
+        return HlsMediaSource.Factory(http)
+            // The master names every rung's codecs and size, so the player
+            // starts from it without reading a segment first.
+            .setAllowChunklessPreparation(true)
+            .setLoadErrorHandlingPolicy(retry)
     }
 
     private fun sendState() {
@@ -639,6 +656,7 @@ class ExoStreamEngine private constructor(
                             (call.argument<Number>("bps"))?.toLong(),
                             (call.argument<Number>("start"))?.toInt(),
                             rungsArg(call.argument<List<Any?>>("rungs")),
+                            call.argument<Boolean>("progressive") ?: false,
                         )
                         "play" -> e.play()
                         "pause" -> e.pause()

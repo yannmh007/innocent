@@ -290,8 +290,9 @@ Future<void> playMedia(
     }
 
     final label = titleOverride ?? content.displayTitle(s.locale.languageCode);
-    Future<String?> registerLadder({int? target, Set<String> keep = const <String>{}}) async {
-      final start = chosen;
+    Future<String?> registerLadder(
+        {int? target, Set<String> keep = const <String>{}, Rendition? startRung}) async {
+      final start = startRung ?? chosen;
       if (start == null) return null;
       final heights = <int>{for (final r in grant.renditions) r.height};
       if (heights.length < 2) return null;
@@ -323,7 +324,9 @@ Future<void> playMedia(
         rungs: rungs,
         label: label,
         aspect: _aspect(content, source),
-        startCacheId: cacheId,
+        // The first rung's own entry: the one the warm start filled when it
+        // is the copy Play chose, never the Original's.
+        startCacheId: streamCacheId(titleId: content.id, assetId: assetId, height: start.height),
       );
       if (url == null) return null;
       MediaKitPlayerService.armLadder(
@@ -338,7 +341,14 @@ Future<void> playMedia(
       return url;
     }
 
-    if (chosen != null && Platform.isAndroid && await VideoSurfacePolicy.useLadderEngine()) {
+    // EVERY STREAMED COPY ON ONE ENGINE where the ladder plays: the rungs as
+    // HLS, the Original as one file. Moving between ExoPlayer and libmpv for
+    // a change of quality held the picture 5-6 s on both real phones (Test
+    // Lab run 40188289751).
+    final ladderEngine = Platform.isAndroid &&
+        <int>{for (final r in grant.renditions) r.height}.length >= 2 &&
+        await VideoSurfacePolicy.useLadderEngine();
+    if (chosen != null && ladderEngine) {
       ladderUrl = await registerLadder(
           target: preferred == QualityChoice.auto ? null : chosen.height);
     }
@@ -372,6 +382,12 @@ Future<void> playMedia(
         return chosen == null ? fresh.url : null;
       },
     );
+    }
+    // Opened on the Original: that file on ExoPlayer too, the ladder
+    // registered when a rung is asked for.
+    if (ladderUrl == null && chosen == null && ladderEngine && localUrl != null) {
+      StreamCacheServer.instance.playAsFile(cacheId);
+      MediaKitPlayerService.armExoFile(localUrl);
     }
     final openUrl = localUrl ?? playUrl;
     PlaybackLog.add('play through ${ladderUrl != null ? 'the ladder on ExoPlayer' : localUrl == null ? 'the remote address' : 'the local proxy'}');
@@ -433,7 +449,7 @@ Future<void> playMedia(
       }
       // BACK TO THE LADDER from Original: the rung picked, on ExoPlayer, at
       // the same moment.
-      if (ladder != null &&
+      if (ladderEngine &&
           playingUrl != ladder &&
           quality != null &&
           quality != QualityChoice.original) {
@@ -441,13 +457,23 @@ Future<void> playMedia(
             ? null
             : chooseRendition(grant.renditions, quality,
                 measuredKbps: ThroughputMemory.current, maxHeight: saverCap);
+        // A film opened on its Original registered no ladder: its first
+        // rung is the one picked, or Auto's.
+        final first = pick ??
+            chosen ??
+            pickRendition(grant.renditions,
+                measuredKbps: ThroughputMemory.current, maxHeight: saverCap);
         // The copy on screen is answered until the player has left it.
-        final again = await registerLadder(target: pick?.height, keep: <String>{playingId});
+        final again = await registerLadder(
+            target: pick?.height, keep: <String>{playingId}, startRung: first);
         if (again != null) {
           await QualityPreference.write(quality);
+          ladderUrl = again;
           playingUrl = again;
-          playingId = cacheId;
-          playingHeight = pick?.height ?? chosen?.height;
+          playingId = first == null
+              ? cacheId
+              : streamCacheId(titleId: content.id, assetId: assetId, height: first.height);
+          playingHeight = pick?.height ?? first?.height;
           playingViaProxy = true;
           final menu = StreamRenewal.quality.value;
           if (menu != null) {
@@ -596,6 +622,11 @@ Future<void> playMedia(
       );
       // A rung of the ladder, now for libmpv: read as a file, not by segment.
       StreamCacheServer.instance.playAsFile(nextId);
+      // The Original where the ladder plays: on ExoPlayer too, so the change
+      // stays within one engine.
+      if (again == null && nextLocal != null && ladderEngine) {
+        MediaKitPlayerService.armExoFile(nextLocal);
+      }
       // ─── THE WARM SWITCH ─────────────────────────────────────────
       //
       // Reopened cold, the new copy's first picture waits for its bytes to

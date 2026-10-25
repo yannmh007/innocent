@@ -87,6 +87,7 @@ import 'widgets/loop_menu_sheet.dart';
 import 'widgets/subtitle_panel.dart';
 import 'widgets/track_selection_sheet.dart';
 import 'widgets/volume_indicator.dart';
+import 'widgets/player_toast.dart';
 import '../../../core/services/secure_screen/secure_screen_service.dart';
 import '../../../core/services/video_player/stream_renewal.dart';
 // The ONE dependency this screen takes on the catalogue feature, and it is a
@@ -192,6 +193,10 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
   /// player instead of a SnackBar (MX Player style).
   final ValueNotifier<String?> _overlayMsg = ValueNotifier(null);
   Timer? _overlayTimer;
+
+  /// Every passing message over the film (see [PlayerToastController]):
+  /// dark, near the top, never over the seek bar and the buttons.
+  final PlayerToastController _toast = PlayerToastController();
 
   /// Clears the notice over the picture (see [PlayerNotice]) after a while.
   Timer? _noticeTimer;
@@ -1134,6 +1139,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     // keep firing into a dead widget every thirty seconds.
     _step('reportTimer', () => _reportTimer?.cancel());
     _step('overlayMsg', () => _overlayMsg.dispose());
+    _step('toast', () => _toast.dispose());
     // Release the screen-capture claim taken in initState. Paired exactly:
     // the service counts holders, so a missed release here would leave the
     // whole app capture-blocked until it restarted.
@@ -1504,7 +1510,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     final m = position.inMinutes.remainder(60).toString().padLeft(2, '0');
     final s = position.inSeconds.remainder(60).toString().padLeft(2, '0');
     final timeStr = h > 0 ? '$h:$m:$s' : '$m:$s';
-    _showSnack(context, '⭐ Bookmark added at $timeStr');
+    _showSnack(context, AppStrings.of(context).plBookmarkAddedAt(timeStr),
+        kind: PlayerToastKind.success);
   }
 
   Future<void> _showBookmarks(BuildContext context) async {
@@ -1538,7 +1545,9 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
         .read(favouritesProvider.notifier)
         .toggle(widget.videoUri);
     if (!context.mounted) return;
-    _showSnack(context, added ? '★ Added to favourites' : '☆ Removed');
+    final t = AppStrings.of(context);
+    _showSnack(context, added ? t.addedToFavourites : t.removedFromFavourites,
+        kind: added ? PlayerToastKind.success : PlayerToastKind.info);
   }
 
   Future<void> _addToPlaylist(BuildContext context) async {
@@ -1940,10 +1949,23 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     }
   }
 
-  void _showSnack(BuildContext context, String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg), duration: const Duration(seconds: 2)),
-    );
+  void _showSnack(BuildContext context, String msg,
+      {PlayerToastKind kind = PlayerToastKind.info}) {
+    _toast.show(msg, kind: kind);
+  }
+
+  /// Where a passing message sits: under the top bar and the shortcut row
+  /// while they are up, near the top edge when they are not. Never at the
+  /// bottom, where the seek bar and the buttons are.
+  double _toastTop(PlayerState state, int shortcuts) {
+    final insets = _controlsInsets(context);
+    final controlsUp = state.controlsVisible && !state.isLocked && !state.sleepTimerDialogOpen;
+    if (!controlsUp) return insets.top + 16;
+    final barOnTop = ref.read(extraSettingsProvider).getStr(StringSetting.toolbarPosition) != 'bottom';
+    if (!barOnTop) return insets.top + (shortcuts > 0 ? 100 : 16);
+    // The bar is 56 high; the shortcut row's centre is 59 below the bar's
+    // top and the row 56 high (LAYER 4, LAYER 6).
+    return insets.top + (shortcuts > 0 ? 59 + 28 + 12 : 56 + 10);
   }
 
   /// Show a brief dark text badge in the player (MX Player style shortcut feedback).
@@ -2097,29 +2119,22 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     // The film plays on while the chosen copy's next seconds arrive (the
     // warm switch), which can take a few seconds on a slow line: say so, or
     // a second tap reads as "nothing happened".
-    final messenger = ScaffoldMessenger.of(this.context);
     final strings = AppStrings.of(this.context);
     final controller = ref.read(playerControllerProvider.notifier);
+    final label = menu.options.where((o) => o.id == picked).firstOrNull?.label ?? picked;
     // A switch already under way: say so, rather than "could not switch".
     if (controller.switchingQuality) {
-      messenger.hideCurrentSnackBar();
-      messenger.showSnackBar(SnackBar(content: Text(strings.playerQualitySwitching)));
+      _toast.show(strings.playerQualitySwitching, kind: PlayerToastKind.busy);
       return;
     }
-    if (picked != menu.selected) {
-      messenger.showSnackBar(SnackBar(
-        content: Text(strings.playerQualitySwitching),
-        duration: const Duration(seconds: 10),
-      ));
-    }
+    if (picked == menu.selected) return;
+    _toast.show(strings.playerQualitySwitchingTo(label), kind: PlayerToastKind.busy);
     final ok = await controller.switchQuality(picked);
     if (!mounted) return;
-    messenger.hideCurrentSnackBar();
-    if (!ok) {
-      messenger.showSnackBar(
-        SnackBar(content: Text(strings.playerQualityFailed)),
-      );
-    }
+    _toast.show(
+      ok ? strings.playerQualityNow(label) : strings.playerQualityFailedTo(label),
+      kind: ok ? PlayerToastKind.success : PlayerToastKind.warning,
+    );
   }
 
   /// rather than relying on PopScope's `canPop` flipping (which never happened
@@ -2130,12 +2145,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     final state = ref.read(playerControllerProvider);
     // Kids Lock: swallow the back entirely and nudge how to unlock.
     if (state.isKidsLocked) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(AppStrings.of(context).kidsLockHoldHint),
-          duration: const Duration(seconds: 2),
-        ),
-      );
+      _toast.show(AppStrings.of(context).kidsLockHoldHint, kind: PlayerToastKind.info, icon: Icons.lock_rounded);
       return;
     }
     final requireDouble =
@@ -2155,12 +2165,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     }
     // First press of a double-tap exit → arm the window + hint.
     _lastBackPressAt = now;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(AppStrings.of(context).pressBackAgain),
-        duration: const Duration(seconds: 2),
-      ),
-    );
+    _toast.show(AppStrings.of(context).pressBackAgain, kind: PlayerToastKind.info);
   }
 
   void _showAudioTracks(BuildContext context) {
@@ -2300,12 +2305,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
         onTap: () {
           controller.closePanel();
           controller.toggleKidsLock();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(AppStrings.of(context).kidsLockOnMsg),
-              duration: const Duration(seconds: 2),
-            ),
-          );
+          _toast.show(AppStrings.of(context).kidsLockOnMsg, kind: PlayerToastKind.success, icon: Icons.lock_rounded);
         },
       ),
       MoreMenuItemData(
@@ -3032,7 +3032,9 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                 onBack: _handleBackRequest,
                 onAudio: () => _showAudioTracks(context),
                 onSubtitle: controller.openSubtitleMenu,
-                onDecoder: controller.openDecoderDialog,
+                onDecoder: svc is MediaKitPlayerService && svc.playingLadder
+                    ? null
+                    : controller.openDecoderDialog,
                 onMore: controller.openMoreMenu,
                 // Phase 45 (audit): PiP icon is in the TOP bar (MX V3 parity).
                 onQuality: () => _showQualitySheet(context),
@@ -3237,12 +3239,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
             KidsLockOverlay(
               onUnlock: () {
                 controller.toggleKidsLock();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(AppStrings.of(context).kidsLockOffMsg),
-                    duration: const Duration(seconds: 2),
-                  ),
-                );
+                _toast.show(AppStrings.of(context).kidsLockOffMsg, kind: PlayerToastKind.success, icon: Icons.lock_open_rounded);
               },
             ),
 
@@ -3587,50 +3584,41 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
             ),
 
           // === LAYER 15: Notice — what the player did about a problem ===
-          // IgnorePointer: it must never be the thing a tap lands on.
+          // The same dark pill as every passing message, in the same place;
+          // a passing message, while it shows, has the floor.
           if (state.notice != null && state.errorMessage == null)
             Positioned(
-              top: 84,
-              left: 24,
-              right: 24,
+              top: _toastTop(state, visibleShortcutList.length),
+              left: 16,
+              right: 16,
               child: IgnorePointer(
-                child: Center(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: const Color(0xE6202124),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          state.notice == PlayerNotice.switchedToSoftware ||
-                                  state.notice ==
-                                      PlayerNotice.hardwareUnavailable
-                              ? Icons.memory
-                              : state.notice == PlayerNotice.engineRestarted
-                                  ? Icons.restart_alt
-                                  : Icons.downloading,
-                          color: Colors.white,
-                          size: 18,
-                        ),
-                        const SizedBox(width: 10),
-                        Flexible(
-                          child: Text(
-                            _noticeText(context, state),
-                            style: const TextStyle(
-                                color: Colors.white, fontSize: 13),
-                            maxLines: 3,
-                            overflow: TextOverflow.ellipsis,
+                child: ValueListenableBuilder<PlayerToastData?>(
+                  valueListenable: _toast,
+                  builder: (context, passing, _) => passing != null
+                      ? const SizedBox.shrink()
+                      : Center(
+                          child: PlayerToastPill(
+                            data: PlayerToastData(
+                              _noticeText(context, state),
+                              kind: PlayerToastKind.info,
+                              icon: state.notice == PlayerNotice.switchedToSoftware ||
+                                      state.notice == PlayerNotice.hardwareUnavailable
+                                  ? Icons.memory
+                                  : state.notice == PlayerNotice.engineRestarted
+                                      ? Icons.restart_alt
+                                      : Icons.downloading,
+                            ),
                           ),
                         ),
-                      ],
-                    ),
-                  ),
                 ),
               ),
+            ),
+
+          // === LAYER 16: Passing messages (PlayerToastController) ===
+          if (!state.sleepTimerDialogOpen)
+            PlayerToastView(
+              controller: _toast,
+              top: _toastTop(state, visibleShortcutList.length),
             ),
         ],
       ),
@@ -3742,7 +3730,10 @@ class _TopBar extends StatelessWidget {
   final VoidCallback onBack;
   final VoidCallback onAudio;
   final VoidCallback onSubtitle;
-  final VoidCallback onDecoder;
+  /// Null when the decoder cannot be chosen: a film on the ladder plays on
+  /// ExoPlayer, which picks its own hardware decoder, and the choice only
+  /// ever reached libmpv — a button that did nothing.
+  final VoidCallback? onDecoder;
   final VoidCallback onMore;
 
   /// The Quality menu. Drawn only while [StreamRenewal.quality] has a menu
@@ -3979,33 +3970,54 @@ class _TopBar extends StatelessWidget {
                       minimumSize: const Size(40, 40),
                     ),
                     icon: const Icon(Icons.high_quality_outlined, size: 18),
-                    label: Text(
-                      chosen ?? AppStrings.of(context).plAuto,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    // On Auto, what Auto has chosen beside it — "Auto · 480p",
+                    // as YouTube's menu says it — live as the rung changes.
+                    label: ValueListenableBuilder<int?>(
+                      valueListenable: MediaKitPlayerService.rungOnScreen,
+                      builder: (context, live, _) {
+                        final now = menu.selected == 'auto'
+                            ? (live != null ? '${live}p' : menu.playing)
+                            : null;
+                        return Text.rich(
+                          TextSpan(children: [
+                            TextSpan(text: chosen ?? AppStrings.of(context).plAuto),
+                            if (now != null && now.isNotEmpty)
+                              TextSpan(
+                                text: ' · $now',
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                          ]),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        );
+                      },
                     ),
                   );
                 },
               ),
-            TextButton(
-              onPressed: onDecoder,
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                minimumSize: const Size(40, 40),
-              ),
-              child: Text(
-                decoderLabel,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
+            if (onDecoder != null)
+              TextButton(
+                onPressed: onDecoder,
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  minimumSize: const Size(40, 40),
+                ),
+                child: Text(
+                  decoderLabel,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
-            ),
             IconButton(
               icon: const Icon(Icons.more_vert, color: Colors.white),
               onPressed: onMore,

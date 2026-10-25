@@ -53,6 +53,39 @@ what was checked, what was fixed, and what is left, with the reason.
 
 ## Released
 
+**1.64.74 (387), 25 October 2026** — main `ec18e35`, release
+`v1.64.74-387`, both APKs on the CDN and with a GitHub mirror, attested,
+`app_releases` updated. What changed:
+- `request-playback` runs beside the database (ap-southeast-1, the
+  `x-region` header), wherever the phone is; a gateway's 5xx is asked
+  once more, unpinned;
+- a far jump draws the seek bar's picture of where it lands until its own
+  frame is drawn;
+- the seek bar's pictures are fetched one at a time, the newest next.
+
+Checked before it shipped:
+- device lab, run 40133079214: eleven of eleven, including Home and back;
+- real phones: the OPPO A38 in Test Lab run 40134791827 and the realme
+  C53 in run 40171631821, ten of ten each (the day's quota split them);
+- `bind ok` on every fetch, no crash.
+
+| On the real phones | realme | OPPO |
+|---|---|---|
+| Play tap to grant (phones in the US) | 1.2 s (1.64.73: 3.6 s) | 1.1 s (3.3 s) |
+| First long seek, picture still | 0.4 s (0.6 s) | 0.6 s (1.1 s) |
+| Landing picture held, to the first frame | 1.0 s | 0.6 s |
+| Pictures fetched on the swipe | 3 (7 queued) | 2 (7 queued) |
+| First frame | 148 ms | 184 ms |
+
+Published with a mistake, found by the owner's phone: the row took the new
+version, links and notes, but `apk_sha256`/`apk_bytes` (and the arm32
+pair and its mirror) still described 1.64.73's file. The update said
+"Download was damaged. Try again." on every network. Corrected at 09:5x
+UTC from the release's own files, both hashed again here: 96,165,373
+bytes `8aaacc1a…`, arm32 88,125,957 bytes `f0023f11…`. Migration 050, run by the owner and
+checked in place (a BEFORE UPDATE trigger on both pairs), makes the
+database refuse a new `version_code` without a new fingerprint.
+
 **1.64.73 (386), 24 October 2026** — main `cd2d9cd`, release
 `v1.64.73-386`, both APKs on the CDN and with a GitHub mirror, attested,
 `app_releases` updated. What changed:

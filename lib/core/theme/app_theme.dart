@@ -55,6 +55,29 @@ class AppTheme {
           iconColor: AppColors.darkOnSurface,
           textColor: AppColors.darkOnSurface,
         ),
+        // A MESSAGE IS DARK, LIKE EVERYTHING ELSE. Material 3 paints a
+        // SnackBar in `inverseSurface`, which on this dark scheme is a near
+        // white bar under white-on-black screens — the owner's report on
+        // 1.64.74. Floating and rounded, clear of the edges and of the
+        // navigation bar, with the accent for its action.
+        snackBarTheme: const SnackBarThemeData(
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: Color(0xFF23272E),
+          contentTextStyle: TextStyle(
+            color: Colors.white,
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            height: 1.3,
+          ),
+          actionTextColor: AppColors.accentBlueLight,
+          closeIconColor: Colors.white70,
+          elevation: 6,
+          insetPadding: EdgeInsets.fromLTRB(16, 0, 16, 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(14)),
+            side: BorderSide(color: Color(0x24FFFFFF), width: 0.8),
+          ),
+        ),
       );
 
   /// INNOCENT HAS NO LIGHT MODE, so this deliberately returns the dark one.

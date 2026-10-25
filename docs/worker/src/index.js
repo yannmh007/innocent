@@ -734,6 +734,10 @@ export default {
         service: 'innocent-stream',
         secret: !!env.TOKEN_SECRET,
         bucket: !!env.MEDIA,
+        // Which checks refuse and which only log, so a deploy that changed
+        // one can be seen to have taken.
+        bind: env.BIND_MODE === 'enforce' ? 'enforce' : 'log',
+        limit: env.LIMIT_MODE === 'enforce' ? 'enforce' : 'log',
       }), {
         headers: { 'Content-Type': 'application/json',
                    'Cache-Control': 'no-store', ...corsFor(request) },

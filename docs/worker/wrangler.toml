@@ -78,7 +78,15 @@ EDGE_BLOCK_BYTES = "0"
 # in the log and in `X-Bind`, and refuses nothing. "enforce" refuses. Each is
 # switched to "enforce" only after the log shows the phones in the field
 # passing — bind once 1.64.70 sends its install id with every fetch.
-BIND_MODE = "log"
+#
+# BIND: ENFORCED 2026-10-25. Workers Logs, the last three days: 3,744
+# fetches of bound tokens said "ok", and every one came from the app. Two
+# said "missing": both asked for bytes 0-4095 with a Windows desktop
+# browser's User-Agent, which no build of the app sends. They used a token
+# granted to the owner's own phone, from somewhere that was not the app.
+# That is the case this check exists to refuse. Older apps (before 1.64.70)
+# do not ask for bound tokens, so they are not affected.
+BIND_MODE = "enforce"
 LIMIT_MODE = "log"
 
 # The ceiling, per install (else per account, else per link), per data

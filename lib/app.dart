@@ -203,7 +203,7 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
     // now waits for the picture to MOVE past where it landed, and reports
     // how long that took after the jump — the number a viewer feels.
     Future<void> check(String what, Duration want, DateTime jumped,
-        {Duration late = const Duration(seconds: 30)}) async {
+        {Duration late = const Duration(seconds: 30), bool refused = false}) async {
       // Near the target AND past it: right after a jump back the player
       // still reports where it was, which is past the target too.
       final moved = await until(
@@ -220,7 +220,7 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
           () => svc.position - landedAt >= const Duration(seconds: 1),
           const Duration(seconds: 6));
       final resumed = DateTime.now().difference(jumped).inMilliseconds - 1000;
-      final ok = moved && playing && LabStream.landed(want, landedAt, late: late);
+      final ok = !refused && moved && playing && LabStream.landed(want, landedAt, late: late);
       ok ? pass++ : fail++;
       sampler?.cancel();
       final live = svc is MediaKitPlayerService ? svc.ladderRung : null;
@@ -280,7 +280,7 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
         final ok = await player().switchQuality(rung);
         // The film plays on through the switch's fetch (up to 8 s).
         await check('quality->$rung${ok ? '' : ' (refused)'}', want, jumped,
-            late: const Duration(seconds: 40));
+            late: const Duration(seconds: 40), refused: !ok);
         await shown(rung, jumped);
       }
 
@@ -308,8 +308,30 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
       want = svc.position;
       jumped = DateTime.now();
       watchFreeze();
-      await player().switchQuality('auto');
-      await check('quality->auto', want, jumped, late: const Duration(seconds: 40));
+      final backToAuto = await player().switchQuality('auto');
+      await check('quality->auto', want, jumped,
+          late: const Duration(seconds: 40), refused: !backToAuto);
+
+      // 5b. Every line of the Quality menu in turn, Original included, then
+      // Auto again: each must be taken and play on. (A viewer's "Could not
+      // switch quality" on Tears of Steel, 1.64.74, while Sintel's passed.)
+      final menu = StreamRenewal.quality.value;
+      if (menu != null) {
+        final ids = <String>[
+          for (final o in menu.options)
+            if (o.id != 'auto') o.id,
+          'auto',
+        ];
+        PlaybackLog.add('LAB tour: ${ids.join(' ')} (menu ${menu.options.map((o) => o.label).join(', ')})');
+        for (final id in ids) {
+          want = svc.position;
+          jumped = DateTime.now();
+          watchFreeze();
+          final took = await player().switchQuality(id);
+          await check('tour->$id${took ? '' : ' (refused)'}', want, jumped,
+              late: const Duration(seconds: 40), refused: !took);
+        }
+      }
 
       // 6. The seek bar's preview pictures (ladder engine): one far from
       // here, then the same again (held), then the one beside it.

@@ -1930,22 +1930,51 @@ class PlayerController extends StateNotifier<PlayerState> {
     }
   }
 
+  /// A change of copy the viewer or a stall asked for is under way. The
+  /// menu says "switching" rather than letting a second tap read as a
+  /// failure. (A climb is not counted: a choice made during one waits for
+  /// it — see [switchQuality].)
+  bool get switchingQuality => _downgradeInFlight;
+
   /// The viewer picked a line in the Quality menu: reopen the film on that
   /// copy at the same moment.
   ///
   /// Answers false when nothing could be had — a refused renewal, or no
   /// stream that can be renewed — so the menu can say so; the copy that was
   /// playing carries on either way.
-  /// A change of copy is under way — a menu choice fetching its copy, a
-  /// step down, a climb. The menu says "switching" rather than letting a
-  /// second tap read as a failure.
-  bool get switchingQuality => _downgradeInFlight || _climbInFlight;
-
   Future<bool> switchQuality(String id) async {
+    // A reconnect or a climb under way is waited for, a few seconds at most,
+    // and the viewer's choice applied after it. Refused, the menu said
+    // "Could not switch quality" for a change nobody had asked to undo — on
+    // a Starlink line that drops for a second every few minutes (the owner,
+    // Tears of Steel, 1.64.74).
+    final until = DateTime.now().add(const Duration(seconds: 8));
+    while ((_networkRetryInFlight || _climbInFlight) && DateTime.now().isBefore(until)) {
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+      if (!mounted) return false;
+    }
     final uri = _currentUri;
     // Every refusal says which, in the trail: "could not switch" with no
     // reason was all a Test Lab run had to go on (run 39202304734).
     if (uri == null || !StreamRenewal.canRenew(uri)) {
+      // ON THE LADDER A RUNG NEEDS NO RENEWER: ExoPlayer has every rung
+      // already, and is only steered. A registration lost or keyed to
+      // another address must not cost the viewer the change.
+      final svc = _ref.read(videoPlayerServiceProvider);
+      final h = int.tryParse(id);
+      if (svc is MediaKitPlayerService && svc.playingRungs && (h != null || id == 'auto')) {
+        await svc.setLadderQuality(h);
+        final menu = StreamRenewal.quality.value;
+        if (menu != null) {
+          StreamRenewal.quality.value = menu.copyWith(
+            selected: id,
+            playing: h != null ? '${h}p' : menu.playing,
+          );
+        }
+        PlaybackLog.add('quality -> $id on the ladder, steered directly '
+            '(renewer ${uri == null ? 'no stream' : 'registered for another address'})');
+        return true;
+      }
       PlaybackLog.add('quality -> $id refused: this stream cannot be renewed');
       return false;
     }
@@ -1973,7 +2002,9 @@ class PlayerController extends StateNotifier<PlayerState> {
       if (fresh == uri) return true;
       final svc = _ref.read(videoPlayerServiceProvider);
       final at = svc.position > Duration.zero ? svc.position : state.position;
-      final wasPlaying = state.isPlaying;
+      // A film stalled mid-play is still playing for the viewer: it reopens
+      // playing.
+      final wasPlaying = state.isPlaying || _rebufferSince != null;
       _currentUri = fresh;
       // A deliberate switch is not a stall: the automatic step-down count
       // starts again from here.

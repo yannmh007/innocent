@@ -168,6 +168,39 @@ any film with one rung. Also any phone the server sends back (see below).
   pinned to a region is not moved when that region is down, so a
   gateway's 5xx is asked once more, unpinned.
 
+## After 1.64.74
+
+- The owner's phone said "Could not switch quality" on Tears of Steel. In
+  the device lab every line of its menu was taken (run 40184478393: 480,
+  360, 240, Original, Auto, 15 of 15), so the refusal came from a state
+  the tour did not reach. Two of the refusals are gone:
+  - a reconnect or a climb under way is waited for, up to 8 s, and the
+    choice then applied;
+  - on the ladder, a rung or Auto is steered directly when the renewer
+    cannot answer. ExoPlayer has every rung, and nothing needs renewing.
+  The lab now tries every line of the menu on every run (LAB check
+  tour->…).
+- A phone line, not Starlink (run 40186513057). Sintel played on a link
+  held to 4 Mbit/s down and 2 up, 80-200 ms, 0.5 % loss. All 17 checks
+  passed:
+
+  | Check | Picture still |
+  |---|---|
+  | Change of quality | 0.2-0.3 s |
+  | Skip +30 | 0.7 s |
+  | Seek | 1.1 s |
+  | Swipe | 1.4 s |
+  | Original | 2.8 s (a reopen on libmpv) |
+
+  The landing picture was held 0.5 s. With nothing measured, the start
+  is 720p on Wi-Fi and 480p on mobile data (`kMeteredStartHeight`). The
+  emulator counts as Wi-Fi, and its 720p start stalled once, for 1.9 s,
+  before Auto stepped down.
+- The player's messages are a dark pill near the top, never over the seek
+  bar (`player_toast.dart`). The quality button shows what Auto chose
+  ("Auto · 480p"). There is no decoder button on a film ExoPlayer plays:
+  the choice only ever reached libmpv.
+
 ## Next
 - Play tap to grant, beside the database: about 0.3–0.7 s. Most of what is
   left is the phone's own round trip and the function's start. A single

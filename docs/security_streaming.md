@@ -164,7 +164,12 @@ log shows the phones in the field passing:
    the proxy hand-over (~8× fewer Worker requests).
 2. When the log shows `bind: ok` from 1.64.70 phones and no `bind_missing`
    from them: `BIND_MODE = "enforce"`. Older apps are unaffected — their
-   tokens are not bound.
+   tokens are not bound. **Done 2026-10-25.** In three days of Workers Logs,
+   3,744 bound fetches were `ok`, all from the app. The two `missing` asked
+   for bytes 0-4095 with a Windows desktop browser's User-Agent, which no
+   build of the app sends, using a token granted to the owner's own phone.
+   `/health` now says `bind` and `limit`, so a deploy can be seen to have
+   taken.
 3. When most phones run 1.64.70: lower the ceiling to ~200 in 10 s and
    `LIMIT_MODE = "enforce"`.
 4. When `min_supported` passes 1.64.70: bind every premium token, asked or

@@ -42,6 +42,9 @@ class ExoEngine {
   /// The rung on screen, by height, as the player last reported it.
   int? rung;
 
+  /// [rung], for whoever draws it (the top bar's "Auto · 480p").
+  final ValueNotifier<int?> rungOnScreen = ValueNotifier<int?>(null);
+
   /// The heights the master offers, once the player has read it.
   List<int> heights = const <int>[];
 
@@ -149,7 +152,12 @@ class ExoEngine {
         _position.add(position);
         _buffered.add(buffered);
       case 'state':
-        final p = e['playing'] == true;
+        // PLAYING MEANS THE VIEWER HAS IT PLAYING, as libmpv says it: a film
+        // waiting for its bytes is still a playing film. ExoPlayer's own
+        // isPlaying is false while it buffers, and read as "paused" it made
+        // a change of quality during a stall reopen the film paused, and put
+        // the play button up under the spinner (device lab run 40190583932).
+        final p = e['ready'] == true && e['ended'] != true;
         final b = e['buffering'] == true;
         final end = e['ended'] == true;
         if (p != playing) _playing.add(playing = p);
@@ -181,6 +189,7 @@ class ExoEngine {
         final h = (e['h'] as num?)?.toInt();
         if (h != null && h > 0 && h != rung) {
           rung = h;
+          rungOnScreen.value = h;
           PlaybackLog.add('exo rung ${h}p ${(e['kbps'] as num?)?.toInt() ?? 0} kbps');
         }
       case 'tracks':
@@ -228,10 +237,12 @@ class ExoEngine {
       int? maxHeight,
       int? kbps,
       int? start,
-      Map<int, int> rungs = const <int, int>{}}) {
+      Map<int, int> rungs = const <int, int>{},
+      bool progressive = false}) {
     position = startAt ?? Duration.zero;
     ended = false;
     rung = null;
+    rungOnScreen.value = null;
     _letGo('a new film');
     return _call('open', <String, Object?>{
       'url': url,
@@ -245,6 +256,8 @@ class ExoEngine {
       'rungs': [
         for (final e in rungs.entries) <int>[e.key, (e.value < 1 ? 1 : e.value) * 1000],
       ],
+      // One MP4 file (a film's Original) rather than the ladder's HLS.
+      'progressive': progressive,
     });
   }
 
