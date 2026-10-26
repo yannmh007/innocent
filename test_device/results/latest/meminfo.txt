@@ -1,1 +1,1 @@
-No process found for: com.innocent.media
+adb: device 'emulator-5554' not found
