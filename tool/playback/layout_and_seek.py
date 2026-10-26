@@ -25,7 +25,7 @@ fragment (docs/streaming_seek_research.md).
 
 Never prints a URL: each carries a live token and this log is public.
 """
-import http.server, json, os, socket, struct, subprocess, sys, threading, time, urllib.request, urllib.error
+import http.server, json, os, shutil, socket, struct, subprocess, sys, threading, time, urllib.request, urllib.error
 
 UA = {'User-Agent': 'innocent-playback-check/1'}
 
@@ -127,6 +127,10 @@ class Relay(http.server.BaseHTTPRequestHandler):
 def seek_test(name, cmd):
     # ONE FRAME at the moment, nothing more, so what was read is what the
     # seek cost — not a player's read-ahead.
+    if not (os.path.exists(cmd[0]) or shutil.which(cmd[0])):
+        # The runner's apt mirror can fail to deliver it (26 Oct, twice).
+        print(f'  {name:<14} skipped: {cmd[0]} is not installed')
+        return
     Relay.log = []
     t = time.time()
     p = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, timeout=300)

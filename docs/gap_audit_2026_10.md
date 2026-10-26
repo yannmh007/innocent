@@ -53,6 +53,19 @@ what was checked, what was fixed, and what is left, with the reason.
 
 ## Released
 
+**Worker, 26 October 2026** — main `05b8fbb`, deployed by Workers Builds
+at 19:41 UTC; no app change. The owner asked whether the film path can be
+intercepted, read or traced to its storage (docs/security_streaming.md
+§7, §8). The new Transport check found the Worker answering plain HTTP and
+requests over TLS 1.0/1.1 (run 40381932657), and R2's ETag (the film's
+MD5) on every answer. Now refused / removed; run 40389401589 on the live
+Worker: every check passed, including the packet capture (no token, path
+or header in it) and expiry. Device lab run 40382851831 put the real app
+behind a man in the middle: it refused the proxy's certificate on the path
+and with the proxy's CA in the user store, and the proxy read nothing of
+Innocent's. The four anti-scraper measures another assistant suggested
+were weighed in §8 (none adds protection here on this plan).
+
 **1.64.75 (388), 25 October 2026** — main `78b6642`, release
 `v1.64.75-388`, both APKs on the CDN and with a GitHub mirror, attested.
 `app_releases` was updated on 26 October at 03:01 UTC with every field,

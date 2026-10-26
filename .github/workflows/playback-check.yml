@@ -230,7 +230,14 @@ jobs:
       - name: Fragment layout and a seek, through the real Worker
         run: |
           set -uo pipefail
-          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg mpv >/dev/null
+          # Bounded and non-interactive: on 26 Oct this line sat silent for
+          # the job's whole 20 minutes, twice, before a byte was measured.
+          echo "installing ffmpeg and mpv"
+          sudo DEBIAN_FRONTEND=noninteractive timeout 300 apt-get update -qq \
+            && sudo DEBIAN_FRONTEND=noninteractive timeout 400 apt-get install -y -qq \
+                 -o Dpkg::Options::=--force-confdef ffmpeg mpv >/dev/null \
+            || echo "::warning::ffmpeg/mpv did not install in time"
+          echo "installed: $(command -v ffmpeg) $(command -v mpv)"
           mkdir -p /tmp/ff60 && curl -sSfL -o /tmp/ff60/ff.gz \
             https://github.com/eugeneware/ffmpeg-static/releases/download/b6.0/ffmpeg-linux-x64.gz \
             && gunzip -f /tmp/ff60/ff.gz && chmod +x /tmp/ff60/ff || true
