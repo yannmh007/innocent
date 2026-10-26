@@ -125,7 +125,18 @@ for label, host in hosts.items():
         # Not a hole for the app: when both sides speak 1.3, TLS 1.3's
         # downgrade sentinel (RFC 8446 4.1.3) makes forcing an older
         # version detectable, so an attacker cannot push the app down.
-        print(f'    note: {label} still takes TLS 1.0/1.1 from clients that only speak those')
+        # Cloudflare's edge on workers.dev and r2.dev keeps them for old
+        # clients and they cannot be turned off there; the Worker itself
+        # refuses a request that came over them (since 2026-10-26).
+        print(f'    note: {label}\'s edge still completes a TLS 1.0/1.1 handshake')
+        if label == 'worker':
+            for proto in ('tls1', 'tls1_1'):
+                ask = f'GET /health HTTP/1.1\r\nHost: {host}\r\nUser-Agent: {UA}\r\nConnection: close\r\n\r\n'
+                _, out, _ = run(['openssl', 's_client', '-connect', f'{host}:443', '-servername', host,
+                                 f'-{proto}', '-cipher', 'DEFAULT:@SECLEVEL=0', '-quiet'], 20, ask.encode())
+                m = re.search(r'HTTP/1\.1 (\d{3})', out)
+                code = m.group(1) if m else 'no answer'
+                verdict(code != '200', f'worker: a request over {proto.replace("tls", "TLS ").replace("_", ".")} is not answered ({code})')
 st, h, _ = http(origin + '/health')
 print(f"worker /health: HTTP {st}, Strict-Transport-Security: {h.get('Strict-Transport-Security')}")
 
@@ -145,15 +156,10 @@ for label, host, path in (('worker', worker, '/health'), ('supabase', hosts['sup
     clear[label] = how.startswith('ANSWERS')
 # The app never asks over plain HTTP: every address it fetches comes from
 # request-playback over TLS and is https://, and Android's network security
-# config forbids cleartext to these domains. This is the second line: a
-# made-up token over plain HTTP must not reach the token check at all —
-# a 404 here would mean a real one would be checked, and served, in the clear.
-code, out, _ = run(['curl', '-sS', '-o', '/dev/null', '--max-time', '20', '-A', UA,
-                    '-w', '%{http_code} %{redirect_url}', f'http://{worker}/v/{"A" * 60}'], 30)
-status, _, where = out.partition(' ')
-print(f'worker    http://…/v/<made-up token> {status}{" redirect to https" if where.startswith("https://") else ""}')
-verdict(status in ('426', '000') or where.startswith('https://'),
-        'worker: a token sent over plain HTTP is not checked or served in the clear')
+# config forbids cleartext to these domains. This is the second line: the
+# Worker answers nothing over plain HTTP — /health included, which is how
+# this tells "refused for the protocol" from "refused for the token".
+verdict(not clear['worker'], 'worker: nothing is answered over plain HTTP')
 
 # ── 3. The door ───────────────────────────────────────────────────────────
 print('\n== 3. The door: altered tokens, other methods, old tokens')
