@@ -3,12 +3,18 @@
 # answer says about the storage, and a packet capture of one real fetch.
 # See tool/playback/transport_check.py.
 #
-# MANUAL ONLY. It asks request-playback for the open test film (Sintel,
-# CC-BY) twice and reads 64 KB-256 KB of it a few times. It never prints a
-# token, a token URL or the Worker's host: this log is public.
+# BY HAND, or on a push to a working branch that changes the check itself.
+# It asks request-playback for the open test film (Sintel, CC-BY) twice and
+# reads 64 KB-256 KB of it a few times. It never prints a token, a token URL
+# or the Worker's host: this log is public.
 name: Transport check
 
 on:
+  push:
+    branches-ignore: [ main ]
+    paths:
+      - 'tool/playback/transport_check.py'
+      - '.github/workflows/transport-check.yml'
   workflow_dispatch:
 
 permissions:
