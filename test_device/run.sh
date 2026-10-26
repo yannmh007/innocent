@@ -379,13 +379,10 @@ for flow in $FLOWS; do
   # A MAN IN THE MIDDLE (2026-10-26). The emulator was started behind
   # mitmproxy (MITM=on in config.env, `-http-proxy` in device-lab.yml), so
   # every connection the app opens reaches the proxy, which answers with a
-  # certificate of its own. The test film is opened three times, the
-  # proxy's certificate a step closer to trusted each time:
-  #   A  on the path only — a hostile Wi-Fi, a tapped line;
-  #   B  also in the phone's USER certificate store — where a profile a
-  #      viewer is talked into installing, or a company's, would put it;
-  #   C  also in the SYSTEM store, which takes root — a phone already in the
-  #      attacker's hands.
+  # certificate of its own. The test film is opened twice:
+  #   A  the proxy on the path only — a hostile Wi-Fi, a tapped line;
+  #   B  its CA also in the phone's USER certificate store — where a profile
+  #      a viewer is talked into installing, or a company's, would put it.
   # tool/netlab/mitm_watch.py writes what the proxy got: refused, accepted,
   # and for what it could read only the kind of path and the header NAMES.
   case "$flow" in mitm)
@@ -425,18 +422,7 @@ for flow in $FLOWS; do
       && restorecon -R /data/misc/user/0/cacerts-added" >/dev/null 2>&1
     log "mitm B: user store now holds $(adb shell ls /data/misc/user/0/cacerts-added 2>/dev/null | tr -d '\r' | wc -l) certificate(s)"
     open_film B
-    # C: the system store, over a copy of itself (no -writable-system), and
-    # in zygote's mount namespace so the app's next process sees it too.
     adb shell "rm -f /data/misc/user/0/cacerts-added/$H.0"
-    adb shell "mkdir -p -m 700 /data/local/tmp/cacerts && cp /system/etc/security/cacerts/* /data/local/tmp/cacerts/ \
-      && mount -t tmpfs tmpfs /system/etc/security/cacerts && cp /data/local/tmp/cacerts/* /system/etc/security/cacerts/ \
-      && cp /data/local/tmp/$H.0 /system/etc/security/cacerts/ && chown root:root /system/etc/security/cacerts/* \
-      && chmod 644 /system/etc/security/cacerts/* && chcon u:object_r:system_file:s0 /system/etc/security/cacerts/*" >/dev/null 2>&1
-    for z in $(adb shell pidof zygote zygote64 2>/dev/null | tr -d '\r'); do
-      adb shell "nsenter --mount=/proc/$z/ns/mnt -- mount --bind /system/etc/security/cacerts /system/etc/security/cacerts" >/dev/null 2>&1
-    done
-    log "mitm C: system store now holds the proxy's CA: $(adb shell ls /system/etc/security/cacerts/$H.0 2>/dev/null | tr -d '\r')"
-    open_film C
     adb shell am force-stop "$PKG"
     adb shell rm -f "$d/lab_stream_url" >/dev/null 2>&1 || true
     python3 test_device/mitm_summary.py "$EV" "$OUT/logcat_raw.txt" | tee "$OUT/mitm.txt"

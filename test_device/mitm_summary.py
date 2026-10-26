@@ -43,8 +43,7 @@ for line in open(logcat, errors='replace'):
 
 about = {'control': 'the runner\'s own curl, without and then with the proxy\'s CA',
          'A': 'the proxy on the path, its CA trusted nowhere',
-         'B': 'its CA also in the phone\'s USER store',
-         'C': 'its CA also in the SYSTEM store (root)'}
+         'B': 'its CA also in the phone\'s USER store'}
 for st, by in seen.items():
     print(f'stage {st}: {about.get(st, "")}')
     for kind in ('worker', 'supabase', 'cdn', 'google', 'other'):

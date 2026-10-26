@@ -236,6 +236,91 @@ not abuse — outgrows that.
 Widevine (§4): Media3/ExoPlayer, CENC-packaged CMAF (no re-encode), a licence
 service from ~USD 100 a month. Not before a licensor asks for it.
 
+## 7. On the wire: interception, the observer, the origin (2026-10-26)
+
+Owner's questions: can the film path be intercepted and read, to a
+recognised standard? Can someone in the middle tell what is being watched?
+Can the storage behind the Worker be reached, or even located? Measured,
+not assumed: `tool/playback/transport_check.py` (workflow Transport check)
+against the live servers, and the device lab's `mitm` flow, the real app
+behind a man in the middle.
+
+**The standard.** OWASP MASVS v2, MASVS-NETWORK-1 ("secure all network
+traffic according to current best practices"): met, see below.
+MASVS-NETWORK-2 (identity pinning, the L2 profile): not done, on purpose.
+Cloudflare does not support pinning its edge certificates and rotates
+them on its own schedule, between issuers (the Worker's is Google Trust
+Services today, the CDN's Let's Encrypt), and a pin that outlives its
+certificate would also break the updater with no store to push a fix
+through (§6 of `docs/security.md`). Certificate Transparency monitoring
+is Cloudflare's answer to the same risk.
+
+**Measured, run 40381932657:**
+
+| | found | verdict |
+|---|---|---|
+| TLS, all three hosts | TLS 1.3 (AES-256-GCM) to a modern client; certificates verify | good |
+| old TLS | Supabase refuses 1.0/1.1; the edges of workers.dev and r2.dev still complete them | not a hole for the app (TLS 1.3's downgrade sentinel, RFC 8446 §4.1.3); the Worker now refuses requests over them |
+| plain HTTP | Supabase and the CDN redirect to https; **the Worker answered** | **fixed**: nothing is answered over http:// |
+| altered tokens | one character changed (start, middle, end), cut, extended, traversal, empty: all the same bare 404 | good |
+| other methods | POST, PUT, DELETE, PATCH: 405, nothing served; no CORS for a foreign page | good |
+| binding | the bound token without its install: 404; an older app's unbound token: plays | good |
+| expiry | the same token 610 s later: 404 | good |
+| what an answer names | no header and no field of the grant names the account, bucket or object; every address in the grant is the Worker | good |
+| ETag | R2's, the film's MD5, the same for every viewer | **removed** |
+| packet capture of a real fetch | the token, the device id, the path, the Range header, the response headers and the film's first box: none in it | good |
+| what an observer reads | the Worker's host name, in DNS and in the TLS server name (SNI) | see below |
+
+**The real app behind a man in the middle, device lab run 40382851831.**
+The emulator was started behind mitmproxy, which answered every connection
+with a certificate of its own, and the test film was opened twice:
+
+| | the app | what the proxy could read of Innocent's traffic |
+|---|---|---|
+| control: the runner's curl, trusting the proxy | — | read it (proves the proxy intercepts) |
+| A: the proxy on the path only | refused: `CERTIFICATE_VERIFY_FAILED` | nothing |
+| B: its CA also in the phone's user store | refused | nothing |
+
+So a hostile Wi-Fi or line, or a certificate a viewer is talked into
+installing, gets nothing: Dart's network stack trusts only the system's
+certificate authorities. What such an attacker can do is stop the film
+(no connection, no playback); reading it is not possible. A phone the
+attacker already controls completely is a different problem, answered by
+the server's checks, the bound token, the watermark and the sealed cache,
+not by the network (`docs/security.md` §6).
+
+**What someone in the middle can learn.** Not what is watched in the
+plain sense: the title, the path, the token and every byte are inside
+TLS 1.3. They see that a phone talks to Innocent's Worker and Supabase
+(the names), when, and how much. Two limits, honestly:
+
+* **Names.** The Worker's host is visible in DNS and in SNI. Cloudflare
+  already publishes an Encrypted Client Hello key for it (its DNS HTTPS
+  record carries `ech=`), but the app's network stack (Dart's) cannot use
+  ECH. Android 17 supports it for OkHttp 5.5+ (HttpEngine from 17 QPR2),
+  with encrypted DNS. Recorded for later; it hides the name, not the IP address, which
+  is Cloudflare's shared anycast either way.
+* **Traffic shape.** Research shows encrypted video can be recognised from
+  its burst pattern: "Beauty and the Burst" (USENIX Security 2017) for
+  segment-by-segment players, and catalogue matching on segment sizes. Here
+  the phone's proxy fetches the copies in parts of up to 2 MB aligned to
+  64 KB, not segment by segment, so the per-request sizes say nothing about
+  segments. The rate at which parts are fetched still follows the bitrate,
+  so a patient observer holding the same files could in principle guess a
+  title. That is true of Netflix and YouTube as well, and padding it away
+  costs bandwidth that Myanmar data plans pay for. Not pursued.
+
+**The origin.** The client never holds an R2 address. Verified live, the
+grant carries only `https://<worker>/v/<opaque token>`; no header names R2,
+the bucket or the account; the bucket is private (no r2.dev address) and
+read only through the Worker's binding; and nothing in `request-playback`
+can presign. `CF-RAY` names the Cloudflare site nearest the *viewer*, not
+the bucket's. The public names that remain are the Worker's
+`workers.dev` host and the photos' and APK's `r2.dev` host (the public
+bucket, not the films'); a domain of our own replaces both (Phase 2).
+Hiding the service from its own host is not an aim (§2, and
+`docs/security.md` §4).
+
 ## Sources
 
 * Cloudflare: [R2 pricing](https://developers.cloudflare.com/r2/pricing/),
@@ -252,3 +337,13 @@ service from ~USD 100 a month. Not before a licensor asks for it.
   pricing: [EZDRM](https://www.ezdrm.com/service-pricing), [Redge](https://redge.media/en/drm/).
 * Device binding: [Android key and ID attestation](https://source.android.com/security/keystore/attestation),
   [Play Integrity standard requests](https://developer.android.com/google/play/integrity/standard).
+* On the wire (§7): [OWASP MASVS-NETWORK](https://mas.owasp.org/MASVS/08-MASVS-NETWORK/)
+  and [MASVS-NETWORK-2](https://mas.owasp.org/MASVS/controls/MASVS-NETWORK-2/);
+  [Cloudflare on certificate pinning](https://developers.cloudflare.com/ssl/reference/certificate-pinning/);
+  [Android: adopting Encrypted Client Hello](https://developer.android.com/privacy-and-security/encrypted-client-hello);
+  [Beauty and the Burst (USENIX Security 2017)](https://usenix.org/conference/usenixsecurity17/technical-sessions/presentation/schuster);
+  [RFC 8446 §4.1.3 (downgrade protection)](https://www.rfc-editor.org/rfc/rfc8446#section-4.1.3),
+  [RFC 8996 (TLS 1.0/1.1 retired)](https://www.rfc-editor.org/rfc/rfc8996);
+  Dart's HttpClient trusts only the system store on Android
+  ([dart-lang/sdk#50435](https://github.com/dart-lang/sdk/issues/50435),
+  [Reqable's note](https://reqable.com/blog/2024/06/27/post)).
