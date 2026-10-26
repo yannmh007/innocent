@@ -1,0 +1,42 @@
+# What someone on the network between a phone and Innocent can see, read or
+# change: TLS on every host, plain HTTP, altered and expired tokens, what an
+# answer says about the storage, and a packet capture of one real fetch.
+# See tool/playback/transport_check.py.
+#
+# BY HAND, or on a push to a working branch that changes the check itself.
+# It asks request-playback for the open test film (Sintel, CC-BY) twice and
+# reads 64 KB-256 KB of it a few times. It never prints a token, a token URL
+# or the Worker's host: this log is public.
+name: Transport check
+
+on:
+  push:
+    branches-ignore: [ main ]
+    paths:
+      - 'tool/playback/transport_check.py'
+      - '.github/workflows/transport-check.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Tools (tshark reads the capture)
+        run: |
+          echo 'wireshark-common wireshark-common/install-setuid boolean false' | sudo debconf-set-selections
+          sudo DEBIAN_FRONTEND=noninteractive apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq tshark dnsutils tcpdump > /dev/null
+          openssl version; tshark --version | head -1
+      - name: Transport check
+        env:
+          SB_URL: ${{ secrets.SUPABASE_URL }}
+          # The publishable key. Not a secret — it ships in every APK.
+          SB_KEY: sb_publishable_vTiAxBAhnZL_BqFcZD4m9A_Rb8Q8PHj
+        run: python3 tool/playback/transport_check.py

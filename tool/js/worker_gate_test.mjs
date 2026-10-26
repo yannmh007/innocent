@@ -104,13 +104,13 @@ const INSTALL = '8c2b5f0e-0d4b-4f1a-9e3a-6b7c8d9e0f1a';
 const D = await mint.sha256Hex(INSTALL, 32);
 const U = await mint.sha256Hex('11111111-2222-3333-4444-555555555555', 16);
 
-async function ask({ who = {}, headers = {}, env = {}, path } = {}) {
+async function ask({ who = {}, headers = {}, env = {}, path, cf } = {}) {
   const url = path ?? (await mint.workerUrl(KEY, who)).replace('https://s.example.workers.dev', 'https://w.example');
   const before = logged.length;
-  const res = await worker.fetch(
-    new Request(url, { headers: { Range: 'bytes=1000-1999', ...headers } }),
-    { TOKEN_SECRET: SECRET, MEDIA, EDGE_BLOCK_BYTES: '0', ...env },
-    {});
+  const req = new Request(url, { headers: { Range: 'bytes=1000-1999', ...headers } });
+  // What Cloudflare's edge attaches; a plain Request has none.
+  if (cf) Object.defineProperty(req, 'cf', { value: cf });
+  const res = await worker.fetch(req, { TOKEN_SECRET: SECRET, MEDIA, EDGE_BLOCK_BYTES: '0', ...env }, {});
   const body = res.status === 206 ? new Uint8Array(await res.arrayBuffer()) : null;
   return { res, body, log: logged.slice(before).map((l) => JSON.parse(l)) };
 }
@@ -199,6 +199,33 @@ for (const [label, headers, want] of [
     (await whole.arrayBuffer()).byteLength === FILM.length);
   const noSecret = await worker.fetch(new Request('https://w.example/v/x'), { MEDIA }, {});
   check('no TOKEN_SECRET: closed', noSecret.status === 404);
+}
+
+// 8. Nothing in the clear, nothing over old TLS (2026-10-26): workers.dev
+// runs the Worker for plain HTTP too, and its edge still takes TLS 1.0/1.1.
+// Both are refused before the token is read; the app's TLS 1.3 plays; and
+// no answer carries R2's ETag (the film's MD5, the same for every viewer).
+{
+  const good = await ask({ who: { u: U, d: D } });
+  check('a 206 carries no ETag', good.res.status === 206 && !good.res.headers.has('ETag'));
+  const r0 = reads;
+  const clearUrl = (await mint.workerUrl(KEY, { u: U, d: D }))
+    .replace('https://s.example.workers.dev', 'http://w.example');
+  const clear = await ask({ path: clearUrl });
+  check('a real token over plain HTTP: the same 404, the bucket not read',
+    clear.res.status === 404 && (await clear.res.text()) === 'Not found' && reads === r0);
+  check('and logged as plain_http', clear.log.some((l) => l.refusal === 'plain_http'));
+  const health = await worker.fetch(new Request('http://w.example/health'), { TOKEN_SECRET: SECRET, MEDIA }, {});
+  check('/health is not answered over plain HTTP either', health.status === 404);
+  for (const v of ['TLSv1', 'TLSv1.1']) {
+    const old = await ask({ who: { u: U, d: D }, cf: { tlsVersion: v } });
+    check(`a real token over ${v}: refused, the bucket not read`, old.res.status === 404 && reads === r0);
+    check(`and logged as old_tls ${v}`, old.log.some((l) => l.refusal === 'old_tls' && l.tls === v));
+  }
+  for (const v of ['TLSv1.2', 'TLSv1.3']) {
+    const ok = await ask({ who: { u: U, d: D }, cf: { tlsVersion: v } });
+    check(`${v}: plays`, ok.res.status === 206 && rightBytes(ok.body));
+  }
 }
 
 // 7. What is deployed: fan-out off, the bind check refusing (since

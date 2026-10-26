@@ -146,6 +146,14 @@ jobs:
             none|emulated) echo "camera=${EMU_CAMERA:-none}" >> "$GITHUB_OUTPUT" ;;
             *) echo "::error::EMU_CAMERA must be none or emulated"; exit 1 ;;
           esac
+          # A man in the middle (config.env MITM=on, flow `mitm`): every
+          # connection the emulator opens goes through mitmproxy on this
+          # runner — see the step below and run.sh.
+          case "${MITM:-}" in
+            on) echo "proxy=-http-proxy http://127.0.0.1:8080" >> "$GITHUB_OUTPUT" ;;
+            '') echo "proxy=" >> "$GITHUB_OUTPUT" ;;
+            *) echo "::error::MITM must be on or empty"; exit 1 ;;
+          esac
           if [ "${APK_SOURCE:-lab}" = release ]; then
             tag="$APK_TAG"
             if [ "$tag" = latest ]; then
@@ -283,6 +291,22 @@ jobs:
           curl -fsSL "https://get.maestro.mobile.dev" | bash
           "$HOME/.maestro/bin/maestro" --version
 
+      # THE MAN IN THE MIDDLE, started before the emulator so its first
+      # connection already meets it. It keeps no traffic: its addon writes
+      # only which service, refused or accepted, and for what it could read
+      # the kind of path and the header names (tool/netlab/mitm_watch.py).
+      - name: Start the interceptor (MITM=on)
+        run: |
+          source test_device/config.env
+          [ "${MITM:-}" = on ] || { echo "no interceptor this run"; exit 0; }
+          python3 -m pip install --quiet --user mitmproxy==11.0.2
+          mkdir -p out
+          MITM_EVENTS="$PWD/out/mitm_events.jsonl" nohup "$HOME/.local/bin/mitmdump" \
+            --listen-host 127.0.0.1 --listen-port 8080 -q \
+            -s tool/netlab/mitm_watch.py > "$RUNNER_TEMP/mitmdump.txt" 2>&1 &
+          for i in $(seq 30); do [ -f "$HOME/.mitmproxy/mitmproxy-ca-cert.pem" ] && break; sleep 1; done
+          ls -la "$HOME/.mitmproxy/"
+
       - name: Boot the emulator and run
         uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2
         env:
@@ -295,7 +319,7 @@ jobs:
           profile: ${{ steps.apk.outputs.profile }}
           ram-size: 4096M
           disk-size: 6G
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back ${{ steps.apk.outputs.camera }}
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back ${{ steps.apk.outputs.camera }} ${{ steps.apk.outputs.proxy }}
           disable-animations: true
           script: bash test_device/run.sh
 

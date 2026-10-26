@@ -376,6 +376,61 @@ for flow in $FLOWS; do
     continue
     ;;
   esac
+  # A MAN IN THE MIDDLE (2026-10-26). The emulator was started behind
+  # mitmproxy (MITM=on in config.env, `-http-proxy` in device-lab.yml), so
+  # every connection the app opens reaches the proxy, which answers with a
+  # certificate of its own. The test film is opened twice:
+  #   A  the proxy on the path only — a hostile Wi-Fi, a tapped line;
+  #   B  its CA also in the phone's USER certificate store — where a profile
+  #      a viewer is talked into installing, or a company's, would put it.
+  # tool/netlab/mitm_watch.py writes what the proxy got: refused, accepted,
+  # and for what it could read only the kind of path and the header NAMES.
+  case "$flow" in mitm)
+    EV="$OUT/mitm_events.jsonl"
+    if [ "${MITM:-}" != on ] || [ ! -f "$HOME/.mitmproxy/mitmproxy-ca-cert.pem" ]; then
+      log "flow mitm: the emulator is not behind the interceptor (MITM=on) — skipped"; continue
+    fi
+    CA="$HOME/.mitmproxy/mitmproxy-ca-cert.pem"
+    H=$(openssl x509 -inform PEM -subject_hash_old -in "$CA" | head -1)
+    # The proxy really reads what it is trusted for: the host asks Supabase
+    # through it once without its certificate (refused) and once with it.
+    echo '{"ev":"stage","stage":"control"}' >> "$EV"
+    nc=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 20 --proxy http://127.0.0.1:8080 \
+      https://yqonvmuiezqvyqmexrft.supabase.co/rest/v1/ 2>&1 | tail -c 80)
+    wc=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 20 --proxy http://127.0.0.1:8080 --cacert "$CA" \
+      https://yqonvmuiezqvyqmexrft.supabase.co/rest/v1/ 2>&1 | tail -c 80)
+    log "mitm control: curl without the proxy's CA: $nc | with it: $wc"
+    d="/sdcard/Android/data/$PKG/files"
+    open_film() { # $1 = stage
+      adb shell am force-stop "$PKG"
+      adb shell pm clear "$PKG" >/dev/null 2>&1 || true
+      adb shell mkdir -p "$d" >/dev/null 2>&1
+      adb shell "echo title:$CLIMB_TITLE > $d/lab_stream_url"
+      echo "{\"ev\":\"stage\",\"stage\":\"$1\"}" >> "$EV"
+      adb shell log -p i -t flutter "LAB mitm stage $1" >/dev/null 2>&1 || true
+      log "mitm $1: the test film opened"
+      adb shell am start -W -n "$PKG/.MainActivity" >/dev/null 2>&1
+      sleep "${MITM_STAGE_S:-50}"
+      adb exec-out screencap -p > "$OUT/shots/95_mitm_$1.png"
+    }
+    open_film A
+    # B: as Settings → Install certificate → CA certificate files it.
+    adb root >/dev/null 2>&1; sleep 3; adb wait-for-device
+    adb push "$CA" "/data/local/tmp/$H.0" >/dev/null 2>&1
+    adb shell "mkdir -p /data/misc/user/0/cacerts-added && cp /data/local/tmp/$H.0 /data/misc/user/0/cacerts-added/ \
+      && chown system:system /data/misc/user/0/cacerts-added/$H.0 && chmod 644 /data/misc/user/0/cacerts-added/$H.0 \
+      && restorecon -R /data/misc/user/0/cacerts-added" >/dev/null 2>&1
+    log "mitm B: user store now holds $(adb shell ls /data/misc/user/0/cacerts-added 2>/dev/null | tr -d '\r' | wc -l) certificate(s)"
+    open_film B
+    adb shell "rm -f /data/misc/user/0/cacerts-added/$H.0"
+    adb shell am force-stop "$PKG"
+    adb shell rm -f "$d/lab_stream_url" >/dev/null 2>&1 || true
+    python3 test_device/mitm_summary.py "$EV" "$OUT/logcat_raw.txt" | tee "$OUT/mitm.txt"
+    adb shell log -p i -t flutter "LAB phase $flow end" >/dev/null 2>&1 || true
+    log "flow $flow done"
+    continue
+    ;;
+  esac
   # TEST LAB'S LAUNCH, ON THE EMULATOR. Test Lab starts a lab APK with the
   # game-loop intent (scenario 3 = a catalogue title) and on two real phones
   # the film never reached the screen (run 37967931084) while the launch-time

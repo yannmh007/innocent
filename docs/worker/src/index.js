@@ -91,6 +91,11 @@ import { WorkerEntrypoint } from 'cloudflare:workers';
 /// at a path no client can reach. That is a different door.)
 const TO_PLAYER = 'private, no-store';
 
+/// The TLS versions a request may arrive over (`request.cf.tlsVersion`).
+/// Every phone that runs the app speaks 1.3; 1.2 stays for anything else of
+/// ours. 1.0 and 1.1 were retired by RFC 8996.
+const MODERN_TLS = new Set(['TLSv1.2', 'TLSv1.3']);
+
 /// The one page allowed to read a response from here with JavaScript.
 ///
 /// WHY A VIDEO WORKER NEEDS CORS AT ALL. It does not, for playback: a
@@ -720,6 +725,21 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
+    // NOTHING IN THE CLEAR, NOTHING OVER OLD TLS (2026-10-26). workers.dev
+    // runs this Worker for plain-HTTP requests too, and Cloudflare's edge
+    // there still takes TLS 1.0 and 1.1; the transport check
+    // (tool/playback/transport_check.py) found both. The app never asks
+    // either way — it gets https:// addresses over TLS 1.3 — but a token
+    // that ever arrived over plain HTTP would have been checked and its
+    // film served in the clear. Refused before the token is read, with the
+    // same bare 404 as every refusal; the log says which.
+    const tls = request.cf && request.cf.tlsVersion;
+    if (url.protocol !== 'https:' || (tls && !MODERN_TLS.has(tls))) {
+      console.log(JSON.stringify({
+        refusal: url.protocol !== 'https:' ? 'plain_http' : 'old_tls', tls: tls || null }));
+      return refuse();
+    }
+
     // ANSWERED BEFORE THE SECRET IS CHECKED, and that order is the point.
     //
     // The first version put this after the guard below, so a Worker with no
@@ -868,7 +888,10 @@ export default {
 
     const headers = new Headers(corsFor(request));
     object.writeHttpMetadata(headers);
-    headers.set('ETag', object.httpEtag);
+    // NO ETag (2026-10-26). R2's is the object's MD5: the same for every
+    // viewer and every token, so two copied answers could be matched to one
+    // film by it. Nothing of ours revalidates (every answer is no-store).
+    headers.delete('ETag');
     headers.set('Accept-Ranges', 'bytes');
     if (edgeOff) headers.set('X-Edge', `off; ${edgeOff}`);
     if (bind !== 'none') headers.set('X-Bind', bind);
