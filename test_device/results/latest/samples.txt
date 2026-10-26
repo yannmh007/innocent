@@ -1,75 +1,125 @@
-1793042410 rx=221501 cpu_res=none batt_temp=250
-1793042413 rx=305952 cpu_res=none batt_temp=250
-1793042415 rx=392752 cpu_res=none batt_temp=250
-1793042417 rx=423917 cpu_res=none batt_temp=250
-1793042420 rx=541718 cpu_res=none batt_temp=250
-1793042422 rx=596588 cpu_res=none batt_temp=250
-1793042424 rx=654772 cpu_res=none batt_temp=250
-1793042426 rx=685550 cpu_res=none batt_temp=250
-1793042429 rx=789001 cpu_res=none batt_temp=250
-1793042431 rx=795736 cpu_res=none batt_temp=250
-1793042434 rx=828136 cpu_res=none batt_temp=250
-1793042436 rx=869203 cpu_res=0.0 3.3M batt_temp=250
-1793042439 rx=896545 cpu_res=104 46M batt_temp=250
-1793042441 rx=942798 cpu_res=4.0 250M batt_temp=250
-1793042443 rx=969155 cpu_res=0.0 249M batt_temp=250
-1793042445 rx=1015898 cpu_res=100 44M batt_temp=250
-1793042448 rx=1031376 cpu_res=0.0 252M batt_temp=250
-1793042450 rx=1049987 cpu_res=0.0 3.4M batt_temp=250
-1793042453 rx=1075464 cpu_res=23.0 46M batt_temp=250
-1793042456 rx=1101040 cpu_res=36.0 259M batt_temp=250
-1793042458 rx=1135700 cpu_res=26.9 259M batt_temp=250
-1793042461 rx=1157904 cpu_res=31.0 247M batt_temp=250
-1793042464 rx=1162342 cpu_res=25.0 247M batt_temp=250
-1793042466 rx=1187198 cpu_res=40.0 45M batt_temp=250
-1793042469 rx=1201089 cpu_res=14.2 247M batt_temp=250
-1793042472 rx=1202491 cpu_res=14.8 247M batt_temp=250
-1793042474 rx=1224099 cpu_res=13.7 248M batt_temp=250
-1793042477 rx=1273371 cpu_res=48.1 249M batt_temp=250
-1793042480 rx=1293452 cpu_res=46.4 248M batt_temp=250
-1793042482 rx=1309292 cpu_res=30.7 247M batt_temp=250
-1793042485 rx=1325210 cpu_res=23.0 247M batt_temp=250
-1793042488 rx=1352069 cpu_res=36.0 243M batt_temp=250
-1793042490 rx=1377138 cpu_res=25.0 244M batt_temp=250
-1793042493 rx=1377472 cpu_res=26.9 247M batt_temp=250
-1793042496 rx=1395256 cpu_res=46.1 247M batt_temp=250
-1793042498 rx=1395906 cpu_res=40.7 244M batt_temp=250
-1793042501 rx=1396412 cpu_res=38.4 247M batt_temp=250
-1793042503 rx=0 cpu_res=none batt_temp=?
-1793042505 rx=1397042 cpu_res=56.6 248M batt_temp=250
-1793042508 rx=1397392 cpu_res=none batt_temp=250
-1793042511 rx=1401392 cpu_res=18.7 26M batt_temp=250
-1793042514 rx=1410590 cpu_res=22.5 50M batt_temp=250
-1793042516 rx=1421733 cpu_res=50.0 259M batt_temp=250
-1793042519 rx=1425343 cpu_res=61.5 244M batt_temp=250
-1793042521 rx=1425697 cpu_res=29.6 246M batt_temp=250
-1793042524 rx=1437376 cpu_res=38.4 51M batt_temp=250
-1793042527 rx=1444006 cpu_res=38.4 246M batt_temp=250
-1793042529 rx=1444006 cpu_res=44.4 246M batt_temp=250
-1793042532 rx=1451189 cpu_res=48.2 246M batt_temp=250
-1793042535 rx=1471449 cpu_res=29.6 247M batt_temp=250
-1793042593 rx=0 cpu_res=none batt_temp=?
-1793042595 rx=0 cpu_res=none batt_temp=?
-1793042597 rx=0 cpu_res=none batt_temp=?
-1793042599 rx=0 cpu_res=none batt_temp=?
-1793042601 rx=0 cpu_res=none batt_temp=?
-1793042603 rx=0 cpu_res=none batt_temp=?
-1793042605 rx=0 cpu_res=none batt_temp=?
-1793042607 rx=0 cpu_res=none batt_temp=?
-1793042609 rx=0 cpu_res=none batt_temp=?
-1793042611 rx=0 cpu_res=none batt_temp=?
-1793042613 rx=0 cpu_res=none batt_temp=?
-1793042615 rx=0 cpu_res=none batt_temp=?
-1793042617 rx=0 cpu_res=none batt_temp=?
-1793042619 rx=0 cpu_res=none batt_temp=?
-1793042621 rx=0 cpu_res=none batt_temp=?
-1793042623 rx=0 cpu_res=none batt_temp=?
-1793042625 rx=0 cpu_res=none batt_temp=?
-1793042627 rx=0 cpu_res=none batt_temp=?
-1793042629 rx=0 cpu_res=none batt_temp=?
-1793042631 rx=0 cpu_res=none batt_temp=?
-1793042633 rx=0 cpu_res=none batt_temp=?
-1793042635 rx=0 cpu_res=none batt_temp=?
-1793042637 rx=0 cpu_res=none batt_temp=?
-1793042639 rx=0 cpu_res=none batt_temp=?
-1793042641 rx=0 cpu_res=none batt_temp=?
+1793043064 rx=20664554 cpu_res=none batt_temp=250
+1793043067 rx=36359636 cpu_res=none batt_temp=250
+1793043069 rx=59385912 cpu_res=none batt_temp=250
+1793043072 rx=70483521 cpu_res=none batt_temp=250
+1793043074 rx=77125045 cpu_res=none batt_temp=250
+1793043076 rx=77852543 cpu_res=none batt_temp=250
+1793043079 rx=99035926 cpu_res=none batt_temp=250
+1793043081 rx=101560978 cpu_res=none batt_temp=250
+1793043084 rx=110783466 cpu_res=none batt_temp=250
+1793043086 rx=110872919 cpu_res=none batt_temp=250
+1793043088 rx=110873452 cpu_res=none batt_temp=250
+1793043091 rx=110890978 cpu_res=none batt_temp=250
+1793043093 rx=110997296 cpu_res=none batt_temp=250
+1793043096 rx=111027363 cpu_res=none batt_temp=250
+1793043098 rx=111388860 cpu_res=none batt_temp=250
+1793043100 rx=111634723 cpu_res=none batt_temp=250
+1793043102 rx=111634863 cpu_res=none batt_temp=250
+1793043105 rx=111635073 cpu_res=none batt_temp=250
+1793043107 rx=111635213 cpu_res=none batt_temp=250
+1793043109 rx=111635917 cpu_res=none batt_temp=250
+1793043112 rx=111641190 cpu_res=none batt_temp=250
+1793043114 rx=111661007 cpu_res=none batt_temp=250
+1793043116 rx=111661147 cpu_res=none batt_temp=250
+1793043119 rx=111661287 cpu_res=none batt_temp=250
+1793043121 rx=111661787 cpu_res=88.4 24M batt_temp=250
+1793043123 rx=114896813 cpu_res=0.0 259M batt_temp=250
+1793043126 rx=114897017 cpu_res=0.0 261M batt_temp=250
+1793043128 rx=114897157 cpu_res=0.0 261M batt_temp=250
+1793043130 rx=114897297 cpu_res=0.0 265M batt_temp=250
+1793043133 rx=114902720 cpu_res=0.0 3.4M batt_temp=250
+1793043135 rx=132232627 cpu_res=53.8 18M batt_temp=250
+1793043138 rx=141720263 cpu_res=23.0 273M batt_temp=250
+1793043141 rx=153840542 cpu_res=42.3 282M batt_temp=250
+1793043143 rx=163288127 cpu_res=47.0 280M batt_temp=250
+1793043146 rx=172397177 cpu_res=30.7 281M batt_temp=250
+1793043149 rx=177009849 cpu_res=85.1 287M batt_temp=250
+1793043151 rx=180058999 cpu_res=25.9 281M batt_temp=250
+1793043154 rx=182347009 cpu_res=19.2 282M batt_temp=250
+1793043157 rx=184270787 cpu_res=28.1 286M batt_temp=250
+1793043159 rx=185624637 cpu_res=57.6 277M batt_temp=250
+1793043162 rx=187518183 cpu_res=46.4 281M batt_temp=250
+1793043165 rx=189090887 cpu_res=46.1 285M batt_temp=250
+1793043167 rx=192526649 cpu_res=40.0 283M batt_temp=250
+1793043170 rx=195060802 cpu_res=51.7 283M batt_temp=250
+1793043172 rx=197938340 cpu_res=46.6 285M batt_temp=250
+1793043175 rx=199809438 cpu_res=57.6 290M batt_temp=250
+1793043178 rx=201703280 cpu_res=70.3 277M batt_temp=250
+1793043180 rx=205953516 cpu_res=51.8 290M batt_temp=250
+1793043183 rx=208225336 cpu_res=57.6 285M batt_temp=250
+1793043186 rx=212586586 cpu_res=48.0 296M batt_temp=250
+1793043188 rx=217042035 cpu_res=50.0 290M batt_temp=250
+1793043191 rx=220467335 cpu_res=46.6 293M batt_temp=250
+1793043193 rx=223920041 cpu_res=39.2 295M batt_temp=250
+1793043196 rx=234865845 cpu_res=30.7 298M batt_temp=250
+1793043199 rx=240838256 cpu_res=36.0 298M batt_temp=250
+1793043201 rx=241335851 cpu_res=34.3 284M batt_temp=250
+1793043204 rx=245333887 cpu_res=53.8 293M batt_temp=250
+1793043207 rx=249663109 cpu_res=34.6 291M batt_temp=250
+1793043209 rx=254022483 cpu_res=42.8 286M batt_temp=250
+1793043212 rx=258181593 cpu_res=42.3 283M batt_temp=250
+1793043214 rx=260715897 cpu_res=41.3 292M batt_temp=250
+1793043217 rx=264869175 cpu_res=50.0 286M batt_temp=250
+1793043220 rx=268050218 cpu_res=32.1 283M batt_temp=250
+1793043222 rx=271614463 cpu_res=37.9 286M batt_temp=250
+1793043225 rx=275557119 cpu_res=65.3 285M batt_temp=250
+1793043228 rx=279108687 cpu_res=56.6 288M batt_temp=250
+1793043230 rx=283526609 cpu_res=55.1 286M batt_temp=250
+1793043233 rx=287846853 cpu_res=33.3 291M batt_temp=250
+1793043236 rx=291231831 cpu_res=40.0 291M batt_temp=250
+1793043238 rx=295395020 cpu_res=50.0 299M batt_temp=250
+1793043241 rx=298312581 cpu_res=42.3 288M batt_temp=250
+1793043243 rx=302130339 cpu_res=48.1 294M batt_temp=250
+1793043246 rx=305739051 cpu_res=40.7 302M batt_temp=250
+1793043248 rx=308984297 cpu_res=55.1 302M batt_temp=250
+1793043251 rx=312798663 cpu_res=40.7 295M batt_temp=250
+1793043254 rx=316029565 cpu_res=42.8 291M batt_temp=250
+1793043257 rx=319462659 cpu_res=51.8 293M batt_temp=250
+1793043259 rx=322578711 cpu_res=50.0 289M batt_temp=250
+1793043262 rx=325788799 cpu_res=38.4 295M batt_temp=250
+1793043265 rx=328291610 cpu_res=33.3 294M batt_temp=250
+1793043267 rx=330471354 cpu_res=36.0 283M batt_temp=250
+1793043269 rx=341370622 cpu_res=12.0 293M batt_temp=250
+1793043272 rx=352269480 cpu_res=36.0 293M batt_temp=250
+1793043274 rx=363168428 cpu_res=56.0 301M batt_temp=250
+1793043276 rx=371887364 cpu_res=56.0 302M batt_temp=250
+1793043279 rx=378426674 cpu_res=42.3 302M batt_temp=250
+1793043281 rx=378426674 cpu_res=36.0 302M batt_temp=250
+1793043284 rx=378426674 cpu_res=25.0 299M batt_temp=250
+1793043287 rx=378426674 cpu_res=30.7 299M batt_temp=250
+1793043289 rx=378426674 cpu_res=38.4 299M batt_temp=250
+1793043291 rx=378426674 cpu_res=44.0 300M batt_temp=250
+1793043294 rx=378426674 cpu_res=26.9 297M batt_temp=250
+1793043296 rx=378426944 cpu_res=42.3 298M batt_temp=250
+1793043299 rx=378427322 cpu_res=33.3 293M batt_temp=250
+1793043302 rx=378427640 cpu_res=51.8 294M batt_temp=250
+1793043304 rx=378427910 cpu_res=34.6 298M batt_temp=250
+1793043307 rx=378429254 cpu_res=36.0 298M batt_temp=250
+1793043309 rx=378429254 cpu_res=29.6 298M batt_temp=250
+1793043312 rx=382790142 cpu_res=51.8 302M batt_temp=250
+1793043314 rx=389242023 cpu_res=46.1 307M batt_temp=250
+1793043317 rx=394747614 cpu_res=56.0 305M batt_temp=250
+1793043319 rx=400237222 cpu_res=55.1 304M batt_temp=250
+1793043322 rx=407224257 cpu_res=57.1 311M batt_temp=250
+1793043324 rx=413320943 cpu_res=43.3 307M batt_temp=250
+1793043327 rx=419436716 cpu_res=50.0 307M batt_temp=250
+1793043330 rx=424402755 cpu_res=57.1 307M batt_temp=250
+1793043332 rx=429754770 cpu_res=61.5 313M batt_temp=250
+1793043335 rx=435118935 cpu_res=51.8 307M batt_temp=250
+1793043337 rx=440904702 cpu_res=51.8 304M batt_temp=250
+1793043340 rx=441658730 cpu_res=34.6 304M batt_temp=250
+1793043342 rx=441658730 cpu_res=38.4 304M batt_temp=250
+1793043345 rx=441658730 cpu_res=34.3 306M batt_temp=250
+1793043347 rx=441658730 cpu_res=30.7 306M batt_temp=250
+1793043350 rx=441658730 cpu_res=38.4 306M batt_temp=250
+1793043352 rx=441658730 cpu_res=38.4 307M batt_temp=250
+1793043355 rx=441658730 cpu_res=42.8 305M batt_temp=250
+1793043357 rx=441663573 cpu_res=36.3 305M batt_temp=250
+1793043360 rx=441663789 cpu_res=27.5 306M batt_temp=250
+1793043363 rx=441663853 cpu_res=50.0 306M batt_temp=250
+1793043365 rx=441664069 cpu_res=32.1 306M batt_temp=250
+1793043368 rx=441664069 cpu_res=44.4 306M batt_temp=250
+1793043370 rx=448018741 cpu_res=65.3 308M batt_temp=250
+1793043373 rx=454168704 cpu_res=61.5 308M batt_temp=250
+1793043375 rx=459548093 cpu_res=53.5 313M batt_temp=250
+1793043378 rx=465661825 cpu_res=none batt_temp=250

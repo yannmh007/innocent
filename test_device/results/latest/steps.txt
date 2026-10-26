@@ -1,20 +1,15 @@
-[19:19:59] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
-[19:19:59] install
-[19:20:10] network: speed full kbit/s, delay none ms
-[19:20:36] overlays: [x] com.android.internal.display.cutout.emulation.hole [x] com.android.internal.systemui.navbar.threebutton 
-[19:20:36] nav bar: navigationBars frame=[0,2274][1080,2400] navigationBars frame=[0,2274][1080,2400] 
-[19:20:36] cold start
+[19:30:52] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
+[19:30:52] install
+[19:31:04] network: speed full kbit/s, delay none ms
+[19:31:30] overlays: [x] com.android.internal.display.cutout.emulation.hole [x] com.android.internal.systemui.navbar.threebutton 
+[19:31:30] nav bar: navigationBars frame=[0,2274][1080,2400] navigationBars frame=[0,2274][1080,2400] 
+[19:31:30] library: pushing 24 files
+[19:31:59] library: MediaStore lists 24 videos
+[19:31:59] cold start
 Status: ok
-TotalTime: 1875
-WaitTime: 1878
-[19:20:48] flow mitm
-[19:20:48] mitm control: curl without the proxy's CA: this situation and
-how to fix it, please visit the web page mentioned above.
-000 | with it: 401
-[19:20:49] mitm A: the test film opened
-[19:21:46] mitm B: user store now holds 1 certificate(s)
-[19:21:48] mitm B: the test film opened
-[19:23:13] mitm C: system store now holds the proxy's CA: 
-[19:23:13] mitm C: the test film opened
-[19:24:03] flow mitm done
-[19:24:05] done
+TotalTime: 1629
+WaitTime: 1636
+[19:32:10] flow jumps
+[19:32:11] jumps: 0839dacb-59ae-4c95-9279-4901b925965d, the viewer's jumps, 240 s, home after 130 s
+[19:36:18] flow jumps done
+[19:36:22] done
