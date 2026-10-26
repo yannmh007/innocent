@@ -321,6 +321,23 @@ bucket, not the films'); a domain of our own replaces both (Phase 2).
 Hiding the service from its own host is not an aim (§2, and
 `docs/security.md` §4).
 
+## 8. Four further measures, weighed (2026-10-26)
+
+Suggested to the owner by another assistant, against scrapers that drive
+headless browsers. Each was weighed for what it adds here, on this stack.
+
+| measure | what it would add | verdict |
+|---|---|---|
+| JA3/JA4 TLS fingerprints | Cloudflare exposes them only with Bot Management, an Enterprise add-on: not on the Free plan, not on `workers.dev`. As a gate it is brittle: the app's own fingerprint changes with Flutter's TLS library, and Cloudflare itself moved to JA4 when browsers began shuffling their TLS extensions | not available; revisit with Bot Management |
+| request signing with a key in the app (HMAC) | a key in the APK is in every copy of the APK and can be read out of it. What is here is stronger: the server mints each token after its own checks, sealed (AES-256-GCM), for 10 minutes, bound to the install. The real step up is a key the phone cannot give away, Android key attestation (Phase 2) | not done; key attestation recorded |
+| behaviour analysis and rate limits | Bot Management is Enterprise; Bot Fight Mode and a WAF rate rule need a domain of our own (Phase 2). Already live: grant budgets per install, account and network (enforced), the Worker's per-install ceiling (log mode, §6 step 3) | Phase 2; the ceiling to "enforce" when the log allows |
+| HLS with AES-128 segments | the key has to reach every player, so whoever can play can decrypt; it only protects a segment copied without its key, which the tokens already prevent. Not DRM | not done; Widevine is the real one (Phase 3) |
+
+What a headless browser meets here: there is no website to crawl for
+films. Every byte needs a grant from `request-playback`, which checks the
+title, the account's tier, the device slots and the budgets, and every
+grant is a sealed, short-lived, install-bound token.
+
 ## Sources
 
 * Cloudflare: [R2 pricing](https://developers.cloudflare.com/r2/pricing/),
