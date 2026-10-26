@@ -53,6 +53,40 @@ what was checked, what was fixed, and what is left, with the reason.
 
 ## Released
 
+**1.64.75 (388), 25 October 2026** — main `78b6642`, release
+`v1.64.75-388`, both APKs on the CDN and with a GitHub mirror, attested.
+`app_releases` was updated on 26 October at 03:01 UTC with every field,
+and both pairs were hashed again here from the release's own files:
+96,167,981 bytes `62da6059…`, and arm32 88,130,317 bytes `8ebe103b…`.
+Migration 050 would have refused the 1.64.74 mistake. What changed:
+- the Original plays on ExoPlayer as a progressive MP4 through the local
+  proxy, with libmpv as the fallback, so a change to or from it no longer
+  swaps engines (5-6 s on the real phones);
+- a film that stalls is still playing, so a quality change during a stall
+  no longer reopens it paused;
+- choosing a quality waits up to 8 s for a reconnect or climb already
+  under way instead of refusing, and steers the ladder directly when the
+  renewer is not there. This fixes "Could not switch quality" on Tears of
+  Steel;
+- player messages are a dark pill near the top, never over the seek bar
+  or the buttons, and the app's SnackBars are dark and floating;
+- the quality chip says what Auto is showing ("Auto · 480p").
+
+The Worker went out with it. `BIND_MODE = "enforce"` was deployed by
+Workers Builds at 18:23 UTC. Three days of logs had shown 3,744 `ok` and
+2 `missing`, both from a Windows browser on one admin account and none
+from the app. Playback check run 40221423041 (Sintel) then proved it live:
+`/health` says `bind=enforce`, and the right install and an unbound token
+play (206). No header and another install's header get the bare 404 with
+`no-store`, before a byte is read.
+
+Checked before it shipped:
+- device lab runs 40184478393 (Tears of Steel, 15 of 15), 40186513057
+  (a 4G line, 17 of 17) and 40192338478 (16 of 17: the Original on a line
+  slower than its bitrate);
+- Test Lab run 40194697661: the OPPO 16 of 16, the realme 15 of 16 (the
+  same Original on a 7.5 Mbps line). `bind ok` on every fetch, no crash.
+
 **1.64.74 (387), 25 October 2026** — main `ec18e35`, release
 `v1.64.74-387`, both APKs on the CDN and with a GitHub mirror, attested,
 `app_releases` updated. What changed:
