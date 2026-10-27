@@ -13,6 +13,7 @@ import '../../../../core/services/network/throughput_memory.dart';
 import '../../domain/cmaf_index.dart';
 import '../../domain/hls_ladder.dart';
 import '../api/ranged_fetch.dart';
+import '../rate_limited.dart';
 import '../stream_door.dart';
 import 'stream_cache_store.dart';
 
@@ -1554,6 +1555,12 @@ class StreamCacheServer {
           if (!await _refresh(src)) return null;
           continue;
         }
+        // Asked to slow down: wait as long as the server said, then ask
+        // again ([RateLimited]) — a pause, not a failed part.
+        if (code == RateLimited.status) {
+          await RateLimited.pause(resp.headers.value('retry-after'));
+          continue;
+        }
         if (code >= 500) continue;
         return null;
       } catch (e) {
@@ -1702,6 +1709,10 @@ class StreamCacheServer {
         if (code == 403 || code == 404 || code == 410) {
           if (await _refresh(src)) continue;
         }
+        if (code == RateLimited.status) {
+          await RateLimited.pause(got.headers.value('retry-after'));
+          continue;
+        }
         return 0;
       } catch (e) {
         // Timed out part way: that connection is not going back to the pool.
@@ -1753,6 +1764,10 @@ class StreamCacheServer {
         // and belongs to the player.
         if (code == 403 || code == 404 || code == 410) {
           if (!await _refresh(src)) return null;
+          continue;
+        }
+        if (code == RateLimited.status) {
+          await RateLimited.pause(resp.headers.value('retry-after'));
           continue;
         }
         if (code >= 500) continue;
@@ -1985,6 +2000,12 @@ class StreamCacheServer {
             } on _LaneRefused catch (e) {
               if (!yielded && attempt == 0 && e.expired && await _refresh(src)) {
                 break stretch; // a fresh link: start the stretch again
+              }
+              // Asked to slow down before a byte went out: wait as the
+              // server said and start the stretch again ([RateLimited]).
+              if (!yielded && attempt == 0 && e.retryAfter != null) {
+                await RateLimited.pause(e.retryAfter);
+                break stretch;
               }
               rethrow;
             }
@@ -2372,9 +2393,12 @@ class _Confirmed {
 /// A part refused by the server. [expired] is the 403 / 404 / 410 a stale
 /// signed link answers with.
 class _LaneRefused implements Exception {
-  _LaneRefused(this.message, {this.expired = false});
+  _LaneRefused(this.message, {this.expired = false, this.retryAfter});
   final String message;
   final bool expired;
+
+  /// Set for a 429: the server's `Retry-After` (empty when none).
+  final String? retryAfter;
   @override
   String toString() => '_LaneRefused: $message';
 }
@@ -2624,9 +2648,12 @@ class _LanePart {
     }
     final code = resp.statusCode;
     if (code != 206) {
+      final retryAfter = code == RateLimited.status
+          ? (resp.headers.value('retry-after') ?? '')
+          : null;
       _drop(resp);
       throw _LaneRefused('HTTP $code for a range',
-          expired: code == 403 || code == 404 || code == 410);
+          expired: code == 403 || code == 404 || code == 410, retryAfter: retryAfter);
     }
     final cr = resp.headers.value(HttpHeaders.contentRangeHeader) ?? '';
     if (!cr.startsWith('bytes $start-${end - 1}/$total')) {

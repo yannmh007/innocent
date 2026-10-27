@@ -41,9 +41,9 @@ const SERVICE_KEY = Deno.env.get('SB_SERVICE_KEY') ??
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 const URL_BASE = Deno.env.get('SUPABASE_URL') ?? '';
 
-/// Public bucket base. Kept in step with `public_asset_base()` in migration
-/// 006 - if the custom domain ever replaces r2.dev, both change together.
-const PUBLIC_BASE = 'https://pub-18c62521649645be87d4d36225021e15.r2.dev/';
+/// Public bucket base. Kept in step with `public_asset_base()` (migration
+/// 006, moved in 051): the bucket's own domain since 2026-10-27.
+const PUBLIC_BASE = 'https://cdn.innocentplayer.com/';
 
 const HEADER_BYTES = 65535;
 

@@ -171,7 +171,23 @@ log shows the phones in the field passing:
    `/health` now says `bind` and `limit`, so a deploy can be seen to have
    taken.
 3. When most phones run 1.64.70: lower the ceiling to ~200 in 10 s and
-   `LIMIT_MODE = "enforce"`.
+   `LIMIT_MODE = "enforce"`. **Held back (2026-10-27):** the field is
+   there (no version older than 1.64.70 seen since 23 October), but the
+   app does not yet wait out a 429: the stream proxy, the downloads and
+   the warm-up treat it as a failed part, so an enforced limit would show
+   as a stall instead of a pause. The zone's IP rule (400 in 10 s) has the
+   same edge, set high for that reason. **1.64.76 waits it out**
+   (`rate_limited.dart`): a 429's `Retry-After`, in seconds or as a date,
+   held to 1–15 s (10 s when it says nothing), then the same request again
+   — in the proxy's length probe, its pooled segment reads, its single
+   reads and the first part of a stretch (a later part ends the stretch,
+   and the next one starts with that wait), and in the downloader, whose
+   next pass waits that long instead of the network wait, which ends as
+   soon as DNS answers. The player's own read timeout is 30 s, so a
+   15-second wait is a pause, not an error. Pinned in
+   `test/rate_limited_test.dart`, `stream_cache_server_test.dart`,
+   `stream_cache_hls_test.dart` and `download_throughput_test.dart`. Once
+   1.64.76 is most of the field: enforce.
 4. When `min_supported` passes 1.64.70: bind every premium token, asked or
    not.
 
@@ -188,6 +204,28 @@ by `u` in the dashboard today; an automatic alert needs Logpush (paid) or a
 small Analytics Engine write per request, which is worth doing with Phase 2.
 
 ### Phase 2 — recorded for when a domain is bought
+
+**Under way since 2026-10-27, on innocentplayer.com** (Cloudflare
+Registrar, $10.46 a year; .com goes to $11.17 on 1 November 2026, and
+auto-renew is set for September 2027).
+
+| step | state |
+|---|---|
+| zone: minimum TLS 1.2, Always Use HTTPS, TLS 1.3, CT monitoring (email alerts) | done by the owner |
+| Bot Fight Mode **off**: on the Free plan it cannot be skipped by any rule and challenges app traffic, which cannot answer a challenge | kept off on purpose |
+| the Worker at `stream.innocentplayer.com` (custom domain, `wrangler.toml` `routes`) | live, main `724a879` |
+| `STREAM_BASE` (request-playback, probe-media, studio) moved to it | done by the owner; no app release: the app learns the origin from each grant |
+| WAF custom rules: only `/v/` and `/health`; only GET, HEAD, OPTIONS | live (403 in front of the Worker) |
+| rate-limiting rule: 400 requests per 10 s per IP on `/v/` (high, for mobile carrier NAT; the per-install ceiling is in the Worker) | live |
+| `workers_dev = false`: nothing reaches the Worker around those rules | main `b4b0481` |
+| photos, posters and the APK from `cdn.innocentplayer.com` (R2 custom domain, minimum TLS 1.2) | live 2026-10-27: the domain connected by the owner; ingest, studio and backfill-dimensions name it (`f30e874`); migration 051 moved `public_asset_base()`, the four stored posters and the release row in one transaction; no app release (every URL comes from the database) |
+| r2.dev off | done by the owner 2026-10-27, after the owner's phone drew the posters from the domain; the transport check now requires it off |
+| the Cache API instead of `Block` | when on Workers Paid |
+
+Proved on the domain: transport check 40479831081 (TLS 1.0/1.1 refused at
+the edge, http:// redirected, other methods and four scanner paths refused
+with 403 before the Worker, every token check and the packet capture as
+before), playback check 40479834765, device lab 40479838296.
 
 **Cost:** a `.com` through Cloudflare Registrar is sold at cost, about
 **USD 10–11 a year** (no markup on renewal). Everything else below is on

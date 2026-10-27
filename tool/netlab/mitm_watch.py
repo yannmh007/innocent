@@ -28,11 +28,11 @@ OUT = os.environ.get('MITM_EVENTS', '/tmp/mitm_events.jsonl')
 
 def kind(host):
     host = (host or '').lower().rstrip('.')
-    if host.endswith('.workers.dev'):
+    if host.endswith('.workers.dev') or host == 'stream.innocentplayer.com':
         return 'worker'
     if host.endswith('.supabase.co'):
         return 'supabase'
-    if host.endswith('.r2.dev'):
+    if host.endswith('.r2.dev') or host == 'cdn.innocentplayer.com':
         return 'cdn'
     if host.endswith(('.google.com', '.googleapis.com', '.gstatic.com', '.android.com',
                       '.googleusercontent.com', '.gvt1.com', '.gvt2.com', '.doubleclick.net')):

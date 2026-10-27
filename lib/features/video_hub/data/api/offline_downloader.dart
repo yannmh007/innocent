@@ -19,6 +19,7 @@ import '../../domain/transfer_rate.dart';
 import '../poster_cache.dart';
 import 'download_plan.dart';
 import 'ranged_fetch.dart';
+import '../rate_limited.dart';
 import 'offline_crypto.dart';
 import 'offline_library.dart';
 import '../stream_door.dart';
@@ -752,6 +753,11 @@ class OfflineDownloader {
     try {
       var failures = 0;
       var attempts = 0;
+      // What the last 429 asked for. See [RateLimited]: the Worker's ceiling
+      // is a pace, so the next attempt waits that long — and only that long —
+      // instead of the network wait, which ends the moment DNS answers and
+      // would come straight back into the same refusal.
+      Duration? holdOff;
       while (failures <= maxConsecutiveFailures && attempts < maxAttempts) {
         attempts++;
         if (_cancelled.contains(key)) return null;
@@ -811,7 +817,13 @@ class OfflineDownloader {
           return null;
         }
 
-        if (failures > 0) {
+        if (holdOff != null) {
+          final wait = holdOff;
+          holdOff = null;
+          PlaybackLog.add('dl 429: waiting ${wait.inSeconds} s');
+          await RateLimited.hold(wait);
+          if (_cancelled.contains(key)) return null;
+        } else if (failures > 0) {
           rate.reset();
           emit(OfflineProgress(
             key: key,
@@ -915,6 +927,9 @@ class OfflineDownloader {
         } else if (!resumed) {
           if (kDebugMode) {
             debugPrint('offline attempt: HTTP ${response.statusCode}');
+          }
+          if (response.statusCode == RateLimited.status) {
+            holdOff = RateLimited.waitFor(response.headers['retry-after']);
           }
           // Drain so the socket is reusable rather than left half-read.
           try {
@@ -1167,6 +1182,9 @@ class OfflineDownloader {
           // new one and carries on from the byte it reached.
           broke = true;
           if (e is RangedFetchException && e.refused) _rangesRefused.add(key);
+          if (e is RangedFetchException && e.retryAfter != null) {
+            holdOff = RateLimited.waitFor(e.retryAfter);
+          }
           if (kDebugMode) debugPrint('offline stream broke at $received: $e');
           PlaybackLog.add('dl broke: ${e.runtimeType}');
         } finally {

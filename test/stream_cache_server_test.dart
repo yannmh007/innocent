@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:innocent/core/services/network/foreground_stream.dart';
 import 'package:innocent/features/video_hub/data/cache/stream_cache_server.dart';
 import 'package:innocent/features/video_hub/data/device_identity.dart';
+import 'package:innocent/features/video_hub/data/rate_limited.dart';
 import 'package:innocent/features/video_hub/data/stream_door.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
@@ -53,6 +54,12 @@ class _Upstream {
   /// The install id each request carried (`X-Innocent-Device`), in order.
   final List<String?> devices = <String?>[];
   int _seq = 0;
+  /// Requests with a valid link, counted from 0 — those in [limitAt] are told
+  /// to slow down (429, `Retry-After: 3`) as the Worker does past its
+  /// ceiling, and counted in [limited].
+  int seen = 0;
+  final Set<int> limitAt = <int>{};
+  int limited = 0;
 
   String url(String token) => 'http://127.0.0.1:${server.port}/v/$token';
 
@@ -67,6 +74,13 @@ class _Upstream {
     if (!valid.contains(token)) {
       refused++;
       res.statusCode = 403;
+      await res.close();
+      return;
+    }
+    if (limitAt.contains(seen++)) {
+      limited++;
+      res.statusCode = 429;
+      res.headers.set(HttpHeaders.retryAfterHeader, '3');
       await res.close();
       return;
     }
@@ -207,6 +221,9 @@ void main() {
     up.requestPorts.clear();
     up.ranges.clear();
     up.ignoreRange = false;
+    up.seen = 0;
+    up.limitAt.clear();
+    up.limited = 0;
     up.valid
       ..clear()
       ..add('t1');
@@ -742,6 +759,56 @@ void main() {
     expect(got, up.body);
     expect(renewals, greaterThanOrEqualTo(1));
     StreamCacheServer.instance.release('film-c');
+  });
+
+  group('a 429 from the Worker', () {
+    final waits = <Duration>[];
+    setUp(() {
+      waits.clear();
+      RateLimited.sleep = (d) async => waits.add(d);
+    });
+    tearDown(() {
+      RateLimited.sleep = Future<void>.delayed;
+    });
+
+    test('before the first byte: waited out as asked, and the film arrives whole',
+        () async {
+      final local = await StreamCacheServer.instance.localUrlFor(
+          cacheId: 'film-429a', upstream: up.url('t1'), refresh: () async => null);
+      up.limitAt.addAll(<int>{up.seen, up.seen + 1});
+      final got = await _get(local!);
+      expect(got, up.body);
+      expect(up.limited, 2);
+      expect(waits, isNotEmpty);
+      expect(waits.every((d) => d == const Duration(seconds: 3)), isTrue,
+          reason: 'the server said three seconds: $waits');
+      StreamCacheServer.instance.release('film-429a');
+    });
+
+    test('part way through a film: the film still arrives byte for byte', () async {
+      final local = await StreamCacheServer.instance.localUrlFor(
+          cacheId: 'film-429b', upstream: up.url('t1'), refresh: () async => null);
+      up.limitAt.addAll(<int>{up.seen + 6, up.seen + 7, up.seen + 8});
+      final got = await _get(local!);
+      expect(got, up.body);
+      expect(up.limited, 3);
+      expect(waits.every((d) => d == const Duration(seconds: 3)), isTrue,
+          reason: 'the server said three seconds: $waits');
+      StreamCacheServer.instance.release('film-429b');
+    });
+
+    test('a seek answered 429 gets exactly its bytes once the wait is over',
+        () async {
+      final local = await StreamCacheServer.instance.localUrlFor(
+          cacheId: 'film-429c', upstream: up.url('t1'), refresh: () async => null);
+      up.limitAt.add(up.seen);
+      const from = 17 * mb + 3;
+      final got = await _get(local!, from: from, take: 2 * mb);
+      expect(got, Uint8List.sublistView(up.body, from, from + 2 * mb));
+      expect(up.limited, 1);
+      expect(waits, [const Duration(seconds: 3)]);
+      StreamCacheServer.instance.release('film-429c');
+    });
   });
 
   test('played again, it comes from the phone and not the network', () async {

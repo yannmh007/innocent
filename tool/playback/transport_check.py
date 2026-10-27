@@ -21,15 +21,24 @@ what it found and a verdict; the run fails if a verdict is BAD.
      which names are visible (DNS, SNI), and whether the hosts offer
      Encrypted Client Hello.
   6. Expiry: the same token, 10 minutes and 10 seconds later.
+  7. Public files (posters, photos, the APK) on the bucket's own domain:
+     the APK's fingerprint as the release row states it, no writes, no
+     listing, and the r2.dev development URL off (since 2026-10-27; until
+     then the two were compared byte for byte). Printed before the
+     10-minute wait of 6.
 
 NEVER PRINTS a token, a token URL, the device id or the Worker's host: this
 log is public. The Worker's host is masked for the runner's log too.
 """
-import json, os, re, socket, ssl, subprocess, sys, time, urllib.error, urllib.parse, urllib.request, uuid
+import hashlib, json, os, re, socket, ssl, subprocess, sys, time, urllib.error, urllib.parse, urllib.request, uuid
 
 UA = 'innocent-transport-check/1'
 SINTEL = '0839dacb-59ae-4c95-9279-4901b925965d'
-CDN = 'pub-18c62521649645be87d4d36225021e15.r2.dev'
+# The public bucket: its own domain since 2026-10-27, and the r2.dev
+# development URL it replaced, which stays off: rate-limited, outside the
+# zone's rules, and a second address for the same files.
+CDN = 'cdn.innocentplayer.com'
+DEV_CDN = 'pub-18c62521649645be87d4d36225021e15.r2.dev'
 
 bad = 0
 
@@ -252,6 +261,42 @@ print('  DNS questions:', sorted(set(label_of(n.rstrip('.')) for n in dns.split(
 for lab, host in hosts.items():
     _, out, _ = run(['dig', '+short', 'HTTPS', host], 20)
     print(f"  {lab:<9} DNS HTTPS record: {'ech= present' if 'ech=' in out else ('present, no ech' if out.strip() else 'none')}")
+
+# ── 7. Public files on our own domain ─────────────────────────────────────
+print('\n== 7. Posters, photos and the APK on ' + CDN)
+read = {'apikey': key, 'Authorization': f'Bearer {key}'}
+st, _, raw = http(f'{sb}/rest/v1/titles?id=eq.{SINTEL}&select=poster_url', headers=read)
+poster = (json.loads(raw or b'[]') or [{}])[0].get('poster_url') or ''
+st, _, raw = http(f'{sb}/rest/v1/app_releases?select=apk_url,apk_bytes,apk_sha256&order=version_code.desc&limit=1',
+                  headers=read)
+release = (json.loads(raw or b'[]') or [{}])[0]
+files = [('poster', urllib.parse.urlsplit(poster).path)] if poster else []
+if release.get('apk_url'):
+    files.append(('apk', urllib.parse.urlsplit(release['apk_url']).path))
+verdict(len(files) == 2, f'the test film\'s poster and the current APK are named ({len(files)} of 2)')
+for what, path in files:
+    st, h, body = http(f'https://{CDN}{path}', timeout=180)
+    digest = hashlib.sha256(body).hexdigest()
+    print(f'{what:<6} {CDN}: HTTP {st}, {len(body)} B, cache {h.get("cf-cache-status") or h.get("CF-Cache-Status")}')
+    verdict(st == 200 and len(body) > 0, f'{what}: served from {CDN}')
+    if what == 'apk':
+        verdict(len(body) == release.get('apk_bytes') and digest == release.get('apk_sha256'),
+                'apk: the bytes and SHA-256 the release row states (the updater checks both)')
+    try:
+        st2, _, _ = http(f'https://{DEV_CDN}{path}', timeout=60)
+    except (urllib.error.URLError, OSError) as e:
+        st2 = f'no answer ({type(e).__name__})'
+    verdict(st2 != 200, f'{what}: not served at r2.dev ({st2})')
+    # A public bucket is read-only to the world: a write is refused by R2
+    # (401) or stopped in front of it (403).
+    st, h, body = http(f'https://{CDN}{path}', method='PUT', body=b'x')
+    verdict(st in (400, 401, 403, 405, 501), f'{what}: PUT refused (HTTP {st})')
+# R2 answers a missing key with its own error page (a few KB): what matters
+# is that it is not a listing of the bucket.
+listing = lambda b: b'ListBucketResult' in b or b'<Key>' in b or b'apk/' in b
+for path in ('/', '/.env', '/wp-login.php'):
+    st, _, body = http(f'https://{CDN}{path}')
+    verdict(st in (403, 404) and not listing(body), f'{CDN}{path}: HTTP {st}, no listing')
 
 # ── 6. Expiry ─────────────────────────────────────────────────────────────
 print('\n== 6. The same token after its 10 minutes')

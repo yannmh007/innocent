@@ -57,7 +57,7 @@ const R2_SECRET_ACCESS_KEY = Deno.env.get('R2_SECRET_ACCESS_KEY')!;
 const MEDIA_BUCKET = Deno.env.get('R2_BUCKET') ?? 'innocent-media';
 const PUBLIC_BUCKET = Deno.env.get('R2_PUBLIC_BUCKET') ?? 'innocent-public';
 const PUBLIC_BASE = Deno.env.get('R2_PUBLIC_BASE') ??
-  'https://pub-18c62521649645be87d4d36225021e15.r2.dev';
+  'https://cdn.innocentplayer.com';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
 const SERVICE_KEY = Deno.env.get('SB_SERVICE_KEY') ??
