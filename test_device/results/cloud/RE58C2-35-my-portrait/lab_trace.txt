@@ -1,0 +1,11 @@
+LAB scenario 3 surfaceProducer=null
+LAB device kind=DeviceKind.phone sw=360.0
+LAB    0.0 LAB script: catalogue title
+LAB cpu app 60% · 1.7fps · pool-thread 47% | .innocent.media 3% | io.worker. 3% | estorage.worker 2% | 1.raster 1% | mali-compiler 1%
+LAB   23.4 LAB title failed: ApiException(network)
+LAB cpu app 1% · 0.0fps · -
+LAB  113.5 LAB check: the film never started
+LAB  113.5 LAB check summary pass=0 fail=0
+LAB  113.5 LAB proxy upstream 0 requests 0.0 MB (- a MB), steps back 0, handed over 0, bind none
+LAB cpu app 0% · 0.0fps · -
+LAB cpu app 0% · 0.0fps · -
