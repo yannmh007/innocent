@@ -38,3 +38,7 @@ begin
       or apk_url_arm32 like 'https://pub-18c62521649645be87d4d36225021e15.r2.dev/%';
 end
 $mig$;
+
+-- CREATE OR REPLACE drops the function's SET options: 041's empty
+-- search_path is put back (applied as 051b in production).
+alter function public.public_asset_base() set search_path = '';
