@@ -85,7 +85,7 @@ const PUBLIC_BUCKET = Deno.env.get('R2_PUBLIC_BUCKET') ?? 'innocent-public';
 // builds artwork URLs on, so an APK put here is served by the edge that is
 // already delivering every poster in the app.
 const PUBLIC_BASE = Deno.env.get('R2_PUBLIC_BASE') ??
-  'https://pub-18c62521649645be87d4d36225021e15.r2.dev/';
+  'https://cdn.innocentplayer.com/';
 
 /// Which bucket a kind belongs in. One place, because the webhook and the
 /// presigned PUT have to agree and the row is written by one and signed by

@@ -391,7 +391,7 @@ jobs:
             echo "update public.app_releases"
             echo "   set version_name = '${VNAME}',"
             echo "       version_code = ${VCODE},"
-            echo "       apk_url    = 'https://pub-18c62521649645be87d4d36225021e15.r2.dev/apk/${NAME}',"
+            echo "       apk_url    = 'https://cdn.innocentplayer.com/apk/${NAME}',"
             echo "       apk_sha256 = '${SHA}',"
             echo "       apk_bytes  = ${BYTES},"
             echo "       notes_en   = 'CHANGE ME',"
@@ -496,7 +496,7 @@ jobs:
             echo ""
             echo '```sql'
             echo "update public.app_releases"
-            echo "   set apk_url_arm32    = 'https://pub-18c62521649645be87d4d36225021e15.r2.dev/apk/${NAME32}',"
+            echo "   set apk_url_arm32    = 'https://cdn.innocentplayer.com/apk/${NAME32}',"
             echo "       apk_sha256_arm32 = '${SHA32}',"
             echo "       apk_bytes_arm32  = ${BYTES32}"
             echo " where id = 1;"
