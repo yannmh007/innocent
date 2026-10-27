@@ -16,6 +16,11 @@ on:
       - 'tool/playback/transport_check.py'
       - '.github/workflows/transport-check.yml'
   workflow_dispatch:
+    inputs:
+      stream_host:
+        description: 'Check the Worker at this host instead of the one grants name (empty: as granted)'
+        required: false
+        default: ''
 
 permissions:
   contents: read
@@ -39,4 +44,6 @@ jobs:
           SB_URL: ${{ secrets.SUPABASE_URL }}
           # The publishable key. Not a secret — it ships in every APK.
           SB_KEY: sb_publishable_vTiAxBAhnZL_BqFcZD4m9A_Rb8Q8PHj
+          # Through the environment, never pasted into the script.
+          STREAM_HOST: ${{ inputs.stream_host }}
         run: python3 tool/playback/transport_check.py

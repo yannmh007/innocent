@@ -75,6 +75,14 @@ if st != 200:
 rungs = sorted([r for r in grant.get('renditions') or [] if r.get('url')],
                key=lambda r: r.get('bytes') or 10 ** 18)
 url = rungs[0]['url'] if rungs else grant.get('url')
+# STREAM_HOST: the same Worker reached at another of its addresses (a token
+# names no host), to prove a new one before request-playback is moved to it.
+moved = os.environ.get('STREAM_HOST', '').strip()
+if moved:
+    if not re.fullmatch(r'[a-z0-9.-]+', moved):
+        print('STREAM_HOST is not a host name'); sys.exit(1)
+    url = urllib.parse.urlsplit(url)._replace(netloc=moved).geturl()
+    print('checking the Worker at the host given in STREAM_HOST')
 parts = urllib.parse.urlsplit(url)
 worker = parts.netloc
 token = parts.path.rsplit('/', 1)[-1]
@@ -88,6 +96,8 @@ st, _, raw = http(sb + '/functions/v1/request-playback', 'POST',
 old = json.loads(raw or b'{}')
 old_url = sorted([r for r in old.get('renditions') or [] if r.get('url')],
                  key=lambda r: r.get('bytes') or 10 ** 18)[0]['url']
+if moved:
+    old_url = urllib.parse.urlsplit(old_url)._replace(netloc=moved).geturl()
 mask(urllib.parse.urlsplit(old_url).path.rsplit('/', 1)[-1])
 hosts = {'worker': worker, 'supabase': urllib.parse.urlsplit(sb).netloc, 'cdn': CDN}
 label_of = lambda n: next((k for k, v in hosts.items() if v == n), 'other')
