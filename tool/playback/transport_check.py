@@ -22,9 +22,10 @@ what it found and a verdict; the run fails if a verdict is BAD.
      Encrypted Client Hello.
   6. Expiry: the same token, 10 minutes and 10 seconds later.
   7. Public files (posters, photos, the APK) on the bucket's own domain:
-     the same bytes as the development URL while that still answers, the
-     APK's fingerprint as the release row states it, no writes, no plain
-     HTTP. Printed before the 10-minute wait of 6.
+     the APK's fingerprint as the release row states it, no writes, no
+     listing, and the r2.dev development URL off (since 2026-10-27; until
+     then the two were compared byte for byte). Printed before the
+     10-minute wait of 6.
 
 NEVER PRINTS a token, a token URL, the device id or the Worker's host: this
 log is public. The Worker's host is masked for the runner's log too.
@@ -34,7 +35,8 @@ import hashlib, json, os, re, socket, ssl, subprocess, sys, time, urllib.error, 
 UA = 'innocent-transport-check/1'
 SINTEL = '0839dacb-59ae-4c95-9279-4901b925965d'
 # The public bucket: its own domain since 2026-10-27, and the r2.dev
-# development URL it replaces, compared while that still answers.
+# development URL it replaced, which stays off: rate-limited, outside the
+# zone's rules, and a second address for the same files.
 CDN = 'cdn.innocentplayer.com'
 DEV_CDN = 'pub-18c62521649645be87d4d36225021e15.r2.dev'
 
@@ -272,7 +274,6 @@ files = [('poster', urllib.parse.urlsplit(poster).path)] if poster else []
 if release.get('apk_url'):
     files.append(('apk', urllib.parse.urlsplit(release['apk_url']).path))
 verdict(len(files) == 2, f'the test film\'s poster and the current APK are named ({len(files)} of 2)')
-dev_on = True
 for what, path in files:
     st, h, body = http(f'https://{CDN}{path}', timeout=180)
     digest = hashlib.sha256(body).hexdigest()
@@ -281,13 +282,11 @@ for what, path in files:
     if what == 'apk':
         verdict(len(body) == release.get('apk_bytes') and digest == release.get('apk_sha256'),
                 'apk: the bytes and SHA-256 the release row states (the updater checks both)')
-    if dev_on:
-        st2, _, body2 = http(f'https://{DEV_CDN}{path}', timeout=180)
-        if st2 == 200:
-            verdict(hashlib.sha256(body2).hexdigest() == digest, f'{what}: byte for byte what r2.dev serves')
-        else:
-            dev_on = False
-            print(f'r2.dev: HTTP {st2} — off, nothing to compare with')
+    try:
+        st2, _, _ = http(f'https://{DEV_CDN}{path}', timeout=60)
+    except (urllib.error.URLError, OSError) as e:
+        st2 = f'no answer ({type(e).__name__})'
+    verdict(st2 != 200, f'{what}: not served at r2.dev ({st2})')
     # A public bucket is read-only to the world: a write is refused by R2
     # (401) or stopped in front of it (403).
     st, h, body = http(f'https://{CDN}{path}', method='PUT', body=b'x')
