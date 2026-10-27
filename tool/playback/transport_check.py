@@ -75,6 +75,14 @@ if st != 200:
 rungs = sorted([r for r in grant.get('renditions') or [] if r.get('url')],
                key=lambda r: r.get('bytes') or 10 ** 18)
 url = rungs[0]['url'] if rungs else grant.get('url')
+# STREAM_HOST: the same Worker reached at another of its addresses (a token
+# names no host), to prove a new one before request-playback is moved to it.
+moved = os.environ.get('STREAM_HOST', '').strip()
+if moved:
+    if not re.fullmatch(r'[a-z0-9.-]+', moved):
+        print('STREAM_HOST is not a host name'); sys.exit(1)
+    url = urllib.parse.urlsplit(url)._replace(netloc=moved).geturl()
+    print('checking the Worker at the host given in STREAM_HOST')
 parts = urllib.parse.urlsplit(url)
 worker = parts.netloc
 token = parts.path.rsplit('/', 1)[-1]
@@ -88,6 +96,8 @@ st, _, raw = http(sb + '/functions/v1/request-playback', 'POST',
 old = json.loads(raw or b'{}')
 old_url = sorted([r for r in old.get('renditions') or [] if r.get('url')],
                  key=lambda r: r.get('bytes') or 10 ** 18)[0]['url']
+if moved:
+    old_url = urllib.parse.urlsplit(old_url)._replace(netloc=moved).geturl()
 mask(urllib.parse.urlsplit(old_url).path.rsplit('/', 1)[-1])
 hosts = {'worker': worker, 'supabase': urllib.parse.urlsplit(sb).netloc, 'cdn': CDN}
 label_of = lambda n: next((k for k, v in hosts.items() if v == n), 'other')
@@ -179,9 +189,18 @@ cases = {
 for name, t in cases.items():
     st, h, body = http(f'{origin}/v/{t}', headers={**rng, **dev})
     verdict(st == 404 and body == b'Not found', f'{name}: HTTP {st}')
+# On our own domain a WAF rule refuses these before the Worker runs (403,
+# Cloudflare's block page, no film); on workers.dev the Worker does (405).
+blocked = lambda st, h: st == 403 and 'cf-ray' in {k.lower() for k in h}
 for m in ('POST', 'PUT', 'DELETE', 'PATCH'):
     st, h, body = http(url, method=m, headers=dev, body=b'' if m != 'DELETE' else None)
-    verdict(st in (404, 405) and len(body) < 100, f'{m} on a real token: HTTP {st}, nothing served')
+    verdict((st in (404, 405) and len(body) < 100) or blocked(st, h),
+            f'{m} on a real token: HTTP {st}, nothing served' + (' (stopped in front of the Worker)' if st == 403 else ''))
+# Paths the Worker has no door for: a scanner's usual first questions.
+for path in ('/', '/wp-login.php', '/.env', '/admin'):
+    st, h, body = http(origin + path)
+    verdict(st in (403, 404) and b'ftyp' not in body,
+            f'{path}: HTTP {st}' + (' (stopped in front of the Worker)' if blocked(st, h) else ''))
 st, h, _ = http(url, method='OPTIONS', headers={'Origin': 'https://example.com',
                                                  'Access-Control-Request-Method': 'GET'})
 verdict('Access-Control-Allow-Origin' not in h, 'a web page elsewhere is given no CORS access')

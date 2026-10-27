@@ -19,10 +19,12 @@ compatibility_date = "2026-07-06"
 routes = [
   { pattern = "stream.innocentplayer.com", custom_domain = true },
 ]
-# workers.dev stays on only until STREAM_BASE has moved and the last token
-# minted for it has expired (10 minutes). Then false: while it answers, the
-# zone's rules can be walked around.
-workers_dev = true
+# workers.dev OFF (2026-10-27). STREAM_BASE moved to the domain at ~09:10 UTC
+# and its last workers.dev token expired 10 minutes later; the transport
+# check (run 40479831081), the playback check and the device lab then passed
+# on the domain. While workers.dev answered, the zone's rules — WAF custom
+# rules, the rate-limiting rule, minimum TLS 1.2 — could be walked around.
+workers_dev = false
 
 # The private bucket, bound directly. No S3 endpoint, no signature, no
 # credentials in the Worker: a binding is an internal handle that only this
