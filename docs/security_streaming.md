@@ -171,7 +171,13 @@ log shows the phones in the field passing:
    `/health` now says `bind` and `limit`, so a deploy can be seen to have
    taken.
 3. When most phones run 1.64.70: lower the ceiling to ~200 in 10 s and
-   `LIMIT_MODE = "enforce"`.
+   `LIMIT_MODE = "enforce"`. **Held back (2026-10-27):** the field is
+   there (no version older than 1.64.70 seen since 23 October), but the
+   app does not yet wait out a 429: the stream proxy, the downloads and
+   the warm-up treat it as a failed part, so an enforced limit would show
+   as a stall instead of a pause. The next app release reads
+   `Retry-After`, waits and retries; then enforce. The zone's IP rule (400
+   in 10 s) has the same edge, set high for that reason.
 4. When `min_supported` passes 1.64.70: bind every premium token, asked or
    not.
 
