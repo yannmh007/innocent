@@ -189,9 +189,18 @@ cases = {
 for name, t in cases.items():
     st, h, body = http(f'{origin}/v/{t}', headers={**rng, **dev})
     verdict(st == 404 and body == b'Not found', f'{name}: HTTP {st}')
+# On our own domain a WAF rule refuses these before the Worker runs (403,
+# Cloudflare's block page, no film); on workers.dev the Worker does (405).
+blocked = lambda st, h: st == 403 and 'cf-ray' in {k.lower() for k in h}
 for m in ('POST', 'PUT', 'DELETE', 'PATCH'):
     st, h, body = http(url, method=m, headers=dev, body=b'' if m != 'DELETE' else None)
-    verdict(st in (404, 405) and len(body) < 100, f'{m} on a real token: HTTP {st}, nothing served')
+    verdict((st in (404, 405) and len(body) < 100) or blocked(st, h),
+            f'{m} on a real token: HTTP {st}, nothing served' + (' (stopped in front of the Worker)' if st == 403 else ''))
+# Paths the Worker has no door for: a scanner's usual first questions.
+for path in ('/', '/wp-login.php', '/.env', '/admin'):
+    st, h, body = http(origin + path)
+    verdict(st in (403, 404) and b'ftyp' not in body,
+            f'{path}: HTTP {st}' + (' (stopped in front of the Worker)' if blocked(st, h) else ''))
 st, h, _ = http(url, method='OPTIONS', headers={'Origin': 'https://example.com',
                                                  'Access-Control-Request-Method': 'GET'})
 verdict('Access-Control-Allow-Origin' not in h, 'a web page elsewhere is given no CORS access')
