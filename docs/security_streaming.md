@@ -218,7 +218,8 @@ auto-renew is set for September 2027).
 | WAF custom rules: only `/v/` and `/health`; only GET, HEAD, OPTIONS | live (403 in front of the Worker) |
 | rate-limiting rule: 400 requests per 10 s per IP on `/v/` (high, for mobile carrier NAT; the per-install ceiling is in the Worker) | live |
 | `workers_dev = false`: nothing reaches the Worker around those rules | main `b4b0481` |
-| photos, posters and the APK from `cdn.innocentplayer.com`, r2.dev off | next: needs the database's `public_asset_base()`, the stored URLs, two edge functions and `app_releases` moved together |
+| photos, posters and the APK from `cdn.innocentplayer.com` (R2 custom domain, minimum TLS 1.2) | live 2026-10-27: the domain connected by the owner; ingest, studio and backfill-dimensions name it (`f30e874`); migration 051 moved `public_asset_base()`, the four stored posters and the release row in one transaction; no app release (every URL comes from the database) |
+| r2.dev off | next, once the app is seen drawing from the domain |
 | the Cache API instead of `Block` | when on Workers Paid |
 
 Proved on the domain: transport check 40479831081 (TLS 1.0/1.1 refused at
