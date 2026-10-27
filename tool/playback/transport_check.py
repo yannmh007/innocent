@@ -289,12 +289,15 @@ for what, path in files:
             dev_on = False
             print(f'r2.dev: HTTP {st2} — off, nothing to compare with')
     # A public bucket is read-only to the world: a write is refused by R2
-    # or stopped in front of it.
+    # (401) or stopped in front of it (403).
     st, h, body = http(f'https://{CDN}{path}', method='PUT', body=b'x')
-    verdict(st in (400, 401, 403, 405, 501) and len(body) < 4096, f'{what}: PUT refused (HTTP {st})')
+    verdict(st in (400, 401, 403, 405, 501), f'{what}: PUT refused (HTTP {st})')
+# R2 answers a missing key with its own error page (a few KB): what matters
+# is that it is not a listing of the bucket.
+listing = lambda b: b'ListBucketResult' in b or b'<Key>' in b or b'apk/' in b
 for path in ('/', '/.env', '/wp-login.php'):
     st, _, body = http(f'https://{CDN}{path}')
-    verdict(st in (403, 404) and len(body) < 4096, f'{CDN}{path}: HTTP {st}, no listing')
+    verdict(st in (403, 404) and not listing(body), f'{CDN}{path}: HTTP {st}, no listing')
 
 # ── 6. Expiry ─────────────────────────────────────────────────────────────
 print('\n== 6. The same token after its 10 minutes')
