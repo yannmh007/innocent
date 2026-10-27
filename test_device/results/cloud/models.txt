@@ -18,6 +18,7 @@ SC-53C         samsung   Galaxy A53 5G                36
 SCG13          samsung   Galaxy S22                   36
 SH-01L         DOCOMO    AQUOS sense2 SH-01L          28
 SO-41A         docomo    Xperia 10 II                 31
+TB330FU        Lenovo    Lenovo Tab M11               35
 TB370FU        Lenovo    Lenovo Tab P12               35
 TECNO-BF6      TECNO     TECNO POP 7                  31
 TECNO-BG6      TECNO     SPARK Go 2024                33
