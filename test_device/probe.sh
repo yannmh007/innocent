@@ -5,7 +5,7 @@
 set -uo pipefail
 OUT=${OUT:-out}; mkdir -p "$OUT"
 SB_KEY=sb_publishable_vTiAxBAhnZL_BqFcZD4m9A_Rb8Q8PHj   # ships in every APK
-TITLE=${PROBE_TITLE:-Chester Koong}
+TITLE=${PROBE_TITLE:-Sintel}   # the open test film (CC-BY), never a catalogue title
 {
   echo "probe: $TITLE"
   q=$(python3 -c "import urllib.parse,sys;print(urllib.parse.quote(sys.argv[1]))" "$TITLE")
