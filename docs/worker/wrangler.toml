@@ -9,6 +9,21 @@ main = "src/index.js"
 # Recent enough for the runtime APIs this Worker uses. Do not lower it.
 compatibility_date = "2026-07-06"
 
+# A DOMAIN OF OUR OWN (2026-10-27, innocentplayer.com, on Cloudflare
+# Registrar). On a zone of ours, the zone's rules — minimum TLS, WAF custom
+# rules, a rate-limiting rule — stand in front of the Worker and refuse junk
+# before it runs, which nothing can do on workers.dev. Workers Builds makes
+# the DNS record and the certificate. The app learns the stream origin from
+# each grant (StreamDoor.learn), so moving request-playback's STREAM_BASE
+# here needs no app release.
+routes = [
+  { pattern = "stream.innocentplayer.com", custom_domain = true },
+]
+# workers.dev stays on only until STREAM_BASE has moved and the last token
+# minted for it has expired (10 minutes). Then false: while it answers, the
+# zone's rules can be walked around.
+workers_dev = true
+
 # The private bucket, bound directly. No S3 endpoint, no signature, no
 # credentials in the Worker: a binding is an internal handle that only this
 # Worker's code can use.

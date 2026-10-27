@@ -239,6 +239,9 @@ for (const [label, headers, want] of [
   check('/health says which mode each check is in',
     /bind: env\.BIND_MODE === 'enforce'/.test(src) && /limit: env\.LIMIT_MODE === 'enforce'/.test(src));
   check('the rate limit starts in log mode', /\nLIMIT_MODE = "log"\n/.test(toml));
+  check('the Worker answers on our own domain, where the zone\'s rules stand in front',
+    /\nroutes = \[\s*\n\s*\{ pattern = "stream\.innocentplayer\.com", custom_domain = true \},\s*\n\]/.test(toml));
+  check('workers.dev is set explicitly, on or off', /\nworkers_dev = (true|false)\n/.test(toml));
   check('the limiter is bound as STREAM_LIMIT, 10-second period',
     /\[\[ratelimits\]\]\s*\nname = "STREAM_LIMIT"\s*\nnamespace_id = "\d+"[\s\S]*?\[ratelimits\.simple\]\s*\n\s*limit = \d+\s*\n\s*period = 10\b/.test(toml));
 }
