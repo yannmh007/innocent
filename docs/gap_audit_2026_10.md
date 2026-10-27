@@ -53,6 +53,20 @@ what was checked, what was fixed, and what is left, with the reason.
 
 ## Released
 
+**innocentplayer.com, 27 October 2026** — main `724a879` and `b4b0481`;
+no app change. The domain was bought on Cloudflare Registrar and its zone
+set up by the owner: minimum TLS 1.2, Always Use HTTPS, CT monitoring,
+Bot Fight Mode off (on the Free plan it cannot be skipped and challenges
+app traffic). The Worker now answers at `stream.innocentplayer.com` and
+nowhere else (workers.dev off). The owner moved `STREAM_BASE` and added
+two WAF custom rules (only `/v/` and `/health`; only GET, HEAD, OPTIONS)
+and a rate-limiting rule (400 per 10 s per IP on `/v/`). Proved on the
+domain: transport check 40479831081, playback check 40479834765, device
+lab 40479838296 (15 of 16; the one miss was a swipe still rebuffering on a
+2 Mbps line, with 48 upstream requests, every bind ok and nothing
+refused); after workers.dev went off, playback check 40488608698. Next:
+photos, posters and the APK on `cdn.innocentplayer.com`, then r2.dev off.
+
 **Worker, 26 October 2026** — main `05b8fbb`, deployed by Workers Builds
 at 19:41 UTC; no app change. The owner asked whether the film path can be
 intercepted, read or traced to its storage (docs/security_streaming.md

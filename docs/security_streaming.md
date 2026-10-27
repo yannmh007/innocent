@@ -189,6 +189,27 @@ small Analytics Engine write per request, which is worth doing with Phase 2.
 
 ### Phase 2 — recorded for when a domain is bought
 
+**Under way since 2026-10-27, on innocentplayer.com** (Cloudflare
+Registrar, $10.46 a year; .com goes to $11.17 on 1 November 2026, and
+auto-renew is set for September 2027).
+
+| step | state |
+|---|---|
+| zone: minimum TLS 1.2, Always Use HTTPS, TLS 1.3, CT monitoring (email alerts) | done by the owner |
+| Bot Fight Mode **off**: on the Free plan it cannot be skipped by any rule and challenges app traffic, which cannot answer a challenge | kept off on purpose |
+| the Worker at `stream.innocentplayer.com` (custom domain, `wrangler.toml` `routes`) | live, main `724a879` |
+| `STREAM_BASE` (request-playback, probe-media, studio) moved to it | done by the owner; no app release: the app learns the origin from each grant |
+| WAF custom rules: only `/v/` and `/health`; only GET, HEAD, OPTIONS | live (403 in front of the Worker) |
+| rate-limiting rule: 400 requests per 10 s per IP on `/v/` (high, for mobile carrier NAT; the per-install ceiling is in the Worker) | live |
+| `workers_dev = false`: nothing reaches the Worker around those rules | main `b4b0481` |
+| photos, posters and the APK from `cdn.innocentplayer.com`, r2.dev off | next: needs the database's `public_asset_base()`, the stored URLs, two edge functions and `app_releases` moved together |
+| the Cache API instead of `Block` | when on Workers Paid |
+
+Proved on the domain: transport check 40479831081 (TLS 1.0/1.1 refused at
+the edge, http:// redirected, other methods and four scanner paths refused
+with 403 before the Worker, every token check and the packet capture as
+before), playback check 40479834765, device lab 40479838296.
+
 **Cost:** a `.com` through Cloudflare Registrar is sold at cost, about
 **USD 10–11 a year** (no markup on renewal). Everything else below is on
 Cloudflare's Free plan.
