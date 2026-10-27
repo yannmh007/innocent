@@ -10,6 +10,7 @@ import 'package:innocent/core/services/network/foreground_stream.dart';
 import 'package:innocent/features/video_hub/data/api/offline_downloader.dart';
 import 'package:innocent/features/video_hub/data/api/offline_library.dart';
 import 'package:innocent/features/video_hub/data/api/ranged_fetch.dart';
+import 'package:innocent/features/video_hub/data/rate_limited.dart';
 import 'package:innocent/features/video_hub/domain/access.dart';
 import 'package:innocent/features/video_hub/domain/content_category.dart';
 import 'package:innocent/features/video_hub/domain/content_repository.dart';
@@ -73,6 +74,11 @@ class _Chunky extends http.BaseClient {
   /// Between packets: a line of a given speed.
   final Duration pieceDelay;
 
+  /// The first request starting here is told to slow down: 429, with
+  /// `Retry-After: 4`, as the stream Worker answers past its ceiling.
+  int? limitPartAt;
+  int limited = 0;
+
   /// The request starting here takes its time: a lossy lane.
   final int? slowPartAt;
   int startedWhileSlow = 0;
@@ -93,6 +99,12 @@ class _Chunky extends http.BaseClient {
       final m = RegExp(r'bytes=(\d+)-(\d*)').firstMatch(range)!;
       from = int.parse(m.group(1)!);
       if (m.group(2)!.isNotEmpty) to = int.parse(m.group(2)!);
+    }
+    if (limitPartAt != null && limitPartAt == from) {
+      limitPartAt = null;
+      limited++;
+      return http.StreamedResponse(const Stream<List<int>>.empty(), 429,
+          headers: <String, String>{'retry-after': '4'});
     }
     final ignored = to != null && ignoreBoundedRanges;
     if (ignored) {
@@ -440,4 +452,44 @@ void main() {
     await expectExact(item, data, log);
     expect(net.maxInFlight, 3, reason: 'stayed on one connection after the film closed');
   }, timeout: const Timeout(Duration(seconds: 60)));
+  group('a 429 from the Worker', () {
+    final waits = <Duration>[];
+    setUp(() {
+      waits.clear();
+      RateLimited.sleep = (d) async => waits.add(d);
+    });
+    tearDown(() {
+      RateLimited.sleep = Future<void>.delayed;
+    });
+
+    test('on the first request: waited out as asked, then the film comes down',
+        () async {
+      final data = body(1024 * 1024);
+      final net = _Chunky(data)..limitPartAt = 0;
+      final d = OfflineDownloader(_Repo(), OfflineLibrary(),
+          httpClient: net, lanes: 3, partBytes: part);
+      final log = <String>[];
+      final item = await d.download(
+          content: film, source: source, onProgress: (p) => log.add('${p.received} ${p.error}'));
+      await expectExact(item, data, log);
+      expect(net.limited, 1);
+      // The server's four seconds, not the network wait — which ends as
+      // soon as DNS answers and would have asked again at once.
+      expect(waits, [const Duration(seconds: 4)]);
+    });
+
+    test('on a lane part way through: the pass ends, the next one waits as asked',
+        () async {
+      final data = body(1024 * 1024);
+      final net = _Chunky(data)..limitPartAt = 5 * part;
+      final d = OfflineDownloader(_Repo(), OfflineLibrary(),
+          httpClient: net, lanes: 3, partBytes: part);
+      final log = <String>[];
+      final item = await d.download(
+          content: film, source: source, onProgress: (p) => log.add('${p.received} ${p.error}'));
+      await expectExact(item, data, log);
+      expect(net.limited, 1);
+      expect(waits, [const Duration(seconds: 4)]);
+    });
+  });
 }

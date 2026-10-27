@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 
+import '../rate_limited.dart';
 import '../stream_door.dart';
 
 /// One film fetched as several byte ranges at once, handed on IN ORDER.
@@ -195,9 +196,14 @@ class RangedFetch {
 /// all. [refused] is the last: the server will not do ranges, and asking it
 /// again would cost the same again.
 class RangedFetchException implements Exception {
-  RangedFetchException(this.message, {this.refused = false});
+  RangedFetchException(this.message, {this.refused = false, this.retryAfter});
   final String message;
   final bool refused;
+
+  /// Set when the server answered 429: its `Retry-After` (empty when it gave
+  /// none). The downloader waits that long before its next pass
+  /// ([RateLimited]) instead of asking again at once.
+  final String? retryAfter;
   @override
   String toString() => 'RangedFetchException: $message';
 }
@@ -258,7 +264,10 @@ class _Part {
     if (res.statusCode != 206) {
       unawaited(res.stream.listen(null).cancel());
       throw RangedFetchException('HTTP ${res.statusCode} for a range',
-          refused: res.statusCode == 200);
+          refused: res.statusCode == 200,
+          retryAfter: res.statusCode == RateLimited.status
+              ? (res.headers['retry-after'] ?? '')
+              : null);
     }
     final range = parseContentRange(res.headers['content-range']);
     if (range != null &&

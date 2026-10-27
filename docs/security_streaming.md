@@ -175,9 +175,19 @@ log shows the phones in the field passing:
    there (no version older than 1.64.70 seen since 23 October), but the
    app does not yet wait out a 429: the stream proxy, the downloads and
    the warm-up treat it as a failed part, so an enforced limit would show
-   as a stall instead of a pause. The next app release reads
-   `Retry-After`, waits and retries; then enforce. The zone's IP rule (400
-   in 10 s) has the same edge, set high for that reason.
+   as a stall instead of a pause. The zone's IP rule (400 in 10 s) has the
+   same edge, set high for that reason. **1.64.76 waits it out**
+   (`rate_limited.dart`): a 429's `Retry-After`, in seconds or as a date,
+   held to 1–15 s (10 s when it says nothing), then the same request again
+   — in the proxy's length probe, its pooled segment reads, its single
+   reads and the first part of a stretch (a later part ends the stretch,
+   and the next one starts with that wait), and in the downloader, whose
+   next pass waits that long instead of the network wait, which ends as
+   soon as DNS answers. The player's own read timeout is 30 s, so a
+   15-second wait is a pause, not an error. Pinned in
+   `test/rate_limited_test.dart`, `stream_cache_server_test.dart`,
+   `stream_cache_hls_test.dart` and `download_throughput_test.dart`. Once
+   1.64.76 is most of the field: enforce.
 4. When `min_supported` passes 1.64.70: bind every premium token, asked or
    not.
 

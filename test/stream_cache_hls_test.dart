@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:innocent/features/video_hub/data/cache/stream_cache_server.dart';
+import 'package:innocent/features/video_hub/data/rate_limited.dart';
 import 'package:innocent/features/video_hub/domain/cmaf_index.dart';
 import 'package:innocent/features/video_hub/domain/hls_ladder.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
@@ -32,12 +33,25 @@ class _Worker {
   late HttpServer server;
   final List<(String, int, int)> asked = <(String, int, int)>[];
 
+  /// The next this many requests are told to slow down, as the Worker does
+  /// past its ceiling: 429, `Retry-After: 2`.
+  int limitNext = 0;
+  int limited = 0;
+
   String url(String name) => 'http://127.0.0.1:${server.port}/v/$name';
 
   Future<void> start() async {
     server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
     server.listen((req) async {
       final res = req.response;
+      if (limitNext > 0) {
+        limitNext--;
+        limited++;
+        res.statusCode = 429;
+        res.headers.set(HttpHeaders.retryAfterHeader, '2');
+        await res.close();
+        return;
+      }
       final body = films[req.uri.pathSegments.last];
       if (body == null) {
         res.statusCode = 404;
@@ -194,6 +208,25 @@ void main() {
     // And on from there.
     final (s61, a61, u61) = segs[61];
     expect((await _get(u61, range: 'bytes=$a61-${a61 + s61 - 1}')).$2, r720.bytes.sublist(a61, a61 + s61));
+  });
+
+  test('a segment answered 429 is waited out as asked, then comes back exactly',
+      () async {
+    final waits = <Duration>[];
+    RateLimited.sleep = (d) async => waits.add(d);
+    addTearDown(() => RateLimited.sleep = Future<void>.delayed);
+    final master = await register('film5');
+    final (_, mbody) = await _get(master);
+    final url = RegExp(r'^http://.+/720\.m3u8$', multiLine: true).firstMatch(String.fromCharCodes(mbody))!.group(0)!;
+    final segs = _segments(String.fromCharCodes((await _get(url)).$2));
+    worker.limited = 0;
+    worker.limitNext = 1;
+    final (s45, a45, u45) = segs[45];
+    final (code, got) = await _get(u45, range: 'bytes=$a45-${a45 + s45 - 1}');
+    expect(code, 206);
+    expect(got, r720.bytes.sublist(a45, a45 + s45));
+    expect(worker.limited, 1);
+    expect(waits, [const Duration(seconds: 2)]);
   });
 
   test('played again, it comes from the phone', () async {
