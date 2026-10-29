@@ -53,6 +53,35 @@ what was checked, what was fixed, and what is left, with the reason.
 
 ## Released
 
+**1.64.76, 29 October 2026** — main `217da3b` (build 40540289076, signed
+and attested), `app_releases` moved at 07:12 UTC; then the Worker's
+`LIMIT_MODE = "enforce"`, main `b608885`, deployed by Workers Builds. The
+app now waits out a 429 — the Worker's per-install ceiling, or the zone's
+per-address rule — for what `Retry-After` asks (1–15 s, 10 s when it says
+nothing) and asks again, in the stream proxy and the downloader, instead
+of failing the part. Proved: Flutter tests 1180 of 1180, with 429 cases in
+the proxy (lanes, seek, HLS segment) and the downloader; device lab
+40499194182 16 of 16; Test Lab realme C53 16 of 16 (run 40516412135) and
+OPPO A79 5G 15 of 16 (run 40536305131: the first seek waited 4.3 s for
+the storage's first answer on a US phone; nothing answered 429). The A38
+sat in Test Lab's queue for two hours, twice, and never ran. After the
+release: transport check 40833941479 (the new APK on the domain, its size
+and SHA-256 as the row states), playback check 40835208892 (`/health`:
+bind=enforce limit=enforce; the right install plays, any other is
+refused). The ceiling stays at 600 in 10 s while older apps are in the
+field.
+
+**Public files on cdn.innocentplayer.com, 27 October 2026** — no app
+release. The owner connected the public bucket's custom domain (minimum
+TLS 1.2); ingest, studio and backfill-dimensions name it (pinned to
+`f30e874`); migration 051 moved `public_asset_base()`, the four open
+films' stored posters and the release row in one transaction (and put
+back its empty `search_path`). The transport check found the domain
+serving the same bytes as r2.dev, the APK's SHA-256 as the row states,
+writes refused and no listing (40503136593); the owner's phone drew the
+posters from it; then the owner turned r2.dev off, and the check now
+requires it off (40506716837: 401).
+
 **innocentplayer.com, 27 October 2026** — main `724a879` and `b4b0481`;
 no app change. The domain was bought on Cloudflare Registrar and its zone
 set up by the owner: minimum TLS 1.2, Always Use HTTPS, CT monitoring,
