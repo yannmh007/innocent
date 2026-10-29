@@ -662,6 +662,7 @@ class StreamCacheServer {
     if (r.index != null && r.head != null) return r;
     final loading = r.loading ??= () async {
       final client = HttpClient()..connectionTimeout = const Duration(seconds: 15);
+      var handedOff = false;
       try {
         final head = BytesBuilder(copy: false);
         var want = firstRead;
@@ -673,24 +674,49 @@ class StreamCacheServer {
             await resp.drain<void>();
             return;
           }
-          await for (final chunk in resp) {
-            head.add(chunk);
+          // THE INDEX AS SOON AS IT IS HERE (2026-10-29), not when the whole
+          // read is. With the start rung's 512 KB read at once the playlist
+          // waited for all of it: on a 4 Mbit/s line the first picture came
+          // 2 s later than it had (device lab run 40843577992). The rest of
+          // the read goes on into the cache, where the player's first
+          // segment waits for it (the segment path's fill).
+          final pieces = StreamIterator<List<int>>(resp);
+          int? need;
+          while (await pieces.moveNext()) {
+            head.add(pieces.current);
+            if (need != null && head.length < need) continue;
+            final bytes = head.toBytes();
+            final idx = CmafIndex.parse(bytes);
+            if (idx != null) {
+              r.index = idx;
+              r.head = CmafHead.parse(bytes);
+              handedOff = true;
+              unawaited(() async {
+                try {
+                  while (await pieces.moveNext()) {}
+                } catch (_) {
+                  // The player's own reads go on regardless.
+                } finally {
+                  client.close(force: true);
+                }
+              }());
+              return;
+            }
+            need = CmafIndex.headBytes(bytes);
+            if (need != null && need > _switchHeadCap) {
+              await pieces.cancel();
+              return;
+            }
           }
           final bytes = head.toBytes();
-          final idx = CmafIndex.parse(bytes);
-          if (idx != null) {
-            r.index = idx;
-            r.head = CmafHead.parse(bytes);
-            return;
-          }
-          final need = CmafIndex.headBytes(bytes);
-          if (need == null || need <= bytes.length || need > _switchHeadCap) return;
-          want = need;
+          final more = CmafIndex.headBytes(bytes);
+          if (more == null || more <= bytes.length || more > _switchHeadCap) return;
+          want = more;
         }
       } catch (e) {
         if (kDebugMode) debugPrint('StreamCacheServer._rungWithHead: $e');
       } finally {
-        client.close(force: true);
+        if (!handedOff) client.close(force: true);
       }
     }();
     await loading;

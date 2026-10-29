@@ -270,6 +270,34 @@ void main() {
         reason: 'three quiet seconds, then a read of its own — it waited 20 s');
   });
 
+  test("on a slow line the start rung's playlist is out as soon as its index is, "
+      'not when the whole opening is; the first segment follows from that read',
+      () async {
+    // About 1.7 Mbit/s: the opening's 512 KB takes 2.4 s to arrive.
+    worker.paceMs = 300;
+    addTearDown(() => worker.paceMs = 0);
+    final before = worker.asked.length;
+    final clock = Stopwatch()..start();
+    final master = await register('film10');
+    final (_, mbody) = await _get(master);
+    final url = RegExp(r'^http://.+/720\.m3u8$', multiLine: true).firstMatch(String.fromCharCodes(mbody))!.group(0)!;
+    final (code, pl) = await _get(url);
+    expect(code, 200);
+    expect(clock.elapsed, lessThan(const Duration(milliseconds: 1800)),
+        reason: 'the index is in the first 64 KB');
+    final segs = _segments(String.fromCharCodes(pl));
+    final (s0, a0, u0) = segs[0];
+    expect((await _get(u0, range: 'bytes=$a0-${a0 + s0 - 1}')).$2,
+        r720.bytes.sublist(a0, a0 + s0));
+    // Beside the 8 KB that finds the film's length, one read of the opening.
+    final film = worker.asked.skip(before)
+        .where((a) => a.$1 == 'a720' && a.$3 - a.$2 + 1 > 8192).toList();
+    expect(film.where((a) => a.$2 == 0).length, 1,
+        reason: 'the opening read once: index, init and first fragment');
+    expect(film.where((a) => a.$2 > 0 && a.$2 <= a0).length, 0,
+        reason: 'the first segment waited for that read');
+  });
+
   test('a segment answered 429 is waited out as asked, then comes back exactly',
       () async {
     final waits = <Duration>[];
