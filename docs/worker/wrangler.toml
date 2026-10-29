@@ -104,7 +104,14 @@ EDGE_BLOCK_BYTES = "0"
 # That is the case this check exists to refuse. Older apps (before 1.64.70)
 # do not ask for bound tokens, so they are not affected.
 BIND_MODE = "enforce"
-LIMIT_MODE = "log"
+# LIMIT: ENFORCED 2026-10-29, with 1.64.76 out. That release waits out a
+# 429 — this Worker's `Retry-After: 10` — in the stream proxy and the
+# downloader, and asks again, so a phone over the ceiling pauses instead
+# of failing. Older apps are not starved by it: the ceiling below is set
+# for 1.64.69's proxy at 50 Mbit/s (~460 in 10 s), and every app since
+# 1.64.70 asks about one request a megabyte (Test Lab: 134 requests in
+# 140 s of jumps and quality changes).
+LIMIT_MODE = "enforce"
 
 # The ceiling, per install (else per account, else per link), per data
 # centre: 600 requests in 10 seconds. Set for the phones already out there:
