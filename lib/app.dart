@@ -334,9 +334,16 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
           // realme's line, 7.5 Mbit/s, run 40194697661). Said as a skip,
           // with both numbers.
           if (id == 'original' && took && svc is MediaKitPlayerService) {
-            await Future<void>.delayed(const Duration(seconds: 3));
+            // The copy's bitrate is known once ExoPlayer has its track,
+            // which on a slow line takes longer than three seconds (realme,
+            // 3.4 Mbit/s, run 40883836265: no number, no skip, a FAIL that
+            // said nothing about the app). Up to twelve, then.
+            int? copy;
+            for (var i = 0; i < 12 && copy == null; i++) {
+              await Future<void>.delayed(const Duration(seconds: 1));
+              copy = svc.ladderRungKbps;
+            }
             final line = MediaKitPlayerService.networkKbps?.value;
-            final copy = svc.ladderRungKbps;
             if (line != null && copy != null && line < copy) {
               sampler?.cancel();
               PlaybackLog.add('LAB check tour->original SKIP (line $line kbps, '
