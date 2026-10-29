@@ -423,6 +423,39 @@ Deno.serve(async (req) => {
     return json({ code: 'not_found' }, 404);
   }
 
+  // THE LADDER'S ROWS, ASKED FOR AS SOON AS THE OBJECT IS KNOWN — beside
+  // the entitlement checks and the budget below, not after them (2026-10-29:
+  // a premium Play waited for the subscription, then the devices, then the
+  // budget, then these, one after the other). Nothing is signed until every
+  // check has said yes; a refusal only throws the rows away. Never rejects:
+  // a ladder that cannot be read is no reason to refuse playback — the
+  // original still plays, as before any of this.
+  //
+  // RENDITIONS BELONG TO A `title_assets` ROW, and a title played through
+  // its own `locator` has no asset id in the request — so it is looked up by
+  // key. Without that, the main film of every title would be the one thing
+  // in the catalogue that never got a smaller copy, which is exactly
+  // backwards.
+  const ladderQ = (async (): Promise<Array<Record<string, unknown>>> => {
+    try {
+      if (!assetId) {
+        const { data: byKey } = await admin
+          .from('title_assets').select('id, master_state')
+          .eq('object_key', objectKey).limit(1).maybeSingle();
+        if (byKey?.id) {
+          assetId = byKey.id as string;
+          masterInR2 = byKey.master_state !== 'telegram' && byKey.master_state !== 'restoring';
+        }
+      }
+      if (!assetId) return [];
+      const { data: rows } = await admin.rpc('renditions_for', { p_asset: assetId });
+      return (rows ?? []) as Array<Record<string, unknown>>;
+    } catch (e) {
+      logRefusal('renditions_failed', String(e).slice(0, 160));
+      return [];
+    }
+  })();
+
   // THE TRAILER SLOT. An asset marked `is_free` opens inside a premium title
   // without an entitlement - that is the whole point of it, and it is an
   // explicit flag rather than a rule like "the first clip is free" because
@@ -434,13 +467,27 @@ Deno.serve(async (req) => {
   if (title.access_tier !== 'free' && !assetIsFree) {
     if (!user) return json({ code: 'needs_premium' }, 401);
 
-    const { data: sub } = await admin
+    // THE SUBSCRIPTION AND THE DEVICES ASKED TOGETHER (2026-10-29): neither
+    // answer depends on the other. Still read in the order below, so the
+    // refusals and their order are what they were.
+    const deviceId = typeof body.device_id === 'string' ? body.device_id : '';
+    const subQ = Promise.resolve(admin
       .from('subscriptions')
       .select('expires_at')
       .eq('user_id', user.id)
       .order('expires_at', { ascending: false, nullsFirst: true })
       .limit(1)
-      .maybeSingle();
+      .maybeSingle());
+    const devicesQ = deviceId
+      ? Promise.resolve(admin
+        .from('devices')
+        .select('device_id')
+        .eq('user_id', user.id))
+      : null;
+    // Awaited below, and a failure there fails as it always did; this only
+    // keeps a refusal that returns first from leaving it unhandled.
+    devicesQ?.catch(() => {});
+    const { data: sub } = await subQ;
 
     // FAIL TOWARD LOCKED. No row, or a past expiry, is a refusal. A null
     // expiry is a lifetime grant - the one case where "no date" means more
@@ -459,7 +506,6 @@ Deno.serve(async (req) => {
     // account can hold at most two installs, it is also the limit on how many
     // phones can be watching premium at once (finding #5): no further count
     // is needed.
-    const deviceId = typeof body.device_id === 'string' ? body.device_id : '';
     if (!deviceId) {
       // Not `wrong_device`: that tells a person their account is full, and
       // no app of ours gets here. Whatever does is told nothing.
@@ -467,10 +513,7 @@ Deno.serve(async (req) => {
       return json({ code: 'bad_request' }, 400);
     }
     {
-      const { data: devices } = await admin
-        .from('devices')
-        .select('device_id')
-        .eq('user_id', user.id);
+      const { data: devices } = await devicesQ!;
       const known = (devices ?? [])
         .some((d: { device_id: string }) => d.device_id === deviceId);
       if (!known && (devices?.length ?? 0) >= 2) {
@@ -507,36 +550,6 @@ Deno.serve(async (req) => {
   // unmetered grant. The log says when it happens.
   const install = typeof body.device_id === 'string'
     ? body.device_id.slice(0, 128) : '';
-
-  // THE LADDER'S ROWS, ASKED FOR BESIDE THE BUDGET. Nothing is signed
-  // until the budget has said yes (below); a refusal only throws the rows
-  // away. Never rejects: a ladder that cannot be read is no reason to
-  // refuse playback — the original still plays, as before any of this.
-  //
-  // RENDITIONS BELONG TO A `title_assets` ROW, and a title played through
-  // its own `locator` has no asset id in the request — so it is looked up by
-  // key. Without that, the main film of every title would be the one thing
-  // in the catalogue that never got a smaller copy, which is exactly
-  // backwards.
-  const ladderQ = (async (): Promise<Array<Record<string, unknown>>> => {
-    try {
-      if (!assetId) {
-        const { data: byKey } = await admin
-          .from('title_assets').select('id, master_state')
-          .eq('object_key', objectKey).limit(1).maybeSingle();
-        if (byKey?.id) {
-          assetId = byKey.id as string;
-          masterInR2 = byKey.master_state !== 'telegram' && byKey.master_state !== 'restoring';
-        }
-      }
-      if (!assetId) return [];
-      const { data: rows } = await admin.rpc('renditions_for', { p_asset: assetId });
-      return (rows ?? []) as Array<Record<string, unknown>>;
-    } catch (e) {
-      logRefusal('renditions_failed', String(e).slice(0, 160));
-      return [];
-    }
-  })();
 
   try {
     const { data: over, error: budgetErr } = await admin.rpc(
