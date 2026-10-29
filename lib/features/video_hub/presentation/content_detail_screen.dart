@@ -232,9 +232,15 @@ class _ContentDetailScreenState extends ConsumerState<ContentDetailScreen> {
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(14, 18, 14, 10),
-                child: Row(
+                // THE HEADING AT ITS OWN WIDTH, UP TO HALF THE ROW. In a
+                // Flexible it was handed half the row's free space and kept
+                // what it did not draw, so the controls at the end stood
+                // 74 px short of the edge (screens harness, detail_film).
+                child: LayoutBuilder(
+                  builder: (context, box) => Row(
                   children: <Widget>[
-                    Flexible(
+                    ConstrainedBox(
+                      constraints: BoxConstraints(maxWidth: box.maxWidth / 2),
                       child: Text(s.vhAlbum,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -247,7 +253,13 @@ class _ContentDetailScreenState extends ConsumerState<ContentDetailScreen> {
                       // tiles arrive is a second thing moving.
                       Text(
                         '${content.albumCount}',
-                        style: VH.meta.copyWith(fontSize: 12.5),
+                        // Secondary and medium weight: the thin tertiary
+                        // digits measured 3.6:1 on black (SCREEN_A11Y=1),
+                        // under the 4.5:1 text needs.
+                        style: VH.meta.copyWith(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w600,
+                            color: VH.textSecondary),
                       ),
                     ],
                     const SizedBox(width: VH.s2),
@@ -270,6 +282,7 @@ class _ContentDetailScreenState extends ConsumerState<ContentDetailScreen> {
                       ),
                     ),
                   ],
+                ),
                 ),
               ),
             ),
