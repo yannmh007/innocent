@@ -47,6 +47,7 @@ import android.util.Rational
 import com.ryanheise.audioservice.AudioServiceFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
+import io.flutter.plugin.common.StandardMethodCodec
 import java.io.ByteArrayOutputStream
 import kotlin.concurrent.thread
 
@@ -1208,14 +1209,20 @@ class MainActivity : AudioServiceFragmentActivity() {
         // offset. The file handling stays in Dart, which already owns the part
         // file, its resume point and its sink.
         //
-        // ON THE MAIN THREAD, and that is measured rather than assumed: the
-        // platform's AES is the CPU's own AES instruction on every ARMv8 phone,
-        // so a quarter-megabyte is a fraction of a millisecond, and the player
-        // asks about twelve times a second. Moving it to a background thread
-        // would add a hop and a copy to buy nothing.
+        // OFF THE MAIN THREAD (2026-10-29). It ran on it once, on the reasoning
+        // that the platform's AES is the CPU's own instruction and a hop to
+        // another thread buys nothing. Since Flutter 3.29 the app's Dart runs
+        // on Android's main thread too, so every byte ciphered there — and
+        // the copies in and out of the channel — was time taken from the
+        // frames being drawn: an OPPO A79 filling a film at 2.7 MB/s showed
+        // that thread 61 % busy (Test Lab run 40536305131). A background
+        // task queue runs the calls in order, one at a time, beside Dart.
+        val cryptoMessenger = flutterEngine.dartExecutor.binaryMessenger
         mediaCryptoChannel = MethodChannel(
-            flutterEngine.dartExecutor.binaryMessenger,
-            MEDIA_CRYPTO_CHANNEL
+            cryptoMessenger,
+            MEDIA_CRYPTO_CHANNEL,
+            StandardMethodCodec.INSTANCE,
+            cryptoMessenger.makeBackgroundTaskQueue()
         )
         mediaCryptoChannel?.setMethodCallHandler { call, result ->
             when (call.method) {

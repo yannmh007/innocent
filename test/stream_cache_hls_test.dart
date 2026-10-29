@@ -229,6 +229,35 @@ void main() {
     expect(waits, [const Duration(seconds: 2)]);
   });
 
+  test('registering the ladder reads the start rung\'s opening at once, in one read; '
+      'the player then finds index, init and first fragment on the phone', () async {
+    worker.asked.clear();
+    final master = await register('film7');
+    // Before the player has asked for anything at all.
+    // The length probe (8 KB) aside: reads of the film itself.
+    bool film720((String, int, int) a) => a.$1 == 'a720' && a.$3 - a.$2 + 1 > 8192;
+    for (var i = 0; i < 100 && !worker.asked.any(film720); i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+    }
+    final first = worker.asked.where(film720).toList();
+    expect(first.length, 1, reason: 'one read: ${worker.asked}');
+    expect(first.single.$2, 0);
+    expect(first.single.$3 + 1, StreamCacheServer.primeBytes);
+    final (_, mbody) = await _get(master);
+    final url = RegExp(r'^http://.+/720\.m3u8$', multiLine: true).firstMatch(String.fromCharCodes(mbody))!.group(0)!;
+    final segs = _segments(String.fromCharCodes((await _get(url)).$2));
+    final head = CmafHead.parse(r720.bytes)!;
+    expect(head.initEnd + segs[0].$1, lessThanOrEqualTo(StreamCacheServer.primeBytes),
+        reason: 'the test film\'s first fragment fits the opening read');
+    final (s0, a0, u0) = segs[0];
+    // The init segment lives in the same file as the fragments.
+    expect((await _get(u0, range: 'bytes=0-${head.initEnd - 1}')).$2,
+        r720.bytes.sublist(0, head.initEnd));
+    expect((await _get(u0, range: 'bytes=$a0-${a0 + s0 - 1}')).$2, r720.bytes.sublist(a0, a0 + s0));
+    final again = worker.asked.where((a) => film720(a) && a.$2 < StreamCacheServer.primeBytes).toList();
+    expect(again, first, reason: 'nothing in the opening asked for twice: $again');
+  });
+
   test('played again, it comes from the phone', () async {
     final master = await register('film2');
     final (_, mbody) = await _get(master);
@@ -267,7 +296,12 @@ void main() {
   test("the seek bar's preview: the smallest rung's init and one fragment, read exactly",
       () async {
     final master = await register('film6');
-    expect((await _get(master)).$1, 200);
+    final (code6, m6) = await _get(master);
+    expect(code6, 200);
+    // The start rung's opening, read at registration, finished first: what
+    // is counted below is the preview's alone.
+    final url720 = RegExp(r'^http://.+/720\.m3u8$', multiLine: true).firstMatch(String.fromCharCodes(m6))!.group(0)!;
+    expect((await _get(url720)).$1, 200);
     final head360 = CmafHead.parse(r360.bytes)!;
     final idx360 = CmafIndex.parse(r360.bytes)!;
     // A moment in the 31st fragment.

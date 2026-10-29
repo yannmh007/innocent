@@ -79,6 +79,11 @@ class StreamCacheServer {
   /// flash memory should not be asked for an fsync per network chunk.
   static const int _flushEvery = 4 * 1024 * 1024;
 
+  /// What a stretch's cache writes gather to before each is sealed and
+  /// written ([CacheWriter.batchBytes]): eight TLS records' worth, so a
+  /// megabyte is eight calls across the platform channel, not sixty-four.
+  static const int _teeBatch = 128 * 1024;
+
   static const int _upstreamTries = 3;
 
   /// ═══════════════════════════════════════════════════════════════════════
@@ -506,6 +511,15 @@ class StreamCacheServer {
       _ladders.remove(ladderId)?.io.close();
       _ladders[ladderId] = ladder;
       _playingLadder = ladderId;
+      // THE START RUNG'S OPENING, ASKED FOR NOW (2026-10-29), while the
+      // player screen is still being built. Left to the player, the head
+      // waited for its media playlist and the first fragment for the head:
+      // two round trips one after the other, 1.1 s of a realme's 3.9 s from
+      // Play to picture (Test Lab run 40516412135). One read of [primeBytes]
+      // brings the index, the init segment and the first fragment or two
+      // together; the player's own requests then find them on the phone, or
+      // wait for this read rather than ask again (the segment path's fill).
+      unawaited(_rungWithHead(ladder, start.height, firstRead: primeBytes));
       return 'http://127.0.0.1:$port/h/$token/$ladderId/master.m3u8';
     } catch (e) {
       if (kDebugMode) debugPrint('StreamCacheServer.hlsUrlFor: $e');
@@ -610,10 +624,16 @@ class StreamCacheServer {
     }
   }
 
+  /// How much of the start rung a ladder's registration reads at once:
+  /// the index and the first fragment or two of a streaming rung (a 720p
+  /// fragment is about 500 KB).
+  static const int primeBytes = 512 * 1024;
+
   /// The rung's head — its fragment table and init segment — read once,
   /// through its own address (so the bytes land in its cache entry, where
   /// the first segments will be found).
-  Future<_LadderRung?> _rungWithHead(_Ladder l, int height) async {
+  Future<_LadderRung?> _rungWithHead(_Ladder l, int height,
+      {int firstRead = 64 * 1024}) async {
     final r = l.rungs.where((x) => x.height == height).firstOrNull;
     if (r == null) return null;
     if (r.index != null && r.head != null) return r;
@@ -621,7 +641,7 @@ class StreamCacheServer {
       final client = HttpClient()..connectionTimeout = const Duration(seconds: 15);
       try {
         final head = BytesBuilder(copy: false);
-        var want = 64 * 1024;
+        var want = firstRead;
         for (var i = 0; i < 4; i++) {
           final req = await client.getUrl(Uri.parse(r.url));
           req.headers.set(HttpHeaders.rangeHeader, 'bytes=${head.length}-${want - 1}');
@@ -1381,7 +1401,7 @@ class StreamCacheServer {
 
     CacheWriter? writer;
     if (await store.hasRoom(protecting: entry.id)) {
-      writer = await store.openWriter(entry, pos);
+      writer = await store.openWriter(entry, pos, batchBytes: _teeBatch);
     }
 
     // Counted inside the tee rather than after it: `addStream` may stop part
