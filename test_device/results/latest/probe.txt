@@ -1,2 +1,19 @@
-probe: Chester Koong
-no such title
+probe: Sintel
+via: edge | rungs: 4
+door host (last two labels): ['innocentplayer', 'com']
+--- whole-object GET, headers only
+HTTP/2 200 
+content-type: video/mp4
+content-length: 1127595385
+accept-ranges: bytes
+--- ranged GET 0-1023, headers
+HTTP/2 206 
+content-length: 1024
+content-range: bytes 0-1023/1127595385
+--- one connection, 20 s
+curl: (28) Operation timed out after 20000 milliseconds with 767754240 out of 1127595385 bytes received
+bytes=767754240 speed=38386239 B/s ttfb=0.435825s
+--- three connections on three ranges, 20 s
+lane0 bytes=375865128 speed=77087604 B/s
+lane1 bytes=375865128 speed=48072008 B/s
+lane2 bytes=375865128 speed=44786593 B/s
