@@ -1327,6 +1327,11 @@ class StreamCacheServer {
             // bringing is not where the player is.
             f.cancel();
           }
+          // Not this rung's own read going on (a jump, or a change of
+          // quality onto it): what the other rungs read ahead is behind us.
+          // Not for a head (byte 0): the neighbours' heads are read beside
+          // the film playing, and must not end its read ahead.
+          if (pos > 0 && (f == null || f.to != pos)) _endOtherReadAheads(src);
           if (src.offline || gone.value) break;
           pos = await _segmentFromUpstream(out, store, entry, src, pos, endInclusive, gone,
               jump: f == null || f.to != pos);
@@ -1502,6 +1507,26 @@ class StreamCacheServer {
     }
   }
 
+  /// A JUMP ENDS WHAT THE LADDER'S OTHER RUNGS ARE READING AHEAD
+  /// (2026-10-29). Those reads are at the place the viewer left — the rung
+  /// before a change of quality, a neighbour warmed for a climb — and they
+  /// hold connections of the ladder's one pool (four in all) and its share
+  /// of the line. On a realme on a 3.4 Mbit/s line a swipe back waited 4.9 s
+  /// for a connection behind them (Test Lab run 40883836265). A read still
+  /// answering its own request, one somebody waits on, and a rung's head
+  /// (from byte 0) are left alone.
+  void _endOtherReadAheads(_Source src) {
+    final pool = src.shared;
+    if (pool == null) return;
+    for (final o in _sources.values) {
+      if (identical(o, src) || !identical(o.shared, pool)) continue;
+      final f = o.fill;
+      if (f != null && !f.done && !f.answering && f.waiting == 0 && f.from > 0) {
+        f.cancel();
+      }
+    }
+  }
+
   /// A segment of the ladder as HLS, and what follows it.
   ///
   /// ONE REQUEST, ON THE FILM'S POOLED CONNECTION: no lanes (a segment is a
@@ -1610,6 +1635,7 @@ class StreamCacheServer {
               break;
             }
             if (sent >= clientEnd) {
+              fill.answering = false;
               answered.complete(sent);
               if (jump) {
                 PlaybackLog.add('hls jump: answer ${headers} ms, first byte $firstByte ms, '
@@ -2885,6 +2911,9 @@ class _Fill {
 
   /// Asked when a request starts waiting: write what has gathered now.
   void Function()? onWait;
+
+  /// Still handing its own request the bytes it asked for.
+  bool answering = true;
   bool done = false;
   bool cancelled = false;
   void Function()? onCancel;

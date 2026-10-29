@@ -298,6 +298,37 @@ void main() {
         reason: 'the first segment waited for that read');
   });
 
+  test("a jump onto another rung ends the old rung's read ahead, which only held a "
+      'connection and the line', () async {
+    final master = await register('film11');
+    final (_, mbody) = await _get(master);
+    final text = String.fromCharCodes(mbody);
+    final url720 = RegExp(r'^http://.+/720\.m3u8$', multiLine: true).firstMatch(text)!.group(0)!;
+    final url360 = RegExp(r'^http://.+/360\.m3u8$', multiLine: true).firstMatch(text)!.group(0)!;
+    final s720 = _segments(String.fromCharCodes((await _get(url720)).$2));
+    final s360 = _segments(String.fromCharCodes((await _get(url360)).$2));
+    // About 1.7 Mbit/s: the 2 MB read ahead of a 720p segment takes ten
+    // seconds.
+    worker.paceMs = 300;
+    addTearDown(() => worker.paceMs = 0);
+    final (n10, a10, u10) = s720[10];
+    expect((await _get(u10, range: 'bytes=$a10-${a10 + n10 - 1}')).$2,
+        r720.bytes.sublist(a10, a10 + n10));
+    // A change of quality and a jump in one: 360p, two minutes on.
+    final (n60, a60, u60) = s360[60];
+    expect((await _get(u60, range: 'bytes=$a60-${a60 + n60 - 1}')).$2,
+        r360.bytes.sublist(a60, a60 + n60));
+    // Long enough for 720p's read ahead, left running, to have brought
+    // segment 15 (five segments at the line's pace).
+    await Future<void>.delayed(const Duration(seconds: 5));
+    final before = worker.asked.length;
+    final (n15, a15, u15) = s720[15];
+    expect((await _get(u15, range: 'bytes=$a15-${a15 + n15 - 1}')).$2,
+        r720.bytes.sublist(a15, a15 + n15));
+    expect(worker.asked.skip(before).where((x) => x.$1 == 'a720' && x.$2 == a15), isNotEmpty,
+        reason: "720p's read ahead from segment 10 ended at the jump, so segment 15 is read now");
+  });
+
   test('a segment answered 429 is waited out as asked, then comes back exactly',
       () async {
     final waits = <Duration>[];
