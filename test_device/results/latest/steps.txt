@@ -1,16 +1,16 @@
-[16:00:30] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
-[16:00:30] install
-[16:00:49] network: speed 2000:4000 kbit/s, delay 80:200 ms
-[16:00:49] network: 0.5% of incoming packets dropped on eth0
-[16:01:16] overlays: [x] com.android.internal.display.cutout.emulation.hole [x] com.android.internal.systemui.navbar.threebutton 
-[16:01:16] nav bar: navigationBars frame=[0,2274][1080,2400] navigationBars frame=[0,2274][1080,2400] 
-[16:01:16] library: pushing 24 files
-[16:01:52] library: MediaStore lists 24 videos
-[16:01:52] cold start
+[16:34:19] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
+[16:34:19] install
+[16:34:35] network: speed 2000:4000 kbit/s, delay 80:200 ms
+[16:34:35] network: 0.5% of incoming packets dropped on eth0
+[16:35:04] overlays: [x] com.android.internal.display.cutout.emulation.hole [x] com.android.internal.systemui.navbar.threebutton 
+[16:35:05] nav bar: navigationBars frame=[0,2274][1080,2400] navigationBars frame=[0,2274][1080,2400] 
+[16:35:05] library: pushing 24 files
+[16:35:34] library: MediaStore lists 24 videos
+[16:35:34] cold start
 Status: ok
-TotalTime: 4342
-WaitTime: 4353
-[16:02:07] flow jumps
-[16:02:08] jumps: 0839dacb-59ae-4c95-9279-4901b925965d, the viewer's jumps, 240 s, home after 130 s
-[16:06:21] flow jumps done
-[16:06:26] done
+TotalTime: 3350
+WaitTime: 3354
+[16:35:48] flow jumps
+[16:35:50] jumps: 0839dacb-59ae-4c95-9279-4901b925965d, the viewer's jumps, 240 s, home after 130 s
+[16:40:02] flow jumps done
+[16:40:08] done
