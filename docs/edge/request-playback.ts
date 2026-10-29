@@ -110,27 +110,40 @@ function b64urlFromBytes(b: Uint8Array): string {
 /// when the app asked for its token to be bound — the Worker then plays it
 /// only for a request carrying that install's id. The Worker ignores fields it
 /// does not know, so a token with them opens on a Worker without the check.
+/// The token key, derived once for each instance of the function rather
+/// than once for every URL — a grant signs up to five. Forgotten if
+/// deriving it fails, so a passing fault is not kept.
+///
+/// SHA-256 OF THE SECRET, NOT THE SECRET'S BYTES. AES-GCM wants exactly
+/// 32 bytes, which meant the secret had to be base64url of exactly that
+/// length — fine at a terminal with `openssl rand`, a trap for an operator
+/// on a phone whose natural source of a long random string is a password
+/// manager, which produces text with symbols in it. Hashing turns any
+/// string into 32 bytes on both sides, so there is no format to get wrong.
+/// The Worker derives its key the same way.
+let tokenKeyCache: Promise<CryptoKey> | null = null;
+function tokenKey() {
+  const made = tokenKeyCache ??= (async () => crypto.subtle.importKey(
+    'raw',
+    await crypto.subtle.digest(
+      'SHA-256', new TextEncoder().encode(STREAM_TOKEN_SECRET)),
+    { name: 'AES-GCM' },
+    false,
+    ['encrypt'],
+  ))();
+  made.catch(() => {
+    if (tokenKeyCache === made) tokenKeyCache = null;
+  });
+  return made;
+}
+
 async function workerUrl(
   objectKey: string,
   who: Record<string, string | number> = {},
 ): Promise<string | null> {
   if (!STREAM_BASE || !STREAM_TOKEN_SECRET) return null;
   try {
-    // SHA-256 OF THE SECRET, NOT THE SECRET'S BYTES. AES-GCM wants exactly
-    // 32 bytes, which meant the secret had to be base64url of exactly that
-    // length — fine at a terminal with `openssl rand`, a trap for an
-    // operator on a phone whose natural source of a long random string is a
-    // password manager, which produces text with symbols in it. Hashing
-    // turns any string into 32 bytes on both sides, so there is no format
-    // to get wrong. The Worker derives its key the same way.
-    const key = await crypto.subtle.importKey(
-      'raw',
-      await crypto.subtle.digest(
-        'SHA-256', new TextEncoder().encode(STREAM_TOKEN_SECRET)),
-      { name: 'AES-GCM' },
-      false,
-      ['encrypt'],
-    );
+    const key = await tokenKey();
     // 12 bytes is the size GCM is defined for; anything else costs an extra
     // derivation step on both sides for no benefit.
     const iv = crypto.getRandomValues(new Uint8Array(12));
@@ -235,6 +248,22 @@ const KEY_SOURCE = Deno.env.get('SB_SERVICE_KEY')
 /// the best copy that exists rather than a URL to nothing. (The downloader
 /// notices that the size changed and starts the file again rather than
 /// splicing two encodes together.) Null when there is neither.
+/// Whether a bearer token claims to be a signed-in user — read, not
+/// verified: it only decides whether Auth is asked, and Auth verifies. The
+/// anon key, a publishable key and an empty header name nobody.
+function namesAUser(token: string): boolean {
+  const parts = token.split('.');
+  if (parts.length !== 3) return false;
+  try {
+    const b = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const claims = JSON.parse(atob(b + '='.repeat((4 - b.length % 4) % 4)));
+    return typeof claims.sub === 'string' && claims.sub.length > 0 &&
+      claims.role !== 'anon' && claims.role !== 'service_role';
+  } catch {
+    return false;
+  }
+}
+
 function primaryUrl(
   masterUrl: string | null,
   ladder: Array<Record<string, unknown>>,
@@ -276,19 +305,6 @@ Deno.serve(async (req) => {
   // resolved from the JWT below, by Supabase, not from anything in the body.
   const admin = createClient(Deno.env.get('SUPABASE_URL') ?? '', SERVICE_KEY);
 
-  // Wrapped: an absent or malformed Authorization header is the NORMAL case
-  // for a free title, and `getUser` throwing on it must not become a 500 that
-  // the app reads as "server down".
-  let user: { id: string } | null = null;
-  try {
-    const { data: userData } = await admin.auth.getUser(
-      auth.replace('Bearer ', ''),
-    );
-    user = userData?.user ?? null;
-  } catch (_) {
-    user = null;
-  }
-
   let body: {
     title_id?: string; device_id?: string; asset_id?: string; bind?: boolean;
   };
@@ -300,11 +316,43 @@ Deno.serve(async (req) => {
   const titleId = body.title_id;
   if (!titleId) return json({ code: 'bad_request' }, 400);
 
-  const { data: title, error } = await admin
+  // ─── THREE QUESTIONS AT ONCE (2026-10-29) ────────────────────────
+  //
+  // Who is asking, the title, and the asset when one was named do not
+  // depend on one another, so they go out together. One after the other,
+  // with the budget and the ladder behind them, they were five round trips
+  // in a row: 330–670 ms of every Play in ap-southeast-1 (function logs).
+  //
+  // Wrapped: an absent or malformed Authorization header is the NORMAL case
+  // for a free title, and `getUser` throwing on it must not become a 500 that
+  // the app reads as "server down". And not asked at all for a token that
+  // names no user (the anon key, a publishable key): Auth would only say no.
+  const bearer = auth.replace('Bearer ', '');
+  const userQ = (async (): Promise<{ id: string } | null> => {
+    if (!namesAUser(bearer)) return null;
+    try {
+      const { data: userData } = await admin.auth.getUser(bearer);
+      return userData?.user ?? null;
+    } catch (_) {
+      return null;
+    }
+  })();
+  const titleQ = admin
     .from('titles')
     .select('id, access_tier, locator, published')
     .eq('id', titleId)
     .maybeSingle();
+  // Started now: a query builder sends nothing until it is awaited.
+  const assetQ = body.asset_id
+    ? Promise.resolve(admin
+      .from('title_assets')
+      .select('id, object_key, is_free, title_id, kind, master_state')
+      .eq('id', body.asset_id)
+      .maybeSingle())
+      .then((r: { data: any; error: any }) => r,
+        (e: unknown) => ({ data: null, error: { message: String(e) } }))
+    : null;
+  const [user, { data: title, error }] = await Promise.all([userQ, titleQ]);
 
   // Four different problems used to share one word. `query_failed` in
   // particular is not a missing title at all - it is the database refusing
@@ -344,12 +392,8 @@ Deno.serve(async (req) => {
   // leave a film's original only in Telegram once its streaming copies exist.
   let masterInR2 = true;
 
-  if (body.asset_id) {
-    const { data: asset, error: assetErr } = await admin
-      .from('title_assets')
-      .select('id, object_key, is_free, title_id, kind, master_state')
-      .eq('id', body.asset_id)
-      .maybeSingle();
+  if (body.asset_id && assetQ) {
+    const { data: asset, error: assetErr } = await assetQ;
 
     if (assetErr || !asset) {
       logRefusal('asset_missing', assetErr?.message ?? body.asset_id);
@@ -463,6 +507,37 @@ Deno.serve(async (req) => {
   // unmetered grant. The log says when it happens.
   const install = typeof body.device_id === 'string'
     ? body.device_id.slice(0, 128) : '';
+
+  // THE LADDER'S ROWS, ASKED FOR BESIDE THE BUDGET. Nothing is signed
+  // until the budget has said yes (below); a refusal only throws the rows
+  // away. Never rejects: a ladder that cannot be read is no reason to
+  // refuse playback — the original still plays, as before any of this.
+  //
+  // RENDITIONS BELONG TO A `title_assets` ROW, and a title played through
+  // its own `locator` has no asset id in the request — so it is looked up by
+  // key. Without that, the main film of every title would be the one thing
+  // in the catalogue that never got a smaller copy, which is exactly
+  // backwards.
+  const ladderQ = (async (): Promise<Array<Record<string, unknown>>> => {
+    try {
+      if (!assetId) {
+        const { data: byKey } = await admin
+          .from('title_assets').select('id, master_state')
+          .eq('object_key', objectKey).limit(1).maybeSingle();
+        if (byKey?.id) {
+          assetId = byKey.id as string;
+          masterInR2 = byKey.master_state !== 'telegram' && byKey.master_state !== 'restoring';
+        }
+      }
+      if (!assetId) return [];
+      const { data: rows } = await admin.rpc('renditions_for', { p_asset: assetId });
+      return (rows ?? []) as Array<Record<string, unknown>>;
+    } catch (e) {
+      logRefusal('renditions_failed', String(e).slice(0, 160));
+      return [];
+    }
+  })();
+
   try {
     const { data: over, error: budgetErr } = await admin.rpc(
       'take_playback_budget', {
@@ -524,26 +599,14 @@ Deno.serve(async (req) => {
   // because the server got cleverer is not an improvement.
   const renditions: Array<Record<string, unknown>> = [];
   try {
-    if (!assetId) {
-      const { data: byKey } = await admin
-        .from('title_assets').select('id, master_state')
-        .eq('object_key', objectKey).limit(1).maybeSingle();
-      if (byKey?.id) {
-        assetId = byKey.id as string;
-        masterInR2 = byKey.master_state !== 'telegram' && byKey.master_state !== 'restoring';
-      }
-    }
-    if (assetId) {
-      const { data: rows } = await admin.rpc('renditions_for', { p_asset: assetId });
-      for (const r of (rows ?? []) as Array<Record<string, unknown>>) {
-        const key = String(r.object_key ?? '');
-        if (!key) continue;
-        const rUrl = await workerUrl(key, who);
-        if (!rUrl) continue;
-        renditions.push({
-          height: r.height, kbps: r.kbps, bytes: r.bytes ?? null, url: rUrl,
-        });
-      }
+    for (const r of await ladderQ) {
+      const key = String(r.object_key ?? '');
+      if (!key) continue;
+      const rUrl = await workerUrl(key, who);
+      if (!rUrl) continue;
+      renditions.push({
+        height: r.height, kbps: r.kbps, bytes: r.bytes ?? null, url: rUrl,
+      });
     }
   } catch (e) {
     // A ladder that cannot be read is not a reason to refuse playback. The
