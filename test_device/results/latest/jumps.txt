@@ -1,28 +1,129 @@
-  LAB check: the film never started
-  LAB check summary pass=0 fail=0
-renewal alarms
+  LAB check seek PASS want=355 got=356 ready=527 ms playing=yes, moving by 3075 ms frozen=2602 ms engine=exo rung=360p
+  LAB check quality->240 PASS want=357 got=357 ready=650 ms playing=yes, moving by 786 ms frozen=458 ms engine=exo rung=360p
+  LAB check shown 240p after 2224 ms
+  LAB check skip+30 PASS want=389 got=390 ready=254 ms playing=yes, moving by 2423 ms frozen=1917 ms engine=exo rung=240p
+  LAB check swipe-120 PASS want=271 got=272 ready=592 ms playing=yes, moving by 2365 ms frozen=2041 ms engine=exo rung=240p
+  LAB check quality->auto PASS want=273 got=273 ready=607 ms playing=yes, moving by 761 ms frozen=204 ms engine=exo rung=240p
+  LAB check tour->720 PASS want=274 got=275 ready=754 ms playing=yes, moving by 793 ms frozen=228 ms engine=exo rung=240p
+  LAB check tour->480 PASS want=276 got=277 ready=583 ms playing=yes, moving by 3381 ms frozen=2301 ms engine=exo rung=720p
+  LAB check tour->360 PASS want=278 got=279 ready=1461 ms playing=yes, moving by 1693 ms frozen=912 ms engine=exo rung=480p
+  LAB check tour->240 PASS want=280 got=281 ready=1377 ms playing=yes, moving by 1907 ms frozen=510 ms engine=exo rung=360p
+  LAB check tour->original SKIP (line 1935 kbps, the copy 9989 kbps) engine=exo
+  LAB check tour->auto PASS want=288 got=288 ready=5751 ms playing=yes, moving by 7392 ms frozen=5007 ms engine=exo rung=480p
+  LAB check preview-far PASS at=666 bytes=6339 ms=1470
+  LAB check preview-again PASS at=666 bytes=6339 ms=0
+  LAB check preview-next PASS at=674 bytes=4597 ms=433
+  LAB check far-jump PASS want=666 got=666 ready=2901 ms playing=yes, moving by 2912 ms frozen=1803 ms engine=exo rung=480p
+  LAB check landing PASS held 1576 ms, first frame
+  LAB check back PASS frames=+72 moved=3048 ms at=719s left=715s
+  LAB check summary pass=16 fail=0
 play through the ladder on ExoPlayer
-open ladder (exo) start=0s autoplay=true rung=auto first=480
-exo load error 720.m3u8 type=4 HttpDataSourceException
+open ladder (exo) start=0s autoplay=true rung=auto first=720
+hls: 720p playlist, 444 segments
+exo tracks 720,480,360,240 selected=4 adaptive=true
+exo rung 720p 2000 kbps
+hls jump: answer 950 ms, first byte 1026 ms, segment 2220 ms (524288 B)
+hls: 360p playlist, 444 segments
+hls jump: answer 861 ms, first byte 1047 ms, segment 1666 ms (65536 B)
+hls jump: answer 356 ms, first byte 453 ms, segment 664 ms (65536 B)
+hls jump: answer 417 ms, first byte 447 ms, segment 1398 ms (160905 B)
+exo rung 360p 600 kbps
+hls jump: answer 479 ms, first byte 684 ms, segment 1279 ms (65536 B)
+exo picture after seek 1528 ms
+hls jump: answer 969 ms, first byte 1147 ms, segment 2329 ms (166749 B)
+exo rung=360p
+exo steer quality target=240 made=1 rungs=[720, 480, 360, 240] picks=240
+quality -> 240 on the ladder (no reopen)
+hls: 240p playlist, 444 segments
+hls jump: answer 562 ms, first byte 586 ms, segment 875 ms (75316 B)
+exo rung=360p
+exo rung 240p 300 kbps
+exo picture after seek 1113 ms
+hls jump: answer 427 ms, first byte 511 ms, segment 1843 ms (90078 B)
+exo rung=240p
+exo tracks 720,480,360,240 selected=4 adaptive=true
+exo picture after seek 919 ms
+hls jump: answer 352 ms, first byte 398 ms, segment 1893 ms (81497 B)
+exo rung=240p
+exo steer quality target=auto made=3 rungs=[720, 480, 360, 240] picks=480
+quality -> auto on the ladder (no reopen)
+hls: 480p playlist, 444 segments
+exo rung=240p
+exo steer quality target=720 made=3 rungs=[720, 480, 360, 240] picks=720
+quality -> 720 on the ladder (no reopen)
+exo rung=240p
+exo steer quality target=480 made=3 rungs=[720, 480, 360, 240] picks=480
+quality -> 480 on the ladder (no reopen)
+exo rung 720p 2000 kbps
+hls jump: answer 499 ms, first byte 526 ms, segment 4880 ms (619400 B)
+exo rung=720p
+exo steer quality target=360 made=3 rungs=[720, 480, 360, 240] picks=360
+quality -> 360 on the ladder (no reopen)
+hls jump: answer 844 ms, first byte 859 ms, segment 1034 ms (195413 B)
+exo rung 480p 1000 kbps
+hls jump: answer 301 ms, first byte 373 ms, segment 847 ms (189173 B)
+exo rung=480p
+exo steer quality target=240 made=3 rungs=[720, 480, 360, 240] picks=240
+quality -> 240 on the ladder (no reopen)
 hls: a segment read stalled 8 s, ended
-hls: a segment read stalled 8 s, ended
-exo load error 720.m3u8 type=4 HttpDataSourceException
-hls: a segment read stalled 8 s, ended
-exo load error 720.m3u8 type=4 HttpDataSourceException
+exo rung 360p 600 kbps
+hls jump: answer 509 ms, first byte 511 ms, segment 1229 ms (8018 B)
+exo rung=360p
+renewal: copies from the grant held 38 s
+exo rung 240p 300 kbps
+quality -> original at 288s
+exo tracks 818 selected=1 adaptive=false
+exo rung 818p 9989 kbps
+quality -> auto at 288s
+open ladder (exo) start=288s autoplay=true rung=auto first=720
 hls: 720p playlist, 444 segments
 exo tracks 720,480,360,240 selected=4 adaptive=true
 hls: 480p playlist, 444 segments
 exo rung 480p 1000 kbps
-LAB away: home
+hls jump: answer 731 ms, first byte 741 ms, segment 2459 ms (284270 B)
+hls jump: answer 265 ms, first byte 272 ms, segment 981 ms (282747 B)
+exo rung=480p
+hls jump: answer 277 ms, first byte 282 ms, segment 506 ms (260189 B)
+exo picture after seek 1696 ms
+exo landing picture held 1576 ms, first frame
+exo rung=480p
+hls jump: answer 288 ms, first byte 294 ms, segment 795 ms (208833 B)
+hls jump: answer 352 ms, first byte 364 ms, segment 598 ms (240426 B)
+hls jump: answer 237 ms, first byte 238 ms, segment 628 ms (323346 B)
 hls: a segment read stalled 8 s, ended
+hls jump: answer 328 ms, first byte 330 ms, segment 772 ms (355609 B)
+hls jump: answer 235 ms, first byte 238 ms, segment 588 ms (172263 B)
+hls jump: answer 269 ms, first byte 273 ms, segment 427 ms (38117 B)
+hls jump: answer 235 ms, first byte 238 ms, segment 702 ms (201111 B)
+hls jump: answer 263 ms, first byte 266 ms, segment 387 ms (127275 B)
+hls jump: answer 232 ms, first byte 236 ms, segment 317 ms (163440 B)
+hls jump: answer 243 ms, first byte 248 ms, segment 427 ms (99190 B)
+hls jump: answer 264 ms, first byte 268 ms, segment 587 ms (112647 B)
+hls jump: answer 261 ms, first byte 264 ms, segment 462 ms (109662 B)
+hls jump: answer 246 ms, first byte 254 ms, segment 363 ms (115046 B)
+hls jump: answer 250 ms, first byte 255 ms, segment 393 ms (116648 B)
+hls jump: answer 292 ms, first byte 297 ms, segment 402 ms (118476 B)
+hls jump: answer 239 ms, first byte 274 ms, segment 299 ms (125394 B)
+hls jump: answer 294 ms, first byte 299 ms, segment 816 ms (240392 B)
+hls jump: answer 230 ms, first byte 238 ms, segment 364 ms (240830 B)
+hls jump: answer 210 ms, first byte 214 ms, segment 305 ms (188532 B)
+hls jump: answer 399 ms, first byte 403 ms, segment 690 ms (168240 B)
+hls jump: answer 314 ms, first byte 315 ms, segment 518 ms (137431 B)
+hls jump: answer 228 ms, first byte 230 ms, segment 781 ms (345650 B)
+hls jump: answer 241 ms, first byte 249 ms, segment 696 ms (288919 B)
+hls jump: answer 241 ms, first byte 250 ms, segment 767 ms (302179 B)
+LAB away: home
 lifecycle hidden mounted=true
 lifecycle paused mounted=true
-hls: a segment read stalled 8 s, ended
+hls jump: answer 261 ms, first byte 266 ms, segment 401 ms (241059 B)
+hls jump: answer 211 ms, first byte 214 ms, segment 300 ms (198992 B)
+hls jump: answer 194 ms, first byte 195 ms, segment 293 ms (208871 B)
+hls jump: answer 204 ms, first byte 209 ms, segment 275 ms (159521 B)
+hls jump: answer 196 ms, first byte 200 ms, segment 273 ms (153881 B)
+hls jump: answer 285 ms, first byte 296 ms, segment 435 ms (260409 B)
 LAB away: back
 lifecycle detached mounted=true
 lifecycle resumed mounted=true
 lifecycle inactive mounted=true
 lifecycle resumed mounted=true
-hls: a segment read stalled 8 s, ended
-hls: a segment read stalled 8 s, ended
-hls: a segment read stalled 8 s, ended
+exo rung 720p 2000 kbps
