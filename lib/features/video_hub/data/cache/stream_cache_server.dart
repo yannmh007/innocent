@@ -396,6 +396,7 @@ class StreamCacheServer {
     int? total,
     String label = '',
     bool probeNow = true,
+    HttpClient? pool,
   }) async {
     try {
       await StreamCacheStore.instance.load();
@@ -409,7 +410,10 @@ class StreamCacheServer {
           .entryFor(cacheId, total: total, label: label);
       // The film's previous registration, if any, gives up its connections.
       _sources[cacheId]?.close();
-      final src = _sources[cacheId] = _Source(upstream: upstream, refresh: refresh);
+      // [pool]: a ladder's connections ([_Ladder.io]), in place before the
+      // length check below goes out, so its connection is the ladder's.
+      final src = _sources[cacheId] = _Source(upstream: upstream, refresh: refresh)
+        ..shared = pool;
       // CONFIRMED A MOMENT AGO, BY A WARM-UP (see [warmOpening]): its length
       // was read from the server and where its index is with it. Asking again
       // would put one round trip — on a Myanmar line, the whole of a warmed
@@ -501,37 +505,44 @@ class StreamCacheServer {
       final port = _server?.port;
       final token = _token;
       if (port == null || token == null) return null;
-      final entries = <_LadderRung>[];
-      for (final r in rungs) {
-        final url = await localUrlFor(
-          cacheId: r.cacheId,
-          upstream: r.upstream,
-          refresh: r.refresh,
-          total: r.bytes,
-          label: label,
-          // The start rung's length check is started below, on the
-          // ladder's pool.
-          probeNow: false,
-        );
-        if (url == null) return null;
-        _sources[r.cacheId]?.segmented = true;
-        entries.add(_LadderRung(height: r.height, kbps: r.kbps, cacheId: r.cacheId, url: url));
-      }
       final start = rungs.where((r) => r.cacheId == startCacheId).firstOrNull ?? rungs.first;
-      final ladder = _Ladder(
-          rungs: entries, aspect: aspect, frameRate: frameRate, startHeight: start.height);
-      for (final r in rungs) {
-        _sources[r.cacheId]?.shared = ladder.io;
+      // ALL RUNGS AT ONCE, THE START RUNG'S LENGTH CHECK AMONG THEM, ON THE
+      // LADDER'S POOL (2026-10-29). One after the other, the rungs' cache
+      // entries (a folder, a fresh IV from the cipher, two small files
+      // each) were most of the 0.9–1.2 s between the grant and the player
+      // opening on the device lab's emulator (runs 40895589540,
+      // 40903780831). And
+      // the length check went out on the start rung's
+      // own pool, before the ladder's existed; the head read, which waits
+      // for it, then opened a connection of its own: two handshakes one
+      // after the other before the playlist, each two round trips on a
+      // Myanmar line. Now the check's connection carries the head next,
+      // then the first fragment.
+      final pool = _Ladder.pool();
+      final urls = await Future.wait([
+        for (final r in rungs)
+          localUrlFor(
+            cacheId: r.cacheId,
+            upstream: r.upstream,
+            refresh: r.refresh,
+            total: r.bytes,
+            label: label,
+            probeNow: identical(r, start),
+            pool: pool,
+          ),
+      ]);
+      if (urls.contains(null)) {
+        pool.close();
+        return null;
       }
-      // THE LENGTH CHECK ON THE LADDER'S POOL (2026-10-29). Started inside
-      // [localUrlFor] it went out on the rung's own pool, before the
-      // ladder's existed, and the head read below — which waits for it —
-      // then opened a connection of its own: two handshakes one after the
-      // other before the playlist, each two round trips on a Myanmar line.
-      // Started here, its connection carries the head next, then the first
-      // fragment.
-      final first = _sources[start.cacheId];
-      if (first != null && !first.checkedTotal) first.probing ??= _probeTotal(first);
+      final entries = <_LadderRung>[];
+      for (var i = 0; i < rungs.length; i++) {
+        final r = rungs[i];
+        _sources[r.cacheId]?.segmented = true;
+        entries.add(_LadderRung(height: r.height, kbps: r.kbps, cacheId: r.cacheId, url: urls[i]!));
+      }
+      final ladder = _Ladder(
+          rungs: entries, io: pool, aspect: aspect, frameRate: frameRate, startHeight: start.height);
       // A ladder registered again (a renewal, a return from Original): the
       // old pool closes once its reads are done.
       _ladders.remove(ladderId)?.io.close();
@@ -2882,12 +2893,15 @@ class HlsRungSource {
 }
 
 class _Ladder {
-  _Ladder({required this.rungs, this.aspect, this.frameRate, this.startHeight});
+  _Ladder(
+      {required this.rungs, required this.io, this.aspect, this.frameRate, this.startHeight});
   final List<_LadderRung> rungs;
 
   /// One pool for every rung (see [_Source.shared]), kept a minute between
-  /// reads.
-  final HttpClient io = HttpClient()
+  /// reads: [pool], made before the rungs are registered.
+  final HttpClient io;
+
+  static HttpClient pool() => HttpClient()
     ..connectionTimeout = const Duration(seconds: 15)
     ..idleTimeout = const Duration(seconds: 60)
     ..maxConnectionsPerHost = 4;
