@@ -659,8 +659,9 @@ class StreamCacheServer {
     }
   }
 
-  /// The first read of a rung's head: its index and init segment, in every
-  /// ladder the catalogue has (a longer index is read on from there).
+  /// The first read of a rung's head: its index and init segment. The index
+  /// is 12 bytes a fragment, so this holds some 5,000 of them — two and a
+  /// half hours of two-second fragments; a longer one is read on from there.
   static const int headRead = 64 * 1024;
 
   /// The rung's head — its fragment table and init segment — read once,
