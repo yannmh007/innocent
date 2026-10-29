@@ -128,6 +128,38 @@ jobs:
           print('every range identical on both paths')
           PY
 
+      - name: Grant time, asked the way the app asks
+        env:
+          SB_URL: ${{ secrets.SUPABASE_URL }}
+          SB_KEY: sb_publishable_vTiAxBAhnZL_BqFcZD4m9A_Rb8Q8PHj
+        run: |
+          set -euo pipefail
+          # The app pins request-playback beside the database
+          # (x-region: ap-southeast-1); this runner is in the US, so each
+          # figure is the function's own time plus one trip across the
+          # Pacific. The function's own share is in its logs
+          # (execution_time_ms). Five asks; the first may meet a cold start.
+          python3 - <<'PY'
+          import json, os, time, urllib.request
+          tid = open('/tmp/title_id').read().strip()
+          ms = []
+          for i in range(5):
+              req = urllib.request.Request(
+                  os.environ['SB_URL'] + '/functions/v1/request-playback',
+                  data=json.dumps({'title_id': tid, 'device_id': 'grant-time-check'}).encode(),
+                  headers={'apikey': os.environ['SB_KEY'], 'Content-Type': 'application/json',
+                           'x-region': 'ap-southeast-1', 'User-Agent': 'innocent-playback-check/1'},
+                  method='POST')
+              t = time.time()
+              with urllib.request.urlopen(req, timeout=60) as r:
+                  r.read()
+                  code = r.status
+              ms.append(int((time.time() - t) * 1000))
+              print(f'grant {i + 1}: HTTP {code} in {ms[-1]} ms')
+          warm = sorted(ms[1:])
+          print(f'warm median {warm[len(warm) // 2]} ms, best {warm[0]} ms')
+          PY
+
       # PHASE 1 (2026-10-22), PROVED ON THE REAL FUNCTION AND WORKER. A grant
       # asked for with an install id and `bind: true` must come back bound:
       # through the Worker, the right install says `X-Bind: ok`, none or

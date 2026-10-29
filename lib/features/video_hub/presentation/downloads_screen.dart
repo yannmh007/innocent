@@ -940,7 +940,14 @@ class _DownloadQualityRowState extends State<_DownloadQualityRow> {
               value: _choices.contains(_value) ? _value : DownloadQuality.ask,
               dropdownColor: VH.surface2,
               underline: const SizedBox.shrink(),
-              style: VH.meta.copyWith(fontSize: 12.5, color: VH.textPrimary),
+              // The theme's face under the row's look: a dropdown's style
+              // replaces the ambient one rather than merging with it, so a
+              // bare VH.meta drew the choice in no family at all (boxes in
+              // the screens harness, downloads_small_my).
+              style: (Theme.of(context).textTheme.bodyMedium ??
+                      const TextStyle())
+                  .merge(VH.meta
+                      .copyWith(fontSize: 12.5, color: VH.textPrimary)),
               selectedItemBuilder: (_) => <Widget>[
                 for (final v in _choices)
                   Align(

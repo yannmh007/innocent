@@ -38,6 +38,15 @@ class _Worker {
   int limitNext = 0;
   int limited = 0;
 
+  /// The line's pace: a wait before each 64 KB (0: as fast as it goes).
+  int paceMs = 0;
+
+  /// The next request starting at [stallFrom] sends [stallAfter] bytes and
+  /// then nothing more, its connection held open — a connection stalled on
+  /// a lossy line.
+  int? stallFrom;
+  int stallAfter = 0;
+
   String url(String name) => 'http://127.0.0.1:${server.port}/v/$name';
 
   Future<void> start() async {
@@ -66,9 +75,16 @@ class _Worker {
       res.statusCode = m == null ? 200 : 206;
       if (m != null) res.headers.set('content-range', 'bytes $a-$b/${body.length}');
       res.contentLength = b - a + 1;
+      final stall = m != null && a == stallFrom ? stallAfter : null;
+      if (stall != null) stallFrom = null;
       try {
         // A little at a time, as a line delivers it.
         for (var at = a; at <= b; at += 64 * 1024) {
+          if (stall != null && at - a >= stall) {
+            await Future<void>.delayed(const Duration(seconds: 30));
+            break;
+          }
+          if (paceMs > 0) await Future<void>.delayed(Duration(milliseconds: paceMs));
           res.add(body.sublist(at, (at + 64 * 1024).clamp(0, b + 1)));
           await res.flush();
         }
@@ -210,6 +226,109 @@ void main() {
     expect((await _get(u61, range: 'bytes=$a61-${a61 + s61 - 1}')).$2, r720.bytes.sublist(a61, a61 + s61));
   });
 
+  test('a skip far ahead inside the read-ahead is a jump: answered at once, not after '
+      'the bytes on the way to it', () async {
+    final master = await register('film8');
+    final (_, mbody) = await _get(master);
+    final url = RegExp(r'^http://.+/720\.m3u8$', multiLine: true).firstMatch(String.fromCharCodes(mbody))!.group(0)!;
+    final segs = _segments(String.fromCharCodes((await _get(url)).$2));
+    // About 1.7 Mbit/s: the 2 MB read ahead of a segment takes ten seconds.
+    worker.paceMs = 300;
+    addTearDown(() => worker.paceMs = 0);
+    final (s10, a10, u10) = segs[10];
+    expect((await _get(u10, range: 'bytes=$a10-${a10 + s10 - 1}')).$2,
+        r720.bytes.sublist(a10, a10 + s10));
+    // Twenty seconds on: inside that read ahead, 1.4 MB beyond where it is.
+    final (s20, a20, u20) = segs[20];
+    expect(a20 - a10, lessThan(StreamCacheServer.segmentReadAhead));
+    final clock = Stopwatch()..start();
+    final (code, got) = await _get(u20, range: 'bytes=$a20-${a20 + s20 - 1}');
+    expect(code, 206);
+    expect(got, r720.bytes.sublist(a20, a20 + s20));
+    expect(clock.elapsed, lessThan(const Duration(seconds: 4)),
+        reason: 'its own read, not the 1.4 MB in front of it');
+  });
+
+  test('a read-ahead that stalls is replaced after a quiet spell, not waited out',
+      () async {
+    final master = await register('film9');
+    final (_, mbody) = await _get(master);
+    final url = RegExp(r'^http://.+/720\.m3u8$', multiLine: true).firstMatch(String.fromCharCodes(mbody))!.group(0)!;
+    final segs = _segments(String.fromCharCodes((await _get(url)).$2));
+    // The segment and a little of the next, then the connection goes dead.
+    final (s30, a30, u30) = segs[30];
+    worker.stallFrom = a30;
+    worker.stallAfter = 192 * 1024;
+    expect((await _get(u30, range: 'bytes=$a30-${a30 + s30 - 1}')).$2,
+        r720.bytes.sublist(a30, a30 + s30));
+    final (s31, a31, u31) = segs[31];
+    final clock = Stopwatch()..start();
+    final (code, got) = await _get(u31, range: 'bytes=$a31-${a31 + s31 - 1}');
+    expect(code, 206);
+    expect(got, r720.bytes.sublist(a31, a31 + s31));
+    expect(clock.elapsed, lessThan(const Duration(seconds: 6)),
+        reason: 'three quiet seconds, then a read of its own — it waited 20 s');
+  });
+
+  test("on a slow line the start rung's playlist is out as soon as its index is, "
+      'not when the whole opening is; the first segment follows from that read',
+      () async {
+    // About 1.7 Mbit/s: the opening's 512 KB takes 2.4 s to arrive.
+    worker.paceMs = 300;
+    addTearDown(() => worker.paceMs = 0);
+    final before = worker.asked.length;
+    final clock = Stopwatch()..start();
+    final master = await register('film10');
+    final (_, mbody) = await _get(master);
+    final url = RegExp(r'^http://.+/720\.m3u8$', multiLine: true).firstMatch(String.fromCharCodes(mbody))!.group(0)!;
+    final (code, pl) = await _get(url);
+    expect(code, 200);
+    expect(clock.elapsed, lessThan(const Duration(milliseconds: 1800)),
+        reason: 'the index is in the first 64 KB');
+    final segs = _segments(String.fromCharCodes(pl));
+    final (s0, a0, u0) = segs[0];
+    expect((await _get(u0, range: 'bytes=$a0-${a0 + s0 - 1}')).$2,
+        r720.bytes.sublist(a0, a0 + s0));
+    // Beside the 8 KB that finds the film's length, one read of the opening.
+    final film = worker.asked.skip(before)
+        .where((a) => a.$1 == 'a720' && a.$3 - a.$2 + 1 > 8192).toList();
+    expect(film.where((a) => a.$2 == 0).length, 1,
+        reason: 'the opening read once: index, init and first fragment');
+    expect(film.where((a) => a.$2 > 0 && a.$2 <= a0).length, 0,
+        reason: 'the first segment waited for that read');
+  });
+
+  test("a jump onto another rung ends the old rung's read ahead, which only held a "
+      'connection and the line', () async {
+    final master = await register('film11');
+    final (_, mbody) = await _get(master);
+    final text = String.fromCharCodes(mbody);
+    final url720 = RegExp(r'^http://.+/720\.m3u8$', multiLine: true).firstMatch(text)!.group(0)!;
+    final url360 = RegExp(r'^http://.+/360\.m3u8$', multiLine: true).firstMatch(text)!.group(0)!;
+    final s720 = _segments(String.fromCharCodes((await _get(url720)).$2));
+    final s360 = _segments(String.fromCharCodes((await _get(url360)).$2));
+    // About 1.7 Mbit/s: the 2 MB read ahead of a 720p segment takes ten
+    // seconds.
+    worker.paceMs = 300;
+    addTearDown(() => worker.paceMs = 0);
+    final (n10, a10, u10) = s720[10];
+    expect((await _get(u10, range: 'bytes=$a10-${a10 + n10 - 1}')).$2,
+        r720.bytes.sublist(a10, a10 + n10));
+    // A change of quality and a jump in one: 360p, two minutes on.
+    final (n60, a60, u60) = s360[60];
+    expect((await _get(u60, range: 'bytes=$a60-${a60 + n60 - 1}')).$2,
+        r360.bytes.sublist(a60, a60 + n60));
+    // Long enough for 720p's read ahead, left running, to have brought
+    // segment 15 (five segments at the line's pace).
+    await Future<void>.delayed(const Duration(seconds: 5));
+    final before = worker.asked.length;
+    final (n15, a15, u15) = s720[15];
+    expect((await _get(u15, range: 'bytes=$a15-${a15 + n15 - 1}')).$2,
+        r720.bytes.sublist(a15, a15 + n15));
+    expect(worker.asked.skip(before).where((x) => x.$1 == 'a720' && x.$2 == a15), isNotEmpty,
+        reason: "720p's read ahead from segment 10 ended at the jump, so segment 15 is read now");
+  });
+
   test('a segment answered 429 is waited out as asked, then comes back exactly',
       () async {
     final waits = <Duration>[];
@@ -227,6 +346,35 @@ void main() {
     expect(got, r720.bytes.sublist(a45, a45 + s45));
     expect(worker.limited, 1);
     expect(waits, [const Duration(seconds: 2)]);
+  });
+
+  test('registering the ladder reads the start rung\'s opening at once, in one read; '
+      'the player then finds index, init and first fragment on the phone', () async {
+    worker.asked.clear();
+    final master = await register('film7');
+    // Before the player has asked for anything at all.
+    // The length probe (8 KB) aside: reads of the film itself.
+    bool film720((String, int, int) a) => a.$1 == 'a720' && a.$3 - a.$2 + 1 > 8192;
+    for (var i = 0; i < 100 && !worker.asked.any(film720); i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+    }
+    final first = worker.asked.where(film720).toList();
+    expect(first.length, 1, reason: 'one read: ${worker.asked}');
+    expect(first.single.$2, 0);
+    expect(first.single.$3 + 1, StreamCacheServer.primeBytes);
+    final (_, mbody) = await _get(master);
+    final url = RegExp(r'^http://.+/720\.m3u8$', multiLine: true).firstMatch(String.fromCharCodes(mbody))!.group(0)!;
+    final segs = _segments(String.fromCharCodes((await _get(url)).$2));
+    final head = CmafHead.parse(r720.bytes)!;
+    expect(head.initEnd + segs[0].$1, lessThanOrEqualTo(StreamCacheServer.primeBytes),
+        reason: 'the test film\'s first fragment fits the opening read');
+    final (s0, a0, u0) = segs[0];
+    // The init segment lives in the same file as the fragments.
+    expect((await _get(u0, range: 'bytes=0-${head.initEnd - 1}')).$2,
+        r720.bytes.sublist(0, head.initEnd));
+    expect((await _get(u0, range: 'bytes=$a0-${a0 + s0 - 1}')).$2, r720.bytes.sublist(a0, a0 + s0));
+    final again = worker.asked.where((a) => film720(a) && a.$2 < StreamCacheServer.primeBytes).toList();
+    expect(again, first, reason: 'nothing in the opening asked for twice: $again');
   });
 
   test('played again, it comes from the phone', () async {
@@ -267,7 +415,12 @@ void main() {
   test("the seek bar's preview: the smallest rung's init and one fragment, read exactly",
       () async {
     final master = await register('film6');
-    expect((await _get(master)).$1, 200);
+    final (code6, m6) = await _get(master);
+    expect(code6, 200);
+    // The start rung's opening, read at registration, finished first: what
+    // is counted below is the preview's alone.
+    final url720 = RegExp(r'^http://.+/720\.m3u8$', multiLine: true).firstMatch(String.fromCharCodes(m6))!.group(0)!;
+    expect((await _get(url720)).$1, 200);
     final head360 = CmafHead.parse(r360.bytes)!;
     final idx360 = CmafIndex.parse(r360.bytes)!;
     // A moment in the 31st fragment.

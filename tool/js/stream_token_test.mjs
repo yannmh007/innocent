@@ -51,6 +51,7 @@ const mint = await import('data:text/javascript,' + encodeURIComponent(
   // bodies are plain JavaScript; only the signatures carry types.
   mintSrc
     .replace(/: Record<string, string \| number>/g, '')
+    .replace(/: Promise<CryptoKey> \| null/g, '')
     .replace(/: Promise<string \| null>/g, '')
     .replace(/: Promise<string>/g, '')
     .replace(/: Uint8Array\b/g, '')

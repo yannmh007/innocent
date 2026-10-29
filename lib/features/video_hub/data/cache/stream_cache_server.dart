@@ -79,6 +79,17 @@ class StreamCacheServer {
   /// flash memory should not be asked for an fsync per network chunk.
   static const int _flushEvery = 4 * 1024 * 1024;
 
+  /// What a stretch's cache writes gather to before each is sealed and
+  /// written ([CacheWriter.batchBytes]): eight TLS records' worth, so a
+  /// megabyte is eight calls across the platform channel, not sixty-four.
+  static const int _teeBatch = 128 * 1024;
+
+  /// While a request waits for a segment read's bytes: written in pieces of
+  /// this, or after [_waitFor], whichever comes first — a quarter of the
+  /// calls a TLS record each would make, and a tenth of a second at most.
+  static const int _waitBatch = 64 * 1024;
+  static const Duration _waitFor = Duration(milliseconds: 100);
+
   static const int _upstreamTries = 3;
 
   /// ═══════════════════════════════════════════════════════════════════════
@@ -452,6 +463,15 @@ class StreamCacheServer {
   /// next unless it jumps.
   static int segmentReadAhead = 2 * 1024 * 1024;
 
+  /// How far ahead of a read-ahead's progress a request may start and still
+  /// wait for it: about a second of a 4G line. Further, and the bytes on the
+  /// way are only in its way — a skip inside the read-ahead is a jump.
+  static int segmentWaitAhead = 512 * 1024;
+
+  /// How long a segment's connection may bring nothing before it is taken
+  /// as stalled and ended — ExoPlayer's own read timeout.
+  static Duration segmentStall = const Duration(seconds: 8);
+
   /// The line's speed as the last stretch from the Worker measured it, in
   /// kbps: what the player's rung choice is fed (its own meter sees this
   /// loopback, where a cached segment arrives at flash speed). Null until
@@ -506,6 +526,15 @@ class StreamCacheServer {
       _ladders.remove(ladderId)?.io.close();
       _ladders[ladderId] = ladder;
       _playingLadder = ladderId;
+      // THE START RUNG'S OPENING, ASKED FOR NOW (2026-10-29), while the
+      // player screen is still being built. Left to the player, the head
+      // waited for its media playlist and the first fragment for the head:
+      // two round trips one after the other, 1.1 s of a realme's 3.9 s from
+      // Play to picture (Test Lab run 40516412135). One read of [primeBytes]
+      // brings the index, the init segment and the first fragment or two
+      // together; the player's own requests then find them on the phone, or
+      // wait for this read rather than ask again (the segment path's fill).
+      unawaited(_rungWithHead(ladder, start.height, firstRead: primeBytes));
       return 'http://127.0.0.1:$port/h/$token/$ladderId/master.m3u8';
     } catch (e) {
       if (kDebugMode) debugPrint('StreamCacheServer.hlsUrlFor: $e');
@@ -610,18 +639,25 @@ class StreamCacheServer {
     }
   }
 
+  /// How much of the start rung a ladder's registration reads at once:
+  /// the index and the first fragment or two of a streaming rung (a 720p
+  /// fragment is about 500 KB).
+  static const int primeBytes = 512 * 1024;
+
   /// The rung's head — its fragment table and init segment — read once,
   /// through its own address (so the bytes land in its cache entry, where
   /// the first segments will be found).
-  Future<_LadderRung?> _rungWithHead(_Ladder l, int height) async {
+  Future<_LadderRung?> _rungWithHead(_Ladder l, int height,
+      {int firstRead = 64 * 1024}) async {
     final r = l.rungs.where((x) => x.height == height).firstOrNull;
     if (r == null) return null;
     if (r.index != null && r.head != null) return r;
     final loading = r.loading ??= () async {
       final client = HttpClient()..connectionTimeout = const Duration(seconds: 15);
+      var handedOff = false;
       try {
         final head = BytesBuilder(copy: false);
-        var want = 64 * 1024;
+        var want = firstRead;
         for (var i = 0; i < 4; i++) {
           final req = await client.getUrl(Uri.parse(r.url));
           req.headers.set(HttpHeaders.rangeHeader, 'bytes=${head.length}-${want - 1}');
@@ -630,24 +666,49 @@ class StreamCacheServer {
             await resp.drain<void>();
             return;
           }
-          await for (final chunk in resp) {
-            head.add(chunk);
+          // THE INDEX AS SOON AS IT IS HERE (2026-10-29), not when the whole
+          // read is. With the start rung's 512 KB read at once the playlist
+          // waited for all of it: on a 4 Mbit/s line the first picture came
+          // 2 s later than it had (device lab run 40843577992). The rest of
+          // the read goes on into the cache, where the player's first
+          // segment waits for it (the segment path's fill).
+          final pieces = StreamIterator<List<int>>(resp);
+          int? need;
+          while (await pieces.moveNext()) {
+            head.add(pieces.current);
+            if (need != null && head.length < need) continue;
+            final bytes = head.toBytes();
+            final idx = CmafIndex.parse(bytes);
+            if (idx != null) {
+              r.index = idx;
+              r.head = CmafHead.parse(bytes);
+              handedOff = true;
+              unawaited(() async {
+                try {
+                  while (await pieces.moveNext()) {}
+                } catch (_) {
+                  // The player's own reads go on regardless.
+                } finally {
+                  client.close(force: true);
+                }
+              }());
+              return;
+            }
+            need = CmafIndex.headBytes(bytes);
+            if (need != null && need > _switchHeadCap) {
+              await pieces.cancel();
+              return;
+            }
           }
           final bytes = head.toBytes();
-          final idx = CmafIndex.parse(bytes);
-          if (idx != null) {
-            r.index = idx;
-            r.head = CmafHead.parse(bytes);
-            return;
-          }
-          final need = CmafIndex.headBytes(bytes);
-          if (need == null || need <= bytes.length || need > _switchHeadCap) return;
-          want = need;
+          final more = CmafIndex.headBytes(bytes);
+          if (more == null || more <= bytes.length || more > _switchHeadCap) return;
+          want = more;
         }
       } catch (e) {
         if (kDebugMode) debugPrint('StreamCacheServer._rungWithHead: $e');
       } finally {
-        client.close(force: true);
+        if (!handedOff) client.close(force: true);
       }
     }();
     await loading;
@@ -1250,16 +1311,27 @@ class StreamCacheServer {
         // ── a segment of the ladder as HLS: wait for, or read ahead ────
         if (src.segmented) {
           final f = src.fill;
-          if (f != null && !f.done && f.from <= pos && pos < f.to) {
+          if (f != null && !f.done && f.from <= pos && pos < f.to &&
+              pos - f.at <= segmentWaitAhead) {
             // Its bytes are already on their way, read ahead with the
-            // segment before: wait for them rather than ask twice.
-            await f.until(() => entry.partAt(pos) != null, gone);
+            // segment before, and close: wait for them rather than ask
+            // twice.
+            final quiet = await f.until(() => entry.partAt(pos) != null, gone);
             if (entry.partAt(pos) != null) continue;
             if (gone.value) break;
+            // Stopped moving: ask again on a connection of its own.
+            if (quiet) f.cancel();
           } else if (f != null && !f.done) {
-            // A jump: what that read is bringing is not where the player is.
+            // A jump — out of that read, or so far ahead in it that the
+            // bytes on the way to it would only delay it: what that read is
+            // bringing is not where the player is.
             f.cancel();
           }
+          // Not this rung's own read going on (a jump, or a change of
+          // quality onto it): what the other rungs read ahead is behind us.
+          // Not for a head (byte 0): the neighbours' heads are read beside
+          // the film playing, and must not end its read ahead.
+          if (pos > 0 && (f == null || f.to != pos)) _endOtherReadAheads(src);
           if (src.offline || gone.value) break;
           pos = await _segmentFromUpstream(out, store, entry, src, pos, endInclusive, gone,
               jump: f == null || f.to != pos);
@@ -1381,7 +1453,7 @@ class StreamCacheServer {
 
     CacheWriter? writer;
     if (await store.hasRoom(protecting: entry.id)) {
-      writer = await store.openWriter(entry, pos);
+      writer = await store.openWriter(entry, pos, batchBytes: _teeBatch);
     }
 
     // Counted inside the tee rather than after it: `addStream` may stop part
@@ -1435,6 +1507,26 @@ class StreamCacheServer {
     }
   }
 
+  /// A JUMP ENDS WHAT THE LADDER'S OTHER RUNGS ARE READING AHEAD
+  /// (2026-10-29). Those reads are at the place the viewer left — the rung
+  /// before a change of quality, a neighbour warmed for a climb — and they
+  /// hold connections of the ladder's one pool (four in all) and its share
+  /// of the line. On a realme on a 3.4 Mbit/s line a swipe back waited 4.9 s
+  /// for a connection behind them (Test Lab run 40883836265). A read still
+  /// answering its own request, one somebody waits on, and a rung's head
+  /// (from byte 0) are left alone.
+  void _endOtherReadAheads(_Source src) {
+    final pool = src.shared;
+    if (pool == null) return;
+    for (final o in _sources.values) {
+      if (identical(o, src) || !identical(o.shared, pool)) continue;
+      final f = o.fill;
+      if (f != null && !f.done && !f.answering && f.waiting == 0 && f.from > 0) {
+        f.cancel();
+      }
+    }
+  }
+
   /// A segment of the ladder as HLS, and what follows it.
   ///
   /// ONE REQUEST, ON THE FILM'S POOLED CONNECTION: no lanes (a segment is a
@@ -1466,25 +1558,59 @@ class StreamCacheServer {
     var firstByte = -1;
     CacheWriter? writer;
     if (await store.hasRoom(protecting: entry.id)) {
-      writer = await store.openWriter(entry, pos);
+      // GATHERED, like a stretch's writes (CacheWriter.batchBytes): a
+      // sealed cache's every write is a call across the platform channel,
+      // on the thread that draws the app. While a request waits for these
+      // bytes, what has gathered is written at once (below, and onWait).
+      writer = await store.openWriter(entry, pos, batchBytes: _teeBatch);
     }
     final fill = src.fill = _Fill(pos, aheadEnd);
+    fill.onWait = () {
+      final w = writer;
+      if (w != null) unawaited(w.drain().catchError((_) {}));
+    };
     final clientEnd = min(endInclusive + 1, aheadEnd);
     final answered = Completer<int>();
     var at = pos;
     var sent = pos;
     final clock = Stopwatch()..start();
+    Timer? stallWatch;
+    Timer? waitFlush;
     unawaited(() async {
       try {
         final pieces = StreamIterator<List<int>>(up);
         fill.onCancel = () => unawaited(pieces.cancel());
+        // A connection that brings nothing for [segmentStall] has stalled (a
+        // lossy line can do that); ended, the player's next request goes out
+        // on a fresh one instead of hanging on this. One check every two
+        // seconds, not a timer for every piece.
+        final quiet = Stopwatch()..start();
+        stallWatch = Timer.periodic(const Duration(seconds: 2), (_) {
+          if (quiet.elapsed < segmentStall) return;
+          stallWatch?.cancel();
+          PlaybackLog.add('hls: a segment read stalled ${segmentStall.inSeconds} s, ended');
+          unawaited(pieces.cancel());
+        });
         while (!fill.cancelled && await pieces.moveNext()) {
+          quiet.reset();
           final chunk = pieces.current;
           ForegroundStream.touch();
           final w = writer;
           if (w != null) {
             try {
               await w.write(chunk);
+              // A reader waiting close behind: written in pieces of
+              // [_waitBatch], and never more than [_waitFor] late.
+              if (fill.waiting > 0 && w.pendingBytes > 0) {
+                if (w.pendingBytes >= _waitBatch) {
+                  await w.drain();
+                } else {
+                  waitFlush ??= Timer(_waitFor, () {
+                    waitFlush = null;
+                    unawaited(w.drain().catchError((_) {}));
+                  });
+                }
+              }
             } catch (e) {
               // A disk that will not take it is not a reason to stop the film.
               writer = null;
@@ -1509,6 +1635,7 @@ class StreamCacheServer {
               break;
             }
             if (sent >= clientEnd) {
+              fill.answering = false;
               answered.complete(sent);
               if (jump) {
                 PlaybackLog.add('hls jump: answer ${headers} ms, first byte $firstByte ms, '
@@ -1516,12 +1643,15 @@ class StreamCacheServer {
               }
             }
           }
+          fill.at = at;
           fill.ping();
         }
         await pieces.cancel();
       } catch (e) {
         if (kDebugMode) debugPrint('StreamCacheServer._segmentFromUpstream: $e');
       } finally {
+        stallWatch?.cancel();
+        waitFlush?.cancel();
         await writer?.close();
         fill.finish();
         final bytes = at - pos;
@@ -2768,9 +2898,22 @@ class _LadderRung {
 /// A read ahead in flight: where it started, where it will stop, and a
 /// signal each time more of it is on the phone.
 class _Fill {
-  _Fill(this.from, this.to);
+  _Fill(this.from, this.to) : at = from;
   final int from;
   final int to;
+
+  /// How far it has brought the film so far.
+  int at;
+
+  /// Requests waiting for its bytes to be on the phone ([until]); while any
+  /// are, what it has gathered for the cache is written at once.
+  int waiting = 0;
+
+  /// Asked when a request starts waiting: write what has gathered now.
+  void Function()? onWait;
+
+  /// Still handing its own request the bytes it asked for.
+  bool answering = true;
   bool done = false;
   bool cancelled = false;
   void Function()? onCancel;
@@ -2793,22 +2936,54 @@ class _Fill {
   }
 
   /// Until [ready] is true, the read has ended, the player has hung up, or
-  /// twenty seconds have gone by — a read stuck that long is a read to
-  /// replace, not to wait for.
-  Future<void> until(bool Function() ready, _Gone gone) async {
-    if (ready() || done) return;
+  /// the read has brought nothing for [quiet] — a read that has stopped
+  /// moving is a read to replace, not to wait for. Twenty seconds at most
+  /// in any case.
+  ///
+  /// QUIET, NOT ONLY TWENTY SECONDS (2026-10-29). On a lossy line a
+  /// connection can stall outright; a skip whose bytes were in that read
+  /// waited out the whole twenty seconds with the picture frozen (device
+  /// lab run 40843577992, 4G profile, skip+30: 22 s). Returns whether the
+  /// read went quiet.
+  Future<bool> until(bool Function() ready, _Gone gone,
+      {Duration quiet = const Duration(seconds: 3)}) async {
+    if (ready() || done) return false;
     final c = Completer<void>();
     late final StreamSubscription<void> sub;
+    var stalled = false;
+    Timer? hush;
+    void listen() {
+      hush?.cancel();
+      hush = Timer(quiet, () {
+        stalled = true;
+        if (!c.isCompleted) c.complete();
+      });
+    }
+
     void check() {
       if (!c.isCompleted && (ready() || done || gone.value)) c.complete();
     }
 
-    sub = _more.stream.listen((_) => check(), onDone: () {
+    sub = _more.stream.listen((_) {
+      listen();
+      check();
+    }, onDone: () {
       if (!c.isCompleted) c.complete();
     });
     unawaited(gone.hungUp.then((_) => check()));
+    waiting++;
+    onWait?.call();
+    listen();
     check();
-    await c.future.timeout(const Duration(seconds: 20), onTimeout: () {});
-    await sub.cancel();
+    try {
+      await c.future.timeout(const Duration(seconds: 20), onTimeout: () {
+        stalled = true;
+      });
+    } finally {
+      waiting--;
+      hush?.cancel();
+      await sub.cancel();
+    }
+    return stalled && !ready() && !done;
   }
 }

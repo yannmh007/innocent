@@ -276,7 +276,10 @@ class _SecurityQuestionDialogState
               isExpanded: true,
               underline: const SizedBox.shrink(),
               dropdownColor: AppColors.darkSurface,
-              style: const TextStyle(color: Colors.white, fontSize: 13),
+              // The theme's face, not the dropdown's bare default.
+              style: (Theme.of(context).textTheme.bodyMedium ??
+                      const TextStyle())
+                  .copyWith(color: Colors.white, fontSize: 13),
               items: [
                 for (final id in _kSecurityQuestionIds)
                   DropdownMenuItem(

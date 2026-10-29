@@ -367,7 +367,10 @@ class StreamCacheStore {
   /// APPEND-ONLY BY CONSTRUCTION. A write either extends a run at its end or
   /// begins a run of its own, so the file's length is always exactly what it
   /// holds, and no record has to be kept in step with it.
-  Future<CacheWriter?> openWriter(CacheEntry e, int at) async {
+  ///
+  /// [batchBytes]: writes gather in memory to this many bytes before they
+  /// are sealed and written ([CacheWriter.batchBytes]); 0 writes each at once.
+  Future<CacheWriter?> openWriter(CacheEntry e, int at, {int batchBytes = 0}) async {
     if (_writing.contains(e.id)) return null;
     try {
       final dir = await entryDir(e.id);
@@ -385,6 +388,7 @@ class StreamCacheStore {
             part: part,
             handle: handle,
             iv: part.sealed ? e.iv : null,
+            batchBytes: batchBytes,
             onClose: () => _closed(e, part),
           );
         }
@@ -409,6 +413,7 @@ class StreamCacheStore {
         part: part,
         handle: handle,
         iv: sealed ? e.iv : null,
+        batchBytes: batchBytes,
         onClose: () => _closed(e, part),
       );
     } catch (err) {
@@ -729,6 +734,7 @@ class CacheWriter {
     required this.handle,
     required this.onClose,
     this.iv,
+    this.batchBytes = 0,
   });
 
   final CacheEntry entry;
@@ -744,10 +750,71 @@ class CacheWriter {
   final void Function() onClose;
   bool _closed = false;
 
-  /// Appends [bytes], sealed when the run is. A seal that fails writes
-  /// nothing and throws: the run ends where it was, and plain bytes never
-  /// land in a sealed run.
+  /// GATHERED, THEN SEALED (2026-10-29). Bytes arrive from the network a
+  /// TLS record at a time, about 16 KB, and every write of a sealed run is
+  /// a call across the platform channel: some 64 calls a megabyte, each a
+  /// copy each way and a hop, on the thread that also runs the app's Dart
+  /// (Flutter 3.29+ runs both on Android's main thread). On an OPPO A79 a
+  /// film filling at 2.7 MB/s kept that thread 61 % busy (Test Lab run
+  /// 40536305131). Gathered to [batchBytes] first, the same bytes are a
+  /// handful of calls. 0 writes each at once. The HLS segment path gathers
+  /// too, and drains at once whenever a reader is waiting ([drain]).
+  final int batchBytes;
+  final List<List<int>> _pending = <List<int>>[];
+  int _pendingLength = 0;
+
+  /// Appends [bytes], sealed when the run is — at once, or once
+  /// [batchBytes] have gathered. A seal that fails writes nothing and
+  /// throws: the run ends where it was, and plain bytes never land in a
+  /// sealed run. The bytes are kept as given until then, not copied.
   Future<void> write(List<int> bytes) async {
+    if (bytes.isEmpty) return;
+    if (batchBytes <= 0) return _put(bytes);
+    _pending.add(bytes);
+    _pendingLength += bytes.length;
+    if (_pendingLength >= batchBytes) await _drain();
+  }
+
+  /// What has gathered, written now — for a reader waiting on those bytes
+  /// (the HLS segment path's next request). Safe beside [write]: writes go
+  /// out one after another, in order, each at its own place in the film.
+  Future<void> drain() => _drain();
+
+  /// How many bytes have gathered and are not yet written.
+  int get pendingBytes => _pendingLength;
+
+  /// What has gathered, written now.
+  Future<void> _drain() async {
+    if (_pendingLength == 0) return;
+    final List<int> all;
+    if (_pending.length == 1) {
+      all = _pending.first;
+    } else {
+      final b = BytesBuilder(copy: false);
+      for (final c in _pending) {
+        b.add(c);
+      }
+      all = b.takeBytes();
+    }
+    // Cleared before the write, so a write that throws leaves nothing for
+    // [close] to try again.
+    _pending.clear();
+    _pendingLength = 0;
+    await _put(all);
+  }
+
+  /// The writes in flight, one after another: a [drain] asked for by a
+  /// waiting reader may arrive while a [write] is still sealing, and two
+  /// seals at the same offset would cipher the second batch wrong.
+  Future<void> _last = Future<void>.value();
+
+  Future<void> _put(List<int> bytes) {
+    final run = _last.then((_) => _putNow(bytes));
+    _last = run.then((_) {}, onError: (_) {});
+    return run;
+  }
+
+  Future<void> _putNow(List<int> bytes) async {
     var out = bytes;
     final key = iv;
     if (key != null && bytes.isNotEmpty) {
@@ -765,11 +832,22 @@ class CacheWriter {
   }
 
   /// Flushed before the length is believed anywhere else.
-  Future<void> flush() => handle.flush();
+  Future<void> flush() async {
+    await _drain();
+    await _last;
+    await handle.flush();
+  }
 
   Future<void> close() async {
     if (_closed) return;
     _closed = true;
+    try {
+      await _drain();
+    } catch (_) {
+      // A seal or a write that fails at the end loses only what had not yet
+      // gathered: the run ends at the last batch written.
+    }
+    await _last;
     try {
       await handle.flush();
     } catch (_) {}

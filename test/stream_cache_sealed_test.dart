@@ -209,6 +209,59 @@ void main() {
       _cipherFails = false;
     });
 
+    group('gathered before sealing (CacheWriter.batchBytes)', () {
+      const batch = 128 * 1024;
+      const piece = 16 * 1024; // a TLS record, as the network hands it over
+
+      test('a megabyte and a half in 16 KB pieces is a dozen seals, not a hundred, '
+          'and reads back exactly', () async {
+        final e = await store.entryFor('batched-1', total: film.length, label: 'b1');
+        final w = (await store.openWriter(e, 0, batchBytes: batch))!;
+        final before = _transforms;
+        const end = 1536 * 1024 + 5000;
+        for (var at = 0; at < end; at += piece) {
+          await w.write(film.sublist(at, min(at + piece, end)));
+        }
+        await w.close();
+        expect(_transforms - before, lessThanOrEqualTo((end / batch).ceil()),
+            reason: 'one seal per ${batch ~/ 1024} KB gathered');
+        final part = e.partAt(0)!;
+        expect(part.end, end);
+        expect(await read(e, part, 0, end), film.sublist(0, end));
+        expect(await read(e, part, 123457, 999999), film.sublist(123457, 999999));
+      });
+
+      test('what has not gathered is not on disk, and not claimed to be', () async {
+        final e = await store.entryFor('batched-2', total: film.length, label: 'b2');
+        final w = (await store.openWriter(e, 0, batchBytes: batch))!;
+        await w.write(film.sublist(0, piece));
+        final part = e.partAt(0);
+        expect(part == null || part.end == 0, isTrue,
+            reason: 'nothing believed before it is written');
+        await w.flush();
+        expect(e.partAt(0)!.end, piece, reason: 'a flush writes what gathered');
+        await w.write(film.sublist(piece, 3 * piece));
+        await w.close();
+        expect(e.partAt(0)!.end, 3 * piece, reason: 'and so does close');
+        expect(await read(e, e.partAt(0)!, 0, 3 * piece), film.sublist(0, 3 * piece));
+      });
+
+      test('a seal that fails at the end loses only what had gathered', () async {
+        final e = await store.entryFor('batched-3', total: film.length, label: 'b3');
+        final w = (await store.openWriter(e, 0, batchBytes: batch))!;
+        for (var at = 0; at < 12 * piece; at += piece) {
+          await w.write(film.sublist(at, at + piece));
+        }
+        _cipherFails = true;
+        await w.close();
+        _cipherFails = false;
+        final part = e.partAt(0)!;
+        expect(part.end, batch, reason: 'the first 128 KB were written; the last 64 KB never were');
+        expect(await part.file.length(), batch);
+        expect(await read(e, part, 0, batch), film.sublist(0, batch));
+      });
+    });
+
     test('the cipher was really asked', () => expect(_transforms, greaterThan(100)));
   });
 }

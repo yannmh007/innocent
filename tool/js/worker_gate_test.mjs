@@ -44,6 +44,7 @@ const mint = await import('data:text/javascript,' + encodeURIComponent(
   'const EXPIRY_SECONDS = 600;\nconst logRefusal = () => {};\n' +
   edge.slice(edge.indexOf('function b64urlFromBytes'), edge.indexOf('// --- refusals'))
     .replace(/: Record<string, string \| number>/g, '')
+    .replace(/: Promise<CryptoKey> \| null/g, '')
     .replace(/: Promise<string \| null>/g, '')
     .replace(/: Promise<string>/g, '')
     .replace(/: Uint8Array\b/g, '')
