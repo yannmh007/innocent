@@ -33,6 +33,10 @@ class _Worker {
   late HttpServer server;
   final List<(String, int, int)> asked = <(String, int, int)>[];
 
+  /// Each request as [asked] has it, and the client port it came on: one
+  /// port, one connection (one handshake).
+  final List<(String, int, int, int)> conns = <(String, int, int, int)>[];
+
   /// The next this many requests are told to slow down, as the Worker does
   /// past its ceiling: 429, `Retry-After: 2`.
   int limitNext = 0;
@@ -72,6 +76,7 @@ class _Worker {
       var b = m == null || m.group(2)!.isEmpty ? body.length - 1 : int.parse(m.group(2)!);
       if (b >= body.length) b = body.length - 1;
       asked.add((req.uri.pathSegments.last, a, b));
+      conns.add((req.uri.pathSegments.last, a, b, req.connectionInfo?.remotePort ?? 0));
       res.statusCode = m == null ? 200 : 206;
       if (m != null) res.headers.set('content-range', 'bytes $a-$b/${body.length}');
       res.contentLength = b - a + 1;
@@ -270,10 +275,9 @@ void main() {
         reason: 'three quiet seconds, then a read of its own — it waited 20 s');
   });
 
-  test("on a slow line the start rung's playlist is out as soon as its index is, "
-      'not when the whole opening is; the first segment follows from that read',
-      () async {
-    // About 1.7 Mbit/s: the opening's 512 KB takes 2.4 s to arrive.
+  test("on a slow line the start rung's playlist is out as soon as its index is; "
+      'the first segment goes on from where the head read stopped', () async {
+    // About 1.7 Mbit/s: 300 ms for each 64 KB.
     worker.paceMs = 300;
     addTearDown(() => worker.paceMs = 0);
     final before = worker.asked.length;
@@ -284,18 +288,20 @@ void main() {
     final (code, pl) = await _get(url);
     expect(code, 200);
     expect(clock.elapsed, lessThan(const Duration(milliseconds: 1800)),
-        reason: 'the index is in the first 64 KB');
+        reason: 'the length check, then the index in the first 64 KB');
     final segs = _segments(String.fromCharCodes(pl));
     final (s0, a0, u0) = segs[0];
+    expect(a0, lessThan(StreamCacheServer.headRead), reason: "the test film's head is small");
     expect((await _get(u0, range: 'bytes=$a0-${a0 + s0 - 1}')).$2,
         r720.bytes.sublist(a0, a0 + s0));
-    // Beside the 8 KB that finds the film's length, one read of the opening.
+    // Beside the 8 KB that finds the film's length: the head once, then on
+    // from its end.
     final film = worker.asked.skip(before)
         .where((a) => a.$1 == 'a720' && a.$3 - a.$2 + 1 > 8192).toList();
-    expect(film.where((a) => a.$2 == 0).length, 1,
-        reason: 'the opening read once: index, init and first fragment');
-    expect(film.where((a) => a.$2 > 0 && a.$2 <= a0).length, 0,
-        reason: 'the first segment waited for that read');
+    expect(film.where((a) => a.$2 == 0).length, 1, reason: 'the head read once: $film');
+    expect(film.where((a) => a.$2 > 0 && a.$2 < StreamCacheServer.headRead), isEmpty,
+        reason: "the first segment's opening came from the head read: $film");
+    expect(film.where((a) => a.$2 == StreamCacheServer.headRead), isNotEmpty);
   });
 
   test("a jump onto another rung ends the old rung's read ahead, which only held a "
@@ -348,33 +354,39 @@ void main() {
     expect(waits, [const Duration(seconds: 2)]);
   });
 
-  test('registering the ladder reads the start rung\'s opening at once, in one read; '
-      'the player then finds index, init and first fragment on the phone', () async {
-    worker.asked.clear();
+  test("registering the ladder checks the start rung's length and reads its head at "
+      'once, on one connection, which then carries the first fragment', () async {
+    worker.conns.clear();
     final master = await register('film7');
     // Before the player has asked for anything at all.
-    // The length probe (8 KB) aside: reads of the film itself.
-    bool film720((String, int, int) a) => a.$1 == 'a720' && a.$3 - a.$2 + 1 > 8192;
-    for (var i = 0; i < 100 && !worker.asked.any(film720); i++) {
+    bool film720((String, int, int, int) a) => a.$1 == 'a720' && a.$3 - a.$2 + 1 > 8192;
+    for (var i = 0; i < 100 && !worker.conns.any(film720); i++) {
       await Future<void>.delayed(const Duration(milliseconds: 20));
     }
-    final first = worker.asked.where(film720).toList();
-    expect(first.length, 1, reason: 'one read: ${worker.asked}');
-    expect(first.single.$2, 0);
-    expect(first.single.$3 + 1, StreamCacheServer.primeBytes);
+    final head = worker.conns.where(film720).toList();
+    expect(head.length, 1, reason: 'one read: ${worker.conns}');
+    expect(head.single.$2, 0);
+    expect(head.single.$3 + 1, StreamCacheServer.headRead,
+        reason: 'the head only: the first fragment is the player\'s own request');
+    final probe = worker.conns.where((a) => a.$1 == 'a720' && !film720(a)).toList();
+    expect(probe.length, 1, reason: 'the 8 KB length check');
+    expect(probe.single.$4, head.single.$4,
+        reason: 'the length check\'s connection carried the head: one handshake, not two');
     final (_, mbody) = await _get(master);
     final url = RegExp(r'^http://.+/720\.m3u8$', multiLine: true).firstMatch(String.fromCharCodes(mbody))!.group(0)!;
     final segs = _segments(String.fromCharCodes((await _get(url)).$2));
-    final head = CmafHead.parse(r720.bytes)!;
-    expect(head.initEnd + segs[0].$1, lessThanOrEqualTo(StreamCacheServer.primeBytes),
-        reason: 'the test film\'s first fragment fits the opening read');
+    final init = CmafHead.parse(r720.bytes)!;
     final (s0, a0, u0) = segs[0];
     // The init segment lives in the same file as the fragments.
-    expect((await _get(u0, range: 'bytes=0-${head.initEnd - 1}')).$2,
-        r720.bytes.sublist(0, head.initEnd));
+    expect((await _get(u0, range: 'bytes=0-${init.initEnd - 1}')).$2,
+        r720.bytes.sublist(0, init.initEnd));
     expect((await _get(u0, range: 'bytes=$a0-${a0 + s0 - 1}')).$2, r720.bytes.sublist(a0, a0 + s0));
-    final again = worker.asked.where((a) => film720(a) && a.$2 < StreamCacheServer.primeBytes).toList();
-    expect(again, first, reason: 'nothing in the opening asked for twice: $again');
+    final a720 = worker.conns.where(film720).toList();
+    expect(a720.where((a) => a.$2 < StreamCacheServer.headRead).toList(), head,
+        reason: 'nothing in the head asked for twice: $a720');
+    final on = a720.where((a) => a.$2 == StreamCacheServer.headRead).toList();
+    expect(on, isNotEmpty, reason: 'the first fragment read on from the head: $a720');
+    expect(on.first.$4, head.single.$4, reason: 'on the same connection');
   });
 
   test('played again, it comes from the phone', () async {

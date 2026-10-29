@@ -509,7 +509,9 @@ class StreamCacheServer {
           refresh: r.refresh,
           total: r.bytes,
           label: label,
-          probeNow: r.cacheId == (startCacheId ?? rungs.first.cacheId),
+          // The start rung's length check is started below, on the
+          // ladder's pool.
+          probeNow: false,
         );
         if (url == null) return null;
         _sources[r.cacheId]?.segmented = true;
@@ -521,20 +523,38 @@ class StreamCacheServer {
       for (final r in rungs) {
         _sources[r.cacheId]?.shared = ladder.io;
       }
+      // THE LENGTH CHECK ON THE LADDER'S POOL (2026-10-29). Started inside
+      // [localUrlFor] it went out on the rung's own pool, before the
+      // ladder's existed, and the head read below — which waits for it —
+      // then opened a connection of its own: two handshakes one after the
+      // other before the playlist, each two round trips on a Myanmar line.
+      // Started here, its connection carries the head next, then the first
+      // fragment.
+      final first = _sources[start.cacheId];
+      if (first != null && !first.checkedTotal) first.probing ??= _probeTotal(first);
       // A ladder registered again (a renewal, a return from Original): the
       // old pool closes once its reads are done.
       _ladders.remove(ladderId)?.io.close();
       _ladders[ladderId] = ladder;
       _playingLadder = ladderId;
-      // THE START RUNG'S OPENING, ASKED FOR NOW (2026-10-29), while the
-      // player screen is still being built. Left to the player, the head
-      // waited for its media playlist and the first fragment for the head:
-      // two round trips one after the other, 1.1 s of a realme's 3.9 s from
-      // Play to picture (Test Lab run 40516412135). One read of [primeBytes]
-      // brings the index, the init segment and the first fragment or two
-      // together; the player's own requests then find them on the phone, or
-      // wait for this read rather than ask again (the segment path's fill).
-      unawaited(_rungWithHead(ladder, start.height, firstRead: primeBytes));
+      // THE START RUNG'S HEAD, ASKED FOR NOW (2026-10-29), while the player
+      // screen is still being built. Left to the player, the head waited for
+      // its media playlist and the first fragment for the head: two round
+      // trips one after the other, 1.1 s of a realme's 3.9 s from Play to
+      // picture (Test Lab run 40516412135). Now the playlist finds its index
+      // on the phone.
+      //
+      // THE HEAD ONLY, NOT THE FIRST FRAGMENTS. 1.64.77's candidate read
+      // 512 KB here; the player's first fragment then waited for that read
+      // through the cache — sealed, written, read back, unsealed, a hop to
+      // the main thread each way while it builds the player — instead of
+      // being sent as it arrives, and it ended mid-fragment, a round trip
+      // more: on the device lab's busy 4G line the player stalled once
+      // just after its first segment, and Play to picture was 3.2 s and
+      // 3.3 s (runs 40883836240, 40895589540). The first fragment is the
+      // player's own request again, sent as it arrives and read ahead
+      // from there.
+      unawaited(_rungWithHead(ladder, start.height));
       return 'http://127.0.0.1:$port/h/$token/$ladderId/master.m3u8';
     } catch (e) {
       if (kDebugMode) debugPrint('StreamCacheServer.hlsUrlFor: $e');
@@ -639,16 +659,14 @@ class StreamCacheServer {
     }
   }
 
-  /// How much of the start rung a ladder's registration reads at once:
-  /// the index and the first fragment or two of a streaming rung (a 720p
-  /// fragment is about 500 KB).
-  static const int primeBytes = 512 * 1024;
+  /// The first read of a rung's head: its index and init segment, in every
+  /// ladder the catalogue has (a longer index is read on from there).
+  static const int headRead = 64 * 1024;
 
   /// The rung's head — its fragment table and init segment — read once,
   /// through its own address (so the bytes land in its cache entry, where
   /// the first segments will be found).
-  Future<_LadderRung?> _rungWithHead(_Ladder l, int height,
-      {int firstRead = 64 * 1024}) async {
+  Future<_LadderRung?> _rungWithHead(_Ladder l, int height) async {
     final r = l.rungs.where((x) => x.height == height).firstOrNull;
     if (r == null) return null;
     if (r.index != null && r.head != null) return r;
@@ -657,7 +675,7 @@ class StreamCacheServer {
       var handedOff = false;
       try {
         final head = BytesBuilder(copy: false);
-        var want = firstRead;
+        var want = headRead;
         for (var i = 0; i < 4; i++) {
           final req = await client.getUrl(Uri.parse(r.url));
           req.headers.set(HttpHeaders.rangeHeader, 'bytes=${head.length}-${want - 1}');
@@ -667,11 +685,8 @@ class StreamCacheServer {
             return;
           }
           // THE INDEX AS SOON AS IT IS HERE (2026-10-29), not when the whole
-          // read is. With the start rung's 512 KB read at once the playlist
-          // waited for all of it: on a 4 Mbit/s line the first picture came
-          // 2 s later than it had (device lab run 40843577992). The rest of
-          // the read goes on into the cache, where the player's first
-          // segment waits for it (the segment path's fill).
+          // read is: on a slow line the playlist does not wait for the rest
+          // of the 64 KB, which goes on into the cache.
           final pieces = StreamIterator<List<int>>(resp);
           int? need;
           while (await pieces.moveNext()) {
