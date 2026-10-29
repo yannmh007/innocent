@@ -757,8 +757,8 @@ class CacheWriter {
   /// (Flutter 3.29+ runs both on Android's main thread). On an OPPO A79 a
   /// film filling at 2.7 MB/s kept that thread 61 % busy (Test Lab run
   /// 40536305131). Gathered to [batchBytes] first, the same bytes are a
-  /// handful of calls. 0 writes each at once — the HLS segment path, whose
-  /// next request waits for these bytes to be on disk.
+  /// handful of calls. 0 writes each at once. The HLS segment path gathers
+  /// too, and drains at once whenever a reader is waiting ([drain]).
   final int batchBytes;
   final List<List<int>> _pending = <List<int>>[];
   int _pendingLength = 0;
@@ -774,6 +774,14 @@ class CacheWriter {
     _pendingLength += bytes.length;
     if (_pendingLength >= batchBytes) await _drain();
   }
+
+  /// What has gathered, written now — for a reader waiting on those bytes
+  /// (the HLS segment path's next request). Safe beside [write]: writes go
+  /// out one after another, in order, each at its own place in the film.
+  Future<void> drain() => _drain();
+
+  /// How many bytes have gathered and are not yet written.
+  int get pendingBytes => _pendingLength;
 
   /// What has gathered, written now.
   Future<void> _drain() async {
@@ -795,7 +803,18 @@ class CacheWriter {
     await _put(all);
   }
 
-  Future<void> _put(List<int> bytes) async {
+  /// The writes in flight, one after another: a [drain] asked for by a
+  /// waiting reader may arrive while a [write] is still sealing, and two
+  /// seals at the same offset would cipher the second batch wrong.
+  Future<void> _last = Future<void>.value();
+
+  Future<void> _put(List<int> bytes) {
+    final run = _last.then((_) => _putNow(bytes));
+    _last = run.then((_) {}, onError: (_) {});
+    return run;
+  }
+
+  Future<void> _putNow(List<int> bytes) async {
     var out = bytes;
     final key = iv;
     if (key != null && bytes.isNotEmpty) {
@@ -815,6 +834,7 @@ class CacheWriter {
   /// Flushed before the length is believed anywhere else.
   Future<void> flush() async {
     await _drain();
+    await _last;
     await handle.flush();
   }
 
@@ -827,6 +847,7 @@ class CacheWriter {
       // A seal or a write that fails at the end loses only what had not yet
       // gathered: the run ends at the last batch written.
     }
+    await _last;
     try {
       await handle.flush();
     } catch (_) {}

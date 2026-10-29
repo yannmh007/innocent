@@ -84,6 +84,12 @@ class StreamCacheServer {
   /// megabyte is eight calls across the platform channel, not sixty-four.
   static const int _teeBatch = 128 * 1024;
 
+  /// While a request waits for a segment read's bytes: written in pieces of
+  /// this, or after [_waitFor], whichever comes first — a quarter of the
+  /// calls a TLS record each would make, and a tenth of a second at most.
+  static const int _waitBatch = 64 * 1024;
+  static const Duration _waitFor = Duration(milliseconds: 100);
+
   static const int _upstreamTries = 3;
 
   /// ═══════════════════════════════════════════════════════════════════════
@@ -465,20 +471,6 @@ class StreamCacheServer {
   /// How long a segment's connection may bring nothing before it is taken
   /// as stalled and ended — ExoPlayer's own read timeout.
   static Duration segmentStall = const Duration(seconds: 8);
-
-  /// The next piece of a segment's read, or false at its end — and at a
-  /// connection that has brought nothing for [segmentStall] (a lossy line
-  /// can stall one outright), which is ended: the player's next request
-  /// then goes out on a fresh connection instead of hanging on this one.
-  static Future<bool> _nextOrStalled(StreamIterator<List<int>> it) async {
-    try {
-      return await it.moveNext().timeout(segmentStall);
-    } on TimeoutException {
-      PlaybackLog.add('hls: a segment read stalled ${segmentStall.inSeconds} s, ended');
-      unawaited(it.cancel());
-      return false;
-    }
-  }
 
   /// The line's speed as the last stretch from the Worker measured it, in
   /// kbps: what the player's rung choice is fed (its own meter sees this
@@ -1541,25 +1533,59 @@ class StreamCacheServer {
     var firstByte = -1;
     CacheWriter? writer;
     if (await store.hasRoom(protecting: entry.id)) {
-      writer = await store.openWriter(entry, pos);
+      // GATHERED, like a stretch's writes (CacheWriter.batchBytes): a
+      // sealed cache's every write is a call across the platform channel,
+      // on the thread that draws the app. While a request waits for these
+      // bytes, what has gathered is written at once (below, and onWait).
+      writer = await store.openWriter(entry, pos, batchBytes: _teeBatch);
     }
     final fill = src.fill = _Fill(pos, aheadEnd);
+    fill.onWait = () {
+      final w = writer;
+      if (w != null) unawaited(w.drain().catchError((_) {}));
+    };
     final clientEnd = min(endInclusive + 1, aheadEnd);
     final answered = Completer<int>();
     var at = pos;
     var sent = pos;
     final clock = Stopwatch()..start();
+    Timer? stallWatch;
+    Timer? waitFlush;
     unawaited(() async {
       try {
         final pieces = StreamIterator<List<int>>(up);
         fill.onCancel = () => unawaited(pieces.cancel());
-        while (!fill.cancelled && await _nextOrStalled(pieces)) {
+        // A connection that brings nothing for [segmentStall] has stalled (a
+        // lossy line can do that); ended, the player's next request goes out
+        // on a fresh one instead of hanging on this. One check every two
+        // seconds, not a timer for every piece.
+        final quiet = Stopwatch()..start();
+        stallWatch = Timer.periodic(const Duration(seconds: 2), (_) {
+          if (quiet.elapsed < segmentStall) return;
+          stallWatch?.cancel();
+          PlaybackLog.add('hls: a segment read stalled ${segmentStall.inSeconds} s, ended');
+          unawaited(pieces.cancel());
+        });
+        while (!fill.cancelled && await pieces.moveNext()) {
+          quiet.reset();
           final chunk = pieces.current;
           ForegroundStream.touch();
           final w = writer;
           if (w != null) {
             try {
               await w.write(chunk);
+              // A reader waiting close behind: written in pieces of
+              // [_waitBatch], and never more than [_waitFor] late.
+              if (fill.waiting > 0 && w.pendingBytes > 0) {
+                if (w.pendingBytes >= _waitBatch) {
+                  await w.drain();
+                } else {
+                  waitFlush ??= Timer(_waitFor, () {
+                    waitFlush = null;
+                    unawaited(w.drain().catchError((_) {}));
+                  });
+                }
+              }
             } catch (e) {
               // A disk that will not take it is not a reason to stop the film.
               writer = null;
@@ -1598,6 +1624,8 @@ class StreamCacheServer {
       } catch (e) {
         if (kDebugMode) debugPrint('StreamCacheServer._segmentFromUpstream: $e');
       } finally {
+        stallWatch?.cancel();
+        waitFlush?.cancel();
         await writer?.close();
         fill.finish();
         final bytes = at - pos;
@@ -2850,6 +2878,13 @@ class _Fill {
 
   /// How far it has brought the film so far.
   int at;
+
+  /// Requests waiting for its bytes to be on the phone ([until]); while any
+  /// are, what it has gathered for the cache is written at once.
+  int waiting = 0;
+
+  /// Asked when a request starts waiting: write what has gathered now.
+  void Function()? onWait;
   bool done = false;
   bool cancelled = false;
   void Function()? onCancel;
@@ -2907,13 +2942,19 @@ class _Fill {
       if (!c.isCompleted) c.complete();
     });
     unawaited(gone.hungUp.then((_) => check()));
+    waiting++;
+    onWait?.call();
     listen();
     check();
-    await c.future.timeout(const Duration(seconds: 20), onTimeout: () {
-      stalled = true;
-    });
-    hush?.cancel();
-    await sub.cancel();
+    try {
+      await c.future.timeout(const Duration(seconds: 20), onTimeout: () {
+        stalled = true;
+      });
+    } finally {
+      waiting--;
+      hush?.cancel();
+      await sub.cancel();
+    }
     return stalled && !ready() && !done;
   }
 }
