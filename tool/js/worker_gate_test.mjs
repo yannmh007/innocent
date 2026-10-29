@@ -238,7 +238,7 @@ for (const [label, headers, want] of [
   const src = readFileSync(join(ROOT, 'docs/worker/src/index.js'), 'utf8');
   check('/health says which mode each check is in',
     /bind: env\.BIND_MODE === 'enforce'/.test(src) && /limit: env\.LIMIT_MODE === 'enforce'/.test(src));
-  check('the rate limit starts in log mode', /\nLIMIT_MODE = "log"\n/.test(toml));
+  check('the rate limit is enforced (1.64.76 waits out its 429)', /\nLIMIT_MODE = "enforce"\n/.test(toml));
   check('the Worker answers on our own domain, where the zone\'s rules stand in front',
     /\nroutes = \[\s*\n\s*\{ pattern = "stream\.innocentplayer\.com", custom_domain = true \},\s*\n\]/.test(toml));
   check('workers.dev is set explicitly, on or off', /\nworkers_dev = (true|false)\n/.test(toml));

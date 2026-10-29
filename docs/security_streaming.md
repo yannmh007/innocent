@@ -186,8 +186,11 @@ log shows the phones in the field passing:
    soon as DNS answers. The player's own read timeout is 30 s, so a
    15-second wait is a pause, not an error. Pinned in
    `test/rate_limited_test.dart`, `stream_cache_server_test.dart`,
-   `stream_cache_hls_test.dart` and `download_throughput_test.dart`. Once
-   1.64.76 is most of the field: enforce.
+   `stream_cache_hls_test.dart` and `download_throughput_test.dart`.
+   **Enforced 2026-10-29**, with 1.64.76 released (main `217da3b`). The
+   ceiling stays at 600 in 10 s, not ~200: phones on 1.64.69–1.64.75 do
+   not wait out a 429, and 600 is above what even 1.64.69's proxy asks on
+   a fast line. Lower it once 1.64.76 is most of the field.
 4. When `min_supported` passes 1.64.70: bind every premium token, asked or
    not.
 
