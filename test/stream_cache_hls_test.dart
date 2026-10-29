@@ -38,6 +38,15 @@ class _Worker {
   int limitNext = 0;
   int limited = 0;
 
+  /// The line's pace: a wait before each 64 KB (0: as fast as it goes).
+  int paceMs = 0;
+
+  /// The next request starting at [stallFrom] sends [stallAfter] bytes and
+  /// then nothing more, its connection held open — a connection stalled on
+  /// a lossy line.
+  int? stallFrom;
+  int stallAfter = 0;
+
   String url(String name) => 'http://127.0.0.1:${server.port}/v/$name';
 
   Future<void> start() async {
@@ -66,9 +75,16 @@ class _Worker {
       res.statusCode = m == null ? 200 : 206;
       if (m != null) res.headers.set('content-range', 'bytes $a-$b/${body.length}');
       res.contentLength = b - a + 1;
+      final stall = m != null && a == stallFrom ? stallAfter : null;
+      if (stall != null) stallFrom = null;
       try {
         // A little at a time, as a line delivers it.
         for (var at = a; at <= b; at += 64 * 1024) {
+          if (stall != null && at - a >= stall) {
+            await Future<void>.delayed(const Duration(seconds: 30));
+            break;
+          }
+          if (paceMs > 0) await Future<void>.delayed(Duration(milliseconds: paceMs));
           res.add(body.sublist(at, (at + 64 * 1024).clamp(0, b + 1)));
           await res.flush();
         }
@@ -208,6 +224,50 @@ void main() {
     // And on from there.
     final (s61, a61, u61) = segs[61];
     expect((await _get(u61, range: 'bytes=$a61-${a61 + s61 - 1}')).$2, r720.bytes.sublist(a61, a61 + s61));
+  });
+
+  test('a skip far ahead inside the read-ahead is a jump: answered at once, not after '
+      'the bytes on the way to it', () async {
+    final master = await register('film8');
+    final (_, mbody) = await _get(master);
+    final url = RegExp(r'^http://.+/720\.m3u8$', multiLine: true).firstMatch(String.fromCharCodes(mbody))!.group(0)!;
+    final segs = _segments(String.fromCharCodes((await _get(url)).$2));
+    // About 1.7 Mbit/s: the 2 MB read ahead of a segment takes ten seconds.
+    worker.paceMs = 300;
+    addTearDown(() => worker.paceMs = 0);
+    final (s10, a10, u10) = segs[10];
+    expect((await _get(u10, range: 'bytes=$a10-${a10 + s10 - 1}')).$2,
+        r720.bytes.sublist(a10, a10 + s10));
+    // Twenty seconds on: inside that read ahead, 1.4 MB beyond where it is.
+    final (s20, a20, u20) = segs[20];
+    expect(a20 - a10, lessThan(StreamCacheServer.segmentReadAhead));
+    final clock = Stopwatch()..start();
+    final (code, got) = await _get(u20, range: 'bytes=$a20-${a20 + s20 - 1}');
+    expect(code, 206);
+    expect(got, r720.bytes.sublist(a20, a20 + s20));
+    expect(clock.elapsed, lessThan(const Duration(seconds: 4)),
+        reason: 'its own read, not the 1.4 MB in front of it');
+  });
+
+  test('a read-ahead that stalls is replaced after a quiet spell, not waited out',
+      () async {
+    final master = await register('film9');
+    final (_, mbody) = await _get(master);
+    final url = RegExp(r'^http://.+/720\.m3u8$', multiLine: true).firstMatch(String.fromCharCodes(mbody))!.group(0)!;
+    final segs = _segments(String.fromCharCodes((await _get(url)).$2));
+    // The segment and a little of the next, then the connection goes dead.
+    final (s30, a30, u30) = segs[30];
+    worker.stallFrom = a30;
+    worker.stallAfter = 192 * 1024;
+    expect((await _get(u30, range: 'bytes=$a30-${a30 + s30 - 1}')).$2,
+        r720.bytes.sublist(a30, a30 + s30));
+    final (s31, a31, u31) = segs[31];
+    final clock = Stopwatch()..start();
+    final (code, got) = await _get(u31, range: 'bytes=$a31-${a31 + s31 - 1}');
+    expect(code, 206);
+    expect(got, r720.bytes.sublist(a31, a31 + s31));
+    expect(clock.elapsed, lessThan(const Duration(seconds: 6)),
+        reason: 'three quiet seconds, then a read of its own — it waited 20 s');
   });
 
   test('a segment answered 429 is waited out as asked, then comes back exactly',

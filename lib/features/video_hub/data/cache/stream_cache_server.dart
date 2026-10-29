@@ -457,6 +457,29 @@ class StreamCacheServer {
   /// next unless it jumps.
   static int segmentReadAhead = 2 * 1024 * 1024;
 
+  /// How far ahead of a read-ahead's progress a request may start and still
+  /// wait for it: about a second of a 4G line. Further, and the bytes on the
+  /// way are only in its way — a skip inside the read-ahead is a jump.
+  static int segmentWaitAhead = 512 * 1024;
+
+  /// How long a segment's connection may bring nothing before it is taken
+  /// as stalled and ended — ExoPlayer's own read timeout.
+  static Duration segmentStall = const Duration(seconds: 8);
+
+  /// The next piece of a segment's read, or false at its end — and at a
+  /// connection that has brought nothing for [segmentStall] (a lossy line
+  /// can stall one outright), which is ended: the player's next request
+  /// then goes out on a fresh connection instead of hanging on this one.
+  static Future<bool> _nextOrStalled(StreamIterator<List<int>> it) async {
+    try {
+      return await it.moveNext().timeout(segmentStall);
+    } on TimeoutException {
+      PlaybackLog.add('hls: a segment read stalled ${segmentStall.inSeconds} s, ended');
+      unawaited(it.cancel());
+      return false;
+    }
+  }
+
   /// The line's speed as the last stretch from the Worker measured it, in
   /// kbps: what the player's rung choice is fed (its own meter sees this
   /// loopback, where a cached segment arrives at flash speed). Null until
@@ -1270,14 +1293,20 @@ class StreamCacheServer {
         // ── a segment of the ladder as HLS: wait for, or read ahead ────
         if (src.segmented) {
           final f = src.fill;
-          if (f != null && !f.done && f.from <= pos && pos < f.to) {
+          if (f != null && !f.done && f.from <= pos && pos < f.to &&
+              pos - f.at <= segmentWaitAhead) {
             // Its bytes are already on their way, read ahead with the
-            // segment before: wait for them rather than ask twice.
-            await f.until(() => entry.partAt(pos) != null, gone);
+            // segment before, and close: wait for them rather than ask
+            // twice.
+            final quiet = await f.until(() => entry.partAt(pos) != null, gone);
             if (entry.partAt(pos) != null) continue;
             if (gone.value) break;
+            // Stopped moving: ask again on a connection of its own.
+            if (quiet) f.cancel();
           } else if (f != null && !f.done) {
-            // A jump: what that read is bringing is not where the player is.
+            // A jump — out of that read, or so far ahead in it that the
+            // bytes on the way to it would only delay it: what that read is
+            // bringing is not where the player is.
             f.cancel();
           }
           if (src.offline || gone.value) break;
@@ -1498,7 +1527,7 @@ class StreamCacheServer {
       try {
         final pieces = StreamIterator<List<int>>(up);
         fill.onCancel = () => unawaited(pieces.cancel());
-        while (!fill.cancelled && await pieces.moveNext()) {
+        while (!fill.cancelled && await _nextOrStalled(pieces)) {
           final chunk = pieces.current;
           ForegroundStream.touch();
           final w = writer;
@@ -1536,6 +1565,7 @@ class StreamCacheServer {
               }
             }
           }
+          fill.at = at;
           fill.ping();
         }
         await pieces.cancel();
@@ -2788,9 +2818,12 @@ class _LadderRung {
 /// A read ahead in flight: where it started, where it will stop, and a
 /// signal each time more of it is on the phone.
 class _Fill {
-  _Fill(this.from, this.to);
+  _Fill(this.from, this.to) : at = from;
   final int from;
   final int to;
+
+  /// How far it has brought the film so far.
+  int at;
   bool done = false;
   bool cancelled = false;
   void Function()? onCancel;
@@ -2813,22 +2846,48 @@ class _Fill {
   }
 
   /// Until [ready] is true, the read has ended, the player has hung up, or
-  /// twenty seconds have gone by — a read stuck that long is a read to
-  /// replace, not to wait for.
-  Future<void> until(bool Function() ready, _Gone gone) async {
-    if (ready() || done) return;
+  /// the read has brought nothing for [quiet] — a read that has stopped
+  /// moving is a read to replace, not to wait for. Twenty seconds at most
+  /// in any case.
+  ///
+  /// QUIET, NOT ONLY TWENTY SECONDS (2026-10-29). On a lossy line a
+  /// connection can stall outright; a skip whose bytes were in that read
+  /// waited out the whole twenty seconds with the picture frozen (device
+  /// lab run 40843577992, 4G profile, skip+30: 22 s). Returns whether the
+  /// read went quiet.
+  Future<bool> until(bool Function() ready, _Gone gone,
+      {Duration quiet = const Duration(seconds: 3)}) async {
+    if (ready() || done) return false;
     final c = Completer<void>();
     late final StreamSubscription<void> sub;
+    var stalled = false;
+    Timer? hush;
+    void listen() {
+      hush?.cancel();
+      hush = Timer(quiet, () {
+        stalled = true;
+        if (!c.isCompleted) c.complete();
+      });
+    }
+
     void check() {
       if (!c.isCompleted && (ready() || done || gone.value)) c.complete();
     }
 
-    sub = _more.stream.listen((_) => check(), onDone: () {
+    sub = _more.stream.listen((_) {
+      listen();
+      check();
+    }, onDone: () {
       if (!c.isCompleted) c.complete();
     });
     unawaited(gone.hungUp.then((_) => check()));
+    listen();
     check();
-    await c.future.timeout(const Duration(seconds: 20), onTimeout: () {});
+    await c.future.timeout(const Duration(seconds: 20), onTimeout: () {
+      stalled = true;
+    });
+    hush?.cancel();
     await sub.cancel();
+    return stalled && !ready() && !done;
   }
 }
