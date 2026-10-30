@@ -767,6 +767,10 @@ class MainActivity : AudioServiceFragmentActivity() {
                 } else {
                     captureIntruderSelfie(path, result)
                 }
+            } else if (call.method == "elapsedRealtime") {
+                // The vault's cooling-off clock: time since boot, which no
+                // setting changes (the date does).
+                result.success(android.os.SystemClock.elapsedRealtime())
             } else {
                 result.notImplemented()
             }

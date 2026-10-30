@@ -92,6 +92,10 @@ class PrivateFolderService {
   // Persisting both here makes the rate-limit survive process death.
   static const String _kLockFailed = 'private_lock_failed_v1';
   static const String _kLockUntil = 'private_lock_until_v1';
+  // The cooling-off on a clock nobody can set: "<ms since boot at the
+  // start>:<length in ms>" (1.64.79). `_kLockUntil` stays the wall-clock
+  // deadline the screens count down from; it no longer decides.
+  static const String _kLockAnchor = 'private_lock_anchor_v1';
   // Recovery (v0.53): two independent PIN-reset paths so a forgotten PIN
   // doesn't strand the vault forever. Neither stores the PIN itself — each
   // is a hashed secret that, once proven, unlocks the ability to SET a new
@@ -421,9 +425,47 @@ class PrivateFolderService {
   /// Persist the failed-attempt count + cooling-off deadline. Pass
   /// `failed: 0, until: null` to clear after a successful unlock.
   Future<void> saveLockout(int failed, DateTime? until) async {
+    if (until == null) await _secureWrite(_kLockAnchor, '');
     await _secureWrite(_kLockFailed, failed.toString());
     await _secureWrite(
         _kLockUntil, (until?.millisecondsSinceEpoch ?? 0).toString());
+  }
+
+  /// Milliseconds since the phone booted (SystemClock.elapsedRealtime), or
+  /// null where the platform does not answer.
+  ///
+  /// WHY NOT THE DATE. The cooling-off used to be a wall-clock deadline, and
+  /// the date is a setting: five wrong PINs, the clock moved forward a
+  /// quarter of an hour in Settings, five more, for as long as the person
+  /// holding the phone cares to — the limiter only ever cost them a trip to
+  /// Settings. Time since boot cannot be set, and it only stops at a reboot.
+  Future<int?> _sinceBootMs() async {
+    try {
+      return await _intruderCam.invokeMethod<int>('elapsedRealtime');
+    } catch (e) {
+      if (kDebugMode) debugPrint('private_folder_service.sinceBoot: $e');
+      return null;
+    }
+  }
+
+  /// What is left of a cooling-off of [lengthMs] that began [startMs] after
+  /// boot, now that it is [nowMs] after boot; null when attempts are allowed.
+  ///
+  /// A REBOOT STARTS IT AGAIN. When the phone has restarted since (now is
+  /// earlier than the start), nothing says how long it was off, so the time
+  /// since boot is what counts — as Android's own lock screen does. Either
+  /// way the time counted is never more than the time that really passed, so
+  /// the wait is never shorter than it should be, and the date changes
+  /// nothing.
+  @visibleForTesting
+  static Duration? cooldownLeft({
+    required int startMs,
+    required int lengthMs,
+    required int nowMs,
+  }) {
+    final passed = nowMs >= startMs ? nowMs - startMs : nowMs;
+    final left = lengthMs - passed;
+    return left > 0 ? Duration(milliseconds: left) : null;
   }
 
   // ── Shared attempt limiter (v1.49) ─────────────────────────────────
@@ -450,10 +492,23 @@ class PrivateFolderService {
   static const List<int> _kLockoutTiers = <int>[15, 60, 300, 900];
 
   /// Remaining cooling-off, or null when attempts are allowed right now.
+  ///
+  /// Counted on the clock since boot ([cooldownLeft]); the wall-clock
+  /// deadline decides only for a lockout an older build began, or where the
+  /// platform gives no time since boot.
   Future<Duration?> lockoutRemaining() async {
     final st = await loadLockout();
     final until = st.until;
     if (until == null) return null;
+    final anchor = (await _secureRead(_kLockAnchor) ?? '').split(':');
+    final startMs = anchor.length == 2 ? int.tryParse(anchor[0]) : null;
+    final lengthMs = anchor.length == 2 ? int.tryParse(anchor[1]) : null;
+    if (startMs != null && lengthMs != null) {
+      final nowMs = await _sinceBootMs();
+      if (nowMs != null) {
+        return cooldownLeft(startMs: startMs, lengthMs: lengthMs, nowMs: nowMs);
+      }
+    }
     final left = until.difference(DateTime.now());
     return left > Duration.zero ? left : null;
   }
@@ -474,12 +529,17 @@ class PrivateFolderService {
     DateTime? until = st.until;
     // Drop an expired deadline rather than carrying it forward; otherwise the
     // stored "until" is a time in the past and every reader has to re-check it.
-    if (until != null && !DateTime.now().isBefore(until)) until = null;
+    // Expired by the clock since boot, as the screens' gate reads it.
+    if (until != null && await lockoutRemaining() == null) until = null;
     if (failed % _kLockoutThreshold == 0) {
       final tier =
           (failed ~/ _kLockoutThreshold).clamp(1, _kLockoutTiers.length);
-      until = DateTime.now()
-          .add(Duration(seconds: _kLockoutTiers[tier - 1]));
+      final seconds = _kLockoutTiers[tier - 1];
+      until = DateTime.now().add(Duration(seconds: seconds));
+      // Before the deadline, so a deadline is never without its anchor.
+      final nowMs = await _sinceBootMs();
+      await _secureWrite(
+          _kLockAnchor, nowMs == null ? '' : '$nowMs:${seconds * 1000}');
     }
     await saveLockout(failed, until);
     if (failed == 3 || failed % _kLockoutThreshold == 0) {

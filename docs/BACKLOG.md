@@ -25,6 +25,12 @@ does it.
   it when the line is measured below the copy's bitrate; a line that swings
   around it fails. Not a regression; worth a look at how the Original's
   first fill sizes itself.
+- **Vault cooling-off on the boot clock** (on the branch): five wrong PINs
+  locked the vault until a wall-clock time, and moving the date forward in
+  Settings ended the wait (OWASP MASTG local-auth). It now counts time since
+  boot (SystemClock.elapsedRealtime), which no setting changes; a reboot
+  starts the wait again. test/private_folder_lockout_test.dart, 12 tests,
+  5 of them fail on the old code. Lab: the vault's PIN flows, then ship.
 
 ### Verify what is live but not yet exercised
 - **Sealed payment fields (migration 054, premium-request v15)**: the first
