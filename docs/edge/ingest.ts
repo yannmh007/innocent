@@ -66,6 +66,8 @@
 // a database function, after the bytes are confirmed. This repository is
 // public and Actions logs on it are public.
 
+import { BACKUP_AAD, BACKUP_KEY_INFO, derivedKey, openFile, sealFile } from './pii.ts';
+
 const R2_ACCOUNT_ID = Deno.env.get('R2_ACCOUNT_ID')!;
 const R2_ACCESS_KEY_ID = Deno.env.get('R2_ACCESS_KEY_ID')!;
 const R2_SECRET_ACCESS_KEY = Deno.env.get('R2_SECRET_ACCESS_KEY')!;
@@ -339,6 +341,15 @@ async function rest(path: string, init: RequestInit = {}): Promise<Response> {
 // tenth of that.
 const BACKUP_PREFIX = '_backup/db/';
 
+// SEALED (2026-10-30). The backup is the whole database and every account's
+// email, so a leaked R2 or off-site token would have been all of it. With
+// PII_ENC_KEY set it is sealed (pii.ts sealFile, under a key derived for
+// backups alone) before it leaves this function, and only the console's
+// download opens it. The name says so: `….json.gz.sealed`. Without the key it
+// is written as before — a backup that cannot be made is worse than one that
+// is not sealed.
+const BACKUP_KEY = derivedKey(Deno.env.get('PII_ENC_KEY') ?? '', BACKUP_KEY_INFO);
+
 async function rpcText(name: string, body: unknown): Promise<string> {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${name}`, {
     method: 'POST',
@@ -380,17 +391,21 @@ async function runBackup(
     `"tables":{${parts.join(',')}},"auth_users":${users}}`;
   const raw = enc.encode(doc);
   const gz = await gzip(raw);
-  const sha = hex(new Uint8Array(await crypto.subtle.digest('SHA-256', gz as BufferSource)));
+  const sealKey = await BACKUP_KEY;
+  // What is stored, and what the size and the hash are of.
+  const stored = sealKey ? await sealFile(sealKey, gz, BACKUP_AAD) : gz;
+  const sha = hex(new Uint8Array(await crypto.subtle.digest('SHA-256', stored as BufferSource)));
   const stamp = takenAt.replace(/[-:]/g, '').replace(/\..*$/, '');   // 20261002T101500
-  const key = `${BACKUP_PREFIX}${takenAt.slice(0, 4)}/${takenAt.slice(5, 7)}/${stamp}-${trigger}.json.gz`;
+  const key = `${BACKUP_PREFIX}${takenAt.slice(0, 4)}/${takenAt.slice(5, 7)}/${stamp}-${trigger}.json.gz` +
+    (sealKey ? '.sealed' : '');
   const put = await fetch(await presign('PUT', key, 600, MEDIA_BUCKET), {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/gzip' },
-    body: gz as BodyInit,
+    headers: { 'Content-Type': backupType(key) },
+    body: stored as BodyInit,
   });
   if (!put.ok) throw new Error(`backup PUT ${put.status} ${(await put.text()).slice(0, 160)}`);
   const id = await rpc('backup_record', {
-    p_key: key, p_bytes: gz.length, p_raw: raw.length, p_sha: sha, p_tables: counts,
+    p_key: key, p_bytes: stored.length, p_raw: raw.length, p_sha: sha, p_tables: counts,
     p_trigger: trigger, p_actor: actor, p_note: null,
   });
   // AND OFF-SITE (migration 045), the same bytes, at once. A failure here is
@@ -398,7 +413,7 @@ async function runBackup(
   let offsite: string | boolean = false;
   if (OFFSITE) {
     try {
-      await putBackupOffsite(Number(id), key, gz);
+      await putBackupOffsite(Number(id), key, stored);
       offsite = true;
     } catch (e) {
       offsite = 'error: ' + String(e).slice(0, 120);
@@ -430,7 +445,83 @@ async function runBackup(
   } catch (e) {
     console.log('backup prune: ' + String(e).slice(0, 160));
   }
-  return { id, key, bytes: gz.length, raw: raw.length, tables: order.length, pruned, offsite };
+  return {
+    id, key, bytes: stored.length, raw: raw.length, tables: order.length, pruned, offsite,
+    sealed: !!sealKey,
+  };
+}
+
+/// A sealed backup is bytes, not a gzip anyone can open.
+function backupType(key: string): string {
+  return key.endsWith('.sealed') ? 'application/octet-stream' : 'application/gzip';
+}
+
+/// THE BACKUPS MADE BEFORE SEALING (migration 055), a few a tick, oldest
+/// first, until none is left. Each step is safe to stop after. The sealed file
+/// is written before anything is deleted, and its name is fixed — the old one
+/// plus `.sealed` — so a repeat writes the same object. A plain file already
+/// gone means an earlier tick got as far as deleting it: the sealed one is read
+/// back, opened to prove it is whole, and the row is pointed at it.
+async function resealOldBackups(): Promise<Record<string, unknown>> {
+  const key = await BACKUP_KEY;
+  if (!key) return { sealed: 0 };
+  const due = (await rpc('backup_plain_due', { p_limit: 3 }) ?? []) as
+    Array<{ id: number; object_key: string; sha256: string | null; offsite_key: string | null }>;
+  const sha256 = async (b: Uint8Array) =>
+    hex(new Uint8Array(await crypto.subtle.digest('SHA-256', b as BufferSource)));
+  let sealed = 0;
+  const errors: string[] = [];
+  for (const b of due) {
+    const plainKey = String(b.object_key ?? '');
+    if (!plainKey.startsWith(BACKUP_PREFIX) || plainKey.endsWith('.sealed')) continue;
+    const sealedKey = plainKey + '.sealed';
+    try {
+      let stored: Uint8Array;
+      const get = await fetch(await presign('GET', plainKey, 300, MEDIA_BUCKET));
+      if (get.ok) {
+        const gz = new Uint8Array(await get.arrayBuffer());
+        // Not the file that was recorded: left exactly as it is, for a person.
+        if (b.sha256 && await sha256(gz) !== b.sha256) throw new Error('hash differs; left as it is');
+        stored = await sealFile(key, gz, BACKUP_AAD);
+        const put = await fetch(await presign('PUT', sealedKey, 600, MEDIA_BUCKET), {
+          method: 'PUT', headers: { 'Content-Type': backupType(sealedKey) }, body: stored as BodyInit,
+        });
+        if (!put.ok) throw new Error(`PUT ${put.status}`);
+      } else if (get.status === 404) {
+        await get.body?.cancel();
+        const again = await fetch(await presign('GET', sealedKey, 300, MEDIA_BUCKET));
+        if (again.status === 404) {
+          await again.body?.cancel();
+          // Neither file: the backup is gone from R2, as the prune would find.
+          if (!b.offsite_key) await rpc('backup_deleted', { p_id: b.id });
+          throw new Error('neither the plain nor the sealed file is in R2');
+        }
+        if (!again.ok) throw new Error(`GET sealed ${again.status}`);
+        stored = new Uint8Array(await again.arrayBuffer());
+        if (!await openFile(key, stored, BACKUP_AAD)) throw new Error('the sealed file does not open');
+      } else {
+        throw new Error(`GET ${get.status}`);
+      }
+      // The copy off-site is plain too, and goes before the row forgets it;
+      // the catch-up copies the sealed one there afterwards.
+      if (b.offsite_key) {
+        if (!OFFSITE) throw new Error('a plain copy off-site, and no off-site key to delete it');
+        const del = await fetch(await presignAt(OFFSITE, 'DELETE', b.offsite_key, 300, OFFSITE_BUCKET),
+          { method: 'DELETE' });
+        if (!del.ok && del.status !== 404) throw new Error(`off-site DELETE ${del.status}`);
+      }
+      const del = await fetch(await presign('DELETE', plainKey, 300, MEDIA_BUCKET), { method: 'DELETE' });
+      if (!del.ok && del.status !== 404) throw new Error(`DELETE ${del.status}`);
+      const ok = await rpc('backup_resealed', {
+        p_id: b.id, p_key: sealedKey, p_bytes: stored.length, p_sha: await sha256(stored),
+      });
+      if (ok !== true) throw new Error('the row was not moved');
+      sealed++;
+    } catch (e) {
+      errors.push(`${b.id}: ${String(e).slice(0, 100)}`);
+    }
+  }
+  return errors.length ? { sealed, errors } : { sealed };
 }
 
 /// `_backup/db/2026/10/x.json.gz` in R2 is `db/2026/10/x.json.gz` off-site.
@@ -438,13 +529,13 @@ function offsiteBackupKey(r2Key: string): string {
   return 'db/' + r2Key.slice(BACKUP_PREFIX.length);
 }
 
-async function putBackupOffsite(id: number, r2Key: string, gz: Uint8Array): Promise<void> {
+async function putBackupOffsite(id: number, r2Key: string, bytes: Uint8Array): Promise<void> {
   if (!OFFSITE) throw new Error('no off-site bucket');
   const key = offsiteBackupKey(r2Key);
   const put = await fetch(await presignAt(OFFSITE, 'PUT', key, 600, OFFSITE_BUCKET), {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/gzip' },
-    body: gz as BodyInit,
+    headers: { 'Content-Type': backupType(key) },
+    body: bytes as BodyInit,
   });
   if (!put.ok) throw new Error(`off-site PUT ${put.status} ${(await put.text()).slice(0, 120)}`);
   await rpc('backup_offsite_done', { p_id: id, p_key: key });
@@ -1929,6 +2020,14 @@ Deno.serve(async (req: Request) => {
       }
     } catch (e) {
       house.noticed = 'error: ' + String(e).slice(0, 120);
+    }
+    // THE BACKUPS MADE BEFORE SEALING (migration 055), sealed where they lie,
+    // before the off-site catch-up below copies the sealed ones.
+    try {
+      const r = await resealOldBackups();
+      if (r.sealed || r.errors) house.resealed = r;
+    } catch (e) {
+      house.resealed = 'error: ' + String(e).slice(0, 120);
     }
     // THE OFF-SITE COPY (migration 045). The database is told, every tick,
     // where the bucket is — host and bucket name, never a key — or that there

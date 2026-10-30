@@ -13,7 +13,7 @@
 
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { createHash, randomBytes } from 'crypto';
+import { createDecipheriv, createHash, hkdfSync, randomBytes } from 'crypto';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const pii = await import(join(ROOT, 'docs/edge/pii.ts'));
@@ -72,6 +72,52 @@ check('a phone is masked to its first two and last three digits',
   pii.maskPhone('+95 9 123 456 789') === '09••••••789');
 check('a transaction id is masked to its last four', pii.maskReference(ref) === '••••••0098');
 check('a short value is masked whole', pii.maskPhone('123') === '•••' && pii.maskReference('AB') === '•••');
+
+// ── whole files: the database backup ─────────────────────────────────────
+// Sealed by ingest.ts, opened by studio.ts, and — with the project gone — by
+// tool/restore_backup.py with the owner's copy of PII_ENC_KEY. Node's own
+// HKDF and AES-GCM read what pii.ts writes, so the format is the documented
+// one and not just whatever WebCrypto happens to do.
+{
+  const raw = randomBytes(32);
+  const b64 = raw.toString('base64');
+  const bk = await pii.derivedKey(b64, pii.BACKUP_KEY_INFO);
+  check('a backup key derives from PII_ENC_KEY', bk !== null);
+  check('no key, no backup key', (await pii.derivedKey('', pii.BACKUP_KEY_INFO)) === null);
+  check('a short key derives nothing',
+    (await pii.derivedKey(randomBytes(16).toString('base64'), pii.BACKUP_KEY_INFO)) === null);
+  const gz = new Uint8Array(randomBytes(70000));   // more than one toB64 piece
+  const sealedFile = await pii.sealFile(bk, gz, pii.BACKUP_AAD);
+  check('a sealed file starts IBK1', pii.isSealedFile(sealedFile) &&
+    new TextDecoder().decode(sealedFile.slice(0, 4)) === 'IBK1');
+  check('a gzip is not a sealed file', !pii.isSealedFile(new Uint8Array([0x1f, 0x8b, 8, 0])));
+  check('it is 32 bytes longer: magic, IV, tag', sealedFile.length === gz.length + 32);
+  const back = await pii.openFile(bk, sealedFile, pii.BACKUP_AAD);
+  check('it opens with its key and its label', back !== null &&
+    Buffer.from(back).equals(Buffer.from(gz)));
+  check('another label does not open it',
+    (await pii.openFile(bk, sealedFile, 'premium_requests:proof')) === null);
+  const other = await pii.derivedKey(b64, 'another-use-v1');
+  check('a key derived for another use does not open it',
+    (await pii.openFile(other, sealedFile, pii.BACKUP_AAD)) === null);
+  const bent = sealedFile.slice();
+  bent[bent.length - 1] ^= 1;
+  check('an altered file does not open', (await pii.openFile(bk, bent, pii.BACKUP_AAD)) === null);
+  const nodeKey = Buffer.from(hkdfSync('sha256', raw, Buffer.alloc(32),
+    Buffer.from(pii.BACKUP_KEY_INFO), 32));
+  const d = createDecipheriv('aes-256-gcm', nodeKey, sealedFile.slice(4, 16));
+  d.setAAD(Buffer.from(pii.BACKUP_AAD));
+  d.setAuthTag(Buffer.from(sealedFile.slice(-16)));
+  const nodeOpened = Buffer.concat([d.update(sealedFile.slice(16, -16)), d.final()]);
+  check('Node\'s HKDF and AES-GCM open it (the documented format)', nodeOpened.equals(Buffer.from(gz)));
+  // restore_backup_test.py holds the same vector for the Python derivation.
+  const vec = Buffer.from(hkdfSync('sha256', Buffer.from([...Array(32).keys()]), Buffer.alloc(32),
+    Buffer.from(pii.BACKUP_KEY_INFO), 32)).toString('hex');
+  check('the derivation vector is the one restore_backup_test.py pins',
+    vec === '138cd64bae9bf39faf2071a0abdc3921568565bbd5c867078d11f586fd3f62c0');
+  check('toB64 is standard base64, in pieces',
+    pii.toB64(gz) === Buffer.from(gz).toString('base64') && pii.toB64(new Uint8Array()) === '');
+}
 
 if (failed) {
   console.log(`\n${failed} check(s) FAILED`);

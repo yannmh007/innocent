@@ -120,3 +120,65 @@ export function maskReference(ref: string): string {
   if (r.length <= 4) return '•'.repeat(Math.max(3, r.length));
   return '•'.repeat(Math.min(6, r.length - 4)) + r.slice(-4);
 }
+
+// ── WHOLE FILES (2026-10-30): the daily database backup ──────────────────
+//
+// The backup (ingest.ts) is every table and the account list. It is sealed
+// under a key DERIVED from PII_ENC_KEY (HKDF-SHA256, its own label), so the
+// owner keeps one secret, not two, and a key made for one purpose never does
+// another's work. `IBK1`, the IV, then the ciphertext and tag. Opened only by
+// the console's download (studio.ts backupUrl), for the owner past the 2-step.
+
+const FILE_MAGIC = new TextEncoder().encode('IBK1');
+
+/// An AES-256-GCM key derived from PII_ENC_KEY for one use, named by [info].
+export async function derivedKey(encB64: string, info: string): Promise<CryptoKey | null> {
+  const raw = fromB64(encB64 ?? '');
+  if (!raw || raw.length !== 32) return null;
+  const ikm = await crypto.subtle.importKey('raw', raw, 'HKDF', false, ['deriveKey']);
+  return await crypto.subtle.deriveKey(
+    { name: 'HKDF', hash: 'SHA-256', salt: new Uint8Array(32), info: new TextEncoder().encode(info) },
+    ikm, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+}
+
+export function isSealedFile(bytes: Uint8Array): boolean {
+  return bytes.length > 4 + 12 + 16 && FILE_MAGIC.every((b, i) => bytes[i] === b);
+}
+
+export async function sealFile(key: CryptoKey, bytes: Uint8Array, aad: string): Promise<Uint8Array> {
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = new Uint8Array(await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv, additionalData: new TextEncoder().encode(aad) }, key, bytes));
+  const out = new Uint8Array(FILE_MAGIC.length + iv.length + ct.length);
+  out.set(FILE_MAGIC, 0);
+  out.set(iv, FILE_MAGIC.length);
+  out.set(ct, FILE_MAGIC.length + iv.length);
+  return out;
+}
+
+/// The file, or null when it is not sealed, not ours, or altered.
+export async function openFile(key: CryptoKey, sealed: Uint8Array, aad: string): Promise<Uint8Array | null> {
+  if (!isSealedFile(sealed)) return null;
+  const iv = sealed.slice(4, 16);
+  try {
+    return new Uint8Array(await crypto.subtle.decrypt(
+      { name: 'AES-GCM', iv, additionalData: new TextEncoder().encode(aad) }, key, sealed.slice(16)));
+  } catch {
+    return null;
+  }
+}
+
+/// The derivation label and the associated data of a database backup: the
+/// same in ingest.ts, which seals, and studio.ts, which opens.
+export const BACKUP_KEY_INFO = 'innocent-db-backup-v1';
+export const BACKUP_AAD = 'innocent-db-backup';
+
+/// Standard base64 of bytes, in pieces: a backup is too long for one
+/// `String.fromCharCode(...bytes)`.
+export function toB64(bytes: Uint8Array): string {
+  let s = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) {
+    s += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  }
+  return btoa(s);
+}

@@ -226,6 +226,11 @@ def main() -> int:
          'a leaked copy of the database carrying every payer\'s number in '
          'the clear, a sealed value that opens in another row, or a reused '
          'transaction number no longer caught'),
+        ('backup_seal_test.mjs',
+         'the backups made before sealing, sealed where they lie',
+         'a plain backup deleted before its sealed copy was written, a sealed '
+         'file adopted that does not open, or a plain copy left off-site '
+         'with no row pointing at it'),
         ('console_smoke.mjs',
          'the console in Chromium: menu per role, routes, 2-step, idle',
          'a control room that draws for an owner and throws for a viewer, a '

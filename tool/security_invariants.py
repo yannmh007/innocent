@@ -402,6 +402,11 @@ CRED_ALLOWED = {
     # .github/workflows/deps-scan.yml checks before running it. A checksum of
     # a public file, published so it can be checked; not a key.
     'c799274b682e0437c802d4714a136ad09b39c65547c460049ba5358d28afa576',
+    # HKDF-SHA256 of the bytes 0..31 (salt zero, info innocent-db-backup-v1):
+    # the test vector tool/restore_backup_test.py and tool/js/pii_test.mjs both
+    # pin, so the Python and the edge function derive the same backup key. Made
+    # from a key anyone can write down; it opens nothing.
+    '138cd64bae9bf39faf2071a0abdc3921568565bbd5c867078d11f586fd3f62c0',
 }
 
 CRED_EXTS = ('.md', '.ts', '.js', '.mjs', '.html', '.yml', '.yaml', '.sh',

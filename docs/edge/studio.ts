@@ -47,6 +47,7 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { namingKey, OPAQUE_FOLDER, opaqueFolder, opaqueName } from './naming.ts';
+import { BACKUP_AAD, BACKUP_KEY_INFO, derivedKey, openFile, toB64 } from './pii.ts';
 
 const R2_ACCOUNT_ID = Deno.env.get('R2_ACCOUNT_ID')!;
 const R2_ACCESS_KEY_ID = Deno.env.get('R2_ACCESS_KEY_ID')!;
@@ -634,6 +635,9 @@ function safeKey(prefix: string, filename: string, folder?: string): string {
 /// Edge secret R2_NAMING_KEY is set; null until then, and keys are made as
 /// before.
 const NAMING: Promise<CryptoKey | null> = namingKey(Deno.env.get('R2_NAMING_KEY') ?? '');
+/// The key a sealed database backup opens with (ingest.ts seals it).
+const BACKUP_KEY: Promise<CryptoKey | null> =
+  derivedKey(Deno.env.get('PII_ENC_KEY') ?? '', BACKUP_KEY_INFO);
 
 /// The key a new upload goes to. With the naming key, the file's own name is
 /// not used at all — only its extension — and the folder is the one the page
@@ -2765,8 +2769,22 @@ async function handleOp(
     if (error || !data || data.deleted_at) return json({ error: 'no_backup' }, 404, req);
     const key = String(data.object_key ?? '');
     if (!key.startsWith('_backup/')) return json({ error: 'no_backup' }, 404, req);
+    const name = String(key.split('/').pop());
+    // A sealed backup (ingest.ts, 2026-10-30) is opened HERE and handed over
+    // as the gzip it was, so the file the owner keeps is the one
+    // restore_backup.py reads. No URL to it leaves the function: a link to
+    // sealed bytes is no use, and a link that opened them would be the backup.
+    if (name.endsWith('.sealed')) {
+      const k = await BACKUP_KEY;
+      if (!k) return json({ error: 'backup_key_missing' }, 500, req);
+      const got = await fetch(await presignPut(MEDIA_BUCKET, key, { 'X-Amz-Expires': '120' }, 'GET'));
+      if (!got.ok) return json({ error: 'backup_unreadable', detail: got.status }, 502, req);
+      const gz = await openFile(k, new Uint8Array(await got.arrayBuffer()), BACKUP_AAD);
+      if (!gz) return json({ error: 'backup_unopenable' }, 500, req);
+      return json({ b64: toB64(gz), name: name.slice(0, -'.sealed'.length) }, 200, req);
+    }
     const url = await presignPut(MEDIA_BUCKET, key, { 'X-Amz-Expires': '600' }, 'GET');
-    return json({ url, name: key.split('/').pop() }, 200, req);
+    return json({ url, name }, 200, req);
   }
 
   // Point Telegram's webhook back at this project, with the secret it must

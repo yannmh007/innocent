@@ -294,7 +294,10 @@ function ssOps(state, body) {
     backupNow: () => owner() || (ss.data.backups.unshift({ id: 8, taken_at: new Date().toISOString(),
       bytes: 82000, raw_bytes: 820000, tables: { titles: 9 }, trigger: 'manual', note: null }),
     { ok: true, backup: { id: 8, bytes: 82000, tables: 31 } }),
-    backupUrl: () => owner() || { url: 'data:application/gzip;base64,H4sIAAAAAAAAAwMAAAAAAAAAAAA=', name: 'b.json.gz' },
+    // A sealed backup comes back opened, as base64 (studio.ts); an older one as a link.
+    backupUrl: () => owner() || (body.id === 7
+      ? { b64: 'H4sIAAAAAAAAAwMAAAAAAAAAAAA=', name: '20261030T010000-daily.json.gz' }
+      : { url: 'data:application/gzip;base64,H4sIAAAAAAAAAwMAAAAAAAAAAAA=', name: 'b.json.gz' }),
     webhookRepair: () => owner() || { ok: true },
     archiveConnect: () => owner() || (body.chat === '@nope' ? { __status: 400, error: 'cannot_post' }
       : (Object.assign(ss.data.archive, { chat_id: -100777, title: 'Innocent archive',
@@ -1465,9 +1468,15 @@ try {
     await page.waitForSelector('#ssBody .ss-row');
     check('status: and it is listed, by hand', /by hand/.test(await page.textContent('#ssBody')));
     // download
-    await page.click('#ssBody .ss-row:nth-child(2) button:has-text("Download")');
-    await page.waitForFunction(() => true);
+    const [dl] = await Promise.all([
+      page.waitForEvent('download', { timeout: 5000 }).catch(() => null),
+      page.click('#ssBody .ss-row:nth-child(2) button:has-text("Download")'),
+    ]);
     check('status: Download asks for that backup', ss.calls.some((c) => c.op === 'backupUrl' && c.id === 7));
+    const saved = dl && await dl.path().catch(() => null);
+    check('status: a sealed backup is saved opened, as the .json.gz it was',
+      !!dl && dl.suggestedFilename() === '20261030T010000-daily.json.gz' && !!saved &&
+      readFileSync(saved).equals(Buffer.from('H4sIAAAAAAAAAwMAAAAAAAAAAAA=', 'base64')));
 
     // webhook repair
     await page.click('#ssBody button:has-text("Repair webhook")');
