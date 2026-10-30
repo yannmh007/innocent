@@ -1,0 +1,24 @@
+> Task :checkKotlinGradlePluginConfigurationErrors SKIPPED
+AdbIdentityTest > the ADB key and certificate build, persist and read back() PASSED
+AdbIdentityTest > the BouncyCastle on the classpath is the one the app pins() PASSED
+NetLabTest > smbWrongPasswordIsAuth() PASSED
+NetLabTest > smbNothingListeningIsUnreachable() PASSED
+NetLabTest > sftpHostKeyPinned() PASSED
+NetLabTest > sftpPassword() PASSED
+NetLabTest > ftpGbkNames() PASSED
+NetLabTest > ftpWrongPasswordIsAuth() PASSED
+NetLabTest > smb1OnlyServerFallsBackToJcifs() PASSED
+NetLabTest > ftpAccountPassiveAndActive() PASSED
+NetLabTest > ftpsExplicitWithRequiredSessionReuse() PASSED
+NetLabTest > smbAccountWithSharePath() PASSED
+NetLabTest > ftpsImplicit() PASSED
+NetLabTest > rangeServerServesEveryProtocol() PASSED
+NetLabTest > sftpWrongPasswordIsAuth() PASSED
+NetLabTest > ftpParallelStreamsUseTheirOwnConnections() PASSED
+NetLabTest > sftpRsaPemKeyWithPassphrase() PASSED
+NetLabTest > scanFindsServersAndNames() PASSED
+NetLabTest > smbMissingShareIsNotFound() PASSED
+NetLabTest > smbAnonymousListsSharesAndReads() PASSED
+NetLabTest > ftpAnonymous() PASSED
+NetLabTest > sftpEd25519Key() PASSED
+BUILD SUCCESSFUL in 2m 36s
