@@ -30,7 +30,16 @@ does it.
   Settings ended the wait (OWASP MASTG local-auth). It now counts time since
   boot (SystemClock.elapsedRealtime), which no setting changes; a reboot
   starts the wait again. test/private_folder_lockout_test.dart, 12 tests,
-  5 of them fail on the old code. Lab: the vault's PIN flows, then ship.
+  5 of them fail on the old code. No lab flow drives the vault yet: write
+  one (set a PIN, five misses, the wait) before this ships.
+- **Android libraries raised** (on the branch): BouncyCastle 1.81 -> 1.86
+  (two critical advisories), Guava 33.7.2, Jackson 2.13.5. Proved: device
+  lab run 41092354010 (adb_own; network: SMB, FTP, FTPS and SFTP browse
+  and play in the app), netlab JVM 22 of 22 on real Samba, vsftpd and
+  OpenSSH, AdbIdentityTest. The downloader (yt-dlp, Jackson) has no lab
+  flow; one real link on a phone before this ships.
+- **"Media only" in the Local Network browser** says on/off to TalkBack;
+  NetPlugin logs every failed call (on the branch).
 
 ### Verify what is live but not yet exercised
 - **Sealed payment fields (migration 054, premium-request v15)**: the first
