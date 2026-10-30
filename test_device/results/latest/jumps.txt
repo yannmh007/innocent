@@ -1,57 +1,55 @@
-  LAB check seek PASS want=355 got=356 ready=256 ms playing=yes, moving by 2278 ms frozen=1531 ms engine=exo rung=720p
-  LAB check quality->240 PASS want=357 got=357 ready=327 ms playing=yes, moving by 429 ms frozen=221 ms engine=exo rung=720p
-  LAB check shown 240p after 1698 ms
-  LAB check skip+30 PASS want=389 got=390 ready=303 ms playing=yes, moving by 2670 ms frozen=2075 ms engine=exo rung=240p
-  LAB check swipe-120 PASS want=271 got=272 ready=275 ms playing=yes, moving by 1532 ms frozen=1217 ms engine=exo rung=240p
-  LAB check quality->auto PASS want=273 got=273 ready=517 ms playing=yes, moving by 889 ms frozen=290 ms engine=exo rung=240p
-  LAB check tour->720 PASS want=274 got=275 ready=308 ms playing=yes, moving by 332 ms frozen=194 ms engine=exo rung=240p
-  LAB check tour->480 PASS want=276 got=276 ready=761 ms playing=yes, moving by 986 ms frozen=279 ms engine=exo rung=720p
-  LAB check tour->360 PASS want=278 got=278 ready=579 ms playing=yes, moving by 1623 ms frozen=335 ms engine=exo rung=480p
-  LAB check tour->240 PASS want=280 got=280 ready=278 ms playing=yes, moving by 592 ms frozen=247 ms engine=exo rung=360p
-  LAB check tour->original SKIP (line 6310 kbps, the copy 9989 kbps) engine=exo
-  LAB check tour->auto PASS want=285 got=285 ready=4453 ms playing=yes, moving by 4548 ms frozen=3810 ms engine=exo rung=720p
-  LAB check preview-far PASS at=666 bytes=6339 ms=1373
+  LAB check seek PASS want=355 got=356 ready=281 ms playing=yes, moving by 2019 ms frozen=1200 ms engine=exo rung=360p
+  LAB check quality->240 PASS want=357 got=358 ready=607 ms playing=yes, moving by 745 ms frozen=222 ms engine=exo rung=360p
+  LAB check shown 240p after 3705 ms
+  LAB check skip+30 PASS want=391 got=392 ready=310 ms playing=yes, moving by 2322 ms frozen=2040 ms engine=exo rung=240p
+  LAB check swipe-120 PASS want=273 got=274 ready=576 ms playing=yes, moving by 2573 ms frozen=1332 ms engine=exo rung=240p
+  LAB check quality->auto PASS want=275 got=275 ready=528 ms playing=yes, moving by 566 ms frozen=198 ms engine=exo rung=240p
+  LAB check tour->720 PASS want=276 got=277 ready=478 ms playing=yes, moving by 599 ms frozen=218 ms engine=exo rung=240p
+  LAB check tour->480 PASS want=278 got=279 ready=596 ms playing=yes, moving by 1274 ms frozen=403 ms engine=exo rung=720p
+  LAB check tour->360 PASS want=280 got=281 ready=942 ms playing=yes, moving by 2389 ms frozen=1034 ms engine=exo rung=480p
+  LAB check tour->240 PASS want=282 got=282 ready=338 ms playing=yes, moving by 529 ms frozen=281 ms engine=exo rung=360p
+  LAB check tour->original FAIL want=283 got=289 ready=8538 ms playing=no frozen=7398 ms engine=exo rung=818p
+  LAB check tour->auto PASS want=289 got=290 ready=7158 ms playing=yes, moving by 7350 ms frozen=6095 ms engine=exo rung=480p
+  LAB check preview-far PASS at=666 bytes=6339 ms=939
   LAB check preview-again PASS at=666 bytes=6339 ms=0
-  LAB check preview-next PASS at=674 bytes=4597 ms=921
-  LAB check far-jump PASS want=666 got=666 ready=2924 ms playing=yes, moving by 2982 ms frozen=1799 ms engine=exo rung=720p
-  LAB check landing PASS held 1612 ms, first frame
-  LAB check back PASS frames=+72 moved=3056 ms at=749s left=744s
-  LAB check summary pass=16 fail=0
+  LAB check preview-next PASS at=674 bytes=4597 ms=852
+  LAB check far-jump PASS want=666 got=666 ready=3643 ms playing=yes, moving by 3658 ms frozen=2702 ms engine=exo rung=480p
+  LAB check landing PASS held 2344 ms, first frame
+  LAB check back PASS frames=+69 moved=3190 ms at=719s left=715s
+  LAB check summary pass=16 fail=1
 play through the ladder on ExoPlayer
 open ladder (exo) start=0s autoplay=true rung=auto first=720
 hls: 720p playlist, 444 segments
+hls jump: answer 345 ms, first byte 415 ms, segment 558 ms (65536 B)
 exo tracks 720,480,360,240 selected=4 adaptive=true
-hls jump: answer 386 ms, first byte 413 ms, segment 687 ms (65536 B)
 exo rung 720p 2000 kbps
-hls jump: answer 473 ms, first byte 544 ms, segment 574 ms (65536 B)
+hls jump: answer 379 ms, first byte 565 ms, segment 1437 ms (65536 B)
 hls: 360p playlist, 444 segments
-hls jump: answer 302 ms, first byte 305 ms, segment 438 ms (65536 B)
-hls jump: answer 312 ms, first byte 353 ms, segment 617 ms (160905 B)
-hls jump: answer 390 ms, first byte 407 ms, segment 713 ms (65536 B)
+hls jump: answer 653 ms, first byte 745 ms, segment 804 ms (65536 B)
 exo rung 360p 600 kbps
-hls jump: answer 427 ms, first byte 430 ms, segment 1315 ms (360921 B)
-exo rung 720p 2000 kbps
-exo picture after seek 990 ms
-hls jump: answer 367 ms, first byte 374 ms, segment 1243 ms (537551 B)
-exo rung=720p
+hls jump: answer 352 ms, first byte 381 ms, segment 1083 ms (160905 B)
+hls jump: answer 457 ms, first byte 625 ms, segment 1102 ms (65536 B)
+exo picture after seek 807 ms
+hls jump: answer 535 ms, first byte 548 ms, segment 1069 ms (166749 B)
+hls: 480p playlist, 444 segments
+exo rung=360p
 exo steer quality target=240 made=1 rungs=[720, 480, 360, 240] picks=240
 quality -> 240 on the ladder (no reopen)
 hls: 240p playlist, 444 segments
-hls jump: answer 447 ms, first byte 451 ms, segment 710 ms (75316 B)
-exo rung=720p
+exo rung=360p
+hls jump: answer 522 ms, first byte 533 ms, segment 1731 ms (71940 B)
 exo rung 240p 300 kbps
-exo picture after seek 1422 ms
-hls jump: answer 856 ms, first byte 890 ms, segment 1603 ms (90078 B)
+exo picture after seek 1534 ms
+hls jump: answer 741 ms, first byte 825 ms, segment 1828 ms (91992 B)
 exo rung=240p
 exo tracks 720,480,360,240 selected=4 adaptive=true
-exo picture after seek 785 ms
-hls jump: answer 556 ms, first byte 559 ms, segment 829 ms (81497 B)
+exo tracks 720,480,360,240 selected=4 adaptive=true
+exo picture after seek 1003 ms
+hls jump: answer 471 ms, first byte 495 ms, segment 1445 ms (105767 B)
 hls: a segment read stalled 8 s, ended
 exo rung=240p
 exo steer quality target=auto made=3 rungs=[720, 480, 360, 240] picks=480
 quality -> auto on the ladder (no reopen)
-hls: 480p playlist, 444 segments
-hls jump: answer 312 ms, first byte 360 ms, segment 758 ms (284964 B)
 exo rung=240p
 exo steer quality target=720 made=3 rungs=[720, 480, 360, 240] picks=720
 quality -> 720 on the ladder (no reopen)
@@ -59,121 +57,76 @@ exo rung=240p
 exo steer quality target=480 made=3 rungs=[720, 480, 360, 240] picks=480
 quality -> 480 on the ladder (no reopen)
 exo rung 720p 2000 kbps
-hls jump: answer 538 ms, first byte 540 ms, segment 1898 ms (619400 B)
+hls jump: answer 953 ms, first byte 956 ms, segment 1775 ms (325862 B)
 exo rung=720p
 exo steer quality target=360 made=3 rungs=[720, 480, 360, 240] picks=360
 quality -> 360 on the ladder (no reopen)
 exo rung 480p 1000 kbps
-hls jump: answer 961 ms, first byte 1046 ms, segment 1440 ms (195413 B)
+hls jump: answer 1215 ms, first byte 1221 ms, segment 2971 ms (292744 B)
 exo rung=480p
 exo steer quality target=240 made=3 rungs=[720, 480, 360, 240] picks=240
 quality -> 240 on the ladder (no reopen)
-hls jump: answer 778 ms, first byte 827 ms, segment 1628 ms (189173 B)
+hls jump: answer 532 ms, first byte 610 ms, segment 1347 ms (186389 B)
 exo rung 360p 600 kbps
-hls jump: answer 504 ms, first byte 507 ms, segment 553 ms (34942 B)
 exo rung=360p
-renewal: copies from the grant held 30 s
+renewal: copies from the grant held 34 s
 exo rung 240p 300 kbps
-quality -> original at 285s
+hls jump: answer 782 ms, first byte 892 ms, segment 1457 ms (81226 B)
+quality -> original at 289s
 exo tracks 818 selected=1 adaptive=false
 exo rung 818p 9989 kbps
-quality -> auto at 285s
-open ladder (exo) start=285s autoplay=true rung=auto first=720
+exo rung=818p
+quality -> auto at 289s
+open ladder (exo) start=289s autoplay=true rung=auto first=720
 hls: 720p playlist, 444 segments
 exo tracks 720,480,360,240 selected=4 adaptive=true
-exo rung 720p 2000 kbps
-hls jump: answer 606 ms, first byte 619 ms, segment 1146 ms (576125 B)
-hls jump: answer 384 ms, first byte 385 ms, segment 935 ms (533633 B)
-exo rung=720p
-hls jump: answer 282 ms, first byte 289 ms, segment 831 ms (535541 B)
-hls jump: answer 312 ms, first byte 327 ms, segment 600 ms (472370 B)
-exo picture after seek 1666 ms
-exo landing picture held 1612 ms, first frame
-exo rung=720p
-hls jump: answer 236 ms, first byte 238 ms, segment 570 ms (370242 B)
-hls jump: answer 277 ms, first byte 280 ms, segment 778 ms (447505 B)
-hls jump: answer 243 ms, first byte 251 ms, segment 742 ms (568086 B)
-hls jump: answer 440 ms, first byte 446 ms, segment 819 ms (711720 B)
+hls: 480p playlist, 444 segments
+exo rung 480p 1000 kbps
+hls jump: answer 598 ms, first byte 601 ms, segment 1511 ms (284270 B)
+hls jump: answer 293 ms, first byte 301 ms, segment 1287 ms (282747 B)
+exo rung=480p
+hls jump: answer 323 ms, first byte 398 ms, segment 879 ms (284964 B)
+exo picture after seek 2460 ms
+exo landing picture held 2344 ms, first frame
+hls jump: answer 407 ms, first byte 409 ms, segment 1065 ms (260189 B)
+exo rung=480p
+hls jump: answer 247 ms, first byte 248 ms, segment 373 ms (208833 B)
+hls jump: answer 266 ms, first byte 267 ms, segment 873 ms (240426 B)
+hls jump: answer 281 ms, first byte 297 ms, segment 600 ms (323346 B)
 hls: a segment read stalled 8 s, ended
-hls jump: answer 300 ms, first byte 300 ms, segment 538 ms (336776 B)
-hls jump: answer 276 ms, first byte 277 ms, segment 324 ms (42294 B)
-hls jump: answer 248 ms, first byte 258 ms, segment 708 ms (408611 B)
-hls jump: answer 384 ms, first byte 398 ms, segment 558 ms (249481 B)
-hls jump: answer 308 ms, first byte 308 ms, segment 636 ms (316615 B)
-hls jump: answer 271 ms, first byte 278 ms, segment 490 ms (155714 B)
-hls jump: answer 239 ms, first byte 239 ms, segment 663 ms (212144 B)
-hls jump: answer 293 ms, first byte 298 ms, segment 607 ms (193453 B)
-hls jump: answer 283 ms, first byte 284 ms, segment 435 ms (210902 B)
-hls jump: answer 244 ms, first byte 245 ms, segment 563 ms (206470 B)
-hls jump: answer 246 ms, first byte 246 ms, segment 296 ms (207671 B)
-hls jump: answer 306 ms, first byte 307 ms, segment 512 ms (225873 B)
-hls jump: answer 277 ms, first byte 278 ms, segment 780 ms (478792 B)
-hls jump: answer 293 ms, first byte 311 ms, segment 798 ms (474035 B)
-hls jump: answer 300 ms, first byte 353 ms, segment 534 ms (371698 B)
-hls jump: answer 366 ms, first byte 366 ms, segment 743 ms (326455 B)
-hls jump: answer 321 ms, first byte 326 ms, segment 607 ms (258226 B)
-hls jump: answer 267 ms, first byte 268 ms, segment 709 ms (635965 B)
-hls jump: answer 303 ms, first byte 303 ms, segment 639 ms (556092 B)
-hls jump: answer 279 ms, first byte 280 ms, segment 778 ms (577920 B)
-hls jump: answer 348 ms, first byte 349 ms, segment 835 ms (454481 B)
-hls jump: answer 251 ms, first byte 253 ms, segment 632 ms (363240 B)
-hls jump: answer 362 ms, first byte 394 ms, segment 826 ms (388225 B)
-hls jump: answer 312 ms, first byte 313 ms, segment 549 ms (292848 B)
-hls jump: answer 255 ms, first byte 258 ms, segment 655 ms (283766 B)
-hls jump: answer 336 ms, first byte 369 ms, segment 497 ms (260409 B)
-hls jump: answer 249 ms, first byte 258 ms, segment 528 ms (260713 B)
-hls jump: answer 337 ms, first byte 341 ms, segment 894 ms (543345 B)
-hls jump: answer 319 ms, first byte 320 ms, segment 872 ms (300595 B)
-hls jump: answer 281 ms, first byte 285 ms, segment 420 ms (303666 B)
-hls jump: answer 266 ms, first byte 268 ms, segment 463 ms (313913 B)
-hls jump: answer 328 ms, first byte 328 ms, segment 492 ms (271976 B)
-hls jump: answer 229 ms, first byte 232 ms, segment 533 ms (260282 B)
-hls jump: answer 292 ms, first byte 293 ms, segment 737 ms (260379 B)
-hls jump: answer 334 ms, first byte 335 ms, segment 569 ms (152389 B)
-hls jump: answer 249 ms, first byte 252 ms, segment 269 ms (43053 B)
-hls jump: answer 1051 ms, first byte 1052 ms, segment 1168 ms (53068 B)
-hls jump: answer 280 ms, first byte 281 ms, segment 287 ms (61854 B)
-hls jump: answer 280 ms, first byte 282 ms, segment 352 ms (61710 B)
-hls jump: answer 339 ms, first byte 351 ms, segment 423 ms (80668 B)
-hls jump: answer 328 ms, first byte 328 ms, segment 458 ms (74700 B)
+hls jump: answer 334 ms, first byte 353 ms, segment 707 ms (355609 B)
+hls jump: answer 299 ms, first byte 301 ms, segment 709 ms (172263 B)
+hls jump: answer 268 ms, first byte 269 ms, segment 473 ms (38117 B)
+hls jump: answer 484 ms, first byte 485 ms, segment 848 ms (201111 B)
+hls jump: answer 286 ms, first byte 289 ms, segment 367 ms (127275 B)
+hls jump: answer 340 ms, first byte 342 ms, segment 890 ms (163440 B)
+hls jump: answer 248 ms, first byte 259 ms, segment 489 ms (99190 B)
+hls jump: answer 422 ms, first byte 428 ms, segment 512 ms (112647 B)
+hls jump: answer 301 ms, first byte 305 ms, segment 502 ms (109662 B)
+hls jump: answer 367 ms, first byte 399 ms, segment 673 ms (115046 B)
+hls jump: answer 290 ms, first byte 293 ms, segment 464 ms (116648 B)
+hls jump: answer 249 ms, first byte 250 ms, segment 743 ms (118476 B)
+hls jump: answer 291 ms, first byte 296 ms, segment 341 ms (125394 B)
+hls jump: answer 329 ms, first byte 335 ms, segment 715 ms (240392 B)
+hls jump: answer 256 ms, first byte 259 ms, segment 562 ms (240830 B)
+hls jump: answer 252 ms, first byte 260 ms, segment 447 ms (188532 B)
+hls jump: answer 229 ms, first byte 233 ms, segment 517 ms (168240 B)
+hls jump: answer 265 ms, first byte 267 ms, segment 367 ms (137431 B)
+hls jump: answer 258 ms, first byte 270 ms, segment 707 ms (345650 B)
+hls jump: answer 298 ms, first byte 338 ms, segment 844 ms (288919 B)
+hls jump: answer 345 ms, first byte 349 ms, segment 1091 ms (302179 B)
 LAB away: home
 lifecycle hidden mounted=true
 lifecycle paused mounted=true
-hls jump: answer 236 ms, first byte 237 ms, segment 259 ms (56443 B)
-hls jump: answer 297 ms, first byte 298 ms, segment 306 ms (61340 B)
-hls jump: answer 252 ms, first byte 254 ms, segment 268 ms (61320 B)
-hls jump: answer 229 ms, first byte 230 ms, segment 252 ms (60525 B)
-hls jump: answer 234 ms, first byte 240 ms, segment 267 ms (58470 B)
-hls jump: answer 219 ms, first byte 226 ms, segment 247 ms (60302 B)
-hls jump: answer 225 ms, first byte 228 ms, segment 244 ms (71076 B)
-hls jump: answer 227 ms, first byte 228 ms, segment 251 ms (79013 B)
-hls jump: answer 226 ms, first byte 230 ms, segment 258 ms (97787 B)
-hls jump: answer 228 ms, first byte 230 ms, segment 258 ms (98003 B)
-hls jump: answer 232 ms, first byte 234 ms, segment 261 ms (106820 B)
-hls jump: answer 247 ms, first byte 247 ms, segment 277 ms (102540 B)
-hls jump: answer 216 ms, first byte 216 ms, segment 240 ms (80804 B)
-hls jump: answer 229 ms, first byte 230 ms, segment 341 ms (398302 B)
-hls jump: answer 249 ms, first byte 260 ms, segment 364 ms (365631 B)
+hls jump: answer 328 ms, first byte 332 ms, segment 477 ms (241059 B)
+hls jump: answer 296 ms, first byte 299 ms, segment 390 ms (198992 B)
+hls jump: answer 254 ms, first byte 255 ms, segment 348 ms (208871 B)
+hls jump: answer 272 ms, first byte 275 ms, segment 351 ms (159521 B)
+hls jump: answer 256 ms, first byte 258 ms, segment 339 ms (153881 B)
+hls jump: answer 374 ms, first byte 388 ms, segment 524 ms (260409 B)
 LAB away: back
 lifecycle detached mounted=true
 lifecycle resumed mounted=true
 lifecycle inactive mounted=true
 lifecycle resumed mounted=true
-hls jump: answer 284 ms, first byte 285 ms, segment 418 ms (423989 B)
-hls jump: answer 240 ms, first byte 243 ms, segment 353 ms (465417 B)
-hls jump: answer 234 ms, first byte 238 ms, segment 348 ms (511205 B)
-hls jump: answer 297 ms, first byte 298 ms, segment 741 ms (538474 B)
-hls jump: answer 235 ms, first byte 253 ms, segment 370 ms (542451 B)
-hls jump: answer 245 ms, first byte 251 ms, segment 418 ms (525078 B)
-hls jump: answer 302 ms, first byte 302 ms, segment 501 ms (555370 B)
-hls jump: answer 285 ms, first byte 291 ms, segment 575 ms (525464 B)
-hls jump: answer 228 ms, first byte 238 ms, segment 465 ms (555619 B)
-hls jump: answer 331 ms, first byte 331 ms, segment 495 ms (536898 B)
-hls jump: answer 273 ms, first byte 274 ms, segment 479 ms (496672 B)
-hls jump: answer 283 ms, first byte 289 ms, segment 508 ms (509042 B)
-hls jump: answer 253 ms, first byte 254 ms, segment 416 ms (499911 B)
-hls jump: answer 265 ms, first byte 284 ms, segment 384 ms (489620 B)
-hls jump: answer 235 ms, first byte 244 ms, segment 352 ms (491886 B)
-hls jump: answer 302 ms, first byte 303 ms, segment 470 ms (515726 B)
-hls jump: answer 401 ms, first byte 402 ms, segment 490 ms (515701 B)
-hls jump: answer 262 ms, first byte 275 ms, segment 428 ms (576859 B)
+exo rung 720p 2000 kbps
