@@ -95,6 +95,11 @@ CHECKS = [
      'a backup that cannot be put back: a child row inserted before its parent '
      'fails the whole restore, and a row holding the quote tag would end the '
      'statement early and run the rest of the row as SQL'),
+    ('gradle_lock_test.py', None,
+     'an Android library the dependency scan never sees: the scan read '
+     'pubspec.lock alone, so smbj, sshj, Bouncy Castle, Media3 and every '
+     'plugin\'s own libraries went unscanned, and a version read as declared '
+     'rather than resolved scans a library the APK does not carry'),
     ('previews_test.py', None,
      'an album blurhash the app cannot read back: the runner encodes and the '
      'app decodes with two ports of one algorithm, and a slip in either draws '
