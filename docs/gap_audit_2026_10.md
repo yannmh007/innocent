@@ -421,6 +421,13 @@ Sintel does not decode there.)
    fourteen Jackson and seven Commons Compress advisories are accepted
    until 31 Jan 2027 (`tool/osv-scanner-android.toml`, with why). Raising
    minSdk drops Android 7 phones and empties that file. Owner's call.
+8. **ffmpeg from BtbN's floating `latest` build** (transcode.yml, and the
+   device lab's film flows). The transcode job runs it holding
+   TRANSCODE_SECRET, which reaches the masters; that build is replaced every
+   day, so nothing says today's is yesterday's. Next step (one CI run): log
+   the dated autobuild tag and its SHA-256, pin both, and keep apt (signed
+   Ubuntu packages, about thirteen minutes slower) as the fallback when the
+   pinned build is gone or does not match.
 
 ## Next app release (after 1.64.71)
 
