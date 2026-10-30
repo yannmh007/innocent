@@ -37,14 +37,29 @@
 // Telegram with the screenshot and into the console's inbox.
 // Answers: 200 { request }, 400 { code }, 401 { code: 'sign_in' },
 //          429 { code: 'too_many' }, 500 { code: 'failed' }.
+//
+// SEALED (v11, migration 054). With the secrets PII_ENC_KEY and PII_INDEX_KEY
+// set, the number a payer paid from and the transaction id are never written
+// as text: sealed (AES-256-GCM, bound to the row and column), the transaction
+// id indexed (HMAC) for the reused-number check, and masked for the payer
+// (docs/edge/pii.ts). The console's inbox gets them opened. Without the
+// secrets, as before.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import {
+  blindIndex, maskPhone, maskReference, normaliseReference, open, piiKeys, seal,
+  type PiiKeys,
+} from './pii.ts';
 
 const SERVICE_KEY = Deno.env.get('SB_SERVICE_KEY') ??
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 const BOT_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN') ?? '';
 const TG_CHATS = (Deno.env.get('TELEGRAM_CHAT_IDS') ?? '')
   .split(',').map((s) => s.trim()).filter(Boolean);
+
+// Null until both secrets are set: then nothing is sealed, as before v11.
+const PII: Promise<PiiKeys | null> = piiKeys(
+  Deno.env.get('PII_ENC_KEY') ?? '', Deno.env.get('PII_INDEX_KEY') ?? '');
 
 const BUCKET = 'payment-proofs';
 const MAX_BYTES = 5 * 1024 * 1024;
@@ -128,7 +143,37 @@ async function tellOwner(opts: {
   }
 }
 
-const SELECT = 'id,plan_id,reference,sender_phone,status,note,submitted_at,message';
+const SELECT = 'id,plan_id,reference,sender_phone,status,note,submitted_at,message,' +
+  'reference_mask,sender_phone_mask';
+
+/// A request as the payer is shown it: the masks where the numbers are sealed,
+/// in the fields an app older than v11 reads.
+function forPayer(row: Record<string, unknown>): Record<string, unknown> {
+  return {
+    ...row,
+    reference: row.reference ?? row.reference_mask ?? null,
+    sender_phone: row.sender_phone ?? row.sender_phone_mask ?? null,
+  };
+}
+
+/// A console row with its sealed numbers opened, and nothing sealed left in
+/// it. A value that will not open says so rather than showing nothing.
+async function forConsole(row: Record<string, unknown>): Promise<Record<string, unknown>> {
+  const { reference_sealed, sender_phone_sealed, ...out } = row;
+  if (!reference_sealed && !sender_phone_sealed) return out;
+  const keys = await PII;
+  const id = String(row.id);
+  const opened = async (sealed: unknown, column: string, mask: unknown) => {
+    if (!sealed) return null;
+    const v = keys ? await open(keys, String(sealed), `premium_requests:${column}:${id}`) : null;
+    return v ?? `${mask ?? ''} (sealed — the key does not open it)`.trim();
+  };
+  out.reference = out.reference ??
+    await opened(reference_sealed, 'reference', row.reference_mask);
+  out.sender_phone = out.sender_phone ??
+    await opened(sender_phone_sealed, 'sender_phone', row.sender_phone_mask);
+  return out;
+}
 
 const RANK: Record<string, number> = { viewer: 1, uploader: 2, editor: 3, owner: 4 };
 
@@ -230,11 +275,12 @@ async function consoleOp(
       .order(decided ? 'reviewed_at' : 'submitted_at', { ascending: waiting })
       .limit(waiting ? 200 : 60);
     if (error) return json({ error: 'inbox_failed', detail: error.message }, 500);
+    const rows = await Promise.all((data ?? []).map((r) => forConsole(r)));
     const count = async (st: string) => (await admin.from('premium_requests')
       .select('id', { count: 'exact', head: true }).eq('status', st)).count ?? 0;
     const [pending, approved, rejected] = await Promise.all(
       [count('pending'), count('approved'), count('rejected')]);
-    return json({ requests: data ?? [], counts: { pending, approved, rejected } });
+    return json({ requests: rows, counts: { pending, approved, rejected } });
   }
 
   if (op === 'seen') {
@@ -366,7 +412,7 @@ Deno.serve(async (req) => {
     const { data: mine } = await admin.from('premium_requests').select(SELECT)
       .eq('user_id', user.id).eq('proof_sha256', sha).eq('status', 'pending')
       .limit(1).maybeSingle();
-    if (mine) return json({ request: mine, again: true }, 200);
+    if (mine) return json({ request: forPayer(mine), again: true }, 200);
   }
 
   // 3. limits
@@ -396,15 +442,30 @@ Deno.serve(async (req) => {
   // as one screenshot twice. Compared without spaces, dashes or dots, the
   // ways people type the same number differently.
   let reusedRef = false;
-  const refKey = reference ? reference.replace(/[^0-9A-Za-z]/g, '').toUpperCase() : '';
+  const refKey = reference ? normaliseReference(reference) : '';
+  const keys = await PII;
+  const refIndex = keys && refKey.length >= 6
+    ? await blindIndex(keys, 'reference', refKey) : null;
+  const reused = (r: { user_id: unknown; status: unknown }) =>
+    r.user_id !== user.id || r.status === 'approved';
+  if (!duplicateOf && refIndex) {
+    const { data: same } = await admin.from('premium_requests')
+      .select('id, user_id, status').eq('reference_index', refIndex)
+      .order('submitted_at').limit(50);
+    const hit = (same ?? []).find(reused);
+    if (hit) {
+      duplicateOf = String(hit.id);
+      reusedRef = true;
+    }
+  }
+  // Requests filed before the secrets were set keep their numbers as text.
   if (!duplicateOf && refKey.length >= 6) {
     const { data: same } = await admin.from('premium_requests')
       .select('id, user_id, status, reference').not('reference', 'is', null)
       .ilike('reference', '%' + refKey.split('').join('%') + '%')
       .order('submitted_at').limit(50);
     const hit = (same ?? []).find((r) =>
-      String(r.reference).replace(/[^0-9A-Za-z]/g, '').toUpperCase() === refKey &&
-      (r.user_id !== user.id || r.status === 'approved'));
+      normaliseReference(String(r.reference)) === refKey && reused(r));
     if (hit) {
       duplicateOf = String(hit.id);
       reusedRef = true;
@@ -424,13 +485,25 @@ Deno.serve(async (req) => {
     }
   }
 
-  // 7. filed
+  // 7. filed — the numbers sealed when the keys are there.
+  const numbers = keys
+    ? {
+      reference: null,
+      sender_phone: null,
+      reference_sealed: reference
+        ? await seal(keys, reference, `premium_requests:reference:${id}`) : null,
+      sender_phone_sealed: senderPhone
+        ? await seal(keys, senderPhone, `premium_requests:sender_phone:${id}`) : null,
+      reference_index: refIndex,
+      reference_mask: reference ? maskReference(reference) : null,
+      sender_phone_mask: senderPhone ? maskPhone(senderPhone) : null,
+    }
+    : { reference, sender_phone: senderPhone };
   const { data: row, error: insErr } = await admin.from('premium_requests').insert({
     id,
     user_id: user.id,
     plan_id: planId,
-    reference,
-    sender_phone: senderPhone,
+    ...numbers,
     proof_path: proofPath,
     proof_sha256: sha,
     proof_bytes: image?.length ?? null,
@@ -455,13 +528,15 @@ Deno.serve(async (req) => {
       : null,
     `💳 Premium request · ${planId}${priceShown ? ' · ' + priceShown : ''}`,
     `from ${who}`,
-    senderPhone ? `paid from ${senderPhone}` : null,
-    reference ? `transaction ${reference}` : null,
+    // Masked when sealed: the whole numbers are in the console, behind its
+    // gate, not in a chat history on another company's servers.
+    senderPhone ? `paid from ${keys ? maskPhone(senderPhone) : senderPhone}` : null,
+    reference ? `transaction ${keys ? maskReference(reference) : reference}` : null,
     image ? null : 'no screenshot',
     message ? `💬 "${message}"` : null,
     `id ${id.slice(0, 8)} — approve in the console, Requests`,
   ].filter(Boolean);
   await tellOwner({ image, mime: kind?.mime ?? 'image/png', caption: lines.join('\n') });
 
-  return json({ request: row }, 200);
+  return json({ request: forPayer(row) }, 200);
 });
