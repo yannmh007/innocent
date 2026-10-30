@@ -1252,7 +1252,10 @@ async function handleOp(
           etag: String(o.etag ?? '').replace(/^"+|"+$/g, ''),
         };
       })
-      .filter((p) => p.n >= 1 && p.etag)
+      // An ETag is a hash, hex with at most a `-N`: anything else (a `<` or
+      // a quote inside) would be markup in the body below, so it is refused
+      // with the list, like a missing one. S3 numbers parts 1 to 10000.
+      .filter((p) => p.n >= 1 && p.n <= 10000 && /^[A-Za-z0-9-]{1,128}$/.test(p.etag))
       .sort((a, b) => a.n - b.n);
     if (parts.length !== raw.length) return json({ error: 'bad_parts' }, 400, req);
 

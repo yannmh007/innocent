@@ -493,6 +493,7 @@ const authOf = (signed) => {
     [{ partNumber: 1, etag: 'a' }, { partNumber: 2, etag: '' }],
     [{ partNumber: 1, etag: 'a' }, { partNumber: 0, etag: 'b' }],
     [{ partNumber: 1, etag: 'a' }, null],
+    [{ partNumber: 1, etag: 'a' }, { partNumber: 10001, etag: 'b' }],
   ]) {
     let refused = false;
     try { signers.completeBody({ parts: bad }); } catch (e) {
@@ -501,6 +502,21 @@ const authOf = (signed) => {
     check('an incomplete part list is refused, not silently shortened',
       refused);
   }
+
+  // 17. An ETag that is not a hash is refused: one carrying markup would
+  //     change the XML body, adding or closing parts of its own.
+  for (const etag of ['a</ETag></Part><Part><PartNumber>9', 'a"b', 'a&b', 'a b', 'x'.repeat(129)]) {
+    let refused = false;
+    try {
+      signers.completeBody({ parts: [{ partNumber: 1, etag: 'a' }, { partNumber: 2, etag }] });
+    } catch (e) {
+      refused = e.message === 'bad_parts';
+    }
+    check(`an ETag that is not a hash is refused (${JSON.stringify(etag.slice(0, 16))})`, refused);
+  }
+  check('a real multipart ETag still passes',
+    signers.completeBody({ parts: [{ partNumber: 1, etag: '"9b2cf535f27731c974343645a3985328-2"' }] })
+      .includes('<ETag>"9b2cf535f27731c974343645a3985328-2"</ETag>'));
 
   let noParts = false;
   try { signers.completeBody({ parts: [] }); } catch (e) {
