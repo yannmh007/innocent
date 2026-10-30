@@ -198,10 +198,13 @@ appId: com.innocent.media
 - inputText: "netlab-pass"
 - hideKeyboard
 - tapOn: "Connect"
+# The folder row ("media", then its date on the next line), never the
+# "Media only" switch above the list: Maestro 2.12 matches text without
+# regard to case, and "(?s)media.*" tapped the switch (run 41088621848).
 - extendedWaitUntil:
-    visible: "(?s)media.*"
+    visible: "(?s)media\\n.*"
     timeout: 45000
-- tapOn: "(?s)media.*"
+- tapOn: "(?s)media\\n.*"
 - extendedWaitUntil:
     visible: "(?s)Movies.*"
     timeout: 20000

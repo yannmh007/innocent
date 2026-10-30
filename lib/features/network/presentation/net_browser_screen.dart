@@ -255,14 +255,21 @@ class _NetBrowserScreenState extends ConsumerState<NetBrowserScreen> {
             ],
           ),
           actions: <Widget>[
-            IconButton(
-              tooltip: s.netMediaOnly,
-              icon: Icon(
-                  _mediaOnly
-                      ? Icons.video_library_rounded
-                      : Icons.video_library_outlined,
-                  color: _mediaOnly ? NetColors.action : Colors.white),
-              onPressed: () => setState(() => _mediaOnly = !_mediaOnly),
+            // An on/off filter, so TalkBack says which: only the icon's
+            // fill and colour changed before (WCAG 4.1.2, name, role, value).
+            MergeSemantics(
+              child: Semantics(
+                toggled: _mediaOnly,
+                child: IconButton(
+                  tooltip: s.netMediaOnly,
+                  icon: Icon(
+                      _mediaOnly
+                          ? Icons.video_library_rounded
+                          : Icons.video_library_outlined,
+                      color: _mediaOnly ? NetColors.action : Colors.white),
+                  onPressed: () => setState(() => _mediaOnly = !_mediaOnly),
+                ),
+              ),
             ),
             SafePopupMenuButton<_Sort>(
               icon: const Icon(Icons.sort_rounded, color: Colors.white),

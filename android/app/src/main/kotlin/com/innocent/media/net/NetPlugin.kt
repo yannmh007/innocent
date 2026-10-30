@@ -131,9 +131,13 @@ object NetPlugin {
         } catch (e: LinkageError) {
             // A library reaching for an API this Android lacks: say so
             // instead of taking the app down.
+            log("${call.method} protocol: ${e.javaClass.simpleName}")
             main.post { result.error("protocol", "Not supported on this Android: ${e.message}", null) }
         } catch (t: Throwable) {
+            // Logged like a NetException: a failure that left no line was
+            // indistinguishable, in the lab's trace, from a call never made.
             val e = classify(t, call.method)
+            log("${call.method} ${e.error.code}: ${e.message}")
             main.post { result.error(e.error.code, e.message, e.detail) }
         }
     }
