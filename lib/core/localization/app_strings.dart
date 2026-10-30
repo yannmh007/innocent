@@ -764,6 +764,7 @@ class AppStrings {
   String get accept => _s('accept');
   String get decline => _s('decline');
   String get trPairDeclined => _s('trPairDeclined');
+  String get trPairWait => _s('trPairWait');
   String get waitingForReceiver => _s('waitingForReceiver');
   String get overallProgress => _s('overallProgress');
   String get alreadyOnThisPhone => _s('alreadyOnThisPhone');
@@ -3587,6 +3588,7 @@ class AppStrings {
     'accept': 'Accept',
     'decline': 'Decline',
     'trPairDeclined': 'The other phone did not let this one in. Ask them to tap Accept when this phone\'s name appears, then tap their phone again.',
+    'trPairWait': 'The other phone is not taking requests from this one just now. Wait a minute, then tap it again.',
     'waitingForReceiver': 'Waiting for the other phone\u2026',
     'overallProgress': 'Overall',
     'alreadyOnThisPhone': 'Already on this phone',
@@ -5923,6 +5925,7 @@ class AppStrings {
     'accept': 'လက်ခံမည်',
     'decline': 'ငြင်းပယ်မည်',
     'trPairDeclined': 'အခြားဖုန်းက ဒီဖုန်းကို လက်မခံခဲ့ပါ။ ဒီဖုန်းအမည် ပေါ်လာရင် “လက်ခံမည်” ကို နှိပ်ပေးဖို့ ပြောပြီး သူ့ဖုန်းကို ထပ်နှိပ်ပါ။',
+    'trPairWait': 'အခြားဖုန်းက ဒီဖုန်းရဲ့ တောင်းဆိုမှုကို ခဏ လက်မခံသေးပါ။ တစ်မိနစ်လောက် စောင့်ပြီး ထပ်နှိပ်ပါ။',
     'waitingForReceiver': 'တစ်ဖက်ဖုန်းကို စောင့်နေသည်\u2026',
     'overallProgress': 'စုစုပေါင်း',
     'alreadyOnThisPhone': 'ဤဖုန်းတွင် ရှိပြီးသား',
@@ -8233,6 +8236,7 @@ class AppStrings {
     'accept': 'ยอมรับ',
     'decline': 'ปฏิเสธ',
     'trPairDeclined': 'อีกเครื่องไม่ได้ให้เครื่องนี้เข้า ขอให้เขาแตะ ยอมรับ เมื่อชื่อโทรศัพท์เครื่องนี้ปรากฏ แล้วแตะโทรศัพท์ของเขาอีกครั้ง',
+    'trPairWait': 'อีกเครื่องยังไม่รับคำขอจากเครื่องนี้ในตอนนี้ รอสักครู่แล้วแตะอีกครั้ง',
     'waitingForReceiver': 'กำลังรอเครื่องอีกฝั่ง\u2026',
     'overallProgress': 'รวมทั้งหมด',
     'alreadyOnThisPhone': 'มีอยู่ในเครื่องนี้แล้ว',

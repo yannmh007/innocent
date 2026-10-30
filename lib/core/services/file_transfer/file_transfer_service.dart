@@ -374,6 +374,50 @@ class FileTransferService {
   static const int _kPinMaxFails = 5;
   static const int _kPinLockSeconds = 30;
 
+  // ── ASKING, AND BEING TOLD NO (2026-10-30) ─────────────────────────────
+  //
+  // With "ask before sending" on by default, every /pair from the radar puts
+  // a question on the sender's screen. Unlimited, a phone on the same Wi-Fi
+  // could put one there every second for as long as it liked, until the
+  // sender tapped Accept to make it stop. So: one question at a time per
+  // address, and an address told no three times is not asked about again for
+  // a minute, then two, four… — the same backoff as a wrong PIN, kept apart
+  // from it so a stranger's refusals never lock out someone typing the PIN.
+  final Set<String> _askingFor = <String>{};
+  final Map<String, _PinAttempts> _declines = <String, _PinAttempts>{};
+  static const int _kDeclinesBeforeLock = 3;
+  static const int _kDeclineLockSeconds = 60;
+
+  int? _declineLockRemaining(String ip) {
+    final a = _declines[ip];
+    if (a == null || a.lockedUntil == null) return null;
+    final left = a.lockedUntil!.difference(DateTime.now()).inSeconds;
+    if (left <= 0) {
+      a.lockedUntil = null;
+      return null;
+    }
+    return left;
+  }
+
+  void _recordDecline(String ip) {
+    final a = _declines.putIfAbsent(ip, () => _PinAttempts());
+    a.fails++;
+    if (a.fails >= _kDeclinesBeforeLock) {
+      final multiplier = 1 << (a.fails - _kDeclinesBeforeLock).clamp(0, 6);
+      a.lockedUntil =
+          DateTime.now().add(Duration(seconds: _kDeclineLockSeconds * multiplier));
+    }
+  }
+
+  /// Free bytes where a browser's uploads land, or -1 when the platform cannot
+  /// say. A field so a test can stand in for the phone's disk.
+  @visibleForTesting
+  Future<int> Function() freeSpace = () => FileReceiverService().freeSpaceBytes();
+
+  /// What an upload must leave free on the phone: the same margin the
+  /// receiver keeps when it checks a batch before pulling it.
+  static const int _kUploadHeadroom = 64 * 1024 * 1024;
+
   /// null when [ip] may try, or the seconds it must wait.
   int? _pinLockRemaining(String ip) {
     final a = _pinAttempts[ip];
@@ -469,6 +513,20 @@ class FileTransferService {
       // the common case, and they should not carry a penalty afterwards.
       if (pin.isNotEmpty) _pinAttempts.remove(ip);
       if (requireApproval) {
+        final declineLeft = _declineLockRemaining(ip);
+        if (declineLeft != null || _askingFor.contains(ip)) {
+          final wait = declineLeft ?? 45;
+          return Response(429,
+              body: jsonEncode({
+                'error': declineLeft != null ? 'declined_too_often' : 'already_asking',
+                'retry_after': wait,
+              }),
+              headers: {
+                'content-type': 'application/json; charset=utf-8',
+                'retry-after': '$wait',
+              });
+        }
+        _askingFor.add(ip);
         final decision = Completer<bool>();
         final pr = PairRequest(
           deviceId: devId.isEmpty ? ip : devId,
@@ -488,8 +546,11 @@ class FileTransferService {
           );
         } catch (_) {
           ok = false;
+        } finally {
+          _askingFor.remove(ip);
         }
         if (!ok) {
+          _recordDecline(ip);
           return Response.forbidden(
             jsonEncode({'error': 'declined'}),
             headers: {'content-type': 'application/json; charset=utf-8'},
@@ -545,12 +606,36 @@ class FileTransferService {
         target = File(p.join(
             dir.path, '$base-${DateTime.now().millisecondsSinceEpoch}$ext'));
       }
+      // NOT MORE THAN THE PHONE HAS ROOM FOR (2026-10-30). Whoever holds the
+      // link could otherwise send until the disk was full — and a full phone
+      // is one that stops recording, saving photos and installing updates.
+      // Refused before a byte when the browser says how big the file is
+      // (it does, for a file) and there is not room for it and the margin;
+      // ended when one that did not say passes what is left.
+      final free = await freeSpace();
+      final declared = int.tryParse(req.headers['content-length'] ?? '') ?? -1;
+      if (free >= 0 && free < (declared < 0 ? 0 : declared) + _kUploadHeadroom) {
+        return Response(507,
+            body: jsonEncode({'error': 'no_space'}),
+            headers: {'content-type': 'application/json; charset=utf-8'});
+      }
+      final budget = free < 0 ? null : free - _kUploadHeadroom;
+      var written = 0;
+      final body = budget == null
+          ? req.read()
+          : req.read().map<List<int>>((data) {
+              written += data.length;
+              if (written > budget) {
+                throw const FileSystemException('no room left on the phone');
+              }
+              return data;
+            });
       IOSink? sink;
       try {
         sink = target.openWrite();
         // addStream, not a manual loop: back-pressure keeps a fast uploader
         // from filling RAM faster than the flash can drain it.
-        await sink.addStream(req.read());
+        await sink.addStream(body);
         await sink.flush();
         await sink.close();
         sink = null;
@@ -567,6 +652,11 @@ class FileTransferService {
         try {
           if (await target.exists()) await target.delete();
         } catch (_) {}
+        if (e is FileSystemException && e.message == 'no room left on the phone') {
+          return Response(507,
+              body: jsonEncode({'error': 'no_space'}),
+              headers: {'content-type': 'application/json; charset=utf-8'});
+        }
         return Response.internalServerError(body: 'upload failed: $e');
       }
     });
@@ -811,7 +901,9 @@ class FileTransferService {
         job.label.textContent = job.file.name + ' \u2014 sent';
       } else {
         job.label.className = 'err';
-        job.label.textContent = job.file.name + ' \u2014 failed (' + xhr.status + ')';
+        job.label.textContent = job.file.name + (xhr.status === 507
+          ? ' \u2014 not sent: the phone has no room for it'
+          : ' \u2014 failed (' + xhr.status + ')');
       }
       pump();
     };
@@ -1140,6 +1232,8 @@ class FileTransferService {
     // someone for a mistake made against a share that no longer exists, and
     // the map would otherwise grow for as long as the app stayed open.
     _pinAttempts.clear();
+    _declines.clear();
+    _askingFor.clear();
     paused = false;
     pin = '';
     if (s != null) {

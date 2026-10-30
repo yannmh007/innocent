@@ -1638,7 +1638,9 @@ class _ReceivePaneState extends ConsumerState<_ReceivePane> {
         ? _turboReason(s, reason)
         : error == ReceiverNotifier.pairDeclinedError
             ? s.trPairDeclined
-            : error;
+            : error == ReceiverNotifier.pairWaitError
+                ? s.trPairWait
+                : error;
     final fix = isTurbo ? _turboFixTarget(reason) : null;
     return Container(
       padding: const EdgeInsets.all(12),

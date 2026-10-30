@@ -33,6 +33,15 @@ class PairDeclined implements Exception {
   String toString() => 'declined';
 }
 
+/// The sender is not taking questions from this phone just now: one is
+/// already on its screen, it said no several times, or the PIN was missed
+/// too often (429). A wait, not a failure.
+class PairWait implements Exception {
+  const PairWait();
+  @override
+  String toString() => 'wait';
+}
+
 /// One file advertised by a sender's /manifest endpoint.
 class RemoteFile {
   final int index;
@@ -363,6 +372,7 @@ class FileReceiverService {
       throw const PinRequired();
     }
     if (resp.statusCode == 403) throw const PairDeclined();
+    if (resp.statusCode == 429) throw const PairWait();
     if (resp.statusCode != 200) {
       throw Exception('Could not connect (HTTP ${resp.statusCode}).');
     }
@@ -857,6 +867,10 @@ class ReceiverNotifier extends StateNotifier<ReceiverState> {
       if (!mounted) return;
       state = state.copyWith(
           connecting: false, connected: false, error: pairDeclinedError);
+    } on PairWait {
+      if (!mounted) return;
+      state = state.copyWith(
+          connecting: false, connected: false, error: pairWaitError);
     } catch (e) {
       if (!mounted) return;
       state = state.copyWith(
@@ -867,6 +881,9 @@ class ReceiverNotifier extends StateNotifier<ReceiverState> {
   /// [ReceiverState.error] when the sender said no ([PairDeclined]); the
   /// screen words it.
   static const String pairDeclinedError = 'pair:declined';
+
+  /// [ReceiverState.error] when the sender asked this phone to wait ([PairWait]).
+  static const String pairWaitError = 'pair:wait';
 
   void dismissPinPrompt() => state = state.copyWith(clearPinPrompt: true);
 
