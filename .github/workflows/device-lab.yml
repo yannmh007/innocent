@@ -292,23 +292,28 @@ jobs:
           bash tool/netlab/make_long_film.sh "$d" out/long_film.txt
           { echo '### Long lab film'; echo '```'; cat out/long_film.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
 
-      # From the project's GitHub release, never a script piped into bash:
-      # the file is checked before it is opened, and the version and digest
-      # of what ran are in the summary (pin them in MAESTRO_VERSION and
-      # MAESTRO_SHA256 to hold a known build).
+      # From the project's GitHub release, never a script piped into bash,
+      # and only the build pinned here: its SHA-256 is checked before the
+      # zip is opened. 2.12.0 is what run 41075543874 installed and passed
+      # with. To move on, empty both values for one run (it takes the latest
+      # and writes its version and digest to the summary), then pin those.
       - name: Install Maestro
         env:
-          MAESTRO_VERSION: ''
-          MAESTRO_SHA256: ''
+          MAESTRO_VERSION: '2.12.0'
+          MAESTRO_SHA256: 'a6044a84542f522f434c5dc3d609e60c7446d423f3ed1b2ae513f5c48663ec5e'
         run: |
           set -euo pipefail
           zip="$RUNNER_TEMP/maestro.zip"
+          base=https://github.com/mobile-dev-inc/maestro/releases
           if [ -n "$MAESTRO_VERSION" ]; then
-            url="https://github.com/mobile-dev-inc/maestro/releases/download/cli-$MAESTRO_VERSION/maestro.zip"
+            # The release tag's spelling has changed over the years; the
+            # digest, not the tag, is what says it is the right file.
+            for tag in "cli-$MAESTRO_VERSION" "v$MAESTRO_VERSION" "$MAESTRO_VERSION"; do
+              curl -fsSL --retry 3 -o "$zip" "$base/download/$tag/maestro.zip" && break
+            done
           else
-            url="https://github.com/mobile-dev-inc/maestro/releases/latest/download/maestro.zip"
+            curl -fsSL --retry 3 -o "$zip" "$base/latest/download/maestro.zip"
           fi
-          curl -fsSL --retry 3 -o "$zip" "$url"
           sha=$(sha256sum "$zip" | cut -d' ' -f1)
           if [ -n "$MAESTRO_SHA256" ] && [ "$sha" != "$MAESTRO_SHA256" ]; then
             echo "::error::maestro.zip is not the pinned build (got $sha)"; exit 1

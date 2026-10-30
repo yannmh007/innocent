@@ -402,6 +402,10 @@ CRED_ALLOWED = {
     # .github/workflows/deps-scan.yml checks before running it. A checksum of
     # a public file, published so it can be checked; not a key.
     'c799274b682e0437c802d4714a136ad09b39c65547c460049ba5358d28afa576',
+    # SHA-256 of Maestro 2.12.0's maestro.zip, which
+    # .github/workflows/device-lab.yml checks before opening it. The digest
+    # of a public release file; not a key.
+    'a6044a84542f522f434c5dc3d609e60c7446d423f3ed1b2ae513f5c48663ec5e',
     # HKDF-SHA256 of the bytes 0..31 (salt zero, info innocent-db-backup-v1):
     # the test vector tool/restore_backup_test.py and tool/js/pii_test.mjs both
     # pin, so the Python and the edge function derive the same backup key. Made
