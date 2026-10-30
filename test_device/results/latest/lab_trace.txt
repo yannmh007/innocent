@@ -1,101 +1,120 @@
 LAB device kind=DeviceKind.phone sw=411.0
-LAB cpu app 37% · 0.2fps · pool-thread 23% | 1.raster 11% | .innocent.media 1% | RenderThread 1%
+LAB cpu app 22% · 0.2fps · pool-thread 15% | 1.raster 5%
 LAB phase adb_own start
 LAB device kind=DeviceKind.phone sw=411.0
-LAB cpu app 11% · 0.4fps · 1.raster 8% | RenderThread 2% | .innocent.media 1%
-LAB cpu app 12% · 3.2fps · 1.raster 7% | .innocent.media 3%
-LAB cpu app 4% · 0.5fps · 1.raster 2% | .innocent.media 1%
-LAB cpu app 5% · 1.1fps · 1.raster 4% | .innocent.media 2%
-LAB cpu app 2% · 0.3fps · -
+LAB cpu app 11% · 0.3fps · 1.raster 7% | RenderThread 2% | .innocent.media 1%
+LAB cpu app 12% · 3.2fps · 1.raster 7% | .innocent.media 3% | 1.io 1%
+LAB cpu app 3% · 0.5fps · 1.raster 1% | .innocent.media 1%
+LAB cpu app 5% · 0.7fps · 1.raster 4% | .innocent.media 1%
+LAB cpu app 1% · 0.3fps · -
 LAB phase network start
 LAB cpu app 1% · 0.4fps · 1.raster 1%
 LAB device kind=DeviceKind.phone sw=411.0
-LAB cpu app 9% · 1.3fps · 1.raster 5% | .innocent.media 3% | RenderThread 1%
-LAB cpu app 6% · 0.7fps · 1.raster 5% | .innocent.media 1%
-LAB cpu app 6% · 1.8fps · 1.raster 4% | .innocent.media 2%
+LAB cpu app 11% · 0.9fps · 1.raster 6% | .innocent.media 3% | RenderThread 2%
+LAB cpu app 6% · 0.6fps · 1.raster 5% | .innocent.media 1%
+LAB cpu app 5% · 1.7fps · 1.raster 4% | .innocent.media 1%
 LAB net scan ok
-LAB cpu app 20% · 7.1fps · 1.raster 18% | .innocent.media 2%
+LAB cpu app 23% · 7.9fps · 1.raster 20% | .innocent.media 2%
 LAB net connect ok
 LAB net list ok
-LAB cpu app 16% · 4.9fps · 1.raster 12% | .innocent.media 2%
+LAB cpu app 17% · 5.8fps · 1.raster 13% | .innocent.media 2% | RenderThread 1%
 LAB net list ok
 LAB net list ok
 LAB net list ok
 LAB net list ok
-LAB cpu app 11% · 4.4fps · 1.raster 8% | .innocent.media 2%
+LAB cpu app 10% · 4.3fps · 1.raster 8% | .innocent.media 2%
 LAB net url ok
 LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
 LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
 LAB    0.0 hwdec -> auto
 LAB    0.0 open scheme=http len=103 hwdec=auto start=0s autoplay=true
 LAB    0.1 wakelock playing=false bg=false priv=false pos=0ms
-LAB    0.1 first frame 636 ms
-LAB    0.3 wakelock playing=true bg=false priv=false pos=0ms
-LAB    0.3 open ok
-LAB    0.3 rebuffer start
-LAB    0.6 rebuffer end 362 ms
-LAB    5.3 wakelock playing=false bg=false priv=false pos=3033ms
-LAB    5.4 player teardown done keepPlaying=false
+LAB    0.1 first frame 306 ms
+LAB    0.2 open ok
+LAB    0.2 wakelock playing=true bg=false priv=false pos=0ms
+LAB    0.2 rebuffer start
+LAB    0.8 rebuffer end 601 ms
+LAB    5.8 wakelock playing=false bg=false priv=false pos=2050ms
+LAB    5.9 player teardown done keepPlaying=false
 LAB net list ok
-LAB cpu app 20% · 5.6fps · 1.raster 11% | RenderThread 4% | .innocent.media 4%
+LAB cpu app 22% · 6.0fps · 1.raster 12% | RenderThread 5% | .innocent.media 3%
 LAB net list ok
-LAB cpu app 9% · 1.1fps · 1.raster 7% | .innocent.media 1%
-LAB cpu app 9% · 1.9fps · 1.raster 6% | .innocent.media 2%
-LAB cpu app 18% · 4.1fps · 1.raster 15% | .innocent.media 2%
-LAB cpu app 15% · 3.5fps · 1.raster 12% | .innocent.media 2%
+LAB cpu app 7% · 1.6fps · 1.raster 6% | .innocent.media 1%
+LAB cpu app 9% · 2.0fps · 1.raster 7% | .innocent.media 2%
+LAB cpu app 17% · 4.3fps · 1.raster 15% | .innocent.media 2%
+LAB cpu app 18% · 4.4fps · 1.raster 15% | .innocent.media 2%
 LAB net connect auth: Sign-in refused
-LAB cpu app 23% · 7.4fps · 1.raster 20% | .innocent.media 3%
+LAB cpu app 23% · 6.9fps · 1.raster 20% | .innocent.media 2%
 LAB net connect ok
 LAB net connect ok
 LAB net list ok
-LAB cpu app 24% · 5.8fps · 1.raster 19% | .innocent.media 3%
+LAB net list ok
+LAB cpu app 19% · 4.7fps · 1.raster 16% | .innocent.media 2%
+LAB net url ok
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
+LAB   71.5 open scheme=http len=96 hwdec=auto start=0s autoplay=true
+LAB   71.5 wakelock playing=false bg=false priv=false pos=0ms
+LAB   71.5 first frame 80 ms
+LAB   71.6 wakelock playing=true bg=false priv=false pos=0ms
+LAB   71.6 open ok
+LAB   71.6 rebuffer start
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
+LAB   72.8 rebuffer end 1257 ms
+LAB   77.2 wakelock playing=false bg=false priv=false pos=2050ms
+LAB   77.3 player teardown done keepPlaying=false
+LAB net list ok
+LAB cpu app 12% · 7.0fps · 1.raster 8% | .innocent.media 3%
+LAB cpu app 2% · 0.9fps · .innocent.media 1%
+LAB cpu app 13% · 3.0fps · 1.raster 11% | .innocent.media 2%
+LAB cpu app 17% · 4.1fps · 1.raster 15% | .innocent.media 2%
+LAB net connect ok
+LAB net connect ok
+LAB net list ok
+LAB cpu app 23% · 6.3fps · 1.raster 19% | .innocent.media 2%
 LAB net list ok
 LAB net url ok
 LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
 LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
-LAB   73.3 open scheme=http len=96 hwdec=auto start=0s autoplay=true
-LAB   73.3 wakelock playing=false bg=false priv=false pos=0ms
-LAB   73.3 first frame 150 ms
-LAB   73.4 wakelock playing=true bg=false priv=false pos=0ms
-LAB   73.4 open ok
-LAB   73.4 rebuffer start
+LAB  124.3 open scheme=http len=96 hwdec=auto start=0s autoplay=true
+LAB  124.3 wakelock playing=false bg=false priv=false pos=0ms
+LAB  124.3 first frame 69 ms
+LAB  124.4 wakelock playing=true bg=false priv=false pos=0ms
+LAB  124.4 open ok
+LAB  124.4 rebuffer start
 LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
-LAB   74.8 rebuffer end 1396 ms
-LAB   78.4 wakelock playing=false bg=false priv=false pos=2035ms
-LAB   78.5 player teardown done keepPlaying=false
-LAB cpu app 13% · 6.2fps · 1.raster 8% | .innocent.media 3%
+LAB  125.6 rebuffer end 1262 ms
+LAB cpu app 14% · 8.4fps · 1.raster 10% | .innocent.media 2%
+LAB  129.4 wakelock playing=false bg=false priv=false pos=2060ms
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
+LAB  129.5 player teardown done keepPlaying=false
 LAB net list ok
-LAB cpu app 5% · 1.6fps · 1.raster 3% | .innocent.media 2%
-LAB cpu app 10% · 2.0fps · 1.raster 7% | .innocent.media 2%
-LAB cpu app 19% · 4.2fps · 1.raster 16% | .innocent.media 2%
-LAB cpu app 22% · 3.8fps · 1.raster 18% | .innocent.media 3%
+LAB cpu app 4% · 1.7fps · 1.raster 2% | .innocent.media 1%
+LAB cpu app 8% · 1.9fps · 1.raster 6% | .innocent.media 1%
+LAB cpu app 18% · 4.8fps · 1.raster 16% | .innocent.media 2%
+LAB cpu app 22% · 4.5fps · 1.raster 16% | net-call 3% | .innocent.media 2%
 LAB net connect ok
 LAB net connect ok
 LAB net list ok
 LAB net list ok
+LAB net list ok
+LAB cpu app 22% · 9.6fps · 1.raster 17% | .innocent.media 2%
 LAB net url ok
 LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
-LAB  127.9 open scheme=http len=96 hwdec=auto start=0s autoplay=true
-LAB  127.9 wakelock playing=false bg=false priv=false pos=0ms
-LAB  127.9 first frame 65 ms
-LAB  128.0 wakelock playing=true bg=false priv=false pos=0ms
-LAB  128.0 open ok
-LAB  128.1 rebuffer start
 LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
-LAB cpu app 22% · 6.5fps · 1.raster 16% | .innocent.media 3%
-LAB  129.6 rebuffer end 1596 ms
-LAB  132.8 wakelock playing=false bg=false priv=false pos=2035ms
-LAB  132.9 player teardown done keepPlaying=false
+LAB  181.7 open scheme=http len=114 hwdec=auto start=0s autoplay=true
+LAB  181.7 wakelock playing=false bg=false priv=false pos=0ms
+LAB  181.7 first frame 56 ms
+LAB  181.9 wakelock playing=true bg=false priv=false pos=0ms
+LAB  181.9 open ok
+LAB  181.9 rebuffer start
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
+LAB  182.2 rebuffer end 338 ms
+LAB  187.5 wakelock playing=false bg=false priv=false pos=3047ms
+LAB  187.5 player teardown done keepPlaying=false
+LAB cpu app 10% · 5.9fps · 1.raster 5% | .innocent.media 2%
 LAB net list ok
-LAB cpu app 12% · 5.9fps · 1.raster 8% | .innocent.media 3%
-LAB cpu app 3% · 0.3fps · .innocent.media 1% | 1.raster 1%
-LAB cpu app 15% · 3.6fps · 1.raster 12% | .innocent.media 2%
-LAB cpu app 20% · 4.1fps · 1.raster 17% | .innocent.media 2%
-LAB net connect ok
-LAB cpu app 33% · 7.6fps · 1.raster 22% | net-call 4% | .innocent.media 3% | HeapTaskDaemon 1% | 2 1%
-LAB net connect ok
 LAB net list ok
-LAB cpu app 10% · 3.3fps · 1.raster 6% | .innocent.media 2%
+LAB cpu app 5% · 1.8fps · 1.raster 3% | .innocent.media 1%
 LAB cpu app 1% · 0.1fps · -
