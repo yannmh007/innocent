@@ -307,8 +307,24 @@ class StreamCacheStore {
     return best;
   }
 
+  /// New entries being made, by id: see [entryFor].
+  final Map<String, Future<CacheEntry>> _making = <String, Future<CacheEntry>>{};
+
   Future<CacheEntry> entryFor(String id, {int? total, String? label}) async {
     await load();
+    // ONE NEW ENTRY PER FILM, HOWEVER MANY ASK AT ONCE. A film opened by
+    // Play while its warm-up is on its way asks twice in the same moment;
+    // both used to find nothing and make an entry each, each writing
+    // `seal.iv` through the same temporary file. The second rename could
+    // fail — an entry with no IV, whose runs are written plain — or the two
+    // IVs could differ, and a run sealed under the one not on disk reads
+    // back as noise after the app restarts. The second caller now waits for
+    // the first one's entry and takes it.
+    final making = _making[id];
+    if (making != null) {
+      await making;
+      return entryFor(id, total: total, label: label);
+    }
     final have = _entries[id];
     if (have != null) {
       if (total != null && total > 0 && have.total > 0 && have.total != total) {
@@ -317,6 +333,8 @@ class StreamCacheStore {
         // reused here, so this should not happen — and if it does, the only
         // safe reading is that the cache is wrong.
         await remove(id);
+        // Asked again: someone may have begun the new entry meanwhile.
+        return entryFor(id, total: total, label: label);
       } else {
         var changed = false;
         if (total != null && total > 0 && have.total != total) {
@@ -342,6 +360,16 @@ class StreamCacheStore {
         return have;
       }
     }
+    final made = _makeEntry(id, total: total, label: label);
+    _making[id] = made;
+    try {
+      return await made;
+    } finally {
+      _making.remove(id);
+    }
+  }
+
+  Future<CacheEntry> _makeEntry(String id, {int? total, String? label}) async {
     final dir = Directory(p.join((await _root()).path, id));
     if (!await dir.exists()) await dir.create(recursive: true);
     final e = CacheEntry(

@@ -396,6 +396,26 @@ class StreamCacheServer {
     int? total,
     String label = '',
     bool probeNow = true,
+    HttpClient? pool,
+  }) =>
+      _localUrlFor(
+          cacheId: cacheId, upstream: upstream, refresh: refresh, total: total,
+          label: label, probeNow: probeNow, pool: pool);
+
+  /// [claim] marks the registration as the caller's, and [ifAbsent] leaves a
+  /// film alone that someone registered while this call was on its way —
+  /// both for [warmOpening], which must never take a player's registration
+  /// for its own (see there).
+  Future<String?> _localUrlFor({
+    required String cacheId,
+    required String upstream,
+    required Future<String?> Function() refresh,
+    int? total,
+    String label = '',
+    bool probeNow = true,
+    HttpClient? pool,
+    Object? claim,
+    bool ifAbsent = false,
   }) async {
     try {
       await StreamCacheStore.instance.load();
@@ -407,9 +427,14 @@ class StreamCacheServer {
 
       final entry = await StreamCacheStore.instance
           .entryFor(cacheId, total: total, label: label);
+      if (ifAbsent && _sources.containsKey(cacheId)) return null;
       // The film's previous registration, if any, gives up its connections.
       _sources[cacheId]?.close();
-      final src = _sources[cacheId] = _Source(upstream: upstream, refresh: refresh);
+      // [pool]: a ladder's connections ([_Ladder.io]), in place before the
+      // length check below goes out, so its connection is the ladder's.
+      final src = _sources[cacheId] = _Source(upstream: upstream, refresh: refresh)
+        ..shared = pool
+        ..claim = claim;
       // CONFIRMED A MOMENT AGO, BY A WARM-UP (see [warmOpening]): its length
       // was read from the server and where its index is with it. Asking again
       // would put one round trip — on a Myanmar line, the whole of a warmed
@@ -501,40 +526,67 @@ class StreamCacheServer {
       final port = _server?.port;
       final token = _token;
       if (port == null || token == null) return null;
-      final entries = <_LadderRung>[];
-      for (final r in rungs) {
-        final url = await localUrlFor(
-          cacheId: r.cacheId,
-          upstream: r.upstream,
-          refresh: r.refresh,
-          total: r.bytes,
-          label: label,
-          probeNow: r.cacheId == (startCacheId ?? rungs.first.cacheId),
-        );
-        if (url == null) return null;
-        _sources[r.cacheId]?.segmented = true;
-        entries.add(_LadderRung(height: r.height, kbps: r.kbps, cacheId: r.cacheId, url: url));
-      }
       final start = rungs.where((r) => r.cacheId == startCacheId).firstOrNull ?? rungs.first;
-      final ladder = _Ladder(
-          rungs: entries, aspect: aspect, frameRate: frameRate, startHeight: start.height);
-      for (final r in rungs) {
-        _sources[r.cacheId]?.shared = ladder.io;
+      // ALL RUNGS AT ONCE, THE START RUNG'S LENGTH CHECK AMONG THEM, ON THE
+      // LADDER'S POOL (2026-10-29). One after the other, the rungs' cache
+      // entries (a folder, a fresh IV from the cipher, two small files
+      // each) were most of the 0.9–1.2 s between the grant and the player
+      // opening on the device lab's emulator (runs 40895589540,
+      // 40903780831). And
+      // the length check went out on the start rung's
+      // own pool, before the ladder's existed; the head read, which waits
+      // for it, then opened a connection of its own: two handshakes one
+      // after the other before the playlist, each two round trips on a
+      // Myanmar line. Now the check's connection carries the head next,
+      // then the first fragment.
+      final pool = _Ladder.pool();
+      final urls = await Future.wait([
+        for (final r in rungs)
+          localUrlFor(
+            cacheId: r.cacheId,
+            upstream: r.upstream,
+            refresh: r.refresh,
+            total: r.bytes,
+            label: label,
+            probeNow: identical(r, start),
+            pool: pool,
+          ),
+      ]);
+      if (urls.contains(null)) {
+        pool.close();
+        return null;
       }
+      final entries = <_LadderRung>[];
+      for (var i = 0; i < rungs.length; i++) {
+        final r = rungs[i];
+        _sources[r.cacheId]?.segmented = true;
+        entries.add(_LadderRung(height: r.height, kbps: r.kbps, cacheId: r.cacheId, url: urls[i]!));
+      }
+      final ladder = _Ladder(
+          rungs: entries, io: pool, aspect: aspect, frameRate: frameRate, startHeight: start.height);
       // A ladder registered again (a renewal, a return from Original): the
       // old pool closes once its reads are done.
       _ladders.remove(ladderId)?.io.close();
       _ladders[ladderId] = ladder;
       _playingLadder = ladderId;
-      // THE START RUNG'S OPENING, ASKED FOR NOW (2026-10-29), while the
-      // player screen is still being built. Left to the player, the head
-      // waited for its media playlist and the first fragment for the head:
-      // two round trips one after the other, 1.1 s of a realme's 3.9 s from
-      // Play to picture (Test Lab run 40516412135). One read of [primeBytes]
-      // brings the index, the init segment and the first fragment or two
-      // together; the player's own requests then find them on the phone, or
-      // wait for this read rather than ask again (the segment path's fill).
-      unawaited(_rungWithHead(ladder, start.height, firstRead: primeBytes));
+      // THE START RUNG'S HEAD, ASKED FOR NOW (2026-10-29), while the player
+      // screen is still being built. Left to the player, the head waited for
+      // its media playlist and the first fragment for the head: two round
+      // trips one after the other, 1.1 s of a realme's 3.9 s from Play to
+      // picture (Test Lab run 40516412135). Now the playlist finds its index
+      // on the phone.
+      //
+      // THE HEAD ONLY, NOT THE FIRST FRAGMENTS. 1.64.77's candidate read
+      // 512 KB here; the player's first fragment then waited for that read
+      // through the cache — sealed, written, read back, unsealed, a hop to
+      // the main thread each way while it builds the player — instead of
+      // being sent as it arrives, and it ended mid-fragment, a round trip
+      // more: on the device lab's busy 4G line the player stalled once
+      // just after its first segment, and Play to picture was 3.2 s and
+      // 3.3 s (runs 40883836240, 40895589540). The first fragment is the
+      // player's own request again, sent as it arrives and read ahead
+      // from there.
+      unawaited(_rungWithHead(ladder, start.height));
       return 'http://127.0.0.1:$port/h/$token/$ladderId/master.m3u8';
     } catch (e) {
       if (kDebugMode) debugPrint('StreamCacheServer.hlsUrlFor: $e');
@@ -639,16 +691,15 @@ class StreamCacheServer {
     }
   }
 
-  /// How much of the start rung a ladder's registration reads at once:
-  /// the index and the first fragment or two of a streaming rung (a 720p
-  /// fragment is about 500 KB).
-  static const int primeBytes = 512 * 1024;
+  /// The first read of a rung's head: its index and init segment. The index
+  /// is 12 bytes a fragment, so this holds some 5,000 of them — two and a
+  /// half hours of two-second fragments; a longer one is read on from there.
+  static const int headRead = 64 * 1024;
 
   /// The rung's head — its fragment table and init segment — read once,
   /// through its own address (so the bytes land in its cache entry, where
   /// the first segments will be found).
-  Future<_LadderRung?> _rungWithHead(_Ladder l, int height,
-      {int firstRead = 64 * 1024}) async {
+  Future<_LadderRung?> _rungWithHead(_Ladder l, int height) async {
     final r = l.rungs.where((x) => x.height == height).firstOrNull;
     if (r == null) return null;
     if (r.index != null && r.head != null) return r;
@@ -657,7 +708,7 @@ class StreamCacheServer {
       var handedOff = false;
       try {
         final head = BytesBuilder(copy: false);
-        var want = firstRead;
+        var want = headRead;
         for (var i = 0; i < 4; i++) {
           final req = await client.getUrl(Uri.parse(r.url));
           req.headers.set(HttpHeaders.rangeHeader, 'bytes=${head.length}-${want - 1}');
@@ -667,11 +718,8 @@ class StreamCacheServer {
             return;
           }
           // THE INDEX AS SOON AS IT IS HERE (2026-10-29), not when the whole
-          // read is. With the start rung's 512 KB read at once the playlist
-          // waited for all of it: on a 4 Mbit/s line the first picture came
-          // 2 s later than it had (device lab run 40843577992). The rest of
-          // the read goes on into the cache, where the player's first
-          // segment waits for it (the segment path's fill).
+          // read is: on a slow line the playlist does not wait for the rest
+          // of the 64 KB, which goes on into the cache.
           final pieces = StreamIterator<List<int>>(resp);
           int? need;
           while (await pieces.moveNext()) {
@@ -847,12 +895,23 @@ class StreamCacheServer {
     _warming = cacheId;
     _warmed.add(cacheId);
     _Source? mine;
+    final claim = Object();
     final client = HttpClient()..connectionTimeout = const Duration(seconds: 15);
     try {
-      final local = await localUrlFor(
-          cacheId: cacheId, upstream: upstream, refresh: refresh, total: total, label: label);
-      mine = _sources[cacheId];
-      if (local == null || mine == null) return false;
+      final local = await _localUrlFor(
+          cacheId: cacheId, upstream: upstream, refresh: refresh, total: total, label: label,
+          claim: claim, ifAbsent: true);
+      // PLAY MAY HAVE REGISTERED THE FILM WHILE THIS CALL WAS ON ITS WAY —
+      // a tap on Play within the first moments of the title page. Then the
+      // registration is the player's: taking it as this warm-up's own (it
+      // was read back by id, before) marked it warm-only and released it
+      // when the warm-up ended, and the player's first read came back
+      // empty. Only the registration this call made is the warm-up's.
+      final registered = _sources[cacheId];
+      if (local == null || registered == null || !identical(registered.claim, claim)) {
+        return false;
+      }
+      mine = registered;
       mine.warmOnly = true;
       final length = await (mine.probing ?? Future<int>.value(0));
       if (length <= 0) return false;
@@ -2476,6 +2535,9 @@ class _Source {
 
   /// Registered by [StreamCacheServer.warmOpening], not by a player.
   bool warmOnly = false;
+
+  /// Who registered it, when that matters ([StreamCacheServer.warmOpening]).
+  Object? claim;
 }
 
 /// How a [StreamCacheServer.warmSwitch] went.
@@ -2866,12 +2928,15 @@ class HlsRungSource {
 }
 
 class _Ladder {
-  _Ladder({required this.rungs, this.aspect, this.frameRate, this.startHeight});
+  _Ladder(
+      {required this.rungs, required this.io, this.aspect, this.frameRate, this.startHeight});
   final List<_LadderRung> rungs;
 
   /// One pool for every rung (see [_Source.shared]), kept a minute between
-  /// reads.
-  final HttpClient io = HttpClient()
+  /// reads: [pool], made before the rungs are registered.
+  final HttpClient io;
+
+  static HttpClient pool() => HttpClient()
     ..connectionTimeout = const Duration(seconds: 15)
     ..idleTimeout = const Duration(seconds: 60)
     ..maxConnectionsPerHost = 4;

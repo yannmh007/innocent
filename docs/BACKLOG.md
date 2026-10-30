@@ -9,6 +9,99 @@ that gets built too early.
 
 ---
 
+## 0. OPEN AS OF 30 OCT 2026 — carry these forward
+
+Written at the owner's request so nothing below is lost between sessions.
+Newest first within each group; tick an item by deleting it in the commit that
+does it.
+
+### Release 1.64.78 (in flight)
+- **Test Lab, both phones** (realme RE58C2/35, OPPO OP573DL1/34) — scheduled
+  07:12 UTC 30 Oct. Compare Play-to-picture and CPU with runs 40890052023 and
+  40883836265. Then release via the main worktree: lib commits d15d478,
+  63aeea2, d63727c, cc57e1a, 0e49166 and the version bump only (never the
+  lab-only lib/app.dart). The release also carries docs/studio/app.js (opaque
+  upload folders) to GitHub Pages. 1.64.77 was built and never published.
+- **Gap audit entries** for 1.64.78 (docs/gap_audit_2026_10.md).
+
+### Verify what is live but not yet exercised
+- **Sealed payment fields (migration 054, premium-request v15)**: the first
+  sealed request (1ccbfbc5) is in, phone sealed and masked, no plain numbers
+  anywhere. Still to see: the console's Requests page opening it (the number
+  in full, not "(sealed — the key does not open it)"), and a request WITH a
+  transaction number, to exercise the HMAC index and the reused-number check.
+  Reject 1ccbfbc5 if it was a test.
+- **Opaque R2 keys (studio v43, R2_NAMING_KEY)**: after the release reaches
+  Pages, make a test title from New with folder `test-naming`: keys must be
+  `f/<20 hex>/<kind>/<32 hex>.<ext>`, the Files page must show "test-naming".
+  Delete the test title after.
+
+### Security — done 30 Oct, to see working
+- **Database backup sealed** (7d3b3d9, ingest v38, migration 055): new backups
+  are `….json.gz.sealed`; the sixteen older ones are sealed a few per runner
+  tick (`house.resealed` in the tick's answer). Check after a day:
+  `select count(*) from db_backups where deleted_at is null and object_key not
+  like '%.sealed'` is 0, and Status → Download still gives a .json.gz that
+  `tool/restore_backup.py --list` reads. The owner keeps a copy of
+  PII_ENC_KEY outside Supabase (RUNBOOK part 4) — without it a lost project's
+  off-site backups do not open.
+- **B2 keeps deleted files as hidden versions** unless the bucket's Lifecycle
+  is "Keep only the last version". Until the owner sets that, the plain
+  backups deleted off-site (and every pruned one) are still in B2 as hidden
+  versions. Owner, once: B2 → Buckets → the private bucket → Lifecycle
+  Settings → Keep only the last version of the file.
+- **Payment screenshots sealed** (migration 056): new receipts are
+  `<user>/<request>.sealed`; the console's `proofs` opens them (data:
+  pictures, a few MB per answer, `more` for the rest). Receipts filed before
+  stay as images. A copy also goes to the owner's Telegram chat as before.
+- **Telegram ingest file names**: with R2_NAMING_KEY, a forwarded file's key
+  is `<folder>/<kind>/<32 hex>.<ext>` — the Telegram file name is no longer in
+  it. Check with the next forwarded file.
+- **studio.ts `requests` op** removed (unused; inbox goes through
+  premium-request).
+- **Google sign-in nonce** (29b71b2) and **Transfer** limits (55a89e3): in the
+  app, ship with 1.64.78. The nonce needs one real Google sign-in on the
+  owner's phone before release.
+
+### Telegram ingest: ten at once (built 30 Oct, live with the next push to main)
+- ingest.yml opens lanes 1..(waiting + busy), at most INGEST_LANES (repository
+  variable, 10 when unset; 1 = the old one-at-a-time). Migration 057 (queue
+  depth, a lock per title for an album's places) and ingest v40 (`depth`) are
+  already live; the workflow takes effect only on main.
+- First real test: forward 3-10 licensed films at once; watch that lanes sign
+  in 20 s apart, no FLOOD_WAIT deferrals pile up, every file lands, and the
+  console's folder shows them in Telegram order.
+- **Next bottleneck: transcode is one film at a time** (`concurrency:
+  transcode`). Ten films in at once are ten ladders in a row. Its claim is
+  already per file; two or three lanes the same way would fit inside the 20
+  jobs a free account runs. Decide after the first real batch.
+- Telegram may throttle one bot's parallel downloads; a long FLOOD_WAIT
+  defers the file (not a failure) and the next run takes it.
+
+### Security, next
+- **Telegram ingest FOLDERS still plain**: the folder segment is what the
+  operator typed (`spider-man/video/…`). Making it `f/<20 hex>` like console
+  uploads means every place that takes a folder as the key's first segment
+  learns the two-segment form and the label table: enqueue_ingest's album
+  inheritance and inbox move (033), bot_folder_stats / bot_folders_recent /
+  bot_retry_folder / the /folder session match (033), attach_ingest_folder
+  (024), review.js's grouping, and the bot's replies (labels, not hashes). One
+  migration with a `key_folder(text)` helper used in all of them, and
+  ingest.ts translating names both ways. Test with the bot end to end (a
+  /folder session, an album with the caption on the third file, /retry).
+- **Old payment screenshots**: reseal the receipts filed before 30 Oct like
+  the backups (premium-request has the key; storage download, seal, upload
+  `.sealed`, update proof_path, remove the image).
+
+### Quality
+- Two sealed stream-cache timing tests fail under the full parallel run and
+  pass alone (903 ms against a 900 ms bound; "a step back into what the
+  player was given carries the stretch on"). Make them robust to load.
+- Burmese Settings still shows Pop-up Play, Decoder, Development and
+  Diagnostics in English — decide whether those stay technical terms.
+
+---
+
 ## A. WAITING ON YOU — no code needed
 
 | | why it is first |

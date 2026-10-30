@@ -323,8 +323,24 @@ const studio = await import('data:text/javascript,' + encodeURIComponent(
     /startsWith\('\/'\) && !body\.edited_message/.test(ingestSrc));
   check('the folder name typed in the chat is slugified the same way as a caption',
     /const name = slugify\(arg\)/.test(ingestSrc));
+  // LANES (migration 057): the plan job's count is the runner's, like claim.
+  const depthSrc = (ingestSrc.match(/if \(op === 'depth'\) \{[^]*?\n  \}/) || [''])[0];
+  check('the queue depth is the runner\'s alone, and only two counts',
+    /sameSecret\(given, RUNNER_SECRET\)\) return json\(\{ error: 'no' \}, 403/.test(depthSrc) &&
+    /return json\(\{ queued: count\(d\.queued\), running: count\(d\.running\) \}/.test(depthSrc));
   check('the tail is sent on its own',
-    /p_key_tail:\s*keyTail\(file\.kind, file\.name\)/.test(ingestSrc));
+    /p_key_tail:\s*await tailFor\(file\.kind, file\.name\)/.test(ingestSrc));
+  // WITH R2_NAMING_KEY, a forwarded file's name is not in its key (30 Oct
+  // 2026): the tail is the kind and naming.ts's random name, and without the
+  // key it is keyTail as before. Both must still pass the console's gate.
+  const tailSrc = (ingestSrc.match(/async function tailFor[^]*?\n\}/) || [''])[0];
+  check('with the naming key the tail is <kind>/<random name>, else keyTail',
+    /if \(!await NAMING\) return keyTail\(prefix, filename\);/.test(tailSrc) &&
+    /return `\$\{prefix\}\/\$\{opaqueName\(/.test(tailSrc));
+  const { opaqueName } = await import(join(ROOT, 'docs/edge/naming.ts'));
+  const opaque = `solar-eclipse/video/${opaqueName('mp4')}`;
+  check('an opaque Telegram tail passes isMintedKey, and says nothing of the file',
+    studio.isMintedKey(opaque) && /^solar-eclipse\/video\/[0-9a-f]{32}\.mp4$/.test(opaque));
 
   // THE INSERT MUST NOT GO ROUND THE FUNCTION. A plain REST insert would skip
   // the lock and the reconciliation and put the album bug straight back, with

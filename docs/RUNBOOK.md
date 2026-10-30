@@ -685,12 +685,27 @@ lists them as "database backup" and will not put them in the bin.
 backups*. "Back up now" and "Download" are the owner's; a download needs a
 fresh 2-step code, because the file holds every account's email.
 
+**Sealed since 30 Oct 2026.** With the Edge secret `PII_ENC_KEY` set, a
+backup is sealed (AES-256-GCM, a key derived from that secret for backups
+alone) before it is written, in R2 and off-site alike: `…-daily.json.gz.sealed`.
+A leaked R2 or B2 token no longer reads as the database. The console's
+Download opens it and saves the ordinary `.json.gz`. **Keep a copy of
+`PII_ENC_KEY` outside Supabase** (a password manager): if the project itself is
+lost, it is the only thing that opens the off-site copies.
+
 **Restore** (owner, from a laptop):
 
 ```
 python3 tool/restore_backup.py 20261002T112909-daily.json.gz --list    # what is in it
 python3 tool/restore_backup.py 20261002T112909-daily.json.gz > restore.sql
 python3 tool/restore_backup.py 20261002T112909-daily.json.gz --tables titles,title_assets > some.sql
+```
+
+With the project gone and only a sealed off-site copy, open it with that key
+(asked for, not shown; `pip install cryptography` once):
+
+```
+python3 tool/restore_backup.py 20261030T010000-daily.json.gz.sealed --key > restore.sql
 ```
 
 Paste the SQL into the SQL editor. It inserts parents before children and
@@ -780,8 +795,8 @@ select t.title, a.kind, a.object_key as r2_key, c.object_key as offsite_key, c.b
 - **R2 lost a file** (or the whole account): upload each `offsite_key` file
   back at its `r2_key` (console → Files → upload, or any S3 tool against the
   new bucket). The catalogue rows are unchanged, so the app plays again.
-- **The database is lost:** the newest `db/…json.gz` restores with
-  `tool/restore_backup.py`, as in PART 4.
+- **The database is lost:** the newest `db/…json.gz` (or `….json.gz.sealed`,
+  with `--key`) restores with `tool/restore_backup.py`, as in PART 4.
 
 ### The update's mirrors
 

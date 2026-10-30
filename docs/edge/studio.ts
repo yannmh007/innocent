@@ -2,7 +2,7 @@
 //
 // Was two calls (sign, publish) behind an upload form. It is now the whole
 // console: list, get, create, save, addAssets, updateAsset, setPrimary,
-// deleteAsset, deleteTitle, reorder, requests, approve, reject, categories,
+// deleteAsset, deleteTitle, reorder, approve, reject, categories,
 // saveCategory, addCategory, stats, health, folder, checkFolder, sign,
 // beginMultipart, signParts, completeMultipart, abortMultipart, selftest.
 //
@@ -46,6 +46,8 @@
 // unauthenticated GET says only that the service is alive.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { namingKey, OPAQUE_FOLDER, opaqueFolder, opaqueName } from './naming.ts';
+import { BACKUP_AAD, BACKUP_KEY_INFO, derivedKey, openFile, toB64 } from './pii.ts';
 
 const R2_ACCOUNT_ID = Deno.env.get('R2_ACCOUNT_ID')!;
 const R2_ACCESS_KEY_ID = Deno.env.get('R2_ACCESS_KEY_ID')!;
@@ -629,6 +631,26 @@ function safeKey(prefix: string, filename: string, folder?: string): string {
   return dir ? `${dir}/${prefix}/${name}` : `${prefix}/${name}`;
 }
 
+/// Keys that say nothing about what they hold (docs/edge/naming.ts), once the
+/// Edge secret R2_NAMING_KEY is set; null until then, and keys are made as
+/// before.
+const NAMING: Promise<CryptoKey | null> = namingKey(Deno.env.get('R2_NAMING_KEY') ?? '');
+/// The key a sealed database backup opens with (ingest.ts seals it).
+const BACKUP_KEY: Promise<CryptoKey | null> =
+  derivedKey(Deno.env.get('PII_ENC_KEY') ?? '', BACKUP_KEY_INFO);
+
+/// The key a new upload goes to. With the naming key, the file's own name is
+/// not used at all — only its extension — and the folder is the one the page
+/// was given: an opaque one for a new title (`checkFolder` hands it out), or an
+/// existing title's own, whatever it was called when the title was made.
+async function mintKey(prefix: string, filename: string, folder: string): Promise<string> {
+  if (!(await NAMING)) return safeKey(prefix, filename, folder);
+  const dot = filename.lastIndexOf('.');
+  const name = opaqueName(dot > 0 ? filename.slice(dot + 1) : '');
+  const dir = slugifyPath(folder ?? '');
+  return dir ? `${dir}/${prefix}/${name}` : `${prefix}/${name}`;
+}
+
 /// The one shape allowed in a path segment.
 ///
 /// Shared by the folder and the file name so a name cannot be legal in one
@@ -728,7 +750,7 @@ function json(body: unknown, status = 200, req?: Request): Response {
 const NEED: Record<string, Role> = {
   // reading
   whoami: 'viewer', summary: 'viewer', list: 'viewer', get: 'viewer',
-  requests: 'viewer', stats: 'viewer', categories: 'viewer', health: 'viewer',
+  stats: 'viewer', categories: 'viewer', health: 'viewer',
   // uploading and drafting
   sign: 'uploader', beginMultipart: 'uploader', signParts: 'uploader',
   completeMultipart: 'uploader', abortMultipart: 'uploader', listParts: 'uploader',
@@ -773,7 +795,7 @@ const NEED: Record<string, Role> = {
 /// a URL is here on purpose: it changes nothing until the upload completes,
 /// and the completion IS logged.
 const READS = new Set([
-  'whoami', 'summary', 'list', 'get', 'requests', 'stats', 'categories',
+  'whoami', 'summary', 'list', 'get', 'stats', 'categories',
   'health', 'checkFolder', 'folder', 'selftest', 'audit', 'admins', 'settings',
   'sign', 'beginMultipart', 'signParts', 'listParts',
   'reviewQueue', 'reviewHistory', 'previewUrl',
@@ -1115,7 +1137,7 @@ async function handleOp(
     // No folder means a caller that predates foldering. It still works and
     // still lands in `video/…` — it simply has no title prefix. Refusing it
     // would break a page held in a browser cache for the sake of tidiness.
-    const objectKey = safeKey(prefix, filename, String(body.folder ?? ''));
+    const objectKey = await mintKey(prefix, filename, String(body.folder ?? ''));
 
     return json({
       uploadUrl: await presignPut(bucket, objectKey),
@@ -1156,7 +1178,7 @@ async function handleOp(
       : 'video';
     const bucket = kind === 'video' ? MEDIA_BUCKET : PUBLIC_BUCKET;
     const prefix = kind === 'video' ? 'video' : kind === 'thumb' ? 'thumb' : 'photo';
-    const objectKey = safeKey(prefix, filename, String(body.folder ?? ''));
+    const objectKey = await mintKey(prefix, filename, String(body.folder ?? ''));
 
     const signed = await signRequest('POST', bucket, objectKey, { uploads: '' }, '');
     const res = await fetch(signed.url, { method: 'POST', headers: signed.headers });
@@ -1375,19 +1397,26 @@ async function handleOp(
     const wanted = slugifyPath(String(body.folder ?? ''));
     if (!wanted) return json({ ok: false, reason: 'empty', folder: '' }, 200, req);
 
+    // WITH THE NAMING KEY the folder is not the name typed but its keyed hash
+    // (docs/edge/naming.ts); the name becomes the folder's display name when
+    // the title is made. Taken if either is a title's folder — one made before
+    // the key under the plain name counts too.
+    const key = await NAMING;
+    const folder = key ? await opaqueFolder(key, wanted) : wanted;
     const { data } = await admin().from('titles')
-      .select('id, title').eq('slug', wanted).maybeSingle();
+      .select('id, title').in('slug', key ? [folder, wanted] : [wanted]).limit(1).maybeSingle();
     return json({
       ok: !data,
-      folder: wanted,
+      folder,
+      label: wanted,
       // Naming the occupant rather than just refusing: "taken" sends an
       // operator hunting through the catalogue; "taken by Spider-Man (2019)"
       // usually ends the question.
       takenBy: data ? String((data as Record<string, unknown>).title ?? '') : null,
       preview: {
-        video: `${MEDIA_BUCKET}/${wanted}/video/…`,
-        photo: `${PUBLIC_BUCKET}/${wanted}/photo/…`,
-        thumb: `${PUBLIC_BUCKET}/${wanted}/thumb/…`,
+        video: `${MEDIA_BUCKET}/${folder}/video/…`,
+        photo: `${PUBLIC_BUCKET}/${folder}/photo/…`,
+        thumb: `${PUBLIC_BUCKET}/${folder}/thumb/…`,
       },
     }, 200, req);
   }
@@ -1605,6 +1634,15 @@ async function handleOp(
       return json({ error: 'asset_insert', detail: ins.error.message }, 500, req);
     }
 
+    // An opaque folder gets the name the operator typed as its display name,
+    // so the Files page shows "spider-man/movies", not "f/3a9c…". Best
+    // effort: a missing label is a name to type again, not a lost title.
+    const made = slugifyPath(String(body.folder ?? ''));
+    const label = String(body.folderLabel ?? '').trim();
+    if (OPAQUE_FOLDER.test(made) && label) {
+      await admin().rpc('folder_label_set', { p_folder: made, p_label: label, p_actor: who.id });
+    }
+
     return json({ id: row.id, title, status: wantPublished ? 'published' : 'draft' }, 200, req);
   }
 
@@ -1819,19 +1857,17 @@ async function handleOp(
   // `docs/movies_gaps.md` §2 calls the missing operator side BLOCKING — "until
   // this exists, the product cannot take money". Every piece of it was already
   // in the database: the `pending_requests` view, `approve_request(id, days)`
-  // and `reject_request(id, note)`. Nothing called them. These three ops are
-  // the whole fix.
+  // and `reject_request(id, note)`. Nothing called them.
+  //
+  // The list itself is the premium-request function's `inbox` (inbox.js),
+  // which opens the sealed payment fields for the operator. The old `requests`
+  // op here, which handed out the view as it stood, was removed on 30 Oct 2026:
+  // nothing called it, and since migration 054 it could only have shown
+  // sealed numbers.
   //
   // The approval writes the subscription row and nothing else does — that is
   // the rule from premium_backend_spec.md and it is why this goes through the
   // RPC rather than inserting into `subscriptions` from here.
-  if (body.op === 'requests') {
-    const { data, error } = await admin()
-      .from('pending_requests').select('*').order('submitted_at');
-    if (error) return json({ error: 'requests_failed', detail: error.message }, 500, req);
-    return json({ requests: data ?? [] }, 200, req);
-  }
-
   if (body.op === 'approve') {
     const id = String(body.id ?? '');
     const days = Math.max(1, Math.min(Number(body.days ?? 365), 3650));
@@ -2731,8 +2767,26 @@ async function handleOp(
     if (error || !data || data.deleted_at) return json({ error: 'no_backup' }, 404, req);
     const key = String(data.object_key ?? '');
     if (!key.startsWith('_backup/')) return json({ error: 'no_backup' }, 404, req);
+    const name = String(key.split('/').pop());
+    // A sealed backup (ingest.ts, 2026-10-30) is opened HERE and handed over
+    // as the gzip it was, so the file the owner keeps is the one
+    // restore_backup.py reads. No URL to it leaves the function: a link to
+    // sealed bytes is no use, and a link that opened them would be the backup.
+    if (name.endsWith('.sealed')) {
+      const k = await BACKUP_KEY;
+      if (!k) return json({ error: 'backup_key_missing' }, 500, req);
+      const got = await fetch(await presignPut(MEDIA_BUCKET, key, { 'X-Amz-Expires': '120' }, 'GET'));
+      if (!got.ok) return json({ error: 'backup_unreadable', detail: got.status }, 502, req);
+      const gz = await openFile(k, new Uint8Array(await got.arrayBuffer()), BACKUP_AAD);
+      if (!gz) return json({ error: 'backup_unopenable' }, 500, req);
+      // `url` as well, for a console page from before b64 (status.js reads
+      // b64 first): a backup is ~100 KB, so a data: link is no burden.
+      const b64 = toB64(gz);
+      return json({ b64, url: 'data:application/gzip;base64,' + b64,
+        name: name.slice(0, -'.sealed'.length) }, 200, req);
+    }
     const url = await presignPut(MEDIA_BUCKET, key, { 'X-Amz-Expires': '600' }, 'GET');
-    return json({ url, name: key.split('/').pop() }, 200, req);
+    return json({ url, name }, 200, req);
   }
 
   // Point Telegram's webhook back at this project, with the secret it must

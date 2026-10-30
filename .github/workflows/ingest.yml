@@ -42,17 +42,69 @@ on:
     - cron: '*/5 * * * *'
   workflow_dispatch:
 
-# One at a time. Two runners claiming two different files would be fine; the
-# claim in the database already prevents two claiming the same one. This is
-# the belt to its braces, and it also keeps one job's disk to itself.
-concurrency:
-  group: ingest
-  cancel-in-progress: false
+# UP TO TEN FILES AT ONCE (2026-10-30). It was one at a time: one runner,
+# one Telegram session, the queue drained in order. Now:
+#
+#   plan   asks how many files wait and how many lanes are still busy
+#          (op "depth", migration 057) and opens lanes 1..(waiting + busy),
+#          at least one, at most INGEST_LANES (a repository variable; 10 when
+#          unset, never more than 10). Set it to 1 and this is the old
+#          workflow again.
+#   fetch  one job per lane, each its own runner, disk and Telegram session.
+#          A lane is one job at a time across every run (its concurrency
+#          group), so lanes never number more than ten however many runs
+#          the webhook starts; a busy lane's next job waits, the others go.
+#          Two lanes never take one file: the claim is FOR UPDATE SKIP LOCKED.
+#          Lane N signs in (N-1) x 20 s after lane 1 (tool/ingest.py), since
+#          sign-ins are what Telegram throttles.
+#   house  the bin, the backup, the off-site work and the album previews —
+#          once a run, not once a lane.
+#
+# Ten lanes and the transcoder's one fit inside the twenty jobs at once a
+# free account runs, with room for a build or a lab.
+#
+# The workflow-level concurrency group is gone with this: it held a whole run
+# until its slowest lane finished, so ten files forwarded behind one long
+# download waited for it.
 
 jobs:
-  fetch:
+  plan:
     runs-on: ubuntu-latest
-    # A 2 GB file over Telegram's rate limiting, then up to R2. Generous
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      lanes: ${{ steps.depth.outputs.lanes }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+          sparse-checkout: tool/ingest_lanes.py
+          sparse-checkout-cone-mode: false
+
+      - name: Count the files waiting
+        id: depth
+        env:
+          SB_URL: ${{ secrets.SUPABASE_URL }}
+          RUNNER_SECRET: ${{ secrets.INGEST_SECRET }}
+          MAX_LANES: ${{ vars.INGEST_LANES }}
+        run: |
+          set -uo pipefail
+          answer='{}'
+          if [ -n "${SB_URL:-}" ] && [ -n "${RUNNER_SECRET:-}" ]; then
+            answer=$(curl -sS -m 20 -X POST "$SB_URL/functions/v1/ingest" \
+              -H "Authorization: Bearer $RUNNER_SECRET" \
+              -H 'Content-Type: application/json' -d '{"op":"depth"}' || echo '{}')
+          fi
+          # Anything unreadable is one lane: the old workflow, never none.
+          lanes=$(printf '%s' "$answer" | python3 tool/ingest_lanes.py "${MAX_LANES:-}")
+          echo "lanes=$lanes" >> "$GITHUB_OUTPUT"
+          echo "lanes: $lanes"
+
+  fetch:
+    needs: plan
+    runs-on: ubuntu-latest
+    # A 4 GB file over Telegram's rate limiting, then up to R2. Generous
     # rather than tight: a job killed part way leaves the row on 'running'
     # until the seven-hour recovery in claim_ingest takes it back.
     timeout-minutes: 120
@@ -62,6 +114,14 @@ jobs:
       # with files still queued. GITHUB_TOKEN may trigger workflow_dispatch;
       # it is the one event it is allowed to.
       actions: write
+    strategy:
+      fail-fast: false
+      max-parallel: 10
+      matrix:
+        lane: ${{ fromJSON(needs.plan.outputs.lanes) }}
+    concurrency:
+      group: ingest-lane-${{ matrix.lane }}
+      cancel-in-progress: false
 
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -130,6 +190,7 @@ jobs:
           TG_API_ID: ${{ secrets.TELEGRAM_API_ID }}
           TG_API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
           TG_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          INGEST_LANE: ${{ matrix.lane }}
         run: python3 tool/ingest.py
 
       # MORE QUEUED THAN ONE RUN TOOK — the job limit or the time budget
@@ -142,8 +203,16 @@ jobs:
           REF: ${{ github.ref_name }}
         run: |
           if [ -f /tmp/ingest.more ]; then
-            gh workflow run ingest.yml --repo "$GITHUB_REPOSITORY" --ref "$REF" \
-              && echo "next run requested" || echo "could not request the next run"
+            # Several lanes can stop with work left at once; one waiting run
+            # is enough, since its plan opens the lanes the queue needs.
+            waiting=$(gh run list --workflow ingest.yml --repo "$GITHUB_REPOSITORY" \
+              --status queued --limit 1 --json databaseId --jq 'length' 2>/dev/null || echo 0)
+            if [ "$waiting" != "0" ]; then
+              echo "a run is already waiting"
+            else
+              gh workflow run ingest.yml --repo "$GITHUB_REPOSITORY" --ref "$REF" \
+                && echo "next run requested" || echo "could not request the next run"
+            fi
           fi
 
       # THE PROCESS DIED WITHOUT SAYING SO — killed for memory, or by the job
@@ -184,11 +253,26 @@ jobs:
           curl -fsS -X POST "$(python3 -c "import json;print(json.load(open('/tmp/ingest.json'))['done_url'])")" \
             -H 'Content-Type: application/json' -d @/tmp/fail.json || true
 
+  house:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    # One at a time across runs: two purges of the same bin, or two backups,
+    # in the same minute would only race each other.
+    concurrency:
+      group: ingest-house
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
       # ── the R2 bin ────────────────────────────────────────────────────────
       #
       # Deletes what the Files page binned seven days ago — and only what
       # nothing uses by then; the function checks again and keeps anything a
-      # title has picked up since. On every run, whatever else this run did,
+      # title has picked up since. On every run, whatever else its lanes did,
       # because a bin that only empties when somebody forwards a film is a bin
       # that fills. The function signs each DELETE itself: this runner still
       # holds no bucket credentials. Only the two counts are printed.
@@ -198,7 +282,6 @@ jobs:
       # for each name, never a value. And the daily database backup happens on
       # this call, inside the function (migration 032).
       - name: Empty the R2 bin
-        if: always()
         env:
           SB_URL: ${{ secrets.SUPABASE_URL }}
           RUNNER_SECRET: ${{ secrets.INGEST_SECRET }}

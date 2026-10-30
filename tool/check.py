@@ -83,6 +83,10 @@ CHECKS = [
      'minutes, Telegram answered FLOOD_WAIT, and seven good files had their '
      'three attempts spent in under a minute — and a wait reported as a '
      'failed attempt, which is how a slow afternoon marks a film as dead'),
+    ('ingest_lanes_test.py', None,
+     'the Telegram queue opening no lane, so nothing is fetched and nothing '
+     'fails; ten lanes and ten bot sign-ins for one photo; or a run held '
+     'behind its slowest lane while ten forwarded films wait'),
     ('workflow_yaml.py', None,
      'a workflow file that does not parse — GitHub then reports it as having '
      'no triggers, so the schedule and the manual run both vanish silently; '
@@ -216,6 +220,21 @@ def main() -> int:
          'what request-playback puts in `url` when a film\'s original is only in Telegram',
          'every app older than the ladder, and every download, handed a URL '
          'to an original the storage policy has taken out of R2'),
+        ('naming_test.mjs',
+         'R2 keys that say nothing about what they hold',
+         'a folder that is a plain hash of a film\'s name, an upload resumed '
+         'into another folder, or a new key that the studio, the frames '
+         'check or the Files page would refuse'),
+        ('pii_test.mjs',
+         'a payer\'s KPay number and transaction id, sealed and indexed',
+         'a leaked copy of the database carrying every payer\'s number in '
+         'the clear, a sealed value that opens in another row, or a reused '
+         'transaction number no longer caught'),
+        ('backup_seal_test.mjs',
+         'the backups made before sealing, sealed where they lie',
+         'a plain backup deleted before its sealed copy was written, a sealed '
+         'file adopted that does not open, or a plain copy left off-site '
+         'with no row pointing at it'),
         ('console_smoke.mjs',
          'the console in Chromium: menu per role, routes, 2-step, idle',
          'a control room that draws for an owner and throws for a viewer, a '

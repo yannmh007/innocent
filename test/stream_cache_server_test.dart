@@ -895,6 +895,42 @@ void main() {
     StreamCacheServer.instance.release('film-w5');
   });
 
+  // THE SAME, WITH NO PAUSE: Play pressed while the warm-up's own
+  // registration is still on its way. Both calls pass the same awaits, so the
+  // warm-up registers first and Play replaces it before the warm-up reads the
+  // registration back — which it used to take for its own, mark warm-only and
+  // release at its end (the full suite under load hit this, 30 Oct 2026). And
+  // the other order: Play registered first must not be replaced by the
+  // warm-up that started before it.
+  test('Play pressed while the warm-up is still registering keeps the film', () async {
+    ForegroundStream.reset();
+    StreamCacheServer.instance.resetWarmForTest();
+    up.pace = const Duration(milliseconds: 20);
+    final warming = warm('film-w5b');
+    final local = await StreamCacheServer.instance.localUrlFor(
+        cacheId: 'film-w5b', upstream: up.url('t1'), refresh: () async => null);
+    expect(await warming, isFalse, reason: 'the film is the player\'s now');
+    up.pace = const Duration(milliseconds: 2);
+    final got = await _getRange(local!, 0, 256 * 1024 - 1);
+    expect(got, Uint8List.sublistView(up.body, 0, 256 * 1024),
+        reason: 'the warm-up must not take or release the player\'s registration');
+    StreamCacheServer.instance.release('film-w5b');
+  });
+
+  test('a warm-up that arrives after Play registered leaves the film alone', () async {
+    ForegroundStream.reset();
+    StreamCacheServer.instance.resetWarmForTest();
+    up.pace = const Duration(milliseconds: 2);
+    final playing = StreamCacheServer.instance.localUrlFor(
+        cacheId: 'film-w5c', upstream: up.url('t1'), refresh: () async => null);
+    final warming = warm('film-w5c');
+    final local = await playing;
+    expect(await warming, isFalse);
+    final got = await _getRange(local!, 0, 64 * 1024 - 1);
+    expect(got, Uint8List.sublistView(up.body, 0, 64 * 1024));
+    StreamCacheServer.instance.release('film-w5c');
+  });
+
   test('no warm-up while a film is playing — its line is not ours', () async {
     ForegroundStream.reset();
     StreamCacheServer.instance.resetWarmForTest();

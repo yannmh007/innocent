@@ -188,6 +188,8 @@ void main() {
       () async {
     final origin = 'http://127.0.0.1:${Uri.parse(base).port}';
     svc.pin = '4821';
+    // The PIN alone, here: the sender's approval is its own test below.
+    svc.requireApproval = false;
     Future<http.Response> pair(String pin) =>
         http.get(Uri.parse('$origin/pair?id=a&name=Phone&pin=$pin'));
     expect(
@@ -204,6 +206,22 @@ void main() {
     }
     expect((await pair('4821')).statusCode, 429,
         reason: 'locked out after five misses');
+  });
+
+  test('ask before sending is on unless the sender turns it off: a phone '
+      'from the radar learns nothing until they say yes', () async {
+    final origin = 'http://127.0.0.1:${Uri.parse(base).port}';
+    expect(FileTransferService().requireApproval, isTrue,
+        reason: 'on a café Wi-Fi, a stranger on the radar must be asked about');
+    final asked = svc.pairRequests.first;
+    final pending = http.get(Uri.parse('$origin/pair?id=s&name=Stranger'));
+    final req = await asked;
+    expect(req.deviceName, 'Stranger');
+    req.decision.complete(false);
+    final res = await pending;
+    expect(res.statusCode, 403);
+    expect(res.body, isNot(contains(svc.token)));
+    expect(svc.peers, isEmpty);
   });
 
   test('ask before sending: the sender decides, the receiver is told',
@@ -244,5 +262,68 @@ void main() {
       expect(f.parent.path, inbox.path, reason: f.path);
     }
     expect(inbox.listSync().length, 5);
+  });
+
+  test('a browser upload the phone has no room for is refused, and leaves '
+      'nothing behind', () async {
+    final inbox = Directory('${tmp.path}/inbox2')..createSync();
+    svc.uploadDir = inbox;
+    const mb = 1024 * 1024;
+    Future<http.Response> up(String name, int bytes) =>
+        http.post(Uri.parse('$base/up?name=$name'), body: randomBytes(bytes, 9));
+    // 100 MB free: the 64 MB margin leaves 36 for uploads.
+    svc.freeSpace = () async => 100 * mb;
+    final fits = await up('fits.bin', 200000);
+    expect(fits.statusCode, 200, reason: fits.body);
+    // 30 MB free: under the margin, so nothing at all.
+    svc.freeSpace = () async => 30 * mb;
+    final full = await up('refused.bin', 1000);
+    expect(full.statusCode, 507);
+    expect(full.body, contains('no_space'));
+    expect(File('${inbox.path}/refused.bin').existsSync(), isFalse);
+    // 64 MB and a little free: a file bigger than the little is refused
+    // before a byte is written.
+    svc.freeSpace = () async => 64 * mb + 100000;
+    expect((await up('big.bin', 300000)).statusCode, 507);
+    expect(File('${inbox.path}/big.bin').existsSync(), isFalse);
+    expect(inbox.listSync().map((f) => f.uri.pathSegments.last), ['fits.bin']);
+  });
+
+  test('one question at a time per phone, and three refusals make it wait',
+      () async {
+    final origin = 'http://127.0.0.1:${Uri.parse(base).port}';
+    svc.requireApproval = true;
+    final asked = <PairRequest>[];
+    final sub = svc.pairRequests.listen(asked.add);
+    Future<http.Response> pair() =>
+        http.get(Uri.parse('$origin/pair?id=n&name=Neighbour'));
+
+    // While the first question is on the sender's screen, a second from the
+    // same phone is not put there too.
+    final first = pair();
+    while (asked.isEmpty) {
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+    }
+    final second = await pair();
+    expect(second.statusCode, 429);
+    expect(second.body, contains('already_asking'));
+    expect(asked.length, 1);
+    asked.single.decision.complete(false);
+    expect((await first).statusCode, 403);
+
+    // Told no twice more: three in all, and the next is not asked about.
+    for (var i = 0; i < 2; i++) {
+      final r = pair();
+      while (asked.length < i + 2) {
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+      }
+      asked.last.decision.complete(false);
+      expect((await r).statusCode, 403);
+    }
+    final locked = await pair();
+    expect(locked.statusCode, 429);
+    expect(locked.body, contains('declined_too_often'));
+    expect(asked.length, 3, reason: 'the fourth never reached the sender');
+    await sub.cancel();
   });
 }

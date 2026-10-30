@@ -29,17 +29,70 @@ NEW project, people sign in again and get new ids; the list in the backup says
 who had which subscription, so the owner can grant them again.
 
 Nothing here needs a network or a credential: the file in, SQL out.
+
+SEALED BACKUPS. Since 30 Oct 2026 the copy in R2 and off-site is sealed
+(`….json.gz.sealed`, starting `IBK1`). The console's Download opens it and
+saves the plain `.json.gz` this reads. When the project itself is gone and
+there is no console, open the off-site copy here with the owner's copy of the
+Edge secret PII_ENC_KEY (asked for, never echoed; `pip install cryptography`):
+
+    python3 tool/restore_backup.py x.json.gz.sealed --key > restore.sql
+
+The key is turned into the backup key exactly as docs/edge/pii.ts does it
+(HKDF-SHA256, zero salt, info `innocent-db-backup-v1`), then AES-256-GCM with
+`innocent-db-backup` as associated data. Only this one step needs a library or
+a secret; without `--key` a sealed file is refused, saying so.
 """
 
+import base64
 import gzip
+import hashlib
+import hmac
 import json
 import secrets
 import sys
 
+SEALED_MAGIC = b'IBK1'
+BACKUP_KEY_INFO = b'innocent-db-backup-v1'
+BACKUP_AAD = b'innocent-db-backup'
 
-def load(path):
+
+def backup_key(enc_b64):
+    """pii.ts derivedKey: HKDF-SHA256 of PII_ENC_KEY, zero salt, one block."""
+    try:
+        ikm = base64.b64decode(enc_b64.strip(), validate=True)
+    except Exception:
+        raise SystemExit('that is not a base64 key')
+    if len(ikm) != 32:
+        raise SystemExit('PII_ENC_KEY is 32 bytes; that one is %d' % len(ikm))
+    prk = hmac.new(b'\0' * 32, ikm, hashlib.sha256).digest()
+    return hmac.new(prk, BACKUP_KEY_INFO + b'\x01', hashlib.sha256).digest()
+
+
+def unseal(raw, enc_b64):
+    try:
+        from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+    except KeyboardInterrupt:
+        raise
+    except BaseException:   # missing, or a broken build (pyo3 panics are BaseException)
+        raise SystemExit('opening a sealed backup needs: pip install cryptography')
+    try:
+        return AESGCM(backup_key(enc_b64)).decrypt(raw[4:16], raw[16:], BACKUP_AAD)
+    except SystemExit:
+        raise
+    except Exception:
+        raise SystemExit('the key does not open this backup (another key, or the file was altered)')
+
+
+def load(path, enc_b64=None):
     with open(path, 'rb') as fh:
         raw = fh.read()
+    if raw[:4] == SEALED_MAGIC:
+        if enc_b64 is None:
+            raise SystemExit('this backup is sealed: download it from the console '
+                             '(Status, Database backups, Download), which hands over the '
+                             'opened .json.gz, or run with --key (see --help)')
+        raw = unseal(raw, enc_b64)
     if raw[:2] == b'\x1f\x8b':
         raw = gzip.decompress(raw)
     doc = json.loads(raw.decode('utf-8'))
@@ -90,7 +143,11 @@ def main(argv):
     if len(argv) < 2 or argv[1] in ('-h', '--help'):
         print(__doc__)
         return 0
-    doc = load(argv[1])
+    key = None
+    if '--key' in argv:
+        import getpass
+        key = getpass.getpass('PII_ENC_KEY: ') if sys.stdin.isatty() else sys.stdin.readline()
+    doc = load(argv[1], key)
     if '--list' in argv:
         for name in doc.get('order') or []:
             print('%-24s %6d' % (name, (doc.get('counts') or {}).get(name, 0)))

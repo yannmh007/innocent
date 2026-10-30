@@ -24,6 +24,24 @@ class PinRequired implements Exception {
   String toString() => 'PIN required';
 }
 
+/// The sender was asked ("ask before sending") and said no, or let the
+/// question go unanswered. A type, like [PinRequired], so the screen can say
+/// it in the viewer's language.
+class PairDeclined implements Exception {
+  const PairDeclined();
+  @override
+  String toString() => 'declined';
+}
+
+/// The sender is not taking questions from this phone just now: one is
+/// already on its screen, it said no several times, or the PIN was missed
+/// too often (429). A wait, not a failure.
+class PairWait implements Exception {
+  const PairWait();
+  @override
+  String toString() => 'wait';
+}
+
 /// One file advertised by a sender's /manifest endpoint.
 class RemoteFile {
   final int index;
@@ -353,9 +371,8 @@ class FileReceiverService {
       // break the moment someone translates it.
       throw const PinRequired();
     }
-    if (resp.statusCode == 403) {
-      throw Exception('The other phone declined the request.');
-    }
+    if (resp.statusCode == 403) throw const PairDeclined();
+    if (resp.statusCode == 429) throw const PairWait();
     if (resp.statusCode != 200) {
       throw Exception('Could not connect (HTTP ${resp.statusCode}).');
     }
@@ -846,12 +863,27 @@ class ReceiverNotifier extends StateNotifier<ReceiverState> {
       // working, deliberately-protected share look broken.
       state = state.copyWith(
           connecting: false, connected: false, pinNeededFor: device);
+    } on PairDeclined {
+      if (!mounted) return;
+      state = state.copyWith(
+          connecting: false, connected: false, error: pairDeclinedError);
+    } on PairWait {
+      if (!mounted) return;
+      state = state.copyWith(
+          connecting: false, connected: false, error: pairWaitError);
     } catch (e) {
       if (!mounted) return;
       state = state.copyWith(
           connecting: false, connected: false, error: _friendly(e));
     }
   }
+
+  /// [ReceiverState.error] when the sender said no ([PairDeclined]); the
+  /// screen words it.
+  static const String pairDeclinedError = 'pair:declined';
+
+  /// [ReceiverState.error] when the sender asked this phone to wait ([PairWait]).
+  static const String pairWaitError = 'pair:wait';
 
   void dismissPinPrompt() => state = state.copyWith(clearPinPrompt: true);
 

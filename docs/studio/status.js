@@ -315,10 +315,19 @@ function ssBackups(d) {
         dl.disabled = true;
         try {
           const r = await api({ op: 'backupUrl', id: b.id });
-          const a = el('a', { href: r.url, download: r.name || 'backup.json.gz' });
+          // A sealed backup comes back opened, as bytes; an older one as a link.
+          let href = r.url;
+          if (r.b64) {
+            const bin = atob(r.b64);
+            const bytes = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+            href = URL.createObjectURL(new Blob([bytes], { type: 'application/gzip' }));
+          }
+          const a = el('a', { href, download: r.name || 'backup.json.gz' });
           document.body.append(a);
           a.click();
           a.remove();
+          if (r.b64) setTimeout(() => URL.revokeObjectURL(href), 60000);
         } catch (e) {
           say('bad', String(e.message || e));
         } finally {
@@ -336,7 +345,7 @@ function ssBackups(d) {
     extra.push(now);
   }
   return ssSec('Database backups', 'Made every day by the runner, into the private bucket: every table ' +
-    'and the account list, gzipped. Fourteen days are kept, and the first of each month for a year. ' +
+    'and the account list, gzipped and sealed. Fourteen days are kept, and the first of each month for a year. ' +
     'The download holds every account\'s email — keep it somewhere private. RUNBOOK part 4 says how ' +
     'to restore one.', [list], extra);
 }

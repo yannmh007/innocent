@@ -461,8 +461,10 @@ class ApiAccountRepository implements AccountRepository {
     final rows = await _api.getJson(
       '/rest/v1/premium_requests',
       query: <String, String>{
-        'select':
-            'id,plan_id,reference,sender_phone,status,note,submitted_at,message',
+        // The masks (migration 054): what is left of the numbers once the
+        // server keeps them sealed.
+        'select': 'id,plan_id,reference,sender_phone,status,note,submitted_at,'
+            'message,reference_mask,sender_phone_mask',
         'order': 'submitted_at.desc',
         'limit': '20',
       },
@@ -514,8 +516,13 @@ class ApiAccountRepository implements AccountRepository {
     return PremiumRequest(
       id: '${m['id']}',
       planId: '${m['plan_id']}',
-      reference: m['reference'] as String? ?? '',
-      senderPhone: m['sender_phone'] as String?,
+      // Sealed on the server (migration 054): the payer is shown the masks,
+      // ••••••0098 and 09••••••789, which are all that says which payment
+      // this was.
+      reference:
+          m['reference'] as String? ?? m['reference_mask'] as String? ?? '',
+      senderPhone:
+          m['sender_phone'] as String? ?? m['sender_phone_mask'] as String?,
       status: _statusFrom(m['status'] as String?),
       submittedAt:
           DateTime.tryParse('${m['submitted_at']}')?.toLocal() ??

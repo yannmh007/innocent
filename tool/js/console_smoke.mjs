@@ -294,7 +294,10 @@ function ssOps(state, body) {
     backupNow: () => owner() || (ss.data.backups.unshift({ id: 8, taken_at: new Date().toISOString(),
       bytes: 82000, raw_bytes: 820000, tables: { titles: 9 }, trigger: 'manual', note: null }),
     { ok: true, backup: { id: 8, bytes: 82000, tables: 31 } }),
-    backupUrl: () => owner() || { url: 'data:application/gzip;base64,H4sIAAAAAAAAAwMAAAAAAAAAAAA=', name: 'b.json.gz' },
+    // A sealed backup comes back opened, as base64 (studio.ts); an older one as a link.
+    backupUrl: () => owner() || (body.id === 7
+      ? { b64: 'H4sIAAAAAAAAAwMAAAAAAAAAAAA=', name: '20261030T010000-daily.json.gz' }
+      : { url: 'data:application/gzip;base64,H4sIAAAAAAAAAwMAAAAAAAAAAAA=', name: 'b.json.gz' }),
     webhookRepair: () => owner() || { ok: true },
     archiveConnect: () => owner() || (body.chat === '@nope' ? { __status: 400, error: 'cannot_post' }
       : (Object.assign(ss.data.archive, { chat_id: -100777, title: 'Innocent archive',
@@ -362,7 +365,7 @@ async function open(browser, role, opts = {}) {
           price_shown: '100,000 MMK', message: null, reference: '01003984021', sender_phone: null,
           email: 'kyaw@example.com', display_name: null,
           submitted_at: new Date(Date.now() - 7200e3).toISOString(), seen_at: new Date().toISOString(),
-          reviewed_at: null, reviewed_by: null, note: null, proof_path: 'u/2.png',
+          reviewed_at: null, reviewed_by: null, note: null, proof_path: 'u/2.sealed',
           duplicate_of: '11111111-1111-4111-8111-111111111111', approved_before: 0,
           premium_until: null, user_id: 'u2' },
         { id: '33333333-3333-4333-8333-333333333333', status: 'approved', plan_id: 'yearly',
@@ -564,7 +567,6 @@ async function open(browser, role, opts = {}) {
           state.cats = [...all, ...rest];
           return { ok: true, order: rest.map((c) => c.id) };
         },
-        requests: () => ({ rows: [] }),
         admins: () => ({ admins: [
           { id: 'a1', email: 'boss@example.com', role: 'owner', disabled: false, linked: true, mfa: true, last_seen_at: new Date().toISOString() },
           { id: 'a2', email: 'helper@example.com', role: 'uploader', disabled: false, linked: false, mfa: false, last_seen_at: null },
@@ -665,7 +667,14 @@ async function open(browser, role, opts = {}) {
         return json(route, 200, { requests: rows, counts: { pending: c('pending'), approved: c('approved'), rejected: c('rejected') } });
       }
       if (body.op === 'proofs') {
-        return json(route, 200, { urls: Object.fromEntries((body.ids || []).map((id) => [id, 'https://proof.test/' + id + '.svg'])) });
+        // One receipt per answer and `more` for the rest, as premium-request
+        // does when they are big; a sealed one comes back opened, as data:.
+        const [head, ...rest] = body.ids || [];
+        const PNG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+        const url = (id) => String(pay.reqs.find((r) => r.id === id)?.proof_path || '').endsWith('.sealed')
+          ? PNG : 'https://proof.test/' + id + '.svg';
+        const urls = head ? { [head]: url(head) } : {};
+        return json(route, 200, rest.length ? { urls, more: rest } : { urls });
       }
       if (body.op === 'seen') {
         for (const r of pay.reqs) if ((body.ids || []).includes(r.id) && !r.seen_at) r.seen_at = new Date().toISOString();
@@ -1465,9 +1474,15 @@ try {
     await page.waitForSelector('#ssBody .ss-row');
     check('status: and it is listed, by hand', /by hand/.test(await page.textContent('#ssBody')));
     // download
-    await page.click('#ssBody .ss-row:nth-child(2) button:has-text("Download")');
-    await page.waitForFunction(() => true);
+    const [dl] = await Promise.all([
+      page.waitForEvent('download', { timeout: 5000 }).catch(() => null),
+      page.click('#ssBody .ss-row:nth-child(2) button:has-text("Download")'),
+    ]);
     check('status: Download asks for that backup', ss.calls.some((c) => c.op === 'backupUrl' && c.id === 7));
+    const saved = dl && await dl.path().catch(() => null);
+    check('status: a sealed backup is saved opened, as the .json.gz it was',
+      !!dl && dl.suggestedFilename() === '20261030T010000-daily.json.gz' && !!saved &&
+      readFileSync(saved).equals(Buffer.from('H4sIAAAAAAAAAwMAAAAAAAAAAAA=', 'base64')));
 
     // webhook repair
     await page.click('#ssBody button:has-text("Repair webhook")');
@@ -1542,7 +1557,12 @@ try {
     const pay = state.pay;
     check('payments: the waiting ones are cards (' + (await page.$$('#reqList .rq-card')).length + ')',
       (await page.$$('#reqList .rq-card')).length === 2);
+    await page.waitForFunction(() => document.querySelectorAll('#reqList .rq-proof img').length === 2);
     check('payments: the receipt is right there on each', (await page.$$('#reqList .rq-proof img')).length === 2);
+    check('payments: receipts come in rounds while the function says `more`',
+      pay.calls.filter((c) => c.op === 'proofs').length >= 2);
+    check('payments: a sealed receipt is shown from the opened bytes',
+      !!(await page.$('#reqList .rq-proof img[src^="data:image/png"]')));
     check('payments: the payer\'s own note is shown', /ညီမရဲ့ KPay/.test(await page.textContent('#reqList .rq-msg')));
     check('payments: a request nobody has seen is marked NEW', !!(await page.$('#reqList .rq-card.new')));
     check('payments: a returning payer says so', /Returning · paid 1×/.test(await page.textContent('#reqList')));
@@ -1559,6 +1579,11 @@ try {
     check('payments: a receipt opens full size over the page', await visible(page, '.rq-light'));
     await page.keyboard.press('Escape');
     check('payments: Escape closes it', !(await page.$('.rq-light')));
+    await page.click('#reqList .rq-proof:has(img[src^="data:"])');
+    await page.waitForSelector('.rq-light img');
+    check('payments: a sealed receipt\'s "Open original" is a blob: address a tab can open',
+      /^blob:/.test(await page.getAttribute('.rq-light a', 'href')));
+    await page.keyboard.press('Escape');
 
     const first = page.locator('#reqList .rq-card').first();
     check('payments: a monthly plan offers 30 days', (await first.locator('.rq-days').inputValue()) === '30');

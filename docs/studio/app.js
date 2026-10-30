@@ -1510,9 +1510,14 @@ buildForm($('nFields'), 'n_',
 
 let folderTimer = null;
 let folderOk = false;
+// What the server made of the name typed: the folder the keys will really
+// use — `f/<hash>` once R2_NAMING_KEY is set (docs/edge/naming.ts), the name
+// itself before — for that exact text. Null until checked.
+let folderChecked = null;
 
 $('nFolder').oninput = () => {
   folderOk = false;
+  folderChecked = null;
   clearTimeout(folderTimer);
   folderTimer = setTimeout(checkFolder, 350);
   $('nPaths').textContent = 'checking…';
@@ -1533,6 +1538,7 @@ async function checkFolder() {
     const r = await api({ op: 'checkFolder', folder: raw });
     folderOk = r.ok;
     if (!r.folder) { out.textContent = 'That reduces to nothing usable.'; return; }
+    folderChecked = { raw, folder: r.folder, label: raw };
     out.append(
       el('div', {}, [text('innocent-media/'), el('b', {}, text(r.folder)),
         text('/video/…')]),
@@ -1541,6 +1547,12 @@ async function checkFolder() {
       el('div', {}, [text('innocent-public/'), el('b', {}, text(r.folder)),
         text('/thumb/…')]),
     );
+    if (r.label && r.label !== r.folder) {
+      // The keys say nothing about the title; this page still calls the
+      // folder by its name.
+      out.append(el('div', { className: 'hint', style: 'margin-top:4px' },
+        text('Hidden in the bucket; shown here as "' + raw + '". File names are random.')));
+    }
     if (!r.ok) {
       out.append(el('div', { style: 'color:var(--bad);margin-top:4px' },
         text('Already used' + (r.takenBy ? ' by "' + r.takenBy + '"' : '') +
@@ -1578,7 +1590,11 @@ $('create').onclick = async () => {
   const raw = $('nFolder').value.trim();
 
   if (!raw) return say('bad', 'Pick a folder first — it cannot be changed later.');
-  if (!folderOk) { await checkFolder(); if (!folderOk) return say('bad', 'That folder is not available.'); }
+  if (!folderOk || !folderChecked || folderChecked.raw !== raw) {
+    await checkFolder();
+    if (!folderOk || !folderChecked) return say('bad', 'That folder is not available.');
+  }
+  const folder = folderChecked.folder;
   if (!f.title) return say('bad', 'A title needs a name.');
   // STILL REQUIRED HERE, and that is not an oversight. This tab is the
   // uploader: it takes files off the phone and builds a title around them. A
@@ -1598,8 +1614,8 @@ $('create').onclick = async () => {
     // THE FORM IS KEPT WITH THE FILES, so a resume after the tab died makes
     // the same title — the details typed before the upload started are not
     // something the operator should have to type twice.
-    const job = newUploadJob(files, raw, { op: 'create', payload: {
-      op: 'create', folder: raw,
+    const job = newUploadJob(files, folder, { op: 'create', payload: {
+      op: 'create', folder, folderLabel: folderChecked.label,
       title: f.title, titleMm: f.title_mm, synopsis: f.synopsis,
       category: f.category, year: f.year, rating: f.rating,
       quality: f.quality_label, genres: f.genres, keywords: f.keywords,
@@ -1607,7 +1623,7 @@ $('create').onclick = async () => {
       featured: f.is_featured,
     } }, f.title);
     await upSave(job);
-    const assets = await uploadAll(files, host, raw, job);
+    const assets = await uploadAll(files, host, folder, job);
     const res = await finishUploadJob(job, assets);
     $('nFiles').value = '';
     $('nFolder').value = '';

@@ -90,6 +90,7 @@ class Client:
 
     def start(self):
         W.started += 1
+        W.sleeps_at_start = list(getattr(W, 'sleeps', []))
         if W.flood_on_start is not None:
             raise FloodWait(W.flood_on_start)
 
@@ -547,6 +548,23 @@ ingest.widen_channel_ids(fake_utils)
 check('widening twice changes nothing', fake_utils.MIN_CHANNEL_ID == -1009999999999)
 check('the runner widens the client it signs in with',
       fake_utils_mod.MIN_CHANNEL_ID == -1009999999999)
+
+# LANES: up to ten runners at once, each signing in for itself. Lane N waits
+# (N-1) x INGEST_SIGNIN_GAP before its sign-in, so ten sign-ins spread over
+# three minutes instead of landing in one second.
+rc, edge = run(job(60), [job(61)], env={'INGEST_LANE': '4', 'INGEST_SIGNIN_GAP': '20'},
+               media={60: ('u60', 60), 61: ('u61', 61)})
+check('lane 4 waits 60 s, and waits BEFORE it signs in',
+      W.sleeps_at_start == [60] and W.started == 1)
+check('and then works as one lane always did',
+      len([c for c in edge.ops('done') if c['ok']]) == 2)
+rc, edge = run(job(62), [], env={'INGEST_LANE': '1'}, media={62: ('u62', 62)})
+check('lane 1 signs in at once', W.sleeps_at_start == [] and W.started == 1)
+rc, edge = run(job(63), [], env={'INGEST_LANE': 'x'}, media={63: ('u63', 63)})
+check('a lane number that is not a number is lane 1', W.sleeps_at_start == [])
+rc, edge = run(job(64), [], env={'INGEST_LANE': '9', 'INGEST_SIGNIN_GAP': '0'},
+               media={64: ('u64', 64)})
+check('a gap of 0 waits for nothing', W.sleeps_at_start == [])
 
 print()
 if failures:
