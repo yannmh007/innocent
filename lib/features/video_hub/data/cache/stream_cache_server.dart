@@ -397,6 +397,25 @@ class StreamCacheServer {
     String label = '',
     bool probeNow = true,
     HttpClient? pool,
+  }) =>
+      _localUrlFor(
+          cacheId: cacheId, upstream: upstream, refresh: refresh, total: total,
+          label: label, probeNow: probeNow, pool: pool);
+
+  /// [claim] marks the registration as the caller's, and [ifAbsent] leaves a
+  /// film alone that someone registered while this call was on its way —
+  /// both for [warmOpening], which must never take a player's registration
+  /// for its own (see there).
+  Future<String?> _localUrlFor({
+    required String cacheId,
+    required String upstream,
+    required Future<String?> Function() refresh,
+    int? total,
+    String label = '',
+    bool probeNow = true,
+    HttpClient? pool,
+    Object? claim,
+    bool ifAbsent = false,
   }) async {
     try {
       await StreamCacheStore.instance.load();
@@ -408,12 +427,14 @@ class StreamCacheServer {
 
       final entry = await StreamCacheStore.instance
           .entryFor(cacheId, total: total, label: label);
+      if (ifAbsent && _sources.containsKey(cacheId)) return null;
       // The film's previous registration, if any, gives up its connections.
       _sources[cacheId]?.close();
       // [pool]: a ladder's connections ([_Ladder.io]), in place before the
       // length check below goes out, so its connection is the ladder's.
       final src = _sources[cacheId] = _Source(upstream: upstream, refresh: refresh)
-        ..shared = pool;
+        ..shared = pool
+        ..claim = claim;
       // CONFIRMED A MOMENT AGO, BY A WARM-UP (see [warmOpening]): its length
       // was read from the server and where its index is with it. Asking again
       // would put one round trip — on a Myanmar line, the whole of a warmed
@@ -874,12 +895,23 @@ class StreamCacheServer {
     _warming = cacheId;
     _warmed.add(cacheId);
     _Source? mine;
+    final claim = Object();
     final client = HttpClient()..connectionTimeout = const Duration(seconds: 15);
     try {
-      final local = await localUrlFor(
-          cacheId: cacheId, upstream: upstream, refresh: refresh, total: total, label: label);
-      mine = _sources[cacheId];
-      if (local == null || mine == null) return false;
+      final local = await _localUrlFor(
+          cacheId: cacheId, upstream: upstream, refresh: refresh, total: total, label: label,
+          claim: claim, ifAbsent: true);
+      // PLAY MAY HAVE REGISTERED THE FILM WHILE THIS CALL WAS ON ITS WAY —
+      // a tap on Play within the first moments of the title page. Then the
+      // registration is the player's: taking it as this warm-up's own (it
+      // was read back by id, before) marked it warm-only and released it
+      // when the warm-up ended, and the player's first read came back
+      // empty. Only the registration this call made is the warm-up's.
+      final registered = _sources[cacheId];
+      if (local == null || registered == null || !identical(registered.claim, claim)) {
+        return false;
+      }
+      mine = registered;
       mine.warmOnly = true;
       final length = await (mine.probing ?? Future<int>.value(0));
       if (length <= 0) return false;
@@ -2503,6 +2535,9 @@ class _Source {
 
   /// Registered by [StreamCacheServer.warmOpening], not by a player.
   bool warmOnly = false;
+
+  /// Who registered it, when that matters ([StreamCacheServer.warmOpening]).
+  Object? claim;
 }
 
 /// How a [StreamCacheServer.warmSwitch] went.

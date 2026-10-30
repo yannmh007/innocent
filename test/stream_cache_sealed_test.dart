@@ -126,6 +126,26 @@ void main() {
       }
     });
 
+    // Play and its warm-up ask for a new film's entry in the same moment.
+    // One entry, its IV the one on disk, and a run written through either
+    // reads back as the film — after a restart too (the IV is read again).
+    test('two asking for a new film at once get one entry, sealed with the IV on disk', () async {
+      final asks = await Future.wait([
+        for (var i = 0; i < 4; i++) store.entryFor('race-new', total: film.length, label: 'race'),
+      ]);
+      expect(asks.every((e) => identical(e, asks.first)), isTrue, reason: 'one entry');
+      final e = asks.first;
+      expect(e.iv, isNotNull, reason: 'sealed, not plain');
+      final dir = Directory(p.join((await getApplicationSupportDirectory()).path, 'stream_cache', 'race-new'));
+      expect((await File(p.join(dir.path, 'seal.iv')).readAsString()).trim(), e.iv);
+      final w = (await store.openWriter(e, 0))!;
+      await w.write(film.sublist(0, 200000));
+      await w.close();
+      final disk = await e.partAt(0)!.file.readAsBytes();
+      expect(disk, _keystreamXor(base64Decode(e.iv!), 0, film.sublist(0, 200000)),
+          reason: 'sealed under the IV that a restart will read');
+    });
+
     test('a run reads back exactly, from any byte, unaligned', () async {
       final e = await cache('sealed-2', [(0, 1000000), (1500001, film.length)]);
       for (final (start, from, to) in [(0, 0, 1000000), (0, 17, 999983), (1500001, 3, 100003), (1500001, 5, film.length - 1500001)]) {
