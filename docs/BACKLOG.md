@@ -9,6 +9,63 @@ that gets built too early.
 
 ---
 
+## 0. OPEN AS OF 30 OCT 2026 — carry these forward
+
+Written at the owner's request so nothing below is lost between sessions.
+Newest first within each group; tick an item by deleting it in the commit that
+does it.
+
+### Release 1.64.78 (in flight)
+- **Test Lab, both phones** (realme RE58C2/35, OPPO OP573DL1/34) — scheduled
+  07:12 UTC 30 Oct. Compare Play-to-picture and CPU with runs 40890052023 and
+  40883836265. Then release via the main worktree: lib commits d15d478,
+  63aeea2, d63727c, cc57e1a, 0e49166 and the version bump only (never the
+  lab-only lib/app.dart). The release also carries docs/studio/app.js (opaque
+  upload folders) to GitHub Pages. 1.64.77 was built and never published.
+- **Gap audit entries** for 1.64.78 (docs/gap_audit_2026_10.md).
+
+### Verify what is live but not yet exercised
+- **Sealed payment fields (migration 054, premium-request v15)**: the first
+  sealed request (1ccbfbc5) is in, phone sealed and masked, no plain numbers
+  anywhere. Still to see: the console's Requests page opening it (the number
+  in full, not "(sealed — the key does not open it)"), and a request WITH a
+  transaction number, to exercise the HMAC index and the reused-number check.
+  Reject 1ccbfbc5 if it was a test.
+- **Opaque R2 keys (studio v43, R2_NAMING_KEY)**: after the release reaches
+  Pages, make a test title from New with folder `test-naming`: keys must be
+  `f/<20 hex>/<kind>/<32 hex>.<ext>`, the Files page must show "test-naming".
+  Delete the test title after.
+
+### Security, next
+- **Encrypt the daily database backup — HIGH.** `_backup/db/…json.gz` in R2
+  and its off-site copy in B2 hold every public table AND the account list
+  (emails, phones), gzipped, not encrypted. A leaked R2 or B2 token is the
+  whole database. Seal it (AES-256-GCM, an Edge secret such as
+  BACKUP_ENC_KEY kept in the owner's password manager) and teach
+  tool/restore_backup.py to open it.
+- **Telegram ingest keys**: ingest.ts still names objects
+  `<folder>/<kind>/<date>-<file name>-<rand>`; give it naming.ts and show
+  folder labels on the Telegram review page (review.js).
+- **Payment screenshots**: still stored as images (private bucket, 10-minute
+  signed URLs). Seal them too and let the console view them through the
+  function.
+- **Google sign-in nonce**: hashed nonce to Google, raw nonce to GoTrue, so a
+  stolen ID token cannot be replayed. Needs one real sign-in on the owner's
+  phone before release (no lab can sign in with Google).
+- **studio.ts `requests` op** (legacy, unused by the console) returns the
+  pending view, whose numbers are now sealed: remove it or open them.
+- **Transfer**: a free-space check on browser uploads; a per-address limit on
+  /pair requests now that every one asks the sender.
+
+### Quality
+- Two sealed stream-cache timing tests fail under the full parallel run and
+  pass alone (903 ms against a 900 ms bound; "a step back into what the
+  player was given carries the stretch on"). Make them robust to load.
+- Burmese Settings still shows Pop-up Play, Decoder, Development and
+  Diagnostics in English — decide whether those stay technical terms.
+
+---
+
 ## A. WAITING ON YOU — no code needed
 
 | | why it is first |
