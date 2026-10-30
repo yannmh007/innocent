@@ -1,0 +1,25 @@
+-- 053 — A PAYMENT REQUEST IS FILED ONLY THROUGH premium-request (2026-10-30)
+--
+-- Paste the WHOLE file into the Supabase SQL Editor and Run. Safe to run
+-- twice. It deletes no row.
+--
+-- WHY. Since 1.64.57 (6 October) the app files every request through the
+-- premium-request edge function, which is where the checks are: at most 3
+-- pending and 6 a day per account, the image checked and stored privately,
+-- a receipt or a transaction number already filed by someone else marked
+-- for the owner (`duplicate_of`, shown in red in the console), and the
+-- owner told on Telegram.
+--
+-- The table still took a direct insert from any signed-in account
+-- (`grant insert (plan_id, reference, sender_phone, user_id)` and the
+-- policy "file own request", from 010). That insert went round every one of
+-- those checks: a request without limit, a transaction number reused from
+-- another payer with no red mark, the owner never told. Nothing has used it
+-- since 1.64.57, and the table has no request filed that way.
+--
+-- WHAT STAYS. The function files with the service role, which this does not
+-- touch. A signed-in account still reads its own requests (the columns
+-- granted in 010 and 042, and the policy "own requests"), which is how the
+-- app shows "waiting / approved / rejected".
+revoke insert on public.premium_requests from anon, authenticated;
+drop policy if exists "file own request" on public.premium_requests;

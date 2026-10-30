@@ -161,7 +161,7 @@ class TransferState {
     this.servedPerFile = const {},
     this.peers = const [],
     this.servedPerPeer = const {},
-    this.requireApproval = false,
+    this.requireApproval = true,
     this.pending,
     this.deviceName,
     this.starting = false,
@@ -282,7 +282,18 @@ class FileTransferService {
   final Map<String, Map<int, int>> _servedPerPeer = {};
 
   final List<TransferPeer> _peers = [];
-  bool requireApproval = false;
+
+  /// Whether a phone that found this one on the radar must be let in by the
+  /// person sharing ([pairRequests]).
+  ///
+  /// ON UNLESS THEY TURN IT OFF (2026-10-29). It was off, and the PIN is off
+  /// too until set: on a café's Wi-Fi anyone running Innocent who saw this
+  /// phone on their radar was handed the share's token by [/pair] and could
+  /// take every file in it, the user's photos among them, without the user
+  /// knowing. Keeping the token out of the broadcast (TransferDiscovery)
+  /// only helps if [/pair] does not give it away. A QR code carries the
+  /// token itself — scanning it is being in the room — and asks nothing.
+  bool requireApproval = true;
 
   /// Sender-side pause.
   ///
@@ -1167,15 +1178,22 @@ class TransferNotifier extends StateNotifier<TransferState> {
 
   static const String _kTurboDefault = 'transfer.turbo_default';
 
+  /// "Ask before sending", as this phone's user last left it (on unless
+  /// they switched it off).
+  static const String _kAskBeforeSending = 'transfer.ask_before_sending';
+
   /// The owner's choice, remembered: Turbo is on unless this phone's user
   /// switched it off (Transfer → ⋮ → Turbo direct link).
   Future<void> _loadTurboDefault() async {
     try {
       final sp = await SharedPreferences.getInstance();
       final on = sp.getBool(_kTurboDefault) ?? true;
-      if (mounted && !state.isRunning) {
-        state = state.copyWith(turboRequested: on);
-      }
+      final ask = sp.getBool(_kAskBeforeSending) ?? true;
+      _svc.requireApproval = ask;
+      if (!mounted) return;
+      state = state.isRunning
+          ? state.copyWith(requireApproval: ask)
+          : state.copyWith(turboRequested: on, requireApproval: ask);
     } catch (_) {
       // Keep the default.
     }
@@ -1204,6 +1222,14 @@ class TransferNotifier extends StateNotifier<TransferState> {
   void setRequireApproval(bool value) {
     _svc.requireApproval = value;
     state = state.copyWith(requireApproval: value);
+    unawaited(() async {
+      try {
+        final sp = await SharedPreferences.getInstance();
+        await sp.setBool(_kAskBeforeSending, value);
+      } catch (_) {
+        // Kept for this session; the default again next time.
+      }
+    }());
   }
 
   /// Hold or release the share. Receivers already pulling stop at their next

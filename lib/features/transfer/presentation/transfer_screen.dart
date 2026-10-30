@@ -1634,7 +1634,11 @@ class _ReceivePaneState extends ConsumerState<_ReceivePane> {
   Widget _errorCard(AppStrings s, String error) {
     final isTurbo = error.startsWith('turbo:');
     final reason = isTurbo ? error.substring(6) : '';
-    final text = isTurbo ? _turboReason(s, reason) : error;
+    final text = isTurbo
+        ? _turboReason(s, reason)
+        : error == ReceiverNotifier.pairDeclinedError
+            ? s.trPairDeclined
+            : error;
     final fix = isTurbo ? _turboFixTarget(reason) : null;
     return Container(
       padding: const EdgeInsets.all(12),

@@ -188,6 +188,8 @@ void main() {
       () async {
     final origin = 'http://127.0.0.1:${Uri.parse(base).port}';
     svc.pin = '4821';
+    // The PIN alone, here: the sender's approval is its own test below.
+    svc.requireApproval = false;
     Future<http.Response> pair(String pin) =>
         http.get(Uri.parse('$origin/pair?id=a&name=Phone&pin=$pin'));
     expect(
@@ -204,6 +206,22 @@ void main() {
     }
     expect((await pair('4821')).statusCode, 429,
         reason: 'locked out after five misses');
+  });
+
+  test('ask before sending is on unless the sender turns it off: a phone '
+      'from the radar learns nothing until they say yes', () async {
+    final origin = 'http://127.0.0.1:${Uri.parse(base).port}';
+    expect(FileTransferService().requireApproval, isTrue,
+        reason: 'on a café Wi-Fi, a stranger on the radar must be asked about');
+    final asked = svc.pairRequests.first;
+    final pending = http.get(Uri.parse('$origin/pair?id=s&name=Stranger'));
+    final req = await asked;
+    expect(req.deviceName, 'Stranger');
+    req.decision.complete(false);
+    final res = await pending;
+    expect(res.statusCode, 403);
+    expect(res.body, isNot(contains(svc.token)));
+    expect(svc.peers, isEmpty);
   });
 
   test('ask before sending: the sender decides, the receiver is told',
