@@ -39,6 +39,7 @@ on:
       - 'android/build.gradle.kts'
       - 'android/settings.gradle.kts'
       - 'tool/gradle_lock.py'
+      - 'tool/osv-scanner-android.toml'
       - '.github/workflows/deps-scan.yml'
   workflow_dispatch:
 
@@ -122,5 +123,9 @@ jobs:
             | sha256sum -c -
           chmod +x /tmp/osv-scanner
 
+      # tool/osv-scanner-android.toml: the advisories accepted while minSdk
+      # is 24, each with why and until when.
       - name: Scan the Android libraries
-        run: /tmp/osv-scanner scan source --lockfile "$RUNNER_TEMP/scan/gradle.lockfile"
+        run: |
+          /tmp/osv-scanner scan source --config tool/osv-scanner-android.toml \
+            --lockfile "$RUNNER_TEMP/scan/gradle.lockfile"
