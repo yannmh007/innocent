@@ -173,6 +173,12 @@ export async function openFile(key: CryptoKey, sealed: Uint8Array, aad: string):
 export const BACKUP_KEY_INFO = 'innocent-db-backup-v1';
 export const BACKUP_AAD = 'innocent-db-backup';
 
+/// A payment screenshot (premium-request.ts, 30 Oct 2026): its own derived
+/// key, and its request's id as associated data, so a sealed receipt moved
+/// to another request does not open.
+export const PROOF_KEY_INFO = 'innocent-payment-proof-v1';
+export const proofAad = (requestId: string) => `premium_requests:proof:${requestId}`;
+
 /// Standard base64 of bytes, in pieces: a backup is too long for one
 /// `String.fromCharCode(...bytes)`.
 export function toB64(bytes: Uint8Array): string {

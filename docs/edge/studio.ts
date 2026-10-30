@@ -2,7 +2,7 @@
 //
 // Was two calls (sign, publish) behind an upload form. It is now the whole
 // console: list, get, create, save, addAssets, updateAsset, setPrimary,
-// deleteAsset, deleteTitle, reorder, requests, approve, reject, categories,
+// deleteAsset, deleteTitle, reorder, approve, reject, categories,
 // saveCategory, addCategory, stats, health, folder, checkFolder, sign,
 // beginMultipart, signParts, completeMultipart, abortMultipart, selftest.
 //
@@ -750,7 +750,7 @@ function json(body: unknown, status = 200, req?: Request): Response {
 const NEED: Record<string, Role> = {
   // reading
   whoami: 'viewer', summary: 'viewer', list: 'viewer', get: 'viewer',
-  requests: 'viewer', stats: 'viewer', categories: 'viewer', health: 'viewer',
+  stats: 'viewer', categories: 'viewer', health: 'viewer',
   // uploading and drafting
   sign: 'uploader', beginMultipart: 'uploader', signParts: 'uploader',
   completeMultipart: 'uploader', abortMultipart: 'uploader', listParts: 'uploader',
@@ -795,7 +795,7 @@ const NEED: Record<string, Role> = {
 /// a URL is here on purpose: it changes nothing until the upload completes,
 /// and the completion IS logged.
 const READS = new Set([
-  'whoami', 'summary', 'list', 'get', 'requests', 'stats', 'categories',
+  'whoami', 'summary', 'list', 'get', 'stats', 'categories',
   'health', 'checkFolder', 'folder', 'selftest', 'audit', 'admins', 'settings',
   'sign', 'beginMultipart', 'signParts', 'listParts',
   'reviewQueue', 'reviewHistory', 'previewUrl',
@@ -1857,19 +1857,17 @@ async function handleOp(
   // `docs/movies_gaps.md` §2 calls the missing operator side BLOCKING — "until
   // this exists, the product cannot take money". Every piece of it was already
   // in the database: the `pending_requests` view, `approve_request(id, days)`
-  // and `reject_request(id, note)`. Nothing called them. These three ops are
-  // the whole fix.
+  // and `reject_request(id, note)`. Nothing called them.
+  //
+  // The list itself is the premium-request function's `inbox` (inbox.js),
+  // which opens the sealed payment fields for the operator. The old `requests`
+  // op here, which handed out the view as it stood, was removed on 30 Oct 2026:
+  // nothing called it, and since migration 054 it could only have shown
+  // sealed numbers.
   //
   // The approval writes the subscription row and nothing else does — that is
   // the rule from premium_backend_spec.md and it is why this goes through the
   // RPC rather than inserting into `subscriptions` from here.
-  if (body.op === 'requests') {
-    const { data, error } = await admin()
-      .from('pending_requests').select('*').order('submitted_at');
-    if (error) return json({ error: 'requests_failed', detail: error.message }, 500, req);
-    return json({ requests: data ?? [] }, 200, req);
-  }
-
   if (body.op === 'approve') {
     const id = String(body.id ?? '');
     const days = Math.max(1, Math.min(Number(body.days ?? 365), 3650));
@@ -2781,7 +2779,11 @@ async function handleOp(
       if (!got.ok) return json({ error: 'backup_unreadable', detail: got.status }, 502, req);
       const gz = await openFile(k, new Uint8Array(await got.arrayBuffer()), BACKUP_AAD);
       if (!gz) return json({ error: 'backup_unopenable' }, 500, req);
-      return json({ b64: toB64(gz), name: name.slice(0, -'.sealed'.length) }, 200, req);
+      // `url` as well, for a console page from before b64 (status.js reads
+      // b64 first): a backup is ~100 KB, so a data: link is no burden.
+      const b64 = toB64(gz);
+      return json({ b64, url: 'data:application/gzip;base64,' + b64,
+        name: name.slice(0, -'.sealed'.length) }, 200, req);
     }
     const url = await presignPut(MEDIA_BUCKET, key, { 'X-Amz-Expires': '600' }, 'GET');
     return json({ url, name }, 200, req);

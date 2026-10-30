@@ -67,6 +67,7 @@
 // public and Actions logs on it are public.
 
 import { BACKUP_AAD, BACKUP_KEY_INFO, derivedKey, openFile, sealFile } from './pii.ts';
+import { namingKey, opaqueName } from './naming.ts';
 
 const R2_ACCOUNT_ID = Deno.env.get('R2_ACCOUNT_ID')!;
 const R2_ACCESS_KEY_ID = Deno.env.get('R2_ACCESS_KEY_ID')!;
@@ -1192,6 +1193,24 @@ async function botCommand(chatId: string, raw: string, req: Request): Promise<Re
   return done('unknown');
 }
 
+/// The tail a file forwarded to the bot is stored under (30 Oct 2026). With
+/// the Edge secret R2_NAMING_KEY set — the switch the console's uploads use
+/// (naming.ts) — the name the file had in Telegram, often a film's full title
+/// with its year and source, is not in the key: `<kind>/<32 hex>.<ext>`. It
+/// is still in ingest_jobs.file_name, where the console and the bot read it.
+///
+/// THE FOLDER IN FRONT IS STILL THE ONE THE OPERATOR TYPED. The bot's
+/// /folder, /info and /retry, an album's caption reaching its siblings, and
+/// attaching a folder to a title all find a folder as the key's first
+/// segment (migrations 023, 024, 033); an opaque folder there is a change to
+/// each of them, recorded in docs/BACKLOG.md, not something to slip in here.
+async function tailFor(prefix: string, filename: string): Promise<string> {
+  if (!await NAMING) return keyTail(prefix, filename);
+  const dot = filename.lastIndexOf('.');
+  return `${prefix}/${opaqueName(dot > 0 ? filename.slice(dot + 1) : '')}`;
+}
+const NAMING: Promise<CryptoKey | null> = namingKey(Deno.env.get('R2_NAMING_KEY') ?? '');
+
 /// The file out of a Telegram message, whichever way it was sent.
 ///
 /// FOUR SHAPES AND THEY ARE NOT INTERCHANGEABLE. A film sent as a VIDEO is
@@ -1424,7 +1443,7 @@ Deno.serve(async (req: Request) => {
         p_kind: file.kind,
         p_bucket: bucketFor(file.kind),
         p_folder: chosen || slugify(caption),
-        p_key_tail: keyTail(file.kind, file.name),
+        p_key_tail: await tailFor(file.kind, file.name),
         p_media_group: mediaGroup,
         // THE WHOLE CAPTION, not just the line the folder came from. The
         // operator types the name, a blank line and three paragraphs of

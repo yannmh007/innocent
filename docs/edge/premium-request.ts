@@ -47,8 +47,8 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import {
-  blindIndex, maskPhone, maskReference, normaliseReference, open, piiKeys, seal,
-  type PiiKeys,
+  blindIndex, derivedKey, maskPhone, maskReference, normaliseReference, open, openFile,
+  piiKeys, PROOF_KEY_INFO, proofAad, seal, sealFile, toB64, type PiiKeys,
 } from './pii.ts';
 
 const SERVICE_KEY = Deno.env.get('SB_SERVICE_KEY') ??
@@ -61,8 +61,21 @@ const TG_CHATS = (Deno.env.get('TELEGRAM_CHAT_IDS') ?? '')
 const PII: Promise<PiiKeys | null> = piiKeys(
   Deno.env.get('PII_ENC_KEY') ?? '', Deno.env.get('PII_INDEX_KEY') ?? '');
 
+// THE SCREENSHOT TOO (30 Oct 2026, migration 056). A KPay receipt shows the
+// payer's name, number, the amount and the transaction id — the same facts
+// sealed above, as a picture. With PII_ENC_KEY set it is stored sealed
+// (pii.ts sealFile, a key derived for receipts alone, the request id as
+// associated data) at `<user>/<request>.sealed`, and the console's `proofs`
+// opens it here and hands it over as a data: picture. A leaked service key
+// reads the bucket and gets bytes. Receipts filed before stay as they were.
+const PROOF_KEY: Promise<CryptoKey | null> =
+  derivedKey(Deno.env.get('PII_ENC_KEY') ?? '', PROOF_KEY_INFO);
+
 const BUCKET = 'payment-proofs';
 const MAX_BYTES = 5 * 1024 * 1024;
+/// How many megabytes of opened receipts one `proofs` answer carries; `more`
+/// names the ones left for the next.
+const PROOF_BATCH_BYTES = 6 * 1024 * 1024;
 const MAX_PENDING = 3;
 const MAX_PER_DAY = 6;
 
@@ -198,7 +211,9 @@ function jwtClaims(token: string): Record<string, unknown> {
 //   { op: 'pulse' }               → { pending, unseen, newest }
 //   { op: 'inbox', status }       → { requests, counts }   (pending|approved|rejected|all)
 //   { op: 'seen', ids }           → marks those still unseen as seen
-//   { op: 'proofs', ids? }        → { urls: { id: signedUrl } } for 10 minutes
+//   { op: 'proofs', ids? }        → { urls: { id: url }, more? } — a sealed receipt
+//                                   opened, as a data: picture; an older one as a
+//                                   signed address for 10 minutes. `more`: ask again
 //   { op: 'approve', id, days, note? }
 //   { op: 'reject', id, note }    → the note is what the payer's app shows
 //
@@ -296,16 +311,38 @@ async function consoleOp(
   if (op === 'proofs') {
     const ids = Array.isArray(body.ids) ? idList(body.ids, 60) : null;
     let q = admin.from('premium_requests')
-      .select('id, proof_path').not('proof_path', 'is', null);
+      .select('id, proof_path, proof_bytes').not('proof_path', 'is', null);
     q = ids ? q.in('id', ids) : q.eq('status', 'pending');
     const { data } = await q;
     const urls: Record<string, string> = {};
+    const more: string[] = [];
+    const pk = await PROOF_KEY;
+    let budget = PROOF_BATCH_BYTES;
+    let opened = 0;
     for (const r of data ?? []) {
-      const { data: signed } = await admin.storage.from(BUCKET)
-        .createSignedUrl(String(r.proof_path), 600);
-      if (signed?.signedUrl) urls[String(r.id)] = signed.signedUrl;
+      const id = String(r.id);
+      const path = String(r.proof_path);
+      if (!path.endsWith('.sealed')) {
+        const { data: signed } = await admin.storage.from(BUCKET).createSignedUrl(path, 600);
+        if (signed?.signedUrl) urls[id] = signed.signedUrl;
+        continue;
+      }
+      // Opened here, so a few at a time: at least one, then as many as fit.
+      const size = Number(r.proof_bytes ?? 0) || MAX_BYTES;
+      if (opened > 0 && size > budget) {
+        more.push(id);
+        continue;
+      }
+      opened++;
+      budget -= size;
+      if (!pk) continue;   // sealed, and the key is gone: shown as no picture
+      const { data: blob } = await admin.storage.from(BUCKET).download(path);
+      if (!blob) continue;
+      const img = await openFile(pk, new Uint8Array(await blob.arrayBuffer()), proofAad(id));
+      const kind = img ? sniff(img) : null;
+      if (img && kind) urls[id] = `data:${kind.mime};base64,${toB64(img)}`;
     }
-    return json({ urls });
+    return json(more.length ? { urls, more } : { urls });
   }
 
   if (op === 'approve' || op === 'reject') {
@@ -476,9 +513,11 @@ Deno.serve(async (req) => {
   const id = crypto.randomUUID();
   let proofPath: string | null = null;
   if (image && kind) {
-    proofPath = `${user.id}/${id}.${kind.ext}`;
-    const { error: upErr } = await admin.storage.from(BUCKET)
-      .upload(proofPath, image, { contentType: kind.mime, upsert: false });
+    const pk = await PROOF_KEY;
+    proofPath = pk ? `${user.id}/${id}.sealed` : `${user.id}/${id}.${kind.ext}`;
+    const stored = pk ? await sealFile(pk, image, proofAad(id)) : image;
+    const { error: upErr } = await admin.storage.from(BUCKET).upload(proofPath, stored,
+      { contentType: pk ? 'application/octet-stream' : kind.mime, upsert: false });
     if (upErr) {
       console.log(JSON.stringify({ upload_failed: upErr.message }));
       return json({ code: 'failed' }, 500);

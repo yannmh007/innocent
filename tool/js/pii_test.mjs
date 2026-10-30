@@ -115,6 +115,18 @@ check('a short value is masked whole', pii.maskPhone('123') === '•••' && p
     Buffer.from(pii.BACKUP_KEY_INFO), 32)).toString('hex');
   check('the derivation vector is the one restore_backup_test.py pins',
     vec === '138cd64bae9bf39faf2071a0abdc3921568565bbd5c867078d11f586fd3f62c0');
+  // A payment screenshot: its own derived key, and its request as the label.
+  const pk = await pii.derivedKey(b64, pii.PROOF_KEY_INFO);
+  const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, ...randomBytes(200)]);
+  const receipt = await pii.sealFile(pk, png, pii.proofAad(id));
+  check('a receipt opens for its own request',
+    Buffer.from(await pii.openFile(pk, receipt, pii.proofAad(id))).equals(Buffer.from(png)));
+  check('a receipt moved to another request does not open',
+    (await pii.openFile(pk, receipt, pii.proofAad('00000000-0000-4000-8000-000000000000'))) === null);
+  check('the backup key does not open a receipt, nor the receipt key a backup',
+    (await pii.openFile(bk, receipt, pii.proofAad(id))) === null &&
+    (await pii.openFile(pk, sealedFile, pii.BACKUP_AAD)) === null &&
+    pii.PROOF_KEY_INFO !== pii.BACKUP_KEY_INFO);
   check('toB64 is standard base64, in pieces',
     pii.toB64(gz) === Buffer.from(gz).toString('base64') && pii.toB64(new Uint8Array()) === '');
 }

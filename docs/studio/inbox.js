@@ -261,15 +261,6 @@ async function loadRequests() {
   }
   rqDrawControls(inbox.counts);
   const rows = inbox.requests || [];
-  // The receipts, as ten-minute signed addresses. A failure here leaves the
-  // list usable: everything but the picture is still on the card.
-  let urls = {};
-  const withProof = rows.filter((r) => r.proof_path).map((r) => r.id);
-  if (withProof.length) {
-    try {
-      urls = (await api({ op: 'proofs', ids: withProof.slice(0, 60) }, PREMIUM_API)).urls || {};
-    } catch (e) { say('bad', 'Receipts could not be loaded: ' + String(e.message || e)); }
-  }
   host.textContent = '';
   if (!rows.length) {
     host.append(el('div', { className: 'rq-empty' }, [
@@ -279,7 +270,9 @@ async function loadRequests() {
         : 'Nothing here yet.')),
     ]));
   }
-  for (const r of rows) host.append(rqCard(r, urls[r.id]));
+  for (const r of rows) host.append(rqCard(r, null));
+  // The receipts after the cards, which are usable without them.
+  rqFillProofs(host, rows);
 
   // Marked seen when a person has the list in front of them, not when a
   // background tab loads it.
@@ -292,14 +285,46 @@ async function loadRequests() {
   }
 }
 
-function rqCard(r, url) {
-  const pending = r.status === 'pending';
+// The receipts, into the cards already drawn. A sealed one (premium-request,
+// 30 Oct 2026) comes back opened, as a data: picture, a few megabytes per
+// answer — `more` names the ones for the next; an older one as a ten-minute
+// signed address. A failure leaves the list usable: everything but the
+// picture is on the card.
+async function rqFillProofs(host, rows) {
+  const byId = new Map(rows.map((r) => [r.id, r]));
+  let todo = rows.filter((r) => r.proof_path).map((r) => r.id).slice(0, 60);
+  for (let round = 0; todo.length && round < 30; round++) {
+    let got;
+    try {
+      got = await api({ op: 'proofs', ids: todo }, PREMIUM_API);
+    } catch (e) {
+      say('bad', 'Receipts could not be loaded: ' + String(e.message || e));
+      return;
+    }
+    for (const [id, url] of Object.entries(got.urls || {})) {
+      const slot = host.querySelector('.rq-proof[data-rq="' + CSS.escape(id) + '"]');
+      if (slot && byId.has(id)) slot.replaceWith(rqProof(byId.get(id), url));
+    }
+    const more = (Array.isArray(got.more) ? got.more : []).filter((id) => todo.includes(id));
+    if (more.length >= todo.length) return;   // no step forward: stop, not loop
+    todo = more;
+  }
+}
+
+function rqProof(r, url) {
   const proof = url
     ? el('button', { type: 'button', className: 'rq-proof', title: 'Open the receipt' },
       [el('img', { src: url, alt: 'Payment receipt', loading: 'lazy' })])
     : el('div', { className: 'rq-proof none' },
       text(r.proof_path ? 'receipt…' : 'no screenshot'));
+  proof.dataset.rq = r.id;
   if (url) proof.onclick = () => rqLightbox(url, r);
+  return proof;
+}
+
+function rqCard(r, url) {
+  const pending = r.status === 'pending';
+  const proof = rqProof(r, url);
 
   const who = r.display_name || r.email || r.phone || String(r.user_id || r.id).slice(0, 8);
   const badges = [];
@@ -422,13 +447,27 @@ function rqLightbox(url, r) {
   const img = el('img', { src: url, alt: 'Payment receipt' });
   const cap = el('div', { className: 'rq-light-cap' }, text(
     [r.display_name || r.email, r.plan_id, r.price_shown].filter(Boolean).join(' · ')));
-  const full = el('a', { href: url, target: '_blank', rel: 'noopener', className: 'b' },
+  // A browser will not open a data: address in a new tab; the same bytes as a
+  // blob: address it will.
+  let href = url;
+  if (url.startsWith('data:')) {
+    const comma = url.indexOf(',');
+    const bin = atob(url.slice(comma + 1));
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    href = URL.createObjectURL(new Blob([bytes], { type: url.slice(5, url.indexOf(';')) }));
+  }
+  const full = el('a', { href, target: '_blank', rel: 'noopener', className: 'b' },
     text('Open original'));
   const box = el('div', { className: 'rq-light' },
     [img, el('div', { className: 'rq-light-bar' }, [cap, full])]);
   box.setAttribute('role', 'dialog');
   box.setAttribute('aria-label', 'Receipt');
-  const close = () => { box.remove(); document.removeEventListener('keydown', esc); };
+  const close = () => {
+    box.remove();
+    document.removeEventListener('keydown', esc);
+    if (href !== url) setTimeout(() => URL.revokeObjectURL(href), 60000);
+  };
   const esc = (e) => { if (e.key === 'Escape') close(); };
   box.onclick = (e) => { if (e.target !== full) close(); };
   document.addEventListener('keydown', esc);

@@ -36,26 +36,47 @@ does it.
   `f/<20 hex>/<kind>/<32 hex>.<ext>`, the Files page must show "test-naming".
   Delete the test title after.
 
+### Security — done 30 Oct, to see working
+- **Database backup sealed** (7d3b3d9, ingest v38, migration 055): new backups
+  are `….json.gz.sealed`; the sixteen older ones are sealed a few per runner
+  tick (`house.resealed` in the tick's answer). Check after a day:
+  `select count(*) from db_backups where deleted_at is null and object_key not
+  like '%.sealed'` is 0, and Status → Download still gives a .json.gz that
+  `tool/restore_backup.py --list` reads. The owner keeps a copy of
+  PII_ENC_KEY outside Supabase (RUNBOOK part 4) — without it a lost project's
+  off-site backups do not open.
+- **B2 keeps deleted files as hidden versions** unless the bucket's Lifecycle
+  is "Keep only the last version". Until the owner sets that, the plain
+  backups deleted off-site (and every pruned one) are still in B2 as hidden
+  versions. Owner, once: B2 → Buckets → the private bucket → Lifecycle
+  Settings → Keep only the last version of the file.
+- **Payment screenshots sealed** (migration 056): new receipts are
+  `<user>/<request>.sealed`; the console's `proofs` opens them (data:
+  pictures, a few MB per answer, `more` for the rest). Receipts filed before
+  stay as images. A copy also goes to the owner's Telegram chat as before.
+- **Telegram ingest file names**: with R2_NAMING_KEY, a forwarded file's key
+  is `<folder>/<kind>/<32 hex>.<ext>` — the Telegram file name is no longer in
+  it. Check with the next forwarded file.
+- **studio.ts `requests` op** removed (unused; inbox goes through
+  premium-request).
+- **Google sign-in nonce** (29b71b2) and **Transfer** limits (55a89e3): in the
+  app, ship with 1.64.78. The nonce needs one real Google sign-in on the
+  owner's phone before release.
+
 ### Security, next
-- **Encrypt the daily database backup — HIGH.** `_backup/db/…json.gz` in R2
-  and its off-site copy in B2 hold every public table AND the account list
-  (emails, phones), gzipped, not encrypted. A leaked R2 or B2 token is the
-  whole database. Seal it (AES-256-GCM, an Edge secret such as
-  BACKUP_ENC_KEY kept in the owner's password manager) and teach
-  tool/restore_backup.py to open it.
-- **Telegram ingest keys**: ingest.ts still names objects
-  `<folder>/<kind>/<date>-<file name>-<rand>`; give it naming.ts and show
-  folder labels on the Telegram review page (review.js).
-- **Payment screenshots**: still stored as images (private bucket, 10-minute
-  signed URLs). Seal them too and let the console view them through the
-  function.
-- **Google sign-in nonce**: hashed nonce to Google, raw nonce to GoTrue, so a
-  stolen ID token cannot be replayed. Needs one real sign-in on the owner's
-  phone before release (no lab can sign in with Google).
-- **studio.ts `requests` op** (legacy, unused by the console) returns the
-  pending view, whose numbers are now sealed: remove it or open them.
-- **Transfer**: a free-space check on browser uploads; a per-address limit on
-  /pair requests now that every one asks the sender.
+- **Telegram ingest FOLDERS still plain**: the folder segment is what the
+  operator typed (`spider-man/video/…`). Making it `f/<20 hex>` like console
+  uploads means every place that takes a folder as the key's first segment
+  learns the two-segment form and the label table: enqueue_ingest's album
+  inheritance and inbox move (033), bot_folder_stats / bot_folders_recent /
+  bot_retry_folder / the /folder session match (033), attach_ingest_folder
+  (024), review.js's grouping, and the bot's replies (labels, not hashes). One
+  migration with a `key_folder(text)` helper used in all of them, and
+  ingest.ts translating names both ways. Test with the bot end to end (a
+  /folder session, an album with the caption on the third file, /retry).
+- **Old payment screenshots**: reseal the receipts filed before 30 Oct like
+  the backups (premium-request has the key; storage download, seal, upload
+  `.sealed`, update proof_path, remove the image).
 
 ### Quality
 - Two sealed stream-cache timing tests fail under the full parallel run and
