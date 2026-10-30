@@ -82,24 +82,18 @@ jobs:
           sparse-checkout: tool/ingest_lanes.py
           sparse-checkout-cone-mode: false
 
+      # Counted once the batch has landed: the webhook starts this on the
+      # first file of a batch, and the rest follow a second or two apart.
+      # While the count grows it is read again every 10 s, a minute at most;
+      # an empty queue is not waited on. Anything unreadable is one lane:
+      # the old workflow, never none.
       - name: Count the files waiting
         id: depth
         env:
           SB_URL: ${{ secrets.SUPABASE_URL }}
           RUNNER_SECRET: ${{ secrets.INGEST_SECRET }}
           MAX_LANES: ${{ vars.INGEST_LANES }}
-        run: |
-          set -uo pipefail
-          answer='{}'
-          if [ -n "${SB_URL:-}" ] && [ -n "${RUNNER_SECRET:-}" ]; then
-            answer=$(curl -sS -m 20 -X POST "$SB_URL/functions/v1/ingest" \
-              -H "Authorization: Bearer $RUNNER_SECRET" \
-              -H 'Content-Type: application/json' -d '{"op":"depth"}' || echo '{}')
-          fi
-          # Anything unreadable is one lane: the old workflow, never none.
-          lanes=$(printf '%s' "$answer" | python3 tool/ingest_lanes.py "${MAX_LANES:-}")
-          echo "lanes=$lanes" >> "$GITHUB_OUTPUT"
-          echo "lanes: $lanes"
+        run: python3 tool/ingest_lanes.py --settle "${MAX_LANES:-}" >> "$GITHUB_OUTPUT"
 
   fetch:
     needs: plan

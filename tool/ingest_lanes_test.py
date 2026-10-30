@@ -49,13 +49,42 @@ for junk in ('', '{}', 'not json', '<html>502</html>', '{"queued": "x"}', '[]', 
     check('an unreadable answer (%r) is one lane' % junk[:12], L(junk, '10') == [1])
 check('negative counts are none', L('{"queued": -4, "running": -1}', '10') == [1])
 
+# Waiting for a batch to land (--settle): Telegram delivers a batch a file
+# every second or two, and the workflow starts on the first.
+def run_settle(readings, max_wait=60):
+    seq = list(readings)
+    slept = []
+    def read():
+        return seq.pop(0) if len(seq) > 1 else seq[0]
+    out = il.settle(read, slept.append, step=10, max_wait=max_wait)
+    return out, slept
+
+q = lambda n: '{"queued": %d, "running": 0}' % n
+out, slept = run_settle([q(0)])
+check('an empty queue is not waited on', slept == [] and il.queued_of(out) == 0)
+out, slept = run_settle([q(5), q(8), q(8)])
+check('five, then eight, then eight: eight lanes after 20 s',
+      il.queued_of(out) == 8 and slept == [10, 10] and il.lanes(out, '10') == list(range(1, 9)))
+out, slept = run_settle([q(3), q(3)])
+check('a count that does not grow is taken after one look', il.queued_of(out) == 3 and slept == [10])
+out, slept = run_settle([q(1), q(2), q(3), q(4), q(5), q(6), q(7), q(8), q(9)])
+check('never more than a minute', sum(slept) == 60 and il.queued_of(out) == 7)
+out, slept = run_settle([q(6), q(2)])
+check('a count that falls (an older run\'s lanes took some) is taken at once',
+      il.queued_of(out) == 2 and slept == [10])
+out, slept = run_settle(['{}'])
+check('an unreadable first answer is one lane, at once', slept == [] and il.lanes(out, '') == [1])
+check('the settled answer\'s queue, read the same way as the count',
+      il.queued_of('not json') == 0 and il.queued_of(q(4)) == 4)
+
 # The workflow, read as text: the shape that makes the lanes safe.
 wf = open(os.path.join(ROOT, '.github', 'workflows', 'ingest.yml'), encoding='utf-8').read()
 check('a lane is one job at a time across runs',
       'group: ingest-lane-${{ matrix.lane }}' in wf and 'cancel-in-progress: false' in wf)
 check('the lanes come from the plan', 'lane: ${{ fromJSON(needs.plan.outputs.lanes) }}' in wf)
-check('the plan reads its count with this script, checked out',
-      'python3 tool/ingest_lanes.py' in wf and 'sparse-checkout: tool/ingest_lanes.py' in wf)
+check('the plan reads its count with this script, after the batch lands, checked out',
+      'python3 tool/ingest_lanes.py --settle' in wf and 'sparse-checkout: tool/ingest_lanes.py' in wf
+      and '>> "$GITHUB_OUTPUT"' in wf)
 check('each lane tells the runner its number (the sign-in gap)',
       'INGEST_LANE: ${{ matrix.lane }}' in wf)
 check('no more than ten at once', 'max-parallel: 10' in wf)
