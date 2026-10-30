@@ -20,6 +20,10 @@
 // configuration faults as a user cancel. A swap would cost a day. It costs
 // one `expect` to notice instead.
 
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:crypto/crypto.dart' show sha256;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -88,6 +92,29 @@ void main() {
         ApiAccountRepository(client).signInWithGoogle(),
         throwsA(anything),
       );
+    });
+  });
+
+  group('the Google nonce', () {
+    test('Google is given the SHA-256 of a value only this process knows', () {
+      final n = ApiAccountRepository.googleNonce;
+      expect(n.raw.length, greaterThanOrEqualTo(43), reason: '32 random bytes');
+      expect(n.hashed, sha256.convert(utf8.encode(n.raw)).toString(),
+          reason: 'GoTrue compares the token\'s nonce with the hex SHA-256 of '
+              'the one sent with it');
+      expect(n.hashed, isNot(contains(n.raw)));
+      expect(ApiAccountRepository.googleNonce.raw, n.raw,
+          reason: 'one per process: the plugin is initialised once');
+    });
+
+    test('the hash goes to Google and the value to the token exchange', () {
+      // The plugin cannot run here, so the two call sites are read: without
+      // the hash in initialize() the token carries no nonce, and without the
+      // value in the exchange the auth server refuses one that does.
+      final src = File('lib/features/video_hub/data/api/api_account_repository.dart')
+          .readAsStringSync();
+      expect(RegExp(r'initialize\([^)]*nonce: _hashedNonce\(\)').hasMatch(src), isTrue);
+      expect(RegExp(r"'id_token': idToken,\s*'nonce': _rawNonce").hasMatch(src), isTrue);
     });
   });
 

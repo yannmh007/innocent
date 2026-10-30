@@ -1,6 +1,9 @@
-import 'dart:typed_data';
 import 'dart:convert';
+import 'dart:math';
+import 'dart:typed_data';
 
+import 'package:crypto/crypto.dart' show sha256;
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -120,12 +123,36 @@ class ApiAccountRepository implements AccountRepository {
   /// singleton. A failure is deliberately NOT remembered - see below.
   static Future<void>? _googleInit;
 
+  /// THE NONCE (2026-10-30). Google is given the SHA-256 of a random value
+  /// made once per process and writes it into the ID token; the exchange
+  /// below sends the value itself, and the auth server checks the one against
+  /// the other. An ID token that leaks — a log, a hostile app, a proxy — is
+  /// then useless to anyone else: they would need a value that never left
+  /// this process. Once per process because the plugin is initialised once
+  /// (below); every sign-in in it carries the same pair.
+  static final String _rawNonce = _newNonce();
+
+  static String _newNonce() {
+    final rnd = Random.secure();
+    return base64UrlEncode(List<int>.generate(32, (_) => rnd.nextInt(256)))
+        .replaceAll('=', '');
+  }
+
+  /// What Google is given: the hex SHA-256 of [_rawNonce], the form the auth
+  /// server compares the token's `nonce` claim with.
+  static String _hashedNonce() => sha256.convert(utf8.encode(_rawNonce)).toString();
+
+  @visibleForTesting
+  static ({String raw, String hashed}) get googleNonce =>
+      (raw: _rawNonce, hashed: _hashedNonce());
+
   static Future<void> _ensureGoogleReady() async {
     final pending = _googleInit;
     if (pending != null) return pending;
 
     final started = GoogleSignIn.instance.initialize(
       serverClientId: BackendConfig.googleServerClientId,
+      nonce: _hashedNonce(),
     );
     _googleInit = started;
     try {
@@ -222,7 +249,12 @@ class ApiAccountRepository implements AccountRepository {
     final body = await _api.postJson(
       '/auth/v1/token',
       query: const <String, String>{'grant_type': 'id_token'},
-      body: <String, dynamic>{'provider': 'google', 'id_token': idToken},
+      // The raw nonce: the token carries its hash (see [_rawNonce]).
+      body: <String, dynamic>{
+        'provider': 'google',
+        'id_token': idToken,
+        'nonce': _rawNonce,
+      },
       authenticated: false,
     );
     return _adoptSession(body);
