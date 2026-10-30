@@ -95,6 +95,10 @@ CHECKS = [
      'a backup that cannot be put back: a child row inserted before its parent '
      'fails the whole restore, and a row holding the quote tag would end the '
      'statement early and run the rest of the row as SQL'),
+    ('netlab_sync.py', None,
+     'tool/netlab testing other versions than the APK ships: the app moved '
+     'to BouncyCastle 1.86 and netlab kept 1.81, so its green described a '
+     'build nobody installs'),
     ('gradle_lock_test.py', None,
      'an Android library the dependency scan never sees: the scan read '
      'pubspec.lock alone, so smbj, sshj, Bouncy Castle, Media3 and every '
