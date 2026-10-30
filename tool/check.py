@@ -216,6 +216,11 @@ def main() -> int:
          'what request-playback puts in `url` when a film\'s original is only in Telegram',
          'every app older than the ladder, and every download, handed a URL '
          'to an original the storage policy has taken out of R2'),
+        ('naming_test.mjs',
+         'R2 keys that say nothing about what they hold',
+         'a folder that is a plain hash of a film\'s name, an upload resumed '
+         'into another folder, or a new key that the studio, the frames '
+         'check or the Files page would refuse'),
         ('pii_test.mjs',
          'a payer\'s KPay number and transaction id, sealed and indexed',
          'a leaked copy of the database carrying every payer\'s number in '

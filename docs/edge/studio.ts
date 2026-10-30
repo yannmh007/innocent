@@ -46,6 +46,7 @@
 // unauthenticated GET says only that the service is alive.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { namingKey, OPAQUE_FOLDER, opaqueFolder, opaqueName } from './naming.ts';
 
 const R2_ACCOUNT_ID = Deno.env.get('R2_ACCOUNT_ID')!;
 const R2_ACCESS_KEY_ID = Deno.env.get('R2_ACCESS_KEY_ID')!;
@@ -629,6 +630,23 @@ function safeKey(prefix: string, filename: string, folder?: string): string {
   return dir ? `${dir}/${prefix}/${name}` : `${prefix}/${name}`;
 }
 
+/// Keys that say nothing about what they hold (docs/edge/naming.ts), once the
+/// Edge secret R2_NAMING_KEY is set; null until then, and keys are made as
+/// before.
+const NAMING: Promise<CryptoKey | null> = namingKey(Deno.env.get('R2_NAMING_KEY') ?? '');
+
+/// The key a new upload goes to. With the naming key, the file's own name is
+/// not used at all — only its extension — and the folder is the one the page
+/// was given: an opaque one for a new title (`checkFolder` hands it out), or an
+/// existing title's own, whatever it was called when the title was made.
+async function mintKey(prefix: string, filename: string, folder: string): Promise<string> {
+  if (!(await NAMING)) return safeKey(prefix, filename, folder);
+  const dot = filename.lastIndexOf('.');
+  const name = opaqueName(dot > 0 ? filename.slice(dot + 1) : '');
+  const dir = slugifyPath(folder ?? '');
+  return dir ? `${dir}/${prefix}/${name}` : `${prefix}/${name}`;
+}
+
 /// The one shape allowed in a path segment.
 ///
 /// Shared by the folder and the file name so a name cannot be legal in one
@@ -1115,7 +1133,7 @@ async function handleOp(
     // No folder means a caller that predates foldering. It still works and
     // still lands in `video/…` — it simply has no title prefix. Refusing it
     // would break a page held in a browser cache for the sake of tidiness.
-    const objectKey = safeKey(prefix, filename, String(body.folder ?? ''));
+    const objectKey = await mintKey(prefix, filename, String(body.folder ?? ''));
 
     return json({
       uploadUrl: await presignPut(bucket, objectKey),
@@ -1156,7 +1174,7 @@ async function handleOp(
       : 'video';
     const bucket = kind === 'video' ? MEDIA_BUCKET : PUBLIC_BUCKET;
     const prefix = kind === 'video' ? 'video' : kind === 'thumb' ? 'thumb' : 'photo';
-    const objectKey = safeKey(prefix, filename, String(body.folder ?? ''));
+    const objectKey = await mintKey(prefix, filename, String(body.folder ?? ''));
 
     const signed = await signRequest('POST', bucket, objectKey, { uploads: '' }, '');
     const res = await fetch(signed.url, { method: 'POST', headers: signed.headers });
@@ -1375,19 +1393,26 @@ async function handleOp(
     const wanted = slugifyPath(String(body.folder ?? ''));
     if (!wanted) return json({ ok: false, reason: 'empty', folder: '' }, 200, req);
 
+    // WITH THE NAMING KEY the folder is not the name typed but its keyed hash
+    // (docs/edge/naming.ts); the name becomes the folder's display name when
+    // the title is made. Taken if either is a title's folder — one made before
+    // the key under the plain name counts too.
+    const key = await NAMING;
+    const folder = key ? await opaqueFolder(key, wanted) : wanted;
     const { data } = await admin().from('titles')
-      .select('id, title').eq('slug', wanted).maybeSingle();
+      .select('id, title').in('slug', key ? [folder, wanted] : [wanted]).limit(1).maybeSingle();
     return json({
       ok: !data,
-      folder: wanted,
+      folder,
+      label: wanted,
       // Naming the occupant rather than just refusing: "taken" sends an
       // operator hunting through the catalogue; "taken by Spider-Man (2019)"
       // usually ends the question.
       takenBy: data ? String((data as Record<string, unknown>).title ?? '') : null,
       preview: {
-        video: `${MEDIA_BUCKET}/${wanted}/video/…`,
-        photo: `${PUBLIC_BUCKET}/${wanted}/photo/…`,
-        thumb: `${PUBLIC_BUCKET}/${wanted}/thumb/…`,
+        video: `${MEDIA_BUCKET}/${folder}/video/…`,
+        photo: `${PUBLIC_BUCKET}/${folder}/photo/…`,
+        thumb: `${PUBLIC_BUCKET}/${folder}/thumb/…`,
       },
     }, 200, req);
   }
@@ -1603,6 +1628,15 @@ async function handleOp(
     const ins = await db.from('title_assets').insert(rows);
     if (ins.error) {
       return json({ error: 'asset_insert', detail: ins.error.message }, 500, req);
+    }
+
+    // An opaque folder gets the name the operator typed as its display name,
+    // so the Files page shows "spider-man/movies", not "f/3a9c…". Best
+    // effort: a missing label is a name to type again, not a lost title.
+    const made = slugifyPath(String(body.folder ?? ''));
+    const label = String(body.folderLabel ?? '').trim();
+    if (OPAQUE_FOLDER.test(made) && label) {
+      await admin().rpc('folder_label_set', { p_folder: made, p_label: label, p_actor: who.id });
     }
 
     return json({ id: row.id, title, status: wantPublished ? 'published' : 'draft' }, 200, req);
