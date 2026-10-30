@@ -109,4 +109,6 @@ with tempfile.TemporaryDirectory() as d:
     check('the CLI fails on a report with no libraries in it', rc == 1)
 
 print(f'\n{checks - fails} of {checks} checks passed')
+if not fails:
+    print(f'=== {checks} check(s) on the Gradle report read as the APK libraries ===')
 sys.exit(1 if fails else 0)

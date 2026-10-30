@@ -95,6 +95,10 @@ CHECKS = [
      'a backup that cannot be put back: a child row inserted before its parent '
      'fails the whole restore, and a row holding the quote tag would end the '
      'statement early and run the rest of the row as SQL'),
+    ('pins_test.py', None,
+     'a pinned download read wrong, so its check checks nothing; the lab '
+     'and the transcode job running different ffmpeg builds; and a '
+     'floating `latest` build left in a job that holds a secret'),
     ('netlab_sync.py', None,
      'tool/netlab testing other versions than the APK ships: the app moved '
      'to BouncyCastle 1.86 and netlab kept 1.81, so its green described a '

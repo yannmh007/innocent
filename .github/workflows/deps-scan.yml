@@ -40,6 +40,7 @@ on:
       - 'android/settings.gradle.kts'
       - 'tool/gradle_lock.py'
       - 'tool/osv-scanner-android.toml'
+      - 'tool/pins.py'
       - '.github/workflows/deps-scan.yml'
   workflow_dispatch:
 
@@ -129,3 +130,22 @@ jobs:
         run: |
           /tmp/osv-scanner scan source --config tool/osv-scanner-android.toml \
             --lockfile "$RUNNER_TEMP/scan/gradle.lockfile"
+
+  # Every file a workflow downloads from outside is pinned by SHA-256 in that
+  # workflow; this downloads each and compares, so a pin that rots (the
+  # release deleted, the file swapped) is a red mark here, not a fallback or
+  # a failure on the day a film is being made. tool/pins.py reads the pins
+  # out of the workflow files, and names the next ffmpeg build to pin.
+  pins:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: The newest ffmpeg build of our line, to pin
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 tool/pins.py ffmpeg | tee -a "$GITHUB_STEP_SUMMARY"
+
