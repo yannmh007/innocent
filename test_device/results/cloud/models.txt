@@ -29,6 +29,7 @@ a03su          samsung   Galaxy A03s                  33
 a03sutfn       samsung   Galaxy A03s                  33
 a04s           samsung   Galaxy A04s                  34
 a05s           samsung   Galaxy A05s                  35
+a05sub         samsung   Galaxy A05s                  35
 a06            samsung   Galaxy A06                   35
 a10            samsung   Galaxy A10                   29
 a12            samsung   Galaxy A12                   31
@@ -157,12 +158,14 @@ p3q            samsung   Galaxy S21 Ultra 5G          34,35
 p3s            samsung   Galaxy S21 Ultra 5G          35
 pa1q           samsung   Galaxy S25                   36
 pa1qksx        samsung   Galaxy S25                   36
+pa1qsqw        samsung   Galaxy S25                   36
 pa2q           samsung   Galaxy S25+                  36
 pa2qxxx        samsung   Galaxy S25+                  36
 pa3q           samsung   Galaxy S25 Ultra             35,36
 panther        google    Pixel 7                      33
 penang         motorola  moto g53 5G                  34
 psq            samsung   Galaxy S25 Edge              35
+psqsqw         samsung   Galaxy S25 Edge              36
 q2qsqw         samsung   Galaxy Z Fold3 5G            35
 q4q            samsung   Galaxy Z Fold4               33
 q4qksx         samsung   Galaxy Z Fold4               36
