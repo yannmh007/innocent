@@ -51,7 +51,12 @@ jobs:
     # phones went on to run without anyone to read the results.
     timeout-minutes: 120
     steps:
+      # No token left in .git/config: the build runs other people's code
+      # (pub packages, Gradle plugins) and a push to main is a production
+      # deploy. Only the last step, which runs nothing but git, is given one.
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
 
       - name: Are the Firebase secrets set?
         id: ready
@@ -262,6 +267,8 @@ jobs:
         if: always() && steps.ready.outputs.ok == 'true'
         env:
           LAB_RESULTS_KEY: ${{ secrets.LAB_RESULTS_KEY }}
+          GH_TOKEN: ${{ github.token }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
           set -e
           dest=test_device/results/cloud
@@ -290,6 +297,17 @@ jobs:
             done
           fi
           echo "run ${GITHUB_RUN_ID} of ${GITHUB_SHA} on ${TAG:-?}" > "$dest/RUN.txt"
+          branch="${GITHUB_REF_NAME}"
+          # main never carries test_device/results: a run dispatched from it
+          # keeps its results in Test Lab's bucket and the summary only.
+          if [ "$branch" = "$DEFAULT_BRANCH" ]; then
+            echo "::notice::run on $branch: results not committed"; exit 0
+          fi
+          # The token for this step alone, as actions/checkout would have set
+          # it, and gone again when the step ends.
+          git config --local "http.https://github.com/.extraheader" \
+            "AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
+          trap 'git config --local --unset-all "http.https://github.com/.extraheader" || true' EXIT
           git config user.name "device-cloud"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A "$dest"
@@ -298,7 +316,6 @@ jobs:
           # changed and untracked files behind; `pull --rebase` refuses to
           # run over them, and the results were lost that way once.
           git stash --include-untracked -q || true
-          branch="${GITHUB_REF_NAME}"
           for i in 1 2 3 4; do
             git pull -q --rebase origin "$branch" && git push -q origin "HEAD:$branch" && exit 0
             sleep $((i * 5))
