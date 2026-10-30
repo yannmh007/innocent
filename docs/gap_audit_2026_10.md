@@ -28,6 +28,11 @@ what was checked, what was fixed, and what is left, with the reason.
 | Two native libraries in 1.64.69 linked for 4 KB memory pages: ML Kit's `libbarhopper_v3.so` and CameraX's `libimage_processing_util_jni.so` (the QR scanner). Android 15+ phones may run with 16 KB pages; there these do not load and the scanner crashes. | high (future) | ML Kit barcode-scanning 17.3.0, CameraX 1.4.2; `tool/apk_page_check.py` now fails any build that ships such a library. Verified in CI build 39812275343: 17 arm64 libraries, 0 that a 16 KB-page phone cannot load. In the device lab the scanner opened the camera and kept it running (run 39899577028, `flows/qr_scanner.yaml`), and on a phone with no camera says so instead of crashing (run 39897703492, `flows/qr_no_camera.yaml`) |
 | RLS policies evaluated `auth.uid()` once per row (4) | performance | `(select auth.uid())` — migration 047 |
 | 9 foreign keys without an index | performance | indexed — migration 047 |
+| 30 Oct, standards pass (Semgrep 1.183 with 842 rules, zizmor 1.31, OSV-Scanner 2.2, the OWASP MASVS checklist): the device lab and Test Lab kept the push token in `.git/config` for the whole job while third-party code ran (the lab piped Maestro's installer into bash). A push to main is a production deploy. | high | the lab's run job is read-only; a separate `keep` job, running only git, commits; Test Lab sets the token for its committing step alone. Maestro from its release, pinned by SHA-256 (2.12.0). Runs 41075543874 and 41075543751 committed their results this way |
+| The dependency scan read only `pubspec.lock`: the Android libraries were never scanned. Its first look: 186 libraries, 32 advisories in 6, two critical in BouncyCastle 1.81 | critical | BouncyCastle 1.86, Guava 33.7.2, Jackson 2.13.5 (newest for Android 7); the rest, which need minSdk 26, listed with reasons in `tool/osv-scanner-android.toml` until 31 Jan 2027 |
+| Vault lockout after wrong PINs ran on the wall clock: moving the date forward ended it (OWASP MASTG local auth) | medium | counted on the time since boot; a reboot restarts the wait. 12 tests, 5 fail on the old code (app 1.64.79) |
+| Console upload put the page's ETags into the S3 XML unchecked (admin only) | low | hex with an optional `-N`, part numbers 1-10000, or refused (studio v45) |
+| A lab run dispatched from main would have committed its results to main | low | refused: results stay in the artifact or Test Lab's bucket |
 | `offsite_max_bytes()` had a mutable `search_path` | low | fixed — migration 047 |
 | A payment's transaction number could be reused by another account unnoticed; only a byte-identical screenshot was caught. An AI-made or re-edited receipt has a new hash. | medium | `premium-request` flags a reused transaction number like a reused screenshot (owner told in red, console marks it); the console says, beside Approve, to find the payment in the KPay/Wave app first |
 | The console — the page that can delete the catalogue and name admins — had no Content-Security-Policy, and any other site could show it inside an invisible frame and line an admin's tap up with Approve or Delete (clickjacking). It renders no database text as HTML today; nothing stopped a future slip from becoming an admin takeover. | medium | the page's script moved to `app.js` and a policy allows only this site's own script files (no inline script, no handler attributes, no eval, no other host); the page starts hidden and `top.js` shows it only as the top window. `console_smoke.mjs` proves both: an injected script and an `onclick` do not run, a framed console stays hidden, and every scenario runs with zero refusals |
@@ -351,6 +356,15 @@ Sintel does not decode there.)
   certificate authorities are trusted, never one a user installed.
 * No accounts were created in the last 30 days that a bot could have made
   in bulk (none at all).
+* 30 Oct: the console writes database text only as text (`textContent`,
+  no `innerHTML` anywhere; the 109 Semgrep "jQuery" hits are DOM `append`);
+  sessions are in the Keystore and out of backups (`SessionStore`); the
+  vault's key wrapping is AES-GCM with a Keystore IV and a 128-bit tag; the
+  Android manifest exports only the launcher, media session, widget and
+  boot receivers; cleartext is allowed only off Innocent's own hosts (the
+  local network features). Analyzer: no errors or warnings, 272 notes
+  (106 `withOpacity` deprecations, 87 fire-and-forget futures, all looked
+  at: haptics, UI callbacks, the break-in photo by design).
 
 ## Looked at and left, on purpose
 
@@ -402,6 +416,11 @@ Sintel does not decode there.)
 6. **Cloudflare connector:** authorising it lets the Worker's logs and
    request counts be read directly — needed to confirm `bind: ok` from the
    field before `BIND_MODE = "enforce"`.
+7. **minSdk 24 → 26 (Android 8)?** The downloader engine's Jackson and
+   Commons Compress can only reach their fixed versions on Android 8+;
+   fourteen Jackson and seven Commons Compress advisories are accepted
+   until 31 Jan 2027 (`tool/osv-scanner-android.toml`, with why). Raising
+   minSdk drops Android 7 phones and empties that file. Owner's call.
 
 ## Next app release (after 1.64.71)
 
