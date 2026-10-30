@@ -63,6 +63,21 @@ does it.
   app, ship with 1.64.78. The nonce needs one real Google sign-in on the
   owner's phone before release.
 
+### Telegram ingest: ten at once (built 30 Oct, live with the next push to main)
+- ingest.yml opens lanes 1..(waiting + busy), at most INGEST_LANES (repository
+  variable, 10 when unset; 1 = the old one-at-a-time). Migration 057 (queue
+  depth, a lock per title for an album's places) and ingest v40 (`depth`) are
+  already live; the workflow takes effect only on main.
+- First real test: forward 3-10 licensed films at once; watch that lanes sign
+  in 20 s apart, no FLOOD_WAIT deferrals pile up, every file lands, and the
+  console's folder shows them in Telegram order.
+- **Next bottleneck: transcode is one film at a time** (`concurrency:
+  transcode`). Ten films in at once are ten ladders in a row. Its claim is
+  already per file; two or three lanes the same way would fit inside the 20
+  jobs a free account runs. Decide after the first real batch.
+- Telegram may throttle one bot's parallel downloads; a long FLOOD_WAIT
+  defers the file (not a failure) and the next run takes it.
+
 ### Security, next
 - **Telegram ingest FOLDERS still plain**: the folder segment is what the
   operator typed (`spider-man/video/…`). Making it `f/<20 hex>` like console

@@ -323,6 +323,11 @@ const studio = await import('data:text/javascript,' + encodeURIComponent(
     /startsWith\('\/'\) && !body\.edited_message/.test(ingestSrc));
   check('the folder name typed in the chat is slugified the same way as a caption',
     /const name = slugify\(arg\)/.test(ingestSrc));
+  // LANES (migration 057): the plan job's count is the runner's, like claim.
+  const depthSrc = (ingestSrc.match(/if \(op === 'depth'\) \{[^]*?\n  \}/) || [''])[0];
+  check('the queue depth is the runner\'s alone, and only two counts',
+    /sameSecret\(given, RUNNER_SECRET\)\) return json\(\{ error: 'no' \}, 403/.test(depthSrc) &&
+    /return json\(\{ queued: count\(d\.queued\), running: count\(d\.running\) \}/.test(depthSrc));
   check('the tail is sent on its own',
     /p_key_tail:\s*await tailFor\(file\.kind, file\.name\)/.test(ingestSrc));
   // WITH R2_NAMING_KEY, a forwarded file's name is not in its key (30 Oct

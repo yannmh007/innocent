@@ -83,6 +83,10 @@ CHECKS = [
      'minutes, Telegram answered FLOOD_WAIT, and seven good files had their '
      'three attempts spent in under a minute — and a wait reported as a '
      'failed attempt, which is how a slow afternoon marks a film as dead'),
+    ('ingest_lanes_test.py', None,
+     'the Telegram queue opening no lane, so nothing is fetched and nothing '
+     'fails; ten lanes and ten bot sign-ins for one photo; or a run held '
+     'behind its slowest lane while ten forwarded films wait'),
     ('workflow_yaml.py', None,
      'a workflow file that does not parse — GitHub then reports it as having '
      'no triggers, so the schedule and the manual run both vanish silently; '

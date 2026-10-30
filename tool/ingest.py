@@ -113,6 +113,15 @@ LINGER_STEP = 10
 # schedule doing it hours later.
 MORE = '/tmp/ingest.more'
 
+# LANES (2026-10-30): ingest.yml runs up to ten of this script at once, each
+# on its own runner with its own Telegram session (one session's auth key on
+# two machines at once is AUTH_KEY_DUPLICATED, so they cannot share one).
+# Sign-ins are what Telegram throttles — fifteen inside two minutes once cost
+# FLOOD_WAITs on auth.ImportBotAuthorization — so lane N waits (N-1) times
+# this many seconds before signing in: ten lanes over three minutes. The job
+# it claimed waits with it; nobody else can take it meanwhile.
+SIGNIN_GAP = 20
+
 _sleep = time.sleep
 
 
@@ -809,6 +818,12 @@ def main():
     # there is nothing to leak into an artifact and nothing to clean up.
     # `sleep_threshold` makes the client itself sit through short FLOOD_WAITs
     # — including on the sign-in — instead of raising them.
+    lane = max(1, _env_int('INGEST_LANE', 1))
+    gap = max(0, _env_int('INGEST_SIGNIN_GAP', SIGNIN_GAP))
+    if lane > 1 and gap > 0:
+        print('lane %d: signing in after %ds, so the lanes do not all at once'
+              % (lane, (lane - 1) * gap))
+        _sleep((lane - 1) * gap)
     app = Client(
         'ingest',
         api_id=int(api_id),

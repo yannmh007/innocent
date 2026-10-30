@@ -1545,6 +1545,24 @@ Deno.serve(async (req: Request) => {
   // ── claim ────────────────────────────────────────────────────────────────
   //
   // Answers `{}` when there is nothing to do, which is the common case.
+  // ── depth ──────────────────────────────────────────────────────────────
+  //
+  // How many forwarded files are waiting, and how many lanes are still busy
+  // (migration 057): ingest.yml opens lanes 1..(queued + running), ten at
+  // most, so one photo does not start ten runners and ten Telegram sign-ins,
+  // and files arriving behind a long download are not left waiting for its
+  // lane. Runner-only, like claim; two counts, nothing else.
+  if (op === 'depth') {
+    const given = (req.headers.get('Authorization') ?? '').replace(/^Bearer /i, '');
+    if (!sameSecret(given, RUNNER_SECRET)) return json({ error: 'no' }, 403, req);
+    const d = (await rpc('ingest_depth', {}) ?? {}) as Record<string, unknown>;
+    const count = (v: unknown) => {
+      const n = Math.floor(Number(v ?? 0));
+      return Number.isFinite(n) && n > 0 ? n : 0;
+    };
+    return json({ queued: count(d.queued), running: count(d.running) }, 200, req);
+  }
+
   if (op === 'claim') {
     const given = (req.headers.get('Authorization') ?? '').replace(/^Bearer /i, '');
     if (!sameSecret(given, RUNNER_SECRET)) return json({ error: 'no' }, 403, req);
