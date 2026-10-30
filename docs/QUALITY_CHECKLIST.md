@@ -60,8 +60,11 @@ Last full pass: **30 Oct 2026**.
    matches, so a pin never rots silently.
 2. **A lab flow for the vault's wait.** Set a PIN, five misses, the wait,
    then the date moved forward: the wait must hold. Gate for 1.64.79.
-3. **The downloader on Jackson 2.13.5.** No flow exercises yt-dlp's report
-   being read; one with an open film's direct link. Gate for 1.64.79.
+3. **The downloader on Jackson 2.13.5.** The library's Jackson reads only
+   the yt-dlp updater's reply from GitHub (the app reads yt-dlp's reports
+   in Dart); a flow opens Downloads on a fresh install, so the engine is
+   unpacked and updated, then reads an open film's direct link. Gate for
+   1.64.79.
 4. **1.64.79**: the vault fix, BouncyCastle 1.86 and the other library
    raises, the "Media only" state, the network log lines. Device lab, then
    Test Lab on the realme and the OPPO, then release.

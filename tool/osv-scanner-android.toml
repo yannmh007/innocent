@@ -7,13 +7,15 @@
 # downloader engine, youtubedl-android 0.18.1, which pins Jackson 2.11.1
 # (held to 2.13.5 in android/app/build.gradle.kts) and Commons Compress 1.12.
 #
-# WHAT THE APP FEEDS THEM.
-#   Jackson reads yt-dlp's own JSON report on a link: its shape is yt-dlp's,
-#   not a web page's, and nothing turns on polymorphic typing, which the
-#   gadget advisories need. The worst a hostile page can do through it is
-#   stop that one download.
+# WHAT THE APP FEEDS THEM (read from youtubedl-android 0.18.1's sources).
+#   Jackson: the app never calls the library's getInfo, the one place it
+#   reads yt-dlp's report; the app runs yt-dlp itself and reads the report
+#   in Dart. Jackson is left reading one thing, the yt-dlp updater's answer
+#   from api.github.com over TLS (YoutubeDLUpdater.checkForUpdate), and
+#   nothing turns on polymorphic typing, which the gadget advisories need.
 #   Commons Compress opens only the Python runtime zipped inside the APK
-#   itself, signed with it; it never opens a file from the network.
+#   itself, signed with it (ZipUtils.unzip, on first use); never a file from
+#   the network.
 #
 # THE WAY OUT is minSdk 26 (Android 8), which the owner decides; then
 # Jackson 2.18.11+ and Commons Compress 1.28+ and this file empties.
@@ -22,28 +24,28 @@
 [[IgnoredVulns]]
 id = "GHSA-h46c-h94j-95f3"
 ignoreUntil = 2027-01-31
-reason = "jackson-core: fixed in 2.15, which needs Android 8; input is yt-dlp's own JSON"
+reason = "jackson-core: fixed in 2.15, which needs Android 8; reads only GitHub's updater reply"
 
 [[IgnoredVulns]]
 id = "GHSA-r7wm-3cxj-wff9"
 ignoreUntil = 2027-01-31
-reason = "jackson-core: fixed in 2.18.8, which needs Android 8; input is yt-dlp's own JSON"
+reason = "jackson-core: fixed in 2.18.8, which needs Android 8; reads only GitHub's updater reply"
 
 [[IgnoredVulns]]
 id = "GHSA-7hhh-6rmp-j9qf"
 ignoreUntil = 2027-01-31
-reason = "jackson-core: fixed in 2.18.11, which needs Android 8; input is yt-dlp's own JSON"
+reason = "jackson-core: fixed in 2.18.11, which needs Android 8; reads only GitHub's updater reply"
 
 # Jackson databind 2.13.5
 [[IgnoredVulns]]
 id = "GHSA-3wrr-7qpf-2prh"
 ignoreUntil = 2027-01-31
-reason = "jackson-databind: fixed in 2.14, which needs Android 8; input is yt-dlp's own JSON"
+reason = "jackson-databind: fixed in 2.14, which needs Android 8; reads only GitHub's updater reply"
 
 [[IgnoredVulns]]
 id = "GHSA-hgj6-7826-r7m5"
 ignoreUntil = 2027-01-31
-reason = "jackson-databind: fixed in 2.18.8, which needs Android 8; input is yt-dlp's own JSON"
+reason = "jackson-databind: fixed in 2.18.8, which needs Android 8; reads only GitHub's updater reply"
 
 [[IgnoredVulns]]
 id = "GHSA-j3rv-43j4-c7qm"
@@ -58,37 +60,37 @@ reason = "jackson-databind: fixed in 2.18.8, which needs Android 8; no polymorph
 [[IgnoredVulns]]
 id = "GHSA-5gvw-p9qm-jgwh"
 ignoreUntil = 2027-01-31
-reason = "jackson-databind: fixed in 2.18.9, which needs Android 8; input is yt-dlp's own JSON"
+reason = "jackson-databind: fixed in 2.18.9, which needs Android 8; reads only GitHub's updater reply"
 
 [[IgnoredVulns]]
 id = "GHSA-5jmj-h7xm-6q6v"
 ignoreUntil = 2027-01-31
-reason = "jackson-databind: fixed in 2.18.9, which needs Android 8; input is yt-dlp's own JSON"
+reason = "jackson-databind: fixed in 2.18.9, which needs Android 8; reads only GitHub's updater reply"
 
 [[IgnoredVulns]]
 id = "GHSA-vvgp-rfg2-7rr6"
 ignoreUntil = 2027-01-31
-reason = "jackson-databind: fixed in 2.18.9, which needs Android 8; input is yt-dlp's own JSON"
+reason = "jackson-databind: fixed in 2.18.9, which needs Android 8; reads only GitHub's updater reply"
 
 [[IgnoredVulns]]
 id = "GHSA-gx83-3vf8-gh7j"
 ignoreUntil = 2027-01-31
-reason = "jackson-databind: fixed in 2.18.10, which needs Android 8; input is yt-dlp's own JSON"
+reason = "jackson-databind: fixed in 2.18.10, which needs Android 8; reads only GitHub's updater reply"
 
 [[IgnoredVulns]]
 id = "GHSA-wjgm-6hv5-3cvf"
 ignoreUntil = 2027-01-31
-reason = "jackson-databind: fixed in 2.18.10, which needs Android 8; input is yt-dlp's own JSON"
+reason = "jackson-databind: fixed in 2.18.10, which needs Android 8; reads only GitHub's updater reply"
 
 [[IgnoredVulns]]
 id = "GHSA-cxp5-3px4-pw24"
 ignoreUntil = 2027-01-31
-reason = "jackson-databind: fixed in 2.18.11, which needs Android 8; input is yt-dlp's own JSON"
+reason = "jackson-databind: fixed in 2.18.11, which needs Android 8; reads only GitHub's updater reply"
 
 [[IgnoredVulns]]
 id = "GHSA-wv8q-qhhj-9h54"
 ignoreUntil = 2027-01-31
-reason = "jackson-databind: fixed in 2.18.11, which needs Android 8; input is yt-dlp's own JSON"
+reason = "jackson-databind: fixed in 2.18.11, which needs Android 8; reads only GitHub's updater reply"
 
 # Commons Compress 1.12
 [[IgnoredVulns]]

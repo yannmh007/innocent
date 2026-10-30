@@ -1,0 +1,13 @@
+# THE VAULT'S WAIT, part two: the date is now two hours ahead (run.sh). The
+# vault is opened afresh, so the wait is read from the service, not from the
+# screen's own countdown: it must still be there.
+appId: com.innocent.media
+---
+- back
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn: "(?s)Private Folder.*"
+- waitForAnimationToEnd:
+    timeout: 5000
+- assertVisible: "(?s).*Too many attempts.*"
+- takeScreenshot: 123_vault_wait_after_date
