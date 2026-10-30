@@ -15,14 +15,16 @@ Written at the owner's request so nothing below is lost between sessions.
 Newest first within each group; tick an item by deleting it in the commit that
 does it.
 
-### Release 1.64.78 (in flight)
-- **Test Lab, both phones** (realme RE58C2/35, OPPO OP573DL1/34) — scheduled
-  07:12 UTC 30 Oct. Compare Play-to-picture and CPU with runs 40890052023 and
-  40883836265. Then release via the main worktree: lib commits d15d478,
-  63aeea2, d63727c, cc57e1a, 0e49166 and the version bump only (never the
-  lab-only lib/app.dart). The release also carries docs/studio/app.js (opaque
-  upload folders) to GitHub Pages. 1.64.77 was built and never published.
-- **Gap audit entries** for 1.64.78 (docs/gap_audit_2026_10.md).
+### Next app release (1.64.79)
+- **1.64.78 is out** (30 Oct 12:43 UTC, main 46e45a7, build 41051432695).
+- **Google sign-in nonce (29b71b2)** waits on the branch: no lab can sign in
+  with Google. Before it ships, the owner signs in once with a build that
+  carries it (a branch build's APK); if Google refuses the token, it stays out.
+- **The OPPO's Original on a borderline line** (Test Lab 41047246611): the
+  10 Mbit/s Original stalled 8 s on a 4-14 Mbit/s line. The lab only skips
+  it when the line is measured below the copy's bitrate; a line that swings
+  around it fails. Not a regression; worth a look at how the Original's
+  first fill sizes itself.
 
 ### Verify what is live but not yet exercised
 - **Sealed payment fields (migration 054, premium-request v15)**: the first

@@ -53,6 +53,102 @@ what was checked, what was fixed, and what is left, with the reason.
 
 ## Released
 
+**1.64.78, 30 October 2026** — main `46e45a7` (build 41051432695, signed
+and attested), `app_releases` moved at 12:43 UTC. It carries 1.64.77,
+which was built on main (`8f30786`) and never published: the real phones
+found the start slower, and the fix is the first item here.
+
+* The start rung's head only (64 KB) is read when the ladder is
+  registered, where 1.64.77 read its first 512 KB: that prime had the first
+  fragment served through the cache path and cost the start more than it
+  saved. The length check rides the ladder's own connection pool, and the
+  rungs are registered at once rather than one after another. Device lab:
+  grant to playlist 2.0-2.5 s, against 3.0-4.3 s (runs 40909578972 and
+  40914094670, 16 of 16 each).
+* From 1.64.77: the sealed stream cache's cipher calls on a background task
+  queue and its writes gathered — 128 KB ahead of the player, 64 KB or a
+  tenth of a second while a request waits — instead of one platform-channel
+  call per TLS record on the thread that draws the app
+  (`test_bench/proxy_cpu_bench.dart`, a sealed 58.6 MB film: 3,800-4,100
+  cipher calls and 114-126 ms/MB before, 1,520-1,620 and 102-106 ms/MB
+  after); a skip into a read-ahead gone quiet no longer waits twenty
+  seconds (22 s frozen to 0.9 s in the device lab's busy 4G line); a jump
+  ends the other rungs' read-aheads (a swipe back had waited 4.9 s on a
+  3.4 Mbit/s line); the start rung's playlist out as soon as its index is
+  in; the title page's album controls at the row's end, its count
+  readable; dropdowns in the theme's font.
+* Transfer asks before sending, by default (it used to let any phone on the
+  network pair), and remembers the choice. A browser upload that the phone
+  has no room for is refused before it starts (507, "not sent: the phone
+  has no room for it") and stopped if it grows past what it declared; one
+  pairing question at a time per sender, and three refusals make it wait a
+  minute, doubling. "Declined" and "wait" are said in the sender's
+  language.
+* The app reads its own payment requests' masks (`09••••••351`), not the
+  numbers, which the server now seals (below).
+* Strings: Burmese and Thai fixes across Settings, Help and the private
+  folder (ကိုယ်ရေးဖိုင်တွဲ).
+* Two stream cache races, there since the warm-up (1.64.67), found when the
+  full suite ran under load on the release tree: Play pressed while the
+  title's warm-up was still registering let the warm-up take Play's film
+  for its own and release it (an empty first read); and Play and the
+  warm-up making a new film's cache entry at once could write `seal.iv`
+  twice — an entry with no IV, its runs plain, or a run sealed under an IV
+  not the one on disk. Both pinned by tests that fail without the fix.
+* Not in this build: the Google sign-in nonce (29b71b2). It changes the
+  sign-in no lab can perform, and ships once the owner has signed in with
+  it on a real phone.
+
+Proved: Flutter tests 1199 of 1199 on the branch; the stream cache (97),
+Transfer (14) and sign-in suites on the release tree itself; device lab 16
+of 16 (runs 40909578972, 40914094670, 41047246610); Test Lab realme C53 16
+of 16 and OPPO A79 5G 15 of 16 (run 41047246611). The OPPO's one miss was
+the 10 Mbit/s Original on a line that measured 4-14 Mbit/s during it, a
+path this release does not touch. An earlier run, 41042377434, met lines
+five to twenty times slower than every run it is compared with (the realme
+at 0.4 Mbit/s) and failed 5 and 4 checks, every one a wait for bytes; it is
+not counted either way.
+
+**Server, 30 October 2026** — live before the app, pinned to `ed6ee97`.
+Against a copy of the data leaving with someone else (a leaked R2, B2 or
+service key, a dump):
+
+* Payments (migrations 053, 054; premium-request v15-v16): a payer's KPay
+  number and transaction id are sealed (AES-256-GCM, bound to the row and
+  column), the transaction id indexed by HMAC so a reused number is still
+  caught, and masked for the payer. Filing goes only through the function
+  (053 took the table's insert from anon and authenticated). The first
+  sealed request was checked in the database: no plain number anywhere.
+* Payment screenshots (migration 056): stored sealed, under a key derived
+  for receipts alone, with the request as associated data; the console's
+  inbox has them opened by the function, a few megabytes per answer.
+* The daily database backup (migration 055; ingest v38-v39): sealed before
+  it is written, in R2 and off-site; the sixteen made before were sealed
+  where they lay, and checked: 16 of 16 sealed, 16 of 16 copied off-site.
+  The console's Download opens it; `tool/restore_backup.py --key` opens an
+  off-site copy with the owner's PII_ENC_KEY if the project itself is lost.
+* R2 keys say nothing of what they hold: a console upload goes to
+  `f/<20 hex>/<kind>/<32 hex>.<ext>` (HMAC of the folder, random file
+  name), its label kept in the database; a file forwarded to the bot keeps
+  the folder the operator typed but loses its Telegram file name.
+* studio's unused `requests` op removed.
+* Telegram ingest, up to ten files at once (migration 057, ingest v40, the
+  workflow with this release): the plan job opens lanes 1..(waiting +
+  busy), at most INGEST_LANES; each lane its own runner and Telegram
+  session, one job at a time across runs; sign-ins 20 s apart; an album's
+  places taken under a lock per title (two lanes finishing two files of
+  one title had collided on title_assets' unique index). Checked on the
+  branch: plan, house and one lane, green (run 41050415899).
+
+**Server, 29 October 2026** — no app release. `request-playback` v34
+(pinned `4b5a7a7`): the subscription, the devices and the ladder are asked
+together, so a premium Play is three round trips in a row, not six (a free
+one three, not five), and the token key is imported once per instance.
+Migration 052: `landing_rows()` and `_for_you` read `title_heat`,
+refreshed at most every ten minutes under an advisory lock, instead of
+scanning the event log on every app open; their output was byte-identical
+before and after for the four busiest viewers.
+
 **1.64.76, 29 October 2026** — main `217da3b` (build 40540289076, signed
 and attested), `app_releases` moved at 07:12 UTC; then the Worker's
 `LIMIT_MODE = "enforce"`, main `b608885`, deployed by Workers Builds. The
