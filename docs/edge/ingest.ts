@@ -66,7 +66,9 @@
 // a database function, after the bytes are confirmed. This repository is
 // public and Actions logs on it are public.
 
-import { BACKUP_AAD, BACKUP_KEY_INFO, derivedKey, openFile, sealFile } from './pii.ts';
+import {
+  BACKUP_AAD, BACKUP_KEY_INFO, derivedKey, openFile, PROOF_KEY_INFO, proofAad, sealFile,
+} from './pii.ts';
 import { namingKey, opaqueName } from './naming.ts';
 
 const R2_ACCOUNT_ID = Deno.env.get('R2_ACCOUNT_ID')!;
@@ -540,6 +542,94 @@ async function putBackupOffsite(id: number, r2Key: string, bytes: Uint8Array): P
   });
   if (!put.ok) throw new Error(`off-site PUT ${put.status} ${(await put.text()).slice(0, 120)}`);
   await rpc('backup_offsite_done', { p_id: id, p_key: key });
+}
+
+/// THE RECEIPTS SEALED AFTER THE FACT. A payment screenshot sent before the
+/// receipts were sealed (premium-request v16) still sits plain in the
+/// `payment-proofs` bucket. Each tick seals a few where they lie, in the
+/// order that can neither lose one nor leave one plain: the sealed copy is
+/// written (and opens) first, then the plain one is deleted, then the request
+/// is pointed at the sealed copy. Deleting last would leave a plain receipt
+/// that no request names when the delete fails, and no tick would look for
+/// it again; this way a tick that stops anywhere leaves a request the next
+/// tick still lists, and it finds the sealed copy and finishes.
+const PROOF_BUCKET = 'payment-proofs';
+const PROOF_KEY: Promise<CryptoKey | null> =
+  derivedKey(Deno.env.get('PII_ENC_KEY') ?? '', PROOF_KEY_INFO);
+
+async function proofObject(method: string, path: string, body?: Uint8Array): Promise<Response> {
+  return await fetch(`${SUPABASE_URL}/storage/v1/object/${PROOF_BUCKET}/${path}`, {
+    method,
+    headers: {
+      apikey: SERVICE_KEY,
+      Authorization: `Bearer ${SERVICE_KEY}`,
+      ...(body ? { 'Content-Type': 'application/octet-stream', 'x-upsert': 'false' } : {}),
+    },
+    ...(body ? { body: body as BodyInit } : {}),
+  });
+}
+
+async function resealOldProofs(): Promise<Record<string, unknown>> {
+  const key = await PROOF_KEY;
+  if (!key) return { sealed: 0 };
+  const res = await rest('premium_requests?select=id,proof_path,proof_bytes' +
+    '&proof_path=not.is.null&proof_path=not.like.*.sealed&limit=3');
+  if (!res.ok) throw new Error(`list ${res.status}`);
+  const due = await res.json() as Array<{ id: string; proof_path: string; proof_bytes: number | null }>;
+  let sealed = 0;
+  const errors: string[] = [];
+  for (const r of due) {
+    const id = String(r.id ?? '');
+    const plain = String(r.proof_path ?? '');
+    // `<user>/<request>.<ext>`, as premium-request wrote it; anything else is
+    // not ours to move.
+    const m = /^([0-9a-f-]{36})\/([0-9a-f-]{36})\.(jpg|png|webp)$/.exec(plain);
+    if (!m || m[2] !== id) continue;
+    const target = `${m[1]}/${id}.sealed`;
+    try {
+      const get = await proofObject('GET', plain);
+      if (get.ok) {
+        const image = new Uint8Array(await get.arrayBuffer());
+        // Not the file that was recorded: left exactly as it is, for a person.
+        if (r.proof_bytes && image.length !== Number(r.proof_bytes)) {
+          throw new Error('size differs from the request; left as it is');
+        }
+        const sealedBytes = await sealFile(key, image, proofAad(id));
+        const put = await proofObject('POST', target, sealedBytes);
+        if (!put.ok) {
+          // Already there from a tick that stopped: it must open, or stop.
+          await put.body?.cancel();
+          const again = await proofObject('GET', target);
+          if (!again.ok) throw new Error(`PUT ${put.status}`);
+          const was = await openFile(key, new Uint8Array(await again.arrayBuffer()), proofAad(id));
+          if (!was || was.length !== image.length) throw new Error('a sealed copy is there and does not open');
+        }
+      } else if (get.status === 400 || get.status === 404) {
+        await get.body?.cancel();
+        // The plain file is gone; a sealed one that opens is the answer.
+        const again = await proofObject('GET', target);
+        if (!again.ok) throw new Error('neither the plain nor the sealed receipt is stored');
+        if (!await openFile(key, new Uint8Array(await again.arrayBuffer()), proofAad(id))) {
+          throw new Error('the sealed receipt does not open');
+        }
+      } else {
+        throw new Error(`GET ${get.status}`);
+      }
+      const del = await proofObject('DELETE', plain);
+      if (!del.ok && del.status !== 400 && del.status !== 404) throw new Error(`DELETE ${del.status}`);
+      await del.body?.cancel();
+      const moved = await rest(
+        `premium_requests?id=eq.${id}&proof_path=eq.${encodeURIComponent(plain)}`,
+        { method: 'PATCH', headers: { Prefer: 'return=representation' },
+          body: JSON.stringify({ proof_path: target }) });
+      if (!moved.ok) throw new Error(`PATCH ${moved.status}`);
+      if (((await moved.json()) as unknown[]).length !== 1) throw new Error('the request was not moved');
+      sealed++;
+    } catch (e) {
+      errors.push(`${id.slice(0, 8)}: ${String(e).slice(0, 100)}`);
+    }
+  }
+  return errors.length ? { sealed, errors } : { sealed };
 }
 
 /// THE OFF-SITE HOUSEKEEPING, on the runner's tick: queue copies, look at old
@@ -2065,6 +2155,13 @@ Deno.serve(async (req: Request) => {
       if (r.sealed || r.errors) house.resealed = r;
     } catch (e) {
       house.resealed = 'error: ' + String(e).slice(0, 120);
+    }
+    // THE RECEIPTS SENT BEFORE SEALING (premium-request v16), likewise.
+    try {
+      const r = await resealOldProofs();
+      if (r.sealed || r.errors) house.receipts = r;
+    } catch (e) {
+      house.receipts = 'error: ' + String(e).slice(0, 120);
     }
     // THE OFF-SITE COPY (migration 045). The database is told, every tick,
     // where the bucket is — host and bucket name, never a key — or that there

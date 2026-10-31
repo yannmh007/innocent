@@ -257,6 +257,43 @@ for flow in $FLOWS; do
     continue
     ;;
   esac
+  # THE VAULT'S WAIT (1.64.79) — the cooling-off after wrong PINs counts time
+  # since boot, so moving the phone's date forward must not end it. Part a
+  # sets a PIN and earns the one-minute wait (ten misses); the date is then
+  # moved two hours ahead (root: the google_apis image allows it); part b
+  # opens the vault afresh and must still find the wait; once the minute has
+  # passed on the real clock and the date is back, part c opens it with the
+  # right PIN. Before 1.64.79 part b found no wait at all.
+  case "$flow" in vault_lock)
+    vault_part() {
+      ( cd "$OUT/shots" && maestro test --test-output-dir "$OUT/maestro_out" "$OLDPWD/test_device/flows/$1.yaml" ) >> "$OUT/maestro_$flow.txt" 2>&1
+    }
+    vault_part vault_lock_a; ra=$?
+    t0=$(date +%s)
+    log "flow $flow: PIN set, ten misses (maestro exit $ra)"
+    adb root >/dev/null 2>&1 || true
+    adb wait-for-device
+    adb shell settings put global auto_time 0 >/dev/null 2>&1 || true
+    before=$(adb shell date +%s | tr -d '\r')
+    adb shell date -u "$(date -u -d '+2 hours' +%m%d%H%M%Y.%S)" >/dev/null 2>&1 || true
+    after=$(adb shell date +%s | tr -d '\r')
+    log "vault: the phone's date moved $(( ${after:-0} - ${before:-0} )) s"
+    vault_part vault_lock_b; rb=$?
+    log "flow $flow: date moved, the wait still holds (maestro exit $rb)"
+    # The minute, counted from the end of part a (after the tenth miss), and
+    # a margin; then the date put back.
+    left=$(( 75 - ($(date +%s) - t0) ))
+    [ "$left" -gt 0 ] && sleep "$left"
+    adb shell date -u "$(date -u +%m%d%H%M%Y.%S)" >/dev/null 2>&1 || true
+    adb shell settings put global auto_time 1 >/dev/null 2>&1 || true
+    vault_part vault_lock_c; rc=$?
+    log "flow $flow: the wait over, the PIN opens it (maestro exit $rc)"
+    adb unroot >/dev/null 2>&1 || true
+    adb wait-for-device
+    if [ "$ra$rb$rc" = 000 ]; then log "flow $flow exit 0"; else log "flow $flow exit 1"; fi
+    continue
+    ;;
+  esac
   # NEW VIDEO — does a video copied onto the phone appear in the open Video
   # tab by itself, and how fast? MX Player shows it within seconds. The tab is
   # opened (flows/new_video_open.yaml), a clip is pushed into a folder that

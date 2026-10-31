@@ -1824,6 +1824,9 @@ internal object DownloadEngine {
             if (status == null && lastError != null) throw lastError
 
             refreshVersion(ctx)
+            // One line for the device lab's trace: the update reads GitHub's
+            // answer with the library's Jackson, which the lab must see work.
+            android.util.Log.i("Innocent", "LAB engine update ok ${status ?: "DONE"} $before -> $ytdlpVersion")
             reply(result) {
                 result.success(
                     mapOf(
@@ -1838,6 +1841,7 @@ internal object DownloadEngine {
         } catch (t: Throwable) {
             val cause = t.cause ?: t
             val message = cause.message ?: cause.toString()
+            android.util.Log.i("Innocent", "LAB engine update failed ${cause.javaClass.simpleName}")
             reply(result) {
                 result.success(
                     mapOf(

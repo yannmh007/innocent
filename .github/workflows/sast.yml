@@ -1,0 +1,84 @@
+# Static analysis — Semgrep, the project's own rule set, on every push.
+#
+# WHY. The 30 Oct audit ran Semgrep (830 rules) by hand: 298 hits, every one
+# looked at, none open. A hand-run check describes one day. This runs the
+# same rules on every push, against what that push changed (diff-aware: a
+# finding that was already there and looked at is not raised again), and
+# fails on a new ERROR-severity finding: credentials, a download piped into
+# a shell, a shell built from strings, a cipher used wrongly. The WARNING and
+# INFO rules (style, and patterns this code uses on purpose) are in the
+# weekly full report on the summary, not a red mark.
+#
+# PINNED: Semgrep by version from PyPI (a version's files cannot be replaced
+# there), the rules by the commit of semgrep/semgrep-rules they were read at.
+# Nothing is sent anywhere (--metrics=off).
+name: Static analysis
+
+on:
+  push:
+    paths:
+      - 'docs/edge/**'
+      - 'docs/studio/**'
+      - 'tool/**'
+      - 'android/app/src/**'
+      - '.github/**'
+      - 'test_device/run.sh'
+  schedule:
+    - cron: '41 4 * * 2'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  semgrep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      SEMGREP_VERSION: '1.183.0'
+      RULES_COMMIT: '16b9e6d45f10649f6a531ec4838ed9924372c3bc'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Semgrep and its rules, pinned
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet --user --disable-pip-version-check "semgrep==$SEMGREP_VERSION"
+          git clone -q --filter=blob:none https://github.com/semgrep/semgrep-rules "$RUNNER_TEMP/rules"
+          git -C "$RUNNER_TEMP/rules" -c advice.detachedHead=false checkout -q "$RULES_COMMIT"
+          "$HOME/.local/bin/semgrep" --version
+
+      - name: Scan
+        env:
+          EVENT: ${{ github.event_name }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          set -uo pipefail
+          R="$RUNNER_TEMP/rules"
+          args=(scan --metrics=off --disable-version-check
+            --config "$R/javascript" --config "$R/typescript" --config "$R/python"
+            --config "$R/kotlin" --config "$R/generic/secrets" --config "$R/yaml/github-actions"
+            --config "$R/bash"
+            --exclude test_device/results --exclude build --exclude '*.min.js' --exclude vendor)
+          paths=(docs/edge docs/studio tool android/app/src .github test_device/run.sh)
+          if [ "$EVENT" = push ]; then
+            base="$BEFORE"
+            if [ -z "$base" ] || ! git cat-file -e "$base^{commit}" 2>/dev/null; then base=HEAD~1; fi
+            echo "new findings since $base"
+            "$HOME/.local/bin/semgrep" "${args[@]}" --baseline-commit "$base" --severity ERROR --error "${paths[@]}"
+          else
+            # The weekly picture: everything, every severity, as a table.
+            "$HOME/.local/bin/semgrep" "${args[@]}" --json -o "$RUNNER_TEMP/semgrep.json" "${paths[@]}" || true
+            python3 - "$RUNNER_TEMP/semgrep.json" >> "$GITHUB_STEP_SUMMARY" <<'PY'
+          import collections, json, sys
+          d = json.load(open(sys.argv[1]))
+          c = collections.Counter((r['extra']['severity'], r['check_id'].split('.')[-1]) for r in d['results'])
+          print('### Semgrep, every rule, every file\n\n| severity | rule | hits |\n|---|---|---|')
+          for (sev, rule), n in sorted(c.items()):
+              print(f'| {sev} | {rule} | {n} |')
+          print(f'\n{len(d["results"])} hits in all; ERROR rules are checked on every push.')
+          PY
+          fi

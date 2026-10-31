@@ -1,0 +1,131 @@
+# THE VAULT'S WAIT, part one (run.sh, flow `vault_lock`): a PIN is set, then
+# ten wrong ones: five give the 15 s wait, the wait is sat out, five more
+# give the minute. run.sh then moves the phone's date two hours forward and
+# runs part two, which must still find the wait (1.64.79: the wait counts
+# time since boot; before, the date decided, and moving it ended the wait).
+appId: com.innocent.media
+---
+- launchApp
+- waitForAnimationToEnd:
+    timeout: 15000
+- tapOn:
+    text: "Wait"
+    optional: true
+- tapOn:
+    text: "Skip"
+    optional: true
+- tapOn:
+    text: "Allow.*"
+    optional: true
+- tapOn:
+    text: "Allow.*"
+    optional: true
+- tapOn:
+    text: "(?s).*Tab 4 of 4.*"
+- waitForAnimationToEnd:
+    timeout: 5000
+- scrollUntilVisible:
+    element:
+      text: "(?s)Private Folder.*"
+    direction: DOWN
+    optional: true
+- tapOn: "(?s)Private Folder.*"
+- waitForAnimationToEnd:
+    timeout: 5000
+- extendedWaitUntil:
+    visible: "(?s).*Set up Private Folder PIN.*"
+    timeout: 15000
+- tapOn: "1"
+- tapOn: "3"
+- tapOn: "5"
+- tapOn: "7"
+- tapOn: "Confirm"
+- extendedWaitUntil:
+    visible: "(?s).*Enter the same PIN once more.*"
+    timeout: 5000
+- tapOn: "1"
+- tapOn: "3"
+- tapOn: "5"
+- tapOn: "7"
+- tapOn: "Confirm"
+- tapOn:
+    text: "Skip for now"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: 120_vault_set
+# Out and in again: the vault locks when its screen goes.
+- back
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn: "(?s)Private Folder.*"
+- waitForAnimationToEnd:
+    timeout: 5000
+- tapOn: "2"
+- tapOn: "4"
+- tapOn: "6"
+- tapOn: "8"
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn: "2"
+- tapOn: "4"
+- tapOn: "6"
+- tapOn: "8"
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn: "2"
+- tapOn: "4"
+- tapOn: "6"
+- tapOn: "8"
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn: "2"
+- tapOn: "4"
+- tapOn: "6"
+- tapOn: "8"
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn: "2"
+- tapOn: "4"
+- tapOn: "6"
+- tapOn: "8"
+- waitForAnimationToEnd:
+    timeout: 3000
+- assertVisible: "(?s).*Too many attempts.*"
+- takeScreenshot: 121_vault_wait_15s
+# Sat out: the countdown on the screen reaches the end.
+- extendedWaitUntil:
+    notVisible: "(?s).*Too many attempts.*"
+    timeout: 30000
+- tapOn: "2"
+- tapOn: "4"
+- tapOn: "6"
+- tapOn: "8"
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn: "2"
+- tapOn: "4"
+- tapOn: "6"
+- tapOn: "8"
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn: "2"
+- tapOn: "4"
+- tapOn: "6"
+- tapOn: "8"
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn: "2"
+- tapOn: "4"
+- tapOn: "6"
+- tapOn: "8"
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn: "2"
+- tapOn: "4"
+- tapOn: "6"
+- tapOn: "8"
+- waitForAnimationToEnd:
+    timeout: 3000
+- assertVisible: "(?s).*Too many attempts.*"
+- takeScreenshot: 122_vault_wait_60s

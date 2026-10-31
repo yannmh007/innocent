@@ -113,12 +113,18 @@ jobs:
   run:
     needs: build
     runs-on: ubuntu-latest
+    # Read only. This job runs code fetched from other people (Maestro, the
+    # interceptor, the emulator image), so it never holds a token that can
+    # push: a push to main is a production deploy. The `keep` job below
+    # commits what this one leaves.
     permissions:
-      contents: write
+      contents: read
     # Two hours: the long film (below) is about half an hour of encoding.
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
 
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
@@ -259,16 +265,27 @@ jobs:
       # ffmpeg installed only for streamlong it skipped itself in any run
       # without a long film (run 37877954034).
       - name: Install ffmpeg (flows that make a film)
+        env:
+          # A dated BtbN build of the 7.1 line, checked by SHA-256 before it
+          # is unpacked; never the floating `latest`, which BtbN replaces
+          # every day. Renew with `python3 tool/pins.py ffmpeg` (the same
+          # three values in transcode.yml and device-lab.yml; the dependency
+          # scan's `pins` job checks every week that the file is still there).
+          FFMPEG_TAG: 'autobuild-2026-07-31-14-10'
+          FFMPEG_ASSET: 'ffmpeg-n7.1.5-12-g1fdbca85aa-linux64-gpl-7.1.tar.xz'
+          FFMPEG_SHA256: 'c1e6caf48923dd8e6bc5e54d51ba70c321175b8162ae9c414c392990e72f0e79'
         run: |
           source test_device/config.env
           case " $FLOWS " in *" streamlong_"*|*" streamab_"*|*" newvideo "*) ;; *) echo "no film made this run"; exit 0 ;; esac
-          url=https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-n7.1-latest-linux64-gpl-7.1.tar.xz
+          url="https://github.com/BtbN/FFmpeg-Builds/releases/download/$FFMPEG_TAG/$FFMPEG_ASSET"
           if curl -fsSL --retry 3 -o /tmp/ffmpeg.tar.xz "$url" \
+             && echo "$FFMPEG_SHA256  /tmp/ffmpeg.tar.xz" | sha256sum -c --quiet - \
              && mkdir -p /tmp/ffmpeg && tar -xJf /tmp/ffmpeg.tar.xz -C /tmp/ffmpeg --strip-components=1 \
              && /tmp/ffmpeg/bin/ffmpeg -version >/dev/null 2>&1; then
             echo "/tmp/ffmpeg/bin" >> "$GITHUB_PATH"
             /tmp/ffmpeg/bin/ffmpeg -version | head -1
           else
+            echo "::warning::the pinned ffmpeg build is gone or is not the pinned file: Ubuntu's ffmpeg instead"
             sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg >/dev/null
             ffmpeg -version | head -1
           fi
@@ -286,10 +303,39 @@ jobs:
           bash tool/netlab/make_long_film.sh "$d" out/long_film.txt
           { echo '### Long lab film'; echo '```'; cat out/long_film.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
 
+      # From the project's GitHub release, never a script piped into bash,
+      # and only the build pinned here: its SHA-256 is checked before the
+      # zip is opened. 2.12.0 is what run 41075543874 installed and passed
+      # with. To move on, empty both values for one run (it takes the latest
+      # and writes its version and digest to the summary), then pin those.
       - name: Install Maestro
+        env:
+          MAESTRO_VERSION: '2.12.0'
+          MAESTRO_SHA256: 'a6044a84542f522f434c5dc3d609e60c7446d423f3ed1b2ae513f5c48663ec5e'
         run: |
-          curl -fsSL "https://get.maestro.mobile.dev" | bash
-          "$HOME/.maestro/bin/maestro" --version
+          set -euo pipefail
+          zip="$RUNNER_TEMP/maestro.zip"
+          base=https://github.com/mobile-dev-inc/maestro/releases
+          if [ -n "$MAESTRO_VERSION" ]; then
+            # The release tag's spelling has changed over the years; the
+            # digest, not the tag, is what says it is the right file.
+            for tag in "cli-$MAESTRO_VERSION" "v$MAESTRO_VERSION" "$MAESTRO_VERSION"; do
+              curl -fsSL --retry 3 -o "$zip" "$base/download/$tag/maestro.zip" && break
+            done
+          else
+            curl -fsSL --retry 3 -o "$zip" "$base/latest/download/maestro.zip"
+          fi
+          sha=$(sha256sum "$zip" | cut -d' ' -f1)
+          if [ -n "$MAESTRO_SHA256" ] && [ "$sha" != "$MAESTRO_SHA256" ]; then
+            echo "::error::maestro.zip is not the pinned build (got $sha)"; exit 1
+          fi
+          rm -rf "$RUNNER_TEMP/maestro_x" "$HOME/.maestro"
+          unzip -q "$zip" -d "$RUNNER_TEMP/maestro_x"
+          mkdir -p "$HOME/.maestro"
+          cp -r "$RUNNER_TEMP/maestro_x/maestro/." "$HOME/.maestro/"
+          ver=$("$HOME/.maestro/bin/maestro" --version 2>/dev/null | tail -1)
+          echo "maestro $ver sha256 $sha"
+          { echo '### Maestro'; echo "version \`$ver\`, maestro.zip sha256 \`$sha\`"; } >> "$GITHUB_STEP_SUMMARY"
 
       # THE MAN IN THE MIDDLE, started before the emulator so its first
       # connection already meets it. It keeps no traffic: its addon writes
@@ -323,13 +369,12 @@ jobs:
           disable-animations: true
           script: bash test_device/run.sh
 
-      - name: Keep the results
+      - name: Seal the results
         if: always()
         env:
           LAB_RESULTS_KEY: ${{ secrets.LAB_RESULTS_KEY }}
         run: |
           set -e
-          branch="${GITHUB_REF_NAME}"
           saved="$RUNNER_TEMP/lab_results"
           rm -rf "$saved"; mkdir -p "$saved"
           if [ -d out ]; then cp -r out/. "$saved/"; fi
@@ -349,6 +394,58 @@ jobs:
           find "$saved" -type f \( -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' \
             -o -iname '*.webp' -o -iname '*.gif' -o -iname '*.mp4' \) -delete
           echo "run ${GITHUB_RUN_ID} of ${GITHUB_SHA}" > "$saved/RUN.txt"
+
+      # Already sealed: the same files that are committed, for a day.
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: lab-results
+          path: ${{ runner.temp }}/lab_results
+          retention-days: 1
+
+  keep:
+    needs: run
+    if: always() && needs.run.result != 'skipped'
+    runs-on: ubuntu-latest
+    # The only job that may push, and it runs nothing but git on files the
+    # run job already sealed.
+    permissions:
+      contents: write
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: lab-results
+          path: ${{ runner.temp }}/lab_results
+
+      - name: Keep the results
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+          branch="${GITHUB_REF_NAME}"
+          saved="$RUNNER_TEMP/lab_results"
+          [ -f "$saved/RUN.txt" ] || { echo "no results to keep"; exit 0; }
+          # A run dispatched from main leaves its results in the artifact
+          # only: main never carries test_device/results.
+          if [ "$branch" = "$DEFAULT_BRANCH" ]; then
+            echo "::notice::run on $branch: results are in the lab-results artifact, not committed"; exit 0
+          fi
+          # Whatever the run job was made to leave, nothing but plain files
+          # and never a picture in the clear.
+          find "$saved" -type l -delete
+          find "$saved" -type f \( -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' \
+            -o -iname '*.webp' -o -iname '*.gif' -o -iname '*.mp4' \) -delete
+          du -sh "$saved"
+          # The token for this step alone, as actions/checkout would have set it.
+          git config --local "http.https://github.com/.extraheader" \
+            "AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
+          trap 'git config --local --unset-all "http.https://github.com/.extraheader" || true' EXIT
           git config user.name "device-lab"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           # The results directory belongs to the lab alone, so it is laid on top

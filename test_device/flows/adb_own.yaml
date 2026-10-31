@@ -35,25 +35,15 @@ appId: com.innocent.media
 - tapOn: "List"
 - waitForAnimationToEnd:
     timeout: 3000
-# The engine self-test: key + certificate built on this device.
-- scrollUntilVisible:
-    element:
-      text: "(?s).*ADB engine self-test.*"
-    direction: DOWN
-- tapOn: "(?s).*ADB engine self-test.*"
-- extendedWaitUntil:
-    visible: "(?s).*ADB engine ready.*"
-    timeout: 20000
-- takeScreenshot: 95_adb_selftest
-- tapOn: "OK"
-- waitForAnimationToEnd:
-    timeout: 3000
+# The engine self-test row went with the dead settings (15 Oct); the key and
+# certificate it built are checked on the JVM now, with the app's
+# BouncyCastle (tool/netlab/src/test/kotlin/AdbIdentityTest.kt).
 # The connection screen: pairing and connect, no backend selector.
 - scrollUntilVisible:
     element:
-      text: "(?s).*ADB connection.*"
+      text: "(?s).*Android/data access.*"
     direction: DOWN
-- tapOn: "(?s).*ADB connection.*"
+- tapOn: "(?s).*Android/data access.*"
 - waitForAnimationToEnd:
     timeout: 8000
 - takeScreenshot: 96_adb_screen
@@ -66,6 +56,7 @@ appId: com.innocent.media
 - assertNotVisible: "(?s).*How Innocent reads Android/data.*"
 - scrollUntilVisible:
     element:
-      text: "(?s).*Scan Android/data for videos.*"
+      text: "(?s).*Open.*"
     direction: DOWN
-- takeScreenshot: 97_adb_screen_scan
+    optional: true
+- takeScreenshot: 97_adb_screen_end

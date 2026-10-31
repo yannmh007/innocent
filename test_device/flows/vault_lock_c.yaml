@@ -1,0 +1,21 @@
+# THE VAULT'S WAIT, part three: the minute has passed on the clock since
+# boot (run.sh waited), the date is back. The wait is over and the right PIN
+# opens the vault.
+appId: com.innocent.media
+---
+- back
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn: "(?s)Private Folder.*"
+- waitForAnimationToEnd:
+    timeout: 5000
+- assertNotVisible: "(?s).*Too many attempts.*"
+- tapOn: "1"
+- tapOn: "3"
+- tapOn: "5"
+- tapOn: "7"
+- waitForAnimationToEnd:
+    timeout: 5000
+- assertNotVisible: "(?s).*Incorrect PIN.*"
+- assertNotVisible: "(?s).*Enter PIN.*"
+- takeScreenshot: 124_vault_open

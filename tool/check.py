@@ -95,6 +95,19 @@ CHECKS = [
      'a backup that cannot be put back: a child row inserted before its parent '
      'fails the whole restore, and a row holding the quote tag would end the '
      'statement early and run the rest of the row as SQL'),
+    ('pins_test.py', None,
+     'a pinned download read wrong, so its check checks nothing; the lab '
+     'and the transcode job running different ffmpeg builds; and a '
+     'floating `latest` build left in a job that holds a secret'),
+    ('netlab_sync.py', None,
+     'tool/netlab testing other versions than the APK ships: the app moved '
+     'to BouncyCastle 1.86 and netlab kept 1.81, so its green described a '
+     'build nobody installs'),
+    ('gradle_lock_test.py', None,
+     'an Android library the dependency scan never sees: the scan read '
+     'pubspec.lock alone, so smbj, sshj, Bouncy Castle, Media3 and every '
+     'plugin\'s own libraries went unscanned, and a version read as declared '
+     'rather than resolved scans a library the APK does not carry'),
     ('previews_test.py', None,
      'an album blurhash the app cannot read back: the runner encodes and the '
      'app decodes with two ports of one algorithm, and a slip in either draws '
@@ -230,6 +243,11 @@ def main() -> int:
          'a leaked copy of the database carrying every payer\'s number in '
          'the clear, a sealed value that opens in another row, or a reused '
          'transaction number no longer caught'),
+        ('proof_reseal_test.mjs',
+         'the receipts sent before sealing, sealed where they lie',
+         'a payment screenshot deleted before its sealed copy opens, or left '
+         'plain with no request naming it when a delete fails (the first '
+         'draft did exactly that; this test caught it)'),
         ('backup_seal_test.mjs',
          'the backups made before sealing, sealed where they lie',
          'a plain backup deleted before its sealed copy was written, a sealed '

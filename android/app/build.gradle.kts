@@ -403,7 +403,11 @@ dependencies {
     // libadb-android already bundles bcprov (jdk15to18:1.81) transitively; we
     // only add bcpkix (the X509 cert-builder classes) in the SAME variant and
     // version so the two share one bcprov and don't collide.
-    implementation("org.bouncycastle:bcpkix-jdk15to18:1.81")
+    // 1.86 (2026-10-30): 1.81 carries two critical and two other advisories
+    // (GHSA-574f-3g2m-x479, GHSA-9pwp-9qqc-pr26, fixed in 1.84/1.85), found
+    // by the dependency scan's Android job. bcprov and bcutil are held to the
+    // same version in the constraints below.
+    implementation("org.bouncycastle:bcpkix-jdk15to18:1.86")
     // Lifts Android 9+ hidden-API restrictions so libadb's TLS handshake can
     // reach the platform Conscrypt provider (see InnocentApplication).
     implementation("org.lsposed.hiddenapibypass:hiddenapibypass:4.3")
@@ -476,4 +480,23 @@ dependencies {
     implementation("androidx.camera:camera-core:1.4.2")
     implementation("androidx.camera:camera-camera2:1.4.2")
     implementation("androidx.camera:camera-lifecycle:1.4.2")
+
+    // LIBRARIES OTHERS BRING, held to versions without known advisories
+    // (deps-scan.yml, job `android`, run 41075543688: 32 advisories in 6
+    // libraries nobody here had declared). A constraint only raises a
+    // version; it adds nothing that was not already in the APK.
+    constraints {
+        // One BouncyCastle for libadb-android, bcpkix and the network stack.
+        implementation("org.bouncycastle:bcprov-jdk15to18:1.86")
+        implementation("org.bouncycastle:bcutil-jdk15to18:1.86")
+        // Media3 and CameraX's: 33.3.1 has GHSA-xxph-c9ww-hj94.
+        implementation("com.google.guava:guava:33.7.2-android")
+        // youtubedl-android pins Jackson 2.11.1: nineteen advisories, five of
+        // them fixed by 2.13. 2.13 is the newest line that runs on Android 7
+        // (minSdk 24); 2.14 to 2.18 need Android 8, so the fourteen fixed
+        // only there are listed, with why, in tool/osv-scanner-android.toml.
+        implementation("com.fasterxml.jackson.core:jackson-databind:2.13.5")
+        implementation("com.fasterxml.jackson.core:jackson-core:2.13.5")
+        implementation("com.fasterxml.jackson.core:jackson-annotations:2.13.5")
+    }
 }

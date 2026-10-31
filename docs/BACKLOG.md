@@ -25,6 +25,21 @@ does it.
   it when the line is measured below the copy's bitrate; a line that swings
   around it fails. Not a regression; worth a look at how the Original's
   first fill sizes itself.
+- **Vault cooling-off on the boot clock** (on the branch): five wrong PINs
+  locked the vault until a wall-clock time, and moving the date forward in
+  Settings ended the wait (OWASP MASTG local-auth). It now counts time since
+  boot (SystemClock.elapsedRealtime), which no setting changes; a reboot
+  starts the wait again. test/private_folder_lockout_test.dart, 12 tests,
+  5 of them fail on the old code. No lab flow drives the vault yet: write
+  one (set a PIN, five misses, the wait) before this ships.
+- **Android libraries raised** (on the branch): BouncyCastle 1.81 -> 1.86
+  (two critical advisories), Guava 33.7.2, Jackson 2.13.5. Proved: device
+  lab run 41092354010 (adb_own; network: SMB, FTP, FTPS and SFTP browse
+  and play in the app), netlab JVM 22 of 22 on real Samba, vsftpd and
+  OpenSSH, AdbIdentityTest. The downloader (yt-dlp, Jackson) has no lab
+  flow; one real link on a phone before this ships.
+- **"Media only" in the Local Network browser** says on/off to TalkBack;
+  NetPlugin logs every failed call (on the branch).
 
 ### Verify what is live but not yet exercised
 - **Sealed payment fields (migration 054, premium-request v15)**: the first
@@ -91,14 +106,31 @@ does it.
   migration with a `key_folder(text)` helper used in all of them, and
   ingest.ts translating names both ways. Test with the bot end to end (a
   /folder session, an album with the caption on the third file, /retry).
-- **Old payment screenshots**: reseal the receipts filed before 30 Oct like
-  the backups (premium-request has the key; storage download, seal, upload
-  `.sealed`, update proof_path, remove the image).
+- ~~**Old payment screenshots**~~: done 31 Oct. ingest v41 seals a receipt
+  sent before sealing where it lies on the house tick (sealed copy, then the
+  plain one deleted, then the request repointed); the one plain receipt is
+  sealed, the bucket holds no plain file (`proof_reseal_test.mjs`).
+### Categories and genres by code (TAX, the owner's request of 31 Oct)
+- [x] Phase 1, the database (058, live 31 Oct): categories C00-C03, genres
+  G001-G003 in their own table, titles carry `category_code` and
+  `genre_codes`; the old text follows the codes by trigger, so every app in
+  the field works unchanged (checked as anon); `taxonomy()` gives the words
+  for every code in three languages; search finds a genre in Burmese and
+  Thai. `tool/sql/taxonomy_test.sql` (codes never reused or changed, a
+  genre in use not deleted, retire, merge).
+- [ ] Phase 2, the console: a Categories and genres page (add, rename,
+  translate, reorder, hide, retire, delete an unused one, merge), the editor
+  choosing genres from the list, studio ops by code, the ingest by code.
+- [ ] Phase 3, the app: read the codes and `taxonomy()` (cached by
+  `version`), labels in the phone's language, filters by code.
+- [ ] Phase 4, once no app that reads the old text is left: drop
+  `titles.category` and `titles.genres` (and `categories.id` as the key).
 
 ### Quality
-- Two sealed stream-cache timing tests fail under the full parallel run and
-  pass alone (903 ms against a 900 ms bound; "a step back into what the
-  player was given carries the stretch on"). Make them robust to load.
+- ~~Two sealed stream-cache timing tests fail under the full parallel run.~~
+  Done 31 Oct: the trickle bound is half the film, and the step-back case
+  found a real fault — a flush into a reset connection could hold a
+  stretch open for seconds after a seek; it now ends at the hang-up.
 - Burmese Settings still shows Pop-up Play, Decoder, Development and
   Diagnostics in English — decide whether those stay technical terms.
 

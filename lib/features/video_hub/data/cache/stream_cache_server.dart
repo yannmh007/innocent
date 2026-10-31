@@ -215,8 +215,10 @@ class StreamCacheServer {
   static bool handOver = true;
 
   /// Stretches handed over, and taken up, since the app started. For the
-  /// bench and the lab's trail.
-  static int handedOver = 0, carriedOn = 0, stepsSeen = 0;
+  /// bench and the lab's trail. [stepsWaiting]: requests that came in while
+  /// the stretch they replace was still serving, and waited for it (tests
+  /// close the old connection only once the new one is in, as ffmpeg does).
+  static int handedOver = 0, carriedOn = 0, stepsSeen = 0, stepsWaiting = 0;
 
   /// Requests made upstream, and the bytes they brought, since the app
   /// started — what the Worker sees of this phone. For the lab's trail.
@@ -270,7 +272,8 @@ class StreamCacheServer {
   /// How long a request waits for the one its player is leaving to end
   /// (see [_serve]). A seek's old connection closes the moment the new one
   /// answers; this is only the bound for one that does not.
-  static const Duration _supersedeWait = Duration(milliseconds: 300);
+  @visibleForTesting
+  static Duration supersedeWait = const Duration(milliseconds: 300);
 
   /// THE PARTS OF A STRETCH START SMALL AND GROW BY 128 KB EACH — 128 KB,
   /// 256 KB, 384 KB … — until they are 2 MB, the sixteenth part on.
@@ -1342,6 +1345,7 @@ class StreamCacheServer {
     if (leaving.isNotEmpty) {
       src.nextStart = start;
       src.nextRunEnd = entry.partAt(start)?.end;
+      stepsWaiting++;
     }
     src.serving.add(gone);
     var complete = false;
@@ -1349,7 +1353,7 @@ class StreamCacheServer {
       if (leaving.isNotEmpty) {
         await Future.any<void>([
           Future.wait([for (final g in leaving) g.over]),
-          Future<void>.delayed(_supersedeWait),
+          Future<void>.delayed(supersedeWait),
         ]);
         // Looked at by now, or not to be: a stretch that outlives the wait
         // gives its parts up as it always did.
@@ -1499,7 +1503,7 @@ class StreamCacheServer {
       parallel = true;
       upstream = _lanesFetch(src, pos, stretchEnd, entry.total,
           gone: () => gone?.value ?? false,
-          hungUp: gone?.hungUp,
+          orHangUp: gone?.orHangUp,
           measured: (bytes, ms) =>
               _recordThroughput(bytes, Duration(milliseconds: ms)));
     } else {
@@ -1523,7 +1527,8 @@ class StreamCacheServer {
     // WRITTEN AND FLUSHED A PIECE AT A TIME, NOT `addStream`. A player that
     // hangs up (a seek, Back) does not stop `addStream` from pulling: it kept
     // draining the stretch into a dead socket, and the lanes kept fetching a
-    // film nobody was watching. A flush fails once the socket is gone, and
+    // film nobody was watching. A flush fails once the socket is gone (or,
+    // [_Gone.flush], once the player is seen to hang up), and
     // that is where this stops — cancelling the stretch, which stops its
     // lanes. It is also the back-pressure: nothing is read from upstream
     // faster than the player takes it, past the lanes' own small window.
@@ -1534,7 +1539,7 @@ class StreamCacheServer {
       while (await pieces.moveNext()) {
         res.add(pieces.current);
         written += pieces.current.length;
-        await res.flush();
+        await (gone?.flush(res) ?? res.flush());
       }
       sent = min(sent, written);
       final took = DateTime.now().difference(startedAt);
@@ -1684,7 +1689,7 @@ class StreamCacheServer {
             final take = min(at, clientEnd) - from;
             try {
               out.add(take == chunk.length ? chunk : chunk.sublist(0, take));
-              await out.flush();
+              await gone.flush(out);
               sent = from + take;
             } catch (_) {
               // The player hung up — a seek, or Back. What it was reading is
@@ -1992,7 +1997,7 @@ class StreamCacheServer {
   /// fast line as a slow one and pick a rung below what it can carry.
   Stream<List<int>> _lanesFetch(_Source src, int start, int end, int total,
       {required bool Function() gone,
-      Future<void>? hungUp,
+      Future<void> Function(Future<void>)? orHangUp,
       void Function(int bytes, int ms)? measured}) async* {
     final window = lanes * 2;
 
@@ -2177,7 +2182,7 @@ class StreamCacheServer {
             if (p.settled || p.through) break;
             // The player hanging up ends the wait at once, and the stretch
             // with it: its parts are released below, not finished for nobody.
-            await Future.any<void>([p.more, if (hungUp != null) hungUp]);
+            await (orHangUp == null ? p.more : orHangUp(p.more));
             if (gone()) return;
           }
           // A kept part taken over for less than all of it is through once
@@ -2310,10 +2315,51 @@ class _Gone {
   void hangUp() {
     value = true;
     if (!_hung.isCompleted) _hung.complete();
+    final racing = [..._racing];
+    _racing.clear();
+    for (final c in racing) {
+      c.complete();
+    }
+  }
+
+  final Set<Completer<void>> _racing = {};
+
+  /// [f], or the player hanging up, whichever comes first.
+  ///
+  /// NOT `Future.any([f, hungUp])`: every call of that leaves a listener on
+  /// [hungUp], which stays pending for as long as the player is connected,
+  /// and a stretch waits once for every piece of a film it passes on. About
+  /// half a kilobyte a call, kept until the player hangs up: 98 MB for
+  /// 200,000 calls in a bench. Here the race is held only while it runs.
+  Future<void> orHangUp(Future<void> f) {
+    final c = Completer<void>();
+    // Listened to even when the player has gone already: a flush into the
+    // dead socket fails, and unheard that failure is an uncaught error.
+    f.then((_) {
+      if (_racing.remove(c)) c.complete();
+    }, onError: (Object e, StackTrace st) {
+      if (_racing.remove(c)) c.completeError(e, st);
+    });
+    if (value) return Future<void>.value();
+    _racing.add(c);
+    return c.future;
   }
 
   void finish() {
     if (!_over.isCompleted) _over.complete();
+  }
+
+  /// [sink] flushed, or a [SocketException] once the player has hung up.
+  ///
+  /// A FLUSH DOES NOT ALWAYS FAIL WHEN THE PLAYER RESETS THE CONNECTION: the
+  /// reset can reach only the reading side ([hangUp]), and a flush waiting
+  /// for room the player will never make kept the stretch, and its lanes,
+  /// open for seconds after a seek (3 s and more on a busy test runner) —
+  /// past [StreamCacheServer.supersedeWait], so what it had fetched ahead
+  /// was not handed to the request that replaced it.
+  Future<void> flush(IOSink sink) async {
+    await orHangUp(sink.flush());
+    if (value) throw const SocketException('the player hung up');
   }
 }
 
