@@ -110,6 +110,22 @@ does it.
   sent before sealing where it lies on the house tick (sealed copy, then the
   plain one deleted, then the request repointed); the one plain receipt is
   sealed, the bucket holds no plain file (`proof_reseal_test.mjs`).
+### Categories and genres by code (TAX, the owner's request of 31 Oct)
+- [x] Phase 1, the database (058, live 31 Oct): categories C00-C03, genres
+  G001-G003 in their own table, titles carry `category_code` and
+  `genre_codes`; the old text follows the codes by trigger, so every app in
+  the field works unchanged (checked as anon); `taxonomy()` gives the words
+  for every code in three languages; search finds a genre in Burmese and
+  Thai. `tool/sql/taxonomy_test.sql` (codes never reused or changed, a
+  genre in use not deleted, retire, merge).
+- [ ] Phase 2, the console: a Categories and genres page (add, rename,
+  translate, reorder, hide, retire, delete an unused one, merge), the editor
+  choosing genres from the list, studio ops by code, the ingest by code.
+- [ ] Phase 3, the app: read the codes and `taxonomy()` (cached by
+  `version`), labels in the phone's language, filters by code.
+- [ ] Phase 4, once no app that reads the old text is left: drop
+  `titles.category` and `titles.genres` (and `categories.id` as the key).
+
 ### Quality
 - ~~Two sealed stream-cache timing tests fail under the full parallel run.~~
   Done 31 Oct: the trickle bound is half the film, and the step-back case
