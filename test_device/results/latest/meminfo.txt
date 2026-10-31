@@ -1,1 +1,61 @@
-No process found for: com.innocent.media
+Applications Memory Usage (in Kilobytes):
+Uptime: 182979 Realtime: 182979
+
+** MEMINFO in pid 6429 [com.innocent.media] **
+                   Pss  Private  Private     Swap      Rss     Heap     Heap     Heap
+                 Total    Dirty    Clean    Dirty    Total     Size    Alloc     Free
+                ------   ------   ------   ------   ------   ------   ------   ------
+  Native Heap    46801    46768        0        0    49984    68004    46934    16875
+  Dalvik Heap     4559     4460        0        0    12312     7659     3846     3813
+ Dalvik Other     1748     1644        0        0     2520                           
+        Stack     1316     1316        0        0     1324                           
+       Ashmem        9        0        0        0      568                           
+    Other dev       14        0       12        0      260                           
+     .so mmap    26773     1500    23116        0    69080                           
+    .jar mmap     1317        0        4        0    34640                           
+    .apk mmap      270        0       52        0     2032                           
+    .ttf mmap     5511        0      752        0    10972                           
+    .dex mmap    24817        4    24804        0    25628                           
+    .oat mmap      453        0        0        0    14460                           
+    .art mmap     2893     2520       12        0    28868                           
+   Other mmap     2253        8       68        0     6400                           
+      Unknown    13946    13944        0        0    14532                           
+        TOTAL   132680    72164    48820        0   273580    75663    50780    20688
+ 
+ App Summary
+                       Pss(KB)                        Rss(KB)
+                        ------                         ------
+           Java Heap:     6992                          41180
+         Native Heap:    46768                          49984
+                Code:    50236                         157032
+               Stack:     1316                           1324
+            Graphics:        0                              0
+       Private Other:    15672
+              System:    11696
+             Unknown:                                   24060
+ 
+           TOTAL PSS:   132680            TOTAL RSS:   273580      TOTAL SWAP (KB):        0
+ 
+ Objects
+               Views:        9         ViewRootImpl:        1
+         AppContexts:        6           Activities:        1
+              Assets:       22        AssetManagers:        0
+       Local Binders:       60        Proxy Binders:       50
+       Parcel memory:       16         Parcel count:       64
+    Death Recipients:        0             WebViews:        0
+ 
+ SQL
+         MEMORY_USED:       71
+  PAGECACHE_OVERFLOW:       12          MALLOC_SIZE:       46
+ 
+ DATABASES
+      pgsz     dbsz   Lookaside(b) cache hits cache misses cache size  Dbname
+PER CONNECTION STATS
+         4       16             17     0    15     1  /data/user/0/com.innocent.media/files/libCachedImageData.db
+POOL STATS
+     cache hits  cache misses    cache size  Dbname
+              0            16            16  /data/user/0/com.innocent.media/files/libCachedImageData.db
+ 
+ Asset Allocations
+    : 54K
+    : 21K

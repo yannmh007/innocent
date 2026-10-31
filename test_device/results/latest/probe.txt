@@ -11,9 +11,8 @@ HTTP/2 206
 content-length: 1024
 content-range: bytes 0-1023/1127595385
 --- one connection, 20 s
-curl: (28) Operation timed out after 20000 milliseconds with 561093184 out of 1127595385 bytes received
-bytes=561093184 speed=28055294 B/s ttfb=0.434429s
+bytes=1127595385 speed=72033664 B/s ttfb=0.647749s
 --- three connections on three ranges, 20 s
-lane0 bytes=375865128 speed=32044344 B/s
-lane2 bytes=375865128 speed=31047178 B/s
-lane1 bytes=375865128 speed=29195262 B/s
+lane1 bytes=375865128 speed=76011908 B/s
+lane2 bytes=375865128 speed=29174996 B/s
+lane0 bytes=375865128 speed=29120251 B/s
