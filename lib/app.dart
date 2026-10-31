@@ -339,12 +339,26 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
             // 3.4 Mbit/s, run 40883836265: no number, no skip, a FAIL that
             // said nothing about the app). Up to twelve, then.
             int? copy;
+            // THE LINE AS THE LOWEST ESTIMATE OVER THE NEXT SECONDS, not one
+            // reading: the one taken as the copy's track came in was the
+            // burst of a 0.7 MB index (11555 kbps) on a 2-4 Mbit/s line, the
+            // ones after it 5732-9952, and a FAIL said nothing about the app
+            // (device lab runs 41075543874, 41164064715).
+            int? line;
+            void sample() {
+              final v = MediaKitPlayerService.networkKbps?.value;
+              if (v != null && (line == null || v < line!)) line = v;
+            }
             for (var i = 0; i < 12 && copy == null; i++) {
               await Future<void>.delayed(const Duration(seconds: 1));
               copy = svc.ladderRungKbps;
+              sample();
             }
-            final line = MediaKitPlayerService.networkKbps?.value;
-            if (line != null && copy != null && line < copy) {
+            for (var i = 0; i < 4 && copy != null; i++) {
+              await Future<void>.delayed(const Duration(seconds: 1));
+              sample();
+            }
+            if (line != null && copy != null && line! < copy) {
               sampler?.cancel();
               PlaybackLog.add('LAB check tour->original SKIP (line $line kbps, '
                   'the copy $copy kbps) engine=${engine()}');
