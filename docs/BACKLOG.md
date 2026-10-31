@@ -128,7 +128,11 @@ does it.
 - [x] Phase 3, the app (branch `e72b278`, ships in the next release):
   `rpc/taxonomy` once for tabs and names, a category asked by its code, genre
   filters by code, names in the phone's language, never a raw code on
-  screen. 21 tests. Lab proof with the release.
+  screen. 23 tests; full suite 1235 of 1235. Device lab on the live
+  catalogue: run 41186616962 caught the filter sheet drawing "G001 G002
+  G003" (it read the names before they had arrived; be7169a: the facets
+  carry their names), run 41188669198 passed (names, Animation lists Sintel
+  and not Tears of Steel, no code on any screen). Test Lab with the release.
 - [ ] Phase 4, once no app that reads the old text is left: drop
   `titles.category` and `titles.genres` (and `categories.id` as the key).
 
