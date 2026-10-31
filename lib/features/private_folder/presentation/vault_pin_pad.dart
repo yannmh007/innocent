@@ -661,9 +661,12 @@ class VaultPinPadState extends State<VaultPinPad>
 
   Widget _digit(String d, double size) {
     final letters = _letters[d];
+    // The digit alone: the key's own Text children were merged in as well,
+    // so TalkBack read "1, 1" and "2, 2, ABC" for one key.
     return Semantics(
       button: true,
       label: d,
+      excludeSemantics: true,
       child: _PadKey(
         size: size,
         onTap: widget.busy ? null : () => _press(d),
