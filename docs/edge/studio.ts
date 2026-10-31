@@ -750,7 +750,7 @@ function json(body: unknown, status = 200, req?: Request): Response {
 const NEED: Record<string, Role> = {
   // reading
   whoami: 'viewer', summary: 'viewer', list: 'viewer', get: 'viewer',
-  stats: 'viewer', categories: 'viewer', health: 'viewer',
+  stats: 'viewer', categories: 'viewer', health: 'viewer', genres: 'viewer',
   // uploading and drafting
   sign: 'uploader', beginMultipart: 'uploader', signParts: 'uploader',
   completeMultipart: 'uploader', abortMultipart: 'uploader', listParts: 'uploader',
@@ -784,6 +784,8 @@ const NEED: Record<string, Role> = {
   // publishing and the business
   publish: 'editor', approve: 'editor', reject: 'editor',
   saveCategory: 'editor', addCategory: 'editor', moveCategory: 'editor',
+  addGenre: 'editor', saveGenre: 'editor', moveGenre: 'editor',
+  retireGenre: 'editor', deleteGenre: 'editor', mergeGenres: 'editor',
   selftest: 'editor',
   audit: 'editor',
   // the owner's
@@ -795,7 +797,7 @@ const NEED: Record<string, Role> = {
 /// a URL is here on purpose: it changes nothing until the upload completes,
 /// and the completion IS logged.
 const READS = new Set([
-  'whoami', 'summary', 'list', 'get', 'stats', 'categories',
+  'whoami', 'summary', 'list', 'get', 'stats', 'categories', 'genres',
   'health', 'checkFolder', 'folder', 'selftest', 'audit', 'admins', 'settings',
   'sign', 'beginMultipart', 'signParts', 'listParts',
   'reviewQueue', 'reviewHistory', 'previewUrl',
@@ -1098,7 +1100,8 @@ async function handleOp(
     'id,title,title_mm,synopsis,category,poster_url,year,rating,quality_label,' +
     'genres,keywords,episode_count,view_count,access_tier,photo_count,' +
     'video_count,is_featured,locator,provider,published,status,slug,created_at,' +
-    'created_by,review_state,review_note,submitted_at,decided_at';
+    'created_by,review_state,review_note,submitted_at,decided_at,' +
+    'category_code,genre_codes';
 
   // --- sign: hand back one presigned PUT URL -------------------------------
   //
@@ -1581,11 +1584,18 @@ async function handleOp(
       title,
       title_mm: str(body.titleMm),
       synopsis: str(body.synopsis),
-      category: String(body.category ?? 'movies'),
+      // BY CODE when the page sends codes (migration 058): the trigger on
+      // titles fills the old id and words from them. An older page sends
+      // the id and the words, and the same trigger finds their codes.
+      ...(codeOf(body.categoryCode, CATEGORY_CODE)
+        ? { category_code: codeOf(body.categoryCode, CATEGORY_CODE) }
+        : { category: String(body.category ?? 'movies') }),
       year: num(body.year),
       rating: num(body.rating),
       quality_label: str(body.quality),
-      genres: arr(body.genres),
+      ...(Array.isArray(body.genreCodes)
+        ? { genre_codes: codesOf(body.genreCodes, GENRE_CODE) }
+        : { genres: arr(body.genres) }),
       // SEARCHABLE, NEVER RENDERED. `genres` draws the chips on the card and
       // fills the filter bar; these are the words people actually type —
       // alternate spellings, a Burmese transliteration, an actor's name —
@@ -1664,11 +1674,20 @@ async function handleOp(
     if ('title' in p) upd.title = String(p.title ?? '').trim();
     if ('title_mm' in p) upd.title_mm = str(p.title_mm);
     if ('synopsis' in p) upd.synopsis = str(p.synopsis);
-    if ('category' in p) upd.category = String(p.category ?? 'movies');
+    // A code wins over the old field it stands for (migration 058).
+    if ('category_code' in p && codeOf(p.category_code, CATEGORY_CODE)) {
+      upd.category_code = codeOf(p.category_code, CATEGORY_CODE);
+    } else if ('category' in p) {
+      upd.category = String(p.category ?? 'movies');
+    }
     if ('year' in p) upd.year = num(p.year);
     if ('rating' in p) upd.rating = num(p.rating);
     if ('quality_label' in p) upd.quality_label = str(p.quality_label);
-    if ('genres' in p) upd.genres = arr(p.genres);
+    if ('genre_codes' in p) {
+      upd.genre_codes = codesOf(p.genre_codes, GENRE_CODE);
+    } else if ('genres' in p) {
+      upd.genres = arr(p.genres);
+    }
     if ('keywords' in p) upd.keywords = arr(p.keywords);
     if ('episode_count' in p) upd.episode_count = num(p.episode_count);
     if ('access_tier' in p) {
@@ -2009,6 +2028,7 @@ async function handleOp(
     const upd: Record<string, unknown> = { updated_at: new Date().toISOString() };
     if ('label' in p) upd.label = String(p.label ?? '').trim();
     if ('label_mm' in p) upd.label_mm = str(p.label_mm);
+    if ('label_th' in p) upd.label_th = str(p.label_th);
     if ('sort_order' in p) upd.sort_order = num(p.sort_order) ?? 0;
     if ('is_visible' in p) upd.is_visible = p.is_visible === true;
     // A blank label would render an empty pill in the tab bar, which reads as
@@ -2075,6 +2095,7 @@ async function handleOp(
       id,
       label,
       label_mm: str(body.label_mm),
+      label_th: str(body.label_th),
       sort_order: order,
       is_visible: body.is_visible !== false,
       updated_at: new Date().toISOString(),
@@ -2082,13 +2103,151 @@ async function handleOp(
     // INSERT AND NOT UPSERT. An operator typing an id that already exists has
     // almost certainly mistyped a new one, and silently overwriting the label
     // of a live section is a worse outcome than being told the name is taken.
-    const { error } = await admin().from('categories').insert(row);
+    // The code (C04, C05 …) is the database's to give (migration 058).
+    const { data: made, error } = await admin().from('categories').insert(row)
+      .select('code').single();
     if (error) {
       const taken = /duplicate key/i.test(error.message);
       return json({ error: taken ? 'id_taken' : 'add_failed',
         detail: error.message }, taken ? 409 : 500, req);
     }
-    return json({ ok: true, id }, 200, req);
+    return json({ ok: true, id, code: made?.code ?? null }, 200, req);
+  }
+
+  // --- genres (migration 058): the words for every genre code -------------
+  //
+  // THE CODE IS THE DATABASE'S, NOT THE OPERATOR'S. G001, G002 … come from a
+  // sequence, are never typed, never change and are never given twice, so a
+  // title, a saved filter and an app's cache always mean the same genre.
+  // Everything else — the English, Burmese and Thai words, the order, whether
+  // it is offered — is the operator's, and a change reaches every title that
+  // has the genre (and the search) at once.
+  //
+  // A GENRE A TITLE HAS IS NOT DELETED. It is retired (not offered for new
+  // titles; those that have it keep it) or merged into another (the titles
+  // move, and the old code points at the new one). Delete is for a genre no
+  // title has ever kept — a typo caught at once.
+  if (body.op === 'genres') {
+    const db = admin();
+    const [{ data, error }, { data: used, error: usedErr }] = await Promise.all([
+      db.from('genres').select('*').order('sort_order').order('code'),
+      db.rpc('genre_usage'),
+    ]);
+    if (error || usedErr) {
+      return json({ error: 'genres_failed',
+        detail: (error ?? usedErr)?.message }, 500, req);
+    }
+    const counts = new Map<string, { titles: number; published: number }>();
+    for (const u of (used ?? []) as Array<Record<string, unknown>>) {
+      counts.set(String(u.code), {
+        titles: Number(u.titles) || 0, published: Number(u.published) || 0 });
+    }
+    return json({ genres: (data ?? []).map((g: Record<string, unknown>) => ({
+      ...g, ...(counts.get(String(g.code)) ?? { titles: 0, published: 0 }),
+    })) }, 200, req);
+  }
+
+  if (body.op === 'addGenre') {
+    const label = String(body.label ?? '').trim();
+    if (!label || label.length > 40) {
+      return json({ error: 'bad_label', detail: '1 to 40 characters' }, 400, req);
+    }
+    const db = admin();
+    // LAST, as a new category is: the arrows move it afterwards.
+    const { data: last } = await db.from('genres')
+      .select('sort_order').order('sort_order', { ascending: false }).limit(1);
+    const { data: made, error } = await db.from('genres').insert({
+      label,
+      label_mm: words(body.label_mm, 60),
+      label_th: words(body.label_th, 60),
+      sort_order: (Number(last?.[0]?.sort_order) || 0) + 1,
+      is_visible: body.is_visible !== false,
+    }).select('code').single();
+    if (error) {
+      // One genre per English name, whatever the case (genres_label_key).
+      const taken = /duplicate key|genres_label_key/i.test(error.message);
+      return json({ error: taken ? 'label_taken' : 'add_failed',
+        detail: error.message }, taken ? 409 : 500, req);
+    }
+    return json({ ok: true, code: made?.code ?? null }, 200, req);
+  }
+
+  if (body.op === 'saveGenre') {
+    const code = codeOf(body.code, GENRE_CODE);
+    if (!code) return json({ error: 'bad_code' }, 400, req);
+    const p = (body.patch ?? {}) as Record<string, unknown>;
+    const upd: Record<string, unknown> = {};
+    if ('label' in p) {
+      const label = String(p.label ?? '').trim();
+      if (!label || label.length > 40) {
+        return json({ error: 'bad_label', detail: '1 to 40 characters' }, 400, req);
+      }
+      upd.label = label;
+    }
+    if ('label_mm' in p) upd.label_mm = words(p.label_mm, 60);
+    if ('label_th' in p) upd.label_th = words(p.label_th, 60);
+    if ('is_visible' in p) upd.is_visible = p.is_visible === true;
+    if (!Object.keys(upd).length) return json({ error: 'nothing_to_save' }, 400, req);
+    const { data, error } = await admin().from('genres').update(upd)
+      .eq('code', code).select('code');
+    if (error) {
+      const taken = /duplicate key|genres_label_key/i.test(error.message);
+      return json({ error: taken ? 'label_taken' : 'save_failed',
+        detail: error.message }, taken ? 409 : 500, req);
+    }
+    if (!data?.length) return json({ error: 'not_found' }, 404, req);
+    return json({ ok: true, code, changed: Object.keys(upd) }, 200, req);
+  }
+
+  if (body.op === 'moveGenre') {
+    const code = codeOf(body.code, GENRE_CODE);
+    const dir = body.dir === 'up' ? 'up' : body.dir === 'down' ? 'down' : '';
+    if (!code || !dir) return json({ error: 'bad_move' }, 400, req);
+    const { data, error } = await admin().rpc('genre_move', { p_code: code, p_dir: dir });
+    if (error) return json({ error: 'move_failed', detail: error.message }, 500, req);
+    const out = (data ?? {}) as Record<string, unknown>;
+    if (out.error) return json({ error: String(out.error) }, 409, req);
+    return json({ ok: true, code, dir, order: out.order ?? [] }, 200, req);
+  }
+
+  if (body.op === 'retireGenre') {
+    const code = codeOf(body.code, GENRE_CODE);
+    if (!code) return json({ error: 'bad_code' }, 400, req);
+    const retire = body.retired !== false;
+    // Brought back, a genre is offered again; a merged one stays merged (its
+    // titles are elsewhere now), so it is not restored.
+    const q = admin().from('genres')
+      .update({ retired_at: retire ? new Date().toISOString() : null })
+      .eq('code', code);
+    const { data, error } = await (retire ? q : q.is('merged_into', null)).select('code');
+    if (error) return json({ error: 'retire_failed', detail: error.message }, 500, req);
+    if (!data?.length) return json({ error: retire ? 'not_found' : 'merged' }, 409, req);
+    return json({ ok: true, code, retired: retire }, 200, req);
+  }
+
+  if (body.op === 'deleteGenre') {
+    const code = codeOf(body.code, GENRE_CODE);
+    if (!code) return json({ error: 'bad_code' }, 400, req);
+    const { data, error } = await admin().from('genres').delete().eq('code', code).select('code');
+    if (error) {
+      // genres_keep_used, and a genre another one was merged into.
+      const used = /in use|foreign key/i.test(error.message);
+      return json({ error: used ? 'in_use' : 'delete_failed',
+        detail: error.message }, used ? 409 : 500, req);
+    }
+    if (!data?.length) return json({ error: 'not_found' }, 404, req);
+    return json({ ok: true, code }, 200, req);
+  }
+
+  if (body.op === 'mergeGenres') {
+    const from = codeOf(body.from, GENRE_CODE);
+    const into = codeOf(body.into, GENRE_CODE);
+    if (!from || !into) return json({ error: 'bad_code' }, 400, req);
+    const { data, error } = await admin().rpc('genre_merge', { p_from: from, p_into: into });
+    if (error) return json({ error: 'merge_failed', detail: error.message }, 500, req);
+    const out = (data ?? {}) as Record<string, unknown>;
+    if (out.error) return json({ error: String(out.error) }, 409, req);
+    return json({ ok: true, from, into, moved: Number(out.moved) || 0 }, 200, req);
   }
 
   // --- health: the view that has existed unread since the schema was written
@@ -2960,6 +3119,33 @@ function arr(v: unknown): string[] {
     if (s && !out.some((o) => o.toLowerCase() === s.toLowerCase())) out.push(s);
   }
   return out;
+}
+
+/// The shape of a category or a genre code (migration 058).
+const CATEGORY_CODE = /^C[0-9]{2}$/;
+const GENRE_CODE = /^G[0-9]{3}$/;
+
+/// One code of that shape, or null.
+function codeOf(v: unknown, shape: RegExp): string | null {
+  const s = String(v ?? '').trim().toUpperCase();
+  return shape.test(s) ? s : null;
+}
+
+/// Codes of that shape, each once, in the order given; anything else is
+/// dropped (the database refuses an unknown code of the right shape).
+function codesOf(v: unknown, shape: RegExp): string[] {
+  const out: string[] = [];
+  for (const x of Array.isArray(v) ? v : []) {
+    const c = codeOf(x, shape);
+    if (c && !out.includes(c)) out.push(c);
+  }
+  return out;
+}
+
+/// Trimmed words up to [max] characters, or null when there are none.
+function words(v: unknown, max: number): string | null {
+  const s = String(v ?? '').trim();
+  return s ? s.slice(0, max) : null;
 }
 
 /// The four kinds `title_assets` accepts from this page.
