@@ -85,6 +85,11 @@ Last full pass: **30 Oct 2026**; open items worked 31 Oct.
    (`_Gone.flush`). The tests close the old connection only once the new
    request is in, as ffmpeg does, and read the ramp's parts in the film's
    order, not the order they reached the test server.
+   Also found on the way and fixed: each wait of a stretch for more bytes
+   left a listener on the hang-up (`Future.any`), kept until the player
+   hung up; about 0.5 KB a wait, 99 MB for 200,000 in a bench (1.6 MB
+   now, `_Gone.orHangUp`). A whole film through one connection waits tens
+   of thousands of times.
 8. ~~Semgrep in CI with a pinned rule set.~~ Done 31 Oct (`sast.yml`).
    Also found on the way and fixed: the vault PIN pad read each digit
    twice to TalkBack.

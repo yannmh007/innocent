@@ -1503,7 +1503,7 @@ class StreamCacheServer {
       parallel = true;
       upstream = _lanesFetch(src, pos, stretchEnd, entry.total,
           gone: () => gone?.value ?? false,
-          hungUp: gone?.hungUp,
+          orHangUp: gone?.orHangUp,
           measured: (bytes, ms) =>
               _recordThroughput(bytes, Duration(milliseconds: ms)));
     } else {
@@ -1997,7 +1997,7 @@ class StreamCacheServer {
   /// fast line as a slow one and pick a rung below what it can carry.
   Stream<List<int>> _lanesFetch(_Source src, int start, int end, int total,
       {required bool Function() gone,
-      Future<void>? hungUp,
+      Future<void> Function(Future<void>)? orHangUp,
       void Function(int bytes, int ms)? measured}) async* {
     final window = lanes * 2;
 
@@ -2182,7 +2182,7 @@ class StreamCacheServer {
             if (p.settled || p.through) break;
             // The player hanging up ends the wait at once, and the stretch
             // with it: its parts are released below, not finished for nobody.
-            await Future.any<void>([p.more, if (hungUp != null) hungUp]);
+            await (orHangUp == null ? p.more : orHangUp(p.more));
             if (gone()) return;
           }
           // A kept part taken over for less than all of it is through once
@@ -2315,6 +2315,34 @@ class _Gone {
   void hangUp() {
     value = true;
     if (!_hung.isCompleted) _hung.complete();
+    final racing = [..._racing];
+    _racing.clear();
+    for (final c in racing) {
+      c.complete();
+    }
+  }
+
+  final Set<Completer<void>> _racing = {};
+
+  /// [f], or the player hanging up, whichever comes first.
+  ///
+  /// NOT `Future.any([f, hungUp])`: every call of that leaves a listener on
+  /// [hungUp], which stays pending for as long as the player is connected,
+  /// and a stretch waits once for every piece of a film it passes on. About
+  /// half a kilobyte a call, kept until the player hangs up: 98 MB for
+  /// 200,000 calls in a bench. Here the race is held only while it runs.
+  Future<void> orHangUp(Future<void> f) {
+    final c = Completer<void>();
+    // Listened to even when the player has gone already: a flush into the
+    // dead socket fails, and unheard that failure is an uncaught error.
+    f.then((_) {
+      if (_racing.remove(c)) c.complete();
+    }, onError: (Object e, StackTrace st) {
+      if (_racing.remove(c)) c.completeError(e, st);
+    });
+    if (value) return Future<void>.value();
+    _racing.add(c);
+    return c.future;
   }
 
   void finish() {
@@ -2330,7 +2358,7 @@ class _Gone {
   /// past [StreamCacheServer.supersedeWait], so what it had fetched ahead
   /// was not handed to the request that replaced it.
   Future<void> flush(IOSink sink) async {
-    await Future.any<void>([sink.flush(), hungUp]);
+    await orHangUp(sink.flush());
     if (value) throw const SocketException('the player hung up');
   }
 }
