@@ -21,40 +21,87 @@ Scrolling DOWN until "(?s)Private Folder.*" is visible with speed 40, visibility
 Tap on "(?s)Private Folder.*"... COMPLETED
 Wait for animation to end within 5000 ms... COMPLETED
 Assert that "(?s).*Set up Private Folder PIN.*" is visible... COMPLETED
-Tap on "1"... FAILED
-
-Element not found: Text matching regex: 1
-
-Element with Text matching regex: 1 not found. Check the UI hierarchy in debug artifacts to verify if the element exists.
-
-Possible causes:
-- Element selector may be incorrect - check if there are similar elements with slightly different names/properties.
-- Element may be temporarily unavailable due to loading state.
-- This could be a real regression that needs to be addressed.
-
-==== Debug output (logs & screenshots) ====
-
-/home/runner/work/innocent/innocent/out/maestro_out/2026-10-30_181214
+Tap on "1"... COMPLETED
+Tap on "3"... COMPLETED
+Tap on "5"... COMPLETED
+Tap on "7"... COMPLETED
+Tap on "Confirm"... COMPLETED
+Assert that "(?s).*Enter the same PIN once more.*" is visible... COMPLETED
+Tap on "1"... COMPLETED
+Tap on "3"... COMPLETED
+Tap on "5"... COMPLETED
+Tap on "7"... COMPLETED
+Tap on "Confirm"... COMPLETED
+Tap on (Optional) "Skip for now"... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Take screenshot 120_vault_set... COMPLETED
+Press back... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Tap on "(?s)Private Folder.*"... COMPLETED
+Wait for animation to end within 5000 ms... COMPLETED
+Tap on "2"... COMPLETED
+Tap on "4"... COMPLETED
+Tap on "6"... COMPLETED
+Tap on "8"... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Tap on "2"... COMPLETED
+Tap on "4"... COMPLETED
+Tap on "6"... COMPLETED
+Tap on "8"... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Tap on "2"... COMPLETED
+Tap on "4"... COMPLETED
+Tap on "6"... COMPLETED
+Tap on "8"... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Tap on "2"... COMPLETED
+Tap on "4"... COMPLETED
+Tap on "6"... COMPLETED
+Tap on "8"... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Tap on "2"... COMPLETED
+Tap on "4"... COMPLETED
+Tap on "6"... COMPLETED
+Tap on "8"... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Assert that "(?s).*Too many attempts.*" is visible... COMPLETED
+Take screenshot 121_vault_wait_15s... COMPLETED
+Assert that "(?s).*Too many attempts.*" is not visible... COMPLETED
+Tap on "2"... COMPLETED
+Tap on "4"... COMPLETED
+Tap on "6"... COMPLETED
+Tap on "8"... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Tap on "2"... COMPLETED
+Tap on "4"... COMPLETED
+Tap on "6"... COMPLETED
+Tap on "8"... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Tap on "2"... COMPLETED
+Tap on "4"... COMPLETED
+Tap on "6"... COMPLETED
+Tap on "8"... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Tap on "2"... COMPLETED
+Tap on "4"... COMPLETED
+Tap on "6"... COMPLETED
+Tap on "8"... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Tap on "2"... COMPLETED
+Tap on "4"... COMPLETED
+Tap on "6"... COMPLETED
+Tap on "8"... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Assert that "(?s).*Too many attempts.*" is visible... COMPLETED
+Take screenshot 122_vault_wait_60s... COMPLETED
 Running on test
  > Flow vault_lock_b
 Press back... COMPLETED
 Wait for animation to end within 3000 ms... COMPLETED
 Tap on "(?s)Private Folder.*"... COMPLETED
 Wait for animation to end within 5000 ms... COMPLETED
-Assert that "(?s).*Too many attempts.*" is visible... FAILED
-
-Assertion is false: "(?s).*Too many attempts.*" is visible
-
-Assertion '"(?s).*Too many attempts.*" is visible' failed. Check the UI hierarchy in debug artifacts to verify the element state and properties.
-
-Possible causes:
-- Element selector may be incorrect - check if there are similar elements with slightly different names/properties.
-- Element may be temporarily unavailable due to loading state
-- This could be a real regression that needs to be addressed
-
-==== Debug output (logs & screenshots) ====
-
-/home/runner/work/innocent/innocent/out/maestro_out/2026-10-30_181321
+Assert that "(?s).*Too many attempts.*" is visible... COMPLETED
+Take screenshot 123_vault_wait_after_date... COMPLETED
 Running on test
  > Flow vault_lock_c
 Press back... COMPLETED
@@ -62,17 +109,11 @@ Wait for animation to end within 3000 ms... COMPLETED
 Tap on "(?s)Private Folder.*"... COMPLETED
 Wait for animation to end within 5000 ms... COMPLETED
 Assert that "(?s).*Too many attempts.*" is not visible... COMPLETED
-Tap on "1"... FAILED
-
-Element not found: Text matching regex: 1
-
-Element with Text matching regex: 1 not found. Check the UI hierarchy in debug artifacts to verify if the element exists.
-
-Possible causes:
-- Element selector may be incorrect - check if there are similar elements with slightly different names/properties.
-- Element may be temporarily unavailable due to loading state.
-- This could be a real regression that needs to be addressed.
-
-==== Debug output (logs & screenshots) ====
-
-/home/runner/work/innocent/innocent/out/maestro_out/2026-10-30_181434
+Tap on "1"... COMPLETED
+Tap on "3"... COMPLETED
+Tap on "5"... COMPLETED
+Tap on "7"... COMPLETED
+Wait for animation to end within 5000 ms... COMPLETED
+Assert that "(?s).*Incorrect PIN.*" is not visible... COMPLETED
+Assert that "(?s).*Enter PIN.*" is not visible... COMPLETED
+Take screenshot 124_vault_open... COMPLETED

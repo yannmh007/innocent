@@ -1,21 +1,19 @@
-[18:10:37] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
-[18:10:37] install
-[18:10:56] network: speed 2000:4000 kbit/s, delay 80:200 ms
-[18:10:56] network: 0.5% of incoming packets dropped on eth0
-[18:11:23] overlays: [x] com.android.internal.display.cutout.emulation.hole [x] com.android.internal.systemui.navbar.threebutton 
-[18:11:23] nav bar: navigationBars frame=[0,2337][1080,2400] navigationBars frame=[0,2337][1080,2400] navigationBars frame=[0,2274][1080,2400] 
-[18:11:23] library: pushing 24 files
-[18:11:58] library: MediaStore lists 24 videos
-[18:11:58] cold start
+[02:25:59] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
+[02:25:59] install
+[02:26:18] network: speed 2000:4000 kbit/s, delay 80:200 ms
+[02:26:18] network: 0.5% of incoming packets dropped on eth0
+[02:26:45] overlays: [x] com.android.internal.display.cutout.emulation.hole [x] com.android.internal.systemui.navbar.threebutton 
+[02:26:46] nav bar: navigationBars frame=[0,2337][1080,2400] navigationBars frame=[0,2337][1080,2400] navigationBars frame=[0,2274][1080,2400] 
+[02:26:46] library: pushing 24 files
+[02:27:19] library: MediaStore lists 24 videos
+[02:27:19] cold start
 Status: ok
-TotalTime: 3846
-WaitTime: 3852
-[18:12:12] flow vault_lock
-[18:13:18] flow vault_lock: PIN set, ten misses (maestro exit 1)
-[18:13:20] vault: the phone's date moved 7201 s
-[18:13:54] flow vault_lock: date moved, the wait still holds (maestro exit 1)
-[18:15:06] flow vault_lock: the wait over, the PIN opens it (maestro exit 1)
-[18:15:07] flow vault_lock exit 1
-[18:15:07] flow downloader_engine
-[18:16:08] flow downloader_engine exit 0
-[18:16:44] done
+TotalTime: 5105
+WaitTime: 5117
+[02:27:35] flow vault_lock
+[02:30:35] flow vault_lock: PIN set, ten misses (maestro exit 0)
+[02:30:37] vault: the phone's date moved 7201 s
+[02:30:54] flow vault_lock: date moved, the wait still holds (maestro exit 0)
+[02:32:19] flow vault_lock: the wait over, the PIN opens it (maestro exit 0)
+[02:32:20] flow vault_lock exit 0
+[02:32:27] done
