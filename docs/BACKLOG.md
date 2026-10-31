@@ -106,10 +106,10 @@ does it.
   migration with a `key_folder(text)` helper used in all of them, and
   ingest.ts translating names both ways. Test with the bot end to end (a
   /folder session, an album with the caption on the third file, /retry).
-- **Old payment screenshots**: reseal the receipts filed before 30 Oct like
-  the backups (premium-request has the key; storage download, seal, upload
-  `.sealed`, update proof_path, remove the image).
-
+- ~~**Old payment screenshots**~~: done 31 Oct. ingest v41 seals a receipt
+  sent before sealing where it lies on the house tick (sealed copy, then the
+  plain one deleted, then the request repointed); the one plain receipt is
+  sealed, the bucket holds no plain file (`proof_reseal_test.mjs`).
 ### Quality
 - Two sealed stream-cache timing tests fail under the full parallel run and
   pass alone (903 ms against a 900 ms bound; "a step back into what the
