@@ -68,9 +68,12 @@ Last full pass: **30 Oct 2026**; open items worked 31 Oct.
    in Dart); a flow opens Downloads on a fresh install, so the engine is
    unpacked and updated, then reads an open film's direct link. Gate for
    1.64.79.
-4. **1.64.79**: the vault fix, BouncyCastle 1.86 and the other library
-   raises, the "Media only" state, the network log lines. Device lab, then
-   Test Lab on the realme and the OPPO, then release.
+4. ~~**1.64.79**~~: released 31 Oct (main `7722136`, build 41182541535,
+   `app_releases` at 08:51 UTC): the vault fix, BouncyCastle 1.86 and the
+   other library raises, the "Media only" state, the network log lines, the
+   hang-up flush and the listener leak. Device lab 16 of 16 (41165924453),
+   Test Lab realme C53 15 of 15 (41179327588) and OPPO A79 16 of 16
+   (41181014623).
 
 **P2 — privacy and reliability.**
 

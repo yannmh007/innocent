@@ -61,6 +61,40 @@ what was checked, what was fixed, and what is left, with the reason.
 
 ## Released
 
+**1.64.79 (392), 31 October 2026** — main `7722136` (build 41182541535,
+signed and attested), `app_releases` moved at 08:51 UTC.
+
+* The vault's wait after five wrong PINs runs on the clock since the phone
+  started, not on the date: moving the date forward no longer ends it
+  (device lab 41158555130: the date moved 7201 s, the wait held, and ended
+  on the boot clock's minute). The PIN pad names each key once to TalkBack
+  (it read "1 1"); the network browser's "Media only" says whether it is on.
+* Streaming: a stretch ends as soon as the player is seen to hang up. A
+  flush into a connection the player had reset could wait 3 s and more (the
+  reset reaches only the reading side), holding the stretch and its lanes
+  open past the 300 ms hand-over after a seek. And a wait for more bytes no
+  longer leaves a listener on the hang-up (about 0.5 KB a wait, kept for
+  the whole film: 99 MB per 200,000 waits in a bench, 1.6 MB now).
+* Libraries: BouncyCastle 1.86, Guava 33.7.2-android, Jackson 2.13.5 (the
+  last line minSdk 24 allows), after the dependency scan's first look at
+  the Android half of the APK.
+* Not in this build: the Google sign-in nonce (29b71b2), as before; the
+  lab-only tour skip and rung pins.
+
+Proved: Flutter tests 1214 of 1214 on the branch (twice, under load) and
+1212 of 1212 on the release tree; device lab 16 of 16 (41165924453); Test
+Lab realme C53 15 of 15 (41179327588) and OPPO A79 16 of 16 (41181014623;
+its first try in 41179327588 had no network on the device).
+
+**Server, 31 October** — category and genre CODES (the owner's request):
+migration 058 gives categories C00-C03 and genres their own table (G001…,
+assigned by the database, never reused or changed; retired, not deleted;
+merged with `merged_into`), titles `category_code` and `genre_codes`, the
+old words kept in step by trigger so every app in the field works
+unchanged, `taxonomy()` for the names in three languages, and search in
+Burmese and Thai. 059: `genre_move`, `genre_usage`. Studio v46 manages
+them; the console's Genres section is on main (`25d0fca`).
+
 **1.64.78, 30 October 2026** — main `46e45a7` (build 41051432695, signed
 and attested), `app_releases` moved at 12:43 UTC. It carries 1.64.77,
 which was built on main (`8f30786`) and never published: the real phones
