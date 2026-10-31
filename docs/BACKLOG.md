@@ -118,11 +118,17 @@ does it.
   for every code in three languages; search finds a genre in Burmese and
   Thai. `tool/sql/taxonomy_test.sql` (codes never reused or changed, a
   genre in use not deleted, retire, merge).
-- [ ] Phase 2, the console: a Categories and genres page (add, rename,
-  translate, reorder, hide, retire, delete an unused one, merge), the editor
-  choosing genres from the list, studio ops by code, the ingest by code.
-- [ ] Phase 3, the app: read the codes and `taxonomy()` (cached by
-  `version`), labels in the phone's language, filters by code.
+- [x] Phase 2, the console (31 Oct): studio v46 (genre ops by code, 059's
+  `genre_move` and `genre_usage`), the Genres section (add, rename,
+  translate, move, offer, retire, merge, delete an unused one), category
+  codes and Thai names, the editor choosing genres as chips. On main
+  (`25d0fca`, docs only). Left: the ingest by code (it sends words, which
+  the trigger maps), and `tool/js/console_smoke.mjs` to main with the next
+  release (a change under tool/ rebuilds the published version).
+- [x] Phase 3, the app (branch `e72b278`, ships in the next release):
+  `rpc/taxonomy` once for tabs and names, a category asked by its code, genre
+  filters by code, names in the phone's language, never a raw code on
+  screen. 21 tests. Lab proof with the release.
 - [ ] Phase 4, once no app that reads the old text is left: drop
   `titles.category` and `titles.genres` (and `categories.id` as the key).
 
