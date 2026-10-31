@@ -1,10 +1,16 @@
 LAB device kind=DeviceKind.phone sw=411.0
 LAB engine update ok ALREADY_UP_TO_DATE 2026.10.26 -> 2026.10.26
-LAB cpu app 17% · 0.3fps · 1.raster 8% | pool-thread 7% | RenderThread 2%
+LAB cpu app 22% · 0.2fps · pool-thread 14% | 1.raster 5% | RenderThread 1%
 LAB phase genres start
 LAB device kind=DeviceKind.phone sw=411.0
-LAB cpu app 10% · 0.3fps · 1.raster 7% | RenderThread 2% | .innocent.media 1%
-LAB cpu app 11% · 3.9fps · 1.raster 7% | .innocent.media 3%
-LAB cpu app 8% · 1.6fps · 1.raster 5% | .innocent.media 2%
-LAB cpu app 10% · 4.1fps · 1.raster 7% | .innocent.media 2%
-LAB cpu app 2% · 0.5fps · -
+LAB cpu app 14% · 0.4fps · 1.raster 11% | RenderThread 2% | .innocent.media 1%
+LAB cpu app 11% · 2.9fps · 1.raster 6% | .innocent.media 3%
+LAB cpu app 7% · 1.4fps · 1.raster 4% | .innocent.media 2%
+LAB cpu app 9% · 2.8fps · 1.raster 6% | .innocent.media 2%
+LAB cpu app 5% · 0.7fps · 1.raster 3% | .innocent.media 2%
+LAB    0.0 stream lanes=6
+LAB    0.0 stream cache: a new film, sealed
+LAB    0.5 stream index 0.0 MB at 0.0 MB
+LAB    1.4 measured 18954 kbps
+LAB    1.4 warm: 2.0 MB of the opening held
+LAB    1.4 stream stretch 2.0 MB in 904 ms lanes=6

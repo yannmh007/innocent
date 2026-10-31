@@ -1,15 +1,15 @@
-[09:13:40] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
-[09:13:40] install
-[09:13:53] network: speed 2000:4000 kbit/s, delay 80:200 ms
-[09:13:53] network: 0.5% of incoming packets dropped on eth0
-[09:14:19] overlays: [x] com.android.internal.display.cutout.emulation.hole [x] com.android.internal.systemui.navbar.threebutton 
-[09:14:19] nav bar: navigationBars frame=[0,2274][1080,2400] navigationBars frame=[0,2274][1080,2400] 
-[09:14:19] library: pushing 24 files
-[09:14:48] library: MediaStore lists 24 videos
-[09:14:48] cold start
+[09:43:39] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
+[09:43:39] install
+[09:44:03] network: speed 2000:4000 kbit/s, delay 80:200 ms
+[09:44:03] network: 0.5% of incoming packets dropped on eth0
+[09:44:30] overlays: [x] com.android.internal.display.cutout.emulation.hole [x] com.android.internal.systemui.navbar.threebutton 
+[09:44:30] nav bar: navigationBars frame=[0,2274][1080,2400] navigationBars frame=[0,2274][1080,2400] 
+[09:44:30] library: pushing 24 files
+[09:45:03] library: MediaStore lists 24 videos
+[09:45:03] cold start
 Status: ok
-TotalTime: 2505
-WaitTime: 2517
-[09:15:01] flow genres
-[09:16:03] flow genres exit 1
-[09:16:15] done
+TotalTime: 4518
+WaitTime: 4606
+[09:45:18] flow genres
+[09:46:31] flow genres exit 0
+[09:46:46] done
