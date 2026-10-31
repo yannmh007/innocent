@@ -72,6 +72,15 @@ class FilterSheet extends StatefulWidget {
 }
 
 class _FilterSheetState extends State<FilterSheet> {
+  /// The facets' own names first (they came with the codes), then the names
+  /// the caller had. A code neither can name is shown as nothing better than
+  /// itself only in a build whose facets and names disagree — the
+  /// repository sends codes only when it can name every one.
+  String _genreLabel(String key, String languageCode) =>
+      widget.facets.genreNames.labelOf(key, languageCode) ??
+      widget.genreNames.labelOf(key, languageCode) ??
+      key;
+
   late ContentFilters _draft;
   int? _count;
   Timer? _debounce;
@@ -152,9 +161,7 @@ class _FilterSheetState extends State<FilterSheet> {
                         runSpacing: VH.s2,
                         children: widget.facets.genres
                             .map((g) => _Choice(
-                                  label: widget.genreNames
-                                          .labelOf(g, s.locale.languageCode) ??
-                                      g,
+                                  label: _genreLabel(g, s.locale.languageCode),
                                   selected: _draft.genres.contains(g),
                                   onTap: () =>
                                       _update(_draft.toggleGenre(g)),

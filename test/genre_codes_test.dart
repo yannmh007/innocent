@@ -14,6 +14,7 @@
 
 import 'dart:convert';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -25,6 +26,8 @@ import 'package:innocent/features/video_hub/domain/content_category.dart';
 import 'package:innocent/features/video_hub/domain/content_filters.dart';
 import 'package:innocent/features/video_hub/domain/genre_names.dart';
 import 'package:innocent/features/video_hub/domain/video_content.dart';
+import 'package:innocent/features/video_hub/presentation/widgets/filter_sheet.dart';
+import 'package:innocent/core/localization/app_strings.dart';
 
 Map<String, dynamic> _taxonomy({List<Map<String, dynamic>>? genres}) =>
     <String, dynamic>{
@@ -319,6 +322,12 @@ void main() {
       });
     });
 
+    test('facets carry the names of their codes', () async {
+      final b = build();
+      final f = await b.repo.getFacets(categoryId: 'movies');
+      expect(f.genreNames.labelOf('G002', 'my'), 'ကာတွန်း');
+    });
+
     test('facets fall back to words when a code cannot be named', () async {
       final b = build(facets: <String, dynamic>{
         'genres': ['Animation', 'Noir'],
@@ -344,5 +353,33 @@ void main() {
           1);
       expect((both[1] as GenreNames).labelOf('G002', 'my'), 'ကာတွန်း');
     });
+  });
+
+  // Device lab run 41186616962: the sheet opened before the app's own names
+  // had arrived and drew "G001 G002 G003". The facets now carry the names.
+  testWidgets('the filter sheet names codes from its facets, never a code',
+      (tester) async {
+    final names = GenreNames.fromJson(_taxonomy()['genres']);
+    await tester.pumpWidget(MaterialApp(
+      localizationsDelegates: AppStrings.localizationsDelegates,
+      supportedLocales: AppStrings.supportedLocales,
+      home: Scaffold(
+        body: FilterSheet(
+          facets: ContentFacets(
+            genres: names.offered(<String>['G001', 'G002', 'G003']),
+            genreNames: names,
+          ),
+          initial: const ContentFilters(),
+          countFor: (_) async => 1,
+          // What the screen had when the sheet opened: nothing yet.
+          genreNames: GenreNames.empty,
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+    expect(find.text('Animation'), findsOneWidget);
+    expect(find.text('Fantasy'), findsOneWidget);
+    expect(find.text('Open Movie'), findsOneWidget);
+    expect(find.textContaining(RegExp(r'G[0-9]{3}')), findsNothing);
   });
 }

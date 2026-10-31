@@ -491,6 +491,7 @@ class ApiContentRepository implements ContentRepository {
       final byCode = codes != null && codes.isNotEmpty && names.knowsAll(codes);
       return ContentFacets(
         genres: byCode ? names.offered(codes) : words,
+        genreNames: byCode ? names : GenreNames.empty,
         years: (body['years'] as List?)
                 ?.map((e) => int.tryParse('$e') ?? 0)
                 .where((y) => y > 0)

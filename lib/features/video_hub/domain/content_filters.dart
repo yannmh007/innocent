@@ -1,3 +1,5 @@
+import 'genre_names.dart';
+
 /// How a filtered grid is ordered.
 ///
 /// `rating` was removed when star ratings left the UI. An option that sorts by
@@ -112,14 +114,24 @@ class ContentFilters {
 /// picks it, gets an empty screen, and blames the app. Facets are derived from
 /// real data so every option shown can return something.
 class ContentFacets {
+  /// Genre CODES when the server sent codes that [genreNames] can all name,
+  /// otherwise the words. Whatever the filter sends back.
   final List<String> genres;
   final List<int> years;
   final List<String> qualities;
+
+  /// The names for [genres], carried WITH them. The sheet that draws the
+  /// chips must not look the names up anywhere else: a lookup made when the
+  /// sheet opens can come before the names have arrived, and then every chip
+  /// reads "G002" (device lab run 41186616962 drew exactly that). Empty when
+  /// [genres] are words, which are their own names.
+  final GenreNames genreNames;
 
   const ContentFacets({
     this.genres = const <String>[],
     this.years = const <int>[],
     this.qualities = const <String>[],
+    this.genreNames = GenreNames.empty,
   });
 
   static const ContentFacets empty = ContentFacets();

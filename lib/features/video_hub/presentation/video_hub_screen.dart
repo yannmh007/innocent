@@ -383,6 +383,12 @@ class _VideoHubScreenState extends ConsumerState<VideoHubScreen>
     );
     final state = ref.watch(pagedCatalogueProvider(key));
     final facets = ref.watch(categoryFacetsProvider).valueOrNull;
+    // The names the chips below draw: the ones that came with the facets,
+    // else the app's own (watched, so they are fetching from the moment the
+    // grid is up rather than from the moment a chip needs one).
+    final appNames = ref.watch(genreNamesProvider);
+    final genreNames =
+        (facets?.genreNames.isEmpty ?? true) ? appNames : facets!.genreNames;
     final maxWidth = MediaQuery.of(context).size.width;
 
     // Filters changed means a different result set, so the old scroll offset
@@ -415,7 +421,7 @@ class _VideoHubScreenState extends ConsumerState<VideoHubScreen>
                     category: category,
                     filters: candidate,
                   ),
-                  genreNames: ref.read(genreNamesProvider),
+                  genreNames: genreNames,
                 );
                 if (next != null) setFilters(next);
               },
@@ -427,7 +433,7 @@ class _VideoHubScreenState extends ConsumerState<VideoHubScreen>
           child: ActiveFilterChips(
             filters: filters,
             onChanged: setFilters,
-            genreNames: ref.watch(genreNamesProvider),
+            genreNames: genreNames,
           ),
         ),
       ...PagedPosterGrid.build(
