@@ -556,7 +556,61 @@ async function open(browser, role, opts = {}) {
             { at: new Date().toISOString(), actor_email: 'boss@example.com', actor_role: 'owner',
               fn: 'studio', action: 'save', target: 't1', ok: true, error: null }] }),
         list: () => ({ titles: [] }),
-        categories: () => ({ categories: state.cats || [{ id: 'movies', sort_order: 1 }] }),
+        categories: () => ({ categories: state.cats || [{ id: 'movies', code: 'C01', sort_order: 1 }] }),
+        // 058: genres by code. The console reads them on every sign-in (the
+        // editor's chooser), so every test answers them.
+        genres: () => ({ genres: (state.genres ||= [
+          { code: 'G001', label: 'Open Movie', label_mm: null, label_th: null, sort_order: 1,
+            is_visible: true, retired_at: null, merged_into: null, titles: 3, published: 3 },
+          { code: 'G002', label: 'Animation', label_mm: 'ကာတွန်း', label_th: 'แอนิเมชัน', sort_order: 2,
+            is_visible: true, retired_at: null, merged_into: null, titles: 1, published: 1 },
+          { code: 'G003', label: 'Fantasy', label_mm: 'စိတ်ကူးယဉ်', label_th: 'แฟนตาซี', sort_order: 3,
+            is_visible: true, retired_at: null, merged_into: null, titles: 1, published: 1 },
+        ]).map((g) => ({ ...g })) }),
+        addGenre: () => {
+          (state.genreOps ||= []).push(body);
+          const code = 'G' + String(state.genres.length + 1).padStart(3, '0');
+          state.genres.push({ code, label: body.label, label_mm: body.label_mm, label_th: body.label_th,
+            sort_order: state.genres.length + 1, is_visible: true, retired_at: null, merged_into: null,
+            titles: 0, published: 0 });
+          return { ok: true, code };
+        },
+        saveGenre: () => {
+          (state.genreOps ||= []).push(body);
+          Object.assign(state.genres.find((g) => g.code === body.code), body.patch);
+          return { ok: true, code: body.code };
+        },
+        moveGenre: () => {
+          (state.genreOps ||= []).push(body);
+          const i = state.genres.findIndex((g) => g.code === body.code);
+          const j = body.dir === 'up' ? i - 1 : i + 1;
+          [state.genres[i], state.genres[j]] = [state.genres[j], state.genres[i]];
+          state.genres.forEach((g, k) => { g.sort_order = k + 1; });
+          return { ok: true };
+        },
+        retireGenre: () => {
+          (state.genreOps ||= []).push(body);
+          state.genres.find((g) => g.code === body.code).retired_at =
+            body.retired === false ? null : new Date().toISOString();
+          return { ok: true };
+        },
+        deleteGenre: () => {
+          (state.genreOps ||= []).push(body);
+          const g = state.genres.find((x) => x.code === body.code);
+          if (g.titles) return { __status: 409, error: 'in_use' };
+          state.genres = state.genres.filter((x) => x.code !== body.code);
+          return { ok: true };
+        },
+        mergeGenres: () => {
+          (state.genreOps ||= []).push(body);
+          const from = state.genres.find((g) => g.code === body.from);
+          const into = state.genres.find((g) => g.code === body.into);
+          into.titles += from.titles;
+          const moved = from.titles;
+          Object.assign(from, { titles: 0, retired_at: new Date().toISOString(), merged_into: body.into });
+          return { ok: true, moved };
+        },
+        save: () => { (state.saves ||= []).push(body); return { ok: true }; },
         moveCategory: () => {
           (state.moves = state.moves || []).push({ id: body.id, dir: body.dir });
           const all = state.cats.filter((c) => c.id === 'all');
@@ -894,10 +948,10 @@ try {
   {
     const { page, ctx, state } = await open(browser, 'editor');
     state.cats = [
-      { id: 'all', label: 'All', label_mm: 'အားလုံး', sort_order: 0, is_visible: true },
-      { id: 'movies', label: 'Movies', label_mm: 'ရုပ်ရှင်', sort_order: 1, is_visible: true },
-      { id: 'series', label: 'Series', label_mm: 'ဇာတ်လမ်းတွဲ', sort_order: 2, is_visible: true },
-      { id: 'reels', label: 'Reels', label_mm: 'Reels', sort_order: 3, is_visible: true },
+      { id: 'all', code: 'C00', label: 'All', label_mm: 'အားလုံး', sort_order: 0, is_visible: true },
+      { id: 'movies', code: 'C01', label: 'Movies', label_mm: 'ရုပ်ရှင်', sort_order: 1, is_visible: true },
+      { id: 'series', code: 'C02', label: 'Series', label_mm: 'ဇာတ်လမ်းတွဲ', sort_order: 2, is_visible: true },
+      { id: 'reels', code: 'C03', label: 'Reels', label_mm: 'Reels', sort_order: 3, is_visible: true },
     ];
     await page.waitForSelector('#tab-dashboard:not([hidden])');
     await page.click('#side a[data-tab=cats]');
@@ -915,14 +969,51 @@ try {
     // not merely for four arrows (the old list has four too).
     await page.waitForFunction(() => {
       const v = [...document.querySelectorAll('#catList input:not([type=checkbox])')].map((n) => n.value);
-      return v.length === 8 && v[2] !== 'Movies';
+      return v.length === 12 && v[3] !== 'Movies';
     }, null, { timeout: 5000 }).catch(() => {});
     check('categories: one call, by id and direction',
       JSON.stringify(state.moves) === JSON.stringify([{ id: 'series', dir: 'up' }]));
-    const order = await page.$$eval('#catList input:not([type=checkbox])', (ns) => ns.filter((_, i) => i % 2 === 0).map((n) => n.value));
+    const order = await page.$$eval('#catList input:not([type=checkbox])', (ns) => ns.filter((_, i) => i % 3 === 0).map((n) => n.value));
     check('categories: Series is now second, Movies third (' + order.join(',') + ')',
       order.join(',') === 'All,Series,Movies,Reels');
+    check('categories: each shows its code (058)',
+      (await page.$$eval('#catList .chip.mono', (ns) => ns.map((n) => n.textContent))).join(',') === 'C00,C02,C01,C03');
     await shot(page, 'cats-after');
+
+    // ── genres by code (058/059): the same page ───────────────────────────
+    await page.waitForFunction(() => document.querySelectorAll('#genreList select[title="Merge into"]').length === 3);
+    const codes = async () => page.$$eval('#genreList .chip.mono', (ns) => ns.map((n) => n.textContent));
+    check('genres: listed by code, in order (' + (await codes()).join(',') + ')',
+      (await codes()).join(',') === 'G001,G002,G003');
+    const delBtns = await page.$$('#genreList button.b.d');
+    check('genres: a genre titles have cannot be deleted', await delBtns[0].isDisabled());
+    await (await page.$$('#genreList button[title="Move down"]'))[0].click();
+    await page.waitForFunction(() => document.querySelector('#genreList .chip.mono')?.textContent === 'G002');
+    check('genres: ▼ is one call, by code', (state.genreOps || []).some((o) => o.op === 'moveGenre' && o.code === 'G001' && o.dir === 'down'));
+    await page.fill('#newGenreLabel', 'Thriller');
+    await page.fill('#newGenreLabelMm', 'သည်းထိတ်ရင်ဖို');
+    await page.click('#newGenreAdd');
+    await page.waitForFunction(() => /Added as G004/.test(document.querySelector('#msg')?.textContent || ''));
+    check('genres: Add sends the words, and the database gives the code',
+      (state.genreOps || []).some((o) => o.op === 'addGenre' && o.label === 'Thriller' && o.label_mm === 'သည်းထိတ်ရင်ဖို' && !o.code));
+    await page.waitForFunction(() => document.querySelectorAll('#genreList select[title="Merge into"]').length === 4);
+    // the new one has no titles: Delete, after a confirm
+    page.once('dialog', (d) => d.accept());
+    await (await page.$$('#genreList button.b.d'))[3].click();
+    await page.waitForFunction(() => /G004 deleted/.test(document.querySelector('#msg')?.textContent || ''));
+    check('genres: an unused genre is deleted by code', (state.genreOps || []).some((o) => o.op === 'deleteGenre' && o.code === 'G004'));
+    // merge Fantasy (G003) into Animation (G002)
+    await page.waitForFunction(() => document.querySelectorAll('#genreList select[title="Merge into"]').length === 3);
+    const rows = await page.$$('#genreList .sechead');
+    let fantasy = null;
+    for (const r of rows) if ((await r.$eval('.chip.mono', (n) => n.textContent)) === 'G003') fantasy = r;
+    page.once('dialog', (d) => d.accept());
+    await (await fantasy.$('select[title="Merge into"]')).selectOption('G002');
+    await page.waitForFunction(() => /Merged: 1 title/.test(document.querySelector('#msg')?.textContent || ''));
+    check('genres: merge moves the titles, by code', (state.genreOps || []).some((o) => o.op === 'mergeGenres' && o.from === 'G003' && o.into === 'G002'));
+    await page.waitForFunction(() => /merged into G002/.test(document.querySelector('#genreList')?.textContent || ''));
+    check('genres: a merged genre says where it went', /merged into G002/.test(await page.textContent('#genreList')));
+    await shot(page, 'genres');
     await ctx.close();
   }
 
@@ -971,6 +1062,17 @@ try {
     await page.waitForSelector('#revBar .cr-revbar');
     await shot(page, 'desk-editor-review');
     check('editor: no Published checkbox any more', !(await page.$('#e_published')));
+    // 058: genres are chosen by tapping, not typed; a save sends their codes.
+    await page.waitForSelector('#e_genre_codes button[data-code="G002"]');
+    check('editor: the genre chooser offers every genre by code',
+      (await page.$$eval('#e_genre_codes button', (ns) => ns.map((n) => n.dataset.code))).join(',') === 'G001,G002,G003');
+    check('editor: the old words box is gone', !(await page.$('input#e_genres')));
+    await page.click('#e_genre_codes button[data-code="G002"]');
+    await page.click('#save');
+    await page.waitForFunction(() => /Saved\./.test(document.querySelector('#msg')?.textContent || ''));
+    const saved = (state.saves || []).find((x) => x.id === MINE);
+    check('editor: a save sends the genre codes chosen, not words',
+      !!saved && JSON.stringify(saved.patch.genre_codes) === '["G002"]' && !('genres' in saved.patch));
     check('editor: the bar offers Approve and Send for review on a draft',
       /Approve/.test(await page.textContent('#revBar')) &&
       /Send for review/.test(await page.textContent('#revBar')));

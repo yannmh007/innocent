@@ -579,6 +579,9 @@ body.sh-on{padding-bottom:calc(76px + env(safe-area-inset-bottom))}
 .up-st.wait{color:var(--acc)}
 .up-st.ok{color:var(--ok)}
 .chip.bad{color:var(--bad);border-color:#5b2626;background:#241012}
+/* The genre chooser: chips to tap (058), big enough for a finger. */
+.genre-pick .chip{height:30px;padding:0 10px;font-size:12.5px;font-weight:550;letter-spacing:0}
+.genre-pick .chip.on{color:var(--ok);border-color:#1e4637;background:#0f2019}
 .cr-rv{display:flex;gap:12px;padding:10px;border:1px solid var(--line);
   border-radius:10px;margin-bottom:8px;background:linear-gradient(180deg,#121418,#101114)}
 .cr-rv-cover{width:56px;height:78px;flex:0 0 56px;border-radius:6px;object-fit:cover;
@@ -1031,8 +1034,46 @@ body.sh-on{padding-bottom:calc(76px + env(safe-area-inset-bottom))}
           <label>Label (Burmese)</label>
           <input id="newCatLabelMm" placeholder="မှတ်တမ်း">
         </div>
+        <div style="flex:1;min-width:120px">
+          <label>Label (Thai)</label>
+          <input id="newCatLabelTh" placeholder="สารคดี">
+        </div>
         <div style="align-self:flex-end">
           <button id="newCatAdd" class="b">Add</button>
+        </div>
+      </div>
+      <p class="hint">Each category also has a code (C01, C02 …) that the
+        database gives it and that never changes: it is what the app and the
+        database know the category by.</p>
+    </div>
+
+    <div class="sec">
+      <div class="sechead"><h2>Genres</h2></div>
+      <p class="hint">The genres a title can have, each known by a code
+        (G001, G002 …) that the database gives and that never changes or comes
+        back. Rename or translate one and every title with it changes at once,
+        and the search finds it in English, Burmese and Thai. A genre a title
+        has cannot be deleted: retire it (no new title gets it; those that have
+        it keep it) or merge it into another (its titles move there). Untick
+        <b>offered</b> to keep it off the chooser and the filter bar without
+        retiring it.</p>
+      <div id="genreList" style="margin-top:10px"></div>
+      <div class="sechead" style="margin-top:14px">Add a genre</div>
+      <div class="cr-form">
+        <div style="flex:1;min-width:120px">
+          <label>Name</label>
+          <input id="newGenreLabel" placeholder="Thriller" maxlength="40">
+        </div>
+        <div style="flex:1;min-width:120px">
+          <label>Name (Burmese)</label>
+          <input id="newGenreLabelMm" placeholder="သည်းထိတ်ရင်ဖို" maxlength="60">
+        </div>
+        <div style="flex:1;min-width:120px">
+          <label>Name (Thai)</label>
+          <input id="newGenreLabelTh" placeholder="ระทึกขวัญ" maxlength="60">
+        </div>
+        <div style="align-self:flex-end">
+          <button id="newGenreAdd" class="b">Add</button>
         </div>
       </div>
     </div>
