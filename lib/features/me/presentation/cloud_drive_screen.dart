@@ -66,7 +66,7 @@ class _CloudDriveScreenState extends State<CloudDriveScreen> {
                       style: const TextStyle(color: Colors.white, fontSize: 16)),
                   content: Text(AppStrings.of(context).cloudDriveBody,
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.75),
+                      color: Colors.white.withValues(alpha: 0.75),
                       fontSize: 13,
                       height: 1.4,
                     ),
@@ -111,7 +111,7 @@ class _CloudDriveScreenState extends State<CloudDriveScreen> {
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: p.color.withOpacity(0.15),
+                      color: p.color.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(p.icon, color: p.color, size: 22),

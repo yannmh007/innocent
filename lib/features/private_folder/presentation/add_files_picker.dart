@@ -2339,7 +2339,7 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
                 // dim + check when selected
                 if (checked)
                   Container(
-                      color: AppColors.accentBlue.withOpacity(0.35)),
+                      color: AppColors.accentBlue.withValues(alpha: 0.35)),
                 Positioned(
                   top: 4,
                   right: 4,
@@ -2348,7 +2348,7 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
                       shape: BoxShape.circle,
                       color: checked
                           ? AppColors.accentBlue
-                          : Colors.black.withOpacity(0.4),
+                          : Colors.black.withValues(alpha: 0.4),
                       border: Border.all(color: Colors.white, width: 1.4),
                     ),
                     padding: const EdgeInsets.all(1),

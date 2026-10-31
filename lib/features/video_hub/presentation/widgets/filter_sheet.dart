@@ -274,7 +274,7 @@ class _Grabber extends StatelessWidget {
           width: 34,
           height: 4,
           decoration: BoxDecoration(
-            color: VH.textTertiary.withOpacity(0.5),
+            color: VH.textTertiary.withValues(alpha: 0.5),
             borderRadius: BorderRadius.circular(2),
           ),
         ),

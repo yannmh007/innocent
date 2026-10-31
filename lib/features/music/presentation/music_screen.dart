@@ -444,7 +444,7 @@ class _TrackTile extends StatelessWidget {
                     artist,
                     style: TextStyle(
                       color: isPlaying
-                          ? AppColors.primaryBlue.withOpacity(0.85)
+                          ? AppColors.primaryBlue.withValues(alpha: 0.85)
                           : Colors.white54,
                       fontSize: 11,
                     ),
@@ -1201,7 +1201,7 @@ class _MiniPlayerBar extends ConsumerWidget {
                   Text(
                     song.displayArtist,
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.45),
+                      color: Colors.white.withValues(alpha: 0.45),
                       fontSize: 11,
                     ),
                     maxLines: 1,

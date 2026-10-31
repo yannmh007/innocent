@@ -487,7 +487,7 @@ class _RecoveryFlowScreenState extends ConsumerState<RecoveryFlowScreen> {
     return SecureScreenGuard(
       child: PopScope(
       canPop: canLeave,
-      onPopInvoked: (didPop) {
+      onPopInvokedWithResult: (didPop, _) {
         if (!didPop) {
           setState(() {
             _error = null;

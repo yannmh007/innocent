@@ -93,7 +93,7 @@ class AppColors {
   static const Color specEqDialFill = Color(0xFF22384F);  // dial circle fill
 
   // === PRE-COMPUTED OPACITY CONSTANTS ===
-  // Pre-computed equivalents of `Colors.white.withOpacity(x)` and
+  // Pre-computed equivalents of `Colors.white.withValues(alpha: x)` and
   // similar runtime calls. Same visual result, but const-able, so
   // widgets that use these can themselves be const (saving rebuilds).
   // Values: alpha = (opacity * 255).round() encoded in ARGB hex.

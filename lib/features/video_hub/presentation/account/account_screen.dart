@@ -410,7 +410,7 @@ class _StatusCard extends StatelessWidget {
             Text(
               s.vhAccountExpires(_formatDate(expires)),
               style: VH.meta.copyWith(
-                color: VH.textInverse.withOpacity(0.75),
+                color: VH.textInverse.withValues(alpha: 0.75),
                 fontSize: 12,
               ),
             ),

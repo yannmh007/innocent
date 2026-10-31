@@ -88,7 +88,7 @@ class FeaturedHero extends StatelessWidget {
             begin: Alignment.topCenter,
             end: Alignment.center,
             colors: <Color>[
-              VH.canvas.withOpacity(0.72),
+              VH.canvas.withValues(alpha: 0.72),
               Colors.transparent,
             ],
           ),
@@ -235,11 +235,11 @@ class _HeroButton extends StatelessWidget {
         decoration: BoxDecoration(
           // The primary action is the ONLY solid-white surface on the page.
           // That is what makes it read as the primary action without a colour.
-          color: primary ? VH.textPrimary : Colors.white.withOpacity(0.14),
+          color: primary ? VH.textPrimary : Colors.white.withValues(alpha: 0.14),
           borderRadius: BorderRadius.circular(VH.rControl),
           border: primary
               ? null
-              : Border.all(color: Colors.white.withOpacity(0.18)),
+              : Border.all(color: Colors.white.withValues(alpha: 0.18)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,

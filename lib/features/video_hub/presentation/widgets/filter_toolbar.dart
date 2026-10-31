@@ -129,7 +129,7 @@ class _ToolbarButton extends StatelessWidget {
                 alignment: Alignment.center,
                 padding: const EdgeInsets.symmetric(horizontal: 4),
                 decoration: BoxDecoration(
-                  color: VH.textInverse.withOpacity(0.14),
+                  color: VH.textInverse.withValues(alpha: 0.14),
                   borderRadius: BorderRadius.circular(VH.rPill),
                 ),
                 child: Text(

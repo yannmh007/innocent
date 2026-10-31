@@ -35,7 +35,7 @@ class AlbumDetailScreen extends ConsumerWidget {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    tintColor.withOpacity(0.4),
+                    tintColor.withValues(alpha: 0.4),
                     Colors.transparent,
                   ],
                 ),

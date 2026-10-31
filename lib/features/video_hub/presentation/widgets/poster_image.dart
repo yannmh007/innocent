@@ -211,7 +211,7 @@ class _PosterImageState extends ConsumerState<PosterImage> {
         child: Icon(
           widget.glyph,
           size: 26,
-          color: Colors.white.withOpacity(0.13),
+          color: Colors.white.withValues(alpha: 0.13),
         ),
       ),
     );

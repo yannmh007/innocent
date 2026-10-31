@@ -300,12 +300,12 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
                 height: 44,
                 decoration: BoxDecoration(
                   color: color
-                      .withOpacity(disabled ? 0.07 : 0.15),
+                      .withValues(alpha: disabled ? 0.07 : 0.15),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(icon,
                     color: disabled
-                        ? color.withOpacity(0.4)
+                        ? color.withValues(alpha: 0.4)
                         : color,
                     size: 22),
               ),

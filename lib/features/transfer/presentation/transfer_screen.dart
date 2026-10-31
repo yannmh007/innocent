@@ -1150,7 +1150,7 @@ class _RunningPane extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppColors.accentBlue.withOpacity(0.10),
+                color: AppColors.accentBlue.withValues(alpha: 0.10),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -1301,7 +1301,7 @@ class _RunningPane extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: accent.withOpacity(0.10),
+        color: accent.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -1467,7 +1467,7 @@ class _RunningPane extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.success.withOpacity(0.10),
+        color: AppColors.success.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -1681,9 +1681,9 @@ class _ReceivePaneState extends ConsumerState<_ReceivePane> {
       padding: const EdgeInsets.all(14),
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
-        color: AppColors.accentBlue.withOpacity(0.12),
+        color: AppColors.accentBlue.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.accentBlue.withOpacity(0.35)),
+        border: Border.all(color: AppColors.accentBlue.withValues(alpha: 0.35)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1774,7 +1774,7 @@ class _ReceivePaneState extends ConsumerState<_ReceivePane> {
       padding: const EdgeInsets.all(14),
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
-        color: AppColors.success.withOpacity(0.10),
+        color: AppColors.success.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -1803,9 +1803,9 @@ class _ReceivePaneState extends ConsumerState<_ReceivePane> {
       padding: const EdgeInsets.all(14),
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
-        color: AppColors.success.withOpacity(0.12),
+        color: AppColors.success.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.success.withOpacity(0.35)),
+        border: Border.all(color: AppColors.success.withValues(alpha: 0.35)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1982,13 +1982,13 @@ class _ReceivePaneState extends ConsumerState<_ReceivePane> {
                     color: AppColors.darkSurfaceVariant,
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                        color: AppColors.accentBlue.withOpacity(0.35)),
+                        color: AppColors.accentBlue.withValues(alpha: 0.35)),
                   ),
                   child: Row(
                     children: [
                       CircleAvatar(
                         radius: 16,
-                        backgroundColor: AppColors.accentBlue.withOpacity(0.20),
+                        backgroundColor: AppColors.accentBlue.withValues(alpha: 0.20),
                         child: const Icon(Icons.phone_android,
                             size: 17, color: AppColors.accentBlue),
                       ),
@@ -2103,9 +2103,9 @@ class _ReceivePaneState extends ConsumerState<_ReceivePane> {
       padding: const EdgeInsets.all(14),
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: AppColors.accentBlue.withOpacity(0.12),
+        color: AppColors.accentBlue.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.accentBlue.withOpacity(0.35)),
+        border: Border.all(color: AppColors.accentBlue.withValues(alpha: 0.35)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

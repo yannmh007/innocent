@@ -186,7 +186,7 @@ class _ContentDetailScreenState extends ConsumerState<ContentDetailScreen> {
                         end: Alignment.topCenter,
                         colors: <Color>[
                           VH.canvas,
-                          VH.canvas.withOpacity(0.15),
+                          VH.canvas.withValues(alpha: 0.15),
                           Colors.transparent,
                         ],
                         stops: const <double>[0.0, 0.55, 1.0],
@@ -855,7 +855,7 @@ class _AlbumTile extends StatelessWidget {
           // detail; this only darkens enough for the lock glyph to read.
           Positioned.fill(
             child: IgnorePointer(
-              child: ColoredBox(color: Colors.black.withOpacity(0.22)),
+              child: ColoredBox(color: Colors.black.withValues(alpha: 0.22)),
             ),
           ),
           const Center(

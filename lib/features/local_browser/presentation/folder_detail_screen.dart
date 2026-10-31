@@ -100,7 +100,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen> {
       // could no longer see — and the bottom bar's Move would then act on
       // files from a folder they had just left.
       canPop: !selectionActive,
-      onPopInvoked: (didPop) {
+      onPopInvokedWithResult: (didPop, _) {
         if (!didPop && selectionActive) {
           ref.read(selectionProvider.notifier).clear();
         }

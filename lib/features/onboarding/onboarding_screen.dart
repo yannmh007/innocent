@@ -190,7 +190,7 @@ class _PageView extends StatelessWidget {
             width: 128,
             height: 128,
             decoration: BoxDecoration(
-              color: page.color.withOpacity(0.15),
+              color: page.color.withValues(alpha: 0.15),
               shape: BoxShape.circle,
             ),
             child: Icon(page.icon, color: page.color, size: 64),

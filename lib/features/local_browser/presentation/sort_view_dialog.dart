@@ -277,7 +277,7 @@ class _SortViewDialogState extends ConsumerState<SortViewDialog> {
                                 decoration: BoxDecoration(
                                   color: selected
                                       ? AppColors.accentBlue
-                                          .withOpacity(0.18)
+                                          .withValues(alpha: 0.18)
                                       : Colors.transparent,
                                   borderRadius: BorderRadius.circular(6),
                                   border: Border.all(

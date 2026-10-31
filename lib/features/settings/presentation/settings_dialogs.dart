@@ -88,7 +88,7 @@ Future<double?> showSettingsSliderDialog({
                   activeTrackColor: AppColors.primaryBlue,
                   inactiveTrackColor: AppColors.white20,
                   thumbColor: AppColors.primaryBlue,
-                  overlayColor: AppColors.primaryBlue.withOpacity(0.2),
+                  overlayColor: AppColors.primaryBlue.withValues(alpha: 0.2),
                 ),
                 child: Slider(
                   value: tempValue,

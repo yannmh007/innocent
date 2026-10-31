@@ -487,7 +487,7 @@ class _PrivateFolderScreenState extends ConsumerState<PrivateFolderScreen>
     return SecureScreenGuard(
       child: PopScope(
       canPop: !_selectionMode && _openFolderId == null,
-      onPopInvoked: (didPop) {
+      onPopInvokedWithResult: (didPop, _) {
         if (didPop) return;
         if (_selectionMode) {
           _exitSelection();
@@ -1058,7 +1058,7 @@ class _PrivateFolderScreenState extends ConsumerState<PrivateFolderScreen>
       semanticLabel: f.name,
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.04),
+          color: Colors.white.withValues(alpha: 0.04),
           borderRadius: BorderRadius.circular(10),
           border: Border.all(color: Colors.white10),
         ),
@@ -1086,7 +1086,7 @@ class _PrivateFolderScreenState extends ConsumerState<PrivateFolderScreen>
     final selected = _selected.contains(e.videoUri);
     return ListTile(
       selected: selected,
-      selectedTileColor: AppColors.accentBlue.withOpacity(0.12),
+      selectedTileColor: AppColors.accentBlue.withValues(alpha: 0.12),
       leading: _selectionMode
           ? Icon(
               selected
@@ -1175,7 +1175,7 @@ class _PrivateFolderScreenState extends ConsumerState<PrivateFolderScreen>
               right: 0,
               bottom: 0,
               child: Container(
-                color: Colors.black.withOpacity(0.45),
+                color: Colors.black.withValues(alpha: 0.45),
                 padding:
                     const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                 child: Text(e.videoTitle,
@@ -1188,8 +1188,8 @@ class _PrivateFolderScreenState extends ConsumerState<PrivateFolderScreen>
             if (_selectionMode) ...[
               Container(
                 color: selected
-                    ? AppColors.accentBlue.withOpacity(0.28)
-                    : Colors.black.withOpacity(0.25),
+                    ? AppColors.accentBlue.withValues(alpha: 0.28)
+                    : Colors.black.withValues(alpha: 0.25),
               ),
               Positioned(
                 top: 4,
