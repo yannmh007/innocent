@@ -265,16 +265,27 @@ jobs:
       # ffmpeg installed only for streamlong it skipped itself in any run
       # without a long film (run 37877954034).
       - name: Install ffmpeg (flows that make a film)
+        env:
+          # A dated BtbN build of the 7.1 line, checked by SHA-256 before it
+          # is unpacked; never the floating `latest`, which BtbN replaces
+          # every day. Renew with `python3 tool/pins.py ffmpeg` (the same
+          # three values in transcode.yml and device-lab.yml; the dependency
+          # scan's `pins` job checks every week that the file is still there).
+          FFMPEG_TAG: 'autobuild-2026-07-31-14-10'
+          FFMPEG_ASSET: 'ffmpeg-n7.1.5-12-g1fdbca85aa-linux64-gpl-7.1.tar.xz'
+          FFMPEG_SHA256: 'c1e6caf48923dd8e6bc5e54d51ba70c321175b8162ae9c414c392990e72f0e79'
         run: |
           source test_device/config.env
           case " $FLOWS " in *" streamlong_"*|*" streamab_"*|*" newvideo "*) ;; *) echo "no film made this run"; exit 0 ;; esac
-          url=https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-n7.1-latest-linux64-gpl-7.1.tar.xz
+          url="https://github.com/BtbN/FFmpeg-Builds/releases/download/$FFMPEG_TAG/$FFMPEG_ASSET"
           if curl -fsSL --retry 3 -o /tmp/ffmpeg.tar.xz "$url" \
+             && echo "$FFMPEG_SHA256  /tmp/ffmpeg.tar.xz" | sha256sum -c --quiet - \
              && mkdir -p /tmp/ffmpeg && tar -xJf /tmp/ffmpeg.tar.xz -C /tmp/ffmpeg --strip-components=1 \
              && /tmp/ffmpeg/bin/ffmpeg -version >/dev/null 2>&1; then
             echo "/tmp/ffmpeg/bin" >> "$GITHUB_PATH"
             /tmp/ffmpeg/bin/ffmpeg -version | head -1
           else
+            echo "::warning::the pinned ffmpeg build is gone or is not the pinned file: Ubuntu's ffmpeg instead"
             sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg >/dev/null
             ffmpeg -version | head -1
           fi

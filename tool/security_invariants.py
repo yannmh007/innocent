@@ -406,6 +406,10 @@ CRED_ALLOWED = {
     # .github/workflows/device-lab.yml checks before opening it. The digest
     # of a public release file; not a key.
     'a6044a84542f522f434c5dc3d609e60c7446d423f3ed1b2ae513f5c48663ec5e',
+    # SHA-256 of BtbN's ffmpeg-n7.1.5-12-g1fdbca85aa-linux64-gpl-7.1.tar.xz
+    # (autobuild-2026-07-31-14-10), which transcode.yml and device-lab.yml check before unpacking
+    # it. The digest of a public release file; not a key.
+    'c1e6caf48923dd8e6bc5e54d51ba70c321175b8162ae9c414c392990e72f0e79',
     # HKDF-SHA256 of the bytes 0..31 (salt zero, info innocent-db-backup-v1):
     # the test vector tool/restore_backup_test.py and tool/js/pii_test.mjs both
     # pin, so the Python and the edge function derive the same backup key. Made

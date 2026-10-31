@@ -41,6 +41,8 @@ on:
       - 'tool/gradle_lock.py'
       - 'tool/osv-scanner-android.toml'
       - 'tool/pins.py'
+      - '.github/workflows/transcode.yml'
+      - '.github/workflows/device-lab.yml'
       - '.github/workflows/deps-scan.yml'
   workflow_dispatch:
 
@@ -144,8 +146,13 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Every pinned download still there, still the same file
+        run: python3 tool/pins.py check
+
+      # Informational: what a renewed pin would be. Never fails the job.
       - name: The newest ffmpeg build of our line, to pin
+        if: always()
         env:
           GH_TOKEN: ${{ github.token }}
-        run: python3 tool/pins.py ffmpeg | tee -a "$GITHUB_STEP_SUMMARY"
+        run: python3 tool/pins.py ffmpeg | tee -a "$GITHUB_STEP_SUMMARY" || true
 
