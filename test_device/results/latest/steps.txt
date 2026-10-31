@@ -1,19 +1,16 @@
-[02:25:59] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
-[02:25:59] install
-[02:26:18] network: speed 2000:4000 kbit/s, delay 80:200 ms
-[02:26:18] network: 0.5% of incoming packets dropped on eth0
-[02:26:45] overlays: [x] com.android.internal.display.cutout.emulation.hole [x] com.android.internal.systemui.navbar.threebutton 
-[02:26:46] nav bar: navigationBars frame=[0,2337][1080,2400] navigationBars frame=[0,2337][1080,2400] navigationBars frame=[0,2274][1080,2400] 
-[02:26:46] library: pushing 24 files
-[02:27:19] library: MediaStore lists 24 videos
-[02:27:19] cold start
+[03:38:13] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
+[03:38:13] install
+[03:38:25] network: speed 2000:4000 kbit/s, delay 80:200 ms
+[03:38:25] network: 0.5% of incoming packets dropped on eth0
+[03:38:53] overlays: [x] com.android.internal.display.cutout.emulation.hole [x] com.android.internal.systemui.navbar.threebutton 
+[03:38:54] nav bar: navigationBars frame=[0,2274][1080,2400] navigationBars frame=[0,2274][1080,2400] 
+[03:38:54] library: pushing 24 files
+[03:39:24] library: MediaStore lists 24 videos
+[03:39:24] cold start
 Status: ok
-TotalTime: 5105
-WaitTime: 5117
-[02:27:35] flow vault_lock
-[02:30:35] flow vault_lock: PIN set, ten misses (maestro exit 0)
-[02:30:37] vault: the phone's date moved 7201 s
-[02:30:54] flow vault_lock: date moved, the wait still holds (maestro exit 0)
-[02:32:19] flow vault_lock: the wait over, the PIN opens it (maestro exit 0)
-[02:32:20] flow vault_lock exit 0
-[02:32:27] done
+TotalTime: 2090
+WaitTime: 2093
+[03:39:36] flow jumps
+[03:39:37] jumps: 0839dacb-59ae-4c95-9279-4901b925965d, the viewer's jumps, 240 s, home after 130 s
+[03:43:44] flow jumps done
+[03:43:48] done
