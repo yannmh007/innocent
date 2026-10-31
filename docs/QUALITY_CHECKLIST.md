@@ -58,8 +58,10 @@ Last full pass: **30 Oct 2026**; open items worked 31 Oct.
    SHA-256 in transcode.yml and the lab, Ubuntu's signed ffmpeg as the
    fallback; checked weekly. transcode.yml takes effect with the next
    release (it runs from main).
-2. **A lab flow for the vault's wait.** Set a PIN, five misses, the wait,
-   then the date moved forward: the wait must hold. Gate for 1.64.79.
+2. ~~**A lab flow for the vault's wait.**~~ Done: run 41158555130, 3 of 3.
+   Set a PIN, five misses, the wait; the phone's date moved 2 hours on
+   (7201 s): the wait held, and ended on the boot clock's 60 s. Gate for
+   1.64.79.
 3. ~~**The downloader on Jackson 2.13.5.**~~ Done: run 41101805278, "LAB
    engine update ok ALREADY_UP_TO_DATE". The library's Jackson reads only
    the yt-dlp updater's reply from GitHub (the app reads yt-dlp's reports
