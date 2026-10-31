@@ -1,0 +1,77 @@
+# Categories and genres BY CODE (TAX phase 3), on the live catalogue.
+#
+# The Movies tab asks for `category_code=eq.C01`; the filter sheet offers
+# genre NAMES from rpc/taxonomy, never a code ("G002"); picking Animation
+# (G002) lists Sintel, which carries it, and not Tears of Steel, which does
+# not; the chip and the title page say "Animation". Open films only.
+appId: com.innocent.media
+---
+- launchApp
+- waitForAnimationToEnd:
+    timeout: 15000
+- tapOn:
+    text: "Wait"
+    optional: true
+- tapOn:
+    text: "Skip"
+    optional: true
+- tapOn:
+    text: "Allow.*"
+    optional: true
+- tapOn:
+    text: "Allow.*"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 8000
+# Into the hub (full screen, outside the tab shell).
+- tapOn: "Movies"
+- waitForAnimationToEnd:
+    timeout: 10000
+- tapOn:
+    text: "I am 18 or older.*"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 15000
+- takeScreenshot: g1_hub
+# The category pill: the hub's only "Movies" now.
+- tapOn: "Movies"
+- extendedWaitUntil:
+    visible: "Sintel"
+    timeout: 30000
+- assertVisible: "Tears of Steel"
+- takeScreenshot: g2_movies
+- tapOn: "Filters"
+- extendedWaitUntil:
+    visible: "Animation"
+    timeout: 15000
+- assertVisible: "Fantasy"
+- assertVisible: "Open Movie"
+- assertNotVisible:
+    text: "G[0-9]{3}"
+- takeScreenshot: g3_sheet
+- tapOn: "Animation"
+- waitForAnimationToEnd:
+    timeout: 8000
+- takeScreenshot: g4_picked
+- tapOn: "Show .*"
+- waitForAnimationToEnd:
+    timeout: 15000
+- extendedWaitUntil:
+    visible: "Genre: Animation"
+    timeout: 15000
+- assertVisible: "Sintel"
+- assertNotVisible: "Tears of Steel"
+- assertNotVisible:
+    text: ".*G[0-9]{3}.*"
+- takeScreenshot: g5_filtered
+- tapOn: "Sintel"
+- waitForAnimationToEnd:
+    timeout: 12000
+- assertVisible:
+    text: ".*Animation.*"
+- assertNotVisible:
+    text: ".*G[0-9]{3}.*"
+- takeScreenshot: g6_title
+- back
+- back
+- back
