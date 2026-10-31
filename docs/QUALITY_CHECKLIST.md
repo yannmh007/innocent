@@ -5,13 +5,13 @@ and what it last said; then what is still open, in the order it is worth
 doing. Kept current by whoever closes an item. The findings themselves, with
 their history, are in `docs/gap_audit_2026_10.md`.
 
-Last full pass: **30 Oct 2026**.
+Last full pass: **30 Oct 2026**; open items worked 31 Oct.
 
 ## 1. The checks
 
 | area | standard | how | where it runs | last result |
 |---|---|---|---|---|
-| Static analysis (code) | OWASP ASVS / CWE | Semgrep 1.183, 842 rules | by hand (the registry is not reachable from sessions) | 298 hits triaged, 0 open |
+| Static analysis (code) | OWASP ASVS / CWE | Semgrep 1.183, 830 rules at a pinned commit | `sast.yml`: every push fails on a new ERROR finding in what it changed; weekly full table | 298 hits triaged 30 Oct, 0 open |
 | Static analysis (Dart) | Flutter lints | `flutter analyze` | every build | 0 errors, 0 warnings, 272 notes (looked at) |
 | Static analysis (edge functions) | TypeScript | `tsc` with a Deno shim | by hand | clean but for TS 5.7's `Uint8Array` typing |
 | Structure, secrets, paywall invariants | own | `tool/check.py` (23 checks, 16 JS suites) | before every push | pass |
@@ -21,7 +21,7 @@ Last full pass: **30 Oct 2026**.
 | The app on real phones | — | Firebase Test Lab, realme C53 and OPPO A79 | Test Lab, 5 phones a day | 16 of 16 and 15 of 16 (run 41047246611) |
 | Dependencies (Dart) | OSV / GitHub Advisories | OSV-Scanner 2.2.2 on a fresh `pubspec.lock` | weekly and on change | 0 |
 | Dependencies (Android) | OSV / GitHub Advisories | the same on Gradle's release classpath | weekly and on change | 0 open; 21 accepted until 31 Jan 2027, each with why |
-| CI supply chain | OpenSSF Scorecard, GitHub hardening | zizmor 1.31; actions pinned by SHA; downloads pinned by SHA-256 | by hand | 0 medium/high; ffmpeg not yet pinned (open, P1) |
+| CI supply chain | OpenSSF Scorecard, GitHub hardening | zizmor 1.31; actions pinned by SHA; every outside download pinned by SHA-256 (`tool/pins.py`) | zizmor by hand; the pins downloaded and compared weekly (`deps-scan.yml`, job `pins`) | 0 medium/high; OSV-Scanner, Maestro, ffmpeg pinned and matching |
 | Mobile app security | OWASP MASVS 2 / MASTG | the checklist below | by hand, per release | see below |
 | Database | Supabase advisors | security and performance advisors | by hand | nothing new; the known ones are in the gap audit |
 | Console (web) | OWASP Top 10 | CSP, frame guard, text-only DOM, smoke test in Chromium | `console_smoke.mjs` in check.py | pass |
@@ -54,13 +54,14 @@ Last full pass: **30 Oct 2026**.
 
 **P1 — security, or a gate for the next release. Done next, in this order.**
 
-1. **Pin ffmpeg.** The transcode job runs BtbN's floating `latest` build
-   while holding `TRANSCODE_SECRET`. Pin a dated build by SHA-256, apt as
-   the fallback; a weekly job checks every pinned download still exists and
-   matches, so a pin never rots silently.
+1. ~~**Pin ffmpeg.**~~ Done 31 Oct: BtbN autobuild-2026-07-31 (n7.1.5) by
+   SHA-256 in transcode.yml and the lab, Ubuntu's signed ffmpeg as the
+   fallback; checked weekly. transcode.yml takes effect with the next
+   release (it runs from main).
 2. **A lab flow for the vault's wait.** Set a PIN, five misses, the wait,
    then the date moved forward: the wait must hold. Gate for 1.64.79.
-3. **The downloader on Jackson 2.13.5.** The library's Jackson reads only
+3. ~~**The downloader on Jackson 2.13.5.**~~ Done: run 41101805278, "LAB
+   engine update ok ALREADY_UP_TO_DATE". The library's Jackson reads only
    the yt-dlp updater's reply from GitHub (the app reads yt-dlp's reports
    in Dart); a flow opens Downloads on a fresh install, so the engine is
    unpacked and updated, then reads an open film's direct link. Gate for
@@ -71,11 +72,13 @@ Last full pass: **30 Oct 2026**.
 
 **P2 — privacy and reliability.**
 
-5. Reseal the one payment screenshot stored before sealing.
+5. Reseal the one payment screenshot stored before sealing: ingest v41
+   seals it on its tick (31 Oct; `proof_reseal_test.mjs`).
 6. Telegram folder names that say nothing (the bot functions in 023/024/033).
 7. The sealed-cache timing tests that sometimes fail on a busy runner.
-8. Semgrep in CI with a pinned rule set, so section 1's first row runs by
-   itself.
+8. ~~Semgrep in CI with a pinned rule set.~~ Done 31 Oct (`sast.yml`).
+   Also found on the way and fixed: the vault PIN pad read each digit
+   twice to TalkBack.
 
 **P3 — when convenient.**
 
