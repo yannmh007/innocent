@@ -36,11 +36,14 @@ let CATEGORIES = ['movies', 'series', 'reels'];
 async function refreshCategoryOptions() {
   try {
     const { categories } = await api({ op: 'categories' });
-    const ids = (categories ?? [])
+    const rows = (categories ?? [])
       .filter((c) => c.id !== 'all')
-      .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
-      .map((c) => String(c.id));
-    if (ids.length) CATEGORIES = ids;
+      .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+    // The value stays the id (what an older studio takes); the code is shown
+    // beside the name, so the operator sees what the title will carry.
+    const opts = rows.map((c) => ({ value: String(c.id),
+      label: (c.label || c.id) + (c.code ? ' · ' + c.code : '') }));
+    if (opts.length) CATEGORIES = opts;
   } catch (e) {
     // A console that cannot reach the table keeps the seeded list. Refusing to
     // draw the form would be worse: the operator would be unable to edit a
@@ -718,6 +721,28 @@ function wireDrop(box, input, after) {
   });
 }
 
+// WHAT THE GENRE CHOOSER OFFERS (migration 058): every genre by its code,
+// with its words. Null until the table has answered — the form then shows the
+// old comma-separated words, which the database maps to codes itself, so a
+// console that cannot reach the list can still save a title.
+let GENRES = null;
+
+async function refreshGenreOptions() {
+  try {
+    const { genres } = await api({ op: 'genres' });
+    GENRES = (genres ?? []).slice().sort((a, b) =>
+      (a.sort_order ?? 0) - (b.sort_order ?? 0) || String(a.code).localeCompare(String(b.code)));
+  } catch (e) {
+    console.warn('genre options: ' + (e && e.message ? e.message : e));
+  }
+  return GENRES;
+}
+
+/// The words for a genre in the chooser: English, then Burmese when there is.
+function genreWords(g) {
+  return g.label + (g.label_mm ? ' · ' + g.label_mm : '');
+}
+
 // ── the detail form, shared by New and the editor ────────────────────────
 //
 // One description, two consumers. Two hand-written copies of a twelve-field
@@ -726,8 +751,11 @@ const FIELDS = [
   { k: 'title', label: 'Title', ph: 'Name shown in the app', w: 2 },
   { k: 'title_mm', label: 'Title (Burmese)', w: 2 },
   { k: 'synopsis', label: 'Description', type: 'textarea', w: 4 },
-  { k: 'genres', label: 'Tags / genres', ph: 'action, drama, myanmar', w: 2,
-    hint: 'Chips on the card, and what the filter bar offers.' },
+  // BY CODE (migration 058): a tap on a genre, not words typed — so a genre
+  // is never spelled two ways. New genres, and their words in each language,
+  // are made on the Categories page.
+  { k: 'genre_codes', label: 'Genres', type: 'genres', w: 2,
+    hint: 'Chips on the card, and what the filter bar offers. Add or rename genres on the Categories page.' },
   { k: 'keywords', label: 'Search keywords (hidden)', w: 2,
     ph: 'alternate spelling, actor, မြန်မာလို အမည်',
     hint: 'Searchable, never shown. The words people actually type.' },
@@ -757,11 +785,16 @@ function buildForm(host, prefix, values, onChange) {
   for (const f of FIELDS) {
     const id = prefix + f.k;
     let input;
-    if (f.type === 'textarea') input = el('textarea', { id });
+    if (f.type === 'genres') {
+      input = genreChooser(id, values, onChange);
+    } else if (f.type === 'textarea') input = el('textarea', { id });
     else if (f.type === 'select') {
       input = el('select', { id });
       const opts = typeof f.options === 'function' ? f.options() : f.options;
-      for (const o of opts) input.append(el('option', { value: o }, text(o)));
+      for (const o of opts) {
+        const value = typeof o === 'object' ? o.value : o;
+        input.append(el('option', { value }, text(typeof o === 'object' ? o.label : o)));
+      }
     } else if (f.type === 'checkbox') input = el('input', { id, type: 'checkbox' });
     else {
       input = el('input', { id, type: f.type || 'text', placeholder: f.ph || '' });
@@ -769,12 +802,13 @@ function buildForm(host, prefix, values, onChange) {
     }
 
     const v = values ? values[f.k] : undefined;
-    if (f.type === 'checkbox') input.checked = v === true;
+    if (f.type === 'genres') { /* drawn with its values */ }
+    else if (f.type === 'checkbox') input.checked = v === true;
     else if (ARRAY_FIELDS.has(f.k)) {
       input.value = Array.isArray(v) ? v.join(', ') : (v || '');
     } else input.value = v == null ? '' : v;
 
-    if (onChange) {
+    if (onChange && f.type !== 'genres') {
       input.addEventListener('input', onChange);
       input.addEventListener('change', onChange);
     }
@@ -796,11 +830,66 @@ function buildForm(host, prefix, values, onChange) {
   }
 }
 
+/// The genres of a title as chips to tap, every genre the table offers plus
+/// any the title already has that it no longer offers (retired, hidden), so
+/// those can be seen and taken off.
+function genreChooser(id, values, onChange) {
+  const have = Array.isArray(values?.genre_codes) ? values.genre_codes.map(String) : [];
+  if (!GENRES) {
+    const words = el('input', { id, type: 'text', placeholder: 'action, drama' });
+    words.dataset.words = '1';
+    words.value = Array.isArray(values?.genres) ? values.genres.join(', ') : '';
+    if (onChange) {
+      words.addEventListener('input', onChange);
+      words.addEventListener('change', onChange);
+    }
+    return words;
+  }
+  const box = el('div', { id, className: 'genre-pick', role: 'group',
+    style: 'display:flex;flex-wrap:wrap;gap:6px;min-height:var(--ctl);align-items:center' });
+  const shown = GENRES.filter((g) =>
+    have.includes(String(g.code)) || (g.is_visible !== false && !g.retired_at));
+  if (!shown.length) {
+    box.append(el('span', { className: 'hint' },
+      text('No genres yet — add them on the Categories page.')));
+  }
+  for (const g of shown) {
+    const on = have.includes(String(g.code));
+    const chip = el('button', { type: 'button', className: 'chip' + (on ? ' on' : ''),
+      title: g.code + (g.retired_at ? ' — retired: take it off, it is not given to new titles' : ''),
+      style: 'cursor:pointer' + (g.retired_at ? ';opacity:.6;text-decoration:line-through' : '') },
+      text(genreWords(g)));
+    chip.dataset.code = String(g.code);
+    chip.setAttribute('aria-pressed', on ? 'true' : 'false');
+    chip.onclick = () => {
+      const now = chip.getAttribute('aria-pressed') !== 'true';
+      // A retired genre can be taken off, not put back.
+      if (now && g.retired_at) return;
+      chip.setAttribute('aria-pressed', now ? 'true' : 'false');
+      chip.classList.toggle('on', now);
+      if (onChange) onChange();
+    };
+    box.append(chip);
+  }
+  return box;
+}
+
 function readForm(prefix) {
   const out = {};
   for (const f of FIELDS) {
     const n = $(prefix + f.k);
     if (!n) continue;
+    if (f.type === 'genres') {
+      if (n.dataset.words === '1') {
+        // The table did not answer: the old words, mapped to codes by the
+        // database.
+        out.genres = n.value.split(',').map((s) => s.trim()).filter(Boolean);
+      } else {
+        out[f.k] = [...n.querySelectorAll('button[aria-pressed=true]')]
+          .map((b) => b.dataset.code);
+      }
+      continue;
+    }
     if (f.type === 'checkbox') out[f.k] = n.checked;
     else if (ARRAY_FIELDS.has(f.k)) {
       out[f.k] = n.value.split(',').map((s) => s.trim()).filter(Boolean);
@@ -837,7 +926,7 @@ function show(tab) {
   if (tab === 'security') loadSecurity();
   if (tab === 'catalogue') loadList();
   if (tab === 'requests') loadRequests();
-  if (tab === 'cats') loadCategories();
+  if (tab === 'cats') { loadCategories(); loadGenres(); }
   if (tab === 'stats') loadStats();
   if (tab === 'health') loadHealth();
   // The From Telegram panel FILLS ITSELF when its page opens. It was wired to
@@ -946,6 +1035,9 @@ async function openEditor(id) {
   say('info', 'Loading…');
   try {
     cur = await api({ op: 'get', id });
+    // The chooser needs the genre list; a console that has not got it yet
+    // asks once more here rather than draw the old words box.
+    if (!GENRES) await refreshGenreOptions();
     clear();
     $('eTitle').textContent = cur.title.title || '(untitled)';
     $('eFolder').textContent = cur.folder + '/';
@@ -1452,7 +1544,8 @@ $('save').onclick = async () => {
       patch: {
         title: f.title, title_mm: f.title_mm, synopsis: f.synopsis,
         category: f.category, year: f.year, rating: f.rating,
-        quality_label: f.quality_label, genres: f.genres, keywords: f.keywords,
+        quality_label: f.quality_label, keywords: f.keywords,
+        ...(f.genre_codes ? { genre_codes: f.genre_codes } : { genres: f.genres }),
         episode_count: f.episode_count, access_tier: f.access_tier,
         is_featured: f.is_featured,
       },
@@ -1507,6 +1600,15 @@ $('delTitle').onclick = async () => {
 // ── new title ────────────────────────────────────────────────────────────
 buildForm($('nFields'), 'n_',
   { category: 'movies', access_tier: 'premium' });
+
+/// The New form is drawn before the genre list has answered, with the old
+/// words box; once the list is here, an untouched box becomes the chooser
+/// (one with words typed in is left as it is — those words still save).
+function upgradeNewGenres() {
+  const box = $('n_genre_codes');
+  if (!GENRES || !box || box.dataset.words !== '1' || box.value.trim()) return;
+  box.replaceWith(genreChooser('n_genre_codes', {}, null));
+}
 
 let folderTimer = null;
 let folderOk = false;
@@ -1618,7 +1720,8 @@ $('create').onclick = async () => {
       op: 'create', folder, folderLabel: folderChecked.label,
       title: f.title, titleMm: f.title_mm, synopsis: f.synopsis,
       category: f.category, year: f.year, rating: f.rating,
-      quality: f.quality_label, genres: f.genres, keywords: f.keywords,
+      quality: f.quality_label, keywords: f.keywords,
+      ...(f.genre_codes ? { genreCodes: f.genre_codes } : { genres: f.genres }),
       episodes: f.episode_count, free: f.access_tier === 'free',
       featured: f.is_featured,
     } }, f.title);
@@ -1642,6 +1745,7 @@ $('create').onclick = async () => {
 };
 
 $('newCatAdd').onclick = addCategory;
+$('newGenreAdd').onclick = addGenre;
 
 $('selftest').onclick = async () => {
   try {
@@ -1669,10 +1773,12 @@ async function addCategory() {
   btn.disabled = true;
   try {
     await api({ op: 'addCategory', id, label,
-      label_mm: ($('newCatLabelMm').value || '').trim() || null });
+      label_mm: ($('newCatLabelMm').value || '').trim() || null,
+      label_th: ($('newCatLabelTh').value || '').trim() || null });
     $('newCatId').value = '';
     $('newCatLabel').value = '';
     $('newCatLabelMm').value = '';
+    $('newCatLabelTh').value = '';
     say('ok', 'Added, as the last tab — move it with ▲▼. It is a tab in the ' +
       'app on its next launch, and in the Category picker here straight away.');
     // BOTH, and in this order. The picker is what the operator will reach for
@@ -1702,6 +1808,7 @@ async function loadCategories() {
     for (const c of categories) {
       const label = el('input', { value: c.label || '' });
       const labelMm = el('input', { value: c.label_mm || '' });
+      const labelTh = el('input', { value: c.label_th || '' });
       const idx = movable.findIndex((m) => m.id === c.id);
       const pos = c.id === 'all' ? 1 : idx + 1 + lead;
       const arrow = (dir, glyph, can) => {
@@ -1743,7 +1850,8 @@ async function loadCategories() {
           // NO sort_order here: the arrows own the order, and a number read
           // when this list was drawn would undo a move made since.
           await api({ op: 'saveCategory', id: c.id, patch: {
-            label: label.value, label_mm: labelMm.value, is_visible: vis.checked,
+            label: label.value, label_mm: labelMm.value, label_th: labelTh.value,
+            is_visible: vis.checked,
           } });
           say('ok', 'Saved. The app picks it up on its next launch.');
         } catch (e) { say('bad', String(e.message || e)); }
@@ -1752,11 +1860,16 @@ async function loadCategories() {
 
       host.append(el('div', { className: 'sechead',
         style: 'border-bottom:1px solid var(--line);padding-bottom:8px' }, [
-        el('span', { className: 'chip mono', style: 'min-width:58px' }, text(c.id)),
-        el('div', { style: 'flex:1;min-width:120px' },
+        // THE CODE the app and the database know it by (058), never typed
+        // and never changed, with the old id an older app still reads.
+        el('span', { className: 'chip mono', style: 'min-width:58px',
+          title: 'id ' + c.id }, text(c.code || c.id)),
+        el('div', { style: 'flex:1;min-width:110px' },
           [el('label', {}, text('Label')), label]),
-        el('div', { style: 'flex:1;min-width:120px' },
+        el('div', { style: 'flex:1;min-width:110px' },
           [el('label', {}, text('Burmese')), labelMm]),
+        el('div', { style: 'flex:1;min-width:110px' },
+          [el('label', {}, text('Thai')), labelTh]),
         el('div', {}, [el('label', {}, text('Position')), order]),
         el('div', { style: 'display:flex;align-items:center;gap:6px;align-self:end;height:var(--ctl)' },
           [vis, el('span', { className: 'hint' },
@@ -1765,6 +1878,180 @@ async function loadCategories() {
       ]));
     }
   } catch (e) { say('bad', String(e.message || e)); }
+}
+
+// ── genres (migration 058) ──────────────────────────────────────────────
+//
+// THE CODE IS THE DATABASE'S. G001, G002 … are given when a genre is added,
+// never typed, never changed and never given twice, so a title, a saved
+// filter and every app's cache keep meaning the same genre. The words —
+// English, Burmese, Thai — the order and whether it is offered are the
+// operator's, and a rename reaches every title that has it, and the search.
+//
+// A GENRE A TITLE HAS IS NOT DELETED: it is retired (not offered for new
+// titles; those that have it keep it) or merged into another (its titles move
+// there). Delete is for one no title has — a typo caught at once.
+async function addGenre() {
+  const btn = $('newGenreAdd');
+  const label = ($('newGenreLabel').value || '').trim();
+  if (!label) return say('bad', 'A genre needs its English name — it is what the card shows.');
+  if (label.length > 40) return say('bad', 'Keep the name to 40 characters.');
+  btn.disabled = true;
+  try {
+    const { code } = await api({ op: 'addGenre', label,
+      label_mm: ($('newGenreLabelMm').value || '').trim() || null,
+      label_th: ($('newGenreLabelTh').value || '').trim() || null });
+    $('newGenreLabel').value = '';
+    $('newGenreLabelMm').value = '';
+    $('newGenreLabelTh').value = '';
+    say('ok', 'Added as ' + code + ', last in the list. It can be given to a title now.');
+    await refreshGenreOptions();
+    await loadGenres();
+  } catch (e) {
+    const m = String(e.message || e);
+    say('bad', /label_taken/.test(m)
+      ? 'There is a genre with that name already. Rename that one, or pick another name.'
+      : m);
+  }
+  btn.disabled = false;
+}
+
+async function loadGenres() {
+  const host = $('genreList');
+  if (!host) return;
+  host.textContent = '';
+  let genres;
+  try {
+    ({ genres } = await api({ op: 'genres' }));
+  } catch (e) {
+    host.append(el('p', { className: 'hint' }, text('The genre list could not be read: '
+      + String(e.message || e))));
+    return;
+  }
+  genres = (genres ?? []).slice().sort((a, b) =>
+    (a.sort_order ?? 0) - (b.sort_order ?? 0) || String(a.code).localeCompare(String(b.code)));
+  GENRES = genres;
+  if (!genres.length) {
+    host.append(el('p', { className: 'hint' }, text('No genres yet. Add the first below.')));
+    return;
+  }
+  const live = genres.filter((g) => !g.retired_at);
+  const redraw = async () => { await refreshGenreOptions(); await loadGenres(); };
+  genres.forEach((g, i) => {
+    const retired = !!g.retired_at;
+    const label = el('input', { value: g.label || '' });
+    const labelMm = el('input', { value: g.label_mm || '' });
+    const labelTh = el('input', { value: g.label_th || '' });
+    const vis = el('input', { type: 'checkbox' });
+    vis.checked = g.is_visible !== false;
+
+    const arrow = (dir, glyph, can) => {
+      const b = el('button', { className: 'b', type: 'button',
+        title: dir === 'up' ? 'Move up' : 'Move down',
+        style: 'min-width:36px;padding:0 8px' }, text(glyph));
+      b.disabled = !can;
+      b.onclick = async () => {
+        b.disabled = true;
+        try {
+          await api({ op: 'moveGenre', code: g.code, dir });
+          say('ok', 'Moved. The filter bar and the chooser show the new order.');
+          await redraw();
+        } catch (e) { say('bad', String(e.message || e)); b.disabled = false; }
+      };
+      return b;
+    };
+
+    const save = el('button', { className: 'b' }, text('Save'));
+    save.onclick = async () => {
+      save.disabled = true;
+      try {
+        await api({ op: 'saveGenre', code: g.code, patch: {
+          label: label.value, label_mm: labelMm.value, label_th: labelTh.value,
+          is_visible: vis.checked,
+        } });
+        say('ok', 'Saved. Every title with ' + g.code + ' shows the new words, and the search finds them.');
+        await redraw();
+      } catch (e) {
+        const m = String(e.message || e);
+        say('bad', /label_taken/.test(m) ? 'Another genre already has that name.' : m);
+        save.disabled = false;
+      }
+    };
+
+    const retire = el('button', { className: 'b', type: 'button' },
+      text(retired ? (g.merged_into ? 'Merged' : 'Bring back') : 'Retire'));
+    retire.disabled = !!g.merged_into;
+    retire.title = retired
+      ? (g.merged_into ? 'Merged into ' + g.merged_into : 'Offer it for titles again')
+      : 'Stop offering it for new titles; those that have it keep it';
+    retire.onclick = async () => {
+      retire.disabled = true;
+      try {
+        await api({ op: 'retireGenre', code: g.code, retired: !retired });
+        say('ok', retired ? g.code + ' is offered again.'
+          : g.code + ' is retired: no new title gets it; the ' + (g.titles || 0) + ' that have it keep it.');
+        await redraw();
+      } catch (e) { say('bad', String(e.message || e)); retire.disabled = false; }
+    };
+
+    // MERGE: its titles move to the one chosen, and this one is retired into
+    // it. Offered only for a live genre, into another live one.
+    const into = el('select', { title: 'Merge into' },
+      [el('option', { value: '' }, text('Merge into…')),
+        ...live.filter((o) => o.code !== g.code)
+          .map((o) => el('option', { value: o.code }, text(o.code + ' · ' + o.label)))]);
+    into.disabled = retired || live.length < 2;
+    into.onchange = async () => {
+      const target = into.value;
+      if (!target) return;
+      const name = live.find((o) => o.code === target)?.label || target;
+      if (!confirm('Merge ' + g.code + ' (' + g.label + ') into ' + target + ' (' + name + ')? '
+        + 'Its ' + (g.titles || 0) + ' title(s) move there, and ' + g.code + ' is retired.')) {
+        into.value = '';
+        return;
+      }
+      try {
+        const res = await api({ op: 'mergeGenres', from: g.code, into: target });
+        say('ok', 'Merged: ' + (res.moved ?? 0) + ' title(s) moved to ' + target + '.');
+        await redraw();
+      } catch (e) { say('bad', String(e.message || e)); into.value = ''; }
+    };
+
+    const del = el('button', { className: 'b d', type: 'button' }, text('Delete'));
+    del.disabled = (g.titles || 0) > 0;
+    del.title = del.disabled ? 'A title has it — retire or merge it instead' : 'No title has it';
+    del.onclick = async () => {
+      if (!confirm('Delete ' + g.code + ' (' + g.label + ')? No title has it. Its code is not given again.')) return;
+      del.disabled = true;
+      try {
+        await api({ op: 'deleteGenre', code: g.code });
+        say('ok', g.code + ' deleted.');
+        await redraw();
+      } catch (e) {
+        const m = String(e.message || e);
+        say('bad', /in_use/.test(m) ? 'A title has it now — retire or merge it instead.' : m);
+        del.disabled = false;
+      }
+    };
+
+    const used = (g.titles || 0) + ' title' + ((g.titles || 0) === 1 ? '' : 's')
+      + ((g.titles || 0) ? ' (' + (g.published || 0) + ' in the app)' : '');
+    host.append(el('div', { className: 'sechead',
+      style: 'border-bottom:1px solid var(--line);padding-bottom:8px' + (retired ? ';opacity:.65' : '') }, [
+      el('span', { className: 'chip mono', style: 'min-width:58px' }, text(g.code)),
+      el('div', { style: 'flex:1;min-width:110px' }, [el('label', {}, text('Label')), label]),
+      el('div', { style: 'flex:1;min-width:110px' }, [el('label', {}, text('Burmese')), labelMm]),
+      el('div', { style: 'flex:1;min-width:110px' }, [el('label', {}, text('Thai')), labelTh]),
+      el('div', {}, [el('label', {}, text('Position')),
+        el('div', { style: 'display:flex;align-items:center;gap:4px' },
+          [arrow('up', '▲', i > 0), arrow('down', '▼', i < genres.length - 1)])]),
+      el('div', { style: 'display:flex;align-items:center;gap:6px;align-self:end;height:var(--ctl)' },
+        [vis, el('span', { className: 'hint' }, text('offered'))]),
+      el('span', { className: 'hint', style: 'align-self:end;min-width:90px' },
+        text(retired ? (g.merged_into ? 'merged into ' + g.merged_into : 'retired') + ' · ' + used : used)),
+      save, retire, into, del,
+    ]));
+  });
 }
 
 // ── signals ──────────────────────────────────────────────────────────────
@@ -2967,6 +3254,7 @@ async function boot() {
     // moment the table answers. Awaiting would hold the whole console on a
     // request it does not need.
     refreshCategoryOptions();
+    refreshGenreOptions().then(upgradeNewGenres);
   } else {
     stopShell();
     for (const t of TABS) $('tab-' + t).hidden = true;
