@@ -111,9 +111,10 @@ does it.
   plain one deleted, then the request repointed); the one plain receipt is
   sealed, the bucket holds no plain file (`proof_reseal_test.mjs`).
 ### Quality
-- Two sealed stream-cache timing tests fail under the full parallel run and
-  pass alone (903 ms against a 900 ms bound; "a step back into what the
-  player was given carries the stretch on"). Make them robust to load.
+- ~~Two sealed stream-cache timing tests fail under the full parallel run.~~
+  Done 31 Oct: the trickle bound is half the film, and the step-back case
+  found a real fault — a flush into a reset connection could hold a
+  stretch open for seconds after a seek; it now ends at the hang-up.
 - Burmese Settings still shows Pop-up Play, Decoder, Development and
   Diagnostics in English — decide whether those stay technical terms.
 

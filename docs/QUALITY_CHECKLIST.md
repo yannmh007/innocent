@@ -77,15 +77,23 @@ Last full pass: **30 Oct 2026**; open items worked 31 Oct.
 5. Reseal the one payment screenshot stored before sealing: ingest v41
    seals it on its tick (31 Oct; `proof_reseal_test.mjs`).
 6. Telegram folder names that say nothing (the bot functions in 023/024/033).
-7. The sealed-cache timing tests that sometimes fail on a busy runner.
+7. ~~The sealed-cache timing tests that sometimes fail on a busy runner.~~
+   Done 31 Oct, and a real fault under it: a flush into a connection the
+   player had reset can wait for seconds (the reset reaches only the reading
+   side), so after a seek the old stretch and its lanes stayed open past the
+   300 ms hand-over window. The flush now ends when the hang-up is seen
+   (`_Gone.flush`). The tests close the old connection only once the new
+   request is in, as ffmpeg does, and read the ramp's parts in the film's
+   order, not the order they reached the test server.
 8. ~~Semgrep in CI with a pinned rule set.~~ Done 31 Oct (`sast.yml`).
    Also found on the way and fixed: the vault PIN pad read each digit
    twice to TalkBack.
 
 **P3 — when convenient.**
 
-9. 106 `withOpacity` and 6 `onPopInvoked` deprecations (with the Flutter
-   upgrade, not before).
+9. ~~99 `withOpacity` and 6 `onPopInvoked` deprecations.~~ Done 31 Oct:
+   `withValues(alpha:)`, `onPopInvokedWithResult`, `WidgetState`; the
+   analyzer reports no deprecated call in lib. Ships after 1.64.79.
 10. Actions on Node 24 versions (GitHub runs the Node 20 ones on 24 today).
 11. Burmese wording in Settings.
 

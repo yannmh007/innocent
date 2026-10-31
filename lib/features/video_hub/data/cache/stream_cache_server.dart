@@ -215,8 +215,10 @@ class StreamCacheServer {
   static bool handOver = true;
 
   /// Stretches handed over, and taken up, since the app started. For the
-  /// bench and the lab's trail.
-  static int handedOver = 0, carriedOn = 0, stepsSeen = 0;
+  /// bench and the lab's trail. [stepsWaiting]: requests that came in while
+  /// the stretch they replace was still serving, and waited for it (tests
+  /// close the old connection only once the new one is in, as ffmpeg does).
+  static int handedOver = 0, carriedOn = 0, stepsSeen = 0, stepsWaiting = 0;
 
   /// Requests made upstream, and the bytes they brought, since the app
   /// started — what the Worker sees of this phone. For the lab's trail.
@@ -270,7 +272,8 @@ class StreamCacheServer {
   /// How long a request waits for the one its player is leaving to end
   /// (see [_serve]). A seek's old connection closes the moment the new one
   /// answers; this is only the bound for one that does not.
-  static const Duration _supersedeWait = Duration(milliseconds: 300);
+  @visibleForTesting
+  static Duration supersedeWait = const Duration(milliseconds: 300);
 
   /// THE PARTS OF A STRETCH START SMALL AND GROW BY 128 KB EACH — 128 KB,
   /// 256 KB, 384 KB … — until they are 2 MB, the sixteenth part on.
@@ -1342,6 +1345,7 @@ class StreamCacheServer {
     if (leaving.isNotEmpty) {
       src.nextStart = start;
       src.nextRunEnd = entry.partAt(start)?.end;
+      stepsWaiting++;
     }
     src.serving.add(gone);
     var complete = false;
@@ -1349,7 +1353,7 @@ class StreamCacheServer {
       if (leaving.isNotEmpty) {
         await Future.any<void>([
           Future.wait([for (final g in leaving) g.over]),
-          Future<void>.delayed(_supersedeWait),
+          Future<void>.delayed(supersedeWait),
         ]);
         // Looked at by now, or not to be: a stretch that outlives the wait
         // gives its parts up as it always did.
@@ -1523,7 +1527,8 @@ class StreamCacheServer {
     // WRITTEN AND FLUSHED A PIECE AT A TIME, NOT `addStream`. A player that
     // hangs up (a seek, Back) does not stop `addStream` from pulling: it kept
     // draining the stretch into a dead socket, and the lanes kept fetching a
-    // film nobody was watching. A flush fails once the socket is gone, and
+    // film nobody was watching. A flush fails once the socket is gone (or,
+    // [_Gone.flush], once the player is seen to hang up), and
     // that is where this stops — cancelling the stretch, which stops its
     // lanes. It is also the back-pressure: nothing is read from upstream
     // faster than the player takes it, past the lanes' own small window.
@@ -1534,7 +1539,7 @@ class StreamCacheServer {
       while (await pieces.moveNext()) {
         res.add(pieces.current);
         written += pieces.current.length;
-        await res.flush();
+        await (gone?.flush(res) ?? res.flush());
       }
       sent = min(sent, written);
       final took = DateTime.now().difference(startedAt);
@@ -1684,7 +1689,7 @@ class StreamCacheServer {
             final take = min(at, clientEnd) - from;
             try {
               out.add(take == chunk.length ? chunk : chunk.sublist(0, take));
-              await out.flush();
+              await gone.flush(out);
               sent = from + take;
             } catch (_) {
               // The player hung up — a seek, or Back. What it was reading is
@@ -2314,6 +2319,19 @@ class _Gone {
 
   void finish() {
     if (!_over.isCompleted) _over.complete();
+  }
+
+  /// [sink] flushed, or a [SocketException] once the player has hung up.
+  ///
+  /// A FLUSH DOES NOT ALWAYS FAIL WHEN THE PLAYER RESETS THE CONNECTION: the
+  /// reset can reach only the reading side ([hangUp]), and a flush waiting
+  /// for room the player will never make kept the stretch, and its lanes,
+  /// open for seconds after a seek (3 s and more on a busy test runner) —
+  /// past [StreamCacheServer.supersedeWait], so what it had fetched ahead
+  /// was not handed to the request that replaced it.
+  Future<void> flush(IOSink sink) async {
+    await Future.any<void>([sink.flush(), hungUp]);
+    if (value) throw const SocketException('the player hung up');
   }
 }
 

@@ -318,7 +318,12 @@ void main() {
     // smallest parts — what stands between Play and the picture — and every
     // part after is no smaller than the one before, up to full size.
     // (The 8 KB is the length check, which also reads where the index is.)
-    final parts = up.sizes.where((s) => s != 8 * 1024).toList();
+    // In the film's order, not the order they reached the server: lanes
+    // opened together arrive in any order on a busy machine (640 KB before
+    // 384 KB in a loaded run).
+    final inFilm = [for (final r in up.ranges) if (r.$2 - r.$1 + 1 != 8 * 1024) r]
+      ..sort((a, b) => a.$1.compareTo(b.$1));
+    final parts = [for (final r in inFilm) r.$2 - r.$1 + 1];
     expect(parts.take(3).toSet(), {128 * k, 256 * k, 384 * k},
         reason: 'first requests: $parts');
     expect(parts.where((s) => s < 2 * mb).length, greaterThanOrEqualTo(15),
@@ -411,7 +416,11 @@ void main() {
       final whole = clock.elapsedMilliseconds;
       final got = out.takeBytes();
       expect(Uint8List.sublistView(got, 0, 4 * mb), Uint8List.sublistView(up.body, 0, 4 * mb));
-      expect(firstAt, lessThan(900),
+      // Against the run's own clock, not a fixed bound: held back, the first
+      // 256 KB comes with the whole first part, near the end; passed on as it
+      // arrives, after the first piece, a small share of it. A fixed 900 ms
+      // failed at 903 on a busy runner with nothing wrong.
+      expect(firstAt, lessThan(whole ~/ 2),
           reason: 'the first 256 KB took $firstAt ms (4 MB in $whole ms): '
               'held back until the whole first part was in');
     } finally {
@@ -672,6 +681,12 @@ void main() {
         () async {
       StreamCacheServer.lanes = 6;
       StreamCacheServer.handOver = hand;
+      // What is measured is the hand-over, not the 300 ms a request waits for
+      // the one it replaces. The old stretch ends once it sees the hang-up
+      // (it no longer waits on a flush into the reset connection, which took
+      // 3 s and more here), but on a loaded runner seeing it can still take
+      // longer than 300 ms. In the field a slower close means no hand-over.
+      StreamCacheServer.supersedeWait = const Duration(seconds: 3);
       up.piece = 64 * 1024;
       up.pace = const Duration(milliseconds: 8);
       final id = hand ? 'film-hand' : 'film-nohand';
@@ -714,8 +729,15 @@ void main() {
           mark = up.sizes.length;
           from = x + got - back;
           if (!hand) take = up.body.length - from;
+          final waiting0 = StreamCacheServer.stepsWaiting;
           next = _get(local, from: from, take: take);
-          await Future<void>.delayed(const Duration(milliseconds: 50));
+          // ffmpeg keeps the old connection until the new one is in. A fixed
+          // 50 ms closed the old one first on a busy runner: the new request
+          // then found nothing leaving, and nothing was handed over.
+          final until = DateTime.now().add(const Duration(seconds: 5));
+          while (StreamCacheServer.stepsWaiting == waiting0 && DateTime.now().isBefore(until)) {
+            await Future<void>.delayed(const Duration(milliseconds: 5));
+          }
           unawaited(sub.cancel());
         } finally {
           first.close(force: true);
@@ -738,6 +760,7 @@ void main() {
         }
       } finally {
         StreamCacheServer.handOver = true;
+        StreamCacheServer.supersedeWait = const Duration(milliseconds: 300);
         StreamCacheServer.instance.release(id);
       }
     });
