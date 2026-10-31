@@ -1,399 +1,394 @@
 LAB scenario 3 surfaceProducer=null
 LAB device kind=DeviceKind.phone sw=360.0
 LAB    0.0 LAB script: catalogue title
-LAB    5.2 LAB title: opening Sintel
-LAB    5.9 play server granted in 747 ms, 4 rungs
-LAB    5.9 play rung 720p 1684 kbps (choice auto, measured - kbps)
-LAB    5.9 stream lanes=6
+LAB    4.9 LAB title: opening Sintel
+LAB    5.9 play server granted in 999 ms, 4 rungs
+LAB    6.0 play rung 720p 1684 kbps (choice auto, measured - kbps)
+LAB    6.0 stream lanes=6
 LAB    6.0 stream cache: a new film, sealed
-LAB    6.0 play through the ladder on ExoPlayer
-LAB    6.0 play: opening the player
+LAB    6.1 play through the ladder on ExoPlayer
+LAB    6.1 play: opening the player
 LAB insets stable l=0.0 t=32.0 r=0.0 b=48.0 padding l=0.0 t=32.0 r=0.0 b=48.0 bar=48.0
 LAB insets stable l=0.0 t=32.0 r=0.0 b=48.0 padding l=0.0 t=32.0 r=0.0 b=0.0 bar=48.0
-LAB    6.2 hwdec -> auto
-LAB    6.3 open ladder (exo) start=0s autoplay=true rung=auto first=720
-LAB    6.3 wakelock playing=false bg=false priv=false pos=0ms
-LAB    6.3 first frame 197 ms
-LAB    6.4 wakelock playing=true bg=false priv=false pos=0ms
-LAB    6.4 rebuffer start
-LAB    6.4 open ok
+LAB    6.4 hwdec -> auto
+LAB    6.5 open ladder (exo) start=0s autoplay=true rung=auto first=720
+LAB    6.5 wakelock playing=false bg=false priv=false pos=0ms
+LAB    6.5 first frame 285 ms
+LAB    6.6 wakelock playing=true bg=false priv=false pos=0ms
+LAB    6.6 rebuffer start
+LAB    6.6 open ok
 LAB insets stable l=0.0 t=32.0 r=0.0 b=48.0 padding l=0.0 t=32.0 r=0.0 b=0.0 bar=48.0
-LAB    7.0 stream index 0.0 MB at 0.0 MB
-LAB    7.3 fg stream: watching
-LAB    7.3 hls: 720p playlist, 444 segments
-LAB    7.4 hls jump: answer 256 ms, first byte 266 ms, segment 419 ms (65536 B)
+LAB    6.8 stream index 0.0 MB at 0.0 MB
+LAB    7.1 fg stream: watching
+LAB    7.1 hls: 720p playlist, 444 segments
+LAB    7.2 hls jump: answer 249 ms, first byte 269 ms, segment 394 ms (65536 B)
 LAB    7.5 exo tracks 720,480,360,240 selected=4 adaptive=true
-LAB    7.7 exo rung 720p 2000 kbps
-LAB    8.1 stream index 0.0 MB at 0.0 MB
-LAB    8.1 rebuffer end 1774 ms
-LAB    8.4 hls jump: answer 292 ms, first byte 296 ms, segment 376 ms (65536 B)
-LAB    9.0 stream index 0.0 MB at 0.0 MB
-LAB    9.3 hls: 360p playlist, 444 segments
-LAB    9.3 measured 15279 kbps
-LAB    9.3 hls jump: answer 282 ms, first byte 287 ms, segment 334 ms (65536 B)
-LAB    9.7 hls jump: answer 259 ms, first byte 264 ms, segment 351 ms (160905 B)
-LAB cpu app 102% · 14.5fps · pool-thread 45% | .innocent.media 20% | 1.raster 7% | ExoPlayer:Playb 5% | Jit thread pool 5% | DartWorker 3%
-LAB    9.8 stream index 0.0 MB at 0.0 MB
-LAB   10.4 hls jump: answer 473 ms, first byte 478 ms, segment 528 ms (65536 B)
-LAB   10.8 measured 14339 kbps
-LAB   11.8 measured 13015 kbps
-LAB   11.9 exo rung 360p 600 kbps
-LAB   13.1 measured 16178 kbps
-LAB   14.1 jump fill start
-LAB   14.1 exo rung 720p 2000 kbps
-LAB   14.2 measured 19528 kbps
-LAB   14.3 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=4
-LAB   14.6 exo picture after seek 583 ms
-LAB   14.8 hls jump: answer 314 ms, first byte 355 ms, segment 647 ms (537551 B)
-LAB   14.9 jump fill end 864 ms
-LAB   15.4 measured 17494 kbps
-LAB   16.3 LAB check seek PASS want=355 got=356 ready=257 ms playing=yes, moving by 1266 ms frozen=899 ms engine=exo rung=720p
-LAB   16.3 exo steer quality target=240 made=1 rungs=[720, 480, 360, 240] picks=240
-LAB   16.3 quality -> 240 on the ladder (no reopen)
-LAB   16.4 hls: 240p playlist, 444 segments
-LAB   16.4 measured 16735 kbps
-LAB   16.7 hls jump: answer 265 ms, first byte 270 ms, segment 312 ms (75316 B)
-LAB   17.9 measured 13595 kbps
-LAB   18.1 LAB check quality->240 PASS want=357 got=357 ready=762 ms playing=yes, moving by 765 ms frozen=200 ms engine=exo rung=720p
-LAB   18.2 exo rung 240p 300 kbps
-LAB   18.3 LAB check shown 240p after 2018 ms
-LAB   18.4 jump fill start
-LAB   18.5 exo picture after seek 116 ms
-LAB   18.5 jump fill end 127 ms
-LAB   19.3 measured 15534 kbps
-LAB cpu app 124% · 26.2fps · .innocent.media 41% | ExoPlayer:Playb 14% | DartWorker 11% | MediaCodec_loop 10% | 1.raster 9% | flutter-worker- 8%
-LAB   19.9 LAB check skip+30 PASS want=389 got=390 ready=258 ms playing=yes, moving by 514 ms frozen=200 ms engine=exo rung=240p
-LAB   19.9 exo tracks 720,480,360,240 selected=4 adaptive=true
-LAB   20.4 preview at 381s: 87 KB, 471 ms
-LAB   20.8 preview at 331s: 94 KB, 413 ms
-LAB   20.8 jump fill start
-LAB   20.9 exo tracks 720,480,360,240 selected=4 adaptive=true
-LAB   21.2 preview at 281s: 70 KB, 448 ms
-LAB   21.5 hls jump: answer 475 ms, first byte 480 ms, segment 528 ms (81497 B)
-LAB   21.5 exo picture after seek 673 ms
-LAB   21.7 jump fill end 868 ms
-LAB   22.5 measured 16677 kbps
-LAB   23.1 LAB check swipe-120 PASS want=271 got=272 ready=510 ms playing=yes, moving by 1270 ms frozen=795 ms engine=exo rung=240p
-LAB   23.1 exo steer quality target=auto made=3 rungs=[720, 480, 360, 240] picks=720
-LAB   23.1 quality -> auto on the ladder (no reopen)
-LAB   23.7 hls jump: answer 264 ms, first byte 269 ms, segment 521 ms (584858 B)
-LAB   24.3 measured 18059 kbps
-LAB   24.6 LAB check quality->auto PASS want=273 got=273 ready=507 ms playing=yes, moving by 511 ms frozen=200 ms engine=exo rung=240p
-LAB   24.6 LAB tour: 720 480 360 240 original auto (menu Auto, 720p, 480p, 360p, 240p, Original)
-LAB   24.6 exo steer quality target=720 made=3 rungs=[720, 480, 360, 240] picks=720
-LAB   24.6 quality -> 720 on the ladder (no reopen)
-LAB   25.5 hls jump: answer 418 ms, first byte 458 ms, segment 803 ms (619400 B)
-LAB   26.4 measured 13808 kbps
-LAB   26.6 LAB check tour->720 PASS want=274 got=275 ready=764 ms playing=yes, moving by 1020 ms frozen=201 ms engine=exo rung=240p
-LAB   26.6 exo steer quality target=480 made=3 rungs=[720, 480, 360, 240] picks=480
-LAB   26.7 quality -> 480 on the ladder (no reopen)
-LAB   26.7 hls: 480p playlist, 444 segments
-LAB   27.0 exo rung 720p 2000 kbps
-LAB   27.3 hls jump: answer 362 ms, first byte 381 ms, segment 556 ms (195413 B)
-LAB   28.5 measured 11790 kbps
-LAB   28.7 LAB check tour->480 PASS want=276 got=277 ready=758 ms playing=yes, moving by 1014 ms frozen=200 ms engine=exo rung=720p
-LAB   28.7 exo steer quality target=360 made=3 rungs=[720, 480, 360, 240] picks=360
-LAB   28.7 quality -> 360 on the ladder (no reopen)
-LAB   29.0 exo rung 480p 1000 kbps
-LAB   29.5 hls jump: answer 337 ms, first byte 357 ms, segment 612 ms (189173 B)
-LAB cpu app 116% · 23.1fps · .innocent.media 46% | DartWorker 15% | ExoPlayer:Playb 10% | 1.raster 9% | MediaCodec_loop 9% | ExoPlayer:Loade 5%
-LAB   30.4 LAB check tour->360 PASS want=278 got=279 ready=757 ms playing=yes, moving by 762 ms frozen=201 ms engine=exo rung=480p
-LAB   30.4 exo steer quality target=240 made=3 rungs=[720, 480, 360, 240] picks=240
-LAB   30.4 quality -> 240 on the ladder (no reopen)
-LAB   30.9 measured 8948 kbps
-LAB   31.0 exo rung 360p 600 kbps
-LAB   31.3 hls jump: answer 361 ms, first byte 365 ms, segment 428 ms (30604 B)
-LAB   32.2 LAB check tour->240 PASS want=280 got=281 ready=764 ms playing=yes, moving by 773 ms frozen=203 ms engine=exo rung=360p
-LAB   32.2 renewal: copies from the grant held 26 s
+LAB    7.8 stream index 0.0 MB at 0.0 MB
+LAB    7.8 exo rung 720p 2000 kbps
+LAB    8.3 hls jump: answer 397 ms, first byte 401 ms, segment 481 ms (65536 B)
+LAB    8.7 rebuffer end 2148 ms
+LAB    9.4 stream index 0.0 MB at 0.0 MB
+LAB cpu app 100% · 14.7fps · pool-thread 46% | .innocent.media 17% | 1.raster 6% | Jit thread pool 5% | io.worker. 4% | Thread 3%
+LAB    9.8 hls: 360p playlist, 444 segments
+LAB    9.8 hls jump: answer 328 ms, first byte 331 ms, segment 416 ms (65536 B)
+LAB   10.4 hls jump: answer 237 ms, first byte 243 ms, segment 492 ms (160905 B)
+LAB   10.9 stream index 0.0 MB at 0.0 MB
+LAB   11.5 hls jump: answer 426 ms, first byte 431 ms, segment 537 ms (65536 B)
+LAB engine update ok ALREADY_UP_TO_DATE 2026.10.26 -> 2026.10.26
+LAB   12.5 hls jump: answer 505 ms, first byte 513 ms, segment 1294 ms (464760 B)
+LAB   12.5 exo rung 360p 600 kbps
+LAB   14.5 jump fill start
+LAB   14.5 exo rung 720p 2000 kbps
+LAB   14.5 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=4
+LAB   14.5 measured 4009 kbps
+LAB   15.0 exo picture after seek 519 ms
+LAB   15.6 hls jump: answer 285 ms, first byte 292 ms, segment 1112 ms (537551 B)
+LAB   15.8 jump fill end 1382 ms
+LAB   17.2 LAB check seek PASS want=355 got=356 ready=255 ms playing=yes, moving by 1766 ms frozen=1098 ms engine=exo rung=720p
+LAB   17.2 exo steer quality target=240 made=1 rungs=[720, 480, 360, 240] picks=240
+LAB   17.2 quality -> 240 on the ladder (no reopen)
+LAB   17.3 hls: 240p playlist, 444 segments
+LAB   17.4 measured 4245 kbps
+LAB   18.1 hls jump: answer 595 ms, first byte 607 ms, segment 688 ms (75316 B)
+LAB   19.0 LAB check quality->240 PASS want=357 got=357 ready=511 ms playing=yes, moving by 766 ms frozen=201 ms engine=exo rung=720p
+LAB   19.1 exo rung 240p 300 kbps
+LAB   19.2 LAB check shown 240p after 2019 ms
+LAB   19.2 jump fill start
+LAB   19.3 exo picture after seek 80 ms
+LAB   19.4 jump fill end 193 ms
+LAB   19.5 measured 10936 kbps
+LAB cpu app 104% · 27.2fps · .innocent.media 34% | ExoPlayer:Playb 13% | 1.raster 10% | MediaCodec_loop 10% | DartWorker 9% | HwBinder:17894_ 6%
+LAB   20.8 LAB check skip+30 PASS want=389 got=390 ready=266 ms playing=yes, moving by 521 ms frozen=200 ms engine=exo rung=240p
+LAB   20.8 exo tracks 720,480,360,240 selected=4 adaptive=true
+LAB   20.9 measured 14807 kbps
+LAB   21.1 preview at 381s: 87 KB, 350 ms
+LAB   21.5 preview at 341s: 80 KB, 350 ms
+LAB   21.7 jump fill start
+LAB   21.8 exo tracks 720,480,360,240 selected=4 adaptive=true
+LAB   21.9 preview at 301s: 98 KB, 448 ms
+LAB   22.1 exo picture after seek 365 ms
+LAB   22.1 hls jump: answer 205 ms, first byte 209 ms, segment 250 ms (81497 B)
+LAB   22.2 jump fill end 502 ms
+LAB   23.5 LAB check swipe-120 PASS want=271 got=272 ready=261 ms playing=yes, moving by 769 ms frozen=701 ms engine=exo rung=240p
+LAB   23.5 exo steer quality target=auto made=3 rungs=[720, 480, 360, 240] picks=720
+LAB   23.5 quality -> auto on the ladder (no reopen)
+LAB   23.7 measured 10337 kbps
+LAB   25.1 hls jump: answer 194 ms, first byte 198 ms, segment 988 ms (584858 B)
+LAB   25.3 LAB check quality->auto PASS want=273 got=273 ready=759 ms playing=yes, moving by 762 ms frozen=200 ms engine=exo rung=240p
+LAB   25.3 LAB tour: 720 480 360 240 original auto (menu Auto, 720p, 480p, 360p, 240p, Original)
+LAB   25.3 exo steer quality target=720 made=3 rungs=[720, 480, 360, 240] picks=720
+LAB   25.3 quality -> 720 on the ladder (no reopen)
+LAB   26.1 measured 9462 kbps
+LAB   26.7 hls jump: answer 226 ms, first byte 232 ms, segment 521 ms (619400 B)
+LAB   27.0 LAB check tour->720 PASS want=274 got=275 ready=759 ms playing=yes, moving by 764 ms frozen=200 ms engine=exo rung=240p
+LAB   27.0 exo steer quality target=480 made=3 rungs=[720, 480, 360, 240] picks=480
+LAB   27.0 quality -> 480 on the ladder (no reopen)
+LAB   27.1 hls: 480p playlist, 444 segments
+LAB   27.1 measured 14939 kbps
+LAB   27.5 hls jump: answer 261 ms, first byte 265 ms, segment 387 ms (195413 B)
+LAB   27.6 exo rung 720p 2000 kbps
+LAB   28.5 measured 15738 kbps
+LAB   28.8 LAB check tour->480 PASS want=276 got=277 ready=510 ms playing=yes, moving by 767 ms frozen=200 ms engine=exo rung=720p
+LAB   28.8 exo steer quality target=360 made=3 rungs=[720, 480, 360, 240] picks=360
+LAB   28.8 quality -> 360 on the ladder (no reopen)
+LAB   29.3 hls jump: answer 248 ms, first byte 252 ms, segment 380 ms (189173 B)
+LAB   29.6 exo rung 480p 1000 kbps
+LAB cpu app 115% · 21.8fps · .innocent.media 44% | DartWorker 12% | ExoPlayer:Playb 11% | 1.raster 9% | MediaCodec_loop 8% | ExoPlayer:Loade 6%
+LAB   30.2 measured 15448 kbps
+LAB   30.6 LAB check tour->360 PASS want=278 got=278 ready=518 ms playing=yes, moving by 805 ms frozen=200 ms engine=exo rung=480p
+LAB   30.6 exo steer quality target=240 made=3 rungs=[720, 480, 360, 240] picks=240
+LAB   30.6 quality -> 240 on the ladder (no reopen)
+LAB   31.5 exo rung 360p 600 kbps
+LAB   31.8 measured 12104 kbps
+LAB   32.1 LAB check tour->240 PASS want=280 got=280 ready=518 ms playing=yes, moving by 523 ms frozen=204 ms engine=exo rung=360p
+LAB   32.1 renewal: copies from the grant held 26 s
 LAB   32.2 stream lanes=6
 LAB   32.2 stream cache: a new film, sealed
-LAB   32.9 stream index 0.7 MB at 0.0 MB
-LAB   33.0 exo rung 240p 300 kbps
-LAB   34.6 quality -> original at 284s
-LAB   34.6 open file (exo) start=284s autoplay=true
-LAB   34.7 jump fill start
-LAB   34.7 open ok
-LAB   34.9 exo tracks 818 selected=1 adaptive=false
-LAB   35.2 exo rung 818p 9989 kbps
-LAB   36.6 hls: a segment read stalled 8 s, ended
-LAB   37.2 measured 12157 kbps
-LAB   39.7 measured 10883 kbps
-LAB cpu app 151% · 39.2fps · .innocent.media 72% | DartWorker 37% | 1.raster 11% | HwBinder:3701 5% | ExoPlayer:Playb 3% | dart:io EventHa 3%
-LAB   40.1 jump fill end 5400 ms
-LAB   41.5 LAB check tour->original PASS want=282 got=284 ready=3536 ms playing=yes, moving by 8351 ms frozen=5707 ms engine=exo rung=818p
-LAB   41.6 stream lanes=6
-LAB   41.6 quality -> auto at 285s
-LAB   41.6 open ladder (exo) start=285s autoplay=true rung=auto first=720
-LAB   41.6 jump fill start
-LAB   41.7 open ok
-LAB   41.8 measured 12288 kbps
-LAB   41.8 stream stretch 9.9 MB in 6636 ms lanes=6
-LAB   43.0 stream index 0.0 MB at 0.0 MB
-LAB   43.0 hls: 720p playlist, 444 segments
-LAB   43.1 exo tracks 720,480,360,240 selected=4 adaptive=true
-LAB   43.2 exo rung 720p 2000 kbps
-LAB   43.6 stream index 0.0 MB at 0.0 MB
-LAB   43.9 jump fill end 2263 ms
-LAB   44.1 hls jump: answer 431 ms, first byte 434 ms, segment 847 ms (513783 B)
-LAB   45.1 measured 11634 kbps
-LAB   45.8 hls jump: answer 282 ms, first byte 284 ms, segment 659 ms (535541 B)
-LAB   46.0 LAB check tour->auto PASS want=285 got=286 ready=3410 ms playing=yes, moving by 3414 ms frozen=2301 ms engine=exo rung=720p
-LAB   46.4 stream index 0.0 MB at 0.0 MB
-LAB   47.0 measured 10538 kbps
-LAB   47.1 preview at 666s: 94 KB, 1120 ms
-LAB   47.1 LAB check preview-far PASS at=666 bytes=6323 ms=1120
-LAB   47.1 LAB check preview-again PASS at=666 bytes=6323 ms=0
-LAB   47.7 preview at 674s: 96 KB, 588 ms
-LAB   47.7 LAB check preview-next PASS at=674 bytes=4575 ms=588
-LAB   47.7 jump fill start
-LAB   47.7 hls jump: answer 262 ms, first byte 265 ms, segment 703 ms (533869 B)
-LAB   48.1 exo picture after seek 407 ms
-LAB   48.1 exo landing picture held 286 ms, first frame
-LAB   48.4 hls jump: answer 273 ms, first byte 276 ms, segment 658 ms (472370 B)
-LAB   48.4 jump fill end 763 ms
-LAB cpu app 77% · 30.7fps · .innocent.media 28% | 1.raster 10% | DartWorker 7% | ExoPlayer:Playb 7% | MediaCodec_loop 7% | HwBinder:3701 6%
-LAB   50.2 measured 7796 kbps
-LAB   50.4 jump fill start
-LAB   50.4 LAB check far-jump PASS want=666 got=666 ready=1763 ms playing=yes, moving by 1767 ms frozen=599 ms engine=exo rung=720p
-LAB   50.4 LAB check landing PASS held 286 ms, first frame
-LAB   50.8 hls jump: answer 261 ms, first byte 263 ms, segment 601 ms (370242 B)
-LAB   50.8 jump fill end 425 ms
-LAB   52.3 measured 9010 kbps
-LAB   52.9 hls jump: answer 246 ms, first byte 248 ms, segment 603 ms (447505 B)
-LAB   54.2 measured 10149 kbps
-LAB   54.8 hls jump: answer 243 ms, first byte 244 ms, segment 631 ms (568086 B)
-LAB   55.9 measured 11475 kbps
-LAB   56.6 hls jump: answer 249 ms, first byte 251 ms, segment 665 ms (711720 B)
-LAB   57.5 measured 12436 kbps
-LAB   58.0 hls jump: answer 220 ms, first byte 222 ms, segment 456 ms (336776 B)
-LAB   59.0 measured 12885 kbps
-LAB   59.3 hls jump: answer 267 ms, first byte 276 ms, segment 288 ms (42294 B)
-LAB cpu app 80% · 24.2fps · .innocent.media 25% | 1.raster 10% | MediaCodec_loop 10% | ExoPlayer:Playb 9% | DartWorker 7% | HwBinder:3701 6%
-LAB   60.5 measured 13923 kbps
-LAB   61.0 hls jump: answer 256 ms, first byte 260 ms, segment 545 ms (408611 B)
-LAB   62.1 measured 12501 kbps
-LAB   62.5 hls jump: answer 266 ms, first byte 270 ms, segment 400 ms (249481 B)
-LAB   63.9 measured 11059 kbps
-LAB   64.4 hls jump: answer 263 ms, first byte 266 ms, segment 483 ms (316615 B)
-LAB   65.4 measured 13378 kbps
-LAB   65.8 hls jump: answer 254 ms, first byte 257 ms, segment 360 ms (155714 B)
-LAB   66.3 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=4
-LAB   66.9 measured 13389 kbps
-LAB   67.3 hls jump: answer 251 ms, first byte 253 ms, segment 409 ms (212144 B)
-LAB   68.8 measured 10512 kbps
-LAB   69.2 hls jump: answer 263 ms, first byte 266 ms, segment 431 ms (193453 B)
-LAB cpu app 84% · 24.9fps · .innocent.media 26% | MediaCodec_loop 11% | 1.raster 11% | ExoPlayer:Playb 10% | DartWorker 7% | HwBinder:3701 7%
-LAB   70.0 measured 17015 kbps
-LAB   70.4 hls jump: answer 241 ms, first byte 244 ms, segment 347 ms (210902 B)
-LAB   71.3 measured 16194 kbps
-LAB   71.6 hls jump: answer 245 ms, first byte 247 ms, segment 326 ms (206470 B)
-LAB   72.5 measured 17586 kbps
-LAB   72.8 hls jump: answer 226 ms, first byte 230 ms, segment 329 ms (207671 B)
-LAB   73.7 measured 18137 kbps
-LAB   74.0 hls jump: answer 229 ms, first byte 234 ms, segment 322 ms (225873 B)
-LAB   75.1 measured 14290 kbps
-LAB   75.5 hls jump: answer 251 ms, first byte 254 ms, segment 443 ms (478792 B)
-LAB   76.3 measured 17905 kbps
-LAB   76.7 hls jump: answer 219 ms, first byte 221 ms, segment 441 ms (474035 B)
-LAB   77.5 measured 16794 kbps
-LAB   78.0 hls jump: answer 275 ms, first byte 279 ms, segment 466 ms (371698 B)
-LAB   78.8 measured 16794 kbps
-LAB   79.2 hls jump: answer 317 ms, first byte 324 ms, segment 449 ms (326455 B)
-LAB cpu app 95% · 22.4fps · .innocent.media 29% | MediaCodec_loop 12% | 1.raster 12% | ExoPlayer:Playb 10% | DartWorker 9% | HwBinder:3701 7%
-LAB   80.3 measured 14051 kbps
-LAB   80.7 hls jump: answer 265 ms, first byte 269 ms, segment 384 ms (258226 B)
-LAB   81.5 measured 18641 kbps
-LAB   82.1 hls jump: answer 266 ms, first byte 267 ms, segment 644 ms (635965 B)
-LAB   83.0 measured 13684 kbps
-LAB   83.6 hls jump: answer 310 ms, first byte 313 ms, segment 630 ms (556092 B)
-LAB   84.5 measured 13411 kbps
-LAB   85.2 hls jump: answer 241 ms, first byte 245 ms, segment 647 ms (577920 B)
-LAB   86.2 measured 11483 kbps
-LAB   86.8 hls jump: answer 230 ms, first byte 232 ms, segment 523 ms (454481 B)
-LAB   87.9 measured 11907 kbps
-LAB   88.3 hls jump: answer 253 ms, first byte 258 ms, segment 454 ms (363240 B)
-LAB   89.3 measured 14966 kbps
-LAB   89.7 hls jump: answer 238 ms, first byte 241 ms, segment 433 ms (388225 B)
-LAB cpu app 93% · 25.0fps · .innocent.media 27% | MediaCodec_loop 12% | 1.raster 12% | ExoPlayer:Playb 10% | DartWorker 9% | HwBinder:3701 7%
-LAB   90.7 measured 14438 kbps
-LAB   91.1 hls jump: answer 246 ms, first byte 248 ms, segment 442 ms (292848 B)
-LAB   92.1 measured 14315 kbps
-LAB   92.5 hls jump: answer 245 ms, first byte 251 ms, segment 388 ms (283766 B)
-LAB   93.3 measured 17829 kbps
-LAB   93.6 hls jump: answer 229 ms, first byte 231 ms, segment 358 ms (260409 B)
-LAB   94.5 measured 17119 kbps
-LAB   94.9 hls jump: answer 245 ms, first byte 250 ms, segment 381 ms (260713 B)
-LAB   95.8 measured 16225 kbps
-LAB   96.3 hls jump: answer 273 ms, first byte 276 ms, segment 535 ms (543345 B)
-LAB   97.2 measured 14691 kbps
-LAB   97.7 hls jump: answer 259 ms, first byte 263 ms, segment 467 ms (300595 B)
-LAB   98.7 measured 13695 kbps
-LAB   99.2 hls jump: answer 256 ms, first byte 258 ms, segment 491 ms (303666 B)
-LAB cpu app 90% · 25.0fps · .innocent.media 28% | 1.raster 11% | MediaCodec_loop 11% | ExoPlayer:Playb 10% | DartWorker 9% | HwBinder:3701 7%
-LAB  100.4 measured 11420 kbps
-LAB  100.9 hls jump: answer 262 ms, first byte 273 ms, segment 462 ms (313913 B)
-LAB  101.8 measured 14952 kbps
-LAB  102.2 hls jump: answer 244 ms, first byte 247 ms, segment 361 ms (271976 B)
-LAB  103.1 measured 15420 kbps
-LAB  103.6 hls jump: answer 262 ms, first byte 265 ms, segment 416 ms (260282 B)
-LAB  104.4 measured 16529 kbps
-LAB  104.8 hls jump: answer 297 ms, first byte 302 ms, segment 390 ms (260379 B)
-LAB  105.7 measured 18216 kbps
-LAB  106.0 hls jump: answer 267 ms, first byte 273 ms, segment 362 ms (152389 B)
-LAB  106.9 measured 17458 kbps
-LAB  107.1 hls jump: answer 230 ms, first byte 234 ms, segment 247 ms (43053 B)
-LAB  108.2 measured 15406 kbps
-LAB  108.6 hls jump: answer 376 ms, first byte 378 ms, segment 400 ms (53068 B)
-LAB  109.7 measured 14899 kbps
-LAB cpu app 95% · 22.5fps · .innocent.media 29% | MediaCodec_loop 12% | 1.raster 12% | ExoPlayer:Playb 10% | DartWorker 10% | HwBinder:3701 7%
-LAB  110.0 hls jump: answer 228 ms, first byte 230 ms, segment 271 ms (61854 B)
-LAB  111.2 measured 13443 kbps
-LAB  111.6 hls jump: answer 329 ms, first byte 335 ms, segment 355 ms (61710 B)
-LAB  113.0 measured 11683 kbps
-LAB  113.3 hls jump: answer 232 ms, first byte 235 ms, segment 294 ms (80668 B)
-LAB  114.4 measured 13530 kbps
-LAB  114.7 hls jump: answer 225 ms, first byte 227 ms, segment 269 ms (74700 B)
-LAB  115.9 measured 14086 kbps
-LAB  116.2 hls jump: answer 288 ms, first byte 294 ms, segment 309 ms (56443 B)
-LAB  117.4 measured 13774 kbps
-LAB  117.7 hls jump: answer 238 ms, first byte 242 ms, segment 291 ms (61340 B)
-LAB  118.8 measured 14475 kbps
-LAB  119.1 hls jump: answer 269 ms, first byte 271 ms, segment 313 ms (61320 B)
-LAB cpu app 90% · 24.9fps · .innocent.media 27% | MediaCodec_loop 12% | 1.raster 12% | ExoPlayer:Playb 10% | DartWorker 8% | HwBinder:3701 8%
-LAB  120.3 measured 13751 kbps
-LAB  120.7 hls jump: answer 416 ms, first byte 420 ms, segment 435 ms (60525 B)
-LAB  122.0 measured 13368 kbps
-LAB  122.3 hls jump: answer 330 ms, first byte 334 ms, segment 354 ms (58470 B)
-LAB  123.8 measured 11459 kbps
-LAB  124.0 hls jump: answer 235 ms, first byte 262 ms, segment 285 ms (60302 B)
-LAB  125.4 measured 11667 kbps
-LAB  125.8 hls jump: answer 272 ms, first byte 277 ms, segment 355 ms (71076 B)
-LAB  127.1 measured 12255 kbps
-LAB  127.4 hls jump: answer 280 ms, first byte 283 ms, segment 346 ms (79013 B)
-LAB  128.5 measured 14807 kbps
-LAB  128.8 hls jump: answer 225 ms, first byte 226 ms, segment 288 ms (97787 B)
-LAB cpu app 87% · 22.5fps · .innocent.media 25% | MediaCodec_loop 12% | 1.raster 12% | ExoPlayer:Playb 10% | DartWorker 8% | HwBinder:3701 7%
-LAB  129.9 measured 14169 kbps
-LAB  130.2 hls jump: answer 265 ms, first byte 269 ms, segment 306 ms (98003 B)
-LAB  131.5 measured 12729 kbps
-LAB  131.8 hls jump: answer 269 ms, first byte 277 ms, segment 344 ms (106820 B)
-LAB  133.1 measured 12719 kbps
-LAB  133.4 hls jump: answer 240 ms, first byte 243 ms, segment 293 ms (102540 B)
-LAB  134.4 measured 16008 kbps
-LAB  134.7 hls jump: answer 246 ms, first byte 248 ms, segment 287 ms (80804 B)
-LAB  135.6 measured 17810 kbps
-LAB  136.0 hls jump: answer 260 ms, first byte 263 ms, segment 454 ms (398302 B)
-LAB  137.1 measured 13740 kbps
-LAB  137.6 hls jump: answer 277 ms, first byte 280 ms, segment 529 ms (365631 B)
-LAB  138.5 measured 14413 kbps
-LAB  139.0 hls jump: answer 254 ms, first byte 259 ms, segment 453 ms (423989 B)
-LAB cpu app 94% · 24.9fps · .innocent.media 28% | MediaCodec_loop 12% | 1.raster 12% | ExoPlayer:Playb 10% | DartWorker 10% | HwBinder:3701 8%
-LAB  139.9 measured 15033 kbps
-LAB  140.4 hls jump: answer 253 ms, first byte 255 ms, segment 552 ms (465417 B)
-LAB  140.4 LAB check back SKIP (no trip to the home screen)
-LAB  140.4 LAB check summary pass=16 fail=0
-LAB  140.4 LAB proxy upstream 121 requests 169.7 MB (0.71 a MB), steps back 0, handed over 0, bind {ok: 129}
-LAB  141.3 measured 14755 kbps
-LAB  141.8 hls jump: answer 245 ms, first byte 248 ms, segment 536 ms (511205 B)
-LAB  142.6 measured 15563 kbps
-LAB  143.2 hls jump: answer 351 ms, first byte 359 ms, segment 611 ms (538474 B)
-LAB  143.9 measured 17791 kbps
-LAB  144.5 hls jump: answer 305 ms, first byte 309 ms, segment 604 ms (542451 B)
-LAB  145.5 measured 13443 kbps
-LAB  146.0 hls jump: answer 249 ms, first byte 251 ms, segment 564 ms (525078 B)
-LAB  147.0 measured 13200 kbps
-LAB  147.7 hls jump: answer 233 ms, first byte 235 ms, segment 709 ms (555370 B)
-LAB  148.6 measured 12681 kbps
-LAB  149.1 hls jump: answer 247 ms, first byte 256 ms, segment 520 ms (525464 B)
-LAB cpu app 92% · 25.0fps · .innocent.media 28% | MediaCodec_loop 12% | 1.raster 12% | ExoPlayer:Playb 10% | DartWorker 9% | HwBinder:3701 7%
-LAB  150.0 measured 14230 kbps
-LAB  150.5 hls jump: answer 256 ms, first byte 258 ms, segment 525 ms (555619 B)
-LAB  151.4 measured 15087 kbps
-LAB  151.8 hls jump: answer 238 ms, first byte 240 ms, segment 476 ms (536898 B)
-LAB  152.8 measured 14388 kbps
-LAB  153.3 hls jump: answer 238 ms, first byte 240 ms, segment 491 ms (496672 B)
-LAB  154.3 measured 13389 kbps
-LAB  154.8 hls jump: answer 243 ms, first byte 245 ms, segment 526 ms (509042 B)
-LAB  155.9 measured 12192 kbps
-LAB  156.4 hls jump: answer 267 ms, first byte 272 ms, segment 563 ms (499911 B)
-LAB  157.5 measured 12131 kbps
-LAB  158.1 hls jump: answer 220 ms, first byte 222 ms, segment 543 ms (489620 B)
-LAB  159.1 measured 12464 kbps
-LAB  159.6 hls jump: answer 233 ms, first byte 239 ms, segment 495 ms (491886 B)
-LAB cpu app 91% · 22.5fps · .innocent.media 28% | MediaCodec_loop 12% | 1.raster 12% | ExoPlayer:Playb 10% | DartWorker 8% | HwBinder:3701 7%
-LAB  160.5 measured 14254 kbps
-LAB  161.2 hls jump: answer 264 ms, first byte 268 ms, segment 642 ms (515726 B)
-LAB  162.1 measured 13200 kbps
-LAB  162.7 hls jump: answer 253 ms, first byte 256 ms, segment 601 ms (515701 B)
-LAB  163.5 measured 14768 kbps
-LAB  164.0 hls jump: answer 236 ms, first byte 238 ms, segment 555 ms (576859 B)
-LAB  164.8 measured 14601 kbps
-LAB  165.5 hls jump: answer 284 ms, first byte 287 ms, segment 655 ms (607971 B)
-LAB  166.2 measured 15349 kbps
-LAB  166.8 hls jump: answer 231 ms, first byte 235 ms, segment 532 ms (533328 B)
-LAB  167.5 measured 16878 kbps
-LAB  168.0 hls jump: answer 252 ms, first byte 258 ms, segment 514 ms (531830 B)
-LAB  168.7 measured 17260 kbps
-LAB  169.2 hls jump: answer 229 ms, first byte 233 ms, segment 504 ms (530783 B)
-LAB  169.7 measured 20360 kbps
-LAB cpu app 97% · 24.9fps · .innocent.media 30% | MediaCodec_loop 12% | 1.raster 12% | ExoPlayer:Playb 10% | DartWorker 9% | HwBinder:3701 8%
-LAB  170.2 hls jump: answer 255 ms, first byte 258 ms, segment 473 ms (535265 B)
-LAB  171.1 measured 15210 kbps
-LAB  171.7 hls jump: answer 255 ms, first byte 260 ms, segment 554 ms (535848 B)
-LAB  172.5 measured 14886 kbps
-LAB  173.0 hls jump: answer 237 ms, first byte 241 ms, segment 512 ms (518831 B)
-LAB  173.7 measured 18416 kbps
-LAB  174.2 hls jump: answer 232 ms, first byte 236 ms, segment 527 ms (536130 B)
-LAB  174.8 measured 17810 kbps
-LAB  175.4 hls jump: answer 242 ms, first byte 245 ms, segment 542 ms (552882 B)
-LAB  176.2 measured 15335 kbps
-LAB  176.7 hls jump: answer 223 ms, first byte 230 ms, segment 527 ms (526960 B)
-LAB  177.5 measured 14691 kbps
-LAB  178.0 hls jump: answer 245 ms, first byte 249 ms, segment 487 ms (523859 B)
-LAB  178.7 measured 18157 kbps
-LAB  179.2 hls jump: answer 241 ms, first byte 245 ms, segment 505 ms (537974 B)
-LAB cpu app 97% · 25.0fps · .innocent.media 30% | MediaCodec_loop 12% | 1.raster 12% | ExoPlayer:Playb 10% | DartWorker 9% | HwBinder:3701 8%
-LAB  180.1 measured 15265 kbps
-LAB  180.5 hls jump: answer 239 ms, first byte 242 ms, segment 463 ms (535548 B)
-LAB  181.3 measured 16878 kbps
-LAB  181.8 hls jump: answer 258 ms, first byte 259 ms, segment 526 ms (543983 B)
-LAB  182.5 measured 17494 kbps
-LAB  183.0 hls jump: answer 268 ms, first byte 273 ms, segment 494 ms (525693 B)
-LAB  183.8 measured 17260 kbps
-LAB  184.4 hls jump: answer 241 ms, first byte 245 ms, segment 614 ms (535044 B)
-LAB  185.1 measured 15046 kbps
-LAB  185.6 hls jump: answer 232 ms, first byte 234 ms, segment 472 ms (529866 B)
-LAB  186.4 measured 16147 kbps
-LAB  186.9 hls jump: answer 238 ms, first byte 241 ms, segment 456 ms (531201 B)
-LAB  187.6 measured 16946 kbps
-LAB  188.2 hls jump: answer 290 ms, first byte 293 ms, segment 599 ms (538254 B)
-LAB  189.0 measured 15872 kbps
-LAB  189.5 hls jump: answer 263 ms, first byte 268 ms, segment 526 ms (541258 B)
-LAB cpu app 97% · 22.4fps · .innocent.media 30% | MediaCodec_loop 12% | 1.raster 12% | ExoPlayer:Playb 10% | DartWorker 9% | HwBinder:3701 7%
-LAB  190.3 measured 15812 kbps
-LAB  190.8 hls jump: answer 223 ms, first byte 226 ms, segment 492 ms (517538 B)
-LAB  191.5 measured 18236 kbps
-LAB  192.0 hls jump: answer 230 ms, first byte 232 ms, segment 495 ms (521926 B)
-LAB  192.7 measured 17225 kbps
-LAB  193.2 hls jump: answer 247 ms, first byte 251 ms, segment 521 ms (536724 B)
-LAB  193.9 measured 17716 kbps
-LAB  194.4 hls jump: answer 234 ms, first byte 240 ms, segment 509 ms (535030 B)
-LAB  195.2 measured 15279 kbps
-LAB cpu app 82% · 25.0fps · .innocent.media 20% | MediaCodec_loop 13% | 1.raster 13% | ExoPlayer:Playb 10% | HwBinder:3701 8% | DartWorker 6%
-LAB cpu app 61% · 22.4fps · 1.raster 14% | MediaCodec_loop 13% | ExoPlayer:Playb 11% | HwBinder:3701 8% | .innocent.media 5% | ExoPlayer:Media 3%
-LAB cpu app 60% · 25.0fps · MediaCodec_loop 13% | 1.raster 13% | ExoPlayer:Playb 11% | HwBinder:3701 8% | .innocent.media 5% | ExoPlayer:Media 3%
-LAB  225.3 fg stream: watching
-LAB  225.6 hls jump: answer 260 ms, first byte 265 ms, segment 479 ms (473652 B)
-LAB  226.4 measured 15548 kbps
-LAB  226.9 hls jump: answer 253 ms, first byte 256 ms, segment 466 ms (467716 B)
-LAB  227.7 measured 17278 kbps
-LAB  228.2 hls jump: answer 263 ms, first byte 270 ms, segment 500 ms (473425 B)
-LAB  228.9 measured 16149 kbps
-LAB  229.3 hls jump: answer 222 ms, first byte 225 ms, segment 453 ms (448534 B)
-LAB  229.7 measured 17669 kbps
-LAB cpu app 77% · 25.0fps · .innocent.media 16% | 1.raster 13% | MediaCodec_loop 13% | ExoPlayer:Playb 10% | HwBinder:3701 8% | DartWorker 4%
-LAB  230.1 hls jump: answer 244 ms, first byte 245 ms, segment 418 ms (394476 B)
-LAB  230.8 hls jump: answer 231 ms, first byte 237 ms, segment 496 ms (440480 B)
-LAB  231.2 hls jump: answer 248 ms, first byte 251 ms, segment 274 ms (55629 B)
-LAB  231.6 hls jump: answer 280 ms, first byte 283 ms, segment 342 ms (56735 B)
-LAB cpu app 63% · 22.4fps · 1.raster 13% | MediaCodec_loop 13% | ExoPlayer:Playb 10% | .innocent.media 8% | HwBinder:3701 8% | ExoPlayer:Media 3%
+LAB   32.5 measured 12293 kbps
+LAB   32.7 stream index 0.7 MB at 0.0 MB
+LAB   33.6 exo rung 240p 300 kbps
+LAB   34.2 quality -> original at 283s
+LAB   34.2 open file (exo) start=283s autoplay=true
+LAB   34.3 jump fill start
+LAB   34.3 open ok
+LAB   34.5 exo tracks 818 selected=1 adaptive=false
+LAB   34.8 exo rung 818p 9989 kbps
+LAB   36.9 measured 7998 kbps
+LAB   38.9 measured 18072 kbps
+LAB   39.0 jump fill end 4728 ms
+LAB cpu app 126% · 39.4fps · .innocent.media 55% | DartWorker 23% | 1.raster 10% | dart:io EventHa 6% | HwBinder:17894_ 5% | flutter-worker- 4%
+LAB   40.4 LAB check tour->original PASS want=281 got=283 ready=3169 ms playing=yes, moving by 7225 ms frozen=5002 ms engine=exo rung=818p
+LAB   40.4 stream lanes=6
+LAB   40.4 quality -> auto at 284s
+LAB   40.4 open ladder (exo) start=284s autoplay=true rung=auto first=720
+LAB   40.5 jump fill start
+LAB   40.5 open ok
+LAB   40.6 stream stretch 8.1 MB in 5929 ms lanes=6
+LAB   41.1 stream index 0.0 MB at 0.0 MB
+LAB   41.1 hls: 720p playlist, 444 segments
+LAB   41.1 exo tracks 720,480,360,240 selected=4 adaptive=true
+LAB   41.2 exo rung 720p 2000 kbps
+LAB   41.3 stream index 0.0 MB at 0.0 MB
+LAB   41.8 hls jump: answer 278 ms, first byte 282 ms, segment 650 ms (576125 B)
+LAB   42.0 jump fill end 1494 ms
+LAB   42.6 measured 14979 kbps
+LAB   43.8 LAB check tour->auto PASS want=284 got=285 ready=2420 ms playing=yes, moving by 2424 ms frozen=1601 ms engine=exo rung=720p
+LAB   43.8 measured 15123 kbps
+LAB   44.3 stream index 0.0 MB at 0.0 MB
+LAB   44.4 hls jump: answer 212 ms, first byte 216 ms, segment 366 ms (276145 B)
+LAB   44.9 preview at 666s: 94 KB, 1078 ms
+LAB   44.9 LAB check preview-far PASS at=666 bytes=6323 ms=1078
+LAB   44.9 LAB check preview-again PASS at=666 bytes=6323 ms=0
+LAB   45.4 measured 13842 kbps
+LAB   45.5 preview at 674s: 96 KB, 624 ms
+LAB   45.5 LAB check preview-next PASS at=674 bytes=4575 ms=624
+LAB   45.5 jump fill start
+LAB   46.6 exo picture after seek 1144 ms
+LAB   46.6 exo landing picture held 1023 ms, first frame
+LAB   46.8 hls jump: answer 247 ms, first byte 250 ms, segment 535 ms (472370 B)
+LAB   46.9 jump fill end 1440 ms
+LAB   47.7 measured 14513 kbps
+LAB   48.1 hls jump: answer 215 ms, first byte 218 ms, segment 408 ms (370242 B)
+LAB   49.0 LAB check far-jump PASS want=666 got=666 ready=2512 ms playing=yes, moving by 2516 ms frozen=1399 ms engine=exo rung=720p
+LAB   49.0 LAB check landing PASS held 1023 ms, first frame
+LAB   49.1 measured 14254 kbps
+LAB cpu app 124% · 30.6fps · .innocent.media 53% | DartWorker 17% | 1.raster 9% | ExoPlayer:Playb 7% | MediaCodec_loop 7% | dart:io EventHa 6%
+LAB   49.6 hls jump: answer 229 ms, first byte 234 ms, segment 507 ms (447505 B)
+LAB   50.6 measured 13273 kbps
+LAB   51.1 hls jump: answer 214 ms, first byte 219 ms, segment 506 ms (568086 B)
+LAB   52.2 measured 12309 kbps
+LAB   52.8 hls jump: answer 213 ms, first byte 216 ms, segment 602 ms (711720 B)
+LAB   53.5 measured 14627 kbps
+LAB   53.9 hls jump: answer 209 ms, first byte 213 ms, segment 387 ms (336776 B)
+LAB   54.9 measured 14601 kbps
+LAB   55.2 hls jump: answer 224 ms, first byte 226 ms, segment 249 ms (42294 B)
+LAB   55.7 hls: a segment read stalled 8 s, ended
+LAB   56.3 measured 14993 kbps
+LAB   56.7 hls jump: answer 205 ms, first byte 208 ms, segment 416 ms (408611 B)
+LAB   57.5 measured 15947 kbps
+LAB   57.9 hls jump: answer 220 ms, first byte 222 ms, segment 371 ms (249481 B)
+LAB   58.8 measured 15635 kbps
+LAB   59.2 hls jump: answer 224 ms, first byte 227 ms, segment 395 ms (316615 B)
+LAB cpu app 118% · 22.4fps · .innocent.media 50% | DartWorker 16% | MediaCodec_loop 10% | 1.raster 10% | ExoPlayer:Playb 9% | dart:io EventHa 7%
+LAB   60.1 measured 15534 kbps
+LAB   60.4 hls jump: answer 215 ms, first byte 220 ms, segment 283 ms (155714 B)
+LAB   61.4 measured 15963 kbps
+LAB   61.7 hls jump: answer 199 ms, first byte 204 ms, segment 300 ms (212144 B)
+LAB   62.7 measured 15917 kbps
+LAB   63.1 hls jump: answer 400 ms, first byte 404 ms, segment 498 ms (193453 B)
+LAB   64.1 measured 16480 kbps
+LAB   64.4 hls jump: answer 214 ms, first byte 221 ms, segment 318 ms (210902 B)
+LAB   65.6 measured 13005 kbps
+LAB   65.9 hls jump: answer 221 ms, first byte 224 ms, segment 345 ms (206470 B)
+LAB   66.5 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=4
+LAB   66.9 measured 15606 kbps
+LAB   67.3 hls jump: answer 283 ms, first byte 287 ms, segment 394 ms (207671 B)
+LAB   68.2 measured 16464 kbps
+LAB   68.5 hls jump: answer 214 ms, first byte 216 ms, segment 324 ms (225873 B)
+LAB   69.5 measured 16039 kbps
+LAB cpu app 121% · 25.0fps · .innocent.media 50% | DartWorker 17% | MediaCodec_loop 11% | 1.raster 11% | ExoPlayer:Playb 10% | dart:io EventHa 7%
+LAB   70.0 hls jump: answer 257 ms, first byte 265 ms, segment 524 ms (478792 B)
+LAB   70.9 measured 14513 kbps
+LAB   71.5 hls jump: answer 351 ms, first byte 356 ms, segment 578 ms (474035 B)
+LAB   72.3 measured 15377 kbps
+LAB   72.8 hls jump: answer 224 ms, first byte 230 ms, segment 430 ms (371698 B)
+LAB   73.7 measured 15265 kbps
+LAB   74.1 hls jump: answer 221 ms, first byte 227 ms, segment 400 ms (326455 B)
+LAB   75.0 measured 15434 kbps
+LAB   75.3 hls jump: answer 219 ms, first byte 223 ms, segment 361 ms (258226 B)
+LAB   76.3 measured 15169 kbps
+LAB   76.8 hls jump: answer 206 ms, first byte 210 ms, segment 528 ms (635965 B)
+LAB   77.6 measured 16100 kbps
+LAB   78.1 hls jump: answer 221 ms, first byte 226 ms, segment 501 ms (556092 B)
+LAB   78.9 measured 15592 kbps
+LAB   79.4 hls jump: answer 239 ms, first byte 244 ms, segment 530 ms (577920 B)
+LAB cpu app 123% · 22.4fps · .innocent.media 50% | DartWorker 17% | 1.raster 11% | MediaCodec_loop 11% | ExoPlayer:Playb 10% | dart:io EventHa 8%
+LAB   80.2 measured 15753 kbps
+LAB   80.7 hls jump: answer 205 ms, first byte 212 ms, segment 491 ms (454481 B)
+LAB   81.7 measured 13046 kbps
+LAB   82.1 hls jump: answer 208 ms, first byte 211 ms, segment 393 ms (363240 B)
+LAB   83.0 measured 15621 kbps
+LAB   83.4 hls jump: answer 202 ms, first byte 206 ms, segment 396 ms (388225 B)
+LAB   84.2 measured 15978 kbps
+LAB   84.6 hls jump: answer 244 ms, first byte 249 ms, segment 406 ms (292848 B)
+LAB   85.6 measured 15196 kbps
+LAB   85.9 hls jump: answer 221 ms, first byte 223 ms, segment 362 ms (283766 B)
+LAB   86.8 measured 16054 kbps
+LAB   87.2 hls jump: answer 238 ms, first byte 244 ms, segment 370 ms (260409 B)
+LAB   88.2 measured 15434 kbps
+LAB   88.5 hls jump: answer 208 ms, first byte 213 ms, segment 329 ms (260713 B)
+LAB   89.4 measured 16513 kbps
+LAB cpu app 126% · 24.8fps · .innocent.media 50% | DartWorker 18% | MediaCodec_loop 11% | 1.raster 11% | ExoPlayer:Playb 10% | dart:io EventHa 8%
+LAB   90.2 hls jump: answer 465 ms, first byte 469 ms, segment 764 ms (543345 B)
+LAB   91.2 measured 13076 kbps
+LAB   91.6 hls jump: answer 233 ms, first byte 237 ms, segment 406 ms (300595 B)
+LAB   92.5 measured 15665 kbps
+LAB   92.9 hls jump: answer 229 ms, first byte 231 ms, segment 415 ms (303666 B)
+LAB   93.8 measured 15349 kbps
+LAB   94.2 hls jump: answer 267 ms, first byte 272 ms, segment 408 ms (313913 B)
+LAB   95.1 measured 16384 kbps
+LAB   95.5 hls jump: answer 213 ms, first byte 218 ms, segment 361 ms (271976 B)
+LAB   96.4 measured 15252 kbps
+LAB   96.8 hls jump: answer 242 ms, first byte 247 ms, segment 369 ms (260282 B)
+LAB   97.8 measured 15073 kbps
+LAB   98.1 hls jump: answer 214 ms, first byte 220 ms, segment 345 ms (260379 B)
+LAB   99.1 measured 15196 kbps
+LAB   99.4 hls jump: answer 216 ms, first byte 219 ms, segment 290 ms (152389 B)
+LAB cpu app 123% · 25.0fps · .innocent.media 49% | DartWorker 17% | 1.raster 11% | MediaCodec_loop 11% | ExoPlayer:Playb 10% | dart:io EventHa 8%
+LAB  100.4 measured 15448 kbps
+LAB  100.6 hls jump: answer 216 ms, first byte 221 ms, segment 244 ms (43053 B)
+LAB  102.0 measured 12595 kbps
+LAB  102.2 hls jump: answer 231 ms, first byte 235 ms, segment 257 ms (53068 B)
+LAB  103.4 measured 14157 kbps
+LAB  103.6 hls jump: answer 205 ms, first byte 209 ms, segment 242 ms (61854 B)
+LAB  104.8 measured 13684 kbps
+LAB  105.1 hls jump: answer 222 ms, first byte 225 ms, segment 275 ms (61710 B)
+LAB  106.3 measured 13797 kbps
+LAB  106.5 hls jump: answer 226 ms, first byte 229 ms, segment 265 ms (80668 B)
+LAB  107.7 measured 14146 kbps
+LAB  107.9 hls jump: answer 207 ms, first byte 212 ms, segment 245 ms (74700 B)
+LAB  109.0 measured 15577 kbps
+LAB  109.2 hls jump: answer 230 ms, first byte 235 ms, segment 258 ms (56443 B)
+LAB cpu app 120% · 22.5fps · .innocent.media 48% | DartWorker 17% | MediaCodec_loop 11% | 1.raster 11% | ExoPlayer:Playb 9% | dart:io EventHa 7%
+LAB  110.3 measured 15723 kbps
+LAB  110.5 hls jump: answer 209 ms, first byte 217 ms, segment 258 ms (61340 B)
+LAB  111.6 measured 15434 kbps
+LAB  111.8 hls jump: answer 206 ms, first byte 211 ms, segment 243 ms (61320 B)
+LAB  112.9 measured 15363 kbps
+LAB  113.1 hls jump: answer 222 ms, first byte 228 ms, segment 250 ms (60525 B)
+LAB  114.4 measured 12768 kbps
+LAB  114.7 hls jump: answer 211 ms, first byte 217 ms, segment 250 ms (58470 B)
+LAB  115.7 measured 16336 kbps
+LAB  115.9 hls jump: answer 226 ms, first byte 238 ms, segment 269 ms (60302 B)
+LAB  117.0 measured 15293 kbps
+LAB  117.3 hls jump: answer 226 ms, first byte 234 ms, segment 268 ms (71076 B)
+LAB  118.3 measured 15679 kbps
+LAB  118.6 hls jump: answer 221 ms, first byte 225 ms, segment 263 ms (79013 B)
+LAB cpu app 124% · 24.9fps · .innocent.media 50% | DartWorker 18% | MediaCodec_loop 12% | 1.raster 11% | ExoPlayer:Playb 10% | dart:io EventHa 8%
+LAB  119.6 measured 15101 kbps
+LAB  119.9 hls jump: answer 207 ms, first byte 214 ms, segment 262 ms (97787 B)
+LAB  120.9 measured 15548 kbps
+LAB  121.2 hls jump: answer 243 ms, first byte 248 ms, segment 288 ms (98003 B)
+LAB  122.3 measured 15491 kbps
+LAB  122.6 hls jump: answer 245 ms, first byte 253 ms, segment 319 ms (106820 B)
+LAB  123.6 measured 15505 kbps
+LAB  123.9 hls jump: answer 208 ms, first byte 212 ms, segment 265 ms (102540 B)
+LAB  125.1 measured 12642 kbps
+LAB  125.4 hls jump: answer 213 ms, first byte 217 ms, segment 257 ms (80804 B)
+LAB  126.5 measured 14290 kbps
+LAB  127.0 hls jump: answer 213 ms, first byte 221 ms, segment 437 ms (398302 B)
+LAB  127.9 measured 14781 kbps
+LAB  128.6 hls jump: answer 394 ms, first byte 397 ms, segment 702 ms (365631 B)
+LAB cpu app 117% · 24.9fps · .innocent.media 47% | DartWorker 15% | MediaCodec_loop 11% | 1.raster 11% | ExoPlayer:Playb 9% | dart:io EventHa 7%
+LAB  129.6 measured 12662 kbps
+LAB  130.1 hls jump: answer 237 ms, first byte 241 ms, segment 464 ms (423989 B)
+LAB  130.9 measured 15335 kbps
+LAB  131.4 hls jump: answer 204 ms, first byte 207 ms, segment 460 ms (465417 B)
+LAB  132.3 measured 14703 kbps
+LAB  132.8 hls jump: answer 207 ms, first byte 210 ms, segment 485 ms (511205 B)
+LAB  133.6 measured 15252 kbps
+LAB  134.4 hls jump: answer 465 ms, first byte 470 ms, segment 779 ms (538474 B)
+LAB  135.2 measured 14781 kbps
+LAB  135.7 hls jump: answer 200 ms, first byte 208 ms, segment 509 ms (542451 B)
+LAB  136.5 measured 15224 kbps
+LAB  137.0 hls jump: answer 206 ms, first byte 210 ms, segment 480 ms (525078 B)
+LAB  137.8 measured 15238 kbps
+LAB  138.3 hls jump: answer 207 ms, first byte 213 ms, segment 472 ms (555370 B)
+LAB  139.0 LAB check back SKIP (no trip to the home screen)
+LAB  139.0 LAB check summary pass=16 fail=0
+LAB  139.0 LAB proxy upstream 121 requests 172.8 MB (0.70 a MB), steps back 0, handed over 0, bind {ok: 129}
+LAB  139.1 measured 16039 kbps
+LAB cpu app 123% · 22.5fps · .innocent.media 49% | DartWorker 18% | 1.raster 11% | MediaCodec_loop 11% | ExoPlayer:Playb 9% | dart:io EventHa 7%
+LAB  139.6 hls jump: answer 216 ms, first byte 220 ms, segment 513 ms (525464 B)
+LAB  140.6 measured 13035 kbps
+LAB  141.2 hls jump: answer 229 ms, first byte 235 ms, segment 548 ms (555619 B)
+LAB  141.9 measured 15349 kbps
+LAB  142.4 hls jump: answer 223 ms, first byte 234 ms, segment 496 ms (536898 B)
+LAB  143.2 measured 15548 kbps
+LAB  143.7 hls jump: answer 224 ms, first byte 230 ms, segment 481 ms (496672 B)
+LAB  144.6 measured 15321 kbps
+LAB  145.1 hls jump: answer 236 ms, first byte 241 ms, segment 494 ms (509042 B)
+LAB  146.1 measured 13179 kbps
+LAB  146.7 hls jump: answer 274 ms, first byte 278 ms, segment 570 ms (499911 B)
+LAB  147.4 measured 15548 kbps
+LAB  147.9 hls jump: answer 207 ms, first byte 214 ms, segment 476 ms (489620 B)
+LAB  148.8 measured 15321 kbps
+LAB  149.2 hls jump: answer 237 ms, first byte 243 ms, segment 488 ms (491886 B)
+LAB cpu app 122% · 25.0fps · .innocent.media 49% | DartWorker 17% | MediaCodec_loop 11% | 1.raster 11% | ExoPlayer:Playb 9% | dart:io EventHa 8%
+LAB  150.1 measured 14807 kbps
+LAB  150.6 hls jump: answer 210 ms, first byte 215 ms, segment 463 ms (515726 B)
+LAB  151.4 measured 15548 kbps
+LAB  152.0 hls jump: answer 197 ms, first byte 202 ms, segment 521 ms (515701 B)
+LAB  152.8 measured 14339 kbps
+LAB  153.3 hls jump: answer 213 ms, first byte 219 ms, segment 536 ms (576859 B)
+LAB  154.3 measured 12915 kbps
+LAB  154.9 hls jump: answer 211 ms, first byte 216 ms, segment 544 ms (607971 B)
+LAB  155.6 measured 15279 kbps
+LAB  156.2 hls jump: answer 219 ms, first byte 225 ms, segment 513 ms (533328 B)
+LAB  156.9 measured 15491 kbps
+LAB  157.4 hls jump: answer 221 ms, first byte 224 ms, segment 478 ms (531830 B)
+LAB  158.2 measured 15963 kbps
+LAB  158.7 hls jump: answer 213 ms, first byte 218 ms, segment 490 ms (530783 B)
+LAB  159.5 measured 16352 kbps
+LAB cpu app 122% · 22.5fps · .innocent.media 50% | DartWorker 16% | MediaCodec_loop 11% | 1.raster 11% | ExoPlayer:Playb 9% | dart:io EventHa 8%
+LAB  159.9 hls jump: answer 203 ms, first byte 204 ms, segment 465 ms (535265 B)
+LAB  160.8 measured 15548 kbps
+LAB  161.2 hls jump: answer 217 ms, first byte 227 ms, segment 485 ms (535848 B)
+LAB  162.0 measured 16384 kbps
+LAB  162.5 hls jump: answer 228 ms, first byte 232 ms, segment 489 ms (518831 B)
+LAB  163.3 measured 15872 kbps
+LAB  163.8 hls jump: answer 219 ms, first byte 223 ms, segment 509 ms (536130 B)
+LAB  164.9 measured 12510 kbps
+LAB  165.4 hls jump: answer 208 ms, first byte 210 ms, segment 517 ms (552882 B)
+LAB  166.3 measured 14217 kbps
+LAB  166.8 hls jump: answer 232 ms, first byte 236 ms, segment 504 ms (526960 B)
+LAB  167.6 measured 15114 kbps
+LAB  168.1 hls jump: answer 216 ms, first byte 220 ms, segment 530 ms (523859 B)
+LAB  168.9 measured 15210 kbps
+LAB  169.4 hls jump: answer 206 ms, first byte 211 ms, segment 479 ms (537974 B)
+LAB cpu app 123% · 24.9fps · .innocent.media 49% | DartWorker 17% | 1.raster 11% | MediaCodec_loop 11% | ExoPlayer:Playb 9% | dart:io EventHa 8%
+LAB  170.2 measured 15534 kbps
+LAB  170.7 hls jump: answer 212 ms, first byte 216 ms, segment 489 ms (535548 B)
+LAB  171.5 measured 15293 kbps
+LAB cpu app 71% · 25.0fps · .innocent.media 15% | 1.raster 13% | MediaCodec_loop 13% | ExoPlayer:Playb 11% | HwBinder:17894_ 8% | ExoPlayer:Media 3%
+LAB cpu app 60% · 22.4fps · MediaCodec_loop 13% | 1.raster 13% | ExoPlayer:Playb 11% | HwBinder:17894_ 8% | .innocent.media 5% | ExoPlayer:Media 3%
+LAB cpu app 61% · 25.0fps · 1.raster 14% | MediaCodec_loop 13% | ExoPlayer:Playb 11% | HwBinder:17894_ 8% | .innocent.media 5% | ExoPlayer:Media 3%
+LAB  201.6 fg stream: watching
+LAB  201.9 hls jump: answer 239 ms, first byte 245 ms, segment 514 ms (543983 B)
+LAB  202.7 measured 15768 kbps
+LAB  203.2 hls jump: answer 215 ms, first byte 220 ms, segment 469 ms (525693 B)
+LAB  204.0 measured 15224 kbps
+LAB  204.5 hls jump: answer 224 ms, first byte 228 ms, segment 495 ms (535044 B)
+LAB  205.3 measured 15577 kbps
+LAB  205.8 hls jump: answer 209 ms, first byte 214 ms, segment 469 ms (529866 B)
+LAB  206.6 measured 15768 kbps
+LAB  207.1 hls jump: answer 221 ms, first byte 224 ms, segment 489 ms (531201 B)
+LAB  207.9 measured 15293 kbps
+LAB  208.4 hls jump: answer 217 ms, first byte 221 ms, segment 485 ms (538254 B)
+LAB  209.2 measured 15932 kbps
+LAB cpu app 112% · 22.4fps · .innocent.media 42% | DartWorker 13% | 1.raster 12% | MediaCodec_loop 12% | ExoPlayer:Playb 10% | HwBinder:17894_ 7%
+LAB  209.7 hls jump: answer 223 ms, first byte 227 ms, segment 500 ms (541258 B)
+LAB  210.5 measured 15577 kbps
+LAB  211.0 hls jump: answer 219 ms, first byte 223 ms, segment 500 ms (517538 B)
+LAB  211.8 measured 15782 kbps
+LAB  212.3 hls jump: answer 223 ms, first byte 227 ms, segment 492 ms (521926 B)
+LAB  213.1 measured 15406 kbps
+LAB  213.6 hls jump: answer 217 ms, first byte 229 ms, segment 496 ms (536724 B)
+LAB  214.4 measured 16194 kbps
+LAB  214.9 hls jump: answer 204 ms, first byte 207 ms, segment 481 ms (535030 B)
+LAB  215.7 measured 15857 kbps
+LAB  216.1 hls jump: answer 223 ms, first byte 228 ms, segment 470 ms (473652 B)
+LAB  216.9 measured 15947 kbps
+LAB  217.4 hls jump: answer 219 ms, first byte 224 ms, segment 463 ms (467716 B)
+LAB  218.2 measured 15842 kbps
+LAB  218.7 hls jump: answer 210 ms, first byte 216 ms, segment 461 ms (473425 B)
+LAB  219.4 measured 16254 kbps
+LAB cpu app 127% · 24.9fps · .innocent.media 52% | DartWorker 18% | MediaCodec_loop 11% | 1.raster 11% | ExoPlayer:Playb 9% | dart:io EventHa 8%
+LAB  219.8 hls jump: answer 266 ms, first byte 268 ms, segment 440 ms (448534 B)
+LAB  220.3 measured 17339 kbps
+LAB  220.7 hls jump: answer 205 ms, first byte 209 ms, segment 397 ms (394476 B)
+LAB  221.4 hls jump: answer 204 ms, first byte 208 ms, segment 420 ms (440480 B)
+LAB  221.9 hls jump: answer 207 ms, first byte 211 ms, segment 232 ms (55629 B)
+LAB  222.5 hls jump: answer 207 ms, first byte 220 ms, segment 247 ms (56735 B)
+LAB cpu app 69% · 24.9fps · .innocent.media 14% | 1.raster 13% | MediaCodec_loop 13% | ExoPlayer:Playb 10% | HwBinder:17894_ 8% | ExoPlayer:Media 3%
+LAB cpu app 60% · 22.4fps · 1.raster 14% | MediaCodec_loop 14% | ExoPlayer:Playb 10% | HwBinder:17894_ 8% | .innocent.media 5% | ExoPlayer:Media 3%
