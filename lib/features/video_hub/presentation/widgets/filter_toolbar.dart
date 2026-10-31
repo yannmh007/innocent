@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/localization/app_strings.dart';
 import '../../domain/content_filters.dart';
+import '../../domain/genre_names.dart';
 import '../video_hub_theme.dart';
 import 'sort_sheet.dart';
 
@@ -159,10 +160,14 @@ class ActiveFilterChips extends StatelessWidget {
   final ContentFilters filters;
   final ValueChanged<ContentFilters> onChanged;
 
+  /// What each genre code is called, so a chip never reads "G002".
+  final GenreNames genreNames;
+
   const ActiveFilterChips({
     super.key,
     required this.filters,
     required this.onChanged,
+    this.genreNames = GenreNames.empty,
   });
 
   static const double height = 44;
@@ -175,7 +180,8 @@ class ActiveFilterChips extends StatelessWidget {
     final chips = <Widget>[
       for (final g in filters.genres)
         _Chip(
-          label: '${s.vhFilterGenre}: $g',
+          label: '${s.vhFilterGenre}: '
+              '${genreNames.labelOf(g, s.locale.languageCode) ?? g}',
           onRemove: () => onChanged(filters.toggleGenre(g)),
         ),
       if (filters.year != null)

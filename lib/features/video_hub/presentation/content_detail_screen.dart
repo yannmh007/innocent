@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/localization/app_strings.dart';
 import '../../../core/services/preferences/player_settings_service.dart';
 import '../domain/access_policy.dart';
+import '../domain/genre_names.dart';
 import '../data/api/event_sender.dart';
 import '../data/api/offline_library.dart';
 import '../domain/video_content.dart';
@@ -200,6 +201,7 @@ class _ContentDetailScreenState extends ConsumerState<ContentDetailScreen> {
           SliverToBoxAdapter(
             child: _Header(
               content: content,
+              genreNames: ref.watch(genreNamesProvider),
               locked: locked,
               lockedCount: lockedCount,
               // `expectsAlbum`, NOT `hasAlbum`, and that one word is the
@@ -488,8 +490,12 @@ class _Header extends StatelessWidget {
   final VoidCallback onResume;
   final VoidCallback onStartOver;
 
+  /// What each genre code is called (empty: the words the title carries).
+  final GenreNames genreNames;
+
   const _Header({
     required this.content,
+    required this.genreNames,
     required this.onPlay,
     required this.locked,
     required this.lockedCount,
@@ -511,7 +517,7 @@ class _Header extends StatelessWidget {
       if (content.qualityLabel != null) content.qualityLabel!,
       if (content.episodeCount != null)
         s.vhEpisodesCount(content.episodeCount!),
-      ...content.genres,
+      ...content.genreLabels(genreNames, s.locale.languageCode),
     ];
 
     return Padding(

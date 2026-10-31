@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 
 import '../../../../core/localization/app_strings.dart';
 import '../../domain/content_filters.dart';
+import '../../domain/genre_names.dart';
 import '../video_hub_theme.dart';
 import '../../../../core/ui/app_sheet.dart';
 
@@ -31,6 +32,9 @@ class FilterSheet extends StatefulWidget {
   final ContentFacets facets;
   final ContentFilters initial;
 
+  /// What each genre code is called. Empty when the facets are words.
+  final GenreNames genreNames;
+
   /// Counts matches for a candidate filter set. Supplied by the caller so this
   /// widget never learns which repository it is talking to.
   final Future<int> Function(ContentFilters) countFor;
@@ -40,6 +44,7 @@ class FilterSheet extends StatefulWidget {
     required this.facets,
     required this.initial,
     required this.countFor,
+    this.genreNames = GenreNames.empty,
   });
 
   static Future<ContentFilters?> show(
@@ -47,6 +52,7 @@ class FilterSheet extends StatefulWidget {
     required ContentFacets facets,
     required ContentFilters initial,
     required Future<int> Function(ContentFilters) countFor,
+    GenreNames genreNames = GenreNames.empty,
   }) {
     return showAppModalBottomSheet<ContentFilters>(
       context: context,
@@ -56,6 +62,7 @@ class FilterSheet extends StatefulWidget {
         facets: facets,
         initial: initial,
         countFor: countFor,
+        genreNames: genreNames,
       ),
     );
   }
@@ -145,7 +152,9 @@ class _FilterSheetState extends State<FilterSheet> {
                         runSpacing: VH.s2,
                         children: widget.facets.genres
                             .map((g) => _Choice(
-                                  label: g,
+                                  label: widget.genreNames
+                                          .labelOf(g, s.locale.languageCode) ??
+                                      g,
                                   selected: _draft.genres.contains(g),
                                   onTap: () =>
                                       _update(_draft.toggleGenre(g)),

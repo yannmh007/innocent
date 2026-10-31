@@ -194,28 +194,44 @@ class CategoryRef {
 @immutable
 class CategoryStyle {
   final String id;
+
+  /// The category's CODE (`C01`), assigned by the database and never changed
+  /// or reused (migration 058). What a catalogue query filters on when it is
+  /// known; null from a server older than 058, which is then asked by [id].
+  final String? code;
   final String label;
   final String? labelMm;
+  final String? labelTh;
   final int sortOrder;
   final bool isVisible;
 
   const CategoryStyle({
     required this.id,
     required this.label,
+    this.code,
     this.labelMm,
+    this.labelTh,
     this.sortOrder = 0,
     this.isVisible = true,
   });
 
+  /// What a code looks like. Anything else from the server is ignored rather
+  /// than sent back as a filter.
+  static final RegExp codePattern = RegExp(r'^C[0-9]{2}$');
+
   /// The name to show, given the language the app is running in.
   ///
   /// Same fallback rule as [VideoContent.displayTitle]: a blank or
-  /// whitespace-only `label_mm` falls back rather than rendering an empty
+  /// whitespace-only translation falls back rather than rendering an empty
   /// pill, because somebody will eventually save one by accident.
   String displayLabel(String? languageCode) {
-    if (languageCode != 'my') return label;
-    final mm = labelMm?.trim();
-    return (mm == null || mm.isEmpty) ? label : mm;
+    final local = switch (languageCode) {
+      'my' => labelMm,
+      'th' => labelTh,
+      _ => null,
+    }
+        ?.trim();
+    return (local == null || local.isEmpty) ? label : local;
   }
 }
 
@@ -330,6 +346,15 @@ class CategoryCatalogue {
     return <CategoryRef>[for (final p in placed) p.ref];
   }
 
+  /// The code a catalogue query should filter [id] by, or null when the
+  /// server has not given one (then the query asks by the id, as before 058).
+  String? codeFor(String id) {
+    final code = byId[id]?.code;
+    return code != null && CategoryStyle.codePattern.hasMatch(code)
+        ? code
+        : null;
+  }
+
   /// The server's label for an id, or null when it has nothing usable to say.
   String? labelForId(String id, String? languageCode) {
     final style = byId[id];
@@ -345,13 +370,14 @@ class CategoryCatalogue {
   /// the language has no column of its own.
   ///
   /// That last part is the case worth being explicit about. `AppStrings`
-  /// carries English, Burmese and Thai; `public.categories` carries English
-  /// and Burmese. When an operator renames Movies to Video, a Thai viewer
-  /// gets `Video` — the English label — rather than the compiled Thai word
-  /// for "Movies". That is deliberate: the compiled string is now the OLD
-  /// NAME, and showing the old name to one audience is worse than showing a
-  /// new one they can read. An untranslated rename is a translation gap; a
-  /// stale rename is a wrong answer.
+  /// carries English, Burmese and Thai, and so does `public.categories` since
+  /// migration 058 — but a Thai label left blank is still common. When an
+  /// operator renames Movies to Video and fills no Thai, a Thai viewer gets
+  /// `Video` — the English label — rather than the compiled Thai word for
+  /// "Movies". That is deliberate: the compiled string is now the OLD NAME,
+  /// and showing the old name to one audience is worse than showing a new
+  /// one they can read. An untranslated rename is a translation gap; a stale
+  /// rename is a wrong answer.
   String? labelFor(ContentCategory category, String? languageCode) {
     final style = byId[category.id];
     if (style == null) return null;

@@ -4,6 +4,7 @@ import '../domain/content_category.dart';
 import '../domain/viewer.dart';
 import '../domain/content_filters.dart';
 import '../domain/content_repository.dart';
+import '../domain/genre_names.dart';
 import '../domain/video_content.dart';
 import '../domain/account_repository.dart';
 import 'demo_content_datasource.dart';
@@ -248,6 +249,10 @@ class DemoContentRepository implements ContentRepository {
   /// is exactly what this build has always shown.
   @override
   Future<CategoryCatalogue> getCategories() async => CategoryCatalogue.empty;
+
+  /// The demo catalogue's genres are words, which are their own names.
+  @override
+  Future<GenreNames> getGenreNames() async => GenreNames.empty;
 
   @override
   Future<ContentFacets> getFacets({required String categoryId}) async {

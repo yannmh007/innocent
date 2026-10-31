@@ -290,6 +290,7 @@ class _VideoHubScreenState extends ConsumerState<VideoHubScreen>
           // nothing to play the shared helper says so.
           onPlay: () => playContent(context, ref, featured),
           onInfo: () => _openDetail(context, featured),
+          genreNames: ref.watch(genreNamesProvider),
         ),
       ),
     ];
@@ -414,6 +415,7 @@ class _VideoHubScreenState extends ConsumerState<VideoHubScreen>
                     category: category,
                     filters: candidate,
                   ),
+                  genreNames: ref.read(genreNamesProvider),
                 );
                 if (next != null) setFilters(next);
               },
@@ -422,7 +424,11 @@ class _VideoHubScreenState extends ConsumerState<VideoHubScreen>
         ),
       if (!filters.isEmpty)
         SliverToBoxAdapter(
-          child: ActiveFilterChips(filters: filters, onChanged: setFilters),
+          child: ActiveFilterChips(
+            filters: filters,
+            onChanged: setFilters,
+            genreNames: ref.watch(genreNamesProvider),
+          ),
         ),
       ...PagedPosterGrid.build(
         context: context,

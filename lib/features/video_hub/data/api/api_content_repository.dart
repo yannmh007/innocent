@@ -7,6 +7,7 @@ import '../../domain/rendition.dart';
 import '../../domain/content_category.dart';
 import '../../domain/content_filters.dart';
 import '../../domain/content_repository.dart';
+import '../../domain/genre_names.dart';
 import '../../domain/viewer.dart';
 import '../../domain/video_content.dart';
 import '../../../../core/services/network/connection_kind.dart';
@@ -53,7 +54,7 @@ class ApiContentRepository implements ContentRepository {
   static const String _titleColumns =
       'id,title,title_mm,synopsis,category,poster_url,year,rating,'
       'quality_label,genres,episode_count,view_count,access_tier,'
-      'photo_count,video_count';
+      'photo_count,video_count,category_code,genre_codes';
 
   // ---- the network, remembered ---------------------------------------------
 
@@ -347,9 +348,17 @@ class ApiContentRepository implements ContentRepository {
         // Changing that would need the server to own the listing (an RPC), and
         // putting a visibility rule in the client instead would be a rule in
         // the wrong place.
-        'category': categoryId == ContentCategory.all.id
-            ? 'neq.adult'
-            : 'eq.$categoryId',
+        //
+        // BY CODE when the server has said what the category's code is
+        // (migration 058): `category_code=eq.C01` rather than the word. The
+        // word is the fallback for the first launch with nothing fetched yet,
+        // and for a server older than 058.
+        if (categoryId == ContentCategory.all.id)
+          'category': 'neq.adult'
+        else if (await _categoryCode(categoryId) case final code?)
+          'category_code': 'eq.$code'
+        else
+          'category': 'eq.$categoryId',
         ..._filterQuery(filters),
       },
       page: page,
@@ -409,8 +418,15 @@ class ApiContentRepository implements ContentRepository {
 
   static Map<String, String> _filterQuery(ContentFilters filters) {
     return <String, String>{
+      // A filter holds whatever the facets offered: codes from a server with
+      // migration 058, words from an older one or from a filter saved by an
+      // older build. Codes go to `genre_codes`, words to the legacy column,
+      // and a set is never split between the two.
       if (filters.genres.isNotEmpty)
-        'genres': 'ov.{${filters.genres.join(',')}}',
+        if (filters.genres.every(GenreNames.isCode))
+          'genre_codes': 'ov.{${filters.genres.join(',')}}'
+        else
+          'genres': 'ov.{${filters.genres.join(',')}}',
       if (filters.year != null) 'year': 'eq.${filters.year}',
       if (filters.quality != null) 'quality_label': 'eq.${filters.quality}',
       'order': _orderFor(filters.sort),
@@ -442,7 +458,9 @@ class ApiContentRepository implements ContentRepository {
   @override
   Future<ContentFacets> getFacets({required String categoryId}) async {
     return _facets(<String, String>{
-      if (categoryId != ContentCategory.all.id) 'category_filter': categoryId,
+      // `category_filter` takes a code or an id (058); the code when known.
+      if (categoryId != ContentCategory.all.id)
+        'category_filter': await _categoryCode(categoryId) ?? categoryId,
     });
   }
 
@@ -458,9 +476,21 @@ class ApiContentRepository implements ContentRepository {
       final body =
           await _cachedPost('/rest/v1/rpc/catalogue_facets', body: args);
       if (body is! Map<String, dynamic>) return ContentFacets.empty;
+      final words =
+          (body['genres'] as List?)?.map((e) => '$e').toList() ??
+              const <String>[];
+      final codes =
+          (body['genre_codes'] as List?)?.map((e) => '$e').toList();
+      // CODES ONLY WHEN EVERY ONE CAN BE NAMED. A chip must never read
+      // "G004", so a code the names table does not know yet (added in the
+      // console a minute ago, or the names not fetched on this launch) sends
+      // the whole sheet back to words for now. The next fetch fixes it.
+      final names = codes == null || codes.isEmpty
+          ? GenreNames.empty
+          : await getGenreNames();
+      final byCode = codes != null && codes.isNotEmpty && names.knowsAll(codes);
       return ContentFacets(
-        genres: (body['genres'] as List?)?.map((e) => '$e').toList() ??
-            const <String>[],
+        genres: byCode ? names.offered(codes) : words,
         years: (body['years'] as List?)
                 ?.map((e) => int.tryParse('$e') ?? 0)
                 .where((y) => y > 0)
@@ -602,44 +632,90 @@ class ApiContentRepository implements ContentRepository {
   @override
   Future<CategoryCatalogue> getCategories() async {
     try {
-      final body = await _cachedGet(
-        '/rest/v1/categories',
-        query: const <String, String>{
-          'select': 'id,label,label_mm,sort_order,is_visible',
-          'order': 'sort_order.asc',
-        },
-        // Drawn before the age gate and before any account exists, so it must
-        // not wait on a session it may never get.
-        authenticated: false,
-      );
-      if (body is! List) return CategoryCatalogue.empty;
-
-      final byId = <String, CategoryStyle>{};
-      for (final row in body) {
-        if (row is! Map) continue;
-        final m = row.cast<String, dynamic>();
-        final id = '${m['id'] ?? ''}'.trim();
-        final label = '${m['label'] ?? ''}'.trim();
-        // A row with no id addresses nothing and a row with no label would
-        // render an empty pill. Skipping beats drawing either.
-        if (id.isEmpty || label.isEmpty) continue;
-        byId[id] = CategoryStyle(
-          id: id,
-          label: label,
-          labelMm: m['label_mm'] as String?,
-          sortOrder: _int(m['sort_order']) ?? 0,
-          // Absent reads as VISIBLE. A column the server has not sent must
-          // never be able to hide a tab.
-          isVisible: m['is_visible'] != false,
-        );
-      }
-      return CategoryCatalogue(byId);
+      return _categoriesFrom(await _taxonomy());
     } on ApiException {
       // The compiled enum and the compiled strings. Not an error state — see
       // CategoryCatalogue.empty. A catalogue that cannot draw its own tab bar
       // without the network is worse than one with month-old labels.
       return CategoryCatalogue.empty;
     }
+  }
+
+  @override
+  Future<GenreNames> getGenreNames() async {
+    try {
+      final body = await _taxonomy();
+      return body is Map ? GenreNames.fromJson(body['genres']) : GenreNames.empty;
+    } on ApiException {
+      return GenreNames.empty;
+    }
+  }
+
+  /// `rpc/taxonomy` (migration 058): every category and genre, by code, with
+  /// its name in each language. ONE request for both, kept and replayed like
+  /// the rest of the catalogue, and shared while it is in flight — the tab bar
+  /// and the filter sheet ask for it at the same moment on a cold start.
+  ///
+  /// Drawn before the age gate and before any account exists, so it must not
+  /// wait on a session it may never get.
+  Future<dynamic> _taxonomy() {
+    final pending = _taxonomyInFlight;
+    if (pending != null) return pending;
+    final f = _cachedGet('/rest/v1/rpc/taxonomy', authenticated: false)
+        .whenComplete(() => _taxonomyInFlight = null);
+    _taxonomyInFlight = f;
+    return f;
+  }
+
+  Future<dynamic>? _taxonomyInFlight;
+
+  /// A category's code, for a query: from the last taxonomy this process
+  /// read, or null (then the query asks by the id, as before 058).
+  Future<String?> _categoryCode(String id) async {
+    final known = _codes[id];
+    if (known != null) return known;
+    try {
+      return _categoriesFrom(await _taxonomy()).codeFor(id);
+    } on ApiException {
+      return null;
+    }
+  }
+
+  final Map<String, String> _codes = <String, String>{};
+
+  CategoryCatalogue _categoriesFrom(dynamic body) {
+    final rows = body is Map ? body['categories'] : null;
+    if (rows is! List) return CategoryCatalogue.empty;
+
+    final byId = <String, CategoryStyle>{};
+    for (final row in rows) {
+      if (row is! Map) continue;
+      final m = row.cast<String, dynamic>();
+      final id = '${m['id'] ?? ''}'.trim();
+      final label = '${m['label'] ?? ''}'.trim();
+      // A row with no id addresses nothing and a row with no label would
+      // render an empty pill. Skipping beats drawing either.
+      if (id.isEmpty || label.isEmpty) continue;
+      final code = m['code'] is String ? (m['code'] as String).trim() : null;
+      final style = CategoryStyle(
+        id: id,
+        code: code != null && CategoryStyle.codePattern.hasMatch(code)
+            ? code
+            : null,
+        label: label,
+        labelMm: m['label_mm'] as String?,
+        labelTh: m['label_th'] as String?,
+        sortOrder: _int(m['sort_order']) ?? 0,
+        // Absent reads as VISIBLE. A column the server has not sent must
+        // never be able to hide a tab. A RETIRED category is hidden, not
+        // dropped: dropping it would make a built-in tab (Reels, say) look
+        // unknown to the server, and an unknown built-in is drawn anyway.
+        isVisible: m['visible'] != false && m['retired'] != true,
+      );
+      byId[id] = style;
+      if (style.code != null) _codes[id] = style.code!;
+    }
+    return CategoryCatalogue(byId);
   }
 
   @override
@@ -994,6 +1070,11 @@ class ApiContentRepository implements ContentRepository {
       qualityLabel: m['quality_label'] as String?,
       genres:
           (m['genres'] as List?)?.map((e) => '$e').toList() ?? const <String>[],
+      genreCodes: (m['genre_codes'] as List?)
+              ?.map((e) => '$e')
+              .where(GenreNames.isCode)
+              .toList() ??
+          const <String>[],
       episodeCount: _int(m['episode_count']),
       viewCount: _int(m['view_count']),
       photoCount: _int(m['photo_count']),

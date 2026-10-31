@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/localization/app_strings.dart';
+import '../../domain/genre_names.dart';
 import '../../domain/video_content.dart';
 import '../video_hub_theme.dart';
 import 'poster_image.dart';
@@ -28,11 +29,15 @@ class FeaturedHero extends StatelessWidget {
   final VoidCallback onPlay;
   final VoidCallback onInfo;
 
+  /// What each genre code is called (empty: the words the title carries).
+  final GenreNames genreNames;
+
   const FeaturedHero({
     super.key,
     required this.content,
     required this.onPlay,
     required this.onInfo,
+    this.genreNames = GenreNames.empty,
   });
 
   /// Portrait-leaning, because a phone is portrait and a 16:9 still would
@@ -63,7 +68,7 @@ class FeaturedHero extends StatelessWidget {
 
     final meta = <String>[
       if (content.year != null) '${content.year}',
-      ...content.genres.take(2),
+      ...content.genreLabels(genreNames, s.locale.languageCode).take(2),
       if (content.episodeCount != null)
         s.vhEpisodesCount(content.episodeCount!),
     ];

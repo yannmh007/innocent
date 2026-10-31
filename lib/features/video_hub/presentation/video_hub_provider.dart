@@ -18,6 +18,7 @@ import '../domain/access_policy.dart';
 import '../domain/content_category.dart';
 import '../domain/content_filters.dart';
 import '../domain/content_repository.dart';
+import '../domain/genre_names.dart';
 import 'account_provider.dart';
 import '../domain/video_content.dart';
 
@@ -186,6 +187,20 @@ final categoryCatalogueProvider = FutureProvider<CategoryCatalogue>((ref) {
 final categoryStylesProvider = Provider<CategoryCatalogue>((ref) {
   return ref.watch(categoryCatalogueProvider).asData?.value ??
       CategoryCatalogue.empty;
+});
+
+/// What each genre code is called (migration 058). Same shape and same
+/// reasoning as [categoryCatalogueProvider]: fetched once into the root
+/// container, refreshed with the catalogue, never an error on screen.
+final genreNamesFetchProvider = FutureProvider<GenreNames>((ref) {
+  ref.watch(catalogueRevisionProvider);
+  return ref.watch(contentRepositoryProvider).getGenreNames();
+});
+
+/// The genre names as a plain value, for widgets that draw at once: whatever
+/// has arrived, or empty — and empty means "show the words a title carries".
+final genreNamesProvider = Provider<GenreNames>((ref) {
+  return ref.watch(genreNamesFetchProvider).asData?.value ?? GenreNames.empty;
 });
 
 /// One title IN FULL — including the album the catalogue never carries.

@@ -156,6 +156,7 @@ class _ContentListScreenState extends ConsumerState<ContentListScreen> {
                         facets: facets,
                         initial: _filters,
                         countFor: _countFor,
+                        genreNames: ref.read(genreNamesProvider),
                       );
                       if (next != null) _setFilters(next);
                     },
@@ -167,6 +168,7 @@ class _ContentListScreenState extends ConsumerState<ContentListScreen> {
                 child: ActiveFilterChips(
                   filters: _filters,
                   onChanged: _setFilters,
+                  genreNames: ref.watch(genreNamesProvider),
                 ),
               ),
             ...PagedPosterGrid.build(
