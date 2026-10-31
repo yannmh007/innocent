@@ -243,6 +243,11 @@ def main() -> int:
          'a leaked copy of the database carrying every payer\'s number in '
          'the clear, a sealed value that opens in another row, or a reused '
          'transaction number no longer caught'),
+        ('proof_reseal_test.mjs',
+         'the receipts sent before sealing, sealed where they lie',
+         'a payment screenshot deleted before its sealed copy opens, or left '
+         'plain with no request naming it when a delete fails (the first '
+         'draft did exactly that; this test caught it)'),
         ('backup_seal_test.mjs',
          'the backups made before sealing, sealed where they lie',
          'a plain backup deleted before its sealed copy was written, a sealed '
