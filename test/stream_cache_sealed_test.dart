@@ -1,8 +1,3 @@
-// The stream proxy playing a sealed film (docs/MEDIA_ENCRYPTION.md §6): the
-// proxy routes a sealed grant's URL through the unseal gateway and does
-// everything else exactly as for a plain film — lanes, seeks, its cache, an
-// expired link renewed — and the player only ever sees the film's own bytes.
-
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
@@ -10,166 +5,283 @@ import 'dart:typed_data';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:innocent/features/video_hub/data/cache/stream_cache_server.dart';
-import 'package:innocent/features/video_hub/data/seal/media_seal.dart';
-import 'package:innocent/features/video_hub/data/seal/unseal_gateway.dart';
-import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
-import 'package:plugin_platform_interface/plugin_platform_interface.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:innocent/features/video_hub/data/cache/stream_cache_store.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 
-import 'support/fake_sealed_worker.dart';
-import 'support/seal_test_cipher.dart';
+import 'stream_cache_server_test.dart' as plain;
 
-class _FakePaths extends PathProviderPlatform with MockPlatformInterfaceMixin {
-  _FakePaths(this.root);
-  final String root;
-  @override
-  Future<String?> getApplicationSupportPath() async => root;
-}
+/// The stream cache, sealed (StreamCacheStore: "SEALED, WITH THE DOWNLOADS'
+/// CIPHER").
+///
+/// FIRST, EVERY STREAM CACHE TEST AGAIN, WITH THE CIPHER ON: byte-exact
+/// films, seeks, hang-ups, renewals, the second play from the phone. A
+/// sealed run read back one byte off its place in the film is a film that
+/// plays as noise, and those tests are what would see it.
+///
+/// Then what only sealing has: nothing on disk is the film's bytes; a run
+/// is readable from any byte; a sealed run whose IV is gone is deleted
+/// rather than served; what was cached plain before still plays, and
+/// stays plain; and a cipher that fails stops the caching, never the film.
+///
+/// The phone's cipher is AES-CTR in Kotlin (MediaCrypto); here it is a
+/// stand-in with the property that matters — each byte is changed by a
+/// function of the IV and of its own place in the film, and the same call
+/// undoes it.
+bool _cipherFails = false;
+int _transforms = 0;
 
-Future<Uint8List> _get(String url, {int? from, int? to}) async {
-  final c = HttpClient();
-  try {
-    final r = await c.getUrl(Uri.parse(url));
-    if (from != null) r.headers.set(HttpHeaders.rangeHeader, 'bytes=$from-${to ?? ''}');
-    final resp = await r.close();
-    final out = BytesBuilder(copy: false);
-    await for (final chunk in resp) {
-      out.add(chunk);
-    }
-    return out.takeBytes();
-  } finally {
-    c.close(force: true);
+Uint8List _keystreamXor(Uint8List iv, int offset, Uint8List bytes) {
+  final out = Uint8List(bytes.length);
+  for (var i = 0; i < bytes.length; i++) {
+    final o = offset + i;
+    out[i] = bytes[i] ^ ((iv[o % 16] + o * 13 + (o >> 9) + 1) & 0xFF);
   }
+  return out;
 }
+
+void _fakeCipher() {
+  final rnd = Random(5);
+  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+      .setMockMethodCallHandler(const MethodChannel('mx_clone/media_crypto'), (call) async {
+    switch (call.method) {
+      case 'selfTest':
+        return true;
+      case 'newIv':
+        return base64Encode(List<int>.generate(16, (_) => rnd.nextInt(256)));
+      case 'transform':
+        if (_cipherFails) return null;
+        _transforms++;
+        final a = call.arguments as Map<Object?, Object?>;
+        return _keystreamXor(base64Decode(a['iv']! as String), (a['offset']! as num).toInt(),
+            a['bytes']! as Uint8List);
+    }
+    return null;
+  });
+}
+
+Future<List<File>> _runs(Directory root) async => [
+      await for (final f in root.list(recursive: true))
+        if (f is File && f.path.endsWith('.bin')) f,
+    ];
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  late Directory temp;
-  late FakeWorker worker;
-  late Uint8List plain;
-  late SealGrant seal;
-  late String upstream;
-  late TestSealCipher cipher;
-  final rnd = Random(21);
-  Uint8List bytes(int n) => Uint8List.fromList(List<int>.generate(n, (_) => rnd.nextInt(256)));
+  setUpAll(_fakeCipher);
 
-  setUpAll(() async {
-    HttpOverrides.global = null;
-    temp = await Directory.systemTemp.createTemp('sealedcache');
-    PathProviderPlatform.instance = _FakePaths(temp.path);
-    SharedPreferences.setMockInitialValues(<String, Object>{});
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(const MethodChannel('mx_clone/media_scan'),
-            (call) async => call.method == 'freeBytes' ? 64 * 1024 * 1024 * 1024 : null);
-    plain = bytes(1536 * 1024 + 777);
-    final dek = bytes(32);
-    final sealed = sealObject(dek, 'dek-proxy', plain, salt: bytes(32), prefix: bytes(7));
-    worker = FakeWorker(sealed);
-    upstream = await worker.start();
-    seal = SealGrant(
-      dekId: 'dek-proxy',
-      plainSize: plain.length,
-      sealedSize: sealed.length,
-      wrap: 'tls',
-      dek: base64Encode(dek),
-      header: Uint8List.sublistView(sealed, 0, 40),
-    );
-    cipher = TestSealCipher();
-    UnsealGateway.instance = UnsealGateway(cipher: cipher);
-    StreamCacheServer.lanes = 3;
+  group('every stream cache test, sealed', () {
+    plain.main();
+    // Inside the group, before its tearDownAll takes the folder away.
+    test('the films those tests played are on disk sealed, and only sealed', () async {
+      final runs = await _runs(await getApplicationSupportDirectory());
+      expect(runs, isNotEmpty);
+      for (final f in runs) {
+        expect(p.basename(f.path), startsWith('s'), reason: '${f.path} is a plain run');
+        expect(File(p.join(f.parent.path, 'seal.iv')).existsSync(), isTrue);
+      }
+    });
   });
 
-  tearDownAll(() async {
-    await UnsealGateway.instance.shutdown();
-    await worker.stop();
-    try {
-      await temp.delete(recursive: true);
-    } on FileSystemException {
-      // A write finishing in the same instant.
+  group('sealed', () {
+    final store = StreamCacheStore.instance;
+    final film = Uint8List.fromList(List<int>.generate(3 * 1024 * 1024 + 77, (i) => (i * 7 + (i >> 11)) & 0xFF));
+
+    setUp(() => _cipherFails = false);
+
+    Future<CacheEntry> cache(String id, List<(int, int)> stretches) async {
+      final e = await store.entryFor(id, total: film.length, label: id);
+      for (final (from, to) in stretches) {
+        final w = (await store.openWriter(e, from))!;
+        // In pieces of uneven size, as a network delivers them.
+        var at = from;
+        var n = 1;
+        while (at < to) {
+          final end = min(at + 1000 * n + 333, to);
+          await w.write(film.sublist(at, end));
+          at = end;
+          n = n % 37 + 1;
+        }
+        await w.close();
+      }
+      return e;
     }
-  });
 
-  setUp(() {
-    SealedUrls.reset();
-  });
-
-  test('a sealed film through the proxy is the film, byte for byte; seeks too', () async {
-    SealedUrls.learn(upstream, seal);
-    final local = await StreamCacheServer.instance.localUrlFor(
-        cacheId: 'sealed-a', upstream: upstream, refresh: () async => null, total: plain.length);
-    expect(local, isNotNull);
-    expect(await _get(local!), plain);
-    for (final (a, b) in <(int, int)>[(0, 99), (65479, 65481), (700000, 900000), (plain.length - 5, plain.length - 1)]) {
-      expect(await _get(local, from: a, to: b), plain.sublist(a, b + 1), reason: '$a-$b');
+    Future<Uint8List> read(CacheEntry e, CachePart part, int from, int to) async {
+      final out = BytesBuilder();
+      await for (final c in e.read(part, from, to)) {
+        out.add(c);
+      }
+      return out.takeBytes();
     }
-    expect(cipher.segments, greaterThan(0), reason: 'the gateway opened it');
-    // The proxy's own cache holds the film now: read again, nothing goes out.
-    final before = worker.requests;
-    expect(await _get(local, from: 300000, to: 400000), plain.sublist(300000, 400001));
-    expect(worker.requests, before, reason: 'served from the phone');
-    StreamCacheServer.instance.release('sealed-a');
-  });
 
-  test('an expired sealed link is renewed through the gateway, mid-film', () async {
-    SealedUrls.learn(upstream, seal);
-    final renewed = '$upstream?renewed';
-    var refreshes = 0;
-    final local = await StreamCacheServer.instance.localUrlFor(
-        cacheId: 'sealed-b',
-        upstream: upstream,
-        total: plain.length,
-        refresh: () async {
-          refreshes++;
-          SealedUrls.learn(renewed, seal);
-          return renewed;
-        });
-    worker.refuse
-      ..add((403, null))
-      ..add((403, null));
-    final got = await _get(local!, from: 1000000);
-    expect(got, plain.sublist(1000000));
-    expect(refreshes, greaterThanOrEqualTo(1));
-    StreamCacheServer.instance.release('sealed-b');
-  });
+    test('nothing on disk is the film: each run is the film ciphered at its own place', () async {
+      final e = await cache('sealed-1', [(0, 1000000), (1500001, film.length)]);
+      expect(e.iv, isNotNull);
+      final iv = base64Decode(e.iv!);
+      for (final part in e.parts) {
+        expect(part.sealed, isTrue);
+        final disk = await part.file.readAsBytes();
+        expect(disk, _keystreamXor(iv, part.start, film.sublist(part.start, part.end)));
+        expect(disk, isNot(film.sublist(part.start, part.end)));
+      }
+    });
 
-  test('renewed as the plain twin: the same film, read as it is', () async {
-    SealedUrls.learn(upstream, seal);
-    final twin = FakeWorker(plain);
-    final plainUrl = await twin.start();
-    final local = await StreamCacheServer.instance.localUrlFor(
-        cacheId: 'sealed-c',
-        upstream: upstream,
-        total: plain.length,
-        refresh: () async => plainUrl);
-    worker.refuse
-      ..add((403, null))
-      ..add((403, null));
-    expect(await _get(local!, from: 500000, to: 600000), plain.sublist(500000, 600001));
-    expect(twin.requests, greaterThan(0), reason: 'read from the plain twin');
-    StreamCacheServer.instance.release('sealed-c');
-    await twin.stop();
-  });
+    // Play and its warm-up ask for a new film's entry in the same moment.
+    // One entry, its IV the one on disk, and a run written through either
+    // reads back as the film — after a restart too (the IV is read again).
+    test('two asking for a new film at once get one entry, sealed with the IV on disk', () async {
+      final asks = await Future.wait([
+        for (var i = 0; i < 4; i++) store.entryFor('race-new', total: film.length, label: 'race'),
+      ]);
+      expect(asks.every((e) => identical(e, asks.first)), isTrue, reason: 'one entry');
+      final e = asks.first;
+      expect(e.iv, isNotNull, reason: 'sealed, not plain');
+      final dir = Directory(p.join((await getApplicationSupportDirectory()).path, 'stream_cache', 'race-new'));
+      expect((await File(p.join(dir.path, 'seal.iv')).readAsString()).trim(), e.iv);
+      final w = (await store.openWriter(e, 0))!;
+      await w.write(film.sublist(0, 200000));
+      await w.close();
+      final disk = await e.partAt(0)!.file.readAsBytes();
+      expect(disk, _keystreamXor(base64Decode(e.iv!), 0, film.sublist(0, 200000)),
+          reason: 'sealed under the IV that a restart will read');
+    });
 
-  test('a plain film renewed sealed is routed through the gateway, never read as noise', () async {
-    final twin = FakeWorker(plain);
-    final plainUrl = await twin.start();
-    final local = await StreamCacheServer.instance.localUrlFor(
-        cacheId: 'sealed-d',
-        upstream: plainUrl,
-        total: plain.length,
-        refresh: () async {
-          SealedUrls.learn(upstream, seal);
-          return upstream;
-        });
-    twin.refuse
-      ..add((403, null))
-      ..add((403, null))
-      ..add((403, null));
-    final before = cipher.segments;
-    expect(await _get(local!, from: 1200000, to: 1300000), plain.sublist(1200000, 1300001));
-    expect(cipher.segments, greaterThan(before), reason: 'opened, not passed through');
-    StreamCacheServer.instance.release('sealed-d');
-    await twin.stop();
+    test('a run reads back exactly, from any byte, unaligned', () async {
+      final e = await cache('sealed-2', [(0, 1000000), (1500001, film.length)]);
+      for (final (start, from, to) in [(0, 0, 1000000), (0, 17, 999983), (1500001, 3, 100003), (1500001, 5, film.length - 1500001)]) {
+        final part = e.partAt(start)!;
+        expect(await read(e, part, from, to), film.sublist(start + from, start + to),
+            reason: 'run at $start, $from..$to');
+      }
+    });
+
+    test('a run extended later is still one film: the new bytes ciphered where they land', () async {
+      final e = await cache('sealed-3', [(0, 123457)]);
+      final w = (await store.openWriter(e, 123457))!;
+      await w.write(film.sublist(123457, 400000));
+      await w.close();
+      final part = e.partAt(0)!;
+      expect(part.end, 400000);
+      expect(await read(e, part, 0, 400000), film.sublist(0, 400000));
+    });
+
+    test('after a restart it reads the same', () async {
+      await cache('sealed-4', [(0, 777777), (2000000, film.length)]);
+      await store.reloadFromDisk();
+      final e = await store.entryFor('sealed-4', total: film.length);
+      expect(e.parts.length, 2);
+      expect(await read(e, e.partAt(0)!, 0, 777777), film.sublist(0, 777777));
+      final tail = e.partAt(2000000)!;
+      expect(await read(e, tail, 0, tail.length), film.sublist(2000000));
+      final head = await e.readHead(e.partAt(0)!, 4096);
+      expect(head, film.sublist(0, 4096), reason: 'what offline replay reads');
+    });
+
+    test('a sealed run whose IV is gone is deleted, never served', () async {
+      final e = await cache('sealed-5', [(0, 50000)]);
+      final dir = e.parts.first.file.parent;
+      await File(p.join(dir.path, 'seal.iv')).delete();
+      await store.reloadFromDisk();
+      final again = await store.entryFor('sealed-5', total: film.length);
+      expect(again.parts, isEmpty);
+      expect((await _runs(dir)).where((f) => p.basename(f.path).startsWith('s')), isEmpty);
+    });
+
+    test('what was cached plain before still plays, and stays plain', () async {
+      // An entry as 1.64.70 left it: a plain run, no seal.iv.
+      final dir = Directory(p.join((await getApplicationSupportDirectory()).path, 'stream_cache', 'legacy-1'));
+      await dir.create(recursive: true);
+      await File(p.join(dir.path, 'p0.bin')).writeAsBytes(film.sublist(0, 60000));
+      await File(p.join(dir.path, 'meta.json')).writeAsString(
+          jsonEncode(<String, dynamic>{'v': 1, 'total': film.length, 'label': 'old', 'used': 0}));
+      await store.reloadFromDisk();
+      final e = await store.entryFor('legacy-1', total: film.length);
+      expect(e.iv, isNull);
+      expect(await read(e, e.partAt(0)!, 0, 60000), film.sublist(0, 60000));
+      final w = (await store.openWriter(e, 60000))!;
+      await w.write(film.sublist(60000, 90000));
+      await w.close();
+      expect(await File(p.join(dir.path, 'p0.bin')).readAsBytes(), film.sublist(0, 90000));
+      final w2 = (await store.openWriter(e, 100000))!;
+      await w2.write(film.sublist(100000, 110000));
+      await w2.close();
+      expect(File(p.join(dir.path, 'p100000.bin')).existsSync(), isTrue);
+    });
+
+    test('a seal that fails writes nothing: the run ends where it was', () async {
+      final e = await cache('sealed-6', [(0, 10000)]);
+      final w = (await store.openWriter(e, 10000))!;
+      _cipherFails = true;
+      await expectLater(w.write(film.sublist(10000, 20000)), throwsA(isA<FileSystemException>()));
+      await w.close();
+      _cipherFails = false;
+      final part = e.partAt(0)!;
+      expect(part.end, 10000);
+      expect(await part.file.length(), 10000);
+      expect(await read(e, part, 0, 10000), film.sublist(0, 10000));
+    });
+
+    test('an unseal that fails ends the read with an error, which the server '
+        'answers as a short read', () async {
+      final e = await cache('sealed-7', [(0, 300000)]);
+      _cipherFails = true;
+      await expectLater(read(e, e.partAt(0)!, 0, 300000), throwsA(isA<FileSystemException>()));
+      _cipherFails = false;
+    });
+
+    group('gathered before sealing (CacheWriter.batchBytes)', () {
+      const batch = 128 * 1024;
+      const piece = 16 * 1024; // a TLS record, as the network hands it over
+
+      test('a megabyte and a half in 16 KB pieces is a dozen seals, not a hundred, '
+          'and reads back exactly', () async {
+        final e = await store.entryFor('batched-1', total: film.length, label: 'b1');
+        final w = (await store.openWriter(e, 0, batchBytes: batch))!;
+        final before = _transforms;
+        const end = 1536 * 1024 + 5000;
+        for (var at = 0; at < end; at += piece) {
+          await w.write(film.sublist(at, min(at + piece, end)));
+        }
+        await w.close();
+        expect(_transforms - before, lessThanOrEqualTo((end / batch).ceil()),
+            reason: 'one seal per ${batch ~/ 1024} KB gathered');
+        final part = e.partAt(0)!;
+        expect(part.end, end);
+        expect(await read(e, part, 0, end), film.sublist(0, end));
+        expect(await read(e, part, 123457, 999999), film.sublist(123457, 999999));
+      });
+
+      test('what has not gathered is not on disk, and not claimed to be', () async {
+        final e = await store.entryFor('batched-2', total: film.length, label: 'b2');
+        final w = (await store.openWriter(e, 0, batchBytes: batch))!;
+        await w.write(film.sublist(0, piece));
+        final part = e.partAt(0);
+        expect(part == null || part.end == 0, isTrue,
+            reason: 'nothing believed before it is written');
+        await w.flush();
+        expect(e.partAt(0)!.end, piece, reason: 'a flush writes what gathered');
+        await w.write(film.sublist(piece, 3 * piece));
+        await w.close();
+        expect(e.partAt(0)!.end, 3 * piece, reason: 'and so does close');
+        expect(await read(e, e.partAt(0)!, 0, 3 * piece), film.sublist(0, 3 * piece));
+      });
+
+      test('a seal that fails at the end loses only what had gathered', () async {
+        final e = await store.entryFor('batched-3', total: film.length, label: 'b3');
+        final w = (await store.openWriter(e, 0, batchBytes: batch))!;
+        for (var at = 0; at < 12 * piece; at += piece) {
+          await w.write(film.sublist(at, at + piece));
+        }
+        _cipherFails = true;
+        await w.close();
+        _cipherFails = false;
+        final part = e.partAt(0)!;
+        expect(part.end, batch, reason: 'the first 128 KB were written; the last 64 KB never were');
+        expect(await part.file.length(), batch);
+        expect(await read(e, part, 0, batch), film.sublist(0, batch));
+      });
+    });
+
+    test('the cipher was really asked', () => expect(_transforms, greaterThan(100)));
   });
 }
