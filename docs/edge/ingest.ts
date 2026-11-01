@@ -70,6 +70,8 @@ import {
   BACKUP_AAD, BACKUP_KEY_INFO, derivedKey, openFile, PROOF_KEY_INFO, proofAad, sealFile,
 } from './pii.ts';
 import { namingKey, opaqueName } from './naming.ts';
+import { b64, importKek, newDek, wrapDek } from './media_keys.js';
+import { checkTwin, isSealedKey, newSealedKey, twinAllowed } from './media_twin.js';
 
 const R2_ACCOUNT_ID = Deno.env.get('R2_ACCOUNT_ID')!;
 const R2_ACCESS_KEY_ID = Deno.env.get('R2_ACCESS_KEY_ID')!;
@@ -209,7 +211,7 @@ async function presignAt(
 }
 
 async function presign(
-  method: 'GET' | 'PUT' | 'DELETE', objectKey: string, seconds: number, bucket: string,
+  method: 'GET' | 'PUT' | 'DELETE' | 'HEAD', objectKey: string, seconds: number, bucket: string,
 ): Promise<string> {
   return await presignAt({
     host: `${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`, region: 'auto',
@@ -1990,6 +1992,111 @@ Deno.serve(async (req: Request) => {
       object_key: key,
       public_url: kind === 'photo' ? `${PUBLIC_BASE}${key}` : null,
     }, 200, req);
+  }
+
+  // ── seal_plan / seal_commit ─────────────────────────────────────────────
+  //
+  // SEALED TWINS of a title's video objects (docs/MEDIA_ENCRYPTION.md §9 B):
+  // the master and every rung, sealed on a runner and recorded here. Only
+  // an open film (slug `open-film-…`, media_twin.js twinAllowed) — the
+  // canary — and nothing else: no other object can be planned or recorded.
+  //
+  // plan: per object not yet twinned, a DEK issued here (and its wrap under
+  // MEDIA_KEK, which the runner hands back untouched), a GET for the plain
+  // object and a PUT for its twin at `s/<32 hex>`. commit: each twin checked
+  // (media_twin.js checkTwin: the wrap is this function's, the sizes and
+  // header are right, the first and last segments open) before its
+  // media_keys row is written. The runner never holds a bucket credential
+  // or MEDIA_KEK; it holds a twin's DEK only while sealing it.
+  if (op === 'seal_plan' || op === 'seal_commit') {
+    const given = (req.headers.get('Authorization') ?? '').replace(/^Bearer /i, '');
+    if (!sameSecret(given, RUNNER_SECRET)) return json({ error: 'no' }, 403, req);
+    let kek: CryptoKey;
+    try {
+      kek = await importKek(Deno.env.get('MEDIA_KEK_V1') ?? '');
+    } catch (_) {
+      return json({ error: 'no_kek' }, 503, req);
+    }
+
+    // The video objects of an allowed title, by key: its assets and their rungs.
+    const objectsOf = async (titleId: string): Promise<string[] | null> => {
+      const t = await rest(`titles?select=id,slug&id=eq.${encodeURIComponent(titleId)}`);
+      const row = t.ok ? (await t.json() as Array<{ id: string; slug: string }>)[0] : null;
+      if (!row || !twinAllowed(row.slug)) return null;
+      const a = await rest(`title_assets?select=id,object_key&title_id=eq.${row.id}&kind=eq.video&bucket=eq.${MEDIA_BUCKET}`);
+      const assets = a.ok ? await a.json() as Array<{ id: string; object_key: string }> : [];
+      const keys = assets.map((x) => x.object_key);
+      if (assets.length) {
+        const r = await rest(`asset_renditions?select=object_key&asset_id=in.(${assets.map((x) => x.id).join(',')})`);
+        if (r.ok) keys.push(...(await r.json() as Array<{ object_key: string }>).map((x) => x.object_key));
+      }
+      return keys.filter((k) => typeof k === 'string' && k && !isSealedKey(k));
+    };
+    const sizeOf = async (key: string): Promise<number | null> => {
+      const h = await fetch(await presign('HEAD', key, 300, MEDIA_BUCKET), { method: 'HEAD' });
+      if (!h.ok) return null;
+      const n = Number(h.headers.get('content-length'));
+      return Number.isSafeInteger(n) && n > 0 ? n : null;
+    };
+
+    if (op === 'seal_plan') {
+      const keys = await objectsOf(String(body.title_id ?? ''));
+      if (!keys) return json({ error: 'not_allowed' }, 403, req);
+      const have = keys.length
+        ? await rest(`media_keys?select=plain_key&bucket=eq.${MEDIA_BUCKET}&plain_key=in.${
+          encodeURIComponent(`(${keys.map((k) => `"${k.replaceAll('"', '')}"`).join(',')})`)}`)
+        : null;
+      const done = new Set(have?.ok ? (await have.json() as Array<{ plain_key: string }>).map((x) => x.plain_key) : []);
+      const items = [];
+      for (const key of keys.filter((k) => !done.has(k)).slice(0, 12)) {
+        const plainSize = await sizeOf(key);
+        if (!plainSize) continue;
+        const dekId = crypto.randomUUID();
+        const dek = newDek();
+        const sealedKey = newSealedKey();
+        items.push({
+          plain_key: key, plain_size: plainSize, sealed_key: sealedKey, dek_id: dekId,
+          dek: b64(dek), wrapped: await wrapDek(kek, dek, dekId, 1),
+          get_url: await presign('GET', key, 3 * 3600, MEDIA_BUCKET),
+          put_url: await presign('PUT', sealedKey, 3 * 3600, MEDIA_BUCKET),
+        });
+        dek.fill(0);
+      }
+      return json({ items, already: done.size }, 200, req);
+    }
+
+    // seal_commit
+    const list = Array.isArray(body.items) ? (body.items as Record<string, unknown>[]).slice(0, 12) : [];
+    const allowed = new Set(await objectsOf(String(body.title_id ?? '')) ?? []);
+    const results = [];
+    for (const item of list) {
+      const plainKey = String(item.plain_key ?? '');
+      if (!allowed.has(plainKey)) {
+        results.push({ plain_key: plainKey, ok: false, why: 'not_allowed' });
+        continue;
+      }
+      try {
+        const row = await checkTwin(kek, item as never, {
+          plainSize: () => sizeOf(plainKey),
+          sealedSize: () => sizeOf(String(item.sealed_key)),
+          readSealed: async (start: number, end: number) => {
+            const g = await fetch(await presign('GET', String(item.sealed_key), 300, MEDIA_BUCKET),
+              { headers: { Range: `bytes=${start}-${end - 1}` } });
+            return g.status === 206 ? new Uint8Array(await g.arrayBuffer()) : null;
+          },
+        });
+        const ins = await rest('media_keys', {
+          method: 'POST',
+          body: JSON.stringify({ ...row, bucket: MEDIA_BUCKET }),
+        });
+        results.push(ins.ok
+          ? { plain_key: plainKey, ok: true, dek_id: row.dek_id }
+          : { plain_key: plainKey, ok: false, why: `insert ${ins.status}` });
+      } catch (e) {
+        results.push({ plain_key: plainKey, ok: false, why: String((e as Error).message ?? e).slice(0, 120) });
+      }
+    }
+    return json({ results }, 200, req);
   }
 
   // ── seed_title ─────────────────────────────────────────────────────────

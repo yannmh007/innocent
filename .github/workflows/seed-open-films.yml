@@ -15,12 +15,54 @@ name: Seed open films
 
 on:
   workflow_dispatch:
+    inputs:
+      task:
+        description: "seed: load the films. seal: make sealed twins of their videos (docs/MEDIA_ENCRYPTION.md §9 B)"
+        type: choice
+        options: [seed, seal]
+        default: seed
+      titles:
+        description: "seal only: title ids, space-separated (open films only; the function refuses any other)"
+        type: string
+        default: "0839dacb-59ae-4c95-9279-4901b925965d ab8b0f1e-e23b-4141-94ba-67f1b29a7765"
 
 permissions:
   contents: read
 
 jobs:
+  # SEALED TWINS of the open films' videos — the canary of media seal v1.
+  # tool/seal_twins.py asks the ingest function for a plan (a DEK per object,
+  # issued and wrapped there), seals each object, opens the whole twin again
+  # and compares it byte for byte, uploads it, and hands it back to be checked
+  # and recorded (seal_plan / seal_commit). The function allows open films
+  # only. Nothing secret is printed: presigned URLs and DEKs stay in memory.
+  seal:
+    if: inputs.task == 'seal'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Install the cipher
+        run: python3 -m pip install --quiet --disable-pip-version-check 'cryptography==50.0.2'
+      - name: Seal, check, upload, record
+        env:
+          SB_URL: ${{ secrets.SUPABASE_URL }}
+          RUNNER_SECRET: ${{ secrets.INGEST_SECRET }}
+          TITLES: ${{ inputs.titles }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SB_URL:-}" ] || [ -z "${RUNNER_SECRET:-}" ]; then
+            echo "::error::SUPABASE_URL or INGEST_SECRET not set"; exit 1
+          fi
+          # Ids only: anything else in the input is dropped, not passed on.
+          ids=$(printf '%s' "$TITLES" | tr -cs '0-9a-f-' ' ')
+          # shellcheck disable=SC2086
+          python3 tool/seal_twins.py $ids
+
   seed:
+    if: inputs.task != 'seal'
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
