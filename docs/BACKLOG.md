@@ -157,7 +157,11 @@ does it.
   granted service_role nothing on media_keys - request-playback could not
   have read a key either; 062 grants SELECT and INSERT only.
 - [ ] Canary in the labs: device lab jumps on a MEDIA_SEAL=1 build (run
-  41293034978), then Test Lab on the realme and the OPPO, against §8.
+  41293034978): sealed path throughout (5 of 5 copies, key held, gateway),
+  15/16. The failure, skip+30 frozen 5.3 s: the jump joined a segment far
+  down the cancelled read-ahead's fetch and waited 3.9 s for it; the
+  gateway now joins only a segment about to arrive (§6). Then the lab
+  again, Test Lab on the realme and the OPPO, against §8.
 - [ ] ENC-4, the pipelines: ingest, console upload, transcode, probe,
   console preview.
 - [ ] ENC-5, rollout: canary on Sintel and Tears of Steel, `min_supported`,

@@ -256,6 +256,75 @@ void main() {
       expect(worker.bytesSent, lessThan(seal.sealedSize ~/ 2));
     });
 
+    // A jump inside another read: the player skips ahead into bytes the
+    // read before is still bringing, far off. The new request must not wait
+    // for the old read to reach them (device lab run 41293034978: skip+30
+    // waited 3.9 s for its first byte at 240p).
+    test('a jump far inside another read does not wait for it', () async {
+      const n = MediaSealLayout.firstPlain + 40 * MediaSealLayout.plainSegment;
+      await setUpObject(n);
+      worker.trickle = 256 * 1024;
+      final url = (await gw.urlFor(id: 'j', upstream: upstream, seal: seal))!;
+      final c = HttpClient();
+      final r = await c.getUrl(Uri.parse(url));
+      r.headers.set(HttpHeaders.rangeHeader, 'bytes=0-${2 * 1024 * 1024 - 1}');
+      final resp = await r.close();
+      expect(resp.statusCode, 206);
+      var got = 0;
+      final first = Completer<void>();
+      final sub = resp.listen((chunk) {
+        got += chunk.length;
+        if (got > 70000 && !first.isCompleted) first.complete();
+      });
+      await first.future;
+      // As the proxy ends a fill: the subscription cancelled.
+      await sub.cancel();
+      final sentAtCut = worker.bytesSent;
+      // 1.5 MB in: some 5 s of the old read away at this speed.
+      const a = 1500 * 1000, b = a + 90000;
+      final clock = Stopwatch()..start();
+      final (code, _, body) = await fetch(url, range: 'bytes=$a-$b');
+      expect(code, 206);
+      expect(body, plain.sublist(a, b + 1));
+      expect(clock.elapsedMilliseconds, lessThan(2500),
+          reason: 'its own read, not the end of the old one');
+      // And the old read stopped once its reader had gone.
+      await Future<void>.delayed(const Duration(milliseconds: 1200));
+      final since = worker.bytesSent - sentAtCut;
+      expect(since, lessThan(2 * (b - a) + 512 * 1024), reason: 'the old read is not read on to its end');
+      c.close(force: true);
+    });
+
+    // A lane and the next: the next starts inside the segment the first
+    // ends in, a long way ahead of the first's progress. The next is not
+    // made to wait for the whole of the first (the proxy's and the
+    // downloader's timers would take that for a dead lane).
+    test('a lane\'s neighbour starting in its last segment is not held behind it', () async {
+      const n = MediaSealLayout.firstPlain + 40 * MediaSealLayout.plainSegment;
+      await setUpObject(n);
+      worker.trickle = 256 * 1024;
+      final url = (await gw.urlFor(id: 'k', upstream: upstream, seal: seal))!;
+      const split = 1000 * 1000;
+      final lane1 = fetch(url, range: 'bytes=0-${split - 1}');
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+      final clock = Stopwatch()..start();
+      final c = HttpClient();
+      final r = await c.getUrl(Uri.parse(url));
+      r.headers.set(HttpHeaders.rangeHeader, 'bytes=$split-${split + 200000}');
+      final resp = await r.close();
+      final answered = clock.elapsedMilliseconds;
+      final b = BytesBuilder(copy: false);
+      await for (final ch in resp) {
+        b.add(ch);
+      }
+      expect(resp.statusCode, 206);
+      expect(b.takeBytes(), plain.sublist(split, split + 200001));
+      expect(answered, lessThan(1500), reason: 'answered on its own fetch, not after the first lane');
+      final (_, _, one) = await lane1;
+      expect(one, plain.sublist(0, split));
+      c.close(force: true);
+    });
+
     test('a malformed seal block is refused', () {
       final ok = <String, dynamic>{
         'v': 1, 'dek_id': 'x', 'plain_size': 100, 'sealed_size': MediaSealLayout.sealedSize(100),

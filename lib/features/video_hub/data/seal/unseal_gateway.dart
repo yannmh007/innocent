@@ -18,11 +18,14 @@
 /// open is fetched once more, and if it still does not, the request ends
 /// with an error — never a corrupt frame.
 ///
-/// NO SEGMENT FETCHED TWICE FOR TWO NEIGHBOURS. The proxy's lanes split a
-/// stretch at points of their own, so two parts can start and end inside
-/// the same segment. A segment on its way for one request is waited for by
-/// the other ([_Pending]), and the last few opened are kept ([_recentCap]),
-/// so a boundary costs nothing more on the line.
+/// A SEGMENT ABOUT TO ARRIVE IS NOT FETCHED TWICE. The proxy's lanes split
+/// a stretch at points of their own, so two parts can start and end inside
+/// the same segment. A segment on its way for one request, and close to
+/// arriving, is waited for by the other ([_Pending], [_joinReach]); the last
+/// few opened are kept ([_recentCap]). One FAR down another read's way is
+/// fetched on this request's own: a jump into a read-ahead, or the next lane
+/// starting where a long part ends, does not wait for the read before it to
+/// get there (device lab run 41293034978: 3.9 s for a skip's first byte).
 ///
 /// ON LOOPBACK, BEHIND A TOKEN, as the proxy is: nothing else on the phone
 /// can read a film through it.
@@ -56,6 +59,13 @@ class UnsealGateway {
 
   /// What a run of segments may be, at most, per call to the platform.
   static const int _runSegments = 16;
+
+  /// How far down another fetch's way a segment may be and still be waited
+  /// for there: the one arriving now, or the one after it — 128 KB, less
+  /// than a round trip to the Worker on the lines the films are made for.
+  /// Further, its own fetch is the quicker; the cost is at most one segment
+  /// read twice where a lane's part ends.
+  static const int _joinReach = 1;
 
   /// Opened segments kept for the next request, per object: half a
   /// megabyte, enough for the neighbour a lane reaches a moment later.
@@ -192,6 +202,25 @@ class _Pending {
   int waiters = 0;
 }
 
+/// One fetch from the Worker: segments [s0]..[s1], one aligned range, and
+/// how far it has got ([next], the first segment not yet opened).
+class _Run {
+  _Run(this.s0, this.s1) : next = s0;
+  final int s0, s1;
+  int next;
+
+  /// Its segments not yet delivered, each with the requests waiting on it.
+  final Map<int, _Pending> own = <int, _Pending>{};
+
+  /// Whether a request may wait here for segment [i]: on its way in this
+  /// fetch, and close to arriving.
+  _Pending? joinable(int i) {
+    final p = own[i];
+    if (p == null || p.done.isCompleted) return null;
+    return i - next <= UnsealGateway._joinReach ? p : null;
+  }
+}
+
 class _Sealed {
   _Sealed(this.gateway, this.upstream, this.seal)
       : count = MediaSealLayout.segmentCount(seal.plainSize) {
@@ -222,7 +251,10 @@ class _Sealed {
   bool _closed = false;
 
   final LinkedHashMap<int, Uint8List> _recent = LinkedHashMap<int, Uint8List>();
-  final Map<int, _Pending> _pending = <int, _Pending>{};
+
+  /// The fetches going on: a handful at most (the proxy's lanes, a
+  /// download's parts).
+  final List<_Run> _live = <_Run>[];
 
   HttpClient? _io;
   HttpClient get io => _io ??= HttpClient()
@@ -232,10 +264,13 @@ class _Sealed {
 
   void close() {
     _closed = true;
-    for (final p in _pending.values) {
-      if (!p.done.isCompleted) p.done.complete(const _Fail(HttpStatus.gone, why: 'closed'));
+    for (final r in _live) {
+      for (final p in r.own.values) {
+        if (!p.done.isCompleted) p.done.complete(const _Fail(HttpStatus.gone, why: 'closed'));
+      }
+      r.own.clear();
     }
-    _pending.clear();
+    _live.clear();
     _recent.clear();
     _io?.close(force: true);
     _io = null;
@@ -255,10 +290,11 @@ class _Sealed {
     final first = MediaSealLayout.segmentOf(a);
     final last = MediaSealLayout.segmentOf(b);
 
-    // Every segment this request needs: opened already, on its way for
-    // another request, or sent for now — in runs of consecutive segments,
-    // one aligned range each.
+    // Every segment this request needs: opened already, about to arrive
+    // for another request, or sent for now — in runs of consecutive
+    // segments, one aligned range each.
     final want = <int, Future<Object>>{};
+    final held = <int, _Pending>{}; // what this request counts as waiting on
     final mine = <int>[];
     for (var i = first; i <= last; i++) {
       final r = _recent.remove(i);
@@ -267,18 +303,30 @@ class _Sealed {
         want[i] = Future<Object>.value(r);
         continue;
       }
-      final p = _pending[i];
+      _Pending? p;
+      for (final run in _live) {
+        p = run.joinable(i);
+        if (p != null) break;
+      }
       if (p != null) {
         p.waiters++;
+        held[i] = p;
         want[i] = p.done.future;
         continue;
       }
-      final mineP = _pending[i] = _Pending()..waiters = 1;
-      want[i] = mineP.done.future;
       mine.add(i);
     }
-    for (final run in _runs(mine)) {
-      unawaited(_fetch(run.$1, run.$2));
+    for (final (s0, s1) in _runs(mine)) {
+      final run = _Run(s0, s1);
+      for (var i = s0; i <= s1; i++) {
+        final p = run.own[i] = held[i] = _Pending()..waiters = 1;
+        want[i] = p.done.future;
+      }
+      unawaited(_drive(run));
+    }
+    void release(int i) {
+      final p = held.remove(i);
+      if (p != null && p.waiters > 0) p.waiters--;
     }
 
     var i = first;
@@ -315,7 +363,7 @@ class _Sealed {
       }, cancelOnError: true);
       for (; i <= last; i++) {
         final got = i == first ? head : await _orHangUp(want[i]!, hung);
-        _release(i);
+        release(i);
         if (got == null) {
           i++;
           return; // the proxy let go
@@ -341,7 +389,7 @@ class _Sealed {
     } finally {
       // Whatever this request did not reach, it no longer waits for.
       for (; i <= last; i++) {
-        _release(i);
+        release(i);
       }
       out?.destroy();
     }
@@ -360,12 +408,6 @@ class _Sealed {
       if (!c.isCompleted) c.complete(null);
     });
     return c.future;
-  }
-
-  /// One fewer request waiting on segment [i].
-  void _release(int i) {
-    final p = _pending[i];
-    if (p != null && p.waiters > 0) p.waiters--;
   }
 
   /// [segments] (ascending) as runs of consecutive ones.
@@ -414,13 +456,33 @@ class _Sealed {
         return h;
       });
 
-  /// Segments [s0]..[s1], sent for as one range; each completes its
-  /// [_Pending] as it opens. One run that does not open is fetched once
-  /// more before it is given up.
-  Future<void> _fetch(int s0, int s1, {bool again = false}) async {
+  /// Fetch [r]: its segments as one range, each delivered as it opens.
+  /// Segments that do not open are fetched once more before they are given
+  /// up; whatever is left undelivered at the end has failed.
+  Future<void> _drive(_Run r) async {
+    _live.add(r);
+    try {
+      final from = await _attempt(r, r.s0);
+      if (from != null && !_closed) await _attempt(r, from, again: true);
+    } finally {
+      _live.remove(r);
+      for (final p in r.own.values) {
+        if (!p.done.isCompleted) p.done.complete(_Fail.network);
+      }
+      r.own.clear();
+    }
+  }
+
+  /// Segments [s0]..`r.s1` of [r], sent for as one range; each completes
+  /// its [_Pending] as it opens. Returns the segment to fetch again from
+  /// when one did not open (and this was not [again] already), else null.
+  Future<int?> _attempt(_Run r, int s0, {bool again = false}) async {
+    final s1 = r.s1;
+    r.next = s0;
+    int? refetchFrom;
     void failFrom(int from, _Fail f) {
       for (var i = from; i <= s1; i++) {
-        final p = _pending.remove(i);
+        final p = r.own.remove(i);
         if (p != null && !p.done.isCompleted) p.done.complete(f);
       }
     }
@@ -432,7 +494,7 @@ class _Sealed {
     final got = await _get(start, end);
     if (got is _Fail) {
       failFrom(s0, got);
-      return;
+      return null;
     }
     final resp = (got as _Got).resp;
     final hdr = await headerF;
@@ -441,11 +503,10 @@ class _Sealed {
       UnsealGateway.refused++;
       PlaybackLog.add('seal: ${hdr == null ? 'no header' : 'the key did not register'} for ${seal.dekId.substring(0, min(8, seal.dekId.length))}');
       failFrom(s0, const _Fail(HttpStatus.badGateway, why: 'no key'));
-      return;
+      return null;
     }
 
     final buf = BytesBuilder(copy: false);
-    var next = s0; // the first segment not yet opened
     var at = start; // sealed offset of buf's first byte
     var opening = Future<void>.value();
     var busy = false;
@@ -459,7 +520,7 @@ class _Sealed {
       stopped = true;
       quiet?.cancel();
       _destroy(resp, sub);
-      if (f != null) failFrom(next, f);
+      if (f != null) failFrom(r.next, f);
       if (!done.isCompleted) done.complete();
     }
 
@@ -469,10 +530,10 @@ class _Sealed {
       if (busy) return;
       busy = true;
       try {
-        while (!stopped && next <= s1) {
+        while (!stopped && r.next <= s1) {
           var n = 0, len = 0;
-          while (n < UnsealGateway._runSegments && next + n <= s1) {
-            final l = _sealedLength(next + n);
+          while (n < UnsealGateway._runSegments && r.next + n <= s1) {
+            final l = _sealedLength(r.next + n);
             if (len + l > buf.length) break;
             len += l;
             n++;
@@ -482,7 +543,7 @@ class _Sealed {
           final run = Uint8List.sublistView(all, 0, len);
           if (all.length > len) buf.add(Uint8List.sublistView(all, len));
           final plain = await gateway._cipher.openRun(
-              dekId: seal.dekId, header: hdr, plainTotal: seal.plainSize, first: next, sealed: run);
+              dekId: seal.dekId, header: hdr, plainTotal: seal.plainSize, first: r.next, sealed: run);
           if (stopped) return;
           if (plain == null) {
             // NOT OPENED. Which one, segment by segment from the bytes
@@ -490,28 +551,28 @@ class _Sealed {
             // that one fetched once more, then given up.
             if (n > 1) {
               var o = 0;
-              while (!stopped && next <= s1) {
-                final l = _sealedLength(next);
+              while (!stopped && r.next <= s1) {
+                final l = _sealedLength(r.next);
                 if (o + l > run.length) break;
                 final one = await gateway._cipher.openRun(
-                    dekId: seal.dekId, header: hdr, plainTotal: seal.plainSize, first: next,
+                    dekId: seal.dekId, header: hdr, plainTotal: seal.plainSize, first: r.next,
                     sealed: Uint8List.sublistView(run, o, o + l));
                 if (stopped) return;
                 if (one == null) break;
-                _deliver(next, one);
+                _deliver(r.next, one);
                 UnsealGateway.segmentsOpened++;
                 o += l;
                 at += l;
-                next++;
+                r.next++;
               }
               if (stopped) return;
             }
-            final from = next;
+            final from = r.next;
             stop(null);
             if (!again) {
               UnsealGateway.refetches++;
               PlaybackLog.add('seal: segments $from..${from + n - 1} did not open; fetched again');
-              unawaited(_fetch(from, s1, again: true));
+              refetchFrom = from;
             } else {
               UnsealGateway.refused++;
               PlaybackLog.add('seal: segments $from..${from + n - 1} did not open twice');
@@ -521,18 +582,18 @@ class _Sealed {
           }
           var o = 0;
           for (var k = 0; k < n; k++) {
-            final pl = _sealedLength(next) - MediaSealLayout.tag;
-            _deliver(next, Uint8List.sublistView(plain, o, o + pl));
+            final pl = _sealedLength(r.next) - MediaSealLayout.tag;
+            _deliver(r.next, Uint8List.sublistView(plain, o, o + pl));
             o += pl;
-            at += _sealedLength(next);
-            next++;
+            at += _sealedLength(r.next);
+            r.next++;
           }
           UnsealGateway.segmentsOpened += n;
-          if (next > s1) {
+          if (r.next > s1) {
             stop(null);
             return;
           }
-          if (!_wanted(next, s1)) {
+          if (!_wanted(r)) {
             // Nobody waits for the rest any more (a seek moved on): the
             // connection is cut rather than read on.
             stop(const _Fail(HttpStatus.gone, why: 'not wanted'));
@@ -565,16 +626,18 @@ class _Sealed {
       opening.whenComplete(() => stop(_Fail.network));
     }, onDone: () {
       opening.then((_) => openWhat()).whenComplete(() {
-        if (next <= s1) stop(_Fail.network);
+        if (r.next <= s1) stop(_Fail.network);
         stop(null);
       });
     }, cancelOnError: true);
     await done.future;
+    return refetchFrom;
   }
 
-  bool _wanted(int from, int to) {
-    for (var i = from; i <= to; i++) {
-      final p = _pending[i];
+  /// Whether a request still waits for any of [r]'s segments not yet opened.
+  bool _wanted(_Run r) {
+    for (var i = r.next; i <= r.s1; i++) {
+      final p = r.own[i];
       if (p != null && p.waiters > 0) return true;
     }
     return false;
@@ -588,8 +651,12 @@ class _Sealed {
     while (_recent.length > UnsealGateway._recentCap) {
       _recent.remove(_recent.keys.first);
     }
-    final p = _pending.remove(i);
-    if (p != null && !p.done.isCompleted) p.done.complete(plain);
+    // To every fetch that has it on the way: one opened first is as good
+    // for the requests waiting on the other.
+    for (final r in _live) {
+      final p = r.own.remove(i);
+      if (p != null && !p.done.isCompleted) p.done.complete(plain);
+    }
   }
 
   int _sealedLength(int i) {

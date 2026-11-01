@@ -11,8 +11,12 @@ on the branch (ENC-3, §6), streaming and downloads. THE CANARY'S TWINS ARE IN
 R2 (ingest v44 `seal_plan`/`seal_commit`, seed-open-films run 41292286979):
 Sintel's master and four rungs, Tears of Steel's master and three, each
 re-opened whole on the runner and checked again by the function before its
-row was written. Next: the device lab on a build that asks (run
-41293034978), then Test Lab, images, and the pipelines.**
+row was written. The device lab on a build that asks (run 41293034978,
+Sintel, jumps) took the sealed path throughout — "grant: 5 of 5 copies
+sealed, keys rsa", "seal: key held (rsa)", every copy through the gateway —
+and passed 15 of 16; the one failure (a skip that waited for another
+read's far segment) is fixed in the gateway (§6). Next: the lab again,
+then Test Lab, images, and the pipelines.**
 This file is the specification the code follows. Change it first, then the
 code.
 
@@ -137,10 +141,17 @@ Why this one (research, 31 Oct 2026):
   gateway asks for exactly the whole segments that hold them (one aligned
   range), opens each as it arrives (`SealOpener.openRun`, one platform call
   per run of the segments that have arrived, at most 16), and sends on the
-  bytes asked for. Segments on their way for one request are waited for by
-  another, and the last 8 opened are kept, so two lanes meeting inside a
-  segment cost nothing more on the line. When the proxy lets go of a part,
-  the Worker's connection is cut, not read on.
+  bytes asked for. A segment on its way for one request is waited for by
+  another only when it is the one arriving now or the next (128 KB), and
+  the last 8 opened are kept, so two lanes meeting inside a segment cost
+  nothing more on the line. A segment further down another fetch's way is
+  fetched on the request's own: a skip into a read-ahead, or the next lane
+  starting where a long part ends, never waits for the read before it to
+  get there (device lab run 41293034978: a skip+30 waited 3.9 s for its
+  first byte at 240p; `test/unseal_gateway_test.dart` holds both cases).
+  The cost is at most one segment read twice where a lane's part ends.
+  When the proxy lets go of a part, the Worker's connection is cut, not
+  read on.
 - **The cache stays sealed**: the proxy writes what the gateway hands it
   under the phone's own key, as it has since 1.64.71 (AES-CTR,
   `OfflineCrypto`); nothing is ever on disk in the clear. Cost: one AES-GCM
