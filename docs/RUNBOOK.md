@@ -833,6 +833,34 @@ rightly taken down, and it is never served to anyone.
 
 ---
 
+## PART 4d — THE MEDIA KEY (MEDIA_KEK_V1)
+
+The key that wraps every photo's and film's own key
+(`docs/MEDIA_ENCRYPTION.md` §4). It is in **one** place online — Supabase →
+Edge Functions → Secrets, `MEDIA_KEK_V1` — and on the owner's two offline
+copies. Never in this repository, a chat, GitHub, Cloudflare or a phone.
+
+**Its check value is `f3bfb0d1`.** That is all anyone ever needs to compare.
+
+- **Is it right?** Edge Functions → request-playback → Logs, search
+  `seal_kek`. The first request after a deploy writes
+  `{"seal_kek":{"state":"ok","form":"base64","bytes":32,"kcv":"f3bfb0d1"},…}`.
+  `missing`: the secret is not set. `unusable`: it is set but is not 32
+  bytes (the line says how long it is). Another `kcv`: it is another key —
+  **stop and put the right one back before anything is sealed with it**.
+- **Restoring it from the paper copy**: paste the 64 hex characters as the
+  value of `MEDIA_KEK_V1` exactly as written (spaces are trimmed). Hex and
+  base64 are both accepted and are the same key; there is nothing to
+  convert. Then check the log line above shows `f3bfb0d1`.
+- **Never "rotate" it by replacing the secret.** Every wrapped key in
+  `media_keys` opens only with this one; a new value makes every sealed
+  object unplayable until the old one is back. A rotation is a new
+  `MEDIA_KEK_V2` beside it and a re-wrap job — not built yet.
+- **Lost both offline copies and the secret?** Every sealed object is lost
+  with them. That is the cost of Cloudflare not being able to read them.
+
+---
+
 ## PART 5 — PREMIUM (after 010)
 
 ### Set the price - this is what the paywall shows

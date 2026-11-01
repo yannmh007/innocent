@@ -136,11 +136,27 @@ does it.
 - [ ] Phase 4, once no app that reads the old text is left: drop
   `titles.category` and `titles.genres` (and `categories.id` as the key).
 
+### Media encryption (ENC, the owner's request of 31 Oct; spec docs/MEDIA_ENCRYPTION.md)
+- [x] ENC-0/1: the spec; seal v1 in Python, JS, Kotlin and Dart, each
+  checked against Tink (`tool/media_seal_test.py`) and shared vectors.
+- [x] ENC-2: migration 060 (`media_keys`, `devices.public_key`), live;
+  request-playback v40 with the seal plan behind `SEAL_MODE` (off);
+  `MEDIA_KEK_V1` set by the owner, check value `f3bfb0d1` (RUNBOOK 4d).
+- [ ] ENC-3, the app: Keystore device key, `seal: 1`, the opener in the
+  stream proxy, sealed downloads, the image loader; labs against §8.
+- [ ] ENC-4, the pipelines: ingest, console upload, transcode, probe,
+  console preview.
+- [ ] ENC-5, rollout: canary on Sintel and Tears of Steel, `min_supported`,
+  the migration job (skips the do-not-touch list), B2 Object Lock after.
 ### Quality
 - ~~Two sealed stream-cache timing tests fail under the full parallel run.~~
   Done 31 Oct: the trickle bound is half the film, and the step-back case
   found a real fault — a flush into a reset connection could hold a
   stretch open for seconds after a seek; it now ends at the hang-up.
+- `tool/js/console_smoke.mjs` failed once on 1 Nov ("upload: the resume
+  sent only what was missing (1,2,3)") with the console untouched; three
+  reruns passed 232 of 232. A timing assumption in the resume check — find
+  it rather than rerun.
 - Burmese Settings still shows Pop-up Play, Decoder, Development and
   Diagnostics in English — decide whether those stay technical terms.
 

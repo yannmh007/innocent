@@ -2,8 +2,10 @@
 
 Status (1 Nov 2026): **design approved by the owner (31 Oct); format
 libraries done (ENC-1); keys table live (migration 060); request-playback
-v38 live with the seal plan behind `SEAL_MODE` (off). Next: the app's opener
-(ENC-3), then the pipelines.** Waiting on the owner: `MEDIA_KEK_V1` (§4).
+v40 live with the seal plan behind `SEAL_MODE` (off). `MEDIA_KEK_V1` set by
+the owner and confirmed from the function's boot log without reading it:
+usable, base64, 32 bytes, key check value `f3bfb0d1` (§4). Next: the app's
+opener (ENC-3), then the pipelines.**
 This file is the specification the code follows. Change it first, then the
 code.
 
@@ -79,6 +81,12 @@ Why this one (research, 31 Oct 2026):
   in `public.media_keys` (dek_id, bucket, object_key, kek_version, wrapped,
   plain_size, sealed_size, created_at), RLS on with no policy: service role
   only.
+- **Key check value** — the first 8 hex digits of
+  HMAC-SHA256(KEK, `"inv-kek-check|v1"`). request-playback logs it once per
+  boot (`{"seal_kek":{"state":"ok",…,"kcv":…}}`) with the form and size, never
+  the key. V1's is **`f3bfb0d1`**: a function, runner or restored secret that
+  shows another value holds another key. Both forms are accepted (base64, 44
+  characters, or the paper copy's hex, 64), and give the same value.
 - **Rotation**: a new KEK re-wraps the rows (seconds); no object is rewritten.
   A DEK that leaked means re-sealing that one object.
 - **Separation**: Cloudflare holds files without keys; Supabase holds keys
@@ -165,8 +173,8 @@ F. B2 Object Lock (governance) after E, never before (it would pin the
 ## 10. Recovery
 
 All three are needed and sufficient: a database backup (sealed with the backup
-key), the backup key, MEDIA_KEK. Runbook and drill in `docs/RUNBOOK.md` when
-phase A lands.
+key), the backup key, MEDIA_KEK. Runbook: `docs/RUNBOOK.md` PART 4d; the
+restore drill joins it with phase F.
 
 ## Research sources
 
