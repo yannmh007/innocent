@@ -1,8 +1,11 @@
 # Media encryption — every photo and film sealed at rest
 
-Status: **design approved by the owner (31 Oct 2026); format libraries done
-(ENC-1); server, app and pipelines next.** This file is the specification the
-code follows. Change it first, then the code.
+Status (1 Nov 2026): **design approved by the owner (31 Oct); format
+libraries done (ENC-1); keys table live (migration 060); request-playback
+v38 live with the seal plan behind `SEAL_MODE` (off). Next: the app's opener
+(ENC-3), then the pipelines.** Waiting on the owner: `MEDIA_KEK_V1` (§4).
+This file is the specification the code follows. Change it first, then the
+code.
 
 ## 1. What the owner asked for
 
