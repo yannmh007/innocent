@@ -31,6 +31,7 @@ import 'features/music/data/music_audio_service.dart';
 import 'features/music/presentation/music_providers.dart';
 import 'features/onboarding/onboarding_screen.dart';
 import 'features/updater/data/update_download_service.dart';
+import 'features/video_hub/data/seal/media_seal.dart';
 import 'core/ui/tooltip_label_binding.dart';
 
 void main() async {
@@ -69,6 +70,13 @@ void main() async {
   // milliseconds of black screen if they are spent when somebody presses
   // play, and this app has spent weeks removing exactly that kind of delay.
   unawaited(StreamCacheStore.instance.load());
+
+  // This install's media key (docs/MEDIA_ENCRYPTION.md §5): made once, in
+  // the phone's TEE, which can take a second or two — so now, in the
+  // background, and never on the way to a first frame. Only in a build
+  // that asks for sealed films.
+  PlatformSealCipher.warmUp();
+  MediaKitPlayerService.refusesUri = (uri) => SealedUrls.of(uri) != null;
 
   // Audit: cap the image cache before any widget is built so a large
   // library with hundreds of thumbnails can't blow past memory. Flutter

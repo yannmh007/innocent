@@ -4,8 +4,9 @@ Status (1 Nov 2026): **design approved by the owner (31 Oct); format
 libraries done (ENC-1); keys table live (migration 060); request-playback
 v40 live with the seal plan behind `SEAL_MODE` (off). `MEDIA_KEK_V1` set by
 the owner and confirmed from the function's boot log without reading it:
-usable, base64, 32 bytes, key check value `f3bfb0d1` (§4). Next: the app's
-opener (ENC-3), then the pipelines.**
+usable, base64, 32 bytes, key check value `f3bfb0d1` (§4). The app's device
+key, keyring and unseal gateway are on the branch (ENC-3, §6); sealed
+downloads and images, then the labs, then the pipelines.**
 This file is the specification the code follows. Change it first, then the
 code.
 
@@ -114,22 +115,62 @@ Why this one (research, 31 Oct 2026):
 
 ## 6. The phone
 
-- **Streaming**: the stream proxy asks the Worker for whole segments (spans
-  from `MediaSealLayout`), keeps them **sealed** in its cache (no second
-  encryption, as today), and opens them on the way to the player with
-  `SealOpener.openRun` — one platform call per run of up to 1 MiB, Conscrypt
-  AES-GCM on the CPU's AES instructions. Target: no more cipher calls and no
-  more CPU per MB than today's sealed cache (`test_bench/proxy_cpu_bench.dart`).
-- **Downloads**: the sealed bytes are written as they arrive (no cipher work
-  while downloading — today's downloader encrypts every byte) with the
-  device-wrapped DEK beside them; playback opens through the same path.
-  Watch-while-downloading works unchanged.
-- **Images**: an image loader fetches, opens, decodes; the disk cache keeps
-  the sealed bytes.
-- **A segment that does not open**: fetched once more; then a clear error and
-  an event, never a crash or a corrupt frame.
+- **Device key** (`SealDevice.kt`): RSA-2048 in Android Keystore, made once
+  in the background at start-up (0.1–2 s in a TEE, never on the way to a
+  first frame) and tested with a wrap and unwrap; its public half goes in
+  `device_key`. A grant asked before the key is ready goes without it and its
+  DEK comes over TLS (`prefer`). DEKs are unwrapped into `SealKeyring.kt` and
+  never cross back into Dart.
+- **Streaming — the unseal gateway** (`unseal_gateway.dart`). A loopback
+  server, behind a token, between the stream proxy and the Worker. The proxy
+  registers a sealed grant's URL and fetches the gateway's address instead,
+  exactly as it fetched the Worker — ranges of the film, a 206 with the
+  film's own length, 403 for an expired link, 429 to slow down — so lanes,
+  seeks, the hand-over, the ladder as HLS and its cache are unchanged
+  (`stream_cache_server.dart`, `_route`). For plain bytes `[a, b]` the
+  gateway asks for exactly the whole segments that hold them (one aligned
+  range), opens each as it arrives (`SealOpener.openRun`, one platform call
+  per run of the segments that have arrived, at most 16), and sends on the
+  bytes asked for. Segments on their way for one request are waited for by
+  another, and the last 8 opened are kept, so two lanes meeting inside a
+  segment cost nothing more on the line. When the proxy lets go of a part,
+  the Worker's connection is cut, not read on.
+- **The cache stays sealed**: the proxy writes what the gateway hands it
+  under the phone's own key, as it has since 1.64.71 (AES-CTR,
+  `OfflineCrypto`); nothing is ever on disk in the clear. Cost: one AES-GCM
+  open per byte fetched on top of today's cache cipher — Conscrypt's AES and
+  PMULL instructions, one call per run. §8's `proxy_cpu_bench` decides
+  whether the next step is needed: keeping each segment's ciphertext itself
+  in the cache (GCM is counter mode underneath, so any byte of a segment
+  opens alone with AES-CTR from counter `nonce ‖ 2` — tested in
+  `tool/sealjvm`), which would drop the cache's own cipher pass.
+- **Renewals**: a renewed link is routed again — sealed through the gateway,
+  plain as it is (the plain twin holds the same film, so a film renewed
+  across the switch plays on), and a sealed one with no gateway fails the
+  renewal rather than being read.
+- **A sealed URL is never played or downloaded as it is.** Every fallback
+  that used to play the remote address checks first (`SealedUrls`), and the
+  player refuses one outright (`MediaKitPlayerService.refusesUri`).
+- **A segment that does not open**: opened again one by one from the bytes
+  already there (so the good ones before it still go on), then fetched once
+  more; twice, the request ends — before its status if it was the first
+  segment (502), otherwise by cutting the connection, which the proxy reads
+  as a failed part. Never a corrupt frame.
+- **Downloads** (not yet): the sealed bytes written as they arrive with the
+  install's wrap of the DEK beside them (`wrapForStorage`), opened by the
+  same path. Until then a sealed copy is refused with a clear message, never
+  saved as a broken film.
+- **Images** (not yet): an image loader fetches, opens, decodes; the disk
+  cache keeps the sealed bytes.
 - **Old formats keep working**: plaintext objects (until migrated) and today's
   CTR downloads and cache files are recognised and played as now.
+- **The Worker passes sealed bytes untouched**: its one rewrite (a stray
+  `sidx` renamed `free`) only reads objects whose first box is `ftyp`; a
+  sealed object starts `0x28` and a random salt.
+- **Who asks**: `seal: 1` is sent only by a build with `kAsksForSealed`
+  (`--dart-define=MEDIA_SEAL=1` for a lab build). Every path a granted URL
+  can reach must open seals before a release turns it on — downloads and
+  images are the two left.
 
 ## 7. Pipelines
 

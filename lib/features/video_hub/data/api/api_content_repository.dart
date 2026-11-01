@@ -16,6 +16,7 @@ import '../stream_door.dart';
 import 'api_client.dart';
 import 'backend_config.dart';
 import 'api_exception.dart';
+import '../seal/media_seal.dart';
 
 /// [ContentRepository] over the backend described in
 /// `docs/premium_backend_spec.md`.
@@ -911,6 +912,12 @@ class ApiContentRepository implements ContentRepository {
         // plays it only for a fetch carrying the same id — see
         // StreamDoor, which every fetch of a granted URL goes through.
         if (deviceId != null) 'bind': true,
+        // Sealed objects (docs/MEDIA_ENCRYPTION.md §5): asked for only by
+        // a build that opens them everywhere a granted URL goes, with this
+        // install's Keystore key when it is ready — never waited for.
+        if (kAsksForSealed) 'seal': 1,
+        if (kAsksForSealed && PlatformSealCipher.deviceKeyNow != null)
+          'device_key': PlatformSealCipher.deviceKeyNow,
       });
       if (body is! Map<String, dynamic>) {
         return const PlaybackGrant.denied(AccessDenial.unavailable);
@@ -929,8 +936,23 @@ class ApiContentRepository implements ContentRepository {
       if (raw is List) {
         for (final row in raw) {
           final r = Rendition.fromJson(row);
-          if (r != null) ladder.add(r);
+          if (r == null) continue;
+          // A sealed rung without a seal that can be read is noise to every
+          // player: dropped, like a rung with no bitrate.
+          if (row is Map && row['seal'] != null) {
+            final seal = SealGrant.fromJson(row['seal']);
+            if (seal == null) continue;
+            SealedUrls.learn(r.url, seal);
+          }
+          ladder.add(r);
         }
+      }
+      if (body['seal'] != null) {
+        final seal = SealGrant.fromJson(body['seal']);
+        if (seal == null) {
+          return const PlaybackGrant.denied(AccessDenial.unavailable);
+        }
+        SealedUrls.learn(url, seal);
       }
       // Where these URLs point is where the install id may be sent.
       StreamDoor.learn(url);
@@ -966,6 +988,10 @@ class ApiContentRepository implements ContentRepository {
       // budget fills again within the hour.
       if (e.code == 'rate_limited') {
         return const PlaybackGrant.denied(AccessDenial.rateLimited);
+      }
+      // Sealed only, and this build does not ask for sealed objects.
+      if (e.code == 'update_required' || e.statusCode == 426) {
+        return const PlaybackGrant.denied(AccessDenial.updateRequired);
       }
       // COULD NOT ASK, told apart from "was told no", and this is the only
       // place in the class that distinction is made about PLAYBACK.

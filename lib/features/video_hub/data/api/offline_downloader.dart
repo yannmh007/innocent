@@ -23,6 +23,7 @@ import '../rate_limited.dart';
 import 'offline_crypto.dart';
 import 'offline_library.dart';
 import '../stream_door.dart';
+import '../seal/media_seal.dart';
 
 /// Where one download has got to.
 @immutable
@@ -894,6 +895,15 @@ class OfflineDownloader {
         if (url == null || url.isEmpty) {
           failures++;
           continue;
+        }
+        // A SEALED COPY IS NOT DOWNLOADED AS A FILM YET: written as it
+        // arrives it would be noise to the offline player. Sealed downloads
+        // (docs/MEDIA_ENCRYPTION.md §6) keep the sealed bytes with the
+        // install's wrap of the DEK; until they exist, a clear refusal —
+        // never a file that plays as a broken film.
+        if (SealedUrls.of(url) != null) {
+          emit(OfflineProgress(key: key, received: received, total: total, error: 'denied:unavailable'));
+          return null;
         }
 
         final abort = Completer<void>();

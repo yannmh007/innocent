@@ -337,7 +337,7 @@ void main() {
       }
     });
 
-    test('the five reasons stay distinct', () {
+    test('the six reasons stay distinct', () {
       // A guard, not a tautology: this fails the moment someone deletes a
       // value or aliases two of them, which is exactly how wrongDevice would
       // quietly become unavailable again.
@@ -354,8 +354,13 @@ void main() {
       // `unavailable`, which reads as "never" when it fills again within the
       // hour, and not `offline`, which is "could not ask" when the server
       // did answer.
-      expect(AccessDenial.values.length, 5);
-      expect(AccessDenial.values.toSet().length, 5);
+      //
+      // SIX SINCE `updateRequired` (media seal, docs/MEDIA_ENCRYPTION.md §9):
+      // the film exists only sealed and this build cannot open it. Not
+      // `unavailable` — a newer build plays it, and the viewer is told so.
+      expect(AccessDenial.values.length, 6);
+      expect(AccessDenial.values.toSet().length, 6);
+      expect(AccessDenial.updateRequired == AccessDenial.unavailable, isFalse);
       expect(AccessDenial.needsPremium == AccessDenial.wrongDevice, isFalse);
       expect(AccessDenial.wrongDevice == AccessDenial.unavailable, isFalse);
       expect(AccessDenial.offline == AccessDenial.unavailable, isFalse);

@@ -145,6 +145,12 @@ class MainActivity : AudioServiceFragmentActivity() {
         // The cipher a downloaded film is kept under. See MediaCrypto for why
         // CTR and why the key is wrapped rather than used directly.
         private const val MEDIA_CRYPTO_CHANNEL = "mx_clone/media_crypto"
+        // Media seal v1 (docs/MEDIA_ENCRYPTION.md §5-6): this install's
+        // Keystore key and the DEKs it unwraps, then the runs of segments
+        // the unseal gateway opens. Two queues: a key made or unwrapped
+        // (0.1-2 s in a TEE) never waits in front of a film's next run.
+        private const val MEDIA_SEAL_KEYS_CHANNEL = "innocent/media_seal_keys"
+        private const val MEDIA_SEAL_CHANNEL = "innocent/media_seal"
         // v0.50 (Zapya-style app sharing): the file picker's Apps tab asks
         // for the installed user apps so their APKs can be sent over the
         // LAN transfer just like any other file.
@@ -231,6 +237,8 @@ class MainActivity : AudioServiceFragmentActivity() {
     private var netInfoChannel: MethodChannel? = null
     private var powerPolicyChannel: MethodChannel? = null
     private var mediaCryptoChannel: MethodChannel? = null
+    private var mediaSealKeysChannel: MethodChannel? = null
+    private var mediaSealChannel: MethodChannel? = null
     // Held only while the Transfer tab is scanning for nearby devices.
     // Without it Android filters out the UDP broadcast frames discovery
     // depends on. Released in onDestroy so it can never leak.
@@ -1256,6 +1264,111 @@ class MainActivity : AudioServiceFragmentActivity() {
                             )
                         }
                     } catch (e: Throwable) {
+                        result.success(null)
+                    }
+                }
+                else -> result.notImplemented()
+            }
+        }
+
+        // MEDIA SEAL (docs/MEDIA_ENCRYPTION.md). NULL, NEVER AN ERROR, on
+        // every failure: the Dart side reads null as "cannot open this one"
+        // and says so, and a PlatformException crossing into the gateway
+        // would be counted as a network failure.
+        mediaSealKeysChannel = MethodChannel(
+            cryptoMessenger,
+            MEDIA_SEAL_KEYS_CHANNEL,
+            StandardMethodCodec.INSTANCE,
+            cryptoMessenger.makeBackgroundTaskQueue()
+        )
+        mediaSealKeysChannel?.setMethodCallHandler { call, result ->
+            when (call.method) {
+                // This install's public key (base64 SPKI), made and tested
+                // the first time; null when the Keystore cannot.
+                "deviceKey" -> result.success(
+                    try { SealDevice.publicKey() } catch (_: Throwable) { null }
+                )
+                // A grant's DEK into the keyring: wrapped for this install
+                // ("rsa") or as sent over TLS ("tls"). True once it is held.
+                "register" -> {
+                    var dek: ByteArray? = null
+                    try {
+                        val id = call.argument<String>("dek_id")
+                        val wrap = call.argument<String>("wrap")
+                        val b64 = call.argument<String>("dek")
+                        if (id.isNullOrEmpty() || b64.isNullOrEmpty()) {
+                            result.success(false)
+                        } else {
+                            val raw = android.util.Base64.decode(b64, android.util.Base64.NO_WRAP)
+                            dek = when (wrap) {
+                                "rsa" -> SealDevice.unwrap(raw)
+                                "tls" -> raw
+                                else -> null
+                            }
+                            if (dek == null) {
+                                result.success(false)
+                            } else {
+                                com.innocent.media.seal.SealKeyring.put(id, dek)
+                                result.success(true)
+                            }
+                        }
+                    } catch (_: Throwable) {
+                        result.success(false)
+                    } finally {
+                        dek?.fill(0)
+                    }
+                }
+                "has" -> result.success(
+                    com.innocent.media.seal.SealKeyring.has(call.argument<String>("dek_id") ?: "")
+                )
+                "forget" -> {
+                    try {
+                        com.innocent.media.seal.SealKeyring.forget(call.argument<String>("dek_id") ?: "")
+                    } catch (_: Throwable) {
+                    }
+                    result.success(true)
+                }
+                // A held DEK wrapped for this install, to keep beside a
+                // download; null when there is none or no device key.
+                "wrapForStorage" -> {
+                    var dek: ByteArray? = null
+                    try {
+                        dek = com.innocent.media.seal.SealKeyring.copyOf(call.argument<String>("dek_id") ?: "")
+                        result.success(SealDevice.wrapForStorage(dek))
+                    } catch (_: Throwable) {
+                        result.success(null)
+                    } finally {
+                        dek?.fill(0)
+                    }
+                }
+                else -> result.notImplemented()
+            }
+        }
+        mediaSealChannel = MethodChannel(
+            cryptoMessenger,
+            MEDIA_SEAL_CHANNEL,
+            StandardMethodCodec.INSTANCE,
+            cryptoMessenger.makeBackgroundTaskQueue()
+        )
+        mediaSealChannel?.setMethodCallHandler { call, result ->
+            when (call.method) {
+                // Consecutive segments from [first], as one aligned range
+                // returned them, opened; null when any does not.
+                "openRun" -> {
+                    try {
+                        val id = call.argument<String>("dek_id")
+                        val header = call.argument<ByteArray>("header")
+                        val plain = (call.argument<Number>("plain"))?.toLong()
+                        val first = (call.argument<Number>("first"))?.toLong()
+                        val bytes = call.argument<ByteArray>("bytes")
+                        if (id == null || header == null || plain == null || first == null || bytes == null) {
+                            result.success(null)
+                        } else {
+                            result.success(
+                                com.innocent.media.seal.SealKeyring.openRun(id, header, plain, first, bytes)
+                            )
+                        }
+                    } catch (_: Throwable) {
                         result.success(null)
                     }
                 }

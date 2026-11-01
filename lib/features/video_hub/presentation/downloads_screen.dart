@@ -531,7 +531,9 @@ class _PendingRowState extends ConsumerState<_PendingRow> {
                 ? s.vhDownloadGaveUp
                 : failure == 'denied:rateLimited'
                     ? s.vhRateLimited
-                    : s.vhUnavailable),
+                    : failure == 'denied:updateRequired'
+                        ? s.vhUpdateToPlay
+                        : s.vhUnavailable),
       ));
     } finally {
       if (mounted) setState(() => _starting = false);

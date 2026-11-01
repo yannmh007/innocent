@@ -6,6 +6,7 @@ import '../../domain/content_repository.dart';
 import '../../domain/video_content.dart';
 import 'download_plan.dart';
 import '../stream_door.dart';
+import '../seal/media_seal.dart';
 
 /// The copies a title can be downloaded as, with their sizes — what the
 /// quality sheet puts in front of the viewer before any byte moves.
@@ -42,6 +43,10 @@ Future<List<DownloadOption>> downloadCopiesOf({
 /// line is then shown without a size rather than holding the sheet back.
 Future<int?> _lengthOf(String? url) async {
   if (url == null || url.isEmpty) return null;
+  // A sealed original: the grant says how long the film is; the object
+  // itself is a little longer (its tags).
+  final sealed = SealedUrls.of(url);
+  if (sealed != null) return sealed.plainSize;
   final client = http.Client();
   try {
     final req = http.Request('GET', Uri.parse(url))

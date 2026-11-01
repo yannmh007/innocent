@@ -166,3 +166,61 @@ class DeviceDekTest {
         assertFailsWith<SealException> { com.innocent.media.seal.DeviceDek.open(other.private, dec.decode(field(fx, "wrapped_for_device"))) }
     }
 }
+
+class SealKeyringTest {
+    private val rnd = SecureRandom()
+
+    private fun sealed(dekId: String, dek: ByteArray, n: Int): Pair<ByteArray, ByteArray> {
+        val pt = ByteArray(n).also { rnd.nextBytes(it) }
+        val w = SealWriter(dek, MediaSeal.aadFor(dekId), n.toLong())
+        val out = ByteArrayOutputStream()
+        out.write(w.header)
+        for (i in 0 until w.count) out.write(w.sealSegment(i, pt, MediaSeal.plainStart(i).toInt(), w.plainLength(i)))
+        return pt to out.toByteArray()
+    }
+
+    @Test fun `opens a run by dek_id, and nothing once forgotten`() {
+        val dek = ByteArray(32).also { rnd.nextBytes(it) }
+        val (pt, s) = sealed("kr-1", dek, MediaSeal.FIRST_PLAIN + 3 * MediaSeal.PLAIN_SEGMENT + 99)
+        com.innocent.media.seal.SealKeyring.put("kr-1", dek)
+        val header = s.copyOf(MediaSeal.HEADER)
+        // Segments 1..2, as one aligned range request returns them.
+        val run = s.copyOfRange(MediaSeal.SEGMENT, 3 * MediaSeal.SEGMENT)
+        val plain = com.innocent.media.seal.SealKeyring.openRun("kr-1", header, pt.size.toLong(), 1, run)
+        val p0 = MediaSeal.plainStart(1).toInt()
+        assertContentEquals(pt.copyOfRange(p0, p0 + 2 * MediaSeal.PLAIN_SEGMENT), plain)
+        // The same id with another key: the old openers go, nothing opens.
+        com.innocent.media.seal.SealKeyring.put("kr-1", ByteArray(32))
+        assertFailsWith<SealException> { com.innocent.media.seal.SealKeyring.openRun("kr-1", header, pt.size.toLong(), 1, run) }
+        com.innocent.media.seal.SealKeyring.forget("kr-1")
+        assertFailsWith<SealException> { com.innocent.media.seal.SealKeyring.openRun("kr-1", header, pt.size.toLong(), 1, run) }
+        assertFailsWith<SealException> { com.innocent.media.seal.SealKeyring.put("kr-2", ByteArray(31)) }
+        assertFailsWith<SealException> { com.innocent.media.seal.SealKeyring.openRun("kr-2", header.copyOf(39), 1, 0, run) }
+    }
+
+    @Test fun `bounded, the oldest key is forgotten first`() {
+        val k = com.innocent.media.seal.SealKeyring
+        for (i in 0 until k.LIMIT + 5) k.put("lim-$i", ByteArray(32).also { rnd.nextBytes(it) })
+        kotlin.test.assertTrue(k.size() <= k.LIMIT, "size ${k.size()}")
+        kotlin.test.assertFalse(k.has("lim-0"))
+        kotlin.test.assertTrue(k.has("lim-${k.LIMIT + 4}"))
+    }
+
+    @Test fun `GCM is counter mode underneath, a segment's body opens at any offset`() {
+        // What lets a cache keep a segment's ciphertext and read any byte of
+        // it later (docs/MEDIA_ENCRYPTION.md §6): AES-CTR from counter
+        // nonce || 2 reproduces GCM's plaintext.
+        val dek = ByteArray(32).also { rnd.nextBytes(it) }
+        val (pt, s) = sealed("ctr", dek, MediaSeal.FIRST_PLAIN + 2 * MediaSeal.PLAIN_SEGMENT + 5)
+        val header = s.copyOf(MediaSeal.HEADER)
+        val key = MediaSeal.derive(dek, header.copyOfRange(1, 33), MediaSeal.aadFor("ctr"))
+        val i = 1L
+        val nonce = MediaSeal.nonce(header.copyOfRange(33, 40), i, false)
+        val body = s.copyOfRange(MediaSeal.SEGMENT, 2 * MediaSeal.SEGMENT - MediaSeal.TAG)
+        val ctr = javax.crypto.Cipher.getInstance("AES/CTR/NoPadding")
+        ctr.init(javax.crypto.Cipher.DECRYPT_MODE, javax.crypto.spec.SecretKeySpec(key, "AES"),
+            javax.crypto.spec.IvParameterSpec(nonce + byteArrayOf(0, 0, 0, 2)))
+        val p0 = MediaSeal.plainStart(i).toInt()
+        assertContentEquals(pt.copyOfRange(p0, p0 + MediaSeal.PLAIN_SEGMENT), ctr.doFinal(body))
+    }
+}

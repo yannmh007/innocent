@@ -14,6 +14,8 @@ import '../../domain/cmaf_index.dart';
 import '../../domain/hls_ladder.dart';
 import '../api/ranged_fetch.dart';
 import '../rate_limited.dart';
+import '../seal/media_seal.dart';
+import '../seal/unseal_gateway.dart';
 import '../stream_door.dart';
 import 'stream_cache_store.dart';
 
@@ -385,6 +387,23 @@ class StreamCacheServer {
       if (kDebugMode) debugPrint('StreamCacheServer: $e');
     });
     _server = s;
+    // Beside the proxy in a build that asks for sealed films, so a link
+    // renewed sealed mid-film ([_route]) has somewhere to go at once.
+    if (kAsksForSealed) await UnsealGateway.instance.start();
+  }
+
+  /// What the proxy fetches for [url], a granted address of film [cacheId]:
+  /// the address itself for a plain object, the unseal gateway's for a
+  /// sealed one (docs/MEDIA_ENCRYPTION.md §6) — and null when the gateway
+  /// is not running, NEVER the sealed address itself: its bytes are noise
+  /// to every player and would be cached as the film.
+  static String? _route(String cacheId, String url) {
+    final seal = SealedUrls.of(url);
+    if (seal == null) {
+      UnsealGateway.instance.forget(cacheId);
+      return url;
+    }
+    return UnsealGateway.instance.route(cacheId, url, seal);
   }
 
   /// Register a film and get the local address to play instead.
@@ -431,11 +450,15 @@ class StreamCacheServer {
       final entry = await StreamCacheStore.instance
           .entryFor(cacheId, total: total, label: label);
       if (ifAbsent && _sources.containsKey(cacheId)) return null;
+      if (SealedUrls.of(upstream) != null) await UnsealGateway.instance.start();
+      final routed = _route(cacheId, upstream);
+      if (routed == null) return null;
       // The film's previous registration, if any, gives up its connections.
       _sources[cacheId]?.close();
       // [pool]: a ladder's connections ([_Ladder.io]), in place before the
       // length check below goes out, so its connection is the ladder's.
-      final src = _sources[cacheId] = _Source(upstream: upstream, refresh: refresh)
+      final src = _sources[cacheId] = _Source(upstream: routed, refresh: refresh)
+        ..cacheId = cacheId
         ..shared = pool
         ..claim = claim;
       // CONFIRMED A MOMENT AGO, BY A WARM-UP (see [warmOpening]): its length
@@ -1141,7 +1164,12 @@ class StreamCacheServer {
 
   /// Point an already-registered film at a fresh upstream URL.
   void updateUpstream(String cacheId, String upstream) {
-    _sources[cacheId]?.upstream = upstream;
+    final src = _sources[cacheId];
+    if (src == null) return;
+    final routed = _route(cacheId, upstream);
+    // Sealed and no gateway: the old link stays, and runs out into a
+    // refresh, which says so — rather than a film read as noise.
+    if (routed != null) src.upstream = routed;
   }
 
   /// Stop serving a film, so a stale signed URL and its refresh closure do
@@ -2284,7 +2312,12 @@ class StreamCacheServer {
       try {
         final fresh = await src.refresh();
         if (fresh == null || fresh.isEmpty) return false;
-        src.upstream = fresh;
+        // Renewed sealed (or no longer sealed): through the gateway or not,
+        // as the new grant says.
+        final id = src.cacheId;
+        final routed = id == null ? (SealedUrls.of(fresh) == null ? fresh : null) : _route(id, fresh);
+        if (routed == null) return false;
+        src.upstream = routed;
         return true;
       } catch (e) {
         if (kDebugMode) debugPrint('StreamCacheServer._refresh: $e');
@@ -2366,7 +2399,12 @@ class _Gone {
 class _Source {
   _Source({required this.upstream, required this.refresh, this.offline = false});
 
+  /// What is fetched: the Worker's address, or for a sealed film the unseal
+  /// gateway's ([StreamCacheServer._route]).
   String upstream;
+
+  /// The film this is, for routing a renewed link.
+  String? cacheId;
 
   /// Read as segments of the ladder as HLS ([StreamCacheServer.hlsUrlFor]):
   /// one pooled request each, reading ahead, never lanes.

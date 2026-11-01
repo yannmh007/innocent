@@ -1515,6 +1515,7 @@ class AppStrings {
   String get vhUnavailable => _s('vhUnavailable');
   String get vhWrongDevice => _s('vhWrongDevice');
   String get vhRateLimited => _s('vhRateLimited');
+  String get vhUpdateToPlay => _s('vhUpdateToPlay');
 
 
   // --- Video Hub: see-all / ranked rows ---
@@ -3190,6 +3191,7 @@ class AppStrings {
     'vhUnavailable': 'This item is not available yet',
     'vhWrongDevice': 'Your subscription is active, but this phone is not on it. Sign out on a device you no longer use, then try again.',
     'vhRateLimited': 'Too many plays in a short time. Wait a few minutes, then try again.',
+    'vhUpdateToPlay': 'Update the app to play this: Settings → App update.',
     'clearAll': 'Clear all',
     'setupPinConfirmHint': 'Enter the same PIN once more to confirm it.',
     'pinSetFailed': 'Could not save the PIN. Please try again.',
@@ -5528,6 +5530,7 @@ class AppStrings {
     'vhUnavailable': 'ဒီအရာကို မဖွင့်နိုင်သေးပါ',
     'vhWrongDevice': 'သင့် subscription က အသက်ဝင်နေပါတယ်။ ဒါပေမယ့် ဒီဖုန်းက စာရင်းထဲ မပါသေးပါ။ မသုံးတော့တဲ့ စက်တစ်လုံးကနေ ထွက်ပြီးမှ ပြန်စမ်းကြည့်ပါ။',
     'vhRateLimited': 'အချိန်တိုအတွင်း ဖွင့်တာ များလွန်းနေပါတယ်။ မိနစ်အနည်းငယ် စောင့်ပြီးမှ ပြန်ဖွင့်ကြည့်ပါ။',
+    'vhUpdateToPlay': 'ဒါကိုကြည့်ဖို့ အက်ပ်ကို အပ်ဒိတ်လုပ်ပါ — Settings → အက်ပ် အပ်ဒိတ်။',
     'clearAll': 'အားလုံး ရှင်းရန်',
     'setupPinConfirmHint': 'အတည်ပြုရန် တူညီတဲ့ PIN ကို နောက်တစ်ကြိမ် ထည့်ပါ။',
     'pinSetFailed': 'PIN သိမ်းဆည်းလို့ မရပါ။ ထပ်ကြိုးစားကြည့်ပါ။',
@@ -7839,6 +7842,7 @@ class AppStrings {
     'vhUnavailable': 'ยังไม่สามารถเล่นรายการนี้ได้',
     'vhWrongDevice': 'บัญชีของคุณยังใช้งานได้ แต่เครื่องนี้ยังไม่อยู่ในรายการ โปรดออกจากระบบในเครื่องที่ไม่ได้ใช้แล้ว จากนั้นลองอีกครั้ง',
     'vhRateLimited': 'เปิดเล่นบ่อยเกินไปในเวลาสั้นๆ โปรดรอสักครู่แล้วลองอีกครั้ง',
+    'vhUpdateToPlay': 'อัปเดตแอปเพื่อเล่นรายการนี้: Settings → อัปเดตแอป',
     'clearAll': 'ล้างทั้งหมด',
     'setupPinConfirmHint': 'ป้อน PIN เดิมอีกครั้งเพื่อยืนยัน',
     'pinSetFailed': 'บันทึก PIN ไม่สำเร็จ โปรดลองอีกครั้ง',
