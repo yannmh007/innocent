@@ -39,18 +39,65 @@ export function newDek() {
   return d;
 }
 
-/** MEDIA_KEK_V<n> from its base64 secret. Refuses anything but 32 bytes. */
-export async function importKek(secretB64) {
+/**
+ * The 32 bytes of a MEDIA_KEK secret, written either way the owner may have
+ * copied it: base64 (44 characters) or hex (64 characters, the paper copy's
+ * form — docs/MEDIA_ENCRYPTION.md §4). Anything else is refused.
+ */
+function kekBytes(secret) {
+  const text = String(secret ?? '').trim();
+  if (!text) throw new KeyError('MEDIA_KEK is not set');
   let raw;
-  try {
-    raw = unb64(String(secretB64 ?? '').trim());
-  } catch (_) {
-    throw new KeyError('MEDIA_KEK is not base64');
+  if (/^[0-9a-fA-F]{64}$/.test(text)) {
+    raw = new Uint8Array(32);
+    for (let i = 0; i < 32; i++) raw[i] = parseInt(text.slice(2 * i, 2 * i + 2), 16);
+    return raw;
   }
-  if (raw.length !== 32) throw new KeyError(`MEDIA_KEK is ${raw.length} bytes, not 32`);
+  try {
+    raw = unb64(text);
+  } catch (_) {
+    throw new KeyError('MEDIA_KEK is neither base64 nor hex');
+  }
+  if (raw.length !== 32) {
+    raw.fill(0);
+    throw new KeyError(`MEDIA_KEK is ${raw.length} bytes, not 32`);
+  }
+  return raw;
+}
+
+/** MEDIA_KEK_V<n> from its secret. Refuses anything but 32 bytes. */
+export async function importKek(secret) {
+  const raw = kekBytes(secret);
   const key = await subtle.importKey('raw', raw, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']);
   raw.fill(0);
   return key;
+}
+
+/**
+ * What a MEDIA_KEK secret is, without what it holds: missing, unusable (and
+ * why), or usable with its key check value — the first 8 hex digits of
+ * HMAC-SHA256(KEK, "inv-kek-check|v1"). The check value shows that every
+ * function holds the same key and that it has not changed; it says nothing
+ * about the key (32 bits of a keyed hash of a constant).
+ */
+export async function kekStatus(secret) {
+  const text = String(secret ?? '').trim();
+  const form = !text ? 'none' : /^[0-9a-fA-F]{64}$/.test(text) ? 'hex'
+    : /^[A-Za-z0-9+/]+={0,2}$/.test(text) ? 'base64' : 'other';
+  let raw;
+  try {
+    raw = kekBytes(text);
+  } catch (e) {
+    return { state: text ? 'unusable' : 'missing', form, chars: text.length, why: e.message };
+  }
+  try {
+    const h = await subtle.importKey('raw', raw, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+    const mac = new Uint8Array(await subtle.sign('HMAC', h, enc.encode('inv-kek-check|v1')));
+    const kcv = Array.from(mac.subarray(0, 4), (b) => b.toString(16).padStart(2, '0')).join('');
+    return { state: 'ok', form, bytes: 32, kcv };
+  } finally {
+    raw.fill(0);
+  }
 }
 
 function kekAad(dekId, version) {

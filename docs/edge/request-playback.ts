@@ -51,7 +51,7 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { planSeal, sealBlock, wrapMode } from './media_grant.js';
-import { importDeviceKey, importKek } from './media_keys.js';
+import { importDeviceKey, importKek, kekStatus } from './media_keys.js';
 
 // ─── MEDIA SEAL (docs/MEDIA_ENCRYPTION.md §5, §9) ─────────────────────────
 //
@@ -65,6 +65,14 @@ const SEAL_MODE = (Deno.env.get('SEAL_MODE') ?? '').trim().toLowerCase() === 'on
 const MEDIA_KEK_V1 = Deno.env.get('MEDIA_KEK_V1') ?? '';
 const SEAL_DEVICE_WRAP = wrapMode(Deno.env.get('SEAL_DEVICE_WRAP'));
 const MEDIA_BUCKET = Deno.env.get('R2_BUCKET') ?? 'innocent-media';
+
+// Once per isolate: whether MEDIA_KEK_V1 is usable — its form, its size and
+// its check value, never the key (kekStatus, media_keys.js). This is how the
+// owner's secret is confirmed from the function logs without anyone reading
+// it, and how a changed or half-pasted secret shows up.
+kekStatus(MEDIA_KEK_V1).then(
+  (st) => console.log(JSON.stringify({ seal_kek: st, seal_mode: SEAL_MODE ? 'on' : 'off' })),
+  () => {});
 
 // Ten minutes. Long enough to start a film on a slow connection, short enough
 // that a copied link is worthless by the time it is pasted anywhere. It does

@@ -39,6 +39,25 @@ const kek = await k.importKek(kekB64);
 ok(await refuses(() => k.importKek(k.b64(new Uint8Array(16)))), 'a 16-byte KEK is refused');
 ok(await refuses(() => k.importKek('not base64 !!')), 'a KEK that is not base64 is refused');
 ok(await refuses(() => k.importKek(undefined)), 'a missing KEK is refused');
+const raw32 = k.unb64(kekB64);
+const hex = Array.from(raw32, (b) => b.toString(16).padStart(2, '0')).join('');
+const fromHex = await k.importKek(hex);
+const probe = await k.wrapDek(fromHex, k.newDek(), 'x', 1);
+ok((await k.unwrapDek(kek, probe, 'x', 1)).length === 32, 'the same KEK written as hex (the paper copy) is the same key');
+ok(await refuses(() => k.importKek(hex.slice(0, 62))), 'hex one byte short is refused');
+const st = await k.kekStatus(kekB64);
+const stHex = await k.kekStatus(hex.toUpperCase());
+ok(st.state === 'ok' && st.form === 'base64' && st.bytes === 32 && /^[0-9a-f]{8}$/.test(st.kcv),
+  'kekStatus: usable, base64, 32 bytes, an 8-digit check value');
+ok(stHex.state === 'ok' && stHex.form === 'hex' && stHex.kcv === st.kcv,
+  'kekStatus: the hex form gives the same check value');
+ok(!JSON.stringify(st).includes(kekB64) && !JSON.stringify(stHex).toLowerCase().includes(hex),
+  'kekStatus never carries the key');
+ok((await k.kekStatus('')).state === 'missing' && (await k.kekStatus(undefined)).state === 'missing',
+  'kekStatus: not set is missing');
+const short = await k.kekStatus(k.b64(new Uint8Array(16)));
+ok(short.state === 'unusable' && /16 bytes/.test(short.why), 'kekStatus: 16 bytes is unusable, and says why');
+ok((await k.kekStatus('hello world!')).form === 'other', 'kekStatus: neither form is named as such');
 
 const dek = k.newDek();
 const id = '7e3c1f0a-1111-4222-8333-944455556666';
