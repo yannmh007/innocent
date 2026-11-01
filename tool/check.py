@@ -112,6 +112,11 @@ CHECKS = [
      'an album blurhash the app cannot read back: the runner encodes and the '
      'app decodes with two ports of one algorithm, and a slip in either draws '
      'every data-saver tile the wrong colour without an error anywhere'),
+    ('media_seal_test.py', None,
+     'a sealed photo or film that does not open, or opens to the wrong bytes: '
+     'the runner seals, the console seals, the phone opens, three ports of '
+     'one format; checked against vectors Google Tink itself opens, and a '
+     'flipped byte, a cut or swapped segment, or the wrong key must refuse'),
     ('frames_test.py', None,
      'a cover picker that offers the wrong frames: frame 0 not at one second, '
      'stills upscaled or squashed for portrait video, a frame PUT under a key '
@@ -166,6 +171,11 @@ def main() -> int:
     # comment is worse than one that was never written: the summary still
     # reads "all passed".
     JS_TESTS = [
+        ('media_seal_test.mjs',
+         'the console\'s and the edge functions\' media seal',
+         'a film sealed in the browser that the phone cannot open: different '
+         'bytes from the reference for the same key, or a range served from '
+         'the wrong segments, seen only as a film that will not play'),
         ('faststart_test.mjs',
          'the MP4 rewrite',
          'an MP4 rewrite that corrupts the video it was meant to speed up'),
