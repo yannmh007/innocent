@@ -64,6 +64,10 @@ export async function sealBlock(kek, row, { deviceKey, mode }) {
       dek_id: String(row.dek_id),
       plain_size: Number(row.plain_size),
       sealed_size: Number(row.sealed_size),
+      // The object's first 40 bytes (salt and nonce prefix, not secret):
+      // with them the phone opens any segment first, without a round trip
+      // for the head — a resume or a seek straight into the film.
+      ...(typeof row.header === 'string' && row.header.length === 56 ? { header: row.header } : {}),
     };
     if (deviceKey && mode !== 'off') {
       return { ...base, wrap: 'rsa', dek: await wrapForDevice(deviceKey, dek) };
@@ -73,6 +77,27 @@ export async function sealBlock(kek, row, { deviceKey, mode }) {
   } finally {
     dek.fill(0);
   }
+}
+
+/**
+ * SEAL_MODE, read strictly (docs/MEDIA_ENCRYPTION.md §9):
+ *   off  nothing sealed is looked at — the kill switch
+ *   ask  (the default) only a request that says it opens seals (`seal: 1`)
+ *        looks; every other app is answered exactly as before, with no
+ *        extra query. Right while every sealed object has its plain twin.
+ *   on   every request looks, so an app that cannot open a sealed-only
+ *        object is told to update (426) — needed once twins are retired.
+ */
+export function sealMode(value) {
+  const v = String(value ?? '').trim().toLowerCase();
+  return v === 'off' || v === 'on' ? v : 'ask';
+}
+
+/** Whether a request looks at media_keys at all, under [mode]. */
+export function looksForSeals(mode, body) {
+  if (mode === 'off') return false;
+  if (mode === 'on') return true;
+  return body?.seal === 1;
 }
 
 /** SEAL_DEVICE_WRAP, read strictly: anything unknown is the safe default. */

@@ -50,18 +50,20 @@
 // ===========================================================================
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { planSeal, sealBlock, wrapMode } from './media_grant.js';
+import { looksForSeals, planSeal, sealBlock, sealMode, wrapMode } from './media_grant.js';
 import { importDeviceKey, importKek, kekStatus } from './media_keys.js';
 
 // ─── MEDIA SEAL (docs/MEDIA_ENCRYPTION.md §5, §9) ─────────────────────────
 //
-// OFF UNTIL SEAL_MODE=on. Off, nothing below is consulted and the response is
-// exactly what it was. On, the grant looks up `media_keys` for the objects it
-// signs: an app that sends `seal: 1` gets each object's sealed twin with its
-// key in a `seal` block (wrapped for the install's Keystore key when it sent
-// `device_key`); any other app gets the plaintext exactly as before, and is
-// told to update (426) when an object exists only sealed.
-const SEAL_MODE = (Deno.env.get('SEAL_MODE') ?? '').trim().toLowerCase() === 'on';
+// SEAL_MODE (media_grant.js `sealMode`): `ask` by default — only a request
+// that says it opens seals (`seal: 1`) looks up `media_keys`, and gets each
+// object's sealed twin with its key in a `seal` block (wrapped for the
+// install's Keystore key when it sent `device_key`); every other app is
+// answered exactly as before, with no extra query. `on`: every request
+// looks, and an app that cannot open an object that exists only sealed is
+// told to update (426) — for when the plain twins are retired. `off`: the
+// kill switch, nothing sealed is looked at.
+const SEAL_MODE = sealMode(Deno.env.get('SEAL_MODE'));
 const MEDIA_KEK_V1 = Deno.env.get('MEDIA_KEK_V1') ?? '';
 const SEAL_DEVICE_WRAP = wrapMode(Deno.env.get('SEAL_DEVICE_WRAP'));
 const MEDIA_BUCKET = Deno.env.get('R2_BUCKET') ?? 'innocent-media';
@@ -71,7 +73,7 @@ const MEDIA_BUCKET = Deno.env.get('R2_BUCKET') ?? 'innocent-media';
 // owner's secret is confirmed from the function logs without anyone reading
 // it, and how a changed or half-pasted secret shows up.
 kekStatus(MEDIA_KEK_V1).then(
-  (st) => console.log(JSON.stringify({ seal_kek: st, seal_mode: SEAL_MODE ? 'on' : 'off' })),
+  (st) => console.log(JSON.stringify({ seal_kek: st, seal_mode: SEAL_MODE })),
   () => {});
 
 // Ten minutes. Long enough to start a film on a slow connection, short enough
@@ -635,7 +637,7 @@ Deno.serve(async (req) => {
   // field and knows nothing about this one, and an app that stops playing
   // because the server got cleverer is not an improvement.
   const ladderRows = await ladderQ;
-  // Which object each key becomes, and its seal (null with SEAL_MODE off).
+  // Which object each key becomes, and its seal (null when not looked for).
   const sealing = await planGrantSeal(admin, [objectKey,
     ...ladderRows.map((r) => String(r.object_key ?? ''))], body);
   // The install's key, pinned on first use, beside the signing below.
@@ -717,7 +719,7 @@ Deno.serve(async (req) => {
     // reads as "there is one copy and this is it".
     renditions,
     // The seal of `url` when it is a sealed object; each rung carries its
-    // own. Absent with SEAL_MODE off, so the response is what it was.
+    // own. Absent when seals were not looked for: the response is as it was.
     ...(sealing ? { seal_v: 1 } : {}),
     ...(urlSeal(url, masterUrl, masterSigned?.seal ?? null, renditions)),
   }, 200);
@@ -734,7 +736,7 @@ function urlSeal(url: string, masterUrl: string | null,
 }
 
 /**
- * The seal plan for one grant, or null with SEAL_MODE off. Never throws: a
+ * The seal plan for one grant, or null when not looked for. Never throws: a
  * key table that cannot be read is logged and read as "nothing sealed" —
  * which plays every plaintext object as before and refuses only objects that
  * exist only sealed.
@@ -744,9 +746,9 @@ async function planGrantSeal(
   keys: string[],
   body: { seal?: number; device_key?: string },
 ) {
-  if (!SEAL_MODE) return null;
+  if (!looksForSeals(SEAL_MODE, body)) return null;
   const want = [...new Set(keys.filter((k) => !!k))];
-  const cols = 'dek_id,bucket,sealed_key,plain_key,kek_version,wrapped,plain_size,sealed_size';
+  const cols = 'dek_id,bucket,sealed_key,plain_key,kek_version,wrapped,plain_size,sealed_size,header';
   let rows: Array<Record<string, unknown>> = [];
   if (want.length) {
     try {

@@ -76,4 +76,14 @@ try {
 }
 ok(refused, 'a row whose wrap belongs to another dek_id is refused, not opened');
 
+ok(g.sealMode('') === 'ask' && g.sealMode(' ON ') === 'on' && g.sealMode('off') === 'off' &&
+  g.sealMode('yes') === 'ask', 'SEAL_MODE read strictly, unknown is ask');
+ok(!g.looksForSeals('ask', {}) && g.looksForSeals('ask', { seal: 1 }) && !g.looksForSeals('ask', { seal: '1' }),
+  'ask: only a request that says seal: 1 looks — every released app is answered as before');
+ok(g.looksForSeals('on', {}) && !g.looksForSeals('off', { seal: 1 }), 'on: every request; off: none');
+const withHead = await g.sealBlock(kek, { ...row, header: 'A'.repeat(56) }, { deviceKey, mode: 'prefer' });
+ok(withHead.header === 'A'.repeat(56), 'the header goes with the block when the row has it');
+ok(!('header' in rsa) && !('header' in (await g.sealBlock(kek, { ...row, header: 'short' }, { deviceKey, mode: 'prefer' }))),
+  'no header, or a malformed one: none in the block (the phone reads the head instead)');
+
 console.log(`media grant (js): all checks passed (${checks})`);

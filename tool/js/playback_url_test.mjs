@@ -54,11 +54,13 @@ check('request-playback presigns nothing (v4)',
 check('no Worker secrets is a 503, before any URL is made',
   /if \(!STREAM_BASE \|\| !STREAM_TOKEN_SECRET\) \{\s*logRefusal\('stream_not_configured'[\s\S]{0,80}503\)/.test(src) &&
   src.indexOf("'stream_not_configured'") < src.indexOf('const masterUrl ='));
-// Media seal: off unless SEAL_MODE=on, and off means nothing is consulted
-// and nothing is added to the response (docs/MEDIA_ENCRYPTION.md §9).
-check('the seal is off unless SEAL_MODE is exactly on',
-  /const SEAL_MODE = \(Deno\.env\.get\('SEAL_MODE'\) \?\? ''\)\.trim\(\)\.toLowerCase\(\) === 'on';/.test(src) &&
-  /if \(!SEAL_MODE\) return null;/.test(src));
+// Media seal: SEAL_MODE read strictly (media_grant.js sealMode: off / ask /
+// on, unknown is ask), and a request that does not look for seals consults
+// nothing and gains nothing (docs/MEDIA_ENCRYPTION.md §9). Under `ask` that
+// is every request without `seal: 1` — every released app.
+check('seals are looked for only as SEAL_MODE and the request say',
+  /const SEAL_MODE = sealMode\(Deno\.env\.get\('SEAL_MODE'\)\);/.test(src) &&
+  /if \(!looksForSeals\(SEAL_MODE, body\)\) return null;/.test(src));
 check('off, the response gains no field',
   /\.\.\.\(sealing \? \{ seal_v: 1 \} : \{\}\)/.test(src) && /return seal \? \{ seal \} : \{\};/.test(src));
 check('an object that exists only sealed is a 426 for an app that cannot open it',
