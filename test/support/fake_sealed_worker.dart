@@ -51,17 +51,22 @@ class FakeWorker {
       await res.close();
       return;
     }
-    final m = RegExp(r'bytes=(\d+)-(\d+)').firstMatch(range)!;
-    final a = int.parse(m.group(1)!);
-    final b = min(int.parse(m.group(2)!), body.length - 1);
+    // A bounded range, an open one (`bytes=a-`, a downloader's resume), or
+    // none at all: the whole object, 200.
+    final m = RegExp(r'bytes=(\d+)-(\d*)').firstMatch(range);
+    final a = m == null ? 0 : int.parse(m.group(1)!);
+    final b = m == null || m.group(2)!.isEmpty
+        ? body.length - 1
+        : min(int.parse(m.group(2)!), body.length - 1);
     if (a == 0 && b == MediaSealLayout.header - 1) headerRequests++;
     final slice = Uint8List.fromList(body.sublist(a, b + 1));
     if (corruptTimes > 0 && corruptAt >= a && corruptAt <= b) {
       corruptTimes--;
       slice[corruptAt - a] ^= 1;
     }
-    res.statusCode = HttpStatus.partialContent;
-    res.headers.set(HttpHeaders.contentRangeHeader, 'bytes $a-$b/${claimTotal ?? body.length}');
+    res.statusCode = m == null ? HttpStatus.ok : HttpStatus.partialContent;
+    res.headers.set(HttpHeaders.acceptRangesHeader, 'bytes');
+    if (m != null) res.headers.set(HttpHeaders.contentRangeHeader, 'bytes $a-$b/${claimTotal ?? body.length}');
     res.contentLength = slice.length;
     try {
       if (trickle <= 0) {

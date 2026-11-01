@@ -5,8 +5,8 @@ libraries done (ENC-1); keys table live (migration 060); request-playback
 v40 live with the seal plan behind `SEAL_MODE` (off). `MEDIA_KEK_V1` set by
 the owner and confirmed from the function's boot log without reading it:
 usable, base64, 32 bytes, key check value `f3bfb0d1` (§4). The app's device
-key, keyring and unseal gateway are on the branch (ENC-3, §6); sealed
-downloads and images, then the labs, then the pipelines.**
+key, keyring and unseal gateway are on the branch (ENC-3, §6), streaming
+and downloads; then images, the labs, and the pipelines.**
 This file is the specification the code follows. Change it first, then the
 code.
 
@@ -156,10 +156,16 @@ Why this one (research, 31 Oct 2026):
   more; twice, the request ends — before its status if it was the first
   segment (502), otherwise by cutting the connection, which the proxy reads
   as a failed part. Never a corrupt frame.
-- **Downloads** (not yet): the sealed bytes written as they arrive with the
-  install's wrap of the DEK beside them (`wrapForStorage`), opened by the
-  same path. Until then a sealed copy is refused with a clear message, never
-  saved as a broken film.
+- **Downloads** read a sealed copy through the same gateway
+  (`offline_downloader.dart`): the film's own bytes and length, every
+  segment checked, and the file then kept under the phone's own key exactly
+  as before — so the offline shelf, watch-while-downloading and offline
+  playback are unchanged, and a download begun on the plain twin resumes on
+  the sealed object (`test/download_media_seal_test.dart`). Without the
+  gateway, a clear refusal. The same next step as the cache applies if §8
+  asks for it: keeping the sealed bytes as they came, with the install's
+  wrap of the DEK beside them (`wrapForStorage`), would take the download's
+  own cipher pass away.
 - **Images** (not yet): an image loader fetches, opens, decodes; the disk
   cache keeps the sealed bytes.
 - **Old formats keep working**: plaintext objects (until migrated) and today's
@@ -169,8 +175,9 @@ Why this one (research, 31 Oct 2026):
   sealed object starts `0x28` and a random salt.
 - **Who asks**: `seal: 1` is sent only by a build with `kAsksForSealed`
   (`--dart-define=MEDIA_SEAL=1` for a lab build). Every path a granted URL
-  can reach must open seals before a release turns it on — downloads and
-  images are the two left.
+  can reach must open seals before a release turns it on — images are the
+  one left (posters and album photos are not granted URLs yet; they stay
+  plain until the image loader and their seal blocks exist).
 
 ## 7. Pipelines
 

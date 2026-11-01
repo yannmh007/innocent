@@ -24,6 +24,7 @@ import 'offline_crypto.dart';
 import 'offline_library.dart';
 import '../stream_door.dart';
 import '../seal/media_seal.dart';
+import '../seal/unseal_gateway.dart';
 
 /// Where one download has got to.
 @immutable
@@ -896,20 +897,28 @@ class OfflineDownloader {
           failures++;
           continue;
         }
-        // A SEALED COPY IS NOT DOWNLOADED AS A FILM YET: written as it
-        // arrives it would be noise to the offline player. Sealed downloads
-        // (docs/MEDIA_ENCRYPTION.md §6) keep the sealed bytes with the
-        // install's wrap of the DEK; until they exist, a clear refusal —
-        // never a file that plays as a broken film.
-        if (SealedUrls.of(url) != null) {
-          emit(OfflineProgress(key: key, received: received, total: total, error: 'denied:unavailable'));
-          return null;
+        // A SEALED COPY IS READ THROUGH THE UNSEAL GATEWAY, as the stream
+        // proxy reads one (docs/MEDIA_ENCRYPTION.md §6): every segment
+        // checked and opened, the film's own bytes and length, and the file
+        // then kept under this phone's own key exactly as before. A download
+        // begun before the film was sealed resumes across the switch — the
+        // plain twin and the sealed object hold the same film. Without the
+        // gateway, a clear refusal: never a file that plays as noise.
+        var fetchUrl = url;
+        final sealedCopy = SealedUrls.of(url);
+        if (sealedCopy != null) {
+          final g = await UnsealGateway.instance.urlFor(id: 'dl-$key', upstream: url, seal: sealedCopy);
+          if (g == null) {
+            emit(OfflineProgress(key: key, received: received, total: total, error: 'denied:unavailable'));
+            return null;
+          }
+          fetchUrl = g;
         }
 
         final abort = Completer<void>();
         final request =
-            http.AbortableRequest('GET', Uri.parse(url), abortTrigger: abort.future)
-              ..headers.addAll(StreamDoor.headersFor(url));
+            http.AbortableRequest('GET', Uri.parse(fetchUrl), abortTrigger: abort.future)
+              ..headers.addAll(StreamDoor.headersFor(fetchUrl));
         if (received > 0) {
           // Resume. A server that ignores this answers 200 with the whole file,
           // which is handled below by starting the file over rather than
@@ -1116,7 +1125,7 @@ class OfflineDownloader {
         final body = split
             ? RangedFetch.ordered(
                 client: _http,
-                url: Uri.parse(url),
+                url: Uri.parse(fetchUrl),
                 head: response.stream,
                 start: received,
                 total: total,
