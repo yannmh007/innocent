@@ -50,6 +50,21 @@
 // ===========================================================================
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { planSeal, sealBlock, wrapMode } from './media_grant.js';
+import { importDeviceKey, importKek } from './media_keys.js';
+
+// ─── MEDIA SEAL (docs/MEDIA_ENCRYPTION.md §5, §9) ─────────────────────────
+//
+// OFF UNTIL SEAL_MODE=on. Off, nothing below is consulted and the response is
+// exactly what it was. On, the grant looks up `media_keys` for the objects it
+// signs: an app that sends `seal: 1` gets each object's sealed twin with its
+// key in a `seal` block (wrapped for the install's Keystore key when it sent
+// `device_key`); any other app gets the plaintext exactly as before, and is
+// told to update (426) when an object exists only sealed.
+const SEAL_MODE = (Deno.env.get('SEAL_MODE') ?? '').trim().toLowerCase() === 'on';
+const MEDIA_KEK_V1 = Deno.env.get('MEDIA_KEK_V1') ?? '';
+const SEAL_DEVICE_WRAP = wrapMode(Deno.env.get('SEAL_DEVICE_WRAP'));
+const MEDIA_BUCKET = Deno.env.get('R2_BUCKET') ?? 'innocent-media';
 
 // Ten minutes. Long enough to start a film on a slow connection, short enough
 // that a copied link is worthless by the time it is pasted anywhere. It does
@@ -307,6 +322,7 @@ Deno.serve(async (req) => {
 
   let body: {
     title_id?: string; device_id?: string; asset_id?: string; bind?: boolean;
+    seal?: number; device_key?: string;
   };
   try {
     body = await req.json();
@@ -610,15 +626,49 @@ Deno.serve(async (req) => {
   // `url` STAYS EXACTLY WHAT IT WAS. Every app already installed reads that
   // field and knows nothing about this one, and an app that stops playing
   // because the server got cleverer is not an improvement.
+  const ladderRows = await ladderQ;
+  // Which object each key becomes, and its seal (null with SEAL_MODE off).
+  const sealing = await planGrantSeal(admin, [objectKey,
+    ...ladderRows.map((r) => String(r.object_key ?? ''))], body);
+  // The install's key, pinned on first use, beside the signing below.
+  const pinQ = sealing?.deviceKey && user && install
+    ? Promise.resolve(admin.from('devices')
+      .update({ public_key: body.device_key, public_key_at: new Date().toISOString() })
+      .eq('user_id', user.id).eq('device_id', install).is('public_key', null))
+      .then(() => {}, () => {})
+    : null;
+  // Objects that exist only sealed, for an app that cannot open them.
+  let sealedOnly = 0;
+  const signFor = async (key: string): Promise<{ key: string; seal: Record<string, unknown> | null } | null> => {
+    const p = sealing?.plan.get(key);
+    if (!p) return { key, seal: null };
+    if (!p.sign) {
+      sealedOnly++;
+      return null;
+    }
+    if (!p.row || !sealing!.kek) return p.row ? null : { key: p.sign, seal: null };
+    try {
+      const seal = await sealBlock(sealing!.kek, p.row,
+        { deviceKey: sealing!.deviceKey, mode: SEAL_DEVICE_WRAP });
+      return seal ? { key: p.sign, seal } : null;
+    } catch (e) {
+      logRefusal('seal_block_failed', String(e).slice(0, 160));
+      return null;
+    }
+  };
+
   const renditions: Array<Record<string, unknown>> = [];
   try {
-    for (const r of await ladderQ) {
+    for (const r of ladderRows) {
       const key = String(r.object_key ?? '');
       if (!key) continue;
-      const rUrl = await workerUrl(key, who);
+      const s = await signFor(key);
+      if (!s) continue;
+      const rUrl = await workerUrl(s.key, who);
       if (!rUrl) continue;
       renditions.push({
         height: r.height, kbps: r.kbps, bytes: r.bytes ?? null, url: rUrl,
+        ...(s.seal ? { seal: s.seal } : {}),
       });
     }
   } catch (e) {
@@ -628,8 +678,17 @@ Deno.serve(async (req) => {
     logRefusal('renditions_failed', String(e).slice(0, 160));
   }
 
-  const masterUrl = masterInR2 ? await workerUrl(objectKey, who) : null;
+  const masterSigned = masterInR2 ? await signFor(objectKey) : null;
+  const masterUrl = masterSigned ? await workerUrl(masterSigned.key, who) : null;
   const url = primaryUrl(masterUrl, renditions);
+  await pinQ;
+  if (!url && sealedOnly > 0) {
+    // There is a film here, sealed, and this app cannot open it. 426, so a
+    // log tells this apart from a missing film; every app that sends
+    // `seal: 1` can, so only an app older than that lands here.
+    logRefusal('seal_update_required', String(assetId ?? titleId));
+    return json({ code: 'update_required' }, 426);
+  }
   if (!url) {
     // Only in Telegram and no streaming copy to play: an archive that lost
     // its ladder. The console shows it; a viewer gets "not found". (In R2
@@ -649,5 +708,72 @@ Deno.serve(async (req) => {
     // Cheapest first. Empty for anything not transcoded, which the client
     // reads as "there is one copy and this is it".
     renditions,
+    // The seal of `url` when it is a sealed object; each rung carries its
+    // own. Absent with SEAL_MODE off, so the response is what it was.
+    ...(sealing ? { seal_v: 1 } : {}),
+    ...(urlSeal(url, masterUrl, masterSigned?.seal ?? null, renditions)),
   }, 200);
 });
+
+/** `{seal}` for whichever object `url` is, or nothing. */
+function urlSeal(url: string, masterUrl: string | null,
+  masterSeal: Record<string, unknown> | null,
+  renditions: Array<Record<string, unknown>>): Record<string, unknown> {
+  const seal = url === masterUrl
+    ? masterSeal
+    : (renditions.find((r) => r.url === url)?.seal ?? null);
+  return seal ? { seal } : {};
+}
+
+/**
+ * The seal plan for one grant, or null with SEAL_MODE off. Never throws: a
+ * key table that cannot be read is logged and read as "nothing sealed" —
+ * which plays every plaintext object as before and refuses only objects that
+ * exist only sealed.
+ */
+async function planGrantSeal(
+  admin: ReturnType<typeof createClient>,
+  keys: string[],
+  body: { seal?: number; device_key?: string },
+) {
+  if (!SEAL_MODE) return null;
+  const want = [...new Set(keys.filter((k) => !!k))];
+  const cols = 'dek_id,bucket,sealed_key,plain_key,kek_version,wrapped,plain_size,sealed_size';
+  let rows: Array<Record<string, unknown>> = [];
+  if (want.length) {
+    try {
+      const [a, b] = await Promise.all([
+        admin.from('media_keys').select(cols).in('sealed_key', want),
+        admin.from('media_keys').select(cols).in('plain_key', want),
+      ]);
+      if (a.error || b.error) {
+        logRefusal('seal_keys_failed', String((a.error ?? b.error)?.message).slice(0, 160));
+      } else {
+        rows = [...(a.data ?? []), ...(b.data ?? [])];
+      }
+    } catch (e) {
+      logRefusal('seal_keys_failed', String(e).slice(0, 160));
+    }
+  }
+  let canOpen = body.seal === 1;
+  let kek: CryptoKey | null = null;
+  if (canOpen) {
+    try {
+      kek = await importKek(MEDIA_KEK_V1);
+    } catch (e) {
+      // No KEK: a sealed twin cannot be opened for anyone, so serve the
+      // plaintext twins as to an older app.
+      logRefusal('seal_kek_missing', String(e).slice(0, 80));
+      canOpen = false;
+    }
+  }
+  let deviceKey: CryptoKey | null = null;
+  if (canOpen && typeof body.device_key === 'string' && body.device_key) {
+    try {
+      deviceKey = await importDeviceKey(body.device_key);
+    } catch (e) {
+      logRefusal('seal_device_key_bad', String(e).slice(0, 80));
+    }
+  }
+  return { plan: planSeal(want, rows, { canOpen, bucket: MEDIA_BUCKET }), kek, deviceKey };
+}
