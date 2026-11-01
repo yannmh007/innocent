@@ -1,15 +1,18 @@
 # Media encryption — every photo and film sealed at rest
 
 Status (1 Nov 2026): **design approved by the owner (31 Oct); format
-libraries done (ENC-1); keys table live (migrations 060, 061). request-playback
-v41 live with `SEAL_MODE` defaulting to `ask` (§9): only a request with
-`seal: 1` looks at sealed rows, so every released app is answered exactly as
-before. `MEDIA_KEK_V1` set by the owner and confirmed twice from boot logs
-without reading it (04:33 and, after the v41 deploy, 05:54 on two fresh
-instances): usable, base64, 32 bytes, key check value `f3bfb0d1` (§4). The
-app's device key, keyring and unseal gateway are on the branch (ENC-3, §6),
-streaming and downloads, branch build 41276775374 green; next the canary's
-sealed copies of the open films, images, the labs, and the pipelines.**
+libraries done (ENC-1); keys table live (migrations 060, 061, 062).
+request-playback v41 live with `SEAL_MODE` defaulting to `ask` (§9): only a
+request with `seal: 1` looks at sealed rows, so every released app is
+answered exactly as before. `MEDIA_KEK_V1` set by the owner and confirmed
+twice from boot logs without reading it: usable, base64, 32 bytes, key check
+value `f3bfb0d1` (§4). The app's device key, keyring and unseal gateway are
+on the branch (ENC-3, §6), streaming and downloads. THE CANARY'S TWINS ARE IN
+R2 (ingest v44 `seal_plan`/`seal_commit`, seed-open-films run 41292286979):
+Sintel's master and four rungs, Tears of Steel's master and three, each
+re-opened whole on the runner and checked again by the function before its
+row was written. Next: the device lab on a build that asks (run
+41293034978), then Test Lab, images, and the pipelines.**
 This file is the specification the code follows. Change it first, then the
 code.
 
@@ -212,6 +215,14 @@ stripped before a photo is sealed.
 A. App with the opener, the device key and the image loader; old formats kept.
    Labs, Test Lab, release.
 B. Canary: the open films only (Sintel, Tears of Steel), sealed; labs measure §8.
+   How the twins are made: `seed-open-films.yml` task `seal` runs
+   `tool/seal_twins.py` — the ingest function issues each DEK (wrapped under
+   MEDIA_KEK, so only it can record the twin), the runner seals, opens the
+   whole twin again and compares it with the plain file, uploads it to
+   `s/<32 hex>`, and the function checks the wrap, the sizes, the header and
+   the first and last segments before writing the row. A twin not recorded
+   is deleted by the runner, and any left an hour later by the next run's
+   sweep. Open films only: `media_twin.js` `twinAllowed`.
    No secret to set: `SEAL_MODE` is `ask` unless set, so the rows plus a
    lab build with `--dart-define=MEDIA_SEAL=1` are the whole canary.
 C. `min_supported` = A's build (the brake exists since 10 Sep 2026; older

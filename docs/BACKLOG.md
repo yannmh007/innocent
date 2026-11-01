@@ -151,8 +151,13 @@ does it.
 - [x] request-playback v41: `SEAL_MODE` ask/on/off, `ask` by default; the
   seal block carries the header (migration 061). Transport check 41278679967
   green; KEK check value `f3bfb0d1` again on fresh instances.
-- [ ] Canary copies (ENC-5 B): ingest ops that issue a DEK and record a
-  sealed twin, and a runner job that seals Sintel and Tears of Steel only.
+- [x] Canary copies (ENC-5 B, 1 Nov): ingest v44 seal_plan / seal_commit /
+  sweep, tool/seal_twins.py, seed-open-films task `seal`. Nine twins
+  recorded (run 41292286979). The first run (41286865663) found 060 had
+  granted service_role nothing on media_keys - request-playback could not
+  have read a key either; 062 grants SELECT and INSERT only.
+- [ ] Canary in the labs: device lab jumps on a MEDIA_SEAL=1 build (run
+  41293034978), then Test Lab on the realme and the OPPO, against §8.
 - [ ] ENC-4, the pipelines: ingest, console upload, transcode, probe,
   console preview.
 - [ ] ENC-5, rollout: canary on Sintel and Tears of Steel, `min_supported`,
@@ -162,10 +167,11 @@ does it.
   Done 31 Oct: the trickle bound is half the film, and the step-back case
   found a real fault — a flush into a reset connection could hold a
   stretch open for seconds after a seek; it now ends at the hang-up.
-- `tool/js/console_smoke.mjs` failed once on 1 Nov ("upload: the resume
-  sent only what was missing (1,2,3)") with the console untouched; three
-  reruns passed 232 of 232. A timing assumption in the resume check — find
-  it rather than rerun.
+- `tool/js/console_smoke.mjs` failed twice on 1 Nov ("upload: the resume
+  sent only what was missing (1,2,3)", then "(1,1,2,3)" — part 1 sent twice)
+  with the console untouched; reruns pass. A timing assumption in the resume
+  check, or a real double send of the first part after a resume — find it
+  rather than rerun.
 - Burmese Settings still shows Pop-up Play, Decoder, Development and
   Diagnostics in English — decide whether those stay technical terms.
 
