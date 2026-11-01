@@ -214,3 +214,29 @@ class SealWriter(dek: ByteArray, aad: ByteArray, val plainTotal: Long,
         val rnd = SecureRandom()
     }
 }
+
+/**
+ * Opens a DEK the server wrapped for this install (docs/MEDIA_ENCRYPTION.md
+ * §5): RSA-OAEP with SHA-1 and MGF1-SHA-1, the only MGF1 digest Android
+ * Keystore accepts below API 35. [privateKey] is the Keystore key's handle on
+ * a phone (its bytes never leave the secure hardware) and an ordinary key in
+ * the JVM tests; the parameters are spelled out rather than left to the
+ * provider's defaults, which differ between providers.
+ */
+object DeviceDek {
+    const val TRANSFORM = "RSA/ECB/OAEPWithSHA-1AndMGF1Padding"
+
+    fun open(privateKey: java.security.PrivateKey, wrapped: ByteArray): ByteArray {
+        val c = Cipher.getInstance(TRANSFORM)
+        c.init(Cipher.DECRYPT_MODE, privateKey, javax.crypto.spec.OAEPParameterSpec(
+            "SHA-1", "MGF1", java.security.spec.MGF1ParameterSpec.SHA1,
+            javax.crypto.spec.PSource.PSpecified.DEFAULT))
+        val dek = try {
+            c.doFinal(wrapped)
+        } catch (e: java.security.GeneralSecurityException) {
+            throw SealException("the DEK was not wrapped for this install")
+        }
+        if (dek.size != 32) throw SealException("a DEK is 32 bytes, not ${dek.size}")
+        return dek
+    }
+}

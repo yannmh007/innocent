@@ -171,6 +171,11 @@ def main() -> int:
     # comment is worse than one that was never written: the summary still
     # reads "all passed".
     JS_TESTS = [
+        ('media_keys_test.mjs',
+         'the media seal keys: KEK wrap and the phone\'s RSA-OAEP',
+         'a DEK that opens in another row or under another KEK version, or a '
+         'DEK wrapped for a phone with padding its Keystore cannot open — '
+         'every sealed film refusing to play on that phone'),
         ('media_seal_test.mjs',
          'the console\'s and the edge functions\' media seal',
          'a film sealed in the browser that the phone cannot open: different '

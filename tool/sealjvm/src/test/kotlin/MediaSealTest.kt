@@ -150,3 +150,19 @@ class MediaSealTest {
         kotlin.test.assertTrue(mbps > 5, "open throughput $mbps MiB/s")
     }
 }
+
+class DeviceDekTest {
+    private fun field(text: String, k: String) = Regex("\"$k\":\\s*\"([^\"]*)\"").find(text)!!.groupValues[1]
+
+    @Test fun `opens what the edge function wrapped for the phone`() {
+        val fx = File(System.getProperty("seal.device")).readText()
+        val dec = java.util.Base64.getDecoder()
+        val priv = java.security.KeyFactory.getInstance("RSA")
+            .generatePrivate(java.security.spec.PKCS8EncodedKeySpec(dec.decode(field(fx, "private_pkcs8"))))
+        val dek = com.innocent.media.seal.DeviceDek.open(priv, dec.decode(field(fx, "wrapped_for_device")))
+        assertContentEquals(dec.decode(field(fx, "dek_b64")), dek)
+        // Someone else's key: refused, never 32 bytes of garbage.
+        val other = java.security.KeyPairGenerator.getInstance("RSA").apply { initialize(2048) }.generateKeyPair()
+        assertFailsWith<SealException> { com.innocent.media.seal.DeviceDek.open(other.private, dec.decode(field(fx, "wrapped_for_device"))) }
+    }
+}

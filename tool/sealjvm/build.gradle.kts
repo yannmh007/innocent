@@ -40,4 +40,5 @@ tasks.test {
         exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
     }
     systemProperty("seal.vectors", file("../../test/fixtures/media_seal_vectors.json").absolutePath)
+    systemProperty("seal.device", file("../../test/fixtures/media_device_key_test.json").absolutePath)
 }
