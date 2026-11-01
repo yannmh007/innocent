@@ -142,8 +142,17 @@ does it.
 - [x] ENC-2: migration 060 (`media_keys`, `devices.public_key`), live;
   request-playback v40 with the seal plan behind `SEAL_MODE` (off);
   `MEDIA_KEK_V1` set by the owner, check value `f3bfb0d1` (RUNBOOK 4d).
-- [ ] ENC-3, the app: Keystore device key, `seal: 1`, the opener in the
-  stream proxy, sealed downloads, the image loader; labs against §8.
+- [x] ENC-3, the app (branch, 1 Nov): Keystore device key, keyring, the
+  unseal gateway in front of the stream proxy, downloads through it, no
+  sealed URL ever played directly; 26 new tests, full suite green, branch
+  build 41276775374 green. Behind `kAsksForSealed` (MEDIA_SEAL=1 for labs).
+- [ ] ENC-3, left: the image loader (posters, album photos); labs against
+  §8 (proxy_cpu_bench, device lab, Test Lab) once the canary copies exist.
+- [x] request-playback v41: `SEAL_MODE` ask/on/off, `ask` by default; the
+  seal block carries the header (migration 061). Transport check 41278679967
+  green; KEK check value `f3bfb0d1` again on fresh instances.
+- [ ] Canary copies (ENC-5 B): ingest ops that issue a DEK and record a
+  sealed twin, and a runner job that seals Sintel and Tears of Steel only.
 - [ ] ENC-4, the pipelines: ingest, console upload, transcode, probe,
   console preview.
 - [ ] ENC-5, rollout: canary on Sintel and Tears of Steel, `min_supported`,

@@ -1,12 +1,15 @@
 # Media encryption — every photo and film sealed at rest
 
 Status (1 Nov 2026): **design approved by the owner (31 Oct); format
-libraries done (ENC-1); keys table live (migration 060); request-playback
-v40 live with the seal plan behind `SEAL_MODE` (off). `MEDIA_KEK_V1` set by
-the owner and confirmed from the function's boot log without reading it:
-usable, base64, 32 bytes, key check value `f3bfb0d1` (§4). The app's device
-key, keyring and unseal gateway are on the branch (ENC-3, §6), streaming
-and downloads; then images, the labs, and the pipelines.**
+libraries done (ENC-1); keys table live (migrations 060, 061). request-playback
+v41 live with `SEAL_MODE` defaulting to `ask` (§9): only a request with
+`seal: 1` looks at sealed rows, so every released app is answered exactly as
+before. `MEDIA_KEK_V1` set by the owner and confirmed twice from boot logs
+without reading it (04:33 and, after the v41 deploy, 05:54 on two fresh
+instances): usable, base64, 32 bytes, key check value `f3bfb0d1` (§4). The
+app's device key, keyring and unseal gateway are on the branch (ENC-3, §6),
+streaming and downloads, branch build 41276775374 green; next the canary's
+sealed copies of the open films, images, the labs, and the pipelines.**
 This file is the specification the code follows. Change it first, then the
 code.
 
@@ -209,8 +212,12 @@ stripped before a photo is sealed.
 A. App with the opener, the device key and the image loader; old formats kept.
    Labs, Test Lab, release.
 B. Canary: the open films only (Sintel, Tears of Steel), sealed; labs measure §8.
+   No secret to set: `SEAL_MODE` is `ask` unless set, so the rows plus a
+   lab build with `--dart-define=MEDIA_SEAL=1` are the whole canary.
 C. `min_supported` = A's build (the brake exists since 10 Sep 2026; older
    builds than that will show a playback error and still offer the update).
+   Then `SEAL_MODE=on`, so an older build is told to update (426) rather
+   than given an object it cannot open.
 D. Every new upload sealed (ingest, console, transcode).
 E. Existing objects sealed by a runner job; plaintext kept 14 days for
    rollback, then deleted. **Objects on the owner's do-not-touch list are
