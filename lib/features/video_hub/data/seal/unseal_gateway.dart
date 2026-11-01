@@ -215,6 +215,7 @@ class _Sealed {
   /// The DEK held by the platform. A registration that failed (a Keystore
   /// that was busy) is tried again by the next fetch, not given up for good.
   Future<bool> keyReady() => _registered ??= gateway._cipher.register(seal).then((ok) {
+        PlaybackLog.add('seal: key ${ok ? 'held' : 'NOT held'} (${seal.wrap})');
         if (!ok) _registered = null;
         return ok;
       });

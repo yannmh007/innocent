@@ -21,7 +21,11 @@ import 'media_seal_layout.dart';
 /// once the server's SEAL_MODE is on, an app that said yes gets sealed
 /// bytes. `--dart-define=MEDIA_SEAL=1` turns it on for a lab build ahead of
 /// a release (the canary: only those builds ask).
-const bool kAsksForSealed = bool.fromEnvironment('MEDIA_SEAL');
+///
+/// `1` or `true` (bool.fromEnvironment alone would read `1` as false, and a
+/// lab build meant to ask would quietly not).
+const bool kAsksForSealed =
+    String.fromEnvironment('MEDIA_SEAL') == '1' || bool.fromEnvironment('MEDIA_SEAL');
 
 /// The `seal` block request-playback sends beside a URL it signed for a
 /// sealed object (docs/edge/media_grant.js, `sealBlock`).

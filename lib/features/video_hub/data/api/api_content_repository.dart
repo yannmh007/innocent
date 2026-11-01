@@ -17,6 +17,7 @@ import 'api_client.dart';
 import 'backend_config.dart';
 import 'api_exception.dart';
 import '../seal/media_seal.dart';
+import '../../../../core/services/diagnostics/playback_log.dart';
 
 /// [ContentRepository] over the backend described in
 /// `docs/premium_backend_spec.md`.
@@ -953,6 +954,12 @@ class ApiContentRepository implements ContentRepository {
           return const PlaybackGrant.denied(AccessDenial.unavailable);
         }
         SealedUrls.learn(url, seal);
+      }
+      if (body['seal_v'] != null) {
+        // In the trail: which copies came sealed, and how their keys came.
+        final sealed = [url, ...ladder.map((r) => r.url)].map(SealedUrls.of).whereType<SealGrant>().toList();
+        PlaybackLog.add('grant: ${sealed.length} of ${ladder.length + 1} copies sealed'
+            '${sealed.isEmpty ? '' : ', keys ${sealed.map((x) => x.wrap).toSet().join('/')}'}');
       }
       // Where these URLs point is where the install id may be sent.
       StreamDoor.learn(url);

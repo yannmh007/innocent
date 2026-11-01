@@ -403,7 +403,11 @@ class StreamCacheServer {
       UnsealGateway.instance.forget(cacheId);
       return url;
     }
-    return UnsealGateway.instance.route(cacheId, url, seal);
+    final routed = UnsealGateway.instance.route(cacheId, url, seal);
+    PlaybackLog.add(routed == null
+        ? 'sealed copy and no unseal gateway: not fetched'
+        : 'sealed copy: through the unseal gateway');
+    return routed;
   }
 
   /// Register a film and get the local address to play instead.
