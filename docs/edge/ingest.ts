@@ -180,6 +180,7 @@ interface S3Target { host: string; region: string; keyId: string; secret: string
 async function presignAt(
   target: S3Target, method: 'GET' | 'PUT' | 'DELETE' | 'HEAD', objectKey: string,
   seconds: number, bucket: string, now: Date = new Date(),
+  query: Record<string, string> = {},
 ): Promise<string> {
   const host = target.host;
   const amzDate = now.toISOString().replace(/[:-]|\.\d{3}/g, '');
@@ -191,10 +192,12 @@ async function presignAt(
     'X-Amz-Date': amzDate,
     'X-Amz-Expires': String(seconds),
     'X-Amz-SignedHeaders': 'host',
+    // A listing's own parameters (an empty key is the bucket itself).
+    ...query,
   };
   const canonicalQuery = Object.keys(params).sort()
     .map((k) => `${rfc3986(k)}=${rfc3986(params[k])}`).join('&');
-  const canonicalPath = `/${bucket}/${encodeKey(objectKey)}`;
+  const canonicalPath = objectKey ? `/${bucket}/${encodeKey(objectKey)}` : `/${bucket}`;
   const canonicalRequest = [
     method, canonicalPath, canonicalQuery, `host:${host}\n`, 'host',
     'UNSIGNED-PAYLOAD',
@@ -212,11 +215,12 @@ async function presignAt(
 
 async function presign(
   method: 'GET' | 'PUT' | 'DELETE' | 'HEAD', objectKey: string, seconds: number, bucket: string,
+  query: Record<string, string> = {},
 ): Promise<string> {
   return await presignAt({
     host: `${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`, region: 'auto',
     keyId: R2_ACCESS_KEY_ID, secret: R2_SECRET_ACCESS_KEY,
-  }, method, objectKey, seconds, bucket);
+  }, method, objectKey, seconds, bucket, new Date(), query);
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -2026,9 +2030,12 @@ Deno.serve(async (req: Request) => {
       const a = await rest(`title_assets?select=id,object_key&title_id=eq.${row.id}&kind=eq.video&bucket=eq.${MEDIA_BUCKET}`);
       const assets = a.ok ? await a.json() as Array<{ id: string; object_key: string }> : [];
       const keys = assets.map((x) => x.object_key);
-      if (assets.length) {
-        const r = await rest(`asset_renditions?select=object_key&asset_id=in.(${assets.map((x) => x.id).join(',')})`);
-        if (r.ok) keys.push(...(await r.json() as Array<{ object_key: string }>).map((x) => x.object_key));
+      // The rungs through renditions_for, as request-playback reads them:
+      // asset_renditions itself grants the service role nothing.
+      for (const asset of assets) {
+        const rungs = await rpc('renditions_for', { p_asset: asset.id }).catch(() => []) as
+          Array<{ object_key: string }> | null;
+        keys.push(...(rungs ?? []).map((x) => x.object_key));
       }
       return keys.filter((k) => typeof k === 'string' && k && !isSealedKey(k));
     };
@@ -2059,10 +2066,43 @@ Deno.serve(async (req: Request) => {
           dek: b64(dek), wrapped: await wrapDek(kek, dek, dekId, 1),
           get_url: await presign('GET', key, 3 * 3600, MEDIA_BUCKET),
           put_url: await presign('PUT', sealedKey, 3 * 3600, MEDIA_BUCKET),
+          // For the runner to take its twin away again if it is not recorded.
+          del_url: await presign('DELETE', sealedKey, 4 * 3600, MEDIA_BUCKET),
         });
         dek.fill(0);
       }
       return json({ items, already: done.size }, 200, req);
+    }
+
+    // seal_sweep: twins nobody recorded — a runner that stopped between
+    // its upload and the commit, or a commit refused. Only `s/<32 hex>`,
+    // only an hour old or more (a job may be uploading one now), and only
+    // one no media_keys row names. Nothing else in the bucket is listed or
+    // touched.
+    if (body.sweep === true) {
+      const list = await fetch(await presign('GET', '', 300, MEDIA_BUCKET,
+        { 'list-type': '2', prefix: 's/', 'max-keys': '200' }));
+      if (!list.ok) return json({ error: 'list_failed', status: list.status }, 502, req);
+      const xml = await list.text();
+      const found: Array<{ key: string; modified: number }> = [];
+      for (const block of xml.split('<Contents>').slice(1)) {
+        const key = /<Key>([^<]*)<\/Key>/.exec(block)?.[1] ?? '';
+        const modified = Date.parse(/<LastModified>([^<]*)<\/LastModified>/.exec(block)?.[1] ?? '');
+        if (isSealedKey(key) && Number.isFinite(modified)) found.push({ key, modified });
+      }
+      const old = found.filter((f) => Date.now() - f.modified > 3600 * 1000);
+      const named = old.length
+        ? await rest(`media_keys?select=sealed_key&bucket=eq.${MEDIA_BUCKET}&sealed_key=in.${
+          encodeURIComponent(`(${old.map((f) => `"${f.key}"`).join(',')})`)}`)
+        : null;
+      if (old.length && !named?.ok) return json({ error: 'keys_unreadable' }, 502, req);
+      const recorded = new Set(named ? (await named.json() as Array<{ sealed_key: string }>).map((x) => x.sealed_key) : []);
+      let removed = 0;
+      for (const f of old.filter((x) => !recorded.has(x.key))) {
+        const d = await fetch(await presign('DELETE', f.key, 300, MEDIA_BUCKET), { method: 'DELETE' });
+        if (d.ok || d.status === 204) removed++;
+      }
+      return json({ twins: found.length, recorded: recorded.size, removed }, 200, req);
     }
 
     // seal_commit

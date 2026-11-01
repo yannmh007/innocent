@@ -124,6 +124,7 @@ def twin_one(item: dict, work: str) -> dict | None:
             return None
         print(f"  {name}: {size} -> {written} bytes, opened and matched, uploaded")
         return {
+            "_del": item.get("del_url"),
             "dek_id": item["dek_id"], "wrapped": item["wrapped"], "plain_key": item["plain_key"],
             "sealed_key": item["sealed_key"], "plain_size": size,
             "header": base64.b64encode(header).decode(),
@@ -136,6 +137,19 @@ def twin_one(item: dict, work: str) -> dict | None:
                 pass
 
 
+def remove(url: str | None) -> bool:
+    """Takes a twin away again (its presigned DELETE): one not recorded is
+    not left in the bucket."""
+    if not url:
+        return False
+    try:
+        req = urllib.request.Request(url, method="DELETE")
+        with urllib.request.urlopen(req, timeout=60) as r:
+            return r.status in (200, 204)
+    except Exception:  # noqa: BLE001 — the sweep takes what this misses
+        return False
+
+
 def main(argv: list[str]) -> int:
     sb, secret = os.environ.get("SB_URL", ""), os.environ.get("RUNNER_SECRET", "")
     if not sb or not secret or len(argv) < 2:
@@ -143,6 +157,13 @@ def main(argv: list[str]) -> int:
         return 2
     fn = sb.rstrip("/") + "/functions/v1/ingest"
     failed = 0
+    # Twins an earlier run left unrecorded (an hour old or more), first.
+    try:
+        sw = call(fn, secret, {"op": "seal_commit", "sweep": True})
+        print(f"sweep: {sw.get('twins', '?')} twins, {sw.get('recorded', '?')} recorded, "
+              f"{sw.get('removed', 0)} removed")
+    except Exception as e:  # noqa: BLE001
+        print(f"sweep: not done ({type(e).__name__})")
     for title_id in argv[1:]:
         print(f"=== {title_id}")
         plan = call(fn, secret, {"op": "seal_plan", "title_id": title_id})
@@ -157,12 +178,16 @@ def main(argv: list[str]) -> int:
                 else:
                     failed += 1
         if made:
+            dels = {m["plain_key"]: m.pop("_del") for m in made}
             res = call(fn, secret, {"op": "seal_commit", "title_id": title_id, "items": made})
             for r in res.get("results", []):
                 name = str(r.get("plain_key", "")).rsplit("/", 1)[-1]
-                print(f"  recorded {name}: {'ok' if r.get('ok') else 'REFUSED ' + str(r.get('why'))}")
-                if not r.get("ok"):
-                    failed += 1
+                if r.get("ok"):
+                    print(f"  recorded {name}: ok")
+                    continue
+                gone = remove(dels.get(r.get("plain_key")))
+                print(f"  recorded {name}: REFUSED {r.get('why')}; twin {'removed' if gone else 'left for the sweep'}")
+                failed += 1
     print("done" if not failed else f"{failed} not sealed")
     return 1 if failed else 0
 
