@@ -225,6 +225,19 @@ Nothing here may be dropped silently: close it with its evidence, or move it.
   but nothing yet renews such a download's grant. Next: decide with O6
   (sealed downloads) whether an offline copy outlives its key row. Done:
   the rule written in §6 and tested.
+- [ ] **O18 Off-site copy of a born-sealed master from Telegram.** The
+  off-site job reads R2 when R2 has the file and the Telegram copy when it
+  does not. For a master born sealed (`on`) and moved to Telegram, that
+  copy is PLAIN, so the off-site bucket would get plain bytes. Next: when
+  `on` nears, either seal it on the runner under the master's own key row
+  (kept while the Telegram copy is the master's) or copy only from R2.
+  Done: no plain byte in the off-site bucket for a sealed master.
+- [ ] **O19 Telegram pipeline not yet run for real.** Built and tested
+  against a fake Telegram and a rolled-back database (§7.4 step 3); no
+  open film comes through Telegram, so the first real run is with the
+  switch `on`. Next: before `on`, one forwarded test file with the switch
+  at `on` for a minute (born sealed end to end: ingest, attach, play),
+  then back to `off`. Done: that file plays sealed on a phone.
 - [ ] **O17 Old runners and the seals flag.** Main's runner (no sealing
   code) now gets only plain work (070). When ENC-4 reaches main, every
   runner sends `seals: 1`. Next: after that release, confirm from the

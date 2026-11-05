@@ -46,18 +46,11 @@ def open_master(job: dict, src: str) -> int:
     if not s:
         print('master: plain')
         return 0
-    have = os.path.getsize(src)
-    if have != int(s['sealed_size']):
-        print(f'master: {have} bytes, not the {s["sealed_size"]} its key row says')
-        return 1
-    dek = base64.b64decode(s['dek'])
-    aad = media_seal.aad_for(s['dek_id'])
     out = src + '.open'
-    with open(src, 'rb') as a, open(out, 'wb') as b:
-        media_seal.open_stream(a, b, dek, aad, have)
-    if os.path.getsize(out) != int(s['plain_size']):
-        os.remove(out)
-        print('master: opened to the wrong size')
+    try:
+        open_checked(src, out, s)
+    except (NotSealed, media_seal.SealError) as e:
+        print(f'master: {e}')
         return 1
     os.replace(out, src)
     print(f'master: sealed, opened ({s["plain_size"]} bytes)')
@@ -68,11 +61,16 @@ def seal_for(job: dict, height: str) -> dict | None:
     return (job.get('seal') or {}).get(str(height))
 
 
-def seal_rung(job: dict, height: str, path: str) -> int:
-    s = seal_for(job, height)
-    if not s:
-        print(f'{height}p: no seal asked for', file=sys.stderr)
-        return 1
+class NotSealed(Exception):
+    """A file that did not seal to exactly what it is. Never uploaded."""
+
+
+def seal_checked(path: str, s: dict) -> tuple[str, dict]:
+    """FILE sealed under the issued DEK `s` (dek_id, dek, wrapped, sealed_key)
+    beside it, then THE WHOLE SEALED FILE OPENED AGAIN and compared with
+    FILE (SHA-256): a sealed object goes up only once it is known to be the
+    same bytes. Answers (sealed path, what its key row carries — never the
+    DEK). The caller uploads and removes the sealed file."""
     size = os.path.getsize(path)
     dek = base64.b64decode(s['dek'])
     aad = media_seal.aad_for(s['dek_id'])
@@ -81,27 +79,67 @@ def seal_rung(job: dict, height: str, path: str) -> int:
         with open(path, 'rb') as a, open(sealed, 'wb') as b:
             written = media_seal.seal_stream(a, b, dek, aad, size)
         if written != media_seal.sealed_size(size) or os.path.getsize(sealed) != written:
-            print(f'{height}p: sealed to {written} bytes, not {media_seal.sealed_size(size)}', file=sys.stderr)
-            return 1
-        # THE WHOLE RUNG OPENED AGAIN, and compared with the plain one: a
-        # sealed rung goes up only once it is known to be the same film.
+            raise NotSealed(f'sealed to {written} bytes, not {media_seal.sealed_size(size)}')
         hasher = _Hasher()
         with open(sealed, 'rb') as a:
             media_seal.open_stream(a, hasher, dek, aad, written)
         if hasher.h.hexdigest() != sha256_of(path):
-            print(f'{height}p: the sealed rung does not open to the same bytes', file=sys.stderr)
-            return 1
+            raise NotSealed('the sealed file does not open to the same bytes')
         with open(sealed, 'rb') as a:
             header = a.read(media_seal.HEADER)
+    except BaseException:
+        try:
+            os.remove(sealed)
+        except FileNotFoundError:
+            pass
+        raise
+    return sealed, {
+        'dek_id': s['dek_id'], 'wrapped': s['wrapped'], 'sealed_key': s['sealed_key'],
+        'plain_size': size, 'header': base64.b64encode(header).decode(),
+    }
+
+
+def open_checked(src: str, dst: str, s: dict) -> int:
+    """A sealed file SRC opened to DST with `s` (dek_id, dek, plain_size,
+    sealed_size), both sizes checked. Answers the plain size; a segment that
+    does not open raises, and DST is removed."""
+    have = os.path.getsize(src)
+    if have != int(s['sealed_size']):
+        raise NotSealed(f'{have} sealed bytes, not the {s["sealed_size"]} its key row says')
+    try:
+        with open(src, 'rb') as a, open(dst, 'wb') as b:
+            media_seal.open_stream(a, b, base64.b64decode(s['dek']), media_seal.aad_for(s['dek_id']), have)
+        n = os.path.getsize(dst)
+        if n != int(s['plain_size']):
+            raise NotSealed(f'opened to {n} bytes, not {s["plain_size"]}')
+        return n
+    except BaseException:
+        try:
+            os.remove(dst)
+        except FileNotFoundError:
+            pass
+        raise
+
+
+def seal_rung(job: dict, height: str, path: str) -> int:
+    s = seal_for(job, height)
+    if not s:
+        print(f'{height}p: no seal asked for', file=sys.stderr)
+        return 1
+    size = os.path.getsize(path)
+    try:
+        sealed, info = seal_checked(path, s)
+    except (NotSealed, media_seal.SealError) as e:
+        print(f'{height}p: {e}', file=sys.stderr)
+        return 1
+    try:
         status = upload(s['put_url'], sealed)
         if status != 200:
             print(f'{height}p: sealed upload HTTP {status}', file=sys.stderr)
             return 1
+        written = os.path.getsize(sealed)
         print(f'{height}p sealed: {size} -> {written} bytes, opened and matched, uploaded', file=sys.stderr)
-        print(json.dumps({
-            'dek_id': s['dek_id'], 'wrapped': s['wrapped'], 'sealed_key': s['sealed_key'],
-            'plain_size': size, 'header': base64.b64encode(header).decode(),
-        }))
+        print(json.dumps(info))
         return 0
     finally:
         try:

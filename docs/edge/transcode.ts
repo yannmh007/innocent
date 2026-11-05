@@ -28,8 +28,11 @@
 // and expires the same day.
 
 import { b64, importKek, unwrapDek } from './media_keys.js';
-import { issue, makeFor, record, sealNewMode } from './media_issue.js';
+import { issue, makeFor, sealNewMode } from './media_issue.js';
 import { isSealedKey } from './media_twin.js';
+import {
+  type RecordIO, recordSealed as recordSealedShared,
+} from './media_record.ts';
 
 const R2_ACCOUNT_ID = Deno.env.get('R2_ACCOUNT_ID')!;
 const R2_ACCESS_KEY_ID = Deno.env.get('R2_ACCESS_KEY_ID')!;
@@ -184,82 +187,16 @@ async function openerFor(k: CryptoKey, row: KeyRow) {
   }
 }
 
-async function sizeAt(key: string, bucket: string): Promise<number | null> {
-  const h = await fetch(await presign('HEAD', key, 300, bucket), { method: 'HEAD' });
-  if (!h.ok) return null;
-  const n = Number(h.headers.get('content-length'));
-  return Number.isSafeInteger(n) && n > 0 ? n : null;
-}
+/// What media_record.ts needs from this function: its own REST, signer and
+/// KEK. Rungs and stills are recorded there (§7.2, migrations 069-070).
+const recordIO: RecordIO = { rest, presign, kek };
 
-/// Records the sealed objects a runner reports (rungs or stills), each
-/// checked by media_issue.js `record`; one already recorded (done is called
-/// after every rung) is skipped. Returns the dek_ids recorded or present,
-/// and a note for each refused.
 async function recordSealed(
   items: Array<Record<string, unknown>>, bucket: string, kind: 'video' | 'image',
 ): Promise<{ ok: Set<string>; refused: string[] }> {
-  const ok = new Set<string>();
-  const refused: string[] = [];
-  if (!items.length) return { ok, refused };
-  const k = await kek();
-  if (!k) return { ok, refused: items.map(() => 'no MEDIA_KEK') };
-  const table = kind === 'image' ? 'media_image_keys' : 'media_keys';
-  const ids = items.map((x) => String(x.dek_id ?? '')).filter((x) => /^[0-9a-f-]{36}$/i.test(x));
-  if (ids.length) {
-    const have = await rest(`${table}?select=dek_id&dek_id=in.(${ids.join(',')})`);
-    if (have.ok) for (const r of await have.json() as Array<{ dek_id: string }>) ok.add(r.dek_id);
-  }
-  for (const item of items) {
-    const id = String(item.dek_id ?? '');
-    if (ok.has(id)) continue;
-    const born = item.plain_key == null;
-    try {
-      const row = await record(k, item as never, {
-        plainSize: () => sizeAt(String(item.plain_key), bucket),
-        sealedSize: () => sizeAt(String(item.sealed_key), bucket),
-        readSealed: async (start: number, end: number) => {
-          const g = await fetch(await presign('GET', String(item.sealed_key), 300, bucket),
-            { headers: { Range: `bytes=${start}-${end - 1}` } });
-          return g.status === 206 ? new Uint8Array(await g.arrayBuffer()) : null;
-        },
-      }, { kind, born });
-      // Migration 069: one twin per plain object. This job has just made the
-      // plain object again, so a twin already there is stale; its row is
-      // replaced and its sealed object binned for a week.
-      const put = await rest('rpc/media_key_put', {
-        method: 'POST',
-        body: JSON.stringify({ p_kind: kind, p_row: { ...row, bucket } }),
-      });
-      if (put.ok) {
-        ok.add(id);
-        const replaced = ((await put.json() as { replaced?: string[] }).replaced ?? []).length;
-        if (replaced) console.log(`sealed copy replaced (${kind}): ${replaced} old copy binned`);
-      } else {
-        refused.push(`${String(item.sealed_key).slice(0, 10)}: record ${put.status}`);
-        await binRefused(bucket, String(item.sealed_key));
-      }
-    } catch (e) {
-      refused.push(`${String(item.sealed_key).slice(0, 10)}: ${String((e as Error).message ?? e).slice(0, 80)}`);
-      await binRefused(bucket, String(item.sealed_key));
-    }
-  }
-  return { ok, refused };
-}
-
-/// A sealed object a runner uploaded and this function would not record
-/// (it did not open, or its sizes were wrong) is junk in R2: it goes to the
-/// bin for a week, like anything else nobody names. The purge checks
-/// `r2_refs()` again first, so a key some row does name is never deleted.
-async function binRefused(bucket: string, key: string) {
-  if (!isSealedKey(key)) return;
-  await rest('r2_trash', {
-    method: 'POST',
-    headers: { Prefer: 'return=minimal' },
-    body: JSON.stringify({
-      bucket, key, reason: 'sealed copy refused when recorded',
-      purge_after: new Date(Date.now() + 7 * 86400_000).toISOString(),
-    }),
-  }).catch(() => undefined);
+  const out = await recordSealedShared(recordIO, items, bucket, kind);
+  if (out.replaced) console.log(`sealed copy replaced (${kind}): ${out.replaced} old copy binned`);
+  return out;
 }
 
 async function renditionKeysOf(asset: string): Promise<string[]> {
@@ -718,8 +655,14 @@ Deno.serve(async (req: Request) => {
       srcKey = masterRow.sealed_key;
       srcSeal = await openerFor(k, masterRow);
     }
-    // No KEK where one is needed: the rungs are plain, as before, rather
-    // than none at all.
+    // No KEK where one is needed: in the canary the rungs are plain, as
+    // before, rather than none at all. With the switch `on` nothing plain
+    // may be written and nothing can be sealed, so the film waits.
+    if (make === 'sealed' && !k) {
+      console.log('MEDIA_KEK unreadable: a film the switch wants sealed waits');
+      await rpc('queue_transcode', { p_asset: job.asset_id });
+      return json({}, 200, req);
+    }
     const makes = k ? make : 'plain';
 
     // SIX HOURS FOR THE MASTER, TWENTY-FOUR FOR THE RUNGS, and the asymmetry
@@ -798,6 +741,11 @@ Deno.serve(async (req: Request) => {
       } else if (make === 'twin' && k && srcRow) {
         srcKey = srcRow.sealed_key;
         srcSeal = await openerFor(k, srcRow);
+      }
+      if (make === 'sealed' && !k) {
+        console.log('MEDIA_KEK unreadable: stills the switch wants sealed wait');
+        await rpc('queue_frames', { p_asset: r.asset_id });
+        continue;
       }
       const makes = k ? make : 'plain';
       const frames = [];

@@ -305,7 +305,7 @@ One module (`docs/edge/media_issue.js`) for every pipeline:
 |---|---|---|---|
 | Transcode, ladder (`transcode.ts` claim/done, `tool/transcode.sh`) | the master | rungs (media bucket) | claim: a sealed master comes with its DEK (unwrapped for the runner, which decodes video anyway) and the runner opens it to its temporary disk; each rung to seal comes with an issued DEK and a PUT for its `s/` key; the runner checks the CMAF layout on the plain rung, seals, re-opens the whole sealed rung and compares SHA-256, uploads `application/octet-stream`; done: `record` before `record_renditions` |
 | Transcode, frames (`frames_claim`, `tool/frames.py`) | the master or a rung | ten stills (public bucket) | sealed images: issued DEKs, `media_image_keys` |
-| Telegram ingest (`ingest.ts` claim/done, `tool/ingest.py`) | Telegram | the film (media bucket) | seal the downloaded file, re-open and compare, one PUT of the sealed file; done records the key. The runner's other jobs: **archive** (R2 → Telegram) opens a sealed film before sending it — the Telegram copy is the plain film it always was; **restore** (Telegram → R2) seals with a NEW DEK (never the old one: a different file under an old nonce breaks GCM); **verify** compares the Telegram file's size with the row's plain size |
+| Telegram ingest (`ingest.ts` claim/done, `tool/ingest.py`) | Telegram | the film or photo (its row's bucket) | seal the downloaded file, re-open the whole sealed file and compare SHA-256, one PUT of the sealed file (a twin: beside the plain one; born: alone); done records the key (`media_record.ts`) and — born — makes the job's object its `s/` key (`ingest_seal_key`) before `finish_ingest` makes the asset; a born file whose seal does not check is a failed attempt, tried again under a new DEK. The runner's other jobs: **archive** (R2 → Telegram) of a sealed master gets `src_seal`, opens it on the runner and sends the plain film — the Telegram copy is the film it always was; **restore** (Telegram → R2) of a sealed master seals with a NEW DEK to a NEW `s/` key (never the old DEK: a different file under an old nonce breaks GCM; never the old name: the Worker's cache keys on it), and `vault_finish(…, p_key)` makes that key the asset's object; **verify** compares the Telegram file's size with the row's plain size (unchanged: `bytes` is always the plain size). Only a runner that claims with `can: [..., "seal"]` is handed any of this (071) |
 | Console upload (`docs/studio/upload.js`, `studio.ts`) | the operator's file | a film or photo | sealed in the browser (WebCrypto, `media_seal.js`), 16 MiB parts = 256 whole segments each, so every part is sealed alone and in parallel. RESUME: the DEK is fetched again by dek_id (the studio unwraps it for an admin with upload rights); each part's plaintext SHA-256 is recorded when it is first sealed, and a part sealed before must hash the same on resume, or the upload starts again under a new DEK — no nonce ever covers two plaintexts. Photos: EXIF stripped before sealing |
 | R2 file manager (`studio.ts` move, delete) | — | — | a move rewrites `sealed_key` (and `plain_key`) in the key row with the object; a delete removes the row only once the object is gone. The bytes never change (the AAD names the dek_id, not the path) |
 | probe-media, backfill-dimensions | head and tail of a film | — | open the head and tail segments with MEDIA_KEK; no plaintext leaves the function |
@@ -328,6 +328,15 @@ the phone takes them from the smallest rung, through the gateway (§6).
    twelve twins of the first and binned the old copies; no refusal.
 3. Telegram ingest, archive, restore, verify — tested against a stand-in;
    real work only once `on` (no open film comes through Telegram).
+   BUILT 5 Nov (071, ingest.ts, tool/ingest.py, `media_record.ts` shared
+   with transcode.ts): the runner against a fake Telegram with real sealing
+   (twin, born, a seal that fails either way, a sealed master archived
+   plain and one that does not open never sent, a restore sealed afresh to
+   its new key, no DEK in any report — tool/ingest_runner_test.py), the
+   database rules rolled back in tool/sql/media_keys_test.sql. Also in
+   071: a key row lives exactly as long as what it opens — a twin is in
+   use while its plain object is (or is a master kept in Telegram), and the
+   bin's purge deletes the key rows of a sealed object it deletes.
 4. Console upload — canary: a photo uploaded into an open film's album.
 5. File manager moves and deletes.
 6. probe-media and backfill-dimensions.

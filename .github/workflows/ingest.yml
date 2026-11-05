@@ -137,11 +137,18 @@ jobs:
             echo "INGEST_SECRET or SUPABASE_URL not set — nothing to do."
             echo "job=none" >> "$GITHUB_OUTPUT"; exit 0
           fi
+          # SEALED WORK ONLY FOR A RUNNER THAT SEALS (migration 071): "seal"
+          # is claimed only when this Python opens the media seal, as
+          # tool/ingest.py claims the rest of the run.
+          can='"archive","offsite"'
+          if python3 -c "import sys; sys.path.insert(0, 'tool'); import media_seal" >/dev/null 2>&1; then
+            can="$can,\"seal\""
+          fi
           code=$(curl -sS -o /tmp/ingest.json -w '%{http_code}' \
             -X POST "$SB_URL/functions/v1/ingest" \
             -H "Authorization: Bearer $RUNNER_SECRET" \
             -H 'Content-Type: application/json' \
-            -d '{"op":"claim","can":["archive","offsite"]}')
+            -d "{\"op\":\"claim\",\"can\":[$can]}")
           if [ "$code" != "200" ]; then
             echo "claim returned $code"; echo "job=none" >> "$GITHUB_OUTPUT"; exit 0
           fi

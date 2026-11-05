@@ -70,8 +70,10 @@ import {
   BACKUP_AAD, BACKUP_KEY_INFO, derivedKey, openFile, PROOF_KEY_INFO, proofAad, sealFile,
 } from './pii.ts';
 import { namingKey, opaqueName } from './naming.ts';
-import { b64, importKek, newDek, wrapDek } from './media_keys.js';
+import { b64, importKek, newDek, unwrapDek, wrapDek } from './media_keys.js';
 import { checkTwin, isSealedKey, newSealedKey, twinAllowed } from './media_twin.js';
+import { issue, makeFor, sealNewMode } from './media_issue.js';
+import { type RecordIO, recordSealed } from './media_record.ts';
 
 const R2_ACCOUNT_ID = Deno.env.get('R2_ACCOUNT_ID')!;
 const R2_ACCESS_KEY_ID = Deno.env.get('R2_ACCESS_KEY_ID')!;
@@ -333,6 +335,70 @@ async function rest(path: string, init: RequestInit = {}): Promise<Response> {
       ...(init.headers ?? {}),
     },
   });
+}
+
+// ── the media seal (docs/MEDIA_ENCRYPTION.md §7, ENC-4 step 3) ─────────────
+//
+// What the switch (admin_settings.seal_new) makes of a forwarded file, the
+// DEK a runner seals it with, and the key a runner opens a sealed master
+// with to send it to the archive channel. A runner says it can seal
+// (`can: [..., "seal"]`); one that does not is never handed sealed work
+// (migration 071).
+
+let sealNewSeen: { mode: string; at: number } | null = null;
+async function sealNew(): Promise<string> {
+  if (sealNewSeen && Date.now() - sealNewSeen.at < 60_000) return sealNewSeen.mode;
+  let mode = 'off';
+  try {
+    const r = await rest('admin_settings?select=seal_new&limit=1');
+    if (r.ok) mode = sealNewMode((await r.json() as Array<{ seal_new: string }>)[0]?.seal_new);
+  } catch (_) { /* off */ }
+  sealNewSeen = { mode, at: Date.now() };
+  return mode;
+}
+
+let kekHeld: Promise<CryptoKey | null> | null = null;
+function mediaKek(): Promise<CryptoKey | null> {
+  return kekHeld ??= importKek(Deno.env.get('MEDIA_KEK_V1') ?? '').catch(() => null);
+}
+
+const recordIO: RecordIO = {
+  rest, kek: mediaKek,
+  presign: (method, key, seconds, bucket) => presign(method, key, seconds, bucket),
+};
+
+async function slugOfTitle(titleId: unknown): Promise<string | null> {
+  if (typeof titleId !== 'string' || !/^[0-9a-f-]{36}$/i.test(titleId)) return null;
+  const r = await rest(`titles?select=slug&id=eq.${titleId}&limit=1`);
+  return r.ok ? (await r.json() as Array<{ slug: string }>)[0]?.slug ?? null : null;
+}
+
+/// What a runner needs to open a sealed film: its DEK, unwrapped here, and
+/// both sizes. The runner sends the film to Telegram plain, as it always
+/// was; the DEK lives on its disk for this job only.
+async function openerOf(sealedKey: string, bucket: string) {
+  const k = await mediaKek();
+  if (!k) return null;
+  const r = await rest(`media_keys?select=dek_id,wrapped,kek_version,plain_size,sealed_size&bucket=eq.${
+    encodeURIComponent(bucket)}&sealed_key=eq.${encodeURIComponent(sealedKey)}&limit=1`);
+  const row = r.ok ? (await r.json() as Array<{ dek_id: string; wrapped: string; kek_version: number;
+    plain_size: number; sealed_size: number }>)[0] : undefined;
+  if (!row) return null;
+  const dek = await unwrapDek(k, row.wrapped, row.dek_id, row.kek_version);
+  try {
+    return { dek_id: row.dek_id, dek: b64(dek), plain_size: row.plain_size, sealed_size: row.sealed_size };
+  } finally {
+    dek.fill(0);
+  }
+}
+
+/// A new DEK and `s/` key for one object, with its PUT. The DEK is for the
+/// runner that seals; the wrap comes back to be recorded.
+async function sealSlot(bucket: string) {
+  const k = await mediaKek();
+  if (!k) return null;
+  const issued = await issue(k);
+  return { ...issued, put_url: await presign('PUT', issued.sealed_key, 86400, bucket) };
 }
 
 // ── the daily backup (migration 032) ───────────────────────────────────────
@@ -1663,7 +1729,10 @@ Deno.serve(async (req: Request) => {
     const given = (req.headers.get('Authorization') ?? '').replace(/^Bearer /i, '');
     if (!sameSecret(given, RUNNER_SECRET)) return json({ error: 'no' }, 403, req);
 
-    const rows = await rpc('claim_ingest', {}) as Array<Record<string, unknown>>;
+    // THE SEAL (§7, 071): a runner that says it can seal is handed sealed
+    // work; one that does not never is.
+    const canSeal = Array.isArray(body.can) && (body.can as unknown[]).includes('seal');
+    const rows = await rpc('claim_ingest', { p_seals: canSeal }) as Array<Record<string, unknown>>;
     if (!Array.isArray(rows) || !rows.length) {
       // NOTHING FORWARDED: the Telegram work of the storage policy (migration
       // 029) — look at a film's Telegram copy, or fetch one back into R2. The
@@ -1679,8 +1748,8 @@ Deno.serve(async (req: Request) => {
         // it, find nowhere to put it, and do the same again every tick. The
         // old claim never hands one out.
         const canArchive = Array.isArray(body.can) && (body.can as unknown[]).includes('archive');
-        vault = await rpc(canArchive ? 'vault_claim_v2' : 'vault_claim', {}) as
-          Array<Record<string, unknown>>;
+        vault = await rpc(canArchive ? 'vault_claim_v2' : 'vault_claim',
+          canArchive ? { p_seals: canSeal } : {}) as Array<Record<string, unknown>>;
       } catch (e) {
         console.log('vault_claim failed: ' + String(e).slice(0, 160));
         return json({}, 200, req);
@@ -1702,6 +1771,19 @@ Deno.serve(async (req: Request) => {
         // read-only, one key, one day — to fetch and send.
         const key = String(v.object_key ?? '');
         const hasCopy = v.chat_id !== null && v.chat_id !== undefined;
+        // A SEALED MASTER IS SENT PLAIN: the Telegram copy is the film it
+        // always was. The runner opens it with this, on its own disk.
+        let srcSeal: Record<string, unknown> | null = null;
+        if (!hasCopy && isSealedKey(key)) {
+          srcSeal = await openerOf(key, String(v.bucket ?? MEDIA_BUCKET));
+          if (!srcSeal) {
+            await rpc('vault_archive_finish', {
+              p_job: v.job_id, p_ok: false, p_note: 'the master is sealed and its key cannot be read',
+              p_chat: null, p_message: null, p_unique: '', p_bytes: null,
+            }).catch(() => undefined);
+            return json({}, 200, req);
+          }
+        }
         return json({
           job_id: v.job_id,
           type: 'archive',
@@ -1715,30 +1797,68 @@ Deno.serve(async (req: Request) => {
           get_url: hasCopy || !key
             ? null
             : await presign('GET', key, 86400, String(v.bucket ?? MEDIA_BUCKET)),
+          src_seal: srcSeal,
           put_url: null,
           done_url: `${SUPABASE_URL}/functions/v1/ingest`,
         }, 200, req);
       }
+      // A SEALED MASTER COMES BACK UNDER A NEW NAME, sealed afresh under a
+      // new DEK (071): one nonce never covers two plaintexts, and an old
+      // name with new bytes would be served from the Worker's cache.
+      const restoreKey = String(v.object_key ?? '');
+      const restoreBucket = String(v.bucket ?? MEDIA_BUCKET);
+      const seal = restore && isSealedKey(restoreKey) ? await sealSlot(restoreBucket) : null;
+      if (restore && isSealedKey(restoreKey) && !seal) {
+        await rpc('vault_finish', { p_job: v.job_id, p_ok: false, p_state: null,
+          p_note: 'no MEDIA_KEK to seal the restore with', p_bytes: null }).catch(() => undefined);
+        return json({}, 200, req);
+      }
       return json({
         job_id: v.job_id,
         type: restore ? 'restore' : 'verify',
+        seal,
         tg_chat_id: v.chat_id ?? null,
         tg_message_id: v.message_id ?? null,
         tg_unique_id: v.unique_id ?? null,
         bytes: v.bytes ?? null,
         file_name: '',
-        // Only a restore writes, and only to the key the film already had.
-        put_url: restore
-          ? await presign('PUT', String(v.object_key ?? ''), 86400, String(v.bucket ?? MEDIA_BUCKET))
+        // Only a restore writes: to the key the film already had, or — a
+        // sealed master — only to its new sealed key (`seal.put_url`).
+        put_url: restore && !seal
+          ? await presign('PUT', restoreKey, 86400, restoreBucket)
           : null,
         done_url: `${SUPABASE_URL}/functions/v1/ingest`,
       }, 200, req);
     }
     const job = rows[0];
+    const jobBucket = String(job.bucket ?? MEDIA_BUCKET);
+
+    // What the switch makes of this file: plain, plain with a sealed twin
+    // (canary: an open film's), or sealed only (`on`).
+    const make = makeFor(await sealNew(), await slugOfTitle(job.title_id));
+    if (make !== 'plain' && !canSeal) {
+      // The switch moved between the claim and here: back to the queue,
+      // without spending an attempt, for a runner that seals.
+      await rpc('defer_ingest', { p_job: job.job_id, p_seconds: 0 });
+      return json({}, 200, req);
+    }
+    const seal = make !== 'plain' ? await sealSlot(jobBucket) : null;
+    if (make === 'sealed' && !seal) {
+      // `on` and no MEDIA_KEK: nothing plain may be written, nothing can be
+      // sealed. The file waits.
+      console.log('MEDIA_KEK unreadable: a forwarded file the switch wants sealed waits');
+      await rpc('defer_ingest', { p_job: job.job_id, p_seconds: 600 });
+      return json({}, 200, req);
+    }
+    const makes = seal ? make : 'plain';
 
     return json({
       job_id: job.job_id,
       type: 'ingest',
+      make: makes,
+      // The DEK lives on the runner's disk for this job only, like the URLs;
+      // nothing here is ever printed (tool/ingest.py).
+      seal,
       // CHAT AND MESSAGE, so the runner can fetch the message and download
       // its media without decoding a Bot API file id. The file id goes too,
       // as a fallback for a library that prefers it. No bot token is in this
@@ -1755,8 +1875,9 @@ Deno.serve(async (req: Request) => {
       // Signed for the bucket the ROW names. Signing the media bucket for a
       // photo would have R2 refuse the PUT — which is the good failure; the
       // bad one was writing the photo there and serving a 404 for ever.
-      put_url: await presign('PUT', String(job.object_key ?? ''), 86400,
-        String(job.bucket ?? MEDIA_BUCKET)),
+      put_url: makes === 'sealed'
+        ? null
+        : await presign('PUT', String(job.object_key ?? ''), 86400, jobBucket),
       done_url: `${SUPABASE_URL}/functions/v1/ingest`,
     }, 200, req);
   }
@@ -1772,11 +1893,42 @@ Deno.serve(async (req: Request) => {
     const jobId = String(body.job_id ?? '');
     if (!jobId) return json({ error: 'no_job' }, 400, req);
 
-    const ok = body.ok === true;
+    let ok = body.ok === true;
+    let note = String(body.note ?? '').slice(0, 300);
+    // A SEALED FILE IS RECORDED BEFORE ITS ROW (§7.2): its key checked and
+    // written, and — born sealed — the job's object becomes its `s/` key,
+    // so the asset finish_ingest makes names the sealed object. A born file
+    // whose seal does not check is a failed attempt (tried again under a
+    // new DEK); a twin that does not check leaves the plain file as before.
+    if (ok && body.sealed && typeof body.sealed === 'object') {
+      const sealed = body.sealed as Record<string, unknown>;
+      const jr = await rest(`ingest_jobs?select=object_key,bucket,kind&id=eq.${encodeURIComponent(jobId)}&limit=1`);
+      const jrow = jr.ok ? (await jr.json() as Array<{ object_key: string; bucket: string; kind: string }>)[0] : undefined;
+      const born = sealed.born === true;
+      if (jrow) {
+        const image = jrow.bucket === PUBLIC_BUCKET;
+        const mediaKind = (['video', 'photo', 'other'].includes(jrow.kind) ? jrow.kind : 'other') as
+          'video' | 'photo' | 'other';
+        const { ok: recorded, refused } = await recordSealed(recordIO,
+          [{ ...sealed, plain_key: born ? null : jrow.object_key }], jrow.bucket,
+          image ? 'image' : 'video', mediaKind);
+        if (refused.length) console.log(`seal refused (ingest ${jobId}): ${refused.join('; ')}`);
+        const sealedOk = recorded.has(String(sealed.dek_id ?? ''));
+        if (born) {
+          const set = sealedOk
+            ? await rpc('ingest_seal_key', { p_job: jobId, p_key: sealed.sealed_key })
+            : null;
+          if (set !== 'sealed') {
+            ok = false;
+            note = `the sealed file was not recorded (${refused[0] ?? String(set)})`.slice(0, 300);
+          }
+        }
+      }
+    }
     const result = await rpc('finish_ingest', {
       p_job: jobId,
       p_ok: ok,
-      p_note: String(body.note ?? '').slice(0, 300),
+      p_note: note,
       // What R2 accepted, not what Telegram claimed. They should agree; the
       // bucket is the one that is right if they ever do not.
       p_bytes: Number(body.bytes ?? 0) || null,
@@ -1885,12 +2037,34 @@ Deno.serve(async (req: Request) => {
       return json({ ok: true, result }, 200, req);
     }
     const state = String(body.state ?? '');
+    let vok = body.ok === true;
+    let vnote = String(body.note ?? '').slice(0, 300);
+    let newKey: string | null = null;
+    // A RESTORED SEALED MASTER (071): recorded under its new key first;
+    // vault_finish then makes that key the asset's object.
+    if (vok && body.sealed && typeof body.sealed === 'object') {
+      const sealed = body.sealed as Record<string, unknown>;
+      const vr = await rest(`vault_jobs?select=title_assets(bucket,kind)&id=eq.${encodeURIComponent(jobId)}&limit=1`);
+      const a = vr.ok ? ((await vr.json() as Array<{ title_assets: { bucket: string; kind: string } | null }>)[0]
+        ?.title_assets ?? null) : null;
+      const bucket = a?.bucket ?? MEDIA_BUCKET;
+      const { ok: recorded, refused } = await recordSealed(recordIO,
+        [{ ...sealed, plain_key: null }], bucket, 'video',
+        (a?.kind === 'video' ? 'video' : 'other'));
+      if (recorded.has(String(sealed.dek_id ?? ''))) {
+        newKey = String(sealed.sealed_key);
+      } else {
+        vok = false;
+        vnote = `the restored master was not recorded (${refused[0] ?? 'refused'})`.slice(0, 300);
+      }
+    }
     const result = await rpc('vault_finish', {
       p_job: jobId,
-      p_ok: body.ok === true,
+      p_ok: vok,
       p_state: ['ok', 'missing', 'changed'].includes(state) ? state : null,
-      p_note: String(body.note ?? '').slice(0, 300),
+      p_note: vnote,
       p_bytes: Number(body.bytes ?? 0) || null,
+      p_key: newKey,
     });
     return json({ ok: true, result }, 200, req);
   }

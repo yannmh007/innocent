@@ -67,6 +67,19 @@ Telegram copy when R2 no longer has the file; written through ONE presigned
 PUT. Asked for with `can: [..., "offsite"]`, answered through `vault_done`
 with `type: "offsite"`; the edge function then asks the bucket what arrived.
 
+AND THE MEDIA SEAL (docs/MEDIA_ENCRYPTION.md §7, migration 071). When the
+switch wants a file sealed, its job carries `seal`: an issued DEK and a PUT
+for an `s/<32 hex>` key. The file is sealed on this runner's disk, the whole
+sealed file opened again and compared with the download (SHA-256), and only
+then uploaded; the report carries what its key row needs (the wrap, handed
+back untouched, and the header) — never the DEK. A twin (canary) goes up
+beside the plain file; a file born sealed (`on`) goes up alone. An archive
+of a sealed master carries `src_seal`: the master is opened here and sent to
+Telegram plain, the film it always was. A restore of one carries `seal`: the
+file from Telegram is sealed afresh under a NEW DEK to a NEW key. Only a run
+whose Python opens the seal says so (`can: [..., "seal"]`), and only such a
+run is handed this work. Nothing secret is printed.
+
 WHAT THIS SCRIPT NEVER SEES: an R2 key. The destination is a presigned PUT
 scoped to one object, minted by the edge function and expiring the same day.
 """
@@ -177,7 +190,7 @@ def _post(url, payload, bearer=None):
                 pass
 
 
-def report(job, ok, note, size=None):
+def report(job, ok, note, size=None, sealed=None):
     """Tell the edge function how it went.
 
     ALWAYS CALLED, on success and on failure, because the alternative is a
@@ -202,6 +215,8 @@ def report(job, ok, note, size=None):
     }
     if size is not None:
         payload['bytes'] = int(size)
+    if sealed:
+        payload['sealed'] = sealed
     _post(job['done_url'], payload)
     # Best effort, and deliberately after the report: a marker written for a
     # report that never went out would silence the backstop.
@@ -231,7 +246,7 @@ def defer(job, seconds):
         pass
 
 
-def vault_report(job, ok, state=None, note='', size=None):
+def vault_report(job, ok, state=None, note='', size=None, sealed=None):
     """Tell the edge function how a verify or restore job went.
 
     `state` is the verdict on a verify — 'ok', 'missing' or 'changed'. `ok`
@@ -249,6 +264,8 @@ def vault_report(job, ok, state=None, note='', size=None):
         payload['state'] = state
     if size is not None:
         payload['bytes'] = int(size)
+    if sealed:
+        payload['sealed'] = sealed
     _post(job['done_url'], payload)
     try:
         with open(REPORTED, 'w') as fh:
@@ -353,6 +370,13 @@ def vault_one(app, job, flood_type):
         if short:
             vault_report(job, False, note=short)
             print('failed: ' + short)
+            return
+        seal = job.get('seal')
+        if seal:
+            # A sealed master comes back sealed afresh, to a new key.
+            sealed = seal_and_put(target, seal)
+            print('restored %d bytes, sealed afresh' % size)
+            vault_report(job, True, note='restored', size=size, sealed=sealed)
             return
         put = put_to_r2(target, job['put_url'])
         print('restored %d bytes' % put)
@@ -471,7 +495,23 @@ def archive_one(app, job, flood_type):
             if not url:
                 archive_report(job, False, note='no Telegram copy and no R2 address')
                 return
-            size = get_from_r2(url, target)
+            src_seal = job.get('src_seal')
+            if src_seal:
+                # A sealed master: fetched sealed, opened here, sent plain.
+                ts = _sealer()
+                if ts is None:
+                    archive_report(job, False, note='this runner cannot open a sealed master')
+                    return
+                get_from_r2(url, target + '.sealed')
+                try:
+                    size = ts.open_checked(target + '.sealed', target, src_seal)
+                finally:
+                    try:
+                        os.unlink(target + '.sealed')
+                    except OSError:
+                        pass
+            else:
+                size = get_from_r2(url, target)
             want = int(job.get('bytes') or 0)
             if want and size != want:
                 archive_report(job, False, note='fetched %d of %d bytes from R2' % (size, want))
@@ -651,6 +691,48 @@ def more():
         pass
 
 
+_SEALER = []
+
+
+def _sealer():
+    """tool/transcode_seal.py, or None where the `cryptography` package does
+    not load. Imported once, when first asked, so a runner without it still
+    moves plain files."""
+    if not _SEALER:
+        try:
+            import transcode_seal  # noqa: PLC0415
+            _SEALER.append(transcode_seal)
+        except BaseException:                      # noqa: BLE001 (pyo3 panics)
+            _SEALER.append(None)
+    return _SEALER[0]
+
+
+def _can():
+    can = ['archive', 'offsite']
+    if _sealer() is not None:
+        can.append('seal')
+    return can
+
+
+def seal_and_put(path, seal):
+    """FILE sealed under the job's issued DEK, opened whole again and
+    compared, and uploaded to its `s/` key. Answers what the key row needs
+    (never the DEK); raises when any step fails, and nothing is uploaded
+    that did not check."""
+    ts = _sealer()
+    if ts is None:
+        raise RuntimeError('this runner cannot seal (cryptography does not load)')
+    sealed, info = ts.seal_checked(path, seal)
+    try:
+        put_to_r2(sealed, seal['put_url'])
+    finally:
+        try:
+            os.unlink(sealed)
+        except OSError:
+            pass
+    return info
+
+
 def claim_next():
     """Ask for the next job. Writes JOB_FILE and answers it, or None.
 
@@ -660,8 +742,9 @@ def claim_next():
     code, body = _post(
         os.environ['SB_URL'].rstrip('/') + '/functions/v1/ingest',
         # `can`: this runner knows what an archive job and an off-site copy
-        # are. See the docstring.
-        {'op': 'claim', 'can': ['archive', 'offsite']},
+        # are, and — when its Python opens the media seal — how to seal. See
+        # the docstring.
+        {'op': 'claim', 'can': _can()},
         bearer=os.environ['RUNNER_SECRET'],
     )
     if code != 200:
@@ -755,9 +838,27 @@ def fetch_one(app, job, flood_type):
             print('failed: ' + short)
             return
 
-        put = put_to_r2(target, job['put_url'])
-        print('uploaded %d bytes' % put)
-        report(job, True, 'ok', put)
+        seal = job.get('seal')
+        sealed = None
+        if seal:
+            # Born sealed (`on`): no plain file ever reaches R2, and a seal
+            # that does not check is a failed attempt. A twin (canary): the
+            # plain file goes up as before whatever happens to its twin.
+            born = not job.get('put_url')
+            try:
+                sealed = seal_and_put(target, seal)
+                sealed['born'] = born
+                print('sealed: %d bytes, opened and matched, uploaded' % size)
+            except Exception as exc:               # noqa: BLE001
+                if born:
+                    report(job, False, 'sealing failed: %s' % str(exc)[:160])
+                    print('failed: sealing: %s' % exc)
+                    return
+                print('twin not made: %s' % str(exc)[:160])
+        if job.get('put_url'):
+            put = put_to_r2(target, job['put_url'])
+            print('uploaded %d bytes' % put)
+        report(job, True, 'ok', size, sealed=sealed)
     except flood_type as exc:
         seconds = int(getattr(exc, 'value', 0) or 0)
         print('Telegram asked for a %ds wait; deferring and ending the run'
