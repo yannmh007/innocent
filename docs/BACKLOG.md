@@ -96,6 +96,27 @@ does it.
   defers the file (not a failure) and the next run takes it.
 
 ### Security, next
+- **Review of 5 Nov 2026: `docs/security_review_2026_11.md`** — findings
+  S1-S10, plan P1-P7. Carry these until each is done:
+  - **S1/P1 — DEADLINE 31 Dec 2026**: legacy JWT keys retire. 21 raw REST
+    calls send the service key as `Bearer` (an `sb_secret_` key is refused
+    there): a `serviceHeaders()` helper, then the owner puts a secret key in
+    `SB_SERVICE_KEY`, then asymmetric signing keys, then legacy anon and
+    service_role off once the API logs show no legacy-key use for 14 days.
+  - **S2/P2**: ENC rollout A→F; every film and photo is still plain in R2.
+  - **S3/P3**: Android Key Attestation on the device key (log, then require
+    for premium and sealed); a human-sized premium budget; bytes per account
+    per day with a Telegram alert.
+  - **S4/P4**: console on `console.innocentplayer.com` with real headers and
+    a narrow CSP; `STUDIO_ORIGINS` moved.
+  - **S5/P5 (owner)**: passkeys on GitHub, Cloudflare, Supabase and Google;
+    Telegram 2-step; a fine-grained, expiring `GH_DISPATCH_TOKEN`; a `main`
+    ruleset; secret scanning with push protection; Dependabot; CodeQL.
+  - **S7/P6**: a takedown contact, an in-app Report and a rights record per
+    title. Hiding the host from abuse reports is NOT a goal (§0).
+  - **S8-S10/P7**: check that `/rest/v1/` refuses the publishable key; turn
+    off auto-expose of new tables; Files → Scan; `claim_anonymous_history`
+    accepts only the calling install.
 - **Telegram ingest FOLDERS still plain**: the folder segment is what the
   operator typed (`spider-man/video/…`). Making it `f/<20 hex>` like console
   uploads means every place that takes a folder as the key's first segment

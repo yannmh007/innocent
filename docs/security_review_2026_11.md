@@ -1,0 +1,166 @@
+# Security review — 5 Nov 2026
+
+Owner's questions: how far has the work come; where are the weak points;
+if dishonest people, AI bots or AI-driven attackers pose as users and probe
+the system, how safe is the content; how well is the R2 origin hidden; and
+is the reporting path (that the host is Cloudflare) hidden so that fake
+reports cannot cause trouble. Check in detail, record what needs raising,
+research, and plan.
+
+Builds on `docs/security.md` (5 Oct), `docs/security_streaming.md`
+(22-27 Oct) and `docs/MEDIA_ENCRYPTION.md`. Everything marked *verified*
+was checked today against the live project or the code at a146699.
+
+## 0. One question this review does not take up
+
+Hiding the fact that Cloudflare hosts the service so that abuse or takedown
+reports cannot reach it is not an aim, and nothing is built for it. That was
+the position on 5 Oct (`docs/security.md` §4) and it stands. It cannot work
+anyway: the host is visible to anyone (Cloudflare's IP ranges, `server:
+cloudflare`, `cf-ray`). And evading a provider's abuse process breaks its
+terms and gets the whole account closed. The real defence against *false*
+reports is §4 below: a takedown contact of our own, a record of rights for
+every title, and the counter-notice process. Encryption at rest (ENC)
+protects against breaches. It does not stop legal process or a host acting
+on a valid report (`MEDIA_ENCRYPTION.md` §2).
+
+## 1. Where things stand (verified)
+
+| Layer | State today |
+|---|---|
+| **Film origin** | `innocent-media` is private, with no public URL; it is read only through the Worker's binding. The client only ever holds `stream.innocentplayer.com/v/<opaque token>`: AES-256-GCM, 10 minutes, bound to the install (enforced since 25 Oct). There is no presign fallback. workers.dev and r2.dev are both **off**. WAF allows only `/v/` and `/health`, with GET, HEAD and OPTIONS. An IP rule allows 400 per 10 s, and the Worker allows 600 per 10 s per install (enforced since 29 Oct). TLS 1.2+. The real app behind a MITM proxy refuses the connection (lab). |
+| **Grants** | `request-playback` checks title, tier, subscription and two device slots. Budgets: per install 300/h and 300 titles/day; per account 600/h and 500/day; per network 1,200/h. |
+| **Database** | RLS is on every table; 40 tables have no policy at all (service role only). The 10 RPCs anon can call are the app's public ones, each budgeted. pg_graphql is not installed. The one SECURITY DEFINER view (`title_media`) is deliberate (041). |
+| **Admin** | One admin, the owner. Google plus a verified TOTP factor; `require_mfa` on; step-up 10 min, idle 30 min. `admin_audit` is append-only. Console CSP is `script-src 'self'`, the vendored supabase-js is pinned with SRI, and no database text is rendered as HTML. |
+| **Accounts** | Only Google identities exist (1 account). Viewers browse without one. |
+| **Secrets** | None in the repo (`security_invariants.py`: 0). The R2 account id is a secret. Every Action is pinned by SHA, no workflow runs on `pull_request_target`, and job permissions are least-privilege. |
+| **Sealed data** | All 16 database backups are sealed (IBK1). Payment screenshots and payment numbers are sealed. |
+| **Telegram** | The webhook secret is compared in constant time; only operator chats are accepted; the runner signs in as the bot over MTProto, never as a user session. |
+| **ENC (media)** | Format, keys and all eight pipeline steps are built, tested and deployed. **41 sealed objects** (12 video, 29 image rows), open films only. Switch `seal_new` = `off`. The app that opens seals is on the branch, not released. |
+
+### Answers to the questions, plainly
+
+* **Content against bots and impostors.** Nobody gets a film byte without a
+  grant. Every grant is decided by the server and is sealed, short-lived and
+  bound to one install. A bot with no account gets the free titles only,
+  slowly. **The gap is a scripted client with a real paid account** (S3).
+  It can pull what that account is entitled to, without the player's
+  watermark. It cannot be stopped today, only traced afterwards in the
+  Worker logs.
+* **The R2 origin.** As hidden as it can be. The films' bucket has no
+  address that works from outside. Nothing the client receives names the
+  account, the bucket or a key. Every film read goes through the Worker. The
+  public bucket (posters, the APK) answers only on `cdn.innocentplayer.com`.
+  What remains visible is our own domain names, which is unavoidable and
+  harmless.
+* **Content at rest.** **Not yet protected by ENC.** Every film and photo
+  still exists in plain form in R2. If the R2 credentials or the Cloudflare
+  account were compromised, plain content would be exposed (S2).
+
+## 2. Findings, worst first
+
+| # | Finding | Severity | Plan (§3) |
+|---|---|---|---|
+| S1 | **Supabase retires the legacy JWT keys by the end of 2026.** All 9 functions read `SB_SERVICE_KEY ?? SUPABASE_SERVICE_ROLE_KEY`. 21 raw REST calls send it as `Authorization: Bearer` (ingest 6, probe-media 5, transcode 5, studio 3, backfill-dimensions 1, self-test 1). A new `sb_secret_` key is not a JWT, and the gateway refuses it there. The legacy anon key is still enabled, though the app and console use the publishable key. Supabase no longer lets the legacy JWT secret be rotated, so a leaked service_role JWT could not be revoked except by migrating. | **High** (outage at a fixed date; no revocation) | P1 |
+| S2 | **ENC is built but not switched on.** Plain copies still in R2: 10 streaming copies, 24 files, 36 thumbnail choices, 4 covers, 4 thumbnails. Sealed twins exist only for the open films. Until rollout C-E, a leaked R2 token or a Cloudflare account takeover exposes plain content. | **High** | P2 |
+| S3 | **No device attestation.** A script with a valid account can (a) send a device RSA key of its own making — the key is only pinned per install at first sight — and receive DEKs, and (b) pull films without the player's moving account code, which the app draws on screen and is not in the file. The account budget (500 titles/day) is far above any human. There is no automatic alert on bytes per account. | Medium-High | P3 |
+| S4 | **The console's origin is shared.** `yannmh007.github.io` is the origin of every GitHub Pages site of this account. The admin session (an aal2 refresh token) lives in that origin's localStorage, and the Worker's CORS trusts that origin. Today there is only one repo, so nothing else shares it, but a second Pages site would. The CSP's `connect-src … https:` and `img-src https:` would let an injected script send data to any host. | Medium | P4 |
+| S5 | **Five accounts are each a master key.** GitHub (a push to main is a production console *and* Worker deploy), Cloudflare, Supabase, Google (admin sign-in) and Telegram (operator). A takeover of any one bypasses every control in the code. | Medium (likelihood) / Critical (impact) | P5 |
+| S6 | **The source is public: a white box for AI-assisted attackers.** Every function, RPC and rule can be read and reviewed by a model in minutes. Making the repo private was declined (Actions minutes). | Medium | P5 |
+| S7 | **No takedown contact and no in-app Report** (owner action #5 of 5 Oct, still open). Without them a complaint goes straight to the host instead of to us. | Medium (fake reports) | P6 |
+| S8 | **Supabase's `/rest/v1/` OpenAPI root** lists every exposed table and RPC. Supabase announced in Feb 2026 that it would stop serving this to the anon key (March and April 2026). Not checked live, because Supabase is unreachable from the sandbox. | Low | P7 |
+| S9 | **The R2 inventory was last scanned on 2 Oct.** The Files page's view of R2 is a month old, so orphaned plain objects would go unnoticed. | Low | P7 |
+| S10 | `claim_anonymous_history(anon_id)`: a signed-in caller who knows another install's id could take over that install's anonymous history. Install ids are random and never shown, and anon calls are a no-op. | Low | P7 |
+
+Not findings (re-checked): the advisor's `rls_enabled_no_policy` (40) is the
+intended "service role only" state. The "leaked password protection" warning
+does not apply, because there are no passwords. The 10 anon SECURITY DEFINER
+RPCs are the public API, budgeted (`docs/security.md` §2).
+
+## 3. The plan, in order
+
+**P1 — move off the legacy keys (before 31 Dec; code plus one owner step).**
+1. Code: add one helper, `serviceHeaders(key)`. It sends
+   `Authorization: Bearer` only when the key is JWT-shaped (`eyJ…`) and
+   always sends `apikey`. Use it for all 21 raw calls, and check that
+   supabase-js 2.x `createClient` accepts an `sb_secret_` key. Test locally
+   with the stub import map, using both key shapes.
+2. Owner: Supabase → API Keys → create a secret key. Put it in Edge secret
+   `SB_SERVICE_KEY`, which every function already reads first. Never paste
+   it in chat.
+3. Verify each function from its boot logs and a self-test run, then move
+   to asymmetric JWT signing keys.
+4. Look in the API logs for any request still using the legacy anon key
+   (old app builds). When there are none for 14 days, disable the legacy
+   anon and service_role keys.
+
+**P2 — finish ENC (the rollout already designed, MEDIA_ENCRYPTION §9).**
+A: release the app with the opener (nonce held back as before) → C:
+`min_supported` and `SEAL_MODE=on` → D: `seal_new` canary, then on → E: a
+runner seals existing objects (skipping the do-not-touch list) and deletes
+the plaintext after 14 days → F: B2 Object Lock. The live checks owed first
+are BACKLOG O19, O20 and O24, and R1-R6.
+
+**P3 — make a scripted client expensive and visible.**
+1. **Android Key Attestation** on the device key the app already makes:
+   generate it with an attestation challenge from the server. The server
+   checks the chain up to Google's roots — trusting both the old RSA root
+   and the ECDSA P-384 root brought in Feb–Apr 2026 — and the revocation
+   list. It checks `attestationApplicationId` (our package and signing
+   certificate digest), the security level (TEE or StrongBox) and
+   `verifiedBootState`. It works outside Google Play and costs nothing.
+   First log only, then require it for premium and sealed grants.
+2. Lower the per-account premium budget to something human, for example 40
+   titles a day (measure first).
+3. Count bytes per account per day in the Worker (a Durable Object or
+   Analytics Engine; check the free-plan limits). Send a Telegram alert to
+   the owner above a threshold.
+4. Later, with Phase 3 DRM: a forensic (A/B segment) watermark.
+
+**P4 — give the console an origin of its own.** Serve
+`console.innocentplayer.com` (Cloudflare Pages or Workers static assets)
+with real headers: CSP including `frame-ancestors 'none'`, HSTS and COOP.
+Narrow `connect-src`/`img-src`/`media-src` to the exact hosts
+(`*.supabase.co`, `stream.`, `cdn.`, the R2 S3 endpoint for uploads). Move
+`STUDIO_ORIGINS` in the Worker and functions over. Keep the Pages copy
+read-only until the move is proven, then retire it.
+
+**P5 — the accounts (owner; no code).** Use passkeys or security keys on
+GitHub, Cloudflare, Supabase and Google, with no SMS fallback. Turn on
+Telegram two-step verification. Review GitHub sessions and tokens:
+`GH_DISPATCH_TOKEN` should be fine-grained, expiring and limited to
+Actions. Give Cloudflare API tokens the narrowest scope. On GitHub: a
+ruleset on `main` blocking force-push and deletion; secret scanning with
+push protection; Dependabot alerts; and CodeQL default setup, all free for
+public repos. Repeat this review every quarter, as if the attacker had the
+source.
+
+**P6 — the honest defence against fake reports.** Publish a takedown
+contact in the app and on the APK page, and answer it, so complaints come
+to us first. Add an in-app Report. Keep a rights record for every title
+(licence, or the performers' consent). That is what lets a valid
+counter-notice (17 U.S.C. §512(g)) restore something removed by mistake.
+Keep `admin_audit` as the record of who uploaded what.
+
+**P7 — tidy.** Add a workflow check that `/rest/v1/` refuses the
+publishable key. In Data API settings, turn off "expose new tables
+automatically". Run Files → Scan (also BACKLOG R2). Make
+`claim_anonymous_history` accept only the install that is calling.
+
+## Sources
+
+* Supabase: [migrating to publishable and secret keys](https://supabase.com/docs/guides/getting-started/migrating-to-new-api-keys)
+  (legacy keys retired by end of 2026; Edge `SUPABASE_SECRET_KEYS`; secret
+  keys are not JWTs), [API keys](https://supabase.com/docs/guides/api/api-keys),
+  [rotating legacy secrets](https://supabase.com/kb/troubleshooting/rotating-anon-service-and-jwt-secrets-1Jq6yd),
+  [OpenAPI spec no longer served to the anon key](https://supabase.com/changelog/42949-breaking-change-removing-access-to-openapi-spec-via-the-anon-key),
+  [hardening the Data API](https://supabase.com/docs/guides/database/hardening-data-api).
+* Android key attestation: [developer guide](https://developer.android.com/preview/features/key-attestation);
+  root change 2026 ([Bayton](https://bayton.org/android/android-enterprise-faq/key-attestation-root-certificate-change/),
+  [protectt.ai](https://protectt.ai/blog/android-key-attestation-root-certificate-rotation)).
+* Cloudflare: Free plan WAF and bot settings ([custom rules](https://developers.cloudflare.com/bots/additional-configurations/custom-rules),
+  [WAF get started](https://developers.cloudflare.com/waf/get-started));
+  abuse handling and counter-notices ([H2 2025 transparency report](https://cfl.re/h2-2025-transparency-report-abuse),
+  [complaint types](https://developers.cloudflare.com/fundamentals/reference/report-abuse/)).
+* GitHub Pages shares one origin per account: [what is GitHub Pages](https://docs.github.com/en/enterprise-server@3.16/pages/getting-started-with-github-pages/what-is-github-pages),
+  [a worked example of shared localStorage](https://github.com/TomasHubelbauer/github-pages-local-storage).
