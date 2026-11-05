@@ -171,6 +171,11 @@ def main() -> int:
     # comment is worse than one that was never written: the summary still
     # reads "all passed".
     JS_TESTS = [
+        ('media_issue_test.mjs',
+         'what the pipelines make of a new object, and keys issued only here',
+         'a pipeline sealing for a title the switch did not allow, or a key '
+         'recorded that was not issued here or does not open — born sealed or '
+         'as a twin'),
         ('media_twin_test.mjs',
          'sealed twins: only open films, and only a twin that opens',
          'a twin recorded that was sealed under another key, cut short or '

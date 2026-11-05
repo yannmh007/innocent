@@ -43,23 +43,26 @@ export function isSealedKey(key) {
  * @param {{plainSize: () => Promise<number|null>, sealedSize: () => Promise<number|null>,
  *          readSealed: (start: number, end: number) => Promise<Uint8Array|null>}} io
  *   sizes of the two objects (HEAD), and bytes [start, end) of the twin
- * @param {{kind?: 'video'|'image'}} [opts] an IMAGE's row (media_image_keys,
- *   migration 063) carries the DEK itself, as the app opens it from its
- *   catalogue row; it is the DEK the wrap opened to, never one the runner
- *   names.
+ * @param {{kind?: 'video'|'image', born?: boolean}} [opts] an IMAGE's row
+ *   (media_image_keys, migration 063) carries the DEK itself, as the app
+ *   opens it from its catalogue row; it is the DEK the wrap opened to, never
+ *   one the runner names. BORN sealed (§7, `on`): there is no plain object —
+ *   its size is not looked at, and the row's plain_key is null.
  * @returns {Promise<Record<string, any>>} the media_keys (or media_image_keys) row
  */
-export async function checkTwin(kek, item, io, { kind = 'video' } = {}) {
+export async function checkTwin(kek, item, io, { kind = 'video', born = false } = {}) {
   const plain = Number(item.plain_size);
   if (!Number.isSafeInteger(plain) || plain <= 0) throw new KeyError('plain_size');
   if (!isSealedKey(item.sealed_key)) throw new KeyError('sealed_key');
-  if (typeof item.plain_key !== 'string' || !item.plain_key || item.plain_key.startsWith('s/')) {
+  if (born) {
+    if (item.plain_key != null) throw new KeyError('plain_key');
+  } else if (typeof item.plain_key !== 'string' || !item.plain_key || item.plain_key.startsWith('s/')) {
     throw new KeyError('plain_key');
   }
   const dek = await unwrapDek(kek, String(item.wrapped ?? ''), String(item.dek_id ?? ''), 1);
   try {
     const want = sealedSize(plain);
-    if ((await io.plainSize()) !== plain) throw new KeyError('the plain object is not that size');
+    if (!born && (await io.plainSize()) !== plain) throw new KeyError('the plain object is not that size');
     if ((await io.sealedSize()) !== want) throw new KeyError('the twin is not the sealed size');
     let header;
     try {
@@ -89,7 +92,7 @@ export async function checkTwin(kek, item, io, { kind = 'video' } = {}) {
       return {
         dek_id: String(item.dek_id),
         sealed_key: item.sealed_key,
-        plain_key: item.plain_key,
+        plain_key: born ? null : item.plain_key,
         dek: b64(dek),
         plain_size: plain,
         sealed_size: want,
@@ -99,7 +102,7 @@ export async function checkTwin(kek, item, io, { kind = 'video' } = {}) {
     return {
       dek_id: String(item.dek_id),
       sealed_key: item.sealed_key,
-      plain_key: item.plain_key,
+      plain_key: born ? null : item.plain_key,
       kek_version: 1,
       wrapped: String(item.wrapped),
       plain_size: plain,
