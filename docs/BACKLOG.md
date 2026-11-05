@@ -200,10 +200,36 @@ Nothing here may be dropped silently: close it with its evidence, or move it.
   each app role and compares the catalogue reads. Done: in tool/check.py or
   the runbook.
 - [ ] **O12 Lab settings to put back.** test_device/config.env and
-  cloud.env carry MEDIA_SEAL=1 and FLOWS="sealed_images jumps"; main must
-  never carry them. Put back when the seal labs end.
+  cloud.env carry MEDIA_SEAL=1 and FLOWS="sealed_images jumps", and
+  config.env JUMPS_TITLE=Big Buck Bunny (5 Nov, the pipeline's sealed
+  rungs); main must never carry them. Put back when the seal labs end.
 - [ ] **O13 Plain copies of the canary stay in R2** until ENC-5 removes
   them after the forced update; until then a plain URL still opens them.
+- [ ] **O14 One orphan sealed still from the first canary (5 Nov).** Run
+  42025083706's tenth still (`s/715c6125…`, Big Buck Bunny f00) was
+  uploaded, then refused (409: the still already had a twin), before 069
+  replaced stale twins and binned refusals. No row names it, so the next
+  Files → Scan lists it in folder `s` as unused. Next: after the scan, bin
+  it from the Files page (the only `s/` object with no key row). Done: in
+  the bin, then purged.
+- [ ] **O15 Pipelines settle twins; the twin job and the console do not
+  yet.** 069/070 keep transcode's rungs and stills in step with their
+  twins. A plain object rewritten by anything else (the console's upload
+  into an existing key, a file manager move, a restore from Telegram)
+  leaves its twin stale or misnamed. Next: §7.4 steps 3-5 call
+  media_key_put / media_keys_settle, and the move rewrites `plain_key`.
+  Done: every writer named in §7.3 does.
+- [ ] **O16 Sealed downloads and replaced twins.** A replaced twin's
+  sealed copy is purged after a week. A phone that downloaded the old
+  sealed rung keeps its own copy and key, so offline play is unaffected;
+  but nothing yet renews such a download's grant. Next: decide with O6
+  (sealed downloads) whether an offline copy outlives its key row. Done:
+  the rule written in §6 and tested.
+- [ ] **O17 Old runners and the seals flag.** Main's runner (no sealing
+  code) now gets only plain work (070). When ENC-4 reaches main, every
+  runner sends `seals: 1`. Next: after that release, confirm from the
+  function log that no claim arrives without it. Done: one week of claims
+  all with seals.
 - [x] ENC-0/1: the spec; seal v1 in Python, JS, Kotlin and Dart, each
   checked against Tink (`tool/media_seal_test.py`) and shared vectors.
 - [x] ENC-2: migration 060 (`media_keys`, `devices.public_key`), live;

@@ -27,9 +27,20 @@ hands each one's key out exactly where it hands out its address
 the Keystore unwrap works on Android 14 and 15. Against the plain 1.64.79
 runs on the same phones (§8). The device lab then drew the Movies hub and
 Sintel's page from sealed posters, none refused (run 42013700193, jumps 16 of
-16 for the fourth run running). Next: the pipelines (ENC-4), so that what is
-uploaded from now on is sealed. WHAT IS NOT CERTAIN OR NOT FINISHED is kept
-as numbered open items O1-O13 in docs/BACKLOG.md ("ENC open items"); none
+16 for the fourth run running). THE PIPELINES (ENC-4, §7): the switch and
+one module for keys (067, media_issue.js); the transcode pipeline seals
+(transcode v24, tool/transcode_seal.py, tool/unseal_proxy.py) — in the
+canary it rebuilt Big Buck Bunny's ladder FROM ITS SEALED MASTER, opened on
+the runner, and sealed both rungs and all ten stills at birth, each
+re-opened whole and compared before upload and checked again by the
+function (runs 42025083706, 42029250311). The second run proved the rules
+that the first one showed were missing (069, 070): a twin follows its
+object (the re-encoded rungs were not byte-identical, so the old twins
+were stale: twelve replaced, their copies binned for a week), sealed
+objects are files in use for the Files page, and a runner that does not
+seal is never handed sealed work. Switch back to `off`. Next: Telegram
+ingest (§7.4 step 3). WHAT IS NOT CERTAIN OR NOT FINISHED is kept
+as numbered open items O1-O17 in docs/BACKLOG.md ("ENC open items"); none
 may be dropped without its evidence.**
 This file is the specification the code follows. Change it first, then the
 code.
@@ -264,6 +275,29 @@ One module (`docs/edge/media_issue.js`) for every pipeline:
 * A born-sealed object's row has `plain_key` null; request-playback already
   finds a key by `sealed_key` as well as `plain_key`, and `private.image_seal`
   looks up both from 067.
+* ONE TWIN PER PLAIN OBJECT (069): `unique (bucket, plain_key)` on both key
+  tables. A pipeline records through `media_key_put(kind, row)`: when the
+  plain object already has a twin, the pipeline has just made that object
+  again, so the old twin is stale — its row is replaced in the same
+  transaction and its sealed copy goes to the bin for a week (a phone that
+  holds a grant for it can still finish the film).
+* A TWIN NEVER OUTLIVES ITS OBJECT (070, `media_keys_settle`): after `done`
+  and `frames_done`, a plain object the job wrote again without a new twin
+  (the switch off, or sealing failed) loses its old twin; an object the
+  asset no longer names (a rung dropped, a still born sealed taken again)
+  loses its key row unless something in the catalogue still names it. Each
+  sealed copy dropped goes to the bin.
+* SEALED OBJECTS ARE FILES IN USE (069): `r2_refs()` names every key row's
+  `s/` object ("sealed copy"), so the Files page never calls one unused and
+  the bin's purge, which checks `r2_refs()` again, never deletes one a row
+  names. A sealed object the function refuses to record is binned.
+* A RUNNER SAYS WHETHER IT SEALS (070): a claim carries `seals: 1` only from
+  a runner whose Python imports `tool/media_seal.py`. One that does not is
+  never handed a sealed master or a film the switch wants sealed
+  (`needs_sealing_runner`, the same open-film rule as `twinAllowed`), so
+  runners of two releases share the queue while the sealing encoder rolls
+  out; if the switch moves between the claim and the answer, the job goes
+  back in the queue.
 
 ### 7.3 Each pipeline
 
@@ -288,6 +322,10 @@ the phone takes them from the smallest rung, through the gateway (§6).
 1. 067 and `media_issue.js` (switch, issue, record), with tests.
 2. Transcode ladder and frames — canary: an open film's ladder rebuilt from
    its sealed master, every rung and still with a twin made at birth.
+   DONE 5 Nov (Big Buck Bunny, runs 42025083706 and 42029250311; 069, 070):
+   240p and 360p sealed, opened whole and matched, one key row each with
+   the rendition's own size; ten stills likewise; the re-run replaced all
+   twelve twins of the first and binned the old copies; no refusal.
 3. Telegram ingest, archive, restore, verify — tested against a stand-in;
    real work only once `on` (no open film comes through Telegram).
 4. Console upload — canary: a photo uploaded into an open film's album.
