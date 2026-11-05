@@ -1682,7 +1682,22 @@ Deno.serve(async (req: Request) => {
     if (!sameSecret(given, RUNNER_SECRET)) return json({ error: 'no' }, 403, req);
     if (op === 'previews_due') {
       const limit = Math.max(1, Math.min(200, Number(body.limit ?? 40) || 40));
-      const rows = await rpc('previews_due', { p_limit: limit });
+      const rows = (await rpc('previews_due', { p_limit: limit }) ?? []) as Array<Record<string, unknown>>;
+      // A SEALED IMAGE (§7.3) comes with what opens it — its DEK from
+      // media_image_keys, its header and plain size — but only to a runner
+      // that says it can open one (`seals: 1`); any other is handed the row
+      // as before, cannot read it, and the database tries it again in a day.
+      if (body.seals === 1 && Array.isArray(rows)) {
+        for (const r of rows) {
+          const url = String(r.source_url ?? '');
+          const key = url.startsWith(PUBLIC_BASE) ? url.slice(PUBLIC_BASE.length).replace(/^\//, '') : '';
+          if (!isSealedKey(key)) continue;
+          const k = await rest(`media_image_keys?select=dek_id,dek,header,plain_size&sealed_key=eq.${
+            encodeURIComponent(key)}&limit=1`);
+          const row = k.ok ? (await k.json() as Array<Record<string, unknown>>)[0] : undefined;
+          if (row) r.seal = row;
+        }
+      }
       return json({ rows: Array.isArray(rows) ? rows : [] }, 200, req);
     }
     const items = Array.isArray(body.items) ? body.items : [];

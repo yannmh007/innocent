@@ -14,6 +14,12 @@ WHAT IT SEES. Public addresses only: `previews_due` hands over the photo, a
 clip's thumbnail, or the title's poster, all in the public bucket. This script
 holds no bucket credentials and never learns a private key.
 
+A SEALED IMAGE (docs/MEDIA_ENCRYPTION.md §7.3). With the switch `on`, a
+photo or still may be born sealed: its public address holds ciphertext. When
+this runner can open one (tool/media_seal.py loads) it says so, and the row
+comes with the image's DEK, header and size; the image is opened here, in
+memory, hashed, and nothing opened is written anywhere.
+
 WHAT IT SENDS BACK. One string per item, or nothing for an image it could not
 read — which the database records as a time, so that item is tried again in a
 day rather than on every tick.
@@ -180,6 +186,29 @@ def fetch(url):
     return data
 
 
+def sealer():
+    """tool/media_seal.py, or None where `cryptography` does not load."""
+    try:
+        import media_seal  # noqa: PLC0415
+        return media_seal
+    except BaseException:  # noqa: BLE001 (pyo3 panics are BaseException)
+        return None
+
+
+def open_sealed(data, seal, ms):
+    """A sealed image's plaintext, every segment checked, or an error."""
+    import base64  # noqa: PLC0415
+    dek = base64.b64decode(seal['dek'])
+    if base64.b64decode(seal['header']) != data[:ms.HEADER]:
+        raise ValueError('not the object its key row describes')
+    out = io.BytesIO()
+    ms.open_stream(io.BytesIO(data), out, dek, ms.aad_for(seal['dek_id']), len(data))
+    plain = out.getvalue()
+    if len(plain) != int(seal['plain_size']):
+        raise ValueError('opened to the wrong size')
+    return plain
+
+
 def main():
     base = (os.environ.get('SB_URL') or '').rstrip('/')
     secret = os.environ.get('RUNNER_SECRET') or ''
@@ -187,7 +216,10 @@ def main():
         print('previews: not configured')
         return 0
     endpoint = base + '/functions/v1/ingest'
-    due = call(endpoint, secret, {'op': 'previews_due', 'limit': BATCH}).get('rows') or []
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    ms = sealer()
+    due = call(endpoint, secret, {'op': 'previews_due', 'limit': BATCH,
+                                  'seals': 1 if ms else 0}).get('rows') or []
     if not due:
         print('previews: none due')
         return 0
@@ -198,7 +230,10 @@ def main():
         preview = None
         if src:
             try:
-                preview = hash_image(fetch(src))
+                data = fetch(src)
+                if row.get('seal'):
+                    data = open_sealed(data, row['seal'], ms)
+                preview = hash_image(data)
             except Exception as e:  # one unreadable image is not the batch's problem
                 print('previews: skip', item_id, type(e).__name__)
         items.append({'id': item_id, 'preview': preview})
