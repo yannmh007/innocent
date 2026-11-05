@@ -25,8 +25,10 @@ hands each one's key out exactly where it hands out its address
 42008905511): the realme 16 of 16, the OPPO 15 of 15 (Original skipped on a
 3.5 Mbit/s line), both "5 of 5 copies sealed, keys rsa" and the key held —
 the Keystore unwrap works on Android 14 and 15. Against the plain 1.64.79
-runs on the same phones (§8). Next: sealed images in the device lab (flow
-`sealed_images`), then the pipelines (ENC-4).**
+runs on the same phones (§8). The device lab then drew the Movies hub and
+Sintel's page from sealed posters, none refused (run 42013700193, jumps 16 of
+16 for the fourth run running). Next: the pipelines (ENC-4), so that what is
+uploaded from now on is sealed.**
 This file is the specification the code follows. Change it first, then the
 code.
 

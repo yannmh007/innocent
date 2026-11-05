@@ -180,8 +180,12 @@ does it.
   16/16. Test Lab 42008905511 (sealed, both phones): realme 16/16, OPPO
   15/15 — real-phone gate passed; the OPPO froze longer on a slower line
   (§8), and its 7.1 s showed the gateway reading on after the proxy let go:
-  it now cuts at once. Still to do: images in the lab (flow sealed_images),
-  frozen time on a like-for-like line.
+  it now cuts at once. Run 42013700193 (the cut, and flow sealed_images):
+  jumps 16/16 for the fourth run running; the hub's and Sintel's posters
+  opened as sealed images, none refused. The flow did not reach the album
+  cell ("1 of N" not found by its scroll) — loosen it at the next run.
+  Still to do: frozen time on a like-for-like line (plain and sealed builds
+  back to back on one phone).
 - [ ] ENC-4, the pipelines: ingest, console upload, transcode, probe,
   console preview.
 - [ ] ENC-5, rollout: canary on Sintel and Tears of Steel, `min_supported`,
