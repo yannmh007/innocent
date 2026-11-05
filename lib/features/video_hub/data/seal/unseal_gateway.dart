@@ -511,14 +511,18 @@ class _Sealed {
     var opening = Future<void>.value();
     var busy = false;
     final done = Completer<void>();
-    Timer? quiet;
+    // SILENCE IS CHECKED, NOT TIMED PER PIECE: one look a quarter of the
+    // stall apart, where a timer re-armed for every 16 KB piece was 64
+    // timers a megabyte on the thread that draws the app.
+    final quiet = Stopwatch()..start();
+    Timer? watch;
     StreamSubscription<List<int>>? sub;
     var stopped = false;
 
     void stop(_Fail? f) {
       if (stopped) return;
       stopped = true;
-      quiet?.cancel();
+      watch?.cancel();
       _destroy(resp, sub);
       if (f != null) failFrom(r.next, f);
       if (!done.isCompleted) done.complete();
@@ -605,15 +609,16 @@ class _Sealed {
       }
     }
 
-    void arm() {
-      quiet?.cancel();
-      quiet = Timer(UnsealGateway.stall, () => stop(_Fail.network));
-    }
-
-    arm();
+    final every = UnsealGateway.stall ~/ 4;
+    watch = Timer.periodic(every < const Duration(milliseconds: 50) ? const Duration(milliseconds: 50) : every, (_) {
+      if (quiet.elapsed >= UnsealGateway.stall) stop(_Fail.network);
+    });
+    // The opener is woken when a whole segment has gathered, not for every
+    // piece: one that is opening already takes up what arrives meanwhile.
+    var woken = false;
     sub = resp.listen((chunk) {
       if (stopped) return;
-      arm();
+      quiet.reset();
       buf.add(chunk);
       if (at + buf.length > end) {
         // Never more than was asked for: a server that ignored the range.
@@ -621,7 +626,13 @@ class _Sealed {
         final all = buf.takeBytes();
         buf.add(Uint8List.sublistView(all, 0, keep));
       }
-      opening = opening.then((_) => openWhat());
+      if (!woken && r.next <= s1 && buf.length >= _sealedLength(r.next)) {
+        woken = true;
+        opening = opening.then((_) {
+          woken = false;
+          return openWhat();
+        });
+      }
     }, onError: (Object e) {
       opening.whenComplete(() => stop(_Fail.network));
     }, onDone: () {
@@ -645,9 +656,12 @@ class _Sealed {
 
   void _deliver(int i, Uint8List plain) {
     _recent.remove(i);
-    // A copy: [plain] is a view into its run, and kept as it is it would
-    // hold the whole run (up to a megabyte) for one segment.
-    _recent[i] = Uint8List.fromList(plain);
+    // A view into a run of several is copied: kept as it is it would hold
+    // the whole run (up to a megabyte) for one segment. A run of one is
+    // kept as it came.
+    _recent[i] = plain.offsetInBytes == 0 && plain.lengthInBytes == plain.buffer.lengthInBytes
+        ? plain
+        : Uint8List.fromList(plain);
     while (_recent.length > UnsealGateway._recentCap) {
       _recent.remove(_recent.keys.first);
     }

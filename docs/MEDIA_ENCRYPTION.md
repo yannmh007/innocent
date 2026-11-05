@@ -221,6 +221,15 @@ stripped before a photo is sealed.
 | Real phones | Test Lab realme C53 and OPPO A79 pass; 32-bit phone opens ≥ 20× its bitrate |
 | Corrupt segment | refetched once, then a clear error; no crash |
 
+Measured so far (5 Nov): **proxy CPU per MB is not yet within the gate** —
+`proxy_cpu_bench` with `BENCH_MEDIA_SEAL=1` is 75 ms/MB against 66-69 for
+the sealed cache alone (+7-10 ms/MB, desktop). The platform channel's codec
+is 0.25 ms/MB of it; a plain loopback relay in the gateway's place costs
+3-6 ms/MB, so the hop is most of it. Real phones decide whether it matters
+(Test Lab, `LAB cpu`, the app's main thread against the plain runs of
+1.64.79); if it does, the next step is the gateway in the proxy's process
+path without the loopback HTTP hop.
+
 ## 9. Rollout
 
 A. App with the opener, the device key and the image loader; old formats kept.
