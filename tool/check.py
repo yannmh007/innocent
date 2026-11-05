@@ -208,6 +208,10 @@ def main() -> int:
          'a probe that reports a sealed film\'s box list or a sealed photo\'s '
          'size from bytes it could not authenticate, or reads the wrong '
          'segments for a range'),
+        ('sealed_preview_test.mjs',
+         'the console playing a sealed film and drawing a sealed picture, in Chromium',
+         'a reviewer who cannot watch a sealed film before approving it, or a '
+         'console that serves an altered segment as if it were the film'),
         ('jpeg_clean_test.mjs',
          'a photo leaving the phone without its place and time',
          'a photo published with the GPS position of the home it was taken '

@@ -767,7 +767,7 @@ const NEED: Record<string, Role> = {
   deleteAsset: 'uploader',
   // review — looking is anyone's; sending your own draft is an uploader's;
   // deciding is an editor's (and review_decide checks all of it again)
-  reviewQueue: 'viewer', reviewHistory: 'viewer', previewUrl: 'viewer',
+  reviewQueue: 'viewer', reviewHistory: 'viewer', previewUrl: 'viewer', sealedImage: 'viewer',
   reviewSubmit: 'uploader', reviewReopen: 'uploader',
   reviewApprove: 'editor', reviewSendBack: 'editor', reviewReject: 'editor',
   unpublish: 'editor',
@@ -807,7 +807,7 @@ const READS = new Set([
   'whoami', 'summary', 'list', 'get', 'stats', 'categories', 'genres',
   'health', 'checkFolder', 'folder', 'selftest', 'audit', 'admins', 'settings',
   'sign', 'beginMultipart', 'signParts', 'listParts',
-  'reviewQueue', 'reviewHistory', 'previewUrl',
+  'reviewQueue', 'reviewHistory', 'previewUrl', 'sealedImage',
   'filesSummary', 'filesList', 'inventoryScan', 'objectUrl', 'moveList',
   'storageOverview', 'status',
 ]);
@@ -2676,7 +2676,11 @@ async function handleOp(
     if (error) return json({ error: 'preview_failed', detail: error.message }, 500, req);
     if (!a) return json({ error: 'no_such_asset' }, 404, req);
     if (a.kind === 'photo' || a.bucket === PUBLIC_BUCKET) {
-      return json({ url: `${PUBLIC_BASE}/${a.object_key}`, kind: 'photo' }, 200, req);
+      // A SEALED PHOTO (§7.3): its key comes with it, and the page opens the
+      // bytes itself (`sealedImage`) — the console never shows a plain one.
+      const seal = isSealedKey(String(a.object_key)) ? await sealFor(PUBLIC_BUCKET, String(a.object_key)) : null;
+      if (isSealedKey(String(a.object_key)) && !seal) return json({ error: 'seal_not_recorded' }, 409, req);
+      return json({ url: `${PUBLIC_BASE}/${a.object_key}`, kind: 'photo', key: a.object_key, seal }, 200, req);
     }
     const { data: rungs } = await db.from('asset_renditions')
       .select('height,object_key').eq('asset_id', id).order('height');
@@ -2684,6 +2688,17 @@ async function handleOp(
     const pick = list.filter((r) => r.height <= 720).pop() ?? list[0] ?? null;
     const key = pick ? pick.object_key : String(a.object_key);
     const seconds = 600;
+    // A SEALED FILM (§7.3) plays through the page's Service Worker, which
+    // reads ranges from the streaming Worker (the one origin that answers the
+    // console with CORS) and opens them; it is handed the film's key here.
+    if (isSealedKey(key)) {
+      const viaWorker = await previewStreamUrl(key, seconds).catch(() => null);
+      if (!viaWorker) return json({ error: 'no_worker_for_sealed' }, 503, req);
+      const seal = await sealFor(MEDIA_BUCKET, key);
+      if (!seal) return json({ error: 'seal_not_recorded' }, 409, req);
+      return json({ url: viaWorker, kind: 'video', height: pick ? pick.height : null, via: 'worker', seal },
+        200, req);
+    }
     const viaWorker = await previewStreamUrl(key, seconds).catch(() => null);
     const url = viaWorker ??
       await presignPut(MEDIA_BUCKET, key, { 'X-Amz-Expires': String(seconds) }, 'GET');
@@ -2760,10 +2775,42 @@ async function handleOp(
     // email; an editor may look at films, and only the owner may download a
     // backup — through backupUrl, which is audited and needs a fresh 2-step.
     if (key.startsWith('_backup/')) return json({ error: 'owner_only' }, 403, req);
+    if (isSealedKey(key)) {
+      // A sealed object (§7.3): its key, and the kind the page cannot read
+      // off a name that says nothing.
+      const bucket = body.bucket === PUBLIC_BUCKET ? PUBLIC_BUCKET : MEDIA_BUCKET;
+      const seal = await sealFor(bucket, key);
+      if (!seal) return json({ error: 'seal_not_recorded' }, 409, req);
+      if (bucket === PUBLIC_BUCKET) {
+        return json({ url: `${PUBLIC_BASE}/${key}`, kind: 'photo', key, seal }, 200, req);
+      }
+      const viaWorker = await previewStreamUrl(key, 600).catch(() => null);
+      if (!viaWorker) return json({ error: 'no_worker_for_sealed' }, 503, req);
+      return json({ url: viaWorker, kind: 'video', key, seal }, 200, req);
+    }
     if (body.bucket === PUBLIC_BUCKET) return json({ url: `${PUBLIC_BASE}/${key}` }, 200, req);
     const url = (await previewStreamUrl(key, 600).catch(() => null)) ??
       await presignPut(MEDIA_BUCKET, key, { 'X-Amz-Expires': '600' }, 'GET');
     return json({ url }, 200, req);
+  }
+
+  // ── sealedImage: a sealed picture's bytes, still sealed ─────────────────
+  //
+  // The public bucket's address does not answer the console with CORS, so
+  // the page cannot read a sealed image's bytes from it; this hands them
+  // over — CIPHERTEXT, as stored, for an image a key row names — and the
+  // page opens them with the key `previewUrl` / `objectUrl` gave it.
+  if (body.op === 'sealedImage') {
+    const key = String(body.key ?? '');
+    if (!isSealedKey(key)) return json({ error: 'bad_key' }, 400, req);
+    if (!(await sealFor(PUBLIC_BUCKET, key))) return json({ error: 'seal_not_recorded' }, 409, req);
+    const res = await fetch(await presignPut(PUBLIC_BUCKET, key, { 'X-Amz-Expires': '120' }, 'GET'));
+    if (!res.ok) return json({ error: 'fetch_failed', status: res.status }, 502, req);
+    const bytes = new Uint8Array(await res.arrayBuffer());
+    if (bytes.length > 24 * 1024 * 1024) return json({ error: 'too_large' }, 413, req);
+    let bin = '';
+    for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+    return json({ bytes: btoa(bin) }, 200, req);
   }
 
   // ── folderLabel: a display name; nothing in R2 changes ─────────────────
@@ -3445,4 +3492,32 @@ async function unrecordedSealed(keys: string[]): Promise<string[]> {
     for (const x of await r.json() as Array<{ sealed_key: string }>) named.add(x.sealed_key);
   }
   return sealed.filter((k) => !named.has(k));
+}
+
+/// What the console needs to open a sealed object it is about to show: the
+/// DEK (a film's unwrapped here with MEDIA_KEK, a picture's as its row holds
+/// it), the header and the plain size. Only `previewUrl` and `objectUrl`
+/// hand it out, to an admin who may look at the object anyway.
+async function sealFor(bucket: string, key: string): Promise<Record<string, unknown> | null> {
+  if (!isSealedKey(key)) return null;
+  if (bucket === PUBLIC_BUCKET) {
+    const r = await srest(`media_image_keys?select=dek_id,dek,header,plain_size&sealed_key=eq.${
+      encodeURIComponent(key)}&limit=1`);
+    const row = r.ok ? (await r.json() as Array<Record<string, unknown>>)[0] : undefined;
+    return row ? { dekId: row.dek_id, dek: row.dek, header: row.header, plainSize: Number(row.plain_size),
+      sealedKey: key } : null;
+  }
+  const k = await mediaKek();
+  if (!k) return null;
+  const r = await srest(`media_keys?select=dek_id,wrapped,kek_version,header,plain_size&sealed_key=eq.${
+    encodeURIComponent(key)}&limit=1`);
+  const row = r.ok ? (await r.json() as Array<Record<string, unknown>>)[0] : undefined;
+  if (!row) return null;
+  const dek = await unwrapDek(k, String(row.wrapped), String(row.dek_id), Number(row.kek_version ?? 1));
+  try {
+    return { dekId: row.dek_id, dek: b64(dek), header: row.header ?? null, plainSize: Number(row.plain_size),
+      sealedKey: key, mime: 'video/mp4' };
+  } finally {
+    dek.fill(0);
+  }
 }

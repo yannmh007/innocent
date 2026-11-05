@@ -298,6 +298,19 @@ Nothing here may be dropped silently: close it with its evidence, or move it.
   in media_upload_keys for eight days, then goes. The Files page lists the
   object as unused after a scan. Next: the bin's housekeeping bins `s/`
   objects named by an expired pending key. Done: none left after a week.
+- [ ] **O24 The console's sealed preview not seen live.** Built and
+  tested in Chromium against stand-ins (§7.4 step 8). Live it needs: the
+  console on Pages (next release), and the streaming Worker answering the
+  console's origin with CORS for ranges (it does today, for the speed test:
+  `STUDIO_ORIGINS`, Content-Range exposed). Next: with a sealed film and a
+  sealed photo in a draft (O20's canary), preview each from Review and from
+  Files on the operator's phone. Done: both shown, nothing plain fetched.
+- [ ] **O25 A module Service Worker on older browsers.** The console's
+  sealed film preview needs a module Service Worker (Chromium 91+,
+  Safari 15+, Firefox recent). A browser without one says so instead of
+  playing. Next: note the browser the operator uses; if it lacks module
+  workers, bundle the format into a classic worker. Done: the operator's
+  browser plays a sealed preview.
 - [ ] **O17 Old runners and the seals flag.** Main's runner (no sealing
   code) now gets only plain work (070). When ENC-4 reaches main, every
   runner sends `seals: 1`. Next: after that release, confirm from the

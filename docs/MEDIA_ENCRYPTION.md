@@ -310,7 +310,7 @@ One module (`docs/edge/media_issue.js`) for every pipeline:
 | R2 file manager (`studio.ts` move, delete; `r2_move_switch`, `r2_trash_done`) | — | — | sealed objects (`s/<32 hex>`) are in no folder and never move; a move rewrites a twin's `plain_key` with its file (and the cover picker's ten stills, which a move used to leave behind — 073). The bytes never change (the AAD names the dek_id, not the path). A delete removes a key row only once its object is gone: the purge of an `s/` object deletes its rows (071); the purge of a plain file deletes its twins' rows and bins their copies, unless something still names them (a master kept in Telegram keeps its twin) (073) |
 | probe-media, backfill-dimensions | head and tail of a film; a photo's header | — | `media_read.js` `readPlain`: a sealed object is read as the whole segments that hold the range (one ranged read; the header from the key row, or read in the same request), each opened and checked before a byte is looked at — a segment that does not open throws, never a verdict on unauthenticated bytes; a plain object is read as before. Films: the DEK unwrapped with MEDIA_KEK from media_keys; photos: media_image_keys. No plaintext leaves the function, and the size reported is the film's own |
 | Blurhash (`previews_due`, `tool/previews.py`) | public images | a string | a sealed image's row comes with its DEK, header and size from media_image_keys — only to a runner that says it can open one (`seals: 1`); the runner checks the header is the object's, opens every segment in memory, checks the size, hashes it, and writes nothing opened anywhere. A runner that cannot open it fails the item, which is tried again in a day |
-| Console preview (`studio.ts` previewUrl, files.js) | an object | — | images opened in the browser with WebCrypto; films through a Service Worker that opens ranges (as the phone's gateway does), so the console never asks Cloudflare for a plain byte |
+| Console preview (`studio.ts` previewUrl, objectUrl, sealedImage; `review.js`, `files.js`, `sealed_view.js`, `sealed_sw.js`) | an object | — | `previewUrl` / `objectUrl` answer a sealed object with its key (a film's DEK unwrapped with MEDIA_KEK, a picture's from media_image_keys) to an admin who may look at it anyway. PICTURES: the studio's `sealedImage` hands over the bytes still sealed (the public bucket's address does not answer the console with CORS), opened in the browser with WebCrypto into a blob: URL. FILMS: a module Service Worker (`sealed_sw.js`, scope the console) answers the <video>'s `sealed/<id>` Range requests by reading the sealed segments from the streaming Worker — the one origin that answers the console with CORS — and opening each (`media_read.js` `rangeAnswer`), as the phone's gateway does; an altered segment is a 502, never a frame. The key lives in the worker's memory for fifteen minutes; if the browser stops the worker the page posts it again. Every other request goes to the network untouched |
 | Off-site copy (B2) | an object | its copy | none: copies sealed bytes as they are, **no key** — and the key tables travel in the encrypted database backup, never with the files |
 
 Every sealed object is uploaded as `application/octet-stream`; EXIF is
@@ -364,7 +364,12 @@ the phone takes them from the smallest rung, through the gateway (§6).
 7. Blurhash. DONE 5 Nov (ingest.ts previews_due, tool/previews.py;
    tool/previews_test.py: a sealed image opens to its bytes, a flipped
    byte, another object's header or a wrong size is refused).
-8. Console preview.
+8. Console preview. BUILT 5 Nov: in Chromium against two loopback servers
+   standing for Pages and the streaming Worker (tool/js/
+   sealed_preview_test.mjs): a sealed film plays in a <video> through the
+   Service Worker, ranges are the film's own bytes, an altered segment is a
+   502, a sealed picture is drawn. Live once the console reaches Pages
+   (BACKLOG O24).
 
 ## 8. Acceptance (each gate must pass before the next)
 

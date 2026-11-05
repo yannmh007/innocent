@@ -78,3 +78,52 @@ export async function readPlain(io, key, start, end) {
     s.dek.fill(0);
   }
 }
+
+/**
+ * The answer to a media element's `Range` request for a sealed object, as
+ * its plaintext — what the console's Service Worker serves for a sealed film
+ * (docs/studio/sealed_sw.js), the same shape the phone's gateway gives the
+ * player. An open-ended range is answered with at most [cap] bytes, which a
+ * media element follows with the next request.
+ *
+ * @param {ReadIO} io
+ * @param {string} key the sealed object
+ * @param {string | null} range the request's Range header
+ * @param {number} plainSize
+ * @param {{cap?: number, type?: string}} [o]
+ * @returns {Promise<{status: number, headers: Record<string, string>, bytes: Uint8Array}>}
+ */
+export async function rangeAnswer(io, key, range, plainSize, { cap = 4 * 1024 * 1024, type = 'video/mp4' } = {}) {
+  let a = 0;
+  let b = plainSize - 1;
+  let asked = false;
+  const m = /^bytes=(\d*)-(\d*)$/.exec(String(range ?? '').trim());
+  if (m && (m[1] !== '' || m[2] !== '')) {
+    asked = true;
+    if (m[1] === '') {
+      a = Math.max(0, plainSize - Number(m[2])); // the last N bytes
+    } else {
+      a = Number(m[1]);
+      if (m[2] !== '') b = Math.min(Number(m[2]), plainSize - 1);
+    }
+  }
+  if (a >= plainSize || a > b) {
+    return { status: 416, headers: { 'Content-Range': `bytes */${plainSize}` }, bytes: new Uint8Array(0) };
+  }
+  b = Math.min(b, a + cap - 1);
+  const got = await readPlain(io, key, a, b + 1);
+  if (!got || got.bytes.length !== b - a + 1) {
+    return { status: 502, headers: {}, bytes: new Uint8Array(0) };
+  }
+  const whole = !asked && b === plainSize - 1;
+  return {
+    status: whole ? 200 : 206,
+    headers: {
+      'Content-Type': type,
+      'Accept-Ranges': 'bytes',
+      'Content-Length': String(got.bytes.length),
+      ...(whole ? {} : { 'Content-Range': `bytes ${a}-${b}/${plainSize}` }),
+    },
+    bytes: got.bytes,
+  };
+}

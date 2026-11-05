@@ -294,12 +294,22 @@ function fmDaysLeft(at) {
 
 async function fmPreview(r) {
   let url;
-  try { url = (await api({ op: 'objectUrl', bucket: r.bucket, key: r.key })).url; }
-  catch (e) { say('bad', String(e.message || e)); return; }
-  const isVideo = /\.(mp4|mov|m4v|webm|mkv)$/i.test(r.key);
+  let isVideo = /\.(mp4|mov|m4v|webm|mkv)$/i.test(r.key);
+  let film = null;
+  try {
+    const p = await api({ op: 'objectUrl', bucket: r.bucket, key: r.key });
+    // A SEALED OBJECT (`s/…`, §7.3) says what it is, and is opened here.
+    if (p.seal) {
+      isVideo = p.kind === 'video';
+      if (isVideo) { film = await sealedVideoSrc(p); url = film.src; } else url = await sealedImageSrc(p);
+    } else {
+      url = p.url;
+    }
+  } catch (e) { say('bad', String(e.message || e)); return; }
   const media = isVideo
     ? el('video', { src: url, controls: true, playsInline: true, preload: 'metadata' })
     : el('img', { src: url, alt: '', style: 'width:100%;border-radius:6px' });
+  if (film) keepSealedPlaying(media, film);
   const close = el('button', { className: 'b', type: 'button' }, text('Close'));
   const back = el('div', { className: 'modal' }, [el('div', { className: 'sheet' }, [
     el('div', { className: 'sh mono' }, text(r.key)),
@@ -307,7 +317,12 @@ async function fmPreview(r) {
     el('div', { className: 'hint' }, text(fmSize(r.bytes) + ' · ' + (r.used_title ? 'used by ' + r.used_title : 'not used by any title'))),
     el('div', { className: 'srow end' }, [close]),
   ])]);
-  const shut = () => { if (media.pause) media.pause(); media.removeAttribute('src'); back.remove(); };
+  const shut = () => {
+    if (media.pause) media.pause();
+    media.removeAttribute('src');
+    if (String(url).startsWith('blob:')) URL.revokeObjectURL(url);
+    back.remove();
+  };
   close.onclick = shut;
   back.onclick = (e) => { if (e.target === back) shut(); };
   document.body.append(back);

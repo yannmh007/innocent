@@ -4,7 +4,7 @@
 //   node tool/js/media_read_test.mjs
 
 import * as ms from '../../docs/edge/media_seal.js';
-import { readPlain } from '../../docs/edge/media_read.js';
+import { rangeAnswer, readPlain } from '../../docs/edge/media_read.js';
 
 let checks = 0;
 function ok(cond, what) {
@@ -85,5 +85,31 @@ try {
 }
 ok(threw, 'a short answer from the store throws');
 ok((await readPlain(io(), 's/' + 'cd'.repeat(16), 0, 10)) === null, 'a sealed key with no key row: null');
+
+// What the console's Service Worker answers a <video> for a sealed film.
+{
+  const cap = 100000;
+  let r = await rangeAnswer(io(), KEY, 'bytes=0-', n, { cap });
+  ok(r.status === 206 && r.headers['Content-Range'] === `bytes 0-${cap - 1}/${n}` &&
+    same(r.bytes, plain.subarray(0, cap)) && r.headers['Accept-Ranges'] === 'bytes',
+    'an open range from 0: 206, at most the cap, the film\'s own bytes');
+  r = await rangeAnswer(io(), KEY, 'bytes=300000-300099', n, { cap });
+  ok(r.status === 206 && r.headers['Content-Range'] === `bytes 300000-300099/${n}` &&
+    same(r.bytes, plain.subarray(300000, 300100)) && r.headers['Content-Length'] === '100',
+    'a closed range: exactly those bytes');
+  r = await rangeAnswer(io(), KEY, 'bytes=-500', n, { cap });
+  ok(r.status === 206 && same(r.bytes, plain.subarray(n - 500)), 'the last 500 bytes');
+  r = await rangeAnswer(io(), KEY, `bytes=${n}-`, n, { cap });
+  ok(r.status === 416 && r.headers['Content-Range'] === `bytes */${n}`, 'past the end: 416');
+  r = await rangeAnswer(io(), KEY, null, n, { cap: n + 1 });
+  ok(r.status === 200 && same(r.bytes, plain) && !r.headers['Content-Range'], 'no range, under the cap: the whole film, 200');
+  r = await rangeAnswer(io(), KEY, null, n, { cap });
+  ok(r.status === 206 && r.bytes.length === cap, 'no range, over the cap: the first part, 206');
+  const bad = sealed.slice();
+  bad[ms.sealedStart(1) + 3] ^= 1;
+  let threw = false;
+  try { await rangeAnswer(io({ store: { [KEY]: bad } }), KEY, 'bytes=0-', n, { cap: 200000 }); } catch (e) { threw = e instanceof ms.SealError; }
+  ok(threw, 'an altered segment is never served');
+}
 
 console.log('media read: all checks passed (' + checks + ')');
