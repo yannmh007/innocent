@@ -325,6 +325,24 @@ void main() {
       c.close(force: true);
     });
 
+    // The rungs of a ladder are on one Worker: a change of rung, or a jump
+    // after the last read was cut, finds a connection already open rather
+    // than a new handshake — 2-3 round trips, 0.3-0.6 s on the lab's line
+    // (device lab run 41984466643: jumps answered in 0.55-2.2 s, plain runs
+    // in 0.25-0.9 s). The proxy's own ladder pool does this for plain films.
+    test('every object shares one pool of connections to the Worker', () async {
+      const n = MediaSealLayout.firstPlain + 6 * MediaSealLayout.plainSegment;
+      await setUpObject(n);
+      final rung1 = (await gw.urlFor(id: 'r1', upstream: upstream, seal: seal))!;
+      final rung2 = (await gw.urlFor(id: 'r2', upstream: upstream, seal: seal))!;
+      final (c1, _, b1) = await fetch(rung1, range: 'bytes=0-1000');
+      final (c2, _, b2) = await fetch(rung2, range: 'bytes=200000-201000');
+      expect([c1, c2], [206, 206]);
+      expect(b1, plain.sublist(0, 1001));
+      expect(b2, plain.sublist(200000, 201001));
+      expect(worker.ports.toSet().length, 1, reason: 'the second object used the first one\'s connection');
+    });
+
     test('a malformed seal block is refused', () {
       final ok = <String, dynamic>{
         'v': 1, 'dek_id': 'x', 'plain_size': 100, 'sealed_size': MediaSealLayout.sealedSize(100),

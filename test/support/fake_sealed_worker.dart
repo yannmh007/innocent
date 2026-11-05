@@ -18,6 +18,10 @@ class FakeWorker {
   int requests = 0, bytesSent = 0, headerRequests = 0;
   final List<String> ranges = <String>[];
 
+  /// The client port of each request: one seen before is a connection
+  /// used again.
+  final List<int> ports = <int>[];
+
   /// Answers to give before serving normally, one per request: a status,
   /// optionally with a retry-after.
   final List<(int, String?)> refuse = <(int, String?)>[];
@@ -41,6 +45,7 @@ class FakeWorker {
 
   Future<void> _serve(HttpRequest req) async {
     requests++;
+    ports.add(req.connectionInfo?.remotePort ?? -1);
     final res = req.response;
     final range = req.headers.value(HttpHeaders.rangeHeader) ?? '';
     ranges.add(range);

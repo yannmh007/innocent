@@ -82,6 +82,25 @@ class UnsealGateway {
   /// Counted for the lab's trail and the tests.
   static int upstreamRequests = 0, segmentsOpened = 0, refetches = 0, refused = 0;
 
+  /// Worker answers that came on a connection opened for them.
+  static int newConnections = 0;
+
+  /// ONE POOL FOR EVERY OBJECT, kept a minute between reads, as the proxy's
+  /// ladder pool is: every rung is on the same Worker, so a change of rung,
+  /// or a jump after the last read was cut (a cut connection cannot be used
+  /// again), finds a connection already open instead of a new handshake —
+  /// two or three round trips. One pool per object left a rung with nothing
+  /// open after a jump: answers of 0.55-2.2 s where plain films had
+  /// 0.25-0.9 s (device lab run 41984466643).
+  HttpClient? _io;
+  HttpClient get io => _io ??= HttpClient()
+    ..connectionTimeout = const Duration(seconds: 15)
+    ..idleTimeout = const Duration(seconds: 60)
+    ..maxConnectionsPerHost = 16;
+
+  /// Local ports of the connections answers came on, to tell a new one.
+  final LinkedHashSet<int> _ports = LinkedHashSet<int>();
+
   /// Starts the loopback server; registering an object needs it running.
   Future<void> start() {
     if (_server != null) return Future<void>.value();
@@ -151,6 +170,9 @@ class UnsealGateway {
       o.close();
     }
     _objects.clear();
+    _io?.close(force: true);
+    _io = null;
+    _ports.clear();
     await _server?.close(force: true);
     _server = null;
     _starting = null;
@@ -256,12 +278,6 @@ class _Sealed {
   /// download's parts).
   final List<_Run> _live = <_Run>[];
 
-  HttpClient? _io;
-  HttpClient get io => _io ??= HttpClient()
-    ..connectionTimeout = const Duration(seconds: 15)
-    ..idleTimeout = const Duration(seconds: 30)
-    ..maxConnectionsPerHost = 16;
-
   void close() {
     _closed = true;
     for (final r in _live) {
@@ -272,8 +288,6 @@ class _Sealed {
     }
     _live.clear();
     _recent.clear();
-    _io?.close(force: true);
-    _io = null;
   }
 
   Future<void> serve(HttpRequest req) async {
@@ -518,12 +532,22 @@ class _Sealed {
     Timer? watch;
     StreamSubscription<List<int>>? sub;
     var stopped = false;
+    var received = 0;
+    var ended = false;
 
-    void stop(_Fail? f) {
+    // A FETCH READ TO ITS END GIVES ITS CONNECTION BACK. Every finished
+    // fetch used to destroy its socket like a cut one, so no connection to
+    // the Worker was ever used twice: every fetch paid a new TCP and TLS
+    // handshake, two or three round trips. Only a fetch cut short, or one
+    // that is not exactly the range asked for, is destroyed now; one whose
+    // last byte has come is left to end, and dart:io puts it back in the
+    // pool ([UnsealGateway.io]).
+    void stop(_Fail? f, {bool whole = false}) {
       if (stopped) return;
       stopped = true;
       watch?.cancel();
-      _destroy(resp, sub);
+      final complete = whole && resp.contentLength == end - start && received == end - start;
+      if (!ended && !complete) _destroy(resp, sub);
       if (f != null) failFrom(r.next, f);
       if (!done.isCompleted) done.complete();
     }
@@ -594,7 +618,7 @@ class _Sealed {
           }
           UnsealGateway.segmentsOpened += n;
           if (r.next > s1) {
-            stop(null);
+            stop(null, whole: true);
             return;
           }
           if (!_wanted(r)) {
@@ -617,6 +641,7 @@ class _Sealed {
     // piece: one that is opening already takes up what arrives meanwhile.
     var woken = false;
     sub = resp.listen((chunk) {
+      received += chunk.length;
       if (stopped) return;
       quiet.reset();
       buf.add(chunk);
@@ -636,6 +661,7 @@ class _Sealed {
     }, onError: (Object e) {
       opening.whenComplete(() => stop(_Fail.network));
     }, onDone: () {
+      ended = true;
       opening.then((_) => openWhat()).whenComplete(() {
         if (r.next <= s1) stop(_Fail.network);
         stop(null);
@@ -686,11 +712,13 @@ class _Sealed {
     if (_closed) return const _Fail(HttpStatus.gone, why: 'closed');
     try {
       final up = Uri.parse(upstream);
-      final r = await io.getUrl(up).timeout(UnsealGateway.stall);
+      final asked = Stopwatch()..start();
+      final r = await gateway.io.getUrl(up).timeout(UnsealGateway.stall);
       UnsealGateway.upstreamRequests++;
       StreamDoor.apply(r, up);
       r.headers.set(HttpHeaders.rangeHeader, 'bytes=$start-${end - 1}');
       final resp = await r.close().timeout(UnsealGateway.stall);
+      _noteAnswer(resp, asked.elapsedMilliseconds);
       lastBind = resp.headers.value('x-bind') ?? lastBind;
       final code = resp.statusCode;
       final cr = resp.headers.value(HttpHeaders.contentRangeHeader) ?? '';
@@ -711,6 +739,25 @@ class _Sealed {
     } catch (e) {
       if (kDebugMode) debugPrint('UnsealGateway._get: $e');
       return _Fail.network;
+    }
+  }
+
+  /// The trail's line for a Worker answer worth a look: one on a new
+  /// connection (a handshake paid), or a slow one.
+  void _noteAnswer(HttpClientResponse resp, int ms) {
+    final port = resp.connectionInfo?.localPort;
+    final ports = gateway._ports;
+    final fresh = port != null && !ports.contains(port);
+    if (port != null) {
+      ports.remove(port);
+      ports.add(port);
+      while (ports.length > 64) {
+        ports.remove(ports.first);
+      }
+    }
+    if (fresh) UnsealGateway.newConnections++;
+    if (fresh || ms >= 400) {
+      PlaybackLog.add('seal: Worker answered in $ms ms${fresh ? ', on a new connection' : ''}');
     }
   }
 

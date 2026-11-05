@@ -160,8 +160,12 @@ does it.
   41293034978): sealed path throughout (5 of 5 copies, key held, gateway),
   15/16. The failure, skip+30 frozen 5.3 s: the jump joined a segment far
   down the cancelled read-ahead's fetch and waited 3.9 s for it; the
-  gateway now joins only a segment about to arrive (§6). Then the lab
-  again, Test Lab on the realme and the OPPO, against §8.
+  gateway now joins only a segment about to arrive (§6). Run 41984466643:
+  16/16, skip+30 frozen 1.0 s — but jumps answered in 0.55-2.2 s against
+  0.25-0.9 s plain: no connection to the Worker was ever used twice (a
+  finished fetch destroyed its socket, and each object had its own pool).
+  Fixed (one pool, a finished fetch gives its connection back); the lab
+  again, then Test Lab on the realme and the OPPO, against §8.
 - [ ] ENC-4, the pipelines: ingest, console upload, transcode, probe,
   console preview.
 - [ ] ENC-5, rollout: canary on Sintel and Tears of Steel, `min_supported`,

@@ -151,7 +151,11 @@ Why this one (research, 31 Oct 2026):
   first byte at 240p; `test/unseal_gateway_test.dart` holds both cases).
   The cost is at most one segment read twice where a lane's part ends.
   When the proxy lets go of a part, the Worker's connection is cut, not
-  read on.
+  read on; a fetch read to its end gives its connection back, and every
+  object shares one pool kept a minute, as the proxy's ladder pool does —
+  so a jump or a change of rung finds a connection open, not a new
+  handshake (run 41984466643 found every fetch on a new one: jumps answered
+  in 0.55-2.2 s against 0.25-0.9 s plain).
 - **The cache stays sealed**: the proxy writes what the gateway hands it
   under the phone's own key, as it has since 1.64.71 (AES-CTR,
   `OfflineCrypto`); nothing is ever on disk in the clear. Cost: one AES-GCM
