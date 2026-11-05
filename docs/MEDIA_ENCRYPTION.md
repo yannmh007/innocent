@@ -325,7 +325,11 @@ the phone takes them from the smallest rung, through the gateway (§6).
    DONE 5 Nov (Big Buck Bunny, runs 42025083706 and 42029250311; 069, 070):
    240p and 360p sealed, opened whole and matched, one key row each with
    the rendition's own size; ten stills likewise; the re-run replaced all
-   twelve twins of the first and binned the old copies; no refusal.
+   twelve twins of the first and binned the old copies; no refusal. On a
+   phone (device lab run 42030588785, a build that asks): Big Buck Bunny
+   "grant: 3 of 3 copies sealed, keys rsa" — the master and both rungs the
+   pipeline sealed, through the gateway — jumps 15 of 15 (Original, the
+   61 MB sealed master on a 2-4 Mbit/s line, ready in 8.6 s).
 3. Telegram ingest, archive, restore, verify — tested against a stand-in;
    real work only once `on` (no open film comes through Telegram).
    BUILT 5 Nov (071, ingest.ts, tool/ingest.py, `media_record.ts` shared
