@@ -111,9 +111,12 @@ jobs:
           flutter pub get
           source test_device/cloud.env
           # MODE=stream: the catalogue title the phones play, compiled in.
+          # MEDIA_SEAL=1: a build that asks for the sealed copies
+          # (docs/MEDIA_ENCRYPTION.md §6), as device-lab.yml builds one.
           flutter build apk --release --target-platform android-arm64 \
             --dart-define=INNOCENT_LAB=true \
-            --dart-define=INNOCENT_LAB_TITLE="${STREAM_TITLE:-}"
+            --dart-define=INNOCENT_LAB_TITLE="${STREAM_TITLE:-}" \
+            --dart-define=MEDIA_SEAL="${MEDIA_SEAL:-}"
           cp build/app/outputs/flutter-apk/app-release.apk app.apk
           # DEVICES32: phones that run 32-bit Android take the armeabi-v7a
           # build — the release's second APK (build.yml) — in a matrix of
@@ -121,7 +124,8 @@ jobs:
           if [ -n "${DEVICES32:-}" ]; then
             INNOCENT_LAB_ABI=armeabi-v7a flutter build apk --release --target-platform android-arm \
               --dart-define=INNOCENT_LAB=true \
-              --dart-define=INNOCENT_LAB_TITLE="${STREAM_TITLE:-}"
+              --dart-define=INNOCENT_LAB_TITLE="${STREAM_TITLE:-}" \
+              --dart-define=MEDIA_SEAL="${MEDIA_SEAL:-}"
             cp build/app/outputs/flutter-apk/app-release.apk app32.apk
             ls -la app32.apk
           fi
