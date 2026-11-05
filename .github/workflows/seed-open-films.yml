@@ -22,9 +22,9 @@ on:
         options: [seed, seal]
         default: seed
       kind:
-        description: "seal only: what to seal — the videos, the images (poster, photos, thumbnails), or both"
+        description: "seal only: what to seal — the videos, the images (poster, photos, thumbnails), both, or the video masters alone (video-master)"
         type: choice
-        options: [video, image, both]
+        options: [video, image, both, video-master]
         default: video
       titles:
         description: "seal only: title ids, space-separated (open films only; the function refuses any other)"
@@ -64,16 +64,18 @@ jobs:
           fi
           # Ids only: anything else in the input is dropped, not passed on.
           ids=$(printf '%s' "$TITLES" | tr -cs '0-9a-f-' ' ')
+          scope=""
           case "${KIND:-video}" in
             video) kinds="video" ;;
             image) kinds="image" ;;
             both) kinds="video image" ;;
-            *) echo "::error::kind must be video, image or both"; exit 1 ;;
+            video-master) kinds="video"; scope="master" ;;
+            *) echo "::error::kind must be video, image, both or video-master"; exit 1 ;;
           esac
           for k in $kinds; do
-            echo "== $k"
+            echo "== $k ${scope}"
             # shellcheck disable=SC2086
-            SEAL_KIND="$k" python3 tool/seal_twins.py $ids
+            SEAL_KIND="$k" SEAL_SCOPE="$scope" python3 tool/seal_twins.py $ids
           done
 
   seed:

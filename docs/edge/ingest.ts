@@ -2050,6 +2050,10 @@ Deno.serve(async (req: Request) => {
       const a = await rest(`title_assets?select=id,object_key&title_id=eq.${row.id}&kind=eq.video&bucket=eq.${MEDIA_BUCKET}`);
       const assets = a.ok ? await a.json() as Array<{ id: string; object_key: string }> : [];
       const keys = assets.map((x) => x.object_key);
+      // `scope: 'master'`: the masters alone — for a film whose ladder the
+      // transcode pipeline is to rebuild from its sealed master, sealing
+      // every rung itself (§7.4 step 2), so no rung gets two twins.
+      if (body.scope === 'master') return keys.filter((k) => typeof k === 'string' && k && !isSealedKey(k));
       // The rungs through renditions_for, as request-playback reads them:
       // asset_renditions itself grants the service role nothing.
       for (const asset of assets) {
