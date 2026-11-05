@@ -137,6 +137,69 @@ does it.
   `titles.category` and `titles.genres` (and `categories.id` as the key).
 
 ### Media encryption (ENC, the owner's request of 31 Oct; spec docs/MEDIA_ENCRYPTION.md)
+
+#### ENC open items — NOT CERTAIN OR NOT FINISHED (recorded 5 Nov; keep until each is closed)
+Each: what is known, why it is open, the next step, and when it is done.
+Nothing here may be dropped silently: close it with its evidence, or move it.
+
+- [ ] **O1 Proxy CPU per MB (§8 gate NOT met).** proxy_cpu_bench
+  BENCH_MEDIA_SEAL=1: 75 ms/MB against 66-69 for the sealed cache alone
+  (+7-10, desktop). The codec is 0.25 ms/MB of it, a plain loopback relay
+  3-6 — most is the gateway→proxy loopback HTTP hop. Phones: main thread
+  realme 7 % (plain 12), OPPO 11 % (plain 4) — lines differed. Next: a
+  like-for-like phone run (O2); if the main thread is higher there, route
+  the gateway into the proxy in-process (no loopback hop). Done: bench and
+  phone within the plain figures, or the owner accepts the cost.
+- [ ] **O2 Frozen time not shown like-for-like (§8 gate open).** OPPO sealed
+  froze longer (seek 2.4 s vs 0.7, back to Auto 7.1 vs 1.1, far jump 2.0 vs
+  0.8) on a line a third as fast; the realme froze less everywhere; device
+  lab seek/far jump about +0.5-1 s over plain runs. Next: plain and sealed
+  lab builds back to back on the same phone in the same hour (2 Test Lab
+  runs each phone), and the same in the device lab. Done: sealed not longer
+  than plain on the same line.
+- [ ] **O3 Worker answers slow for sealed twins.** 400-850 ms even on a
+  reused connection (run 41988997290), plain 250-900. Thought: R2 keeps the
+  much-read plain copies hot, the new twins are cold. Not proven. Next: a
+  probe from one runner timing plain and sealed objects of the same film,
+  ten each, cold and repeated. Done: the cause named, with numbers.
+- [ ] **O4 Many new connections.** 31 Worker answers on new connections in
+  one lab session after the pool fix (each cut connection is gone). Next:
+  count fetches against new connections in the trail; consider keeping a
+  part nearly done instead of cutting (as the proxy's finish-below does).
+  Done: new connections only where a cut made them unavoidable.
+- [ ] **O5 Album photos not seen opening on a device.** The lab flow
+  sealed_images reached the hub and Sintel's page (posters opened, none
+  refused) but not the album cell ("1 of N" not found by its scroll). Next:
+  loosen the flow (scroll, regex), and log every photo open in lab builds.
+  Done: a photo and its next one opened in the viewer, in the trail.
+- [ ] **O6 Downloads not measured sealed (§8 gate open).** Sealed downloads
+  pass the unit tests only. Next: the downloads flow in the device lab on a
+  sealed build, speed and CPU against a plain run. Done: not slower, not
+  heavier.
+- [ ] **O7 32-bit phone not tried (§8 gate open).** "opens ≥ 20× its
+  bitrate" never run. Next: DEVICES32 in Test Lab with MEDIA_SEAL=1. Done:
+  a 32-bit phone plays the sealed film.
+- [ ] **O8 Corrupt segment only tested off-device (§8).** Next: a lab
+  switch that flips a byte in the gateway's input once. Done: refetched once,
+  then a clear error, no crash, on a device.
+- [ ] **O9 Seek-bar preview pictures not sealed.** Made by the transcode
+  pipeline; part of ENC-4. Done: previews sealed and opened in the app.
+- [ ] **O10 Image keys are in the database in the clear (decided, recorded).**
+  A poster's or photo's DEK is in media_image_keys (no app role reads it),
+  so a database dump together with the bucket opens the images; a film
+  needs MEDIA_KEK as well. Accepted for images in the spec (§5). Revisit
+  only if the owner wants images to need the KEK too.
+- [ ] **O11 Lessons to turn into checks.** (a) A migration touching a view
+  must be dry-run AS anon and AS authenticated (063's six minutes). (b)
+  tool/check.py before every push (238d7a4 went out with ingest_test red).
+  Next: a tool that runs a migration in a rolled-back transaction under
+  each app role and compares the catalogue reads. Done: in tool/check.py or
+  the runbook.
+- [ ] **O12 Lab settings to put back.** test_device/config.env and
+  cloud.env carry MEDIA_SEAL=1 and FLOWS="sealed_images jumps"; main must
+  never carry them. Put back when the seal labs end.
+- [ ] **O13 Plain copies of the canary stay in R2** until ENC-5 removes
+  them after the forced update; until then a plain URL still opens them.
 - [x] ENC-0/1: the spec; seal v1 in Python, JS, Kotlin and Dart, each
   checked against Tink (`tool/media_seal_test.py`) and shared vectors.
 - [x] ENC-2: migration 060 (`media_keys`, `devices.public_key`), live;
@@ -187,7 +250,7 @@ does it.
   Still to do: frozen time on a like-for-like line (plain and sealed builds
   back to back on one phone).
 - [ ] ENC-4, the pipelines: ingest, console upload, transcode, probe,
-  console preview.
+  console preview (in progress 5 Nov; see the spec §7).
 - [ ] ENC-5, rollout: canary on Sintel and Tears of Steel, `min_supported`,
   the migration job (skips the do-not-touch list), B2 Object Lock after.
 ### Quality

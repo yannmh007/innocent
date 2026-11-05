@@ -28,7 +28,9 @@ the Keystore unwrap works on Android 14 and 15. Against the plain 1.64.79
 runs on the same phones (§8). The device lab then drew the Movies hub and
 Sintel's page from sealed posters, none refused (run 42013700193, jumps 16 of
 16 for the fourth run running). Next: the pipelines (ENC-4), so that what is
-uploaded from now on is sealed.**
+uploaded from now on is sealed. WHAT IS NOT CERTAIN OR NOT FINISHED is kept
+as numbered open items O1-O13 in docs/BACKLOG.md ("ENC open items"); none
+may be dropped without its evidence.**
 This file is the specification the code follows. Change it first, then the
 code.
 
