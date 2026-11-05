@@ -109,8 +109,10 @@ export class Sealer {
    * @param {Uint8Array} dek
    * @param {Uint8Array} aad
    * @param {number} plainTotal
-   * @param {{salt?: Uint8Array, prefix?: Uint8Array}} [fixed] test vectors only:
-   *   a repeated (DEK, salt, prefix) over different plaintext breaks GCM.
+   * @param {{salt?: Uint8Array, prefix?: Uint8Array}} [fixed] test vectors, and
+   *   the console resuming an upload whose header is already in R2 — only ever
+   *   over the SAME plaintext (each part's SHA-256 is checked first): a
+   *   repeated (DEK, salt, prefix) over different plaintext breaks GCM.
    */
   static async create(dek, aad, plainTotal, fixed = {}) {
     const salt = fixed.salt ?? randomBytes(SALT);
@@ -169,6 +171,62 @@ export class Opener {
       throw new SealError(`segment ${i} does not open`);
     }
   }
+}
+
+// ---- a sealed object uploaded in parts (the console, §7.3) -----------------
+//
+// A part of PART_SIZE sealed bytes, a whole number of 64 KiB segments, is
+// sealed on its own from the plaintext that makes it — part 1 also carries
+// the header — so each 16 MiB part of a multipart upload is sealed, sent and
+// retried alone, and every part but the last is exactly PART_SIZE, as R2
+// requires.
+
+function wholeSegments(partSize) {
+  if (!(partSize > 0) || partSize % SEGMENT) throw new SealError('a part must be whole segments');
+  return partSize / SEGMENT;
+}
+
+/** How many parts of [partSize] sealed bytes the sealed object has. */
+export function sealedPartCount(partSize, plainTotal) {
+  wholeSegments(partSize);
+  return Math.ceil(sealedSize(plainTotal) / partSize);
+}
+
+/** The plaintext [start, end) that sealed part [n] (1-based) is made of. */
+export function partPlainRange(n, partSize, plainTotal) {
+  const per = wholeSegments(partSize);
+  const count = segmentCount(plainTotal);
+  const first = (n - 1) * per;
+  if (!(n >= 1) || first >= count) throw new SealError(`part ${n} is past the end`);
+  const last = Math.min(count, first + per);
+  return [plainStart(first), last >= count ? plainTotal : plainStart(last)];
+}
+
+/** Sealed part [n] (1-based) from exactly its plaintext (partPlainRange). */
+export async function sealPart(sealer, n, partSize, plain) {
+  const per = wholeSegments(partSize);
+  const first = (n - 1) * per;
+  const last = Math.min(sealer.count, first + per);
+  const [p0, p1] = partPlainRange(n, partSize, sealer.plainTotal);
+  if (plain.length !== p1 - p0) {
+    throw new SealError(`part ${n} wants ${p1 - p0} plaintext bytes, got ${plain.length}`);
+  }
+  const start = (n - 1) * partSize;
+  const end = last >= sealer.count ? sealedSize(sealer.plainTotal) : last * SEGMENT;
+  const out = new Uint8Array(end - start);
+  let at = 0;
+  if (first === 0) {
+    out.set(sealer.header, 0);
+    at = HEADER;
+  }
+  for (let i = first; i < last; i++) {
+    const s0 = plainStart(i) - p0;
+    const seg = await sealer.sealSegment(i, plain.subarray(s0, s0 + sealer.plainLength(i)));
+    out.set(seg, at);
+    at += seg.length;
+  }
+  if (at !== out.length) throw new SealError(`part ${n} sealed to ${at} bytes, not ${out.length}`);
+  return out;
 }
 
 /** Seals a whole buffer (images, tests). */

@@ -272,6 +272,32 @@ Nothing here may be dropped silently: close it with its evidence, or move it.
   switch `on`. Next: before `on`, one forwarded test file with the switch
   at `on` for a minute (born sealed end to end: ingest, attach, play),
   then back to `off`. Done: that file plays sealed on a phone.
+- [ ] **O20 Console sealing not yet run live.** Built and tested in
+  Chromium against a fake studio and R2 (§7.4 step 4). Pages serves the
+  console from main, so the live canary waits for the next release: then,
+  with the switch at `canary` for a minute, upload one photo into an open
+  film's album from a phone (a twin: plain + sealed, the key row from
+  media_upload_keys), check it in media_image_keys and in the app, and put
+  the switch back. Also then: a 40 MB file with the switch `on` for a
+  minute, killed mid-upload and resumed (sealResume once, only the missing
+  parts sent), then deleted. Done: both on the live console, from a phone.
+- [ ] **O21 Photos that are not JPEG keep their metadata.** jpeg_clean.js
+  cleans JPEG (what phones send by default) and refuses a JPEG it cannot
+  walk; PNG, WebP and HEIC go as they are, with a warning in the upload
+  row. HEIC can carry GPS. Next: decide — convert HEIC/WebP to JPEG in the
+  browser (re-encode), or strip their metadata blocks, or refuse them.
+  Done: no photo format reaches the public bucket with a location.
+- [ ] **O22 Sealing speed on a phone not measured.** WebCrypto seals each
+  16 MiB part as 256 AES-GCM segments; on a desktop this is far faster
+  than any uplink. Next: time a 500 MB sealed upload from the operator's
+  phone against a plain one. Done: sealing adds under 10 % to the upload,
+  or the part is sealed in a Worker thread.
+- [ ] **O23 Pending upload keys and abandoned sealed objects.** A sealed
+  single-PUT object whose `sealCommit` never came (the tab died after the
+  PUT, before the commit) is in R2 with no key row; its pending key stays
+  in media_upload_keys for eight days, then goes. The Files page lists the
+  object as unused after a scan. Next: the bin's housekeeping bins `s/`
+  objects named by an expired pending key. Done: none left after a week.
 - [ ] **O17 Old runners and the seals flag.** Main's runner (no sealing
   code) now gets only plain work (070). When ENC-4 reaches main, every
   runner sends `seals: 1`. Next: after that release, confirm from the

@@ -203,6 +203,11 @@ def main() -> int:
          'a film sealed in the browser that the phone cannot open: different '
          'bytes from the reference for the same key, or a range served from '
          'the wrong segments, seen only as a film that will not play'),
+        ('jpeg_clean_test.mjs',
+         'a photo leaving the phone without its place and time',
+         'a photo published with the GPS position of the home it was taken '
+         'in, or turned on its side because its orientation went with the '
+         'rest of the EXIF'),
         ('faststart_test.mjs',
          'the MP4 rewrite',
          'an MP4 rewrite that corrupts the video it was meant to speed up'),

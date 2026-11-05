@@ -424,6 +424,8 @@ async function uploadOne(file, onProgress, folder, note, ctx = {}) {
     const fs = await faststart(file);
     body = fs.blob;
     if (note) note(fs.state, fs.detail);
+  } else {
+    body = await cleanPhoto(file, note);
   }
 
   // ONE PUT FOR A SMALL FILE, PARTS FOR A LARGE ONE. The threshold is about
@@ -464,16 +466,35 @@ async function uploadOne(file, onProgress, folder, note, ctx = {}) {
   // already uploaded successfully.
   if (isVideo && meta.thumb) {
     try {
-      const t = await api({
-        op: 'sign', kind: 'thumb',
-        filename: file.name.replace(/\.[^.]+$/, '') + '.jpg',
-        size: meta.thumb.size, folder,
-      });
-      await put(t.uploadUrl, meta.thumb);
+      // Through putSmall, so a still is sealed whenever its film is (§7.3).
+      const t = await putSmall(meta.thumb, null, {
+        kind: 'thumb', filename: file.name.replace(/\.[^.]+$/, '') + '.jpg', folder,
+      }, null);
       out.thumbKey = t.objectKey;
     } catch (_) { /* a missing thumbnail falls back to the title poster */ }
   }
   return out;
+}
+
+/// A photo without what it says about where and when it was taken
+/// (jpeg_clean.js): EXIF, GPS, XMP, comments go; the orientation and the
+/// colour profile stay, and the picture itself is not re-encoded. Photos
+/// land in the public bucket, so a JPEG this cannot walk is REFUSED rather
+/// than published with its location. Decided by the bytes, not the name:
+/// other formats (PNG, WebP, HEIC) go as they are, and the note says so.
+async function cleanPhoto(file, note) {
+  const { cleanJpeg, isJpeg } = await import('./jpeg_clean.js');
+  if (!isJpeg(new Uint8Array(await file.slice(0, 8).arrayBuffer()))) {
+    if (note) note('warn', 'not a JPEG: sent as it is, its metadata not checked');
+    return file;
+  }
+  const r = cleanJpeg(new Uint8Array(await file.arrayBuffer()));
+  if (!r) {
+    throw new Error(file.name + ' is a JPEG this page cannot read, so its location could not ' +
+      'be removed. Save it again from the phone\'s gallery and try once more.');
+  }
+  if (note && r.removed) note('ok', 'place and time removed (' + r.removed + ' bytes)');
+  return new Blob([r.bytes], { type: 'image/jpeg' });
 }
 
 /// Uploads a list of files with a progress row each, three at a time.
@@ -1270,13 +1291,12 @@ function pickFrame(file) {
 
 /// Uploads a still and points the asset at it.
 async function setThumbBlob(a, blob, extra) {
-  const t = await api({
-    op: 'sign', kind: 'thumb',
-    filename: (a.object_key.split('/').pop() || 'thumb')
-      .replace(/\.[^.]+$/, '') + '.jpg',
-    size: blob.size, folder: cur.folder,
-  });
-  await put(t.uploadUrl, blob);
+  // Through putSmall, so a still is sealed whenever the switch says (§7.3).
+  const t = await putSmall(blob, null, {
+    kind: 'thumb',
+    filename: (a.object_key.split('/').pop() || 'thumb').replace(/\.[^.]+$/, '') + '.jpg',
+    folder: cur.folder,
+  }, null);
   // The dimensions ride along, because a video row with a null width is what
   // makes the app's mosaic give a portrait clip a landscape hole — and the
   // operator has just had the real numbers on screen.

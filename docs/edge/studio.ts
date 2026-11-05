@@ -48,6 +48,10 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { namingKey, OPAQUE_FOLDER, opaqueFolder, opaqueName } from './naming.ts';
 import { BACKUP_AAD, BACKUP_KEY_INFO, derivedKey, openFile, toB64 } from './pii.ts';
+import { b64, importKek, unwrapDek } from './media_keys.js';
+import { issue, makeFor, sealNewMode } from './media_issue.js';
+import { isSealedKey } from './media_twin.js';
+import { type RecordIO, recordSealed } from './media_record.ts';
 
 const R2_ACCOUNT_ID = Deno.env.get('R2_ACCOUNT_ID')!;
 const R2_ACCESS_KEY_ID = Deno.env.get('R2_ACCESS_KEY_ID')!;
@@ -311,6 +315,8 @@ function xmlTag(xml: string, tag: string): string | null {
 function isMintedKey(key: string): boolean {
   if (!key || key.length > 512) return false;
   if (key.includes('..') || key.startsWith('/')) return false;
+  // A sealed upload's object (§7.3): `s/` and 32 hex, minted by `issue`.
+  if (/^s\/[0-9a-f]{32}$/.test(key)) return true;
   return /(^|\/)(video|photo|thumb)\/[a-z0-9][a-z0-9.\-]*$/.test(key);
 }
 
@@ -754,6 +760,7 @@ const NEED: Record<string, Role> = {
   // uploading and drafting
   sign: 'uploader', beginMultipart: 'uploader', signParts: 'uploader',
   completeMultipart: 'uploader', abortMultipart: 'uploader', listParts: 'uploader',
+  sealResume: 'uploader', sealCommit: 'uploader',
   folder: 'uploader', checkFolder: 'uploader',
   create: 'uploader', save: 'uploader', addAssets: 'uploader',
   updateAsset: 'uploader', reorder: 'uploader', setPrimary: 'uploader',
@@ -1137,6 +1144,43 @@ async function handleOp(
 
     const bucket = kind === 'video' ? MEDIA_BUCKET : PUBLIC_BUCKET;
     const prefix = kind === 'video' ? 'video' : kind === 'thumb' ? 'thumb' : 'photo';
+
+    // THE SEAL (§7.3): sealed in the browser, under a DEK issued here.
+    // Born sealed (`on`): the object IS its `s/` key and nothing plain is
+    // uploaded. A twin (canary photo or still): the plain file as before
+    // and its sealed twin beside it. A page from before the seal sends no
+    // `seal: 1` and is refused sealed work rather than handed a DEK it
+    // would ignore.
+    const make = await uploadMake(kind, String(body.folder ?? ''));
+    if (make !== 'plain') {
+      if (body.seal !== 1) {
+        return json({ error: 'reload_to_seal', detail: 'Reload this page: uploads are now sealed ' +
+          'on this phone before they leave it, and this copy of the page cannot.' }, 409, req);
+      }
+      const k = await mediaKek();
+      if (!(size > 0)) return json({ error: 'no_size' }, 400, req);
+      if (!k) {
+        if (make === 'sealed') return json({ error: 'no_media_kek' }, 503, req);
+      } else {
+        const plainKey = make === 'twin' ? await mintKey(prefix, filename, String(body.folder ?? '')) : null;
+        const issued = await issueUpload(k, { bucket, kind, plainKey, plainSize: size, adminId: who.id });
+        if (!issued) return json({ error: 'seal_issue_failed' }, 500, req);
+        const sealedPut = await presignPut(bucket, issued.sealed_key);
+        const seal = { make, dekId: issued.dek_id, dek: issued.dek, sealedKey: issued.sealed_key };
+        if (make === 'sealed') {
+          return json({
+            uploadUrl: sealedPut, bucket, objectKey: issued.sealed_key, kind,
+            publicUrl: kind === 'video' ? null : `${PUBLIC_BASE}/${issued.sealed_key}`, seal,
+          }, 200, req);
+        }
+        return json({
+          uploadUrl: await presignPut(bucket, plainKey!), bucket, objectKey: plainKey, kind,
+          publicUrl: kind === 'video' ? null : `${PUBLIC_BASE}/${plainKey}`,
+          seal: { ...seal, uploadUrl: sealedPut },
+        }, 200, req);
+      }
+    }
+
     // No folder means a caller that predates foldering. It still works and
     // still lands in `video/…` — it simply has no title prefix. Refusing it
     // would break a page held in a browser cache for the sake of tidiness.
@@ -1181,7 +1225,27 @@ async function handleOp(
       : 'video';
     const bucket = kind === 'video' ? MEDIA_BUCKET : PUBLIC_BUCKET;
     const prefix = kind === 'video' ? 'video' : kind === 'thumb' ? 'thumb' : 'photo';
-    const objectKey = await mintKey(prefix, filename, String(body.folder ?? ''));
+
+    // THE SEAL (§7.3): born sealed only (`on`). Each 16 MiB part is sealed
+    // on the phone — 256 whole segments, part 1 with the header — so a part
+    // is sealed, sent and retried alone. A large upload in the canary stays
+    // plain (a film's twin is the twin job's; a 32 MiB photo is rare).
+    const make = await uploadMake(kind, String(body.folder ?? ''));
+    let sealed: { dek_id: string; dek: string; sealed_key: string } | null = null;
+    let k: CryptoKey | null = null;
+    if (make === 'sealed') {
+      if (body.seal !== 1) {
+        return json({ error: 'reload_to_seal', detail: 'Reload this page: uploads are now sealed ' +
+          'on this phone before they leave it, and this copy of the page cannot.' }, 409, req);
+      }
+      const plainSize = Number(body.size ?? 0);
+      if (!(plainSize > 0)) return json({ error: 'no_size' }, 400, req);
+      k = await mediaKek();
+      if (!k) return json({ error: 'no_media_kek' }, 503, req);
+    }
+    const objectKey = make === 'sealed'
+      ? (await issue(k!)).sealed_key
+      : await mintKey(prefix, filename, String(body.folder ?? ''));
 
     const signed = await signRequest('POST', bucket, objectKey, { uploads: '' }, '');
     const res = await fetch(signed.url, { method: 'POST', headers: signed.headers });
@@ -1194,8 +1258,14 @@ async function handleOp(
     if (!uploadId) {
       return json({ error: 'no_upload_id', detail: xml.slice(0, 200) }, 502, req);
     }
+    if (make === 'sealed') {
+      sealed = await issueUpload(k!, { bucket, kind, plainKey: null,
+        plainSize: Number(body.size), uploadId, adminId: who.id, sealedKey: objectKey });
+      if (!sealed) return json({ error: 'seal_issue_failed' }, 500, req);
+    }
     return json({ uploadId, bucket, objectKey, kind,
-      publicUrl: kind === 'video' ? null : `${PUBLIC_BASE}/${objectKey}` }, 200, req);
+      publicUrl: kind === 'video' ? null : `${PUBLIC_BASE}/${objectKey}`,
+      seal: sealed ? { make: 'sealed', dekId: sealed.dek_id, dek: sealed.dek } : null }, 200, req);
   }
 
   // --- signParts: URLs for a BATCH of parts, not all of them ----------------
@@ -1363,10 +1433,67 @@ async function handleOp(
       'DELETE', bucket, objectKey, { uploadId }, '');
     const res = await fetch(signed.url,
       { method: 'DELETE', headers: signed.headers });
+    // A sealed upload abandoned: its pending key goes with it.
+    if (isSealedKey(objectKey)) {
+      await srest(`media_upload_keys?sealed_key=eq.${encodeURIComponent(objectKey)}&upload_id=eq.${
+        encodeURIComponent(uploadId)}`, { method: 'DELETE' }).catch(() => undefined);
+    }
     // A failed abort is reported and not thrown: the upload is already
     // abandoned, and the operator needs to know the parts may still be there
     // rather than to be given an error about a thing they did not ask for.
     return json({ ok: res.ok, status: res.status }, 200, req);
+  }
+
+  // --- sealResume: the DEK of an upload still in flight, again --------------
+  //
+  // THE PHONE KEEPS NO DEK. A tab that died and is picked up again holds the
+  // header (its salt and nonce prefix are in part 1, already in R2) and each
+  // sent part's plaintext SHA-256 — and asks for the DEK here. Only for an
+  // upload still pending (never a recorded key), only to the admin who began
+  // it or the owner.
+  if (body.op === 'sealResume') {
+    const p = await pendingKey(String(body.dekId ?? ''));
+    if (!p) return json({ error: 'no_pending_key' }, 404, req);
+    if (p.admin_id && p.admin_id !== who.id && who.role !== 'owner') {
+      return json({ error: 'not_your_upload' }, 403, req);
+    }
+    const k = await mediaKek();
+    if (!k) return json({ error: 'no_media_kek' }, 503, req);
+    const dek = await unwrapDek(k, p.wrapped, p.dek_id, 1);
+    try {
+      return json({ dek: b64(dek), sealedKey: p.sealed_key, plainSize: p.plain_size }, 200, req);
+    } finally {
+      dek.fill(0);
+    }
+  }
+
+  // --- sealCommit: the sealed object is whole; record its key ---------------
+  //
+  // From THIS function's own record of what it issued (media_upload_keys):
+  // the wrap, the key and the size are not taken from the browser, only the
+  // header — which media_record.ts checks against the object (its first and
+  // last segments must open under the issued DEK). Then the pending key
+  // goes, and the page writes the asset row naming the sealed object.
+  if (body.op === 'sealCommit') {
+    const p = await pendingKey(String(body.dekId ?? ''));
+    if (!p) return json({ error: 'no_pending_key' }, 404, req);
+    if (p.admin_id && p.admin_id !== who.id && who.role !== 'owner') {
+      return json({ error: 'not_your_upload' }, 403, req);
+    }
+    if (Number(body.plainSize) !== Number(p.plain_size)) {
+      return json({ error: 'wrong_size', detail: `${body.plainSize} is not ${p.plain_size}` }, 400, req);
+    }
+    const { ok, refused } = await recordSealed(recordIO, [{
+      dek_id: p.dek_id, wrapped: p.wrapped, sealed_key: p.sealed_key, plain_size: Number(p.plain_size),
+      header: String(body.header ?? ''), plain_key: p.plain_key,
+    }], p.bucket, p.kind, p.media_kind);
+    if (!ok.has(p.dek_id)) {
+      return json({ error: 'seal_refused', detail: (refused[0] ?? '').slice(0, 200) }, 422, req);
+    }
+    await srest(`media_upload_keys?dek_id=eq.${p.dek_id}`, { method: 'DELETE' });
+    const objectKey = p.plain_key ?? p.sealed_key;
+    return json({ ok: true, objectKey, sealedKey: p.sealed_key,
+      publicUrl: p.bucket === PUBLIC_BUCKET ? `${PUBLIC_BASE}/${objectKey}` : null }, 200, req);
   }
 
   // --- folder: SUGGEST a free prefix --------------------------------------
@@ -1564,6 +1691,10 @@ async function handleOp(
           ...(body.photo ? [{ ...(body.photo as object), kind: 'photo' }] : []),
         ];
     if (incoming.length === 0) return json({ error: 'no_assets' }, 400, req);
+    // NEVER AN ASSET THAT POINTS AT A SEALED OBJECT NOTHING CAN OPEN.
+    const unopened = await unrecordedSealed(incoming.flatMap((a) =>
+      [String(a.objectKey ?? ''), String(a.thumbKey ?? '')]));
+    if (unopened.length) return json({ error: 'seal_not_recorded', keys: unopened }, 409, req);
 
     const db = admin();
     // ALWAYS A DRAFT, whatever the page asks. Since the review queue, nothing
@@ -1738,6 +1869,9 @@ async function handleOp(
       ? (body.assets as Record<string, unknown>[]) : [];
     if (!id) return json({ error: 'no_id' }, 400, req);
     if (incoming.length === 0) return json({ error: 'no_assets' }, 400, req);
+    const unopened = await unrecordedSealed(incoming.flatMap((a) =>
+      [String(a.objectKey ?? ''), String(a.thumbKey ?? '')]));
+    if (unopened.length) return json({ error: 'seal_not_recorded', keys: unopened }, 409, req);
 
     const db = admin();
     // Appended AFTER whatever is already there. Reading the current maximum
@@ -1765,7 +1899,11 @@ async function handleOp(
     if ('is_free' in p) upd.is_free = p.is_free === true;
     if ('label' in p) upd.label = str(p.label);
     if ('language' in p) upd.language = str(p.language);
-    if ('thumb_key' in p) upd.thumb_key = str(p.thumb_key);
+    if ('thumb_key' in p) {
+      upd.thumb_key = str(p.thumb_key);
+      const unopened = await unrecordedSealed([String(p.thumb_key ?? '')]);
+      if (unopened.length) return json({ error: 'seal_not_recorded', keys: unopened }, 409, req);
+    }
     if ('duration_s' in p) upd.duration_s = num(p.duration_s);
     if ('width' in p) upd.width = num(p.width);
     if ('height' in p) upd.height = num(p.height);
@@ -3198,4 +3336,113 @@ function assetRow(
     bytes: num(a.bytes),
     mime: str(a.mime),
   };
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// THE MEDIA SEAL FOR UPLOADS (docs/MEDIA_ENCRYPTION.md §7.3, ENC-4 step 4)
+// ═══════════════════════════════════════════════════════════════════════
+//
+// The operator's browser seals what it uploads, part by part, with a DEK
+// issued here. The wrap stays in media_upload_keys (072) until `sealCommit`
+// records the key row from it; the browser never holds anything it could
+// use to record a key the studio did not issue, and the phone keeps no DEK
+// between sessions (a resume asks for it again, `sealResume`).
+
+async function srest(path: string, init: RequestInit = {}): Promise<Response> {
+  return await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    ...init,
+    headers: {
+      apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`,
+      'Content-Type': 'application/json', ...(init.headers ?? {}),
+    },
+  });
+}
+
+let sealNewSeen: { mode: string; at: number } | null = null;
+async function sealNew(): Promise<string> {
+  if (sealNewSeen && Date.now() - sealNewSeen.at < 60_000) return sealNewSeen.mode;
+  let mode = 'off';
+  try {
+    const r = await srest('admin_settings?select=seal_new&limit=1');
+    if (r.ok) mode = sealNewMode((await r.json() as Array<{ seal_new: string }>)[0]?.seal_new);
+  } catch (_) { /* off */ }
+  sealNewSeen = { mode, at: Date.now() };
+  return mode;
+}
+
+let kekHeld: Promise<CryptoKey | null> | null = null;
+function mediaKek(): Promise<CryptoKey | null> {
+  return kekHeld ??= importKek(Deno.env.get('MEDIA_KEK_V1') ?? '').catch(() => null);
+}
+
+const recordIO: RecordIO = {
+  rest: srest, kek: mediaKek,
+  presign: (method, key, seconds, bucket) =>
+    presignPut(bucket, key, { 'X-Amz-Expires': String(seconds) }, method),
+};
+
+/// What the switch makes of an upload. A FILM IN THE CANARY STAYS PLAIN:
+/// its twin is made by the twin job (seed-open-films), not by a phone
+/// uploading the same film twice over a Myanmar uplink. A photo or still of
+/// an open film gets a twin sealed in the browser; with the switch `on`
+/// everything is born sealed. The folder is the title's (`open-film-…`).
+async function uploadMake(kind: string, folder: string): Promise<'plain' | 'twin' | 'sealed'> {
+  const m = makeFor(await sealNew(), folder) as 'plain' | 'twin' | 'sealed';
+  return m === 'twin' && kind === 'video' ? 'plain' : m;
+}
+
+type Pending = {
+  dek_id: string; bucket: string; sealed_key: string; plain_key: string | null;
+  kind: 'video' | 'image'; media_kind: 'video' | 'photo' | 'other'; wrapped: string;
+  plain_size: number; upload_id: string | null; admin_id: string | null; created_at: string;
+};
+
+/// The pending key of an upload still in flight: issued here, not yet
+/// recorded, at most eight days old (R2 drops an unfinished upload at
+/// seven). Null for anything else — a recorded key is never handed out again.
+async function pendingKey(dekId: string): Promise<Pending | null> {
+  if (!/^[0-9a-f-]{36}$/i.test(dekId)) return null;
+  const since = new Date(Date.now() - 8 * 86400_000).toISOString();
+  const r = await srest(`media_upload_keys?select=*&dek_id=eq.${dekId}&created_at=gt.${since}&limit=1`);
+  return r.ok ? (await r.json() as Pending[])[0] ?? null : null;
+}
+
+/// A new DEK for one upload, its wrap kept in media_upload_keys.
+async function issueUpload(
+  k: CryptoKey, o: { bucket: string; kind: string; plainKey: string | null; plainSize: number;
+    uploadId?: string | null; adminId: string; sealedKey?: string },
+): Promise<{ dek_id: string; dek: string; sealed_key: string } | null> {
+  const issued = await issue(k);
+  const sealedKey = o.sealedKey ?? issued.sealed_key;
+  // Old pending keys go first: an upload R2 has already dropped.
+  await srest(`media_upload_keys?created_at=lt.${new Date(Date.now() - 8 * 86400_000).toISOString()}`,
+    { method: 'DELETE' }).catch(() => undefined);
+  const ins = await srest('media_upload_keys', {
+    method: 'POST',
+    headers: { Prefer: 'return=minimal' },
+    body: JSON.stringify({
+      dek_id: issued.dek_id, bucket: o.bucket, sealed_key: sealedKey, plain_key: o.plainKey,
+      kind: o.bucket === PUBLIC_BUCKET ? 'image' : 'video',
+      media_kind: o.kind === 'video' ? 'video' : o.kind === 'photo' ? 'photo' : 'other',
+      wrapped: issued.wrapped, plain_size: o.plainSize, upload_id: o.uploadId ?? null,
+      admin_id: o.adminId,
+    }),
+  });
+  if (!ins.ok) return null;
+  return { dek_id: issued.dek_id, dek: issued.dek, sealed_key: sealedKey };
+}
+
+/// Sealed keys among [keys] that no key row names: an asset must never point
+/// at a sealed object nothing can open.
+async function unrecordedSealed(keys: string[]): Promise<string[]> {
+  const sealed = [...new Set(keys.filter((k) => isSealedKey(k)))];
+  if (!sealed.length) return [];
+  const list = `(${sealed.map((k) => `"${k}"`).join(',')})`;
+  const named = new Set<string>();
+  for (const table of ['media_keys', 'media_image_keys']) {
+    const r = await srest(`${table}?select=sealed_key&sealed_key=in.${encodeURIComponent(list)}`);
+    if (!r.ok) return sealed;
+    for (const x of await r.json() as Array<{ sealed_key: string }>) named.add(x.sealed_key);
+  }
+  return sealed.filter((k) => !named.has(k));
 }

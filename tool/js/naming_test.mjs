@@ -64,6 +64,11 @@ const frameRe = new RegExp(framePat[1]);
 const video = `${f}/video/${naming.opaqueName('mp4')}`;
 const photo = `${f}/photo/${naming.opaqueName('jpg')}`;
 check('a video key passes isMintedKey', isMintedKey(video));
+// A sealed upload's object (§7.3) is `s/` and 32 hex — that and nothing like it.
+check('a sealed key passes isMintedKey', isMintedKey('s/' + 'a'.repeat(32)));
+check('and nothing that only looks like one',
+  !isMintedKey('s/' + 'a'.repeat(31)) && !isMintedKey('s/' + 'A'.repeat(32)) &&
+  !isMintedKey('x/s/' + 'a'.repeat(32)) && !isMintedKey('s/' + 'a'.repeat(32) + '.mp4'));
 check('a photo key passes isMintedKey', isMintedKey(photo));
 check('the Files page puts both in the folder', folderOf(video) === f && folderOf(photo) === f);
 

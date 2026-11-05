@@ -23,7 +23,8 @@ import { fileURLToPath } from 'url';
 import { dirname, join, extname } from 'path';
 import { createRequire } from 'module';
 import { execSync } from 'child_process';
-import { createHash } from 'crypto';
+import { createHash, randomBytes, randomUUID } from 'crypto';
+import * as ms from '../../docs/edge/media_seal.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const STUDIO = join(ROOT, 'docs', 'studio');
@@ -312,6 +313,24 @@ function ssOps(state, body) {
 
 const TYPES = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css' };
 
+/// What the fake studio's switch makes of an upload — the rule studio.ts
+/// `uploadMake` follows: `on` seals everything; the canary twins an open
+/// film's photos and stills (never a film, never in parts); off is plain.
+function sealMake(state, body, multipart) {
+  const mode = state.seal.mode;
+  if (mode === 'on') return 'sealed';
+  if (mode === 'canary' && !multipart && body.kind !== 'video' &&
+      /^open-film-[a-z0-9-]+$/.test(String(body.folder || ''))) return 'twin';
+  return 'plain';
+}
+
+function sealIssue(state, body, plainKey) {
+  const k = { dekId: randomUUID(), dek: randomBytes(32), sealedKey: 's/' + randomBytes(16).toString('hex'),
+    plainKey, plainSize: Number(body.size), committed: false };
+  state.seal.keys[k.dekId] = k;
+  return k;
+}
+
 // Everything the page's Content-Security-Policy refused, in every scenario
 // below. The policy (index.html) is meant to refuse nothing the console
 // itself does; one refusal here is a page feature the policy broke.
@@ -380,7 +399,10 @@ async function open(browser, role, opts = {}) {
     // it was sent, and the knobs a test turns — hold a part, refuse
     // everything, report the wrong size.
     r2: { uploads: {}, puts: [], begins: 0, aborts: [], creates: [], hold: null,
-      refuseAll: false, wrongSize: false },
+      refuseAll: false, wrongSize: false, keep: false, objects: {}, types: [] },
+    // The media seal (§7.3): what the switch says, the keys this fake studio
+    // issued, and what each sealCommit found when it opened the object.
+    seal: { mode: 'off', keys: {}, commits: [], resumes: 0, noSealFlag: 0 },
     // The phone's connection, as far as the fake servers are concerned: while
     // false, every request to R2 and to Supabase is cut off. (Playwright's own
     // offline switch does not reach requests the test answers itself.)
@@ -461,9 +483,16 @@ async function open(browser, role, opts = {}) {
     const buf = req.postDataBuffer() || Buffer.alloc(0);
     const etag = createHash('md5').update(buf).digest('hex');
     r2.puts.push({ upload: m ? m[1] : null, n, size: buf.length });
+    r2.types.push({ upload: m ? m[1] : null, type: req.headers()['content-type'] || '' });
     if (m) {
       const up = r2.uploads[m[1]];
-      if (up) up.parts[n] = { etag, size: buf.length };
+      if (up) {
+        up.parts[n] = { etag, size: buf.length };
+        if (r2.keep) (up.bodies ||= {})[n] = buf;
+      }
+    } else if (r2.keep) {
+      const one = /\/one\/(.+)$/.exec(new URL(req.url()).pathname);
+      if (one) r2.objects[decodeURIComponent(one[1])] = buf;
     }
     try {
       await route.fulfill({ status: 200, body: '', headers: { ...cors, ETag: '"' + etag + '"' } });
@@ -473,7 +502,9 @@ async function open(browser, role, opts = {}) {
   await page.route(SITE + '/**', async (route) => {
     const path = new URL(route.request().url()).pathname.replace(/^\//, '') || 'index.html';
     try {
-      const body = readFileSync(join(STUDIO, path));
+      // The console imports the media seal from ../edge/ — on Pages, the
+      // sibling of studio/ under docs/.
+      const body = readFileSync(path.startsWith('edge/') ? join(STUDIO, '..', path) : join(STUDIO, path));
       await route.fulfill({ status: 200, body, contentType: TYPES[extname(path)] || 'application/octet-stream' });
     } catch {
       await route.fulfill({ status: 404, body: 'no' });
@@ -650,12 +681,53 @@ async function open(browser, role, opts = {}) {
         },
         previewUrl: () => ({ url: 'https://media.test/p.mp4', kind: 'video', height: 720, via: 'worker' }),
         checkFolder: () => ({ ok: true, folder: body.folder, takenBy: null, preview: {} }),
-        sign: () => ({ uploadUrl: 'https://r2.test/one/' + encodeURIComponent(body.filename),
-          objectKey: (body.folder || 'f') + '/photo/' + body.filename, kind: body.kind }),
+        sign: () => {
+          const plain = { uploadUrl: 'https://r2.test/one/' + encodeURIComponent(body.filename),
+            objectKey: (body.folder || 'f') + '/photo/' + body.filename, kind: body.kind };
+          const make = sealMake(state, body, false);
+          if (make === 'plain') return plain;
+          if (body.seal !== 1) { state.seal.noSealFlag++; return { __status: 409, error: 'reload_to_seal' }; }
+          const k = sealIssue(state, body, make === 'twin' ? plain.objectKey : null);
+          const sealedUrl = 'https://r2.test/one/' + encodeURIComponent(k.sealedKey);
+          const seal = { make, dekId: k.dekId, dek: k.dek.toString('base64'), sealedKey: k.sealedKey };
+          return make === 'sealed'
+            ? { uploadUrl: sealedUrl, objectKey: k.sealedKey, kind: body.kind, seal }
+            : { ...plain, seal: { ...seal, uploadUrl: sealedUrl } };
+        },
         beginMultipart: () => {
           const id = 'u' + (++state.r2.begins);
+          const make = sealMake(state, body, true);
+          if (make === 'sealed') {
+            if (body.seal !== 1) { state.seal.noSealFlag++; return { __status: 409, error: 'reload_to_seal' }; }
+            const k = sealIssue(state, body, null);
+            k.uploadId = id;
+            state.r2.uploads[id] = { key: k.sealedKey, parts: {} };
+            return { uploadId: id, objectKey: k.sealedKey, kind: body.kind, publicUrl: null,
+              seal: { make, dekId: k.dekId, dek: k.dek.toString('base64') } };
+          }
           state.r2.uploads[id] = { key: (body.folder || 'f') + '/photo/' + id + '-' + body.filename, parts: {} };
           return { uploadId: id, objectKey: state.r2.uploads[id].key, kind: body.kind, publicUrl: null };
+        },
+        sealResume: () => {
+          const k = state.seal.keys[body.dekId];
+          if (!k || k.committed) return { __status: 404, error: 'no_pending_key' };
+          state.seal.resumes++;
+          return { dek: k.dek.toString('base64'), sealedKey: k.sealedKey, plainSize: k.plainSize };
+        },
+        // As the studio does: the object is opened under the key IT issued
+        // (here, wholly — the real one checks the first and last segments).
+        sealCommit: async () => {
+          const k = state.seal.keys[body.dekId];
+          if (!k || k.committed) return { __status: 404, error: 'no_pending_key' };
+          if (Number(body.plainSize) !== k.plainSize) return { __status: 400, error: 'wrong_size' };
+          const obj = state.r2.objects[k.sealedKey];
+          let plain = null;
+          try { plain = obj ? Buffer.from(await ms.openAll(new Uint8Array(obj), new Uint8Array(k.dek), ms.aadFor(body.dekId))) : null; } catch { plain = null; }
+          const headerOk = !!obj && Buffer.from(String(body.header || ''), 'base64').equals(obj.subarray(0, ms.HEADER));
+          state.seal.commits.push({ dekId: body.dekId, sealedKey: k.sealedKey, plainKey: k.plainKey, plain, headerOk });
+          if (!plain || !headerOk) return { __status: 422, error: 'seal_refused' };
+          k.committed = true;
+          return { ok: true, objectKey: k.plainKey || k.sealedKey, sealedKey: k.sealedKey, publicUrl: null };
         },
         signParts: () => ({ parts: Array.from({ length: body.count || 8 }, (_, k) => ({
           partNumber: body.from + k,
@@ -668,6 +740,10 @@ async function open(browser, role, opts = {}) {
         completeMultipart: () => {
           const up = state.r2.uploads[body.uploadId];
           const bytes = (body.parts || []).reduce((a, p) => a + (up.parts[p.partNumber] || { size: 0 }).size, 0);
+          if (state.r2.keep && up.bodies) {
+            state.r2.objects[up.key] = Buffer.concat((body.parts || [])
+              .map((p) => p.partNumber).sort((a, b) => a - b).map((n) => up.bodies[n]));
+          }
           delete state.r2.uploads[body.uploadId];
           return { ok: true, objectKey: up.key, bytes: state.r2.wrongSize ? 1 : bytes, publicUrl: null };
         },
@@ -696,7 +772,7 @@ async function open(browser, role, opts = {}) {
       }
       const f = ops[body.op] || fmOps(state, body) || stOps(state, body) || ssOps(state, body);
       if (!f) { state.unexpected.push('studio op ' + body.op); return json(route, 400, { error: 'unknown_op' }); }
-      const out = f();
+      const out = await f();
       if (out && out.__status) return json(route, out.__status, { error: out.error });
       return json(route, 200, out);
     }
@@ -1279,6 +1355,170 @@ try {
     check('upload: no script errors', state.errors.length === 0);
     if (state.errors.length) console.log('     ' + state.errors.join('\n     '));
     check('upload: nothing unexpected was called', state.unexpected.length === 0);
+    if (state.unexpected.length) console.log('     ' + state.unexpected.join('\n     '));
+    await ctx.close();
+  }
+
+  // ── the media seal: uploads sealed on the phone (§7.3, ENC-4 step 4) ───
+  {
+    const { page, ctx, state } = await open(browser, 'owner', { hash: '#/upload' });
+    await page.waitForSelector('#tab-new:not([hidden])');
+    state.r2.keep = true;
+    const MiB = 1024 * 1024;
+    const prep = async () => page.evaluate(() => {
+      UPLOAD_TIMING.stallMs = 1500; UPLOAD_TIMING.backoffMs = 30; UPLOAD_TIMING.pollMs = 200;
+      window.__mk = (seed, name, mid) => {
+        const n = 40 * 1024 * 1024;
+        const u = new Uint8Array(n);
+        for (let i = 0; i < n; i++) u[i] = (i * 31 + seed) & 255;
+        if (mid) u[20 * 1024 * 1024] ^= 0xff;
+        return new File([u], name, { type: 'image/jpeg', lastModified: 1 });
+      };
+      window.__go = (f, folder) => {
+        window.__res = null; window.__err = null;
+        const host = document.body.appendChild(document.createElement('div'));
+        const job = newUploadJob([f], folder, { op: 'create', payload: { op: 'create', folder, title: f.name } }, f.name);
+        upSave(job).then(() => uploadAll([f], host, folder, job))
+          .then((a) => finishUploadJob(job, a))
+          .then((r) => { window.__res = r; }, (e) => { window.__err = String(e.message || e); });
+      };
+    });
+    const nodeFile = (seed, name, mid) => {
+      const n = 40 * MiB;
+      const b = Buffer.alloc(n);
+      for (let i = 0; i < n; i++) b[i] = (i * 31 + seed) & 255;
+      if (mid) b[20 * MiB] ^= 0xff;
+      return { name, mimeType: 'image/jpeg', buffer: b };
+    };
+    const settled = () => page.waitForFunction(() => window.__res || window.__err, null, { timeout: 90000 });
+    const partsOf = (id) => state.r2.puts.filter((p) => p.upload === id).map((p) => p.n);
+    const lastCreate = () => state.r2.creates[state.r2.creates.length - 1];
+    await prep();
+
+    // S1. Switch `on`: a 40 MB file goes up sealed, in 16 MiB parts.
+    state.seal.mode = 'on';
+    await page.evaluate(() => __go(__mk(21, 'born.jpg'), 'f'));
+    await settled();
+    const c1 = state.seal.commits[state.seal.commits.length - 1];
+    check('seal: a large upload is sealed on the phone and recorded (' + (await page.evaluate(() => window.__err)) + ')',
+      !!(await page.evaluate(() => window.__res)) && !!c1 && c1.headerOk);
+    check('seal: the sealed object opens to exactly the file', !!c1.plain && c1.plain.equals(nodeFile(21).buffer));
+    const id1 = 'u' + state.r2.begins;
+    const sizes1 = state.r2.puts.filter((p) => p.upload === id1).map((p) => p.size);
+    check('seal: 16 MiB sealed parts, the last the rest (' + sizes1.join(',') + ')',
+      sizes1.length === 3 && sizes1[0] === 16 * MiB && sizes1[1] === 16 * MiB &&
+      sizes1[2] === ms.sealedSize(40 * MiB) - 32 * MiB);
+    check('seal: every part sent as application/octet-stream',
+      state.r2.types.filter((t) => t.upload === id1).every((t) => t.type === 'application/octet-stream'));
+    const a1 = (lastCreate().assets || [])[0] || {};
+    check('seal: the row names the sealed object, at the plain size',
+      /^s\/[0-9a-f]{32}$/.test(a1.objectKey || '') && a1.bytes === 40 * MiB);
+
+    // S2. The tab dies after part 1 of a sealed upload. The record on the
+    //     phone has the header and the hashes — never the DEK; the resume
+    //     asks for the DEK again and sends only what is missing.
+    let release;
+    const held = new Promise((r) => { release = r; });
+    state.r2.hold = (n) => (n === 2 ? held : null);
+    const nextUpload = async (before) => {
+      for (let k = 0; k < 600 && state.r2.begins === before; k++) await new Promise((r) => setTimeout(r, 50));
+      return 'u' + state.r2.begins;
+    };
+    let before = state.r2.begins;
+    await page.evaluate(() => __go(__mk(22, 'born-dies.jpg'), 'f'));
+    const id2 = await nextUpload(before);
+    for (let k = 0; k < 300 && !partsOf(id2).includes(1); k++) await new Promise((r) => setTimeout(r, 50));
+    for (let k = 0; k < 100; k++) {
+      const h = await page.evaluate(() => upJobs().then((j) => JSON.stringify(j)));
+      if (/"2":"[0-9a-f]{64}"/.test(h)) break;
+      await new Promise((r) => setTimeout(r, 50));
+    }
+    const rec = await page.evaluate(() => upJobs().then((j) => JSON.stringify(j)));
+    const k2 = Object.values(state.seal.keys).find((k) => k.uploadId === id2);
+    check('seal: the resume record holds the header and each sent part\'s hash',
+      /"header":"[A-Za-z0-9+/]{54}==/.test(rec) && /"1":"[0-9a-f]{64}"/.test(rec));
+    check('seal: and never the DEK', !!k2 && !rec.includes(k2.dek.toString('base64')));
+    await page.reload();
+    await page.waitForSelector('#tab-new:not([hidden])');
+    release();
+    state.r2.hold = null;
+    await prep();
+    await page.waitForSelector('#upResume .cr-rv');
+    const putsBefore = state.r2.puts.length;
+    const beginsBefore = state.r2.begins;
+    const resumesBefore = state.seal.resumes;
+    await page.setInputFiles('#upResume .cr-rv input[type=file]', nodeFile(22, 'born-dies.jpg'));
+    await page.waitForFunction(() => /Finished/.test(document.querySelector('#msg')?.textContent || ''), null, { timeout: 90000 });
+    const resent = state.r2.puts.slice(putsBefore).filter((p) => p.upload === id2).map((p) => p.n);
+    const c2 = state.seal.commits.find((c) => c.dekId === k2.dekId);
+    check('seal: the resume asked for the DEK once, and sent only what was missing (parts ' + resent.join(',') +
+      '; DEK asked ' + (state.seal.resumes - resumesBefore) + ', new uploads ' + (state.r2.begins - beginsBefore) + ')',
+      state.seal.resumes === resumesBefore + 1 && !resent.includes(1) && resent.includes(2) && resent.includes(3) &&
+      state.r2.begins === beginsBefore);
+    check('seal: and the object it finished opens to exactly the file',
+      !!c2 && !!c2.plain && c2.plain.equals(nodeFile(22).buffer));
+
+    // S3. The same name, size, first and last megabyte — another middle.
+    //     A part already sealed is never sealed again over other bytes: the
+    //     upload starts over under a new DEK.
+    await page.evaluate(() => show('new'));
+    state.r2.hold = (n) => (n === 2 ? new Promise(() => {}) : null);
+    before = state.r2.begins;
+    await page.evaluate(() => __go(__mk(23, 'mid.jpg'), 'f'));
+    const id3 = await nextUpload(before);
+    for (let k = 0; k < 300 && !partsOf(id3).includes(1); k++) await new Promise((r) => setTimeout(r, 50));
+    for (let k = 0; k < 100; k++) {
+      if (/"2":"[0-9a-f]{64}"/.test(await page.evaluate(() => upJobs().then((j) => JSON.stringify(j))))) break;
+      await new Promise((r) => setTimeout(r, 50));
+    }
+    await page.reload();
+    state.r2.hold = null;
+    await page.waitForSelector('#tab-new:not([hidden])');
+    await prep();
+    await page.waitForSelector('#upResume .cr-rv');
+    const b3 = state.r2.begins;
+    await page.setInputFiles('#upResume .cr-rv input[type=file]', nodeFile(23, 'mid.jpg', true));
+    await page.waitForFunction(() => /Finished/.test(document.querySelector('#msg')?.textContent || ''), null, { timeout: 90000 });
+    const c3 = state.seal.commits[state.seal.commits.length - 1];
+    check('seal: another middle restarts the upload under a new DEK, the old one aborted',
+      state.r2.begins === b3 + 1 && state.r2.aborts.includes(id3));
+    check('seal: and the object opens to the file actually sent',
+      !!c3 && !!c3.plain && c3.plain.equals(nodeFile(23, 'mid.jpg', true).buffer));
+
+    // S4. A photo from a phone, switch `on`: its place and time are gone
+    //     BEFORE it is sealed, and it goes up in one sealed PUT.
+    const exifSeg = (() => {
+      const p = Buffer.concat([Buffer.from('Exif\0\0'), Buffer.from([0x4d, 0x4d, 0, 42, 0, 0, 0, 8, 0, 1,
+        0x01, 0x0f, 0, 2, 0, 0, 0, 10, 0, 0, 0, 26, 0, 0, 0, 0]), Buffer.from('SECRETCAM\0')]);
+      return Buffer.concat([Buffer.from([0xff, 0xe1, (p.length + 2) >> 8, (p.length + 2) & 255]), p]);
+    })();
+    const scan = Buffer.from([0xff, 0xdb, 0, 3, 0, 0xff, 0xda, 0, 8, 1, 1, 0, 0, 0x3f, 0, 0x12, 0x34, 0xff, 0xd9]);
+    const photo = Buffer.concat([Buffer.from([0xff, 0xd8]), exifSeg, scan]);
+    await page.evaluate((arr) => __go(new File([Uint8Array.from(arr)], 'home.jpg', { type: 'image/jpeg' }), 'f'),
+      Array.from(photo));
+    await settled();
+    const c4 = state.seal.commits[state.seal.commits.length - 1];
+    check('seal: a phone photo goes up sealed in one PUT (' + (await page.evaluate(() => window.__err)) + ')',
+      !!c4 && !!c4.plain && c4.headerOk);
+    check('seal: without its camera, place or time — the picture itself untouched',
+      !!c4.plain && !c4.plain.includes(Buffer.from('SECRETCAM')) && c4.plain.subarray(c4.plain.length - scan.length).equals(scan));
+
+    // S5. The canary: an open film's photo goes up plain AND sealed beside it.
+    state.seal.mode = 'canary';
+    await page.evaluate((arr) => __go(new File([Uint8Array.from(arr)], 'still.jpg', { type: 'image/jpeg' }), 'open-film-zz'),
+      Array.from(photo));
+    await settled();
+    const c5 = state.seal.commits[state.seal.commits.length - 1];
+    const a5 = (lastCreate().assets || [])[0] || {};
+    check('seal: a canary twin — the row names the plain photo, its sealed twin recorded beside it',
+      !!c5 && c5.plainKey === a5.objectKey && !/^s\//.test(a5.objectKey || '') && !!c5.plain &&
+      !c5.plain.includes(Buffer.from('SECRETCAM')));
+    state.seal.mode = 'off';
+
+    check('seal: every request carried seal: 1', state.seal.noSealFlag === 0);
+    check('seal: no script errors', state.errors.length === 0);
+    if (state.errors.length) console.log('     ' + state.errors.join('\n     '));
+    check('seal: nothing unexpected was called', state.unexpected.length === 0);
     if (state.unexpected.length) console.log('     ' + state.unexpected.join('\n     '));
     await ctx.close();
   }

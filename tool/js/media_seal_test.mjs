@@ -111,4 +111,52 @@ ok(await refuses(() => ms.openAll(sealed, dek, ms.aadFor('another-id'))), 'anoth
 const s = await ms.Sealer.create(dek, aad, 10);
 ok(await refuses(() => s.sealSegment(0, new Uint8Array(9))), 'a segment of the wrong length is refused');
 
+// -- a sealed object uploaded in parts (the console, §7.3) ------------------------
+// Each part sealed alone, from exactly its plaintext, must concatenate to the
+// object sealAll makes with the same salt and prefix — byte for byte — with
+// every part but the last exactly the part size R2 requires.
+{
+  const PART = 4 * ms.SEGMENT; // small parts, the same arithmetic as 16 MiB
+  const fixed = { salt: ms.randomBytes(ms.SALT), prefix: ms.randomBytes(ms.PREFIX) };
+  const sizes = [1, ms.FIRST_PLAIN - 1, ms.FIRST_PLAIN, ms.FIRST_PLAIN + 1,
+    ms.FIRST_PLAIN + 3 * ms.PLAIN_SEGMENT, ms.FIRST_PLAIN + 3 * ms.PLAIN_SEGMENT + 1,
+    ms.FIRST_PLAIN + 7 * ms.PLAIN_SEGMENT + 5, 13 * ms.SEGMENT + 777];
+  let allSame = true;
+  let allSized = true;
+  for (const n of sizes) {
+    const pt = ms.randomBytes(n);
+    const whole = await ms.sealAll(pt, dek, aad, fixed);
+    const sealer = await ms.Sealer.create(dek, aad, n, fixed);
+    const count = ms.sealedPartCount(PART, n);
+    const parts = [];
+    for (let p = 1; p <= count; p++) {
+      const [a, b] = ms.partPlainRange(p, PART, n);
+      const part = await ms.sealPart(sealer, p, PART, pt.subarray(a, b));
+      if (p < count && part.length !== PART) allSized = false;
+      parts.push(part);
+    }
+    const joined = new Uint8Array(parts.reduce((t, x) => t + x.length, 0));
+    let at = 0;
+    for (const x of parts) { joined.set(x, at); at += x.length; }
+    if (joined.length !== whole.length || joined.some((x, i) => x !== whole[i])) allSame = false;
+  }
+  ok(allSame, 'parts sealed alone join to exactly the object sealed whole (8 sizes)');
+  ok(allSized, 'every part but the last is exactly the part size');
+  // A RESUME: a new Sealer over the header already uploaded (its salt and
+  // prefix) seals the remaining parts to the same bytes.
+  const n = ms.FIRST_PLAIN + 9 * ms.PLAIN_SEGMENT + 3;
+  const pt = ms.randomBytes(n);
+  const first = await ms.Sealer.create(dek, aad, n);
+  const again = await ms.Sealer.create(dek, aad, n,
+    { salt: first.header.slice(1, 1 + ms.SALT), prefix: first.header.slice(1 + ms.SALT, ms.HEADER) });
+  const [a, b] = ms.partPlainRange(2, PART, n);
+  const x1 = await ms.sealPart(first, 2, PART, pt.subarray(a, b));
+  const x2 = await ms.sealPart(again, 2, PART, pt.subarray(a, b));
+  ok(x1.every((v, i) => v === x2[i]) && first.header.every((v, i) => v === again.header[i]),
+    'a resumed upload seals a part to the same bytes from the header alone');
+  ok(await refuses(() => ms.sealPart(first, 2, PART, pt.subarray(a, b - 1))), 'a part of the wrong length is refused');
+  ok(await refuses(async () => ms.partPlainRange(99, PART, n)), 'a part past the end is refused');
+  ok(await refuses(async () => ms.sealedPartCount(PART + 1, n)), 'a part that is not whole segments is refused');
+}
+
 console.log(`media seal (js): all checks passed (${checks})`);

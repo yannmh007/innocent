@@ -215,17 +215,104 @@ function putWatched(url, blob, onProgress, needEtag) {
   });
 }
 
+// ── the media seal (docs/MEDIA_ENCRYPTION.md §7.3) ───────────────────────
+//
+// WHAT THE STUDIO ASKS FOR, THIS PAGE DOES. When the switch wants an upload
+// sealed, `sign` and `beginMultipart` answer with `seal`: a DEK issued for
+// this one object. The bytes are sealed HERE, on the phone, before any of
+// them leaves it — a small file whole, a large one part by part, each
+// 16 MiB part 256 whole segments (part 1 with the header), so a part is
+// sealed, sent and retried on its own. `sealCommit` then has the studio
+// check the object and record its key; only after that is an asset row
+// written that names it.
+//
+// THE DEK LIVES IN THIS TAB'S MEMORY ONLY. What the job store keeps for a
+// resume is the header (its salt and nonce prefix are already in R2) and
+// each part's plaintext SHA-256 — never the DEK, which `sealResume` hands
+// back for an upload still pending. A part is sealed under a nonce that
+// part 1's header fixed; sealing DIFFERENT bytes under it would break the
+// cipher, so a part whose plaintext no longer hashes as it did is never
+// sealed again: the upload starts over under a new DEK.
+
+let sealLibP = null;
+/// The format, shared with the edge functions (docs/edge/media_seal.js).
+function sealLib() {
+  return sealLibP || (sealLibP = import('../edge/media_seal.js'));
+}
+
+function unb64(s) {
+  return Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+}
+
+function tob64(bytes) {
+  let s = '';
+  for (let i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
+  return btoa(s);
+}
+
+async function sha256hex(bytes) {
+  const h = new Uint8Array(await crypto.subtle.digest('SHA-256', bytes));
+  return Array.from(h, (b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+function octets(bytes) {
+  return new Blob([bytes], { type: 'application/octet-stream' });
+}
+
+/// [blob] sealed whole under the issued DEK: `{ body, header }`.
+async function sealWhole(blob, seal) {
+  const ms = await sealLib();
+  const plain = new Uint8Array(await blob.arrayBuffer());
+  const dek = unb64(seal.dek);
+  try {
+    const sealed = await ms.sealAll(plain, dek, ms.aadFor(seal.dekId));
+    return { body: octets(sealed), header: tob64(sealed.subarray(0, ms.HEADER)) };
+  } finally {
+    dek.fill(0);
+  }
+}
+
+async function sealCommit(dekId, header, plainSize, status) {
+  return await apiPatient({ op: 'sealCommit', dekId, header, plainSize }, status);
+}
+
 // ── a small file: one PUT ────────────────────────────────────────────────
 
 async function putSmall(blob, onProgress, { kind, filename, folder }, status) {
   let sig = null;
+  let sealed = null;
   await patiently(async (fresh) => {
     if (!sig || fresh) {
-      sig = await apiPatient({ op: 'sign', kind, filename, size: blob.size, folder }, status);
+      // `seal: 1`: this page seals when asked (an older page is refused
+      // sealed work rather than handed a DEK it would ignore).
+      sig = await apiPatient({ op: 'sign', kind, filename, size: blob.size, folder, seal: 1 }, status);
+      sealed = null;
     }
-    await putWatched(sig.uploadUrl, blob, onProgress, false);
+    if (sig.seal && sig.seal.make === 'sealed') {
+      // BORN SEALED: nothing plain leaves the phone.
+      if (!sealed) sealed = await sealWhole(blob, sig.seal);
+      await putWatched(sig.uploadUrl, sealed.body, onProgress, false);
+    } else {
+      await putWatched(sig.uploadUrl, blob, onProgress, false);
+    }
   }, status, () => false);
-  return sig;
+  if (sig.seal && sig.seal.make === 'sealed') {
+    const c = await sealCommit(sig.seal.dekId, sealed.header, blob.size, status);
+    return { ...sig, objectKey: c.objectKey, publicUrl: c.publicUrl || null, seal: null };
+  }
+  if (sig.seal && sig.seal.make === 'twin') {
+    // A TWIN (canary): the plain file is up and is what the row names; its
+    // sealed twin goes beside it. One that fails costs the twin, not the
+    // upload.
+    try {
+      const tw = await sealWhole(blob, sig.seal);
+      await patiently(() => putWatched(sig.seal.uploadUrl, tw.body, null, false), status, () => false);
+      await sealCommit(sig.seal.dekId, tw.header, blob.size, status);
+    } catch (e) {
+      if (status) status('The sealed copy was not made (' + (e.message || e) + '); the file is uploaded as before', 'warn');
+    }
+  }
+  return { ...sig, seal: null };
 }
 
 // ── a large file: parts, each one recorded ───────────────────────────────
@@ -241,14 +328,54 @@ async function putSmall(blob, onProgress, { kind, filename, folder }, status) {
 /// what a resume needs; R2 deletes an unfinished upload by itself after
 /// seven days, and Discard (on the Upload page) deletes it at once.
 async function putInParts(blob, onProgress, { kind, filename, folder }, ctx = {}) {
+  try {
+    return await putInPartsOnce(blob, onProgress, { kind, filename, folder }, ctx);
+  } catch (e) {
+    if (e.code !== 'seal_restart') throw e;
+    // NOT THE BYTES THIS SEALED UPLOAD BEGAN WITH: its parts cannot be
+    // sealed again under the same nonces. Abandoned, and begun again under a
+    // new DEK.
+    if (ctx.status) ctx.status('This file is not byte for byte the one this upload began with — sending it again from the start', 'warn');
+    if (e.mp && e.mp.uploadId) {
+      try {
+        await api({ op: 'abortMultipart', kind: e.mp.kind, objectKey: e.mp.objectKey, uploadId: e.mp.uploadId });
+      } catch (_) { /* R2 drops it after a week anyway */ }
+    }
+    return await putInPartsOnce(blob, onProgress, { kind, filename, folder }, { ...ctx, resume: null });
+  }
+}
+
+async function putInPartsOnce(blob, onProgress, { kind, filename, folder }, ctx = {}) {
   const status = ctx.status || null;
   const record = ctx.record || (() => {});
   const total = blob.size;
-  const count = Math.ceil(total / PART_SIZE);
-  if (count > 10000) {
-    throw new Error('This file is larger than 160 GB, which is R2\'s limit for one upload.');
-  }
-  const sizeOf = (n) => (n < count ? PART_SIZE : total - (count - 1) * PART_SIZE);
+
+  // SEALED OR PLAIN is decided by the studio when the upload begins (or was
+  // decided when it began, for a resume), and fixes every size below: a
+  // sealed upload sends sealedSize(total) bytes, in parts of PART_SIZE.
+  let seal = null;          // { ms, sealer } while sealing
+  let wire = total;         // bytes sent to R2
+  let count = Math.ceil(total / PART_SIZE);
+  const sizeOf = (n) => (n < count ? PART_SIZE : wire - (count - 1) * PART_SIZE);
+  const startSealing = async (dek, dekId, header) => {
+    const ms = await sealLib();
+    try {
+      const fixed = header
+        ? { salt: header.subarray(1, 1 + ms.SALT), prefix: header.subarray(1 + ms.SALT, ms.HEADER) }
+        : undefined;
+      seal = { ms, sealer: await ms.Sealer.create(dek, ms.aadFor(dekId), total, fixed) };
+    } finally {
+      dek.fill(0);
+    }
+    wire = ms.sealedSize(total);
+    count = ms.sealedPartCount(PART_SIZE, total);
+  };
+  const tooBig = () => {
+    if (count > 10000) {
+      throw new Error('This file is larger than 160 GB, which is R2\'s limit for one upload.');
+    }
+  };
+  tooBig();
 
   let mp = null;
   const done = new Map();
@@ -256,9 +383,30 @@ async function putInParts(blob, onProgress, { kind, filename, folder }, ctx = {}
   if (old && old.uploadId && old.partSize === PART_SIZE && old.bodySize === total) {
     // FINISHED ALREADY. The tab died between R2 completing the upload and the
     // page writing the row: the object is whole, and uploading it again would
-    // leave a second copy nothing points at.
-    if (old.completed) return { objectKey: old.objectKey, publicUrl: old.publicUrl || null };
+    // leave a second copy nothing points at. A sealed one may still need its
+    // key recorded.
+    if (old.completed) {
+      if (old.sealed && !old.committed) {
+        const c = await sealCommit(old.sealed.dekId, old.sealed.header, total, status);
+        record({ ...old, committed: true });
+        return { objectKey: c.objectKey, publicUrl: c.publicUrl || null };
+      }
+      return { objectKey: old.objectKey, publicUrl: old.publicUrl || null };
+    }
     mp = { ...old, parts: [...(old.parts || [])] };
+    if (old.sealed) {
+      // THE DEK AGAIN, from the studio: this phone never kept it.
+      try {
+        const r = await apiPatient({ op: 'sealResume', dekId: old.sealed.dekId }, status);
+        await startSealing(unb64(r.dek), old.sealed.dekId, unb64(old.sealed.header));
+        mp.sealed = { ...old.sealed, hashes: { ...(old.sealed.hashes || {}) } };
+      } catch (e) {
+        if (e.code !== 'no_pending_key') throw e;
+        mp = null; // the key is gone with the upload: start again
+      }
+    }
+  }
+  if (mp) {
     for (const p of mp.parts) done.set(p.partNumber, p.etag);
     // THE OTHER SIDE'S VIEW. A part is in the local record only after R2
     // accepted it and handed back its ETag, so the record is trusted — but if
@@ -284,22 +432,72 @@ async function putInParts(blob, onProgress, { kind, filename, folder }, ctx = {}
   }
 
   if (!mp) {
-    const begin = await apiPatient({ op: 'beginMultipart', kind, filename, folder }, status);
+    done.clear();
+    seal = null;
+    wire = total;
+    count = Math.ceil(total / PART_SIZE);
+    const begin = await apiPatient({ op: 'beginMultipart', kind, filename, folder,
+      size: total, seal: 1 }, status);
     mp = { uploadId: begin.uploadId, objectKey: begin.objectKey, kind,
       publicUrl: begin.publicUrl || null, partSize: PART_SIZE, bodySize: total, parts: [] };
+    if (begin.seal && begin.seal.make === 'sealed') {
+      await startSealing(unb64(begin.seal.dek), begin.seal.dekId, null);
+      tooBig();
+      mp.sealed = { dekId: begin.seal.dekId, header: tob64(seal.sealer.header), hashes: {} };
+    }
     record(mp);
   }
+
+  // A SEALED RESUME PROVES THE SAME BYTES: every part already in R2 is
+  // hashed again and must match what was sealed then — otherwise the object
+  // would join two files, and the parts still to send would be sealed under
+  // nonces another plaintext already used.
+  const restart = () => {
+    const e = new Error('not the same bytes');
+    e.code = 'seal_restart';
+    e.mp = mp;
+    return e;
+  };
+  const plainOf = async (n) => {
+    const [a, b] = seal.ms.partPlainRange(n, PART_SIZE, total);
+    return new Uint8Array(await blob.slice(a, b).arrayBuffer());
+  };
+  if (seal && done.size) {
+    for (const n of done.keys()) {
+      const was = mp.sealed.hashes[n];
+      if (!was || was !== await sha256hex(await plainOf(n))) throw restart();
+    }
+  }
+  let sealedPart = null; // { n, body } — a retry sends the same sealed bytes
+  const chunkFor = async (n) => {
+    if (!seal) {
+      const start = (n - 1) * PART_SIZE;
+      return blob.slice(start, start + sizeOf(n));
+    }
+    if (sealedPart && sealedPart.n === n) return sealedPart.body;
+    const plain = await plainOf(n);
+    const h = await sha256hex(plain);
+    const was = mp.sealed.hashes[n];
+    if (was && was !== h) throw restart();
+    if (!was) {
+      // RECORDED BEFORE A BYTE OF IT IS SENT: a part sealed once is only
+      // ever sealed again from the same plaintext.
+      mp.sealed.hashes[n] = h;
+      record(mp);
+    }
+    sealedPart = { n, body: octets(await seal.ms.sealPart(seal.sealer, n, PART_SIZE, plain)) };
+    return sealedPart.body;
+  };
   const ref = { kind, objectKey: mp.objectKey, uploadId: mp.uploadId };
 
   let sent = 0;
   for (const n of done.keys()) sent += sizeOf(n);
-  if (onProgress) onProgress(sent / total);
+  if (onProgress) onProgress(sent / wire);
 
   let queue = [];
   for (let n = 1; n <= count; n++) {
     if (done.has(n)) continue;
-    const start = (n - 1) * PART_SIZE;
-    const chunk = blob.slice(start, start + sizeOf(n));
+    const chunk = await chunkFor(n);
 
     const etag = await patiently(async (fresh) => {
       // A batch of presigned URLs, refilled as it runs out — and refilled at
@@ -317,14 +515,14 @@ async function putInParts(blob, onProgress, { kind, filename, folder }, ctx = {}
           ' where part ' + n + ' was asked for.');
       }
       const tag = await putWatched(slot.url, chunk,
-        (f) => onProgress && onProgress((sent + f * chunk.size) / total), true);
+        (f) => onProgress && onProgress((sent + f * chunk.size) / wire), true);
       queue.shift();
       return tag;
     }, status, () => done.size > 0);
 
     done.set(n, etag);
     sent += chunk.size;
-    if (onProgress) onProgress(sent / total);
+    if (onProgress) onProgress(sent / wire);
     mp.parts = [...done].map(([partNumber, e]) => ({ partNumber, etag: e }));
     record(mp);
   }
@@ -334,11 +532,19 @@ async function putInParts(blob, onProgress, { kind, filename, folder }, ctx = {}
   const res = await apiPatient({ ...ref, op: 'completeMultipart', parts }, status);
   // CHECKED BEFORE ANY ROW IS WRITTEN. `bytes` null means R2 could not be
   // asked; anything else must be exactly the file.
-  if (res.bytes != null && Number(res.bytes) !== total) {
-    throw new Error('R2 holds ' + res.bytes + ' bytes of a ' + total + '-byte file. ' +
+  if (res.bytes != null && Number(res.bytes) !== wire) {
+    throw new Error('R2 holds ' + res.bytes + ' bytes of a ' + wire + '-byte upload. ' +
       'Nothing was saved; upload it again.');
   }
   record({ ...mp, completed: true, publicUrl: res.publicUrl || mp.publicUrl });
+  if (seal) {
+    // The studio checks the sealed object (its header, first and last
+    // segments open under the issued DEK) and records its key; only then is
+    // it something an asset row may name.
+    const c = await sealCommit(mp.sealed.dekId, mp.sealed.header, total, status);
+    record({ ...mp, completed: true, committed: true });
+    return { objectKey: c.objectKey, publicUrl: c.publicUrl || null };
+  }
   return { objectKey: mp.objectKey, publicUrl: res.publicUrl || mp.publicUrl };
 }
 
