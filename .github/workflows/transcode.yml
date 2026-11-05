@@ -175,6 +175,9 @@ jobs:
           export SRC_URL="$(python3 -c "import json;print(json.load(open('/tmp/job.json'))['src_url'])")"
           export DONE_URL="$(python3 -c "import json;print(json.load(open('/tmp/job.json'))['done_url'])")"
           export PUT_BASE="$(python3 -c "import json;print(json.dumps(json.load(open('/tmp/job.json'))['put']))")"
+          # The media seal's part of the job (docs/MEDIA_ENCRYPTION.md §7):
+          # read from the file by tool/transcode_seal.py, never printed.
+          export JOB_FILE=/tmp/job.json
           bash tool/transcode.sh
 
       - name: Say so when it did not work

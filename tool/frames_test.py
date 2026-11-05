@@ -67,6 +67,27 @@ class Store(http.server.BaseHTTPRequestHandler):
         self.send_response(200)
         self.end_headers()
 
+    objects = {}
+
+    def do_GET(self):
+        # An object by range, as R2 answers a presigned GET (the sealed
+        # source below).
+        import re
+        data = Store.objects[self.path]
+        m = re.match(r'bytes=(\d+)-(\d*)', self.headers.get('Range', ''))
+        a = int(m.group(1)) if m else 0
+        b = int(m.group(2)) if m and m.group(2) else len(data) - 1
+        chunk = data[a:b + 1]
+        self.send_response(206 if m else 200)
+        if m:
+            self.send_header('Content-Range', 'bytes %d-%d/%d' % (a, b, len(data)))
+        self.send_header('Content-Length', str(len(chunk)))
+        self.end_headers()
+        try:
+            self.wfile.write(chunk)
+        except (BrokenPipeError, ConnectionResetError):
+            pass
+
     def do_POST(self):
         n = int(self.headers.get('Content-Length') or 0)
         Store.reports.append(json.loads(self.rfile.read(n)))
@@ -149,6 +170,77 @@ check('a small video is never upscaled (%s)' % ssizes, ssizes == {(320, 180)})
 
 check('an unreadable video is reported as a failure with a reason',
       by['bad']['frames'] is None and 'no frame' in by['bad']['note'])
+
+# ── sealed (docs/MEDIA_ENCRYPTION.md §7) ──────────────────────────────────
+try:
+    import base64
+    import io
+    import media_seal
+except BaseException as e:  # no `cryptography` here (pyo3 panics are BaseException)
+    media_seal = None
+    print('SKIP the sealed half: the `cryptography` package does not load here (%s)' % type(e).__name__)
+
+if media_seal:
+    def sealed_bytes(data, dek_id):
+        dek = os.urandom(32)
+        out = io.BytesIO()
+        media_seal.seal_stream(io.BytesIO(data), out, dek, media_seal.aad_for(dek_id), len(data))
+        return dek, out.getvalue()
+
+    def open_bytes(sealed, dek, dek_id):
+        back = io.BytesIO()
+        media_seal.open_stream(io.BytesIO(sealed), back, dek, media_seal.aad_for(dek_id), len(sealed))
+        return back.getvalue()
+
+    raw = open(land, 'rb').read()
+    mdek, msealed = sealed_bytes(raw, 'm-1')
+    Store.objects['/obj/sealed-master'] = msealed
+    deks = {}
+
+    def sjob(asset, plain_too):
+        slots = []
+        for i in range(10):
+            d = os.urandom(32)
+            did = '%s-%d' % (asset, i)
+            deks[did] = d
+            slot = {'seal': {'dek_id': did, 'dek': base64.b64encode(d).decode(), 'wrapped': 'W' + did,
+                             'sealed_key': 's/%032x' % (hash(did) & (2 ** 128 - 1)),
+                             'put_url': '%s/sput/%s/%d' % (base, asset, i)}}
+            if plain_too:
+                slot['key'] = 'f/thumb/%s-f%02d.jpg' % (asset, i)
+                slot['put'] = '%s/put/%s/%d' % (base, asset, i)
+            slots.append(slot)
+        return {'asset_id': asset, 'src_url': base + '/obj/sealed-master', 'duration_s': 20,
+                'src_seal': {'dek_id': 'm-1', 'dek': base64.b64encode(mdek).decode(),
+                             'plain_size': len(raw), 'sealed_size': len(msealed)},
+                'frames': slots}
+
+    Store.reports.clear()
+    batch = {'jobs': [sjob('twin', True), sjob('born', False)], 'done_url': base + '/done'}
+    with open(frames.JOBS, 'w') as fh:
+        json.dump(batch, fh)
+    frames.main()
+    by = {r['asset_id']: r for r in Store.reports}
+    tw = by['twin']['frames'] or []
+    check('sealed source: ten stills read through the proxy', len(tw) == 10)
+    good = True
+    for i, f in enumerate(tw):
+        sealed = Store.puts['/sput/twin/%d' % i]
+        plain = Store.puts['/put/twin/%d' % i]
+        sl = f.get('sealed') or {}
+        good = good and f['key'] == 'f/thumb/twin-f%02d.jpg' % i and sl.get('wrapped') == 'Wtwin-%d' % i \
+            and 'dek' not in sl and open_bytes(sealed, deks['twin-%d' % i], 'twin-%d' % i) == plain \
+            and Store.types['/sput/twin/%d' % i] == 'application/octet-stream' \
+            and base64.b64decode(sl['header']) == sealed[:40] and sl['plain_size'] == len(plain)
+    check('canary: each still plain AND sealed, the sealed one opening to exactly it, its wrap and header '
+          'reported and never its DEK', good)
+    bo = by['born']['frames'] or []
+    check('on: ten stills, born sealed', len(bo) == 10)
+    check('on: no plain still uploaded', not any(k.startswith('/put/born/') for k in Store.puts))
+    born_ok = all(f['key'] == f['sealed']['sealed_key'] for f in bo) and \
+        {jpeg_size(open_bytes(Store.puts['/sput/born/%d' % i], deks['born-%d' % i], 'born-%d' % i))
+         for i in range(10)} == {(640, 360)}
+    check('on: each still\'s key is its sealed object, and it opens to a 640-wide JPEG', born_ok)
 
 srv.shutdown()
 shutil.rmtree(work, ignore_errors=True)

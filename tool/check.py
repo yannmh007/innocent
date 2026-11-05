@@ -117,6 +117,15 @@ CHECKS = [
      'the runner seals, the console seals, the phone opens, three ports of '
      'one format; checked against vectors Google Tink itself opens, and a '
      'flipped byte, a cut or swapped segment, or the wrong key must refuse'),
+    ('unseal_proxy_test.py', None,
+     'a runner reading a sealed film by range wrongly: a range not exact, a '
+     'seek that fetches the whole film, or an altered segment passed to ffmpeg '
+     '(the ffmpeg half runs wherever ffmpeg is on PATH)'),
+    ('transcode_seal_test.py', None,
+     'a transcode that seals wrongly: a sealed master not opened, a sealed '
+     'rung that does not open to the encode, a plain rung reaching R2 when the '
+     'function asked for sealed only, or a DEK in the public log (the ffmpeg '
+     'half runs wherever ffmpeg is on PATH)'),
     ('frames_test.py', None,
      'a cover picker that offers the wrong frames: frame 0 not at one second, '
      'stills upscaled or squashed for portrait video, a frame PUT under a key '

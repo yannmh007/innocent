@@ -24,9 +24,19 @@ phone's HDR10 clip drawn as 8-bit without converting the curve is a grey,
 washed-out still — the worst possible advertisement for it.
 
 NOTHING HERE HOLDS A BUCKET KEY. Every URL arrives presigned for one object.
+
+SEALED (docs/MEDIA_ENCRYPTION.md §7), as the claim says, never by choice
+here: a sealed source (`src_seal`) is read through tool/unseal_proxy.py on
+loopback — still range requests, still a few megabytes — and a slot with a
+`seal` gets its still sealed under the DEK issued for it, opened again and
+compared, and uploaded to its own key; with a plain `put` as well in the
+canary, alone once the switch is `on`. What comes back carries the wrap and
+header, never the DEK; nothing secret is printed.
 """
 
 import json
+import base64
+import contextlib
 import os
 import subprocess
 import sys
@@ -116,6 +126,50 @@ def put(path, url):
     return p.returncode == 0
 
 
+def seal_still(path, seal):
+    """The still at [path] sealed under its issued DEK, opened again and
+    compared, uploaded to its own key: what its row carries, or None."""
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import io
+    import media_seal
+    from seal_twins import upload
+    data = open(path, 'rb').read()
+    dek = base64.b64decode(seal['dek'])
+    aad = media_seal.aad_for(seal['dek_id'])
+    out = io.BytesIO()
+    media_seal.seal_stream(io.BytesIO(data), out, dek, aad, len(data))
+    sealed = out.getvalue()
+    back = io.BytesIO()
+    media_seal.open_stream(io.BytesIO(sealed), back, dek, aad, len(sealed))
+    if back.getvalue() != data:
+        return None
+    spath = path + '.sealed'
+    with open(spath, 'wb') as fh:
+        fh.write(sealed)
+    try:
+        if upload(seal['put_url'], spath) != 200:
+            return None
+    finally:
+        os.unlink(spath)
+    return {'dek_id': seal['dek_id'], 'wrapped': seal['wrapped'], 'sealed_key': seal['sealed_key'],
+            'plain_size': len(data), 'header': base64.b64encode(sealed[:media_seal.HEADER]).decode()}
+
+
+@contextlib.contextmanager
+def source(job):
+    """The URL ffmpeg reads: the presigned one, or for a sealed source the
+    loopback proxy that opens it by range."""
+    s = job.get('src_seal')
+    if not s:
+        yield job['src_url']
+        return
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from unseal_proxy import UnsealProxy
+    with UnsealProxy(job['src_url'], base64.b64decode(s['dek']), s['dek_id'],
+                     int(s['plain_size']), int(s['sealed_size'])) as url:
+        yield url
+
+
 def report(done_url, token, asset_id, frames, note):
     body = json.dumps({'op': 'frames_done', 'token': token, 'asset_id': asset_id,
                        'frames': frames, 'note': note})
@@ -132,8 +186,12 @@ def report(done_url, token, asset_id, frames, note):
 
 
 def one(job, work, zscale):
-    """Frames for one video: (list of {at, key}, note)."""
-    src = job['src_url']
+    """Frames for one video: (list of {at, key[, sealed]}, note)."""
+    with source(job) as src:
+        return _one(job, src, work, zscale)
+
+
+def _one(job, src, work, zscale):
     dur, transfer = probe(src)
     dur = dur or job.get('duration_s')
     tonemap = TONEMAP if transfer in ('smpte2084', 'arib-std-b67') and zscale else ''
@@ -148,8 +206,25 @@ def one(job, work, zscale):
         if not ok and at > 1:
             at = max(0.0, at - 1)
             ok = grab(src, at, out, tonemap)
-        if ok and put(out, slots[i]['put']):
-            made.append({'at': round(at, 1), 'key': slots[i]['key']})
+        slot = slots[i]
+        if ok:
+            # Sealed (as the claim says): a twin beside the plain still, or
+            # the only one. A twin that could not be sealed leaves the plain
+            # still; a still to be born sealed that could not be is left out.
+            sealed = None
+            if slot.get('seal'):
+                try:
+                    sealed = seal_still(out, slot['seal'])
+                except Exception:  # noqa: BLE001
+                    sealed = None
+            plain_ok = bool(slot.get('put')) and put(out, slot['put'])
+            if plain_ok:
+                entry = {'at': round(at, 1), 'key': slot['key']}
+                if sealed:
+                    entry['sealed'] = sealed
+                made.append(entry)
+            elif sealed and not slot.get('put'):
+                made.append({'at': round(at, 1), 'key': sealed['sealed_key'], 'sealed': sealed})
         if os.path.exists(out):
             os.unlink(out)
     if not made:

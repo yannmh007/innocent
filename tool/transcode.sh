@@ -48,6 +48,14 @@ curl -fsSL --retry 3 --retry-delay 5 -o "$src" "$SRC_URL"
 ls -lh "$src"
 echo "::endgroup::"
 
+# A SEALED MASTER (docs/MEDIA_ENCRYPTION.md §7) — born sealed, or in the
+# canary the master's twin — is opened here, on this runner's disk, before
+# anything reads it. The job file holds what that needs; nothing is printed.
+HERE="$(dirname "$0")"
+if [ -n "${JOB_FILE:-}" ]; then
+  python3 "$HERE/transcode_seal.py" open-master "$JOB_FILE" "$src"
+fi
+
 # ── what are we working with ───────────────────────────────────────────────
 # THE REPORTER IS DEFINED BEFORE ANYTHING CAN FAIL, because a job that dies
 # before it exists leaves the row saying "running" for ever, and the operator
@@ -187,7 +195,11 @@ for i in "${!LADDER_H[@]}"; do
   fi
 
   url="$(python3 -c "import json,os; print(json.loads(os.environ['PUT_BASE']).get('$h',''))")"
-  if [ -z "$url" ]; then echo "no upload url for ${h}p — skipped"; continue; fi
+  # Sealed as well (canary: a twin beside the plain rung), or sealed only
+  # (on: no plain upload URL at all) — as the job says.
+  sealing=0
+  if [ -n "${JOB_FILE:-}" ]; then sealing="$(python3 "$HERE/transcode_seal.py" has-seal "$JOB_FILE" "$h")"; fi
+  if [ -z "$url" ] && [ "$sealing" != 1 ]; then echo "no upload url for ${h}p — skipped"; continue; fi
 
   out="$work/${h}.mp4"
   echo "::group::Encode ${h}p at ${k}k"
@@ -252,19 +264,41 @@ for i in "${!LADDER_H[@]}"; do
   real_k="$(python3 -c "print(max(1, round($bytes*8/max(1,$DUR_I)/1000)))")"
   echo "${h}p -> $(( bytes / 1024 / 1024 )) MB, ${real_k} kbps"
 
-  echo "::group::Upload ${h}p"
-  curl -fsS --retry 3 --retry-delay 5 -H 'Expect:' \
-    -H 'Content-Type: video/mp4' -T "$out" "$url" >/dev/null
-  echo "::endgroup::"
+  # SEALED: sealed, opened whole again and compared, uploaded to its own
+  # key; what the row carries comes back (never the DEK). A twin that could
+  # not be sealed leaves its plain rung as before; a rung to be born sealed
+  # that could not be is left out — never a plain rung where none belongs.
+  sealed_json=""
+  if [ "$sealing" = 1 ]; then
+    if ! sealed_json="$(python3 "$HERE/transcode_seal.py" seal-rung "$JOB_FILE" "$h" "$out")"; then
+      sealed_json=""
+      echo "::warning::${h}p could not be sealed"
+      if [ -z "$url" ]; then rm -f "$out"; continue; fi
+    fi
+  fi
 
-  PUT_URL="$url" python3 - "$results" "$h" "$real_k" "$bytes" "$FPS" <<'PY'
+  if [ -n "$url" ]; then
+    echo "::group::Upload ${h}p"
+    curl -fsS --retry 3 --retry-delay 5 -H 'Expect:' \
+      -H 'Content-Type: video/mp4' -T "$out" "$url" >/dev/null
+    echo "::endgroup::"
+  fi
+
+  PUT_URL="$url" SEALED_JSON="$sealed_json" python3 - "$results" "$h" "$real_k" "$bytes" "$FPS" <<'PY'
 import json, os, sys, urllib.parse
 path, h, k, b, fps = sys.argv[1], int(sys.argv[2]), int(sys.argv[3]), int(sys.argv[4]), float(sys.argv[5])
-u = urllib.parse.urlsplit(os.environ['PUT_URL'])
-key = urllib.parse.unquote('/'.join(u.path.lstrip('/').split('/')[1:]))
+sealed = json.loads(os.environ['SEALED_JSON']) if os.environ.get('SEALED_JSON') else None
+if os.environ.get('PUT_URL'):
+    u = urllib.parse.urlsplit(os.environ['PUT_URL'])
+    key = urllib.parse.unquote('/'.join(u.path.lstrip('/').split('/')[1:]))
+else:
+    key = sealed['sealed_key']  # born sealed: the rung IS its sealed object
 rows = json.load(open(path))
 rows = [r for r in rows if r['height'] != h]
-rows.append({'height': h, 'kbps': k, 'object_key': key, 'bytes': b, 'fps': fps})
+row = {'height': h, 'kbps': k, 'object_key': key, 'bytes': b, 'fps': fps}
+if sealed:
+    row['sealed'] = sealed
+rows.append(row)
 rows.sort(key=lambda r: r['kbps'])
 json.dump(rows, open(path, 'w'))
 PY
