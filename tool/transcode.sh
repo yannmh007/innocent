@@ -314,4 +314,13 @@ if [ "$(python3 -c "import json;print(len(json.load(open('$results'))))")" = "0"
 else
   NOTE="complete" report
 fi
-echo "ladder:"; cat "$results"
+# The ladder as the log shows it: a sealed rung's row says only that it is
+# sealed — its wrap, dek_id and header went to the function, not to a public
+# log.
+echo "ladder:"
+python3 - "$results" <<'PY'
+import json, sys
+rows = json.load(open(sys.argv[1]))
+print(json.dumps([dict({k: v for k, v in r.items() if k != 'sealed'}, **({'sealed': True} if r.get('sealed') else {}))
+                  for r in rows]))
+PY

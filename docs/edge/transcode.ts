@@ -223,18 +223,80 @@ async function recordSealed(
           return g.status === 206 ? new Uint8Array(await g.arrayBuffer()) : null;
         },
       }, { kind, born });
-      const ins = await rest(`${table}?on_conflict=dek_id`, {
+      // Migration 069: one twin per plain object. This job has just made the
+      // plain object again, so a twin already there is stale; its row is
+      // replaced and its sealed object binned for a week.
+      const put = await rest('rpc/media_key_put', {
         method: 'POST',
-        headers: { Prefer: 'resolution=ignore-duplicates' },
-        body: JSON.stringify({ ...row, bucket }),
+        body: JSON.stringify({ p_kind: kind, p_row: { ...row, bucket } }),
       });
-      if (ins.ok) ok.add(id);
-      else refused.push(`${String(item.sealed_key).slice(0, 10)}: insert ${ins.status}`);
+      if (put.ok) {
+        ok.add(id);
+        const replaced = ((await put.json() as { replaced?: string[] }).replaced ?? []).length;
+        if (replaced) console.log(`sealed copy replaced (${kind}): ${replaced} old copy binned`);
+      } else {
+        refused.push(`${String(item.sealed_key).slice(0, 10)}: record ${put.status}`);
+        await binRefused(bucket, String(item.sealed_key));
+      }
     } catch (e) {
       refused.push(`${String(item.sealed_key).slice(0, 10)}: ${String((e as Error).message ?? e).slice(0, 80)}`);
+      await binRefused(bucket, String(item.sealed_key));
     }
   }
   return { ok, refused };
+}
+
+/// A sealed object a runner uploaded and this function would not record
+/// (it did not open, or its sizes were wrong) is junk in R2: it goes to the
+/// bin for a week, like anything else nobody names. The purge checks
+/// `r2_refs()` again first, so a key some row does name is never deleted.
+async function binRefused(bucket: string, key: string) {
+  if (!isSealedKey(key)) return;
+  await rest('r2_trash', {
+    method: 'POST',
+    headers: { Prefer: 'return=minimal' },
+    body: JSON.stringify({
+      bucket, key, reason: 'sealed copy refused when recorded',
+      purge_after: new Date(Date.now() + 7 * 86400_000).toISOString(),
+    }),
+  }).catch(() => undefined);
+}
+
+async function renditionKeysOf(asset: string): Promise<string[]> {
+  const r = await rest(`asset_renditions?select=object_key&asset_id=eq.${encodeURIComponent(asset)}`);
+  return r.ok ? (await r.json() as Array<{ object_key: string }>).map((x) => x.object_key) : [];
+}
+
+async function frameKeysOf(asset: string): Promise<string[]> {
+  const r = await rest(`title_assets?select=frames&id=eq.${encodeURIComponent(asset)}&limit=1`);
+  if (!r.ok) return [];
+  const f = (await r.json() as Array<{ frames: unknown }>)[0]?.frames;
+  return Array.isArray(f) ? f.map((x) => String((x as { key?: unknown })?.key ?? '')).filter(Boolean) : [];
+}
+
+/// A TWIN NEVER OUTLIVES ITS OBJECT (070). After a job's rungs or stills are
+/// recorded: a plain object it wrote again whose twin it did not make (the
+/// switch was off, or sealing failed) keeps no twin, which would open to the
+/// old bytes; an object the asset named before and no longer does (a rung
+/// dropped, a still born sealed taken again) loses its key row unless
+/// something still names it. Each sealed copy so dropped goes to the bin.
+async function settle(
+  kind: 'video' | 'image', bucket: string, asset: string,
+  before: string[], now: string[], keep: Set<string>,
+) {
+  const nowSet = new Set(now.filter(Boolean));
+  const remade = [...nowSet].filter((k) => !isSealedKey(k));
+  const gone = before.filter((k) => k && !nowSet.has(k));
+  if (!remade.length && !gone.length) return;
+  try {
+    const out = await rpc('media_keys_settle', {
+      p_kind: kind, p_bucket: bucket, p_remade: remade, p_gone: gone, p_keep: [...keep],
+    }) as { binned?: string[] };
+    const n = (out?.binned ?? []).length;
+    if (n) console.log(`sealed copies settled (${kind} ${asset}): ${n} binned`);
+  } catch (e) {
+    console.log(`settle failed (${kind} ${asset}): ${String(e).slice(0, 120)}`);
+  }
 }
 
 async function rpc(name: string, body: unknown): Promise<unknown> {
@@ -619,7 +681,11 @@ Deno.serve(async (req: Request) => {
     const given = (req.headers.get('Authorization') ?? '').replace(/^Bearer /i, '');
     if (!sameSecret(given, RUNNER_SECRET)) return json({ error: 'no' }, 403, req);
 
-    const rows = await rpc('claim_transcode', {}) as Array<Record<string, unknown>>;
+    // A RUNNER SAYS WHETHER IT SEALS (070). One that does not — main's
+    // scheduled runner while the sealing encoder is on a branch — is never
+    // handed a sealed master, nor a film the switch wants sealed.
+    const canSeal = body.seals === 1;
+    const rows = await rpc('claim_transcode', { p_seals: canSeal }) as Array<Record<string, unknown>>;
     if (!Array.isArray(rows) || !rows.length) return json({}, 200, req);
     const job = rows[0];
     const masterKey = String(job.object_key ?? '');
@@ -631,6 +697,12 @@ Deno.serve(async (req: Request) => {
     // the runner with its DEK; in the canary a master with a twin is read
     // from the twin, which proves that opening on real work.
     const make = makeFor(await sealNew(), await slugOfAsset(String(job.asset_id)));
+    if (!canSeal && (make !== 'plain' || isSealedKey(masterKey))) {
+      // The switch moved between the claim and here: back in the queue for
+      // a runner that seals.
+      await rpc('queue_transcode', { p_asset: job.asset_id });
+      return json({}, 200, req);
+    }
     const k = (make !== 'plain' || isSealedKey(masterKey)) ? await kek() : null;
     let srcKey = masterKey;
     let srcSeal: Record<string, unknown> | null = null;
@@ -694,7 +766,8 @@ Deno.serve(async (req: Request) => {
   if (op === 'frames_claim') {
     const given = (req.headers.get('Authorization') ?? '').replace(/^Bearer /i, '');
     if (!sameSecret(given, RUNNER_SECRET)) return json({ error: 'no' }, 403, req);
-    const rows = await rpc('claim_frames', { p_limit: 20 }) as Array<Record<string, unknown>>;
+    const canSeal = body.seals === 1; // as for `claim` (070)
+    const rows = await rpc('claim_frames', { p_limit: 20, p_seals: canSeal }) as Array<Record<string, unknown>>;
     if (!Array.isArray(rows) || !rows.length) return json({ jobs: [] }, 200, req);
     const jobs = [];
     const mode = await sealNew();
@@ -707,6 +780,10 @@ Deno.serve(async (req: Request) => {
       // each still is plain, plain with a sealed twin (canary, open films),
       // or sealed only (on).
       const make = makeFor(mode, await slugOfAsset(String(r.asset_id)));
+      if (!canSeal && (make !== 'plain' || isSealedKey(src))) {
+        await rpc('queue_frames', { p_asset: r.asset_id });
+        continue;
+      }
       const k = (make !== 'plain' || isSealedKey(src)) ? await kek() : null;
       let srcKey = src;
       let srcSeal: Record<string, unknown> | null = null;
@@ -754,6 +831,8 @@ Deno.serve(async (req: Request) => {
     const asset = String(body.asset_id ?? '');
     if (!/^[0-9a-f-]{36}$/i.test(asset)) return json({ error: 'no_asset' }, 400, req);
     let frames = Array.isArray(body.frames) ? body.frames as Array<Record<string, unknown>> : null;
+    const framesBefore = frames ? await frameKeysOf(asset) : [];
+    let recorded = new Set<string>();
     // SEALED STILLS (§7): each checked and its key recorded first. A twin
     // that does not check keeps its plain still; a still born sealed that
     // does not check is left out.
@@ -765,6 +844,7 @@ Deno.serve(async (req: Request) => {
         items.push({ ...sealed, plain_key: f.key === sealed.sealed_key ? null : f.key });
       }
       const { ok, refused } = await recordSealed(items, PUBLIC_BUCKET, 'image');
+      recorded = ok;
       if (refused.length) console.log(`seal refused (frames ${asset}): ${refused.join('; ')}`);
       frames = frames
         .filter((f) => {
@@ -778,6 +858,10 @@ Deno.serve(async (req: Request) => {
         p_asset: asset, p_frames: frames && frames.length ? frames : null,
         p_note: String(body.note ?? '').slice(0, 200) || null,
       });
+      if (frames && frames.length) {
+        await settle('image', PUBLIC_BUCKET, asset, framesBefore,
+          frames.map((f) => String(f.key ?? '')), recorded);
+      }
       return json({ ok: true, thumb }, 200, req);
     } catch (e) {
       return json({ error: 'record_failed', detail: String(e).slice(0, 200) }, 400, req);
@@ -805,6 +889,7 @@ Deno.serve(async (req: Request) => {
     // is. A twin that does not check keeps its plain rung; a rung born
     // sealed that does not check is left out — never a rung nobody can open.
     const list = Array.isArray(rows) ? rows as Array<Record<string, unknown>> : [];
+    const ladderBefore = await renditionKeysOf(asset);
     const sealedItems: Array<Record<string, unknown>> = [];
     for (const r of list) {
       if (!r.sealed || typeof r.sealed !== 'object') continue;
@@ -827,6 +912,7 @@ Deno.serve(async (req: Request) => {
     const written = await rpc('record_renditions', {
       p_asset: asset, p_rows: kept, p_note: note,
     });
+    await settle('video', MEDIA_BUCKET, asset, ladderBefore, kept.map((r) => String(r.object_key ?? '')), ok);
     return json({ ok: true, written, sealed: ok.size, refused: refused.length }, 200, req);
   }
 

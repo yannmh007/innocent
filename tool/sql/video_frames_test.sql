@@ -91,7 +91,7 @@ begin
   end if;
 
   -- ── nobody but the service may call them ─────────────────────────────────
-  if has_function_privilege('anon', 'public.claim_frames(integer)', 'execute')
+  if has_function_privilege('anon', 'public.claim_frames(integer, boolean)', 'execute')
      or has_function_privilege('authenticated', 'public.record_frames(uuid,jsonb,text)', 'execute')
      or has_function_privilege('authenticated', 'public.queue_frames(uuid)', 'execute') then
     raise exception 'grants: a viewer can call a frames function';

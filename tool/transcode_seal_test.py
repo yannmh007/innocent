@@ -91,8 +91,11 @@ def run(mode):
     final = reports[-1]
     assert final['note'] == 'complete', final['note']
     rows = final['rows']
-    pass
     assert rows, 'no rungs'
+    # The log says a rung is sealed and no more: no wrap, dek_id or header.
+    for row in rows:
+        for k in ('wrapped', 'dek_id', 'header'):
+            assert row['sealed'][k] not in log, 'a rung\'s %s was printed' % k
     for row in rows:
         s = row['sealed']
         sealed = store['/media/' + s['sealed_key']]
