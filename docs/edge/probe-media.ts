@@ -32,6 +32,9 @@
 // this is a hundred, it only reads, and it can be redeployed without anyone
 // holding their breath.
 
+import { importKek, unwrapDek } from './media_keys.js';
+import { readPlain } from './media_read.js';
+
 const R2_ACCOUNT_ID = Deno.env.get('R2_ACCOUNT_ID')!;
 const R2_ACCESS_KEY_ID = Deno.env.get('R2_ACCESS_KEY_ID')!;
 const R2_SECRET_ACCESS_KEY = Deno.env.get('R2_SECRET_ACCESS_KEY')!;
@@ -816,24 +819,57 @@ Deno.serve(async (req: Request) => {
   }
   if (!keys.length) return json({ error: 'no_keys' }, 400, req);
 
-  const results = [];
-  for (const key of keys) {
-    try {
-      const res = await fetch(await presignGet(key), {
-        // 64 KB is generous for a box list and small enough that probing
-        // forty objects costs less than a second of transfer.
-        headers: { Range: 'bytes=0-65535' },
-      });
+  // A SEALED FILM (§7.3) IS READ AS ITS PLAINTEXT: the segments holding
+  // the head (and the tail) are opened here under the film's key, each
+  // checked before a byte is looked at; no plaintext leaves this function.
+  // A plain one is read exactly as before. `readPlain` (media_read.js)
+  // answers the film's own size either way, so the bitrate is the film's.
+  let kekHeld: Promise<CryptoKey | null> | null = null;
+  const readIO = {
+    get: async (key: string, first: number, last: number) => {
+      const res = await fetch(await presignGet(key), { headers: { Range: `bytes=${first}-${last}` } });
       if (!res.ok && res.status !== 206) {
-        results.push({ key, error: `http_${res.status}` });
-        continue;
+        lastStatus = res.status;
+        await res.body?.cancel();
+        return null;
       }
       // `Content-Range: bytes 0-65535/1234567` carries the real size, which
       // is the only place the total length is available on a ranged read.
       const cr = res.headers.get('Content-Range') ?? '';
-      const total = Number(cr.split('/')[1] ?? 0) ||
-        Number(res.headers.get('Content-Length') ?? 0);
-      const headBytes = new Uint8Array(await res.arrayBuffer());
+      const total = Number(cr.split('/')[1] ?? 0) || Number(res.headers.get('Content-Length') ?? 0) || null;
+      return { bytes: new Uint8Array(await res.arrayBuffer()), total };
+    },
+    seal: async (key: string) => {
+      const k = await (kekHeld ??= importKek(Deno.env.get('MEDIA_KEK_V1') ?? '').catch(() => null));
+      if (!k || !SERVICE_KEY) return null;
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/media_keys` +
+        `?select=dek_id,wrapped,kek_version,plain_size,header&sealed_key=eq.${encodeURIComponent(key)}&limit=1`,
+        { headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` } });
+      const row = r.ok ? (await r.json() as Array<{ dek_id: string; wrapped: string; kek_version: number;
+        plain_size: number; header: string | null }>)[0] : undefined;
+      if (!row) return null;
+      return {
+        dekId: row.dek_id, dek: await unwrapDek(k, row.wrapped, row.dek_id, row.kek_version),
+        plainSize: Number(row.plain_size),
+        header: row.header ? Uint8Array.from(atob(row.header), (c) => c.charCodeAt(0)) : null,
+      };
+    },
+  };
+  let lastStatus = 0;
+
+  const results = [];
+  for (const key of keys) {
+    try {
+      lastStatus = 0;
+      // 64 KB is generous for a box list and small enough that probing
+      // forty objects costs less than a second of transfer.
+      const got = await readPlain(readIO, key, 0, 65536);
+      if (!got) {
+        results.push({ key, error: lastStatus ? `http_${lastStatus}` : 'no_key' });
+        continue;
+      }
+      const total = got.total ?? 0;
+      const headBytes = got.bytes;
       const head = new DataView(
         headBytes.buffer, headBytes.byteOffset, headBytes.byteLength);
       const list = boxes(head, total);
@@ -850,12 +886,8 @@ Deno.serve(async (req: Request) => {
       if (seconds === null && total > 0) {
         try {
           const from = Math.max(0, total - 1024 * 1024);
-          const tail = await fetch(await presignGet(key), {
-            headers: { Range: `bytes=${from}-${total - 1}` },
-          });
-          if (tail.ok || tail.status === 206) {
-            seconds = mvhdSeconds(new Uint8Array(await tail.arrayBuffer()));
-          }
+          const tail = await readPlain(readIO, key, from, total);
+          if (tail) seconds = mvhdSeconds(tail.bytes);
         } catch {
           // The head answer stands on its own; a failed tail read costs a
           // bitrate, not a verdict.

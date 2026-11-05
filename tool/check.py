@@ -203,6 +203,11 @@ def main() -> int:
          'a film sealed in the browser that the phone cannot open: different '
          'bytes from the reference for the same key, or a range served from '
          'the wrong segments, seen only as a film that will not play'),
+        ('media_read_test.mjs',
+         'a stored object read as its plaintext, plain or sealed',
+         'a probe that reports a sealed film\'s box list or a sealed photo\'s '
+         'size from bytes it could not authenticate, or reads the wrong '
+         'segments for a range'),
         ('jpeg_clean_test.mjs',
          'a photo leaving the phone without its place and time',
          'a photo published with the GPS position of the home it was taken '

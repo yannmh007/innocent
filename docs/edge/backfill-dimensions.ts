@@ -37,6 +37,8 @@
 //   that are still null, so running it twice costs nothing.
 // ===========================================================================
 
+import { readPlain } from './media_read.js';
+
 const SERVICE_KEY = Deno.env.get('SB_SERVICE_KEY') ??
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 const URL_BASE = Deno.env.get('SUPABASE_URL') ?? '';
@@ -219,16 +221,38 @@ Deno.serve(async (req) => {
         failures.push({ key: row.object_key, why: 'not in the public bucket' });
         continue;
       }
-      const res = await fetch(PUBLIC_BASE + row.object_key, {
-        headers: { Range: `bytes=0-${HEADER_BYTES}` },
-      });
-      // 206 is the expected answer; 200 means Range was ignored, which is
-      // still usable - just a bigger download.
-      if (res.status !== 206 && res.status !== 200) {
-        failures.push({ key: row.object_key, why: `HTTP ${res.status}` });
+      // A SEALED PHOTO (§7.3) is read as its plaintext: the segment holding
+      // its header opened here with the DEK from media_image_keys; nothing
+      // opened leaves this function. A plain one is read as before.
+      let status = 0;
+      const got = await readPlain({
+        get: async (key: string, first: number, last: number) => {
+          const res = await fetch(PUBLIC_BASE + key, { headers: { Range: `bytes=${first}-${last}` } });
+          // 206 is the expected answer; 200 means Range was ignored, which
+          // is still usable for a plain photo — just a bigger download.
+          if (res.status !== 206 && res.status !== 200) {
+            status = res.status;
+            await res.body?.cancel();
+            return null;
+          }
+          const all = new Uint8Array(await res.arrayBuffer());
+          return { bytes: res.status === 200 ? all.subarray(first, last + 1) : all, total: null };
+        },
+        seal: async (key: string) => {
+          const r = await db(`media_image_keys?select=dek_id,dek,plain_size,header&sealed_key=eq.${
+            encodeURIComponent(key)}&limit=1`);
+          const k = r.ok ? (await r.json() as Array<{ dek_id: string; dek: string; plain_size: number;
+            header: string }>)[0] : undefined;
+          if (!k) return null;
+          const b = (x: string) => Uint8Array.from(atob(x), (c) => c.charCodeAt(0));
+          return { dekId: k.dek_id, dek: b(k.dek), plainSize: Number(k.plain_size), header: b(k.header) };
+        },
+      }, row.object_key, 0, HEADER_BYTES + 1);
+      if (!got) {
+        failures.push({ key: row.object_key, why: status ? `HTTP ${status}` : 'no key for the sealed photo' });
         continue;
       }
-      const bytes = new Uint8Array(await res.arrayBuffer());
+      const bytes = got.bytes;
       const size = sizeOf(bytes);
       if (!size || size.w <= 0 || size.h <= 0) {
         failures.push({ key: row.object_key, why: 'unrecognised image header' });
