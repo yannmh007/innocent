@@ -38,9 +38,19 @@ that the first one showed were missing (069, 070): a twin follows its
 object (the re-encoded rungs were not byte-identical, so the old twins
 were stale: twelve replaced, their copies binned for a week), sealed
 objects are files in use for the Files page, and a runner that does not
-seal is never handed sealed work. Switch back to `off`. Next: Telegram
-ingest (§7.4 step 3). WHAT IS NOT CERTAIN OR NOT FINISHED is kept
-as numbered open items O1-O17 in docs/BACKLOG.md ("ENC open items"); none
+seal is never handed sealed work. Switch back to `off`. THEN ALL EIGHT
+STEPS OF §7.4 WERE BUILT AND TESTED (5 Nov, migrations 069-073): Telegram
+ingest, archive and restore (against a fake Telegram, real sealing); the
+console sealing uploads on the phone in 16 MiB parts with a resume that
+never reuses a nonce, and photos losing their place and time (Chromium);
+the Files page keeping key rows in step with moves and deletes; probe-media
+and backfill-dimensions reading sealed objects; blurhash for sealed images;
+the console previewing sealed films through a Service Worker (Chromium).
+Live: transcode v25, ingest v48, studio v49, probe-media v24,
+backfill-dimensions v27. What still has to be SEEN LIVE — the Telegram
+pipeline, the console's sealing and preview once it reaches Pages — is in
+BACKLOG O19, O20 and O24, with dated checks R1-R6. WHAT IS NOT CERTAIN OR NOT FINISHED is kept
+as numbered open items O1-O25 in docs/BACKLOG.md ("ENC open items"); none
 may be dropped without its evidence.**
 This file is the specification the code follows. Change it first, then the
 code.

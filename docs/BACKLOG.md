@@ -158,8 +158,10 @@ evidence; if it is wrong, it becomes an open item below.
   r.key = i.key)` → 1 before, 0 after.
 - [ ] **R3 — daily until 12 Nov: the pipelines' function logs.** No
   "seal refused", "settle failed", "MEDIA_KEK unreadable", and no 5xx from
-  `transcode` or `ingest` (`function_logs` / `function_edge_logs`). Live
-  versions: transcode v25, ingest v47 (209f5e1).
+  `transcode`, `ingest`, `studio`, `probe-media` or `backfill-dimensions`
+  (`function_logs` / `function_edge_logs`). Live versions (5 Nov): transcode
+  v25 (209f5e1), ingest v48 (1058fd5), studio v49 (6ecba09), probe-media v24
+  and backfill-dimensions v27 (ac29482); migrations through 073.
 - [ ] **R4 — at the start of every session: the switch is `off`.**
   `select seal_new from admin_settings` → `off`, unless a canary is running
   that session. A switch left on hands open films to the branch runner
