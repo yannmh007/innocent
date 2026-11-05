@@ -138,6 +138,40 @@ does it.
 
 ### Media encryption (ENC, the owner's request of 31 Oct; spec docs/MEDIA_ENCRYPTION.md)
 
+#### ENC checks with a date — LOOK AGAIN ON THE DAY (recorded 5 Nov)
+Things that are live and believed right, but whose proof comes later. Each
+says when, exactly what to run, and what counts as right. Tick it with the
+evidence; if it is wrong, it becomes an open item below.
+
+- [ ] **R1 — 12 Nov, after 12:43 UTC: the bin deletes the twelve replaced
+  twins of Big Buck Bunny** (2 rungs, 10 stills, binned by run 42029250311).
+  `select key, purged_at, purge_error from r2_trash where reason like
+  'sealed copy replaced%'` → every row purged, no error. Then BBB still has
+  exactly one key row per rung and per still (`media_keys` plain_key
+  `video/open-film-big-buck-bunny/master-%p.mp4` → 2; `media_image_keys`
+  plain_key `…/thumb/master-f0%.jpg` → 10), and the next sealed lab run
+  on BBB still says "3 of 3 copies sealed".
+- [ ] **R2 — after the owner's next Files → Scan: folder `s`.** Every
+  `s/` object shows "sealed copy" with its title, except O14's orphan
+  (the only one unused). Bin that one. `select count(*) from r2_inventory
+  i where key like 's/%' and not exists (select 1 from r2_refs() r where
+  r.key = i.key)` → 1 before, 0 after.
+- [ ] **R3 — daily until 12 Nov: the pipelines' function logs.** No
+  "seal refused", "settle failed", "MEDIA_KEK unreadable", and no 5xx from
+  `transcode` or `ingest` (`function_logs` / `function_edge_logs`). Live
+  versions: transcode v25, ingest v47 (209f5e1).
+- [ ] **R4 — at the start of every session: the switch is `off`.**
+  `select seal_new from admin_settings` → `off`, unless a canary is running
+  that session. A switch left on hands open films to the branch runner
+  only.
+- [ ] **R5 — after every migration that touches r2_refs, a claim, or a
+  key table:** tool/sql/media_keys_test.sql, video_frames_test.sql and
+  storage_test.sql, each in its rolled-back transaction on the live
+  database, end on their PASSED message.
+- [ ] **R6 — when ENC-4 reaches main:** every claim arrives with
+  `seals: 1` / `can: [..., "seal"]` (O17), and the device lab and Test Lab
+  settings are put back (O12).
+
 #### ENC open items — NOT CERTAIN OR NOT FINISHED (recorded 5 Nov; keep until each is closed)
 Each: what is known, why it is open, the next step, and when it is done.
 Nothing here may be dropped silently: close it with its evidence, or move it.
