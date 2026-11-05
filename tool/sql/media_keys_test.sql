@@ -1,6 +1,6 @@
 -- Sealed objects in the Files page, a twin that follows its object, sealed
--- work only for a runner that seals, and the Telegram pipeline's keys
--- (migrations 069, 070, 071).
+-- work only for a runner that seals, the Telegram pipeline's keys, and the
+-- Files page's moves and deletes (migrations 069, 070, 071, 073).
 --
 -- Run inside one transaction that ends on a deliberate exception, so nothing
 -- it creates survives. Success is the message `MEDIA KEYS TEST PASSED`; any
@@ -31,6 +31,7 @@ declare
   t_cat  uuid; a_cat uuid; a_tg uuid; a_rest uuid; job uuid; vj uuid; tid bigint;
   k_new  text := 's/' || md5('zz-restored');
   k_old  text := 's/' || md5('zz-old-master');
+  t_mv   uuid; a_mv uuid; mv uuid; id_mv uuid := gen_random_uuid(); id_mvi uuid := gen_random_uuid();
   j      jsonb;
   v      text;
   n      integer;
@@ -359,6 +360,57 @@ begin
      or has_function_privilege('anon', 'public.claim_ingest(boolean)', 'execute')
      or has_function_privilege('anon', 'public.vault_finish(uuid, boolean, text, text, bigint, text)', 'execute') then
     raise exception 'an app role can call a Telegram pipeline function';
+  end if;
+
+  -- ── 073: a move re-points the twins and the cover picker's stills ─────
+  insert into public.titles (title, slug, published, status, created_by)
+  values ('Seal test move', 'zz-mv-old', false, 'draft', owner_id) returning id into t_mv;
+  insert into public.title_assets (title_id, kind, bucket, object_key, thumb_key, sort_order, master_state, frames)
+  values (t_mv, 'video', b, 'zz-mv-old/video/a.mp4', 'zz-mv-old/thumb/a-f00.jpg', 1, 'r2',
+          '[{"at":1,"key":"zz-mv-old/thumb/a-f00.jpg"},{"at":9,"key":"zz-mv-old/thumb/a-f01.jpg"}]')
+  returning id into a_mv;
+  perform public.media_key_put('video', jsonb_build_object(
+    'dek_id', id_mv, 'bucket', b, 'sealed_key', 's/' || md5('zz-mv-v'), 'plain_key', 'zz-mv-old/video/a.mp4',
+    'kek_version', 1, 'wrapped', w, 'plain_size', 7, 'sealed_size', public.media_sealed_size(7),
+    'kind', 'video', 'header', h));
+  perform public.media_key_put('image', jsonb_build_object(
+    'dek_id', id_mvi, 'bucket', b, 'sealed_key', 's/' || md5('zz-mv-i'), 'plain_key', 'zz-mv-old/thumb/a-f01.jpg',
+    'dek', d, 'header', h, 'plain_size', 10, 'sealed_size', 60));
+  insert into public.r2_moves (mode, from_folder, to_folder, title_id, objects, requested_by)
+  values ('folder', 'zz-mv-old', 'zz-mv-new', t_mv, jsonb_build_array(
+    jsonb_build_object('bucket', b, 'from', 'zz-mv-old/video/a.mp4', 'to', 'zz-mv-new/video/a.mp4', 'bytes', 7, 'done', true),
+    jsonb_build_object('bucket', b, 'from', 'zz-mv-old/thumb/a-f00.jpg', 'to', 'zz-mv-new/thumb/a-f00.jpg', 'bytes', 5, 'done', true),
+    jsonb_build_object('bucket', b, 'from', 'zz-mv-old/thumb/a-f01.jpg', 'to', 'zz-mv-new/thumb/a-f01.jpg', 'bytes', 10, 'done', true)),
+    owner_id)
+  returning id into mv;
+  j := public.r2_move_switch(mv, owner_id);
+  if (j->>'switched')::int <> 3 then raise exception 'move: %', j; end if;
+  if (select plain_key from public.media_keys where dek_id = id_mv) <> 'zz-mv-new/video/a.mp4'
+     or (select plain_key from public.media_image_keys where dek_id = id_mvi) <> 'zz-mv-new/thumb/a-f01.jpg' then
+    raise exception 'a moved file left its twin naming the old key';
+  end if;
+  if (select frames->1->>'key' || ' ' || (frames->0->>'at') from public.title_assets where id = a_mv)
+     <> 'zz-mv-new/thumb/a-f01.jpg 1' then
+    raise exception 'the cover picker''s stills were not moved with their files';
+  end if;
+  if not exists (select 1 from public.r2_refs() where key = 's/' || md5('zz-mv-v') and how = 'sealed copy') then
+    raise exception 'a moved film''s twin is no longer in use';
+  end if;
+
+  -- ── 073: a deleted file takes its twin; a master kept in Telegram does not ─
+  insert into public.r2_trash (bucket, key, bytes, reason, purge_after)
+  values (b, 'zz-film/video/nobody.mp4', 7, 'test', now()) returning id into tid;
+  perform public.r2_trash_done(tid, null);
+  if exists (select 1 from public.media_keys where sealed_key = 's/' || md5('zz-loose'))
+     or not exists (select 1 from public.r2_trash where key = 's/' || md5('zz-loose')
+                      and reason = 'sealed copy of a deleted file' and purged_at is null) then
+    raise exception 'a deleted file left its twin behind';
+  end if;
+  insert into public.r2_trash (bucket, key, bytes, reason, purge_after)
+  values (b, 'zz-film/video/kept.mp4', 7, 'master kept in Telegram (test)', now()) returning id into tid;
+  perform public.r2_trash_done(tid, null);
+  if not exists (select 1 from public.media_keys where sealed_key = 's/' || md5('zz-kept')) then
+    raise exception 'the twin of a master kept in Telegram went with the R2 copy';
   end if;
 
   raise exception 'MEDIA KEYS TEST PASSED';
