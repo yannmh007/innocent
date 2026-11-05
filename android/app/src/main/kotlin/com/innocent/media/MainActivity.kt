@@ -1372,6 +1372,24 @@ class MainActivity : AudioServiceFragmentActivity() {
                         result.success(null)
                     }
                 }
+                // A whole poster or photo, with the DEK its row carried;
+                // null when it does not open. The DEK is cleared here.
+                "openWhole" -> {
+                    val dek = call.argument<ByteArray>("dek")
+                    try {
+                        val id = call.argument<String>("dek_id")
+                        val bytes = call.argument<ByteArray>("bytes")
+                        if (id == null || dek == null || bytes == null) {
+                            result.success(null)
+                        } else {
+                            result.success(com.innocent.media.seal.SealKeyring.openWhole(id, dek, bytes))
+                        }
+                    } catch (_: Throwable) {
+                        result.success(null)
+                    } finally {
+                        dek?.fill(0)
+                    }
+                }
                 else -> result.notImplemented()
             }
         }

@@ -301,4 +301,28 @@ class TestSealCipher implements SealCipher {
     }
     return out.takeBytes();
   }
+
+  int wholes = 0;
+
+  @override
+  Future<Uint8List?> openWhole({required SealGrant seal, required Uint8List sealed}) async {
+    wholes++;
+    if (seal.wrap != 'tls' || sealed.length != seal.sealedSize || sealed.length < MediaSealLayout.header) {
+      return null;
+    }
+    final header = Uint8List.sublistView(sealed, 0, MediaSealLayout.header);
+    if (header[0] != MediaSealLayout.header) return null;
+    final gcm = AesGcm(deriveKey(base64Decode(seal.dek), Uint8List.sublistView(header, 1, 33), aadFor(seal.dekId)));
+    final prefix = Uint8List.sublistView(header, 33, 40);
+    final count = MediaSealLayout.segmentCount(seal.plainSize);
+    final out = BytesBuilder(copy: false);
+    for (var i = 0; i < count; i++) {
+      final a = MediaSealLayout.sealedStart(i);
+      final b = i + 1 < count ? MediaSealLayout.sealedStart(i + 1) : seal.sealedSize;
+      final p = gcm.open(nonceFor(prefix, i, i == count - 1), Uint8List.sublistView(sealed, a, b));
+      if (p == null) return null;
+      out.add(p);
+    }
+    return out.takeBytes();
+  }
 }

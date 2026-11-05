@@ -58,6 +58,31 @@ class ApiContentRepository implements ContentRepository {
       'quality_label,genres,episode_count,view_count,access_tier,'
       'photo_count,video_count,category_code,genre_codes';
 
+  @visibleForTesting
+  static String? imageUrlFor(Object? plain, Object? sealBlock, {bool asks = kAsksForSealed}) =>
+      _imageUrl(plain, sealBlock, asks: asks);
+
+  /// Where titles are read, and what is asked of them. A build that opens
+  /// sealed posters (docs/MEDIA_ENCRYPTION.md §6) reads `title_cards`, whose
+  /// rows carry `poster_seal` (migration 063); `titles` cannot, because the
+  /// app roles may read only named columns of it (066). The same rows, the
+  /// same filters and orders: every column asked of `titles` is in both.
+  static const String _titlesPath = kAsksForSealed ? '/rest/v1/title_cards' : '/rest/v1/titles';
+  static const String _titleSelect = kAsksForSealed ? '$_titleColumns,poster_seal' : _titleColumns;
+
+  /// The address to fetch an image from: its sealed twin's when the row
+  /// carries a usable seal for it (and this build opens seals), learned so
+  /// every loader knows to open it; otherwise the plain address as it was.
+  static String? _imageUrl(Object? plain, Object? sealBlock, {bool asks = kAsksForSealed}) {
+    final p = plain is String ? plain : null;
+    if (!asks || sealBlock is! Map) return p;
+    final seal = SealGrant.fromJson(sealBlock);
+    final url = sealBlock['url'];
+    if (seal == null || seal.wrap != 'tls' || url is! String || !url.startsWith('https://')) return p;
+    SealedUrls.learn(url, seal);
+    return url;
+  }
+
   // ---- the network, remembered ---------------------------------------------
 
   /// A catalogue GET whose answer is kept, and replayed when the server cannot
@@ -284,9 +309,9 @@ class ApiContentRepository implements ContentRepository {
   @override
   Future<VideoContent?> getFeatured() async {
     final rows = await _cachedGet(
-      '/rest/v1/titles',
+      _titlesPath,
       query: <String, String>{
-        'select': _titleColumns,
+        'select': _titleSelect,
         'is_featured': 'eq.true',
         'limit': '1',
       },
@@ -337,7 +362,7 @@ class ApiContentRepository implements ContentRepository {
   }) async {
     return _page(
       query: <String, String>{
-        'select': _titleColumns,
+        'select': _titleSelect,
         // ONE `category` key. Writing the two conditions as two entries looked
         // fine and was wrong: a map literal keeps the LAST value, so asking
         // for Movies silently became "anything that is not adult".
@@ -389,7 +414,7 @@ class ApiContentRepository implements ContentRepository {
   }
 
   Future<ContentPage> _page({
-    String path = '/rest/v1/titles',
+    String path = _titlesPath,
     required Map<String, String> query,
     required int page,
     required int pageSize,
@@ -553,9 +578,9 @@ class ApiContentRepository implements ContentRepository {
     final safe = _forOrGroup(q);
     try {
       final body = await _api.getJson(
-        '/rest/v1/titles',
+        _titlesPath,
         query: <String, String>{
-          'select': _titleColumns,
+          'select': _titleSelect,
           'or': '(title.ilike."*$safe*",title_mm.ilike."*$safe*")',
           'limit': '50',
         },
@@ -572,9 +597,9 @@ class ApiContentRepository implements ContentRepository {
       // a broken app.
       try {
         final body = await _api.getJson(
-          '/rest/v1/titles',
+          _titlesPath,
           query: <String, String>{
-            'select': _titleColumns,
+            'select': _titleSelect,
             'title': 'ilike.*$q*',
             'limit': '50',
           },
@@ -724,9 +749,9 @@ class ApiContentRepository implements ContentRepository {
   @override
   Future<VideoContent?> getById(String id) async {
     final body = await _cachedGet(
-      '/rest/v1/titles',
+      _titlesPath,
       query: <String, String>{
-        'select': _titleColumns,
+        'select': _titleSelect,
         'id': 'eq.$id',
         'limit': '1',
       },
@@ -742,9 +767,9 @@ class ApiContentRepository implements ContentRepository {
     if (clean.isEmpty) return const <VideoContent>[];
     try {
       final body = await _cachedGet(
-        '/rest/v1/titles',
+        _titlesPath,
         query: <String, String>{
-          'select': _titleColumns,
+          'select': _titleSelect,
           'id': 'in.(${clean.join(',')})',
           'limit': '${clean.length}',
         },
@@ -795,7 +820,14 @@ class ApiContentRepository implements ContentRepository {
     try {
       dynamic body;
       try {
-        body = await _albumRows(titleId, _albumColumns);
+        try {
+          body = await _albumRows(titleId, _albumSelect);
+        } catch (e) {
+          if (_albumSelect == _albumColumns) rethrow;
+          // A build that opens seals asks for them too (migration 063); one
+          // whose cached album is under the list before them still has it.
+          body = await _albumRows(titleId, _albumColumns);
+        }
       } catch (e) {
         // THE CACHED ALBUM IS KEYED BY ITS QUERY, and the column list just
         // grew. A phone that updates while it has no signal holds every album
@@ -821,7 +853,7 @@ class ApiContentRepository implements ContentRepository {
         // its address. It stays in the album, frosted behind its lock —
         // "eleven more like this" is the offer. Without even a blurhash there
         // is nothing to draw, and it is skipped.
-        final url = m['url'] as String?;
+        final url = _imageUrl(m['url'], m['seal']);
         final id = '${m['id'] ?? ''}';
         if (id.isEmpty) continue;
         final preview = m['preview'] is String ? m['preview'] as String : null;
@@ -837,7 +869,7 @@ class ApiContentRepository implements ContentRepository {
           source: isPhoto
               ? _refFrom(url)
               : MediaRef(provider: 'asset', locator: id),
-          thumbnail: _refFrom(m['thumb_url'] ?? (isPhoto ? url : null)),
+          thumbnail: _refFrom(_imageUrl(m['thumb_url'], m['thumb_seal']) ?? (isPhoto ? url : null)),
           durationSec: _int(m['duration_s']),
           isPreview: m['is_free'] == true,
           width: _int(m['width']),
@@ -860,6 +892,7 @@ class ApiContentRepository implements ContentRepository {
   static const String _albumColumns =
       'id,kind,url,thumb_url,duration_s,is_free,width,height,is_main,bytes,'
       'preview';
+  static const String _albumSelect = kAsksForSealed ? '$_albumColumns,seal,thumb_seal' : _albumColumns;
   static const String _albumColumnsBefore030 =
       'id,kind,url,thumb_url,duration_s,is_free,width,height';
 
@@ -1098,7 +1131,7 @@ class ApiContentRepository implements ContentRepository {
       titleMm: m['title_mm'] as String?,
       synopsis: m['synopsis'] as String?,
       category: ContentCategoryX.fromId(m['category'] as String?),
-      poster: _refFrom(m['poster_url']),
+      poster: _refFrom(_imageUrl(m['poster_url'], m['poster_seal'])),
       year: _int(m['year']),
       rating: _double(m['rating']),
       qualityLabel: m['quality_label'] as String?,

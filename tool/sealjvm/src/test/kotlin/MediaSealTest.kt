@@ -198,6 +198,24 @@ class SealKeyringTest {
         assertFailsWith<SealException> { com.innocent.media.seal.SealKeyring.openRun("kr-2", header.copyOf(39), 1, 0, run) }
     }
 
+    @Test fun `a whole poster opens with the key its row carried, which is not kept`() {
+        val k = com.innocent.media.seal.SealKeyring
+        val dek = ByteArray(32).also { rnd.nextBytes(it) }
+        for (n in listOf(1, 40_000, MediaSeal.FIRST_PLAIN, MediaSeal.FIRST_PLAIN + 1, MediaSeal.FIRST_PLAIN + 2 * MediaSeal.PLAIN_SEGMENT + 7)) {
+            val (pt, s) = sealed("img-$n", dek, n)
+            assertContentEquals(pt, k.openWhole("img-$n", dek, s), "size $n")
+            kotlin.test.assertFalse(k.has("img-$n"), "an image's key is not kept")
+            // Another id (the AAD), another key, one byte changed, cut short: nothing opens.
+            assertFailsWith<SealException> { k.openWhole("img-x", dek, s) }
+            assertFailsWith<SealException> { k.openWhole("img-$n", ByteArray(32), s) }
+            val bad = s.copyOf().also { it[it.size - 3] = (it[it.size - 3].toInt() xor 1).toByte() }
+            assertFailsWith<SealException> { k.openWhole("img-$n", dek, bad) }
+            assertFailsWith<SealException> { k.openWhole("img-$n", dek, s.copyOf(s.size - 1)) }
+        }
+        assertFailsWith<SealException> { k.openWhole("img", dek, ByteArray(10)) }
+        assertFailsWith<SealException> { k.openWhole("img", ByteArray(31), ByteArray(100)) }
+    }
+
     @Test fun `bounded, the oldest key is forgotten first`() {
         val k = com.innocent.media.seal.SealKeyring
         for (i in 0 until k.LIMIT + 5) k.put("lim-$i", ByteArray(32).also { rnd.nextBytes(it) })

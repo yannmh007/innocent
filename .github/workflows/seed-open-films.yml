@@ -21,6 +21,11 @@ on:
         type: choice
         options: [seed, seal]
         default: seed
+      kind:
+        description: "seal only: what to seal — the videos, the images (poster, photos, thumbnails), or both"
+        type: choice
+        options: [video, image, both]
+        default: video
       titles:
         description: "seal only: title ids, space-separated (open films only; the function refuses any other)"
         type: string
@@ -51,6 +56,7 @@ jobs:
           SB_URL: ${{ secrets.SUPABASE_URL }}
           RUNNER_SECRET: ${{ secrets.INGEST_SECRET }}
           TITLES: ${{ inputs.titles }}
+          KIND: ${{ inputs.kind }}
         run: |
           set -euo pipefail
           if [ -z "${SB_URL:-}" ] || [ -z "${RUNNER_SECRET:-}" ]; then
@@ -58,8 +64,17 @@ jobs:
           fi
           # Ids only: anything else in the input is dropped, not passed on.
           ids=$(printf '%s' "$TITLES" | tr -cs '0-9a-f-' ' ')
-          # shellcheck disable=SC2086
-          python3 tool/seal_twins.py $ids
+          case "${KIND:-video}" in
+            video) kinds="video" ;;
+            image) kinds="image" ;;
+            both) kinds="video image" ;;
+            *) echo "::error::kind must be video, image or both"; exit 1 ;;
+          esac
+          for k in $kinds; do
+            echo "== $k"
+            # shellcheck disable=SC2086
+            SEAL_KIND="$k" python3 tool/seal_twins.py $ids
+          done
 
   seed:
     if: inputs.task != 'seal'

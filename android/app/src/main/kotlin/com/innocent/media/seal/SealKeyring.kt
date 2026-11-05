@@ -70,6 +70,27 @@ object SealKeyring {
         return op.openRun(first, sealed)
     }
 
+    /**
+     * A whole small object — a poster, an album photo — opened with the DEK
+     * its catalogue row carried (docs/MEDIA_ENCRYPTION.md §5, photos). The
+     * DEK is NOT kept: a grid of posters is a key each, and would push the
+     * films' keys out of [LIMIT]. [sealed] is the object as stored, header
+     * first. Throws [SealException] for anything that does not open.
+     */
+    fun openWhole(dekId: String, dek: ByteArray, sealed: ByteArray): ByteArray {
+        if (dekId.isEmpty()) throw SealException("a DEK needs its id")
+        if (dek.size != 32) throw SealException("a DEK is 32 bytes, not ${dek.size}")
+        if (sealed.size < MediaSeal.HEADER + MediaSeal.TAG || sealed.size > WHOLE_LIMIT) {
+            throw SealException("not a whole small object: ${sealed.size} bytes")
+        }
+        val plain = MediaSeal.plainSize(sealed.size.toLong())
+        val op = SealOpener(dek, MediaSeal.aadFor(dekId), sealed.copyOf(MediaSeal.HEADER), plain)
+        return op.openRun(0, sealed, MediaSeal.HEADER, sealed.size - MediaSeal.HEADER)
+    }
+
+    /** The largest object [openWhole] takes in one call: far above a photo. */
+    const val WHOLE_LIMIT = 32 * 1024 * 1024
+
     /** The DEK itself, for wrapping it for this device's storage. */
     @Synchronized
     fun copyOf(dekId: String): ByteArray = deks[dekId]?.copyOf() ?: throw SealException("no DEK for $dekId")

@@ -90,16 +90,17 @@ class SealGrant {
   }
 }
 
-/// Which granted URLs are sealed objects, as the grants said.
+/// Which URLs are sealed objects, as the grants and catalogue rows said.
 ///
-/// Learned when a grant is read (ApiContentRepository), the way StreamDoor
-/// learns the Worker's origin, and asked by everything that fetches a granted
-/// URL. A URL carries its own short-lived token, so the map is small and
-/// bounded: the oldest are let go first.
+/// Learned when a grant or a row is read (ApiContentRepository), the way
+/// StreamDoor learns the Worker's origin, and asked by everything that
+/// fetches a granted URL or shows a poster. Bounded, the oldest let go
+/// first: a catalogue's posters and photos are a few hundred to a few
+/// thousand, a seal some two hundred bytes.
 class SealedUrls {
   SealedUrls._();
 
-  static const int _limit = 256;
+  static const int _limit = 4096;
   static final Map<String, SealGrant> _byUrl = <String, SealGrant>{};
 
   static void learn(String url, SealGrant seal) {
@@ -134,6 +135,11 @@ abstract class SealCipher {
     required int first,
     required Uint8List sealed,
   });
+
+  /// A whole small object — a poster, a photo — opened with the DEK its row
+  /// carried ([seal], wrap `tls`); null when it does not open. The DEK is
+  /// not kept.
+  Future<Uint8List?> openWhole({required SealGrant seal, required Uint8List sealed});
 }
 
 /// [SealCipher] on Android (MainActivity: `innocent/media_seal_keys`,
@@ -207,6 +213,21 @@ class PlatformSealCipher implements SealCipher {
       });
     } catch (e) {
       if (kDebugMode) debugPrint('PlatformSealCipher.openRun: $e');
+      return null;
+    }
+  }
+
+  @override
+  Future<Uint8List?> openWhole({required SealGrant seal, required Uint8List sealed}) async {
+    if (seal.wrap != 'tls' || sealed.length != seal.sealedSize) return null;
+    try {
+      return await _bulk.invokeMethod<Uint8List>('openWhole', <String, dynamic>{
+        'dek_id': seal.dekId,
+        'dek': base64Decode(seal.dek),
+        'bytes': sealed,
+      });
+    } catch (e) {
+      if (kDebugMode) debugPrint('PlatformSealCipher.openWhole: $e');
       return null;
     }
   }

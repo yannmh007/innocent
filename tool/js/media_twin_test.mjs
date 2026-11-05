@@ -93,4 +93,13 @@ const row2 = await t.checkTwin(kek, {
   readSealed: async (a, b) => sealed2.slice(a, b) });
 ok(row2.sealed_size === sealed2.length, 'a one-segment twin opens in one read');
 
+// An IMAGE's row carries the DEK the wrap opened to (the app opens a poster
+// with the key from its row), and no wrap.
+const img = await t.checkTwin(kek, { ...item, plain_key: 'photo/open-film-sintel/still-1.jpg' }, io(), { kind: 'image' });
+ok(img.dek === k.b64(dek) && img.wrapped === undefined && img.kek_version === undefined &&
+  img.sealed_size === sealed.length && img.header.length === 56,
+  'an image row: the DEK the wrap opened to, sizes, header — no wrap');
+ok(await refused(t.checkTwin(kek, { ...item, dek_id: '0d6a1f4e-1111-4222-8333-000000000000' }, io(), { kind: 'image' })),
+  'an image twin with a DEK not issued for it is refused too');
+
 console.log(`media twin (js): all checks passed (${checks})`);

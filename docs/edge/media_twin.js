@@ -43,9 +43,13 @@ export function isSealedKey(key) {
  * @param {{plainSize: () => Promise<number|null>, sealedSize: () => Promise<number|null>,
  *          readSealed: (start: number, end: number) => Promise<Uint8Array|null>}} io
  *   sizes of the two objects (HEAD), and bytes [start, end) of the twin
- * @returns {Promise<Record<string, any>>} the media_keys row
+ * @param {{kind?: 'video'|'image'}} [opts] an IMAGE's row (media_image_keys,
+ *   migration 063) carries the DEK itself, as the app opens it from its
+ *   catalogue row; it is the DEK the wrap opened to, never one the runner
+ *   names.
+ * @returns {Promise<Record<string, any>>} the media_keys (or media_image_keys) row
  */
-export async function checkTwin(kek, item, io) {
+export async function checkTwin(kek, item, io, { kind = 'video' } = {}) {
   const plain = Number(item.plain_size);
   if (!Number.isSafeInteger(plain) || plain <= 0) throw new KeyError('plain_size');
   if (!isSealedKey(item.sealed_key)) throw new KeyError('sealed_key');
@@ -80,6 +84,17 @@ export async function checkTwin(kek, item, io) {
     } catch (e) {
       if (e instanceof KeyError) throw e;
       throw new KeyError('the twin does not open with its key');
+    }
+    if (kind === 'image') {
+      return {
+        dek_id: String(item.dek_id),
+        sealed_key: item.sealed_key,
+        plain_key: item.plain_key,
+        dek: b64(dek),
+        plain_size: plain,
+        sealed_size: want,
+        header: b64(header),
+      };
     }
     return {
       dek_id: String(item.dek_id),

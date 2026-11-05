@@ -2012,6 +2012,11 @@ Deno.serve(async (req: Request) => {
   // header are right, the first and last segments open) before its
   // media_keys row is written. The runner never holds a bucket credential
   // or MEDIA_KEK; it holds a twin's DEK only while sealing it.
+  //
+  // `kind: 'image'`: the same for the title's IMAGES in the public bucket —
+  // its poster, its photos and every thumbnail — recorded in
+  // media_image_keys (migration 063) with the DEK the wrap opened to, as the
+  // app opens an image with the key its catalogue row carries.
   if (op === 'seal_plan' || op === 'seal_commit') {
     const given = (req.headers.get('Authorization') ?? '').replace(/^Bearer /i, '');
     if (!sameSecret(given, RUNNER_SECRET)) return json({ error: 'no' }, 403, req);
@@ -2022,11 +2027,26 @@ Deno.serve(async (req: Request) => {
       return json({ error: 'no_kek' }, 503, req);
     }
 
-    // The video objects of an allowed title, by key: its assets and their rungs.
+    const images = body.kind === 'image';
+    const bucket = images ? PUBLIC_BUCKET : MEDIA_BUCKET;
+    const table = images ? 'media_image_keys' : 'media_keys';
+
+    // The video objects of an allowed title, by key: its assets and their
+    // rungs — or, for `images`, its poster, photos and thumbnails.
     const objectsOf = async (titleId: string): Promise<string[] | null> => {
-      const t = await rest(`titles?select=id,slug&id=eq.${encodeURIComponent(titleId)}`);
-      const row = t.ok ? (await t.json() as Array<{ id: string; slug: string }>)[0] : null;
+      const t = await rest(`titles?select=id,slug,poster_url&id=eq.${encodeURIComponent(titleId)}`);
+      const row = t.ok ? (await t.json() as Array<{ id: string; slug: string; poster_url: string | null }>)[0] : null;
       if (!row || !twinAllowed(row.slug)) return null;
+      if (images) {
+        const keys: string[] = [];
+        if (row.poster_url && row.poster_url.startsWith(PUBLIC_BASE)) keys.push(row.poster_url.slice(PUBLIC_BASE.length));
+        const a = await rest(`title_assets?select=kind,bucket,object_key,thumb_key&title_id=eq.${row.id}`);
+        for (const x of a.ok ? await a.json() as Array<{ kind: string; bucket: string; object_key: string; thumb_key: string | null }> : []) {
+          if (x.kind === 'photo' && x.bucket === PUBLIC_BUCKET) keys.push(x.object_key);
+          if (x.thumb_key) keys.push(x.thumb_key);
+        }
+        return [...new Set(keys)].filter((k) => typeof k === 'string' && k && !isSealedKey(k));
+      }
       const a = await rest(`title_assets?select=id,object_key&title_id=eq.${row.id}&kind=eq.video&bucket=eq.${MEDIA_BUCKET}`);
       const assets = a.ok ? await a.json() as Array<{ id: string; object_key: string }> : [];
       const keys = assets.map((x) => x.object_key);
@@ -2040,7 +2060,7 @@ Deno.serve(async (req: Request) => {
       return keys.filter((k) => typeof k === 'string' && k && !isSealedKey(k));
     };
     const sizeOf = async (key: string): Promise<number | null> => {
-      const h = await fetch(await presign('HEAD', key, 300, MEDIA_BUCKET), { method: 'HEAD' });
+      const h = await fetch(await presign('HEAD', key, 300, bucket), { method: 'HEAD' });
       if (!h.ok) return null;
       const n = Number(h.headers.get('content-length'));
       return Number.isSafeInteger(n) && n > 0 ? n : null;
@@ -2050,7 +2070,7 @@ Deno.serve(async (req: Request) => {
       const keys = await objectsOf(String(body.title_id ?? ''));
       if (!keys) return json({ error: 'not_allowed' }, 403, req);
       const have = keys.length
-        ? await rest(`media_keys?select=plain_key&bucket=eq.${MEDIA_BUCKET}&plain_key=in.${
+        ? await rest(`${table}?select=plain_key&bucket=eq.${bucket}&plain_key=in.${
           encodeURIComponent(`(${keys.map((k) => `"${k.replaceAll('"', '')}"`).join(',')})`)}`)
         : null;
       const done = new Set(have?.ok ? (await have.json() as Array<{ plain_key: string }>).map((x) => x.plain_key) : []);
@@ -2064,10 +2084,10 @@ Deno.serve(async (req: Request) => {
         items.push({
           plain_key: key, plain_size: plainSize, sealed_key: sealedKey, dek_id: dekId,
           dek: b64(dek), wrapped: await wrapDek(kek, dek, dekId, 1),
-          get_url: await presign('GET', key, 3 * 3600, MEDIA_BUCKET),
-          put_url: await presign('PUT', sealedKey, 3 * 3600, MEDIA_BUCKET),
+          get_url: await presign('GET', key, 3 * 3600, bucket),
+          put_url: await presign('PUT', sealedKey, 3 * 3600, bucket),
           // For the runner to take its twin away again if it is not recorded.
-          del_url: await presign('DELETE', sealedKey, 4 * 3600, MEDIA_BUCKET),
+          del_url: await presign('DELETE', sealedKey, 4 * 3600, bucket),
         });
         dek.fill(0);
       }
@@ -2080,7 +2100,7 @@ Deno.serve(async (req: Request) => {
     // one no media_keys row names. Nothing else in the bucket is listed or
     // touched.
     if (body.sweep === true) {
-      const list = await fetch(await presign('GET', '', 300, MEDIA_BUCKET,
+      const list = await fetch(await presign('GET', '', 300, bucket,
         { 'list-type': '2', prefix: 's/', 'max-keys': '200' }));
       if (!list.ok) return json({ error: 'list_failed', status: list.status }, 502, req);
       const xml = await list.text();
@@ -2092,14 +2112,14 @@ Deno.serve(async (req: Request) => {
       }
       const old = found.filter((f) => Date.now() - f.modified > 3600 * 1000);
       const named = old.length
-        ? await rest(`media_keys?select=sealed_key&bucket=eq.${MEDIA_BUCKET}&sealed_key=in.${
+        ? await rest(`${table}?select=sealed_key&bucket=eq.${bucket}&sealed_key=in.${
           encodeURIComponent(`(${old.map((f) => `"${f.key}"`).join(',')})`)}`)
         : null;
       if (old.length && !named?.ok) return json({ error: 'keys_unreadable' }, 502, req);
       const recorded = new Set(named ? (await named.json() as Array<{ sealed_key: string }>).map((x) => x.sealed_key) : []);
       let removed = 0;
       for (const f of old.filter((x) => !recorded.has(x.key))) {
-        const d = await fetch(await presign('DELETE', f.key, 300, MEDIA_BUCKET), { method: 'DELETE' });
+        const d = await fetch(await presign('DELETE', f.key, 300, bucket), { method: 'DELETE' });
         if (d.ok || d.status === 204) removed++;
       }
       return json({ twins: found.length, recorded: recorded.size, removed }, 200, req);
@@ -2120,14 +2140,14 @@ Deno.serve(async (req: Request) => {
           plainSize: () => sizeOf(plainKey),
           sealedSize: () => sizeOf(String(item.sealed_key)),
           readSealed: async (start: number, end: number) => {
-            const g = await fetch(await presign('GET', String(item.sealed_key), 300, MEDIA_BUCKET),
+            const g = await fetch(await presign('GET', String(item.sealed_key), 300, bucket),
               { headers: { Range: `bytes=${start}-${end - 1}` } });
             return g.status === 206 ? new Uint8Array(await g.arrayBuffer()) : null;
           },
-        });
-        const ins = await rest('media_keys', {
+        }, { kind: images ? 'image' : 'video' });
+        const ins = await rest(table, {
           method: 'POST',
-          body: JSON.stringify({ ...row, bucket: MEDIA_BUCKET }),
+          body: JSON.stringify({ ...row, bucket }),
         });
         results.push(ins.ok
           ? { plain_key: plainKey, ok: true, dek_id: row.dek_id }

@@ -18,6 +18,10 @@ ever given their ids. NOTHING SECRET IS PRINTED: presigned URLs and DEKs are
 held in memory and never logged — this repository and its logs are public.
 
   SB_URL=… RUNNER_SECRET=… python3 tool/seal_twins.py <title id> [<title id> …]
+
+SEAL_KIND=image does the same for the title's IMAGES — its poster, photos
+and thumbnails, in the public bucket — recorded in media_image_keys
+(migration 063). The default is the videos.
 """
 from __future__ import annotations
 
@@ -156,17 +160,21 @@ def main(argv: list[str]) -> int:
         print("usage: SB_URL=… RUNNER_SECRET=… seal_twins.py <title id> …")
         return 2
     fn = sb.rstrip("/") + "/functions/v1/ingest"
+    kind = os.environ.get("SEAL_KIND", "video")
+    if kind not in ("video", "image"):
+        print("SEAL_KIND is video or image")
+        return 2
     failed = 0
     # Twins an earlier run left unrecorded (an hour old or more), first.
     try:
-        sw = call(fn, secret, {"op": "seal_commit", "sweep": True})
+        sw = call(fn, secret, {"op": "seal_commit", "sweep": True, "kind": kind})
         print(f"sweep: {sw.get('twins', '?')} twins, {sw.get('recorded', '?')} recorded, "
               f"{sw.get('removed', 0)} removed")
     except Exception as e:  # noqa: BLE001
         print(f"sweep: not done ({type(e).__name__})")
     for title_id in argv[1:]:
         print(f"=== {title_id}")
-        plan = call(fn, secret, {"op": "seal_plan", "title_id": title_id})
+        plan = call(fn, secret, {"op": "seal_plan", "title_id": title_id, "kind": kind})
         items = plan.get("items", [])
         print(f"  {len(items)} to seal, {plan.get('already', 0)} already twinned")
         made = []
@@ -179,7 +187,7 @@ def main(argv: list[str]) -> int:
                     failed += 1
         if made:
             dels = {m["plain_key"]: m.pop("_del") for m in made}
-            res = call(fn, secret, {"op": "seal_commit", "title_id": title_id, "items": made})
+            res = call(fn, secret, {"op": "seal_commit", "title_id": title_id, "items": made, "kind": kind})
             for r in res.get("results", []):
                 name = str(r.get("plain_key", "")).rsplit("/", 1)[-1]
                 if r.get("ok"):
