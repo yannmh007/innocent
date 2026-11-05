@@ -227,19 +227,74 @@ Why this one (research, 31 Oct 2026):
   Still plain, and not yet sealed by any job: the seek-bar preview pictures
   (made by the transcode pipeline, ENC-4).
 
-## 7. Pipelines
+## 7. Pipelines (ENC-4)
 
-| Step | Where | What changes |
+Every writer of a media object seals it before it reaches R2, and every
+reader that needs the picture opens it — with the same format (§3), keys
+issued and recorded only by an edge function (§4), and nothing plain ever
+written to the bucket once a pipeline is `on`.
+
+### 7.1 The switch, and why there are three positions
+
+`admin_settings.seal_new` (migration 067), read by every function that
+issues work, cached a minute:
+
+| Position | New objects | Who it is for |
 |---|---|---|
-| Telegram ingest | runner (`tool/ingest.py`) | seals before the multipart upload; parts are whole segments |
-| Console upload | browser | seals with a DEK the studio issues; a resumed upload must be the same file (size, mtime, hash of first and last MiB), else a new DEK — a reused nonce with different plaintext breaks GCM |
-| Transcode, frames, previews | runner | DEK from an edge op (runner secret); open to a temporary file on the ephemeral VM, ffmpeg, seal every output with a new DEK |
-| probe-media, backfill | edge | open the head/tail segments only |
-| Off-site copy (B2/Storj) | runner | copies sealed bytes as they are: **no key needed** |
-| Console preview | browser | WebCrypto opens images; a Service Worker opens video ranges |
+| `off` (default) | plain, as before | until the canary |
+| `canary` | for an OPEN FILM (`open-film-…`) only: the plain object as before AND a sealed twin made by the same pipeline, at birth; everything else plain | proving each pipeline's sealing on real work without one released app losing a film |
+| `on` | sealed only; the asset row names `s/<32 hex>` and its key row has no `plain_key` | after §9 C (`min_supported`, `SEAL_MODE=on`) — never before: a released app cannot open a sealed object |
+
+The pipeline code is the same in `canary` and `on`; `on` only skips the plain
+upload. A function reads the position when it hands out the work, and the
+work says what to make — a runner never decides.
+
+### 7.2 Keys: issued here, recorded here, never named by a runner
+
+One module (`docs/edge/media_issue.js`) for every pipeline:
+
+* `issue(kek, kind)` — a new `dek_id`, the DEK, its wrap under MEDIA_KEK
+  (AAD `inv-kek|v1|dek_id`) and a new `s/<32 hex>` key. The runner gets the
+  DEK (it seals) and the wrap (it hands it back untouched).
+* `record(kek, item, io, kind)` — `checkTwin` (media_twin.js): the wrap opens
+  under MEDIA_KEK for this dek_id, both sizes are what the row will say, the
+  object starts with the header and its first and last segments open. Then
+  the `media_keys` row (films) or the `media_image_keys` row (images, with
+  the DEK the wrap opened to). Nothing is recorded that was not issued here.
+* A born-sealed object's row has `plain_key` null; request-playback already
+  finds a key by `sealed_key` as well as `plain_key`, and `private.image_seal`
+  looks up both from 067.
+
+### 7.3 Each pipeline
+
+| Pipeline | Reads | Writes | What changes |
+|---|---|---|---|
+| Transcode, ladder (`transcode.ts` claim/done, `tool/transcode.sh`) | the master | rungs (media bucket) | claim: a sealed master comes with its DEK (unwrapped for the runner, which decodes video anyway) and the runner opens it to its temporary disk; each rung to seal comes with an issued DEK and a PUT for its `s/` key; the runner checks the CMAF layout on the plain rung, seals, re-opens the whole sealed rung and compares SHA-256, uploads `application/octet-stream`; done: `record` before `record_renditions` |
+| Transcode, frames (`frames_claim`, `tool/frames.py`) | the master or a rung | ten stills (public bucket) | sealed images: issued DEKs, `media_image_keys` |
+| Telegram ingest (`ingest.ts` claim/done, `tool/ingest.py`) | Telegram | the film (media bucket) | seal the downloaded file, re-open and compare, one PUT of the sealed file; done records the key. The runner's other jobs: **archive** (R2 → Telegram) opens a sealed film before sending it — the Telegram copy is the plain film it always was; **restore** (Telegram → R2) seals with a NEW DEK (never the old one: a different file under an old nonce breaks GCM); **verify** compares the Telegram file's size with the row's plain size |
+| Console upload (`docs/studio/upload.js`, `studio.ts`) | the operator's file | a film or photo | sealed in the browser (WebCrypto, `media_seal.js`), 16 MiB parts = 256 whole segments each, so every part is sealed alone and in parallel. RESUME: the DEK is fetched again by dek_id (the studio unwraps it for an admin with upload rights); each part's plaintext SHA-256 is recorded when it is first sealed, and a part sealed before must hash the same on resume, or the upload starts again under a new DEK — no nonce ever covers two plaintexts. Photos: EXIF stripped before sealing |
+| R2 file manager (`studio.ts` move, delete) | — | — | a move rewrites `sealed_key` (and `plain_key`) in the key row with the object; a delete removes the row only once the object is gone. The bytes never change (the AAD names the dek_id, not the path) |
+| probe-media, backfill-dimensions | head and tail of a film | — | open the head and tail segments with MEDIA_KEK; no plaintext leaves the function |
+| Blurhash (`previews_due`, `tool/previews.py`) | public images | a string | a sealed image comes with its seal; the runner opens it |
+| Console preview (`studio.ts` previewUrl, files.js) | an object | — | images opened in the browser with WebCrypto; films through a Service Worker that opens ranges (as the phone's gateway does), so the console never asks Cloudflare for a plain byte |
+| Off-site copy (B2) | an object | its copy | none: copies sealed bytes as they are, **no key** — and the key tables travel in the encrypted database backup, never with the files |
 
 Every sealed object is uploaded as `application/octet-stream`; EXIF is
-stripped before a photo is sealed.
+stripped before a photo is sealed. The seek-bar pictures are NOT objects:
+the phone takes them from the smallest rung, through the gateway (§6).
+
+### 7.4 Order of work, each proven before the next
+
+1. 067 and `media_issue.js` (switch, issue, record), with tests.
+2. Transcode ladder and frames — canary: an open film's ladder rebuilt from
+   its sealed master, every rung and still with a twin made at birth.
+3. Telegram ingest, archive, restore, verify — tested against a stand-in;
+   real work only once `on` (no open film comes through Telegram).
+4. Console upload — canary: a photo uploaded into an open film's album.
+5. File manager moves and deletes.
+6. probe-media and backfill-dimensions.
+7. Blurhash.
+8. Console preview.
 
 ## 8. Acceptance (each gate must pass before the next)
 

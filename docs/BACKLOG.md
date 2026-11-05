@@ -182,8 +182,12 @@ Nothing here may be dropped silently: close it with its evidence, or move it.
 - [ ] **O8 Corrupt segment only tested off-device (§8).** Next: a lab
   switch that flips a byte in the gateway's input once. Done: refetched once,
   then a clear error, no crash, on a device.
-- [ ] **O9 Seek-bar preview pictures not sealed.** Made by the transcode
-  pipeline; part of ENC-4. Done: previews sealed and opened in the app.
+- [x] **O9 Seek-bar preview pictures — not R2 objects (corrected 5 Nov).**
+  The phone takes them from the smallest rung through the gateway
+  (media_kit_player_service ladderPreview); the lab's preview-far, -again
+  and -next passed on every sealed run (e.g. 42013700193). What the
+  pipelines DO make as images — the cover picker's ten stills
+  (tool/frames.py) and thumbnails — are in ENC-4 §7.3.
 - [ ] **O10 Image keys are in the database in the clear (decided, recorded).**
   A poster's or photo's DEK is in media_image_keys (no app role reads it),
   so a database dump together with the bucket opens the images; a film
