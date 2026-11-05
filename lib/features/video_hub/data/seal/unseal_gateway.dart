@@ -220,6 +220,10 @@ class _Fail {
 /// A segment on its way: the request that sent for it and any that wait on
 /// it share one answer.
 class _Pending {
+  _Pending(this.run);
+
+  /// The fetch bringing it.
+  final _Run run;
   final Completer<Object> done = Completer<Object>(); // Uint8List | _Fail
   int waiters = 0;
 }
@@ -233,6 +237,9 @@ class _Run {
 
   /// Its segments not yet delivered, each with the requests waiting on it.
   final Map<int, _Pending> own = <int, _Pending>{};
+
+  /// Ends the fetch now, its connection cut (set while it reads).
+  void Function()? cut;
 
   /// Whether a request may wait here for segment [i]: on its way in this
   /// fetch, and close to arriving.
@@ -333,14 +340,21 @@ class _Sealed {
     for (final (s0, s1) in _runs(mine)) {
       final run = _Run(s0, s1);
       for (var i = s0; i <= s1; i++) {
-        final p = run.own[i] = held[i] = _Pending()..waiters = 1;
+        final p = run.own[i] = held[i] = _Pending(run)..waiters = 1;
         want[i] = p.done.future;
       }
       unawaited(_drive(run));
     }
+    // NOBODY LEFT, NOTHING READ ON: when the last request waiting on a
+    // fetch lets go, the Worker's connection is cut then and there — not
+    // when the segment on its way has finished arriving, which across a
+    // stretch's six lanes was most of a second of a slow line taken from the
+    // copy the player had moved to (Test Lab run 42008905511).
     void release(int i) {
       final p = held.remove(i);
-      if (p != null && p.waiters > 0) p.waiters--;
+      if (p == null) return;
+      if (p.waiters > 0) p.waiters--;
+      if (p.waiters == 0 && !p.done.isCompleted && !_wanted(p.run)) p.run.cut?.call();
     }
 
     var i = first;
@@ -545,6 +559,7 @@ class _Sealed {
     void stop(_Fail? f, {bool whole = false}) {
       if (stopped) return;
       stopped = true;
+      r.cut = null;
       watch?.cancel();
       final complete = whole && resp.contentLength == end - start && received == end - start;
       if (!ended && !complete) _destroy(resp, sub);
@@ -633,6 +648,7 @@ class _Sealed {
       }
     }
 
+    r.cut = () => stop(const _Fail(HttpStatus.gone, why: 'not wanted'));
     final every = UnsealGateway.stall ~/ 4;
     watch = Timer.periodic(every < const Duration(milliseconds: 50) ? const Duration(milliseconds: 50) : every, (_) {
       if (quiet.elapsed >= UnsealGateway.stall) stop(_Fail.network);

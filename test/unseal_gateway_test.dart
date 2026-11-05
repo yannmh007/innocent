@@ -343,6 +343,39 @@ void main() {
       expect(worker.ports.toSet().length, 1, reason: 'the second object used the first one\'s connection');
     });
 
+    // The proxy's lanes let go at once when the player leaves a copy (a
+    // change of quality after Original: six lanes on a 3.5 Mbit/s line, Test
+    // Lab run 42008905511). The Worker's read must stop then, not when its
+    // next segment has finished arriving: six lanes' worth of a segment is
+    // most of a second of a slow line taken from the new picture.
+    test('the last reader letting go stops the Worker at once, not a segment later', () async {
+      const n = MediaSealLayout.firstPlain + 40 * MediaSealLayout.plainSegment;
+      await setUpObject(n);
+      worker.trickle = 64 * 1024; // a segment a second
+      final url = (await gw.urlFor(id: 'cut', upstream: upstream, seal: seal))!;
+      final c = HttpClient();
+      final r = await c.getUrl(Uri.parse(url));
+      r.headers.set(HttpHeaders.rangeHeader, 'bytes=0-${n - 1}');
+      final resp = await r.close();
+      var got = 0;
+      final first = Completer<void>();
+      final sub = resp.listen((chunk) {
+        got += chunk.length;
+        if (got >= MediaSealLayout.firstPlain && !first.isCompleted) first.complete();
+      });
+      await first.future;
+      // Just after a segment boundary: the next whole segment is a second away.
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+      final s = await resp.detachSocket();
+      s.destroy();
+      await sub.cancel();
+      final atCut = worker.bytesSent;
+      await Future<void>.delayed(const Duration(milliseconds: 700));
+      expect(worker.bytesSent - atCut, lessThan(32 * 1024),
+          reason: 'cut when the reader went, not when the segment on the way was whole');
+      c.close(force: true);
+    });
+
     test('a malformed seal block is refused', () {
       final ok = <String, dynamic>{
         'v': 1, 'dek_id': 'x', 'plain_size': 100, 'sealed_size': MediaSealLayout.sealedSize(100),

@@ -1,0 +1,68 @@
+# Sealed images (docs/MEDIA_ENCRYPTION.md §6): the Movies hub's posters, an
+# open film's album and a photo in the viewer — each a sealed twin in R2,
+# opened on the phone with the key its catalogue row carried. The trail says
+# "seal: images opened N" (and "did not open" for any refused); the
+# screenshots show whether pictures or placeholders were drawn. Open films
+# only (Sintel), never a catalogue title of anyone's.
+appId: com.innocent.media
+---
+- launchApp
+- waitForAnimationToEnd:
+    timeout: 15000
+- tapOn:
+    text: "Wait"
+    optional: true
+- tapOn:
+    text: "Skip"
+    optional: true
+- tapOn:
+    text: "Allow.*"
+    optional: true
+- tapOn:
+    text: "Allow.*"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 8000
+- tapOn:
+    text: "Movies"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 10000
+- tapOn:
+    text: "I am 18 or older.*"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 15000
+- takeScreenshot: 30_sealed_hub
+- tapOn:
+    text: "Sintel"
+    index: 0
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 12000
+- takeScreenshot: 31_sealed_title
+- scrollUntilVisible:
+    element:
+      text: "1 of [0-9]+"
+    direction: DOWN
+    timeout: 15000
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 6000
+- takeScreenshot: 32_sealed_album
+- tapOn:
+    text: "1 of [0-9]+"
+    index: 0
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 6000
+- takeScreenshot: 33_sealed_photo
+- swipe:
+    start: "85%,50%"
+    end: "15%,50%"
+    duration: 400
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: 34_sealed_photo_next
+- back
+- back

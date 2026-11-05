@@ -1,7 +1,7 @@
 # Media encryption — every photo and film sealed at rest
 
-Status (1 Nov 2026): **design approved by the owner (31 Oct); format
-libraries done (ENC-1); keys table live (migrations 060, 061, 062).
+Status (5 Nov 2026): **design approved by the owner (31 Oct); format
+libraries done (ENC-1); keys tables live (migrations 060-066).
 request-playback v41 live with `SEAL_MODE` defaulting to `ask` (§9): only a
 request with `seal: 1` looks at sealed rows, so every released app is
 answered exactly as before. `MEDIA_KEK_V1` set by the owner and confirmed
@@ -15,8 +15,18 @@ row was written. The device lab on a build that asks (run 41293034978,
 Sintel, jumps) took the sealed path throughout — "grant: 5 of 5 copies
 sealed, keys rsa", "seal: key held (rsa)", every copy through the gateway —
 and passed 15 of 16; the one failure (a skip that waited for another
-read's far segment) is fixed in the gateway (§6). Next: the lab again,
-then Test Lab, images, and the pipelines.**
+read's far segment) is fixed in the gateway (§6). Then 16 of 16 twice (runs
+41984466643 and 41988997290, the second after the gateway's connections to
+the Worker were made to be used again, §6). IMAGES ARE SEALED TOO (§5, §6):
+every poster, photo and thumbnail of the four open films has a sealed twin
+(seed-open-films run 42008144845, 52 images, ingest v45), and the catalogue
+hands each one's key out exactly where it hands out its address
+(migrations 063-066). TEST LAB ON REAL PHONES with a build that asks (run
+42008905511): the realme 16 of 16, the OPPO 15 of 15 (Original skipped on a
+3.5 Mbit/s line), both "5 of 5 copies sealed, keys rsa" and the key held —
+the Keystore unwrap works on Android 14 and 15. Against the plain 1.64.79
+runs on the same phones (§8). Next: sealed images in the device lab (flow
+`sealed_images`), then the pipelines (ENC-4).**
 This file is the specification the code follows. Change it first, then the
 code.
 
@@ -150,8 +160,9 @@ Why this one (research, 31 Oct 2026):
   get there (device lab run 41293034978: a skip+30 waited 3.9 s for its
   first byte at 240p; `test/unseal_gateway_test.dart` holds both cases).
   The cost is at most one segment read twice where a lane's part ends.
-  When the proxy lets go of a part, the Worker's connection is cut, not
-  read on; a fetch read to its end gives its connection back, and every
+  When the last request waiting on a fetch lets go, the Worker's connection
+  is cut at once, not read on to the end of the segment on its way; a fetch
+  read to its end gives its connection back, and every
   object shares one pool kept a minute, as the proxy's ladder pool does —
   so a jump or a change of rung finds a connection open, not a new
   handshake (run 41984466643 found every fetch on a new one: jumps answered
@@ -187,18 +198,30 @@ Why this one (research, 31 Oct 2026):
   asks for it: keeping the sealed bytes as they came, with the install's
   wrap of the DEK beside them (`wrapForStorage`), would take the download's
   own cipher pass away.
-- **Images** (not yet): an image loader fetches, opens, decodes; the disk
-  cache keeps the sealed bytes.
+- **Images** (`sealed_image.dart`, `poster_image.dart`): a row's image is
+  its sealed twin's address when the row carries a usable seal (`tls`, the
+  sizes agree, an `https` address) — posters from `title_cards` and the
+  landing cards (`poster_seal`), photos and thumbnails from `title_media`
+  (`seal`, `thumb_seal`, under the same `may_open` as their address). The
+  poster cache and photo downloads keep the sealed bytes as they came, and
+  only whole; `SealedFileImage` has the platform open the whole object in
+  one call (`SealKeyring.openWhole`, the DEK not kept — a grid would push
+  the films' keys out) and decodes it in memory. A sealed address is never
+  drawn from the network. A build that asks reads `title_cards` where it
+  read `titles`: the app roles may read only named columns of `titles`, so
+  no computed column can ride on it (066).
 - **Old formats keep working**: plaintext objects (until migrated) and today's
   CTR downloads and cache files are recognised and played as now.
 - **The Worker passes sealed bytes untouched**: its one rewrite (a stray
   `sidx` renamed `free`) only reads objects whose first box is `ftyp`; a
   sealed object starts `0x28` and a random salt.
 - **Who asks**: `seal: 1` is sent only by a build with `kAsksForSealed`
-  (`--dart-define=MEDIA_SEAL=1` for a lab build). Every path a granted URL
-  can reach must open seals before a release turns it on — images are the
-  one left (posters and album photos are not granted URLs yet; they stay
-  plain until the image loader and their seal blocks exist).
+  (`--dart-define=MEDIA_SEAL=1` for a lab build), and only such a build
+  reads the image seals. Every path a sealed address can reach opens it:
+  streaming and downloads through the gateway, images through
+  `SealedFileImage`, and nothing plays, downloads or draws one directly.
+  Still plain, and not yet sealed by any job: the seek-bar preview pictures
+  (made by the transcode pipeline, ENC-4).
 
 ## 7. Pipelines
 
@@ -224,6 +247,18 @@ stripped before a photo is sealed.
 | Download speed and CPU | not worse than today |
 | Real phones | Test Lab realme C53 and OPPO A79 pass; 32-bit phone opens ≥ 20× its bitrate |
 | Corrupt segment | refetched once, then a clear error; no crash |
+
+Real phones (5 Nov, Test Lab run 42008905511 against the plain 1.64.79
+runs 41179327588 and 41181014623): every check passes on both. The realme
+froze less everywhere (skip 0.2 s against 0.7, back to Auto 1.4 against
+4.3, far jump 1.3 against 2.1) and its app's main thread was at 7 % against
+12. The OPPO froze more (seek 2.4 s against 0.7, back to Auto 7.1 against
+1.1) on a line a third as fast as its plain run had (3.5 Mbit/s; the plain
+run's carried the Original), main thread 11 % against 4. Its 7.1 s was the
+change back to Auto after Original's six lanes: the gateway read on to the
+end of the segment on its way after each lane let go — now it cuts at once
+(§6). Lines on Test Lab differ five to twenty times between runs, so these
+are a pass, not a measurement; the gate on frozen time stays open.
 
 Measured so far (5 Nov): **proxy CPU per MB is not yet within the gate** —
 `proxy_cpu_bench` with `BENCH_MEDIA_SEAL=1` is 75 ms/MB against 66-69 for

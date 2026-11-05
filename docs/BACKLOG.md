@@ -146,8 +146,19 @@ does it.
   unseal gateway in front of the stream proxy, downloads through it, no
   sealed URL ever played directly; 26 new tests, full suite green, branch
   build 41276775374 green. Behind `kAsksForSealed` (MEDIA_SEAL=1 for labs).
-- [ ] ENC-3, left: the image loader (posters, album photos); labs against
-  §8 (proxy_cpu_bench, device lab, Test Lab) once the canary copies exist.
+- [x] ENC-3 images (5 Nov): migrations 063-066 (media_image_keys; a
+  poster's key in title_cards and the landing cards, a photo's beside its
+  address in title_media; the helpers in a `private` schema no URL reaches),
+  SealKeyring.openWhole, SealedFileImage, the poster cache and photo
+  downloads keep sealed images whole, a build that asks reads title_cards.
+  Twins of all 52 images of the four open films (run 42008144845, ingest
+  v45). 063 first left title_media refusing the app roles for six minutes
+  (a view checks a function's EXECUTE as its reader); no app request came
+  in that window; 065 fixed it and every catalogue read was checked as
+  anon and authenticated.
+- [ ] ENC-3, left: proxy CPU per MB is +7-10 ms/MB on the bench (the
+  loopback hop, §8); real phones decide whether the in-process route is
+  needed. Seek-bar preview pictures are not sealed yet (ENC-4).
 - [x] request-playback v41: `SEAL_MODE` ask/on/off, `ask` by default; the
   seal block carries the header (migration 061). Transport check 41278679967
   green; KEK check value `f3bfb0d1` again on fresh instances.
@@ -164,8 +175,13 @@ does it.
   16/16, skip+30 frozen 1.0 s — but jumps answered in 0.55-2.2 s against
   0.25-0.9 s plain: no connection to the Worker was ever used twice (a
   finished fetch destroyed its socket, and each object had its own pool).
-  Fixed (one pool, a finished fetch gives its connection back); the lab
-  again, then Test Lab on the realme and the OPPO, against §8.
+  Fixed (one pool, a finished fetch gives its connection back): run
+  41988997290 16/16, skip+30 0.4 s, answers 0.34-1.4 s; run 42008905621
+  16/16. Test Lab 42008905511 (sealed, both phones): realme 16/16, OPPO
+  15/15 — real-phone gate passed; the OPPO froze longer on a slower line
+  (§8), and its 7.1 s showed the gateway reading on after the proxy let go:
+  it now cuts at once. Still to do: images in the lab (flow sealed_images),
+  frozen time on a like-for-like line.
 - [ ] ENC-4, the pipelines: ingest, console upload, transcode, probe,
   console preview.
 - [ ] ENC-5, rollout: canary on Sintel and Tears of Steel, `min_supported`,
