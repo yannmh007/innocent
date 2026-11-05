@@ -1,0 +1,43 @@
+Running on test
+ > Flow sealed_images
+Launch app "com.innocent.media"... COMPLETED
+Wait for animation to end within 15000 ms... COMPLETED
+Tap on (Optional) "Wait"... WARNED
+
+
+ Warning: Element not found: Text matching regex: Wait
+Tap on (Optional) "Skip"... COMPLETED
+Tap on (Optional) "Allow.*"... WARNED
+
+
+ Warning: Element not found: Text matching regex: Allow.*
+Tap on (Optional) "Allow.*"... WARNED
+
+
+ Warning: Element not found: Text matching regex: Allow.*
+Wait for animation to end within 8000 ms... COMPLETED
+Tap on (Optional) "Movies"... COMPLETED
+Wait for animation to end within 10000 ms... COMPLETED
+Tap on (Optional) "I am 18 or older.*"... COMPLETED
+Wait for animation to end within 15000 ms... COMPLETED
+Take screenshot 30_sealed_hub... COMPLETED
+Tap on (Optional) "Sintel", Index: 0... COMPLETED
+Wait for animation to end within 12000 ms... COMPLETED
+Take screenshot 31_sealed_title... COMPLETED
+Scrolling DOWN until "1 of [0-9]+" is visible with speed 40, visibility percentage 100%, timeout 15000 ms, with centering disabled... WARNED
+
+
+ Warning: No visible element found: "1 of [0-9]+"
+Wait for animation to end within 6000 ms... COMPLETED
+Take screenshot 32_sealed_album... COMPLETED
+Tap on (Optional) "1 of [0-9]+", Index: 0... WARNED
+
+
+ Warning: Element not found: Text matching regex: 1 of [0-9]+, Index: 0
+Wait for animation to end within 6000 ms... COMPLETED
+Take screenshot 33_sealed_photo... COMPLETED
+Swipe from (85%,50%) to (15%,50%) in 400 ms... COMPLETED
+Wait for animation to end within 4000 ms... COMPLETED
+Take screenshot 34_sealed_photo_next... COMPLETED
+Press back... COMPLETED
+Press back... COMPLETED
