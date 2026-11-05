@@ -13,11 +13,13 @@
 library;
 
 import 'dart:io';
+import 'dart:math';
 import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/painting.dart';
 
+import '../../../../core/services/diagnostics/playback_log.dart';
 import 'media_seal.dart';
 
 class SealedFileImage extends ImageProvider<SealedFileImage> {
@@ -49,9 +51,11 @@ class SealedFileImage extends ImageProvider<SealedFileImage> {
     final plain = await cipher.openWhole(seal: key.seal, sealed: sealed);
     if (plain == null || plain.length != key.seal.plainSize) {
       refused++;
+      PlaybackLog.add('seal: an image did not open (${key.seal.dekId.substring(0, min(8, key.seal.dekId.length))})');
       throw StateError('a sealed image that does not open');
     }
-    opened++;
+    // The trail: the first, then every tenth — enough to see posters open.
+    if (opened++ % 10 == 0) PlaybackLog.add('seal: images opened $opened');
     return decode(await ui.ImmutableBuffer.fromUint8List(plain));
   }
 
