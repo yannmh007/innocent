@@ -80,8 +80,8 @@ for d in docs:
     text = open(d, encoding='utf-8').read()
     for m in PATHY.finditer(text):
         p = m.group(1).rstrip('.')
-        if 'NNN' in p or '<' in p or p.startswith('.claude/state/'):
-            continue  # a placeholder, or a file the hooks write at run time
+        if 'NNN' in p or '<' in p or p.startswith(('.claude/state/', 'test_device/results')):
+            continue  # a placeholder, a file the hooks write, or lab results (never on main)
         if any(c in p for c in '*{'):
             ok = len(files_matching(p.replace('{', '').replace('}', ''))) > 0
         else:
