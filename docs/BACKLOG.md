@@ -135,8 +135,11 @@ does it.
   - **S5/P5 (owner)**: passkeys on GitHub, Cloudflare, Supabase and Google;
     Telegram 2-step; a fine-grained, expiring `GH_DISPATCH_TOKEN`; a `main`
     ruleset; secret scanning with push protection; Dependabot; CodeQL.
-  - **S7/P6**: a takedown contact, an in-app Report and a rights record per
-    title. Hiding the host from abuse reports is NOT a goal (§0).
+  - **S7/P6**: BUILT 6 Nov — takedown address innocentmail69@gmail.com in
+    About, Report on every title (next release), migration 076 live (budget
+    5/phone/day, owner told in Telegram by ingest v51). Left: a Reports page
+    in the console; the owner keeps a rights record per title. Hiding the
+    host from abuse reports is NOT a goal (§0).
   - **S8-S10/P7**: check that `/rest/v1/` refuses the publishable key; turn
     off auto-expose of new tables; Files → Scan; `claim_anonymous_history`
     accepts only the calling install.

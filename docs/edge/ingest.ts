@@ -2520,6 +2520,17 @@ Deno.serve(async (req: Request) => {
     } catch (e) {
       house.watched = 'error: ' + String(e).slice(0, 120);
     }
+    // A VIEWER'S REPORT (migration 076): each one to the owner, once, on
+    // the next tick after it is sent.
+    try {
+      const reports = await rpc('report_notice', {});
+      if (typeof reports === 'string' && reports) {
+        for (const chat of TG_CHATS) await say(chat, reports);
+        house.reported = true;
+      }
+    } catch (e) {
+      house.reported = 'error: ' + String(e).slice(0, 120);
+    }
     // THE BACKUPS MADE BEFORE SEALING (migration 055), sealed where they lie,
     // before the off-site catch-up below copies the sealed ones.
     try {

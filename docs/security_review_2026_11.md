@@ -222,12 +222,33 @@ push protection; Dependabot alerts; and CodeQL default setup, all free for
 public repos. Repeat this review every quarter, as if the attacker had the
 source.
 
-**P6 — the honest defence against fake reports.** Publish a takedown
-contact in the app and on the APK page, and answer it, so complaints come
-to us first. Add an in-app Report. Keep a rights record for every title
-(licence, or the performers' consent). That is what lets a valid
-counter-notice (17 U.S.C. §512(g)) restore something removed by mistake.
-Keep `admin_audit` as the record of who uploaded what.
+**P6 — the honest defence against fake reports.** Complaints should come
+to us first, and be answered.
+- **Built 6 Nov.** The takedown address is **innocentmail69@gmail.com**,
+  given by the owner. It is kept in one place (`kTakedownEmail`) and in the
+  owner's notices.
+  - **App** (next release): About → "Copyright & takedown" says who to
+    write to and what to include, with the address copyable. Every
+    title's page has a Report flag with five reasons: copyright, illegal,
+    someone under 18, someone who did not consent, something else. It
+    takes words and an optional contact, in all three languages.
+    `test/content_report_test.dart`, 8 tests.
+  - **Server** (migration 076, live). `report_content()` is open to the
+    app, 5 a day per phone, 20 per network, 200 in all. It keeps the
+    report, a contact only if given, and who sent it only as hashes.
+    `report_notice()` sends each report to the owner in Telegram once, on
+    the next ingest tick (ingest v51). `tool/sql/content_reports_test.sql`
+    passed on live, rolled back, as anon and as authenticated.
+- **The owner, on each report:**
+  - take down what should not be here (unpublish in the console);
+  - answer from the address;
+  - keep a rights record for every title (a licence, or the performers'
+    consent). That record is what lets a valid counter-notice (17 U.S.C.
+    §512(g)) restore something removed by mistake.
+  - `admin_audit` stays the record of who uploaded what.
+- **Not built:** a Reports page in the console (Telegram carries every
+  report for now) and a download page for the APK (there is none: the
+  APK's address comes from the release row). Both are recorded.
 
 **P7 — tidy.**
 - **The schema map (S8):** the transport check now asks `/rest/v1/` and

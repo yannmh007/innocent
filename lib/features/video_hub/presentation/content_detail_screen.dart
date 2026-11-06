@@ -30,6 +30,7 @@ import 'account_provider.dart';
 import 'watch_points_provider.dart';
 import '../data/watch_state_store.dart';
 import '../../../core/ui/transient_prompt.dart';
+import 'report_sheet.dart';
 
 /// One catalogue entry in full: artwork, facts, and the mixed photo/video
 /// album behind it.
@@ -169,7 +170,10 @@ class _ContentDetailScreenState extends ConsumerState<ContentDetailScreen> {
             ),
             // Where Netflix keeps "My List" and YouTube "Save": pinned with
             // the back arrow, so it is there however far the page scrolls.
-            actions: <Widget>[_BookmarkButton(content: content)],
+            actions: <Widget>[
+              _ReportButton(content: content),
+              _BookmarkButton(content: content),
+            ],
             flexibleSpace: FlexibleSpaceBar(
               background: Stack(
                 fit: StackFit.expand,
@@ -414,6 +418,31 @@ String clockOf(Duration d) {
   final sec = d.inSeconds % 60;
   final ss = sec.toString().padLeft(2, '0');
   return h > 0 ? '$h:${m.toString().padLeft(2, '0')}:$ss' : '$m:$ss';
+}
+
+/// Report this title: a rights holder, a parent, a person in a film
+/// (docs/security_review_2026_11.md P6). It reaches the owner within minutes.
+class _ReportButton extends StatelessWidget {
+  const _ReportButton({required this.content});
+  final VideoContent content;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppStrings.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(right: VH.s2),
+      child: Material(
+        color: const Color(0x66000000),
+        shape: const CircleBorder(),
+        child: IconButton(
+          key: const ValueKey('detail-report'),
+          tooltip: s.reportAction,
+          onPressed: () => showReportSheet(context, titleId: content.id),
+          icon: const Icon(Icons.outlined_flag_rounded, color: Colors.white),
+        ),
+      ),
+    );
+  }
 }
 
 /// Save for later: a bookmark that fills when the title is saved.
