@@ -1646,7 +1646,22 @@ class StreamCacheServer {
         min(entry.nextPartStart(pos, total), total), // exclusive
         max(endInclusive + 1, pos + ahead));
     if (aheadEnd <= pos) return pos;
-    final up = await _openPooled(src, pos, aheadEnd - 1);
+    // THE READ BEFORE PUTS ITS PEN DOWN FIRST (2026-11-06). A film has one
+    // writer at a time ([StreamCacheStore.openWriter] says null to a
+    // second). A read that began while the one before was still closing its
+    // writer — every byte in, the last batch going to disk — got no writer,
+    // and its two megabytes went to the player and nowhere else: the next
+    // segments were asked of the Worker again, and their bytes read twice.
+    // Build run 42255981825 on a busy runner: 12 reads where 8 do; under a
+    // loaded CPU and disk here, 4 runs in 10. That close is short against
+    // the Worker's answer, so it is waited for alongside the answer, not in
+    // front of it, and never long.
+    final before = src.fill;
+    final opening = _openPooled(src, pos, aheadEnd - 1);
+    if (before != null && !before.done) {
+      await before.finished.timeout(const Duration(seconds: 1), onTimeout: () {});
+    }
+    final up = await opening;
     if (up == null) return pos;
     // A jump's cost, in the trail: the Worker's answer, then the segment
     // the player is waiting for (docs/streaming_pro_plan.md, far seeks).
@@ -3076,10 +3091,16 @@ class _Fill {
     if (!_more.isClosed) _more.add(null);
   }
 
+  /// Completes once the read has ended and its writer is closed — the film
+  /// is free for the next read to write ([StreamCacheStore.openWriter]).
+  Future<void> get finished => _finished.future;
+  final Completer<void> _finished = Completer<void>();
+
   void finish() {
     done = true;
     ping();
     unawaited(_more.close());
+    if (!_finished.isCompleted) _finished.complete();
   }
 
   void cancel() {

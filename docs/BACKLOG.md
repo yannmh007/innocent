@@ -26,6 +26,20 @@ does it.
   fake JWTs in `tool/js/service_key_test.mjs`, fixed on the branch
   (06c70cc); it reaches main with the next release, not before, since a
   change under tool/ rebuilds 1.64.80 for nothing.
+- **Main red twice after the Claude-setup pushes (6 Nov), both fixed on
+  main the same evening; 1.64.80 rebuilt, nothing uploaded.**
+  (a) Static analysis 42258949696: `tool/claude_hooks_test.py` ran a hook
+  by a path from a variable; now a literal command per hook. The fake
+  JWTs (06c70cc) went with it. (b) Build 42255981825: one Flutter test,
+  `stream_cache_hls_test` "asked a few times, not 90": 12 Worker reads
+  where 8 do. A REAL BUG, timing-dependent: a film has one cache writer at
+  a time, and a segment read that began while the last read's writer was
+  still closing got none — its 2 MB reached the player but not the cache,
+  so the next segments were read from the Worker again (bytes read twice,
+  Worker requests spent). Reproduced here under CPU+disk load (4 runs in
+  10); the read now waits for that close, alongside the Worker's answer,
+  at most 1 s: 0 in 16. Also one metadata save per film at a time (two
+  shared `meta.json.tmp`). Reaches phones with the next release.
 - 1.64.80 carries Report on every title and the
   takedown address in About (P6), genres by code in the phone's language
   (TAX phase 3), the media seal's app half (the opener, the device key, the
