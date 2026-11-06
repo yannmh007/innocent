@@ -1288,6 +1288,11 @@ class MainActivity : AudioServiceFragmentActivity() {
                 "deviceKey" -> result.success(
                     try { SealDevice.publicKey() } catch (_: Throwable) { null }
                 )
+                // Its attestation chain (leaf first, base64 DER), for the
+                // server to check where the key lives; null without one.
+                "deviceAttest" -> result.success(
+                    try { SealDevice.attestation() } catch (_: Throwable) { null }
+                )
                 // A grant's DEK into the keyring: wrapped for this install
                 // ("rsa") or as sent over TLS ("tls"). True once it is held.
                 "register" -> {

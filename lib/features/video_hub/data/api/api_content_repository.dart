@@ -952,7 +952,16 @@ class ApiContentRepository implements ContentRepository {
         if (kAsksForSealed) 'seal': 1,
         if (kAsksForSealed && PlatformSealCipher.deviceKeyNow != null)
           'device_key': PlatformSealCipher.deviceKeyNow,
+        // Where that key lives, certified by the phone's Keystore, until
+        // the server has said it has it (docs/edge/key_attest.js).
+        if (kAsksForSealed && PlatformSealCipher.deviceKeyNow != null &&
+            PlatformSealCipher.deviceAttestNow != null)
+          'device_attest': PlatformSealCipher.deviceAttestNow,
       });
+      if (body is Map<String, dynamic> && body['attest'] != null) {
+        PlatformSealCipher.attestHeard();
+        PlaybackLog.add('attest: ${body['attest']}');
+      }
       if (body is! Map<String, dynamic>) {
         return const PlaybackGrant.denied(AccessDenial.unavailable);
       }

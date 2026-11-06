@@ -163,6 +163,7 @@ class PlatformSealCipher implements SealCipher {
         try {
           final k = await _keys.invokeMethod<String>('deviceKey');
           _deviceKeyNow = (k != null && k.isNotEmpty) ? k : null;
+          if (_deviceKeyNow != null) await _readAttest();
         } catch (e) {
           if (kDebugMode) debugPrint('PlatformSealCipher.deviceKey: $e');
           _deviceKeyNow = null;
@@ -172,6 +173,31 @@ class PlatformSealCipher implements SealCipher {
 
   /// The key if it is ready, without waiting for it.
   static String? get deviceKeyNow => _deviceKeyNow;
+
+  static List<String>? _attestNow;
+  static bool _attestHeard = false;
+
+  /// The key's attestation chain (leaf first, base64 DER): what lets the
+  /// server tell a Keystore key on this phone from one a script made
+  /// (docs/edge/key_attest.js). Read once, after the key.
+  static Future<void> _readAttest() async {
+    try {
+      final raw = await _keys.invokeMethod<List<Object?>>('deviceAttest');
+      final chain = raw?.whereType<String>().where((c) => c.isNotEmpty).toList();
+      _attestNow = (chain != null && chain.length > 1) ? chain : null;
+    } catch (e) {
+      if (kDebugMode) debugPrint('PlatformSealCipher.deviceAttest: $e');
+      _attestNow = null;
+    }
+  }
+
+  /// The chain to send with the next grant: until the server has said it
+  /// has it (`attest` in a grant's answer, [attestHeard]), never waited for.
+  /// A few kilobytes, so not on every grant once heard.
+  static List<String>? get deviceAttestNow => _attestHeard ? null : _attestNow;
+
+  /// The server answered a grant that carried the chain.
+  static void attestHeard() => _attestHeard = true;
 
   /// Makes (or reads) the device key in the background. Only for a build
   /// that asks for sealed objects: no other has a use for it.

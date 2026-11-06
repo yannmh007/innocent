@@ -2,6 +2,7 @@ package com.innocent.media
 
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
+import android.util.Log
 import android.util.Base64
 import com.innocent.media.seal.DeviceDek
 import com.innocent.media.seal.SealException
@@ -35,6 +36,17 @@ import javax.crypto.spec.PSource
  * NO USER AUTHENTICATION, as with MediaCrypto: a film plays, and a download
  * resumes, with the screen locked.
  *
+ * CERTIFIED BY THE HARDWARE (v2, docs/security_review_2026_11.md P3). The
+ * key is made with an attestation challenge, so Keystore signs a
+ * certificate chain for it up to Google's attestation root, saying in the
+ * leaf what made it: secure hardware or software, our package and signing
+ * certificate, and whether the phone boots a locked, verified system. The
+ * chain goes to request-playback (`device_attest`), which checks it
+ * (docs/edge/key_attest.js). A copied chain buys nothing: the DEKs are
+ * wrapped for this key, which never leaves this phone. A phone whose
+ * Keystore cannot attest still makes the key without it; the server then
+ * sees no chain.
+ *
  * MADE ONCE, TESTED ONCE A PROCESS. Generating the key takes 0.1–2 s in a
  * phone's TEE, so the app asks for it at start-up, in the background, never
  * on the way to a first frame; a grant asked before it is ready goes without
@@ -43,7 +55,12 @@ import javax.crypto.spec.PSource
  * whose Keystore cannot do this at all answers null for good.
  */
 object SealDevice {
-    private const val ALIAS = "inv_media_device_v1"
+    // v2: made with an attestation challenge. v1 (no chain) was only ever on
+    // lab builds; it is deleted the first time v2 is made.
+    private const val ALIAS = "inv_media_device_v2"
+    private const val OLD_ALIAS = "inv_media_device_v1"
+    // What the server expects in the KeyDescription (key_attest.js CHALLENGE).
+    private val CHALLENGE = "inv-media-device-v2".toByteArray(Charsets.UTF_8)
     private val OAEP = OAEPParameterSpec("SHA-1", "MGF1", MGF1ParameterSpec.SHA1, PSource.PSpecified.DEFAULT)
 
     @Volatile private var spki: String? = null
@@ -75,6 +92,20 @@ object SealDevice {
         return null
     }
 
+    /**
+     * The key's attestation chain, leaf first, each certificate base64 DER;
+     * null when the key has none (a phone that cannot attest) or is not made.
+     */
+    @Synchronized
+    fun attestation(): List<String>? = try {
+        if (publicKey() == null) null
+        else keyStore().getCertificateChain(ALIAS)
+            ?.takeIf { it.size > 1 }
+            ?.map { Base64.encodeToString(it.encoded, Base64.NO_WRAP) }
+    } catch (_: Throwable) {
+        null
+    }
+
     /** The DEK the server wrapped for this install. */
     fun unwrap(wrapped: ByteArray): ByteArray {
         val priv = keyStore().getKey(ALIAS, null) as? PrivateKey
@@ -98,16 +129,33 @@ object SealDevice {
     private fun publicHalf(): PublicKey? = keyStore().getCertificate(ALIAS)?.publicKey
 
     private fun make(): PublicKey {
-        val gen = KeyPairGenerator.getInstance(KeyProperties.KEY_ALGORITHM_RSA, "AndroidKeyStore")
-        gen.initialize(
-            KeyGenParameterSpec.Builder(ALIAS, KeyProperties.PURPOSE_DECRYPT or KeyProperties.PURPOSE_ENCRYPT)
-                .setAlgorithmParameterSpec(RSAKeyGenParameterSpec(2048, RSAKeyGenParameterSpec.F4))
-                .setDigests(KeyProperties.DIGEST_SHA1, KeyProperties.DIGEST_SHA256)
-                .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_RSA_OAEP)
-                .setUserAuthenticationRequired(false)
-                .build()
-        )
-        return gen.generateKeyPair().public
+        try {
+            keyStore().deleteEntry(OLD_ALIAS)
+        } catch (_: Throwable) {
+        }
+        // Attested first; a Keystore that refuses attestation (some older or
+        // unusual builds throw here) still gets its key, without a chain.
+        for (attest in listOf(true, false)) {
+            try {
+                val gen = KeyPairGenerator.getInstance(KeyProperties.KEY_ALGORITHM_RSA, "AndroidKeyStore")
+                val spec = KeyGenParameterSpec.Builder(ALIAS, KeyProperties.PURPOSE_DECRYPT or KeyProperties.PURPOSE_ENCRYPT)
+                    .setAlgorithmParameterSpec(RSAKeyGenParameterSpec(2048, RSAKeyGenParameterSpec.F4))
+                    .setDigests(KeyProperties.DIGEST_SHA1, KeyProperties.DIGEST_SHA256)
+                    .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_RSA_OAEP)
+                    .setUserAuthenticationRequired(false)
+                if (attest) spec.setAttestationChallenge(CHALLENGE)
+                gen.initialize(spec.build())
+                return gen.generateKeyPair().public
+            } catch (e: Throwable) {
+                if (!attest) throw e
+                Log.w("SealDevice", "attested key refused, making it without: ${e.javaClass.simpleName}")
+                try {
+                    keyStore().deleteEntry(ALIAS)
+                } catch (_: Throwable) {
+                }
+            }
+        }
+        throw IllegalStateException("unreachable")
     }
 
     /**

@@ -53,6 +53,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { looksForSeals, planSeal, sealBlock, sealMode, wrapMode } from './media_grant.js';
 import { importDeviceKey, importKek, kekStatus } from './media_keys.js';
 import { clientOptions, keyFacts, pickKey } from './service_key.js';
+import { CHALLENGE as ATTEST_CHALLENGE, revokedFrom, verdict as attestVerdict } from './key_attest.js';
 
 // ─── MEDIA SEAL (docs/MEDIA_ENCRYPTION.md §5, §9) ─────────────────────────
 //
@@ -335,7 +336,7 @@ Deno.serve(async (req) => {
 
   let body: {
     title_id?: string; device_id?: string; asset_id?: string; bind?: boolean;
-    seal?: number; device_key?: string;
+    seal?: number; device_key?: string; device_attest?: unknown;
   };
   try {
     body = await req.json();
@@ -643,6 +644,12 @@ Deno.serve(async (req) => {
   // Which object each key becomes, and its seal (null when not looked for).
   const sealing = await planGrantSeal(admin, [objectKey,
     ...ladderRows.map((r) => String(r.object_key ?? ''))], body);
+  // Where that key lives (key_attest.js), checked and recorded in the
+  // background: LOG MODE, nothing is refused because of it yet.
+  const attestQ = sealing?.deviceKey && Array.isArray(body.device_attest)
+    ? checkAttest(admin, body.device_attest, String(body.device_key), user?.id ?? null, install)
+    : null;
+  if (attestQ) keepAlive(attestQ);
   // The install's key, pinned on first use, beside the signing below.
   const pinQ = sealing?.deviceKey && user && install
     ? Promise.resolve(admin.from('devices')
@@ -724,9 +731,58 @@ Deno.serve(async (req) => {
     // The seal of `url` when it is a sealed object; each rung carries its
     // own. Absent when seals were not looked for: the response is as it was.
     ...(sealing ? { seal_v: 1 } : {}),
+    // The phone sends its key's chain until it reads this.
+    ...(attestQ ? { attest: 'received' } : {}),
     ...(urlSeal(url, masterUrl, masterSigned?.seal ?? null, renditions)),
   }, 200);
 });
+
+// ── key attestation, log mode (docs/security_review_2026_11.md P3) ───────
+
+/// Google's revocation list, kept an hour per isolate. Null when it cannot be
+/// had: the verdict then says `revoked: null`, not "not revoked".
+let REVOKED: { at: number; set: Set<string> } | null = null;
+async function revokedList(): Promise<Set<string> | null> {
+  if (REVOKED && Date.now() - REVOKED.at < 3600_000) return REVOKED.set;
+  try {
+    const r = await fetch('https://android.googleapis.com/attestation/status',
+      { signal: AbortSignal.timeout(4000) });
+    if (!r.ok) return REVOKED?.set ?? null;
+    REVOKED = { at: Date.now(), set: revokedFrom(await r.json()) };
+    return REVOKED.set;
+  } catch (_) {
+    return REVOKED?.set ?? null;
+  }
+}
+
+/// Work that must finish after the answer has gone: the edge runtime's
+/// waitUntil where there is one.
+function keepAlive(p: Promise<unknown>) {
+  // deno-lint-ignore no-explicit-any
+  const rt = (globalThis as any).EdgeRuntime;
+  if (rt && typeof rt.waitUntil === 'function') rt.waitUntil(p);
+}
+
+/// The verdict on a phone's chain: logged (no identifier) and, for a
+/// signed-in install, kept on its devices row. Never throws.
+async function checkAttest(
+  admin: ReturnType<typeof createClient>, chain: unknown[], deviceKey: string,
+  userId: string | null, install: string | null,
+): Promise<void> {
+  try {
+    const v = await attestVerdict(chain.map((c) => String(c ?? '')),
+      { deviceKey, challenge: ATTEST_CHALLENGE, revoked: await revokedList() });
+    console.log(JSON.stringify({ attest: v, signed_in: !!userId }));
+    if (userId && install) {
+      const { error } = await admin.from('devices')
+        .update({ attest: v, attest_at: new Date().toISOString() })
+        .eq('user_id', userId).eq('device_id', install);
+      if (error) logRefusal('attest_store_failed', String(error.message).slice(0, 120));
+    }
+  } catch (e) {
+    logRefusal('attest_failed', String(e).slice(0, 120));
+  }
+}
 
 /** `{seal}` for whichever object `url` is, or nothing. */
 function urlSeal(url: string, masterUrl: string | null,

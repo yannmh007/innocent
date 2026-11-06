@@ -203,6 +203,12 @@ def main() -> int:
          'a film sealed in the browser that the phone cannot open: different '
          'bytes from the reference for the same key, or a range served from '
          'the wrong segments, seen only as a film that will not play'),
+        ('key_attest_test.mjs',
+         'Android key attestation: a phone\'s media key, certified by its hardware',
+         'a script\'s own key taken for a phone\'s Keystore key, or a real '
+         'phone refused: a chain to the wrong root, a changed byte, another '
+         'app or signer, an unlocked phone or a revoked certificate passing, '
+         'or Google\'s own roots failing'),
         ('service_key_test.mjs',
          'the Supabase keys every edge function uses, legacy and new',
          'every function failing the day Supabase retires the legacy keys (a '
