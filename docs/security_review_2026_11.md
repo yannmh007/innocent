@@ -156,9 +156,20 @@ are BACKLOG O19, O20 and O24, and R1-R6.
    - **Proved:** `key_attest_test.mjs`, 27 checks — openssl chains in
      Keystore's shapes, each failure naming itself, and Google's real roots
      verifying under the pins.
-   - **Still to see (BACKLOG R8):** a real chain from the device lab (an
-     emulator: software attestation, so `unknown_root` / `software` is the
-     right answer) and from Test Lab's real phones (`ok`).
+   - **Seen on real chains, 6 Nov** (request-playback v43):
+
+     | where | root | level | boot | why not `ok` |
+     |---|---|---|---|---|
+     | device lab, emulator (run 42154151610) | unknown | software | unverified, unlocked | chain, level, boot, app — all as an emulator must read |
+     | Test Lab, the realme, Android 15, KeyMint 2, chain of 5 (run 42156742961) | **google-ec** (the 2025 root, through Remote Key Provisioning) | TEE | verified, locked | `app` only |
+     | Test Lab, the OPPO, Android 14, Keymaster 4, chain of 4 (same run) | **google-rsa** | TEE | verified, locked | `app` only |
+
+     On all three the key and challenge matched and the revocation list
+     was read (`revoked: false`). `app: other_signer` is right for a lab
+     build: labs are debug-signed. Only a release build can read
+     `app: ok`, so that is the one thing left to see (R8, after the
+     release). Playback unchanged: the emulator passed jumps 15 of 15, the
+     OPPO 16 of 16 and the realme 15 of 15, all sealed, the key held (rsa).
 
    **What it does and does not stop, honestly.** A chain is public, so
    anyone can replay a real phone's chain. That buys nothing where it

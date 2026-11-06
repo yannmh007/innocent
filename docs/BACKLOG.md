@@ -42,12 +42,13 @@ does it.
   NetPlugin logs every failed call (on the branch).
 
 ### Verify what is live but not yet exercised
-- **R8 — key attestation, real chains** (since 6 Nov, request-playback
-  v43): the function log's `attest` lines and `devices.attest`. The device
-  lab (emulator) should read `chain: unknown_root`, `level: software`; Test
-  Lab's real phones `ok: true`, `root: google-rsa` or `google-ec`, `level:
-  tee`/`strongbox`, `boot: verified`, `app: ok`. A real phone NOT `ok`
-  says which check to look at again before anything is enforced.
+- **R8 — key attestation, real chains**: SEEN 6 Nov on the emulator
+  (software, unknown root) and on Test Lab's realme (google-ec, TEE,
+  verified, locked) and OPPO (google-rsa, TEE, verified, locked), key and
+  challenge matching, revocation list read; only `app` failed, which is
+  right for a debug-signed lab build. Left: the first RELEASE build must
+  read `ok: true` (`app: ok`) on a real phone, in the function log and in
+  `devices.attest`, before anything is enforced.
 - **R7 — the new Supabase keys, first real calls** (since 6 Nov): studio
   (the console), premium-request, delete-account, probe-media,
   backfill-dimensions, self-test. In the logs, each boot says `service:
