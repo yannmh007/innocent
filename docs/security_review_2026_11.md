@@ -231,8 +231,9 @@ turns it on** (`docs/console/README.md`):
   2. Limit the zone's WAF rules to `stream.`.
   3. Add the Supabase redirect URL.
   4. Sign in there.
-  It needs `docs/console` and the Worker line on `main`, with the release
-  or earlier. Retire the Pages copy a week after.
+  `docs/console` and the Worker line are on `main` since 6 Nov
+  (b6fc0d0, docs only; Playback check 42208213495 passed after the
+  Worker's redeploy). Retire the Pages copy a week after.
 
 **P5 — the accounts (owner; no code).** Use passkeys or security keys on
 GitHub, Cloudflare, Supabase and Google, with no SMS fallback. Turn on
