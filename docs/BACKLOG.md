@@ -125,8 +125,11 @@ does it.
     key_attest.js, request-playback v43, migration 074, app key v2 with the
     next release). Next: R8 (real chains), then P3b (the stream token
     wrapped for the attested key, so a plain grant needs the phone too),
-    then `require` for premium; a human-sized premium budget; bytes per
-    account per day with a Telegram alert.
+    then `require` for premium. The owner is told in Telegram when one
+    install/account/network pulls far more than a person (migration 075,
+    ingest v50, refuses nothing). A lower cap waits for that data: today
+    it would be a guess (4 titles; busiest install 2 titles a day). Bytes
+    per account need a Worker counter and a Cloudflare token to read it.
   - **S4/P4**: console on `console.innocentplayer.com` with real headers and
     a narrow CSP; `STUDIO_ORIGINS` moved.
   - **S5/P5 (owner)**: passkeys on GitHub, Cloudflare, Supabase and Google;

@@ -182,11 +182,26 @@ are BACKLOG O19, O20 and O24, and R1-R6.
    that phone can use it (P3b, with the ENC rollout). Then `require` for
    premium: first premium sealed grants only to an attested install, then
    all premium grants.
-2. Lower the per-account premium budget to something human, for example 40
-   titles a day (measure first).
-3. Count bytes per account per day in the Worker (a Durable Object or
-   Analytics Engine; check the free-plan limits). Send a Telegram alert to
-   the owner above a threshold.
+2. **A lower cap: not yet, on purpose (6 Nov).** A grant is asked for
+   when a title's page is opened, so the daily title cap counts pages
+   browsed, not films taken. A tight cap would refuse someone who browses.
+   Measured on the live table: the busiest install had 2 titles and
+   5 grants in an hour, the busiest network 13 grants in an hour, the one
+   account 2 titles. The catalogue has 4 published titles. A cap set from
+   that would be a guess. It is set once step 3 has seen real viewers.
+3. **The owner is told — built 6 Nov** (migration 075, ingest v50).
+   `playback_watch_notice()` runs on every ingest runner tick. It reports,
+   in Telegram, the first time each day an install or account passes
+   60 distinct titles in a day or 200 grants in an hour, or a network
+   passes 800 grants in an hour. Each is named only by its 8-character
+   code: for an account, the one the player draws over a paid film and the
+   start of `u` in the Worker's logs, found with the query in
+   `docs/security.md` §9. It refuses nothing. Tested on live in a
+   rolled-back transaction (`tool/sql/playback_watch_test.sql`): an
+   ordinary day is silent, yesterday is not news, a sweep is reported once
+   a day by its code, and no id or address is in the message. Bytes per
+   account need the Worker's own counter (Analytics Engine or a Durable
+   Object, plus a Cloudflare API token to read it): recorded, not built.
 4. Later, with Phase 3 DRM: a forensic (A/B segment) watermark.
 
 **P4 — give the console an origin of its own.** Serve

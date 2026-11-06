@@ -2508,6 +2508,18 @@ Deno.serve(async (req: Request) => {
     } catch (e) {
       house.noticed = 'error: ' + String(e).slice(0, 120);
     }
+    // ONE SUBJECT PULLING A LOT (migration 075): an install, account or
+    // network far past what a person does, told to the owner once a day
+    // each, by the code the player draws. Refuses nothing.
+    try {
+      const watch = await rpc('playback_watch_notice', {});
+      if (typeof watch === 'string' && watch) {
+        for (const chat of TG_CHATS) await say(chat, watch);
+        house.watched = true;
+      }
+    } catch (e) {
+      house.watched = 'error: ' + String(e).slice(0, 120);
+    }
     // THE BACKUPS MADE BEFORE SEALING (migration 055), sealed where they lie,
     // before the off-site catch-up below copies the sealed ones.
     try {
