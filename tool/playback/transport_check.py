@@ -313,6 +313,13 @@ st, _, body = http(f'{sb}/graphql/v1', 'POST', {'apikey': key, 'Content-Type': '
                    json.dumps({'query': '{ __schema { types { name } } }'}).encode())
 introspected = st == 200 and b'__schema' in body and b'"types"' in body
 verdict(not introspected, f'GraphQL introspection refused or absent (HTTP {st})')
+# The report door (migration 076) answers the app, and keeps nothing it
+# should not: an unknown reason is 'bad', so this probe writes no row and
+# sends the owner no notice.
+st, _, body = http(f'{sb}/rest/v1/rpc/report_content', 'POST',
+                   {'apikey': key, 'Content-Type': 'application/json'},
+                   json.dumps({'p_title': None, 'p_reason': 'transport-check', 'p_detail': ''}).encode())
+verdict(st == 200 and body.strip() == b'"bad"', f'report_content answers the app, and refuses a bad reason (HTTP {st}, {body[:20]!r})')
 
 # ── 6. Expiry ─────────────────────────────────────────────────────────────
 print('\n== 6. The same token after its 10 minutes')
