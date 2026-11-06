@@ -321,6 +321,37 @@ st, _, body = http(f'{sb}/rest/v1/rpc/report_content', 'POST',
                    json.dumps({'p_title': None, 'p_reason': 'transport-check', 'p_detail': ''}).encode())
 verdict(st == 200 and body.strip() == b'"bad"', f'report_content answers the app, and refuses a bad reason (HTTP {st}, {body[:20]!r})')
 
+# ── 9. The console on its own origin ──────────────────────────────────────
+# docs/console (innocent-console). Its headers are what make the move worth
+# making; a deploy that dropped _headers would serve the console naked.
+CONSOLE = 'console.innocentplayer.com'
+print('\n== 9. The console at ' + CONSOLE)
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, *a, **k):
+        return None  # see the 302 itself, not where it leads
+
+
+try:
+    with urllib.request.build_opener(_NoRedirect).open(
+            urllib.request.Request(f'https://{CONSOLE}/', headers={'User-Agent': UA}), timeout=30) as r:
+        st, h = r.status, dict(r.headers)
+except urllib.error.HTTPError as e:
+    st, h = e.code, dict(e.headers)
+loc = h.get('Location') or h.get('location') or ''
+verdict(st in (301, 302, 307, 308) and loc.rstrip('/').endswith('/studio'), f'/ sends to /studio/ (HTTP {st})')
+st, h, body = http(f'https://{CONSOLE}/studio/')
+hl = {k.lower(): v for k, v in h.items()}
+csp = hl.get('content-security-policy', '')
+verdict(st == 200 and b'<title>' in body, f'/studio/ is the console (HTTP {st})')
+verdict("frame-ancestors 'none'" in csp and "default-src 'none'" in csp and ' https: ' not in f' {csp} ',
+        'the CSP header: default-src none, frame-ancestors none, no bare https:')
+verdict('max-age=' in hl.get('strict-transport-security', ''), 'HSTS')
+verdict(hl.get('cross-origin-opener-policy') == 'same-origin' and hl.get('x-content-type-options') == 'nosniff'
+        and hl.get('referrer-policy') == 'no-referrer', 'COOP, nosniff, no referrer')
+for path in ('/edge/studio.ts', '/migrations/074_device_attestation.sql', '/BACKLOG.md', '/console/wrangler.toml'):
+    st, _, _ = http(f'https://{CONSOLE}{path}')
+    verdict(st == 404, f'{path} is not published there (HTTP {st})')
+
 # ── 6. Expiry ─────────────────────────────────────────────────────────────
 print('\n== 6. The same token after its 10 minutes')
 time.sleep(610)
