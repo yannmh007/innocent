@@ -42,6 +42,13 @@ does it.
   NetPlugin logs every failed call (on the branch).
 
 ### Verify what is live but not yet exercised
+- **R7 — the new Supabase keys, first real calls** (since 6 Nov): studio
+  (the console), premium-request, delete-account, probe-media,
+  backfill-dimensions, self-test. In the logs, each boot says `service:
+  SUPABASE_SECRET_KEYS.default` and the calls are not 5xx. Also, in the
+  gateway logs (edge_logs, `request.sb.jwt.apikey.payload.role`), no
+  `service_role` or `anon` legacy JWT after 6 Nov 02:40 UTC, before the
+  owner deactivates the legacy keys.
 - **Sealed payment fields (migration 054, premium-request v15)**: the first
   sealed request (1ccbfbc5) is in, phone sealed and masked, no plain numbers
   anywhere. Still to see: the console's Requests page opening it (the number
@@ -98,12 +105,14 @@ does it.
 ### Security, next
 - **Review of 5 Nov 2026: `docs/security_review_2026_11.md`** — findings
   S1-S10, plan P1-P7. Carry these until each is done:
-  - **S1/P1 — DEADLINE 31 Dec 2026**: legacy JWT keys retire. Code done
-    6 Nov (`docs/edge/service_key.js`, every function, `prefer: 'legacy'`).
-    Next: a canary function on `prefer: 'new'` (its boot log says whether
-    `SUPABASE_SECRET_KEYS` exists; if not, the owner creates a secret key),
-    then all functions, then asymmetric signing keys, then legacy anon and
-    service_role off once the API logs show no legacy-key use for 14 days.
+  - **S1/P1 — DEADLINE 31 Dec 2026**: every function on the new secret
+    key since 6 Nov (39daef0; canary transcode v26, then ingest v49,
+    request-playback v42, studio v50, probe-media v25,
+    backfill-dimensions v28, self-test v30, premium-request v18,
+    delete-account v7). Owner, no code: asymmetric JWT signing keys; then,
+    after a quiet week in the gateway logs, deactivate the legacy anon and
+    service_role keys; then delete the Edge secret `SB_SERVICE_KEY` (legacy
+    JWT, no longer read).
   - **S2/P2**: ENC rollout A→F; every film and photo is still plain in R2.
   - **S3/P3**: Android Key Attestation on the device key (log, then require
     for premium and sealed); a human-sized premium budget; bytes per account
