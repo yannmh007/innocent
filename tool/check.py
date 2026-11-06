@@ -136,6 +136,11 @@ CHECKS = [
      'BY or CC0 on Blender\'s own site (No Derivatives, Non Commercial, '
      'unset), a copy from another server, or a download that is not the film '
      'the licence was read for (cut short, another height, no sound)'),
+    ('claude_config_test.py', None,
+     'an instruction file Claude ignores without a word: a rule whose '
+     'frontmatter does not parse or whose paths match nothing, a skill or '
+     'agent missing its name or description, a path CLAUDE.md names that is '
+     'gone, or anything secret-shaped in them (the repository is public)'),
     ('claude_hooks_test.py', None,
      'a Claude Code hook that stands in the way: one that throws, prints '
      'junk, blocks a call, or trims away a fact of a CI run (they run on '

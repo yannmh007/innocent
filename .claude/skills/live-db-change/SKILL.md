@@ -1,6 +1,6 @@
 ---
 name: live-db-change
-description: Change the live Supabase database safely (migrations, grants, functions, data fixes): reproduce, dry-run rolled back as each role, apply, then run the SQL tests. Use before any apply_migration or write through execute_sql.
+description: "Change the live Supabase database safely (migrations, grants, functions, data fixes): reproduce, dry-run rolled back as each role, apply, then run the SQL tests. Use before any apply_migration or write through execute_sql."
 ---
 
 # Changing the live database

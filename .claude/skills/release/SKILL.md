@@ -1,6 +1,6 @@
 ---
 name: release
-description: Ship a new app version to main (Innocent): build the release tree from the work branch without lab-only code, prove it, push, and move app_releases. Use whenever the owner asks for a release.
+description: "Ship a new app version to main (Innocent): build the release tree from the work branch without lab-only code, prove it, push, and move app_releases. Use whenever the owner asks for a release."
 ---
 
 # Releasing the app (as 1.64.80 was, 6 Nov 2026)
