@@ -248,8 +248,10 @@ const json = (body: unknown, status: number) =>
 // without editing this file again. If neither exists the function says so
 // instead of quietly continuing with no privileges.
 // The Supabase keys (service_key.js, docs/security_review_2026_11.md S1):
-// 'legacy' keeps the choice made before the new keys; 'new' once proven.
-const KEYS = { prefer: 'legacy' } as const;
+// the new secret and publishable keys, proved by transcode's canary on
+// 6 Nov (its service-role-only claims answered with `apikey` alone). With
+// no new key in the environment this falls back to the legacy key.
+const KEYS = { prefer: 'new' } as const;
 const SERVICE = pickKey((n) => Deno.env.get(n), 'service', KEYS);
 const SERVICE_KEY = SERVICE.key;
 const KEY_SOURCE = SERVICE.source;
