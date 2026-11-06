@@ -15,40 +15,40 @@ Written at the owner's request so nothing below is lost between sessions.
 Newest first within each group; tick an item by deleting it in the commit that
 does it.
 
-### Next app release (1.64.79)
-- **1.64.78 is out** (30 Oct 12:43 UTC, main 46e45a7, build 41051432695).
+### Next app release (1.64.80, 6 Nov)
+- **1.64.79 is out** (31 Oct 08:51 UTC, main 7722136).
+- **1.64.80** goes out on 6 Nov. It carries Report on every title and the
+  takedown address in About (P6), genres by code in the phone's language
+  (TAX phase 3), the media seal's app half (the opener, the device key, the
+  unseal gateway, sealed images) DORMANT — the build asks for no sealed
+  copy (docs/MEDIA_ENCRYPTION.md §9 step A) — the key attestation code
+  (sent only by a build that asks), and the deprecated-API renames
+  (d709830). The console, its edge modules and the runners' sealing code
+  reach main with it.
+- **Left out of 1.64.80, by design**: the Google sign-in nonce (29b71b2,
+  `api_account_repository.dart`, its test) and the lab's own hooks
+  (`lib/app.dart` tour skip, `rungKbps`, `ladderRungKbps`).
 - **Google sign-in nonce (29b71b2)** waits on the branch: no lab can sign in
   with Google. Before it ships, the owner signs in once with a build that
   carries it (a branch build's APK); if Google refuses the token, it stays out.
+- **A release that asks for sealed copies** (§9 step C needs one as
+  `min_supported`) waits for §8's gates: proxy CPU per MB and frozen time.
+  R8 (attestation `app: ok`) can only be read from such a build.
 - **The OPPO's Original on a borderline line** (Test Lab 41047246611): the
   10 Mbit/s Original stalled 8 s on a 4-14 Mbit/s line. The lab only skips
   it when the line is measured below the copy's bitrate; a line that swings
   around it fails. Not a regression; worth a look at how the Original's
   first fill sizes itself.
-- **Vault cooling-off on the boot clock** (on the branch): five wrong PINs
-  locked the vault until a wall-clock time, and moving the date forward in
-  Settings ended the wait (OWASP MASTG local-auth). It now counts time since
-  boot (SystemClock.elapsedRealtime), which no setting changes; a reboot
-  starts the wait again. test/private_folder_lockout_test.dart, 12 tests,
-  5 of them fail on the old code. No lab flow drives the vault yet: write
-  one (set a PIN, five misses, the wait) before this ships.
-- **Android libraries raised** (on the branch): BouncyCastle 1.81 -> 1.86
-  (two critical advisories), Guava 33.7.2, Jackson 2.13.5. Proved: device
-  lab run 41092354010 (adb_own; network: SMB, FTP, FTPS and SFTP browse
-  and play in the app), netlab JVM 22 of 22 on real Samba, vsftpd and
-  OpenSSH, AdbIdentityTest. The downloader (yt-dlp, Jackson) has no lab
-  flow; one real link on a phone before this ships.
-- **"Media only" in the Local Network browser** says on/off to TalkBack;
-  NetPlugin logs every failed call (on the branch).
 
 ### Verify what is live but not yet exercised
 - **R8 — key attestation, real chains**: SEEN 6 Nov on the emulator
   (software, unknown root) and on Test Lab's realme (google-ec, TEE,
   verified, locked) and OPPO (google-rsa, TEE, verified, locked), key and
   challenge matching, revocation list read; only `app` failed, which is
-  right for a debug-signed lab build. Left: the first RELEASE build must
-  read `ok: true` (`app: ok`) on a real phone, in the function log and in
-  `devices.attest`, before anything is enforced.
+  right for a debug-signed lab build. Left: the first RELEASE build that
+  asks for sealed copies must read `ok: true` (`app: ok`) on a real phone,
+  in the function log and in `devices.attest`, before anything is
+  enforced. 1.64.80 asks for none, so it sends no chain.
 - **R7 — the new Supabase keys, first real calls** (since 6 Nov): studio
   (the console), premium-request, delete-account, probe-media,
   backfill-dimensions, self-test. In the logs, each boot says `service:
