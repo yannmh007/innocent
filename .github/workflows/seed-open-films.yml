@@ -17,10 +17,10 @@ on:
   workflow_dispatch:
     inputs:
       task:
-        description: "seed: load the films. seal: make sealed twins of their videos (docs/MEDIA_ENCRYPTION.md §9 B)"
+        description: "find: what video.blender.org has, with licences. seed: load the films. seal: make sealed twins of their videos (docs/MEDIA_ENCRYPTION.md §9 B)"
         type: choice
-        options: [seed, seal]
-        default: seed
+        options: [find, seed, seal]
+        default: find
       kind:
         description: "seal only: what to seal — the videos, the images (poster, photos, thumbnails), both, or the video masters alone (video-master)"
         type: choice
@@ -30,6 +30,10 @@ on:
         description: "seal only: title ids, space-separated (open films only; the function refuses any other)"
         type: string
         default: "0839dacb-59ae-4c95-9279-4901b925965d ab8b0f1e-e23b-4141-94ba-67f1b29a7765"
+      names:
+        description: "find only: film names to look up, separated by commas"
+        type: string
+        default: "Cosmos Laundromat,Caminandes,Spring,Coffee Run,Sprite Fright,Charge,Wing It,Hero,Agent 327,Glass Half,Big Buck Bunny,Elephants Dream,Sintel,Tears of Steel"
 
 permissions:
   contents: read
@@ -78,8 +82,28 @@ jobs:
             SEAL_KIND="$k" SEAL_SCOPE="$scope" python3 tool/seal_twins.py $ids
           done
 
+  # WHAT THE OFFICIAL SITE HAS. Read-only: for each name, the videos
+  # video.blender.org publishes, with the licence its API states, the length
+  # and the files on offer (tool/open_films.py). Nothing is downloaded.
+  find:
+    if: inputs.task == 'find'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Look the films up
+        env:
+          NAMES: ${{ inputs.names }}
+        run: |
+          set -euo pipefail
+          # Names only: letters, digits, spaces, a few marks; commas split them.
+          IFS=',' read -ra list <<< "$(printf '%s' "$NAMES" | tr -cd "A-Za-z0-9 ,:'!-")"
+          python3 tool/open_films.py find "${list[@]}" | tee -a "$GITHUB_STEP_SUMMARY"
+
   seed:
-    if: inputs.task != 'seal'
+    if: inputs.task == 'seed'
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
