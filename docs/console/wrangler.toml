@@ -1,0 +1,31 @@
+# innocent-console — the admin console on an origin of its own
+# (docs/console/README.md; docs/security_review_2026_11.md S4/P4).
+#
+# An assets-only Worker: no code runs, Cloudflare serves the files and
+# applies `_headers` and `_redirects` (build.mjs writes them). Requests for
+# static assets cost nothing on the Free plan and do not count against the
+# Worker request allowance.
+#
+# Deployed by Workers Builds from this folder (root directory docs/console),
+# like innocent-stream. It runs `npx wrangler deploy`, which runs the build
+# below first.
+
+name = "innocent-console"
+compatibility_date = "2026-10-13"
+
+routes = [
+  { pattern = "console.innocentplayer.com", custom_domain = true },
+]
+# Only the domain: a workers.dev address would serve the console without
+# the zone in front of it.
+workers_dev = false
+preview_urls = false
+
+[build]
+command = "node build.mjs"
+
+[assets]
+directory = "./dist"
+# /studio/ is the console's page, as on Pages.
+html_handling = "auto-trailing-slash"
+not_found_handling = "none"

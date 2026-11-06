@@ -1,0 +1,12 @@
+{
+  "name": "innocent-console",
+  "private": true,
+  "version": "1.0.0",
+  "_comment": [
+    "Wrangler is pinned here because Workers Builds reads its version out of",
+    "this file. Static assets with _headers and _redirects need Wrangler 4."
+  ],
+  "devDependencies": {
+    "wrangler": "^4.107.0"
+  }
+}
