@@ -204,8 +204,8 @@ are BACKLOG O19, O20 and O24, and R1-R6.
    Object, plus a Cloudflare API token to read it): recorded, not built.
 4. Later, with Phase 3 DRM: a forensic (A/B segment) watermark.
 
-**P4 — give the console an origin of its own. Built 6 Nov; the owner
-turns it on** (`docs/console/README.md`):
+**P4 — give the console an origin of its own. Built 6 Nov; ON 6 Nov**
+(`docs/console/README.md`):
 - `docs/console`: an assets-only Worker, `innocent-console`, on
   `console.innocentplayer.com`. It serves `docs/studio` and the four edge
   modules the console imports, nothing else of `docs/`. `_headers` sets:
@@ -233,7 +233,18 @@ turns it on** (`docs/console/README.md`):
   4. Sign in there.
   `docs/console` and the Worker line are on `main` since 6 Nov
   (b6fc0d0, docs only; Playback check 42208213495 passed after the
-  Worker's redeploy). Retire the Pages copy a week after.
+  Worker's redeploy).
+- **On, 6 Nov.** The owner did all four steps. The Worker built from
+  `main` (Workers Builds) with workers.dev off. The zone's custom rules
+  were already limited to `stream.`; the rate-limiting rule matches only
+  `/v/`. The redirect URL was added and the owner signed in with Google
+  and the authenticator code; the Dashboard loads. Transport check
+  42211630577 (section 9) asked the live origin: `/` answers 302 to
+  `/studio/`, the console answers 200 with the strict CSP header, HSTS,
+  COOP, `nosniff` and no referrer, and `/edge/studio.ts`, a migration,
+  `BACKLOG.md` and `console/wrangler.toml` answer 404.
+- **Next:** retire the Pages copy after a week of use (from 13 Nov), as
+  the README's "Afterwards" says.
 
 **P5 — the accounts (owner; no code).** Use passkeys or security keys on
 GitHub, Cloudflare, Supabase and Google, with no SMS fallback. Turn on

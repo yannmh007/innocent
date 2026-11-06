@@ -134,10 +134,13 @@ does it.
     v51, ingest v52, transcode v27, probe-media v26; the stream Worker's
     origin on the branch; console_build_test.mjs 20 checks). ON MAIN 6 Nov
     (b6fc0d0: docs/console and the stream Worker's origin; docs only, no
-    build; Playback check 42208213495 passed after). Left: the owner's four
-    steps in docs/console/README.md (Worker from the repo,
-    WAF rules limited to `stream.`, Supabase redirect URL, sign in). Retire
-    the Pages copy a week after.
+    build; Playback check 42208213495 passed after). ON 6 Nov: the owner
+    did the four steps (Worker `innocent-console` built from the repo,
+    workers.dev off; the WAF rules were already limited to `stream.`;
+    Supabase redirect URL added; signed in, Dashboard loads; Transport
+    check 42211630577 section 9: headers live, no docs/ served). Retire the
+    Pages copy after a week of use (from 13 Nov): docs/console/README.md
+    "Afterwards".
   - **S5/P5 (owner)**: passkeys on GitHub, Cloudflare, Supabase and Google;
     Telegram 2-step; a fine-grained, expiring `GH_DISPATCH_TOKEN`; a `main`
     ruleset; secret scanning with push protection; Dependabot; CodeQL.
