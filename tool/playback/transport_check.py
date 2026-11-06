@@ -298,6 +298,22 @@ for path in ('/', '/.env', '/wp-login.php'):
     st, _, body = http(f'https://{CDN}{path}')
     verdict(st in (403, 404) and not listing(body), f'{CDN}{path}: HTTP {st}, no listing')
 
+# ── 8. What the data API tells a stranger ─────────────────────────────────
+# The publishable key is in every APK. PostgREST's root answers with an
+# OpenAPI document of every exposed table, view and RPC to whoever may read
+# it; Supabase announced (Feb 2026) that the anon/publishable key would no
+# longer be served it (docs/security_review_2026_11.md S8). A map of the
+# API is not a hole, but it is the first thing an automated scanner asks
+# for. And GraphQL introspection does the same where pg_graphql is on.
+print('\n== 8. The data API, asked as a stranger with the publishable key')
+st, _, body = http(f'{sb}/rest/v1/', headers={'apikey': key})
+mapped = st == 200 and (b'"paths"' in body or b'"definitions"' in body)
+verdict(not mapped, f'/rest/v1/ does not list the schema (HTTP {st}{", OpenAPI document served" if mapped else ""})')
+st, _, body = http(f'{sb}/graphql/v1', 'POST', {'apikey': key, 'Content-Type': 'application/json'},
+                   json.dumps({'query': '{ __schema { types { name } } }'}).encode())
+introspected = st == 200 and b'__schema' in body and b'"types"' in body
+verdict(not introspected, f'GraphQL introspection refused or absent (HTTP {st})')
+
 # ── 6. Expiry ─────────────────────────────────────────────────────────────
 print('\n== 6. The same token after its 10 minutes')
 time.sleep(610)

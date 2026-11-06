@@ -229,10 +229,26 @@ to us first. Add an in-app Report. Keep a rights record for every title
 counter-notice (17 U.S.C. §512(g)) restore something removed by mistake.
 Keep `admin_audit` as the record of who uploaded what.
 
-**P7 — tidy.** Add a workflow check that `/rest/v1/` refuses the
-publishable key. In Data API settings, turn off "expose new tables
-automatically". Run Files → Scan (also BACKLOG R2). Make
-`claim_anonymous_history` accept only the install that is calling.
+**P7 — tidy.**
+- **The schema map (S8):** the transport check now asks `/rest/v1/` and
+  GraphQL introspection as a stranger with the publishable key, and fails
+  if either lists the schema (section 8 of `transport_check.py`). If it
+  fails, the fix is Supabase's Data API settings, not code.
+- **Owner, Data API settings:** turn off "expose new tables
+  automatically", so a table made later is private until granted.
+- **Files → Scan** (also BACKLOG R2): the R2 inventory was last read on
+  2 Oct.
+- **`claim_anonymous_history` (S10): accepted, with the reason.** It moves
+  an install's anonymous views and age consent to the account that names
+  that install's id. The server cannot tell "the calling install" from
+  anyone who knows the id, because the id is the install's only
+  credential. That is the same as any bearer token, and the right
+  protection is the one in place: the id is never shown (the player's code
+  is a hash of it), never logged in the clear (budgets and the Worker keep
+  hashes), and only ever sent over TLS. A rule such as "only an install
+  registered to this account" would refuse every free viewer, since
+  `devices` holds only premium installs. Revisit if install ids ever reach
+  a screen or a log.
 
 ## Sources
 
