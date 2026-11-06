@@ -214,7 +214,9 @@ turns it on** (`docs/console/README.md`):
     `stream.`, `cdn.` and `*.r2.cloudflarestorage.com`;
   - HSTS, COOP `same-origin`, `nosniff`, `no-referrer`, `noindex`.
 - `docs/edge/console_origins.js`: one list of console origins for the
-  functions (studio, ingest, transcode, probe-media). `STUDIO_ORIGINS` can
+  functions — live 6 Nov in studio v51, ingest v52, transcode v27 and
+  probe-media v26. Their claims and ticks answered 200, and studio, booted
+  locally, answers the new origin's preflight and refuses `evil.example`. `STUDIO_ORIGINS` can
   only add to it. The stream Worker's `STUDIO_ORIGINS` gains the new
   origin.
 - `tool/js/console_build_test.mjs`, 20 checks, in Chromium under the real
