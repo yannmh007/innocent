@@ -251,10 +251,12 @@ to us first, and be answered.
   APK's address comes from the release row). Both are recorded.
 
 **P7 — tidy.**
-- **The schema map (S8):** the transport check now asks `/rest/v1/` and
-  GraphQL introspection as a stranger with the publishable key, and fails
-  if either lists the schema (section 8 of `transport_check.py`). If it
-  fails, the fix is Supabase's Data API settings, not code.
+- **The schema map (S8): closed, 6 Nov.** The transport check now asks
+  `/rest/v1/` and GraphQL introspection as a stranger with the publishable
+  key, and fails if either lists the schema (section 8 of
+  `transport_check.py`). Run 42177384203: `/rest/v1/` answers 401 (Supabase's
+  change is live), GraphQL lists nothing, and the report door answers the
+  app (`"bad"` for an unknown reason, so the probe writes nothing).
 - **Owner, Data API settings:** turn off "expose new tables
   automatically", so a table made later is private until granted.
 - **Files → Scan** (also BACKLOG R2): the R2 inventory was last read on

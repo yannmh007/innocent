@@ -140,9 +140,10 @@ does it.
     5/phone/day, owner told in Telegram by ingest v51). Left: a Reports page
     in the console; the owner keeps a rights record per title. Hiding the
     host from abuse reports is NOT a goal (§0).
-  - **S8-S10/P7**: check that `/rest/v1/` refuses the publishable key; turn
-    off auto-expose of new tables; Files → Scan; `claim_anonymous_history`
-    accepts only the calling install.
+  - **S8-S10/P7**: S8 closed 6 Nov (transport check section 8: `/rest/v1/`
+    answers the publishable key 401; run 42177384203). S10 accepted with its
+    reason (review P7). Owner: Data API → turn off auto-expose of new
+    tables; Files → Scan (R2).
 - **Telegram ingest FOLDERS still plain**: the folder segment is what the
   operator typed (`spider-man/video/…`). Making it `f/<20 hex>` like console
   uploads means every place that takes a folder as the key's first segment
