@@ -2444,7 +2444,38 @@ Deno.serve(async (req: Request) => {
         return json({ error: 'photo_insert', detail: (await pres.text()).slice(0, 200) }, 500, req);
       }
     }
-    return json({ id: titleRow.id, assets: 1 + photoRows.length }, 200, req);
+
+    // SENT FOR REVIEW, when asked (`review: "ready"`): the title waits in the
+    // console's Review queue ("waiting for approval") as one an uploader
+    // submitted, so the whole path a real upload takes is there to try —
+    // preview, edit, approve or send back. Only once its files are in: a
+    // title is never "ready" with nothing to look at. Nobody submitted it,
+    // so `submitted_by` stays empty and the history says the runner did,
+    // with what it checked (027: the review history is append-only).
+    let review = 'editing';
+    if (body.review === 'ready') {
+      const note = typeof body.review_note === 'string'
+        ? body.review_note.slice(0, 500) : 'Open film seeded by the runner';
+      const up = await rest(`titles?id=eq.${titleRow.id}&published=eq.false`, {
+        method: 'PATCH',
+        body: JSON.stringify({ review_state: 'ready', submitted_at: new Date().toISOString() }),
+      });
+      if (!up.ok) {
+        return json({ error: 'submit', detail: (await up.text()).slice(0, 200) }, 500, req);
+      }
+      const hist = await rest('title_reviews', {
+        method: 'POST',
+        body: JSON.stringify({
+          title_id: titleRow.id, actor: null, actor_email: 'open-films runner',
+          action: 'submit', note,
+        }),
+      });
+      if (!hist.ok) {
+        return json({ error: 'history', detail: (await hist.text()).slice(0, 200) }, 500, req);
+      }
+      review = 'ready';
+    }
+    return json({ id: titleRow.id, assets: 1 + photoRows.length, review }, 200, req);
   }
 
   // ── purge ────────────────────────────────────────────────────────────────

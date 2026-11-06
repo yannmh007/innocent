@@ -19,6 +19,11 @@ ladder and cuts stills from it.
         its best file at or under 1080p. Exits 3 when the licence refuses it,
         4 when no file can be downloaded.
 
+    python3 tool/open_films.py check <pick.json> <ffprobe.json>
+        After the download: is the file the film the licence was read for
+        (H.264 at the height picked, with sound, the site's length to three
+        seconds)? Exits 1 and says why when not.
+
 Standard library only: it runs on a bare GitHub runner.
 """
 from __future__ import annotations
@@ -181,10 +186,54 @@ def cmd_pick(uuid: str) -> int:
         'attribution': attribution(d),
         'page': f"{SITE}/w/{d.get('shortUUID') or d.get('uuid')}",
         'height': f['height'],
+        'fps': f.get('fps'),
         'size': f['size'],
         'url': f['url'],
     }))
     return 0
+
+
+def check_probe(pick: dict, probe: dict) -> list[str]:
+    """What is wrong with a downloaded master, against what the site said.
+
+    `probe` is ffprobe's JSON (-show_streams -show_format). An empty list
+    means the file is the film the licence was read for: H.264 video of the
+    height picked, an audio track, and the length the site gives to within
+    three seconds (a short or truncated download fails here, not in a
+    viewer's player)."""
+    bad = []
+    streams = probe.get('streams') or []
+    video = [s for s in streams if s.get('codec_type') == 'video' and s.get('codec_name') not in ('mjpeg', 'png')]
+    audio = [s for s in streams if s.get('codec_type') == 'audio']
+    if not video:
+        return ['no video stream']
+    v = video[0]
+    if v.get('codec_name') != 'h264':
+        bad.append(f"video is {v.get('codec_name')}, not h264")
+    h = int(v.get('height') or 0)
+    if h != int(pick.get('height') or -1):
+        bad.append(f"height {h}, the site said {pick.get('height')}")
+    if not audio:
+        bad.append('no audio stream')
+    try:
+        dur = float((probe.get('format') or {}).get('duration') or 0)
+    except ValueError:
+        dur = 0.0
+    want = float(pick.get('duration_s') or 0)
+    if want and abs(dur - want) > 3:
+        bad.append(f'{dur:.0f} s long, the site said {want:.0f} s')
+    return bad
+
+
+def cmd_check(pick_path: str, probe_path: str) -> int:
+    pick = json.load(open(pick_path))
+    probe = json.load(open(probe_path))
+    bad = check_probe(pick, probe)
+    for b in bad:
+        print('  BAD ' + b)
+    if not bad:
+        print('  master checked: the film the licence was read for')
+    return 1 if bad else 0
 
 
 def main(argv: list[str]) -> int:
@@ -192,6 +241,8 @@ def main(argv: list[str]) -> int:
         return cmd_find(argv[1:])
     if len(argv) == 2 and argv[0] == 'pick':
         return cmd_pick(argv[1])
+    if len(argv) == 3 and argv[0] == 'check':
+        return cmd_check(argv[1], argv[2])
     print(__doc__)
     return 2
 

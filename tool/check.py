@@ -131,6 +131,17 @@ CHECKS = [
      'stills upscaled or squashed for portrait video, a frame PUT under a key '
      'the claim did not give, or one unreadable video ending the batch for '
      'the nineteen after it (the ffmpeg half runs wherever ffmpeg is on PATH)'),
+    ('open_films_test.py', None,
+     'a test film that may not be in the catalogue: a licence other than CC '
+     'BY or CC0 on Blender\'s own site (No Derivatives, Non Commercial, '
+     'unset), a copy from another server, or a download that is not the film '
+     'the licence was read for (cut short, another height, no sound)'),
+    ('function_tables.py', None,
+     'a table an edge function uses that the service role may not read: '
+     'every table named in docs/edge must be in '
+     'tool/sql/service_role_grants_test.sql, which is run on the live '
+     'database (058 left genres out; the console\'s Genres section failed '
+     'for a week)'),
     ('unread_contract.py', None,
      'a repository method built, implemented twice and called by nothing — '
      'the same bug class as dead_settings one level up. getById was the only '
