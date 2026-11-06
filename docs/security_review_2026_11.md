@@ -204,13 +204,33 @@ are BACKLOG O19, O20 and O24, and R1-R6.
    Object, plus a Cloudflare API token to read it): recorded, not built.
 4. Later, with Phase 3 DRM: a forensic (A/B segment) watermark.
 
-**P4 — give the console an origin of its own.** Serve
-`console.innocentplayer.com` (Cloudflare Pages or Workers static assets)
-with real headers: CSP including `frame-ancestors 'none'`, HSTS and COOP.
-Narrow `connect-src`/`img-src`/`media-src` to the exact hosts
-(`*.supabase.co`, `stream.`, `cdn.`, the R2 S3 endpoint for uploads). Move
-`STUDIO_ORIGINS` in the Worker and functions over. Keep the Pages copy
-read-only until the move is proven, then retire it.
+**P4 — give the console an origin of its own. Built 6 Nov; the owner
+turns it on** (`docs/console/README.md`):
+- `docs/console`: an assets-only Worker, `innocent-console`, on
+  `console.innocentplayer.com`. It serves `docs/studio` and the four edge
+  modules the console imports, nothing else of `docs/`. `_headers` sets:
+  - a CSP with `default-src 'none'`, `frame-ancestors 'none'`, and a
+    `connect-src`/`img-src`/`media-src` of exactly the Supabase project,
+    `stream.`, `cdn.` and `*.r2.cloudflarestorage.com`;
+  - HSTS, COOP `same-origin`, `nosniff`, `no-referrer`, `noindex`.
+- `docs/edge/console_origins.js`: one list of console origins for the
+  functions (studio, ingest, transcode, probe-media). `STUDIO_ORIGINS` can
+  only add to it. The stream Worker's `STUDIO_ORIGINS` gains the new
+  origin.
+- `tool/js/console_build_test.mjs`, 20 checks, in Chromium under the real
+  header:
+  - every import resolves inside the bundle;
+  - no violation on load, and the module Service Worker registers;
+  - the four hosts are allowed, and `evil.example` is refused.
+  The bundle was also built from `main`'s tree, whose console seals
+  nothing.
+- **Owner:**
+  1. Create the Worker from the repository (root `docs/console`).
+  2. Limit the zone's WAF rules to `stream.`.
+  3. Add the Supabase redirect URL.
+  4. Sign in there.
+  It needs `docs/console` and the Worker line on `main`, with the release
+  or earlier. Retire the Pages copy a week after.
 
 **P5 — the accounts (owner; no code).** Use passkeys or security keys on
 GitHub, Cloudflare, Supabase and Google, with no SMS fallback. Turn on

@@ -203,6 +203,11 @@ def main() -> int:
          'a film sealed in the browser that the phone cannot open: different '
          'bytes from the reference for the same key, or a range served from '
          'the wrong segments, seen only as a film that will not play'),
+        ('console_build_test.mjs',
+         'the console on its own origin: the bundle and its headers, in Chromium',
+         'a console that loads blank or cannot upload on console.innocentplayer.com '
+         '(a file left out of the bundle, a host the policy blocks), or a '
+         'bundle that publishes more than the console'),
         ('key_attest_test.mjs',
          'Android key attestation: a phone\'s media key, certified by its hardware',
          'a script\'s own key taken for a phone\'s Keystore key, or a real '

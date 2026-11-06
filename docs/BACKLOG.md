@@ -130,8 +130,12 @@ does it.
     ingest v50, refuses nothing). A lower cap waits for that data: today
     it would be a guess (4 titles; busiest install 2 titles a day). Bytes
     per account need a Worker counter and a Cloudflare token to read it.
-  - **S4/P4**: console on `console.innocentplayer.com` with real headers and
-    a narrow CSP; `STUDIO_ORIGINS` moved.
+  - **S4/P4**: BUILT 6 Nov (docs/console, console_origins.js, the stream
+    Worker's origin, console_build_test.mjs 20 checks). To turn on:
+    docs/console and the Worker line on `main` (release or on request); the
+    owner's four steps in docs/console/README.md (Worker from the repo,
+    WAF rules limited to `stream.`, Supabase redirect URL, sign in). Retire
+    the Pages copy a week after.
   - **S5/P5 (owner)**: passkeys on GitHub, Cloudflare, Supabase and Google;
     Telegram 2-step; a fine-grained, expiring `GH_DISPATCH_TOKEN`; a `main`
     ruleset; secret scanning with push protection; Dependabot; CodeQL.

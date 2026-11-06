@@ -35,6 +35,7 @@
 import { importKek, unwrapDek } from './media_keys.js';
 import { readPlain } from './media_read.js';
 import { keyFacts, keyHeaders, pickKey } from './service_key.js';
+import { consoleOrigins } from './console_origins.js';
 
 const R2_ACCOUNT_ID = Deno.env.get('R2_ACCOUNT_ID')!;
 const R2_ACCESS_KEY_ID = Deno.env.get('R2_ACCESS_KEY_ID')!;
@@ -62,9 +63,8 @@ console.log(JSON.stringify({ keys: keyFacts((n) => Deno.env.get(n), KEYS) }));
 const STREAM_BASE = (Deno.env.get('STREAM_BASE') ?? '').replace(/\/+$/, '');
 const STREAM_TOKEN_SECRET = Deno.env.get('STREAM_TOKEN_SECRET') ?? '';
 
-const ALLOWED_ORIGINS = (Deno.env.get('STUDIO_ORIGINS') ??
-  'https://yannmh007.github.io')
-  .split(',').map((s) => s.trim()).filter(Boolean);
+// The console's pages, which may call this with CORS (console_origins.js).
+const ALLOWED_ORIGINS = consoleOrigins(Deno.env.get('STUDIO_ORIGINS'));
 
 const enc = new TextEncoder();
 
