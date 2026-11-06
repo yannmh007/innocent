@@ -203,6 +203,11 @@ def main() -> int:
          'a film sealed in the browser that the phone cannot open: different '
          'bytes from the reference for the same key, or a range served from '
          'the wrong segments, seen only as a film that will not play'),
+        ('service_key_test.mjs',
+         'the Supabase keys every edge function uses, legacy and new',
+         'every function failing the day Supabase retires the legacy keys (a '
+         'new key sent as Bearer is refused), or a key read or a key header '
+         'built outside service_key.js that the move would miss'),
         ('media_read_test.mjs',
          'a stored object read as its plaintext, plain or sealed',
          'a probe that reports a sealed film\'s box list or a sealed photo\'s '

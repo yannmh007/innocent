@@ -34,6 +34,7 @@
 
 import { importKek, unwrapDek } from './media_keys.js';
 import { readPlain } from './media_read.js';
+import { keyFacts, keyHeaders, pickKey } from './service_key.js';
 
 const R2_ACCOUNT_ID = Deno.env.get('R2_ACCOUNT_ID')!;
 const R2_ACCESS_KEY_ID = Deno.env.get('R2_ACCESS_KEY_ID')!;
@@ -45,10 +46,13 @@ const MEDIA_BUCKET = Deno.env.get('R2_BUCKET') ?? 'innocent-media';
 const PUBLIC_BUCKET = Deno.env.get('R2_PUBLIC_BUCKET') ?? 'innocent-public';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
-const ANON_KEY = Deno.env.get('SB_ANON_KEY') ??
-  Deno.env.get('SUPABASE_ANON_KEY') ?? '';
-const SERVICE_KEY = Deno.env.get('SB_SERVICE_KEY') ??
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+// The Supabase keys (service_key.js, docs/security_review_2026_11.md S1):
+// 'legacy' keeps the choice made before the new keys; 'new' once proven.
+const KEYS = { prefer: 'legacy' } as const;
+const ANON_KEY = pickKey((n) => Deno.env.get(n), 'public', KEYS).key;
+const SERVICE_KEY = pickKey((n) => Deno.env.get(n), 'service', KEYS).key;
+const SERVICE_HEADERS = keyHeaders(SERVICE_KEY);
+console.log(JSON.stringify({ keys: keyFacts((n) => Deno.env.get(n), KEYS) }));
 
 // The same two values `request-playback` mints tokens from. Read here so the
 // console can time a download over the REAL path — phone to Worker to R2 —
@@ -403,8 +407,7 @@ async function whoIsAsking(
   const rr = await fetch(`${SUPABASE_URL}/rest/v1/rpc/admin_resolve`, {
     method: 'POST',
     headers: {
-      apikey: SERVICE_KEY,
-      Authorization: `Bearer ${SERVICE_KEY}`,
+      ...SERVICE_HEADERS,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ p_user: id }),
@@ -478,8 +481,7 @@ async function audit(
     await fetch(`${SUPABASE_URL}/rest/v1/rpc/admin_log`, {
       method: 'POST',
       headers: {
-        apikey: SERVICE_KEY,
-        Authorization: `Bearer ${SERVICE_KEY}`,
+        ...SERVICE_HEADERS,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -664,8 +666,7 @@ Deno.serve(async (req: Request) => {
       const asked = await fetch(`${SUPABASE_URL}/rest/v1/rpc/unknown_object_keys`, {
         method: 'POST',
         headers: {
-          apikey: SERVICE_KEY,
-          Authorization: `Bearer ${SERVICE_KEY}`,
+          ...SERVICE_HEADERS,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ keys: seen.map((o) => o.key) }),
@@ -801,7 +802,7 @@ Deno.serve(async (req: Request) => {
       `${SUPABASE_URL}/rest/v1/title_assets` +
       `?select=object_key&bucket=eq.${encodeURIComponent(MEDIA_BUCKET)}` +
       `&order=added_at.desc&limit=${PAGE}&offset=${offset}`,
-      { headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` } },
+      { headers: { ...SERVICE_HEADERS } },
     );
     if (!res.ok) {
       return json({ error: 'lookup_failed', status: res.status }, 500, req);
@@ -844,7 +845,7 @@ Deno.serve(async (req: Request) => {
       if (!k || !SERVICE_KEY) return null;
       const r = await fetch(`${SUPABASE_URL}/rest/v1/media_keys` +
         `?select=dek_id,wrapped,kek_version,plain_size,header&sealed_key=eq.${encodeURIComponent(key)}&limit=1`,
-        { headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` } });
+        { headers: { ...SERVICE_HEADERS } });
       const row = r.ok ? (await r.json() as Array<{ dek_id: string; wrapped: string; kek_version: number;
         plain_size: number; header: string | null }>)[0] : undefined;
       if (!row) return null;

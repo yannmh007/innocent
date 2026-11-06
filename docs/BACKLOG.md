@@ -98,10 +98,11 @@ does it.
 ### Security, next
 - **Review of 5 Nov 2026: `docs/security_review_2026_11.md`** — findings
   S1-S10, plan P1-P7. Carry these until each is done:
-  - **S1/P1 — DEADLINE 31 Dec 2026**: legacy JWT keys retire. 21 raw REST
-    calls send the service key as `Bearer` (an `sb_secret_` key is refused
-    there): a `serviceHeaders()` helper, then the owner puts a secret key in
-    `SB_SERVICE_KEY`, then asymmetric signing keys, then legacy anon and
+  - **S1/P1 — DEADLINE 31 Dec 2026**: legacy JWT keys retire. Code done
+    6 Nov (`docs/edge/service_key.js`, every function, `prefer: 'legacy'`).
+    Next: a canary function on `prefer: 'new'` (its boot log says whether
+    `SUPABASE_SECRET_KEYS` exists; if not, the owner creates a secret key),
+    then all functions, then asymmetric signing keys, then legacy anon and
     service_role off once the API logs show no legacy-key use for 14 days.
   - **S2/P2**: ENC rollout A→F; every film and photo is still plain in R2.
   - **S3/P3**: Android Key Attestation on the device key (log, then require

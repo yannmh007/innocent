@@ -33,6 +33,7 @@ import { isSealedKey } from './media_twin.js';
 import {
   type RecordIO, recordSealed as recordSealedShared,
 } from './media_record.ts';
+import { keyFacts, keyHeaders, pickKey } from './service_key.js';
 
 const R2_ACCOUNT_ID = Deno.env.get('R2_ACCOUNT_ID')!;
 const R2_ACCESS_KEY_ID = Deno.env.get('R2_ACCESS_KEY_ID')!;
@@ -52,10 +53,13 @@ const GH_REPO = Deno.env.get('GH_REPO') ?? 'yannmh007/innocent';
 const GH_REF = Deno.env.get('GH_REF') ?? 'main';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
-const ANON_KEY = Deno.env.get('SB_ANON_KEY') ??
-  Deno.env.get('SUPABASE_ANON_KEY') ?? '';
-const SERVICE_KEY = Deno.env.get('SB_SERVICE_KEY') ??
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+// The Supabase keys (service_key.js, docs/security_review_2026_11.md S1):
+// 'legacy' keeps the choice made before the new keys; 'new' once proven.
+const KEYS = { prefer: 'legacy' } as const;
+const ANON_KEY = pickKey((n) => Deno.env.get(n), 'public', KEYS).key;
+const SERVICE_KEY = pickKey((n) => Deno.env.get(n), 'service', KEYS).key;
+const SERVICE_HEADERS = keyHeaders(SERVICE_KEY);
+console.log(JSON.stringify({ keys: keyFacts((n) => Deno.env.get(n), KEYS) }));
 
 // The one secret the runner holds. Absent means the runner half is switched
 // off — `queue` still works, jobs simply pile up, and the console says so.
@@ -128,7 +132,7 @@ async function presign(
 // rung or still, read when work is handed out — a runner never decides.
 // Keys are issued and recorded through media_issue.js only.
 
-const SERVICE = () => ({ apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` });
+const SERVICE = () => ({ ...SERVICE_HEADERS });
 
 async function rest(path: string, init: RequestInit = {}): Promise<Response> {
   return await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
@@ -240,8 +244,7 @@ async function rpc(name: string, body: unknown): Promise<unknown> {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${name}`, {
     method: 'POST',
     headers: {
-      apikey: SERVICE_KEY,
-      Authorization: `Bearer ${SERVICE_KEY}`,
+      ...SERVICE_HEADERS,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(body ?? {}),
@@ -328,8 +331,7 @@ async function whoIsAsking(
   const rr = await fetch(`${SUPABASE_URL}/rest/v1/rpc/admin_resolve`, {
     method: 'POST',
     headers: {
-      apikey: SERVICE_KEY,
-      Authorization: `Bearer ${SERVICE_KEY}`,
+      ...SERVICE_HEADERS,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ p_user: id }),
@@ -403,8 +405,7 @@ async function audit(
     await fetch(`${SUPABASE_URL}/rest/v1/rpc/admin_log`, {
       method: 'POST',
       headers: {
-        apikey: SERVICE_KEY,
-        Authorization: `Bearer ${SERVICE_KEY}`,
+        ...SERVICE_HEADERS,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -567,7 +568,7 @@ Deno.serve(async (req: Request) => {
       const res = await fetch(
         `${SUPABASE_URL}/rest/v1/title_assets?select=id&object_key=eq.` +
         `${encodeURIComponent(key)}&limit=1`,
-        { headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` } },
+        { headers: { ...SERVICE_HEADERS } },
       );
       if (res.ok) {
         const rows = await res.json() as Array<{ id: string }>;

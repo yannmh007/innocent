@@ -38,9 +38,14 @@
 // ===========================================================================
 
 import { readPlain } from './media_read.js';
+import { keyFacts, keyHeaders, pickKey } from './service_key.js';
 
-const SERVICE_KEY = Deno.env.get('SB_SERVICE_KEY') ??
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+// The Supabase keys (service_key.js, docs/security_review_2026_11.md S1):
+// 'legacy' keeps the choice made before the new keys; 'new' once proven.
+const KEYS = { prefer: 'legacy' } as const;
+const SERVICE_KEY = pickKey((n) => Deno.env.get(n), 'service', KEYS).key;
+const SERVICE_HEADERS = keyHeaders(SERVICE_KEY);
+console.log(JSON.stringify({ keys: keyFacts((n) => Deno.env.get(n), KEYS) }));
 const URL_BASE = Deno.env.get('SUPABASE_URL') ?? '';
 
 /// Public bucket base. Kept in step with `public_asset_base()` (migration
@@ -130,8 +135,7 @@ const db = (path: string, init: RequestInit = {}) =>
   fetch(`${URL_BASE}/rest/v1/${path}`, {
     ...init,
     headers: {
-      apikey: SERVICE_KEY,
-      Authorization: `Bearer ${SERVICE_KEY}`,
+      ...SERVICE_HEADERS,
       'Content-Type': 'application/json',
       ...(init.headers ?? {}),
     },
@@ -150,9 +154,8 @@ async function adminGate(req: Request): Promise<Response | null> {
     JSON.stringify({ error: code }),
     { status, headers: { 'Content-Type': 'application/json' } });
   const url = Deno.env.get('SUPABASE_URL') ?? '';
-  const key = Deno.env.get('SB_SERVICE_KEY') ??
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-  const anon = Deno.env.get('SB_ANON_KEY') ?? Deno.env.get('SUPABASE_ANON_KEY') ?? '';
+  const key = SERVICE_KEY;
+  const anon = pickKey((n) => Deno.env.get(n), 'public', KEYS).key;
   const auth = req.headers.get('Authorization') ?? '';
   if (!auth.toLowerCase().startsWith('bearer ') || !url || !key) {
     return no('not_signed_in', 401);
@@ -165,7 +168,7 @@ async function adminGate(req: Request): Promise<Response | null> {
   if (typeof id !== 'string' || !id) return no('not_signed_in', 401);
   const r = await fetch(`${url}/rest/v1/rpc/admin_resolve`, {
     method: 'POST',
-    headers: { apikey: key, Authorization: `Bearer ${key}`,
+    headers: { ...keyHeaders(key),
                'Content-Type': 'application/json' },
     body: JSON.stringify({ p_user: id }),
   });

@@ -50,9 +50,14 @@ import {
   blindIndex, derivedKey, maskPhone, maskReference, normaliseReference, open, openFile,
   piiKeys, PROOF_KEY_INFO, proofAad, seal, sealFile, toB64, type PiiKeys,
 } from './pii.ts';
+import { clientOptions, keyFacts, keyHeaders, pickKey } from './service_key.js';
 
-const SERVICE_KEY = Deno.env.get('SB_SERVICE_KEY') ??
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+// The Supabase keys (service_key.js, docs/security_review_2026_11.md S1):
+// 'legacy' keeps the choice made before the new keys; 'new' once proven.
+const KEYS = { prefer: 'legacy' } as const;
+const SERVICE_KEY = pickKey((n) => Deno.env.get(n), 'service', KEYS).key;
+const SERVICE_HEADERS = keyHeaders(SERVICE_KEY);
+console.log(JSON.stringify({ keys: keyFacts((n) => Deno.env.get(n), KEYS) }));
 const BOT_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN') ?? '';
 const TG_CHATS = (Deno.env.get('TELEGRAM_CHAT_IDS') ?? '')
   .split(',').map((s) => s.trim()).filter(Boolean);
@@ -387,7 +392,7 @@ async function consoleOp(
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return json({ code: 'bad_method' }, 405);
   if (!SERVICE_KEY) return json({ code: 'failed' }, 500);
-  const admin = createClient(Deno.env.get('SUPABASE_URL') ?? '', SERVICE_KEY);
+  const admin = createClient(Deno.env.get('SUPABASE_URL') ?? '', SERVICE_KEY, clientOptions(SERVICE_KEY));
 
   // 1. who
   const token = (req.headers.get('Authorization') ?? '').replace('Bearer ', '');

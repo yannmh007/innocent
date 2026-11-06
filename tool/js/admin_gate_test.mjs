@@ -241,9 +241,11 @@ if (typeof strip !== 'function') {
     }
     throw new Error('unexpected fetch ' + u);
   };
-  const make = new Function('SUPABASE_URL', 'ANON_KEY', 'SERVICE_KEY', 'fetch',
+  // SERVICE_HEADERS: what docs/edge/service_key.js keyHeaders gives each copy.
+  const make = new Function('SUPABASE_URL', 'ANON_KEY', 'SERVICE_KEY', 'SERVICE_HEADERS', 'fetch',
     js + '\nreturn { whoIsAsking, mayDo, freshEnough, auditDetail, audit, RANK };');
-  const g = make('https://sb.example', 'anon', 'service', fakeFetch);
+  const g = make('https://sb.example', 'anon', 'service',
+    { apikey: 'service', Authorization: 'Bearer service' }, fakeFetch);
 
   const req = (auth) => new Request('https://x/', {
     method: 'POST', headers: auth ? { Authorization: auth } : {},

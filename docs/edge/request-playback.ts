@@ -52,6 +52,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { looksForSeals, planSeal, sealBlock, sealMode, wrapMode } from './media_grant.js';
 import { importDeviceKey, importKek, kekStatus } from './media_keys.js';
+import { clientOptions, keyFacts, pickKey } from './service_key.js';
 
 // ─── MEDIA SEAL (docs/MEDIA_ENCRYPTION.md §5, §9) ─────────────────────────
 //
@@ -246,13 +247,13 @@ const json = (body: unknown, status: number) =>
 // name - the dashboard already marks `SUPABASE_SERVICE_ROLE_KEY` deprecated -
 // without editing this file again. If neither exists the function says so
 // instead of quietly continuing with no privileges.
-const SERVICE_KEY = Deno.env.get('SB_SERVICE_KEY') ??
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-const KEY_SOURCE = Deno.env.get('SB_SERVICE_KEY')
-  ? 'SB_SERVICE_KEY'
-  : (Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-    ? 'SUPABASE_SERVICE_ROLE_KEY'
-    : 'NONE');
+// The Supabase keys (service_key.js, docs/security_review_2026_11.md S1):
+// 'legacy' keeps the choice made before the new keys; 'new' once proven.
+const KEYS = { prefer: 'legacy' } as const;
+const SERVICE = pickKey((n) => Deno.env.get(n), 'service', KEYS);
+const SERVICE_KEY = SERVICE.key;
+const KEY_SOURCE = SERVICE.source;
+console.log(JSON.stringify({ keys: keyFacts((n) => Deno.env.get(n), KEYS) }));
 
 // v3: LOGGED, not returned.
 //
@@ -328,7 +329,7 @@ Deno.serve(async (req) => {
   // SERVICE ROLE, deliberately. This client reads `titles.locator`, which no
   // other role may see. It never trusts the request for identity - the user is
   // resolved from the JWT below, by Supabase, not from anything in the body.
-  const admin = createClient(Deno.env.get('SUPABASE_URL') ?? '', SERVICE_KEY);
+  const admin = createClient(Deno.env.get('SUPABASE_URL') ?? '', SERVICE_KEY, clientOptions(SERVICE_KEY));
 
   let body: {
     title_id?: string; device_id?: string; asset_id?: string; bind?: boolean;

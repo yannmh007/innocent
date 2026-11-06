@@ -61,7 +61,7 @@ on a valid report (`MEDIA_ENCRYPTION.md` §2).
 
 | # | Finding | Severity | Plan (§3) |
 |---|---|---|---|
-| S1 | **Supabase retires the legacy JWT keys by the end of 2026.** All 9 functions read `SB_SERVICE_KEY ?? SUPABASE_SERVICE_ROLE_KEY`. 21 raw REST calls send it as `Authorization: Bearer` (ingest 6, probe-media 5, transcode 5, studio 3, backfill-dimensions 1, self-test 1). A new `sb_secret_` key is not a JWT, and the gateway refuses it there. The legacy anon key is still enabled, though the app and console use the publishable key. Supabase no longer lets the legacy JWT secret be rotated, so a leaked service_role JWT could not be revoked except by migrating. | **High** (outage at a fixed date; no revocation) | P1 |
+| S1 | **Supabase retires the legacy JWT keys by the end of 2026.** All 9 functions read `SB_SERVICE_KEY ?? SUPABASE_SERVICE_ROLE_KEY`, and 21 raw REST calls sent it as `apikey` *and* `Authorization: Bearer`. Supabase documents that a new `sb_secret_` key is not a JWT and must go in `apikey` only ("Invalid JWT" otherwise); supabase-js 2.117.2 itself puts it in Bearer by default (seen on the wire, 6 Nov). The legacy anon key is still enabled, though the app and console use the publishable key. Supabase no longer lets the legacy JWT secret be rotated, so a leaked service_role JWT could not be revoked except by migrating. **Code done 6 Nov** (`service_key.js`, below); the switch to the new key is next. | **High** (outage at a fixed date; no revocation) | P1 |
 | S2 | **ENC is built but not switched on.** Plain copies still in R2: 10 streaming copies, 24 files, 36 thumbnail choices, 4 covers, 4 thumbnails. Sealed twins exist only for the open films. Until rollout C-E, a leaked R2 token or a Cloudflare account takeover exposes plain content. | **High** | P2 |
 | S3 | **No device attestation.** A script with a valid account can (a) send a device RSA key of its own making — the key is only pinned per install at first sight — and receive DEKs, and (b) pull films without the player's moving account code, which the app draws on screen and is not in the file. The account budget (500 titles/day) is far above any human. There is no automatic alert on bytes per account. | Medium-High | P3 |
 | S4 | **The console's origin is shared.** `yannmh007.github.io` is the origin of every GitHub Pages site of this account. The admin session (an aal2 refresh token) lives in that origin's localStorage, and the Worker's CORS trusts that origin. Today there is only one repo, so nothing else shares it, but a second Pages site would. The CSP's `connect-src … https:` and `img-src https:` would let an injected script send data to any host. | Medium | P4 |
@@ -79,17 +79,28 @@ RPCs are the public API, budgeted (`docs/security.md` §2).
 
 ## 3. The plan, in order
 
-**P1 — move off the legacy keys (before 31 Dec; code plus one owner step).**
-1. Code: add one helper, `serviceHeaders(key)`. It sends
-   `Authorization: Bearer` only when the key is JWT-shaped (`eyJ…`) and
-   always sends `apikey`. Use it for all 21 raw calls, and check that
-   supabase-js 2.x `createClient` accepts an `sb_secret_` key. Test locally
-   with the stub import map, using both key shapes.
-2. Owner: Supabase → API Keys → create a secret key. Put it in Edge secret
-   `SB_SERVICE_KEY`, which every function already reads first. Never paste
-   it in chat.
-3. Verify each function from its boot logs and a self-test run, then move
-   to asymmetric JWT signing keys.
+**P1 — move off the legacy keys (before 31 Dec).**
+1. ~~Code~~ **done 6 Nov**: `docs/edge/service_key.js` is the one place a key
+   is read (`SB_SERVICE_KEY`/`SB_ANON_KEY`, then the platform's
+   `SUPABASE_SECRET_KEYS`/`SUPABASE_PUBLISHABLE_KEYS` JSON, then legacy) and
+   the one place its headers are made: a legacy JWT still gets `apikey` +
+   `Bearer`, exactly as before; a new key gets `apikey` alone, also through
+   supabase-js (`keyFetch` removes the Bearer copy supabase-js adds). Every
+   function logs at boot which names are set and each key's shape, never a
+   value. `prefer: 'legacy'` keeps today's choice; `prefer: 'new'` takes a
+   new key when one exists and otherwise falls back to the legacy key.
+   Proved: `tool/js/service_key_test.mjs` (also fails the build if any
+   function reads a key or builds a key header itself), the nine functions
+   booted locally, and on the wire against a stand-in server — transcode's
+   claim and supabase-js REST, RPC and auth-admin calls carry `apikey`
+   alone with a new key and both headers with a legacy one.
+2. Canary: one function deployed with `prefer: 'new'`. Its boot log says
+   whether the project's environment holds `SUPABASE_SECRET_KEYS`. If it
+   does, no owner step is needed. If not, the owner creates the secret key
+   (Settings → API Keys) and nothing is pasted in chat. Its scheduled calls
+   must keep answering 200.
+3. Then all functions on `'new'`, verified from boot logs and their scheduled
+   calls; then asymmetric JWT signing keys.
 4. Look in the API logs for any request still using the legacy anon key
    (old app builds). When there are none for 14 days, disable the legacy
    anon and service_role keys.

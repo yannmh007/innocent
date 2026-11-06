@@ -50,6 +50,7 @@ const prelude = (key) =>
   `import { derivedKey, openFile, PROOF_KEY_INFO, proofAad, sealFile } from ${JSON.stringify(piiUrl)};\n` +
   `const Deno = { env: { get: (_k: string) => ${JSON.stringify(key)} } };\n` +
   `const SUPABASE_URL = 'https://db.test';\nconst SERVICE_KEY = 'service';\n` +
+  `const SERVICE_HEADERS = { apikey: SERVICE_KEY, Authorization: 'Bearer ' + SERVICE_KEY };\n` +
   `async function rest(path: string, init: RequestInit = {}): Promise<Response> {\n` +
   `  return await fetch(SUPABASE_URL + '/rest/v1/' + path, init);\n}\n`;
 const body = between('const PROOF_BUCKET = ', "/// THE OFF-SITE HOUSEKEEPING, on the runner's tick:");

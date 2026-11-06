@@ -52,6 +52,7 @@ import { b64, importKek, unwrapDek } from './media_keys.js';
 import { issue, makeFor, sealNewMode } from './media_issue.js';
 import { isSealedKey } from './media_twin.js';
 import { type RecordIO, recordSealed } from './media_record.ts';
+import { clientOptions, keyFacts, keyHeaders, pickKey } from './service_key.js';
 
 const R2_ACCOUNT_ID = Deno.env.get('R2_ACCOUNT_ID')!;
 const R2_ACCESS_KEY_ID = Deno.env.get('R2_ACCESS_KEY_ID')!;
@@ -66,8 +67,12 @@ const PUBLIC_BASE = Deno.env.get('R2_PUBLIC_BASE') ??
   'https://cdn.innocentplayer.com';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
-const SERVICE_KEY = Deno.env.get('SB_SERVICE_KEY') ??
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+// The Supabase keys (service_key.js, docs/security_review_2026_11.md S1):
+// 'legacy' keeps the choice made before the new keys; 'new' once proven.
+const KEYS = { prefer: 'legacy' } as const;
+const SERVICE_KEY = pickKey((n) => Deno.env.get(n), 'service', KEYS).key;
+const SERVICE_HEADERS = keyHeaders(SERVICE_KEY);
+console.log(JSON.stringify({ keys: keyFacts((n) => Deno.env.get(n), KEYS) }));
 // SB_ANON_KEY is a secret somebody has to remember to add — self-test.ts has
 // a whole branch for it being missing — whereas SUPABASE_ANON_KEY is injected
 // into every function by the platform. Falling back to it is the same shape as
@@ -75,8 +80,7 @@ const SERVICE_KEY = Deno.env.get('SB_SERVICE_KEY') ??
 // page cannot build a client and `/auth/v1/user` refuses every token, so the
 // symptom of a missing secret would be a dead sign-in button and a 403 on
 // everything — with nothing on screen to say which secret.
-const ANON_KEY = Deno.env.get('SB_ANON_KEY') ??
-  Deno.env.get('SUPABASE_ANON_KEY') ?? '';
+const ANON_KEY = pickKey((n) => Deno.env.get(n), 'public', KEYS).key;
 
 // WHO MAY USE THE CONSOLE is no longer a list here. It was OPERATOR_IDS — one
 // user id, copied into four functions — and it could not say what each person
@@ -382,8 +386,7 @@ async function whoIsAsking(
   const rr = await fetch(`${SUPABASE_URL}/rest/v1/rpc/admin_resolve`, {
     method: 'POST',
     headers: {
-      apikey: SERVICE_KEY,
-      Authorization: `Bearer ${SERVICE_KEY}`,
+      ...SERVICE_HEADERS,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ p_user: id }),
@@ -457,8 +460,7 @@ async function audit(
     await fetch(`${SUPABASE_URL}/rest/v1/rpc/admin_log`, {
       method: 'POST',
       headers: {
-        apikey: SERVICE_KEY,
-        Authorization: `Bearer ${SERVICE_KEY}`,
+        ...SERVICE_HEADERS,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -841,7 +843,7 @@ async function uploaderRefusal(
   if ((op === 'create' || op === 'publish') && body.publish === true) {
     return 'needs_editor_to_publish';
   }
-  const db = createClient(SUPABASE_URL, SERVICE_KEY);
+  const db = createClient(SUPABASE_URL, SERVICE_KEY, clientOptions(SERVICE_KEY));
   let titles: string[] = [];
   if (op === 'save') {
     const p = (body.patch ?? {}) as Record<string, unknown>;
@@ -946,14 +948,16 @@ const WEBHOOK_UPDATES = ['message', 'edited_message', 'channel_post', 'my_chat_m
 /// Which project secrets are SET — a yes or no per name, never a value. Every
 /// edge function sees the same project secrets, so this list is the
 /// project's, not just this function's.
-const SECRET_FACTS: Array<{ name: string; alt?: string; need: boolean; what: string }> = [
+const SECRET_FACTS: Array<{ name: string; alt?: string; alt2?: string; need: boolean; what: string }> = [
   { name: 'R2_ACCOUNT_ID', need: true, what: 'Cloudflare account for R2' },
   { name: 'R2_ACCESS_KEY_ID', need: true, what: 'R2 key id' },
   { name: 'R2_SECRET_ACCESS_KEY', need: true, what: 'R2 secret key' },
   { name: 'R2_BUCKET', need: false, what: 'private bucket name (default innocent-media)' },
   { name: 'R2_PUBLIC_BUCKET', need: false, what: 'public bucket name (default innocent-public)' },
-  { name: 'SB_SERVICE_KEY', alt: 'SUPABASE_SERVICE_ROLE_KEY', need: true, what: 'database service key' },
-  { name: 'SB_ANON_KEY', alt: 'SUPABASE_ANON_KEY', need: true, what: 'public API key' },
+  // Either shape, from SB_SERVICE_KEY / SB_ANON_KEY or the platform's own
+  // (new keys, then legacy until they retire): service_key.js.
+  { name: 'SB_SERVICE_KEY', alt: 'SUPABASE_SECRET_KEYS', alt2: 'SUPABASE_SERVICE_ROLE_KEY', need: true, what: 'database service key' },
+  { name: 'SB_ANON_KEY', alt: 'SUPABASE_PUBLISHABLE_KEYS', alt2: 'SUPABASE_ANON_KEY', need: true, what: 'public API key' },
   { name: 'INGEST_SECRET', need: true, what: 'the runners\' shared secret' },
   { name: 'TRANSCODE_SECRET', need: false, what: 'the encoder runner\'s secret' },
   { name: 'TELEGRAM_BOT_TOKEN', need: true, what: 'the bot' },
@@ -973,7 +977,8 @@ const SECRET_FACTS: Array<{ name: string; alt?: string; need: boolean; what: str
 function secretFacts(): Array<Record<string, unknown>> {
   return SECRET_FACTS.map((f) => ({
     name: f.name, need: f.need, what: f.what,
-    set: !!(Deno.env.get(f.name) || (f.alt ? Deno.env.get(f.alt) : '')),
+    set: !!(Deno.env.get(f.name) || (f.alt ? Deno.env.get(f.alt) : '') ||
+      (f.alt2 ? Deno.env.get(f.alt2) : '')),
   }));
 }
 
@@ -1097,7 +1102,7 @@ Deno.serve(async (req: Request) => {
 async function handleOp(
   req: Request, body: Record<string, unknown>, who: Admin,
 ): Promise<Response> {
-  const admin = () => createClient(SUPABASE_URL, SERVICE_KEY);
+  const admin = () => createClient(SUPABASE_URL, SERVICE_KEY, clientOptions(SERVICE_KEY));
 
   // Columns the console reads for ONE title. Not `*`: `locator` is in here on
   // purpose (the operator must be able to see and fix a wrong key) but that
@@ -3399,7 +3404,7 @@ async function srest(path: string, init: RequestInit = {}): Promise<Response> {
   return await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
     ...init,
     headers: {
-      apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`,
+      ...SERVICE_HEADERS,
       'Content-Type': 'application/json', ...(init.headers ?? {}),
     },
   });

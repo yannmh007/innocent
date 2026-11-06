@@ -32,9 +32,16 @@
 //   app fails, which is worse than not checking at all.
 // ===========================================================================
 
-const SERVICE_KEY = Deno.env.get('SB_SERVICE_KEY') ??
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-const ANON_KEY = Deno.env.get('SB_ANON_KEY') ?? '';
+import { keyFacts, keyHeaders, keyShape, pickKey } from './service_key.js';
+
+// The Supabase keys (service_key.js, docs/security_review_2026_11.md S1):
+// 'legacy' keeps the choice made before the new keys; 'new' once proven.
+const KEYS = { prefer: 'legacy' } as const;
+const SERVICE_KEY = pickKey((n) => Deno.env.get(n), 'service', KEYS).key;
+const SERVICE_HEADERS = keyHeaders(SERVICE_KEY);
+console.log(JSON.stringify({ keys: keyFacts((n) => Deno.env.get(n), KEYS) }));
+// AS THE APP: the app sends the publishable key, so that is the one checked.
+const ANON_KEY = pickKey((n) => Deno.env.get(n), 'public', { prefer: 'new' }).key;
 const URL_BASE = Deno.env.get('SUPABASE_URL') ?? '';
 
 // The EXACT column list `api_content_repository.dart` sends. Copied, not
@@ -84,9 +91,8 @@ async function adminGate(req: Request): Promise<Response | null> {
     JSON.stringify({ error: code }),
     { status, headers: { 'Content-Type': 'application/json' } });
   const url = Deno.env.get('SUPABASE_URL') ?? '';
-  const key = Deno.env.get('SB_SERVICE_KEY') ??
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-  const anon = Deno.env.get('SB_ANON_KEY') ?? Deno.env.get('SUPABASE_ANON_KEY') ?? '';
+  const key = SERVICE_KEY;
+  const anon = pickKey((n) => Deno.env.get(n), 'public', KEYS).key;
   const auth = req.headers.get('Authorization') ?? '';
   if (!auth.toLowerCase().startsWith('bearer ') || !url || !key) {
     return no('not_signed_in', 401);
@@ -99,7 +105,7 @@ async function adminGate(req: Request): Promise<Response | null> {
   if (typeof id !== 'string' || !id) return no('not_signed_in', 401);
   const r = await fetch(`${url}/rest/v1/rpc/admin_resolve`, {
     method: 'POST',
-    headers: { apikey: key, Authorization: `Bearer ${key}`,
+    headers: { ...keyHeaders(key),
                'Content-Type': 'application/json' },
     body: JSON.stringify({ p_user: id }),
   });
@@ -128,8 +134,11 @@ Deno.serve(async (req) => {
   checks.length = 0;
 
   // --- 0. the function's own prerequisites ---------------------------------
-  record('service key present', SERVICE_KEY.length > 50,
-    `${SERVICE_KEY.length} chars`);
+  // A legacy JWT is ~220 characters, a secret key ~41: the shape is the
+  // check, never the length (service_key.js).
+  const svcShape = keyShape(SERVICE_KEY);
+  record('service key present', svcShape === 'jwt' || svcShape === 'secret',
+    `${svcShape}, ${SERVICE_KEY.length} chars`);
   const anonReady = ANON_KEY.length > 20;
   record('anon key present', anonReady, `${ANON_KEY.length} chars`);
 
@@ -137,7 +146,7 @@ Deno.serve(async (req) => {
   try {
     const r = await fetch(
       `${URL_BASE}/rest/v1/schema_migrations?select=version&order=version.desc&limit=1`,
-      { headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` } },
+      { headers: { ...SERVICE_HEADERS } },
     );
     const rows = await r.json();
     // `Array.isArray(rows) && ...` yields FALSE, not null, when PostgREST
@@ -153,7 +162,7 @@ Deno.serve(async (req) => {
   }
 
   if (!anonReady) {
-    skip('anon checks', 'SB_ANON_KEY not set — add it and re-run');
+    skip('anon checks', 'no public key (SB_ANON_KEY or the platform\'s publishable key) — add one and re-run');
     return new Response(JSON.stringify({ checks }, null, 2),
       { headers: { 'Content-Type': 'application/json' } });
   }
