@@ -136,6 +136,10 @@ CHECKS = [
      'BY or CC0 on Blender\'s own site (No Derivatives, Non Commercial, '
      'unset), a copy from another server, or a download that is not the film '
      'the licence was read for (cut short, another height, no sound)'),
+    ('claude_hooks_test.py', None,
+     'a Claude Code hook that stands in the way: one that throws, prints '
+     'junk, blocks a call, or trims away a fact of a CI run (they run on '
+     'every matching tool call in every session on this repository)'),
     ('function_tables.py', None,
      'a table an edge function uses that the service role may not read: '
      'every table named in docs/edge must be in '

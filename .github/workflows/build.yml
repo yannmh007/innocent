@@ -41,6 +41,10 @@ on:
       # and then try to publish a release for a version that already has one.
       # It is still covered on every pull request and by workflow_dispatch.
       - 'tool/transcode.sh'
+      # How Claude works on this repository (docs/ai_workflow.md): rules,
+      # agents, skills and hooks for the assistant. Nothing in them is built.
+      - 'CLAUDE.md'
+      - '.claude/**'
   pull_request:
   workflow_dispatch:
 
