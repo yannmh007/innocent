@@ -133,14 +133,44 @@ the plaintext after 14 days → F: B2 Object Lock. The live checks owed first
 are BACKLOG O19, O20 and O24, and R1-R6.
 
 **P3 — make a scripted client expensive and visible.**
-1. **Android Key Attestation** on the device key the app already makes:
-   generate it with an attestation challenge from the server. The server
-   checks the chain up to Google's roots — trusting both the old RSA root
-   and the ECDSA P-384 root brought in Feb–Apr 2026 — and the revocation
-   list. It checks `attestationApplicationId` (our package and signing
-   certificate digest), the security level (TEE or StrongBox) and
-   `verifiedBootState`. It works outside Google Play and costs nothing.
-   First log only, then require it for premium and sealed grants.
+1. **Android Key Attestation** — **built 6 Nov, log mode** (6a87482):
+   - **App** (next release, with the ENC opener). The media key is
+     `inv_media_device_v2`, made with the challenge `inv-media-device-v2`.
+     A Keystore that refuses attestation still gets its key, without a
+     chain. The chain goes with grants until the server answers
+     `attest: received`.
+   - **Server.** `docs/edge/key_attest.js` checks:
+     - every signature, up to one of Google's two roots, pinned by public
+       key (RSA-4096 and the 2025 ECDSA P-384 Key Attestation CA1);
+     - validity above the leaf;
+     - Google's revocation list, cached an hour;
+     - that the leaf certifies the key that was sent, with our challenge;
+     - TEE or StrongBox;
+     - locked and verified boot;
+     - our package and release signer;
+     - that the key was generated on the phone, not imported.
+     It is size-capped, and hostile input is a verdict, not a throw.
+     request-playback v43 checks in the background, logs the verdict and
+     keeps it on the install's `devices` row (migration 074: `attest`,
+     `attest_at`; the app cannot read them). Nothing is refused.
+   - **Proved:** `key_attest_test.mjs`, 27 checks — openssl chains in
+     Keystore's shapes, each failure naming itself, and Google's real roots
+     verifying under the pins.
+   - **Still to see (BACKLOG R8):** a real chain from the device lab (an
+     emulator: software attestation, so `unknown_root` / `software` is the
+     right answer) and from Test Lab's real phones (`ok`).
+
+   **What it does and does not stop, honestly.** A chain is public, so
+   anyone can replay a real phone's chain. That buys nothing where it
+   counts: the film keys are wrapped for the attested key, which never
+   leaves that phone's hardware. So once films exist only sealed (ENC
+   rollout E), a script on a computer gets no film key at all. Today's
+   plain copies are not covered: a grant for a plain file needs no key.
+   Covering them means proof that the phone holds the key. One way: the
+   server wraps the stream token itself for the attested key, so only
+   that phone can use it (P3b, with the ENC rollout). Then `require` for
+   premium: first premium sealed grants only to an attested install, then
+   all premium grants.
 2. Lower the per-account premium budget to something human, for example 40
    titles a day (measure first).
 3. Count bytes per account per day in the Worker (a Durable Object or

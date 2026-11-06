@@ -148,6 +148,11 @@ Why this one (research, 31 Oct 2026):
   OAEP hash, so SHA-256/SHA-1 cannot be produced by the edge function without a
   hand-written OAEP. OAEP with SHA-1 remains approved for encryption (SHA-1's
   collision weakness concerns signatures).
+- **Attested** (6 Nov, key v2): the key is made with an attestation
+  challenge, and its chain goes with grants until the server has it.
+  request-playback checks it against Google's roots
+  (`docs/edge/key_attest.js`) and records the verdict on the install.
+  Log mode: nothing is refused yet (docs/security_review_2026_11.md P3).
 - **Grant**: `request-playback` adds a `seal` block beside each URL it signs:
   `{dek_id, plain_size, dek_rsa}` — the DEK wrapped for that phone — or, while
   `SEAL_DEVICE_WRAP` is `prefer` and the install has no key yet, `{dek}` over

@@ -42,6 +42,12 @@ does it.
   NetPlugin logs every failed call (on the branch).
 
 ### Verify what is live but not yet exercised
+- **R8 — key attestation, real chains** (since 6 Nov, request-playback
+  v43): the function log's `attest` lines and `devices.attest`. The device
+  lab (emulator) should read `chain: unknown_root`, `level: software`; Test
+  Lab's real phones `ok: true`, `root: google-rsa` or `google-ec`, `level:
+  tee`/`strongbox`, `boot: verified`, `app: ok`. A real phone NOT `ok`
+  says which check to look at again before anything is enforced.
 - **R7 — the new Supabase keys, first real calls** (since 6 Nov): studio
   (the console), premium-request, delete-account, probe-media,
   backfill-dimensions, self-test. In the logs, each boot says `service:
@@ -114,9 +120,12 @@ does it.
     service_role keys; then delete the Edge secret `SB_SERVICE_KEY` (legacy
     JWT, no longer read).
   - **S2/P2**: ENC rollout A→F; every film and photo is still plain in R2.
-  - **S3/P3**: Android Key Attestation on the device key (log, then require
-    for premium and sealed); a human-sized premium budget; bytes per account
-    per day with a Telegram alert.
+  - **S3/P3**: key attestation BUILT 6 Nov, log mode (6a87482:
+    key_attest.js, request-playback v43, migration 074, app key v2 with the
+    next release). Next: R8 (real chains), then P3b (the stream token
+    wrapped for the attested key, so a plain grant needs the phone too),
+    then `require` for premium; a human-sized premium budget; bytes per
+    account per day with a Telegram alert.
   - **S4/P4**: console on `console.innocentplayer.com` with real headers and
     a narrow CSP; `STUDIO_ORIGINS` moved.
   - **S5/P5 (owner)**: passkeys on GitHub, Cloudflare, Supabase and Google;
