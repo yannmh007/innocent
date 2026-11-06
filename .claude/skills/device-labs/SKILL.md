@@ -1,6 +1,6 @@
 ---
 name: device-labs
-description: Run and read Innocent's device lab (emulator, device-lab.yml) and Firebase Test Lab (real phones, device-cloud.yml). Use when a change needs proof on a phone or before a release.
+description: "Run and read Innocent's device lab (emulator, device-lab.yml) and Firebase Test Lab (real phones, device-cloud.yml). Use when a change needs proof on a phone or before a release."
 ---
 
 # The labs

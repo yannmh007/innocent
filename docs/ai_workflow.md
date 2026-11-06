@@ -54,6 +54,40 @@ this project better:
 - Skills: `release`, `live-db-change`, `device-labs`.
 - Not adopted: blanket delegation, the fork ban, call-count escalation.
 
+## Memory across sessions (second post, 6 Nov 2026)
+
+The same author's setup: a short CLAUDE.md (28 lines), and Claude Code's
+**auto memory** — one small file per correction ("never use dashes in
+captions"), indexed one line each in `MEMORY.md`, which loads at session
+start; 454 such files.
+
+What the docs say, and what it means here:
+- **Auto memory is per machine** ("not shared across machines or cloud
+  environments", memory docs). This project works in cloud sessions whose
+  container is reclaimed: notes written to `~/.claude/projects/…/memory/`
+  vanish. None existed in this session. `autoMemoryDirectory` could point
+  into the checkout, but this repository is public and auto memory is not
+  curated, so it is not used.
+- **Path-scoped rules** (`.claude/rules/*.md` with `paths:`) load only when
+  Claude reads a matching file — the cheapest place for a lesson that
+  concerns one area. Verified live: reading a migration loaded
+  `migrations.md`, and nothing else.
+- **The index costs every session** (MEMORY.md: up to 200 lines / 25 KB);
+  454 one-line entries would be past it. Rules cost nothing until needed.
+- **Stale memories mislead** (the post says so too). Here
+  `tool/claude_config_test.py` fails when a rule's `paths:` match nothing, a
+  named file is gone, or frontmatter does not parse — it caught two skills
+  whose descriptions did not parse as YAML. `/doctor prompt-audit` finds
+  conflicting or outdated instructions.
+
+Decided: corrections and lessons go into the repository, reviewed, public-
+safe: CLAUDE.md (everywhere), `.claude/rules/` (by path), skills
+(procedures). Claude tells the owner one line on what it saved. Five rule
+files hold what this project learned the hard way (edge functions,
+migrations, the app, workflows, the console); a fourth skill,
+`edge-deploy`; `tool/edge_stub/` makes a local function boot reproducible
+in any session (it lived only in a scratch directory before).
+
 ## How to tell whether it works
 
 - `/usage` in a session (Pro/Max plans) shows what counts against the plan,

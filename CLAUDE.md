@@ -28,17 +28,38 @@ in English. Why this file is shaped as it is: `docs/ai_workflow.md`.
 - A push to `main` is a production deploy: `docs/**` republishes Pages and
   rebuilds both Workers; most other paths start the app Build. Releases:
   skill `release`. Database changes: skill `live-db-change`. Labs: skill
-  `device-labs`.
+  `device-labs`. Edge function deploys: skill `edge-deploy`.
 - No help hosting or streaming films without a licence, and nothing that
   hides the service from rights holders.
+
+## Working with the owner
+- Reply in Burmese. When the owner has something to do (a dashboard, a
+  secret, a review), give numbered steps with the exact place to click and
+  what to check, and say what you will verify afterwards.
+- Verify before saying done: live checks (SQL, logs, a workflow run, a
+  screenshot the owner sends) over assumptions; say plainly what failed.
+- The owner prefers thoroughness to speed, and wants findings beyond the
+  question reported (e.g. a bug met on the way), fixed where safe.
+
+## What Claude learns stays in the repository
+Cloud sessions lose `~/.claude` (auto memory is per machine), so learnings
+are written into the repo, and the repo is PUBLIC: never a secret, a
+personal detail, or anything about a title the owner wants kept out.
+- When the owner corrects you, or a mistake teaches something: add the rule
+  where it will load when needed — this file if it applies everywhere,
+  `.claude/rules/<area>.md` (loads only with matching `paths:`) if it
+  applies to some files, a skill if it is a procedure. Write the rule, why,
+  and how to apply it; commit it; tell the owner one line on what was saved.
+- A rule found wrong or stale: fix or delete it in the same way. The owner
+  can ask for `/doctor prompt-audit` to find conflicts.
 
 ## The sandbox
 - Supabase REST, Cloudflare APIs, blender.org and archive.org are not
   reachable from here: read the database with the Supabase MCP, and reach the
   rest from a GitHub runner (a workflow task), which can.
 - Foreground `sleep` is blocked: wait with `timeout N tail -f /dev/null`.
-- Deno: `$SCRATCHPAD/denoinst/node_modules/deno/deno` when it exists; boot a
-  function locally with the stub import map and `NO_PROXY=127.0.0.1`.
+- Boot an edge function locally: `tool/edge_stub/boot.sh <name> <dir>`
+  (needs deno: `npm install -g deno` if `command -v deno` finds none).
 
 ## Spending tokens well (the owner's standing request, 6 Nov 2026)
 Quality first: the main session stays on Opus for this project's work —
