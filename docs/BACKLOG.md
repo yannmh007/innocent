@@ -49,6 +49,37 @@ does it.
   around it fails. Not a regression; worth a look at how the Original's
   first fill sizes itself.
 
+### Open test films, five more (6 Nov)
+- **In the review queue** since 6 Nov 15:49 (seed run 42246218584, ingest
+  v53): Cosmos Laundromat (12 min, 1920x804 2.39:1, dialogue), Caminandes:
+  Llamigos (2.5 min, 1080p), Glass Half (3 min, 1080p, dialogue), Hero
+  (4 min, 2D Grease Pencil, 1280x536 23.976 fps) and Big Buck Bunny (60 fps)
+  (10.6 min, 1080p60, 5.1 sound). Free, C01, genre G001 (Open Movie), five
+  stills each, the first as the poster. Not in the app until approved.
+- **How they were chosen**: `tool/open_films.py find` (run 42240921914)
+  read each candidate's licence from video.blender.org's API, from a
+  runner. Only CC BY or CC0 is taken: Spring is CC BY-SA there, Coffee Run,
+  Charge, Wing It and Caminandes 2 state no licence, Agent 327's file is CC
+  BY-ND (studio.blender.org says so too). The seed reads the licence again,
+  downloads, and checks the file is that film (H.264 at the height picked,
+  sound, the length to 3 s; dry run 42243911348). Each synopsis carries the
+  CC BY attribution and the source page.
+- **The owner, in the console** (Review, "waiting for approval"): open each,
+  play the preview, look at the stills and pick a cover, add a Burmese title
+  or Animation if wanted, then Approve (or Send back with a note, to try
+  that path). Cosmos Laundromat's story is a sheep who has lost the will to
+  live: decide whether it belongs before approving it.
+- **Then**: the transcode ladder (queued at seed; Cosmos running at 15:54),
+  frames (done for all five), Playback check, and a device lab run on Big
+  Buck Bunny (60 fps) and Cosmos Laundromat once approved. Note for the
+  `genres` lab flow: it asserts Animation lists Sintel; five more animated
+  titles in Animation may push Sintel off the first screen.
+- **Found on the way, fixed**: migration 077 (live) — the service role could
+  not read genres (the console's Genres section, every genre change, and a
+  title made with genre words had failed since 31 Oct) nor asset_renditions
+  (three silent reads). `tool/sql/service_role_grants_test.sql`,
+  `tool/function_tables.py`.
+
 ### Verify what is live but not yet exercised
 - **R8 — key attestation, real chains**: SEEN 6 Nov on the emulator
   (software, unknown root) and on Test Lab's realme (google-ec, TEE,
