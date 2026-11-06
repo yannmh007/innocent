@@ -179,7 +179,7 @@ class _FavTileState extends State<_FavTile> {
                 fit: StackFit.expand,
                 children: [
                   SafeThumbnail(bytes: _thumb!),
-                  Container(color: Colors.black.withOpacity(0.15)),
+                  Container(color: Colors.black.withValues(alpha: 0.15)),
                   const Center(
                     child: Icon(Icons.favorite,
                         color: AppColors.error, size: 18),

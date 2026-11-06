@@ -140,7 +140,7 @@ class _VaultPinFlowScreenState extends State<VaultPinFlowScreen> {
     return SecureScreenGuard(
       child: PopScope(
         canPop: _step == 0,
-        onPopInvoked: (didPop) {
+        onPopInvokedWithResult: (didPop, _) {
           if (!didPop) _stepBack();
         },
         child: Scaffold(

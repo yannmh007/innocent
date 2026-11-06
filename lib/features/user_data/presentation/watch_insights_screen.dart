@@ -210,7 +210,7 @@ class _Stat extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.04),
+        color: Colors.white.withValues(alpha: 0.04),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -252,7 +252,7 @@ class _StreakCard extends StatelessWidget {
             height: 44,
             decoration: BoxDecoration(
               color: (s > 0 ? AppColors.accentBlue : Colors.white)
-                  .withOpacity(0.15),
+                  .withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(22),
             ),
             alignment: Alignment.center,
@@ -336,7 +336,7 @@ class _SevenDayCard extends StatelessWidget {
                                 : (i == 6
                                     ? AppColors.accentBlue
                                     : AppColors.accentBlue
-                                        .withOpacity(0.5)),
+                                        .withValues(alpha: 0.5)),
                             borderRadius: const BorderRadius.vertical(
                                 top: Radius.circular(3)),
                           ),

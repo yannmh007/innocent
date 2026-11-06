@@ -15,6 +15,7 @@ import '../updater/presentation/app_update_screen.dart';
 import '../../core/theme/tab_title.dart';
 import '../../core/ui/app_sheet.dart';
 import '../../core/ui/nav_bar_space.dart';
+import '../video_hub/presentation/report_sheet.dart';
 
 /// Me → About.
 ///
@@ -182,6 +183,14 @@ class _AboutScreenState extends State<AboutScreen> {
                   tint: const Color(0xFF34C759),
                   title: s.aboutHelpFaq,
                   onTap: () => _open(const HelpScreen()),
+                ),
+                // Where a rights holder writes, and Report for anything else
+                // (docs/security_review_2026_11.md P6).
+                _Row(
+                  icon: Icons.copyright_rounded,
+                  tint: const Color(0xFFFF9F0A),
+                  title: s.takedownTitle,
+                  onTap: () => showTakedownSheet(context),
                 ),
               ],
             ),

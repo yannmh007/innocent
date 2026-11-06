@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/api/offline_library.dart';
 import '../../data/poster_cache.dart';
+import '../../data/seal/media_seal.dart';
+import '../../data/seal/sealed_image.dart';
 import '../../domain/video_content.dart';
 import '../video_hub_provider.dart';
 
@@ -132,6 +134,12 @@ class _PosterImageState extends ConsumerState<PosterImage> {
   }
 
   Widget _image(String url) {
+    // A SEALED IMAGE (docs/MEDIA_ENCRYPTION.md §6) is the same two places —
+    // a photo saved for offline, then the cache — read as sealed bytes and
+    // opened before decoding. Never the network: its bytes there are noise.
+    final seal = SealedUrls.of(url);
+    if (seal != null) return _sealed(url, seal);
+
     // A PHOTO SAVED FOR OFFLINE WINS. It is the full photo, it is on the disk
     // for as long as the viewer keeps it — unlike the artwork cache, which has
     // a ceiling and evicts — and drawing it costs no data at all. One map
@@ -186,6 +194,36 @@ class _PosterImageState extends ConsumerState<PosterImage> {
     );
   }
 
+  Widget _sealed(String url, SealGrant seal) {
+    final saved = OfflineLibrary.photoPathFor(url);
+    if (saved != null) {
+      return Image(
+        image: SealedFileImage(File(saved), seal),
+        fit: widget.fit,
+        semanticLabel: widget.title,
+        frameBuilder: _frame,
+        errorBuilder: (context, error, stack) => _sealedCached(url, seal),
+      );
+    }
+    return _sealedCached(url, seal);
+  }
+
+  Widget _sealedCached(String url, SealGrant seal) {
+    _ensureCached(url);
+    final path = _cachedPath;
+    if (path == null) return _placeholder();
+    return Image(
+      image: SealedFileImage(File(path), seal),
+      fit: widget.fit,
+      semanticLabel: widget.title,
+      frameBuilder: _frame,
+      errorBuilder: (context, error, stack) {
+        PosterCache.forget(url);
+        return _placeholder();
+      },
+    );
+  }
+
   /// A half-drawn poster is worse than a placeholder that becomes one.
   Widget _frame(
     BuildContext context,
@@ -211,7 +249,7 @@ class _PosterImageState extends ConsumerState<PosterImage> {
         child: Icon(
           widget.glyph,
           size: 26,
-          color: Colors.white.withOpacity(0.13),
+          color: Colors.white.withValues(alpha: 0.13),
         ),
       ),
     );

@@ -32,6 +32,11 @@
 // this is a hundred, it only reads, and it can be redeployed without anyone
 // holding their breath.
 
+import { importKek, unwrapDek } from './media_keys.js';
+import { readPlain } from './media_read.js';
+import { keyFacts, keyHeaders, pickKey } from './service_key.js';
+import { consoleOrigins } from './console_origins.js';
+
 const R2_ACCOUNT_ID = Deno.env.get('R2_ACCOUNT_ID')!;
 const R2_ACCESS_KEY_ID = Deno.env.get('R2_ACCESS_KEY_ID')!;
 const R2_SECRET_ACCESS_KEY = Deno.env.get('R2_SECRET_ACCESS_KEY')!;
@@ -42,10 +47,15 @@ const MEDIA_BUCKET = Deno.env.get('R2_BUCKET') ?? 'innocent-media';
 const PUBLIC_BUCKET = Deno.env.get('R2_PUBLIC_BUCKET') ?? 'innocent-public';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
-const ANON_KEY = Deno.env.get('SB_ANON_KEY') ??
-  Deno.env.get('SUPABASE_ANON_KEY') ?? '';
-const SERVICE_KEY = Deno.env.get('SB_SERVICE_KEY') ??
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+// The Supabase keys (service_key.js, docs/security_review_2026_11.md S1):
+// the new secret and publishable keys, proved by transcode's canary on
+// 6 Nov (its service-role-only claims answered with `apikey` alone). With
+// no new key in the environment this falls back to the legacy key.
+const KEYS = { prefer: 'new' } as const;
+const ANON_KEY = pickKey((n) => Deno.env.get(n), 'public', KEYS).key;
+const SERVICE_KEY = pickKey((n) => Deno.env.get(n), 'service', KEYS).key;
+const SERVICE_HEADERS = keyHeaders(SERVICE_KEY);
+console.log(JSON.stringify({ keys: keyFacts((n) => Deno.env.get(n), KEYS) }));
 
 // The same two values `request-playback` mints tokens from. Read here so the
 // console can time a download over the REAL path — phone to Worker to R2 —
@@ -53,9 +63,8 @@ const SERVICE_KEY = Deno.env.get('SB_SERVICE_KEY') ??
 const STREAM_BASE = (Deno.env.get('STREAM_BASE') ?? '').replace(/\/+$/, '');
 const STREAM_TOKEN_SECRET = Deno.env.get('STREAM_TOKEN_SECRET') ?? '';
 
-const ALLOWED_ORIGINS = (Deno.env.get('STUDIO_ORIGINS') ??
-  'https://yannmh007.github.io')
-  .split(',').map((s) => s.trim()).filter(Boolean);
+// The console's pages, which may call this with CORS (console_origins.js).
+const ALLOWED_ORIGINS = consoleOrigins(Deno.env.get('STUDIO_ORIGINS'));
 
 const enc = new TextEncoder();
 
@@ -400,8 +409,7 @@ async function whoIsAsking(
   const rr = await fetch(`${SUPABASE_URL}/rest/v1/rpc/admin_resolve`, {
     method: 'POST',
     headers: {
-      apikey: SERVICE_KEY,
-      Authorization: `Bearer ${SERVICE_KEY}`,
+      ...SERVICE_HEADERS,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ p_user: id }),
@@ -475,8 +483,7 @@ async function audit(
     await fetch(`${SUPABASE_URL}/rest/v1/rpc/admin_log`, {
       method: 'POST',
       headers: {
-        apikey: SERVICE_KEY,
-        Authorization: `Bearer ${SERVICE_KEY}`,
+        ...SERVICE_HEADERS,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -661,8 +668,7 @@ Deno.serve(async (req: Request) => {
       const asked = await fetch(`${SUPABASE_URL}/rest/v1/rpc/unknown_object_keys`, {
         method: 'POST',
         headers: {
-          apikey: SERVICE_KEY,
-          Authorization: `Bearer ${SERVICE_KEY}`,
+          ...SERVICE_HEADERS,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ keys: seen.map((o) => o.key) }),
@@ -798,7 +804,7 @@ Deno.serve(async (req: Request) => {
       `${SUPABASE_URL}/rest/v1/title_assets` +
       `?select=object_key&bucket=eq.${encodeURIComponent(MEDIA_BUCKET)}` +
       `&order=added_at.desc&limit=${PAGE}&offset=${offset}`,
-      { headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` } },
+      { headers: { ...SERVICE_HEADERS } },
     );
     if (!res.ok) {
       return json({ error: 'lookup_failed', status: res.status }, 500, req);
@@ -816,24 +822,57 @@ Deno.serve(async (req: Request) => {
   }
   if (!keys.length) return json({ error: 'no_keys' }, 400, req);
 
-  const results = [];
-  for (const key of keys) {
-    try {
-      const res = await fetch(await presignGet(key), {
-        // 64 KB is generous for a box list and small enough that probing
-        // forty objects costs less than a second of transfer.
-        headers: { Range: 'bytes=0-65535' },
-      });
+  // A SEALED FILM (§7.3) IS READ AS ITS PLAINTEXT: the segments holding
+  // the head (and the tail) are opened here under the film's key, each
+  // checked before a byte is looked at; no plaintext leaves this function.
+  // A plain one is read exactly as before. `readPlain` (media_read.js)
+  // answers the film's own size either way, so the bitrate is the film's.
+  let kekHeld: Promise<CryptoKey | null> | null = null;
+  const readIO = {
+    get: async (key: string, first: number, last: number) => {
+      const res = await fetch(await presignGet(key), { headers: { Range: `bytes=${first}-${last}` } });
       if (!res.ok && res.status !== 206) {
-        results.push({ key, error: `http_${res.status}` });
-        continue;
+        lastStatus = res.status;
+        await res.body?.cancel();
+        return null;
       }
       // `Content-Range: bytes 0-65535/1234567` carries the real size, which
       // is the only place the total length is available on a ranged read.
       const cr = res.headers.get('Content-Range') ?? '';
-      const total = Number(cr.split('/')[1] ?? 0) ||
-        Number(res.headers.get('Content-Length') ?? 0);
-      const headBytes = new Uint8Array(await res.arrayBuffer());
+      const total = Number(cr.split('/')[1] ?? 0) || Number(res.headers.get('Content-Length') ?? 0) || null;
+      return { bytes: new Uint8Array(await res.arrayBuffer()), total };
+    },
+    seal: async (key: string) => {
+      const k = await (kekHeld ??= importKek(Deno.env.get('MEDIA_KEK_V1') ?? '').catch(() => null));
+      if (!k || !SERVICE_KEY) return null;
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/media_keys` +
+        `?select=dek_id,wrapped,kek_version,plain_size,header&sealed_key=eq.${encodeURIComponent(key)}&limit=1`,
+        { headers: { ...SERVICE_HEADERS } });
+      const row = r.ok ? (await r.json() as Array<{ dek_id: string; wrapped: string; kek_version: number;
+        plain_size: number; header: string | null }>)[0] : undefined;
+      if (!row) return null;
+      return {
+        dekId: row.dek_id, dek: await unwrapDek(k, row.wrapped, row.dek_id, row.kek_version),
+        plainSize: Number(row.plain_size),
+        header: row.header ? Uint8Array.from(atob(row.header), (c) => c.charCodeAt(0)) : null,
+      };
+    },
+  };
+  let lastStatus = 0;
+
+  const results = [];
+  for (const key of keys) {
+    try {
+      lastStatus = 0;
+      // 64 KB is generous for a box list and small enough that probing
+      // forty objects costs less than a second of transfer.
+      const got = await readPlain(readIO, key, 0, 65536);
+      if (!got) {
+        results.push({ key, error: lastStatus ? `http_${lastStatus}` : 'no_key' });
+        continue;
+      }
+      const total = got.total ?? 0;
+      const headBytes = got.bytes;
       const head = new DataView(
         headBytes.buffer, headBytes.byteOffset, headBytes.byteLength);
       const list = boxes(head, total);
@@ -850,12 +889,8 @@ Deno.serve(async (req: Request) => {
       if (seconds === null && total > 0) {
         try {
           const from = Math.max(0, total - 1024 * 1024);
-          const tail = await fetch(await presignGet(key), {
-            headers: { Range: `bytes=${from}-${total - 1}` },
-          });
-          if (tail.ok || tail.status === 206) {
-            seconds = mvhdSeconds(new Uint8Array(await tail.arrayBuffer()));
-          }
+          const tail = await readPlain(readIO, key, from, total);
+          if (tail) seconds = mvhdSeconds(tail.bytes);
         } catch {
           // The head answer stands on its own; a failed tail read costs a
           // bitrate, not a verdict.

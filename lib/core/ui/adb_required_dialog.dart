@@ -52,7 +52,7 @@ class AdbRequiredDialog {
               width: 60,
               height: 60,
               decoration: BoxDecoration(
-                color: AppColors.accentBlue.withOpacity(0.14),
+                color: AppColors.accentBlue.withValues(alpha: 0.14),
                 shape: BoxShape.circle,
               ),
               child: Icon(

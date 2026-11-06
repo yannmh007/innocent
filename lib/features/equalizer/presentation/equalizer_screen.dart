@@ -428,9 +428,9 @@ class _EqualizerScreenState extends ConsumerState<EqualizerScreen>
       height: 240,
       padding: const EdgeInsets.fromLTRB(10, 16, 10, 14),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.03),
+        color: Colors.white.withValues(alpha: 0.03),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.10)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -747,13 +747,13 @@ class _ProfileCard extends StatelessWidget {
         duration: const Duration(milliseconds: 150),
         decoration: BoxDecoration(
           color: selected
-              ? AppColors.accentBlue.withOpacity(0.20)
-              : Colors.white.withOpacity(0.03),
+              ? AppColors.accentBlue.withValues(alpha: 0.20)
+              : Colors.white.withValues(alpha: 0.03),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: selected
                 ? AppColors.accentBlue
-                : Colors.white.withOpacity(0.12),
+                : Colors.white.withValues(alpha: 0.12),
             width: selected ? 1.6 : 1,
           ),
         ),

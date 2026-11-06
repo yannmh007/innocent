@@ -222,10 +222,16 @@ const studio = await import('data:text/javascript,' + encodeURIComponent(
   check('the queued row takes the bucket from the kind',
     /bucket:\s*bucketFor\(file\.kind\)/.test(ingestSrc));
   check('the signed path uses the bucket it was given, not a constant',
-    /const canonicalPath = `\/\$\{bucket\}\//.test(ingestSrc) &&
+    // (An empty key signs the bucket itself — the sweep's listing — and is
+    // the same bucket, from the same argument.)
+    /const canonicalPath = (?:objectKey \? )?`\/\$\{bucket\}\//.test(ingestSrc) &&
     !/const canonicalPath = `\/\$\{MEDIA_BUCKET\}/.test(ingestSrc));
+  // Both PUTs: the plain file's and, when the switch wants it sealed, the
+  // sealed object's (§7, ENC-4 step 3) — each for the row's own bucket.
   check('the PUT is signed for the bucket the row names',
-    /put_url: await presign\('PUT',[\s\S]{0,160}?String\(job\.bucket/.test(ingestSrc));
+    /const jobBucket = String\(job\.bucket \?\? MEDIA_BUCKET\)/.test(ingestSrc) &&
+    /presign\('PUT', String\(job\.object_key \?\? ''\), 86400, jobBucket\)/.test(ingestSrc) &&
+    /sealSlot\(jobBucket\)/.test(ingestSrc));
 }
 
 // ── the one key the RUNNER may write ──────────────────────────────────────

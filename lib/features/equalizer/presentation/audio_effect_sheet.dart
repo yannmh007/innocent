@@ -36,7 +36,7 @@ Future<void> showAudioEffectSheet(BuildContext context, {int initialTab = 1}) {
     context: context,
     barrierDismissible: true,
     barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
-    barrierColor: Colors.black.withOpacity(0.18),
+    barrierColor: Colors.black.withValues(alpha: 0.18),
     transitionDuration: const Duration(milliseconds: 240),
     pageBuilder: (ctx, _, __) {
       final land = MediaQuery.of(ctx).size.width >
@@ -312,9 +312,9 @@ class _AudioEffectSheetState extends ConsumerState<AudioEffectSheet>
             begin: Alignment.centerLeft,
             end: Alignment.centerRight,
             colors: [
-              Colors.black.withOpacity(0.72),
-              Colors.black.withOpacity(0.93),
-              Colors.black.withOpacity(0.97),
+              Colors.black.withValues(alpha: 0.72),
+              Colors.black.withValues(alpha: 0.93),
+              Colors.black.withValues(alpha: 0.97),
             ],
             stops: const [0.0, 0.16, 1.0],
           ),
@@ -342,10 +342,10 @@ class _AudioEffectSheetState extends ConsumerState<AudioEffectSheet>
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            Colors.black.withOpacity(0.0),
-            Colors.black.withOpacity(0.60),
-            Colors.black.withOpacity(0.95),
-            Colors.black.withOpacity(0.97),
+            Colors.black.withValues(alpha: 0.0),
+            Colors.black.withValues(alpha: 0.60),
+            Colors.black.withValues(alpha: 0.95),
+            Colors.black.withValues(alpha: 0.97),
           ],
           stops: const [0.0, 0.05, 0.17, 1.0],
         ),
@@ -462,7 +462,7 @@ class _AudioEffectSheetState extends ConsumerState<AudioEffectSheet>
       height: 164,
       padding: const EdgeInsets.fromLTRB(8, 12, 8, 10),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.035),
+        color: Colors.white.withValues(alpha: 0.035),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: _mxCardBorder, width: 1.2),
       ),
@@ -585,7 +585,7 @@ class _AudioEffectSheetState extends ConsumerState<AudioEffectSheet>
                   const RoundSliderThumbShape(enabledThumbRadius: 8),
               overlayShape:
                   const RoundSliderOverlayShape(overlayRadius: 16),
-              overlayColor: _mxActive.withOpacity(0.15),
+              overlayColor: _mxActive.withValues(alpha: 0.15),
               trackShape: const RectangularSliderTrackShape(),
             ),
             child: RotatedBox(
@@ -742,7 +742,7 @@ class _AudioEffectSheetState extends ConsumerState<AudioEffectSheet>
                     colors: [_mxSelTop, _mxSelBottom],
                   )
                 : null,
-            color: active ? null : Colors.white.withOpacity(0.03),
+            color: active ? null : Colors.white.withValues(alpha: 0.03),
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: active ? _mxSelBorder : _mxCardBorder,

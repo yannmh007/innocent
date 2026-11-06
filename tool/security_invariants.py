@@ -398,6 +398,12 @@ CRED_ALLOWED = {
     'f0e8bdb87c964420e857bd35b5d6ed310bd44f0170aba48dd91039c6036bdb41',
     # SHA-256 of the empty string, in the same test.
     'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+    # SHA-256 of Google's two Android key attestation root public keys
+    # (docs/edge/key_attest.js), published at
+    # https://android.googleapis.com/attestation/root; checked against the
+    # pinned keys by tool/js/key_attest_test.mjs.
+    'feb2ea7551ee316ed4bb443c8293b884dbfdea40b603ee3e4f4a897e4580fbae',
+    '3ee44512a1af2beb39c889490c60ea3f82e43f5d5a5532f5ab9419f676cd07ec',
     # SHA-256 of Google's OSV-Scanner 2.2.2 linux binary, which
     # .github/workflows/deps-scan.yml checks before running it. A checksum of
     # a public file, published so it can be checked; not a key.

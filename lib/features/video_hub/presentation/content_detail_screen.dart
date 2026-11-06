@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/localization/app_strings.dart';
 import '../../../core/services/preferences/player_settings_service.dart';
 import '../domain/access_policy.dart';
+import '../domain/genre_names.dart';
 import '../data/api/event_sender.dart';
 import '../data/api/offline_library.dart';
 import '../domain/video_content.dart';
@@ -29,6 +30,7 @@ import 'account_provider.dart';
 import 'watch_points_provider.dart';
 import '../data/watch_state_store.dart';
 import '../../../core/ui/transient_prompt.dart';
+import 'report_sheet.dart';
 
 /// One catalogue entry in full: artwork, facts, and the mixed photo/video
 /// album behind it.
@@ -168,7 +170,10 @@ class _ContentDetailScreenState extends ConsumerState<ContentDetailScreen> {
             ),
             // Where Netflix keeps "My List" and YouTube "Save": pinned with
             // the back arrow, so it is there however far the page scrolls.
-            actions: <Widget>[_BookmarkButton(content: content)],
+            actions: <Widget>[
+              _ReportButton(content: content),
+              _BookmarkButton(content: content),
+            ],
             flexibleSpace: FlexibleSpaceBar(
               background: Stack(
                 fit: StackFit.expand,
@@ -186,7 +191,7 @@ class _ContentDetailScreenState extends ConsumerState<ContentDetailScreen> {
                         end: Alignment.topCenter,
                         colors: <Color>[
                           VH.canvas,
-                          VH.canvas.withOpacity(0.15),
+                          VH.canvas.withValues(alpha: 0.15),
                           Colors.transparent,
                         ],
                         stops: const <double>[0.0, 0.55, 1.0],
@@ -200,6 +205,7 @@ class _ContentDetailScreenState extends ConsumerState<ContentDetailScreen> {
           SliverToBoxAdapter(
             child: _Header(
               content: content,
+              genreNames: ref.watch(genreNamesProvider),
               locked: locked,
               lockedCount: lockedCount,
               // `expectsAlbum`, NOT `hasAlbum`, and that one word is the
@@ -414,6 +420,31 @@ String clockOf(Duration d) {
   return h > 0 ? '$h:${m.toString().padLeft(2, '0')}:$ss' : '$m:$ss';
 }
 
+/// Report this title: a rights holder, a parent, a person in a film
+/// (docs/security_review_2026_11.md P6). It reaches the owner within minutes.
+class _ReportButton extends StatelessWidget {
+  const _ReportButton({required this.content});
+  final VideoContent content;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppStrings.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(right: VH.s2),
+      child: Material(
+        color: const Color(0x66000000),
+        shape: const CircleBorder(),
+        child: IconButton(
+          key: const ValueKey('detail-report'),
+          tooltip: s.reportAction,
+          onPressed: () => showReportSheet(context, titleId: content.id),
+          icon: const Icon(Icons.outlined_flag_rounded, color: Colors.white),
+        ),
+      ),
+    );
+  }
+}
+
 /// Save for later: a bookmark that fills when the title is saved.
 class _BookmarkButton extends ConsumerWidget {
   const _BookmarkButton({required this.content});
@@ -488,8 +519,12 @@ class _Header extends StatelessWidget {
   final VoidCallback onResume;
   final VoidCallback onStartOver;
 
+  /// What each genre code is called (empty: the words the title carries).
+  final GenreNames genreNames;
+
   const _Header({
     required this.content,
+    required this.genreNames,
     required this.onPlay,
     required this.locked,
     required this.lockedCount,
@@ -511,7 +546,7 @@ class _Header extends StatelessWidget {
       if (content.qualityLabel != null) content.qualityLabel!,
       if (content.episodeCount != null)
         s.vhEpisodesCount(content.episodeCount!),
-      ...content.genres,
+      ...content.genreLabels(genreNames, s.locale.languageCode),
     ];
 
     return Padding(
@@ -855,7 +890,7 @@ class _AlbumTile extends StatelessWidget {
           // detail; this only darkens enough for the lock glyph to read.
           Positioned.fill(
             child: IgnorePointer(
-              child: ColoredBox(color: Colors.black.withOpacity(0.22)),
+              child: ColoredBox(color: Colors.black.withValues(alpha: 0.22)),
             ),
           ),
           const Center(

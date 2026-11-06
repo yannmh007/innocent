@@ -50,6 +50,33 @@
 // ===========================================================================
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { looksForSeals, planSeal, sealBlock, sealMode, wrapMode } from './media_grant.js';
+import { importDeviceKey, importKek, kekStatus } from './media_keys.js';
+import { clientOptions, keyFacts, pickKey } from './service_key.js';
+import { CHALLENGE as ATTEST_CHALLENGE, revokedFrom, verdict as attestVerdict } from './key_attest.js';
+
+// ─── MEDIA SEAL (docs/MEDIA_ENCRYPTION.md §5, §9) ─────────────────────────
+//
+// SEAL_MODE (media_grant.js `sealMode`): `ask` by default — only a request
+// that says it opens seals (`seal: 1`) looks up `media_keys`, and gets each
+// object's sealed twin with its key in a `seal` block (wrapped for the
+// install's Keystore key when it sent `device_key`); every other app is
+// answered exactly as before, with no extra query. `on`: every request
+// looks, and an app that cannot open an object that exists only sealed is
+// told to update (426) — for when the plain twins are retired. `off`: the
+// kill switch, nothing sealed is looked at.
+const SEAL_MODE = sealMode(Deno.env.get('SEAL_MODE'));
+const MEDIA_KEK_V1 = Deno.env.get('MEDIA_KEK_V1') ?? '';
+const SEAL_DEVICE_WRAP = wrapMode(Deno.env.get('SEAL_DEVICE_WRAP'));
+const MEDIA_BUCKET = Deno.env.get('R2_BUCKET') ?? 'innocent-media';
+
+// Once per isolate: whether MEDIA_KEK_V1 is usable — its form, its size and
+// its check value, never the key (kekStatus, media_keys.js). This is how the
+// owner's secret is confirmed from the function logs without anyone reading
+// it, and how a changed or half-pasted secret shows up.
+kekStatus(MEDIA_KEK_V1).then(
+  (st) => console.log(JSON.stringify({ seal_kek: st, seal_mode: SEAL_MODE })),
+  () => {});
 
 // Ten minutes. Long enough to start a film on a slow connection, short enough
 // that a copied link is worthless by the time it is pasted anywhere. It does
@@ -221,13 +248,15 @@ const json = (body: unknown, status: number) =>
 // name - the dashboard already marks `SUPABASE_SERVICE_ROLE_KEY` deprecated -
 // without editing this file again. If neither exists the function says so
 // instead of quietly continuing with no privileges.
-const SERVICE_KEY = Deno.env.get('SB_SERVICE_KEY') ??
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-const KEY_SOURCE = Deno.env.get('SB_SERVICE_KEY')
-  ? 'SB_SERVICE_KEY'
-  : (Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-    ? 'SUPABASE_SERVICE_ROLE_KEY'
-    : 'NONE');
+// The Supabase keys (service_key.js, docs/security_review_2026_11.md S1):
+// the new secret and publishable keys, proved by transcode's canary on
+// 6 Nov (its service-role-only claims answered with `apikey` alone). With
+// no new key in the environment this falls back to the legacy key.
+const KEYS = { prefer: 'new' } as const;
+const SERVICE = pickKey((n) => Deno.env.get(n), 'service', KEYS);
+const SERVICE_KEY = SERVICE.key;
+const KEY_SOURCE = SERVICE.source;
+console.log(JSON.stringify({ keys: keyFacts((n) => Deno.env.get(n), KEYS) }));
 
 // v3: LOGGED, not returned.
 //
@@ -303,10 +332,11 @@ Deno.serve(async (req) => {
   // SERVICE ROLE, deliberately. This client reads `titles.locator`, which no
   // other role may see. It never trusts the request for identity - the user is
   // resolved from the JWT below, by Supabase, not from anything in the body.
-  const admin = createClient(Deno.env.get('SUPABASE_URL') ?? '', SERVICE_KEY);
+  const admin = createClient(Deno.env.get('SUPABASE_URL') ?? '', SERVICE_KEY, clientOptions(SERVICE_KEY));
 
   let body: {
     title_id?: string; device_id?: string; asset_id?: string; bind?: boolean;
+    seal?: number; device_key?: string; device_attest?: unknown;
   };
   try {
     body = await req.json();
@@ -610,15 +640,55 @@ Deno.serve(async (req) => {
   // `url` STAYS EXACTLY WHAT IT WAS. Every app already installed reads that
   // field and knows nothing about this one, and an app that stops playing
   // because the server got cleverer is not an improvement.
+  const ladderRows = await ladderQ;
+  // Which object each key becomes, and its seal (null when not looked for).
+  const sealing = await planGrantSeal(admin, [objectKey,
+    ...ladderRows.map((r) => String(r.object_key ?? ''))], body);
+  // Where that key lives (key_attest.js), checked and recorded in the
+  // background: LOG MODE, nothing is refused because of it yet.
+  const attestQ = sealing?.deviceKey && Array.isArray(body.device_attest)
+    ? checkAttest(admin, body.device_attest, String(body.device_key), user?.id ?? null, install)
+    : null;
+  if (attestQ) keepAlive(attestQ);
+  // The install's key, pinned on first use, beside the signing below.
+  const pinQ = sealing?.deviceKey && user && install
+    ? Promise.resolve(admin.from('devices')
+      .update({ public_key: body.device_key, public_key_at: new Date().toISOString() })
+      .eq('user_id', user.id).eq('device_id', install).is('public_key', null))
+      .then(() => {}, () => {})
+    : null;
+  // Objects that exist only sealed, for an app that cannot open them.
+  let sealedOnly = 0;
+  const signFor = async (key: string): Promise<{ key: string; seal: Record<string, unknown> | null } | null> => {
+    const p = sealing?.plan.get(key);
+    if (!p) return { key, seal: null };
+    if (!p.sign) {
+      sealedOnly++;
+      return null;
+    }
+    if (!p.row || !sealing!.kek) return p.row ? null : { key: p.sign, seal: null };
+    try {
+      const seal = await sealBlock(sealing!.kek, p.row,
+        { deviceKey: sealing!.deviceKey, mode: SEAL_DEVICE_WRAP });
+      return seal ? { key: p.sign, seal } : null;
+    } catch (e) {
+      logRefusal('seal_block_failed', String(e).slice(0, 160));
+      return null;
+    }
+  };
+
   const renditions: Array<Record<string, unknown>> = [];
   try {
-    for (const r of await ladderQ) {
+    for (const r of ladderRows) {
       const key = String(r.object_key ?? '');
       if (!key) continue;
-      const rUrl = await workerUrl(key, who);
+      const s = await signFor(key);
+      if (!s) continue;
+      const rUrl = await workerUrl(s.key, who);
       if (!rUrl) continue;
       renditions.push({
         height: r.height, kbps: r.kbps, bytes: r.bytes ?? null, url: rUrl,
+        ...(s.seal ? { seal: s.seal } : {}),
       });
     }
   } catch (e) {
@@ -628,8 +698,17 @@ Deno.serve(async (req) => {
     logRefusal('renditions_failed', String(e).slice(0, 160));
   }
 
-  const masterUrl = masterInR2 ? await workerUrl(objectKey, who) : null;
+  const masterSigned = masterInR2 ? await signFor(objectKey) : null;
+  const masterUrl = masterSigned ? await workerUrl(masterSigned.key, who) : null;
   const url = primaryUrl(masterUrl, renditions);
+  await pinQ;
+  if (!url && sealedOnly > 0) {
+    // There is a film here, sealed, and this app cannot open it. 426, so a
+    // log tells this apart from a missing film; every app that sends
+    // `seal: 1` can, so only an app older than that lands here.
+    logRefusal('seal_update_required', String(assetId ?? titleId));
+    return json({ code: 'update_required' }, 426);
+  }
   if (!url) {
     // Only in Telegram and no streaming copy to play: an archive that lost
     // its ladder. The console shows it; a viewer gets "not found". (In R2
@@ -649,5 +728,121 @@ Deno.serve(async (req) => {
     // Cheapest first. Empty for anything not transcoded, which the client
     // reads as "there is one copy and this is it".
     renditions,
+    // The seal of `url` when it is a sealed object; each rung carries its
+    // own. Absent when seals were not looked for: the response is as it was.
+    ...(sealing ? { seal_v: 1 } : {}),
+    // The phone sends its key's chain until it reads this.
+    ...(attestQ ? { attest: 'received' } : {}),
+    ...(urlSeal(url, masterUrl, masterSigned?.seal ?? null, renditions)),
   }, 200);
 });
+
+// ── key attestation, log mode (docs/security_review_2026_11.md P3) ───────
+
+/// Google's revocation list, kept an hour per isolate. Null when it cannot be
+/// had: the verdict then says `revoked: null`, not "not revoked".
+let REVOKED: { at: number; set: Set<string> } | null = null;
+async function revokedList(): Promise<Set<string> | null> {
+  if (REVOKED && Date.now() - REVOKED.at < 3600_000) return REVOKED.set;
+  try {
+    const r = await fetch('https://android.googleapis.com/attestation/status',
+      { signal: AbortSignal.timeout(4000) });
+    if (!r.ok) return REVOKED?.set ?? null;
+    REVOKED = { at: Date.now(), set: revokedFrom(await r.json()) };
+    return REVOKED.set;
+  } catch (_) {
+    return REVOKED?.set ?? null;
+  }
+}
+
+/// Work that must finish after the answer has gone: the edge runtime's
+/// waitUntil where there is one.
+function keepAlive(p: Promise<unknown>) {
+  // deno-lint-ignore no-explicit-any
+  const rt = (globalThis as any).EdgeRuntime;
+  if (rt && typeof rt.waitUntil === 'function') rt.waitUntil(p);
+}
+
+/// The verdict on a phone's chain: logged (no identifier) and, for a
+/// signed-in install, kept on its devices row. Never throws.
+async function checkAttest(
+  admin: ReturnType<typeof createClient>, chain: unknown[], deviceKey: string,
+  userId: string | null, install: string | null,
+): Promise<void> {
+  try {
+    const v = await attestVerdict(chain.map((c) => String(c ?? '')),
+      { deviceKey, challenge: ATTEST_CHALLENGE, revoked: await revokedList() });
+    console.log(JSON.stringify({ attest: v, signed_in: !!userId }));
+    if (userId && install) {
+      const { error } = await admin.from('devices')
+        .update({ attest: v, attest_at: new Date().toISOString() })
+        .eq('user_id', userId).eq('device_id', install);
+      if (error) logRefusal('attest_store_failed', String(error.message).slice(0, 120));
+    }
+  } catch (e) {
+    logRefusal('attest_failed', String(e).slice(0, 120));
+  }
+}
+
+/** `{seal}` for whichever object `url` is, or nothing. */
+function urlSeal(url: string, masterUrl: string | null,
+  masterSeal: Record<string, unknown> | null,
+  renditions: Array<Record<string, unknown>>): Record<string, unknown> {
+  const seal = url === masterUrl
+    ? masterSeal
+    : (renditions.find((r) => r.url === url)?.seal ?? null);
+  return seal ? { seal } : {};
+}
+
+/**
+ * The seal plan for one grant, or null when not looked for. Never throws: a
+ * key table that cannot be read is logged and read as "nothing sealed" —
+ * which plays every plaintext object as before and refuses only objects that
+ * exist only sealed.
+ */
+async function planGrantSeal(
+  admin: ReturnType<typeof createClient>,
+  keys: string[],
+  body: { seal?: number; device_key?: string },
+) {
+  if (!looksForSeals(SEAL_MODE, body)) return null;
+  const want = [...new Set(keys.filter((k) => !!k))];
+  const cols = 'dek_id,bucket,sealed_key,plain_key,kek_version,wrapped,plain_size,sealed_size,header';
+  let rows: Array<Record<string, unknown>> = [];
+  if (want.length) {
+    try {
+      const [a, b] = await Promise.all([
+        admin.from('media_keys').select(cols).in('sealed_key', want),
+        admin.from('media_keys').select(cols).in('plain_key', want),
+      ]);
+      if (a.error || b.error) {
+        logRefusal('seal_keys_failed', String((a.error ?? b.error)?.message).slice(0, 160));
+      } else {
+        rows = [...(a.data ?? []), ...(b.data ?? [])];
+      }
+    } catch (e) {
+      logRefusal('seal_keys_failed', String(e).slice(0, 160));
+    }
+  }
+  let canOpen = body.seal === 1;
+  let kek: CryptoKey | null = null;
+  if (canOpen) {
+    try {
+      kek = await importKek(MEDIA_KEK_V1);
+    } catch (e) {
+      // No KEK: a sealed twin cannot be opened for anyone, so serve the
+      // plaintext twins as to an older app.
+      logRefusal('seal_kek_missing', String(e).slice(0, 80));
+      canOpen = false;
+    }
+  }
+  let deviceKey: CryptoKey | null = null;
+  if (canOpen && typeof body.device_key === 'string' && body.device_key) {
+    try {
+      deviceKey = await importDeviceKey(body.device_key);
+    } catch (e) {
+      logRefusal('seal_device_key_bad', String(e).slice(0, 80));
+    }
+  }
+  return { plan: planSeal(want, rows, { canOpen, bucket: MEDIA_BUCKET }), kek, deviceKey };
+}

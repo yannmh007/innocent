@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 
 import '../../../../core/localization/app_strings.dart';
 import '../../domain/content_filters.dart';
+import '../../domain/genre_names.dart';
 import '../video_hub_theme.dart';
 import '../../../../core/ui/app_sheet.dart';
 
@@ -31,6 +32,9 @@ class FilterSheet extends StatefulWidget {
   final ContentFacets facets;
   final ContentFilters initial;
 
+  /// What each genre code is called. Empty when the facets are words.
+  final GenreNames genreNames;
+
   /// Counts matches for a candidate filter set. Supplied by the caller so this
   /// widget never learns which repository it is talking to.
   final Future<int> Function(ContentFilters) countFor;
@@ -40,6 +44,7 @@ class FilterSheet extends StatefulWidget {
     required this.facets,
     required this.initial,
     required this.countFor,
+    this.genreNames = GenreNames.empty,
   });
 
   static Future<ContentFilters?> show(
@@ -47,6 +52,7 @@ class FilterSheet extends StatefulWidget {
     required ContentFacets facets,
     required ContentFilters initial,
     required Future<int> Function(ContentFilters) countFor,
+    GenreNames genreNames = GenreNames.empty,
   }) {
     return showAppModalBottomSheet<ContentFilters>(
       context: context,
@@ -56,6 +62,7 @@ class FilterSheet extends StatefulWidget {
         facets: facets,
         initial: initial,
         countFor: countFor,
+        genreNames: genreNames,
       ),
     );
   }
@@ -65,6 +72,15 @@ class FilterSheet extends StatefulWidget {
 }
 
 class _FilterSheetState extends State<FilterSheet> {
+  /// The facets' own names first (they came with the codes), then the names
+  /// the caller had. A code neither can name is shown as nothing better than
+  /// itself only in a build whose facets and names disagree — the
+  /// repository sends codes only when it can name every one.
+  String _genreLabel(String key, String languageCode) =>
+      widget.facets.genreNames.labelOf(key, languageCode) ??
+      widget.genreNames.labelOf(key, languageCode) ??
+      key;
+
   late ContentFilters _draft;
   int? _count;
   Timer? _debounce;
@@ -145,7 +161,7 @@ class _FilterSheetState extends State<FilterSheet> {
                         runSpacing: VH.s2,
                         children: widget.facets.genres
                             .map((g) => _Choice(
-                                  label: g,
+                                  label: _genreLabel(g, s.locale.languageCode),
                                   selected: _draft.genres.contains(g),
                                   onTap: () =>
                                       _update(_draft.toggleGenre(g)),
@@ -274,7 +290,7 @@ class _Grabber extends StatelessWidget {
           width: 34,
           height: 4,
           decoration: BoxDecoration(
-            color: VH.textTertiary.withOpacity(0.5),
+            color: VH.textTertiary.withValues(alpha: 0.5),
             borderRadius: BorderRadius.circular(2),
           ),
         ),

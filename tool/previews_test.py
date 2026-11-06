@@ -63,5 +63,32 @@ edge = re.compile(r'^[0-9A-Za-z#$%*+,\-.:;=?@\[\]^_{|}~]{6,100}$')
 for name, px, cx, cy, _ in VECTORS:
     check('edge accepts ' + name, bool(edge.match(previews.encode(px, W, H, cx, cy))), True)
 
+# A SEALED IMAGE (§7.3): opened in memory before it is hashed, every
+# segment checked; one that is not what its key row describes is refused.
+ms = previews.sealer()
+if ms is None:
+    print('SKIP the sealed half: `cryptography` does not load here')
+else:
+    import base64, io as _io  # noqa: E401,E402
+    plain = os.urandom(150000)
+    dek = os.urandom(32)
+    did = '00000000-0000-4000-8000-000000000007'
+    out = _io.BytesIO()
+    ms.seal_stream(_io.BytesIO(plain), out, dek, ms.aad_for(did), len(plain))
+    sealed = out.getvalue()
+    seal = {'dek_id': did, 'dek': base64.b64encode(dek).decode(), 'plain_size': len(plain),
+            'header': base64.b64encode(sealed[:ms.HEADER]).decode()}
+    check('a sealed image opens to its bytes', previews.open_sealed(sealed, seal, ms) == plain, True)
+    for name, data, bad in (
+        ('a flipped byte is refused', sealed[:70000] + bytes([sealed[70000] ^ 1]) + sealed[70001:], seal),
+        ('another object under this key row is refused', sealed, dict(seal, header=base64.b64encode(b'x' * 40).decode())),
+        ('a size the key row does not say is refused', sealed, dict(seal, plain_size=len(plain) + 1)),
+    ):
+        try:
+            previews.open_sealed(data, bad, ms)
+            check(name, 'opened', 'refused')
+        except Exception:  # noqa: BLE001
+            check(name, 'refused', 'refused')
+
 print(('FAIL' if fails else 'PASS'), f'=== {checks} check(s) on the album blurhash encoder ===')
 sys.exit(1 if fails else 0)

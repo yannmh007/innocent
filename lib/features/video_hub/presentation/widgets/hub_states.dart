@@ -77,7 +77,7 @@ class _PosterSkeletonGridState extends State<PosterSkeletonGrid>
                 Expanded(
                   child: Container(
                     decoration: BoxDecoration(
-                      color: VH.surface3.withOpacity(t),
+                      color: VH.surface3.withValues(alpha: t),
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
@@ -87,7 +87,7 @@ class _PosterSkeletonGridState extends State<PosterSkeletonGrid>
                   height: 10,
                   width: double.infinity,
                   decoration: BoxDecoration(
-                    color: VH.surface3.withOpacity(t),
+                    color: VH.surface3.withValues(alpha: t),
                     borderRadius: BorderRadius.circular(3),
                   ),
                 ),
@@ -96,7 +96,7 @@ class _PosterSkeletonGridState extends State<PosterSkeletonGrid>
                   height: 8,
                   width: 34,
                   decoration: BoxDecoration(
-                    color: VH.surface3.withOpacity(t * 0.8),
+                    color: VH.surface3.withValues(alpha: t * 0.8),
                     borderRadius: BorderRadius.circular(3),
                   ),
                 ),
@@ -137,7 +137,7 @@ class RowSkeletonList extends StatelessWidget {
                 width: 120 + (r * 18),
                 height: 15,
                 decoration: BoxDecoration(
-                  color: VH.surface3.withOpacity(0.45),
+                  color: VH.surface3.withValues(alpha: 0.45),
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),
@@ -161,7 +161,7 @@ class RowSkeletonList extends StatelessWidget {
                         width: cardWidth,
                         height: posterHeight,
                         decoration: BoxDecoration(
-                          color: VH.surface3.withOpacity(0.45),
+                          color: VH.surface3.withValues(alpha: 0.45),
                           borderRadius: BorderRadius.circular(10),
                         ),
                       ),
@@ -170,7 +170,7 @@ class RowSkeletonList extends StatelessWidget {
                         width: cardWidth * 0.8,
                         height: 9,
                         decoration: BoxDecoration(
-                          color: VH.surface3.withOpacity(0.35),
+                          color: VH.surface3.withValues(alpha: 0.35),
                           borderRadius: BorderRadius.circular(3),
                         ),
                       ),

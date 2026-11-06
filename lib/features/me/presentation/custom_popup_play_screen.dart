@@ -82,8 +82,8 @@ class CustomPopupPlayScreen extends ConsumerWidget {
               value: value,
               groupValue: selectedControl,
               activeColor: AppColors.primaryBlue,
-              fillColor: MaterialStateProperty.resolveWith((states) {
-                if (states.contains(MaterialState.selected)) {
+              fillColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
                   return AppColors.primaryBlue;
                 }
                 return Colors.white54;

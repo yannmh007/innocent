@@ -298,6 +298,60 @@ for path in ('/', '/.env', '/wp-login.php'):
     st, _, body = http(f'https://{CDN}{path}')
     verdict(st in (403, 404) and not listing(body), f'{CDN}{path}: HTTP {st}, no listing')
 
+# ── 8. What the data API tells a stranger ─────────────────────────────────
+# The publishable key is in every APK. PostgREST's root answers with an
+# OpenAPI document of every exposed table, view and RPC to whoever may read
+# it; Supabase announced (Feb 2026) that the anon/publishable key would no
+# longer be served it (docs/security_review_2026_11.md S8). A map of the
+# API is not a hole, but it is the first thing an automated scanner asks
+# for. And GraphQL introspection does the same where pg_graphql is on.
+print('\n== 8. The data API, asked as a stranger with the publishable key')
+st, _, body = http(f'{sb}/rest/v1/', headers={'apikey': key})
+mapped = st == 200 and (b'"paths"' in body or b'"definitions"' in body)
+verdict(not mapped, f'/rest/v1/ does not list the schema (HTTP {st}{", OpenAPI document served" if mapped else ""})')
+st, _, body = http(f'{sb}/graphql/v1', 'POST', {'apikey': key, 'Content-Type': 'application/json'},
+                   json.dumps({'query': '{ __schema { types { name } } }'}).encode())
+introspected = st == 200 and b'__schema' in body and b'"types"' in body
+verdict(not introspected, f'GraphQL introspection refused or absent (HTTP {st})')
+# The report door (migration 076) answers the app, and keeps nothing it
+# should not: an unknown reason is 'bad', so this probe writes no row and
+# sends the owner no notice.
+st, _, body = http(f'{sb}/rest/v1/rpc/report_content', 'POST',
+                   {'apikey': key, 'Content-Type': 'application/json'},
+                   json.dumps({'p_title': None, 'p_reason': 'transport-check', 'p_detail': ''}).encode())
+verdict(st == 200 and body.strip() == b'"bad"', f'report_content answers the app, and refuses a bad reason (HTTP {st}, {body[:20]!r})')
+
+# ── 9. The console on its own origin ──────────────────────────────────────
+# docs/console (innocent-console). Its headers are what make the move worth
+# making; a deploy that dropped _headers would serve the console naked.
+CONSOLE = 'console.innocentplayer.com'
+print('\n== 9. The console at ' + CONSOLE)
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, *a, **k):
+        return None  # see the 302 itself, not where it leads
+
+
+try:
+    with urllib.request.build_opener(_NoRedirect).open(
+            urllib.request.Request(f'https://{CONSOLE}/', headers={'User-Agent': UA}), timeout=30) as r:
+        st, h = r.status, dict(r.headers)
+except urllib.error.HTTPError as e:
+    st, h = e.code, dict(e.headers)
+loc = h.get('Location') or h.get('location') or ''
+verdict(st in (301, 302, 307, 308) and loc.rstrip('/').endswith('/studio'), f'/ sends to /studio/ (HTTP {st})')
+st, h, body = http(f'https://{CONSOLE}/studio/')
+hl = {k.lower(): v for k, v in h.items()}
+csp = hl.get('content-security-policy', '')
+verdict(st == 200 and b'<title>' in body, f'/studio/ is the console (HTTP {st})')
+verdict("frame-ancestors 'none'" in csp and "default-src 'none'" in csp and ' https: ' not in f' {csp} ',
+        'the CSP header: default-src none, frame-ancestors none, no bare https:')
+verdict('max-age=' in hl.get('strict-transport-security', ''), 'HSTS')
+verdict(hl.get('cross-origin-opener-policy') == 'same-origin' and hl.get('x-content-type-options') == 'nosniff'
+        and hl.get('referrer-policy') == 'no-referrer', 'COOP, nosniff, no referrer')
+for path in ('/edge/studio.ts', '/migrations/074_device_attestation.sql', '/BACKLOG.md', '/console/wrangler.toml'):
+    st, _, _ = http(f'https://{CONSOLE}{path}')
+    verdict(st == 404, f'{path} is not published there (HTTP {st})')
+
 # ── 6. Expiry ─────────────────────────────────────────────────────────────
 print('\n== 6. The same token after its 10 minutes')
 time.sleep(610)

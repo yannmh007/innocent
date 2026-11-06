@@ -34,9 +34,16 @@
 //          409 { code: 'other_account' }, 500 { code: 'failed' }.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { clientOptions, keyFacts, keyHeaders, pickKey } from './service_key.js';
 
-const SERVICE_KEY = Deno.env.get('SB_SERVICE_KEY') ??
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+// The Supabase keys (service_key.js, docs/security_review_2026_11.md S1):
+// the new secret and publishable keys, proved by transcode's canary on
+// 6 Nov (its service-role-only claims answered with `apikey` alone). With
+// no new key in the environment this falls back to the legacy key.
+const KEYS = { prefer: 'new' } as const;
+const SERVICE_KEY = pickKey((n) => Deno.env.get(n), 'service', KEYS).key;
+const SERVICE_HEADERS = keyHeaders(SERVICE_KEY);
+console.log(JSON.stringify({ keys: keyFacts((n) => Deno.env.get(n), KEYS) }));
 const BUCKET = 'payment-proofs';
 
 function json(body: unknown, status = 200): Response {
@@ -103,7 +110,7 @@ function installId(raw) {
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return json({ code: 'bad_method' }, 405);
   if (!SERVICE_KEY) return json({ code: 'failed' }, 500);
-  const admin = createClient(Deno.env.get('SUPABASE_URL') ?? '', SERVICE_KEY);
+  const admin = createClient(Deno.env.get('SUPABASE_URL') ?? '', SERVICE_KEY, clientOptions(SERVICE_KEY));
 
   // 1. who
   const token = (req.headers.get('Authorization') ?? '').replace('Bearer ', '');

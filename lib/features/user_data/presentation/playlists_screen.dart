@@ -180,7 +180,7 @@ class PlaylistsScreen extends ConsumerWidget {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: Colors.redAccent.withOpacity(0.15),
+                color: Colors.redAccent.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: const Icon(Icons.favorite,
@@ -365,7 +365,7 @@ class PlaylistsScreen extends ConsumerWidget {
                   Icon(
                     Icons.playlist_play,
                     size: 48,
-                    color: Colors.white.withOpacity(0.25),
+                    color: Colors.white.withValues(alpha: 0.25),
                   ),
                   const SizedBox(height: 12),
                   Text(AppStrings.of(context).noCustomPlaylists,

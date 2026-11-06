@@ -1515,6 +1515,7 @@ class AppStrings {
   String get vhUnavailable => _s('vhUnavailable');
   String get vhWrongDevice => _s('vhWrongDevice');
   String get vhRateLimited => _s('vhRateLimited');
+  String get vhUpdateToPlay => _s('vhUpdateToPlay');
 
 
   // --- Video Hub: see-all / ranked rows ---
@@ -1630,6 +1631,28 @@ class AppStrings {
   String aboutWhatsNewIn(String v) =>
       _s('aboutWhatsNewIn').replaceFirst('{v}', v);
   String get aboutHelpFaq => _s('aboutHelpFaq');
+  String get reportAction => _s('reportAction');
+  String get reportSheetTitle => _s('reportSheetTitle');
+  String get reportAppTitle => _s('reportAppTitle');
+  String get reportIntro => _s('reportIntro');
+  String get reportReasonRights => _s('reportReasonRights');
+  String get reportReasonIllegal => _s('reportReasonIllegal');
+  String get reportReasonMinor => _s('reportReasonMinor');
+  String get reportReasonConsent => _s('reportReasonConsent');
+  String get reportReasonOther => _s('reportReasonOther');
+  String get reportDetailHint => _s('reportDetailHint');
+  String get reportContactHint => _s('reportContactHint');
+  String get reportPrivacy => _s('reportPrivacy');
+  String get reportSend => _s('reportSend');
+  String get reportSent => _s('reportSent');
+  String get reportTooMany => _s('reportTooMany');
+  String get reportFailed => _s('reportFailed');
+  String get reportNeedsDetail => _s('reportNeedsDetail');
+  String get takedownTitle => _s('takedownTitle');
+  String get takedownBody => _s('takedownBody');
+  String get takedownCopy => _s('takedownCopy');
+  String get takedownCopied => _s('takedownCopied');
+  String get takedownReportInApp => _s('takedownReportInApp');
   String get aboutRights => _s('aboutRights');
   String get vhPayShotAttached => _s('vhPayShotAttached');
   String get vhPayShotCheck => _s('vhPayShotCheck');
@@ -3099,6 +3122,28 @@ class AppStrings {
     'aboutWhatsNew': "What's new",
     'aboutWhatsNewIn': "What's new in {v}",
     'aboutHelpFaq': 'Help & FAQ',
+    'reportAction': 'Report',
+    'reportSheetTitle': 'Report this title',
+    'reportAppTitle': 'Report a problem',
+    'reportIntro': 'Why are you reporting it?',
+    'reportReasonRights': "Copyright: it's mine, or it's here without permission",
+    'reportReasonIllegal': 'Illegal content',
+    'reportReasonMinor': 'Someone in it may be under 18',
+    'reportReasonConsent': 'Someone in it did not consent',
+    'reportReasonOther': 'Something else',
+    'reportDetailHint': 'What is wrong? (needed for "Something else")',
+    'reportContactHint': 'Email or phone, if you want a reply (optional)',
+    'reportPrivacy': 'We keep what you write and, if you give it, how to reach you. Nothing else about you.',
+    'reportSend': 'Send',
+    'reportSent': 'Thank you. We will look into it.',
+    'reportTooMany': 'This phone has sent many reports today. Please email us instead.',
+    'reportFailed': 'Could not send. Check your connection and try again.',
+    'reportNeedsDetail': 'Please say what is wrong.',
+    'takedownTitle': 'Copyright & takedown',
+    'takedownBody': 'If you hold the rights to something in Innocent, or something here shows you without your consent, email us. Include the title, why it should be removed (for copyright, proof that the rights are yours) and how to reach you. We read every request and remove what should not be here.',
+    'takedownCopy': 'Copy email',
+    'takedownCopied': 'Email copied',
+    'takedownReportInApp': 'Report from the app',
     'aboutRights': '© 2026 Innocent. All rights reserved.',
     'vhPayShotAttached': 'Receipt attached',
     'vhPayShotCheck': 'Check that the amount and the transaction are visible.',
@@ -3190,6 +3235,7 @@ class AppStrings {
     'vhUnavailable': 'This item is not available yet',
     'vhWrongDevice': 'Your subscription is active, but this phone is not on it. Sign out on a device you no longer use, then try again.',
     'vhRateLimited': 'Too many plays in a short time. Wait a few minutes, then try again.',
+    'vhUpdateToPlay': 'Update the app to play this: Settings → App update.',
     'clearAll': 'Clear all',
     'setupPinConfirmHint': 'Enter the same PIN once more to confirm it.',
     'pinSetFailed': 'Could not save the PIN. Please try again.',
@@ -5437,6 +5483,28 @@ class AppStrings {
     'aboutWhatsNew': 'ဒီဗားရှင်းမှာ ဘာအသစ်ပါလဲ',
     'aboutWhatsNewIn': '{v} မှာ ပါဝင်တဲ့ အသစ်များ',
     'aboutHelpFaq': 'အသုံးပြုနည်း လမ်းညွှန်',
+    'reportAction': 'Report လုပ်ရန်',
+    'reportSheetTitle': 'ဒီဇာတ်ကားကို report လုပ်ရန်',
+    'reportAppTitle': 'ပြဿနာတစ်ခု report လုပ်ရန်',
+    'reportIntro': 'ဘာကြောင့် report လုပ်တာလဲ။',
+    'reportReasonRights': 'မူပိုင်ခွင့် — ကျွန်ုပ်ပိုင်သည်၊ သို့မဟုတ် ခွင့်ပြုချက်မရှိဘဲ တင်ထားသည်',
+    'reportReasonIllegal': 'တရားမဝင်သော အကြောင်းအရာ',
+    'reportReasonMinor': 'အသက် ၁၈ နှစ်မပြည့်သူ ပါဝင်နိုင်သည်',
+    'reportReasonConsent': 'ပါဝင်သူတစ်ဦး၏ ခွင့်ပြုချက် မရှိပါ',
+    'reportReasonOther': 'အခြား',
+    'reportDetailHint': 'ဘာမှားနေလဲ ရေးပေးပါ ("အခြား" ဆိုရင် ရေးရန် လိုပါသည်)',
+    'reportContactHint': 'ပြန်ကြားစေချင်ရင် email သို့မဟုတ် ဖုန်း (မဖြည့်လည်း ရပါသည်)',
+    'reportPrivacy': 'သင်ရေးတာနဲ့ သင်ဖြည့်ပေးတဲ့ ဆက်သွယ်ရန်ကိုပဲ သိမ်းပါတယ်။ သင့်အကြောင်း တခြား ဘာမှ မသိမ်းပါ။',
+    'reportSend': 'ပို့ရန်',
+    'reportSent': 'ကျေးဇူးတင်ပါတယ်။ စစ်ဆေးပေးပါမယ်။',
+    'reportTooMany': 'ဒီဖုန်းကနေ ဒီနေ့ report အများကြီး ပို့ပြီးပါပြီ။ Email နဲ့ ဆက်သွယ်ပေးပါ။',
+    'reportFailed': 'မပို့နိုင်ပါ။ အင်တာနက်ကို စစ်ပြီး ထပ်ကြိုးစားပါ။',
+    'reportNeedsDetail': 'ဘာမှားနေလဲ ရေးပေးပါ။',
+    'takedownTitle': 'မူပိုင်ခွင့်နှင့် ဖယ်ရှားရန် တောင်းဆိုခြင်း',
+    'takedownBody': 'Innocent ထဲက တစ်ခုခုရဲ့ မူပိုင်ခွင့်ကို သင်ပိုင်ရင်၊ ဒါမှမဟုတ် သင့်ခွင့်ပြုချက်မရှိဘဲ သင်ပါဝင်နေတာ ရှိရင် ကျွန်ုပ်တို့ကို email ပို့ပါ။ ဇာတ်ကားအမည်၊ ဘာကြောင့် ဖယ်ရှားသင့်လဲ (မူပိုင်ခွင့်ဆိုရင် သင်ပိုင်ကြောင်း အထောက်အထား) နဲ့ သင့်ကို ဆက်သွယ်ရမယ့်နည်း ထည့်ပေးပါ။ တောင်းဆိုချက်တိုင်းကို ဖတ်ပြီး ဒီမှာ မရှိသင့်တာကို ဖယ်ရှားပါတယ်။',
+    'takedownCopy': 'Email ကူးယူရန်',
+    'takedownCopied': 'Email ကူးယူပြီးပါပြီ',
+    'takedownReportInApp': 'App ထဲကနေ report လုပ်ရန်',
     'aboutRights': '© 2026 Innocent — မူပိုင်ခွင့်အားလုံး ရယူထားသည်။',
     'vhPayShotAttached': 'ပြေစာ ထည့်ပြီးပါပြီ',
     'vhPayShotCheck': 'ငွေပမာဏနဲ့ လွှဲပြောင်းမှု မြင်ရရဲ့လား စစ်ပါ။',
@@ -5528,6 +5596,7 @@ class AppStrings {
     'vhUnavailable': 'ဒီအရာကို မဖွင့်နိုင်သေးပါ',
     'vhWrongDevice': 'သင့် subscription က အသက်ဝင်နေပါတယ်။ ဒါပေမယ့် ဒီဖုန်းက စာရင်းထဲ မပါသေးပါ။ မသုံးတော့တဲ့ စက်တစ်လုံးကနေ ထွက်ပြီးမှ ပြန်စမ်းကြည့်ပါ။',
     'vhRateLimited': 'အချိန်တိုအတွင်း ဖွင့်တာ များလွန်းနေပါတယ်။ မိနစ်အနည်းငယ် စောင့်ပြီးမှ ပြန်ဖွင့်ကြည့်ပါ။',
+    'vhUpdateToPlay': 'ဒါကိုကြည့်ဖို့ အက်ပ်ကို အပ်ဒိတ်လုပ်ပါ — Settings → အက်ပ် အပ်ဒိတ်။',
     'clearAll': 'အားလုံး ရှင်းရန်',
     'setupPinConfirmHint': 'အတည်ပြုရန် တူညီတဲ့ PIN ကို နောက်တစ်ကြိမ် ထည့်ပါ။',
     'pinSetFailed': 'PIN သိမ်းဆည်းလို့ မရပါ။ ထပ်ကြိုးစားကြည့်ပါ။',
@@ -7748,6 +7817,28 @@ class AppStrings {
     'aboutWhatsNew': 'มีอะไรใหม่',
     'aboutWhatsNewIn': 'มีอะไรใหม่ใน {v}',
     'aboutHelpFaq': 'ความช่วยเหลือและคำถามที่พบบ่อย',
+    'reportAction': 'รายงาน',
+    'reportSheetTitle': 'รายงานเรื่องนี้',
+    'reportAppTitle': 'รายงานปัญหา',
+    'reportIntro': 'เหตุผลที่รายงาน',
+    'reportReasonRights': 'ลิขสิทธิ์: เป็นของฉัน หรือถูกนำมาลงโดยไม่ได้รับอนุญาต',
+    'reportReasonIllegal': 'เนื้อหาผิดกฎหมาย',
+    'reportReasonMinor': 'อาจมีผู้ที่อายุต่ำกว่า 18 ปี',
+    'reportReasonConsent': 'ผู้ที่ปรากฏไม่ได้ให้ความยินยอม',
+    'reportReasonOther': 'อื่น ๆ',
+    'reportDetailHint': 'มีอะไรผิดปกติ (จำเป็นสำหรับ "อื่น ๆ")',
+    'reportContactHint': 'อีเมลหรือเบอร์โทร หากต้องการให้ตอบกลับ (ไม่บังคับ)',
+    'reportPrivacy': 'เราเก็บเฉพาะสิ่งที่คุณเขียนและช่องทางติดต่อหากคุณให้ไว้ ไม่เก็บข้อมูลอื่นของคุณ',
+    'reportSend': 'ส่ง',
+    'reportSent': 'ขอบคุณ เราจะตรวจสอบ',
+    'reportTooMany': 'วันนี้โทรศัพท์เครื่องนี้ส่งรายงานหลายครั้งแล้ว โปรดส่งอีเมลถึงเราแทน',
+    'reportFailed': 'ส่งไม่สำเร็จ ตรวจสอบการเชื่อมต่อแล้วลองอีกครั้ง',
+    'reportNeedsDetail': 'โปรดระบุว่ามีอะไรผิดปกติ',
+    'takedownTitle': 'ลิขสิทธิ์และการขอลบเนื้อหา',
+    'takedownBody': 'หากคุณเป็นเจ้าของลิขสิทธิ์ของสิ่งใดใน Innocent หรือมีเนื้อหาที่มีคุณปรากฏโดยไม่ได้รับความยินยอม โปรดส่งอีเมลถึงเรา ระบุชื่อเรื่อง เหตุผลที่ควรลบ (กรณีลิขสิทธิ์ โปรดแนบหลักฐานความเป็นเจ้าของ) และช่องทางติดต่อกลับ เราอ่านทุกคำขอและลบสิ่งที่ไม่ควรอยู่ที่นี่',
+    'takedownCopy': 'คัดลอกอีเมล',
+    'takedownCopied': 'คัดลอกอีเมลแล้ว',
+    'takedownReportInApp': 'รายงานจากในแอป',
     'aboutRights': '© 2026 Innocent สงวนลิขสิทธิ์',
     'vhPayShotAttached': 'แนบใบเสร็จแล้ว',
     'vhPayShotCheck': 'ตรวจว่ามองเห็นยอดเงินและรายการ',
@@ -7839,6 +7930,7 @@ class AppStrings {
     'vhUnavailable': 'ยังไม่สามารถเล่นรายการนี้ได้',
     'vhWrongDevice': 'บัญชีของคุณยังใช้งานได้ แต่เครื่องนี้ยังไม่อยู่ในรายการ โปรดออกจากระบบในเครื่องที่ไม่ได้ใช้แล้ว จากนั้นลองอีกครั้ง',
     'vhRateLimited': 'เปิดเล่นบ่อยเกินไปในเวลาสั้นๆ โปรดรอสักครู่แล้วลองอีกครั้ง',
+    'vhUpdateToPlay': 'อัปเดตแอปเพื่อเล่นรายการนี้: Settings → อัปเดตแอป',
     'clearAll': 'ล้างทั้งหมด',
     'setupPinConfirmHint': 'ป้อน PIN เดิมอีกครั้งเพื่อยืนยัน',
     'pinSetFailed': 'บันทึก PIN ไม่สำเร็จ โปรดลองอีกครั้ง',

@@ -108,6 +108,10 @@ class _ContentListScreenState extends ConsumerState<ContentListScreen> {
     final facets = ref
         .watch(rowFacetsProvider(RowFacetsArg(widget.rowKey)))
         .valueOrNull;
+    // As on the hub: the facets' own names first, the app's otherwise.
+    final appNames = ref.watch(genreNamesProvider);
+    final genreNames =
+        (facets?.genreNames.isEmpty ?? true) ? appNames : facets!.genreNames;
     final maxWidth = MediaQuery.of(context).size.width;
 
     return Scaffold(
@@ -156,6 +160,7 @@ class _ContentListScreenState extends ConsumerState<ContentListScreen> {
                         facets: facets,
                         initial: _filters,
                         countFor: _countFor,
+                        genreNames: genreNames,
                       );
                       if (next != null) _setFilters(next);
                     },
@@ -167,6 +172,7 @@ class _ContentListScreenState extends ConsumerState<ContentListScreen> {
                 child: ActiveFilterChips(
                   filters: _filters,
                   onChanged: _setFilters,
+                  genreNames: genreNames,
                 ),
               ),
             ...PagedPosterGrid.build(

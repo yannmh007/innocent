@@ -135,7 +135,7 @@ class RecycleBinScreen extends ConsumerWidget {
                                 height: 96,
                                 decoration: BoxDecoration(
                                   color: const Color(0xFFC9A98A)
-                                      .withOpacity(0.15),
+                                      .withValues(alpha: 0.15),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                               ),
@@ -298,7 +298,7 @@ class RecycleBinScreen extends ConsumerWidget {
                                 decoration: BoxDecoration(
                                   color: daysLeft <= 7
                                       ? AppColors.error
-                                          .withOpacity(0.18)
+                                          .withValues(alpha: 0.18)
                                       : AppColors.darkSurfaceVariant,
                                   borderRadius: BorderRadius.circular(3),
                                 ),

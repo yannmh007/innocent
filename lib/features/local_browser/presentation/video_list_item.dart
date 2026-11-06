@@ -297,7 +297,7 @@ class VideoListItem extends ConsumerWidget {
                                 part,
                                 style: TextStyle(
                                   color: AppColors.darkOnSurface
-                                      .withOpacity(0.75),
+                                      .withValues(alpha: 0.75),
                                   fontSize: 10,
                                   height: 1.2,
                                 ),
@@ -312,7 +312,7 @@ class VideoListItem extends ConsumerWidget {
                         video.folderPath,
                         style: TextStyle(
                           color: AppColors.darkOnSurface
-                              .withOpacity(0.4),
+                              .withValues(alpha: 0.4),
                           fontSize: 10,
                           height: 1.2,
                         ),

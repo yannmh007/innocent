@@ -36,6 +36,7 @@ import 'album_saver.dart';
 import 'watch_points_provider.dart';
 import '../../player/domain/climb_rule.dart';
 import '../../player/presentation/up_next.dart';
+import '../data/seal/media_seal.dart';
 
 /// Asks the repository for a playable URL and acts on the answer.
 ///
@@ -389,6 +390,17 @@ Future<void> playMedia(
       StreamCacheServer.instance.playAsFile(cacheId);
       MediaKitPlayerService.armExoFile(localUrl);
     }
+    // A SEALED COPY IS NEVER PLAYED FROM ITS REMOTE ADDRESS: without the
+    // proxy's unseal gateway its bytes are noise (docs/MEDIA_ENCRYPTION.md).
+    if (localUrl == null && SealedUrls.of(playUrl) != null) {
+      PlaybackLog.add('sealed copy and no local proxy: not played');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(s.vhUnavailable), duration: const Duration(seconds: 3)),
+        );
+      }
+      return;
+    }
     final openUrl = localUrl ?? playUrl;
     PlaybackLog.add('play through ${ladderUrl != null ? 'the ladder on ExoPlayer' : localUrl == null ? 'the remote address' : 'the local proxy'}');
 
@@ -585,8 +597,11 @@ Future<void> playMedia(
         // opened on is no longer registered.)
         StreamCacheServer.instance.updateUpstream(playingId, freshUrl);
         // Played straight from the network (the proxy would not start), the
-        // address itself is what expired.
-        if (!playingViaProxy) playingUrl = freshUrl;
+        // address itself is what expired — never a sealed one.
+        if (!playingViaProxy) {
+          if (SealedUrls.of(freshUrl) != null) return null;
+          playingUrl = freshUrl;
+        }
         playingHeight = again?.height;
         markPlaying(playingUrl);
         return playingUrl;
@@ -659,6 +674,7 @@ Future<void> playMedia(
           return null;
         }
       }
+      if (nextLocal == null && SealedUrls.of(freshUrl) != null) return null;
       playingHeight = again?.height;
       playingId = nextId;
       playingUrl = nextLocal ?? freshUrl;
@@ -800,6 +816,18 @@ Future<void> playMedia(
       SnackBar(
         content: Text(s.vhRateLimited),
         duration: const Duration(seconds: 4),
+      ),
+    );
+    return;
+  }
+
+  // SEALED, AND THIS BUILD CANNOT OPEN IT: a newer one can. Said as such,
+  // with where the update is, rather than "unavailable".
+  if (grant.denial == AccessDenial.updateRequired) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(s.vhUpdateToPlay),
+        duration: const Duration(seconds: 5),
       ),
     );
     return;

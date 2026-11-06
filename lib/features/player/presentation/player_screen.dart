@@ -2788,7 +2788,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
       // is what makes the phone's back button exit the player — the old code
       // gated on `canPop` flipping to true, which never happened.
       canPop: false,
-      onPopInvoked: (didPop) {
+      onPopInvokedWithResult: (didPop, _) {
         if (didPop) {
           _lockPortraitOnExit();
           return;
@@ -2857,7 +2857,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                   padding: const EdgeInsets.symmetric(
                       horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.7),
+                    color: Colors.black.withValues(alpha: 0.7),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Text(
@@ -2892,7 +2892,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                   padding: const EdgeInsets.symmetric(
                       horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.7),
+                    color: Colors.black.withValues(alpha: 0.7),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Row(
@@ -3480,7 +3480,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                 child: Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: AppColors.error.withOpacity(0.9),
+                    color: AppColors.error.withValues(alpha: 0.9),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Column(
@@ -3898,7 +3898,7 @@ class _TopBar extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: AppColors.accentBlue.withOpacity(0.25),
+                  color: AppColors.accentBlue.withValues(alpha: 0.25),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Row(

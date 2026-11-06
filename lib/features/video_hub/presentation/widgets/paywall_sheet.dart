@@ -101,7 +101,7 @@ class PaywallSheet extends ConsumerWidget {
                   width: 34,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: VH.textTertiary.withOpacity(0.5),
+                    color: VH.textTertiary.withValues(alpha: 0.5),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -300,7 +300,7 @@ class _Plan extends StatelessWidget {
                       note!,
                       style: VH.meta.copyWith(
                         color: recommended
-                            ? VH.textInverse.withOpacity(0.7)
+                            ? VH.textInverse.withValues(alpha: 0.7)
                             : VH.textTertiary,
                         fontSize: 11.5,
                       ),

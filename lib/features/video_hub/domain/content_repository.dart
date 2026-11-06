@@ -2,6 +2,7 @@ import 'access.dart';
 import 'content_category.dart';
 import 'viewer.dart';
 import 'content_filters.dart';
+import 'genre_names.dart';
 import 'video_content.dart';
 
 /// The single seam between the Video Hub UI and whatever is behind it.
@@ -65,6 +66,12 @@ abstract class ContentRepository {
   /// compiled strings. That is what the demo repository returns, what a build
   /// with no backend uses, and what the app falls back to offline.
   Future<CategoryCatalogue> getCategories();
+
+  /// What each genre CODE is called, in each language (migration 058).
+  ///
+  /// Same contract as [getCategories]: [GenreNames.empty] is "no opinion",
+  /// never an error, and every caller then shows the words a title carries.
+  Future<GenreNames> getGenreNames();
 
   /// The FULL list behind one of the landing rows, filtered, sorted and paged.
   ///

@@ -180,7 +180,9 @@ class _DownloadActionState extends ConsumerState<DownloadAction> {
                 ? s.vhDownloadWifiOnlyBlocked
                 : failed == 'denied:rateLimited'
                     ? s.vhRateLimited
-                    : s.vhUnavailable;
+                    : failed == 'denied:updateRequired'
+                        ? s.vhUpdateToPlay
+                        : s.vhUnavailable;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message)),
     );

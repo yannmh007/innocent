@@ -99,7 +99,7 @@ class PosterCard extends StatelessWidget {
                       begin: Alignment.bottomCenter,
                       end: Alignment.topCenter,
                       colors: <Color>[
-                        Colors.black.withOpacity(0.5),
+                        Colors.black.withValues(alpha: 0.5),
                         Colors.transparent,
                       ],
                     ),
@@ -189,8 +189,8 @@ class PosterCard extends StatelessWidget {
                   child: InkWell(
                     onTap: onTap,
                     onLongPress: onLongPress,
-                    splashColor: Colors.white.withOpacity(0.10),
-                    highlightColor: Colors.white.withOpacity(0.05),
+                    splashColor: Colors.white.withValues(alpha: 0.10),
+                    highlightColor: Colors.white.withValues(alpha: 0.05),
                   ),
                 ),
               ),
@@ -272,8 +272,8 @@ class _Marker extends StatelessWidget {
       alignment: Alignment.center,
       decoration: BoxDecoration(
         color: prominent
-            ? Colors.white.withOpacity(0.92)
-            : Colors.black.withOpacity(0.62),
+            ? Colors.white.withValues(alpha: 0.92)
+            : Colors.black.withValues(alpha: 0.62),
         borderRadius: BorderRadius.circular(5),
       ),
       child: Text(
@@ -297,7 +297,7 @@ class _PremiumTag extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
       decoration: BoxDecoration(
-        color: VH.textPrimary.withOpacity(0.92),
+        color: VH.textPrimary.withValues(alpha: 0.92),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(

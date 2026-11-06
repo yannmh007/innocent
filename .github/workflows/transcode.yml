@@ -77,11 +77,17 @@ jobs:
             echo "TRANSCODE_SECRET or SUPABASE_URL not set — nothing to do."
             echo "job=none" >> "$GITHUB_OUTPUT"; exit 0
           fi
+          # A RUNNER SAYS WHETHER IT SEALS (migration 070): only one whose
+          # Python opens the media seal (tool/media_seal.py) is handed a
+          # sealed master, or a film the switch wants sealed.
+          seals=0
+          if python3 -c "import sys; sys.path.insert(0, 'tool'); import media_seal" >/dev/null 2>&1; then seals=1; fi
+          echo "seals=$seals" >> "$GITHUB_OUTPUT"
           code=$(curl -sS -o /tmp/job.json -w '%{http_code}' \
             -X POST "$SB_URL/functions/v1/transcode" \
             -H "Authorization: Bearer $RUNNER_SECRET" \
             -H 'Content-Type: application/json' \
-            -d '{"op":"claim"}')
+            -d "{\"op\":\"claim\",\"seals\":$seals}")
           if [ "$code" != "200" ]; then
             echo "claim returned $code"; echo "job=none" >> "$GITHUB_OUTPUT"; exit 0
           fi
@@ -114,7 +120,7 @@ jobs:
             -X POST "$SB_URL/functions/v1/transcode" \
             -H "Authorization: Bearer $RUNNER_SECRET" \
             -H 'Content-Type: application/json' \
-            -d '{"op":"frames_claim"}' || echo 000)
+            -d "{\"op\":\"frames_claim\",\"seals\":${{ steps.claim.outputs.seals || 0 }}}" || echo 000)
           n=$(python3 -c "import json;print(len(json.load(open('/tmp/frames.json')).get('jobs') or []))" 2>/dev/null || echo 0)
           echo "frames: HTTP $code, $n video(s)"
           if [ "$code" = "200" ] && [ "$n" -gt 0 ]; then
@@ -175,6 +181,9 @@ jobs:
           export SRC_URL="$(python3 -c "import json;print(json.load(open('/tmp/job.json'))['src_url'])")"
           export DONE_URL="$(python3 -c "import json;print(json.load(open('/tmp/job.json'))['done_url'])")"
           export PUT_BASE="$(python3 -c "import json;print(json.dumps(json.load(open('/tmp/job.json'))['put']))")"
+          # The media seal's part of the job (docs/MEDIA_ENCRYPTION.md §7):
+          # read from the file by tool/transcode_seal.py, never printed.
+          export JOB_FILE=/tmp/job.json
           bash tool/transcode.sh
 
       - name: Say so when it did not work

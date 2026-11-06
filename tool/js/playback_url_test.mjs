@@ -43,7 +43,7 @@ check('a rung with no URL is never chosen',
 
 // The original is sealed only when it is in R2, and the refusal exists.
 check('the original is sealed only when it is in R2',
-  /const masterUrl = masterInR2 \? await workerUrl\(objectKey, who\) : null;/.test(src));
+  /const masterSigned = masterInR2 \? await signFor\(objectKey\) : null;\s*const masterUrl = masterSigned \? await workerUrl\(masterSigned\.key, who\) : null;/.test(src));
 check('no URL at all is a refusal, logged',
   /if \(!url\) \{[\s\S]{0,400}logRefusal\(masterInR2 \? 'no_url' : 'master_in_telegram'/.test(src));
 
@@ -54,8 +54,19 @@ check('request-playback presigns nothing (v4)',
 check('no Worker secrets is a 503, before any URL is made',
   /if \(!STREAM_BASE \|\| !STREAM_TOKEN_SECRET\) \{\s*logRefusal\('stream_not_configured'[\s\S]{0,80}503\)/.test(src) &&
   src.indexOf("'stream_not_configured'") < src.indexOf('const masterUrl ='));
+// Media seal: SEAL_MODE read strictly (media_grant.js sealMode: off / ask /
+// on, unknown is ask), and a request that does not look for seals consults
+// nothing and gains nothing (docs/MEDIA_ENCRYPTION.md §9). Under `ask` that
+// is every request without `seal: 1` — every released app.
+check('seals are looked for only as SEAL_MODE and the request say',
+  /const SEAL_MODE = sealMode\(Deno\.env\.get\('SEAL_MODE'\)\);/.test(src) &&
+  /if \(!looksForSeals\(SEAL_MODE, body\)\) return null;/.test(src));
+check('off, the response gains no field',
+  /\.\.\.\(sealing \? \{ seal_v: 1 \} : \{\}\)/.test(src) && /return seal \? \{ seal \} : \{\};/.test(src));
+check('an object that exists only sealed is a 426 for an app that cannot open it',
+  /if \(!url && sealedOnly > 0\) \{[\s\S]{0,400}'update_required' \}, 426\)/.test(src));
 check('a rung whose token cannot be sealed is left out, not presigned',
-  /const rUrl = await workerUrl\(key, who\);\s*if \(!rUrl\) continue;/.test(src));
+  /const rUrl = await workerUrl\(s\.key, who\);\s*if \(!rUrl\) continue;/.test(src));
 
 // v4: a premium grant needs the install id; without it the two-device count
 // was skipped.

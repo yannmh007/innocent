@@ -205,6 +205,13 @@ jobs:
       - name: Structural checks
         run: python3 tool/check.py
 
+      # The phone's half of the media seal (MediaSeal.kt) on a plain JVM,
+      # against the vectors Google Tink opens. It is the code that opens every
+      # photo and film once R2 holds only sealed objects, so it is checked
+      # before an APK carrying it is built (docs/MEDIA_ENCRYPTION.md).
+      - name: Media seal on the JVM
+        run: (cd tool/sealjvm && gradle test --no-daemon --console=plain)
+
       # Errors fail the build. Warnings and infos do not — yet.
       #
       # analysis_options.yaml deliberately runs a wide rule set and there is a

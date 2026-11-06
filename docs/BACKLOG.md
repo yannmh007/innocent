@@ -15,33 +15,47 @@ Written at the owner's request so nothing below is lost between sessions.
 Newest first within each group; tick an item by deleting it in the commit that
 does it.
 
-### Next app release (1.64.79)
-- **1.64.78 is out** (30 Oct 12:43 UTC, main 46e45a7, build 41051432695).
+### Next app release (1.64.80, 6 Nov)
+- **1.64.79 is out** (31 Oct 08:51 UTC, main 7722136).
+- **1.64.80** goes out on 6 Nov. It carries Report on every title and the
+  takedown address in About (P6), genres by code in the phone's language
+  (TAX phase 3), the media seal's app half (the opener, the device key, the
+  unseal gateway, sealed images) DORMANT — the build asks for no sealed
+  copy (docs/MEDIA_ENCRYPTION.md §9 step A) — the key attestation code
+  (sent only by a build that asks), and the deprecated-API renames
+  (d709830). The console, its edge modules and the runners' sealing code
+  reach main with it.
+- **Left out of 1.64.80, by design**: the Google sign-in nonce (29b71b2,
+  `api_account_repository.dart`, its test) and the lab's own hooks
+  (`lib/app.dart` tour skip, `rungKbps`, `ladderRungKbps`).
 - **Google sign-in nonce (29b71b2)** waits on the branch: no lab can sign in
   with Google. Before it ships, the owner signs in once with a build that
   carries it (a branch build's APK); if Google refuses the token, it stays out.
+- **A release that asks for sealed copies** (§9 step C needs one as
+  `min_supported`) waits for §8's gates: proxy CPU per MB and frozen time.
+  R8 (attestation `app: ok`) can only be read from such a build.
 - **The OPPO's Original on a borderline line** (Test Lab 41047246611): the
   10 Mbit/s Original stalled 8 s on a 4-14 Mbit/s line. The lab only skips
   it when the line is measured below the copy's bitrate; a line that swings
   around it fails. Not a regression; worth a look at how the Original's
   first fill sizes itself.
-- **Vault cooling-off on the boot clock** (on the branch): five wrong PINs
-  locked the vault until a wall-clock time, and moving the date forward in
-  Settings ended the wait (OWASP MASTG local-auth). It now counts time since
-  boot (SystemClock.elapsedRealtime), which no setting changes; a reboot
-  starts the wait again. test/private_folder_lockout_test.dart, 12 tests,
-  5 of them fail on the old code. No lab flow drives the vault yet: write
-  one (set a PIN, five misses, the wait) before this ships.
-- **Android libraries raised** (on the branch): BouncyCastle 1.81 -> 1.86
-  (two critical advisories), Guava 33.7.2, Jackson 2.13.5. Proved: device
-  lab run 41092354010 (adb_own; network: SMB, FTP, FTPS and SFTP browse
-  and play in the app), netlab JVM 22 of 22 on real Samba, vsftpd and
-  OpenSSH, AdbIdentityTest. The downloader (yt-dlp, Jackson) has no lab
-  flow; one real link on a phone before this ships.
-- **"Media only" in the Local Network browser** says on/off to TalkBack;
-  NetPlugin logs every failed call (on the branch).
 
 ### Verify what is live but not yet exercised
+- **R8 — key attestation, real chains**: SEEN 6 Nov on the emulator
+  (software, unknown root) and on Test Lab's realme (google-ec, TEE,
+  verified, locked) and OPPO (google-rsa, TEE, verified, locked), key and
+  challenge matching, revocation list read; only `app` failed, which is
+  right for a debug-signed lab build. Left: the first RELEASE build that
+  asks for sealed copies must read `ok: true` (`app: ok`) on a real phone,
+  in the function log and in `devices.attest`, before anything is
+  enforced. 1.64.80 asks for none, so it sends no chain.
+- **R7 — the new Supabase keys, first real calls** (since 6 Nov): studio
+  (the console), premium-request, delete-account, probe-media,
+  backfill-dimensions, self-test. In the logs, each boot says `service:
+  SUPABASE_SECRET_KEYS.default` and the calls are not 5xx. Also, in the
+  gateway logs (edge_logs, `request.sb.jwt.apikey.payload.role`), no
+  `service_role` or `anon` legacy JWT after 6 Nov 02:40 UTC, before the
+  owner deactivates the legacy keys.
 - **Sealed payment fields (migration 054, premium-request v15)**: the first
   sealed request (1ccbfbc5) is in, phone sealed and masked, no plain numbers
   anywhere. Still to see: the console's Requests page opening it (the number
@@ -96,6 +110,49 @@ does it.
   defers the file (not a failure) and the next run takes it.
 
 ### Security, next
+- **Review of 5 Nov 2026: `docs/security_review_2026_11.md`** — findings
+  S1-S10, plan P1-P7. Carry these until each is done:
+  - **S1/P1 — DEADLINE 31 Dec 2026**: every function on the new secret
+    key since 6 Nov (39daef0; canary transcode v26, then ingest v49,
+    request-playback v42, studio v50, probe-media v25,
+    backfill-dimensions v28, self-test v30, premium-request v18,
+    delete-account v7). Owner, no code: asymmetric JWT signing keys; then,
+    after a quiet week in the gateway logs, deactivate the legacy anon and
+    service_role keys; then delete the Edge secret `SB_SERVICE_KEY` (legacy
+    JWT, no longer read).
+  - **S2/P2**: ENC rollout A→F; every film and photo is still plain in R2.
+  - **S3/P3**: key attestation BUILT 6 Nov, log mode (6a87482:
+    key_attest.js, request-playback v43, migration 074, app key v2 with the
+    next release). Next: R8 (real chains), then P3b (the stream token
+    wrapped for the attested key, so a plain grant needs the phone too),
+    then `require` for premium. The owner is told in Telegram when one
+    install/account/network pulls far more than a person (migration 075,
+    ingest v50, refuses nothing). A lower cap waits for that data: today
+    it would be a guess (4 titles; busiest install 2 titles a day). Bytes
+    per account need a Worker counter and a Cloudflare token to read it.
+  - **S4/P4**: BUILT 6 Nov (docs/console, console_origins.js live in studio
+    v51, ingest v52, transcode v27, probe-media v26; the stream Worker's
+    origin on the branch; console_build_test.mjs 20 checks). ON MAIN 6 Nov
+    (b6fc0d0: docs/console and the stream Worker's origin; docs only, no
+    build; Playback check 42208213495 passed after). ON 6 Nov: the owner
+    did the four steps (Worker `innocent-console` built from the repo,
+    workers.dev off; the WAF rules were already limited to `stream.`;
+    Supabase redirect URL added; signed in, Dashboard loads; Transport
+    check 42211630577 section 9: headers live, no docs/ served). Retire the
+    Pages copy after a week of use (from 13 Nov): docs/console/README.md
+    "Afterwards".
+  - **S5/P5 (owner)**: passkeys on GitHub, Cloudflare, Supabase and Google;
+    Telegram 2-step; a fine-grained, expiring `GH_DISPATCH_TOKEN`; a `main`
+    ruleset; secret scanning with push protection; Dependabot; CodeQL.
+  - **S7/P6**: BUILT 6 Nov — takedown address innocentmail69@gmail.com in
+    About, Report on every title (next release), migration 076 live (budget
+    5/phone/day, owner told in Telegram by ingest v51). Left: a Reports page
+    in the console; the owner keeps a rights record per title. Hiding the
+    host from abuse reports is NOT a goal (§0).
+  - **S8-S10/P7**: S8 closed 6 Nov (transport check section 8: `/rest/v1/`
+    answers the publishable key 401; run 42177384203). S10 accepted with its
+    reason (review P7). Owner: Data API → turn off auto-expose of new
+    tables; Files → Scan (R2).
 - **Telegram ingest FOLDERS still plain**: the folder segment is what the
   operator typed (`spider-man/video/…`). Making it `f/<20 hex>` like console
   uploads means every place that takes a folder as the key's first segment
@@ -128,15 +185,259 @@ does it.
 - [x] Phase 3, the app (branch `e72b278`, ships in the next release):
   `rpc/taxonomy` once for tabs and names, a category asked by its code, genre
   filters by code, names in the phone's language, never a raw code on
-  screen. 21 tests. Lab proof with the release.
+  screen. 23 tests; full suite 1235 of 1235. Device lab on the live
+  catalogue: run 41186616962 caught the filter sheet drawing "G001 G002
+  G003" (it read the names before they had arrived; be7169a: the facets
+  carry their names), run 41188669198 passed (names, Animation lists Sintel
+  and not Tears of Steel, no code on any screen). Test Lab with the release.
 - [ ] Phase 4, once no app that reads the old text is left: drop
   `titles.category` and `titles.genres` (and `categories.id` as the key).
 
+### Media encryption (ENC, the owner's request of 31 Oct; spec docs/MEDIA_ENCRYPTION.md)
+
+#### ENC checks with a date — LOOK AGAIN ON THE DAY (recorded 5 Nov)
+Things that are live and believed right, but whose proof comes later. Each
+says when, exactly what to run, and what counts as right. Tick it with the
+evidence; if it is wrong, it becomes an open item below.
+
+- [ ] **R1 — 12 Nov, after 12:43 UTC: the bin deletes the twelve replaced
+  twins of Big Buck Bunny** (2 rungs, 10 stills, binned by run 42029250311).
+  `select key, purged_at, purge_error from r2_trash where reason like
+  'sealed copy replaced%'` → every row purged, no error. Then BBB still has
+  exactly one key row per rung and per still (`media_keys` plain_key
+  `video/open-film-big-buck-bunny/master-%p.mp4` → 2; `media_image_keys`
+  plain_key `…/thumb/master-f0%.jpg` → 10), and the next sealed lab run
+  on BBB still says "3 of 3 copies sealed".
+- [ ] **R2 — after the owner's next Files → Scan: folder `s`.** Every
+  `s/` object shows "sealed copy" with its title, except O14's orphan
+  (the only one unused). Bin that one. `select count(*) from r2_inventory
+  i where key like 's/%' and not exists (select 1 from r2_refs() r where
+  r.key = i.key)` → 1 before, 0 after.
+- [ ] **R3 — daily until 12 Nov: the pipelines' function logs.** No
+  "seal refused", "settle failed", "MEDIA_KEK unreadable", and no 5xx from
+  `transcode`, `ingest`, `studio`, `probe-media` or `backfill-dimensions`
+  (`function_logs` / `function_edge_logs`). Live versions (5 Nov): transcode
+  v25 (209f5e1), ingest v48 (1058fd5), studio v49 (6ecba09), probe-media v24
+  and backfill-dimensions v27 (ac29482); migrations through 073.
+- [ ] **R4 — at the start of every session: the switch is `off`.**
+  `select seal_new from admin_settings` → `off`, unless a canary is running
+  that session. A switch left on hands open films to the branch runner
+  only.
+- [ ] **R5 — after every migration that touches r2_refs, a claim, or a
+  key table:** tool/sql/media_keys_test.sql, video_frames_test.sql and
+  storage_test.sql, each in its rolled-back transaction on the live
+  database, end on their PASSED message.
+- [ ] **R6 — when ENC-4 reaches main:** every claim arrives with
+  `seals: 1` / `can: [..., "seal"]` (O17), and the device lab and Test Lab
+  settings are put back (O12).
+
+#### ENC open items — NOT CERTAIN OR NOT FINISHED (recorded 5 Nov; keep until each is closed)
+Each: what is known, why it is open, the next step, and when it is done.
+Nothing here may be dropped silently: close it with its evidence, or move it.
+
+- [ ] **O1 Proxy CPU per MB (§8 gate NOT met).** proxy_cpu_bench
+  BENCH_MEDIA_SEAL=1: 75 ms/MB against 66-69 for the sealed cache alone
+  (+7-10, desktop). The codec is 0.25 ms/MB of it, a plain loopback relay
+  3-6 — most is the gateway→proxy loopback HTTP hop. Phones: main thread
+  realme 7 % (plain 12), OPPO 11 % (plain 4) — lines differed. Next: a
+  like-for-like phone run (O2); if the main thread is higher there, route
+  the gateway into the proxy in-process (no loopback hop). Done: bench and
+  phone within the plain figures, or the owner accepts the cost.
+- [ ] **O2 Frozen time not shown like-for-like (§8 gate open).** OPPO sealed
+  froze longer (seek 2.4 s vs 0.7, back to Auto 7.1 vs 1.1, far jump 2.0 vs
+  0.8) on a line a third as fast; the realme froze less everywhere; device
+  lab seek/far jump about +0.5-1 s over plain runs. Next: plain and sealed
+  lab builds back to back on the same phone in the same hour (2 Test Lab
+  runs each phone), and the same in the device lab. Done: sealed not longer
+  than plain on the same line.
+- [ ] **O3 Worker answers slow for sealed twins.** 400-850 ms even on a
+  reused connection (run 41988997290), plain 250-900. Thought: R2 keeps the
+  much-read plain copies hot, the new twins are cold. Not proven. Next: a
+  probe from one runner timing plain and sealed objects of the same film,
+  ten each, cold and repeated. Done: the cause named, with numbers.
+- [ ] **O4 Many new connections.** 31 Worker answers on new connections in
+  one lab session after the pool fix (each cut connection is gone). Next:
+  count fetches against new connections in the trail; consider keeping a
+  part nearly done instead of cutting (as the proxy's finish-below does).
+  Done: new connections only where a cut made them unavoidable.
+- [ ] **O5 Album photos not seen opening on a device.** The lab flow
+  sealed_images reached the hub and Sintel's page (posters opened, none
+  refused) but not the album cell ("1 of N" not found by its scroll). Next:
+  loosen the flow (scroll, regex), and log every photo open in lab builds.
+  Done: a photo and its next one opened in the viewer, in the trail.
+- [ ] **O6 Downloads not measured sealed (§8 gate open).** Sealed downloads
+  pass the unit tests only. Next: the downloads flow in the device lab on a
+  sealed build, speed and CPU against a plain run. Done: not slower, not
+  heavier.
+- [ ] **O7 32-bit phone not tried (§8 gate open).** "opens ≥ 20× its
+  bitrate" never run. Next: DEVICES32 in Test Lab with MEDIA_SEAL=1. Done:
+  a 32-bit phone plays the sealed film.
+- [ ] **O8 Corrupt segment only tested off-device (§8).** Next: a lab
+  switch that flips a byte in the gateway's input once. Done: refetched once,
+  then a clear error, no crash, on a device.
+- [x] **O9 Seek-bar preview pictures — not R2 objects (corrected 5 Nov).**
+  The phone takes them from the smallest rung through the gateway
+  (media_kit_player_service ladderPreview); the lab's preview-far, -again
+  and -next passed on every sealed run (e.g. 42013700193). What the
+  pipelines DO make as images — the cover picker's ten stills
+  (tool/frames.py) and thumbnails — are in ENC-4 §7.3.
+- [ ] **O10 Image keys are in the database in the clear (decided, recorded).**
+  A poster's or photo's DEK is in media_image_keys (no app role reads it),
+  so a database dump together with the bucket opens the images; a film
+  needs MEDIA_KEK as well. Accepted for images in the spec (§5). Revisit
+  only if the owner wants images to need the KEK too.
+- [ ] **O11 Lessons to turn into checks.** (a) A migration touching a view
+  must be dry-run AS anon and AS authenticated (063's six minutes). (b)
+  tool/check.py before every push (238d7a4 went out with ingest_test red).
+  Next: a tool that runs a migration in a rolled-back transaction under
+  each app role and compares the catalogue reads. Done: in tool/check.py or
+  the runbook.
+- [ ] **O12 Lab settings to put back.** test_device/config.env and
+  cloud.env carry MEDIA_SEAL=1 and FLOWS="sealed_images jumps", and
+  config.env JUMPS_TITLE=Big Buck Bunny (5 Nov, the pipeline's sealed
+  rungs); main must never carry them. Put back when the seal labs end.
+- [ ] **O13 Plain copies of the canary stay in R2** until ENC-5 removes
+  them after the forced update; until then a plain URL still opens them.
+- [ ] **O14 One orphan sealed still from the first canary (5 Nov).** Run
+  42025083706's tenth still (`s/715c6125…`, Big Buck Bunny f00) was
+  uploaded, then refused (409: the still already had a twin), before 069
+  replaced stale twins and binned refusals. No row names it, so the next
+  Files → Scan lists it in folder `s` as unused. Next: after the scan, bin
+  it from the Files page (the only `s/` object with no key row). Done: in
+  the bin, then purged.
+- [ ] **O15 Pipelines settle twins; the twin job and the console do not
+  yet.** 069/070 keep transcode's rungs and stills in step with their
+  twins. A plain object rewritten by anything else (the console's upload
+  into an existing key, a file manager move, a restore from Telegram)
+  leaves its twin stale or misnamed. Next: §7.4 steps 3-5 call
+  media_key_put / media_keys_settle, and the move rewrites `plain_key`.
+  Done: every writer named in §7.3 does.
+- [ ] **O16 Sealed downloads and replaced twins.** A replaced twin's
+  sealed copy is purged after a week. A phone that downloaded the old
+  sealed rung keeps its own copy and key, so offline play is unaffected;
+  but nothing yet renews such a download's grant. Next: decide with O6
+  (sealed downloads) whether an offline copy outlives its key row. Done:
+  the rule written in §6 and tested.
+- [ ] **O18 Off-site copy of a born-sealed master from Telegram.** The
+  off-site job reads R2 when R2 has the file and the Telegram copy when it
+  does not. For a master born sealed (`on`) and moved to Telegram, that
+  copy is PLAIN, so the off-site bucket would get plain bytes. Next: when
+  `on` nears, either seal it on the runner under the master's own key row
+  (kept while the Telegram copy is the master's) or copy only from R2.
+  Done: no plain byte in the off-site bucket for a sealed master.
+- [ ] **O19 Telegram pipeline not yet run for real.** Built and tested
+  against a fake Telegram and a rolled-back database (§7.4 step 3); no
+  open film comes through Telegram, so the first real run is with the
+  switch `on`. Next: before `on`, one forwarded test file with the switch
+  at `on` for a minute (born sealed end to end: ingest, attach, play),
+  then back to `off`. Done: that file plays sealed on a phone.
+- [ ] **O20 Console sealing not yet run live.** Built and tested in
+  Chromium against a fake studio and R2 (§7.4 step 4). Pages serves the
+  console from main, so the live canary waits for the next release: then,
+  with the switch at `canary` for a minute, upload one photo into an open
+  film's album from a phone (a twin: plain + sealed, the key row from
+  media_upload_keys), check it in media_image_keys and in the app, and put
+  the switch back. Also then: a 40 MB file with the switch `on` for a
+  minute, killed mid-upload and resumed (sealResume once, only the missing
+  parts sent), then deleted. Done: both on the live console, from a phone.
+- [ ] **O21 Photos that are not JPEG keep their metadata.** jpeg_clean.js
+  cleans JPEG (what phones send by default) and refuses a JPEG it cannot
+  walk; PNG, WebP and HEIC go as they are, with a warning in the upload
+  row. HEIC can carry GPS. Next: decide — convert HEIC/WebP to JPEG in the
+  browser (re-encode), or strip their metadata blocks, or refuse them.
+  Done: no photo format reaches the public bucket with a location.
+- [ ] **O22 Sealing speed on a phone not measured.** WebCrypto seals each
+  16 MiB part as 256 AES-GCM segments; on a desktop this is far faster
+  than any uplink. Next: time a 500 MB sealed upload from the operator's
+  phone against a plain one. Done: sealing adds under 10 % to the upload,
+  or the part is sealed in a Worker thread.
+- [ ] **O23 Pending upload keys and abandoned sealed objects.** A sealed
+  single-PUT object whose `sealCommit` never came (the tab died after the
+  PUT, before the commit) is in R2 with no key row; its pending key stays
+  in media_upload_keys for eight days, then goes. The Files page lists the
+  object as unused after a scan. Next: the bin's housekeeping bins `s/`
+  objects named by an expired pending key. Done: none left after a week.
+- [ ] **O24 The console's sealed preview not seen live.** Built and
+  tested in Chromium against stand-ins (§7.4 step 8). Live it needs: the
+  console on Pages (next release), and the streaming Worker answering the
+  console's origin with CORS for ranges (it does today, for the speed test:
+  `STUDIO_ORIGINS`, Content-Range exposed). Next: with a sealed film and a
+  sealed photo in a draft (O20's canary), preview each from Review and from
+  Files on the operator's phone. Done: both shown, nothing plain fetched.
+- [ ] **O25 A module Service Worker on older browsers.** The console's
+  sealed film preview needs a module Service Worker (Chromium 91+,
+  Safari 15+, Firefox recent). A browser without one says so instead of
+  playing. Next: note the browser the operator uses; if it lacks module
+  workers, bundle the format into a classic worker. Done: the operator's
+  browser plays a sealed preview.
+- [ ] **O17 Old runners and the seals flag.** Main's runner (no sealing
+  code) now gets only plain work (070). When ENC-4 reaches main, every
+  runner sends `seals: 1`. Next: after that release, confirm from the
+  function log that no claim arrives without it. Done: one week of claims
+  all with seals.
+- [x] ENC-0/1: the spec; seal v1 in Python, JS, Kotlin and Dart, each
+  checked against Tink (`tool/media_seal_test.py`) and shared vectors.
+- [x] ENC-2: migration 060 (`media_keys`, `devices.public_key`), live;
+  request-playback v40 with the seal plan behind `SEAL_MODE` (off);
+  `MEDIA_KEK_V1` set by the owner, check value `f3bfb0d1` (RUNBOOK 4d).
+- [x] ENC-3, the app (branch, 1 Nov): Keystore device key, keyring, the
+  unseal gateway in front of the stream proxy, downloads through it, no
+  sealed URL ever played directly; 26 new tests, full suite green, branch
+  build 41276775374 green. Behind `kAsksForSealed` (MEDIA_SEAL=1 for labs).
+- [x] ENC-3 images (5 Nov): migrations 063-066 (media_image_keys; a
+  poster's key in title_cards and the landing cards, a photo's beside its
+  address in title_media; the helpers in a `private` schema no URL reaches),
+  SealKeyring.openWhole, SealedFileImage, the poster cache and photo
+  downloads keep sealed images whole, a build that asks reads title_cards.
+  Twins of all 52 images of the four open films (run 42008144845, ingest
+  v45). 063 first left title_media refusing the app roles for six minutes
+  (a view checks a function's EXECUTE as its reader); no app request came
+  in that window; 065 fixed it and every catalogue read was checked as
+  anon and authenticated.
+- [ ] ENC-3, left: proxy CPU per MB is +7-10 ms/MB on the bench (the
+  loopback hop, §8); real phones decide whether the in-process route is
+  needed. Seek-bar preview pictures are not sealed yet (ENC-4).
+- [x] request-playback v41: `SEAL_MODE` ask/on/off, `ask` by default; the
+  seal block carries the header (migration 061). Transport check 41278679967
+  green; KEK check value `f3bfb0d1` again on fresh instances.
+- [x] Canary copies (ENC-5 B, 1 Nov): ingest v44 seal_plan / seal_commit /
+  sweep, tool/seal_twins.py, seed-open-films task `seal`. Nine twins
+  recorded (run 41292286979). The first run (41286865663) found 060 had
+  granted service_role nothing on media_keys - request-playback could not
+  have read a key either; 062 grants SELECT and INSERT only.
+- [ ] Canary in the labs: device lab jumps on a MEDIA_SEAL=1 build (run
+  41293034978): sealed path throughout (5 of 5 copies, key held, gateway),
+  15/16. The failure, skip+30 frozen 5.3 s: the jump joined a segment far
+  down the cancelled read-ahead's fetch and waited 3.9 s for it; the
+  gateway now joins only a segment about to arrive (§6). Run 41984466643:
+  16/16, skip+30 frozen 1.0 s — but jumps answered in 0.55-2.2 s against
+  0.25-0.9 s plain: no connection to the Worker was ever used twice (a
+  finished fetch destroyed its socket, and each object had its own pool).
+  Fixed (one pool, a finished fetch gives its connection back): run
+  41988997290 16/16, skip+30 0.4 s, answers 0.34-1.4 s; run 42008905621
+  16/16. Test Lab 42008905511 (sealed, both phones): realme 16/16, OPPO
+  15/15 — real-phone gate passed; the OPPO froze longer on a slower line
+  (§8), and its 7.1 s showed the gateway reading on after the proxy let go:
+  it now cuts at once. Run 42013700193 (the cut, and flow sealed_images):
+  jumps 16/16 for the fourth run running; the hub's and Sintel's posters
+  opened as sealed images, none refused. The flow did not reach the album
+  cell ("1 of N" not found by its scroll) — loosen it at the next run.
+  Still to do: frozen time on a like-for-like line (plain and sealed builds
+  back to back on one phone).
+- [ ] ENC-4, the pipelines: ingest, console upload, transcode, probe,
+  console preview (in progress 5 Nov; see the spec §7).
+- [ ] ENC-5, rollout: canary on Sintel and Tears of Steel, `min_supported`,
+  the migration job (skips the do-not-touch list), B2 Object Lock after.
 ### Quality
 - ~~Two sealed stream-cache timing tests fail under the full parallel run.~~
   Done 31 Oct: the trickle bound is half the film, and the step-back case
   found a real fault — a flush into a reset connection could hold a
   stretch open for seconds after a seek; it now ends at the hang-up.
+- `tool/js/console_smoke.mjs` failed twice on 1 Nov ("upload: the resume
+  sent only what was missing (1,2,3)", then "(1,1,2,3)" — part 1 sent twice)
+  with the console untouched; reruns pass. A timing assumption in the resume
+  check, or a real double send of the first part after a resume — find it
+  rather than rerun.
 - Burmese Settings still shows Pop-up Play, Decoder, Development and
   Diagnostics in English — decide whether those stay technical terms.
 

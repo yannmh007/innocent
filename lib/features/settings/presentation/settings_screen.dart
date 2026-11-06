@@ -105,7 +105,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onTap: () => _open(i, screens[i]),
               child: Container(
                 color: isSelected
-                    ? AppColors.primaryBlue.withOpacity(0.12)
+                    ? AppColors.primaryBlue.withValues(alpha: 0.12)
                     : Colors.transparent,
                 padding:
                     const EdgeInsets.symmetric(horizontal: 20, vertical: 15),

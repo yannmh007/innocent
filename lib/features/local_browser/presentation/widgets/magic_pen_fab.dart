@@ -30,7 +30,7 @@ class MagicPenFab extends StatelessWidget {
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.3),
+                color: Colors.black.withValues(alpha: 0.3),
                 blurRadius: 6,
                 offset: const Offset(0, 2),
               ),
@@ -51,7 +51,7 @@ class _PenSparkPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.white.withOpacity(0.95)
+      ..color = Colors.white.withValues(alpha: 0.95)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.6
       ..strokeCap = StrokeCap.round;

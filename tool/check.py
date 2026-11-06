@@ -112,6 +112,20 @@ CHECKS = [
      'an album blurhash the app cannot read back: the runner encodes and the '
      'app decodes with two ports of one algorithm, and a slip in either draws '
      'every data-saver tile the wrong colour without an error anywhere'),
+    ('media_seal_test.py', None,
+     'a sealed photo or film that does not open, or opens to the wrong bytes: '
+     'the runner seals, the console seals, the phone opens, three ports of '
+     'one format; checked against vectors Google Tink itself opens, and a '
+     'flipped byte, a cut or swapped segment, or the wrong key must refuse'),
+    ('unseal_proxy_test.py', None,
+     'a runner reading a sealed film by range wrongly: a range not exact, a '
+     'seek that fetches the whole film, or an altered segment passed to ffmpeg '
+     '(the ffmpeg half runs wherever ffmpeg is on PATH)'),
+    ('transcode_seal_test.py', None,
+     'a transcode that seals wrongly: a sealed master not opened, a sealed '
+     'rung that does not open to the encode, a plain rung reaching R2 when the '
+     'function asked for sealed only, or a DEK in the public log (the ffmpeg '
+     'half runs wherever ffmpeg is on PATH)'),
     ('frames_test.py', None,
      'a cover picker that offers the wrong frames: frame 0 not at one second, '
      'stills upscaled or squashed for portrait video, a frame PUT under a key '
@@ -166,6 +180,59 @@ def main() -> int:
     # comment is worse than one that was never written: the summary still
     # reads "all passed".
     JS_TESTS = [
+        ('media_issue_test.mjs',
+         'what the pipelines make of a new object, and keys issued only here',
+         'a pipeline sealing for a title the switch did not allow, or a key '
+         'recorded that was not issued here or does not open — born sealed or '
+         'as a twin'),
+        ('media_twin_test.mjs',
+         'sealed twins: only open films, and only a twin that opens',
+         'a twin recorded that was sealed under another key, cut short or '
+         'padded — or an object outside the open films sealed by the canary'),
+        ('media_grant_test.mjs',
+         'which object a grant signs during the seal rollout',
+         'an older app handed a sealed film it plays as noise, or a new app '
+         'handed the plaintext and its key for the wrong object'),
+        ('media_keys_test.mjs',
+         'the media seal keys: KEK wrap and the phone\'s RSA-OAEP',
+         'a DEK that opens in another row or under another KEK version, or a '
+         'DEK wrapped for a phone with padding its Keystore cannot open — '
+         'every sealed film refusing to play on that phone'),
+        ('media_seal_test.mjs',
+         'the console\'s and the edge functions\' media seal',
+         'a film sealed in the browser that the phone cannot open: different '
+         'bytes from the reference for the same key, or a range served from '
+         'the wrong segments, seen only as a film that will not play'),
+        ('console_build_test.mjs',
+         'the console on its own origin: the bundle and its headers, in Chromium',
+         'a console that loads blank or cannot upload on console.innocentplayer.com '
+         '(a file left out of the bundle, a host the policy blocks), or a '
+         'bundle that publishes more than the console'),
+        ('key_attest_test.mjs',
+         'Android key attestation: a phone\'s media key, certified by its hardware',
+         'a script\'s own key taken for a phone\'s Keystore key, or a real '
+         'phone refused: a chain to the wrong root, a changed byte, another '
+         'app or signer, an unlocked phone or a revoked certificate passing, '
+         'or Google\'s own roots failing'),
+        ('service_key_test.mjs',
+         'the Supabase keys every edge function uses, legacy and new',
+         'every function failing the day Supabase retires the legacy keys (a '
+         'new key sent as Bearer is refused), or a key read or a key header '
+         'built outside service_key.js that the move would miss'),
+        ('media_read_test.mjs',
+         'a stored object read as its plaintext, plain or sealed',
+         'a probe that reports a sealed film\'s box list or a sealed photo\'s '
+         'size from bytes it could not authenticate, or reads the wrong '
+         'segments for a range'),
+        ('sealed_preview_test.mjs',
+         'the console playing a sealed film and drawing a sealed picture, in Chromium',
+         'a reviewer who cannot watch a sealed film before approving it, or a '
+         'console that serves an altered segment as if it were the film'),
+        ('jpeg_clean_test.mjs',
+         'a photo leaving the phone without its place and time',
+         'a photo published with the GPS position of the home it was taken '
+         'in, or turned on its side because its orientation went with the '
+         'rest of the EXIF'),
         ('faststart_test.mjs',
          'the MP4 rewrite',
          'an MP4 rewrite that corrupts the video it was meant to speed up'),

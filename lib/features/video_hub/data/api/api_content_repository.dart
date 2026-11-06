@@ -7,6 +7,7 @@ import '../../domain/rendition.dart';
 import '../../domain/content_category.dart';
 import '../../domain/content_filters.dart';
 import '../../domain/content_repository.dart';
+import '../../domain/genre_names.dart';
 import '../../domain/viewer.dart';
 import '../../domain/video_content.dart';
 import '../../../../core/services/network/connection_kind.dart';
@@ -15,6 +16,8 @@ import '../stream_door.dart';
 import 'api_client.dart';
 import 'backend_config.dart';
 import 'api_exception.dart';
+import '../seal/media_seal.dart';
+import '../../../../core/services/diagnostics/playback_log.dart';
 
 /// [ContentRepository] over the backend described in
 /// `docs/premium_backend_spec.md`.
@@ -53,7 +56,32 @@ class ApiContentRepository implements ContentRepository {
   static const String _titleColumns =
       'id,title,title_mm,synopsis,category,poster_url,year,rating,'
       'quality_label,genres,episode_count,view_count,access_tier,'
-      'photo_count,video_count';
+      'photo_count,video_count,category_code,genre_codes';
+
+  @visibleForTesting
+  static String? imageUrlFor(Object? plain, Object? sealBlock, {bool asks = kAsksForSealed}) =>
+      _imageUrl(plain, sealBlock, asks: asks);
+
+  /// Where titles are read, and what is asked of them. A build that opens
+  /// sealed posters (docs/MEDIA_ENCRYPTION.md §6) reads `title_cards`, whose
+  /// rows carry `poster_seal` (migration 063); `titles` cannot, because the
+  /// app roles may read only named columns of it (066). The same rows, the
+  /// same filters and orders: every column asked of `titles` is in both.
+  static const String _titlesPath = kAsksForSealed ? '/rest/v1/title_cards' : '/rest/v1/titles';
+  static const String _titleSelect = kAsksForSealed ? '$_titleColumns,poster_seal' : _titleColumns;
+
+  /// The address to fetch an image from: its sealed twin's when the row
+  /// carries a usable seal for it (and this build opens seals), learned so
+  /// every loader knows to open it; otherwise the plain address as it was.
+  static String? _imageUrl(Object? plain, Object? sealBlock, {bool asks = kAsksForSealed}) {
+    final p = plain is String ? plain : null;
+    if (!asks || sealBlock is! Map) return p;
+    final seal = SealGrant.fromJson(sealBlock);
+    final url = sealBlock['url'];
+    if (seal == null || seal.wrap != 'tls' || url is! String || !url.startsWith('https://')) return p;
+    SealedUrls.learn(url, seal);
+    return url;
+  }
 
   // ---- the network, remembered ---------------------------------------------
 
@@ -281,9 +309,9 @@ class ApiContentRepository implements ContentRepository {
   @override
   Future<VideoContent?> getFeatured() async {
     final rows = await _cachedGet(
-      '/rest/v1/titles',
+      _titlesPath,
       query: <String, String>{
-        'select': _titleColumns,
+        'select': _titleSelect,
         'is_featured': 'eq.true',
         'limit': '1',
       },
@@ -334,7 +362,7 @@ class ApiContentRepository implements ContentRepository {
   }) async {
     return _page(
       query: <String, String>{
-        'select': _titleColumns,
+        'select': _titleSelect,
         // ONE `category` key. Writing the two conditions as two entries looked
         // fine and was wrong: a map literal keeps the LAST value, so asking
         // for Movies silently became "anything that is not adult".
@@ -347,9 +375,17 @@ class ApiContentRepository implements ContentRepository {
         // Changing that would need the server to own the listing (an RPC), and
         // putting a visibility rule in the client instead would be a rule in
         // the wrong place.
-        'category': categoryId == ContentCategory.all.id
-            ? 'neq.adult'
-            : 'eq.$categoryId',
+        //
+        // BY CODE when the server has said what the category's code is
+        // (migration 058): `category_code=eq.C01` rather than the word. The
+        // word is the fallback for the first launch with nothing fetched yet,
+        // and for a server older than 058.
+        if (categoryId == ContentCategory.all.id)
+          'category': 'neq.adult'
+        else if (await _categoryCode(categoryId) case final code?)
+          'category_code': 'eq.$code'
+        else
+          'category': 'eq.$categoryId',
         ..._filterQuery(filters),
       },
       page: page,
@@ -378,7 +414,7 @@ class ApiContentRepository implements ContentRepository {
   }
 
   Future<ContentPage> _page({
-    String path = '/rest/v1/titles',
+    String path = _titlesPath,
     required Map<String, String> query,
     required int page,
     required int pageSize,
@@ -409,8 +445,15 @@ class ApiContentRepository implements ContentRepository {
 
   static Map<String, String> _filterQuery(ContentFilters filters) {
     return <String, String>{
+      // A filter holds whatever the facets offered: codes from a server with
+      // migration 058, words from an older one or from a filter saved by an
+      // older build. Codes go to `genre_codes`, words to the legacy column,
+      // and a set is never split between the two.
       if (filters.genres.isNotEmpty)
-        'genres': 'ov.{${filters.genres.join(',')}}',
+        if (filters.genres.every(GenreNames.isCode))
+          'genre_codes': 'ov.{${filters.genres.join(',')}}'
+        else
+          'genres': 'ov.{${filters.genres.join(',')}}',
       if (filters.year != null) 'year': 'eq.${filters.year}',
       if (filters.quality != null) 'quality_label': 'eq.${filters.quality}',
       'order': _orderFor(filters.sort),
@@ -442,7 +485,9 @@ class ApiContentRepository implements ContentRepository {
   @override
   Future<ContentFacets> getFacets({required String categoryId}) async {
     return _facets(<String, String>{
-      if (categoryId != ContentCategory.all.id) 'category_filter': categoryId,
+      // `category_filter` takes a code or an id (058); the code when known.
+      if (categoryId != ContentCategory.all.id)
+        'category_filter': await _categoryCode(categoryId) ?? categoryId,
     });
   }
 
@@ -458,9 +503,22 @@ class ApiContentRepository implements ContentRepository {
       final body =
           await _cachedPost('/rest/v1/rpc/catalogue_facets', body: args);
       if (body is! Map<String, dynamic>) return ContentFacets.empty;
+      final words =
+          (body['genres'] as List?)?.map((e) => '$e').toList() ??
+              const <String>[];
+      final codes =
+          (body['genre_codes'] as List?)?.map((e) => '$e').toList();
+      // CODES ONLY WHEN EVERY ONE CAN BE NAMED. A chip must never read
+      // "G004", so a code the names table does not know yet (added in the
+      // console a minute ago, or the names not fetched on this launch) sends
+      // the whole sheet back to words for now. The next fetch fixes it.
+      final names = codes == null || codes.isEmpty
+          ? GenreNames.empty
+          : await getGenreNames();
+      final byCode = codes != null && codes.isNotEmpty && names.knowsAll(codes);
       return ContentFacets(
-        genres: (body['genres'] as List?)?.map((e) => '$e').toList() ??
-            const <String>[],
+        genres: byCode ? names.offered(codes) : words,
+        genreNames: byCode ? names : GenreNames.empty,
         years: (body['years'] as List?)
                 ?.map((e) => int.tryParse('$e') ?? 0)
                 .where((y) => y > 0)
@@ -520,9 +578,9 @@ class ApiContentRepository implements ContentRepository {
     final safe = _forOrGroup(q);
     try {
       final body = await _api.getJson(
-        '/rest/v1/titles',
+        _titlesPath,
         query: <String, String>{
-          'select': _titleColumns,
+          'select': _titleSelect,
           'or': '(title.ilike."*$safe*",title_mm.ilike."*$safe*")',
           'limit': '50',
         },
@@ -539,9 +597,9 @@ class ApiContentRepository implements ContentRepository {
       // a broken app.
       try {
         final body = await _api.getJson(
-          '/rest/v1/titles',
+          _titlesPath,
           query: <String, String>{
-            'select': _titleColumns,
+            'select': _titleSelect,
             'title': 'ilike.*$q*',
             'limit': '50',
           },
@@ -602,38 +660,7 @@ class ApiContentRepository implements ContentRepository {
   @override
   Future<CategoryCatalogue> getCategories() async {
     try {
-      final body = await _cachedGet(
-        '/rest/v1/categories',
-        query: const <String, String>{
-          'select': 'id,label,label_mm,sort_order,is_visible',
-          'order': 'sort_order.asc',
-        },
-        // Drawn before the age gate and before any account exists, so it must
-        // not wait on a session it may never get.
-        authenticated: false,
-      );
-      if (body is! List) return CategoryCatalogue.empty;
-
-      final byId = <String, CategoryStyle>{};
-      for (final row in body) {
-        if (row is! Map) continue;
-        final m = row.cast<String, dynamic>();
-        final id = '${m['id'] ?? ''}'.trim();
-        final label = '${m['label'] ?? ''}'.trim();
-        // A row with no id addresses nothing and a row with no label would
-        // render an empty pill. Skipping beats drawing either.
-        if (id.isEmpty || label.isEmpty) continue;
-        byId[id] = CategoryStyle(
-          id: id,
-          label: label,
-          labelMm: m['label_mm'] as String?,
-          sortOrder: _int(m['sort_order']) ?? 0,
-          // Absent reads as VISIBLE. A column the server has not sent must
-          // never be able to hide a tab.
-          isVisible: m['is_visible'] != false,
-        );
-      }
-      return CategoryCatalogue(byId);
+      return _categoriesFrom(await _taxonomy());
     } on ApiException {
       // The compiled enum and the compiled strings. Not an error state — see
       // CategoryCatalogue.empty. A catalogue that cannot draw its own tab bar
@@ -643,11 +670,88 @@ class ApiContentRepository implements ContentRepository {
   }
 
   @override
+  Future<GenreNames> getGenreNames() async {
+    try {
+      final body = await _taxonomy();
+      return body is Map ? GenreNames.fromJson(body['genres']) : GenreNames.empty;
+    } on ApiException {
+      return GenreNames.empty;
+    }
+  }
+
+  /// `rpc/taxonomy` (migration 058): every category and genre, by code, with
+  /// its name in each language. ONE request for both, kept and replayed like
+  /// the rest of the catalogue, and shared while it is in flight — the tab bar
+  /// and the filter sheet ask for it at the same moment on a cold start.
+  ///
+  /// Drawn before the age gate and before any account exists, so it must not
+  /// wait on a session it may never get.
+  Future<dynamic> _taxonomy() {
+    final pending = _taxonomyInFlight;
+    if (pending != null) return pending;
+    final f = _cachedGet('/rest/v1/rpc/taxonomy', authenticated: false)
+        .whenComplete(() => _taxonomyInFlight = null);
+    _taxonomyInFlight = f;
+    return f;
+  }
+
+  Future<dynamic>? _taxonomyInFlight;
+
+  /// A category's code, for a query: from the last taxonomy this process
+  /// read, or null (then the query asks by the id, as before 058).
+  Future<String?> _categoryCode(String id) async {
+    final known = _codes[id];
+    if (known != null) return known;
+    try {
+      return _categoriesFrom(await _taxonomy()).codeFor(id);
+    } on ApiException {
+      return null;
+    }
+  }
+
+  final Map<String, String> _codes = <String, String>{};
+
+  CategoryCatalogue _categoriesFrom(dynamic body) {
+    final rows = body is Map ? body['categories'] : null;
+    if (rows is! List) return CategoryCatalogue.empty;
+
+    final byId = <String, CategoryStyle>{};
+    for (final row in rows) {
+      if (row is! Map) continue;
+      final m = row.cast<String, dynamic>();
+      final id = '${m['id'] ?? ''}'.trim();
+      final label = '${m['label'] ?? ''}'.trim();
+      // A row with no id addresses nothing and a row with no label would
+      // render an empty pill. Skipping beats drawing either.
+      if (id.isEmpty || label.isEmpty) continue;
+      final code = m['code'] is String ? (m['code'] as String).trim() : null;
+      final style = CategoryStyle(
+        id: id,
+        code: code != null && CategoryStyle.codePattern.hasMatch(code)
+            ? code
+            : null,
+        label: label,
+        labelMm: m['label_mm'] as String?,
+        labelTh: m['label_th'] as String?,
+        sortOrder: _int(m['sort_order']) ?? 0,
+        // Absent reads as VISIBLE. A column the server has not sent must
+        // never be able to hide a tab. A RETIRED category is hidden, not
+        // dropped: dropping it would make a built-in tab (Reels, say) look
+        // unknown to the server, and an unknown built-in is drawn anyway.
+        isVisible: m['visible'] != false && m['retired'] != true,
+      );
+      byId[id] = style;
+      if (style.code != null) _codes[id] = style.code!;
+    }
+    return CategoryCatalogue(byId);
+  }
+
+  @override
   Future<VideoContent?> getById(String id) async {
     final body = await _cachedGet(
-      '/rest/v1/titles',
+      _titlesPath,
       query: <String, String>{
-        'select': _titleColumns,
+        'select': _titleSelect,
         'id': 'eq.$id',
         'limit': '1',
       },
@@ -663,9 +767,9 @@ class ApiContentRepository implements ContentRepository {
     if (clean.isEmpty) return const <VideoContent>[];
     try {
       final body = await _cachedGet(
-        '/rest/v1/titles',
+        _titlesPath,
         query: <String, String>{
-          'select': _titleColumns,
+          'select': _titleSelect,
           'id': 'in.(${clean.join(',')})',
           'limit': '${clean.length}',
         },
@@ -716,7 +820,14 @@ class ApiContentRepository implements ContentRepository {
     try {
       dynamic body;
       try {
-        body = await _albumRows(titleId, _albumColumns);
+        try {
+          body = await _albumRows(titleId, _albumSelect);
+        } catch (e) {
+          if (_albumSelect == _albumColumns) rethrow;
+          // A build that opens seals asks for them too (migration 063); one
+          // whose cached album is under the list before them still has it.
+          body = await _albumRows(titleId, _albumColumns);
+        }
       } catch (e) {
         // THE CACHED ALBUM IS KEYED BY ITS QUERY, and the column list just
         // grew. A phone that updates while it has no signal holds every album
@@ -742,7 +853,7 @@ class ApiContentRepository implements ContentRepository {
         // its address. It stays in the album, frosted behind its lock —
         // "eleven more like this" is the offer. Without even a blurhash there
         // is nothing to draw, and it is skipped.
-        final url = m['url'] as String?;
+        final url = _imageUrl(m['url'], m['seal']);
         final id = '${m['id'] ?? ''}';
         if (id.isEmpty) continue;
         final preview = m['preview'] is String ? m['preview'] as String : null;
@@ -758,7 +869,7 @@ class ApiContentRepository implements ContentRepository {
           source: isPhoto
               ? _refFrom(url)
               : MediaRef(provider: 'asset', locator: id),
-          thumbnail: _refFrom(m['thumb_url'] ?? (isPhoto ? url : null)),
+          thumbnail: _refFrom(_imageUrl(m['thumb_url'], m['thumb_seal']) ?? (isPhoto ? url : null)),
           durationSec: _int(m['duration_s']),
           isPreview: m['is_free'] == true,
           width: _int(m['width']),
@@ -781,6 +892,7 @@ class ApiContentRepository implements ContentRepository {
   static const String _albumColumns =
       'id,kind,url,thumb_url,duration_s,is_free,width,height,is_main,bytes,'
       'preview';
+  static const String _albumSelect = kAsksForSealed ? '$_albumColumns,seal,thumb_seal' : _albumColumns;
   static const String _albumColumnsBefore030 =
       'id,kind,url,thumb_url,duration_s,is_free,width,height';
 
@@ -834,7 +946,22 @@ class ApiContentRepository implements ContentRepository {
         // plays it only for a fetch carrying the same id — see
         // StreamDoor, which every fetch of a granted URL goes through.
         if (deviceId != null) 'bind': true,
+        // Sealed objects (docs/MEDIA_ENCRYPTION.md §5): asked for only by
+        // a build that opens them everywhere a granted URL goes, with this
+        // install's Keystore key when it is ready — never waited for.
+        if (kAsksForSealed) 'seal': 1,
+        if (kAsksForSealed && PlatformSealCipher.deviceKeyNow != null)
+          'device_key': PlatformSealCipher.deviceKeyNow,
+        // Where that key lives, certified by the phone's Keystore, until
+        // the server has said it has it (docs/edge/key_attest.js).
+        if (kAsksForSealed && PlatformSealCipher.deviceKeyNow != null &&
+            PlatformSealCipher.deviceAttestNow != null)
+          'device_attest': PlatformSealCipher.deviceAttestNow,
       });
+      if (body is Map<String, dynamic> && body['attest'] != null) {
+        PlatformSealCipher.attestHeard();
+        PlaybackLog.add('attest: ${body['attest']}');
+      }
       if (body is! Map<String, dynamic>) {
         return const PlaybackGrant.denied(AccessDenial.unavailable);
       }
@@ -852,8 +979,29 @@ class ApiContentRepository implements ContentRepository {
       if (raw is List) {
         for (final row in raw) {
           final r = Rendition.fromJson(row);
-          if (r != null) ladder.add(r);
+          if (r == null) continue;
+          // A sealed rung without a seal that can be read is noise to every
+          // player: dropped, like a rung with no bitrate.
+          if (row is Map && row['seal'] != null) {
+            final seal = SealGrant.fromJson(row['seal']);
+            if (seal == null) continue;
+            SealedUrls.learn(r.url, seal);
+          }
+          ladder.add(r);
         }
+      }
+      if (body['seal'] != null) {
+        final seal = SealGrant.fromJson(body['seal']);
+        if (seal == null) {
+          return const PlaybackGrant.denied(AccessDenial.unavailable);
+        }
+        SealedUrls.learn(url, seal);
+      }
+      if (body['seal_v'] != null) {
+        // In the trail: which copies came sealed, and how their keys came.
+        final sealed = [url, ...ladder.map((r) => r.url)].map(SealedUrls.of).whereType<SealGrant>().toList();
+        PlaybackLog.add('grant: ${sealed.length} of ${ladder.length + 1} copies sealed'
+            '${sealed.isEmpty ? '' : ', keys ${sealed.map((x) => x.wrap).toSet().join('/')}'}');
       }
       // Where these URLs point is where the install id may be sent.
       StreamDoor.learn(url);
@@ -889,6 +1037,10 @@ class ApiContentRepository implements ContentRepository {
       // budget fills again within the hour.
       if (e.code == 'rate_limited') {
         return const PlaybackGrant.denied(AccessDenial.rateLimited);
+      }
+      // Sealed only, and this build does not ask for sealed objects.
+      if (e.code == 'update_required' || e.statusCode == 426) {
+        return const PlaybackGrant.denied(AccessDenial.updateRequired);
       }
       // COULD NOT ASK, told apart from "was told no", and this is the only
       // place in the class that distinction is made about PLAYBACK.
@@ -988,12 +1140,17 @@ class ApiContentRepository implements ContentRepository {
       titleMm: m['title_mm'] as String?,
       synopsis: m['synopsis'] as String?,
       category: ContentCategoryX.fromId(m['category'] as String?),
-      poster: _refFrom(m['poster_url']),
+      poster: _refFrom(_imageUrl(m['poster_url'], m['poster_seal'])),
       year: _int(m['year']),
       rating: _double(m['rating']),
       qualityLabel: m['quality_label'] as String?,
       genres:
           (m['genres'] as List?)?.map((e) => '$e').toList() ?? const <String>[],
+      genreCodes: (m['genre_codes'] as List?)
+              ?.map((e) => '$e')
+              .where(GenreNames.isCode)
+              .toList() ??
+          const <String>[],
       episodeCount: _int(m['episode_count']),
       viewCount: _int(m['view_count']),
       photoCount: _int(m['photo_count']),

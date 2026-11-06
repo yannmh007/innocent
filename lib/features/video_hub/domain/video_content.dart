@@ -1,6 +1,7 @@
 import 'access.dart';
 import 'content_category.dart';
 import 'content_filters.dart';
+import 'genre_names.dart';
 
 /// WHERE a piece of media physically lives, expressed so the app never needs
 /// to know.
@@ -156,7 +157,16 @@ class VideoContent {
   /// '4K', 'HD', 'CAM' — shown as the top-left corner badge. Null hides it.
   final String? qualityLabel;
 
+  /// The genres as WORDS, as an older server sent them. Kept because a card
+  /// saved by an older build, the demo catalogue and a server before
+  /// migration 058 have nothing else; see [genreLabels].
   final List<String> genres;
+
+  /// The genres as CODES (`G001`), which is what the database stores since
+  /// migration 058. The names are looked up in [GenreNames] in the phone's
+  /// language when drawn, so renaming a genre in the console never needs a
+  /// release and never breaks a filter.
+  final List<String> genreCodes;
 
   /// Total episodes for a series; null for a single film.
   final int? episodeCount;
@@ -216,6 +226,7 @@ class VideoContent {
     this.rating,
     this.qualityLabel,
     this.genres = const <String>[],
+    this.genreCodes = const <String>[],
     this.episodeCount,
     this.viewCount,
     this.source = MediaRef.none,
@@ -257,6 +268,7 @@ class VideoContent {
       rating: rating,
       qualityLabel: qualityLabel,
       genres: genres,
+      genreCodes: genreCodes,
       episodeCount: episodeCount,
       viewCount: viewCount,
       source: source,
@@ -283,6 +295,7 @@ class VideoContent {
         rating: rating,
         qualityLabel: qualityLabel,
         genres: genres,
+      genreCodes: genreCodes,
         episodeCount: episodeCount,
         viewCount: views,
         source: source,
@@ -291,6 +304,17 @@ class VideoContent {
         photoCount: photoCount,
         videoCount: videoCount,
       );
+
+  /// The genre names to show, in [languageCode]: the codes named by
+  /// [names] when every one of them is known, otherwise the words the server
+  /// sent beside them. Never a raw code on screen.
+  List<String> genreLabels(GenreNames names, String? languageCode) {
+    if (genreCodes.isNotEmpty) {
+      final named = names.labelsOf(genreCodes, languageCode);
+      if (named != null) return named;
+    }
+    return genres;
+  }
 
   bool get isSeries => category == ContentCategory.series;
 

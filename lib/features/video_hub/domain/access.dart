@@ -112,6 +112,11 @@ enum AccessDenial {
   /// [offline], it never opens the bytes the phone already holds.
   rateLimited,
 
+  /// The film exists only sealed and this build cannot open it (426,
+  /// docs/MEDIA_ENCRYPTION.md §9). Its own value so the viewer is told to
+  /// update, not that the film is gone.
+  updateRequired,
+
   /// No provider could serve this. Show the unavailable message.
   unavailable,
 }

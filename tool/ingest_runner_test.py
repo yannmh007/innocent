@@ -78,6 +78,8 @@ class World:
         self.sends = []                  # (to_chat, path size)
         self.chat_error = None           # text: get_chat on the archive fails
         self.r2_size = None              # bytes a presigned GET delivers
+        self.r2_bytes = None             # or exactly these bytes
+        self.put_bytes = {}              # url -> what was PUT there
 
 
 W = World()
@@ -220,7 +222,7 @@ def ojob(n, from_r2=True, size=None):
 
 
 def run(first, rest, env=None, start_flood=None, flood=None, error=None,
-        media=None, gone=None, short=None, chat_error=None, r2_size=None):
+        media=None, gone=None, short=None, chat_error=None, r2_size=None, r2_bytes=None):
     """One runner invocation in a scratch directory. Answers (rc, edge).
 
     `env` entries set to None are REMOVED for the run, which is how the
@@ -236,6 +238,7 @@ def run(first, rest, env=None, start_flood=None, flood=None, error=None,
     W.short = dict(short or {})
     W.chat_error = chat_error
     W.r2_size = r2_size
+    W.r2_bytes = r2_bytes
     tmp = tempfile.mkdtemp(prefix='ingest-test-')
     ingest.JOB_FILE = os.path.join(tmp, 'ingest.json')
     ingest.REPORTED = os.path.join(tmp, 'ingest.reported')
@@ -248,13 +251,15 @@ def run(first, rest, env=None, start_flood=None, flood=None, error=None,
     ingest._post = edge.post
     def put(path, url):
         W.puts.append(url)
+        with open(path, 'rb') as fh:
+            W.put_bytes[url] = fh.read()
         return os.path.getsize(path)
     ingest.put_to_r2 = put
     def get(url, path):
-        size = W.r2_size if W.r2_size is not None else 0
+        data = W.r2_bytes if W.r2_bytes is not None else b'y' * (W.r2_size or 0)
         with open(path, 'wb') as fh:
-            fh.write(b'y' * size)
-        return size
+            fh.write(data)
+        return len(data)
     ingest.get_from_r2 = get
     base = {
         'TG_API_ID': '1', 'TG_API_HASH': 'h', 'TG_BOT_TOKEN': 't',
@@ -451,8 +456,11 @@ rc, edge = run(ajob(20), [ajob(21, forwarded=False)],
                media={20: ('u20', 5020)}, r2_size=5021)
 va = {c['job_id']: c for c in edge.ops('vault_done')}
 check('this runner asks for archive and off-site work when it claims',
-      all(c.get('can') == ['archive', 'offsite'] for c in edge.ops('claim'))
+      all(c.get('can', [])[:2] == ['archive', 'offsite'] for c in edge.ops('claim'))
       and edge.ops('claim'))
+check('and for sealed work exactly when its Python opens the seal',
+      all(('seal' in c.get('can', [])) == (ingest._sealer() is not None)
+          for c in edge.ops('claim')))
 check('a forwarded film is COPIED into the channel, not downloaded',
       W.copies == [(-100555, 1, 20)])
 check('and reported where it now is, with the same file',
@@ -565,6 +573,102 @@ check('a lane number that is not a number is lane 1', W.sleeps_at_start == [])
 rc, edge = run(job(64), [], env={'INGEST_LANE': '9', 'INGEST_SIGNIN_GAP': '0'},
                media={64: ('u64', 64)})
 check('a gap of 0 waits for nothing', W.sleeps_at_start == [])
+
+# ── THE MEDIA SEAL (docs/MEDIA_ENCRYPTION.md §7, migration 071) ─────────
+# Real sealing, where the `cryptography` package loads (the transcode and
+# ingest runners have it); skipped, and said so, where it does not.
+ts = ingest._sealer()
+if ts is None:
+    print('SKIP the sealed half: `cryptography` does not load here')
+else:
+    import base64
+    import io as _io
+    ms = ts.media_seal
+
+    def issued(n, dek=None):
+        dek = dek if dek is not None else os.urandom(32)
+        did = '00000000-0000-4000-8000-%012d' % n
+        return dek, {
+            'dek_id': did, 'dek': base64.b64encode(dek).decode(), 'wrapped': 'W' * 80,
+            'sealed_key': 's/%032x' % n, 'put_url': 'https://r2.invalid/sealed/%d' % n,
+        }
+
+    def opens_to(sealed, dek, did):
+        out = _io.BytesIO()
+        ms.open_stream(_io.BytesIO(sealed), out, dek, ms.aad_for(did), len(sealed))
+        return out.getvalue()
+
+    # A twin (canary): the plain file and its sealed twin, both up.
+    dek, seal = issued(70)
+    j = dict(job(70), seal=seal)
+    rc, edge = run(j, [], media={70: ('u70', 70000)})
+    d = edge.ops('done')[0]
+    check('a twin: the plain file goes up as before', 'https://r2.invalid/put/70' in W.puts)
+    check('and its sealed twin, which opens to exactly the download',
+          opens_to(W.put_bytes.get(seal['put_url'], b''), dek, seal['dek_id']) == b'x' * 70000)
+    check('reported with what its key row needs, born false, at the plain size',
+          d['ok'] is True and d['bytes'] == 70000 and d['sealed']['born'] is False
+          and d['sealed']['sealed_key'] == seal['sealed_key'] and d['sealed']['wrapped'] == 'W' * 80
+          and d['sealed']['plain_size'] == 70000
+          and base64.b64decode(d['sealed']['header']) == W.put_bytes[seal['put_url']][:ms.HEADER])
+    check('and never with its DEK', seal['dek'] not in json.dumps(edge.calls) and 'dek' not in d['sealed'])
+
+    # Born sealed (`on`): no plain file ever reaches R2.
+    dek, seal = issued(71)
+    j = dict(job(71), seal=seal, put_url=None)
+    rc, edge = run(j, [], media={71: ('u71', 131000)})
+    d = edge.ops('done')[0]
+    check('born sealed: only the sealed object is uploaded', W.puts == [seal['put_url']])
+    check('and it opens to the download',
+          opens_to(W.put_bytes[seal['put_url']], dek, seal['dek_id']) == b'x' * 131000)
+    check('reported born, at the plain size',
+          d['ok'] is True and d['sealed']['born'] is True and d['bytes'] == 131000)
+
+    # A seal that cannot be made: born → a failed attempt, nothing up.
+    _, seal = issued(72, dek=b'short')
+    rc, edge = run(dict(job(72), seal=seal, put_url=None), [], media={72: ('u72', 900)})
+    d = edge.ops('done')[0]
+    check('born, sealing failed: a failed attempt, and nothing uploaded',
+          d['ok'] is False and 'sealing failed' in d['note'] and not W.puts)
+    # …a twin → the plain file as before, no twin reported.
+    _, seal = issued(73, dek=b'short')
+    rc, edge = run(dict(job(73), seal=seal), [], media={73: ('u73', 900)})
+    d = edge.ops('done')[0]
+    check('a twin that cannot be sealed: the plain file still goes up, no twin reported',
+          d['ok'] is True and W.puts == ['https://r2.invalid/put/73'] and 'sealed' not in d)
+
+    # The archive of a sealed master: fetched sealed, opened, sent plain.
+    mdek = os.urandom(32)
+    mid = '00000000-0000-4000-8000-000000000074'
+    plain = os.urandom(70000)
+    buf = _io.BytesIO()
+    ms.seal_stream(_io.BytesIO(plain), buf, mdek, ms.aad_for(mid), len(plain))
+    src_seal = {'dek_id': mid, 'dek': base64.b64encode(mdek).decode(),
+                'plain_size': len(plain), 'sealed_size': len(buf.getvalue())}
+    a = dict(ajob(74, forwarded=False, size=len(plain)), src_seal=src_seal)
+    rc, edge = run(a, [], r2_bytes=buf.getvalue())
+    va = edge.ops('vault_done')[0]
+    check('a sealed master is opened and SENT PLAIN to the archive channel',
+          W.sends == [(-100555, len(plain))] and va.get('ok') is True and va.get('bytes') == len(plain))
+    bad = bytearray(buf.getvalue())
+    bad[ms.HEADER + 100] ^= 1
+    rc, edge = run(a, [], r2_bytes=bytes(bad))
+    va = edge.ops('vault_done')[0]
+    check('a sealed master that does not open is never sent',
+          W.sends == [] and va.get('ok') is False)
+
+    # A restore of a sealed master: sealed afresh, to its new key.
+    dek, seal = issued(75)
+    r = dict(vjob(75, 'restore', size=60000), seal=seal, put_url=None)
+    rc, edge = run(r, [], media={75: ('u75', 60000)})
+    va = edge.ops('vault_done')[0]
+    check('a restore of a sealed master is sealed afresh to its new key, nothing plain up',
+          W.puts == [seal['put_url']]
+          and opens_to(W.put_bytes[seal['put_url']], dek, seal['dek_id']) == b'x' * 60000)
+    check('and reported restored at the plain size, with what its key row needs',
+          va.get('ok') is True and va.get('bytes') == 60000
+          and va.get('sealed', {}).get('sealed_key') == seal['sealed_key']
+          and seal['dek'] not in json.dumps(edge.calls))
 
 print()
 if failures:

@@ -1073,8 +1073,20 @@ class MediaKitPlayerService implements VideoPlayerService {
     }
   }
 
+  /// Addresses never to be opened as they are: set at start-up to "a sealed
+  /// object's own address" (main.dart, docs/MEDIA_ENCRYPTION.md), so this
+  /// file needs nothing from the catalogue.
+  static bool Function(String uri)? refusesUri;
+
   @override
   Future<void> open(String uri, {Duration? startAt, bool autoplay = true}) async {
+    // THE LAST GUARD: a sealed object's own address is never played — its
+    // bytes are noise without the proxy's unseal gateway. Every caller
+    // routes it through the proxy first; this says so if one ever does not.
+    if (refusesUri?.call(uri) ?? false) {
+      PlaybackLog.add('refused: a sealed object handed to the player directly');
+      throw StateError('a sealed object is opened through the local proxy only');
+    }
     if (ExoEngine.isLadder(uri)) {
       await _openLadder(uri, startAt: startAt, autoplay: autoplay);
       return;

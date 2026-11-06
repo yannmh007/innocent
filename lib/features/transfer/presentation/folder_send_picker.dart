@@ -212,7 +212,7 @@ class _FolderSendPickerState extends ConsumerState<FolderSendPicker> {
       // later Flutter than this project builds against, and every other
       // PopScope in the codebase uses this one. Match the tree, not the
       // newest docs.
-      onPopInvoked: (didPop) {
+      onPopInvokedWithResult: (didPop, _) {
         if (!didPop) _up();
       },
       child: Scaffold(

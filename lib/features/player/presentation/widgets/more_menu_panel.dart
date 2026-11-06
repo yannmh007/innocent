@@ -152,7 +152,7 @@ class MoreMenuPanel extends StatelessWidget {
     );
 
     final sheet = Material(
-      color: AppColors.specSheetBg.withOpacity(0.92),
+      color: AppColors.specSheetBg.withValues(alpha: 0.92),
       borderRadius: isPortrait
           ? const BorderRadius.vertical(top: Radius.circular(16))
           : null,

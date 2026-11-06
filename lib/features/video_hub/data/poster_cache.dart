@@ -8,6 +8,8 @@ import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
+import 'seal/media_seal.dart';
+
 /// Disk cache for catalogue artwork.
 ///
 /// WHY THIS EXISTS
@@ -157,6 +159,11 @@ class PosterCache {
       if (response.statusCode < 200 || response.statusCode >= 300) return null;
       final bytes = response.bodyBytes;
       if (bytes.isEmpty || bytes.length > _maxEntryBytes) return null;
+      // A sealed image (docs/MEDIA_ENCRYPTION.md §6) is kept as it came, and
+      // only if it is the size its row says: anything else would be a file
+      // that never opens, cached for good.
+      final seal = SealedUrls.of(url);
+      if (seal != null && bytes.length != seal.sealedSize) return null;
 
       // Write to a sidecar and rename. A half-written file that is renamed
       // only on success can never be read as a complete one - without this, an

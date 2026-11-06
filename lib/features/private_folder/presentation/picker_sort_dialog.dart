@@ -195,7 +195,7 @@ class _PickerSortDialogState extends State<PickerSortDialog> {
                                 height: 38,
                                 decoration: BoxDecoration(
                                   color: selected
-                                      ? AppColors.accentBlue.withOpacity(0.18)
+                                      ? AppColors.accentBlue.withValues(alpha: 0.18)
                                       : Colors.transparent,
                                   borderRadius: BorderRadius.circular(6),
                                   border: Border.all(

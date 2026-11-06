@@ -486,7 +486,7 @@ class _LockedPage extends ConsumerWidget {
         // Enough scrim for white text to hold against any photo underneath.
         Positioned.fill(
           child: IgnorePointer(
-            child: ColoredBox(color: Colors.black.withOpacity(0.45)),
+            child: ColoredBox(color: Colors.black.withValues(alpha: 0.45)),
           ),
         ),
         _lockedOffer(context, s),

@@ -110,7 +110,7 @@ class HistoryScreen extends ConsumerWidget {
                   Icon(Icons.history,
                       size: 64,
                       color: AppColors.darkOnSurfaceMuted
-                          .withOpacity(0.5)),
+                          .withValues(alpha: 0.5)),
                   const SizedBox(height: 16),
                   Text(AppStrings.of(context).noHistoryYet,
                     style: const TextStyle(color: AppColors.darkOnSurfaceMuted),

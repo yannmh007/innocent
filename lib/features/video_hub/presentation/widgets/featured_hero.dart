@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/localization/app_strings.dart';
+import '../../domain/genre_names.dart';
 import '../../domain/video_content.dart';
 import '../video_hub_theme.dart';
 import 'poster_image.dart';
@@ -28,11 +29,15 @@ class FeaturedHero extends StatelessWidget {
   final VoidCallback onPlay;
   final VoidCallback onInfo;
 
+  /// What each genre code is called (empty: the words the title carries).
+  final GenreNames genreNames;
+
   const FeaturedHero({
     super.key,
     required this.content,
     required this.onPlay,
     required this.onInfo,
+    this.genreNames = GenreNames.empty,
   });
 
   /// Portrait-leaning, because a phone is portrait and a 16:9 still would
@@ -63,7 +68,7 @@ class FeaturedHero extends StatelessWidget {
 
     final meta = <String>[
       if (content.year != null) '${content.year}',
-      ...content.genres.take(2),
+      ...content.genreLabels(genreNames, s.locale.languageCode).take(2),
       if (content.episodeCount != null)
         s.vhEpisodesCount(content.episodeCount!),
     ];
@@ -88,7 +93,7 @@ class FeaturedHero extends StatelessWidget {
             begin: Alignment.topCenter,
             end: Alignment.center,
             colors: <Color>[
-              VH.canvas.withOpacity(0.72),
+              VH.canvas.withValues(alpha: 0.72),
               Colors.transparent,
             ],
           ),
@@ -235,11 +240,11 @@ class _HeroButton extends StatelessWidget {
         decoration: BoxDecoration(
           // The primary action is the ONLY solid-white surface on the page.
           // That is what makes it read as the primary action without a colour.
-          color: primary ? VH.textPrimary : Colors.white.withOpacity(0.14),
+          color: primary ? VH.textPrimary : Colors.white.withValues(alpha: 0.14),
           borderRadius: BorderRadius.circular(VH.rControl),
           border: primary
               ? null
-              : Border.all(color: Colors.white.withOpacity(0.18)),
+              : Border.all(color: Colors.white.withValues(alpha: 0.18)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,

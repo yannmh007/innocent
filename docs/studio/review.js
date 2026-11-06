@@ -390,27 +390,37 @@ async function reloadReviewState() {
 /// play would.
 async function previewAsset(a) {
   let p;
+  let src;
+  let film = null;
   try {
     p = await api({ op: 'previewUrl', id: a.id });
+    // A SEALED FILE (§7.3) is opened here, never fetched plain: a picture
+    // as a blob, a film through the console's Service Worker.
+    if (p.seal && p.kind === 'photo') src = await sealedImageSrc(p);
+    else if (p.seal) { film = await sealedVideoSrc(p); src = film.src; }
+    else src = p.url;
   } catch (e) { say('bad', String(e.message || e)); return; }
   const media = p.kind === 'photo'
-    ? el('img', { src: p.url, alt: '', style: 'width:100%;border-radius:6px' })
-    : el('video', { src: p.url, controls: true, playsInline: true, autoplay: true,
+    ? el('img', { src, alt: '', style: 'width:100%;border-radius:6px' })
+    : el('video', { src, controls: true, playsInline: true, autoplay: true,
       preload: 'metadata' });
+  if (film) keepSealedPlaying(media, film);
   const close = el('button', { className: 'b', type: 'button' }, text('Close'));
   const back = el('div', { className: 'modal' }, [
     el('div', { className: 'sheet' }, [
       el('div', { className: 'sh' }, text(a.label || (a.object_key || '').split('/').pop() || 'Preview')),
       media,
       el('div', { className: 'hint', style: 'margin-top:6px' }, text(
-        p.kind === 'photo' ? '' : (p.height ? p.height + 'p streaming copy' : 'original file') +
-          (p.via === 'worker' ? ' · through the streaming Worker' : ' · straight from R2'))),
+        (p.kind === 'photo' ? '' : (p.height ? p.height + 'p streaming copy' : 'original file') +
+          (p.via === 'worker' ? ' · through the streaming Worker' : ' · straight from R2')) +
+        (p.seal ? (p.kind === 'photo' ? 'sealed · opened on this device' : ' · sealed, opened on this device') : ''))),
       el('div', { className: 'srow end' }, [close]),
     ]),
   ]);
   const shut = () => {
     if (media.pause) media.pause();
     media.removeAttribute('src');
+    if (String(src).startsWith('blob:')) URL.revokeObjectURL(src);
     back.remove();
   };
   close.onclick = shut;

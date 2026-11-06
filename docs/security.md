@@ -123,7 +123,7 @@ legitimate, so a report is rejected on its face:
 3. **Custom domain for R2 and the Worker** (§4), when there is one.
 4. Drop the three `*_v039` test functions (they have no grants; this is
    tidiness): `drop function public.<name>_v039(...)`.
-5. A takedown/contact address and an in-app Report (§4.3).
+5. A takedown/contact address and an in-app Report (§4.3). **Built 6 Nov 2026**: innocentmail69@gmail.com in About, Report on every title, reports to the owner's Telegram (docs/security_review_2026_11.md P6).
 
 ## 6. Interception and the phone itself
 

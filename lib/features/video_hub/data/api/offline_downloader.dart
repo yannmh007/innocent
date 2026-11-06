@@ -23,6 +23,8 @@ import '../rate_limited.dart';
 import 'offline_crypto.dart';
 import 'offline_library.dart';
 import '../stream_door.dart';
+import '../seal/media_seal.dart';
+import '../seal/unseal_gateway.dart';
 
 /// Where one download has got to.
 @immutable
@@ -458,6 +460,13 @@ class OfflineDownloader {
   ///
   /// Copied from the artwork cache when the photo is already there, which it
   /// is for any photo somebody has opened: the bytes were paid for once.
+  /// Whether [n] bytes are a whole copy of [url]: any size for a plain
+  /// photo, exactly the sealed size for a sealed one.
+  static bool _sealedSizeOk(String url, int n) {
+    final seal = SealedUrls.of(url);
+    return seal == null || n == seal.sealedSize;
+  }
+
   Future<OfflineItem?> downloadPhoto({
     required VideoContent content,
     required String assetId,
@@ -534,7 +543,7 @@ class OfflineDownloader {
       try {
         await File(cached).copy(part.path);
         bytes = await part.length();
-        if (bytes <= 0) bytes = null;
+        if (bytes <= 0 || !_sealedSizeOk(url, bytes)) bytes = null;
       } catch (e) {
         if (kDebugMode) debugPrint('offline photo copy: $e');
         bytes = null;
@@ -587,7 +596,9 @@ class OfflineDownloader {
         // SHORT IS FAILED. A photo that stopped half way draws as half a
         // photo, and "downloaded" is a promise made offline, where nobody
         // can go back and look.
-        if (got > 0 && (expected == null || got == expected)) bytes = got;
+        // A sealed photo is kept as it came, and only whole: the size its
+        // row says (docs/MEDIA_ENCRYPTION.md §6).
+        if (got > 0 && (expected == null || got == expected) && _sealedSizeOk(url, got)) bytes = got;
       } catch (e) {
         if (kDebugMode) debugPrint('offline photo attempt: $e');
       } finally {
@@ -895,11 +906,28 @@ class OfflineDownloader {
           failures++;
           continue;
         }
+        // A SEALED COPY IS READ THROUGH THE UNSEAL GATEWAY, as the stream
+        // proxy reads one (docs/MEDIA_ENCRYPTION.md §6): every segment
+        // checked and opened, the film's own bytes and length, and the file
+        // then kept under this phone's own key exactly as before. A download
+        // begun before the film was sealed resumes across the switch — the
+        // plain twin and the sealed object hold the same film. Without the
+        // gateway, a clear refusal: never a file that plays as noise.
+        var fetchUrl = url;
+        final sealedCopy = SealedUrls.of(url);
+        if (sealedCopy != null) {
+          final g = await UnsealGateway.instance.urlFor(id: 'dl-$key', upstream: url, seal: sealedCopy);
+          if (g == null) {
+            emit(OfflineProgress(key: key, received: received, total: total, error: 'denied:unavailable'));
+            return null;
+          }
+          fetchUrl = g;
+        }
 
         final abort = Completer<void>();
         final request =
-            http.AbortableRequest('GET', Uri.parse(url), abortTrigger: abort.future)
-              ..headers.addAll(StreamDoor.headersFor(url));
+            http.AbortableRequest('GET', Uri.parse(fetchUrl), abortTrigger: abort.future)
+              ..headers.addAll(StreamDoor.headersFor(fetchUrl));
         if (received > 0) {
           // Resume. A server that ignores this answers 200 with the whole file,
           // which is handled below by starting the file over rather than
@@ -1106,7 +1134,7 @@ class OfflineDownloader {
         final body = split
             ? RangedFetch.ordered(
                 client: _http,
-                url: Uri.parse(url),
+                url: Uri.parse(fetchUrl),
                 head: response.stream,
                 start: received,
                 total: total,

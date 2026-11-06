@@ -72,7 +72,7 @@ class SettingsNavTile extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(
                     horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: Colors.amber.withOpacity(0.85),
+                  color: Colors.amber.withValues(alpha: 0.85),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(AppStrings.of(context).soonBadge,
