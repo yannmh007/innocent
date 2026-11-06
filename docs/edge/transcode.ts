@@ -55,7 +55,11 @@ const GH_REF = Deno.env.get('GH_REF') ?? 'main';
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
 // The Supabase keys (service_key.js, docs/security_review_2026_11.md S1):
 // 'legacy' keeps the choice made before the new keys; 'new' once proven.
-const KEYS = { prefer: 'legacy' } as const;
+// THE CANARY (6 Nov): this function goes first. Its claims run every five
+// minutes, so a new key that the platform refuses shows within the hour as
+// failed claims, and nothing is lost meanwhile (a claim that fails hands
+// nothing out). Without new keys in the environment this is the legacy key.
+const KEYS = { prefer: 'new' } as const;
 const ANON_KEY = pickKey((n) => Deno.env.get(n), 'public', KEYS).key;
 const SERVICE_KEY = pickKey((n) => Deno.env.get(n), 'service', KEYS).key;
 const SERVICE_HEADERS = keyHeaders(SERVICE_KEY);
