@@ -31,8 +31,17 @@ def check(what: str, ok: bool) -> None:
 
 
 def run(hook: str, stdin: str, env: dict | None = None):
-    p = subprocess.run([sys.executable, os.path.join(HOOKS, hook)], input=stdin,
-                       capture_output=True, text=True, timeout=20, env={**os.environ, **(env or {})})
+    # Each hook is run by a literal command, from the repository root, as
+    # settings.json runs it: nothing in the command line comes from a variable
+    # (Semgrep's subprocess rule, and no way to run anything but the two hooks).
+    kw = dict(input=stdin, capture_output=True, text=True, timeout=20, cwd=ROOT,
+              env={**os.environ, **(env or {})})
+    if hook == 'trim_github.py':
+        p = subprocess.run(['python3', '.claude/hooks/trim_github.py'], **kw)
+    elif hook == 'agent_log.py':
+        p = subprocess.run(['python3', '.claude/hooks/agent_log.py'], **kw)
+    else:
+        raise ValueError(f'no such hook: {hook}')
     return p.returncode, p.stdout.strip(), p.stderr.strip()
 
 

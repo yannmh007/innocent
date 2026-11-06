@@ -508,7 +508,23 @@ class StreamCacheStore {
     await _saveMeta(e);
   }
 
-  Future<void> _saveMeta(CacheEntry e) async {
+  /// ONE SAVE OF A FILM'S METADATA AT A TIME (2026-11-06). Two at once
+  /// share `meta.json.tmp`: the second's rename found it gone (seen in the
+  /// HLS test under load: a read's touch beside a request's), and two
+  /// writers into one file can leave it half of each. Each save waits for
+  /// the one before; a save never fails, so the chain never breaks.
+  final Map<String, Future<void>> _metaSaving = <String, Future<void>>{};
+
+  Future<void> _saveMeta(CacheEntry e) {
+    final next = (_metaSaving[e.id] ?? Future<void>.value()).then((_) => _writeMeta(e));
+    _metaSaving[e.id] = next;
+    unawaited(next.whenComplete(() {
+      if (identical(_metaSaving[e.id], next)) _metaSaving.remove(e.id);
+    }));
+    return next;
+  }
+
+  Future<void> _writeMeta(CacheEntry e) async {
     try {
       final dir = await entryDir(e.id);
       if (!await dir.exists()) await dir.create(recursive: true);
