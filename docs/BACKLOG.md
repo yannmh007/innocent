@@ -15,9 +15,18 @@ Written at the owner's request so nothing below is lost between sessions.
 Newest first within each group; tick an item by deleting it in the commit that
 does it.
 
-### Next app release (1.64.80, 6 Nov)
-- **1.64.79 is out** (31 Oct 08:51 UTC, main 7722136).
-- **1.64.80** goes out on 6 Nov. It carries Report on every title and the
+### Next app release (after 1.64.80)
+- **1.64.80 is out** (6 Nov 14:20 UTC, main 0202f0a, build 42226206227,
+  arm64 95609920 bytes `a519403d…8569`, arm32 87572232 bytes
+  `a3dd686f…4ee0`; GitHub's digests agree; app_releases moved at 14:20,
+  mirrors on the GitHub release). After the push: Playback check
+  42226785108 passed, both Workers rebuilt from main (13:32), Pages
+  published, the transcode and ingest runners on main claim with
+  `seals: 1`. Static analysis on main went red once (42226206270): the two
+  fake JWTs in `tool/js/service_key_test.mjs`, fixed on the branch
+  (06c70cc); it reaches main with the next release, not before, since a
+  change under tool/ rebuilds 1.64.80 for nothing.
+- 1.64.80 carries Report on every title and the
   takedown address in About (P6), genres by code in the phone's language
   (TAX phase 3), the media seal's app half (the opener, the device key, the
   unseal gateway, sealed images) DORMANT — the build asks for no sealed
@@ -122,8 +131,8 @@ does it.
     JWT, no longer read).
   - **S2/P2**: ENC rollout A→F; every film and photo is still plain in R2.
   - **S3/P3**: key attestation BUILT 6 Nov, log mode (6a87482:
-    key_attest.js, request-playback v43, migration 074, app key v2 with the
-    next release). Next: R8 (real chains), then P3b (the stream token
+    key_attest.js, request-playback v43, migration 074, app key v2 in
+    1.64.80, sent only by a build that asks for sealed copies). Next: R8 (real chains), then P3b (the stream token
     wrapped for the attested key, so a plain grant needs the phone too),
     then `require` for premium. The owner is told in Telegram when one
     install/account/network pulls far more than a person (migration 075,
@@ -145,7 +154,7 @@ does it.
     Telegram 2-step; a fine-grained, expiring `GH_DISPATCH_TOKEN`; a `main`
     ruleset; secret scanning with push protection; Dependabot; CodeQL.
   - **S7/P6**: BUILT 6 Nov — takedown address innocentmail69@gmail.com in
-    About, Report on every title (next release), migration 076 live (budget
+    About, Report on every title (both in 1.64.80), migration 076 live (budget
     5/phone/day, owner told in Telegram by ingest v51). Left: a Reports page
     in the console; the owner keeps a rights record per title. Hiding the
     host from abuse reports is NOT a goal (§0).
@@ -180,9 +189,9 @@ does it.
   translate, move, offer, retire, merge, delete an unused one), category
   codes and Thai names, the editor choosing genres as chips. On main
   (`25d0fca`, docs only). Left: the ingest by code (it sends words, which
-  the trigger maps), and `tool/js/console_smoke.mjs` to main with the next
-  release (a change under tool/ rebuilds the published version).
-- [x] Phase 3, the app (branch `e72b278`, ships in the next release):
+  the trigger maps). `tool/js/console_smoke.mjs` reached main with
+  1.64.80.
+- [x] Phase 3, the app (branch `e72b278`, released in 1.64.80):
   `rpc/taxonomy` once for tabs and names, a category asked by its code, genre
   filters by code, names in the phone's language, never a raw code on
   screen. 23 tests; full suite 1235 of 1235. Device lab on the live
@@ -332,8 +341,9 @@ Nothing here may be dropped silently: close it with its evidence, or move it.
   at `on` for a minute (born sealed end to end: ingest, attach, play),
   then back to `off`. Done: that file plays sealed on a phone.
 - [ ] **O20 Console sealing not yet run live.** Built and tested in
-  Chromium against a fake studio and R2 (§7.4 step 4). Pages serves the
-  console from main, so the live canary waits for the next release: then,
+  Chromium against a fake studio and R2 (§7.4 step 4). The console with
+  sealing is on main since 1.64.80 (Pages and console.innocentplayer.com),
+  so the live canary can run: then,
   with the switch at `canary` for a minute, upload one photo into an open
   film's album from a phone (a twin: plain + sealed, the key row from
   media_upload_keys), check it in media_image_keys and in the app, and put
@@ -359,7 +369,7 @@ Nothing here may be dropped silently: close it with its evidence, or move it.
   objects named by an expired pending key. Done: none left after a week.
 - [ ] **O24 The console's sealed preview not seen live.** Built and
   tested in Chromium against stand-ins (§7.4 step 8). Live it needs: the
-  console on Pages (next release), and the streaming Worker answering the
+  console from main (there since 1.64.80), and the streaming Worker answering the
   console's origin with CORS for ranges (it does today, for the speed test:
   `STUDIO_ORIGINS`, Content-Range exposed). Next: with a sealed film and a
   sealed photo in a draft (O20's canary), preview each from Review and from

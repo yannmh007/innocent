@@ -134,7 +134,8 @@ are BACKLOG O19, O20 and O24, and R1-R6.
 
 **P3 — make a scripted client expensive and visible.**
 1. **Android Key Attestation** — **built 6 Nov, log mode** (6a87482):
-   - **App** (next release, with the ENC opener). The media key is
+   - **App** (in 1.64.80, with the ENC opener, dormant: the chain is sent
+     only by a build that asks for sealed copies). The media key is
      `inv_media_device_v2`, made with the challenge `inv-media-device-v2`.
      A Keystore that refuses attestation still gets its key, without a
      chain. The chain goes with grants until the server answers
@@ -261,7 +262,7 @@ to us first, and be answered.
 - **Built 6 Nov.** The takedown address is **innocentmail69@gmail.com**,
   given by the owner. It is kept in one place (`kTakedownEmail`) and in the
   owner's notices.
-  - **App** (next release): About → "Copyright & takedown" says who to
+  - **App** (released in 1.64.80, 6 Nov): About → "Copyright & takedown" says who to
     write to and what to include, with the address copyable. Every
     title's page has a Report flag with five reasons: copyright, illegal,
     someone under 18, someone who did not consent, something else. It
