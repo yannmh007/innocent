@@ -182,3 +182,14 @@ every stop, interim readings in the trail, and 8 s with no line (steps
   read watch (8 s, fix 4 in §3) never fired. A shorter watch would only
   matter with a nearly empty buffer: it drops down the list.
 
+**Run D (42370839630)**: C with both start fixes, same line and steps.
+The start is honest at last: the picture moved at 5.3 s from the tap
+(C: 8.1 s), "first frame 3351 ms" after the hand-over (grant 1.6 s on this
+line), 480p's playlist first and no 720p one, and nothing frozen after the
+first frame. Steps 2–5: no stop again (blips 4, 1, 0, 2). One stop left,
+0.995 s at 9.3 s with 135 ms in hand: Auto stepped down to 360p with no
+reading of the line at all, because ExoPlayer's meter starts at 1.5 Mbit/s
+(70 % usable), below 480p's peak, and the change of rung on a four-second
+buffer emptied it. Fixed in E: with nothing measured, the meter guesses a
+line that keeps the rung the app opened on until the first reading.
+
