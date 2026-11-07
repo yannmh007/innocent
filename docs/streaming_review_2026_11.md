@@ -252,3 +252,23 @@ after the jump was 720p on a ~5 Mbit/s line, which is fix 3's case (a
 jump answers from a lower rung first). Both stepped down to 360p before
 any reading, the OPPO on a line 20 times faster than 360p.
 
+**Run G (42384151800)**: F's build again, with each rung's peak in the
+trail. No stop (7 blips, 181 ms), first frame 2.8 s, and **480p 100 % of
+the time** — where F, the same build, spent 97 % at 360p. Picture quality
+on this line is decided by the first few readings. The peaks say why:
+
+| Rung | Average (grant) | Peak Auto weighs (master BANDWIDTH) | Line needed (peak / 0.7) |
+|---|---|---|---|
+| 720p | 1684 | 2105 (index not read: average × 1.25) | 3.0 Mbit/s |
+| 480p | 912 | 1591 (index read: fastest fragment, 1.74 × average) | 2.3 Mbit/s |
+| 360p | 579 | 723 (average × 1.25) | 1.0 Mbit/s |
+| 240p | 306 | 382 (average × 1.25) | 0.55 Mbit/s |
+
+Two things follow (BACKLOG 5b). With a minute of buffer, what must keep
+up is the rate over tens of seconds, not the fastest 2 s fragment: a peak
+over a sliding window of ~20 s would weigh 480p nearer its average, and a
+line of ~1.7 Mbit/s would hold it. And a rung whose index is read is
+weighed by its real peak while one not yet read is weighed at 1.25 × its
+average: 720p looks cheaper than it is until it is read. Both are one
+rule in `HlsLadder.master`; it needs several runs per variant to judge.
+
