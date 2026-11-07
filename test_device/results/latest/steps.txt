@@ -1,20 +1,17 @@
-[09:56:47] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
-[09:56:47] install
-[09:57:02] network: speed 2000:4000 kbit/s, delay 80:200 ms
-[09:57:03] network: 0.5% of incoming packets dropped on eth0
-[09:57:32] overlays: [x] com.android.internal.display.cutout.emulation.hole [x] com.android.internal.systemui.navbar.threebutton 
-[09:57:32] nav bar: navigationBars frame=[0,2274][1080,2400] navigationBars frame=[0,2274][1080,2400] 
-[09:57:32] library: pushing 24 files
-[09:58:01] library: MediaStore lists 24 videos
-[09:58:01] cold start
+[10:36:10] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
+[10:36:10] install
+[10:36:27] network: speed 2000:4000 kbit/s, delay 80:200 ms
+[10:36:28] network: eth0 has qdisc clsact
+[10:36:28] network: 0.5% of incoming packets dropped on eth0 (through ifb0)
+[10:36:55] overlays: [x] com.android.internal.display.cutout.emulation.hole [x] com.android.internal.systemui.navbar.threebutton 
+[10:36:56] nav bar: navigationBars frame=[0,2274][1080,2400] navigationBars frame=[0,2274][1080,2400] 
+[10:36:56] library: pushing 24 files
+[10:37:27] library: MediaStore lists 24 videos
+[10:37:27] cold start
 Status: ok
-TotalTime: 3631
-WaitTime: 3638
-[09:58:16] flow weakline
-[09:58:18] weakline: the test film from its start; the line in steps: 4mbit:40 900kbit:120 3mbit:100
-[09:58:22] weakline: line 4mbit for 40 s
-[09:59:03] weakline: line 900kbit for 120 s
-[10:01:03] weakline: line 3mbit for 100 s
-[10:02:46] weakline: first frame 1138 ms, stalls 22, frozen 3713 ms, longest 2122 ms
-[10:02:46] flow weakline done
-[10:02:52] done
+TotalTime: 3853
+WaitTime: 3895
+[10:37:41] flow weakline
+[10:37:41] weakline: the line under a 900kbit cap measured 32002 kbps (600000 bytes)
+[10:37:41] flow weakline: the cap did not hold (32002 kbps under 900kbit) — skipped, not run unshaped
+[10:37:46] done
