@@ -193,3 +193,19 @@ reading of the line at all, because ExoPlayer's meter starts at 1.5 Mbit/s
 buffer emptied it. Fixed in E: with nothing measured, the meter guesses a
 line that keeps the rung the app opened on until the first reading.
 
+**Run E (42373118426)**: D with the meter's guess. **No stop a viewer sees
+in the whole film**: 6 blips, 175 ms frozen in all, the longest 84 ms;
+moving 5.7 s from the tap (the grant took 1.8 s of it on this line; a
+viewer who opens the film's page first has it already).
+
+| Run | What changed | Stops ≥ 250 ms | Frozen |
+|---|---|---|---|
+| B' | the branch at noon (720p start) | 3 | 5.9 s |
+| C | 480p start | 1 (the start, mislabelled) | 4.6 s |
+| D | first frame from ExoPlayer; start rung leads the master | 1 | 1.0 s |
+| E | the meter keeps the start rung until a reading | 0 | 0.18 s (blips) |
+
+Auto still stepped down to 360p at 6.9 s before any interim reading was
+logged; an end-of-read reading (not written to the trail) is the likely
+source. It cost nothing here (58 ms, 3 s in hand).
+
