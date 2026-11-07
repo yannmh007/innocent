@@ -30,8 +30,12 @@ ladder's first frame taken from ExoPlayer, not from libmpv's stop (the
 "first picture in 0.2 s" of earlier labs was that artefact; open_ms
 before and after this change are not comparable); (c) the start rung
 leading the master playlist; (d) ExoPlayer's meter keeping the start rung
-until a reading; and the line read during a read (fix 1; A', run
-42376362339, measures it). **The lab line was never shaped
+until a reading (works since run F, 42381638569: the guess must be made
+where the selection is built). The line read during a read (fix 1) stays:
+no stop in any run with it; its effect on picture quality is not shown
+(A' 3 % at 480p, E 87 %, F with fix 1 3 %: early readings decide it).
+Test Lab run 42376634865: all checks passed on both phones, honest first
+frame 1.5 s / 3.1 s. **The lab line was never shaped
 before 7 Nov** (the runner's bpf filter on eth0 took the ifb redirect's
 packets): it now runs through `tool/netlab/line_relay.py` on loopback and
 proves its cap first. Next, each proved by an emulator A/B on that line:
@@ -47,6 +51,13 @@ proves its cap first. Next, each proved by an emulator A/B on that line:
 5. two connections for a ladder's reads on a lossy line: one carries
    ~1.5–2 Mbit/s at 0.5 % loss and 120 ms whatever the cap (TCP's own
    limit), less than 720p's peak; costs Worker requests;
+5b. picture quality on a weak line: Auto weighs a rung by its PEAK (the
+   master's BANDWIDTH, the fastest fragment) over 0.7; with a minute of
+   buffer the average is what must keep up. Measure the peaks (run G logs
+   them), then consider a high percentile instead of the maximum. Judge
+   by several runs per variant: one run's quality share is mostly spread;
+5c. a seek on a ~5 Mbit/s line froze 1.7 s on the realme (first segment
+   720p): fix 3 below, for the first segment after a jump only;
 6. labs to add: ten minutes on a weak line, a link expiring mid-film, a
    low-end and a 32-bit Test Lab phone, two runs per build.
 After the release: frozen seconds per minute played, from `play_summary`,
