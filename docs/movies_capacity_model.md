@@ -1,5 +1,9 @@
 # Year one — the numbers, and where they actually bind
 
+> **Superseded as the current shape (7 Nov 2026):** see `docs/architecture.md`.
+> This is the October plan; its reasoning still holds, but the system has
+> moved on (a stream Worker in front of R2, encrypted copies, the console).
+
 Written 28 Aug 2026 against the owner's own projections and content profile;
 revised the same day to add the auth cost, which was missing entirely.
 Read after `movies_platform_plan.md`, and act on it via
