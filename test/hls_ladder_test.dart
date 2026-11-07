@@ -113,6 +113,27 @@ void main() {
     expect(text, startsWith('#EXTM3U\n#EXT-X-VERSION:7\n#EXT-X-INDEPENDENT-SEGMENTS\n'));
   });
 
+  test('the rung the player opens with leads; the rest stay best first', () {
+    // ExoPlayer reads the first variant's playlist before it can start: a
+    // 480p start behind 720p waited for 720p's index (run 42367973983).
+    const rungs = [
+      HlsRung(height: 240, kbps: 300, url: 'a'),
+      HlsRung(height: 720, kbps: 1500, url: 'b'),
+      HlsRung(height: 480, kbps: 900, url: 'c'),
+      HlsRung(height: 360, kbps: 600, url: 'd'),
+    ];
+    List<String?> order(int? first) => RegExp(r'#EXT-X-STREAM-INF:.*\n(.*)')
+        .allMatches(HlsLadder.master(rungs, mediaUri: (r) => '${r.height}', first: first))
+        .map((m) => m.group(1))
+        .toList();
+    expect(order(480), ['480', '720', '360', '240']);
+    expect(order(720), ['720', '480', '360', '240']);
+    expect(order(240), ['240', '720', '480', '360']);
+    // No start known, or one the ladder lacks: best first, as before.
+    expect(order(null), ['720', '480', '360', '240']);
+    expect(order(1080), ['720', '480', '360', '240']);
+  });
+
   test('no rung read and no shape known: every rung still has a RESOLUTION', () {
     // The player tells rungs apart by height; without one, a pick of 240p
     // played the best rung (device-lab run 40079651806).

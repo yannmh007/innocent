@@ -175,9 +175,18 @@ class HlsLadder {
               ? 'avc1.640028'
               : 'avc1.640033';
 
-  /// The master playlist: every rung, best first. [mediaUri] names a
-  /// rung's media playlist; [aspect] (width / height, from any rung read)
-  /// gives each rung its RESOLUTION.
+  /// The master playlist: every rung, best first — except [first], the rung
+  /// the player opens with, which leads. [mediaUri] names a rung's media
+  /// playlist; [aspect] (width / height, from any rung read) gives each
+  /// rung its RESOLUTION.
+  ///
+  /// THE START RUNG LEADS (7 Nov 2026). ExoPlayer reads the FIRST variant's
+  /// playlist before it can start (its primary playlist; Apple's players
+  /// start on the first listed), and a rung's playlist needs its index read
+  /// from the Worker. Best first, a 480p start waited for 720p's index too:
+  /// one more round trip on a weak line, in the 4.6 s between the first
+  /// frame and play in the device lab (run 42367973983). Auto still chooses
+  /// among all of them; their order is not a preference.
   ///
   /// EVERY RUNG HAS A RESOLUTION, with 16:9 when nothing better is known:
   /// the player tells rungs apart by their height, and a master without
@@ -188,8 +197,11 @@ class HlsLadder {
     required String Function(HlsRung rung) mediaUri,
     double? aspect,
     double? frameRate,
+    int? first,
   }) {
     final sorted = [...rungs]..sort((a, b) => b.height.compareTo(a.height));
+    final lead = sorted.indexWhere((r) => r.height == first);
+    if (lead > 0) sorted.insert(0, sorted.removeAt(lead));
     final out = StringBuffer()
       ..writeln('#EXTM3U')
       ..writeln('#EXT-X-VERSION:7')

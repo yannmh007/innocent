@@ -818,6 +818,7 @@ class StreamCacheServer {
           mediaUri: (r) => 'http://127.0.0.1:$port/h/$token/$ladderId/${r.height}.m3u8',
           aspect: aspect,
           frameRate: l.frameRate,
+          first: startHeight,
         );
       } else if (name.endsWith('.m3u8')) {
         final h = int.tryParse(name.substring(0, name.length - 5));
