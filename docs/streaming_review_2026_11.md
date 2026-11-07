@@ -30,9 +30,11 @@ phone. That is the number every change below is judged by.
 
 ## 2. What the labs show (1.64.78, six newest runs; lab-reader 7 Nov)
 
-- **Start-up is fine**: first picture 136–240 ms after the player has the
-  address on the Test Lab phones (OPPO A79, realme C53); 0.3–1.2 s on the
-  shaped emulator line.
+- ~~**Start-up is fine**: first picture 136–240 ms after the player has
+  the address on the Test Lab phones (OPPO A79, realme C53); 0.3–1.2 s on
+  the shaped emulator line.~~ **Not a measurement** (found 7 Nov, §5): on
+  the ladder the "first frame" was libmpv's stop, heard before the streams
+  moved to ExoPlayer; the real start came seconds later, logged as a stall.
 - **A quality change no longer freezes**: about 0.2 s (it was 4.2 s on
   libmpv at 1.64.71).
 - **Many short stalls on a weak line**: on the emulator's 2–4 Mbit/s line,
@@ -144,4 +146,39 @@ costs (BACKLOG).
 - The climb back after the line returned took ~80 s: at 240p the buffer
   fills to its minute and the player stops reading, so there is nothing to
   measure. Slow, but it is a softer picture, not a stop.
+
+**Run C (42367973983)**: 480p unmeasured start, the film in hand logged at
+every stop, interim readings in the trail, and 8 s with no line (steps
+4 Mbit/s 40 s, 900 kbit/s 120 s, 3 Mbit/s 60 s, off 8 s, 3 Mbit/s 60 s):
+
+| Step | Stops ≥ 250 ms | Blips | Rungs |
+|---|---|---|---|
+| 4 Mbit/s (start) | 1: 4.6 s, nothing in hand | 3 | 480 → 360 → 240 |
+| 900 kbit/s | 0 | 10 | 360 |
+| 3 Mbit/s | 0 | 3 | — |
+| off 8 s | 0 | 1 | — |
+| 3 Mbit/s | 0 | 9 | 480 → 240 → 360 → 480 |
+
+- **The one stop was the start, mislabelled.** "first frame 928 ms" then
+  "rebuffer start (ahead 0 ms)" at the same instant, in B, B' and C alike:
+  opening a ladder stopped libmpv before the player screen's streams moved
+  to ExoPlayer, and libmpv's stop ("not buffering") was taken for the
+  first frame. So open_ms on the ladder was too good, the start's wait was
+  counted as a stall, and the screen called it a slow connection at 3 s
+  (an open has 6 s and 40 s of rope). Fixed: the streams move first, and
+  on the ladder a position counts as the picture only once it has moved.
+- **The start also waited for the wrong rung's index**: ExoPlayer reads the
+  first variant's playlist before it can start, the master listed 720p
+  first, and a playlist needs its rung's index from the Worker — 720p's
+  came (5.8–6.2 s) before 480p's (6.4 s). Fixed: the start rung leads the
+  master.
+- **Blips are the emulator's decoder, not the line**: every one had 21–59 s
+  of film in hand and came about a second after a rung change reached the
+  screen (a decoder starting again at the new size). 2–75 ms, no spinner.
+  Fewer rung changes would mean fewer; a real phone's adaptive decoder may
+  have none. Not chased further.
+- **Eight seconds with no line cost nothing**: 26 s were in hand. The first
+  answer after it took 2.9 s (TCP's retransmission backoff), and the dead
+  read watch (8 s, fix 4 in §3) never fired. A shorter watch would only
+  matter with a nearly empty buffer: it drops down the list.
 
