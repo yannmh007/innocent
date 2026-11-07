@@ -2606,6 +2606,16 @@ Deno.serve(async (req: Request) => {
     } catch (e) {
       house.backup = 'error: ' + String(e).slice(0, 160);
     }
+    // THE ANALYTICS ROLLUP AND THE 90-DAY PRUNE (migration 078): due once a
+    // day, on the first tick that finds a finished day not rolled up yet or
+    // an event past 90 days; every other tick it only looks. Shown only
+    // when it did something, or failed.
+    try {
+      const ev = await rpc('events_housekeeping', {}) as { due?: boolean } | null;
+      if (ev?.due) house.events = ev;
+    } catch (e) {
+      house.events = 'error: ' + String(e).slice(0, 160);
+    }
     return json({ ok: true, purged, failed, house }, 200, req);
   }
 
