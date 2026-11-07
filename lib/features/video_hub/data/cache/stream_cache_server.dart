@@ -1869,14 +1869,10 @@ class StreamCacheServer {
     if (ms <= 0) return;
     final kbps = max(_interimFloorKbps, (bytes * 8) ~/ ms);
     networkKbps.value = kbps;
-    // In the trail once it has moved by a quarter: what Auto steers by
-    // between whole reads ('measured'), which on a weak line come ~20 s
-    // apart — the lab could not tell when the player first knew the line.
-    final last = _interimLogged;
-    if (last == null || (kbps - last).abs() * 4 > last) {
-      _interimLogged = kbps;
-      PlaybackLog.add('line $kbps kbps, in a read');
-    }
+    // In the trail: what Auto steers by between whole reads ('measured'),
+    // which on a weak line come ~20 s apart — the lab could not tell when
+    // the player first knew the line.
+    _logLine(kbps, 'in a read');
   }
 
   void _recordNetwork(int bytes, Duration took) {
@@ -1884,7 +1880,18 @@ class StreamCacheServer {
     if (ms < 200) return;
     final kbps = (bytes * 8) ~/ ms;
     networkKbps.value = kbps;
+    _logLine(kbps, 'a read');
     _recordThroughput(bytes, took);
+  }
+
+  /// A reading the player is fed, in the trail once it has moved by a
+  /// quarter from the last one written there.
+  void _logLine(int kbps, String from) {
+    final last = _interimLogged;
+    if (last == null || (kbps - last).abs() * 4 > last) {
+      _interimLogged = kbps;
+      PlaybackLog.add('line $kbps kbps, $from');
+    }
   }
 
   /// Write each chunk to the cache, then hand it on.
