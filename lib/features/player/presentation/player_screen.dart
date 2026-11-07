@@ -38,6 +38,7 @@ import '../../local_browser/presentation/widgets/video_option_menu.dart'
 
 import '../../../core/di/core_providers.dart';
 import '../../../core/services/diagnostics/playback_log.dart';
+import '../../video_hub/data/cache/stream_cache_server.dart';
 import '../../../core/services/diagnostics/semantics_dump.dart';
 import '../../../core/services/file_transfer/file_transfer_service.dart';
 import '../../../core/router/routes.dart';
@@ -1004,12 +1005,24 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     // why the player — which also plays local files, music and vault content
     // — never has to learn what a title id is.
     try {
-      ref.read(playerControllerProvider.notifier).onFirstFrame =
-          (took) => _reporter?.reportOpen(took);
+      final ctrl = ref.read(playerControllerProvider.notifier);
+      // One viewing of this title, reopens and renewals included: the
+      // summary sent at the end covers all of it (PlaybackQoe).
+      ctrl.qoe.reset();
+      ctrl.onFirstFrame = (took) => _reporter?.reportOpen(took);
       // The same seam, for the same reason: the controller measures WHY
       // playback stopped and only this screen knows which title it was.
-      ref.read(playerControllerProvider.notifier).onStall =
-          (reason) => _reporter?.reportStall(reason.toMeta());
+      ctrl.onStall = (reason) => _reporter?.reportStall(reason.toMeta());
+      // On the ladder, measured as the stall ends; the line's speed as the
+      // proxy last read it travels with it (the proxy is this feature's).
+      ctrl.onLadderStall = (meta) {
+        final kbps = StreamCacheServer.networkKbps.value;
+        _reporter?.reportStall(<String, dynamic>{
+          ...meta,
+          if (kbps != null && kbps > 0) 'have_kbps': kbps,
+        });
+      };
+      ctrl.onPlaybackError = (code) => _reporter?.reportError(code);
     } catch (e) {
       PlaybackLog.add('open timing not wired: $e');
     }
@@ -1071,6 +1084,13 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     // failure below would lose the answer to "does this title hold people".
     try {
       final svc = ref.read(videoPlayerServiceProvider);
+      // What watching was like, just before the last progress row.
+      try {
+        _reporter?.reportSummary(
+            ref.read(playerControllerProvider.notifier).qoe.toMeta(DateTime.now()));
+      } catch (e) {
+        PlaybackLog.add('summary report failed: $e');
+      }
       _reporter?.finish(position: svc.position, duration: svc.duration);
       _rememberPoint(svc.position, svc.duration, last: true);
     } catch (e) {
@@ -1087,6 +1107,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     try {
       ref.read(playerControllerProvider.notifier).onFirstFrame = null;
       ref.read(playerControllerProvider.notifier).onStall = null;
+      ref.read(playerControllerProvider.notifier).onLadderStall = null;
+      ref.read(playerControllerProvider.notifier).onPlaybackError = null;
       ref.read(playerControllerProvider.notifier).onFinished = null;
     } catch (_) {
       // Nothing to release if the provider is already gone.

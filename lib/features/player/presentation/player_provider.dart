@@ -18,6 +18,7 @@ import '../../../core/services/video_player/media_kit_player_service.dart';
 import '../../../core/services/video_player/loopback_uri.dart';
 import '../../../core/services/video_player/seek_math.dart';
 import '../../../core/services/video_player/stall_diagnosis.dart';
+import '../domain/playback_qoe.dart';
 import '../../../core/services/network/throughput_memory.dart';
 import '../../../core/services/video_player/stream_renewal.dart';
 import '../../user_data/domain/user_data_models.dart';
@@ -166,6 +167,26 @@ class PlayerController extends StateNotifier<PlayerState> {
   /// content as well as catalogue titles, and none of those has a title id or
   /// belongs in the event log.
   void Function(StallDiagnosis reason)? onStall;
+
+  /// A stall on the ladder engine, measured when it ENDS: how long the
+  /// picture was frozen, on which rung, what the line was doing. Null for
+  /// local playback. [onStall] cannot carry it: its diagnosis reads libmpv,
+  /// which is idle while ExoPlayer plays a ladder — so until 7 Nov 2026 a
+  /// ladder stall went only into the phone's own trail.
+  void Function(Map<String, dynamic> meta)? onLadderStall;
+
+  /// A failure the viewer saw, as a fixed code (never the message: it can
+  /// carry a signed address). Null for local playback.
+  void Function(String code)? onPlaybackError;
+
+  /// This file's playback in numbers, for the screen to send once at the
+  /// end (PlaybackQoe). Reset for every file.
+  final PlaybackQoe qoe = PlaybackQoe();
+
+  void _reportError(String code) {
+    qoe.error(code);
+    onPlaybackError?.call(code);
+  }
 
   /// Called when a file plays to its end with no loop or sleep timer in the
   /// way. Returns true when the screen takes the end over (Up next), so the
@@ -804,8 +825,12 @@ class PlayerController extends StateNotifier<PlayerState> {
     } catch (e) { if (kDebugMode) debugPrint('PlayerProvider: $e'); }
   }
 
+  /// The ladder's rung, as it changes on screen: how far quality moved.
+  void _onRungShown() => qoe.rung(MediaKitPlayerService.rungOnScreen.value);
+
   void _attachListeners() {
     final svc = _ref.read(videoPlayerServiceProvider);
+    MediaKitPlayerService.rungOnScreen.addListener(_onRungShown);
     _subs.add(svc.positionStream.listen((p) {
       if (!mounted) return;
       _scheduleAutoSave();
@@ -880,6 +905,7 @@ class PlayerController extends StateNotifier<PlayerState> {
       if (!mounted) return;
       state = state.copyWith(isPlaying: p);
       _updateBackgroundWakeLock(p);
+      qoe.playing(p, DateTime.now());
     }));
     _subs.add(svc.bufferingStream.listen((b) {
       if (!mounted) return;
@@ -896,8 +922,23 @@ class PlayerController extends StateNotifier<PlayerState> {
                 DateTime.now().difference(reopen) < _reopenFillWindow);
         PlaybackLog.add(_fillAfterJump ? 'jump fill start' : 'rebuffer start');
       } else if (!b && _rebufferSince != null) {
-        PlaybackLog.add('${_fillAfterJump ? 'jump fill' : 'rebuffer'} end '
-            '${DateTime.now().difference(_rebufferSince!).inMilliseconds} ms');
+        final ms = DateTime.now().difference(_rebufferSince!).inMilliseconds;
+        PlaybackLog.add('${_fillAfterJump ? 'jump fill' : 'rebuffer'} end $ms ms');
+        if (_fillAfterJump) {
+          qoe.jumpFillEnded(ms);
+        } else {
+          qoe.stallEnded(ms);
+          // On the ladder this is the only measurement of the stall there
+          // is: libmpv's diagnosis (onStall) reads an idle player there.
+          final player = _ref.read(videoPlayerServiceProvider);
+          if (player is MediaKitPlayerService && player.playingLadder) {
+            onLadderStall?.call(<String, dynamic>{
+              'reason': 'ladder',
+              'frozen_ms': ms,
+              if (player.ladderRung != null) 'res': player.ladderRung,
+            });
+          }
+        }
         _rebufferSince = null;
         _fillAfterJump = false;
       }
@@ -988,6 +1029,7 @@ class PlayerController extends StateNotifier<PlayerState> {
                     ? AppStrings.current.pvWouldNotStart
                     : AppStrings.current.pvStalled,
               );
+              _reportError(opening ? 'would_not_start' : 'stalled');
             },
           );
         }
@@ -1018,6 +1060,7 @@ class PlayerController extends StateNotifier<PlayerState> {
             isOpening: false,
             loadingMessage: null,
           );
+          _reportError('engine_stuck');
         } else if (state.errorMessage == kPlayerEngineStuck) {
           // It came back by itself: slow, not dead.
           state = state.copyWith(errorMessage: null);
@@ -1030,6 +1073,7 @@ class PlayerController extends StateNotifier<PlayerState> {
       _subs.add(svc.decodeFloods.listen((line) {
         if (!mounted) return;
         _stopDecodeWatch();
+        _reportError('damaged_stretch');
         state = state.copyWith(
           errorMessage: kPlayerDamagedStretch,
           isBuffering: false,
@@ -1129,10 +1173,12 @@ class PlayerController extends StateNotifier<PlayerState> {
         if (!online) {
           state = state.copyWith(
               errorMessage: AppStrings.current.pvOffline);
+          _reportError('offline');
           // Skip the auto-retry — it would just fail again.
           return;
         }
         state = state.copyWith(errorMessage: e);
+        _reportError('player_error');
         if (_networkRetryInFlight) return;
         _networkRetryInFlight = true;
         Future.delayed(const Duration(seconds: 2), () async {
@@ -1175,6 +1221,7 @@ class PlayerController extends StateNotifier<PlayerState> {
                 // language on screen.
                 state = state.copyWith(
                     errorMessage: AppStrings.current.pvLinkExpired);
+                _reportError('link_expired');
                 _networkRetryInFlight = false;
                 return;
               }
@@ -2048,6 +2095,15 @@ class PlayerController extends StateNotifier<PlayerState> {
     if (mounted && state.isOpening) {
       state = state.copyWith(isOpening: false, slowNetworkHintVisible: false);
     }
+    {
+      final player = _ref.read(videoPlayerServiceProvider);
+      final ladder = player is MediaKitPlayerService && player.playingLadder;
+      qoe.firstFrame(
+        ms: started == null ? -1 : DateTime.now().difference(started).inMilliseconds,
+        engineName: ladder ? 'ladder' : 'mpv',
+      );
+      if (ladder) qoe.rung(player.ladderRung);
+    }
     if (started != null) {
       PlaybackLog.add('first frame ${DateTime.now().difference(started).inMilliseconds} ms');
       // Reported, not logged. A number nobody collects is a number nobody
@@ -2101,6 +2157,7 @@ class PlayerController extends StateNotifier<PlayerState> {
 
   @override
   void dispose() {
+    MediaKitPlayerService.rungOnScreen.removeListener(_onRungShown);
     // Final save before dispose — forced, so the history entry lands even if
     // the throttled window has not elapsed.
     _autoSavePosition(force: true);

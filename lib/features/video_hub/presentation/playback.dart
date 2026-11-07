@@ -178,6 +178,15 @@ Future<void> playMedia(
       // would be indistinguishable from the main film, and "which extra do
       // people actually watch" would be unanswerable.
       assetId: source.provider == 'asset' ? source.locator : null,
+      // The server's half of tap-to-picture (7 Nov 2026): play_open starts
+      // its clock when the player is handed the address, after this. With
+      // both, the wait a viewer sees is grant_ms + open_ms, and which half is
+      // slow is known. `ahead`: the grant was asked for while they read the
+      // title, so the tap waited for nothing.
+      meta: <String, dynamic>{
+        'grant_ms': asked.elapsedMilliseconds,
+        if (reused) 'ahead': true,
+      },
     );
     // Screen-capture protection for paid content is requested here but HELD
     // BY THE PLAYER, which acquires it in initState and releases it in

@@ -253,6 +253,16 @@ class Ev {
   /// does not exist yet at that point.
   static const String playOpen = 'play_open';
 
+  /// One per playback, as it ends: what it was like to watch, in numbers
+  /// (PlaybackQoe.toMeta) — open_ms, played_s, stalls, frozen_ms,
+  /// longest_ms, jumps, jump_ms, the rungs seen, the error codes.
+  ///
+  /// THE ONE ROW THAT SAYS WHETHER STREAMING IS SMOOTH (7 Nov 2026). Stalls
+  /// on the ladder were never sent, so "no stalls since 24 Oct" was a blind
+  /// spot and not a result. Frozen seconds per minute played, per version
+  /// and per network, is what tells a fix that worked from one that did not.
+  static const String playSummary = 'play_summary';
+
   static const String playProgress = 'play_progress';
 
   /// ≥90% watched.
