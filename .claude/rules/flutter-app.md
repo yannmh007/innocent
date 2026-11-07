@@ -34,5 +34,11 @@ paths:
   flow checks the Privacy text (`privacyBody`, three languages) in the same
   change. Why: on 7 Nov it still said "runs entirely offline, sends
   nothing".
+- **"No events" is not "no problem" until the path that sends them is
+  read.** Ladder (ExoPlayer) stalls were never sent (`_measureStall`
+  returned early off libmpv), so `play_stall` went quiet after 24 Oct and
+  looked like smoothness (7 Nov). Playback telemetry must cover both
+  engines; `play_summary` (PlaybackQoe) is the per-playback truth, and a
+  new playback event kind needs its row in `event_kinds` (migration 080).
 - No owner name, location or personal contact in the app (the takedown
   address is the one public contact).

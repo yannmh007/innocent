@@ -15,6 +15,25 @@ Written at the owner's request so nothing below is lost between sessions.
 Newest first within each group; tick an item by deleting it in the commit that
 does it.
 
+### Streaming without stutter (7 Nov) — `docs/streaming_review_2026_11.md`
+The owner's request: no stutter, nothing that annoys a viewer. Evidence:
+live events (labs only, real viewers one or two) and the six newest lab
+runs. Done on the branch (ships with the next release): ladder stalls,
+tap-to-picture (`grant_ms`), failures (`error` codes) and one
+`play_summary` per playback (migration 080 live; PlaybackQoe). Next, in
+order, each proved by an emulator A/B on the same shaped line first:
+1. resume after a stall on 4–5 s, not 2 s, and push the estimate down on
+   a stall (13 stalls in 240 s at 2–4 Mbit/s, 1.64.78);
+2. climb back only when the slow average clears the higher rung (720 →
+   240 → 720 → stall);
+3. a jump on a slow line takes its first segment from the rung below
+   (OPPO seek 5.9 s);
+4. a dead segment read noticed in 3–4 s, not 8 (`segmentStall`);
+5. labs to add: ten minutes on a weak line, a link expiring mid-film, a
+   low-end and a 32-bit Test Lab phone, two runs per build.
+After the release: frozen seconds per minute played, from `play_summary`,
+per version and network — the number each step must lower.
+
 ### Architecture review, eleven layers (7 Nov) — `docs/architecture.md`
 Checked live against a classic web-architecture picture the owner shared.
 Most layers are sound (jobs, backups, search for Burmese, rate limits,
