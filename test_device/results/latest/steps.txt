@@ -1,17 +1,28 @@
-[10:36:10] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
-[10:36:10] install
-[10:36:27] network: speed 2000:4000 kbit/s, delay 80:200 ms
-[10:36:28] network: eth0 has qdisc clsact
-[10:36:28] network: 0.5% of incoming packets dropped on eth0 (through ifb0)
-[10:36:55] overlays: [x] com.android.internal.display.cutout.emulation.hole [x] com.android.internal.systemui.navbar.threebutton 
-[10:36:56] nav bar: navigationBars frame=[0,2274][1080,2400] navigationBars frame=[0,2274][1080,2400] 
-[10:36:56] library: pushing 24 files
-[10:37:27] library: MediaStore lists 24 videos
-[10:37:27] cold start
+[10:57:03] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
+[10:57:03] install
+[10:57:23] network: speed 2000:4000 kbit/s, delay 80:200 ms
+[10:57:23] network: eth0 has qdisc clsact
+[10:57:24] network: the redirect into ifb0 was accepted but only 0 bytes reached it — NO loss applies (ingress filters there: pref 1 bpf pref 49 u32 )
+[10:57:50] overlays: [x] com.android.internal.display.cutout.emulation.hole [x] com.android.internal.systemui.navbar.threebutton 
+[10:57:51] nav bar: navigationBars frame=[0,2337][1080,2400] navigationBars frame=[0,2337][1080,2400] navigationBars frame=[0,2274][1080,2400] 
+[10:57:51] library: pushing 24 files
+[10:58:22] library: MediaStore lists 24 videos
+[10:58:22] cold start
 Status: ok
-TotalTime: 3853
-WaitTime: 3895
-[10:37:41] flow weakline
-[10:37:41] weakline: the line under a 900kbit cap measured 32002 kbps (600000 bytes)
-[10:37:41] flow weakline: the cap did not hold (32002 kbps under 900kbit) — skipped, not run unshaped
-[10:37:46] done
+TotalTime: 3617
+WaitTime: 3629
+[10:58:36] flow weakline
+[10:58:37] line: this user's HTTPS through the relay on 47126, shaped on lo (delay 60ms each way, loss 0.5%)
+[10:58:43] weakline: the line under a 900kbit cap measured 757 kbps (600000 bytes)
+[10:58:45] weakline: the test film from its start; the line in steps: 4mbit:40 900kbit:120 3mbit:100 (delay 60ms each way, loss 0.5%)
+[10:58:48] weakline: line 4mbit for 40 s
+[10:59:28] weakline: line 900kbit for 120 s
+[11:01:28] weakline: line 3mbit for 100 s
+[11:03:11] weakline: the line passed Sent 33137438 bytes 22280 pkt (dropped 81
+[11:03:13] weakline: 
+[11:03:13] weakline: first frame 874 ms, stalls 3 (>=250 ms), blips 19, frozen 6811 ms, longest 3214 ms
+[11:03:13] weakline step 1 (4mbit): stalls 3, frozen 5914 ms, longest 3214 ms, blips 4, rungs 720p 360p 480p 360p
+[11:03:13] weakline step 2 (900kbit): stalls 0, frozen 0 ms, longest 0 ms, blips 11, rungs 480p 360p 240p
+[11:03:13] weakline step 3 (3mbit): stalls 0, frozen 0 ms, longest 0 ms, blips 4, rungs 360p 480p
+[11:03:14] flow weakline done
+[11:03:18] done
