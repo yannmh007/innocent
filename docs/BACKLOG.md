@@ -40,10 +40,10 @@ security). Found, most urgent first:
    real (last 7 Nov 02:55); `tool/restore_backup.py` exists. A monthly
    runner job: restore the latest into a throwaway Postgres (service
    container), compare row counts with `db_backups.tables`.
-5. **DNSSEC: off on 7 Nov** (owner's screenshots). The owner enables it
-   (DNS → Settings → Enable DNSSEC); Cloudflare Registrar publishes the DS
-   in 1–2 days; then a screenshot of the card showing Active. CAA: none,
-   and none wanted (see `docs/architecture.md`, layer 1).
+5. **DNSSEC: enabled 7 Nov, pending** ("pending while we automatically add
+   the DS record"). Cloudflare Registrar publishes the DS in 1–2 days; the
+   12 Nov reminder asks for a screenshot showing Active. Never press Cancel
+   Setup. CAA: none, and none wanted (`docs/architecture.md`, layer 1).
 6. When the catalogue reaches thousands of titles: `search_titles`' fuzzy
    half as `needle <% search_text` with `pg_trgm.word_similarity_threshold
    = 0.45` set on the function (EXPLAIN: Seq Scan today, Bitmap Index Scan
