@@ -1859,11 +1859,23 @@ class StreamCacheServer {
   /// a line to step down for, and a zero would be ignored downstream.
   static const int _interimFloorKbps = 64;
 
+  /// The last interim reading written to the trail.
+  int? _interimLogged;
+
   /// A reading from the middle of a segment read (see the read loop): only
   /// the speed, never the throughput memory — that keeps whole reads.
   void _recordInterim(int bytes, int ms) {
     if (ms <= 0) return;
-    networkKbps.value = max(_interimFloorKbps, (bytes * 8) ~/ ms);
+    final kbps = max(_interimFloorKbps, (bytes * 8) ~/ ms);
+    networkKbps.value = kbps;
+    // In the trail once it has moved by a quarter: what Auto steers by
+    // between whole reads ('measured'), which on a weak line come ~20 s
+    // apart — the lab could not tell when the player first knew the line.
+    final last = _interimLogged;
+    if (last == null || (kbps - last).abs() * 4 > last) {
+      _interimLogged = kbps;
+      PlaybackLog.add('line $kbps kbps, in a read');
+    }
   }
 
   void _recordNetwork(int bytes, Duration took) {

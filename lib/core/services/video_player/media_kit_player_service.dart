@@ -290,6 +290,15 @@ class MediaKitPlayerService implements VideoPlayerService {
   /// The rung on screen while a ladder plays, by height.
   int? get ladderRung => _exoActive ? _exo?.rung : null;
 
+  /// Film in hand ahead of the picture while a ladder plays (ms), as of the
+  /// player's last state change; null off the ladder.
+  int? get ladderAheadMs {
+    final e = _exo;
+    if (!_exoActive || e == null) return null;
+    final ms = (e.buffered - e.position).inMilliseconds;
+    return ms < 0 ? 0 : ms;
+  }
+
   /// The declared bitrate of [ladderRung]'s copy (kbps), for the lab.
   int? get ladderRungKbps => _exoActive ? _exo?.rungKbps : null;
 

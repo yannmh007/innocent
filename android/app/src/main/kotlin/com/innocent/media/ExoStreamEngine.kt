@@ -282,6 +282,11 @@ class ExoStreamEngine private constructor(
             "ready" to p.playWhenReady,
             "buffering" to (p.playbackState == Player.STATE_BUFFERING),
             "ended" to (p.playbackState == Player.STATE_ENDED),
+            // At the moment it changes, not up to 250 ms late as the ticker's:
+            // how much film was in hand when a stall began says whether the
+            // line (none) or the phone (plenty) stopped it.
+            "pos" to p.currentPosition,
+            "buf" to p.bufferedPosition,
         ))
     }
 

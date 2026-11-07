@@ -124,6 +124,9 @@ class PlayerController extends StateNotifier<PlayerState> {
   /// device lab counts stalls and their length.
   DateTime? _rebufferSince;
 
+  /// Film in hand ahead of the picture when the current stop began (ms).
+  int? _rebufferAheadMs;
+
   /// The wait for the buffer under way began straight after a seek or a
   /// reopen (see [_seekFillWindow], [_reopenFillWindow]): shown, timed,
   /// never taken for a failing line.
@@ -920,7 +923,14 @@ class PlayerController extends StateNotifier<PlayerState> {
         _fillAfterJump = (seek != null && seek < _seekFillWindow) ||
             (reopen != null &&
                 DateTime.now().difference(reopen) < _reopenFillWindow);
-        PlaybackLog.add(_fillAfterJump ? 'jump fill start' : 'rebuffer start');
+        // How much film was in hand as it stopped: none is the line; seconds
+        // of it is the phone (a decoder or a renderer that fell behind).
+        // 27 of 28 stops in the lab were blips of 2-67 ms whose cause the
+        // trail could not tell (7 Nov 2026).
+        _rebufferAheadMs = player is MediaKitPlayerService ? player.ladderAheadMs : null;
+        final ahead = _rebufferAheadMs;
+        PlaybackLog.add('${_fillAfterJump ? 'jump fill start' : 'rebuffer start'}'
+            '${ahead != null ? ' (ahead $ahead ms)' : ''}');
       } else if (!b && _rebufferSince != null) {
         final ms = DateTime.now().difference(_rebufferSince!).inMilliseconds;
         PlaybackLog.add('${_fillAfterJump ? 'jump fill' : 'rebuffer'} end $ms ms');
@@ -939,10 +949,12 @@ class PlayerController extends StateNotifier<PlayerState> {
               'reason': 'ladder',
               'frozen_ms': ms,
               if (player.ladderRung != null) 'res': player.ladderRung,
+              if (_rebufferAheadMs != null) 'ahead_ms': _rebufferAheadMs,
             });
           }
         }
         _rebufferSince = null;
+        _rebufferAheadMs = null;
         _fillAfterJump = false;
       }
       // Buffering going FALSE is the first-frame signal: libmpv only stops
