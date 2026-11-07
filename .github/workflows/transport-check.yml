@@ -3,13 +3,21 @@
 # answer says about the storage, and a packet capture of one real fetch.
 # See tool/playback/transport_check.py.
 #
-# BY HAND, or on a push to a working branch that changes the check itself.
+# BY HAND, on a push to a working branch that changes the check itself, AND
+# ON A SCHEDULE (7 Nov 2026): this is the outage alarm. It is the one check
+# that walks what a viewer needs — a grant from Supabase, the stream Worker,
+# the CDN, TLS on each — and it fails when any of them does; GitHub e-mails
+# the owner when a scheduled run fails. Every six hours asked; GitHub runs
+# busy schedules late (ingest's five minutes come every 3-5 hours), so
+# expect a run a few times a day.
 # It asks request-playback for the open test film (Sintel, CC-BY) twice and
 # reads 64 KB-256 KB of it a few times. It never prints a token, a token URL
 # or the Worker's host: this log is public.
 name: Transport check
 
 on:
+  schedule:
+    - cron: '23 */6 * * *'
   push:
     branches-ignore: [ main ]
     paths:
