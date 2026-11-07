@@ -1204,10 +1204,6 @@ class MediaKitPlayerService implements VideoPlayerService {
         ? 'open file (exo) start=${startAt?.inSeconds ?? 0}s autoplay=$autoplay'
         : 'open ladder (exo) start=${startAt?.inSeconds ?? 0}s '
             'autoplay=$autoplay rung=${armed?.target ?? 'auto'} first=${armed?.start ?? '-'}');
-    // libmpv lets go of the decoder and the sound first.
-    try {
-      await _player.stop();
-    } catch (_) {}
     final e = _exo ??= await ExoEngine.create();
     if (e == null) {
       PlaybackLog.add('open ladder: no ExoPlayer on this build');
@@ -1220,6 +1216,15 @@ class MediaKitPlayerService implements VideoPlayerService {
       _exoActive = true;
       _bindLadderEngine(e);
     }
+    // libmpv lets go of the decoder and the sound — AFTER the streams have
+    // moved to ExoPlayer. Its stop says "not buffering", and heard by the
+    // player screen that was the first frame of a film that had not loaded:
+    // every ladder start in the device lab read ~0.9 s to a picture, then a
+    // "stall" of 2-5 s with nothing in hand (runs 42365863693, 42367973983),
+    // and the wait was called a slow connection at 3 s instead of an open.
+    try {
+      await _player.stop();
+    } catch (_) {}
     _position = startAt ?? Duration.zero;
     // The viewer's volume (a boost above 100 % too) and speed carry over.
     await e.volume((_volumePct / 100).clamp(0.0, 4.0));

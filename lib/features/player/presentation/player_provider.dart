@@ -150,6 +150,10 @@ class PlayerController extends StateNotifier<PlayerState> {
   /// 13 MB/s link.
   bool _firstFrameSeen = false;
 
+  /// The first position the ladder reported for this open (see the position
+  /// listener): the first frame is a position that has moved from it.
+  Duration? _openPosition;
+
   /// When this copy's first picture came, for [ClimbRule.isStall].
   DateTime? _firstFrameAt;
 
@@ -896,7 +900,19 @@ class PlayerController extends StateNotifier<PlayerState> {
       // the primary signal, but a file that never reports buffering at all
       // (a local file, or a stream mpv had cached) would otherwise stay
       // "opening" forever and never be measured.
-      if (!_firstFrameSeen && p > Duration.zero) _markFirstFrame();
+      if (!_firstFrameSeen && p > Duration.zero) {
+        final player = _ref.read(videoPlayerServiceProvider);
+        if (player is MediaKitPlayerService && player.playingLadder) {
+          // On the ladder the position is ExoPlayer's from the moment it
+          // opens: a resume at minute 40 says 40:00 with nothing loaded.
+          // Only a position that has MOVED is a picture; READY (buffering
+          // going false) is the usual signal and comes first.
+          final from = _openPosition ??= p;
+          if (p - from >= const Duration(milliseconds: 200)) _markFirstFrame();
+        } else {
+          _markFirstFrame();
+        }
+      }
       if (_positionIsVisible() && p.inSeconds != state.position.inSeconds) {
         state = state.copyWith(position: p);
       }
@@ -1711,6 +1727,7 @@ class PlayerController extends StateNotifier<PlayerState> {
       // — the player must not blame the viewer's network for a reload it
       // chose to perform.
       _firstFrameSeen = false;
+      _openPosition = null;
       state = state.copyWith(
         isOpening: true,
         slowNetworkHintVisible: false,
