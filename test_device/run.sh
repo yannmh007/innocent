@@ -340,6 +340,54 @@ for flow in $FLOWS; do
     continue
     ;;
   esac
+  # A LINE THAT COLLAPSES AND RECOVERS (flow weakline, 2026-11-07). The test
+  # film from its start, played straight through, while the line steps
+  # through WEAK_STEPS (rate:seconds ...). The cap is netem's rate on ifb0,
+  # the device NET_LOSS already uses for everything the runner receives — a
+  # hard cap, unlike `adb emu network speed`, which did not hold (run
+  # 37967426588) — with a 300-packet queue (about 2 s at 1.2 Mbit/s, the
+  # buffering of a real mobile line, not the 100 s a default queue holds).
+  # The verdict is the app's own trail between two markers: stalls, frozen
+  # ms, longest, first frame. What a viewer feels when a line falls away
+  # mid-film, which no other flow measured (docs/streaming_review_2026_11.md).
+  case "$flow" in weakline)
+    if [ -z "${CLIMB_TITLE:-}" ]; then log "flow weakline: no CLIMB_TITLE in config.env — skipped"; continue; fi
+    if ! ip link show ifb0 >/dev/null 2>&1; then log "flow weakline: no ifb0 (NET_LOSS unset, or no ifb) — skipped"; continue; fi
+    adb shell am force-stop "$PKG"
+    adb shell pm clear "$PKG" >/dev/null 2>&1 || true
+    d="/sdcard/Android/data/$PKG/files"
+    adb shell mkdir -p "$d" >/dev/null 2>&1
+    adb shell "echo title:$CLIMB_TITLE > $d/lab_stream_url"
+    steps="${WEAK_STEPS:-4mbit:40 900kbit:120 3mbit:100}"
+    log "weakline: the test film from its start; the line in steps: $steps"
+    adb shell log -p i -t flutter "LAB weakline begin" >/dev/null 2>&1 || true
+    adb shell am start -W -n "$PKG/.MainActivity" >/dev/null 2>&1
+    for step in $steps; do
+      rate="${step%%:*}"; secs="${step##*:}"
+      sudo tc qdisc replace dev ifb0 root netem loss "${NET_LOSS:-0%}" rate "$rate" limit 300
+      adb shell log -p i -t flutter "LAB weakline line $rate for ${secs}s" >/dev/null 2>&1 || true
+      log "weakline: line $rate for $secs s"
+      sleep "$secs"
+    done
+    adb exec-out screencap -p > "$OUT/shots/9_weakline_end.png"
+    adb shell log -p i -t flutter "LAB weakline end" >/dev/null 2>&1 || true
+    sleep 2
+    sudo tc qdisc replace dev ifb0 root netem loss "${NET_LOSS:-0%}" 2>/dev/null || true
+    awk '/LAB weakline begin/{on=1} on{print} /LAB weakline end/{on=0}' "$OUT/logcat_raw.txt" \
+      | grep -o 'LAB .*' | sed -E 's#https?://[^ "]+#<url>#g; s#[A-Za-z0-9_-]{40,}#<token>#g' > "$OUT/weakline.txt" || true
+    n=$(grep -cE 'rebuffer end [0-9]+ ms' "$OUT/weakline.txt" || true)
+    sum=$(grep -oE 'rebuffer end [0-9]+ ms' "$OUT/weakline.txt" | awk '{s+=$3} END {print s+0}')
+    max=$(grep -oE 'rebuffer end [0-9]+ ms' "$OUT/weakline.txt" | awk '$3>m{m=$3} END {print m+0}')
+    first=$(grep -oE 'first frame [0-9]+ ms' "$OUT/weakline.txt" | head -1 | grep -oE '[0-9]+' || echo "-")
+    log "weakline: first frame ${first} ms, stalls $n, frozen ${sum} ms, longest ${max} ms"
+    adb shell log -p i -t flutter "LAB weakline verdict first=${first} stalls=$n frozen_ms=$sum longest_ms=$max" >/dev/null 2>&1 || true
+    adb shell log -p i -t flutter "LAB phase $flow end" >/dev/null 2>&1 || true
+    adb shell am force-stop "$PKG"
+    adb shell rm -f "$d/lab_stream_url" >/dev/null 2>&1 || true
+    log "flow $flow done"
+    continue
+    ;;
+  esac
   # AUTO CLIMBS BACK UP — a catalogue title (the free test film) played the
   # way a viewer's tap plays it: the real request-playback, Worker and R2,
   # the rung Auto picks, the proxy. It opens on a small copy (a low starting
