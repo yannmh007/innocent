@@ -53,9 +53,12 @@ proves its cap first. Next, each proved by an emulator A/B on that line:
    limit), less than 720p's peak; costs Worker requests;
 5b. picture quality on a weak line: Auto weighs a rung by its PEAK (the
    master's BANDWIDTH, the fastest fragment) over 0.7; with a minute of
-   buffer the average is what must keep up. Measure the peaks (run G logs
-   them), then consider a high percentile instead of the maximum. Judge
-   by several runs per variant: one run's quality share is mostly spread;
+   buffer the rate over ~20 s is what must keep up. Run G (42384151800):
+   480p's peak 1591 kbps = 1.74 × its average, so 480p needs 2.3 Mbit/s;
+   rungs not yet read are weighed at 1.25 × average (720p looks cheaper
+   than it is). F and G, one build, spent 97 % at 360p and 100 % at 480p:
+   judge by several runs per variant. Next: a sliding-window peak for every
+   rung in `HlsLadder.master`;
 5c. a seek on a ~5 Mbit/s line froze 1.7 s on the realme (first segment
    720p): fix 3 below, for the first segment after a jump only;
 6. labs to add: ten minutes on a weak line, a link expiring mid-film, a
