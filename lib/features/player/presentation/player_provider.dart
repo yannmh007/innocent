@@ -930,8 +930,11 @@ class PlayerController extends StateNotifier<PlayerState> {
           qoe.stallEnded(ms);
           // On the ladder this is the only measurement of the stall there
           // is: libmpv's diagnosis (onStall) reads an idle player there.
+          // Only a stop a viewer sees is reported one by one (six at most
+          // a playback); blips are counted in the summary.
           final player = _ref.read(videoPlayerServiceProvider);
-          if (player is MediaKitPlayerService && player.playingLadder) {
+          if (ms >= PlaybackQoe.visibleMs &&
+              player is MediaKitPlayerService && player.playingLadder) {
             onLadderStall?.call(<String, dynamic>{
               'reason': 'ladder',
               'frozen_ms': ms,

@@ -20,8 +20,13 @@ class PlaybackQoe {
   int? openMs;
 
   /// Refills after the first frame that were not a jump's: what reads as
-  /// "it stuttered".
+  /// "it stuttered". A stop under [visibleMs] is a BLIP — a frame or two, no
+  /// spinner — counted apart: in the device lab 27 of 28 refills were blips
+  /// of 2-67 ms and one was a 2 s stop, and counting them together hid the
+  /// stop a viewer saw (7 Nov 2026). Frozen time counts both.
+  static const int visibleMs = 250;
   int stalls = 0;
+  int blips = 0;
   int frozenMs = 0;
   int longestMs = 0;
 
@@ -47,7 +52,7 @@ class PlaybackQoe {
   void reset() {
     engine = null;
     openMs = null;
-    stalls = frozenMs = longestMs = jumpFills = jumpMs = playingMs = 0;
+    stalls = blips = frozenMs = longestMs = jumpFills = jumpMs = playingMs = 0;
     rungChanges = 0;
     rungLow = rungHigh = _lastRung = null;
     _playingSince = null;
@@ -61,7 +66,11 @@ class PlaybackQoe {
 
   void stallEnded(int ms) {
     if (ms < 0) return;
-    stalls++;
+    if (ms < visibleMs) {
+      blips++;
+    } else {
+      stalls++;
+    }
     frozenMs += ms;
     if (ms > longestMs) longestMs = ms;
   }
@@ -104,8 +113,9 @@ class PlaybackQoe {
       if (openMs != null) 'open_ms': openMs,
       'played_s': played ~/ 1000,
       'stalls': stalls,
+      if (blips > 0) 'blips': blips,
       'frozen_ms': frozenMs,
-      if (stalls > 0) 'longest_ms': longestMs,
+      if (stalls + blips > 0) 'longest_ms': longestMs,
       'jumps': jumpFills,
       if (jumpFills > 0) 'jump_ms': jumpMs,
       if (rungLow != null) 'rung_low': rungLow,

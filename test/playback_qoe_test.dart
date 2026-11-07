@@ -38,6 +38,18 @@ void main() {
   final t0 = DateTime(2026, 11, 7, 12);
 
   group('PlaybackQoe', () {
+    test('a blip under a quarter second is not a stall, but its time counts', () {
+      final q = PlaybackQoe()
+        ..stallEnded(3)
+        ..stallEnded(67)
+        ..stallEnded(1998);
+      final m = q.toMeta(t0);
+      expect(m['stalls'], 1);
+      expect(m['blips'], 2);
+      expect(m['frozen_ms'], 2068);
+      expect(m['longest_ms'], 1998);
+    });
+
     test('stalls and jump fills are counted apart, with the longest stall', () {
       final q = PlaybackQoe()
         ..firstFrame(ms: 640, engineName: 'ladder')

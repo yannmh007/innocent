@@ -136,16 +136,16 @@ class ExoStreamEngine private constructor(
             .setReadTimeoutMs(30_000)
             .setAllowCrossProtocolRedirects(false)
         val load = DefaultLoadControl.Builder()
-            // Start on one second of film, as YouTube does. After a stall,
-            // FIVE (7 Nov 2026; it was two): on a line slower than the rung,
-            // two seconds drained in seconds and the film stopped again —
-            // 13 stops in 240 s on the lab's 2-4 Mbit/s line. Fewer, steadier
-            // starts are what a viewer forgives; five is ExoPlayer's own
-            // default, and by then the line reading of the read in flight
-            // (StreamCacheServer._recordInterim) has moved Auto to a rung
-            // that keeps up. Keep up to a minute ahead, and thirty seconds
-            // behind so a step back is played from memory.
-            .setBufferDurationsMs(30_000, 60_000, 1_000, 5_000)
+            // Start on one second of film, as YouTube does; after a stall,
+            // two. TRIED FIVE (ExoPlayer's default) on 7 Nov 2026 and put
+            // back: in the device lab's A/B (runs 42358540751 and
+            // 42360760676, same flow) five turned what had been 3-14 ms
+            // blips after a stall into one more stop a viewer sees (1.26 s):
+            // waiting for five seconds of film is a longer stop every time,
+            // and the stops it was meant to prevent were blips, not stops.
+            // Keep up to a minute ahead, and thirty seconds behind so a step
+            // back is played from memory.
+            .setBufferDurationsMs(30_000, 60_000, 1_000, 2_000)
             .setBackBuffer(30_000, true)
             // A minute of 240p and a minute of 1080p are both a minute.
             .setPrioritizeTimeOverSizeThresholds(true)
