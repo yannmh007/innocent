@@ -203,11 +203,16 @@ viewer who opens the film's page first has it already).
 | B' | the branch at noon (720p start) | 3 | 5.9 s |
 | C | 480p start | 1 (the start, mislabelled) | 4.6 s |
 | D | first frame from ExoPlayer; start rung leads the master | 1 | 1.0 s |
-| E | the meter keeps the start rung until a reading | 0 | 0.18 s (blips) |
+| E | the meter's guess (it did nothing: see below) | 0 | 0.18 s (blips) |
 
-Auto still stepped down to 360p at 6.9 s before any interim reading was
-logged; an end-of-read reading (not written to the trail) is the likely
-source. It cost nothing here (58 ms, 3 s in hand).
+**Correction (same day):** E's guess changed nothing. Auto still stepped
+down to 360p at 6.9 s before any reading, as in D; here the step cost a
+58 ms blip with 3 s in hand instead of D's 1 s stop. So D → E is the
+spread between two runs of the same start, not the guess. The Test Lab
+phones showed the same step down before any reading (below), which is how
+it was found: AdaptiveTrackSelection settles its first choice from the
+meter when it is built, before the tracks are reported, so the guess now
+goes where the selection is built (run F).
 
 **Run A' (42376362339)**: E with fix 1 (the line read during a read) taken
 out for one run. Also no stop a viewer sees (8 blips, 210 ms) — on this
@@ -222,4 +227,15 @@ collapse. What fix 1 buys is the picture:
 Without it the only readings are whole reads (every ~20–45 s at 360p),
 too few for Auto to climb back after the start's step down. Fix 1 stays
 (restored in the next commit, 5955c06).
+
+**Test Lab, run 42376634865** (the branch with fix 1 back; realme C53 and
+OPPO A79 on their own lines): every check passed on both. The first frame
+is now honest: 3.1 s (realme, 4.6–12 Mbit/s) and 1.5 s (OPPO, 20–40
+Mbit/s) from the hand-over, where 6 Nov's 0.19 and 0.24 s were libmpv's
+stop; nothing froze after it (one 8 ms blip with 6 s in hand on the
+realme). Seek: OPPO 402 ms frozen (6 Nov: FAIL, 5.9 s, on a 1.9–4.7 Mbit/s
+line — not comparable), realme 1.7 s (6 Nov 0.4 s): the first segment
+after the jump was 720p on a ~5 Mbit/s line, which is fix 3's case (a
+jump answers from a lower rung first). Both stepped down to 360p before
+any reading, the OPPO on a line 20 times faster than 360p.
 
