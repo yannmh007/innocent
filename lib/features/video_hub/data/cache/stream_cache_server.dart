@@ -1716,7 +1716,9 @@ class StreamCacheServer {
             final wall = clock.elapsedMilliseconds - winWall;
             final wait = waiting.elapsedMilliseconds - winWait;
             if (wall >= _interimWindowMs) {
-              if (wait * 2 >= wall) _recordInterim(winBytes, wall);
+              // A' (device lab baseline, 7 Nov 2026; restored after the run):
+              // no reading of the line while a read goes on.
+              // if (wait * 2 >= wall) _recordInterim(winBytes, wall);
               winBytes = 0;
               winWall = clock.elapsedMilliseconds;
               winWait = waiting.elapsedMilliseconds;
