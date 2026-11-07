@@ -64,6 +64,9 @@ judged by the frozen seconds per minute, stall count and jump wait.
    Try 4–5 s, and on a mid-film stall push the bandwidth estimate down to
    what actually arrived so the next segment is a lower rung, not the
    same one. Lab: emulator jumps flow, Sintel, 2–4 Mbit/s, before/after.
+   **Tried and undone (§5):** 5 s turned blips after a stall into a
+   visible 1.26 s stop. The second half (read the line during a read)
+   is fix 1 below in §5, and stays.
 3. **Do not climb back too eagerly.** The rung returned to 720p on the
    same 2–4 Mbit/s line and stalled again: require the slow average (not
    the fast one) to clear the higher rung's peak with margin, or hold a
@@ -96,3 +99,49 @@ judged by the frozen seconds per minute, stall count and jump wait.
 
 Test Lab allows 5 physical runs a day (reset 07:00 UTC); the emulator lab
 has no such limit and comes first for every A/B above.
+
+## 5. What the A/B found (7 Nov 2026, afternoon)
+
+**The lab's weak line had never been weak.** The ifb redirect of eth0's
+incoming packets was accepted and fed nothing: GitHub's runners carry a
+bpf filter at pref 1 on eth0's clsact that takes every packet first. Runs
+A (42358540751) and B (42360760676) were shaped only by the emulator's own
+`network speed` (the app measured 2.5–5.5 Mbit/s), and the "0.5 % loss"
+of every earlier lab never applied. Found because the flow now proves its
+cap before it runs (a 600 KB probe under 900 kbit came in at 32 Mbit/s,
+run 42363479008). The line is now on loopback: the emulator's HTTPS goes
+through `tool/netlab/line_relay.py` (iptables REDIRECT, TLS untouched)
+and netem on lo is the line; the probe then read 757 kbps under the cap.
+
+**What one connection carries.** With 0.5 % loss and 120 ms of round
+trip, one TCP connection carries ~1.5–2 Mbit/s whatever the cap above it
+(TCP's own limit: segment / RTT × 1.22 / √loss). The proxy reads a
+ladder's segments on one connection per film, so on such a line the
+720p rung (peak 2 Mbit/s) cannot be kept up by design. Two connections
+would carry twice — a candidate, weighed against the Worker requests it
+costs (BACKLOG).
+
+**Run B' (42365863693), the branch on a shaped line** (4 Mbit/s 40 s,
+900 kbit/s 120 s, 3 Mbit/s 100 s; 60 ms each way, 0.5 % loss):
+
+| Step | Stops ≥ 250 ms | Frozen | Blips | Rungs |
+|---|---|---|---|---|
+| 4 Mbit/s (start) | 3 | 5.9 s (longest 3.2 s) | 4 | 720 → 360 → 480 → 360 |
+| 900 kbit/s | 0 | 0 | 11 | 480 → 360 → 240 |
+| 3 Mbit/s | 0 | 0 | 4 | 360 → 480 |
+
+- The collapse cost no stop a viewer sees: the line read during a read
+  (fix 1, `_recordInterim`) moved Auto down in time. A' (fix 1 off, same
+  line) says how much of that is fix 1.
+- The worst was the START: 720p unmeasured on "Wi-Fi", frozen 3.2 s right
+  after the first frame and 2.4 s more while stepping down to 360p. Fixed:
+  an unmeasured film opens at 480p on every connection
+  (`kUnmeasuredStartHeight`); every later film opens from what the first
+  measured.
+- Blips (under 250 ms, no spinner) are counted apart now, in the summary
+  and the lab verdict; a stop logs how much film was in hand (`ahead`), so
+  the next run says whether they are the line or the emulator.
+- The climb back after the line returned took ~80 s: at 240p the buffer
+  fills to its minute and the player stops reading, so there is nothing to
+  measure. Slow, but it is a softer picture, not a stop.
+

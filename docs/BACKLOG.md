@@ -20,16 +20,27 @@ The owner's request: no stutter, nothing that annoys a viewer. Evidence:
 live events (labs only, real viewers one or two) and the six newest lab
 runs. Done on the branch (ships with the next release): ladder stalls,
 tap-to-picture (`grant_ms`), failures (`error` codes) and one
-`play_summary` per playback (migration 080 live; PlaybackQoe). Next, in
-order, each proved by an emulator A/B on the same shaped line first:
-1. resume after a stall on 4–5 s, not 2 s, and push the estimate down on
-   a stall (13 stalls in 240 s at 2–4 Mbit/s, 1.64.78);
+`play_summary` per playback (migration 080 live; PlaybackQoe), blips
+(< 250 ms) counted apart from stops, and the film in hand at each stop.
+Also on the branch (7 Nov, review §5): the line read during a read (fix
+1: the 900 kbit/s collapse cost no visible stop in run 42365863693; A' to
+confirm), and an unmeasured film opening at 480p on every connection (the
+720p start froze 5.9 s in its first 13 s). **The lab line was never shaped
+before 7 Nov** (the runner's bpf filter on eth0 took the ifb redirect's
+packets): it now runs through `tool/netlab/line_relay.py` on loopback and
+proves its cap first. Next, each proved by an emulator A/B on that line:
+1. ~~resume after a stall on 5 s~~ tried, undone: it made blips a visible
+   1.26 s stop;
 2. climb back only when the slow average clears the higher rung (720 →
    240 → 720 → stall);
 3. a jump on a slow line takes its first segment from the rung below
    (OPPO seek 5.9 s);
-4. a dead segment read noticed in 3–4 s, not 8 (`segmentStall`);
-5. labs to add: ten minutes on a weak line, a link expiring mid-film, a
+4. a dead segment read noticed in 3–4 s, not 8 (`segmentStall`): run C
+   has 8 s with no line, the baseline;
+5. two connections for a ladder's reads on a lossy line: one carries
+   ~1.5–2 Mbit/s at 0.5 % loss and 120 ms whatever the cap (TCP's own
+   limit), less than 720p's peak; costs Worker requests;
+6. labs to add: ten minutes on a weak line, a link expiring mid-film, a
    low-end and a 32-bit Test Lab phone, two runs per build.
 After the release: frozen seconds per minute played, from `play_summary`,
 per version and network — the number each step must lower.
