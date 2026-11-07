@@ -22,10 +22,16 @@ runs. Done on the branch (ships with the next release): ladder stalls,
 tap-to-picture (`grant_ms`), failures (`error` codes) and one
 `play_summary` per playback (migration 080 live; PlaybackQoe), blips
 (< 250 ms) counted apart from stops, and the film in hand at each stop.
-Also on the branch (7 Nov, review §5): the line read during a read (fix
-1: the 900 kbit/s collapse cost no visible stop in run 42365863693; A' to
-confirm), and an unmeasured film opening at 480p on every connection (the
-720p start froze 5.9 s in its first 13 s). **The lab line was never shaped
+Also on the branch (7 Nov, review §5), proved step by step on one shaped
+line (4 → 0.9 → 3 Mbit/s, 8 s with none, 0.5 % loss, 120 ms): from 3
+stops / 5.9 s frozen (run B') to **none** (run E, 42373118426) by
+(a) an unmeasured film opening at 480p on every connection; (b) the
+ladder's first frame taken from ExoPlayer, not from libmpv's stop (the
+"first picture in 0.2 s" of earlier labs was that artefact; open_ms
+before and after this change are not comparable); (c) the start rung
+leading the master playlist; (d) ExoPlayer's meter keeping the start rung
+until a reading; and the line read during a read (fix 1; A', run
+42376362339, measures it). **The lab line was never shaped
 before 7 Nov** (the runner's bpf filter on eth0 took the ifb redirect's
 packets): it now runs through `tool/netlab/line_relay.py` on loopback and
 proves its cap first. Next, each proved by an emulator A/B on that line:
@@ -35,8 +41,9 @@ proves its cap first. Next, each proved by an emulator A/B on that line:
    240 → 720 → stall);
 3. a jump on a slow line takes its first segment from the rung below
    (OPPO seek 5.9 s);
-4. a dead segment read noticed in 3–4 s, not 8 (`segmentStall`): run C
-   has 8 s with no line, the baseline;
+4. ~~a dead segment read noticed in 3–4 s~~ dropped down: 8 s with no
+   line cost nothing with 26 s in hand (run C); it matters only with a
+   nearly empty buffer;
 5. two connections for a ladder's reads on a lossy line: one carries
    ~1.5–2 Mbit/s at 0.5 % loss and 120 ms whatever the cap (TCP's own
    limit), less than 720p's peak; costs Worker requests;
