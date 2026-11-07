@@ -209,3 +209,17 @@ Auto still stepped down to 360p at 6.9 s before any interim reading was
 logged; an end-of-read reading (not written to the trail) is the likely
 source. It cost nothing here (58 ms, 3 s in hand).
 
+**Run A' (42376362339)**: E with fix 1 (the line read during a read) taken
+out for one run. Also no stop a viewer sees (8 blips, 210 ms) — on this
+line the buffer, not fix 1, is what carries a viewer through the
+collapse. What fix 1 buys is the picture:
+
+| | Time at 480p | Time at 360p | Bytes to the phone |
+|---|---|---|---|
+| E, fix 1 on | 87 % | 13 % | 46.9 MB |
+| A', fix 1 off | 3 % | 97 % | 31.4 MB |
+
+Without it the only readings are whole reads (every ~20–45 s at 360p),
+too few for Auto to climb back after the start's step down. Fix 1 stays
+(restored in the next commit, 5955c06).
+
