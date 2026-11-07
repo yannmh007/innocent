@@ -21,6 +21,7 @@ Usage: line_relay.py PORT [STATS_FILE]
   addresses) to STATS_FILE, or stderr.
 """
 import asyncio
+import os
 import signal
 import socket
 import struct
@@ -91,9 +92,13 @@ async def main():
     loop = asyncio.get_running_loop()
     for s in (signal.SIGTERM, signal.SIGINT):
         loop.add_signal_handler(s, stop.set)
-    async with server:
-        await stop.wait()
+    await stop.wait()
+    # Counts first, then out at once: closing the server politely waits for
+    # every connection the emulator still holds open (Python 3.12), and the
+    # counts never came (run 42365863693).
     write_stats(path)
+    sys.stderr.flush()
+    os._exit(0)
 
 
 if __name__ == '__main__':
