@@ -19,27 +19,29 @@ does it.
 Checked live against a classic web-architecture picture the owner shared.
 Most layers are sound (jobs, backups, search for Burmese, rate limits,
 security). Found, most urgent first:
-1. **The Privacy dialog is false** (`privacyBody`, en/my/th, shown from
-   `local_screen.dart`): "runs entirely offline… does not collect
-   telemetry, analytics, or send any data". The app sends usage events
-   (2,299 rows), playback requests, account data when signed in, crash
-   reports when set. NEEDS THE OWNER: approve new wording (draft in the
-   7 Nov reply), then it ships in the next release.
-2. **Analytics rollups and the 90-day prune never run.** `rollup_events`
-   and `prune_events` (014) have no caller; `event_daily` and
-   `search_daily` are empty; events are kept since 23 Sep. The first event
-   passes 90 days on 22 Dec, so before then: call both from the daily
-   step of the ingest tick (after the backup), roll up the past days
-   first, then check `max(day)` the next morning. Skills `edge-deploy`,
-   `live-db-change`.
-3. **No scheduled health check.** transport-check and playback-check run
-   on dispatch only; an outage is learned from users. A daily (or hourly)
-   schedule on main for transport-check + self-test: GitHub e-mails the
-   owner on a failed scheduled run. Costs nothing (public repo).
-4. **No restore is tested.** Daily sealed backups and off-site copies are
-   real (last 7 Nov 02:55); `tool/restore_backup.py` exists. A monthly
-   runner job: restore the latest into a throwaway Postgres (service
-   container), compare row counts with `db_backups.tables`.
+1. **Privacy dialog: rewritten, on the branch, ships with the next
+   release** (7 Nov). It said "runs entirely offline… sends nothing"; now
+   it says what is sent (usage records under the account or a random
+   install id, searches included, 90 days then daily totals only; playback;
+   reports a user sends), in en/my/th (`app_strings.dart` and the .arb
+   files). The dialog scrolls now (test/privacy_dialog_test.dart fails in
+   all three languages without it). The owner approved going ahead
+   ("ဆက်လုပ်ပါ အကောင်းဆုံး"); the wording can still change before release.
+2. **DONE 7 Nov: analytics rollup and 90-day prune run daily.** Migration
+   078 `events_housekeeping()` (service role; index on occurred_at), called
+   by the ingest house step, ingest **v54** (SHA 261638b). First run 03:46:
+   event_daily 35 days, 366 rows, all 2,299 events counted; search_daily
+   3 days. Nothing past 90 days yet (first on 22 Dec).
+3. **DONE 7 Nov: transport-check on a schedule** (every 6 h asked; on main
+   with the next main push, a9fbccb). GitHub e-mails the owner when a
+   scheduled run fails. Watch: the first scheduled run on main is green.
+4. **DONE 7 Nov: restore drill, weekly.** Migration 079 (verified_at,
+   verify_error on db_backups; backup_verify_due, backup_verified), ingest
+   **v55** (SHA 0dfe2a5): the newest backup is read back, hash-checked,
+   unsealed, un-gzipped, parsed and counted per table, in the function;
+   a failure goes to the owner on Telegram and is retried daily. First
+   drill 03:52: backup #47 (sealed), 50 tables, passed. Still by hand: a
+   full restore into an empty database.
 5. **DNSSEC: enabled 7 Nov, pending** ("pending while we automatically add
    the DS record"). Cloudflare Registrar publishes the DS in 1–2 days; the
    12 Nov reminder asks for a screenshot showing Active. Never press Cancel

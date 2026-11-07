@@ -30,11 +30,11 @@ GitHub runners, every 5 min ─► claim jobs in Postgres: ingest, transcode,
 | 3 | App servers | Edge functions: request-playback, studio, ingest, transcode, premium-request, delete-account, probe-media, backfill-dimensions, self-test. Workers: stream, console | slice tests in `tool/js/`, local boot `tool/edge_stub/` | Stateless except per-isolate key caches: keep it so |
 | 4 | Database | Postgres 17, 19 MB (7 Nov). The app reads PostgREST directly; RLS on every table, 41 with no policy (service role only); 10 RPCs open to anon, each budgeted | `tool/sql/*_test.sql`, advisors | Fine for years at this size. Advisor notices are known and decided (`docs/security_review_2026_11.md`) |
 | 5 | Cache | Phone: catalogue (45 days, used when offline or 5xx), posters, the stream cache (segments, sealed). Server: none for the catalogue; film bytes `private, no-store` on purpose (tokens); the Worker's edge block cache is built but off (`EDGE_BLOCK_BYTES=0`) | `test/stream_cache_*` | Every app open asks Postgres. Binds when catalogue RPCs load the database: then a short public cache in a Worker for public rows only |
-| 6 | Job queue | Postgres tables (ingest_jobs, transcode state on title_assets, frames, vault_jobs, offsite_jobs) claimed `for update skip locked` by runners every 5 min; 3 tries then failed; 7 h lease; no pg_cron | claim tests, console queue pages | Sound. A job that gave up waits for someone to look |
+| 6 | Job queue | Postgres tables (ingest_jobs, transcode state on title_assets, frames, vault_jobs, offsite_jobs) claimed `for update skip locked` by runners; 3 tries then failed; 7 h lease; no pg_cron. The work is started by dispatch the moment it is queued; the `*/5` schedules are the fallback and housekeeping, and GitHub runs them every 3–5 hours (7 Nov: 18:18, 23:17, 02:55) | claim tests, console queue pages | Sound. Anything that only the schedule starts waits hours, not minutes: fine for daily work, never for an alarm |
 | 7 | Search | `search_titles`: substring first (exact Burmese phrases), then trigram `word_similarity`; GIN trigram index; Myanmar and Thai get trigrams | migration 015, live `show_trgm` | The fuzzy half cannot use the index: EXPLAIN (7 Nov) shows a Seq Scan; written as `<%` it is a Bitmap Index Scan. Nothing at 9 titles; matters at thousands |
 | 8 | Services / API | PostgREST + RPC + edge functions; `docs/client_api_contract.md`, `tool/contract_conformance.py` | check.py | No versioning: old installed apps keep calling. Additive-only; `app_releases.min_supported` is the only lever |
-| 9 | Warehouse | `events` (append-only, batches of 25 or 30 s from the app); rollups `event_daily`, `search_daily`; title_heat, reach, co-watch; prune after 90 days | — | **`rollup_events` and `prune_events` have no caller: both rollups are empty and events are kept since 23 Sep (7 Nov).** The first event passes 90 days on 22 Dec |
-| 10 | Cloud storage | R2 `innocent-media` (private), `innocent-public` (via cdn.), a third bucket at another company (off-site); DB backup daily, sealed, off-site, 14 days + monthly for a year | `db_backups` (last 7 Nov 02:55, off-site too), `tool/restore_backup.py` | No restore is tested on a schedule |
+| 9 | Warehouse | `events` (append-only, batches of 25 or 30 s from the app); rollups `event_daily`, `search_daily`; title_heat, reach, co-watch; raw events pruned after 90 days | `events_housekeeping` (078) once a day from the ingest tick; first run 7 Nov 03:46: 35 days, 366 rows, all 2,299 events counted | Fixed 7 Nov: the rollups and the prune had never run |
+| 10 | Cloud storage | R2 `innocent-media` (private), `innocent-public` (via cdn.), a third bucket at another company (off-site); DB backup daily, sealed, off-site, 14 days + monthly for a year | `db_backups`; the restore drill (079) opens the newest backup weekly in the ingest function: hash, unseal, gunzip, parse, rows per table. First drill 7 Nov 03:52: backup #47, 50 tables, passed | A full restore into an empty database is still by hand (`tool/restore_backup.py`) |
 | 11 | CDN | `cdn.innocentplayer.com` cached by Cloudflare; console assets on Workers Assets; film bytes through the stream Worker, uncached, rate-limited 600 requests / 10 s / install | transport-check | — |
 
 ## Beyond the eleven (they matter more here)
@@ -42,12 +42,14 @@ GitHub runners, every 5 min ─► claim jobs in Postgres: ingest, transcode,
 - **Security**: `docs/security_review_2026_11.md`, `docs/MEDIA_ENCRYPTION.md`.
 - **Abuse and cost**: the Worker's rate limit, `take_playback_budget` per
   install, account and network, premium-request caps.
-- **Monitoring**: the self-test function, the console Status page, Workers
-  logs, Sentry when set. transport-check and playback-check run on dispatch
-  only: no scheduled check, no alert. An outage is learned from users.
+- **Monitoring**: transport-check runs on a schedule on main (since 7 Nov)
+  and e-mails the owner when a viewer could not play; the console Status
+  page; the ingest runner's Telegram notices (storage, reports, a failed
+  restore drill); Workers logs; Sentry when set (not in release builds).
 - **Privacy**: the app's Privacy dialog (`privacyBody`, three languages)
-  says it runs entirely offline and sends nothing. It sends usage events,
-  playback requests and, when set, crash reports (found 7 Nov).
+  said it ran offline and sent nothing; rewritten 7 Nov to say what it
+  sends (usage records with the 90-day rule, playback, the account,
+  reports a user sends). Ships with the next release.
 
 ## What the classic picture has that we do not need yet
 
