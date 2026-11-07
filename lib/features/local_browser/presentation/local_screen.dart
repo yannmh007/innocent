@@ -411,21 +411,7 @@ class _LocalScreenState extends ConsumerState<LocalScreen>
   Future<void> _showPrivacyDialog(BuildContext context) async {
     await showDialog<void>(
       context: context,
-      builder: (dctx) => AlertDialog(
-        backgroundColor: AppColors.darkSurface,
-        title: Text(AppStrings.of(context).privacy,
-            style: const TextStyle(color: Colors.white)),
-        content: Text(AppStrings.of(context).privacyBody,
-          style: const TextStyle(color: Colors.white70, fontSize: 13),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dctx).pop(),
-            child: Text(AppStrings.of(context).close,
-                style: const TextStyle(color: AppColors.accentBlue)),
-          ),
-        ],
-      ),
+      builder: (dctx) => privacyDialog(context, onClose: () => Navigator.of(dctx).pop()),
     );
   }
 
@@ -1287,3 +1273,27 @@ class _HiddenFoldersLine extends ConsumerWidget {
     );
   }
 }
+
+/// The Privacy dialog: what stays on the phone and what the app sends.
+///
+/// IT SCROLLS (7 Nov 2026). The text now says what the app really sends —
+/// usage records, playback, the account — and at 200 % text on a small
+/// phone it is taller than the screen; a plain Text would overflow.
+/// Public so test/privacy_dialog_test.dart can open it in each language.
+AlertDialog privacyDialog(BuildContext context, {required VoidCallback onClose}) =>
+    AlertDialog(
+      backgroundColor: AppColors.darkSurface,
+      title: Text(AppStrings.of(context).privacy,
+          style: const TextStyle(color: Colors.white)),
+      content: SingleChildScrollView(
+        child: Text(AppStrings.of(context).privacyBody,
+            style: const TextStyle(color: Colors.white70, fontSize: 13)),
+      ),
+      actions: [
+        TextButton(
+          onPressed: onClose,
+          child: Text(AppStrings.of(context).close,
+              style: const TextStyle(color: AppColors.accentBlue)),
+        ),
+      ],
+    );
