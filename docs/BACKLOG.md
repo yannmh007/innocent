@@ -34,7 +34,10 @@ security). Found, most urgent first:
    3 days. Nothing past 90 days yet (first on 22 Dec).
 3. **DONE 7 Nov: transport-check on a schedule** (every 6 h asked; on main
    with the next main push, a9fbccb). GitHub e-mails the owner when a
-   scheduled run fails. Watch: the first scheduled run on main is green.
+   scheduled run fails: the owner's Actions e-mail is on, failed workflows
+   only (screenshot 7 Nov), and the pushes and dispatches act as the
+   owner's own account (get_me: yannmh007), so the e-mail reaches the owner.
+   Watch: the first scheduled run on main is green.
 4. **DONE 7 Nov: restore drill, weekly.** Migration 079 (verified_at,
    verify_error on db_backups; backup_verify_due, backup_verified), ingest
    **v55** (SHA 0dfe2a5): the newest backup is read back, hash-checked,
