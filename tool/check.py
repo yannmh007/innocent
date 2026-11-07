@@ -335,6 +335,10 @@ def main() -> int:
          'a payment screenshot deleted before its sealed copy opens, or left '
          'plain with no request naming it when a delete fails (the first '
          'draft did exactly that; this test caught it)'),
+        ('backup_drill_test.mjs',
+         'the restore drill opens the newest backup the way a restore would',
+         'a drill that says fine for a backup that does not open, or fails '
+         'without saying why'),
         ('backup_seal_test.mjs',
          'the backups made before sealing, sealed where they lie',
          'a plain backup deleted before its sealed copy was written, a sealed '

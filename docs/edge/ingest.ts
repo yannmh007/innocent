@@ -602,6 +602,71 @@ async function resealOldBackups(): Promise<Record<string, unknown>> {
   return errors.length ? { sealed, errors } : { sealed };
 }
 
+// ── the restore drill (migration 079) ─────────────────────────────────────
+//
+// A BACKUP NOBODY HAS OPENED IS A HOPE. Once a week the newest one is read
+// back from R2 and opened the way a restore opens it: the bytes are the
+// ones recorded (hash), it unseals, it un-gzips, it parses, and every table
+// holds the rows its record counted. The key stays in this function and
+// nothing is written anywhere; the outcome goes on the backup's row. A
+// failure is told to the owner and tried again the next day.
+async function gunzip(bytes: Uint8Array): Promise<Uint8Array> {
+  const stream = new Blob([bytes as BlobPart]).stream()
+    .pipeThrough(new DecompressionStream('gzip'));
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+
+async function drillBackup(): Promise<Record<string, unknown> | null> {
+  const due = (await rpc('backup_verify_due', {}) ?? []) as Array<{
+    id: number; object_key: string; sha256: string | null; tables: Record<string, number> | null;
+  }>;
+  const b = due[0];
+  if (!b) return null;
+  const facts: Record<string, unknown> = { id: b.id };
+  let error: string | null = null;
+  try {
+    const key = String(b.object_key ?? '');
+    if (!key.startsWith(BACKUP_PREFIX)) throw new Error('not a backup key');
+    const get = await fetch(await presign('GET', key, 300, MEDIA_BUCKET));
+    if (!get.ok) {
+      await get.body?.cancel();
+      throw new Error(`GET ${get.status}`);
+    }
+    const stored = new Uint8Array(await get.arrayBuffer());
+    const sha = hex(new Uint8Array(await crypto.subtle.digest('SHA-256', stored as BufferSource)));
+    if (b.sha256 && sha !== b.sha256) throw new Error('the file is not the one recorded (hash differs)');
+    let gz: Uint8Array = stored;
+    if (key.endsWith('.sealed')) {
+      const k = await BACKUP_KEY;
+      if (!k) throw new Error('sealed, and PII_ENC_KEY is not set here');
+      const opened = await openFile(k, stored, BACKUP_AAD);
+      if (!opened) throw new Error('the sealed file does not open');
+      gz = opened;
+    }
+    const raw = await gunzip(gz);
+    const doc = JSON.parse(new TextDecoder().decode(raw)) as {
+      format?: string; tables?: Record<string, unknown>; auth_users?: unknown;
+    };
+    if (doc.format !== 'innocent-db-backup') throw new Error('not an Innocent backup');
+    const want = b.tables ?? {};
+    if (!Object.keys(want).length) throw new Error('the record counts no tables');
+    let rows = 0;
+    for (const [name, n] of Object.entries(want)) {
+      const got = doc.tables?.[name];
+      if (!Array.isArray(got)) throw new Error(`table ${name} is missing`);
+      if (got.length !== Number(n)) throw new Error(`table ${name}: ${got.length} rows, recorded ${n}`);
+      rows += got.length;
+    }
+    if (!Array.isArray(doc.auth_users)) throw new Error('the account list is missing');
+    Object.assign(facts, { tables: Object.keys(want).length, rows, bytes: raw.length });
+  } catch (e) {
+    error = String(e instanceof Error ? e.message : e).slice(0, 200);
+  }
+  await rpc('backup_verified', { p_id: b.id, p_error: error });
+  return error ? { ...facts, error } : facts;
+}
+// ── end of the restore drill ──────────────────────────────────────────────
+
 /// `_backup/db/2026/10/x.json.gz` in R2 is `db/2026/10/x.json.gz` off-site.
 function offsiteBackupKey(r2Key: string): string {
   return 'db/' + r2Key.slice(BACKUP_PREFIX.length);
@@ -2615,6 +2680,21 @@ Deno.serve(async (req: Request) => {
       if (ev?.due) house.events = ev;
     } catch (e) {
       house.events = 'error: ' + String(e).slice(0, 160);
+    }
+    // THE RESTORE DRILL (migration 079): weekly, after the day's backup.
+    try {
+      const drill = await drillBackup();
+      if (drill) {
+        house.drill = drill;
+        if (drill.error) {
+          for (const chat of TG_CHATS) {
+            await say(chat, `⚠️ Database backup ကို ပြန်ဖွင့်စမ်းတာ မအောင်မြင်ပါ ` +
+              `(backup #${drill.id}): ${drill.error}\nနောက်နေ့ ထပ်စမ်းပါမယ်။ Claude ကို ပြပါ။`);
+          }
+        }
+      }
+    } catch (e) {
+      house.drill = 'error: ' + String(e).slice(0, 160);
     }
     return json({ ok: true, purged, failed, house }, 200, req);
   }
