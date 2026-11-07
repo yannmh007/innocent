@@ -1696,15 +1696,52 @@ class StreamCacheServer {
         // on a fresh one instead of hanging on this. One check every two
         // seconds, not a timer for every piece.
         final quiet = Stopwatch()..start();
+        // THE LINE, READ WHILE THE READ GOES ON (7 Nov 2026). The line's
+        // speed used to be measured once a read had ended (_recordNetwork),
+        // and a read is two megabytes: sixteen seconds at 1 Mbit/s. A line
+        // that fell away mid-read went unnoticed that long, ExoPlayer kept
+        // asking for the rung the old speed allowed, and the film stopped
+        // (13.4 s on the OPPO, run 42008905511). Now every two seconds of a
+        // read are a reading — but only a window spent mostly WAITING on the
+        // network: one spent writing to the disk or to the player says
+        // nothing about the line, and would only pull the quality down.
+        final waiting = Stopwatch();
+        var started = false;
+        var winBytes = 0;
+        var winWall = 0;
+        var winWait = 0;
         stallWatch = Timer.periodic(const Duration(seconds: 2), (_) {
+          if (started) {
+            final wall = clock.elapsedMilliseconds - winWall;
+            final wait = waiting.elapsedMilliseconds - winWait;
+            if (wall >= _interimWindowMs) {
+              if (wait * 2 >= wall) _recordInterim(winBytes, wall);
+              winBytes = 0;
+              winWall = clock.elapsedMilliseconds;
+              winWait = waiting.elapsedMilliseconds;
+            }
+          }
           if (quiet.elapsed < segmentStall) return;
           stallWatch?.cancel();
           PlaybackLog.add('hls: a segment read stalled ${segmentStall.inSeconds} s, ended');
           unawaited(pieces.cancel());
         });
-        while (!fill.cancelled && await pieces.moveNext()) {
+        while (!fill.cancelled) {
+          waiting.start();
+          final more = await pieces.moveNext();
+          waiting.stop();
+          if (!more) break;
           quiet.reset();
           final chunk = pieces.current;
+          // The window opens at the first byte, so the Worker's time to
+          // answer is never read as a slow line.
+          if (!started) {
+            started = true;
+            winWall = clock.elapsedMilliseconds;
+            winWait = waiting.elapsedMilliseconds;
+          } else {
+            winBytes += chunk.length;
+          }
           ForegroundStream.touch();
           final w = writer;
           if (w != null) {
@@ -1815,6 +1852,20 @@ class StreamCacheServer {
   /// the HLS player's rung choice ([networkKbps]). Smaller and shorter
   /// reads than [_recordThroughput] takes, because a segment is small:
   /// still never one so short it measures the handshake.
+  /// The shortest stretch of a read taken as a reading of the line.
+  static const int _interimWindowMs = 1500;
+
+  /// Below any rung: a read that brought next to nothing for two seconds is
+  /// a line to step down for, and a zero would be ignored downstream.
+  static const int _interimFloorKbps = 64;
+
+  /// A reading from the middle of a segment read (see the read loop): only
+  /// the speed, never the throughput memory — that keeps whole reads.
+  void _recordInterim(int bytes, int ms) {
+    if (ms <= 0) return;
+    networkKbps.value = max(_interimFloorKbps, (bytes * 8) ~/ ms);
+  }
+
   void _recordNetwork(int bytes, Duration took) {
     final ms = took.inMilliseconds;
     if (ms < 200) return;
