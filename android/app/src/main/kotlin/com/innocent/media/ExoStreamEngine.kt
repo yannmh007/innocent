@@ -188,28 +188,14 @@ class ExoStreamEngine private constructor(
                 val heights = mutableListOf<Int>()
                 var selected = 0
                 var adaptive = false
-                // NOTHING MEASURED YET: Auto keeps the rung the app opened on
-                // until a reading of the line says otherwise. The meter's own
-                // default (1.5 Mbit/s, 70 % of it usable) is below a 480p
-                // rung's peak, so with no evidence at all Auto stepped down
-                // to 360p as soon as the start rung's two segments were in,
-                // and that change on a four-second buffer cost a 1 s stop
-                // (device lab run 42370839630, on a line that carried 480p).
-                val start = steer.start
-                var startPeak = 0
                 for (g in tracks.groups) {
                     if (g.type != C.TRACK_TYPE_VIDEO) continue
                     adaptive = adaptive || g.isAdaptiveSupported
                     for (i in 0 until g.length) {
-                        val f = g.getTrackFormat(i)
-                        val h = steer.heightOf(f)
+                        val h = steer.heightOf(g.getTrackFormat(i))
                         if (h > 0 && !heights.contains(h)) heights.add(h)
                         if (g.isTrackSelected(i)) selected++
-                        if (start != null && h == start && f.bitrate > startPeak) startPeak = f.bitrate
                     }
-                }
-                if (startPeak > 0 && !meter.measured) {
-                    meter.guess((startPeak / AdaptiveTrackSelection.DEFAULT_BANDWIDTH_FRACTION * 1.1).toLong())
                 }
                 emit(mapOf("id" to id, "e" to "tracks", "heights" to heights,
                     "selected" to selected, "adaptive" to adaptive))
@@ -539,6 +525,27 @@ class ExoStreamEngine private constructor(
             bandwidthMeter: BandwidthMeter,
             adaptationCheckpoints: ImmutableList<AdaptiveTrackSelection.AdaptationCheckpoint>,
         ): AdaptiveTrackSelection {
+            // NOTHING MEASURED YET: Auto keeps the rung the app opened on
+            // until a reading of the line says otherwise. The meter's own
+            // default (1.5 Mbit/s, 70 % of it usable) is below a 480p rung's
+            // peak, so with no evidence at all Auto stepped down to 360p as
+            // soon as the start rung's two segments were in, and that change
+            // on a four-second buffer cost a 1 s stop (device lab run
+            // 42370839630, on a line that carried 480p). HERE, before the
+            // selection exists: it settles its own first choice from the
+            // meter as it is built, and a guess made later (on the tracks,
+            // run 42373118426) changed nothing — the 360p choice was already
+            // inside it, held back only while the start rung was forced.
+            val start = steer.start
+            val m = bandwidthMeter as? ProxyMeter
+            if (start != null && m != null && !m.measured && group.type == C.TRACK_TYPE_VIDEO) {
+                var peak = 0
+                for (i in tracks) {
+                    val f = group.getFormat(i)
+                    if (steer.heightOf(f) == start && f.bitrate > peak) peak = f.bitrate
+                }
+                if (peak > 0) m.guess((peak / AdaptiveTrackSelection.DEFAULT_BANDWIDTH_FRACTION * 1.1).toLong())
+            }
             val s = SteeredSelection(group, tracks, type, bandwidthMeter, adaptationCheckpoints, steer)
             if (group.type == C.TRACK_TYPE_VIDEO) {
                 made++
