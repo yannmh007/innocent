@@ -193,9 +193,10 @@ any film with one rung. Also any phone the server sends back (see below).
   | Original | 2.8 s (a reopen on libmpv) |
 
   The landing picture was held 0.5 s. With nothing measured, the start
-  is 720p on Wi-Fi and 480p on mobile data (`kMeteredStartHeight`). The
-  emulator counts as Wi-Fi, and its 720p start stalled once, for 1.9 s,
-  before Auto stepped down.
+  was then 720p on Wi-Fi and 480p on mobile data. The emulator counts as
+  Wi-Fi, and its 720p start stalled once, for 1.9 s, before Auto stepped
+  down. Since 7 Nov 2026 every unmeasured start is 480p
+  (`kUnmeasuredStartHeight`; docs/streaming_review_2026_11.md).
 - The player's messages are a dark pill near the top, never over the seek
   bar (`player_toast.dart`). The quality button shows what Auto chose
   ("Auto · 480p"). There is no decoder button on a film ExoPlayer plays:

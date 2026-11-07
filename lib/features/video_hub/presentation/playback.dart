@@ -1173,17 +1173,14 @@ Future<_CopyChoice> _chooseCopy(WidgetRef ref, PlaybackGrant grant) async {
     saving = false;
   }
   final saverCap = saving ? kDataSaverMaxHeight : null;
-  // NOTHING MEASURED YET: start lower on mobile data (480p) than on Wi-Fi
-  // (720p). Auto climbs once the connection shows it can carry more.
-  final startHeight = (await ConnectionInfo.read()).metered
-      ? kMeteredStartHeight
-      : kDefaultHeight;
+  // NOTHING MEASURED YET: 480p on every connection (kUnmeasuredStartHeight
+  // says why). Auto climbs once the connection shows it can carry more.
   final chosen = chooseRendition(
     grant.renditions,
     preferred,
     measuredKbps: ThroughputMemory.current,
     maxHeight: saverCap,
-    defaultHeight: startHeight,
+    defaultHeight: kUnmeasuredStartHeight,
   );
   return _CopyChoice(chosen, preferred, saving, saverCap);
 }

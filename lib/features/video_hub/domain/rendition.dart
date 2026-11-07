@@ -57,21 +57,30 @@ class Rendition {
 /// which is precisely the failure this whole ladder exists to end.
 const double kBandwidthHeadroom = 0.6;
 
-/// The rung to open with when nothing has ever been measured.
+/// The rung Auto means when nothing has been measured and nobody is waiting
+/// on it: a download's Auto, a return to the ladder from the Original.
 ///
 /// 720p rather than the best or the worst available. The worst insults a
-/// viewer on fibre with a picture they did not need; the best hands someone
-/// on a bus the stutter that started all of this. 720p is watchable on a
-/// phone screen, and the first measurement arrives seconds later anyway.
+/// viewer on fibre with a picture they did not need; the best costs data
+/// and time nobody asked for. A film being OPENED does not use it: see
+/// [kUnmeasuredStartHeight].
 const int kDefaultHeight = 720;
 
-/// The rung to open with on MOBILE DATA when nothing has been measured.
+/// The rung a film OPENS with when this phone has never measured its line —
+/// on mobile data and on Wi-Fi alike.
 ///
-/// 480p, the way Netflix starts low and climbs: on a phone's own data the
-/// cost of guessing high is a stall in the first minute of the first film,
-/// and since 1.64.60 Auto climbs back up within a minute or two once the
-/// connection has shown it can carry more. On Wi-Fi the guess stays 720p.
-const int kMeteredStartHeight = 480;
+/// 480p, the way Netflix starts low and climbs. It was 720p on Wi-Fi until
+/// 7 Nov 2026: in the device lab, on a line capped at 4 Mbit/s with 0.5 %
+/// loss and 120 ms of round trip (a Wi-Fi behind a Myanmar mobile uplink),
+/// one connection carries about 1.5 Mbit/s, and 720p's first seconds froze
+/// for 3.2 s right after the first frame and 2.4 s more on the way down to
+/// 360p: 5.9 s frozen in the first 13 s of a new viewer's first film (run
+/// 42365863693). "Wi-Fi" says nothing about the line behind it, and the
+/// first measurement comes only with the first whole read, ~20 s in. The
+/// cost the other way is a softer picture for those seconds on fibre, and
+/// Auto climbs once the line has shown it can carry more; every film after
+/// the first opens from what this one measured ([ThroughputMemory]).
+const int kUnmeasuredStartHeight = 480;
 
 /// The tallest rung Auto picks while the data saver is on — YouTube's Data
 /// saver tops out at 480p, and Netflix's "Save data" is SD. A viewer who
