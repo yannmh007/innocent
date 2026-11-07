@@ -205,8 +205,10 @@ class ExoEngine {
           for (final h in (e['heights'] as List<Object?>? ?? const <Object?>[]))
             if (h is num) h.toInt(),
         ];
+        final peaks = (e['peaks'] as List<Object?>?)?.whereType<num>().map((p) => p.toInt()).toList();
         PlaybackLog.add('exo tracks ${heights.join(',')} selected=${e['selected']} '
-            'adaptive=${e['adaptive']}');
+            'adaptive=${e['adaptive']}'
+            '${peaks == null || peaks.isEmpty ? '' : ' peaks=${peaks.join(',')} kbps'}');
       case 'steer':
         PlaybackLog.add('exo steer ${e['why']} target=${e['target'] ?? 'auto'} '
             'made=${e['made']} rungs=${e['heights']} picks=${e['picks']}');

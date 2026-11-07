@@ -186,18 +186,26 @@ class ExoStreamEngine private constructor(
 
             override fun onTracksChanged(tracks: Tracks) {
                 val heights = mutableListOf<Int>()
+                // What Auto weighs each rung by (the master's BANDWIDTH, its
+                // fastest fragment), for the trail: whether a rung fits a
+                // line is this over 0.7, not its average.
+                val peaks = mutableListOf<Int>()
                 var selected = 0
                 var adaptive = false
                 for (g in tracks.groups) {
                     if (g.type != C.TRACK_TYPE_VIDEO) continue
                     adaptive = adaptive || g.isAdaptiveSupported
                     for (i in 0 until g.length) {
-                        val h = steer.heightOf(g.getTrackFormat(i))
-                        if (h > 0 && !heights.contains(h)) heights.add(h)
+                        val f = g.getTrackFormat(i)
+                        val h = steer.heightOf(f)
+                        if (h > 0 && !heights.contains(h)) {
+                            heights.add(h)
+                            peaks.add(if (f.bitrate > 0) f.bitrate / 1000 else 0)
+                        }
                         if (g.isTrackSelected(i)) selected++
                     }
                 }
-                emit(mapOf("id" to id, "e" to "tracks", "heights" to heights,
+                emit(mapOf("id" to id, "e" to "tracks", "heights" to heights, "peaks" to peaks,
                     "selected" to selected, "adaptive" to adaptive))
             }
 
