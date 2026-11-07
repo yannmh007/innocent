@@ -228,6 +228,19 @@ Without it the only readings are whole reads (every ~20–45 s at 360p),
 too few for Auto to climb back after the start's step down. Fix 1 stays
 (restored in the next commit, 5955c06).
 
+**Correction, run F (42381638569):** the branch with fix 1 AND the guess
+where it now works also spent 97 % at 360p (480p 3 %), with no stop. So
+the 87 % against 3 % above is not fix 1: it is how early readings fall.
+In E the first readings were 1.2, 1.9, 3.5 Mbit/s and Auto climbed; in F
+0.8, 1.1, 2.2 and it did not, and once the 900 kbit/s step came it
+stayed. On this line one connection carries ~1.5–2.2 Mbit/s, and Auto
+needs the line to clear a rung's PEAK (the master's BANDWIDTH, the
+fastest fragment) over 0.7 — for 480p that is borderline, so one run says
+little about picture quality. What F does show: with nothing measured,
+Auto no longer steps down before a reading (the 360p playlist now comes
+1.3 s after the first one, 776 kbps). Quality needs several runs per
+variant, and the peaks logged (next run).
+
 **Test Lab, run 42376634865** (the branch with fix 1 back; realme C53 and
 OPPO A79 on their own lines): every check passed on both. The first frame
 is now honest: 3.1 s (realme, 4.6–12 Mbit/s) and 1.5 s (OPPO, 20–40
