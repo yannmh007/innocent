@@ -1,32 +1,32 @@
-[12:52:56] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
-[12:52:56] install
-[12:53:09] network: speed 2000:4000 kbit/s, delay 80:200 ms
-[12:53:09] network: eth0 has qdisc clsact
-[12:53:09] network: the redirect into ifb0 was accepted but only 0 bytes reached it — NO loss applies (ingress filters there: pref 1 bpf pref 49 u32 )
-[12:53:40] overlays: [x] com.android.internal.display.cutout.emulation.hole [x] com.android.internal.systemui.navbar.threebutton 
-[12:53:40] nav bar: navigationBars frame=[0,2274][1080,2400] navigationBars frame=[0,2274][1080,2400] 
-[12:53:40] library: pushing 24 files
-[12:54:11] library: MediaStore lists 24 videos
-[12:54:11] cold start
+[13:35:47] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
+[13:35:47] install
+[13:36:07] network: speed 2000:4000 kbit/s, delay 80:200 ms
+[13:36:07] network: eth0 has qdisc clsact
+[13:36:07] network: the redirect into ifb0 was accepted but only 0 bytes reached it — NO loss applies (ingress filters there: pref 1 bpf pref 49 u32 )
+[13:36:34] overlays: [x] com.android.internal.display.cutout.emulation.hole [x] com.android.internal.systemui.navbar.threebutton 
+[13:36:35] nav bar: navigationBars frame=[0,2274][1080,2400] navigationBars frame=[0,2274][1080,2400] 
+[13:36:35] library: pushing 24 files
+[13:37:09] library: MediaStore lists 24 videos
+[13:37:09] cold start
 Status: ok
-TotalTime: 3136
-WaitTime: 3143
-[12:54:24] flow weakline
-[12:54:25] line: this user's HTTPS through the relay on 47126, shaped on lo (delay 60ms each way, loss 0.5%)
-[12:54:31] weakline: the line under a 900kbit cap measured 780 kbps (600000 bytes)
-[12:54:32] weakline: the test film from its start; the line in steps: 4mbit:40 900kbit:120 3mbit:60 off:8 3mbit:60 (delay 60ms each way, loss 0.5%)
-[13:09:49] weakline: line 4mbit for 40 s
-[13:10:29] weakline: line 900kbit for 120 s
-[13:12:29] weakline: line 3mbit for 60 s
-[13:13:29] weakline: line off for 8 s
-[13:13:37] weakline: line 3mbit for 60 s
-[13:14:41] weakline: the line passed Sent 46295723 bytes 31188 pkt (dropped 115
-[13:14:42] weakline: relay: 60 connections (0 refused), 46.9 MB to the emulator, 123.7 KB from it
-[13:14:42] weakline: first frame 3559 ms, stalls 0 (>=250 ms), blips 6, frozen 175 ms, longest 84 ms
-[13:14:42] weakline step 1 (4mbit): stalls 0, frozen 0 ms, longest 0 ms, blips 1, rungs 480p 360p
-[13:14:42] weakline step 2 (900kbit): stalls 0, frozen 0 ms, longest 0 ms, blips 2, rungs 480p
-[13:14:42] weakline step 3 (3mbit): stalls 0, frozen 0 ms, longest 0 ms, blips 1, rungs -
-[13:14:42] weakline step 4 (off): stalls 0, frozen 0 ms, longest 0 ms, blips 0, rungs -
-[13:14:42] weakline step 5 (3mbit): stalls 0, frozen 0 ms, longest 0 ms, blips 2, rungs -
-[13:14:43] flow weakline done
-[13:14:48] done
+TotalTime: 4877
+WaitTime: 4898
+[13:37:24] flow weakline
+[13:37:25] line: this user's HTTPS through the relay on 47126, shaped on lo (delay 60ms each way, loss 0.5%)
+[13:37:31] weakline: the line under a 900kbit cap measured 787 kbps (600000 bytes)
+[13:37:32] weakline: the test film from its start; the line in steps: 4mbit:40 900kbit:120 3mbit:60 off:8 3mbit:60 (delay 60ms each way, loss 0.5%)
+[13:37:35] weakline: line 4mbit for 40 s
+[13:38:15] weakline: line 900kbit for 120 s
+[13:40:16] weakline: line 3mbit for 60 s
+[13:41:16] weakline: line off for 8 s
+[13:41:24] weakline: line 3mbit for 60 s
+[13:42:28] weakline: the line passed Sent 31744353 bytes 21291 pkt (dropped 45
+[13:42:29] weakline: relay: 39 connections (0 refused), 31.4 MB to the emulator, 64.6 KB from it
+[13:42:29] weakline: first frame 4029 ms, stalls 0 (>=250 ms), blips 8, frozen 210 ms, longest 135 ms
+[13:42:29] weakline step 1 (4mbit): stalls 0, frozen 0 ms, longest 0 ms, blips 4, rungs 480p 360p 480p 360p
+[13:42:29] weakline step 2 (900kbit): stalls 0, frozen 0 ms, longest 0 ms, blips 2, rungs -
+[13:42:29] weakline step 3 (3mbit): stalls 0, frozen 0 ms, longest 0 ms, blips 1, rungs -
+[13:42:29] weakline step 4 (off): stalls 0, frozen 0 ms, longest 0 ms, blips 1, rungs -
+[13:42:29] weakline step 5 (3mbit): stalls 0, frozen 0 ms, longest 0 ms, blips 0, rungs -
+[13:42:30] flow weakline done
+[13:42:35] done
