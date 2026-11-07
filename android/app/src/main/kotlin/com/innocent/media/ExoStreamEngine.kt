@@ -188,14 +188,28 @@ class ExoStreamEngine private constructor(
                 val heights = mutableListOf<Int>()
                 var selected = 0
                 var adaptive = false
+                // NOTHING MEASURED YET: Auto keeps the rung the app opened on
+                // until a reading of the line says otherwise. The meter's own
+                // default (1.5 Mbit/s, 70 % of it usable) is below a 480p
+                // rung's peak, so with no evidence at all Auto stepped down
+                // to 360p as soon as the start rung's two segments were in,
+                // and that change on a four-second buffer cost a 1 s stop
+                // (device lab run 42370839630, on a line that carried 480p).
+                val start = steer.start
+                var startPeak = 0
                 for (g in tracks.groups) {
                     if (g.type != C.TRACK_TYPE_VIDEO) continue
                     adaptive = adaptive || g.isAdaptiveSupported
                     for (i in 0 until g.length) {
-                        val h = steer.heightOf(g.getTrackFormat(i))
+                        val f = g.getTrackFormat(i)
+                        val h = steer.heightOf(f)
                         if (h > 0 && !heights.contains(h)) heights.add(h)
                         if (g.isTrackSelected(i)) selected++
+                        if (start != null && h == start && f.bitrate > startPeak) startPeak = f.bitrate
                     }
+                }
+                if (startPeak > 0 && !meter.measured) {
+                    meter.guess((startPeak / AdaptiveTrackSelection.DEFAULT_BANDWIDTH_FRACTION * 1.1).toLong())
                 }
                 emit(mapOf("id" to id, "e" to "tracks", "heights" to heights,
                     "selected" to selected, "adaptive" to adaptive))
@@ -475,14 +489,31 @@ class ExoStreamEngine private constructor(
         private var slow = 0.0
         @Volatile var estimate: Long = 1_500_000L
 
+        /** A reading of the line has come in (or a remembered one was seeded). */
+        @Volatile var measured = false
+            private set
+
         /** A first value: what the line was last measured at. */
         fun seed(bps: Long) {
+            fast = bps.toDouble()
+            slow = bps.toDouble()
+            estimate = bps
+            measured = true
+        }
+
+        /**
+         * No reading yet: a value that keeps the rung the app opened on.
+         * Not a measurement — the first reading moves it like any other.
+         */
+        fun guess(bps: Long) {
+            if (measured) return
             fast = bps.toDouble()
             slow = bps.toDouble()
             estimate = bps
         }
 
         fun add(bps: Long) {
+            measured = true
             if (fast == 0.0) return seed(bps)
             fast = 0.5 * bps + 0.5 * fast
             slow = 0.2 * bps + 0.8 * slow
