@@ -15,6 +15,40 @@ Written at the owner's request so nothing below is lost between sessions.
 Newest first within each group; tick an item by deleting it in the commit that
 does it.
 
+### Architecture review, eleven layers (7 Nov) — `docs/architecture.md`
+Checked live against a classic web-architecture picture the owner shared.
+Most layers are sound (jobs, backups, search for Burmese, rate limits,
+security). Found, most urgent first:
+1. **The Privacy dialog is false** (`privacyBody`, en/my/th, shown from
+   `local_screen.dart`): "runs entirely offline… does not collect
+   telemetry, analytics, or send any data". The app sends usage events
+   (2,299 rows), playback requests, account data when signed in, crash
+   reports when set. NEEDS THE OWNER: approve new wording (draft in the
+   7 Nov reply), then it ships in the next release.
+2. **Analytics rollups and the 90-day prune never run.** `rollup_events`
+   and `prune_events` (014) have no caller; `event_daily` and
+   `search_daily` are empty; events are kept since 23 Sep. The first event
+   passes 90 days on 22 Dec, so before then: call both from the daily
+   step of the ingest tick (after the backup), roll up the past days
+   first, then check `max(day)` the next morning. Skills `edge-deploy`,
+   `live-db-change`.
+3. **No scheduled health check.** transport-check and playback-check run
+   on dispatch only; an outage is learned from users. A daily (or hourly)
+   schedule on main for transport-check + self-test: GitHub e-mails the
+   owner on a failed scheduled run. Costs nothing (public repo).
+4. **No restore is tested.** Daily sealed backups and off-site copies are
+   real (last 7 Nov 02:55); `tool/restore_backup.py` exists. A monthly
+   runner job: restore the latest into a throwaway Postgres (service
+   container), compare row counts with `db_backups.tables`.
+5. **Owner check: DNSSEC and CAA** on innocentplayer.com (Cloudflare →
+   DNS → Settings → DNSSEC; SSL/TLS → Edge Certificates). Not recorded;
+   the sandbox cannot see DNS.
+6. When the catalogue reaches thousands of titles: `search_titles`' fuzzy
+   half as `needle <% search_text` with `pg_trgm.word_similarity_threshold
+   = 0.45` set on the function (EXPLAIN: Seq Scan today, Bitmap Index Scan
+   so); and a short public Worker cache for landing and row RPCs when they
+   load the database. Not before.
+
 ### Next app release (after 1.64.80)
 - **1.64.80 is out** (6 Nov 14:20 UTC, main 0202f0a, build 42226206227,
   arm64 95609920 bytes `a519403d…8569`, arm32 87572232 bytes

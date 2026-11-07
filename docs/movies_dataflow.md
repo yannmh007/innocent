@@ -1,5 +1,9 @@
 # End to end — from a file on your phone to a picture on theirs
 
+> **Superseded as the current shape (7 Nov 2026):** see `docs/architecture.md`.
+> This is the October plan; its reasoning still holds, but the system has
+> moved on (a stream Worker in front of R2, encrypted copies, the console).
+
 Written 28 Aug 2026. The concrete walk-through behind `movies_roadmap.md`; the
 step-by-step build order is in `movies_execution_plan.md`.
 Two journeys: how a title gets in, and how a viewer gets it out.

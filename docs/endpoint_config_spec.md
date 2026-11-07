@@ -1,5 +1,9 @@
 # Endpoint configuration — buying the domain late, safely
 
+> **Superseded as the current shape (7 Nov 2026):** see `docs/architecture.md`.
+> This is the October plan; its reasoning still holds, but the system has
+> moved on (a stream Worker in front of R2, encrypted copies, the console).
+
 Written 30 Aug 2026. Answers one question: **can the domain wait until release,
 and can it then be swapped in without shipping a new build?**
 

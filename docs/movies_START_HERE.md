@@ -1,5 +1,9 @@
 # START HERE — Innocent Movies, handoff for a new chat
 
+> **Superseded as the current shape (7 Nov 2026):** see `docs/architecture.md`.
+> This is the October plan; its reasoning still holds, but the system has
+> moved on (a stream Worker in front of R2, encrypted copies, the console).
+
 Last updated 30 Aug 2026. Read this file first; it says what is decided, what to
 do next, and what the other files are for.
 

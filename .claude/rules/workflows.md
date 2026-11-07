@@ -17,6 +17,9 @@ paths:
   while a release build runs.
 - **Schedules run main's copy** of a workflow; a branch change to a
   scheduled workflow takes effect only when it reaches main.
+- **A check meant to alert runs on a schedule on main.** GitHub e-mails
+  the owner when a scheduled run fails; a dispatch-only check alerts
+  nobody. transport-check and playback-check are dispatch-only (7 Nov).
 - `tool/check.py` runs `workflow_yaml.py` and `security_invariants.py` over
   these files; Semgrep runs on push and fails on new findings (a JWT-shaped
   literal counts, even a fake one: build it at run time).

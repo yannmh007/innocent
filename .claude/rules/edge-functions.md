@@ -24,6 +24,10 @@ paths:
   (`tool/sql/service_role_grants_test.sql`), and the service role granted.
   Why: supabase-js returns a refusal as data; 058's genres failed silently
   for a week (077).
+- **Stateless.** Per-isolate memo (key caches) only; whatever must survive
+  goes to Postgres or R2. Work longer than a request (transcode, ingest,
+  backups, rollups) is a job row claimed `for update skip locked` by a
+  runner, never done inline. Map of who does what: `docs/architecture.md`.
 - **Test before deploy:** the slice tests in `tool/js/` that cover the file,
   and for a changed op a local boot with `tool/edge_stub/boot.sh` (a
   stand-in REST server records the calls). `deno check` errors that

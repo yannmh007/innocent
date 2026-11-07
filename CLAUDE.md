@@ -13,6 +13,9 @@ in English. Why this file is shaped as it is: `docs/ai_workflow.md`.
   Supabase MCP, then committed · `docs/studio/` the console ·
   `docs/console/` its Worker · `docs/worker/` the stream Worker
 - `tool/check.py` every structural check · `tool/sql/*_test.sql` DB tests
+- `docs/architecture.md` the system layer by layer: what, how we know,
+  where weak. A change that adds a table, RPC, job or traffic: skill
+  `architecture-review`
 - `docs/BACKLOG.md` open work, newest first — read §0 before starting
 - `docs/security_review_2026_11.md`, `docs/MEDIA_ENCRYPTION.md`, `docs/RUNBOOK.md`
 

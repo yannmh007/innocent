@@ -28,5 +28,11 @@ paths:
 - **Lab-only code stays behind `INNOCENT_LAB`** and is never shipped
   (skill `release` lists it). `MEDIA_SEAL` is a dart-define; the release
   build leaves it unset.
+- **What the app tells users about data matches what it does.** It sends
+  usage events (`record_events`), playback requests, account data when
+  signed in, crash reports when SENTRY_DSN is set. A change to any data
+  flow checks the Privacy text (`privacyBody`, three languages) in the same
+  change. Why: on 7 Nov it still said "runs entirely offline, sends
+  nothing".
 - No owner name, location or personal contact in the app (the takedown
   address is the one public contact).
