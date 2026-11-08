@@ -15,6 +15,31 @@ Written at the owner's request so nothing below is lost between sessions.
 Newest first within each group; tick an item by deleting it in the commit that
 does it.
 
+### WHERE THINGS STAND — read first in a new session (8 Nov 2026)
+- **Work branch `claude/extract-github-release-oteqr5`** holds everything
+  not yet live (main is 1.64.80, a86d949). A new session starts on main:
+  fetch this branch and work on top of it, or the notes below are missing.
+- **On the branch, not released**: the Privacy text (en/my/th), the HLS
+  read-ahead fix, the playback telemetry (`play_summary`, ladder
+  `play_stall` with `ahead_ms`, `error` codes, `grant_ms`), and the 7 Nov
+  streaming fixes (480p unmeasured start, ExoPlayer's first frame, start
+  rung leads the master, the meter's guess, fix 1). Proved on the shaped
+  lab line (3 stops / 5.9 s → none) and on both Test Lab phones (all checks
+  pass). Ships when the owner says "release လုပ်ပါ" (skill `release`).
+- **Live already**: migrations 077–080, ingest v55 (0dfe2a5),
+  transport-check every 6 h, the backup drill.
+- **The owner still has to**: say "release လုပ်ပါ"; approve the five open
+  films in the console's Review; send the DNSSEC "Active" screenshot on
+  12 Nov. Reminders: trig_01Q1Z21R5QVuAzPJQqjTfK7W (12 Nov),
+  trig_01G9fdiXXaVGHSbMgqiJc1bg (13 Nov).
+- **Next streaming work**: items 5b (a sliding-window peak per rung in
+  `HlsLadder.master`), 5c / 3 (a jump's first segment from the rung
+  below), 5 (two connections) below; method in
+  `docs/streaming_review_2026_11.md` §5 and skill `device-labs` (the
+  weakline flow; read the cap probe first; several runs per variant —
+  one run's picture quality is mostly spread). Lab config now:
+  `FLOWS="weakline"`; Test Lab `cloud.env`: both phones.
+
 ### Streaming without stutter (7 Nov) — `docs/streaming_review_2026_11.md`
 The owner's request: no stutter, nothing that annoys a viewer. Evidence:
 live events (labs only, real viewers one or two) and the six newest lab
