@@ -32,9 +32,9 @@ does it.
   pass). Ships when the owner says "release လုပ်ပါ" (skill `release`).
 - **Live already**: migrations 077–080, ingest v55 (0dfe2a5),
   transport-check every 6 h, the backup drill.
-- **The owner still has to**: say "release လုပ်ပါ"; approve the five open
-  films in the console's Review; send the DNSSEC "Active" screenshot on
-  12 Nov. Reminders: trig_01Q1Z21R5QVuAzPJQqjTfK7W (12 Nov),
+- **The owner still has to**: send the DNSSEC "Active" screenshot on
+  12 Nov. (Release asked for 8 Nov: 1.64.81, below. The five open films
+  were approved: every `open-film-%` title reads `approved`, checked 8 Nov.) Reminders: trig_01Q1Z21R5QVuAzPJQqjTfK7W (12 Nov),
   trig_01G9fdiXXaVGHSbMgqiJc1bg (13 Nov).
 - **5b done on the branch (8 Nov)**: the master weighs a rung by its
   fastest 20 s (`PeakRule.window`), decided by 32 weakline passes in runs
@@ -204,7 +204,7 @@ security). Found, most urgent first:
   first fill sizes itself.
 
 ### Open test films, five more (6 Nov)
-- **In the review queue** since 6 Nov 15:49 (seed run 42246218584, ingest
+- **Approved** (all five `approved`, read 8 Nov); seeded 6 Nov 15:49 (seed run 42246218584, ingest
   v53): Cosmos Laundromat (12 min, 1920x804 2.39:1, dialogue), Caminandes:
   Llamigos (2.5 min, 1080p), Glass Half (3 min, 1080p, dialogue), Hero
   (4 min, 2D Grease Pencil, 1280x536 23.976 fps) and Big Buck Bunny (60 fps)
