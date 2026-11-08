@@ -119,13 +119,14 @@ class ExoStreamEngine private constructor(
     fun open(
         url: String, startMs: Long, autoplay: Boolean,
         target: Int?, maxHeight: Int?, bps: Long?, start: Int?,
-        rungs: Map<Int, Int>, progressive: Boolean = false,
+        rungs: Map<Int, Int>, progressive: Boolean = false, deepMs: Long = 0L,
     ) {
         release(keepSurface = true)
         steer.target = target
         steer.maxHeight = maxHeight
         steer.start = start
         steer.heightByRate = rungs
+        steer.deepUs = deepMs.coerceAtLeast(0L) * 1000L
         if (bps != null && bps > 0) meter.seed(bps)
         val http = DefaultHttpDataSource.Factory()
             .setUserAgent("Innocent")
@@ -465,6 +466,13 @@ class ExoStreamEngine private constructor(
             if (f.height > 0) f.height else heightByRate[f.averageBitrate] ?: Format.NO_VALUE
         /** Film kept in the old rung after a change: the next segment or so. */
         val keepUs = 2_000_000L
+
+        /**
+         * Film in hand above which Auto weighs a rung against the whole
+         * measured line rather than 70 % of it (0: never). See
+         * [SteeredSelection.canSelectFormat].
+         */
+        @Volatile var deepUs: Long = 0L
     }
 
     /**
@@ -613,6 +621,29 @@ class ExoStreamEngine private constructor(
 
         private val steering: Boolean get() = steer.target != null || steer.maxHeight != null
 
+        /** The film in hand at the latest [updateSelectedTrack]. */
+        @Volatile private var bufferedUs = 0L
+
+        /**
+         * A DEEP BUFFER CARRIES THE LINE'S DIPS (BACKLOG 5b, device lab runs
+         * 42445022401 and 42450352466). ExoPlayer keeps 30 % of the measured
+         * line in reserve whatever is in hand; with [Steer.deepUs] of film
+         * buffered the rung's own weight (its fastest 20 s, HlsLadder) is
+         * reserve enough. Where it showed: a line that fell to ~860 kbit/s
+         * under a 480p film. Once fewer than 25 s were left, Auto stepped down
+         * to 240p, because 360p's 745 kbps needed 1.06 Mbit/s of line at 70 %
+         * — on a line that carried 360p's 578 kbps average half again over.
+         * Below [Steer.deepUs] the reserve is back, so a start or the end of a
+         * buffer is weighed as before.
+         */
+        override fun canSelectFormat(format: Format, trackBitrate: Int, effectiveBitrate: Long): Boolean {
+            val deep = steer.deepUs
+            if (deep > 0 && bufferedUs >= deep) {
+                return trackBitrate <= effectiveBitrate / AdaptiveTrackSelection.DEFAULT_BANDWIDTH_FRACTION
+            }
+            return trackBitrate <= effectiveBitrate
+        }
+
         override fun getSelectedIndex(): Int {
             val t = steer.target
             if (t != null) return indexFor(t)
@@ -629,6 +660,7 @@ class ExoStreamEngine private constructor(
             queue: List<MediaChunk>,
             mediaChunkIterators: Array<out MediaChunkIterator>,
         ) {
+            bufferedUs = bufferedDurationUs
             super.updateSelectedTrack(
                 playbackPositionUs, bufferedDurationUs, availableDurationUs, queue, mediaChunkIterators)
             // Two segments of the start rung in hand: Auto is the player's.
@@ -714,6 +746,7 @@ class ExoStreamEngine private constructor(
                             (call.argument<Number>("start"))?.toInt(),
                             rungsArg(call.argument<List<Any?>>("rungs")),
                             call.argument<Boolean>("progressive") ?: false,
+                            (call.argument<Number>("deepMs"))?.toLong() ?: 0L,
                         )
                         "play" -> e.play()
                         "pause" -> e.pause()

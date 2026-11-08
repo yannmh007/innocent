@@ -10,6 +10,7 @@ import 'package:path_provider/path_provider.dart';
 import '../../../../core/services/diagnostics/playback_log.dart';
 import '../../../../core/services/network/foreground_stream.dart';
 import '../../../../core/services/network/throughput_memory.dart';
+import '../../../../core/services/video_player/exo_engine.dart';
 import '../../domain/cmaf_index.dart';
 import '../../domain/hls_ladder.dart';
 import '../api/ranged_fetch.dart';
@@ -871,7 +872,7 @@ class StreamCacheServer {
   /// shaped line — one connection, then three. A release build never looks.
   ///
   /// And `lab_peak` names the rule the master weighs rungs by
-  /// ([PeakRule]: `fragment` or `window`), for the weakline flow's passes
+  /// ([PeakRule]: `fragment`, `window`, or `deep`), for the weakline flow's passes
   /// that alternate between them on one line (BACKLOG 5b).
   static Future<void> _labLanes() async {
     if (!const bool.fromEnvironment('INNOCENT_LAB')) return;
@@ -885,9 +886,14 @@ class StreamCacheServer {
       final p = File('${dir?.path}/lab_peak');
       if (dir != null && await p.exists()) {
         final name = (await p.readAsString()).trim();
-        peakRule = PeakRule.values.where((v) => v.name == name).firstOrNull ?? peakRule;
+        // `deep` is `window` with a deep buffer weighed against the whole
+        // line (ExoEngine.deepBufferMs).
+        peakRule = name == 'deep'
+            ? PeakRule.window
+            : PeakRule.values.where((v) => v.name == name).firstOrNull ?? peakRule;
+        ExoEngine.deepBufferMs = name == 'deep' ? ExoEngine.labDeepBufferMs : 0;
       }
-      PlaybackLog.add('stream lanes=$lanes peak=${peakRule.name}');
+      PlaybackLog.add('stream lanes=$lanes peak=${peakRule.name} deep=${ExoEngine.deepBufferMs}');
     } catch (_) {}
   }
 

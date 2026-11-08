@@ -64,6 +64,17 @@ class ExoEngine {
   /// holding the picture that briefly would only flash a softer copy.
   static const Duration landingAfter = Duration(milliseconds: 120);
 
+  /// Film in hand above which Auto weighs a rung against the whole measured
+  /// line, not 70 % of it (0: never); BACKLOG 5b, the Kotlin's
+  /// `SteeredSelection.canSelectFormat`. A lab build's `lab_peak` of `deep`
+  /// sets it for a pass of the weakline flow (StreamCacheServer, which
+  /// reads the lab's switches before any rung is opened).
+  static int deepBufferMs = 0;
+
+  /// The lab's `deep` variant: fifteen seconds, five more than Auto needs in
+  /// hand before it climbs at all.
+  static const int labDeepBufferMs = 15000;
+
   /// However long the jump takes, the picture goes by then: past it, the
   /// spinner tells the truth better than a still.
   static const Duration landingAtMost = Duration(seconds: 4);
@@ -268,6 +279,7 @@ class ExoEngine {
       ],
       // One MP4 file (a film's Original) rather than the ladder's HLS.
       'progressive': progressive,
+      'deepMs': deepBufferMs,
     });
   }
 
