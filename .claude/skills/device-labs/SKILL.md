@@ -33,6 +33,14 @@ Both run only on non-main branches, started by pushing their config file.
 - weakline's verdict is per step: stops >= 250 ms (a viewer sees them)
   apart from blips, with the rungs; `rebuffer start (ahead N ms)` says
   whether the buffer was empty (the line) or full (the phone).
+- **An A/B is passes in ONE run, never one run per variant.** One play of
+  the film says little about its picture (runs F and G, one build: 3 % and
+  100 % at 480p). `WEAK_PASSES` plays the film once per word from a cleared
+  app, writing the word to `lab_peak` (a lab build's switch; add a variant
+  there), and steps.txt ends with one summary line per variant listing
+  every pass's share. Alternate the words, and run again in the other
+  order: H and H2 (8 Nov) disagreed because H2's runner carried more. A
+  pass is ~5 min; twelve fit the 120-minute job.
 
 ## Test Lab — `test_device/cloud.env` → device-cloud.yml (real phones)
 - `DEVICES="RE58C2,35 OP573DL1,34"` (realme, OPPO). Five physical tests a
