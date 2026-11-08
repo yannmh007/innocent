@@ -41,6 +41,14 @@ files, minus what must not ship. Nothing is merged.
   is server-side, the run ids that proved it, what is left out by design.
 
 ## 4. Ship
+- **Not while GitHub's release downloads fail.** The Build fetches Gradle
+  and the libmpv jar from github.com/…/releases/download, and it puts the
+  APK on the CDN BEFORE the GitHub release: a run that dies between the two
+  leaves a version half published, and a rebuild is not the same binary
+  (the CDN keeps the first). On 8 Nov those downloads answered 504 for
+  about two hours. Before pushing, fetch the libmpv jar whole from the
+  sandbox (`curl -L` its URL in third_party/media_kit_libs_android_video)
+  until it succeeds three times in a row.
 - Push: `git push origin HEAD:main`. Do NOT push anything else to main
   until the Build finishes: build.yml cancels an in-progress run on a new push.
 - Watch: Build (Analyze, Test, APKs, CDN, Release), Pages, both Workers.

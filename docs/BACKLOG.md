@@ -17,24 +17,23 @@ does it.
 
 ### WHERE THINGS STAND — read first in a new session (8 Nov 2026)
 - **Work branch `claude/extract-github-release-oteqr5`** holds everything
-  not yet live (main is 1.64.80, a86d949). A new session starts on main:
+  not yet live (main is 1.64.81, 96d504c). A new session starts on main:
   fetch this branch and work on top of it, or the notes below are missing.
   Push to it (fast-forward), the owner's choice of 8 Nov: a session's own
   branch starts at main, has no history in common with this one, and
   would need a force-push.
-- **On the branch, not released**: the Privacy text (en/my/th), the HLS
-  read-ahead fix, the playback telemetry (`play_summary`, ladder
-  `play_stall` with `ahead_ms`, `error` codes, `grant_ms`), and the 7 Nov
-  streaming fixes (480p unmeasured start, ExoPlayer's first frame, start
-  rung leads the master, the meter's guess, fix 1), and 8 Nov's rung
-  weight by the fastest 20 s (5b). Proved on the shaped
-  lab line (3 stops / 5.9 s → none) and on both Test Lab phones (all checks
-  pass). Ships when the owner says "release လုပ်ပါ" (skill `release`).
+- **1.64.81 (394) is out, 8 Nov**: the Privacy text, the HLS read-ahead
+  fix, the playback telemetry (`play_summary`, ladder `play_stall` with
+  `ahead_ms`, `error` codes, `grant_ms`), the 7 Nov streaming fixes and
+  5b's rung weight by the fastest 20 s. Details under "Next app release".
+  On the branch only, by design: the Google sign-in nonce and the lab's
+  hooks (tour skip, `rungKbps`, `ladderRungKbps`, `lab_peak`'s A/B).
 - **Live already**: migrations 077–080, ingest v55 (0dfe2a5),
   transport-check every 6 h, the backup drill.
 - **The owner still has to**: send the DNSSEC "Active" screenshot on
-  12 Nov. (Release asked for 8 Nov: 1.64.81, below. The five open films
-  were approved: every `open-film-%` title reads `approved`, checked 8 Nov.) Reminders: trig_01Q1Z21R5QVuAzPJQqjTfK7W (12 Nov),
+  12 Nov; update a phone to 1.64.81 and say if anything looks wrong. (The
+  five open films were approved: every `open-film-%` title reads
+  `approved`, checked 8 Nov.) Reminders: trig_01Q1Z21R5QVuAzPJQqjTfK7W (12 Nov),
   trig_01G9fdiXXaVGHSbMgqiJc1bg (13 Nov).
 - **5b done on the branch (8 Nov)**: the master weighs a rung by its
   fastest 20 s (`PeakRule.window`), decided by 32 weakline passes in runs
@@ -155,7 +154,22 @@ security). Found, most urgent first:
    so); and a short public Worker cache for landing and row RPCs when they
    load the database. Not before.
 
-### Next app release (after 1.64.80)
+### Next app release (after 1.64.81)
+- **1.64.81 is out** (8 Nov, main 96d504c, build 42477027297; arm64
+  95615240 bytes `44c1ef3d…128a`, arm32 87579964 bytes `66cd8824…5e35`;
+  GitHub's asset digests agree; app_releases moved after a rolled-back dry
+  run, mirrors on the GitHub release). Proved before the push: device lab
+  42465757907 (plain: genres, jumps 15/15), Test Lab 42461966293 (15/15 on
+  both phones), the branch's Build 42465763590, the release tree's 1288
+  Flutter tests. After it: Playback check 42479026804 passed, Pages
+  published, Static analysis green. Left out by design: the Google sign-in
+  nonce and the lab hooks, as for 1.64.80. **GitHub's release downloads
+  failed (504) for about two hours that day**: the lab and branch builds
+  needed four tries, and the Dependency scan on main (42477027283) failed
+  on the Gradle download, not on a finding (its `pins` job passed on the
+  rerun); a release push is safest when a full download of the libmpv jar
+  succeeds three times in a row (the CDN step publishes before the GitHub
+  release, and a half-published version cannot be rebuilt the same).
 - **1.64.80 is out** (6 Nov 14:20 UTC, main 0202f0a, build 42226206227,
   arm64 95609920 bytes `a519403d…8569`, arm32 87572232 bytes
   `a3dd686f…4ee0`; GitHub's digests agree; app_releases moved at 14:20,
