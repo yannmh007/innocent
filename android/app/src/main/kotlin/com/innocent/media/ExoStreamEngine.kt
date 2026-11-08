@@ -137,8 +137,14 @@ class ExoStreamEngine private constructor(
             .setAllowCrossProtocolRedirects(false)
         val load = DefaultLoadControl.Builder()
             // Start on one second of film, as YouTube does; after a stall,
-            // two. Keep up to a minute ahead, and thirty seconds behind so a
-            // step back is played from memory.
+            // two. TRIED FIVE (ExoPlayer's default) on 7 Nov 2026 and put
+            // back: in the device lab's A/B (runs 42358540751 and
+            // 42360760676, same flow) five turned what had been 3-14 ms
+            // blips after a stall into one more stop a viewer sees (1.26 s):
+            // waiting for five seconds of film is a longer stop every time,
+            // and the stops it was meant to prevent were blips, not stops.
+            // Keep up to a minute ahead, and thirty seconds behind so a step
+            // back is played from memory.
             .setBufferDurationsMs(30_000, 60_000, 1_000, 2_000)
             .setBackBuffer(30_000, true)
             // A minute of 240p and a minute of 1080p are both a minute.
@@ -180,18 +186,27 @@ class ExoStreamEngine private constructor(
 
             override fun onTracksChanged(tracks: Tracks) {
                 val heights = mutableListOf<Int>()
+                // What Auto weighs each rung by (the master's BANDWIDTH, its
+                // fastest 20 s: HlsLadder.peakWindowMs), for the trail:
+                // whether a rung fits a line is this over 0.7, not its
+                // average.
+                val peaks = mutableListOf<Int>()
                 var selected = 0
                 var adaptive = false
                 for (g in tracks.groups) {
                     if (g.type != C.TRACK_TYPE_VIDEO) continue
                     adaptive = adaptive || g.isAdaptiveSupported
                     for (i in 0 until g.length) {
-                        val h = steer.heightOf(g.getTrackFormat(i))
-                        if (h > 0 && !heights.contains(h)) heights.add(h)
+                        val f = g.getTrackFormat(i)
+                        val h = steer.heightOf(f)
+                        if (h > 0 && !heights.contains(h)) {
+                            heights.add(h)
+                            peaks.add(if (f.bitrate > 0) f.bitrate / 1000 else 0)
+                        }
                         if (g.isTrackSelected(i)) selected++
                     }
                 }
-                emit(mapOf("id" to id, "e" to "tracks", "heights" to heights,
+                emit(mapOf("id" to id, "e" to "tracks", "heights" to heights, "peaks" to peaks,
                     "selected" to selected, "adaptive" to adaptive))
             }
 
@@ -276,6 +291,11 @@ class ExoStreamEngine private constructor(
             "ready" to p.playWhenReady,
             "buffering" to (p.playbackState == Player.STATE_BUFFERING),
             "ended" to (p.playbackState == Player.STATE_ENDED),
+            // At the moment it changes, not up to 250 ms late as the ticker's:
+            // how much film was in hand when a stall began says whether the
+            // line (none) or the phone (plenty) stopped it.
+            "pos" to p.currentPosition,
+            "buf" to p.bufferedPosition,
         ))
     }
 
@@ -464,14 +484,31 @@ class ExoStreamEngine private constructor(
         private var slow = 0.0
         @Volatile var estimate: Long = 1_500_000L
 
+        /** A reading of the line has come in (or a remembered one was seeded). */
+        @Volatile var measured = false
+            private set
+
         /** A first value: what the line was last measured at. */
         fun seed(bps: Long) {
+            fast = bps.toDouble()
+            slow = bps.toDouble()
+            estimate = bps
+            measured = true
+        }
+
+        /**
+         * No reading yet: a value that keeps the rung the app opened on.
+         * Not a measurement — the first reading moves it like any other.
+         */
+        fun guess(bps: Long) {
+            if (measured) return
             fast = bps.toDouble()
             slow = bps.toDouble()
             estimate = bps
         }
 
         fun add(bps: Long) {
+            measured = true
             if (fast == 0.0) return seed(bps)
             fast = 0.5 * bps + 0.5 * fast
             slow = 0.2 * bps + 0.8 * slow
@@ -497,6 +534,27 @@ class ExoStreamEngine private constructor(
             bandwidthMeter: BandwidthMeter,
             adaptationCheckpoints: ImmutableList<AdaptiveTrackSelection.AdaptationCheckpoint>,
         ): AdaptiveTrackSelection {
+            // NOTHING MEASURED YET: Auto keeps the rung the app opened on
+            // until a reading of the line says otherwise. The meter's own
+            // default (1.5 Mbit/s, 70 % of it usable) is below a 480p rung's
+            // peak, so with no evidence at all Auto stepped down to 360p as
+            // soon as the start rung's two segments were in, and that change
+            // on a four-second buffer cost a 1 s stop (device lab run
+            // 42370839630, on a line that carried 480p). HERE, before the
+            // selection exists: it settles its own first choice from the
+            // meter as it is built, and a guess made later (on the tracks,
+            // run 42373118426) changed nothing — the 360p choice was already
+            // inside it, held back only while the start rung was forced.
+            val start = steer.start
+            val m = bandwidthMeter as? ProxyMeter
+            if (start != null && m != null && !m.measured && group.type == C.TRACK_TYPE_VIDEO) {
+                var peak = 0
+                for (i in tracks) {
+                    val f = group.getFormat(i)
+                    if (steer.heightOf(f) == start && f.bitrate > peak) peak = f.bitrate
+                }
+                if (peak > 0) m.guess((peak / AdaptiveTrackSelection.DEFAULT_BANDWIDTH_FRACTION * 1.1).toLong())
+            }
             val s = SteeredSelection(group, tracks, type, bandwidthMeter, adaptationCheckpoints, steer)
             if (group.type == C.TRACK_TYPE_VIDEO) {
                 made++

@@ -79,9 +79,13 @@ void main() {
       const Rendition(height: 720, kbps: 1684, url: 'c'),
     ];
 
-    test('on Wi-Fi it opens near 720p, on mobile data at 480p', () {
+    test('a film opens at 480p on any connection; Auto with nobody waiting is 720p', () {
+      // Play and the warm start pass kUnmeasuredStartHeight (_chooseCopy):
+      // 720p on an unmeasured "Wi-Fi" froze 5.9 s in its first 13 s in the
+      // device lab (run 42365863693). A download's Auto keeps the default.
+      expect(kUnmeasuredStartHeight, 480);
+      expect(pickRendition(ladder, defaultHeight: kUnmeasuredStartHeight)!.height, 480);
       expect(pickRendition(ladder)!.height, 720);
-      expect(pickRendition(ladder, defaultHeight: kMeteredStartHeight)!.height, 480);
     });
 
     test('a measurement wins over the starting guess', () {

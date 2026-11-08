@@ -156,8 +156,42 @@ class HlsRung {
   final CmafHead? head;
 }
 
+/// What the master writes as a rung's BANDWIDTH — the number ExoPlayer's
+/// Auto weighs it by (a rung fits a line when this is under 70 % of it).
+enum PeakRule {
+  /// The fastest single fragment (two seconds), as HLS defines BANDWIDTH;
+  /// a rung whose index is not read yet at 1.25 × its average.
+  fragment,
+
+  /// The fastest [HlsLadder.peakWindowMs] of film; a rung not read yet at
+  /// its average times what a read rung's peak is to its own average.
+  ///
+  /// THE RULE SINCE 8 NOV 2026, by 32 passes of the device lab's weak line
+  /// (runs 42445022401, 42450352466, 42455719742; docs/
+  /// streaming_review_2026_11.md §5): against [fragment] it kept 480p 89 %
+  /// of the time to 69 %, led 12 pairs of 14, and had no stop where
+  /// [fragment] had one. Weighing a deep buffer against the whole line
+  /// as well (`deep`, ff10144) was tried and dropped: 720p in and out,
+  /// 64 %.
+  window,
+}
+
 class HlsLadder {
   HlsLadder._();
+
+  /// The span [PeakRule.window] weighs a rung over.
+  ///
+  /// WHY NOT ONE FRAGMENT (BACKLOG 5b, run 42384151800). With up to a
+  /// minute of film in hand — and Auto never climbing on less than ten
+  /// seconds of it — what has to keep up is the line over tens of seconds,
+  /// not over the fastest two: one busy fragment is carried by the buffer.
+  /// The fastest fragment made 480p of Sintel 1.74 × its average (1591 of
+  /// 912 kbps), so it needed a 2.3 Mbit/s line, where one connection on the
+  /// lab's lossy line carries 1.5-2.2. And a rung not read yet was weighed at
+  /// 1.25 × its average, so 720p looked cheaper than a rung that was read.
+  /// x264's `-maxrate k -bufsize 2k` (tool/transcode.sh) bounds any 20 s
+  /// at 1.1 × the cap, any 2 s at 2 ×.
+  static const int peakWindowMs = 20000;
 
   /// Sound in every rung is AAC-LC (`-c:a aac`), so this is a fact, not a
   /// guess.
@@ -175,9 +209,18 @@ class HlsLadder {
               ? 'avc1.640028'
               : 'avc1.640033';
 
-  /// The master playlist: every rung, best first. [mediaUri] names a
-  /// rung's media playlist; [aspect] (width / height, from any rung read)
-  /// gives each rung its RESOLUTION.
+  /// The master playlist: every rung, best first — except [first], the rung
+  /// the player opens with, which leads. [mediaUri] names a rung's media
+  /// playlist; [aspect] (width / height, from any rung read) gives each
+  /// rung its RESOLUTION.
+  ///
+  /// THE START RUNG LEADS (7 Nov 2026). ExoPlayer reads the FIRST variant's
+  /// playlist before it can start (its primary playlist; Apple's players
+  /// start on the first listed), and a rung's playlist needs its index read
+  /// from the Worker. Best first, a 480p start waited for 720p's index too:
+  /// one more round trip on a weak line, in the 4.6 s between the first
+  /// frame and play in the device lab (run 42367973983). Auto still chooses
+  /// among all of them; their order is not a preference.
   ///
   /// EVERY RUNG HAS A RESOLUTION, with 16:9 when nothing better is known:
   /// the player tells rungs apart by their height, and a master without
@@ -188,15 +231,19 @@ class HlsLadder {
     required String Function(HlsRung rung) mediaUri,
     double? aspect,
     double? frameRate,
+    int? first,
+    PeakRule rule = PeakRule.window,
   }) {
     final sorted = [...rungs]..sort((a, b) => b.height.compareTo(a.height));
+    final lead = sorted.indexWhere((r) => r.height == first);
+    if (lead > 0) sorted.insert(0, sorted.removeAt(lead));
     final out = StringBuffer()
       ..writeln('#EXTM3U')
       ..writeln('#EXT-X-VERSION:7')
       ..writeln('#EXT-X-INDEPENDENT-SEGMENTS');
     for (final r in sorted) {
       final avg = max(1, r.kbps) * 1000;
-      final peak = r.index == null ? (avg * 1.25).round() : max(avg, peakBps(r.index!));
+      final peak = weighed(r, rungs, rule);
       final codecs = [
         r.head?.videoCodec ?? fallbackVideoCodec(r.height),
         if (r.head?.hasAudio ?? true) audioCodec,
@@ -260,6 +307,68 @@ class HlsLadder {
       peak = max(peak, idx.sizes[i] * 8000 ~/ ms);
     }
     return peak;
+  }
+
+  /// The highest rate any [windowMs] of film needs, in bits a second: the
+  /// fragments from each one on until they cover the window. A film shorter
+  /// than the window is weighed whole; [windowMs] ≤ 0 is one fragment.
+  static int windowPeakBps(CmafIndex idx, int windowMs) {
+    if (windowMs <= 0) return peakBps(idx);
+    var peak = 0;
+    var j = 0;
+    var bytes = 0; // fragments i .. j-1
+    for (var i = 0; i < idx.length; i++) {
+      while (j < idx.length && idx.timesMs[j] - idx.timesMs[i] < windowMs) {
+        bytes += idx.sizes[j];
+        j++;
+      }
+      final span = idx.timesMs[j] - idx.timesMs[i];
+      // The last windows run short of the film's end: the window that
+      // starts earlier and reaches it has already been weighed.
+      if (span > 0 && (span >= windowMs || i == 0)) {
+        peak = max(peak, bytes * 8000 ~/ span);
+      }
+      bytes -= idx.sizes[i];
+    }
+    return peak;
+  }
+
+  /// The rung's average from its own fragments, in bits a second.
+  static int averageBps(CmafIndex idx) {
+    if (idx.length == 0) return 0;
+    final ms = idx.timesMs.last - idx.timesMs.first;
+    if (ms <= 0) return 0;
+    var bytes = 0;
+    for (final s in idx.sizes) {
+      bytes += s;
+    }
+    return bytes * 8000 ~/ ms;
+  }
+
+  /// The BANDWIDTH [r] is written with under [rule], never under its
+  /// average; [all] is the ladder, whose read rungs stand in for one not read.
+  static int weighed(HlsRung r, List<HlsRung> all, PeakRule rule) {
+    final avg = max(1, r.kbps) * 1000;
+    switch (rule) {
+      case PeakRule.fragment:
+        return r.index == null ? (avg * 1.25).round() : max(avg, peakBps(r.index!));
+      case PeakRule.window:
+        final idx = r.index;
+        if (idx != null && idx.length > 0) return max(avg, windowPeakBps(idx, peakWindowMs));
+        // Not read: the nearest read rung's peak over its average. The rungs
+        // are one encode of one film under the same cap rule, so how far a
+        // busy stretch rises over the average is close from rung to rung.
+        HlsRung? near;
+        for (final o in all) {
+          if (o.index == null || o.index!.length == 0 || o.kbps <= 0) continue;
+          if (near == null || (o.height - r.height).abs() < (near.height - r.height).abs()) {
+            near = o;
+          }
+        }
+        if (near == null) return (avg * 1.25).round();
+        final ratio = windowPeakBps(near.index!, peakWindowMs) / (near.kbps * 1000);
+        return (avg * ratio.clamp(1.0, 2.0)).round();
+    }
   }
 
   static int _even(double v) {

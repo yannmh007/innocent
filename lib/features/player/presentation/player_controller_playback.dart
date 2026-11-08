@@ -203,6 +203,7 @@ extension PlayerPlayback on PlayerController {
     // begins the instant the file is handed over.
     _openStartedAt = DateTime.now();
     _firstFrameSeen = false;
+    _openPosition = null;
     // Per FILE, not per session. The drop counter and the stall budget both
     // describe one playback; carrying them over would attribute the previous
     // video's dropped frames to this one and spend this one's budget before

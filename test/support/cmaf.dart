@@ -15,16 +15,21 @@ class FakeCmaf {
   final int headEnd;
 
   /// [fragments] fragments of [seconds] each, [fragmentBytes] bytes each
-  /// (moof and mdat together); [version] 1 writes the sidx with 64-bit times.
+  /// (moof and mdat together) — or [sizes], one per fragment, for a film
+  /// whose busy stretches matter; [version] 1 writes the sidx with 64-bit
+  /// times.
   static FakeCmaf build({
     int fragments = 30,
     int fragmentBytes = 64 * 1024,
+    List<int>? sizes,
     double seconds = 2,
     int timescale = 15360,
     int ept = 0,
     int version = 0,
     int seed = 7,
   }) {
+    final each = sizes ?? List<int>.filled(fragments, fragmentBytes);
+    final n = each.length;
     final out = BytesBuilder();
     void box(String kind, List<int> body) {
       final h = ByteData(4)..setUint32(0, body.length + 8);
@@ -55,11 +60,11 @@ class FakeCmaf {
           ..setUint64(8, firstOffset);
         b.add(t.buffer.asUint8List());
       }
-      final c = ByteData(4)..setUint16(2, fragments);
+      final c = ByteData(4)..setUint16(2, n);
       b.add(c.buffer.asUint8List());
-      for (var i = 0; i < fragments; i++) {
+      for (var i = 0; i < n; i++) {
         final r = ByteData(12)
-          ..setUint32(0, fragmentBytes)
+          ..setUint32(0, each[i])
           ..setUint32(4, (duration * scale / timescale).round())
           ..setUint32(8, 0x90000000);
         b.add(r.buffer.asUint8List());
@@ -74,11 +79,11 @@ class FakeCmaf {
     final headEnd = out.length;
     final r = Random(seed);
     final starts = <int>[];
-    for (var i = 0; i < fragments; i++) {
+    for (var i = 0; i < n; i++) {
       starts.add(out.length);
       box('moof', List<int>.generate(200, (_) => r.nextInt(256)));
-      box('mdat', List<int>.generate(fragmentBytes - 216, (_) => r.nextInt(256)));
+      box('mdat', List<int>.generate(each[i] - 216, (_) => r.nextInt(256)));
     }
-    return FakeCmaf._(out.toBytes(), starts, List<int>.filled(fragments, fragmentBytes), headEnd);
+    return FakeCmaf._(out.toBytes(), starts, each, headEnd);
   }
 }

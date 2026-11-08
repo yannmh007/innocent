@@ -169,4 +169,27 @@ void main() {
       await tester.pump(ExoEngine.landingAtMost);
     });
   });
+
+  group('ExoEngine state', () {
+    test('a stall says how much film was in hand as it began, not 250 ms later', () async {
+      final e = ExoEngine.forTest();
+      e.debugEvent(<Object?, Object?>{'e': 'pos', 'pos': 10000, 'buf': 30000, 'dur': 888000});
+      final seen = <(bool, int)>[];
+      final sub = e.bufferingStream.listen(
+          (b) => seen.add((b, (e.buffered - e.position).inMilliseconds)));
+      // The ticker said 20 s ahead; at the stall itself there was none.
+      e.debugEvent(<Object?, Object?>{
+        'e': 'state', 'ready': true, 'buffering': true, 'ended': false,
+        'pos': 12400, 'buf': 12400,
+      });
+      await Future<void>.delayed(Duration.zero);
+      expect(seen, [(true, 0)]);
+      // An older engine without them leaves the last reading as it was.
+      e.debugEvent(<Object?, Object?>{'e': 'state', 'ready': true, 'buffering': false, 'ended': false});
+      await Future<void>.delayed(Duration.zero);
+      expect(seen.last, (false, 0));
+      expect(e.position, const Duration(milliseconds: 12400));
+      await sub.cancel();
+    });
+  });
 }

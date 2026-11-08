@@ -178,6 +178,15 @@ Future<void> playMedia(
       // would be indistinguishable from the main film, and "which extra do
       // people actually watch" would be unanswerable.
       assetId: source.provider == 'asset' ? source.locator : null,
+      // The server's half of tap-to-picture (7 Nov 2026): play_open starts
+      // its clock when the player is handed the address, after this. With
+      // both, the wait a viewer sees is grant_ms + open_ms, and which half is
+      // slow is known. `ahead`: the grant was asked for while they read the
+      // title, so the tap waited for nothing.
+      meta: <String, dynamic>{
+        'grant_ms': asked.elapsedMilliseconds,
+        if (reused) 'ahead': true,
+      },
     );
     // Screen-capture protection for paid content is requested here but HELD
     // BY THE PLAYER, which acquires it in initState and releases it in
@@ -1164,17 +1173,14 @@ Future<_CopyChoice> _chooseCopy(WidgetRef ref, PlaybackGrant grant) async {
     saving = false;
   }
   final saverCap = saving ? kDataSaverMaxHeight : null;
-  // NOTHING MEASURED YET: start lower on mobile data (480p) than on Wi-Fi
-  // (720p). Auto climbs once the connection shows it can carry more.
-  final startHeight = (await ConnectionInfo.read()).metered
-      ? kMeteredStartHeight
-      : kDefaultHeight;
+  // NOTHING MEASURED YET: 480p on every connection (kUnmeasuredStartHeight
+  // says why). Auto climbs once the connection shows it can carry more.
   final chosen = chooseRendition(
     grant.renditions,
     preferred,
     measuredKbps: ThroughputMemory.current,
     maxHeight: saverCap,
-    defaultHeight: startHeight,
+    defaultHeight: kUnmeasuredStartHeight,
   );
   return _CopyChoice(chosen, preferred, saving, saverCap);
 }

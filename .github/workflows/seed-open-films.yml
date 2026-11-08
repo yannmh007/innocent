@@ -9,18 +9,22 @@
 # The bytes move on this runner, exactly as every other master does: the
 # runner downloads the film, asks the ingest function to presign a PUT for an
 # `open-film-<slug>/…` key (seed_sign, INGEST_SECRET), uploads, then asks it
-# to make the draft catalogue row (seed_title). The runner never holds a
-# bucket credential or the database key.
+# to make the catalogue row (seed_title), sent for review. The runner never
+# holds a bucket credential or the database key.
+#
+# Since 6 Nov 2026 the films come from video.blender.org, whose API states
+# each video's licence; tool/open_films.py refuses anything but CC BY or CC0
+# and checks the download is the film whose licence it read.
 name: Seed open films
 
 on:
   workflow_dispatch:
     inputs:
       task:
-        description: "seed: load the films. seal: make sealed twins of their videos (docs/MEDIA_ENCRYPTION.md §9 B)"
+        description: "find: what video.blender.org has, with licences. seed: load the films. seal: make sealed twins of their videos (docs/MEDIA_ENCRYPTION.md §9 B)"
         type: choice
-        options: [seed, seal]
-        default: seed
+        options: [find, seed, seal]
+        default: find
       kind:
         description: "seal only: what to seal — the videos, the images (poster, photos, thumbnails), both, or the video masters alone (video-master)"
         type: choice
@@ -30,6 +34,14 @@ on:
         description: "seal only: title ids, space-separated (open films only; the function refuses any other)"
         type: string
         default: "0839dacb-59ae-4c95-9279-4901b925965d ab8b0f1e-e23b-4141-94ba-67f1b29a7765"
+      dry:
+        description: "seed only: check the licence, download and probe each film, make its stills — and upload nothing"
+        type: boolean
+        default: true
+      names:
+        description: "find only: film names to look up, separated by commas"
+        type: string
+        default: "Cosmos Laundromat,Caminandes,Spring,Coffee Run,Sprite Fright,Charge,Wing It,Hero,Agent 327,Glass Half,Big Buck Bunny,Elephants Dream,Sintel,Tears of Steel"
 
 permissions:
   contents: read
@@ -78,42 +90,80 @@ jobs:
             SEAL_KIND="$k" SEAL_SCOPE="$scope" python3 tool/seal_twins.py $ids
           done
 
+  # WHAT THE OFFICIAL SITE HAS. Read-only: for each name, the videos
+  # video.blender.org publishes, with the licence its API states, the length
+  # and the files on offer (tool/open_films.py). Nothing is downloaded.
+  find:
+    if: inputs.task == 'find'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Look the films up
+        env:
+          NAMES: ${{ inputs.names }}
+        run: |
+          set -euo pipefail
+          # Names only: letters, digits, spaces, a few marks; commas split them.
+          IFS=',' read -ra list <<< "$(printf '%s' "$NAMES" | tr -cd "A-Za-z0-9 ,:'!-")"
+          python3 tool/open_films.py find "${list[@]}" | tee -a "$GITHUB_STEP_SUMMARY"
+
   seed:
-    if: inputs.task != 'seal'
+    if: inputs.task == 'seed'
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
       - name: Install ffmpeg
         run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg jq
 
-      - name: Download, make stills, upload, and make the rows
+      # EACH FILM, IN ORDER, AND EACH STEP MUST PASS OR THE FILM IS SKIPPED:
+      #   1. its licence, read now from video.blender.org's API (open_films.py
+      #      pick): CC BY or CC0, nothing else; and the file to take;
+      #   2. the download, then ffprobe against what the site said (open_films.py
+      #      check): H.264 at that height, with sound, the right length;
+      #   3. five stills from the film itself;
+      #   4. (not with dry) the stills and the master into R2 through presigned
+      #      PUTs (seed_sign), then the title row (seed_title), SENT FOR REVIEW:
+      #      it waits on the console's Review page like any upload, and nothing
+      #      reaches the app until someone approves it there.
+      # The video is queued for its ladder; the next transcode run builds it.
+      - name: Check, download, and seed for review
         env:
           SB_URL: ${{ secrets.SUPABASE_URL }}
           RUNNER_SECRET: ${{ secrets.INGEST_SECRET }}
+          DRY: ${{ inputs.dry }}
         run: |
           set -uo pipefail
-          if [ -z "${SB_URL:-}" ] || [ -z "${RUNNER_SECRET:-}" ]; then
+          if [ "${DRY:-false}" != true ] && { [ -z "${SB_URL:-}" ] || [ -z "${RUNNER_SECRET:-}" ]; }; then
             echo "::error::SUPABASE_URL or INGEST_SECRET not set"; exit 1
           fi
-          FN="$SB_URL/functions/v1/ingest"
+          FN="${SB_URL:-}/functions/v1/ingest"
 
-          # slug | title | year | comma-separated candidate URLs (first that
-          # downloads wins). Sources are download.blender.org (CC-BY, allows
-          # CI) and archive.org as a backup. A film that does not download
-          # from any candidate is skipped, not fatal. Google's gtv-videos
-          # bucket is NOT used: it answers 403 to GitHub runners.
+          # slug | title | year | video.blender.org id | synopsis
+          # Chosen 6 Nov 2026 from a find run (42240921914): the five whose
+          # licence the site states as CC BY, each adding something the four
+          # films already here do not (docs/BACKLOG.md "Open test films").
+          # Already seeded (9 and 17 Oct): Sintel, Big Buck Bunny, Elephants
+          # Dream, Tears of Steel; seed_title answers "existing" for a slug it
+          # has, so a second run makes nothing twice.
           films=(
-            "open-film-big-buck-bunny|Big Buck Bunny|2008|https://download.blender.org/peach/bigbuckbunny_movies/big_buck_bunny_720p_h264.mov,https://archive.org/download/BigBuckBunny_124/Content/big_buck_bunny_720p_surround.mp4,https://download.blender.org/peach/bigbuckbunny_movies/big_buck_bunny_480p_h264.mov"
-            "open-film-elephants-dream|Elephants Dream|2006|https://archive.org/download/ElephantsDream/ed_1024_512kb.mp4,https://download.blender.org/ED/ED_HD.avi,https://archive.org/download/elephants_dream/ed_hd.avi"
-            "open-film-tears-of-steel|Tears of Steel|2012|https://download.blender.org/demo/movies/ToS/tears_of_steel_720p.mov,https://archive.org/download/tears-of-steel_202102/Tears%20of%20Steel.mp4"
-            "open-film-caminandes-llamigos|Caminandes: Llamigos|2016|https://archive.org/download/Caminandes3Llamigos/Caminandes_%233_-_Llamigos_1080p.mp4,https://download.blender.org/demo/movies/Caminandes_3_Llamigos_1080p.mp4"
-            "open-film-cosmos-laundromat|Cosmos Laundromat|2015|https://archive.org/download/CosmosLaundromat/Cosmos%20Laundromat%20-%20First%20Cycle%20%281080p%29.mp4,https://download.blender.org/demo/movies/CosmosLaundromat_1080p.mp4"
+            "open-film-cosmos-laundromat|Cosmos Laundromat|2015|f507dfdc-e73e-45a4-9778-d758cbe1ce96|On a desolate island, a sheep who has lost the will to live meets a strange salesman who offers him the gift of a lifetime."
+            "open-film-caminandes-llamigos|Caminandes: Llamigos|2016|23f3ef79-15dc-44c5-aa45-cf92e78a4509|Winter in Patagonia: Koro the llama and Oti the pesky penguin fight over the last tasty berry."
+            "open-film-glass-half|Glass Half|2015|64222c8a-c4c7-4b3b-9850-7fb2078edcf6|Two art critics in a gallery see the same works very differently, and neither will give way."
+            "open-film-hero|Hero|2018|3eb93cab-79a2-4fd5-a636-d42e5c59ddea|A short 2D action film, drawn frame by frame with Blender's Grease Pencil."
+            "open-film-big-buck-bunny-60fps|Big Buck Bunny (60 fps)|2008|6402b77c-b61f-4a06-96ca-c8420a2becf4|A big, gentle rabbit takes comic revenge on three bullying rodents. This is the 2013 re-render at 60 frames a second, to try smooth high-frame-rate playback."
           )
 
           # Presign a PUT for one open-film object and upload a local file to it.
           put() {   # slug name kind file  -> echoes object_key
             local slug="$1" name="$2" kind="$3" file="$4"
-            local sign code
+            local code
             code=$(curl -sS -o /tmp/sign.json -w '%{http_code}' -X POST "$FN" \
               -H "Authorization: Bearer $RUNNER_SECRET" -H 'Content-Type: application/json' \
               -d "{\"op\":\"seed_sign\",\"slug\":\"$slug\",\"name\":\"$name\",\"kind\":\"$kind\"}")
@@ -130,76 +180,82 @@ jobs:
             echo "$key"
           }
 
-          made=0
+          made=0; checked=0; skipped=0
           for line in "${films[@]}"; do
-            IFS='|' read -r slug title year urls <<< "$line"
-            [ -z "$slug" ] && continue
+            IFS='|' read -r slug title year uuid synopsis <<< "$line"
             echo "=== $title ($slug) ==="
-            rm -f /tmp/master.mp4 /tmp/still-*.jpg
-            got=0
-            IFS=',' read -ra cands <<< "$urls"
-            for u in "${cands[@]}"; do
-              [ -z "$u" ] && continue
-              if curl --fail-with-body -sSL --max-time 1800 -o /tmp/master.mp4 "$u"; then
-                echo "  source ok: ${u%%\?*}"; got=1; break
-              fi
-              echo "  source failed: ${u%%\?*}"
-            done
-            if [ "$got" != 1 ]; then echo "  SKIP: no source downloaded"; continue; fi
-            bytes=$(stat -c%s /tmp/master.mp4)
-            # Probe the master.
-            probe=$(ffprobe -v error -select_streams v:0 \
-              -show_entries stream=width,height -show_entries format=duration \
-              -of json /tmp/master.mp4 2>/dev/null)
-            w=$(echo "$probe" | jq -r '.streams[0].width // 0')
-            h=$(echo "$probe" | jq -r '.streams[0].height // 0')
-            dur=$(echo "$probe" | jq -r '.format.duration // 0' | cut -d. -f1)
-            [ -z "$dur" ] && dur=0
-            echo "  ${w}x${h}, ${dur}s, $((bytes/1000000)) MB"
-            if [ "$bytes" -lt 100000 ] || [ "$w" = 0 ]; then echo "  SKIP: not a usable video"; continue; fi
+            rm -f /tmp/master.mp4 /tmp/still-*.jpg /tmp/pick.json /tmp/probe.json
 
-            # Five stills, evenly spaced away from the very start and end.
-            photos_json='[]'
-            i=0
-            for pct in 10 30 50 70 90; do
-              i=$((i+1))
-              t=$(( dur * pct / 100 ))
-              out="/tmp/still-$i.jpg"
+            # 1. The licence, now, from the source.
+            if ! python3 tool/open_films.py pick "$uuid" > /tmp/pick.json; then
+              echo "  SKIP: $(cat /tmp/pick.json)"; skipped=$((skipped+1)); continue
+            fi
+            lic=$(jq -r .licence /tmp/pick.json); attr=$(jq -r .attribution /tmp/pick.json)
+            page=$(jq -r .page /tmp/pick.json); url=$(jq -r .url /tmp/pick.json)
+            echo "  licence $lic; file $(jq -r .height /tmp/pick.json)p$(jq -r '.fps // ""' /tmp/pick.json), $(( $(jq -r '.size // 0' /tmp/pick.json) / 1000000 )) MB"
+
+            # 2. The download, then is it the film the licence was read for?
+            if ! curl --fail-with-body -sSL --max-time 1800 -o /tmp/master.mp4 "$url"; then
+              echo "  SKIP: download failed"; skipped=$((skipped+1)); continue
+            fi
+            ffprobe -v error -show_streams -show_format -of json /tmp/master.mp4 > /tmp/probe.json 2>/dev/null || echo '{}' > /tmp/probe.json
+            if ! python3 tool/open_films.py check /tmp/pick.json /tmp/probe.json; then
+              echo "  SKIP: not the film the licence was read for"; skipped=$((skipped+1)); continue
+            fi
+            bytes=$(stat -c%s /tmp/master.mp4)
+            w=$(jq -r '[.streams[]|select(.codec_type=="video" and .codec_name=="h264")][0].width' /tmp/probe.json)
+            h=$(jq -r '[.streams[]|select(.codec_type=="video" and .codec_name=="h264")][0].height' /tmp/probe.json)
+            fps=$(jq -r '[.streams[]|select(.codec_type=="video" and .codec_name=="h264")][0].avg_frame_rate' /tmp/probe.json)
+            dur=$(jq -r '.format.duration' /tmp/probe.json | cut -d. -f1)
+            ach=$(jq -r '[.streams[]|select(.codec_type=="audio")][0].channels' /tmp/probe.json)
+            echo "  master ${w}x${h} ${fps} fps, ${dur}s, ${ach}-channel sound, $((bytes/1000000)) MB"
+
+            # 3. Five stills, evenly spaced away from the very start and end.
+            n_stills=0
+            for i in 1 2 3 4 5; do
+              t=$(( dur * (i * 20 - 10) / 100 ))
               ffmpeg -nostdin -y -ss "$t" -i /tmp/master.mp4 -frames:v 1 \
-                -vf "scale='min(1280,iw)':-2" -q:v 3 "$out" >/dev/null 2>&1
-              if [ ! -s "$out" ]; then echo "  still $i failed"; continue; fi
+                -vf "scale='min(1280,iw)':-2" -q:v 3 "/tmp/still-$i.jpg" >/dev/null 2>&1
+              [ -s "/tmp/still-$i.jpg" ] && n_stills=$((n_stills+1))
+            done
+            echo "  $n_stills stills"
+            checked=$((checked+1))
+            echo "- **$title** ($year) — $lic, ${w}x${h} ${fps} fps, ${dur}s, $((bytes/1000000)) MB, $n_stills stills" >> "$GITHUB_STEP_SUMMARY"
+            if [ "${DRY:-false}" = true ]; then echo "  (dry: nothing uploaded)"; continue; fi
+
+            # 4. Into R2, then the row, sent for review.
+            photos_json='[]'
+            for i in 1 2 3 4 5; do
+              out="/tmp/still-$i.jpg"
+              [ -s "$out" ] || continue
               pk=$(put "$slug" "still-$i.jpg" photo "$out") || continue
               pw=$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=p=0 "$out" 2>/dev/null)
-              pwid=$(echo "$pw" | cut -d, -f1); phei=$(echo "$pw" | cut -d, -f2)
-              pbytes=$(stat -c%s "$out")
               photos_json=$(echo "$photos_json" | jq -c \
-                --arg k "$pk" --argjson w "${pwid:-0}" --argjson h "${phei:-0}" --argjson b "$pbytes" \
-                '. + [{object_key:$k,width:$w,height:$h,bytes:$b}]')
+                --arg k "$pk" --argjson w "$(echo "$pw" | cut -d, -f1)" --argjson h "$(echo "$pw" | cut -d, -f2)" \
+                --argjson b "$(stat -c%s "$out")" '. + [{object_key:$k,width:$w,height:$h,bytes:$b}]')
             done
+            vk=$(put "$slug" "master.mp4" video /tmp/master.mp4) || { echo "  SKIP: video upload failed"; skipped=$((skipped+1)); continue; }
 
-            vk=$(put "$slug" "master.mp4" video /tmp/master.mp4) || { echo "  SKIP: video upload failed"; continue; }
+            syn="$synopsis
 
+          Creative Commons Attribution ($lic): $attr. Source: $page. Re-encoded for streaming."
+            note="Open film from video.blender.org ($uuid). Licence $lic read from the site's API on $(date -u +%Y-%m-%d); master ${w}x${h} ${fps} fps ${dur}s with sound, checked with ffprobe; $n_stills stills. Look at it, set its Burmese title and genres if you like, then approve or send back."
             payload=$(jq -nc \
-              --arg slug "$slug" --arg title "$title" --argjson year "${year:-0}" \
-              --arg syn "A Creative Commons (CC-BY) open movie by the Blender Foundation, used here to test streaming and download." \
-              --arg vk "$vk" --argjson vb "$bytes" --argjson vw "${w:-0}" --argjson vh "${h:-0}" --argjson vd "${dur:-0}" \
+              --arg slug "$slug" --arg title "$title" --argjson year "$year" --arg syn "$syn" --arg note "$note" \
+              --arg vk "$vk" --argjson vb "$bytes" --argjson vw "$w" --argjson vh "$h" --argjson vd "$dur" \
               --argjson photos "$photos_json" \
-              '{op:"seed_title",slug:$slug,title:$title,year:$year,synopsis:$syn,
+              '{op:"seed_title",slug:$slug,title:$title,year:$year,synopsis:$syn,review:"ready",review_note:$note,
                 video:{object_key:$vk,bytes:$vb,width:$vw,height:$vh,duration_s:$vd,mime:"video/mp4"},
                 photos:$photos}')
             code=$(curl -sS -o /tmp/seed.json -w '%{http_code}' -X POST "$FN" \
               -H "Authorization: Bearer $RUNNER_SECRET" -H 'Content-Type: application/json' -d "$payload")
             if [ "$code" = 200 ]; then
-              id=$(jq -r '.id' /tmp/seed.json)
-              echo "  title row: $id ($(jq -r '.assets // "existing"' /tmp/seed.json) assets)"
+              echo "  title $(jq -r .id /tmp/seed.json): $(jq -r '.assets // "existing"' /tmp/seed.json) files, review $(jq -r '.review // "unchanged"' /tmp/seed.json)"
               made=$((made+1))
-              {
-                echo "- **$title** ($year) — $((bytes/1000000)) MB, ${w}x${h}, $(echo "$photos_json" | jq 'length') stills"
-              } >> "$GITHUB_STEP_SUMMARY"
             else
-              echo "  seed_title: HTTP $code $(cat /tmp/seed.json)"
+              echo "  seed_title: HTTP $code $(head -c 300 /tmp/seed.json)"; skipped=$((skipped+1))
             fi
           done
 
-          echo "=== seeded $made film(s) ==="
-          [ "$made" -gt 0 ]
+          echo "=== checked $checked, seeded $made, skipped $skipped ==="
+          if [ "${DRY:-false}" = true ]; then [ "$checked" -gt 0 ]; else [ "$made" -gt 0 ]; fi

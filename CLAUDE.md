@@ -26,7 +26,10 @@ in English. Why this file is shaped as it is: `docs/ai_workflow.md`.
 - Touch no catalogue title but the open films (slug `open-film-…`) unless the
   owner names it. Labs and canaries use open films only.
 - Never rewrite pushed history. No pull request unless asked. Work on the
-  session's branch; `git checkout pubspec.lock` before committing.
+  session's branch; `git checkout pubspec.lock` before committing. When
+  BACKLOG §0 names a work branch with no history in common with the
+  session's branch (which starts at main), push to the work branch,
+  fast-forward — the owner's choice of 8 Nov — never a force-push.
 - `python3 tool/check.py` passes before every push.
 - A push to `main` is a production deploy: `docs/**` republishes Pages and
   rebuilds both Workers; most other paths start the app Build. Releases:

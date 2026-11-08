@@ -15,6 +15,146 @@ Written at the owner's request so nothing below is lost between sessions.
 Newest first within each group; tick an item by deleting it in the commit that
 does it.
 
+### WHERE THINGS STAND — read first in a new session (8 Nov 2026)
+- **Work branch `claude/extract-github-release-oteqr5`** holds everything
+  not yet live (main is 1.64.80, a86d949). A new session starts on main:
+  fetch this branch and work on top of it, or the notes below are missing.
+  Push to it (fast-forward), the owner's choice of 8 Nov: a session's own
+  branch starts at main, has no history in common with this one, and
+  would need a force-push.
+- **On the branch, not released**: the Privacy text (en/my/th), the HLS
+  read-ahead fix, the playback telemetry (`play_summary`, ladder
+  `play_stall` with `ahead_ms`, `error` codes, `grant_ms`), and the 7 Nov
+  streaming fixes (480p unmeasured start, ExoPlayer's first frame, start
+  rung leads the master, the meter's guess, fix 1), and 8 Nov's rung
+  weight by the fastest 20 s (5b). Proved on the shaped
+  lab line (3 stops / 5.9 s → none) and on both Test Lab phones (all checks
+  pass). Ships when the owner says "release လုပ်ပါ" (skill `release`).
+- **Live already**: migrations 077–080, ingest v55 (0dfe2a5),
+  transport-check every 6 h, the backup drill.
+- **The owner still has to**: say "release လုပ်ပါ"; approve the five open
+  films in the console's Review; send the DNSSEC "Active" screenshot on
+  12 Nov. Reminders: trig_01Q1Z21R5QVuAzPJQqjTfK7W (12 Nov),
+  trig_01G9fdiXXaVGHSbMgqiJc1bg (13 Nov).
+- **5b done on the branch (8 Nov)**: the master weighs a rung by its
+  fastest 20 s (`PeakRule.window`), decided by 32 weakline passes in runs
+  H, H2, H3 (review §5): 480p or better 89 % against 69 %, no stop;
+  Test Lab 42461966293: 15 of 15 on both phones.
+  `deep` (a deep buffer weighed against the whole line) tried, dropped.
+  The weakline flow now plays `WEAK_PASSES` passes per run, alternating
+  `lab_peak` variants: use it for every A/B (one pass says little).
+- **Next streaming work**: 5c / 3 (a jump's first segment from the rung
+  below), then 5 (two connections) below; method in
+  `docs/streaming_review_2026_11.md` §5 and skill `device-labs` (the
+  weakline flow; read the cap probe first; passes alternating per
+  variant). Lab config now: `FLOWS="weakline"`, 12 passes; Test Lab
+  `cloud.env`: both phones.
+
+### Streaming without stutter (7 Nov) — `docs/streaming_review_2026_11.md`
+The owner's request: no stutter, nothing that annoys a viewer. Evidence:
+live events (labs only, real viewers one or two) and the six newest lab
+runs. Done on the branch (ships with the next release): ladder stalls,
+tap-to-picture (`grant_ms`), failures (`error` codes) and one
+`play_summary` per playback (migration 080 live; PlaybackQoe), blips
+(< 250 ms) counted apart from stops, and the film in hand at each stop.
+Also on the branch (7 Nov, review §5), proved step by step on one shaped
+line (4 → 0.9 → 3 Mbit/s, 8 s with none, 0.5 % loss, 120 ms): from 3
+stops / 5.9 s frozen (run B') to **none** (run E, 42373118426) by
+(a) an unmeasured film opening at 480p on every connection; (b) the
+ladder's first frame taken from ExoPlayer, not from libmpv's stop (the
+"first picture in 0.2 s" of earlier labs was that artefact; open_ms
+before and after this change are not comparable); (c) the start rung
+leading the master playlist; (d) ExoPlayer's meter keeping the start rung
+until a reading (works since run F, 42381638569: the guess must be made
+where the selection is built). The line read during a read (fix 1) stays:
+no stop in any run with it; its effect on picture quality is not shown
+(A' 3 % at 480p, E 87 %, F with fix 1 3 %: early readings decide it).
+Test Lab run 42376634865: all checks passed on both phones, honest first
+frame 1.5 s / 3.1 s. **The lab line was never shaped
+before 7 Nov** (the runner's bpf filter on eth0 took the ifb redirect's
+packets): it now runs through `tool/netlab/line_relay.py` on loopback and
+proves its cap first. Next, each proved by an emulator A/B on that line:
+1. ~~resume after a stall on 5 s~~ tried, undone: it made blips a visible
+   1.26 s stop;
+2. climb back only when the slow average clears the higher rung (720 →
+   240 → 720 → stall);
+3. a jump on a slow line takes its first segment from the rung below
+   (OPPO seek 5.9 s);
+4. ~~a dead segment read noticed in 3–4 s~~ dropped down: 8 s with no
+   line cost nothing with 26 s in hand (run C); it matters only with a
+   nearly empty buffer;
+5. two connections for a ladder's reads on a lossy line: one carries
+   ~1.5–2 Mbit/s at 0.5 % loss and 120 ms whatever the cap (TCP's own
+   limit), less than 720p's peak; costs Worker requests;
+5b. ~~picture quality on a weak line~~ done 8 Nov: a rung is weighed by
+   its fastest 20 s, a rung not read by a read rung's ratio
+   (`PeakRule.window`; runs H/H2/H3: 480p or better 89 % against 69 %,
+   12 pairs of 14, no stop). Left: on a line that falls under the rung in
+   hand, the step down lands on 240p where 360p's average fits (ExoPlayer
+   defers it to 25 s in hand, then 360p's peak over 0.7 does not fit);
+   weighing a deep buffer against the whole line made it worse (`deep`,
+   720p in and out). A softer picture, not a stop: low priority;
+5c. a seek on a ~5 Mbit/s line froze 1.7 s on the realme (first segment
+   720p): fix 3 below, for the first segment after a jump only. What the
+   trail says (Test Lab 42376634865): the realme's jump fetched a 537,551 B
+   720p segment in 1401 ms (answer 380 ms) at ~4.6 Mbit/s and stood 1699 ms;
+   the OPPO's same segment at ~30 Mbit/s took 473 ms, frozen 402 ms. A jump
+   needs one whole segment (1 s of film to play), so its size is the wait.
+   Plan, read in Media3 1.9.2's AdaptiveTrackSelection: on a seek in Auto,
+   `SteeredSelection.getSelectedIndex` returns the highest rung whose
+   segment arrives in ~0.5 s at the meter's estimate (weight × 2 s /
+   estimate), for the first chunk after the jump only; then back to the
+   rung before the jump — ExoPlayer's own rule would hold the lower rung
+   until 10 s are in hand (minDurationForQualityIncrease), a soft picture
+   for 10 s after every jump. Lab: the jumps (`lab_jumps`, LAB check
+   frozen=) on the weak line in passes, `lab_jump` on/off alternating;
+   then Test Lab on both phones. `test_device/config.env` still names
+   `deep` in WEAK_PASSES (now the same as window): set it with that run;
+6. labs to add: ten minutes on a weak line, a link expiring mid-film, a
+   low-end and a 32-bit Test Lab phone, two runs per build.
+After the release: frozen seconds per minute played, from `play_summary`,
+per version and network — the number each step must lower.
+
+### Architecture review, eleven layers (7 Nov) — `docs/architecture.md`
+Checked live against a classic web-architecture picture the owner shared.
+Most layers are sound (jobs, backups, search for Burmese, rate limits,
+security). Found, most urgent first:
+1. **Privacy dialog: rewritten, on the branch, ships with the next
+   release** (7 Nov). It said "runs entirely offline… sends nothing"; now
+   it says what is sent (usage records under the account or a random
+   install id, searches included, 90 days then daily totals only; playback;
+   reports a user sends), in en/my/th (`app_strings.dart` and the .arb
+   files). The dialog scrolls now (test/privacy_dialog_test.dart fails in
+   all three languages without it). The owner approved going ahead
+   ("ဆက်လုပ်ပါ အကောင်းဆုံး"); the wording can still change before release.
+2. **DONE 7 Nov: analytics rollup and 90-day prune run daily.** Migration
+   078 `events_housekeeping()` (service role; index on occurred_at), called
+   by the ingest house step, ingest **v54** (SHA 261638b). First run 03:46:
+   event_daily 35 days, 366 rows, all 2,299 events counted; search_daily
+   3 days. Nothing past 90 days yet (first on 22 Dec).
+3. **DONE 7 Nov: transport-check on a schedule** (every 6 h asked; on main
+   with the next main push, a9fbccb). GitHub e-mails the owner when a
+   scheduled run fails: the owner's Actions e-mail is on, failed workflows
+   only (screenshot 7 Nov), and the pushes and dispatches act as the
+   owner's own account (get_me: yannmh007), so the e-mail reaches the owner.
+   Watch: the first scheduled run on main is green.
+4. **DONE 7 Nov: restore drill, weekly.** Migration 079 (verified_at,
+   verify_error on db_backups; backup_verify_due, backup_verified), ingest
+   **v55** (SHA 0dfe2a5): the newest backup is read back, hash-checked,
+   unsealed, un-gzipped, parsed and counted per table, in the function;
+   a failure goes to the owner on Telegram and is retried daily. First
+   drill 03:52: backup #47 (sealed), 50 tables, passed. Still by hand: a
+   full restore into an empty database.
+5. **DNSSEC: enabled 7 Nov, pending** ("pending while we automatically add
+   the DS record"). Cloudflare Registrar publishes the DS in 1–2 days; the
+   12 Nov reminder asks for a screenshot showing Active. Never press Cancel
+   Setup. CAA: none, and none wanted (`docs/architecture.md`, layer 1).
+6. When the catalogue reaches thousands of titles: `search_titles`' fuzzy
+   half as `needle <% search_text` with `pg_trgm.word_similarity_threshold
+   = 0.45` set on the function (EXPLAIN: Seq Scan today, Bitmap Index Scan
+   so); and a short public Worker cache for landing and row RPCs when they
+   load the database. Not before.
+
 ### Next app release (after 1.64.80)
 - **1.64.80 is out** (6 Nov 14:20 UTC, main 0202f0a, build 42226206227,
   arm64 95609920 bytes `a519403d…8569`, arm32 87572232 bytes
@@ -26,6 +166,20 @@ does it.
   fake JWTs in `tool/js/service_key_test.mjs`, fixed on the branch
   (06c70cc); it reaches main with the next release, not before, since a
   change under tool/ rebuilds 1.64.80 for nothing.
+- **Main red twice after the Claude-setup pushes (6 Nov), both fixed on
+  main the same evening; 1.64.80 rebuilt, nothing uploaded.**
+  (a) Static analysis 42258949696: `tool/claude_hooks_test.py` ran a hook
+  by a path from a variable; now a literal command per hook. The fake
+  JWTs (06c70cc) went with it. (b) Build 42255981825: one Flutter test,
+  `stream_cache_hls_test` "asked a few times, not 90": 12 Worker reads
+  where 8 do. A REAL BUG, timing-dependent: a film has one cache writer at
+  a time, and a segment read that began while the last read's writer was
+  still closing got none — its 2 MB reached the player but not the cache,
+  so the next segments were read from the Worker again (bytes read twice,
+  Worker requests spent). Reproduced here under CPU+disk load (4 runs in
+  10); the read now waits for that close, alongside the Worker's answer,
+  at most 1 s: 0 in 16. Also one metadata save per film at a time (two
+  shared `meta.json.tmp`). Reaches phones with the next release.
 - 1.64.80 carries Report on every title and the
   takedown address in About (P6), genres by code in the phone's language
   (TAX phase 3), the media seal's app half (the opener, the device key, the

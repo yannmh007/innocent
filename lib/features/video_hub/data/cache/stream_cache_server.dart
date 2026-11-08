@@ -137,6 +137,12 @@ class StreamCacheServer {
   @visibleForTesting
   static int lanes = 6;
 
+  /// How the master weighs each rung for Auto (HlsLadder.master, BACKLOG
+  /// 5b): by its fastest 20 s since 8 Nov 2026 (device lab runs H, H2, H3).
+  /// Settable for the lab's A/B (`lab_peak`) and for tests.
+  @visibleForTesting
+  static PeakRule peakRule = PeakRule.window;
+
   /// How much one parallel stretch covers before the loop comes round again
   /// (to check the cache, renew a link).
   @visibleForTesting
@@ -760,6 +766,13 @@ class StreamCacheServer {
             if (idx != null) {
               r.index = idx;
               r.head = CmafHead.parse(bytes);
+              // What a rung asks of the line, over one fragment and over
+              // longer stretches: the numbers BACKLOG 5b weighs rungs by.
+              int k(int bps) => bps ~/ 1000;
+              PlaybackLog.add('hls: ${r.height}p index, ${idx.length} segments, '
+                  'average ${k(HlsLadder.averageBps(idx))}, peak 2s ${k(HlsLadder.peakBps(idx))}, '
+                  '10s ${k(HlsLadder.windowPeakBps(idx, 10000))}, '
+                  '20s ${k(HlsLadder.windowPeakBps(idx, 20000))} kbps');
               handedOff = true;
               unawaited(() async {
                 try {
@@ -818,6 +831,8 @@ class StreamCacheServer {
           mediaUri: (r) => 'http://127.0.0.1:$port/h/$token/$ladderId/${r.height}.m3u8',
           aspect: aspect,
           frameRate: l.frameRate,
+          first: startHeight,
+          rule: peakRule,
         );
       } else if (name.endsWith('.m3u8')) {
         final h = int.tryParse(name.substring(0, name.length - 5));
@@ -855,6 +870,10 @@ class StreamCacheServer {
   /// count from `lab_lanes` in the app's external files directory, which the
   /// lab writes with adb between two plays of the same film over the same
   /// shaped line — one connection, then three. A release build never looks.
+  ///
+  /// And `lab_peak` names the rule the master weighs rungs by
+  /// ([PeakRule]: `fragment` or `window`), for the weakline flow's passes
+  /// that alternate between them on one line (BACKLOG 5b).
   static Future<void> _labLanes() async {
     if (!const bool.fromEnvironment('INNOCENT_LAB')) return;
     try {
@@ -864,7 +883,12 @@ class StreamCacheServer {
         final n = int.tryParse((await f.readAsString()).trim());
         if (n != null) lanes = n.clamp(1, 8);
       }
-      PlaybackLog.add('stream lanes=$lanes');
+      final p = File('${dir?.path}/lab_peak');
+      if (dir != null && await p.exists()) {
+        final name = (await p.readAsString()).trim();
+        peakRule = PeakRule.values.where((v) => v.name == name).firstOrNull ?? peakRule;
+      }
+      PlaybackLog.add('stream lanes=$lanes peak=${peakRule.name}');
     } catch (_) {}
   }
 
@@ -1696,15 +1720,52 @@ class StreamCacheServer {
         // on a fresh one instead of hanging on this. One check every two
         // seconds, not a timer for every piece.
         final quiet = Stopwatch()..start();
+        // THE LINE, READ WHILE THE READ GOES ON (7 Nov 2026). The line's
+        // speed used to be measured once a read had ended (_recordNetwork),
+        // and a read is two megabytes: sixteen seconds at 1 Mbit/s. A line
+        // that fell away mid-read went unnoticed that long, ExoPlayer kept
+        // asking for the rung the old speed allowed, and the film stopped
+        // (13.4 s on the OPPO, run 42008905511). Now every two seconds of a
+        // read are a reading — but only a window spent mostly WAITING on the
+        // network: one spent writing to the disk or to the player says
+        // nothing about the line, and would only pull the quality down.
+        final waiting = Stopwatch();
+        var started = false;
+        var winBytes = 0;
+        var winWall = 0;
+        var winWait = 0;
         stallWatch = Timer.periodic(const Duration(seconds: 2), (_) {
+          if (started) {
+            final wall = clock.elapsedMilliseconds - winWall;
+            final wait = waiting.elapsedMilliseconds - winWait;
+            if (wall >= _interimWindowMs) {
+              if (wait * 2 >= wall) _recordInterim(winBytes, wall);
+              winBytes = 0;
+              winWall = clock.elapsedMilliseconds;
+              winWait = waiting.elapsedMilliseconds;
+            }
+          }
           if (quiet.elapsed < segmentStall) return;
           stallWatch?.cancel();
           PlaybackLog.add('hls: a segment read stalled ${segmentStall.inSeconds} s, ended');
           unawaited(pieces.cancel());
         });
-        while (!fill.cancelled && await pieces.moveNext()) {
+        while (!fill.cancelled) {
+          waiting.start();
+          final more = await pieces.moveNext();
+          waiting.stop();
+          if (!more) break;
           quiet.reset();
           final chunk = pieces.current;
+          // The window opens at the first byte, so the Worker's time to
+          // answer is never read as a slow line.
+          if (!started) {
+            started = true;
+            winWall = clock.elapsedMilliseconds;
+            winWait = waiting.elapsedMilliseconds;
+          } else {
+            winBytes += chunk.length;
+          }
           ForegroundStream.touch();
           final w = writer;
           if (w != null) {
@@ -1815,12 +1876,45 @@ class StreamCacheServer {
   /// the HLS player's rung choice ([networkKbps]). Smaller and shorter
   /// reads than [_recordThroughput] takes, because a segment is small:
   /// still never one so short it measures the handshake.
+  /// The shortest stretch of a read taken as a reading of the line.
+  static const int _interimWindowMs = 1500;
+
+  /// Below any rung: a read that brought next to nothing for two seconds is
+  /// a line to step down for, and a zero would be ignored downstream.
+  static const int _interimFloorKbps = 64;
+
+  /// The last interim reading written to the trail.
+  int? _interimLogged;
+
+  /// A reading from the middle of a segment read (see the read loop): only
+  /// the speed, never the throughput memory — that keeps whole reads.
+  void _recordInterim(int bytes, int ms) {
+    if (ms <= 0) return;
+    final kbps = max(_interimFloorKbps, (bytes * 8) ~/ ms);
+    networkKbps.value = kbps;
+    // In the trail: what Auto steers by between whole reads ('measured'),
+    // which on a weak line come ~20 s apart — the lab could not tell when
+    // the player first knew the line.
+    _logLine(kbps, 'in a read');
+  }
+
   void _recordNetwork(int bytes, Duration took) {
     final ms = took.inMilliseconds;
     if (ms < 200) return;
     final kbps = (bytes * 8) ~/ ms;
     networkKbps.value = kbps;
+    _logLine(kbps, 'a read');
     _recordThroughput(bytes, took);
+  }
+
+  /// A reading the player is fed, in the trail once it has moved by a
+  /// quarter from the last one written there.
+  void _logLine(int kbps, String from) {
+    final last = _interimLogged;
+    if (last == null || (kbps - last).abs() * 4 > last) {
+      _interimLogged = kbps;
+      PlaybackLog.add('line $kbps kbps, $from');
+    }
   }
 
   /// Write each chunk to the cache, then hand it on.

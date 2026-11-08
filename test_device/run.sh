@@ -26,21 +26,109 @@ adb emu network delay "$NET_DELAY" || true
 # leaves through this host (QEMU re-originates each connection here), so
 # dropping a share of the packets ARRIVING on the host's interface is loss on
 # the very connections the app opened. Removed again at the end of the run.
+#
+# IT HAD NOT WORKED, AND SAID IT HAD (found 7 Nov 2026). The runner's eth0
+# already holds a clsact qdisc, which owns handle ffff:: adding an ingress
+# qdisc there is refused ("Exclusivity flag on, cannot modify") and a filter
+# on parent ffff: is invalid on clsact ("RTNETLINK answers: Invalid
+# argument") — and the line "dropped on eth0" was logged regardless. So the
+# filter now goes on the device's ingress hook, which ingress and clsact
+# both have, under a priority of its own (removed alone at the end), and
+# SHAPED says whether it took: a flow that needs the line shaped reads it.
 LOSS_DEV=""
+SHAPED=0
+OUR_INGRESS=0
 if [ -n "${NET_LOSS:-}" ]; then
   LOSS_DEV=$(ip route | awk '/^default/ {print $5; exit}')
-  if sudo modprobe ifb 2>/dev/null && sudo ip link add ifb0 type ifb 2>/dev/null; then
+  if sudo modprobe ifb 2>/dev/null && { ip link show ifb0 >/dev/null 2>&1 || sudo ip link add ifb0 type ifb 2>/dev/null; }; then
     sudo ip link set ifb0 up
-    sudo tc qdisc add dev "$LOSS_DEV" handle ffff: ingress
-    sudo tc filter add dev "$LOSS_DEV" parent ffff: protocol ip u32 match u32 0 0 \
-      action mirred egress redirect dev ifb0
-    sudo tc qdisc add dev ifb0 root netem loss "$NET_LOSS"
-    log "network: $NET_LOSS of incoming packets dropped on $LOSS_DEV"
+    if ! tc qdisc show dev "$LOSS_DEV" | grep -qE 'qdisc (ingress|clsact)'; then
+      sudo tc qdisc add dev "$LOSS_DEV" handle ffff: ingress && OUR_INGRESS=1
+    fi
+    log "network: $LOSS_DEV has $(tc qdisc show dev "$LOSS_DEV" | grep -oE 'qdisc (ingress|clsact)' | head -1)"
+    if sudo tc filter add dev "$LOSS_DEV" ingress pref 49 protocol ip u32 match u32 0 0 \
+         action mirred egress redirect dev ifb0 \
+       && sudo tc qdisc replace dev ifb0 root netem loss "$NET_LOSS"; then
+      # SAY IT ONLY IF PACKETS PASS (run 42363479008: the filter was taken
+      # and not one packet reached ifb0 — the runner's own filters on
+      # clsact come first). Some traffic, then ifb0's own count.
+      curl -s -o /dev/null --max-time 20 'https://speed.cloudflare.com/__down?bytes=200000' || true
+      passed=$(tc -s qdisc show dev ifb0 | grep -oE 'Sent [0-9]+ bytes' | head -1 | grep -oE '[0-9]+' || echo 0)
+      if [ "${passed:-0}" -gt 100000 ]; then
+        SHAPED=1
+        log "network: $NET_LOSS of incoming packets dropped on $LOSS_DEV (through ifb0: $passed bytes seen)"
+      else
+        log "network: the redirect into ifb0 was accepted but only ${passed:-0} bytes reached it — NO loss applies (ingress filters there: $(tc filter show dev "$LOSS_DEV" ingress 2>/dev/null | grep -oE 'pref [0-9]+ [a-z0-9]+' | sort -u | tr '\n' ' '))"
+        sudo tc filter del dev "$LOSS_DEV" ingress pref 49 2>/dev/null || true
+      fi
+    else
+      log "network: the ifb0 redirect could NOT be set — no loss, no rate cap; speed and delay only"
+    fi
   else
     log "network: could not add loss (no ifb) — speed and delay only"
     LOSS_DEV=""
   fi
 fi
+
+# THE LAB LINE (flow weakline): see the flow and tool/netlab/line_relay.py.
+# line_up starts the relay, shapes lo and redirects this user's HTTPS to the
+# relay; line_rate RATE|off sets the cap; line_down undoes all of it and is
+# safe to call twice. LINE_DELAY is each way (the round trip is twice it,
+# plus the runner's own), LINE_LOSS is on what comes in.
+LINE_PORT=47126
+LINE_DELAY=${WEAK_DELAY:-60ms}
+LINE_LOSS=${NET_LOSS:-0.5%}
+LINE_UP=0
+LINE_RULE=(OUTPUT -p tcp --dport 443 -m owner --uid-owner "$(id -u)"
+  -m comment --comment innocent-lab-line -j REDIRECT --to-ports "$LINE_PORT")
+line_up() {
+  sudo python3 tool/netlab/line_relay.py "$LINE_PORT" > "$OUT/relay.txt" 2>&1 &
+  LINE_UP=1
+  local i
+  for i in $(seq 1 40); do
+    ss -ltn "sport = :$LINE_PORT" 2>/dev/null | grep -q LISTEN && break
+    sleep 0.25
+  done
+  ss -ltn "sport = :$LINE_PORT" 2>/dev/null | grep -q LISTEN || { log "line: the relay did not start"; return 1; }
+  sudo ip link set dev lo mtu 1500 || return 1
+  # One packet is one packet: without this, lo hands netem 64 KB at a time,
+  # and one loss is forty packets lost.
+  sudo ethtool -K lo tso off gso off gro off >/dev/null 2>&1 || log "line: lo offloads could not be turned off"
+  sudo tc qdisc del dev lo root 2>/dev/null || true
+  sudo tc qdisc add dev lo root handle 1: prio bands 5 || return 1
+  sudo tc qdisc add dev lo parent 1:4 handle 40: netem delay "$LINE_DELAY" loss "$LINE_LOSS" limit 300 || return 1
+  sudo tc qdisc add dev lo parent 1:5 handle 50: netem delay "$LINE_DELAY" limit 10000 || return 1
+  # Toward the emulator: from 443 once the relay's answer is un-NATed, or
+  # from the relay's port if it is seen before; away from it: to the relay.
+  sudo tc filter add dev lo parent 1:0 protocol ip prio 1 u32 match ip sport 443 0xffff flowid 1:4 || return 1
+  sudo tc filter add dev lo parent 1:0 protocol ip prio 2 u32 match ip sport "$LINE_PORT" 0xffff flowid 1:4 || return 1
+  sudo tc filter add dev lo parent 1:0 protocol ip prio 3 u32 match ip dport "$LINE_PORT" 0xffff flowid 1:5 || return 1
+  sudo iptables -t nat -A "${LINE_RULE[@]}" || return 1
+  # Over IPv6 the redirect would not apply: refused, so v4 is used.
+  sudo ip6tables -A OUTPUT -p tcp --dport 443 -m owner --uid-owner "$(id -u)" \
+    -m comment --comment innocent-lab-line -j REJECT --reject-with tcp-reset 2>/dev/null || true
+  log "line: this user's HTTPS through the relay on $LINE_PORT, shaped on lo (delay $LINE_DELAY each way, loss $LINE_LOSS)"
+}
+line_rate() {
+  if [ "$1" = off ]; then
+    sudo tc qdisc change dev lo parent 1:4 handle 40: netem delay "$LINE_DELAY" loss 100% limit 300
+  else
+    sudo tc qdisc change dev lo parent 1:4 handle 40: netem delay "$LINE_DELAY" loss "$LINE_LOSS" rate "$1" limit 300
+  fi
+}
+line_down() {
+  [ "$LINE_UP" = 1 ] || return 0
+  LINE_UP=0
+  while sudo iptables -t nat -D "${LINE_RULE[@]}" 2>/dev/null; do :; done
+  while sudo ip6tables -D OUTPUT -p tcp --dport 443 -m owner --uid-owner "$(id -u)" \
+    -m comment --comment innocent-lab-line -j REJECT --reject-with tcp-reset 2>/dev/null; do :; done
+  # [y]: so the pattern does not match this pkill's own sudo.
+  sudo pkill -TERM -f "line_rela[y].py $LINE_PORT" 2>/dev/null || true
+  sudo tc qdisc del dev lo root 2>/dev/null || true
+  sudo ethtool -K lo tso on gso on gro on >/dev/null 2>&1 || true
+  sudo ip link set dev lo mtu 65536 2>/dev/null || true
+  sleep 1
+}
 
 # Bytes received by the whole device, every two seconds, alongside the app's
 # CPU and memory — the ground truth to hold the app's own speed figure to.
@@ -336,6 +424,153 @@ for flow in $FLOWS; do
     adb shell rm -rf /sdcard/Movies/LabNew >/dev/null 2>&1 || true
     rm -f /tmp/lab_new.mp4
     adb shell log -p i -t flutter "LAB phase $flow end" >/dev/null 2>&1 || true
+    log "flow $flow done"
+    continue
+    ;;
+  esac
+  # A LINE THAT COLLAPSES AND RECOVERS (flow weakline, 2026-11-07). The test
+  # film from its start, played straight through, while the line steps
+  # through WEAK_STEPS (rate:seconds ...; "off" is no line at all): a hard
+  # cap, unlike `adb emu network speed`, which did not hold (run
+  # 37967426588), with a 300-packet queue (about 2 s at 1.2 Mbit/s, the
+  # buffering of a real mobile line, not the 100 s a default queue holds).
+  # The verdict is the app's own trail between two markers: stalls, frozen
+  # ms, longest, first frame. What a viewer feels when a line falls away
+  # mid-film, which no other flow measured (docs/streaming_review_2026_11.md).
+  #
+  # THE LINE IS ON LOOPBACK (7 Nov 2026). It was netem on ifb0, fed from
+  # eth0's ingress — and the runner's own clsact filters on eth0 take every
+  # packet before ours: a 600 KB probe under a "900 kbit" cap came in at
+  # 32 Mbit/s (run 42363479008), and the A/B runs before it were unshaped.
+  # Now iptables sends this user's outgoing HTTPS (the emulator's: QEMU
+  # opens each of its connections here) to tool/netlab/line_relay.py, which
+  # opens the same connection as root and copies the bytes, TLS untouched;
+  # what it sends back crosses lo, and netem on lo is the line — the way the
+  # streamlong flows and stream-bench shape theirs. Only while this flow
+  # runs (line_down; the workflow takes it down too if the run dies).
+  case "$flow" in weakline)
+    if [ -z "${CLIMB_TITLE:-}" ]; then log "flow weakline: no CLIMB_TITLE in config.env — skipped"; continue; fi
+    adb emu network speed full >/dev/null 2>&1 || true
+    adb emu network delay none >/dev/null 2>&1 || true
+    if ! line_up; then log "flow weakline: the lab line could not be set up — skipped, not run unshaped"; line_down; continue; fi
+    # PROVE THE CAP FIRST (7 Nov 2026: the first A/B ran on a line nothing
+    # shaped). 600 KB under the collapse step's rate, timed, by this user —
+    # so through the relay, as the emulator's bytes go; a line more than
+    # half again faster than its cap is not the line this flow is for.
+    probe_rate="900kbit"
+    line_rate "$probe_rate"
+    t0=$(date +%s%N)
+    got=$(curl -s -o /dev/null -w '%{size_download}' --max-time 30 'https://speed.cloudflare.com/__down?bytes=600000' || echo 0)
+    t1=$(date +%s%N)
+    kbps=$(( got * 8 * 1000000 / ( (t1 - t0) / 1000 + 1 ) / 1000 ))
+    log "weakline: the line under a $probe_rate cap measured $kbps kbps ($got bytes)"
+    if [ "$got" -lt 100000 ] || [ "$kbps" -gt 1400 ]; then
+      log "flow weakline: the cap did not hold ($kbps kbps, $got bytes, under 900kbit) — skipped, not run unshaped"
+      line_down; continue
+    fi
+    # PASSES (8 Nov 2026, BACKLOG 5b). One play of the film says little about
+    # its picture: runs F and G, one build on one line, spent 97 % at 360p
+    # and 100 % at 480p — the first few readings decide it. So the film is
+    # played once per word of WEAK_PASSES, each time from a cleared app (no
+    # line remembered, the same unmeasured start), each word the rule the
+    # master weighs rungs by (lab_peak: fragment or window; "-" leaves the
+    # build's own). Interleaved, every variant meets the same runner and the
+    # same hours of the line; the summary at the end is per variant.
+    passes="${WEAK_PASSES:--}"
+    steps="${WEAK_STEPS:-4mbit:40 900kbit:120 3mbit:100}"
+    d="/sdcard/Android/data/$PKG/files"
+    : > "$OUT/weakline.txt"
+    : > "$OUT/weakline_ms.txt"
+    : > "$OUT/weakline_passes.tsv"
+    p=0
+    for variant in $passes; do
+      p=$((p + 1))
+      adb shell am force-stop "$PKG"
+      adb shell pm clear "$PKG" >/dev/null 2>&1 || true
+      adb shell mkdir -p "$d" >/dev/null 2>&1
+      adb shell "echo title:$CLIMB_TITLE > $d/lab_stream_url"
+      if [ "$variant" != "-" ]; then adb shell "echo $variant > $d/lab_peak"; fi
+      log "weakline pass $p ($variant): the test film from its start; the line in steps: $steps (delay $LINE_DELAY each way, loss $LINE_LOSS)"
+      adb shell log -p i -t flutter "LAB weakline begin pass=$p peak=$variant" >/dev/null 2>&1 || true
+      adb shell am start -W -n "$PKG/.MainActivity" >/dev/null 2>&1
+      for step in $steps; do
+        rate="${step%%:*}"; secs="${step##*:}"
+        line_rate "$rate"
+        adb shell log -p i -t flutter "LAB weakline line $rate for ${secs}s" >/dev/null 2>&1 || true
+        log "weakline: line $rate for $secs s"
+        sleep "$secs"
+      done
+      adb exec-out screencap -p > "$OUT/shots/9_weakline_end_$p.png"
+      adb shell log -p i -t flutter "LAB weakline end pass=$p peak=$variant" >/dev/null 2>&1 || true
+      sleep 2
+      adb shell am force-stop "$PKG"
+      wl="$OUT/weakline_$p.txt"
+      awk -v b="LAB weakline begin pass=$p " -v e="LAB weakline end pass=$p " \
+        'index($0,b){on=1} on{print} index($0,e){on=0}' "$OUT/logcat_raw.txt" \
+        | grep -o 'LAB .*' | sed -E 's#https?://[^ "]+#<url>#g; s#[A-Za-z0-9_-]{40,}#<token>#g' > "$wl" || true
+      cat "$wl" >> "$OUT/weakline.txt"
+      # A stop under 250 ms is a BLIP (a frame or two, no spinner) and is
+      # counted apart, as PlaybackQoe.visibleMs does: in runs 42358540751 and
+      # 42360760676, 27 of 28 refills were 2-67 ms blips and counting them
+      # with the one 2 s stop hid it (7 Nov 2026).
+      grep -oE 'rebuffer end [0-9]+ ms' "$wl" | awk '{print $3}' > "$OUT/weakline_ms_$p.txt" || true
+      cat "$OUT/weakline_ms_$p.txt" >> "$OUT/weakline_ms.txt"
+      n=$(awk '$1>=250' "$OUT/weakline_ms_$p.txt" | wc -l | tr -d ' ')
+      blips=$(awk '$1<250' "$OUT/weakline_ms_$p.txt" | wc -l | tr -d ' ')
+      sum=$(awk '{s+=$1} END {print s+0}' "$OUT/weakline_ms_$p.txt")
+      max=$(awk '$1>m{m=$1} END {print m+0}' "$OUT/weakline_ms_$p.txt")
+      first=$(grep -oE 'first frame [0-9]+ ms' "$wl" | head -1 | grep -oE '[0-9]+' || true)
+      first=${first:--}
+      # The picture: how long each rung reached the screen (exo rung, the
+      # decoder's input), from the first rung to the pass's last line.
+      shares=$(awk '
+        /^LAB +[0-9]+\.[0-9]+ / { t=$2+0; last=t }
+        /^LAB +[0-9]+\.[0-9]+ exo rung [0-9]+p/ { r=$5; sub(/p$/,"",r); if (cur!="") tm[cur]+=t-at; cur=r; at=t }
+        END { if (cur!="") tm[cur]+=last-at; tot=0; for (r in tm) tot+=tm[r];
+              for (r in tm) printf "%d %d\n", r, (tot>0 ? 100*tm[r]/tot+0.5 : 0) }
+      ' "$wl" | sort -nr | awk '{printf "%s%sp:%d%%", (NR>1?" ":""), $1, $2}')
+      shares=${shares:--}
+      log "weakline pass $p ($variant): first frame ${first} ms, stalls $n (>=250 ms), blips $blips, frozen ${sum} ms, longest ${max} ms, time ${shares}"
+      grep -oE 'exo tracks .*peaks=[0-9,]+' "$wl" | head -1 | sed "s/^/weakline pass $p ($variant): /" | while read -r line; do log "$line"; done
+      printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$p" "$variant" "$first" "$n" "$blips" "$sum" "$max" "$shares" >> "$OUT/weakline_passes.tsv"
+      # And step by step: which part of the line each stop and rung belongs to.
+      awk -v p="$p" '
+        /LAB weakline line /   { i++; step[i]=$4; next }
+        /rebuffer end [0-9]+ ms/ { for (k=1;k<=NF;k++) if ($k=="end") ms=$(k+1)+0
+                                 if (ms>=250) { st[i]++; fr[i]+=ms; if (ms>lg[i]) lg[i]=ms } else bl[i]++ }
+        /exo rung [0-9]+p/     { for (k=1;k<=NF;k++) if ($k=="rung") r=$(k+1); rg[i]=rg[i] (rg[i]==""?"":" ") r }
+        END { for (j=1;j<=i;j++) printf "weakline pass %d step %d (%s): stalls %d, frozen %d ms, longest %d ms, blips %d, rungs %s\n",
+                p, j, step[j], st[j], fr[j], lg[j], bl[j], (rg[j]==""?"-":rg[j]) }
+      ' "$wl" | while read -r line; do log "$line"; done
+      adb shell log -p i -t flutter "LAB weakline verdict pass=$p peak=$variant first=${first} stalls=$n blips=$blips frozen_ms=$sum longest_ms=$max time=${shares// /,}" >/dev/null 2>&1 || true
+    done
+    log "weakline: the line passed $(tc -s qdisc show dev lo | grep -A1 'netem 40:' | grep -oE 'Sent [0-9]+ bytes [0-9]+ pkt \(dropped [0-9]+' | head -1)"
+    line_down
+    adb emu network speed "$NET_SPEED" >/dev/null 2>&1 || true
+    adb emu network delay "$NET_DELAY" >/dev/null 2>&1 || true
+    log "weakline: $(cat "$OUT/relay.txt" 2>/dev/null || echo 'relay: no counts')"
+    # PER VARIANT: the passes' stops summed, and the share of time at each
+    # rung as the mean over the passes with every pass's own in brackets —
+    # the spread is the point: a variant is better only if its passes are.
+    awk -F'\t' '
+      { v=$2; np[v]++; st[v]+=$4; bl[v]+=$5; fr[v]+=$6; if ($7>lg[v]) lg[v]=$7
+        if (!(v in seen)) { seen[v]=1; order[++nv]=v }
+        split("", got); m=split($8, parts, " ")
+        for (k=1;k<=m;k++) { split(parts[k], hs, ":"); h=hs[1]; sub(/p$/,"",h); s=hs[2]; sub(/%$/,"",s)
+                             got[h]=s+0; heights[h]=1 }
+        for (h in got) sh[v,h]+=got[h]
+        hi=0; for (h in got) if (h+0>=480) hi+=got[h]; hl[v]=hl[v] (hl[v]==""?"":",") hi; hsum[v]+=hi }
+      END { for (i=1;i<=nv;i++) { v=order[i]
+              line=sprintf("weakline %s, %d passes: stalls %d, frozen %d ms, longest %d ms, blips %d; at 480p or better %d%% (%s)",
+                           v, np[v], st[v], fr[v], lg[v], bl[v], hsum[v]/np[v]+0.5, hl[v])
+              n=0; for (h in heights) hh[++n]=h+0
+              for (a=1;a<=n;a++) for (b=a+1;b<=n;b++) if (hh[b]>hh[a]) { x=hh[a]; hh[a]=hh[b]; hh[b]=x }
+              for (a=1;a<=n;a++) line=line sprintf("; %dp %d%%", hh[a], sh[v,hh[a]]/np[v]+0.5)
+              print line } }
+    ' "$OUT/weakline_passes.tsv" | while read -r line; do log "$line"; done
+    adb shell log -p i -t flutter "LAB phase $flow end" >/dev/null 2>&1 || true
+    adb shell rm -f "$d/lab_stream_url" "$d/lab_peak" >/dev/null 2>&1 || true
+    rm -f "$OUT"/weakline_ms_*.txt
     log "flow $flow done"
     continue
     ;;
@@ -716,8 +951,12 @@ if [ -n "${RANGE_SERVER:-}" ]; then
   sudo tc qdisc del dev lo root 2>/dev/null || true
   rm -f /tmp/stream_film.mp4
 fi
+line_down
 if [ -n "$LOSS_DEV" ]; then
-  sudo tc qdisc del dev "$LOSS_DEV" ingress 2>/dev/null || true
+  # Only what this run added: its filter, and the ingress qdisc if it made
+  # one — never the runner's own clsact.
+  sudo tc filter del dev "$LOSS_DEV" ingress pref 49 2>/dev/null || true
+  [ "$OUR_INGRESS" = 1 ] && { sudo tc qdisc del dev "$LOSS_DEV" ingress 2>/dev/null || true; }
   sudo ip link del ifb0 2>/dev/null || true
 fi
 kill $SAMPLER $LOGCAT 2>/dev/null

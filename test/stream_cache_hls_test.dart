@@ -472,4 +472,33 @@ void main() {
     StreamCacheServer.instance.releaseLadder('film4');
     expect((await _get(master)).$1, 404);
   });
+
+  test('a slow line is read while the read goes on, not only once it ends',
+      () async {
+    // 7 Nov 2026: the line was measured once a read had ended, and a read is
+    // two megabytes — sixteen seconds at 1 Mbit/s, during which a line that
+    // fell away went unnoticed and Auto kept the rung it no longer carried.
+    final master = await register('film12');
+    final (_, mbody) = await _get(master);
+    final url = RegExp(r'^http://.+/720\.m3u8$', multiLine: true).firstMatch(String.fromCharCodes(mbody))!.group(0)!;
+    final segs = _segments(String.fromCharCodes((await _get(url)).$2));
+    // About 1.7 Mbit/s: 64 KB every 0.3 s. The 2 MB read behind the first
+    // segment takes about ten seconds.
+    worker.paceMs = 300;
+    addTearDown(() => worker.paceMs = 0);
+    StreamCacheServer.networkKbps.value = null;
+    final (s0, a0, u0) = segs[0];
+    expect((await _get(u0, range: 'bytes=$a0-${a0 + s0 - 1}')).$1, 206);
+    final asked = worker.asked.where((a) => a.$1 == 'a720').toList();
+    await Future<void>.delayed(const Duration(milliseconds: 4500));
+    final kbps = StreamCacheServer.networkKbps.value;
+    expect(kbps, isNotNull, reason: 'no reading while the read went on');
+    expect(kbps, inInclusiveRange(800, 3000), reason: 'about 1.7 Mbit/s, measured $kbps');
+    // And it came from the middle of the read: the read is not over yet.
+    final last = asked.last;
+    final served = worker.asked.where((a) => a.$1 == 'a720').length;
+    expect(served, asked.length, reason: 'no new read was needed for this');
+    expect(last.$3 - last.$2 + 1, greaterThan(1500000),
+        reason: 'the read behind the segment is the long one');
+  });
 }

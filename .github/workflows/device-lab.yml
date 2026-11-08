@@ -380,6 +380,19 @@ jobs:
           disable-animations: true
           script: bash test_device/run.sh
 
+      # The lab line (run.sh line_up) sends this user's HTTPS to a relay that
+      # lives only as long as run.sh: a run cut short must not leave the
+      # redirect behind, or the upload below has nowhere to go.
+      - name: Take the lab line down
+        if: always()
+        run: |
+          for t in iptables ip6tables; do
+            tab=filter; [ "$t" = iptables ] && tab=nat
+            sudo "$t" -t "$tab" -S OUTPUT 2>/dev/null | grep -- 'innocent-lab-line' | sed 's/^-A /-D /' \
+              | while read -r rule; do read -ra args <<< "$rule"; sudo "$t" -t "$tab" "${args[@]}" || true; done
+          done
+          sudo pkill -TERM -f 'line_rela[y].py' || true
+
       - name: Seal the results
         if: always()
         env:

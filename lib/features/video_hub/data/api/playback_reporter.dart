@@ -94,6 +94,42 @@ class PlaybackReporter {
     );
   }
 
+  final Set<String> _errorsSent = <String>{};
+
+  /// Records a failure the viewer saw, as a fixed code (`would_not_start`,
+  /// `stalled`, `link_expired`, …) — never the message, which can carry a
+  /// signed address. Each code once per playback, three at most: a failing
+  /// player retries, and every retry must not become another request on the
+  /// line that is failing.
+  void reportError(String code) {
+    if (_finished || _errorsSent.length >= 3 || !_errorsSent.add(code)) return;
+    _events.log(
+      Ev.error,
+      titleId: titleId,
+      assetId: assetId,
+      positionS: _furthestS,
+      meta: <String, dynamic>{'where': 'player', 'code': code},
+    );
+  }
+
+  bool _summarySent = false;
+
+  /// Records what the playback was like (PlaybackQoe.toMeta), once, just
+  /// before [finish]. Sent even for a playback that never showed a picture:
+  /// that one is the most important row of all.
+  void reportSummary(Map<String, dynamic> meta) {
+    if (_finished || _summarySent) return;
+    _summarySent = true;
+    _events.log(
+      Ev.playSummary,
+      titleId: titleId,
+      assetId: assetId,
+      positionS: _furthestS,
+      durationS: _durationS > 0 ? _durationS : null,
+      meta: meta,
+    );
+  }
+
   int _furthestS = 0;
   int _durationS = 0;
   bool _finished = false;

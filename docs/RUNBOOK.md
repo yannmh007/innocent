@@ -715,6 +715,15 @@ written back (auth.users is Supabase's): into the same project nothing is
 needed; into a new one people sign in again, and the backup's account list
 says who had which subscription.
 
+**The restore drill (migration 079, 7 Nov 2026).** Once a week the ingest
+function opens the newest backup the way a restore would: it reads it back
+from R2, checks the hash against its record, unseals it, un-gzips it,
+parses it and counts every table's rows against the record. The outcome is
+on the backup's row (`db_backups.verified_at`, `verify_error`); a failure
+is sent to the owner on Telegram and tried again the next day. The key
+never leaves the function. What it does not do is load the SQL into an
+empty database: that stays the laptop restore above.
+
 **If backups stop:** the Status page shows "Last backup" in amber after a day
 and red after three. The usual cause is the runner not running — see
 *Runners* on the same page.

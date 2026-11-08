@@ -132,7 +132,7 @@
   "faqA3": "A: Settings → Audio → Audio delay. Or use the long-press menu in player → Audio sync.",
   "faqQ4": "Q: Why is my screen dim after playing?",
   "faqA4": "A: Fixed in build 56 — brightness is now restored when the player closes.",
-  "privacyBody": "Innocent runs entirely offline. It does not collect telemetry, analytics, or send any data to remote servers. All your video history, favourites, and playlists stay on this device.",
+  "privacyBody": "Your own videos, music, history, favourites and playlists stay on this phone.\n\nWhen you browse or play films, Innocent connects to its servers to show the catalogue, play the film and, if you sign in, keep your account. It also sends usage records (what was searched, opened or played, app version, device and network type, country), linked to your account if you are signed in, or to a random install ID if not. They never include your name or email, and your IP address is kept only as a one-way hash. Usage records are deleted after 90 days; only daily totals with no ID are kept.\n\nA report you choose to send (about a title, or “Report a problem”) reaches us as you send it.",
   "aboutBody": "A faithful MX Player-style media player for Android, built with Flutter and media_kit.",
   "addSubtitleFromUrl": "Add Subtitle from URL",
   "subtitleUrlTip": "Tip: at OpenSubtitles.org, copy the direct \"Download\" link (not the page URL). For zipped subtitles, extract first.",

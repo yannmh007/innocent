@@ -131,6 +131,26 @@ CHECKS = [
      'stills upscaled or squashed for portrait video, a frame PUT under a key '
      'the claim did not give, or one unreadable video ending the batch for '
      'the nineteen after it (the ffmpeg half runs wherever ffmpeg is on PATH)'),
+    ('open_films_test.py', None,
+     'a test film that may not be in the catalogue: a licence other than CC '
+     'BY or CC0 on Blender\'s own site (No Derivatives, Non Commercial, '
+     'unset), a copy from another server, or a download that is not the film '
+     'the licence was read for (cut short, another height, no sound)'),
+    ('claude_config_test.py', None,
+     'an instruction file Claude ignores without a word: a rule whose '
+     'frontmatter does not parse or whose paths match nothing, a skill or '
+     'agent missing its name or description, a path CLAUDE.md names that is '
+     'gone, or anything secret-shaped in them (the repository is public)'),
+    ('claude_hooks_test.py', None,
+     'a Claude Code hook that stands in the way: one that throws, prints '
+     'junk, blocks a call, or trims away a fact of a CI run (they run on '
+     'every matching tool call in every session on this repository)'),
+    ('function_tables.py', None,
+     'a table an edge function uses that the service role may not read: '
+     'every table named in docs/edge must be in '
+     'tool/sql/service_role_grants_test.sql, which is run on the live '
+     'database (058 left genres out; the console\'s Genres section failed '
+     'for a week)'),
     ('unread_contract.py', None,
      'a repository method built, implemented twice and called by nothing — '
      'the same bug class as dead_settings one level up. getById was the only '
@@ -315,6 +335,10 @@ def main() -> int:
          'a payment screenshot deleted before its sealed copy opens, or left '
          'plain with no request naming it when a delete fails (the first '
          'draft did exactly that; this test caught it)'),
+        ('backup_drill_test.mjs',
+         'the restore drill opens the newest backup the way a restore would',
+         'a drill that says fine for a backup that does not open, or fails '
+         'without saying why'),
         ('backup_seal_test.mjs',
          'the backups made before sealing, sealed where they lie',
          'a plain backup deleted before its sealed copy was written, a sealed '

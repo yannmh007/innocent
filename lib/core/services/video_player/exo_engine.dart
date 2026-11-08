@@ -159,6 +159,10 @@ class ExoEngine {
         // the play button up under the spinner (device lab run 40190583932).
         final p = e['ready'] == true && e['ended'] != true;
         final b = e['buffering'] == true;
+        final pos = (e['pos'] as num?)?.toInt();
+        final buf = (e['buf'] as num?)?.toInt();
+        if (pos != null) position = Duration(milliseconds: pos);
+        if (buf != null) buffered = Duration(milliseconds: buf);
         final end = e['ended'] == true;
         if (p != playing) _playing.add(playing = p);
         if (b != buffering) _buffering.add(buffering = b);
@@ -197,8 +201,10 @@ class ExoEngine {
           for (final h in (e['heights'] as List<Object?>? ?? const <Object?>[]))
             if (h is num) h.toInt(),
         ];
+        final peaks = (e['peaks'] as List<Object?>?)?.whereType<num>().map((p) => p.toInt()).toList();
         PlaybackLog.add('exo tracks ${heights.join(',')} selected=${e['selected']} '
-            'adaptive=${e['adaptive']}');
+            'adaptive=${e['adaptive']}'
+            '${peaks == null || peaks.isEmpty ? '' : ' peaks=${peaks.join(',')} kbps'}');
       case 'steer':
         PlaybackLog.add('exo steer ${e['why']} target=${e['target'] ?? 'auto'} '
             'made=${e['made']} rungs=${e['heights']} picks=${e['picks']}');
