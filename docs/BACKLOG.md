@@ -94,7 +94,21 @@ proves its cap first. Next, each proved by an emulator A/B on that line:
    weighing a deep buffer against the whole line made it worse (`deep`,
    720p in and out). A softer picture, not a stop: low priority;
 5c. a seek on a ~5 Mbit/s line froze 1.7 s on the realme (first segment
-   720p): fix 3 below, for the first segment after a jump only;
+   720p): fix 3 below, for the first segment after a jump only. What the
+   trail says (Test Lab 42376634865): the realme's jump fetched a 537,551 B
+   720p segment in 1401 ms (answer 380 ms) at ~4.6 Mbit/s and stood 1699 ms;
+   the OPPO's same segment at ~30 Mbit/s took 473 ms, frozen 402 ms. A jump
+   needs one whole segment (1 s of film to play), so its size is the wait.
+   Plan, read in Media3 1.9.2's AdaptiveTrackSelection: on a seek in Auto,
+   `SteeredSelection.getSelectedIndex` returns the highest rung whose
+   segment arrives in ~0.5 s at the meter's estimate (weight × 2 s /
+   estimate), for the first chunk after the jump only; then back to the
+   rung before the jump — ExoPlayer's own rule would hold the lower rung
+   until 10 s are in hand (minDurationForQualityIncrease), a soft picture
+   for 10 s after every jump. Lab: the jumps (`lab_jumps`, LAB check
+   frozen=) on the weak line in passes, `lab_jump` on/off alternating;
+   then Test Lab on both phones. `test_device/config.env` still names
+   `deep` in WEAK_PASSES (now the same as window): set it with that run;
 6. labs to add: ten minutes on a weak line, a link expiring mid-film, a
    low-end and a 32-bit Test Lab phone, two runs per build.
 After the release: frozen seconds per minute played, from `play_summary`,
