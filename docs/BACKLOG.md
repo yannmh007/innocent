@@ -19,11 +19,15 @@ does it.
 - **Work branch `claude/extract-github-release-oteqr5`** holds everything
   not yet live (main is 1.64.80, a86d949). A new session starts on main:
   fetch this branch and work on top of it, or the notes below are missing.
+  Push to it (fast-forward), the owner's choice of 8 Nov: a session's own
+  branch starts at main, has no history in common with this one, and
+  would need a force-push.
 - **On the branch, not released**: the Privacy text (en/my/th), the HLS
   read-ahead fix, the playback telemetry (`play_summary`, ladder
   `play_stall` with `ahead_ms`, `error` codes, `grant_ms`), and the 7 Nov
   streaming fixes (480p unmeasured start, ExoPlayer's first frame, start
-  rung leads the master, the meter's guess, fix 1). Proved on the shaped
+  rung leads the master, the meter's guess, fix 1), and 8 Nov's rung
+  weight by the fastest 20 s (5b). Proved on the shaped
   lab line (3 stops / 5.9 s → none) and on both Test Lab phones (all checks
   pass). Ships when the owner says "release လုပ်ပါ" (skill `release`).
 - **Live already**: migrations 077–080, ingest v55 (0dfe2a5),
@@ -32,13 +36,18 @@ does it.
   films in the console's Review; send the DNSSEC "Active" screenshot on
   12 Nov. Reminders: trig_01Q1Z21R5QVuAzPJQqjTfK7W (12 Nov),
   trig_01G9fdiXXaVGHSbMgqiJc1bg (13 Nov).
-- **Next streaming work**: items 5b (a sliding-window peak per rung in
-  `HlsLadder.master`), 5c / 3 (a jump's first segment from the rung
-  below), 5 (two connections) below; method in
+- **5b done on the branch (8 Nov)**: the master weighs a rung by its
+  fastest 20 s (`PeakRule.window`), decided by 32 weakline passes in runs
+  H, H2, H3 (review §5): 480p or better 89 % against 69 %, no stop.
+  `deep` (a deep buffer weighed against the whole line) tried, dropped.
+  The weakline flow now plays `WEAK_PASSES` passes per run, alternating
+  `lab_peak` variants: use it for every A/B (one pass says little).
+- **Next streaming work**: 5c / 3 (a jump's first segment from the rung
+  below), then 5 (two connections) below; method in
   `docs/streaming_review_2026_11.md` §5 and skill `device-labs` (the
-  weakline flow; read the cap probe first; several runs per variant —
-  one run's picture quality is mostly spread). Lab config now:
-  `FLOWS="weakline"`; Test Lab `cloud.env`: both phones.
+  weakline flow; read the cap probe first; passes alternating per
+  variant). Lab config now: `FLOWS="weakline"`, 12 passes; Test Lab
+  `cloud.env`: both phones.
 
 ### Streaming without stutter (7 Nov) — `docs/streaming_review_2026_11.md`
 The owner's request: no stutter, nothing that annoys a viewer. Evidence:
@@ -76,14 +85,14 @@ proves its cap first. Next, each proved by an emulator A/B on that line:
 5. two connections for a ladder's reads on a lossy line: one carries
    ~1.5–2 Mbit/s at 0.5 % loss and 120 ms whatever the cap (TCP's own
    limit), less than 720p's peak; costs Worker requests;
-5b. picture quality on a weak line: Auto weighs a rung by its PEAK (the
-   master's BANDWIDTH, the fastest fragment) over 0.7; with a minute of
-   buffer the rate over ~20 s is what must keep up. Run G (42384151800):
-   480p's peak 1591 kbps = 1.74 × its average, so 480p needs 2.3 Mbit/s;
-   rungs not yet read are weighed at 1.25 × average (720p looks cheaper
-   than it is). F and G, one build, spent 97 % at 360p and 100 % at 480p:
-   judge by several runs per variant. Next: a sliding-window peak for every
-   rung in `HlsLadder.master`;
+5b. ~~picture quality on a weak line~~ done 8 Nov: a rung is weighed by
+   its fastest 20 s, a rung not read by a read rung's ratio
+   (`PeakRule.window`; runs H/H2/H3: 480p or better 89 % against 69 %,
+   12 pairs of 14, no stop). Left: on a line that falls under the rung in
+   hand, the step down lands on 240p where 360p's average fits (ExoPlayer
+   defers it to 25 s in hand, then 360p's peak over 0.7 does not fit);
+   weighing a deep buffer against the whole line made it worse (`deep`,
+   720p in and out). A softer picture, not a stop: low priority;
 5c. a seek on a ~5 Mbit/s line froze 1.7 s on the realme (first segment
    720p): fix 3 below, for the first segment after a jump only;
 6. labs to add: ten minutes on a weak line, a link expiring mid-film, a

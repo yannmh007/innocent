@@ -337,3 +337,32 @@ again, and this time no clear winner:
   of it (`SteeredSelection.canSelectFormat`); under 15 s the reserve is
   back. In the collapse that is 360p, not 240p; on a 2-2.8 Mbit/s line
   with a deep buffer it lets 720p (2168) in.
+
+**Run H3 (42455719742): three variants, four passes each, rotated.**
+`deep` is `window` with a deep buffer (15 s or more in hand) weighed
+against the whole measured line rather than 70 % of it:
+
+| Variant | At 480p or better, each pass | Mean | Stops ≥ 250 ms | Rung changes a pass |
+|---|---|---|---|---|
+| `fragment` | 5, 94, 33, 94 % | 57 % (240p 12 %) | 1 (564 ms) | 3-6 |
+| `window` | 96, 100, 100, 100 % | 99 % | 0 | 1-3 |
+| `deep` | 55, 54, 52, 93 % | 64 % (720p 18 %, 360p 36 %) | 0 | 6-15 |
+
+- `deep` is dropped (reverted): with a deep buffer it climbed to 720p in
+  the 4 Mbit/s step, met the collapse there, and went 720p → 360p → 240p →
+  360p, and up and down again in steps 3-5 (pass 7: fifteen changes, 26
+  blips). A 720p a viewer gets for a minute and loses again is worse than
+  a 480p they keep.
+- `fragment`'s one stop (564 ms) came with 30 s in hand, right after
+  360p reached the screen: the emulator's decoder starting again at a new
+  size, as in C — so fewer rung changes is fewer of them too.
+
+**The decision (8 Nov): `window` is the rule.** Over H, H2 and H3, 14
+passes each: `window` kept the film at 480p or better 89 % of the time
+against `fragment`'s 69 %, led 12 pairs of 14 (one-sided sign test
+p ≈ 0.0065), had no stop in 14 passes (`fragment` one), the fewest rung
+changes, and the same first frame. Its weakness is the step down to 240p
+on a line that falls under the rung in hand (H 39 %, H2 56 %, 75 %): a
+softer picture, not a stop. `StreamCacheServer.peakRule` is
+`PeakRule.window` from this commit on; `lab_peak` still picks either for
+an A/B. The price is data: more of the film at 480p.
