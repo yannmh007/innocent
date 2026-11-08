@@ -38,7 +38,8 @@ does it.
   trig_01G9fdiXXaVGHSbMgqiJc1bg (13 Nov).
 - **5b done on the branch (8 Nov)**: the master weighs a rung by its
   fastest 20 s (`PeakRule.window`), decided by 32 weakline passes in runs
-  H, H2, H3 (review §5): 480p or better 89 % against 69 %, no stop.
+  H, H2, H3 (review §5): 480p or better 89 % against 69 %, no stop;
+  Test Lab 42461966293: 15 of 15 on both phones.
   `deep` (a deep buffer weighed against the whole line) tried, dropped.
   The weakline flow now plays `WEAK_PASSES` passes per run, alternating
   `lab_peak` variants: use it for every A/B (one pass says little).

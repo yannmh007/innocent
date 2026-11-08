@@ -366,3 +366,14 @@ on a line that falls under the rung in hand (H 39 %, H2 56 %, 75 %): a
 softer picture, not a stop. `StreamCacheServer.peakRule` is
 `PeakRule.window` from this commit on; `lab_peak` still picks either for
 an A/B. The price is data: more of the film at 480p.
+
+**Test Lab, run 42461966293** (the branch with `window` as the rule;
+realme C53 and OPPO A79): **15 checks of 15 passed on both**, and Auto
+weighed the rungs as meant (`peaks=1174,2168,745,394`). First frame 2.7 s
+(realme) and 2.5 s (OPPO) from the hand-over. Both lines were far slower
+than in run 42376634865: the realme's read 0.4-1.1 Mbit/s at first
+(answers ~1 s; it played 240p, the right rung for it) and the OPPO's
+7.5-10 Mbit/s against 20-40. So the jumps' frozen times — realme seek
+2.6 s at 240p, OPPO 0.9 s at 720p (its 537,551 B segment in 800 ms) — are
+the line, not comparable with that run, and the baseline for 5c stays
+that run's (realme 1.7 s on a 720p segment at ~4.6 Mbit/s).
