@@ -166,8 +166,7 @@ security). Found, most urgent first:
   nonce and the lab hooks, as for 1.64.80. **GitHub's release downloads
   failed (504) for about two hours that day**: the lab and branch builds
   needed four tries, and the Dependency scan on main (42477027283) failed
-  on the Gradle download, not on a finding (its `pins` job passed on the
-  rerun); a release push is safest when a full download of the libmpv jar
+  on the Gradle download, not on a finding (green on the third try); a release push is safest when a full download of the libmpv jar
   succeeds three times in a row (the CDN step publishes before the GitHub
   release, and a half-published version cannot be rebuilt the same).
 - **1.64.80 is out** (6 Nov 14:20 UTC, main 0202f0a, build 42226206227,
