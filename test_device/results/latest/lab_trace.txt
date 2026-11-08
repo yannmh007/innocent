@@ -1,162 +1,1827 @@
 LAB device kind=DeviceKind.phone sw=411.0
 LAB engine update ok ALREADY_UP_TO_DATE 2026.10.26 -> 2026.10.26
-LAB cpu app 16% · 0.2fps · pool-thread 8% | 1.raster 6%
+LAB cpu app 35% · 0.3fps · pool-thread 24% | 1.raster 10%
 LAB phase weakline start
-LAB weakline begin
+LAB weakline begin pass=1 peak=fragment
 LAB device kind=DeviceKind.phone sw=411.0
 LAB weakline line 4mbit for 40s
 LAB    0.0 LAB title: opening Sintel
-LAB    2.5 play server granted in 2495 ms, 4 rungs
-LAB    2.5 play rung 480p 912 kbps (choice auto, measured - kbps)
-LAB    2.5 stream lanes=6
-LAB    2.9 stream cache: a new film, sealed
-LAB    3.0 play through the ladder on ExoPlayer
-LAB    3.0 play: opening the player
+LAB    1.4 play server granted in 1429 ms, 4 rungs
+LAB    1.4 play rung 480p 912 kbps (choice auto, measured - kbps)
+LAB    1.5 stream lanes=6 peak=fragment
+LAB    1.7 stream cache: a new film, sealed
+LAB    1.7 play through the ladder on ExoPlayer
+LAB    1.7 play: opening the player
 LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
-LAB cpu app 42% · 10.7fps · 1.raster 27% | pool-thread 8% | .innocent.media 3% | RenderThread 2%
+LAB cpu app 50% · 9.4fps · 1.raster 31% | pool-thread 12% | .innocent.media 3% | RenderThread 2%
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
+LAB    2.5 hwdec -> auto
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
+LAB    2.7 open ladder (exo) start=0s autoplay=true rung=auto first=480
+LAB    2.9 wakelock playing=true bg=false priv=false pos=0ms
+LAB    2.9 open ok
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
+LAB    3.1 stream index 0.0 MB at 0.0 MB
+LAB    3.5 fg stream: watching
+LAB    3.7 hls: 480p index, 444 segments, average 912, peak 2s 1591, 10s 1224, 20s 1174 kbps
+LAB    3.7 hls: 480p playlist, 444 segments
+LAB    4.1 exo tracks 480,720,360,240 selected=4 adaptive=true peaks=1591,2105,723,382 kbps
+LAB    4.2 hls jump: answer 380 ms, first byte 383 ms, segment 1040 ms (65536 B)
+LAB    4.5 exo rung 480p 1000 kbps
+LAB    5.2 stream index 0.0 MB at 0.0 MB
+LAB    5.4 first frame 3413 ms
+LAB    5.4 stream index 0.0 MB at 0.0 MB
+LAB    5.9 hls: 720p index, 444 segments, average 1683, peak 2s 3052, 10s 2317, 20s 2212 kbps
+LAB    6.1 hls: 360p index, 444 segments, average 578, peak 2s 976, 10s 754, 20s 725 kbps
+LAB    6.2 hls jump: answer 485 ms, first byte 487 ms, segment 971 ms (65536 B)
+LAB    6.5 hls jump: answer 469 ms, first byte 479 ms, segment 1085 ms (65536 B)
+LAB    7.7 line 1792 kbps, in a read
+LAB    8.9 hls: 360p playlist, 444 segments
+LAB    9.6 stream index 0.0 MB at 0.0 MB
+LAB   10.5 hls: 240p index, 444 segments, average 306, peak 2s 507, 10s 394, 20s 380 kbps
+LAB   10.8 hls jump: answer 428 ms, first byte 438 ms, segment 1624 ms (176371 B)
+LAB   11.0 hls jump: answer 557 ms, first byte 751 ms, segment 1371 ms (65536 B)
+LAB   11.6 line 1307 kbps, in a read
+LAB cpu app 43% · 8.9fps · 1.raster 17% | pool-thread 12% | .innocent.media 5% | ExoPlayer:Playb 2% | MediaCodec_loop 2%
+LAB   12.5 exo rung 360p 600 kbps
+LAB   14.1 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
+LAB   14.2 rebuffer start (ahead 7254 ms)
+LAB   14.2 rebuffer end 2 ms
+LAB   15.6 line 1703 kbps, in a read
+LAB   19.6 line 1079 kbps, in a read
+LAB   20.5 line 1533 kbps, a read
+LAB   20.6 measured 1533 kbps
+LAB cpu app 25% · 10.2fps · 1.raster 12% | .innocent.media 4% | MediaCodec_loop 2% | ExoPlayer:Playb 2% | HwBinder:5814 1%
+LAB   25.2 line 2315 kbps, in a read
+LAB   27.2 line 4366 kbps, in a read
+LAB   27.5 line 2531 kbps, a read
+LAB   27.5 measured 2531 kbps
+LAB   29.4 hls jump: answer 523 ms, first byte 573 ms, segment 1906 ms (270450 B)
+LAB   30.1 line 1657 kbps, in a read
+LAB cpu app 30% · 11.5fps · 1.raster 13% | .innocent.media 5% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | HwBinder:5814 2% | flutter-worker- 1%
+LAB weakline line 900kbit for 120s
+LAB   38.1 line 943 kbps, in a read
+LAB   39.7 line 1434 kbps, a read
+LAB   39.7 measured 1434 kbps
+LAB cpu app 26% · 10.6fps · 1.raster 13% | .innocent.media 4% | MediaCodec_loop 2% | ExoPlayer:Playb 2% | HwBinder:5814 2%
+LAB   42.3 line 818 kbps, in a read
+LAB   44.4 rebuffer start (ahead 27247 ms)
+LAB   44.4 rebuffer end 46 ms
+LAB   46.3 line 131 kbps, in a read
+LAB   48.3 line 753 kbps, in a read
+LAB   50.3 line 1704 kbps, in a read
+LAB cpu app 35% · 12.8fps · 1.raster 22% | .innocent.media 4% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | HwBinder:5814 2%
+LAB   52.3 line 897 kbps, in a read
+LAB   53.6 exo rung 480p 1000 kbps
+LAB   54.3 line 508 kbps, in a read
+LAB   54.3 rebuffer start (ahead 27376 ms)
+LAB   54.3 rebuffer end 52 ms
+LAB   56.3 line 64 kbps, in a read
+LAB   58.3 line 1355 kbps, in a read
+LAB   59.9 line 856 kbps, a read
+LAB   59.9 measured 856 kbps
+LAB cpu app 44% · 11.6fps · 1.raster 30% | MediaCodec_loop 4% | .innocent.media 4% | ExoPlayer:Playb 2% | HwBinder:5814 2%
+LAB   62.9 rebuffer start (ahead 30414 ms)
+LAB   62.9 rebuffer end 1 ms
+LAB   65.4 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
+LAB   66.5 line 197 kbps, in a read
+LAB   68.5 line 1105 kbps, in a read
+LAB   69.8 rebuffer start (ahead 33576 ms)
+LAB   69.8 rebuffer end 7 ms
+LAB   70.5 line 562 kbps, in a read
+LAB cpu app 38% · 12.8fps · 1.raster 24% | MediaCodec_loop 3% | .innocent.media 3% | HwBinder:5814 2% | ExoPlayer:Playb 2%
+LAB   72.5 line 1277 kbps, in a read
+LAB   74.5 line 662 kbps, in a read
+LAB   76.5 line 267 kbps, in a read
+LAB   78.4 rebuffer start (ahead 39161 ms)
+LAB   78.5 rebuffer end 46 ms
+LAB   78.5 line 721 kbps, in a read
+LAB   80.5 line 455 kbps, in a read
+LAB cpu app 36% · 11.8fps · 1.raster 23% | MediaCodec_loop 4% | .innocent.media 3% | ExoPlayer:Playb 2% | HwBinder:5814 2%
+LAB   82.5 line 64 kbps, in a read
+LAB   84.5 line 854 kbps, in a read
+LAB   86.5 line 202 kbps, in a read
+LAB   87.5 line 620 kbps, a read
+LAB   87.5 measured 620 kbps
+LAB cpu app 40% · 13.2fps · 1.raster 27% | MediaCodec_loop 4% | .innocent.media 3% | ExoPlayer:Playb 2% | HwBinder:5814 2%
+LAB   93.2 line 305 kbps, in a read
+LAB   93.5 rebuffer start (ahead 28791 ms)
+LAB   93.5 rebuffer end 21 ms
+LAB   97.2 line 146 kbps, in a read
+LAB   99.2 line 64 kbps, in a read
+LAB  101.2 line 640 kbps, in a read
+LAB  101.7 hls: 240p playlist, 444 segments
+LAB  102.1 line 354 kbps, a read
+LAB cpu app 38% · 13.3fps · 1.raster 25% | MediaCodec_loop 4% | .innocent.media 3% | ExoPlayer:Playb 2% | HwBinder:5814 2%
+LAB  111.4 line 64 kbps, in a read
+LAB cpu app 38% · 12.0fps · 1.raster 27% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | .innocent.media 2% | HwBinder:5814 2%
+LAB  113.4 line 109 kbps, in a read
+LAB  115.4 line 64 kbps, in a read
+LAB engine update ok DONE 2025.11.12 -> 2026.10.26
+LAB  115.9 hls jump: answer 7401 ms, first byte 7407 ms, segment 13895 ms (82404 B)
+LAB  117.4 line 733 kbps, in a read
+LAB cpu app 40% · 13.7fps · 1.raster 25% | .innocent.media 4% | MediaCodec_loop 4% | HwBinder:5814 2% | ExoPlayer:Playb 2%
+LAB  123.9 rebuffer start (ahead 33483 ms)
+LAB  124.0 rebuffer end 24 ms
+LAB  124.9 exo rung 240p 300 kbps
+LAB  126.2 rebuffer start (ahead 39397 ms)
+LAB  126.3 rebuffer end 107 ms
+LAB  129.4 line 196 kbps, in a read
+LAB  131.4 line 64 kbps, in a read
+LAB cpu app 40% · 11.7fps · 1.raster 28% | .innocent.media 4% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | HwBinder:5814 2%
+LAB  134.8 line 658 kbps, a read
+LAB  134.8 measured 658 kbps
+LAB  139.4 line 965 kbps, in a read
+LAB cpu app 46% · 13.5fps · 1.raster 31% | .innocent.media 5% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | HwBinder:5814 2%
+LAB  147.4 line 557 kbps, in a read
+LAB  149.4 line 64 kbps, in a read
+LAB  151.4 line 2044 kbps, in a read
+LAB cpu app 43% · 12.7fps · 1.raster 30% | .innocent.media 3% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | HwBinder:5814 2%
+LAB  153.4 line 843 kbps, in a read
+LAB weakline line 3mbit for 60s
+LAB  154.9 measured 861 kbps
+LAB cpu app 41% · 14.2fps · 1.raster 30% | MediaCodec_loop 3% | .innocent.media 2% | ExoPlayer:Playb 2% | HwBinder:5814 2%
+LAB cpu app 42% · 12.5fps · 1.raster 31% | MediaCodec_loop 4% | ExoPlayer:Playb 2% | .innocent.media 2% | HwBinder:5814 2%
+LAB  174.8 fg stream: watching
+LAB  176.8 line 2214 kbps, in a read
+LAB  180.2 hls jump: answer 1839 ms, first byte 1862 ms, segment 2835 ms (204686 B)
+LAB cpu app 41% · 13.7fps · 1.raster 26% | .innocent.media 4% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | HwBinder:5814 2%
+LAB  183.2 line 3227 kbps, in a read
+LAB  183.9 rebuffer start (ahead 36195 ms)
+LAB  183.9 rebuffer end 1 ms
+LAB  185.4 measured 2709 kbps
+LAB  190.0 hls jump: answer 920 ms, first byte 931 ms, segment 1756 ms (243173 B)
+LAB cpu app 42% · 12.1fps · 1.raster 22% | .innocent.media 7% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | HwBinder:5814 2% | DartWorker 1%
+LAB  195.3 measured 2757 kbps
+LAB  197.8 line 2188 kbps, in a read
+LAB  199.8 line 3251 kbps, in a read
+LAB  201.8 line 2225 kbps, in a read
+LAB cpu app 39% · 13.3fps · 1.raster 21% | .innocent.media 6% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | HwBinder:5814 2% | flutter-worker- 1%
+LAB  202.5 measured 2484 kbps
+LAB  202.9 exo rung 360p 600 kbps
+LAB  203.7 rebuffer start (ahead 44686 ms)
+LAB  203.8 rebuffer end 47 ms
+LAB  204.9 line 1434 kbps, in a read
+LAB  206.5 rebuffer start (ahead 45973 ms)
+LAB  206.5 rebuffer end 14 ms
+LAB  206.9 line 1978 kbps, in a read
+LAB  208.9 line 1197 kbps, in a read
+LAB cpu app 38% · 11.8fps · 1.raster 23% | .innocent.media 5% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | HwBinder:5814 2% | DartWorker 1%
+LAB  212.9 line 1753 kbps, in a read
+LAB  213.8 measured 1537 kbps
+LAB  213.9 exo rung 480p 1000 kbps
+LAB weakline line off for 8s
+LAB  214.8 rebuffer start (ahead 48724 ms)
+LAB  214.8 rebuffer end 6 ms
+LAB  216.7 rebuffer start (ahead 47297 ms)
+LAB  216.7 rebuffer end 14 ms
+LAB weakline line 3mbit for 60s
+LAB cpu app 38% · 10.8fps · 1.raster 29% | MediaCodec_loop 2% | .innocent.media 2% | ExoPlayer:Playb 2% | HwBinder:5814 2%
+LAB  224.1 rebuffer start (ahead 40298 ms)
+LAB  224.2 rebuffer end 113 ms
+LAB  225.6 fg stream: watching
+LAB  227.6 line 976 kbps, in a read
+LAB  229.7 line 1481 kbps, in a read
+LAB  231.6 line 1962 kbps, in a read
+LAB cpu app 38% · 13.4fps · 1.raster 24% | .innocent.media 4% | MediaCodec_loop 4% | HwBinder:5814 2% | ExoPlayer:Playb 2%
+LAB  235.4 measured 1722 kbps
+LAB cpu app 43% · 11.7fps · 1.raster 24% | .innocent.media 6% | MediaCodec_loop 3% | HwBinder:5814 2% | ExoPlayer:Playb 2% | DartWorker 1%
+LAB  243.5 measured 2177 kbps
+LAB  246.0 line 2557 kbps, in a read
+LAB  251.3 measured 2277 kbps
+LAB cpu app 41% · 12.9fps · 1.raster 24% | .innocent.media 6% | MediaCodec_loop 3% | HwBinder:5814 2% | ExoPlayer:Playb 2% | flutter-worker- 1%
+LAB  253.8 line 1471 kbps, in a read
+LAB  255.8 line 2208 kbps, in a read
+LAB  259.7 measured 2125 kbps
+LAB cpu app 33% · 12.9fps · 1.raster 21% | .innocent.media 4% | MediaCodec_loop 3% | HwBinder:5814 2% | ExoPlayer:Playb 1%
+LAB  269.6 rebuffer start (ahead 45362 ms)
+LAB  269.6 rebuffer end 7 ms
+LAB cpu app 30% · 11.8fps · 1.raster 23% | MediaCodec_loop 2% | HwBinder:5814 2% | .innocent.media 2% | ExoPlayer:Playb 1%
+LAB  279.2 rebuffer start (ahead 36218 ms)
+LAB  279.2 rebuffer end 8 ms
+LAB cpu app 32% · 11.8fps · 1.raster 24% | MediaCodec_loop 3% | HwBinder:5814 2% | .innocent.media 1% | ExoPlayer:Playb 1%
+LAB  282.5 rebuffer start (ahead 33304 ms)
+LAB  282.5 rebuffer end 8 ms
+LAB weakline end pass=1 peak=fragment
+LAB weakline verdict pass=1 peak=fragment first=3413 stalls=0 blips=18 frozen_ms=524 longest_ms=113 time=480p:53%,360p:19%,240p:28%
+LAB weakline begin pass=2 peak=window
+LAB device kind=DeviceKind.phone sw=411.0
+LAB weakline line 4mbit for 40s
+LAB    0.0 LAB title: opening Sintel
+LAB    1.7 play server granted in 1645 ms, 4 rungs
+LAB    1.7 play rung 480p 912 kbps (choice auto, measured - kbps)
+LAB    1.7 stream lanes=6 peak=window
+LAB    2.0 stream cache: a new film, sealed
+LAB    2.0 play through the ladder on ExoPlayer
+LAB    2.0 play: opening the player
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
 LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
 LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
 LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
-LAB    3.7 hwdec -> auto
-LAB    3.8 open ladder (exo) start=0s autoplay=true rung=auto first=480
-LAB    3.9 wakelock playing=true bg=false priv=false pos=0ms
-LAB    3.9 open ok
+LAB    2.9 hwdec -> auto
+LAB    3.0 open ladder (exo) start=0s autoplay=true rung=auto first=480
+LAB cpu app 58% · 9.1fps · 1.raster 31% | pool-thread 19% | .innocent.media 3% | RenderThread 2%
+LAB    3.2 wakelock playing=true bg=false priv=false pos=0ms
+LAB    3.2 open ok
 LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
 LAB    4.3 stream index 0.0 MB at 0.0 MB
-LAB engine update ok ALREADY_UP_TO_DATE null -> 2026.10.26
-LAB    4.7 fg stream: watching
-LAB    4.7 hls: 480p playlist, 444 segments
-LAB    4.9 exo tracks 480,720,360,240 selected=4 adaptive=true peaks=1591,2105,723,382 kbps
-LAB    5.0 hls jump: answer 374 ms, first byte 439 ms, segment 710 ms (65536 B)
-LAB    5.6 exo rung 480p 1000 kbps
-LAB    5.8 first frame 2757 ms
-LAB    6.0 stream index 0.0 MB at 0.0 MB
-LAB    7.2 hls jump: answer 437 ms, first byte 455 ms, segment 1195 ms (65536 B)
-LAB    7.2 hls jump: answer 462 ms, first byte 495 ms, segment 1220 ms (65536 B)
-LAB    8.2 line 2893 kbps, in a read
-LAB   12.3 measured 2768 kbps
-LAB cpu app 46% · 13.8fps · 1.raster 28% | .innocent.media 7% | ExoPlayer:Playb 3% | MediaCodec_loop 2% | HwBinder:6089 2% | DartWorker 1%
-LAB   13.8 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
-LAB   14.5 rebuffer start (ahead 16545 ms)
-LAB   14.5 rebuffer end 6 ms
-LAB   19.1 measured 2674 kbps
-LAB   21.8 line 1685 kbps, in a read
-LAB cpu app 40% · 13.0fps · 1.raster 21% | .innocent.media 6% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | HwBinder:6089 2% | DartWorker 1%
-LAB   29.2 measured 1784 kbps
-LAB cpu app 35% · 13.4fps · 1.raster 18% | .innocent.media 5% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | HwBinder:6089 2% | DartWorker 2%
-LAB   33.8 line 2174 kbps, in a read
+LAB    5.2 fg stream: watching
+LAB    5.2 hls: 480p index, 444 segments, average 912, peak 2s 1591, 10s 1224, 20s 1174 kbps
+LAB    5.3 hls: 480p playlist, 444 segments
+LAB    5.5 exo tracks 480,720,360,240 selected=4 adaptive=true peaks=1174,2168,745,394 kbps
+LAB    6.2 exo rung 480p 1000 kbps
+LAB    6.8 first frame 4699 ms
+LAB    6.9 hls jump: answer 867 ms, first byte 869 ms, segment 2545 ms (65536 B)
+LAB    7.5 stream index 0.0 MB at 0.0 MB
+LAB    8.6 hls: 720p index, 444 segments, average 1683, peak 2s 3052, 10s 2317, 20s 2212 kbps
+LAB    8.8 hls: 360p index, 444 segments, average 578, peak 2s 976, 10s 754, 20s 725 kbps
+LAB    9.3 hls jump: answer 764 ms, first byte 877 ms, segment 1815 ms (65536 B)
+LAB    9.4 hls jump: answer 837 ms, first byte 862 ms, segment 1514 ms (65536 B)
+LAB    9.6 line 1054 kbps, in a read
+LAB engine update ok ALREADY_UP_TO_DATE 2026.10.26 -> 2026.10.26
+LAB    9.9 hls: 360p playlist, 444 segments
+LAB   10.6 stream index 0.0 MB at 0.0 MB
+LAB   11.2 hls: 240p index, 444 segments, average 306, peak 2s 507, 10s 394, 20s 380 kbps
+LAB   11.4 hls jump: answer 495 ms, first byte 529 ms, segment 762 ms (65536 B)
+LAB   11.9 hls jump: answer 585 ms, first byte 632 ms, segment 1402 ms (215459 B)
+LAB   12.3 exo rung 360p 600 kbps
+LAB cpu app 39% · 10.2fps · 1.raster 25% | .innocent.media 5% | ExoPlayer:Playb 2% | MediaCodec_loop 1% | HwBinder:7437 1%
+LAB   13.2 line 2366 kbps, in a read
+LAB   13.2 rebuffer start (ahead 6006 ms)
+LAB   13.3 rebuffer end 77 ms
+LAB   14.9 measured 2588 kbps
+LAB   14.9 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
+LAB   16.1 hls jump: answer 550 ms, first byte 552 ms, segment 1291 ms (213998 B)
+LAB   18.7 rebuffer start (ahead 16800 ms)
+LAB   18.7 rebuffer end 23 ms
+LAB   22.5 measured 2359 kbps
+LAB cpu app 44% · 12.2fps · 1.raster 24% | .innocent.media 6% | MediaCodec_loop 3% | ExoPlayer:Playb 3% | HwBinder:7437 2% | DartWorker 1%
+LAB   25.0 exo rung 480p 1000 kbps
+LAB   26.0 rebuffer start (ahead 27310 ms)
+LAB   26.1 rebuffer end 77 ms
+LAB   27.0 line 1763 kbps, in a read
+LAB   28.9 line 2418 kbps, in a read
+LAB   30.1 measured 2328 kbps
+LAB cpu app 42% · 10.6fps · 1.raster 23% | .innocent.media 6% | MediaCodec_loop 4% | HwBinder:7437 2% | ExoPlayer:Playb 2% | DartWorker 1%
+LAB   34.6 rebuffer start (ahead 36765 ms)
+LAB   34.7 rebuffer end 49 ms
 LAB weakline line 900kbit for 120s
-LAB   35.8 line 1377 kbps, in a read
-LAB   37.8 line 855 kbps, in a read
-LAB   42.3 line 1336 kbps, a read
-LAB   42.3 measured 1336 kbps
-LAB cpu app 40% · 14.8fps · 1.raster 25% | .innocent.media 4% | MediaCodec_loop 3% | HwBinder:6089 2% | ExoPlayer:Playb 2%
-LAB   45.0 line 637 kbps, in a read
-LAB   46.9 line 803 kbps, in a read
-LAB   50.9 line 99 kbps, in a read
-LAB   52.9 line 1978 kbps, in a read
-LAB cpu app 35% · 14.3fps · 1.raster 22% | .innocent.media 4% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | HwBinder:6089 2%
-LAB   54.9 line 265 kbps, in a read
-LAB   56.9 line 1485 kbps, in a read
-LAB   58.9 line 855 kbps, in a read
-LAB   62.6 measured 853 kbps
-LAB cpu app 45% · 15.6fps · 1.raster 31% | .innocent.media 4% | MediaCodec_loop 3% | HwBinder:6089 2% | ExoPlayer:Playb 2%
-LAB   64.2 rebuffer start (ahead 48523 ms)
-LAB   64.3 rebuffer end 92 ms
-LAB   65.8 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
-LAB   67.0 line 604 kbps, in a read
-LAB   71.1 line 1256 kbps, in a read
-LAB   73.1 line 860 kbps, in a read
-LAB cpu app 44% · 15.3fps · 1.raster 30% | .innocent.media 4% | MediaCodec_loop 3% | HwBinder:6089 2% | ExoPlayer:Playb 2%
-LAB   79.0 line 328 kbps, in a read
-LAB   81.1 line 1362 kbps, in a read
-LAB   82.6 line 857 kbps, a read
-LAB   82.6 measured 857 kbps
-LAB cpu app 43% · 15.5fps · 1.raster 30% | .innocent.media 4% | MediaCodec_loop 2% | HwBinder:6089 2% | ExoPlayer:Playb 2%
-LAB   85.3 line 294 kbps, in a read
-LAB   87.3 line 1377 kbps, in a read
-LAB   89.3 line 920 kbps, in a read
-LAB cpu app 42% · 13.9fps · 1.raster 29% | .innocent.media 4% | MediaCodec_loop 2% | ExoPlayer:Playb 2% | HwBinder:6089 2%
-LAB   93.3 line 475 kbps, in a read
-LAB   95.3 line 1173 kbps, in a read
-LAB   97.3 line 866 kbps, in a read
-LAB  102.8 measured 860 kbps
-LAB cpu app 45% · 15.3fps · 1.raster 30% | .innocent.media 4% | MediaCodec_loop 3% | HwBinder:6089 2% | ExoPlayer:Playb 2%
-LAB  109.4 line 523 kbps, in a read
-LAB cpu app 45% · 15.9fps · 1.raster 32% | .innocent.media 4% | MediaCodec_loop 3% | HwBinder:6089 2% | ExoPlayer:Playb 2%
-LAB  113.4 line 983 kbps, in a read
-LAB  115.4 line 1414 kbps, in a read
-LAB  117.4 line 891 kbps, in a read
-LAB  122.8 measured 863 kbps
-LAB cpu app 43% · 13.9fps · 1.raster 29% | .innocent.media 4% | MediaCodec_loop 3% | HwBinder:6089 2% | ExoPlayer:Playb 2% | DartWorker 1%
-LAB cpu app 43% · 15.7fps · 1.raster 29% | .innocent.media 4% | MediaCodec_loop 3% | HwBinder:6089 2% | ExoPlayer:Playb 2%
-LAB  133.4 line 197 kbps, in a read
-LAB  135.5 line 64 kbps, in a read
-LAB  137.5 line 1147 kbps, in a read
-LAB  139.4 line 1684 kbps, in a read
-LAB  141.5 line 64 kbps, in a read
-LAB cpu app 44% · 15.6fps · 1.raster 31% | .innocent.media 4% | MediaCodec_loop 3% | HwBinder:6089 2% | ExoPlayer:Playb 2%
-LAB  143.3 line 844 kbps, a read
-LAB  143.3 measured 844 kbps
-LAB  144.1 rebuffer start (ahead 45622 ms)
-LAB  144.1 rebuffer end 46 ms
-LAB  148.0 line 131 kbps, in a read
-LAB  150.0 line 1567 kbps, in a read
-LAB  151.5 rebuffer start (ahead 44636 ms)
-LAB  151.5 rebuffer end 1 ms
-LAB  151.9 line 858 kbps, in a read
-LAB cpu app 42% · 15.1fps · 1.raster 29% | .innocent.media 4% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | HwBinder:6089 2%
-LAB  153.9 line 64 kbps, in a read
+LAB   36.7 line 911 kbps, in a read
+LAB   41.5 rebuffer start (ahead 36659 ms)
+LAB   41.5 rebuffer end 4 ms
+LAB   42.8 line 1386 kbps, a read
+LAB   42.8 measured 1386 kbps
+LAB cpu app 41% · 12.8fps · 1.raster 25% | .innocent.media 4% | MediaCodec_loop 4% | HwBinder:7437 2% | ExoPlayer:Playb 2% | DartWorker 1%
+LAB   45.2 line 825 kbps, in a read
+LAB   51.2 line 259 kbps, in a read
+LAB cpu app 40% · 11.7fps · 1.raster 26% | MediaCodec_loop 4% | .innocent.media 3% | HwBinder:7437 2% | ExoPlayer:Playb 2%
+LAB   53.2 line 64 kbps, in a read
+LAB   53.6 rebuffer start (ahead 33823 ms)
+LAB   53.7 rebuffer end 24 ms
+LAB   55.2 line 1749 kbps, in a read
+LAB   57.2 line 436 kbps, in a read
+LAB   59.2 line 1851 kbps, in a read
+LAB   61.2 line 850 kbps, in a read
+LAB   62.7 rebuffer start (ahead 44875 ms)
+LAB   62.8 rebuffer end 40 ms
+LAB   62.8 measured 854 kbps
+LAB cpu app 43% · 13.2fps · 1.raster 28% | MediaCodec_loop 4% | .innocent.media 4% | HwBinder:7437 2% | ExoPlayer:Playb 2%
+LAB   66.9 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
+LAB   67.4 line 64 kbps, in a read
+LAB   69.4 line 1107 kbps, in a read
+LAB   71.2 rebuffer start (ahead 49208 ms)
+LAB   71.2 rebuffer end 19 ms
+LAB   71.4 line 1640 kbps, in a read
+LAB cpu app 39% · 12.8fps · 1.raster 27% | MediaCodec_loop 3% | .innocent.media 3% | HwBinder:7437 2% | ExoPlayer:Playb 2%
+LAB   73.4 line 96 kbps, in a read
+LAB   75.4 line 1400 kbps, in a read
+LAB   79.4 line 850 kbps, in a read
+LAB   83.0 measured 854 kbps
+LAB cpu app 40% · 11.8fps · 1.raster 26% | .innocent.media 4% | MediaCodec_loop 4% | HwBinder:7437 2% | ExoPlayer:Playb 2%
+LAB   87.7 line 198 kbps, in a read
+LAB   89.7 line 1455 kbps, in a read
+LAB   91.7 line 917 kbps, in a read
+LAB cpu app 40% · 13.6fps · 1.raster 27% | .innocent.media 4% | MediaCodec_loop 4% | HwBinder:7437 2% | ExoPlayer:Playb 2%
+LAB   97.8 line 448 kbps, in a read
+LAB   99.7 line 1147 kbps, in a read
+LAB cpu app 40% · 13.1fps · 1.raster 26% | MediaCodec_loop 4% | .innocent.media 4% | HwBinder:7437 3% | ExoPlayer:Playb 2%
+LAB  103.4 line 853 kbps, a read
+LAB  103.4 measured 853 kbps
+LAB  107.8 line 524 kbps, in a read
+LAB  109.9 line 1214 kbps, in a read
+LAB  111.9 line 884 kbps, in a read
+LAB cpu app 41% · 11.6fps · 1.raster 27% | MediaCodec_loop 4% | .innocent.media 4% | ExoPlayer:Playb 2% | HwBinder:7437 2%
+LAB  116.9 rebuffer start (ahead 52955 ms)
+LAB  116.9 rebuffer end 24 ms
+LAB  121.8 line 592 kbps, in a read
+LAB cpu app 39% · 13.5fps · 1.raster 25% | .innocent.media 4% | MediaCodec_loop 3% | HwBinder:7437 2% | ExoPlayer:Playb 2%
+LAB  123.4 rebuffer start (ahead 52392 ms)
+LAB  123.4 rebuffer end 19 ms
+LAB  123.6 line 847 kbps, a read
+LAB  123.6 measured 847 kbps
+LAB cpu app 38% · 11.4fps · 1.raster 24% | .innocent.media 4% | MediaCodec_loop 4% | HwBinder:7437 2% | ExoPlayer:Playb 2%
+LAB  138.7 rebuffer start (ahead 49519 ms)
+LAB  138.7 rebuffer end 6 ms
+LAB cpu app 39% · 13.4fps · 1.raster 26% | .innocent.media 4% | MediaCodec_loop 3% | HwBinder:7437 2% | ExoPlayer:Playb 2%
+LAB  143.8 measured 851 kbps
+LAB  145.9 rebuffer start (ahead 46902 ms)
+LAB  145.9 rebuffer end 12 ms
+LAB  148.4 line 197 kbps, in a read
+LAB  150.4 line 64 kbps, in a read
+LAB  152.4 line 771 kbps, in a read
+LAB cpu app 40% · 12.1fps · 1.raster 28% | MediaCodec_loop 3% | .innocent.media 3% | HwBinder:7437 2% | ExoPlayer:Playb 2%
+LAB  154.5 rebuffer start (ahead 42699 ms)
+LAB  154.5 rebuffer end 68 ms
 LAB weakline line 3mbit for 60s
-LAB  155.9 line 1508 kbps, in a read
-LAB  158.0 line 3089 kbps, in a read
-LAB  158.3 line 1168 kbps, a read
-LAB  158.3 measured 1168 kbps
-LAB  160.8 line 2573 kbps, in a read
-LAB cpu app 44% · 15.2fps · 1.raster 27% | .innocent.media 6% | MediaCodec_loop 3% | HwBinder:6089 2% | ExoPlayer:Playb 2% | flutter-worker- 1%
-LAB  166.8 line 812 kbps, in a read
-LAB  167.6 line 1892 kbps, a read
-LAB  167.6 measured 1892 kbps
-LAB  171.0 rebuffer start (ahead 52977 ms)
-LAB  171.0 rebuffer end 27 ms
-LAB  172.3 line 1120 kbps, in a read
-LAB cpu app 44% · 15.2fps · 1.raster 28% | .innocent.media 5% | MediaCodec_loop 4% | ExoPlayer:Playb 2% | HwBinder:6089 2% | DartWorker 1%
-LAB  180.3 line 1431 kbps, in a read
-LAB  180.7 measured 1347 kbps
-LAB cpu app 45% · 15.1fps · 1.raster 29% | .innocent.media 5% | MediaCodec_loop 3% | HwBinder:6089 2% | ExoPlayer:Playb 2% | DartWorker 1%
-LAB  185.2 line 1791 kbps, in a read
-LAB  190.9 measured 1726 kbps
-LAB cpu app 43% · 15.2fps · 1.raster 30% | .innocent.media 4% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | HwBinder:6089 2%
-LAB cpu app 43% · 14.0fps · 1.raster 34% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | HwBinder:6089 2% | .innocent.media 2%
-LAB cpu app 42% · 15.8fps · 1.raster 33% | HwBinder:6089 2% | MediaCodec_loop 2% | ExoPlayer:Playb 2% | .innocent.media 2%
+LAB  156.5 line 1217 kbps, in a read
+LAB  158.4 line 1808 kbps, in a read
+LAB  160.4 line 2383 kbps, in a read
+LAB  160.7 line 1029 kbps, a read
+LAB  160.7 measured 1029 kbps
+LAB  161.8 rebuffer start (ahead 47506 ms)
+LAB  161.8 rebuffer end 10 ms
+LAB cpu app 38% · 12.4fps · 1.raster 23% | MediaCodec_loop 4% | .innocent.media 4% | HwBinder:7437 2% | ExoPlayer:Playb 2%
+LAB  163.3 line 2484 kbps, in a read
+LAB  167.2 measured 2866 kbps
+LAB  169.6 line 1833 kbps, in a read
+LAB cpu app 41% · 13.5fps · 1.raster 24% | .innocent.media 5% | MediaCodec_loop 4% | HwBinder:7437 2% | ExoPlayer:Playb 1% | DartWorker 1%
+LAB  173.6 line 1179 kbps, in a read
+LAB  177.7 line 2217 kbps, in a read
+LAB  177.8 line 1652 kbps, a read
+LAB  177.8 measured 1652 kbps
+LAB  179.9 rebuffer start (ahead 58518 ms)
+LAB  179.9 rebuffer end 31 ms
+LAB  180.2 line 2532 kbps, in a read
+LAB cpu app 41% · 11.4fps · 1.raster 24% | .innocent.media 6% | MediaCodec_loop 4% | HwBinder:7437 2% | ExoPlayer:Playb 2%
+LAB  185.1 measured 2449 kbps
+LAB  188.3 rebuffer start (ahead 50373 ms)
+LAB  188.3 rebuffer end 3 ms
+LAB cpu app 37% · 13.1fps · 1.raster 26% | MediaCodec_loop 4% | .innocent.media 2% | ExoPlayer:Playb 2% | HwBinder:7437 2%
+LAB  193.9 rebuffer start (ahead 45227 ms)
+LAB  193.9 rebuffer end 46 ms
+LAB cpu app 38% · 13.2fps · 1.raster 29% | MediaCodec_loop 3% | HwBinder:7437 2% | .innocent.media 2% | ExoPlayer:Playb 2%
+LAB  211.0 fg stream: watching
+LAB  211.1 rebuffer start (ahead 47408 ms)
+LAB  211.1 rebuffer end 5 ms
+LAB cpu app 40% · 11.7fps · 1.raster 27% | MediaCodec_loop 4% | .innocent.media 3% | HwBinder:7437 2% | ExoPlayer:Playb 2%
 LAB weakline line off for 8s
-LAB  220.8 rebuffer start (ahead 34443 ms)
-LAB  220.8 rebuffer end 5 ms
+LAB  217.0 line 263 kbps, in a read
+LAB  219.0 line 64 kbps, in a read
+LAB  220.4 rebuffer start (ahead 47708 ms)
+LAB  220.4 rebuffer end 5 ms
+LAB  221.4 line 976 kbps, a read
+LAB  221.4 measured 976 kbps
+LAB cpu app 35% · 13.2fps · 1.raster 25% | MediaCodec_loop 4% | .innocent.media 2% | HwBinder:7437 2% | ExoPlayer:Playb 1%
 LAB weakline line 3mbit for 60s
-LAB cpu app 38% · 15.6fps · 1.raster 28% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | .innocent.media 2% | HwBinder:6089 2%
-LAB  227.8 fg stream: watching
-LAB  229.8 line 525 kbps, in a read
-LAB  231.8 line 1211 kbps, in a read
-LAB cpu app 42% · 13.5fps · 1.raster 30% | .innocent.media 3% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | HwBinder:6089 2%
-LAB  233.8 line 1858 kbps, in a read
-LAB  235.8 line 2910 kbps, in a read
-LAB  237.3 line 1760 kbps, a read
-LAB  237.3 measured 1760 kbps
-LAB cpu app 47% · 14.9fps · 1.raster 29% | .innocent.media 6% | MediaCodec_loop 4% | HwBinder:6089 2% | ExoPlayer:Playb 2% | flutter-worker- 1%
-LAB  245.8 line 2533 kbps, in a read
-LAB  246.1 measured 2039 kbps
-LAB  250.6 line 1684 kbps, in a read
-LAB cpu app 46% · 15.3fps · 1.raster 27% | .innocent.media 6% | MediaCodec_loop 4% | HwBinder:6089 3% | ExoPlayer:Playb 2% | flutter-worker- 2%
-LAB  255.7 measured 1841 kbps
-LAB  257.7 rebuffer start (ahead 46474 ms)
-LAB  257.7 rebuffer end 4 ms
-LAB  262.2 line 2227 kbps, in a read
-LAB cpu app 46% · 14.8fps · 1.raster 28% | .innocent.media 6% | MediaCodec_loop 4% | HwBinder:6089 2% | ExoPlayer:Playb 2% | flutter-worker- 1%
-LAB  264.7 measured 1975 kbps
-LAB cpu app 47% · 15.3fps · 1.raster 29% | .innocent.media 6% | MediaCodec_loop 3% | HwBinder:6089 2% | ExoPlayer:Playb 2% | DartWorker 2%
-LAB  273.4 measured 2065 kbps
-LAB  282.1 measured 2044 kbps
-LAB cpu app 47% · 15.0fps · 1.raster 30% | .innocent.media 5% | MediaCodec_loop 3% | HwBinder:6089 2% | ExoPlayer:Playb 2% | DartWorker 1%
-LAB weakline end
-LAB weakline verdict first=2757 stalls=0 blips=7 frozen_ms=181 longest_ms=92
+LAB  224.7 fg stream: watching
+LAB  224.8 hls jump: answer 3375 ms, first byte 3454 ms, segment 3542 ms (19975 B)
+LAB  226.8 line 2794 kbps, in a read
+LAB  230.9 measured 2730 kbps
+LAB cpu app 40% · 12.7fps · 1.raster 22% | .innocent.media 5% | MediaCodec_loop 4% | HwBinder:7437 2% | ExoPlayer:Playb 2%
+LAB  237.5 measured 2717 kbps
+LAB  240.1 rebuffer start (ahead 56665 ms)
+LAB  240.1 rebuffer end 1 ms
+LAB cpu app 38% · 12.8fps · 1.raster 24% | .innocent.media 4% | MediaCodec_loop 4% | HwBinder:7437 2% | ExoPlayer:Playb 2%
+LAB  246.1 rebuffer start (ahead 51066 ms)
+LAB  246.1 rebuffer end 3 ms
+LAB  253.0 rebuffer start (ahead 44516 ms)
+LAB  253.0 rebuffer end 17 ms
+LAB cpu app 37% · 12.0fps · 1.raster 27% | MediaCodec_loop 3% | .innocent.media 2% | HwBinder:7437 2% | ExoPlayer:Playb 2%
+LAB  261.7 rebuffer start (ahead 36220 ms)
+LAB  261.7 rebuffer end 6 ms
+LAB cpu app 40% · 13.5fps · 1.raster 30% | MediaCodec_loop 4% | HwBinder:7437 2% | ExoPlayer:Playb 2% | .innocent.media 1%
+LAB  269.0 fg stream: watching
+LAB  271.0 line 2027 kbps, in a read
+LAB cpu app 37% · 11.8fps · 1.raster 26% | MediaCodec_loop 3% | .innocent.media 3% | ExoPlayer:Playb 2% | HwBinder:7437 2%
+LAB  275.0 line 2577 kbps, in a read
+LAB  275.9 measured 2433 kbps
+LAB  278.2 rebuffer start (ahead 42246 ms)
+LAB  278.3 rebuffer end 51 ms
+LAB  282.5 measured 2684 kbps
+LAB cpu app 43% · 13.0fps · 1.raster 25% | .innocent.media 6% | MediaCodec_loop 4% | HwBinder:7437 2% | flutter-worker- 2% | DartWorker 2%
+LAB weakline end pass=2 peak=window
+LAB weakline verdict pass=2 peak=window first=4699 stalls=0 blips=24 frozen_ms=620 longest_ms=77 time=480p:95%,360p:5%
+LAB weakline begin pass=3 peak=fragment
+LAB device kind=DeviceKind.phone sw=411.0
+LAB weakline line 4mbit for 40s
+LAB    0.0 LAB title: opening Sintel
+LAB    1.7 play server granted in 1717 ms, 4 rungs
+LAB    1.7 play rung 480p 912 kbps (choice auto, measured - kbps)
+LAB    1.7 stream lanes=6 peak=fragment
+LAB    1.9 stream cache: a new film, sealed
+LAB    2.1 play through the ladder on ExoPlayer
+LAB    2.1 play: opening the player
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
+LAB cpu app 58% · 9.9fps · 1.raster 34% | pool-thread 18% | .innocent.media 3%
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
+LAB    3.1 hwdec -> auto
+LAB    3.2 open ladder (exo) start=0s autoplay=true rung=auto first=480
+LAB    3.3 wakelock playing=true bg=false priv=false pos=0ms
+LAB    3.3 open ok
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
+LAB    4.1 stream index 0.0 MB at 0.0 MB
+LAB    4.7 fg stream: watching
+LAB    4.9 hls: 480p index, 444 segments, average 912, peak 2s 1591, 10s 1224, 20s 1174 kbps
+LAB    4.9 hls: 480p playlist, 444 segments
+LAB    5.2 exo tracks 480,720,360,240 selected=4 adaptive=true peaks=1591,2105,723,382 kbps
+LAB    5.3 hls jump: answer 538 ms, first byte 547 ms, segment 1216 ms (65536 B)
+LAB    5.7 exo rung 480p 1000 kbps
+LAB    6.2 first frame 4003 ms
+LAB    6.5 stream index 0.0 MB at 0.0 MB
+LAB    7.0 hls: 720p index, 444 segments, average 1683, peak 2s 3052, 10s 2317, 20s 2212 kbps
+LAB    7.3 hls: 360p index, 444 segments, average 578, peak 2s 976, 10s 754, 20s 725 kbps
+LAB    7.8 hls jump: answer 439 ms, first byte 444 ms, segment 1247 ms (65536 B)
+LAB    7.8 hls jump: answer 683 ms, first byte 770 ms, segment 1336 ms (65536 B)
+LAB    8.6 line 1381 kbps, in a read
+LAB   10.0 hls: 360p playlist, 444 segments
+LAB   10.7 stream index 0.0 MB at 0.0 MB
+LAB   11.3 hls: 240p index, 444 segments, average 306, peak 2s 507, 10s 394, 20s 380 kbps
+LAB   11.5 hls jump: answer 420 ms, first byte 426 ms, segment 1366 ms (176371 B)
+LAB   11.7 hls jump: answer 487 ms, first byte 521 ms, segment 933 ms (65536 B)
+LAB engine update ok ALREADY_UP_TO_DATE null -> 2026.10.26
+LAB   12.6 line 1979 kbps, in a read
+LAB cpu app 35% · 9.5fps · 1.raster 22% | .innocent.media 5% | ExoPlayer:Playb 2% | MediaCodec_loop 2% | HwBinder:8557 1% | DartWorker 1%
+LAB   14.0 exo rung 360p 600 kbps
+LAB   14.5 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
+LAB   15.0 rebuffer start (ahead 12248 ms)
+LAB   15.1 rebuffer end 91 ms
+LAB   16.6 line 3198 kbps, in a read
+LAB   16.8 line 2393 kbps, a read
+LAB   16.8 measured 2393 kbps
+LAB   18.0 hls jump: answer 402 ms, first byte 420 ms, segment 1285 ms (205190 B)
+LAB   21.7 rebuffer start (ahead 28896 ms)
+LAB   21.7 rebuffer end 13 ms
+LAB cpu app 45% · 12.6fps · 1.raster 26% | .innocent.media 6% | MediaCodec_loop 4% | ExoPlayer:Playb 2% | HwBinder:8557 2% | flutter-worker- 1%
+LAB   24.9 measured 2176 kbps
+LAB   29.4 line 3979 kbps, in a read
+LAB   30.7 measured 3136 kbps
+LAB cpu app 42% · 13.1fps · 1.raster 22% | .innocent.media 6% | MediaCodec_loop 3% | HwBinder:8557 2% | ExoPlayer:Playb 2% | DartWorker 2%
+LAB   33.2 line 2783 kbps, in a read
+LAB weakline line 900kbit for 120s
+LAB   37.2 line 863 kbps, in a read
+LAB   40.1 line 1887 kbps, a read
+LAB   40.1 measured 1887 kbps
+LAB   40.4 rebuffer start (ahead 53473 ms)
+LAB   40.4 rebuffer end 1 ms
+LAB   41.4 exo rung 480p 1000 kbps
+LAB   42.3 rebuffer start (ahead 54017 ms)
+LAB   42.3 rebuffer end 78 ms
+LAB   42.8 line 786 kbps, in a read
+LAB cpu app 40% · 12.1fps · 1.raster 26% | .innocent.media 4% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | HwBinder:8557 2%
+LAB   44.8 rebuffer start (ahead 56437 ms)
+LAB   44.8 rebuffer end 42 ms
+LAB   46.8 line 460 kbps, in a read
+LAB   48.8 line 1181 kbps, in a read
+LAB   52.8 line 847 kbps, in a read
+LAB   52.8 rebuffer start (ahead 56331 ms)
+LAB   52.8 rebuffer end 1 ms
+LAB cpu app 43% · 12.7fps · 1.raster 29% | MediaCodec_loop 4% | .innocent.media 3% | ExoPlayer:Playb 2% | HwBinder:8557 2%
+LAB   60.3 measured 858 kbps
+LAB cpu app 40% · 11.8fps · 1.raster 28% | MediaCodec_loop 4% | .innocent.media 3% | ExoPlayer:Playb 2% | HwBinder:8557 2%
+LAB   66.3 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
+LAB   71.0 rebuffer start (ahead 38822 ms)
+LAB   71.0 rebuffer end 1 ms
+LAB cpu app 39% · 13.8fps · 1.raster 28% | MediaCodec_loop 4% | ExoPlayer:Playb 2% | .innocent.media 2% | HwBinder:8557 2%
+LAB   81.6 fg stream: watching
+LAB cpu app 42% · 12.3fps · 1.raster 30% | MediaCodec_loop 4% | .innocent.media 2% | ExoPlayer:Playb 2% | HwBinder:8557 2%
+LAB   89.7 line 223 kbps, in a read
+LAB   91.7 line 1426 kbps, in a read
+LAB cpu app 44% · 13.5fps · 1.raster 31% | .innocent.media 3% | MediaCodec_loop 3% | HwBinder:8557 2% | ExoPlayer:Playb 2%
+LAB   93.6 line 900 kbps, in a read
+LAB   95.1 rebuffer start (ahead 41763 ms)
+LAB   95.2 rebuffer end 11 ms
+LAB   99.7 line 486 kbps, in a read
+LAB  100.2 rebuffer start (ahead 41617 ms)
+LAB  100.3 rebuffer end 48 ms
+LAB  101.2 line 855 kbps, a read
+LAB  101.2 measured 855 kbps
+LAB cpu app 42% · 13.0fps · 1.raster 27% | .innocent.media 4% | MediaCodec_loop 4% | HwBinder:8557 2% | ExoPlayer:Playb 2%
+LAB cpu app 41% · 11.9fps · 1.raster 27% | .innocent.media 4% | MediaCodec_loop 3% | HwBinder:8557 2% | ExoPlayer:Playb 2% | flutter-worker- 1%
+LAB  121.5 measured 857 kbps
+LAB cpu app 42% · 13.4fps · 1.raster 29% | .innocent.media 4% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | HwBinder:8557 2%
+LAB  128.3 rebuffer start (ahead 47289 ms)
+LAB  128.4 rebuffer end 41 ms
+LAB  130.3 line 64 kbps, in a read
+LAB cpu app 40% · 11.7fps · 1.raster 27% | MediaCodec_loop 5% | .innocent.media 3% | HwBinder:8557 2% | ExoPlayer:Playb 2%
+LAB  134.3 line 618 kbps, in a read
+LAB  136.3 line 2971 kbps, in a read
+LAB  138.3 line 198 kbps, in a read
+LAB  140.3 line 64 kbps, in a read
+LAB  142.3 line 1517 kbps, in a read
+LAB  142.6 line 824 kbps, a read
+LAB  142.6 measured 824 kbps
+LAB cpu app 41% · 13.5fps · 1.raster 27% | .innocent.media 4% | MediaCodec_loop 4% | ExoPlayer:Playb 2% | HwBinder:8557 2%
+LAB  145.2 line 199 kbps, in a read
+LAB  145.8 rebuffer start (ahead 41932 ms)
+LAB  145.8 rebuffer end 4 ms
+LAB  147.2 line 991 kbps, in a read
+LAB  149.2 line 1361 kbps, in a read
+LAB  151.2 line 64 kbps, in a read
+LAB cpu app 40% · 11.9fps · 1.raster 26% | MediaCodec_loop 4% | .innocent.media 3% | HwBinder:8557 2% | ExoPlayer:Playb 2%
+LAB  153.2 line 1811 kbps, in a read
+LAB weakline line 3mbit for 60s
+LAB  155.2 line 96 kbps, in a read
+LAB  157.2 line 2233 kbps, in a read
+LAB  158.1 line 1128 kbps, a read
+LAB  158.1 measured 1128 kbps
+LAB  160.7 line 2855 kbps, in a read
+LAB cpu app 39% · 13.0fps · 1.raster 24% | .innocent.media 5% | MediaCodec_loop 3% | HwBinder:8557 2% | ExoPlayer:Playb 2% | flutter-worker- 1%
+LAB  164.7 line 1783 kbps, in a read
+LAB  166.1 line 2267 kbps, a read
+LAB  166.1 measured 2267 kbps
+LAB  170.8 line 1690 kbps, in a read
+LAB  172.8 line 2452 kbps, in a read
+LAB cpu app 41% · 13.1fps · 1.raster 25% | .innocent.media 5% | MediaCodec_loop 4% | HwBinder:8557 2% | ExoPlayer:Playb 2%
+LAB  174.7 measured 2118 kbps
+LAB  181.2 measured 2769 kbps
+LAB cpu app 41% · 13.3fps · 1.raster 24% | .innocent.media 5% | MediaCodec_loop 3% | HwBinder:8557 3% | ExoPlayer:Playb 2% | DartWorker 1%
+LAB cpu app 39% · 12.1fps · 1.raster 29% | MediaCodec_loop 4% | HwBinder:8557 2% | ExoPlayer:Playb 2% | .innocent.media 2%
+LAB cpu app 37% · 13.4fps · 1.raster 27% | MediaCodec_loop 3% | HwBinder:8557 2% | ExoPlayer:Playb 2% | .innocent.media 1%
+LAB  204.2 rebuffer start (ahead 35962 ms)
+LAB  204.2 rebuffer end 33 ms
+LAB  211.4 fg stream: watching
+LAB cpu app 39% · 13.4fps · 1.raster 27% | MediaCodec_loop 3% | .innocent.media 3% | HwBinder:8557 2% | ExoPlayer:Playb 2%
+LAB weakline line off for 8s
+LAB  215.4 line 1838 kbps, in a read
+LAB  217.4 line 64 kbps, in a read
+LAB  221.3 line 842 kbps, a read
+LAB cpu app 40% · 11.8fps · 1.raster 28% | MediaCodec_loop 3% | .innocent.media 3% | HwBinder:8557 2% | ExoPlayer:Playb 2%
+LAB weakline line 3mbit for 60s
+LAB  224.4 fg stream: watching
+LAB  224.9 hls jump: answer 3122 ms, first byte 3143 ms, segment 3637 ms (66792 B)
+LAB  226.4 line 2519 kbps, in a read
+LAB  230.7 measured 2674 kbps
+LAB cpu app 41% · 13.1fps · 1.raster 25% | .innocent.media 5% | MediaCodec_loop 3% | HwBinder:8557 2% | ExoPlayer:Playb 2% | flutter-worker- 1%
+LAB  238.2 measured 2438 kbps
+LAB cpu app 39% · 13.2fps · 1.raster 22% | .innocent.media 6% | MediaCodec_loop 3% | HwBinder:8557 2% | ExoPlayer:Playb 2% | flutter-worker- 1%
+LAB  245.4 measured 2496 kbps
+LAB  250.2 rebuffer start (ahead 55581 ms)
+LAB  250.2 rebuffer end 4 ms
+LAB cpu app 39% · 11.9fps · 1.raster 27% | MediaCodec_loop 3% | .innocent.media 3% | HwBinder:8557 2% | ExoPlayer:Playb 2%
+LAB  259.7 rebuffer start (ahead 46459 ms)
+LAB  259.7 rebuffer end 10 ms
+LAB cpu app 41% · 13.6fps · 1.raster 31% | MediaCodec_loop 4% | HwBinder:8557 3% | ExoPlayer:Playb 1% | .innocent.media 1%
+LAB  267.5 rebuffer start (ahead 39099 ms)
+LAB  267.5 rebuffer end 13 ms
+LAB  271.8 rebuffer start (ahead 35022 ms)
+LAB  271.9 rebuffer end 47 ms
+LAB cpu app 41% · 13.3fps · 1.raster 30% | MediaCodec_loop 4% | HwBinder:8557 2% | .innocent.media 2% | ExoPlayer:Playb 2%
+LAB  277.7 fg stream: watching
+LAB cpu app 41% · 11.9fps · 1.raster 28% | .innocent.media 4% | MediaCodec_loop 3% | HwBinder:8557 2% | ExoPlayer:Playb 2%
+LAB weakline end pass=3 peak=fragment
+LAB  285.2 measured 2261 kbps
+LAB weakline verdict pass=3 peak=fragment first=4003 stalls=0 blips=16 frozen_ms=438 longest_ms=91 time=480p:90%,360p:10%
+LAB weakline begin pass=4 peak=window
+LAB device kind=DeviceKind.phone sw=411.0
+LAB weakline line 4mbit for 40s
+LAB    0.0 LAB title: opening Sintel
+LAB    1.2 play server granted in 1215 ms, 4 rungs
+LAB    1.2 play rung 480p 912 kbps (choice auto, measured - kbps)
+LAB    1.3 stream lanes=6 peak=window
+LAB    1.9 stream cache: a new film, sealed
+LAB    2.0 play through the ladder on ExoPlayer
+LAB    2.0 play: opening the player
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
+LAB cpu app 59% · 9.6fps · 1.raster 30% | pool-thread 21% | .innocent.media 3% | RenderThread 2%
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
+LAB    3.0 hwdec -> auto
+LAB    3.1 open ladder (exo) start=0s autoplay=true rung=auto first=480
+LAB    3.2 wakelock playing=true bg=false priv=false pos=0ms
+LAB    3.2 open ok
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
+LAB    3.8 stream index 0.0 MB at 0.0 MB
+LAB    4.5 fg stream: watching
+LAB    4.7 hls: 480p index, 444 segments, average 912, peak 2s 1591, 10s 1224, 20s 1174 kbps
+LAB    4.7 hls: 480p playlist, 444 segments
+LAB    4.9 exo tracks 480,720,360,240 selected=4 adaptive=true peaks=1174,2168,745,394 kbps
+LAB    5.4 hls jump: answer 727 ms, first byte 730 ms, segment 1624 ms (65536 B)
+LAB    5.7 exo rung 480p 1000 kbps
+LAB    6.3 first frame 4290 ms
+LAB    6.4 stream index 0.0 MB at 0.0 MB
+LAB    7.1 hls: 720p index, 444 segments, average 1683, peak 2s 3052, 10s 2317, 20s 2212 kbps
+LAB    7.6 hls: 360p index, 444 segments, average 578, peak 2s 976, 10s 754, 20s 725 kbps
+LAB    8.2 hls jump: answer 640 ms, first byte 641 ms, segment 1700 ms (65536 B)
+LAB    8.4 hls jump: answer 738 ms, first byte 934 ms, segment 1925 ms (65536 B)
+LAB    8.6 line 1577 kbps, in a read
+LAB   10.5 line 2528 kbps, in a read
+LAB   12.5 line 1635 kbps, in a read
+LAB cpu app 39% · 9.9fps · 1.raster 24% | .innocent.media 6% | ExoPlayer:Playb 2% | MediaCodec_loop 2% | DartWorker 1%
+LAB engine update ok ALREADY_UP_TO_DATE 2026.10.26 -> 2026.10.26
+LAB   14.4 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
+LAB   14.5 line 2080 kbps, in a read
+LAB   14.9 measured 2003 kbps
+LAB   17.5 line 2757 kbps, in a read
+LAB   19.5 line 1708 kbps, in a read
+LAB   21.5 line 1169 kbps, in a read
+LAB cpu app 37% · 13.1fps · 1.raster 21% | .innocent.media 5% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | HwBinder:9656 2% | DartWorker 1%
+LAB   22.9 hls: 360p playlist, 444 segments
+LAB   23.3 line 1736 kbps, a read
+LAB   23.3 measured 1736 kbps
+LAB   23.8 stream index 0.0 MB at 0.0 MB
+LAB   24.4 hls jump: answer 408 ms, first byte 418 ms, segment 1186 ms (143699 B)
+LAB   24.4 hls: 240p index, 444 segments, average 306, peak 2s 507, 10s 394, 20s 380 kbps
+LAB   24.7 hls jump: answer 505 ms, first byte 506 ms, segment 848 ms (65536 B)
+LAB   25.6 line 2523 kbps, in a read
+LAB   26.9 rebuffer start (ahead 24535 ms)
+LAB   26.9 rebuffer end 6 ms
+LAB   27.6 hls jump: answer 455 ms, first byte 457 ms, segment 1452 ms (301047 B)
+LAB   30.6 line 1508 kbps, in a read
+LAB cpu app 37% · 11.6fps · 1.raster 19% | .innocent.media 5% | MediaCodec_loop 4% | HwBinder:9656 2% | ExoPlayer:Playb 2% | flutter-worker- 1%
+LAB weakline line 900kbit for 120s
+LAB   34.6 line 2663 kbps, in a read
+LAB   35.0 line 1995 kbps, a read
+LAB   35.0 measured 1995 kbps
+LAB   35.2 rebuffer start (ahead 30848 ms)
+LAB   35.2 rebuffer end 4 ms
+LAB   37.5 line 667 kbps, in a read
+LAB   39.5 line 1017 kbps, in a read
+LAB cpu app 38% · 13.3fps · 1.raster 22% | .innocent.media 5% | MediaCodec_loop 4% | ExoPlayer:Playb 2% | HwBinder:9656 2% | DartWorker 1%
+LAB   44.9 exo rung 360p 600 kbps
+LAB   45.8 rebuffer start (ahead 28048 ms)
+LAB   45.8 rebuffer end 4 ms
+LAB   49.7 rebuffer start (ahead 28508 ms)
+LAB   49.7 rebuffer end 17 ms
+LAB   51.7 exo rung 480p 1000 kbps
+LAB   52.6 rebuffer start (ahead 28220 ms)
+LAB cpu app 42% · 12.0fps · 1.raster 28% | .innocent.media 4% | MediaCodec_loop 4% | ExoPlayer:Playb 2% | HwBinder:9656 2%
+LAB   52.9 rebuffer end 197 ms
+LAB   53.5 line 126 kbps, in a read
+LAB   55.5 line 1178 kbps, in a read
+LAB   55.6 line 831 kbps, a read
+LAB   55.6 measured 831 kbps
+LAB   58.5 rebuffer start (ahead 29351 ms)
+LAB   58.5 rebuffer end 16 ms
+LAB   62.2 line 64 kbps, in a read
+LAB cpu app 40% · 11.4fps · 1.raster 26% | .innocent.media 4% | MediaCodec_loop 4% | ExoPlayer:Playb 2% | HwBinder:9656 2%
+LAB   64.2 line 655 kbps, in a read
+LAB   66.2 line 1603 kbps, in a read
+LAB   66.3 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
+LAB   68.2 line 198 kbps, in a read
+LAB   68.5 rebuffer start (ahead 29142 ms)
+LAB   68.5 rebuffer end 75 ms
+LAB   70.2 line 1712 kbps, in a read
+LAB   72.2 line 491 kbps, in a read
+LAB cpu app 37% · 13.6fps · 1.raster 23% | .innocent.media 4% | MediaCodec_loop 3% | HwBinder:9656 2% | ExoPlayer:Playb 2%
+LAB   74.2 line 1344 kbps, in a read
+LAB   76.0 line 848 kbps, a read
+LAB   76.0 measured 848 kbps
+LAB   78.6 line 370 kbps, in a read
+LAB   80.5 line 1321 kbps, in a read
+LAB   82.5 line 853 kbps, in a read
+LAB cpu app 39% · 12.8fps · 1.raster 25% | .innocent.media 4% | MediaCodec_loop 4% | HwBinder:9656 2% | ExoPlayer:Playb 2%
+LAB   86.1 rebuffer start (ahead 39119 ms)
+LAB   86.1 rebuffer end 1 ms
+LAB   88.6 line 130 kbps, in a read
+LAB   90.6 line 1533 kbps, in a read
+LAB   92.6 line 794 kbps, in a read
+LAB cpu app 37% · 11.8fps · 1.raster 23% | .innocent.media 4% | MediaCodec_loop 3% | HwBinder:9656 2% | ExoPlayer:Playb 2%
+LAB   96.1 measured 855 kbps
+LAB  101.7 rebuffer start (ahead 39061 ms)
+LAB  101.7 rebuffer end 7 ms
+LAB cpu app 38% · 13.0fps · 1.raster 24% | MediaCodec_loop 4% | .innocent.media 3% | HwBinder:9656 2% | ExoPlayer:Playb 2%
+LAB  110.6 rebuffer start (ahead 45129 ms)
+LAB  110.6 rebuffer end 23 ms
+LAB cpu app 36% · 13.3fps · 1.raster 22% | .innocent.media 4% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | HwBinder:9656 2%
+LAB  116.1 measured 863 kbps
+LAB  122.6 line 425 kbps, in a read
+LAB cpu app 36% · 12.0fps · 1.raster 24% | .innocent.media 3% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | HwBinder:9656 2%
+LAB  124.6 line 1476 kbps, in a read
+LAB  126.6 line 850 kbps, in a read
+LAB cpu app 43% · 13.5fps · 1.raster 28% | .innocent.media 4% | MediaCodec_loop 3% | HwBinder:9656 2% | ExoPlayer:Playb 2%
+LAB  136.6 line 570 kbps, in a read
+LAB  136.8 line 830 kbps, a read
+LAB  136.8 measured 830 kbps
+LAB  138.8 rebuffer start (ahead 42982 ms)
+LAB  138.8 rebuffer end 5 ms
+LAB cpu app 38% · 12.1fps · 1.raster 25% | MediaCodec_loop 4% | .innocent.media 3% | HwBinder:9656 2% | ExoPlayer:Playb 2%
+LAB  143.3 line 132 kbps, in a read
+LAB  145.4 line 1570 kbps, in a read
+LAB  147.4 line 834 kbps, in a read
+LAB cpu app 38% · 13.1fps · 1.raster 24% | .innocent.media 4% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | HwBinder:9656 2%
+LAB weakline line 3mbit for 60s
+LAB  155.4 line 315 kbps, in a read
+LAB  157.1 line 847 kbps, a read
+LAB  157.1 measured 847 kbps
+LAB  157.7 rebuffer start (ahead 38572 ms)
+LAB  157.7 rebuffer end 36 ms
+LAB  159.5 line 2623 kbps, in a read
+LAB  161.5 line 1905 kbps, in a read
+LAB cpu app 40% · 12.8fps · 1.raster 25% | .innocent.media 5% | MediaCodec_loop 3% | HwBinder:9656 2% | ExoPlayer:Playb 2% | DartWorker 1%
+LAB  163.5 line 2814 kbps, a read
+LAB  163.5 measured 2814 kbps
+LAB  167.0 rebuffer start (ahead 52105 ms)
+LAB  167.0 rebuffer end 33 ms
+LAB  169.9 measured 2827 kbps
+LAB cpu app 41% · 11.8fps · 1.raster 23% | .innocent.media 6% | MediaCodec_loop 4% | HwBinder:9656 2% | ExoPlayer:Playb 2% | flutter-worker- 2%
+LAB  175.6 rebuffer start (ahead 60001 ms)
+LAB  175.6 rebuffer end 10 ms
+LAB  177.2 measured 2427 kbps
+LAB  180.8 rebuffer start (ahead 55195 ms)
+LAB  180.8 rebuffer end 10 ms
+LAB cpu app 39% · 13.5fps · 1.raster 25% | MediaCodec_loop 4% | .innocent.media 3% | HwBinder:9656 2% | ExoPlayer:Playb 2%
+LAB  189.3 rebuffer start (ahead 46968 ms)
+LAB  189.4 rebuffer end 80 ms
+LAB cpu app 39% · 12.0fps · 1.raster 29% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | HwBinder:9656 2% | .innocent.media 2%
+LAB cpu app 37% · 13.5fps · 1.raster 27% | MediaCodec_loop 4% | .innocent.media 2% | HwBinder:9656 2% | ExoPlayer:Playb 2%
+LAB  207.8 fg stream: watching
+LAB  209.9 line 1958 kbps, in a read
+LAB  211.9 line 2645 kbps, in a read
+LAB cpu app 39% · 13.1fps · 1.raster 24% | .innocent.media 4% | MediaCodec_loop 4% | HwBinder:9656 2% | ExoPlayer:Playb 2%
+LAB  213.8 line 1935 kbps, in a read
+LAB weakline line off for 8s
+LAB  215.8 line 714 kbps, in a read
+LAB  217.8 line 64 kbps, in a read
+LAB  220.9 line 1117 kbps, a read
+LAB  220.9 measured 1117 kbps
+LAB weakline line 3mbit for 60s
+LAB cpu app 39% · 12.0fps · 1.raster 27% | MediaCodec_loop 4% | HwBinder:9656 2% | .innocent.media 2% | ExoPlayer:Playb 2%
+LAB  223.8 fg stream: watching
+LAB  224.6 hls jump: answer 3080 ms, first byte 3096 ms, segment 3935 ms (115944 B)
+LAB  225.8 line 1668 kbps, in a read
+LAB  229.8 line 2351 kbps, in a read
+LAB  232.2 measured 1981 kbps
+LAB cpu app 37% · 13.5fps · 1.raster 21% | .innocent.media 5% | MediaCodec_loop 5% | HwBinder:9656 2% | ExoPlayer:Playb 2% | flutter-worker- 1%
+LAB  233.7 rebuffer start (ahead 43605 ms)
+LAB  233.7 rebuffer end 13 ms
+LAB  238.9 line 1618 kbps, in a read
+LAB  240.9 line 1156 kbps, in a read
+LAB cpu app 41% · 11.8fps · 1.raster 25% | .innocent.media 5% | MediaCodec_loop 3% | HwBinder:9656 2% | ExoPlayer:Playb 2%
+LAB  243.6 line 1555 kbps, a read
+LAB  243.6 measured 1555 kbps
+LAB  248.3 line 2237 kbps, in a read
+LAB  252.1 rebuffer start (ahead 54480 ms)
+LAB  252.1 rebuffer end 1 ms
+LAB  252.2 measured 2102 kbps
+LAB cpu app 40% · 13.0fps · 1.raster 23% | .innocent.media 5% | MediaCodec_loop 4% | HwBinder:9656 3% | ExoPlayer:Playb 2% | DartWorker 1%
+LAB  258.6 line 1406 kbps, in a read
+LAB  259.6 rebuffer start (ahead 59188 ms)
+LAB  259.6 rebuffer end 2 ms
+LAB  262.3 measured 1725 kbps
+LAB cpu app 43% · 11.9fps · 1.raster 26% | .innocent.media 5% | MediaCodec_loop 4% | HwBinder:9656 2% | ExoPlayer:Playb 1% | DartWorker 1%
+LAB  270.9 line 1999 kbps, in a read
+LAB cpu app 37% · 13.5fps · 1.raster 24% | .innocent.media 4% | MediaCodec_loop 3% | HwBinder:9656 2% | ExoPlayer:Playb 2%
+LAB  272.8 measured 1700 kbps
+LAB  278.9 rebuffer start (ahead 44857 ms)
+LAB  278.9 rebuffer end 2 ms
+LAB cpu app 36% · 12.0fps · 1.raster 27% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | HwBinder:9656 2% | .innocent.media 2%
+LAB  283.8 rebuffer start (ahead 40315 ms)
+LAB  283.8 rebuffer end 4 ms
+LAB weakline end pass=4 peak=window
+LAB weakline verdict pass=4 peak=window first=4290 stalls=0 blips=21 frozen_ms=546 longest_ms=197 time=480p:98%,360p:2%
+LAB weakline begin pass=5 peak=fragment
+LAB device kind=DeviceKind.phone sw=411.0
+LAB weakline line 4mbit for 40s
+LAB    0.0 LAB title: opening Sintel
+LAB    1.6 play server granted in 1599 ms, 4 rungs
+LAB    1.6 play rung 480p 912 kbps (choice auto, measured - kbps)
+LAB    1.6 stream lanes=6 peak=fragment
+LAB    1.7 stream cache: a new film, sealed
+LAB    1.8 play through the ladder on ExoPlayer
+LAB    1.8 play: opening the player
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
+LAB    2.5 hwdec -> auto
+LAB    2.5 open ladder (exo) start=0s autoplay=true rung=auto first=480
+LAB    2.5 wakelock playing=true bg=false priv=false pos=0ms
+LAB    2.5 open ok
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
+LAB cpu app 67% · 9.0fps · 1.raster 34% | pool-thread 24% | .innocent.media 3% | RenderThread 3%
+LAB    3.2 stream index 0.0 MB at 0.0 MB
+LAB    3.6 fg stream: watching
+LAB    3.7 hls: 480p index, 444 segments, average 912, peak 2s 1591, 10s 1224, 20s 1174 kbps
+LAB    3.7 hls: 480p playlist, 444 segments
+LAB    4.1 exo tracks 480,720,360,240 selected=4 adaptive=true peaks=1591,2105,723,382 kbps
+LAB    4.2 hls jump: answer 491 ms, first byte 494 ms, segment 1017 ms (65536 B)
+LAB    4.6 exo rung 480p 1000 kbps
+LAB    5.1 stream index 0.0 MB at 0.0 MB
+LAB    5.2 first frame 3257 ms
+LAB    5.7 hls: 360p index, 444 segments, average 578, peak 2s 976, 10s 754, 20s 725 kbps
+LAB    5.8 hls: 720p index, 444 segments, average 1683, peak 2s 3052, 10s 2317, 20s 2212 kbps
+LAB    6.1 hls jump: answer 364 ms, first byte 365 ms, segment 956 ms (65536 B)
+LAB    6.3 hls jump: answer 413 ms, first byte 468 ms, segment 1147 ms (65536 B)
+LAB    7.6 line 1775 kbps, in a read
+LAB    8.1 hls: 360p playlist, 444 segments
+LAB    8.8 stream index 0.0 MB at 0.0 MB
+LAB    9.4 hls: 240p index, 444 segments, average 306, peak 2s 507, 10s 394, 20s 380 kbps
+LAB    9.6 hls jump: answer 357 ms, first byte 434 ms, segment 1240 ms (176371 B)
+LAB    9.8 hls jump: answer 471 ms, first byte 624 ms, segment 1047 ms (65536 B)
+LAB   10.8 line 2336 kbps, in a read
+LAB   12.5 exo rung 360p 600 kbps
+LAB cpu app 39% · 10.1fps · 1.raster 22% | .innocent.media 6% | ExoPlayer:Playb 3% | MediaCodec_loop 2% | HwBinder:10768_ 1%
+LAB   13.3 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
+LAB   13.9 rebuffer start (ahead 17158 ms)
+LAB   14.0 rebuffer end 55 ms
+LAB   14.2 measured 2131 kbps
+LAB   15.3 hls jump: answer 377 ms, first byte 437 ms, segment 1168 ms (133649 B)
+LAB engine update ok ALREADY_UP_TO_DATE null -> 2026.10.26
+LAB   16.5 line 1474 kbps, in a read
+LAB   18.2 hls jump: answer 832 ms, first byte 839 ms, segment 1327 ms (127013 B)
+LAB   19.8 line 2838 kbps, in a read
+LAB   21.8 line 3916 kbps, in a read
+LAB   22.0 measured 3278 kbps
+LAB cpu app 42% · 10.8fps · 1.raster 24% | .innocent.media 5% | ExoPlayer:Playb 3% | MediaCodec_loop 3% | HwBinder:10768_ 2% | Jit thread pool 1%
+LAB   24.1 hls jump: answer 1177 ms, first byte 1182 ms, segment 2235 ms (381104 B)
+LAB   25.1 line 2785 kbps, in a read
+LAB   27.1 line 3663 kbps, in a read
+LAB   28.1 measured 3303 kbps
+LAB   31.3 exo rung 480p 1000 kbps
+LAB   31.4 hls: 720p playlist, 444 segments
+LAB   32.3 line 2711 kbps, a read
+LAB   32.3 measured 2711 kbps
+LAB   32.4 rebuffer start (ahead 26059 ms)
+LAB   32.4 rebuffer end 3 ms
+LAB cpu app 43% · 12.8fps · 1.raster 24% | .innocent.media 6% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | HwBinder:10768_ 2% | DartWorker 2%
+LAB weakline line 900kbit for 120s
+LAB   35.0 hls jump: answer 1361 ms, first byte 1384 ms, segment 3157 ms (530422 B)
+LAB   37.3 line 2006 kbps, in a read
+LAB   37.8 exo rung 360p 600 kbps
+LAB   38.5 rebuffer start (ahead 25134 ms)
+LAB   38.6 rebuffer end 50 ms
+LAB   39.4 line 579 kbps, in a read
+LAB   41.3 line 64 kbps, in a read
+LAB   42.3 hls: 240p playlist, 444 segments
+LAB   42.4 line 1546 kbps, a read
+LAB   42.4 measured 1546 kbps
+LAB cpu app 43% · 11.1fps · 1.raster 28% | .innocent.media 5% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | HwBinder:10768_ 2%
+LAB   46.4 hls jump: answer 3109 ms, first byte 3111 ms, segment 3968 ms (92327 B)
+LAB   48.4 exo rung 480p 1000 kbps
+LAB   48.9 rebuffer start (ahead 19262 ms)
+LAB   48.9 rebuffer end 2 ms
+LAB   50.1 hls jump: answer 1680 ms, first byte 1682 ms, segment 3626 ms (174234 B)
+LAB   50.3 line 676 kbps, in a read
+LAB   52.3 rebuffer start (ahead 19528 ms)
+LAB   52.4 rebuffer end 2 ms
+LAB cpu app 42% · 12.5fps · 1.raster 29% | .innocent.media 3% | MediaCodec_loop 3% | HwBinder:10768_ 2% | ExoPlayer:Playb 2%
+LAB   54.6 hls jump: answer 1831 ms, first byte 1832 ms, segment 2706 ms (91523 B)
+LAB   57.7 line 873 kbps, in a read
+LAB   59.4 exo rung 720p 2000 kbps
+LAB   60.6 rebuffer start (ahead 31173 ms)
+LAB   60.6 rebuffer end 2 ms
+LAB cpu app 44% · 11.0fps · 1.raster 27% | .innocent.media 5% | MediaCodec_loop 4% | HwBinder:10768_ 2% | ExoPlayer:Playb 2%
+LAB   65.3 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
+LAB   65.9 rebuffer start (ahead 51934 ms)
+LAB   66.0 rebuffer end 75 ms
+LAB   66.2 exo rung 240p 300 kbps
+LAB   67.3 rebuffer start (ahead 52850 ms)
+LAB   67.3 rebuffer end 44 ms
+LAB   67.8 line 650 kbps, in a read
+LAB   68.8 exo rung 360p 600 kbps
+LAB   69.5 rebuffer start (ahead 52095 ms)
+LAB   69.6 rebuffer end 50 ms
+LAB   69.9 line 64 kbps, in a read
+LAB cpu app 40% · 10.1fps · 1.raster 27% | .innocent.media 4% | MediaCodec_loop 3% | HwBinder:10768_ 2% | ExoPlayer:Playb 2%
+LAB   73.4 exo rung 240p 300 kbps
+LAB   73.7 line 839 kbps, a read
+LAB   73.7 measured 839 kbps
+LAB   74.6 rebuffer start (ahead 59915 ms)
+LAB   74.6 rebuffer end 0 ms
+LAB cpu app 41% · 11.6fps · 1.raster 30% | MediaCodec_loop 3% | .innocent.media 2% | HwBinder:10768_ 2% | ExoPlayer:Playb 2%
+LAB cpu app 44% · 14.1fps · 1.raster 33% | MediaCodec_loop 4% | ExoPlayer:Playb 2% | .innocent.media 2% | HwBinder:10768_ 2%
+LAB   94.0 rebuffer start (ahead 41153 ms)
+LAB   94.0 rebuffer end 3 ms
+LAB  101.1 rebuffer start (ahead 34466 ms)
+LAB  101.1 rebuffer end 1 ms
+LAB cpu app 41% · 13.7fps · 1.raster 31% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | .innocent.media 2% | HwBinder:10768_ 2%
+LAB  106.6 fg stream: watching
+LAB  112.6 line 64 kbps, in a read
+LAB cpu app 41% · 12.6fps · 1.raster 28% | MediaCodec_loop 3% | .innocent.media 3% | ExoPlayer:Playb 2% | HwBinder:10768_ 2%
+LAB  114.6 line 1747 kbps, in a read
+LAB  116.6 line 332 kbps, in a read
+LAB  118.6 line 1358 kbps, in a read
+LAB  120.6 line 788 kbps, in a read
+LAB cpu app 44% · 13.8fps · 1.raster 31% | .innocent.media 4% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | HwBinder:10768_ 2%
+LAB  124.6 line 394 kbps, in a read
+LAB  126.1 line 858 kbps, a read
+LAB  126.1 measured 858 kbps
+LAB cpu app 45% · 12.7fps · 1.raster 33% | MediaCodec_loop 4% | .innocent.media 2% | ExoPlayer:Playb 2% | HwBinder:10768_ 2%
+LAB cpu app 43% · 14.1fps · 1.raster 33% | MediaCodec_loop 3% | .innocent.media 2% | ExoPlayer:Playb 2% | HwBinder:10768_ 2%
+LAB  152.0 fg stream: watching
+LAB cpu app 43% · 14.2fps · 1.raster 31% | MediaCodec_loop 3% | .innocent.media 2% | ExoPlayer:Playb 2% | HwBinder:10768_ 2%
+LAB  154.0 line 558 kbps, in a read
+LAB weakline line 3mbit for 60s
+LAB  156.0 line 1328 kbps, in a read
+LAB  158.0 line 2890 kbps, in a read
+LAB  158.3 line 1600 kbps, a read
+LAB  158.4 measured 1600 kbps
+LAB  160.0 hls jump: answer 1256 ms, first byte 1284 ms, segment 1759 ms (155891 B)
+LAB  161.5 line 2151 kbps, in a read
+LAB cpu app 44% · 12.2fps · 1.raster 27% | .innocent.media 6% | MediaCodec_loop 3% | HwBinder:10768_ 2% | ExoPlayer:Playb 2% | flutter-worker- 1%
+LAB  163.5 line 3367 kbps, in a read
+LAB  165.5 measured 2785 kbps
+LAB  170.2 measured 2825 kbps
+LAB  172.6 hls jump: answer 842 ms, first byte 849 ms, segment 2423 ms (304738 B)
+LAB cpu app 44% · 13.5fps · 1.raster 26% | .innocent.media 6% | MediaCodec_loop 3% | HwBinder:10768_ 2% | ExoPlayer:Playb 2% | DartWorker 1%
+LAB  173.0 line 1776 kbps, in a read
+LAB  177.0 line 2268 kbps, in a read
+LAB  178.9 measured 2128 kbps
+LAB  181.3 line 1319 kbps, in a read
+LAB cpu app 44% · 13.6fps · 1.raster 28% | .innocent.media 5% | MediaCodec_loop 4% | ExoPlayer:Playb 2% | HwBinder:10768_ 2% | DartWorker 1%
+LAB  183.3 line 845 kbps, in a read
+LAB  184.9 exo rung 360p 600 kbps
+LAB  185.3 line 1098 kbps, in a read
+LAB  186.1 rebuffer start (ahead 30256 ms)
+LAB  186.2 rebuffer end 121 ms
+LAB  190.7 rebuffer start (ahead 32407 ms)
+LAB  190.7 rebuffer end 49 ms
+LAB  191.3 line 1824 kbps, in a read
+LAB  192.3 line 1292 kbps, a read
+LAB  192.3 measured 1292 kbps
+LAB cpu app 41% · 11.6fps · 1.raster 26% | .innocent.media 5% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | HwBinder:10768_ 2%
+LAB  195.0 line 2269 kbps, in a read
+LAB  195.7 exo rung 480p 1000 kbps
+LAB  196.9 rebuffer start (ahead 36260 ms)
+LAB  196.9 rebuffer end 2 ms
+LAB  200.0 measured 2411 kbps
+LAB  202.5 line 1442 kbps, in a read
+LAB cpu app 43% · 11.7fps · 1.raster 26% | .innocent.media 6% | MediaCodec_loop 3% | HwBinder:10768_ 2% | DartWorker 1% | ExoPlayer:Playb 1%
+LAB  204.4 line 1880 kbps, in a read
+LAB  205.5 rebuffer start (ahead 47849 ms)
+LAB  205.5 rebuffer end 23 ms
+LAB  208.5 line 2409 kbps, in a read
+LAB  208.9 measured 1988 kbps
+LAB cpu app 42% · 12.8fps · 1.raster 23% | .innocent.media 6% | MediaCodec_loop 4% | HwBinder:10768_ 3% | ExoPlayer:Playb 2% | flutter-worker- 1%
+LAB weakline line off for 8s
+LAB  217.3 line 197 kbps, in a read
+LAB  217.3 rebuffer start (ahead 56511 ms)
+LAB  217.3 rebuffer end 10 ms
+LAB  219.3 line 64 kbps, in a read
+LAB  221.7 line 1171 kbps, a read
+LAB  221.7 measured 1171 kbps
+LAB cpu app 37% · 11.7fps · 1.raster 25% | .innocent.media 3% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | HwBinder:10768_ 2%
+LAB weakline line 3mbit for 60s
+LAB  224.8 fg stream: watching
+LAB  225.9 hls jump: answer 3232 ms, first byte 3238 ms, segment 4280 ms (231530 B)
+LAB  226.8 line 2442 kbps, in a read
+LAB  231.4 measured 2530 kbps
+LAB cpu app 40% · 13.2fps · 1.raster 24% | .innocent.media 5% | MediaCodec_loop 3% | HwBinder:10768_ 2% | ExoPlayer:Playb 2%
+LAB  239.0 measured 2385 kbps
+LAB cpu app 38% · 11.8fps · 1.raster 24% | .innocent.media 4% | MediaCodec_loop 3% | HwBinder:10768_ 2% | ExoPlayer:Playb 2%
+LAB cpu app 40% · 13.6fps · 1.raster 31% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | HwBinder:10768_ 2% | .innocent.media 2%
+LAB cpu app 38% · 13.4fps · 1.raster 28% | MediaCodec_loop 3% | HwBinder:10768_ 2% | ExoPlayer:Playb 2% | .innocent.media 2%
+LAB  264.9 rebuffer start (ahead 30298 ms)
+LAB  265.0 rebuffer end 26 ms
+LAB  267.0 fg stream: watching
+LAB  269.0 line 1590 kbps, in a read
+LAB cpu app 41% · 12.0fps · 1.raster 27% | .innocent.media 4% | MediaCodec_loop 3% | HwBinder:10768_ 2% | ExoPlayer:Playb 1%
+LAB  275.0 line 2033 kbps, in a read
+LAB  276.1 measured 1838 kbps
+LAB cpu app 40% · 13.0fps · 1.raster 24% | .innocent.media 5% | MediaCodec_loop 3% | HwBinder:10768_ 2% | ExoPlayer:Playb 2% | DartWorker 1%
+LAB  284.8 measured 2071 kbps
+LAB weakline end pass=5 peak=fragment
+LAB weakline verdict pass=5 peak=fragment first=3257 stalls=0 blips=18 frozen_ms=518 longest_ms=121 time=720p:2%,480p:41%,360p:16%,240p:41%
+LAB weakline begin pass=6 peak=window
+LAB device kind=DeviceKind.phone sw=411.0
+LAB weakline line 4mbit for 40s
+LAB    0.0 LAB title: opening Sintel
+LAB    1.2 play server granted in 1206 ms, 4 rungs
+LAB    1.2 play rung 480p 912 kbps (choice auto, measured - kbps)
+LAB    1.3 stream lanes=6 peak=window
+LAB    1.6 stream cache: a new film, sealed
+LAB    1.6 play through the ladder on ExoPlayer
+LAB    1.6 play: opening the player
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
+LAB    2.3 hwdec -> auto
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
+LAB    2.3 open ladder (exo) start=0s autoplay=true rung=auto first=480
+LAB    2.5 wakelock playing=true bg=false priv=false pos=0ms
+LAB    2.5 open ok
+LAB cpu app 68% · 9.4fps · 1.raster 36% | pool-thread 24% | .innocent.media 3% | RenderThread 3%
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
+LAB    3.2 stream index 0.0 MB at 0.0 MB
+LAB    3.9 fg stream: watching
+LAB    3.9 hls: 480p index, 444 segments, average 912, peak 2s 1591, 10s 1224, 20s 1174 kbps
+LAB    3.9 hls: 480p playlist, 444 segments
+LAB    4.1 exo tracks 480,720,360,240 selected=4 adaptive=true peaks=1174,2168,745,394 kbps
+LAB    4.3 hls jump: answer 645 ms, first byte 653 ms, segment 1128 ms (65536 B)
+LAB    4.6 exo rung 480p 1000 kbps
+LAB    4.9 first frame 3242 ms
+LAB    5.1 stream index 0.0 MB at 0.0 MB
+LAB    5.8 hls: 360p index, 444 segments, average 578, peak 2s 976, 10s 754, 20s 725 kbps
+LAB    6.1 hls: 720p index, 444 segments, average 1683, peak 2s 3052, 10s 2317, 20s 2212 kbps
+LAB    6.9 hls jump: answer 587 ms, first byte 588 ms, segment 1741 ms (65536 B)
+LAB    7.1 hls jump: answer 660 ms, first byte 664 ms, segment 1671 ms (65536 B)
+LAB    7.4 line 1801 kbps, in a read
+LAB   11.3 line 2311 kbps, in a read
+LAB cpu app 41% · 10.7fps · 1.raster 25% | .innocent.media 5% | ExoPlayer:Playb 2% | MediaCodec_loop 2% | HeapTaskDaemon 1% | HwBinder:11981_ 1%
+LAB   13.1 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
+LAB   13.7 measured 2003 kbps
+LAB engine update ok ALREADY_UP_TO_DATE 2026.10.26 -> 2026.10.26
+LAB   14.8 rebuffer start (ahead 11813 ms)
+LAB   14.9 rebuffer end 97 ms
+LAB   18.3 line 3192 kbps, in a read
+LAB   19.3 measured 3321 kbps
+LAB   22.0 line 916 kbps, in a read
+LAB cpu app 41% · 11.1fps · 1.raster 21% | .innocent.media 5% | MediaCodec_loop 4% | ExoPlayer:Playb 2% | HwBinder:11981_ 2% | Jit thread pool 1%
+LAB   24.0 line 1216 kbps, in a read
+LAB   26.0 line 1755 kbps, in a read
+LAB   30.2 measured 1645 kbps
+LAB cpu app 40% · 13.2fps · 1.raster 21% | .innocent.media 5% | MediaCodec_loop 4% | ExoPlayer:Playb 2% | HwBinder:11981_ 2% | DartWorker 1%
+LAB weakline line 900kbit for 120s
+LAB   35.9 rebuffer start (ahead 32363 ms)
+LAB   35.9 rebuffer end 39 ms
+LAB   36.6 line 935 kbps, in a read
+LAB   40.6 line 622 kbps, in a read
+LAB cpu app 41% · 12.1fps · 1.raster 25% | .innocent.media 4% | MediaCodec_loop 4% | HwBinder:11981_ 2% | ExoPlayer:Playb 2%
+LAB   42.6 line 1009 kbps, in a read
+LAB   47.1 measured 1015 kbps
+LAB cpu app 39% · 13.3fps · 1.raster 24% | .innocent.media 4% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | HwBinder:11981_ 2%
+LAB cpu app 42% · 13.1fps · 1.raster 26% | .innocent.media 4% | MediaCodec_loop 4% | HwBinder:11981_ 3% | ExoPlayer:Playb 2%
+LAB   64.9 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
+LAB   67.2 measured 861 kbps
+LAB cpu app 40% · 13.1fps · 1.raster 25% | .innocent.media 4% | MediaCodec_loop 3% | HwBinder:11981_ 2% | ExoPlayer:Playb 2%
+LAB cpu app 40% · 11.9fps · 1.raster 26% | .innocent.media 4% | MediaCodec_loop 4% | ExoPlayer:Playb 2% | HwBinder:11981_ 2%
+LAB   87.3 measured 858 kbps
+LAB cpu app 41% · 13.1fps · 1.raster 27% | .innocent.media 4% | MediaCodec_loop 4% | HwBinder:11981_ 2% | ExoPlayer:Playb 2%
+LAB   93.8 line 688 kbps, in a read
+LAB   93.9 rebuffer start (ahead 41450 ms)
+LAB   94.0 rebuffer end 101 ms
+LAB   95.8 line 1050 kbps, in a read
+LAB cpu app 39% · 13.4fps · 1.raster 23% | .innocent.media 4% | MediaCodec_loop 3% | HwBinder:11981_ 2% | ExoPlayer:Playb 2%
+LAB  103.2 rebuffer start (ahead 45966 ms)
+LAB  103.2 rebuffer end 11 ms
+LAB  107.4 measured 853 kbps
+LAB cpu app 41% · 11.8fps · 1.raster 26% | .innocent.media 4% | MediaCodec_loop 4% | HwBinder:11981_ 2% | ExoPlayer:Playb 2%
+LAB  117.6 rebuffer start (ahead 49018 ms)
+LAB  117.6 rebuffer end 9 ms
+LAB cpu app 45% · 13.4fps · 1.raster 31% | .innocent.media 4% | MediaCodec_loop 4% | ExoPlayer:Playb 2% | HwBinder:11981_ 2%
+LAB  124.0 line 64 kbps, in a read
+LAB  127.5 rebuffer start (ahead 45473 ms)
+LAB  127.5 rebuffer end 4 ms
+LAB  127.5 line 855 kbps, a read
+LAB  127.5 measured 855 kbps
+LAB  130.1 line 383 kbps, in a read
+LAB  132.1 line 64 kbps, in a read
+LAB cpu app 38% · 13.3fps · 1.raster 26% | MediaCodec_loop 3% | .innocent.media 3% | HwBinder:11981_ 2% | ExoPlayer:Playb 2%
+LAB  134.1 line 2147 kbps, in a read
+LAB  136.1 line 868 kbps, in a read
+LAB  138.1 line 64 kbps, in a read
+LAB  140.1 line 1722 kbps, in a read
+LAB  142.1 line 827 kbps, in a read
+LAB cpu app 43% · 11.8fps · 1.raster 28% | .innocent.media 4% | MediaCodec_loop 3% | HwBinder:11981_ 2% | ExoPlayer:Playb 2%
+LAB  144.1 line 135 kbps, in a read
+LAB  146.1 line 1576 kbps, in a read
+LAB  146.9 rebuffer start (ahead 41811 ms)
+LAB  147.0 rebuffer end 130 ms
+LAB  147.9 line 850 kbps, a read
+LAB  147.9 measured 850 kbps
+LAB cpu app 40% · 13.1fps · 1.raster 27% | .innocent.media 3% | MediaCodec_loop 3% | HwBinder:11981_ 2% | ExoPlayer:Playb 2%
+LAB weakline line 3mbit for 60s
+LAB  158.5 line 2069 kbps, in a read
+LAB  160.0 line 1456 kbps, a read
+LAB  160.0 measured 1456 kbps
+LAB  162.5 line 2838 kbps, in a read
+LAB cpu app 40% · 12.9fps · 1.raster 24% | .innocent.media 5% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | HwBinder:11981_ 2% | DartWorker 1%
+LAB  166.4 measured 2826 kbps
+LAB cpu app 41% · 11.7fps · 1.raster 23% | .innocent.media 6% | MediaCodec_loop 3% | HwBinder:11981_ 2% | ExoPlayer:Playb 2% | DartWorker 2%
+LAB  173.1 measured 2720 kbps
+LAB  173.2 rebuffer start (ahead 59142 ms)
+LAB  173.2 rebuffer end 12 ms
+LAB  182.2 rebuffer start (ahead 50481 ms)
+LAB  182.3 rebuffer end 12 ms
+LAB cpu app 39% · 13.7fps · 1.raster 28% | MediaCodec_loop 3% | HwBinder:11981_ 3% | ExoPlayer:Playb 2% | .innocent.media 2%
+LAB  190.2 rebuffer start (ahead 42910 ms)
+LAB  190.2 rebuffer end 12 ms
+LAB cpu app 37% · 13.5fps · 1.raster 26% | MediaCodec_loop 4% | HwBinder:11981_ 2% | ExoPlayer:Playb 2% | .innocent.media 2%
+LAB  200.2 rebuffer start (ahead 33328 ms)
+LAB  200.2 rebuffer end 1 ms
+LAB cpu app 40% · 12.2fps · 1.raster 30% | MediaCodec_loop 4% | HwBinder:11981_ 2% | ExoPlayer:Playb 2% | .innocent.media 2%
+LAB  204.5 fg stream: watching
+LAB  207.0 rebuffer start (ahead 39201 ms)
+LAB  207.0 rebuffer end 4 ms
+LAB  210.5 line 1376 kbps, in a read
+LAB cpu app 40% · 13.0fps · 1.raster 24% | .innocent.media 5% | MediaCodec_loop 3% | HwBinder:11981_ 2% | ExoPlayer:Playb 2%
+LAB  213.2 line 1926 kbps, a read
+LAB  213.2 measured 1926 kbps
+LAB weakline line off for 8s
+LAB  217.7 line 64 kbps, in a read
+LAB  221.8 line 445 kbps, a read
+LAB cpu app 38% · 12.0fps · 1.raster 26% | MediaCodec_loop 4% | .innocent.media 3% | HwBinder:11981_ 2% | ExoPlayer:Playb 2%
+LAB weakline line 3mbit for 60s
+LAB  225.1 fg stream: watching
+LAB  226.3 hls jump: answer 3357 ms, first byte 3374 ms, segment 4528 ms (328895 B)
+LAB  226.9 rebuffer start (ahead 36023 ms)
+LAB  227.0 rebuffer end 41 ms
+LAB  227.1 line 2446 kbps, in a read
+LAB cpu app 40% · 13.1fps · 1.raster 25% | .innocent.media 5% | MediaCodec_loop 3% | HwBinder:11981_ 2% | ExoPlayer:Playb 2%
+LAB  232.8 measured 2189 kbps
+LAB  235.5 rebuffer start (ahead 44446 ms)
+LAB  235.5 rebuffer end 8 ms
+LAB  237.3 line 3076 kbps, in a read
+LAB  239.3 measured 2782 kbps
+LAB cpu app 41% · 12.9fps · 1.raster 23% | .innocent.media 6% | MediaCodec_loop 4% | ExoPlayer:Playb 2% | HwBinder:11981_ 1% | flutter-worker- 1%
+LAB  245.8 measured 2763 kbps
+LAB  252.4 measured 2712 kbps
+LAB cpu app 40% · 11.8fps · 1.raster 24% | .innocent.media 5% | MediaCodec_loop 4% | HwBinder:11981_ 2% | ExoPlayer:Playb 2% | DartWorker 1%
+LAB cpu app 37% · 13.2fps · 1.raster 28% | MediaCodec_loop 3% | .innocent.media 2% | ExoPlayer:Playb 2% | HwBinder:11981_ 2%
+LAB  263.0 rebuffer start (ahead 44712 ms)
+LAB  263.0 rebuffer end 6 ms
+LAB  272.5 rebuffer start (ahead 35675 ms)
+LAB  272.5 rebuffer end 63 ms
+LAB cpu app 40% · 13.5fps · 1.raster 30% | MediaCodec_loop 3% | HwBinder:11981_ 2% | ExoPlayer:Playb 2% | .innocent.media 2%
+LAB  279.6 fg stream: watching
+LAB  280.6 rebuffer start (ahead 43385 ms)
+LAB  280.7 rebuffer end 40 ms
+LAB  281.6 line 2274 kbps, in a read
+LAB cpu app 38% · 12.0fps · 1.raster 24% | MediaCodec_loop 4% | .innocent.media 3% | ExoPlayer:Playb 2% | HwBinder:11981_ 2%
+LAB  283.6 line 3021 kbps, in a read
+LAB weakline end pass=6 peak=window
+LAB  285.8 measured 2682 kbps
+LAB weakline verdict pass=6 peak=window first=3242 stalls=0 blips=17 frozen_ms=590 longest_ms=130 time=480p:100%
+LAB weakline begin pass=7 peak=fragment
+LAB device kind=DeviceKind.phone sw=411.0
+LAB weakline line 4mbit for 40s
+LAB    0.0 LAB title: opening Sintel
+LAB    1.2 play server granted in 1142 ms, 4 rungs
+LAB    1.2 play rung 480p 912 kbps (choice auto, measured - kbps)
+LAB    1.2 stream lanes=6 peak=fragment
+LAB    1.6 stream cache: a new film, sealed
+LAB    1.8 play through the ladder on ExoPlayer
+LAB    1.8 play: opening the player
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
+LAB cpu app 58% · 9.6fps · 1.raster 31% | pool-thread 19% | .innocent.media 3% | RenderThread 2%
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
+LAB    2.8 stream index 0.0 MB at 0.0 MB
+LAB    2.9 hwdec -> auto
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
+LAB    3.0 open ladder (exo) start=0s autoplay=true rung=auto first=480
+LAB    3.0 wakelock playing=true bg=false priv=false pos=0ms
+LAB    3.0 open ok
+LAB    3.3 fg stream: watching
+LAB    3.4 hls: 480p index, 444 segments, average 912, peak 2s 1591, 10s 1224, 20s 1174 kbps
+LAB    3.4 hls: 480p playlist, 444 segments
+LAB    3.8 exo tracks 480,720,360,240 selected=4 adaptive=true peaks=1591,2105,723,382 kbps
+LAB    3.8 hls jump: answer 384 ms, first byte 484 ms, segment 957 ms (65536 B)
+LAB    4.3 exo rung 480p 1000 kbps
+LAB    4.8 first frame 2824 ms
+LAB    5.1 stream index 0.0 MB at 0.0 MB
+LAB    6.3 hls: 720p index, 444 segments, average 1683, peak 2s 3052, 10s 2317, 20s 2212 kbps
+LAB    6.3 hls: 360p index, 444 segments, average 578, peak 2s 976, 10s 754, 20s 725 kbps
+LAB    6.8 rebuffer start (ahead 4344 ms)
+LAB    6.9 rebuffer end 24 ms
+LAB    6.9 hls jump: answer 717 ms, first byte 721 ms, segment 1797 ms (65536 B)
+LAB    6.9 hls jump: answer 645 ms, first byte 653 ms, segment 1805 ms (65536 B)
+LAB    7.3 line 2470 kbps, in a read
+LAB   12.0 hls: 360p playlist, 444 segments
+LAB   12.6 measured 2144 kbps
+LAB cpu app 36% · 10.0fps · 1.raster 20% | .innocent.media 6% | ExoPlayer:Playb 2% | MediaCodec_loop 2% | HwBinder:13064_ 2% | DartWorker 1%
+LAB   12.9 stream index 0.0 MB at 0.0 MB
+LAB   13.0 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
+LAB   13.8 hls: 240p index, 444 segments, average 306, peak 2s 507, 10s 394, 20s 380 kbps
+LAB   14.0 hls jump: answer 407 ms, first byte 429 ms, segment 1549 ms (141576 B)
+LAB   14.1 hls jump: answer 477 ms, first byte 484 ms, segment 1228 ms (65536 B)
+LAB   14.9 line 1506 kbps, in a read
+LAB engine update ok ALREADY_UP_TO_DATE null -> 2026.10.26
+LAB   16.9 line 2916 kbps, in a read
+LAB   17.5 measured 2502 kbps
+LAB   18.8 hls jump: answer 507 ms, first byte 522 ms, segment 1352 ms (218981 B)
+LAB   20.0 line 2145 kbps, in a read
+LAB cpu app 41% · 12.9fps · 1.raster 22% | .innocent.media 6% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | HwBinder:13064_ 2% | DartWorker 1%
+LAB   23.2 exo rung 360p 600 kbps
+LAB   23.9 rebuffer start (ahead 31827 ms)
+LAB   23.9 rebuffer end 6 ms
+LAB   25.1 measured 2366 kbps
+LAB   26.1 rebuffer start (ahead 34439 ms)
+LAB   26.1 rebuffer end 57 ms
+LAB   27.6 line 2872 kbps, in a read
+LAB   29.5 line 4002 kbps, in a read
+LAB   30.7 measured 3246 kbps
+LAB cpu app 42% · 12.1fps · 1.raster 25% | .innocent.media 6% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | HwBinder:13064_ 2%
+LAB   33.2 line 2520 kbps, in a read
+LAB weakline line 900kbit for 120s
+LAB   36.4 rebuffer start (ahead 54154 ms)
+LAB   36.4 rebuffer end 36 ms
+LAB   37.2 line 880 kbps, in a read
+LAB   41.2 line 201 kbps, in a read
+LAB   42.2 line 1531 kbps, a read
+LAB   42.2 measured 1531 kbps
+LAB cpu app 40% · 12.1fps · 1.raster 24% | .innocent.media 4% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | HwBinder:13064_ 2%
+LAB   44.3 exo rung 480p 1000 kbps
+LAB   44.8 line 427 kbps, in a read
+LAB   45.3 rebuffer start (ahead 58006 ms)
+LAB   45.4 rebuffer end 132 ms
+LAB   46.9 line 1137 kbps, in a read
+LAB   49.5 rebuffer start (ahead 58080 ms)
+LAB   49.6 rebuffer end 73 ms
+LAB cpu app 44% · 12.5fps · 1.raster 31% | .innocent.media 4% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | HwBinder:13064_ 2%
+LAB   52.8 line 846 kbps, in a read
+LAB   62.2 measured 867 kbps
+LAB cpu app 40% · 12.0fps · 1.raster 28% | MediaCodec_loop 4% | .innocent.media 3% | ExoPlayer:Playb 2% | HwBinder:13064_ 2%
+LAB   64.9 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
+LAB cpu app 40% · 13.8fps · 1.raster 29% | MediaCodec_loop 3% | HwBinder:13064_ 2% | ExoPlayer:Playb 2% | .innocent.media 2%
+LAB   80.2 fg stream: watching
+LAB cpu app 38% · 13.5fps · 1.raster 26% | MediaCodec_loop 4% | .innocent.media 2% | ExoPlayer:Playb 2% | HwBinder:13064_ 2%
+LAB cpu app 38% · 11.8fps · 1.raster 23% | .innocent.media 4% | MediaCodec_loop 4% | HwBinder:13064_ 2% | ExoPlayer:Playb 2% | flutter-worker- 1%
+LAB   99.7 measured 860 kbps
+LAB cpu app 40% · 13.5fps · 1.raster 27% | .innocent.media 4% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | HwBinder:13064_ 2%
+LAB  107.8 rebuffer start (ahead 55277 ms)
+LAB  107.9 rebuffer end 9 ms
+LAB cpu app 39% · 12.9fps · 1.raster 25% | .innocent.media 4% | MediaCodec_loop 3% | HwBinder:13064_ 2% | ExoPlayer:Playb 2%
+LAB  117.8 rebuffer start (ahead 52402 ms)
+LAB  117.8 rebuffer end 2 ms
+LAB  119.7 measured 867 kbps
+LAB cpu app 38% · 13.0fps · 1.raster 24% | .innocent.media 4% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | HwBinder:13064_ 2%
+LAB  127.9 rebuffer start (ahead 49912 ms)
+LAB  127.9 rebuffer end 21 ms
+LAB cpu app 38% · 11.7fps · 1.raster 25% | .innocent.media 3% | MediaCodec_loop 3% | HwBinder:13064_ 2% | ExoPlayer:Playb 2%
+LAB  140.0 measured 852 kbps
+LAB cpu app 40% · 13.7fps · 1.raster 27% | .innocent.media 4% | MediaCodec_loop 3% | HwBinder:13064_ 2% | ExoPlayer:Playb 2%
+LAB  144.5 line 524 kbps, in a read
+LAB  146.5 line 1182 kbps, in a read
+LAB  148.6 line 875 kbps, in a read
+LAB  151.9 rebuffer start (ahead 45172 ms)
+LAB  151.9 rebuffer end 12 ms
+LAB cpu app 39% · 12.1fps · 1.raster 25% | .innocent.media 4% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | HwBinder:13064_ 2%
+LAB weakline line 3mbit for 60s
+LAB  156.5 line 1653 kbps, in a read
+LAB  157.2 line 1008 kbps, a read
+LAB  157.2 measured 1008 kbps
+LAB  159.7 line 1312 kbps, in a read
+LAB  161.8 line 3332 kbps, in a read
+LAB cpu app 41% · 13.4fps · 1.raster 25% | .innocent.media 5% | MediaCodec_loop 3% | HwBinder:13064_ 2% | ExoPlayer:Playb 2% | DartWorker 1%
+LAB  163.6 measured 2859 kbps
+LAB  166.0 line 2418 kbps, in a read
+LAB  168.0 rebuffer start (ahead 59826 ms)
+LAB  168.0 rebuffer end 5 ms
+LAB  170.2 measured 2729 kbps
+LAB cpu app 40% · 11.7fps · 1.raster 25% | .innocent.media 5% | MediaCodec_loop 3% | HwBinder:13064_ 2% | ExoPlayer:Playb 2%
+LAB  177.8 rebuffer start (ahead 50420 ms)
+LAB  177.8 rebuffer end 22 ms
+LAB cpu app 39% · 13.0fps · 1.raster 29% | MediaCodec_loop 3% | .innocent.media 2% | ExoPlayer:Playb 2% | HwBinder:13064_ 2%
+LAB  184.3 rebuffer start (ahead 44368 ms)
+LAB  184.3 rebuffer end 14 ms
+LAB  191.8 rebuffer start (ahead 37270 ms)
+LAB  191.8 rebuffer end 12 ms
+LAB cpu app 38% · 12.4fps · 1.raster 28% | MediaCodec_loop 4% | HwBinder:13064_ 2% | ExoPlayer:Playb 2% | .innocent.media 2%
+LAB  196.3 rebuffer start (ahead 33102 ms)
+LAB  196.3 rebuffer end 8 ms
+LAB  200.7 fg stream: watching
+LAB cpu app 40% · 13.3fps · 1.raster 28% | MediaCodec_loop 4% | .innocent.media 3% | HwBinder:13064_ 2% | ExoPlayer:Playb 2%
+LAB  207.1 measured 2632 kbps
+LAB  208.3 rebuffer start (ahead 47404 ms)
+LAB  208.3 rebuffer end 31 ms
+LAB  211.7 line 1799 kbps, in a read
+LAB cpu app 42% · 13.1fps · 1.raster 25% | .innocent.media 6% | MediaCodec_loop 4% | HwBinder:13064_ 2% | ExoPlayer:Playb 2% | flutter-worker- 1%
+LAB  213.7 line 1294 kbps, in a read
+LAB weakline line off for 8s
+LAB  215.7 line 679 kbps, in a read
+LAB  217.7 line 64 kbps, in a read
+LAB  220.8 line 865 kbps, a read
+LAB  220.8 measured 865 kbps
+LAB weakline line 3mbit for 60s
+LAB cpu app 38% · 13.4fps · 1.raster 27% | MediaCodec_loop 4% | .innocent.media 2% | ExoPlayer:Playb 2% | HwBinder:13064_ 2%
+LAB  223.7 fg stream: watching
+LAB  223.7 rebuffer start (ahead 42082 ms)
+LAB  223.7 rebuffer end 30 ms
+LAB  224.1 hls jump: answer 3021 ms, first byte 3024 ms, segment 3432 ms (118279 B)
+LAB  225.7 line 2332 kbps, in a read
+LAB  229.7 measured 2804 kbps
+LAB cpu app 41% · 11.8fps · 1.raster 23% | .innocent.media 6% | MediaCodec_loop 4% | HwBinder:13064_ 2% | ExoPlayer:Playb 2% | flutter-worker- 1%
+LAB  236.2 line 3077 kbps, in a read
+LAB  236.6 measured 2639 kbps
+LAB cpu app 37% · 13.2fps · 1.raster 23% | .innocent.media 4% | MediaCodec_loop 4% | ExoPlayer:Playb 2% | HwBinder:13064_ 2%
+LAB  251.7 rebuffer start (ahead 45813 ms)
+LAB  251.8 rebuffer end 42 ms
+LAB cpu app 39% · 12.0fps · 1.raster 30% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | HwBinder:13064_ 2% | .innocent.media 2%
+LAB  260.9 rebuffer start (ahead 37051 ms)
+LAB  261.1 rebuffer end 122 ms
+LAB cpu app 39% · 13.5fps · 1.raster 30% | MediaCodec_loop 4% | HwBinder:13064_ 2% | .innocent.media 2% | ExoPlayer:Playb 2%
+LAB  268.1 rebuffer start (ahead 30309 ms)
+LAB  268.1 rebuffer end 13 ms
+LAB  269.3 fg stream: watching
+LAB cpu app 39% · 13.3fps · 1.raster 25% | MediaCodec_loop 3% | .innocent.media 3% | ExoPlayer:Playb 2% | HwBinder:13064_ 2%
+LAB  275.8 measured 2579 kbps
+LAB  278.3 line 1608 kbps, in a read
+LAB  282.4 rebuffer start (ahead 40508 ms)
+LAB  282.4 rebuffer end 21 ms
+LAB cpu app 39% · 11.8fps · 1.raster 23% | .innocent.media 6% | MediaCodec_loop 4% | ExoPlayer:Playb 2% | HwBinder:13064_ 2% | DartWorker 1%
+LAB weakline end pass=7 peak=fragment
+LAB  286.2 measured 1704 kbps
+LAB weakline verdict pass=7 peak=fragment first=2824 stalls=0 blips=21 frozen_ms=692 longest_ms=132 time=480p:92%,360p:8%
+LAB weakline begin pass=8 peak=window
+LAB device kind=DeviceKind.phone sw=411.0
+LAB weakline line 4mbit for 40s
+LAB    0.0 LAB title: opening Sintel
+LAB    2.0 play server granted in 1976 ms, 4 rungs
+LAB    2.0 play rung 480p 912 kbps (choice auto, measured - kbps)
+LAB    2.0 stream lanes=6 peak=window
+LAB    2.3 stream cache: a new film, sealed
+LAB    2.4 play through the ladder on ExoPlayer
+LAB    2.4 play: opening the player
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
+LAB cpu app 58% · 9.7fps · 1.raster 32% | pool-thread 19% | .innocent.media 3% | RenderThread 2%
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
+LAB    3.3 hwdec -> auto
+LAB    3.4 open ladder (exo) start=0s autoplay=true rung=auto first=480
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
+LAB    3.5 wakelock playing=true bg=false priv=false pos=0ms
+LAB    3.5 open ok
+LAB    3.9 stream index 0.0 MB at 0.0 MB
+LAB    4.3 fg stream: watching
+LAB    4.3 hls: 480p index, 444 segments, average 912, peak 2s 1591, 10s 1224, 20s 1174 kbps
+LAB    4.4 hls: 480p playlist, 444 segments
+LAB    4.6 exo tracks 480,720,360,240 selected=4 adaptive=true peaks=1174,2168,745,394 kbps
+LAB    4.6 hls jump: answer 368 ms, first byte 372 ms, segment 689 ms (65536 B)
+LAB    4.9 exo rung 480p 1000 kbps
+LAB    5.4 first frame 2802 ms
+LAB    5.6 stream index 0.0 MB at 0.0 MB
+LAB    6.2 hls: 720p index, 444 segments, average 1683, peak 2s 3052, 10s 2317, 20s 2212 kbps
+LAB    6.8 hls: 360p index, 444 segments, average 578, peak 2s 976, 10s 754, 20s 725 kbps
+LAB    7.4 hls jump: answer 635 ms, first byte 645 ms, segment 1770 ms (65536 B)
+LAB    7.6 hls jump: answer 551 ms, first byte 554 ms, segment 1965 ms (65536 B)
+LAB    7.8 line 2018 kbps, in a read
+LAB    9.7 line 2963 kbps, in a read
+LAB   12.6 measured 2458 kbps
+LAB   12.6 rebuffer start (ahead 12954 ms)
+LAB   12.7 rebuffer end 50 ms
+LAB cpu app 39% · 9.7fps · 1.raster 23% | .innocent.media 6% | ExoPlayer:Playb 3% | MediaCodec_loop 2% | HwBinder:14193_ 1% | DartWorker 1%
+LAB   13.5 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
+LAB engine update ok ALREADY_UP_TO_DATE 2026.10.26 -> 2026.10.26
+LAB   18.2 measured 3296 kbps
+LAB cpu app 42% · 12.5fps · 1.raster 22% | .innocent.media 6% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | HwBinder:14193_ 2% | DartWorker 2%
+LAB   25.2 measured 2563 kbps
+LAB   27.9 line 1670 kbps, in a read
+LAB   31.9 line 2276 kbps, in a read
+LAB cpu app 40% · 13.1fps · 1.raster 21% | .innocent.media 5% | MediaCodec_loop 4% | ExoPlayer:Playb 2% | HwBinder:14193_ 2% | DartWorker 1%
+LAB   34.0 measured 2053 kbps
+LAB weakline line 900kbit for 120s
+LAB   36.4 line 1082 kbps, in a read
+LAB cpu app 39% · 11.8fps · 1.raster 25% | .innocent.media 5% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | HwBinder:14193_ 2%
+LAB   51.9 rebuffer start (ahead 51409 ms)
+LAB   52.0 rebuffer end 56 ms
+LAB   52.4 line 327 kbps, in a read
+LAB cpu app 40% · 13.7fps · 1.raster 25% | MediaCodec_loop 4% | .innocent.media 4% | HwBinder:14193_ 2% | ExoPlayer:Playb 2%
+LAB   54.3 line 841 kbps, a read
+LAB   54.3 measured 841 kbps
+LAB   61.0 line 518 kbps, in a read
+LAB   63.0 line 64 kbps, in a read
+LAB cpu app 41% · 12.0fps · 1.raster 27% | MediaCodec_loop 4% | .innocent.media 3% | HwBinder:14193_ 2% | ExoPlayer:Playb 2%
+LAB   63.6 rebuffer start (ahead 53425 ms)
+LAB   63.6 rebuffer end 6 ms
+LAB   65.6 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
+LAB   66.9 line 2029 kbps, in a read
+LAB   69.0 line 481 kbps, in a read
+LAB   70.3 rebuffer start (ahead 52720 ms)
+LAB   70.3 rebuffer end 14 ms
+LAB   70.9 line 970 kbps, in a read
+LAB   72.9 line 1967 kbps, in a read
+LAB cpu app 39% · 13.1fps · 1.raster 26% | MediaCodec_loop 4% | .innocent.media 3% | ExoPlayer:Playb 2% | HwBinder:14193_ 2%
+LAB   74.8 line 842 kbps, a read
+LAB   74.8 measured 842 kbps
+LAB   79.7 rebuffer start (ahead 53628 ms)
+LAB   79.7 rebuffer end 48 ms
+LAB cpu app 43% · 13.5fps · 1.raster 28% | MediaCodec_loop 4% | .innocent.media 4% | HwBinder:14193_ 2% | ExoPlayer:Playb 2%
+LAB   88.7 rebuffer start (ahead 57339 ms)
+LAB   88.7 rebuffer end 25 ms
+LAB   89.4 line 222 kbps, in a read
+LAB   91.4 line 64 kbps, in a read
+LAB cpu app 39% · 11.9fps · 1.raster 23% | MediaCodec_loop 4% | .innocent.media 4% | HwBinder:14193_ 2% | ExoPlayer:Playb 2%
+LAB   93.4 line 2320 kbps, in a read
+LAB   94.9 line 859 kbps, a read
+LAB   94.9 measured 859 kbps
+LAB   99.7 rebuffer start (ahead 54834 ms)
+LAB   99.7 rebuffer end 21 ms
+LAB cpu app 39% · 13.6fps · 1.raster 28% | MediaCodec_loop 3% | .innocent.media 2% | ExoPlayer:Playb 2% | HwBinder:14193_ 2%
+LAB  105.5 rebuffer start (ahead 49360 ms)
+LAB  105.5 rebuffer end 2 ms
+LAB cpu app 41% · 13.5fps · 1.raster 30% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | HwBinder:14193_ 2% | .innocent.media 2%
+LAB  121.8 rebuffer start (ahead 33616 ms)
+LAB  121.8 rebuffer end 2 ms
+LAB cpu app 37% · 11.9fps · 1.raster 27% | MediaCodec_loop 3% | HwBinder:14193_ 2% | ExoPlayer:Playb 2% | .innocent.media 2%
+LAB  126.5 fg stream: watching
+LAB  130.0 rebuffer start (ahead 33734 ms)
+LAB  130.0 rebuffer end 4 ms
+LAB cpu app 39% · 13.6fps · 1.raster 26% | MediaCodec_loop 4% | .innocent.media 4% | HwBinder:14193_ 2% | ExoPlayer:Playb 2%
+LAB  136.5 line 521 kbps, in a read
+LAB  138.5 line 1198 kbps, in a read
+LAB  140.5 line 819 kbps, in a read
+LAB cpu app 38% · 12.1fps · 1.raster 25% | .innocent.media 4% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | HwBinder:14193_ 2%
+LAB  146.2 measured 852 kbps
+LAB  150.0 rebuffer start (ahead 28502 ms)
+LAB  150.0 rebuffer end 6 ms
+LAB cpu app 40% · 13.2fps · 1.raster 26% | .innocent.media 4% | MediaCodec_loop 4% | HwBinder:14193_ 2% | ExoPlayer:Playb 2%
+LAB  154.8 line 64 kbps, in a read
+LAB weakline line 3mbit for 60s
+LAB  156.8 line 1809 kbps, in a read
+LAB  158.8 line 1150 kbps, in a read
+LAB  160.7 measured 1209 kbps
+LAB cpu app 43% · 13.3fps · 1.raster 28% | .innocent.media 4% | MediaCodec_loop 3% | HwBinder:14193_ 2% | ExoPlayer:Playb 2%
+LAB  163.2 line 2433 kbps, in a read
+LAB  165.8 rebuffer start (ahead 37322 ms)
+LAB  165.9 rebuffer end 75 ms
+LAB  167.0 measured 2878 kbps
+LAB  171.4 rebuffer start (ahead 45439 ms)
+LAB  171.5 rebuffer end 44 ms
+LAB cpu app 42% · 12.2fps · 1.raster 23% | .innocent.media 7% | MediaCodec_loop 3% | HwBinder:14193_ 2% | ExoPlayer:Playb 2% | DartWorker 2%
+LAB  173.5 measured 2781 kbps
+LAB  178.0 rebuffer start (ahead 53672 ms)
+LAB  178.0 rebuffer end 4 ms
+LAB  180.7 measured 2407 kbps
+LAB cpu app 43% · 11.7fps · 1.raster 25% | .innocent.media 5% | MediaCodec_loop 4% | HwBinder:14193_ 2% | ExoPlayer:Playb 2% | DartWorker 1%
+LAB  183.2 line 1401 kbps, in a read
+LAB  185.2 line 1814 kbps, in a read
+LAB  187.2 line 2718 kbps, in a read
+LAB  189.5 line 2008 kbps, a read
+LAB  189.5 measured 2008 kbps
+LAB cpu app 41% · 13.1fps · 1.raster 27% | .innocent.media 4% | MediaCodec_loop 4% | HwBinder:14193_ 2% | ExoPlayer:Playb 2%
+LAB  197.9 rebuffer start (ahead 46635 ms)
+LAB  197.9 rebuffer end 14 ms
+LAB  202.4 rebuffer start (ahead 42539 ms)
+LAB  202.5 rebuffer end 31 ms
+LAB cpu app 40% · 12.4fps · 1.raster 30% | MediaCodec_loop 4% | .innocent.media 2% | HwBinder:14193_ 2% | ExoPlayer:Playb 2%
+LAB  207.8 rebuffer start (ahead 37280 ms)
+LAB  207.8 rebuffer end 4 ms
+LAB cpu app 41% · 13.5fps · 1.raster 30% | MediaCodec_loop 3% | HwBinder:14193_ 2% | .innocent.media 2% | ExoPlayer:Playb 2%
+LAB  214.5 rebuffer start (ahead 30910 ms)
+LAB  214.5 rebuffer end 4 ms
+LAB weakline line off for 8s
+LAB cpu app 36% · 13.3fps · 1.raster 26% | MediaCodec_loop 3% | .innocent.media 2% | HwBinder:14193_ 2% | ExoPlayer:Playb 2%
+LAB  223.1 rebuffer start (ahead 34796 ms)
+LAB  223.1 rebuffer end 41 ms
+LAB weakline line 3mbit for 60s
+LAB  228.5 fg stream: watching
+LAB  230.5 line 684 kbps, in a read
+LAB  232.5 line 1072 kbps, in a read
+LAB  232.9 rebuffer start (ahead 29677 ms)
+LAB  233.0 rebuffer end 16 ms
+LAB cpu app 37% · 11.7fps · 1.raster 26% | MediaCodec_loop 4% | .innocent.media 2% | HwBinder:14193_ 2% | ExoPlayer:Playb 2%
+LAB  234.5 line 1763 kbps, in a read
+LAB  236.5 line 2662 kbps, in a read
+LAB  238.2 line 1729 kbps, a read
+LAB  238.2 measured 1729 kbps
+LAB  240.7 line 2573 kbps, in a read
+LAB cpu app 43% · 13.0fps · 1.raster 24% | .innocent.media 7% | MediaCodec_loop 4% | HwBinder:14193_ 3% | ExoPlayer:Playb 2% | flutter-worker- 1%
+LAB  244.6 measured 2789 kbps
+LAB  251.0 rebuffer start (ahead 52754 ms)
+LAB  251.0 rebuffer end 26 ms
+LAB  251.3 measured 2709 kbps
+LAB cpu app 39% · 12.4fps · 1.raster 22% | .innocent.media 6% | MediaCodec_loop 3% | HwBinder:14193_ 2% | ExoPlayer:Playb 2% | flutter-worker- 1%
+LAB  255.8 line 1540 kbps, in a read
+LAB  261.2 measured 1787 kbps
+LAB  261.4 rebuffer start (ahead 58844 ms)
+LAB  261.5 rebuffer end 55 ms
+LAB cpu app 42% · 13.0fps · 1.raster 25% | .innocent.media 5% | MediaCodec_loop 4% | HwBinder:14193_ 2% | ExoPlayer:Playb 2% | DartWorker 1%
+LAB  265.7 line 2249 kbps, in a read
+LAB  268.9 rebuffer start (ahead 56923 ms)
+LAB  269.0 rebuffer end 15 ms
+LAB  269.7 line 1408 kbps, in a read
+LAB  271.4 measured 1740 kbps
+LAB cpu app 39% · 11.8fps · 1.raster 26% | .innocent.media 4% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | HwBinder:14193_ 2%
+LAB  277.2 rebuffer start (ahead 49030 ms)
+LAB  277.2 rebuffer end 25 ms
+LAB cpu app 39% · 13.2fps · 1.raster 29% | MediaCodec_loop 4% | HwBinder:14193_ 2% | ExoPlayer:Playb 2% | .innocent.media 2%
+LAB  284.4 rebuffer start (ahead 42180 ms)
+LAB  284.4 rebuffer end 1 ms
+LAB weakline end pass=8 peak=window
+LAB weakline verdict pass=8 peak=window first=2802 stalls=0 blips=25 frozen_ms=589 longest_ms=75 time=480p:100%
+LAB weakline begin pass=9 peak=fragment
+LAB device kind=DeviceKind.phone sw=411.0
+LAB weakline line 4mbit for 40s
+LAB    0.0 LAB title: opening Sintel
+LAB    1.3 play server granted in 1079 ms, 4 rungs
+LAB    1.3 play rung 480p 912 kbps (choice auto, measured - kbps)
+LAB    1.4 stream lanes=6 peak=fragment
+LAB    1.4 stream cache: a new film, sealed
+LAB    1.5 play through the ladder on ExoPlayer
+LAB    1.5 play: opening the player
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
+LAB    2.4 hwdec -> auto
+LAB    2.5 open ladder (exo) start=0s autoplay=true rung=auto first=480
+LAB    2.7 wakelock playing=true bg=false priv=false pos=0ms
+LAB    2.7 open ok
+LAB cpu app 59% · 8.8fps · 1.raster 31% | pool-thread 20% | .innocent.media 4% | RenderThread 3%
+LAB    3.4 stream index 0.0 MB at 0.0 MB
+LAB    4.3 fg stream: watching
+LAB    4.3 hls: 480p index, 444 segments, average 912, peak 2s 1591, 10s 1224, 20s 1174 kbps
+LAB    4.3 hls: 480p playlist, 444 segments
+LAB    4.8 exo tracks 480,720,360,240 selected=4 adaptive=true peaks=1591,2105,723,382 kbps
+LAB    5.1 hls jump: answer 850 ms, first byte 858 ms, segment 1732 ms (65536 B)
+LAB    5.3 exo rung 480p 1000 kbps
+LAB    5.7 first frame 4081 ms
+LAB    6.5 stream index 0.0 MB at 0.0 MB
+LAB    7.5 hls: 720p index, 444 segments, average 1683, peak 2s 3052, 10s 2317, 20s 2212 kbps
+LAB    7.5 hls: 360p index, 444 segments, average 578, peak 2s 976, 10s 754, 20s 725 kbps
+LAB    8.3 line 513 kbps, in a read
+LAB    8.5 hls jump: answer 828 ms, first byte 868 ms, segment 1886 ms (65536 B)
+LAB    8.6 hls jump: answer 817 ms, first byte 868 ms, segment 1959 ms (65536 B)
+LAB   10.3 hls: 360p playlist, 444 segments
+LAB   10.4 line 1181 kbps, in a read
+LAB engine update ok ALREADY_UP_TO_DATE 2026.10.26 -> 2026.10.26
+LAB   11.0 stream index 0.0 MB at 0.0 MB
+LAB   11.3 exo rung 360p 600 kbps
+LAB   11.5 hls: 240p index, 444 segments, average 306, peak 2s 507, 10s 394, 20s 380 kbps
+LAB   11.9 hls jump: answer 400 ms, first byte 405 ms, segment 814 ms (65536 B)
+LAB   11.9 rebuffer start (ahead 2038 ms)
+LAB   12.0 rebuffer end 67 ms
+LAB   12.0 hls jump: answer 485 ms, first byte 491 ms, segment 1468 ms (215459 B)
+LAB   13.1 line 2363 kbps, in a read
+LAB cpu app 41% · 9.8fps · 1.raster 28% | .innocent.media 5% | ExoPlayer:Playb 2% | MediaCodec_loop 2% | HwBinder:15299_ 1%
+LAB   13.7 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
+LAB   15.4 rebuffer start (ahead 11273 ms)
+LAB   15.4 rebuffer end 7 ms
+LAB   18.5 measured 2232 kbps
+LAB   23.0 line 1761 kbps, in a read
+LAB cpu app 42% · 13.0fps · 1.raster 23% | .innocent.media 6% | MediaCodec_loop 3% | ExoPlayer:Playb 3% | HwBinder:15299_ 2% | flutter-worker- 1%
+LAB   27.0 measured 2093 kbps
+LAB cpu app 42% · 13.3fps · 1.raster 23% | .innocent.media 5% | MediaCodec_loop 4% | ExoPlayer:Playb 2% | HwBinder:15299_ 2% | DartWorker 1%
+LAB   34.5 line 2399 kbps, a read
+LAB   34.5 measured 2399 kbps
+LAB weakline line 900kbit for 120s
+LAB   41.8 rebuffer start (ahead 53524 ms)
+LAB   41.8 rebuffer end 9 ms
+LAB cpu app 42% · 12.2fps · 1.raster 29% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | .innocent.media 2% | HwBinder:15299_ 2%
+LAB   47.8 rebuffer start (ahead 47970 ms)
+LAB   47.8 rebuffer end 7 ms
+LAB cpu app 37% · 13.5fps · 1.raster 28% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | HwBinder:15299_ 2% | .innocent.media 2%
+LAB cpu app 38% · 12.4fps · 1.raster 29% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | .innocent.media 2% | HwBinder:15299_ 2%
+LAB   65.7 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
+LAB   67.0 fg stream: watching
+LAB   69.0 line 815 kbps, in a read
+LAB cpu app 43% · 13.7fps · 1.raster 30% | .innocent.media 3% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | HwBinder:15299_ 2%
+LAB   81.0 line 196 kbps, in a read
+LAB   83.1 line 1470 kbps, in a read
+LAB cpu app 42% · 13.6fps · 1.raster 28% | .innocent.media 4% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | HwBinder:15299_ 2%
+LAB   85.0 line 921 kbps, in a read
+LAB   86.5 measured 861 kbps
+LAB cpu app 44% · 12.2fps · 1.raster 29% | .innocent.media 4% | MediaCodec_loop 4% | HwBinder:15299_ 2% | ExoPlayer:Playb 2%
+LAB   95.6 rebuffer start (ahead 59481 ms)
+LAB   95.6 rebuffer end 57 ms
+LAB   97.0 line 64 kbps, in a read
+LAB   99.0 line 1794 kbps, in a read
+LAB  101.0 line 655 kbps, in a read
+LAB  103.0 line 325 kbps, in a read
+LAB cpu app 42% · 13.7fps · 1.raster 28% | MediaCodec_loop 4% | .innocent.media 3% | ExoPlayer:Playb 2% | HwBinder:15299_ 2%
+LAB  105.0 line 1642 kbps, in a read
+LAB  106.6 line 852 kbps, a read
+LAB  106.6 measured 852 kbps
+LAB cpu app 43% · 12.5fps · 1.raster 31% | MediaCodec_loop 3% | .innocent.media 3% | ExoPlayer:Playb 3% | HwBinder:15299_ 2%
+LAB cpu app 40% · 14.0fps · 1.raster 29% | MediaCodec_loop 4% | ExoPlayer:Playb 2% | .innocent.media 2% | HwBinder:15299_ 2%
+LAB  126.9 fg stream: watching
+LAB cpu app 41% · 11.9fps · 1.raster 28% | .innocent.media 3% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | HwBinder:15299_ 2%
+LAB cpu app 42% · 13.9fps · 1.raster 28% | .innocent.media 4% | MediaCodec_loop 3% | HwBinder:15299_ 2% | ExoPlayer:Playb 2%
+LAB  146.6 measured 852 kbps
+LAB  151.0 line 64 kbps, in a read
+LAB cpu app 44% · 12.5fps · 1.raster 31% | MediaCodec_loop 3% | .innocent.media 3% | ExoPlayer:Playb 2% | HwBinder:15299_ 2%
+LAB  153.9 exo dropped 12 frames
+LAB  154.0 rebuffer start (ahead 47565 ms)
+LAB  154.0 rebuffer end 3 ms
+LAB weakline line 3mbit for 60s
+LAB  155.0 line 913 kbps, in a read
+LAB  157.0 line 2349 kbps, in a read
+LAB  159.0 line 1163 kbps, in a read
+LAB  161.7 measured 1138 kbps
+LAB  163.1 rebuffer start (ahead 59838 ms)
+LAB  163.1 rebuffer end 7 ms
+LAB cpu app 43% · 13.3fps · 1.raster 29% | .innocent.media 4% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | HwBinder:15299_ 2%
+LAB cpu app 41% · 12.3fps · 1.raster 30% | MediaCodec_loop 4% | ExoPlayer:Playb 2% | HwBinder:15299_ 2% | .innocent.media 2%
+LAB cpu app 42% · 14.0fps · 1.raster 31% | MediaCodec_loop 4% | HwBinder:15299_ 2% | ExoPlayer:Playb 2% | .innocent.media 2%
+LAB cpu app 44% · 13.8fps · 1.raster 33% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | HwBinder:15299_ 2% | .innocent.media 2%
+LAB  194.6 fg stream: watching
+LAB  196.6 line 2851 kbps, in a read
+LAB  198.6 line 1248 kbps, in a read
+LAB  200.6 line 3378 kbps, in a read
+LAB  201.0 measured 2638 kbps
+LAB cpu app 43% · 11.7fps · 1.raster 26% | .innocent.media 5% | MediaCodec_loop 4% | ExoPlayer:Playb 2% | HwBinder:15299_ 2% | DartWorker 1%
+LAB  203.7 line 2245 kbps, in a read
+LAB  205.7 line 3563 kbps, in a read
+LAB  206.7 measured 2784 kbps
+LAB  209.2 hls jump: answer 1167 ms, first byte 1173 ms, segment 2541 ms (321308 B)
+LAB  209.9 line 2238 kbps, in a read
+LAB  211.9 line 3207 kbps, in a read
+LAB cpu app 41% · 13.2fps · 1.raster 23% | .innocent.media 6% | MediaCodec_loop 4% | HwBinder:15299_ 2% | ExoPlayer:Playb 2% | DartWorker 1%
+LAB  213.4 exo dropped 12 frames
+LAB  213.4 rebuffer start (ahead 35935 ms)
+LAB  213.5 rebuffer end 19 ms
+LAB  213.8 measured 2801 kbps
+LAB weakline line off for 8s
+LAB  216.3 line 1359 kbps, in a read
+LAB  218.3 line 64 kbps, in a read
+LAB  221.6 line 381 kbps, a read
+LAB weakline line 3mbit for 60s
+LAB cpu app 43% · 13.9fps · 1.raster 30% | MediaCodec_loop 4% | .innocent.media 3% | HwBinder:15299_ 2% | ExoPlayer:Playb 2%
+LAB  224.8 fg stream: watching
+LAB  225.3 hls jump: answer 3270 ms, first byte 3273 ms, segment 3782 ms (124066 B)
+LAB  226.8 line 2513 kbps, in a read
+LAB  230.7 rebuffer start (ahead 37922 ms)
+LAB  230.7 rebuffer end 5 ms
+LAB  231.0 measured 2740 kbps
+LAB  232.6 exo rung 480p 1000 kbps
+LAB cpu app 43% · 11.6fps · 1.raster 27% | .innocent.media 5% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | HwBinder:15299_ 2%
+LAB  234.3 rebuffer start (ahead 41385 ms)
+LAB  234.3 rebuffer end 1 ms
+LAB  235.3 line 3326 kbps, in a read
+LAB  237.4 line 1812 kbps, in a read
+LAB  239.0 measured 2188 kbps
+LAB cpu app 46% · 12.5fps · 1.raster 29% | .innocent.media 5% | MediaCodec_loop 3% | HwBinder:15299_ 2% | ExoPlayer:Playb 2% | flutter-worker- 1%
+LAB  248.9 measured 1771 kbps
+LAB cpu app 43% · 11.5fps · 1.raster 25% | .innocent.media 5% | MediaCodec_loop 4% | HwBinder:15299_ 2% | ExoPlayer:Playb 2% | flutter-worker- 1%
+LAB  253.5 line 2273 kbps, in a read
+LAB  255.4 line 1249 kbps, in a read
+LAB  257.4 line 1814 kbps, in a read
+LAB  258.6 measured 1821 kbps
+LAB  259.1 rebuffer start (ahead 57313 ms)
+LAB  259.1 rebuffer end 5 ms
+LAB cpu app 42% · 13.6fps · 1.raster 25% | .innocent.media 5% | MediaCodec_loop 3% | HwBinder:15299_ 2% | ExoPlayer:Playb 2% | DartWorker 1%
+LAB  267.0 rebuffer start (ahead 57742 ms)
+LAB  267.0 rebuffer end 5 ms
+LAB  267.9 measured 1930 kbps
+LAB cpu app 40% · 11.9fps · 1.raster 28% | MediaCodec_loop 4% | .innocent.media 3% | HwBinder:15299_ 2% | ExoPlayer:Playb 2%
+LAB  277.4 rebuffer start (ahead 47769 ms)
+LAB  277.4 rebuffer end 27 ms
+LAB  282.1 rebuffer start (ahead 43417 ms)
+LAB  282.1 rebuffer end 9 ms
+LAB cpu app 39% · 13.4fps · 1.raster 28% | MediaCodec_loop 4% | HwBinder:15299_ 2% | ExoPlayer:Playb 2% | .innocent.media 2%
+LAB weakline end pass=9 peak=fragment
+LAB weakline verdict pass=9 peak=fragment first=4081 stalls=0 blips=14 frozen_ms=228 longest_ms=67 time=480p:20%,360p:80%
+LAB weakline begin pass=10 peak=window
+LAB device kind=DeviceKind.phone sw=411.0
+LAB weakline line 4mbit for 40s
+LAB    0.0 LAB title: opening Sintel
+LAB    1.2 play server granted in 1151 ms, 4 rungs
+LAB    1.2 play rung 480p 912 kbps (choice auto, measured - kbps)
+LAB    1.2 stream lanes=6 peak=window
+LAB    1.4 stream cache: a new film, sealed
+LAB    1.5 play through the ladder on ExoPlayer
+LAB    1.5 play: opening the player
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
+LAB cpu app 61% · 9.7fps · 1.raster 32% | pool-thread 22% | .innocent.media 3% | RenderThread 2%
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
+LAB    2.4 hwdec -> auto
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
+LAB    2.5 open ladder (exo) start=0s autoplay=true rung=auto first=480
+LAB    2.6 wakelock playing=true bg=false priv=false pos=0ms
+LAB    2.6 open ok
+LAB    2.7 stream index 0.0 MB at 0.0 MB
+LAB    3.2 fg stream: watching
+LAB    3.4 hls: 480p index, 444 segments, average 912, peak 2s 1591, 10s 1224, 20s 1174 kbps
+LAB    3.4 hls: 480p playlist, 444 segments
+LAB    3.7 exo tracks 480,720,360,240 selected=4 adaptive=true peaks=1174,2168,745,394 kbps
+LAB    3.8 hls jump: answer 497 ms, first byte 518 ms, segment 1046 ms (65536 B)
+LAB    4.6 exo rung 480p 1000 kbps
+LAB    4.7 stream index 0.0 MB at 0.0 MB
+LAB    5.1 first frame 3452 ms
+LAB    5.3 hls: 720p index, 444 segments, average 1683, peak 2s 3052, 10s 2317, 20s 2212 kbps
+LAB    5.6 hls jump: answer 429 ms, first byte 432 ms, segment 890 ms (65536 B)
+LAB    5.6 hls: 360p index, 444 segments, average 578, peak 2s 976, 10s 754, 20s 725 kbps
+LAB    6.0 hls jump: answer 612 ms, first byte 615 ms, segment 1032 ms (65536 B)
+LAB    7.8 line 1418 kbps, in a read
+LAB    9.2 hls: 360p playlist, 444 segments
+LAB    9.8 stream index 0.0 MB at 0.0 MB
+LAB   10.5 hls: 240p index, 444 segments, average 306, peak 2s 507, 10s 394, 20s 380 kbps
+LAB   10.5 rebuffer start (ahead 3233 ms)
+LAB   10.5 rebuffer end 7 ms
+LAB   10.8 hls jump: answer 379 ms, first byte 382 ms, segment 970 ms (65536 B)
+LAB   10.8 hls jump: answer 380 ms, first byte 432 ms, segment 1223 ms (176371 B)
+LAB cpu app 38% · 11.1fps · 1.raster 24% | .innocent.media 5% | ExoPlayer:Playb 2% | MediaCodec_loop 2% | HwBinder:16389_ 1%
+LAB engine update ok ALREADY_UP_TO_DATE 2026.10.26 -> 2026.10.26
+LAB   12.9 exo rung 360p 600 kbps
+LAB   13.3 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
+LAB   13.8 rebuffer start (ahead 6043 ms)
+LAB   13.8 rebuffer end 4 ms
+LAB   14.2 line 887 kbps, in a read
+LAB   16.1 line 1812 kbps, in a read
+LAB   20.6 measured 1592 kbps
+LAB   21.6 rebuffer start (ahead 23956 ms)
+LAB   21.6 rebuffer end 20 ms
+LAB cpu app 42% · 11.2fps · 1.raster 25% | .innocent.media 5% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | HwBinder:16389_ 2% | DartWorker 1%
+LAB   23.2 line 2272 kbps, in a read
+LAB   26.5 line 1101 kbps, in a read
+LAB   27.1 hls jump: answer 546 ms, first byte 555 ms, segment 3231 ms (381104 B)
+LAB   29.1 hls jump: answer 1158 ms, first byte 1178 ms, segment 1700 ms (130835 B)
+LAB   30.6 line 2865 kbps, in a read
+LAB   30.7 rebuffer start (ahead 30150 ms)
+LAB   30.8 rebuffer end 35 ms
+LAB cpu app 43% · 13.1fps · 1.raster 26% | .innocent.media 5% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | HwBinder:16389_ 2%
+LAB   33.0 hls jump: answer 1218 ms, first byte 1260 ms, segment 2100 ms (286706 B)
+LAB weakline line 900kbit for 120s
+LAB   36.2 line 581 kbps, in a read
+LAB   38.2 line 405 kbps, in a read
+LAB   40.2 line 1725 kbps, in a read
+LAB   42.2 line 786 kbps, in a read
+LAB cpu app 42% · 12.1fps · 1.raster 27% | .innocent.media 4% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | HwBinder:16389_ 2%
+LAB   44.2 line 64 kbps, in a read
+LAB   44.7 hls: 240p playlist, 444 segments
+LAB   44.9 line 1136 kbps, a read
+LAB   44.9 measured 1136 kbps
+LAB   48.1 hls jump: answer 2128 ms, first byte 2158 ms, segment 3276 ms (94707 B)
+LAB   48.4 exo rung 480p 1000 kbps
+LAB   49.0 line 817 kbps, in a read
+LAB   49.6 rebuffer start (ahead 24858 ms)
+LAB   49.7 rebuffer end 108 ms
+LAB   50.9 exo rung 360p 600 kbps
+LAB   51.7 rebuffer start (ahead 30143 ms)
+LAB   51.8 rebuffer end 97 ms
+LAB cpu app 39% · 11.8fps · 1.raster 26% | .innocent.media 4% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | HwBinder:16389_ 2%
+LAB   56.5 rebuffer start (ahead 43616 ms)
+LAB   56.5 rebuffer end 11 ms
+LAB   58.0 exo rung 480p 1000 kbps
+LAB   59.0 rebuffer start (ahead 53953 ms)
+LAB   59.0 rebuffer end 62 ms
+LAB cpu app 42% · 11.0fps · 1.raster 27% | .innocent.media 5% | MediaCodec_loop 3% | HwBinder:16389_ 2% | ExoPlayer:Playb 2%
+LAB   63.9 rebuffer start (ahead 59328 ms)
+LAB   63.9 rebuffer end 1 ms
+LAB   65.1 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
+LAB   66.7 measured 851 kbps
+LAB   70.7 exo rung 240p 300 kbps
+LAB   71.3 rebuffer start (ahead 52346 ms)
+LAB   71.3 rebuffer end 1 ms
+LAB cpu app 40% · 12.5fps · 1.raster 28% | MediaCodec_loop 4% | .innocent.media 3% | ExoPlayer:Playb 2% | HwBinder:16389_ 2%
+LAB   74.8 rebuffer start (ahead 49468 ms)
+LAB   74.8 rebuffer end 2 ms
+LAB cpu app 46% · 12.0fps · 1.raster 36% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | .innocent.media 2% | HwBinder:16389_ 2%
+LAB cpu app 42% · 14.3fps · 1.raster 31% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | HwBinder:16389_ 2% | .innocent.media 2%
+LAB   95.7 fg stream: watching
+LAB cpu app 42% · 12.4fps · 1.raster 29% | MediaCodec_loop 3% | .innocent.media 3% | ExoPlayer:Playb 2% | HwBinder:16389_ 2%
+LAB  107.7 line 446 kbps, in a read
+LAB  109.7 line 1275 kbps, in a read
+LAB  111.7 line 857 kbps, in a read
+LAB cpu app 42% · 13.7fps · 1.raster 31% | .innocent.media 3% | MediaCodec_loop 3% | ExoPlayer:Playb 3% | HwBinder:16389_ 2%
+LAB  115.1 measured 863 kbps
+LAB cpu app 40% · 14.3fps · 1.raster 28% | MediaCodec_loop 4% | .innocent.media 2% | ExoPlayer:Playb 2% | HwBinder:16389_ 2%
+LAB cpu app 40% · 12.5fps · 1.raster 29% | MediaCodec_loop 3% | .innocent.media 2% | HwBinder:16389_ 2% | ExoPlayer:Playb 2%
+LAB cpu app 44% · 14.1fps · 1.raster 33% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | .innocent.media 2% | HwBinder:16389_ 2%
+LAB cpu app 41% · 12.5fps · 1.raster 31% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | .innocent.media 2% | HwBinder:16389_ 2%
+LAB weakline line 3mbit for 60s
+LAB cpu app 42% · 13.8fps · 1.raster 32% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | .innocent.media 2% | HwBinder:16389_ 2%
+LAB  165.0 fg stream: watching
+LAB  167.1 line 2310 kbps, in a read
+LAB  169.3 hls jump: answer 873 ms, first byte 879 ms, segment 1795 ms (158428 B)
+LAB cpu app 45% · 13.8fps · 1.raster 29% | .innocent.media 5% | MediaCodec_loop 4% | HwBinder:16389_ 2% | ExoPlayer:Playb 2%
+LAB  172.8 measured 2701 kbps
+LAB  174.7 hls jump: answer 945 ms, first byte 979 ms, segment 1894 ms (289605 B)
+LAB  179.9 measured 2735 kbps
+LAB cpu app 46% · 11.6fps · 1.raster 28% | .innocent.media 6% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | HwBinder:16389_ 2% | DartWorker 1%
+LAB  184.4 line 2951 kbps, in a read
+LAB  186.4 measured 2753 kbps
+LAB  192.0 exo rung 360p 600 kbps
+LAB cpu app 46% · 13.2fps · 1.raster 25% | .innocent.media 7% | MediaCodec_loop 4% | HwBinder:16389_ 2% | ExoPlayer:Playb 2% | flutter-worker- 2%
+LAB  192.9 exo dropped 16 frames
+LAB  193.0 rebuffer start (ahead 52554 ms)
+LAB  193.0 line 2051 kbps, in a read
+LAB  193.1 rebuffer end 121 ms
+LAB  193.7 measured 2478 kbps
+LAB  198.3 line 2722 kbps, in a read
+LAB  198.8 exo rung 480p 1000 kbps
+LAB  199.7 rebuffer start (ahead 59974 ms)
+LAB  199.8 rebuffer end 93 ms
+LAB  201.1 measured 2449 kbps
+LAB  201.7 rebuffer start (ahead 60365 ms)
+LAB  201.7 rebuffer end 15 ms
+LAB cpu app 44% · 11.7fps · 1.raster 26% | .innocent.media 6% | MediaCodec_loop 3% | HwBinder:16389_ 2% | flutter-worker- 2% | ExoPlayer:Playb 2%
+LAB cpu app 40% · 12.2fps · 1.raster 30% | MediaCodec_loop 3% | .innocent.media 2% | HwBinder:16389_ 2% | ExoPlayer:Playb 2%
+LAB weakline line off for 8s
+LAB  218.8 rebuffer start (ahead 43862 ms)
+LAB  218.9 rebuffer end 8 ms
+LAB weakline line 3mbit for 60s
+LAB cpu app 40% · 13.5fps · 1.raster 30% | MediaCodec_loop 3% | HwBinder:16389_ 2% | ExoPlayer:Playb 2% | .innocent.media 2%
+LAB  227.0 rebuffer start (ahead 35990 ms)
+LAB  227.0 rebuffer end 2 ms
+LAB cpu app 39% · 11.8fps · 1.raster 29% | MediaCodec_loop 4% | ExoPlayer:Playb 2% | HwBinder:16389_ 2% | .innocent.media 2%
+LAB  233.9 fg stream: watching
+LAB  236.0 line 1545 kbps, in a read
+LAB  238.0 line 2320 kbps, in a read
+LAB  242.0 measured 2069 kbps
+LAB cpu app 44% · 12.9fps · 1.raster 27% | .innocent.media 5% | MediaCodec_loop 3% | HwBinder:16389_ 2% | ExoPlayer:Playb 2%
+LAB  244.9 rebuffer start (ahead 39876 ms)
+LAB  245.0 rebuffer end 18 ms
+LAB  246.6 line 1487 kbps, in a read
+LAB  250.6 line 2053 kbps, in a read
+LAB  250.9 measured 1991 kbps
+LAB  251.8 rebuffer start (ahead 44289 ms)
+LAB  251.8 rebuffer end 21 ms
+LAB cpu app 42% · 12.9fps · 1.raster 24% | .innocent.media 6% | MediaCodec_loop 4% | HwBinder:16389_ 2% | ExoPlayer:Playb 2% | DartWorker 1%
+LAB  255.4 line 2783 kbps, in a read
+LAB  258.0 measured 2542 kbps
+LAB  260.0 rebuffer start (ahead 54127 ms)
+LAB  260.0 rebuffer end 9 ms
+LAB cpu app 42% · 12.7fps · 1.raster 22% | .innocent.media 7% | MediaCodec_loop 3% | HwBinder:16389_ 2% | flutter-worker- 2% | ExoPlayer:Playb 2%
+LAB  264.6 measured 2774 kbps
+LAB  266.7 rebuffer start (ahead 58100 ms)
+LAB  266.7 rebuffer end 49 ms
+LAB  272.0 rebuffer start (ahead 53226 ms)
+LAB  272.0 rebuffer end 2 ms
+LAB cpu app 36% · 11.8fps · 1.raster 24% | MediaCodec_loop 4% | .innocent.media 3% | HwBinder:16389_ 2% | ExoPlayer:Playb 2%
+LAB cpu app 41% · 13.3fps · 1.raster 31% | MediaCodec_loop 4% | HwBinder:16389_ 2% | .innocent.media 2% | ExoPlayer:Playb 2%
+LAB  282.8 rebuffer start (ahead 42936 ms)
+LAB  282.8 rebuffer end 12 ms
+LAB weakline end pass=10 peak=window
+LAB weakline verdict pass=10 peak=window first=3452 stalls=0 blips=22 frozen_ms=698 longest_ms=121 time=480p:39%,360p:18%,240p:44%
 LAB phase weakline end

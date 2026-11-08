@@ -1,32 +1,152 @@
-[15:18:36] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
-[15:18:36] install
-[15:18:49] network: speed 2000:4000 kbit/s, delay 80:200 ms
-[15:18:49] network: eth0 has qdisc clsact
-[15:18:49] network: the redirect into ifb0 was accepted but only 0 bytes reached it — NO loss applies (ingress filters there: pref 1 bpf pref 49 u32 )
-[15:19:17] overlays: [x] com.android.internal.display.cutout.emulation.hole [x] com.android.internal.systemui.navbar.threebutton 
-[15:19:17] nav bar: navigationBars frame=[0,2274][1080,2400] navigationBars frame=[0,2274][1080,2400] 
-[15:19:17] library: pushing 24 files
-[15:19:46] library: MediaStore lists 24 videos
-[15:19:46] cold start
+[04:19:37] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
+[04:19:37] install
+[04:19:58] network: speed 2000:4000 kbit/s, delay 80:200 ms
+[04:19:58] network: eth0 has qdisc clsact
+[04:19:58] network: the redirect into ifb0 was accepted but only 0 bytes reached it — NO loss applies (ingress filters there: pref 1 bpf pref 49 u32 )
+[04:20:25] overlays: [x] com.android.internal.display.cutout.emulation.hole [x] com.android.internal.systemui.navbar.threebutton 
+[04:20:25] nav bar: navigationBars frame=[0,2274][1080,2400] navigationBars frame=[0,2274][1080,2400] 
+[04:20:25] library: pushing 24 files
+[04:20:56] library: MediaStore lists 24 videos
+[04:20:56] cold start
 Status: ok
-TotalTime: 3259
-WaitTime: 3263
-[15:20:00] flow weakline
-[15:20:01] line: this user's HTTPS through the relay on 47126, shaped on lo (delay 60ms each way, loss 0.5%)
-[15:20:07] weakline: the line under a 900kbit cap measured 784 kbps (600000 bytes)
-[15:20:08] weakline: the test film from its start; the line in steps: 4mbit:40 900kbit:120 3mbit:60 off:8 3mbit:60 (delay 60ms each way, loss 0.5%)
-[15:20:11] weakline: line 4mbit for 40 s
-[15:20:51] weakline: line 900kbit for 120 s
-[15:22:51] weakline: line 3mbit for 60 s
-[15:23:51] weakline: line off for 8 s
-[15:23:59] weakline: line 3mbit for 60 s
-[15:25:03] weakline: the line passed Sent 47302795 bytes 31605 pkt (dropped 125
-[15:25:04] weakline: relay: 42 connections (0 refused), 45.2 MB to the emulator, 83.2 KB from it
-[15:25:04] weakline: first frame 2757 ms, stalls 0 (>=250 ms), blips 7, frozen 181 ms, longest 92 ms
-[15:25:04] weakline step 1 (4mbit): stalls 0, frozen 0 ms, longest 0 ms, blips 1, rungs 480p
-[15:25:04] weakline step 2 (900kbit): stalls 0, frozen 0 ms, longest 0 ms, blips 3, rungs -
-[15:25:04] weakline step 3 (3mbit): stalls 0, frozen 0 ms, longest 0 ms, blips 1, rungs -
-[15:25:04] weakline step 4 (off): stalls 0, frozen 0 ms, longest 0 ms, blips 1, rungs -
-[15:25:04] weakline step 5 (3mbit): stalls 0, frozen 0 ms, longest 0 ms, blips 1, rungs -
-[15:25:05] flow weakline done
-[15:25:10] done
+TotalTime: 4349
+WaitTime: 4361
+[04:21:11] flow weakline
+[04:21:12] line: this user's HTTPS through the relay on 47126, shaped on lo (delay 60ms each way, loss 0.5%)
+[04:21:18] weakline: the line under a 900kbit cap measured 786 kbps (600000 bytes)
+[04:21:20] weakline pass 1 (fragment): the test film from its start; the line in steps: 4mbit:40 900kbit:120 3mbit:60 off:8 3mbit:60 (delay 60ms each way, loss 0.5%)
+[04:21:23] weakline: line 4mbit for 40 s
+[04:22:03] weakline: line 900kbit for 120 s
+[04:24:03] weakline: line 3mbit for 60 s
+[04:25:03] weakline: line off for 8 s
+[04:25:11] weakline: line 3mbit for 60 s
+[04:26:15] weakline pass 1 (fragment): first frame 3413 ms, stalls 0 (>=250 ms), blips 18, frozen 524 ms, longest 113 ms, time 480p:53% 360p:19% 240p:28%
+[04:26:15] weakline pass 1 (fragment): exo tracks 480,720,360,240 selected=4 adaptive=true peaks=1591,2105,723,382
+[04:26:15] weakline pass 1 step 1 (4mbit): stalls 0, frozen 0 ms, longest 0 ms, blips 1, rungs 480p 360p
+[04:26:15] weakline pass 1 step 2 (900kbit): stalls 0, frozen 0 ms, longest 0 ms, blips 8, rungs 480p 240p
+[04:26:15] weakline pass 1 step 3 (3mbit): stalls 0, frozen 0 ms, longest 0 ms, blips 3, rungs 360p 480p
+[04:26:15] weakline pass 1 step 4 (off): stalls 0, frozen 0 ms, longest 0 ms, blips 2, rungs -
+[04:26:15] weakline pass 1 step 5 (3mbit): stalls 0, frozen 0 ms, longest 0 ms, blips 4, rungs -
+[04:26:17] weakline pass 2 (window): the test film from its start; the line in steps: 4mbit:40 900kbit:120 3mbit:60 off:8 3mbit:60 (delay 60ms each way, loss 0.5%)
+[04:26:20] weakline: line 4mbit for 40 s
+[04:27:00] weakline: line 900kbit for 120 s
+[04:29:01] weakline: line 3mbit for 60 s
+[04:30:01] weakline: line off for 8 s
+[04:30:09] weakline: line 3mbit for 60 s
+[04:31:14] weakline pass 2 (window): first frame 4699 ms, stalls 0 (>=250 ms), blips 24, frozen 620 ms, longest 77 ms, time 480p:95% 360p:5%
+[04:31:14] weakline pass 2 (window): exo tracks 480,720,360,240 selected=4 adaptive=true peaks=1174,2168,745,394
+[04:31:14] weakline pass 2 step 1 (4mbit): stalls 0, frozen 0 ms, longest 0 ms, blips 4, rungs 480p 360p 480p
+[04:31:14] weakline pass 2 step 2 (900kbit): stalls 0, frozen 0 ms, longest 0 ms, blips 9, rungs -
+[04:31:14] weakline pass 2 step 3 (3mbit): stalls 0, frozen 0 ms, longest 0 ms, blips 5, rungs -
+[04:31:14] weakline pass 2 step 4 (off): stalls 0, frozen 0 ms, longest 0 ms, blips 1, rungs -
+[04:31:14] weakline pass 2 step 5 (3mbit): stalls 0, frozen 0 ms, longest 0 ms, blips 5, rungs -
+[04:31:15] weakline pass 3 (fragment): the test film from its start; the line in steps: 4mbit:40 900kbit:120 3mbit:60 off:8 3mbit:60 (delay 60ms each way, loss 0.5%)
+[04:31:18] weakline: line 4mbit for 40 s
+[04:31:58] weakline: line 900kbit for 120 s
+[04:33:58] weakline: line 3mbit for 60 s
+[04:34:59] weakline: line off for 8 s
+[04:35:07] weakline: line 3mbit for 60 s
+[04:36:11] weakline pass 3 (fragment): first frame 4003 ms, stalls 0 (>=250 ms), blips 16, frozen 438 ms, longest 91 ms, time 480p:90% 360p:10%
+[04:36:11] weakline pass 3 (fragment): exo tracks 480,720,360,240 selected=4 adaptive=true peaks=1591,2105,723,382
+[04:36:11] weakline pass 3 step 1 (4mbit): stalls 0, frozen 0 ms, longest 0 ms, blips 2, rungs 480p 360p
+[04:36:11] weakline pass 3 step 2 (900kbit): stalls 0, frozen 0 ms, longest 0 ms, blips 9, rungs 480p
+[04:36:11] weakline pass 3 step 3 (3mbit): stalls 0, frozen 0 ms, longest 0 ms, blips 1, rungs -
+[04:36:11] weakline pass 3 step 4 (off): stalls 0, frozen 0 ms, longest 0 ms, blips 0, rungs -
+[04:36:11] weakline pass 3 step 5 (3mbit): stalls 0, frozen 0 ms, longest 0 ms, blips 4, rungs -
+[04:36:13] weakline pass 4 (window): the test film from its start; the line in steps: 4mbit:40 900kbit:120 3mbit:60 off:8 3mbit:60 (delay 60ms each way, loss 0.5%)
+[04:36:16] weakline: line 4mbit for 40 s
+[04:36:56] weakline: line 900kbit for 120 s
+[04:38:56] weakline: line 3mbit for 60 s
+[04:39:56] weakline: line off for 8 s
+[04:40:04] weakline: line 3mbit for 60 s
+[04:41:08] weakline pass 4 (window): first frame 4290 ms, stalls 0 (>=250 ms), blips 21, frozen 546 ms, longest 197 ms, time 480p:98% 360p:2%
+[04:41:08] weakline pass 4 (window): exo tracks 480,720,360,240 selected=4 adaptive=true peaks=1174,2168,745,394
+[04:41:08] weakline pass 4 step 1 (4mbit): stalls 0, frozen 0 ms, longest 0 ms, blips 1, rungs 480p
+[04:41:08] weakline pass 4 step 2 (900kbit): stalls 0, frozen 0 ms, longest 0 ms, blips 10, rungs 360p 480p
+[04:41:08] weakline pass 4 step 3 (3mbit): stalls 0, frozen 0 ms, longest 0 ms, blips 5, rungs -
+[04:41:08] weakline pass 4 step 4 (off): stalls 0, frozen 0 ms, longest 0 ms, blips 0, rungs -
+[04:41:08] weakline pass 4 step 5 (3mbit): stalls 0, frozen 0 ms, longest 0 ms, blips 5, rungs -
+[04:41:09] weakline pass 5 (fragment): the test film from its start; the line in steps: 4mbit:40 900kbit:120 3mbit:60 off:8 3mbit:60 (delay 60ms each way, loss 0.5%)
+[04:41:12] weakline: line 4mbit for 40 s
+[04:41:52] weakline: line 900kbit for 120 s
+[04:43:53] weakline: line 3mbit for 60 s
+[04:44:53] weakline: line off for 8 s
+[04:45:01] weakline: line 3mbit for 60 s
+[04:46:05] weakline pass 5 (fragment): first frame 3257 ms, stalls 0 (>=250 ms), blips 18, frozen 518 ms, longest 121 ms, time 720p:2% 480p:41% 360p:16% 240p:41%
+[04:46:05] weakline pass 5 (fragment): exo tracks 480,720,360,240 selected=4 adaptive=true peaks=1591,2105,723,382
+[04:46:05] weakline pass 5 step 1 (4mbit): stalls 0, frozen 0 ms, longest 0 ms, blips 2, rungs 480p 360p 480p
+[04:46:05] weakline pass 5 step 2 (900kbit): stalls 0, frozen 0 ms, longest 0 ms, blips 10, rungs 360p 480p 720p 240p 360p 240p
+[04:46:05] weakline pass 5 step 3 (3mbit): stalls 0, frozen 0 ms, longest 0 ms, blips 4, rungs 360p 480p
+[04:46:05] weakline pass 5 step 4 (off): stalls 0, frozen 0 ms, longest 0 ms, blips 1, rungs -
+[04:46:05] weakline pass 5 step 5 (3mbit): stalls 0, frozen 0 ms, longest 0 ms, blips 1, rungs -
+[04:46:07] weakline pass 6 (window): the test film from its start; the line in steps: 4mbit:40 900kbit:120 3mbit:60 off:8 3mbit:60 (delay 60ms each way, loss 0.5%)
+[04:46:10] weakline: line 4mbit for 40 s
+[04:46:50] weakline: line 900kbit for 120 s
+[04:48:50] weakline: line 3mbit for 60 s
+[04:49:50] weakline: line off for 8 s
+[04:49:58] weakline: line 3mbit for 60 s
+[04:51:02] weakline pass 6 (window): first frame 3242 ms, stalls 0 (>=250 ms), blips 17, frozen 590 ms, longest 130 ms, time 480p:100%
+[04:51:02] weakline pass 6 (window): exo tracks 480,720,360,240 selected=4 adaptive=true peaks=1174,2168,745,394
+[04:51:02] weakline pass 6 step 1 (4mbit): stalls 0, frozen 0 ms, longest 0 ms, blips 1, rungs 480p
+[04:51:02] weakline pass 6 step 2 (900kbit): stalls 0, frozen 0 ms, longest 0 ms, blips 6, rungs -
+[04:51:02] weakline pass 6 step 3 (3mbit): stalls 0, frozen 0 ms, longest 0 ms, blips 5, rungs -
+[04:51:02] weakline pass 6 step 4 (off): stalls 0, frozen 0 ms, longest 0 ms, blips 0, rungs -
+[04:51:02] weakline pass 6 step 5 (3mbit): stalls 0, frozen 0 ms, longest 0 ms, blips 5, rungs -
+[04:51:04] weakline pass 7 (fragment): the test film from its start; the line in steps: 4mbit:40 900kbit:120 3mbit:60 off:8 3mbit:60 (delay 60ms each way, loss 0.5%)
+[04:51:07] weakline: line 4mbit for 40 s
+[04:51:47] weakline: line 900kbit for 120 s
+[04:53:47] weakline: line 3mbit for 60 s
+[04:54:47] weakline: line off for 8 s
+[04:54:55] weakline: line 3mbit for 60 s
+[04:55:59] weakline pass 7 (fragment): first frame 2824 ms, stalls 0 (>=250 ms), blips 21, frozen 692 ms, longest 132 ms, time 480p:92% 360p:8%
+[04:55:59] weakline pass 7 (fragment): exo tracks 480,720,360,240 selected=4 adaptive=true peaks=1591,2105,723,382
+[04:55:59] weakline pass 7 step 1 (4mbit): stalls 0, frozen 0 ms, longest 0 ms, blips 3, rungs 480p 360p
+[04:55:59] weakline pass 7 step 2 (900kbit): stalls 0, frozen 0 ms, longest 0 ms, blips 7, rungs 480p
+[04:55:59] weakline pass 7 step 3 (3mbit): stalls 0, frozen 0 ms, longest 0 ms, blips 6, rungs -
+[04:55:59] weakline pass 7 step 4 (off): stalls 0, frozen 0 ms, longest 0 ms, blips 0, rungs -
+[04:55:59] weakline pass 7 step 5 (3mbit): stalls 0, frozen 0 ms, longest 0 ms, blips 5, rungs -
+[04:56:01] weakline pass 8 (window): the test film from its start; the line in steps: 4mbit:40 900kbit:120 3mbit:60 off:8 3mbit:60 (delay 60ms each way, loss 0.5%)
+[04:56:04] weakline: line 4mbit for 40 s
+[04:56:44] weakline: line 900kbit for 120 s
+[04:58:44] weakline: line 3mbit for 60 s
+[04:59:45] weakline: line off for 8 s
+[04:59:53] weakline: line 3mbit for 60 s
+[05:00:57] weakline pass 8 (window): first frame 2802 ms, stalls 0 (>=250 ms), blips 25, frozen 589 ms, longest 75 ms, time 480p:100%
+[05:00:57] weakline pass 8 (window): exo tracks 480,720,360,240 selected=4 adaptive=true peaks=1174,2168,745,394
+[05:00:57] weakline pass 8 step 1 (4mbit): stalls 0, frozen 0 ms, longest 0 ms, blips 1, rungs 480p
+[05:00:57] weakline pass 8 step 2 (900kbit): stalls 0, frozen 0 ms, longest 0 ms, blips 10, rungs -
+[05:00:57] weakline pass 8 step 3 (3mbit): stalls 0, frozen 0 ms, longest 0 ms, blips 7, rungs -
+[05:00:57] weakline pass 8 step 4 (off): stalls 0, frozen 0 ms, longest 0 ms, blips 1, rungs -
+[05:00:57] weakline pass 8 step 5 (3mbit): stalls 0, frozen 0 ms, longest 0 ms, blips 6, rungs -
+[05:00:58] weakline pass 9 (fragment): the test film from its start; the line in steps: 4mbit:40 900kbit:120 3mbit:60 off:8 3mbit:60 (delay 60ms each way, loss 0.5%)
+[05:01:01] weakline: line 4mbit for 40 s
+[05:01:41] weakline: line 900kbit for 120 s
+[05:03:41] weakline: line 3mbit for 60 s
+[05:04:41] weakline: line off for 8 s
+[05:04:49] weakline: line 3mbit for 60 s
+[05:05:53] weakline pass 9 (fragment): first frame 4081 ms, stalls 0 (>=250 ms), blips 14, frozen 228 ms, longest 67 ms, time 480p:20% 360p:80%
+[05:05:53] weakline pass 9 (fragment): exo tracks 480,720,360,240 selected=4 adaptive=true peaks=1591,2105,723,382
+[05:05:53] weakline pass 9 step 1 (4mbit): stalls 0, frozen 0 ms, longest 0 ms, blips 2, rungs 480p 360p
+[05:05:53] weakline pass 9 step 2 (900kbit): stalls 0, frozen 0 ms, longest 0 ms, blips 4, rungs -
+[05:05:53] weakline pass 9 step 3 (3mbit): stalls 0, frozen 0 ms, longest 0 ms, blips 2, rungs -
+[05:05:53] weakline pass 9 step 4 (off): stalls 0, frozen 0 ms, longest 0 ms, blips 0, rungs -
+[05:05:53] weakline pass 9 step 5 (3mbit): stalls 0, frozen 0 ms, longest 0 ms, blips 6, rungs 480p
+[05:05:55] weakline pass 10 (window): the test film from its start; the line in steps: 4mbit:40 900kbit:120 3mbit:60 off:8 3mbit:60 (delay 60ms each way, loss 0.5%)
+[05:05:57] weakline: line 4mbit for 40 s
+[05:06:37] weakline: line 900kbit for 120 s
+[05:08:38] weakline: line 3mbit for 60 s
+[05:09:38] weakline: line off for 8 s
+[05:09:46] weakline: line 3mbit for 60 s
+[05:10:49] weakline pass 10 (window): first frame 3452 ms, stalls 0 (>=250 ms), blips 22, frozen 698 ms, longest 121 ms, time 480p:39% 360p:18% 240p:44%
+[05:10:49] weakline pass 10 (window): exo tracks 480,720,360,240 selected=4 adaptive=true peaks=1174,2168,745,394
+[05:10:49] weakline pass 10 step 1 (4mbit): stalls 0, frozen 0 ms, longest 0 ms, blips 4, rungs 480p 360p
+[05:10:49] weakline pass 10 step 2 (900kbit): stalls 0, frozen 0 ms, longest 0 ms, blips 7, rungs 480p 360p 480p 240p
+[05:10:49] weakline pass 10 step 3 (3mbit): stalls 0, frozen 0 ms, longest 0 ms, blips 3, rungs 360p 480p
+[05:10:49] weakline pass 10 step 4 (off): stalls 0, frozen 0 ms, longest 0 ms, blips 1, rungs -
+[05:10:49] weakline pass 10 step 5 (3mbit): stalls 0, frozen 0 ms, longest 0 ms, blips 7, rungs -
+[05:10:50] weakline: the line passed Sent 421299996 bytes 280766 pkt (dropped 1043
+[05:10:51] weakline: relay: 339 connections (0 refused), 424.4 MB to the emulator, 412.6 KB from it
+[05:10:51] weakline fragment, 5 passes: stalls 0, frozen 2400 ms, longest 132 ms, blips 87; at 480p or better 60% (53,90,43,92,20); 720p 0%; 480p 59%; 360p 27%; 240p 14%
+[05:10:51] weakline window, 5 passes: stalls 0, frozen 3043 ms, longest 197 ms, blips 109; at 480p or better 86% (95,98,100,100,39); 720p 0%; 480p 86%; 360p 5%; 240p 9%
+[05:10:51] flow weakline done
+[05:10:56] done
