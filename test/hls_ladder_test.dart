@@ -93,6 +93,8 @@ void main() {
       mediaUri: (r) => '${r.height}.m3u8',
       aspect: 16 / 9,
       frameRate: 24,
+      // The rule before 8 Nov 2026, kept for the lab's A/B (lab_peak).
+      rule: PeakRule.fragment,
     );
     final inf = RegExp(r'#EXT-X-STREAM-INF:(.*)\n(.*)').allMatches(text).toList();
     expect(inf.map((m) => m.group(2)), ['720.m3u8', '480.m3u8', '240.m3u8']);
@@ -172,10 +174,12 @@ void main() {
     int bw(String text, String uri) => int.parse(RegExp('BANDWIDTH=(\\d+),AVERAGE-BANDWIDTH=\\d+[^\\n]*\\n$uri\\n')
         .firstMatch(text)!
         .group(1)!);
-    final frag = HlsLadder.master(rungs, mediaUri: (r) => '${r.height}');
+    final frag = HlsLadder.master(rungs, mediaUri: (r) => '${r.height}', rule: PeakRule.fragment);
     expect(bw(frag, '480'), 400000, reason: 'the fastest fragment, as before');
     expect(bw(frag, '720'), 2500000, reason: 'not read: 1.25 × the average, as before');
-    final win = HlsLadder.master(rungs, mediaUri: (r) => '${r.height}', rule: PeakRule.window);
+    final win = HlsLadder.master(rungs, mediaUri: (r) => '${r.height}');
+    expect(win, HlsLadder.master(rungs, mediaUri: (r) => '${r.height}', rule: PeakRule.window),
+        reason: 'the window is the rule unless the lab asks for another');
     expect(bw(win, '480'), 150000);
     final ratio = 150000 / (avg * 1000);
     expect(bw(win, '720'), (2000000 * ratio).round());

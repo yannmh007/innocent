@@ -165,6 +165,14 @@ enum PeakRule {
 
   /// The fastest [HlsLadder.peakWindowMs] of film; a rung not read yet at
   /// its average times what a read rung's peak is to its own average.
+  ///
+  /// THE RULE SINCE 8 NOV 2026, by 32 passes of the device lab's weak line
+  /// (runs 42445022401, 42450352466, 42455719742; docs/
+  /// streaming_review_2026_11.md §5): against [fragment] it kept 480p 89 %
+  /// of the time to 69 %, led 12 pairs of 14, and had no stop where
+  /// [fragment] had one. Weighing a deep buffer against the whole line
+  /// as well (`deep`, ff10144) was tried and dropped: 720p in and out,
+  /// 64 %.
   window,
 }
 
@@ -224,7 +232,7 @@ class HlsLadder {
     double? aspect,
     double? frameRate,
     int? first,
-    PeakRule rule = PeakRule.fragment,
+    PeakRule rule = PeakRule.window,
   }) {
     final sorted = [...rungs]..sort((a, b) => b.height.compareTo(a.height));
     final lead = sorted.indexWhere((r) => r.height == first);
