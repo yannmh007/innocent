@@ -304,3 +304,36 @@ G's line and steps. No pass had a stop a viewer sees; the picture:
   fastest fragment of 3052: a third cheaper than the rule said.
 - The price is data: 480p is 912 kbps against 360p's 578, so a film held
   at 480p costs the viewer more of their plan on a weak line.
+
+**Run H2 (42450352466): H again, `window` first.** No stop in any pass
+again, and this time no clear winner:
+
+| Pair | `window` | `fragment` |
+|---|---|---|
+| 1-2 | 95 % | 88 % |
+| 3-4 | 56 % (240p 41 %) | 94 % |
+| 5-6 | 95 % | 87 % |
+| 7-8 | 97 % | 87 % |
+| 9-10 | 75 % (240p 15 %) | 84 % |
+| mean | 84 % (360p 5 %, 240p 11 %) | 88 % (360p 12 %, 240p 0 %) |
+
+- Over both runs, `window` led 8 pairs of 10 (means 85 % and 74 %, medians
+  95 % and 88 %); the signed ranks fall short of chance at 5 %
+  (W- = 13 of 55). On H2's runner one connection carried more in the
+  3 Mbit/s steps (readings 2.2-2.8 Mbit/s against H's 1.2-1.9), above
+  even `fragment`'s 2.27 Mbit/s for 480p, so the two rules chose alike —
+  the rule matters on a line between 1.7 and 2.3 Mbit/s, which is H's.
+- **Each rule has its own bad pass.** `fragment`'s (H 20 %, 43 %, 53 %):
+  stuck at 360p or 240p after the start, because climbing back needs
+  2.27 Mbit/s. `window`'s (H 39 %, H2 56 %, 75 %): 480p held into the
+  900 kbit/s step, the buffer drained under 25 s (ExoPlayer defers every
+  step down until then), and the step down went to **240p**, because 360p
+  (745 kbps over 0.7) needs 1.06 Mbit/s of line — on a line of ~860 kbit/s
+  that carries 360p's 578 kbps average half again over. Which pass meets
+  which depends on where the 30-60 s refill cycle stands when the line
+  falls (the buffer is refilled from 30 s up to 60 s, then left).
+- So the next variant, `deep` (run H3): `window`, and with 15 s or more in
+  hand Auto weighs a rung against the whole measured line instead of 70 %
+  of it (`SteeredSelection.canSelectFormat`); under 15 s the reserve is
+  back. In the collapse that is 360p, not 240p; on a 2-2.8 Mbit/s line
+  with a deep buffer it lets 720p (2168) in.
