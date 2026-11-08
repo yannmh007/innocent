@@ -272,3 +272,35 @@ weighed by its real peak while one not yet read is weighed at 1.25 × its
 average: 720p looks cheaper than it is until it is read. Both are one
 rule in `HlsLadder.master`; it needs several runs per variant to judge.
 
+
+**Run H (42445022401, 8 Nov): the first A/B with passes** (BACKLOG 5b).
+The weakline flow now plays the film once per word of `WEAK_PASSES`, from
+a cleared app each time, and the build weighs rungs by the rule `lab_peak`
+names; ten passes, `fragment` (the rule as it was) and `window` (a rung's
+fastest 20 s; a rung not read at a read rung's ratio) alternating, on F and
+G's line and steps. No pass had a stop a viewer sees; the picture:
+
+| Pair | `fragment`: time at 480p | `window`: time at 480p |
+|---|---|---|
+| 1-2 | 53 % | 95 % |
+| 3-4 | 90 % | 98 % |
+| 5-6 | 43 % (720p 2 %) | 100 % |
+| 7-8 | 92 % | 100 % |
+| 9-10 | 20 % | 39 % |
+| mean | 60 % (360p 27 %, 240p 14 %) | 86 % (360p 5 %, 240p 9 %) |
+
+- `window` won all five pairs (a sign test: 1 in 32 by chance). Stops
+  ≥ 250 ms: 0 and 0. Blips 87 and 109, every one with film in hand (2 s
+  at the least, 40 s typical): the emulator's decoder, as in C; more time
+  at 480p is more decoding. First frame alike (median 3.4 s and 3.5 s).
+- What Auto weighed (`exo tracks … peaks=`): 480p 1591 → 1174 kbps, 720p
+  2105 → 2168, 360p 723 → 745, 240p 382 → 394.
+- **The ratio holds.** Each rung's own numbers once read (the trail's
+  `hls: Np index`), average / fastest 2 s / 10 s / 20 s, kbps: 720p 1683 /
+  3052 / 2317 / 2212; 480p 912 / 1591 / 1224 / 1174; 360p 578 / 976 / 754 /
+  725; 240p 306 / 507 / 394 / 380. The 20 s peak is 1.24-1.31 × the average
+  on every rung, so 720p weighed from 480p's ratio (2168) is 2 % under its
+  own (2212). Under `fragment` 720p was weighed at 2105 against its own
+  fastest fragment of 3052: a third cheaper than the rule said.
+- The price is data: 480p is 912 kbps against 360p's 578, so a film held
+  at 480p costs the viewer more of their plan on a weak line.
