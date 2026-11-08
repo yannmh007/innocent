@@ -134,6 +134,58 @@ void main() {
     expect(order(1080), ['720', '480', '360', '240']);
   });
 
+  // A film of 2 s fragments at 100 kbit/s (25,000 bytes), with one busy
+  // fragment at 400 kbit/s and, later, ten fragments (20 s) at 150 kbit/s.
+  CmafIndex busyFilm() {
+    final sizes = List<int>.filled(60, 25000);
+    sizes[5] = 100000;
+    for (var i = 30; i < 40; i++) {
+      sizes[i] = 37500;
+    }
+    final film = FakeCmaf.build(sizes: sizes, seconds: 2);
+    return CmafIndex.parse(Uint8List.sublistView(film.bytes, 0, film.headEnd + 16))!;
+  }
+
+  test('the peak over a window: one busy fragment is carried, a busy stretch is not', () {
+    final idx = busyFilm();
+    expect(idx.length, 60);
+    // One fragment: the busy one, 400 kbit/s.
+    expect(HlsLadder.peakBps(idx), 400000);
+    expect(HlsLadder.windowPeakBps(idx, 0), 400000);
+    // Twenty seconds: the stretch at 150 kbit/s, not the single 400 —
+    // which over any 20 s around it is (9 × 25,000 + 100,000) B / 20 s.
+    expect(HlsLadder.windowPeakBps(idx, 20000), 150000);
+    expect(HlsLadder.windowPeakBps(idx, 4000), 250000);
+    // A window longer than the film: the film whole.
+    expect(HlsLadder.windowPeakBps(idx, 1000000), HlsLadder.averageBps(idx));
+    expect(HlsLadder.averageBps(idx), (59 * 25000 + 100000 + 10 * 12500) * 8000 ~/ 120000);
+  });
+
+  test('the window rule: read rungs by their window, the rest by a read rung\'s ratio', () {
+    final idx = busyFilm();
+    final avg = HlsLadder.averageBps(idx) ~/ 1000;
+    final rungs = [
+      HlsRung(height: 480, kbps: avg, url: 'a', index: idx),
+      const HlsRung(height: 720, kbps: 2000, url: 'b'),
+      const HlsRung(height: 240, kbps: 300, url: 'c'),
+    ];
+    int bw(String text, String uri) => int.parse(RegExp('BANDWIDTH=(\\d+),AVERAGE-BANDWIDTH=\\d+[^\\n]*\\n$uri\\n')
+        .firstMatch(text)!
+        .group(1)!);
+    final frag = HlsLadder.master(rungs, mediaUri: (r) => '${r.height}');
+    expect(bw(frag, '480'), 400000, reason: 'the fastest fragment, as before');
+    expect(bw(frag, '720'), 2500000, reason: 'not read: 1.25 × the average, as before');
+    final win = HlsLadder.master(rungs, mediaUri: (r) => '${r.height}', rule: PeakRule.window);
+    expect(bw(win, '480'), 150000);
+    final ratio = 150000 / (avg * 1000);
+    expect(bw(win, '720'), (2000000 * ratio).round());
+    expect(bw(win, '240'), (300000 * ratio).round());
+    // Nothing read at all: 1.25 × the average under either rule.
+    final none = HlsLadder.master(const [HlsRung(height: 360, kbps: 600, url: 'd')],
+        mediaUri: (r) => '${r.height}', rule: PeakRule.window);
+    expect(bw(none, '360'), 750000);
+  });
+
   test('no rung read and no shape known: every rung still has a RESOLUTION', () {
     // The player tells rungs apart by height; without one, a pick of 240p
     // played the best rung (device-lab run 40079651806).

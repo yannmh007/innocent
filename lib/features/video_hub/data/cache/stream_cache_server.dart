@@ -137,6 +137,11 @@ class StreamCacheServer {
   @visibleForTesting
   static int lanes = 6;
 
+  /// How the master weighs each rung for Auto (HlsLadder.master, BACKLOG
+  /// 5b). Settable for the lab's A/B (`lab_peak`) and for tests.
+  @visibleForTesting
+  static PeakRule peakRule = PeakRule.fragment;
+
   /// How much one parallel stretch covers before the loop comes round again
   /// (to check the cache, renew a link).
   @visibleForTesting
@@ -760,6 +765,13 @@ class StreamCacheServer {
             if (idx != null) {
               r.index = idx;
               r.head = CmafHead.parse(bytes);
+              // What a rung asks of the line, over one fragment and over
+              // longer stretches: the numbers BACKLOG 5b weighs rungs by.
+              int k(int bps) => bps ~/ 1000;
+              PlaybackLog.add('hls: ${r.height}p index, ${idx.length} segments, '
+                  'average ${k(HlsLadder.averageBps(idx))}, peak 2s ${k(HlsLadder.peakBps(idx))}, '
+                  '10s ${k(HlsLadder.windowPeakBps(idx, 10000))}, '
+                  '20s ${k(HlsLadder.windowPeakBps(idx, 20000))} kbps');
               handedOff = true;
               unawaited(() async {
                 try {
@@ -819,6 +831,7 @@ class StreamCacheServer {
           aspect: aspect,
           frameRate: l.frameRate,
           first: startHeight,
+          rule: peakRule,
         );
       } else if (name.endsWith('.m3u8')) {
         final h = int.tryParse(name.substring(0, name.length - 5));
@@ -856,6 +869,10 @@ class StreamCacheServer {
   /// count from `lab_lanes` in the app's external files directory, which the
   /// lab writes with adb between two plays of the same film over the same
   /// shaped line — one connection, then three. A release build never looks.
+  ///
+  /// And `lab_peak` names the rule the master weighs rungs by
+  /// ([PeakRule]: `fragment` or `window`), for the weakline flow's passes
+  /// that alternate between them on one line (BACKLOG 5b).
   static Future<void> _labLanes() async {
     if (!const bool.fromEnvironment('INNOCENT_LAB')) return;
     try {
@@ -865,7 +882,12 @@ class StreamCacheServer {
         final n = int.tryParse((await f.readAsString()).trim());
         if (n != null) lanes = n.clamp(1, 8);
       }
-      PlaybackLog.add('stream lanes=$lanes');
+      final p = File('${dir?.path}/lab_peak');
+      if (dir != null && await p.exists()) {
+        final name = (await p.readAsString()).trim();
+        peakRule = PeakRule.values.where((v) => v.name == name).firstOrNull ?? peakRule;
+      }
+      PlaybackLog.add('stream lanes=$lanes peak=${peakRule.name}');
     } catch (_) {}
   }
 
