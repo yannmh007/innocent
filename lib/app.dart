@@ -157,7 +157,10 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
   /// (seconds), which device-cloud.yml keeps in lab_trace.txt. Written after
   /// 1.64.68 reopened the film at 00:00 after a quality change and after a
   /// slow seek — on every phone, and no run had looked at the position.
-  Future<void> _labJumpScript() async {
+  ///
+  /// [homeTrip]: false on Test Lab, where nothing presses Home: the trip's
+  /// check is skipped at once instead of after 90 s of waiting for it.
+  Future<void> _labJumpScript({bool homeTrip = true}) async {
     final svc = ref.read(videoPlayerServiceProvider);
     // THE PLAYER SCREEN'S CONTROLLER, read at each step. It is autoDispose,
     // and read once here — before the screen had mounted and watched it —
@@ -406,7 +409,9 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
       // Home, then opens the app as the launcher does): the film picks up
       // where it was and the picture is drawn again — frames counted by
       // the engine itself, since a screenshot here is sealed.
-      if (svc is MediaKitPlayerService && svc.playingLadder) {
+      if (!homeTrip) {
+        PlaybackLog.add('LAB check back SKIP (no trip to the home screen)');
+      } else if (svc is MediaKitPlayerService && svc.playingLadder) {
         final away = Completer<void>();
         final back = Completer<void>();
         final watch = AppLifecycleListener(
@@ -475,7 +480,9 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
   ///   back_ms    from moving again until `before` was back (-1: not then)
   ///   stall_ms   the longest stop in those twenty seconds
   ///   mean       the mean rung over them
-  Future<void> _labAutoJumps(List<double> shares) async {
+  /// [alternate]: the rule on for the odd jumps and off for the even ones,
+  /// within the one film (Test Lab, where a phone plays the film once).
+  Future<void> _labAutoJumps(List<double> shares, {bool alternate = false}) async {
     final svc = ref.read(videoPlayerServiceProvider);
     PlayerController player() => ref.read(playerControllerProvider.notifier);
     int rungNow() => (svc is MediaKitPlayerService ? svc.ladderRung : null) ?? 0;
@@ -498,6 +505,7 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
       i++;
       if (!mounted) return;
       final want = Duration(milliseconds: (length.inMilliseconds * share).round());
+      if (alternate && svc is MediaKitPlayerService) await svc.ladderJumpRule(i.isOdd);
       final before = rungNow();
       final jumped = DateTime.now();
       var last = svc.position;
@@ -610,6 +618,7 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
         // Compiled in for Test Lab; the device lab names it in
         // lab_stream_url instead, to take this same path on the emulator.
         const built = String.fromEnvironment('INNOCENT_LAB_TITLE');
+        const autoJumps = String.fromEnvironment('INNOCENT_LAB_AUTOJUMPS');
         unawaited(() async {
           final id = built.isNotEmpty
               ? built
@@ -621,10 +630,16 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
           await _labTitle(id);
           // Test Lab only (the title compiled in): the jumps a viewer
           // makes, each checked for where it landed.
-          if (built.isNotEmpty) await _labJumpScript();
+          if (built.isNotEmpty) await _labJumpScript(homeTrip: false);
+          // Then the jump rule's A/B on this phone's own line (BACKLOG
+          // 5c): jumps in Auto, the rule on and off in turn.
+          if (built.isNotEmpty && autoJumps.isNotEmpty) {
+            await _labAutoJumps(LabStream.parseAutoJumps(autoJumps), alternate: true);
+          }
         }());
         if (built.isNotEmpty) {
-          Timer(const Duration(seconds: 240), () => exit(0));
+          // Test Lab's game loop has 360 s; the jumps in Auto take ~140.
+          Timer(Duration(seconds: autoJumps.isEmpty ? 240 : 330), () => exit(0));
         }
         return;
       }

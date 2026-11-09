@@ -62,7 +62,7 @@ import io.flutter.view.TextureRegistry
  *
  * WHAT THE CHANNEL CARRIES
  *   methods `innocent/exo`: create, open, play, pause, seek, scrubbing,
- *     rate, volume, quality, maxHeight, bandwidth, stop, release
+ *     rate, volume, quality, maxHeight, bandwidth, jumpLow, stop, release
  *   events `innocent/exo/events`: state, pos, size, rung, first, tracks,
  *     jump, jumpback, dropped, error — each with the engine's `id`.
  */
@@ -856,6 +856,8 @@ class ExoStreamEngine private constructor(
                         "quality" -> e.quality((call.argument<Number>("height"))?.toInt())
                         "maxHeight" -> e.maxHeight((call.argument<Number>("height"))?.toInt())
                         "bandwidth" -> e.bandwidth((call.argument<Number>("bps"))?.toLong() ?: 0L)
+                        // The lab's A/B jump by jump, on a phone (Test Lab).
+                        "jumpLow" -> { e.steer.jumpLow = call.argument<Boolean>("on") ?: false }
                         "stop" -> e.stop()
                         "release" -> {
                             e.release()

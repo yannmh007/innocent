@@ -302,6 +302,12 @@ class MediaKitPlayerService implements VideoPlayerService {
   /// The declared bitrate of [ladderRung]'s copy (kbps), for the lab.
   int? get ladderRungKbps => _exoActive ? _exo?.rungKbps : null;
 
+  /// The lab's jump rule ([ExoEngine.jumpLow]) for the film playing now.
+  Future<void> ladderJumpRule(bool on) async {
+    ExoEngine.jumpLow = on;
+    if (_exoActive) await _exo?.jumpRule(on);
+  }
+
   /// [ladderRung] as it changes, for the top bar; null off the ladder.
   static final ValueNotifier<int?> rungOnScreen = ValueNotifier<int?>(null);
   VoidCallback? _rungListener;

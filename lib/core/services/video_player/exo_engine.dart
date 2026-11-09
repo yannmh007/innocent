@@ -326,6 +326,13 @@ class ExoEngine {
   /// The line's speed as the proxy measured it, for Auto's choices.
   Future<bool> bandwidth(int kbps) => _call('bandwidth', <String, Object?>{'bps': kbps * 1000});
 
+  /// [jumpLow] for this film from now on, not only at the next open: the
+  /// lab's A/B jump by jump on a phone (Test Lab).
+  Future<bool> jumpRule(bool on) {
+    jumpLow = on;
+    return _call('jumpLow', <String, Object?>{'on': on});
+  }
+
   Future<bool> stop() {
     _letGo('stopped');
     return _call('stop');
