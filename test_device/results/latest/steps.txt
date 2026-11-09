@@ -1,175 +1,103 @@
-[13:53:31] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
-[13:53:31] install
-[13:53:56] network: speed 2000:4000 kbit/s, delay 80:200 ms
-[13:53:56] network: eth0 has qdisc clsact
-[13:53:56] network: the redirect into ifb0 was accepted but only 0 bytes reached it — NO loss applies (ingress filters there: pref 1 bpf pref 49 u32 )
-[13:54:23] overlays: [x] com.android.internal.display.cutout.emulation.hole [x] com.android.internal.systemui.navbar.threebutton 
-[13:54:23] nav bar: navigationBars frame=[0,2274][1080,2400] navigationBars frame=[0,2274][1080,2400] 
-[13:54:23] library: pushing 24 files
-[13:54:52] library: MediaStore lists 24 videos
-[13:54:52] cold start
+[16:46:50] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
+[16:46:50] install
+[16:47:08] network: speed 2000:4000 kbit/s, delay 80:200 ms
+[16:47:09] network: eth0 has qdisc clsact
+[16:47:09] network: the redirect into ifb0 was accepted but only 0 bytes reached it — NO loss applies (ingress filters there: pref 1 bpf pref 49 u32 )
+[16:47:35] overlays: [x] com.android.internal.display.cutout.emulation.hole [x] com.android.internal.systemui.navbar.threebutton 
+[16:47:36] nav bar: navigationBars frame=[0,2274][1080,2400] navigationBars frame=[0,2274][1080,2400] 
+[16:47:36] library: pushing 24 files
+[16:48:09] library: MediaStore lists 24 videos
+[16:48:09] cold start
 Status: ok
-TotalTime: 4414
-WaitTime: 4420
-[13:55:07] flow weakjumps
-[13:55:08] line: this user's HTTPS through the relay on 47126, shaped on lo (delay 60ms each way, loss 0.5%)
-[13:55:14] weakjumps: the line under a 900kbit cap measured 783 kbps (600000 bytes)
-[13:55:16] weakjumps pass 1 (off): the test film, jumps to 0.40 0.70 0.20 0.85 0.55 0.31 0.95 on a 4mbit line (delay 60ms each way, loss 0.5%)
-[13:58:57] weakjumps pass 1 (off): 7 jumps, the rule took a lower first segment 0 times; jump rule off
-[13:58:57] weakjumps pass 1 (off): autojump 1/7 at=0.40 want=355 got=356 frozen_ms=2100 ready_ms=330 before=240 first=360 low_ms=0 back_ms=0 stall_ms=359 mean=360 rule=off
-[13:58:57] weakjumps pass 1 (off): autojump 2/7 at=0.70 want=621 got=622 frozen_ms=1994 ready_ms=2770 before=360 first=480 low_ms=0 back_ms=0 stall_ms=430 mean=480 rule=off
-[13:58:57] weakjumps pass 1 (off): autojump 3/7 at=0.20 want=177 got=178 frozen_ms=3328 ready_ms=3766 before=480 first=480 low_ms=0 back_ms=0 stall_ms=336 mean=480 rule=off
-[13:58:57] weakjumps pass 1 (off): autojump 4/7 at=0.85 want=754 got=755 frozen_ms=1755 ready_ms=3631 before=480 first=480 low_ms=0 back_ms=0 stall_ms=318 mean=480 rule=off
-[13:58:57] weakjumps pass 1 (off): autojump 5/7 at=0.55 want=488 got=489 frozen_ms=1386 ready_ms=2852 before=480 first=480 low_ms=0 back_ms=0 stall_ms=417 mean=480 rule=off
-[13:58:57] weakjumps pass 1 (off): autojump 6/7 at=0.31 want=275 got=276 frozen_ms=4261 ready_ms=191 before=480 first=480 low_ms=0 back_ms=0 stall_ms=303 mean=480 rule=off
-[13:58:57] weakjumps pass 1 (off): autojump 7/7 at=0.95 want=843 got=844 frozen_ms=1971 ready_ms=2422 before=480 first=480 low_ms=0 back_ms=0 stall_ms=342 mean=480 rule=off
-[13:58:59] weakjumps pass 2 (on): the test film, jumps to 0.40 0.70 0.20 0.85 0.55 0.31 0.95 on a 4mbit line (delay 60ms each way, loss 0.5%)
-[14:02:44] weakjumps pass 2 (on): 7 jumps, the rule took a lower first segment 7 times; jump rule on
-[14:02:44] weakjumps pass 2 (on): autojump 1/7 at=0.40 want=355 got=356 frozen_ms=2466 ready_ms=402 before=480 first=240 low_ms=2900 back_ms=3934 stall_ms=803 mean=435 rule=on
-[14:02:44] weakjumps pass 2 (on): autojump 2/7 at=0.70 want=621 got=622 frozen_ms=2415 ready_ms=3071 before=480 first=240 low_ms=500 back_ms=785 stall_ms=571 mean=472 rule=on
-[14:02:44] weakjumps pass 2 (on): autojump 3/7 at=0.20 want=177 got=178 frozen_ms=2341 ready_ms=3280 before=480 first=240 low_ms=12900 back_ms=922 stall_ms=1180 mean=376 rule=on
-[14:02:44] weakjumps pass 2 (on): autojump 4/7 at=0.85 want=754 got=755 frozen_ms=2577 ready_ms=4876 before=360 first=480 low_ms=0 back_ms=0 stall_ms=252 mean=480 rule=on
-[14:02:44] weakjumps pass 2 (on): autojump 5/7 at=0.55 want=488 got=489 frozen_ms=2259 ready_ms=3558 before=480 first=480 low_ms=0 back_ms=0 stall_ms=410 mean=480 rule=on
-[14:02:44] weakjumps pass 2 (on): autojump 6/7 at=0.31 want=275 got=276 frozen_ms=1308 ready_ms=442 before=480 first=240 low_ms=12500 back_ms=16596 stall_ms=814 mean=366 rule=on
-[14:02:44] weakjumps pass 2 (on): autojump 7/7 at=0.95 want=843 got=844 frozen_ms=2266 ready_ms=3375 before=480 first=240 low_ms=800 back_ms=1045 stall_ms=354 mean=468 rule=on
-[14:02:46] weakjumps pass 3 (off): the test film, jumps to 0.40 0.70 0.20 0.85 0.55 0.31 0.95 on a 4mbit line (delay 60ms each way, loss 0.5%)
-[14:06:31] weakjumps pass 3 (off): 7 jumps, the rule took a lower first segment 0 times; jump rule off
-[14:06:31] weakjumps pass 3 (off): autojump 1/7 at=0.40 want=355 got=356 frozen_ms=1522 ready_ms=332 before=480 first=480 low_ms=0 back_ms=0 stall_ms=324 mean=480 rule=off
-[14:06:31] weakjumps pass 3 (off): autojump 2/7 at=0.70 want=621 got=622 frozen_ms=3357 ready_ms=4264 before=480 first=360 low_ms=9000 back_ms=11253 stall_ms=384 mean=412 rule=off
-[14:06:31] weakjumps pass 3 (off): autojump 3/7 at=0.20 want=177 got=178 frozen_ms=2753 ready_ms=3415 before=480 first=480 low_ms=13900 back_ms=0 stall_ms=363 mean=377 rule=off
-[14:06:31] weakjumps pass 3 (off): autojump 4/7 at=0.85 want=754 got=755 frozen_ms=3039 ready_ms=5099 before=360 first=480 low_ms=0 back_ms=0 stall_ms=430 mean=480 rule=off
-[14:06:31] weakjumps pass 3 (off): autojump 5/7 at=0.55 want=488 got=489 frozen_ms=1739 ready_ms=3057 before=480 first=480 low_ms=0 back_ms=0 stall_ms=321 mean=480 rule=off
-[14:06:31] weakjumps pass 3 (off): autojump 6/7 at=0.31 want=275 got=276 frozen_ms=3011 ready_ms=367 before=480 first=360 low_ms=11400 back_ms=14617 stall_ms=414 mean=392 rule=off
-[14:06:31] weakjumps pass 3 (off): autojump 7/7 at=0.95 want=843 got=844 frozen_ms=1971 ready_ms=2778 before=480 first=480 low_ms=0 back_ms=0 stall_ms=490 mean=559 rule=off
-[14:06:33] weakjumps pass 4 (on): the test film, jumps to 0.40 0.70 0.20 0.85 0.55 0.31 0.95 on a 4mbit line (delay 60ms each way, loss 0.5%)
-[14:10:18] weakjumps pass 4 (on): 7 jumps, the rule took a lower first segment 7 times; jump rule on
-[14:10:18] weakjumps pass 4 (on): autojump 1/7 at=0.40 want=355 got=356 frozen_ms=2040 ready_ms=243 before=360 first=360 low_ms=8900 back_ms=0 stall_ms=1220 mean=328 rule=on
-[14:10:18] weakjumps pass 4 (on): autojump 2/7 at=0.70 want=621 got=622 frozen_ms=2002 ready_ms=2824 before=240 first=240 low_ms=0 back_ms=0 stall_ms=866 mean=470 rule=on
-[14:10:18] weakjumps pass 4 (on): autojump 3/7 at=0.20 want=177 got=178 frozen_ms=2487 ready_ms=3246 before=480 first=240 low_ms=600 back_ms=782 stall_ms=1686 mean=471 rule=on
-[14:10:18] weakjumps pass 4 (on): autojump 4/7 at=0.85 want=754 got=755 frozen_ms=1946 ready_ms=4784 before=480 first=480 low_ms=9000 back_ms=0 stall_ms=417 mean=412 rule=on
-[14:10:18] weakjumps pass 4 (on): autojump 5/7 at=0.55 want=488 got=489 frozen_ms=2407 ready_ms=3684 before=360 first=360 low_ms=0 back_ms=0 stall_ms=631 mean=509 rule=on
-[14:10:18] weakjumps pass 4 (on): autojump 6/7 at=0.31 want=275 got=276 frozen_ms=2643 ready_ms=238 before=720 first=240 low_ms=15300 back_ms=-1 stall_ms=557 mean=438 rule=on
-[14:10:18] weakjumps pass 4 (on): autojump 7/7 at=0.95 want=843 got=844 frozen_ms=2594 ready_ms=3204 before=480 first=240 low_ms=700 back_ms=999 stall_ms=730 mean=470 rule=on
-[14:10:20] weakjumps pass 5 (off): the test film, jumps to 0.40 0.70 0.20 0.85 0.55 0.31 0.95 on a 4mbit line (delay 60ms each way, loss 0.5%)
-[14:14:00] weakjumps pass 5 (off): 7 jumps, the rule took a lower first segment 0 times; jump rule off
-[14:14:00] weakjumps pass 5 (off): autojump 1/7 at=0.40 want=355 got=356 frozen_ms=1587 ready_ms=118 before=480 first=480 low_ms=5200 back_ms=0 stall_ms=273 mean=441 rule=off
-[14:14:00] weakjumps pass 5 (off): autojump 2/7 at=0.70 want=621 got=622 frozen_ms=2441 ready_ms=3493 before=360 first=480 low_ms=0 back_ms=0 stall_ms=428 mean=480 rule=off
-[14:14:00] weakjumps pass 5 (off): autojump 3/7 at=0.20 want=177 got=178 frozen_ms=2190 ready_ms=2904 before=480 first=480 low_ms=0 back_ms=0 stall_ms=308 mean=480 rule=off
-[14:14:00] weakjumps pass 5 (off): autojump 4/7 at=0.85 want=754 got=755 frozen_ms=1111 ready_ms=3052 before=480 first=480 low_ms=0 back_ms=0 stall_ms=338 mean=480 rule=off
-[14:14:00] weakjumps pass 5 (off): autojump 5/7 at=0.55 want=488 got=489 frozen_ms=1723 ready_ms=3140 before=480 first=480 low_ms=0 back_ms=0 stall_ms=313 mean=480 rule=off
-[14:14:00] weakjumps pass 5 (off): autojump 6/7 at=0.31 want=275 got=276 frozen_ms=3243 ready_ms=421 before=480 first=720 low_ms=0 back_ms=0 stall_ms=693 mean=526 rule=off
-[14:14:00] weakjumps pass 5 (off): autojump 7/7 at=0.95 want=843 got=844 frozen_ms=1723 ready_ms=2439 before=480 first=480 low_ms=0 back_ms=0 stall_ms=288 mean=480 rule=off
-[14:14:02] weakjumps pass 6 (on): the test film, jumps to 0.40 0.70 0.20 0.85 0.55 0.31 0.95 on a 4mbit line (delay 60ms each way, loss 0.5%)
-[14:17:43] weakjumps pass 6 (on): 7 jumps, the rule took a lower first segment 7 times; jump rule on
-[14:17:43] weakjumps pass 6 (on): autojump 1/7 at=0.40 want=355 got=356 frozen_ms=3274 ready_ms=327 before=480 first=480 low_ms=2400 back_ms=0 stall_ms=283 mean=443 rule=on
-[14:17:43] weakjumps pass 6 (on): autojump 2/7 at=0.70 want=621 got=622 frozen_ms=2164 ready_ms=2842 before=480 first=240 low_ms=1500 back_ms=1867 stall_ms=396 mean=457 rule=on
-[14:17:43] weakjumps pass 6 (on): autojump 3/7 at=0.20 want=177 got=178 frozen_ms=1750 ready_ms=2610 before=480 first=240 low_ms=2300 back_ms=2813 stall_ms=304 mean=446 rule=on
-[14:17:43] weakjumps pass 6 (on): autojump 4/7 at=0.85 want=754 got=755 frozen_ms=1765 ready_ms=3805 before=480 first=480 low_ms=11000 back_ms=0 stall_ms=513 mean=395 rule=on
-[14:17:43] weakjumps pass 6 (on): autojump 5/7 at=0.55 want=488 got=489 frozen_ms=2629 ready_ms=4149 before=360 first=360 low_ms=0 back_ms=0 stall_ms=307 mean=360 rule=on
-[14:17:43] weakjumps pass 6 (on): autojump 6/7 at=0.31 want=275 got=276 frozen_ms=2450 ready_ms=247 before=360 first=360 low_ms=4800 back_ms=0 stall_ms=633 mean=338 rule=on
-[14:17:43] weakjumps pass 6 (on): autojump 7/7 at=0.95 want=843 got=844 frozen_ms=2429 ready_ms=3443 before=360 first=240 low_ms=600 back_ms=884 stall_ms=1057 mean=471 rule=on
-[14:17:45] weakjumps pass 7 (off): the test film, jumps to 0.40 0.70 0.20 0.85 0.55 0.31 0.95 on a 4mbit line (delay 60ms each way, loss 0.5%)
-[14:21:26] weakjumps pass 7 (off): 7 jumps, the rule took a lower first segment 0 times; jump rule off
-[14:21:26] weakjumps pass 7 (off): autojump 1/7 at=0.40 want=355 got=356 frozen_ms=1586 ready_ms=377 before=480 first=480 low_ms=0 back_ms=0 stall_ms=409 mean=480 rule=off
-[14:21:26] weakjumps pass 7 (off): autojump 2/7 at=0.70 want=621 got=622 frozen_ms=1269 ready_ms=2053 before=480 first=480 low_ms=0 back_ms=0 stall_ms=411 mean=480 rule=off
-[14:21:26] weakjumps pass 7 (off): autojump 3/7 at=0.20 want=177 got=178 frozen_ms=1697 ready_ms=2401 before=480 first=480 low_ms=0 back_ms=0 stall_ms=263 mean=480 rule=off
-[14:21:26] weakjumps pass 7 (off): autojump 4/7 at=0.85 want=754 got=755 frozen_ms=1718 ready_ms=3363 before=480 first=480 low_ms=11600 back_ms=0 stall_ms=409 mean=394 rule=off
-[14:21:26] weakjumps pass 7 (off): autojump 5/7 at=0.55 want=488 got=488 frozen_ms=2498 ready_ms=4199 before=360 first=480 low_ms=0 back_ms=0 stall_ms=382 mean=480 rule=off
-[14:21:26] weakjumps pass 7 (off): autojump 6/7 at=0.31 want=275 got=276 frozen_ms=1963 ready_ms=240 before=480 first=480 low_ms=12000 back_ms=0 stall_ms=666 mean=388 rule=off
-[14:21:26] weakjumps pass 7 (off): autojump 7/7 at=0.95 want=843 got=844 frozen_ms=2306 ready_ms=3093 before=480 first=480 low_ms=10300 back_ms=0 stall_ms=390 mean=403 rule=off
-[14:21:28] weakjumps pass 8 (on): the test film, jumps to 0.40 0.70 0.20 0.85 0.55 0.31 0.95 on a 4mbit line (delay 60ms each way, loss 0.5%)
-[14:25:09] weakjumps pass 8 (on): 7 jumps, the rule took a lower first segment 7 times; jump rule on
-[14:25:09] weakjumps pass 8 (on): autojump 1/7 at=0.40 want=355 got=356 frozen_ms=2114 ready_ms=363 before=360 first=360 low_ms=2600 back_ms=0 stall_ms=560 mean=368 rule=on
-[14:25:09] weakjumps pass 8 (on): autojump 2/7 at=0.70 want=621 got=622 frozen_ms=2554 ready_ms=3417 before=360 first=240 low_ms=3000 back_ms=3866 stall_ms=384 mean=368 rule=on
-[14:25:09] weakjumps pass 8 (on): autojump 3/7 at=0.20 want=177 got=178 frozen_ms=2328 ready_ms=3751 before=480 first=240 low_ms=9100 back_ms=664 stall_ms=2192 mean=404 rule=on
-[14:25:10] weakjumps pass 8 (on): autojump 4/7 at=0.85 want=754 got=755 frozen_ms=1123 ready_ms=3143 before=480 first=480 low_ms=0 back_ms=0 stall_ms=393 mean=480 rule=on
-[14:25:10] weakjumps pass 8 (on): autojump 5/7 at=0.55 want=488 got=488 frozen_ms=2614 ready_ms=4041 before=480 first=240 low_ms=100 back_ms=204 stall_ms=407 mean=479 rule=on
-[14:25:10] weakjumps pass 8 (on): autojump 6/7 at=0.31 want=275 got=276 frozen_ms=2079 ready_ms=437 before=480 first=240 low_ms=13500 back_ms=16727 stall_ms=558 mean=358 rule=on
-[14:25:10] weakjumps pass 8 (on): autojump 7/7 at=0.95 want=843 got=844 frozen_ms=1954 ready_ms=2466 before=480 first=240 low_ms=900 back_ms=1213 stall_ms=1377 mean=467 rule=on
-[14:25:11] weakjumps pass 9 (off): the test film, jumps to 0.40 0.70 0.20 0.85 0.55 0.31 0.95 on a 4mbit line (delay 60ms each way, loss 0.5%)
-[14:28:53] weakjumps pass 9 (off): 7 jumps, the rule took a lower first segment 0 times; jump rule off
-[14:28:53] weakjumps pass 9 (off): autojump 1/7 at=0.40 want=355 got=356 frozen_ms=1253 ready_ms=318 before=480 first=480 low_ms=0 back_ms=0 stall_ms=379 mean=480 rule=off
-[14:28:53] weakjumps pass 9 (off): autojump 2/7 at=0.70 want=621 got=622 frozen_ms=2663 ready_ms=3137 before=480 first=480 low_ms=13300 back_ms=0 stall_ms=300 mean=378 rule=off
-[14:28:53] weakjumps pass 9 (off): autojump 3/7 at=0.20 want=177 got=178 frozen_ms=2088 ready_ms=2567 before=480 first=360 low_ms=8800 back_ms=10897 stall_ms=423 mean=414 rule=off
-[14:28:53] weakjumps pass 9 (off): autojump 4/7 at=0.85 want=754 got=755 frozen_ms=2001 ready_ms=3698 before=480 first=480 low_ms=0 back_ms=0 stall_ms=295 mean=480 rule=off
-[14:28:53] weakjumps pass 9 (off): autojump 5/7 at=0.55 want=488 got=489 frozen_ms=1588 ready_ms=2878 before=480 first=480 low_ms=0 back_ms=0 stall_ms=411 mean=480 rule=off
-[14:28:53] weakjumps pass 9 (off): autojump 6/7 at=0.31 want=275 got=276 frozen_ms=2213 ready_ms=399 before=480 first=480 low_ms=0 back_ms=0 stall_ms=374 mean=480 rule=off
-[14:28:53] weakjumps pass 9 (off): autojump 7/7 at=0.95 want=843 got=844 frozen_ms=1943 ready_ms=2513 before=480 first=480 low_ms=0 back_ms=0 stall_ms=413 mean=480 rule=off
-[14:28:55] weakjumps pass 10 (on): the test film, jumps to 0.40 0.70 0.20 0.85 0.55 0.31 0.95 on a 4mbit line (delay 60ms each way, loss 0.5%)
-[14:32:38] weakjumps pass 10 (on): 7 jumps, the rule took a lower first segment 7 times; jump rule on
-[14:32:38] weakjumps pass 10 (on): autojump 1/7 at=0.40 want=355 got=356 frozen_ms=2346 ready_ms=319 before=480 first=480 low_ms=2300 back_ms=0 stall_ms=365 mean=445 rule=on
-[14:32:38] weakjumps pass 10 (on): autojump 2/7 at=0.70 want=621 got=622 frozen_ms=1381 ready_ms=1970 before=480 first=240 low_ms=700 back_ms=1109 stall_ms=518 mean=470 rule=on
-[14:32:38] weakjumps pass 10 (on): autojump 3/7 at=0.20 want=177 got=178 frozen_ms=1957 ready_ms=3408 before=480 first=240 low_ms=600 back_ms=761 stall_ms=540 mean=471 rule=on
-[14:32:38] weakjumps pass 10 (on): autojump 4/7 at=0.85 want=754 got=755 frozen_ms=1972 ready_ms=4083 before=480 first=480 low_ms=6800 back_ms=0 stall_ms=354 mean=427 rule=on
-[14:32:38] weakjumps pass 10 (on): autojump 5/7 at=0.55 want=488 got=489 frozen_ms=2269 ready_ms=3918 before=480 first=480 low_ms=0 back_ms=0 stall_ms=346 mean=480 rule=on
-[14:32:38] weakjumps pass 10 (on): autojump 6/7 at=0.31 want=275 got=276 frozen_ms=1837 ready_ms=316 before=480 first=240 low_ms=2800 back_ms=3538 stall_ms=388 mean=437 rule=on
-[14:32:38] weakjumps pass 10 (on): autojump 7/7 at=0.95 want=843 got=844 frozen_ms=2125 ready_ms=2562 before=480 first=240 low_ms=8800 back_ms=2395 stall_ms=323 mean=397 rule=on
-[14:32:39] weakjumps pass 11 (off): the test film, jumps to 0.40 0.70 0.20 0.85 0.55 0.31 0.95 on a 4mbit line (delay 60ms each way, loss 0.5%)
-[14:36:22] weakjumps pass 11 (off): 7 jumps, the rule took a lower first segment 0 times; jump rule off
-[14:36:22] weakjumps pass 11 (off): autojump 1/7 at=0.40 want=355 got=356 frozen_ms=1431 ready_ms=379 before=480 first=480 low_ms=0 back_ms=0 stall_ms=314 mean=480 rule=off
-[14:36:22] weakjumps pass 11 (off): autojump 2/7 at=0.70 want=621 got=622 frozen_ms=2691 ready_ms=2938 before=480 first=480 low_ms=0 back_ms=0 stall_ms=280 mean=480 rule=off
-[14:36:22] weakjumps pass 11 (off): autojump 3/7 at=0.20 want=177 got=178 frozen_ms=2130 ready_ms=2659 before=480 first=480 low_ms=0 back_ms=0 stall_ms=423 mean=480 rule=off
-[14:36:22] weakjumps pass 11 (off): autojump 4/7 at=0.85 want=754 got=755 frozen_ms=1668 ready_ms=3282 before=480 first=480 low_ms=0 back_ms=0 stall_ms=280 mean=480 rule=off
-[14:36:22] weakjumps pass 11 (off): autojump 5/7 at=0.55 want=488 got=488 frozen_ms=2281 ready_ms=4127 before=480 first=720 low_ms=0 back_ms=0 stall_ms=394 mean=528 rule=off
-[14:36:22] weakjumps pass 11 (off): autojump 6/7 at=0.31 want=275 got=276 frozen_ms=2273 ready_ms=333 before=480 first=480 low_ms=0 back_ms=0 stall_ms=327 mean=480 rule=off
-[14:36:22] weakjumps pass 11 (off): autojump 7/7 at=0.95 want=843 got=844 frozen_ms=2109 ready_ms=2829 before=480 first=480 low_ms=0 back_ms=0 stall_ms=437 mean=480 rule=off
-[14:36:24] weakjumps pass 12 (on): the test film, jumps to 0.40 0.70 0.20 0.85 0.55 0.31 0.95 on a 4mbit line (delay 60ms each way, loss 0.5%)
-[14:40:06] weakjumps pass 12 (on): 7 jumps, the rule took a lower first segment 7 times; jump rule on
-[14:40:06] weakjumps pass 12 (on): autojump 1/7 at=0.40 want=355 got=356 frozen_ms=2257 ready_ms=326 before=480 first=240 low_ms=2800 back_ms=3765 stall_ms=293 mean=437 rule=on
-[14:40:06] weakjumps pass 12 (on): autojump 2/7 at=0.70 want=621 got=622 frozen_ms=1690 ready_ms=2641 before=480 first=240 low_ms=400 back_ms=745 stall_ms=823 mean=474 rule=on
-[14:40:06] weakjumps pass 12 (on): autojump 3/7 at=0.20 want=177 got=178 frozen_ms=1762 ready_ms=2753 before=480 first=240 low_ms=700 back_ms=972 stall_ms=468 mean=469 rule=on
-[14:40:06] weakjumps pass 12 (on): autojump 4/7 at=0.85 want=754 got=755 frozen_ms=1249 ready_ms=3682 before=480 first=480 low_ms=0 back_ms=0 stall_ms=345 mean=480 rule=on
-[14:40:06] weakjumps pass 12 (on): autojump 5/7 at=0.55 want=488 got=489 frozen_ms=2726 ready_ms=4318 before=480 first=360 low_ms=12100 back_ms=15084 stall_ms=407 mean=389 rule=on
-[14:40:06] weakjumps pass 12 (on): autojump 6/7 at=0.31 want=275 got=276 frozen_ms=1320 ready_ms=476 before=480 first=240 low_ms=2200 back_ms=3119 stall_ms=529 mean=447 rule=on
-[14:40:06] weakjumps pass 12 (on): autojump 7/7 at=0.95 want=843 got=844 frozen_ms=1920 ready_ms=2911 before=480 first=240 low_ms=400 back_ms=588 stall_ms=712 mean=474 rule=on
-[14:40:07] weakjumps pass 13 (off): the test film, jumps to 0.40 0.70 0.20 0.85 0.55 0.31 0.95 on a 4mbit line (delay 60ms each way, loss 0.5%)
-[14:43:46] weakjumps pass 13 (off): 7 jumps, the rule took a lower first segment 0 times; jump rule off
-[14:43:46] weakjumps pass 13 (off): autojump 1/7 at=0.40 want=355 got=356 frozen_ms=2083 ready_ms=240 before=480 first=480 low_ms=0 back_ms=0 stall_ms=426 mean=480 rule=off
-[14:43:46] weakjumps pass 13 (off): autojump 2/7 at=0.70 want=621 got=622 frozen_ms=1635 ready_ms=2256 before=480 first=480 low_ms=0 back_ms=0 stall_ms=276 mean=480 rule=off
-[14:43:46] weakjumps pass 13 (off): autojump 3/7 at=0.20 want=177 got=178 frozen_ms=1819 ready_ms=2750 before=480 first=480 low_ms=10800 back_ms=0 stall_ms=405 mean=400 rule=off
-[14:43:46] weakjumps pass 13 (off): autojump 4/7 at=0.85 want=754 got=755 frozen_ms=2081 ready_ms=4394 before=360 first=480 low_ms=0 back_ms=0 stall_ms=252 mean=480 rule=off
-[14:43:46] weakjumps pass 13 (off): autojump 5/7 at=0.55 want=488 got=488 frozen_ms=1686 ready_ms=3225 before=480 first=480 low_ms=0 back_ms=0 stall_ms=282 mean=480 rule=off
-[14:43:46] weakjumps pass 13 (off): autojump 6/7 at=0.31 want=275 got=276 frozen_ms=1389 ready_ms=303 before=480 first=480 low_ms=0 back_ms=0 stall_ms=285 mean=480 rule=off
-[14:43:46] weakjumps pass 13 (off): autojump 7/7 at=0.95 want=843 got=844 frozen_ms=1857 ready_ms=2459 before=480 first=480 low_ms=0 back_ms=0 stall_ms=242 mean=480 rule=off
-[14:43:47] weakjumps pass 14 (on): the test film, jumps to 0.40 0.70 0.20 0.85 0.55 0.31 0.95 on a 4mbit line (delay 60ms each way, loss 0.5%)
-[14:47:30] weakjumps pass 14 (on): 7 jumps, the rule took a lower first segment 7 times; jump rule on
-[14:47:30] weakjumps pass 14 (on): autojump 1/7 at=0.40 want=355 got=356 frozen_ms=1847 ready_ms=315 before=360 first=240 low_ms=2300 back_ms=3233 stall_ms=565 mean=342 rule=on
-[14:47:30] weakjumps pass 14 (on): autojump 2/7 at=0.70 want=621 got=622 frozen_ms=2040 ready_ms=2886 before=360 first=240 low_ms=600 back_ms=811 stall_ms=371 mean=471 rule=on
-[14:47:30] weakjumps pass 14 (on): autojump 3/7 at=0.20 want=177 got=178 frozen_ms=1593 ready_ms=2411 before=480 first=240 low_ms=1700 back_ms=2093 stall_ms=307 mean=455 rule=on
-[14:47:30] weakjumps pass 14 (on): autojump 4/7 at=0.85 want=754 got=755 frozen_ms=1625 ready_ms=4229 before=480 first=480 low_ms=0 back_ms=0 stall_ms=273 mean=480 rule=on
-[14:47:30] weakjumps pass 14 (on): autojump 5/7 at=0.55 want=488 got=488 frozen_ms=1548 ready_ms=2867 before=480 first=240 low_ms=300 back_ms=477 stall_ms=327 mean=476 rule=on
-[14:47:30] weakjumps pass 14 (on): autojump 6/7 at=0.31 want=275 got=276 frozen_ms=1740 ready_ms=238 before=480 first=240 low_ms=2500 back_ms=3346 stall_ms=425 mean=442 rule=on
-[14:47:30] weakjumps pass 14 (on): autojump 7/7 at=0.95 want=843 got=844 frozen_ms=1503 ready_ms=2628 before=480 first=240 low_ms=1700 back_ms=2176 stall_ms=318 mean=455 rule=on
-[14:47:31] weakjumps pass 15 (off): the test film, jumps to 0.40 0.70 0.20 0.85 0.55 0.31 0.95 on a 4mbit line (delay 60ms each way, loss 0.5%)
-[14:51:15] weakjumps pass 15 (off): 7 jumps, the rule took a lower first segment 0 times; jump rule off
-[14:51:15] weakjumps pass 15 (off): autojump 1/7 at=0.40 want=355 got=356 frozen_ms=3256 ready_ms=143 before=480 first=480 low_ms=0 back_ms=0 stall_ms=254 mean=480 rule=off
-[14:51:15] weakjumps pass 15 (off): autojump 2/7 at=0.70 want=621 got=622 frozen_ms=2984 ready_ms=3474 before=480 first=480 low_ms=15300 back_ms=0 stall_ms=687 mean=366 rule=off
-[14:51:15] weakjumps pass 15 (off): autojump 3/7 at=0.20 want=177 got=178 frozen_ms=3208 ready_ms=4504 before=360 first=480 low_ms=0 back_ms=0 stall_ms=270 mean=480 rule=off
-[14:51:15] weakjumps pass 15 (off): autojump 4/7 at=0.85 want=754 got=755 frozen_ms=2377 ready_ms=4364 before=480 first=480 low_ms=0 back_ms=0 stall_ms=319 mean=480 rule=off
-[14:51:15] weakjumps pass 15 (off): autojump 5/7 at=0.55 want=488 got=488 frozen_ms=2507 ready_ms=4005 before=480 first=480 low_ms=0 back_ms=0 stall_ms=434 mean=480 rule=off
-[14:51:15] weakjumps pass 15 (off): autojump 6/7 at=0.31 want=275 got=276 frozen_ms=2653 ready_ms=325 before=480 first=480 low_ms=0 back_ms=0 stall_ms=417 mean=480 rule=off
-[14:51:15] weakjumps pass 15 (off): autojump 7/7 at=0.95 want=843 got=844 frozen_ms=2773 ready_ms=3234 before=480 first=480 low_ms=0 back_ms=0 stall_ms=290 mean=480 rule=off
-[14:51:16] weakjumps pass 16 (on): the test film, jumps to 0.40 0.70 0.20 0.85 0.55 0.31 0.95 on a 4mbit line (delay 60ms each way, loss 0.5%)
-[14:54:59] weakjumps pass 16 (on): 7 jumps, the rule took a lower first segment 7 times; jump rule on
-[14:54:59] weakjumps pass 16 (on): autojump 1/7 at=0.40 want=355 got=356 frozen_ms=2126 ready_ms=252 before=480 first=240 low_ms=2600 back_ms=3704 stall_ms=412 mean=439 rule=on
-[14:54:59] weakjumps pass 16 (on): autojump 2/7 at=0.70 want=621 got=622 frozen_ms=2237 ready_ms=2939 before=480 first=240 low_ms=700 back_ms=959 stall_ms=593 mean=469 rule=on
-[14:54:59] weakjumps pass 16 (on): autojump 3/7 at=0.20 want=177 got=178 frozen_ms=3084 ready_ms=3898 before=480 first=240 low_ms=600 back_ms=889 stall_ms=334 mean=471 rule=on
-[14:54:59] weakjumps pass 16 (on): autojump 4/7 at=0.85 want=754 got=755 frozen_ms=2384 ready_ms=4248 before=480 first=480 low_ms=0 back_ms=0 stall_ms=444 mean=480 rule=on
-[14:54:59] weakjumps pass 16 (on): autojump 5/7 at=0.55 want=488 got=488 frozen_ms=2013 ready_ms=3257 before=480 first=240 low_ms=0 back_ms=131 stall_ms=375 mean=480 rule=on
-[14:54:59] weakjumps pass 16 (on): autojump 6/7 at=0.31 want=275 got=276 frozen_ms=2050 ready_ms=495 before=480 first=240 low_ms=15500 back_ms=-1 stall_ms=760 mean=338 rule=on
-[14:54:59] weakjumps pass 16 (on): autojump 7/7 at=0.95 want=843 got=844 frozen_ms=1742 ready_ms=2662 before=360 first=240 low_ms=600 back_ms=863 stall_ms=629 mean=471 rule=on
-[14:54:59] weakjumps: the line passed Sent 981045005 bytes 652904 pkt (dropped 2042
-[14:55:00] weakjumps: Task was destroyed but it is pending!
-task: <Task pending name='Task-1882' coro=<handle() done, defined at /home/runner/work/innocent/innocent/tool/netlab/line_relay.py:57> wait_for=<_GatheringFuture pending cb=[Task.task_wakeup()]> cb=[StreamReaderProtocol.connection_made.<locals>.callback() at /usr/lib/python3.12/asyncio/streams.py:248]>
-Task was destroyed but it is pending!
-task: <Task pending name='Task-2850' coro=<handle() done, defined at /home/runner/work/innocent/innocent/tool/netlab/line_relay.py:57> wait_for=<_GatheringFuture pending cb=[Task.task_wakeup()]> cb=[StreamReaderProtocol.connection_made.<locals>.callback() at /usr/lib/python3.12/asyncio/streams.py:248]>
-relay: 866 connections (0 refused), 1101.5 MB to the emulator, 851.1 KB from it
-[14:55:00] weakjumps off, 56 jumps in 8 passes (the app's rule: off): frozen median 2082 ms, mean 2176, p90 3208, longest 4261; moving again after median 2804 ms (0 never)
-[14:55:00] weakjumps off, the picture after: first segment under the rung before in 3 of 56 (480->480 x44, 360->480 x6, 480->360 x3, 480->720 x2, 240->360 x1); under it 2.2 s of 20 on average, back after median 11253 ms (0 not within 20 s); mean rung 465p; stops >= 250 ms after the jump: 55 (longest 693 ms)
-[14:55:00] weakjumps off, frozen median per pass: 1:1994, 3:2753, 5:1723, 7:1718, 9:2001, 11:2130, 13:1819, 15:2773
-[14:55:00] weakjumps on, 56 jumps in 8 passes (the app's rule: on): frozen median 2096 ms, mean 2095, p90 2614, longest 3274; moving again after median 2876 ms (0 never)
-[14:55:00] weakjumps on, the picture after: first segment under the rung before in 38 of 56 (480->240 x31, 480->480 x11, 360->360 x5, 360->240 x5, 360->480 x1, 240->240 x1, 720->240 x1, 480->360 x1); under it 3.3 s of 20 on average, back after median 1077 ms (2 not within 20 s); mean rung 439p; stops >= 250 ms after the jump: 56 (longest 2192 ms)
-[14:55:00] weakjumps on, frozen median per pass: 2:2341, 4:2407, 6:2429, 8:2114, 10:1972, 12:1762, 14:1625, 16:2126
-[14:55:00] weakjumps paired, 56 jumps (off against on, same pair of passes, same moment): off stood still shorter in 24, on in 30, alike (within 100 ms) 2; median off - on = 134 ms; sign test p=0.8296 for off, p=0.2483 for on; stops after the jump 55 against 56
-[14:55:00] flow weakjumps done
-[14:55:05] done
+TotalTime: 3743
+WaitTime: 3764
+[16:48:23] flow jumps
+[16:48:25] jumps: 5c01507a-ef1d-46eb-8bb8-a9a2326be153, the viewer's jumps, 240 s, home after 130 s
+[16:52:33] flow jumps done
+[16:52:34] flow weakjumps
+[16:52:35] line: this user's HTTPS through the relay on 47126, shaped on lo (delay 60ms each way, loss 0.5%)
+[16:52:41] weakjumps: the line under a 900kbit cap measured 750 kbps (600000 bytes)
+[16:52:42] weakjumps pass 1 (a): the test film, jumps to 0.40 0.70 0.20 0.85 0.55 0.31 0.95 on a 4mbit line (delay 60ms each way, loss 0.5%)
+[16:56:23] weakjumps pass 1 (a): 7 jumps
+[16:56:23] weakjumps pass 1 (a): autojump 1/7 at=0.40 want=355 got=356 frozen_ms=1464 ready_ms=208 before=480 first=480 low_ms=0 back_ms=0 stall_ms=432 mean=480 rule=a
+[16:56:23] weakjumps pass 1 (a): autojump 2/7 at=0.70 want=621 got=622 frozen_ms=1198 ready_ms=2043 before=480 first=480 low_ms=0 back_ms=0 stall_ms=302 mean=480 rule=a
+[16:56:23] weakjumps pass 1 (a): autojump 3/7 at=0.20 want=177 got=178 frozen_ms=1925 ready_ms=2571 before=480 first=480 low_ms=12700 back_ms=0 stall_ms=449 mean=388 rule=a
+[16:56:23] weakjumps pass 1 (a): autojump 4/7 at=0.85 want=754 got=755 frozen_ms=2121 ready_ms=4227 before=360 first=480 low_ms=0 back_ms=0 stall_ms=424 mean=480 rule=a
+[16:56:23] weakjumps pass 1 (a): autojump 5/7 at=0.55 want=488 got=489 frozen_ms=1909 ready_ms=3282 before=480 first=720 low_ms=0 back_ms=0 stall_ms=392 mean=606 rule=a
+[16:56:23] weakjumps pass 1 (a): autojump 6/7 at=0.31 want=275 got=276 frozen_ms=1730 ready_ms=504 before=480 first=480 low_ms=0 back_ms=0 stall_ms=305 mean=480 rule=a
+[16:56:23] weakjumps pass 1 (a): autojump 7/7 at=0.95 want=843 got=844 frozen_ms=1221 ready_ms=2008 before=480 first=480 low_ms=1400 back_ms=0 stall_ms=444 mean=500 rule=a
+[16:56:25] weakjumps pass 2 (b): the test film, jumps to 0.40 0.70 0.20 0.85 0.55 0.31 0.95 on a 4mbit line (delay 60ms each way, loss 0.5%)
+[17:00:09] weakjumps pass 2 (b): 7 jumps
+[17:00:09] weakjumps pass 2 (b): autojump 1/7 at=0.40 want=355 got=356 frozen_ms=1812 ready_ms=297 before=480 first=480 low_ms=0 back_ms=0 stall_ms=312 mean=480 rule=b
+[17:00:09] weakjumps pass 2 (b): autojump 2/7 at=0.70 want=621 got=622 frozen_ms=1563 ready_ms=2300 before=480 first=480 low_ms=15700 back_ms=0 stall_ms=286 mean=365 rule=b
+[17:00:09] weakjumps pass 2 (b): autojump 3/7 at=0.20 want=177 got=178 frozen_ms=4074 ready_ms=4848 before=360 first=480 low_ms=0 back_ms=0 stall_ms=1590 mean=364 rule=b
+[17:00:09] weakjumps pass 2 (b): autojump 4/7 at=0.85 want=754 got=755 frozen_ms=1659 ready_ms=3891 before=360 first=480 low_ms=0 back_ms=0 stall_ms=420 mean=480 rule=b
+[17:00:09] weakjumps pass 2 (b): autojump 5/7 at=0.55 want=488 got=489 frozen_ms=2256 ready_ms=3651 before=480 first=480 low_ms=0 back_ms=0 stall_ms=307 mean=480 rule=b
+[17:00:09] weakjumps pass 2 (b): autojump 6/7 at=0.31 want=275 got=276 frozen_ms=2486 ready_ms=131 before=480 first=480 low_ms=0 back_ms=0 stall_ms=282 mean=480 rule=b
+[17:00:09] weakjumps pass 2 (b): autojump 7/7 at=0.95 want=843 got=844 frozen_ms=1870 ready_ms=2778 before=480 first=480 low_ms=0 back_ms=0 stall_ms=283 mean=480 rule=b
+[17:00:11] weakjumps pass 3 (a): the test film, jumps to 0.40 0.70 0.20 0.85 0.55 0.31 0.95 on a 4mbit line (delay 60ms each way, loss 0.5%)
+[17:03:52] weakjumps pass 3 (a): 7 jumps
+[17:03:52] weakjumps pass 3 (a): autojump 1/7 at=0.40 want=355 got=356 frozen_ms=1378 ready_ms=227 before=480 first=480 low_ms=0 back_ms=0 stall_ms=315 mean=480 rule=a
+[17:03:52] weakjumps pass 3 (a): autojump 2/7 at=0.70 want=621 got=622 frozen_ms=1490 ready_ms=2054 before=480 first=480 low_ms=0 back_ms=0 stall_ms=278 mean=480 rule=a
+[17:03:52] weakjumps pass 3 (a): autojump 3/7 at=0.20 want=177 got=178 frozen_ms=2611 ready_ms=3472 before=480 first=360 low_ms=10600 back_ms=12993 stall_ms=404 mean=402 rule=a
+[17:03:52] weakjumps pass 3 (a): autojump 4/7 at=0.85 want=754 got=755 frozen_ms=1513 ready_ms=3111 before=480 first=480 low_ms=0 back_ms=0 stall_ms=278 mean=480 rule=a
+[17:03:52] weakjumps pass 3 (a): autojump 5/7 at=0.55 want=488 got=488 frozen_ms=2487 ready_ms=3532 before=480 first=720 low_ms=0 back_ms=0 stall_ms=435 mean=533 rule=a
+[17:03:52] weakjumps pass 3 (a): autojump 6/7 at=0.31 want=275 got=276 frozen_ms=3199 ready_ms=258 before=480 first=480 low_ms=0 back_ms=0 stall_ms=416 mean=480 rule=a
+[17:03:52] weakjumps pass 3 (a): autojump 7/7 at=0.95 want=843 got=844 frozen_ms=2733 ready_ms=3444 before=480 first=480 low_ms=0 back_ms=0 stall_ms=313 mean=480 rule=a
+[17:03:54] weakjumps pass 4 (b): the test film, jumps to 0.40 0.70 0.20 0.85 0.55 0.31 0.95 on a 4mbit line (delay 60ms each way, loss 0.5%)
+[17:07:35] weakjumps pass 4 (b): 7 jumps
+[17:07:35] weakjumps pass 4 (b): autojump 1/7 at=0.40 want=355 got=356 frozen_ms=1267 ready_ms=310 before=480 first=480 low_ms=0 back_ms=0 stall_ms=408 mean=480 rule=b
+[17:07:35] weakjumps pass 4 (b): autojump 2/7 at=0.70 want=621 got=622 frozen_ms=2281 ready_ms=3156 before=480 first=480 low_ms=0 back_ms=0 stall_ms=289 mean=480 rule=b
+[17:07:35] weakjumps pass 4 (b): autojump 3/7 at=0.20 want=177 got=178 frozen_ms=1526 ready_ms=2294 before=480 first=480 low_ms=0 back_ms=0 stall_ms=277 mean=480 rule=b
+[17:07:35] weakjumps pass 4 (b): autojump 4/7 at=0.85 want=754 got=755 frozen_ms=1899 ready_ms=3969 before=480 first=480 low_ms=0 back_ms=0 stall_ms=281 mean=480 rule=b
+[17:07:35] weakjumps pass 4 (b): autojump 5/7 at=0.55 want=488 got=488 frozen_ms=2935 ready_ms=3964 before=480 first=480 low_ms=0 back_ms=0 stall_ms=413 mean=480 rule=b
+[17:07:35] weakjumps pass 4 (b): autojump 6/7 at=0.31 want=275 got=276 frozen_ms=2475 ready_ms=194 before=480 first=480 low_ms=0 back_ms=0 stall_ms=468 mean=480 rule=b
+[17:07:35] weakjumps pass 4 (b): autojump 7/7 at=0.95 want=843 got=844 frozen_ms=3078 ready_ms=3780 before=480 first=480 low_ms=0 back_ms=0 stall_ms=312 mean=480 rule=b
+[17:07:36] weakjumps pass 5 (a): the test film, jumps to 0.40 0.70 0.20 0.85 0.55 0.31 0.95 on a 4mbit line (delay 60ms each way, loss 0.5%)
+[17:11:18] weakjumps pass 5 (a): 7 jumps
+[17:11:18] weakjumps pass 5 (a): autojump 1/7 at=0.40 want=355 got=356 frozen_ms=1682 ready_ms=256 before=480 first=480 low_ms=0 back_ms=0 stall_ms=437 mean=480 rule=a
+[17:11:18] weakjumps pass 5 (a): autojump 2/7 at=0.70 want=621 got=622 frozen_ms=1809 ready_ms=2482 before=480 first=480 low_ms=0 back_ms=0 stall_ms=568 mean=506 rule=a
+[17:11:18] weakjumps pass 5 (a): autojump 3/7 at=0.20 want=177 got=178 frozen_ms=3424 ready_ms=4140 before=720 first=720 low_ms=15600 back_ms=0 stall_ms=645 mean=490 rule=a
+[17:11:18] weakjumps pass 5 (a): autojump 4/7 at=0.85 want=754 got=755 frozen_ms=1597 ready_ms=3564 before=480 first=480 low_ms=0 back_ms=0 stall_ms=422 mean=480 rule=a
+[17:11:18] weakjumps pass 5 (a): autojump 5/7 at=0.55 want=488 got=489 frozen_ms=1890 ready_ms=3371 before=480 first=480 low_ms=4600 back_ms=0 stall_ms=420 mean=447 rule=a
+[17:11:18] weakjumps pass 5 (a): autojump 6/7 at=0.31 want=275 got=276 frozen_ms=2201 ready_ms=368 before=360 first=480 low_ms=0 back_ms=0 stall_ms=417 mean=480 rule=a
+[17:11:18] weakjumps pass 5 (a): autojump 7/7 at=0.95 want=843 got=844 frozen_ms=2027 ready_ms=2748 before=480 first=480 low_ms=0 back_ms=0 stall_ms=464 mean=530 rule=a
+[17:11:20] weakjumps pass 6 (b): the test film, jumps to 0.40 0.70 0.20 0.85 0.55 0.31 0.95 on a 4mbit line (delay 60ms each way, loss 0.5%)
+[17:15:02] weakjumps pass 6 (b): 7 jumps
+[17:15:02] weakjumps pass 6 (b): autojump 1/7 at=0.40 want=355 got=356 frozen_ms=1548 ready_ms=165 before=480 first=480 low_ms=0 back_ms=0 stall_ms=303 mean=480 rule=b
+[17:15:02] weakjumps pass 6 (b): autojump 2/7 at=0.70 want=621 got=622 frozen_ms=1667 ready_ms=2519 before=480 first=480 low_ms=0 back_ms=0 stall_ms=283 mean=480 rule=b
+[17:15:02] weakjumps pass 6 (b): autojump 3/7 at=0.20 want=177 got=178 frozen_ms=1536 ready_ms=2433 before=480 first=480 low_ms=0 back_ms=0 stall_ms=415 mean=480 rule=b
+[17:15:02] weakjumps pass 6 (b): autojump 4/7 at=0.85 want=754 got=755 frozen_ms=2325 ready_ms=3981 before=480 first=480 low_ms=0 back_ms=0 stall_ms=422 mean=480 rule=b
+[17:15:02] weakjumps pass 6 (b): autojump 5/7 at=0.55 want=488 got=488 frozen_ms=1815 ready_ms=3136 before=480 first=480 low_ms=0 back_ms=0 stall_ms=408 mean=480 rule=b
+[17:15:02] weakjumps pass 6 (b): autojump 6/7 at=0.31 want=275 got=276 frozen_ms=2796 ready_ms=326 before=480 first=480 low_ms=0 back_ms=0 stall_ms=278 mean=480 rule=b
+[17:15:02] weakjumps pass 6 (b): autojump 7/7 at=0.95 want=843 got=844 frozen_ms=2503 ready_ms=3317 before=480 first=480 low_ms=0 back_ms=0 stall_ms=406 mean=480 rule=b
+[17:15:03] weakjumps pass 7 (a): the test film, jumps to 0.40 0.70 0.20 0.85 0.55 0.31 0.95 on a 4mbit line (delay 60ms each way, loss 0.5%)
+[17:18:40] weakjumps pass 7 (a): 7 jumps
+[17:18:40] weakjumps pass 7 (a): autojump 1/7 at=0.40 want=355 got=356 frozen_ms=1262 ready_ms=212 before=480 first=480 low_ms=0 back_ms=0 stall_ms=256 mean=480 rule=a
+[17:18:40] weakjumps pass 7 (a): autojump 2/7 at=0.70 want=621 got=622 frozen_ms=999 ready_ms=1793 before=480 first=480 low_ms=0 back_ms=0 stall_ms=261 mean=480 rule=a
+[17:18:40] weakjumps pass 7 (a): autojump 3/7 at=0.20 want=177 got=178 frozen_ms=2136 ready_ms=2872 before=480 first=480 low_ms=0 back_ms=0 stall_ms=342 mean=480 rule=a
+[17:18:40] weakjumps pass 7 (a): autojump 4/7 at=0.85 want=754 got=755 frozen_ms=1958 ready_ms=3911 before=480 first=480 low_ms=0 back_ms=0 stall_ms=411 mean=480 rule=a
+[17:18:40] weakjumps pass 7 (a): autojump 5/7 at=0.55 want=488 got=488 frozen_ms=1690 ready_ms=2869 before=480 first=480 low_ms=0 back_ms=0 stall_ms=312 mean=480 rule=a
+[17:18:40] weakjumps pass 7 (a): autojump 6/7 at=0.31 want=275 got=276 frozen_ms=2279 ready_ms=327 before=480 first=480 low_ms=0 back_ms=0 stall_ms=408 mean=480 rule=a
+[17:18:40] weakjumps pass 7 (a): autojump 7/7 at=0.95 want=843 got=844 frozen_ms=2330 ready_ms=2692 before=480 first=480 low_ms=0 back_ms=0 stall_ms=429 mean=480 rule=a
+[17:18:41] weakjumps pass 8 (b): the test film, jumps to 0.40 0.70 0.20 0.85 0.55 0.31 0.95 on a 4mbit line (delay 60ms each way, loss 0.5%)
+[17:22:18] weakjumps pass 8 (b): 7 jumps
+[17:22:18] weakjumps pass 8 (b): autojump 1/7 at=0.40 want=355 got=356 frozen_ms=1890 ready_ms=308 before=480 first=360 low_ms=16400 back_ms=-1 stall_ms=316 mean=360 rule=b
+[17:22:18] weakjumps pass 8 (b): autojump 2/7 at=0.70 want=621 got=622 frozen_ms=2949 ready_ms=3818 before=360 first=480 low_ms=0 back_ms=0 stall_ms=405 mean=414 rule=b
+[17:22:18] weakjumps pass 8 (b): autojump 3/7 at=0.20 want=177 got=178 frozen_ms=1743 ready_ms=2387 before=480 first=480 low_ms=0 back_ms=0 stall_ms=407 mean=480 rule=b
+[17:22:18] weakjumps pass 8 (b): autojump 4/7 at=0.85 want=754 got=755 frozen_ms=2053 ready_ms=3551 before=480 first=480 low_ms=0 back_ms=0 stall_ms=564 mean=508 rule=b
+[17:22:18] weakjumps pass 8 (b): autojump 5/7 at=0.55 want=488 got=488 frozen_ms=1501 ready_ms=2503 before=480 first=480 low_ms=0 back_ms=0 stall_ms=406 mean=480 rule=b
+[17:22:18] weakjumps pass 8 (b): autojump 6/7 at=0.31 want=275 got=276 frozen_ms=1960 ready_ms=430 before=480 first=480 low_ms=14300 back_ms=0 stall_ms=749 mean=378 rule=b
+[17:22:18] weakjumps pass 8 (b): autojump 7/7 at=0.95 want=843 got=844 frozen_ms=2408 ready_ms=2801 before=360 first=360 low_ms=0 back_ms=0 stall_ms=405 mean=415 rule=b
+[17:22:18] weakjumps: the line passed Sent 504188374 bytes 335284 pkt (dropped 1045
+[17:22:20] weakjumps: relay: 381 connections (0 refused), 545.1 MB to the emulator, 360.8 KB from it
+[17:22:20] weakjumps a, 28 jumps in 4 passes (the app saw: a): frozen median 1900 ms, mean 1938, p90 2733, longest 3424; moving again after median 2632 ms (0 never)
+[17:22:20] weakjumps a, the picture after: first segment under the rung before in 1 of 28 (480->480 x22, 360->480 x2, 480->720 x2, 480->360 x1, 720->720 x1); under it 1.6 s of 20 on average, back after median 12993 ms (0 not within 20 s); mean rung 483p; stops >= 600 ms after the jump: 1 (longest 645 ms)
+[17:22:20] weakjumps a, frozen median per pass: 1:1730, 3:2487, 5:1890, 7:1958
+[17:22:20] weakjumps b, 28 jumps in 4 passes (the app saw: b): frozen median 1930 ms, mean 2138, p90 2949, longest 4074; moving again after median 2648 ms (0 never)
+[17:22:20] weakjumps b, the picture after: first segment under the rung before in 1 of 28 (480->480 x23, 360->480 x3, 480->360 x1, 360->360 x1); under it 1.7 s of 20 on average, back after median 0 ms (1 not within 20 s); mean rung 460p; stops >= 600 ms after the jump: 2 (longest 1590 ms)
+[17:22:20] weakjumps b, frozen median per pass: 2:1870, 4:2281, 6:1815, 8:1960
+[17:22:20] weakjumps paired, 28 jumps (a against b, same pair of passes, same moment): a stood still shorter in 15, b in 10, alike (within 100 ms) 3; median a - b = -346 ms; sign test p=0.2122 for a, p=0.8852 for b; stops after the jump 1 against 2
+[17:22:20] weakjumps paired, the jump's stop and any stop after it: a shorter in 16, b in 9, alike 3; median a - b = -348 ms; sign test p=0.1148 for a, p=0.9461 for b
+[17:22:20] flow weakjumps done
+[17:22:24] done

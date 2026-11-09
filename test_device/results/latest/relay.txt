@@ -1,5 +1,1 @@
-Task was destroyed but it is pending!
-task: <Task pending name='Task-1882' coro=<handle() done, defined at /home/runner/work/innocent/innocent/tool/netlab/line_relay.py:57> wait_for=<_GatheringFuture pending cb=[Task.task_wakeup()]> cb=[StreamReaderProtocol.connection_made.<locals>.callback() at /usr/lib/python3.12/asyncio/streams.py:248]>
-Task was destroyed but it is pending!
-task: <Task pending name='Task-2850' coro=<handle() done, defined at /home/runner/work/innocent/innocent/tool/netlab/line_relay.py:57> wait_for=<_GatheringFuture pending cb=[Task.task_wakeup()]> cb=[StreamReaderProtocol.connection_made.<locals>.callback() at /usr/lib/python3.12/asyncio/streams.py:248]>
-relay: 866 connections (0 refused), 1101.5 MB to the emulator, 851.1 KB from it
+relay: 381 connections (0 refused), 545.1 MB to the emulator, 360.8 KB from it
