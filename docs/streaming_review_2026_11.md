@@ -377,3 +377,79 @@ than in run 42376634865: the realme's read 0.4-1.1 Mbit/s at first
 2.6 s at 240p, OPPO 0.9 s at 720p (its 537,551 B segment in 800 ms) — are
 the line, not comparable with that run, and the baseline for 5c stays
 that run's (realme 1.7 s on a 720p segment at ~4.6 Mbit/s).
+
+**Runs J and J2 (42616754742, 42628158249; 9 Nov): BACKLOG 5c, a jump's
+first segment from a rung that arrives quickly.** The rule
+(`Steer.jumpLow`, `SteeredSelection`): in Auto, a jump out of the buffer
+takes its first segment from the best rung whose segment arrives in
+~0.5 s at the meter's estimate (rate × 2 s / line), the second from the
+rung before the jump again. Flow `weakjumps`: Sintel on the weak line
+held at 4 Mbit/s (60 ms each way, 0.5 % loss; probes 785 and 783 kbps
+under 900 kbit), 16 passes from a cleared app, `lab_jump` on and off in turn
+(J on first, J2 off first); each pass jumps in Auto to 40, 70, 20, 85,
+55, 31, 95 % of the film, each far from what is in hand. 224 jumps;
+the same jump of a pair of passes lands on the same moment, so they are
+compared pair by pair:
+
+| | J on | J off | J2 on | J2 off |
+|---|---|---|---|---|
+| The jump's stop (frozen, median) | 1719 ms | 1842 ms | 2096 ms | 2082 ms |
+| First picture after the seek (median) | 1544 ms | 1531 ms | 1802 ms | 1646 ms |
+| A second stop ≥ 0.6 s within 20 s | 7 (13.0 s) | 2 (2.1 s) | 16 (16.1 s) | 3 (2.0 s) |
+| Mean rung over the 20 s after | 485p | 494p | 439p | 465p |
+| First segment (median) | 79 KB in 425 ms | 228 KB in 772 ms | 83 KB in 760 ms | 267 KB in 916 ms |
+| The Worker's answer before it (median) | 798 ms | 790 ms | 804 ms | 800 ms |
+
+- **Over both runs, 112 pairs**: the jump's own stop was shorter under the
+  rule in 62 and longer in 42 (8 alike; sign test p 0.03), by a median
+  0.18 s. Counting the stop right after the jump too, 54 against 50,
+  median 0.04 s: nothing. The first picture came no sooner (J) or later
+  (J2).
+- **Why so little: the segment is not the wait.** The Worker's answer is
+  ~0.8 s of the ~1.6 s to the first picture, and ExoPlayer starts once
+  1 s of film is in (half a segment), not the whole segment. And at
+  120 ms and 0.5 % loss an 80 KB segment cost nearly what a 250 KB one
+  did (J2: 760 against 916 ms) — most likely TCP's slow start on the
+  jump's fresh read, where round trips, not bytes, set the time.
+  BACKLOG's premise ("a jump needs one whole segment, so its size is the
+  wait") is wrong for this line.
+- **And the rule costs a second stop.** The rung before the jump, asked
+  for with 2 s in hand on a connection still in slow start, did not come
+  in time: 23 jumps of 112 stopped again for 0.6-2.7 s within seconds of
+  starting, against 5 of 112 without the rule. A viewer who sees a film
+  start and freeze again is worse off than one who waits 0.2 s longer.
+  The picture is softer too: 240p for the first segment where Auto plays
+  480p.
+- `stall_ms` under ~500 ms is the position's own tick (250 ms, stretched
+  by the emulator): 183 of 224 jumps read 231-490 ms, 13 read 500-600 ms,
+  28 read 0.6 s or more. The flow's summary now counts a stop after the
+  jump from 600 ms and pairs the jump's stop and that one together.
+
+**Test Lab, run 42641532315** (the rule present and off for the checks,
+then six jumps in Auto, the rule on for the odd ones): the phones' lines
+put both outside the band where the rule acts (a line between a rung's
+peak / 0.7 and four times it). The realme's read 3-28 Mbit/s (median
+14.8): the quick rung was 720p, the rung Auto held, on all six; each
+jump: the Worker's answer ~290 ms, the 270-540 KB 720p segment whole in
+0.4-0.8 s, the first picture at 1.0-1.2 s, frozen 1.1-1.4 s, rule on or
+off alike — the last 0.4-0.7 s, after the segment was in, is the phone
+(the decoder starting again), not the line. The OPPO's read 64-3885 kbps (median 330 of 92 readings,
+the slowest it has had): 240p all along, the rule acted once (360p → 240p:
+frozen 1.2 s, no stop after). Checks: realme 15 of 16 (the Original,
+9989 kbps, opened on a line measured at 3.0-9.3 Mbit/s — BACKLOG's
+"Original on a borderline line"), OPPO 12 of 15 (seek, quality->240 and
+tour->360 waited for bytes that a 330 kbps line did not bring; the OPPO
+runs again alone).
+
+**The decision (9 Nov): 5c's rule is taken out.** Over 224 jumps on the
+emulator's weak line it shortened the jump's own stop by a median 0.18 s
+in 62 pairs of 104 that differed, gave no sooner first picture, stopped
+the film a second time right after the jump in 23 jumps against 5, and
+softened the picture; on the phones' lines it had nothing to act on. A
+jump's wait is, in order: the Worker's answer (0.3 s on the realme's good
+line, 0.8 s on the weak one, 0.2-0.9 s on the OPPO's), the phone's own
+restart (0.4-0.7 s on the realme), and only then the bytes of half a
+segment. What could shorten it is the answer — a connection kept warm
+for a jump, say — not the rung; untried. The `weakjumps`
+flow and the jumps in Auto (`_labAutoJumps`, `STREAM_AUTOJUMPS` on Test
+Lab) stay, to measure that.

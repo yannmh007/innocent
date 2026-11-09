@@ -62,9 +62,9 @@ import io.flutter.view.TextureRegistry
  *
  * WHAT THE CHANNEL CARRIES
  *   methods `innocent/exo`: create, open, play, pause, seek, scrubbing,
- *     rate, volume, quality, maxHeight, bandwidth, jumpLow, stop, release
+ *     rate, volume, quality, maxHeight, bandwidth, stop, release
  *   events `innocent/exo/events`: state, pos, size, rung, first, tracks,
- *     jump, jumpback, dropped, error — each with the engine's `id`.
+ *     dropped, error — each with the engine's `id`.
  */
 @OptIn(UnstableApi::class)
 class ExoStreamEngine private constructor(
@@ -110,15 +110,6 @@ class ExoStreamEngine private constructor(
                 emit(mapOf("id" to id, "e" to "surface", "on" to false))
             }
         })
-        // What a jump chose (Steer.jumpLow), told from the player's own
-        // thread: the events go out on the main one.
-        steer.onJump = { before, first, kbps, on ->
-            main.post {
-                emit(mapOf("id" to id, "e" to "jump", "before" to before, "first" to first,
-                    "kbps" to kbps, "on" to on))
-            }
-        }
-        steer.onJumpBack = { h -> main.post { emit(mapOf("id" to id, "e" to "jumpback", "h" to h)) } }
         // Every rung is a choice: the screen's size is no reason to hide a
         // 1080p the viewer picks on a 720p phone. Auto is capped by [Steer].
         selector.setParameters(
@@ -128,14 +119,13 @@ class ExoStreamEngine private constructor(
     fun open(
         url: String, startMs: Long, autoplay: Boolean,
         target: Int?, maxHeight: Int?, bps: Long?, start: Int?,
-        rungs: Map<Int, Int>, progressive: Boolean = false, jumpLow: Boolean = false,
+        rungs: Map<Int, Int>, progressive: Boolean = false,
     ) {
         release(keepSurface = true)
         steer.target = target
         steer.maxHeight = maxHeight
         steer.start = start
         steer.heightByRate = rungs
-        steer.jumpLow = jumpLow
         if (bps != null && bps > 0) meter.seed(bps)
         val http = DefaultHttpDataSource.Factory()
             .setUserAgent("Innocent")
@@ -476,31 +466,6 @@ class ExoStreamEngine private constructor(
             if (f.height > 0) f.height else heightByRate[f.averageBitrate] ?: Format.NO_VALUE
         /** Film kept in the old rung after a change: the next segment or so. */
         val keepUs = 2_000_000L
-
-        /**
-         * A JUMP'S FIRST SEGMENT FROM A RUNG THAT ARRIVES QUICKLY (BACKLOG
-         * 5c). A jump out of the buffer plays nothing until one whole
-         * segment is in, so that segment's size is the wait: the realme's
-         * seek on a ~4.6 Mbit/s line fetched a 537,551 B 720p segment in
-         * 1.4 s and stood still 1.7 s (Test Lab 42376634865). On: in Auto,
-         * the first segment after such a jump comes from the highest rung
-         * whose segment arrives in [jumpBudgetUs] at the meter's estimate,
-         * and the second from the rung before the jump again (if the line
-         * still carries it) — ExoPlayer's own rule would hold the lower rung
-         * until ten seconds are in hand. Set by the app at each open (the
-         * lab's A/B, `lab_jump`).
-         */
-        @Volatile var jumpLow = false
-
-        /** What a jump chose, for the trail: (before, first, kbps, on), then (back). */
-        @Volatile var onJump: ((Int, Int, Long, Boolean) -> Unit)? = null
-        @Volatile var onJumpBack: ((Int) -> Unit)? = null
-
-        /** How long a jump's first segment may take to arrive. */
-        val jumpBudgetUs = 500_000L
-
-        /** One segment of the ladder: two-second CMAF fragments. */
-        val segmentUs = 2_000_000L
     }
 
     /**
@@ -610,7 +575,7 @@ class ExoStreamEngine private constructor(
         group: TrackGroup,
         tracks: IntArray,
         type: Int,
-        private val meter: BandwidthMeter,
+        meter: BandwidthMeter,
         checkpoints: List<AdaptiveTrackSelection.AdaptationCheckpoint>,
         private val steer: Steer,
     ) : AdaptiveTrackSelection(
@@ -649,65 +614,13 @@ class ExoStreamEngine private constructor(
 
         private val steering: Boolean get() = steer.target != null || steer.maxHeight != null
 
-        // THE JUMP (Steer.jumpLow, BACKLOG 5c). A seek reaches every
-        // selection as onDiscontinuity, before the player asks for the
-        // segment it lands in; if the next choice is made with nothing in
-        // hand (the jump left the buffer), that is the jump's first segment.
-        // Tracks are ordered best first, so a higher index is a lower rung.
-        private val video = group.type == C.TRACK_TYPE_VIDEO
-        private var played = false
-        private var jumpArmed = false
-        /** The first segment's rung after a jump, until it is in. */
-        private var jumpFirst = -1
-        /** The rung Auto held before the jump. */
-        private var jumpBefore = -1
-        /** The second segment's rung: back to [jumpBefore], or lower if the line fell. */
-        private var jumpBack = -1
-        /**
-         * The segment in hand when [jumpBack] was chosen. The queue loses
-         * segments already played from its front, so its size does not say
-         * whether the second has been added; a new last one does.
-         */
-        private var jumpBackAfter: MediaChunk? = null
-
-        override fun onDiscontinuity() {
-            super.onDiscontinuity()
-            // Also called as a film starts (nothing played yet): not a jump.
-            jumpArmed = video && played
-            jumpFirst = -1
-            jumpBack = -1
-            jumpBackAfter = null
-        }
-
-        /** Auto's own pick, under the data saver's ceiling. */
-        private fun autoIndex(): Int {
-            val i = super.getSelectedIndex()
-            val cap = steer.maxHeight ?: return i
-            return if (steer.heightOf(getFormat(i)) <= cap) i else indexFor(cap)
-        }
-
-        /**
-         * The best rung no better than [atMost] whose rate fits [bps], or the
-         * lowest rung there is when none does.
-         */
-        private fun fitIndex(atMost: Int, bps: Long): Int {
-            val now = Clock.DEFAULT.elapsedRealtime()
-            var lowest = atMost
-            for (i in atMost until length()) {
-                if (isTrackExcluded(i, now)) continue
-                if (getFormat(i).bitrate <= bps) return i
-                lowest = i
-            }
-            return lowest
-        }
-
         override fun getSelectedIndex(): Int {
             val t = steer.target
             if (t != null) return indexFor(t)
             steer.start?.let { return indexFor(it) }
-            if (jumpFirst >= 0) return jumpFirst
-            if (jumpBack >= 0) return jumpBack
-            return autoIndex()
+            val i = super.getSelectedIndex()
+            val cap = steer.maxHeight ?: return i
+            return if (steer.heightOf(getFormat(i)) <= cap) i else indexFor(cap)
         }
 
         override fun updateSelectedTrack(
@@ -721,46 +634,6 @@ class ExoStreamEngine private constructor(
                 playbackPositionUs, bufferedDurationUs, availableDurationUs, queue, mediaChunkIterators)
             // Two segments of the start rung in hand: Auto is the player's.
             if (steer.start != null && queue.size >= 2) steer.start = null
-            if (!video) return
-            val auto = steer.target == null && steer.start == null
-            when {
-                jumpArmed -> {
-                    jumpArmed = false
-                    // A jump inside the buffer needs nothing fetched.
-                    if (queue.isEmpty() && auto) {
-                        val before = autoIndex()
-                        val bps = meter.bitrateEstimate
-                        // Its segment in the budget: rate × segment / line ≤ budget.
-                        val quick = fitIndex(before, bps * steer.jumpBudgetUs / steer.segmentUs)
-                        val on = steer.jumpLow
-                        steer.onJump?.invoke(
-                            steer.heightOf(getFormat(before)), steer.heightOf(getFormat(quick)), bps / 1000, on)
-                        if (on && quick != before) {
-                            jumpFirst = quick
-                            jumpBefore = before
-                        }
-                    }
-                }
-                // The first segment is in: the rung before the jump for the
-                // next, if the line (read again meanwhile) still carries it,
-                // where ExoPlayer would wait for ten seconds in hand.
-                jumpFirst >= 0 && queue.isNotEmpty() -> {
-                    jumpFirst = -1
-                    jumpBack = if (auto) {
-                        fitIndex(jumpBefore,
-                            (meter.bitrateEstimate * AdaptiveTrackSelection.DEFAULT_BANDWIDTH_FRACTION).toLong())
-                    } else -1
-                    jumpBackAfter = queue.last()
-                    if (jumpBack >= 0) steer.onJumpBack?.invoke(steer.heightOf(getFormat(jumpBack)))
-                }
-                // The second is in: Auto is ExoPlayer's again, from the rung
-                // of the last segment in hand.
-                jumpBack >= 0 && queue.isNotEmpty() && queue.last() !== jumpBackAfter -> {
-                    jumpBack = -1
-                    jumpBackAfter = null
-                }
-            }
-            if (queue.isNotEmpty()) played = true
         }
 
         override fun getSelectionReason(): Int =
@@ -842,7 +715,6 @@ class ExoStreamEngine private constructor(
                             (call.argument<Number>("start"))?.toInt(),
                             rungsArg(call.argument<List<Any?>>("rungs")),
                             call.argument<Boolean>("progressive") ?: false,
-                            call.argument<Boolean>("jumpLow") ?: false,
                         )
                         "play" -> e.play()
                         "pause" -> e.pause()
@@ -856,8 +728,6 @@ class ExoStreamEngine private constructor(
                         "quality" -> e.quality((call.argument<Number>("height"))?.toInt())
                         "maxHeight" -> e.maxHeight((call.argument<Number>("height"))?.toInt())
                         "bandwidth" -> e.bandwidth((call.argument<Number>("bps"))?.toLong() ?: 0L)
-                        // The lab's A/B jump by jump, on a phone (Test Lab).
-                        "jumpLow" -> { e.steer.jumpLow = call.argument<Boolean>("on") ?: false }
                         "stop" -> e.stop()
                         "release" -> {
                             e.release()

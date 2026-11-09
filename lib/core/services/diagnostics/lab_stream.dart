@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 
 import '../../../features/video_hub/data/cache/stream_cache_server.dart';
-import '../video_player/exo_engine.dart';
 import 'playback_log.dart';
 
 /// DEVICE LAB ONLY — a film from a URL the lab names, played through the real
@@ -59,18 +58,17 @@ class LabStream {
     }
   }
 
-  /// THE JUMP RULE FOR THIS PLAY (BACKLOG 5c): `lab_jump` holds `on` or
-  /// `off` ([ExoEngine.jumpLow]), written by the weakjumps flow before each
-  /// pass so the passes alternate on one line. Nothing there: the build's
-  /// own. Said in the trail either way.
-  static Future<void> jumpRule() async {
-    if (!const bool.fromEnvironment('INNOCENT_LAB')) return;
+  /// The pass's word (`lab_jump`), written by the weakjumps flow before
+  /// each pass, echoed on every `LAB autojump` line so the flow can check
+  /// the app saw it; a jump switch for an A/B reads it too (none now: 5c's
+  /// rule was tried and taken out, 9 Nov 2026). Null when none was written.
+  static Future<String?> jumpVariant() async {
+    if (!const bool.fromEnvironment('INNOCENT_LAB')) return null;
     try {
-      final v = await _read('lab_jump');
-      if (v == 'on' || v == 'off') ExoEngine.jumpLow = v == 'on';
-      PlaybackLog.add('LAB jump rule ${ExoEngine.jumpLow ? 'on' : 'off'}'
-          '${v == 'on' || v == 'off' ? '' : " (the build's own)"}');
-    } catch (_) {}
+      return await _read('lab_jump');
+    } catch (_) {
+      return null;
+    }
   }
 
   /// The lab's jumps in Auto (`lab_autojumps`): where each lands, as shares

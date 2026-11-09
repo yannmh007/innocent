@@ -27,7 +27,10 @@ does it.
   `ahead_ms`, `error` codes, `grant_ms`), the 7 Nov streaming fixes and
   5b's rung weight by the fastest 20 s. Details under "Next app release".
   On the branch only, by design: the Google sign-in nonce and the lab's
-  hooks (tour skip, `rungKbps`, `ladderRungKbps`, `lab_peak`'s A/B).
+  hooks (tour skip, `rungKbps`, `ladderRungKbps`, `lab_peak`'s A/B, and
+  since 9 Nov the jumps in Auto: `_labAutoJumps`, `LabStream.autoJumps` /
+  `jumpVariant`, the Test Lab path's `INNOCENT_LAB_AUTOJUMPS` and its
+  home-trip skip).
 - **Live already**: migrations 077–080, ingest v55 (0dfe2a5),
   transport-check every 6 h, the backup drill.
 - **The owner still has to**: send the DNSSEC "Active" screenshot on
@@ -35,19 +38,33 @@ does it.
   five open films were approved: every `open-film-%` title reads
   `approved`, checked 8 Nov.) Reminders: trig_01Q1Z21R5QVuAzPJQqjTfK7W (12 Nov),
   trig_01G9fdiXXaVGHSbMgqiJc1bg (13 Nov).
-- **5b done on the branch (8 Nov)**: the master weighs a rung by its
+- **5c tried and taken out (9 Nov)**: a jump's first segment from a rung
+  that arrives in ~0.5 s did not pay. Device lab J and J2 (42616754742,
+  42628158249; 224 jumps on the weak line, on/off alternating, both
+  orders): the jump's own stop a median 0.18 s shorter, the first picture
+  no sooner, a second stop right after the jump in 23 jumps against 5, a
+  softer picture. Test Lab 42641532315: the phones' lines (realme
+  ~15 Mbit/s, OPPO ~0.3) gave the rule nothing to act on. A jump's wait is
+  the Worker's answer (0.3-0.9 s), the phone's restart (0.4-0.7 s), then
+  half a segment's bytes (review §5). The player code is back as it was
+  (cdc1319); the `weakjumps` flow and the jumps in Auto stay, to measure
+  jumps. Waiting on: J3 (the jumps gate and an A/A of the flow, on the
+  reverted build) and the OPPO alone on Test Lab (its line was the
+  slowest yet: seek, quality->240, tour->360 failed waiting for bytes).
+- **5b (8 Nov, live in 1.64.81)**: the master weighs a rung by its
   fastest 20 s (`PeakRule.window`), decided by 32 weakline passes in runs
   H, H2, H3 (review §5): 480p or better 89 % against 69 %, no stop;
   Test Lab 42461966293: 15 of 15 on both phones.
   `deep` (a deep buffer weighed against the whole line) tried, dropped.
   The weakline flow now plays `WEAK_PASSES` passes per run, alternating
   `lab_peak` variants: use it for every A/B (one pass says little).
-- **Next streaming work**: 5c / 3 (a jump's first segment from the rung
-  below), then 5 (two connections) below; method in
-  `docs/streaming_review_2026_11.md` §5 and skill `device-labs` (the
-  weakline flow; read the cap probe first; passes alternating per
-  variant). Lab config now: `FLOWS="weakline"`, 12 passes; Test Lab
-  `cloud.env`: both phones.
+- **Next streaming work**: 5 (two connections) below, or a jump's answer
+  (a connection kept warm for a jump: the answer is the largest part of a
+  jump's wait); method in `docs/streaming_review_2026_11.md` §5 and skill
+  `device-labs` (weakline / weakjumps flows; read the cap probe first;
+  passes alternating per variant, then the other order). Lab config now:
+  `FLOWS="jumps weakjumps"`, an A/A of 8 passes (J3); Test Lab
+  `cloud.env`: the OPPO alone — name both phones again for the next run.
 
 ### Streaming without stutter (7 Nov) — `docs/streaming_review_2026_11.md`
 The owner's request: no stutter, nothing that annoys a viewer. Evidence:
@@ -77,8 +94,8 @@ proves its cap first. Next, each proved by an emulator A/B on that line:
    1.26 s stop;
 2. climb back only when the slow average clears the higher rung (720 →
    240 → 720 → stall);
-3. a jump on a slow line takes its first segment from the rung below
-   (OPPO seek 5.9 s);
+3. ~~a jump on a slow line takes its first segment from the rung below~~
+   (OPPO seek 5.9 s): see 5c, tried and taken out;
 4. ~~a dead segment read noticed in 3–4 s~~ dropped down: 8 s with no
    line cost nothing with 26 s in hand (run C); it matters only with a
    nearly empty buffer;
@@ -93,7 +110,12 @@ proves its cap first. Next, each proved by an emulator A/B on that line:
    defers it to 25 s in hand, then 360p's peak over 0.7 does not fit);
    weighing a deep buffer against the whole line made it worse (`deep`,
    720p in and out). A softer picture, not a stop: low priority;
-5c. a seek on a ~5 Mbit/s line froze 1.7 s on the realme (first segment
+5c. ~~a jump's first segment from a quick rung~~ tried 9 Nov and taken
+   out (runs J, J2, Test Lab 42641532315; review §5): the segment is not
+   the wait — the Worker's answer and the phone's restart are; the rule
+   saved ~0.2 s and cost a second stop after 23 jumps of 112 against 5.
+   The plan as it was written:
+   a seek on a ~5 Mbit/s line froze 1.7 s on the realme (first segment
    720p): fix 3 below, for the first segment after a jump only. What the
    trail says (Test Lab 42376634865): the realme's jump fetched a 537,551 B
    720p segment in 1401 ms (answer 380 ms) at ~4.6 Mbit/s and stood 1699 ms;
@@ -107,8 +129,7 @@ proves its cap first. Next, each proved by an emulator A/B on that line:
    until 10 s are in hand (minDurationForQualityIncrease), a soft picture
    for 10 s after every jump. Lab: the jumps (`lab_jumps`, LAB check
    frozen=) on the weak line in passes, `lab_jump` on/off alternating;
-   then Test Lab on both phones. `test_device/config.env` still names
-   `deep` in WEAK_PASSES (now the same as window): set it with that run;
+   then Test Lab on both phones;
 6. labs to add: ten minutes on a weak line, a link expiring mid-film, a
    low-end and a 32-bit Test Lab phone, two runs per build.
 After the release: frozen seconds per minute played, from `play_summary`,

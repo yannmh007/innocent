@@ -31,7 +31,6 @@ import 'features/player/presentation/player_provider.dart';
 import 'features/player/presentation/shortcut_item.dart';
 import 'core/services/diagnostics/lab_stream.dart';
 import 'core/services/diagnostics/playback_log.dart';
-import 'core/services/video_player/exo_engine.dart';
 import 'core/services/video_player/media_kit_player_service.dart';
 import 'core/services/video_player/stream_renewal.dart';
 import 'core/services/network/throughput_memory.dart';
@@ -88,8 +87,6 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
   Future<void> _labStream() async {
     final titleId = await LabStream.titleId();
     if (titleId != null) {
-      // Before the film opens: the rule a jump's first segment follows.
-      await LabStream.jumpRule();
       await _labTitle(titleId);
       // The device lab's own run of Test Lab's jumps (run.sh, flow jumps).
       if (await LabStream.jumpsAsked()) await _labJumpScript();
@@ -480,9 +477,8 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
   ///   back_ms    from moving again until `before` was back (-1: not then)
   ///   stall_ms   the longest stop in those twenty seconds
   ///   mean       the mean rung over them
-  /// [alternate]: the rule on for the odd jumps and off for the even ones,
-  /// within the one film (Test Lab, where a phone plays the film once).
-  Future<void> _labAutoJumps(List<double> shares, {bool alternate = false}) async {
+  ///   rule       the pass's word (`lab_jump`), or - when none was written
+  Future<void> _labAutoJumps(List<double> shares) async {
     final svc = ref.read(videoPlayerServiceProvider);
     PlayerController player() => ref.read(playerControllerProvider.notifier);
     int rungNow() => (svc is MediaKitPlayerService ? svc.ladderRung : null) ?? 0;
@@ -500,12 +496,12 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
       await Future<void>.delayed(const Duration(milliseconds: 250));
     }
     final length = svc.duration;
+    final variant = await LabStream.jumpVariant() ?? '-';
     var i = 0;
     for (final share in shares) {
       i++;
       if (!mounted) return;
       final want = Duration(milliseconds: (length.inMilliseconds * share).round());
-      if (alternate && svc is MediaKitPlayerService) await svc.ladderJumpRule(i.isOdd);
       final before = rungNow();
       final jumped = DateTime.now();
       var last = svc.position;
@@ -575,7 +571,7 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
           'ready_ms=${readyMs ?? -1} before=$before first=$first low_ms=$lowMs '
           'back_ms=${backMs ?? -1} stall_ms=${stall.inMilliseconds} '
           'mean=${samples == 0 ? 0 : (sum / samples).round()} '
-          'rule=${ExoEngine.jumpLow ? 'on' : 'off'}');
+          'rule=$variant');
     }
     PlaybackLog.add('LAB autojump done');
   }
@@ -631,10 +627,10 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
           // Test Lab only (the title compiled in): the jumps a viewer
           // makes, each checked for where it landed.
           if (built.isNotEmpty) await _labJumpScript(homeTrip: false);
-          // Then the jump rule's A/B on this phone's own line (BACKLOG
-          // 5c): jumps in Auto, the rule on and off in turn.
+          // Then jumps in Auto on this phone's own line, each measured
+          // (STREAM_AUTOJUMPS in cloud.env; none by default).
           if (built.isNotEmpty && autoJumps.isNotEmpty) {
-            await _labAutoJumps(LabStream.parseAutoJumps(autoJumps), alternate: true);
+            await _labAutoJumps(LabStream.parseAutoJumps(autoJumps));
           }
         }());
         if (built.isNotEmpty) {

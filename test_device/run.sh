@@ -583,17 +583,20 @@ for flow in $FLOWS; do
     continue
     ;;
   esac
-  # A JUMP'S FIRST SEGMENT (9 Nov 2026, BACKLOG 5c): the viewer's jumps in
-  # Auto on the weak line, the film far from what is in hand each time, so
-  # the player waits for one whole segment before it plays. The film is
-  # played once per word of JUMP_PASSES, from a cleared app each time, each
-  # word the jump rule (lab_jump: on, the first segment from a rung that
-  # arrives in ~0.5 s and the rung before for the next; off, ExoPlayer's
-  # own). The app (lib/app.dart, _labAutoJumps) warms up for 40 s of film,
-  # then jumps to each share of JUMP_AT in turn and writes one line a jump:
-  # the longest the picture stood still, and the rungs for 20 s after.
+  # JUMPS IN AUTO ON THE WEAK LINE (9 Nov 2026, BACKLOG 5c): the film far
+  # from what is in hand each time, so the player waits for the Worker and
+  # a segment before it plays. The film is played once per word of
+  # JUMP_PASSES, from a cleared app each time, the word written to
+  # lab_jump for a build's jump switch (5c's, a first segment from a lower
+  # rung, was A/B'd in runs 42616754742 and 42628158249 and taken out; no
+  # build reads one now, so two words are an A/A). The app (lib/app.dart,
+  # _labAutoJumps) warms up for 40 s of film, then jumps to each share of
+  # JUMP_AT in turn and writes one line a jump: the longest the picture
+  # stood still, and the rungs and stops for 20 s after.
   # test_device/weakjumps_summary.py sums them per variant and pairs each
-  # jump with the same jump in the neighbouring pass.
+  # jump with the same jump in the neighbouring pass. The trail has each
+  # jump's wait in parts: `hls jump: answer … first byte … segment …` and
+  # `exo picture after seek`.
   case "$flow" in weakjumps)
     if [ -z "${CLIMB_TITLE:-}" ]; then log "flow weakjumps: no CLIMB_TITLE in config.env — skipped"; continue; fi
     line_proved weakjumps || continue
@@ -641,8 +644,7 @@ for flow in $FLOWS; do
             kv["ready_ms"], kv["before"], kv["first"], kv["low_ms"], kv["back_ms"], kv["stall_ms"], kv["mean"], kv["rule"],
             kv["want"] }' >> "$OUT/weakjumps.tsv" || true
       n=$(grep -c 'LAB autojump [0-9]' "$wj" || true)
-      fired=$(grep -c 'exo jump on: .*first segment' "$wj" || true)
-      log "weakjumps pass $p ($variant): $n jumps, the rule took a lower first segment $fired times; $(grep -o 'jump rule [a-z]*' "$wj" | head -1)"
+      log "weakjumps pass $p ($variant): $n jumps"
       grep -oE 'LAB autojump [0-9]+/[0-9]+ .*' "$wj" | sed "s/^LAB /weakjumps pass $p ($variant): /" | while read -r line; do log "$line"; done
     done
     log "weakjumps: the line passed $(tc -s qdisc show dev lo | grep -A1 'netem 40:' | grep -oE 'Sent [0-9]+ bytes [0-9]+ pkt \(dropped [0-9]+' | head -1)"

@@ -41,11 +41,25 @@ Both run only on non-main branches, started by pushing their config file.
   every pass's share. Alternate the words, and run again in the other
   order: H and H2 (8 Nov) disagreed because H2's runner carried more. A
   pass is ~5 min; twelve fit the 120-minute job.
+- **Jumps: flow `weakjumps`** (JUMP_PASSES, JUMP_LINE, JUMP_AT): the film
+  from a cleared app per word (written to `lab_jump`), 40 s of film, then
+  jumps in Auto, one `LAB autojump` line each; ~4 min a pass, sixteen fit.
+  `test_device/weakjumps_summary.py` pairs the same jump of neighbouring
+  passes. `stall_ms` under 600 ms is the position's 250 ms tick, not a
+  stop. **Before changing what a jump fetches, read how its wait divides**
+  (`hls jump: answer … first byte … segment …`, `exo picture after seek`):
+  5c (9 Nov) shrank the segment and gained ~0.2 s, because the Worker's
+  answer and the phone's restart were most of the wait, and the bigger
+  segment asked for next with 2 s in hand stopped the film again.
 
 ## Test Lab — `test_device/cloud.env` → device-cloud.yml (real phones)
 - `DEVICES="RE58C2,35 OP573DL1,34"` (realme, OPPO). Five physical tests a
   day, reset 07:00 UTC; each device in a run is one.
 - `MEDIA_SEAL=` empty for the release build; `MODE=stream` plays Sintel.
+- `STREAM_AUTOJUMPS` (shares of the film): jumps in Auto after the checks,
+  measured as on the emulator; the app then closes at 330 s, not 240. The
+  phones' lines decide whether a jump rule has anything to act on: on
+  9 Nov the realme's (~15 Mbit/s) and the OPPO's (~0.3) gave 5c none.
 - Results: `test_device/results/cloud/<device>/lab_trace.txt`. A seek or
   quality check failing with "measured" line speeds far below earlier runs
   is the line: say so with the numbers, and run that phone once more.

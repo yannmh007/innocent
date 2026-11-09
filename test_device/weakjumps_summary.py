@@ -27,7 +27,11 @@ COLUMNS = ["pass", "variant", "jump", "at", "frozen_ms", "ready_ms", "before",
 NUMERIC = {"pass", "jump", "frozen_ms", "ready_ms", "before", "first", "low_ms",
            "back_ms", "stall_ms", "mean", "want"}
 ALIKE_MS = 100  # closer than this is the position's own tick, not a win
-STOP_MS = 250   # a stop a viewer sees (PlaybackQoe.visibleMs)
+# A STOP AFTER THE JUMP: stall_ms is the longest the position stood still,
+# and the position moves in ticks of 250 ms, which the emulator stretches:
+# in runs 42616754742 and 42628158249, 183 of 224 jumps read 231-490 ms,
+# 13 read 500-600 and 28 read 0.6 s or more. Under 600 ms is the tick.
+STOP_MS = 600
 
 
 def read(path):
@@ -86,7 +90,7 @@ def per_variant(v, rows):
     stops = [r["stall_ms"] for r in rows if r["stall_ms"] >= STOP_MS]
     passes = sorted({r["pass"] for r in rows})
     rules = sorted({r["rule"] for r in rows})
-    yield (f"weakjumps {v}, {len(rows)} jumps in {len(passes)} passes (the app's rule: "
+    yield (f"weakjumps {v}, {len(rows)} jumps in {len(passes)} passes (the app saw: "
            f"{','.join(rules)}): frozen median {median(frozen):.0f} ms, mean "
            f"{sum(frozen) / max(1, len(frozen)):.0f}, p90 {pct(frozen, 0.9)}, longest "
            f"{max(frozen, default=0)}; moving again after median {median(ready):.0f} ms "
@@ -104,12 +108,17 @@ def per_variant(v, rows):
            + ", ".join(f"{p}:{median(by_pass[p]):.0f}" for p in passes))
 
 
+def total(r):
+    """The jump's stop, and the stop after it if there was one."""
+    return r["frozen_ms"] + (r["stall_ms"] if r["stall_ms"] >= STOP_MS else 0)
+
+
 def paired(rows, a, b):
     """The same jump of a pass pair (1-2, 3-4, ...) under a and under b."""
     cell = {}
     for r in rows:
         cell[((r["pass"] + 1) // 2, r["jump"], r["variant"])] = r
-    diffs, stop_a, stop_b = [], 0, 0
+    diffs, totals, stop_a, stop_b = [], [], 0, 0
     for (pair, jump, var), ra in cell.items():
         if var != a:
             continue
@@ -117,6 +126,8 @@ def paired(rows, a, b):
         if rb is None:
             continue
         diffs.append(ra["frozen_ms"] - rb["frozen_ms"])
+        # What a viewer sees in all: the jump's stop and one right after it.
+        totals.append(total(ra) - total(rb))
         stop_a += ra["stall_ms"] >= STOP_MS
         stop_b += rb["stall_ms"] >= STOP_MS
     if not diffs:
@@ -130,6 +141,11 @@ def paired(rows, a, b):
            f"{ALIKE_MS} ms) {alike}; median {a} - {b} = {median(diffs):.0f} ms; sign test "
            f"p={sign_p(a_wins, b_wins):.4f} for {a}, p={sign_p(b_wins, a_wins):.4f} for {b}; "
            f"stops after the jump {stop_a} against {stop_b}")
+    ta = sum(1 for d in totals if d <= -ALIKE_MS)
+    tb = sum(1 for d in totals if d >= ALIKE_MS)
+    yield (f"weakjumps paired, the jump's stop and any stop after it: {a} shorter in {ta}, "
+           f"{b} in {tb}, alike {len(totals) - ta - tb}; median {a} - {b} = {median(totals):.0f} ms; "
+           f"sign test p={sign_p(ta, tb):.4f} for {a}, p={sign_p(tb, ta):.4f} for {b}")
 
 
 def main(path):
