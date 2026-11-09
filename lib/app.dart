@@ -31,6 +31,7 @@ import 'features/player/presentation/player_provider.dart';
 import 'features/player/presentation/shortcut_item.dart';
 import 'core/services/diagnostics/lab_stream.dart';
 import 'core/services/diagnostics/playback_log.dart';
+import 'core/services/video_player/exo_engine.dart';
 import 'core/services/video_player/media_kit_player_service.dart';
 import 'core/services/video_player/stream_renewal.dart';
 import 'core/services/network/throughput_memory.dart';
@@ -87,9 +88,14 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
   Future<void> _labStream() async {
     final titleId = await LabStream.titleId();
     if (titleId != null) {
+      // Before the film opens: the rule a jump's first segment follows.
+      await LabStream.jumpRule();
       await _labTitle(titleId);
       // The device lab's own run of Test Lab's jumps (run.sh, flow jumps).
       if (await LabStream.jumpsAsked()) await _labJumpScript();
+      // Jumps in Auto on a weak line (run.sh, flow weakjumps).
+      final auto = await LabStream.autoJumps();
+      if (auto.isNotEmpty) await _labAutoJumps(auto);
       return;
     }
     final local = await LabStream.localUrl();
@@ -452,6 +458,118 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
           'steps back ${StreamCacheServer.stepsSeen}, handed over ${StreamCacheServer.handedOver}, '
           'bind ${StreamCacheServer.bindAnswers.isEmpty ? 'none' : StreamCacheServer.bindAnswers}');
     }
+  }
+
+  /// DEVICE LAB ONLY — jumps in Auto, one after another, each far from what
+  /// is in hand (BACKLOG 5c, run.sh flow weakjumps): how long the picture
+  /// stood still, and how it looked for the twenty seconds after. One line
+  /// a jump, `LAB autojump I/N key=value…`, which the flow sums per
+  /// `lab_jump` variant:
+  ///   frozen_ms  the longest stretch the position did not move, from the
+  ///              jump to a second of film played after it (as the jumps
+  ///              flow's `frozen=`; ~250 ms is the position's own tick)
+  ///   ready_ms   from the jump until the film moved past where it landed
+  ///   before     the rung on screen before the jump; first: the one it
+  ///              came back on
+  ///   low_ms     of the twenty seconds after, how long under `before`
+  ///   back_ms    from moving again until `before` was back (-1: not then)
+  ///   stall_ms   the longest stop in those twenty seconds
+  ///   mean       the mean rung over them
+  Future<void> _labAutoJumps(List<double> shares) async {
+    final svc = ref.read(videoPlayerServiceProvider);
+    PlayerController player() => ref.read(playerControllerProvider.notifier);
+    int rungNow() => (svc is MediaKitPlayerService ? svc.ladderRung : null) ?? 0;
+    const window = Duration(seconds: 20);
+    const tick = Duration(milliseconds: 100);
+    // A film that never got going says so; a few readings of the line
+    // first, as a viewer's jump comes after some watching.
+    final start = DateTime.now();
+    while (svc.position < const Duration(seconds: 40)) {
+      if (!mounted) return;
+      if (DateTime.now().difference(start) > const Duration(seconds: 150)) {
+        PlaybackLog.add('LAB autojump: the film never got going');
+        return;
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 250));
+    }
+    final length = svc.duration;
+    var i = 0;
+    for (final share in shares) {
+      i++;
+      if (!mounted) return;
+      final want = Duration(milliseconds: (length.inMilliseconds * share).round());
+      final before = rungNow();
+      final jumped = DateTime.now();
+      var last = svc.position;
+      var stillSince = jumped;
+      var frozen = Duration.zero;
+      // Every tick: the longest the position stood still so far.
+      void look() {
+        final now = DateTime.now();
+        if (svc.position != last) {
+          last = svc.position;
+          stillSince = now;
+        } else if (now.difference(stillSince) > frozen) {
+          frozen = now.difference(stillSince);
+        }
+      }
+
+      await player().seek(want);
+      // Landed and moving past where it landed (as the jumps flow's check).
+      int? readyMs;
+      while (DateTime.now().difference(jumped) < const Duration(seconds: 30)) {
+        if (!mounted) return;
+        look();
+        if (svc.position > want + const Duration(milliseconds: 500) &&
+            LabStream.landed(want, svc.position)) {
+          readyMs = DateTime.now().difference(jumped).inMilliseconds;
+          break;
+        }
+        await Future<void>.delayed(tick);
+      }
+      final got = svc.position;
+      final first = rungNow();
+      // The twenty seconds after: the stops, and the rungs.
+      final moving = DateTime.now();
+      final atMoving = svc.position;
+      var stall = Duration.zero;
+      var oneSecondIn = false;
+      var lowMs = 0;
+      int? backMs = first >= before ? 0 : null;
+      var sum = 0, samples = 0;
+      stillSince = moving;
+      last = svc.position;
+      while (DateTime.now().difference(moving) < window) {
+        if (!mounted) return;
+        await Future<void>.delayed(tick);
+        final now = DateTime.now();
+        // The jump's own stop runs on until a second of film has played.
+        if (!oneSecondIn) {
+          look();
+          oneSecondIn = svc.position - atMoving >= const Duration(seconds: 1);
+          if (oneSecondIn) stillSince = now;
+        } else if (svc.position != last) {
+          last = svc.position;
+          stillSince = now;
+        } else if (now.difference(stillSince) > stall) {
+          stall = now.difference(stillSince);
+        }
+        final r = rungNow();
+        if (r > 0) {
+          sum += r;
+          samples++;
+          if (r < before) lowMs += tick.inMilliseconds;
+          if (r >= before && backMs == null) backMs = now.difference(moving).inMilliseconds;
+        }
+      }
+      PlaybackLog.add('LAB autojump $i/${shares.length} at=${share.toStringAsFixed(2)} '
+          'want=${want.inSeconds} got=${got.inSeconds} frozen_ms=${frozen.inMilliseconds} '
+          'ready_ms=${readyMs ?? -1} before=$before first=$first low_ms=$lowMs '
+          'back_ms=${backMs ?? -1} stall_ms=${stall.inMilliseconds} '
+          'mean=${samples == 0 ? 0 : (sum / samples).round()} '
+          'rule=${ExoEngine.jumpLow ? 'on' : 'off'}');
+    }
+    PlaybackLog.add('LAB autojump done');
   }
 
   /// DEVICE LAB ONLY — Test Lab's playback measurement (device-cloud.yml,

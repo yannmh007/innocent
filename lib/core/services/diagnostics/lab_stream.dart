@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 
 import '../../../features/video_hub/data/cache/stream_cache_server.dart';
+import '../video_player/exo_engine.dart';
 import 'playback_log.dart';
 
 /// DEVICE LAB ONLY — a film from a URL the lab names, played through the real
@@ -57,6 +58,39 @@ class LabStream {
       return false;
     }
   }
+
+  /// THE JUMP RULE FOR THIS PLAY (BACKLOG 5c): `lab_jump` holds `on` or
+  /// `off` ([ExoEngine.jumpLow]), written by the weakjumps flow before each
+  /// pass so the passes alternate on one line. Nothing there: the build's
+  /// own. Said in the trail either way.
+  static Future<void> jumpRule() async {
+    if (!const bool.fromEnvironment('INNOCENT_LAB')) return;
+    try {
+      final v = await _read('lab_jump');
+      if (v == 'on' || v == 'off') ExoEngine.jumpLow = v == 'on';
+      PlaybackLog.add('LAB jump rule ${ExoEngine.jumpLow ? 'on' : 'off'}'
+          '${v == 'on' || v == 'off' ? '' : " (the build's own)"}');
+    } catch (_) {}
+  }
+
+  /// The lab's jumps in Auto (`lab_autojumps`): where each lands, as shares
+  /// of the film ("0.40 0.70 0.20"), one after another. Empty when the lab
+  /// asked for none.
+  static Future<List<double>> autoJumps() async {
+    if (!const bool.fromEnvironment('INNOCENT_LAB')) return const [];
+    try {
+      return parseAutoJumps((await _read('lab_autojumps')) ?? '');
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  /// "0.40 0.70 0.20" (spaces or commas); anything not a share of the film
+  /// (0 < s < 1) is skipped.
+  static List<double> parseAutoJumps(String raw) => [
+        for (final w in raw.split(RegExp(r'[\s,]+')))
+          if (double.tryParse(w) case final s? when s > 0 && s < 1) s,
+      ];
 
   /// Whether a jump to [want] LANDED THERE: [got], read a while after it,
   /// is no more than [early] short of [want] (a start lands on the keyframe

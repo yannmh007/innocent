@@ -19,6 +19,13 @@ void main() {
     expect(LabStream.parseSeekPlan(''), isEmpty);
   });
 
+  test("the lab's jumps in Auto: shares of the film, junk skipped", () {
+    expect(LabStream.parseAutoJumps('0.40 0.70 0.20'), [0.40, 0.70, 0.20]);
+    expect(LabStream.parseAutoJumps(' 0.4,0.7\n0.2 '), [0.4, 0.7, 0.2]);
+    expect(LabStream.parseAutoJumps('0 1 1.5 -0.2 x 0.5'), [0.5]);
+    expect(LabStream.parseAutoJumps(''), isEmpty);
+  });
+
   test('a jump landed: near where it was asked, never back at 00:00', () {
     const want = Duration(seconds: 600);
     expect(LabStream.landed(want, const Duration(seconds: 598)), isTrue,

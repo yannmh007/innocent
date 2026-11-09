@@ -28,6 +28,14 @@ class ExoEngine {
   static const EventChannel _ev = EventChannel('innocent/exo/events');
   static Stream<Map<Object?, Object?>>? _events;
 
+  /// A JUMP'S FIRST SEGMENT FROM A RUNG THAT ARRIVES QUICKLY (BACKLOG 5c;
+  /// ExoStreamEngine's `Steer.jumpLow`): in Auto, a jump out of the buffer
+  /// takes its first segment from the best rung whose segment arrives in
+  /// about half a second at the line's speed, and the second from the rung
+  /// before the jump again. Applied at each open. Settable for the lab's A/B
+  /// (`lab_jump`, read by `LabStream.jumpRule`) and for tests.
+  static bool jumpLow = false;
+
   final int id;
   final int textureId;
 
@@ -212,6 +220,14 @@ class ExoEngine {
       case 'steer':
         PlaybackLog.add('exo steer ${e['why']} target=${e['target'] ?? 'auto'} '
             'made=${e['made']} rungs=${e['heights']} picks=${e['picks']}');
+      case 'jump':
+        // Every jump out of the buffer in Auto, either way: the rung Auto
+        // would fetch first, and the one that arrives in ~0.5 s.
+        final on = e['on'] == true;
+        PlaybackLog.add('exo jump ${on ? 'on' : 'off'}: auto ${e['before']}p, quick ${e['first']}p, '
+            'line ${e['kbps']} kbps${on && e['first'] != e['before'] ? ', first segment ${e['first']}p' : ''}');
+      case 'jumpback':
+        PlaybackLog.add('exo jump back: second segment ${e['h']}p');
       case 'loaderr':
         PlaybackLog.add('exo load error ${e['what']} type=${e['type']} ${e['err']}');
       case 'dropped':
@@ -268,6 +284,7 @@ class ExoEngine {
       ],
       // One MP4 file (a film's Original) rather than the ladder's HLS.
       'progressive': progressive,
+      'jumpLow': jumpLow,
     });
   }
 

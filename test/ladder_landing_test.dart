@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:innocent/core/services/diagnostics/playback_log.dart';
 import 'package:innocent/core/services/video_player/exo_engine.dart';
 import 'package:innocent/features/player/presentation/ladder_preview_loader.dart';
 
@@ -190,6 +191,23 @@ void main() {
       expect(seen.last, (false, 0));
       expect(e.position, const Duration(milliseconds: 12400));
       await sub.cancel();
+    });
+
+    test("a jump's first segment is in the trail, rule on or off (BACKLOG 5c)", () {
+      final e = ExoEngine.forTest();
+      e.debugEvent(<Object?, Object?>{
+        'e': 'jump', 'before': 480, 'first': 240, 'kbps': 1900, 'on': true,
+      });
+      e.debugEvent(<Object?, Object?>{'e': 'jumpback', 'h': 480});
+      e.debugEvent(<Object?, Object?>{
+        'e': 'jump', 'before': 480, 'first': 240, 'kbps': 1900, 'on': false,
+      });
+      final lines = PlaybackLog.tail(3).join('\n');
+      expect(lines, contains('exo jump on: auto 480p, quick 240p, line 1900 kbps, first segment 240p'));
+      expect(lines, contains('exo jump back: second segment 480p'));
+      // Off: what the rule would have taken, and nothing taken.
+      expect(PlaybackLog.tail(1).single, contains('exo jump off: auto 480p, quick 240p, line 1900 kbps'));
+      expect(PlaybackLog.tail(1).single, isNot(contains('first segment')));
     });
   });
 }
