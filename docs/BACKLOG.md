@@ -48,9 +48,11 @@ does it.
   the Worker's answer (0.3-0.9 s), the phone's restart (0.4-0.7 s), then
   half a segment's bytes (review §5). The player code is back as it was
   (cdc1319); the `weakjumps` flow and the jumps in Auto stay, to measure
-  jumps. Waiting on: J3 (the jumps gate and an A/A of the flow, on the
-  reverted build) and the OPPO alone on Test Lab (its line was the
-  slowest yet: seek, quality->240, tour->360 failed waiting for bytes).
+  jumps. On that build: device lab J3 (42655210613) jumps 15 of 15, and
+  an A/A of the flow came apart by 0.35 s over 28 pairs (5c's 0.18 s gain
+  in the jump's stop is that flow's noise; its second stops are not);
+  Test Lab 42655210615, the OPPO alone: 16 of 16 on 11.5-38.6 Mbit/s (the
+  three failures before were its 0.3 Mbit/s line).
 - **5b (8 Nov, live in 1.64.81)**: the master weighs a rung by its
   fastest 20 s (`PeakRule.window`), decided by 32 weakline passes in runs
   H, H2, H3 (review §5): 480p or better 89 % against 69 %, no stop;
@@ -62,9 +64,11 @@ does it.
   (a connection kept warm for a jump: the answer is the largest part of a
   jump's wait); method in `docs/streaming_review_2026_11.md` §5 and skill
   `device-labs` (weakline / weakjumps flows; read the cap probe first;
-  passes alternating per variant, then the other order). Lab config now:
-  `FLOWS="jumps weakjumps"`, an A/A of 8 passes (J3); Test Lab
-  `cloud.env`: the OPPO alone — name both phones again for the next run.
+  passes alternating per variant, then the other order; an A/A of 28
+  pairs spreads 0.35 s, so an effect on a jump's stop needs more pairs
+  than that or a bigger effect). Lab config now: `FLOWS="jumps weakjumps"`,
+  the A/A of J3; Test Lab `cloud.env`: the OPPO alone — name both phones
+  again for the next run.
 
 ### Streaming without stutter (7 Nov) — `docs/streaming_review_2026_11.md`
 The owner's request: no stutter, nothing that annoys a viewer. Evidence:

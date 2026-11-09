@@ -453,3 +453,17 @@ segment. What could shorten it is the answer — a connection kept warm
 for a jump, say — not the rung; untried. The `weakjumps`
 flow and the jumps in Auto (`_labAutoJumps`, `STREAM_AUTOJUMPS` on Test
 Lab) stay, to measure that.
+
+**After the decision.** Device lab J3 (42655210613), the build with the
+rule taken out: the jumps on Big Buck Bunny 15 of 15; then an A/A of
+`weakjumps`, eight passes, both words alike (probe 750 kbps under
+900 kbit). Identical variants came apart by a median 0.35 s in the
+jump's own stop over 28 pairs (15 shorter against 10, sign p 0.21), with
+a stop after the jump in 1 and 2 of 28. So the flow's own spread is of
+the size of 5c's gain in the jump's stop (0.18 s over 112 pairs; a median
+over four times the pairs spreads about half as far): that gain is not
+shown. The second stops are: 23 of 112 under the rule against 5 of 112
+without it and 3 of 56 in the A/A. Test Lab 42655210615, the OPPO alone
+on the same build: 16 of 16 on a line of 11.5-38.6 Mbit/s (median 31),
+seek frozen 400 ms at 720p, far-jump 599 ms — run 42641532315's three
+failures were its 0.3 Mbit/s line.
