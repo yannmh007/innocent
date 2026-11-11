@@ -297,8 +297,7 @@ void main() {
 
   test('kept spare: a jump that cuts the read in flight is answered on a connection the '
       'other pool kept open, with no request more', () async {
-    StreamCacheServer.keepSpare = true;
-    addTearDown(() => StreamCacheServer.keepSpare = false);
+    expect(StreamCacheServer.keepSpare, isTrue, reason: 'on by default since 11 Nov');
     final master = await register('film13');
     final (_, mbody) = await _get(master);
     final url = RegExp(r'^http://.+/720\.m3u8$', multiLine: true).firstMatch(String.fromCharCodes(mbody))!.group(0)!;

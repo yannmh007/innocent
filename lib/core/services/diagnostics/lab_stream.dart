@@ -75,7 +75,8 @@ class LabStream {
   /// `off` for [StreamCacheServer.keepSpare] — a ladder's segment reads in
   /// turn on two pools, so a jump finds a connection open — written by the
   /// weakjumps flow before each pass, so the passes alternate on one line.
-  /// Read before the film opens. Any other word, or none: the build's own.
+  /// Read before the film opens. Any other word, or none: the build's own
+  /// (on since 11 Nov).
   /// Said in the trail either way. (5c's switch, a jump's first segment
   /// from a quick rung, read the same file; tried and taken out 9 Nov.)
   static Future<void> jumpRule() async {

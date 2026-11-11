@@ -649,8 +649,9 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
           }
           // Test Lab with jumps in Auto (no word can be written there): the
           // spare pool on for the whole playback, the checks included, so
-          // they prove it on a real phone; the jumps then take it in turn
-          // (_labAutoJumps, alternate).
+          // they prove it on a real phone — as the build's default is since
+          // 11 Nov, and whatever a later A/B sets it to; the jumps then take
+          // it in turn (_labAutoJumps, alternate).
           if (built.isNotEmpty && autoJumps.isNotEmpty) {
             StreamCacheServer.keepSpare = true;
             PlaybackLog.add('LAB jump rule spare on (Test Lab: the jumps in Auto alternate)');

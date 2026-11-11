@@ -316,8 +316,9 @@ class StreamCacheServer {
 
   static void _readWhole(HttpClient pool) => _useOf(pool).whole();
 
-  /// A CONNECTION KEPT OPEN FOR A JUMP (11 Nov 2026; lab switch `lab_jump`,
-  /// off until the lab decides). A jump cuts the read ahead in flight, and a
+  /// A CONNECTION KEPT OPEN FOR A JUMP (11 Nov 2026; on since the lab
+  /// decided, the lab switch `lab_jump` on/off). A jump cuts the read ahead
+  /// in flight, and a
   /// response cut before its end takes its connection with it: the jump's
   /// own request then waits for a new one — a name lookup, TCP and TLS, two
   /// round trips or more before the Worker even hears it, and on a lossy
@@ -327,7 +328,16 @@ class StreamCacheServer {
   /// ago; a jump goes to the one with no read on it ([_poolFor]). No request
   /// more to the Worker: the reads are the same reads, on two connections
   /// in turn rather than one.
-  static bool keepSpare = false;
+  ///
+  /// DECIDED BY 112 PAIRS OF JUMPS (device lab S1 42957372146, S2
+  /// 42982586873, both orders, the weak line): the Worker's answer to the
+  /// jump's first read a median 0.30 s sooner (82 pairs against 10), the
+  /// jump's stop 0.31 s shorter (69 against 33, sign p 0.0002; an A/A
+  /// spreads 0.31-0.35 s over 21-28 pairs), the first picture 0.30 s sooner
+  /// (76 against 17); stops after the jump 3 of 0.6-0.73 s against 0, the
+  /// picture after alike. The release gate 15 of 15 and Test Lab 16 of 16
+  /// on both phones with it on.
+  static bool keepSpare = true;
 
   /// LAB ONLY (Test Lab's jumps in Auto, on for one jump and off for the
   /// next, lib/app.dart): false sends a jump onto the pool whose read it
@@ -340,10 +350,21 @@ class StreamCacheServer {
   /// — its connection is open. A read that carries on from the one before:
   /// the pool used less recently, so both stay open. Off, or for a film
   /// that is not a ladder's, the film's one pool.
-  HttpClient _poolFor(_Source src, {required bool jump}) {
+  HttpClient _poolFor(_Source src, {required bool jump, _Fill? after}) {
     final a = src.io;
     final b = src.second;
     if (!keepSpare || b == null || identical(a, b)) return a;
+    // A read that carries on from a short one — the head, at the start, or
+    // a read a run already on the phone cut short — stays on that one's
+    // pool: the player has next to nothing in hand, and the other pool's
+    // first read would put a handshake in front of the picture (the length
+    // check's connection carries the head and then the first fragment,
+    // 29 Oct). The turns begin once a whole read ahead is in.
+    final p = after?.pool;
+    if (!jump && after != null && p != null &&
+        after.to - after.from < segmentReadAhead && _useOf(p).reading == 0) {
+      return p;
+    }
     final ua = _useOf(a);
     final ub = _useOf(b);
     return firstPool(
@@ -1844,7 +1865,7 @@ class StreamCacheServer {
     // ago a read on the pool last came in whole (leaving its connection
     // open, for the pool's idleTimeout).
     final cut = before != null && !before.done;
-    final pool = _poolFor(src, jump: jump);
+    final pool = _poolFor(src, jump: jump, after: before);
     final use = _useOf(pool);
     final idle = use.sinceWhole;
     // Counted from the choice on, so a jump that comes while this read waits
@@ -1880,7 +1901,7 @@ class StreamCacheServer {
       use.reading--;
       rethrow;
     }
-    final fill = src.fill = _Fill(pos, aheadEnd);
+    final fill = src.fill = _Fill(pos, aheadEnd)..pool = pool;
     fill.onWait = () {
       final w = writer;
       if (w != null) unawaited(w.drain().catchError((_) {}));
@@ -3441,6 +3462,9 @@ class _Fill {
   _Fill(this.from, this.to) : at = from;
   final int from;
   final int to;
+
+  /// The pool its request went out on ([StreamCacheServer._poolFor]).
+  HttpClient? pool;
 
   /// How far it has brought the film so far.
   int at;
