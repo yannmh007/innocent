@@ -15,9 +15,9 @@ Written at the owner's request so nothing below is lost between sessions.
 Newest first within each group; tick an item by deleting it in the commit that
 does it.
 
-### WHERE THINGS STAND — read first in a new session (8 Nov 2026)
+### WHERE THINGS STAND — read first in a new session (11 Nov 2026)
 - **Work branch `claude/extract-github-release-oteqr5`** holds everything
-  not yet live (main is 1.64.81, 96d504c). A new session starts on main:
+  not yet live (main is 1.64.82, 72b20dd). A new session starts on main:
   fetch this branch and work on top of it, or the notes below are missing.
   Push to it (fast-forward), the owner's choice of 8 Nov: a session's own
   branch starts at main, has no history in common with this one, and
@@ -27,27 +27,121 @@ does it.
   `ahead_ms`, `error` codes, `grant_ms`), the 7 Nov streaming fixes and
   5b's rung weight by the fastest 20 s. Details under "Next app release".
   On the branch only, by design: the Google sign-in nonce and the lab's
-  hooks (tour skip, `rungKbps`, `ladderRungKbps`, `lab_peak`'s A/B).
+  hooks (tour skip, `rungKbps`, `ladderRungKbps`, `lab_peak`'s A/B, and
+  since 9 Nov the jumps in Auto: `_labAutoJumps`, `LabStream.autoJumps` /
+  `jumpVariant`, the Test Lab path's `INNOCENT_LAB_AUTOJUMPS` and its
+  home-trip skip; since 11 Nov `LabStream.jumpRule` (`lab_jump` on/off →
+  `keepSpare`), the Test Lab path's `keepSpare = true` and
+  `_labAutoJumps(alternate:)` / `StreamCacheServer.spareForJumps`, and
+  `_Ladder.pool`'s lab `connectionFactory` (`_labTimedConnect`, DNS / TCP /
+  TLS apart in the trail)).
+- **1.64.82 (395) is out, 11 Nov**: the player audit
+  (docs/player_ux_audit_2026_11.md), and nothing else: released from main
+  1.64.81 plus the audit (session branch `claude/focused-johnson-1915dp`),
+  so none of this branch's unreleased work went with it (5d's keepSpare,
+  the play_summary stash, the lab hooks). The audit is on this branch too
+  (822a7e8f) and the next release from here carries it. Details under
+  "Next app release"; what the audit left open under "Player audit".
 - **Live already**: migrations 077–080, ingest v55 (0dfe2a5),
   transport-check every 6 h, the backup drill.
 - **The owner still has to**: send the DNSSEC "Active" screenshot on
-  12 Nov; update a phone to 1.64.81 and say if anything looks wrong. (The
+  12 Nov; update a phone to 1.64.82 and say if anything looks wrong (the player:
+  subtitles chosen upright, ⋮ then Back, Display Settings' sliders). (The
   five open films were approved: every `open-film-%` title reads
   `approved`, checked 8 Nov.) Reminders: trig_01Q1Z21R5QVuAzPJQqjTfK7W (12 Nov),
   trig_01G9fdiXXaVGHSbMgqiJc1bg (13 Nov).
-- **5b done on the branch (8 Nov)**: the master weighs a rung by its
+- **5d, a connection kept open for a jump (11 Nov, on the branch, ON by
+  default; ships with the next release)**: `StreamCacheServer.keepSpare`.
+  Measured first (device lab M1, 42951731347): on the weak line a jump's
+  answer was 885 ms on a new connection (DNS 25 + TCP 147 + TLS 189 + the
+  Worker's wait 441) against 466 on a kept one, and 33 of 34 jumps that cut
+  the read ahead in flight paid the handshake (a response cut before its
+  end takes its connection with it). Now a ladder's segment reads take
+  turns on two pools and a jump takes the one with no read on it: device
+  lab S1/S2 (42957372146, 42982586873; 112 pairs, both orders) the answer,
+  the jump's stop and the first picture each 0.30 s sooner (stop: 69
+  pairs against 33, p 0.0002; the A/A spreads 0.31-0.35 s over 21-28);
+  stops after 3 (0.61-0.73 s) against 0, picture after alike; no Worker
+  request more. Gate: jumps on Big Buck Bunny 15 of 15 with it on. Test
+  Lab with it on: OPPO 16 of 16 (42982587122), realme 16 of 16 on its rerun
+  (42985879375; its first run's line read 64-303 kbps and the checks never
+  began). On the phones' fast lines every jump found a connection open
+  either way. Review §5 "Runs M1, S1, S2". Follow-ups: mark a pool lost
+  when a read on it ends cut; the Worker's own wait (~0.3 s, R2 most
+  likely) needs a `Server-Timing` header to split (a Worker change).
+- **play_summary was lost for a playback the app never came back to
+  (found 11 Nov, fixed on the branch)**: it was sent only as the player
+  screen closed; an app sent to the background and closed from Recents
+  never closed it (1.64.81's first viewer: 4 playbacks, 2 summaries; the
+  labs' 79 force-stopped plays: none). Now kept on the phone when the app
+  goes to the background mid-playback and sent at the next start with its
+  own time, session and version (`stashed: 1`). Viewer data otherwise: 2
+  `play_summary` rows since 1.64.81 (one viewer, open films, 212 s played,
+  no stall, 20 jumps 2.7 s in all); `network_kind` is never sent (no
+  plugin, by design), so "per network" needs the measured line in the
+  summary instead.
+- **5c tried and taken out (9 Nov)**: a jump's first segment from a rung
+  that arrives in ~0.5 s did not pay. Device lab J and J2 (42616754742,
+  42628158249; 224 jumps on the weak line, on/off alternating, both
+  orders): the jump's own stop a median 0.18 s shorter, the first picture
+  no sooner, a second stop right after the jump in 23 jumps against 5, a
+  softer picture. Test Lab 42641532315: the phones' lines (realme
+  ~15 Mbit/s, OPPO ~0.3) gave the rule nothing to act on. A jump's wait is
+  the Worker's answer (0.3-0.9 s), the phone's restart (0.4-0.7 s), then
+  half a segment's bytes (review §5). The player code is back as it was
+  (cdc1319); the `weakjumps` flow and the jumps in Auto stay, to measure
+  jumps. On that build: device lab J3 (42655210613) jumps 15 of 15, and
+  an A/A of the flow came apart by 0.35 s over 28 pairs (5c's 0.18 s gain
+  in the jump's stop is that flow's noise; its second stops are not);
+  Test Lab 42655210615, the OPPO alone: 16 of 16 on 11.5-38.6 Mbit/s (the
+  three failures before were its 0.3 Mbit/s line).
+- **5b (8 Nov, live in 1.64.81)**: the master weighs a rung by its
   fastest 20 s (`PeakRule.window`), decided by 32 weakline passes in runs
   H, H2, H3 (review §5): 480p or better 89 % against 69 %, no stop;
   Test Lab 42461966293: 15 of 15 on both phones.
   `deep` (a deep buffer weighed against the whole line) tried, dropped.
   The weakline flow now plays `WEAK_PASSES` passes per run, alternating
   `lab_peak` variants: use it for every A/B (one pass says little).
-- **Next streaming work**: 5c / 3 (a jump's first segment from the rung
-  below), then 5 (two connections) below; method in
-  `docs/streaming_review_2026_11.md` §5 and skill `device-labs` (the
-  weakline flow; read the cap probe first; passes alternating per
-  variant). Lab config now: `FLOWS="weakline"`, 12 passes; Test Lab
-  `cloud.env`: both phones.
+- **Next streaming work**: 5d's follow-ups (a pool marked lost when a
+  read on it ends cut; the Worker's wait split by `Server-Timing`, the
+  owner's call), or 2 (climb back only when the slow average clears the
+  higher rung). Not 5 as written: it doubles the Worker requests and would
+  take 5d's spare away (review §5). Method in
+  `docs/streaming_review_2026_11.md` §5 and skill `device-labs` (weakline /
+  weakjumps flows; read the cap probe first; passes alternating per
+  variant, then the other order; read a jump's answer in parts first; an
+  A/A of 21-28 pairs spreads 0.31-0.35 s). Lab config now: `FLOWS="jumps"`,
+  the gate on the build with 5d on by default; Test Lab `cloud.env`: the
+  realme alone (its rerun) — name both phones again for the next run.
+
+### Player audit (11 Nov) — `docs/player_ux_audit_2026_11.md`
+The owner's request: every menu and button of the player, both ways round,
+in every language, MX-level. Found and fixed (1.64.82): Back closed the
+film over an open menu; no subtitles or audio choice in portrait; holding
+Next never opened the repeat menu; Display Settings did nothing; "Track
+auto/no" in the audio menu; a 4 s timer leaked per film; the last history
+entry lost on close; a dozen layouts cut off in Burmese, sideways or at a
+large font. Left open:
+1. On purpose, the owner's call: Back while the screen is locked still
+   leaves the film (Kids Lock swallows it); the error banner shows
+   libmpv's own sentence under its title; "Online subtitles" shares a
+   search link (no url_launcher in the app).
+2. Toward MX, by what a viewer here would miss: chapters (libmpv's
+   `chapter-list`; local MKVs have them, the catalogue does not); subtitle
+   search and download in the app (OpenSubtitles, a key on the server);
+   the track playing marked in the menus on the ladder engine (1.64.82
+   reads it from libmpv only); cast.
+3. How to check a player change: `test/player_layout_test.dart` (1,224
+   layouts with LANGS=my,en,th SCALES=1.0,1.3; real fonts from test/fonts
+   and the SDK; PLAYER_SHOTS=<dir> photographs them),
+   `test/player_controls_test.dart`, and in the device lab
+   `layout_portrait player_audit layout_landscape player_audit_land`. The
+   controls hide 4 s after a tap and Maestro needs about a second a step:
+   a flow acts on freshly shown controls, its two taps 0.8 s apart (closer
+   is a double tap: play/pause). A build of main shows the first-run tour
+   (layout_portrait skips it); run.sh's rotation line read "now 0" in run
+   42993934736 while the screen was 2400x1080 — the UI dump's bounds are
+   the truth.
 
 ### Streaming without stutter (7 Nov) — `docs/streaming_review_2026_11.md`
 The owner's request: no stutter, nothing that annoys a viewer. Evidence:
@@ -77,14 +171,18 @@ proves its cap first. Next, each proved by an emulator A/B on that line:
    1.26 s stop;
 2. climb back only when the slow average clears the higher rung (720 →
    240 → 720 → stall);
-3. a jump on a slow line takes its first segment from the rung below
-   (OPPO seek 5.9 s);
+3. ~~a jump on a slow line takes its first segment from the rung below~~
+   (OPPO seek 5.9 s): see 5c, tried and taken out;
 4. ~~a dead segment read noticed in 3–4 s~~ dropped down: 8 s with no
    line cost nothing with 26 s in hand (run C); it matters only with a
    nearly empty buffer;
 5. two connections for a ladder's reads on a lossy line: one carries
    ~1.5–2 Mbit/s at 0.5 % loss and 120 ms whatever the cap (TCP's own
-   limit), less than 720p's peak; costs Worker requests;
+   limit), less than 720p's peak; costs Worker requests: each read in two
+   halves doubles them (an hour of film at 2 MB a read: 720p 360, 480p
+   196, 360p 124, 240p 66 requests; the Free plan's 100,000 a day ~510
+   viewer-hours at 480p, ~255 with it), and both connections busy at a
+   jump would undo 5d (review §5, 11 Nov);
 5b. ~~picture quality on a weak line~~ done 8 Nov: a rung is weighed by
    its fastest 20 s, a rung not read by a read rung's ratio
    (`PeakRule.window`; runs H/H2/H3: 480p or better 89 % against 69 %,
@@ -93,7 +191,12 @@ proves its cap first. Next, each proved by an emulator A/B on that line:
    defers it to 25 s in hand, then 360p's peak over 0.7 does not fit);
    weighing a deep buffer against the whole line made it worse (`deep`,
    720p in and out). A softer picture, not a stop: low priority;
-5c. a seek on a ~5 Mbit/s line froze 1.7 s on the realme (first segment
+5c. ~~a jump's first segment from a quick rung~~ tried 9 Nov and taken
+   out (runs J, J2, Test Lab 42641532315; review §5): the segment is not
+   the wait — the Worker's answer and the phone's restart are; the rule
+   saved ~0.2 s and cost a second stop after 23 jumps of 112 against 5.
+   The plan as it was written:
+   a seek on a ~5 Mbit/s line froze 1.7 s on the realme (first segment
    720p): fix 3 below, for the first segment after a jump only. What the
    trail says (Test Lab 42376634865): the realme's jump fetched a 537,551 B
    720p segment in 1401 ms (answer 380 ms) at ~4.6 Mbit/s and stood 1699 ms;
@@ -107,8 +210,13 @@ proves its cap first. Next, each proved by an emulator A/B on that line:
    until 10 s are in hand (minDurationForQualityIncrease), a soft picture
    for 10 s after every jump. Lab: the jumps (`lab_jumps`, LAB check
    frozen=) on the weak line in passes, `lab_jump` on/off alternating;
-   then Test Lab on both phones. `test_device/config.env` still names
-   `deep` in WEAK_PASSES (now the same as window): set it with that run;
+   then Test Lab on both phones;
+5d. a connection kept open for a jump: done 11 Nov, on by default
+   (`keepSpare`; runs M1, S1, S2, Test Lab 42982587122 / 42985879375;
+   review §5): a ladder's segment reads take turns on two pools, so a jump
+   that cuts the read in flight finds the other's connection open — the
+   answer, the jump's stop and the first picture 0.30 s sooner over 112
+   pairs, no Worker request more;
 6. labs to add: ten minutes on a weak line, a link expiring mid-film, a
    low-end and a 32-bit Test Lab phone, two runs per build.
 After the release: frozen seconds per minute played, from `play_summary`,
@@ -154,7 +262,36 @@ security). Found, most urgent first:
    so); and a short public Worker cache for landing and row RPCs when they
    load the database. Not before.
 
-### Next app release (after 1.64.81)
+### Next app release (after 1.64.82)
+- **1.64.82 is out** (11 Nov, main 72b20dd, build 42996818415; arm64
+  95628676 bytes `dee484cc…de28`, arm32 87598952 bytes `907e8350…3929`;
+  GitHub's asset digests agree; app_releases moved at 10:23 UTC after a
+  rolled-back dry run, mirrors on the GitHub release). The player audit
+  only, on main 1.64.81: 357dfb9a, then 72b20dd adding the lab's player
+  flows. Proved before the push: the release tree's 1663 Flutter tests and
+  check.py; its Build 42986335820; device lab 42986323922 (plain: genres,
+  jumps 15/15); Test Lab 42986497192, the realme alone, 16/16 (one phone:
+  this branch's Test Lab had two of the day's five); device lab 42996379027,
+  the player flows in both orientations (Back closes ⋮ and the subtitle
+  panel with the film still playing; audio and subtitles on the portrait
+  top bar; holding Next opens the repeat menu). After it: Pages, Dependency
+  scan and CodeQL green; Playback check 43024797061 passed on main. The CDN copy
+  cannot be fetched from the sandbox (its host is blocked there); the
+  Build's CDN step passed. **The next release from this branch keeps**
+  `test_device/flows/player_audit*.yaml` and layout_portrait's tour skip
+  (brought here with this record, `[skip ci]`, so the device lab did not
+  start under this branch's own runs).
+- **Added on the branch 11 Nov, for the next release**: 5d, a connection
+  kept open for a jump (`StreamCacheServer.keepSpare`, on; a second pool
+  per ladder, `_Ladder.spare`); a jump's answer in parts in the trail
+  (`hls jump: … conn new|kept …, wait …`); `play_summary` kept on the phone
+  when the app goes to the background mid-playback and sent at the next
+  start (`PlaybackReporter.stashSummary` / `sendStashed`, EventSender
+  `build` + `enqueue`). Leave out the 11 Nov lab hooks listed in §0
+  (`jumpRule`, the Test Lab `keepSpare` line, `alternate` /
+  `spareForJumps`, `_labTimedConnect`). Proof so far: device lab M1, S1,
+  S2 and the gate (15 of 15), Test Lab 16 of 16 on both phones, the
+  branch's 1671 Flutter tests here (the player audit's with them).
 - **1.64.81 is out** (8 Nov, main 96d504c, build 42477027297; arm64
   95615240 bytes `44c1ef3d…128a`, arm32 87579964 bytes `66cd8824…5e35`;
   GitHub's asset digests agree; app_releases moved after a rolled-back dry
@@ -166,8 +303,7 @@ security). Found, most urgent first:
   nonce and the lab hooks, as for 1.64.80. **GitHub's release downloads
   failed (504) for about two hours that day**: the lab and branch builds
   needed four tries, and the Dependency scan on main (42477027283) failed
-  on the Gradle download, not on a finding (its `pins` job passed on the
-  rerun); a release push is safest when a full download of the libmpv jar
+  on the Gradle download, not on a finding (green on the third try); a release push is safest when a full download of the libmpv jar
   succeeds three times in a row (the CDN step publishes before the GitHub
   release, and a half-published version cannot be rebuilt the same).
 - **1.64.80 is out** (6 Nov 14:20 UTC, main 0202f0a, build 42226206227,
