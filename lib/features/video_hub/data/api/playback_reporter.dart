@@ -1,3 +1,7 @@
+import 'dart:convert';
+
+import 'package:shared_preferences/shared_preferences.dart';
+
 import 'event_sender.dart';
 
 /// Turns a running player into the two numbers a ranking is built on.
@@ -128,6 +132,62 @@ class PlaybackReporter {
       durationS: _durationS > 0 ? _durationS : null,
       meta: meta,
     );
+    // ignore: discarded_futures
+    _dropStash();
+  }
+
+  /// A SUMMARY THE APP NEVER CAME BACK TO SEND (11 Nov 2026). The summary
+  /// goes out as the player screen closes ([reportSummary]); an app sent to
+  /// the background mid-film and then closed from Recents, or by Android,
+  /// never closes it, and its summary was lost: on 1.64.81 the first viewer
+  /// had 4 playbacks and 2 summaries, and the labs' 79 force-stopped plays
+  /// none at all. Now the screen keeps the summary as it stands whenever the
+  /// app goes to the background mid-playback ([stashSummary]): sent as usual
+  /// it is dropped, left behind it goes out at the next start
+  /// ([sendStashed]) with the time, session and version it was made in,
+  /// `stashed: 1` in its meta. One kept at a time: the latest.
+  static const String stashKey = 'play_summary_kept';
+
+  Future<void> stashSummary(Map<String, dynamic> meta) async {
+    if (_finished || _summarySent) return;
+    final event = _events.build(
+      Ev.playSummary,
+      titleId: titleId,
+      assetId: assetId,
+      positionS: _furthestS,
+      durationS: _durationS > 0 ? _durationS : null,
+      meta: <String, dynamic>{...meta, 'stashed': 1},
+    );
+    try {
+      final sp = await SharedPreferences.getInstance();
+      // Sent while this was on its way: nothing to keep.
+      if (_finished || _summarySent) return;
+      await sp.setString(stashKey, jsonEncode(event));
+    } catch (_) {
+      // A summary not kept is one row lost, as before; never a failure.
+    }
+  }
+
+  static Future<void> _dropStash() async {
+    try {
+      final sp = await SharedPreferences.getInstance();
+      await sp.remove(stashKey);
+    } catch (_) {}
+  }
+
+  /// At start: a summary left by a playback the app never came back to,
+  /// queued as it was made, then forgotten.
+  static Future<void> sendStashed(EventSender events) async {
+    try {
+      final sp = await SharedPreferences.getInstance();
+      final raw = sp.getString(stashKey);
+      if (raw == null) return;
+      await sp.remove(stashKey);
+      final event = jsonDecode(raw);
+      if (event is Map<String, dynamic> && event['kind'] == Ev.playSummary) {
+        events.enqueue(event);
+      }
+    } catch (_) {}
   }
 
   int _furthestS = 0;

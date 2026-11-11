@@ -102,8 +102,25 @@ class EventSender {
     int? positionS,
     int? durationS,
     Map<String, dynamic>? meta,
+  }) =>
+      enqueue(build(kind,
+          titleId: titleId,
+          assetId: assetId,
+          positionS: positionS,
+          durationS: durationS,
+          meta: meta));
+
+  /// [log]'s event, made but not queued: one kept on the phone to be sent
+  /// later ([enqueue]) keeps the time, session and version it was made in.
+  Map<String, dynamic> build(
+    String kind, {
+    String? titleId,
+    String? assetId,
+    int? positionS,
+    int? durationS,
+    Map<String, dynamic>? meta,
   }) {
-    final event = <String, dynamic>{
+    return <String, dynamic>{
       'kind': kind,
       // The DEVICE's clock, not the server's. A batch flushed after thirty
       // seconds offline would otherwise record every event at the moment the
@@ -133,7 +150,11 @@ class EventSender {
       if (durationS != null) 'duration_s': durationS,
       if (meta != null && meta.isNotEmpty) 'meta': meta,
     };
+  }
 
+  /// Queues an event as [build] made it — now, or after the app was closed
+  /// and opened again (PlaybackReporter.sendStashed).
+  void enqueue(Map<String, dynamic> event) {
     _buffer.add(event);
     // Oldest first. See the class note.
     while (_buffer.length > maxBuffered) {

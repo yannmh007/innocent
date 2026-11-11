@@ -729,6 +729,19 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     final inSystemPip = playerState.inSystemPip;
     final controller = ref.read(playerControllerProvider.notifier);
 
+    // Before any branch below can return: what watching was like so far,
+    // kept on the phone in case the app is closed from the background and
+    // this screen never gets to send it (PlaybackReporter.stashSummary).
+    if (appState == AppLifecycleState.paused ||
+        appState == AppLifecycleState.hidden) {
+      try {
+        // ignore: discarded_futures
+        _reporter?.stashSummary(controller.qoe.toMeta(DateTime.now()));
+      } catch (e) {
+        PlaybackLog.add('summary keep failed: $e');
+      }
+    }
+
     // Privacy override: a Private Folder video is ALWAYS paused the moment
     // we lose the foreground — no background play, no PiP exemption.
     if (widget.isPrivate) {

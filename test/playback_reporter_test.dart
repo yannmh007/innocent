@@ -13,6 +13,8 @@
 // is not, and the failure would only show up months later as a Trending row
 // promoting the wrong titles with no way to tell why.
 
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -137,6 +139,56 @@ void main() {
       r.reportOpen(const Duration(seconds: 3));
 
       expect(s.pending, afterFinish);
+    });
+  });
+
+  group('a summary the app never came back to send', () {
+    // 1.64.81's first viewer: 4 playbacks, 2 summaries. The summary goes out
+    // when the player screen closes, and an app closed from the background
+    // never closes it.
+    test('kept at the background, sent at the next start as it was made', () async {
+      final s = sender();
+      addTearDown(s.dispose);
+      final r = PlaybackReporter(s, titleId: 'abc');
+      r.report(const Duration(seconds: 300), const Duration(seconds: 6000));
+      final before = s.pending;
+      await r.stashSummary(<String, dynamic>{'played_s': 280, 'stalls': 1});
+      expect(s.pending, before, reason: 'kept on the phone, not sent');
+      final sp = await SharedPreferences.getInstance();
+      final kept = jsonDecode(sp.getString(PlaybackReporter.stashKey)!) as Map<String, dynamic>;
+      expect(kept['kind'], Ev.playSummary);
+      expect(kept['session_id'], s.sessionId, reason: "the playback's own session");
+      expect(kept['position_s'], 300);
+      expect((kept['meta'] as Map)['played_s'], 280);
+      expect((kept['meta'] as Map)['stashed'], 1);
+
+      // The app is closed there; the next start's sender sends it, once.
+      final next = sender();
+      addTearDown(next.dispose);
+      await PlaybackReporter.sendStashed(next);
+      expect(next.pending, 1);
+      expect(sp.getString(PlaybackReporter.stashKey), isNull);
+      await PlaybackReporter.sendStashed(next);
+      expect(next.pending, 1);
+    });
+
+    test('sent as usual when the screen closes: nothing is left to send twice', () async {
+      final s = sender();
+      addTearDown(s.dispose);
+      final r = PlaybackReporter(s, titleId: 'abc');
+      await r.stashSummary(<String, dynamic>{'played_s': 10});
+      r.reportSummary(<String, dynamic>{'played_s': 40});
+      r.finish();
+      await Future<void>.delayed(Duration.zero);
+      final sp = await SharedPreferences.getInstance();
+      expect(sp.getString(PlaybackReporter.stashKey), isNull);
+      // And a background after the summary keeps nothing.
+      await r.stashSummary(<String, dynamic>{'played_s': 50});
+      expect(sp.getString(PlaybackReporter.stashKey), isNull);
+      final next = sender();
+      addTearDown(next.dispose);
+      await PlaybackReporter.sendStashed(next);
+      expect(next.pending, 0);
     });
   });
 

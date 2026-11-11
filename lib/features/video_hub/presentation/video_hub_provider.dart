@@ -9,6 +9,7 @@ import '../../../core/services/preferences/player_settings_service.dart';
 import '../data/api/api_content_repository.dart';
 import '../data/api/backend_config.dart';
 import '../data/api/event_sender.dart';
+import '../data/api/playback_reporter.dart';
 import '../data/api/offline_downloader.dart';
 import '../data/api/offline_library.dart';
 import '../data/cache/catalogue_cache.dart';
@@ -325,6 +326,10 @@ final offlinePendingProvider =
 /// every call site, and the one that gets forgotten is the one that matters.
 final eventSenderProvider = Provider<EventSender>((ref) {
   final sender = EventSender(ref.watch(apiClientProvider));
+  // A playback's summary the app never came back to send (closed from the
+  // background): queued now, as it was made.
+  // ignore: discarded_futures
+  PlaybackReporter.sendStashed(sender);
 
   // THE FLUSH THAT ACTUALLY MATTERS. On a timer alone, every session would
   // lose its last thirty seconds — and the last thirty seconds is where
