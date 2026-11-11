@@ -5,11 +5,12 @@ Run flow when "(Audio track|အသံ လိုင်း)" is not visible...
   Wait for animation to end within 1000 ms... COMPLETED
 Run flow when "(Audio track|အသံ လိုင်း)" is not visible... COMPLETED
 Take screenshot 80_audit_controls_landscape... COMPLETED
-Assert that "(Audio track|အသံ လိုင်း)" is visible... FAILED
+Assert that "(Audio track|အသံ လိုင်း)" is visible... COMPLETED
+Assert that "(Subtitle|စာတန်းထိုး)" is visible... FAILED
 
-Assertion is false: "(Audio track|အသံ လိုင်း)" is visible
+Assertion is false: "(Subtitle|စာတန်းထိုး)" is visible
 
-Assertion '"(Audio track|အသံ လိုင်း)" is visible' failed. Check the UI hierarchy in debug artifacts to verify the element state and properties.
+Assertion '"(Subtitle|စာတန်းထိုး)" is visible' failed. Check the UI hierarchy in debug artifacts to verify the element state and properties.
 
 Possible causes:
 - Element selector may be incorrect - check if there are similar elements with slightly different names/properties.
@@ -18,4 +19,4 @@ Possible causes:
 
 ==== Debug output (logs & screenshots) ====
 
-/home/runner/work/innocent/innocent/out/maestro_out/2026-11-11_084601
+/home/runner/work/innocent/innocent/out/maestro_out/2026-11-11_090515
