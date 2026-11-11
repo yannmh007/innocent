@@ -2436,6 +2436,18 @@ class MediaKitPlayerService implements VideoPlayerService {
   /// The cumulative decoder drop count, for the caller to carry between
   /// readings. Separate from [readStallNumbers] so the delta arithmetic lives
   /// in one place and this stays a plain accessor.
+  /// The id of the track libmpv is playing for [kind] — `audio` or `sub` —
+  /// or null for none, on the ladder engine, or when it cannot be read.
+  ///
+  /// What the audio and subtitle menus mark as chosen before the viewer has
+  /// chosen: libmpv picks a file's default tracks itself and media_kit does
+  /// not report its pick, so the subtitle menu said "None" over a film
+  /// whose Burmese subtitles were on screen.
+  Future<String?> currentTrackId(String kind) async {
+    if (_exoActive) return null;
+    return _getMpvProperty('current-tracks/$kind/id');
+  }
+
   Future<int> readDroppedFrames() async {
     final raw = await _getMpvProperty('decoder-frame-drop-count');
     return int.tryParse(raw?.trim() ?? '') ?? 0;

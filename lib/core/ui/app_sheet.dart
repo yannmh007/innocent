@@ -66,3 +66,16 @@ Future<T?> showAppModalBottomSheet<T>({
     anchorPoint: anchorPoint,
   );
 }
+
+/// Constraints for a sheet whose content scrolls: up to 85 % of the screen's
+/// height instead of Material's 9/16, and Material's own 640 dp width. Pass
+/// with `isScrollControlled: true`.
+///
+/// WHY. On a phone held sideways 9/16 of the screen is about 200 dp: the
+/// player's track lists, Display Settings, bookmarks and skip markers were
+/// cut off below their second row, with nothing to scroll
+/// (test/player_layout_test.dart).
+BoxConstraints tallSheetConstraints(BuildContext context) => BoxConstraints(
+      maxWidth: 640,
+      maxHeight: MediaQuery.sizeOf(context).height * 0.85,
+    );

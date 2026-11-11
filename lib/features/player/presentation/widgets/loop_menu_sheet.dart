@@ -17,6 +17,8 @@ class LoopMenuSheet extends ConsumerWidget {
       context: context,
       backgroundColor: Colors.transparent,
       barrierColor: Colors.black54,
+      isScrollControlled: true,
+      constraints: tallSheetConstraints(context),
       builder: (_) => const LoopMenuSheet(),
     );
   }
@@ -37,7 +39,10 @@ class LoopMenuSheet extends ConsumerWidget {
       ),
       child: SafeArea(
         top: false,
-        child: Column(
+        // Scrolls on a short screen (sideways, large font) instead of
+        // cutting off its last rows.
+        child: SingleChildScrollView(
+          child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
@@ -82,6 +87,7 @@ class LoopMenuSheet extends ConsumerWidget {
             ),
             const SizedBox(height: 8),
           ],
+        ),
         ),
       ),
     );

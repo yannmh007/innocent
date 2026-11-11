@@ -547,8 +547,6 @@ class PlayerController extends StateNotifier<PlayerState> {
         'priv=$_isPrivate pos=${state.position.inMilliseconds}ms');
     if (!state.isBackgroundPlay || _isPrivate) return;
     _bgPauseTimer?.cancel();
-    _decodeWatchTimer?.cancel();
-    _noAudioCheckTimer?.cancel();
     _bgPauseTimer = null;
     if (playing) {
       try {
@@ -1352,7 +1350,12 @@ class PlayerController extends StateNotifier<PlayerState> {
     }));
     _subs.add(svc.audioTracksStream.listen((tracks) async {
       if (!mounted) return;
-      state = state.copyWith(audioTracks: tracks);
+      // Only real tracks reach the picker. media_kit puts two pseudo-tracks
+      // at the head of every list, `auto` and `no`: the audio menu showed
+      // them as "Track auto" and "Track no", and the "more than one to
+      // choose from" dot on ♪ and CC was lit for every file.
+      state = state.copyWith(
+          audioTracks: tracks.where((t) => _isRealTrackId(t.id)).toList());
       // Phase 41: when "Remember selections" is on, reapply the previously
       // chosen track for this video once the engine reports its track list.
       //
@@ -1388,7 +1391,10 @@ class PlayerController extends StateNotifier<PlayerState> {
     }));
     _subs.add(svc.subtitleTracksStream.listen((tracks) async {
       if (!mounted) return;
-      state = state.copyWith(subtitleTracks: tracks);
+      // As for audio: `auto` and `no` are not subtitles (the menu has its
+      // own "None").
+      state = state.copyWith(
+          subtitleTracks: tracks.where((t) => _isRealTrackId(t.id)).toList());
       // Phase 41: same restore behaviour for subtitles. Empty string means
       // "subtitles were explicitly off last time".
       //
@@ -2213,6 +2219,11 @@ class PlayerController extends StateNotifier<PlayerState> {
     _brightnessPersistTimer?.cancel();
     _volumePersistTimer?.cancel();
     _bgPauseTimer?.cancel();
+    // The decode watch is periodic: left running, every film watched added a
+    // timer waking the phone every 4 s for the rest of the app's life, each
+    // holding its dead controller (test/player_layout_test.dart found it).
+    _decodeWatchTimer?.cancel();
+    _noAudioCheckTimer?.cancel();
     // The background-playback service is an app-lifetime singleton, so our
     // callbacks must be cleared — never left pointing at a disposed notifier.
     _detachScreenStateHandlers();

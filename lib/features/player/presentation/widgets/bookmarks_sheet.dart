@@ -47,6 +47,8 @@ class BookmarksSheet extends ConsumerWidget {
     await showAppModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      constraints: tallSheetConstraints(context),
       builder: (_) => BookmarksSheet(videoUri: videoUri, onSeek: onSeek),
     );
     if (wasPlaying) {
@@ -118,7 +120,11 @@ class BookmarksSheet extends ConsumerWidget {
                 ),
               )
             else
-              ConstrainedBox(
+              // The list gives way when the sheet is short (a phone held
+              // sideways, or a 320 dp one): it scrolls instead of running
+              // off the screen.
+              Flexible(
+                child: ConstrainedBox(
                 constraints: const BoxConstraints(maxHeight: 320),
                 child: ListView.separated(
                   shrinkWrap: true,
@@ -150,7 +156,8 @@ class BookmarksSheet extends ConsumerWidget {
                             )
                           : null,
                       trailing: IconButton(
-                        tooltip: AppStrings.of(context).close,
+                        // It deletes the bookmark: TalkBack said "Close".
+                        tooltip: AppStrings.of(context).delete,
                         icon: const Icon(
                           Icons.close,
                           color: AppColors.darkOnSurfaceMuted,
@@ -167,6 +174,7 @@ class BookmarksSheet extends ConsumerWidget {
                     );
                   },
                 ),
+              ),
               ),
             const SizedBox(height: 8),
           ],

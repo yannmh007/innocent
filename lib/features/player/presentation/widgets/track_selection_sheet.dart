@@ -64,7 +64,13 @@ class TrackSelectionSheet<T> extends StatelessWidget {
               ),
             ),
             const Divider(height: 1, color: Colors.white12),
-            ConstrainedBox(
+            // The list gives way, not the sheet: on a phone held sideways
+            // the sheet is about 200 dp tall, and a list held at its full
+            // height pushed the tracks below the second (and "Load
+            // external") off the screen with nothing to scroll
+            // (test/player_layout_test.dart).
+            Flexible(
+              child: ConstrainedBox(
               constraints: const BoxConstraints(maxHeight: 320),
               child: ListView(
                 shrinkWrap: true,
@@ -92,6 +98,7 @@ class TrackSelectionSheet<T> extends StatelessWidget {
                     ),
                 ],
               ),
+              ),
             ),
             if (onLoadExternal != null) ...[
               const Divider(height: 1, color: Colors.white12),
@@ -104,11 +111,15 @@ class TrackSelectionSheet<T> extends StatelessWidget {
                       const Icon(Icons.folder_open_outlined,
                           color: AppColors.accentBlue, size: 22),
                       const SizedBox(width: 16),
-                      Text(AppStrings.of(context).loadExternalSubtitle,
-                        style: const TextStyle(
-                          color: AppColors.accentBlue,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w500,
+                      // Wraps rather than running off a 320 dp phone at a
+                      // large font size (Burmese, 3.5 dp past the edge).
+                      Expanded(
+                        child: Text(AppStrings.of(context).loadExternalSubtitle,
+                          style: const TextStyle(
+                            color: AppColors.accentBlue,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ),
                     ],
@@ -132,6 +143,8 @@ class TrackSelectionSheet<T> extends StatelessWidget {
     return showAppModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      constraints: tallSheetConstraints(context),
       builder: (_) => TrackSelectionSheet<AudioTrackInfo>(
         title: AppStrings.of(context).audioTrack,
         tracks: tracks,
@@ -156,6 +169,8 @@ class TrackSelectionSheet<T> extends StatelessWidget {
     return showAppModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      constraints: tallSheetConstraints(context),
       builder: (_) => TrackSelectionSheet<SubtitleTrackInfo>(
         title: AppStrings.of(context).pwSubTrack,
         tracks: tracks,

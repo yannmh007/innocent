@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_colors.dart';
 
 import '../../../../core/localization/app_strings.dart';
 import '../../../../core/ui/app_sheet.dart';
+import '../video_adjust.dart';
 /// Display Settings sheet — brightness, contrast, saturation, hue sliders
-class DisplaySettingsSheet extends StatefulWidget {
+class DisplaySettingsSheet extends ConsumerWidget {
   const DisplaySettingsSheet({super.key});
 
   static Future<void> show(BuildContext context) {
@@ -15,33 +17,22 @@ class DisplaySettingsSheet extends StatefulWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
+      // Sideways the default 9/16 of the screen held two of the four
+      // sliders; the rest were cut off with nothing to scroll.
+      isScrollControlled: true,
+      constraints: tallSheetConstraints(context),
       builder: (_) => const DisplaySettingsSheet(),
     );
   }
 
   @override
-  State<DisplaySettingsSheet> createState() => _DisplaySettingsSheetState();
-}
-
-class _DisplaySettingsSheetState extends State<DisplaySettingsSheet> {
-  double _brightness = 0.0;
-  double _contrast = 0.0;
-  double _saturation = 0.0;
-  double _hue = 0.0;
-
-  void _reset() {
-    setState(() {
-      _brightness = 0.0;
-      _contrast = 0.0;
-      _saturation = 0.0;
-      _hue = 0.0;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // The picture's own adjustments (video_adjust.dart): the sliders used
+    // to move numbers nothing read.
+    final adjust = ref.watch(videoAdjustProvider);
+    final set = ref.read(videoAdjustProvider.notifier);
     return SafeArea(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -49,45 +40,55 @@ class _DisplaySettingsSheetState extends State<DisplaySettingsSheet> {
             // Header
             Row(
               children: [
-                Text(AppStrings.of(context).displaySettingsTitle,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 17,
-                    fontWeight: FontWeight.w600,
+                Expanded(
+                  child: Text(AppStrings.of(context).displaySettingsTitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
-                const Spacer(),
                 TextButton(
-                  onPressed: _reset,
+                  onPressed: adjust.isNeutral
+                      ? null
+                      : () => set.state = const VideoAdjust(),
                   child: Text(AppStrings.of(context).reset,
-                      style: const TextStyle(color: AppColors.primaryBlue)),
+                      style: TextStyle(
+                          color: adjust.isNeutral
+                              ? AppColors.white60
+                              : AppColors.primaryBlue)),
                 ),
               ],
             ),
             const SizedBox(height: 8),
             _buildSlider(
               label: AppStrings.of(context).pwBrightness,
-              value: _brightness,
+              value: adjust.brightness,
               icon: Icons.brightness_6,
-              onChanged: (v) => setState(() => _brightness = v),
+              onChanged: (v) =>
+                  set.state = set.state.copyWith(brightness: v),
             ),
             _buildSlider(
               label: AppStrings.of(context).pwContrast,
-              value: _contrast,
+              value: adjust.contrast,
               icon: Icons.contrast,
-              onChanged: (v) => setState(() => _contrast = v),
+              onChanged: (v) => set.state = set.state.copyWith(contrast: v),
             ),
             _buildSlider(
               label: AppStrings.of(context).pwSaturation,
-              value: _saturation,
+              value: adjust.saturation,
               icon: Icons.color_lens_outlined,
-              onChanged: (v) => setState(() => _saturation = v),
+              onChanged: (v) =>
+                  set.state = set.state.copyWith(saturation: v),
             ),
             _buildSlider(
               label: AppStrings.of(context).pwHue,
-              value: _hue,
+              value: adjust.hue,
               icon: Icons.palette_outlined,
-              onChanged: (v) => setState(() => _hue = v),
+              onChanged: (v) => set.state = set.state.copyWith(hue: v),
             ),
             const SizedBox(height: 8),
           ],

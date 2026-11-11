@@ -52,7 +52,6 @@ import '../../../core/services/video_player/video_player_service.dart';
 import '../../../core/services/video_player/media_kit_player_service.dart';
 import '../../../core/services/video_player/stall_diagnosis.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/ui/app_snackbar.dart';
 import '../../../core/utils/system_insets.dart';
 import '../../equalizer/presentation/audio_effect_sheet.dart';
 import '../../settings/presentation/subtitle_text_screen.dart';
@@ -61,6 +60,8 @@ import 'aspect_ratio_mode.dart';
 import 'player_provider.dart';
 import 'player_stats_overlay.dart';
 import 'shortcut_item.dart';
+import 'video_adjust.dart';
+import '../domain/speed_format.dart';
 import 'widgets/account_mark.dart';
 import 'widgets/brightness_indicator.dart';
 import 'widgets/bookmarks_sheet.dart';
@@ -256,6 +257,9 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
   /// Seeded from the user's default-orientation setting so the first tap moves
   /// to the next mode rather than to whatever the code assumed.
   int _rotationMode = 0;
+
+  /// The orientation the rotate button's round began in ([nextRotationMode]).
+  Orientation? _rotationStart;
 
   void _applyRotationMode({bool announce = false}) {
     switch (_rotationMode) {
@@ -922,10 +926,12 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     // a lap, so it is also the moment a stray touch is most likely — which is
     // the whole reason MX Player offers this. The switch had no reader.
     if (!mounted) return;
-    final size = WidgetsBinding.instance.platformDispatcher.views.isEmpty
-        ? null
-        : MediaQuery.maybeOf(context)?.size;
-    if (size == null) return;
+    // The WINDOW's new size, not MediaQuery's: this runs before the rebuild,
+    // so MediaQuery still holds the old shape — every turn was read as the
+    // orientation it came from, and the lock came one rotation late
+    // (test/player_controls_test.dart).
+    final size = View.maybeOf(context)?.physicalSize;
+    if (size == null || size.isEmpty) return;
     final now =
         size.width >= size.height ? Orientation.landscape : Orientation.portrait;
     final was = _lastOrientation;
@@ -1929,11 +1935,9 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
         {
           const cycle = [0.5, 1.0, 1.25, 1.5, 2.0];
           final current = ref.read(playerControllerProvider).playbackSpeed;
-          final idx =
-              cycle.indexWhere((s) => (s - current).abs() < 0.01);
-          final next = cycle[(idx + 1) % cycle.length];
+          final next = nextSpeedInCycle(current, cycle);
           controller.setSpeed(next);
-          _showOverlay(AppStrings.of(context).plSpeed('${next.toStringAsFixed(2)}x'));
+          _showOverlay(AppStrings.of(context).plSpeed('${formatSpeed(next)}x'));
         }
         break;
       case ShortcutItem.screenRotation:
@@ -1944,7 +1948,16 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
         // tap overrode the phone's own auto-rotate and nothing in the player
         // could hand it back. Anyone who straightened out one awkward clip was
         // then stuck with a fixed orientation for every video that session.
-        _rotationMode = (_rotationMode + 1) % 3;
+        //
+        // And the first tap always turns the picture: from "follow the
+        // phone" it pins the orientation the screen is NOT in. Auto →
+        // Portrait did nothing visible on a phone held upright, or with its
+        // rotation locked — the commonest start — and took a second tap to
+        // reach landscape.
+        final next = nextRotationMode(
+            _rotationMode, MediaQuery.orientationOf(context), _rotationStart);
+        _rotationMode = next.mode;
+        _rotationStart = next.start;
         _applyRotationMode(announce: true);
         break;
       case ShortcutItem.customiseItems:
@@ -2183,6 +2196,24 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
       _toast.show(AppStrings.of(context).kidsLockHoldHint, kind: PlayerToastKind.info, icon: Icons.lock_rounded);
       return;
     }
+    // A MENU OR DIALOG DRAWN INSIDE THE PLAYER IS NOT A ROUTE, so Back reaches
+    // here with it still open. Close it, as Back does on every Android
+    // screen: it used to close the film behind it instead — open ⋮, press
+    // Back to put the menu away, and the film was gone
+    // (test/player_controls_test.dart).
+    final controller = ref.read(playerControllerProvider.notifier);
+    if (state.sleepTimerDialogOpen) {
+      controller.closeSleepTimerDialog();
+      return;
+    }
+    if (state.decoderDialogOpen) {
+      controller.closeDecoderDialog();
+      return;
+    }
+    if (state.openPanel != SidePanel.none) {
+      controller.closePanel();
+      return;
+    }
     final requireDouble =
         ref.read(playerSettingsProvider).get(PlayerSetting.doubleTapBack);
     final now = DateTime.now();
@@ -2203,17 +2234,39 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     _toast.show(AppStrings.of(context).pressBackAgain, kind: PlayerToastKind.info);
   }
 
-  void _showAudioTracks(BuildContext context) {
+  /// The track libmpv chose itself, when the viewer has not chosen one:
+  /// the menus mark it instead of nothing (or "None" over subtitles that
+  /// are showing).
+  Future<T?> _engineTrack<T>(
+      List<T> tracks, String kind, String Function(T) idOf) async {
+    final svc = ref.read(videoPlayerServiceProvider);
+    if (svc is! MediaKitPlayerService) return null;
+    try {
+      final id = await svc.currentTrackId(kind);
+      if (id == null) return null;
+      for (final t in tracks) {
+        if (idOf(t) == id) return t;
+      }
+    } catch (e) {
+      PlaybackLog.add('current track not read: $e');
+    }
+    return null;
+  }
+
+  Future<void> _showAudioTracks(BuildContext context) async {
     final state = ref.read(playerControllerProvider);
     final controller = ref.read(playerControllerProvider.notifier);
     if (state.audioTracks.isEmpty) {
       _showSnack(context, AppStrings.of(context).plNoAudioTracks);
       return;
     }
-    TrackSelectionSheet.showAudio(
+    final current = state.currentAudioTrack ??
+        await _engineTrack(state.audioTracks, 'audio', (t) => t.id);
+    if (!context.mounted) return;
+    await TrackSelectionSheet.showAudio(
       context,
       tracks: state.audioTracks,
-      current: state.currentAudioTrack,
+      current: current,
       // Phase 45 (audit): wrap the selection callback so the user sees a
       // brief toast confirming what they just switched to — MX Player
       // shows this as "Audio: <track name>" in the same position as
@@ -2221,31 +2274,38 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
       // the tap registered.
       onSelect: (track) async {
         await controller.selectAudioTrack(track);
+        // In the player's own message place, not the app's snackbar: that
+        // one sat on the seek bar and the buttons for four seconds.
         if (track != null && context.mounted) {
-          AppSnackbar.show(context, AppStrings.of(context).plAudio(track.displayName));
+          _toast.show(AppStrings.of(context).plAudio(track.displayName),
+              kind: PlayerToastKind.success, icon: Icons.music_note);
         }
       },
     );
   }
 
-  void _showSubtitleTracks(BuildContext context) {
+  Future<void> _showSubtitleTracks(BuildContext context) async {
     final state = ref.read(playerControllerProvider);
     final controller = ref.read(playerControllerProvider.notifier);
-    TrackSelectionSheet.showSubtitle(
+    final current = state.currentSubtitleTrack ??
+        await _engineTrack(state.subtitleTracks, 'sub', (t) => t.id);
+    if (!context.mounted) return;
+    await TrackSelectionSheet.showSubtitle(
       context,
       tracks: state.subtitleTracks,
-      current: state.currentSubtitleTrack,
+      current: current,
       // Phase 45 (audit): same feedback toast as the audio picker, plus
       // an explicit AppStrings.of(context).subtitleOff message when the user picks no
       // subtitle (otherwise nothing changes visibly).
       onSelect: (track) async {
         await controller.selectSubtitleTrack(track);
         if (context.mounted) {
-          AppSnackbar.show(
-            context,
+          _toast.show(
             track == null
                 ? AppStrings.of(context).subtitleOff
                 : AppStrings.of(context).plSubtitle(track.displayName),
+            kind: PlayerToastKind.success,
+            icon: Icons.subtitles_outlined,
           );
         }
       },
@@ -2286,15 +2346,17 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                       : Colors.white54,
                 ),
                 const SizedBox(width: 12),
-                Text(
-                  r.labelIn(AppStrings.of(context)),
-                  style: TextStyle(
-                    color: isSelected
-                        ? AppColors.accentBlue
-                        : Colors.white,
-                    fontWeight: isSelected
-                        ? FontWeight.w600
-                        : FontWeight.w400,
+                Flexible(
+                  child: Text(
+                    r.labelIn(AppStrings.of(context)),
+                    style: TextStyle(
+                      color: isSelected
+                          ? AppColors.accentBlue
+                          : Colors.white,
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.w400,
+                    ),
                   ),
                 ),
               ],
@@ -2306,7 +2368,9 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     if (picked != null && context.mounted) {
       await controller.setExplicitAspectRatio(picked);
       if (context.mounted) {
-        AppSnackbar.show(context, AppStrings.of(context).plAspect(picked.labelIn(AppStrings.of(context))));
+        _toast.show(AppStrings.of(context)
+            .plAspect(picked.labelIn(AppStrings.of(context))),
+            kind: PlayerToastKind.success, icon: Icons.aspect_ratio);
       }
     }
   }
@@ -2577,14 +2641,22 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
         child: result,
       );
     }
+    // Display Settings (video_adjust.dart) and Night mode: one colour
+    // matrix, so the picture is filtered once, not twice.
+    final adjust = ref.watch(videoAdjustProvider);
+    List<double>? colour = adjust.isNeutral ? null : adjust.matrix;
     if (state.isNightMode) {
+      const night = <double>[
+        1, 0, 0, 0, 0,
+        0, 0.4, 0, 0, 0,
+        0, 0, 0.2, 0, 0,
+        0, 0, 0, 1, 0,
+      ];
+      colour = colour == null ? night : composeColorMatrices(night, colour);
+    }
+    if (colour != null) {
       result = ColorFiltered(
-        colorFilter: const ColorFilter.matrix([
-          1, 0, 0, 0, 0,
-          0, 0.4, 0, 0, 0,
-          0, 0, 0.2, 0, 0,
-          0, 0, 0, 1, 0,
-        ]),
+        colorFilter: ColorFilter.matrix(colour),
         child: result,
       );
     }
@@ -2712,6 +2784,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
   }
 
   Widget _buildPage(BuildContext context) {
+    // Where the phone starts, so the first turn counts (didChangeMetrics).
+    _lastOrientation ??= MediaQuery.orientationOf(context);
     final svc = ref.watch(videoPlayerServiceProvider);
     final state = ref.watch(playerControllerProvider);
     final controller = ref.read(playerControllerProvider.notifier);
@@ -3077,7 +3151,9 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                     ref.read(playerControllerProvider.notifier).activeUri,
                 fmtTimer: _fmtTimerBadge,
                 hasMultipleAudioTracks: state.audioTracks.length > 1,
-                hasMultipleSubtitleTracks: state.subtitleTracks.length > 1,
+                // One subtitle is already a choice (on or off); one audio
+                // track is not.
+                hasMultipleSubtitleTracks: state.subtitleTracks.isNotEmpty,
                 showTitle: ref
                     .watch(playerSettingsProvider)
                     .get(PlayerSetting.styleShowTitle),
@@ -3112,10 +3188,12 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                   !state.isLocked &&
                   visibleShortcutList.contains(ShortcutItem.playbackSpeed)))
             Positioned(
-              left: 16,
-              top: MediaQuery.of(context).orientation == Orientation.portrait
-                  ? 124
-                  : 80,
+              // Clear of the camera cutout, as the controls are.
+              left: _controlsInsets(context).left + 16,
+              top: _controlsInsets(context).top +
+                  (MediaQuery.of(context).orientation == Orientation.portrait
+                      ? 124
+                      : 80),
               child: SpeedIndicator(speed: state.playbackSpeed),
             ),
 
@@ -3145,6 +3223,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                 visibleItems: visibleShortcutList,
                 activeItems: _activeSet(state),
                 expanded: state.shortcutsExpanded,
+                pinned: state.visibleShortcuts,
                 onItemTap: (item) => _onShortcutTap(context, item),
                 onToggleExpand: controller.toggleShortcutsExpanded,
                 // Phase 45 (audit): MX Player styling rules — portrait
@@ -3334,7 +3413,12 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                 controller.closePanel();
                 _pickExternalSubtitle(context);
               },
-              onSettings: () => _showSubtitleTracks(context),
+              // The panel goes first, as for every other row: the track
+              // list used to open over it, the panel still up behind.
+              onSettings: () {
+                controller.closePanel();
+                _showSubtitleTracks(context);
+              },
               onTextStyle: () {
                 controller.closePanel();
                 Navigator.of(context).push(
@@ -3384,7 +3468,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                         : type == DecoderType.hw
                             ? AppStrings.of(context).plDecoder('HW')
                             : AppStrings.of(context).plDecoder('SW');
-                AppSnackbar.show(context, label);
+                _toast.show(label,
+                    kind: PlayerToastKind.success, icon: Icons.memory);
               },
               onDismiss: controller.closeDecoderDialog,
             ),
@@ -3460,8 +3545,12 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
           // video is looping — this badge makes the state visible.
           if (state.abPointA != null)
             Positioned(
-              left: 16,
-              bottom: MediaQuery.of(context).padding.bottom + 110,
+              // Above the seek bar and clear of the cutout. The window's own
+              // padding is zero in full screen, so in portrait the badge
+              // sat on the seek bar, which stands on the navigation bar's
+              // reserved space (_controlsInsets).
+              left: _controlsInsets(context).left + 16,
+              bottom: _controlsInsets(context).bottom + 110,
               child: IgnorePointer(
                 child: Container(
                   padding: const EdgeInsets.symmetric(
@@ -3487,7 +3576,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
           // === LAYER 13b: Speed slider (long-press) ===
           if (state.speedSliderVisible)
             Positioned(
-              top: 30,
+              top: _controlsInsets(context).top + 30,
               left: 0,
               right: 0,
               child: SpeedSlider(
@@ -3507,9 +3596,10 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                   .watch(playerSettingsProvider)
                   .get(PlayerSetting.suppressError))
             Positioned(
-              top: 80,
-              left: 16,
-              right: 16,
+              // Clear of the camera cutout and the status bar.
+              top: _controlsInsets(context).top + 80,
+              left: _controlsInsets(context).left + 16,
+              right: _controlsInsets(context).right + 16,
               child: Material(
                 color: Colors.transparent,
                 child: Container(
@@ -3558,7 +3648,12 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 12),
-                      Row(
+                      // Side by side when they fit, else one under the
+                      // other: in Burmese at a large font the pair ran 31 dp
+                      // past a 320 dp phone's banner.
+                      OverflowBar(
+                        spacing: 8,
+                        overflowSpacing: 4,
                         children: [
                           TextButton.icon(
                             onPressed: () {
@@ -3577,7 +3672,6 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                                   horizontal: 12, vertical: 4),
                             ),
                           ),
-                          const SizedBox(width: 8),
                           TextButton.icon(
                             onPressed: () {
                               _lockPortraitOnExit();
@@ -3698,7 +3792,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
       case IndicatorType.speed:
         final v = indicator.value!;
         return GestureValueText(
-          value: '${v.toStringAsFixed(v == v.roundToDouble() ? 1 : 2)}x',
+          value: '${formatSpeed(v)}x',
           caption: AppStrings.of(context).scSpeed,
         );
       case IndicatorType.subtitleSize:
@@ -3827,13 +3921,11 @@ class _TopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Phase 45 (audit): MX Player shows audio + subtitle icons ONLY in
-    // LANDSCAPE. In portrait the top bar is compact: back, title, PiP,
-    // HW+, ⋮. The audio/subtitle pickers are still reachable via the
-    // More menu, but the icons themselves are hidden to keep the
-    // portrait top bar uncluttered.
-    final isLandscape =
-        MediaQuery.of(context).orientation == Orientation.landscape;
+    // A portrait bar under 400 dp (most phones held upright) has room for a
+    // readable title or the clock, not both, now that audio and subtitles
+    // are on it: the title wins. The owner's 411 dp phone keeps the clock.
+    final size = MediaQuery.sizeOf(context);
+    final narrow = size.width < size.height && size.width < 400;
     return Container(
       // Landscape keeps the back arrow and the menu clear of the status bar,
       // the side nav bar and the camera cutout, as MX does.
@@ -3908,7 +4000,7 @@ class _TopBar extends StatelessWidget {
                 ),
               ),
             // Settings → Style → "Show system clock".
-            if (showClock)
+            if (showClock && !narrow)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 6),
                 child: Semantics(
@@ -3955,30 +4047,25 @@ class _TopBar extends StatelessWidget {
                 ),
               ),
               ),
-            // Phase 28: Audio + subtitle icons ALWAYS in title bar (was landscape-only).
-            // Phase 44: small accent dot when there's more than one track,
-            // so the user can tell a file has selectable audio/subtitle.
-            // PiP is NOT up here: in the owner's MX (2026-10 screenshots,
-            // both orientations) the top bar is ← title … ♪ CC HW ⋮ and the
-            // PiP button is the last one on the bottom row. It moved there.
-            // Phase 45 (audit): Audio + subtitle icons LANDSCAPE ONLY.
-            // MX Player hides them in portrait — they're reachable via
-            // the More menu instead. This matches frame 20 (180939) which
-            // shows only ←, title, PiP, HW+, ⋮ in portrait top bar.
-            if (isLandscape) ...[
-              _IconWithDot(
-                icon: Icons.music_note,
-                tooltip: AppStrings.of(context).audioTrack,
-                showDot: hasMultipleAudioTracks,
-                onPressed: onAudio,
-              ),
-              _IconWithDot(
-                icon: Icons.subtitles_outlined,
-                tooltip: AppStrings.of(context).subtitle,
-                showDot: hasMultipleSubtitleTracks,
-                onPressed: onSubtitle,
-              ),
-            ],
+            // AUDIO AND SUBTITLES, IN BOTH ORIENTATIONS: the owner's MX
+            // (2026-10 screenshots, portrait and landscape) has ← title …
+            // ♪ CC HW ⋮. They were landscape-only, on the word that the More
+            // menu had them — it never did, so in portrait a film's
+            // subtitles and its other audio could not be chosen at all
+            // (test/player_controls_test.dart). The dot: more than one track
+            // to choose from. PiP is on the bottom row, as in MX.
+            _IconWithDot(
+              icon: Icons.music_note,
+              tooltip: AppStrings.of(context).audioTrack,
+              showDot: hasMultipleAudioTracks,
+              onPressed: onAudio,
+            ),
+            _IconWithDot(
+              icon: Icons.subtitles_outlined,
+              tooltip: AppStrings.of(context).subtitle,
+              showDot: hasMultipleSubtitleTracks,
+              onPressed: onSubtitle,
+            ),
             // QUALITY, where YouTube keeps it: one tap from the picture, in
             // both orientations. Shows what was chosen — "Auto", "720p",
             // "Original" — so the viewer can see the state without opening
@@ -4041,15 +4128,25 @@ class _TopBar extends StatelessWidget {
                 onPressed: onDecoder,
                 style: TextButton.styleFrom(
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
                   minimumSize: const Size(40, 40),
                 ),
-                child: Text(
-                  decoderLabel,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
+                // "HW+" is three letters; "Default" in Thai is eleven, and
+                // it took the title's room. Never wider than this: a longer
+                // word is set smaller.
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 44),
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      decoderLabel,
+                      maxLines: 1,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -4199,6 +4296,72 @@ class _BottomControls extends ConsumerStatefulWidget {
 bool _isStream(String? uri) =>
     uri != null &&
     (uri.startsWith('http') || uri.startsWith('rtmp') || uri.startsWith('rtsp'));
+
+/// The rotate button's next mode (0 follows the phone, 1 pins portrait, 2
+/// pins landscape) and the orientation its round began in.
+///
+/// From following the phone it pins the orientation the screen is not in,
+/// so one tap always turns the picture; then the orientation it began in;
+/// then back to following the phone — Auto → Landscape → Portrait → Auto
+/// from portrait, Auto → Portrait → Landscape → Auto from landscape.
+@visibleForTesting
+({int mode, Orientation? start}) nextRotationMode(
+    int mode, Orientation now, Orientation? start) {
+  if (mode == 0) {
+    return (
+      mode: now == Orientation.portrait ? 2 : 1,
+      start: now,
+    );
+  }
+  final pinned = mode == 1 ? Orientation.portrait : Orientation.landscape;
+  // Pinned by the default-orientation setting, not by a tap: the round
+  // began in the other orientation.
+  final from = start ??
+      (pinned == Orientation.portrait
+          ? Orientation.landscape
+          : Orientation.portrait);
+  if (pinned == from) return (mode: 0, start: null);
+  return (mode: from == Orientation.portrait ? 1 : 2, start: from);
+}
+
+/// How the bottom row fits [width]: the gap between the transport buttons,
+/// the gap between aspect ratio and picture-in-picture, and whether Play can
+/// stay at the centre of the screen.
+///
+/// Centred, the transport row must clear the widest side group (aspect +
+/// PiP) on both sides. Below about 388 dp it did not, and Next shared its
+/// touch area with the aspect button — on a 360 dp phone, the commonest
+/// screen among this app's viewers, a tap on Next's right edge changed the
+/// screen mode, and on 320 dp the two icons touched. Room is taken back
+/// first from the side gap, then from the transport gaps; only when even
+/// gap-less buttons cannot be centred do they go side by side.
+@visibleForTesting
+({double spacing, double sideGap, bool centred}) transportLayout({
+  required double width,
+  required int transportButtons,
+  required double spacing,
+  double sideGap = 9,
+  double button = 48,
+}) {
+  final gaps = transportButtons - 1;
+  double need(double sp, double side) =>
+      transportButtons * button + gaps * sp + 2 * (2 * button + side);
+  if (need(spacing, sideGap) <= width) {
+    return (spacing: spacing, sideGap: sideGap, centred: true);
+  }
+  if (need(spacing, 0) <= width) {
+    return (spacing: spacing, sideGap: 0, centred: true);
+  }
+  final room = width - need(0, 0);
+  if (room >= 0) {
+    return (
+      spacing: gaps == 0 ? 0 : (room / gaps).clamp(0, spacing).toDouble(),
+      sideGap: 0,
+      centred: true,
+    );
+  }
+  return (spacing: 0, sideGap: 0, centred: false);
+}
 
 class _BottomControlsState extends ConsumerState<_BottomControls> {
   /// Local drag position — overrides widget.position while user is scrubbing.
@@ -4369,6 +4532,28 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
 
     final landscape =
         MediaQuery.of(context).orientation == Orientation.landscape;
+    // THE TIME LABELS ARE AS WIDE AS THEIR LONGEST TEXT AT THE PHONE'S FONT
+    // SIZE. A fixed 56 dp held "-1:16:48" at the default size only: with
+    // Settings → Font size at its largest (1.3) the remaining time broke over
+    // two lines ("-1:16:4" / "8") and pushed the row up
+    // (test/player_layout_test.dart). Never narrower than MX's 56.
+    const timeStyle = TextStyle(
+      color: Colors.white,
+      fontSize: 13,
+      fontFeatures: [FontFeature.tabularFigures()],
+    );
+    final widest = '-${widget.formatDuration(widget.duration)}'
+        .replaceAll(RegExp(r'\d'), '0');
+    final timePainter = TextPainter(
+      text: TextSpan(
+          text: widest,
+          style: DefaultTextStyle.of(context).style.merge(timeStyle)),
+      textDirection: TextDirection.ltr,
+      textScaler: MediaQuery.textScalerOf(context),
+      maxLines: 1,
+    )..layout();
+    final timeWidth = math.max(56.0, timePainter.width.ceilToDouble() + 2);
+    timePainter.dispose();
     return Container(
       // MX GEOMETRY, measured on its screenshots taken on the owner's phone
       // (1080x2316, 2.625 dpi, 3-button navigation: a 51.4 dp bar) — each
@@ -4455,16 +4640,14 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
             child: Row(
               children: [
                 SizedBox(
-                  width: 56,
+                  width: timeWidth,
                   child: Semantics(
                     container: true,
                     child: Text(
                     widget.formatDuration(displayPosition),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                      fontFeatures: [FontFeature.tabularFigures()],
-                    ),
+                    maxLines: 1,
+                    softWrap: false,
+                    style: timeStyle,
                   ),
                   ),
                 ),
@@ -4521,7 +4704,7 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
                   ),
                 ),
                 SizedBox(
-                  width: 56,
+                  width: timeWidth,
                   child: Semantics(
                     container: true,
                     child: Text(
@@ -4530,11 +4713,9 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
                     hasDuration
                         ? '-${widget.formatDuration(widget.duration - displayPosition)}'
                         : widget.formatDuration(widget.duration),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                      fontFeatures: [FontFeature.tabularFigures()],
-                    ),
+                    maxLines: 1,
+                    softWrap: false,
+                    style: timeStyle,
                     textAlign: TextAlign.right,
                   ),
                   ),
@@ -4558,130 +4739,159 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
             child: OverflowBox(
               minHeight: 48,
               maxHeight: 48,
-              child: Stack(
-              alignment: Alignment.center,
-              children: [
-                // Primary transport — prev / play / next — pinned to the
-                // centre of the screen as the main (major) controls.
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (widget.showPrevNext) ...[
-                      IconButton(
-                        icon: const Icon(Icons.skip_previous,
-                            color: Colors.white),
-                        iconSize: 32,
-                        onPressed: widget.onPrevious,
-                        tooltip: AppStrings.of(context).plPrevVideo,
-                      ),
-                      SizedBox(width: transportSpacing),
-                    ],
-                    // v1.63: frame-step, paused only. See [onFrameStep].
-                    // v1.63.2: hidden — see [_kShowFrameStepButtons].
-                    if (_kShowFrameStepButtons && !widget.isPlaying) ...[
-                      IconButton(
-                        icon: const Icon(Icons.first_page, color: Colors.white),
-                        iconSize: 26,
-                        onPressed: () => widget.onFrameStep(false),
-                        tooltip: AppStrings.of(context).plPrevFrame,
-                      ),
-                      const SizedBox(width: 4),
-                    ],
-                    // Phase 16: Plain play/pause icons (NO white filled circle).
+              child: LayoutBuilder(builder: (context, box) {
+                final s = AppStrings.of(context);
+                final stepping = _kShowFrameStepButtons && !widget.isPlaying;
+                final fit = transportLayout(
+                  width: box.maxWidth,
+                  transportButtons:
+                      (widget.showPrevNext ? 3 : 1) + (stepping ? 2 : 0),
+                  spacing: transportSpacing,
+                );
+                final transport = <Widget>[
+                  if (widget.showPrevNext) ...[
                     IconButton(
-                      focusNode: widget.playFocus,
-                      tooltip: widget.isPlaying ? AppStrings.of(context).plPause : AppStrings.of(context).play,
-                      icon: Icon(
-                        widget.isPlaying ? Icons.pause : Icons.play_arrow,
-                        color: Colors.white,
-                      ),
-                      iconSize: 38,
-                      // 38 + 2 × 5 = 48, the row's height: centred, not pushed.
-                      padding: const EdgeInsets.all(5),
-                      onPressed: widget.onPlayPause,
+                      icon: const Icon(Icons.skip_previous,
+                          color: Colors.white),
+                      iconSize: 32,
+                      onPressed: widget.onPrevious,
+                      tooltip: s.plPrevVideo,
                     ),
-                    // v1.63.2: hidden — see [_kShowFrameStepButtons].
-                    if (_kShowFrameStepButtons && !widget.isPlaying) ...[
-                      const SizedBox(width: 4),
-                      IconButton(
-                        icon: const Icon(Icons.last_page, color: Colors.white),
-                        iconSize: 26,
-                        onPressed: () => widget.onFrameStep(true),
-                        tooltip: AppStrings.of(context).plNextFrame,
-                      ),
-                    ],
-                    if (widget.showPrevNext) ...[
-                      SizedBox(width: transportSpacing),
-                      GestureDetector(
+                    SizedBox(width: fit.spacing),
+                  ],
+                  // v1.63: frame-step, paused only. See [onFrameStep].
+                  // v1.63.2: hidden — see [_kShowFrameStepButtons].
+                  if (stepping) ...[
+                    IconButton(
+                      icon: const Icon(Icons.first_page, color: Colors.white),
+                      iconSize: 26,
+                      onPressed: () => widget.onFrameStep(false),
+                      tooltip: s.plPrevFrame,
+                    ),
+                    SizedBox(width: fit.spacing),
+                  ],
+                  // Phase 16: Plain play/pause icons (NO white filled circle).
+                  IconButton(
+                    focusNode: widget.playFocus,
+                    tooltip: widget.isPlaying ? s.plPause : s.play,
+                    icon: Icon(
+                      widget.isPlaying ? Icons.pause : Icons.play_arrow,
+                      color: Colors.white,
+                    ),
+                    iconSize: 38,
+                    // 38 + 2 × 5 = 48, the row's height: centred, not pushed.
+                    padding: const EdgeInsets.all(5),
+                    onPressed: widget.onPlayPause,
+                  ),
+                  if (stepping) ...[
+                    SizedBox(width: fit.spacing),
+                    IconButton(
+                      icon: const Icon(Icons.last_page, color: Colors.white),
+                      iconSize: 26,
+                      onPressed: () => widget.onFrameStep(true),
+                      tooltip: s.plNextFrame,
+                    ),
+                  ],
+                  if (widget.showPrevNext) ...[
+                    SizedBox(width: fit.spacing),
+                    // Next; HELD, the repeat menu. No tooltip: a Tooltip
+                    // takes the long press for itself, so holding Next
+                    // showed "hold for loop options" and the menu never
+                    // opened (test/player_controls_test.dart). The name and
+                    // both actions are TalkBack's through this node.
+                    Semantics(
+                      container: true,
+                      button: true,
+                      label: s.plNextVideo,
+                      onTap: widget.onNext,
+                      onLongPress: widget.onShowLoopMenu,
+                      excludeSemantics: true,
+                      child: GestureDetector(
                         onLongPress: widget.onShowLoopMenu,
+                        // Named by the Semantics above (a tooltip would
+                        // take the long press).
+                        // ignore: nameless_icon_button
                         child: IconButton(
-                          icon:
-                              const Icon(Icons.skip_next, color: Colors.white),
+                          icon: const Icon(Icons.skip_next,
+                              color: Colors.white),
                           iconSize: 32,
                           onPressed: widget.onNext,
-                          tooltip: AppStrings.of(context).plNextVideo,
                         ),
                       ),
-                    ],
+                    ),
                   ],
-                ),
-                // Lock — far left.
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: IconButton(
-                    icon: const Icon(Icons.lock_open, color: Colors.white),
-                    onPressed: widget.onLock,
-                    tooltip: AppStrings.of(context).lockControls,
+                ];
+                final lock = IconButton(
+                  icon: const Icon(Icons.lock_open, color: Colors.white),
+                  onPressed: widget.onLock,
+                  tooltip: s.lockControls,
+                );
+                final screenModes = <Widget>[
+                  // Named for TalkBack (and the device lab): a tooltip
+                  // alone reaches Android as tooltip text, not as the
+                  // button's name, so the button was nameless. Its own
+                  // node (container): without it the name and the id
+                  // went up into the full-screen node above, and the
+                  // lab's taps on "the button" landed mid-screen (run
+                  // 37308309328). One node, read "Fit to screen, button".
+                  Semantics(
+                    container: true,
+                    // A stable id for automation (Android resource-id).
+                    identifier: 'player-screen-mode',
+                    label: widget.aspectRatioMode.labelIn(s),
+                    button: true,
+                    onTap: widget.onCycleAspectRatio,
+                    excludeSemantics: true,
+                    child: IconButton(
+                      icon: const Icon(Icons.crop_landscape_outlined,
+                          color: Colors.white),
+                      onPressed: widget.onCycleAspectRatio,
+                      tooltip: widget.aspectRatioMode.labelIn(s),
+                    ),
                   ),
-                ),
-                // Aspect ratio + fill-screen — far right.
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Named for TalkBack (and the device lab): a tooltip
-                      // alone reaches Android as tooltip text, not as the
-                      // button's name, so the button was nameless. Its own
-                      // node (container): without it the name and the id
-                      // went up into the full-screen node above, and the
-                      // lab's taps on "the button" landed mid-screen (run
-                      // 37308309328). One node, read "Fit to screen, button".
-                      Semantics(
-                        container: true,
-                        // A stable id for automation (Android resource-id).
-                        identifier: 'player-screen-mode',
-                        label: widget.aspectRatioMode
-                            .labelIn(AppStrings.of(context)),
-                        button: true,
-                        onTap: widget.onCycleAspectRatio,
-                        excludeSemantics: true,
-                        child: IconButton(
-                          icon: const Icon(Icons.crop_landscape_outlined,
-                              color: Colors.white),
-                          onPressed: widget.onCycleAspectRatio,
-                          tooltip: widget.aspectRatioMode
-                              .labelIn(AppStrings.of(context)),
-                        ),
-                      ),
-                      const SizedBox(width: 9),
-                      // MX's row ends aspect ratio, picture-in-picture.
-                      // The fit/zoom toggle that sat here duplicated the
-                      // aspect button (its cycle includes Zoom); pinch zoom
-                      // is unchanged.
-                      IconButton(
-                        icon: const Icon(
-                          Icons.picture_in_picture_alt_outlined,
-                          color: Colors.white,
-                        ),
-                        tooltip: AppStrings.of(context).spBgPip,
-                        onPressed: widget.onEnterPip,
-                      ),
-                    ],
+                  SizedBox(width: fit.sideGap),
+                  // MX's row ends aspect ratio, picture-in-picture.
+                  // The fit/zoom toggle that sat here duplicated the
+                  // aspect button (its cycle includes Zoom); pinch zoom
+                  // is unchanged.
+                  IconButton(
+                    icon: const Icon(
+                      Icons.picture_in_picture_alt_outlined,
+                      color: Colors.white,
+                    ),
+                    tooltip: s.spBgPip,
+                    onPressed: widget.onEnterPip,
                   ),
-                ),
-              ],
-            ),
+                ];
+                if (!fit.centred) {
+                  // Too narrow for Play at the screen's centre: one row,
+                  // side by side, so no two buttons share a touch.
+                  return Row(children: [
+                    lock,
+                    const Spacer(),
+                    ...transport,
+                    const Spacer(),
+                    ...screenModes,
+                  ]);
+                }
+                return Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    // Primary transport — prev / play / next — pinned to the
+                    // centre of the screen as the main (major) controls.
+                    Row(mainAxisSize: MainAxisSize.min, children: transport),
+                    // Lock — far left.
+                    Align(alignment: Alignment.centerLeft, child: lock),
+                    // Aspect ratio + picture-in-picture — far right.
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: screenModes),
+                    ),
+                  ],
+                );
+              }),
             ),
           ),
         ],

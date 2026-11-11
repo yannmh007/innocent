@@ -222,10 +222,18 @@ extension PlayerNavigation on PlayerController {
     // threshold anyway, so saving it would never have produced an offer to
     // resume.
     if (pos <= Duration.zero) return;
+    // Everything the history write below needs is taken HERE, before the
+    // first await. The final save runs from dispose(): once this await
+    // yields, the controller is gone, and reading `state` or `_ref` after it
+    // threw — so the one history entry that matters, the position the viewer
+    // left at, was never written (seen in test/player_layout_test.dart).
+    final duration = state.duration;
+    final title = _currentVideoTitle ?? uri.split('/').last;
+    final history = _ref.read(historyProvider.notifier);
     await _ref.read(resumeStorageProvider).savePosition(
           uri: uri,
           position: pos,
-          duration: state.duration,
+          duration: duration,
         );
     // Phase 8: also record into history.
     //
@@ -245,11 +253,11 @@ extension PlayerNavigation on PlayerController {
     try {
       final firstForThisPlay = !_countedThisPlay;
       _countedThisPlay = true;
-      await _ref.read(historyProvider.notifier).record(
+      await history.record(
             videoUri: uri,
-            videoTitle: _currentVideoTitle ?? uri.split('/').last,
+            videoTitle: title,
             position: pos,
-            duration: state.duration,
+            duration: duration,
             countAsNewPlay: firstForThisPlay,
           );
     } catch (e) { if (kDebugMode) debugPrint('PlayerNav: $e'); }

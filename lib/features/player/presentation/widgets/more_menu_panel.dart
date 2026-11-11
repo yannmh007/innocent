@@ -88,26 +88,40 @@ class MoreMenuPanel extends StatelessWidget {
           const Divider(height: 1, color: Color(0xFF2A2A2A)),
           if (videoDisplayEnabled) ...[
             const SizedBox(height: 12),
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              // MX (portrait): four columns 89 dp apart, the first centred
-              // 72 dp in — 27 dp from each edge, 12 of them the sheet's.
-              padding: const EdgeInsets.symmetric(horizontal: 15),
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 4,
-                // MX: one row every 84 dp — a 47 dp ring, 9 dp, then a
-                // label of up to two 12.5 sp lines (27.5 dp), which grow
-                // with the system font size: at 130 % a fixed 84 cut the
-                // second line by 8 dp.
-                mainAxisExtent:
-                    84 + MediaQuery.textScalerOf(context).scale(28) - 28,
-                crossAxisSpacing: 0,
-                mainAxisSpacing: 0,
+            // MX (portrait): four columns 89 dp apart, the first centred
+            // 72 dp in — 27 dp from each edge, 12 of them the sheet's.
+            // MX: one row every 84 dp — a 47 dp ring, 9 dp, then a label of
+            // up to two 12.5 sp lines. That is a Latin label's height. A
+            // Burmese one is nearly twice as tall per line (its vowels and
+            // medials stack above and below), so in a fixed 84 dp cell its
+            // second line was cut off on every phone
+            // (test/player_layout_test.dart). Each row is now as tall as
+            // its tallest label, never less than MX's 84 (grown with the
+            // system font size, as before).
+            for (var r = 0; r < items.length; r += 4)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 15),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minHeight:
+                        84 + MediaQuery.textScalerOf(context).scale(28) - 28,
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      for (var c = r; c < r + 4; c++)
+                        Expanded(
+                          child: c < items.length
+                              ? Padding(
+                                  padding: const EdgeInsets.only(bottom: 6),
+                                  child: _MoreMenuItem(data: items[c]),
+                                )
+                              : const SizedBox.shrink(),
+                        ),
+                    ],
+                  ),
+                ),
               ),
-              itemCount: items.length,
-              itemBuilder: (_, i) => _MoreMenuItem(data: items[i]),
-            ),
           ],
           const SizedBox(height: 14),
           // ── Shortcuts section ──
@@ -298,10 +312,11 @@ class _MoreMenuItem extends StatelessWidget {
             textAlign: TextAlign.center,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
+            // No fixed line height: 1.1 suits Latin, and pressed Burmese
+            // lines into each other.
             style: const TextStyle(
               color: Colors.white,
               fontSize: 12.5,
-              height: 1.1,
             ),
           ),
         ],

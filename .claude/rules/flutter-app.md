@@ -25,6 +25,19 @@ paths:
   count the event with a temporary print. That found the lost read-ahead
   of 6 Nov (stream_cache_hls_test: a read starting while the last one's
   writer was closing got no writer).
+- **A box sized for Latin text cuts Burmese.** Android draws Burmese in the
+  tall Noto Sans Myanmar: a line is nearly twice a Latin one. No fixed
+  height (or `height:` under 1.5) around text that can be Burmese or Thai;
+  let the row grow or measure it (`TextPainter`), and let text in a Row be
+  `Flexible`. A sheet whose content can grow: `isScrollControlled: true`,
+  `constraints: tallSheetConstraints(context)`, a scrolling body (sideways
+  the default sheet is ~200 dp). Why: the 11 Nov player audit found a dozen
+  such cuts (docs/player_ux_audit_2026_11.md). Check a player change with
+  `test/player_layout_test.dart` (real fonts: `FONT_DIR`, see the doc) —
+  320/360/411 dp, both orientations, `LANGS=my,en,th`, `SCALES=1.0,1.3`.
+- **A Tooltip takes the long press.** A GestureDetector(onLongPress) around a
+  tooltip'd IconButton never fires (Next's repeat menu, 11 Nov): drop the
+  tooltip and name the button with `Semantics(label:, onLongPress:)`.
 - **Lab-only code stays behind `INNOCENT_LAB`** and is never shipped
   (skill `release` lists it). `MEDIA_SEAL` is a dart-define; the release
   build leaves it unset.
