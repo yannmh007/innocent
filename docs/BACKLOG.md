@@ -17,7 +17,7 @@ does it.
 
 ### WHERE THINGS STAND — read first in a new session (11 Nov 2026)
 - **Work branch `claude/extract-github-release-oteqr5`** holds everything
-  not yet live (main is 1.64.81, 96d504c). A new session starts on main:
+  not yet live (main is 1.64.82, 72b20dd). A new session starts on main:
   fetch this branch and work on top of it, or the notes below are missing.
   Push to it (fast-forward), the owner's choice of 8 Nov: a session's own
   branch starts at main, has no history in common with this one, and
@@ -35,10 +35,18 @@ does it.
   `_labAutoJumps(alternate:)` / `StreamCacheServer.spareForJumps`, and
   `_Ladder.pool`'s lab `connectionFactory` (`_labTimedConnect`, DNS / TCP /
   TLS apart in the trail)).
+- **1.64.82 (395) is out, 11 Nov**: the player audit
+  (docs/player_ux_audit_2026_11.md), and nothing else: released from main
+  1.64.81 plus the audit (session branch `claude/focused-johnson-1915dp`),
+  so none of this branch's unreleased work went with it (5d's keepSpare,
+  the play_summary stash, the lab hooks). The audit is on this branch too
+  (822a7e8f) and the next release from here carries it. Details under
+  "Next app release"; what the audit left open under "Player audit".
 - **Live already**: migrations 077–080, ingest v55 (0dfe2a5),
   transport-check every 6 h, the backup drill.
 - **The owner still has to**: send the DNSSEC "Active" screenshot on
-  12 Nov; update a phone to 1.64.81 and say if anything looks wrong. (The
+  12 Nov; update a phone to 1.64.82 and say if anything looks wrong (the player:
+  subtitles chosen upright, ⋮ then Back, Display Settings' sliders). (The
   five open films were approved: every `open-film-%` title reads
   `approved`, checked 8 Nov.) Reminders: trig_01Q1Z21R5QVuAzPJQqjTfK7W (12 Nov),
   trig_01G9fdiXXaVGHSbMgqiJc1bg (13 Nov).
@@ -105,6 +113,35 @@ does it.
   A/A of 21-28 pairs spreads 0.31-0.35 s). Lab config now: `FLOWS="jumps"`,
   the gate on the build with 5d on by default; Test Lab `cloud.env`: the
   realme alone (its rerun) — name both phones again for the next run.
+
+### Player audit (11 Nov) — `docs/player_ux_audit_2026_11.md`
+The owner's request: every menu and button of the player, both ways round,
+in every language, MX-level. Found and fixed (1.64.82): Back closed the
+film over an open menu; no subtitles or audio choice in portrait; holding
+Next never opened the repeat menu; Display Settings did nothing; "Track
+auto/no" in the audio menu; a 4 s timer leaked per film; the last history
+entry lost on close; a dozen layouts cut off in Burmese, sideways or at a
+large font. Left open:
+1. On purpose, the owner's call: Back while the screen is locked still
+   leaves the film (Kids Lock swallows it); the error banner shows
+   libmpv's own sentence under its title; "Online subtitles" shares a
+   search link (no url_launcher in the app).
+2. Toward MX, by what a viewer here would miss: chapters (libmpv's
+   `chapter-list`; local MKVs have them, the catalogue does not); subtitle
+   search and download in the app (OpenSubtitles, a key on the server);
+   the track playing marked in the menus on the ladder engine (1.64.82
+   reads it from libmpv only); cast.
+3. How to check a player change: `test/player_layout_test.dart` (1,224
+   layouts with LANGS=my,en,th SCALES=1.0,1.3; real fonts from test/fonts
+   and the SDK; PLAYER_SHOTS=<dir> photographs them),
+   `test/player_controls_test.dart`, and in the device lab
+   `layout_portrait player_audit layout_landscape player_audit_land`. The
+   controls hide 4 s after a tap and Maestro needs about a second a step:
+   a flow acts on freshly shown controls, its two taps 0.8 s apart (closer
+   is a double tap: play/pause). A build of main shows the first-run tour
+   (layout_portrait skips it); run.sh's rotation line read "now 0" in run
+   42993934736 while the screen was 2400x1080 — the UI dump's bounds are
+   the truth.
 
 ### Streaming without stutter (7 Nov) — `docs/streaming_review_2026_11.md`
 The owner's request: no stutter, nothing that annoys a viewer. Evidence:
@@ -225,7 +262,25 @@ security). Found, most urgent first:
    so); and a short public Worker cache for landing and row RPCs when they
    load the database. Not before.
 
-### Next app release (after 1.64.81)
+### Next app release (after 1.64.82)
+- **1.64.82 is out** (11 Nov, main 72b20dd, build 42996818415; arm64
+  95628676 bytes `dee484cc…de28`, arm32 87598952 bytes `907e8350…3929`;
+  GitHub's asset digests agree; app_releases moved at 10:23 UTC after a
+  rolled-back dry run, mirrors on the GitHub release). The player audit
+  only, on main 1.64.81: 357dfb9a, then 72b20dd adding the lab's player
+  flows. Proved before the push: the release tree's 1663 Flutter tests and
+  check.py; its Build 42986335820; device lab 42986323922 (plain: genres,
+  jumps 15/15); Test Lab 42986497192, the realme alone, 16/16 (one phone:
+  this branch's Test Lab had two of the day's five); device lab 42996379027,
+  the player flows in both orientations (Back closes ⋮ and the subtitle
+  panel with the film still playing; audio and subtitles on the portrait
+  top bar; holding Next opens the repeat menu). After it: Pages, Dependency
+  scan and CodeQL green; Playback check 43024797061 passed on main. The CDN copy
+  cannot be fetched from the sandbox (its host is blocked there); the
+  Build's CDN step passed. **The next release from this branch keeps**
+  `test_device/flows/player_audit*.yaml` and layout_portrait's tour skip
+  (brought here with this record, `[skip ci]`, so the device lab did not
+  start under this branch's own runs).
 - **Added on the branch 11 Nov, for the next release**: 5d, a connection
   kept open for a jump (`StreamCacheServer.keepSpare`, on; a second pool
   per ladder, `_Ladder.spare`); a jump's answer in parts in the trail
