@@ -5,49 +5,104 @@
 #  - B1: ⋮ then Back closes the menu and the film stays;
 #  - B3: holding Next opens the repeat menu (Loop one / Loop all);
 #  - the subtitle panel opens from CC, and Back closes it, not the film.
-# Each check has its screenshot (8x_audit_*).
+# The controls hide 4 s after a tap and Maestro takes about a second a
+# step (run 42991222224 lost them between two asserts), so before each
+# action the controls are shown afresh — hidden first if up — and used at
+# once. Each check has its screenshot (8x_audit_*).
 appId: com.innocent.media
 ---
+# ── B2: audio and subtitles on the top bar ───────────────────────────────
 - runFlow:
-    # Controls up: tap the picture only if they are not (a tap on shown
-    # controls hides them).
+    # Fresh controls: hidden first if they are up, then shown, so the next
+    # step has the whole 4 s.
     when:
-      notVisible: "(Audio track|အသံ လိုင်း)"
+      visible: "(Audio track|အသံ လိုင်း)"
     commands:
       - tapOn:
           point: "50%,50%"
+      # Apart from the next tap, or the two make a double tap: play/pause,
+      # and the controls stay down (run 42993934736's last check).
       - waitForAnimationToEnd:
-          timeout: 1000
+          timeout: 800
+- tapOn:
+    point: "50%,50%"
 - takeScreenshot: 80_audit_controls_landscape
 - assertVisible: "(Audio track|အသံ လိုင်း)"
+- runFlow:
+    # Fresh controls: hidden first if they are up, then shown, so the next
+    # step has the whole 4 s.
+    when:
+      visible: "(Audio track|အသံ လိုင်း)"
+    commands:
+      - tapOn:
+          point: "50%,50%"
+      # Apart from the next tap, or the two make a double tap: play/pause,
+      # and the controls stay down (run 42993934736's last check).
+      - waitForAnimationToEnd:
+          timeout: 800
+- tapOn:
+    point: "50%,50%"
 - assertVisible: "(Subtitle|စာတန်းထိုး)"
 
-# ── B1: ⋮, then Back ───────────────────────────────────────────────────
+# ── B1: ⋮, then Back ─────────────────────────────────────────────────────
+- runFlow:
+    # Fresh controls: hidden first if they are up, then shown, so the next
+    # step has the whole 4 s.
+    when:
+      visible: "(Audio track|အသံ လိုင်း)"
+    commands:
+      - tapOn:
+          point: "50%,50%"
+      # Apart from the next tap, or the two make a double tap: play/pause,
+      # and the controls stay down (run 42993934736's last check).
+      - waitForAnimationToEnd:
+          timeout: 800
+- tapOn:
+    point: "50%,50%"
 - tapOn: "(More|နောက်ထပ်)"
 - waitForAnimationToEnd:
     timeout: 1500
 - takeScreenshot: 81_audit_more_landscape
-- assertVisible: "(Video Display|ဗီဒီယိုပြသမှု)"
+# The menu holds the controls up while it is open.
+- assertVisible: "(Video Display|ဗီဒီယိုပြသမှု).*"
 - back
 - waitForAnimationToEnd:
     timeout: 1500
 - takeScreenshot: 82_audit_more_closed_by_back
-- assertNotVisible: "(Video Display|ဗီဒီယိုပြသမှု)"
-# Still in the player: its controls come back on a tap.
+- assertNotVisible: "(Video Display|ဗီဒီယိုပြသမှု).*"
+# Still in the player: a tap brings its controls back.
 - runFlow:
-    # Controls up: tap the picture only if they are not (a tap on shown
-    # controls hides them).
+    # Fresh controls: hidden first if they are up, then shown, so the next
+    # step has the whole 4 s.
     when:
-      notVisible: "(Audio track|အသံ လိုင်း)"
+      visible: "(Audio track|အသံ လိုင်း)"
     commands:
       - tapOn:
           point: "50%,50%"
+      # Apart from the next tap, or the two make a double tap: play/pause,
+      # and the controls stay down (run 42993934736's last check).
       - waitForAnimationToEnd:
-          timeout: 1000
+          timeout: 800
+- tapOn:
+    point: "50%,50%"
 - assertVisible: "(Audio track|အသံ လိုင်း)"
 
-# ── B3: hold Next ──────────────────────────────────────────────────────
-- longPressOn: "(Next video.*|နောက် ဗီဒီယို.*)"
+# ── B3: hold Next ────────────────────────────────────────────────────────
+- runFlow:
+    # Fresh controls: hidden first if they are up, then shown, so the next
+    # step has the whole 4 s.
+    when:
+      visible: "(Audio track|အသံ လိုင်း)"
+    commands:
+      - tapOn:
+          point: "50%,50%"
+      # Apart from the next tap, or the two make a double tap: play/pause,
+      # and the controls stay down (run 42993934736's last check).
+      - waitForAnimationToEnd:
+          timeout: 800
+- tapOn:
+    point: "50%,50%"
+- longPressOn: "(Next video|နောက် ဗီဒီယို).*"
 - waitForAnimationToEnd:
     timeout: 1500
 - takeScreenshot: 83_audit_repeat_menu
@@ -56,33 +111,43 @@ appId: com.innocent.media
 - waitForAnimationToEnd:
     timeout: 1000
 
-# ── CC: the subtitle panel, closed by Back ─────────────────────────────
+# ── CC: the subtitle panel, closed by Back ───────────────────────────────
 - runFlow:
-    # Controls up: tap the picture only if they are not (a tap on shown
-    # controls hides them).
+    # Fresh controls: hidden first if they are up, then shown, so the next
+    # step has the whole 4 s.
     when:
-      notVisible: "(Audio track|အသံ လိုင်း)"
+      visible: "(Audio track|အသံ လိုင်း)"
     commands:
       - tapOn:
           point: "50%,50%"
+      # Apart from the next tap, or the two make a double tap: play/pause,
+      # and the controls stay down (run 42993934736's last check).
       - waitForAnimationToEnd:
-          timeout: 1000
+          timeout: 800
+- tapOn:
+    point: "50%,50%"
 - tapOn: "(Subtitle|စာတန်းထိုး)"
 - waitForAnimationToEnd:
     timeout: 1500
 - takeScreenshot: 84_audit_subtitle_panel
+- assertVisible: "(Online.*|.*Online.*)"
 - back
 - waitForAnimationToEnd:
     timeout: 1500
 - takeScreenshot: 85_audit_subtitle_panel_closed
+- assertNotVisible: "(Online.*|.*Online.*)"
 - runFlow:
-    # Controls up: tap the picture only if they are not (a tap on shown
-    # controls hides them).
+    # Fresh controls: hidden first if they are up, then shown, so the next
+    # step has the whole 4 s.
     when:
-      notVisible: "(Audio track|အသံ လိုင်း)"
+      visible: "(Audio track|အသံ လိုင်း)"
     commands:
       - tapOn:
           point: "50%,50%"
+      # Apart from the next tap, or the two make a double tap: play/pause,
+      # and the controls stay down (run 42993934736's last check).
       - waitForAnimationToEnd:
-          timeout: 1000
+          timeout: 800
+- tapOn:
+    point: "50%,50%"
 - assertVisible: "(Audio track|အသံ လိုင်း)"

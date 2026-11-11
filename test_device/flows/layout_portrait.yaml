@@ -12,6 +12,14 @@ appId: com.innocent.media
     optional: true
 - waitForAnimationToEnd:
     timeout: 2000
+# A build of main shows the first-run tour here (only the work branch's lab
+# builds skip it): without this the flow photographed the tour, not the
+# player (run 42986323922). Optional: nothing to skip on the work branch.
+- tapOn:
+    text: "Skip"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 1500
 - scrollUntilVisible:
     element:
       text: ".*Perf Test.*"
