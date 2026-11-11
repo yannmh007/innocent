@@ -51,6 +51,17 @@ Both run only on non-main branches, started by pushing their config file.
   5c (9 Nov) shrank the segment and gained ~0.2 s, because the Worker's
   answer and the phone's restart were most of the wait, and the bigger
   segment asked for next with 2 s in hand stopped the film again.
+- **The answer has parts too** (since 11 Nov): `hls jump: …; conn new|kept
+  N ms (dns, tcp, tls), wait N ms, before N ms; a read cut|no read cut`,
+  and the same on the `LAB autojump` line (`conn= wait_ms= answer_ms=
+  cut=`), summed per variant by the summary. A response cut before its end
+  takes its connection with it (Dart's HttpClient), so a jump during a read
+  ahead pays a handshake: M1 (42951731347), 33 of 34 such jumps on a new
+  connection, answer 885 ms (DNS 25 + TCP 147 + TLS 189 + the Worker's
+  wait 441) against 466 on a kept one. A/A spread: 0.35 s over 28 pairs
+  (J3), 0.31 s over 21 (M1). `JUMPS_JUMP` writes a `lab_jump` word for the
+  jumps flow, so the release gate can run with a switch on before the
+  build's default is.
 
 ## Test Lab — `test_device/cloud.env` → device-cloud.yml (real phones)
 - `DEVICES="RE58C2,35 OP573DL1,34"` (realme, OPPO). Five physical tests a
@@ -59,7 +70,9 @@ Both run only on non-main branches, started by pushing their config file.
 - `STREAM_AUTOJUMPS` (shares of the film): jumps in Auto after the checks,
   measured as on the emulator; the app then closes at 330 s, not 240. The
   phones' lines decide whether a jump rule has anything to act on: on
-  9 Nov the realme's (~15 Mbit/s) and the OPPO's (~0.3) gave 5c none.
+  9 Nov the realme's (~15 Mbit/s) and the OPPO's (~0.3) gave 5c none. No
+  word can be written there: a switch is compared jump by jump in one
+  playback (`_labAutoJumps(alternate:)`, odd jumps on).
 - Results: `test_device/results/cloud/<device>/lab_trace.txt`. A seek or
   quality check failing with "measured" line speeds far below earlier runs
   is the line: say so with the numbers, and run that phone once more.
